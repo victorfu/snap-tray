@@ -9,7 +9,6 @@
 
 class QWidget;
 class TextAnnotationEditor;
-class ToolOptionsPanel;
 class AnnotationHostAdapter;
 class RegionSettingsHelper;
 
@@ -24,12 +23,8 @@ class AnnotationContext
 public:
     explicit AnnotationContext(AnnotationHostAdapter& host);
 
-    void setupTextAnnotationEditor(bool attachOptionsPanel = true,
-                                   bool connectUpdateSignal = true) const;
+    void setupTextAnnotationEditor(bool connectUpdateSignal = true) const;
     void connectTextEditorSignals() const;
-    void connectToolOptionsSignals() const;
-    void connectTextFormattingSignals() const;
-    void syncTextFormattingControls() const;
     void showTextFontSizeDropdown(RegionSettingsHelper& settingsHelper, const QPoint& pos) const;
     void showTextFontFamilyDropdown(RegionSettingsHelper& settingsHelper, const QPoint& pos) const;
     void applyTextFontSize(int size) const;

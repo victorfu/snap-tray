@@ -4,7 +4,7 @@ import SnapTrayQml
 /**
  * FloatingToolbar: Glass-effect toolbar for PinWindow annotation mode.
  *
- * Driven by PinToolbarViewModel (injected as "viewModel" context property).
+ * Driven by a toolbar view model injected as the root "viewModel" property.
  * Uses GlassSurface for background, ToolbarButton for each tool, and
  * emits drag/tooltip signals handled by QmlWindowedToolbar C++ bridge.
  *
@@ -16,7 +16,22 @@ import SnapTrayQml
  */
 Item {
     id: root
-    property var viewModel: pinToolbarViewModel
+    required property var viewModel
+    readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
+    property int iconPalette: 0
+    readonly property bool useCaptureOverlayIconPalette: root.iconPalette === 1
+    property color iconNormalColor: root.useCaptureOverlayIconPalette
+        ? SemanticTokens.captureOverlaySelectionBorder
+        : ComponentTokens.toolbarIcon
+    property color iconActionColor: root.useCaptureOverlayIconPalette
+        ? SemanticTokens.captureOverlaySelectionBorder
+        : (SemanticTokens.isDarkMode ? DesignSystem.blue400 : DesignSystem.annotationBlue)
+    property color iconCancelColor: root.useCaptureOverlayIconPalette
+        ? SemanticTokens.captureOverlaySelectionBorder
+        : (SemanticTokens.isDarkMode ? DesignSystem.red400 : DesignSystem.red500)
+    property color iconActiveColor: root.useCaptureOverlayIconPalette
+        ? SemanticTokens.captureOverlaySelectionBorder
+        : ComponentTokens.toolbarIconActive
 
     // ── Signals to C++ bridge ──
     signal buttonHovered(int buttonId, real anchorX, real anchorY,
@@ -81,7 +96,7 @@ Item {
         z: 1
 
         Repeater {
-            model: root.viewModel.buttons
+            model: root.hasViewModel ? root.viewModel.buttons : []
 
             Loader {
                 id: delegateLoader
@@ -93,7 +108,7 @@ Item {
                 readonly property bool isOCR: buttonData.isOCR
 
                 // Skip OCR button if not available
-                active: !(isOCR && !root.viewModel.ocrAvailable)
+                active: root.hasViewModel && !(isOCR && !root.viewModel.ocrAvailable)
                 visible: active
 
                 sourceComponent: Item {
@@ -125,9 +140,14 @@ Item {
                         buttonId: delegateLoader.buttonId
                         iconSource: delegateLoader.buttonData.iconSource
                         tooltipText: delegateLoader.buttonData.tooltip
-                        isAction: delegateLoader.buttonData.isAction
-                        isActive: root.viewModel.activeTool === delegateLoader.buttonId
+                        isAction: delegateLoader.buttonData.isAction || false
+                        isCancel: delegateLoader.buttonData.isCancel || false
+                        isRecord: delegateLoader.buttonData.isRecord || false
+                        isActive: root.hasViewModel
+                                  && root.viewModel.activeTool === delegateLoader.buttonId
                         isDisabled: {
+                            if (!root.hasViewModel)
+                                return true;
                             if (delegateLoader.buttonData.isUndo)
                                 return !root.viewModel.canUndo;
                             if (delegateLoader.buttonData.isRedo)
@@ -136,11 +156,16 @@ Item {
                                 return root.viewModel.shareInProgress;
                             return false;
                         }
+                        iconNormalColor: root.iconNormalColor
+                        iconActionColor: root.iconActionColor
+                        iconCancelColor: root.iconCancelColor
+                        iconActiveColor: root.iconActiveColor
                         width: root.buttonWidth
                         height: root.buttonHeight
 
                         onClicked: function(id) {
-                            root.viewModel.handleButtonClicked(id)
+                            if (root.hasViewModel)
+                                root.viewModel.handleButtonClicked(id)
                         }
 
                         onHovered: function(id, globalX, globalY, w, h) {

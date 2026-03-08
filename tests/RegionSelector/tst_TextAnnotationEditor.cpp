@@ -13,9 +13,8 @@
 /**
  * @brief Standalone test class for TextAnnotationEditor logic.
  *
- * Since TextAnnotationEditor depends on AnnotationLayer, InlineTextEditor,
- * and ToolOptionsPanel, we test the core logic directly here without
- * needing those dependencies.
+ * Since TextAnnotationEditor depends on AnnotationLayer and InlineTextEditor,
+ * we test the core logic directly here without needing those dependencies.
  */
 class tst_TextAnnotationEditor : public QObject
 {

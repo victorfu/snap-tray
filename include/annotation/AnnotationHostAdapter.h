@@ -10,7 +10,6 @@
 
 class QWidget;
 class AnnotationLayer;
-class ToolOptionsPanel;
 class InlineTextEditor;
 class TextAnnotationEditor;
 
@@ -21,7 +20,6 @@ public:
 
     virtual QWidget* annotationHostWidget() const = 0;
     virtual AnnotationLayer* annotationLayerForContext() const = 0;
-    virtual ToolOptionsPanel* toolOptionsPanelForContext() const = 0;
     virtual InlineTextEditor* inlineTextEditorForContext() const = 0;
     virtual TextAnnotationEditor* textAnnotationEditorForContext() const = 0;
 

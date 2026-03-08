@@ -39,13 +39,12 @@ struct OCRResult;
 class QRCodeManager;
 class PinWindowManager;
 class UIIndicators;
-namespace SnapTray { class QmlToast; class QmlWindowedToolbar; class QmlWindowedSubToolbar; }
+namespace SnapTray { class QmlToast; class QmlWindowedToolbar; class QmlFloatingSubToolbar; }
 class PinToolbarViewModel;
 class PinToolOptionsViewModel;
 class AnnotationLayer;
 class AnnotationItem;
 class ToolManager;
-class ToolOptionsPanel;
 class InlineTextEditor;
 class TextAnnotationEditor;
 class AutoBlurManager;
@@ -163,7 +162,6 @@ private:
     // AnnotationHostAdapter implementation
     QWidget* annotationHostWidget() const override;
     AnnotationLayer* annotationLayerForContext() const override;
-    ToolOptionsPanel* toolOptionsPanelForContext() const override;
     InlineTextEditor* inlineTextEditorForContext() const override;
     TextAnnotationEditor* textAnnotationEditorForContext() const override;
     void onContextColorSelected(const QColor& color) override;
@@ -409,7 +407,7 @@ private:
 
     // Toolbar and annotation members
     std::unique_ptr<SnapTray::QmlWindowedToolbar> m_toolbar;
-    std::unique_ptr<SnapTray::QmlWindowedSubToolbar> m_subToolbar;
+    std::unique_ptr<SnapTray::QmlFloatingSubToolbar> m_subToolbar;
     AnnotationLayer* m_annotationLayer = nullptr; // Qt parent owns lifetime
     ToolManager* m_toolManager = nullptr;
     InlineTextEditor* m_textEditor = nullptr;

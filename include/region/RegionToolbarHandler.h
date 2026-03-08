@@ -8,10 +8,8 @@
 #include "tools/ToolId.h"
 
 class QWidget;
-class ToolbarCore;
 class ToolManager;
 class AnnotationLayer;
-class ToolOptionsPanel;
 class SelectionStateManager;
 class OCRManager;
 
@@ -36,22 +34,14 @@ public:
     explicit RegionToolbarHandler(QObject* parent = nullptr);
 
     // Dependency injection
-    void setToolbar(ToolbarCore* toolbar);
     void setToolManager(ToolManager* manager);
     void setAnnotationLayer(AnnotationLayer* layer);
-    void setColorAndWidthWidget(ToolOptionsPanel* widget);
     void setSelectionManager(SelectionStateManager* manager);
     void setOCRManager(OCRManager* manager);
     void setParentWidget(QWidget* widget);
 
-    // Setup toolbar buttons (call once during initialization)
-    void setupToolbarButtons();
-
     // Handle toolbar button click
     void handleToolbarClick(ToolId button);
-
-    // Icon color provider (passed to ToolbarCore)
-    QColor getToolbarIconColor(int buttonId, bool isActive, bool isHovered) const;
 
     // Current state
     ToolId currentTool() const { return m_currentTool; }
@@ -88,7 +78,7 @@ signals:
     void multiRegionDoneRequested();
     void multiRegionCancelRequested();
 
-    // ToolOptionsPanel configuration signals
+    // Sub-toolbar configuration signals
     void showSizeSectionRequested(bool show);
     void showWidthSectionRequested(bool show);
     void widthSectionHiddenRequested(bool hidden);
@@ -142,10 +132,8 @@ private:
     void restoreStandardWidth();
 
     // Dependencies (non-owning pointers)
-    ToolbarCore* m_toolbar = nullptr;
     ToolManager* m_toolManager = nullptr;
     AnnotationLayer* m_annotationLayer = nullptr;
-    ToolOptionsPanel* m_colorAndWidthWidget = nullptr;
     SelectionStateManager* m_selectionManager = nullptr;
     OCRManager* m_ocrManager = nullptr;
     QWidget* m_parentWidget = nullptr;

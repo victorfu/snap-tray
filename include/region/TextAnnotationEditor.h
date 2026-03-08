@@ -13,7 +13,6 @@
 
 class AnnotationLayer;
 class InlineTextEditor;
-class ToolOptionsPanel;
 class QWidget;
 
 /**
@@ -41,7 +40,6 @@ public:
     // Initialization
     void setAnnotationLayer(AnnotationLayer* layer);
     void setTextEditor(InlineTextEditor* editor);
-    void setColorAndWidthWidget(ToolOptionsPanel* widget);
     void setParentWidget(QWidget* widget);
     void setCoordinateMappers(const std::function<QPointF(const QPointF&)>& displayToAnnotation,
                               const std::function<QPointF(const QPointF&)>& annotationToDisplay);
@@ -94,7 +92,6 @@ private:
     // Dependencies
     AnnotationLayer* m_annotationLayer = nullptr;
     InlineTextEditor* m_textEditor = nullptr;
-    ToolOptionsPanel* m_colorAndWidthWidget = nullptr;
     QWidget* m_parentWidget = nullptr;
 
     // Transformation state

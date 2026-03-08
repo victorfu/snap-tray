@@ -598,11 +598,6 @@ add_library(snaptray_ui STATIC
     src/GlassPanelCSS.cpp
     src/IconRenderer.cpp
     src/ToolbarStyle.cpp
-    src/toolbar/ToolbarCore.cpp
-    src/toolbar/ToolbarButtonConfig.cpp
-    src/toolbar/ToolbarRenderer.cpp
-    src/toolbar/WindowInteractionUtils.cpp
-
     # Annotation UI
     src/AnnotationLayer.cpp
     src/InlineTextEditor.cpp
@@ -628,7 +623,6 @@ add_library(snaptray_ui STATIC
     src/tools/handlers/MeasureToolHandler.cpp
 
     # Widgets
-    src/toolbar/ToolOptionsPanel.cpp
     src/EmojiPicker.cpp
     src/pinwindow/EmojiPickerPopup.cpp
 
@@ -641,15 +635,7 @@ add_library(snaptray_ui STATIC
     include/widgets/HotkeySettingsTab.h
 
     # UI sections
-    src/ui/sections/ColorSection.cpp
-    src/ui/sections/WidthSection.cpp
     src/ui/sections/MosaicBlurTypeSection.cpp
-    src/ui/sections/TextSection.cpp
-    src/ui/sections/ArrowStyleSection.cpp
-    src/ui/sections/LineStyleSection.cpp
-    src/ui/sections/ShapeSection.cpp
-    src/ui/sections/SizeSection.cpp
-    src/ui/sections/AutoBlurSection.cpp
 
     # Region selection
     src/RegionSelector.cpp
@@ -676,8 +662,6 @@ add_library(snaptray_ui STATIC
     src/pinwindow/PinHistoryStore.cpp
     src/pinwindow/PinHistoryWindow.cpp
     src/pinwindow/PinWindowPlacement.cpp
-    # WindowedToolbar.cpp and WindowedSubToolbar.cpp removed — replaced by QML
-    # (QmlWindowedToolbar.mm and QmlWindowedSubToolbar.mm in snaptray_qml)
     src/pinwindow/ResizeHandler.cpp
     src/pinwindow/UIIndicators.cpp
     src/pinwindow/ClickThroughExitButton.cpp
@@ -733,24 +717,14 @@ add_library(snaptray_ui STATIC
     # macOS-only UI
 
     # Headers with Q_OBJECT for MOC processing
-    include/toolbar/ToolbarCore.h
     include/annotations/AnnotationLayer.h
     include/InlineTextEditor.h
     include/TransformationGizmo.h
     include/tools/ToolRegistry.h
     include/tools/ToolManager.h
-    include/toolbar/ToolOptionsPanel.h
     include/EmojiPicker.h
     include/pinwindow/EmojiPickerPopup.h
-    include/ui/sections/ColorSection.h
-    include/ui/sections/WidthSection.h
     include/ui/sections/MosaicBlurTypeSection.h
-    include/ui/sections/TextSection.h
-    include/ui/sections/ArrowStyleSection.h
-    include/ui/sections/LineStyleSection.h
-    include/ui/sections/ShapeSection.h
-    include/ui/sections/SizeSection.h
-    include/ui/sections/AutoBlurSection.h
     include/RegionSelector.h
     include/region/SelectionStateManager.h
     include/region/MagnifierPanel.h
@@ -772,8 +746,6 @@ add_library(snaptray_ui STATIC
     include/pinwindow/PinHistoryStore.h
     include/pinwindow/PinHistoryWindow.h
     include/pinwindow/PinWindowPlacement.h
-    # WindowedToolbar.h and WindowedSubToolbar.h removed — replaced by QML
-    # (QmlWindowedToolbar.h and QmlWindowedSubToolbar.h in snaptray_qml)
     include/pinwindow/ResizeHandler.h
     include/pinwindow/UIIndicators.h
     include/pinwindow/ClickThroughExitButton.h
@@ -897,7 +869,6 @@ set_source_files_properties(src/qml/toolbar/TextFormattingSection.qml PROPERTIES
 set_source_files_properties(src/qml/toolbar/ShapeSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ShapeSection.qml)
 set_source_files_properties(src/qml/toolbar/ArrowStyleSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ArrowStyleSection.qml)
 set_source_files_properties(src/qml/toolbar/LineStyleSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/LineStyleSection.qml)
-set_source_files_properties(src/qml/toolbar/SharedStyleDropdownHost.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/SharedStyleDropdownHost.qml)
 set_source_files_properties(src/qml/toolbar/SizeSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/SizeSection.qml)
 set_source_files_properties(src/qml/toolbar/AutoBlurSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/AutoBlurSection.qml)
 
@@ -988,7 +959,6 @@ qt_add_qml_module(snaptray_qml
         src/qml/toolbar/ShapeSection.qml
         src/qml/toolbar/ArrowStyleSection.qml
         src/qml/toolbar/LineStyleSection.qml
-        src/qml/toolbar/SharedStyleDropdownHost.qml
         src/qml/toolbar/SizeSection.qml
         src/qml/toolbar/AutoBlurSection.qml
     SOURCES
@@ -1022,10 +992,16 @@ qt_add_qml_module(snaptray_qml
         include/qml/PinToolbarViewModel.h
         src/qml/QmlWindowedToolbar.mm
         include/qml/QmlWindowedToolbar.h
-        src/qml/QmlWindowedSubToolbar.mm
-        include/qml/QmlWindowedSubToolbar.h
         src/qml/PinToolOptionsViewModel.cpp
         include/qml/PinToolOptionsViewModel.h
+        src/qml/RegionToolbarViewModel.cpp
+        include/qml/RegionToolbarViewModel.h
+        src/qml/CanvasToolbarViewModel.cpp
+        include/qml/CanvasToolbarViewModel.h
+        src/qml/QmlFloatingToolbar.mm
+        include/qml/QmlFloatingToolbar.h
+        src/qml/QmlFloatingSubToolbar.mm
+        include/qml/QmlFloatingSubToolbar.h
 )
 
 target_include_directories(snaptray_qml

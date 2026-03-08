@@ -1,9 +1,58 @@
 #include "qml/SvgIconItem.h"
 
+#include <QFile>
 #include <QPainter>
 #include <QQuickWindow>
 #include <QSvgRenderer>
 #include <QDebug>
+
+namespace {
+
+QString fallbackIconResourcePath(const QString& path)
+{
+    constexpr auto kIconsRoot = ":/icons/";
+    constexpr auto kNestedIconsRoot = ":/icons/icons/";
+    constexpr qsizetype kIconsRootLength = sizeof(":/icons/") - 1;
+    constexpr qsizetype kNestedIconsRootLength = sizeof(":/icons/icons/") - 1;
+
+    if (path.startsWith(QLatin1String(kNestedIconsRoot))) {
+        const QString tail = path.mid(kNestedIconsRootLength);
+        return QStringLiteral("%1%2").arg(QLatin1String(kIconsRoot), tail);
+    }
+
+    if (path.startsWith(QLatin1String(kIconsRoot))) {
+        const QString tail = path.mid(kIconsRootLength);
+        if (!tail.startsWith(QStringLiteral("icons/"))) {
+            return QStringLiteral("%1%2").arg(QLatin1String(kNestedIconsRoot), tail);
+        }
+    }
+
+    return QString();
+}
+
+QString resolveExistingPath(const QString& path)
+{
+    if (path.isEmpty()) {
+        return QString();
+    }
+
+    if (!path.startsWith(QStringLiteral(":/"))) {
+        return path;
+    }
+
+    if (QFile::exists(path)) {
+        return path;
+    }
+
+    const QString fallbackPath = fallbackIconResourcePath(path);
+    if (!fallbackPath.isEmpty() && QFile::exists(fallbackPath)) {
+        return fallbackPath;
+    }
+
+    return path;
+}
+
+} // namespace
 
 SvgIconItem::SvgIconItem(QQuickItem* parent)
     : QQuickPaintedItem(parent)
@@ -53,8 +102,13 @@ void SvgIconItem::setSource(const QUrl& source)
     emit sourceChanged();
 
     m_renderer.reset();
-    const QString sourcePath = resolveSourcePath(source);
+    const QString sourcePath = resolveExistingPath(resolveSourcePath(source));
     if (!sourcePath.isEmpty()) {
+        if (sourcePath.startsWith(QStringLiteral(":/")) && !QFile::exists(sourcePath)) {
+            qWarning() << "SvgIconItem: Failed to load icon:" << sourcePath;
+            update();
+            return;
+        }
         auto renderer = std::make_unique<QSvgRenderer>(sourcePath);
         if (renderer->isValid()) {
             m_renderer = std::move(renderer);

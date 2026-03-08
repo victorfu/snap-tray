@@ -22,7 +22,6 @@
 #include "region/ShapeAnnotationEditor.h"
 #include "region/RegionSettingsHelper.h"
 #include "tools/ToolId.h"
-#include "ToolbarStyle.h"
 #include "TransformationGizmo.h"
 
 class QScreen;
@@ -34,15 +33,19 @@ class ColorPickerDialogCompat;
 }
 }
 class EmojiPicker;
-class ToolOptionsPanel;
 class LaserPointerRenderer;
-class ToolbarCore;
 class ArrowAnnotation;
 class PolylineAnnotation;
 class TextBoxAnnotation;
 class EmojiStickerAnnotation;
 class ShapeAnnotation;
 class AnnotationContext;
+class CanvasToolbarViewModel;
+class PinToolOptionsViewModel;
+namespace SnapTray {
+class QmlFloatingToolbar;
+class QmlFloatingSubToolbar;
+}
 
 // Canvas background mode
 enum class CanvasBackgroundMode {
@@ -79,7 +82,6 @@ private:
     // AnnotationHostAdapter implementation
     QWidget* annotationHostWidget() const override;
     AnnotationLayer* annotationLayerForContext() const override;
-    ToolOptionsPanel* toolOptionsPanelForContext() const override;
     InlineTextEditor* inlineTextEditorForContext() const override;
     TextAnnotationEditor* textAnnotationEditorForContext() const override;
     void onContextColorSelected(const QColor& color) override;
@@ -98,9 +100,6 @@ private:
     void drawCursorDot(QPainter &painter);
 
     // Toolbar helpers
-    void initializeIcons();
-    void setupToolbar();
-    void updateToolbarPosition();
     void handleToolbarClick(int buttonId);
     void handlePersistentToolClick(ToolId toolId);
     void handleLaserPointerClick();
@@ -110,8 +109,8 @@ private:
     void handleRedoAction(ToolId toolId);
     void handleClearAction(ToolId toolId);
     void handleExitAction(ToolId toolId);
+    void finalizePolylineForToolbarInteraction();
     bool isDrawingTool(ToolId toolId) const;
-    QColor getButtonIconColor(int buttonId) const;
     void setToolCursor();
 
     using ToolbarClickHandler = void (ScreenCanvas::*)(ToolId);
@@ -127,8 +126,6 @@ private:
     void onLineWidthChanged(int width);
 
     // Unified color and width widget helpers
-    bool shouldShowColorAndWidthWidget() const;
-    bool shouldShowWidthControl() const;
     void syncColorToAllWidgets(const QColor& color);
 
     // Annotation settings persistence
@@ -144,6 +141,9 @@ private:
     void onFontSizeSelected(int size);
     void onFontFamilySelected(const QString &family);
 
+    // Update QML toolbar/sub-toolbar state for current tool
+    void updateQmlToolbarState();
+
     // Background pixmap (used for Whiteboard/Blackboard modes)
     QPixmap m_backgroundPixmap;
     QPointer<QScreen> m_currentScreen;
@@ -155,15 +155,13 @@ private:
     ToolId m_currentToolId;
     bool m_laserPointerActive;
 
-    // Toolbar using ToolbarCore
-    ToolbarCore *m_toolbar;
-    bool m_isDraggingToolbar;
-    bool m_toolbarManuallyPositioned;
-    QPoint m_toolbarDragOffset;
+    // QML toolbar and sub-toolbar
+    CanvasToolbarViewModel *m_toolbarViewModel = nullptr;
+    PinToolOptionsViewModel *m_toolOptionsViewModel = nullptr;
+    std::unique_ptr<SnapTray::QmlFloatingToolbar> m_qmlToolbar;
+    std::unique_ptr<SnapTray::QmlFloatingSubToolbar> m_qmlSubToolbar;
+    bool m_toolbarUserDragged = false;
     bool m_showSubToolbar;
-
-    // Unified color and width widget
-    ToolOptionsPanel *m_colorAndWidthWidget;
 
     // Emoji picker
     EmojiPicker *m_emojiPicker;
@@ -176,9 +174,6 @@ private:
 
     // Cursor position for drawing cursor dot
     QPoint m_cursorPos;
-
-    // Toolbar style configuration
-    ToolbarStyleConfig m_toolbarStyleConfig;
 
     // Shape tool state
     ShapeType m_shapeType = ShapeType::Rectangle;
@@ -224,7 +219,7 @@ private:
     bool handlePolylineAnnotationMove(const QPoint& pos);
     bool handlePolylineAnnotationRelease(const QPoint& pos);
     PolylineAnnotation* getSelectedPolylineAnnotation();
-    
+
     // Cursor update helper
     void updateAnnotationCursor(const QPoint& pos);
 

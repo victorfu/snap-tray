@@ -201,24 +201,27 @@ void PinToolOptionsViewModel::setAutoBlurProcessing(bool value)
 
 QVariantList PinToolOptionsViewModel::arrowStyleOptions() const
 {
-    // LineEndStyle enum: None=0, EndArrow=1, EndArrowOutline=2, EndArrowLine=3, BothArrow=4, BothArrowOutline=5
+    // Arrow style previews are drawn by QML/menus directly; keep this model
+    // free of icon resource keys so shared consumers cannot accidentally
+    // resolve stale SVG paths.
     return {
-        QVariantMap{{"value", 0}, {"iconKey", "arrow-none"}},
-        QVariantMap{{"value", 1}, {"iconKey", "arrow-end"}},
-        QVariantMap{{"value", 2}, {"iconKey", "arrow-end-outline"}},
-        QVariantMap{{"value", 3}, {"iconKey", "arrow-end-line"}},
-        QVariantMap{{"value", 4}, {"iconKey", "arrow-both"}},
-        QVariantMap{{"value", 5}, {"iconKey", "arrow-both-outline"}},
+        QVariantMap{{"value", 0}},
+        QVariantMap{{"value", 1}},
+        QVariantMap{{"value", 2}},
+        QVariantMap{{"value", 3}},
+        QVariantMap{{"value", 4}},
+        QVariantMap{{"value", 5}},
     };
 }
 
 QVariantList PinToolOptionsViewModel::lineStyleOptions() const
 {
-    // LineStyle enum: Solid=0, Dashed=1, Dotted=2
+    // Line style previews are drawn by QML/menus directly; keep this model free
+    // of icon resource keys so shared consumers cannot accidentally resolve SVGs.
     return {
-        QVariantMap{{"value", 0}, {"iconKey", "line-solid"}},
-        QVariantMap{{"value", 1}, {"iconKey", "line-dashed"}},
-        QVariantMap{{"value", 2}, {"iconKey", "line-dotted"}},
+        QVariantMap{{"value", 0}},
+        QVariantMap{{"value", 1}},
+        QVariantMap{{"value", 2}},
     };
 }
 
@@ -298,6 +301,16 @@ void PinToolOptionsViewModel::handleFontSizeDropdown(double globalX, double glob
 void PinToolOptionsViewModel::handleFontFamilyDropdown(double globalX, double globalY)
 {
     emit fontFamilyDropdownRequested(globalX, globalY);
+}
+
+void PinToolOptionsViewModel::handleArrowStyleDropdown(double globalX, double globalY)
+{
+    emit arrowStyleDropdownRequested(globalX, globalY);
+}
+
+void PinToolOptionsViewModel::handleLineStyleDropdown(double globalX, double globalY)
+{
+    emit lineStyleDropdownRequested(globalX, globalY);
 }
 
 void PinToolOptionsViewModel::handleShapeTypeSelected(int type)

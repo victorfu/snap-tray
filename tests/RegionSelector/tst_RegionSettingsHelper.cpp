@@ -1,8 +1,19 @@
 #include <QtTest/QtTest>
 
 #include "TextFormattingState.h"
+#include "annotations/ArrowAnnotation.h"
+#include "annotations/LineStyle.h"
 #include "region/RegionSettingsHelper.h"
 #include "settings/Settings.h"
+
+#include <QAction>
+#include <QMenu>
+#include <QMutex>
+#include <QMutexLocker>
+#include <QSignalSpy>
+
+Q_DECLARE_METATYPE(LineEndStyle)
+Q_DECLARE_METATYPE(LineStyle)
 
 namespace {
 
@@ -34,6 +45,55 @@ QStringList allTextSettingKeys()
     };
 }
 
+QMutex g_warningMutex;
+QStringList g_warningMessages;
+QtMessageHandler g_previousHandler = nullptr;
+
+void warningCaptureHandler(QtMsgType type, const QMessageLogContext& context, const QString& message)
+{
+    Q_UNUSED(context);
+
+    if (type == QtWarningMsg || type == QtCriticalMsg || type == QtFatalMsg) {
+        QMutexLocker locker(&g_warningMutex);
+        g_warningMessages.push_back(message);
+    }
+
+    if (g_previousHandler) {
+        g_previousHandler(type, context, message);
+    }
+}
+
+class WarningCaptureScope
+{
+public:
+    WarningCaptureScope()
+    {
+        QMutexLocker locker(&g_warningMutex);
+        g_warningMessages.clear();
+        g_previousHandler = qInstallMessageHandler(warningCaptureHandler);
+    }
+
+    ~WarningCaptureScope()
+    {
+        qInstallMessageHandler(g_previousHandler);
+        g_previousHandler = nullptr;
+    }
+
+    QStringList svgWarnings() const
+    {
+        QMutexLocker locker(&g_warningMutex);
+        QStringList filtered;
+        for (const QString& message : g_warningMessages) {
+            if (message.contains(QStringLiteral("qt.svg:"), Qt::CaseInsensitive)
+                || message.contains(QStringLiteral("Cannot open file"), Qt::CaseInsensitive)) {
+                filtered.push_back(message);
+            }
+        }
+        return filtered;
+    }
+}
+;
+
 } // namespace
 
 class tst_RegionSettingsHelper : public QObject
@@ -47,6 +107,8 @@ private slots:
     void testLoadTextFormatting_UsesAnnotationKeysFirst();
     void testLoadTextFormatting_IgnoresLegacyKeys();
     void testLoadTextFormatting_UsesDefaultsWithoutKeys();
+    void testShowArrowStyleDropdown_EmitsSelectedStyle();
+    void testShowLineStyleDropdown_EmitsSelectedStyle();
 
 private:
     QHash<QString, QVariant> m_savedValues;
@@ -55,6 +117,9 @@ private:
 
 void tst_RegionSettingsHelper::init()
 {
+    qRegisterMetaType<LineEndStyle>("LineEndStyle");
+    qRegisterMetaType<LineStyle>("LineStyle");
+
     m_savedValues.clear();
     m_existingKeys.clear();
 
@@ -139,6 +204,46 @@ void tst_RegionSettingsHelper::testLoadTextFormatting_UsesDefaultsWithoutKeys()
     QCOMPARE(state.underline, false);
     QCOMPARE(state.fontSize, 16);
     QVERIFY(state.fontFamily.isEmpty());
+}
+
+void tst_RegionSettingsHelper::testShowArrowStyleDropdown_EmitsSelectedStyle()
+{
+    RegionSettingsHelper helper;
+    QSignalSpy spy(&helper, &RegionSettingsHelper::arrowStyleSelected);
+    QMenu menu;
+    WarningCaptureScope warningScope;
+
+    helper.populateArrowStyleMenu(&menu, LineEndStyle::EndArrowOutline);
+
+    const auto actions = menu.actions();
+    QCOMPARE(actions.size(), 6);
+    QVERIFY(!actions.at(0)->icon().isNull());
+    QVERIFY2(warningScope.svgWarnings().isEmpty(),
+             qPrintable(warningScope.svgWarnings().join('\n')));
+    QVERIFY(actions.at(2)->isChecked());
+    actions.at(4)->trigger();
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(spy.at(0).at(0).toInt(), static_cast<int>(LineEndStyle::BothArrow));
+}
+
+void tst_RegionSettingsHelper::testShowLineStyleDropdown_EmitsSelectedStyle()
+{
+    RegionSettingsHelper helper;
+    QSignalSpy spy(&helper, &RegionSettingsHelper::lineStyleSelected);
+    QMenu menu;
+    WarningCaptureScope warningScope;
+
+    helper.populateLineStyleMenu(&menu, LineStyle::Dashed);
+
+    const auto actions = menu.actions();
+    QCOMPARE(actions.size(), 3);
+    QVERIFY(!actions.at(0)->icon().isNull());
+    QVERIFY2(warningScope.svgWarnings().isEmpty(),
+             qPrintable(warningScope.svgWarnings().join('\n')));
+    QVERIFY(actions.at(1)->isChecked());
+    actions.at(2)->trigger();
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(spy.at(0).at(0).toInt(), static_cast<int>(LineStyle::Dotted));
 }
 
 QTEST_MAIN(tst_RegionSettingsHelper)

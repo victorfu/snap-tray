@@ -176,6 +176,8 @@ signals:
     void underlineToggled(bool enabled);
     void fontSizeDropdownRequested(double globalX, double globalY);
     void fontFamilyDropdownRequested(double globalX, double globalY);
+    void arrowStyleDropdownRequested(double globalX, double globalY);
+    void lineStyleDropdownRequested(double globalX, double globalY);
     void shapeTypeSelected(int type);
     void shapeFillModeSelected(int mode);
     void arrowStyleSelected(int style);
@@ -194,6 +196,8 @@ public slots:
     void handleUnderlineToggled();
     void handleFontSizeDropdown(double globalX, double globalY);
     void handleFontFamilyDropdown(double globalX, double globalY);
+    void handleArrowStyleDropdown(double globalX, double globalY);
+    void handleLineStyleDropdown(double globalX, double globalY);
     void handleShapeTypeSelected(int type);
     void handleShapeFillModeSelected(int mode);
     void handleArrowStyleSelected(int style);

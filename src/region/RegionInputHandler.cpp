@@ -13,9 +13,7 @@
 #include "annotations/PolylineAnnotation.h"
 #include "cursor/CursorManager.h"
 #include "tools/ToolManager.h"
-#include "toolbar/ToolbarCore.h"
 #include "InlineTextEditor.h"
-#include "toolbar/ToolOptionsPanel.h"
 #include "EmojiPicker.h"
 #include "TransformationGizmo.h"
 #include "tools/ToolTraits.h"
@@ -65,11 +63,6 @@ void RegionInputHandler::setToolManager(ToolManager* manager)
     m_toolManager = manager;
 }
 
-void RegionInputHandler::setToolbar(ToolbarCore* toolbar)
-{
-    m_toolbar = toolbar;
-}
-
 void RegionInputHandler::setTextEditor(InlineTextEditor* editor)
 {
     m_textEditor = editor;
@@ -78,11 +71,6 @@ void RegionInputHandler::setTextEditor(InlineTextEditor* editor)
 void RegionInputHandler::setTextAnnotationEditor(TextAnnotationEditor* editor)
 {
     m_textAnnotationEditor = editor;
-}
-
-void RegionInputHandler::setColorAndWidthWidget(ToolOptionsPanel* widget)
-{
-    m_colorAndWidthWidget = widget;
 }
 
 void RegionInputHandler::setEmojiPicker(EmojiPicker* picker)
@@ -169,21 +157,18 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
                 }
                 };
 
-            // Check toolbar
-            if (handleToolbarPress(event->pos())) {
-                finalizePolylineForUiClick(event->pos());
-                return;
-            }
-
             // Check region control widget (radius + aspect ratio)
             if (handleRegionControlWidgetPress(event->pos())) {
                 return;
             }
 
-            // Check color/width widgets
-            if (handleColorWidgetPress(event->pos())) {
-                finalizePolylineForUiClick(event->pos());
-                return;
+            // Check emoji picker clicks (still QPainter-based)
+            if (m_emojiPicker && m_emojiPicker->isVisible()) {
+                if (m_emojiPicker->handleClick(event->pos())) {
+                    finalizePolylineForUiClick(event->pos());
+                    emit updateRequested();
+                    return;
+                }
             }
 
             // Text interaction is centralized in TextToolHandler and stays active
@@ -399,10 +384,6 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
             handleAnnotationRelease();
             emit updateRequested();
         }
-        else if (shouldShowColorAndWidthWidget() &&
-            m_colorAndWidthWidget->handleMouseRelease(event->pos())) {
-            emit updateRequested();
-        }
     }
 }
 
@@ -443,19 +424,6 @@ bool RegionInputHandler::handleTextEditorPress(const QPoint& pos)
     return true;
 }
 
-bool RegionInputHandler::handleToolbarPress(const QPoint& pos)
-{
-    int buttonIdx = m_toolbar->buttonAtPosition(pos);
-    if (buttonIdx >= 0) {
-        int buttonId = m_toolbar->buttonIdAt(buttonIdx);
-        if (buttonId >= 0) {
-            emit toolbarClickRequested(buttonId);
-        }
-        return true;
-    }
-    return false;
-}
-
 bool RegionInputHandler::handleRegionControlWidgetPress(const QPoint& pos)
 {
     if (m_regionControlWidget && m_regionControlWidget->isVisible() &&
@@ -465,27 +433,6 @@ bool RegionInputHandler::handleRegionControlWidgetPress(const QPoint& pos)
     }
     return false;
 }
-
-bool RegionInputHandler::handleColorWidgetPress(const QPoint& pos)
-{
-    if (shouldShowColorAndWidthWidget()) {
-        if (m_colorAndWidthWidget->handleClick(pos)) {
-            emit updateRequested();
-            return true;
-        }
-    }
-
-    // Handle emoji picker clicks
-    if (m_emojiPicker && m_emojiPicker->isVisible()) {
-        if (m_emojiPicker->handleClick(pos)) {
-            emit updateRequested();
-            return true;
-        }
-    }
-
-    return false;
-}
-
 
 bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
 {
@@ -874,19 +821,6 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
 
     // Multi-region mode cursor handling - MUST be checked FIRST and return early
     if (state().multiRegionMode && m_multiRegionManager && m_parentWidget) {
-        // Update toolbar hover first (toolbar always takes priority)
-        m_toolbar->updateHoveredButton(pos);
-        int hoveredButton = m_toolbar->hoveredButton();
-
-        if (hoveredButton >= 0) {
-            cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::ToolbarButton);
-            return;
-        }
-        if (m_toolbar->contains(pos)) {
-            cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::Toolbar);
-            return;
-        }
-
         int activeIndex = m_multiRegionManager->activeIndex();
 
         // Active region: only show resize cursors on 8 handles
@@ -900,14 +834,6 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
                 cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::ResizeHandle, static_cast<int>(handle));
                 return;
             }
-        }
-
-        // Check color/width widget before falling back to CrossCursor
-        if (shouldShowColorAndWidthWidget() && m_colorAndWidthWidget->contains(pos)) {
-            m_colorAndWidthWidget->handleMouseMove(pos, buttons & Qt::LeftButton);
-            m_colorAndWidthWidget->updateHovered(pos);
-            cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::Widget);
-            return;
         }
 
         // Everything else in multi-region mode: reset hover and let input state control
@@ -1001,22 +927,6 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
         }
     }
 
-    const bool colorAndWidthVisible = shouldShowColorAndWidthWidget();
-
-    // Update color/width widget
-    if (colorAndWidthVisible) {
-        if (m_colorAndWidthWidget->handleMouseMove(pos, buttons & Qt::LeftButton)) {
-            emit updateRequested();
-        }
-        if (m_colorAndWidthWidget->updateHovered(pos)) {
-            emit updateRequested();
-        }
-        if (m_colorAndWidthWidget->contains(pos)) {
-            cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::Widget);
-            return;
-        }
-    }
-
     // Check emoji picker
     if (m_emojiPicker && m_emojiPicker->isVisible()) {
         if (m_emojiPicker->updateHoveredEmoji(pos)) {
@@ -1026,17 +936,6 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
             cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::Widget);
             return;
         }
-    }
-
-    // Update toolbar hover
-    m_toolbar->updateHoveredButton(pos);
-    if (m_toolbar->hoveredButton() >= 0) {
-        cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::ToolbarButton);
-        return;
-    }
-    if (m_toolbar->contains(pos)) {
-        cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::Toolbar);
-        return;
     }
 
     // Check resize handles for selection tool
@@ -1082,14 +981,8 @@ void RegionInputHandler::handleThrottledUpdate()
             state().currentPoint, m_parentWidget->size());
         const bool hasRenderableSelection =
             m_selectionManager->hasSelection() && m_lastSelectionRect.isValid();
-        if (hasRenderableSelection && m_toolbar) {
-            m_toolbar->setViewportWidth(m_parentWidget->width());
-            m_toolbar->setPositionForSelection(m_lastSelectionRect, m_parentWidget->height());
-            m_lastToolbarRect = m_toolbar->boundingRect();
-        }
-        else {
-            m_lastToolbarRect = QRect();
-        }
+        // QML toolbar positions itself; just track empty rect for dirty region
+        m_lastToolbarRect = QRect();
         if (hasRenderableSelection && m_regionControlWidget) {
             const QRect dimensionInfoRect =
                 m_dirtyRegionPlanner.dimensionInfoRectForSelection(m_lastSelectionRect);
@@ -1113,13 +1006,7 @@ void RegionInputHandler::handleThrottledUpdate()
         QRect currentRegionControlRect;
         const bool hasRenderableSelection = m_selectionManager->hasSelection() && currentSelectionRect.isValid();
 
-        if (hasRenderableSelection && m_toolbar) {
-            // Predict next toolbar placement from the latest selection rect instead of reusing stale paint geometry.
-            m_toolbar->setViewportWidth(m_parentWidget->width());
-            m_toolbar->setPositionForSelection(currentSelectionRect, m_parentWidget->height());
-            currentToolbarRect = m_toolbar->boundingRect();
-        }
-
+        // QML toolbar positions itself in a separate window; no dirty region tracking needed
         if (hasRenderableSelection && m_regionControlWidget) {
             // RegionControlWidget is positioned from the dimension panel anchor during paint;
             // mirror that anchor here so dirty-region planning includes next-frame placement.
@@ -1469,8 +1356,7 @@ ShapeAnnotation* RegionInputHandler::getSelectedShapeAnnotation() const
 
 bool RegionInputHandler::shouldShowColorAndWidthWidget() const
 {
-    if (!m_colorAndWidthWidget) return false;
-    return m_colorAndWidthWidget->isVisible();
+    return false; // QML sub-toolbar manages its own visibility
 }
 
 bool RegionInputHandler::isAnnotationTool(ToolId tool) const

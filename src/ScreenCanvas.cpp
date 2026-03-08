@@ -3,15 +3,15 @@
 #include "annotations/AnnotationLayer.h"
 #include "tools/ToolManager.h"
 #include "cursor/CursorManager.h"
-#include "IconRenderer.h"
-#include "GlassRenderer.h"
 #include "colorwidgets/ColorPickerDialogCompat.h"
 
 using snaptray::colorwidgets::ColorPickerDialogCompat;
-#include "toolbar/ToolOptionsPanel.h"
+#include "qml/CanvasToolbarViewModel.h"
+#include "qml/PinToolOptionsViewModel.h"
+#include "qml/QmlFloatingToolbar.h"
+#include "qml/QmlFloatingSubToolbar.h"
 #include "EmojiPicker.h"
 #include "LaserPointerRenderer.h"
-#include "toolbar/ToolbarCore.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
 #include "annotations/ArrowAnnotation.h"
@@ -31,6 +31,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QGuiApplication>
 #include <QScreen>
 #include <QDebug>
+#include <QCursor>
 #include <QTimer>
 #include <QtMath>
 #include "tools/ToolRegistry.h"
@@ -103,12 +104,8 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     , m_toolManager(nullptr)
     , m_currentToolId(ToolId::Pencil)
     , m_laserPointerActive(false)
-    , m_toolbar(nullptr)
-    , m_isDraggingToolbar(false)
-    , m_toolbarManuallyPositioned(false)
     , m_showSubToolbar(true)
     , m_colorPickerDialog(nullptr)
-    , m_toolbarStyleConfig(ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle()))
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool | Qt::NoDropShadowWindowHint);
     setAttribute(Qt::WA_DeleteOnClose);
@@ -144,36 +141,119 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     auto& cursorManager = CursorManager::instance();
     cursorManager.registerWidget(this, m_toolManager);
 
-    // Initialize SVG icons
-    initializeIcons();
+    // Initialize QML toolbar ViewModels
+    m_toolbarViewModel = new CanvasToolbarViewModel(this);
+    m_toolOptionsViewModel = new PinToolOptionsViewModel(this);
 
-    // Initialize toolbar
-    setupToolbar();
+    // Create QML floating toolbar windows
+    m_qmlToolbar = std::make_unique<SnapTray::QmlFloatingToolbar>(m_toolbarViewModel, nullptr);
+    m_qmlToolbar->setParentWidget(this);
+    m_qmlSubToolbar = std::make_unique<SnapTray::QmlFloatingSubToolbar>(m_toolOptionsViewModel, nullptr);
+    m_qmlSubToolbar->setParentWidget(this);
 
-    // Initialize unified color and width widget
-    m_colorAndWidthWidget = new ToolOptionsPanel(this);
-    m_colorAndWidthWidget->setUseSharedStyleDropdowns(true);
-    m_colorAndWidthWidget->setCurrentColor(savedColor);
-    m_colorAndWidthWidget->setCurrentWidth(savedWidth);
-    m_colorAndWidthWidget->setWidthRange(1, 20);
-    m_colorAndWidthWidget->setArrowStyle(savedArrowStyle);
-    m_colorAndWidthWidget->setLineStyle(savedLineStyle);
-    m_colorAndWidthWidget->setStepBadgeSize(m_stepBadgeSize);
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::shapeTypeChanged,
-        this, [this](ShapeType type) {
-            m_shapeType = type;
-            m_toolManager->setShapeType(static_cast<int>(type));
+    // Connect toolbar ViewModel signals
+    connect(m_toolbarViewModel, &CanvasToolbarViewModel::toolSelected,
+        this, [this](int toolId) { handleToolbarClick(toolId); });
+    connect(m_toolbarViewModel, &CanvasToolbarViewModel::undoClicked,
+        this, [this]() { handleToolbarClick(static_cast<int>(ToolId::Undo)); });
+    connect(m_toolbarViewModel, &CanvasToolbarViewModel::redoClicked,
+        this, [this]() { handleToolbarClick(static_cast<int>(ToolId::Redo)); });
+    connect(m_toolbarViewModel, &CanvasToolbarViewModel::clearClicked,
+        this, [this]() { handleToolbarClick(static_cast<int>(ToolId::Clear)); });
+    connect(m_toolbarViewModel, &CanvasToolbarViewModel::exitClicked,
+        this, [this]() { handleToolbarClick(static_cast<int>(ToolId::Exit)); });
+    connect(m_toolbarViewModel, &CanvasToolbarViewModel::canvasWhiteboardClicked,
+        this, [this]() { handleToolbarClick(static_cast<int>(ToolId::CanvasWhiteboard)); });
+    connect(m_toolbarViewModel, &CanvasToolbarViewModel::canvasBlackboardClicked,
+        this, [this]() { handleToolbarClick(static_cast<int>(ToolId::CanvasBlackboard)); });
+
+    // Track undo/redo state via AnnotationLayer::changed signal
+    connect(m_annotationLayer, &AnnotationLayer::changed,
+        this, [this]() {
+            m_toolbarViewModel->setCanUndo(m_annotationLayer->canUndo());
+            m_toolbarViewModel->setCanRedo(m_annotationLayer->canRedo());
+            update();
         });
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::shapeFillModeChanged,
-        this, [this](ShapeFillMode mode) {
-            m_shapeFillMode = mode;
-            m_toolManager->setShapeFillMode(static_cast<int>(mode));
+
+    // Initialize sub-toolbar ViewModel with persisted state
+    m_toolOptionsViewModel->setCurrentColor(savedColor);
+    m_toolOptionsViewModel->setCurrentWidth(savedWidth);
+    m_toolOptionsViewModel->setArrowStyle(static_cast<int>(savedArrowStyle));
+    m_toolOptionsViewModel->setLineStyle(static_cast<int>(savedLineStyle));
+    m_toolOptionsViewModel->setStepBadgeSize(static_cast<int>(m_stepBadgeSize));
+
+    // Connect sub-toolbar ViewModel signals (replaces connectToolOptionsSignals)
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::colorSelected,
+        this, &ScreenCanvas::onColorSelected);
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::customColorPickerRequested,
+        this, &ScreenCanvas::onMoreColorsRequested);
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::widthValueChanged,
+        this, &ScreenCanvas::onLineWidthChanged);
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::arrowStyleSelected,
+        this, [this](int style) { onArrowStyleChanged(static_cast<LineEndStyle>(style)); });
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::lineStyleSelected,
+        this, [this](int style) { onLineStyleChanged(static_cast<LineStyle>(style)); });
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::fontSizeDropdownRequested,
+        this, [this](double globalX, double globalY) {
+            onFontSizeDropdownRequested(QPoint(qRound(globalX), qRound(globalY)));
         });
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::stepBadgeSizeChanged,
-        this, [this](StepBadgeSize size) {
-            m_stepBadgeSize = size;
-            AnnotationSettingsManager::instance().saveStepBadgeSize(size);
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::fontFamilyDropdownRequested,
+        this, [this](double globalX, double globalY) {
+            onFontFamilyDropdownRequested(QPoint(qRound(globalX), qRound(globalY)));
         });
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::arrowStyleDropdownRequested,
+        this, [this](double globalX, double globalY) {
+            if (!m_settingsHelper) {
+                return;
+            }
+            m_settingsHelper->showArrowStyleDropdown(
+                QPoint(qRound(globalX), qRound(globalY)),
+                static_cast<LineEndStyle>(m_toolOptionsViewModel->arrowStyle()));
+        });
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::lineStyleDropdownRequested,
+        this, [this](double globalX, double globalY) {
+            if (!m_settingsHelper) {
+                return;
+            }
+            m_settingsHelper->showLineStyleDropdown(
+                QPoint(qRound(globalX), qRound(globalY)),
+                static_cast<LineStyle>(m_toolOptionsViewModel->lineStyle()));
+        });
+
+    // Connect shape/stepBadge signals via sub-toolbar ViewModel
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::shapeTypeSelected,
+        this, [this](int type) {
+            m_shapeType = static_cast<ShapeType>(type);
+            m_toolManager->setShapeType(type);
+        });
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::shapeFillModeSelected,
+        this, [this](int mode) {
+            m_shapeFillMode = static_cast<ShapeFillMode>(mode);
+            m_toolManager->setShapeFillMode(mode);
+        });
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::stepBadgeSizeSelected,
+        this, [this](int size) {
+            m_stepBadgeSize = static_cast<StepBadgeSize>(size);
+            AnnotationSettingsManager::instance().saveStepBadgeSize(m_stepBadgeSize);
+        });
+    connect(m_qmlSubToolbar.get(), &SnapTray::QmlFloatingSubToolbar::emojiPickerRequested,
+        this, [this]() {
+            if (m_emojiPicker && m_qmlToolbar) {
+                m_emojiPicker->setVisible(true);
+                m_emojiPicker->updatePosition(m_qmlToolbar->geometry(), false);
+                update();
+            }
+        });
+
+    // Track user drag to prevent paintEvent from overriding toolbar position
+    connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::dragFinished,
+        this, [this]() { m_toolbarUserDragged = true; });
+
+    // Cursor management: restore drawing cursor when mouse leaves QML overlays
+    connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::cursorRestoreRequested,
+        this, [this]() { setToolCursor(); });
+    connect(m_qmlSubToolbar.get(), &SnapTray::QmlFloatingSubToolbar::cursorRestoreRequested,
+        this, [this]() { setToolCursor(); });
 
     // Initialize emoji picker
     m_emojiPicker = new EmojiPicker(this);
@@ -218,14 +298,41 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
         this, &ScreenCanvas::onFontSizeSelected);
     connect(m_settingsHelper, &RegionSettingsHelper::fontFamilySelected,
         this, &ScreenCanvas::onFontFamilySelected);
+    connect(m_settingsHelper, &RegionSettingsHelper::arrowStyleSelected,
+        this, &ScreenCanvas::onArrowStyleChanged);
+    connect(m_settingsHelper, &RegionSettingsHelper::lineStyleSelected,
+        this, &ScreenCanvas::onLineStyleChanged);
 
     // Centralized annotation/text setup and common signal wiring
     m_annotationContext = std::make_unique<AnnotationContext>(*this);
-    m_annotationContext->setupTextAnnotationEditor(true, true);
+    m_annotationContext->setupTextAnnotationEditor();
     m_annotationContext->connectTextEditorSignals();
-    m_annotationContext->connectToolOptionsSignals();
-    m_annotationContext->connectTextFormattingSignals();
-    m_annotationContext->syncTextFormattingControls();
+
+    // Connect text formatting signals via sub-toolbar ViewModel
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::boldToggled,
+        m_textAnnotationEditor, &TextAnnotationEditor::setBold);
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::italicToggled,
+        m_textAnnotationEditor, &TextAnnotationEditor::setItalic);
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::underlineToggled,
+        m_textAnnotationEditor, &TextAnnotationEditor::setUnderline);
+
+    auto syncTextFormattingToSubToolbar = [this]() {
+        if (!m_textAnnotationEditor) {
+            return;
+        }
+        const auto formatting = m_textAnnotationEditor->formatting();
+        if (m_textEditor && m_textEditor->isEditing()) {
+            m_toolOptionsViewModel->setCurrentColor(m_textEditor->color());
+        }
+        m_toolOptionsViewModel->setBold(formatting.bold);
+        m_toolOptionsViewModel->setItalic(formatting.italic);
+        m_toolOptionsViewModel->setUnderline(formatting.underline);
+        m_toolOptionsViewModel->setFontSize(formatting.fontSize);
+        m_toolOptionsViewModel->setFontFamily(formatting.fontFamily);
+    };
+    connect(m_textAnnotationEditor, &TextAnnotationEditor::formattingChanged,
+        this, syncTextFormattingToSubToolbar);
+    syncTextFormattingToSubToolbar();
 
     // Initialize laser pointer renderer
     m_laserRenderer = new LaserPointerRenderer(this);
@@ -236,6 +343,9 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
 
     // Set initial cursor based on default tool
     setToolCursor();
+
+    // Show initial sub-toolbar for current tool
+    updateQmlToolbarState();
 
     // Connect to screen removal signal for graceful handling
     connect(qApp, &QGuiApplication::screenRemoved,
@@ -258,131 +368,6 @@ ScreenCanvas::~ScreenCanvas()
     m_shapeAnnotationEditor.reset();
 }
 
-void ScreenCanvas::initializeIcons()
-{
-    // Use shared IconRenderer for all icons
-    IconRenderer& iconRenderer = IconRenderer::instance();
-    auto& registry = ToolRegistry::instance();
-    for (ToolId toolId : registry.getToolsForToolbar(ToolbarType::ScreenCanvas)) {
-        const QString iconKey = registry.getIconKey(toolId);
-        if (!iconKey.isEmpty()) {
-            iconRenderer.loadIconByKey(iconKey);
-        }
-    }
-    iconRenderer.loadIconByKey("laser-pointer");
-
-    // Shape and arrow style icons for ToolOptionsPanel sections
-    iconRenderer.loadIconsByKey({
-        "rectangle",
-        "ellipse",
-        "shape-filled",
-        "shape-outline",
-        "arrow-none",
-        "arrow-end",
-        "arrow-end-outline",
-        "arrow-end-line",
-        "arrow-both",
-        "arrow-both-outline",
-        "auto-blur"
-    });
-}
-
-void ScreenCanvas::setupToolbar()
-{
-    m_toolbar = new ToolbarCore(this);
-    auto& registry = ToolRegistry::instance();
-    const auto& dispatch = toolbarDispatchTable();
-    const QVector<ToolId> toolbarTools = registry.getToolsForToolbar(ToolbarType::ScreenCanvas);
-
-    QVector<ToolbarCore::ButtonConfig> buttons;
-    QVector<int> activeButtonIds;
-    bool laserInserted = false;
-    for (ToolId toolId : toolbarTools) {
-        if (!laserInserted && toolId == ToolId::CanvasWhiteboard) {
-            buttons.append(ToolbarCore::ButtonConfig(
-                kLaserPointerButtonId,
-                "laser-pointer",
-                tr("Laser Pointer")));
-            activeButtonIds.append(kLaserPointerButtonId);
-            laserInserted = true;
-        }
-
-        const auto& def = registry.get(toolId);
-        ToolbarCore::ButtonConfig config(
-            static_cast<int>(toolId),
-            def.iconKey,
-            registry.getTooltipWithShortcut(toolId),
-            def.showSeparatorBefore);
-        if (toolId == ToolId::Exit) {
-            config.cancel();
-        }
-        buttons.append(config);
-
-        const auto dispatchIt = dispatch.find(toolId);
-        const bool supportsActiveState = dispatchIt != dispatch.end() &&
-            (dispatchIt->second == &ScreenCanvas::handlePersistentToolClick ||
-             dispatchIt->second == &ScreenCanvas::handleCanvasModeToggle);
-        if (supportsActiveState) {
-            activeButtonIds.append(static_cast<int>(toolId));
-        }
-    }
-
-    if (!laserInserted) {
-        buttons.append(ToolbarCore::ButtonConfig(
-            kLaserPointerButtonId,
-            "laser-pointer",
-            tr("Laser Pointer")));
-        activeButtonIds.append(kLaserPointerButtonId);
-    }
-
-    m_toolbar->setButtons(buttons);
-    m_toolbar->setActiveButtonIds(activeButtonIds);
-
-    m_toolbar->setStyleConfig(m_toolbarStyleConfig);
-
-    // Set custom icon color provider for complex color logic
-    m_toolbar->setIconColorProvider([this](int buttonId, bool isActive, bool isHovered) -> QColor {
-        Q_UNUSED(isHovered)
-        return getButtonIconColor(buttonId);
-    });
-}
-
-QColor ScreenCanvas::getButtonIconColor(int buttonId) const
-{
-    const bool isManagedToolButton = isManagedToolButtonId(buttonId);
-    const ToolId buttonToolId = isManagedToolButton
-        ? static_cast<ToolId>(buttonId)
-        : ToolId::Selection;
-
-    const bool isToolButtonActive = isManagedToolButton &&
-        !m_laserPointerActive &&
-        (buttonToolId == m_currentToolId) &&
-        isDrawingTool(buttonToolId) &&
-        m_showSubToolbar;
-    const bool isLaserButtonActive =
-        isLaserPointerButtonId(buttonId) && m_laserPointerActive && m_showSubToolbar;
-    const bool isBgModeActive =
-        (isManagedToolButton && buttonToolId == ToolId::CanvasWhiteboard && m_bgMode == CanvasBackgroundMode::Whiteboard) ||
-        (isManagedToolButton && buttonToolId == ToolId::CanvasBlackboard && m_bgMode == CanvasBackgroundMode::Blackboard);
-
-    if (buttonId == static_cast<int>(ToolId::Exit)) {
-        return m_toolbarStyleConfig.iconCancelColor;
-    }
-    if (buttonId == static_cast<int>(ToolId::Clear)) {
-        return QColor(255, 180, 100);  // Orange for clear
-    }
-    if (buttonId == static_cast<int>(ToolId::Undo) && !m_annotationLayer->canUndo()) {
-        return QColor(128, 128, 128);  // Gray for disabled undo
-    }
-    if (buttonId == static_cast<int>(ToolId::Redo) && !m_annotationLayer->canRedo()) {
-        return QColor(128, 128, 128);  // Gray for disabled redo
-    }
-    if (isToolButtonActive || isLaserButtonActive || isBgModeActive) {
-        return m_toolbarStyleConfig.iconActiveColor;
-    }
-    return m_toolbarStyleConfig.iconNormalColor;
-}
-
 bool ScreenCanvas::shouldShowColorPalette() const
 {
     if (!m_showSubToolbar) return false;
@@ -398,11 +383,6 @@ QWidget* ScreenCanvas::annotationHostWidget() const
 AnnotationLayer* ScreenCanvas::annotationLayerForContext() const
 {
     return m_annotationLayer;
-}
-
-ToolOptionsPanel* ScreenCanvas::toolOptionsPanelForContext() const
-{
-    return m_colorAndWidthWidget;
 }
 
 InlineTextEditor* ScreenCanvas::inlineTextEditorForContext() const
@@ -466,7 +446,7 @@ void ScreenCanvas::syncColorToAllWidgets(const QColor& color)
 {
     m_toolManager->setColor(color);
     m_laserRenderer->setColor(color);
-    m_colorAndWidthWidget->setCurrentColor(color);
+    m_toolOptionsViewModel->setCurrentColor(color);
     if (m_textEditor) {
         m_textEditor->setColor(color);
     }
@@ -487,23 +467,10 @@ void ScreenCanvas::onLineWidthChanged(int width)
     update();
 }
 
-bool ScreenCanvas::shouldShowColorAndWidthWidget() const
-{
-    if (!m_showSubToolbar) return false;
-    if (m_laserPointerActive) return true;
-    return ToolRegistry::instance().showColorWidthWidget(m_currentToolId);
-}
-
-bool ScreenCanvas::shouldShowWidthControl() const
-{
-    if (m_laserPointerActive) return true;
-    return ToolRegistry::instance().showWidthControl(m_currentToolId);
-}
-
 void ScreenCanvas::onMoreColorsRequested()
 {
-    // Ensure unified color/width widget is in sync with the tool manager color before showing the dialog
-    m_colorAndWidthWidget->setCurrentColor(m_toolManager->color());
+    // Ensure ViewModel is in sync with the tool manager color before showing the dialog
+    m_toolOptionsViewModel->setCurrentColor(m_toolManager->color());
 
     AnnotationContext::showColorPickerDialog(
         this,
@@ -513,7 +480,7 @@ void ScreenCanvas::onMoreColorsRequested()
         [this](const QColor& color) {
             // Preserve existing behavior: custom-color selection does not persist settings.
             m_toolManager->setColor(color);
-            m_colorAndWidthWidget->setCurrentColor(color);
+            m_toolOptionsViewModel->setCurrentColor(color);
             update();
         });
 }
@@ -538,11 +505,42 @@ void ScreenCanvas::initializeForScreen(QScreen* screen)
     setFixedSize(m_currentScreen->geometry().size());
     m_toolManager->setTextEditingBounds(rect());
 
-    // Update toolbar position
-    updateToolbarPosition();
-
     // Set initial cursor based on current tool
     setToolCursor();
+}
+
+void ScreenCanvas::updateQmlToolbarState()
+{
+    // Update active tool in toolbar ViewModel
+    int activeToolId = -1;
+    if (m_showSubToolbar) {
+        if (m_laserPointerActive) {
+            activeToolId = kLaserPointerButtonId;
+        } else if (isDrawingTool(m_currentToolId)) {
+            activeToolId = static_cast<int>(m_currentToolId);
+        }
+    }
+    // Handle Whiteboard/Blackboard background mode
+    if (m_bgMode == CanvasBackgroundMode::Whiteboard) {
+        activeToolId = static_cast<int>(ToolId::CanvasWhiteboard);
+    }
+    if (m_bgMode == CanvasBackgroundMode::Blackboard) {
+        activeToolId = static_cast<int>(ToolId::CanvasBlackboard);
+    }
+    m_toolbarViewModel->setActiveTool(activeToolId);
+
+    // Update sub-toolbar for current tool
+    if (m_showSubToolbar && !m_laserPointerActive) {
+        m_qmlSubToolbar->showForTool(static_cast<int>(m_currentToolId));
+    } else if (m_showSubToolbar && m_laserPointerActive) {
+        // Laser pointer shows color + width sections
+        m_toolOptionsViewModel->showForTool(-1); // Reset first
+        // Manually configure for laser pointer (not in ToolRegistry)
+        m_qmlSubToolbar->showForTool(static_cast<int>(ToolId::Pencil)); // Similar sections
+    } else {
+        m_qmlSubToolbar->hide();
+    }
+
 }
 
 void ScreenCanvas::paintEvent(QPaintEvent*)
@@ -572,65 +570,35 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
     // Draw laser pointer trail
     m_laserRenderer->draw(painter);
 
-    // Update toolbar position only when not dragging and not manually positioned
-    if (!m_isDraggingToolbar && !m_toolbarManuallyPositioned) {
-        updateToolbarPosition();
-    }
-    // Update active button based on current tool state
-    int activeButtonId = -1;
-    if (m_showSubToolbar) {
-        if (m_laserPointerActive) {
-            activeButtonId = kLaserPointerButtonId;
-        } else if (isDrawingTool(m_currentToolId)) {
-            activeButtonId = static_cast<int>(m_currentToolId);
+    // Show and position QML toolbar centered at bottom of screen
+    // Show BEFORE position to ensure correct geometry on macOS
+    if (m_qmlToolbar) {
+        if (!m_qmlToolbar->isVisible()) {
+            m_qmlToolbar->show();
+            // Initial toolbar state update on first show
+            updateQmlToolbarState();
         }
-    }
-    // Handle Whiteboard/Blackboard background mode
-    if (m_bgMode == CanvasBackgroundMode::Whiteboard) {
-        activeButtonId = static_cast<int>(ToolId::CanvasWhiteboard);
-    }
-    if (m_bgMode == CanvasBackgroundMode::Blackboard) {
-        activeButtonId = static_cast<int>(ToolId::CanvasBlackboard);
-    }
-    m_toolbar->setActiveButton(activeButtonId);
-    m_toolbar->draw(painter);
-
-    // Use unified color and width widget with data-driven configuration
-    QRect toolbarRect = m_toolbar->boundingRect();
-    if (shouldShowColorAndWidthWidget()) {
-        m_colorAndWidthWidget->setVisible(true);
-        // Laser pointer is ScreenCanvas-local and not part of ToolRegistry.
-        if (m_laserPointerActive) {
-            ToolSectionConfig laserConfig;
-            laserConfig.showColorSection = true;
-            laserConfig.showWidthSection = true;
-            laserConfig.applyTo(m_colorAndWidthWidget);
-        } else {
-            ToolSectionConfig config = ToolSectionConfig::forTool(m_currentToolId);
-            if (m_currentToolId == ToolId::Mosaic) {
-                config.showAutoBlurSection = false;
-            }
-            config.applyTo(m_colorAndWidthWidget);
+        if (!m_toolbarUserDragged) {
+            int centerX = width() / 2;
+            int bottomY = height() - 30;
+            m_qmlToolbar->positionAt(centerX, bottomY);
         }
-        m_colorAndWidthWidget->updatePosition(toolbarRect, true, width());
-        m_colorAndWidthWidget->draw(painter);
-    }
-    else {
-        m_colorAndWidthWidget->setVisible(false);
+        if (m_qmlSubToolbar && m_qmlSubToolbar->isVisible()) {
+            m_qmlSubToolbar->positionBelow(m_qmlToolbar->geometry());
+        }
     }
 
     // Draw emoji picker when EmojiSticker tool is selected
     if (!m_laserPointerActive && m_currentToolId == ToolId::EmojiSticker && m_showSubToolbar) {
         m_emojiPicker->setVisible(true);
-        m_emojiPicker->updatePosition(toolbarRect, true);
+        if (m_qmlToolbar) {
+            m_emojiPicker->updatePosition(m_qmlToolbar->geometry(), true);
+        }
         m_emojiPicker->draw(painter);
     }
     else {
         m_emojiPicker->setVisible(false);
     }
-
-    // Draw tooltip
-    m_toolbar->drawTooltip(painter);
 
     // Draw cursor dot
     drawCursorDot(painter);
@@ -683,18 +651,10 @@ void ScreenCanvas::drawCurrentAnnotation(QPainter& painter)
     m_toolManager->drawCurrentPreview(painter);
 }
 
-void ScreenCanvas::updateToolbarPosition()
-{
-    // Center horizontally, 30px from bottom
-    int centerX = width() / 2;
-    int bottomY = height() - 30;
-
-    m_toolbar->setPosition(centerX, bottomY);
-    m_toolbar->setViewportWidth(width());
-}
-
 void ScreenCanvas::handleToolbarClick(int buttonId)
 {
+    finalizePolylineForToolbarInteraction();
+
     if (isLaserPointerButtonId(buttonId)) {
         handleLaserPointerClick();
         return;
@@ -711,6 +671,18 @@ void ScreenCanvas::handleToolbarClick(int buttonId)
         return;
     }
     (this->*(it->second))(toolId);
+}
+
+void ScreenCanvas::finalizePolylineForToolbarInteraction()
+{
+    if (!m_toolManager ||
+        m_toolManager->currentTool() != ToolId::Arrow ||
+        !m_toolManager->isDrawing()) {
+        return;
+    }
+
+    const QPoint toolbarClickPos = mapFromGlobal(QCursor::pos());
+    m_toolManager->handleDoubleClick(toolbarClickPos);
 }
 
 void ScreenCanvas::handlePersistentToolClick(ToolId toolId)
@@ -731,6 +703,7 @@ void ScreenCanvas::handlePersistentToolClick(ToolId toolId)
         m_toolManager->setCurrentTool(toolId);
         m_showSubToolbar = true;
     }
+    updateQmlToolbarState();
     setToolCursor();
     update();
 }
@@ -750,6 +723,7 @@ void ScreenCanvas::handleLaserPointerClick()
         m_laserRenderer->setWidth(m_toolManager->width());
     }
 
+    updateQmlToolbarState();
     setToolCursor();
     update();
 }
@@ -855,33 +829,6 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
             }
         };
 
-        // Check if clicked on toolbar FIRST (before widgets that may overlap)
-        if (m_toolbar->contains(event->pos())) {
-            int buttonIdx = m_toolbar->buttonAtPosition(event->pos());
-            if (buttonIdx >= 0) {
-                finalizePolylineForUiClick(event->pos());
-                int buttonId = m_toolbar->buttonIdAt(buttonIdx);
-                handleToolbarClick(buttonId);
-            } else {
-                // Start toolbar drag (clicked on toolbar but not on a button)
-                m_isDraggingToolbar = true;
-                m_toolbarDragOffset = event->pos() - m_toolbar->boundingRect().topLeft();
-                CursorManager::instance().setDragStateForWidget(this, DragState::ToolbarDrag);
-            }
-            return;
-        }
-
-        // Check if clicked on unified color and width widget
-        if (shouldShowColorAndWidthWidget()) {
-            if (m_colorAndWidthWidget->contains(event->pos())) {
-                finalizePolylineForUiClick(event->pos());
-            }
-            if (m_colorAndWidthWidget->handleClick(event->pos())) {
-                update();
-                return;
-            }
-        }
-
         // Check if clicked on emoji picker
         if (m_emojiPicker->isVisible()) {
             if (m_emojiPicker->handleClick(event->pos())) {
@@ -969,21 +916,6 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
     QPoint oldCursorPos = m_cursorPos;
     m_cursorPos = event->pos();
 
-    // Handle toolbar drag
-    if (m_isDraggingToolbar) {
-        QPoint newTopLeft = event->pos() - m_toolbarDragOffset;
-        QRect toolbarRect = m_toolbar->boundingRect();
-        // Clamp to screen bounds
-        newTopLeft.setX(qBound(0, newTopLeft.x(), width() - toolbarRect.width()));
-        newTopLeft.setY(qBound(0, newTopLeft.y(), height() - toolbarRect.height()));
-        // Update toolbar position using setPosition (centered, so adjust)
-        int centerX = newTopLeft.x() + toolbarRect.width() / 2;
-        int bottomY = newTopLeft.y() + toolbarRect.height();
-        m_toolbar->setPosition(centerX, bottomY);
-        update();
-        return;
-    }
-
     // Handle laser pointer drawing
     if (m_laserPointerActive && m_laserRenderer->isDrawing()) {
         m_laserRenderer->updateDrawing(event->pos());
@@ -1025,25 +957,7 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
     }
     else {
         bool needsUpdate = false;
-        bool widgetHovered = false;
         auto& cursorManager = CursorManager::instance();
-
-        // Handle unified color and width widget
-        if (shouldShowColorAndWidthWidget()) {
-            if (m_colorAndWidthWidget->handleMouseMove(event->pos(), event->buttons() & Qt::LeftButton)) {
-                if (m_colorAndWidthWidget->contains(event->pos())) {
-                    cursorManager.setHoverTargetForWidget(this, HoverTarget::Widget);
-                }
-                update();
-                return;
-            }
-            if (m_colorAndWidthWidget->updateHovered(event->pos())) {
-                needsUpdate = true;
-            }
-            if (m_colorAndWidthWidget->contains(event->pos())) {
-                widgetHovered = true;
-            }
-        }
 
         // Update hovered emoji in emoji picker
         if (m_emojiPicker->isVisible()) {
@@ -1051,27 +965,12 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
                 needsUpdate = true;
             }
             if (m_emojiPicker->contains(event->pos())) {
-                widgetHovered = true;
+                cursorManager.setHoverTargetForWidget(this, HoverTarget::ToolbarButton);
             }
         }
 
-        // Update hovered button via ToolbarCore
-        if (m_toolbar->updateHoveredButton(event->pos())) {
-            needsUpdate = true;
-        }
-
-        // Update cursor based on current hover state using state-driven API
-        if (m_toolbar->hoveredButton() >= 0 || widgetHovered) {
-            cursorManager.setHoverTargetForWidget(this, HoverTarget::ToolbarButton);
-        }
-        else if (m_toolbar->contains(event->pos())) {
-            // Hovering over toolbar but not on a button - show drag cursor
-            cursorManager.setHoverTargetForWidget(this, HoverTarget::Toolbar);
-        }
-        else {
-            // Check annotation cursors - updateAnnotationCursor uses state-driven API
-            updateAnnotationCursor(event->pos());
-        }
+        // Check annotation cursors
+        updateAnnotationCursor(event->pos());
 
         if (needsUpdate) {
             update();
@@ -1092,25 +991,6 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
 void ScreenCanvas::mouseReleaseEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
-        // Handle toolbar drag end
-        if (m_isDraggingToolbar) {
-            m_isDraggingToolbar = false;
-            m_toolbarManuallyPositioned = true;
-            // Clear drag state - cursor will revert based on hover target
-            auto& cursorManager = CursorManager::instance();
-            cursorManager.setDragStateForWidget(this, DragState::None);
-            if (m_toolbar->contains(event->pos())) {
-                cursorManager.setHoverTargetForWidget(this, HoverTarget::Toolbar);
-            }
-            return;
-        }
-
-        // Handle unified widget release
-        if (shouldShowColorAndWidthWidget() && m_colorAndWidthWidget->handleMouseRelease(event->pos())) {
-            update();
-            return;
-        }
-
         // Handle laser pointer release
         if (m_laserPointerActive && m_laserRenderer->isDrawing()) {
             m_laserRenderer->stopDrawing();
@@ -1158,15 +1038,6 @@ void ScreenCanvas::mouseReleaseEvent(QMouseEvent* event)
             return;
         }
 
-        // Skip annotation handling if releasing on toolbar or widgets
-        // This prevents StepBadge from creating badges when clicking on UI elements
-        if (m_toolbar->contains(event->pos())) {
-            return;
-        }
-        if (shouldShowColorAndWidthWidget() && m_colorAndWidthWidget->contains(event->pos())) {
-            return;
-        }
-
         // Finish drawing annotation
         // StepBadge/EmojiSticker place on release but isDrawing() returns false, so handle them specially
         if (m_toolManager->isDrawing() || m_currentToolId == ToolId::StepBadge ||
@@ -1203,15 +1074,6 @@ void ScreenCanvas::mouseDoubleClickEvent(QMouseEvent* event)
 
 void ScreenCanvas::wheelEvent(QWheelEvent* event)
 {
-    // Forward wheel events when tools that support width adjustment are active
-    if (shouldShowColorAndWidthWidget()) {
-        if (m_colorAndWidthWidget->handleWheel(event->angleDelta().y())) {
-            update();
-            event->accept();
-            return;
-        }
-    }
-
     event->ignore();
 }
 
@@ -1265,16 +1127,19 @@ void ScreenCanvas::keyPressEvent(QKeyEvent* event)
 
 void ScreenCanvas::drawCursorDot(QPainter& painter)
 {
-    // Don't show when drawing, on toolbar, or on widgets
+    // Don't show when drawing or on widgets
     if (m_toolManager->isDrawing()) return;
     if (m_laserRenderer->isDrawing()) return;
-    if (m_toolbar->contains(m_cursorPos)) return;
-    if (m_toolbar->hoveredButton() >= 0) return;
-    if (shouldShowColorAndWidthWidget() && m_colorAndWidthWidget->contains(m_cursorPos)) return;
 }
 
 void ScreenCanvas::closeEvent(QCloseEvent* event)
 {
+    if (m_qmlToolbar) {
+        m_qmlToolbar->hide();
+    }
+    if (m_qmlSubToolbar) {
+        m_qmlSubToolbar->hide();
+    }
     emit closed();
     QWidget::closeEvent(event);
 }
@@ -1291,6 +1156,9 @@ void ScreenCanvas::showEvent(QShowEvent* event)
 
 void ScreenCanvas::onArrowStyleChanged(LineEndStyle style)
 {
+    if (m_toolOptionsViewModel) {
+        m_toolOptionsViewModel->setArrowStyle(static_cast<int>(style));
+    }
     m_toolManager->setArrowStyle(style);
     AnnotationSettingsManager::instance().saveArrowStyle(style);
     update();
@@ -1298,6 +1166,9 @@ void ScreenCanvas::onArrowStyleChanged(LineEndStyle style)
 
 void ScreenCanvas::onLineStyleChanged(LineStyle style)
 {
+    if (m_toolOptionsViewModel) {
+        m_toolOptionsViewModel->setLineStyle(static_cast<int>(style));
+    }
     m_toolManager->setLineStyle(style);
     AnnotationSettingsManager::instance().saveLineStyle(style);
     update();
@@ -1326,6 +1197,9 @@ void ScreenCanvas::onFontFamilyDropdownRequested(const QPoint& pos)
 
 void ScreenCanvas::onFontSizeSelected(int size)
 {
+    if (m_toolOptionsViewModel) {
+        m_toolOptionsViewModel->setFontSize(size);
+    }
     if (m_annotationContext) {
         m_annotationContext->applyTextFontSize(size);
     }
@@ -1333,6 +1207,9 @@ void ScreenCanvas::onFontSizeSelected(int size)
 
 void ScreenCanvas::onFontFamilySelected(const QString& family)
 {
+    if (m_toolOptionsViewModel) {
+        m_toolOptionsViewModel->setFontFamily(family);
+    }
     if (m_annotationContext) {
         m_annotationContext->applyTextFontFamily(family);
     }
@@ -1365,6 +1242,7 @@ void ScreenCanvas::setBackgroundMode(CanvasBackgroundMode mode)
         break;
     }
 
+    updateQmlToolbarState();
     update();
 }
 
@@ -1576,7 +1454,7 @@ bool ScreenCanvas::handleArrowAnnotationPress(const QPoint& pos)
              m_arrowDragHandle = handle;
              m_dragStartPos = pos;
              // Set appropriate cursor based on handle
-             update(); 
+             update();
              return true;
         }
     }
@@ -1588,7 +1466,7 @@ bool ScreenCanvas::handleArrowAnnotationPress(const QPoint& pos)
         m_isArrowDragging = true;
         m_arrowDragHandle = GizmoHandle::Body; // Default to body drag on selection
         m_dragStartPos = pos;
-        
+
         // Refine potential handle hit
         if (auto* arrowItem = getSelectedArrowAnnotation()) {
              GizmoHandle handle = TransformationGizmo::hitTest(arrowItem, pos);
@@ -1596,7 +1474,7 @@ bool ScreenCanvas::handleArrowAnnotationPress(const QPoint& pos)
                  m_arrowDragHandle = handle;
              }
         }
-        
+
         update();
         return true;
     }
@@ -1620,7 +1498,7 @@ bool ScreenCanvas::handleArrowAnnotationMove(const QPoint& pos)
             } else if (m_arrowDragHandle == GizmoHandle::ArrowEnd) {
                 arrowItem->setEnd(pos);
             } else if (m_arrowDragHandle == GizmoHandle::ArrowControl) {
-                // User drags the curve midpoint (t=0.5), calculate actual Bézier control point
+                // User drags the curve midpoint (t=0.5), calculate actual Bezier control point
                 // P1 = 2*Mid - 0.5*(Start + End)
                 QPointF start = arrowItem->start();
                 QPointF end = arrowItem->end();
@@ -1702,7 +1580,7 @@ bool ScreenCanvas::handlePolylineAnnotationPress(const QPoint& pos)
                  m_activePolylineVertexIndex = vertexIndex;
              }
         }
-        
+
         update();
         return true;
     }

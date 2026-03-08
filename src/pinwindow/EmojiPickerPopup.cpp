@@ -9,10 +9,11 @@
 #include <QGuiApplication>
 
 EmojiPickerPopup::EmojiPickerPopup(QWidget* parent)
-    : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint)
+    : QWidget(parent, Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint)
 {
     setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_ShowWithoutActivating);
+    setWindowFlag(Qt::WindowDoesNotAcceptFocus, true);
     setCursor(Qt::ArrowCursor);
 
     m_picker = new EmojiPicker(this);

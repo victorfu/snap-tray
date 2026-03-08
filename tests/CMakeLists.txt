@@ -12,23 +12,13 @@ find_package(Qt6 REQUIRED COMPONENTS Test)
 set(CMAKE_AUTOMOC ON)
 
 # ============================================================================
-# ToolOptionsPanel Tests (link snaptray_ui)
+# QML ViewModel Tests
 # ============================================================================
 
-add_executable(ToolOptionsPanel_State ToolOptionsPanel/tst_State.cpp)
-target_link_libraries(ToolOptionsPanel_State PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME ToolOptionsPanel_State COMMAND ToolOptionsPanel_State)
-set_tests_properties(ToolOptionsPanel_State PROPERTIES TIMEOUT 60 LABELS "unit")
-
-add_executable(ToolOptionsPanel_Signals ToolOptionsPanel/tst_Signals.cpp)
-target_link_libraries(ToolOptionsPanel_Signals PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME ToolOptionsPanel_Signals COMMAND ToolOptionsPanel_Signals)
-set_tests_properties(ToolOptionsPanel_Signals PROPERTIES TIMEOUT 60 LABELS "unit")
-
-add_executable(ToolOptionsPanel_HitTest ToolOptionsPanel/tst_HitTest.cpp)
-target_link_libraries(ToolOptionsPanel_HitTest PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME ToolOptionsPanel_HitTest COMMAND ToolOptionsPanel_HitTest)
-set_tests_properties(ToolOptionsPanel_HitTest PROPERTIES TIMEOUT 60 LABELS "unit")
+add_executable(Qml_PinToolOptionsViewModel Qml/tst_PinToolOptionsViewModel.cpp)
+target_link_libraries(Qml_PinToolOptionsViewModel PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Qml_PinToolOptionsViewModel COMMAND Qml_PinToolOptionsViewModel)
+set_tests_properties(Qml_PinToolOptionsViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
 # PinWindow Tests (link snaptray_ui which includes snaptray_platform)
@@ -105,6 +95,7 @@ set_tests_properties(RegionSelector_ShapeAnnotationEditor PROPERTIES TIMEOUT 60 
 
 add_executable(RegionSelector_RegionSettingsHelper RegionSelector/tst_RegionSettingsHelper.cpp)
 target_link_libraries(RegionSelector_RegionSettingsHelper PRIVATE snaptray_ui Qt6::Test)
+target_sources(RegionSelector_RegionSettingsHelper PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
 add_test(NAME RegionSelector_RegionSettingsHelper COMMAND RegionSelector_RegionSettingsHelper)
 set_tests_properties(RegionSelector_RegionSettingsHelper PROPERTIES TIMEOUT 60 LABELS "unit")
 
@@ -442,35 +433,6 @@ add_executable(Tools_MeasureToolHandler Tools/handlers/tst_MeasureToolHandler.cp
 target_link_libraries(Tools_MeasureToolHandler PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Tools_MeasureToolHandler COMMAND Tools_MeasureToolHandler)
 set_tests_properties(Tools_MeasureToolHandler PROPERTIES TIMEOUT 60 LABELS "unit")
-
-# ============================================================================
-# UI Section Tests (link snaptray_ui for UI components)
-# ============================================================================
-
-add_executable(UISections_ColorSection UISections/tst_ColorSection.cpp)
-target_link_libraries(UISections_ColorSection PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME UISections_ColorSection COMMAND UISections_ColorSection)
-set_tests_properties(UISections_ColorSection PROPERTIES TIMEOUT 60 LABELS "unit")
-
-add_executable(UISections_WidthSection UISections/tst_WidthSection.cpp)
-target_link_libraries(UISections_WidthSection PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME UISections_WidthSection COMMAND UISections_WidthSection)
-set_tests_properties(UISections_WidthSection PROPERTIES TIMEOUT 60 LABELS "unit")
-
-add_executable(UISections_ShapeSection UISections/tst_ShapeSection.cpp)
-target_link_libraries(UISections_ShapeSection PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME UISections_ShapeSection COMMAND UISections_ShapeSection)
-set_tests_properties(UISections_ShapeSection PROPERTIES TIMEOUT 60 LABELS "unit")
-
-add_executable(UISections_ArrowStyleSection UISections/tst_ArrowStyleSection.cpp)
-target_link_libraries(UISections_ArrowStyleSection PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME UISections_ArrowStyleSection COMMAND UISections_ArrowStyleSection)
-set_tests_properties(UISections_ArrowStyleSection PROPERTIES TIMEOUT 60 LABELS "unit")
-
-add_executable(UISections_SizeSection UISections/tst_SizeSection.cpp)
-target_link_libraries(UISections_SizeSection PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME UISections_SizeSection COMMAND UISections_SizeSection)
-set_tests_properties(UISections_SizeSection PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
 # Video Tests (link snaptray_ui for video components)

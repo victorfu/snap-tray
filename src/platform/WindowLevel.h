@@ -41,8 +41,8 @@ void forceNativeCrosshairCursor(QWidget *widget = nullptr);
 // On Windows: No-op (Windows doesn't have this issue)
 void forceNativeArrowCursor(QWidget *widget = nullptr);
 
-// Raises window above overlay windows (RegionSelector, ScreenCanvas)
-// On macOS: Sets NSWindow level to kCGScreenSaverWindowLevel + 1
+// Raises window above overlay windows and their floating toolbars.
+// On macOS: Sets NSWindow level to kCGScreenSaverWindowLevel + 2
 // On Windows: No-op (Qt::WindowStaysOnTopHint is sufficient)
 void raiseWindowAboveOverlays(QWidget *widget);
 

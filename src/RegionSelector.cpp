@@ -13,7 +13,10 @@
 #include "GlassRenderer.h"
 #include "ToolbarStyle.h"
 #include "IconRenderer.h"
-#include "toolbar/ToolOptionsPanel.h"
+#include "qml/RegionToolbarViewModel.h"
+#include "qml/PinToolOptionsViewModel.h"
+#include "qml/QmlFloatingToolbar.h"
+#include "qml/QmlFloatingSubToolbar.h"
 #include "colorwidgets/ColorPickerDialogCompat.h"
 
 using snaptray::colorwidgets::ColorPickerDialogCompat;
@@ -85,7 +88,6 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_currentScreen(nullptr)
     , m_selectionManager(nullptr)
     , m_devicePixelRatio(1.0)
-    , m_toolbar(nullptr)
     , m_annotationLayer(nullptr)
     , m_isClosing(false)
     , m_isDialogOpen(false)
@@ -224,11 +226,46 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Initialize auto-blur manager (lazy initialization - cascade loaded on first use)
     m_autoBlurManager = new AutoBlurManager(this);
 
-    // Initialize toolbar widget
-    m_toolbar = new ToolbarCore(this);
-    connect(m_toolbar, &ToolbarCore::buttonClicked, this, [this](int buttonId) {
-        handleToolbarClick(static_cast<ToolId>(buttonId));
-        });
+    // Initialize QML toolbar ViewModels
+    m_toolbarViewModel = new RegionToolbarViewModel(this);
+    m_toolOptionsViewModel = new PinToolOptionsViewModel(this);
+
+    // Create QML floating toolbar windows
+    SnapTray::QmlFloatingToolbar::Appearance toolbarAppearance;
+    toolbarAppearance.iconPalette = SnapTray::QmlFloatingToolbar::IconPalette::CaptureOverlay;
+    m_qmlToolbar = std::make_unique<SnapTray::QmlFloatingToolbar>(
+        m_toolbarViewModel, toolbarAppearance, nullptr);
+    m_qmlToolbar->setParentWidget(this);
+    m_qmlSubToolbar = std::make_unique<SnapTray::QmlFloatingSubToolbar>(m_toolOptionsViewModel, nullptr);
+    m_qmlSubToolbar->setParentWidget(this);
+
+    // Connect toolbar ViewModel signals
+    connect(m_toolbarViewModel, &RegionToolbarViewModel::toolSelected,
+        this, [this](int toolId) { handleToolbarClick(static_cast<ToolId>(toolId)); });
+    connect(m_toolbarViewModel, &RegionToolbarViewModel::undoClicked,
+        this, [this]() { handleToolbarClick(ToolId::Undo); });
+    connect(m_toolbarViewModel, &RegionToolbarViewModel::redoClicked,
+        this, [this]() { handleToolbarClick(ToolId::Redo); });
+    connect(m_toolbarViewModel, &RegionToolbarViewModel::cancelClicked,
+        this, [this]() { handleToolbarClick(ToolId::Cancel); });
+    connect(m_toolbarViewModel, &RegionToolbarViewModel::pinClicked,
+        this, [this]() { handleToolbarClick(ToolId::Pin); });
+    connect(m_toolbarViewModel, &RegionToolbarViewModel::recordClicked,
+        this, [this]() { handleToolbarClick(ToolId::Record); });
+    connect(m_toolbarViewModel, &RegionToolbarViewModel::saveClicked,
+        this, [this]() { handleToolbarClick(ToolId::Save); });
+    connect(m_toolbarViewModel, &RegionToolbarViewModel::copyClicked,
+        this, [this]() { handleToolbarClick(ToolId::Copy); });
+    connect(m_toolbarViewModel, &RegionToolbarViewModel::shareClicked,
+        this, [this]() { handleToolbarClick(ToolId::Share); });
+    connect(m_toolbarViewModel, &RegionToolbarViewModel::ocrClicked,
+        this, [this]() { handleToolbarClick(ToolId::OCR); });
+    connect(m_toolbarViewModel, &RegionToolbarViewModel::qrCodeClicked,
+        this, [this]() { handleToolbarClick(ToolId::QRCode); });
+    connect(m_toolbarViewModel, &RegionToolbarViewModel::multiRegionToggled,
+        this, [this]() { handleToolbarClick(ToolId::MultiRegion); });
+    connect(m_toolbarViewModel, &RegionToolbarViewModel::multiRegionDoneClicked,
+        this, [this]() { handleToolbarClick(ToolId::MultiRegionDone); });
 
     // Initialize inline text editor
     m_textEditor = new InlineTextEditor(this);
@@ -252,39 +289,127 @@ RegionSelector::RegionSelector(QWidget* parent)
         setFocus(Qt::OtherFocusReason);
     });
 
-    // Initialize unified color and width widget
-    m_colorAndWidthWidget = new ToolOptionsPanel(this);
-    m_colorAndWidthWidget->setUseSharedStyleDropdowns(true);
-    m_colorAndWidthWidget->setCurrentColor(m_inputState.annotationColor);
-    m_colorAndWidthWidget->setCurrentWidth(m_inputState.annotationWidth);
-    m_colorAndWidthWidget->setWidthRange(1, 20);
-    // Set persisted annotation style controls
-    m_colorAndWidthWidget->setArrowStyle(m_inputState.arrowStyle);
-    m_colorAndWidthWidget->setLineStyle(m_inputState.lineStyle);
+    // Initialize sub-toolbar ViewModel with persisted state
+    m_toolOptionsViewModel->setCurrentColor(m_inputState.annotationColor);
+    m_toolOptionsViewModel->setCurrentWidth(m_inputState.annotationWidth);
+    m_toolOptionsViewModel->setArrowStyle(static_cast<int>(m_inputState.arrowStyle));
+    m_toolOptionsViewModel->setLineStyle(static_cast<int>(m_inputState.lineStyle));
 
     // Centralized annotation/text setup and common signal wiring
     m_annotationContext = std::make_unique<AnnotationContext>(*this);
-    m_annotationContext->setupTextAnnotationEditor(true, true);
+    m_annotationContext->setupTextAnnotationEditor();
     m_annotationContext->connectTextEditorSignals();
-    m_annotationContext->connectToolOptionsSignals();
-    m_annotationContext->connectTextFormattingSignals();
-    m_annotationContext->syncTextFormattingControls();
 
-    // Connect shape section signals
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::shapeTypeChanged,
-        this, [this](ShapeType type) {
-            m_inputState.shapeType = type;
-            m_toolManager->setShapeType(static_cast<int>(type));
+    // Connect sub-toolbar ViewModel signals (replaces connectToolOptionsSignals)
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::colorSelected,
+        this, &RegionSelector::onColorSelected);
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::customColorPickerRequested,
+        this, &RegionSelector::onMoreColorsRequested);
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::widthValueChanged,
+        this, &RegionSelector::onLineWidthChanged);
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::arrowStyleSelected,
+        this, [this](int style) { onArrowStyleChanged(static_cast<LineEndStyle>(style)); });
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::lineStyleSelected,
+        this, [this](int style) { onLineStyleChanged(static_cast<LineStyle>(style)); });
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::fontSizeDropdownRequested,
+        this, [this](double globalX, double globalY) {
+            onFontSizeDropdownRequested(QPoint(qRound(globalX), qRound(globalY)));
         });
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::shapeFillModeChanged,
-        this, [this](ShapeFillMode mode) {
-            m_inputState.shapeFillMode = mode;
-            m_toolManager->setShapeFillMode(static_cast<int>(mode));
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::fontFamilyDropdownRequested,
+        this, [this](double globalX, double globalY) {
+            onFontFamilyDropdownRequested(QPoint(qRound(globalX), qRound(globalY)));
         });
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::stepBadgeSizeChanged,
-        this, &RegionSelector::onStepBadgeSizeChanged);
-    connect(m_colorAndWidthWidget, &ToolOptionsPanel::autoBlurRequested,
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::arrowStyleDropdownRequested,
+        this, [this](double globalX, double globalY) {
+            if (!m_settingsHelper) {
+                return;
+            }
+            m_settingsHelper->showArrowStyleDropdown(
+                QPoint(qRound(globalX), qRound(globalY)),
+                static_cast<LineEndStyle>(m_toolOptionsViewModel->arrowStyle()));
+        });
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::lineStyleDropdownRequested,
+        this, [this](double globalX, double globalY) {
+            if (!m_settingsHelper) {
+                return;
+            }
+            m_settingsHelper->showLineStyleDropdown(
+                QPoint(qRound(globalX), qRound(globalY)),
+                static_cast<LineStyle>(m_toolOptionsViewModel->lineStyle()));
+        });
+
+    // Connect text formatting signals
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::boldToggled,
+        m_textAnnotationEditor, &TextAnnotationEditor::setBold);
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::italicToggled,
+        m_textAnnotationEditor, &TextAnnotationEditor::setItalic);
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::underlineToggled,
+        m_textAnnotationEditor, &TextAnnotationEditor::setUnderline);
+
+    auto syncTextFormattingToSubToolbar = [this]() {
+        if (!m_textAnnotationEditor) {
+            return;
+        }
+        const auto formatting = m_textAnnotationEditor->formatting();
+        if (m_textEditor && m_textEditor->isEditing()) {
+            m_toolOptionsViewModel->setCurrentColor(m_textEditor->color());
+        }
+        m_toolOptionsViewModel->setBold(formatting.bold);
+        m_toolOptionsViewModel->setItalic(formatting.italic);
+        m_toolOptionsViewModel->setUnderline(formatting.underline);
+        m_toolOptionsViewModel->setFontSize(formatting.fontSize);
+        m_toolOptionsViewModel->setFontFamily(formatting.fontFamily);
+    };
+    connect(m_textAnnotationEditor, &TextAnnotationEditor::formattingChanged,
+        this, syncTextFormattingToSubToolbar);
+    syncTextFormattingToSubToolbar();
+
+    // Connect shape/stepBadge/autoBlur signals via sub-toolbar ViewModel
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::shapeTypeSelected,
+        this, [this](int type) {
+            m_inputState.shapeType = static_cast<ShapeType>(type);
+            m_toolManager->setShapeType(type);
+        });
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::shapeFillModeSelected,
+        this, [this](int mode) {
+            m_inputState.shapeFillMode = static_cast<ShapeFillMode>(mode);
+            m_toolManager->setShapeFillMode(mode);
+        });
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::stepBadgeSizeSelected,
+        this, [this](int size) { onStepBadgeSizeChanged(static_cast<StepBadgeSize>(size)); });
+    connect(m_toolOptionsViewModel, &PinToolOptionsViewModel::autoBlurRequested,
         this, &RegionSelector::performAutoBlur);
+    // Track user drag to prevent paintEvent from overriding toolbar position
+    connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::dragFinished,
+        this, [this]() { m_toolbarUserDragged = true; });
+
+    // Cursor management: restore drawing cursor when mouse leaves QML overlays
+    connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::cursorRestoreRequested,
+        this, [this]() {
+            CursorManager::instance().updateToolCursorForWidget(this);
+        });
+    connect(m_qmlSubToolbar.get(), &SnapTray::QmlFloatingSubToolbar::cursorRestoreRequested,
+        this, [this]() {
+            CursorManager::instance().updateToolCursorForWidget(this);
+        });
+
+    connect(m_qmlSubToolbar.get(), &SnapTray::QmlFloatingSubToolbar::emojiPickerRequested,
+        this, [this]() {
+            EmojiPicker* picker = ensureEmojiPicker();
+            if (m_qmlToolbar) {
+                picker->setVisible(true);
+                picker->updatePosition(m_qmlToolbar->geometry(), false);
+                update();
+            }
+        });
+    connect(m_annotationLayer, &AnnotationLayer::changed,
+        this, [this]() {
+            if (m_toolbarViewModel) {
+                m_toolbarViewModel->setCanUndo(m_annotationLayer && m_annotationLayer->canUndo());
+                m_toolbarViewModel->setCanRedo(m_annotationLayer && m_annotationLayer->canRedo());
+            }
+            update();
+        });
 
     // EmojiPicker is lazy-initialized via ensureEmojiPicker() when first needed
     // LoadingSpinner is lazy-initialized via ensureLoadingSpinner() when first needed
@@ -424,7 +549,6 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_painter->setSelectionManager(m_selectionManager);
     m_painter->setAnnotationLayer(m_annotationLayer);
     m_painter->setToolManager(m_toolManager);
-    m_painter->setToolbar(m_toolbar);
     m_painter->setRegionControlWidget(m_regionControlWidget);
     m_painter->setMultiRegionManager(m_multiRegionManager);
     m_painter->setParentWidget(this);
@@ -516,6 +640,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             if (m_toolbarHandler) {
                 m_toolbarHandler->setShareInProgress(false);
             }
+            m_toolbarViewModel->setShareInProgress(false);
             if (m_loadingSpinner && !(m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress)) {
                 m_loadingSpinner->stop();
             }
@@ -537,6 +662,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             if (m_toolbarHandler) {
                 m_toolbarHandler->setShareInProgress(false);
             }
+            m_toolbarViewModel->setShareInProgress(false);
             if (m_loadingSpinner && !(m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress)) {
                 m_loadingSpinner->stop();
             }
@@ -552,10 +678,8 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_inputHandler->setSelectionManager(m_selectionManager);
     m_inputHandler->setAnnotationLayer(m_annotationLayer);
     m_inputHandler->setToolManager(m_toolManager);
-    m_inputHandler->setToolbar(m_toolbar);
     m_inputHandler->setTextEditor(m_textEditor);
     m_inputHandler->setTextAnnotationEditor(m_textAnnotationEditor);
-    m_inputHandler->setColorAndWidthWidget(m_colorAndWidthWidget);
     // EmojiPicker is set lazily via ensureEmojiPicker() when first needed
     m_inputHandler->setRegionControlWidget(m_regionControlWidget);
     m_inputHandler->setMultiRegionManager(m_multiRegionManager);
@@ -655,19 +779,27 @@ RegionSelector::RegionSelector(QWidget* parent)
 
     // Initialize toolbar handler component
     m_toolbarHandler = new RegionToolbarHandler(this);
-    m_toolbarHandler->setToolbar(m_toolbar);
     m_toolbarHandler->setToolManager(m_toolManager);
     m_toolbarHandler->setAnnotationLayer(m_annotationLayer);
-    m_toolbarHandler->setColorAndWidthWidget(m_colorAndWidthWidget);
     m_toolbarHandler->setSelectionManager(m_selectionManager);
-    // OCRManager is set lazily via ensureOCRManager() when first needed
     m_toolbarHandler->setParentWidget(this);
 
-    // Connect toolbar handler signals
+    // Connect toolbar handler signals (tool state changes)
     connect(m_toolbarHandler, &RegionToolbarHandler::toolChanged,
         this, [this](ToolId tool, bool showSubToolbar) {
             m_inputState.currentTool = tool;
             m_inputState.showSubToolbar = showSubToolbar;
+            m_toolbarViewModel->setActiveTool(showSubToolbar ? static_cast<int>(tool) : -1);
+            // Update sub-toolbar sections for the current tool
+            m_qmlSubToolbar->showForTool(static_cast<int>(tool));
+            // Runtime-dependent setting for Mosaic auto blur
+            if (tool == ToolId::Mosaic) {
+                m_toolOptionsViewModel->setAutoBlurEnabled(m_autoBlurManager != nullptr);
+            }
+            // Position sub-toolbar below main toolbar
+            if (m_qmlToolbar && m_qmlToolbar->isVisible() && m_qmlSubToolbar->isVisible()) {
+                m_qmlSubToolbar->positionBelow(m_qmlToolbar->geometry());
+            }
         });
     connect(m_toolbarHandler, &RegionToolbarHandler::updateRequested,
         this, qOverload<>(&QWidget::update));
@@ -690,6 +822,7 @@ RegionSelector::RegionSelector(QWidget* parent)
                 close();
                 return;
             }
+
             emit recordingRequested(localToGlobal(m_selectionManager->selectionRect()), m_currentScreen.data());
             close();
         });
@@ -710,25 +843,6 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_toolbarHandler, &RegionToolbarHandler::multiRegionCancelRequested,
         this, &RegionSelector::cancelMultiRegionCapture);
 
-    // Connect ToolOptionsPanel configuration signals
-    connect(m_toolbarHandler, &RegionToolbarHandler::showSizeSectionRequested,
-        m_colorAndWidthWidget, &ToolOptionsPanel::setShowSizeSection);
-    connect(m_toolbarHandler, &RegionToolbarHandler::showWidthSectionRequested,
-        m_colorAndWidthWidget, &ToolOptionsPanel::setShowWidthSection);
-    connect(m_toolbarHandler, &RegionToolbarHandler::widthSectionHiddenRequested,
-        m_colorAndWidthWidget, &ToolOptionsPanel::setWidthSectionHidden);
-    connect(m_toolbarHandler, &RegionToolbarHandler::showColorSectionRequested,
-        m_colorAndWidthWidget, &ToolOptionsPanel::setShowColorSection);
-    connect(m_toolbarHandler, &RegionToolbarHandler::widthRangeRequested,
-        m_colorAndWidthWidget, &ToolOptionsPanel::setWidthRange);
-    connect(m_toolbarHandler, &RegionToolbarHandler::currentWidthRequested,
-        m_colorAndWidthWidget, &ToolOptionsPanel::setCurrentWidth);
-    connect(m_toolbarHandler, &RegionToolbarHandler::stepBadgeSizeRequested,
-        m_colorAndWidthWidget, &ToolOptionsPanel::setStepBadgeSize);
-
-    // Setup toolbar buttons via handler
-    m_toolbarHandler->setupToolbarButtons();
-
     // Initialize settings helper
     m_settingsHelper = new RegionSettingsHelper(this);
     m_settingsHelper->setParentWidget(this);
@@ -736,6 +850,10 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, &RegionSelector::onFontSizeSelected);
     connect(m_settingsHelper, &RegionSettingsHelper::fontFamilySelected,
         this, &RegionSelector::onFontFamilySelected);
+    connect(m_settingsHelper, &RegionSettingsHelper::arrowStyleSelected,
+        this, &RegionSelector::onArrowStyleChanged);
+    connect(m_settingsHelper, &RegionSettingsHelper::lineStyleSelected,
+        this, &RegionSelector::onLineStyleChanged);
 
     // Initialize update throttler
     m_updateThrottler.startAll();
@@ -793,11 +911,6 @@ QWidget* RegionSelector::annotationHostWidget() const
 AnnotationLayer* RegionSelector::annotationLayerForContext() const
 {
     return m_annotationLayer;
-}
-
-ToolOptionsPanel* RegionSelector::toolOptionsPanelForContext() const
-{
-    return m_colorAndWidthWidget;
 }
 
 InlineTextEditor* RegionSelector::inlineTextEditorForContext() const
@@ -867,7 +980,7 @@ void RegionSelector::syncColorToRuntimeState(const QColor& color)
 {
     m_inputState.annotationColor = color;
     m_toolManager->setColor(color);
-    m_colorAndWidthWidget->setCurrentColor(color);
+    m_toolOptionsViewModel->setCurrentColor(color);
     if (m_textEditor->isEditing()) {
         m_textEditor->setColor(color);
     }
@@ -881,7 +994,7 @@ void RegionSelector::onColorSelected(const QColor& color)
 
 void RegionSelector::onMoreColorsRequested()
 {
-    m_colorAndWidthWidget->setCurrentColor(m_inputState.annotationColor);
+    m_toolOptionsViewModel->setCurrentColor(m_inputState.annotationColor);
 
     AnnotationContext::showColorPickerDialog(
         this,
@@ -984,10 +1097,7 @@ int RegionSelector::effectiveCornerRadius() const
 
 bool RegionSelector::shouldShowColorAndWidthWidget() const
 {
-    if (m_inputState.multiRegionMode) return false;
-    if (!m_selectionManager->isComplete()) return false;
-    if (!m_inputState.showSubToolbar) return false;
-    return ToolRegistry::instance().showColorWidthWidget(m_inputState.currentTool);
+    return false; // QML sub-toolbar manages its own visibility via showForTool()
 }
 
 bool RegionSelector::shouldShowWidthControl() const
@@ -1544,79 +1654,92 @@ void RegionSelector::paintEvent(QPaintEvent* event)
     // Delegate core painting (background, overlay, selection, annotations)
     m_painter->paint(painter, m_backgroundPixmap, dirtyRect);
 
-    // Draw toolbar and widgets (UI management stays in RegionSelector)
+    // QML toolbars render themselves in separate windows.
+    // Show/position them when selection is active.
     QRect selectionRect = m_selectionManager->selectionRect();
-    if (m_selectionManager->hasActiveSelection() && selectionRect.isValid()) {
-        if (m_selectionManager->hasSelection()) {
-            // Update toolbar position and draw
-            // Only show active indicator when sub-toolbar is visible
-            m_toolbar->setActiveButton(m_inputState.showSubToolbar ? static_cast<int>(m_inputState.currentTool) : -1);
-            m_toolbar->setViewportWidth(width());
-            m_toolbar->setPositionForSelection(selectionRect, height());
-            m_toolbar->draw(painter);
-
-            if (m_inputState.multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0) {
-                const int regionCount = m_multiRegionManager->count();
-                QString countText = (regionCount == 1)
-                    ? tr("%1 region").arg(regionCount)
-                    : tr("%1 regions").arg(regionCount);
-                QFont countFont = painter.font();
-                countFont.setPointSize(11);
-                painter.setFont(countFont);
-
-                QFontMetrics fm(countFont);
-                QRect countRect = fm.boundingRect(countText);
-                countRect.adjust(-8, -4, 8, 4);
-
-                QRect toolbarRect = m_toolbar->boundingRect();
-                int countX = toolbarRect.right() - countRect.width();
-                int countY = toolbarRect.top() - countRect.height() - 6;
-                if (countY < 5) {
-                    countY = toolbarRect.bottom() + 6;
-                }
-                countRect.moveTo(countX, countY);
-
-                auto styleConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
-                GlassRenderer::drawGlassPanel(painter, countRect, styleConfig, 6);
-                painter.setPen(styleConfig.textColor);
-                painter.drawText(countRect, Qt::AlignCenter, countText);
+    const bool shouldShowSelectionUi =
+        m_selectionManager->hasActiveSelection() &&
+        selectionRect.isValid() &&
+        m_selectionManager->hasSelection();
+    if (shouldShowSelectionUi) {
+        // Position and show QML toolbar
+        if (m_qmlToolbar && !m_qmlToolbar->isVisible()) {
+            m_qmlToolbar->show();
+        }
+        if (m_qmlToolbar) {
+            if (!m_toolbarUserDragged) {
+                m_qmlToolbar->positionForSelection(
+                    selectionRect,
+                    width(),
+                    height(),
+                    SnapTray::QmlFloatingToolbar::HorizontalAlignment::RightEdge);
             }
+            // Update undo/redo state
+            m_toolbarViewModel->setCanUndo(m_annotationLayer && m_annotationLayer->canUndo());
+            m_toolbarViewModel->setCanRedo(m_annotationLayer && m_annotationLayer->canRedo());
+        }
 
-            // Use unified color and width widget with data-driven configuration
-            if (shouldShowColorAndWidthWidget()) {
-                m_colorAndWidthWidget->setVisible(true);
-                // Apply tool-specific section configuration
-                ToolSectionConfig::forTool(m_inputState.currentTool).applyTo(m_colorAndWidthWidget);
-                m_colorAndWidthWidget->setWidthSectionHidden(false);
-                // Runtime-dependent setting for Mosaic auto blur
-                if (m_inputState.currentTool == ToolId::Mosaic) {
-                    m_colorAndWidthWidget->setAutoBlurEnabled(m_autoBlurManager != nullptr);
-                }
-                m_colorAndWidthWidget->updatePosition(m_toolbar->boundingRect(), false, width());
-                m_colorAndWidthWidget->draw(painter);
-            }
-            else {
-                m_colorAndWidthWidget->setVisible(false);
-            }
+        // Position sub-toolbar below main toolbar
+        if (m_qmlSubToolbar && m_qmlSubToolbar->isVisible() && m_qmlToolbar) {
+            m_qmlSubToolbar->positionBelow(m_qmlToolbar->geometry());
+        }
 
-            // Draw emoji picker when EmojiSticker tool is selected (lazy creation)
-            if (m_inputState.currentTool == ToolId::EmojiSticker) {
-                EmojiPicker* picker = ensureEmojiPicker();
-                picker->setVisible(true);
-                picker->updatePosition(m_toolbar->boundingRect(), false);
-                picker->draw(painter);
-            }
-            else if (m_emojiPicker) {
-                m_emojiPicker->setVisible(false);
-            }
+        if (m_inputState.multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0) {
+            const int regionCount = m_multiRegionManager->count();
+            QString countText = (regionCount == 1)
+                ? tr("%1 region").arg(regionCount)
+                : tr("%1 regions").arg(regionCount);
+            QFont countFont = painter.font();
+            countFont.setPointSize(11);
+            painter.setFont(countFont);
 
-            m_toolbar->drawTooltip(painter);
+            QFontMetrics fm(countFont);
+            QRect countRect = fm.boundingRect(countText);
+            countRect.adjust(-8, -4, 8, 4);
 
-            // Draw loading spinner when OCR, QR Code scan, or auto-blur is in progress
-            if ((m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress || m_shareInProgress) && m_loadingSpinner) {
-                QPoint center = selectionRect.center();
-                m_loadingSpinner->draw(painter, center);
+            QRect toolbarRect = m_qmlToolbar ? m_qmlToolbar->geometry() : QRect();
+            int countX = toolbarRect.right() - countRect.width();
+            int countY = toolbarRect.top() - countRect.height() - 6;
+            if (countY < 5) {
+                countY = toolbarRect.bottom() + 6;
             }
+            countRect.moveTo(countX, countY);
+
+            auto styleConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+            GlassRenderer::drawGlassPanel(painter, countRect, styleConfig, 6);
+            painter.setPen(styleConfig.textColor);
+            painter.drawText(countRect, Qt::AlignCenter, countText);
+        }
+
+        // Draw emoji picker when EmojiSticker tool is selected (lazy creation)
+        if (m_inputState.currentTool == ToolId::EmojiSticker) {
+            EmojiPicker* picker = ensureEmojiPicker();
+            picker->setVisible(true);
+            if (m_qmlToolbar) {
+                picker->updatePosition(m_qmlToolbar->geometry(), false);
+            }
+            picker->draw(painter);
+        }
+        else if (m_emojiPicker) {
+            m_emojiPicker->setVisible(false);
+        }
+
+        // Draw loading spinner when OCR, QR Code scan, or auto-blur is in progress
+        if ((m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress || m_shareInProgress) && m_loadingSpinner) {
+            QPoint center = selectionRect.center();
+            m_loadingSpinner->draw(painter, center);
+        }
+    }
+    else {
+        m_toolbarUserDragged = false;
+        if (m_qmlToolbar) {
+            m_qmlToolbar->hide();
+        }
+        if (m_qmlSubToolbar) {
+            m_qmlSubToolbar->hide();
+        }
+        if (m_emojiPicker) {
+            m_emojiPicker->setVisible(false);
         }
     }
 
@@ -1626,8 +1749,7 @@ void RegionSelector::paintEvent(QPaintEvent* event)
     if (m_selectionManager->isComplete()) {
         // Only show crosshair inside selection area, not on toolbar
         shouldShowCrosshair = shouldShowCrosshair &&
-            selectionRect.contains(m_inputState.currentPoint) &&
-            !m_toolbar->contains(m_inputState.currentPoint);
+            selectionRect.contains(m_inputState.currentPoint);
     }
 
     if (shouldShowCrosshair) {
@@ -1781,6 +1903,8 @@ void RegionSelector::syncMultiRegionListPanelCursor()
 
 void RegionSelector::handleToolbarClick(ToolId tool)
 {
+    finalizePolylineForToolbarInteraction();
+
     // Sync current state to handler
     m_toolbarHandler->setCurrentTool(m_inputState.currentTool);
     m_toolbarHandler->setShowSubToolbar(m_inputState.showSubToolbar);
@@ -1795,6 +1919,19 @@ void RegionSelector::handleToolbarClick(ToolId tool)
     m_toolbarHandler->handleToolbarClick(tool);
 }
 
+void RegionSelector::finalizePolylineForToolbarInteraction()
+{
+    if (!m_toolManager ||
+        m_toolManager->currentTool() != ToolId::Arrow ||
+        !m_toolManager->isDrawing()) {
+        return;
+    }
+
+    const QPoint toolbarClickPos = globalToLocal(QCursor::pos());
+    m_toolManager->handleDoubleClick(toolbarClickPos);
+    m_inputState.isDrawing = m_toolManager->isDrawing();
+}
+
 void RegionSelector::setMultiRegionMode(bool enabled)
 {
     if (m_inputState.multiRegionMode == enabled) {
@@ -1805,7 +1942,7 @@ void RegionSelector::setMultiRegionMode(bool enabled)
     m_inputState.multiRegionMode = enabled;
     m_painter->setMultiRegionMode(enabled);
     m_toolbarHandler->setMultiRegionMode(enabled);
-    m_toolbarHandler->setupToolbarButtons();
+    m_toolbarViewModel->setMultiRegionMode(enabled);
 
     if (enabled) {
         clearPreservedSelection();
@@ -1933,6 +2070,7 @@ void RegionSelector::shareToUrl()
         if (m_toolbarHandler) {
             m_toolbarHandler->setShareInProgress(true);
         }
+        m_toolbarViewModel->setShareInProgress(true);
         ensureLoadingSpinner()->start();
         update();
 
@@ -2030,20 +2168,12 @@ void RegionSelector::wheelEvent(QWheelEvent* event)
             }
             StepBadgeSize newSize = static_cast<StepBadgeSize>(current);
             onStepBadgeSizeChanged(newSize);
-            m_colorAndWidthWidget->setStepBadgeSize(newSize);
+            m_toolOptionsViewModel->setStepBadgeSize(static_cast<int>(newSize));
             event->accept();
             return;
         }
     }
 
-    // Forward wheel events when tools that support width adjustment are active
-    if (shouldShowColorAndWidthWidget()) {
-        if (m_colorAndWidthWidget->handleWheel(event->angleDelta().y())) {
-            update();
-            event->accept();
-            return;
-        }
-    }
     event->ignore();
 }
 
@@ -2135,8 +2265,7 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
         if (m_selectionManager->isComplete()) {
             QRect selectionRect = m_selectionManager->selectionRect();
             magnifierVisible = magnifierVisible &&
-                selectionRect.contains(m_inputState.currentPoint) &&
-                !m_toolbar->contains(m_inputState.currentPoint);
+                selectionRect.contains(m_inputState.currentPoint);
         }
         if (magnifierVisible) {
             m_magnifierPanel->toggleColorFormat();
@@ -2240,6 +2369,8 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
 void RegionSelector::closeEvent(QCloseEvent* event)
 {
     m_isClosing = true;
+    if (m_qmlToolbar) m_qmlToolbar->hide();
+    if (m_qmlSubToolbar) m_qmlSubToolbar->hide();
     if (m_screenSwitchTimer) {
         m_screenSwitchTimer->stop();
     }
@@ -2578,7 +2709,7 @@ void RegionSelector::performAutoBlur()
     }
 
     m_autoBlurInProgress = true;
-    m_colorAndWidthWidget->setAutoBlurProcessing(true);
+    m_toolOptionsViewModel->setAutoBlurProcessing(true);
     ensureLoadingSpinner()->start();
     update();
 
@@ -2591,7 +2722,7 @@ void RegionSelector::performAutoBlur()
     const QRect clampedPhysicalRect = physicalRect.intersected(m_backgroundPixmap.rect());
     if (clampedPhysicalRect.isEmpty()) {
         m_autoBlurInProgress = false;
-        m_colorAndWidthWidget->setAutoBlurProcessing(false);
+        m_toolOptionsViewModel->setAutoBlurProcessing(false);
         if (m_loadingSpinner) {
             m_loadingSpinner->stop();
         }
@@ -2618,7 +2749,7 @@ void RegionSelector::performAutoBlur()
 
     if (!runFaceDetection && !runCredentialDetection) {
         m_autoBlurInProgress = false;
-        m_colorAndWidthWidget->setAutoBlurProcessing(false);
+        m_toolOptionsViewModel->setAutoBlurProcessing(false);
         if (m_loadingSpinner) {
             m_loadingSpinner->stop();
         }
@@ -2793,7 +2924,7 @@ void RegionSelector::performAutoBlur()
 void RegionSelector::onAutoBlurComplete(bool success, int faceCount, int credentialCount, const QString& error)
 {
     m_autoBlurInProgress = false;
-    m_colorAndWidthWidget->setAutoBlurProcessing(false);
+    m_toolOptionsViewModel->setAutoBlurProcessing(false);
     if (m_loadingSpinner) {
         m_loadingSpinner->stop();
     }
@@ -2865,6 +2996,9 @@ QRect RegionSelector::globalToLocal(const QRect& globalRect) const
 
 void RegionSelector::onArrowStyleChanged(LineEndStyle style)
 {
+    if (m_toolOptionsViewModel) {
+        m_toolOptionsViewModel->setArrowStyle(static_cast<int>(style));
+    }
     m_inputState.arrowStyle = style;
     m_toolManager->setArrowStyle(style);
     AnnotationSettingsManager::instance().saveArrowStyle(style);
@@ -2873,6 +3007,9 @@ void RegionSelector::onArrowStyleChanged(LineEndStyle style)
 
 void RegionSelector::onLineStyleChanged(LineStyle style)
 {
+    if (m_toolOptionsViewModel) {
+        m_toolOptionsViewModel->setLineStyle(static_cast<int>(style));
+    }
     m_inputState.lineStyle = style;
     m_toolManager->setLineStyle(style);
     AnnotationSettingsManager::instance().saveLineStyle(style);
@@ -2895,6 +3032,9 @@ void RegionSelector::onFontFamilyDropdownRequested(const QPoint& pos)
 
 void RegionSelector::onFontSizeSelected(int size)
 {
+    if (m_toolOptionsViewModel) {
+        m_toolOptionsViewModel->setFontSize(size);
+    }
     if (m_annotationContext) {
         m_annotationContext->applyTextFontSize(size);
     }
@@ -2902,6 +3042,9 @@ void RegionSelector::onFontSizeSelected(int size)
 
 void RegionSelector::onFontFamilySelected(const QString& family)
 {
+    if (m_toolOptionsViewModel) {
+        m_toolOptionsViewModel->setFontFamily(family);
+    }
     if (m_annotationContext) {
         m_annotationContext->applyTextFontFamily(family);
     }

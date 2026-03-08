@@ -2,111 +2,149 @@ import QtQuick
 import SnapTrayQml
 
 /**
- * ArrowStyleSection: Arrow end-style selector with dropdown.
- *
- * Shows current arrow style icon with dropdown arrow.
- * Clicking cycles through available arrow styles.
+ * ArrowStyleSection: Arrow end-style selector button that opens a native QMenu.
  */
 Item {
     id: root
     objectName: "arrowStyleSection"
     required property var viewModel
-    property bool expandUpward: false
     signal menuOpened()
     signal menuClosed()
 
     readonly property int buttonWidth: 52
-    readonly property int buttonHeight: 22
-    readonly property int buttonTop: 3
-    readonly property int dropdownGap: 4
-    readonly property int dropdownPadding: 4
-    readonly property int dropdownSpacing: 2
-    readonly property int dropdownRadius: 6
-    readonly property int dropdownOptionHeight: 28
-    readonly property int dropdownWidth: buttonWidth + 10
-    readonly property var options: root.viewModel ? root.viewModel.arrowStyleOptions : []
-    readonly property int dropdownContentHeight: root.dropdownPadding * 2 + optionsColumn.height
-    readonly property int openExtraHeight: root.dropdownGap + root.dropdownContentHeight
-    readonly property int buttonYOffset: root.expandUpward && root.dropdownOpen ? root.openExtraHeight : 0
-    readonly property int popupOverflowLeft: root.dropdownOpen ? Math.max(0, -dropdownRect.x) : 0
-    readonly property int anchorOffsetY: buttonRect.y
-    property bool dropdownOpen: false
+    readonly property int buttonHeight: 20
     property int hoveredOption: -1
 
     implicitWidth: buttonWidth
-    implicitHeight: dropdownOpen
-                    ? buttonTop + buttonHeight + root.openExtraHeight
-                    : buttonTop + buttonHeight
+    implicitHeight: 22
     width: implicitWidth
     height: implicitHeight
 
-    readonly property color btnInactiveBg: ComponentTokens.toolbarControlBackground
-    readonly property color btnHoverBg: ComponentTokens.toolbarControlBackgroundHover
-    readonly property color borderColor: SemanticTokens.borderDefault
-    readonly property color popupHoverBg: ComponentTokens.toolbarPopupHover
-    readonly property color popupSelectedBg: ComponentTokens.toolbarPopupSelected
-
-    function rectContains(itemRect, localX, localY) {
-        return localX >= itemRect.x
-            && localX < itemRect.x + itemRect.width
-            && localY >= itemRect.y
-            && localY < itemRect.y + itemRect.height
-    }
+    readonly property color btnInactiveBg: SemanticTokens.isDarkMode
+        ? Qt.rgba(50 / 255, 50 / 255, 50 / 255, 1.0)
+        : Qt.rgba(245 / 255, 245 / 255, 245 / 255, 1.0)
+    readonly property color btnHoverBg: SemanticTokens.isDarkMode
+        ? Qt.rgba(80 / 255, 80 / 255, 80 / 255, 1.0)
+        : Qt.rgba(232 / 255, 232 / 255, 232 / 255, 1.0)
 
     function closeMenu() {
-        dropdownOpen = false
         hoveredOption = -1
     }
 
     function openMenu() {
-        dropdownOpen = true
-        hoveredOption = -1
+        var mapped = buttonRect.mapToGlobal(0, buttonRect.height)
+        root.menuOpened()
+        root.viewModel.handleArrowStyleDropdown(mapped.x, mapped.y)
+        root.menuClosed()
     }
 
-    onDropdownOpenChanged: {
-        if (dropdownOpen)
-            root.menuOpened()
-        else
-            root.menuClosed()
-    }
+    component ArrowPreview: Canvas {
+        required property int styleValue
+        required property color strokeColor
 
-    function currentIconKey() {
-        for (var i = 0; i < options.length; i++) {
-            if (options[i].value === root.viewModel.arrowStyle)
-                return options[i].iconKey
+        width: parent ? parent.width - 16 : 36
+        height: 14
+        antialiasing: true
+        renderTarget: Canvas.Image
+
+        function drawArrowTriangle(ctx, tipX, tipY, pointRight, filled) {
+            var arrowLength = 6
+            var arrowHalfHeight = 3.5
+
+            ctx.beginPath()
+            ctx.moveTo(tipX, tipY)
+            if (pointRight) {
+                ctx.lineTo(tipX - arrowLength, tipY - arrowHalfHeight)
+                ctx.lineTo(tipX - arrowLength, tipY + arrowHalfHeight)
+            } else {
+                ctx.lineTo(tipX + arrowLength, tipY - arrowHalfHeight)
+                ctx.lineTo(tipX + arrowLength, tipY + arrowHalfHeight)
+            }
+            ctx.closePath()
+
+            if (filled)
+                ctx.fill()
+            else
+                ctx.stroke()
         }
-        return "arrow-end"
-    }
 
-    function containsLocalPoint(localX, localY) {
-        if (rectContains(buttonRect, localX, localY))
-            return true
+        function drawArrowLine(ctx, tipX, tipY, pointRight) {
+            var arrowLength = 6
+            var arrowHalfHeight = 3.5
+            var backX = pointRight ? tipX - arrowLength : tipX + arrowLength
 
-        if (dropdownOpen && rectContains(dropdownRect, localX, localY))
-            return true
+            ctx.beginPath()
+            ctx.moveTo(backX, tipY - arrowHalfHeight)
+            ctx.lineTo(tipX, tipY)
+            ctx.lineTo(backX, tipY + arrowHalfHeight)
+            ctx.stroke()
+        }
 
-        return false
+        onStyleValueChanged: requestPaint()
+        onStrokeColorChanged: requestPaint()
+        onWidthChanged: requestPaint()
+        onHeightChanged: requestPaint()
+
+        onPaint: {
+            var ctx = getContext("2d")
+            ctx.reset()
+            ctx.lineWidth = 1.8
+            ctx.lineCap = "round"
+            ctx.lineJoin = "round"
+            ctx.strokeStyle = strokeColor
+            ctx.fillStyle = strokeColor
+
+            var hasEndArrow = styleValue !== 0
+            var hasStartArrow = styleValue === 4 || styleValue === 5
+            var centerY = height / 2
+            var lineStartX = hasStartArrow ? 8 : 2
+            var lineEndX = hasEndArrow ? width - 8 : width - 2
+
+            ctx.beginPath()
+            ctx.moveTo(lineStartX, centerY)
+            ctx.lineTo(lineEndX, centerY)
+            ctx.stroke()
+
+            switch (styleValue) {
+            case 1:
+                drawArrowTriangle(ctx, width - 2, centerY, true, true)
+                break
+            case 2:
+                drawArrowTriangle(ctx, width - 2, centerY, true, false)
+                break
+            case 3:
+                drawArrowLine(ctx, width - 2, centerY, true)
+                break
+            case 4:
+                drawArrowTriangle(ctx, 2, centerY, false, true)
+                drawArrowTriangle(ctx, width - 2, centerY, true, true)
+                break
+            case 5:
+                drawArrowTriangle(ctx, 2, centerY, false, false)
+                drawArrowTriangle(ctx, width - 2, centerY, true, false)
+                break
+            }
+        }
+
+        Component.onCompleted: requestPaint()
     }
 
     Rectangle {
         id: buttonRect
-        y: root.buttonTop + root.buttonYOffset
+        y: 1
         width: root.buttonWidth
         height: root.buttonHeight
         radius: 4
         color: root.hoveredOption === -2 ? root.btnHoverBg : root.btnInactiveBg
         border.width: 1
-        border.color: root.dropdownOpen ? SemanticTokens.borderActive : root.borderColor
+        border.color: SemanticTokens.borderDefault
 
-        SvgIcon {
+        ArrowPreview {
             anchors.left: parent.left
             anchors.leftMargin: 4
             anchors.verticalCenter: parent.verticalCenter
-            width: parent.width - 16
-            height: 14
-            source: "qrc:/icons/icons/" + root.currentIconKey() + ".svg"
-            iconSize: 14
-            color: ComponentTokens.toolbarIcon
+            styleValue: root.viewModel.arrowStyle
+            strokeColor: ComponentTokens.toolbarIcon
         }
 
         ToolbarChevron {
@@ -126,84 +164,8 @@ Item {
             }
 
             onClicked: {
-                root.dropdownOpen = !root.dropdownOpen
-                root.hoveredOption = root.dropdownOpen ? -1 : (containsMouse ? -2 : -1)
-            }
-        }
-    }
-
-    Rectangle {
-        id: dropdownRect
-        x: root.buttonWidth - root.dropdownWidth
-        y: root.expandUpward ? root.buttonTop : buttonRect.y + buttonRect.height + root.dropdownGap
-        width: root.dropdownWidth
-        height: root.dropdownContentHeight
-        radius: root.dropdownRadius
-        visible: root.dropdownOpen
-        z: 2
-
-        GlassSurface {
-            anchors.fill: parent
-            glassBg: ComponentTokens.toolbarPopupBackground
-            glassBgTop: ComponentTokens.toolbarPopupBackgroundTop
-            glassHighlight: ComponentTokens.toolbarPopupHighlight
-            glassBorder: ComponentTokens.toolbarPopupBorder
-            glassRadius: root.dropdownRadius
-        }
-
-        Item {
-            id: optionsClip
-            anchors.fill: parent
-            anchors.margins: root.dropdownPadding
-            clip: true
-
-            Column {
-                id: optionsColumn
-                anchors.left: parent.left
-                anchors.right: parent.right
-                spacing: root.dropdownSpacing
-
-                Repeater {
-                    model: root.options
-
-                    Rectangle {
-                        width: optionsColumn.width
-                        height: root.dropdownOptionHeight
-                        radius: 5
-                        color: {
-                            if (root.viewModel.arrowStyle === modelData.value)
-                                return root.popupSelectedBg
-                            if (optionMouse.containsMouse)
-                                return root.popupHoverBg
-                            return "transparent"
-                        }
-                        border.width: root.viewModel.arrowStyle === modelData.value ? 1 : 0
-                        border.color: ComponentTokens.toolbarPopupSelectedBorder
-
-                        SvgIcon {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 8
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width - 16
-                            height: 14
-                            source: "qrc:/icons/icons/" + modelData.iconKey + ".svg"
-                            iconSize: 14
-                            color: ComponentTokens.toolbarIcon
-                        }
-
-                        MouseArea {
-                            id: optionMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.ArrowCursor
-
-                            onClicked: {
-                                root.viewModel.handleArrowStyleSelected(modelData.value)
-                                root.closeMenu()
-                            }
-                        }
-                    }
-                }
+                root.openMenu()
+                root.hoveredOption = containsMouse ? -2 : -1
             }
         }
     }

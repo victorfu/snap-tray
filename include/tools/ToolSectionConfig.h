@@ -3,14 +3,12 @@
 
 #include "ToolId.h"
 
-class ToolOptionsPanel;
-
 /**
- * @brief Configuration for which ToolOptionsPanel sections to show for a tool.
+ * @brief Configuration for which sub-toolbar sections to show for a tool.
  *
  * Provides a data-driven approach to configure the sub-toolbar sections based
  * on the selected tool, eliminating duplicate configuration logic across
- * RegionSelector, ScreenCanvas, and QmlWindowedSubToolbar.
+ * RegionSelector, ScreenCanvas, and PinWindow.
  */
 struct ToolSectionConfig {
     bool showColorSection = false;
@@ -28,16 +26,6 @@ struct ToolSectionConfig {
      * @return Configuration with appropriate sections enabled
      */
     static ToolSectionConfig forTool(ToolId toolId);
-
-    /**
-     * @brief Apply this configuration to a ToolOptionsPanel.
-     *
-     * Sets all section visibility flags at once. Note that runtime-dependent
-     * settings like setAutoBlurEnabled() must be handled separately by the caller.
-     *
-     * @param widget The widget to configure
-     */
-    void applyTo(ToolOptionsPanel* widget) const;
 
     /**
      * @brief Check if any section is enabled.

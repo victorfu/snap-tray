@@ -46,6 +46,15 @@
         <file>icons/line-solid.svg</file>
         <file>icons/line-dashed.svg</file>
         <file>icons/line-dotted.svg</file>
+        <file alias="arrow-none.svg">icons/arrow-none.svg</file>
+        <file alias="arrow-end.svg">icons/arrow-end.svg</file>
+        <file alias="arrow-end-outline.svg">icons/arrow-end-outline.svg</file>
+        <file alias="arrow-end-line.svg">icons/arrow-end-line.svg</file>
+        <file alias="arrow-both.svg">icons/arrow-both.svg</file>
+        <file alias="arrow-both-outline.svg">icons/arrow-both-outline.svg</file>
+        <file alias="line-solid.svg">icons/line-solid.svg</file>
+        <file alias="line-dashed.svg">icons/line-dashed.svg</file>
+        <file alias="line-dotted.svg">icons/line-dotted.svg</file>
         <file>icons/close.svg</file>
         <file>icons/arrow-vertical.svg</file>
         <file>icons/arrow-horizontal.svg</file>

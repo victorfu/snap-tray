@@ -16,7 +16,7 @@
 #include "annotations/ShapeAnnotation.h"
 #include "annotations/LineStyle.h"
 #include "annotations/StepBadgeAnnotation.h"
-#include "toolbar/ToolbarCore.h"
+#include "tools/ToolId.h"
 #include "InlineTextEditor.h"
 #include "WindowDetector.h"
 #include "LoadingSpinnerRenderer.h"
@@ -37,8 +37,13 @@
 #include "ui/sections/MosaicBlurTypeSection.h"
 
 class QScreen;
-class ToolOptionsPanel;
 class EmojiPicker;
+class RegionToolbarViewModel;
+class PinToolOptionsViewModel;
+namespace SnapTray {
+class QmlFloatingToolbar;
+class QmlFloatingSubToolbar;
+}
 
 namespace snaptray {
 namespace colorwidgets {
@@ -136,7 +141,6 @@ private:
     // AnnotationHostAdapter implementation
     QWidget* annotationHostWidget() const override;
     AnnotationLayer* annotationLayerForContext() const override;
-    ToolOptionsPanel* toolOptionsPanelForContext() const override;
     InlineTextEditor* inlineTextEditorForContext() const override;
     TextAnnotationEditor* textAnnotationEditorForContext() const override;
     void onContextColorSelected(const QColor& color) override;
@@ -195,6 +199,7 @@ private:
     void saveToFile();
     void shareToUrl();
     void finishSelection();
+    void finalizePolylineForToolbarInteraction();
 
     // Cursor helpers
     QCursor getMosaicCursor(int width);
@@ -248,11 +253,12 @@ private:
     SelectionStateManager *m_selectionManager;
     qreal m_devicePixelRatio;
 
-    // Toolbar
-    ToolbarCore *m_toolbar;
-
-    // Unified color and width widget
-    ToolOptionsPanel *m_colorAndWidthWidget;
+    // QML toolbar (floating QQuickView windows)
+    RegionToolbarViewModel* m_toolbarViewModel = nullptr;
+    PinToolOptionsViewModel* m_toolOptionsViewModel = nullptr;
+    std::unique_ptr<SnapTray::QmlFloatingToolbar> m_qmlToolbar;
+    std::unique_ptr<SnapTray::QmlFloatingSubToolbar> m_qmlSubToolbar;
+    bool m_toolbarUserDragged = false;
 
     // Emoji picker
     EmojiPicker *m_emojiPicker;

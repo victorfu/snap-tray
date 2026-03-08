@@ -11,10 +11,6 @@ Item {
     id: root
     property var viewModel: pinToolOptionsViewModel
     readonly property int panelRightMargin: 6
-    readonly property bool hasOpenStyleMenu: (
-        (arrowStyleSection.visible && arrowStyleSection.dropdownOpen)
-        || (lineStyleSection.visible && lineStyleSection.dropdownOpen)
-    )
 
     // Content sizing: expand to fit the row of sections
     implicitWidth: glassBg.width
@@ -53,16 +49,6 @@ Item {
             h = Math.max(h, Math.max(child.height, child.implicitHeight))
         }
         return h
-    }
-
-    function closeStyleMenus() {
-        arrowStyleSection.closeMenu()
-        lineStyleSection.closeMenu()
-    }
-
-    function styleControlContainsLocalPoint(localX, localY) {
-        return (arrowStyleSection.visible && arrowStyleSection.containsLocalPoint(localX, localY))
-            || (lineStyleSection.visible && lineStyleSection.containsLocalPoint(localX, localY))
     }
 
     GlassSurface {
@@ -135,6 +121,7 @@ Item {
             id: arrowStyleSection
             visible: root.viewModel.showArrowStyleSection
             viewModel: root.viewModel
+            anchors.verticalCenter: parent.verticalCenter
             onMenuOpened: lineStyleSection.closeMenu()
         }
 
@@ -142,6 +129,7 @@ Item {
             id: lineStyleSection
             visible: root.viewModel.showLineStyleSection
             viewModel: root.viewModel
+            anchors.verticalCenter: parent.verticalCenter
             onMenuOpened: arrowStyleSection.closeMenu()
         }
 

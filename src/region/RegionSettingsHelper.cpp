@@ -2,6 +2,7 @@
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/LineStyle.h"
 #include "annotations/ShapeAnnotation.h"
+#include "platform/WindowLevel.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/Settings.h"
 #include "TextFormattingState.h"
@@ -9,8 +10,14 @@
 #include <QSettings>
 #include <QMenu>
 #include <QAction>
+#include <QActionGroup>
+#include <QIcon>
+#include <QPainter>
+#include <QPalette>
+#include <QPixmap>
 #include <QWidget>
 #include <QFontDatabase>
+#include <QTimer>
 
 // Settings keys
 static const char* SETTINGS_KEY_SHAPE_TYPE = "annotation/shapeType";
@@ -25,6 +32,144 @@ static const char* SETTINGS_KEY_TEXT_FAMILY = "annotation/text_family";
 static QSettings getSettings()
 {
     return SnapTray::getSettings();
+}
+
+struct ArrowStyleMenuEntry {
+    LineEndStyle value;
+    const char* label;
+};
+
+constexpr ArrowStyleMenuEntry kArrowStyleEntries[] = {
+    {LineEndStyle::None, QT_TR_NOOP("No Arrow")},
+    {LineEndStyle::EndArrow, QT_TR_NOOP("End Arrow")},
+    {LineEndStyle::EndArrowOutline, QT_TR_NOOP("End Arrow Outline")},
+    {LineEndStyle::EndArrowLine, QT_TR_NOOP("End Arrow Line")},
+    {LineEndStyle::BothArrow, QT_TR_NOOP("Both Ends")},
+    {LineEndStyle::BothArrowOutline, QT_TR_NOOP("Both Ends Outline")},
+};
+
+struct LineStyleMenuEntry {
+    LineStyle value;
+    const char* label;
+};
+
+constexpr LineStyleMenuEntry kLineStyleEntries[] = {
+    {LineStyle::Solid, QT_TR_NOOP("Solid")},
+    {LineStyle::Dashed, QT_TR_NOOP("Dashed")},
+    {LineStyle::Dotted, QT_TR_NOOP("Dotted")},
+};
+
+static Qt::PenStyle qtPenStyleForLineStyle(LineStyle style)
+{
+    switch (style) {
+    case LineStyle::Solid:
+        return Qt::SolidLine;
+    case LineStyle::Dashed:
+        return Qt::DashLine;
+    case LineStyle::Dotted:
+        return Qt::DotLine;
+    }
+    return Qt::SolidLine;
+}
+
+static QPixmap createMenuIconCanvas()
+{
+    constexpr QSize kLogicalSize(22, 14);
+    QPixmap pixmap(kLogicalSize);
+    pixmap.fill(Qt::transparent);
+    return pixmap;
+}
+
+static void drawArrowTriangle(QPainter& painter, const QPointF& tip, bool pointRight, bool filled)
+{
+    constexpr qreal kArrowLength = 6.0;
+    constexpr qreal kArrowHalfHeight = 3.5;
+
+    QPolygonF polygon;
+    if (pointRight) {
+        polygon << tip
+                << QPointF(tip.x() - kArrowLength, tip.y() - kArrowHalfHeight)
+                << QPointF(tip.x() - kArrowLength, tip.y() + kArrowHalfHeight);
+    } else {
+        polygon << tip
+                << QPointF(tip.x() + kArrowLength, tip.y() - kArrowHalfHeight)
+                << QPointF(tip.x() + kArrowLength, tip.y() + kArrowHalfHeight);
+    }
+
+    painter.save();
+    painter.setBrush(filled ? painter.pen().color() : Qt::NoBrush);
+    painter.drawPolygon(polygon);
+    painter.restore();
+}
+
+static void drawArrowLine(QPainter& painter, const QPointF& tip, bool pointRight)
+{
+    constexpr qreal kArrowLength = 6.0;
+    constexpr qreal kArrowHalfHeight = 3.5;
+    const qreal backX = pointRight ? tip.x() - kArrowLength : tip.x() + kArrowLength;
+    painter.drawLine(QPointF(backX, tip.y() - kArrowHalfHeight), tip);
+    painter.drawLine(QPointF(backX, tip.y() + kArrowHalfHeight), tip);
+}
+
+static QIcon createLineStyleMenuIcon(LineStyle style, const QColor& color)
+{
+    QPixmap pixmap = createMenuIconCanvas();
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    QPen pen(color, 2.0, qtPenStyleForLineStyle(style), Qt::RoundCap, Qt::RoundJoin);
+    if (style == LineStyle::Dashed) {
+        pen.setDashPattern({4.0, 3.0});
+    } else if (style == LineStyle::Dotted) {
+        pen.setDashPattern({1.0, 3.0});
+    }
+
+    painter.setPen(pen);
+    painter.drawLine(QPointF(2.0, 7.0), QPointF(20.0, 7.0));
+    painter.end();
+    return QIcon(pixmap);
+}
+
+static QIcon createArrowStyleMenuIcon(LineEndStyle style, const QColor& color)
+{
+    QPixmap pixmap = createMenuIconCanvas();
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setPen(QPen(color, 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+
+    const bool hasEndArrow = style != LineEndStyle::None;
+    const bool hasStartArrow = style == LineEndStyle::BothArrow
+                            || style == LineEndStyle::BothArrowOutline;
+    const qreal lineStartX = hasStartArrow ? 8.0 : 2.0;
+    const qreal lineEndX = hasEndArrow ? 14.0 : 20.0;
+    constexpr qreal kCenterY = 7.0;
+
+    painter.drawLine(QPointF(lineStartX, kCenterY), QPointF(lineEndX, kCenterY));
+
+    switch (style) {
+    case LineEndStyle::None:
+        break;
+    case LineEndStyle::EndArrow:
+        drawArrowTriangle(painter, QPointF(20.0, kCenterY), true, true);
+        break;
+    case LineEndStyle::EndArrowOutline:
+        drawArrowTriangle(painter, QPointF(20.0, kCenterY), true, false);
+        break;
+    case LineEndStyle::EndArrowLine:
+        drawArrowLine(painter, QPointF(20.0, kCenterY), true);
+        break;
+    case LineEndStyle::BothArrow:
+        drawArrowTriangle(painter, QPointF(2.0, kCenterY), false, true);
+        drawArrowTriangle(painter, QPointF(20.0, kCenterY), true, true);
+        break;
+    case LineEndStyle::BothArrowOutline:
+        drawArrowTriangle(painter, QPointF(2.0, kCenterY), false, false);
+        drawArrowTriangle(painter, QPointF(20.0, kCenterY), true, false);
+        break;
+    }
+
+    painter.end();
+    return QIcon(pixmap);
 }
 
 RegionSettingsHelper::RegionSettingsHelper(QObject* parent)
@@ -95,14 +240,61 @@ ShapeFillMode RegionSettingsHelper::loadShapeFillMode()
 
 QMenu* RegionSettingsHelper::createMenu()
 {
-    QMenu* menu = new QMenu(m_parentWidget);
+    QMenu* menu = m_parentWidget ? new QMenu(m_parentWidget) : new QMenu();
     return menu;
 }
 
 void RegionSettingsHelper::showFontSizeDropdown(const QPoint& pos, int currentSize)
 {
     QMenu* menu = createMenu();
+    populateFontSizeMenu(menu, currentSize);
+    showMenu(menu, pos);
+}
 
+void RegionSettingsHelper::showFontFamilyDropdown(const QPoint& pos, const QString& currentFamily)
+{
+    QMenu* menu = createMenu();
+    populateFontFamilyMenu(menu, currentFamily);
+    showMenu(menu, pos);
+}
+
+void RegionSettingsHelper::showArrowStyleDropdown(const QPoint& pos, LineEndStyle currentStyle)
+{
+    QMenu* menu = createMenu();
+    populateArrowStyleMenu(menu, currentStyle);
+    showMenu(menu, pos);
+}
+
+void RegionSettingsHelper::showLineStyleDropdown(const QPoint& pos, LineStyle currentStyle)
+{
+    QMenu* menu = createMenu();
+    populateLineStyleMenu(menu, currentStyle);
+    showMenu(menu, pos);
+}
+
+void RegionSettingsHelper::showMenu(QMenu* menu, const QPoint& globalPos)
+{
+    auto bringToFront = [menu]() {
+        if (!menu || !menu->isVisible()) {
+            return;
+        }
+        raiseWindowAboveOverlays(menu);
+        menu->raise();
+        menu->activateWindow();
+    };
+
+    QObject::connect(menu, &QMenu::aboutToShow, menu, [menu, bringToFront]() {
+        QTimer::singleShot(0, menu, bringToFront);
+        QTimer::singleShot(80, menu, bringToFront);
+    });
+
+    bringToFront();
+    menu->exec(globalPos);
+    menu->deleteLater();
+}
+
+void RegionSettingsHelper::populateFontSizeMenu(QMenu* menu, int currentSize)
+{
     static const int sizes[] = { 8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72 };
     for (int size : sizes) {
         QAction* action = menu->addAction(QString::number(size));
@@ -112,21 +304,10 @@ void RegionSettingsHelper::showFontSizeDropdown(const QPoint& pos, int currentSi
             emit fontSizeSelected(size);
         });
     }
-
-    if (m_parentWidget) {
-        menu->exec(m_parentWidget->mapToGlobal(pos));
-    } else {
-        menu->exec(pos);
-    }
-
-    menu->deleteLater();
 }
 
-void RegionSettingsHelper::showFontFamilyDropdown(const QPoint& pos, const QString& currentFamily)
+void RegionSettingsHelper::populateFontFamilyMenu(QMenu* menu, const QString& currentFamily)
 {
-    QMenu* menu = createMenu();
-
-    // Add "Default" option
     QAction* defaultAction = menu->addAction(tr("Default"));
     defaultAction->setCheckable(true);
     defaultAction->setChecked(currentFamily.isEmpty());
@@ -136,26 +317,57 @@ void RegionSettingsHelper::showFontFamilyDropdown(const QPoint& pos, const QStri
 
     menu->addSeparator();
 
-    // Add common font families
-    QStringList families = QFontDatabase::families();
-    QStringList commonFonts = { "Arial", "Helvetica", "Times New Roman", "Courier New",
-                               "Verdana", "Georgia", "Trebuchet MS", "Impact" };
+    const QStringList families = QFontDatabase::families();
+    const QStringList commonFonts = { "Arial", "Helvetica", "Times New Roman", "Courier New",
+                                      "Verdana", "Georgia", "Trebuchet MS", "Impact" };
     for (const QString& family : commonFonts) {
-        if (families.contains(family)) {
-            QAction* action = menu->addAction(family);
-            action->setCheckable(true);
-            action->setChecked(family == currentFamily);
-            connect(action, &QAction::triggered, this, [this, family]() {
-                emit fontFamilySelected(family);
-            });
+        if (!families.contains(family)) {
+            continue;
         }
-    }
 
-    if (m_parentWidget) {
-        menu->exec(m_parentWidget->mapToGlobal(pos));
-    } else {
-        menu->exec(pos);
+        QAction* action = menu->addAction(family);
+        action->setCheckable(true);
+        action->setChecked(family == currentFamily);
+        connect(action, &QAction::triggered, this, [this, family]() {
+            emit fontFamilySelected(family);
+        });
     }
+}
 
-    menu->deleteLater();
+void RegionSettingsHelper::populateArrowStyleMenu(QMenu* menu, LineEndStyle currentStyle)
+{
+    auto* group = new QActionGroup(menu);
+    group->setExclusive(true);
+    const QColor iconColor = menu->palette().color(QPalette::WindowText);
+
+    for (const auto& entry : kArrowStyleEntries) {
+        QAction* action = menu->addAction(
+            createArrowStyleMenuIcon(entry.value, iconColor),
+            tr(entry.label));
+        action->setCheckable(true);
+        action->setChecked(entry.value == currentStyle);
+        group->addAction(action);
+        connect(action, &QAction::triggered, this, [this, value = entry.value]() {
+            emit arrowStyleSelected(value);
+        });
+    }
+}
+
+void RegionSettingsHelper::populateLineStyleMenu(QMenu* menu, LineStyle currentStyle)
+{
+    auto* group = new QActionGroup(menu);
+    group->setExclusive(true);
+    const QColor iconColor = menu->palette().color(QPalette::WindowText);
+
+    for (const auto& entry : kLineStyleEntries) {
+        QAction* action = menu->addAction(
+            createLineStyleMenuIcon(entry.value, iconColor),
+            tr(entry.label));
+        action->setCheckable(true);
+        action->setChecked(entry.value == currentStyle);
+        group->addAction(action);
+        connect(action, &QAction::triggered, this, [this, value = entry.value]() {
+            emit lineStyleSelected(value);
+        });
+    }
 }

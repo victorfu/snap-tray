@@ -23,6 +23,8 @@ Item {
     property int buttonId: -1
     property string iconSource: ""
     property bool isAction: false
+    property bool isCancel: false
+    property bool isRecord: false
     property bool isActive: false
     property bool isDisabled: false
     property string tooltipText: ""
@@ -32,6 +34,8 @@ Item {
     property color iconNormalColor: ComponentTokens.toolbarIcon
     property color iconActionColor: SemanticTokens.isDarkMode
         ? DesignSystem.blue400 : DesignSystem.annotationBlue
+    property color iconCancelColor: SemanticTokens.isDarkMode
+        ? DesignSystem.red400 : DesignSystem.red500
     property color iconActiveColor: ComponentTokens.toolbarIconActive
     property color hoverBgColor: SemanticTokens.isDarkMode
         ? Qt.rgba(80 / 255, 80 / 255, 80 / 255, 1.0)
@@ -74,7 +78,11 @@ Item {
         color: {
             if (root.isActive)
                 return root.iconActiveColor;
-            return root.isAction ? root.iconActionColor : root.iconNormalColor;
+            if (root.isCancel || root.isRecord)
+                return root.iconCancelColor;
+            if (root.isAction)
+                return root.iconActionColor;
+            return root.iconNormalColor;
         }
     }
 

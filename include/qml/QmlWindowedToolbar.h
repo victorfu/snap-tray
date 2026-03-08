@@ -13,7 +13,7 @@ class QQuickItem;
 class PinToolbarViewModel;
 
 namespace SnapTray {
-class QmlWindowedSubToolbar;
+class QmlFloatingSubToolbar;
 
 /**
  * @brief QML-based floating toolbar for PinWindow.
@@ -49,7 +49,7 @@ public:
     PinToolbarViewModel* viewModel() const;
 
     // Associated widgets for click-outside detection
-    void setAssociatedWidgets(QWidget* pinWindow, QmlWindowedSubToolbar* subToolbar);
+    void setAssociatedWidgets(QWidget* pinWindow, QmlFloatingSubToolbar* subToolbar);
     void setAssociatedTransientWidget(QWidget* widget);
 
 signals:
@@ -86,12 +86,13 @@ private:
 
     // Drag state
     QPoint m_dragStartViewPos;
+    QPoint m_dragStartCursorPos;
     bool m_isDragging = false;
 
     // Click-outside detection
     QElapsedTimer m_showTime;
     QWidget* m_associatedPinWindow = nullptr;
-    QmlWindowedSubToolbar* m_associatedSubToolbar = nullptr;
+    QmlFloatingSubToolbar* m_associatedSubToolbar = nullptr;
     QPointer<QWidget> m_associatedTransientWidget;
 
     quint64 m_tooltipRequestId = 0;

@@ -17,7 +17,7 @@
 #include "pinwindow/PinMergeHelper.h"
 #include "pinwindow/PinHistoryStore.h"
 #include "pinwindow/PinWindowPlacement.h"
-#include "qml/QmlWindowedSubToolbar.h"
+#include "qml/QmlFloatingSubToolbar.h"
 #include "qml/PinToolOptionsViewModel.h"
 #include "pinwindow/EmojiPickerPopup.h"
 #include "qml/QmlWindowedToolbar.h"
@@ -50,7 +50,6 @@
 #include "InlineTextEditor.h"
 #include "region/TextAnnotationEditor.h"
 #include "region/RegionSettingsHelper.h"
-#include "toolbar/ToolOptionsPanel.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "TransformationGizmo.h"
 #include "annotations/ArrowAnnotation.h"
@@ -2732,7 +2731,7 @@ void PinWindow::initializeAnnotationComponents()
     m_toolManager->setShapeAnnotationEditor(m_shapeAnnotationEditor.get());
 
     m_annotationContext = std::make_unique<AnnotationContext>(*this);
-    m_annotationContext->setupTextAnnotationEditor(false, false);
+    m_annotationContext->setupTextAnnotationEditor(false);
     m_annotationContext->connectTextEditorSignals();
 
     // Initialize QML toolbar (separate floating QQuickView window)
@@ -2765,10 +2764,10 @@ void PinWindow::initializeAnnotationComponents()
         this, &PinWindow::syncFloatingUiCursor);
 
     // Initialize QML sub-toolbar
-    m_subToolbar = std::make_unique<SnapTray::QmlWindowedSubToolbar>(nullptr);
-    connect(m_subToolbar.get(), &SnapTray::QmlWindowedSubToolbar::cursorRestoreRequested,
+    m_subToolbar = std::make_unique<SnapTray::QmlFloatingSubToolbar>(static_cast<QObject*>(nullptr));
+    connect(m_subToolbar.get(), &SnapTray::QmlFloatingSubToolbar::cursorRestoreRequested,
         this, &PinWindow::updateCursorForTool);
-    connect(m_subToolbar.get(), &SnapTray::QmlWindowedSubToolbar::cursorSyncRequested,
+    connect(m_subToolbar.get(), &SnapTray::QmlFloatingSubToolbar::cursorSyncRequested,
         this, &PinWindow::syncFloatingUiCursor);
     auto* optionsVM = m_subToolbar->viewModel();
     auto syncTextFormattingToSubToolbar = [this, optionsVM]() {
@@ -2805,7 +2804,7 @@ void PinWindow::initializeAnnotationComponents()
         this, [this](int size) { onStepBadgeSizeChanged(static_cast<StepBadgeSize>(size)); });
     connect(optionsVM, &PinToolOptionsViewModel::autoBlurRequested,
         this, &PinWindow::onAutoBlurRequested);
-    connect(m_subToolbar.get(), &SnapTray::QmlWindowedSubToolbar::emojiPickerRequested,
+    connect(m_subToolbar.get(), &SnapTray::QmlFloatingSubToolbar::emojiPickerRequested,
         this, [this]() { showEmojiPickerPopup(); });
 
     // Text formatting signals → TextAnnotationEditor
@@ -2834,6 +2833,24 @@ void PinWindow::initializeAnnotationComponents()
             QPoint globalPos(qRound(globalX), qRound(globalY));
             m_settingsHelper->showFontFamilyDropdown(globalPos, m_subToolbar->viewModel()->fontFamily());
         });
+
+    // Arrow/line style dropdown signals → RegionSettingsHelper
+    connect(optionsVM, &PinToolOptionsViewModel::arrowStyleDropdownRequested,
+        this, [this](double globalX, double globalY) {
+            QPoint globalPos(qRound(globalX), qRound(globalY));
+            m_settingsHelper->showArrowStyleDropdown(
+                globalPos, static_cast<LineEndStyle>(m_subToolbar->viewModel()->arrowStyle()));
+        });
+    connect(optionsVM, &PinToolOptionsViewModel::lineStyleDropdownRequested,
+        this, [this](double globalX, double globalY) {
+            QPoint globalPos(qRound(globalX), qRound(globalY));
+            m_settingsHelper->showLineStyleDropdown(
+                globalPos, static_cast<LineStyle>(m_subToolbar->viewModel()->lineStyle()));
+        });
+    connect(m_settingsHelper, &RegionSettingsHelper::arrowStyleSelected,
+        this, [this](LineEndStyle style) { onArrowStyleChanged(style); });
+    connect(m_settingsHelper, &RegionSettingsHelper::lineStyleSelected,
+        this, [this](LineStyle style) { onLineStyleChanged(style); });
 
     // Sync initial width and color to sub-toolbar ViewModel
     optionsVM->setCurrentWidth(m_annotationWidth);
@@ -3548,13 +3565,6 @@ QWidget* PinWindow::annotationHostWidget() const
 AnnotationLayer* PinWindow::annotationLayerForContext() const
 {
     return m_annotationLayer;
-}
-
-ToolOptionsPanel* PinWindow::toolOptionsPanelForContext() const
-{
-    // QML sub-toolbar uses PinToolOptionsViewModel directly;
-    // ToolOptionsPanel is not available (only used by RegionSelector/ScreenCanvas)
-    return nullptr;
 }
 
 InlineTextEditor* PinWindow::inlineTextEditorForContext() const

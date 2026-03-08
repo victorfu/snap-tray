@@ -5,6 +5,7 @@
 #include <QQuickView>
 #include <QQuickItem>
 #include <QShortcut>
+#include <QCursor>
 #include <QScreen>
 #include <QGuiApplication>
 #include <QTimer>
@@ -531,6 +532,7 @@ void QmlRecordingControlBar::onDragStarted()
     m_isDragging = true;
     if (m_view)
         m_dragStartViewPos = m_view->position();
+    m_dragStartCursorPos = QCursor::pos();
     hideTooltip();
 }
 
@@ -541,11 +543,13 @@ void QmlRecordingControlBar::onDragFinished()
 
 void QmlRecordingControlBar::onDragMoved(double deltaX, double deltaY)
 {
+    Q_UNUSED(deltaX)
+    Q_UNUSED(deltaY)
+
     if (!m_view || !m_isDragging)
         return;
 
-    QPoint newPos(m_dragStartViewPos.x() + qRound(deltaX),
-                  m_dragStartViewPos.y() + qRound(deltaY));
+    QPoint newPos = m_dragStartViewPos + (QCursor::pos() - m_dragStartCursorPos);
 
     // Clamp to screen boundaries
     QScreen* screen = QGuiApplication::screenAt(newPos + QPoint(m_view->width() / 2, m_view->height() / 2));

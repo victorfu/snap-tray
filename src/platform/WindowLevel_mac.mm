@@ -117,7 +117,9 @@ void raiseWindowAboveOverlays(QWidget *widget)
     NSView *view = reinterpret_cast<NSView *>(widget->winId());
     if (view) {
         NSWindow *window = [view window];
-        // Set level above RegionSelector/ScreenCanvas (which use kCGScreenSaverWindowLevel)
-        [window setLevel:kCGScreenSaverWindowLevel + 1];
+        // RegionSelector / ScreenCanvas live at kCGScreenSaverWindowLevel and
+        // their floating toolbar overlays use +1. Native transient popups
+        // (QMenu, dialogs) must sit above both layers to remain usable.
+        [window setLevel:kCGScreenSaverWindowLevel + 2];
     }
 }

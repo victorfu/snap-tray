@@ -55,12 +55,27 @@ public:
     // Show font family dropdown
     void showFontFamilyDropdown(const QPoint& pos, const QString& currentFamily);
 
+    // Show arrow style dropdown
+    void showArrowStyleDropdown(const QPoint& pos, LineEndStyle currentStyle);
+
+    // Show line style dropdown
+    void showLineStyleDropdown(const QPoint& pos, LineStyle currentStyle);
+
 signals:
     void fontSizeSelected(int size);
     void fontFamilySelected(const QString& family);
+    void arrowStyleSelected(LineEndStyle style);
+    void lineStyleSelected(LineStyle style);
 
 private:
+    friend class tst_RegionSettingsHelper;
+
     QMenu* createMenu();
+    void showMenu(QMenu* menu, const QPoint& globalPos);
+    void populateFontSizeMenu(QMenu* menu, int currentSize);
+    void populateFontFamilyMenu(QMenu* menu, const QString& currentFamily);
+    void populateArrowStyleMenu(QMenu* menu, LineEndStyle currentStyle);
+    void populateLineStyleMenu(QMenu* menu, LineStyle currentStyle);
 
     QWidget* m_parentWidget = nullptr;
 };

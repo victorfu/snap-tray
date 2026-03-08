@@ -2,7 +2,6 @@
 
 #include "annotation/AnnotationHostAdapter.h"
 #include "annotations/AnnotationLayer.h"
-#include "toolbar/ToolOptionsPanel.h"
 #include "InlineTextEditor.h"
 #include "region/TextAnnotationEditor.h"
 #include "region/RegionSettingsHelper.h"
@@ -17,8 +16,7 @@ AnnotationContext::AnnotationContext(AnnotationHostAdapter& host)
 {
 }
 
-void AnnotationContext::setupTextAnnotationEditor(bool attachOptionsPanel,
-                                                  bool connectUpdateSignal) const
+void AnnotationContext::setupTextAnnotationEditor(bool connectUpdateSignal) const
 {
     auto* textAnnotationEditor = m_host.textAnnotationEditorForContext();
     if (!textAnnotationEditor) {
@@ -28,10 +26,6 @@ void AnnotationContext::setupTextAnnotationEditor(bool attachOptionsPanel,
     textAnnotationEditor->setAnnotationLayer(m_host.annotationLayerForContext());
     textAnnotationEditor->setTextEditor(m_host.inlineTextEditorForContext());
     textAnnotationEditor->setParentWidget(m_host.annotationHostWidget());
-
-    if (attachOptionsPanel) {
-        textAnnotationEditor->setColorAndWidthWidget(m_host.toolOptionsPanelForContext());
-    }
 
     if (connectUpdateSignal && m_host.annotationHostWidget()) {
         QObject::connect(textAnnotationEditor,
@@ -62,102 +56,6 @@ void AnnotationContext::connectTextEditorSignals() const
                      [this]() {
                          m_host.onContextTextEditingCancelled();
                      });
-}
-
-void AnnotationContext::connectToolOptionsSignals() const
-{
-    auto* optionsPanel = m_host.toolOptionsPanelForContext();
-    QWidget* hostWidget = m_host.annotationHostWidget();
-    if (!optionsPanel || !hostWidget) {
-        return;
-    }
-
-    QObject::connect(optionsPanel,
-                     &ToolOptionsPanel::colorSelected,
-                     hostWidget,
-                     [this](const QColor& color) {
-                         m_host.onContextColorSelected(color);
-                     });
-
-    QObject::connect(optionsPanel,
-                     &ToolOptionsPanel::customColorPickerRequested,
-                     hostWidget,
-                     [this]() {
-                         m_host.onContextMoreColorsRequested();
-                     });
-
-    QObject::connect(optionsPanel,
-                     &ToolOptionsPanel::widthChanged,
-                     hostWidget,
-                     [this](int width) {
-                         m_host.onContextLineWidthChanged(width);
-                     });
-
-    QObject::connect(optionsPanel,
-                     &ToolOptionsPanel::arrowStyleChanged,
-                     hostWidget,
-                     [this](LineEndStyle style) {
-                         m_host.onContextArrowStyleChanged(style);
-                     });
-
-    QObject::connect(optionsPanel,
-                     &ToolOptionsPanel::lineStyleChanged,
-                     hostWidget,
-                     [this](LineStyle style) {
-                         m_host.onContextLineStyleChanged(style);
-                     });
-
-    QObject::connect(optionsPanel,
-                     &ToolOptionsPanel::fontSizeDropdownRequested,
-                     hostWidget,
-                     [this](const QPoint& pos) {
-                         m_host.onContextFontSizeDropdownRequested(pos);
-                     });
-
-    QObject::connect(optionsPanel,
-                     &ToolOptionsPanel::fontFamilyDropdownRequested,
-                     hostWidget,
-                     [this](const QPoint& pos) {
-                         m_host.onContextFontFamilyDropdownRequested(pos);
-                     });
-}
-
-void AnnotationContext::connectTextFormattingSignals() const
-{
-    auto* optionsPanel = m_host.toolOptionsPanelForContext();
-    auto* textAnnotationEditor = m_host.textAnnotationEditorForContext();
-    if (!optionsPanel || !textAnnotationEditor) {
-        return;
-    }
-
-    QObject::connect(optionsPanel,
-                     &ToolOptionsPanel::boldToggled,
-                     textAnnotationEditor,
-                     &TextAnnotationEditor::setBold);
-    QObject::connect(optionsPanel,
-                     &ToolOptionsPanel::italicToggled,
-                     textAnnotationEditor,
-                     &TextAnnotationEditor::setItalic);
-    QObject::connect(optionsPanel,
-                     &ToolOptionsPanel::underlineToggled,
-                     textAnnotationEditor,
-                     &TextAnnotationEditor::setUnderline);
-}
-
-void AnnotationContext::syncTextFormattingControls() const
-{
-    auto* optionsPanel = m_host.toolOptionsPanelForContext();
-    auto* textAnnotationEditor = m_host.textAnnotationEditorForContext();
-    if (!optionsPanel || !textAnnotationEditor) {
-        return;
-    }
-
-    TextFormattingState textFormatting = textAnnotationEditor->formatting();
-    optionsPanel->setBold(textFormatting.bold);
-    optionsPanel->setItalic(textFormatting.italic);
-    optionsPanel->setUnderline(textFormatting.underline);
-    optionsPanel->setFontSize(textFormatting.fontSize);
-    optionsPanel->setFontFamily(textFormatting.fontFamily);
 }
 
 void AnnotationContext::showTextFontSizeDropdown(RegionSettingsHelper& settingsHelper,

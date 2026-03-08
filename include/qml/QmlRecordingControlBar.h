@@ -93,6 +93,7 @@ private:
 
     // For drag: track where the view started
     QPoint m_dragStartViewPos;
+    QPoint m_dragStartCursorPos;
 
     // For re-centering after width change
     bool m_isDragging = false;

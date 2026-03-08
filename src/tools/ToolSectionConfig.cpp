@@ -1,5 +1,4 @@
 #include "tools/ToolSectionConfig.h"
-#include "toolbar/ToolOptionsPanel.h"
 
 #include <map>
 
@@ -43,22 +42,6 @@ ToolSectionConfig ToolSectionConfig::forTool(ToolId toolId)
     }
     // Return empty config for tools without sub-toolbar (Eraser, EmojiSticker, actions, etc.)
     return ToolSectionConfig{};
-}
-
-void ToolSectionConfig::applyTo(ToolOptionsPanel* widget) const
-{
-    if (!widget) {
-        return;
-    }
-
-    widget->setShowColorSection(showColorSection);
-    widget->setShowWidthSection(showWidthSection);
-    widget->setShowTextSection(showTextSection);
-    widget->setShowArrowStyleSection(showArrowStyleSection);
-    widget->setShowLineStyleSection(showLineStyleSection);
-    widget->setShowShapeSection(showShapeSection);
-    widget->setShowSizeSection(showSizeSection);
-    widget->setShowAutoBlurSection(showAutoBlurSection);
 }
 
 bool ToolSectionConfig::hasAnySectionEnabled() const

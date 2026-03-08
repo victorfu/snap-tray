@@ -33,6 +33,8 @@ echo.
 
 REM Configure if needed
 set "NEED_CONFIGURE=0"
+set "CACHE_EXISTS=0"
+if exist "%BUILD_DIR%\CMakeCache.txt" set "CACHE_EXISTS=1"
 if not exist "%BUILD_DIR%\CMakeCache.txt" set "NEED_CONFIGURE=1"
 if not exist "%BUILD_DIR%\build.ninja" set "NEED_CONFIGURE=1"
 if exist "%BUILD_DIR%\CMakeFiles\rules.ninja" (
@@ -45,7 +47,11 @@ if exist "%BUILD_DIR%\CMakeFiles\rules.ninja" (
 
 if "!NEED_CONFIGURE!"=="1" (
     echo Configuring project...
-    cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="%QT_PATH%"
+    if "!CACHE_EXISTS!"=="1" (
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+    ) else (
+        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="%QT_PATH%"
+    )
     set "CONFIGURE_EXIT_CODE=!ERRORLEVEL!"
     if not "!CONFIGURE_EXIT_CODE!"=="0" (
         echo.

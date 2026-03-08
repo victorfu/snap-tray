@@ -2,7 +2,6 @@
 #include "annotations/AnnotationLayer.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "InlineTextEditor.h"
-#include "toolbar/ToolOptionsPanel.h"
 #include "settings/Settings.h"
 #include <QWidget>
 #include <QSettings>
@@ -44,11 +43,6 @@ void TextAnnotationEditor::setAnnotationLayer(AnnotationLayer* layer)
 void TextAnnotationEditor::setTextEditor(InlineTextEditor* editor)
 {
     m_textEditor = editor;
-}
-
-void TextAnnotationEditor::setColorAndWidthWidget(ToolOptionsPanel* widget)
-{
-    m_colorAndWidthWidget = widget;
 }
 
 void TextAnnotationEditor::setParentWidget(QWidget* widget)
@@ -97,16 +91,6 @@ void TextAnnotationEditor::startReEditing(int annotationIndex, const QColor& col
 
     // Extract formatting from existing annotation
     m_formatting = TextFormattingState::fromQFont(textItem->font());
-
-    // Update UI to reflect current formatting
-    if (m_colorAndWidthWidget) {
-        m_colorAndWidthWidget->setCurrentColor(textItem->color());
-        m_colorAndWidthWidget->setBold(m_formatting.bold);
-        m_colorAndWidthWidget->setItalic(m_formatting.italic);
-        m_colorAndWidthWidget->setUnderline(m_formatting.underline);
-        m_colorAndWidthWidget->setFontSize(m_formatting.fontSize);
-        m_colorAndWidthWidget->setFontFamily(m_formatting.fontFamily);
-    }
 
     // Start editor with existing text
     m_textEditor->setColor(textItem->color());
@@ -352,9 +336,6 @@ void TextAnnotationEditor::setFontSize(int size)
 {
     m_formatting.fontSize = size;
     saveSettings();
-    if (m_colorAndWidthWidget) {
-        m_colorAndWidthWidget->setFontSize(size);
-    }
     if (m_textEditor && m_textEditor->isEditing()) {
         m_textEditor->setFontSize(size);
     }
@@ -366,9 +347,6 @@ void TextAnnotationEditor::setFontFamily(const QString& family)
 {
     m_formatting.fontFamily = family;
     saveSettings();
-    if (m_colorAndWidthWidget) {
-        m_colorAndWidthWidget->setFontFamily(family);
-    }
     if (m_textEditor && m_textEditor->isEditing()) {
         m_textEditor->setFontFamily(family);
     }

@@ -1,4 +1,4 @@
-#include "qml/QmlWindowedSubToolbar.h"
+#include "qml/QmlFloatingSubToolbar.h"
 #include "qml/QmlOverlayManager.h"
 #include "qml/PinToolOptionsViewModel.h"
 #include "platform/WindowLevel.h"
@@ -10,6 +10,7 @@
 #include <QScreen>
 #include <QGuiApplication>
 #include <QMouseEvent>
+#include <QWidget>
 #include <QVariant>
 #include <QtMath>
 
@@ -37,10 +38,8 @@ bool shouldReassertNativeArrow(QEvent::Type type)
 
 void reassertNativeArrowForView(QQuickView* view)
 {
-    if (!view || !view->isVisible()) {
+    if (!view || !view->isVisible())
         return;
-    }
-
     forceNativeArrowCursor();
 }
 
@@ -48,7 +47,6 @@ void destroyQuickView(QQuickView*& view, QQuickItem*& rootItem)
 {
     if (!view)
         return;
-
     view->close();
     delete view;
     view = nullptr;
@@ -57,49 +55,60 @@ void destroyQuickView(QQuickView*& view, QQuickItem*& rootItem)
 
 } // namespace
 
-QmlWindowedSubToolbar::QmlWindowedSubToolbar(QObject* parent)
+QmlFloatingSubToolbar::QmlFloatingSubToolbar(PinToolOptionsViewModel* viewModel,
+                                             QObject* parent)
     : QObject(parent)
-    , m_viewModel(new PinToolOptionsViewModel(this))
+    , m_viewModel(viewModel)
 {
-    // Forward emojiPickerRequested from ViewModel
     connect(m_viewModel, &PinToolOptionsViewModel::emojiPickerRequested,
-            this, &QmlWindowedSubToolbar::emojiPickerRequested);
+            this, &QmlFloatingSubToolbar::emojiPickerRequested);
 }
 
-QmlWindowedSubToolbar::~QmlWindowedSubToolbar()
+QmlFloatingSubToolbar::QmlFloatingSubToolbar(QObject* parent)
+    : QObject(parent)
+    , m_viewModel(new PinToolOptionsViewModel(this))
+    , m_ownsViewModel(true)
+{
+    connect(m_viewModel, &PinToolOptionsViewModel::emojiPickerRequested,
+            this, &QmlFloatingSubToolbar::emojiPickerRequested);
+}
+
+QmlFloatingSubToolbar::~QmlFloatingSubToolbar()
 {
     if (m_view)
         m_view->removeEventFilter(this);
     destroyQuickView(m_view, m_rootItem);
 }
 
-void QmlWindowedSubToolbar::ensureView()
+void QmlFloatingSubToolbar::ensureView()
 {
     if (m_view)
         return;
 
     m_view = QmlOverlayManager::instance().createScreenOverlay();
-    // This tool-options strip should not take focus away from the PinWindow.
     m_view->setFlag(Qt::WindowDoesNotAcceptFocus, true);
     m_view->setCursor(Qt::ArrowCursor);
-    m_view->rootContext()->setContextProperty(QStringLiteral("pinToolOptionsViewModel"), m_viewModel);
-    m_view->setSource(QUrl(QStringLiteral("qrc:/SnapTrayQml/toolbar/ToolOptionsStrip.qml")));
+    m_view->rootContext()->setContextProperty(
+        QStringLiteral("pinToolOptionsViewModel"), m_viewModel);
+    m_view->setSource(
+        QUrl(QStringLiteral("qrc:/SnapTrayQml/toolbar/ToolOptionsStrip.qml")));
 
     if (m_view->status() == QQuickView::Error) {
         for (const auto& error : m_view->errors())
-            qWarning() << "ToolOptionsStrip QML error:" << error.toString();
+            qWarning() << "QmlFloatingSubToolbar QML error:" << error.toString();
     }
 
     m_rootItem = m_view->rootObject();
     if (m_rootItem) {
-        m_rootItem->setProperty("viewModel",
-                                QVariant::fromValue(static_cast<QObject*>(m_viewModel)));
+        m_rootItem->setProperty(
+            "viewModel",
+            QVariant::fromValue(static_cast<QObject*>(m_viewModel)));
     }
 
     m_view->installEventFilter(this);
 }
 
-void QmlWindowedSubToolbar::applyPlatformWindowFlags()
+void QmlFloatingSubToolbar::applyPlatformWindowFlags()
 {
 #ifdef Q_OS_MACOS
     if (!m_view)
@@ -113,7 +122,18 @@ void QmlWindowedSubToolbar::applyPlatformWindowFlags()
     if (!window)
         return;
 
-    [window setLevel:NSFloatingWindowLevel];
+    // Set sub-toolbar one level above parent so it stays visible over fullscreen widgets
+    NSInteger targetLevel = NSFloatingWindowLevel;
+    if (m_parentWidget) {
+        NSView* parentView = reinterpret_cast<NSView*>(m_parentWidget->winId());
+        if (parentView) {
+            NSWindow* parentWindow = [parentView window];
+            if (parentWindow) {
+                targetLevel = qMax(targetLevel, [parentWindow level] + 1);
+            }
+        }
+    }
+    [window setLevel:targetLevel];
     [window setHidesOnDeactivate:NO];
 
     if ([window isKindOfClass:[NSPanel class]]) {
@@ -128,7 +148,7 @@ void QmlWindowedSubToolbar::applyPlatformWindowFlags()
 
 // ── Show / Hide / Close ──
 
-void QmlWindowedSubToolbar::show()
+void QmlFloatingSubToolbar::show()
 {
     ensureView();
 
@@ -142,60 +162,45 @@ void QmlWindowedSubToolbar::show()
     emit cursorSyncRequested();
 }
 
-void QmlWindowedSubToolbar::hide()
+void QmlFloatingSubToolbar::hide()
 {
     if (m_view)
         m_view->hide();
     emit cursorSyncRequested();
 }
 
-void QmlWindowedSubToolbar::close()
+void QmlFloatingSubToolbar::close()
 {
     if (m_view)
         m_view->removeEventFilter(this);
     destroyQuickView(m_view, m_rootItem);
 }
 
-bool QmlWindowedSubToolbar::isVisible() const
+bool QmlFloatingSubToolbar::isVisible() const
 {
     return m_view && m_view->isVisible();
 }
 
-QRect QmlWindowedSubToolbar::geometry() const
+QRect QmlFloatingSubToolbar::geometry() const
 {
     if (!m_view)
         return QRect();
     return QRect(m_view->position(), m_view->size());
 }
 
-PinToolOptionsViewModel* QmlWindowedSubToolbar::viewModel() const
+PinToolOptionsViewModel* QmlFloatingSubToolbar::viewModel() const
 {
     return m_viewModel;
 }
 
-bool QmlWindowedSubToolbar::eventFilter(QObject* obj, QEvent* event)
+void QmlFloatingSubToolbar::setParentWidget(QWidget* parent)
+{
+    m_parentWidget = parent;
+}
+
+bool QmlFloatingSubToolbar::eventFilter(QObject* obj, QEvent* event)
 {
     if (obj == m_view) {
-        if (event->type() == QEvent::MouseButtonPress &&
-            m_rootItem &&
-            m_rootItem->property("hasOpenStyleMenu").toBool()) {
-            auto* mouseEvent = static_cast<QMouseEvent*>(event);
-            const QVariant localX(mouseEvent->position().x());
-            const QVariant localY(mouseEvent->position().y());
-            QVariant insideStyleControls(false);
-
-            const bool invoked = QMetaObject::invokeMethod(
-                m_rootItem,
-                "styleControlContainsLocalPoint",
-                Q_RETURN_ARG(QVariant, insideStyleControls),
-                Q_ARG(QVariant, localX),
-                Q_ARG(QVariant, localY));
-
-            if (!invoked || !insideStyleControls.toBool()) {
-                QMetaObject::invokeMethod(m_rootItem, "closeStyleMenus");
-            }
-        }
-
         if (shouldReassertNativeArrow(event->type())) {
             reassertNativeArrowForView(m_view);
             emit cursorSyncRequested();
@@ -210,7 +215,7 @@ bool QmlWindowedSubToolbar::eventFilter(QObject* obj, QEvent* event)
 
 // ── Tool display ──
 
-void QmlWindowedSubToolbar::showForTool(int toolId)
+void QmlFloatingSubToolbar::showForTool(int toolId)
 {
     m_viewModel->showForTool(toolId);
 
@@ -223,8 +228,9 @@ void QmlWindowedSubToolbar::showForTool(int toolId)
 
 // ── Positioning ──
 
-void QmlWindowedSubToolbar::positionBelow(const QRect& toolbarRect)
+void QmlFloatingSubToolbar::positionBelow(const QRect& toolbarRect)
 {
+    ensureView();
     if (!m_view)
         return;
 
@@ -237,15 +243,12 @@ void QmlWindowedSubToolbar::positionBelow(const QRect& toolbarRect)
     const int h = m_view->height();
     constexpr int kMargin = 4;
 
-    // Left-aligned with toolbar, below it
     int x = toolbarRect.left();
     int y = toolbarRect.bottom() + kMargin;
 
-    // If would go off bottom, position above
     if (y + h > screenGeom.bottom() - 10)
         y = toolbarRect.top() - h - kMargin;
 
-    // Keep on screen horizontally
     x = qBound(screenGeom.left() + 10, x, screenGeom.right() - w - 10);
 
     m_view->setPosition(x, y);

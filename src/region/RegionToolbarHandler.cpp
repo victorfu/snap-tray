@@ -4,12 +4,8 @@
 #include "annotations/StepBadgeAnnotation.h"
 #include "tools/ToolManager.h"
 #include "tools/ToolId.h"
-#include "toolbar/ToolbarCore.h"
-#include "toolbar/ToolOptionsPanel.h"
-#include "IconRenderer.h"
 #include "OCRManager.h"
 #include "PlatformFeatures.h"
-#include "tools/ToolRegistry.h"
 #include "tools/ToolTraits.h"
 
 #include <QWidget>
@@ -67,11 +63,6 @@ const std::map<ToolId, RegionToolbarHandler::ClickHandler>& RegionToolbarHandler
     return kActionDispatch;
 }
 
-void RegionToolbarHandler::setToolbar(ToolbarCore* toolbar)
-{
-    m_toolbar = toolbar;
-}
-
 void RegionToolbarHandler::setToolManager(ToolManager* manager)
 {
     m_toolManager = manager;
@@ -80,11 +71,6 @@ void RegionToolbarHandler::setToolManager(ToolManager* manager)
 void RegionToolbarHandler::setAnnotationLayer(AnnotationLayer* layer)
 {
     m_annotationLayer = layer;
-}
-
-void RegionToolbarHandler::setColorAndWidthWidget(ToolOptionsPanel* widget)
-{
-    m_colorAndWidthWidget = widget;
 }
 
 void RegionToolbarHandler::setSelectionManager(SelectionStateManager* manager)
@@ -105,174 +91,6 @@ void RegionToolbarHandler::setParentWidget(QWidget* widget)
 void RegionToolbarHandler::setStepBadgeSize(StepBadgeSize size)
 {
     m_stepBadgeSize = size;
-}
-
-void RegionToolbarHandler::setupToolbarButtons()
-{
-    if (!m_toolbar) return;
-
-    // Load icons
-    IconRenderer& iconRenderer = IconRenderer::instance();
-    auto& registry = ToolRegistry::instance();
-    auto loadToolIcon = [&](ToolId toolId) {
-        const QString iconKey = registry.getIconKey(toolId);
-        if (!iconKey.isEmpty()) {
-            iconRenderer.loadIconByKey(iconKey);
-        }
-    };
-    for (ToolId toolId : registry.getToolsForToolbar(ToolbarType::RegionSelector)) {
-        // Keep OCR icon lazy with feature availability, same as prior behavior.
-        if (toolId == ToolId::OCR && !PlatformFeatures::instance().isOCRAvailable()) {
-            continue;
-        }
-        loadToolIcon(toolId);
-    }
-    loadToolIcon(ToolId::MultiRegionDone);
-
-    // Shape and arrow style icons for ToolOptionsPanel sections
-    iconRenderer.loadIconsByKey({
-        "rectangle",
-        "ellipse",
-        "shape-filled",
-        "shape-outline",
-        "arrow-none",
-        "arrow-end",
-        "arrow-end-outline",
-        "arrow-end-line",
-        "arrow-both",
-        "arrow-both-outline",
-        "auto-blur"
-    });
-
-    // Configure buttons
-    QVector<Toolbar::ButtonConfig> buttons;
-    if (m_multiRegionMode) {
-        const auto& dispatch = toolDispatchTable();
-        const auto& doneDef = registry.get(ToolId::MultiRegionDone);
-        buttons.append({
-            static_cast<int>(ToolId::MultiRegionDone),
-            doneDef.iconKey,
-            registry.getTooltipWithShortcut(ToolId::MultiRegionDone),
-            doneDef.showSeparatorBefore
-        });
-
-        const auto& cancelDef = registry.get(ToolId::Cancel);
-        Toolbar::ButtonConfig cancelBtn(
-            static_cast<int>(ToolId::Cancel),
-            cancelDef.iconKey,
-            registry.getTooltipWithShortcut(ToolId::Cancel),
-            cancelDef.showSeparatorBefore);
-        auto cancelDispatchIt = dispatch.find(ToolId::Cancel);
-        if (cancelDispatchIt != dispatch.end() &&
-            cancelDispatchIt->second.buttonRole == ToolbarButtonRole::Cancel) {
-            cancelBtn.cancel();
-        }
-        buttons.append(cancelBtn);
-
-        m_toolbar->setButtons(buttons);
-        m_toolbar->setActiveButtonIds({});
-        m_toolbar->setIconColorProvider([this](int buttonId, bool isActive, bool isHovered) {
-            return getToolbarIconColor(buttonId, isActive, isHovered);
-        });
-        return;
-    }
-
-    const QVector<ToolId> toolbarTools = registry.getToolsForToolbar(ToolbarType::RegionSelector);
-    const auto& dispatch = toolDispatchTable();
-    QVector<int> activeButtonIds;
-    for (ToolId toolId : toolbarTools) {
-        if (toolId == ToolId::OCR && !PlatformFeatures::instance().isOCRAvailable()) {
-            continue;
-        }
-
-        const auto& def = registry.get(toolId);
-        Toolbar::ButtonConfig config(
-            static_cast<int>(toolId),
-            def.iconKey,
-            registry.getTooltipWithShortcut(toolId),
-            def.showSeparatorBefore);
-        const auto dispatchIt = dispatch.find(toolId);
-        const ToolbarButtonRole role = dispatchIt != dispatch.end()
-            ? dispatchIt->second.buttonRole
-            : (def.category == ToolCategory::Toggle ? ToolbarButtonRole::Toggle : ToolbarButtonRole::Default);
-        switch (role) {
-        case ToolbarButtonRole::Cancel:
-            config.cancel();
-            break;
-        case ToolbarButtonRole::Record:
-            config.record();
-            break;
-        case ToolbarButtonRole::Action:
-            config.action();
-            break;
-        case ToolbarButtonRole::Toggle:
-            config.toggle();
-            break;
-        case ToolbarButtonRole::Default:
-            break;
-        }
-
-        buttons.append(config);
-
-        const bool supportsActiveState = dispatchIt != dispatch.end()
-            ? dispatchIt->second.supportsActiveState
-            : (toolId == ToolId::Selection || isAnnotationTool(toolId));
-        if (supportsActiveState) {
-            activeButtonIds.append(static_cast<int>(toolId));
-        }
-    }
-
-    m_toolbar->setButtons(buttons);
-    m_toolbar->setActiveButtonIds(activeButtonIds);
-
-    // Set icon color provider
-    m_toolbar->setIconColorProvider([this](int buttonId, bool isActive, bool isHovered) {
-        return getToolbarIconColor(buttonId, isActive, isHovered);
-    });
-}
-
-QColor RegionToolbarHandler::getToolbarIconColor(int buttonId, bool isActive, bool isHovered) const
-{
-    Q_UNUSED(isHovered);
-
-    if (!m_toolbar) return QColor(128, 128, 128);
-
-    const auto& style = m_toolbar->styleConfig();
-    ToolId btn = static_cast<ToolId>(buttonId);
-
-    // Show gray for unavailable features
-    if (btn == ToolId::OCR && !PlatformFeatures::instance().isOCRAvailable()) {
-        return QColor(128, 128, 128);
-    }
-
-    // Show yellow when processing
-    if (btn == ToolId::OCR && m_ocrInProgress) {
-        return QColor(255, 200, 100);
-    }
-
-    if (btn == ToolId::Share && m_shareInProgress) {
-        return QColor(255, 200, 100);
-    }
-
-    if (btn == ToolId::MultiRegionDone) {
-        return style.iconActionColor;
-    }
-
-    // Show gray for Undo when nothing to undo
-    if (btn == ToolId::Undo && m_annotationLayer && !m_annotationLayer->canUndo()) {
-        return QColor(128, 128, 128);
-    }
-
-    // Show gray for Redo when nothing to redo
-    if (btn == ToolId::Redo && m_annotationLayer && !m_annotationLayer->canRedo()) {
-        return QColor(128, 128, 128);
-    }
-
-    // All icons use the same color scheme as Pencil
-    if (isActive) {
-        return style.iconActiveColor;
-    }
-    return style.iconNormalColor;
 }
 
 void RegionToolbarHandler::handleToolbarClick(ToolId button)

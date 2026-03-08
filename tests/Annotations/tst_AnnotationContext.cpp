@@ -6,7 +6,6 @@
 #include "annotations/AnnotationLayer.h"
 #include "region/TextAnnotationEditor.h"
 #include "settings/Settings.h"
-#include "toolbar/ToolOptionsPanel.h"
 
 namespace {
 
@@ -33,14 +32,12 @@ class FakeAnnotationHostAdapter : public AnnotationHostAdapter
 {
 public:
     FakeAnnotationHostAdapter()
-        : toolOptionsPanel(&hostWidget)
-        , inlineTextEditor(&hostWidget)
+        : inlineTextEditor(&hostWidget)
         , textAnnotationEditor(&hostWidget)
     {
         textAnnotationEditor.setAnnotationLayer(&annotationLayer);
         textAnnotationEditor.setTextEditor(&inlineTextEditor);
         textAnnotationEditor.setParentWidget(&hostWidget);
-        textAnnotationEditor.setColorAndWidthWidget(&toolOptionsPanel);
     }
 
     QWidget* annotationHostWidget() const override
@@ -51,11 +48,6 @@ public:
     AnnotationLayer* annotationLayerForContext() const override
     {
         return const_cast<AnnotationLayer*>(&annotationLayer);
-    }
-
-    ToolOptionsPanel* toolOptionsPanelForContext() const override
-    {
-        return const_cast<ToolOptionsPanel*>(&toolOptionsPanel);
     }
 
     InlineTextEditor* inlineTextEditorForContext() const override
@@ -116,7 +108,6 @@ public:
 
     QWidget hostWidget;
     AnnotationLayer annotationLayer;
-    ToolOptionsPanel toolOptionsPanel;
     InlineTextEditor inlineTextEditor;
     TextAnnotationEditor textAnnotationEditor;
 
@@ -139,9 +130,7 @@ class TestAnnotationContext : public QObject
 private slots:
     void init();
     void cleanup();
-    void testConnectTextFormattingSignals_PropagatesToEditor();
-    void testApplyTextFontFormatting_UpdatesEditorAndPanel();
-    void testSyncTextFormattingControls_UsesEditorState();
+    void testApplyTextFontFormatting_UpdatesEditor();
 
 private:
     QHash<QString, QVariant> m_savedTextSettings;
@@ -175,27 +164,7 @@ void TestAnnotationContext::cleanup()
     }
 }
 
-void TestAnnotationContext::testConnectTextFormattingSignals_PropagatesToEditor()
-{
-    FakeAnnotationHostAdapter host;
-    AnnotationContext context(host);
-
-    context.connectTextFormattingSignals();
-
-    QSignalSpy formattingSpy(&host.textAnnotationEditor, &TextAnnotationEditor::formattingChanged);
-
-    host.toolOptionsPanel.setBold(false);
-    host.toolOptionsPanel.setItalic(true);
-    host.toolOptionsPanel.setUnderline(true);
-
-    const TextFormattingState formatting = host.textAnnotationEditor.formatting();
-    QCOMPARE(formatting.bold, false);
-    QCOMPARE(formatting.italic, true);
-    QCOMPARE(formatting.underline, true);
-    QVERIFY(formattingSpy.count() >= 3);
-}
-
-void TestAnnotationContext::testApplyTextFontFormatting_UpdatesEditorAndPanel()
+void TestAnnotationContext::testApplyTextFontFormatting_UpdatesEditor()
 {
     FakeAnnotationHostAdapter host;
     AnnotationContext context(host);
@@ -206,35 +175,6 @@ void TestAnnotationContext::testApplyTextFontFormatting_UpdatesEditorAndPanel()
     const TextFormattingState formatting = host.textAnnotationEditor.formatting();
     QCOMPARE(formatting.fontSize, 28);
     QCOMPARE(formatting.fontFamily, QStringLiteral("Courier New"));
-    QCOMPARE(host.toolOptionsPanel.fontSize(), 28);
-    QCOMPARE(host.toolOptionsPanel.fontFamily(), QStringLiteral("Courier New"));
-}
-
-void TestAnnotationContext::testSyncTextFormattingControls_UsesEditorState()
-{
-    FakeAnnotationHostAdapter host;
-    AnnotationContext context(host);
-
-    // Make panel deliberately different from editor state.
-    host.toolOptionsPanel.setBold(true);
-    host.toolOptionsPanel.setItalic(false);
-    host.toolOptionsPanel.setUnderline(false);
-    host.toolOptionsPanel.setFontSize(10);
-    host.toolOptionsPanel.setFontFamily(QStringLiteral("Arial"));
-
-    host.textAnnotationEditor.setBold(false);
-    host.textAnnotationEditor.setItalic(true);
-    host.textAnnotationEditor.setUnderline(true);
-    host.textAnnotationEditor.setFontSize(22);
-    host.textAnnotationEditor.setFontFamily(QStringLiteral("Georgia"));
-
-    context.syncTextFormattingControls();
-
-    QCOMPARE(host.toolOptionsPanel.isBold(), false);
-    QCOMPARE(host.toolOptionsPanel.isItalic(), true);
-    QCOMPARE(host.toolOptionsPanel.isUnderline(), true);
-    QCOMPARE(host.toolOptionsPanel.fontSize(), 22);
-    QCOMPARE(host.toolOptionsPanel.fontFamily(), QStringLiteral("Georgia"));
 }
 
 QTEST_MAIN(TestAnnotationContext)
