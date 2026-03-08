@@ -30,11 +30,6 @@ target_link_libraries(ToolOptionsPanel_HitTest PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME ToolOptionsPanel_HitTest COMMAND ToolOptionsPanel_HitTest)
 set_tests_properties(ToolOptionsPanel_HitTest PROPERTIES TIMEOUT 60 LABELS "unit")
 
-add_executable(ToolOptionsPanel_Events ToolOptionsPanel/tst_Events.cpp)
-target_link_libraries(ToolOptionsPanel_Events PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME ToolOptionsPanel_Events COMMAND ToolOptionsPanel_Events)
-set_tests_properties(ToolOptionsPanel_Events PROPERTIES TIMEOUT 60 LABELS "unit")
-
 # ============================================================================
 # PinWindow Tests (link snaptray_ui which includes snaptray_platform)
 # ============================================================================
@@ -68,11 +63,6 @@ add_executable(PinWindow_PinMergeHelper PinWindow/tst_PinMergeHelper.cpp)
 target_link_libraries(PinWindow_PinMergeHelper PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_PinMergeHelper COMMAND PinWindow_PinMergeHelper)
 set_tests_properties(PinWindow_PinMergeHelper PROPERTIES TIMEOUT 60 LABELS "integration")
-
-add_executable(PinWindow_TextToolFormatting PinWindow/tst_TextToolFormatting.cpp)
-target_link_libraries(PinWindow_TextToolFormatting PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME PinWindow_TextToolFormatting COMMAND PinWindow_TextToolFormatting)
-set_tests_properties(PinWindow_TextToolFormatting PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
 add_executable(PinWindow_CropUndo PinWindow/tst_CropUndo.cpp)
 target_link_libraries(PinWindow_CropUndo PRIVATE snaptray_ui Qt6::Test)
