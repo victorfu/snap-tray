@@ -1,8 +1,40 @@
 #include "ui/sections/LineStyleSection.h"
+#include "GlassRenderer.h"
 #include "ToolbarStyle.h"
 
 #include <QPainter>
 #include <QPainterPath>
+
+namespace {
+
+constexpr int kDropdownGap = 4;
+constexpr int kDropdownRadius = 6;
+constexpr int kOptionRadius = 5;
+constexpr int kOptionInsetX = 4;
+constexpr int kOptionInsetY = 2;
+
+QColor popupHoverColor(const ToolbarStyleConfig& styleConfig)
+{
+    QColor color = styleConfig.buttonHoverColor;
+    color.setAlpha(56);
+    return color;
+}
+
+QColor popupSelectedColor(const ToolbarStyleConfig& styleConfig)
+{
+    QColor color = styleConfig.buttonActiveColor;
+    color.setAlpha(86);
+    return color;
+}
+
+QColor popupSelectedBorderColor(const ToolbarStyleConfig& styleConfig)
+{
+    QColor color = styleConfig.buttonActiveColor;
+    color.setAlpha(132);
+    return color;
+}
+
+} // namespace
 
 LineStyleSection::LineStyleSection(QObject* parent)
     : QObject(parent)
@@ -37,7 +69,7 @@ void LineStyleSection::updateLayout(int containerTop, int containerHeight, int x
     if (m_dropdownExpandsUpward) {
         m_dropdownRect = QRect(
             m_buttonRect.left(),
-            m_buttonRect.top() - dropdownHeight - 2,
+            m_buttonRect.top() - dropdownHeight - kDropdownGap,
             dropdownWidth,
             dropdownHeight
         );
@@ -45,7 +77,7 @@ void LineStyleSection::updateLayout(int containerTop, int containerHeight, int x
     else {
         m_dropdownRect = QRect(
             m_buttonRect.left(),
-            m_buttonRect.bottom() + 2,
+            m_buttonRect.bottom() + kDropdownGap,
             dropdownWidth,
             dropdownHeight
         );
@@ -59,7 +91,7 @@ void LineStyleSection::draw(QPainter& painter, const ToolbarStyleConfig& styleCo
     // Draw the button showing current style
     bool buttonHovered = (m_hoveredOption == -2);
     QColor bgColor = buttonHovered ? styleConfig.buttonHoverColor : styleConfig.buttonInactiveColor;
-    painter.setPen(QPen(styleConfig.dropdownBorder, 1));
+    painter.setPen(QPen(m_dropdownOpen ? styleConfig.buttonActiveColor : styleConfig.dropdownBorder, 1));
     painter.setBrush(bgColor);
     painter.drawRoundedRect(m_buttonRect, 4, 4);
 
@@ -79,15 +111,12 @@ void LineStyleSection::draw(QPainter& painter, const ToolbarStyleConfig& styleCo
 
     // Draw dropdown menu if open
     if (m_dropdownOpen) {
-        // Draw dropdown background
-        painter.setPen(QPen(styleConfig.dropdownBorder, 1));
-        painter.setBrush(styleConfig.dropdownBackground);
-        painter.drawRoundedRect(m_dropdownRect, 4, 4);
+        GlassRenderer::drawGlassPanel(painter, m_dropdownRect, styleConfig, kDropdownRadius);
 
         // Draw each option
         LineStyle styles[] = { LineStyle::Solid, LineStyle::Dashed, LineStyle::Dotted };
         for (int i = 0; i < NUM_OPTIONS; ++i) {
-            QRect optionRect(
+            const QRect optionRect(
                 m_dropdownRect.left(),
                 m_dropdownRect.top() + i * DROPDOWN_OPTION_HEIGHT,
                 m_dropdownRect.width(),
@@ -99,18 +128,18 @@ void LineStyleSection::draw(QPainter& painter, const ToolbarStyleConfig& styleCo
 
             // Highlight hovered or selected option
             if (isHovered || isSelected) {
-                QColor highlightColor = isSelected
-                    ? QColor(styleConfig.buttonActiveColor.red(),
-                        styleConfig.buttonActiveColor.green(),
-                        styleConfig.buttonActiveColor.blue(), 100)
-                    : styleConfig.buttonHoverColor;
-                painter.setPen(Qt::NoPen);
-                painter.setBrush(highlightColor);
-                painter.drawRoundedRect(optionRect.adjusted(2, 2, -2, -2), 3, 3);
+                const QRect highlightRect = optionRect.adjusted(
+                    kOptionInsetX,
+                    kOptionInsetY,
+                    -kOptionInsetX,
+                    -kOptionInsetY);
+                painter.setPen(isSelected ? QPen(popupSelectedBorderColor(styleConfig), 1) : Qt::NoPen);
+                painter.setBrush(isSelected ? popupSelectedColor(styleConfig) : popupHoverColor(styleConfig));
+                painter.drawRoundedRect(highlightRect, kOptionRadius, kOptionRadius);
             }
 
             // Draw the style icon
-            QRect optionIconRect = optionRect.adjusted(8, 4, -8, -4);
+            const QRect optionIconRect = optionRect.adjusted(8, 4, -8, -4);
             drawLineStyleIcon(painter, styles[i], optionIconRect, styleConfig);
         }
     }

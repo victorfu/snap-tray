@@ -1,9 +1,10 @@
 pragma Singleton
 import QtQuick
+import SnapTrayQml
 
 /**
  * PrimitiveTokens: Raw design values with no semantic meaning.
- * Colors, sizes, font weights, spacing, and animation durations.
+ * Thin wrapper delegating to the C++ DesignSystem singleton.
  *
  * These values should NEVER be used directly in components.
  * Always go through SemanticTokens or ComponentTokens.
@@ -12,198 +13,187 @@ QtObject {
     // ========================================================================
     // Brand colors
     // ========================================================================
-    readonly property color primaryPurple: "#6C5CE7"
+    readonly property color primaryPurple: DesignSystem.primaryPurple
 
     // ========================================================================
     // Annotation palette (colorblind-friendly)
     // ========================================================================
-    readonly property color annotationRed: "#FF3B30"
-    readonly property color annotationBlue: "#007AFF"
-    readonly property color annotationOrange: "#FF9500"
-    readonly property color annotationGreen: "#34C759"
-    readonly property color annotationPurple: "#AF52DE"
-    readonly property color annotationYellow: "#FFCC00"
-    readonly property color annotationPink: "#FF2D55"
-    readonly property color annotationBlack: "#000000"
-    readonly property color annotationWhite: "#FFFFFF"
+    readonly property color annotationRed: DesignSystem.annotationRed
+    readonly property color annotationBlue: DesignSystem.annotationBlue
+    readonly property color annotationOrange: DesignSystem.annotationOrange
+    readonly property color annotationGreen: DesignSystem.annotationGreen
+    readonly property color annotationPurple: DesignSystem.annotationPurple
+    readonly property color annotationYellow: DesignSystem.annotationYellow
+    readonly property color annotationPink: DesignSystem.annotationPink
+    readonly property color annotationBlack: DesignSystem.annotationBlack
+    readonly property color annotationWhite: DesignSystem.annotationWhite
 
     // ========================================================================
     // Capture overlay colors (always dark, theme-independent)
     // ========================================================================
-    readonly property color dimOverlay: Qt.rgba(0, 0, 0, 0.45)
-    readonly property color crosshair: "#00FF00"
-    readonly property color selectionBorder: "#FFFFFF"
-    readonly property color dimensionLabel: Qt.rgba(0, 0, 0, 0.75)
+    readonly property color dimOverlay: DesignSystem.dimOverlay
+    readonly property color crosshair: DesignSystem.crosshair
+    readonly property color selectionBorder: DesignSystem.selectionBorder
+    readonly property color dimensionLabel: DesignSystem.dimensionLabel
 
     // ========================================================================
     // Neutral palette
     // ========================================================================
-    readonly property color white: "#FFFFFF"
-    readonly property color gray50: "#FAFAFA"
-    readonly property color gray100: "#F5F5F5"
-    readonly property color gray200: "#EEEEEE"
-    readonly property color gray300: "#E0E0E0"
-    readonly property color gray400: "#BDBDBD"
-    readonly property color gray500: "#9E9E9E"
-    readonly property color gray600: "#757575"
-    readonly property color gray700: "#616161"
-    readonly property color gray800: "#424242"
-    readonly property color gray850: "#303030"
-    readonly property color gray900: "#212121"
-    readonly property color gray950: "#1A1A1A"
-    readonly property color black: "#000000"
+    readonly property color white: DesignSystem.white
+    readonly property color gray50: DesignSystem.gray50
+    readonly property color gray100: DesignSystem.gray100
+    readonly property color gray200: DesignSystem.gray200
+    readonly property color gray300: DesignSystem.gray300
+    readonly property color gray400: DesignSystem.gray400
+    readonly property color gray500: DesignSystem.gray500
+    readonly property color gray600: DesignSystem.gray600
+    readonly property color gray700: DesignSystem.gray700
+    readonly property color gray800: DesignSystem.gray800
+    readonly property color gray850: DesignSystem.gray850
+    readonly property color gray900: DesignSystem.gray900
+    readonly property color gray950: DesignSystem.gray950
+    readonly property color black: DesignSystem.black
 
-    // Dark mode surface colors (Atlassian-style purple-tinted elevation)
-    readonly property color darkSurface: "#1A1A2E"
-    readonly property color darkSurfaceElevated: "#2E2E50"
-    readonly property color darkSurfaceOverlay: Qt.rgba(0, 0, 0, 0.6)
+    // Dark mode surface colors
+    readonly property color darkSurface: DesignSystem.darkSurface
+    readonly property color darkSurfaceElevated: DesignSystem.darkSurfaceElevated
+    readonly property color darkSurfaceOverlay: DesignSystem.darkSurfaceOverlay
 
     // Light mode surface colors
-    readonly property color lightSurface: "#FFFFFF"
-    readonly property color lightSurfaceElevated: "#F5F5FA"
-    readonly property color lightSurfaceOverlay: Qt.rgba(0, 0, 0, 0.3)
+    readonly property color lightSurface: DesignSystem.lightSurface
+    readonly property color lightSurfaceElevated: DesignSystem.lightSurfaceElevated
+    readonly property color lightSurfaceOverlay: DesignSystem.lightSurfaceOverlay
 
     // ========================================================================
     // Status colors
     // ========================================================================
-    readonly property color green500: "#34C759"
-    readonly property color green400: "#52D977"
-    readonly property color amber500: "#F59E0B"
-    readonly property color amber400: "#FBBF24"
-    readonly property color red500: "#EF4444"
-    readonly property color red400: "#F87171"
-    readonly property color blue500: "#3B82F6"
-    readonly property color blue400: "#60A5FA"
-    readonly property color indigo500: "#5856D6"
-    readonly property color purple400: "#AF52DE"
-    readonly property color amber600: "#FFB800"
+    readonly property color green500: DesignSystem.green500
+    readonly property color green400: DesignSystem.green400
+    readonly property color amber500: DesignSystem.amber500
+    readonly property color amber400: DesignSystem.amber400
+    readonly property color red500: DesignSystem.red500
+    readonly property color red400: DesignSystem.red400
+    readonly property color blue500: DesignSystem.blue500
+    readonly property color blue400: DesignSystem.blue400
+    readonly property color indigo500: DesignSystem.indigo500
+    readonly property color purple400: DesignSystem.purple400
+    readonly property color amber600: DesignSystem.amber600
 
     // ========================================================================
     // Recording boundary gradient colors
     // ========================================================================
-    readonly property color boundaryBlue: "#007AFF"
-    readonly property color boundaryPurple: "#BF5AF2"
+    readonly property color boundaryBlue: DesignSystem.boundaryBlue
+    readonly property color boundaryPurple: DesignSystem.boundaryPurple
 
     // ========================================================================
     // Accent states
     // ========================================================================
-    readonly property color accentDefault: "#6C5CE7"
-    readonly property color accentHover: "#5A4BD6"
-    readonly property color accentPressed: "#4A3BC5"
+    readonly property color accentDefault: DesignSystem.accentDefault
+    readonly property color accentHover: DesignSystem.accentHover
+    readonly property color accentPressed: DesignSystem.accentPressed
 
     // ========================================================================
     // Spacing scale (px)
     // ========================================================================
-    readonly property int spacing2: 2
-    readonly property int spacing4: 4
-    readonly property int spacing8: 8
-    readonly property int spacing12: 12
-    readonly property int spacing16: 16
-    readonly property int spacing20: 20
-    readonly property int spacing24: 24
-    readonly property int spacing32: 32
-    readonly property int spacing40: 40
-    readonly property int spacing48: 48
+    readonly property int spacing2: DesignSystem.spacing2
+    readonly property int spacing4: DesignSystem.spacing4
+    readonly property int spacing8: DesignSystem.spacing8
+    readonly property int spacing12: DesignSystem.spacing12
+    readonly property int spacing16: DesignSystem.spacing16
+    readonly property int spacing20: DesignSystem.spacing20
+    readonly property int spacing24: DesignSystem.spacing24
+    readonly property int spacing32: DesignSystem.spacing32
+    readonly property int spacing40: DesignSystem.spacing40
+    readonly property int spacing48: DesignSystem.spacing48
 
     // ========================================================================
     // Border radius
     // ========================================================================
-    readonly property int radiusSmall: 4
-    readonly property int radiusMedium: 8
-    readonly property int radiusLarge: 12
-    readonly property int radiusXL: 16
+    readonly property int radiusSmall: DesignSystem.radiusSmall
+    readonly property int radiusMedium: DesignSystem.radiusMedium
+    readonly property int radiusLarge: DesignSystem.radiusLarge
+    readonly property int radiusXL: DesignSystem.radiusXL
 
     // ========================================================================
-    // Font sizes (px) - use pixelSize for cross-platform consistency
+    // Font sizes (px)
     // ========================================================================
-    readonly property int fontSizeDisplay: 28
-    readonly property int fontSizeH1: 22
-    readonly property int fontSizeH2: 18
-    readonly property int fontSizeH3: 15
-    readonly property int fontSizeBody: 13
-    readonly property int fontSizeSmallBody: 12
-    readonly property int fontSizeCaption: 11
-    readonly property int fontSizeSmall: 10
+    readonly property int fontSizeDisplay: DesignSystem.fontSizeDisplay
+    readonly property int fontSizeH1: DesignSystem.fontSizeH1
+    readonly property int fontSizeH2: DesignSystem.fontSizeH2
+    readonly property int fontSizeH3: DesignSystem.fontSizeH3
+    readonly property int fontSizeBody: DesignSystem.fontSizeBody
+    readonly property int fontSizeSmallBody: DesignSystem.fontSizeSmallBody
+    readonly property int fontSizeCaption: DesignSystem.fontSizeCaption
+    readonly property int fontSizeSmall: DesignSystem.fontSizeSmall
 
     // ========================================================================
     // Font weights
     // ========================================================================
-    readonly property int fontWeightRegular: Font.Normal
-    readonly property int fontWeightMedium: Font.Medium
-    readonly property int fontWeightSemiBold: Font.DemiBold
-    readonly property int fontWeightBold: Font.Bold
+    readonly property int fontWeightRegular: DesignSystem.fontWeightRegular
+    readonly property int fontWeightMedium: DesignSystem.fontWeightMedium
+    readonly property int fontWeightSemiBold: DesignSystem.fontWeightSemiBold
+    readonly property int fontWeightBold: DesignSystem.fontWeightBold
 
     // ========================================================================
     // Letter spacing
     // ========================================================================
-    readonly property real letterSpacingTight: -0.2
-    readonly property real letterSpacingWide: 0.5
+    readonly property real letterSpacingTight: DesignSystem.letterSpacingTight
+    readonly property real letterSpacingWide: DesignSystem.letterSpacingWide
 
     // ========================================================================
-    // Font families (platform-aware fallback)
+    // Font families
     // ========================================================================
-    readonly property string fontFamily: Qt.platform.os === "osx"
-        ? ".AppleSystemUIFont"
-        : "Segoe UI"
-    readonly property int fontBaseSize: 13
+    readonly property string fontFamily: DesignSystem.fontFamily
+    readonly property int fontBaseSize: DesignSystem.fontBaseSize
 
     // ========================================================================
     // Icon sizes
     // ========================================================================
-    readonly property int iconSizeSmall: 16
-    readonly property int iconSizeMedium: 20
-    readonly property int iconSizeLarge: 24
+    readonly property int iconSizeSmall: DesignSystem.iconSizeSmall
+    readonly property int iconSizeMedium: DesignSystem.iconSizeMedium
+    readonly property int iconSizeLarge: DesignSystem.iconSizeLarge
 
     // ========================================================================
     // Shadow definitions
     // ========================================================================
-    // Light mode shadows
-    readonly property color lightShadowSmall: Qt.rgba(0, 0, 0, 0.08)
-    readonly property int lightShadowSmallBlur: 4
-    readonly property int lightShadowSmallY: 1
-
-    readonly property color lightShadowMedium: Qt.rgba(0, 0, 0, 0.12)
-    readonly property int lightShadowMediumBlur: 8
-    readonly property int lightShadowMediumY: 2
-
-    readonly property color lightShadowLarge: Qt.rgba(0, 0, 0, 0.16)
-    readonly property int lightShadowLargeBlur: 16
-    readonly property int lightShadowLargeY: 4
-
-    // Dark mode shadows are reduced versus previous values to avoid heavy depth.
-    readonly property color darkShadowSmall: Qt.rgba(0, 0, 0, 0.17)
-    readonly property int darkShadowSmallBlur: 4
-    readonly property int darkShadowSmallY: 1
-
-    readonly property color darkShadowMedium: Qt.rgba(0, 0, 0, 0.25)
-    readonly property int darkShadowMediumBlur: 8
-    readonly property int darkShadowMediumY: 2
-
-    readonly property color darkShadowLarge: Qt.rgba(0, 0, 0, 0.34)
-    readonly property int darkShadowLargeBlur: 16
-    readonly property int darkShadowLargeY: 4
+    readonly property color lightShadowSmall: DesignSystem.lightShadowSmall
+    readonly property int lightShadowSmallBlur: DesignSystem.lightShadowSmallBlur
+    readonly property int lightShadowSmallY: DesignSystem.lightShadowSmallY
+    readonly property color lightShadowMedium: DesignSystem.lightShadowMedium
+    readonly property int lightShadowMediumBlur: DesignSystem.lightShadowMediumBlur
+    readonly property int lightShadowMediumY: DesignSystem.lightShadowMediumY
+    readonly property color lightShadowLarge: DesignSystem.lightShadowLarge
+    readonly property int lightShadowLargeBlur: DesignSystem.lightShadowLargeBlur
+    readonly property int lightShadowLargeY: DesignSystem.lightShadowLargeY
+    readonly property color darkShadowSmall: DesignSystem.darkShadowSmall
+    readonly property int darkShadowSmallBlur: DesignSystem.darkShadowSmallBlur
+    readonly property int darkShadowSmallY: DesignSystem.darkShadowSmallY
+    readonly property color darkShadowMedium: DesignSystem.darkShadowMedium
+    readonly property int darkShadowMediumBlur: DesignSystem.darkShadowMediumBlur
+    readonly property int darkShadowMediumY: DesignSystem.darkShadowMediumY
+    readonly property color darkShadowLarge: DesignSystem.darkShadowLarge
+    readonly property int darkShadowLargeBlur: DesignSystem.darkShadowLargeBlur
+    readonly property int darkShadowLargeY: DesignSystem.darkShadowLargeY
 
     // ========================================================================
     // Animation durations (ms)
     // ========================================================================
-    readonly property int durationInstant: 0
-    readonly property int durationFast: 100
-    readonly property int durationNormal: 200
-    readonly property int durationSlow: 300
-    readonly property int durationEmphasis: 400
-    readonly property int durationBoundaryLoop: 3200
-
-    // Interaction timing contract (<= 200ms for direct feedback).
-    readonly property int durationInteractionHover: durationFast
-    readonly property int durationInteractionPress: durationFast
-    readonly property int durationInteractionState: durationNormal
-    readonly property int durationInteractionMax: 200
+    readonly property int durationInstant: DesignSystem.durationInstant
+    readonly property int durationFast: DesignSystem.durationFast
+    readonly property int durationNormal: DesignSystem.durationNormal
+    readonly property int durationSlow: DesignSystem.durationSlow
+    readonly property int durationEmphasis: DesignSystem.durationEmphasis
+    readonly property int durationBoundaryLoop: DesignSystem.durationBoundaryLoop
+    readonly property int durationInteractionHover: DesignSystem.durationInteractionHover
+    readonly property int durationInteractionPress: DesignSystem.durationInteractionPress
+    readonly property int durationInteractionState: DesignSystem.durationInteractionState
+    readonly property int durationInteractionMax: DesignSystem.durationInteractionMax
 
     // ========================================================================
     // Icon system (Lucide conventions)
     // ========================================================================
-    readonly property int iconStrokeWidth: 2
-    readonly property int iconGridSize: 24
-    readonly property color iconColorLight: "#404040"
-    readonly property color iconColorDark: "#E0E0EE"
+    readonly property int iconStrokeWidth: DesignSystem.iconStrokeWidth
+    readonly property int iconGridSize: DesignSystem.iconGridSize
+    readonly property color iconColorLight: DesignSystem.iconColorLight
+    readonly property color iconColorDark: DesignSystem.iconColorDark
 }

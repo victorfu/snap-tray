@@ -128,6 +128,7 @@ void TextAnnotationEditor::startReEditing(int annotationIndex, const QColor& col
 
     // Clear selection to hide gizmo while editing
     m_annotationLayer->clearSelection();
+    emit formattingChanged();
     emit updateRequested();
 }
 

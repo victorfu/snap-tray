@@ -21,7 +21,9 @@ Flickable {
     readonly property bool ocrLoaded: settingsBackend.ocrAvailableLanguagesLoaded
     readonly property bool ocrSupported: settingsBackend.ocrSupported
     readonly property bool showLoadingState: root.ocrSupported && (!root.ocrLoaded || root.ocrLoading)
-    readonly property bool showLanguageLists: root.ocrLoaded && !root.ocrLoading && root.availableLangs.length > 0
+    readonly property bool showLanguageLists: root.ocrLoaded
+        && !root.ocrLoading
+        && (root.availableLangs.length > 0 || root.selectedLangs.length > 0)
 
     Component.onCompleted: {
         Qt.callLater(function() {

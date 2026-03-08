@@ -61,8 +61,8 @@ void tst_QmlTranslations::testRecordingControlBarContext()
              QString::fromUtf8("繼續錄製"));
     QCOMPARE(QCoreApplication::translate("RecordingControlBar", "Stop Recording"),
              QString::fromUtf8("停止錄製"));
-    QCOMPARE(QCoreApplication::translate("RecordingControlBar", "Cancel Recording (Esc)"),
-             QString::fromUtf8("取消錄製 (Esc)"));
+    QCOMPARE(QCoreApplication::translate("RecordingControlBar", "Cancel Recording"),
+             QString::fromUtf8("取消錄製"));
 }
 
 QTEST_MAIN(tst_QmlTranslations)

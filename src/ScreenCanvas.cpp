@@ -152,6 +152,7 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
 
     // Initialize unified color and width widget
     m_colorAndWidthWidget = new ToolOptionsPanel(this);
+    m_colorAndWidthWidget->setUseSharedStyleDropdowns(true);
     m_colorAndWidthWidget->setCurrentColor(savedColor);
     m_colorAndWidthWidget->setCurrentWidth(savedWidth);
     m_colorAndWidthWidget->setWidthRange(1, 20);

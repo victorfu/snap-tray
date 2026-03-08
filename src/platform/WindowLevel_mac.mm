@@ -104,6 +104,11 @@ void forceNativeCrosshairCursor(QWidget *)
     [[NSCursor crosshairCursor] set];
 }
 
+void forceNativeArrowCursor(QWidget *)
+{
+    [[NSCursor arrowCursor] set];
+}
+
 void raiseWindowAboveOverlays(QWidget *widget)
 {
     if (!widget) {

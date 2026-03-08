@@ -36,12 +36,16 @@
         <file>icons/stop.svg</file>
         <file>icons/shape-filled.svg</file>
         <file>icons/shape-outline.svg</file>
+        <file>icons/color-wheel.svg</file>
         <file>icons/arrow-none.svg</file>
         <file>icons/arrow-end.svg</file>
         <file>icons/arrow-end-outline.svg</file>
         <file>icons/arrow-end-line.svg</file>
         <file>icons/arrow-both.svg</file>
         <file>icons/arrow-both-outline.svg</file>
+        <file>icons/line-solid.svg</file>
+        <file>icons/line-dashed.svg</file>
+        <file>icons/line-dotted.svg</file>
         <file>icons/close.svg</file>
         <file>icons/arrow-vertical.svg</file>
         <file>icons/arrow-horizontal.svg</file>

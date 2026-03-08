@@ -17,8 +17,11 @@
 #include "pinwindow/PinMergeHelper.h"
 #include "pinwindow/PinHistoryStore.h"
 #include "pinwindow/PinWindowPlacement.h"
-#include "toolbar/WindowedToolbar.h"
-#include "toolbar/WindowedSubToolbar.h"
+#include "qml/QmlWindowedSubToolbar.h"
+#include "qml/PinToolOptionsViewModel.h"
+#include "pinwindow/EmojiPickerPopup.h"
+#include "qml/QmlWindowedToolbar.h"
+#include "qml/PinToolbarViewModel.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ErasedItemsGroup.h"
 #include "annotations/EmojiStickerAnnotation.h"
@@ -27,7 +30,6 @@
 #include "detection/AutoBlurManager.h"
 #include "detection/CredentialDetector.h"
 #include "tools/ToolManager.h"
-#include "tools/IToolHandler.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
 #include "tools/handlers/CropToolHandler.h"
 #include "settings/AnnotationSettingsManager.h"
@@ -62,6 +64,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 
 
 #include <QPainter>
+#include <QCursor>
 #include <QImage>
 #include <QMouseEvent>
 #include <QWheelEvent>
@@ -443,7 +446,7 @@ PinWindow::PinWindow(const QPixmap& screenshot,
         this, [this](const QString& url, const QDateTime& expiresAt, bool isProtected) {
             m_shareInProgress = false;
             if (m_toolbar) {
-                m_toolbar->setShareInProgress(false);
+                m_toolbar->viewModel()->setShareInProgress(false);
             }
             updateLoadingSpinnerState();
 
@@ -456,7 +459,7 @@ PinWindow::PinWindow(const QPixmap& screenshot,
         this, [this](const QString& errorMessage) {
             m_shareInProgress = false;
             if (m_toolbar) {
-                m_toolbar->setShareInProgress(false);
+                m_toolbar->viewModel()->setShareInProgress(false);
             }
             updateLoadingSpinnerState();
             m_pendingSharePassword.clear();
@@ -499,6 +502,11 @@ PinWindow::~PinWindow()
     if (m_subToolbar) {
         m_subToolbar->close();
         m_subToolbar.reset();
+    }
+    if (m_emojiPickerPopup) {
+        m_emojiPickerPopup->close();
+        delete m_emojiPickerPopup;
+        m_emojiPickerPopup = nullptr;
     }
     if (m_colorPickerDialog) {
         m_colorPickerDialog->close();
@@ -1445,7 +1453,7 @@ void PinWindow::shareToUrl()
 
         m_shareInProgress = true;
         if (m_toolbar) {
-            m_toolbar->setShareInProgress(true);
+            m_toolbar->viewModel()->setShareInProgress(true);
         }
         updateLoadingSpinnerState();
         m_shareClient->uploadPixmap(pixmapToShare, m_pendingSharePassword);
@@ -1974,7 +1982,7 @@ void PinWindow::paintEvent(QPaintEvent*)
 void PinWindow::enterEvent(QEnterEvent* event)
 {
     if (m_annotationMode) {
-        updateCursorForTool();
+        restoreAnnotationCursorAt(event->position().toPoint());
     }
     QWidget::enterEvent(event);
 }
@@ -2697,9 +2705,13 @@ void PinWindow::initializeAnnotationComponents()
     auto& annotationSettings = AnnotationSettingsManager::instance();
     m_annotationColor = annotationSettings.loadColor();
     m_annotationWidth = annotationSettings.loadWidth();
+    LineEndStyle savedArrowStyle = annotationSettings.loadArrowStyle();
+    LineStyle savedLineStyle = annotationSettings.loadLineStyle();
     m_stepBadgeSize = annotationSettings.loadStepBadgeSize();
     m_toolManager->setColor(m_annotationColor);
     m_toolManager->setWidth(m_annotationWidth);
+    m_toolManager->setArrowStyle(savedArrowStyle);
+    m_toolManager->setLineStyle(savedLineStyle);
 
     // Connect tool manager signals
     connect(m_toolManager, &ToolManager::needsRepaint,
@@ -2723,68 +2735,113 @@ void PinWindow::initializeAnnotationComponents()
     m_annotationContext->setupTextAnnotationEditor(false, false);
     m_annotationContext->connectTextEditorSignals();
 
-    // Initialize toolbar (not parented - separate floating window)
-    m_toolbar = std::make_unique<WindowedToolbar>(nullptr);
-    m_toolbar->setOCRAvailable(PlatformFeatures::instance().isOCRAvailable());
+    // Initialize QML toolbar (separate floating QQuickView window)
+    m_toolbar = std::make_unique<SnapTray::QmlWindowedToolbar>(nullptr);
+    m_toolbar->viewModel()->setOCRAvailable(PlatformFeatures::instance().isOCRAvailable());
 
-    // Connect toolbar signals
-    connect(m_toolbar.get(), &WindowedToolbar::toolSelected,
+    // Connect toolbar ViewModel signals
+    auto* vm = m_toolbar->viewModel();
+    connect(vm, &PinToolbarViewModel::toolSelected,
         this, &PinWindow::handleToolbarToolSelected);
-    connect(m_toolbar.get(), &WindowedToolbar::undoClicked,
+    connect(vm, &PinToolbarViewModel::undoClicked,
         this, &PinWindow::handleToolbarUndo);
-    connect(m_toolbar.get(), &WindowedToolbar::redoClicked,
+    connect(vm, &PinToolbarViewModel::redoClicked,
         this, &PinWindow::handleToolbarRedo);
-    connect(m_toolbar.get(), &WindowedToolbar::ocrClicked,
+    connect(vm, &PinToolbarViewModel::ocrClicked,
         this, &PinWindow::performOCR);
-    connect(m_toolbar.get(), &WindowedToolbar::qrCodeClicked,
+    connect(vm, &PinToolbarViewModel::qrCodeClicked,
         this, &PinWindow::performQRCodeScan);
-    connect(m_toolbar.get(), &WindowedToolbar::shareClicked,
+    connect(vm, &PinToolbarViewModel::shareClicked,
         this, &PinWindow::shareToUrl);
-    connect(m_toolbar.get(), &WindowedToolbar::copyClicked,
+    connect(vm, &PinToolbarViewModel::copyClicked,
         this, &PinWindow::copyToClipboard);
-    connect(m_toolbar.get(), &WindowedToolbar::saveClicked,
+    connect(vm, &PinToolbarViewModel::saveClicked,
         this, &PinWindow::saveToFile);
-    connect(m_toolbar.get(), &WindowedToolbar::doneClicked,
+    connect(vm, &PinToolbarViewModel::doneClicked,
         this, &PinWindow::hideToolbar);
-    connect(m_toolbar.get(), &WindowedToolbar::cursorRestoreRequested,
+    connect(m_toolbar.get(), &SnapTray::QmlWindowedToolbar::cursorRestoreRequested,
         this, &PinWindow::updateCursorForTool);
+    connect(m_toolbar.get(), &SnapTray::QmlWindowedToolbar::cursorSyncRequested,
+        this, &PinWindow::syncFloatingUiCursor);
 
-    // Initialize sub-toolbar (not parented - separate floating window)
-    m_subToolbar = std::make_unique<WindowedSubToolbar>(nullptr);
+    // Initialize QML sub-toolbar
+    m_subToolbar = std::make_unique<SnapTray::QmlWindowedSubToolbar>(nullptr);
+    connect(m_subToolbar.get(), &SnapTray::QmlWindowedSubToolbar::cursorRestoreRequested,
+        this, &PinWindow::updateCursorForTool);
+    connect(m_subToolbar.get(), &SnapTray::QmlWindowedSubToolbar::cursorSyncRequested,
+        this, &PinWindow::syncFloatingUiCursor);
+    auto* optionsVM = m_subToolbar->viewModel();
+    auto syncTextFormattingToSubToolbar = [this, optionsVM]() {
+        if (!m_textAnnotationEditor) {
+            return;
+        }
+        const auto formatting = m_textAnnotationEditor->formatting();
+        if (m_textEditor && m_textEditor->isEditing()) {
+            optionsVM->setCurrentColor(m_textEditor->color());
+        }
+        optionsVM->setBold(formatting.bold);
+        optionsVM->setItalic(formatting.italic);
+        optionsVM->setUnderline(formatting.underline);
+        optionsVM->setFontSize(formatting.fontSize);
+        optionsVM->setFontFamily(formatting.fontFamily);
+    };
 
-    // Connect sub-toolbar signals
-    connect(m_subToolbar.get(), &WindowedSubToolbar::emojiSelected,
-        this, &PinWindow::onEmojiSelected);
-    connect(m_subToolbar.get(), &WindowedSubToolbar::stepBadgeSizeChanged,
-        this, &PinWindow::onStepBadgeSizeChanged);
-    connect(m_subToolbar.get(), &WindowedSubToolbar::shapeTypeChanged,
-        this, &PinWindow::onShapeTypeChanged);
-    connect(m_subToolbar.get(), &WindowedSubToolbar::shapeFillModeChanged,
-        this, &PinWindow::onShapeFillModeChanged);
-    connect(m_subToolbar.get(), &WindowedSubToolbar::autoBlurRequested,
+    // Connect ViewModel action signals → PinWindow handlers
+    connect(optionsVM, &PinToolOptionsViewModel::colorSelected,
+        this, &PinWindow::onColorSelected);
+    connect(optionsVM, &PinToolOptionsViewModel::customColorPickerRequested,
+        this, &PinWindow::onMoreColorsRequested);
+    connect(optionsVM, &PinToolOptionsViewModel::widthValueChanged,
+        this, &PinWindow::onWidthChanged);
+    connect(optionsVM, &PinToolOptionsViewModel::arrowStyleSelected,
+        this, [this](int style) { onArrowStyleChanged(static_cast<LineEndStyle>(style)); });
+    connect(optionsVM, &PinToolOptionsViewModel::lineStyleSelected,
+        this, [this](int style) { onLineStyleChanged(static_cast<LineStyle>(style)); });
+    connect(optionsVM, &PinToolOptionsViewModel::shapeTypeSelected,
+        this, [this](int type) { onShapeTypeChanged(static_cast<ShapeType>(type)); });
+    connect(optionsVM, &PinToolOptionsViewModel::shapeFillModeSelected,
+        this, [this](int mode) { onShapeFillModeChanged(static_cast<ShapeFillMode>(mode)); });
+    connect(optionsVM, &PinToolOptionsViewModel::stepBadgeSizeSelected,
+        this, [this](int size) { onStepBadgeSizeChanged(static_cast<StepBadgeSize>(size)); });
+    connect(optionsVM, &PinToolOptionsViewModel::autoBlurRequested,
         this, &PinWindow::onAutoBlurRequested);
-    connect(m_subToolbar.get(), &WindowedSubToolbar::cursorRestoreRequested,
-        this, &PinWindow::updateCursorForTool);
+    connect(m_subToolbar.get(), &SnapTray::QmlWindowedSubToolbar::emojiPickerRequested,
+        this, [this]() { showEmojiPickerPopup(); });
 
-    // Initialize settings helper for text font dropdowns
+    // Text formatting signals → TextAnnotationEditor
+    connect(optionsVM, &PinToolOptionsViewModel::boldToggled,
+        m_textAnnotationEditor, &TextAnnotationEditor::setBold);
+    connect(optionsVM, &PinToolOptionsViewModel::italicToggled,
+        m_textAnnotationEditor, &TextAnnotationEditor::setItalic);
+    connect(optionsVM, &PinToolOptionsViewModel::underlineToggled,
+        m_textAnnotationEditor, &TextAnnotationEditor::setUnderline);
+    connect(m_textAnnotationEditor, &TextAnnotationEditor::formattingChanged,
+        this, syncTextFormattingToSubToolbar);
+
+    // Font dropdown signals → RegionSettingsHelper (global coords from QML)
     m_settingsHelper = new RegionSettingsHelper(this);
-    m_settingsHelper->setParentWidget(m_subToolbar.get());
     connect(m_settingsHelper, &RegionSettingsHelper::fontSizeSelected,
         this, &PinWindow::onFontSizeSelected);
     connect(m_settingsHelper, &RegionSettingsHelper::fontFamilySelected,
         this, &PinWindow::onFontFamilySelected);
+    connect(optionsVM, &PinToolOptionsViewModel::fontSizeDropdownRequested,
+        this, [this](double globalX, double globalY) {
+            QPoint globalPos(qRound(globalX), qRound(globalY));
+            m_settingsHelper->showFontSizeDropdown(globalPos, m_subToolbar->viewModel()->fontSize());
+        });
+    connect(optionsVM, &PinToolOptionsViewModel::fontFamilyDropdownRequested,
+        this, [this](double globalX, double globalY) {
+            QPoint globalPos(qRound(globalX), qRound(globalY));
+            m_settingsHelper->showFontFamilyDropdown(globalPos, m_subToolbar->viewModel()->fontFamily());
+        });
 
-    // Connect TextAnnotationEditor to ToolOptionsPanel (must be after sub-toolbar creation)
-    m_textAnnotationEditor->setColorAndWidthWidget(m_subToolbar->colorAndWidthWidget());
-
-    // Centralized common ToolOptionsPanel signal wiring
-    m_annotationContext->connectToolOptionsSignals();
-    m_annotationContext->connectTextFormattingSignals();
-    m_annotationContext->syncTextFormattingControls();
-
-    // Sync initial width and color to sub-toolbar UI
-    m_subToolbar->colorAndWidthWidget()->setCurrentWidth(m_annotationWidth);
-    m_subToolbar->colorAndWidthWidget()->setCurrentColor(m_annotationColor);
+    // Sync initial width and color to sub-toolbar ViewModel
+    optionsVM->setCurrentWidth(m_annotationWidth);
+    optionsVM->setCurrentColor(m_annotationColor);
+    optionsVM->setArrowStyle(static_cast<int>(savedArrowStyle));
+    optionsVM->setLineStyle(static_cast<int>(savedLineStyle));
+    optionsVM->setStepBadgeSize(static_cast<int>(m_stepBadgeSize));
+    syncTextFormattingToSubToolbar();
 }
 
 void PinWindow::toggleToolbar()
@@ -2806,16 +2863,20 @@ void PinWindow::showToolbar()
 
     // Set associated widgets for click-outside detection
     m_toolbar->setAssociatedWidgets(this, m_subToolbar.get());
+    m_toolbar->setAssociatedTransientWidget(m_emojiPickerPopup);
 
     // Connect close request signal
-    connect(m_toolbar.get(), &WindowedToolbar::closeRequested,
+    connect(m_toolbar.get(), &SnapTray::QmlWindowedToolbar::closeRequested,
         this, &PinWindow::hideToolbar, Qt::UniqueConnection);
 
-    m_toolbarVisible = true;
     updateUndoRedoState();
-    m_toolbar->setShareInProgress(m_shareInProgress);
+    m_toolbar->viewModel()->setShareInProgress(m_shareInProgress);
     m_toolbar->show();
-    m_toolbar->raise();
+
+    m_toolbarVisible = m_toolbar->isVisible();
+    if (!m_toolbarVisible) {
+        return;
+    }
 
     // Position AFTER show to ensure correct geometry on macOS
     updateToolbarPosition();
@@ -2860,29 +2921,12 @@ void PinWindow::updateCursorForTool()
         return;
     }
 
-    // Determine the appropriate cursor for the current tool
-    QCursor toolCursor = Qt::CrossCursor;
-
     if (m_toolManager) {
-        ToolId currentTool = m_toolManager->currentTool();
-
-        // Special handling for mosaic tool
-        // Use 2x width for mosaic cursor (UI shows half the actual drawing size)
-        if (currentTool == ToolId::Mosaic) {
-            int mosaicWidth = m_toolManager->width() * 2;
-            toolCursor = CursorManager::createMosaicCursor(mosaicWidth);
-        }
-        else {
-            // Use handler's cursor() method
-            IToolHandler* handler = m_toolManager->currentHandler();
-            if (handler) {
-                toolCursor = handler->cursor();
-            }
-        }
+        cursorManager.updateToolCursorForWidget(this);
+    } else {
+        cursorManager.pushCursorForWidget(this, CursorContext::Tool, Qt::CrossCursor);
     }
-
-    // Use CursorManager so the tool cursor persists across hover/drag contexts
-    cursorManager.pushCursorForWidget(this, CursorContext::Tool, toolCursor);
+    cursorManager.reapplyCursorForWidget(this);
 }
 
 void PinWindow::exitAnnotationMode()
@@ -2896,7 +2940,7 @@ void PinWindow::exitAnnotationMode()
     CursorManager::instance().clearAllForWidget(this);
 
     if (m_toolbar) {
-        m_toolbar->setActiveButton(-1);
+        m_toolbar->viewModel()->setActiveTool(-1);
     }
 
     // Hide sub-toolbar when exiting annotation mode
@@ -2911,6 +2955,7 @@ void PinWindow::handleToolbarToolSelected(int toolId)
         return;
     }
     ToolId tool = static_cast<ToolId>(toolId);
+    const bool emojiPickerVisible = m_emojiPickerPopup && m_emojiPickerPopup->isVisible();
 
     // Check if same tool clicked - toggle sub-toolbar visibility (matches RegionSelector behavior)
     bool sameToolClicked = (m_currentToolId == tool && m_annotationMode);
@@ -2922,7 +2967,7 @@ void PinWindow::handleToolbarToolSelected(int toolId)
     }
 
     if (m_toolbar) {
-        m_toolbar->setActiveButton(toolId);
+        m_toolbar->viewModel()->setActiveTool(toolId);
     }
 
     if (isAnnotationTool(tool)) {
@@ -2933,7 +2978,8 @@ void PinWindow::handleToolbarToolSelected(int toolId)
         if (!hasFocus()) {
             setFocus(Qt::OtherFocusReason);
         }
-        if (sameToolClicked && m_subToolbar && m_subToolbar->isVisible()) {
+        if (sameToolClicked
+            && ((m_subToolbar && m_subToolbar->isVisible()) || emojiPickerVisible)) {
             // Same tool clicked while sub-toolbar visible - exit annotation mode entirely
             exitAnnotationMode();
             return;
@@ -2943,6 +2989,10 @@ void PinWindow::handleToolbarToolSelected(int toolId)
         // Update cursor for the new tool (enterAnnotationMode also calls this,
         // but we need to update when switching between annotation tools too)
         updateCursorForTool();
+
+        if (tool != ToolId::EmojiSticker && emojiPickerVisible) {
+            m_emojiPickerPopup->hide();
+        }
 
         // Show sub-toolbar for the selected tool
         if (m_subToolbar) {
@@ -3155,7 +3205,7 @@ void PinWindow::applyCrop(const QRect& cropRect)
 
     // Exit crop mode and switch to Selection
     if (m_toolbar) {
-        m_toolbar->setActiveButton(static_cast<int>(ToolId::Selection));
+        m_toolbar->viewModel()->setActiveTool(static_cast<int>(ToolId::Selection));
     }
     m_currentToolId = ToolId::Selection;
     if (m_toolManager) {
@@ -3319,8 +3369,8 @@ void PinWindow::updateUndoRedoState()
     if (m_toolbar && m_annotationLayer) {
         bool canUndo = m_annotationLayer->canUndo() || canUndoCrop();
         bool canRedo = m_annotationLayer->canRedo() || canRedoCrop();
-        m_toolbar->setCanUndo(canUndo);
-        m_toolbar->setCanRedo(canRedo);
+        m_toolbar->viewModel()->setCanUndo(canUndo);
+        m_toolbar->viewModel()->setCanRedo(canRedo);
     }
 }
 
@@ -3374,10 +3424,14 @@ QPixmap PinWindow::exportPixmapForMerge() const
 
 void PinWindow::updateSubToolbarPosition()
 {
-    // Only position if sub-toolbar is visible
-    if (m_subToolbar && m_subToolbar->isVisible() && m_toolbar) {
-        QRect toolbarGeom = m_toolbar->frameGeometry();
-        m_subToolbar->positionBelow(toolbarGeom);
+    if (m_toolbar) {
+        QRect toolbarGeom = m_toolbar->geometry();
+        if (m_subToolbar && m_subToolbar->isVisible()) {
+            m_subToolbar->positionBelow(toolbarGeom);
+        }
+        if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+            m_emojiPickerPopup->positionAt(toolbarGeom);
+        }
     }
 }
 
@@ -3386,6 +3440,97 @@ void PinWindow::hideSubToolbar()
     if (m_subToolbar) {
         m_subToolbar->hide();
     }
+    if (m_emojiPickerPopup) {
+        m_emojiPickerPopup->hide();
+    }
+}
+
+void PinWindow::showEmojiPickerPopup()
+{
+    if (!m_emojiPickerPopup) {
+        m_emojiPickerPopup = new EmojiPickerPopup(nullptr);
+        connect(m_emojiPickerPopup, &EmojiPickerPopup::emojiSelected,
+                this, &PinWindow::onEmojiSelected);
+        connect(m_emojiPickerPopup, &EmojiPickerPopup::cursorRestoreRequested,
+                this, &PinWindow::updateCursorForTool);
+        connect(m_emojiPickerPopup, &EmojiPickerPopup::cursorSyncRequested,
+                this, &PinWindow::syncFloatingUiCursor);
+        if (m_toolbar) {
+            m_toolbar->setAssociatedTransientWidget(m_emojiPickerPopup);
+        }
+    }
+
+    // Position below the toolbar
+    QRect anchor = m_toolbar ? m_toolbar->geometry() : frameGeometry();
+    m_emojiPickerPopup->showAt(anchor);
+}
+
+bool PinWindow::isGlobalPosOverFloatingUi(const QPoint& globalPos) const
+{
+    if (m_toolbar && m_toolbar->isVisible() && m_toolbar->geometry().contains(globalPos)) {
+        return true;
+    }
+
+    if (m_subToolbar && m_subToolbar->isVisible() && m_subToolbar->geometry().contains(globalPos)) {
+        return true;
+    }
+
+    if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible() &&
+        m_emojiPickerPopup->frameGeometry().contains(globalPos)) {
+        return true;
+    }
+
+    return false;
+}
+
+void PinWindow::syncFloatingUiCursor()
+{
+    auto& cursorManager = CursorManager::instance();
+
+    if (!m_annotationMode) {
+        cursorManager.popCursorForWidget(this, CursorContext::Override);
+        return;
+    }
+
+    const QPoint globalPos = QCursor::pos();
+    if (isGlobalPosOverFloatingUi(globalPos)) {
+        cursorManager.pushCursorForWidget(this, CursorContext::Override, Qt::ArrowCursor);
+        return;
+    }
+
+    const QPoint localPos = mapFromGlobal(globalPos);
+    if (!rect().contains(localPos)) {
+        cursorManager.popCursorForWidget(this, CursorContext::Override);
+        cursorManager.setHoverTargetForWidget(this, HoverTarget::None);
+        return;
+    }
+
+    restoreAnnotationCursorAt(localPos);
+}
+
+void PinWindow::restoreAnnotationCursorAt(const QPoint& localPos)
+{
+    auto& cursorManager = CursorManager::instance();
+
+    if (!m_annotationMode) {
+        cursorManager.popCursorForWidget(this, CursorContext::Override);
+        return;
+    }
+
+    if (m_toolManager) {
+        cursorManager.updateToolCursorForWidget(this);
+    } else {
+        cursorManager.pushCursorForWidget(this, CursorContext::Tool, Qt::CrossCursor);
+    }
+
+    if (rect().contains(localPos)) {
+        updateAnnotationCursor(localPos);
+    } else {
+        cursorManager.setHoverTargetForWidget(this, HoverTarget::None);
+    }
+
+    cursorManager.popCursorForWidget(this, CursorContext::Override);
+    cursorManager.reapplyCursorForWidget(this);
 }
 
 QWidget* PinWindow::annotationHostWidget() const
@@ -3400,7 +3545,9 @@ AnnotationLayer* PinWindow::annotationLayerForContext() const
 
 ToolOptionsPanel* PinWindow::toolOptionsPanelForContext() const
 {
-    return m_subToolbar ? m_subToolbar->colorAndWidthWidget() : nullptr;
+    // QML sub-toolbar uses PinToolOptionsViewModel directly;
+    // ToolOptionsPanel is not available (only used by RegionSelector/ScreenCanvas)
+    return nullptr;
 }
 
 InlineTextEditor* PinWindow::inlineTextEditorForContext() const
@@ -3530,6 +3677,8 @@ void PinWindow::onArrowStyleChanged(LineEndStyle style)
     if (m_toolManager) {
         m_toolManager->setArrowStyle(style);
     }
+    AnnotationSettingsManager::instance().saveArrowStyle(style);
+    update();
 }
 
 void PinWindow::onLineStyleChanged(LineStyle style)
@@ -3537,6 +3686,8 @@ void PinWindow::onLineStyleChanged(LineStyle style)
     if (m_toolManager) {
         m_toolManager->setLineStyle(style);
     }
+    AnnotationSettingsManager::instance().saveLineStyle(style);
+    update();
 }
 
 void PinWindow::onFontSizeDropdownRequested(const QPoint& pos)
@@ -3802,7 +3953,8 @@ void PinWindow::onAutoBlurRequested()
 
 void PinWindow::onMoreColorsRequested()
 {
-    m_subToolbar->colorAndWidthWidget()->setCurrentColor(m_annotationColor);
+    if (m_subToolbar)
+        m_subToolbar->viewModel()->setCurrentColor(m_annotationColor);
 
     AnnotationContext::showColorPickerDialog(
         this,
@@ -3812,7 +3964,7 @@ void PinWindow::onMoreColorsRequested()
         [this](const QColor& color) {
             onColorSelected(color);
             if (m_subToolbar) {
-                m_subToolbar->colorAndWidthWidget()->setCurrentColor(color);
+                m_subToolbar->viewModel()->setCurrentColor(color);
             }
         });
 }
@@ -4435,12 +4587,16 @@ void PinWindow::updateAnnotationCursor(const QPoint& pos)
     // Map to original coords for hit testing
     QPoint mappedPos = mapToOriginalCoords(pos);
     auto& cursorManager = CursorManager::instance();
+    auto applyHoverTarget = [&cursorManager, this](HoverTarget target, int handleIndex = -1) {
+        cursorManager.setHoverTargetForWidget(this, target, handleIndex);
+        cursorManager.reapplyCursorForWidget(this);
+    };
 
     // Check selected text annotation's gizmo handles first (highest priority)
     if (auto* textItem = getSelectedTextAnnotation()) {
         GizmoHandle handle = TransformationGizmo::hitTest(textItem, mappedPos);
         if (handle != GizmoHandle::None) {
-            cursorManager.setHoverTargetForWidget(this, HoverTarget::GizmoHandle, static_cast<int>(handle));
+            applyHoverTarget(HoverTarget::GizmoHandle, static_cast<int>(handle));
             return;
         }
     }
@@ -4448,7 +4604,7 @@ void PinWindow::updateAnnotationCursor(const QPoint& pos)
     if (auto* shapeItem = getSelectedShapeAnnotation()) {
         GizmoHandle handle = TransformationGizmo::hitTest(shapeItem, mappedPos);
         if (handle != GizmoHandle::None) {
-            cursorManager.setHoverTargetForWidget(this, HoverTarget::GizmoHandle, static_cast<int>(handle));
+            applyHoverTarget(HoverTarget::GizmoHandle, static_cast<int>(handle));
             return;
         }
     }
@@ -4464,12 +4620,12 @@ void PinWindow::updateAnnotationCursor(const QPoint& pos)
     );
 
     if (result.hit) {
-        cursorManager.setHoverTargetForWidget(this, result.target, result.handleIndex);
+        applyHoverTarget(result.target, result.handleIndex);
     } else if (m_annotationLayer->hitTestShape(mappedPos) >= 0) {
-        cursorManager.setHoverTargetForWidget(this, HoverTarget::Annotation);
+        applyHoverTarget(HoverTarget::Annotation);
     } else {
         // No annotation hit - clear hover target to let tool cursor show
-        cursorManager.setHoverTargetForWidget(this, HoverTarget::None);
+        applyHoverTarget(HoverTarget::None);
     }
 }
 

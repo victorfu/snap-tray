@@ -39,9 +39,9 @@ struct OCRResult;
 class QRCodeManager;
 class PinWindowManager;
 class UIIndicators;
-namespace SnapTray { class QmlToast; }
-class WindowedToolbar;
-class WindowedSubToolbar;
+namespace SnapTray { class QmlToast; class QmlWindowedToolbar; class QmlWindowedSubToolbar; }
+class PinToolbarViewModel;
+class PinToolOptionsViewModel;
 class AnnotationLayer;
 class AnnotationItem;
 class ToolManager;
@@ -157,6 +157,7 @@ protected:
 
 private:
     friend class TestPinWindowCropUndo;
+    friend class TestPinWindowTextToolFormatting;
     struct CropUndoEntry;
 
     // AnnotationHostAdapter implementation
@@ -240,6 +241,10 @@ private:
     QPixmap getExportPixmapWithAnnotations() const;
     void updateSubToolbarPosition();
     void hideSubToolbar();
+    void showEmojiPickerPopup();
+    bool isGlobalPosOverFloatingUi(const QPoint& globalPos) const;
+    void restoreAnnotationCursorAt(const QPoint& localPos);
+    void syncFloatingUiCursor();
     void applyCrop(const QRect& cropRect);
     void undoCrop();
     void redoCrop();
@@ -403,13 +408,14 @@ private:
     int m_baseCornerRadius = 0;
 
     // Toolbar and annotation members
-    std::unique_ptr<WindowedToolbar> m_toolbar;
-    std::unique_ptr<WindowedSubToolbar> m_subToolbar;
+    std::unique_ptr<SnapTray::QmlWindowedToolbar> m_toolbar;
+    std::unique_ptr<SnapTray::QmlWindowedSubToolbar> m_subToolbar;
     AnnotationLayer* m_annotationLayer = nullptr; // Qt parent owns lifetime
     ToolManager* m_toolManager = nullptr;
     InlineTextEditor* m_textEditor = nullptr;
     TextAnnotationEditor* m_textAnnotationEditor = nullptr;
     std::unique_ptr<ShapeAnnotationEditor> m_shapeAnnotationEditor;
+    class EmojiPickerPopup* m_emojiPickerPopup = nullptr;
     RegionSettingsHelper* m_settingsHelper = nullptr;
     bool m_toolbarVisible = false;
     bool m_annotationMode = false;

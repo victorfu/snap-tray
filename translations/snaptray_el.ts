@@ -1560,8 +1560,8 @@ Size: %2</source>
         <translation>Διακοπή εγγραφής</translation>
     </message>
     <message>
-        <source>Cancel Recording (Esc)</source>
-        <translation>Ακύρωση εγγραφής (Esc)</translation>
+        <source>Cancel Recording</source>
+        <translation>Ακύρωση εγγραφής</translation>
     </message>
 </context>
 <context>

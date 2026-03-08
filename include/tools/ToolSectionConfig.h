@@ -10,7 +10,7 @@ class ToolOptionsPanel;
  *
  * Provides a data-driven approach to configure the sub-toolbar sections based
  * on the selected tool, eliminating duplicate configuration logic across
- * RegionSelector, ScreenCanvas, and WindowedSubToolbar.
+ * RegionSelector, ScreenCanvas, and QmlWindowedSubToolbar.
  */
 struct ToolSectionConfig {
     bool showColorSection = false;

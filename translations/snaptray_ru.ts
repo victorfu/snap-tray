@@ -1566,8 +1566,8 @@ Size: %2</source>
         <translation>Остановить запись</translation>
     </message>
     <message>
-        <source>Cancel Recording (Esc)</source>
-        <translation>Отменить запись (Esc)</translation>
+        <source>Cancel Recording</source>
+        <translation>Отменить запись</translation>
     </message>
 </context>
 <context>

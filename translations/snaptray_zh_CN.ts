@@ -1557,8 +1557,8 @@ Size: %2</source>
         <translation>停止录制</translation>
     </message>
     <message>
-        <source>Cancel Recording (Esc)</source>
-        <translation>取消录制 (Esc)</translation>
+        <source>Cancel Recording</source>
+        <translation>取消录制</translation>
     </message>
 </context>
 <context>

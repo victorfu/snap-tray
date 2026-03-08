@@ -34,6 +34,16 @@ public:
     QQmlEngine* engine() const;
 
     /**
+     * @brief Create a screen-level overlay view without loading a QML source yet.
+     *
+     * Use this when the caller must inject context properties before
+     * QQuickView::setSource().
+     *
+     * @return Owned QQuickView pointer; caller takes ownership.
+     */
+    QQuickView* createScreenOverlay();
+
+    /**
      * @brief Create a QQuickView for a screen-level overlay (frameless, transparent, stay-on-top).
      * @param qmlUrl URL of the QML component to load (e.g., "qrc:/SnapTrayQml/components/Toast.qml")
      * @return Owned QQuickView pointer; caller takes ownership.
@@ -73,6 +83,14 @@ public:
      * non-macOS.
      */
     static void enableNativeShadow(QQuickView* view);
+
+    /**
+     * @brief Apply native window configuration for interactive transparent overlays.
+     *
+     * Used by popup-style QML overlays that must stay transparent and
+     * mouse-interactive without activating the app.
+     */
+    static void configureInteractiveOverlayWindow(QQuickView* view);
 
 private:
     explicit QmlOverlayManager(QObject* parent = nullptr);

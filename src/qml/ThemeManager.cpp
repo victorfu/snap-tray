@@ -1,11 +1,21 @@
 #include "qml/ThemeManager.h"
-#include "ToolbarStyle.h"
+#include "ui/DesignSystem.h"
 
 #include <QJSEngine>
 
 ThemeManager::ThemeManager(QObject *parent)
     : QObject(parent)
 {
+    // Forward DesignSystem's themeChanged so existing QML bindings keep working.
+    connect(&DesignSystem::instance(), &DesignSystem::themeChanged,
+            this, [this]() {
+        Theme resolved = DesignSystem::instance().isDarkMode()
+            ? Theme::Dark : Theme::Light;
+        if (m_effectiveTheme != resolved) {
+            m_effectiveTheme = resolved;
+            emit themeChanged();
+        }
+    });
     updateEffectiveTheme();
 }
 
@@ -17,8 +27,6 @@ ThemeManager& ThemeManager::instance()
 
 ThemeManager* ThemeManager::create(QQmlEngine *, QJSEngine *jsEngine)
 {
-    // Return the C++ singleton; prevent the QML engine from taking ownership
-    // so the static instance is not double-deleted.
     auto *inst = &instance();
     QJSEngine::setObjectOwnership(inst, QJSEngine::CppOwnership);
     return inst;
@@ -36,24 +44,25 @@ bool ThemeManager::isDarkMode() const
 
 QColor ThemeManager::primarySurface() const
 {
-    return isDarkMode() ? QColor(0x1A, 0x1A, 0x2E) : QColor(0xFF, 0xFF, 0xFF);
+    return DesignSystem::instance().backgroundPrimary();
 }
 
 QColor ThemeManager::elevatedSurface() const
 {
-    return isDarkMode() ? QColor(0x2E, 0x2E, 0x50) : QColor(0xF5, 0xF5, 0xFA);
+    return DesignSystem::instance().backgroundElevated();
 }
 
 void ThemeManager::refreshTheme()
 {
-    updateEffectiveTheme();
+    DesignSystem::instance().refreshTheme();
+    // themeChanged is forwarded via the connect in the constructor
 }
 
 // ---- private ----
 
 void ThemeManager::updateEffectiveTheme()
 {
-    Theme resolved = (ToolbarStyleConfig::loadStyle() == ToolbarStyleType::Dark)
+    Theme resolved = DesignSystem::instance().isDarkMode()
         ? Theme::Dark : Theme::Light;
 
     if (m_effectiveTheme != resolved) {

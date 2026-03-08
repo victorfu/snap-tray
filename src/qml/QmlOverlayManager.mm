@@ -46,7 +46,7 @@ QQmlEngine* QmlOverlayManager::engine() const
     return m_engine;
 }
 
-QQuickView* QmlOverlayManager::createScreenOverlay(const QUrl& qmlUrl)
+QQuickView* QmlOverlayManager::createScreenOverlay()
 {
     ensureEngine();
 
@@ -54,6 +54,13 @@ QQuickView* QmlOverlayManager::createScreenOverlay(const QUrl& qmlUrl)
     view->setFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     view->setColor(Qt::transparent);
     view->setResizeMode(QQuickView::SizeViewToRootObject);
+
+    return view;
+}
+
+QQuickView* QmlOverlayManager::createScreenOverlay(const QUrl& qmlUrl)
+{
+    auto* view = createScreenOverlay();
     view->setSource(qmlUrl);
 
     return view;
@@ -123,6 +130,37 @@ void QmlOverlayManager::enableNativeShadow(QQuickView* view)
     if (!nsWindow)
         return;
     [nsWindow setHasShadow:YES];
+#else
+    Q_UNUSED(view);
+#endif
+}
+
+void QmlOverlayManager::configureInteractiveOverlayWindow(QQuickView* view)
+{
+#ifdef Q_OS_MACOS
+    if (!view)
+        return;
+
+    NSView* nsView = reinterpret_cast<NSView*>(view->winId());
+    if (!nsView)
+        return;
+
+    NSWindow* window = [nsView window];
+    if (!window)
+        return;
+
+    [window setLevel:NSFloatingWindowLevel];
+    [window setHidesOnDeactivate:NO];
+    [window setOpaque:NO];
+    [window setBackgroundColor:[NSColor clearColor]];
+
+    if ([window isKindOfClass:[NSPanel class]]) {
+        [(NSPanel*)window setBecomesKeyOnlyIfNeeded:YES];
+    }
+
+    NSUInteger mask = [window styleMask];
+    mask &= ~NSWindowStyleMaskResizable;
+    [window setStyleMask:mask];
 #else
     Q_UNUSED(view);
 #endif

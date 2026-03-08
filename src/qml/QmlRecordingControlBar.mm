@@ -32,7 +32,7 @@ const char* const kPauseRecordingText =
 const char* const kStopRecordingText =
     QT_TRANSLATE_NOOP("RecordingControlBar", "Stop Recording");
 const char* const kCancelRecordingText =
-    QT_TRANSLATE_NOOP("RecordingControlBar", "Cancel Recording (Esc)");
+    QT_TRANSLATE_NOOP("RecordingControlBar", "Cancel Recording");
 
 QString translateRecordingControlBar(const char* sourceText)
 {

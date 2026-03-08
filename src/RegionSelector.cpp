@@ -254,6 +254,7 @@ RegionSelector::RegionSelector(QWidget* parent)
 
     // Initialize unified color and width widget
     m_colorAndWidthWidget = new ToolOptionsPanel(this);
+    m_colorAndWidthWidget->setUseSharedStyleDropdowns(true);
     m_colorAndWidthWidget->setCurrentColor(m_inputState.annotationColor);
     m_colorAndWidthWidget->setCurrentWidth(m_inputState.annotationWidth);
     m_colorAndWidthWidget->setWidthRange(1, 20);

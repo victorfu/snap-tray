@@ -1,151 +1,120 @@
 pragma Singleton
 import QtQuick
+import SnapTrayQml
 
 /**
  * SemanticTokens: Maps PrimitiveTokens to purpose, switching by theme.
- *
- * References PrimitiveTokens for all raw values and binds to
- * ThemeManager.isDarkMode for live light/dark switching.
+ * Thin wrapper delegating to the C++ DesignSystem singleton.
  */
 QtObject {
-    // Theme state - bound to ThemeManager singleton for live theme switching
-    readonly property bool isDarkMode: ThemeManager ? ThemeManager.isDarkMode : false
+    // Theme state
+    readonly property bool isDarkMode: DesignSystem.isDarkMode
 
     // ========================================================================
     // Background
     // ========================================================================
-    readonly property color backgroundPrimary: isDarkMode
-        ? PrimitiveTokens.darkSurface : PrimitiveTokens.lightSurface
-    readonly property color backgroundElevated: isDarkMode
-        ? PrimitiveTokens.darkSurfaceElevated : PrimitiveTokens.lightSurfaceElevated
-    readonly property color backgroundOverlay: isDarkMode
-        ? PrimitiveTokens.darkSurfaceOverlay : PrimitiveTokens.lightSurfaceOverlay
+    readonly property color backgroundPrimary: DesignSystem.backgroundPrimary
+    readonly property color backgroundElevated: DesignSystem.backgroundElevated
+    readonly property color backgroundOverlay: DesignSystem.backgroundOverlay
 
     // ========================================================================
     // Text
     // ========================================================================
-    readonly property color textPrimary: isDarkMode
-        ? PrimitiveTokens.gray200 : PrimitiveTokens.gray900
-    readonly property color textSecondary: isDarkMode
-        ? PrimitiveTokens.gray500 : PrimitiveTokens.gray600
-    readonly property color textTertiary: isDarkMode
-        ? PrimitiveTokens.gray600 : PrimitiveTokens.gray500
-    readonly property color textInverse: isDarkMode
-        ? PrimitiveTokens.gray900 : PrimitiveTokens.white
+    readonly property color textPrimary: DesignSystem.textPrimary
+    readonly property color textSecondary: DesignSystem.textSecondary
+    readonly property color textTertiary: DesignSystem.textTertiary
+    readonly property color textInverse: DesignSystem.textInverse
 
     // ========================================================================
     // Border
     // ========================================================================
-    readonly property color borderDefault: isDarkMode
-        ? PrimitiveTokens.gray800 : PrimitiveTokens.gray300
-    readonly property color borderFocus: PrimitiveTokens.accentDefault
-    readonly property color borderActive: PrimitiveTokens.accentDefault
+    readonly property color borderDefault: DesignSystem.borderDefault
+    readonly property color borderFocus: DesignSystem.borderFocus
+    readonly property color borderActive: DesignSystem.borderActive
 
     // ========================================================================
     // Accent
     // ========================================================================
-    readonly property color accentDefault: PrimitiveTokens.accentDefault
-    readonly property color accentHover: PrimitiveTokens.accentHover
-    readonly property color accentPressed: PrimitiveTokens.accentPressed
+    readonly property color accentDefault: DesignSystem.accentDefault
+    readonly property color accentHover: DesignSystem.accentHover
+    readonly property color accentPressed: DesignSystem.accentPressed
 
     // ========================================================================
     // Status
     // ========================================================================
-    readonly property color statusSuccess: isDarkMode
-        ? PrimitiveTokens.green400 : PrimitiveTokens.green500
-    readonly property color statusWarning: isDarkMode
-        ? PrimitiveTokens.amber400 : PrimitiveTokens.amber500
-    readonly property color statusError: isDarkMode
-        ? PrimitiveTokens.red400 : PrimitiveTokens.red500
-    readonly property color statusInfo: isDarkMode
-        ? PrimitiveTokens.blue400 : PrimitiveTokens.blue500
+    readonly property color statusSuccess: DesignSystem.statusSuccess
+    readonly property color statusWarning: DesignSystem.statusWarning
+    readonly property color statusError: DesignSystem.statusError
+    readonly property color statusInfo: DesignSystem.statusInfo
 
     // ========================================================================
     // Toolbar
     // ========================================================================
-    readonly property color toolbarBackground: isDarkMode
-        ? Qt.rgba(PrimitiveTokens.gray850.r, PrimitiveTokens.gray850.g,
-                  PrimitiveTokens.gray850.b, 0.85)
-        : Qt.rgba(PrimitiveTokens.white.r, PrimitiveTokens.white.g,
-                  PrimitiveTokens.white.b, 0.90)
-    readonly property color toolbarIcon: isDarkMode
-        ? PrimitiveTokens.gray300 : PrimitiveTokens.gray700
-    readonly property color toolbarIconActive: PrimitiveTokens.white
-    readonly property color toolbarSeparator: isDarkMode
-        ? PrimitiveTokens.gray800 : PrimitiveTokens.gray300
+    readonly property color toolbarBackground: DesignSystem.toolbarBackground
+    readonly property color toolbarIcon: DesignSystem.toolbarIcon
+    readonly property color toolbarIconActive: DesignSystem.toolbarIconActive
+    readonly property color toolbarSeparator: DesignSystem.toolbarSeparator
 
     // ========================================================================
     // Shadows
     // ========================================================================
-    readonly property color shadowSmallColor: isDarkMode
-        ? PrimitiveTokens.darkShadowSmall : PrimitiveTokens.lightShadowSmall
-    readonly property int shadowSmallBlur: isDarkMode
-        ? PrimitiveTokens.darkShadowSmallBlur : PrimitiveTokens.lightShadowSmallBlur
-    readonly property int shadowSmallY: isDarkMode
-        ? PrimitiveTokens.darkShadowSmallY : PrimitiveTokens.lightShadowSmallY
-
-    readonly property color shadowMediumColor: isDarkMode
-        ? PrimitiveTokens.darkShadowMedium : PrimitiveTokens.lightShadowMedium
-    readonly property int shadowMediumBlur: isDarkMode
-        ? PrimitiveTokens.darkShadowMediumBlur : PrimitiveTokens.lightShadowMediumBlur
-    readonly property int shadowMediumY: isDarkMode
-        ? PrimitiveTokens.darkShadowMediumY : PrimitiveTokens.lightShadowMediumY
-
-    readonly property color shadowLargeColor: isDarkMode
-        ? PrimitiveTokens.darkShadowLarge : PrimitiveTokens.lightShadowLarge
-    readonly property int shadowLargeBlur: isDarkMode
-        ? PrimitiveTokens.darkShadowLargeBlur : PrimitiveTokens.lightShadowLargeBlur
-    readonly property int shadowLargeY: isDarkMode
-        ? PrimitiveTokens.darkShadowLargeY : PrimitiveTokens.lightShadowLargeY
+    readonly property color shadowSmallColor: DesignSystem.shadowSmallColor
+    readonly property int shadowSmallBlur: DesignSystem.shadowSmallBlur
+    readonly property int shadowSmallY: DesignSystem.shadowSmallY
+    readonly property color shadowMediumColor: DesignSystem.shadowMediumColor
+    readonly property int shadowMediumBlur: DesignSystem.shadowMediumBlur
+    readonly property int shadowMediumY: DesignSystem.shadowMediumY
+    readonly property color shadowLargeColor: DesignSystem.shadowLargeColor
+    readonly property int shadowLargeBlur: DesignSystem.shadowLargeBlur
+    readonly property int shadowLargeY: DesignSystem.shadowLargeY
 
     // ========================================================================
     // Capture overlay (always dark, theme-independent)
     // ========================================================================
-    readonly property color captureOverlayDim: PrimitiveTokens.dimOverlay
-    readonly property color captureOverlayCrosshair: PrimitiveTokens.crosshair
-    readonly property color captureOverlaySelectionBorder: PrimitiveTokens.selectionBorder
-    readonly property color captureOverlayDimensionLabel: PrimitiveTokens.dimensionLabel
+    readonly property color captureOverlayDim: DesignSystem.captureOverlayDim
+    readonly property color captureOverlayCrosshair: DesignSystem.captureOverlayCrosshair
+    readonly property color captureOverlaySelectionBorder: DesignSystem.captureOverlaySelectionBorder
+    readonly property color captureOverlayDimensionLabel: DesignSystem.captureOverlayDimensionLabel
 
     // ========================================================================
-    // Icon overlay color (for ColorOverlay on SVG icons)
+    // Icon overlay color
     // ========================================================================
-    readonly property color iconColor: isDarkMode
-        ? PrimitiveTokens.iconColorDark : PrimitiveTokens.iconColorLight
+    readonly property color iconColor: DesignSystem.iconColor
 
     // ========================================================================
-    // Typography (semantic aliases — components use these, not PrimitiveTokens)
+    // Typography (semantic aliases)
     // ========================================================================
-    readonly property string fontFamily: PrimitiveTokens.fontFamily
-    readonly property int fontSizeH2: PrimitiveTokens.fontSizeH2
-    readonly property int fontSizeH3: PrimitiveTokens.fontSizeH3
-    readonly property int fontSizeBody: PrimitiveTokens.fontSizeBody
-    readonly property int fontSizeCaption: PrimitiveTokens.fontSizeCaption
-    readonly property int fontSizeSmall: PrimitiveTokens.fontSizeSmall
-    readonly property real letterSpacingDefault: PrimitiveTokens.letterSpacingTight
-    readonly property real letterSpacingWide: PrimitiveTokens.letterSpacingWide
-    readonly property int fontWeightRegular: PrimitiveTokens.fontWeightRegular
-    readonly property int fontWeightMedium: PrimitiveTokens.fontWeightMedium
-    readonly property int fontWeightSemiBold: PrimitiveTokens.fontWeightSemiBold
+    readonly property string fontFamily: DesignSystem.fontFamily
+    readonly property int fontSizeH2: DesignSystem.fontSizeH2
+    readonly property int fontSizeH3: DesignSystem.fontSizeH3
+    readonly property int fontSizeBody: DesignSystem.fontSizeBody
+    readonly property int fontSizeCaption: DesignSystem.fontSizeCaption
+    readonly property int fontSizeSmall: DesignSystem.fontSizeSmall
+    readonly property real letterSpacingDefault: DesignSystem.letterSpacingTight
+    readonly property real letterSpacingWide: DesignSystem.letterSpacingWide
+    readonly property int fontWeightRegular: DesignSystem.fontWeightRegular
+    readonly property int fontWeightMedium: DesignSystem.fontWeightMedium
+    readonly property int fontWeightSemiBold: DesignSystem.fontWeightSemiBold
 
     // ========================================================================
     // Spacing (semantic aliases)
     // ========================================================================
-    readonly property int spacing4: PrimitiveTokens.spacing4
-    readonly property int spacing8: PrimitiveTokens.spacing8
-    readonly property int spacing12: PrimitiveTokens.spacing12
-    readonly property int spacing16: PrimitiveTokens.spacing16
-    readonly property int spacing40: PrimitiveTokens.spacing40
+    readonly property int spacing4: DesignSystem.spacing4
+    readonly property int spacing8: DesignSystem.spacing8
+    readonly property int spacing12: DesignSystem.spacing12
+    readonly property int spacing16: DesignSystem.spacing16
+    readonly property int spacing40: DesignSystem.spacing40
 
     // ========================================================================
     // Radius (semantic aliases)
     // ========================================================================
-    readonly property int radiusSmall: PrimitiveTokens.radiusSmall
-    readonly property int radiusMedium: PrimitiveTokens.radiusMedium
+    readonly property int radiusSmall: DesignSystem.radiusSmall
+    readonly property int radiusMedium: DesignSystem.radiusMedium
 
     // ========================================================================
     // Animation (semantic aliases)
     // ========================================================================
-    readonly property int durationFast: PrimitiveTokens.durationFast
-    readonly property int durationNormal: PrimitiveTokens.durationNormal
-    readonly property int durationInteractionHover: PrimitiveTokens.durationInteractionHover
+    readonly property int durationFast: DesignSystem.durationFast
+    readonly property int durationNormal: DesignSystem.durationNormal
+    readonly property int durationInteractionHover: DesignSystem.durationInteractionHover
 }

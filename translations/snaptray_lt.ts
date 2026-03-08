@@ -1560,8 +1560,8 @@ Dydis: %2</translation>
         <translation>Sustabdyti įrašymą</translation>
     </message>
     <message>
-        <source>Cancel Recording (Esc)</source>
-        <translation>Atšaukti įrašymą (Esc)</translation>
+        <source>Cancel Recording</source>
+        <translation>Atšaukti įrašymą</translation>
     </message>
 </context>
 <context>

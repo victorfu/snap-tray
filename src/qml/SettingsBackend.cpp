@@ -930,6 +930,9 @@ void SettingsBackend::normalizeRecordingAudioSettings()
 {
     if (!m_recordingAudioDevice.isEmpty()) {
         if (m_recordingAudioDevicesLoaded) {
+            if (m_recordingAudioDeviceItems.isEmpty()) {
+                return;
+            }
             if (!hasRecordingAudioDevice(m_recordingAudioDevice)) {
                 m_recordingAudioDevice.clear();
                 emit recordingAudioDeviceChanged();

@@ -207,6 +207,15 @@ public:
      */
     void updateToolCursorForWidget(QWidget* widget);
 
+    /**
+     * @brief Reapply the current effective cursor to a widget immediately.
+     *
+     * Useful when native cursor ownership was taken by another floating UI
+     * window and we need to reassert the widget's existing cursor without
+     * changing its stack or state.
+     */
+    void reapplyCursorForWidget(QWidget* widget);
+
     // ========================================================================
     // Static Cursor Factories
     // ========================================================================
@@ -301,7 +310,7 @@ private:
     /**
      * @brief Apply cursor to a specific widget based on its stack.
      */
-    void applyCursorForWidget(QWidget* widget);
+    void applyCursorForWidget(QWidget* widget, bool force = false);
 
     /**
      * @brief Get effective cursor for a widget.

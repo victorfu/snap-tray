@@ -1560,8 +1560,8 @@ Kích thước: %2</translation>
         <translation>Dừng ghi</translation>
     </message>
     <message>
-        <source>Cancel Recording (Esc)</source>
-        <translation>Hủy ghi (Esc)</translation>
+        <source>Cancel Recording</source>
+        <translation>Hủy ghi</translation>
     </message>
 </context>
 <context>

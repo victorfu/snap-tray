@@ -1560,8 +1560,8 @@ Size: %2</source>
         <translation>إيقاف التسجيل</translation>
     </message>
     <message>
-        <source>Cancel Recording (Esc)</source>
-        <translation>إلغاء التسجيل (Esc)</translation>
+        <source>Cancel Recording</source>
+        <translation>إلغاء التسجيل</translation>
     </message>
 </context>
 <context>

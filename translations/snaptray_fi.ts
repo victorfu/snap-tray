@@ -1560,8 +1560,8 @@ Koko: %2</translation>
         <translation>Lopeta tallennus</translation>
     </message>
     <message>
-        <source>Cancel Recording (Esc)</source>
-        <translation>Peruuta tallennus (Esc)</translation>
+        <source>Cancel Recording</source>
+        <translation>Peruuta tallennus</translation>
     </message>
 </context>
 <context>

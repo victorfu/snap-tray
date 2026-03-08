@@ -1566,8 +1566,8 @@ Rozmiar: %2</translation>
         <translation>Zatrzymaj nagrywanie</translation>
     </message>
     <message>
-        <source>Cancel Recording (Esc)</source>
-        <translation>Anuluj nagrywanie (Esc)</translation>
+        <source>Cancel Recording</source>
+        <translation>Anuluj nagrywanie</translation>
     </message>
 </context>
 <context>

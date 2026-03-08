@@ -1560,8 +1560,8 @@ Size: %2</source>
         <translation>停止錄製</translation>
     </message>
     <message>
-        <source>Cancel Recording (Esc)</source>
-        <translation>取消錄製 (Esc)</translation>
+        <source>Cancel Recording</source>
+        <translation>取消錄製</translation>
     </message>
 </context>
 <context>

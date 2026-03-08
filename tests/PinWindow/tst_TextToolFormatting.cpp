@@ -1,10 +1,13 @@
 #include <QtTest/QtTest>
 #include <QAction>
 #include <QApplication>
+#include <QEnterEvent>
 #include <QFontDatabase>
 #include <QGuiApplication>
 #include <QMenu>
 #include <QPixmap>
+#include <QQuickItem>
+#include <QQuickView>
 #include <QSet>
 #include <QTimer>
 
@@ -13,9 +16,12 @@
 #include "annotation/AnnotationHostAdapter.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/TextBoxAnnotation.h"
+#include "qml/PinToolOptionsViewModel.h"
+#include "qml/QmlWindowedToolbar.h"
+#include "qml/QmlWindowedSubToolbar.h"
+#include "pinwindow/EmojiPickerPopup.h"
 #include "region/TextAnnotationEditor.h"
 #include "settings/Settings.h"
-#include "toolbar/ToolOptionsPanel.h"
 
 namespace {
 constexpr const char* kTextBoldKey = "annotation/text_bold";
@@ -82,6 +88,33 @@ void queueMenuActionSelection(const QString& actionText, bool* triggered, int re
         menu->close();
     });
 }
+
+QQuickView* findVisibleQuickView(const QRect& expectedGeometry)
+{
+    const auto windows = QGuiApplication::topLevelWindows();
+    for (QWindow* window : windows) {
+        auto* quickView = qobject_cast<QQuickView*>(window);
+        if (quickView && quickView->isVisible() && quickView->geometry() == expectedGeometry) {
+            return quickView;
+        }
+    }
+
+    return nullptr;
+}
+
+QObject* findRootChild(QObject* rootObject, const QString& objectName)
+{
+    return rootObject ? rootObject->findChild<QObject*>(objectName) : nullptr;
+}
+
+QPoint styleButtonCenter(QObject* sectionObject)
+{
+    const int sectionX = qRound(sectionObject->property("x").toDouble());
+    const int buttonWidth = sectionObject->property("buttonWidth").toInt();
+    const int buttonHeight = sectionObject->property("buttonHeight").toInt();
+    const int buttonTop = sectionObject->property("buttonTop").toInt();
+    return QPoint(sectionX + buttonWidth / 2, buttonTop + buttonHeight / 2);
+}
 } // namespace
 
 class TestPinWindowTextToolFormatting : public QObject
@@ -98,6 +131,13 @@ private slots:
     void testFormattingUpdatesInlineEditorDuringEditing();
     void testFormattedFontAppliedToCreatedTextAnnotation();
     void testFormattingControlsSyncFromPersistedSettings();
+    void testReEditingSyncsTextColorToSubToolbar();
+    void testFloatingUiHitTestingCoversToolbarSurfaces();
+    void testCustomToolCursorRestoresAfterArrowOverride();
+    void testAnnotationCursorReappliesToolCursorWhenHoverTargetUnchanged();
+    void testEnterEventRestoresToolCursorAfterToolbarArrowOverride();
+    void testArrowStyleMenuClosesOnOtherSubToolbarClick();
+    void testLineStyleMenuClosesOnOtherSubToolbarClick();
 
 private:
     QHash<QString, QVariant> m_savedTextSettings;
@@ -146,9 +186,7 @@ void TestPinWindowTextToolFormatting::testTextStyleTogglesPropagateToEditor()
     window.toggleToolbar();
 
     AnnotationHostAdapter& host = window;
-    auto* panel = host.toolOptionsPanelForContext();
     auto* editor = host.textAnnotationEditorForContext();
-    QVERIFY(panel != nullptr);
     QVERIFY(editor != nullptr);
 
     QSignalSpy formattingSpy(editor, &TextAnnotationEditor::formattingChanged);
@@ -157,17 +195,14 @@ void TestPinWindowTextToolFormatting::testTextStyleTogglesPropagateToEditor()
     const bool newItalic = !editor->formatting().italic;
     const bool newUnderline = !editor->formatting().underline;
 
-    panel->setBold(newBold);
-    panel->setItalic(newItalic);
-    panel->setUnderline(newUnderline);
+    editor->setBold(newBold);
+    editor->setItalic(newItalic);
+    editor->setUnderline(newUnderline);
 
     const TextFormattingState formatting = editor->formatting();
     QCOMPARE(formatting.bold, newBold);
     QCOMPARE(formatting.italic, newItalic);
     QCOMPARE(formatting.underline, newUnderline);
-    QCOMPARE(panel->isBold(), newBold);
-    QCOMPARE(panel->isItalic(), newItalic);
-    QCOMPARE(panel->isUnderline(), newUnderline);
     QVERIFY(formattingSpy.count() >= 3);
 }
 
@@ -179,9 +214,7 @@ void TestPinWindowTextToolFormatting::testFontDropdownSelectionsPropagateToEdito
     window.toggleToolbar();
 
     AnnotationHostAdapter& host = window;
-    auto* panel = host.toolOptionsPanelForContext();
     auto* editor = host.textAnnotationEditorForContext();
-    QVERIFY(panel != nullptr);
     QVERIFY(editor != nullptr);
 
     bool sizeSelectionTriggered = false;
@@ -190,7 +223,6 @@ void TestPinWindowTextToolFormatting::testFontDropdownSelectionsPropagateToEdito
 
     QVERIFY(sizeSelectionTriggered);
     QCOMPARE(editor->formatting().fontSize, 24);
-    QCOMPARE(panel->fontSize(), 24);
 
     const QString targetFamily = pickAvailableCommonFont();
     bool familySelectionTriggered = false;
@@ -200,7 +232,6 @@ void TestPinWindowTextToolFormatting::testFontDropdownSelectionsPropagateToEdito
 
     QVERIFY(familySelectionTriggered);
     QCOMPARE(editor->formatting().fontFamily, targetFamily);
-    QCOMPARE(panel->fontFamily(), targetFamily);
 }
 
 void TestPinWindowTextToolFormatting::testFormattingUpdatesInlineEditorDuringEditing()
@@ -211,19 +242,17 @@ void TestPinWindowTextToolFormatting::testFormattingUpdatesInlineEditorDuringEdi
     window.toggleToolbar();
 
     AnnotationHostAdapter& host = window;
-    auto* panel = host.toolOptionsPanelForContext();
     auto* editor = host.textAnnotationEditorForContext();
     auto* inlineEditor = host.inlineTextEditorForContext();
-    QVERIFY(panel != nullptr);
     QVERIFY(editor != nullptr);
     QVERIFY(inlineEditor != nullptr);
 
     editor->startEditing(QPoint(80, 80), window.rect(), Qt::yellow);
     QVERIFY(inlineEditor->isEditing());
 
-    panel->setBold(false);
-    panel->setItalic(true);
-    panel->setUnderline(true);
+    editor->setBold(false);
+    editor->setItalic(true);
+    editor->setUnderline(true);
     editor->setFontSize(28);
     editor->setFontFamily(QStringLiteral("Verdana"));
 
@@ -245,16 +274,14 @@ void TestPinWindowTextToolFormatting::testFormattedFontAppliedToCreatedTextAnnot
     window.toggleToolbar();
 
     AnnotationHostAdapter& host = window;
-    auto* panel = host.toolOptionsPanelForContext();
     auto* editor = host.textAnnotationEditorForContext();
     auto* layer = host.annotationLayerForContext();
-    QVERIFY(panel != nullptr);
     QVERIFY(editor != nullptr);
     QVERIFY(layer != nullptr);
 
-    panel->setBold(false);
-    panel->setItalic(true);
-    panel->setUnderline(true);
+    editor->setBold(false);
+    editor->setItalic(true);
+    editor->setUnderline(true);
     editor->setFontSize(26);
     editor->setFontFamily(QStringLiteral("Tahoma"));
 
@@ -292,9 +319,7 @@ void TestPinWindowTextToolFormatting::testFormattingControlsSyncFromPersistedSet
     window.toggleToolbar();
 
     AnnotationHostAdapter& host = window;
-    auto* panel = host.toolOptionsPanelForContext();
     auto* editor = host.textAnnotationEditorForContext();
-    QVERIFY(panel != nullptr);
     QVERIFY(editor != nullptr);
 
     const TextFormattingState formatting = editor->formatting();
@@ -303,12 +328,208 @@ void TestPinWindowTextToolFormatting::testFormattingControlsSyncFromPersistedSet
     QCOMPARE(formatting.underline, true);
     QCOMPARE(formatting.fontSize, 32);
     QCOMPARE(formatting.fontFamily, QStringLiteral("Georgia"));
+}
 
-    QCOMPARE(panel->isBold(), false);
-    QCOMPARE(panel->isItalic(), true);
-    QCOMPARE(panel->isUnderline(), true);
-    QCOMPARE(panel->fontSize(), 32);
-    QCOMPARE(panel->fontFamily(), QStringLiteral("Georgia"));
+void TestPinWindowTextToolFormatting::testReEditingSyncsTextColorToSubToolbar()
+{
+    QPixmap pixmap(320, 240);
+    pixmap.fill(Qt::white);
+    PinWindow window(pixmap, QPoint(0, 0), nullptr, false);
+    window.toggleToolbar();
+
+    AnnotationHostAdapter& host = window;
+    auto* editor = host.textAnnotationEditorForContext();
+    auto* layer = host.annotationLayerForContext();
+    QVERIFY(editor != nullptr);
+    QVERIFY(layer != nullptr);
+    QVERIFY(window.m_subToolbar != nullptr);
+    auto* optionsVM = window.m_subToolbar->viewModel();
+    QVERIFY(optionsVM != nullptr);
+
+    const QColor textColor = QColor(QStringLiteral("#007AFF"));
+    const QColor drawingColor = QColor(QStringLiteral("#FF3B30"));
+
+    editor->startEditing(QPoint(100, 100), window.rect(), textColor);
+    const bool created = editor->finishEditing(QStringLiteral("Re-edit color"),
+                                               QPoint(100, 100),
+                                               textColor);
+    QVERIFY(created);
+    QCOMPARE(layer->itemCount(), qsizetype(1));
+
+    window.onColorSelected(drawingColor);
+    optionsVM->setCurrentColor(drawingColor);
+    QCOMPARE(optionsVM->currentColor(), drawingColor);
+
+    editor->startReEditing(0, drawingColor);
+
+    QCOMPARE(optionsVM->currentColor(), textColor);
+
+    editor->cancelEditing();
+}
+
+void TestPinWindowTextToolFormatting::testFloatingUiHitTestingCoversToolbarSurfaces()
+{
+    QPixmap pixmap(320, 240);
+    pixmap.fill(Qt::white);
+    PinWindow window(pixmap, QPoint(0, 0), nullptr, false);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    window.toggleToolbar();
+    QVERIFY(window.m_toolbar != nullptr);
+    QTRY_VERIFY(window.m_toolbar->isVisible());
+    QVERIFY(window.isGlobalPosOverFloatingUi(window.m_toolbar->geometry().center()));
+
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Pencil));
+    QVERIFY(window.m_subToolbar != nullptr);
+    QTRY_VERIFY(window.m_subToolbar->isVisible());
+    QVERIFY(window.isGlobalPosOverFloatingUi(window.m_subToolbar->geometry().center()));
+
+    window.showEmojiPickerPopup();
+    QVERIFY(window.m_emojiPickerPopup != nullptr);
+    QTRY_VERIFY(window.m_emojiPickerPopup->isVisible());
+    QVERIFY(window.isGlobalPosOverFloatingUi(window.m_emojiPickerPopup->frameGeometry().center()));
+
+    QVERIFY(!window.isGlobalPosOverFloatingUi(window.frameGeometry().center()));
+}
+
+void TestPinWindowTextToolFormatting::testCustomToolCursorRestoresAfterArrowOverride()
+{
+    QPixmap pixmap(320, 240);
+    pixmap.fill(Qt::white);
+    PinWindow window(pixmap, QPoint(0, 0), nullptr, false);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    window.toggleToolbar();
+    QVERIFY(window.m_toolbar != nullptr);
+    QTRY_VERIFY(window.m_toolbar->isVisible());
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Eraser));
+
+    QVERIFY(window.isAnnotationMode());
+    const QCursor expectedCursor = window.cursor();
+    QVERIFY(expectedCursor.shape() != Qt::ArrowCursor);
+    QVERIFY(!expectedCursor.pixmap().isNull());
+
+    const QPoint originalCursorPos = QCursor::pos();
+    QCursor::setPos(window.m_toolbar->geometry().center());
+    window.setCursor(Qt::ArrowCursor);
+    QCOMPARE(window.cursor().shape(), Qt::ArrowCursor);
+
+    window.updateCursorForTool();
+
+    const QCursor restoredCursor = window.cursor();
+    QCOMPARE(restoredCursor.shape(), expectedCursor.shape());
+    QCOMPARE(restoredCursor.hotSpot(), expectedCursor.hotSpot());
+    QCOMPARE(restoredCursor.pixmap().cacheKey(), expectedCursor.pixmap().cacheKey());
+    QCursor::setPos(originalCursorPos);
+}
+
+void TestPinWindowTextToolFormatting::testAnnotationCursorReappliesToolCursorWhenHoverTargetUnchanged()
+{
+    QPixmap pixmap(320, 240);
+    pixmap.fill(Qt::white);
+    PinWindow window(pixmap, QPoint(0, 0), nullptr, false);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    window.toggleToolbar();
+    QVERIFY(window.m_toolbar != nullptr);
+    QTRY_VERIFY(window.m_toolbar->isVisible());
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Pencil));
+
+    const QPoint originalCursorPos = QCursor::pos();
+    QCursor::setPos(window.m_toolbar->geometry().center());
+    window.syncFloatingUiCursor();
+    QCOMPARE(window.cursor().shape(), Qt::ArrowCursor);
+
+    window.updateAnnotationCursor(window.rect().center());
+
+    QCOMPARE(window.cursor().shape(), Qt::CrossCursor);
+    QCursor::setPos(originalCursorPos);
+}
+
+void TestPinWindowTextToolFormatting::testEnterEventRestoresToolCursorAfterToolbarArrowOverride()
+{
+    QPixmap pixmap(320, 240);
+    pixmap.fill(Qt::white);
+    PinWindow window(pixmap, QPoint(0, 0), nullptr, false);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    window.toggleToolbar();
+    QVERIFY(window.m_toolbar != nullptr);
+    QTRY_VERIFY(window.m_toolbar->isVisible());
+
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Pencil));
+    QVERIFY(window.isAnnotationMode());
+
+    const QPoint originalCursorPos = QCursor::pos();
+    QCursor::setPos(window.m_toolbar->geometry().center());
+    window.syncFloatingUiCursor();
+    QCOMPARE(window.cursor().shape(), Qt::ArrowCursor);
+
+    const QPoint localPos = window.rect().center();
+    const QPoint globalPos = window.mapToGlobal(localPos);
+    const QPointF localPosF(localPos);
+    const QPointF globalPosF(globalPos);
+    QEnterEvent enterEvent{localPosF, globalPosF, globalPosF};
+    QCoreApplication::sendEvent(&window, &enterEvent);
+
+    QCOMPARE(window.cursor().shape(), Qt::CrossCursor);
+    QCursor::setPos(originalCursorPos);
+}
+
+void TestPinWindowTextToolFormatting::testArrowStyleMenuClosesOnOtherSubToolbarClick()
+{
+    QPixmap pixmap(320, 240);
+    pixmap.fill(Qt::white);
+    PinWindow window(pixmap, QPoint(0, 0), nullptr, false);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    window.toggleToolbar();
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Arrow));
+
+    QVERIFY(window.m_subToolbar != nullptr);
+    QTRY_VERIFY(window.m_subToolbar->isVisible());
+
+    QQuickView* subToolbarView = findVisibleQuickView(window.m_subToolbar->geometry());
+    QVERIFY(subToolbarView != nullptr);
+    QObject* arrowSection = findRootChild(subToolbarView->rootObject(), QStringLiteral("arrowStyleSection"));
+    QVERIFY(arrowSection != nullptr);
+
+    QTest::mouseClick(subToolbarView, Qt::LeftButton, Qt::NoModifier, styleButtonCenter(arrowSection));
+    QTRY_VERIFY(arrowSection->property("dropdownOpen").toBool());
+
+    QTest::mouseClick(subToolbarView, Qt::LeftButton, Qt::NoModifier, QPoint(10, 10));
+    QTRY_VERIFY(!arrowSection->property("dropdownOpen").toBool());
+}
+
+void TestPinWindowTextToolFormatting::testLineStyleMenuClosesOnOtherSubToolbarClick()
+{
+    QPixmap pixmap(320, 240);
+    pixmap.fill(Qt::white);
+    PinWindow window(pixmap, QPoint(0, 0), nullptr, false);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    window.toggleToolbar();
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Pencil));
+
+    QVERIFY(window.m_subToolbar != nullptr);
+    QTRY_VERIFY(window.m_subToolbar->isVisible());
+
+    QQuickView* subToolbarView = findVisibleQuickView(window.m_subToolbar->geometry());
+    QVERIFY(subToolbarView != nullptr);
+    QObject* lineSection = findRootChild(subToolbarView->rootObject(), QStringLiteral("lineStyleSection"));
+    QVERIFY(lineSection != nullptr);
+
+    QTest::mouseClick(subToolbarView, Qt::LeftButton, Qt::NoModifier, styleButtonCenter(lineSection));
+    QTRY_VERIFY(lineSection->property("dropdownOpen").toBool());
+
+    QTest::mouseClick(subToolbarView, Qt::LeftButton, Qt::NoModifier, QPoint(10, 10));
+    QTRY_VERIFY(!lineSection->property("dropdownOpen").toBool());
 }
 
 QTEST_MAIN(TestPinWindowTextToolFormatting)

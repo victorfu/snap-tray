@@ -9,8 +9,8 @@ namespace SnapTray {
 /**
  * @brief Reusable glass-effect tooltip widget.
  *
- * Replaces the anonymous ToolbarGlassTooltipWidget (WindowedToolbar.cpp) and
- * GlassTooltipWidget (RecordingControlBar.cpp) with a single shared component.
+ * Reusable glass-effect tooltip. Used by QWidget-based toolbars.
+ * QML-based toolbars (QmlWindowedToolbar) use their own QML tooltip views.
  *
  * Usage:
  *   auto* tip = new GlassTooltip(nullptr);

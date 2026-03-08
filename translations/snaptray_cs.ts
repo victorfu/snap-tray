@@ -1566,8 +1566,8 @@ Velikost: %2</translation>
         <translation>Zastavit nahrávání</translation>
     </message>
     <message>
-        <source>Cancel Recording (Esc)</source>
-        <translation>Zrušit nahrávání (Esc)</translation>
+        <source>Cancel Recording</source>
+        <translation>Zrušit nahrávání</translation>
     </message>
 </context>
 <context>

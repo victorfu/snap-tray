@@ -14,6 +14,7 @@
 #include "ToolbarStyle.h"
 
 class QPainter;
+class QWidget;
 class ColorSection;
 class WidthSection;
 class TextSection;
@@ -22,6 +23,8 @@ class LineStyleSection;
 class ShapeSection;
 class SizeSection;
 class AutoBlurSection;
+class EmbeddedSharedStyleControl;
+class PinToolOptionsViewModel;
 
 /**
  * @brief Unified color palette and line width picker component.
@@ -133,7 +136,7 @@ public:
     // Visibility and Positioning
     // =========================================================================
 
-    void setVisible(bool visible) { m_visible = visible; }
+    void setVisible(bool visible);
     bool isVisible() const { return m_visible; }
     void setDrawBackground(bool draw) { m_drawBackground = draw; }
     bool drawBackground() const { return m_drawBackground; }
@@ -141,10 +144,22 @@ public:
     QRect boundingRect() const { return m_widgetRect; }
 
     /**
+     * @brief Render arrow/line style sections via the shared QML dropdown components.
+     *
+     * RegionSelector and ScreenCanvas enable this so they use the same
+     * ArrowStyleSection.qml / LineStyleSection.qml components as PinWindow.
+     * When disabled, ToolOptionsPanel falls back to the legacy QWidget-drawn
+     * section implementations.
+     */
+    void setUseSharedStyleDropdowns(bool enabled);
+    bool useSharedStyleDropdowns() const { return m_useSharedStyleDropdowns; }
+
+    /**
      * @brief Get height needed for any active dropdown.
      * @return Height of the largest open dropdown, or 0 if none open.
      */
     int activeDropdownHeight() const;
+    bool hasOpenSharedStyleMenu() const;
 
     // =========================================================================
     // Rendering
@@ -200,9 +215,22 @@ signals:
     // Dropdown state signal (for window resizing)
     void dropdownStateChanged();
 
+private slots:
+    void onSharedArrowMenuOpened();
+    void onSharedLineMenuOpened();
+    void onSharedArrowMenuClosed();
+    void onSharedLineMenuClosed();
+
 private:
+    bool eventFilter(QObject* watched, QEvent* event) override;
     void updateLayout();
     void connectSectionSignals();
+    QWidget* hostWidget() const;
+    bool shouldDeferSharedStyleSync() const;
+    void queueSharedStyleSync();
+    void ensureSharedStyleDropdowns();
+    void syncSharedStyleDropdowns();
+    void hideSharedStyleDropdowns();
 
     // Section components
     ColorSection* m_colorSection;
@@ -229,10 +257,17 @@ private:
     bool m_visible = false;
     bool m_drawBackground = true;  // Whether to draw glass panel background
     bool m_dropdownExpandsUpward = false;
+    bool m_useSharedStyleDropdowns = false;
     QRect m_widgetRect;
 
     // Toolbar style configuration
     ToolbarStyleConfig m_styleConfig;
+
+    // Shared QML bridge for arrow/line style dropdowns
+    EmbeddedSharedStyleControl* m_arrowStyleQmlControl = nullptr;
+    EmbeddedSharedStyleControl* m_lineStyleQmlControl = nullptr;
+    PinToolOptionsViewModel* m_sharedStyleDropdownViewModel = nullptr;
+    bool m_sharedStyleSyncQueued = false;
 
     // Layout constants
     static constexpr int VERTICAL_PADDING = 4;  // Padding at top and bottom

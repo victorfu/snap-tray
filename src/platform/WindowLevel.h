@@ -36,6 +36,11 @@ void setWindowVisibleOnAllWorkspaces(QWidget *widget, bool enabled);
 // On Windows: No-op (Windows doesn't have this issue)
 void forceNativeCrosshairCursor(QWidget *widget = nullptr);
 
+// Forces the native arrow cursor at the OS level
+// On macOS: Sets NSCursor directly to reclaim floating toolbar cursor ownership
+// On Windows: No-op (Windows doesn't have this issue)
+void forceNativeArrowCursor(QWidget *widget = nullptr);
+
 // Raises window above overlay windows (RegionSelector, ScreenCanvas)
 // On macOS: Sets NSWindow level to kCGScreenSaverWindowLevel + 1
 // On Windows: No-op (Qt::WindowStaysOnTopHint is sufficient)

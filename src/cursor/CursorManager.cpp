@@ -279,6 +279,11 @@ void CursorManager::updateToolCursorForWidget(QWidget* widget)
     }
 }
 
+void CursorManager::reapplyCursorForWidget(QWidget* widget)
+{
+    applyCursorForWidget(widget, true);
+}
+
 void CursorManager::updateCursorFromStateForWidget(QWidget* widget)
 {
     if (!widget || !m_widgetStates.contains(widget)) {
@@ -373,7 +378,7 @@ void CursorManager::updateCursorFromStateForWidget(QWidget* widget)
     // 4. Fall back to tool cursor (already managed separately)
 }
 
-void CursorManager::applyCursorForWidget(QWidget* widget)
+void CursorManager::applyCursorForWidget(QWidget* widget, bool force)
 {
     if (!widget) {
         return;
@@ -381,10 +386,18 @@ void CursorManager::applyCursorForWidget(QWidget* widget)
 
     QCursor newCursor = effectiveCursorForWidget(widget);
     QCursor currentCursor = widget->cursor();
+    const bool cursorChanged =
+        newCursor.shape() != currentCursor.shape() ||
+        newCursor.pixmap().cacheKey() != currentCursor.pixmap().cacheKey();
 
-    // Only apply if changed
-    if (newCursor.shape() != currentCursor.shape() ||
-        newCursor.pixmap().cacheKey() != currentCursor.pixmap().cacheKey()) {
+    // macOS floating UI can change the native cursor without updating Qt's cached
+    // widget cursor. Reapply while the widget owns the pointer so custom drawing
+    // cursors (for example eraser/mosaic) do not get stuck as the default arrow.
+#ifdef Q_OS_MAC
+    if (force || cursorChanged || widget->underMouse()) {
+#else
+    if (force || cursorChanged) {
+#endif
         widget->setCursor(newCursor);
     }
 

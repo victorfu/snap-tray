@@ -106,6 +106,11 @@ void forceNativeCrosshairCursor(QWidget *)
     // Windows doesn't have the Qt-OS cursor sync issue that macOS has
 }
 
+void forceNativeArrowCursor(QWidget *)
+{
+    // Windows doesn't have the Qt-OS cursor sync issue that macOS has
+}
+
 void raiseWindowAboveOverlays(QWidget *)
 {
     // Windows doesn't need special handling when dialogs are properly managed

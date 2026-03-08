@@ -1,4 +1,8 @@
 #include <QtTest/QtTest>
+#include <QGuiApplication>
+#include <QQuickItem>
+#include <QQuickWidget>
+#include <QScreen>
 #include <QSignalSpy>
 #include "toolbar/ToolOptionsPanel.h"
 
@@ -15,6 +19,21 @@ constexpr int kColorItemCount = 1 + kStandardColorCount;  // Custom + standard c
 constexpr int kColorSectionWidth =
     kColorItemCount * kSwatchSize + (kColorItemCount - 1) * kSwatchSpacing + kColorPadding * 2;
 constexpr int kArrowSectionWidth = 52;
+
+class TrackingHostWidget : public QWidget
+{
+public:
+    int mousePressCount = 0;
+    QPoint lastMousePressPos;
+
+protected:
+    void mousePressEvent(QMouseEvent* event) override
+    {
+        ++mousePressCount;
+        lastMousePressPos = event->position().toPoint();
+        QWidget::mousePressEvent(event);
+    }
+};
 }
 
 class TestToolOptionsPanelEvents : public QObject
@@ -47,6 +66,13 @@ private slots:
     void testHandleClickOnArrowStyleButtonOpensDropdown();
     void testHandleClickOnArrowStyleOption();
     void testHandleClickOutsideClosesDropdown();
+    void testSharedModeArrowButtonOpensEmbeddedControl();
+    void testSharedModeEmbeddedControlForwardsHostMousePress();
+    void testSharedModeLineButtonClosesArrow();
+    void testSharedModeOutsideClickClosesMenu();
+    void testSharedModeOptionSelectionUpdatesStateAndCloses();
+    void testSharedModeSetVisibleFalseClosesMenu();
+    void testSharedModeHidingSectionClosesMenu();
 
     // Wheel event tests
     void testHandleWheelScrollUp();
@@ -64,13 +90,22 @@ private slots:
     void testHandleMouseReleaseReturnsFalse();
 
 private:
+    QWidget* m_host = nullptr;
     ToolOptionsPanel* m_widget = nullptr;
 
     void setupWidgetWithAllSections();
+    void setupSharedStyleWidget(bool above = false);
+    bool canRunSharedWidgetTests() const;
+    TrackingHostWidget* trackingHost() const;
     QPoint getColorSwatchCenter(int index);
     QPoint getPreviewCenter();
     QPoint getTextButtonCenter(int buttonIndex);
     QPoint getShapeButtonCenter(int buttonIndex);
+    QQuickWidget* sharedQuickWidget(const QString& objectName) const;
+    QObject* sharedLoadedSection(QQuickWidget* quickWidget) const;
+    QPoint sharedButtonCenter(QQuickWidget* quickWidget) const;
+    QPoint sharedOptionCenter(QQuickWidget* quickWidget, int optionIndex) const;
+    bool sharedMenuOpen(QQuickWidget* quickWidget) const;
 };
 
 void TestToolOptionsPanelEvents::init()
@@ -80,6 +115,13 @@ void TestToolOptionsPanelEvents::init()
 
 void TestToolOptionsPanelEvents::cleanup()
 {
+    if (m_host) {
+        delete m_host;
+        m_host = nullptr;
+        m_widget = nullptr;
+        return;
+    }
+
     delete m_widget;
     m_widget = nullptr;
 }
@@ -92,6 +134,32 @@ void TestToolOptionsPanelEvents::setupWidgetWithAllSections()
     m_widget->setShowShapeSection(true);
     m_widget->setVisible(true);
     m_widget->updatePosition(QRect(100, 100, 200, 40), false, 1920);
+}
+
+void TestToolOptionsPanelEvents::setupSharedStyleWidget(bool above)
+{
+    delete m_widget;
+    m_host = new TrackingHostWidget();
+    m_host->resize(640, 480);
+    m_widget = new ToolOptionsPanel(m_host);
+    m_widget->setUseSharedStyleDropdowns(true);
+    m_widget->setShowArrowStyleSection(true);
+    m_widget->setShowLineStyleSection(true);
+    m_widget->setVisible(true);
+    m_widget->updatePosition(QRect(100, above ? 200 : 100, 200, 40), above, 1920);
+    QCoreApplication::processEvents();
+}
+
+bool TestToolOptionsPanelEvents::canRunSharedWidgetTests() const
+{
+    auto* screen = QGuiApplication::primaryScreen();
+    return screen && screen->geometry().isValid() && !screen->geometry().isEmpty() &&
+           QGuiApplication::screenAt(screen->geometry().center()) != nullptr;
+}
+
+TrackingHostWidget* TestToolOptionsPanelEvents::trackingHost() const
+{
+    return static_cast<TrackingHostWidget*>(m_host);
 }
 
 QPoint TestToolOptionsPanelEvents::getColorSwatchCenter(int index)
@@ -187,6 +255,57 @@ QPoint TestToolOptionsPanelEvents::getShapeButtonCenter(int buttonIndex)
     int y = widgetRect.center().y();
 
     return QPoint(x, y);
+}
+
+QQuickWidget* TestToolOptionsPanelEvents::sharedQuickWidget(const QString& objectName) const
+{
+    return m_host->findChild<QQuickWidget*>(objectName);
+}
+
+QObject* TestToolOptionsPanelEvents::sharedLoadedSection(QQuickWidget* quickWidget) const
+{
+    auto* root = qobject_cast<QQuickItem*>(quickWidget ? quickWidget->rootObject() : nullptr);
+    return root ? qvariant_cast<QObject*>(root->property("loadedSection")) : nullptr;
+}
+
+QPoint TestToolOptionsPanelEvents::sharedButtonCenter(QQuickWidget* quickWidget) const
+{
+    auto* section = sharedLoadedSection(quickWidget);
+    Q_ASSERT(section);
+    const int sectionX = qRound(section->property("x").toDouble());
+    const int buttonWidth = section->property("buttonWidth").toInt();
+    const int buttonHeight = section->property("buttonHeight").toInt();
+    const int buttonTop = section->property("buttonTop").toInt();
+    return QPoint(sectionX + buttonWidth / 2, buttonTop + buttonHeight / 2);
+}
+
+QPoint TestToolOptionsPanelEvents::sharedOptionCenter(QQuickWidget* quickWidget, int optionIndex) const
+{
+    auto* section = sharedLoadedSection(quickWidget);
+    Q_ASSERT(section);
+
+    const int sectionX = qRound(section->property("x").toDouble());
+    const int buttonWidth = section->property("buttonWidth").toInt();
+    const int buttonHeight = section->property("buttonHeight").toInt();
+    const int buttonTop = section->property("buttonTop").toInt();
+    const int dropdownWidth = section->property("dropdownWidth").toInt();
+    const int dropdownGap = section->property("dropdownGap").toInt();
+    const int dropdownPadding = section->property("dropdownPadding").toInt();
+    const int dropdownSpacing = section->property("dropdownSpacing").toInt();
+    const int dropdownOptionHeight = section->property("dropdownOptionHeight").toInt();
+    const bool expandUpward = section->property("expandUpward").toBool();
+    const int dropdownX = sectionX + buttonWidth - dropdownWidth;
+    const int dropdownY = expandUpward ? buttonTop : buttonTop + buttonHeight + dropdownGap;
+    const int optionY = dropdownY + dropdownPadding +
+                        optionIndex * (dropdownOptionHeight + dropdownSpacing) +
+                        dropdownOptionHeight / 2;
+    return QPoint(dropdownX + dropdownWidth / 2, optionY);
+}
+
+bool TestToolOptionsPanelEvents::sharedMenuOpen(QQuickWidget* quickWidget) const
+{
+    auto* root = qobject_cast<QQuickItem*>(quickWidget ? quickWidget->rootObject() : nullptr);
+    return root && root->property("dropdownOpen").toBool();
 }
 
 // ============================================================================
@@ -439,6 +558,149 @@ void TestToolOptionsPanelEvents::testHandleClickOutsideClosesDropdown()
     // The dropdown should now be closed
     // Verify by clicking the arrow button again - it should open the dropdown
     // (If it was still open, clicking would close it)
+}
+
+void TestToolOptionsPanelEvents::testSharedModeArrowButtonOpensEmbeddedControl()
+{
+    if (!canRunSharedWidgetTests())
+        QSKIP("Shared QQuickWidget event tests require an available screen");
+
+    setupSharedStyleWidget(false);
+
+    auto* arrowQuickWidget = sharedQuickWidget(QStringLiteral("sharedArrowStyleQuickWidget"));
+    QVERIFY(arrowQuickWidget != nullptr);
+
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::dropdownStateChanged);
+
+    QTest::mouseClick(arrowQuickWidget, Qt::LeftButton, Qt::NoModifier, sharedButtonCenter(arrowQuickWidget));
+
+    QTRY_VERIFY(sharedMenuOpen(arrowQuickWidget));
+    QVERIFY(m_widget->hasOpenSharedStyleMenu());
+    QVERIFY(spy.count() >= 1);
+}
+
+void TestToolOptionsPanelEvents::testSharedModeEmbeddedControlForwardsHostMousePress()
+{
+    if (!canRunSharedWidgetTests())
+        QSKIP("Shared QQuickWidget event tests require an available screen");
+
+    setupSharedStyleWidget(false);
+
+    auto* host = trackingHost();
+    QVERIFY(host != nullptr);
+
+    auto* arrowQuickWidget = sharedQuickWidget(QStringLiteral("sharedArrowStyleQuickWidget"));
+    QVERIFY(arrowQuickWidget != nullptr);
+
+    const QPoint buttonCenter = sharedButtonCenter(arrowQuickWidget);
+    const QPoint hostButtonCenter = arrowQuickWidget->mapTo(m_host, buttonCenter);
+
+    QCOMPARE(host->mousePressCount, 0);
+    QTest::mouseClick(arrowQuickWidget, Qt::LeftButton, Qt::NoModifier, buttonCenter);
+    QTRY_COMPARE(host->mousePressCount, 1);
+    QCOMPARE(host->lastMousePressPos, hostButtonCenter);
+}
+
+void TestToolOptionsPanelEvents::testSharedModeLineButtonClosesArrow()
+{
+    if (!canRunSharedWidgetTests())
+        QSKIP("Shared QQuickWidget event tests require an available screen");
+
+    setupSharedStyleWidget(false);
+
+    auto* arrowQuickWidget = sharedQuickWidget(QStringLiteral("sharedArrowStyleQuickWidget"));
+    auto* lineQuickWidget = sharedQuickWidget(QStringLiteral("sharedLineStyleQuickWidget"));
+    QVERIFY(arrowQuickWidget != nullptr);
+    QVERIFY(lineQuickWidget != nullptr);
+
+    QTest::mouseClick(arrowQuickWidget, Qt::LeftButton, Qt::NoModifier, sharedButtonCenter(arrowQuickWidget));
+    QTRY_VERIFY(sharedMenuOpen(arrowQuickWidget));
+
+    QTest::mouseClick(lineQuickWidget, Qt::LeftButton, Qt::NoModifier, sharedButtonCenter(lineQuickWidget));
+
+    QTRY_VERIFY(sharedMenuOpen(lineQuickWidget));
+    QTRY_VERIFY(!sharedMenuOpen(arrowQuickWidget));
+}
+
+void TestToolOptionsPanelEvents::testSharedModeOutsideClickClosesMenu()
+{
+    if (!canRunSharedWidgetTests())
+        QSKIP("Shared QQuickWidget event tests require an available screen");
+
+    setupSharedStyleWidget(false);
+
+    auto* arrowQuickWidget = sharedQuickWidget(QStringLiteral("sharedArrowStyleQuickWidget"));
+    QVERIFY(arrowQuickWidget != nullptr);
+
+    QTest::mouseClick(arrowQuickWidget, Qt::LeftButton, Qt::NoModifier, sharedButtonCenter(arrowQuickWidget));
+    QTRY_VERIFY(m_widget->hasOpenSharedStyleMenu());
+
+    QTest::mouseClick(m_host, Qt::LeftButton, Qt::NoModifier, QPoint(20, 20));
+
+    QTRY_VERIFY(!m_widget->hasOpenSharedStyleMenu());
+    QVERIFY(!sharedMenuOpen(arrowQuickWidget));
+}
+
+void TestToolOptionsPanelEvents::testSharedModeOptionSelectionUpdatesStateAndCloses()
+{
+    if (!canRunSharedWidgetTests())
+        QSKIP("Shared QQuickWidget event tests require an available screen");
+
+    setupSharedStyleWidget(false);
+
+    auto* arrowQuickWidget = sharedQuickWidget(QStringLiteral("sharedArrowStyleQuickWidget"));
+    QVERIFY(arrowQuickWidget != nullptr);
+
+    QSignalSpy spy(m_widget, &ToolOptionsPanel::arrowStyleChanged);
+
+    QTest::mouseClick(arrowQuickWidget, Qt::LeftButton, Qt::NoModifier, sharedButtonCenter(arrowQuickWidget));
+    QTRY_VERIFY(sharedMenuOpen(arrowQuickWidget));
+
+    QTest::mouseClick(arrowQuickWidget, Qt::LeftButton, Qt::NoModifier, sharedOptionCenter(arrowQuickWidget, 0));
+
+    QTRY_COMPARE(spy.count(), 1);
+    QCOMPARE(m_widget->arrowStyle(), LineEndStyle::None);
+    QTRY_VERIFY(!m_widget->hasOpenSharedStyleMenu());
+}
+
+void TestToolOptionsPanelEvents::testSharedModeSetVisibleFalseClosesMenu()
+{
+    if (!canRunSharedWidgetTests())
+        QSKIP("Shared QQuickWidget event tests require an available screen");
+
+    setupSharedStyleWidget(false);
+
+    auto* arrowQuickWidget = sharedQuickWidget(QStringLiteral("sharedArrowStyleQuickWidget"));
+    QVERIFY(arrowQuickWidget != nullptr);
+
+    QTest::mouseClick(arrowQuickWidget, Qt::LeftButton, Qt::NoModifier, sharedButtonCenter(arrowQuickWidget));
+    QTRY_VERIFY(m_widget->hasOpenSharedStyleMenu());
+
+    m_widget->setVisible(false);
+    QCoreApplication::processEvents();
+
+    QVERIFY(!m_widget->hasOpenSharedStyleMenu());
+    QVERIFY(!arrowQuickWidget->isVisible());
+}
+
+void TestToolOptionsPanelEvents::testSharedModeHidingSectionClosesMenu()
+{
+    if (!canRunSharedWidgetTests())
+        QSKIP("Shared QQuickWidget event tests require an available screen");
+
+    setupSharedStyleWidget(false);
+
+    auto* arrowQuickWidget = sharedQuickWidget(QStringLiteral("sharedArrowStyleQuickWidget"));
+    QVERIFY(arrowQuickWidget != nullptr);
+
+    QTest::mouseClick(arrowQuickWidget, Qt::LeftButton, Qt::NoModifier, sharedButtonCenter(arrowQuickWidget));
+    QTRY_VERIFY(m_widget->hasOpenSharedStyleMenu());
+
+    m_widget->setShowArrowStyleSection(false);
+    QCoreApplication::processEvents();
+
+    QVERIFY(!m_widget->hasOpenSharedStyleMenu());
+    QVERIFY(!arrowQuickWidget->isVisible());
 }
 
 // ============================================================================

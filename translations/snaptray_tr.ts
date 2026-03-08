@@ -1560,8 +1560,8 @@ Boyut: %2</translation>
         <translation>Kaydı Durdur</translation>
     </message>
     <message>
-        <source>Cancel Recording (Esc)</source>
-        <translation>Kaydı İptal Et (Esc)</translation>
+        <source>Cancel Recording</source>
+        <translation>Kaydı İptal Et</translation>
     </message>
 </context>
 <context>

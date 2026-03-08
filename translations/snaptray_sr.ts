@@ -1566,8 +1566,8 @@ Size: %2</source>
         <translation>Заустави снимање</translation>
     </message>
     <message>
-        <source>Cancel Recording (Esc)</source>
-        <translation>Откажи снимање (Esc)</translation>
+        <source>Cancel Recording</source>
+        <translation>Откажи снимање</translation>
     </message>
 </context>
 <context>

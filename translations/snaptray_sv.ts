@@ -1560,8 +1560,8 @@ Storlek: %2</translation>
         <translation>Stoppa inspelning</translation>
     </message>
     <message>
-        <source>Cancel Recording (Esc)</source>
-        <translation>Avbryt inspelning (Esc)</translation>
+        <source>Cancel Recording</source>
+        <translation>Avbryt inspelning</translation>
     </message>
 </context>
 <context>

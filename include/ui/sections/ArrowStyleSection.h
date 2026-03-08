@@ -57,6 +57,8 @@ public:
      * @brief Get the dropdown bounding rect (for extended hit testing).
      */
     QRect dropdownRect() const { return m_dropdownRect; }
+    QRect buttonRect() const { return m_buttonRect; }
+    bool buttonContains(const QPoint& pos) const { return m_buttonRect.contains(pos); }
 
 signals:
     void arrowStyleChanged(LineEndStyle style);

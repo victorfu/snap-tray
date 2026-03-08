@@ -1566,8 +1566,8 @@ Grootte: %2</translation>
         <translation>Opname stoppen</translation>
     </message>
     <message>
-        <source>Cancel Recording (Esc)</source>
-        <translation>Opname annuleren (Esc)</translation>
+        <source>Cancel Recording</source>
+        <translation>Opname annuleren</translation>
     </message>
 </context>
 <context>

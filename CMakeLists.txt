@@ -630,6 +630,7 @@ add_library(snaptray_ui STATIC
     # Widgets
     src/toolbar/ToolOptionsPanel.cpp
     src/EmojiPicker.cpp
+    src/pinwindow/EmojiPickerPopup.cpp
 
     # Hotkey management system
     src/hotkey/HotkeyManager.cpp
@@ -675,8 +676,8 @@ add_library(snaptray_ui STATIC
     src/pinwindow/PinHistoryStore.cpp
     src/pinwindow/PinHistoryWindow.cpp
     src/pinwindow/PinWindowPlacement.cpp
-    src/toolbar/WindowedToolbar.cpp
-    src/toolbar/WindowedSubToolbar.cpp
+    # WindowedToolbar.cpp and WindowedSubToolbar.cpp removed — replaced by QML
+    # (QmlWindowedToolbar.mm and QmlWindowedSubToolbar.mm in snaptray_qml)
     src/pinwindow/ResizeHandler.cpp
     src/pinwindow/UIIndicators.cpp
     src/pinwindow/ClickThroughExitButton.cpp
@@ -740,6 +741,7 @@ add_library(snaptray_ui STATIC
     include/tools/ToolManager.h
     include/toolbar/ToolOptionsPanel.h
     include/EmojiPicker.h
+    include/pinwindow/EmojiPickerPopup.h
     include/ui/sections/ColorSection.h
     include/ui/sections/WidthSection.h
     include/ui/sections/MosaicBlurTypeSection.h
@@ -770,8 +772,8 @@ add_library(snaptray_ui STATIC
     include/pinwindow/PinHistoryStore.h
     include/pinwindow/PinHistoryWindow.h
     include/pinwindow/PinWindowPlacement.h
-    include/toolbar/WindowedToolbar.h
-    include/toolbar/WindowedSubToolbar.h
+    # WindowedToolbar.h and WindowedSubToolbar.h removed — replaced by QML
+    # (QmlWindowedToolbar.h and QmlWindowedSubToolbar.h in snaptray_qml)
     include/pinwindow/ResizeHandler.h
     include/pinwindow/UIIndicators.h
     include/pinwindow/ClickThroughExitButton.h
@@ -883,6 +885,21 @@ set_source_files_properties(src/qml/components/Badge.qml PROPERTIES QT_RESOURCE_
 set_source_files_properties(src/qml/components/RecordingBoundary.qml PROPERTIES QT_RESOURCE_ALIAS components/RecordingBoundary.qml)
 set_source_files_properties(src/qml/components/Countdown.qml PROPERTIES QT_RESOURCE_ALIAS components/Countdown.qml)
 set_source_files_properties(src/qml/components/RecordingTooltip.qml PROPERTIES QT_RESOURCE_ALIAS components/RecordingTooltip.qml)
+set_source_files_properties(src/qml/components/GlassSurface.qml PROPERTIES QT_RESOURCE_ALIAS components/GlassSurface.qml)
+set_source_files_properties(src/qml/components/ToolbarButton.qml PROPERTIES QT_RESOURCE_ALIAS components/ToolbarButton.qml)
+
+# Floating toolbar
+set_source_files_properties(src/qml/toolbar/FloatingToolbar.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/FloatingToolbar.qml)
+set_source_files_properties(src/qml/toolbar/ToolOptionsStrip.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ToolOptionsStrip.qml)
+set_source_files_properties(src/qml/toolbar/ColorPaletteSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ColorPaletteSection.qml)
+set_source_files_properties(src/qml/toolbar/WidthSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/WidthSection.qml)
+set_source_files_properties(src/qml/toolbar/TextFormattingSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/TextFormattingSection.qml)
+set_source_files_properties(src/qml/toolbar/ShapeSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ShapeSection.qml)
+set_source_files_properties(src/qml/toolbar/ArrowStyleSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ArrowStyleSection.qml)
+set_source_files_properties(src/qml/toolbar/LineStyleSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/LineStyleSection.qml)
+set_source_files_properties(src/qml/toolbar/SharedStyleDropdownHost.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/SharedStyleDropdownHost.qml)
+set_source_files_properties(src/qml/toolbar/SizeSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/SizeSection.qml)
+set_source_files_properties(src/qml/toolbar/AutoBlurSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/AutoBlurSection.qml)
 
 # Settings controls
 set_source_files_properties(src/qml/controls/SettingsSection.qml PROPERTIES QT_RESOURCE_ALIAS controls/SettingsSection.qml)
@@ -933,6 +950,9 @@ qt_add_qml_module(snaptray_qml
         src/qml/components/RecordingBoundary.qml
         src/qml/components/Countdown.qml
         src/qml/components/RecordingTooltip.qml
+        src/qml/components/GlassSurface.qml
+        src/qml/components/ToolbarButton.qml
+        src/qml/components/ToolbarChevron.qml
         src/qml/controls/SettingsSection.qml
         src/qml/controls/SettingsRow.qml
         src/qml/controls/SettingsToggle.qml
@@ -960,7 +980,20 @@ qt_add_qml_module(snaptray_qml
         src/qml/recording/RecordingPreview.qml
         src/qml/recording/RecordingControlBar.qml
         src/qml/recording/RecordingRegionSelector.qml
+        src/qml/toolbar/FloatingToolbar.qml
+        src/qml/toolbar/ToolOptionsStrip.qml
+        src/qml/toolbar/ColorPaletteSection.qml
+        src/qml/toolbar/WidthSection.qml
+        src/qml/toolbar/TextFormattingSection.qml
+        src/qml/toolbar/ShapeSection.qml
+        src/qml/toolbar/ArrowStyleSection.qml
+        src/qml/toolbar/LineStyleSection.qml
+        src/qml/toolbar/SharedStyleDropdownHost.qml
+        src/qml/toolbar/SizeSection.qml
+        src/qml/toolbar/AutoBlurSection.qml
     SOURCES
+        src/ui/DesignSystem.cpp
+        include/ui/DesignSystem.h
         src/qml/AnnotationCanvas.cpp
         include/qml/AnnotationCanvas.h
         src/qml/ThemeManager.cpp
@@ -985,12 +1018,21 @@ qt_add_qml_module(snaptray_qml
         include/qml/SvgIconItem.h
         src/qml/RecordingPreviewBackend.mm
         include/qml/RecordingPreviewBackend.h
+        src/qml/PinToolbarViewModel.cpp
+        include/qml/PinToolbarViewModel.h
+        src/qml/QmlWindowedToolbar.mm
+        include/qml/QmlWindowedToolbar.h
+        src/qml/QmlWindowedSubToolbar.mm
+        include/qml/QmlWindowedSubToolbar.h
+        src/qml/PinToolOptionsViewModel.cpp
+        include/qml/PinToolOptionsViewModel.h
 )
 
 target_include_directories(snaptray_qml
     PUBLIC
         ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_SOURCE_DIR}/include/qml
+        ${CMAKE_SOURCE_DIR}/include/ui
     PRIVATE
         ${CMAKE_SOURCE_DIR}/src
         ${CMAKE_BINARY_DIR}/generated

@@ -8,9 +8,248 @@
 #include "ui/sections/ShapeSection.h"
 #include "ui/sections/SizeSection.h"
 #include "ui/sections/AutoBlurSection.h"
+#include "qml/PinToolOptionsViewModel.h"
+#include "qml/QmlOverlayManager.h"
 
+#include <QCoreApplication>
+#include <QEvent>
+#include <QMouseEvent>
 #include <QPainter>
+#include <QPointer>
+#include <QQuickItem>
+#include <QQuickWidget>
+#include <QQmlContext>
+#include <QWidget>
 #include <QtGlobal>
+
+class EmbeddedSharedStyleControl : public QObject
+{
+public:
+    EmbeddedSharedStyleControl(const QString& kind,
+                               PinToolOptionsViewModel* viewModel,
+                               QWidget* hostWidget,
+                               QObject* parent = nullptr)
+        : QObject(parent)
+        , m_kind(kind)
+        , m_viewModel(viewModel)
+        , m_hostWidget(hostWidget)
+    {
+        ensureWidget();
+    }
+
+    ~EmbeddedSharedStyleControl() override
+    {
+        delete m_container;
+    }
+
+    QQuickItem* rootItem() const
+    {
+        return m_rootItem;
+    }
+
+    QRect geometry() const
+    {
+        return m_container ? m_container->geometry() : QRect();
+    }
+
+    bool contains(const QPoint& pos) const
+    {
+        return m_container && m_container->isVisible() && m_container->geometry().contains(pos);
+    }
+
+    bool isMenuOpen() const
+    {
+        return m_rootItem && m_rootItem->property("dropdownOpen").toBool();
+    }
+
+    void setAnchorRect(const QRect& rect)
+    {
+        m_anchorRect = rect;
+        updateGeometryFromAnchor();
+    }
+
+    void setExpandUpward(bool upward)
+    {
+        m_expandUpward = upward;
+        if (m_rootItem) {
+            m_rootItem->setProperty("expandUpward", upward);
+        }
+        updateGeometryFromAnchor();
+    }
+
+    void setSectionVisible(bool visible)
+    {
+        m_sectionVisible = visible;
+        if (!visible) {
+            closeMenu();
+            hide();
+            return;
+        }
+
+        updateGeometryFromAnchor();
+        show();
+    }
+
+    void closeMenu()
+    {
+        if (m_rootItem) {
+            QMetaObject::invokeMethod(m_rootItem, "closeMenu");
+        }
+    }
+
+    void hide()
+    {
+        if (m_container)
+            m_container->hide();
+    }
+
+private:
+    bool eventFilter(QObject* watched, QEvent* event) override
+    {
+        if (watched == m_quickWidget) {
+            if (event->type() == QEvent::MouseButtonPress) {
+                forwardMousePressToHost(static_cast<QMouseEvent*>(event));
+            } else if (event->type() == QEvent::Resize) {
+                syncSizeFromRoot();
+                updateGeometryFromAnchor();
+            }
+        }
+        return QObject::eventFilter(watched, event);
+    }
+
+    void ensureWidget()
+    {
+        if (m_container || !m_hostWidget)
+            return;
+
+        m_container = new QWidget(m_hostWidget);
+        m_container->setObjectName(
+            m_kind == QStringLiteral("line")
+                ? QStringLiteral("sharedLineStyleControlContainer")
+                : QStringLiteral("sharedArrowStyleControlContainer"));
+        m_container->setAttribute(Qt::WA_TranslucentBackground);
+        m_container->setAttribute(Qt::WA_NoSystemBackground);
+        m_container->setAutoFillBackground(false);
+        m_container->setFocusPolicy(Qt::NoFocus);
+        m_container->hide();
+
+        m_quickWidget = new QQuickWidget(SnapTray::QmlOverlayManager::instance().engine(), m_container);
+        m_quickWidget->setObjectName(
+            m_kind == QStringLiteral("line")
+                ? QStringLiteral("sharedLineStyleQuickWidget")
+                : QStringLiteral("sharedArrowStyleQuickWidget"));
+        m_quickWidget->setAttribute(Qt::WA_TranslucentBackground);
+        m_quickWidget->setAttribute(Qt::WA_AlwaysStackOnTop);
+        m_quickWidget->setClearColor(Qt::transparent);
+        m_quickWidget->setResizeMode(QQuickWidget::SizeViewToRootObject);
+        m_quickWidget->setFocusPolicy(Qt::NoFocus);
+        m_quickWidget->installEventFilter(this);
+        m_quickWidget->rootContext()->setContextProperty(
+            QStringLiteral("sharedStyleDropdownViewModel"), m_viewModel);
+        m_quickWidget->setSource(QUrl(QStringLiteral("qrc:/SnapTrayQml/toolbar/SharedStyleDropdownHost.qml")));
+
+        if (m_quickWidget->status() != QQuickWidget::Ready) {
+            qWarning() << "SharedStyleDropdownHost QML error:" << m_quickWidget->errors();
+            return;
+        }
+
+        m_rootItem = qobject_cast<QQuickItem*>(m_quickWidget->rootObject());
+        if (!m_rootItem)
+            return;
+
+        m_rootItem->setProperty("kind", m_kind);
+        m_rootItem->setProperty("expandUpward", m_expandUpward);
+        m_rootItem->setProperty("viewModel",
+                                QVariant::fromValue(static_cast<QObject*>(m_viewModel)));
+
+        QObject::connect(m_rootItem, &QQuickItem::widthChanged, m_container, [this]() {
+            syncSizeFromRoot();
+            updateGeometryFromAnchor();
+        });
+        QObject::connect(m_rootItem, &QQuickItem::heightChanged, m_container, [this]() {
+            syncSizeFromRoot();
+            updateGeometryFromAnchor();
+        });
+
+        syncSizeFromRoot();
+    }
+
+    void forwardMousePressToHost(QMouseEvent* event)
+    {
+        if (!event || !m_hostWidget || !m_container)
+            return;
+
+        const QPoint hostPos = m_container->mapTo(m_hostWidget, event->position().toPoint());
+        const QPoint globalPos = m_hostWidget->mapToGlobal(hostPos);
+        QMouseEvent forwardedEvent(event->type(),
+                                   QPointF(hostPos),
+                                   QPointF(globalPos),
+                                   event->button(),
+                                   event->buttons(),
+                                   event->modifiers());
+        QCoreApplication::sendEvent(m_hostWidget, &forwardedEvent);
+    }
+
+    void syncSizeFromRoot()
+    {
+        if (!m_container || !m_quickWidget || !m_rootItem)
+            return;
+
+        const QSize size(qMax(qRound(m_rootItem->width()), qRound(m_rootItem->implicitWidth())),
+                         qMax(qRound(m_rootItem->height()), qRound(m_rootItem->implicitHeight())));
+        if (!size.isValid() || size.isEmpty())
+            return;
+
+        if (m_container->size() != size)
+            m_container->setFixedSize(size);
+        if (m_quickWidget->size() != size)
+            m_quickWidget->setFixedSize(size);
+        if (m_quickWidget->pos() != QPoint(0, 0))
+            m_quickWidget->move(0, 0);
+    }
+
+    void updateGeometryFromAnchor()
+    {
+        if (!m_container || !m_quickWidget || !m_rootItem)
+            return;
+        if (!m_sectionVisible || !m_anchorRect.isValid()) {
+            hide();
+            return;
+        }
+
+        syncSizeFromRoot();
+
+        const int offsetX = m_rootItem->property("anchorOffsetX").toInt();
+        const int offsetY = m_rootItem->property("anchorOffsetY").toInt();
+        const QPoint topLeft = m_anchorRect.topLeft() - QPoint(offsetX, offsetY);
+        if (m_container->pos() != topLeft)
+            m_container->move(topLeft);
+
+        if (!m_container->isVisible())
+            m_container->show();
+
+        m_container->raise();
+        m_quickWidget->raise();
+    }
+
+    void show()
+    {
+        if (!m_sectionVisible)
+            return;
+
+        updateGeometryFromAnchor();
+    }
+
+    QString m_kind;
+    PinToolOptionsViewModel* m_viewModel = nullptr;
+    QWidget* m_hostWidget = nullptr;
+    QPointer<QWidget> m_container;
+    QPointer<QQuickWidget> m_quickWidget;
+    QPointer<QQuickItem> m_rootItem;
+    QRect m_anchorRect;
+    bool m_expandUpward = false;
+    bool m_sectionVisible = false;
+};
 
 ToolOptionsPanel::ToolOptionsPanel(QObject* parent)
     : QObject(parent)
@@ -29,6 +268,13 @@ ToolOptionsPanel::ToolOptionsPanel(QObject* parent)
 
 ToolOptionsPanel::~ToolOptionsPanel()
 {
+    if (m_useSharedStyleDropdowns) {
+        if (QWidget* widget = hostWidget())
+            widget->removeEventFilter(this);
+    }
+    hideSharedStyleDropdowns();
+    delete m_arrowStyleQmlControl;
+    delete m_lineStyleQmlControl;
     // Sections are QObject children, automatically deleted
 }
 
@@ -186,11 +432,13 @@ QString ToolOptionsPanel::fontFamily() const
 void ToolOptionsPanel::setShowArrowStyleSection(bool show)
 {
     m_showArrowStyleSection = show;
+    syncSharedStyleDropdowns();
 }
 
 void ToolOptionsPanel::setArrowStyle(LineEndStyle style)
 {
     m_arrowStyleSection->setArrowStyle(style);
+    syncSharedStyleDropdowns();
 }
 
 LineEndStyle ToolOptionsPanel::arrowStyle() const
@@ -205,11 +453,13 @@ LineEndStyle ToolOptionsPanel::arrowStyle() const
 void ToolOptionsPanel::setShowLineStyleSection(bool show)
 {
     m_showLineStyleSection = show;
+    syncSharedStyleDropdowns();
 }
 
 void ToolOptionsPanel::setLineStyle(LineStyle style)
 {
     m_lineStyleSection->setLineStyle(style);
+    syncSharedStyleDropdowns();
 }
 
 LineStyle ToolOptionsPanel::lineStyle() const
@@ -282,6 +532,30 @@ void ToolOptionsPanel::setAutoBlurEnabled(bool enabled)
 void ToolOptionsPanel::setAutoBlurProcessing(bool processing)
 {
     m_autoBlurSection->setProcessing(processing);
+}
+
+void ToolOptionsPanel::setVisible(bool visible)
+{
+    m_visible = visible;
+    syncSharedStyleDropdowns();
+}
+
+void ToolOptionsPanel::setUseSharedStyleDropdowns(bool enabled)
+{
+    if (m_useSharedStyleDropdowns == enabled)
+        return;
+
+    m_useSharedStyleDropdowns = enabled;
+
+    if (QWidget* widget = hostWidget()) {
+        if (enabled) {
+            widget->installEventFilter(this);
+        } else {
+            widget->removeEventFilter(this);
+        }
+    }
+
+    syncSharedStyleDropdowns();
 }
 
 // =============================================================================
@@ -386,6 +660,7 @@ void ToolOptionsPanel::updatePosition(const QRect& anchorRect, bool above, int s
     m_lineStyleSection->setDropdownExpandsUpward(above);
 
     updateLayout();
+    syncSharedStyleDropdowns();
 }
 
 void ToolOptionsPanel::updateLayout()
@@ -464,6 +739,8 @@ void ToolOptionsPanel::updateLayout()
         m_autoBlurSection->updateLayout(containerTop, containerHeight, xOffset);
         xOffset += m_autoBlurSection->preferredWidth();
     }
+
+    syncSharedStyleDropdowns();
 }
 
 // =============================================================================
@@ -490,11 +767,11 @@ void ToolOptionsPanel::draw(QPainter& painter)
         m_widthSection->draw(painter, m_styleConfig);
     }
 
-    if (m_showArrowStyleSection) {
+    if (m_showArrowStyleSection && !m_useSharedStyleDropdowns) {
         m_arrowStyleSection->draw(painter, m_styleConfig);
     }
 
-    if (m_showLineStyleSection) {
+    if (m_showLineStyleSection && !m_useSharedStyleDropdowns) {
         m_lineStyleSection->draw(painter, m_styleConfig);
     }
 
@@ -524,7 +801,18 @@ bool ToolOptionsPanel::contains(const QPoint& pos) const
     if (!m_visible) {
         return false;
     }
-    if (m_widgetRect.contains(pos)) return true;
+
+    if (m_widgetRect.contains(pos))
+        return true;
+
+    if (m_useSharedStyleDropdowns) {
+        if (m_arrowStyleQmlControl && m_arrowStyleQmlControl->contains(pos))
+            return true;
+        if (m_lineStyleQmlControl && m_lineStyleQmlControl->contains(pos))
+            return true;
+        return false;
+    }
+
     // Also include arrow style dropdown area when open
     if (m_showArrowStyleSection && m_arrowStyleSection->isDropdownOpen() &&
         m_arrowStyleSection->dropdownRect().contains(pos)) {
@@ -540,6 +828,50 @@ bool ToolOptionsPanel::contains(const QPoint& pos) const
 
 bool ToolOptionsPanel::handleClick(const QPoint& pos)
 {
+    if (m_useSharedStyleDropdowns) {
+        syncSharedStyleDropdowns();
+
+        if ((m_arrowStyleQmlControl && m_arrowStyleQmlControl->contains(pos)) ||
+            (m_lineStyleQmlControl && m_lineStyleQmlControl->contains(pos))) {
+            return true;
+        }
+
+        if (!m_widgetRect.contains(pos))
+            return false;
+
+        // Text section
+        if (m_showTextSection && m_textSection->contains(pos)) {
+            return m_textSection->handleClick(pos);
+        }
+
+        // Shape section
+        if (m_showShapeSection && m_shapeSection->contains(pos)) {
+            return m_shapeSection->handleClick(pos);
+        }
+
+        // Size section (Step Badge)
+        if (m_showSizeSection && m_sizeSection->contains(pos)) {
+            return m_sizeSection->handleClick(pos);
+        }
+
+        // Auto blur section
+        if (m_showAutoBlurSection && m_autoBlurSection->contains(pos)) {
+            return m_autoBlurSection->handleClick(pos);
+        }
+
+        // Width section: consume click but don't trigger color picker
+        if (m_showWidthSection && !m_widthSectionHidden && m_widthSection->contains(pos)) {
+            return true;
+        }
+
+        // Color section
+        if (m_showColorSection && m_colorSection->contains(pos)) {
+            return m_colorSection->handleClick(pos);
+        }
+
+        return false;
+    }
+
     // Track dropdown state before handling click
     bool wasArrowOpen = m_showArrowStyleSection && m_arrowStyleSection->isDropdownOpen();
     bool wasLineOpen = m_showLineStyleSection && m_lineStyleSection->isDropdownOpen();
@@ -633,11 +965,11 @@ bool ToolOptionsPanel::updateHovered(const QPoint& pos)
         changed |= m_widthSection->updateHovered(pos);
     }
 
-    if (m_showArrowStyleSection) {
+    if (m_showArrowStyleSection && !m_useSharedStyleDropdowns) {
         changed |= m_arrowStyleSection->updateHovered(pos);
     }
 
-    if (m_showLineStyleSection) {
+    if (m_showLineStyleSection && !m_useSharedStyleDropdowns) {
         changed |= m_lineStyleSection->updateHovered(pos);
     }
 
@@ -670,6 +1002,10 @@ bool ToolOptionsPanel::handleWheel(int delta)
 
 int ToolOptionsPanel::activeDropdownHeight() const
 {
+    if (m_useSharedStyleDropdowns) {
+        return 0;
+    }
+
     int dropdownHeight = 0;
 
     if (m_showArrowStyleSection && m_arrowStyleSection->isDropdownOpen()) {
@@ -681,4 +1017,169 @@ int ToolOptionsPanel::activeDropdownHeight() const
     }
 
     return dropdownHeight;
+}
+
+bool ToolOptionsPanel::hasOpenSharedStyleMenu() const
+{
+    if (!m_useSharedStyleDropdowns)
+        return false;
+
+    return (m_arrowStyleQmlControl && m_arrowStyleQmlControl->isMenuOpen()) ||
+           (m_lineStyleQmlControl && m_lineStyleQmlControl->isMenuOpen());
+}
+
+bool ToolOptionsPanel::eventFilter(QObject* watched, QEvent* event)
+{
+    if (!m_useSharedStyleDropdowns || watched != hostWidget() || !m_visible) {
+        return QObject::eventFilter(watched, event);
+    }
+
+    if (event->type() == QEvent::MouseButtonPress) {
+        auto* mouseEvent = static_cast<QMouseEvent*>(event);
+        const QPoint pos = mouseEvent->position().toPoint();
+        const bool insideArrow = m_arrowStyleQmlControl && m_arrowStyleQmlControl->contains(pos);
+        const bool insideLine = m_lineStyleQmlControl && m_lineStyleQmlControl->contains(pos);
+        if (!insideArrow && !insideLine && hasOpenSharedStyleMenu()) {
+            hideSharedStyleDropdowns();
+        }
+    } else if (event->type() == QEvent::Hide) {
+        hideSharedStyleDropdowns();
+    }
+
+    return QObject::eventFilter(watched, event);
+}
+
+QWidget* ToolOptionsPanel::hostWidget() const
+{
+    return qobject_cast<QWidget*>(parent());
+}
+
+bool ToolOptionsPanel::shouldDeferSharedStyleSync() const
+{
+    QWidget* widget = hostWidget();
+    return m_useSharedStyleDropdowns && widget && widget->testAttribute(Qt::WA_WState_InPaintEvent);
+}
+
+void ToolOptionsPanel::queueSharedStyleSync()
+{
+    if (m_sharedStyleSyncQueued)
+        return;
+
+    m_sharedStyleSyncQueued = true;
+    QMetaObject::invokeMethod(this, [this]() {
+        m_sharedStyleSyncQueued = false;
+        syncSharedStyleDropdowns();
+    }, Qt::QueuedConnection);
+}
+
+void ToolOptionsPanel::ensureSharedStyleDropdowns()
+{
+    if (!m_useSharedStyleDropdowns || !hostWidget())
+        return;
+
+    if (!m_sharedStyleDropdownViewModel) {
+        m_sharedStyleDropdownViewModel = new PinToolOptionsViewModel(this);
+        m_sharedStyleDropdownViewModel->setArrowStyle(static_cast<int>(m_arrowStyleSection->arrowStyle()));
+        m_sharedStyleDropdownViewModel->setLineStyle(static_cast<int>(m_lineStyleSection->lineStyle()));
+        connect(m_sharedStyleDropdownViewModel, &PinToolOptionsViewModel::arrowStyleSelected,
+                this, [this](int style) {
+                    m_arrowStyleSection->setArrowStyle(static_cast<LineEndStyle>(style));
+                });
+        connect(m_sharedStyleDropdownViewModel, &PinToolOptionsViewModel::lineStyleSelected,
+                this, [this](int style) {
+                    m_lineStyleSection->setLineStyle(static_cast<LineStyle>(style));
+                });
+    }
+
+    if (!m_arrowStyleQmlControl) {
+        m_arrowStyleQmlControl = new EmbeddedSharedStyleControl(QStringLiteral("arrow"),
+                                                                m_sharedStyleDropdownViewModel,
+                                                                hostWidget(),
+                                                                this);
+        if (QQuickItem* root = m_arrowStyleQmlControl->rootItem()) {
+            connect(root, SIGNAL(menuOpened()), this, SLOT(onSharedArrowMenuOpened()));
+            connect(root, SIGNAL(menuClosed()), this, SLOT(onSharedArrowMenuClosed()));
+        }
+    }
+
+    if (!m_lineStyleQmlControl) {
+        m_lineStyleQmlControl = new EmbeddedSharedStyleControl(QStringLiteral("line"),
+                                                               m_sharedStyleDropdownViewModel,
+                                                               hostWidget(),
+                                                               this);
+        if (QQuickItem* root = m_lineStyleQmlControl->rootItem()) {
+            connect(root, SIGNAL(menuOpened()), this, SLOT(onSharedLineMenuOpened()));
+            connect(root, SIGNAL(menuClosed()), this, SLOT(onSharedLineMenuClosed()));
+        }
+    }
+}
+
+void ToolOptionsPanel::syncSharedStyleDropdowns()
+{
+    if (shouldDeferSharedStyleSync()) {
+        queueSharedStyleSync();
+        return;
+    }
+
+    if (!m_useSharedStyleDropdowns || !m_visible || !hostWidget()) {
+        hideSharedStyleDropdowns();
+        return;
+    }
+
+    ensureSharedStyleDropdowns();
+    if (!m_sharedStyleDropdownViewModel)
+        return;
+
+    m_sharedStyleDropdownViewModel->setArrowStyle(static_cast<int>(m_arrowStyleSection->arrowStyle()));
+    m_sharedStyleDropdownViewModel->setLineStyle(static_cast<int>(m_lineStyleSection->lineStyle()));
+
+    if (m_arrowStyleQmlControl) {
+        m_arrowStyleQmlControl->setExpandUpward(m_dropdownExpandsUpward);
+        m_arrowStyleQmlControl->setAnchorRect(m_arrowStyleSection->buttonRect());
+        m_arrowStyleQmlControl->setSectionVisible(m_showArrowStyleSection);
+    }
+
+    if (m_lineStyleQmlControl) {
+        m_lineStyleQmlControl->setExpandUpward(m_dropdownExpandsUpward);
+        m_lineStyleQmlControl->setAnchorRect(m_lineStyleSection->buttonRect());
+        m_lineStyleQmlControl->setSectionVisible(m_showLineStyleSection);
+    }
+}
+
+void ToolOptionsPanel::hideSharedStyleDropdowns()
+{
+    if (m_arrowStyleQmlControl) {
+        m_arrowStyleQmlControl->closeMenu();
+        if (!m_useSharedStyleDropdowns || !m_visible || !m_showArrowStyleSection)
+            m_arrowStyleQmlControl->hide();
+    }
+    if (m_lineStyleQmlControl) {
+        m_lineStyleQmlControl->closeMenu();
+        if (!m_useSharedStyleDropdowns || !m_visible || !m_showLineStyleSection)
+            m_lineStyleQmlControl->hide();
+    }
+}
+
+void ToolOptionsPanel::onSharedArrowMenuOpened()
+{
+    if (m_lineStyleQmlControl && m_lineStyleQmlControl->isMenuOpen())
+        m_lineStyleQmlControl->closeMenu();
+    emit dropdownStateChanged();
+}
+
+void ToolOptionsPanel::onSharedLineMenuOpened()
+{
+    if (m_arrowStyleQmlControl && m_arrowStyleQmlControl->isMenuOpen())
+        m_arrowStyleQmlControl->closeMenu();
+    emit dropdownStateChanged();
+}
+
+void ToolOptionsPanel::onSharedArrowMenuClosed()
+{
+    emit dropdownStateChanged();
+}
+
+void ToolOptionsPanel::onSharedLineMenuClosed()
+{
+    emit dropdownStateChanged();
 }
