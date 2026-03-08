@@ -413,13 +413,6 @@ bool QmlWindowedToolbar::eventFilter(QObject* obj, QEvent* event)
             return false;
     }
 
-    // Check if click is inside the tooltip
-    if (m_tooltipView && m_tooltipView->isVisible()) {
-        QRect tipRect(m_tooltipView->position(), m_tooltipView->size());
-        if (tipRect.contains(globalPos))
-            return false;
-    }
-
     // Check if click is inside an explicitly associated transient widget
     if (containsGlobalPoint(m_associatedTransientWidget.data(), globalPos))
         return false;

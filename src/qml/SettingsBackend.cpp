@@ -728,6 +728,9 @@ void SettingsBackend::loadOcrLanguages()
             }
 
             const bool loadedChanged = !m_ocrAvailableLanguagesLoaded;
+            // A completed query, even an unsuccessful one, should unblock the
+            // page so the user sees the empty/fallback state instead of an
+            // infinite loading spinner.
             m_ocrAvailableLanguagesLoaded = true;
             m_ocrLoading = false;
             emit ocrLoadingChanged();
@@ -759,7 +762,6 @@ void SettingsBackend::loadRecordingAudioDevices()
             const bool loadedChanged = !m_recordingAudioDevicesLoaded;
             m_recordingAudioDevicesLoaded = true;
             m_recordingAudioDevicesLoading = false;
-            normalizeRecordingAudioSettings();
             emit recordingAudioDevicesLoadingChanged();
             if (loadedChanged)
                 emit recordingAudioDevicesLoadedChanged();
@@ -931,36 +933,12 @@ QVariantList SettingsBackend::audioDevices() const
 void SettingsBackend::normalizeRecordingAudioSettings()
 {
     if (!m_recordingAudioDevice.isEmpty()) {
-        if (m_recordingAudioDevicesLoaded) {
-            if (m_recordingAudioDeviceItems.isEmpty()) {
-                m_recordingAudioDevice.clear();
-                emit recordingAudioDeviceChanged();
-                return;
-            }
-            if (!hasRecordingAudioDevice(m_recordingAudioDevice)) {
-                m_recordingAudioDevice.clear();
-                emit recordingAudioDeviceChanged();
-            }
-            return;
-        }
-
         const auto normalized = normalizeRecordingAudioInputDeviceId(m_recordingAudioDevice);
         if (m_recordingAudioDevice != normalized) {
             m_recordingAudioDevice = normalized;
             emit recordingAudioDeviceChanged();
         }
     }
-}
-
-bool SettingsBackend::hasRecordingAudioDevice(const QString& deviceId) const
-{
-    for (const auto& deviceValue : m_recordingAudioDeviceItems) {
-        const QVariantMap device = deviceValue.toMap();
-        if (device.value(QStringLiteral("value")).toString() == deviceId)
-            return true;
-    }
-
-    return false;
 }
 
 QString SettingsBackend::computeFilenamePreview() const

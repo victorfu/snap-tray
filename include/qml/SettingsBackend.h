@@ -328,7 +328,6 @@ private:
     void loadAllSettings();
     QString computeFilenamePreview() const;
     void normalizeRecordingAudioSettings();
-    bool hasRecordingAudioDevice(const QString& deviceId) const;
     void ensureOcrSettingsLoaded();
     QString ocrDisplayNameForCode(const QString& code) const;
 
