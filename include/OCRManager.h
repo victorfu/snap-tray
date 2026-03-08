@@ -25,6 +25,11 @@ struct OCRLanguageInfo {
     QString englishName; ///< English name (e.g., "English", "Traditional Chinese", "Japanese")
 };
 
+struct OCRLanguageQueryResult {
+    QList<OCRLanguageInfo> languages;
+    bool success = false;
+};
+
 class OCRManager : public QObject
 {
     Q_OBJECT
@@ -38,6 +43,12 @@ public:
      * @return List of available languages with their display names.
      */
     static QList<OCRLanguageInfo> availableLanguages();
+
+    /**
+     * @brief Query available OCR languages and report whether enumeration succeeded.
+     * @return Query result containing languages and a success flag.
+     */
+    static OCRLanguageQueryResult queryAvailableLanguages();
 
     /**
      * @brief Set the recognition languages in priority order.

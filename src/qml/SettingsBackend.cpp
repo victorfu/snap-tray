@@ -711,10 +711,11 @@ void SettingsBackend::loadOcrLanguages()
         return;
 
     if (!m_ocrLanguageWatcher) {
-        m_ocrLanguageWatcher = new QFutureWatcher<QList<OCRLanguageInfo>>(this);
-        connect(m_ocrLanguageWatcher, &QFutureWatcher<QList<OCRLanguageInfo>>::finished,
+        m_ocrLanguageWatcher = new QFutureWatcher<OCRLanguageQueryResult>(this);
+        connect(m_ocrLanguageWatcher, &QFutureWatcher<OCRLanguageQueryResult>::finished,
                 this, [this]() {
-            const auto languages = m_ocrLanguageWatcher->result();
+            const OCRLanguageQueryResult queryResult = m_ocrLanguageWatcher->result();
+            const auto& languages = queryResult.languages;
             m_ocrAvailableLanguageItems.clear();
             m_ocrDisplayNamesByCode.clear();
 
@@ -726,8 +727,9 @@ void SettingsBackend::loadOcrLanguages()
                 m_ocrDisplayNamesByCode.insert(lang.code, lang.nativeName);
             }
 
-            const bool loadedChanged = !m_ocrAvailableLanguagesLoaded;
-            m_ocrAvailableLanguagesLoaded = true;
+            const bool loadedChanged =
+                m_ocrAvailableLanguagesLoaded != queryResult.success;
+            m_ocrAvailableLanguagesLoaded = queryResult.success;
             m_ocrLoading = false;
             emit ocrLoadingChanged();
             if (loadedChanged)
@@ -740,7 +742,7 @@ void SettingsBackend::loadOcrLanguages()
     m_ocrLoading = true;
     emit ocrLoadingChanged();
     m_ocrLanguageWatcher->setFuture(QtConcurrent::run([]() {
-        return OCRManager::availableLanguages();
+        return OCRManager::queryAvailableLanguages();
     }));
 }
 
@@ -758,6 +760,7 @@ void SettingsBackend::loadRecordingAudioDevices()
             const bool loadedChanged = !m_recordingAudioDevicesLoaded;
             m_recordingAudioDevicesLoaded = true;
             m_recordingAudioDevicesLoading = false;
+            normalizeRecordingAudioSettings();
             emit recordingAudioDevicesLoadingChanged();
             if (loadedChanged)
                 emit recordingAudioDevicesLoadedChanged();
@@ -931,6 +934,8 @@ void SettingsBackend::normalizeRecordingAudioSettings()
     if (!m_recordingAudioDevice.isEmpty()) {
         if (m_recordingAudioDevicesLoaded) {
             if (m_recordingAudioDeviceItems.isEmpty()) {
+                m_recordingAudioDevice.clear();
+                emit recordingAudioDeviceChanged();
                 return;
             }
             if (!hasRecordingAudioDevice(m_recordingAudioDevice)) {

@@ -11,6 +11,7 @@ class UpdateChecker;
 template<typename T>
 class QFutureWatcher;
 struct OCRLanguageInfo;
+struct OCRLanguageQueryResult;
 
 namespace SnapTray {
 
@@ -402,7 +403,7 @@ private:
     bool m_ocrAvailableLanguagesLoaded = false;
     QVariantList m_ocrAvailableLanguageItems;
     QHash<QString, QString> m_ocrDisplayNamesByCode;
-    QFutureWatcher<QList<OCRLanguageInfo>>* m_ocrLanguageWatcher = nullptr;
+    QFutureWatcher<OCRLanguageQueryResult>* m_ocrLanguageWatcher = nullptr;
 
     UpdateChecker* m_updateChecker = nullptr;
 };

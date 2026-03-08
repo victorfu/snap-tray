@@ -260,7 +260,7 @@ struct AvailableLanguageQueryResult {
     bool success = false;
 };
 
-AvailableLanguageQueryResult queryAvailableLanguages()
+AvailableLanguageQueryResult performAvailableLanguageQuery()
 {
     AvailableLanguageQueryResult result;
 
@@ -426,7 +426,7 @@ QList<OCRLanguageInfo> OCRManager::availableLanguages()
         }
     }
 
-    const AvailableLanguageQueryResult queryResult = queryAvailableLanguages();
+    const AvailableLanguageQueryResult queryResult = performAvailableLanguageQuery();
 
     QMutexLocker locker(&availableLanguagesCacheMutex());
     if (!availableLanguagesCacheReady() && queryResult.success) {
@@ -434,6 +434,29 @@ QList<OCRLanguageInfo> OCRManager::availableLanguages()
         availableLanguagesCacheReady() = true;
     }
     return availableLanguagesCacheReady() ? availableLanguagesCache() : queryResult.languages;
+}
+
+OCRLanguageQueryResult OCRManager::queryAvailableLanguages()
+{
+    {
+        QMutexLocker locker(&availableLanguagesCacheMutex());
+        if (availableLanguagesCacheReady()) {
+            return OCRLanguageQueryResult{availableLanguagesCache(), true};
+        }
+    }
+
+    const AvailableLanguageQueryResult queryResult = performAvailableLanguageQuery();
+
+    QMutexLocker locker(&availableLanguagesCacheMutex());
+    if (!availableLanguagesCacheReady() && queryResult.success) {
+        availableLanguagesCache() = queryResult.languages;
+        availableLanguagesCacheReady() = true;
+    }
+    if (availableLanguagesCacheReady()) {
+        return OCRLanguageQueryResult{availableLanguagesCache(), true};
+    }
+
+    return OCRLanguageQueryResult{queryResult.languages, queryResult.success};
 }
 
 void OCRManager::setRecognitionLanguages(const QStringList &languageCodes)

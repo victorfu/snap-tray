@@ -25,10 +25,24 @@ Flickable {
         && !root.ocrLoading
         && (root.availableLangs.length > 0 || root.selectedLangs.length > 0)
 
+    function loadLanguagesIfNeeded() {
+        if (root.visible && root.ocrSupported && !root.ocrLoaded && !root.ocrLoading) {
+            settingsBackend.loadOcrLanguages()
+        }
+    }
+
     Component.onCompleted: {
         Qt.callLater(function() {
-            settingsBackend.loadOcrLanguages()
+            root.loadLanguagesIfNeeded()
         })
+    }
+
+    onVisibleChanged: {
+        if (visible) {
+            Qt.callLater(function() {
+                root.loadLanguagesIfNeeded()
+            })
+        }
     }
 
     Column {

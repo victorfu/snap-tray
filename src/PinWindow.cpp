@@ -2898,6 +2898,13 @@ void PinWindow::updateToolbarPosition()
         // Also update sub-toolbar position if visible
         updateSubToolbarPosition();
     }
+
+    if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+        const QRect anchor = (m_toolbar && m_toolbar->isVisible())
+            ? m_toolbar->geometry()
+            : frameGeometry();
+        m_emojiPickerPopup->positionAt(anchor);
+    }
 }
 
 void PinWindow::enterAnnotationMode()
