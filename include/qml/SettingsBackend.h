@@ -7,6 +7,7 @@
 #include <QStringList>
 #include <QVariantList>
 
+class tst_SettingsBackend;
 class UpdateChecker;
 template<typename T>
 class QFutureWatcher;
@@ -318,9 +319,12 @@ signals:
     void ocrLanguagesChanged(const QStringList& languages);
 
 private:
+    friend class ::tst_SettingsBackend;
+
     void loadAllSettings();
     QString computeFilenamePreview() const;
-    void normalizeRecordingAudioSettings();
+    bool normalizeRecordingAudioSettings();
+    bool hasRecordingAudioDevice(const QString& deviceId) const;
     void ensureOcrSettingsLoaded();
     QString ocrDisplayNameForCode(const QString& code) const;
     void persistOcrSettings();

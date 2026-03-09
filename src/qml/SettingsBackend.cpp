@@ -450,9 +450,11 @@ QString SettingsBackend::recordingAudioDevice() const { return m_recordingAudioD
 void SettingsBackend::setRecordingAudioDevice(const QString& v) {
     if (m_recordingAudioDevice != v) {
         m_recordingAudioDevice = v;
-        normalizeRecordingAudioSettings();
+        const bool normalized = normalizeRecordingAudioSettings();
         RecordingSettingsManager::instance().setAudioDevice(m_recordingAudioDevice);
-        emit recordingAudioDeviceChanged();
+        if (!normalized) {
+            emit recordingAudioDeviceChanged();
+        }
     }
 }
 
@@ -787,6 +789,10 @@ void SettingsBackend::loadRecordingAudioDevices()
             const bool loadedChanged = !m_recordingAudioDevicesLoaded;
             m_recordingAudioDevicesLoaded = true;
             m_recordingAudioDevicesLoading = false;
+            const bool deviceChanged = normalizeRecordingAudioSettings();
+            if (deviceChanged) {
+                RecordingSettingsManager::instance().setAudioDevice(m_recordingAudioDevice);
+            }
             emit recordingAudioDevicesLoadingChanged();
             if (loadedChanged)
                 emit recordingAudioDevicesLoadedChanged();
@@ -959,15 +965,42 @@ QVariantList SettingsBackend::audioDevices() const
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-void SettingsBackend::normalizeRecordingAudioSettings()
+bool SettingsBackend::normalizeRecordingAudioSettings()
 {
-    if (!m_recordingAudioDevice.isEmpty()) {
-        const auto normalized = normalizeRecordingAudioInputDeviceId(m_recordingAudioDevice);
-        if (m_recordingAudioDevice != normalized) {
-            m_recordingAudioDevice = normalized;
-            emit recordingAudioDeviceChanged();
+    QString normalized = m_recordingAudioDevice;
+    if (!normalized.isEmpty()) {
+        const QString canonical = normalizeRecordingAudioInputDeviceId(normalized);
+        if (!canonical.isEmpty()) {
+            normalized = canonical;
+        } else if (!m_recordingAudioDevicesLoaded) {
+            normalized.clear();
+        }
+
+        if (m_recordingAudioDevicesLoaded && !normalized.isEmpty()
+            && !hasRecordingAudioDevice(normalized)) {
+            normalized.clear();
         }
     }
+
+    if (m_recordingAudioDevice == normalized) {
+        return false;
+    }
+
+    m_recordingAudioDevice = normalized;
+    emit recordingAudioDeviceChanged();
+    return true;
+}
+
+bool SettingsBackend::hasRecordingAudioDevice(const QString& deviceId) const
+{
+    for (const auto& deviceValue : m_recordingAudioDeviceItems) {
+        const QVariantMap device = deviceValue.toMap();
+        if (device.value(QStringLiteral("value")).toString() == deviceId) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 QString SettingsBackend::computeFilenamePreview() const
