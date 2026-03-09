@@ -250,13 +250,19 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::dragFinished,
         this, [this]() { m_toolbarUserDragged = true; });
 
+    // Detached QML overlays emit Leave before the OS cursor position reliably updates.
+    // Queue restores so Arrow override is cleared using the post-transition pointer location.
+    const auto queueFloatingUiCursorRestore = [this]() {
+        QTimer::singleShot(0, this, &ScreenCanvas::syncFloatingUiCursor);
+    };
+
     // Keep floating QML overlay cursor ownership in sync with the canvas cursor state.
     connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::cursorRestoreRequested,
-        this, &ScreenCanvas::syncFloatingUiCursor);
+        this, queueFloatingUiCursorRestore);
     connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::cursorSyncRequested,
         this, &ScreenCanvas::syncFloatingUiCursor);
     connect(m_qmlSubToolbar.get(), &SnapTray::QmlFloatingSubToolbar::cursorRestoreRequested,
-        this, &ScreenCanvas::syncFloatingUiCursor);
+        this, queueFloatingUiCursorRestore);
     connect(m_qmlSubToolbar.get(), &SnapTray::QmlFloatingSubToolbar::cursorSyncRequested,
         this, &ScreenCanvas::syncFloatingUiCursor);
 

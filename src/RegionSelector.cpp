@@ -384,13 +384,20 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::dragFinished,
         this, [this]() { m_toolbarUserDragged = true; });
 
+    // Leave/Hide from detached QML overlay windows can arrive before the global cursor
+    // position has switched back to the region surface. Queue restore to avoid
+    // sampling a stale overlay position and leaving Arrow override stuck.
+    const auto queueFloatingUiCursorRestore = [this]() {
+        QTimer::singleShot(0, this, &RegionSelector::syncFloatingUiCursor);
+    };
+
     // Keep floating UI and native popup cursor ownership aligned with the region surface.
     connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::cursorRestoreRequested,
-        this, &RegionSelector::syncFloatingUiCursor);
+        this, queueFloatingUiCursorRestore);
     connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::cursorSyncRequested,
         this, &RegionSelector::syncFloatingUiCursor);
     connect(m_qmlSubToolbar.get(), &SnapTray::QmlFloatingSubToolbar::cursorRestoreRequested,
-        this, &RegionSelector::syncFloatingUiCursor);
+        this, queueFloatingUiCursorRestore);
     connect(m_qmlSubToolbar.get(), &SnapTray::QmlFloatingSubToolbar::cursorSyncRequested,
         this, &RegionSelector::syncFloatingUiCursor);
 

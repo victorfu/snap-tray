@@ -4,6 +4,7 @@
 
 #include "PinWindow.h"
 #include "cursor/CursorManager.h"
+#include "qml/QmlWindowedToolbar.h"
 #include "qml/QmlFloatingSubToolbar.h"
 #include "qml/PinToolOptionsViewModel.h"
 #include "tools/ToolManager.h"
@@ -28,6 +29,7 @@ private slots:
     void testArrowStyleChangeUpdatesViewModelAndToolManager();
     void testLineStyleChangeUpdatesViewModelAndToolManager();
     void testDropdownLifecycleRestoresToolCursor();
+    void testQueuedFloatingUiRestoreClearsArrowOverride();
 };
 
 void TestPinWindowStyleSync::initTestCase()
@@ -92,6 +94,32 @@ void TestPinWindowStyleSync::testDropdownLifecycleRestoresToolCursor()
     QCOMPARE(window.cursor().shape(), Qt::ArrowCursor);
 
     window.syncFloatingUiCursor();
+    QTRY_COMPARE(window.cursor().shape(), expectedToolCursorShape);
+}
+
+void TestPinWindowStyleSync::testQueuedFloatingUiRestoreClearsArrowOverride()
+{
+    PinWindow window(createPixmap(), QPoint(0, 0), nullptr, false);
+    window.initializeAnnotationComponents();
+    window.enterAnnotationMode();
+
+    QVERIFY(window.m_toolbar);
+
+    const QPoint center = window.rect().center();
+    QCursor::setPos(window.mapToGlobal(center));
+    QTRY_VERIFY(window.rect().contains(window.mapFromGlobal(QCursor::pos())));
+
+    auto& cursorManager = CursorManager::instance();
+    window.updateCursorForTool();
+
+    const Qt::CursorShape expectedToolCursorShape = window.cursor().shape();
+    QVERIFY(expectedToolCursorShape != Qt::ArrowCursor);
+
+    cursorManager.pushCursorForWidget(&window, CursorContext::Override, Qt::ArrowCursor);
+    cursorManager.reapplyCursorForWidget(&window);
+    QCOMPARE(window.cursor().shape(), Qt::ArrowCursor);
+
+    window.m_toolbar->cursorRestoreRequested();
     QTRY_COMPARE(window.cursor().shape(), expectedToolCursorShape);
 }
 

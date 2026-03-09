@@ -2763,15 +2763,19 @@ void PinWindow::initializeAnnotationComponents()
         this, &PinWindow::saveToFile);
     connect(vm, &PinToolbarViewModel::doneClicked,
         this, &PinWindow::hideToolbar);
+    const auto queueFloatingUiCursorRestore = [this]() {
+        QTimer::singleShot(0, this, &PinWindow::syncFloatingUiCursor);
+    };
+
     connect(m_toolbar.get(), &SnapTray::QmlWindowedToolbar::cursorRestoreRequested,
-        this, &PinWindow::updateCursorForTool);
+        this, queueFloatingUiCursorRestore);
     connect(m_toolbar.get(), &SnapTray::QmlWindowedToolbar::cursorSyncRequested,
         this, &PinWindow::syncFloatingUiCursor);
 
     // Initialize QML sub-toolbar
     m_subToolbar = std::make_unique<SnapTray::QmlFloatingSubToolbar>(static_cast<QObject*>(nullptr));
     connect(m_subToolbar.get(), &SnapTray::QmlFloatingSubToolbar::cursorRestoreRequested,
-        this, &PinWindow::updateCursorForTool);
+        this, queueFloatingUiCursorRestore);
     connect(m_subToolbar.get(), &SnapTray::QmlFloatingSubToolbar::cursorSyncRequested,
         this, &PinWindow::syncFloatingUiCursor);
     auto* optionsVM = m_subToolbar->viewModel();
@@ -3491,7 +3495,9 @@ void PinWindow::showEmojiPickerPopup()
         connect(m_emojiPickerPopup, &EmojiPickerPopup::emojiSelected,
                 this, &PinWindow::onEmojiSelected);
         connect(m_emojiPickerPopup, &EmojiPickerPopup::cursorRestoreRequested,
-                this, &PinWindow::updateCursorForTool);
+                this, [this]() {
+                    QTimer::singleShot(0, this, &PinWindow::syncFloatingUiCursor);
+                });
         connect(m_emojiPickerPopup, &EmojiPickerPopup::cursorSyncRequested,
                 this, &PinWindow::syncFloatingUiCursor);
         if (m_toolbar) {
