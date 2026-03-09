@@ -3,6 +3,7 @@
 #include <QImage>
 #include <QPainter>
 
+#include "annotations/MosaicBlurType.h"
 #include "PinWindow.h"
 
 #include "annotations/AnnotationLayer.h"
@@ -365,7 +366,7 @@ void TestPinWindowCropUndo::testApplyCrop_RefreshesMosaicSourceInsideErasedGroup
         originalRect,
         window.m_sharedSourcePixmap,
         12,
-        MosaicRectAnnotation::BlurType::Pixelate));
+        MosaicBlurType::Pixelate));
 
     window.m_annotationLayer->setSelectedIndex(0);
     QVERIFY(window.m_annotationLayer->removeSelectedItem());
@@ -392,7 +393,7 @@ void TestPinWindowCropUndo::testApplyCrop_RefreshesMosaicSourceInsideErasedGroup
         translatedRect,
         expectedSource,
         12,
-        MosaicRectAnnotation::BlurType::Pixelate);
+        MosaicBlurType::Pixelate);
 
     QImage expected(120, 90, QImage::Format_ARGB32_Premultiplied);
     expected.fill(Qt::transparent);

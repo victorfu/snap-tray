@@ -135,8 +135,8 @@ public:
     void setShapeFillMode(int mode);
     int shapeFillMode() const { return m_context->shapeFillMode; }
 
-    void setMosaicBlurType(MosaicStroke::BlurType type);
-    MosaicStroke::BlurType mosaicBlurType() const { return m_context->mosaicBlurType; }
+    void setMosaicBlurType(MosaicBlurType type);
+    MosaicBlurType mosaicBlurType() const { return m_context->mosaicBlurType; }
 
 signals:
     /**

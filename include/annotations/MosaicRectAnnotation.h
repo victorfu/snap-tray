@@ -1,6 +1,7 @@
 #ifndef MOSAICRECTANNOTATION_H
 #define MOSAICRECTANNOTATION_H
 
+#include "MosaicBlurType.h"
 #include "AnnotationItem.h"
 #include <QRect>
 #include <QPixmap>
@@ -19,10 +20,7 @@ using SharedPixmap = std::shared_ptr<const QPixmap>;
 class MosaicRectAnnotation : public AnnotationItem
 {
 public:
-    enum class BlurType {
-        Pixelate,
-        Gaussian
-    };
+    using BlurType = MosaicBlurType;
 
     MosaicRectAnnotation(const QRect& rect, SharedPixmap sourcePixmap,
                          int blockSize = 12, BlurType blurType = BlurType::Pixelate);

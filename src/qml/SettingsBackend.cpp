@@ -74,6 +74,18 @@ QVariantList queryRecordingAudioDevices()
     }
     return result;
 }
+
+int blurTypeToUiIndex(AutoBlurSettingsManager::BlurType type)
+{
+    return (type == AutoBlurSettingsManager::BlurType::Gaussian) ? 1 : 0;
+}
+
+AutoBlurSettingsManager::BlurType blurTypeFromUiIndex(int index)
+{
+    return (index == 1)
+        ? AutoBlurSettingsManager::BlurType::Gaussian
+        : AutoBlurSettingsManager::BlurType::Pixelate;
+}
 }
 
 namespace SnapTray {
@@ -111,7 +123,7 @@ void SettingsBackend::loadAllSettings()
 
     auto blurOpts = AutoBlurSettingsManager::instance().load();
     m_blurIntensity = blurOpts.blurIntensity;
-    m_blurType = static_cast<int>(blurOpts.blurType);
+    m_blurType = blurTypeToUiIndex(blurOpts.blurType);
 
     auto& pinMgr = PinWindowSettingsManager::instance();
     m_pinDefaultOpacity = qRound(pinMgr.loadDefaultOpacity() * 100.0);
@@ -265,10 +277,10 @@ void SettingsBackend::setBlurIntensity(int v) {
 
 int SettingsBackend::blurType() const { return m_blurType; }
 void SettingsBackend::setBlurType(int v) {
+    v = qBound(0, v, 1);
     if (m_blurType != v) {
         m_blurType = v;
-        AutoBlurSettingsManager::instance().saveBlurType(
-            static_cast<AutoBlurSettingsManager::BlurType>(v));
+        AutoBlurSettingsManager::instance().saveBlurType(blurTypeFromUiIndex(v));
         emit blurTypeChanged();
     }
 }

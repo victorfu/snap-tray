@@ -2,10 +2,10 @@
 #define ANNOTATIONSETTINGSMANAGER_H
 
 #include <QColor>
+#include "annotations/MosaicBlurType.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/LineStyle.h"
 #include "annotations/StepBadgeAnnotation.h"
-#include "ui/sections/MosaicBlurTypeSection.h"
 
 /**
  * @brief Singleton class for managing annotation settings.
@@ -51,8 +51,8 @@ public:
     void saveAspectRatio(int width, int height);
 
     // Mosaic blur type settings
-    MosaicBlurTypeSection::BlurType loadMosaicBlurType() const;
-    void saveMosaicBlurType(MosaicBlurTypeSection::BlurType type);
+    MosaicBlurType loadMosaicBlurType() const;
+    void saveMosaicBlurType(MosaicBlurType type);
 
     // Default values
     static constexpr int kDefaultWidth = 3;
@@ -65,7 +65,7 @@ public:
     static constexpr bool kDefaultAspectRatioLocked = false;
     static constexpr int kDefaultAspectRatioWidth = 1;
     static constexpr int kDefaultAspectRatioHeight = 1;
-    static constexpr MosaicBlurTypeSection::BlurType kDefaultMosaicBlurType = MosaicBlurTypeSection::BlurType::Pixelate;
+    static constexpr MosaicBlurType kDefaultMosaicBlurType = MosaicBlurType::Pixelate;
 
 private:
     AnnotationSettingsManager() = default;

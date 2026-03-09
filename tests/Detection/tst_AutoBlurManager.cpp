@@ -1,4 +1,5 @@
 #include <QtTest>
+#include "annotations/MosaicBlurType.h"
 #include "detection/AutoBlurManager.h"
 #include "settings/AutoBlurSettingsManager.h"
 #include "settings/Settings.h"
@@ -129,7 +130,7 @@ void tst_AutoBlurManager::testDefaultOptions()
     QVERIFY(opts.enabled);
     QVERIFY(opts.detectFaces);
     QCOMPARE(opts.blurIntensity, 50);
-    QCOMPARE(opts.blurType, AutoBlurManager::BlurType::Pixelate);
+    QCOMPARE(opts.blurType, MosaicBlurType::Pixelate);
 }
 
 void tst_AutoBlurManager::testSetOptions()
@@ -138,7 +139,7 @@ void tst_AutoBlurManager::testSetOptions()
     newOpts.enabled = false;
     newOpts.detectFaces = true;
     newOpts.blurIntensity = 75;
-    newOpts.blurType = AutoBlurManager::BlurType::Gaussian;
+    newOpts.blurType = MosaicBlurType::Gaussian;
 
     m_manager->setOptions(newOpts);
 
@@ -146,7 +147,7 @@ void tst_AutoBlurManager::testSetOptions()
     QVERIFY(!retrieved.enabled);
     QVERIFY(retrieved.detectFaces);
     QCOMPARE(retrieved.blurIntensity, 75);
-    QCOMPARE(retrieved.blurType, AutoBlurManager::BlurType::Gaussian);
+    QCOMPARE(retrieved.blurType, MosaicBlurType::Gaussian);
 }
 
 void tst_AutoBlurManager::testOptionsBlurIntensityClamp()
@@ -190,7 +191,7 @@ void tst_AutoBlurManager::testSaveAndLoadSettings()
     opts.enabled = true;
     opts.detectFaces = false;
     opts.blurIntensity = 80;
-    opts.blurType = AutoBlurSettingsManager::BlurType::Gaussian;
+    opts.blurType = MosaicBlurType::Gaussian;
 
     AutoBlurSettingsManager::instance().save(opts);
 
@@ -199,7 +200,7 @@ void tst_AutoBlurManager::testSaveAndLoadSettings()
     QVERIFY(loaded.enabled);
     QVERIFY(!loaded.detectFaces);
     QCOMPARE(loaded.blurIntensity, 80);
-    QCOMPARE(loaded.blurType, AutoBlurSettingsManager::BlurType::Gaussian);
+    QCOMPARE(loaded.blurType, MosaicBlurType::Gaussian);
 }
 
 void tst_AutoBlurManager::testSettingsDefaults()
@@ -211,7 +212,7 @@ void tst_AutoBlurManager::testSettingsDefaults()
     QVERIFY(opts.enabled);
     QVERIFY(opts.detectFaces);
     QCOMPARE(opts.blurIntensity, 50);
-    QCOMPARE(opts.blurType, AutoBlurSettingsManager::BlurType::Pixelate);
+    QCOMPARE(opts.blurType, MosaicBlurType::Pixelate);
 }
 
 void tst_AutoBlurManager::testDetect_EmptyImage()
@@ -294,7 +295,7 @@ void tst_AutoBlurManager::testApplyBlur_EmptyRegions()
     QImage originalCopy = testImage.copy();
 
     QVector<QRect> emptyRegions;
-    m_manager->applyBlur(testImage, emptyRegions, 50, AutoBlurManager::BlurType::Pixelate);
+    m_manager->applyBlur(testImage, emptyRegions, 50, MosaicBlurType::Pixelate);
 
     // Image should be unchanged
     QCOMPARE(testImage, originalCopy);
@@ -310,7 +311,7 @@ void tst_AutoBlurManager::testApplyBlur_GaussianBlur()
     QVector<QRect> regions;
     regions.append(QRect(50, 50, 100, 100));
 
-    m_manager->applyBlur(testImage, regions, 50, AutoBlurManager::BlurType::Gaussian);
+    m_manager->applyBlur(testImage, regions, 50, MosaicBlurType::Gaussian);
 
     // Image should be modified
     QVERIFY(testImage != originalCopy);
@@ -326,7 +327,7 @@ void tst_AutoBlurManager::testApplyBlur_PixelateBlur()
     QVector<QRect> regions;
     regions.append(QRect(50, 50, 100, 100));
 
-    m_manager->applyBlur(testImage, regions, 50, AutoBlurManager::BlurType::Pixelate);
+    m_manager->applyBlur(testImage, regions, 50, MosaicBlurType::Pixelate);
 
     // Image should be modified
     QVERIFY(testImage != originalCopy);
@@ -342,7 +343,7 @@ void tst_AutoBlurManager::testApplyBlur_SingleRegion()
     regions.append(QRect(50, 50, 50, 50));
 
     // Should not crash
-    m_manager->applyBlur(testImage, regions, 50, AutoBlurManager::BlurType::Pixelate);
+    m_manager->applyBlur(testImage, regions, 50, MosaicBlurType::Pixelate);
 
     QVERIFY(!testImage.isNull());
 }
@@ -359,7 +360,7 @@ void tst_AutoBlurManager::testApplyBlur_MultipleRegions()
     regions.append(QRect(250, 50, 100, 100));
 
     // Should not crash
-    m_manager->applyBlur(testImage, regions, 50, AutoBlurManager::BlurType::Pixelate);
+    m_manager->applyBlur(testImage, regions, 50, MosaicBlurType::Pixelate);
 
     QVERIFY(!testImage.isNull());
 }

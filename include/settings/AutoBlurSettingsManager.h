@@ -1,6 +1,8 @@
 #ifndef AUTOBLURSETTINGSMANAGER_H
 #define AUTOBLURSETTINGSMANAGER_H
 
+#include "annotations/MosaicBlurType.h"
+
 /**
  * @brief Singleton class for managing auto-blur detection settings.
  *
@@ -10,13 +12,7 @@
 class AutoBlurSettingsManager
 {
 public:
-    /**
-     * @brief Blur effect type.
-     */
-    enum class BlurType {
-        Gaussian,
-        Pixelate
-    };
+    using BlurType = MosaicBlurType;
 
     /**
      * @brief Detection options.

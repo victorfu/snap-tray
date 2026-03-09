@@ -1,4 +1,5 @@
 #include "PinWindow.h"
+#include "ui/DesignSystem.h"
 #include "annotation/AnnotationContext.h"
 #include "PinWindowManager.h"
 #include "OCRManager.h"
@@ -1882,7 +1883,11 @@ void PinWindow::paintEvent(QPaintEvent*)
         // Define colors inline (previously in Constants.h but only used here)
         static const QColor kBorderIndigo{88, 86, 214, 200};
         static const QColor kBorderGreen{52, 199, 89, 200};
-        static const QColor kBorderBlue{0, 122, 255, 200};
+        static const QColor kBorderAccent = [] {
+            QColor c = DesignSystem::instance().accentDefault();
+            c.setAlpha(200);
+            return c;
+        }();
         
         if (m_clickThrough) {
             // Dashed indigo border for click-through mode
@@ -1893,8 +1898,8 @@ void PinWindow::paintEvent(QPaintEvent*)
             painter.setPen(QPen(kBorderGreen, 2));
         }
         else {
-            // Blue border
-            painter.setPen(QPen(kBorderBlue, 1.5));
+            // Accent border
+            painter.setPen(QPen(kBorderAccent, 1.5));
         }
         painter.setBrush(Qt::NoBrush);
         if (cornerRadius > 0) {
@@ -3870,9 +3875,7 @@ void PinWindow::onAutoBlurRequested()
 
             const auto opts = safeThis->m_autoBlurManager->options();
             const int blockSize = AutoBlurManager::intensityToBlockSize(opts.blurIntensity);
-            const auto blurType = (opts.blurType == AutoBlurSettingsManager::BlurType::Gaussian)
-                ? MosaicRectAnnotation::BlurType::Gaussian
-                : MosaicRectAnnotation::BlurType::Pixelate;
+            const auto blurType = opts.blurType;
             const QRect logicalBounds(QPoint(0, 0), logicalSizeFromPixmap(detectionPixmap));
             auto sharedDisplayPixmap = std::make_shared<const QPixmap>(detectionPixmap);
 

@@ -34,7 +34,6 @@
 #include "region/RegionControlWidget.h"
 #include "region/MultiRegionManager.h"
 #include "region/RegionInputState.h"
-#include "ui/sections/MosaicBlurTypeSection.h"
 
 class QScreen;
 class EmojiPicker;
@@ -273,7 +272,6 @@ private:
     AnnotationLayer *m_annotationLayer; // Qt parent owns lifetime
     ToolManager *m_toolManager;
     StepBadgeSize m_stepBadgeSize = StepBadgeSize::Medium;
-    MosaicBlurTypeSection::BlurType m_mosaicBlurType = MosaicBlurTypeSection::BlurType::Pixelate;
 
     // Mosaic cursor cache (avoid recreating on every mouse move)
     QCursor m_mosaicCursorCache;

@@ -2,6 +2,7 @@
 
 namespace SnapTray {
 namespace DialogTheme {
+
 QString baseStylesheet(const Palette& palette)
 {
     return QStringLiteral(R"(

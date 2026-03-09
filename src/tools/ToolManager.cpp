@@ -332,6 +332,6 @@ void ToolManager::setShapeFillMode(int mode) {
     m_context->shapeFillMode = mode;
 }
 
-void ToolManager::setMosaicBlurType(MosaicStroke::BlurType type) {
+void ToolManager::setMosaicBlurType(MosaicBlurType type) {
     m_context->mosaicBlurType = type;
 }

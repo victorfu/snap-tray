@@ -1,6 +1,7 @@
 #ifndef MOSAICSTROKE_H
 #define MOSAICSTROKE_H
 
+#include "MosaicBlurType.h"
 #include "AnnotationItem.h"
 #include <QVector>
 #include <QPoint>
@@ -17,10 +18,7 @@ using SharedPixmap = std::shared_ptr<const QPixmap>;
 class MosaicStroke : public AnnotationItem
 {
 public:
-    enum class BlurType {
-        Pixelate,
-        Gaussian
-    };
+    using BlurType = MosaicBlurType;
 
     MosaicStroke(const QVector<QPoint> &points, SharedPixmap sourcePixmap,
                  int width = 24, int blockSize = 12, BlurType blurType = BlurType::Pixelate);

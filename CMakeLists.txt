@@ -634,9 +634,6 @@ add_library(snaptray_ui STATIC
     include/widgets/TypeHotkeyDialog.h
     include/widgets/HotkeySettingsTab.h
 
-    # UI sections
-    src/ui/sections/MosaicBlurTypeSection.cpp
-
     # Region selection
     src/RegionSelector.cpp
     src/region/SelectionStateManager.cpp
@@ -724,7 +721,6 @@ add_library(snaptray_ui STATIC
     include/tools/ToolManager.h
     include/EmojiPicker.h
     include/pinwindow/EmojiPickerPopup.h
-    include/ui/sections/MosaicBlurTypeSection.h
     include/RegionSelector.h
     include/region/SelectionStateManager.h
     include/region/MagnifierPanel.h
@@ -988,6 +984,8 @@ qt_add_qml_module(snaptray_qml
         include/qml/SvgIconItem.h
         src/qml/RecordingPreviewBackend.mm
         include/qml/RecordingPreviewBackend.h
+        src/qml/ToolbarViewModelBase.cpp
+        include/qml/ToolbarViewModelBase.h
         src/qml/PinToolbarViewModel.cpp
         include/qml/PinToolbarViewModel.h
         src/qml/QmlWindowedToolbar.mm

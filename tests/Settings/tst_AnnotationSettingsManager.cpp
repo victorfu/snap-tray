@@ -461,30 +461,30 @@ void tst_AnnotationSettingsManager::testLoadMosaicBlurType_DefaultValue()
 {
     auto type = AnnotationSettingsManager::instance().loadMosaicBlurType();
     QCOMPARE(type, AnnotationSettingsManager::kDefaultMosaicBlurType);
-    QCOMPARE(type, MosaicBlurTypeSection::BlurType::Pixelate);
+    QCOMPARE(type, MosaicBlurType::Pixelate);
 }
 
 void tst_AnnotationSettingsManager::testSaveLoadMosaicBlurType_Roundtrip()
 {
     AnnotationSettingsManager& manager = AnnotationSettingsManager::instance();
 
-    manager.saveMosaicBlurType(MosaicBlurTypeSection::BlurType::Gaussian);
-    QCOMPARE(manager.loadMosaicBlurType(), MosaicBlurTypeSection::BlurType::Gaussian);
+    manager.saveMosaicBlurType(MosaicBlurType::Gaussian);
+    QCOMPARE(manager.loadMosaicBlurType(), MosaicBlurType::Gaussian);
 
-    manager.saveMosaicBlurType(MosaicBlurTypeSection::BlurType::Pixelate);
-    QCOMPARE(manager.loadMosaicBlurType(), MosaicBlurTypeSection::BlurType::Pixelate);
+    manager.saveMosaicBlurType(MosaicBlurType::Pixelate);
+    QCOMPARE(manager.loadMosaicBlurType(), MosaicBlurType::Pixelate);
 }
 
 void tst_AnnotationSettingsManager::testSaveLoadMosaicBlurType_AllValues()
 {
     AnnotationSettingsManager& manager = AnnotationSettingsManager::instance();
 
-    manager.saveMosaicBlurType(MosaicBlurTypeSection::BlurType::Pixelate);
-    QCOMPARE(manager.loadMosaicBlurType(), MosaicBlurTypeSection::BlurType::Pixelate);
+    manager.saveMosaicBlurType(MosaicBlurType::Pixelate);
+    QCOMPARE(manager.loadMosaicBlurType(), MosaicBlurType::Pixelate);
     QCOMPARE(static_cast<int>(manager.loadMosaicBlurType()), 0);
 
-    manager.saveMosaicBlurType(MosaicBlurTypeSection::BlurType::Gaussian);
-    QCOMPARE(manager.loadMosaicBlurType(), MosaicBlurTypeSection::BlurType::Gaussian);
+    manager.saveMosaicBlurType(MosaicBlurType::Gaussian);
+    QCOMPARE(manager.loadMosaicBlurType(), MosaicBlurType::Gaussian);
     QCOMPARE(static_cast<int>(manager.loadMosaicBlurType()), 1);
 }
 

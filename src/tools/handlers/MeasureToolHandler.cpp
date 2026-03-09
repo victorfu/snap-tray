@@ -1,5 +1,6 @@
 #include "tools/handlers/MeasureToolHandler.h"
 #include "tools/ToolContext.h"
+#include "ui/DesignSystem.h"
 
 #include <QPainter>
 #include <QPen>
@@ -80,8 +81,9 @@ void MeasureToolHandler::drawMeasurementOverlay(QPainter& painter,
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing);
 
-    const QColor measureColor(0, 122, 255);
-    const QColor guideColor(0, 122, 255, 100);
+    const QColor measureColor = DesignSystem::instance().accentDefault();
+    QColor guideColor = measureColor;
+    guideColor.setAlpha(100);
 
     // Measurement line
     painter.setPen(QPen(measureColor, 2, Qt::SolidLine));

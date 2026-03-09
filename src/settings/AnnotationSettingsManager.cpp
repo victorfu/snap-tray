@@ -144,18 +144,18 @@ void AnnotationSettingsManager::saveAspectRatio(int width, int height)
     }
 }
 
-MosaicBlurTypeSection::BlurType AnnotationSettingsManager::loadMosaicBlurType() const
+MosaicBlurType AnnotationSettingsManager::loadMosaicBlurType() const
 {
     auto settings = SnapTray::getSettings();
     int value = settings.value(kSettingsKeyMosaicBlurType,
                                static_cast<int>(kDefaultMosaicBlurType)).toInt();
     if (value >= 0 && value <= 1) {
-        return static_cast<MosaicBlurTypeSection::BlurType>(value);
+        return static_cast<MosaicBlurType>(value);
     }
     return kDefaultMosaicBlurType;
 }
 
-void AnnotationSettingsManager::saveMosaicBlurType(MosaicBlurTypeSection::BlurType type)
+void AnnotationSettingsManager::saveMosaicBlurType(MosaicBlurType type)
 {
     auto settings = SnapTray::getSettings();
     settings.setValue(kSettingsKeyMosaicBlurType, static_cast<int>(type));

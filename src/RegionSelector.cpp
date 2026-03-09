@@ -205,7 +205,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_inputState.arrowStyle = settings.loadArrowStyle();
     m_inputState.lineStyle = settings.loadLineStyle();
     m_stepBadgeSize = settings.loadStepBadgeSize();
-    m_mosaicBlurType = settings.loadMosaicBlurType();
+    const MosaicBlurType mosaicBlurType = settings.loadMosaicBlurType();
 
     // Initialize tool manager
     m_toolManager = new ToolManager(this);
@@ -215,7 +215,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_toolManager->setWidth(m_inputState.annotationWidth);
     m_toolManager->setArrowStyle(m_inputState.arrowStyle);
     m_toolManager->setLineStyle(m_inputState.lineStyle);
-    m_toolManager->setMosaicBlurType(static_cast<MosaicStroke::BlurType>(m_mosaicBlurType));
+    m_toolManager->setMosaicBlurType(mosaicBlurType);
     connect(m_toolManager, &ToolManager::needsRepaint, this, QOverload<>::of(&QWidget::update));
 
     // Initialize cursor manager for centralized cursor handling
@@ -2886,9 +2886,7 @@ void RegionSelector::performAutoBlur()
 
             const auto options = safeThis->m_autoBlurManager->options();
             const int blockSize = AutoBlurManager::intensityToBlockSize(options.blurIntensity);
-            const auto blurType = (options.blurType == AutoBlurSettingsManager::BlurType::Gaussian)
-                ? MosaicRectAnnotation::BlurType::Gaussian
-                : MosaicRectAnnotation::BlurType::Pixelate;
+            const auto blurType = options.blurType;
 
             auto addMosaicRegions = [&](const QVector<QRect>& regions) {
                 for (const QRect& region : regions) {

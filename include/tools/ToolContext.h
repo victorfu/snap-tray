@@ -45,7 +45,7 @@ public:
     int shapeFillMode = 0;  // 0 = Outline, 1 = Filled
 
     // Mosaic tool settings
-    MosaicStroke::BlurType mosaicBlurType = MosaicStroke::BlurType::Pixelate;
+    MosaicBlurType mosaicBlurType = MosaicBlurType::Pixelate;
 
     // Source pixmap (for mosaic tool) - shared to avoid memory duplication
     SharedPixmap sourcePixmap;

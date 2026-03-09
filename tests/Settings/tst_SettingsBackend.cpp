@@ -16,25 +16,27 @@ private slots:
     void cleanup();
 
     void testNormalizeRecordingAudioSettings_ClearsStaleLoadedDevice();
+    void testBlurTypeMapping_RoundTripMatchesUiIndices();
 
 private:
-    void clearRecordingSettings();
+    void clearTestSettings();
 };
 
 void tst_SettingsBackend::init()
 {
-    clearRecordingSettings();
+    clearTestSettings();
 }
 
 void tst_SettingsBackend::cleanup()
 {
-    clearRecordingSettings();
+    clearTestSettings();
 }
 
-void tst_SettingsBackend::clearRecordingSettings()
+void tst_SettingsBackend::clearTestSettings()
 {
     auto settings = SnapTray::getSettings();
     settings.remove("recording/audioDevice");
+    settings.remove("detection/blurType");
     settings.sync();
 }
 
@@ -58,6 +60,28 @@ void tst_SettingsBackend::testNormalizeRecordingAudioSettings_ClearsStaleLoadedD
     QVERIFY(backend.normalizeRecordingAudioSettings());
     QCOMPARE(backend.recordingAudioDevice(), QString());
     QCOMPARE(deviceChangedSpy.count(), 1);
+}
+
+void tst_SettingsBackend::testBlurTypeMapping_RoundTripMatchesUiIndices()
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue("detection/blurType", QStringLiteral("gaussian"));
+    settings.sync();
+
+    SettingsBackend backend;
+    QCOMPARE(backend.blurType(), 1);
+
+    backend.setBlurType(0);
+    QCOMPARE(settings.value("detection/blurType").toString(), QStringLiteral("pixelate"));
+
+    settings.setValue("detection/blurType", QStringLiteral("pixelate"));
+    settings.sync();
+
+    SettingsBackend reloadedBackend;
+    QCOMPARE(reloadedBackend.blurType(), 0);
+
+    reloadedBackend.setBlurType(1);
+    QCOMPARE(settings.value("detection/blurType").toString(), QStringLiteral("gaussian"));
 }
 
 QTEST_MAIN(tst_SettingsBackend)
