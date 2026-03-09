@@ -2984,12 +2984,12 @@ Il est peut-être utilisé par une autre application.</translation>
     <message>
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="48" />
         <source>Auto-check updates</source>
-        <translation>Vérifier les mises à jour automatiquement</translation>
+        <translation>Contrôle auto</translation>
         </message>
     <message>
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="54" />
         <source>Check frequency</source>
-        <translation>Fréquence de vérification</translation>
+        <translation>Fréquence</translation>
         </message>
     <message>
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="56" />

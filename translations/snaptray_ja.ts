@@ -2984,7 +2984,7 @@ It may be in use by another application.</source>
     <message>
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="48" />
         <source>Auto-check updates</source>
-        <translation>アップデートを自動的に確認</translation>
+        <translation>自動更新確認</translation>
         </message>
     <message>
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="54" />

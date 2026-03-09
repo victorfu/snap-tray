@@ -2978,7 +2978,7 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
     <message>
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="48" />
         <source>Auto-check updates</source>
-        <translation>Tự động kiểm tra cập nhật</translation>
+        <translation>Tự kiểm tra</translation>
         </message>
     <message>
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="54" />

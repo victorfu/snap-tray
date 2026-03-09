@@ -2978,7 +2978,7 @@ Se saattaa olla toisen sovelluksen käytössä.</translation>
     <message>
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="48" />
         <source>Auto-check updates</source>
-        <translation>Tarkista päivitykset automaattisesti</translation>
+        <translation>Autotarkistus</translation>
         </message>
     <message>
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="54" />

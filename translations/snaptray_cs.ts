@@ -2984,7 +2984,7 @@ Může být používána jinou aplikací.</translation>
     <message>
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="48" />
         <source>Auto-check updates</source>
-        <translation>Automaticky kontrolovat aktualizace</translation>
+        <translation>Automatická kontrola</translation>
         </message>
     <message>
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="54" />

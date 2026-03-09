@@ -2978,7 +2978,7 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
     <message>
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="48" />
         <source>Auto-check updates</source>
-        <translation>Güncellemeleri otomatik olarak denetle</translation>
+        <translation>Otomatik denetim</translation>
         </message>
     <message>
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="54" />

@@ -2978,7 +2978,7 @@ Den kan användas av ett annat program.</translation>
     <message>
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="48" />
         <source>Auto-check updates</source>
-        <translation>Sök efter uppdateringar automatiskt</translation>
+        <translation>Automatisk koll</translation>
         </message>
     <message>
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="54" />

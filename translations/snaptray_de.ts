@@ -2984,7 +2984,7 @@ Sie wird möglicherweise von einer anderen Anwendung verwendet.</translation>
     <message>
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="48" />
         <source>Auto-check updates</source>
-        <translation>Automatisch nach Updates suchen</translation>
+        <translation>Update-Prüfung</translation>
         </message>
     <message>
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="54" />

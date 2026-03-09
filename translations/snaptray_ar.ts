@@ -2978,7 +2978,7 @@ It may be in use by another application.</source>
     <message>
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="48" />
         <source>Auto-check updates</source>
-        <translation>التحقق من التحديثات تلقائيًا</translation>
+        <translation>التحقق التلقائي</translation>
         </message>
     <message>
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="54" />

@@ -2978,7 +2978,7 @@ Jį gali naudoti kita programa.</translation>
     <message>
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="48" />
         <source>Auto-check updates</source>
-        <translation>Automatiškai tikrinti atnaujinimus</translation>
+        <translation>Automatinė patikra</translation>
         </message>
     <message>
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="54" />
