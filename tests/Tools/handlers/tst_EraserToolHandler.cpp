@@ -49,6 +49,7 @@ private slots:
     void testErasesIntersectingItems();
     void testDoesNotEraseNonIntersecting();
     void testCursor_UsesCenteredPixmapHotspot();
+    void testCursor_UsesSingleCrispOutline();
 
 private:
     EraserToolHandler* m_handler = nullptr;
@@ -237,9 +238,60 @@ void TestEraserToolHandler::testCursor_UsesCenteredPixmapHotspot()
 {
     const QCursor cursor = m_handler->cursor();
     const QPixmap pixmap = cursor.pixmap();
+    const QSizeF logicalSize = pixmap.deviceIndependentSize();
 
     QVERIFY(!pixmap.isNull());
-    QCOMPARE(cursor.hotSpot(), QPoint(pixmap.width() / 2, pixmap.height() / 2));
+    QVERIFY(pixmap.devicePixelRatio() >= 2.0);
+    QCOMPARE(cursor.hotSpot(), QPoint(qRound(logicalSize.width() / 2.0), qRound(logicalSize.height() / 2.0)));
+}
+
+void TestEraserToolHandler::testCursor_UsesSingleCrispOutline()
+{
+    constexpr int expectedPadding = 4;
+    constexpr QColor expectedColor(0x6C, 0x5C, 0xE7);
+
+    const QPixmap pixmap = m_handler->cursor().pixmap();
+    const qreal dpr = pixmap.devicePixelRatio();
+    const QSizeF logicalSize = pixmap.deviceIndependentSize();
+    const QImage image = pixmap.toImage().convertToFormat(QImage::Format_ARGB32);
+
+    QVERIFY(!image.isNull());
+
+    int minX = image.width();
+    int minY = image.height();
+    int maxX = -1;
+    int maxY = -1;
+
+    for (int y = 0; y < image.height(); ++y) {
+        for (int x = 0; x < image.width(); ++x) {
+            if (qAlpha(image.pixel(x, y)) == 0) {
+                continue;
+            }
+
+            minX = qMin(minX, x);
+            minY = qMin(minY, y);
+            maxX = qMax(maxX, x);
+            maxY = qMax(maxY, y);
+        }
+    }
+
+    QVERIFY(maxX >= 0);
+    QVERIFY(qAbs((maxX - minX) - (maxY - minY)) <= 1);
+
+    auto toPhysical = [dpr](qreal value) {
+        return qRound(value * dpr);
+    };
+
+    const int centerX = image.width() / 2;
+    const int topY = toPhysical(expectedPadding + 1.0);
+    const QRgb topPixel = image.pixel(centerX, topY);
+
+    QVERIFY(qAlpha(topPixel) > 0);
+    QCOMPARE(qRed(topPixel), expectedColor.red());
+    QCOMPARE(qGreen(topPixel), expectedColor.green());
+    QCOMPARE(qBlue(topPixel), expectedColor.blue());
+    QCOMPARE(qAlpha(image.pixel(toPhysical(logicalSize.width() / 2.0), toPhysical(expectedPadding + 4.0))), 0);
+    QCOMPARE(qAlpha(image.pixel(image.width() / 2, image.height() / 2)), 0);
 }
 
 QTEST_MAIN(TestEraserToolHandler)

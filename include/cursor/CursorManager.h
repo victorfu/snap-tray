@@ -223,7 +223,7 @@ public:
     /**
      * @brief Create a mosaic brush cursor.
      *
-     * Creates a semi-transparent circular cursor with border and inner outline.
+     * Creates a clean square cursor with a single outline.
      */
     static QCursor createMosaicCursor(int size);
 

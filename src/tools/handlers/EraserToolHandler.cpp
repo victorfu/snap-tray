@@ -1,30 +1,68 @@
 #include "tools/handlers/EraserToolHandler.h"
 #include "tools/ToolContext.h"
 
+#include <QCursor>
+#include <QGuiApplication>
 #include <QPainter>
 #include <QPixmap>
+#include <QScreen>
+#include <QtMath>
 #include <algorithm>
 
 namespace {
-QPixmap createCursorPixmap(int diameter) {
-    constexpr qreal kCursorStrokeWidth = 1.5;
-    const int cursorSize = diameter + 6;
-    QPixmap pixmap(cursorSize, cursorSize);
+constexpr qreal kCursorRenderDprFloor = 2.0;
+constexpr qreal kEraserCursorOutlineWidth = 2.0;
+constexpr int kEraserCursorPadding = 4;
+const QColor kCursorOutlineColor(0x6C, 0x5C, 0xE7);
+
+qreal cursorRenderDpr()
+{
+    if (auto* screen = QGuiApplication::screenAt(QCursor::pos())) {
+        return std::max(kCursorRenderDprFloor, screen->devicePixelRatio());
+    }
+    if (auto* screen = QGuiApplication::primaryScreen()) {
+        return std::max(kCursorRenderDprFloor, screen->devicePixelRatio());
+    }
+    if (qApp) {
+        return std::max(kCursorRenderDprFloor, qApp->devicePixelRatio());
+    }
+    return kCursorRenderDprFloor;
+}
+
+QPixmap createCursorCanvas(const QSize& logicalSize, qreal dpr)
+{
+    const QSize physicalSize(
+        qCeil(logicalSize.width() * dpr),
+        qCeil(logicalSize.height() * dpr)
+    );
+
+    QPixmap pixmap(physicalSize);
+    pixmap.setDevicePixelRatio(dpr);
     pixmap.fill(Qt::transparent);
+    return pixmap;
+}
+
+QPixmap createCursorPixmap(int diameter) {
+    const QSize logicalSize(
+        diameter + (kEraserCursorPadding * 2),
+        diameter + (kEraserCursorPadding * 2)
+    );
+    const qreal dpr = cursorRenderDpr();
+    QPixmap pixmap = createCursorCanvas(logicalSize, dpr);
 
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    const qreal center = cursorSize / 2.0;
-    const qreal radius = diameter / 2.0;
-
     painter.setBrush(Qt::NoBrush);
-    painter.setPen(QPen(QColor(170, 170, 170, 235),
-        kCursorStrokeWidth,
+    painter.setPen(QPen(kCursorOutlineColor,
+        kEraserCursorOutlineWidth,
         Qt::SolidLine,
         Qt::RoundCap,
         Qt::RoundJoin));
-    painter.drawEllipse(QPointF(center, center), radius, radius);
+
+    const qreal inset = kEraserCursorPadding + (kEraserCursorOutlineWidth / 2.0);
+    const qreal ellipseExtent = std::max<qreal>(1.0, diameter - kEraserCursorOutlineWidth);
+    painter.drawEllipse(QRectF(inset, inset, ellipseExtent, ellipseExtent));
 
     painter.end();
     return pixmap;
@@ -101,8 +139,12 @@ QCursor EraserToolHandler::cursor() const
     int diameter = std::clamp(m_eraserWidth, kMinWidth, kMaxWidth);
     if (m_cachedCursorWidth != diameter || m_cachedCursor.pixmap().isNull()) {
         QPixmap pixmap = createCursorPixmap(diameter);
-        int hotspot = pixmap.width() / 2;
-        m_cachedCursor = QCursor(pixmap, hotspot, hotspot);
+        const QSizeF logicalSize = pixmap.deviceIndependentSize();
+        const QPoint hotspot(
+            qRound(logicalSize.width() / 2.0),
+            qRound(logicalSize.height() / 2.0)
+        );
+        m_cachedCursor = QCursor(pixmap, hotspot.x(), hotspot.y());
         m_cachedCursorWidth = diameter;
     }
     return m_cachedCursor;

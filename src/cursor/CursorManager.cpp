@@ -1,7 +1,11 @@
 #include "cursor/CursorManager.h"
 
+#include <QCursor>
+#include <QGuiApplication>
 #include <QPainter>
 #include <QPixmap>
+#include <QScreen>
+#include <QtMath>
 #include <algorithm>
 
 #include "platform/WindowLevel.h"  // for forceNativeCrosshairCursor
@@ -14,6 +18,40 @@
 #include "annotations/EmojiStickerAnnotation.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/PolylineAnnotation.h"
+
+namespace {
+constexpr qreal kCursorRenderDprFloor = 2.0;
+constexpr qreal kMosaicCursorOutlineWidth = 2.0;
+constexpr int kMosaicCursorPadding = 4;
+const QColor kCursorOutlineColor(0x6C, 0x5C, 0xE7);
+
+qreal cursorRenderDpr()
+{
+    if (auto* screen = QGuiApplication::screenAt(QCursor::pos())) {
+        return std::max(kCursorRenderDprFloor, screen->devicePixelRatio());
+    }
+    if (auto* screen = QGuiApplication::primaryScreen()) {
+        return std::max(kCursorRenderDprFloor, screen->devicePixelRatio());
+    }
+    if (qApp) {
+        return std::max(kCursorRenderDprFloor, qApp->devicePixelRatio());
+    }
+    return kCursorRenderDprFloor;
+}
+
+QPixmap createCursorCanvas(const QSize& logicalSize, qreal dpr)
+{
+    const QSize physicalSize(
+        qCeil(logicalSize.width() * dpr),
+        qCeil(logicalSize.height() * dpr)
+    );
+
+    QPixmap pixmap(physicalSize);
+    pixmap.setDevicePixelRatio(dpr);
+    pixmap.fill(Qt::transparent);
+    return pixmap;
+}
+}  // namespace
 
 CursorManager::CursorManager()
     : QObject(nullptr)
@@ -434,36 +472,31 @@ QCursor CursorManager::effectiveCursorForWidget(QWidget* widget) const
 
 QCursor CursorManager::createMosaicCursor(int size)
 {
-    int cursorSize = size + 4;  // Add margin for border
-    QPixmap pixmap(cursorSize, cursorSize);
-    pixmap.fill(Qt::transparent);
+    const int boxSize = std::max(size, 2);
+    const QSize logicalSize(
+        boxSize + (kMosaicCursorPadding * 2),
+        boxSize + (kMosaicCursorPadding * 2)
+    );
+    const qreal dpr = cursorRenderDpr();
+    QPixmap pixmap = createCursorCanvas(logicalSize, dpr);
 
     QPainter painter(&pixmap);
-    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setRenderHint(QPainter::Antialiasing, false);
 
-    int center = cursorSize / 2;
-    int halfSize = size / 2;
-
-    // Draw semi-transparent fill
-    painter.setBrush(QColor(255, 255, 255, 60));
-    painter.setPen(Qt::NoPen);
-    QRect innerRect(center - halfSize, center - halfSize, size, size);
-    painter.drawRoundedRect(innerRect, 2, 2);
-
-    // Draw light gray/white border for better visibility
-    painter.setPen(QPen(QColor(220, 220, 220), 1.5, Qt::SolidLine));
+    QPen pen(kCursorOutlineColor, kMosaicCursorOutlineWidth, Qt::SolidLine,
+        Qt::SquareCap, Qt::MiterJoin);
+    painter.setPen(pen);
     painter.setBrush(Qt::NoBrush);
-    painter.drawRoundedRect(innerRect, 2, 2);
 
-    // Draw darker inner outline for contrast on light backgrounds
-    painter.setPen(QPen(QColor(100, 100, 100, 180), 0.5, Qt::SolidLine));
-    QRect innerOutline = innerRect.adjusted(1, 1, -1, -1);
-    painter.drawRoundedRect(innerOutline, 1, 1);
+    // Draw a single crisp square outline without any extra outer/inner guide lines.
+    const qreal inset = kMosaicCursorPadding + (kMosaicCursorOutlineWidth / 2.0);
+    const qreal rectExtent = std::max<qreal>(1.0, boxSize - kMosaicCursorOutlineWidth);
+    painter.drawRect(QRectF(inset, inset, rectExtent, rectExtent));
 
     painter.end();
 
-    int hotspot = cursorSize / 2;
-    return QCursor(pixmap, hotspot, hotspot);
+    const QPoint hotspot(logicalSize.width() / 2, logicalSize.height() / 2);
+    return QCursor(pixmap, hotspot.x(), hotspot.y());
 }
 
 Qt::CursorShape CursorManager::cursorForHandle(SelectionStateManager::ResizeHandle handle)

@@ -453,6 +453,11 @@ target_link_libraries(Tools_MeasureToolHandler PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Tools_MeasureToolHandler COMMAND Tools_MeasureToolHandler)
 set_tests_properties(Tools_MeasureToolHandler PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Tools_MosaicToolHandler Tools/handlers/tst_MosaicToolHandler.cpp)
+target_link_libraries(Tools_MosaicToolHandler PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Tools_MosaicToolHandler COMMAND Tools_MosaicToolHandler)
+set_tests_properties(Tools_MosaicToolHandler PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # Video Tests (link snaptray_ui for video components)
 # ============================================================================
