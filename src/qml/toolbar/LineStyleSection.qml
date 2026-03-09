@@ -7,7 +7,8 @@ import SnapTrayQml
 Item {
     id: root
     objectName: "lineStyleSection"
-    required property var viewModel
+    property var viewModel: null
+    readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
     signal menuOpened()
     signal menuClosed()
 
@@ -32,6 +33,8 @@ Item {
     }
 
     function openMenu() {
+        if (!root.hasViewModel)
+            return
         var mapped = buttonRect.mapToGlobal(0, buttonRect.height)
         root.menuOpened()
         root.viewModel.handleLineStyleDropdown(mapped.x, mapped.y)
@@ -84,7 +87,7 @@ Item {
             anchors.left: parent.left
             anchors.leftMargin: 4
             anchors.verticalCenter: parent.verticalCenter
-            styleValue: root.viewModel.lineStyle
+            styleValue: root.hasViewModel ? root.viewModel.lineStyle : 0
             strokeColor: ComponentTokens.toolbarIcon
         }
 

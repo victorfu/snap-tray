@@ -8,7 +8,12 @@ import SnapTrayQml
  */
 Item {
     id: root
-    required property var viewModel
+    property var viewModel: null
+    readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
+    readonly property color currentColorValue: root.hasViewModel
+        ? root.viewModel.currentColor
+        : "transparent"
+    readonly property var paletteModel: root.hasViewModel ? root.viewModel.colorPalette : []
 
     readonly property int sectionPadding: 4
     readonly property int swatchSize: 20
@@ -27,12 +32,12 @@ Item {
         width: root.swatchSize
         height: root.swatchSize
         radius: 3
-        color: root.viewModel.currentColor
+        color: root.currentColorValue
         border.width: 1
         border.color: {
-            var lum = root.viewModel.currentColor.r * 0.299 +
-                      root.viewModel.currentColor.g * 0.587 +
-                      root.viewModel.currentColor.b * 0.114
+            var lum = root.currentColorValue.r * 0.299 +
+                      root.currentColorValue.g * 0.587 +
+                      root.currentColorValue.b * 0.114
             return lum > 0.7
                 ? Qt.rgba(96 / 255, 96 / 255, 96 / 255, 1.0)
                 : Qt.rgba(192 / 255, 192 / 255, 192 / 255, 1.0)
@@ -83,7 +88,10 @@ Item {
             anchors.fill: parent
             cursorShape: Qt.ArrowCursor
             hoverEnabled: true
-            onClicked: root.viewModel.handleCustomColorClicked()
+            onClicked: {
+                if (root.hasViewModel)
+                    root.viewModel.handleCustomColorClicked()
+            }
         }
     }
 
@@ -95,7 +103,7 @@ Item {
         spacing: root.swatchSpacing
 
         Repeater {
-            model: root.viewModel.colorPalette
+            model: root.paletteModel
 
             Rectangle {
                 width: root.swatchSize
@@ -121,7 +129,7 @@ Item {
                     color: "transparent"
                     border.width: 2
                     border.color: DesignSystem.accentDefault
-                    visible: modelData == root.viewModel.currentColor
+                    visible: modelData == root.currentColorValue
                 }
 
                 // Hover effect
@@ -131,7 +139,7 @@ Item {
                     color: "transparent"
                     border.width: 2
                     border.color: DesignSystem.accentDefault
-                    visible: swatchMouse.containsMouse && modelData != root.viewModel.currentColor
+                    visible: swatchMouse.containsMouse && modelData != root.currentColorValue
                 }
 
                 MouseArea {
@@ -139,7 +147,10 @@ Item {
                     anchors.fill: parent
                     cursorShape: Qt.ArrowCursor
                     hoverEnabled: true
-                    onClicked: root.viewModel.handleColorClicked(index)
+                    onClicked: {
+                        if (root.hasViewModel)
+                            root.viewModel.handleColorClicked(index)
+                    }
                 }
             }
         }

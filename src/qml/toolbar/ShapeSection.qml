@@ -8,7 +8,12 @@ import SnapTrayQml
  */
 Item {
     id: root
-    required property var viewModel
+    property var viewModel: null
+    readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
+    readonly property var shapeOptionsModel: root.hasViewModel ? root.viewModel.shapeOptions : []
+    readonly property var shapeFillOptionsModel: root.hasViewModel ? root.viewModel.shapeFillOptions : []
+    readonly property int shapeTypeValue: root.hasViewModel ? root.viewModel.shapeType : 0
+    readonly property int shapeFillModeValue: root.hasViewModel ? root.viewModel.shapeFillMode : 0
 
     readonly property int sectionPadding: 3
 
@@ -31,13 +36,13 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
 
         Repeater {
-            model: root.viewModel.shapeOptions
+            model: root.shapeOptionsModel
 
             Rectangle {
                 width: 22
                 height: 22
                 radius: 4
-                color: root.viewModel.shapeType === modelData.value ? root.btnActiveBg
+                color: root.shapeTypeValue === modelData.value ? root.btnActiveBg
                      : shapeMouse.containsMouse ? root.btnHoverBg
                      : "transparent"
 
@@ -45,7 +50,7 @@ Item {
                     anchors.centerIn: parent
                     source: "qrc:/icons/icons/" + modelData.iconKey + ".svg"
                     iconSize: 14
-                    color: root.viewModel.shapeType === modelData.value
+                    color: root.shapeTypeValue === modelData.value
                         ? ComponentTokens.toolbarIconActive
                         : ComponentTokens.toolbarIcon
                 }
@@ -55,7 +60,10 @@ Item {
                     anchors.fill: parent
                     cursorShape: Qt.ArrowCursor
                     hoverEnabled: true
-                    onClicked: root.viewModel.handleShapeTypeSelected(modelData.value)
+                    onClicked: {
+                        if (root.hasViewModel)
+                            root.viewModel.handleShapeTypeSelected(modelData.value)
+                    }
                 }
             }
         }
@@ -70,22 +78,22 @@ Item {
         width: 22
         height: 22
         radius: 4
-        color: root.viewModel.shapeFillMode === 1 ? root.btnActiveBg
+        color: root.shapeFillModeValue === 1 ? root.btnActiveBg
              : fillMouse.containsMouse ? root.btnHoverBg
              : "transparent"
 
         SvgIcon {
             anchors.centerIn: parent
             source: {
-                var opts = root.viewModel.shapeFillOptions
+                var opts = root.shapeFillOptionsModel
                 for (var i = 0; i < opts.length; i++) {
-                    if (opts[i].value === root.viewModel.shapeFillMode)
+                    if (opts[i].value === root.shapeFillModeValue)
                         return "qrc:/icons/icons/" + opts[i].iconKey + ".svg"
                 }
                 return "qrc:/icons/icons/shape-outline.svg"
             }
             iconSize: 14
-            color: root.viewModel.shapeFillMode === 1
+            color: root.shapeFillModeValue === 1
                 ? ComponentTokens.toolbarIconActive
                 : ComponentTokens.toolbarIcon
         }
@@ -96,8 +104,10 @@ Item {
             cursorShape: Qt.ArrowCursor
             hoverEnabled: true
             onClicked: {
+                if (!root.hasViewModel)
+                    return
                 // Toggle between 0 (outline) and 1 (filled)
-                var next = root.viewModel.shapeFillMode === 0 ? 1 : 0
+                var next = root.shapeFillModeValue === 0 ? 1 : 0
                 root.viewModel.handleShapeFillModeSelected(next)
             }
         }

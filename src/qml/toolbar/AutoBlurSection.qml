@@ -6,7 +6,9 @@ import SnapTrayQml
  */
 Item {
     id: root
-    required property var viewModel
+    property var viewModel: null
+    readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
+    readonly property bool autoBlurProcessingValue: root.hasViewModel && root.viewModel.autoBlurProcessing
 
     implicitWidth: 22
     implicitHeight: 22
@@ -17,7 +19,7 @@ Item {
         anchors.fill: parent
         radius: 4
         color: {
-            if (root.viewModel.autoBlurProcessing)
+            if (root.autoBlurProcessingValue)
                 return "#FFC107"  // Material amber — processing indicator
             if (blurMouse.containsMouse)
                 return SemanticTokens.isDarkMode
@@ -30,10 +32,10 @@ Item {
             anchors.centerIn: parent
             source: "qrc:/icons/icons/auto-blur.svg"
             iconSize: 14
-            color: root.viewModel.autoBlurProcessing
+            color: root.autoBlurProcessingValue
                 ? "#000000"
                 : ComponentTokens.toolbarIcon
-            opacity: root.viewModel.autoBlurProcessing ? 1.0 : (blurMouse.containsMouse ? 1.0 : 0.6)
+            opacity: root.autoBlurProcessingValue ? 1.0 : (blurMouse.containsMouse ? 1.0 : 0.6)
         }
 
         MouseArea {
@@ -41,7 +43,10 @@ Item {
             anchors.fill: parent
             cursorShape: Qt.ArrowCursor
             hoverEnabled: true
-            onClicked: root.viewModel.handleAutoBlurClicked()
+            onClicked: {
+                if (root.hasViewModel)
+                    root.viewModel.handleAutoBlurClicked()
+            }
         }
     }
 }

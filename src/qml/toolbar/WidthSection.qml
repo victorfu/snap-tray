@@ -9,7 +9,11 @@ import SnapTrayQml
  */
 Item {
     id: root
-    required property var viewModel
+    property var viewModel: null
+    readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
+    readonly property int currentWidthValue: root.hasViewModel ? root.viewModel.currentWidth : 1
+    readonly property int minWidthValue: root.hasViewModel ? root.viewModel.minWidth : 1
+    readonly property int maxWidthValue: root.hasViewModel ? root.viewModel.maxWidth : 1
 
     implicitWidth: 28
     implicitHeight: 28
@@ -32,8 +36,8 @@ Item {
 
             readonly property real minDot: 4
             readonly property real maxDot: 20
-            readonly property real ratio: (root.viewModel.currentWidth - root.viewModel.minWidth) /
-                                          Math.max(1, root.viewModel.maxWidth - root.viewModel.minWidth)
+            readonly property real ratio: (root.currentWidthValue - root.minWidthValue) /
+                                          Math.max(1, root.maxWidthValue - root.minWidthValue)
 
             width: minDot + ratio * (maxDot - minDot)
             height: width

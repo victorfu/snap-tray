@@ -9,7 +9,10 @@ import SnapTrayQml
  */
 Item {
     id: root
-    property var viewModel: pinToolOptionsViewModel
+    property var viewModel: typeof pinToolOptionsViewModel !== "undefined"
+        ? pinToolOptionsViewModel
+        : null
+    readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
     readonly property int panelRightMargin: 6
 
     // Content sizing: expand to fit the row of sections
@@ -62,7 +65,9 @@ Item {
         acceptedButtons: Qt.NoButton
 
         onWheel: function(wheel) {
-            if (!root.viewModel.showWidthSection || wheel.angleDelta.y === 0) {
+            if (!root.hasViewModel
+                    || !root.viewModel.showWidthSection
+                    || wheel.angleDelta.y === 0) {
                 wheel.accepted = false
                 return
             }
@@ -84,10 +89,13 @@ Item {
         z: 1
 
         Row {
-            visible: root.viewModel.showWidthSection
-                     || root.viewModel.showColorSection
-                     || root.viewModel.showAutoBlurSection
+            visible: root.hasViewModel
+                     && (root.viewModel.showWidthSection
+                         || root.viewModel.showColorSection
+                         || root.viewModel.showAutoBlurSection)
             spacing: {
+                if (!root.hasViewModel)
+                    return 0
                 if (root.viewModel.showWidthSection && root.viewModel.showColorSection)
                     return -2
                 if (root.viewModel.showWidthSection
@@ -99,19 +107,19 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
 
             WidthSection {
-                visible: root.viewModel.showWidthSection
+                visible: root.hasViewModel && root.viewModel.showWidthSection
                 viewModel: root.viewModel
                 anchors.verticalCenter: parent.verticalCenter
             }
 
             ColorPaletteSection {
-                visible: root.viewModel.showColorSection
+                visible: root.hasViewModel && root.viewModel.showColorSection
                 viewModel: root.viewModel
                 anchors.verticalCenter: parent.verticalCenter
             }
 
             AutoBlurSection {
-                visible: root.viewModel.showAutoBlurSection
+                visible: root.hasViewModel && root.viewModel.showAutoBlurSection
                 viewModel: root.viewModel
                 anchors.verticalCenter: parent.verticalCenter
             }
@@ -119,7 +127,7 @@ Item {
 
         ArrowStyleSection {
             id: arrowStyleSection
-            visible: root.viewModel.showArrowStyleSection
+            visible: root.hasViewModel && root.viewModel.showArrowStyleSection
             viewModel: root.viewModel
             anchors.verticalCenter: parent.verticalCenter
             onMenuOpened: lineStyleSection.closeMenu()
@@ -127,26 +135,26 @@ Item {
 
         LineStyleSection {
             id: lineStyleSection
-            visible: root.viewModel.showLineStyleSection
+            visible: root.hasViewModel && root.viewModel.showLineStyleSection
             viewModel: root.viewModel
             anchors.verticalCenter: parent.verticalCenter
             onMenuOpened: arrowStyleSection.closeMenu()
         }
 
         TextFormattingSection {
-            visible: root.viewModel.showTextSection
+            visible: root.hasViewModel && root.viewModel.showTextSection
             viewModel: root.viewModel
             anchors.verticalCenter: parent.verticalCenter
         }
 
         ShapeSection {
-            visible: root.viewModel.showShapeSection
+            visible: root.hasViewModel && root.viewModel.showShapeSection
             viewModel: root.viewModel
             anchors.verticalCenter: parent.verticalCenter
         }
 
         SizeSection {
-            visible: root.viewModel.showSizeSection
+            visible: root.hasViewModel && root.viewModel.showSizeSection
             viewModel: root.viewModel
             anchors.verticalCenter: parent.verticalCenter
         }

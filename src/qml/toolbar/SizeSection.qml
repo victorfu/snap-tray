@@ -6,7 +6,10 @@ import SnapTrayQml
  */
 Item {
     id: root
-    required property var viewModel
+    property var viewModel: null
+    readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
+    readonly property var sizeOptionsModel: root.hasViewModel ? root.viewModel.stepBadgeSizeOptions : []
+    readonly property int stepBadgeSizeValue: root.hasViewModel ? root.viewModel.stepBadgeSize : 1
 
     readonly property int sectionPadding: 3
 
@@ -28,13 +31,13 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
 
         Repeater {
-            model: root.viewModel.stepBadgeSizeOptions
+            model: root.sizeOptionsModel
 
             Rectangle {
                 width: 22
                 height: 22
                 radius: 4
-                color: root.viewModel.stepBadgeSize === modelData.value ? root.btnActiveBg
+                color: root.stepBadgeSizeValue === modelData.value ? root.btnActiveBg
                      : sizeMouse.containsMouse ? root.btnHoverBg
                      : "transparent"
 
@@ -53,7 +56,7 @@ Item {
                     }
                     height: width
                     radius: width / 2
-                    color: root.viewModel.stepBadgeSize === modelData.value
+                    color: root.stepBadgeSizeValue === modelData.value
                         ? ComponentTokens.toolbarIconActive
                         : ComponentTokens.toolbarIcon
                 }
@@ -63,7 +66,10 @@ Item {
                     anchors.fill: parent
                     cursorShape: Qt.ArrowCursor
                     hoverEnabled: true
-                    onClicked: root.viewModel.handleStepBadgeSizeSelected(modelData.value)
+                    onClicked: {
+                        if (root.hasViewModel)
+                            root.viewModel.handleStepBadgeSizeSelected(modelData.value)
+                    }
                 }
             }
         }

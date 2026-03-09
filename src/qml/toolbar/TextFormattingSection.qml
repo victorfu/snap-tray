@@ -8,7 +8,15 @@ import SnapTrayQml
  */
 Item {
     id: root
-    required property var viewModel
+    property var viewModel: null
+    readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
+    readonly property bool boldValue: root.hasViewModel && root.viewModel.isBold
+    readonly property bool italicValue: root.hasViewModel && root.viewModel.isItalic
+    readonly property bool underlineValue: root.hasViewModel && root.viewModel.isUnderline
+    readonly property int fontSizeValue: root.hasViewModel ? root.viewModel.fontSize : 0
+    readonly property string fontFamilyValue: root.hasViewModel && root.viewModel.fontFamily
+        ? root.viewModel.fontFamily
+        : qsTr("Default")
 
     readonly property int sectionPadding: 6
     readonly property int buttonSize: 20
@@ -38,9 +46,9 @@ Item {
 
         Repeater {
             model: [
-                { label: "B", bold: true, active: root.viewModel.isBold, action: function() { root.viewModel.handleBoldToggled() } },
-                { label: "I", italic: true, active: root.viewModel.isItalic, action: function() { root.viewModel.handleItalicToggled() } },
-                { label: "U", underline: true, active: root.viewModel.isUnderline, action: function() { root.viewModel.handleUnderlineToggled() } }
+                { label: "B", bold: true, active: root.boldValue, action: function() { if (root.hasViewModel) root.viewModel.handleBoldToggled() } },
+                { label: "I", italic: true, active: root.italicValue, action: function() { if (root.hasViewModel) root.viewModel.handleItalicToggled() } },
+                { label: "U", underline: true, active: root.underlineValue, action: function() { if (root.hasViewModel) root.viewModel.handleUnderlineToggled() } }
             ]
 
             Rectangle {
@@ -89,7 +97,7 @@ Item {
             anchors.left: parent.left
             anchors.leftMargin: 6
             anchors.verticalCenter: parent.verticalCenter
-            text: root.viewModel.fontSize
+            text: root.fontSizeValue
             font.pixelSize: 10
             color: root.btnText
         }
@@ -107,6 +115,8 @@ Item {
             cursorShape: Qt.ArrowCursor
             hoverEnabled: true
             onClicked: {
+                if (!root.hasViewModel)
+                    return
                 var mapped = fontSizeBtn.mapToGlobal(0, fontSizeBtn.height)
                 root.viewModel.handleFontSizeDropdown(mapped.x, mapped.y)
             }
@@ -132,7 +142,7 @@ Item {
             anchors.right: dropArrow2.left
             anchors.rightMargin: 4
             anchors.verticalCenter: parent.verticalCenter
-            text: root.viewModel.fontFamily || qsTr("Default")
+            text: root.fontFamilyValue
             font.pixelSize: 10
             color: root.btnText
             elide: Text.ElideRight
@@ -152,6 +162,8 @@ Item {
             cursorShape: Qt.ArrowCursor
             hoverEnabled: true
             onClicked: {
+                if (!root.hasViewModel)
+                    return
                 var mapped = fontFamilyBtn.mapToGlobal(0, fontFamilyBtn.height)
                 root.viewModel.handleFontFamilyDropdown(mapped.x, mapped.y)
             }
