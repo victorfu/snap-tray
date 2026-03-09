@@ -30,19 +30,54 @@ bool PinToolOptionsViewModel::hasContent() const
            m_showSize || m_showAutoBlur;
 }
 
+void PinToolOptionsViewModel::applySectionVisibility(bool showColor,
+                                                     bool showWidth,
+                                                     bool showText,
+                                                     bool showArrowStyle,
+                                                     bool showLineStyle,
+                                                     bool showShape,
+                                                     bool showSize,
+                                                     bool showAutoBlur)
+{
+    m_showColor = showColor;
+    m_showWidth = showWidth;
+    m_showText = showText;
+    m_showArrowStyle = showArrowStyle;
+    m_showLineStyle = showLineStyle;
+    m_showShape = showShape;
+    m_showSize = showSize;
+    m_showAutoBlur = showAutoBlur;
+    emit sectionVisibilityChanged();
+}
+
+void PinToolOptionsViewModel::setShowingEmojiPicker(bool visible)
+{
+    if (m_showingEmojiPicker == visible) {
+        return;
+    }
+
+    m_showingEmojiPicker = visible;
+    emit showingEmojiPickerChanged();
+}
+
+void PinToolOptionsViewModel::clearSections()
+{
+    setShowingEmojiPicker(false);
+    applySectionVisibility(false, false, false, false, false, false, false, false);
+}
+
+void PinToolOptionsViewModel::showLaserPointerOptions()
+{
+    setShowingEmojiPicker(false);
+    applySectionVisibility(true, true, false, false, false, false, false, false);
+}
+
 // ── Section configuration ──
 
 void PinToolOptionsViewModel::showForTool(int toolId)
 {
     if (toolId < 0 || toolId >= static_cast<int>(ToolId::Count)) {
-        m_showColor = m_showWidth = m_showText = false;
-        m_showArrowStyle = m_showLineStyle = m_showShape = false;
-        m_showSize = m_showAutoBlur = false;
-        if (m_showingEmojiPicker) {
-            m_showingEmojiPicker = false;
-            emit showingEmojiPickerChanged();
-        }
-        emit sectionVisibilityChanged();
+        clearSections();
         return;
     }
 
@@ -50,36 +85,24 @@ void PinToolOptionsViewModel::showForTool(int toolId)
 
     // Special case: EmojiSticker shows emoji picker popup
     if (id == ToolId::EmojiSticker) {
-        m_showColor = m_showWidth = m_showText = false;
-        m_showArrowStyle = m_showLineStyle = m_showShape = false;
-        m_showSize = m_showAutoBlur = false;
-        if (!m_showingEmojiPicker) {
-            m_showingEmojiPicker = true;
-            emit showingEmojiPickerChanged();
-        }
-        emit sectionVisibilityChanged();
+        clearSections();
+        setShowingEmojiPicker(true);
         emit emojiPickerRequested();
         return;
     }
 
-    // Reset emoji picker
-    if (m_showingEmojiPicker) {
-        m_showingEmojiPicker = false;
-        emit showingEmojiPickerChanged();
-    }
+    setShowingEmojiPicker(false);
 
     // Apply tool section config
     auto config = ToolSectionConfig::forTool(id);
-    m_showColor = config.showColorSection;
-    m_showWidth = config.showWidthSection;
-    m_showText = config.showTextSection;
-    m_showArrowStyle = config.showArrowStyleSection;
-    m_showLineStyle = config.showLineStyleSection;
-    m_showShape = config.showShapeSection;
-    m_showSize = config.showSizeSection;
-    m_showAutoBlur = config.showAutoBlurSection;
-
-    emit sectionVisibilityChanged();
+    applySectionVisibility(config.showColorSection,
+                           config.showWidthSection,
+                           config.showTextSection,
+                           config.showArrowStyleSection,
+                           config.showLineStyleSection,
+                           config.showShapeSection,
+                           config.showSizeSection,
+                           config.showAutoBlurSection);
 }
 
 // ── Property setters ──

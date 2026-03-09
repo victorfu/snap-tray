@@ -148,6 +148,8 @@ public:
      * Special cases: EmojiSticker shows emoji picker, Eraser shows nothing.
      */
     void showForTool(int toolId);
+    void clearSections();
+    void showLaserPointerOptions();
 
 signals:
     void sectionVisibilityChanged();
@@ -211,6 +213,15 @@ public slots:
 
 private:
     void buildColorPalette();
+    void applySectionVisibility(bool showColor,
+                                bool showWidth,
+                                bool showText,
+                                bool showArrowStyle,
+                                bool showLineStyle,
+                                bool showShape,
+                                bool showSize,
+                                bool showAutoBlur);
+    void setShowingEmojiPicker(bool visible);
 
     // Section visibility
     bool m_showColor = false;

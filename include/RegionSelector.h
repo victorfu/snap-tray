@@ -247,6 +247,7 @@ private:
     QPoint globalToLocal(const QPoint& globalPos) const;
     QRect localToGlobal(const QRect& localRect) const;
     QRect globalToLocal(const QRect& globalRect) const;
+    QRect floatingToolbarRectInLocalCoords() const;
 
     QPixmap m_backgroundPixmap;
     SharedPixmap m_sharedSourcePixmap;  // Shared for mosaic tool memory efficiency

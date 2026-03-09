@@ -15,7 +15,7 @@ private slots:
     void init();
     void cleanup();
 
-    void testNormalizeRecordingAudioSettings_ClearsStaleLoadedDevice();
+    void testNormalizeRecordingAudioSettings_PreservesUnavailableLoadedDevice();
     void testBlurTypeMapping_RoundTripMatchesUiIndices();
 
 private:
@@ -40,7 +40,7 @@ void tst_SettingsBackend::clearTestSettings()
     settings.sync();
 }
 
-void tst_SettingsBackend::testNormalizeRecordingAudioSettings_ClearsStaleLoadedDevice()
+void tst_SettingsBackend::testNormalizeRecordingAudioSettings_PreservesUnavailableLoadedDevice()
 {
     RecordingSettingsManager::instance().setAudioDevice(QStringLiteral("stale-device"));
 
@@ -57,9 +57,9 @@ void tst_SettingsBackend::testNormalizeRecordingAudioSettings_ClearsStaleLoadedD
 
     QSignalSpy deviceChangedSpy(&backend, &SettingsBackend::recordingAudioDeviceChanged);
 
-    QVERIFY(backend.normalizeRecordingAudioSettings());
-    QCOMPARE(backend.recordingAudioDevice(), QString());
-    QCOMPARE(deviceChangedSpy.count(), 1);
+    QVERIFY(!backend.normalizeRecordingAudioSettings());
+    QCOMPARE(backend.recordingAudioDevice(), QStringLiteral("stale-device"));
+    QCOMPARE(deviceChangedSpy.count(), 0);
 }
 
 void tst_SettingsBackend::testBlurTypeMapping_RoundTripMatchesUiIndices()

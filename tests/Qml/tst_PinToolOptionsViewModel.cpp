@@ -15,6 +15,8 @@ private slots:
     void testLineStyleDropdownRequested_PreservesCoordinates();
     void testArrowStyleOptions_AreValueOnly();
     void testLineStyleOptions_AreValueOnly();
+    void testShowLaserPointerOptions_ShowsOnlyColorAndWidth();
+    void testClearSections_DisablesWidthWheelHandling();
 };
 
 void tst_PinToolOptionsViewModel::testFontSizeDropdownRequested_PreservesCoordinates()
@@ -89,6 +91,31 @@ void tst_PinToolOptionsViewModel::testLineStyleOptions_AreValueOnly()
         QCOMPARE(option.value(QStringLiteral("value")).toInt(), i);
         QVERIFY(!option.contains(QStringLiteral("iconKey")));
     }
+}
+
+void tst_PinToolOptionsViewModel::testShowLaserPointerOptions_ShowsOnlyColorAndWidth()
+{
+    PinToolOptionsViewModel viewModel;
+
+    viewModel.showLaserPointerOptions();
+
+    QVERIFY(viewModel.showColorSection());
+    QVERIFY(viewModel.showWidthSection());
+    QVERIFY(!viewModel.showLineStyleSection());
+    QVERIFY(!viewModel.showArrowStyleSection());
+    QVERIFY(!viewModel.showTextSection());
+}
+
+void tst_PinToolOptionsViewModel::testClearSections_DisablesWidthWheelHandling()
+{
+    PinToolOptionsViewModel viewModel;
+    viewModel.showLaserPointerOptions();
+
+    QVERIFY(viewModel.handleWidthWheelDelta(120));
+
+    viewModel.clearSections();
+
+    QVERIFY(!viewModel.handleWidthWheelDelta(120));
 }
 
 QTEST_MAIN(tst_PinToolOptionsViewModel)

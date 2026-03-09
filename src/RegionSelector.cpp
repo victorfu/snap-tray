@@ -84,6 +84,19 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QtConcurrent/QtConcurrentRun>
 #include "tools/ToolRegistry.h"
 
+namespace {
+
+QRect rectFromGlobal(QWidget* widget, const QRect& globalRect)
+{
+    if (!widget || !globalRect.isValid()) {
+        return {};
+    }
+
+    return QRect(widget->mapFromGlobal(globalRect.topLeft()), globalRect.size());
+}
+
+} // namespace
+
 RegionSelector::RegionSelector(QWidget* parent)
     : QWidget(parent)
     , m_currentScreen(nullptr)
@@ -406,7 +419,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             EmojiPicker* picker = ensureEmojiPicker();
             if (m_qmlToolbar) {
                 picker->setVisible(true);
-                picker->updatePosition(m_qmlToolbar->geometry(), false);
+                picker->updatePosition(floatingToolbarRectInLocalCoords(), false);
                 update();
             }
         });
@@ -1704,7 +1717,7 @@ void RegionSelector::paintEvent(QPaintEvent* event)
             QRect countRect = fm.boundingRect(countText);
             countRect.adjust(-8, -4, 8, 4);
 
-            QRect toolbarRect = m_qmlToolbar ? m_qmlToolbar->geometry() : QRect();
+            QRect toolbarRect = floatingToolbarRectInLocalCoords();
             int countX = toolbarRect.right() - countRect.width();
             int countY = toolbarRect.top() - countRect.height() - 6;
             if (countY < 5) {
@@ -1723,7 +1736,7 @@ void RegionSelector::paintEvent(QPaintEvent* event)
             EmojiPicker* picker = ensureEmojiPicker();
             picker->setVisible(true);
             if (m_qmlToolbar) {
-                picker->updatePosition(m_qmlToolbar->geometry(), false);
+                picker->updatePosition(floatingToolbarRectInLocalCoords(), false);
             }
             picker->draw(painter);
         }
@@ -3089,6 +3102,12 @@ QRect RegionSelector::globalToLocal(const QRect& globalRect) const
         return globalRect;
     }
     return globalRect.translated(-m_currentScreen->geometry().topLeft());
+}
+
+QRect RegionSelector::floatingToolbarRectInLocalCoords() const
+{
+    return rectFromGlobal(const_cast<RegionSelector*>(this),
+                          m_qmlToolbar ? m_qmlToolbar->geometry() : QRect());
 }
 
 void RegionSelector::onArrowStyleChanged(LineEndStyle style)

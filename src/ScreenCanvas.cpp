@@ -63,6 +63,15 @@ qreal normalizeAngleDelta(qreal deltaDegrees)
     }
     return deltaDegrees;
 }
+
+QRect rectFromGlobal(QWidget* widget, const QRect& globalRect)
+{
+    if (!widget || !globalRect.isValid()) {
+        return {};
+    }
+
+    return QRect(widget->mapFromGlobal(globalRect.topLeft()), globalRect.size());
+}
 }
 
 const std::map<ToolId, ScreenCanvas::ToolbarClickHandler>& ScreenCanvas::toolbarDispatchTable()
@@ -241,7 +250,7 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
         this, [this]() {
             if (m_emojiPicker && m_qmlToolbar) {
                 m_emojiPicker->setVisible(true);
-                m_emojiPicker->updatePosition(m_qmlToolbar->geometry(), false);
+                m_emojiPicker->updatePosition(floatingToolbarRectInLocalCoords(), false);
                 update();
             }
         });
@@ -554,14 +563,23 @@ void ScreenCanvas::updateQmlToolbarState()
     if (m_showSubToolbar && !m_laserPointerActive) {
         m_qmlSubToolbar->showForTool(static_cast<int>(m_currentToolId));
     } else if (m_showSubToolbar && m_laserPointerActive) {
-        // Laser pointer shows color + width sections
-        m_toolOptionsViewModel->showForTool(-1); // Reset first
-        // Manually configure for laser pointer (not in ToolRegistry)
-        m_qmlSubToolbar->showForTool(static_cast<int>(ToolId::Pencil)); // Similar sections
+        m_toolOptionsViewModel->showLaserPointerOptions();
+        if (m_toolOptionsViewModel->hasContent()) {
+            m_qmlSubToolbar->show();
+        } else {
+            m_qmlSubToolbar->hide();
+        }
     } else {
+        m_toolOptionsViewModel->clearSections();
         m_qmlSubToolbar->hide();
     }
 
+}
+
+QRect ScreenCanvas::floatingToolbarRectInLocalCoords() const
+{
+    return rectFromGlobal(const_cast<ScreenCanvas*>(this),
+                          m_qmlToolbar ? m_qmlToolbar->geometry() : QRect());
 }
 
 void ScreenCanvas::paintEvent(QPaintEvent*)
@@ -613,7 +631,7 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
     if (!m_laserPointerActive && m_currentToolId == ToolId::EmojiSticker && m_showSubToolbar) {
         m_emojiPicker->setVisible(true);
         if (m_qmlToolbar) {
-            m_emojiPicker->updatePosition(m_qmlToolbar->geometry(), true);
+            m_emojiPicker->updatePosition(floatingToolbarRectInLocalCoords(), true);
         }
         m_emojiPicker->draw(painter);
     }

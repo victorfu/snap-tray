@@ -146,6 +146,7 @@ private:
 
     // Update QML toolbar/sub-toolbar state for current tool
     void updateQmlToolbarState();
+    QRect floatingToolbarRectInLocalCoords() const;
 
     // Background pixmap (used for Whiteboard/Blackboard modes)
     QPixmap m_backgroundPixmap;

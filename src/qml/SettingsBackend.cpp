@@ -462,11 +462,8 @@ QString SettingsBackend::recordingAudioDevice() const { return m_recordingAudioD
 void SettingsBackend::setRecordingAudioDevice(const QString& v) {
     if (m_recordingAudioDevice != v) {
         m_recordingAudioDevice = v;
-        const bool normalized = normalizeRecordingAudioSettings();
         RecordingSettingsManager::instance().setAudioDevice(m_recordingAudioDevice);
-        if (!normalized) {
-            emit recordingAudioDeviceChanged();
-        }
+        emit recordingAudioDeviceChanged();
     }
 }
 
@@ -984,13 +981,6 @@ bool SettingsBackend::normalizeRecordingAudioSettings()
         const QString canonical = normalizeRecordingAudioInputDeviceId(normalized);
         if (!canonical.isEmpty()) {
             normalized = canonical;
-        } else if (!m_recordingAudioDevicesLoaded) {
-            normalized.clear();
-        }
-
-        if (m_recordingAudioDevicesLoaded && !normalized.isEmpty()
-            && !hasRecordingAudioDevice(normalized)) {
-            normalized.clear();
         }
     }
 
