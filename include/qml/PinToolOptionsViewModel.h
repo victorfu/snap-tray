@@ -206,6 +206,9 @@ public slots:
     void handleAutoBlurClicked();
     void handleEmojiPickerRequested();
 
+    // Returns true if the wheel delta was consumed (width adjusted)
+    bool handleWidthWheelDelta(int delta);
+
 private:
     void buildColorPalette();
 

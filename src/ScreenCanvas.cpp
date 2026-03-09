@@ -1150,6 +1150,31 @@ void ScreenCanvas::mouseDoubleClickEvent(QMouseEvent* event)
 
 void ScreenCanvas::wheelEvent(QWheelEvent* event)
 {
+    int delta = event->angleDelta().y();
+    if (delta == 0) {
+        event->ignore();
+        return;
+    }
+
+    // Handle scroll wheel for StepBadge size adjustment
+    if (m_currentToolId == ToolId::StepBadge) {
+        int current = static_cast<int>(m_stepBadgeSize);
+        if (delta > 0) {
+            current = (current + 1) % 3;
+        } else {
+            current = (current + 2) % 3;
+        }
+        m_toolOptionsViewModel->handleStepBadgeSizeSelected(current);
+        event->accept();
+        return;
+    }
+
+    // Handle scroll wheel for brush/stroke width adjustment
+    if (m_toolOptionsViewModel->handleWidthWheelDelta(delta)) {
+        event->accept();
+        return;
+    }
+
     event->ignore();
 }
 

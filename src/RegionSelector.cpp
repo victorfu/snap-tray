@@ -2237,24 +2237,33 @@ void RegionSelector::wheelEvent(QWheelEvent* event)
 {
     maybeDismissShortcutHintsAfterSelectionCompleted();
 
+    int delta = event->angleDelta().y();
+    if (delta == 0) {
+        event->ignore();
+        return;
+    }
+
     // Handle scroll wheel for StepBadge size adjustment
     if (m_inputState.currentTool == ToolId::StepBadge) {
-        int delta = event->angleDelta().y();
-        if (delta != 0) {
-            // Cycle through sizes: Small -> Medium -> Large -> Small
-            int current = static_cast<int>(m_stepBadgeSize);
-            if (delta > 0) {
-                current = (current + 1) % 3;  // Scroll up = increase size
-            }
-            else {
-                current = (current + 2) % 3;  // Scroll down = decrease size
-            }
-            StepBadgeSize newSize = static_cast<StepBadgeSize>(current);
-            onStepBadgeSizeChanged(newSize);
-            m_toolOptionsViewModel->setStepBadgeSize(static_cast<int>(newSize));
-            event->accept();
-            return;
+        // Cycle through sizes: Small -> Medium -> Large -> Small
+        int current = static_cast<int>(m_stepBadgeSize);
+        if (delta > 0) {
+            current = (current + 1) % 3;  // Scroll up = increase size
         }
+        else {
+            current = (current + 2) % 3;  // Scroll down = decrease size
+        }
+        StepBadgeSize newSize = static_cast<StepBadgeSize>(current);
+        onStepBadgeSizeChanged(newSize);
+        m_toolOptionsViewModel->setStepBadgeSize(static_cast<int>(newSize));
+        event->accept();
+        return;
+    }
+
+    // Handle scroll wheel for brush/stroke width adjustment
+    if (m_toolOptionsViewModel->handleWidthWheelDelta(delta)) {
+        event->accept();
+        return;
     }
 
     event->ignore();

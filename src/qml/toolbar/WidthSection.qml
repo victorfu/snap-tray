@@ -39,7 +39,7 @@ Item {
             readonly property real ratio: (root.currentWidthValue - root.minWidthValue) /
                                           Math.max(1, root.maxWidthValue - root.minWidthValue)
 
-            width: minDot + ratio * (maxDot - minDot)
+            width: Math.round(minDot + ratio * (maxDot - minDot))
             height: width
             radius: width / 2
             color: "white"

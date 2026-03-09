@@ -275,6 +275,15 @@ void PinToolOptionsViewModel::handleWidthChanged(int width)
     emit widthValueChanged(m_currentWidth);
 }
 
+bool PinToolOptionsViewModel::handleWidthWheelDelta(int delta)
+{
+    if (!m_showWidth || delta == 0)
+        return false;
+    int step = delta > 0 ? 1 : -1;
+    handleWidthChanged(m_currentWidth + step);
+    return true;
+}
+
 void PinToolOptionsViewModel::handleBoldToggled()
 {
     setBold(!m_bold);

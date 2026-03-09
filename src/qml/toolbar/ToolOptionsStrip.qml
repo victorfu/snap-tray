@@ -65,16 +65,11 @@ Item {
         acceptedButtons: Qt.NoButton
 
         onWheel: function(wheel) {
-            if (!root.hasViewModel
-                    || !root.viewModel.showWidthSection
-                    || wheel.angleDelta.y === 0) {
+            if (!root.hasViewModel) {
                 wheel.accepted = false
                 return
             }
-
-            var delta = wheel.angleDelta.y > 0 ? 1 : -1
-            root.viewModel.handleWidthChanged(root.viewModel.currentWidth + delta)
-            wheel.accepted = true
+            wheel.accepted = root.viewModel.handleWidthWheelDelta(wheel.angleDelta.y)
         }
     }
 
