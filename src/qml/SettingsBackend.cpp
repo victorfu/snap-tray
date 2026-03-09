@@ -727,9 +727,8 @@ void SettingsBackend::loadOcrLanguages()
                 m_ocrDisplayNamesByCode.insert(lang.code, lang.nativeName);
             }
 
-            const bool loadedChanged =
-                m_ocrAvailableLanguagesLoaded != queryResult.success;
-            m_ocrAvailableLanguagesLoaded = queryResult.success;
+            const bool loadedChanged = !m_ocrAvailableLanguagesLoaded;
+            m_ocrAvailableLanguagesLoaded = true;
             m_ocrLoading = false;
             emit ocrLoadingChanged();
             if (loadedChanged)

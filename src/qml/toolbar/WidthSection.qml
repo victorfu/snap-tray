@@ -41,14 +41,4 @@ Item {
             color: "white"
         }
     }
-
-    MouseArea {
-        anchors.fill: parent
-        cursorShape: Qt.ArrowCursor
-
-        onWheel: function(wheel) {
-            var delta = wheel.angleDelta.y > 0 ? 1 : -1
-            root.viewModel.handleWidthChanged(root.viewModel.currentWidth + delta)
-        }
-    }
 }

@@ -71,6 +71,21 @@ Item {
         height: 36  // 28px content + 8px padding
         glassRadius: 6
     }
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.NoButton
+
+        onWheel: function(wheel) {
+            if (!root.viewModel.showWidthSection || wheel.angleDelta.y === 0) {
+                wheel.accepted = false
+                return
+            }
+
+            var delta = wheel.angleDelta.y > 0 ? 1 : -1
+            root.viewModel.handleWidthChanged(root.viewModel.currentWidth + delta)
+            wheel.accepted = true
+        }
+    }
 
     Row {
         id: sectionRow

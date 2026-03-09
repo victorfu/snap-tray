@@ -84,9 +84,11 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.ArrowCursor
-        enabled: !root.isDisabled
 
-        onClicked: root.clicked(root.buttonId)
+        onClicked: {
+            if (!root.isDisabled)
+                root.clicked(root.buttonId)
+        }
 
         onContainsMouseChanged: {
             if (containsMouse) {
