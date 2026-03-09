@@ -30,7 +30,7 @@ Flickable {
         SettingsToggle {
             label: qsTr("Start on login")
             checked: settingsBackend.startOnLogin
-            onToggled: settingsBackend.startOnLogin = checked
+            onToggled: function(checked) { settingsBackend.startOnLogin = checked }
         }
 
         SettingsSection { title: qsTr("Language") }

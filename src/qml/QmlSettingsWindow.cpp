@@ -4,8 +4,6 @@
 #include "qml/QmlToast.h"
 #include "PlatformFeatures.h"
 
-#include <QCloseEvent>
-#include <QEvent>
 #include <QQmlContext>
 #include <QQuickView>
 
@@ -37,40 +35,25 @@ void QmlSettingsWindow::ensureView()
     m_view->setSource(
         QUrl(QStringLiteral("qrc:/SnapTrayQml/settings/SettingsWindow.qml")));
     m_view->setTitle(tr("Settings"));
-    m_view->installEventFilter(this);
 
     connect(m_backend, &SettingsBackend::ocrLanguagesChanged,
             this, &QmlSettingsWindow::ocrLanguagesChanged);
     connect(m_backend, &SettingsBackend::mcpEnabledChanged,
             this, &QmlSettingsWindow::mcpEnabledChanged);
-    connect(m_backend, &SettingsBackend::settingsSaved,
-            this, [this](bool languageChangeRequiresRestart) {
-        const QString message = languageChangeRequiresRestart
-            ? tr("Settings saved. Language change will apply after restart.")
-            : tr("Settings saved");
-        QmlToast::screenToast().showToast(
-            QmlToast::Level::Success, message, QString(), 2000);
-        if (!m_view)
-            return;
-        m_allowDirectClose = true;
-        m_view->close();
-        m_allowDirectClose = false;
-    });
-
-    // Route backend-driven close through a guard so user-initiated title-bar
-    // close can still be transformed into cancel() without recursion.
-    connect(m_backend, &SettingsBackend::settingsCancelled,
+    connect(m_backend, &SettingsBackend::languageChanged,
             this, [this]() {
-        if (!m_view)
+        if (!m_view || !m_view->isVisible())
             return;
-        m_allowDirectClose = true;
-        m_view->close();
-        m_allowDirectClose = false;
+
+        QmlToast::screenToast().showToast(
+            QmlToast::Level::Success,
+            tr("Settings saved. Language change will apply after restart."),
+            QString(),
+            2000);
     });
 
 #ifdef Q_OS_MAC
-    // Revert to accessory (LSUIElement) mode when the window is dismissed
-    // for any reason (Save, Cancel, or the title-bar close button).
+    // Revert to accessory (LSUIElement) mode when the window is dismissed.
     connect(m_view, &QWindow::visibleChanged, this, [](bool visible) {
         if (!visible)
             PlatformFeatures::setActivationPolicyAccessory();
@@ -123,19 +106,6 @@ void QmlSettingsWindow::activateWindow()
 bool QmlSettingsWindow::isVisible() const
 {
     return m_view && m_view->isVisible();
-}
-
-bool QmlSettingsWindow::eventFilter(QObject* watched, QEvent* event)
-{
-    if (watched == m_view && event && event->type() == QEvent::Close) {
-        auto* closeEvent = static_cast<QCloseEvent*>(event);
-        if (!m_allowDirectClose && m_backend) {
-            closeEvent->ignore();
-            m_backend->cancel();
-            return true;
-        }
-    }
-    return QObject::eventFilter(watched, event);
 }
 
 } // namespace SnapTray

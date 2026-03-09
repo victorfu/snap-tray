@@ -87,7 +87,7 @@ SettingsBackend::SettingsBackend(QObject* parent)
 SettingsBackend::~SettingsBackend() = default;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Load all settings from managers into buffered members
+// Load all settings from managers into the current view model state
 // ─────────────────────────────────────────────────────────────────────────────
 
 void SettingsBackend::loadAllSettings()
@@ -95,9 +95,7 @@ void SettingsBackend::loadAllSettings()
     // General
     m_startOnLogin = AutoLaunchManager::isEnabled();
     m_language = LanguageManager::instance().loadLanguage();
-    m_originalLanguage = m_language;
     m_appTheme = static_cast<int>(ToolbarStyleConfig::loadStyle());
-    m_originalAppTheme = m_appTheme;
     m_cliInstalled = PlatformFeatures::instance().isCLIInstalled();
 
 #ifdef Q_OS_MAC
@@ -163,12 +161,20 @@ void SettingsBackend::loadAllSettings()
 
 bool SettingsBackend::startOnLogin() const { return m_startOnLogin; }
 void SettingsBackend::setStartOnLogin(bool v) {
-    if (m_startOnLogin != v) { m_startOnLogin = v; emit startOnLoginChanged(); }
+    if (m_startOnLogin != v) {
+        m_startOnLogin = v;
+        AutoLaunchManager::setEnabled(v);
+        emit startOnLoginChanged();
+    }
 }
 
 QString SettingsBackend::language() const { return m_language; }
 void SettingsBackend::setLanguage(const QString& v) {
-    if (m_language != v) { m_language = v; emit languageChanged(); }
+    if (m_language != v) {
+        m_language = v;
+        LanguageManager::instance().saveLanguage(v);
+        emit languageChanged();
+    }
 }
 
 QVariantList SettingsBackend::availableLanguages() const
@@ -188,8 +194,6 @@ int SettingsBackend::appTheme() const { return m_appTheme; }
 void SettingsBackend::setAppTheme(int v) {
     if (m_appTheme != v) {
         m_appTheme = v;
-        // Apply preview immediately but keep Save/Cancel semantics by restoring
-        // the original persisted style in cancel() when needed.
         ToolbarStyleConfig::saveStyle(static_cast<ToolbarStyleType>(v));
         ThemeManager::instance().refreshTheme();
         emit appThemeChanged();
@@ -232,44 +236,77 @@ bool SettingsBackend::isMcpBuild() const
 }
 
 void SettingsBackend::setShortcutHintsEnabled(bool v) {
-    if (m_shortcutHintsEnabled != v) { m_shortcutHintsEnabled = v; emit shortcutHintsEnabledChanged(); }
+    if (m_shortcutHintsEnabled != v) {
+        m_shortcutHintsEnabled = v;
+        RegionCaptureSettingsManager::instance().setShortcutHintsEnabled(v);
+        emit shortcutHintsEnabledChanged();
+    }
 }
 
 #ifdef SNAPTRAY_ENABLE_MCP
 bool SettingsBackend::mcpEnabled() const { return m_mcpEnabled; }
 void SettingsBackend::setMcpEnabled(bool v) {
-    if (m_mcpEnabled != v) { m_mcpEnabled = v; emit mcpEnabledChanged(v); }
+    if (m_mcpEnabled != v) {
+        m_mcpEnabled = v;
+        MCPSettingsManager::instance().setEnabled(v);
+        emit mcpEnabledChanged(v);
+    }
 }
 #endif
 
 int SettingsBackend::blurIntensity() const { return m_blurIntensity; }
 void SettingsBackend::setBlurIntensity(int v) {
-    if (m_blurIntensity != v) { m_blurIntensity = v; emit blurIntensityChanged(); }
+    if (m_blurIntensity != v) {
+        m_blurIntensity = v;
+        AutoBlurSettingsManager::instance().saveBlurIntensity(v);
+        emit blurIntensityChanged();
+    }
 }
 
 int SettingsBackend::blurType() const { return m_blurType; }
 void SettingsBackend::setBlurType(int v) {
-    if (m_blurType != v) { m_blurType = v; emit blurTypeChanged(); }
+    if (m_blurType != v) {
+        m_blurType = v;
+        AutoBlurSettingsManager::instance().saveBlurType(
+            static_cast<AutoBlurSettingsManager::BlurType>(v));
+        emit blurTypeChanged();
+    }
 }
 
 int SettingsBackend::pinDefaultOpacity() const { return m_pinDefaultOpacity; }
 void SettingsBackend::setPinDefaultOpacity(int v) {
-    if (m_pinDefaultOpacity != v) { m_pinDefaultOpacity = v; emit pinDefaultOpacityChanged(); }
+    if (m_pinDefaultOpacity != v) {
+        m_pinDefaultOpacity = v;
+        PinWindowSettingsManager::instance().saveDefaultOpacity(v / 100.0);
+        emit pinDefaultOpacityChanged();
+    }
 }
 
 int SettingsBackend::pinOpacityStep() const { return m_pinOpacityStep; }
 void SettingsBackend::setPinOpacityStep(int v) {
-    if (m_pinOpacityStep != v) { m_pinOpacityStep = v; emit pinOpacityStepChanged(); }
+    if (m_pinOpacityStep != v) {
+        m_pinOpacityStep = v;
+        PinWindowSettingsManager::instance().saveOpacityStep(v / 100.0);
+        emit pinOpacityStepChanged();
+    }
 }
 
 int SettingsBackend::pinZoomStep() const { return m_pinZoomStep; }
 void SettingsBackend::setPinZoomStep(int v) {
-    if (m_pinZoomStep != v) { m_pinZoomStep = v; emit pinZoomStepChanged(); }
+    if (m_pinZoomStep != v) {
+        m_pinZoomStep = v;
+        PinWindowSettingsManager::instance().saveZoomStep(v / 100.0);
+        emit pinZoomStepChanged();
+    }
 }
 
 int SettingsBackend::pinMaxCacheFiles() const { return m_pinMaxCacheFiles; }
 void SettingsBackend::setPinMaxCacheFiles(int v) {
-    if (m_pinMaxCacheFiles != v) { m_pinMaxCacheFiles = v; emit pinMaxCacheFilesChanged(); }
+    if (m_pinMaxCacheFiles != v) {
+        m_pinMaxCacheFiles = v;
+        PinWindowSettingsManager::instance().saveMaxCacheFiles(v);
+        emit pinMaxCacheFilesChanged();
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -278,37 +315,66 @@ void SettingsBackend::setPinMaxCacheFiles(int v) {
 
 bool SettingsBackend::watermarkEnabled() const { return m_watermarkEnabled; }
 void SettingsBackend::setWatermarkEnabled(bool v) {
-    if (m_watermarkEnabled != v) { m_watermarkEnabled = v; emit watermarkEnabledChanged(); }
+    if (m_watermarkEnabled != v) {
+        m_watermarkEnabled = v;
+        WatermarkSettingsManager::instance().saveEnabled(v);
+        emit watermarkEnabledChanged();
+    }
 }
 
 bool SettingsBackend::watermarkApplyToRecording() const { return m_watermarkApplyToRecording; }
 void SettingsBackend::setWatermarkApplyToRecording(bool v) {
-    if (m_watermarkApplyToRecording != v) { m_watermarkApplyToRecording = v; emit watermarkApplyToRecordingChanged(); }
+    if (m_watermarkApplyToRecording != v) {
+        m_watermarkApplyToRecording = v;
+        WatermarkSettingsManager::instance().saveApplyToRecording(v);
+        emit watermarkApplyToRecordingChanged();
+    }
 }
 
 QString SettingsBackend::watermarkImagePath() const { return m_watermarkImagePath; }
 void SettingsBackend::setWatermarkImagePath(const QString& v) {
-    if (m_watermarkImagePath != v) { m_watermarkImagePath = v; emit watermarkImagePathChanged(); }
+    if (m_watermarkImagePath != v) {
+        m_watermarkImagePath = v;
+        WatermarkSettingsManager::instance().saveImagePath(v);
+        emit watermarkImagePathChanged();
+    }
 }
 
 int SettingsBackend::watermarkScale() const { return m_watermarkScale; }
 void SettingsBackend::setWatermarkScale(int v) {
-    if (m_watermarkScale != v) { m_watermarkScale = v; emit watermarkScaleChanged(); }
+    if (m_watermarkScale != v) {
+        m_watermarkScale = v;
+        WatermarkSettingsManager::instance().saveImageScale(v);
+        emit watermarkScaleChanged();
+    }
 }
 
 int SettingsBackend::watermarkOpacity() const { return m_watermarkOpacity; }
 void SettingsBackend::setWatermarkOpacity(int v) {
-    if (m_watermarkOpacity != v) { m_watermarkOpacity = v; emit watermarkOpacityChanged(); }
+    if (m_watermarkOpacity != v) {
+        m_watermarkOpacity = v;
+        WatermarkSettingsManager::instance().saveOpacity(v / 100.0);
+        emit watermarkOpacityChanged();
+    }
 }
 
 int SettingsBackend::watermarkMargin() const { return m_watermarkMargin; }
 void SettingsBackend::setWatermarkMargin(int v) {
-    if (m_watermarkMargin != v) { m_watermarkMargin = v; emit watermarkMarginChanged(); }
+    if (m_watermarkMargin != v) {
+        m_watermarkMargin = v;
+        WatermarkSettingsManager::instance().saveMargin(v);
+        emit watermarkMarginChanged();
+    }
 }
 
 int SettingsBackend::watermarkPosition() const { return m_watermarkPosition; }
 void SettingsBackend::setWatermarkPosition(int v) {
-    if (m_watermarkPosition != v) { m_watermarkPosition = v; emit watermarkPositionChanged(); }
+    if (m_watermarkPosition != v) {
+        m_watermarkPosition = v;
+        WatermarkSettingsManager::instance().savePosition(
+            static_cast<WatermarkSettingsManager::Position>(v));
+        emit watermarkPositionChanged();
+    }
 }
 
 QString SettingsBackend::watermarkPreviewUrl() const
@@ -324,7 +390,11 @@ QString SettingsBackend::watermarkPreviewUrl() const
 
 int SettingsBackend::recordingFrameRate() const { return m_recordingFrameRate; }
 void SettingsBackend::setRecordingFrameRate(int v) {
-    if (m_recordingFrameRate != v) { m_recordingFrameRate = v; emit recordingFrameRateChanged(); }
+    if (m_recordingFrameRate != v) {
+        m_recordingFrameRate = v;
+        RecordingSettingsManager::instance().setFrameRate(v);
+        emit recordingFrameRateChanged();
+    }
 }
 
 int SettingsBackend::recordingOutputFormat() const { return m_recordingOutputFormat; }
@@ -334,12 +404,17 @@ void SettingsBackend::setRecordingOutputFormat(int v) {
         return;
 
     m_recordingOutputFormat = v;
+    RecordingSettingsManager::instance().setOutputFormat(v);
     emit recordingOutputFormatChanged();
 }
 
 int SettingsBackend::recordingQuality() const { return m_recordingQuality; }
 void SettingsBackend::setRecordingQuality(int v) {
-    if (m_recordingQuality != v) { m_recordingQuality = v; emit recordingQualityChanged(); }
+    if (m_recordingQuality != v) {
+        m_recordingQuality = v;
+        RecordingSettingsManager::instance().setQuality(v);
+        emit recordingQualityChanged();
+    }
 }
 
 bool SettingsBackend::recordingShowPreview() const { return m_recordingShowPreview; }
@@ -348,6 +423,7 @@ void SettingsBackend::setRecordingShowPreview(bool v) {
         return;
 
     m_recordingShowPreview = v;
+    RecordingSettingsManager::instance().setShowPreview(v);
     emit recordingShowPreviewChanged();
 }
 
@@ -355,6 +431,7 @@ bool SettingsBackend::recordingAudioEnabled() const { return m_recordingAudioEna
 void SettingsBackend::setRecordingAudioEnabled(bool v) {
     if (m_recordingAudioEnabled != v) {
         m_recordingAudioEnabled = v;
+        RecordingSettingsManager::instance().setAudioEnabled(v);
         emit recordingAudioEnabledChanged();
     }
 }
@@ -362,13 +439,19 @@ void SettingsBackend::setRecordingAudioEnabled(bool v) {
 int SettingsBackend::recordingAudioSource() const { return m_recordingAudioSource; }
 void SettingsBackend::setRecordingAudioSource(int v) {
     v = qBound(0, v, 2);
-    if (m_recordingAudioSource != v) { m_recordingAudioSource = v; emit recordingAudioSourceChanged(); }
+    if (m_recordingAudioSource != v) {
+        m_recordingAudioSource = v;
+        RecordingSettingsManager::instance().setAudioSource(v);
+        emit recordingAudioSourceChanged();
+    }
 }
 
 QString SettingsBackend::recordingAudioDevice() const { return m_recordingAudioDevice; }
 void SettingsBackend::setRecordingAudioDevice(const QString& v) {
     if (m_recordingAudioDevice != v) {
         m_recordingAudioDevice = v;
+        normalizeRecordingAudioSettings();
+        RecordingSettingsManager::instance().setAudioDevice(m_recordingAudioDevice);
         emit recordingAudioDeviceChanged();
     }
 }
@@ -390,12 +473,20 @@ QVariantList SettingsBackend::recordingAudioDevices() const
 
 bool SettingsBackend::countdownEnabled() const { return m_countdownEnabled; }
 void SettingsBackend::setCountdownEnabled(bool v) {
-    if (m_countdownEnabled != v) { m_countdownEnabled = v; emit countdownEnabledChanged(); }
+    if (m_countdownEnabled != v) {
+        m_countdownEnabled = v;
+        RecordingSettingsManager::instance().setCountdownEnabled(v);
+        emit countdownEnabledChanged();
+    }
 }
 
 int SettingsBackend::countdownSeconds() const { return m_countdownSeconds; }
 void SettingsBackend::setCountdownSeconds(int v) {
-    if (m_countdownSeconds != v) { m_countdownSeconds = v; emit countdownSecondsChanged(); }
+    if (m_countdownSeconds != v) {
+        m_countdownSeconds = v;
+        RecordingSettingsManager::instance().setCountdownSeconds(v);
+        emit countdownSecondsChanged();
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -404,17 +495,29 @@ void SettingsBackend::setCountdownSeconds(int v) {
 
 QString SettingsBackend::screenshotPath() const { return m_screenshotPath; }
 void SettingsBackend::setScreenshotPath(const QString& v) {
-    if (m_screenshotPath != v) { m_screenshotPath = v; emit screenshotPathChanged(); }
+    if (m_screenshotPath != v) {
+        m_screenshotPath = v;
+        FileSettingsManager::instance().saveScreenshotPath(v);
+        emit screenshotPathChanged();
+    }
 }
 
 QString SettingsBackend::recordingPath() const { return m_recordingPath; }
 void SettingsBackend::setRecordingPath(const QString& v) {
-    if (m_recordingPath != v) { m_recordingPath = v; emit recordingPathChanged(); }
+    if (m_recordingPath != v) {
+        m_recordingPath = v;
+        FileSettingsManager::instance().saveRecordingPath(v);
+        emit recordingPathChanged();
+    }
 }
 
 QString SettingsBackend::filenameTemplate() const { return m_filenameTemplate; }
 void SettingsBackend::setFilenameTemplate(const QString& v) {
-    if (m_filenameTemplate != v) { m_filenameTemplate = v; emit filenameTemplateChanged(); }
+    if (m_filenameTemplate != v) {
+        m_filenameTemplate = v;
+        FileSettingsManager::instance().saveFilenameTemplate(v);
+        emit filenameTemplateChanged();
+    }
 }
 
 QString SettingsBackend::filenamePreview() const
@@ -424,12 +527,20 @@ QString SettingsBackend::filenamePreview() const
 
 bool SettingsBackend::autoSaveScreenshots() const { return m_autoSaveScreenshots; }
 void SettingsBackend::setAutoSaveScreenshots(bool v) {
-    if (m_autoSaveScreenshots != v) { m_autoSaveScreenshots = v; emit autoSaveScreenshotsChanged(); }
+    if (m_autoSaveScreenshots != v) {
+        m_autoSaveScreenshots = v;
+        FileSettingsManager::instance().saveAutoSaveScreenshots(v);
+        emit autoSaveScreenshotsChanged();
+    }
 }
 
 bool SettingsBackend::autoSaveRecordings() const { return m_autoSaveRecordings; }
 void SettingsBackend::setAutoSaveRecordings(bool v) {
-    if (m_autoSaveRecordings != v) { m_autoSaveRecordings = v; emit autoSaveRecordingsChanged(); }
+    if (m_autoSaveRecordings != v) {
+        m_autoSaveRecordings = v;
+        FileSettingsManager::instance().saveAutoSaveRecordings(v);
+        emit autoSaveRecordingsChanged();
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -443,12 +554,20 @@ QString SettingsBackend::currentVersion() const
 
 bool SettingsBackend::autoCheckUpdates() const { return m_autoCheckUpdates; }
 void SettingsBackend::setAutoCheckUpdates(bool v) {
-    if (m_autoCheckUpdates != v) { m_autoCheckUpdates = v; emit autoCheckUpdatesChanged(); }
+    if (m_autoCheckUpdates != v) {
+        m_autoCheckUpdates = v;
+        UpdateSettingsManager::instance().setAutoCheckEnabled(v);
+        emit autoCheckUpdatesChanged();
+    }
 }
 
 int SettingsBackend::checkFrequencyHours() const { return m_checkFrequencyHours; }
 void SettingsBackend::setCheckFrequencyHours(int v) {
-    if (m_checkFrequencyHours != v) { m_checkFrequencyHours = v; emit checkFrequencyHoursChanged(); }
+    if (m_checkFrequencyHours != v) {
+        m_checkFrequencyHours = v;
+        UpdateSettingsManager::instance().setCheckIntervalHours(v);
+        emit checkFrequencyHoursChanged();
+    }
 }
 
 QString SettingsBackend::lastCheckedText() const
@@ -488,100 +607,6 @@ bool SettingsBackend::ocrLoading() const
 bool SettingsBackend::ocrAvailableLanguagesLoaded() const
 {
     return !ocrSupported() || m_ocrAvailableLanguagesLoaded;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// save() — flush all buffered values to settings managers
-// ─────────────────────────────────────────────────────────────────────────────
-
-void SettingsBackend::save()
-{
-    const bool languageChanged = (m_language != m_originalLanguage);
-
-    // General
-    AutoLaunchManager::setEnabled(m_startOnLogin);
-    LanguageManager::instance().saveLanguage(m_language);
-    m_originalLanguage = m_language;
-    ToolbarStyleConfig::saveStyle(static_cast<ToolbarStyleType>(m_appTheme));
-    m_originalAppTheme = m_appTheme;
-
-    // Advanced
-    RegionCaptureSettingsManager::instance().setShortcutHintsEnabled(m_shortcutHintsEnabled);
-#ifdef SNAPTRAY_ENABLE_MCP
-    MCPSettingsManager::instance().setEnabled(m_mcpEnabled);
-#endif
-
-    AutoBlurSettingsManager::Options blurOpts;
-    blurOpts.blurIntensity = m_blurIntensity;
-    blurOpts.blurType = static_cast<AutoBlurSettingsManager::BlurType>(m_blurType);
-    blurOpts.enabled = AutoBlurSettingsManager::instance().loadEnabled();
-    blurOpts.detectFaces = AutoBlurSettingsManager::instance().loadDetectFaces();
-    AutoBlurSettingsManager::instance().save(blurOpts);
-
-    auto& pinMgr = PinWindowSettingsManager::instance();
-    pinMgr.saveDefaultOpacity(m_pinDefaultOpacity / 100.0);
-    pinMgr.saveOpacityStep(m_pinOpacityStep / 100.0);
-    pinMgr.saveZoomStep(m_pinZoomStep / 100.0);
-    pinMgr.saveMaxCacheFiles(m_pinMaxCacheFiles);
-
-    // Watermark
-    WatermarkSettingsManager::Settings wmSettings;
-    wmSettings.enabled = m_watermarkEnabled;
-    wmSettings.applyToRecording = m_watermarkApplyToRecording;
-    wmSettings.imagePath = m_watermarkImagePath;
-    wmSettings.imageScale = m_watermarkScale;
-    wmSettings.opacity = m_watermarkOpacity / 100.0;
-    wmSettings.margin = m_watermarkMargin;
-    wmSettings.position = static_cast<WatermarkSettingsManager::Position>(m_watermarkPosition);
-    WatermarkSettingsManager::instance().save(wmSettings);
-
-    // Recording
-    auto& recMgr = RecordingSettingsManager::instance();
-    normalizeRecordingAudioSettings();
-    recMgr.setFrameRate(m_recordingFrameRate);
-    recMgr.setOutputFormat(m_recordingOutputFormat);
-    recMgr.setQuality(m_recordingQuality);
-    recMgr.setShowPreview(m_recordingShowPreview);
-    recMgr.setAudioEnabled(m_recordingAudioEnabled);
-    recMgr.setAudioSource(m_recordingAudioSource);
-    recMgr.setAudioDevice(m_recordingAudioDevice);
-    recMgr.setCountdownEnabled(m_countdownEnabled);
-    recMgr.setCountdownSeconds(m_countdownSeconds);
-
-    // Files
-    auto& fileMgr = FileSettingsManager::instance();
-    fileMgr.saveScreenshotPath(m_screenshotPath);
-    fileMgr.saveRecordingPath(m_recordingPath);
-    fileMgr.saveFilenameTemplate(m_filenameTemplate);
-    fileMgr.saveAutoSaveScreenshots(m_autoSaveScreenshots);
-    fileMgr.saveAutoSaveRecordings(m_autoSaveRecordings);
-
-    // Updates
-    auto& updateMgr = UpdateSettingsManager::instance();
-    updateMgr.setAutoCheckEnabled(m_autoCheckUpdates);
-    updateMgr.setCheckIntervalHours(m_checkFrequencyHours);
-
-    // OCR (if loaded)
-    if (m_ocrLoaded) {
-        auto& ocrMgr = OCRSettingsManager::instance();
-        ocrMgr.setLanguages(m_ocrSelectedLanguages);
-        ocrMgr.setBehavior(static_cast<OCRBehavior>(m_ocrBehavior));
-        ocrMgr.save();
-        emit ocrLanguagesChanged(m_ocrSelectedLanguages);
-    }
-
-    emit settingsSaved(languageChanged);
-}
-
-void SettingsBackend::cancel()
-{
-    if (m_appTheme != m_originalAppTheme) {
-        ToolbarStyleConfig::saveStyle(static_cast<ToolbarStyleType>(m_originalAppTheme));
-        ThemeManager::instance().refreshTheme();
-        m_appTheme = m_originalAppTheme;
-        emit appThemeChanged();
-    }
-    emit settingsCancelled();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -801,6 +826,7 @@ void SettingsBackend::addOcrLanguage(const QString& code)
     ensureOcrSettingsLoaded();
     if (!m_ocrSelectedLanguages.contains(code)) {
         m_ocrSelectedLanguages.append(code);
+        persistOcrSettings();
         emit ocrSelectedLanguagesChanged();
         emit ocrLanguagesChanged(m_ocrSelectedLanguages);
     }
@@ -810,6 +836,7 @@ void SettingsBackend::removeOcrLanguage(const QString& code)
 {
     ensureOcrSettingsLoaded();
     if (m_ocrSelectedLanguages.removeAll(code) > 0) {
+        persistOcrSettings();
         emit ocrSelectedLanguagesChanged();
         emit ocrLanguagesChanged(m_ocrSelectedLanguages);
     }
@@ -823,6 +850,7 @@ void SettingsBackend::moveOcrLanguage(int from, int to)
         || from == to)
         return;
     m_ocrSelectedLanguages.move(from, to);
+    persistOcrSettings();
     emit ocrSelectedLanguagesChanged();
     emit ocrLanguagesChanged(m_ocrSelectedLanguages);
 }
@@ -836,6 +864,7 @@ void SettingsBackend::setOcrBehavior(int behavior)
         return;
 
     m_ocrBehavior = behavior;
+    persistOcrSettings();
     emit ocrBehaviorChanged();
 }
 
@@ -967,6 +996,16 @@ void SettingsBackend::ensureOcrSettingsLoaded()
     m_ocrLoaded = true;
     emit ocrSelectedLanguagesChanged();
     emit ocrBehaviorChanged();
+}
+
+void SettingsBackend::persistOcrSettings()
+{
+    auto& ocrMgr = OCRSettingsManager::instance();
+    ocrMgr.setLanguages(m_ocrSelectedLanguages);
+    ocrMgr.setBehavior(static_cast<OCRBehavior>(m_ocrBehavior));
+    ocrMgr.save();
+    m_ocrSelectedLanguages = ocrMgr.languages();
+    m_ocrBehavior = static_cast<int>(ocrMgr.behavior());
 }
 
 QString SettingsBackend::ocrDisplayNameForCode(const QString& code) const

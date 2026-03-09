@@ -6,7 +6,6 @@ import SnapTrayQml
  * SettingsWindow: Root layout for the QML settings dialog.
  *
  * Three-column layout: sidebar navigation | 1px separator | content stack.
- * Bottom bar with Save / Cancel buttons, separated by a 1px top border.
  */
 Item {
     id: root
@@ -19,7 +18,6 @@ Item {
 
     RowLayout {
         anchors.fill: parent
-        anchors.bottomMargin: bottomBar.height
         spacing: 0
 
         SettingsSidebar {
@@ -134,43 +132,6 @@ Item {
                     || status === Loader.Ready
                     || status === Loader.Loading
                 sourceComponent: aboutSettingsPage
-            }
-        }
-    }
-
-    // Bottom bar with Save / Cancel
-    Rectangle {
-        id: bottomBar
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        height: ComponentTokens.settingsBottomBarHeight
-        color: SemanticTokens.backgroundPrimary
-
-        // Top border
-        Rectangle {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            height: 1
-            color: SemanticTokens.borderDefault
-        }
-
-        Row {
-            anchors.right: parent.right
-            anchors.rightMargin: ComponentTokens.settingsBottomBarPaddingH
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: SemanticTokens.spacing8
-
-            SettingsButton {
-                text: qsTr("Cancel")
-                onClicked: settingsBackend.cancel()
-            }
-
-            SettingsButton {
-                text: qsTr("Save")
-                primary: true
-                onClicked: settingsBackend.save()
             }
         }
     }

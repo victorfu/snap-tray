@@ -214,10 +214,6 @@ public:
     int ocrBehavior() const;
     void setOcrBehavior(int behavior);
 
-    // ──── Q_INVOKABLE methods ────
-    Q_INVOKABLE void save();
-    Q_INVOKABLE void cancel();
-
     Q_INVOKABLE void installCLI();
     Q_INVOKABLE void uninstallCLI();
 
@@ -249,9 +245,6 @@ public:
     Q_INVOKABLE QVariantList audioDevices() const;
 
 signals:
-    void settingsSaved(bool languageChangeRequiresRestart);
-    void settingsCancelled();
-
     // General
     void startOnLoginChanged();
     void languageChanged();
@@ -330,15 +323,14 @@ private:
     void normalizeRecordingAudioSettings();
     void ensureOcrSettingsLoaded();
     QString ocrDisplayNameForCode(const QString& code) const;
+    void persistOcrSettings();
 
-    // ──── Buffered values ────
+    // ──── Current settings values ────
 
     // General
     bool m_startOnLogin = false;
     QString m_language;
-    QString m_originalLanguage;
     int m_appTheme = 0;
-    int m_originalAppTheme = 0;
     bool m_cliInstalled = false;
 
 #ifdef Q_OS_MAC

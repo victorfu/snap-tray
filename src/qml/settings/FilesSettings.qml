@@ -91,13 +91,13 @@ Flickable {
         SettingsToggle {
             label: qsTr("Auto-save screenshots")
             checked: settingsBackend.autoSaveScreenshots
-            onToggled: settingsBackend.autoSaveScreenshots = checked
+            onToggled: function(checked) { settingsBackend.autoSaveScreenshots = checked }
         }
 
         SettingsToggle {
             label: qsTr("Auto-save recordings")
             checked: settingsBackend.autoSaveRecordings
-            onToggled: settingsBackend.autoSaveRecordings = checked
+            onToggled: function(checked) { settingsBackend.autoSaveRecordings = checked }
         }
     }
 }

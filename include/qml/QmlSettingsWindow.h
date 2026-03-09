@@ -25,10 +25,8 @@ signals:
 
 private:
     void ensureView();
-    bool eventFilter(QObject* watched, QEvent* event) override;
 
     QPointer<QQuickView> m_view;
     SettingsBackend* m_backend = nullptr;
-    bool m_allowDirectClose = false;
 };
 } // namespace SnapTray

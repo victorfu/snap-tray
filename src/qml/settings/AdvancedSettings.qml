@@ -23,7 +23,7 @@ Flickable {
         SettingsToggle {
             label: qsTr("Show shortcut hints")
             checked: settingsBackend.shortcutHintsEnabled
-            onToggled: settingsBackend.shortcutHintsEnabled = checked
+            onToggled: function(checked) { settingsBackend.shortcutHintsEnabled = checked }
         }
 
         // MCP section (debug builds only)
@@ -36,7 +36,7 @@ Flickable {
             label: qsTr("Enable MCP server")
             checked: settingsBackend.isMcpBuild ? settingsBackend.mcpEnabled : false
             visible: settingsBackend.isMcpBuild
-            onToggled: {
+            onToggled: function(checked) {
                 if (settingsBackend.isMcpBuild)
                     settingsBackend.mcpEnabled = checked
             }
@@ -49,7 +49,7 @@ Flickable {
             value: settingsBackend.blurIntensity
             from: 1
             to: 100
-            onMoved: settingsBackend.blurIntensity = value
+            onMoved: function(value) { settingsBackend.blurIntensity = value }
         }
 
         SettingsCombo {
@@ -70,7 +70,7 @@ Flickable {
             from: 10
             to: 100
             suffix: "%"
-            onMoved: settingsBackend.pinDefaultOpacity = value
+            onMoved: function(value) { settingsBackend.pinDefaultOpacity = value }
         }
 
         SettingsSlider {
@@ -79,7 +79,7 @@ Flickable {
             from: 1
             to: 20
             suffix: "%"
-            onMoved: settingsBackend.pinOpacityStep = value
+            onMoved: function(value) { settingsBackend.pinOpacityStep = value }
         }
 
         SettingsSlider {
@@ -88,7 +88,7 @@ Flickable {
             from: 1
             to: 20
             suffix: "%"
-            onMoved: settingsBackend.pinZoomStep = value
+            onMoved: function(value) { settingsBackend.pinZoomStep = value }
         }
 
         SettingsSlider {
@@ -96,7 +96,7 @@ Flickable {
             value: settingsBackend.pinMaxCacheFiles
             from: 5
             to: 200
-            onMoved: settingsBackend.pinMaxCacheFiles = value
+            onMoved: function(value) { settingsBackend.pinMaxCacheFiles = value }
         }
     }
 }

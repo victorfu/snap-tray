@@ -22,13 +22,13 @@ Flickable {
         SettingsToggle {
             label: qsTr("Apply to images")
             checked: settingsBackend.watermarkEnabled
-            onToggled: settingsBackend.watermarkEnabled = checked
+            onToggled: function(checked) { settingsBackend.watermarkEnabled = checked }
         }
 
         SettingsToggle {
             label: qsTr("Apply to recordings")
             checked: settingsBackend.watermarkApplyToRecording
-            onToggled: settingsBackend.watermarkApplyToRecording = checked
+            onToggled: function(checked) { settingsBackend.watermarkApplyToRecording = checked }
         }
 
         Spacer {}
@@ -55,7 +55,7 @@ Flickable {
                     from: 10
                     to: 200
                     suffix: "%"
-                    onMoved: settingsBackend.watermarkScale = value
+                    onMoved: function(value) { settingsBackend.watermarkScale = value }
                 }
 
                 SettingsSlider {
@@ -64,7 +64,7 @@ Flickable {
                     from: 10
                     to: 100
                     suffix: "%"
-                    onMoved: settingsBackend.watermarkOpacity = value
+                    onMoved: function(value) { settingsBackend.watermarkOpacity = value }
                 }
 
                 SettingsSlider {
@@ -73,7 +73,7 @@ Flickable {
                     from: 0
                     to: 100
                     suffix: " px"
-                    onMoved: settingsBackend.watermarkMargin = value
+                    onMoved: function(value) { settingsBackend.watermarkMargin = value }
                 }
 
                 SettingsCombo {

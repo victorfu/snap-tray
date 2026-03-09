@@ -109,7 +109,7 @@ Flickable {
             from: 0
             to: 100
             visible: settingsBackend.recordingShowPreview || settingsBackend.recordingOutputFormat === 0
-            onMoved: settingsBackend.recordingQuality = value
+            onMoved: function(value) { settingsBackend.recordingQuality = value }
         }
 
         Rectangle {
@@ -146,7 +146,7 @@ Flickable {
             checked: settingsBackend.recordingAudioEnabled
             enabled: root.audioCaptureSupported
             opacity: enabled ? 1.0 : 0.6
-            onToggled: settingsBackend.recordingAudioEnabled = checked
+            onToggled: function(checked) { settingsBackend.recordingAudioEnabled = checked }
         }
 
         SettingsCombo {
@@ -226,7 +226,7 @@ Flickable {
             label: qsTr("Show preview")
             description: qsTr("Keep this on to trim or export after recording. Preview recordings are always captured as MP4 first.")
             checked: settingsBackend.recordingShowPreview
-            onToggled: settingsBackend.recordingShowPreview = checked
+            onToggled: function(checked) { settingsBackend.recordingShowPreview = checked }
         }
 
         SettingsSection { title: qsTr("Countdown") }
@@ -234,7 +234,7 @@ Flickable {
         SettingsToggle {
             label: qsTr("Show countdown")
             checked: settingsBackend.countdownEnabled
-            onToggled: settingsBackend.countdownEnabled = checked
+            onToggled: function(checked) { settingsBackend.countdownEnabled = checked }
         }
 
         SettingsCombo {

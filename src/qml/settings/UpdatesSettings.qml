@@ -47,7 +47,7 @@ Flickable {
         SettingsToggle {
             label: qsTr("Auto-check updates")
             checked: settingsBackend.autoCheckUpdates
-            onToggled: settingsBackend.autoCheckUpdates = checked
+            onToggled: function(checked) { settingsBackend.autoCheckUpdates = checked }
         }
 
         SettingsCombo {
