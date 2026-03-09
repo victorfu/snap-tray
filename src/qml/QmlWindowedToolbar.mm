@@ -305,11 +305,6 @@ bool QmlWindowedToolbar::isVisible() const
     return m_view && m_view->isVisible();
 }
 
-WId QmlWindowedToolbar::winId() const
-{
-    return m_view ? m_view->winId() : 0;
-}
-
 QRect QmlWindowedToolbar::geometry() const
 {
     if (!m_view)

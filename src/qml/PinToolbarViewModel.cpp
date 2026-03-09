@@ -18,13 +18,11 @@ void PinToolbarViewModel::buildButtonList()
         const auto& def = registry.get(toolId);
         QVariantMap entry;
         entry["id"] = static_cast<int>(toolId);
-        entry["iconKey"] = def.iconKey;
         entry["iconSource"] = QStringLiteral("qrc:/icons/icons/%1.svg").arg(def.iconKey);
         entry["tooltip"] = registry.getTooltipWithShortcut(toolId);
         entry["separatorBefore"] = def.showSeparatorBefore
                                    || toolId == ToolId::OCR;
         entry["isAction"] = false;
-        entry["isDrawing"] = ToolTraits::isAnnotationTool(toolId);
         entry["isOCR"] = (toolId == ToolId::OCR);
         entry["isUndo"] = (toolId == ToolId::Undo);
         entry["isRedo"] = (toolId == ToolId::Redo);
@@ -35,12 +33,10 @@ void PinToolbarViewModel::buildButtonList()
     // "Done" — local toolbar-only action
     QVariantMap done;
     done["id"] = ButtonDone;
-    done["iconKey"] = QStringLiteral("done");
     done["iconSource"] = QStringLiteral("qrc:/icons/icons/done.svg");
     done["tooltip"] = QStringLiteral("Done (Space/Esc)");
     done["separatorBefore"] = true;
     done["isAction"] = false;
-    done["isDrawing"] = false;
     done["isOCR"] = false;
     done["isUndo"] = false;
     done["isRedo"] = false;

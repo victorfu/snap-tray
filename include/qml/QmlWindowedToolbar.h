@@ -5,7 +5,6 @@
 #include <QPoint>
 #include <QPointer>
 #include <QElapsedTimer>
-#include <QWindow>  // for WId
 
 class QWidget;
 class QQuickView;
@@ -40,7 +39,6 @@ public:
     void close();
 
     bool isVisible() const;
-    WId winId() const;
 
     void positionNear(const QRect& pinWindowRect);
 

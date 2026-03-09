@@ -61,7 +61,6 @@ signals:
     void copyClicked();
     void saveClicked();
     void doneClicked();
-    void closeRequested();
 
 public slots:
     /**
