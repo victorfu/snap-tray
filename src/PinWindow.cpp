@@ -2819,6 +2819,16 @@ void PinWindow::initializeAnnotationComponents()
 
     // Font dropdown signals → RegionSettingsHelper (global coords from QML)
     m_settingsHelper = new RegionSettingsHelper(this);
+    connect(m_settingsHelper, &RegionSettingsHelper::dropdownShown,
+        this, [this]() {
+            auto& cursorManager = CursorManager::instance();
+            cursorManager.pushCursorForWidget(this, CursorContext::Override, Qt::ArrowCursor);
+            cursorManager.reapplyCursorForWidget(this);
+        });
+    connect(m_settingsHelper, &RegionSettingsHelper::dropdownHidden,
+        this, [this]() {
+            QTimer::singleShot(0, this, &PinWindow::syncFloatingUiCursor);
+        });
     connect(m_settingsHelper, &RegionSettingsHelper::fontSizeSelected,
         this, &PinWindow::onFontSizeSelected);
     connect(m_settingsHelper, &RegionSettingsHelper::fontFamilySelected,
@@ -3504,6 +3514,10 @@ bool PinWindow::isGlobalPosOverFloatingUi(const QPoint& globalPos) const
         return true;
     }
 
+    if (QWidget* popup = QApplication::activePopupWidget(); popup && popup->isVisible()) {
+        return true;
+    }
+
     return false;
 }
 
@@ -3691,6 +3705,9 @@ void PinWindow::onShapeFillModeChanged(ShapeFillMode mode)
 
 void PinWindow::onArrowStyleChanged(LineEndStyle style)
 {
+    if (m_subToolbar && m_subToolbar->viewModel()) {
+        m_subToolbar->viewModel()->setArrowStyle(static_cast<int>(style));
+    }
     if (m_toolManager) {
         m_toolManager->setArrowStyle(style);
     }
@@ -3700,6 +3717,9 @@ void PinWindow::onArrowStyleChanged(LineEndStyle style)
 
 void PinWindow::onLineStyleChanged(LineStyle style)
 {
+    if (m_subToolbar && m_subToolbar->viewModel()) {
+        m_subToolbar->viewModel()->setLineStyle(static_cast<int>(style));
+    }
     if (m_toolManager) {
         m_toolManager->setLineStyle(style);
     }

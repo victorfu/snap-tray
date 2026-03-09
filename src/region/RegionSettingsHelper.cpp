@@ -80,7 +80,8 @@ static QPixmap createMenuIconCanvas()
     return pixmap;
 }
 
-static void drawArrowTriangle(QPainter& painter, const QPointF& tip, bool pointRight, bool filled)
+static void drawArrowTriangle(QPainter& painter, const QPointF& tip, bool pointRight, bool filled,
+                              const QColor& fillColor = QColor())
 {
     constexpr qreal kArrowLength = 6.0;
     constexpr qreal kArrowHalfHeight = 3.5;
@@ -97,7 +98,14 @@ static void drawArrowTriangle(QPainter& painter, const QPointF& tip, bool pointR
     }
 
     painter.save();
-    painter.setBrush(filled ? painter.pen().color() : Qt::NoBrush);
+    if (filled) {
+        painter.setBrush(painter.pen().color());
+    } else {
+        QPen outlinePen = painter.pen();
+        outlinePen.setWidthF(qMax(1.15, outlinePen.widthF() - 0.45));
+        painter.setPen(outlinePen);
+        painter.setBrush(fillColor.isValid() ? QBrush(fillColor) : Qt::NoBrush);
+    }
     painter.drawPolygon(polygon);
     painter.restore();
 }
@@ -130,7 +138,8 @@ static QIcon createLineStyleMenuIcon(LineStyle style, const QColor& color)
     return QIcon(pixmap);
 }
 
-static QIcon createArrowStyleMenuIcon(LineEndStyle style, const QColor& color)
+static QIcon createArrowStyleMenuIcon(LineEndStyle style, const QColor& color,
+                                      const QColor& backgroundColor)
 {
     QPixmap pixmap = createMenuIconCanvas();
     QPainter painter(&pixmap);
@@ -153,7 +162,7 @@ static QIcon createArrowStyleMenuIcon(LineEndStyle style, const QColor& color)
         drawArrowTriangle(painter, QPointF(20.0, kCenterY), true, true);
         break;
     case LineEndStyle::EndArrowOutline:
-        drawArrowTriangle(painter, QPointF(20.0, kCenterY), true, false);
+        drawArrowTriangle(painter, QPointF(20.0, kCenterY), true, false, backgroundColor);
         break;
     case LineEndStyle::EndArrowLine:
         drawArrowLine(painter, QPointF(20.0, kCenterY), true);
@@ -163,8 +172,8 @@ static QIcon createArrowStyleMenuIcon(LineEndStyle style, const QColor& color)
         drawArrowTriangle(painter, QPointF(20.0, kCenterY), true, true);
         break;
     case LineEndStyle::BothArrowOutline:
-        drawArrowTriangle(painter, QPointF(2.0, kCenterY), false, false);
-        drawArrowTriangle(painter, QPointF(20.0, kCenterY), true, false);
+        drawArrowTriangle(painter, QPointF(2.0, kCenterY), false, false, backgroundColor);
+        drawArrowTriangle(painter, QPointF(20.0, kCenterY), true, false, backgroundColor);
         break;
     }
 
@@ -274,6 +283,7 @@ void RegionSettingsHelper::showLineStyleDropdown(const QPoint& pos, LineStyle cu
 
 void RegionSettingsHelper::showMenu(QMenu* menu, const QPoint& globalPos)
 {
+    bool menuWasShown = false;
     auto bringToFront = [menu]() {
         if (!menu || !menu->isVisible()) {
             return;
@@ -287,9 +297,16 @@ void RegionSettingsHelper::showMenu(QMenu* menu, const QPoint& globalPos)
         QTimer::singleShot(0, menu, bringToFront);
         QTimer::singleShot(80, menu, bringToFront);
     });
+    QObject::connect(menu, &QMenu::aboutToShow, this, [this, &menuWasShown]() {
+        menuWasShown = true;
+        emit dropdownShown();
+    });
 
     bringToFront();
     menu->exec(globalPos);
+    if (menuWasShown) {
+        emit dropdownHidden();
+    }
     menu->deleteLater();
 }
 
@@ -339,10 +356,11 @@ void RegionSettingsHelper::populateArrowStyleMenu(QMenu* menu, LineEndStyle curr
     auto* group = new QActionGroup(menu);
     group->setExclusive(true);
     const QColor iconColor = menu->palette().color(QPalette::WindowText);
+    const QColor iconBackground = menu->palette().color(QPalette::Window);
 
     for (const auto& entry : kArrowStyleEntries) {
         QAction* action = menu->addAction(
-            createArrowStyleMenuIcon(entry.value, iconColor),
+            createArrowStyleMenuIcon(entry.value, iconColor, iconBackground),
             tr(entry.label));
         action->setCheckable(true);
         action->setChecked(entry.value == currentStyle);

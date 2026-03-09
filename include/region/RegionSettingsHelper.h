@@ -62,6 +62,8 @@ public:
     void showLineStyleDropdown(const QPoint& pos, LineStyle currentStyle);
 
 signals:
+    void dropdownShown();
+    void dropdownHidden();
     void fontSizeSelected(int size);
     void fontFamilySelected(const QString& family);
     void arrowStyleSelected(LineEndStyle style);

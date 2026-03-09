@@ -112,6 +112,9 @@ private:
     void finalizePolylineForToolbarInteraction();
     bool isDrawingTool(ToolId toolId) const;
     void setToolCursor();
+    void syncFloatingUiCursor();
+    void restoreCanvasCursorAt(const QPoint& localPos);
+    bool isGlobalPosOverFloatingUi(const QPoint& globalPos) const;
 
     using ToolbarClickHandler = void (ScreenCanvas::*)(ToolId);
     static const std::map<ToolId, ToolbarClickHandler>& toolbarDispatchTable();

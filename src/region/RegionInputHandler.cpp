@@ -322,6 +322,11 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
     handleThrottledUpdate();
 }
 
+void RegionInputHandler::syncHoverCursorAt(const QPoint& pos)
+{
+    handleHoverMove(pos, Qt::NoButton);
+}
+
 void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
 {
     if (!m_state) {

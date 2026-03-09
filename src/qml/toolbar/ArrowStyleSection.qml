@@ -41,6 +41,7 @@ Item {
     component ArrowPreview: Canvas {
         required property int styleValue
         required property color strokeColor
+        required property color backgroundColor
 
         width: parent ? parent.width - 16 : 36
         height: 14
@@ -62,10 +63,18 @@ Item {
             }
             ctx.closePath()
 
-            if (filled)
+            if (filled) {
                 ctx.fill()
-            else
+            } else {
+                var previousLineWidth = ctx.lineWidth
+                var previousFillStyle = ctx.fillStyle
+                ctx.fillStyle = backgroundColor
+                ctx.fill()
+                ctx.lineWidth = Math.max(1.15, previousLineWidth - 0.45)
                 ctx.stroke()
+                ctx.lineWidth = previousLineWidth
+                ctx.fillStyle = previousFillStyle
+            }
         }
 
         function drawArrowLine(ctx, tipX, tipY, pointRight) {
@@ -82,6 +91,7 @@ Item {
 
         onStyleValueChanged: requestPaint()
         onStrokeColorChanged: requestPaint()
+        onBackgroundColorChanged: requestPaint()
         onWidthChanged: requestPaint()
         onHeightChanged: requestPaint()
 
@@ -145,6 +155,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             styleValue: root.viewModel.arrowStyle
             strokeColor: ComponentTokens.toolbarIcon
+            backgroundColor: buttonRect.color
         }
 
         ToolbarChevron {

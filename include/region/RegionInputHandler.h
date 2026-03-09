@@ -63,6 +63,7 @@ public:
     void handleMousePress(QMouseEvent* event);
     void handleMouseMove(QMouseEvent* event);
     void handleMouseRelease(QMouseEvent* event);
+    void syncHoverCursorAt(const QPoint& pos);
 
     // State accessors
     QPoint currentPoint() const { return m_state ? m_state->currentPoint : QPoint(); }

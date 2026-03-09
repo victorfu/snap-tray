@@ -59,6 +59,11 @@ target_link_libraries(PinWindow_CropUndo PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_CropUndo COMMAND PinWindow_CropUndo)
 set_tests_properties(PinWindow_CropUndo PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(PinWindow_StyleSync PinWindow/tst_StyleSync.cpp)
+target_link_libraries(PinWindow_StyleSync PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_StyleSync COMMAND PinWindow_StyleSync)
+set_tests_properties(PinWindow_StyleSync PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 # ============================================================================
 # RegionSelector Tests
 # ============================================================================

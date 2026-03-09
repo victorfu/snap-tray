@@ -29,6 +29,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QCloseEvent>
 #include <QShowEvent>
 #include <QGuiApplication>
+#include <QApplication>
 #include <QScreen>
 #include <QDebug>
 #include <QCursor>
@@ -249,11 +250,15 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::dragFinished,
         this, [this]() { m_toolbarUserDragged = true; });
 
-    // Cursor management: restore drawing cursor when mouse leaves QML overlays
+    // Keep floating QML overlay cursor ownership in sync with the canvas cursor state.
     connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::cursorRestoreRequested,
-        this, [this]() { setToolCursor(); });
+        this, &ScreenCanvas::syncFloatingUiCursor);
+    connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::cursorSyncRequested,
+        this, &ScreenCanvas::syncFloatingUiCursor);
     connect(m_qmlSubToolbar.get(), &SnapTray::QmlFloatingSubToolbar::cursorRestoreRequested,
-        this, [this]() { setToolCursor(); });
+        this, &ScreenCanvas::syncFloatingUiCursor);
+    connect(m_qmlSubToolbar.get(), &SnapTray::QmlFloatingSubToolbar::cursorSyncRequested,
+        this, &ScreenCanvas::syncFloatingUiCursor);
 
     // Initialize emoji picker
     m_emojiPicker = new EmojiPicker(this);
@@ -292,6 +297,16 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     // Initialize settings helper for font dropdowns
     m_settingsHelper = new RegionSettingsHelper(this);
     m_settingsHelper->setParentWidget(this);
+    connect(m_settingsHelper, &RegionSettingsHelper::dropdownShown,
+        this, [this]() {
+            auto& cursorManager = CursorManager::instance();
+            cursorManager.pushCursorForWidget(this, CursorContext::Override, Qt::ArrowCursor);
+            cursorManager.reapplyCursorForWidget(this);
+        });
+    connect(m_settingsHelper, &RegionSettingsHelper::dropdownHidden,
+        this, [this]() {
+            QTimer::singleShot(0, this, &ScreenCanvas::syncFloatingUiCursor);
+        });
 
     // Connect font selection signals
     connect(m_settingsHelper, &RegionSettingsHelper::fontSizeSelected,
@@ -798,6 +813,67 @@ void ScreenCanvas::setToolCursor()
     } else {
         cursorManager.updateToolCursorForWidget(this);
     }
+    cursorManager.reapplyCursorForWidget(this);
+}
+
+bool ScreenCanvas::isGlobalPosOverFloatingUi(const QPoint& globalPos) const
+{
+    if (m_qmlToolbar && m_qmlToolbar->isVisible() && m_qmlToolbar->geometry().contains(globalPos)) {
+        return true;
+    }
+
+    if (m_qmlSubToolbar && m_qmlSubToolbar->isVisible() &&
+        m_qmlSubToolbar->geometry().contains(globalPos)) {
+        return true;
+    }
+
+    if (QWidget* popup = QApplication::activePopupWidget(); popup && popup->isVisible()) {
+        return true;
+    }
+
+    return false;
+}
+
+void ScreenCanvas::restoreCanvasCursorAt(const QPoint& localPos)
+{
+    auto& cursorManager = CursorManager::instance();
+
+    if (!rect().contains(localPos)) {
+        cursorManager.setHoverTargetForWidget(this, HoverTarget::None);
+        cursorManager.popCursorForWidget(this, CursorContext::Override);
+        return;
+    }
+
+    setToolCursor();
+
+    if (!m_toolManager || m_toolManager->isDrawing()) {
+        cursorManager.popCursorForWidget(this, CursorContext::Override);
+        cursorManager.reapplyCursorForWidget(this);
+        return;
+    }
+
+    if (m_emojiPicker && m_emojiPicker->isVisible() && m_emojiPicker->contains(localPos)) {
+        cursorManager.setHoverTargetForWidget(this, HoverTarget::ToolbarButton);
+    } else {
+        updateAnnotationCursor(localPos);
+    }
+
+    cursorManager.popCursorForWidget(this, CursorContext::Override);
+    cursorManager.reapplyCursorForWidget(this);
+}
+
+void ScreenCanvas::syncFloatingUiCursor()
+{
+    auto& cursorManager = CursorManager::instance();
+    const QPoint globalPos = QCursor::pos();
+
+    if (isGlobalPosOverFloatingUi(globalPos)) {
+        cursorManager.pushCursorForWidget(this, CursorContext::Override, Qt::ArrowCursor);
+        cursorManager.reapplyCursorForWidget(this);
+        return;
+    }
+
+    restoreCanvasCursorAt(mapFromGlobal(globalPos));
 }
 
 void ScreenCanvas::mousePressEvent(QMouseEvent* event)

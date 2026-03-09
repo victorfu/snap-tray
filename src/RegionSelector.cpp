@@ -58,6 +58,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QEnterEvent>
 #include <QFocusEvent>
 #include <QGuiApplication>
+#include <QApplication>
 #include <QScreen>
 #include <QDebug>
 #include <QCursor>
@@ -383,15 +384,15 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::dragFinished,
         this, [this]() { m_toolbarUserDragged = true; });
 
-    // Cursor management: restore drawing cursor when mouse leaves QML overlays
+    // Keep floating UI and native popup cursor ownership aligned with the region surface.
     connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::cursorRestoreRequested,
-        this, [this]() {
-            CursorManager::instance().updateToolCursorForWidget(this);
-        });
+        this, &RegionSelector::syncFloatingUiCursor);
+    connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::cursorSyncRequested,
+        this, &RegionSelector::syncFloatingUiCursor);
     connect(m_qmlSubToolbar.get(), &SnapTray::QmlFloatingSubToolbar::cursorRestoreRequested,
-        this, [this]() {
-            CursorManager::instance().updateToolCursorForWidget(this);
-        });
+        this, &RegionSelector::syncFloatingUiCursor);
+    connect(m_qmlSubToolbar.get(), &SnapTray::QmlFloatingSubToolbar::cursorSyncRequested,
+        this, &RegionSelector::syncFloatingUiCursor);
 
     connect(m_qmlSubToolbar.get(), &SnapTray::QmlFloatingSubToolbar::emojiPickerRequested,
         this, [this]() {
@@ -846,6 +847,16 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Initialize settings helper
     m_settingsHelper = new RegionSettingsHelper(this);
     m_settingsHelper->setParentWidget(this);
+    connect(m_settingsHelper, &RegionSettingsHelper::dropdownShown,
+        this, [this]() {
+            auto& cursorManager = CursorManager::instance();
+            cursorManager.pushCursorForWidget(this, CursorContext::Override, Qt::ArrowCursor);
+            cursorManager.reapplyCursorForWidget(this);
+        });
+    connect(m_settingsHelper, &RegionSettingsHelper::dropdownHidden,
+        this, [this]() {
+            QTimer::singleShot(0, this, &RegionSelector::syncFloatingUiCursor);
+        });
     connect(m_settingsHelper, &RegionSettingsHelper::fontSizeSelected,
         this, &RegionSelector::onFontSizeSelected);
     connect(m_settingsHelper, &RegionSettingsHelper::fontFamilySelected,
@@ -1869,6 +1880,60 @@ void RegionSelector::setToolCursor()
     // Use CursorManager's unified tool cursor update
     // This delegates to IToolHandler::cursor() for proper cursor behavior
     cursorManager.updateToolCursorForWidget(this);
+    cursorManager.reapplyCursorForWidget(this);
+}
+
+bool RegionSelector::isGlobalPosOverFloatingUi(const QPoint& globalPos) const
+{
+    if (m_qmlToolbar && m_qmlToolbar->isVisible() && m_qmlToolbar->geometry().contains(globalPos)) {
+        return true;
+    }
+
+    if (m_qmlSubToolbar && m_qmlSubToolbar->isVisible() &&
+        m_qmlSubToolbar->geometry().contains(globalPos)) {
+        return true;
+    }
+
+    if (QWidget* popup = QApplication::activePopupWidget(); popup && popup->isVisible()) {
+        return true;
+    }
+
+    return false;
+}
+
+void RegionSelector::restoreRegionCursorAt(const QPoint& localPos)
+{
+    auto& cursorManager = CursorManager::instance();
+    cursorManager.popCursorForWidget(this, CursorContext::Override);
+
+    if (!rect().contains(localPos)) {
+        cursorManager.setHoverTargetForWidget(this, HoverTarget::None);
+        cursorManager.reapplyCursorForWidget(this);
+        return;
+    }
+
+    if (m_inputHandler) {
+        m_inputHandler->syncHoverCursorAt(localPos);
+    } else {
+        cursorManager.setHoverTargetForWidget(this, HoverTarget::None);
+        setToolCursor();
+    }
+
+    cursorManager.reapplyCursorForWidget(this);
+}
+
+void RegionSelector::syncFloatingUiCursor()
+{
+    auto& cursorManager = CursorManager::instance();
+    const QPoint globalPos = QCursor::pos();
+
+    if (isGlobalPosOverFloatingUi(globalPos)) {
+        cursorManager.pushCursorForWidget(this, CursorContext::Override, Qt::ArrowCursor);
+        cursorManager.reapplyCursorForWidget(this);
+        return;
+    }
+
+    restoreRegionCursorAt(globalToLocal(globalPos));
 }
 
 void RegionSelector::syncMultiRegionListPanelCursor()

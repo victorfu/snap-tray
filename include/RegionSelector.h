@@ -227,6 +227,9 @@ private:
 
     // Annotation helpers
     bool isAnnotationTool(ToolId tool) const;
+    void syncFloatingUiCursor();
+    void restoreRegionCursorAt(const QPoint& localPos);
+    bool isGlobalPosOverFloatingUi(const QPoint& globalPos) const;
 
     // Inline text editing handlers
     void onTextEditingFinished(const QString &text, const QPoint &position);
