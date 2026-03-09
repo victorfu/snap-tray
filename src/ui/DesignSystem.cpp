@@ -60,13 +60,13 @@ ToolbarStyleConfig DesignSystem::buildToolbarStyleConfig(bool dark) const
             QColor(55, 55, 55, 245),   QColor(40, 40, 40, 245),
             QColor(70, 70, 70),        50,
             QColor(220, 220, 220),     Qt::white,
-            QColor(220, 220, 220),     QColor(100, 200, 255),
+            QColor(220, 220, 220),     accentLight(),
             QColor(255, 100, 100),     QColor(255, 80, 80),
             QColor(0x6C, 0x5C, 0xE7),  QColor(80, 80, 80),
             false,                     QColor(255, 68, 68),   6,
             QColor(80, 80, 80),        QColor(30, 30, 30, 230),
             QColor(80, 80, 80),        Qt::white,
-            QColor(0, 122, 255),       QColor(80, 80, 80),
+            accentDefault(),           QColor(80, 80, 80),
             QColor(50, 50, 50),        QColor(200, 200, 200),
             Qt::white,                 QColor(50, 50, 50, 250),
             QColor(70, 70, 70),
@@ -80,13 +80,13 @@ ToolbarStyleConfig DesignSystem::buildToolbarStyleConfig(bool dark) const
         QColor(248, 248, 248, 245), QColor(240, 240, 240, 245),
         QColor(224, 224, 224),      30,
         QColor(60, 60, 60),         Qt::white,
-        QColor(70, 70, 70),         QColor(0, 122, 255),
+        QColor(70, 70, 70),         accentDefault(),
         QColor(220, 60, 60),        QColor(220, 50, 50),
         QColor(0x6C, 0x5C, 0xE7),   QColor(220, 220, 220),
         false,                      QColor(255, 68, 68),   6,
         QColor(208, 208, 208),      QColor(255, 255, 255, 240),
         QColor(200, 200, 200),      QColor(50, 50, 50),
-        QColor(0, 122, 255),        QColor(232, 232, 232),
+        accentDefault(),            QColor(232, 232, 232),
         QColor(245, 245, 245),      QColor(80, 80, 80),
         Qt::white,                  QColor(255, 255, 255, 250),
         QColor(200, 200, 200),
@@ -175,6 +175,7 @@ QColor DesignSystem::boundaryPurple() const { return QColor(0xBF, 0x5A, 0xF2); }
 QColor DesignSystem::accentDefault() const { return QColor(0x6C, 0x5C, 0xE7); }
 QColor DesignSystem::accentHover() const   { return QColor(0x5A, 0x4B, 0xD6); }
 QColor DesignSystem::accentPressed() const { return QColor(0x4A, 0x3B, 0xC5); }
+QColor DesignSystem::accentLight() const   { return QColor(0xA2, 0x9B, 0xFE); }
 
 // ============================================================================
 // Primitive: Spacing

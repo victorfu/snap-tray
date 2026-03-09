@@ -1,13 +1,10 @@
 #include "GlassPanelCSS.h"
 #include "ToolbarStyle.h"
+#include "ui/DesignSystem.h"
 #include "utils/DialogThemeUtils.h"
 
 namespace SnapTray {
 namespace GlassPanelCSS {
-
-namespace {
-constexpr const char* kAccentBlue = "#3B82F6";
-}
 
 QString comboBoxStylesheet(const ToolbarStyleConfig& config)
 {
@@ -67,7 +64,7 @@ QString sliderStylesheet(const ToolbarStyleConfig& config, ToolbarStyleType type
         "  margin: -5px 0;"
         "  border-radius: 7px;"
         "}")
-        .arg(grooveColor, handleColor, QLatin1String(kAccentBlue));
+        .arg(grooveColor, handleColor, DesignSystem::instance().accentDefault().name());
 }
 
 QString actionButtonStylesheet(const ToolbarStyleConfig& config, ToolbarStyleType type)
@@ -114,7 +111,7 @@ QString checkboxStylesheet(const ToolbarStyleConfig& config)
         "  background: %4;"
         "  border: 1px solid %4;"
         "}")
-        .arg(textColor, indicatorBorder, indicatorBg, QLatin1String(kAccentBlue));
+        .arg(textColor, indicatorBorder, indicatorBg, DesignSystem::instance().accentDefault().name());
 }
 
 QString labelStylesheet(const ToolbarStyleConfig& config, int fontSize)

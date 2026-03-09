@@ -91,6 +91,7 @@ QtObject {
     readonly property color accentDefault: DesignSystem.accentDefault
     readonly property color accentHover: DesignSystem.accentHover
     readonly property color accentPressed: DesignSystem.accentPressed
+    readonly property color accentLight: DesignSystem.accentLight
 
     // ========================================================================
     // Spacing scale (px)

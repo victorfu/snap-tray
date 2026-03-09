@@ -64,9 +64,9 @@ inline Palette paletteForToolbarStyle()
             QColor(158, 158, 158),  // buttonDisabledText
             QColor(220, 220, 220),  // buttonDisabledBorder
             QColor(144, 202, 249),  // selectionBackground
-            QColor(0, 122, 255),    // accentBackground
-            QColor(0, 140, 220),    // accentHoverBackground
-            QColor(0, 100, 180),    // accentPressedBackground
+            QColor(0x6C, 0x5C, 0xE7), // accentBackground
+            QColor(0x5A, 0x4B, 0xD6), // accentHoverBackground
+            QColor(0x4A, 0x3B, 0xC5), // accentPressedBackground
             QColor(220, 60, 60),    // closeButtonHoverBackground
             QColor(76, 175, 80),    // successBackground
             QColor(102, 187, 106),  // successBorder
@@ -92,9 +92,9 @@ inline Palette paletteForToolbarStyle()
         QColor(102, 102, 102), // buttonDisabledText
         QColor(58, 58, 58),    // buttonDisabledBorder
         QColor(102, 179, 255), // selectionBackground
-        QColor(0, 120, 200),   // accentBackground
-        QColor(0, 140, 220),   // accentHoverBackground
-        QColor(0, 100, 180),   // accentPressedBackground
+        QColor(0xA2, 0x9B, 0xFE), // accentBackground
+        QColor(0x6C, 0x5C, 0xE7), // accentHoverBackground
+        QColor(0x5A, 0x4B, 0xD6), // accentPressedBackground
         QColor(200, 60, 60),   // closeButtonHoverBackground
         QColor(76, 175, 80),   // successBackground
         QColor(102, 187, 106), // successBorder

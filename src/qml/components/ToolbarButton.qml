@@ -33,7 +33,7 @@ Item {
     // Icon color overrides (default to toolbar tokens)
     property color iconNormalColor: ComponentTokens.toolbarIcon
     property color iconActionColor: SemanticTokens.isDarkMode
-        ? DesignSystem.blue400 : DesignSystem.annotationBlue
+        ? DesignSystem.accentLight : DesignSystem.accentDefault
     property color iconCancelColor: SemanticTokens.isDarkMode
         ? DesignSystem.red400 : DesignSystem.red500
     property color iconActiveColor: ComponentTokens.toolbarIconActive

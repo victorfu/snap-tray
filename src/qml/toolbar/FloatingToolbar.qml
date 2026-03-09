@@ -25,7 +25,7 @@ Item {
         : ComponentTokens.toolbarIcon
     property color iconActionColor: root.useCaptureOverlayIconPalette
         ? SemanticTokens.captureOverlaySelectionBorder
-        : (SemanticTokens.isDarkMode ? DesignSystem.blue400 : DesignSystem.annotationBlue)
+        : (SemanticTokens.isDarkMode ? DesignSystem.accentLight : DesignSystem.accentDefault)
     property color iconCancelColor: root.useCaptureOverlayIconPalette
         ? SemanticTokens.captureOverlaySelectionBorder
         : (SemanticTokens.isDarkMode ? DesignSystem.red400 : DesignSystem.red500)

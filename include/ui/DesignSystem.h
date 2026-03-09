@@ -113,6 +113,7 @@ class DesignSystem : public QObject
     Q_PROPERTY(QColor accentDefault READ accentDefault CONSTANT)
     Q_PROPERTY(QColor accentHover READ accentHover CONSTANT)
     Q_PROPERTY(QColor accentPressed READ accentPressed CONSTANT)
+    Q_PROPERTY(QColor accentLight READ accentLight CONSTANT)
 
     // ====================================================================
     // Primitive: Spacing
@@ -653,6 +654,7 @@ public:
     QColor accentDefault() const;
     QColor accentHover() const;
     QColor accentPressed() const;
+    QColor accentLight() const;
 
     // -- Primitive: Spacing -----------------------------------------------
     int spacing2() const;
