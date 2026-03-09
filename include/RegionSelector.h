@@ -80,6 +80,8 @@ class RegionSelector : public QWidget, public AnnotationHostAdapter
 {
     Q_OBJECT
 
+    friend class tst_RegionSelectorMultiRegionSubToolbar;
+
 public:
     explicit RegionSelector(QWidget *parent = nullptr);
     ~RegionSelector();
@@ -220,6 +222,7 @@ private:
     void refreshMultiRegionListPanel();
     void beginMultiRegionReplace(int index);
     void cancelMultiRegionReplace(bool restoreSelection);
+    void syncRegionSubToolbar(bool refreshContent);
 
     // Screen lifecycle management
     void onScreenRemoved(QScreen *screen);

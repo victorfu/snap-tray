@@ -791,16 +791,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             m_inputState.currentTool = tool;
             m_inputState.showSubToolbar = showSubToolbar;
             m_toolbarViewModel->setActiveTool(showSubToolbar ? static_cast<int>(tool) : -1);
-            // Update sub-toolbar sections for the current tool
-            m_qmlSubToolbar->showForTool(static_cast<int>(tool));
-            // Runtime-dependent setting for Mosaic auto blur
-            if (tool == ToolId::Mosaic) {
-                m_toolOptionsViewModel->setAutoBlurEnabled(m_autoBlurManager != nullptr);
-            }
-            // Position sub-toolbar below main toolbar
-            if (m_qmlToolbar && m_qmlToolbar->isVisible() && m_qmlSubToolbar->isVisible()) {
-                m_qmlSubToolbar->positionBelow(m_qmlToolbar->geometry());
-            }
+            syncRegionSubToolbar(true);
         });
     connect(m_toolbarHandler, &RegionToolbarHandler::updateRequested,
         this, qOverload<>(&QWidget::update));
@@ -1534,6 +1525,7 @@ void RegionSelector::beginMultiRegionReplace(int index)
     m_inputState.currentTool = ToolId::Selection;
     m_inputState.showSubToolbar = false;
     m_inputState.replaceTargetIndex = index;
+    syncRegionSubToolbar(true);
     m_replaceOriginalRect = m_multiRegionManager->regionRect(index);
 
     m_multiRegionManager->setActiveIndex(index);
@@ -1690,10 +1682,7 @@ void RegionSelector::paintEvent(QPaintEvent* event)
             m_toolbarViewModel->setCanRedo(m_annotationLayer && m_annotationLayer->canRedo());
         }
 
-        // Position sub-toolbar below main toolbar
-        if (m_qmlSubToolbar && m_qmlSubToolbar->isVisible() && m_qmlToolbar) {
-            m_qmlSubToolbar->positionBelow(m_qmlToolbar->geometry());
-        }
+        syncRegionSubToolbar(false);
 
         if (m_inputState.multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0) {
             const int regionCount = m_multiRegionManager->count();
@@ -1984,6 +1973,33 @@ void RegionSelector::handleToolbarClick(ToolId tool)
     m_toolbarHandler->handleToolbarClick(tool);
 }
 
+void RegionSelector::syncRegionSubToolbar(bool refreshContent)
+{
+    if (!m_qmlSubToolbar || !m_toolOptionsViewModel) {
+        return;
+    }
+
+    const bool allowSubToolbar = m_inputState.showSubToolbar &&
+                                 !m_inputState.multiRegionMode &&
+                                 m_inputState.replaceTargetIndex < 0;
+    if (!allowSubToolbar) {
+        m_toolOptionsViewModel->showForTool(-1);
+        m_qmlSubToolbar->hide();
+        return;
+    }
+
+    if (refreshContent) {
+        if (m_inputState.currentTool == ToolId::Mosaic) {
+            m_toolOptionsViewModel->setAutoBlurEnabled(m_autoBlurManager != nullptr);
+        }
+        m_qmlSubToolbar->showForTool(static_cast<int>(m_inputState.currentTool));
+    }
+
+    if (m_qmlToolbar && m_qmlToolbar->isVisible() && m_qmlSubToolbar->isVisible()) {
+        m_qmlSubToolbar->positionBelow(m_qmlToolbar->geometry());
+    }
+}
+
 void RegionSelector::finalizePolylineForToolbarInteraction()
 {
     if (!m_toolManager ||
@@ -2024,6 +2040,7 @@ void RegionSelector::setMultiRegionMode(bool enabled)
         m_annotationLayer->clear();
         m_inputState.currentTool = ToolId::Selection;
         m_inputState.showSubToolbar = false;
+        syncRegionSubToolbar(true);
         if (m_multiRegionListPanel) {
             m_multiRegionListPanel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
             m_multiRegionListPanel->updatePanelGeometry(size());
@@ -2037,6 +2054,7 @@ void RegionSelector::setMultiRegionMode(bool enabled)
         m_multiRegionManager->clear();
         m_selectionManager->clearSelection();
         m_inputState.showSubToolbar = true;
+        syncRegionSubToolbar(true);
         if (m_multiRegionListPanel) {
             m_multiRegionListPanel->clearInteractionCursor();
             m_multiRegionListPanel->hide();
