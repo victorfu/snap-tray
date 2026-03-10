@@ -120,6 +120,11 @@ namespace {
         return deltaDegrees;
     }
 
+    bool containsGlobalPoint(const QWidget* widget, const QPoint& globalPos)
+    {
+        return widget && widget->isVisible() && widget->frameGeometry().contains(globalPos);
+    }
+
     struct TextCompensation
     {
         qreal rotation = 0.0;
@@ -3539,7 +3544,7 @@ bool PinWindow::isGlobalPosOverFloatingUi(const QPoint& globalPos) const
         return true;
     }
 
-    if (QWidget* popup = QApplication::activePopupWidget(); popup && popup->isVisible()) {
+    if (QWidget* popup = QApplication::activePopupWidget(); containsGlobalPoint(popup, globalPos)) {
         return true;
     }
 

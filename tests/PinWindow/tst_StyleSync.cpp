@@ -1,6 +1,8 @@
 #include <QtTest/QtTest>
+#include <QApplication>
 #include <QGuiApplication>
 #include <QCursor>
+#include <QMenu>
 
 #include "PinWindow.h"
 #include "cursor/CursorManager.h"
@@ -30,6 +32,7 @@ private slots:
     void testLineStyleChangeUpdatesViewModelAndToolManager();
     void testDropdownLifecycleRestoresToolCursor();
     void testQueuedFloatingUiRestoreClearsArrowOverride();
+    void testPopupAwayFromCursorKeepsAnnotationToolCursor();
 };
 
 void TestPinWindowStyleSync::initTestCase()
@@ -121,6 +124,45 @@ void TestPinWindowStyleSync::testQueuedFloatingUiRestoreClearsArrowOverride()
 
     window.m_toolbar->cursorRestoreRequested();
     QTRY_COMPARE(window.cursor().shape(), expectedToolCursorShape);
+}
+
+void TestPinWindowStyleSync::testPopupAwayFromCursorKeepsAnnotationToolCursor()
+{
+    PinWindow window(createPixmap(), QPoint(0, 0), nullptr, false);
+    window.initializeAnnotationComponents();
+    window.enterAnnotationMode();
+    window.show();
+    QTRY_VERIFY(window.isVisible());
+
+    QVERIFY(window.m_toolManager);
+
+    window.m_currentToolId = ToolId::Pencil;
+    window.m_toolManager->setCurrentTool(ToolId::Pencil);
+    window.updateCursorForTool();
+
+    const QPoint center = window.rect().center();
+    QCursor::setPos(window.mapToGlobal(center));
+    QTRY_VERIFY(window.rect().contains(window.mapFromGlobal(QCursor::pos())));
+
+    auto& cursorManager = CursorManager::instance();
+    cursorManager.reapplyCursorForWidget(&window);
+
+    const Qt::CursorShape expectedToolCursorShape = window.cursor().shape();
+    QVERIFY(expectedToolCursorShape != Qt::ArrowCursor);
+
+    QMenu popup(&window);
+    popup.addAction(QStringLiteral("Solid"));
+    popup.addAction(QStringLiteral("Dashed"));
+    popup.popup(window.mapToGlobal(QPoint(12, 12)));
+    QTRY_VERIFY(popup.isVisible());
+    QTRY_COMPARE(QApplication::activePopupWidget(), static_cast<QWidget*>(&popup));
+    QVERIFY(!popup.frameGeometry().contains(QCursor::pos()));
+
+    window.syncFloatingUiCursor();
+    QTRY_COMPARE(window.cursor().shape(), expectedToolCursorShape);
+
+    popup.close();
+    QTRY_VERIFY(!popup.isVisible());
 }
 
 QTEST_MAIN(TestPinWindowStyleSync)

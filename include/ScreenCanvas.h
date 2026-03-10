@@ -58,6 +58,8 @@ class ScreenCanvas : public QWidget, public AnnotationHostAdapter
 {
     Q_OBJECT
 
+    friend class TestScreenCanvasStyleSync;
+
 public:
     explicit ScreenCanvas(QWidget *parent = nullptr);
     ~ScreenCanvas();

@@ -52,6 +52,11 @@ bool isLaserPointerButtonId(int buttonId)
     return buttonId == kLaserPointerButtonId;
 }
 
+bool containsGlobalPoint(const QWidget* widget, const QPoint& globalPos)
+{
+    return widget && widget->isVisible() && widget->frameGeometry().contains(globalPos);
+}
+
 qreal normalizeAngleDelta(qreal deltaDegrees)
 {
     while (deltaDegrees > 180.0) {
@@ -843,7 +848,7 @@ bool ScreenCanvas::isGlobalPosOverFloatingUi(const QPoint& globalPos) const
         return true;
     }
 
-    if (QWidget* popup = QApplication::activePopupWidget(); popup && popup->isVisible()) {
+    if (QWidget* popup = QApplication::activePopupWidget(); containsGlobalPoint(popup, globalPos)) {
         return true;
     }
 

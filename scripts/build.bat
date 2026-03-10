@@ -36,7 +36,7 @@ set "NEED_CONFIGURE=0"
 if not exist "%BUILD_DIR%\CMakeCache.txt" set "NEED_CONFIGURE=1"
 if not exist "%BUILD_DIR%\build.ninja" set "NEED_CONFIGURE=1"
 if exist "%BUILD_DIR%\CMakeFiles\rules.ninja" (
-    findstr /B /C:"msvc_deps_prefix = " "%BUILD_DIR%\CMakeFiles\rules.ninja" >nul
+    findstr /B /C:"msvc_deps_prefix = %MSVC_DEPS_PREFIX%" "%BUILD_DIR%\CMakeFiles\rules.ninja" >nul
     if errorlevel 1 (
         echo Existing build files use an unsupported MSVC output language. Reconfiguring...
         set "NEED_CONFIGURE=1"

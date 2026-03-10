@@ -1731,6 +1731,9 @@ void RegionSelector::paintEvent(QPaintEvent* event)
         if (m_qmlToolbar) {
             m_qmlToolbar->hide();
         }
+        if (m_toolOptionsViewModel) {
+            m_toolOptionsViewModel->clearSections();
+        }
         if (m_qmlSubToolbar) {
             m_qmlSubToolbar->hide();
         }
@@ -1982,7 +1985,10 @@ void RegionSelector::syncRegionSubToolbar(bool refreshContent)
         return;
     }
 
-    if (refreshContent) {
+    const bool shouldRefreshContent = refreshContent ||
+                                      !m_qmlSubToolbar->isVisible() ||
+                                      !m_toolOptionsViewModel->hasContent();
+    if (shouldRefreshContent) {
         if (m_inputState.currentTool == ToolId::Mosaic) {
             m_toolOptionsViewModel->setAutoBlurEnabled(m_autoBlurManager != nullptr);
         }
@@ -2258,8 +2264,13 @@ void RegionSelector::wheelEvent(QWheelEvent* event)
         return;
     }
 
-    // Handle scroll wheel for brush/stroke width adjustment
-    if (m_toolOptionsViewModel->handleWidthWheelDelta(delta)) {
+    const bool allowWidthWheelAdjustment =
+        m_selectionManager &&
+        m_selectionManager->isComplete() &&
+        m_inputState.showSubToolbar &&
+        !m_inputState.multiRegionMode &&
+        m_inputState.replaceTargetIndex < 0;
+    if (allowWidthWheelAdjustment && m_toolOptionsViewModel->handleWidthWheelDelta(delta)) {
         event->accept();
         return;
     }
