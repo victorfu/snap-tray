@@ -1,14 +1,8 @@
 #include "region/RegionToolbarHandler.h"
-#include "region/SelectionStateManager.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/StepBadgeAnnotation.h"
 #include "tools/ToolManager.h"
 #include "tools/ToolId.h"
-#include "OCRManager.h"
-#include "PlatformFeatures.h"
-#include "tools/ToolTraits.h"
-
-#include <QWidget>
 
 RegionToolbarHandler::RegionToolbarHandler(QObject* parent)
     : QObject(parent)
@@ -20,28 +14,28 @@ RegionToolbarHandler::RegionToolbarHandler(QObject* parent)
 const std::map<ToolId, RegionToolbarHandler::ToolDispatchEntry>& RegionToolbarHandler::toolDispatchTable()
 {
     static const std::map<ToolId, ToolDispatchEntry> kDispatch = {
-        {ToolId::Selection, {&RegionToolbarHandler::handleSelectionTool, ToolbarButtonRole::Default, true}},
-        {ToolId::Arrow, {&RegionToolbarHandler::handleAnnotationTool, ToolbarButtonRole::Default, true}},
-        {ToolId::Pencil, {&RegionToolbarHandler::handleAnnotationTool, ToolbarButtonRole::Default, true}},
-        {ToolId::Marker, {&RegionToolbarHandler::handleAnnotationTool, ToolbarButtonRole::Default, true}},
-        {ToolId::Shape, {&RegionToolbarHandler::handleAnnotationTool, ToolbarButtonRole::Default, true}},
-        {ToolId::Text, {&RegionToolbarHandler::handleAnnotationTool, ToolbarButtonRole::Default, true}},
-        {ToolId::Eraser, {&RegionToolbarHandler::handleAnnotationTool, ToolbarButtonRole::Default, true}},
-        {ToolId::EmojiSticker, {&RegionToolbarHandler::handleAnnotationTool, ToolbarButtonRole::Default, true}},
-        {ToolId::StepBadge, {&RegionToolbarHandler::handleStepBadgeTool, ToolbarButtonRole::Default, true}},
-        {ToolId::Mosaic, {&RegionToolbarHandler::handleMosaicTool, ToolbarButtonRole::Default, true}},
-        {ToolId::Undo, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Default, false}},
-        {ToolId::Redo, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Default, false}},
-        {ToolId::Cancel, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Cancel, false}},
-        {ToolId::OCR, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Default, false}},
-        {ToolId::QRCode, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Default, false}},
-        {ToolId::Pin, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Action, false}},
-        {ToolId::Record, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Record, false}},
-        {ToolId::Share, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Action, false}},
-        {ToolId::Save, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Action, false}},
-        {ToolId::Copy, {&RegionToolbarHandler::handleActionButton, ToolbarButtonRole::Action, false}},
-        {ToolId::MultiRegion, {&RegionToolbarHandler::handleMultiRegionToggle, ToolbarButtonRole::Default, false}},
-        {ToolId::MultiRegionDone, {&RegionToolbarHandler::handleMultiRegionDone, ToolbarButtonRole::Default, false}},
+        {ToolId::Selection, {&RegionToolbarHandler::handleSelectionTool}},
+        {ToolId::Arrow, {&RegionToolbarHandler::handleAnnotationTool}},
+        {ToolId::Pencil, {&RegionToolbarHandler::handleAnnotationTool}},
+        {ToolId::Marker, {&RegionToolbarHandler::handleAnnotationTool}},
+        {ToolId::Shape, {&RegionToolbarHandler::handleAnnotationTool}},
+        {ToolId::Text, {&RegionToolbarHandler::handleAnnotationTool}},
+        {ToolId::Eraser, {&RegionToolbarHandler::handleAnnotationTool}},
+        {ToolId::EmojiSticker, {&RegionToolbarHandler::handleAnnotationTool}},
+        {ToolId::StepBadge, {&RegionToolbarHandler::handleStepBadgeTool}},
+        {ToolId::Mosaic, {&RegionToolbarHandler::handleMosaicTool}},
+        {ToolId::Undo, {&RegionToolbarHandler::handleActionButton}},
+        {ToolId::Redo, {&RegionToolbarHandler::handleActionButton}},
+        {ToolId::Cancel, {&RegionToolbarHandler::handleActionButton}},
+        {ToolId::OCR, {&RegionToolbarHandler::handleActionButton}},
+        {ToolId::QRCode, {&RegionToolbarHandler::handleActionButton}},
+        {ToolId::Pin, {&RegionToolbarHandler::handleActionButton}},
+        {ToolId::Record, {&RegionToolbarHandler::handleActionButton}},
+        {ToolId::Share, {&RegionToolbarHandler::handleActionButton}},
+        {ToolId::Save, {&RegionToolbarHandler::handleActionButton}},
+        {ToolId::Copy, {&RegionToolbarHandler::handleActionButton}},
+        {ToolId::MultiRegion, {&RegionToolbarHandler::handleMultiRegionToggle}},
+        {ToolId::MultiRegionDone, {&RegionToolbarHandler::handleMultiRegionDone}},
     };
     return kDispatch;
 }
@@ -73,21 +67,6 @@ void RegionToolbarHandler::setAnnotationLayer(AnnotationLayer* layer)
     m_annotationLayer = layer;
 }
 
-void RegionToolbarHandler::setSelectionManager(SelectionStateManager* manager)
-{
-    m_selectionManager = manager;
-}
-
-void RegionToolbarHandler::setOCRManager(OCRManager* manager)
-{
-    m_ocrManager = manager;
-}
-
-void RegionToolbarHandler::setParentWidget(QWidget* widget)
-{
-    m_parentWidget = widget;
-}
-
 void RegionToolbarHandler::setStepBadgeSize(StepBadgeSize size)
 {
     m_stepBadgeSize = size;
@@ -105,10 +84,8 @@ void RegionToolbarHandler::handleToolbarClick(ToolId button)
 
 void RegionToolbarHandler::handleSelectionTool(ToolId button)
 {
-    // Selection has no sub-toolbar, just switch tool
     m_currentTool = button;
     m_showSubToolbar = true;
-    emit showSizeSectionRequested(false);
     emit toolChanged(m_currentTool, m_showSubToolbar);
     emit updateRequested();
 }
@@ -129,7 +106,6 @@ void RegionToolbarHandler::handleAnnotationTool(ToolId button)
     if (m_toolManager) {
         m_toolManager->setCurrentTool(m_currentTool);
     }
-    emit showSizeSectionRequested(false);
     emit toolChanged(m_currentTool, m_showSubToolbar);
     emit updateRequested();
 }
@@ -137,10 +113,8 @@ void RegionToolbarHandler::handleAnnotationTool(ToolId button)
 void RegionToolbarHandler::handleStepBadgeTool(ToolId button)
 {
     if (m_currentTool == button) {
-        // Same tool clicked - switch to Selection tool
         m_currentTool = ToolId::Selection;
         m_showSubToolbar = true;
-        emit showSizeSectionRequested(false);
         emit toolChanged(m_currentTool, m_showSubToolbar);
         emit updateRequested();
         return;
@@ -152,11 +126,6 @@ void RegionToolbarHandler::handleStepBadgeTool(ToolId button)
         }
         m_showSubToolbar = true;
     }
-    // Show size section, hide width section for step badge
-    emit showSizeSectionRequested(true);
-    emit showWidthSectionRequested(false);
-    emit stepBadgeSizeRequested(m_stepBadgeSize);
-    // StepBadgeToolHandler reads size from AnnotationSettingsManager, no setWidth needed
     emit toolChanged(m_currentTool, m_showSubToolbar);
     emit updateRequested();
 }
@@ -164,10 +133,8 @@ void RegionToolbarHandler::handleStepBadgeTool(ToolId button)
 void RegionToolbarHandler::handleMosaicTool(ToolId button)
 {
     if (m_currentTool == button) {
-        // Same tool clicked - switch to Selection tool
         m_currentTool = ToolId::Selection;
         m_showSubToolbar = true;
-        emit showColorSectionRequested(true);  // Restore color section visibility
         emit toolChanged(m_currentTool, m_showSubToolbar);
         emit updateRequested();
         return;
@@ -179,16 +146,9 @@ void RegionToolbarHandler::handleMosaicTool(ToolId button)
         }
         m_showSubToolbar = true;
     }
-    // Use shared WidthSection for Mosaic (synced with other tools)
-    emit showWidthSectionRequested(true);
-    emit widthSectionHiddenRequested(false);
-    emit currentWidthRequested(m_annotationWidth);
     if (m_toolManager) {
         m_toolManager->setWidth(m_annotationWidth);
     }
-    emit showSizeSectionRequested(false);
-    // Mosaic tool doesn't use color, hide color section
-    emit showColorSectionRequested(false);
     emit toolChanged(m_currentTool, m_showSubToolbar);
     emit updateRequested();
 }
@@ -274,9 +234,4 @@ void RegionToolbarHandler::handleMultiRegionToggle(ToolId)
 void RegionToolbarHandler::handleMultiRegionDone(ToolId)
 {
     emit multiRegionDoneRequested();
-}
-
-bool RegionToolbarHandler::isAnnotationTool(ToolId tool) const
-{
-    return ToolTraits::isAnnotationTool(tool);
 }

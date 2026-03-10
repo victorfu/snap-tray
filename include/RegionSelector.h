@@ -163,8 +163,7 @@ private:
     // Toolbar helpers
     void handleToolbarClick(ToolId tool);
 
-    // Color palette helpers (legacy)
-    bool shouldShowColorPalette() const;
+    // Color and style actions
     void onColorSelected(const QColor &color);
     void onMoreColorsRequested();
     void syncColorToRuntimeState(const QColor& color);
@@ -181,11 +180,6 @@ private:
 
     // Step Badge size handling
     void onStepBadgeSizeChanged(StepBadgeSize size);
-
-    // Unified color and width widget helpers
-    bool shouldShowColorAndWidthWidget() const;
-    bool shouldShowWidthControl() const;
-    int toolWidthForCurrentTool() const;
 
     // Annotation settings handlers
     void onArrowStyleChanged(LineEndStyle style);

@@ -139,7 +139,6 @@ private:
     EmojiStickerAnnotation* getSelectedEmojiStickerAnnotation() const;
     ShapeAnnotation* getSelectedShapeAnnotation() const;
     ArrowAnnotation* getSelectedArrowAnnotation() const;
-    bool shouldShowColorAndWidthWidget() const;
     bool isAnnotationTool(ToolId tool) const;
     RegionInputState& state();
     const RegionInputState& state() const;

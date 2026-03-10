@@ -1359,11 +1359,6 @@ ShapeAnnotation* RegionInputHandler::getSelectedShapeAnnotation() const
     return nullptr;
 }
 
-bool RegionInputHandler::shouldShowColorAndWidthWidget() const
-{
-    return false; // QML sub-toolbar manages its own visibility
-}
-
 bool RegionInputHandler::isAnnotationTool(ToolId tool) const
 {
     return ToolTraits::isAnnotationTool(tool);

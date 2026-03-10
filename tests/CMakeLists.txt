@@ -20,6 +20,11 @@ target_link_libraries(Qml_PinToolOptionsViewModel PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_PinToolOptionsViewModel COMMAND Qml_PinToolOptionsViewModel)
 set_tests_properties(Qml_PinToolOptionsViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_CanvasToolbarViewModel Qml/tst_CanvasToolbarViewModel.cpp)
+target_link_libraries(Qml_CanvasToolbarViewModel PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Qml_CanvasToolbarViewModel COMMAND Qml_CanvasToolbarViewModel)
+set_tests_properties(Qml_CanvasToolbarViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # PinWindow Tests (link snaptray_ui which includes snaptray_platform)
 # ============================================================================

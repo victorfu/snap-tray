@@ -82,7 +82,6 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QFontDatabase>
 #include <QFutureWatcher>
 #include <QtConcurrent/QtConcurrentRun>
-#include "tools/ToolRegistry.h"
 
 namespace {
 
@@ -802,8 +801,6 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_toolbarHandler = new RegionToolbarHandler(this);
     m_toolbarHandler->setToolManager(m_toolManager);
     m_toolbarHandler->setAnnotationLayer(m_annotationLayer);
-    m_toolbarHandler->setSelectionManager(m_selectionManager);
-    m_toolbarHandler->setParentWidget(this);
 
     // Connect toolbar handler signals (tool state changes)
     connect(m_toolbarHandler, &RegionToolbarHandler::toolChanged,
@@ -915,14 +912,6 @@ void RegionSelector::onScreenRemoved(QScreen* screen)
 bool RegionSelector::isScreenValid() const
 {
     return !m_currentScreen.isNull();
-}
-
-bool RegionSelector::shouldShowColorPalette() const
-{
-    if (m_inputState.multiRegionMode) return false;
-    if (!m_selectionManager->isComplete()) return false;
-    if (!m_inputState.showSubToolbar) return false;
-    return ToolRegistry::instance().showColorPalette(m_inputState.currentTool);
 }
 
 QWidget* RegionSelector::annotationHostWidget() const
@@ -1084,8 +1073,6 @@ OCRManager* RegionSelector::ensureOCRManager()
         if (m_ocrManager) {
             m_ocrManager->setRecognitionLanguages(OCRSettingsManager::instance().languages());
         }
-        // Update toolbar handler reference
-        m_toolbarHandler->setOCRManager(m_ocrManager);
     }
     return m_ocrManager;
 }
@@ -1116,27 +1103,6 @@ int RegionSelector::effectiveCornerRadius() const
     int maxRadius = qMin(sel.width(), sel.height()) / 2;
     return qMin(m_cornerRadius, maxRadius);
 }
-
-bool RegionSelector::shouldShowColorAndWidthWidget() const
-{
-    return false; // QML sub-toolbar manages its own visibility via showForTool()
-}
-
-bool RegionSelector::shouldShowWidthControl() const
-{
-    if (m_inputState.multiRegionMode) return false;
-    return ToolRegistry::instance().showWidthControl(m_inputState.currentTool);
-}
-
-int RegionSelector::toolWidthForCurrentTool() const
-{
-    if (m_inputState.currentTool == ToolId::StepBadge) {
-        return StepBadgeAnnotation::radiusForSize(m_stepBadgeSize);
-    }
-    // Mosaic now uses m_inputState.annotationWidth (synced with other tools)
-    return m_inputState.annotationWidth;
-}
-
 
 void RegionSelector::setupScreenGeometry(QScreen* screen)
 {
@@ -1295,7 +1261,7 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     QPoint globalCursor = QCursor::pos();
     m_inputState.currentPoint = globalCursor - screenGeom.topLeft();
 
-    // Trigger repaint to show toolbar (toolbar is drawn in paintEvent when m_selectionComplete is true)
+    // Schedule a repaint so the floating QML toolbar can appear for the new selection.
     QTimer::singleShot(0, this, [this]() {
         update();
         });
@@ -1983,9 +1949,7 @@ void RegionSelector::handleToolbarClick(ToolId tool)
     m_toolbarHandler->setCurrentTool(m_inputState.currentTool);
     m_toolbarHandler->setShowSubToolbar(m_inputState.showSubToolbar);
     m_toolbarHandler->setAnnotationWidth(m_inputState.annotationWidth);
-    m_toolbarHandler->setAnnotationColor(m_inputState.annotationColor);
     m_toolbarHandler->setStepBadgeSize(m_stepBadgeSize);
-    m_toolbarHandler->setOCRInProgress(m_ocrInProgress);
     m_toolbarHandler->setShareInProgress(m_shareInProgress);
     m_toolbarHandler->setMultiRegionMode(m_inputState.multiRegionMode);
 

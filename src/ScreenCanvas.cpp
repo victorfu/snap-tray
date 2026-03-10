@@ -35,7 +35,6 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QCursor>
 #include <QTimer>
 #include <QtMath>
-#include "tools/ToolRegistry.h"
 #include "tools/ToolSectionConfig.h"
 #include "tools/ToolTraits.h"
 #include "platform/WindowLevel.h"
@@ -396,13 +395,6 @@ ScreenCanvas::~ScreenCanvas()
         m_colorPickerDialog->close();
     }
     m_shapeAnnotationEditor.reset();
-}
-
-bool ScreenCanvas::shouldShowColorPalette() const
-{
-    if (!m_showSubToolbar) return false;
-    if (m_laserPointerActive) return true;
-    return ToolRegistry::instance().showColorPalette(m_currentToolId);
 }
 
 QWidget* ScreenCanvas::annotationHostWidget() const

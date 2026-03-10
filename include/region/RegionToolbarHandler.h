@@ -2,29 +2,18 @@
 #define REGIONTOOLBARHANDLER_H
 
 #include <QObject>
-#include <QColor>
-#include <QCursor>
 #include <map>
 #include "tools/ToolId.h"
 
-class QWidget;
 class ToolManager;
 class AnnotationLayer;
-class SelectionStateManager;
-class OCRManager;
-
-enum class LineEndStyle;
-enum class LineStyle;
-enum class ShapeType;
-enum class ShapeFillMode;
 enum class StepBadgeSize;
 
 /**
- * @brief Handles toolbar setup and button click actions for RegionSelector.
+ * @brief Routes RegionSelector toolbar actions to the host widget state.
  *
- * Manages toolbar button configuration, icon loading, icon color logic,
- * and click handling. Uses signals to communicate state changes back to
- * RegionSelector since many operations require updating parent state.
+ * The QML toolbar owns presentation. This handler only keeps the interaction
+ * rules for tool toggles and action buttons in one place.
  */
 class RegionToolbarHandler : public QObject
 {
@@ -33,28 +22,16 @@ class RegionToolbarHandler : public QObject
 public:
     explicit RegionToolbarHandler(QObject* parent = nullptr);
 
-    // Dependency injection
     void setToolManager(ToolManager* manager);
     void setAnnotationLayer(AnnotationLayer* layer);
-    void setSelectionManager(SelectionStateManager* manager);
-    void setOCRManager(OCRManager* manager);
-    void setParentWidget(QWidget* widget);
 
-    // Handle toolbar button click
     void handleToolbarClick(ToolId button);
-
-    // Current state
-    ToolId currentTool() const { return m_currentTool; }
-    bool showSubToolbar() const { return m_showSubToolbar; }
-    int annotationWidth() const { return m_annotationWidth; }
 
     // State setters (synced from RegionSelector before handle calls)
     void setCurrentTool(ToolId tool) { m_currentTool = tool; }
     void setShowSubToolbar(bool show) { m_showSubToolbar = show; }
     void setAnnotationWidth(int width) { m_annotationWidth = width; }
-    void setAnnotationColor(const QColor& color) { m_annotationColor = color; }
     void setStepBadgeSize(StepBadgeSize size);
-    void setOCRInProgress(bool inProgress) { m_ocrInProgress = inProgress; }
     void setShareInProgress(bool inProgress) { m_shareInProgress = inProgress; }
     void setMultiRegionMode(bool enabled) { m_multiRegionMode = enabled; }
 
@@ -78,30 +55,11 @@ signals:
     void multiRegionDoneRequested();
     void multiRegionCancelRequested();
 
-    // Sub-toolbar configuration signals
-    void showSizeSectionRequested(bool show);
-    void showWidthSectionRequested(bool show);
-    void widthSectionHiddenRequested(bool hidden);
-    void showColorSectionRequested(bool show);
-    void widthRangeRequested(int min, int max);
-    void currentWidthRequested(int width);
-    void stepBadgeSizeRequested(StepBadgeSize size);
-
 private:
-    enum class ToolbarButtonRole {
-        Default,
-        Toggle,
-        Action,
-        Record,
-        Cancel
-    };
-
     using ClickHandler = void (RegionToolbarHandler::*)(ToolId);
 
     struct ToolDispatchEntry {
         ClickHandler handler = nullptr;
-        ToolbarButtonRole buttonRole = ToolbarButtonRole::Default;
-        bool supportsActiveState = false;
     };
 
     static const std::map<ToolId, ToolDispatchEntry>& toolDispatchTable();
@@ -127,24 +85,13 @@ private:
     void handleMultiRegionToggle(ToolId button);
     void handleMultiRegionDone(ToolId button);
 
-    // Tool state helpers
-    bool isAnnotationTool(ToolId tool) const;
-    void restoreStandardWidth();
-
-    // Dependencies (non-owning pointers)
     ToolManager* m_toolManager = nullptr;
     AnnotationLayer* m_annotationLayer = nullptr;
-    SelectionStateManager* m_selectionManager = nullptr;
-    OCRManager* m_ocrManager = nullptr;
-    QWidget* m_parentWidget = nullptr;
 
-    // State
     ToolId m_currentTool;
     bool m_showSubToolbar = true;
-    QColor m_annotationColor = Qt::red;
     int m_annotationWidth = 3;
     StepBadgeSize m_stepBadgeSize;
-    bool m_ocrInProgress = false;
     bool m_shareInProgress = false;
     bool m_multiRegionMode = false;
 };

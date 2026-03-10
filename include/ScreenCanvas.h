@@ -120,8 +120,7 @@ private:
     static const std::map<ToolId, ToolbarClickHandler>& toolbarDispatchTable();
     static const std::map<ToolId, ToolbarClickHandler>& actionDispatchTable();
 
-    // Color palette helpers (legacy)
-    bool shouldShowColorPalette() const;
+    // Color and style actions
     void onColorSelected(const QColor &color);
     void onMoreColorsRequested();
 
