@@ -13,7 +13,9 @@ DialogImageProvider::DialogImageProvider()
 QImage DialogImageProvider::requestImage(const QString& id, QSize* size, const QSize& requestedSize)
 {
     QMutexLocker lock(&s_mutex);
-    const QImage img = s_images.value(id);
+    // Strip cache-buster suffix (e.g. "region_1?3" → "region_1")
+    const QString cleanId = id.section(QLatin1Char('?'), 0, 0);
+    const QImage img = s_images.value(cleanId);
     if (img.isNull()) {
         if (size)
             *size = QSize();

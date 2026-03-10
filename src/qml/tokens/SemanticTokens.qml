@@ -24,6 +24,7 @@ QtObject {
     readonly property color textSecondary: DesignSystem.textSecondary
     readonly property color textTertiary: DesignSystem.textTertiary
     readonly property color textInverse: DesignSystem.textInverse
+    readonly property color textOnAccent: DesignSystem.textOnAccent
 
     // ========================================================================
     // Border
@@ -75,6 +76,31 @@ QtObject {
     readonly property color captureOverlayCrosshair: DesignSystem.captureOverlayCrosshair
     readonly property color captureOverlaySelectionBorder: DesignSystem.captureOverlaySelectionBorder
     readonly property color captureOverlayDimensionLabel: DesignSystem.captureOverlayDimensionLabel
+
+    // ========================================================================
+    // Capture overlay panel (always dark, theme-independent)
+    // ========================================================================
+    readonly property color captureOverlayPanelBg: DesignSystem.captureOverlayPanelBg
+    readonly property color captureOverlayPanelBgTop: DesignSystem.captureOverlayPanelBgTop
+    readonly property color captureOverlayPanelHighlight: DesignSystem.captureOverlayPanelHighlight
+    readonly property color captureOverlayPanelBorder: DesignSystem.captureOverlayPanelBorder
+    readonly property int captureOverlayPanelRadius: DesignSystem.captureOverlayPanelRadius
+    readonly property color captureOverlayKeycapBg: DesignSystem.captureOverlayKeycapBg
+    readonly property color captureOverlayKeycapBorder: DesignSystem.captureOverlayKeycapBorder
+    readonly property color captureOverlayKeycapText: DesignSystem.captureOverlayKeycapText
+    readonly property color captureOverlayHintText: DesignSystem.captureOverlayHintText
+    readonly property int captureOverlayKeycapRadius: DesignSystem.captureOverlayKeycapRadius
+    readonly property color captureOverlayIconNormal: DesignSystem.captureOverlayIconNormal
+    readonly property color captureOverlayIconActive: DesignSystem.captureOverlayIconActive
+    readonly property color captureOverlayIconDimmed: DesignSystem.captureOverlayIconDimmed
+    readonly property color captureOverlayControlHoverBg: DesignSystem.captureOverlayControlHoverBg
+    readonly property color captureOverlayListItemHover: DesignSystem.captureOverlayListItemHover
+    readonly property color captureOverlayListItemActive: DesignSystem.captureOverlayListItemActive
+    readonly property color captureOverlayListButtonBg: DesignSystem.captureOverlayListButtonBg
+    readonly property color captureOverlayListButtonHover: DesignSystem.captureOverlayListButtonHover
+    readonly property color captureOverlaySliderTrack: DesignSystem.captureOverlaySliderTrack
+    readonly property color captureOverlaySliderFill: DesignSystem.captureOverlaySliderFill
+    readonly property color captureOverlaySliderKnob: DesignSystem.captureOverlaySliderKnob
 
     // ========================================================================
     // Icon overlay color

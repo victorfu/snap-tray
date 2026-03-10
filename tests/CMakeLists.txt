@@ -88,7 +88,7 @@ add_test(NAME RegionSelector_MagnifierPanel COMMAND RegionSelector_MagnifierPane
 set_tests_properties(RegionSelector_MagnifierPanel PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(RegionSelector_CaptureShortcutHintsOverlay RegionSelector/tst_CaptureShortcutHintsOverlay.cpp)
-target_link_libraries(RegionSelector_CaptureShortcutHintsOverlay PRIVATE snaptray_ui Qt6::Test)
+target_link_libraries(RegionSelector_CaptureShortcutHintsOverlay PRIVATE snaptray_qml snaptray_ui Qt6::Test)
 add_test(NAME RegionSelector_CaptureShortcutHintsOverlay COMMAND RegionSelector_CaptureShortcutHintsOverlay)
 set_tests_properties(RegionSelector_CaptureShortcutHintsOverlay PROPERTIES TIMEOUT 60 LABELS "unit")
 
@@ -144,7 +144,7 @@ add_test(NAME RegionSelector_MultiRegionManagerDeleteReindex COMMAND RegionSelec
 set_tests_properties(RegionSelector_MultiRegionManagerDeleteReindex PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(RegionSelector_MultiRegionListPanel RegionSelector/tst_MultiRegionListPanel.cpp)
-target_link_libraries(RegionSelector_MultiRegionListPanel PRIVATE snaptray_ui Qt6::Test)
+target_link_libraries(RegionSelector_MultiRegionListPanel PRIVATE snaptray_qml snaptray_ui Qt6::Test)
 add_test(NAME RegionSelector_MultiRegionListPanel COMMAND RegionSelector_MultiRegionListPanel)
 set_tests_properties(RegionSelector_MultiRegionListPanel PROPERTIES TIMEOUT 60 LABELS "unit")
 

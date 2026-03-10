@@ -238,6 +238,7 @@ class DesignSystem : public QObject
     Q_PROPERTY(QColor textSecondary READ textSecondary NOTIFY themeChanged)
     Q_PROPERTY(QColor textTertiary READ textTertiary NOTIFY themeChanged)
     Q_PROPERTY(QColor textInverse READ textInverse NOTIFY themeChanged)
+    Q_PROPERTY(QColor textOnAccent READ textOnAccent CONSTANT)
 
     // ====================================================================
     // Semantic: Border (theme-dependent)
@@ -282,6 +283,35 @@ class DesignSystem : public QObject
     Q_PROPERTY(QColor captureOverlayCrosshair READ captureOverlayCrosshair CONSTANT)
     Q_PROPERTY(QColor captureOverlaySelectionBorder READ captureOverlaySelectionBorder CONSTANT)
     Q_PROPERTY(QColor captureOverlayDimensionLabel READ captureOverlayDimensionLabel CONSTANT)
+
+    // Capture overlay panel (shortcut hints, region control — always dark)
+    Q_PROPERTY(QColor captureOverlayPanelBg READ captureOverlayPanelBg CONSTANT)
+    Q_PROPERTY(QColor captureOverlayPanelBgTop READ captureOverlayPanelBgTop CONSTANT)
+    Q_PROPERTY(QColor captureOverlayPanelHighlight READ captureOverlayPanelHighlight CONSTANT)
+    Q_PROPERTY(QColor captureOverlayPanelBorder READ captureOverlayPanelBorder CONSTANT)
+    Q_PROPERTY(int captureOverlayPanelRadius READ captureOverlayPanelRadius CONSTANT)
+
+    // Shortcut hints specific
+    Q_PROPERTY(QColor captureOverlayKeycapBg READ captureOverlayKeycapBg CONSTANT)
+    Q_PROPERTY(QColor captureOverlayKeycapBorder READ captureOverlayKeycapBorder CONSTANT)
+    Q_PROPERTY(QColor captureOverlayKeycapText READ captureOverlayKeycapText CONSTANT)
+    Q_PROPERTY(QColor captureOverlayHintText READ captureOverlayHintText CONSTANT)
+    Q_PROPERTY(int captureOverlayKeycapRadius READ captureOverlayKeycapRadius CONSTANT)
+
+    // Region control icon states
+    Q_PROPERTY(QColor captureOverlayIconNormal READ captureOverlayIconNormal CONSTANT)
+    Q_PROPERTY(QColor captureOverlayIconActive READ captureOverlayIconActive CONSTANT)
+    Q_PROPERTY(QColor captureOverlayIconDimmed READ captureOverlayIconDimmed CONSTANT)
+    Q_PROPERTY(QColor captureOverlayControlHoverBg READ captureOverlayControlHoverBg CONSTANT)
+
+    // Multi-region list panel
+    Q_PROPERTY(QColor captureOverlayListItemHover READ captureOverlayListItemHover CONSTANT)
+    Q_PROPERTY(QColor captureOverlayListItemActive READ captureOverlayListItemActive CONSTANT)
+    Q_PROPERTY(QColor captureOverlayListButtonBg READ captureOverlayListButtonBg CONSTANT)
+    Q_PROPERTY(QColor captureOverlayListButtonHover READ captureOverlayListButtonHover CONSTANT)
+    Q_PROPERTY(QColor captureOverlaySliderTrack READ captureOverlaySliderTrack CONSTANT)
+    Q_PROPERTY(QColor captureOverlaySliderFill READ captureOverlaySliderFill CONSTANT)
+    Q_PROPERTY(QColor captureOverlaySliderKnob READ captureOverlaySliderKnob CONSTANT)
 
     // ====================================================================
     // Semantic: Icon overlay (theme-dependent)
@@ -332,6 +362,7 @@ class DesignSystem : public QObject
     Q_PROPERTY(int toolbarRadius READ toolbarRadius CONSTANT)
     Q_PROPERTY(QColor toolbarControlBackground READ toolbarControlBackground NOTIFY themeChanged)
     Q_PROPERTY(QColor toolbarControlBackgroundHover READ toolbarControlBackgroundHover NOTIFY themeChanged)
+    Q_PROPERTY(QColor toolbarControlBackgroundPressed READ toolbarControlBackgroundPressed NOTIFY themeChanged)
     Q_PROPERTY(QColor toolbarPopupBackground READ toolbarPopupBackground NOTIFY themeChanged)
     Q_PROPERTY(QColor toolbarPopupBackgroundTop READ toolbarPopupBackgroundTop NOTIFY themeChanged)
     Q_PROPERTY(QColor toolbarPopupHighlight READ toolbarPopupHighlight NOTIFY themeChanged)
@@ -753,6 +784,7 @@ public:
     QColor textSecondary() const;
     QColor textTertiary() const;
     QColor textInverse() const;
+    QColor textOnAccent() const;
 
     // -- Semantic: Border -------------------------------------------------
     QColor borderDefault() const;
@@ -787,6 +819,29 @@ public:
     QColor captureOverlayCrosshair() const;
     QColor captureOverlaySelectionBorder() const;
     QColor captureOverlayDimensionLabel() const;
+
+    // -- Capture overlay panel (always dark) ------------------------------
+    QColor captureOverlayPanelBg() const;
+    QColor captureOverlayPanelBgTop() const;
+    QColor captureOverlayPanelHighlight() const;
+    QColor captureOverlayPanelBorder() const;
+    int captureOverlayPanelRadius() const;
+    QColor captureOverlayKeycapBg() const;
+    QColor captureOverlayKeycapBorder() const;
+    QColor captureOverlayKeycapText() const;
+    QColor captureOverlayHintText() const;
+    int captureOverlayKeycapRadius() const;
+    QColor captureOverlayIconNormal() const;
+    QColor captureOverlayIconActive() const;
+    QColor captureOverlayIconDimmed() const;
+    QColor captureOverlayControlHoverBg() const;
+    QColor captureOverlayListItemHover() const;
+    QColor captureOverlayListItemActive() const;
+    QColor captureOverlayListButtonBg() const;
+    QColor captureOverlayListButtonHover() const;
+    QColor captureOverlaySliderTrack() const;
+    QColor captureOverlaySliderFill() const;
+    QColor captureOverlaySliderKnob() const;
 
     // -- Semantic: Icon overlay (theme-dependent) -------------------------
     QColor iconColor() const;
@@ -825,6 +880,7 @@ public:
     int toolbarRadius() const;
     QColor toolbarControlBackground() const;
     QColor toolbarControlBackgroundHover() const;
+    QColor toolbarControlBackgroundPressed() const;
     QColor toolbarPopupBackground() const;
     QColor toolbarPopupBackgroundTop() const;
     QColor toolbarPopupHighlight() const;

@@ -20,7 +20,6 @@ class ToolManager;
 class InlineTextEditor;
 class TextAnnotationEditor;
 class EmojiPicker;
-class RegionControlWidget;
 class UpdateThrottler;
 class TextBoxAnnotation;
 class EmojiStickerAnnotation;
@@ -50,7 +49,6 @@ public:
     void setTextEditor(InlineTextEditor* editor);
     void setTextAnnotationEditor(TextAnnotationEditor* editor);
     void setEmojiPicker(EmojiPicker* picker);
-    void setRegionControlWidget(RegionControlWidget* widget);
     void setMultiRegionManager(MultiRegionManager* manager);
     void setUpdateThrottler(UpdateThrottler* throttler);
     void setParentWidget(QWidget* widget);
@@ -94,7 +92,6 @@ signals:
 private:
     // Mouse press helpers
     bool handleTextEditorPress(const QPoint& pos);
-    bool handleRegionControlWidgetPress(const QPoint& pos);
     bool handleEmojiStickerAnnotationPress(const QPoint& pos);
     bool handleArrowAnnotationPress(const QPoint& pos);
     bool handleAnnotationToolPress(const QPoint& pos);
@@ -120,7 +117,6 @@ private:
     bool handleTextEditorRelease(const QPoint& pos);
     bool handleEmojiStickerRelease();
     bool handleArrowAnnotationRelease();
-    bool handleRegionControlWidgetRelease(const QPoint& pos);
     void handleSelectionRelease(const QPoint& pos);
     void handleAnnotationRelease();
 
@@ -150,7 +146,6 @@ private:
     InlineTextEditor* m_textEditor = nullptr;
     TextAnnotationEditor* m_textAnnotationEditor = nullptr;
     EmojiPicker* m_emojiPicker = nullptr;
-    RegionControlWidget* m_regionControlWidget = nullptr;
     MultiRegionManager* m_multiRegionManager = nullptr;
     UpdateThrottler* m_updateThrottler = nullptr;
     QWidget* m_parentWidget = nullptr;
@@ -165,7 +160,6 @@ private:
     QRect m_lastSelectionRect;
     QRect m_lastMagnifierRect;
     QRect m_lastToolbarRect;
-    QRect m_lastRegionControlRect;
     bool m_pendingWindowClickActive = false;
 
     // Emoji sticker transformation state

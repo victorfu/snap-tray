@@ -639,9 +639,7 @@ add_library(snaptray_ui STATIC
     src/region/UpdateThrottler.cpp
     src/region/TextAnnotationEditor.cpp
     src/region/ShapeAnnotationEditor.cpp
-    src/region/RegionControlWidget.cpp
     src/region/MultiRegionManager.cpp
-    src/region/MultiRegionListPanel.cpp
     src/region/RegionPainter.cpp
     src/region/RegionInputHandler.cpp
     src/region/SelectionDirtyRegionPlanner.cpp
@@ -649,8 +647,6 @@ add_library(snaptray_ui STATIC
     src/region/RegionSettingsHelper.cpp
     src/region/SelectionResizeHelper.cpp
     src/region/RegionExportManager.cpp
-    src/region/CaptureShortcutHintsOverlay.cpp
-
     # PinWindow
     src/PinWindow.cpp
     src/PinWindowManager.cpp
@@ -718,16 +714,13 @@ add_library(snaptray_ui STATIC
     include/region/UpdateThrottler.h
     include/region/TextAnnotationEditor.h
     include/region/ShapeAnnotationEditor.h
-    include/region/RegionControlWidget.h
     include/region/MultiRegionManager.h
-    include/region/MultiRegionListPanel.h
     include/region/RegionPainter.h
     include/region/RegionInputHandler.h
     include/region/SelectionDirtyRegionPlanner.h
     include/region/RegionToolbarHandler.h
     include/region/RegionSettingsHelper.h
     include/region/RegionExportManager.h
-    include/region/CaptureShortcutHintsOverlay.h
     include/PinWindow.h
     include/PinWindowManager.h
     include/pinwindow/PinHistoryStore.h
@@ -902,6 +895,11 @@ set_source_files_properties(src/qml/recording/RecordingPreview.qml PROPERTIES QT
 set_source_files_properties(src/qml/recording/RecordingControlBar.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingControlBar.qml)
 set_source_files_properties(src/qml/recording/RecordingRegionSelector.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingRegionSelector.qml)
 
+# Capture overlay panels
+set_source_files_properties(src/qml/panels/ShortcutHintsPanel.qml PROPERTIES QT_RESOURCE_ALIAS panels/ShortcutHintsPanel.qml)
+set_source_files_properties(src/qml/panels/RegionControlPanel.qml PROPERTIES QT_RESOURCE_ALIAS panels/RegionControlPanel.qml)
+set_source_files_properties(src/qml/panels/MultiRegionListPanel.qml PROPERTIES QT_RESOURCE_ALIAS panels/MultiRegionListPanel.qml)
+
 qt_add_qml_module(snaptray_qml
     URI SnapTrayQml
     VERSION 1.0
@@ -963,6 +961,9 @@ qt_add_qml_module(snaptray_qml
         src/qml/toolbar/LineStyleSection.qml
         src/qml/toolbar/SizeSection.qml
         src/qml/toolbar/AutoBlurSection.qml
+        src/qml/panels/ShortcutHintsPanel.qml
+        src/qml/panels/RegionControlPanel.qml
+        src/qml/panels/MultiRegionListPanel.qml
     SOURCES
         src/ui/DesignSystem.cpp
         include/ui/DesignSystem.h
@@ -1020,6 +1021,14 @@ qt_add_qml_module(snaptray_qml
         include/qml/UpdateDialogViewModel.h
         src/qml/QRCodeResultViewModel.cpp
         include/qml/QRCodeResultViewModel.h
+        src/qml/QmlOverlayPanel.mm
+        include/qml/QmlOverlayPanel.h
+        src/qml/ShortcutHintsViewModel.cpp
+        include/qml/ShortcutHintsViewModel.h
+        src/qml/RegionControlViewModel.cpp
+        include/qml/RegionControlViewModel.h
+        src/qml/MultiRegionListViewModel.cpp
+        include/qml/MultiRegionListViewModel.h
 )
 
 target_include_directories(snaptray_qml

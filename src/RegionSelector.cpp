@@ -6,7 +6,10 @@
 #include "region/RegionToolbarHandler.h"
 #include "region/RegionSettingsHelper.h"
 #include "region/RegionExportManager.h"
-#include "region/MultiRegionListPanel.h"
+#include "qml/QmlOverlayPanel.h"
+#include "qml/ShortcutHintsViewModel.h"
+#include "qml/RegionControlViewModel.h"
+#include "qml/MultiRegionListViewModel.h"
 #include "share/ShareUploadClient.h"
 #include "annotations/AllAnnotations.h"
 #include "cursor/CursorManager.h"
@@ -42,7 +45,6 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "tools/ToolSectionConfig.h"
 #include "tools/ToolTraits.h"
 #include "utils/CoordinateHelper.h"
-#include "region/CaptureShortcutHintsOverlay.h"
 #include <QTextEdit>
 
 #include <cstring>
@@ -121,7 +123,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_textEditor(nullptr)
     , m_colorPickerDialog(nullptr)
     , m_magnifierPanel(nullptr)
-    , m_shortcutHintsOverlay(nullptr)
+    , m_shortcutHintsViewModel(nullptr)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     setAttribute(Qt::WA_DeleteOnClose);
@@ -169,7 +171,7 @@ RegionSelector::RegionSelector(QWidget* parent)
                 else {
                     cm.popCursorForWidget(this, CursorContext::Selection);
                 }
-                syncMultiRegionListPanelCursor();
+                // QML multi-region panel handles cursor internally
                 return;
             }
 
@@ -201,8 +203,8 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_multiRegionManager, &MultiRegionManager::activeIndexChanged,
         this, [this](int index) {
             if (!m_inputState.multiRegionMode) return;
-            if (m_multiRegionListPanel) {
-                m_multiRegionListPanel->setActiveIndex(index);
+            if (m_multiRegionListViewModel) {
+                m_multiRegionListViewModel->setActiveIndex(index);
             }
             if (index >= 0) {
                 m_selectionManager->setSelectionRect(m_multiRegionManager->regionRect(index));
@@ -455,29 +457,38 @@ RegionSelector::RegionSelector(QWidget* parent)
 
     // Initialize magnifier panel component
     m_magnifierPanel = new MagnifierPanel(this);
-    m_shortcutHintsOverlay = std::make_unique<CaptureShortcutHintsOverlay>();
+    // Shortcut hints overlay (QML)
+    m_shortcutHintsViewModel = new ShortcutHintsViewModel(this);
+    SnapTray::QmlOverlayPanel::Options shortcutHintsOptions;
+    shortcutHintsOptions.transparentForInput = true;
+    m_shortcutHintsPanel = std::make_unique<SnapTray::QmlOverlayPanel>(
+        QUrl(QStringLiteral("qrc:/SnapTrayQml/panels/ShortcutHintsPanel.qml")),
+        m_shortcutHintsViewModel, QStringLiteral("viewModel"),
+        shortcutHintsOptions);
+    m_shortcutHintsPanel->setParentWidget(this);
 
-    // Initialize region control widget (combines radius toggle + aspect ratio lock)
-    m_regionControlWidget = new RegionControlWidget(this);
+    // Region control panel (QML - combines radius toggle + aspect ratio lock)
+    m_regionControlViewModel = new RegionControlViewModel(this);
 
-    // Load saved aspect ratio
     int savedRatioWidth = settings.loadAspectRatioWidth();
     int savedRatioHeight = settings.loadAspectRatioHeight();
-    m_regionControlWidget->setLockedRatio(savedRatioWidth, savedRatioHeight);
+    m_regionControlViewModel->setLockedRatio(savedRatioWidth, savedRatioHeight);
 
-    // Load saved corner radius and enabled state
     m_cornerRadius = settings.loadCornerRadius();
-    m_regionControlWidget->setCurrentRadius(m_cornerRadius);
-    m_regionControlWidget->setRadiusEnabled(settings.loadCornerRadiusEnabled());
+    m_regionControlViewModel->setCurrentRadius(m_cornerRadius);
+    m_regionControlViewModel->setRadiusEnabled(settings.loadCornerRadiusEnabled());
 
-    // Connect radius enabled state signal
-    connect(m_regionControlWidget, &RegionControlWidget::radiusEnabledChanged,
+    m_regionControlPanel = std::make_unique<SnapTray::QmlOverlayPanel>(
+        QUrl(QStringLiteral("qrc:/SnapTrayQml/panels/RegionControlPanel.qml")),
+        m_regionControlViewModel, QStringLiteral("viewModel"));
+    m_regionControlPanel->setParentWidget(this);
+
+    connect(m_regionControlViewModel, &RegionControlViewModel::radiusEnabledChanged,
         this, [](bool enabled) {
             AnnotationSettingsManager::instance().saveCornerRadiusEnabled(enabled);
         });
 
-    // Connect aspect ratio lock signal
-    connect(m_regionControlWidget, &RegionControlWidget::lockChanged,
+    connect(m_regionControlViewModel, &RegionControlViewModel::lockChanged,
         this, [this](bool locked) {
             auto& settings = AnnotationSettingsManager::instance();
             if (!locked) {
@@ -502,21 +513,24 @@ RegionSelector::RegionSelector(QWidget* parent)
             int gcd = std::gcd(ratioWidth, ratioHeight);
             ratioWidth /= gcd;
             ratioHeight /= gcd;
-            m_regionControlWidget->setLockedRatio(ratioWidth, ratioHeight);
+            m_regionControlViewModel->setLockedRatio(ratioWidth, ratioHeight);
             settings.saveAspectRatio(ratioWidth, ratioHeight);
             m_selectionManager->setAspectRatio(static_cast<qreal>(ratioWidth) /
                 static_cast<qreal>(ratioHeight));
             update();
         });
 
-    // Connect corner radius signal
-    connect(m_regionControlWidget, &RegionControlWidget::radiusChanged,
+    connect(m_regionControlViewModel, &RegionControlViewModel::radiusChanged,
         this, &RegionSelector::onCornerRadiusChanged);
 
-    // Multi-region list panel (left dock)
-    m_multiRegionListPanel = new MultiRegionListPanel(this);
-    m_multiRegionListPanel->hide();
-    connect(m_multiRegionListPanel, &MultiRegionListPanel::regionActivated,
+    // Multi-region list panel (QML - left dock)
+    m_multiRegionListViewModel = new MultiRegionListViewModel(this);
+    m_multiRegionListPanel = std::make_unique<SnapTray::QmlOverlayPanel>(
+        QUrl(QStringLiteral("qrc:/SnapTrayQml/panels/MultiRegionListPanel.qml")),
+        m_multiRegionListViewModel, QStringLiteral("viewModel"));
+    m_multiRegionListPanel->setParentWidget(this);
+
+    connect(m_multiRegionListViewModel, &MultiRegionListViewModel::regionActivated,
         this, [this](int index) {
             if (!m_inputState.multiRegionMode || !m_multiRegionManager) {
                 return;
@@ -529,7 +543,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             m_multiRegionManager->setActiveIndex(index);
             update();
         });
-    connect(m_multiRegionListPanel, &MultiRegionListPanel::regionDeleteRequested,
+    connect(m_multiRegionListViewModel, &MultiRegionListViewModel::regionDeleteRequested,
         this, [this](int index) {
             if (!m_inputState.multiRegionMode || !m_multiRegionManager) {
                 return;
@@ -543,9 +557,9 @@ RegionSelector::RegionSelector(QWidget* parent)
             m_multiRegionManager->removeRegion(index);
             update();
         });
-    connect(m_multiRegionListPanel, &MultiRegionListPanel::regionReplaceRequested,
+    connect(m_multiRegionListViewModel, &MultiRegionListViewModel::regionReplaceRequested,
         this, &RegionSelector::beginMultiRegionReplace);
-    connect(m_multiRegionListPanel, &MultiRegionListPanel::regionMoveRequested,
+    connect(m_multiRegionListViewModel, &MultiRegionListViewModel::regionMoveRequested,
         this, [this](int fromIndex, int toIndex) {
             if (!m_inputState.multiRegionMode || !m_multiRegionManager) {
                 return;
@@ -573,7 +587,6 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_painter->setSelectionManager(m_selectionManager);
     m_painter->setAnnotationLayer(m_annotationLayer);
     m_painter->setToolManager(m_toolManager);
-    m_painter->setRegionControlWidget(m_regionControlWidget);
     m_painter->setMultiRegionManager(m_multiRegionManager);
     m_painter->setParentWidget(this);
 
@@ -709,7 +722,6 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_inputHandler->setTextEditor(m_textEditor);
     m_inputHandler->setTextAnnotationEditor(m_textAnnotationEditor);
     // EmojiPicker is set lazily via ensureEmojiPicker() when first needed
-    m_inputHandler->setRegionControlWidget(m_regionControlWidget);
     m_inputHandler->setMultiRegionManager(m_multiRegionManager);
     m_inputHandler->setUpdateThrottler(&m_updateThrottler);
     m_inputHandler->setParentWidget(this);
@@ -1123,9 +1135,7 @@ void RegionSelector::setupScreenGeometry(QScreen* screen)
 
     QRect screenGeom = m_currentScreen->geometry();
     setFixedSize(screenGeom.size());
-    if (m_multiRegionListPanel) {
-        m_multiRegionListPanel->updatePanelGeometry(size());
-    }
+    positionMultiRegionListPanel();
     m_selectionManager->setBounds(QRect(0, 0, screenGeom.width(), screenGeom.height()));
     m_toolManager->setTextEditingBounds(rect());
 
@@ -1142,6 +1152,8 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     clearPreservedSelection();
     m_shortcutHintsVisible = false;
     m_shortcutHintsTemporarilyHiddenByHover = false;
+    if (m_shortcutHintsPanel) m_shortcutHintsPanel->hide();
+    if (m_regionControlPanel) m_regionControlPanel->hide();
 
     setupScreenGeometry(screen);
     if (!isScreenValid()) {
@@ -1171,8 +1183,8 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
     m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
     m_exportManager->setSourceScreen(m_currentScreen.data());
-    if (m_multiRegionListPanel) {
-        m_multiRegionListPanel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
+    if (m_multiRegionListViewModel) {
+        m_multiRegionListViewModel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
     }
 
     // 不預設選取整個螢幕，等待用戶操作
@@ -1220,6 +1232,12 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
         m_showShortcutHintsOnEntry &&
         RegionCaptureSettingsManager::instance().isShortcutHintsEnabled();
     m_shortcutHintsTemporarilyHiddenByHover = false;
+    if (m_shortcutHintsVisible && m_shortcutHintsPanel) {
+        m_shortcutHintsPanel->show();
+        positionShortcutHintsPanel();
+    } else if (m_shortcutHintsPanel) {
+        m_shortcutHintsPanel->hide();
+    }
 }
 
 void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
@@ -1227,6 +1245,8 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     clearPreservedSelection();
     m_shortcutHintsVisible = false;
     m_shortcutHintsTemporarilyHiddenByHover = false;
+    if (m_shortcutHintsPanel) m_shortcutHintsPanel->hide();
+    if (m_regionControlPanel) m_regionControlPanel->hide();
 
     setupScreenGeometry(screen);
     if (!isScreenValid()) {
@@ -1250,8 +1270,8 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
     m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
     m_exportManager->setSourceScreen(m_currentScreen.data());
-    if (m_multiRegionListPanel) {
-        m_multiRegionListPanel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
+    if (m_multiRegionListViewModel) {
+        m_multiRegionListViewModel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
     }
 
     // Pre-compose dimmed background cache for fast painting on high-DPI screens
@@ -1494,14 +1514,14 @@ void RegionSelector::refreshWindowDetectorForCurrentScreen()
 
 void RegionSelector::refreshMultiRegionListPanel()
 {
-    if (!m_multiRegionListPanel || !m_multiRegionManager) {
+    if (!m_multiRegionListViewModel || !m_multiRegionManager) {
         return;
     }
 
     m_multiRegionListRefreshPending = false;
-    m_multiRegionListPanel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
-    m_multiRegionListPanel->setRegions(m_multiRegionManager->regions());
-    m_multiRegionListPanel->setActiveIndex(m_multiRegionManager->activeIndex());
+    m_multiRegionListViewModel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
+    m_multiRegionListViewModel->setRegions(m_multiRegionManager->regions());
+    m_multiRegionListViewModel->setActiveIndex(m_multiRegionManager->activeIndex());
 }
 
 void RegionSelector::beginMultiRegionReplace(int index)
@@ -1753,16 +1773,66 @@ void RegionSelector::paintEvent(QPaintEvent* event)
         drawMagnifier(painter);
     }
 
-    if (m_shortcutHintsVisible && m_shortcutHintsOverlay) {
-        m_shortcutHintsOverlay->draw(painter, size());
-    }
-
+    // Position region control panel after paint (painter computes dimension info rect)
+    positionRegionControlPanel();
 }
 
 void RegionSelector::drawMagnifier(QPainter& painter)
 {
     // Delegate to MagnifierPanel component
     m_magnifierPanel->draw(painter, m_inputState.currentPoint, size(), m_backgroundPixmap);
+}
+
+void RegionSelector::positionShortcutHintsPanel()
+{
+    if (!m_shortcutHintsPanel || !m_shortcutHintsPanel->isVisible())
+        return;
+    QRect panelGeom = m_shortcutHintsPanel->geometry();
+    int margin = 12;
+    QPoint pos = mapToGlobal(QPoint(margin, height() - panelGeom.height() - margin));
+    m_shortcutHintsPanel->setPosition(pos);
+}
+
+void RegionSelector::positionRegionControlPanel()
+{
+    if (!m_regionControlPanel)
+        return;
+
+    bool shouldShow = m_selectionManager && m_selectionManager->hasSelection();
+    if (shouldShow != m_regionControlPanel->isVisible()) {
+        shouldShow ? m_regionControlPanel->show() : m_regionControlPanel->hide();
+    }
+    if (!shouldShow)
+        return;
+
+    QRect dimRect = m_painter->lastDimensionInfoRect();
+    if (!dimRect.isValid())
+        return;
+
+    QRect panelGeom = m_regionControlPanel->geometry();
+    int gap = 8;
+    // The QML root is 60px tall: [popup 28] [gap 4] [main panel 28]
+    // The visible main panel is the bottom 28px. Align it with dim label.
+    int mainPanelHeight = 28;
+    int popupOverhead = panelGeom.height() - mainPanelHeight;
+    QPoint pos = mapToGlobal(QPoint(dimRect.right() + gap,
+        dimRect.top() + (dimRect.height() - mainPanelHeight) / 2 - popupOverhead));
+
+    // Fallback if off-screen right
+    if (pos.x() + panelGeom.width() > mapToGlobal(QPoint(width(), 0)).x()) {
+        pos = mapToGlobal(QPoint(dimRect.left(), dimRect.bottom() + 4 - popupOverhead));
+    }
+    m_regionControlPanel->setPosition(pos);
+}
+
+void RegionSelector::positionMultiRegionListPanel()
+{
+    if (!m_multiRegionListPanel || !m_multiRegionListPanel->isVisible())
+        return;
+    int margin = 12;
+    QPoint pos = mapToGlobal(QPoint(margin, margin));
+    m_multiRegionListPanel->setPosition(pos);
+    m_multiRegionListPanel->resize(QSize(280, height() - 2 * margin));
 }
 
 void RegionSelector::hideShortcutHints()
@@ -1774,7 +1844,9 @@ void RegionSelector::hideShortcutHints()
 
     m_shortcutHintsVisible = false;
     m_shortcutHintsTemporarilyHiddenByHover = false;
-    update();
+    if (m_shortcutHintsPanel) {
+        m_shortcutHintsPanel->hide();
+    }
 }
 
 void RegionSelector::maybeDismissShortcutHintsAfterSelectionCompleted()
@@ -1792,11 +1864,13 @@ void RegionSelector::maybeDismissShortcutHintsAfterSelectionCompleted()
 
 void RegionSelector::updateShortcutHintsHoverVisibilityDuringSelection(const QPoint& localPos)
 {
-    if (!m_shortcutHintsOverlay || !m_selectionManager) {
+    if (!m_shortcutHintsPanel || !m_selectionManager) {
         return;
     }
 
-    const QRect panelRect = m_shortcutHintsOverlay->panelRectForViewport(size());
+    // Convert QML panel geometry (global) to local coordinates for overlap detection
+    const QRect panelGlobalRect = m_shortcutHintsPanel->geometry();
+    const QRect panelRect = globalToLocal(panelGlobalRect);
     if (!panelRect.isValid()) {
         return;
     }
@@ -1810,13 +1884,12 @@ void RegionSelector::updateShortcutHintsHoverVisibilityDuringSelection(const QPo
         selectionRect.intersects(panelRect);
     const bool shouldTemporarilyHide = isHoveringPanel || isSelectionOverlappingPanel;
 
-    // If we are in temporary-hidden state, keep it hidden while cursor hovers panel
-    // or while selection overlaps panel, and restore once both conditions end.
     if (m_shortcutHintsTemporarilyHiddenByHover) {
         if (!shouldTemporarilyHide && !m_shortcutHintsVisible) {
             m_shortcutHintsVisible = true;
             m_shortcutHintsTemporarilyHiddenByHover = false;
-            update(panelRect);
+            m_shortcutHintsPanel->show();
+            positionShortcutHintsPanel();
         }
         return;
     }
@@ -1824,7 +1897,7 @@ void RegionSelector::updateShortcutHintsHoverVisibilityDuringSelection(const QPo
     if (shouldTemporarilyHide && m_shortcutHintsVisible) {
         m_shortcutHintsVisible = false;
         m_shortcutHintsTemporarilyHiddenByHover = true;
-        update(panelRect);
+        m_shortcutHintsPanel->hide();
     }
 }
 
@@ -1880,6 +1953,14 @@ bool RegionSelector::isGlobalPosOverFloatingUi(const QPoint& globalPos) const
         return true;
     }
 
+    if (m_regionControlPanel && m_regionControlPanel->containsGlobalPoint(globalPos)) {
+        return true;
+    }
+
+    if (m_multiRegionListPanel && m_multiRegionListPanel->containsGlobalPoint(globalPos)) {
+        return true;
+    }
+
     if (QWidget* popup = QApplication::activePopupWidget(); containsGlobalPoint(popup, globalPos)) {
         return true;
     }
@@ -1922,35 +2003,6 @@ void RegionSelector::syncFloatingUiCursor()
     restoreRegionCursorAt(globalToLocal(globalPos));
 }
 
-void RegionSelector::syncMultiRegionListPanelCursor()
-{
-    if (!m_multiRegionListPanel || !m_inputState.multiRegionMode || !m_multiRegionListPanel->isVisible()) {
-        return;
-    }
-
-    if (!m_selectionManager) {
-        return;
-    }
-
-    const bool isDraggingRegion = m_selectionManager->isSelecting() ||
-                                  m_selectionManager->isResizing() ||
-                                  m_selectionManager->isMoving();
-
-    if (isDraggingRegion) {
-        Qt::CursorShape interactionCursor = Qt::CrossCursor;
-        if (m_selectionManager->isMoving()) {
-            interactionCursor = Qt::SizeAllCursor;
-        } else if (m_selectionManager->isResizing()) {
-            const SelectionStateManager::ResizeHandle handle = m_selectionManager->activeResizeHandle();
-            interactionCursor = handle != SelectionStateManager::ResizeHandle::None
-                ? CursorManager::cursorForHandle(handle)
-                : Qt::SizeAllCursor;
-        }
-        m_multiRegionListPanel->setInteractionCursor(interactionCursor);
-    } else {
-        m_multiRegionListPanel->clearInteractionCursor();
-    }
-}
 
 void RegionSelector::handleToolbarClick(ToolId tool)
 {
@@ -2039,14 +2091,14 @@ void RegionSelector::setMultiRegionMode(bool enabled)
         m_inputState.currentTool = ToolId::Selection;
         m_inputState.showSubToolbar = false;
         syncRegionSubToolbar(true);
-        if (m_multiRegionListPanel) {
-            m_multiRegionListPanel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
-            m_multiRegionListPanel->updatePanelGeometry(size());
-            m_multiRegionListPanel->show();
-            m_multiRegionListPanel->raise();
-            m_multiRegionListPanel->clearInteractionCursor();
-            refreshMultiRegionListPanel();
+        if (m_multiRegionListViewModel) {
+            m_multiRegionListViewModel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
         }
+        if (m_multiRegionListPanel) {
+            m_multiRegionListPanel->show();
+            positionMultiRegionListPanel();
+        }
+        refreshMultiRegionListPanel();
     }
     else {
         m_multiRegionManager->clear();
@@ -2054,9 +2106,10 @@ void RegionSelector::setMultiRegionMode(bool enabled)
         m_inputState.showSubToolbar = true;
         syncRegionSubToolbar(true);
         if (m_multiRegionListPanel) {
-            m_multiRegionListPanel->clearInteractionCursor();
             m_multiRegionListPanel->hide();
-            m_multiRegionListPanel->setRegions(QVector<MultiRegionManager::Region>());
+        }
+        if (m_multiRegionListViewModel) {
+            m_multiRegionListViewModel->setRegions(QVector<MultiRegionManager::Region>());
         }
     }
 
@@ -2196,7 +2249,7 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
 
     m_inputHandler->handleMousePress(event);
     m_lastMagnifierRect = m_inputHandler->lastMagnifierRect();
-    syncMultiRegionListPanelCursor();
+    // QML multi-region panel handles cursor internally
 }
 
 void RegionSelector::mouseMoveEvent(QMouseEvent* event)
@@ -2204,14 +2257,14 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
     m_inputHandler->handleMouseMove(event);
     updateShortcutHintsHoverVisibilityDuringSelection(event->pos());
     m_lastMagnifierRect = m_inputHandler->lastMagnifierRect();
-    syncMultiRegionListPanelCursor();
+    // QML multi-region panel handles cursor internally
 }
 
 void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
 {
     m_inputHandler->handleMouseRelease(event);
     updateShortcutHintsHoverVisibilityDuringSelection(event->pos());
-    syncMultiRegionListPanelCursor();
+    // QML multi-region panel handles cursor internally
 }
 
 void RegionSelector::mouseDoubleClickEvent(QMouseEvent* event)
@@ -2487,9 +2540,8 @@ void RegionSelector::showEvent(QShowEvent* event)
 void RegionSelector::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
-    if (m_multiRegionListPanel) {
-        m_multiRegionListPanel->updatePanelGeometry(size());
-    }
+    positionMultiRegionListPanel();
+    positionShortcutHintsPanel();
 }
 
 void RegionSelector::enterEvent(QEnterEvent* event)

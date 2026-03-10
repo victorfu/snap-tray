@@ -14,7 +14,6 @@ class QWidget;
 class SelectionStateManager;
 class AnnotationLayer;
 class ToolManager;
-class RegionControlWidget;
 class TextBoxAnnotation;
 class EmojiStickerAnnotation;
 class ShapeAnnotation;
@@ -41,7 +40,6 @@ public:
     void setSelectionManager(SelectionStateManager* manager);
     void setAnnotationLayer(AnnotationLayer* layer);
     void setToolManager(ToolManager* manager);
-    void setRegionControlWidget(RegionControlWidget* widget);
     void setParentWidget(QWidget* widget);
     void setMultiRegionManager(MultiRegionManager* manager);
 
@@ -78,6 +76,8 @@ public:
      */
     void invalidateOverlayCache();
 
+    QRect lastDimensionInfoRect() const { return m_lastDimensionInfoRect; }
+
     void buildDimmedCache(const QPixmap& background);
     const QPixmap& dimmedCache() const { return m_dimmedCache; }
 
@@ -87,7 +87,6 @@ private:
     void drawDimmingOverlay(QPainter& painter, const QRect& clearRect, const QColor& dimColor);
     void drawSelection(QPainter& painter);
     void drawDimensionInfo(QPainter& painter);
-    void drawRegionControlWidget(QPainter& painter, const QRect& dimensionInfoRect);
     void drawDetectedWindow(QPainter& painter);
     void drawWindowHint(QPainter& painter, const QString& title);
     void drawAnnotations(QPainter& painter);
@@ -109,7 +108,6 @@ private:
     SelectionStateManager* m_selectionManager = nullptr;
     AnnotationLayer* m_annotationLayer = nullptr;
     ToolManager* m_toolManager = nullptr;
-    RegionControlWidget* m_regionControlWidget = nullptr;
     QWidget* m_parentWidget = nullptr;
     MultiRegionManager* m_multiRegionManager = nullptr;
 
@@ -133,6 +131,8 @@ private:
 
     QPixmap m_dimmedCache;
     bool m_dimmedCacheReady = false;
+
+    QRect m_lastDimensionInfoRect;
 };
 
 #endif // REGIONPAINTER_H

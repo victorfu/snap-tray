@@ -31,7 +31,6 @@
 #include "region/UpdateThrottler.h"
 #include "region/TextAnnotationEditor.h"
 #include "region/ShapeAnnotationEditor.h"
-#include "region/RegionControlWidget.h"
 #include "region/MultiRegionManager.h"
 #include "region/RegionInputState.h"
 
@@ -42,6 +41,7 @@ class PinToolOptionsViewModel;
 namespace SnapTray {
 class QmlFloatingToolbar;
 class QmlFloatingSubToolbar;
+class QmlOverlayPanel;
 }
 
 namespace snaptray {
@@ -62,9 +62,10 @@ class RegionInputHandler;
 class RegionToolbarHandler;
 class RegionSettingsHelper;
 class RegionExportManager;
-class MultiRegionListPanel;
 class AnnotationContext;
-class CaptureShortcutHintsOverlay;
+class ShortcutHintsViewModel;
+class RegionControlViewModel;
+class MultiRegionListViewModel;
 class ShareUploadClient;
 namespace SnapTray { class QmlToast; }
 
@@ -200,8 +201,10 @@ private:
     // Cursor helpers
     QCursor getMosaicCursor(int width);
     void setToolCursor();
-    void syncMultiRegionListPanelCursor();
     void hideShortcutHints();
+    void positionShortcutHintsPanel();
+    void positionRegionControlPanel();
+    void positionMultiRegionListPanel();
     void maybeDismissShortcutHintsAfterSelectionCompleted();
     void updateShortcutHintsHoverVisibilityDuringSelection(const QPoint& localPos);
     static bool isPureModifierKey(int key);
@@ -326,11 +329,12 @@ private:
     // Magnifier panel component
     MagnifierPanel* m_magnifierPanel;
 
-    // Capture shortcut hints overlay
+    // Capture shortcut hints overlay (QML)
     bool m_showShortcutHintsOnEntry = false;
     bool m_shortcutHintsVisible = false;
     bool m_shortcutHintsTemporarilyHiddenByHover = false;
-    std::unique_ptr<CaptureShortcutHintsOverlay> m_shortcutHintsOverlay;
+    ShortcutHintsViewModel* m_shortcutHintsViewModel = nullptr;
+    std::unique_ptr<SnapTray::QmlOverlayPanel> m_shortcutHintsPanel;
 
     // Update throttling component
     UpdateThrottler m_updateThrottler;
@@ -347,13 +351,15 @@ private:
     QRect m_preservedGlobalSelectionRect;
     QPixmap m_preservedSelectionPixmap;
 
-    // Region control widget (radius + aspect ratio)
-    RegionControlWidget* m_regionControlWidget = nullptr;
+    // Region control panel (QML - radius + aspect ratio)
+    RegionControlViewModel* m_regionControlViewModel = nullptr;
+    std::unique_ptr<SnapTray::QmlOverlayPanel> m_regionControlPanel;
     int m_cornerRadius = 0;  // Current corner radius in logical pixels
 
     // Multi-region capture
     MultiRegionManager* m_multiRegionManager = nullptr;       // Qt parent owns lifetime
-    MultiRegionListPanel* m_multiRegionListPanel = nullptr;   // Qt parent owns lifetime
+    MultiRegionListViewModel* m_multiRegionListViewModel = nullptr;
+    std::unique_ptr<SnapTray::QmlOverlayPanel> m_multiRegionListPanel;
     QRect m_replaceOriginalRect;
     bool m_multiRegionListRefreshPending = false;
 

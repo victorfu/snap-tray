@@ -304,6 +304,7 @@ QColor DesignSystem::textPrimary() const   { return m_isDark ? gray200() : gray9
 QColor DesignSystem::textSecondary() const { return m_isDark ? gray500() : gray600(); }
 QColor DesignSystem::textTertiary() const  { return m_isDark ? gray600() : gray500(); }
 QColor DesignSystem::textInverse() const   { return m_isDark ? gray900() : white(); }
+QColor DesignSystem::textOnAccent() const  { return white(); }
 
 // ============================================================================
 // Semantic: Border
@@ -354,6 +355,31 @@ QColor DesignSystem::captureOverlayDim() const             { return dimOverlay()
 QColor DesignSystem::captureOverlayCrosshair() const       { return crosshair(); }
 QColor DesignSystem::captureOverlaySelectionBorder() const { return selectionBorder(); }
 QColor DesignSystem::captureOverlayDimensionLabel() const  { return dimensionLabel(); }
+
+// ============================================================================
+// Capture overlay panel (always dark)
+// ============================================================================
+QColor DesignSystem::captureOverlayPanelBg() const        { return QColor(52, 54, 60, 220); }
+QColor DesignSystem::captureOverlayPanelBgTop() const     { return QColor(58, 60, 66, 220); }
+QColor DesignSystem::captureOverlayPanelHighlight() const { return QColor(255, 255, 255, 10); }
+QColor DesignSystem::captureOverlayPanelBorder() const    { return QColor(255, 255, 255, 58); }
+int    DesignSystem::captureOverlayPanelRadius() const    { return 14; }
+QColor DesignSystem::captureOverlayKeycapBg() const       { return QColor(75, 77, 84, 228); }
+QColor DesignSystem::captureOverlayKeycapBorder() const   { return QColor(235, 235, 235, 165); }
+QColor DesignSystem::captureOverlayKeycapText() const     { return QColor(250, 250, 250, 255); }
+QColor DesignSystem::captureOverlayHintText() const       { return QColor(244, 244, 244, 255); }
+int    DesignSystem::captureOverlayKeycapRadius() const   { return 7; }
+QColor DesignSystem::captureOverlayIconNormal() const     { return QColor(224, 224, 238, 255); }
+QColor DesignSystem::captureOverlayIconActive() const     { return primaryPurple(); }
+QColor DesignSystem::captureOverlayIconDimmed() const     { return QColor(224, 224, 238, 102); }
+QColor DesignSystem::captureOverlayControlHoverBg() const { return QColor(255, 255, 255, 20); }
+QColor DesignSystem::captureOverlayListItemHover() const  { return QColor(255, 255, 255, 15); }
+QColor DesignSystem::captureOverlayListItemActive() const { return QColor(255, 255, 255, 25); }
+QColor DesignSystem::captureOverlayListButtonBg() const   { return QColor(255, 255, 255, 20); }
+QColor DesignSystem::captureOverlayListButtonHover() const { return QColor(255, 255, 255, 38); }
+QColor DesignSystem::captureOverlaySliderTrack() const     { return QColor(255, 255, 255, 40); }
+QColor DesignSystem::captureOverlaySliderFill() const      { return QColor(108, 92, 231); }  // primaryPurple
+QColor DesignSystem::captureOverlaySliderKnob() const      { return QColor(255, 255, 255); }
 
 // ============================================================================
 // Semantic: Icon overlay (theme-dependent)
@@ -415,6 +441,14 @@ QColor DesignSystem::toolbarControlBackgroundHover() const
     QColor base = backgroundElevated();
     base = m_isDark ? base.lighter(116) : base.darker(106);
     base.setAlpha(m_isDark ? 248 : 250);
+    return base;
+}
+
+QColor DesignSystem::toolbarControlBackgroundPressed() const
+{
+    QColor base = backgroundElevated();
+    base = m_isDark ? base.lighter(124) : base.darker(112);
+    base.setAlpha(m_isDark ? 252 : 252);
     return base;
 }
 

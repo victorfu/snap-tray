@@ -2,7 +2,6 @@
 #include "region/SelectionStateManager.h"
 #include "region/SelectionResizeHelper.h"
 #include "region/TextAnnotationEditor.h"
-#include "region/RegionControlWidget.h"
 #include "region/MultiRegionManager.h"
 #include "region/UpdateThrottler.h"
 #include "annotations/AnnotationLayer.h"
@@ -78,11 +77,6 @@ void RegionInputHandler::setEmojiPicker(EmojiPicker* picker)
     m_emojiPicker = picker;
 }
 
-void RegionInputHandler::setRegionControlWidget(RegionControlWidget* widget)
-{
-    m_regionControlWidget = widget;
-}
-
 void RegionInputHandler::setMultiRegionManager(MultiRegionManager* manager)
 {
     m_multiRegionManager = manager;
@@ -121,7 +115,6 @@ void RegionInputHandler::resetDirtyTracking()
     m_lastCrosshairPoint = QPoint();
     m_lastSelectionRect = QRect();
     m_lastToolbarRect = QRect();
-    m_lastRegionControlRect = QRect();
     m_pendingWindowClickActive = false;
     m_pendingWindowClickRect = QRect();
     m_pendingWindowClickStartPos = QPoint();
@@ -158,10 +151,6 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
                 };
 
             // Check region control widget (radius + aspect ratio)
-            if (handleRegionControlWidgetPress(event->pos())) {
-                return;
-            }
-
             // Check emoji picker clicks (still QPainter-based)
             if (m_emojiPicker && m_emojiPicker->isVisible()) {
                 if (m_emojiPicker->handleClick(event->pos())) {
@@ -367,11 +356,6 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
             return;
         }
 
-        // Handle region control widget release
-        if (handleRegionControlWidgetRelease(event->pos())) {
-            return;
-        }
-
         // Handle selection release
         if (m_selectionManager->isSelecting()) {
             handleSelectionRelease(event->pos());
@@ -427,16 +411,6 @@ bool RegionInputHandler::handleTextEditorPress(const QPoint& pos)
     }
 
     return true;
-}
-
-bool RegionInputHandler::handleRegionControlWidgetPress(const QPoint& pos)
-{
-    if (m_regionControlWidget && m_regionControlWidget->isVisible() &&
-        m_regionControlWidget->handleMousePress(pos)) {
-        emit updateRequested();
-        return true;
-    }
-    return false;
 }
 
 bool RegionInputHandler::handleEmojiStickerAnnotationPress(const QPoint& pos)
@@ -921,17 +895,6 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
         return;
     }
 
-    // Update region control widget (radius + aspect ratio)
-    if (m_regionControlWidget && m_regionControlWidget->isVisible()) {
-        if (m_regionControlWidget->handleMouseMove(pos, buttons & Qt::LeftButton)) {
-            emit updateRequested();
-        }
-        if (m_regionControlWidget->contains(pos)) {
-            cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::Widget);
-            return;
-        }
-    }
-
     // Check emoji picker
     if (m_emojiPicker && m_emojiPicker->isVisible()) {
         if (m_emojiPicker->updateHoveredEmoji(pos)) {
@@ -986,18 +949,8 @@ void RegionInputHandler::handleThrottledUpdate()
             state().currentPoint, m_parentWidget->size());
         const bool hasRenderableSelection =
             m_selectionManager->hasSelection() && m_lastSelectionRect.isValid();
-        // QML toolbar positions itself; just track empty rect for dirty region
+        // QML toolbar and region control panel position themselves in separate windows
         m_lastToolbarRect = QRect();
-        if (hasRenderableSelection && m_regionControlWidget) {
-            const QRect dimensionInfoRect =
-                m_dirtyRegionPlanner.dimensionInfoRectForSelection(m_lastSelectionRect);
-            m_regionControlWidget->updatePosition(
-                dimensionInfoRect, m_parentWidget->width(), m_parentWidget->height());
-            m_lastRegionControlRect = m_regionControlWidget->boundingRect();
-        }
-        else {
-            m_lastRegionControlRect = QRect();
-        }
 
         m_parentWidget->update();  // Full repaint for first frame
         return;
@@ -1009,18 +962,6 @@ void RegionInputHandler::handleThrottledUpdate()
             state().currentPoint, m_parentWidget->size());
         QRect currentToolbarRect;
         QRect currentRegionControlRect;
-        const bool hasRenderableSelection = m_selectionManager->hasSelection() && currentSelectionRect.isValid();
-
-        // QML toolbar positions itself in a separate window; no dirty region tracking needed
-        if (hasRenderableSelection && m_regionControlWidget) {
-            // RegionControlWidget is positioned from the dimension panel anchor during paint;
-            // mirror that anchor here so dirty-region planning includes next-frame placement.
-            const QRect currentDimensionInfoRect =
-                m_dirtyRegionPlanner.dimensionInfoRectForSelection(currentSelectionRect);
-            m_regionControlWidget->updatePosition(
-                currentDimensionInfoRect, m_parentWidget->width(), m_parentWidget->height());
-            currentRegionControlRect = m_regionControlWidget->boundingRect();
-        }
 
         SelectionDirtyRegionPlanner::SelectionDragParams params;
         params.currentSelectionRect = currentSelectionRect;
@@ -1028,7 +969,7 @@ void RegionInputHandler::handleThrottledUpdate()
         params.currentToolbarRect = currentToolbarRect;
         params.lastToolbarRect = m_lastToolbarRect;
         params.currentRegionControlRect = currentRegionControlRect;
-        params.lastRegionControlRect = m_lastRegionControlRect;
+        params.lastRegionControlRect = QRect();
         params.currentMagnifierRect = currentMagnifierRect;
         params.lastMagnifierRect = m_lastMagnifierRect;
         params.currentCursorPos = state().currentPoint;
@@ -1039,7 +980,6 @@ void RegionInputHandler::handleThrottledUpdate()
         m_lastSelectionRect = currentSelectionRect;
         m_lastMagnifierRect = currentMagnifierRect;
         m_lastToolbarRect = currentToolbarRect;
-        m_lastRegionControlRect = currentRegionControlRect;
         m_lastCrosshairPoint = state().currentPoint;
     }
     else if (state().isDrawing) {
@@ -1170,16 +1110,6 @@ bool RegionInputHandler::handleEmojiStickerRelease()
         m_emojiStartAngle = 0.0;
         // Reset input state to let hover logic take over (consistent with arrow/polyline)
         CursorManager::instance().setInputStateForWidget(m_parentWidget,InputState::Idle);
-        return true;
-    }
-    return false;
-}
-
-bool RegionInputHandler::handleRegionControlWidgetRelease(const QPoint& pos)
-{
-    if (m_regionControlWidget && m_regionControlWidget->isVisible() &&
-        m_regionControlWidget->handleMouseRelease(pos)) {
-        emit updateRequested();
         return true;
     }
     return false;

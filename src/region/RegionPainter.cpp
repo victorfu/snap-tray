@@ -1,6 +1,5 @@
 #include "region/RegionPainter.h"
 #include "region/SelectionStateManager.h"
-#include "region/RegionControlWidget.h"
 #include "region/MultiRegionManager.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/TextBoxAnnotation.h"
@@ -41,10 +40,7 @@ void RegionPainter::setToolManager(ToolManager* manager)
     m_toolManager = manager;
 }
 
-void RegionPainter::setRegionControlWidget(RegionControlWidget* widget)
-{
-    m_regionControlWidget = widget;
-}
+
 
 void RegionPainter::setParentWidget(QWidget* widget)
 {
@@ -260,34 +256,14 @@ void RegionPainter::drawDimensionInfo(QPainter& painter)
             }
         }
 
-        if (!activeInfoRect.isNull()) {
-            drawRegionControlWidget(painter, activeInfoRect);
-        }
+        m_lastDimensionInfoRect = activeInfoRect;
         return;
     }
 
     QRect sel = m_selectionManager->selectionRect();
     QString dimensions = tr("%1 x %2 pt").arg(sel.width()).arg(sel.height());
     QRect textRect = drawDimensionInfoPanel(painter, sel, dimensions);
-
-    // Draw region control widget next to dimension info
-    drawRegionControlWidget(painter, textRect);
-}
-
-void RegionPainter::drawRegionControlWidget(QPainter& painter, const QRect& dimensionInfoRect)
-{
-    if (!m_regionControlWidget) {
-        return;
-    }
-
-    // Show region control widget when selection has been made
-    if (m_selectionManager->hasSelection()) {
-        m_regionControlWidget->setVisible(true);
-        m_regionControlWidget->updatePosition(dimensionInfoRect, m_parentWidget->width(), m_parentWidget->height());
-        m_regionControlWidget->draw(painter);
-    } else {
-        m_regionControlWidget->setVisible(false);
-    }
+    m_lastDimensionInfoRect = textRect;
 }
 
 void RegionPainter::drawMultiSelection(QPainter& painter)
