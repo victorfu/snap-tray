@@ -219,7 +219,7 @@ void ToolRegistry::registerTools() {
 
     registerTool({
         ToolId::Clear,
-        "cancel",
+        "trash-2",
         QCoreApplication::translate("ToolRegistry", "Clear All"),
         "",
         ToolCategory::Action,

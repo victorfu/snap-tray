@@ -2,6 +2,7 @@
 #include <QWheelEvent>
 
 #include "RegionSelector.h"
+#include "qml/QmlFloatingSubToolbar.h"
 #include "qml/PinToolOptionsViewModel.h"
 #include "qml/RegionToolbarViewModel.h"
 
