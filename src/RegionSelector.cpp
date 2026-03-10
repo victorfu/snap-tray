@@ -94,6 +94,11 @@ QRect rectFromGlobal(QWidget* widget, const QRect& globalRect)
     return QRect(widget->mapFromGlobal(globalRect.topLeft()), globalRect.size());
 }
 
+bool containsGlobalPoint(const QWidget* widget, const QPoint& globalPos)
+{
+    return widget && widget->isVisible() && widget->frameGeometry().contains(globalPos);
+}
+
 } // namespace
 
 RegionSelector::RegionSelector(QWidget* parent)
@@ -1869,7 +1874,7 @@ bool RegionSelector::isGlobalPosOverFloatingUi(const QPoint& globalPos) const
         return true;
     }
 
-    if (QWidget* popup = QApplication::activePopupWidget(); popup && popup->isVisible()) {
+    if (QWidget* popup = QApplication::activePopupWidget(); containsGlobalPoint(popup, globalPos)) {
         return true;
     }
 

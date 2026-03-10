@@ -80,6 +80,7 @@ class RegionSelector : public QWidget, public AnnotationHostAdapter
     Q_OBJECT
 
     friend class tst_RegionSelectorMultiRegionSubToolbar;
+    friend class TestRegionSelectorStyleSync;
 
 public:
     explicit RegionSelector(QWidget *parent = nullptr);

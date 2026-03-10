@@ -139,6 +139,11 @@ target_link_libraries(RegionSelector_MultiRegionListPanel PRIVATE snaptray_ui Qt
 add_test(NAME RegionSelector_MultiRegionListPanel COMMAND RegionSelector_MultiRegionListPanel)
 set_tests_properties(RegionSelector_MultiRegionListPanel PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RegionSelector_StyleSync RegionSelector/tst_StyleSync.cpp)
+target_link_libraries(RegionSelector_StyleSync PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME RegionSelector_StyleSync COMMAND RegionSelector_StyleSync)
+set_tests_properties(RegionSelector_StyleSync PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 add_executable(RegionSelector_MultiRegionReplaceFlow RegionSelector/tst_MultiRegionReplaceFlow.cpp)
 target_link_libraries(RegionSelector_MultiRegionReplaceFlow PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME RegionSelector_MultiRegionReplaceFlow COMMAND RegionSelector_MultiRegionReplaceFlow)
