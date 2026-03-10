@@ -81,7 +81,8 @@ downloads:
     title: 桌面安裝程式
     requirements: macOS 14.0（Sonoma）以上
     button: 下載 .dmg
-    empty: 目前尚無可用版本
+    empty: DMG 安裝檔即將推出
+    source_link: 從 GitHub 原始碼建置
   windows:
     label: Windows
     title: 商店與安裝檔

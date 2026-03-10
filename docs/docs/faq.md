@@ -11,7 +11,7 @@ doc_order: 3
 
 ## Does SnapTray upload my captures?
 
-No automatic upload. Capture, annotation, and recording workflows stay local unless you explicitly use the Share URL action.
+No automatic upload. Capture, annotation, and recording workflows stay local unless you explicitly use the Share URL action. SnapTray also checks for updates via the GitHub Releases API (can be disabled in Settings).
 
 ## Which output format should I use?
 
@@ -29,7 +29,7 @@ Yes. Open Settings > Hotkeys and edit by category.
 
 ## Can I use SnapTray from scripts?
 
-Yes. The CLI supports local capture commands and IPC-based control.
+Yes. The CLI is the official automation interface, supporting local capture commands and IPC-based control. See [CLI](/docs/cli/) for the full command reference.
 
 ## Where should I report bugs?
 

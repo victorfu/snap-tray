@@ -1,13 +1,15 @@
 ---
 layout: docs
 title: CLI
-description: Automate capture workflows with local and IPC command-line operations.
+description: The official automation interface for scripting capture, recording, and pin workflows.
 permalink: /docs/cli/
 lang: en
 route_key: docs_cli
 doc_group: advanced
 doc_order: 1
 ---
+
+The CLI is SnapTray's official automation interface. Use it to script capture workflows, control recordings, and manage pins from any shell or CI pipeline.
 
 ## Install CLI helper
 

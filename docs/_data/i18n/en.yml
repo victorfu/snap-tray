@@ -81,7 +81,8 @@ downloads:
     title: Desktop Installer
     requirements: macOS 14.0 (Sonoma) or later
     button: Download .dmg
-    empty: No release available yet
+    empty: DMG installer coming soon
+    source_link: Build from source on GitHub
   windows:
     label: Windows
     title: Store + Installer

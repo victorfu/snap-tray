@@ -1,13 +1,15 @@
 ---
 layout: docs
 title: 命令列
-description: 使用 CLI 進行本地擷取與 IPC 控制，建立自動化流程。
+description: 官方自動化介面，可透過腳本控制擷取、錄影與釘選。
 permalink: /zh-tw/docs/cli/
 lang: zh-tw
 route_key: docs_cli
 doc_group: advanced
 doc_order: 1
 ---
+
+CLI 是 SnapTray 的官方自動化介面。你可以用它來編寫擷取腳本、控制錄影，以及從任何 shell 或 CI 流程管理釘選視窗。
 
 ## 安裝 CLI helper
 
