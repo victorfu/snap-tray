@@ -874,7 +874,7 @@ void ScreenCanvas::restoreCanvasCursorAt(const QPoint& localPos)
     }
 
     if (m_emojiPicker && m_emojiPicker->isVisible() && m_emojiPicker->contains(localPos)) {
-        cursorManager.setHoverTargetForWidget(this, HoverTarget::ToolbarButton);
+        cursorManager.setHoverTargetForWidget(this, HoverTarget::Widget);
     } else {
         updateAnnotationCursor(localPos);
     }
@@ -1056,18 +1056,42 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
         bool needsUpdate = false;
         auto& cursorManager = CursorManager::instance();
 
-        // Update hovered emoji in emoji picker
-        if (m_emojiPicker->isVisible()) {
-            if (m_emojiPicker->updateHoveredEmoji(event->pos())) {
-                needsUpdate = true;
+        // Floating UI check: keep arrow cursor when over toolbar / sub-toolbar / popup
+        const QPoint globalPos = event->globalPosition().toPoint();
+        if (isGlobalPosOverFloatingUi(globalPos)) {
+            cursorManager.pushCursorForWidget(this, CursorContext::Override, Qt::ArrowCursor);
+            cursorManager.reapplyCursorForWidget(this);
+        } else {
+            cursorManager.popCursorForWidget(this, CursorContext::Override);
+
+            // Update hovered emoji in emoji picker
+            bool overEmojiPicker = false;
+            if (m_emojiPicker->isVisible()) {
+                if (m_emojiPicker->updateHoveredEmoji(event->pos())) {
+                    needsUpdate = true;
+                }
+                if (m_emojiPicker->contains(event->pos())) {
+                    cursorManager.setHoverTargetForWidget(this, HoverTarget::Widget);
+                    overEmojiPicker = true;
+                }
             }
-            if (m_emojiPicker->contains(event->pos())) {
-                cursorManager.setHoverTargetForWidget(this, HoverTarget::ToolbarButton);
+
+            if (!overEmojiPicker) {
+                // Check annotation cursors
+                updateAnnotationCursor(event->pos());
+
+                // Refresh tool cursor so custom cursors (Eraser circle, Mosaic square)
+                // stay in the stack, matching RegionSelector's toolCursorRequested pattern.
+                if (cursorManager.hoverTargetForWidget(this) == HoverTarget::None) {
+                    setToolCursor();
+
+                    // Eraser hover highlighting (matches RegionInputHandler behaviour)
+                    if (m_currentToolId == ToolId::Eraser && m_toolManager) {
+                        m_toolManager->handleMouseMove(event->pos(), event->modifiers());
+                    }
+                }
             }
         }
-
-        // Check annotation cursors
-        updateAnnotationCursor(event->pos());
 
         if (needsUpdate) {
             update();
