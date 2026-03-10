@@ -458,7 +458,6 @@ add_library(snaptray_platform STATIC
     src/video/VideoTrimmer.cpp
     src/VideoEncoderFactory.cpp
     src/QRCodeManager.cpp
-    src/QRCodeResultDialog.cpp
     $<$<NOT:$<PLATFORM_ID:Darwin>>:
         src/ImageColorSpaceHelper.cpp
     >
@@ -472,7 +471,6 @@ add_library(snaptray_platform STATIC
     include/video/IVideoPlayer.h
     include/video/VideoTrimmer.h
     include/QRCodeManager.h
-    include/QRCodeResultDialog.h
     include/ImageColorSpaceHelper.h
 
     # macOS sources
@@ -679,10 +677,7 @@ add_library(snaptray_ui STATIC
     src/beautify/BeautifyPanel.cpp
     include/beautify/BeautifyPanel.h
 
-    # Dialogs and overlays
-    src/OCRResultDialog.cpp
-    src/ui/SharePasswordDialog.cpp
-    src/ui/ShareResultDialog.cpp
+    # Share
     src/share/ShareUploadClient.cpp
 
     # Global UI components
@@ -690,17 +685,13 @@ add_library(snaptray_ui STATIC
     src/ui/GlassTooltip.cpp
     include/ui/DesignTokens.h
     include/ui/GlassTooltip.h
-    include/ui/SharePasswordDialog.h
-    include/ui/ShareResultDialog.h
     include/share/ShareUploadClient.h
 
     # Update system
     src/update/InstallSourceDetector.cpp
     src/update/UpdateChecker.cpp
-    src/update/UpdateDialog.cpp
     include/update/InstallSourceDetector.h
     include/update/UpdateChecker.h
-    include/update/UpdateDialog.h
     include/update/UpdateSettingsManager.h
 
     # Platform-specific update sources
@@ -752,7 +743,6 @@ add_library(snaptray_ui STATIC
     include/LaserPointerRenderer.h
     include/WatermarkRenderer.h
     include/LoadingSpinnerRenderer.h
-    include/OCRResultDialog.h
 
     # Recording management (moved from APP_SOURCES for testability)
     src/RecordingManager.cpp
@@ -896,6 +886,15 @@ set_source_files_properties(src/qml/settings/FilesSettings.qml PROPERTIES QT_RES
 set_source_files_properties(src/qml/settings/UpdatesSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/UpdatesSettings.qml)
 set_source_files_properties(src/qml/settings/AboutSettings.qml PROPERTIES QT_RESOURCE_ALIAS settings/AboutSettings.qml)
 
+# Dialog components
+set_source_files_properties(src/qml/components/DialogBase.qml PROPERTIES QT_RESOURCE_ALIAS components/DialogBase.qml)
+set_source_files_properties(src/qml/controls/DialogButton.qml PROPERTIES QT_RESOURCE_ALIAS controls/DialogButton.qml)
+set_source_files_properties(src/qml/dialogs/SharePasswordDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/SharePasswordDialog.qml)
+set_source_files_properties(src/qml/dialogs/ShareResultDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/ShareResultDialog.qml)
+set_source_files_properties(src/qml/dialogs/OCRResultDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/OCRResultDialog.qml)
+set_source_files_properties(src/qml/dialogs/UpdateDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/UpdateDialog.qml)
+set_source_files_properties(src/qml/dialogs/QRCodeResultDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/QRCodeResultDialog.qml)
+
 # Recording preview
 set_source_files_properties(src/qml/recording/RecordingPreview.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingPreview.qml)
 
@@ -920,6 +919,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/components/GlassSurface.qml
         src/qml/components/ToolbarButton.qml
         src/qml/components/ToolbarChevron.qml
+        src/qml/components/DialogBase.qml
         src/qml/controls/SettingsSection.qml
         src/qml/controls/SettingsRow.qml
         src/qml/controls/SettingsToggle.qml
@@ -933,6 +933,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/controls/BusySpinner.qml
         src/qml/controls/SettingsRadioGroup.qml
         src/qml/controls/SvgIcon.qml
+        src/qml/controls/DialogButton.qml
         src/qml/settings/SettingsWindow.qml
         src/qml/settings/SettingsSidebar.qml
         src/qml/settings/GeneralSettings.qml
@@ -947,6 +948,11 @@ qt_add_qml_module(snaptray_qml
         src/qml/recording/RecordingPreview.qml
         src/qml/recording/RecordingControlBar.qml
         src/qml/recording/RecordingRegionSelector.qml
+        src/qml/dialogs/SharePasswordDialog.qml
+        src/qml/dialogs/ShareResultDialog.qml
+        src/qml/dialogs/OCRResultDialog.qml
+        src/qml/dialogs/UpdateDialog.qml
+        src/qml/dialogs/QRCodeResultDialog.qml
         src/qml/toolbar/FloatingToolbar.qml
         src/qml/toolbar/ToolOptionsStrip.qml
         src/qml/toolbar/ColorPaletteSection.qml
@@ -1000,6 +1006,20 @@ qt_add_qml_module(snaptray_qml
         include/qml/QmlFloatingToolbar.h
         src/qml/QmlFloatingSubToolbar.mm
         include/qml/QmlFloatingSubToolbar.h
+        src/qml/QmlDialog.mm
+        include/qml/QmlDialog.h
+        src/qml/DialogImageProvider.cpp
+        include/qml/DialogImageProvider.h
+        src/qml/SharePasswordViewModel.cpp
+        include/qml/SharePasswordViewModel.h
+        src/qml/ShareResultViewModel.cpp
+        include/qml/ShareResultViewModel.h
+        src/qml/OCRResultViewModel.cpp
+        include/qml/OCRResultViewModel.h
+        src/qml/UpdateDialogViewModel.cpp
+        include/qml/UpdateDialogViewModel.h
+        src/qml/QRCodeResultViewModel.cpp
+        include/qml/QRCodeResultViewModel.h
 )
 
 target_include_directories(snaptray_qml

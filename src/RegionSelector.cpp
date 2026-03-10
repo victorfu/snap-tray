@@ -31,11 +31,12 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "settings/FileSettingsManager.h"
 #include "settings/OCRSettingsManager.h"
 #include "settings/RegionCaptureSettingsManager.h"
-#include "OCRResultDialog.h"
-#include "QRCodeResultDialog.h"
+#include "qml/OCRResultViewModel.h"
+#include "qml/QRCodeResultViewModel.h"
+#include "qml/QmlDialog.h"
 #include "qml/QmlToast.h"
-#include "ui/SharePasswordDialog.h"
-#include "ui/ShareResultDialog.h"
+#include "qml/SharePasswordViewModel.h"
+#include "qml/ShareResultViewModel.h"
 #include "tools/handlers/MosaicToolHandler.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
 #include "tools/ToolSectionConfig.h"
@@ -672,11 +673,15 @@ RegionSelector::RegionSelector(QWidget* parent)
             update();
 
             m_isDialogOpen = true;
-            auto* dialog = new ShareResultDialog(this);
-            dialog->setResult(url, expiresAt, isProtected, m_pendingSharePassword);
+            auto* vm = new ShareResultViewModel(this);
+            vm->setResult(url, expiresAt, isProtected, m_pendingSharePassword);
             m_pendingSharePassword.clear();
-            connect(dialog, &ShareResultDialog::dialogClosed, this, [this]() {
+            auto* dialog = new SnapTray::QmlDialog(
+                QUrl("qrc:/SnapTrayQml/dialogs/ShareResultDialog.qml"),
+                vm, "viewModel", this);
+            connect(vm, &ShareResultViewModel::dialogClosed, this, [this, dialog]() {
                 m_isDialogOpen = false;
+                dialog->close();
                 close();
             });
             dialog->showAt();
@@ -2128,15 +2133,18 @@ void RegionSelector::shareToUrl()
     }
 
     m_isDialogOpen = true;
-    auto* passwordDialog = new SharePasswordDialog(this);
-    passwordDialog->setAttribute(Qt::WA_DeleteOnClose);
-    connect(passwordDialog, &QDialog::accepted, this, [this, passwordDialog, selectedRegion]() {
+    auto* vm = new SharePasswordViewModel(this);
+    auto* dialog = new SnapTray::QmlDialog(
+        QUrl("qrc:/SnapTrayQml/dialogs/SharePasswordDialog.qml"),
+        vm, "viewModel", this);
+    connect(vm, &SharePasswordViewModel::accepted, this, [this, vm, dialog, selectedRegion]() {
         m_isDialogOpen = false;
+        dialog->close();
         if (m_shareInProgress || !m_shareClient) {
             return;
         }
 
-        m_pendingSharePassword = passwordDialog->password();
+        m_pendingSharePassword = vm->password();
 
         m_shareInProgress = true;
         if (m_toolbarHandler) {
@@ -2148,12 +2156,13 @@ void RegionSelector::shareToUrl()
 
         m_shareClient->uploadPixmap(selectedRegion, m_pendingSharePassword);
     });
-    connect(passwordDialog, &QDialog::rejected, this, [this]() {
+    connect(vm, &SharePasswordViewModel::rejected, this, [this, dialog]() {
         m_isDialogOpen = false;
         m_pendingSharePassword.clear();
+        dialog->close();
     });
-    passwordDialog->showAt();
-    passwordDialog->show();
+    dialog->setModal(true);
+    dialog->showAt();
 }
 
 void RegionSelector::finishSelection()
@@ -2668,12 +2677,14 @@ void RegionSelector::onOCRComplete(const OCRResult& result)
 
 void RegionSelector::showOCRResultDialog(const OCRResult& result)
 {
-    // Create non-modal dialog
-    auto *dialog = new OCRResultDialog(this);
-    dialog->setOCRResult(result);
+    auto* vm = new OCRResultViewModel(this);
+    vm->setOCRResult(result);
 
-    // Connect signals
-    connect(dialog, &OCRResultDialog::textCopied, this, [this](const QString &copiedText) {
+    auto* dialog = new SnapTray::QmlDialog(
+        QUrl("qrc:/SnapTrayQml/dialogs/OCRResultDialog.qml"),
+        vm, "viewModel", this);
+
+    connect(vm, &OCRResultViewModel::textCopied, this, [this](const QString& copiedText) {
         qDebug() << "OCR text copied:" << copiedText.length() << "characters";
 
         SnapTray::QmlToast::screenToast().showToast(
@@ -2683,12 +2694,11 @@ void RegionSelector::showOCRResultDialog(const OCRResult& result)
         );
     });
 
-    connect(dialog, &OCRResultDialog::dialogClosed, this, [this]() {
-        // Close the region selector after dialog closes
+    connect(vm, &OCRResultViewModel::dialogClosed, this, [this, dialog]() {
+        dialog->close();
         close();
     });
 
-    // Show dialog centered on screen
     dialog->showAt();
 }
 
@@ -2737,41 +2747,41 @@ void RegionSelector::onQRCodeComplete(bool success, const QString& text, const Q
     }
 
     if (success && !text.isEmpty()) {
-        // Show result dialog
-        auto *dialog = new QRCodeResultDialog(this);
-        dialog->setPinActionAvailable(true);
-        dialog->setResult(text, format, sourceImage);
+        auto* vm = new QRCodeResultViewModel(this);
+        vm->setPinActionAvailable(true);
+        vm->setResult(text, format, sourceImage);
 
-        // Connect signals
-        connect(dialog, &QRCodeResultDialog::textCopied, this, [this](const QString &copiedText) {
+        auto* dialog = new SnapTray::QmlDialog(
+            QUrl("qrc:/SnapTrayQml/dialogs/QRCodeResultDialog.qml"),
+            vm, "viewModel", this);
+
+        connect(vm, &QRCodeResultViewModel::textCopied, this, [](const QString& copiedText) {
             qDebug() << "QR Code text copied:" << copiedText.length() << "characters";
         });
 
-        connect(dialog, &QRCodeResultDialog::urlOpened, this, [](const QString &url) {
+        connect(vm, &QRCodeResultViewModel::urlOpened, this, [](const QString& url) {
             qDebug() << "URL opened:" << url;
         });
 
-        connect(dialog, &QRCodeResultDialog::qrCodeGenerated, this,
-            [](const QImage &image, const QString &encodedText) {
+        connect(vm, &QRCodeResultViewModel::qrCodeGenerated, this,
+            [](const QImage& image, const QString& encodedText) {
                 qDebug() << "QR Code generated:" << image.size() << "for" << encodedText.length() << "characters";
             });
 
-        connect(dialog, &QRCodeResultDialog::pinGeneratedRequested, this,
-            [this, dialog](const QPixmap &pixmap) {
-                const QPoint globalTopLeft = dialog->mapToGlobal(QPoint(0, 0));
-                // Generated QR content is synthetic and has no stable screen source region.
-                // Emit an empty source rect so live-update is not mapped to unrelated screen content.
+        connect(vm, &QRCodeResultViewModel::pinGeneratedRequested, this,
+            [this, dialog](const QPixmap& pixmap) {
+                const QPoint globalTopLeft;
                 const QRect globalRect;
                 emit regionSelected(pixmap, globalTopLeft, globalRect);
+                dialog->close();
                 close();
             });
 
-        connect(dialog, &QRCodeResultDialog::dialogClosed, this, [this]() {
-            // Close the region selector after dialog closes
+        connect(vm, &QRCodeResultViewModel::dialogClosed, this, [this, dialog]() {
+            dialog->close();
             close();
         });
 
-        // Show dialog centered on screen
         dialog->showAt();
     }
     else {

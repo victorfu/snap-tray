@@ -15,7 +15,8 @@
 #include "qml/QmlToast.h"
 #include "qml/RecordingPreviewBackend.h"
 #include "update/UpdateChecker.h"
-#include "update/UpdateDialog.h"
+#include "qml/UpdateDialogViewModel.h"
+#include "qml/QmlDialog.h"
 #include "utils/CoordinateHelper.h"
 #ifdef SNAPTRAY_ENABLE_MCP
 #include "mcp/MCPServer.h"
@@ -971,10 +972,12 @@ void MainApplication::onUpdateAvailable(const ReleaseInfo& release)
 {
     qDebug() << "MainApplication: Update available -" << release.version;
 
-    // Show update dialog
-    UpdateDialog* dialog = new UpdateDialog(release, nullptr);
-    dialog->setAttribute(Qt::WA_DeleteOnClose);
-    dialog->show();
-    dialog->raise();
-    dialog->activateWindow();
+    auto* vm = UpdateDialogViewModel::createForRelease(release, this);
+    auto* dlg = new SnapTray::QmlDialog(
+        QUrl("qrc:/SnapTrayQml/dialogs/UpdateDialog.qml"),
+        vm, "viewModel", this);
+    connect(vm, &UpdateDialogViewModel::closeRequested, this, [dlg]() {
+        dlg->close();
+    });
+    dlg->showAt();
 }

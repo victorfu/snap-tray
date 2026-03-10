@@ -385,6 +385,8 @@ class DesignSystem : public QObject
     Q_PROPERTY(QColor dialogOverlay READ dialogOverlay NOTIFY themeChanged)
     Q_PROPERTY(int dialogRadius READ dialogRadius CONSTANT)
     Q_PROPERTY(int dialogPadding READ dialogPadding CONSTANT)
+    Q_PROPERTY(int dialogTitleBarHeight READ dialogTitleBarHeight CONSTANT)
+    Q_PROPERTY(int dialogButtonBarHeight READ dialogButtonBarHeight CONSTANT)
 
     // ====================================================================
     // Component: Badge (theme-dependent)
@@ -870,6 +872,8 @@ public:
     QColor dialogOverlay() const;
     int dialogRadius() const;
     int dialogPadding() const;
+    int dialogTitleBarHeight() const;
+    int dialogButtonBarHeight() const;
 
     // -- Component: Badge (theme-dependent) -------------------------------
     QColor badgeBackground() const;

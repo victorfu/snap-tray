@@ -112,6 +112,8 @@ QtObject {
     readonly property color dialogOverlay: DesignSystem.dialogOverlay
     readonly property int dialogRadius: DesignSystem.dialogRadius
     readonly property int dialogPadding: DesignSystem.dialogPadding
+    readonly property int dialogTitleBarHeight: DesignSystem.dialogTitleBarHeight
+    readonly property int dialogButtonBarHeight: DesignSystem.dialogButtonBarHeight
 
     // ========================================================================
     // Badge

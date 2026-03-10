@@ -509,8 +509,10 @@ int    DesignSystem::panelPadding() const    { return spacing16(); }
 QColor DesignSystem::dialogBackground() const { return backgroundPrimary(); }
 QColor DesignSystem::dialogBorder() const     { return borderDefault(); }
 QColor DesignSystem::dialogOverlay() const    { return backgroundOverlay(); }
-int    DesignSystem::dialogRadius() const     { return radiusXL(); }
-int    DesignSystem::dialogPadding() const    { return spacing24(); }
+int    DesignSystem::dialogRadius() const         { return radiusXL(); }
+int    DesignSystem::dialogPadding() const        { return spacing24(); }
+int    DesignSystem::dialogTitleBarHeight() const  { return 72; }
+int    DesignSystem::dialogButtonBarHeight() const { return 56; }
 
 // ============================================================================
 // Component: Badge

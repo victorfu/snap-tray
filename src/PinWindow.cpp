@@ -4,7 +4,7 @@
 #include "PinWindowManager.h"
 #include "OCRManager.h"
 #include "QRCodeManager.h"
-#include "QRCodeResultDialog.h"
+#include "qml/QRCodeResultViewModel.h"
 #include "PlatformFeatures.h"
 #include "ImageColorSpaceHelper.h"
 #include "WatermarkRenderer.h"
@@ -43,11 +43,12 @@
 #include "settings/OCRSettingsManager.h"
 #include "share/ShareUploadClient.h"
 #include "qml/QmlToast.h"
-#include "ui/SharePasswordDialog.h"
-#include "ui/ShareResultDialog.h"
+#include "qml/SharePasswordViewModel.h"
+#include "qml/ShareResultViewModel.h"
+#include "qml/QmlDialog.h"
 #include "utils/FilenameTemplateEngine.h"
 #include "utils/ImageSaveUtils.h"
-#include "OCRResultDialog.h"
+#include "qml/OCRResultViewModel.h"
 #include "InlineTextEditor.h"
 #include "region/TextAnnotationEditor.h"
 #include "region/RegionSettingsHelper.h"
@@ -450,10 +451,16 @@ PinWindow::PinWindow(const QPixmap& screenshot,
             }
             updateLoadingSpinnerState();
 
-            auto* dialog = new ShareResultDialog(this);
-            dialog->setResult(url, expiresAt, isProtected, m_pendingSharePassword);
+            auto* vm = new ShareResultViewModel(this);
+            vm->setResult(url, expiresAt, isProtected, m_pendingSharePassword);
             m_pendingSharePassword.clear();
-            dialog->showAt();
+            auto* dlg = new SnapTray::QmlDialog(
+                QUrl("qrc:/SnapTrayQml/dialogs/ShareResultDialog.qml"),
+                vm, "viewModel", this);
+            connect(vm, &ShareResultViewModel::dialogClosed, this, [dlg]() {
+                dlg->close();
+            });
+            dlg->showAt();
         });
     connect(m_shareClient, &ShareUploadClient::uploadFailed,
         this, [this](const QString& errorMessage) {
@@ -1442,14 +1449,17 @@ void PinWindow::shareToUrl()
         return;
     }
 
-    auto* passwordDialog = new SharePasswordDialog(this);
-    passwordDialog->setAttribute(Qt::WA_DeleteOnClose);
-    connect(passwordDialog, &QDialog::accepted, this, [this, passwordDialog, pixmapToShare]() {
+    auto* vm = new SharePasswordViewModel(this);
+    auto* dlg = new SnapTray::QmlDialog(
+        QUrl("qrc:/SnapTrayQml/dialogs/SharePasswordDialog.qml"),
+        vm, "viewModel", this);
+    connect(vm, &SharePasswordViewModel::accepted, this, [this, vm, dlg, pixmapToShare]() {
+        dlg->close();
         if (m_shareInProgress || !m_shareClient) {
             return;
         }
 
-        m_pendingSharePassword = passwordDialog->password();
+        m_pendingSharePassword = vm->password();
 
         m_shareInProgress = true;
         if (m_toolbar) {
@@ -1458,11 +1468,12 @@ void PinWindow::shareToUrl()
         updateLoadingSpinnerState();
         m_shareClient->uploadPixmap(pixmapToShare, m_pendingSharePassword);
     });
-    connect(passwordDialog, &QDialog::rejected, this, [this]() {
+    connect(vm, &SharePasswordViewModel::rejected, this, [this, dlg]() {
         m_pendingSharePassword.clear();
+        dlg->close();
     });
-    passwordDialog->showAt();
-    passwordDialog->show();
+    dlg->setModal(true);
+    dlg->showAt();
 }
 
 OCRManager* PinWindow::ensureOCRManager()
@@ -1542,23 +1553,24 @@ void PinWindow::onOCRComplete(const OCRResult& result)
 
 void PinWindow::showOCRResultDialog(const OCRResult& result)
 {
-    // Create non-modal dialog
-    auto *dialog = new OCRResultDialog(this);
-    dialog->setOCRResult(result);
+    auto* vm = new OCRResultViewModel(this);
+    vm->setOCRResult(result);
 
-    // Connect signals
-    connect(dialog, &OCRResultDialog::textCopied, this, [this](const QString &copiedText) {
+    auto* dlg = new SnapTray::QmlDialog(
+        QUrl("qrc:/SnapTrayQml/dialogs/OCRResultDialog.qml"),
+        vm, "viewModel", this);
+
+    connect(vm, &OCRResultViewModel::textCopied, this, [this](const QString& copiedText) {
         qDebug() << "OCR text copied:" << copiedText.length() << "characters";
-
-        // Show success toast
         m_toast->showToast(SnapTray::QmlToast::Level::Success, tr("Copied %1 characters").arg(copiedText.length()));
         emit ocrCompleted(true, tr("Text copied"));
     });
 
-    // Note: PinWindow stays open after dialog closes (no close() call)
+    connect(vm, &OCRResultViewModel::dialogClosed, this, [dlg]() {
+        dlg->close();
+    });
 
-    // Show dialog centered on screen
-    dialog->showAt();
+    dlg->showAt();
 }
 
 void PinWindow::performQRCodeScan()
@@ -1595,24 +1607,26 @@ void PinWindow::onQRCodeComplete(bool success, const QString& text, const QStrin
     updateLoadingSpinnerState();
 
     if (success && !text.isEmpty()) {
-        // Show result dialog
-        auto *dialog = new QRCodeResultDialog(this);
-        dialog->setResult(text, format, m_originalPixmap);
+        auto* vm = new QRCodeResultViewModel(this);
+        vm->setResult(text, format, m_originalPixmap);
 
-        // Connect signals
-        connect(dialog, &QRCodeResultDialog::textCopied, this, [this](const QString &copiedText) {
+        auto* dlg = new SnapTray::QmlDialog(
+            QUrl("qrc:/SnapTrayQml/dialogs/QRCodeResultDialog.qml"),
+            vm, "viewModel", this);
+
+        connect(vm, &QRCodeResultViewModel::textCopied, this, [this](const QString& copiedText) {
             qDebug() << "QR Code text copied:" << copiedText.length() << "characters";
-
-            // Show success toast
             QString msg = tr("Copied %1 characters").arg(copiedText.length());
             m_toast->showToast(SnapTray::QmlToast::Level::Success, msg);
         });
 
-        // Show dialog centered on screen
-        dialog->showAt();
+        connect(vm, &QRCodeResultViewModel::dialogClosed, this, [dlg]() {
+            dlg->close();
+        });
+
+        dlg->showAt();
     }
     else {
-        // Show error toast
         QString msg = error.isEmpty() ? tr("No QR code found") : error;
         m_toast->showToast(SnapTray::QmlToast::Level::Error, msg);
     }

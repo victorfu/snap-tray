@@ -1,8 +1,10 @@
 #include "qml/QmlOverlayManager.h"
+#include "qml/DialogImageProvider.h"
 #include "qml/ThemeManager.h"
 
 #include <QQmlContext>
 #include <QQmlEngine>
+#include <QQuickStyle>
 #include <QQuickView>
 
 #ifdef Q_OS_MACOS
@@ -27,6 +29,10 @@ void QmlOverlayManager::ensureEngine()
     if (m_engine)
         return;
 
+    // Use Basic style so TextField/TextArea background customization works.
+    // The native macOS style does not support custom background properties.
+    QQuickStyle::setStyle(QStringLiteral("Basic"));
+
     m_engine = new QQmlEngine(this);
 
     // For static QML modules linked via qt_add_qml_module, add the resource
@@ -37,6 +43,9 @@ void QmlOverlayManager::ensureEngine()
     // ComponentTokens) can always resolve it, regardless of module loading order.
     m_engine->rootContext()->setContextProperty(
         QStringLiteral("ThemeManager"), &ThemeManager::instance());
+
+    // Register image provider for dialog thumbnails/previews
+    m_engine->addImageProvider(QStringLiteral("dialog"), new DialogImageProvider());
 }
 
 QQmlEngine* QmlOverlayManager::engine() const
