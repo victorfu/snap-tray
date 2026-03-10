@@ -18,12 +18,15 @@ void PinToolbarViewModel::buildButtonList()
         auto options = defaultToolButtonOptions(toolId);
         options.separatorBefore = registry.get(toolId).showSeparatorBefore
                                   || toolId == ToolId::OCR;
+        options.isAction = (toolId == ToolId::Save
+                            || toolId == ToolId::Copy);
         buttons.append(buildToolButtonEntry(toolId, options));
     }
 
     // "Done" — local toolbar-only action
     ToolButtonOptions doneOptions;
     doneOptions.separatorBefore = true;
+    doneOptions.isAction = true;
     buttons.append(buildCustomButtonEntry(ButtonDone,
                                           QStringLiteral("done"),
                                           QStringLiteral("qrc:/icons/icons/done.svg"),

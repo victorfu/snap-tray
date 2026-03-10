@@ -410,9 +410,9 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
             ToolId::Cancel,
             ToolId::OCR,
             ToolId::QRCode,
-            ToolId::Record,
-            ToolId::MultiRegion,
             ToolId::Share,
+            ToolId::MultiRegion,
+            ToolId::Record,
             ToolId::Pin,
             ToolId::Save,
             ToolId::Copy

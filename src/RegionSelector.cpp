@@ -250,10 +250,8 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_toolOptionsViewModel = new PinToolOptionsViewModel(this);
 
     // Create QML floating toolbar windows
-    SnapTray::QmlFloatingToolbar::Appearance toolbarAppearance;
-    toolbarAppearance.iconPalette = SnapTray::QmlFloatingToolbar::IconPalette::CaptureOverlay;
     m_qmlToolbar = std::make_unique<SnapTray::QmlFloatingToolbar>(
-        m_toolbarViewModel, toolbarAppearance, nullptr);
+        m_toolbarViewModel, nullptr);
     m_qmlToolbar->setParentWidget(this);
     m_qmlSubToolbar = std::make_unique<SnapTray::QmlFloatingSubToolbar>(m_toolOptionsViewModel, nullptr);
     m_qmlSubToolbar->setParentWidget(this);
