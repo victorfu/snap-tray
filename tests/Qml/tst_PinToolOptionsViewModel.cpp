@@ -4,67 +4,80 @@
 
 #include <QSignalSpy>
 
+namespace {
+enum class DropdownHandler {
+    FontSize,
+    FontFamily,
+    ArrowStyle,
+    LineStyle
+};
+}
+
+Q_DECLARE_METATYPE(DropdownHandler)
+
 class tst_PinToolOptionsViewModel : public QObject
 {
     Q_OBJECT
 
 private slots:
-    void testFontSizeDropdownRequested_PreservesCoordinates();
-    void testFontFamilyDropdownRequested_PreservesCoordinates();
-    void testArrowStyleDropdownRequested_PreservesCoordinates();
-    void testLineStyleDropdownRequested_PreservesCoordinates();
+    void testDropdownRequested_PreservesCoordinates_data();
+    void testDropdownRequested_PreservesCoordinates();
     void testArrowStyleOptions_AreValueOnly();
     void testLineStyleOptions_AreValueOnly();
     void testShowLaserPointerOptions_ShowsOnlyColorAndWidth();
     void testClearSections_DisablesWidthWheelHandling();
 };
 
-void tst_PinToolOptionsViewModel::testFontSizeDropdownRequested_PreservesCoordinates()
+void tst_PinToolOptionsViewModel::testDropdownRequested_PreservesCoordinates_data()
 {
-    PinToolOptionsViewModel viewModel;
-    QSignalSpy spy(&viewModel, &PinToolOptionsViewModel::fontSizeDropdownRequested);
+    QTest::addColumn<DropdownHandler>("handler");
+    QTest::addColumn<QByteArray>("signal");
+    QTest::addColumn<double>("x");
+    QTest::addColumn<double>("y");
 
-    viewModel.handleFontSizeDropdown(123.5, 456.25);
-
-    QCOMPARE(spy.count(), 1);
-    QCOMPARE(spy.at(0).at(0).toDouble(), 123.5);
-    QCOMPARE(spy.at(0).at(1).toDouble(), 456.25);
+    QTest::newRow("font-size") << DropdownHandler::FontSize
+                                << QByteArray(SIGNAL(fontSizeDropdownRequested(double, double)))
+                                << 123.5 << 456.25;
+    QTest::newRow("font-family") << DropdownHandler::FontFamily
+                                  << QByteArray(SIGNAL(fontFamilyDropdownRequested(double, double)))
+                                  << 222.0 << 333.75;
+    QTest::newRow("arrow-style") << DropdownHandler::ArrowStyle
+                                  << QByteArray(SIGNAL(arrowStyleDropdownRequested(double, double)))
+                                  << 42.25 << 84.5;
+    QTest::newRow("line-style") << DropdownHandler::LineStyle
+                                 << QByteArray(SIGNAL(lineStyleDropdownRequested(double, double)))
+                                 << 19.0 << 73.125;
 }
 
-void tst_PinToolOptionsViewModel::testFontFamilyDropdownRequested_PreservesCoordinates()
+void tst_PinToolOptionsViewModel::testDropdownRequested_PreservesCoordinates()
 {
-    PinToolOptionsViewModel viewModel;
-    QSignalSpy spy(&viewModel, &PinToolOptionsViewModel::fontFamilyDropdownRequested);
+    QFETCH(DropdownHandler, handler);
+    QFETCH(QByteArray, signal);
+    QFETCH(double, x);
+    QFETCH(double, y);
 
-    viewModel.handleFontFamilyDropdown(222.0, 333.75);
+    PinToolOptionsViewModel viewModel;
+    QSignalSpy spy(&viewModel, signal.constData());
+    QVERIFY(spy.isValid());
+
+    switch (handler) {
+    case DropdownHandler::FontSize:
+        viewModel.handleFontSizeDropdown(x, y);
+        break;
+    case DropdownHandler::FontFamily:
+        viewModel.handleFontFamilyDropdown(x, y);
+        break;
+    case DropdownHandler::ArrowStyle:
+        viewModel.handleArrowStyleDropdown(x, y);
+        break;
+    case DropdownHandler::LineStyle:
+        viewModel.handleLineStyleDropdown(x, y);
+        break;
+    }
 
     QCOMPARE(spy.count(), 1);
-    QCOMPARE(spy.at(0).at(0).toDouble(), 222.0);
-    QCOMPARE(spy.at(0).at(1).toDouble(), 333.75);
-}
-
-void tst_PinToolOptionsViewModel::testArrowStyleDropdownRequested_PreservesCoordinates()
-{
-    PinToolOptionsViewModel viewModel;
-    QSignalSpy spy(&viewModel, &PinToolOptionsViewModel::arrowStyleDropdownRequested);
-
-    viewModel.handleArrowStyleDropdown(42.25, 84.5);
-
-    QCOMPARE(spy.count(), 1);
-    QCOMPARE(spy.at(0).at(0).toDouble(), 42.25);
-    QCOMPARE(spy.at(0).at(1).toDouble(), 84.5);
-}
-
-void tst_PinToolOptionsViewModel::testLineStyleDropdownRequested_PreservesCoordinates()
-{
-    PinToolOptionsViewModel viewModel;
-    QSignalSpy spy(&viewModel, &PinToolOptionsViewModel::lineStyleDropdownRequested);
-
-    viewModel.handleLineStyleDropdown(19.0, 73.125);
-
-    QCOMPARE(spy.count(), 1);
-    QCOMPARE(spy.at(0).at(0).toDouble(), 19.0);
-    QCOMPARE(spy.at(0).at(1).toDouble(), 73.125);
+    QCOMPARE(spy.at(0).at(0).toDouble(), x);
+    QCOMPARE(spy.at(0).at(1).toDouble(), y);
 }
 
 void tst_PinToolOptionsViewModel::testArrowStyleOptions_AreValueOnly()

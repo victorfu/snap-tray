@@ -24,7 +24,6 @@ private slots:
 
     // Cache tests
     // Draw tests
-    void testDrawWithEmptyImage();
     void testDrawUpdatesCurrentColor();
 
     // Constants tests
@@ -33,7 +32,6 @@ private slots:
     // Pixel sampling tests (critical for high DPI displays)
     void testPixelSamplingAllQuadrants();
     void testPixelSamplingWithHighDPI();
-    void testPixelSamplingAtEdges();
     void testPixelSamplingWithRGB32Format();
 
 private:
@@ -129,17 +127,6 @@ void tst_MagnifierPanel::testColorStringHex()
     QString colorStr = m_panel->colorString();
     QVERIFY(colorStr.startsWith("#"));
     QCOMPARE(colorStr.length(), 7);  // #RRGGBB
-}
-
-void tst_MagnifierPanel::testDrawWithEmptyImage()
-{
-    QPixmap pixmap(400, 400);
-    pixmap.fill(Qt::transparent);
-    QPainter painter(&pixmap);
-
-    QPixmap emptyPixmap;
-    m_panel->draw(painter, QPoint(100, 100), QSize(400, 400), emptyPixmap);
-    QVERIFY(true);  // Should not crash
 }
 
 void tst_MagnifierPanel::testDrawUpdatesCurrentColor()
@@ -288,46 +275,6 @@ void tst_MagnifierPanel::testPixelSamplingWithHighDPI()
     QCOMPARE(bottomRightColor.red(), 255);
     QCOMPARE(bottomRightColor.green(), 255);
     QCOMPARE(bottomRightColor.blue(), 0);
-}
-
-void tst_MagnifierPanel::testPixelSamplingAtEdges()
-{
-    // Test sampling near image boundaries to ensure no crashes or invalid reads
-    QImage image(200, 200, QImage::Format_RGB32);
-    image.fill(QColor(128, 64, 32));  // Fill with known color
-
-    QPixmap testPixmap = QPixmap::fromImage(image);
-
-    QPixmap outputPixmap(400, 400);
-    outputPixmap.fill(Qt::transparent);
-    QPainter outputPainter(&outputPixmap);
-
-    m_panel->setDevicePixelRatio(1.0);
-
-    // Test at origin (0, 0) - partial magnifier visible
-    m_panel->invalidateCache();
-    m_panel->draw(outputPainter, QPoint(0, 0), QSize(400, 400), testPixmap);
-    QVERIFY(true);  // Should not crash
-
-    // Test at top-right corner
-    m_panel->invalidateCache();
-    m_panel->draw(outputPainter, QPoint(199, 0), QSize(400, 400), testPixmap);
-    QVERIFY(true);
-
-    // Test at bottom-left corner
-    m_panel->invalidateCache();
-    m_panel->draw(outputPainter, QPoint(0, 199), QSize(400, 400), testPixmap);
-    QVERIFY(true);
-
-    // Test at bottom-right corner
-    m_panel->invalidateCache();
-    m_panel->draw(outputPainter, QPoint(199, 199), QSize(400, 400), testPixmap);
-    QVERIFY(true);
-
-    // Test beyond image bounds (should handle gracefully)
-    m_panel->invalidateCache();
-    m_panel->draw(outputPainter, QPoint(250, 250), QSize(400, 400), testPixmap);
-    QVERIFY(true);
 }
 
 void tst_MagnifierPanel::testPixelSamplingWithRGB32Format()

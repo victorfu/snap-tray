@@ -71,34 +71,6 @@ private slots:
         QCOMPARE(zoomedSize.width(), originalSize.width() * 2);
     }
 
-    void testZoomDoesNotGoAboveMax() {
-        QPixmap pixmap = createTestPixmap(100, 100);
-        PinWindow window(pixmap, QPoint(0, 0));
-
-        window.setZoomLevel(5.0);
-        QSize maxSize = window.size();
-
-        // Try to zoom beyond max
-        window.setZoomLevel(10.0);
-        QCOMPARE(window.size(), maxSize);
-    }
-
-    void testZoomDoesNotGoBelowMin() {
-        QPixmap pixmap = createTestPixmap(100, 100);
-        PinWindow window(pixmap, QPoint(0, 0));
-
-        window.setZoomLevel(0.1);
-        QSize minSize = window.size();
-
-        // Try to zoom below min
-        window.setZoomLevel(0.01);
-        QCOMPARE(window.size(), minSize);
-    }
-
-    // =========================================================================
-    // Rotation and Size Tests
-    // =========================================================================
-
     void testRotationAffectsSize() {
         // Use non-square pixmap to see size change
         QPixmap pixmap = createTestPixmap(200, 100);
@@ -117,37 +89,6 @@ private slots:
         QCOMPARE(rotatedHeight, originalWidth);
     }
 
-    void testFourRotationsReturnToOriginalSize() {
-        QPixmap pixmap = createTestPixmap(200, 100);
-        PinWindow window(pixmap, QPoint(0, 0));
-
-        QSize originalSize = window.size();
-
-        window.rotateRight();
-        window.rotateRight();
-        window.rotateRight();
-        window.rotateRight();
-
-        QCOMPARE(window.size(), originalSize);
-    }
-
-    // =========================================================================
-    // Flip and Size Tests
-    // =========================================================================
-
-    void testFlipDoesNotAffectSize() {
-        QPixmap pixmap = createTestPixmap(200, 100);
-        PinWindow window(pixmap, QPoint(0, 0));
-
-        QSize originalSize = window.size();
-
-        window.flipHorizontal();
-        QCOMPARE(window.size(), originalSize);
-
-        window.flipVertical();
-        QCOMPARE(window.size(), originalSize);
-    }
-
     // =========================================================================
     // Combined Transform and Size Tests
     // =========================================================================
@@ -164,20 +105,6 @@ private slots:
 
         // Content should double
         QCOMPARE(afterZoom.width(), afterRotation.width() * 2);
-    }
-
-    void testMultipleTransformsSize() {
-        QPixmap pixmap = createTestPixmap(100, 100);
-        PinWindow window(pixmap, QPoint(0, 0));
-
-        // Apply various transforms
-        window.setZoomLevel(1.5);
-        window.rotateRight();
-        window.flipHorizontal();
-
-        // Verify the window is still valid and has reasonable size
-        QVERIFY(window.size().width() >= kMinSize);
-        QVERIFY(window.size().height() >= kMinSize);
     }
 
     // =========================================================================

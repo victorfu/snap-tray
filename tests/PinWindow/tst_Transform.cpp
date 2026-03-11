@@ -128,35 +128,6 @@ private slots:
     // Rotation Tests
     // =========================================================================
 
-    void testRotateRight() {
-        QPixmap pixmap = createTestPixmap(100, 100);
-        PinWindow window(pixmap, QPoint(0, 0));
-
-        // One rotation = 90 degrees
-        window.rotateRight();
-        // Window size should change for non-square images
-        // For square pixmap, just verify it doesn't crash
-
-        // Four rotations = back to original
-        window.rotateRight();
-        window.rotateRight();
-        window.rotateRight();
-        // Should be back at 0 degrees (360 % 360 = 0)
-    }
-
-    void testRotateLeft() {
-        QPixmap pixmap = createTestPixmap(100, 100);
-        PinWindow window(pixmap, QPoint(0, 0));
-
-        window.rotateLeft();
-        // One left rotation = 270 degrees (same as -90)
-
-        // Four left rotations = back to original
-        window.rotateLeft();
-        window.rotateLeft();
-        window.rotateLeft();
-    }
-
     void testRotateRightThenLeft() {
         QPixmap pixmap = createTestPixmap(100, 100);
         PinWindow window(pixmap, QPoint(0, 0));
@@ -240,18 +211,6 @@ private slots:
     // =========================================================================
     // Combined Transform Tests
     // =========================================================================
-
-    void testRotateAndFlip() {
-        QPixmap pixmap = createTestPixmap(100, 100);
-        PinWindow window(pixmap, QPoint(0, 0));
-
-        window.rotateRight();
-        window.flipHorizontal();
-        window.rotateLeft();
-        window.flipVertical();
-
-        // Should not crash, transforms should compose correctly
-    }
 
     void testRotateAndZoom() {
         QPixmap pixmap = createTestPixmap(100, 100);

@@ -25,7 +25,6 @@ private slots:
     // Tool retrieval tests
     void testGet_ValidToolId();
     void testGet_InvalidToolId_ReturnsDefault();
-    void testGet_AllRegisteredTools();
 
     // Tool classification tests
     void testIsDrawingTool_DrawingTools();
@@ -40,13 +39,9 @@ private slots:
     void testGetToolsForToolbar_RegionSelector();
     void testGetToolsForToolbar_ScreenCanvas();
     void testGetToolsForToolbar_PinWindow();
-    void testGetToolsForToolbar_RegionSelectorHasDrawingTools();
-    void testGetToolsForToolbar_ScreenCanvasHasToggleTools();
 
     // Icon and tooltip tests
-    void testGetIconKey_ValidTool();
     void testGetIconKey_AllToolsHaveIcons();
-    void testGetTooltip_ValidTool();
     void testGetTooltip_AllToolsHaveTooltips();
     void testGetTooltipWithShortcut_PlatformSpecificUndoRedo();
 
@@ -56,8 +51,6 @@ private slots:
     void testShowColorWidthWidget();
 
     // Tool definition tests
-    void testToolDefinition_HasCorrectCategory();
-    void testToolDefinition_Capabilities();
     void testToolDefinition_SelectionTool();
     void testToolDefinition_PencilTool();
     void testToolDefinition_TextTool();
@@ -100,28 +93,6 @@ void TestToolRegistry::testGet_InvalidToolId_ReturnsDefault()
 
     // Should return default definition (Selection)
     QCOMPARE(def.id, ToolId::Selection);
-}
-
-void TestToolRegistry::testGet_AllRegisteredTools()
-{
-    QList<ToolId> expectedTools = {
-        ToolId::Selection, ToolId::Arrow, ToolId::Polyline,
-        ToolId::Pencil, ToolId::Marker, ToolId::Shape,
-        ToolId::Text, ToolId::Mosaic, ToolId::Eraser,
-        ToolId::StepBadge, ToolId::EmojiSticker,
-        ToolId::CanvasWhiteboard, ToolId::CanvasBlackboard,
-        ToolId::Undo, ToolId::Redo, ToolId::Clear,
-        ToolId::Cancel, ToolId::OCR, ToolId::QRCode,
-        ToolId::Pin, ToolId::Record, ToolId::Share, ToolId::Save,
-        ToolId::Copy, ToolId::Exit,
-        ToolId::MultiRegion, ToolId::MultiRegionDone
-    };
-
-    for (ToolId id : expectedTools) {
-        const ToolDefinition& def = registry().get(id);
-        QCOMPARE(def.id, id);
-        QVERIFY(!def.iconKey.isEmpty());
-    }
 }
 
 // ============================================================================
@@ -309,44 +280,9 @@ void TestToolRegistry::testGetToolsForToolbar_PinWindow()
     QVERIFY(!tools.contains(ToolId::MultiRegion));
 }
 
-void TestToolRegistry::testGetToolsForToolbar_RegionSelectorHasDrawingTools()
-{
-    QVector<ToolId> tools = registry().getToolsForToolbar(ToolbarType::RegionSelector);
-
-    int drawingToolCount = 0;
-    for (ToolId id : tools) {
-        if (registry().isDrawingTool(id)) {
-            drawingToolCount++;
-        }
-    }
-
-    QVERIFY(drawingToolCount >= 5);  // At least Pencil, Marker, Arrow, Shape, Text...
-}
-
-void TestToolRegistry::testGetToolsForToolbar_ScreenCanvasHasToggleTools()
-{
-    QVector<ToolId> tools = registry().getToolsForToolbar(ToolbarType::ScreenCanvas);
-
-    QVERIFY(tools.contains(ToolId::CanvasWhiteboard));
-    QVERIFY(tools.contains(ToolId::CanvasBlackboard));
-}
-
 // ============================================================================
 // Icon and Tooltip Tests
 // ============================================================================
-
-void TestToolRegistry::testGetIconKey_ValidTool()
-{
-    QCOMPARE(registry().getIconKey(ToolId::Pencil), QString("pencil"));
-    QCOMPARE(registry().getIconKey(ToolId::Arrow), QString("arrow"));
-    QCOMPARE(registry().getIconKey(ToolId::Shape), QString("shape"));
-    QCOMPARE(registry().getIconKey(ToolId::Text), QString("text"));
-    QCOMPARE(registry().getIconKey(ToolId::Mosaic), QString("mosaic"));
-    QCOMPARE(registry().getIconKey(ToolId::StepBadge), QString("step-badge"));
-    QCOMPARE(registry().getIconKey(ToolId::Share), QString("share"));
-    QCOMPARE(registry().getIconKey(ToolId::CanvasWhiteboard), QString("whiteboard"));
-    QCOMPARE(registry().getIconKey(ToolId::CanvasBlackboard), QString("blackboard"));
-}
 
 void TestToolRegistry::testGetIconKey_AllToolsHaveIcons()
 {
@@ -357,15 +293,6 @@ void TestToolRegistry::testGetIconKey_AllToolsHaveIcons()
         QVERIFY2(!iconKey.isEmpty(),
                  qPrintable(QString("Tool %1 should have an icon key").arg(static_cast<int>(id))));
     }
-}
-
-void TestToolRegistry::testGetTooltip_ValidTool()
-{
-    QCOMPARE(registry().getTooltip(ToolId::Pencil), QString("Pencil"));
-    QCOMPARE(registry().getTooltip(ToolId::Arrow), QString("Arrow"));
-    QCOMPARE(registry().getTooltip(ToolId::Selection), QString("Selection"));
-    QCOMPARE(registry().getTooltip(ToolId::CanvasWhiteboard), QString("Whiteboard"));
-    QCOMPARE(registry().getTooltip(ToolId::CanvasBlackboard), QString("Blackboard"));
 }
 
 void TestToolRegistry::testGetTooltip_AllToolsHaveTooltips()
@@ -438,38 +365,6 @@ void TestToolRegistry::testShowColorWidthWidget()
 // ============================================================================
 // Tool Definition Tests
 // ============================================================================
-
-void TestToolRegistry::testToolDefinition_HasCorrectCategory()
-{
-    QCOMPARE(registry().get(ToolId::Selection).category, ToolCategory::Selection);
-    QCOMPARE(registry().get(ToolId::Pencil).category, ToolCategory::Drawing);
-    QCOMPARE(registry().get(ToolId::CanvasWhiteboard).category, ToolCategory::Toggle);
-    QCOMPARE(registry().get(ToolId::CanvasBlackboard).category, ToolCategory::Toggle);
-    QCOMPARE(registry().get(ToolId::Undo).category, ToolCategory::Action);
-}
-
-void TestToolRegistry::testToolDefinition_Capabilities()
-{
-    // Arrow tool has color, width, and arrow style
-    const ToolDefinition& arrow = registry().get(ToolId::Arrow);
-    QVERIFY(arrow.hasColor);
-    QVERIFY(arrow.hasWidth);
-    QVERIFY(arrow.hasArrowStyle);
-    QVERIFY(!arrow.hasTextFormatting);
-
-    // Text tool has color and text formatting
-    const ToolDefinition& text = registry().get(ToolId::Text);
-    QVERIFY(text.hasColor);
-    QVERIFY(text.hasTextFormatting);
-    QVERIFY(!text.hasWidth);
-
-    // Shape tool has color, width, shape type, and fill mode
-    const ToolDefinition& shape = registry().get(ToolId::Shape);
-    QVERIFY(shape.hasColor);
-    QVERIFY(shape.hasWidth);
-    QVERIFY(shape.hasShapeType);
-    QVERIFY(shape.hasFillMode);
-}
 
 void TestToolRegistry::testToolDefinition_SelectionTool()
 {

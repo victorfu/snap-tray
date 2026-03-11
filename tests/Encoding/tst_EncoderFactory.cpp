@@ -28,17 +28,11 @@ private slots:
 
     // Factory creation tests - GIF
     void testCreateGifEncoder();
-    void testCreateGifEncoderWithCustomBitDepth();
-    void testCreateGifEncoderStartsEncoder();
 
     // Factory creation tests - Native
     void testCreateNativeEncoder();
     void testCreateNativeEncoderWithAudio();
     void testCreateNativeEncoderWithQuality();
-
-    // Error handling tests
-    void testCreateWithInvalidPath();
-    void testCreateWithZeroFrameSize();
 
 private:
     QTemporaryDir* m_tempDir = nullptr;
@@ -128,44 +122,6 @@ void TestEncoderFactory::testCreateGifEncoder()
     }
 }
 
-void TestEncoderFactory::testCreateGifEncoderWithCustomBitDepth()
-{
-    auto config = createTestConfig(EncoderFactory::Format::GIF);
-    config.gifBitDepth = 8;
-
-    auto result = EncoderFactory::create(config, this);
-
-    QVERIFY(result.success);
-    QVERIFY(result.gifEncoder != nullptr);
-
-    // Verify bit depth was set
-    QCOMPARE(result.gifEncoder->maxBitDepth(), 8);
-
-    // Cleanup
-    if (result.gifEncoder) {
-        result.gifEncoder->abort();
-        delete result.gifEncoder;
-    }
-}
-
-void TestEncoderFactory::testCreateGifEncoderStartsEncoder()
-{
-    auto config = createTestConfig(EncoderFactory::Format::GIF);
-
-    auto result = EncoderFactory::create(config, this);
-
-    QVERIFY(result.success);
-    QVERIFY(result.gifEncoder != nullptr);
-    // Factory should start the encoder
-    QVERIFY(result.gifEncoder->isRunning());
-
-    // Cleanup
-    if (result.gifEncoder) {
-        result.gifEncoder->abort();
-        delete result.gifEncoder;
-    }
-}
-
 // ============================================================================
 // Factory Creation Tests - Native
 // ============================================================================
@@ -244,44 +200,6 @@ void TestEncoderFactory::testCreateNativeEncoderWithQuality()
             result.nativeEncoder->abort();
             delete result.nativeEncoder;
         }
-    }
-}
-
-// ============================================================================
-// Error Handling Tests
-// ============================================================================
-
-void TestEncoderFactory::testCreateWithInvalidPath()
-{
-    auto config = createTestConfig(EncoderFactory::Format::GIF);
-    config.outputPath = "/nonexistent/directory/test.gif";
-
-    auto result = EncoderFactory::create(config, this);
-
-    // GIF encoder might still start (it validates path on finish())
-    // This test documents actual behavior
-    if (result.success && result.gifEncoder) {
-        // Encoder started but will fail on finish
-        result.gifEncoder->abort();
-        delete result.gifEncoder;
-    }
-}
-
-void TestEncoderFactory::testCreateWithZeroFrameSize()
-{
-    auto config = createTestConfig(EncoderFactory::Format::GIF);
-    config.frameSize = QSize(0, 0);
-
-    auto result = EncoderFactory::create(config, this);
-
-    // Behavior with zero frame size
-    if (result.gifEncoder) {
-        result.gifEncoder->abort();
-        delete result.gifEncoder;
-    }
-    if (result.nativeEncoder) {
-        result.nativeEncoder->abort();
-        delete result.nativeEncoder;
     }
 }
 

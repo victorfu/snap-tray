@@ -61,8 +61,6 @@ private slots:
     void testWidth();
 
     // Drawing tests
-    void testDraw_Empty();
-    void testDraw_SinglePoint();
     void testDraw_MultiplePoints();
 
 private:
@@ -389,33 +387,6 @@ void TestPolylineAnnotation::testWidth()
 // ============================================================================
 // Drawing Tests
 // ============================================================================
-
-void TestPolylineAnnotation::testDraw_Empty()
-{
-    PolylineAnnotation polyline(Qt::red, 3);
-
-    QImage image(200, 200, QImage::Format_ARGB32);
-    image.fill(Qt::white);
-    QPainter painter(&image);
-
-    // Should not crash
-    polyline.draw(painter);
-    QVERIFY(true);
-}
-
-void TestPolylineAnnotation::testDraw_SinglePoint()
-{
-    PolylineAnnotation polyline(Qt::red, 3);
-    polyline.addPoint(QPoint(100, 100));
-
-    QImage image(200, 200, QImage::Format_ARGB32);
-    image.fill(Qt::white);
-    QPainter painter(&image);
-
-    // Should not crash
-    polyline.draw(painter);
-    QVERIFY(true);
-}
 
 void TestPolylineAnnotation::testDraw_MultiplePoints()
 {

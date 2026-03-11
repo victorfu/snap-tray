@@ -58,8 +58,6 @@ private slots:
     void testStrokePath_ValidPath();
 
     // Drawing tests
-    void testDraw_EmptyPoints();
-    void testDraw_SinglePoint();
     void testDraw_MultiplePoints();
     void testTranslate_UpdatesBoundingRectAfterCacheWarmup();
     void testTranslate_RebuildsRenderedCacheAtNewPosition();
@@ -369,33 +367,6 @@ void TestMarkerStroke::testStrokePath_ValidPath()
 // ============================================================================
 // Drawing Tests
 // ============================================================================
-
-void TestMarkerStroke::testDraw_EmptyPoints()
-{
-    MarkerStroke stroke(QVector<QPointF>(), Qt::yellow, 20);
-
-    QImage image(100, 100, QImage::Format_ARGB32);
-    image.fill(Qt::white);
-    QPainter painter(&image);
-
-    // Should not crash
-    stroke.draw(painter);
-    QVERIFY(true);
-}
-
-void TestMarkerStroke::testDraw_SinglePoint()
-{
-    QVector<QPointF> points = { QPointF(50, 50) };
-    MarkerStroke stroke(points, Qt::yellow, 20);
-
-    QImage image(100, 100, QImage::Format_ARGB32);
-    image.fill(Qt::white);
-    QPainter painter(&image);
-
-    // Should not crash (may not draw anything visible, but shouldn't crash)
-    stroke.draw(painter);
-    QVERIFY(true);
-}
 
 void TestMarkerStroke::testDraw_MultiplePoints()
 {

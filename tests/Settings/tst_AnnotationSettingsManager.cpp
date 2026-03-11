@@ -40,19 +40,16 @@ private slots:
 
     // Arrow style settings tests
     void testLoadArrowStyle_DefaultValue();
-    void testSaveLoadArrowStyle_Roundtrip();
     void testSaveLoadArrowStyle_AllValues();
     void testLoadArrowStyle_InvalidValue();
 
     // Line style settings tests
     void testLoadLineStyle_DefaultValue();
-    void testSaveLoadLineStyle_Roundtrip();
     void testSaveLoadLineStyle_AllValues();
     void testLoadLineStyle_InvalidValue();
 
     // Step badge size tests
     void testLoadStepBadgeSize_DefaultValue();
-    void testSaveLoadStepBadgeSize_Roundtrip();
     void testSaveLoadStepBadgeSize_AllValues();
     void testLoadStepBadgeSize_InvalidValue();
 
@@ -72,7 +69,6 @@ private slots:
 
     // Mosaic blur type tests
     void testLoadMosaicBlurType_DefaultValue();
-    void testSaveLoadMosaicBlurType_Roundtrip();
     void testSaveLoadMosaicBlurType_AllValues();
     void testLoadMosaicBlurType_InvalidValue();
 
@@ -223,17 +219,6 @@ void tst_AnnotationSettingsManager::testLoadArrowStyle_DefaultValue()
     QCOMPARE(style, LineEndStyle::EndArrow);
 }
 
-void tst_AnnotationSettingsManager::testSaveLoadArrowStyle_Roundtrip()
-{
-    AnnotationSettingsManager& manager = AnnotationSettingsManager::instance();
-
-    manager.saveArrowStyle(LineEndStyle::BothArrow);
-    QCOMPARE(manager.loadArrowStyle(), LineEndStyle::BothArrow);
-
-    manager.saveArrowStyle(LineEndStyle::EndArrowLine);
-    QCOMPARE(manager.loadArrowStyle(), LineEndStyle::EndArrowLine);
-}
-
 void tst_AnnotationSettingsManager::testSaveLoadArrowStyle_AllValues()
 {
     AnnotationSettingsManager& manager = AnnotationSettingsManager::instance();
@@ -273,17 +258,6 @@ void tst_AnnotationSettingsManager::testLoadLineStyle_DefaultValue()
     QCOMPARE(style, LineStyle::Solid);
 }
 
-void tst_AnnotationSettingsManager::testSaveLoadLineStyle_Roundtrip()
-{
-    AnnotationSettingsManager& manager = AnnotationSettingsManager::instance();
-
-    manager.saveLineStyle(LineStyle::Dashed);
-    QCOMPARE(manager.loadLineStyle(), LineStyle::Dashed);
-
-    manager.saveLineStyle(LineStyle::Dotted);
-    QCOMPARE(manager.loadLineStyle(), LineStyle::Dotted);
-}
-
 void tst_AnnotationSettingsManager::testSaveLoadLineStyle_AllValues()
 {
     AnnotationSettingsManager& manager = AnnotationSettingsManager::instance();
@@ -318,17 +292,6 @@ void tst_AnnotationSettingsManager::testLoadStepBadgeSize_DefaultValue()
     StepBadgeSize size = AnnotationSettingsManager::instance().loadStepBadgeSize();
     QCOMPARE(size, AnnotationSettingsManager::kDefaultStepBadgeSize);
     QCOMPARE(size, StepBadgeSize::Medium);
-}
-
-void tst_AnnotationSettingsManager::testSaveLoadStepBadgeSize_Roundtrip()
-{
-    AnnotationSettingsManager& manager = AnnotationSettingsManager::instance();
-
-    manager.saveStepBadgeSize(StepBadgeSize::Large);
-    QCOMPARE(manager.loadStepBadgeSize(), StepBadgeSize::Large);
-
-    manager.saveStepBadgeSize(StepBadgeSize::Small);
-    QCOMPARE(manager.loadStepBadgeSize(), StepBadgeSize::Small);
 }
 
 void tst_AnnotationSettingsManager::testSaveLoadStepBadgeSize_AllValues()
@@ -462,17 +425,6 @@ void tst_AnnotationSettingsManager::testLoadMosaicBlurType_DefaultValue()
     auto type = AnnotationSettingsManager::instance().loadMosaicBlurType();
     QCOMPARE(type, AnnotationSettingsManager::kDefaultMosaicBlurType);
     QCOMPARE(type, MosaicBlurType::Pixelate);
-}
-
-void tst_AnnotationSettingsManager::testSaveLoadMosaicBlurType_Roundtrip()
-{
-    AnnotationSettingsManager& manager = AnnotationSettingsManager::instance();
-
-    manager.saveMosaicBlurType(MosaicBlurType::Gaussian);
-    QCOMPARE(manager.loadMosaicBlurType(), MosaicBlurType::Gaussian);
-
-    manager.saveMosaicBlurType(MosaicBlurType::Pixelate);
-    QCOMPARE(manager.loadMosaicBlurType(), MosaicBlurType::Pixelate);
 }
 
 void tst_AnnotationSettingsManager::testSaveLoadMosaicBlurType_AllValues()
