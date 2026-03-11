@@ -5,6 +5,7 @@
 #ifndef WINDOWLEVEL_H
 #define WINDOWLEVEL_H
 
+#include <QWindow>
 #include <QWidget>
 
 // Sets the window level above the menu bar (macOS) or does nothing (Windows)
@@ -45,5 +46,10 @@ void forceNativeArrowCursor(QWidget *widget = nullptr);
 // On macOS: Sets NSWindow level to kCGScreenSaverWindowLevel + 2
 // On Windows: No-op (Qt::WindowStaysOnTopHint is sufficient)
 void raiseWindowAboveOverlays(QWidget *widget);
+
+// Raises a transient QWindow above its parent widget's native window level.
+// On macOS: Sets NSWindow level to max(NSFloatingWindowLevel, parent + 1)
+// On Windows: No-op (Qt::WindowStaysOnTopHint is sufficient)
+void raiseTransientWindowAboveParent(QWindow *window, QWidget *parentWidget);
 
 #endif // WINDOWLEVEL_H

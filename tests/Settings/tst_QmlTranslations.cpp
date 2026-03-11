@@ -21,6 +21,7 @@ private slots:
     void initTestCase();
     void testQmlSettingsContexts();
     void testRecordingControlBarContext();
+    void testPhase4PanelContexts();
 
 private:
     QTranslator m_translator;
@@ -63,6 +64,18 @@ void tst_QmlTranslations::testRecordingControlBarContext()
              QString::fromUtf8("停止錄製"));
     QCOMPARE(QCoreApplication::translate("RecordingControlBar", "Cancel Recording"),
              QString::fromUtf8("取消錄製"));
+}
+
+void tst_QmlTranslations::testPhase4PanelContexts()
+{
+    QCOMPARE(QCoreApplication::translate("BeautifyPanel", "Linear Gradient"),
+             QString::fromUtf8("線性漸層"));
+    QCOMPARE(QCoreApplication::translate("BeautifyPanel", "Select Color"),
+             QString::fromUtf8("選擇顏色"));
+    QCOMPARE(QCoreApplication::translate("PinHistoryWindow", "Open Cache Folder"),
+             QString::fromUtf8("開啟快取資料夾"));
+    QCOMPARE(QCoreApplication::translate("PinHistoryWindow", "No pinned screenshots yet"),
+             QString::fromUtf8("尚無釘選的螢幕截圖"));
 }
 
 QTEST_MAIN(tst_QmlTranslations)

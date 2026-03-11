@@ -44,6 +44,20 @@ public:
     QQuickView* createScreenOverlay();
 
     /**
+     * @brief Create a floating tool panel window.
+     *
+     * Frameless, transparent, stay-on-top, and non-focus-stealing.
+     */
+    QQuickView* createToolPanelWindow();
+
+    /**
+     * @brief Create an interactive popup window.
+     *
+     * Used for floating popup surfaces that should close on click-outside.
+     */
+    QQuickView* createPopupWindow();
+
+    /**
      * @brief Create a QQuickView for a screen-level overlay (frameless, transparent, stay-on-top).
      * @param qmlUrl URL of the QML component to load (e.g., "qrc:/SnapTrayQml/components/Toast.qml")
      * @return Owned QQuickView pointer; caller takes ownership.
@@ -65,6 +79,11 @@ public:
      * @return Owned QQuickView pointer; caller takes ownership.
      */
     QQuickView* createSettingsWindow();
+
+    /**
+     * @brief Create a utility window with native title bar and resize affordance.
+     */
+    QQuickView* createUtilityWindow();
 
     /**
      * @brief Prevent an NSWindow from hiding when the app deactivates.

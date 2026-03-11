@@ -25,6 +25,16 @@ target_link_libraries(Qml_CanvasToolbarViewModel PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_CanvasToolbarViewModel COMMAND Qml_CanvasToolbarViewModel)
 set_tests_properties(Qml_CanvasToolbarViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_BeautifyPanelBackend Qml/tst_BeautifyPanelBackend.cpp)
+target_link_libraries(Qml_BeautifyPanelBackend PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Qml_BeautifyPanelBackend COMMAND Qml_BeautifyPanelBackend)
+set_tests_properties(Qml_BeautifyPanelBackend PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Qml_EmojiPickerBackend Qml/tst_EmojiPickerBackend.cpp)
+target_link_libraries(Qml_EmojiPickerBackend PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Qml_EmojiPickerBackend COMMAND Qml_EmojiPickerBackend)
+set_tests_properties(Qml_EmojiPickerBackend PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # PinWindow Tests (link snaptray_ui which includes snaptray_platform)
 # ============================================================================
@@ -53,6 +63,11 @@ add_executable(PinWindow_PinHistoryStore PinWindow/tst_PinHistoryStore.cpp)
 target_link_libraries(PinWindow_PinHistoryStore PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_PinHistoryStore COMMAND PinWindow_PinHistoryStore)
 set_tests_properties(PinWindow_PinHistoryStore PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(PinWindow_PinHistoryModel PinWindow/tst_PinHistoryModel.cpp)
+target_link_libraries(PinWindow_PinHistoryModel PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_PinHistoryModel COMMAND PinWindow_PinHistoryModel)
+set_tests_properties(PinWindow_PinHistoryModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(PinWindow_PinMergeHelper PinWindow/tst_PinMergeHelper.cpp)
 target_link_libraries(PinWindow_PinMergeHelper PRIVATE snaptray_ui Qt6::Test)

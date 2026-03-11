@@ -24,7 +24,7 @@
 #include "colorwidgets/ColorPickerDialogCompat.h"
 
 using snaptray::colorwidgets::ColorPickerDialogCompat;
-#include "EmojiPicker.h"
+#include "qml/QmlEmojiPickerPopup.h"
 #include "OCRManager.h"
 #include "QRCodeManager.h"
 #include "PlatformFeatures.h"
@@ -120,7 +120,6 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_qrCodeInProgress(false)
     , m_autoBlurManager(nullptr)
     , m_autoBlurInProgress(false)
-    , m_emojiPicker(nullptr)
     , m_textEditor(nullptr)
     , m_colorPickerDialog(nullptr)
     , m_magnifierPanel(nullptr)
@@ -421,14 +420,7 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, &RegionSelector::syncFloatingUiCursor);
 
     connect(m_qmlSubToolbar.get(), &SnapTray::QmlFloatingSubToolbar::emojiPickerRequested,
-        this, [this]() {
-            EmojiPicker* picker = ensureEmojiPicker();
-            if (m_qmlToolbar) {
-                picker->setVisible(true);
-                picker->updatePosition(floatingToolbarRectInLocalCoords(), false);
-                update();
-            }
-        });
+        this, [this]() { showEmojiPickerPopup(); });
     connect(m_annotationLayer, &AnnotationLayer::changed,
         this, [this]() {
             if (m_toolbarViewModel) {
@@ -438,7 +430,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             update();
         });
 
-    // EmojiPicker is lazy-initialized via ensureEmojiPicker() when first needed
+    // EmojiPickerPopup is lazy-initialized via showEmojiPickerPopup() when first needed
     // LoadingSpinner is lazy-initialized via ensureLoadingSpinner() when first needed
 
     // Selection toast (shows OCR/QR/auto-blur results near selection)
@@ -717,7 +709,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_inputHandler->setToolManager(m_toolManager);
     m_inputHandler->setTextEditor(m_textEditor);
     m_inputHandler->setTextAnnotationEditor(m_textAnnotationEditor);
-    // EmojiPicker is set lazily via ensureEmojiPicker() when first needed
+    // EmojiPickerPopup is lazily created via showEmojiPickerPopup() when first needed
     m_inputHandler->setMultiRegionManager(m_multiRegionManager);
     m_inputHandler->setUpdateThrottler(&m_updateThrottler);
     m_inputHandler->setParentWidget(this);
@@ -1068,22 +1060,27 @@ void RegionSelector::onCornerRadiusChanged(int radius)
     update();
 }
 
-EmojiPicker* RegionSelector::ensureEmojiPicker()
+void RegionSelector::showEmojiPickerPopup()
 {
-    if (!m_emojiPicker) {
-        m_emojiPicker = new EmojiPicker(this);
-        connect(m_emojiPicker, &EmojiPicker::emojiSelected,
+    if (!m_emojiPickerPopup) {
+        m_emojiPickerPopup = new SnapTray::QmlEmojiPickerPopup(this);
+        m_emojiPickerPopup->setParentWidget(this);
+        connect(m_emojiPickerPopup, &SnapTray::QmlEmojiPickerPopup::emojiSelected,
             this, [this](const QString& emoji) {
                 if (auto* handler = dynamic_cast<EmojiStickerToolHandler*>(
                     m_toolManager->handler(ToolId::EmojiSticker))) {
                     handler->setCurrentEmoji(emoji);
                 }
-                update();
             });
-        // Update input handler reference
-        m_inputHandler->setEmojiPicker(m_emojiPicker);
+        connect(m_emojiPickerPopup, &SnapTray::QmlEmojiPickerPopup::cursorRestoreRequested,
+            this, [this]() {
+                QTimer::singleShot(0, this, &RegionSelector::syncFloatingUiCursor);
+            });
+        connect(m_emojiPickerPopup, &SnapTray::QmlEmojiPickerPopup::cursorSyncRequested,
+            this, &RegionSelector::syncFloatingUiCursor);
     }
-    return m_emojiPicker;
+    QRect anchor = m_qmlToolbar ? m_qmlToolbar->geometry() : QRect();
+    m_emojiPickerPopup->showAt(anchor);
 }
 
 OCRManager* RegionSelector::ensureOCRManager()
@@ -1691,6 +1688,9 @@ void RegionSelector::paintEvent(QPaintEvent* event)
             // Update undo/redo state
             m_toolbarViewModel->setCanUndo(m_annotationLayer && m_annotationLayer->canUndo());
             m_toolbarViewModel->setCanRedo(m_annotationLayer && m_annotationLayer->canRedo());
+            if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+                m_emojiPickerPopup->positionAt(m_qmlToolbar->geometry());
+            }
         }
 
         syncRegionSubToolbar(false);
@@ -1722,17 +1722,10 @@ void RegionSelector::paintEvent(QPaintEvent* event)
             painter.drawText(countRect, Qt::AlignCenter, countText);
         }
 
-        // Draw emoji picker when EmojiSticker tool is selected (lazy creation)
-        if (m_inputState.currentTool == ToolId::EmojiSticker) {
-            EmojiPicker* picker = ensureEmojiPicker();
-            picker->setVisible(true);
-            if (m_qmlToolbar) {
-                picker->updatePosition(floatingToolbarRectInLocalCoords(), false);
-            }
-            picker->draw(painter);
-        }
-        else if (m_emojiPicker) {
-            m_emojiPicker->setVisible(false);
+        // Hide emoji picker popup when tool switches away from EmojiSticker
+        if (m_inputState.currentTool != ToolId::EmojiSticker &&
+            m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+            m_emojiPickerPopup->hide();
         }
 
         // Draw loading spinner when OCR, QR Code scan, or auto-blur is in progress
@@ -1753,8 +1746,8 @@ void RegionSelector::paintEvent(QPaintEvent* event)
         if (m_qmlSubToolbar) {
             m_qmlSubToolbar->hide();
         }
-        if (m_emojiPicker) {
-            m_emojiPicker->setVisible(false);
+        if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+            m_emojiPickerPopup->hide();
         }
     }
 
@@ -1942,6 +1935,11 @@ bool RegionSelector::isGlobalPosOverFloatingUi(const QPoint& globalPos) const
     }
 
     if (m_multiRegionListPanel && m_multiRegionListPanel->containsGlobalPoint(globalPos)) {
+        return true;
+    }
+
+    if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible() &&
+        m_emojiPickerPopup->geometry().contains(globalPos)) {
         return true;
     }
 
@@ -2262,6 +2260,10 @@ void RegionSelector::finishSelection()
 
 void RegionSelector::mousePressEvent(QMouseEvent* event)
 {
+    if (isGlobalPosOverFloatingUi(event->globalPosition().toPoint())) {
+        return;
+    }
+
     maybeDismissShortcutHintsAfterSelectionCompleted();
 
     if (!m_inputState.multiRegionMode &&
@@ -2282,6 +2284,11 @@ void RegionSelector::mousePressEvent(QMouseEvent* event)
 
 void RegionSelector::mouseMoveEvent(QMouseEvent* event)
 {
+    if (isGlobalPosOverFloatingUi(event->globalPosition().toPoint())) {
+        syncFloatingUiCursor();
+        return;
+    }
+
     m_inputHandler->handleMouseMove(event);
     updateShortcutHintsHoverVisibilityDuringSelection(event->pos());
     m_lastMagnifierRect = m_inputHandler->lastMagnifierRect();
@@ -2290,6 +2297,10 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
 
 void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
 {
+    if (isGlobalPosOverFloatingUi(event->globalPosition().toPoint())) {
+        return;
+    }
+
     m_inputHandler->handleMouseRelease(event);
     updateShortcutHintsHoverVisibilityDuringSelection(event->pos());
     // QML multi-region panel handles cursor internally
@@ -2547,6 +2558,11 @@ void RegionSelector::closeEvent(QCloseEvent* event)
     if (m_qmlToolbar) m_qmlToolbar->hide();
     if (m_qmlSubToolbar) m_qmlSubToolbar->hide();
     if (m_magnifierOverlay) m_magnifierOverlay->hideOverlay();
+    if (m_emojiPickerPopup) {
+        m_emojiPickerPopup->close();
+        delete m_emojiPickerPopup;
+        m_emojiPickerPopup = nullptr;
+    }
     if (m_screenSwitchTimer) {
         m_screenSwitchTimer->stop();
     }

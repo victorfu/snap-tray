@@ -20,8 +20,9 @@
 #include "pinwindow/PinWindowPlacement.h"
 #include "qml/QmlFloatingSubToolbar.h"
 #include "qml/PinToolOptionsViewModel.h"
-#include "pinwindow/EmojiPickerPopup.h"
+#include "qml/QmlEmojiPickerPopup.h"
 #include "qml/QmlWindowedToolbar.h"
+#include "qml/QmlBeautifyPanel.h"
 #include "qml/PinToolbarViewModel.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ErasedItemsGroup.h"
@@ -38,7 +39,6 @@
 #include "settings/FileSettingsManager.h"
 #include "settings/PinWindowSettingsManager.h"
 #include "settings/BeautifySettingsManager.h"
-#include "beautify/BeautifyPanel.h"
 #include "beautify/BeautifyRenderer.h"
 #include "settings/OCRSettingsManager.h"
 #include "share/ShareUploadClient.h"
@@ -2012,6 +2012,10 @@ void PinWindow::enterEvent(QEnterEvent* event)
 
 void PinWindow::mousePressEvent(QMouseEvent* event)
 {
+    if (isGlobalPosOverFloatingUi(event->globalPosition().toPoint())) {
+        return;
+    }
+
     if (event->button() == Qt::LeftButton) {
         m_consumeNextToolRelease = false;
 
@@ -2152,6 +2156,11 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
 
 void PinWindow::mouseMoveEvent(QMouseEvent* event)
 {
+    if (isGlobalPosOverFloatingUi(event->globalPosition().toPoint())) {
+        syncFloatingUiCursor();
+        return;
+    }
+
     // Handle Region Layout Mode
     if (isRegionLayoutMode()) {
         QPoint pos = event->pos();
@@ -2323,6 +2332,10 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
 
 void PinWindow::mouseReleaseEvent(QMouseEvent* event)
 {
+    if (isGlobalPosOverFloatingUi(event->globalPosition().toPoint())) {
+        return;
+    }
+
     if (event->button() == Qt::LeftButton) {
         // Handle Region Layout Mode
         if (isRegionLayoutMode()) {
@@ -2918,7 +2931,8 @@ void PinWindow::showToolbar()
 
     // Set associated widgets for click-outside detection
     m_toolbar->setAssociatedWidgets(this, m_subToolbar.get());
-    m_toolbar->setAssociatedTransientWidget(m_emojiPickerPopup);
+    m_toolbar->setAssociatedTransientWidget(nullptr);
+    m_toolbar->setAssociatedTransientWindow(m_emojiPickerPopup ? m_emojiPickerPopup->window() : nullptr);
 
     // Connect close request signal
     connect(m_toolbar.get(), &SnapTray::QmlWindowedToolbar::closeRequested,
@@ -3510,23 +3524,24 @@ void PinWindow::hideSubToolbar()
 void PinWindow::showEmojiPickerPopup()
 {
     if (!m_emojiPickerPopup) {
-        m_emojiPickerPopup = new EmojiPickerPopup(nullptr);
-        connect(m_emojiPickerPopup, &EmojiPickerPopup::emojiSelected,
+        m_emojiPickerPopup = new SnapTray::QmlEmojiPickerPopup(this);
+        m_emojiPickerPopup->setParentWidget(this);
+        connect(m_emojiPickerPopup, &SnapTray::QmlEmojiPickerPopup::emojiSelected,
                 this, &PinWindow::onEmojiSelected);
-        connect(m_emojiPickerPopup, &EmojiPickerPopup::cursorRestoreRequested,
+        connect(m_emojiPickerPopup, &SnapTray::QmlEmojiPickerPopup::cursorRestoreRequested,
                 this, [this]() {
                     QTimer::singleShot(0, this, &PinWindow::syncFloatingUiCursor);
                 });
-        connect(m_emojiPickerPopup, &EmojiPickerPopup::cursorSyncRequested,
+        connect(m_emojiPickerPopup, &SnapTray::QmlEmojiPickerPopup::cursorSyncRequested,
                 this, &PinWindow::syncFloatingUiCursor);
-        if (m_toolbar) {
-            m_toolbar->setAssociatedTransientWidget(m_emojiPickerPopup);
-        }
     }
 
     // Position below the toolbar
     QRect anchor = m_toolbar ? m_toolbar->geometry() : frameGeometry();
     m_emojiPickerPopup->showAt(anchor);
+    if (m_toolbar) {
+        m_toolbar->setAssociatedTransientWindow(m_emojiPickerPopup->window());
+    }
 }
 
 bool PinWindow::isGlobalPosOverFloatingUi(const QPoint& globalPos) const
@@ -3540,7 +3555,7 @@ bool PinWindow::isGlobalPosOverFloatingUi(const QPoint& globalPos) const
     }
 
     if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible() &&
-        m_emojiPickerPopup->frameGeometry().contains(globalPos)) {
+        m_emojiPickerPopup->geometry().contains(globalPos)) {
         return true;
     }
 
@@ -4843,26 +4858,17 @@ bool PinWindow::isRegionLayoutMode() const
 void PinWindow::showBeautifyPanel()
 {
     if (!m_beautifyPanel) {
-        m_beautifyPanel = std::make_unique<BeautifyPanel>(nullptr);
-        m_beautifyPanel->setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
-        m_beautifyPanel->setAttribute(Qt::WA_DeleteOnClose, false);
+        m_beautifyPanel = std::make_unique<SnapTray::QmlBeautifyPanel>(this);
 
-        connect(m_beautifyPanel.get(), &BeautifyPanel::copyRequested,
+        connect(m_beautifyPanel.get(), &SnapTray::QmlBeautifyPanel::copyRequested,
                 this, &PinWindow::onBeautifyCopy);
-        connect(m_beautifyPanel.get(), &BeautifyPanel::saveRequested,
+        connect(m_beautifyPanel.get(), &SnapTray::QmlBeautifyPanel::saveRequested,
                 this, &PinWindow::onBeautifySave);
-        connect(m_beautifyPanel.get(), &BeautifyPanel::closeRequested,
-                m_beautifyPanel.get(), &QWidget::hide);
     }
 
     m_beautifyPanel->setSourcePixmap(getExportPixmapWithAnnotations());
     m_beautifyPanel->setSettings(BeautifySettingsManager::instance().loadSettings());
-
-    // Position panel next to the pin window
-    QPoint panelPos = mapToGlobal(QPoint(width() + 8, 0));
-    m_beautifyPanel->move(panelPos);
-    m_beautifyPanel->show();
-    m_beautifyPanel->raise();
+    m_beautifyPanel->showNear(frameGeometry());
 }
 
 void PinWindow::onBeautifyCopy(const BeautifySettings& settings)

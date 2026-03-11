@@ -123,3 +123,34 @@ void raiseWindowAboveOverlays(QWidget *widget)
         [window setLevel:kCGScreenSaverWindowLevel + 2];
     }
 }
+
+void raiseTransientWindowAboveParent(QWindow *window, QWidget *parentWidget)
+{
+    if (!window) {
+        return;
+    }
+
+    NSView *view = reinterpret_cast<NSView *>(window->winId());
+    if (!view) {
+        return;
+    }
+
+    NSWindow *nsWindow = [view window];
+    if (!nsWindow) {
+        return;
+    }
+
+    NSInteger targetLevel = NSFloatingWindowLevel;
+    if (parentWidget) {
+        NSView *parentView = reinterpret_cast<NSView *>(parentWidget->winId());
+        if (parentView) {
+            NSWindow *parentWindow = [parentView window];
+            if (parentWindow) {
+                targetLevel = qMax<NSInteger>(targetLevel, [parentWindow level] + 1);
+            }
+        }
+    }
+
+    [nsWindow setLevel:targetLevel];
+    [nsWindow setHidesOnDeactivate:NO];
+}

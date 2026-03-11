@@ -17,8 +17,8 @@ namespace SnapTray {
  * @brief Generic QML-based floating toolbar overlay.
  *
  * Creates a frameless, transparent QQuickView window that renders
- * FloatingToolbar.qml. Used by RegionSelector and ScreenCanvas to
- * replace QPainter-drawn ToolbarCore.
+ * FloatingToolbar.qml. Used by RegionSelector and ScreenCanvas as the
+ * shared floating toolbar overlay for full-screen capture surfaces.
  *
  * Unlike QmlWindowedToolbar (PinWindow), this class does NOT implement
  * click-outside detection. The full-screen host widget handles all input

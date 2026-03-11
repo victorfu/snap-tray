@@ -6,8 +6,8 @@
 #include "PlatformFeatures.h"
 #include "RecordingManager.h"
 #include "ScreenCanvasManager.h"
+#include "qml/QmlPinHistoryWindow.h"
 #include "qml/QmlSettingsWindow.h"
-#include "pinwindow/PinHistoryWindow.h"
 #include "pinwindow/PinWindowPlacement.h"
 #include "ImageColorSpaceHelper.h"
 #include "cli/IPCProtocol.h"
@@ -630,7 +630,7 @@ void MainApplication::onPinHistory()
         return;
     }
 
-    m_pinHistoryWindow = new PinHistoryWindow(m_pinWindowManager);
+    m_pinHistoryWindow = new SnapTray::QmlPinHistoryWindow(m_pinWindowManager, this);
     m_pinHistoryWindow->show();
     m_pinHistoryWindow->raise();
     m_pinHistoryWindow->activateWindow();

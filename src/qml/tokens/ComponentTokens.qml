@@ -104,6 +104,10 @@ QtObject {
     readonly property color panelBorder: DesignSystem.panelBorder
     readonly property int panelRadius: DesignSystem.panelRadius
     readonly property int panelPadding: DesignSystem.panelPadding
+    readonly property color panelGlassBackground: DesignSystem.panelGlassBackground
+    readonly property color panelGlassBackgroundTop: DesignSystem.panelGlassBackgroundTop
+    readonly property color panelGlassHighlight: DesignSystem.panelGlassHighlight
+    readonly property color panelGlassBorder: DesignSystem.panelGlassBorder
 
     // ========================================================================
     // Dialog
@@ -221,6 +225,23 @@ QtObject {
     readonly property int recordingPreviewControlButtonHeight: DesignSystem.recordingPreviewControlButtonHeight
     readonly property int recordingPreviewIconSize: DesignSystem.recordingPreviewIconSize
     readonly property int recordingPreviewActionIconSize: DesignSystem.recordingPreviewActionIconSize
+
+    // ========================================================================
+    // Panel-specific visuals
+    // ========================================================================
+    readonly property color thumbnailCardBackground: DesignSystem.thumbnailCardBackground
+    readonly property color thumbnailCardHover: DesignSystem.thumbnailCardHover
+    readonly property color thumbnailCardSelected: DesignSystem.thumbnailCardSelected
+    readonly property color thumbnailCardBorder: DesignSystem.thumbnailCardBorder
+    readonly property color thumbnailCardSelectedBorder: DesignSystem.thumbnailCardSelectedBorder
+    readonly property color thumbnailCardErrorBackground: DesignSystem.thumbnailCardErrorBackground
+    readonly property color emojiCellHover: DesignSystem.emojiCellHover
+    readonly property color emojiCellPressed: DesignSystem.emojiCellPressed
+    readonly property color emojiCellSelectedRing: DesignSystem.emojiCellSelectedRing
+    readonly property color beautifyPreviewFrame: DesignSystem.beautifyPreviewFrame
+    readonly property color beautifyPreviewPlaceholder: DesignSystem.beautifyPreviewPlaceholder
+    readonly property color beautifyPresetRing: DesignSystem.beautifyPresetRing
+    readonly property color beautifyPresetHoverRing: DesignSystem.beautifyPresetHoverRing
 
     // ========================================================================
     // Recording Boundary

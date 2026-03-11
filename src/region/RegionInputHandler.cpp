@@ -13,7 +13,6 @@
 #include "cursor/CursorManager.h"
 #include "tools/ToolManager.h"
 #include "InlineTextEditor.h"
-#include "EmojiPicker.h"
 #include "TransformationGizmo.h"
 #include "tools/ToolTraits.h"
 #include "platform/WindowLevel.h"
@@ -70,11 +69,6 @@ void RegionInputHandler::setTextEditor(InlineTextEditor* editor)
 void RegionInputHandler::setTextAnnotationEditor(TextAnnotationEditor* editor)
 {
     m_textAnnotationEditor = editor;
-}
-
-void RegionInputHandler::setEmojiPicker(EmojiPicker* picker)
-{
-    m_emojiPicker = picker;
 }
 
 void RegionInputHandler::setMultiRegionManager(MultiRegionManager* manager)
@@ -149,16 +143,6 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
                     emit drawingStateChanged(state().isDrawing);
                 }
                 };
-
-            // Check region control widget (radius + aspect ratio)
-            // Check emoji picker clicks (still QPainter-based)
-            if (m_emojiPicker && m_emojiPicker->isVisible()) {
-                if (m_emojiPicker->handleClick(event->pos())) {
-                    finalizePolylineForUiClick(event->pos());
-                    emit updateRequested();
-                    return;
-                }
-            }
 
             // Text interaction is centralized in TextToolHandler and stays active
             // globally (not only when Text is the current tool).
@@ -893,17 +877,6 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
     } else if (m_annotationLayer->hitTestShape(pos) >= 0) {
         cm.setHoverTargetForWidget(m_parentWidget, HoverTarget::Annotation);
         return;
-    }
-
-    // Check emoji picker
-    if (m_emojiPicker && m_emojiPicker->isVisible()) {
-        if (m_emojiPicker->updateHoveredEmoji(pos)) {
-            emit updateRequested();
-        }
-        if (m_emojiPicker->contains(pos)) {
-            cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::Widget);
-            return;
-        }
     }
 
     // Check resize handles for selection tool

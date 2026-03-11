@@ -411,6 +411,10 @@ class DesignSystem : public QObject
     Q_PROPERTY(QColor panelBorder READ panelBorder NOTIFY themeChanged)
     Q_PROPERTY(int panelRadius READ panelRadius CONSTANT)
     Q_PROPERTY(int panelPadding READ panelPadding CONSTANT)
+    Q_PROPERTY(QColor panelGlassBackground READ panelGlassBackground NOTIFY themeChanged)
+    Q_PROPERTY(QColor panelGlassBackgroundTop READ panelGlassBackgroundTop NOTIFY themeChanged)
+    Q_PROPERTY(QColor panelGlassHighlight READ panelGlassHighlight CONSTANT)
+    Q_PROPERTY(QColor panelGlassBorder READ panelGlassBorder NOTIFY themeChanged)
     Q_PROPERTY(QColor dialogBackground READ dialogBackground NOTIFY themeChanged)
     Q_PROPERTY(QColor dialogBorder READ dialogBorder NOTIFY themeChanged)
     Q_PROPERTY(QColor dialogOverlay READ dialogOverlay NOTIFY themeChanged)
@@ -509,6 +513,23 @@ class DesignSystem : public QObject
     Q_PROPERTY(int recordingPreviewControlButtonHeight READ recordingPreviewControlButtonHeight CONSTANT)
     Q_PROPERTY(int recordingPreviewIconSize READ recordingPreviewIconSize CONSTANT)
     Q_PROPERTY(int recordingPreviewActionIconSize READ recordingPreviewActionIconSize CONSTANT)
+
+    // ====================================================================
+    // Component: Panel-specific visuals (theme-dependent)
+    // ====================================================================
+    Q_PROPERTY(QColor thumbnailCardBackground READ thumbnailCardBackground NOTIFY themeChanged)
+    Q_PROPERTY(QColor thumbnailCardHover READ thumbnailCardHover NOTIFY themeChanged)
+    Q_PROPERTY(QColor thumbnailCardSelected READ thumbnailCardSelected NOTIFY themeChanged)
+    Q_PROPERTY(QColor thumbnailCardBorder READ thumbnailCardBorder NOTIFY themeChanged)
+    Q_PROPERTY(QColor thumbnailCardSelectedBorder READ thumbnailCardSelectedBorder CONSTANT)
+    Q_PROPERTY(QColor thumbnailCardErrorBackground READ thumbnailCardErrorBackground NOTIFY themeChanged)
+    Q_PROPERTY(QColor emojiCellHover READ emojiCellHover NOTIFY themeChanged)
+    Q_PROPERTY(QColor emojiCellPressed READ emojiCellPressed NOTIFY themeChanged)
+    Q_PROPERTY(QColor emojiCellSelectedRing READ emojiCellSelectedRing CONSTANT)
+    Q_PROPERTY(QColor beautifyPreviewFrame READ beautifyPreviewFrame NOTIFY themeChanged)
+    Q_PROPERTY(QColor beautifyPreviewPlaceholder READ beautifyPreviewPlaceholder NOTIFY themeChanged)
+    Q_PROPERTY(QColor beautifyPresetRing READ beautifyPresetRing CONSTANT)
+    Q_PROPERTY(QColor beautifyPresetHoverRing READ beautifyPresetHoverRing CONSTANT)
 
     // ====================================================================
     // Component: Recording Boundary (always dark)
@@ -923,6 +944,10 @@ public:
     QColor panelBorder() const;
     int panelRadius() const;
     int panelPadding() const;
+    QColor panelGlassBackground() const;
+    QColor panelGlassBackgroundTop() const;
+    QColor panelGlassHighlight() const;
+    QColor panelGlassBorder() const;
     QColor dialogBackground() const;
     QColor dialogBorder() const;
     QColor dialogOverlay() const;
@@ -1011,6 +1036,21 @@ public:
     int recordingPreviewControlButtonHeight() const;
     int recordingPreviewIconSize() const;
     int recordingPreviewActionIconSize() const;
+
+    // -- Component: Panel-specific visuals --------------------------------
+    QColor thumbnailCardBackground() const;
+    QColor thumbnailCardHover() const;
+    QColor thumbnailCardSelected() const;
+    QColor thumbnailCardBorder() const;
+    QColor thumbnailCardSelectedBorder() const;
+    QColor thumbnailCardErrorBackground() const;
+    QColor emojiCellHover() const;
+    QColor emojiCellPressed() const;
+    QColor emojiCellSelectedRing() const;
+    QColor beautifyPreviewFrame() const;
+    QColor beautifyPreviewPlaceholder() const;
+    QColor beautifyPresetRing() const;
+    QColor beautifyPresetHoverRing() const;
 
     // -- Component: Recording Boundary (always dark) ----------------------
     QColor recordingBoundaryGradientStart() const;

@@ -20,11 +20,11 @@ class ScreenCanvasManager;
 class RecordingManager;
 class RecordingPreviewBackend;
 class UpdateChecker;
-class PinHistoryWindow;
 struct ReleaseInfo;
 
 namespace SnapTray {
 class QmlSettingsWindow;
+class QmlPinHistoryWindow;
 }
 
 #ifdef SNAPTRAY_ENABLE_MCP
@@ -99,7 +99,7 @@ private:
     QAction *m_closeAllPinsAction;
     QAction *m_fullScreenRecordingAction;
     QPointer<SnapTray::QmlSettingsWindow> m_settingsWindow;
-    QPointer<PinHistoryWindow> m_pinHistoryWindow;
+    QPointer<SnapTray::QmlPinHistoryWindow> m_pinHistoryWindow;
     RecordingPreviewBackend *m_previewBackend = nullptr;
     UpdateChecker *m_updateChecker;
 #ifdef SNAPTRAY_ENABLE_MCP

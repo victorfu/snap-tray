@@ -116,3 +116,8 @@ void raiseWindowAboveOverlays(QWidget *)
     // Windows doesn't need special handling when dialogs are properly managed
     // (dialogs are destroyed on hide and recreated on show to avoid z-order corruption)
 }
+
+void raiseTransientWindowAboveParent(QWindow *, QWidget *)
+{
+    // Windows doesn't need special handling for transient popup z-order here.
+}

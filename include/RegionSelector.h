@@ -35,13 +35,13 @@
 #include "region/RegionInputState.h"
 
 class QScreen;
-class EmojiPicker;
 class RegionToolbarViewModel;
 class PinToolOptionsViewModel;
 namespace SnapTray {
 class QmlFloatingToolbar;
 class QmlFloatingSubToolbar;
 class QmlOverlayPanel;
+class QmlEmojiPickerPopup;
 }
 
 namespace snaptray {
@@ -177,7 +177,7 @@ private:
     void onLineWidthChanged(int width);
 
     // Lazy component creation
-    EmojiPicker* ensureEmojiPicker();
+    void showEmojiPickerPopup();
     OCRManager* ensureOCRManager();
     QRCodeManager* ensureQRCodeManager();
     LoadingSpinnerRenderer* ensureLoadingSpinner();
@@ -269,8 +269,8 @@ private:
     bool m_toolbarUserDragged = false;
     bool m_cursorOverSelectionToolbar = false;
 
-    // Emoji picker
-    EmojiPicker *m_emojiPicker;
+    // Emoji picker (QML popup)
+    SnapTray::QmlEmojiPickerPopup *m_emojiPickerPopup = nullptr;
 
     // Annotation layer and tool manager
     AnnotationLayer *m_annotationLayer; // Qt parent owns lifetime

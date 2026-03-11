@@ -7,6 +7,7 @@
 #include <QElapsedTimer>
 
 class QWidget;
+class QWindow;
 class QQuickView;
 class QQuickItem;
 class PinToolbarViewModel;
@@ -49,6 +50,7 @@ public:
     // Associated widgets for click-outside detection
     void setAssociatedWidgets(QWidget* pinWindow, QmlFloatingSubToolbar* subToolbar);
     void setAssociatedTransientWidget(QWidget* widget);
+    void setAssociatedTransientWindow(QWindow* window);
 
 signals:
     void closeRequested();
@@ -92,6 +94,7 @@ private:
     QWidget* m_associatedPinWindow = nullptr;
     QmlFloatingSubToolbar* m_associatedSubToolbar = nullptr;
     QPointer<QWidget> m_associatedTransientWidget;
+    QPointer<QWindow> m_associatedTransientWindow;
 
     quint64 m_tooltipRequestId = 0;
 };

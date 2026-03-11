@@ -19,7 +19,6 @@ class AnnotationLayer;
 class ToolManager;
 class InlineTextEditor;
 class TextAnnotationEditor;
-class EmojiPicker;
 class UpdateThrottler;
 class TextBoxAnnotation;
 class EmojiStickerAnnotation;
@@ -48,7 +47,6 @@ public:
     void setToolManager(ToolManager* manager);
     void setTextEditor(InlineTextEditor* editor);
     void setTextAnnotationEditor(TextAnnotationEditor* editor);
-    void setEmojiPicker(EmojiPicker* picker);
     void setMultiRegionManager(MultiRegionManager* manager);
     void setUpdateThrottler(UpdateThrottler* throttler);
     void setParentWidget(QWidget* widget);
@@ -145,7 +143,6 @@ private:
     ToolManager* m_toolManager = nullptr;
     InlineTextEditor* m_textEditor = nullptr;
     TextAnnotationEditor* m_textAnnotationEditor = nullptr;
-    EmojiPicker* m_emojiPicker = nullptr;
     MultiRegionManager* m_multiRegionManager = nullptr;
     UpdateThrottler* m_updateThrottler = nullptr;
     QWidget* m_parentWidget = nullptr;

@@ -67,6 +67,27 @@ QQuickView* QmlOverlayManager::createScreenOverlay()
     return view;
 }
 
+QQuickView* QmlOverlayManager::createToolPanelWindow()
+{
+    auto* view = createScreenOverlay();
+    view->setFlag(Qt::WindowDoesNotAcceptFocus, true);
+    view->setFlag(Qt::WindowTransparentForInput, false);
+    return view;
+}
+
+QQuickView* QmlOverlayManager::createPopupWindow()
+{
+    ensureEngine();
+
+    auto* view = new QQuickView(m_engine, nullptr);
+    view->setFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+    view->setColor(Qt::transparent);
+    view->setResizeMode(QQuickView::SizeViewToRootObject);
+    view->setFlag(Qt::WindowDoesNotAcceptFocus, true);
+
+    return view;
+}
+
 QQuickView* QmlOverlayManager::createScreenOverlay(const QUrl& qmlUrl)
 {
     auto* view = createScreenOverlay();
@@ -99,6 +120,17 @@ QQuickView* QmlOverlayManager::createSettingsWindow()
     // Note: setSource() is NOT called here. The caller (QmlSettingsWindow::ensureView)
     // must set context properties first, then call setSource() to avoid
     // "settingsBackend is not defined" errors during QML component creation.
+
+    return view;
+}
+
+QQuickView* QmlOverlayManager::createUtilityWindow()
+{
+    ensureEngine();
+
+    auto* view = new QQuickView(m_engine, nullptr);
+    view->setFlags(Qt::Window);
+    view->setResizeMode(QQuickView::SizeRootObjectToView);
 
     return view;
 }

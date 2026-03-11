@@ -39,7 +39,13 @@ struct OCRResult;
 class QRCodeManager;
 class PinWindowManager;
 class UIIndicators;
-namespace SnapTray { class QmlToast; class QmlWindowedToolbar; class QmlFloatingSubToolbar; }
+namespace SnapTray {
+class QmlToast;
+class QmlWindowedToolbar;
+class QmlFloatingSubToolbar;
+class QmlEmojiPickerPopup;
+class QmlBeautifyPanel;
+}
 class PinToolbarViewModel;
 class PinToolOptionsViewModel;
 class AnnotationLayer;
@@ -57,7 +63,6 @@ class RegionLayoutManager;
 class RegionSettingsHelper;
 struct LayoutRegion;
 class AnnotationContext;
-class BeautifyPanel;
 struct BeautifySettings;
 class TestPinWindowCropUndo;
 class ShareUploadClient;
@@ -414,7 +419,7 @@ private:
     InlineTextEditor* m_textEditor = nullptr;
     TextAnnotationEditor* m_textAnnotationEditor = nullptr;
     std::unique_ptr<ShapeAnnotationEditor> m_shapeAnnotationEditor;
-    class EmojiPickerPopup* m_emojiPickerPopup = nullptr;
+    SnapTray::QmlEmojiPickerPopup* m_emojiPickerPopup = nullptr;
     RegionSettingsHelper* m_settingsHelper = nullptr;
     bool m_toolbarVisible = false;
     bool m_annotationMode = false;
@@ -475,7 +480,7 @@ private:
     void showBeautifyPanel();
     void onBeautifyCopy(const BeautifySettings& settings);
     void onBeautifySave(const BeautifySettings& settings);
-    std::unique_ptr<BeautifyPanel> m_beautifyPanel;
+    std::unique_ptr<SnapTray::QmlBeautifyPanel> m_beautifyPanel;
 
     // ========================================================================
     // Local constants (previously in Constants.h but only used by PinWindow)

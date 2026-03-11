@@ -15,6 +15,7 @@
 #include <QMouseEvent>
 #include <QCursor>
 #include <QWidget>
+#include <QWindow>
 #include <QApplication>
 #include <QDialog>
 #include <QMenu>
@@ -57,6 +58,12 @@ void reassertNativeArrowForView(QQuickView* view)
 bool containsGlobalPoint(const QWidget* widget, const QPoint& globalPos)
 {
     return widget && widget->isVisible() && widget->frameGeometry().contains(globalPos);
+}
+
+bool containsGlobalPoint(const QWindow* window, const QPoint& globalPos)
+{
+    return window && window->isVisible()
+        && QRect(window->position(), window->size()).contains(globalPos);
 }
 
 bool isTransientPopup(const QWidget* widget)
@@ -328,6 +335,11 @@ void QmlWindowedToolbar::setAssociatedTransientWidget(QWidget* widget)
     m_associatedTransientWidget = widget;
 }
 
+void QmlWindowedToolbar::setAssociatedTransientWindow(QWindow* window)
+{
+    m_associatedTransientWindow = window;
+}
+
 // ── Positioning ──
 
 void QmlWindowedToolbar::positionNear(const QRect& pinWindowRect)
@@ -411,6 +423,9 @@ bool QmlWindowedToolbar::eventFilter(QObject* obj, QEvent* event)
 
     // Check if click is inside an explicitly associated transient widget
     if (containsGlobalPoint(m_associatedTransientWidget.data(), globalPos))
+        return false;
+
+    if (containsGlobalPoint(m_associatedTransientWindow.data(), globalPos))
         return false;
 
     // Don't close if click is inside an active popup (QMenu, dropdown, etc.)

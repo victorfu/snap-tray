@@ -620,10 +620,6 @@ add_library(snaptray_ui STATIC
     src/tools/handlers/CropToolHandler.cpp
     src/tools/handlers/MeasureToolHandler.cpp
 
-    # Widgets
-    src/EmojiPicker.cpp
-    src/pinwindow/EmojiPickerPopup.cpp
-
     # Hotkey management system
     src/hotkey/HotkeyManager.cpp
     src/widgets/TypeHotkeyDialog.cpp
@@ -654,6 +650,9 @@ add_library(snaptray_ui STATIC
     src/PinWindowManager.cpp
     src/pinwindow/PinHistoryStore.cpp
     src/pinwindow/PinHistoryWindow.cpp
+    src/qml/PinHistoryModel.cpp
+    src/qml/PinHistoryBackend.cpp
+    src/qml/QmlPinHistoryWindow.cpp
     src/pinwindow/PinWindowPlacement.cpp
     src/pinwindow/ResizeHandler.cpp
     src/pinwindow/UIIndicators.cpp
@@ -709,8 +708,6 @@ add_library(snaptray_ui STATIC
     include/TransformationGizmo.h
     include/tools/ToolRegistry.h
     include/tools/ToolManager.h
-    include/EmojiPicker.h
-    include/pinwindow/EmojiPickerPopup.h
     include/RegionSelector.h
     include/region/SelectionStateManager.h
     include/region/MagnifierPanel.h
@@ -729,6 +726,9 @@ add_library(snaptray_ui STATIC
     include/PinWindowManager.h
     include/pinwindow/PinHistoryStore.h
     include/pinwindow/PinHistoryWindow.h
+    include/qml/PinHistoryModel.h
+    include/qml/PinHistoryBackend.h
+    include/qml/QmlPinHistoryWindow.h
     include/pinwindow/PinWindowPlacement.h
     include/pinwindow/ResizeHandler.h
     include/pinwindow/UIIndicators.h
@@ -842,6 +842,9 @@ set_source_files_properties(src/qml/components/Countdown.qml PROPERTIES QT_RESOU
 set_source_files_properties(src/qml/components/RecordingTooltip.qml PROPERTIES QT_RESOURCE_ALIAS components/RecordingTooltip.qml)
 set_source_files_properties(src/qml/components/GlassSurface.qml PROPERTIES QT_RESOURCE_ALIAS components/GlassSurface.qml)
 set_source_files_properties(src/qml/components/ToolbarButton.qml PROPERTIES QT_RESOURCE_ALIAS components/ToolbarButton.qml)
+set_source_files_properties(src/qml/components/PanelSurface.qml PROPERTIES QT_RESOURCE_ALIAS components/PanelSurface.qml)
+set_source_files_properties(src/qml/components/ContextActionMenu.qml PROPERTIES QT_RESOURCE_ALIAS components/ContextActionMenu.qml)
+set_source_files_properties(src/qml/components/ThumbnailCard.qml PROPERTIES QT_RESOURCE_ALIAS components/ThumbnailCard.qml)
 
 # Floating toolbar
 set_source_files_properties(src/qml/toolbar/FloatingToolbar.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/FloatingToolbar.qml)
@@ -898,6 +901,9 @@ set_source_files_properties(src/qml/recording/RecordingPreview.qml PROPERTIES QT
 # Recording control bar
 set_source_files_properties(src/qml/recording/RecordingControlBar.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingControlBar.qml)
 set_source_files_properties(src/qml/recording/RecordingRegionSelector.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingRegionSelector.qml)
+set_source_files_properties(src/qml/panels/BeautifyPanel.qml PROPERTIES QT_RESOURCE_ALIAS panels/BeautifyPanel.qml)
+set_source_files_properties(src/qml/panels/EmojiPickerPopup.qml PROPERTIES QT_RESOURCE_ALIAS panels/EmojiPickerPopup.qml)
+set_source_files_properties(src/qml/panels/PinHistoryWindow.qml PROPERTIES QT_RESOURCE_ALIAS panels/PinHistoryWindow.qml)
 
 # Capture overlay panels
 set_source_files_properties(src/qml/panels/ShortcutHintsPanel.qml PROPERTIES QT_RESOURCE_ALIAS panels/ShortcutHintsPanel.qml)
@@ -920,6 +926,9 @@ qt_add_qml_module(snaptray_qml
         src/qml/components/RecordingTooltip.qml
         src/qml/components/GlassSurface.qml
         src/qml/components/ToolbarButton.qml
+        src/qml/components/PanelSurface.qml
+        src/qml/components/ContextActionMenu.qml
+        src/qml/components/ThumbnailCard.qml
         src/qml/components/ToolbarChevron.qml
         src/qml/components/DialogBase.qml
         src/qml/controls/SettingsSection.qml
@@ -950,6 +959,9 @@ qt_add_qml_module(snaptray_qml
         src/qml/recording/RecordingPreview.qml
         src/qml/recording/RecordingControlBar.qml
         src/qml/recording/RecordingRegionSelector.qml
+        src/qml/panels/BeautifyPanel.qml
+        src/qml/panels/EmojiPickerPopup.qml
+        src/qml/panels/PinHistoryWindow.qml
         src/qml/dialogs/SharePasswordDialog.qml
         src/qml/dialogs/ShareResultDialog.qml
         src/qml/dialogs/OCRResultDialog.qml
@@ -975,8 +987,18 @@ qt_add_qml_module(snaptray_qml
         include/qml/AnnotationCanvas.h
         src/qml/ThemeManager.cpp
         include/qml/ThemeManager.h
+        src/qml/BeautifyPanelBackend.cpp
+        include/qml/BeautifyPanelBackend.h
+        src/qml/BeautifyPreviewItem.cpp
+        include/qml/BeautifyPreviewItem.h
+        src/qml/EmojiPickerBackend.cpp
+        include/qml/EmojiPickerBackend.h
         src/qml/QmlOverlayManager.mm
         include/qml/QmlOverlayManager.h
+        src/qml/QmlBeautifyPanel.cpp
+        include/qml/QmlBeautifyPanel.h
+        src/qml/QmlEmojiPickerPopup.cpp
+        include/qml/QmlEmojiPickerPopup.h
         src/qml/QmlToast.cpp
         include/qml/QmlToast.h
         src/qml/QmlBadge.cpp

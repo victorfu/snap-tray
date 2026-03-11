@@ -32,7 +32,6 @@ namespace colorwidgets {
 class ColorPickerDialogCompat;
 }
 }
-class EmojiPicker;
 class LaserPointerRenderer;
 class ArrowAnnotation;
 class PolylineAnnotation;
@@ -45,6 +44,7 @@ class PinToolOptionsViewModel;
 namespace SnapTray {
 class QmlFloatingToolbar;
 class QmlFloatingSubToolbar;
+class QmlEmojiPickerPopup;
 }
 
 // Canvas background mode
@@ -168,8 +168,9 @@ private:
     bool m_toolbarUserDragged = false;
     bool m_showSubToolbar;
 
-    // Emoji picker
-    EmojiPicker *m_emojiPicker;
+    // Emoji picker (QML popup)
+    SnapTray::QmlEmojiPickerPopup *m_emojiPickerPopup = nullptr;
+    void showEmojiPickerPopup();
 
     // Color picker dialog
     std::unique_ptr<snaptray::colorwidgets::ColorPickerDialogCompat> m_colorPickerDialog;

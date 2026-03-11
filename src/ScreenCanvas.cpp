@@ -10,7 +10,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "qml/PinToolOptionsViewModel.h"
 #include "qml/QmlFloatingToolbar.h"
 #include "qml/QmlFloatingSubToolbar.h"
-#include "EmojiPicker.h"
+#include "qml/QmlEmojiPickerPopup.h"
 #include "LaserPointerRenderer.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
@@ -251,13 +251,7 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
             AnnotationSettingsManager::instance().saveStepBadgeSize(m_stepBadgeSize);
         });
     connect(m_qmlSubToolbar.get(), &SnapTray::QmlFloatingSubToolbar::emojiPickerRequested,
-        this, [this]() {
-            if (m_emojiPicker && m_qmlToolbar) {
-                m_emojiPicker->setVisible(true);
-                m_emojiPicker->updatePosition(floatingToolbarRectInLocalCoords(), false);
-                update();
-            }
-        });
+        this, [this]() { showEmojiPickerPopup(); });
 
     // Track user drag to prevent paintEvent from overriding toolbar position
     connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::dragFinished,
@@ -278,17 +272,6 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
         this, queueFloatingUiCursorRestore);
     connect(m_qmlSubToolbar.get(), &SnapTray::QmlFloatingSubToolbar::cursorSyncRequested,
         this, &ScreenCanvas::syncFloatingUiCursor);
-
-    // Initialize emoji picker
-    m_emojiPicker = new EmojiPicker(this);
-    connect(m_emojiPicker, &EmojiPicker::emojiSelected,
-        this, [this](const QString& emoji) {
-            if (auto* handler = dynamic_cast<EmojiStickerToolHandler*>(
-                    m_toolManager->handler(ToolId::EmojiSticker))) {
-                handler->setCurrentEmoji(emoji);
-            }
-            update();
-        });
 
     // Initialize inline text editor
     m_textEditor = new InlineTextEditor(this);
@@ -396,6 +379,11 @@ ScreenCanvas::~ScreenCanvas()
 {
     // Clean up cursor state before destruction
     CursorManager::instance().clearAllForWidget(this);
+    if (m_emojiPickerPopup) {
+        m_emojiPickerPopup->close();
+        delete m_emojiPickerPopup;
+        m_emojiPickerPopup = nullptr;
+    }
     if (m_colorPickerDialog) {
         m_colorPickerDialog->close();
     }
@@ -622,18 +610,15 @@ void ScreenCanvas::paintEvent(QPaintEvent*)
         if (m_qmlSubToolbar && m_qmlSubToolbar->isVisible()) {
             m_qmlSubToolbar->positionBelow(m_qmlToolbar->geometry());
         }
+        if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+            m_emojiPickerPopup->positionAt(m_qmlToolbar->geometry());
+        }
     }
 
-    // Draw emoji picker when EmojiSticker tool is selected
-    if (!m_laserPointerActive && m_currentToolId == ToolId::EmojiSticker && m_showSubToolbar) {
-        m_emojiPicker->setVisible(true);
-        if (m_qmlToolbar) {
-            m_emojiPicker->updatePosition(floatingToolbarRectInLocalCoords(), true);
-        }
-        m_emojiPicker->draw(painter);
-    }
-    else {
-        m_emojiPicker->setVisible(false);
+    // Hide emoji picker popup when tool switches away from EmojiSticker
+    if ((m_laserPointerActive || m_currentToolId != ToolId::EmojiSticker || !m_showSubToolbar) &&
+        m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+        m_emojiPickerPopup->hide();
     }
 
     // Draw cursor dot
@@ -848,6 +833,11 @@ bool ScreenCanvas::isGlobalPosOverFloatingUi(const QPoint& globalPos) const
         return true;
     }
 
+    if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible() &&
+        m_emojiPickerPopup->geometry().contains(globalPos)) {
+        return true;
+    }
+
     if (QWidget* popup = QApplication::activePopupWidget(); containsGlobalPoint(popup, globalPos)) {
         return true;
     }
@@ -872,20 +862,16 @@ void ScreenCanvas::restoreCanvasCursorAt(const QPoint& localPos)
         return;
     }
 
-    if (m_emojiPicker && m_emojiPicker->isVisible() && m_emojiPicker->contains(localPos)) {
-        cursorManager.setHoverTargetForWidget(this, HoverTarget::Widget);
-    } else {
-        updateAnnotationCursor(localPos);
+    updateAnnotationCursor(localPos);
 
-        // Refresh tool cursor so custom cursors (Eraser circle, Mosaic square)
-        // remain active when no annotation is hovered.
-        if (cursorManager.hoverTargetForWidget(this) == HoverTarget::None) {
-            setToolCursor();
+    // Refresh tool cursor so custom cursors (Eraser circle, Mosaic square)
+    // remain active when no annotation is hovered.
+    if (cursorManager.hoverTargetForWidget(this) == HoverTarget::None) {
+        setToolCursor();
 
-            // Eraser hover highlighting for annotation hit feedback
-            if (m_currentToolId == ToolId::Eraser && m_toolManager) {
-                m_toolManager->handleMouseMove(localPos, Qt::NoModifier);
-            }
+        // Eraser hover highlighting for annotation hit feedback
+        if (m_currentToolId == ToolId::Eraser && m_toolManager) {
+            m_toolManager->handleMouseMove(localPos, Qt::NoModifier);
         }
     }
 
@@ -908,6 +894,10 @@ void ScreenCanvas::syncFloatingUiCursor()
 
 void ScreenCanvas::mousePressEvent(QMouseEvent* event)
 {
+    if (isGlobalPosOverFloatingUi(event->globalPosition().toPoint())) {
+        return;
+    }
+
     if (event->button() == Qt::LeftButton) {
         m_consumeNextToolRelease = false;
 
@@ -934,14 +924,6 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
                 m_toolManager->handleDoubleClick(pos);
             }
         };
-
-        // Check if clicked on emoji picker
-        if (m_emojiPicker->isVisible()) {
-            if (m_emojiPicker->handleClick(event->pos())) {
-                update();
-                return;
-            }
-        }
 
         // Handle laser pointer drawing
         if (m_laserPointerActive) {
@@ -1018,6 +1000,11 @@ void ScreenCanvas::mousePressEvent(QMouseEvent* event)
 
 void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
 {
+    if (isGlobalPosOverFloatingUi(event->globalPosition().toPoint())) {
+        syncFloatingUiCursor();
+        return;
+    }
+
     // Track cursor position for cursor dot
     QPoint oldCursorPos = m_cursorPos;
     m_cursorPos = event->pos();
@@ -1062,14 +1049,7 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
         update();
     }
     else {
-        // Update emoji picker hover state (visual feedback independent of cursor)
-        if (m_emojiPicker && m_emojiPicker->isVisible()) {
-            if (m_emojiPicker->updateHoveredEmoji(event->pos())) {
-                update();
-            }
-        }
-
-        // Unified cursor management: floating UI → emoji picker → annotations → tool
+        // Unified cursor management: floating UI → annotations → tool
         syncFloatingUiCursor();
     }
 
@@ -1086,6 +1066,10 @@ void ScreenCanvas::mouseMoveEvent(QMouseEvent* event)
 
 void ScreenCanvas::mouseReleaseEvent(QMouseEvent* event)
 {
+    if (isGlobalPosOverFloatingUi(event->globalPosition().toPoint())) {
+        return;
+    }
+
     if (event->button() == Qt::LeftButton) {
         // Handle laser pointer release
         if (m_laserPointerActive && m_laserRenderer->isDrawing()) {
@@ -1261,6 +1245,11 @@ void ScreenCanvas::closeEvent(QCloseEvent* event)
     if (m_qmlSubToolbar) {
         m_qmlSubToolbar->hide();
     }
+    if (m_emojiPickerPopup) {
+        m_emojiPickerPopup->close();
+        delete m_emojiPickerPopup;
+        m_emojiPickerPopup = nullptr;
+    }
     emit closed();
     QWidget::closeEvent(event);
 }
@@ -1379,6 +1368,29 @@ QPixmap ScreenCanvas::createSolidBackgroundPixmap(const QColor& color) const
 }
 
 // ============================================================================
+void ScreenCanvas::showEmojiPickerPopup()
+{
+    if (!m_emojiPickerPopup) {
+        m_emojiPickerPopup = new SnapTray::QmlEmojiPickerPopup(this);
+        m_emojiPickerPopup->setParentWidget(this);
+        connect(m_emojiPickerPopup, &SnapTray::QmlEmojiPickerPopup::emojiSelected,
+            this, [this](const QString& emoji) {
+                if (auto* handler = dynamic_cast<EmojiStickerToolHandler*>(
+                        m_toolManager->handler(ToolId::EmojiSticker))) {
+                    handler->setCurrentEmoji(emoji);
+                }
+            });
+        connect(m_emojiPickerPopup, &SnapTray::QmlEmojiPickerPopup::cursorRestoreRequested,
+            this, [this]() {
+                QTimer::singleShot(0, this, &ScreenCanvas::syncFloatingUiCursor);
+            });
+        connect(m_emojiPickerPopup, &SnapTray::QmlEmojiPickerPopup::cursorSyncRequested,
+            this, &ScreenCanvas::syncFloatingUiCursor);
+    }
+    QRect anchor = m_qmlToolbar ? m_qmlToolbar->geometry() : QRect();
+    m_emojiPickerPopup->showAt(anchor);
+}
+
 // Text, Emoji, Arrow and Polyline Handling
 // ============================================================================
 

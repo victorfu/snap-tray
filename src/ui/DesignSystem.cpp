@@ -272,14 +272,14 @@ int    DesignSystem::darkShadowLargeY() const      { return 4; }
 // Primitive: Animation durations
 // ============================================================================
 int DesignSystem::durationInstant() const          { return 0; }
-int DesignSystem::durationFast() const             { return 100; }
-int DesignSystem::durationNormal() const           { return 200; }
+int DesignSystem::durationFast() const             { return 120; }
+int DesignSystem::durationNormal() const           { return 180; }
 int DesignSystem::durationSlow() const             { return 300; }
 int DesignSystem::durationEmphasis() const         { return 400; }
 int DesignSystem::durationBoundaryLoop() const     { return 3200; }
-int DesignSystem::durationInteractionHover() const { return 100; }
-int DesignSystem::durationInteractionPress() const { return 100; }
-int DesignSystem::durationInteractionState() const { return 200; }
+int DesignSystem::durationInteractionHover() const { return 120; }
+int DesignSystem::durationInteractionPress() const { return 80; }
+int DesignSystem::durationInteractionState() const { return 160; }
 int DesignSystem::durationInteractionMax() const   { return 200; }
 
 // ============================================================================
@@ -540,6 +540,29 @@ QColor DesignSystem::panelBackground() const { return backgroundElevated(); }
 QColor DesignSystem::panelBorder() const     { return borderDefault(); }
 int    DesignSystem::panelRadius() const     { return radiusLarge(); }
 int    DesignSystem::panelPadding() const    { return spacing16(); }
+QColor DesignSystem::panelGlassBackground() const
+{
+    return m_isDark ? QColor::fromRgbF(0.16, 0.16, 0.26, 0.92)
+                    : QColor::fromRgbF(1.0, 1.0, 1.0, 0.94);
+}
+
+QColor DesignSystem::panelGlassBackgroundTop() const
+{
+    return m_isDark ? QColor::fromRgbF(0.20, 0.20, 0.31, 0.96)
+                    : QColor::fromRgbF(1.0, 1.0, 1.0, 0.98);
+}
+
+QColor DesignSystem::panelGlassHighlight() const
+{
+    return QColor::fromRgbF(1, 1, 1, 0.08);
+}
+
+QColor DesignSystem::panelGlassBorder() const
+{
+    return m_isDark ? QColor::fromRgbF(1, 1, 1, 0.12)
+                    : QColor::fromRgbF(0, 0, 0, 0.10);
+}
+
 QColor DesignSystem::dialogBackground() const { return backgroundPrimary(); }
 QColor DesignSystem::dialogBorder() const     { return borderDefault(); }
 QColor DesignSystem::dialogOverlay() const    { return backgroundOverlay(); }
@@ -659,6 +682,85 @@ int    DesignSystem::recordingPreviewControlButtonSize() const    { return 36; }
 int    DesignSystem::recordingPreviewControlButtonHeight() const  { return 30; }
 int    DesignSystem::recordingPreviewIconSize() const             { return iconSizeToolbar(); }
 int    DesignSystem::recordingPreviewActionIconSize() const       { return iconSizeAction(); }
+
+// ============================================================================
+// Component: Panel-specific visuals
+// ============================================================================
+QColor DesignSystem::thumbnailCardBackground() const
+{
+    return m_isDark ? QColor::fromRgbF(1, 1, 1, 0.03)
+                    : QColor::fromRgbF(0, 0, 0, 0.02);
+}
+
+QColor DesignSystem::thumbnailCardHover() const
+{
+    return m_isDark ? QColor::fromRgbF(1, 1, 1, 0.06)
+                    : QColor::fromRgbF(0, 0, 0, 0.04);
+}
+
+QColor DesignSystem::thumbnailCardSelected() const
+{
+    QColor c = accentDefault();
+    c.setAlphaF(m_isDark ? 0.18 : 0.10);
+    return c;
+}
+
+QColor DesignSystem::thumbnailCardBorder() const
+{
+    return m_isDark ? QColor::fromRgbF(1, 1, 1, 0.08)
+                    : QColor::fromRgbF(0, 0, 0, 0.08);
+}
+
+QColor DesignSystem::thumbnailCardSelectedBorder() const
+{
+    return accentDefault();
+}
+
+QColor DesignSystem::thumbnailCardErrorBackground() const
+{
+    QColor c = red500();
+    c.setAlphaF(m_isDark ? 0.16 : 0.08);
+    return c;
+}
+
+QColor DesignSystem::emojiCellHover() const
+{
+    return m_isDark ? QColor::fromRgbF(1, 1, 1, 0.08)
+                    : QColor::fromRgbF(0, 0, 0, 0.05);
+}
+
+QColor DesignSystem::emojiCellPressed() const
+{
+    return m_isDark ? QColor::fromRgbF(1, 1, 1, 0.14)
+                    : QColor::fromRgbF(0, 0, 0, 0.08);
+}
+
+QColor DesignSystem::emojiCellSelectedRing() const
+{
+    return accentDefault();
+}
+
+QColor DesignSystem::beautifyPreviewFrame() const
+{
+    return m_isDark ? QColor::fromRgbF(1, 1, 1, 0.10)
+                    : QColor::fromRgbF(0, 0, 0, 0.10);
+}
+
+QColor DesignSystem::beautifyPreviewPlaceholder() const
+{
+    return m_isDark ? QColor::fromRgbF(1, 1, 1, 0.04)
+                    : QColor::fromRgbF(0, 0, 0, 0.03);
+}
+
+QColor DesignSystem::beautifyPresetRing() const
+{
+    return accentDefault();
+}
+
+QColor DesignSystem::beautifyPresetHoverRing() const
+{
+    return m_isDark ? accentLight() : accentHover();
+}
 
 // ============================================================================
 // Component: Recording Boundary (always dark)
