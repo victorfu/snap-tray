@@ -17,7 +17,7 @@ Current code version: `1.0.30`.
   - RGB/HEX color preview (Shift to toggle, C to copy color code)
   - Dimension display
   - Selection handles (Snipaste-style)
-  - Aspect ratio lock (hold Shift to constrain proportions)
+  - Region control overlay for selection corner radius and aspect ratio lock
   - Multi-region selection (capture multiple areas, merge or save separately)
   - Include cursor option in screenshots
   - Window detection (macOS/Windows): Auto-detect window under cursor, single-click to select
@@ -585,6 +585,7 @@ snap-tray/
 |   |-- mcp/               # Built-in MCP server and tool contracts (debug-only)
 |   |-- pinwindow/         # Pin window components
 |   |-- platform/          # Platform abstraction (WindowLevel, PlatformFeatures)
+|   |-- qml/               # QML view models, overlay wrappers, and bridges
 |   |-- region/            # Region selection components
 |   |-- settings/          # Settings managers
 |   |-- share/             # Share upload client
@@ -619,6 +620,15 @@ snap-tray/
 |   |-- mcp/               # MCP HTTP transport and tool implementations (debug-only)
 |   |-- pinwindow/         # Pin window component implementations
 |   |-- platform/          # Platform abstraction (macOS/Windows)
+|   |-- qml/               # Qt Quick overlays, dialogs, toolbars, and settings pages
+|   |   |-- components/    # Shared QML visual building blocks
+|   |   |-- controls/      # Reusable QML controls
+|   |   |-- dialogs/       # Result and share dialogs
+|   |   |-- panels/        # Capture overlay panels (region control, multi-region list)
+|   |   |-- recording/     # Recording overlays and preview UI
+|   |   |-- settings/      # Settings window pages
+|   |   |-- toolbar/       # Floating toolbar UI
+|   |   `-- tokens/        # QML design tokens
 |   |-- region/            # Region selection implementations
 |   |-- settings/          # Settings manager implementations
 |   |-- share/             # Share upload client implementation
@@ -697,11 +707,16 @@ The codebase follows a modular architecture with extracted components for mainta
 | `MultiRegionManager`        | `src/region/`      | Multi-region capture coordination         |
 | `RegionToolbarHandler`      | `src/region/`      | Region toolbar interactions               |
 | `RegionSettingsHelper`      | `src/region/`      | Region settings management                |
-| `SelectionDirtyRegionPlanner`| `src/region/`     | Optimized dirty region calculation        |
+| `SelectionDirtyRegionPlanner` | `src/region/`    | Optimized dirty region calculation        |
 | `SelectionResizeHelper`     | `src/region/`      | Selection resize assistance               |
 | `ShapeAnnotationEditor`     | `src/region/`      | Inline shape annotation editing           |
-| `CaptureShortcutHintsOverlay`| `src/region/`     | Capture shortcut hints overlay            |
-| `MultiRegionListPanel`      | `src/region/`      | Multi-region list UI panel                |
+| `CaptureShortcutHintsOverlay` | `src/region/`    | Capture shortcut hints overlay            |
+| `QmlOverlayManager`         | `src/qml/`         | Shared QQmlEngine and floating overlay creation |
+| `QmlOverlayPanel`           | `src/qml/`         | Generic floating QML overlay wrapper      |
+| `RegionControlViewModel`    | `src/qml/`         | State/actions for rounded-corner and aspect-ratio controls |
+| `RegionControlPanel`        | `src/qml/panels/`  | Region control overlay UI                 |
+| `MultiRegionListViewModel`  | `src/qml/`         | Multi-region data + thumbnail bridge      |
+| `MultiRegionListPanel`      | `src/qml/panels/`  | Multi-region list UI panel                |
 | `AnnotationSettingsManager` | `src/settings/`    | Centralized annotation settings           |
 | `FileSettingsManager`       | `src/settings/`    | File path settings                        |
 | `PinWindowSettingsManager`  | `src/settings/`    | Pin window settings                       |

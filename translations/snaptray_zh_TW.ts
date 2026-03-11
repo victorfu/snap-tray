@@ -629,27 +629,27 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 <context>
     <name>MultiRegionListPanel</name>
     <message>
-        <location filename="../src/region/MultiRegionListPanel.cpp" line="53" />
+        <location filename="../src/qml/panels/MultiRegionListPanel.qml" line="44" />
         <source>Regions</source>
         <translation>區域</translation>
     </message>
     <message>
-        <location filename="../src/region/MultiRegionListPanel.cpp" line="260" />
+        <location filename="../src/qml/panels/MultiRegionListPanel.qml" line="172" />
         <source>Region %1</source>
         <translation>區域 %1</translation>
     </message>
     <message>
-        <location filename="../src/region/MultiRegionListPanel.cpp" line="270" />
+        <location filename="../src/qml/panels/MultiRegionListPanel.qml" line="183" />
         <source>%1 x %2</source>
         <translation>%1 × %2</translation>
     </message>
     <message>
-        <location filename="../src/region/MultiRegionListPanel.cpp" line="283" />
+        <location filename="../src/qml/panels/MultiRegionListPanel.qml" line="215" />
         <source>Replace</source>
         <translation>取代</translation>
     </message>
     <message>
-        <location filename="../src/region/MultiRegionListPanel.cpp" line="290" />
+        <location filename="../src/qml/panels/MultiRegionListPanel.qml" line="241" />
         <source>Delete</source>
         <translation>刪除</translation>
     </message>
