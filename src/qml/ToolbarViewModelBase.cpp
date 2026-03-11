@@ -1,7 +1,25 @@
 #include "qml/ToolbarViewModelBase.h"
 
+#include <algorithm>
+#include <array>
+
 #include "tools/ToolRegistry.h"
 #include "tools/ToolTraits.h"
+
+namespace {
+
+bool isExportActionTool(ToolId toolId)
+{
+    static constexpr std::array<ToolId, 4> kExportActionTools = {
+        ToolId::Pin,
+        ToolId::Share,
+        ToolId::Save,
+        ToolId::Copy,
+    };
+    return std::find(kExportActionTools.begin(), kExportActionTools.end(), toolId) != kExportActionTools.end();
+}
+
+}  // namespace
 
 ToolbarViewModelBase::ToolbarViewModelBase(QObject* parent)
     : QObject(parent)
@@ -78,6 +96,19 @@ void ToolbarViewModelBase::setShareInProgress(bool value)
     }
 }
 
+bool ToolbarViewModelBase::autoBlurProcessing() const
+{
+    return m_autoBlurProcessing;
+}
+
+void ToolbarViewModelBase::setAutoBlurProcessing(bool value)
+{
+    if (m_autoBlurProcessing != value) {
+        m_autoBlurProcessing = value;
+        emit autoBlurProcessingChanged();
+    }
+}
+
 ToolbarViewModelBase::ToolButtonOptions ToolbarViewModelBase::defaultToolButtonOptions(ToolId toolId) const
 {
     ToolButtonOptions options;
@@ -86,6 +117,7 @@ ToolbarViewModelBase::ToolButtonOptions ToolbarViewModelBase::defaultToolButtonO
     options.isUndo = (toolId == ToolId::Undo);
     options.isRedo = (toolId == ToolId::Redo);
     options.isShare = (toolId == ToolId::Share);
+    options.isExportAction = isExportActionTool(toolId);
     return options;
 }
 
@@ -119,6 +151,7 @@ QVariantMap ToolbarViewModelBase::buildCustomButtonEntry(int id,
     entry[QStringLiteral("isRedo")] = options.isRedo;
     entry[QStringLiteral("isShare")] = options.isShare;
     entry[QStringLiteral("isAction")] = options.isAction;
+    entry[QStringLiteral("isExportAction")] = options.isExportAction;
     entry[QStringLiteral("isCancel")] = options.isCancel;
     entry[QStringLiteral("isRecord")] = options.isRecord;
     return entry;

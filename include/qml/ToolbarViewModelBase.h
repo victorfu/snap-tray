@@ -22,6 +22,7 @@ class ToolbarViewModelBase : public QObject
     Q_PROPERTY(bool canRedo READ canRedo WRITE setCanRedo NOTIFY canRedoChanged)
     Q_PROPERTY(bool ocrAvailable READ ocrAvailable WRITE setOCRAvailable NOTIFY ocrAvailableChanged)
     Q_PROPERTY(bool shareInProgress READ shareInProgress WRITE setShareInProgress NOTIFY shareInProgressChanged)
+    Q_PROPERTY(bool autoBlurProcessing READ autoBlurProcessing WRITE setAutoBlurProcessing NOTIFY autoBlurProcessingChanged)
 
 public:
     struct ToolButtonOptions {
@@ -32,6 +33,7 @@ public:
         bool isRedo = false;
         bool isShare = false;
         bool isAction = false;
+        bool isExportAction = false;
         bool isCancel = false;
         bool isRecord = false;
     };
@@ -55,6 +57,9 @@ public:
     bool shareInProgress() const;
     void setShareInProgress(bool value);
 
+    bool autoBlurProcessing() const;
+    void setAutoBlurProcessing(bool value);
+
 signals:
     void buttonsChanged();
     void activeToolChanged();
@@ -62,6 +67,7 @@ signals:
     void canRedoChanged();
     void ocrAvailableChanged();
     void shareInProgressChanged();
+    void autoBlurProcessingChanged();
 
 protected:
     ToolButtonOptions defaultToolButtonOptions(ToolId toolId) const;
@@ -80,5 +86,5 @@ private:
     bool m_canRedo = false;
     bool m_ocrAvailable = true;
     bool m_shareInProgress = false;
+    bool m_autoBlurProcessing = false;
 };
-

@@ -198,6 +198,8 @@ private:
     void saveToFile();
     void shareToUrl();
     void finishSelection();
+    bool ensureAutoBlurReadyForExport();
+    void updateToolbarAutoBlurState();
     void finalizePolylineForToolbarInteraction();
 
     // Cursor helpers

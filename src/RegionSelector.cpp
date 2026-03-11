@@ -249,6 +249,7 @@ RegionSelector::RegionSelector(QWidget* parent)
 
     // Initialize QML toolbar ViewModels
     m_toolbarViewModel = new RegionToolbarViewModel(this);
+    m_toolbarViewModel->setAutoBlurProcessing(m_autoBlurInProgress);
     m_toolOptionsViewModel = new PinToolOptionsViewModel(this);
 
     // Create QML floating toolbar windows
@@ -1690,6 +1691,7 @@ void RegionSelector::paintEvent(QPaintEvent* event)
             // Update undo/redo state
             m_toolbarViewModel->setCanUndo(m_annotationLayer && m_annotationLayer->canUndo());
             m_toolbarViewModel->setCanRedo(m_annotationLayer && m_annotationLayer->canRedo());
+            m_toolbarViewModel->setAutoBlurProcessing(m_autoBlurInProgress);
             if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
                 m_emojiPickerPopup->positionAt(m_qmlToolbar->geometry());
             }
@@ -2091,6 +2093,27 @@ void RegionSelector::handleToolbarClick(ToolId tool)
     m_toolbarHandler->handleToolbarClick(tool);
 }
 
+bool RegionSelector::ensureAutoBlurReadyForExport()
+{
+    if (!m_autoBlurInProgress) {
+        return true;
+    }
+
+    if (m_selectionToast && m_selectionManager) {
+        m_selectionToast->showNearRect(SnapTray::QmlToast::Level::Error,
+            tr("Please wait for auto-blur to finish"),
+            m_selectionManager->selectionRect());
+    }
+    return false;
+}
+
+void RegionSelector::updateToolbarAutoBlurState()
+{
+    if (m_toolbarViewModel) {
+        m_toolbarViewModel->setAutoBlurProcessing(m_autoBlurInProgress);
+    }
+}
+
 void RegionSelector::syncRegionSubToolbar(bool refreshContent)
 {
     if (!m_qmlSubToolbar || !m_toolOptionsViewModel) {
@@ -2220,6 +2243,10 @@ bool RegionSelector::isMultiRegionCapture() const
 
 void RegionSelector::copyToClipboard()
 {
+    if (!ensureAutoBlurReadyForExport()) {
+        return;
+    }
+
     m_exportManager->copyToClipboard(
         m_selectionManager->selectionRect(), effectiveCornerRadius());
     // Note: close() will be called via copyCompleted signal connection
@@ -2227,6 +2254,10 @@ void RegionSelector::copyToClipboard()
 
 void RegionSelector::saveToFile()
 {
+    if (!ensureAutoBlurReadyForExport()) {
+        return;
+    }
+
     if (m_exportManager) {
         const int regionIndex = (m_inputState.multiRegionMode && m_multiRegionManager)
             ? m_multiRegionManager->activeIndex()
@@ -2247,8 +2278,12 @@ void RegionSelector::saveToFile()
 
 void RegionSelector::shareToUrl()
 {
-    if (m_shareInProgress || m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress ||
+    if (m_shareInProgress || m_ocrInProgress || m_qrCodeInProgress ||
         !m_shareClient || !m_selectionManager || !m_selectionManager->isComplete()) {
+        return;
+    }
+
+    if (!ensureAutoBlurReadyForExport()) {
         return;
     }
 
@@ -2295,6 +2330,10 @@ void RegionSelector::shareToUrl()
 
 void RegionSelector::finishSelection()
 {
+    if (!ensureAutoBlurReadyForExport()) {
+        return;
+    }
+
     QRect sel = m_selectionManager->selectionRect();
     QPixmap selectedRegion = m_exportManager->getSelectedRegion(sel, effectiveCornerRadius());
 
@@ -2947,6 +2986,7 @@ void RegionSelector::performAutoBlur()
     }
 
     m_autoBlurInProgress = true;
+    updateToolbarAutoBlurState();
     m_toolOptionsViewModel->setAutoBlurProcessing(true);
     ensureLoadingSpinner()->start();
     update();
@@ -2960,6 +3000,7 @@ void RegionSelector::performAutoBlur()
     const QRect clampedPhysicalRect = physicalRect.intersected(m_backgroundPixmap.rect());
     if (clampedPhysicalRect.isEmpty()) {
         m_autoBlurInProgress = false;
+        updateToolbarAutoBlurState();
         m_toolOptionsViewModel->setAutoBlurProcessing(false);
         if (m_loadingSpinner) {
             m_loadingSpinner->stop();
@@ -2987,6 +3028,7 @@ void RegionSelector::performAutoBlur()
 
     if (!runFaceDetection && !runCredentialDetection) {
         m_autoBlurInProgress = false;
+        updateToolbarAutoBlurState();
         m_toolOptionsViewModel->setAutoBlurProcessing(false);
         if (m_loadingSpinner) {
             m_loadingSpinner->stop();
@@ -3160,6 +3202,7 @@ void RegionSelector::performAutoBlur()
 void RegionSelector::onAutoBlurComplete(bool success, int faceCount, int credentialCount, const QString& error)
 {
     m_autoBlurInProgress = false;
+    updateToolbarAutoBlurState();
     m_toolOptionsViewModel->setAutoBlurProcessing(false);
     if (m_loadingSpinner) {
         m_loadingSpinner->stop();

@@ -1339,6 +1339,10 @@ void PinWindow::mergePinsFromContextMenu()
 
 void PinWindow::saveToFile()
 {
+    if (!ensureAutoBlurReadyForExport()) {
+        return;
+    }
+
     // Use FileSettingsManager for consistent path and filename format
     auto& fileSettings = FileSettingsManager::instance();
     QString savePath = fileSettings.loadScreenshotPath();
@@ -1432,6 +1436,10 @@ void PinWindow::saveToFile()
 
 void PinWindow::copyToClipboard()
 {
+    if (!ensureAutoBlurReadyForExport()) {
+        return;
+    }
+
     QPixmap pixmapToCopy = getExportPixmapWithAnnotations();
     if (pixmapToCopy.isNull()) {
         m_toast->showToast(SnapTray::QmlToast::Level::Error, tr("Copy failed"));
@@ -1450,16 +1458,25 @@ void PinWindow::copyToClipboard()
     m_toast->showToast(SnapTray::QmlToast::Level::Success, tr("Copied to clipboard"));
 }
 
+bool PinWindow::ensureAutoBlurReadyForExport()
+{
+    // Auto-blur applies redaction annotations asynchronously; exporting now can
+    // capture an unredacted snapshot before those annotations are added.
+    if (!m_autoBlurInProgress) {
+        return true;
+    }
+
+    m_toast->showToast(SnapTray::QmlToast::Level::Error, tr("Please wait for auto-blur to finish"));
+    return false;
+}
+
 void PinWindow::shareToUrl()
 {
     if (m_shareInProgress || !m_shareClient) {
         return;
     }
 
-    // Auto-blur applies redaction annotations asynchronously; sharing now can
-    // upload an unredacted snapshot before those annotations are added.
-    if (m_autoBlurInProgress) {
-        m_toast->showToast(SnapTray::QmlToast::Level::Error, tr("Please wait for auto-blur to finish"));
+    if (!ensureAutoBlurReadyForExport()) {
         return;
     }
 
@@ -1518,6 +1535,13 @@ void PinWindow::updateLoadingSpinnerState()
         m_loadingSpinner->start();
     } else {
         m_loadingSpinner->stop();
+    }
+}
+
+void PinWindow::updateToolbarAutoBlurState()
+{
+    if (m_toolbar) {
+        m_toolbar->viewModel()->setAutoBlurProcessing(m_autoBlurInProgress);
     }
 }
 
@@ -2789,6 +2813,7 @@ void PinWindow::initializeAnnotationComponents()
     // Initialize QML toolbar (separate floating QQuickView window)
     m_toolbar = std::make_unique<SnapTray::QmlWindowedToolbar>(nullptr);
     m_toolbar->viewModel()->setOCRAvailable(PlatformFeatures::instance().isOCRAvailable());
+    m_toolbar->viewModel()->setAutoBlurProcessing(m_autoBlurInProgress);
 
     // Connect toolbar ViewModel signals
     auto* vm = m_toolbar->viewModel();
@@ -2955,6 +2980,7 @@ void PinWindow::showToolbar()
 
     updateUndoRedoState();
     m_toolbar->viewModel()->setShareInProgress(m_shareInProgress);
+    m_toolbar->viewModel()->setAutoBlurProcessing(m_autoBlurInProgress);
     m_toolbar->show();
 
     m_toolbarVisible = m_toolbar->isVisible();
@@ -3827,6 +3853,7 @@ void PinWindow::onAutoBlurRequested()
     }
 
     m_autoBlurInProgress = true;
+    updateToolbarAutoBlurState();
     updateLoadingSpinnerState();
     update();
 
@@ -3846,6 +3873,7 @@ void PinWindow::onAutoBlurRequested()
 
     if (!runFaceDetection && !runCredentialDetection) {
         m_autoBlurInProgress = false;
+        updateToolbarAutoBlurState();
         updateLoadingSpinnerState();
         m_toast->showToast(SnapTray::QmlToast::Level::Error,
             faceUnavailableError.isEmpty() ? tr("Detection unavailable") : faceUnavailableError);
@@ -3887,6 +3915,7 @@ void PinWindow::onAutoBlurRequested()
         }
 
         safeThis->m_autoBlurInProgress = false;
+        safeThis->updateToolbarAutoBlurState();
         safeThis->updateLoadingSpinnerState();
 
         QString message;
@@ -4888,6 +4917,10 @@ void PinWindow::showBeautifyPanel()
 
 void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
 {
+    if (!ensureAutoBlurReadyForExport()) {
+        return;
+    }
+
     BeautifySettingsManager::instance().saveSettings(settings);
     QPixmap source = getExportPixmapWithAnnotations();
     if (source.isNull()) {
@@ -4913,6 +4946,10 @@ void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
 
 void PinWindow::onBeautifySave(const BeautifySettings& settings)
 {
+    if (!ensureAutoBlurReadyForExport()) {
+        return;
+    }
+
     BeautifySettingsManager::instance().saveSettings(settings);
     const QPixmap sizeReferencePixmap = !m_displayPixmap.isNull() ? m_displayPixmap : m_originalPixmap;
     if (sizeReferencePixmap.isNull()) {

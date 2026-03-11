@@ -153,7 +153,10 @@ Item {
                             if (delegateLoader.buttonData.isRedo)
                                 return !root.viewModel.canRedo;
                             if (delegateLoader.buttonData.isShare)
-                                return root.viewModel.shareInProgress;
+                                return root.viewModel.shareInProgress
+                                       || root.viewModel.autoBlurProcessing;
+                            if (delegateLoader.buttonData.isExportAction)
+                                return root.viewModel.autoBlurProcessing;
                             return false;
                         }
                         iconNormalColor: root.iconNormalColor

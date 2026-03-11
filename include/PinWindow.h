@@ -192,6 +192,7 @@ private:
     void saveToFile();
     void copyToClipboard();
     void shareToUrl();
+    bool ensureAutoBlurReadyForExport();
     QPixmap getTransformedPixmap() const;
     QPixmap getExportPixmapCore(bool includeDisplayEffects) const;
     void drawAnnotationsForExport(QPainter& painter, const QSize& logicalSize) const;
@@ -209,6 +210,7 @@ private:
     void updateClickThroughForCursor();
 
     // OCR methods
+    void updateToolbarAutoBlurState();
     OCRManager* ensureOCRManager();
     void updateLoadingSpinnerState();
     void performOCR();
