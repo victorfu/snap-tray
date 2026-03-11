@@ -649,7 +649,6 @@ add_library(snaptray_ui STATIC
     src/PinWindow.cpp
     src/PinWindowManager.cpp
     src/pinwindow/PinHistoryStore.cpp
-    src/pinwindow/PinHistoryWindow.cpp
     src/qml/PinHistoryModel.cpp
     src/qml/PinHistoryBackend.cpp
     src/qml/QmlPinHistoryWindow.cpp
@@ -671,9 +670,6 @@ add_library(snaptray_ui STATIC
     src/LoadingSpinnerRenderer.cpp
 
     # Beautify
-    src/beautify/BeautifyPanel.cpp
-    include/beautify/BeautifyPanel.h
-
     # Share
     src/share/ShareUploadClient.cpp
 
@@ -725,7 +721,6 @@ add_library(snaptray_ui STATIC
     include/PinWindow.h
     include/PinWindowManager.h
     include/pinwindow/PinHistoryStore.h
-    include/pinwindow/PinHistoryWindow.h
     include/qml/PinHistoryModel.h
     include/qml/PinHistoryBackend.h
     include/qml/QmlPinHistoryWindow.h
