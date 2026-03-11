@@ -179,7 +179,7 @@ add_test(NAME RegionSelector_MultiRegionReplaceFlow COMMAND RegionSelector_Multi
 set_tests_properties(RegionSelector_MultiRegionReplaceFlow PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(RegionSelector_MultiRegionSubToolbar RegionSelector/tst_MultiRegionSubToolbar.cpp)
-target_link_libraries(RegionSelector_MultiRegionSubToolbar PRIVATE snaptray_ui Qt6::Test)
+target_link_libraries(RegionSelector_MultiRegionSubToolbar PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
 add_test(NAME RegionSelector_MultiRegionSubToolbar COMMAND RegionSelector_MultiRegionSubToolbar)
 set_tests_properties(RegionSelector_MultiRegionSubToolbar PROPERTIES TIMEOUT 60 LABELS "unit")
 

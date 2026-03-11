@@ -1,4 +1,5 @@
 #include <QtTest/QtTest>
+#include <QGuiApplication>
 #include <QPixmap>
 #include <QPainter>
 #include <QMouseEvent>
@@ -20,6 +21,11 @@ private:
     static constexpr int kMinSize = 50;
 
 private slots:
+    void initTestCase() {
+        if (QGuiApplication::screens().isEmpty()) {
+            QSKIP("No screens available for PinWindow tests in this environment.");
+        }
+    }
 
     // =========================================================================
     // Initial Size Tests

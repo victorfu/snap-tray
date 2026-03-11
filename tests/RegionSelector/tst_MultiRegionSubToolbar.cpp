@@ -1,21 +1,33 @@
 #include <QtTest>
+#include <QGuiApplication>
 #include <QWheelEvent>
+#include <QtQml/qqmlextensionplugin.h>
 
 #include "RegionSelector.h"
 #include "qml/QmlFloatingSubToolbar.h"
 #include "qml/PinToolOptionsViewModel.h"
 #include "qml/RegionToolbarViewModel.h"
 
+Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
+
 class tst_RegionSelectorMultiRegionSubToolbar : public QObject
 {
     Q_OBJECT
 
 private slots:
+    void initTestCase();
     void testToolbarToggleHidesSubToolbarInMultiRegionMode();
     void testBeginReplaceHidesStaleSubToolbar();
     void testCompletedSelectionReopensHiddenSubToolbar();
     void testWheelDoesNotAdjustWidthWithoutCompletedSelection();
 };
+
+void tst_RegionSelectorMultiRegionSubToolbar::initTestCase()
+{
+    if (QGuiApplication::screens().isEmpty()) {
+        QSKIP("No screens available for RegionSelector floating UI tests in this environment.");
+    }
+}
 
 void tst_RegionSelectorMultiRegionSubToolbar::testToolbarToggleHidesSubToolbarInMultiRegionMode()
 {

@@ -1,4 +1,5 @@
 #include <QtTest/QtTest>
+#include <QGuiApplication>
 #include <memory>
 #include <vector>
 
@@ -33,6 +34,13 @@ private:
     }
 
 private slots:
+    void initTestCase()
+    {
+        if (QGuiApplication::screens().isEmpty()) {
+            QSKIP("No screens available for PinWindow tests in this environment.");
+        }
+    }
+
     void testMergeTwoSameSize()
     {
         PinWindow first(createTestPixmap(100, 100, Qt::red), QPoint(0, 0));

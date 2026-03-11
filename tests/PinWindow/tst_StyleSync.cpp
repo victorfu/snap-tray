@@ -15,7 +15,9 @@ namespace {
 
 QPixmap createPixmap()
 {
-    QPixmap pixmap(120, 80);
+    // Keep the test surface comfortably larger than native popup menus so the
+    // cursor can stay on the annotation surface while menus are shown nearby.
+    QPixmap pixmap(420, 260);
     pixmap.fill(Qt::white);
     return pixmap;
 }

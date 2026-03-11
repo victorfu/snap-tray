@@ -1,4 +1,5 @@
 #include <QtTest/QtTest>
+#include <QGuiApplication>
 #include <QSignalSpy>
 #include <QPixmap>
 #include <QPainter>
@@ -21,7 +22,9 @@ private:
 
 private slots:
     void initTestCase() {
-        // Ensure we have a QApplication for GUI tests
+        if (QGuiApplication::screens().isEmpty()) {
+            QSKIP("No screens available for PinWindow tests in this environment.");
+        }
     }
 
     // =========================================================================
