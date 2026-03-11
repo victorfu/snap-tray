@@ -6,6 +6,7 @@
 #include "region/RegionToolbarHandler.h"
 #include "region/RegionSettingsHelper.h"
 #include "region/RegionExportManager.h"
+#include "region/MagnifierOverlay.h"
 #include "region/CaptureShortcutHintsOverlay.h"
 #include "qml/QmlOverlayPanel.h"
 #include "qml/RegionControlViewModel.h"
@@ -457,6 +458,7 @@ RegionSelector::RegionSelector(QWidget* parent)
 
     // Initialize magnifier panel component
     m_magnifierPanel = new MagnifierPanel(this);
+    m_magnifierOverlay = std::make_unique<MagnifierOverlay>(m_magnifierPanel);
     // Deliberately not a QML overlay window: this hint panel must share the
     // RegionSelector paint/lifecycle path to avoid native window ordering bugs.
     m_shortcutHintsOverlay = std::make_unique<CaptureShortcutHintsOverlay>();
@@ -900,6 +902,10 @@ RegionSelector::~RegionSelector()
         m_autoBlurWatcher->waitForFinished();
     }
 
+    if (m_magnifierOverlay) {
+        m_magnifierOverlay->hideOverlay();
+    }
+
     // Clean up cursor state before destruction
     CursorManager::instance().clearAllForWidget(this);
 
@@ -1147,6 +1153,7 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     m_shortcutHintsVisible = false;
     m_shortcutHintsTemporarilyHiddenByHover = false;
     if (m_regionControlPanel) m_regionControlPanel->hide();
+    if (m_magnifierOverlay) m_magnifierOverlay->hideOverlay();
 
     setupScreenGeometry(screen);
     if (!isScreenValid()) {
@@ -1233,6 +1240,7 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     m_shortcutHintsVisible = false;
     m_shortcutHintsTemporarilyHiddenByHover = false;
     if (m_regionControlPanel) m_regionControlPanel->hide();
+    if (m_magnifierOverlay) m_magnifierOverlay->hideOverlay();
 
     setupScreenGeometry(screen);
     if (!isScreenValid()) {
@@ -1349,6 +1357,9 @@ void RegionSelector::switchToScreen(QScreen* screen, bool preserveCompletedSelec
     // setUpdatesEnabled(false) only suppresses Qt paint events — DWM still composites
     // the old backing-store at the new position when setGeometry() moves the window.
     // Making the window transparent prevents DWM from showing stale content.
+    if (m_magnifierOverlay) {
+        m_magnifierOverlay->hideOverlay();
+    }
     setWindowOpacity(0.0);
     setUpdatesEnabled(false);
 
@@ -1732,6 +1743,7 @@ void RegionSelector::paintEvent(QPaintEvent* event)
     }
     else {
         m_toolbarUserDragged = false;
+        m_cursorOverSelectionToolbar = false;
         if (m_qmlToolbar) {
             m_qmlToolbar->hide();
         }
@@ -1746,21 +1758,9 @@ void RegionSelector::paintEvent(QPaintEvent* event)
         }
     }
 
-    // Draw crosshair at cursor - show during selection process and inside selection when complete
-    // Hide magnifier when any annotation tool is selected or when drawing
-    bool shouldShowCrosshair = !m_inputState.isDrawing && !isAnnotationTool(m_inputState.currentTool);
-    if (m_selectionManager->isComplete()) {
-        // Only show crosshair inside selection area, not on toolbar
-        shouldShowCrosshair = shouldShowCrosshair &&
-            selectionRect.contains(m_inputState.currentPoint);
-    }
+    syncMagnifierOverlay();
 
-    if (shouldShowCrosshair) {
-        drawMagnifier(painter);
-    }
-
-    // Paint inside RegionSelector so visibility stays tied to the host overlay
-    // instead of a separate native window.
+    // Shortcut hints remain painter-based in the RegionSelector host window.
     if (m_shortcutHintsVisible && m_shortcutHintsOverlay) {
         m_shortcutHintsOverlay->draw(painter, size());
     }
@@ -1769,10 +1769,17 @@ void RegionSelector::paintEvent(QPaintEvent* event)
     positionRegionControlPanel();
 }
 
-void RegionSelector::drawMagnifier(QPainter& painter)
+void RegionSelector::syncMagnifierOverlay()
 {
-    // Delegate to MagnifierPanel component
-    m_magnifierPanel->draw(painter, m_inputState.currentPoint, size(), m_backgroundPixmap);
+    if (!m_magnifierOverlay) {
+        return;
+    }
+
+    m_magnifierOverlay->syncToHost(
+        this,
+        m_inputState.currentPoint,
+        &m_backgroundPixmap,
+        shouldShowMagnifier());
 }
 
 void RegionSelector::positionRegionControlPanel()
@@ -1966,10 +1973,54 @@ void RegionSelector::restoreRegionCursorAt(const QPoint& localPos)
     cursorManager.reapplyCursorForWidget(this);
 }
 
+bool RegionSelector::shouldShowMagnifier() const
+{
+    if (m_inputState.isDrawing || isAnnotationTool(m_inputState.currentTool)) {
+        return false;
+    }
+
+    if (!m_selectionManager || !m_selectionManager->isComplete()) {
+        return !m_cursorOverSelectionToolbar;
+    }
+
+    const QRect selectionRect = m_selectionManager->selectionRect();
+    return selectionRect.contains(m_inputState.currentPoint) &&
+           !m_cursorOverSelectionToolbar;
+}
+
+void RegionSelector::syncSelectionToolbarHoverState(const QPoint& globalPos)
+{
+    const bool cursorOverSelectionToolbar = isCursorOverSelectionToolbar(globalPos);
+    if (m_cursorOverSelectionToolbar == cursorOverSelectionToolbar) {
+        return;
+    }
+
+    m_cursorOverSelectionToolbar = cursorOverSelectionToolbar;
+
+    if (!m_lastMagnifierRect.isNull()) {
+        update(m_lastMagnifierRect);
+    } else {
+        update();
+    }
+
+    syncMagnifierOverlay();
+}
+
+bool RegionSelector::isCursorOverSelectionToolbar(const QPoint& globalPos) const
+{
+    return m_qmlToolbar &&
+           m_qmlToolbar->isVisible() &&
+           m_selectionManager &&
+           m_selectionManager->hasSelection() &&
+           m_qmlToolbar->geometry().contains(globalPos);
+}
+
 void RegionSelector::syncFloatingUiCursor()
 {
     auto& cursorManager = CursorManager::instance();
     const QPoint globalPos = QCursor::pos();
+
+    syncSelectionToolbarHoverState(globalPos);
 
     if (isGlobalPosOverFloatingUi(globalPos)) {
         cursorManager.pushCursorForWidget(this, CursorContext::Override, Qt::ArrowCursor);
@@ -2390,14 +2441,9 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
     }
     else if (event->key() == Qt::Key_Shift) {
         // Switch RGB/HEX color format display (only when magnifier is shown)
-        bool magnifierVisible = !m_inputState.isDrawing && !isAnnotationTool(m_inputState.currentTool);
-        if (m_selectionManager->isComplete()) {
-            QRect selectionRect = m_selectionManager->selectionRect();
-            magnifierVisible = magnifierVisible &&
-                selectionRect.contains(m_inputState.currentPoint);
-        }
-        if (magnifierVisible) {
+        if (shouldShowMagnifier()) {
             m_magnifierPanel->toggleColorFormat();
+            syncMagnifierOverlay();
             update();
         }
     }
@@ -2500,6 +2546,7 @@ void RegionSelector::closeEvent(QCloseEvent* event)
     m_isClosing = true;
     if (m_qmlToolbar) m_qmlToolbar->hide();
     if (m_qmlSubToolbar) m_qmlSubToolbar->hide();
+    if (m_magnifierOverlay) m_magnifierOverlay->hideOverlay();
     if (m_screenSwitchTimer) {
         m_screenSwitchTimer->stop();
     }
@@ -2512,12 +2559,14 @@ void RegionSelector::showEvent(QShowEvent* event)
 
     // Set cursor immediately on show (replaces unreliable 100ms timer)
     ensureCrossCursor();
+    syncMagnifierOverlay();
 }
 
 void RegionSelector::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
     positionMultiRegionListPanel();
+    syncMagnifierOverlay();
 }
 
 void RegionSelector::enterEvent(QEnterEvent* event)

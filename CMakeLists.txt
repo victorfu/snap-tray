@@ -636,6 +636,7 @@ add_library(snaptray_ui STATIC
     src/RegionSelector.cpp
     src/region/SelectionStateManager.cpp
     src/region/MagnifierPanel.cpp
+    src/region/MagnifierOverlay.cpp
     src/region/UpdateThrottler.cpp
     src/region/TextAnnotationEditor.cpp
     src/region/ShapeAnnotationEditor.cpp
@@ -683,6 +684,7 @@ add_library(snaptray_ui STATIC
     include/ui/DesignTokens.h
     include/ui/GlassTooltip.h
     include/share/ShareUploadClient.h
+    include/region/MagnifierOverlay.h
 
     # Update system
     src/update/InstallSourceDetector.cpp

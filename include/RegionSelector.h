@@ -62,6 +62,7 @@ class RegionInputHandler;
 class RegionToolbarHandler;
 class RegionSettingsHelper;
 class RegionExportManager;
+class MagnifierOverlay;
 class AnnotationContext;
 class CaptureShortcutHintsOverlay;
 class RegionControlViewModel;
@@ -81,6 +82,7 @@ class RegionSelector : public QWidget, public AnnotationHostAdapter
     Q_OBJECT
 
     friend class tst_RegionSelectorMultiRegionSubToolbar;
+    friend class tst_RegionSelectorMagnifierToolbarVisibility;
     friend class TestRegionSelectorStyleSync;
 
 public:
@@ -156,7 +158,7 @@ private:
     void onContextTextEditingFinished(const QString& text, const QPoint& position) override;
     void onContextTextEditingCancelled() override;
 
-    void drawMagnifier(QPainter &painter);
+    void syncMagnifierOverlay();
 
     // Corner radius helpers
     void onCornerRadiusChanged(int radius);
@@ -226,8 +228,11 @@ private:
 
     // Annotation helpers
     bool isAnnotationTool(ToolId tool) const;
+    bool shouldShowMagnifier() const;
     void syncFloatingUiCursor();
     void restoreRegionCursorAt(const QPoint& localPos);
+    void syncSelectionToolbarHoverState(const QPoint& globalPos);
+    bool isCursorOverSelectionToolbar(const QPoint& globalPos) const;
     bool isGlobalPosOverFloatingUi(const QPoint& globalPos) const;
 
     // Inline text editing handlers
@@ -262,6 +267,7 @@ private:
     std::unique_ptr<SnapTray::QmlFloatingToolbar> m_qmlToolbar;
     std::unique_ptr<SnapTray::QmlFloatingSubToolbar> m_qmlSubToolbar;
     bool m_toolbarUserDragged = false;
+    bool m_cursorOverSelectionToolbar = false;
 
     // Emoji picker
     EmojiPicker *m_emojiPicker;
@@ -327,6 +333,7 @@ private:
 
     // Magnifier panel component
     MagnifierPanel* m_magnifierPanel;
+    std::unique_ptr<MagnifierOverlay> m_magnifierOverlay;
 
     // Keep shortcut hints painter-based and in-window. A prior QML top-level
     // overlay version regressed on macOS by flashing and disappearing during
