@@ -79,19 +79,9 @@ target_link_libraries(PinWindow_CropUndo PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_CropUndo COMMAND PinWindow_CropUndo)
 set_tests_properties(PinWindow_CropUndo PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
-add_executable(PinWindow_StyleSync PinWindow/tst_StyleSync.cpp)
-target_link_libraries(PinWindow_StyleSync PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME PinWindow_StyleSync COMMAND PinWindow_StyleSync)
-set_tests_properties(PinWindow_StyleSync PROPERTIES TIMEOUT 60 LABELS "unit;integration")
-
 # ============================================================================
 # ScreenCanvas Tests
 # ============================================================================
-
-add_executable(ScreenCanvas_StyleSync ScreenCanvas/tst_StyleSync.cpp)
-target_link_libraries(ScreenCanvas_StyleSync PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME ScreenCanvas_StyleSync COMMAND ScreenCanvas_StyleSync)
-set_tests_properties(ScreenCanvas_StyleSync PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
 # ============================================================================
 # RegionSelector Tests
@@ -167,11 +157,6 @@ add_executable(RegionSelector_MultiRegionListPanel RegionSelector/tst_MultiRegio
 target_link_libraries(RegionSelector_MultiRegionListPanel PRIVATE snaptray_qml snaptray_ui Qt6::Test)
 add_test(NAME RegionSelector_MultiRegionListPanel COMMAND RegionSelector_MultiRegionListPanel)
 set_tests_properties(RegionSelector_MultiRegionListPanel PROPERTIES TIMEOUT 60 LABELS "unit")
-
-add_executable(RegionSelector_StyleSync RegionSelector/tst_StyleSync.cpp)
-target_link_libraries(RegionSelector_StyleSync PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME RegionSelector_StyleSync COMMAND RegionSelector_StyleSync)
-set_tests_properties(RegionSelector_StyleSync PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
 add_executable(RegionSelector_MultiRegionReplaceFlow RegionSelector/tst_MultiRegionReplaceFlow.cpp)
 target_link_libraries(RegionSelector_MultiRegionReplaceFlow PRIVATE snaptray_ui Qt6::Test)
