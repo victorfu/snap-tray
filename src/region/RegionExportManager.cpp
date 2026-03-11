@@ -6,14 +6,13 @@
 #include "utils/CoordinateHelper.h"
 #include "utils/FilenameTemplateEngine.h"
 #include "utils/ImageSaveUtils.h"
+#include "utils/NativeFileDialogUtils.h"
 
 #include <QClipboard>
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
 #include <QFile>
-#include <QFileDialog>
-#include <QFileInfo>
 #include <QGuiApplication>
 #include <QImage>
 #include <QPainter>
@@ -152,12 +151,6 @@ void RegionExportManager::copyToClipboard(const QRect &selectionRect, int corner
 
 bool RegionExportManager::saveToFile(const QRect &selectionRect, int cornerRadius, QWidget *parentWidget)
 {
-    QPixmap selectedRegion = getSelectedRegion(selectionRect, cornerRadius);
-    if (selectedRegion.isNull()) {
-        qWarning() << "RegionExportManager: Cannot save - no valid selection";
-        return false;
-    }
-
     // Get file settings
     auto &fileSettings = FileSettingsManager::instance();
     QString savePath = fileSettings.loadScreenshotPath();
@@ -177,6 +170,12 @@ bool RegionExportManager::saveToFile(const QRect &selectionRect, int cornerRadiu
 
     // Check auto-save setting
     if (fileSettings.loadAutoSaveScreenshots()) {
+        QPixmap selectedRegion = getSelectedRegion(selectionRect, cornerRadius);
+        if (selectedRegion.isNull()) {
+            qWarning() << "RegionExportManager: Cannot save - no valid selection";
+            return false;
+        }
+
         QString renderError;
         QString filePath = FilenameTemplateEngine::buildUniqueFilePath(
             savePath, templateValue, context, 100, &renderError);
@@ -212,14 +211,21 @@ bool RegionExportManager::saveToFile(const QRect &selectionRect, int cornerRadiu
     // Notify parent before showing dialog
     emit saveDialogOpening();
 
-    QString filePath = QFileDialog::getSaveFileName(
+    const QString filePath = NativeFileDialogUtils::getSaveFileName(
         parentWidget,
         tr("Save Screenshot"),
         defaultName,
-        tr("PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)")
-    );
+        tr("PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)"));
 
     if (!filePath.isEmpty()) {
+        QPixmap selectedRegion = getSelectedRegion(selectionRect, cornerRadius);
+        if (selectedRegion.isNull()) {
+            qWarning() << "RegionExportManager: Cannot save selected region after dialog";
+            emit saveFailed(filePath, tr("Failed to save screenshot: unable to process selection"));
+            emit saveDialogClosed(false);
+            return false;
+        }
+
         ImageSaveUtils::Error saveError;
         const QImage taggedImage =
             tagImageWithScreenColorSpace(selectedRegion.toImage(), m_sourceScreen.data());
@@ -233,8 +239,12 @@ bool RegionExportManager::saveToFile(const QRect &selectionRect, int cornerRadiu
             if (!saveError.stage.isEmpty() || !saveError.message.isEmpty()) {
                 qWarning() << "RegionExportManager: save error:" << saveError.stage << saveError.message;
             }
+            const QString detail = saveError.stage.isEmpty()
+                ? (saveError.message.isEmpty() ? QStringLiteral("Unknown error") : saveError.message)
+                : QStringLiteral("%1: %2").arg(saveError.stage, saveError.message);
+            emit saveFailed(filePath, tr("Failed to save screenshot: %1").arg(detail));
         }
-        emit saveDialogClosed(true);
+        emit saveDialogClosed(success);
         return success;
     }
 

@@ -10,16 +10,14 @@
 #include "settings/FileSettingsManager.h"
 #include "utils/FilenameTemplateEngine.h"
 #include "utils/ImageSaveUtils.h"
+#include "utils/NativeFileDialogUtils.h"
 
 #include <QClipboard>
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDesktopServices>
 #include <QDir>
-#include <QDialog>
 #include <QFile>
-#include <QFileDialog>
-#include <QFileInfo>
 #include <QGuiApplication>
 #include <QScreen>
 #include <QUrl>
@@ -41,30 +39,6 @@ QString saveErrorDetail(const ImageSaveUtils::Error& error)
         return error.stage;
     }
     return QStringLiteral("%1: %2").arg(error.stage, error.message);
-}
-
-QString suffixForNameFilter(const QString& nameFilter)
-{
-    const int openParen = nameFilter.indexOf(QLatin1Char('('));
-    const int closeParen = nameFilter.indexOf(QLatin1Char(')'), openParen + 1);
-    if (openParen < 0 || closeParen <= openParen) {
-        return QString();
-    }
-
-    const QString patterns = nameFilter.mid(openParen + 1, closeParen - openParen - 1);
-    const QStringList entries = patterns.split(QLatin1Char(' '), Qt::SkipEmptyParts);
-    for (const QString& entry : entries) {
-        if (!entry.startsWith(QStringLiteral("*."))) {
-            continue;
-        }
-
-        const QString suffix = entry.mid(2);
-        if (!suffix.isEmpty() && suffix != QStringLiteral("*")) {
-            return suffix;
-        }
-    }
-
-    return QString();
 }
 
 } // namespace
@@ -183,40 +157,14 @@ void PinHistoryBackend::saveAs(int index)
 
     const QString defaultPath = FilenameTemplateEngine::buildUniqueFilePath(
         defaultDir, fileSettings.loadFilenameTemplate(), context, 1);
-    const QString filtersText =
-        pinHistoryText("PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)");
-    const QFileInfo defaultInfo(defaultPath);
-    const QStringList nameFilters = filtersText.split(QStringLiteral(";;"));
-
-    QFileDialog dialog(nullptr, pinHistoryText("Save Screenshot"));
-    dialog.setAcceptMode(QFileDialog::AcceptSave);
-    dialog.setFileMode(QFileDialog::AnyFile);
-    dialog.setDirectory(defaultInfo.absolutePath());
-    dialog.selectFile(defaultInfo.fileName());
-    dialog.setNameFilters(nameFilters);
-    dialog.selectNameFilter(nameFilters.value(0));
-    dialog.setDefaultSuffix(suffixForNameFilter(dialog.selectedNameFilter()));
-    QObject::connect(&dialog, &QFileDialog::filterSelected, &dialog, [&dialog](const QString& filter) {
-        dialog.setDefaultSuffix(suffixForNameFilter(filter));
-    });
-    dialog.setWindowModality(Qt::WindowModal);
-    dialog.winId();
-    if (m_hostWindow && dialog.windowHandle()) {
-        dialog.windowHandle()->setTransientParent(m_hostWindow);
-    }
-    if (dialog.exec() != QDialog::Accepted) {
-        return;
-    }
-
-    QString filePath = dialog.selectedFiles().value(0);
+    const QString filePath = NativeFileDialogUtils::getSaveFileName(
+        nullptr,
+        pinHistoryText("Save Screenshot"),
+        defaultPath,
+        pinHistoryText("PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)"),
+        m_hostWindow.data());
     if (filePath.isEmpty()) {
         return;
-    }
-    if (QFileInfo(filePath).suffix().isEmpty()) {
-        const QString selectedSuffix = suffixForNameFilter(dialog.selectedNameFilter());
-        if (!selectedSuffix.isEmpty()) {
-            filePath += QStringLiteral(".") + selectedSuffix;
-        }
     }
 
     QScreen* exportScreen = QGuiApplication::primaryScreen();

@@ -48,6 +48,7 @@
 #include "qml/QmlDialog.h"
 #include "utils/FilenameTemplateEngine.h"
 #include "utils/ImageSaveUtils.h"
+#include "utils/NativeFileDialogUtils.h"
 #include "qml/OCRResultViewModel.h"
 #include "InlineTextEditor.h"
 #include "region/TextAnnotationEditor.h"
@@ -77,7 +78,6 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QAction>
 #include <QDir>
 #include <QFile>
-#include <QFileDialog>
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QApplication>
@@ -1342,8 +1342,12 @@ void PinWindow::saveToFile()
     // Use FileSettingsManager for consistent path and filename format
     auto& fileSettings = FileSettingsManager::instance();
     QString savePath = fileSettings.loadScreenshotPath();
-    QPixmap pixmapToSave = getExportPixmapWithAnnotations();
-    const QSize logicalSize = logicalSizeFromPixmap(pixmapToSave);
+    const QPixmap sizeReferencePixmap = !m_displayPixmap.isNull() ? m_displayPixmap : m_originalPixmap;
+    if (sizeReferencePixmap.isNull()) {
+        emit saveFailed(QString(), tr("No image available to save"));
+        return;
+    }
+    const QSize logicalSize = logicalSizeFromPixmap(sizeReferencePixmap);
 
     QScreen* exportScreen = m_sourceScreen.data();
     if (!exportScreen) {
@@ -1376,6 +1380,12 @@ void PinWindow::saveToFile()
 
     // Check auto-save setting
     if (fileSettings.loadAutoSaveScreenshots()) {
+        QPixmap pixmapToSave = getExportPixmapWithAnnotations();
+        if (pixmapToSave.isNull()) {
+            emit saveFailed(QString(), tr("No image available to save"));
+            return;
+        }
+
         QString renderError;
         QString filePath = FilenameTemplateEngine::buildUniqueFilePath(
             savePath, templateValue, context, kMaxFileCollisionRetries, &renderError);
@@ -1397,18 +1407,23 @@ void PinWindow::saveToFile()
     // Show save dialog
     QString defaultName = FilenameTemplateEngine::buildUniqueFilePath(
         savePath, templateValue, context, 1);
-    QString filePath = QFileDialog::getSaveFileName(
+    const QString filePath = NativeFileDialogUtils::getSaveFileName(
         this,
         tr("Save Screenshot"),
         defaultName,
-        tr("PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)")
-    );
+        tr("PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)"));
 
     if (!filePath.isEmpty()) {
+        QPixmap pixmapToSave = getExportPixmapWithAnnotations();
+        if (pixmapToSave.isNull()) {
+            emit saveFailed(filePath, tr("No image available to save"));
+            return;
+        }
+
         const QImage taggedImage = tagImageWithScreenColorSpace(pixmapToSave.toImage(), exportScreen);
         ImageSaveUtils::Error saveError;
         if (ImageSaveUtils::saveImageAtomically(taggedImage, filePath, QByteArray(), &saveError)) {
-            emit saveRequested(pixmapToSave);
+            emit saveCompleted(pixmapToSave, filePath);
         } else {
             emit saveFailed(filePath, tr("Failed to save screenshot: %1").arg(saveErrorDetail(saveError)));
         }
@@ -4899,14 +4914,9 @@ void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
 void PinWindow::onBeautifySave(const BeautifySettings& settings)
 {
     BeautifySettingsManager::instance().saveSettings(settings);
-    QPixmap source = getExportPixmapWithAnnotations();
-    if (source.isNull()) {
+    const QPixmap sizeReferencePixmap = !m_displayPixmap.isNull() ? m_displayPixmap : m_originalPixmap;
+    if (sizeReferencePixmap.isNull()) {
         emit saveFailed(QString(), tr("No image available to save"));
-        return;
-    }
-    QPixmap result = BeautifyRenderer::applyToPixmap(source, settings);
-    if (result.isNull()) {
-        emit saveFailed(QString(), tr("Beautify rendering failed"));
         return;
     }
 
@@ -4920,14 +4930,27 @@ void PinWindow::onBeautifySave(const BeautifySettings& settings)
     FilenameTemplateEngine::Context context;
     context.type = QStringLiteral("Screenshot");
     context.prefix = fileSettings.loadFilenamePrefix();
-    context.width = result.width();
-    context.height = result.height();
+    const QSize logicalSourceSize = logicalSizeFromPixmap(sizeReferencePixmap);
+    const QSize logicalOutputSize = BeautifyRenderer::calculateOutputSize(logicalSourceSize, settings);
+    context.width = logicalOutputSize.width();
+    context.height = logicalOutputSize.height();
     context.ext = QStringLiteral("png");
     context.dateFormat = fileSettings.loadDateFormat();
     context.outputDir = savePath;
     const QString templateValue = fileSettings.loadFilenameTemplate();
 
     if (fileSettings.loadAutoSaveScreenshots()) {
+        QPixmap source = getExportPixmapWithAnnotations();
+        if (source.isNull()) {
+            emit saveFailed(QString(), tr("No image available to save"));
+            return;
+        }
+        QPixmap result = BeautifyRenderer::applyToPixmap(source, settings);
+        if (result.isNull()) {
+            emit saveFailed(QString(), tr("Beautify rendering failed"));
+            return;
+        }
+
         QString renderError;
         QString filePath = FilenameTemplateEngine::buildUniqueFilePath(
             savePath, templateValue, context, kMaxFileCollisionRetries, &renderError);
@@ -4946,10 +4969,23 @@ void PinWindow::onBeautifySave(const BeautifySettings& settings)
     } else {
         QString defaultName = FilenameTemplateEngine::buildUniqueFilePath(
             savePath, templateValue, context, 1);
-        QString filePath = QFileDialog::getSaveFileName(
-            this, tr("Save Beautified Screenshot"), defaultName,
+        const QString filePath = NativeFileDialogUtils::getSaveFileName(
+            this,
+            tr("Save Beautified Screenshot"),
+            defaultName,
             tr("PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)"));
         if (!filePath.isEmpty()) {
+            QPixmap source = getExportPixmapWithAnnotations();
+            if (source.isNull()) {
+                emit saveFailed(filePath, tr("No image available to save"));
+                return;
+            }
+            QPixmap result = BeautifyRenderer::applyToPixmap(source, settings);
+            if (result.isNull()) {
+                emit saveFailed(filePath, tr("Beautify rendering failed"));
+                return;
+            }
+
             const QImage taggedImage = tagImageWithScreenColorSpace(result.toImage(), exportScreen);
             ImageSaveUtils::Error saveError;
             if (ImageSaveUtils::saveImageAtomically(taggedImage, filePath, QByteArray(), &saveError)) {

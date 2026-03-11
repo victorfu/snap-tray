@@ -14,6 +14,7 @@
 #include "utils/ResourceCleanupHelper.h"
 #include "utils/CoordinateHelper.h"
 #include "utils/FilenameTemplateEngine.h"
+#include "utils/NativeFileDialogUtils.h"
 #include "settings/FileSettingsManager.h"
 #include "settings/RecordingSettingsManager.h"
 
@@ -25,7 +26,6 @@
 #include <QDir>
 #include <QDateTime>
 #include <QDebug>
-#include <QFileDialog>
 #include <QFileInfo>
 #include <QFile>
 #include <QMutexLocker>
@@ -104,6 +104,29 @@ bool recordingSupportsAudioCapture(int outputFormat, bool showPreview)
 bool audioSourceUsesInputDevice(int audioSourceSetting)
 {
     return audioSourceSetting != 1;
+}
+
+QString forceFileExtension(QString filePath, const QString& extension)
+{
+    if (filePath.isEmpty() || extension.isEmpty()) {
+        return filePath;
+    }
+
+    const QString normalizedExtension = extension.startsWith(QLatin1Char('.'))
+        ? extension.mid(1)
+        : extension;
+    if (normalizedExtension.isEmpty()) {
+        return filePath;
+    }
+
+    const int slashIndex = qMax(filePath.lastIndexOf(QLatin1Char('/')),
+                                filePath.lastIndexOf(QLatin1Char('\\')));
+    const int dotIndex = filePath.lastIndexOf(QLatin1Char('.'));
+    if (dotIndex > slashIndex) {
+        return filePath.left(dotIndex + 1) + normalizedExtension;
+    }
+
+    return filePath + QLatin1Char('.') + normalizedExtension;
 }
 
 QString configuredAudioInputDeviceOrDefault(IAudioCaptureEngine& engine,
@@ -1420,23 +1443,18 @@ void RecordingManager::showSaveDialog(const QString &tempOutputPath)
     const QString defaultFileName = FilenameTemplateEngine::buildUniqueFilePath(
         outputDir, templateValue, context, 1);
 
-    QString savePath = QFileDialog::getSaveFileName(
+    const QString dialogPath = NativeFileDialogUtils::getSaveFileName(
         nullptr,
         tr("Save Recording"),
         defaultFileName,
-        filter
-    );
+        QStringList{filter});
+    const QString savePath = forceFileExtension(dialogPath, extension);
 
     if (savePath.isEmpty()) {
         // User cancelled - delete the temp file
         QFile::remove(tempOutputPath);
         emit recordingCancelled();
     } else {
-        // Ensure correct extension
-        if (!savePath.endsWith("." + extension, Qt::CaseInsensitive)) {
-            savePath += "." + extension;
-        }
-
         // Move/rename the file to chosen location
         if (savePath != tempOutputPath) {
             // Remove existing file if it exists

@@ -231,6 +231,8 @@ private:
     bool shouldShowMagnifier() const;
     void syncFloatingUiCursor();
     void restoreRegionCursorAt(const QPoint& localPos);
+    void hideDetachedFloatingUi();
+    void restoreAfterDialogCancelled();
     void syncSelectionToolbarHoverState(const QPoint& globalPos);
     bool isCursorOverSelectionToolbar(const QPoint& globalPos) const;
     bool isGlobalPosOverFloatingUi(const QPoint& globalPos) const;

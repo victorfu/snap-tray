@@ -1,6 +1,8 @@
 #include "qml/QmlOverlayPanel.h"
 #include "qml/QmlOverlayManager.h"
+#include "platform/WindowLevel.h"
 
+#include <QEvent>
 #include <QQuickView>
 #include <QQuickItem>
 #include <QVariantList>
@@ -14,6 +16,28 @@
 namespace SnapTray {
 
 namespace {
+
+bool shouldReassertNativeArrow(QEvent::Type type)
+{
+    switch (type) {
+    case QEvent::Enter:
+    case QEvent::HoverMove:
+    case QEvent::MouseMove:
+    case QEvent::MouseButtonPress:
+    case QEvent::MouseButtonRelease:
+        return true;
+    default:
+        return false;
+    }
+}
+
+void reassertNativeArrowForView(QQuickView* view)
+{
+    if (!view || !view->isVisible()) {
+        return;
+    }
+    forceNativeArrowCursor();
+}
 
 void destroyQuickView(QQuickView*& view, QQuickItem*& rootItem)
 {
@@ -42,6 +66,9 @@ QmlOverlayPanel::QmlOverlayPanel(const QUrl& qmlSource,
 
 QmlOverlayPanel::~QmlOverlayPanel()
 {
+    if (m_view) {
+        m_view->removeEventFilter(this);
+    }
     destroyQuickView(m_view, m_rootItem);
 }
 
@@ -82,6 +109,7 @@ void QmlOverlayPanel::ensureView()
                 this, SLOT(onWindowMaskRectsChanged()));
     }
 
+    m_view->installEventFilter(this);
     updateWindowMask();
 }
 
@@ -134,16 +162,22 @@ void QmlOverlayPanel::show()
     applyPlatformWindowFlags();
     QmlOverlayManager::enableNativeShadow(m_view);
     m_view->raise();
+    emit cursorSyncRequested();
 }
 
 void QmlOverlayPanel::hide()
 {
-    if (m_view)
+    if (m_view) {
         m_view->hide();
+    }
+    emit cursorSyncRequested();
 }
 
 void QmlOverlayPanel::close()
 {
+    if (m_view) {
+        m_view->removeEventFilter(this);
+    }
     destroyQuickView(m_view, m_rootItem);
 }
 
@@ -218,6 +252,21 @@ void QmlOverlayPanel::updateWindowMask()
 
     m_windowMask = newMask;
     m_view->setMask(m_windowMask);
+}
+
+bool QmlOverlayPanel::eventFilter(QObject* watched, QEvent* event)
+{
+    if (watched == m_view) {
+        if (shouldReassertNativeArrow(event->type())) {
+            reassertNativeArrowForView(m_view);
+            emit cursorSyncRequested();
+        }
+        if (event->type() == QEvent::Leave || event->type() == QEvent::Hide) {
+            emit cursorRestoreRequested();
+        }
+    }
+
+    return QObject::eventFilter(watched, event);
 }
 
 QQuickView* QmlOverlayPanel::view() const

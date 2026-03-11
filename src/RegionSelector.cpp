@@ -470,6 +470,10 @@ RegionSelector::RegionSelector(QWidget* parent)
         QUrl(QStringLiteral("qrc:/SnapTrayQml/panels/RegionControlPanel.qml")),
         m_regionControlViewModel, QStringLiteral("viewModel"));
     m_regionControlPanel->setParentWidget(this);
+    connect(m_regionControlPanel.get(), &SnapTray::QmlOverlayPanel::cursorRestoreRequested,
+        this, queueFloatingUiCursorRestore);
+    connect(m_regionControlPanel.get(), &SnapTray::QmlOverlayPanel::cursorSyncRequested,
+        this, &RegionSelector::syncFloatingUiCursor);
 
     connect(m_regionControlViewModel, &RegionControlViewModel::radiusEnabledChanged,
         this, [](bool enabled) {
@@ -517,6 +521,10 @@ RegionSelector::RegionSelector(QWidget* parent)
         QUrl(QStringLiteral("qrc:/SnapTrayQml/panels/MultiRegionListPanel.qml")),
         m_multiRegionListViewModel, QStringLiteral("viewModel"));
     m_multiRegionListPanel->setParentWidget(this);
+    connect(m_multiRegionListPanel.get(), &SnapTray::QmlOverlayPanel::cursorRestoreRequested,
+        this, queueFloatingUiCursorRestore);
+    connect(m_multiRegionListPanel.get(), &SnapTray::QmlOverlayPanel::cursorSyncRequested,
+        this, &RegionSelector::syncFloatingUiCursor);
 
     connect(m_multiRegionListViewModel, &MultiRegionListViewModel::regionActivated,
         this, [this](int index) {
@@ -629,22 +637,14 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_exportManager, &RegionExportManager::saveDialogOpening,
         this, [this]() {
             m_isDialogOpen = true;
+            hideDetachedFloatingUi();
             hide();
         });
     connect(m_exportManager, &RegionExportManager::saveDialogClosed,
         this, [this](bool saved) {
             m_isDialogOpen = false;
-            if (saved) {
-                // Get the selected region again for the signal
-                QPixmap selectedRegion = m_exportManager->getSelectedRegion(
-                    m_selectionManager->selectionRect(), effectiveCornerRadius());
-                emit saveRequested(selectedRegion);
-                close();
-            }
-            else {
-                show();
-                activateWindow();
-                raise();
+            if (!saved) {
+                restoreAfterDialogCancelled();
             }
         });
     connect(m_exportManager, &RegionExportManager::saveCompleted,
@@ -655,7 +655,9 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_exportManager, &RegionExportManager::saveFailed,
         this, [this](const QString& filePath, const QString& error) {
             emit saveFailed(filePath, error);
-            close();
+            if (!m_isDialogOpen) {
+                close();
+            }
         });
 
     m_shareClient = new ShareUploadClient(this);
@@ -1971,9 +1973,49 @@ void RegionSelector::restoreRegionCursorAt(const QPoint& localPos)
     cursorManager.reapplyCursorForWidget(this);
 }
 
+void RegionSelector::hideDetachedFloatingUi()
+{
+    if (m_qmlToolbar) {
+        m_qmlToolbar->hide();
+    }
+    if (m_qmlSubToolbar) {
+        m_qmlSubToolbar->hide();
+    }
+    if (m_regionControlPanel) {
+        m_regionControlPanel->hide();
+    }
+    if (m_multiRegionListPanel) {
+        m_multiRegionListPanel->hide();
+    }
+    if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+        m_emojiPickerPopup->hide();
+    }
+    if (m_magnifierOverlay) {
+        m_magnifierOverlay->hideOverlay();
+    }
+}
+
+void RegionSelector::restoreAfterDialogCancelled()
+{
+    show();
+    activateWindow();
+    raise();
+    if (m_inputState.multiRegionMode && m_multiRegionListPanel) {
+        m_multiRegionListPanel->show();
+        positionMultiRegionListPanel();
+    }
+    update();
+    syncMagnifierOverlay();
+    syncFloatingUiCursor();
+}
+
 bool RegionSelector::shouldShowMagnifier() const
 {
     if (m_inputState.isDrawing || isAnnotationTool(m_inputState.currentTool)) {
+        return false;
+    }
+
+    if (isGlobalPosOverFloatingUi(QCursor::pos())) {
         return false;
     }
 
@@ -2021,6 +2063,9 @@ void RegionSelector::syncFloatingUiCursor()
     syncSelectionToolbarHoverState(globalPos);
 
     if (isGlobalPosOverFloatingUi(globalPos)) {
+        if (m_magnifierOverlay) {
+            m_magnifierOverlay->hideOverlay();
+        }
         cursorManager.pushCursorForWidget(this, CursorContext::Override, Qt::ArrowCursor);
         cursorManager.reapplyCursorForWidget(this);
         return;

@@ -298,6 +298,7 @@ add_library(snaptray_core STATIC
     src/utils/DialogThemeUtils.cpp
     src/utils/FilenameTemplateEngine.cpp
     src/utils/ImageSaveUtils.cpp
+    src/utils/NativeFileDialogUtils.cpp
     # CLI sources
     src/cli/CLIHandler.cpp
     src/cli/IPCProtocol.cpp
@@ -320,6 +321,7 @@ add_library(snaptray_core STATIC
     include/cursor/CursorManager.h
     include/utils/FilenameTemplateEngine.h
     include/utils/ImageSaveUtils.h
+    include/utils/NativeFileDialogUtils.h
 )
 
 target_include_directories(snaptray_core

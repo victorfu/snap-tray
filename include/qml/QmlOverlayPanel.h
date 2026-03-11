@@ -11,6 +11,7 @@
 class QQuickView;
 class QQuickItem;
 class QWidget;
+class QEvent;
 
 namespace SnapTray {
 
@@ -51,10 +52,15 @@ public:
     void setParentWidget(QWidget* parent);
     QQuickView* view() const;
 
+signals:
+    void cursorRestoreRequested();
+    void cursorSyncRequested();
+
 private:
     void ensureView();
     void applyPlatformWindowFlags();
     void updateWindowMask();
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
 private slots:
     void onWindowMaskRectsChanged();
