@@ -1,66 +1,67 @@
 #include <QtTest/QtTest>
-#include <QVariantList>
-#include <QVariantMap>
-#include <QStringList>
+#include <QPainter>
+#include <QPixmap>
 
-#include "qml/ShortcutHintsViewModel.h"
+#include "region/CaptureShortcutHintsOverlay.h"
 
 class tst_CaptureShortcutHintsOverlay : public QObject
 {
     Q_OBJECT
 
 private slots:
-    void testHintCount();
-    void testHintStructure();
-    void testHintKeys();
-    void testMultiKeyCombo();
+    void testRowCount();
+    void testLayoutMetrics();
+    void testPanelRectWithinViewport();
+    void testDrawNoCrash();
 };
 
-void tst_CaptureShortcutHintsOverlay::testHintCount()
+void tst_CaptureShortcutHintsOverlay::testRowCount()
 {
-    ShortcutHintsViewModel vm;
-    QCOMPARE(vm.hints().size(), 7);
+    CaptureShortcutHintsOverlay overlay;
+    QCOMPARE(overlay.rowCount(), 7);
 }
 
-void tst_CaptureShortcutHintsOverlay::testHintStructure()
+void tst_CaptureShortcutHintsOverlay::testLayoutMetrics()
 {
-    ShortcutHintsViewModel vm;
-    const QVariantList hints = vm.hints();
+    CaptureShortcutHintsOverlay overlay;
+    const auto metrics = overlay.layoutMetrics();
 
-    for (const auto& hint : hints) {
-        QVariantMap map = hint.toMap();
-        QVERIFY2(map.contains("keys"), "Each hint must have 'keys'");
-        QVERIFY2(map.contains("description"), "Each hint must have 'description'");
-        QVERIFY2(!map["description"].toString().isEmpty(), "Description must not be empty");
+    QVERIFY(metrics.keyColumnWidth > 0);
+    QVERIFY(metrics.textColumnWidth > 0);
+    QVERIFY(metrics.rowHeight > 0);
+    QVERIFY(metrics.panelWidth > 0);
+    QVERIFY(metrics.panelHeight > 0);
+}
 
-        QStringList keys = map["keys"].toStringList();
-        QVERIFY2(!keys.isEmpty(), "Keys list must not be empty");
+void tst_CaptureShortcutHintsOverlay::testPanelRectWithinViewport()
+{
+    CaptureShortcutHintsOverlay overlay;
+
+    const QList<QSize> viewports{
+        QSize(420, 280),
+        QSize(900, 600),
+        QSize(2560, 1440)
+    };
+
+    for (const QSize& viewport : viewports) {
+        const QRect panelRect = overlay.panelRectForViewport(viewport);
+        QVERIFY2(panelRect.isValid(), "Panel rect should be valid");
+        QVERIFY2(panelRect.left() >= 0, "Panel rect should stay inside viewport");
+        QVERIFY2(panelRect.top() >= 0, "Panel rect should stay inside viewport");
+        QVERIFY2(panelRect.right() < viewport.width(), "Panel rect right edge should stay inside viewport");
+        QVERIFY2(panelRect.bottom() < viewport.height(), "Panel rect bottom edge should stay inside viewport");
     }
 }
 
-void tst_CaptureShortcutHintsOverlay::testHintKeys()
+void tst_CaptureShortcutHintsOverlay::testDrawNoCrash()
 {
-    ShortcutHintsViewModel vm;
-    const QVariantList hints = vm.hints();
+    CaptureShortcutHintsOverlay overlay;
+    QPixmap canvas(1280, 720);
+    canvas.fill(Qt::transparent);
 
-    // First hint should be Esc
-    QVariantMap first = hints.first().toMap();
-    QStringList keys = first["keys"].toStringList();
-    QCOMPARE(keys.size(), 1);
-    QCOMPARE(keys.first(), QStringLiteral("Esc"));
-}
-
-void tst_CaptureShortcutHintsOverlay::testMultiKeyCombo()
-{
-    ShortcutHintsViewModel vm;
-    const QVariantList hints = vm.hints();
-
-    // Last hint should be Shift + Arrow (multi-key combo)
-    QVariantMap last = hints.last().toMap();
-    QStringList keys = last["keys"].toStringList();
-    QCOMPARE(keys.size(), 2);
-    QCOMPARE(keys.at(0), QStringLiteral("Shift"));
-    QCOMPARE(keys.at(1), QStringLiteral("Arrow"));
+    QPainter painter(&canvas);
+    overlay.draw(painter, canvas.size());
+    QVERIFY(true);
 }
 
 QTEST_MAIN(tst_CaptureShortcutHintsOverlay)

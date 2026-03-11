@@ -63,7 +63,7 @@ class RegionToolbarHandler;
 class RegionSettingsHelper;
 class RegionExportManager;
 class AnnotationContext;
-class ShortcutHintsViewModel;
+class CaptureShortcutHintsOverlay;
 class RegionControlViewModel;
 class MultiRegionListViewModel;
 class ShareUploadClient;
@@ -202,7 +202,6 @@ private:
     QCursor getMosaicCursor(int width);
     void setToolCursor();
     void hideShortcutHints();
-    void positionShortcutHintsPanel();
     void positionRegionControlPanel();
     void positionMultiRegionListPanel();
     void maybeDismissShortcutHintsAfterSelectionCompleted();
@@ -329,12 +328,13 @@ private:
     // Magnifier panel component
     MagnifierPanel* m_magnifierPanel;
 
-    // Capture shortcut hints overlay (QML)
+    // Keep shortcut hints painter-based and in-window. A prior QML top-level
+    // overlay version regressed on macOS by flashing and disappearing during
+    // RegionSelector activation/screen-overlay transitions.
     bool m_showShortcutHintsOnEntry = false;
     bool m_shortcutHintsVisible = false;
     bool m_shortcutHintsTemporarilyHiddenByHover = false;
-    ShortcutHintsViewModel* m_shortcutHintsViewModel = nullptr;
-    std::unique_ptr<SnapTray::QmlOverlayPanel> m_shortcutHintsPanel;
+    std::unique_ptr<CaptureShortcutHintsOverlay> m_shortcutHintsOverlay;
 
     // Update throttling component
     UpdateThrottler m_updateThrottler;

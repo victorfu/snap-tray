@@ -647,6 +647,7 @@ add_library(snaptray_ui STATIC
     src/region/RegionSettingsHelper.cpp
     src/region/SelectionResizeHelper.cpp
     src/region/RegionExportManager.cpp
+    src/region/CaptureShortcutHintsOverlay.cpp
     # PinWindow
     src/PinWindow.cpp
     src/PinWindowManager.cpp
@@ -721,6 +722,7 @@ add_library(snaptray_ui STATIC
     include/region/RegionToolbarHandler.h
     include/region/RegionSettingsHelper.h
     include/region/RegionExportManager.h
+    include/region/CaptureShortcutHintsOverlay.h
     include/PinWindow.h
     include/PinWindowManager.h
     include/pinwindow/PinHistoryStore.h

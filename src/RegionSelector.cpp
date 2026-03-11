@@ -6,8 +6,8 @@
 #include "region/RegionToolbarHandler.h"
 #include "region/RegionSettingsHelper.h"
 #include "region/RegionExportManager.h"
+#include "region/CaptureShortcutHintsOverlay.h"
 #include "qml/QmlOverlayPanel.h"
-#include "qml/ShortcutHintsViewModel.h"
 #include "qml/RegionControlViewModel.h"
 #include "qml/MultiRegionListViewModel.h"
 #include "share/ShareUploadClient.h"
@@ -123,7 +123,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_textEditor(nullptr)
     , m_colorPickerDialog(nullptr)
     , m_magnifierPanel(nullptr)
-    , m_shortcutHintsViewModel(nullptr)
+    , m_shortcutHintsOverlay(nullptr)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     setAttribute(Qt::WA_DeleteOnClose);
@@ -457,15 +457,9 @@ RegionSelector::RegionSelector(QWidget* parent)
 
     // Initialize magnifier panel component
     m_magnifierPanel = new MagnifierPanel(this);
-    // Shortcut hints overlay (QML)
-    m_shortcutHintsViewModel = new ShortcutHintsViewModel(this);
-    SnapTray::QmlOverlayPanel::Options shortcutHintsOptions;
-    shortcutHintsOptions.transparentForInput = true;
-    m_shortcutHintsPanel = std::make_unique<SnapTray::QmlOverlayPanel>(
-        QUrl(QStringLiteral("qrc:/SnapTrayQml/panels/ShortcutHintsPanel.qml")),
-        m_shortcutHintsViewModel, QStringLiteral("viewModel"),
-        shortcutHintsOptions);
-    m_shortcutHintsPanel->setParentWidget(this);
+    // Deliberately not a QML overlay window: this hint panel must share the
+    // RegionSelector paint/lifecycle path to avoid native window ordering bugs.
+    m_shortcutHintsOverlay = std::make_unique<CaptureShortcutHintsOverlay>();
 
     // Region control panel (QML - combines radius toggle + aspect ratio lock)
     m_regionControlViewModel = new RegionControlViewModel(this);
@@ -1152,7 +1146,6 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     clearPreservedSelection();
     m_shortcutHintsVisible = false;
     m_shortcutHintsTemporarilyHiddenByHover = false;
-    if (m_shortcutHintsPanel) m_shortcutHintsPanel->hide();
     if (m_regionControlPanel) m_regionControlPanel->hide();
 
     setupScreenGeometry(screen);
@@ -1232,12 +1225,6 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
         m_showShortcutHintsOnEntry &&
         RegionCaptureSettingsManager::instance().isShortcutHintsEnabled();
     m_shortcutHintsTemporarilyHiddenByHover = false;
-    if (m_shortcutHintsVisible && m_shortcutHintsPanel) {
-        m_shortcutHintsPanel->show();
-        positionShortcutHintsPanel();
-    } else if (m_shortcutHintsPanel) {
-        m_shortcutHintsPanel->hide();
-    }
 }
 
 void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
@@ -1245,7 +1232,6 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     clearPreservedSelection();
     m_shortcutHintsVisible = false;
     m_shortcutHintsTemporarilyHiddenByHover = false;
-    if (m_shortcutHintsPanel) m_shortcutHintsPanel->hide();
     if (m_regionControlPanel) m_regionControlPanel->hide();
 
     setupScreenGeometry(screen);
@@ -1773,6 +1759,12 @@ void RegionSelector::paintEvent(QPaintEvent* event)
         drawMagnifier(painter);
     }
 
+    // Paint inside RegionSelector so visibility stays tied to the host overlay
+    // instead of a separate native window.
+    if (m_shortcutHintsVisible && m_shortcutHintsOverlay) {
+        m_shortcutHintsOverlay->draw(painter, size());
+    }
+
     // Position region control panel after paint (painter computes dimension info rect)
     positionRegionControlPanel();
 }
@@ -1781,16 +1773,6 @@ void RegionSelector::drawMagnifier(QPainter& painter)
 {
     // Delegate to MagnifierPanel component
     m_magnifierPanel->draw(painter, m_inputState.currentPoint, size(), m_backgroundPixmap);
-}
-
-void RegionSelector::positionShortcutHintsPanel()
-{
-    if (!m_shortcutHintsPanel || !m_shortcutHintsPanel->isVisible())
-        return;
-    QRect panelGeom = m_shortcutHintsPanel->geometry();
-    int margin = 12;
-    QPoint pos = mapToGlobal(QPoint(margin, height() - panelGeom.height() - margin));
-    m_shortcutHintsPanel->setPosition(pos);
 }
 
 void RegionSelector::positionRegionControlPanel()
@@ -1844,9 +1826,7 @@ void RegionSelector::hideShortcutHints()
 
     m_shortcutHintsVisible = false;
     m_shortcutHintsTemporarilyHiddenByHover = false;
-    if (m_shortcutHintsPanel) {
-        m_shortcutHintsPanel->hide();
-    }
+    update();
 }
 
 void RegionSelector::maybeDismissShortcutHintsAfterSelectionCompleted()
@@ -1864,13 +1844,11 @@ void RegionSelector::maybeDismissShortcutHintsAfterSelectionCompleted()
 
 void RegionSelector::updateShortcutHintsHoverVisibilityDuringSelection(const QPoint& localPos)
 {
-    if (!m_shortcutHintsPanel || !m_selectionManager) {
+    if (!m_shortcutHintsOverlay || !m_selectionManager) {
         return;
     }
 
-    // Convert QML panel geometry (global) to local coordinates for overlap detection
-    const QRect panelGlobalRect = m_shortcutHintsPanel->geometry();
-    const QRect panelRect = globalToLocal(panelGlobalRect);
+    const QRect panelRect = m_shortcutHintsOverlay->panelRectForViewport(size());
     if (!panelRect.isValid()) {
         return;
     }
@@ -1888,8 +1866,7 @@ void RegionSelector::updateShortcutHintsHoverVisibilityDuringSelection(const QPo
         if (!shouldTemporarilyHide && !m_shortcutHintsVisible) {
             m_shortcutHintsVisible = true;
             m_shortcutHintsTemporarilyHiddenByHover = false;
-            m_shortcutHintsPanel->show();
-            positionShortcutHintsPanel();
+            update(panelRect);
         }
         return;
     }
@@ -1897,7 +1874,7 @@ void RegionSelector::updateShortcutHintsHoverVisibilityDuringSelection(const QPo
     if (shouldTemporarilyHide && m_shortcutHintsVisible) {
         m_shortcutHintsVisible = false;
         m_shortcutHintsTemporarilyHiddenByHover = true;
-        m_shortcutHintsPanel->hide();
+        update(panelRect);
     }
 }
 
@@ -2541,7 +2518,6 @@ void RegionSelector::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
     positionMultiRegionListPanel();
-    positionShortcutHintsPanel();
 }
 
 void RegionSelector::enterEvent(QEnterEvent* event)
