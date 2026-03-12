@@ -1,6 +1,7 @@
 #include "WindowDetector.h"
 #include "WindowDetectorMacFilters.h"
 
+#include <QImage>
 #include <QScreen>
 #include <QDebug>
 #include <QByteArray>
@@ -103,6 +104,133 @@ int getMinimumSize(ElementType type)
         return 50;
     }
     return 50;
+}
+
+QImage createQImageFromCGImage(CGImageRef sourceImage)
+{
+    if (!sourceImage) {
+        return QImage();
+    }
+
+    const size_t width = CGImageGetWidth(sourceImage);
+    const size_t height = CGImageGetHeight(sourceImage);
+    if (width == 0 || height == 0) {
+        return QImage();
+    }
+
+    QImage target(static_cast<int>(width), static_cast<int>(height), QImage::Format_RGBA8888_Premultiplied);
+    if (target.isNull()) {
+        return QImage();
+    }
+
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    if (!colorSpace) {
+        return QImage();
+    }
+
+    CGContextRef context = CGBitmapContextCreate(
+        target.bits(),
+        width,
+        height,
+        8,
+        static_cast<size_t>(target.bytesPerLine()),
+        colorSpace,
+        kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(colorSpace);
+
+    if (!context) {
+        return QImage();
+    }
+
+    CGContextSetBlendMode(context, kCGBlendModeCopy);
+    CGContextDrawImage(context, CGRectMake(0.0, 0.0, static_cast<CGFloat>(width), static_cast<CGFloat>(height)), sourceImage);
+    CGContextRelease(context);
+
+    return target;
+}
+
+QRect nonTransparentImageBounds(const QImage &image, int alphaThreshold = 8)
+{
+    if (image.isNull()) {
+        return QRect();
+    }
+
+    int minX = image.width();
+    int minY = image.height();
+    int maxX = -1;
+    int maxY = -1;
+
+    for (int y = 0; y < image.height(); ++y) {
+        const QRgb *row = reinterpret_cast<const QRgb *>(image.constScanLine(y));
+        for (int x = 0; x < image.width(); ++x) {
+            if (qAlpha(row[x]) > alphaThreshold) {
+                minX = qMin(minX, x);
+                minY = qMin(minY, y);
+                maxX = qMax(maxX, x);
+                maxY = qMax(maxY, y);
+            }
+        }
+    }
+
+    if (maxX < minX || maxY < minY) {
+        return QRect();
+    }
+
+    return QRect(minX, minY, maxX - minX + 1, maxY - minY + 1);
+}
+
+bool shouldRefinePopupBoundsFromImage(ElementType elementType, const QRect &bounds)
+{
+    if (elementType != ElementType::ContextMenu &&
+        elementType != ElementType::PopupMenu &&
+        elementType != ElementType::StatusBarItem) {
+        return false;
+    }
+
+    // Small menu bar items already have reasonable bounds. The problematic
+    // Control Center host windows are tall, oversized containers.
+    return bounds.width() >= 120 && bounds.height() >= 200;
+}
+
+QRect refineVisibleBoundsFromWindowImage(CGWindowID windowId, const QRect &rawBounds)
+{
+    if (windowId == 0 || !rawBounds.isValid() || rawBounds.isEmpty()) {
+        return QRect();
+    }
+
+    CGImageRef windowImage = CGWindowListCreateImage(
+        CGRectNull,
+        kCGWindowListOptionIncludingWindow,
+        windowId,
+        kCGWindowImageBoundsIgnoreFraming | kCGWindowImageBestResolution);
+    if (!windowImage) {
+        return QRect();
+    }
+
+    const QImage image = createQImageFromCGImage(windowImage);
+    CGImageRelease(windowImage);
+    if (image.isNull()) {
+        return QRect();
+    }
+
+    const QRect imageBounds = nonTransparentImageBounds(image);
+    if (!imageBounds.isValid() || imageBounds.isEmpty()) {
+        return QRect();
+    }
+
+    const qreal scaleX = rawBounds.width() > 0
+        ? static_cast<qreal>(rawBounds.width()) / static_cast<qreal>(image.width())
+        : 1.0;
+    const qreal scaleY = rawBounds.height() > 0
+        ? static_cast<qreal>(rawBounds.height()) / static_cast<qreal>(image.height())
+        : 1.0;
+
+    const int refinedX = rawBounds.x() + qRound(imageBounds.x() * scaleX);
+    const int refinedY = rawBounds.y() + qRound(imageBounds.y() * scaleY);
+    const int refinedWidth = qMax(1, qRound(imageBounds.width() * scaleX));
+    const int refinedHeight = qMax(1, qRound(imageBounds.height() * scaleY));
+
+    return QRect(refinedX, refinedY, refinedWidth, refinedHeight);
 }
 
 // Get element frame (position + size) from an AXUIElement
@@ -365,6 +493,13 @@ std::optional<DetectedElement> buildDetectedTopLevelElement(
     int windowId = 0;
     readCFNumberValue(windowInfo, kCGWindowNumber, kCFNumberIntType, windowId);
 
+    if (windowId > 0 && shouldRefinePopupBoundsFromImage(elementType, bounds)) {
+        const QRect refinedBounds = refineVisibleBoundsFromWindowImage(static_cast<CGWindowID>(windowId), bounds);
+        if (refinedBounds.isValid() && !refinedBounds.isEmpty()) {
+            bounds = refinedBounds;
+        }
+    }
+
     DetectedElement element;
     element.bounds = bounds;
     element.windowTitle = readWindowString(windowInfo, kCGWindowName);
@@ -617,8 +752,14 @@ std::optional<DetectedElement> WindowDetector::detectWindowAt(const QPoint &scre
         return std::nullopt;
     }
 
-    // Step 1: Find the top-level window from CGWindowList cache.
+    // Step 1: Find the best top-level window from CGWindowList cache.
     // This cache already excludes our own process windows.
+    //
+    // We do not stop at the first bounds match because macOS menu bar popups
+    // and other transient system UI can overlap an app window while living on
+    // a higher CoreGraphics layer. Prefer the highest-layer match so detached
+    // popups win over the underlying document window even if the raw list order
+    // is not ideal for our use case.
     std::optional<DetectedElement> topWindow;
     {
         QMutexLocker locker(&m_cacheMutex);
@@ -637,8 +778,9 @@ std::optional<DetectedElement> WindowDetector::detectWindowAt(const QPoint &scre
                 continue;
             }
             if (window.bounds.contains(screenPos)) {
-                topWindow = window;
-                break;
+                if (!topWindow.has_value() || window.windowLayer > topWindow->windowLayer) {
+                    topWindow = window;
+                }
             }
         }
     }

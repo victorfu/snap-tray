@@ -115,10 +115,17 @@ void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortc
         return;
     }
 
-    // 2. Start window detection FIRST (async, runs in parallel with grabWindow)
+    // 2. Prime window detection before we capture the screen.
+    // On macOS, transient UI such as menu-bar popups can disappear as soon as
+    // the capture overlay activates. Refresh synchronously here so the
+    // detector cache matches the same UI snapshot used for preCapture.
     if (m_windowDetector) {
         m_windowDetector->setScreen(targetScreen);
+#ifdef Q_OS_MACOS
+        m_windowDetector->refreshWindowList();
+#else
         m_windowDetector->refreshWindowListAsync();
+#endif
     }
 
     // 3. Capture screenshot while popup/modal is still visible
