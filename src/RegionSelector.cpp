@@ -656,9 +656,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_exportManager, &RegionExportManager::saveFailed,
         this, [this](const QString& filePath, const QString& error) {
             emit saveFailed(filePath, error);
-            if (!m_isDialogOpen) {
-                close();
-            }
+            // Keep the current capture alive so auto-save failures can be retried.
         });
 
     m_shareClient = new ShareUploadClient(this);
