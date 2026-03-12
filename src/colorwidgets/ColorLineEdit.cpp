@@ -93,22 +93,12 @@ void ColorLineEdit::setColor(const QColor& color)
     }
 }
 
-bool ColorLineEdit::showAlpha() const
-{
-    return m_showAlpha;
-}
-
 void ColorLineEdit::setShowAlpha(bool show)
 {
     if (m_showAlpha != show) {
         m_showAlpha = show;
         updateFromColor();
     }
-}
-
-bool ColorLineEdit::previewColor() const
-{
-    return m_previewColor;
 }
 
 void ColorLineEdit::setPreviewColor(bool preview)

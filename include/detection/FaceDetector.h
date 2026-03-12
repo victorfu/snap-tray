@@ -1,7 +1,10 @@
 #ifndef FACEDETECTOR_H
 #define FACEDETECTOR_H
 
-#include "IDetector.h"
+#include <QImage>
+#include <QRect>
+#include <QVector>
+
 #include <memory>
 
 namespace cv {
@@ -14,7 +17,7 @@ class CascadeClassifier;
  * Uses OpenCV's CascadeClassifier with the pre-trained
  * haarcascade_frontalface_default.xml model for offline face detection.
  */
-class FaceDetector : public IDetector
+class FaceDetector
 {
 public:
     /**
@@ -28,12 +31,11 @@ public:
     };
 
     FaceDetector();
-    ~FaceDetector() override;
+    ~FaceDetector();
 
-    // IDetector interface
-    bool initialize() override;
-    bool isInitialized() const override;
-    QVector<QRect> detect(const QImage& image) override;
+    bool initialize();
+    bool isInitialized() const;
+    QVector<QRect> detect(const QImage& image);
 
     /**
      * @brief Set detection configuration.

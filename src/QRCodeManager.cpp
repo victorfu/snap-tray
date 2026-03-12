@@ -115,20 +115,6 @@ QRCodeManager::QRCodeManager(QObject *parent)
 
 QRCodeManager::~QRCodeManager() = default;
 
-bool QRCodeManager::isAvailable()
-{
-    return true;  // ZXing-CPP doesn't require platform-specific APIs
-}
-
-QStringList QRCodeManager::supportedFormats()
-{
-    return {
-        "QR_CODE", "DATA_MATRIX", "AZTEC", "PDF_417",
-        "EAN_8", "EAN_13", "UPC_A", "UPC_E",
-        "CODE_39", "CODE_93", "CODE_128", "ITF", "CODABAR"
-    };
-}
-
 void QRCodeManager::decode(const QPixmap &pixmap, const QRDecodeCallback &callback)
 {
     if (pixmap.isNull()) {
@@ -335,9 +321,4 @@ bool QRCodeManager::canEncode(const QString &text, int eccLevel)
     } catch (const std::exception &) {
         return false;
     }
-}
-
-int QRCodeManager::maxEncodableLength(int eccLevel)
-{
-    return maxEncodableBytesForEccLevel(eccLevel);
 }

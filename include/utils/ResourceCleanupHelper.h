@@ -2,8 +2,6 @@
 #define RESOURCECLEANUPHELPER_H
 
 #include <QObject>
-#include <QString>
-#include <QFile>
 #include <memory>
 
 class ICaptureEngine;
@@ -33,22 +31,5 @@ struct StopAndDeleteLater {
 /// Engine pointer with stop + disconnect + deleteLater
 using CaptureEnginePtr = std::unique_ptr<ICaptureEngine, StopAndDeleteLater<ICaptureEngine>>;
 using AudioEnginePtr = std::unique_ptr<IAudioCaptureEngine, StopAndDeleteLater<IAudioCaptureEngine>>;
-
-// ============================================================================
-// Static Helper Functions
-// ============================================================================
-
-class ResourceCleanupHelper {
-public:
-    ResourceCleanupHelper() = delete;
-
-    // Remove temp file and clear path
-    static void removeTempFile(QString& path) {
-        if (!path.isEmpty() && QFile::exists(path)) {
-            QFile::remove(path);
-            path.clear();
-        }
-    }
-};
 
 #endif // RESOURCECLEANUPHELPER_H

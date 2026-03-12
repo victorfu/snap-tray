@@ -23,19 +23,13 @@ namespace colorwidgets {
 class StyledColorDialog : public ColorDialog
 {
     Q_OBJECT
-    Q_PROPERTY(bool customTitleBar READ hasCustomTitleBar WRITE setCustomTitleBar)
 
 public:
     explicit StyledColorDialog(QWidget* parent = nullptr);
     explicit StyledColorDialog(const QColor& initial, QWidget* parent = nullptr);
     ~StyledColorDialog() override;
 
-    bool hasCustomTitleBar() const;
     void setCustomTitleBar(bool custom);
-
-    // Static convenience method with SnapTray styling
-    static QColor getColor(const QColor& initial = Qt::white, QWidget* parent = nullptr,
-                           const QString& title = QString());
 
 protected:
     void showEvent(QShowEvent* event) override;

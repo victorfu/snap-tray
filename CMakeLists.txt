@@ -354,7 +354,6 @@ add_library(snaptray_colorwidgets STATIC
     src/colorwidgets/ColorUtils.cpp
     src/colorwidgets/ColorWheel.cpp
     src/colorwidgets/GradientSlider.cpp
-    src/colorwidgets/HueSlider.cpp
     src/colorwidgets/ColorPreview.cpp
     src/colorwidgets/ColorLineEdit.cpp
     src/colorwidgets/ColorDialog.cpp
@@ -363,7 +362,6 @@ add_library(snaptray_colorwidgets STATIC
     # Headers with Q_OBJECT for MOC processing
     include/colorwidgets/ColorWheel.h
     include/colorwidgets/GradientSlider.h
-    include/colorwidgets/HueSlider.h
     include/colorwidgets/ColorPreview.h
     include/colorwidgets/ColorLineEdit.h
     include/colorwidgets/ColorDialog.h
@@ -828,7 +826,6 @@ set_source_files_properties(
 
 # Flatten resource aliases so QML files are at e.g. :/SnapTrayQml/components/Toast.qml
 # instead of :/SnapTrayQml/src/qml/components/Toast.qml
-set_source_files_properties(src/qml/main.qml PROPERTIES QT_RESOURCE_ALIAS main.qml)
 set_source_files_properties(src/qml/tokens/PrimitiveTokens.qml PROPERTIES QT_RESOURCE_ALIAS tokens/PrimitiveTokens.qml)
 set_source_files_properties(src/qml/tokens/SemanticTokens.qml PROPERTIES QT_RESOURCE_ALIAS tokens/SemanticTokens.qml)
 set_source_files_properties(src/qml/tokens/ComponentTokens.qml PROPERTIES QT_RESOURCE_ALIAS tokens/ComponentTokens.qml)
@@ -912,7 +909,6 @@ qt_add_qml_module(snaptray_qml
     VERSION 1.0
     STATIC
     QML_FILES
-        src/qml/main.qml
         src/qml/tokens/PrimitiveTokens.qml
         src/qml/tokens/SemanticTokens.qml
         src/qml/tokens/ComponentTokens.qml
@@ -980,8 +976,6 @@ qt_add_qml_module(snaptray_qml
     SOURCES
         src/ui/DesignSystem.cpp
         include/ui/DesignSystem.h
-        src/qml/AnnotationCanvas.cpp
-        include/qml/AnnotationCanvas.h
         src/qml/ThemeManager.cpp
         include/qml/ThemeManager.h
         src/qml/BeautifyPanelBackend.cpp

@@ -18,8 +18,6 @@ class ColorDialog : public QDialog
 {
     Q_OBJECT
     Q_PROPERTY(QColor color READ color WRITE setColor NOTIFY colorChanged)
-    Q_PROPERTY(bool showAlpha READ showAlpha WRITE setShowAlpha)
-    Q_PROPERTY(bool showButtons READ showButtons WRITE setShowButtons)
 
 public:
     explicit ColorDialog(QWidget* parent = nullptr);
@@ -27,12 +25,6 @@ public:
     ~ColorDialog() override;
 
     QColor color() const;
-    bool showAlpha() const;
-    bool showButtons() const;
-
-    // Static convenience method
-    static QColor getColor(const QColor& initial = Qt::white, QWidget* parent = nullptr,
-                           const QString& title = QString());
 
 public slots:
     void setColor(const QColor& color);

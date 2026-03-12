@@ -24,7 +24,6 @@
 #include "TextFormattingState.h"
 #include "annotation/AnnotationHostAdapter.h"
 #include "tools/ToolId.h"
-#include "tools/ToolTraits.h"
 #include "tools/ToolManager.h"
 #include "region/SelectionStateManager.h"
 #include "region/MagnifierPanel.h"
@@ -72,11 +71,6 @@ class ShareUploadClient;
 namespace SnapTray { class QmlToast; }
 
 // ShapeType and ShapeFillMode are defined in annotations/ShapeAnnotation.h
-
-// Helper to check if a tool is handled by ToolManager.
-inline bool isToolManagerHandledTool(ToolId id) {
-    return ToolTraits::isToolManagerHandledTool(id);
-}
 
 class RegionSelector : public QWidget, public AnnotationHostAdapter
 {

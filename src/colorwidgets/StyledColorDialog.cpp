@@ -242,33 +242,12 @@ void StyledColorDialog::mouseReleaseEvent(QMouseEvent* event)
     ColorDialog::mouseReleaseEvent(event);
 }
 
-bool StyledColorDialog::hasCustomTitleBar() const
-{
-    return m_customTitleBar;
-}
-
 void StyledColorDialog::setCustomTitleBar(bool custom)
 {
     if (m_customTitleBar != custom) {
         m_customTitleBar = custom;
         // Would need to rebuild UI to change this at runtime
     }
-}
-
-QColor StyledColorDialog::getColor(const QColor& initial, QWidget* parent, const QString& title)
-{
-    StyledColorDialog dialog(initial, parent);
-    if (!title.isEmpty()) {
-        dialog.setWindowTitle(title);
-        if (dialog.m_titleLabel) {
-            dialog.m_titleLabel->setText(title);
-        }
-    }
-
-    if (dialog.exec() == QDialog::Accepted) {
-        return dialog.color();
-    }
-    return initial;
 }
 
 }  // namespace colorwidgets

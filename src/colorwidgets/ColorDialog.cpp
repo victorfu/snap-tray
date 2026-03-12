@@ -531,11 +531,6 @@ void ColorDialog::setColor(const QColor& color)
     }
 }
 
-bool ColorDialog::showAlpha() const
-{
-    return m_showAlpha;
-}
-
 void ColorDialog::setShowAlpha(bool show)
 {
     if (m_showAlpha != show) {
@@ -548,11 +543,6 @@ void ColorDialog::setShowAlpha(bool show)
         }
         updateHexEdit();
     }
-}
-
-bool ColorDialog::showButtons() const
-{
-    return m_showButtons;
 }
 
 void ColorDialog::setShowButtons(bool show)
@@ -587,20 +577,6 @@ void ColorDialog::keyPressEvent(QKeyEvent* event)
     } else {
         QDialog::keyPressEvent(event);
     }
-}
-
-// Static method
-QColor ColorDialog::getColor(const QColor& initial, QWidget* parent, const QString& title)
-{
-    ColorDialog dialog(initial, parent);
-    if (!title.isEmpty()) {
-        dialog.setWindowTitle(title);
-    }
-
-    if (dialog.exec() == QDialog::Accepted) {
-        return dialog.color();
-    }
-    return initial;
 }
 
 }  // namespace colorwidgets

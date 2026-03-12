@@ -105,10 +105,6 @@ inline Palette paletteForToolbarStyle()
     };
 }
 
-// Shared CSS generators — implemented in DialogThemeUtils.cpp
-QString baseStylesheet(const Palette& palette);
-QString successButtonStylesheet(const Palette& palette);
-
 inline QString toCssColor(const QColor& color)
 {
     if (color.alpha() == 255) {

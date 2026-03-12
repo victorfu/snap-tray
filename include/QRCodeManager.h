@@ -80,24 +80,6 @@ public:
      */
     static bool canEncode(const QString &text, int eccLevel = 1);
 
-    /**
-     * @brief Get maximum encodable character count
-     * @param eccLevel Error correction level (0=L, 1=M, 2=Q, 3=H)
-     */
-    static int maxEncodableLength(int eccLevel = 1);
-
-    // ========== Utility ==========
-
-    /**
-     * @brief Check if QR Code functionality is available
-     */
-    static bool isAvailable();
-
-    /**
-     * @brief Get supported barcode formats
-     */
-    static QStringList supportedFormats();
-
 signals:
     void decodeComplete(const QRDecodeResult &result);
     void encodeComplete(const QImage &qrCode);

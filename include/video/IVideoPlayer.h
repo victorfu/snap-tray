@@ -49,7 +49,6 @@ public:
 
     // Factory method
     static IVideoPlayer* create(QObject *parent = nullptr);
-    static bool isAvailable();
 
 signals:
     void stateChanged(IVideoPlayer::State state);

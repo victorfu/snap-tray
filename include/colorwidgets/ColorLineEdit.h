@@ -10,15 +10,11 @@ class ColorLineEdit : public QLineEdit
 {
     Q_OBJECT
     Q_PROPERTY(QColor color READ color WRITE setColor NOTIFY colorChanged)
-    Q_PROPERTY(bool showAlpha READ showAlpha WRITE setShowAlpha)
-    Q_PROPERTY(bool previewColor READ previewColor WRITE setPreviewColor)
 
 public:
     explicit ColorLineEdit(QWidget* parent = nullptr);
 
     QColor color() const;
-    bool showAlpha() const;
-    bool previewColor() const;
 
 public slots:
     void setColor(const QColor& color);

@@ -34,16 +34,3 @@ IVideoPlayer* IVideoPlayer::create(QObject *parent)
     qWarning() << "IVideoPlayer: No video player implementation available";
     return nullptr;
 }
-
-bool IVideoPlayer::isAvailable()
-{
-#ifdef Q_OS_MAC
-    return isAVFoundationAvailable();
-#endif
-
-#ifdef Q_OS_WIN
-    return isMediaFoundationAvailable();
-#endif
-
-    return false;
-}
