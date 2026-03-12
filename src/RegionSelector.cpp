@@ -2936,6 +2936,8 @@ void RegionSelector::onQRCodeComplete(bool success, const QString& text, const Q
         auto* vm = new QRCodeResultViewModel(this);
         vm->setPinActionAvailable(true);
         vm->setResult(text, format, sourceImage);
+        const QPoint selectionGlobalTopLeft =
+            localToGlobal(m_selectionManager->selectionRect().topLeft());
 
         auto* dialog = new SnapTray::QmlDialog(
             QUrl("qrc:/SnapTrayQml/dialogs/QRCodeResultDialog.qml"),
@@ -2955,10 +2957,11 @@ void RegionSelector::onQRCodeComplete(bool success, const QString& text, const Q
             });
 
         connect(vm, &QRCodeResultViewModel::pinGeneratedRequested, this,
-            [this, dialog](const QPixmap& pixmap) {
-                const QPoint globalTopLeft;
+            [this, dialog, selectionGlobalTopLeft](const QPixmap& pixmap) {
+                // Generated QR codes are synthetic content, so they have no source-region
+                // metadata. Open the pin near the current selection instead of (0, 0).
                 const QRect globalRect;
-                emit regionSelected(pixmap, globalTopLeft, globalRect);
+                emit regionSelected(pixmap, selectionGlobalTopLeft, globalRect);
                 dialog->close();
                 close();
             });
