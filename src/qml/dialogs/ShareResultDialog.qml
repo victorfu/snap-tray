@@ -43,6 +43,8 @@ DialogBase {
                     font.pixelSize: SemanticTokens.fontSizeBody
                     font.family: Qt.platform.os === "osx" ? "Menlo" : "Consolas"
                     color: SemanticTokens.textPrimary
+                    selectionColor: ComponentTokens.inputSelectionBackground
+                    selectedTextColor: ComponentTokens.inputSelectionText
                     placeholderText: qsTr("No URL")
                     placeholderTextColor: SemanticTokens.textTertiary
                     background: Rectangle {
@@ -74,6 +76,8 @@ DialogBase {
                     font.pixelSize: SemanticTokens.fontSizeBody
                     font.family: Qt.platform.os === "osx" ? "Menlo" : "Consolas"
                     color: SemanticTokens.textPrimary
+                    selectionColor: ComponentTokens.inputSelectionBackground
+                    selectedTextColor: ComponentTokens.inputSelectionText
                     background: Rectangle {
                         radius: DesignSystem.inputRadius
                         color: DesignSystem.inputBackground

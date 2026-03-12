@@ -1,5 +1,6 @@
 #include "InlineTextEditor.h"
 #include "cursor/CursorManager.h"
+#include "ui/DesignSystem.h"
 
 #include <QTextEdit>
 #include <QTextDocument>
@@ -389,6 +390,9 @@ void InlineTextEditor::updateStyle()
     const QString focusedBackground = useDarkBackdrop
         ? QStringLiteral("rgba(0, 0, 0, 150)")
         : QStringLiteral("rgba(220, 242, 255, 70)");
+    const auto& designSystem = DesignSystem::instance();
+    const QString selectionBackground = designSystem.inputSelectionBackground().name(QColor::HexArgb);
+    const QString selectionText = designSystem.inputSelectionText().name(QColor::HexArgb);
 
     // Keep blue focus chrome while preserving contrast for light text colors.
     QString styleSheet = QString(
@@ -403,6 +407,8 @@ void InlineTextEditor::updateStyle()
         "  font-style: %4;"
         "  text-decoration: %5;"
         "  %6"
+        "  selection-background-color: %9;"
+        "  selection-color: %10;"
         "}"
         "QTextEdit:focus {"
         "  background: %8;"
@@ -415,7 +421,9 @@ void InlineTextEditor::updateStyle()
      .arg(textDecoration)
      .arg(fontFamily)
      .arg(normalBackground)
-     .arg(focusedBackground);
+     .arg(focusedBackground)
+     .arg(selectionBackground)
+     .arg(selectionText);
     m_textEdit->setStyleSheet(styleSheet);
 }
 

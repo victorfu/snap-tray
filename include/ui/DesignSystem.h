@@ -470,6 +470,8 @@ class DesignSystem : public QObject
     Q_PROPERTY(QColor inputBackground READ inputBackground NOTIFY themeChanged)
     Q_PROPERTY(QColor inputBorder READ inputBorder NOTIFY themeChanged)
     Q_PROPERTY(QColor inputBorderFocus READ inputBorderFocus CONSTANT)
+    Q_PROPERTY(QColor inputSelectionBackground READ inputSelectionBackground NOTIFY themeChanged)
+    Q_PROPERTY(QColor inputSelectionText READ inputSelectionText NOTIFY themeChanged)
     Q_PROPERTY(int inputRadius READ inputRadius CONSTANT)
     Q_PROPERTY(int inputHeight READ inputHeight CONSTANT)
     Q_PROPERTY(QColor sliderTrack READ sliderTrack NOTIFY themeChanged)
@@ -997,6 +999,8 @@ public:
     QColor inputBackground() const;
     QColor inputBorder() const;
     QColor inputBorderFocus() const;
+    QColor inputSelectionBackground() const;
+    QColor inputSelectionText() const;
     int inputRadius() const;
     int inputHeight() const;
     QColor sliderTrack() const;

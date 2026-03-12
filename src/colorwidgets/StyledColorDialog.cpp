@@ -69,38 +69,40 @@ void StyledColorDialog::applySnapTrayStyle()
             border-radius: 0px;
             color: %4;
             padding: 4px 8px;
+            selection-background-color: %7;
+            selection-color: %8;
         }
         QPushButton {
-            background-color: %7;
-            border: 1px solid %8;
+            background-color: %9;
+            border: 1px solid %10;
             border-radius: 0px;
-            color: %9;
+            color: %11;
             padding: 6px 16px;
             min-width: 60px;
         }
         QPushButton:hover {
-            background-color: %10;
+            background-color: %12;
         }
         QPushButton:pressed {
-            background-color: %11;
+            background-color: %13;
         }
         QPushButton:disabled {
-            background-color: %12;
-            border-color: %13;
-            color: %14;
-        }
-        QPushButton#okButton {
-            background-color: %15;
-            border: 1px solid %15;
+            background-color: %14;
+            border-color: %15;
             color: %16;
         }
-        QPushButton#okButton:hover {
+        QPushButton#okButton {
             background-color: %17;
-            border-color: %17;
+            border: 1px solid %17;
+            color: %18;
+        }
+        QPushButton#okButton:hover {
+            background-color: %19;
+            border-color: %19;
         }
         QPushButton#okButton:pressed {
-            background-color: %18;
-            border-color: %18;
+            background-color: %20;
+            border-color: %20;
         }
     )")
         .arg(SnapTray::DialogTheme::toCssColor(palette.textPrimary))
@@ -109,6 +111,8 @@ void StyledColorDialog::applySnapTrayStyle()
         .arg(SnapTray::DialogTheme::toCssColor(palette.textPrimary))
         .arg(SnapTray::DialogTheme::toCssColor(palette.buttonBackground))
         .arg(SnapTray::DialogTheme::toCssColor(palette.buttonHoverBackground))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.selectionBackground))
+        .arg(SnapTray::DialogTheme::toCssColor(palette.selectionText))
         .arg(SnapTray::DialogTheme::toCssColor(palette.buttonBackground))
         .arg(SnapTray::DialogTheme::toCssColor(palette.controlBorder))
         .arg(SnapTray::DialogTheme::toCssColor(palette.buttonText))

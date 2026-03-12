@@ -82,6 +82,8 @@ DialogBase {
                                 readOnly: true
                                 wrapMode: TextEdit.Wrap
                                 color: SemanticTokens.textPrimary
+                                selectionColor: ComponentTokens.inputSelectionBackground
+                                selectedTextColor: ComponentTokens.inputSelectionText
                                 font.pixelSize: SemanticTokens.fontSizeBody
                                 font.family: SemanticTokens.fontFamily
 

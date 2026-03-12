@@ -28,6 +28,8 @@ DialogBase {
                     wrapMode: TextEdit.Wrap
                     selectByMouse: true
                     color: SemanticTokens.textPrimary
+                    selectionColor: ComponentTokens.inputSelectionBackground
+                    selectedTextColor: ComponentTokens.inputSelectionText
                     placeholderText: qsTr("No text recognized")
                     placeholderTextColor: SemanticTokens.textTertiary
                     font.pixelSize: SemanticTokens.fontSizeBody

@@ -56,6 +56,8 @@ Flickable {
                     verticalAlignment: TextInput.AlignVCenter
                     text: settingsBackend.filenameTemplate
                     color: SemanticTokens.textPrimary
+                    selectionColor: ComponentTokens.inputSelectionBackground
+                    selectedTextColor: ComponentTokens.inputSelectionText
                     font.pixelSize: SemanticTokens.fontSizeBody
                     font.family: SemanticTokens.fontFamily
                     font.letterSpacing: SemanticTokens.letterSpacingDefault

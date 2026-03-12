@@ -619,6 +619,13 @@ int DesignSystem::toggleLabelIndent() const { return 140; }
 QColor DesignSystem::inputBackground() const  { return m_isDark ? QColor::fromRgbF(1, 1, 1, 0.04) : QColor::fromRgbF(0, 0, 0, 0.03); }
 QColor DesignSystem::inputBorder() const      { return borderDefault(); }
 QColor DesignSystem::inputBorderFocus() const { return borderFocus(); }
+QColor DesignSystem::inputSelectionBackground() const
+{
+    QColor color = m_isDark ? blue400() : blue500();
+    color.setAlpha(m_isDark ? 112 : 72);
+    return color;
+}
+QColor DesignSystem::inputSelectionText() const { return textPrimary(); }
 int    DesignSystem::inputRadius() const      { return radiusSmall(); }
 int    DesignSystem::inputHeight() const      { return 32; }
 

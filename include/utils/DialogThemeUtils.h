@@ -27,6 +27,7 @@ struct Palette {
     QColor buttonDisabledText;
     QColor buttonDisabledBorder;
     QColor selectionBackground;
+    QColor selectionText;
     QColor accentBackground;
     QColor accentHoverBackground;
     QColor accentPressedBackground;
@@ -63,7 +64,8 @@ inline Palette paletteForToolbarStyle()
             QColor(236, 236, 236),  // buttonDisabledBackground
             QColor(158, 158, 158),  // buttonDisabledText
             QColor(220, 220, 220),  // buttonDisabledBorder
-            QColor(144, 202, 249),  // selectionBackground
+            QColor(59, 130, 246, 72), // selectionBackground
+            QColor(48, 48, 48),     // selectionText
             QColor(0x6C, 0x5C, 0xE7), // accentBackground
             QColor(0x5A, 0x4B, 0xD6), // accentHoverBackground
             QColor(0x4A, 0x3B, 0xC5), // accentPressedBackground
@@ -91,7 +93,8 @@ inline Palette paletteForToolbarStyle()
         QColor(42, 42, 42),    // buttonDisabledBackground
         QColor(102, 102, 102), // buttonDisabledText
         QColor(58, 58, 58),    // buttonDisabledBorder
-        QColor(102, 179, 255), // selectionBackground
+        QColor(96, 165, 250, 112), // selectionBackground
+        QColor(224, 224, 224), // selectionText
         QColor(0xA2, 0x9B, 0xFE), // accentBackground
         QColor(0x6C, 0x5C, 0xE7), // accentHoverBackground
         QColor(0x5A, 0x4B, 0xD6), // accentPressedBackground

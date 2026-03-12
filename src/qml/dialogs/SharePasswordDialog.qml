@@ -37,6 +37,8 @@ DialogBase {
                     font.pixelSize: SemanticTokens.fontSizeBody
                     font.family: SemanticTokens.fontFamily
                     color: SemanticTokens.textPrimary
+                    selectionColor: ComponentTokens.inputSelectionBackground
+                    selectedTextColor: ComponentTokens.inputSelectionText
                     placeholderTextColor: SemanticTokens.textTertiary
 
                     background: Rectangle {

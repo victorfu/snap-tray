@@ -166,6 +166,8 @@ QtObject {
     readonly property color inputBackground: DesignSystem.inputBackground
     readonly property color inputBorder: DesignSystem.inputBorder
     readonly property color inputBorderFocus: DesignSystem.inputBorderFocus
+    readonly property color inputSelectionBackground: DesignSystem.inputSelectionBackground
+    readonly property color inputSelectionText: DesignSystem.inputSelectionText
     readonly property int inputRadius: DesignSystem.inputRadius
     readonly property int inputHeight: DesignSystem.inputHeight
 

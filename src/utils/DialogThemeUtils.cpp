@@ -47,6 +47,7 @@ QString baseStylesheet(const Palette& palette)
             padding: 8px;
             font-size: 13px;
             selection-background-color: %10;
+            selection-color: %11;
         }
 
         #buttonBar {
@@ -56,8 +57,8 @@ QString baseStylesheet(const Palette& palette)
         }
 
         QPushButton {
-            background-color: %11;
-            color: %12;
+            background-color: %12;
+            color: %13;
             border: 1px solid %5;
             border-radius: 6px;
             font-size: 13px;
@@ -66,18 +67,18 @@ QString baseStylesheet(const Palette& palette)
         }
 
         QPushButton:hover {
-            background-color: %13;
+            background-color: %14;
             border-color: %2;
         }
 
         QPushButton:pressed {
-            background-color: %14;
+            background-color: %15;
         }
 
         QPushButton:disabled {
-            background-color: %15;
-            color: %16;
-            border-color: %17;
+            background-color: %16;
+            color: %17;
+            border-color: %18;
         }
     )")
     .arg(toCssColor(palette.windowBackground))       // %1
@@ -90,13 +91,14 @@ QString baseStylesheet(const Palette& palette)
     .arg(toCssColor(palette.inputBackground))         // %8
     .arg(toCssColor(palette.inputBorder))             // %9
     .arg(toCssColor(palette.selectionBackground))     // %10
-    .arg(toCssColor(palette.buttonBackground))        // %11
-    .arg(toCssColor(palette.buttonText))              // %12
-    .arg(toCssColor(palette.buttonHoverBackground))   // %13
-    .arg(toCssColor(palette.buttonPressedBackground)) // %14
-    .arg(toCssColor(palette.buttonDisabledBackground))// %15
-    .arg(toCssColor(palette.buttonDisabledText))      // %16
-    .arg(toCssColor(palette.buttonDisabledBorder));   // %17
+    .arg(toCssColor(palette.selectionText))           // %11
+    .arg(toCssColor(palette.buttonBackground))        // %12
+    .arg(toCssColor(palette.buttonText))              // %13
+    .arg(toCssColor(palette.buttonHoverBackground))   // %14
+    .arg(toCssColor(palette.buttonPressedBackground)) // %15
+    .arg(toCssColor(palette.buttonDisabledBackground))// %16
+    .arg(toCssColor(palette.buttonDisabledText))      // %17
+    .arg(toCssColor(palette.buttonDisabledBorder));   // %18
 }
 
 QString successButtonStylesheet(const Palette& palette)
