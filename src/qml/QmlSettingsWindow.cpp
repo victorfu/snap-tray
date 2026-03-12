@@ -1,13 +1,38 @@
 #include "qml/QmlSettingsWindow.h"
 #include "qml/QmlOverlayManager.h"
+#include "qml/QmlDialog.h"
 #include "qml/SettingsBackend.h"
 #include "qml/QmlToast.h"
+#include "qml/UpdateDialogViewModel.h"
 #include "PlatformFeatures.h"
 
 #include <QQmlContext>
 #include <QQuickView>
 
 namespace SnapTray {
+
+namespace {
+void showUpdateDialog(QObject* parent, UpdateDialogViewModel* viewModel,
+                      SettingsBackend* backend)
+{
+    auto* dialog = new QmlDialog(
+        QUrl(QStringLiteral("qrc:/SnapTrayQml/dialogs/UpdateDialog.qml")),
+        viewModel, QStringLiteral("viewModel"), parent);
+
+    QObject::connect(viewModel, &UpdateDialogViewModel::retryRequested, parent,
+                     [backend]() {
+        if (backend) {
+            backend->checkForUpdates();
+        }
+    });
+    QObject::connect(viewModel, &UpdateDialogViewModel::closeRequested, parent,
+                     [dialog]() {
+        dialog->close();
+    });
+
+    dialog->showAt();
+}
+}
 
 QmlSettingsWindow::QmlSettingsWindow(QObject* parent)
     : QObject(parent)
@@ -50,6 +75,29 @@ void QmlSettingsWindow::ensureView()
             tr("Settings saved. Language change will apply after restart."),
             QString(),
             2000);
+    });
+    connect(m_backend, &SettingsBackend::updateAvailable,
+            this, [this](const QString& version, const QString& notes,
+                         const QString& releaseUrl) {
+        ReleaseInfo release;
+        release.version = version;
+        release.releaseNotes = notes;
+        release.htmlUrl = releaseUrl;
+        showUpdateDialog(this,
+                         UpdateDialogViewModel::createForRelease(release, this),
+                         m_backend);
+    });
+    connect(m_backend, &SettingsBackend::noUpdateAvailable,
+            this, [this]() {
+        showUpdateDialog(this,
+                         UpdateDialogViewModel::createUpToDate(this),
+                         m_backend);
+    });
+    connect(m_backend, &SettingsBackend::updateCheckFailed,
+            this, [this](const QString& error) {
+        showUpdateDialog(this,
+                         UpdateDialogViewModel::createError(error, this),
+                         m_backend);
     });
 
 #ifdef Q_OS_MAC

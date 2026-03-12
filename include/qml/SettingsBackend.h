@@ -303,7 +303,8 @@ signals:
     void isCheckingForUpdatesChanged();
 
     // Update check results
-    void updateAvailable(const QString& version, const QString& notes);
+    void updateAvailable(const QString& version, const QString& notes,
+                         const QString& releaseUrl);
     void noUpdateAvailable();
     void updateCheckFailed(const QString& error);
 

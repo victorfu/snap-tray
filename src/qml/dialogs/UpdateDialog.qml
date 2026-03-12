@@ -5,6 +5,8 @@ import SnapTrayQml
 DialogBase {
     id: root
     property var viewModel: null
+    readonly property int compactDialogWidth: 420
+    readonly property int releaseDialogWidth: 500
 
     title: {
         if (!viewModel) return ""
@@ -28,7 +30,9 @@ DialogBase {
         if (viewModel.mode === 1) return "\u2713"          // check
         return "\u26A0"                                     // warning
     }
-    dialogWidth: (viewModel && viewModel.mode === 0) ? 480 : 320
+    dialogWidth: (viewModel && viewModel.mode === 0)
+        ? releaseDialogWidth
+        : compactDialogWidth
 
     onCloseRequested: if (viewModel) viewModel.close()
 

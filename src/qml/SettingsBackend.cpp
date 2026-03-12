@@ -714,7 +714,8 @@ void SettingsBackend::checkForUpdates()
                     m_isCheckingForUpdates = false;
                     emit isCheckingForUpdatesChanged();
                     emit lastCheckedTextChanged();
-                    emit updateAvailable(release.version, release.releaseNotes);
+                    emit updateAvailable(release.version, release.releaseNotes,
+                                         release.htmlUrl);
                 });
 
         connect(m_updateChecker, &UpdateChecker::noUpdateAvailable, this, [this]() {
