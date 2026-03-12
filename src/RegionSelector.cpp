@@ -112,7 +112,8 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_devicePixelRatio(1.0)
     , m_annotationLayer(nullptr)
     , m_isClosing(false)
-    , m_isDialogOpen(false)
+    , m_saveDialogOpen(false)
+    , m_dropdownOpen(false)
     , m_windowDetector(nullptr)
     , m_ocrManager(nullptr)
     , m_ocrInProgress(false)
@@ -637,13 +638,13 @@ RegionSelector::RegionSelector(QWidget* parent)
         });
     connect(m_exportManager, &RegionExportManager::saveDialogOpening,
         this, [this]() {
-            m_isDialogOpen = true;
+            m_saveDialogOpen = true;
             hideDetachedFloatingUi();
             hide();
         });
     connect(m_exportManager, &RegionExportManager::saveDialogClosed,
         this, [this](bool saved) {
-            m_isDialogOpen = false;
+            m_saveDialogOpen = false;
             if (!saved) {
                 restoreAfterDialogCancelled();
             }
@@ -672,17 +673,16 @@ RegionSelector::RegionSelector(QWidget* parent)
             }
             update();
 
-            m_isDialogOpen = true;
             auto* vm = new ShareResultViewModel(this);
             vm->setResult(url, expiresAt, isProtected, m_pendingSharePassword);
             m_pendingSharePassword.clear();
             auto* dialog = new SnapTray::QmlDialog(
                 QUrl("qrc:/SnapTrayQml/dialogs/ShareResultDialog.qml"),
                 vm, "viewModel", this);
+            trackBlockingDialog(dialog);
             connect(vm, &ShareResultViewModel::dialogClosed, this, [this, dialog]() {
-                m_isDialogOpen = false;
                 dialog->close();
-                close();
+                restoreAfterDialogCancelled();
             });
             dialog->showAt();
         });
@@ -866,12 +866,14 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_settingsHelper->setParentWidget(this);
     connect(m_settingsHelper, &RegionSettingsHelper::dropdownShown,
         this, [this]() {
+            m_dropdownOpen = true;
             auto& cursorManager = CursorManager::instance();
             cursorManager.pushCursorForWidget(this, CursorContext::Override, Qt::ArrowCursor);
             cursorManager.reapplyCursorForWidget(this);
         });
     connect(m_settingsHelper, &RegionSettingsHelper::dropdownHidden,
         this, [this]() {
+            m_dropdownOpen = false;
             QTimer::singleShot(0, this, &RegionSelector::syncFloatingUiCursor);
         });
     connect(m_settingsHelper, &RegionSettingsHelper::fontSizeSelected,
@@ -1414,7 +1416,7 @@ void RegionSelector::handleCursorScreenSwitch()
     if (m_isClosing || !isVisible() || !isScreenValid()) {
         return;
     }
-    if (m_isDialogOpen) {
+    if (hasBlockingTransientUiOpen()) {
         return;
     }
     if (m_textEditor->isEditing() ||
@@ -2009,6 +2011,46 @@ void RegionSelector::restoreAfterDialogCancelled()
     syncFloatingUiCursor();
 }
 
+bool RegionSelector::hasBlockingTransientUiOpen() const
+{
+    if (m_saveDialogOpen || m_dropdownOpen || m_openBlockingDialogCount > 0) {
+        return true;
+    }
+
+    if (m_colorPickerDialog && m_colorPickerDialog->isVisible()) {
+        return true;
+    }
+
+    if (QApplication::activePopupWidget() || QApplication::activeModalWidget()) {
+        return true;
+    }
+
+    return false;
+}
+
+void RegionSelector::trackBlockingDialog(SnapTray::QmlDialog* dialog)
+{
+    if (!dialog) {
+        return;
+    }
+
+    ++m_openBlockingDialogCount;
+    auto released = std::make_shared<bool>(false);
+    auto release = [this, released]() {
+        if (*released) {
+            return;
+        }
+
+        *released = true;
+        if (m_openBlockingDialogCount > 0) {
+            --m_openBlockingDialogCount;
+        }
+    };
+
+    connect(dialog, &SnapTray::QmlDialog::closed, this, release);
+    connect(dialog, &QObject::destroyed, this, release);
+}
+
 bool RegionSelector::shouldShowMagnifier() const
 {
     if (m_inputState.isDrawing || isAnnotationTool(m_inputState.currentTool)) {
@@ -2293,13 +2335,12 @@ void RegionSelector::shareToUrl()
         return;
     }
 
-    m_isDialogOpen = true;
     auto* vm = new SharePasswordViewModel(this);
     auto* dialog = new SnapTray::QmlDialog(
         QUrl("qrc:/SnapTrayQml/dialogs/SharePasswordDialog.qml"),
         vm, "viewModel", this);
+    trackBlockingDialog(dialog);
     connect(vm, &SharePasswordViewModel::accepted, this, [this, vm, dialog, selectedRegion]() {
-        m_isDialogOpen = false;
         dialog->close();
         if (m_shareInProgress || !m_shareClient) {
             return;
@@ -2318,9 +2359,9 @@ void RegionSelector::shareToUrl()
         m_shareClient->uploadPixmap(selectedRegion, m_pendingSharePassword);
     });
     connect(vm, &SharePasswordViewModel::rejected, this, [this, dialog]() {
-        m_isDialogOpen = false;
         m_pendingSharePassword.clear();
         dialog->close();
+        restoreAfterDialogCancelled();
     });
     dialog->setModal(true);
     dialog->showAt();
@@ -2484,6 +2525,11 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
     }
 
     if (event->key() == Qt::Key_Escape) {
+        if (hasBlockingTransientUiOpen()) {
+            event->ignore();
+            return;
+        }
+
         // Try to handle escape in tool first (e.g. finish polyline)
         if (m_toolManager && m_toolManager->handleEscape()) {
             event->accept();
@@ -2724,7 +2770,7 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
         if (keyEvent->key() == Qt::Key_Escape) {
             // Let the active dialog (save/share/OCR/QR) consume Esc so this
             // global handler does not cancel the entire capture session.
-            if (m_isDialogOpen) {
+            if (hasBlockingTransientUiOpen()) {
                 return false;
             }
 
@@ -2758,7 +2804,7 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
     }
     else if (event->type() == QEvent::ApplicationDeactivate) {
         // Don't cancel if a dialog is open (e.g., save dialog)
-        if (m_isDialogOpen) {
+        if (hasBlockingTransientUiOpen()) {
             return false;
         }
         // Startup protection: ignore deactivation if window hasn't been activated yet
@@ -2867,6 +2913,7 @@ void RegionSelector::showOCRResultDialog(const OCRResult& result)
     auto* dialog = new SnapTray::QmlDialog(
         QUrl("qrc:/SnapTrayQml/dialogs/OCRResultDialog.qml"),
         vm, "viewModel", this);
+    trackBlockingDialog(dialog);
 
     connect(vm, &OCRResultViewModel::textCopied, this, [this](const QString& copiedText) {
         qDebug() << "OCR text copied:" << copiedText.length() << "characters";
@@ -2880,7 +2927,7 @@ void RegionSelector::showOCRResultDialog(const OCRResult& result)
 
     connect(vm, &OCRResultViewModel::dialogClosed, this, [this, dialog]() {
         dialog->close();
-        close();
+        restoreAfterDialogCancelled();
     });
 
     dialog->showAt();
@@ -2940,6 +2987,7 @@ void RegionSelector::onQRCodeComplete(bool success, const QString& text, const Q
         auto* dialog = new SnapTray::QmlDialog(
             QUrl("qrc:/SnapTrayQml/dialogs/QRCodeResultDialog.qml"),
             vm, "viewModel", this);
+        trackBlockingDialog(dialog);
 
         connect(vm, &QRCodeResultViewModel::textCopied, this, [](const QString& copiedText) {
             qDebug() << "QR Code text copied:" << copiedText.length() << "characters";
@@ -2966,7 +3014,7 @@ void RegionSelector::onQRCodeComplete(bool success, const QString& text, const Q
 
         connect(vm, &QRCodeResultViewModel::dialogClosed, this, [this, dialog]() {
             dialog->close();
-            close();
+            restoreAfterDialogCancelled();
         });
 
         dialog->showAt();

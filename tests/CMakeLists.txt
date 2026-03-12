@@ -168,6 +168,11 @@ target_link_libraries(RegionSelector_MultiRegionSubToolbar PRIVATE snaptray_ui s
 add_test(NAME RegionSelector_MultiRegionSubToolbar COMMAND RegionSelector_MultiRegionSubToolbar)
 set_tests_properties(RegionSelector_MultiRegionSubToolbar PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RegionSelector_TransientUiCancelGuard RegionSelector/tst_TransientUiCancelGuard.cpp)
+target_link_libraries(RegionSelector_TransientUiCancelGuard PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME RegionSelector_TransientUiCancelGuard COMMAND RegionSelector_TransientUiCancelGuard)
+set_tests_properties(RegionSelector_TransientUiCancelGuard PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # Encoding Tests (link snaptray_platform)
 # ============================================================================

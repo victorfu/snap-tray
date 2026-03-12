@@ -42,6 +42,7 @@ class QmlFloatingToolbar;
 class QmlFloatingSubToolbar;
 class QmlOverlayPanel;
 class QmlEmojiPickerPopup;
+class QmlDialog;
 }
 
 namespace snaptray {
@@ -83,6 +84,7 @@ class RegionSelector : public QWidget, public AnnotationHostAdapter
 
     friend class tst_RegionSelectorMultiRegionSubToolbar;
     friend class tst_RegionSelectorMagnifierToolbarVisibility;
+    friend class tst_RegionSelectorTransientUiCancelGuard;
     friend class TestRegionSelectorStyleSync;
 
 public:
@@ -235,6 +237,8 @@ private:
     void restoreRegionCursorAt(const QPoint& localPos);
     void hideDetachedFloatingUi();
     void restoreAfterDialogCancelled();
+    bool hasBlockingTransientUiOpen() const;
+    void trackBlockingDialog(SnapTray::QmlDialog* dialog);
     void syncSelectionToolbarHoverState(const QPoint& globalPos);
     bool isCursorOverSelectionToolbar(const QPoint& globalPos) const;
     bool isGlobalPosOverFloatingUi(const QPoint& globalPos) const;
@@ -287,7 +291,9 @@ private:
 
     // Selection state flags
     bool m_isClosing;
-    bool m_isDialogOpen;  // Prevents close during file dialog
+    bool m_saveDialogOpen;
+    bool m_dropdownOpen;
+    int m_openBlockingDialogCount = 0;
 
     // Window detection state
     WindowDetector *m_windowDetector;
