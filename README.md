@@ -388,26 +388,26 @@ SnapTray provides a CLI for scripting and automation.
 ### CLI Setup
 
 **macOS:**
-Open Settings → General → Install CLI to create the system-wide `snaptray` command. This requires administrator privileges.
+Open Settings → General → Install CLI to create `/usr/local/bin/snaptray`. This requires administrator privileges.
 
-**Windows (NSIS Installer):**
-The installer automatically adds SnapTray to your system PATH. Open a new terminal after installation.
+**Windows:**
+Open Settings → General → Install CLI to add SnapTray's executable directory to the current user's `PATH`. Open a new terminal after install or uninstall.
 
-**Windows (MSIX/MS Store):**
-The `snaptray` command is available immediately after installation via App Execution Alias.
+**Packaged Windows builds:**
+Some installers may already expose `snaptray` through `PATH` or App Execution Alias, but the in-app install/remove action above reflects the current application code.
 
 ### CLI Commands
 
 | Command | Description | Requires Main Instance |
 |---------|-------------|----------------------|
-| `full` | Capture full screen | No |
-| `screen` | Capture specified screen | No |
-| `region` | Capture specified region | No |
+| `full` | Capture the entire screen under the cursor, or the `-n` selected screen | No |
+| `screen` | Capture a specific screen, or list screens with `--list` | No |
+| `region` | Capture `-r x,y,width,height` from a selected screen | No |
 | `gui` | Open region capture GUI | Yes |
-| `canvas` | Toggle Screen Canvas | Yes |
+| `canvas` | Toggle Screen Canvas mode | Yes |
 | `record` | Start/stop/toggle recording | Yes |
-| `pin` | Pin image to screen | Yes |
-| `config` | View/modify settings (no options opens Settings dialog) | Partial |
+| `pin` | Pin an image file or clipboard image | Yes |
+| `config` | `--list` / `--get` / `--set` / `--reset` run locally; no options opens Settings | Partial |
 
 ### CLI Examples
 
@@ -418,16 +418,18 @@ snaptray --version
 snaptray full --help
 
 # Local capture commands (no main instance needed)
+snaptray full                         # Capture the screen under the cursor
 snaptray full -c                      # Full screen to clipboard
 snaptray full -d 1000 -o shot.png     # Delay 1s, then save
-snaptray full -o screenshot.png       # Full screen to file
+snaptray full -n 1 -o screen1.png     # Capture screen 1 to file
+snaptray full --raw > shot.png        # Write PNG bytes to stdout
 snaptray screen --list                # List available screens
 snaptray screen 0 -c                  # Capture screen 0 (positional syntax)
 snaptray screen -n 1 -o screen1.png   # Capture screen 1 (option syntax)
 snaptray screen 1 -o screen1.png      # Capture screen 1 to file
-snaptray region -r 0,0,800,600 -c     # Capture region on screen 0 to clipboard
+snaptray region -r 0,0,800,600 -c     # Capture a region from screen 0 to clipboard
 snaptray region -n 1 -r 100,100,400,300 -o region.png
-snaptray region -r 100,100,400,300 -o region.png
+snaptray region -r 100,100,400,300 -o region.png   # Default target is screen index 0
 
 # IPC commands (requires main instance running)
 snaptray gui                          # Open region capture selector
@@ -440,37 +442,25 @@ snaptray record start -n 1            # Start full-screen recording on screen 1
 snaptray pin -f image.png             # Pin image file
 snaptray pin -c --center              # Pin from clipboard, centered
 snaptray pin -f image.png -x 200 -y 120
-snaptray config                        # Open Settings dialog (IPC)
+snaptray config                       # Open Settings dialog (IPC)
 
-# Config commands
+# Local config commands
 snaptray config --list
 snaptray config --get hotkey
 snaptray config --set files/filenamePrefix SnapTray
 snaptray config --reset
-
-# Options
-full/screen/region:
-  -c, --clipboard    Copy to clipboard
-  -o, --output       Save to file
-  -p, --path         Save directory
-  -d, --delay        Delay before capture (milliseconds)
-  -n, --screen       Screen index
-  -r, --region       Region coordinates in logical pixels (region only: x,y,width,height)
-  --raw              Output raw PNG to stdout
-
-screen only:
-  --list             List available screens
-
-record:
-  [action]           start | stop | toggle (default: toggle)
-
-pin:
-  -f, --file         Image file path
-  -c, --clipboard    Pin from clipboard
-  -x, --pos-x        Window X position
-  -y, --pos-y        Window Y position
-  --center           Center window on screen
 ```
+
+### Current Behavior Notes
+
+- Capture commands (`full`, `screen`, `region`) save a PNG by default.
+- `--clipboard` copies instead of saving. `--raw` writes PNG bytes to stdout.
+- `--output` takes priority over `--path`. Without either, SnapTray generates a filename in the configured screenshot directory.
+- `screen` supports both `snaptray screen 1` and `snaptray screen -n 1`.
+- `region` requires `-r/--region` and uses logical pixels relative to the selected screen. The rectangle must fit inside that screen.
+- `record` accepts `start`, `stop`, or `toggle`. No action means `toggle`. In the current implementation, `-n/--screen` is only consumed by `record start`.
+- `pin` requires exactly one of `--file` or `--clipboard`. `--file` must be a readable image. Custom placement only applies when both `-x` and `-y` are provided; otherwise the pin is centered.
+- `config --set` takes a single positional value. `config --reset` clears the entire settings store.
 
 ### Return Codes
 
@@ -481,7 +471,7 @@ pin:
 | 2 | Invalid arguments |
 | 3 | File error |
 | 4 | Instance error (main app not running) |
-| 5 | Recording error |
+| 5 | Recording error (`CLIResult::Code` defines it, but current CLI commands do not emit it) |
 
 ## MCP Server (V1, Localhost HTTP)
 

@@ -388,26 +388,26 @@ SnapTray 提供 CLI 介面，可用於腳本自動化。
 ### CLI 安裝設定
 
 **macOS：**
-開啟 Settings → General → Install CLI 以建立系統級的 `snaptray` 指令。此操作需要管理員權限。
+開啟 Settings → General → Install CLI 會建立 `/usr/local/bin/snaptray`。此操作需要管理員權限。
 
-**Windows (NSIS 安裝程式)：**
-安裝程式會自動將 SnapTray 加入系統 PATH。安裝後請開啟新的終端機視窗。
+**Windows：**
+開啟 Settings → General → Install CLI 會將 SnapTray 執行檔所在目錄加入目前使用者的 `PATH`。安裝或移除後請開啟新的終端機視窗。
 
-**Windows (MSIX/MS Store)：**
-透過 App Execution Alias，`snaptray` 指令在安裝後立即可用。
+**Windows 打包版本：**
+部分安裝方式可能已經透過 `PATH` 或 App Execution Alias 提供 `snaptray` 指令，但上面的 in-app 安裝／移除流程才是目前應用程式碼裡直接實作的行為。
 
 ### CLI 指令
 
 | 指令 | 說明 | 需要主程式運行 |
 |------|------|--------------|
-| `full` | 擷取全螢幕 | 否 |
-| `screen` | 擷取指定螢幕 | 否 |
-| `region` | 擷取指定區域 | 否 |
+| `full` | 擷取游標所在的整個螢幕，或用 `-n` 指定螢幕 | 否 |
+| `screen` | 擷取指定螢幕，或用 `--list` 列出螢幕 | 否 |
+| `region` | 從指定螢幕擷取 `-r x,y,width,height` 區域 | 否 |
 | `gui` | 開啟區域截圖 GUI | 是 |
 | `canvas` | 切換螢幕畫布 | 是 |
 | `record` | 開始/停止/切換錄影 | 是 |
-| `pin` | 釘選圖片 | 是 |
-| `config` | 檢視/修改設定（無參數時開啟設定視窗） | 部分 |
+| `pin` | 釘選圖片檔案或剪貼簿圖片 | 是 |
+| `config` | `--list` / `--get` / `--set` / `--reset` 為本地操作；無參數時開啟設定視窗 | 部分 |
 
 ### CLI 範例
 
@@ -418,16 +418,18 @@ snaptray --version
 snaptray full --help
 
 # 本地擷取指令（不需要主程式運行）
+snaptray full                         # 擷取游標所在螢幕
 snaptray full -c                      # 全螢幕到剪貼簿
 snaptray full -d 1000 -o shot.png     # 延遲 1 秒後儲存
-snaptray full -o screenshot.png       # 全螢幕到檔案
+snaptray full -n 1 -o screen1.png     # 擷取螢幕 1 到檔案
+snaptray full --raw > shot.png        # 將 PNG 位元組輸出到 stdout
 snaptray screen --list                # 列出可用螢幕
 snaptray screen 0 -c                  # 擷取螢幕 0（位置參數寫法）
 snaptray screen -n 1 -o screen1.png   # 擷取螢幕 1（選項寫法）
 snaptray screen 1 -o screen1.png      # 擷取螢幕 1 到檔案
-snaptray region -r 0,0,800,600 -c     # 在螢幕 0 擷取區域到剪貼簿
+snaptray region -r 0,0,800,600 -c     # 從螢幕 0 擷取區域到剪貼簿
 snaptray region -n 1 -r 100,100,400,300 -o region.png
-snaptray region -r 100,100,400,300 -o region.png
+snaptray region -r 100,100,400,300 -o region.png   # 預設目標為螢幕索引 0
 
 # IPC 指令（需要主程式運行）
 snaptray gui                          # 開啟區域截圖選擇器
@@ -440,37 +442,25 @@ snaptray record start -n 1            # 在螢幕 1 開始全螢幕錄影
 snaptray pin -f image.png             # 釘選圖片檔案
 snaptray pin -c --center              # 從剪貼簿釘選並置中
 snaptray pin -f image.png -x 200 -y 120
-snaptray config                        # 開啟設定視窗（IPC）
+snaptray config                       # 開啟設定視窗（IPC）
 
-# 設定指令
+# 本地設定指令
 snaptray config --list
 snaptray config --get hotkey
 snaptray config --set files/filenamePrefix SnapTray
 snaptray config --reset
-
-# 選項
-full/screen/region:
-  -c, --clipboard    複製到剪貼簿
-  -o, --output       儲存到檔案
-  -p, --path         儲存目錄
-  -d, --delay        擷取前延遲（毫秒）
-  -n, --screen       螢幕編號
-  -r, --region       區域座標（logical 像素，僅 region：x,y,寬,高）
-  --raw              輸出原始 PNG 到 stdout
-
-screen 專屬:
-  --list             列出可用螢幕
-
-record:
-  [action]           start | stop | toggle（預設：toggle）
-
-pin:
-  -f, --file         圖片檔路徑
-  -c, --clipboard    從剪貼簿釘選
-  -x, --pos-x        視窗 X 座標
-  -y, --pos-y        視窗 Y 座標
-  --center           視窗置中
 ```
+
+### 目前行為補充
+
+- 擷取命令（`full`、`screen`、`region`）預設會輸出 PNG 檔案。
+- `--clipboard` 會改為複製到剪貼簿。`--raw` 會將 PNG 位元組輸出到 stdout。
+- `--output` 的優先權高於 `--path`。若兩者都沒給，SnapTray 會依目前設定的截圖目錄與檔名規則自動產生檔案。
+- `screen` 同時支援 `snaptray screen 1` 與 `snaptray screen -n 1`。
+- `region` 必須提供 `-r/--region`，且座標使用相對於所選螢幕的 logical pixels；矩形必須落在該螢幕範圍內。
+- `record` 只接受 `start`、`stop`、`toggle`。不給 action 時預設是 `toggle`。目前實作中，`-n/--screen` 只會被 `record start` 使用。
+- `pin` 必須二選一提供 `--file` 或 `--clipboard`。`--file` 必須是可讀取的圖片。只有同時提供 `-x` 與 `-y` 才會套用自訂位置，否則仍會置中。
+- `config --set` 只會讀取一個位置參數值。`config --reset` 會清空整個設定儲存區。
 
 ### 回傳碼
 
@@ -481,7 +471,7 @@ pin:
 | 2 | 無效參數 |
 | 3 | 檔案錯誤 |
 | 4 | 實例錯誤（主程式未運行） |
-| 5 | 錄影錯誤 |
+| 5 | 錄影錯誤（`CLIResult::Code` 有定義，但目前 CLI 流程不會回傳） |
 
 ## MCP Server（V1，Localhost HTTP）
 
