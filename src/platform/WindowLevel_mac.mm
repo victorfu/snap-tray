@@ -7,6 +7,15 @@
 #import <Cocoa/Cocoa.h>
 
 namespace {
+#if defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 150000
+API_AVAILABLE(macos(15.0))
+NSCursor* frameResizeCursor(NSCursorFrameResizePosition position)
+{
+    return [NSCursor frameResizeCursorFromPosition:position
+                                     inDirections:NSCursorFrameResizeDirectionsAll];
+}
+#endif
+
 NSCursor* nsCursorForQtCursor(const QCursor& cursor)
 {
     switch (cursor.shape()) {
@@ -22,15 +31,41 @@ NSCursor* nsCursorForQtCursor(const QCursor& cursor)
         return [NSCursor closedHandCursor];
     case Qt::IBeamCursor:
         return [NSCursor IBeamCursor];
+    case Qt::SizeAllCursor:
+        return [NSCursor openHandCursor];
     case Qt::SizeHorCursor:
         return [NSCursor resizeLeftRightCursor];
     case Qt::SizeVerCursor:
         return [NSCursor resizeUpDownCursor];
+    case Qt::SizeFDiagCursor:
+#if defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 150000
+        if (@available(macOS 15.0, *)) {
+            return frameResizeCursor(NSCursorFrameResizePositionTopLeft);
+        }
+#endif
+        break;
+    case Qt::SizeBDiagCursor:
+#if defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 150000
+        if (@available(macOS 15.0, *)) {
+            return frameResizeCursor(NSCursorFrameResizePositionTopRight);
+        }
+#endif
+        break;
     default:
         break;
     }
 
-    const QPixmap pixmap = cursor.pixmap();
+    QPixmap pixmap = cursor.pixmap();
+    if (pixmap.isNull()) {
+        const QBitmap bitmap = cursor.bitmap();
+        const QBitmap mask = cursor.mask();
+        if (!bitmap.isNull() && !mask.isNull()) {
+            const QPoint hotspot = cursor.hotSpot();
+            const QCursor bitmapCursor(bitmap, mask, hotspot.x(), hotspot.y());
+            pixmap = bitmapCursor.pixmap();
+        }
+    }
+
     if (pixmap.isNull()) {
         return nil;
     }

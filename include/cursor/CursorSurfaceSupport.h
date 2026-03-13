@@ -21,9 +21,7 @@ inline bool isPointerRefreshEvent(QEvent::Type type)
     case QEvent::Show:
     case QEvent::Hide:
     case QEvent::FocusIn:
-    case QEvent::FocusOut:
     case QEvent::WindowActivate:
-    case QEvent::WindowDeactivate:
         return true;
     default:
         return false;

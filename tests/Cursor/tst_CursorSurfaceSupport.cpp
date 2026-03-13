@@ -26,6 +26,9 @@ void TestCursorSurfaceSupport::testPointerRefreshClassification()
 {
     QVERIFY(CursorSurfaceSupport::isPointerRefreshEvent(QEvent::HoverMove));
     QVERIFY(CursorSurfaceSupport::isPointerRefreshEvent(QEvent::WindowActivate));
+    QVERIFY(CursorSurfaceSupport::isPointerRefreshEvent(QEvent::FocusIn));
+    QVERIFY(!CursorSurfaceSupport::isPointerRefreshEvent(QEvent::FocusOut));
+    QVERIFY(!CursorSurfaceSupport::isPointerRefreshEvent(QEvent::WindowDeactivate));
     QVERIFY(!CursorSurfaceSupport::isPointerRefreshEvent(QEvent::Paint));
 }
 
