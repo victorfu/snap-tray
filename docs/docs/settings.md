@@ -13,7 +13,7 @@ doc_order: 4
 
 ### General
 
-Launch at startup, region-capture shortcut hints, display language, toolbar style, and CLI install/uninstall.
+Launch at startup, display language, app theme, and CLI install/uninstall.
 
 On macOS, this tab also shows Screen Recording and Accessibility permission status with one-click system settings shortcuts.
 
@@ -23,19 +23,31 @@ Centralized hotkey editor by functional category.
 
 ### Advanced
 
-Blur intensity/type and pin window defaults (opacity, zoom step, cache limits).
+Capture shortcut hints, blur intensity/type, pin window defaults (opacity, opacity step, zoom step, cache limits), and the debug-build MCP toggle.
+
+### Watermark
+
+Watermark image selection, whether it applies to screenshots/recordings, opacity, scale, margin, and position preview.
+
+### OCR
+
+OCR language order and post-recognition behavior.
 
 ### Recording
 
-Frame rate, format, quality, countdown, preview, and audio source.
+Frame rate, default output format, preview-first export behavior, audio source/device, and countdown.
 
 ### Files
 
 Screenshot and recording folders plus filename format templates.
 
-### OCR / Watermark / Updates
+### Updates
 
-OCR language order + behavior, watermark placement/opacity/scale, and auto-check update interval.
+Current version, auto-check interval, last-checked status, and manual check now.
+
+### About
+
+App name, version, copyright, author, and website link.
 
 ## Recommended baseline profile
 

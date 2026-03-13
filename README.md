@@ -3,7 +3,6 @@
 **English** | [繁體中文](README.zh-TW.md)
 
 SnapTray is a lightweight tray utility for region screenshots, on-screen annotations, and quick screen recordings. Press F2 (default) to capture a region, or Ctrl+F2 for Screen Canvas.
-Current code version: `1.0.30`.
 
 ## Features
 
@@ -66,15 +65,15 @@ Current code version: `1.0.30`.
     - `Undo` / `Redo` support
     - `OCR` / `QR Code Scan` / `Share URL` / `Copy` / `Save` quick actions
 - **Settings Dialog**:
-  - General tab: Launch at startup, capture shortcut hints, display language, toolbar style (Dark/Light), macOS permission shortcuts, CLI install/uninstall
+  - General tab: Launch at startup, display language, app theme (Dark/Light), macOS permission shortcuts, CLI install/uninstall
   - Hotkeys tab: Category-based hotkey management (Capture/Canvas/Clipboard/Pin/Recording)
-  - Advanced tab: Auto blur configuration + pin window defaults (opacity/zoom/cache)
+  - Advanced tab: Capture shortcut hints, auto blur configuration, and pin window defaults (opacity/zoom/cache)
   - Watermark tab: Image watermark, opacity, position, and scale
   - OCR tab: OCR language selection and post-recognition behavior
   - Recording tab: Frame rate, output format (MP4/GIF/WebP), quality, preview behavior, countdown, audio (enable/source/device)
   - Files tab: Screenshot/recording save paths, filename format
-  - Updates tab: Auto-check, check frequency, last-checked status, manual check now
-  - About tab: Version information
+  - Updates tab: Current version, auto-check, check frequency, last-checked status, manual check now
+  - About tab: App identity, version, author, and website
   - Automatic update checks run in the background
   - Settings stored via QSettings
 

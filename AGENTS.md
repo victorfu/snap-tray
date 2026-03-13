@@ -76,6 +76,7 @@ snap-tray/
 │   ├── mcp/                   # Built-in MCP server and tool contracts (debug-only)
 │   ├── pinwindow/             # Pin window components
 │   ├── platform/              # Platform abstraction (WindowLevel, PlatformFeatures)
+│   ├── qml/                   # QML bridges, view models, and overlay helpers
 │   ├── region/                # Region selection UI
 │   ├── settings/              # Settings managers
 │   ├── share/                 # Share upload client
@@ -104,6 +105,7 @@ snap-tray/
 │   ├── mcp/                   # MCP HTTP transport and tool implementations (debug-only)
 │   ├── pinwindow/             # Pin window logic
 │   ├── platform/              # Platform-specific code
+│   ├── qml/                   # QML bridges, view models, and overlay implementations
 │   ├── region/                # Region selection implementation
 │   ├── settings/              # Settings management
 │   ├── share/                 # Share upload client implementation
@@ -120,22 +122,22 @@ snap-tray/
 │   ├── Annotations/           # Annotation type tests
 │   ├── Beautify/              # Beautify settings/renderer tests
 │   ├── CLI/                   # CLI command tests
+│   ├── Cursor/                # Cursor authority/style tests
 │   ├── Detection/             # FaceDetector, AutoBlurManager, TableDetector tests
 │   ├── Encoding/              # NativeGifEncoder, EncoderFactory tests
 │   ├── Hotkey/                # HotkeyManager tests
 │   ├── IPC/                   # SingleInstanceGuard tests
 │   ├── MCP/                   # MCP server protocol and tools tests
 │   ├── PinWindow/             # Transform, Resize, PinHistory, PinMerge, RegionLayout tests
+│   ├── Qml/                   # QML backend/view-model tests
 │   ├── RecordingManager/      # StateMachine, Lifecycle, InitTask tests
 │   ├── RegionSelector/        # MagnifierPanel, Throttler tests
+│   ├── ScreenCanvas/          # Screen canvas integration/style tests
 │   ├── Settings/              # SettingsManager tests
 │   ├── Share/                 # ShareUploadClient tests
-│   ├── ToolOptionsPanel/      # State, Signals, HitTest, Events tests
 │   ├── Tools/                 # ToolRegistry, ToolHandler tests
-│   ├── UISections/            # UI section tests
 │   ├── Update/                # UpdateChecker, InstallSourceDetector tests
-│   ├── Utils/                 # CoordinateHelper tests
-│   └── Video/                 # Video timeline tests
+│   └── Utils/                 # CoordinateHelper tests
 │
 ├── packaging/                 # Application packaging
 │   ├── windows/               # NSIS and MSIX packaging
@@ -189,6 +191,9 @@ OCRSettingsManager::instance();
 
 // Watermark configuration
 WatermarkSettingsManager::instance();
+
+// Recording defaults (format, quality, preview, audio, countdown)
+RecordingSettingsManager::instance();
 
 // Update preferences (auto-check, intervals, skipped version)
 UpdateSettingsManager::instance();  // From include/update/UpdateSettingsManager.h
