@@ -93,6 +93,11 @@ target_link_libraries(ScreenCanvas_StyleSync PRIVATE snaptray_ui snaptray_qmlplu
 add_test(NAME ScreenCanvas_StyleSync COMMAND ScreenCanvas_StyleSync)
 set_tests_properties(ScreenCanvas_StyleSync PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(ScreenCanvas_Placement ScreenCanvas/tst_Placement.cpp)
+target_link_libraries(ScreenCanvas_Placement PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME ScreenCanvas_Placement COMMAND ScreenCanvas_Placement)
+set_tests_properties(ScreenCanvas_Placement PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 # ============================================================================
 # RegionSelector Tests
 # ============================================================================

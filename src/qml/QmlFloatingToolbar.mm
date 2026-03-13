@@ -14,6 +14,8 @@
 #include <QVariant>
 #include <QtMath>
 
+#include <limits>
+
 #ifdef Q_OS_MACOS
 #import <Cocoa/Cocoa.h>
 #endif
@@ -21,6 +23,46 @@
 namespace SnapTray {
 
 namespace {
+QPoint clampTopLeftToRect(const QPoint& desiredTopLeft,
+                         const QSize& windowSize,
+                         const QRect& bounds)
+{
+    if (!bounds.isValid()) {
+        return desiredTopLeft;
+    }
+
+    const int width = qMax(1, windowSize.width());
+    const int height = qMax(1, windowSize.height());
+    const int maxX = bounds.right() - width + 1;
+    const int maxY = bounds.bottom() - height + 1;
+
+    const int clampedX = (width >= bounds.width())
+        ? bounds.left()
+        : qBound(bounds.left(), desiredTopLeft.x(), maxX);
+    const int clampedY = (height >= bounds.height())
+        ? bounds.top()
+        : qBound(bounds.top(), desiredTopLeft.y(), maxY);
+    return QPoint(clampedX, clampedY);
+}
+
+qint64 axisDistanceToRange(int value, int minValue, int maxValue)
+{
+    if (value < minValue) {
+        return static_cast<qint64>(minValue) - value;
+    }
+    if (value > maxValue) {
+        return static_cast<qint64>(value) - maxValue;
+    }
+    return 0;
+}
+
+qint64 squaredDistanceToRect(const QPoint& point, const QRect& rect)
+{
+    const qint64 dx = axisDistanceToRange(point.x(), rect.left(), rect.right());
+    const qint64 dy = axisDistanceToRange(point.y(), rect.top(), rect.bottom());
+    return (dx * dx) + (dy * dy);
+}
+
 void destroyQuickView(QQuickView*& view, QQuickItem*& rootItem)
 {
     if (!view)
@@ -387,6 +429,49 @@ void QmlFloatingToolbar::setPosition(const QPoint& pos)
     }
 }
 
+void QmlFloatingToolbar::setDragBounds(const QList<QRect>& bounds)
+{
+    m_dragBounds = bounds;
+}
+
+void QmlFloatingToolbar::clearDragBounds()
+{
+    m_dragBounds.clear();
+}
+
+QPoint QmlFloatingToolbar::clampTopLeftToBounds(const QPoint& desiredTopLeft,
+                                                const QSize& windowSize,
+                                                const QList<QRect>& bounds)
+{
+    QPoint bestPosition = desiredTopLeft;
+    qint64 bestDistance = std::numeric_limits<qint64>::max();
+    bool foundBounds = false;
+
+    const QSize normalizedSize(qMax(1, windowSize.width()), qMax(1, windowSize.height()));
+    const QPoint desiredCenter(
+        desiredTopLeft.x() + normalizedSize.width() / 2,
+        desiredTopLeft.y() + normalizedSize.height() / 2);
+
+    for (const QRect& boundsRect : bounds) {
+        if (!boundsRect.isValid()) {
+            continue;
+        }
+
+        const qint64 distance = squaredDistanceToRect(desiredCenter, boundsRect);
+        if (!foundBounds || distance < bestDistance) {
+            bestDistance = distance;
+            bestPosition = clampTopLeftToRect(desiredTopLeft, normalizedSize, boundsRect);
+            foundBounds = true;
+
+            if (distance == 0) {
+                break;
+            }
+        }
+    }
+
+    return foundBounds ? bestPosition : desiredTopLeft;
+}
+
 void QmlFloatingToolbar::syncCursorSurface()
 {
     if (!m_view || m_cursorSurfaceId.isEmpty() || m_cursorOwnerId.isEmpty()) {
@@ -562,12 +647,16 @@ void QmlFloatingToolbar::onDragMoved(double deltaX, double deltaY)
 
     QPoint newPos = m_dragStartViewPos + (QCursor::pos() - m_dragStartCursorPos);
 
-    QScreen* screen = QGuiApplication::screenAt(
-        newPos + QPoint(m_view->width() / 2, m_view->height() / 2));
-    if (screen) {
-        const QRect screenGeom = screen->geometry();
-        newPos.setX(qBound(screenGeom.left(), newPos.x(), screenGeom.right() - m_view->width()));
-        newPos.setY(qBound(screenGeom.top(), newPos.y(), screenGeom.bottom() - m_view->height()));
+    if (!m_dragBounds.isEmpty()) {
+        newPos = clampTopLeftToBounds(newPos, m_view->size(), m_dragBounds);
+    } else {
+        QScreen* screen = QGuiApplication::screenAt(
+            newPos + QPoint(m_view->width() / 2, m_view->height() / 2));
+        if (screen) {
+            const QRect screenGeom = screen->geometry();
+            newPos.setX(qBound(screenGeom.left(), newPos.x(), screenGeom.right() - m_view->width()));
+            newPos.setY(qBound(screenGeom.top(), newPos.y(), screenGeom.bottom() - m_view->height()));
+        }
     }
 
     m_view->setPosition(newPos);

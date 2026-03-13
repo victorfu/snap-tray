@@ -8,6 +8,7 @@
 #include <QPixmap>
 #include <functional>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <vector>
 
@@ -68,7 +69,10 @@ public:
 
     // Cache management for rendering optimization
     void invalidateCache();
-    void drawCached(QPainter &painter, const QSize &canvasSize, qreal devicePixelRatio = 1.0) const;
+    void drawCached(QPainter &painter,
+                    const QSize &canvasSize,
+                    qreal devicePixelRatio = 1.0,
+                    const QPoint& origin = QPoint()) const;
 
     // Dirty region optimization for dragging operations
     // Instead of invalidating the entire cache during drag, mark only affected regions
@@ -78,8 +82,11 @@ public:
 
     // Draw with dirty region optimization - used during drag operations
     // Draws cached content for non-dirty areas, redraws only dirty region
-    void drawWithDirtyRegion(QPainter &painter, const QSize &canvasSize,
-                             qreal devicePixelRatio, int excludeIndex = -1) const;
+    void drawWithDirtyRegion(QPainter &painter,
+                             const QSize &canvasSize,
+                             qreal devicePixelRatio,
+                             int excludeIndex = -1,
+                             const QPoint& origin = QPoint()) const;
 
     // Commit dirty region changes to cache after drag completes
     void commitDirtyRegion(const QSize &canvasSize, qreal devicePixelRatio);
@@ -97,11 +104,37 @@ private:
     std::vector<std::unique_ptr<AnnotationItem>> m_redoStack;
     int m_selectedIndex = -1;
 
-    // Completed annotations cache for rendering optimization
-    mutable QPixmap m_annotationCache;
-    mutable bool m_cacheValid = false;
-    // Cache mode: -1 means full cache, >=0 means cache built excluding that item index.
-    mutable int m_cacheExcludeIndex = -1;
+    struct CacheKey {
+        int physicalWidth = 0;
+        int physicalHeight = 0;
+        int originX = 0;
+        int originY = 0;
+        int excludeIndex = -1;
+        int devicePixelRatioMilli = 1000;
+
+        bool operator<(const CacheKey& other) const
+        {
+            if (physicalWidth != other.physicalWidth) {
+                return physicalWidth < other.physicalWidth;
+            }
+            if (physicalHeight != other.physicalHeight) {
+                return physicalHeight < other.physicalHeight;
+            }
+            if (originX != other.originX) {
+                return originX < other.originX;
+            }
+            if (originY != other.originY) {
+                return originY < other.originY;
+            }
+            if (excludeIndex != other.excludeIndex) {
+                return excludeIndex < other.excludeIndex;
+            }
+            return devicePixelRatioMilli < other.devicePixelRatioMilli;
+        }
+    };
+
+    // Completed annotations caches for rendering optimization.
+    mutable std::map<CacheKey, QPixmap> m_annotationCaches;
     std::uint64_t m_revision = 0;
 
     // Dirty region tracking for drag optimization

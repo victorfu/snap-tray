@@ -4,6 +4,7 @@
 #include <QRect>
 #include <QPoint>
 #include <QElapsedTimer>
+#include <QList>
 #include <QWindow>
 #include <QColor>
 #include <QString>
@@ -86,6 +87,11 @@ public:
      * @brief Move the toolbar to a screen position.
      */
     void setPosition(const QPoint& pos);
+    void setDragBounds(const QList<QRect>& bounds);
+    void clearDragBounds();
+    static QPoint clampTopLeftToBounds(const QPoint& desiredTopLeft,
+                                       const QSize& windowSize,
+                                       const QList<QRect>& bounds);
 
     QRect geometry() const;
     int width() const;
@@ -132,6 +138,7 @@ private:
     QQuickView* m_tooltipView = nullptr;
     QQuickItem* m_tooltipRootItem = nullptr;
     QWidget* m_parentWidget = nullptr;
+    QList<QRect> m_dragBounds;
 
     // Drag state
     QPoint m_dragStartViewPos;

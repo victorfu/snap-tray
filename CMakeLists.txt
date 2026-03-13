@@ -288,6 +288,7 @@ add_library(snaptray_core STATIC
     src/settings/PinWindowSettingsManager.cpp
     src/settings/RecordingSettingsManager.cpp
     src/settings/RegionCaptureSettingsManager.cpp
+    src/settings/ScreenCanvasSettingsManager.cpp
     src/settings/WatermarkSettingsManager.cpp
     src/settings/BeautifySettingsManager.cpp
     src/settings/LanguageManager.cpp
@@ -320,6 +321,7 @@ add_library(snaptray_core STATIC
     include/settings/MCPSettingsManager.h
     include/settings/PinWindowSettingsManager.h
     include/settings/RegionCaptureSettingsManager.h
+    include/settings/ScreenCanvasSettingsManager.h
     include/settings/SettingsTheme.h
     include/cursor/CursorManager.h
     include/cursor/CursorAuthority.h
@@ -667,7 +669,11 @@ add_library(snaptray_ui STATIC
     src/pinwindow/PinMergeHelper.cpp
 
     # Screen canvas
+    include/ScreenCanvas.h
+    include/ScreenCanvasManager.h
+    include/ScreenCanvasSession.h
     src/ScreenCanvas.cpp
+    src/ScreenCanvasSession.cpp
     src/ScreenCanvasManager.cpp
 
     # Renderers

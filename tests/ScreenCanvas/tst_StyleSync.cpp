@@ -33,11 +33,15 @@ void TestScreenCanvasStyleSync::testUsesAuthorityModeByDefault()
 void TestScreenCanvasStyleSync::testPopupRestoreReturnsEraserCursor()
 {
     ScreenCanvas canvas;
+    ToolManager toolManager;
+    toolManager.registerDefaultHandlers();
+    canvas.setSharedToolManager(&toolManager);
+
     auto& authority = CursorAuthority::instance();
     auto& cursorManager = CursorManager::instance();
 
-    canvas.m_toolManager->setCurrentTool(ToolId::Eraser);
-    canvas.m_toolManager->setWidth(24);
+    toolManager.setCurrentTool(ToolId::Eraser);
+    toolManager.setWidth(24);
     cursorManager.updateToolCursorForWidget(&canvas);
     cursorManager.reapplyCursorForWidget(&canvas);
 

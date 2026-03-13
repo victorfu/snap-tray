@@ -70,7 +70,8 @@ void TextAnnotationEditor::startEditing(const QPoint& pos, const QRect& selectio
     m_editingIndex = -1;  // Creating new annotation
     m_textEditor->setColor(color);
     m_textEditor->setFont(m_formatting.toQFont());
-    m_textEditor->startEditing(pos, selectionRect);
+    const QPoint displayPos = toRoundedPoint(m_annotationToDisplayMapper(QPointF(pos)));
+    m_textEditor->startEditing(displayPos, selectionRect);
 }
 
 void TextAnnotationEditor::startReEditing(int annotationIndex, const QColor& color)

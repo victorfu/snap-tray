@@ -4,15 +4,15 @@
 #include <QObject>
 #include <QPointer>
 
-class ScreenCanvas;
+class ScreenCanvasSession;
 
 class ScreenCanvasManager : public QObject
 {
     Q_OBJECT
 
 public:
-    explicit ScreenCanvasManager(QObject *parent = nullptr);
-    ~ScreenCanvasManager();
+    explicit ScreenCanvasManager(QObject* parent = nullptr);
+    ~ScreenCanvasManager() override;
 
     bool isActive() const;
 
@@ -24,10 +24,10 @@ signals:
     void canvasClosed();
 
 private slots:
-    void onCanvasClosed();
+    void onSessionClosed();
 
 private:
-    QPointer<ScreenCanvas> m_canvas;
+    QPointer<ScreenCanvasSession> m_session;
 };
 
 #endif // SCREENCANVASMANAGER_H

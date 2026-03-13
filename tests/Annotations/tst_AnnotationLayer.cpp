@@ -18,6 +18,8 @@ class TestAnnotationLayer : public QObject
 private slots:
     void testDrawWithDirtyRegion_ExcludesDraggedItemFromFullCache();
     void testDrawCached_RebuildsAfterExcludeCache();
+    void testDrawCached_RebuildsAfterDraggedItemMoved();
+    void testDrawCached_AppliesViewportOrigin();
     void testHitTestText_IgnoresHiddenItems();
     void testHitTestEmojiSticker_IgnoresHiddenItems();
     void testHitTestEmojiSticker_ReturnsTopMostVisible();
@@ -138,6 +140,65 @@ void TestAnnotationLayer::testDrawCached_RebuildsAfterExcludeCache()
     }
 
     QVERIFY(hasVisiblePixel(cachedFrame, QRect(70, 22, 24, 16)));
+}
+
+void TestAnnotationLayer::testDrawCached_RebuildsAfterDraggedItemMoved()
+{
+    const QSize canvasSize(180, 100);
+
+    AnnotationLayer layer;
+    layer.addItem(createPolyline(20));
+    layer.setSelectedIndex(0);
+
+    QImage initialFrame(canvasSize, QImage::Format_ARGB32_Premultiplied);
+    initialFrame.fill(Qt::transparent);
+    {
+        QPainter painter(&initialFrame);
+        layer.drawCached(painter, canvasSize, 1.0);
+    }
+
+    auto* selectedPolyline = dynamic_cast<PolylineAnnotation*>(layer.itemAt(0));
+    QVERIFY(selectedPolyline != nullptr);
+    selectedPolyline->moveBy(QPoint(0, 30));
+
+    QImage dragFrame(canvasSize, QImage::Format_ARGB32_Premultiplied);
+    dragFrame.fill(Qt::transparent);
+    {
+        QPainter painter(&dragFrame);
+        layer.drawWithDirtyRegion(painter, canvasSize, 1.0, 0);
+    }
+
+    QImage cachedFrame(canvasSize, QImage::Format_ARGB32_Premultiplied);
+    cachedFrame.fill(Qt::transparent);
+    {
+        QPainter painter(&cachedFrame);
+        layer.drawCached(painter, canvasSize, 1.0);
+    }
+
+    QVERIFY(!hasVisiblePixel(cachedFrame, QRect(70, 12, 24, 16)));
+    QVERIFY(hasVisiblePixel(cachedFrame, QRect(70, 42, 24, 16)));
+}
+
+void TestAnnotationLayer::testDrawCached_AppliesViewportOrigin()
+{
+    const QSize canvasSize(180, 100);
+
+    AnnotationLayer layer;
+    QVector<QPoint> points = {
+        QPoint(220, 40),
+        QPoint(340, 40)
+    };
+    layer.addItem(std::make_unique<PolylineAnnotation>(
+        points, QColor(Qt::red), 4, LineEndStyle::None, LineStyle::Solid));
+
+    QImage cachedFrame(canvasSize, QImage::Format_ARGB32_Premultiplied);
+    cachedFrame.fill(Qt::transparent);
+    {
+        QPainter painter(&cachedFrame);
+        layer.drawCached(painter, canvasSize, 1.0, QPoint(200, 0));
+    }
+
+    QVERIFY(hasVisiblePixel(cachedFrame, QRect(70, 32, 24, 16)));
 }
 
 void TestAnnotationLayer::testHitTestText_IgnoresHiddenItems()

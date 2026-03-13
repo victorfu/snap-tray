@@ -1,72 +1,65 @@
 #include "ScreenCanvasManager.h"
-#include "ScreenCanvas.h"
-#include "platform/WindowLevel.h"
 
-#include <QGuiApplication>
-#include <QScreen>
+#include "ScreenCanvasSession.h"
+
 #include <QCursor>
 #include <QDebug>
+#include <QGuiApplication>
+#include <QScreen>
 
-ScreenCanvasManager::ScreenCanvasManager(QObject *parent)
+ScreenCanvasManager::ScreenCanvasManager(QObject* parent)
     : QObject(parent)
-    , m_canvas(nullptr)
 {
     qDebug() << "ScreenCanvasManager: Created";
 }
 
 ScreenCanvasManager::~ScreenCanvasManager()
 {
-    if (m_canvas) {
-        m_canvas->close();
+    if (m_session) {
+        m_session->close();
     }
     qDebug() << "ScreenCanvasManager: Destroyed";
 }
 
 bool ScreenCanvasManager::isActive() const
 {
-    return m_canvas && m_canvas->isVisible();
+    return m_session && m_session->isOpen();
 }
 
 void ScreenCanvasManager::toggle()
 {
-    if (m_canvas && m_canvas->isVisible()) {
-        // Canvas is active - close it
-        qDebug() << "ScreenCanvasManager: Closing canvas via toggle";
-        m_canvas->close();
-        // m_canvas will be nulled via QPointer after deleteLater
-    } else {
-        // No canvas - create and show one
-        QScreen *targetScreen = QGuiApplication::screenAt(QCursor::pos());
-        if (!targetScreen) {
-            targetScreen = QGuiApplication::primaryScreen();
-        }
+    if (m_session && m_session->isOpen()) {
+        qDebug() << "ScreenCanvasManager: Closing canvas session via toggle";
+        m_session->close();
+        return;
+    }
 
-        if (!targetScreen) {
-            qWarning() << "ScreenCanvasManager: No screen available";
-            return;
-        }
+    QScreen* targetScreen = QGuiApplication::screenAt(QCursor::pos());
+    if (!targetScreen) {
+        targetScreen = QGuiApplication::primaryScreen();
+    }
+    if (!targetScreen) {
+        qWarning() << "ScreenCanvasManager: No screen available";
+        return;
+    }
 
-        qDebug() << "ScreenCanvasManager: Opening canvas on screen" << targetScreen->name();
+    qDebug() << "ScreenCanvasManager: Opening canvas session on screen" << targetScreen->name();
 
-        m_canvas = new ScreenCanvas();
-        m_canvas->setAttribute(Qt::WA_DeleteOnClose);
-        connect(m_canvas, &ScreenCanvas::closed, this, &ScreenCanvasManager::onCanvasClosed);
+    m_session = new ScreenCanvasSession(this);
+    connect(m_session, &ScreenCanvasSession::closed,
+            this, &ScreenCanvasManager::onSessionClosed);
+    connect(m_session, &QObject::destroyed, this, [this]() {
+        m_session = nullptr;
+    });
 
-        m_canvas->initializeForScreen(targetScreen);
-        m_canvas->setGeometry(targetScreen->geometry());
-        m_canvas->show();
-        raiseWindowAboveMenuBar(m_canvas);
-        setWindowClickThrough(m_canvas, false);
-        m_canvas->activateWindow();
-        m_canvas->setFocus();
-        m_canvas->raise();
-
+    m_session->open(targetScreen);
+    if (m_session && m_session->isOpen()) {
         emit canvasOpened();
     }
 }
 
-void ScreenCanvasManager::onCanvasClosed()
+void ScreenCanvasManager::onSessionClosed()
 {
-    qDebug() << "ScreenCanvasManager: Canvas closed";
+    qDebug() << "ScreenCanvasManager: Canvas session closed";
     emit canvasClosed();
 }

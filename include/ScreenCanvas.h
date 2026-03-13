@@ -1,251 +1,91 @@
 #ifndef SCREENCANVAS_H
 #define SCREENCANVAS_H
 
-#include <QWidget>
-#include <QPixmap>
 #include <QPoint>
 #include <QPointF>
-#include <QRect>
-#include <QVector>
-#include <QColor>
 #include <QPointer>
-#include <map>
+#include <QRect>
+#include <QWidget>
 #include <memory>
-#include "annotations/AnnotationLayer.h"
-#include "annotations/ArrowAnnotation.h"
-#include "annotations/LineStyle.h"
-#include "annotations/ShapeAnnotation.h"
-#include "annotations/StepBadgeAnnotation.h"
-#include "annotation/AnnotationHostAdapter.h"
-#include "InlineTextEditor.h"
-#include "region/TextAnnotationEditor.h"
-#include "region/ShapeAnnotationEditor.h"
-#include "region/RegionSettingsHelper.h"
-#include "tools/ToolId.h"
-#include "TransformationGizmo.h"
 
 class QScreen;
-class AnnotationLayer;
+class QCloseEvent;
+class QKeyEvent;
+class QMouseEvent;
+class QPaintEvent;
+class QShowEvent;
+class QWheelEvent;
 class ToolManager;
-namespace snaptray {
-namespace colorwidgets {
-class ColorPickerDialogCompat;
-}
-}
-class LaserPointerRenderer;
-class ArrowAnnotation;
-class PolylineAnnotation;
-class TextBoxAnnotation;
-class EmojiStickerAnnotation;
-class ShapeAnnotation;
-class AnnotationContext;
-class CanvasToolbarViewModel;
-class PinToolOptionsViewModel;
-namespace SnapTray {
-class QmlFloatingToolbar;
-class QmlFloatingSubToolbar;
-class QmlEmojiPickerPopup;
-}
+class InlineTextEditor;
+class TextAnnotationEditor;
+class ShapeAnnotationEditor;
+class RegionSettingsHelper;
+class ScreenCanvasSession;
 
-// Canvas background mode
 enum class CanvasBackgroundMode {
-    Screen,     // Screenshot background (default)
-    Whiteboard, // Solid white background
-    Blackboard  // Solid black background
+    Screen,
+    Whiteboard,
+    Blackboard
 };
 
-class ScreenCanvas : public QWidget, public AnnotationHostAdapter
+class ScreenCanvas : public QWidget
 {
     Q_OBJECT
 
     friend class TestScreenCanvasStyleSync;
 
 public:
-    explicit ScreenCanvas(QWidget *parent = nullptr);
-    ~ScreenCanvas();
+    explicit ScreenCanvas(ScreenCanvasSession* session = nullptr, QWidget* parent = nullptr);
+    ~ScreenCanvas() override;
 
-    void initializeForScreen(QScreen *screen);
+    void setSession(ScreenCanvasSession* session);
+    void initializeForScreenSurface(QScreen* screen, const QRect& desktopGeometry);
+    void setSharedToolManager(ToolManager* toolManager);
+
+    QScreen* canvasScreen() const;
+    QRect screenGeometry() const;
+    QRect desktopGeometry() const { return m_desktopGeometry; }
+
+    QPoint annotationOffset() const;
+    QPoint toAnnotationPoint(const QPoint& localPos) const;
+    QPointF toAnnotationPointF(const QPointF& localPos) const;
+    QPoint toLocalPoint(const QPoint& annotationPos) const;
+    QPointF toLocalPointF(const QPointF& annotationPos) const;
+
+    InlineTextEditor* inlineTextEditor() const { return m_textEditor; }
+    TextAnnotationEditor* textAnnotationEditor() const { return m_textAnnotationEditor; }
+    ShapeAnnotationEditor* shapeAnnotationEditor() const { return m_shapeAnnotationEditor.get(); }
+    RegionSettingsHelper* settingsHelper() const { return m_settingsHelper; }
+    ToolManager* sharedToolManager() const { return m_toolManager; }
+
+    void closeFromSession();
 
 signals:
-    void closed();
+    void closeRequested();
 
 protected:
-    void paintEvent(QPaintEvent *event) override;
-    void mousePressEvent(QMouseEvent *event) override;
-    void mouseMoveEvent(QMouseEvent *event) override;
-    void mouseReleaseEvent(QMouseEvent *event) override;
-    void mouseDoubleClickEvent(QMouseEvent *event) override;
-    void wheelEvent(QWheelEvent *event) override;
-    void keyPressEvent(QKeyEvent *event) override;
-    void closeEvent(QCloseEvent *event) override;
-    void showEvent(QShowEvent *event) override;
+    void paintEvent(QPaintEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
+    void mouseDoubleClickEvent(QMouseEvent* event) override;
+    void wheelEvent(QWheelEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
+    void closeEvent(QCloseEvent* event) override;
+    void showEvent(QShowEvent* event) override;
 
 private:
-    // AnnotationHostAdapter implementation
-    QWidget* annotationHostWidget() const override;
-    AnnotationLayer* annotationLayerForContext() const override;
-    InlineTextEditor* inlineTextEditorForContext() const override;
-    TextAnnotationEditor* textAnnotationEditorForContext() const override;
-    void onContextColorSelected(const QColor& color) override;
-    void onContextMoreColorsRequested() override;
-    void onContextLineWidthChanged(int width) override;
-    void onContextArrowStyleChanged(LineEndStyle style) override;
-    void onContextLineStyleChanged(LineStyle style) override;
-    void onContextFontSizeDropdownRequested(const QPoint& pos) override;
-    void onContextFontFamilyDropdownRequested(const QPoint& pos) override;
-    void onContextTextEditingFinished(const QString& text, const QPoint& position) override;
-    void onContextTextEditingCancelled() override;
+    ScreenCanvasSession* m_session = nullptr;
+    QPointer<QScreen> m_screen;
+    QRect m_desktopGeometry;
+    ToolManager* m_toolManager = nullptr;
 
-    // Painting helpers
-    void drawAnnotations(QPainter &painter);
-    void drawCurrentAnnotation(QPainter &painter);
-    void drawCursorDot(QPainter &painter);
-
-    // Toolbar helpers
-    void handleToolbarClick(int buttonId);
-    void handlePersistentToolClick(ToolId toolId);
-    void handleLaserPointerClick();
-    void handleCanvasModeToggle(ToolId toolId);
-    void handleActionToolClick(ToolId toolId);
-    void handleUndoAction(ToolId toolId);
-    void handleRedoAction(ToolId toolId);
-    void handleClearAction(ToolId toolId);
-    void handleExitAction(ToolId toolId);
-    void finalizePolylineForToolbarInteraction();
-    bool isDrawingTool(ToolId toolId) const;
-    void setToolCursor();
-    void syncFloatingUiCursor();
-    void restoreCanvasCursorAt(const QPoint& localPos);
-    bool isGlobalPosOverFloatingUi(const QPoint& globalPos) const;
-
-    using ToolbarClickHandler = void (ScreenCanvas::*)(ToolId);
-    static const std::map<ToolId, ToolbarClickHandler>& toolbarDispatchTable();
-    static const std::map<ToolId, ToolbarClickHandler>& actionDispatchTable();
-
-    // Color and style actions
-    void onColorSelected(const QColor &color);
-    void onMoreColorsRequested();
-
-    // Line width callback
-    void onLineWidthChanged(int width);
-
-    // Unified color and width widget helpers
-    void syncColorToAllWidgets(const QColor& color);
-
-    // Annotation settings persistence
-    void onArrowStyleChanged(LineEndStyle style);
-    void onLineStyleChanged(LineStyle style);
-
-    // Text editing handlers
-    void onTextEditingFinished(const QString &text, const QPoint &position);
-
-    // Font dropdown handlers
-    void onFontSizeDropdownRequested(const QPoint &pos);
-    void onFontFamilyDropdownRequested(const QPoint &pos);
-    void onFontSizeSelected(int size);
-    void onFontFamilySelected(const QString &family);
-
-    // Update QML toolbar/sub-toolbar state for current tool
-    void updateQmlToolbarState();
-    QRect floatingToolbarRectInLocalCoords() const;
-
-    // Background pixmap (used for Whiteboard/Blackboard modes)
-    QPixmap m_backgroundPixmap;
-    QPointer<QScreen> m_currentScreen;
-    qreal m_devicePixelRatio;
-
-    // Annotation layer and tool manager
-    AnnotationLayer *m_annotationLayer; // Qt parent owns lifetime
-    ToolManager *m_toolManager;
-    ToolId m_currentToolId;
-    bool m_laserPointerActive;
-
-    // QML toolbar and sub-toolbar
-    CanvasToolbarViewModel *m_toolbarViewModel = nullptr;
-    PinToolOptionsViewModel *m_toolOptionsViewModel = nullptr;
-    std::unique_ptr<SnapTray::QmlFloatingToolbar> m_qmlToolbar;
-    std::unique_ptr<SnapTray::QmlFloatingSubToolbar> m_qmlSubToolbar;
-    bool m_toolbarUserDragged = false;
-    bool m_showSubToolbar;
-
-    // Emoji picker (QML popup)
-    SnapTray::QmlEmojiPickerPopup *m_emojiPickerPopup = nullptr;
-    void showEmojiPickerPopup();
-
-    // Color picker dialog
-    std::unique_ptr<snaptray::colorwidgets::ColorPickerDialogCompat> m_colorPickerDialog;
-
-    // Laser pointer renderer
-    LaserPointerRenderer *m_laserRenderer;
-
-    // Cursor position for drawing cursor dot
-    QPoint m_cursorPos;
-
-    // Shape tool state
-    ShapeType m_shapeType = ShapeType::Rectangle;
-    ShapeFillMode m_shapeFillMode = ShapeFillMode::Outline;
-
-    // StepBadge tool state
-    StepBadgeSize m_stepBadgeSize = StepBadgeSize::Medium;
-
-    // Emoji, Arrow and Polyline editing state
-    bool m_isEmojiDragging = false;
-    bool m_isEmojiScaling = false;
-    bool m_isEmojiRotating = false;
-    GizmoHandle m_activeEmojiHandle = GizmoHandle::None;
-    QPoint m_emojiDragStart;
-    qreal m_emojiStartScale = 1.0;
-    qreal m_emojiStartDistance = 0.0;
-    QPointF m_emojiStartCenter;
-    qreal m_emojiStartRotation = 0.0;
-    qreal m_emojiStartAngle = 0.0;
-
-    bool m_isArrowDragging = false;
-    GizmoHandle m_arrowDragHandle = GizmoHandle::None;
-    bool m_isPolylineDragging = false;
-    int m_activePolylineVertexIndex = -1;
-    QPoint m_dragStartPos;
-    bool m_consumeNextToolRelease = false;
-
-    // Emoji, Arrow and Polyline helpers
-    TextBoxAnnotation* getSelectedTextAnnotation();
-    EmojiStickerAnnotation* getSelectedEmojiStickerAnnotation();
-    ShapeAnnotation* getSelectedShapeAnnotation();
-
-    bool handleEmojiStickerAnnotationPress(const QPoint& pos);
-    bool handleEmojiStickerAnnotationMove(const QPoint& pos);
-    bool handleEmojiStickerAnnotationRelease(const QPoint& pos);
-
-    bool handleArrowAnnotationPress(const QPoint& pos);
-    bool handleArrowAnnotationMove(const QPoint& pos);
-    bool handleArrowAnnotationRelease(const QPoint& pos);
-    ArrowAnnotation* getSelectedArrowAnnotation();
-
-    bool handlePolylineAnnotationPress(const QPoint& pos);
-    bool handlePolylineAnnotationMove(const QPoint& pos);
-    bool handlePolylineAnnotationRelease(const QPoint& pos);
-    PolylineAnnotation* getSelectedPolylineAnnotation();
-
-    // Cursor update helper
-    void updateAnnotationCursor(const QPoint& pos);
-
-    // Text editing components
-
-    // Text editing components
-    InlineTextEditor *m_textEditor;
-    TextAnnotationEditor *m_textAnnotationEditor;
+    InlineTextEditor* m_textEditor = nullptr;
+    TextAnnotationEditor* m_textAnnotationEditor = nullptr;
     std::unique_ptr<ShapeAnnotationEditor> m_shapeAnnotationEditor;
-    RegionSettingsHelper *m_settingsHelper;
+    RegionSettingsHelper* m_settingsHelper = nullptr;
 
-    // Background mode
-    CanvasBackgroundMode m_bgMode = CanvasBackgroundMode::Screen;
-
-    // Shared annotation setup/signals helper
-    std::unique_ptr<AnnotationContext> m_annotationContext;
-
-    // Background mode helpers
-    void setBackgroundMode(CanvasBackgroundMode mode);
-    QPixmap createSolidBackgroundPixmap(const QColor& color) const;
+    bool m_sessionClosing = false;
 };
 
 #endif // SCREENCANVAS_H
