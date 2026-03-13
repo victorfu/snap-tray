@@ -20,6 +20,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 BUILD_DIR="${PROJECT_ROOT}/build"
 OUTPUT_DIR="${PROJECT_ROOT}/dist"
+QML_SOURCE_DIR="${PROJECT_ROOT}/src/qml"
+QML_IMPORT_DIR="${BUILD_DIR}"
 
 # Extract version from CMakeLists.txt
 VERSION=$(grep "project(SnapTray VERSION" "$PROJECT_ROOT/CMakeLists.txt" | \
@@ -77,7 +79,10 @@ fi
 # Step 2: Run macdeployqt
 echo ""
 echo -e "${YELLOW}[2/6] Running macdeployqt...${NC}"
-"$QT_PREFIX/bin/macdeployqt" "$APP_PATH" -verbose=1
+"$QT_PREFIX/bin/macdeployqt" "$APP_PATH" \
+    -qmldir="$QML_SOURCE_DIR" \
+    -qmlimport="$QML_IMPORT_DIR" \
+    -verbose=1
 
 # Fix brotli dependencies not handled by macdeployqt (QTBUG-100686)
 echo "Fixing brotli dependencies..."

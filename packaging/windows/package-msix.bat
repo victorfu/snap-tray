@@ -26,6 +26,8 @@ set BUILD_DIR=%PROJECT_ROOT%\build
 set OUTPUT_DIR=%PROJECT_ROOT%\dist
 set STAGING_DIR=%BUILD_DIR%\msix-staging
 set ASSETS_DIR=%STAGING_DIR%\Assets
+set QML_SOURCE_DIR=%PROJECT_ROOT%\src\qml
+set QML_IMPORT_DIR=%BUILD_DIR%
 
 REM Extract version from CMakeLists.txt
 for /f "tokens=*" %%a in ('findstr /C:"project(SnapTray VERSION" "%PROJECT_ROOT%\CMakeLists.txt"') do (
@@ -125,7 +127,7 @@ copy "%EXE_PATH%" "%STAGING_DIR%\" >nul
 REM Step 3: Run windeployqt
 echo.
 echo [3/7] Running windeployqt...
-"%QT_PATH%\bin\windeployqt.exe" --release --no-translations "%STAGING_DIR%\%APP_NAME%.exe"
+"%QT_PATH%\bin\windeployqt.exe" --release --no-translations --qmldir "%QML_SOURCE_DIR%" --qmlimport "%QML_IMPORT_DIR%" "%STAGING_DIR%\%APP_NAME%.exe"
 if errorlevel 1 (
     echo ERROR: windeployqt failed
     exit /b 1

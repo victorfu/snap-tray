@@ -10,6 +10,8 @@ set "PROJECT_DIR=%SCRIPT_DIR%.."
 set "BUILD_DIR=%PROJECT_DIR%\release"
 set "BIN_DIR=%BUILD_DIR%\bin"
 set "EXE_PATH=%BIN_DIR%\SnapTray.exe"
+set "QML_SOURCE_DIR=%PROJECT_DIR%\src\qml"
+set "QML_IMPORT_DIR=%BUILD_DIR%"
 
 cd /d "%PROJECT_DIR%"
 
@@ -73,6 +75,8 @@ if exist "%EXE_PATH%" (
     if not exist "%BIN_DIR%\Qt6Quick.dll" set "NEED_WINDEPLOYQT=1"
     if not exist "%BIN_DIR%\Qt6QuickWidgets.dll" set "NEED_WINDEPLOYQT=1"
     if not exist "%BIN_DIR%\platforms\qwindows.dll" set "NEED_WINDEPLOYQT=1"
+    if not exist "%BIN_DIR%\qml\QtQuick\Layouts" set "NEED_WINDEPLOYQT=1"
+    if not exist "%BIN_DIR%\qml\QtQuick\Controls\Basic" set "NEED_WINDEPLOYQT=1"
 
     if "!NEED_WINDEPLOYQT!"=="1" (
         echo.
@@ -87,7 +91,7 @@ if exist "%EXE_PATH%" (
             REM Navigate from Qt6_DIR (lib/cmake/Qt6) to bin
             set "QT_BIN_DIR=!QT_DIR!\..\..\..\bin"
             if exist "!QT_BIN_DIR!\windeployqt.exe" (
-                "!QT_BIN_DIR!\windeployqt.exe" "%EXE_PATH%"
+                "!QT_BIN_DIR!\windeployqt.exe" --qmldir "%QML_SOURCE_DIR%" --qmlimport "%QML_IMPORT_DIR%" "%EXE_PATH%"
             ) else (
                 echo Warning: windeployqt.exe not found at !QT_BIN_DIR!
                 echo Please run windeployqt manually or set Qt path correctly.
@@ -100,7 +104,7 @@ if exist "%EXE_PATH%" (
             if exist "C:\Qt\6.7.0\msvc2022_64\bin\windeployqt.exe" set "WINDEPLOYQT=C:\Qt\6.7.0\msvc2022_64\bin\windeployqt.exe"
 
             if defined WINDEPLOYQT (
-                "!WINDEPLOYQT!" "%EXE_PATH%"
+                "!WINDEPLOYQT!" --qmldir "%QML_SOURCE_DIR%" --qmlimport "%QML_IMPORT_DIR%" "%EXE_PATH%"
             ) else (
                 echo Warning: Could not find windeployqt.exe
                 echo Please run windeployqt manually before running.

@@ -7,6 +7,7 @@
 #include "qml/UpdateDialogViewModel.h"
 #include "PlatformFeatures.h"
 
+#include <QDebug>
 #include <QEvent>
 #include <QQmlContext>
 #include <QQuickView>
@@ -14,6 +15,24 @@
 namespace SnapTray {
 
 namespace {
+void logQmlViewErrors(QQuickView* view, const QString& context)
+{
+    if (!view) {
+        return;
+    }
+
+    const auto errors = view->errors();
+    if (errors.isEmpty()) {
+        qCritical().noquote() << context
+                              << QStringLiteral("QML view entered error state without details.");
+        return;
+    }
+
+    for (const auto& error : errors) {
+        qCritical().noquote() << context << error.toString();
+    }
+}
+
 void showUpdateDialog(QObject* parent, UpdateDialogViewModel* viewModel,
                       SettingsBackend* backend)
 {
@@ -59,6 +78,14 @@ void QmlSettingsWindow::ensureView()
     // property bindings in the settings pages can resolve settingsBackend.
     m_view->rootContext()->setContextProperty(
         QStringLiteral("settingsBackend"), m_backend);
+    connect(m_view, &QQuickView::statusChanged, this,
+            [this](QQuickView::Status status) {
+                if (status == QQuickView::Error) {
+                    logQmlViewErrors(
+                        m_view,
+                        QStringLiteral("QmlSettingsWindow: Failed to load settings UI:"));
+                }
+            });
 
     m_view->setSource(
         QUrl(QStringLiteral("qrc:/SnapTrayQml/settings/SettingsWindow.qml")));
