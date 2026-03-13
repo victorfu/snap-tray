@@ -25,6 +25,8 @@ void ArrowToolHandler::onDeactivate(ToolContext* ctx) {
 
 void ArrowToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
     if (m_isPolylineMode) {
+        if (!m_currentPolyline)
+            return;
         // Already in polyline mode - check for double-click to finish
         if (m_clickTimer.isValid() && m_clickTimer.elapsed() < DOUBLE_CLICK_INTERVAL) {
             // Double-click detected - finish the polyline

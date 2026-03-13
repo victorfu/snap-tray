@@ -441,7 +441,7 @@ bool QmlFloatingToolbar::eventFilter(QObject* obj, QEvent* event)
 void QmlFloatingToolbar::onButtonHovered(int buttonId, double anchorX, double anchorY,
                                          double anchorW, double anchorH)
 {
-    if (!m_view)
+    if (!m_view || !m_viewModel)
         return;
 
     syncCursorSurface();

@@ -35,6 +35,8 @@ void PolylineToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos)
         m_currentMousePos = pos;
         m_clickTimer.start();
     } else {
+        if (!m_currentPolyline)
+            return;
         // Check for double-click to finish
         if (m_clickTimer.isValid() && m_clickTimer.elapsed() < DOUBLE_CLICK_INTERVAL) {
             // Double-click detected - finish the polyline

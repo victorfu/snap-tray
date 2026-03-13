@@ -164,7 +164,8 @@ IPCResponse IPCProtocol::sendCommand(const IPCMessage& message, bool waitRespons
     QDataStream readStream(headerData);
     quint32 size = 0;
     readStream >> size;
-    if (readStream.status() != QDataStream::Ok || size == 0) {
+    constexpr quint32 kMaxResponseSize = 10 * 1024 * 1024; // 10 MB
+    if (readStream.status() != QDataStream::Ok || size == 0 || size > kMaxResponseSize) {
         response.error = "Invalid response header";
         return response;
     }
