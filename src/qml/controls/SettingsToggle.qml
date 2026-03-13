@@ -64,7 +64,7 @@ Column {
             MouseArea {
                 id: toggleArea
                 anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
+                cursorShape: CursorTokens.clickable
                 focus: true
 
                 Accessible.role: Accessible.CheckBox

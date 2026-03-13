@@ -59,7 +59,7 @@ Item {
                     id: emojiMouse
                     anchors.fill: parent
                     hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
+                    cursorShape: CursorTokens.clickable
 
                     onClicked: {
                         if (root.backend)

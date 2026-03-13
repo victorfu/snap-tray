@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QPointer>
+#include <QString>
 
 class QEvent;
 class QQuickView;
@@ -30,6 +31,7 @@ public:
 
 private:
     void ensureView();
+    void syncCursorSurface();
     bool eventFilter(QObject* watched, QEvent* event) override;
 
     QPointer<QQuickView> m_view;
@@ -37,6 +39,8 @@ private:
     PinHistoryBackend* m_backend = nullptr;
     PinWindowManager* m_pinWindowManager = nullptr;
     bool m_hasShownOnce = false;
+    QString m_cursorSurfaceId;
+    QString m_cursorOwnerId;
 };
 
 } // namespace SnapTray

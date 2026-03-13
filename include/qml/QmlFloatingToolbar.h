@@ -10,6 +10,7 @@
 class QQuickView;
 class QQuickItem;
 class QWidget;
+class QWindow;
 
 namespace SnapTray {
 
@@ -88,6 +89,8 @@ public:
     QRect geometry() const;
     int width() const;
     int height() const;
+    QWindow* window() const;
+    QWindow* tooltipWindow() const;
 
     /**
      * @brief Set the parent widget to keep the toolbar above it.

@@ -44,6 +44,8 @@ public:
     void positionNear(const QRect& pinWindowRect);
 
     QRect geometry() const;
+    QWindow* window() const;
+    QWindow* tooltipWindow() const;
 
     PinToolbarViewModel* viewModel() const;
 

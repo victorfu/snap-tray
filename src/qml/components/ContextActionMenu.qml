@@ -100,7 +100,7 @@ Popup {
                     visible: modelData.separator !== true
                     anchors.fill: parent
                     hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
+                    cursorShape: CursorTokens.clickable
 
                     onClicked: function(mouse) {
                         mouse.accepted = true

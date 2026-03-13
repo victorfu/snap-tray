@@ -2,6 +2,7 @@
 
 #include "encoding/EncoderFactory.h"
 #include <QObject>
+#include <QString>
 
 class QQuickView;
 class QEvent;
@@ -126,6 +127,7 @@ private:
 
     void ensureView();
     void applyPlatformWindowFlags();
+    void syncCursorSurface();
     void performFormatConversion(OutputFormat format);
     void performTrim();
 
@@ -162,4 +164,6 @@ private:
 
     // State
     bool m_saved = false;
+    QString m_cursorSurfaceId;
+    QString m_cursorOwnerId;
 };

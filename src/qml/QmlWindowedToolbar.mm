@@ -1,8 +1,8 @@
 #include "qml/QmlWindowedToolbar.h"
+#include "cursor/CursorPlatformApplier.h"
 #include "qml/QmlFloatingSubToolbar.h"
 #include "qml/QmlOverlayManager.h"
 #include "qml/PinToolbarViewModel.h"
-#include "platform/WindowLevel.h"
 
 #include <QCoreApplication>
 #include <QQuickView>
@@ -31,30 +31,6 @@
 namespace SnapTray {
 
 namespace {
-
-bool shouldReassertNativeArrow(QEvent::Type type)
-{
-    switch (type) {
-    case QEvent::Enter:
-    case QEvent::HoverMove:
-    case QEvent::MouseMove:
-    case QEvent::MouseButtonPress:
-    case QEvent::MouseButtonRelease:
-        return true;
-    default:
-        return false;
-    }
-}
-
-void reassertNativeArrowForView(QQuickView* view)
-{
-    if (!view || !view->isVisible()) {
-        return;
-    }
-
-    forceNativeArrowCursor();
-}
-
 bool containsGlobalPoint(const QWidget* widget, const QPoint& globalPos)
 {
     return widget && widget->isVisible() && widget->frameGeometry().contains(globalPos);
@@ -135,7 +111,7 @@ void QmlWindowedToolbar::ensureView()
     // This floating toolbar must stay mouse-interactive without stealing
     // keyboard focus from the host PinWindow.
     m_view->setFlag(Qt::WindowDoesNotAcceptFocus, true);
-    m_view->setCursor(Qt::ArrowCursor);
+    CursorPlatformApplier::applyWindowCursor(m_view, CursorStyleSpec::fromShape(Qt::ArrowCursor));
     const QVariantMap initialProperties{
         {QStringLiteral("viewModel"),
          QVariant::fromValue(static_cast<QObject*>(m_viewModel))},
@@ -166,7 +142,8 @@ void QmlWindowedToolbar::ensureTooltipView()
     m_tooltipView->setFlag(Qt::WindowDoesNotAcceptFocus, true);
     m_tooltipView->setResizeMode(QQuickView::SizeRootObjectToView);
     m_tooltipView->setFlag(Qt::WindowTransparentForInput, true);
-    m_tooltipView->setCursor(Qt::ArrowCursor);
+    CursorPlatformApplier::applyWindowCursor(
+        m_tooltipView, CursorStyleSpec::fromShape(Qt::ArrowCursor));
 
     if (m_tooltipView->status() == QQuickView::Error) {
         for (const auto& error : m_tooltipView->errors())
@@ -319,6 +296,16 @@ QRect QmlWindowedToolbar::geometry() const
     return QRect(m_view->position(), m_view->size());
 }
 
+QWindow* QmlWindowedToolbar::window() const
+{
+    return m_view;
+}
+
+QWindow* QmlWindowedToolbar::tooltipWindow() const
+{
+    return m_tooltipView;
+}
+
 PinToolbarViewModel* QmlWindowedToolbar::viewModel() const
 {
     return m_viewModel;
@@ -379,13 +366,21 @@ void QmlWindowedToolbar::positionNear(const QRect& pinWindowRect)
 bool QmlWindowedToolbar::eventFilter(QObject* obj, QEvent* event)
 {
     if (obj == m_view) {
-        if (shouldReassertNativeArrow(event->type())) {
-            reassertNativeArrowForView(m_view);
+        switch (event->type()) {
+        case QEvent::Enter:
+        case QEvent::HoverMove:
+        case QEvent::MouseMove:
+        case QEvent::MouseButtonPress:
+        case QEvent::MouseButtonRelease:
             emit cursorSyncRequested();
-        }
-        if (event->type() == QEvent::Leave || event->type() == QEvent::Hide) {
+            break;
+        case QEvent::Leave:
+        case QEvent::Hide:
             hideTooltip();
             emit cursorRestoreRequested();
+            break;
+        default:
+            break;
         }
         return false;
     }
@@ -456,7 +451,6 @@ void QmlWindowedToolbar::onButtonHovered(int buttonId, double anchorX, double an
     if (!m_view)
         return;
 
-    reassertNativeArrowForView(m_view);
     emit cursorSyncRequested();
 
     // Find the tooltip text from the ViewModel's button list

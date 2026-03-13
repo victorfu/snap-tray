@@ -1,14 +1,11 @@
 #include "cursor/CursorManager.h"
 
 #include <QCursor>
-#include <QGuiApplication>
-#include <QPainter>
-#include <QPixmap>
-#include <QScreen>
-#include <QtMath>
 #include <algorithm>
 
-#include "platform/WindowLevel.h"  // for forceNativeCrosshairCursor
+#include "cursor/CursorAuthority.h"
+#include "cursor/CursorPlatformApplier.h"
+#include "cursor/CursorStyleCatalog.h"
 #include "tools/ToolManager.h"
 #include "tools/IToolHandler.h"
 #include "tools/ToolId.h"
@@ -20,36 +17,11 @@
 #include "annotations/PolylineAnnotation.h"
 
 namespace {
-constexpr qreal kCursorRenderDprFloor = 2.0;
-constexpr qreal kMosaicCursorOutlineWidth = 2.0;
-constexpr int kMosaicCursorPadding = 4;
-const QColor kCursorOutlineColor(0x6C, 0x5C, 0xE7);
-
-qreal cursorRenderDpr()
+bool cursorsEqual(const QCursor& lhs, const QCursor& rhs)
 {
-    if (auto* screen = QGuiApplication::screenAt(QCursor::pos())) {
-        return std::max(kCursorRenderDprFloor, screen->devicePixelRatio());
-    }
-    if (auto* screen = QGuiApplication::primaryScreen()) {
-        return std::max(kCursorRenderDprFloor, screen->devicePixelRatio());
-    }
-    if (qApp) {
-        return std::max(kCursorRenderDprFloor, qApp->devicePixelRatio());
-    }
-    return kCursorRenderDprFloor;
-}
-
-QPixmap createCursorCanvas(const QSize& logicalSize, qreal dpr)
-{
-    const QSize physicalSize(
-        qCeil(logicalSize.width() * dpr),
-        qCeil(logicalSize.height() * dpr)
-    );
-
-    QPixmap pixmap(physicalSize);
-    pixmap.setDevicePixelRatio(dpr);
-    pixmap.fill(Qt::transparent);
-    return pixmap;
+    return lhs.shape() == rhs.shape() &&
+           lhs.hotSpot() == rhs.hotSpot() &&
+           lhs.pixmap().cacheKey() == rhs.pixmap().cacheKey();
 }
 }  // namespace
 
@@ -96,6 +68,7 @@ void CursorManager::pushCursorForWidget(QWidget* widget, CursorContext context, 
 
     // Sort by priority (highest last)
     std::sort(stack.begin(), stack.end());
+    submitContextRequestForWidget(widget, context, CursorStyleSpec::fromCursor(cursor));
 
     applyCursorForWidget(widget);
 }
@@ -119,6 +92,7 @@ void CursorManager::popCursorForWidget(QWidget* widget, CursorContext context)
 
     if (it != stack.end()) {
         stack.erase(it, stack.end());
+        CursorAuthority::instance().clearWidgetRequest(widget, ownerIdForContext(context));
         applyCursorForWidget(widget);
     }
 }
@@ -130,7 +104,10 @@ void CursorManager::clearAllForWidget(QWidget* widget, Qt::CursorShape defaultCu
     }
 
     m_widgetCursorStacks.remove(widget);
-    widget->setCursor(defaultCursor);
+    CursorAuthority::instance().clearWidgetRequests(widget);
+    const CursorStyleSpec defaultSpec = CursorStyleSpec::fromShape(defaultCursor);
+    CursorPlatformApplier::applyWidgetCursor(widget, defaultSpec);
+    CursorAuthority::instance().recordLegacyAppliedForWidget(widget, defaultSpec);
 }
 
 void CursorManager::setButtonCursor(QWidget* button)
@@ -161,6 +138,12 @@ void CursorManager::registerWidget(QWidget* widget, ToolManager* toolManager)
     // Initialize state
     m_widgetStates[widget] = WidgetCursorState();
 
+    auto& authority = CursorAuthority::instance();
+    authority.registerWidgetSurface(
+        widget,
+        authority.defaultGroupForObject(widget),
+        authority.defaultManagedModeForWidget(widget));
+
     // Set tool manager if provided
     if (toolManager) {
         setToolManagerForWidget(widget, toolManager);
@@ -175,6 +158,7 @@ void CursorManager::unregisterWidget(QWidget* widget)
 
     m_widgetCursorStacks.remove(widget);
     m_widgetStates.remove(widget);
+    CursorAuthority::instance().unregisterWidgetSurface(widget);
 
     // Disconnect from tool manager for this widget
     if (m_widgetToolManagers.contains(widget)) {
@@ -311,6 +295,7 @@ void CursorManager::updateToolCursorForWidget(QWidget* widget)
     // Use handler's cursor() method
     if (handler) {
         pushCursorForWidget(widget, CursorContext::Tool, handler->cursor());
+        submitContextRequestForWidget(widget, CursorContext::Tool, handler->cursorStyleSpec());
     } else {
         // Fallback to cross cursor for drawing tools
         pushCursorForWidget(widget, CursorContext::Tool, Qt::CrossCursor);
@@ -422,33 +407,34 @@ void CursorManager::applyCursorForWidget(QWidget* widget, bool force)
         return;
     }
 
-    QCursor newCursor = effectiveCursorForWidget(widget);
-    QCursor currentCursor = widget->cursor();
-    const bool cursorChanged =
-        newCursor.shape() != currentCursor.shape() ||
-        newCursor.pixmap().cacheKey() != currentCursor.pixmap().cacheKey();
+    auto& authority = CursorAuthority::instance();
+    const CursorSurfaceMode mode = authority.modeForWidget(widget);
+    const QCursor legacyCursor = effectiveCursorForWidget(widget);
+    const CursorStyleSpec legacySpec = CursorStyleSpec::fromCursor(legacyCursor);
 
-    // macOS floating UI can change the native cursor without updating Qt's cached
-    // widget cursor. Reapply while the widget owns the pointer so custom drawing
-    // cursors (for example eraser/mosaic) do not get stuck as the default arrow.
+    if (mode != CursorSurfaceMode::Legacy) {
+        authority.recordLegacyAppliedForWidget(widget, legacySpec);
+    }
+
+    CursorStyleSpec targetSpec = legacySpec;
+    if (mode == CursorSurfaceMode::Authority && authority.hasResolvedRequestForWidget(widget)) {
+        targetSpec = authority.resolvedStyleForWidget(widget);
+    }
+
+    const QCursor targetCursor = CursorStyleCatalog::instance().cursorForStyle(targetSpec);
+    const bool cursorChanged = !cursorsEqual(targetCursor, widget->cursor());
+
 #ifdef Q_OS_MAC
     if (force || cursorChanged || widget->underMouse()) {
 #else
     if (force || cursorChanged) {
 #endif
-        widget->setCursor(newCursor);
+        if (mode == CursorSurfaceMode::Authority) {
+            CursorPlatformApplier::applyWidgetCursor(widget, targetSpec);
+        } else {
+            CursorPlatformApplier::applyWidgetCursor(widget, legacyCursor);
+        }
     }
-
-    // On macOS, always reinforce CrossCursor via native API.
-    // Qt's cursor() returns a cached value that can desync from the actual
-    // native macOS cursor (e.g., when mouse moves over text selection in other
-    // apps, macOS sets IBeam but Qt doesn't know). By calling the native API
-    // on every cursor application, we ensure the native cursor stays correct.
-#ifdef Q_OS_MAC
-    if (newCursor.shape() == Qt::CrossCursor) {
-        forceNativeCrosshairCursor(widget);
-    }
-#endif
 }
 
 QCursor CursorManager::effectiveCursorForWidget(QWidget* widget) const
@@ -472,31 +458,7 @@ QCursor CursorManager::effectiveCursorForWidget(QWidget* widget) const
 
 QCursor CursorManager::createMosaicCursor(int size)
 {
-    const int boxSize = std::max(size, 2);
-    const QSize logicalSize(
-        boxSize + (kMosaicCursorPadding * 2),
-        boxSize + (kMosaicCursorPadding * 2)
-    );
-    const qreal dpr = cursorRenderDpr();
-    QPixmap pixmap = createCursorCanvas(logicalSize, dpr);
-
-    QPainter painter(&pixmap);
-    painter.setRenderHint(QPainter::Antialiasing, false);
-
-    QPen pen(kCursorOutlineColor, kMosaicCursorOutlineWidth, Qt::SolidLine,
-        Qt::SquareCap, Qt::MiterJoin);
-    painter.setPen(pen);
-    painter.setBrush(Qt::NoBrush);
-
-    // Draw a single crisp square outline without any extra outer/inner guide lines.
-    const qreal inset = kMosaicCursorPadding + (kMosaicCursorOutlineWidth / 2.0);
-    const qreal rectExtent = std::max<qreal>(1.0, boxSize - kMosaicCursorOutlineWidth);
-    painter.drawRect(QRectF(inset, inset, rectExtent, rectExtent));
-
-    painter.end();
-
-    const QPoint hotspot(logicalSize.width() / 2, logicalSize.height() / 2);
-    return QCursor(pixmap, hotspot.x(), hotspot.y());
+    return CursorStyleCatalog::instance().mosaicCursor(size);
 }
 
 Qt::CursorShape CursorManager::cursorForHandle(SelectionStateManager::ResizeHandle handle)
@@ -663,4 +625,55 @@ CursorManager::AnnotationHitResult CursorManager::hitTestAnnotations(
 
     // No hit.
     return result;
+}
+
+void CursorManager::submitContextRequestForWidget(QWidget* widget, CursorContext context,
+                                                  const CursorStyleSpec& spec)
+{
+    if (!widget) {
+        return;
+    }
+
+    CursorAuthority::instance().submitWidgetRequest(
+        widget,
+        ownerIdForContext(context),
+        requestSourceForContext(context),
+        spec,
+        static_cast<int>(context));
+}
+
+QString CursorManager::ownerIdForContext(CursorContext context)
+{
+    switch (context) {
+    case CursorContext::Tool:
+        return QStringLiteral("widget.tool");
+    case CursorContext::Hover:
+        return QStringLiteral("widget.hover");
+    case CursorContext::Selection:
+        return QStringLiteral("widget.selection");
+    case CursorContext::Drag:
+        return QStringLiteral("widget.drag");
+    case CursorContext::Override:
+        return QStringLiteral("widget.override");
+    }
+
+    return QStringLiteral("widget.unknown");
+}
+
+CursorRequestSource CursorManager::requestSourceForContext(CursorContext context)
+{
+    switch (context) {
+    case CursorContext::Tool:
+        return CursorRequestSource::Tool;
+    case CursorContext::Hover:
+        return CursorRequestSource::Hover;
+    case CursorContext::Selection:
+        return CursorRequestSource::Selection;
+    case CursorContext::Drag:
+        return CursorRequestSource::Drag;
+    case CursorContext::Override:
+        return CursorRequestSource::Override;
+    }
+
+    return CursorRequestSource::SurfaceDefault;
 }

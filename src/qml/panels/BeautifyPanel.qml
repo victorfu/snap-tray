@@ -25,7 +25,7 @@ Item {
         id: dragArea
         anchors.fill: parent
         z: 0
-        cursorShape: pressed ? Qt.ClosedHandCursor : Qt.ArrowCursor
+        cursorShape: pressed ? CursorTokens.panelDragActive : CursorTokens.panelDragIdle
 
         property point pressStart
 
@@ -106,7 +106,7 @@ Item {
                     id: closeMouse
                     anchors.fill: parent
                     hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
+                    cursorShape: CursorTokens.clickable
                     onClicked: if (root.backend) root.backend.requestClose()
                 }
             }
@@ -170,7 +170,7 @@ Item {
                         id: presetMouse
                         anchors.fill: parent
                         hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
+                        cursorShape: CursorTokens.clickable
                         onClicked: if (root.backend) root.backend.applyPreset(index)
                     }
                 }
@@ -206,7 +206,7 @@ Item {
 
                     MouseArea {
                         anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
+                        cursorShape: CursorTokens.clickable
                         onClicked: if (root.backend) root.backend.pickPrimaryColor()
                     }
                 }
@@ -222,7 +222,7 @@ Item {
 
                     MouseArea {
                         anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
+                        cursorShape: CursorTokens.clickable
                         onClicked: if (root.backend) root.backend.pickSecondaryColor()
                     }
                 }
@@ -297,7 +297,7 @@ Item {
 
                 MouseArea {
                     anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
+                    cursorShape: CursorTokens.clickable
                     onClicked: {
                         if (root.backend)
                             root.backend.shadowEnabled = !root.backend.shadowEnabled

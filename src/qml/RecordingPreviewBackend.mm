@@ -1,4 +1,5 @@
 #include "qml/RecordingPreviewBackend.h"
+#include "cursor/CursorSurfaceSupport.h"
 #include "qml/QmlOverlayManager.h"
 #include "video/VideoTrimmer.h"
 #include "video/IVideoPlayer.h"
@@ -44,6 +45,7 @@ RecordingPreviewBackend::~RecordingPreviewBackend()
     }
 
     if (m_view) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         // Disconnect to prevent re-entrant signals during teardown
         disconnect(m_view, nullptr, this, nullptr);
         m_view->close();
@@ -70,6 +72,9 @@ void RecordingPreviewBackend::ensureView()
     m_view->setResizeMode(QQuickView::SizeRootObjectToView);
     m_view->setTitle(tr("Recording Preview"));
     m_view->installEventFilter(this);
+    m_cursorSurfaceId = CursorSurfaceSupport::registerManagedSurface(
+        m_view, QStringLiteral("RecordingPreviewBackend"));
+    m_cursorOwnerId = CursorSurfaceSupport::defaultOwnerId(QStringLiteral("RecordingPreviewBackend"));
 
     // Set backend as context property before loading QML
     m_view->rootContext()->setContextProperty(
@@ -89,6 +94,14 @@ bool RecordingPreviewBackend::eventFilter(QObject* watched, QEvent* event)
     if (watched == m_view && event && event->type() == QEvent::Close && m_isProcessing) {
         static_cast<QCloseEvent*>(event)->ignore();
         return true;
+    }
+
+    if (watched == m_view && event) {
+        if (event->type() == QEvent::Hide || event->type() == QEvent::Close) {
+            CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        } else if (CursorSurfaceSupport::isPointerRefreshEvent(event->type())) {
+            syncCursorSurface();
+        }
     }
 
     return QObject::eventFilter(watched, event);
@@ -131,13 +144,30 @@ void RecordingPreviewBackend::show()
     applyPlatformWindowFlags();
     m_view->raise();
     m_view->requestActivate();
+    syncCursorSurface();
 }
 
 void RecordingPreviewBackend::close()
 {
     if (m_view) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->close();
     }
+}
+
+void RecordingPreviewBackend::syncCursorSurface()
+{
+    if (!m_view || m_cursorSurfaceId.isEmpty() || m_cursorOwnerId.isEmpty()) {
+        return;
+    }
+
+    if (!m_view->isVisible()) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        return;
+    }
+
+    CursorSurfaceSupport::syncWindowSurface(
+        m_view, m_cursorSurfaceId, m_cursorOwnerId, CursorRequestSource::SurfaceDefault);
 }
 
 void RecordingPreviewBackend::setDefaultOutputFormat(int formatInt)

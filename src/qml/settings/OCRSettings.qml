@@ -344,7 +344,7 @@ Flickable {
                                 id: selDragArea
                                 anchors.fill: parent
                                 hoverEnabled: true
-                                cursorShape: Qt.OpenHandCursor
+                                cursorShape: CursorTokens.dragReady
                                 drag.target: selContent
                                 drag.axis: Drag.YAxis
 

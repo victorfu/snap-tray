@@ -5,6 +5,7 @@
 #ifndef WINDOWLEVEL_H
 #define WINDOWLEVEL_H
 
+#include <QCursor>
 #include <QWindow>
 #include <QWidget>
 
@@ -32,15 +33,10 @@ void setWindowExcludedFromCapture(QWidget *widget, bool excluded);
 // On Windows: Uses WS_EX_TOOLWINDOW style
 void setWindowVisibleOnAllWorkspaces(QWidget *widget, bool enabled);
 
-// Forces the native crosshair cursor at the OS level
-// On macOS: Sets NSCursor directly to bypass Qt-macOS sync issues
-// On Windows: No-op (Windows doesn't have this issue)
-void forceNativeCrosshairCursor(QWidget *widget = nullptr);
-
-// Forces the native arrow cursor at the OS level
-// On macOS: Sets NSCursor directly to reclaim floating toolbar cursor ownership
-// On Windows: No-op (Windows doesn't have this issue)
-void forceNativeArrowCursor(QWidget *widget = nullptr);
+// Reasserts a Qt cursor at the native platform layer.
+// On macOS: maps system shapes or uploads custom pixmap cursors.
+// On Windows: currently no-op (policy is still unified at the Qt layer).
+void forceNativeCursor(const QCursor& cursor, QWidget *widget = nullptr);
 
 // Raises window above overlay windows and their floating toolbars.
 // On macOS: Sets NSWindow level to kCGScreenSaverWindowLevel + 2

@@ -1,6 +1,6 @@
 #include "tools/handlers/MosaicToolHandler.h"
 #include "tools/ToolContext.h"
-#include "cursor/CursorManager.h"
+#include "cursor/CursorStyleCatalog.h"
 
 #include <QPainter>
 
@@ -77,10 +77,19 @@ QCursor MosaicToolHandler::cursor() const {
     // Use 2x width for cursor (UI shows half the actual drawing size)
     int effectiveWidth = m_brushWidth * 2;
     if (m_cachedCursorWidth != effectiveWidth || m_cachedCursor.pixmap().isNull()) {
-        m_cachedCursor = CursorManager::createMosaicCursor(effectiveWidth);
+        m_cachedCursor = CursorStyleCatalog::instance().mosaicCursor(effectiveWidth);
         m_cachedCursorWidth = effectiveWidth;
     }
     return m_cachedCursor;
+}
+
+CursorStyleSpec MosaicToolHandler::cursorStyleSpec() const
+{
+    CursorStyleSpec spec;
+    spec.styleId = CursorStyleId::MosaicBrush;
+    spec.primaryValue = m_brushWidth * 2;
+    spec.legacyCursor = cursor();
+    return spec;
 }
 
 void MosaicToolHandler::setWidth(int width) {

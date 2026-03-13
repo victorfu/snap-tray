@@ -96,7 +96,7 @@ Rectangle {
                 MouseArea {
                     id: optionArea
                     anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
+                    cursorShape: CursorTokens.clickable
                     focus: true
 
                     Accessible.role: Accessible.RadioButton

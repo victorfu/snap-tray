@@ -1,7 +1,7 @@
 #include "qml/QmlFloatingSubToolbar.h"
+#include "cursor/CursorPlatformApplier.h"
 #include "qml/QmlOverlayManager.h"
 #include "qml/PinToolOptionsViewModel.h"
-#include "platform/WindowLevel.h"
 
 #include <QQuickView>
 #include <QQuickItem>
@@ -21,28 +21,6 @@
 namespace SnapTray {
 
 namespace {
-
-bool shouldReassertNativeArrow(QEvent::Type type)
-{
-    switch (type) {
-    case QEvent::Enter:
-    case QEvent::HoverMove:
-    case QEvent::MouseMove:
-    case QEvent::MouseButtonPress:
-    case QEvent::MouseButtonRelease:
-        return true;
-    default:
-        return false;
-    }
-}
-
-void reassertNativeArrowForView(QQuickView* view)
-{
-    if (!view || !view->isVisible())
-        return;
-    forceNativeArrowCursor();
-}
-
 void destroyQuickView(QQuickView*& view, QQuickItem*& rootItem)
 {
     if (!view)
@@ -87,7 +65,7 @@ void QmlFloatingSubToolbar::ensureView()
 
     m_view = QmlOverlayManager::instance().createScreenOverlay();
     m_view->setFlag(Qt::WindowDoesNotAcceptFocus, true);
-    m_view->setCursor(Qt::ArrowCursor);
+    CursorPlatformApplier::applyWindowCursor(m_view, CursorStyleSpec::fromShape(Qt::ArrowCursor));
     m_view->rootContext()->setContextProperty(
         QStringLiteral("pinToolOptionsViewModel"), m_viewModel);
     m_view->setSource(
@@ -188,6 +166,11 @@ QRect QmlFloatingSubToolbar::geometry() const
     return QRect(m_view->position(), m_view->size());
 }
 
+QWindow* QmlFloatingSubToolbar::window() const
+{
+    return m_view;
+}
+
 PinToolOptionsViewModel* QmlFloatingSubToolbar::viewModel() const
 {
     return m_viewModel;
@@ -201,12 +184,20 @@ void QmlFloatingSubToolbar::setParentWidget(QWidget* parent)
 bool QmlFloatingSubToolbar::eventFilter(QObject* obj, QEvent* event)
 {
     if (obj == m_view) {
-        if (shouldReassertNativeArrow(event->type())) {
-            reassertNativeArrowForView(m_view);
+        switch (event->type()) {
+        case QEvent::Enter:
+        case QEvent::HoverMove:
+        case QEvent::MouseMove:
+        case QEvent::MouseButtonPress:
+        case QEvent::MouseButtonRelease:
             emit cursorSyncRequested();
-        }
-        if (event->type() == QEvent::Leave || event->type() == QEvent::Hide) {
+            break;
+        case QEvent::Leave:
+        case QEvent::Hide:
             emit cursorRestoreRequested();
+            break;
+        default:
+            break;
         }
     }
 

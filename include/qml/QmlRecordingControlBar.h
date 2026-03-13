@@ -3,11 +3,13 @@
 #include <QObject>
 #include <QRect>
 #include <QPointer>
+#include <QString>
 #include <QWindow>  // for WId
 
 class QQuickView;
 class QQuickItem;
 class QShortcut;
+class QEvent;
 
 namespace SnapTray {
 
@@ -77,6 +79,8 @@ private:
     void applyTooltipWindowFlags();
     void setupConnections();
     QString formatDuration(qint64 ms) const;
+    bool eventFilter(QObject* watched, QEvent* event) override;
+    void syncCursorSurface();
 
     void showTooltip(const QString& text, const QRect& anchorRect);
     void hideTooltip();
@@ -98,6 +102,8 @@ private:
     // For re-centering after width change
     bool m_isDragging = false;
     quint64 m_tooltipRequestId = 0;
+    QString m_cursorSurfaceId;
+    QString m_cursorOwnerId;
 };
 
 } // namespace SnapTray

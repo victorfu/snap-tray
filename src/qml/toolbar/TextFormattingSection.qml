@@ -72,7 +72,7 @@ Item {
                 MouseArea {
                     id: biuMouse
                     anchors.fill: parent
-                    cursorShape: Qt.ArrowCursor
+                    cursorShape: CursorTokens.toolbarControl
                     hoverEnabled: true
                     onClicked: modelData.action()
                 }
@@ -112,7 +112,7 @@ Item {
         MouseArea {
             id: fontSizeMouse
             anchors.fill: parent
-            cursorShape: Qt.ArrowCursor
+            cursorShape: CursorTokens.toolbarControl
             hoverEnabled: true
             onClicked: {
                 if (!root.hasViewModel)
@@ -159,7 +159,7 @@ Item {
         MouseArea {
             id: fontFamilyMouse
             anchors.fill: parent
-            cursorShape: Qt.ArrowCursor
+            cursorShape: CursorTokens.toolbarControl
             hoverEnabled: true
             onClicked: {
                 if (!root.hasViewModel)

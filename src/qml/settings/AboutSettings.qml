@@ -87,7 +87,7 @@ Flickable {
 
             MouseArea {
                 anchors.fill: parent
-                cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
+                cursorShape: parent.hoveredLink ? CursorTokens.clickable : CursorTokens.defaultCursor
                 acceptedButtons: Qt.NoButton
             }
         }

@@ -41,7 +41,7 @@ Item {
         MouseArea {
             id: blurMouse
             anchors.fill: parent
-            cursorShape: Qt.ArrowCursor
+            cursorShape: CursorTokens.toolbarControl
             hoverEnabled: true
             onClicked: {
                 if (root.hasViewModel)

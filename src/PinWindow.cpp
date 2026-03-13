@@ -8,7 +8,10 @@
 #include "PlatformFeatures.h"
 #include "ImageColorSpaceHelper.h"
 #include "WatermarkRenderer.h"
+#include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
+#include "cursor/CursorPlatformApplier.h"
+#include "cursor/CursorSurfaceSupport.h"
 #include "platform/WindowLevel.h"
 #include "capture/ICaptureEngine.h"
 #include "pinwindow/ResizeHandler.h"
@@ -123,6 +126,17 @@ namespace {
     bool containsGlobalPoint(const QWidget* widget, const QPoint& globalPos)
     {
         return widget && widget->isVisible() && widget->frameGeometry().contains(globalPos);
+    }
+
+    CursorStyleSpec cursorSpecForWidget(const QWidget* widget)
+    {
+        return widget ? CursorStyleSpec::fromCursor(widget->cursor())
+                      : CursorStyleSpec::fromShape(Qt::ArrowCursor);
+    }
+
+    CursorStyleSpec cursorSpecForWindow(const QWindow* window)
+    {
+        return CursorSurfaceSupport::currentCursorSpecForWindow(window);
     }
 
     struct TextCompensation
@@ -2222,38 +2236,53 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
 
         // Update cursor based on what's under the mouse
         ResizeHandler::Edge handle = m_regionLayoutManager->hitTestHandle(pos);
+        CursorStyleSpec layoutSpec = CursorStyleSpec::fromShape(Qt::ArrowCursor);
         if (handle != ResizeHandler::Edge::None) {
             // Set resize cursor based on edge
             switch (handle) {
                 case ResizeHandler::Edge::Left:
                 case ResizeHandler::Edge::Right:
-                    setCursor(Qt::SizeHorCursor);
+                    layoutSpec = CursorStyleSpec::fromShape(Qt::SizeHorCursor);
                     break;
                 case ResizeHandler::Edge::Top:
                 case ResizeHandler::Edge::Bottom:
-                    setCursor(Qt::SizeVerCursor);
+                    layoutSpec = CursorStyleSpec::fromShape(Qt::SizeVerCursor);
                     break;
                 case ResizeHandler::Edge::TopLeft:
                 case ResizeHandler::Edge::BottomRight:
-                    setCursor(Qt::SizeFDiagCursor);
+                    layoutSpec = CursorStyleSpec::fromShape(Qt::SizeFDiagCursor);
                     break;
                 case ResizeHandler::Edge::TopRight:
                 case ResizeHandler::Edge::BottomLeft:
-                    setCursor(Qt::SizeBDiagCursor);
+                    layoutSpec = CursorStyleSpec::fromShape(Qt::SizeBDiagCursor);
                     break;
                 default:
-                    setCursor(Qt::ArrowCursor);
+                    layoutSpec = CursorStyleSpec::fromShape(Qt::ArrowCursor);
                     break;
             }
         } else if (hoveredRegion >= 0) {
-            setCursor(Qt::SizeAllCursor);
+            layoutSpec = CursorStyleSpec::fromShape(Qt::SizeAllCursor);
         } else {
-            setCursor(Qt::ArrowCursor);
+            layoutSpec = CursorStyleSpec::fromShape(Qt::ArrowCursor);
+        }
+
+        auto& authority = CursorAuthority::instance();
+        authority.submitWidgetRequest(
+            this,
+            QStringLiteral("pin.layout"),
+            CursorRequestSource::LayoutMode,
+            layoutSpec);
+        if (authority.modeForWidget(this) == CursorSurfaceMode::Authority) {
+            CursorManager::instance().reapplyCursorForWidget(this);
+        } else {
+            CursorPlatformApplier::applyWidgetCursor(this, layoutSpec);
         }
 
         update();
         return;
     }
+
+    CursorAuthority::instance().clearWidgetRequest(this, QStringLiteral("pin.layout"));
 
     // Handle confirm mode text dragging
     if (m_textEditor && m_textEditor->isConfirmMode() && m_textEditor->isDragging()) {
@@ -2902,9 +2931,19 @@ void PinWindow::initializeAnnotationComponents()
     m_settingsHelper = new RegionSettingsHelper(this);
     connect(m_settingsHelper, &RegionSettingsHelper::dropdownShown,
         this, [this]() {
+            auto& authority = CursorAuthority::instance();
+            if (QWidget* popup = QApplication::activePopupWidget()) {
+                authority.submitWidgetRequest(
+                    this, QStringLiteral("floating.popup"), CursorRequestSource::Popup,
+                    cursorSpecForWidget(popup));
+            }
             auto& cursorManager = CursorManager::instance();
-            cursorManager.pushCursorForWidget(this, CursorContext::Override, Qt::ArrowCursor);
-            cursorManager.reapplyCursorForWidget(this);
+            if (authority.modeForWidget(this) == CursorSurfaceMode::Authority) {
+                cursorManager.reapplyCursorForWidget(this);
+            } else {
+                cursorManager.pushCursorForWidget(this, CursorContext::Override, Qt::ArrowCursor);
+                cursorManager.reapplyCursorForWidget(this);
+            }
         });
     connect(m_settingsHelper, &RegionSettingsHelper::dropdownHidden,
         this, [this]() {
@@ -3610,16 +3649,78 @@ bool PinWindow::isGlobalPosOverFloatingUi(const QPoint& globalPos) const
 void PinWindow::syncFloatingUiCursor()
 {
     auto& cursorManager = CursorManager::instance();
+    auto& authority = CursorAuthority::instance();
 
     if (!m_annotationMode) {
         cursorManager.popCursorForWidget(this, CursorContext::Override);
+        authority.clearWidgetRequest(this, QStringLiteral("floating.popup"));
+        authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.toolbar"));
+        authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.subtoolbar"));
+        authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.emoji"));
         return;
     }
 
     const QPoint globalPos = QCursor::pos();
+    bool popupMatched = false;
+    if (QWidget* popup = QApplication::activePopupWidget();
+        containsGlobalPoint(popup, globalPos)) {
+        authority.submitWidgetRequest(
+            this,
+            QStringLiteral("floating.popup"),
+            CursorRequestSource::Popup,
+            cursorSpecForWidget(popup));
+        popupMatched = true;
+    } else {
+        authority.clearWidgetRequest(this, QStringLiteral("floating.popup"));
+    }
+
+    authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.toolbar"));
+    authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.subtoolbar"));
+    authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.emoji"));
+
+    bool overlayMatched = false;
+    if (m_toolbar && m_toolbar->isVisible() && m_toolbar->geometry().contains(globalPos)) {
+        authority.submitWidgetRequest(
+            this,
+            QStringLiteral("floating.overlay.toolbar"),
+            CursorRequestSource::Overlay,
+            cursorSpecForWindow(m_toolbar->window()));
+        overlayMatched = true;
+    } else if (m_subToolbar && m_subToolbar->isVisible() &&
+               m_subToolbar->geometry().contains(globalPos)) {
+        authority.submitWidgetRequest(
+            this,
+            QStringLiteral("floating.overlay.subtoolbar"),
+            CursorRequestSource::Overlay,
+            cursorSpecForWindow(m_subToolbar->window()));
+        overlayMatched = true;
+    } else if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible() &&
+               m_emojiPickerPopup->geometry().contains(globalPos)) {
+        authority.submitWidgetRequest(
+            this,
+            QStringLiteral("floating.overlay.emoji"),
+            CursorRequestSource::Popup,
+            cursorSpecForWindow(m_emojiPickerPopup->window()));
+        popupMatched = true;
+    }
+
     if (isGlobalPosOverFloatingUi(globalPos)) {
+        const CursorRequestSource resolvedSource = authority.resolvedSourceForWidget(this);
+        if (authority.modeForWidget(this) == CursorSurfaceMode::Authority &&
+            (resolvedSource == CursorRequestSource::Overlay ||
+             resolvedSource == CursorRequestSource::Popup ||
+             popupMatched || overlayMatched)) {
+            cursorManager.reapplyCursorForWidget(this);
+            return;
+        }
+
         cursorManager.pushCursorForWidget(this, CursorContext::Override, Qt::ArrowCursor);
         return;
+    }
+
+    if (!popupMatched) {
+        authority.clearWidgetRequest(this, QStringLiteral("floating.popup"));
+        authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.emoji"));
     }
 
     const QPoint localPos = mapFromGlobal(globalPos);

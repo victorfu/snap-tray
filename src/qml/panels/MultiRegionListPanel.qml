@@ -112,7 +112,7 @@ Item {
                         MouseArea {
                             id: dragArea
                             anchors.fill: parent
-                            cursorShape: Qt.OpenHandCursor
+                            cursorShape: CursorTokens.dragReady
 
                             property real startMouseY: 0
 

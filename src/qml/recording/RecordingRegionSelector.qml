@@ -202,7 +202,7 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton
-        cursorShape: root.selectionComplete ? Qt.ArrowCursor : Qt.CrossCursor
+        cursorShape: root.selectionComplete ? CursorTokens.defaultCursor : CursorTokens.captureSelection
 
         onPressed: function(mouse) {
             root.mousePosition = Qt.point(Math.round(mouse.x), Math.round(mouse.y))
@@ -417,7 +417,7 @@ Item {
             anchors.fill: parent
             hoverEnabled: true
             acceptedButtons: Qt.LeftButton
-            cursorShape: Qt.ArrowCursor
+            cursorShape: CursorTokens.toolbarControl
         }
 
         Row {
@@ -448,7 +448,7 @@ Item {
                     id: startMouseArea
                     anchors.fill: parent
                     hoverEnabled: true
-                    cursorShape: Qt.ArrowCursor
+                    cursorShape: CursorTokens.toolbarControl
 
                     onPressed: function(mouse) {
                         mouse.accepted = true
@@ -481,7 +481,7 @@ Item {
                     id: cancelMouseArea
                     anchors.fill: parent
                     hoverEnabled: true
-                    cursorShape: Qt.ArrowCursor
+                    cursorShape: CursorTokens.toolbarControl
 
                     onPressed: function(mouse) {
                         mouse.accepted = true

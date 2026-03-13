@@ -8,6 +8,7 @@
 #include <QHash>
 #include <initializer_list>
 
+#include "cursor/CursorTypes.h"
 #include "region/SelectionStateManager.h"
 #include "pinwindow/ResizeHandler.h"
 
@@ -311,6 +312,10 @@ private:
      * @brief Apply cursor to a specific widget based on its stack.
      */
     void applyCursorForWidget(QWidget* widget, bool force = false);
+    void submitContextRequestForWidget(QWidget* widget, CursorContext context,
+                                       const CursorStyleSpec& spec);
+    static QString ownerIdForContext(CursorContext context);
+    static CursorRequestSource requestSourceForContext(CursorContext context);
 
     /**
      * @brief Get effective cursor for a widget.

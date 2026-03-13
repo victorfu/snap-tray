@@ -64,7 +64,7 @@ Item {
         id: dragArea
         anchors.fill: parent
         z: 0
-        cursorShape: pressed ? Qt.ClosedHandCursor : Qt.ArrowCursor
+        cursorShape: pressed ? CursorTokens.panelDragActive : CursorTokens.panelDragIdle
 
         property point pressStart
 

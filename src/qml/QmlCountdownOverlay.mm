@@ -1,6 +1,8 @@
 #include "qml/QmlCountdownOverlay.h"
+#include "cursor/CursorSurfaceSupport.h"
 #include "qml/QmlOverlayManager.h"
 
+#include <QEvent>
 #include <QQuickView>
 #include <QQuickItem>
 
@@ -15,6 +17,7 @@ QmlCountdownOverlay::QmlCountdownOverlay(QObject* parent)
 
 QmlCountdownOverlay::~QmlCountdownOverlay()
 {
+    CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
     if (m_view) {
         m_view->close();
         m_rootItem = nullptr;
@@ -33,6 +36,10 @@ void QmlCountdownOverlay::ensureView()
 
     m_view = SnapTray::QmlOverlayManager::instance().createScreenOverlay(
         QUrl(QStringLiteral("qrc:/SnapTrayQml/components/Countdown.qml")));
+    m_view->installEventFilter(this);
+    m_cursorSurfaceId = CursorSurfaceSupport::registerManagedSurface(
+        m_view, QStringLiteral("QmlCountdownOverlay"));
+    m_cursorOwnerId = CursorSurfaceSupport::defaultOwnerId(QStringLiteral("QmlCountdownOverlay"));
 
     // Countdown root item should fill the overlay geometry set from C++.
     m_view->setResizeMode(QQuickView::SizeRootObjectToView);
@@ -110,6 +117,7 @@ void QmlCountdownOverlay::start()
     m_view->requestActivate();
 
     m_running = true;
+    syncCursorSurface();
 
     if (m_rootItem)
         QMetaObject::invokeMethod(m_rootItem, "start");
@@ -131,9 +139,38 @@ void QmlCountdownOverlay::close()
     m_running = false;
 
     if (m_view) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->close();
         m_rootItem = nullptr;
         m_view->deleteLater();
         m_view = nullptr;
     }
+}
+
+bool QmlCountdownOverlay::eventFilter(QObject* watched, QEvent* event)
+{
+    if (watched == m_view && event) {
+        if (event->type() == QEvent::Hide || event->type() == QEvent::Close) {
+            CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        } else if (CursorSurfaceSupport::isPointerRefreshEvent(event->type())) {
+            syncCursorSurface();
+        }
+    }
+
+    return QObject::eventFilter(watched, event);
+}
+
+void QmlCountdownOverlay::syncCursorSurface()
+{
+    if (!m_view || m_cursorSurfaceId.isEmpty() || m_cursorOwnerId.isEmpty()) {
+        return;
+    }
+
+    if (!m_view->isVisible()) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        return;
+    }
+
+    CursorSurfaceSupport::syncWindowSurface(
+        m_view, m_cursorSurfaceId, m_cursorOwnerId, CursorRequestSource::SurfaceDefault);
 }

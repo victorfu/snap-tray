@@ -108,7 +108,7 @@ Rectangle {
                 id: hoverArea
                 anchors.fill: parent
                 hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
+                cursorShape: CursorTokens.clickable
                 focus: true
 
                 Accessible.role: Accessible.MenuItem

@@ -2,7 +2,9 @@
 #include "annotation/AnnotationContext.h"
 #include "annotations/AnnotationLayer.h"
 #include "tools/ToolManager.h"
+#include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
+#include "cursor/CursorSurfaceSupport.h"
 #include "colorwidgets/ColorPickerDialogCompat.h"
 
 using snaptray::colorwidgets::ColorPickerDialogCompat;
@@ -55,6 +57,17 @@ bool isLaserPointerButtonId(int buttonId)
 bool containsGlobalPoint(const QWidget* widget, const QPoint& globalPos)
 {
     return widget && widget->isVisible() && widget->frameGeometry().contains(globalPos);
+}
+
+CursorStyleSpec cursorSpecForWidget(const QWidget* widget)
+{
+    return widget ? CursorStyleSpec::fromCursor(widget->cursor())
+                  : CursorStyleSpec::fromShape(Qt::ArrowCursor);
+}
+
+CursorStyleSpec cursorSpecForWindow(const QWindow* window)
+{
+    return CursorSurfaceSupport::currentCursorSpecForWindow(window);
 }
 
 qreal normalizeAngleDelta(qreal deltaDegrees)
@@ -301,9 +314,19 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     m_settingsHelper->setParentWidget(this);
     connect(m_settingsHelper, &RegionSettingsHelper::dropdownShown,
         this, [this]() {
+            auto& authority = CursorAuthority::instance();
+            if (QWidget* popup = QApplication::activePopupWidget()) {
+                authority.submitWidgetRequest(
+                    this, QStringLiteral("floating.popup"), CursorRequestSource::Popup,
+                    cursorSpecForWidget(popup));
+            }
             auto& cursorManager = CursorManager::instance();
-            cursorManager.pushCursorForWidget(this, CursorContext::Override, Qt::ArrowCursor);
-            cursorManager.reapplyCursorForWidget(this);
+            if (authority.modeForWidget(this) == CursorSurfaceMode::Authority) {
+                cursorManager.reapplyCursorForWidget(this);
+            } else {
+                cursorManager.pushCursorForWidget(this, CursorContext::Override, Qt::ArrowCursor);
+                cursorManager.reapplyCursorForWidget(this);
+            }
         });
     connect(m_settingsHelper, &RegionSettingsHelper::dropdownHidden,
         this, [this]() {
@@ -881,12 +904,70 @@ void ScreenCanvas::restoreCanvasCursorAt(const QPoint& localPos)
 void ScreenCanvas::syncFloatingUiCursor()
 {
     auto& cursorManager = CursorManager::instance();
+    auto& authority = CursorAuthority::instance();
     const QPoint globalPos = QCursor::pos();
 
+    bool popupMatched = false;
+    if (QWidget* popup = QApplication::activePopupWidget();
+        containsGlobalPoint(popup, globalPos)) {
+        authority.submitWidgetRequest(
+            this,
+            QStringLiteral("floating.popup"),
+            CursorRequestSource::Popup,
+            cursorSpecForWidget(popup));
+        popupMatched = true;
+    } else {
+        authority.clearWidgetRequest(this, QStringLiteral("floating.popup"));
+    }
+
+    authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.toolbar"));
+    authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.subtoolbar"));
+    authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.emoji"));
+
+    bool overlayMatched = false;
+    if (m_qmlToolbar && m_qmlToolbar->isVisible() && m_qmlToolbar->geometry().contains(globalPos)) {
+        authority.submitWidgetRequest(
+            this,
+            QStringLiteral("floating.overlay.toolbar"),
+            CursorRequestSource::Overlay,
+            cursorSpecForWindow(m_qmlToolbar->window()));
+        overlayMatched = true;
+    } else if (m_qmlSubToolbar && m_qmlSubToolbar->isVisible() &&
+               m_qmlSubToolbar->geometry().contains(globalPos)) {
+        authority.submitWidgetRequest(
+            this,
+            QStringLiteral("floating.overlay.subtoolbar"),
+            CursorRequestSource::Overlay,
+            cursorSpecForWindow(m_qmlSubToolbar->window()));
+        overlayMatched = true;
+    } else if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible() &&
+               m_emojiPickerPopup->geometry().contains(globalPos)) {
+        authority.submitWidgetRequest(
+            this,
+            QStringLiteral("floating.overlay.emoji"),
+            CursorRequestSource::Popup,
+            cursorSpecForWindow(m_emojiPickerPopup->window()));
+        popupMatched = true;
+    }
+
     if (isGlobalPosOverFloatingUi(globalPos)) {
+        const CursorRequestSource resolvedSource = authority.resolvedSourceForWidget(this);
+        if (authority.modeForWidget(this) == CursorSurfaceMode::Authority &&
+            (resolvedSource == CursorRequestSource::Overlay ||
+             resolvedSource == CursorRequestSource::Popup ||
+             popupMatched || overlayMatched)) {
+            cursorManager.reapplyCursorForWidget(this);
+            return;
+        }
+
         cursorManager.pushCursorForWidget(this, CursorContext::Override, Qt::ArrowCursor);
         cursorManager.reapplyCursorForWidget(this);
         return;
+    }
+
+    if (!popupMatched) {
+        authority.clearWidgetRequest(this, QStringLiteral("floating.popup"));
+        authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.emoji"));
     }
 
     restoreCanvasCursorAt(mapFromGlobal(globalPos));
@@ -1260,7 +1341,7 @@ void ScreenCanvas::showEvent(QShowEvent* event)
 
     // Delay cursor setting to ensure macOS has finished window activation.
     QTimer::singleShot(100, this, [this]() {
-        forceNativeCrosshairCursor(this);
+        CursorManager::instance().reapplyCursorForWidget(this);
     });
 }
 

@@ -1,6 +1,8 @@
 #include "qml/QmlDialog.h"
+#include "cursor/CursorSurfaceSupport.h"
 #include "qml/QmlOverlayManager.h"
 
+#include <QEvent>
 #include <QQuickView>
 #include <QScreen>
 #include <QGuiApplication>
@@ -27,6 +29,7 @@ QmlDialog::QmlDialog(const QUrl& qmlSource, QObject* viewModel,
 QmlDialog::~QmlDialog()
 {
     if (m_view) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->close();
         m_view->deleteLater();
         m_view = nullptr;
@@ -51,6 +54,10 @@ void QmlDialog::ensureView()
     initialProps[m_contextPropertyName] = QVariant::fromValue(m_viewModel.data());
     m_view->setInitialProperties(initialProps);
     m_view->setSource(m_qmlSource);
+    m_view->installEventFilter(this);
+    m_cursorSurfaceId = CursorSurfaceSupport::registerManagedSurface(
+        m_view, QStringLiteral("QmlDialog"));
+    m_cursorOwnerId = CursorSurfaceSupport::defaultOwnerId(QStringLiteral("QmlDialog"));
 
     if (m_view->status() == QQuickView::Error) {
         for (const auto& error : m_view->errors())
@@ -107,11 +114,13 @@ void QmlDialog::showAt(const QPoint& pos)
 
     m_view->raise();
     m_view->requestActivate();
+    syncCursorSurface();
 }
 
 void QmlDialog::close()
 {
     if (m_view) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->close(); // triggers QQuickView::closing -> emit closed()
     } else {
         emit closed();
@@ -122,6 +131,34 @@ void QmlDialog::close()
 void QmlDialog::setModal(bool modal)
 {
     m_modal = modal;
+}
+
+void QmlDialog::syncCursorSurface()
+{
+    if (!m_view || m_cursorSurfaceId.isEmpty() || m_cursorOwnerId.isEmpty()) {
+        return;
+    }
+
+    if (!m_view->isVisible()) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        return;
+    }
+
+    CursorSurfaceSupport::syncWindowSurface(
+        m_view, m_cursorSurfaceId, m_cursorOwnerId, CursorRequestSource::Popup);
+}
+
+bool QmlDialog::eventFilter(QObject* watched, QEvent* event)
+{
+    if (watched == m_view && event) {
+        if (event->type() == QEvent::Hide || event->type() == QEvent::Close) {
+            CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        } else if (CursorSurfaceSupport::isPointerRefreshEvent(event->type())) {
+            syncCursorSurface();
+        }
+    }
+
+    return QObject::eventFilter(watched, event);
 }
 
 } // namespace SnapTray

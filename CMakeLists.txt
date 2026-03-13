@@ -294,6 +294,9 @@ add_library(snaptray_core STATIC
     src/beautify/BeautifyRenderer.cpp
     src/update/UpdateSettingsManager.cpp
     src/cursor/CursorManager.cpp
+    src/cursor/CursorAuthority.cpp
+    src/cursor/CursorPlatformApplier.cpp
+    src/cursor/CursorStyleCatalog.cpp
     src/utils/CoordinateHelper.cpp
     src/utils/DialogThemeUtils.cpp
     src/utils/FilenameTemplateEngine.cpp
@@ -319,6 +322,11 @@ add_library(snaptray_core STATIC
     include/settings/RegionCaptureSettingsManager.h
     include/settings/SettingsTheme.h
     include/cursor/CursorManager.h
+    include/cursor/CursorAuthority.h
+    include/cursor/CursorPlatformApplier.h
+    include/cursor/CursorStyleCatalog.h
+    include/cursor/CursorSurfaceSupport.h
+    include/cursor/CursorTypes.h
     include/utils/FilenameTemplateEngine.h
     include/utils/ImageSaveUtils.h
     include/utils/NativeFileDialogUtils.h
@@ -829,6 +837,7 @@ set_source_files_properties(
 set_source_files_properties(src/qml/tokens/PrimitiveTokens.qml PROPERTIES QT_RESOURCE_ALIAS tokens/PrimitiveTokens.qml)
 set_source_files_properties(src/qml/tokens/SemanticTokens.qml PROPERTIES QT_RESOURCE_ALIAS tokens/SemanticTokens.qml)
 set_source_files_properties(src/qml/tokens/ComponentTokens.qml PROPERTIES QT_RESOURCE_ALIAS tokens/ComponentTokens.qml)
+set_source_files_properties(src/qml/tokens/CursorTokens.qml PROPERTIES QT_RESOURCE_ALIAS tokens/CursorTokens.qml)
 set_source_files_properties(src/qml/components/Toast.qml PROPERTIES QT_RESOURCE_ALIAS components/Toast.qml)
 set_source_files_properties(src/qml/components/Badge.qml PROPERTIES QT_RESOURCE_ALIAS components/Badge.qml)
 set_source_files_properties(src/qml/components/RecordingBoundary.qml PROPERTIES QT_RESOURCE_ALIAS components/RecordingBoundary.qml)
@@ -912,6 +921,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/tokens/PrimitiveTokens.qml
         src/qml/tokens/SemanticTokens.qml
         src/qml/tokens/ComponentTokens.qml
+        src/qml/tokens/CursorTokens.qml
         src/qml/components/Toast.qml
         src/qml/components/Badge.qml
         src/qml/components/RecordingBoundary.qml

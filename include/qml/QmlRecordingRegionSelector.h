@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QPointer>
 #include <QRect>
+#include <QString>
 
 class QQuickItem;
 class QQuickView;
@@ -47,6 +48,7 @@ private:
     void applyPlatformWindowFlags();
     void updateTextProperties();
     void syncSelectionToQml();
+    void syncCursorSurface();
     QRect toGlobalRect(double x, double y, double width, double height) const;
 
     QQuickView* m_view = nullptr;
@@ -55,6 +57,8 @@ private:
     QRect m_windowGeometry;
     QRect m_selectionRect;
     bool m_selectionComplete = false;
+    QString m_cursorSurfaceId;
+    QString m_cursorOwnerId;
 };
 
 } // namespace SnapTray

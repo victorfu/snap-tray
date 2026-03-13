@@ -79,9 +79,19 @@ target_link_libraries(PinWindow_CropUndo PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_CropUndo COMMAND PinWindow_CropUndo)
 set_tests_properties(PinWindow_CropUndo PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(PinWindow_StyleSync PinWindow/tst_StyleSync.cpp)
+target_link_libraries(PinWindow_StyleSync PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME PinWindow_StyleSync COMMAND PinWindow_StyleSync)
+set_tests_properties(PinWindow_StyleSync PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 # ============================================================================
 # ScreenCanvas Tests
 # ============================================================================
+
+add_executable(ScreenCanvas_StyleSync ScreenCanvas/tst_StyleSync.cpp)
+target_link_libraries(ScreenCanvas_StyleSync PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME ScreenCanvas_StyleSync COMMAND ScreenCanvas_StyleSync)
+set_tests_properties(ScreenCanvas_StyleSync PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
 # ============================================================================
 # RegionSelector Tests
@@ -172,6 +182,11 @@ add_executable(RegionSelector_TransientUiCancelGuard RegionSelector/tst_Transien
 target_link_libraries(RegionSelector_TransientUiCancelGuard PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
 add_test(NAME RegionSelector_TransientUiCancelGuard COMMAND RegionSelector_TransientUiCancelGuard)
 set_tests_properties(RegionSelector_TransientUiCancelGuard PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RegionSelector_StyleSync RegionSelector/tst_StyleSync.cpp)
+target_link_libraries(RegionSelector_StyleSync PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME RegionSelector_StyleSync COMMAND RegionSelector_StyleSync)
+set_tests_properties(RegionSelector_StyleSync PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
 # ============================================================================
 # Encoding Tests (link snaptray_platform)
@@ -365,6 +380,38 @@ target_compile_definitions(Settings_QmlTranslations PRIVATE
 add_dependencies(Settings_QmlTranslations SnapTray_lrelease)
 add_test(NAME Settings_QmlTranslations COMMAND Settings_QmlTranslations)
 set_tests_properties(Settings_QmlTranslations PROPERTIES TIMEOUT 60 LABELS "unit")
+
+# ============================================================================
+# Cursor Tests
+# ============================================================================
+
+add_executable(Cursor_CursorStyleCatalog Cursor/tst_CursorStyleCatalog.cpp)
+target_link_libraries(Cursor_CursorStyleCatalog PRIVATE snaptray_core Qt6::Test)
+add_test(NAME Cursor_CursorStyleCatalog COMMAND Cursor_CursorStyleCatalog)
+set_tests_properties(Cursor_CursorStyleCatalog PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Cursor_CursorAuthority Cursor/tst_CursorAuthority.cpp)
+target_link_libraries(Cursor_CursorAuthority PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
+add_test(NAME Cursor_CursorAuthority COMMAND Cursor_CursorAuthority)
+set_tests_properties(Cursor_CursorAuthority PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Cursor_CursorManager Cursor/tst_CursorManager.cpp)
+target_link_libraries(Cursor_CursorManager PRIVATE snaptray_ui Qt6::Widgets Qt6::Test)
+add_test(NAME Cursor_CursorManager COMMAND Cursor_CursorManager)
+set_tests_properties(Cursor_CursorManager PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Cursor_CursorSurfaceSupport Cursor/tst_CursorSurfaceSupport.cpp)
+target_link_libraries(Cursor_CursorSurfaceSupport PRIVATE snaptray_platform Qt6::Gui Qt6::Test)
+add_test(NAME Cursor_CursorSurfaceSupport COMMAND Cursor_CursorSurfaceSupport)
+set_tests_properties(Cursor_CursorSurfaceSupport PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Cursor_CursorQmlGuard Cursor/tst_CursorQmlGuard.cpp)
+target_link_libraries(Cursor_CursorQmlGuard PRIVATE Qt6::Core Qt6::Test)
+target_compile_definitions(Cursor_CursorQmlGuard PRIVATE
+    CURSOR_QML_SOURCE_DIR="${CMAKE_SOURCE_DIR}/src/qml"
+    CURSOR_GUARD_SOURCE_ROOT="${CMAKE_SOURCE_DIR}/src")
+add_test(NAME Cursor_CursorQmlGuard COMMAND Cursor_CursorQmlGuard)
+set_tests_properties(Cursor_CursorQmlGuard PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
 # Hotkey Tests (link snaptray_ui for HotkeyManager)

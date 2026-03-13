@@ -86,7 +86,7 @@ Item {
 
         MouseArea {
             anchors.fill: parent
-            cursorShape: Qt.ArrowCursor
+            cursorShape: CursorTokens.toolbarControl
             hoverEnabled: true
             onClicked: {
                 if (root.hasViewModel)
@@ -145,7 +145,7 @@ Item {
                 MouseArea {
                     id: swatchMouse
                     anchors.fill: parent
-                    cursorShape: Qt.ArrowCursor
+                    cursorShape: CursorTokens.toolbarControl
                     hoverEnabled: true
                     onClicked: {
                         if (root.hasViewModel)

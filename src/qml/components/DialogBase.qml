@@ -43,7 +43,7 @@ Item {
                 anchors.fill: parent
                 property point screenDragStart
                 property point windowStart
-                cursorShape: Qt.SizeAllCursor
+                cursorShape: CursorTokens.dialogMove
 
                 onPressed: function(mouse) {
                     let global = mapToGlobal(mouse.x, mouse.y)

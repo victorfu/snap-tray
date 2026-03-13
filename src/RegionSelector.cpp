@@ -13,7 +13,9 @@
 #include "qml/MultiRegionListViewModel.h"
 #include "share/ShareUploadClient.h"
 #include "annotations/AllAnnotations.h"
+#include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
+#include "cursor/CursorSurfaceSupport.h"
 #include "GlassRenderer.h"
 #include "ToolbarStyle.h"
 #include "IconRenderer.h"
@@ -66,6 +68,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QScreen>
 #include <QDebug>
 #include <QCursor>
+#include <QQuickView>
 #include <QClipboard>
 #include <QFileDialog>
 #include <QMessageBox>
@@ -101,6 +104,17 @@ QRect rectFromGlobal(QWidget* widget, const QRect& globalRect)
 bool containsGlobalPoint(const QWidget* widget, const QPoint& globalPos)
 {
     return widget && widget->isVisible() && widget->frameGeometry().contains(globalPos);
+}
+
+CursorStyleSpec cursorSpecForWidget(const QWidget* widget)
+{
+    return widget ? CursorStyleSpec::fromCursor(widget->cursor())
+                  : CursorStyleSpec::fromShape(Qt::ArrowCursor);
+}
+
+CursorStyleSpec cursorSpecForWindow(const QWindow* window)
+{
+    return CursorSurfaceSupport::currentCursorSpecForWindow(window);
 }
 
 } // namespace
@@ -867,9 +881,19 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_settingsHelper, &RegionSettingsHelper::dropdownShown,
         this, [this]() {
             m_dropdownOpen = true;
+            auto& authority = CursorAuthority::instance();
+            if (QWidget* popup = QApplication::activePopupWidget()) {
+                authority.submitWidgetRequest(
+                    this, QStringLiteral("floating.popup"), CursorRequestSource::Popup,
+                    cursorSpecForWidget(popup));
+            }
             auto& cursorManager = CursorManager::instance();
-            cursorManager.pushCursorForWidget(this, CursorContext::Override, Qt::ArrowCursor);
-            cursorManager.reapplyCursorForWidget(this);
+            if (authority.modeForWidget(this) == CursorSurfaceMode::Authority) {
+                cursorManager.reapplyCursorForWidget(this);
+            } else {
+                cursorManager.pushCursorForWidget(this, CursorContext::Override, Qt::ArrowCursor);
+                cursorManager.reapplyCursorForWidget(this);
+            }
         });
     connect(m_settingsHelper, &RegionSettingsHelper::dropdownHidden,
         this, [this]() {
@@ -2100,17 +2124,84 @@ bool RegionSelector::isCursorOverSelectionToolbar(const QPoint& globalPos) const
 void RegionSelector::syncFloatingUiCursor()
 {
     auto& cursorManager = CursorManager::instance();
+    auto& authority = CursorAuthority::instance();
     const QPoint globalPos = QCursor::pos();
 
     syncSelectionToolbarHoverState(globalPos);
+
+    bool popupMatched = false;
+    if (QWidget* popup = QApplication::activePopupWidget();
+        containsGlobalPoint(popup, globalPos)) {
+        authority.submitWidgetRequest(
+            this,
+            QStringLiteral("floating.popup"),
+            CursorRequestSource::Popup,
+            cursorSpecForWidget(popup));
+        popupMatched = true;
+    } else {
+        authority.clearWidgetRequest(this, QStringLiteral("floating.popup"));
+    }
+
+    bool overlayMatched = false;
+    auto submitOverlay = [&](const char* ownerId, const QWindow* window) {
+        if (!window) {
+            return false;
+        }
+        authority.submitWidgetRequest(
+            this,
+            QString::fromLatin1(ownerId),
+            CursorRequestSource::Overlay,
+            cursorSpecForWindow(window));
+        overlayMatched = true;
+        return true;
+    };
+
+    authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.toolbar"));
+    authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.subtoolbar"));
+    authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.regioncontrol"));
+    authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.multiregion"));
+    authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.emoji"));
+
+    if (m_qmlToolbar && m_qmlToolbar->isVisible() && m_qmlToolbar->geometry().contains(globalPos)) {
+        submitOverlay("floating.overlay.toolbar", m_qmlToolbar->window());
+    } else if (m_qmlSubToolbar && m_qmlSubToolbar->isVisible() &&
+               m_qmlSubToolbar->geometry().contains(globalPos)) {
+        submitOverlay("floating.overlay.subtoolbar", m_qmlSubToolbar->window());
+    } else if (m_regionControlPanel && m_regionControlPanel->containsGlobalPoint(globalPos)) {
+        submitOverlay("floating.overlay.regioncontrol", m_regionControlPanel->view());
+    } else if (m_multiRegionListPanel && m_multiRegionListPanel->containsGlobalPoint(globalPos)) {
+        submitOverlay("floating.overlay.multiregion", m_multiRegionListPanel->view());
+    } else if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible() &&
+               m_emojiPickerPopup->geometry().contains(globalPos)) {
+        authority.submitWidgetRequest(
+            this,
+            QStringLiteral("floating.overlay.emoji"),
+            CursorRequestSource::Popup,
+            cursorSpecForWindow(m_emojiPickerPopup->window()));
+        popupMatched = true;
+    }
 
     if (isGlobalPosOverFloatingUi(globalPos)) {
         if (m_magnifierOverlay) {
             m_magnifierOverlay->hideOverlay();
         }
+        const CursorRequestSource resolvedSource = authority.resolvedSourceForWidget(this);
+        if (authority.modeForWidget(this) == CursorSurfaceMode::Authority &&
+            (resolvedSource == CursorRequestSource::Overlay ||
+             resolvedSource == CursorRequestSource::Popup ||
+             popupMatched || overlayMatched)) {
+            cursorManager.reapplyCursorForWidget(this);
+            return;
+        }
+
         cursorManager.pushCursorForWidget(this, CursorContext::Override, Qt::ArrowCursor);
         cursorManager.reapplyCursorForWidget(this);
         return;
+    }
+
+    if (!popupMatched) {
+        authority.clearWidgetRequest(this, QStringLiteral("floating.popup"));
+        authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.emoji"));
     }
 
     restoreRegionCursorAt(globalToLocal(globalPos));
@@ -2744,7 +2835,6 @@ void RegionSelector::ensureCrossCursor()
     // Override context beats all other contexts, ensuring cross cursor is shown.
     CursorManager::instance().pushCursorForWidget(
         this, CursorContext::Override, Qt::CrossCursor);
-    forceNativeCrosshairCursor(this);
 
     // After initialization stabilizes, transition to normal Tool context.
     // This allows normal state-driven cursor updates to work properly.

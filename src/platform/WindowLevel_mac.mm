@@ -6,6 +6,68 @@
 
 #import <Cocoa/Cocoa.h>
 
+namespace {
+NSCursor* nsCursorForQtCursor(const QCursor& cursor)
+{
+    switch (cursor.shape()) {
+    case Qt::ArrowCursor:
+        return [NSCursor arrowCursor];
+    case Qt::CrossCursor:
+        return [NSCursor crosshairCursor];
+    case Qt::PointingHandCursor:
+        return [NSCursor pointingHandCursor];
+    case Qt::OpenHandCursor:
+        return [NSCursor openHandCursor];
+    case Qt::ClosedHandCursor:
+        return [NSCursor closedHandCursor];
+    case Qt::IBeamCursor:
+        return [NSCursor IBeamCursor];
+    case Qt::SizeHorCursor:
+        return [NSCursor resizeLeftRightCursor];
+    case Qt::SizeVerCursor:
+        return [NSCursor resizeUpDownCursor];
+    default:
+        break;
+    }
+
+    const QPixmap pixmap = cursor.pixmap();
+    if (pixmap.isNull()) {
+        return nil;
+    }
+
+    const QImage image = pixmap.toImage().convertToFormat(QImage::Format_RGBA8888_Premultiplied);
+    if (image.isNull()) {
+        return nil;
+    }
+
+    NSBitmapImageRep* rep = [[NSBitmapImageRep alloc]
+        initWithBitmapDataPlanes:nil
+        pixelsWide:image.width()
+        pixelsHigh:image.height()
+        bitsPerSample:8
+        samplesPerPixel:4
+        hasAlpha:YES
+        isPlanar:NO
+        colorSpaceName:NSCalibratedRGBColorSpace
+        bytesPerRow:static_cast<NSInteger>(image.bytesPerLine())
+        bitsPerPixel:32];
+    if (!rep) {
+        return nil;
+    }
+
+    memcpy([rep bitmapData], image.constBits(), static_cast<size_t>(image.sizeInBytes()));
+
+    const qreal dpr = pixmap.devicePixelRatio() > 0.0 ? pixmap.devicePixelRatio() : 1.0;
+    NSImage* nsImage = [[NSImage alloc]
+        initWithSize:NSMakeSize(image.width() / dpr, image.height() / dpr)];
+    [nsImage addRepresentation:rep];
+
+    const QPoint hotspot = cursor.hotSpot();
+    return [[NSCursor alloc] initWithImage:nsImage
+                                   hotSpot:NSMakePoint(hotspot.x(), hotspot.y())];
+}
+}  // namespace
+
 void raiseWindowAboveMenuBar(QWidget *widget)
 {
     if (!widget) {
@@ -99,14 +161,11 @@ void setWindowVisibleOnAllWorkspaces(QWidget *widget, bool enabled)
     }
 }
 
-void forceNativeCrosshairCursor(QWidget *)
+void forceNativeCursor(const QCursor& cursor, QWidget *)
 {
-    [[NSCursor crosshairCursor] set];
-}
-
-void forceNativeArrowCursor(QWidget *)
-{
-    [[NSCursor arrowCursor] set];
+    if (NSCursor* nsCursor = nsCursorForQtCursor(cursor)) {
+        [nsCursor set];
+    }
 }
 
 void raiseWindowAboveOverlays(QWidget *widget)

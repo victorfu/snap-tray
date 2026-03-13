@@ -58,7 +58,7 @@ Item {
                 MouseArea {
                     id: shapeMouse
                     anchors.fill: parent
-                    cursorShape: Qt.ArrowCursor
+                    cursorShape: CursorTokens.toolbarControl
                     hoverEnabled: true
                     onClicked: {
                         if (root.hasViewModel)
@@ -101,7 +101,7 @@ Item {
         MouseArea {
             id: fillMouse
             anchors.fill: parent
-            cursorShape: Qt.ArrowCursor
+            cursorShape: CursorTokens.toolbarControl
             hoverEnabled: true
             onClicked: {
                 if (!root.hasViewModel)

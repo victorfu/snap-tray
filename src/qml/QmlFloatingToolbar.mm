@@ -1,6 +1,6 @@
 #include "qml/QmlFloatingToolbar.h"
+#include "cursor/CursorPlatformApplier.h"
 #include "qml/QmlOverlayManager.h"
-#include "platform/WindowLevel.h"
 
 #include <QQuickView>
 #include <QQuickItem>
@@ -21,29 +21,6 @@
 namespace SnapTray {
 
 namespace {
-
-bool shouldReassertNativeArrow(QEvent::Type type)
-{
-    switch (type) {
-    case QEvent::Enter:
-    case QEvent::HoverMove:
-    case QEvent::MouseMove:
-    case QEvent::MouseButtonPress:
-    case QEvent::MouseButtonRelease:
-        return true;
-    default:
-        return false;
-    }
-}
-
-void reassertNativeArrowForView(QQuickView* view)
-{
-    if (!view || !view->isVisible()) {
-        return;
-    }
-    forceNativeArrowCursor();
-}
-
 void destroyQuickView(QQuickView*& view, QQuickItem*& rootItem)
 {
     if (!view)
@@ -85,7 +62,7 @@ void QmlFloatingToolbar::ensureView()
 
     m_view = QmlOverlayManager::instance().createScreenOverlay();
     m_view->setFlag(Qt::WindowDoesNotAcceptFocus, true);
-    m_view->setCursor(Qt::ArrowCursor);
+    CursorPlatformApplier::applyWindowCursor(m_view, CursorStyleSpec::fromShape(Qt::ArrowCursor));
 
     const QVariantMap initialProperties{
         {QStringLiteral("viewModel"),
@@ -143,7 +120,8 @@ void QmlFloatingToolbar::ensureTooltipView()
     m_tooltipView->setFlag(Qt::WindowDoesNotAcceptFocus, true);
     m_tooltipView->setResizeMode(QQuickView::SizeRootObjectToView);
     m_tooltipView->setFlag(Qt::WindowTransparentForInput, true);
-    m_tooltipView->setCursor(Qt::ArrowCursor);
+    CursorPlatformApplier::applyWindowCursor(
+        m_tooltipView, CursorStyleSpec::fromShape(Qt::ArrowCursor));
 
     if (m_tooltipView->status() == QQuickView::Error) {
         for (const auto& error : m_tooltipView->errors())
@@ -304,6 +282,16 @@ int QmlFloatingToolbar::height() const
     return m_view ? m_view->height() : 0;
 }
 
+QWindow* QmlFloatingToolbar::window() const
+{
+    return m_view;
+}
+
+QWindow* QmlFloatingToolbar::tooltipWindow() const
+{
+    return m_tooltipView;
+}
+
 void QmlFloatingToolbar::setParentWidget(QWidget* parent)
 {
     m_parentWidget = parent;
@@ -385,13 +373,21 @@ void QmlFloatingToolbar::setPosition(const QPoint& pos)
 bool QmlFloatingToolbar::eventFilter(QObject* obj, QEvent* event)
 {
     if (obj == m_view) {
-        if (shouldReassertNativeArrow(event->type())) {
-            reassertNativeArrowForView(m_view);
+        switch (event->type()) {
+        case QEvent::Enter:
+        case QEvent::HoverMove:
+        case QEvent::MouseMove:
+        case QEvent::MouseButtonPress:
+        case QEvent::MouseButtonRelease:
             emit cursorSyncRequested();
-        }
-        if (event->type() == QEvent::Leave || event->type() == QEvent::Hide) {
+            break;
+        case QEvent::Leave:
+        case QEvent::Hide:
             hideTooltip();
             emit cursorRestoreRequested();
+            break;
+        default:
+            break;
         }
     }
     return QObject::eventFilter(obj, event);
@@ -405,7 +401,6 @@ void QmlFloatingToolbar::onButtonHovered(int buttonId, double anchorX, double an
     if (!m_view)
         return;
 
-    reassertNativeArrowForView(m_view);
     emit cursorSyncRequested();
 
     // Find tooltip text from ViewModel's button list

@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "ToolId.h"
+#include "cursor/CursorTypes.h"
 
 class QPainter;
 class ToolContext;
@@ -131,6 +132,13 @@ public:
      * @brief Get the cursor for this tool.
      */
     virtual QCursor cursor() const { return Qt::CrossCursor; }
+
+    /**
+     * @brief Semantic cursor description used by CursorAuthority.
+     *
+     * Temporary compatibility layer during cursor-system migration.
+     */
+    virtual CursorStyleSpec cursorStyleSpec() const { return CursorStyleSpec::fromCursor(cursor()); }
 };
 
 #endif // ITOOLHANDLER_H

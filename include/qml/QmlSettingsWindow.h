@@ -2,7 +2,9 @@
 
 #include <QObject>
 #include <QPointer>
+#include <QString>
 
+class QEvent;
 class QQuickView;
 
 namespace SnapTray {
@@ -25,8 +27,12 @@ signals:
 
 private:
     void ensureView();
+    void syncCursorSurface();
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
     QPointer<QQuickView> m_view;
     SettingsBackend* m_backend = nullptr;
+    QString m_cursorSurfaceId;
+    QString m_cursorOwnerId;
 };
 } // namespace SnapTray

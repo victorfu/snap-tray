@@ -122,7 +122,7 @@ Item {
 
             MouseArea {
                 anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
+                cursorShape: CursorTokens.clickable
                 onClicked: videoPlayer.togglePlayPause()
             }
 
@@ -675,7 +675,7 @@ Item {
             id: mouseArea
             anchors.fill: parent
             hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
+            cursorShape: CursorTokens.clickable
 
             onEntered: parent.updateTooltip()
             onExited: root.hideButtonTooltip(parent)
@@ -744,7 +744,7 @@ Item {
             id: fmtMouseArea
             anchors.fill: parent
             hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
+            cursorShape: CursorTokens.clickable
 
             onEntered: parent.updateTooltip()
             onExited: root.hideButtonTooltip(parent)

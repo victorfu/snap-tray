@@ -91,7 +91,7 @@ Item {
         id: mouseArea
         anchors.fill: parent
         hoverEnabled: true
-        cursorShape: Qt.ArrowCursor
+        cursorShape: CursorTokens.toolbarControl
 
         onClicked: {
             if (!root.isDisabled)

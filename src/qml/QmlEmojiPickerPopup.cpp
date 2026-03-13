@@ -1,5 +1,6 @@
 #include "qml/QmlEmojiPickerPopup.h"
 
+#include "cursor/CursorPlatformApplier.h"
 #include "platform/WindowLevel.h"
 #include "qml/EmojiPickerBackend.h"
 #include "qml/QmlOverlayManager.h"
@@ -102,7 +103,7 @@ void QmlEmojiPickerPopup::showAt(const QRect& anchorRect)
     QmlOverlayManager::preventWindowHideOnDeactivate(m_view);
     QmlOverlayManager::enableNativeShadow(m_view);
     m_view->raise();
-    forceNativeArrowCursor();
+    CursorPlatformApplier::applyWindowCursor(m_view, CursorStyleSpec::fromShape(Qt::ArrowCursor));
     emit cursorSyncRequested();
 }
 
@@ -175,6 +176,7 @@ void QmlEmojiPickerPopup::ensureView()
 
     m_backend = new EmojiPickerBackend(this);
     m_view = QmlOverlayManager::instance().createPopupWindow();
+    CursorPlatformApplier::applyWindowCursor(m_view, CursorStyleSpec::fromShape(Qt::ArrowCursor));
     m_view->rootContext()->setContextProperty(QStringLiteral("emojiPickerBackend"), m_backend);
     m_view->setSource(QUrl(QStringLiteral("qrc:/SnapTrayQml/panels/EmojiPickerPopup.qml")));
     m_rootItem = m_view->rootObject();
@@ -195,7 +197,6 @@ bool QmlEmojiPickerPopup::eventFilter(QObject* obj, QEvent* event)
 {
     if (obj == m_view) {
         if (isPointerRefreshEvent(event->type())) {
-            forceNativeArrowCursor();
             emit cursorSyncRequested();
         }
         if (event->type() == QEvent::Leave || event->type() == QEvent::Hide) {

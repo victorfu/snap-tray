@@ -1,5 +1,6 @@
 #include "qml/QmlPinHistoryWindow.h"
 
+#include "cursor/CursorSurfaceSupport.h"
 #include "qml/PinHistoryBackend.h"
 #include "qml/PinHistoryModel.h"
 #include "qml/QmlOverlayManager.h"
@@ -22,6 +23,7 @@ QmlPinHistoryWindow::QmlPinHistoryWindow(PinWindowManager* pinWindowManager, QOb
 
 QmlPinHistoryWindow::~QmlPinHistoryWindow()
 {
+    CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
     delete m_view;
 }
 
@@ -37,6 +39,7 @@ void QmlPinHistoryWindow::show()
     QmlOverlayManager::preventWindowHideOnDeactivate(m_view);
     m_view->raise();
     m_view->requestActivate();
+    syncCursorSurface();
 }
 
 void QmlPinHistoryWindow::showNormal()
@@ -50,6 +53,7 @@ void QmlPinHistoryWindow::raise()
 {
     if (m_view) {
         m_view->raise();
+        syncCursorSurface();
     }
 }
 
@@ -57,6 +61,7 @@ void QmlPinHistoryWindow::activateWindow()
 {
     if (m_view) {
         m_view->requestActivate();
+        syncCursorSurface();
     }
 }
 
@@ -86,6 +91,9 @@ void QmlPinHistoryWindow::ensureView()
     m_view->rootContext()->setContextProperty(QStringLiteral("pinHistoryBackend"), m_backend);
     m_view->setSource(QUrl(QStringLiteral("qrc:/SnapTrayQml/panels/PinHistoryWindow.qml")));
     m_view->installEventFilter(this);
+    m_cursorSurfaceId = CursorSurfaceSupport::registerManagedSurface(
+        m_view, QStringLiteral("QmlPinHistoryWindow"));
+    m_cursorOwnerId = CursorSurfaceSupport::defaultOwnerId(QStringLiteral("QmlPinHistoryWindow"));
 
     if (m_view->status() == QQuickView::Error) {
         for (const auto& error : m_view->errors()) {
@@ -121,7 +129,28 @@ bool QmlPinHistoryWindow::eventFilter(QObject* watched, QEvent* event)
         }
     }
 
+    if (event->type() == QEvent::Hide || event->type() == QEvent::Close) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+    } else if (CursorSurfaceSupport::isPointerRefreshEvent(event->type())) {
+        syncCursorSurface();
+    }
+
     return QObject::eventFilter(watched, event);
+}
+
+void QmlPinHistoryWindow::syncCursorSurface()
+{
+    if (!m_view || m_cursorSurfaceId.isEmpty() || m_cursorOwnerId.isEmpty()) {
+        return;
+    }
+
+    if (!m_view->isVisible()) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        return;
+    }
+
+    CursorSurfaceSupport::syncWindowSurface(
+        m_view, m_cursorSurfaceId, m_cursorOwnerId, CursorRequestSource::SurfaceDefault);
 }
 
 } // namespace SnapTray

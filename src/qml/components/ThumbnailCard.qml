@@ -139,7 +139,7 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
-        cursorShape: Qt.PointingHandCursor
+        cursorShape: CursorTokens.clickable
 
         onClicked: function(mouse) {
             if (mouse.button === Qt.RightButton) {

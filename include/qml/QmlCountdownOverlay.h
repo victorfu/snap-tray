@@ -2,7 +2,9 @@
 
 #include <QObject>
 #include <QRect>
+#include <QString>
 
+class QEvent;
 class QQuickView;
 class QQuickItem;
 
@@ -47,10 +49,14 @@ signals:
 private:
     void ensureView();
     void applyPlatformWindowFlags();
+    void syncCursorSurface();
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
     QQuickView* m_view = nullptr;
     QQuickItem* m_rootItem = nullptr;
     QRect m_region;
     int m_countdownSeconds = 3;
     bool m_running = false;
+    QString m_cursorSurfaceId;
+    QString m_cursorOwnerId;
 };

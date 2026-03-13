@@ -7,6 +7,7 @@ class QQuickView;
 class QQuickItem;
 class PinToolOptionsViewModel;
 class QWidget;
+class QWindow;
 
 namespace SnapTray {
 
@@ -44,6 +45,7 @@ public:
     void positionBelow(const QRect& toolbarRect);
 
     QRect geometry() const;
+    QWindow* window() const;
 
     PinToolOptionsViewModel* viewModel() const;
 

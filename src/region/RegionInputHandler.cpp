@@ -235,9 +235,6 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
         auto& cm = CursorManager::instance();
         cm.setHoverTargetForWidget(m_parentWidget, HoverTarget::None);
         cm.pushCursorForWidget(m_parentWidget, CursorContext::Tool, Qt::CrossCursor);
-#ifdef Q_OS_MAC
-        forceNativeCrosshairCursor(m_parentWidget);
-#endif
     }
 
     // Handle text editor in confirm mode

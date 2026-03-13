@@ -1,4 +1,5 @@
 #include "qml/QmlRecordingRegionSelector.h"
+#include "cursor/CursorSurfaceSupport.h"
 #include "qml/QmlOverlayManager.h"
 
 #include <QCoreApplication>
@@ -55,6 +56,9 @@ void QmlRecordingRegionSelector::ensureView()
     m_view->setResizeMode(QQuickView::SizeRootObjectToView);
     m_view->installEventFilter(this);
     m_view->setSource(QUrl(QStringLiteral("qrc:/SnapTrayQml/recording/RecordingRegionSelector.qml")));
+    m_cursorSurfaceId = CursorSurfaceSupport::registerManagedSurface(
+        m_view, QStringLiteral("QmlRecordingRegionSelector"));
+    m_cursorOwnerId = CursorSurfaceSupport::defaultOwnerId(QStringLiteral("QmlRecordingRegionSelector"));
 
     if (m_view->status() == QQuickView::Error) {
         for (const auto& error : m_view->errors())
@@ -189,6 +193,7 @@ void QmlRecordingRegionSelector::show()
     m_view->requestActivate();
     if (m_rootItem)
         m_rootItem->forceActiveFocus();
+    syncCursorSurface();
 
     QTimer::singleShot(0, this, [this]() {
         if (!m_view)
@@ -205,6 +210,7 @@ void QmlRecordingRegionSelector::close()
     if (!m_view)
         return;
 
+    CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
     m_view->removeEventFilter(this);
     m_view->close();
     m_view->deleteLater();
@@ -259,9 +265,31 @@ bool QmlRecordingRegionSelector::eventFilter(QObject* watched, QEvent* event)
         }
         if (m_rootItem)
             m_rootItem->forceActiveFocus();
+        syncCursorSurface();
+    } else if (watched == m_view && event) {
+        if (event->type() == QEvent::Hide || event->type() == QEvent::Close) {
+            CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        } else if (CursorSurfaceSupport::isPointerRefreshEvent(event->type())) {
+            syncCursorSurface();
+        }
     }
 
     return QObject::eventFilter(watched, event);
+}
+
+void QmlRecordingRegionSelector::syncCursorSurface()
+{
+    if (!m_view || m_cursorSurfaceId.isEmpty() || m_cursorOwnerId.isEmpty()) {
+        return;
+    }
+
+    if (!m_view->isVisible()) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        return;
+    }
+
+    CursorSurfaceSupport::syncWindowSurface(
+        m_view, m_cursorSurfaceId, m_cursorOwnerId, CursorRequestSource::SurfaceDefault);
 }
 
 QRect QmlRecordingRegionSelector::toGlobalRect(double x, double y, double width, double height) const

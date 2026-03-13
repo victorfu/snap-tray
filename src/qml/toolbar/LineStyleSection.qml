@@ -101,7 +101,7 @@ Item {
         MouseArea {
             anchors.fill: parent
             hoverEnabled: true
-            cursorShape: Qt.ArrowCursor
+            cursorShape: CursorTokens.toolbarControl
 
             onContainsMouseChanged: {
                 root.hoveredOption = containsMouse ? -2 : -1

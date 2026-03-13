@@ -1,5 +1,6 @@
 #include "qml/QmlBeautifyPanel.h"
 
+#include "cursor/CursorSurfaceSupport.h"
 #include "qml/BeautifyPanelBackend.h"
 #include "qml/QmlOverlayManager.h"
 
@@ -48,12 +49,14 @@ void QmlBeautifyPanel::showNear(const QRect& anchorRect)
     QmlOverlayManager::enableNativeShadow(m_view);
     m_view->raise();
     m_view->requestActivate();
+    syncCursorSurface();
 }
 
 void QmlBeautifyPanel::hide()
 {
     if (m_view) {
         m_view->hide();
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
     }
 }
 
@@ -64,6 +67,7 @@ void QmlBeautifyPanel::close()
     }
 
     m_view->removeEventFilter(this);
+    CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
     m_view->close();
     delete m_view;
     m_view = nullptr;
@@ -92,6 +96,7 @@ void QmlBeautifyPanel::onDragStarted()
     m_dragStartWindowPos = m_view->position();
     m_dragStartCursorPos = QCursor::pos();
     m_isDragging = true;
+    syncCursorSurface();
 }
 
 void QmlBeautifyPanel::onDragMoved(double deltaX, double deltaY)
@@ -122,6 +127,7 @@ void QmlBeautifyPanel::onDragMoved(double deltaX, double deltaY)
 void QmlBeautifyPanel::onDragFinished()
 {
     m_isDragging = false;
+    syncCursorSurface();
 }
 
 void QmlBeautifyPanel::ensureView()
@@ -136,6 +142,9 @@ void QmlBeautifyPanel::ensureView()
     m_view->rootContext()->setContextProperty(QStringLiteral("beautifyBackend"), m_backend);
     m_view->setSource(QUrl(QStringLiteral("qrc:/SnapTrayQml/panels/BeautifyPanel.qml")));
     m_view->installEventFilter(this);
+    m_cursorSurfaceId = CursorSurfaceSupport::registerManagedSurface(
+        m_view, QStringLiteral("QmlBeautifyPanel"));
+    m_cursorOwnerId = CursorSurfaceSupport::defaultOwnerId(QStringLiteral("QmlBeautifyPanel"));
 
     m_rootItem = m_view->rootObject();
     if (m_view->status() == QQuickView::Error) {
@@ -205,7 +214,28 @@ bool QmlBeautifyPanel::eventFilter(QObject* watched, QEvent* event)
         }
     }
 
+    if (event->type() == QEvent::Hide || event->type() == QEvent::Close) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+    } else if (CursorSurfaceSupport::isPointerRefreshEvent(event->type())) {
+        syncCursorSurface();
+    }
+
     return QObject::eventFilter(watched, event);
+}
+
+void QmlBeautifyPanel::syncCursorSurface()
+{
+    if (!m_view || m_cursorSurfaceId.isEmpty() || m_cursorOwnerId.isEmpty()) {
+        return;
+    }
+
+    if (!m_view->isVisible()) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        return;
+    }
+
+    CursorSurfaceSupport::syncWindowSurface(
+        m_view, m_cursorSurfaceId, m_cursorOwnerId, CursorRequestSource::Overlay);
 }
 
 } // namespace SnapTray

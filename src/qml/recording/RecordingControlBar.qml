@@ -130,7 +130,7 @@ Item {
         id: dragArea
         anchors.fill: parent
         z: 0
-        cursorShape: pressed ? Qt.ClosedHandCursor : Qt.ArrowCursor
+        cursorShape: pressed ? CursorTokens.panelDragActive : CursorTokens.panelDragIdle
 
         property point pressStart
 
@@ -347,7 +347,7 @@ Item {
                 id: pauseMouseArea
                 anchors.fill: parent
                 hoverEnabled: true
-                cursorShape: Qt.ArrowCursor
+                cursorShape: CursorTokens.toolbarControl
                 enabled: !root.isPreparing
 
                 onClicked: {
@@ -394,7 +394,7 @@ Item {
                 id: stopMouseArea
                 anchors.fill: parent
                 hoverEnabled: true
-                cursorShape: Qt.ArrowCursor
+                cursorShape: CursorTokens.toolbarControl
                 enabled: !root.isPreparing
 
                 onClicked: root.stopRequested()
@@ -436,7 +436,7 @@ Item {
                 id: cancelMouseArea
                 anchors.fill: parent
                 hoverEnabled: true
-                cursorShape: Qt.ArrowCursor
+                cursorShape: CursorTokens.toolbarControl
 
                 onClicked: root.cancelRequested()
 

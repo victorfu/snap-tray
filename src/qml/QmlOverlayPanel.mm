@@ -1,6 +1,6 @@
 #include "qml/QmlOverlayPanel.h"
+#include "cursor/CursorPlatformApplier.h"
 #include "qml/QmlOverlayManager.h"
-#include "platform/WindowLevel.h"
 
 #include <QEvent>
 #include <QQuickView>
@@ -16,29 +16,6 @@
 namespace SnapTray {
 
 namespace {
-
-bool shouldReassertNativeArrow(QEvent::Type type)
-{
-    switch (type) {
-    case QEvent::Enter:
-    case QEvent::HoverMove:
-    case QEvent::MouseMove:
-    case QEvent::MouseButtonPress:
-    case QEvent::MouseButtonRelease:
-        return true;
-    default:
-        return false;
-    }
-}
-
-void reassertNativeArrowForView(QQuickView* view)
-{
-    if (!view || !view->isVisible()) {
-        return;
-    }
-    forceNativeArrowCursor();
-}
-
 void destroyQuickView(QQuickView*& view, QQuickItem*& rootItem)
 {
     if (!view)
@@ -90,7 +67,7 @@ void QmlOverlayPanel::ensureView()
     }
 
     m_view->setResizeMode(QQuickView::SizeViewToRootObject);
-    m_view->setCursor(Qt::ArrowCursor);
+    CursorPlatformApplier::applyWindowCursor(m_view, CursorStyleSpec::fromShape(Qt::ArrowCursor));
 
     const QVariantMap initialProperties{
         {m_contextPropertyName, QVariant::fromValue(m_viewModel)},
@@ -257,12 +234,20 @@ void QmlOverlayPanel::updateWindowMask()
 bool QmlOverlayPanel::eventFilter(QObject* watched, QEvent* event)
 {
     if (watched == m_view) {
-        if (shouldReassertNativeArrow(event->type())) {
-            reassertNativeArrowForView(m_view);
+        switch (event->type()) {
+        case QEvent::Enter:
+        case QEvent::HoverMove:
+        case QEvent::MouseMove:
+        case QEvent::MouseButtonPress:
+        case QEvent::MouseButtonRelease:
             emit cursorSyncRequested();
-        }
-        if (event->type() == QEvent::Leave || event->type() == QEvent::Hide) {
+            break;
+        case QEvent::Leave:
+        case QEvent::Hide:
             emit cursorRestoreRequested();
+            break;
+        default:
+            break;
         }
     }
 

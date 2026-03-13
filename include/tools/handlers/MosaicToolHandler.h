@@ -35,6 +35,7 @@ public:
     bool supportsWidth() const override { return true; }
 
     QCursor cursor() const override;
+    CursorStyleSpec cursorStyleSpec() const override;
 
     /**
      * @brief Set the brush width for cursor display.

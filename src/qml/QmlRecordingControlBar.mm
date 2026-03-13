@@ -1,7 +1,9 @@
 #include "qml/QmlRecordingControlBar.h"
+#include "cursor/CursorSurfaceSupport.h"
 #include "qml/QmlOverlayManager.h"
 
 #include <QCoreApplication>
+#include <QEvent>
 #include <QQuickView>
 #include <QQuickItem>
 #include <QShortcut>
@@ -61,6 +63,7 @@ QmlRecordingControlBar::~QmlRecordingControlBar()
     m_escShortcut = nullptr;
 
     if (m_view) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->close();
         m_view->deleteLater();
         m_view = nullptr;
@@ -75,6 +78,10 @@ void QmlRecordingControlBar::ensureView()
 
     m_view = QmlOverlayManager::instance().createScreenOverlay(
         QUrl(QStringLiteral("qrc:/SnapTrayQml/recording/RecordingControlBar.qml")));
+    m_view->installEventFilter(this);
+    m_cursorSurfaceId = CursorSurfaceSupport::registerManagedSurface(
+        m_view, QStringLiteral("QmlRecordingControlBar"));
+    m_cursorOwnerId = CursorSurfaceSupport::defaultOwnerId(QStringLiteral("QmlRecordingControlBar"));
 
     if (m_view->status() == QQuickView::Error) {
         for (const auto& error : m_view->errors())
@@ -223,13 +230,16 @@ void QmlRecordingControlBar::show()
     m_view->show();
     applyPlatformWindowFlags();
     m_view->raise();
+    syncCursorSurface();
 }
 
 void QmlRecordingControlBar::hide()
 {
     hideTooltip();
-    if (m_view)
+    if (m_view) {
         m_view->hide();
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+    }
 }
 
 void QmlRecordingControlBar::close()
@@ -237,6 +247,7 @@ void QmlRecordingControlBar::close()
     hideTooltip();
 
     if (m_view) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->close();
         m_view->deleteLater();
         m_view = nullptr;
@@ -534,11 +545,13 @@ void QmlRecordingControlBar::onDragStarted()
         m_dragStartViewPos = m_view->position();
     m_dragStartCursorPos = QCursor::pos();
     hideTooltip();
+    syncCursorSurface();
 }
 
 void QmlRecordingControlBar::onDragFinished()
 {
     m_isDragging = false;
+    syncCursorSurface();
 }
 
 void QmlRecordingControlBar::onDragMoved(double deltaX, double deltaY)
@@ -579,6 +592,35 @@ void QmlRecordingControlBar::onWidthChanged()
 
     QPoint center(m_view->x() + m_view->width() / 2, m_view->y());
     m_view->setPosition(center.x() - viewWidth / 2, m_view->y());
+    syncCursorSurface();
+}
+
+bool QmlRecordingControlBar::eventFilter(QObject* watched, QEvent* event)
+{
+    if (watched == m_view && event) {
+        if (event->type() == QEvent::Hide || event->type() == QEvent::Close) {
+            CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        } else if (CursorSurfaceSupport::isPointerRefreshEvent(event->type())) {
+            syncCursorSurface();
+        }
+    }
+
+    return QObject::eventFilter(watched, event);
+}
+
+void QmlRecordingControlBar::syncCursorSurface()
+{
+    if (!m_view || m_cursorSurfaceId.isEmpty() || m_cursorOwnerId.isEmpty()) {
+        return;
+    }
+
+    if (!m_view->isVisible()) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        return;
+    }
+
+    CursorSurfaceSupport::syncWindowSurface(
+        m_view, m_cursorSurfaceId, m_cursorOwnerId, CursorRequestSource::Overlay);
 }
 
 } // namespace SnapTray

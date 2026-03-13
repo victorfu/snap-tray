@@ -27,6 +27,7 @@ public:
     void cancelDrawing() override;
 
     QCursor cursor() const override;
+    CursorStyleSpec cursorStyleSpec() const override;
 
 private:
     static constexpr int kMinWidth = 5;

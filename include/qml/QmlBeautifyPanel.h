@@ -4,6 +4,7 @@
 #include <QPointer>
 #include <QPoint>
 #include <QRect>
+#include <QString>
 
 #include "beautify/BeautifySettings.h"
 
@@ -45,6 +46,7 @@ private slots:
 private:
     void ensureView();
     void positionNear(const QRect& anchorRect);
+    void syncCursorSurface();
     bool eventFilter(QObject* watched, QEvent* event) override;
 
     QQuickView* m_view = nullptr;
@@ -53,6 +55,8 @@ private:
     QPoint m_dragStartWindowPos;
     QPoint m_dragStartCursorPos;
     bool m_isDragging = false;
+    QString m_cursorSurfaceId;
+    QString m_cursorOwnerId;
 };
 
 } // namespace SnapTray

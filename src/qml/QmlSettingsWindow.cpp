@@ -1,4 +1,5 @@
 #include "qml/QmlSettingsWindow.h"
+#include "cursor/CursorSurfaceSupport.h"
 #include "qml/QmlOverlayManager.h"
 #include "qml/QmlDialog.h"
 #include "qml/SettingsBackend.h"
@@ -6,6 +7,7 @@
 #include "qml/UpdateDialogViewModel.h"
 #include "PlatformFeatures.h"
 
+#include <QEvent>
 #include <QQmlContext>
 #include <QQuickView>
 
@@ -41,6 +43,7 @@ QmlSettingsWindow::QmlSettingsWindow(QObject* parent)
 
 QmlSettingsWindow::~QmlSettingsWindow()
 {
+    CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
     delete m_view.data();
 }
 
@@ -60,6 +63,10 @@ void QmlSettingsWindow::ensureView()
     m_view->setSource(
         QUrl(QStringLiteral("qrc:/SnapTrayQml/settings/SettingsWindow.qml")));
     m_view->setTitle(tr("Settings"));
+    m_view->installEventFilter(this);
+    m_cursorSurfaceId = CursorSurfaceSupport::registerManagedSurface(
+        m_view, QStringLiteral("QmlSettingsWindow"));
+    m_cursorOwnerId = CursorSurfaceSupport::defaultOwnerId(QStringLiteral("QmlSettingsWindow"));
 
     connect(m_backend, &SettingsBackend::ocrLanguagesChanged,
             this, &QmlSettingsWindow::ocrLanguagesChanged);
@@ -124,6 +131,7 @@ void QmlSettingsWindow::show()
     QmlOverlayManager::preventWindowHideOnDeactivate(m_view);
     m_view->raise();
     m_view->requestActivate();
+    syncCursorSurface();
 
 #ifdef Q_OS_MAC
     PlatformFeatures::activateApp();
@@ -135,6 +143,7 @@ void QmlSettingsWindow::raise()
     if (m_view) {
         m_view->raise();
         m_view->requestActivate();
+        syncCursorSurface();
 #ifdef Q_OS_MAC
         PlatformFeatures::activateApp();
 #endif
@@ -145,6 +154,7 @@ void QmlSettingsWindow::activateWindow()
 {
     if (m_view) {
         m_view->requestActivate();
+        syncCursorSurface();
 #ifdef Q_OS_MAC
         PlatformFeatures::activateApp();
 #endif
@@ -154,6 +164,34 @@ void QmlSettingsWindow::activateWindow()
 bool QmlSettingsWindow::isVisible() const
 {
     return m_view && m_view->isVisible();
+}
+
+void QmlSettingsWindow::syncCursorSurface()
+{
+    if (!m_view || m_cursorSurfaceId.isEmpty() || m_cursorOwnerId.isEmpty()) {
+        return;
+    }
+
+    if (!m_view->isVisible()) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        return;
+    }
+
+    CursorSurfaceSupport::syncWindowSurface(
+        m_view, m_cursorSurfaceId, m_cursorOwnerId, CursorRequestSource::SurfaceDefault);
+}
+
+bool QmlSettingsWindow::eventFilter(QObject* watched, QEvent* event)
+{
+    if (watched == m_view && event) {
+        if (event->type() == QEvent::Hide || event->type() == QEvent::Close) {
+            CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        } else if (CursorSurfaceSupport::isPointerRefreshEvent(event->type())) {
+            syncCursorSurface();
+        }
+    }
+
+    return QObject::eventFilter(watched, event);
 }
 
 } // namespace SnapTray

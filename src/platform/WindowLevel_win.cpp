@@ -101,14 +101,9 @@ void setWindowVisibleOnAllWorkspaces(QWidget *widget, bool enabled)
 #endif
 }
 
-void forceNativeCrosshairCursor(QWidget *)
+void forceNativeCursor(const QCursor&, QWidget *)
 {
-    // Windows doesn't have the Qt-OS cursor sync issue that macOS has
-}
-
-void forceNativeArrowCursor(QWidget *)
-{
-    // Windows doesn't have the Qt-OS cursor sync issue that macOS has
+    // Windows doesn't need separate native reassertion here.
 }
 
 void raiseWindowAboveOverlays(QWidget *)
