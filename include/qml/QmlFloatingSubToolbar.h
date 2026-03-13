@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QRect>
+#include <QString>
 
 class QQuickView;
 class QQuickItem;
@@ -64,12 +65,11 @@ public:
 
 signals:
     void emojiPickerRequested();
-    void cursorRestoreRequested();
-    void cursorSyncRequested();
 
 private:
     void ensureView();
     void applyPlatformWindowFlags();
+    void syncCursorSurface();
     bool eventFilter(QObject* obj, QEvent* event) override;
 
     PinToolOptionsViewModel* m_viewModel = nullptr;
@@ -77,6 +77,8 @@ private:
     QQuickItem* m_rootItem = nullptr;
     QWidget* m_parentWidget = nullptr;
     bool m_ownsViewModel = false;
+    QString m_cursorSurfaceId;
+    QString m_cursorOwnerId;
 };
 
 } // namespace SnapTray

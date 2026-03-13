@@ -1,5 +1,5 @@
 #include "qml/QmlWindowedToolbar.h"
-#include "cursor/CursorPlatformApplier.h"
+#include "cursor/CursorSurfaceSupport.h"
 #include "qml/QmlFloatingSubToolbar.h"
 #include "qml/QmlOverlayManager.h"
 #include "qml/PinToolbarViewModel.h"
@@ -96,6 +96,7 @@ QmlWindowedToolbar::~QmlWindowedToolbar()
     destroyQuickView(m_tooltipView, m_tooltipRootItem);
 
     if (m_view) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->removeEventFilter(this);
         qApp->removeEventFilter(this);
     }
@@ -111,7 +112,6 @@ void QmlWindowedToolbar::ensureView()
     // This floating toolbar must stay mouse-interactive without stealing
     // keyboard focus from the host PinWindow.
     m_view->setFlag(Qt::WindowDoesNotAcceptFocus, true);
-    CursorPlatformApplier::applyWindowCursor(m_view, CursorStyleSpec::fromShape(Qt::ArrowCursor));
     const QVariantMap initialProperties{
         {QStringLiteral("viewModel"),
          QVariant::fromValue(static_cast<QObject*>(m_viewModel))},
@@ -127,6 +127,9 @@ void QmlWindowedToolbar::ensureView()
     m_rootItem = m_view->rootObject();
 
     m_view->installEventFilter(this);
+    m_cursorSurfaceId = CursorSurfaceSupport::registerManagedSurface(
+        m_view, QStringLiteral("QmlWindowedToolbar"));
+    m_cursorOwnerId = CursorSurfaceSupport::defaultOwnerId(QStringLiteral("QmlWindowedToolbar"));
 
     if (m_rootItem)
         setupConnections();
@@ -142,8 +145,6 @@ void QmlWindowedToolbar::ensureTooltipView()
     m_tooltipView->setFlag(Qt::WindowDoesNotAcceptFocus, true);
     m_tooltipView->setResizeMode(QQuickView::SizeRootObjectToView);
     m_tooltipView->setFlag(Qt::WindowTransparentForInput, true);
-    CursorPlatformApplier::applyWindowCursor(
-        m_tooltipView, CursorStyleSpec::fromShape(Qt::ArrowCursor));
 
     if (m_tooltipView->status() == QQuickView::Error) {
         for (const auto& error : m_tooltipView->errors())
@@ -258,7 +259,7 @@ void QmlWindowedToolbar::show()
     // Install event filter for click-outside detection
     qApp->installEventFilter(this);
     m_showTime.start();
-    emit cursorSyncRequested();
+    syncCursorSurface();
 }
 
 void QmlWindowedToolbar::hide()
@@ -268,7 +269,12 @@ void QmlWindowedToolbar::hide()
         m_view->hide();
         qApp->removeEventFilter(this);
     }
-    emit cursorSyncRequested();
+    CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+    if (m_associatedPinWindow) {
+        QTimer::singleShot(0, this, [this]() {
+            CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_associatedPinWindow);
+        });
+    }
 }
 
 void QmlWindowedToolbar::close()
@@ -276,8 +282,14 @@ void QmlWindowedToolbar::close()
     hideTooltip();
 
     if (m_view) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->removeEventFilter(this);
         qApp->removeEventFilter(this);
+    }
+    if (m_associatedPinWindow) {
+        QTimer::singleShot(0, this, [this]() {
+            CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_associatedPinWindow);
+        });
     }
     destroyQuickView(m_view, m_rootItem);
 
@@ -359,6 +371,28 @@ void QmlWindowedToolbar::positionNear(const QRect& pinWindowRect)
     x = qBound(screenGeom.left() + 10, x, screenGeom.right() - w - 10);
 
     m_view->setPosition(x, y);
+    syncCursorSurface();
+}
+
+void QmlWindowedToolbar::syncCursorSurface()
+{
+    if (!m_view || m_cursorSurfaceId.isEmpty() || m_cursorOwnerId.isEmpty()) {
+        return;
+    }
+
+    if (!m_view->isVisible()) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        return;
+    }
+
+    const QRect bounds(m_view->position(), m_view->size());
+    if (!bounds.contains(QCursor::pos())) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        return;
+    }
+
+    CursorSurfaceSupport::syncWindowSurface(
+        m_view, m_cursorSurfaceId, m_cursorOwnerId, CursorRequestSource::Overlay);
 }
 
 // ── Click-outside detection ──
@@ -368,16 +402,19 @@ bool QmlWindowedToolbar::eventFilter(QObject* obj, QEvent* event)
     if (obj == m_view) {
         switch (event->type()) {
         case QEvent::Enter:
+        case QEvent::HoverEnter:
         case QEvent::HoverMove:
         case QEvent::MouseMove:
         case QEvent::MouseButtonPress:
         case QEvent::MouseButtonRelease:
-            emit cursorSyncRequested();
+        case QEvent::Show:
+            syncCursorSurface();
             break;
         case QEvent::Leave:
         case QEvent::Hide:
+        case QEvent::Close:
             hideTooltip();
-            emit cursorRestoreRequested();
+            CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
             break;
         default:
             break;
@@ -451,7 +488,7 @@ void QmlWindowedToolbar::onButtonHovered(int buttonId, double anchorX, double an
     if (!m_view)
         return;
 
-    emit cursorSyncRequested();
+    syncCursorSurface();
 
     // Find the tooltip text from the ViewModel's button list
     QString tip;
@@ -550,11 +587,13 @@ void QmlWindowedToolbar::onDragStarted()
         m_dragStartViewPos = m_view->position();
     m_dragStartCursorPos = QCursor::pos();
     hideTooltip();
+    syncCursorSurface();
 }
 
 void QmlWindowedToolbar::onDragFinished()
 {
     m_isDragging = false;
+    syncCursorSurface();
 }
 
 void QmlWindowedToolbar::onDragMoved(double deltaX, double deltaY)
@@ -577,6 +616,7 @@ void QmlWindowedToolbar::onDragMoved(double deltaX, double deltaY)
     }
 
     m_view->setPosition(newPos);
+    syncCursorSurface();
     hideTooltip();
 }
 

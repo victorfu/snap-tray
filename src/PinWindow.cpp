@@ -11,7 +11,6 @@
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
 #include "cursor/CursorPlatformApplier.h"
-#include "cursor/CursorSurfaceSupport.h"
 #include "platform/WindowLevel.h"
 #include "capture/ICaptureEngine.h"
 #include "pinwindow/ResizeHandler.h"
@@ -132,11 +131,6 @@ namespace {
     {
         return widget ? CursorStyleSpec::fromCursor(widget->cursor())
                       : CursorStyleSpec::fromShape(Qt::ArrowCursor);
-    }
-
-    CursorStyleSpec cursorSpecForWindow(const QWindow* window)
-    {
-        return CursorSurfaceSupport::currentCursorSpecForWindow(window);
     }
 
     struct TextCompensation
@@ -2864,21 +2858,9 @@ void PinWindow::initializeAnnotationComponents()
         this, &PinWindow::saveToFile);
     connect(vm, &PinToolbarViewModel::doneClicked,
         this, &PinWindow::hideToolbar);
-    const auto queueFloatingUiCursorRestore = [this]() {
-        QTimer::singleShot(0, this, &PinWindow::syncFloatingUiCursor);
-    };
-
-    connect(m_toolbar.get(), &SnapTray::QmlWindowedToolbar::cursorRestoreRequested,
-        this, queueFloatingUiCursorRestore);
-    connect(m_toolbar.get(), &SnapTray::QmlWindowedToolbar::cursorSyncRequested,
-        this, &PinWindow::syncFloatingUiCursor);
 
     // Initialize QML sub-toolbar
     m_subToolbar = std::make_unique<SnapTray::QmlFloatingSubToolbar>(static_cast<QObject*>(nullptr));
-    connect(m_subToolbar.get(), &SnapTray::QmlFloatingSubToolbar::cursorRestoreRequested,
-        this, queueFloatingUiCursorRestore);
-    connect(m_subToolbar.get(), &SnapTray::QmlFloatingSubToolbar::cursorSyncRequested,
-        this, &PinWindow::syncFloatingUiCursor);
     auto* optionsVM = m_subToolbar->viewModel();
     auto syncTextFormattingToSubToolbar = [this, optionsVM]() {
         if (!m_textAnnotationEditor) {
@@ -3608,12 +3590,6 @@ void PinWindow::showEmojiPickerPopup()
         m_emojiPickerPopup->setParentWidget(this);
         connect(m_emojiPickerPopup, &SnapTray::QmlEmojiPickerPopup::emojiSelected,
                 this, &PinWindow::onEmojiSelected);
-        connect(m_emojiPickerPopup, &SnapTray::QmlEmojiPickerPopup::cursorRestoreRequested,
-                this, [this]() {
-                    QTimer::singleShot(0, this, &PinWindow::syncFloatingUiCursor);
-                });
-        connect(m_emojiPickerPopup, &SnapTray::QmlEmojiPickerPopup::cursorSyncRequested,
-                this, &PinWindow::syncFloatingUiCursor);
     }
 
     // Position below the toolbar
@@ -3678,43 +3654,8 @@ void PinWindow::syncFloatingUiCursor()
     authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.subtoolbar"));
     authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.emoji"));
 
-    bool overlayMatched = false;
-    if (m_toolbar && m_toolbar->isVisible() && m_toolbar->geometry().contains(globalPos)) {
-        authority.submitWidgetRequest(
-            this,
-            QStringLiteral("floating.overlay.toolbar"),
-            CursorRequestSource::Overlay,
-            cursorSpecForWindow(m_toolbar->window()));
-        overlayMatched = true;
-    } else if (m_subToolbar && m_subToolbar->isVisible() &&
-               m_subToolbar->geometry().contains(globalPos)) {
-        authority.submitWidgetRequest(
-            this,
-            QStringLiteral("floating.overlay.subtoolbar"),
-            CursorRequestSource::Overlay,
-            cursorSpecForWindow(m_subToolbar->window()));
-        overlayMatched = true;
-    } else if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible() &&
-               m_emojiPickerPopup->geometry().contains(globalPos)) {
-        authority.submitWidgetRequest(
-            this,
-            QStringLiteral("floating.overlay.emoji"),
-            CursorRequestSource::Popup,
-            cursorSpecForWindow(m_emojiPickerPopup->window()));
-        popupMatched = true;
-    }
-
     if (isGlobalPosOverFloatingUi(globalPos)) {
-        const CursorRequestSource resolvedSource = authority.resolvedSourceForWidget(this);
-        if (authority.modeForWidget(this) == CursorSurfaceMode::Authority &&
-            (resolvedSource == CursorRequestSource::Overlay ||
-             resolvedSource == CursorRequestSource::Popup ||
-             popupMatched || overlayMatched)) {
-            cursorManager.reapplyCursorForWidget(this);
-            return;
-        }
-
-        cursorManager.pushCursorForWidget(this, CursorContext::Override, Qt::ArrowCursor);
+        cursorManager.popCursorForWidget(this, CursorContext::Override);
         return;
     }
 

@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QPointer>
 #include <QRect>
+#include <QString>
 
 class QEvent;
 class QQuickItem;
@@ -34,18 +35,19 @@ public:
 
 signals:
     void emojiSelected(const QString& emoji);
-    void cursorRestoreRequested();
-    void cursorSyncRequested();
 
 private:
     void ensureView();
     void applyPlatformWindowFlags();
+    void syncCursorSurface();
     bool eventFilter(QObject* obj, QEvent* event) override;
 
     QQuickView* m_view = nullptr;
     QQuickItem* m_rootItem = nullptr;
     EmojiPickerBackend* m_backend = nullptr;
     QPointer<QWidget> m_parentWidget;
+    QString m_cursorSurfaceId;
+    QString m_cursorOwnerId;
 };
 
 } // namespace SnapTray

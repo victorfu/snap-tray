@@ -11,6 +11,8 @@ private slots:
     void testLegacyCursorPassthrough();
     void testMosaicBrushUsesCenteredHotspot();
     void testEraserBrushUsesCenteredHotspot();
+    void testMosaicBrushUsesStableCachedPixmap();
+    void testEraserBrushUsesStableCachedPixmap();
 };
 
 void TestCursorStyleCatalog::testSystemShapeMapping()
@@ -58,6 +60,32 @@ void TestCursorStyleCatalog::testEraserBrushUsesCenteredHotspot()
     QVERIFY(pixmap.devicePixelRatio() >= 2.0);
     QCOMPARE(cursor.hotSpot(),
              QPoint(qRound(logicalSize.width() / 2.0), qRound(logicalSize.height() / 2.0)));
+}
+
+void TestCursorStyleCatalog::testMosaicBrushUsesStableCachedPixmap()
+{
+    CursorStyleSpec spec;
+    spec.styleId = CursorStyleId::MosaicBrush;
+    spec.primaryValue = 18;
+
+    const QCursor first = CursorStyleCatalog::instance().cursorForStyle(spec);
+    const QCursor second = CursorStyleCatalog::instance().cursorForStyle(spec);
+
+    QCOMPARE(first.pixmap().cacheKey(), second.pixmap().cacheKey());
+    QCOMPARE(first.hotSpot(), second.hotSpot());
+}
+
+void TestCursorStyleCatalog::testEraserBrushUsesStableCachedPixmap()
+{
+    CursorStyleSpec spec;
+    spec.styleId = CursorStyleId::EraserBrush;
+    spec.primaryValue = 24;
+
+    const QCursor first = CursorStyleCatalog::instance().cursorForStyle(spec);
+    const QCursor second = CursorStyleCatalog::instance().cursorForStyle(spec);
+
+    QCOMPARE(first.pixmap().cacheKey(), second.pixmap().cacheKey());
+    QCOMPARE(first.hotSpot(), second.hotSpot());
 }
 
 QTEST_MAIN(TestCursorStyleCatalog)

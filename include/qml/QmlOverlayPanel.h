@@ -6,6 +6,7 @@
 #include <QRegion>
 #include <QSize>
 #include <QUrl>
+#include <QString>
 #include <memory>
 
 class QQuickView;
@@ -52,14 +53,11 @@ public:
     void setParentWidget(QWidget* parent);
     QQuickView* view() const;
 
-signals:
-    void cursorRestoreRequested();
-    void cursorSyncRequested();
-
 private:
     void ensureView();
     void applyPlatformWindowFlags();
     void updateWindowMask();
+    void syncCursorSurface();
     bool eventFilter(QObject* watched, QEvent* event) override;
 
 private slots:
@@ -75,6 +73,8 @@ private:
     QQuickItem* m_rootItem = nullptr;
     QWidget* m_parentWidget = nullptr;
     QRegion m_windowMask;
+    QString m_cursorSurfaceId;
+    QString m_cursorOwnerId;
 };
 
 } // namespace SnapTray

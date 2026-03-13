@@ -1,6 +1,6 @@
 #include "qml/QmlEmojiPickerPopup.h"
 
-#include "cursor/CursorPlatformApplier.h"
+#include "cursor/CursorSurfaceSupport.h"
 #include "platform/WindowLevel.h"
 #include "qml/EmojiPickerBackend.h"
 #include "qml/QmlOverlayManager.h"
@@ -9,8 +9,10 @@
 #include <QDebug>
 #include <QEvent>
 #include <QGuiApplication>
+#include <QCursor>
 #include <QKeyEvent>
 #include <QMouseEvent>
+#include <QTimer>
 #include <QQmlContext>
 #include <QQuickItem>
 #include <QQuickView>
@@ -27,10 +29,12 @@ bool isPointerRefreshEvent(QEvent::Type type)
 {
     switch (type) {
     case QEvent::Enter:
+    case QEvent::HoverEnter:
     case QEvent::HoverMove:
     case QEvent::MouseMove:
     case QEvent::MouseButtonPress:
     case QEvent::MouseButtonRelease:
+    case QEvent::Show:
         return true;
     default:
         return false;
@@ -80,6 +84,7 @@ void QmlEmojiPickerPopup::positionAt(const QRect& anchorRect)
     }
 
     m_view->setPosition(x, y);
+    syncCursorSurface();
 }
 
 void QmlEmojiPickerPopup::showAt(const QRect& anchorRect)
@@ -103,8 +108,7 @@ void QmlEmojiPickerPopup::showAt(const QRect& anchorRect)
     QmlOverlayManager::preventWindowHideOnDeactivate(m_view);
     QmlOverlayManager::enableNativeShadow(m_view);
     m_view->raise();
-    CursorPlatformApplier::applyWindowCursor(m_view, CursorStyleSpec::fromShape(Qt::ArrowCursor));
-    emit cursorSyncRequested();
+    syncCursorSurface();
 }
 
 void QmlEmojiPickerPopup::hide()
@@ -114,7 +118,12 @@ void QmlEmojiPickerPopup::hide()
     }
 
     m_view->hide();
-    emit cursorRestoreRequested();
+    CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+    if (m_parentWidget) {
+        QTimer::singleShot(0, this, [this]() {
+            CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_parentWidget);
+        });
+    }
 }
 
 void QmlEmojiPickerPopup::close()
@@ -124,6 +133,12 @@ void QmlEmojiPickerPopup::close()
     }
 
     m_view->removeEventFilter(this);
+    CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+    if (m_parentWidget) {
+        QTimer::singleShot(0, this, [this]() {
+            CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_parentWidget);
+        });
+    }
     m_view->close();
     delete m_view;
     m_view = nullptr;
@@ -176,11 +191,13 @@ void QmlEmojiPickerPopup::ensureView()
 
     m_backend = new EmojiPickerBackend(this);
     m_view = QmlOverlayManager::instance().createPopupWindow();
-    CursorPlatformApplier::applyWindowCursor(m_view, CursorStyleSpec::fromShape(Qt::ArrowCursor));
     m_view->rootContext()->setContextProperty(QStringLiteral("emojiPickerBackend"), m_backend);
     m_view->setSource(QUrl(QStringLiteral("qrc:/SnapTrayQml/panels/EmojiPickerPopup.qml")));
     m_rootItem = m_view->rootObject();
     m_view->installEventFilter(this);
+    m_cursorSurfaceId = CursorSurfaceSupport::registerManagedSurface(
+        m_view, QStringLiteral("QmlEmojiPickerPopup"));
+    m_cursorOwnerId = CursorSurfaceSupport::defaultOwnerId(QStringLiteral("QmlEmojiPickerPopup"));
 
     if (m_view->status() == QQuickView::Error) {
         for (const auto& error : m_view->errors()) {
@@ -193,14 +210,37 @@ void QmlEmojiPickerPopup::ensureView()
 
 }
 
+void QmlEmojiPickerPopup::syncCursorSurface()
+{
+    if (!m_view || m_cursorSurfaceId.isEmpty() || m_cursorOwnerId.isEmpty()) {
+        return;
+    }
+
+    if (!m_view->isVisible()) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        return;
+    }
+
+    const QRect bounds(m_view->position(), m_view->size());
+    if (!bounds.contains(QCursor::pos())) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        return;
+    }
+
+    CursorSurfaceSupport::syncWindowSurface(
+        m_view, m_cursorSurfaceId, m_cursorOwnerId, CursorRequestSource::Popup);
+}
+
 bool QmlEmojiPickerPopup::eventFilter(QObject* obj, QEvent* event)
 {
     if (obj == m_view) {
         if (isPointerRefreshEvent(event->type())) {
-            emit cursorSyncRequested();
+            syncCursorSurface();
         }
-        if (event->type() == QEvent::Leave || event->type() == QEvent::Hide) {
-            emit cursorRestoreRequested();
+        if (event->type() == QEvent::Leave ||
+            event->type() == QEvent::Hide ||
+            event->type() == QEvent::Close) {
+            CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         }
         return false;
     }

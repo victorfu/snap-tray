@@ -2,6 +2,7 @@
 #define CURSORSTYLECATALOG_H
 
 #include <QCursor>
+#include <QHash>
 
 #include "cursor/CursorTypes.h"
 
@@ -19,6 +20,10 @@ public:
 
 private:
     CursorStyleCatalog() = default;
+
+    QCursor cachedBrushCursor(const QString& family, int logicalSize) const;
+
+    mutable QHash<QString, QCursor> m_brushCursorCache;
 };
 
 #endif // CURSORSTYLECATALOG_H

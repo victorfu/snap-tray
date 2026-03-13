@@ -5,6 +5,7 @@
 #include <QPoint>
 #include <QPointer>
 #include <QElapsedTimer>
+#include <QString>
 
 class QWidget;
 class QWindow;
@@ -56,8 +57,6 @@ public:
 
 signals:
     void closeRequested();
-    void cursorRestoreRequested();
-    void cursorSyncRequested();
 
 private slots:
     void onButtonHovered(int buttonId, double anchorX, double anchorY,
@@ -73,6 +72,7 @@ private:
     void setupConnections();
     void applyPlatformWindowFlags();
     void applyTooltipWindowFlags();
+    void syncCursorSurface();
 
     void showTooltip(const QString& text, const QRect& anchorRect);
     void hideTooltip();
@@ -99,6 +99,8 @@ private:
     QPointer<QWindow> m_associatedTransientWindow;
 
     quint64 m_tooltipRequestId = 0;
+    QString m_cursorSurfaceId;
+    QString m_cursorOwnerId;
 };
 
 } // namespace SnapTray

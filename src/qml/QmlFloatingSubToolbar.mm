@@ -1,5 +1,5 @@
 #include "qml/QmlFloatingSubToolbar.h"
-#include "cursor/CursorPlatformApplier.h"
+#include "cursor/CursorSurfaceSupport.h"
 #include "qml/QmlOverlayManager.h"
 #include "qml/PinToolOptionsViewModel.h"
 
@@ -10,6 +10,8 @@
 #include <QScreen>
 #include <QGuiApplication>
 #include <QMouseEvent>
+#include <QCursor>
+#include <QTimer>
 #include <QWidget>
 #include <QVariant>
 #include <QtMath>
@@ -53,8 +55,10 @@ QmlFloatingSubToolbar::QmlFloatingSubToolbar(QObject* parent)
 
 QmlFloatingSubToolbar::~QmlFloatingSubToolbar()
 {
-    if (m_view)
+    if (m_view) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->removeEventFilter(this);
+    }
     destroyQuickView(m_view, m_rootItem);
 }
 
@@ -65,7 +69,6 @@ void QmlFloatingSubToolbar::ensureView()
 
     m_view = QmlOverlayManager::instance().createScreenOverlay();
     m_view->setFlag(Qt::WindowDoesNotAcceptFocus, true);
-    CursorPlatformApplier::applyWindowCursor(m_view, CursorStyleSpec::fromShape(Qt::ArrowCursor));
     m_view->rootContext()->setContextProperty(
         QStringLiteral("pinToolOptionsViewModel"), m_viewModel);
     m_view->setSource(
@@ -84,6 +87,9 @@ void QmlFloatingSubToolbar::ensureView()
     }
 
     m_view->installEventFilter(this);
+    m_cursorSurfaceId = CursorSurfaceSupport::registerManagedSurface(
+        m_view, QStringLiteral("QmlFloatingSubToolbar"));
+    m_cursorOwnerId = CursorSurfaceSupport::defaultOwnerId(QStringLiteral("QmlFloatingSubToolbar"));
 }
 
 void QmlFloatingSubToolbar::applyPlatformWindowFlags()
@@ -137,20 +143,33 @@ void QmlFloatingSubToolbar::show()
     applyPlatformWindowFlags();
     QmlOverlayManager::enableNativeShadow(m_view);
     m_view->raise();
-    emit cursorSyncRequested();
+    syncCursorSurface();
 }
 
 void QmlFloatingSubToolbar::hide()
 {
-    if (m_view)
+    if (m_view) {
         m_view->hide();
-    emit cursorSyncRequested();
+    }
+    CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+    if (m_parentWidget) {
+        QTimer::singleShot(0, this, [this]() {
+            CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_parentWidget);
+        });
+    }
 }
 
 void QmlFloatingSubToolbar::close()
 {
-    if (m_view)
+    if (m_view) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->removeEventFilter(this);
+    }
+    if (m_parentWidget) {
+        QTimer::singleShot(0, this, [this]() {
+            CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_parentWidget);
+        });
+    }
     destroyQuickView(m_view, m_rootItem);
 }
 
@@ -181,20 +200,44 @@ void QmlFloatingSubToolbar::setParentWidget(QWidget* parent)
     m_parentWidget = parent;
 }
 
+void QmlFloatingSubToolbar::syncCursorSurface()
+{
+    if (!m_view || m_cursorSurfaceId.isEmpty() || m_cursorOwnerId.isEmpty()) {
+        return;
+    }
+
+    if (!m_view->isVisible()) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        return;
+    }
+
+    const QRect bounds(m_view->position(), m_view->size());
+    if (!bounds.contains(QCursor::pos())) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        return;
+    }
+
+    CursorSurfaceSupport::syncWindowSurface(
+        m_view, m_cursorSurfaceId, m_cursorOwnerId, CursorRequestSource::Overlay);
+}
+
 bool QmlFloatingSubToolbar::eventFilter(QObject* obj, QEvent* event)
 {
     if (obj == m_view) {
         switch (event->type()) {
         case QEvent::Enter:
+        case QEvent::HoverEnter:
         case QEvent::HoverMove:
         case QEvent::MouseMove:
         case QEvent::MouseButtonPress:
         case QEvent::MouseButtonRelease:
-            emit cursorSyncRequested();
+        case QEvent::Show:
+            syncCursorSurface();
             break;
         case QEvent::Leave:
         case QEvent::Hide:
-            emit cursorRestoreRequested();
+        case QEvent::Close:
+            CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
             break;
         default:
             break;
@@ -243,6 +286,7 @@ void QmlFloatingSubToolbar::positionBelow(const QRect& toolbarRect)
     x = qBound(screenGeom.left() + 10, x, screenGeom.right() - w - 10);
 
     m_view->setPosition(x, y);
+    syncCursorSurface();
 }
 
 } // namespace SnapTray

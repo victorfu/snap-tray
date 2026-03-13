@@ -4,7 +4,6 @@
 #include "tools/ToolManager.h"
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
-#include "cursor/CursorSurfaceSupport.h"
 #include "colorwidgets/ColorPickerDialogCompat.h"
 
 using snaptray::colorwidgets::ColorPickerDialogCompat;
@@ -63,11 +62,6 @@ CursorStyleSpec cursorSpecForWidget(const QWidget* widget)
 {
     return widget ? CursorStyleSpec::fromCursor(widget->cursor())
                   : CursorStyleSpec::fromShape(Qt::ArrowCursor);
-}
-
-CursorStyleSpec cursorSpecForWindow(const QWindow* window)
-{
-    return CursorSurfaceSupport::currentCursorSpecForWindow(window);
 }
 
 qreal normalizeAngleDelta(qreal deltaDegrees)
@@ -269,22 +263,6 @@ ScreenCanvas::ScreenCanvas(QWidget* parent)
     // Track user drag to prevent paintEvent from overriding toolbar position
     connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::dragFinished,
         this, [this]() { m_toolbarUserDragged = true; });
-
-    // Detached QML overlays emit Leave before the OS cursor position reliably updates.
-    // Queue restores so Arrow override is cleared using the post-transition pointer location.
-    const auto queueFloatingUiCursorRestore = [this]() {
-        QTimer::singleShot(0, this, &ScreenCanvas::syncFloatingUiCursor);
-    };
-
-    // Keep floating QML overlay cursor ownership in sync with the canvas cursor state.
-    connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::cursorRestoreRequested,
-        this, queueFloatingUiCursorRestore);
-    connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::cursorSyncRequested,
-        this, &ScreenCanvas::syncFloatingUiCursor);
-    connect(m_qmlSubToolbar.get(), &SnapTray::QmlFloatingSubToolbar::cursorRestoreRequested,
-        this, queueFloatingUiCursorRestore);
-    connect(m_qmlSubToolbar.get(), &SnapTray::QmlFloatingSubToolbar::cursorSyncRequested,
-        this, &ScreenCanvas::syncFloatingUiCursor);
 
     // Initialize inline text editor
     m_textEditor = new InlineTextEditor(this);
@@ -924,44 +902,8 @@ void ScreenCanvas::syncFloatingUiCursor()
     authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.subtoolbar"));
     authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.emoji"));
 
-    bool overlayMatched = false;
-    if (m_qmlToolbar && m_qmlToolbar->isVisible() && m_qmlToolbar->geometry().contains(globalPos)) {
-        authority.submitWidgetRequest(
-            this,
-            QStringLiteral("floating.overlay.toolbar"),
-            CursorRequestSource::Overlay,
-            cursorSpecForWindow(m_qmlToolbar->window()));
-        overlayMatched = true;
-    } else if (m_qmlSubToolbar && m_qmlSubToolbar->isVisible() &&
-               m_qmlSubToolbar->geometry().contains(globalPos)) {
-        authority.submitWidgetRequest(
-            this,
-            QStringLiteral("floating.overlay.subtoolbar"),
-            CursorRequestSource::Overlay,
-            cursorSpecForWindow(m_qmlSubToolbar->window()));
-        overlayMatched = true;
-    } else if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible() &&
-               m_emojiPickerPopup->geometry().contains(globalPos)) {
-        authority.submitWidgetRequest(
-            this,
-            QStringLiteral("floating.overlay.emoji"),
-            CursorRequestSource::Popup,
-            cursorSpecForWindow(m_emojiPickerPopup->window()));
-        popupMatched = true;
-    }
-
     if (isGlobalPosOverFloatingUi(globalPos)) {
-        const CursorRequestSource resolvedSource = authority.resolvedSourceForWidget(this);
-        if (authority.modeForWidget(this) == CursorSurfaceMode::Authority &&
-            (resolvedSource == CursorRequestSource::Overlay ||
-             resolvedSource == CursorRequestSource::Popup ||
-             popupMatched || overlayMatched)) {
-            cursorManager.reapplyCursorForWidget(this);
-            return;
-        }
-
-        cursorManager.pushCursorForWidget(this, CursorContext::Override, Qt::ArrowCursor);
-        cursorManager.reapplyCursorForWidget(this);
+        cursorManager.popCursorForWidget(this, CursorContext::Override);
         return;
     }
 
@@ -1461,12 +1403,6 @@ void ScreenCanvas::showEmojiPickerPopup()
                     handler->setCurrentEmoji(emoji);
                 }
             });
-        connect(m_emojiPickerPopup, &SnapTray::QmlEmojiPickerPopup::cursorRestoreRequested,
-            this, [this]() {
-                QTimer::singleShot(0, this, &ScreenCanvas::syncFloatingUiCursor);
-            });
-        connect(m_emojiPickerPopup, &SnapTray::QmlEmojiPickerPopup::cursorSyncRequested,
-            this, &ScreenCanvas::syncFloatingUiCursor);
     }
     QRect anchor = m_qmlToolbar ? m_qmlToolbar->geometry() : QRect();
     m_emojiPickerPopup->showAt(anchor);

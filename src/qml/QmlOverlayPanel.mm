@@ -1,10 +1,12 @@
 #include "qml/QmlOverlayPanel.h"
-#include "cursor/CursorPlatformApplier.h"
+#include "cursor/CursorSurfaceSupport.h"
 #include "qml/QmlOverlayManager.h"
 
 #include <QEvent>
 #include <QQuickView>
 #include <QQuickItem>
+#include <QCursor>
+#include <QTimer>
 #include <QVariantList>
 #include <QWidget>
 #include <QVariant>
@@ -44,6 +46,7 @@ QmlOverlayPanel::QmlOverlayPanel(const QUrl& qmlSource,
 QmlOverlayPanel::~QmlOverlayPanel()
 {
     if (m_view) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->removeEventFilter(this);
     }
     destroyQuickView(m_view, m_rootItem);
@@ -67,7 +70,6 @@ void QmlOverlayPanel::ensureView()
     }
 
     m_view->setResizeMode(QQuickView::SizeViewToRootObject);
-    CursorPlatformApplier::applyWindowCursor(m_view, CursorStyleSpec::fromShape(Qt::ArrowCursor));
 
     const QVariantMap initialProperties{
         {m_contextPropertyName, QVariant::fromValue(m_viewModel)},
@@ -87,6 +89,11 @@ void QmlOverlayPanel::ensureView()
     }
 
     m_view->installEventFilter(this);
+    if (!m_options.transparentForInput) {
+        m_cursorSurfaceId = CursorSurfaceSupport::registerManagedSurface(
+            m_view, QStringLiteral("QmlOverlayPanel"));
+        m_cursorOwnerId = CursorSurfaceSupport::defaultOwnerId(QStringLiteral("QmlOverlayPanel"));
+    }
     updateWindowMask();
 }
 
@@ -139,7 +146,7 @@ void QmlOverlayPanel::show()
     applyPlatformWindowFlags();
     QmlOverlayManager::enableNativeShadow(m_view);
     m_view->raise();
-    emit cursorSyncRequested();
+    syncCursorSurface();
 }
 
 void QmlOverlayPanel::hide()
@@ -147,13 +154,24 @@ void QmlOverlayPanel::hide()
     if (m_view) {
         m_view->hide();
     }
-    emit cursorSyncRequested();
+    CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+    if (m_parentWidget) {
+        QTimer::singleShot(0, this, [this]() {
+            CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_parentWidget);
+        });
+    }
 }
 
 void QmlOverlayPanel::close()
 {
     if (m_view) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->removeEventFilter(this);
+    }
+    if (m_parentWidget) {
+        QTimer::singleShot(0, this, [this]() {
+            CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_parentWidget);
+        });
     }
     destroyQuickView(m_view, m_rootItem);
 }
@@ -186,8 +204,10 @@ bool QmlOverlayPanel::containsGlobalPoint(const QPoint& globalPos) const
 
 void QmlOverlayPanel::setPosition(const QPoint& globalPos)
 {
-    if (m_view)
+    if (m_view) {
         m_view->setPosition(globalPos);
+        syncCursorSurface();
+    }
 }
 
 void QmlOverlayPanel::resize(const QSize& size)
@@ -200,6 +220,8 @@ void QmlOverlayPanel::resize(const QSize& size)
     } else {
         m_view->resize(size);
     }
+
+    syncCursorSurface();
 }
 
 void QmlOverlayPanel::setParentWidget(QWidget* parent)
@@ -229,6 +251,22 @@ void QmlOverlayPanel::updateWindowMask()
 
     m_windowMask = newMask;
     m_view->setMask(m_windowMask);
+    syncCursorSurface();
+}
+
+void QmlOverlayPanel::syncCursorSurface()
+{
+    if (!m_view || m_cursorSurfaceId.isEmpty() || m_cursorOwnerId.isEmpty()) {
+        return;
+    }
+
+    if (!m_view->isVisible() || !containsGlobalPoint(QCursor::pos())) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        return;
+    }
+
+    CursorSurfaceSupport::syncWindowSurface(
+        m_view, m_cursorSurfaceId, m_cursorOwnerId, CursorRequestSource::Overlay);
 }
 
 bool QmlOverlayPanel::eventFilter(QObject* watched, QEvent* event)
@@ -236,15 +274,18 @@ bool QmlOverlayPanel::eventFilter(QObject* watched, QEvent* event)
     if (watched == m_view) {
         switch (event->type()) {
         case QEvent::Enter:
+        case QEvent::HoverEnter:
         case QEvent::HoverMove:
         case QEvent::MouseMove:
         case QEvent::MouseButtonPress:
         case QEvent::MouseButtonRelease:
-            emit cursorSyncRequested();
+        case QEvent::Show:
+            syncCursorSurface();
             break;
         case QEvent::Leave:
         case QEvent::Hide:
-            emit cursorRestoreRequested();
+        case QEvent::Close:
+            CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
             break;
         default:
             break;

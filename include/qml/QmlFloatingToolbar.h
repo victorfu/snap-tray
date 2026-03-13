@@ -6,6 +6,7 @@
 #include <QElapsedTimer>
 #include <QWindow>
 #include <QColor>
+#include <QString>
 
 class QQuickView;
 class QQuickItem;
@@ -98,8 +99,6 @@ public:
     void setParentWidget(QWidget* parent);
 
 signals:
-    void cursorRestoreRequested();
-    void cursorSyncRequested();
     void dragStarted();
     void dragFinished();
     void dragMoved(double deltaX, double deltaY);
@@ -119,6 +118,7 @@ private:
     void applyAppearance();
     void applyPlatformWindowFlags();
     void applyTooltipWindowFlags();
+    void syncCursorSurface();
 
     void showTooltip(const QString& text, const QRect& anchorRect);
     void hideTooltip();
@@ -139,6 +139,8 @@ private:
     bool m_isDragging = false;
 
     quint64 m_tooltipRequestId = 0;
+    QString m_cursorSurfaceId;
+    QString m_cursorOwnerId;
 };
 
 } // namespace SnapTray

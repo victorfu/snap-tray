@@ -2,9 +2,14 @@
 #define CURSORSURFACESUPPORT_H
 
 #include <QEvent>
+#include <QApplication>
+#include <QCursor>
+#include <QGuiApplication>
+#include <QWidget>
 #include <QWindow>
 
 #include "cursor/CursorAuthority.h"
+#include "cursor/CursorManager.h"
 #include "cursor/CursorPlatformApplier.h"
 
 namespace CursorSurfaceSupport {
@@ -73,6 +78,37 @@ inline void clearWindowSurface(const QString& surfaceId, const QString& ownerId)
         return;
     }
     CursorAuthority::instance().clearRequest(surfaceId, ownerId);
+}
+
+inline void restoreWidgetCursorIfPointerOver(QWidget* widget)
+{
+    if (!widget || !widget->isVisible()) {
+        return;
+    }
+
+    const QPoint globalPos = QCursor::pos();
+    const QRect widgetBounds(widget->mapToGlobal(QPoint(0, 0)), widget->size());
+    if (!widgetBounds.contains(globalPos)) {
+        return;
+    }
+
+    if (QWidget* popup = QApplication::activePopupWidget();
+        popup && popup->isVisible() && popup->frameGeometry().contains(globalPos)) {
+        return;
+    }
+
+    QWindow* hostWindow = widget->windowHandle();
+    for (QWindow* window : QGuiApplication::topLevelWindows()) {
+        if (!window || !window->isVisible() || window == hostWindow) {
+            continue;
+        }
+
+        if (QRect(window->position(), window->size()).contains(globalPos)) {
+            return;
+        }
+    }
+
+    CursorManager::instance().reapplyCursorForWidget(widget);
 }
 
 }  // namespace CursorSurfaceSupport

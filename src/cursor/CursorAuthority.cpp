@@ -49,6 +49,11 @@ CursorSurfaceMode CursorAuthority::defaultManagedModeForGroup(const QString& gro
         QStringLiteral("QMLBEAUTIFYPANEL"),
         QStringLiteral("QMLSETTINGSWINDOW"),
         QStringLiteral("QMLPINHISTORYWINDOW"),
+        QStringLiteral("QMLFLOATINGTOOLBAR"),
+        QStringLiteral("QMLFLOATINGSUBTOOLBAR"),
+        QStringLiteral("QMLWINDOWEDTOOLBAR"),
+        QStringLiteral("QMLOVERLAYPANEL"),
+        QStringLiteral("QMLEMOJIPICKERPOPUP"),
     };
 
     return kAuthorityGroups.contains(normalized)

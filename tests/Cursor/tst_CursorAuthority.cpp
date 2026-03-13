@@ -74,6 +74,12 @@ void TestCursorAuthority::testGroupModeDefaultsAndOverride()
     qunsetenv(envKey.constData());
     QCOMPARE(CursorAuthority::defaultManagedModeForGroup(QStringLiteral("RegionSelector")),
              CursorSurfaceMode::Authority);
+    QCOMPARE(CursorAuthority::defaultManagedModeForGroup(QStringLiteral("QmlFloatingToolbar")),
+             CursorSurfaceMode::Authority);
+    QCOMPARE(CursorAuthority::defaultManagedModeForGroup(QStringLiteral("QmlOverlayPanel")),
+             CursorSurfaceMode::Authority);
+    QCOMPARE(CursorAuthority::defaultManagedModeForGroup(QStringLiteral("QmlEmojiPickerPopup")),
+             CursorSurfaceMode::Authority);
     QCOMPARE(CursorAuthority::defaultManagedModeForGroup(QStringLiteral("UnknownSurface")),
              CursorSurfaceMode::Shadow);
 

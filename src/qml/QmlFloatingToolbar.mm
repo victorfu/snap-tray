@@ -1,5 +1,5 @@
 #include "qml/QmlFloatingToolbar.h"
-#include "cursor/CursorPlatformApplier.h"
+#include "cursor/CursorSurfaceSupport.h"
 #include "qml/QmlOverlayManager.h"
 
 #include <QQuickView>
@@ -50,8 +50,10 @@ QmlFloatingToolbar::~QmlFloatingToolbar()
 {
     destroyQuickView(m_tooltipView, m_tooltipRootItem);
 
-    if (m_view)
+    if (m_view) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->removeEventFilter(this);
+    }
     destroyQuickView(m_view, m_rootItem);
 }
 
@@ -62,7 +64,6 @@ void QmlFloatingToolbar::ensureView()
 
     m_view = QmlOverlayManager::instance().createScreenOverlay();
     m_view->setFlag(Qt::WindowDoesNotAcceptFocus, true);
-    CursorPlatformApplier::applyWindowCursor(m_view, CursorStyleSpec::fromShape(Qt::ArrowCursor));
 
     const QVariantMap initialProperties{
         {QStringLiteral("viewModel"),
@@ -83,6 +84,9 @@ void QmlFloatingToolbar::ensureView()
     }
 
     m_view->installEventFilter(this);
+    m_cursorSurfaceId = CursorSurfaceSupport::registerManagedSurface(
+        m_view, QStringLiteral("QmlFloatingToolbar"));
+    m_cursorOwnerId = CursorSurfaceSupport::defaultOwnerId(QStringLiteral("QmlFloatingToolbar"));
 
     if (m_rootItem)
         setupConnections();
@@ -120,8 +124,6 @@ void QmlFloatingToolbar::ensureTooltipView()
     m_tooltipView->setFlag(Qt::WindowDoesNotAcceptFocus, true);
     m_tooltipView->setResizeMode(QQuickView::SizeRootObjectToView);
     m_tooltipView->setFlag(Qt::WindowTransparentForInput, true);
-    CursorPlatformApplier::applyWindowCursor(
-        m_tooltipView, CursorStyleSpec::fromShape(Qt::ArrowCursor));
 
     if (m_tooltipView->status() == QQuickView::Error) {
         for (const auto& error : m_tooltipView->errors())
@@ -240,22 +242,35 @@ void QmlFloatingToolbar::show()
     applyPlatformWindowFlags();
     QmlOverlayManager::enableNativeShadow(m_view);
     m_view->raise();
-    emit cursorSyncRequested();
+    syncCursorSurface();
 }
 
 void QmlFloatingToolbar::hide()
 {
     hideTooltip();
-    if (m_view)
+    if (m_view) {
         m_view->hide();
-    emit cursorSyncRequested();
+    }
+    CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+    if (m_parentWidget) {
+        QTimer::singleShot(0, this, [this]() {
+            CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_parentWidget);
+        });
+    }
 }
 
 void QmlFloatingToolbar::close()
 {
     hideTooltip();
-    if (m_view)
+    if (m_view) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->removeEventFilter(this);
+    }
+    if (m_parentWidget) {
+        QTimer::singleShot(0, this, [this]() {
+            CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_parentWidget);
+        });
+    }
     destroyQuickView(m_view, m_rootItem);
     destroyQuickView(m_tooltipView, m_tooltipRootItem);
 }
@@ -342,6 +357,7 @@ void QmlFloatingToolbar::positionForSelection(const QRect& selectionRect,
     }
 
     m_view->setPosition(screenPos);
+    syncCursorSurface();
 }
 
 void QmlFloatingToolbar::positionAt(int centerX, int bottomY)
@@ -360,12 +376,36 @@ void QmlFloatingToolbar::positionAt(int centerX, int bottomY)
     }
 
     m_view->setPosition(pos);
+    syncCursorSurface();
 }
 
 void QmlFloatingToolbar::setPosition(const QPoint& pos)
 {
-    if (m_view)
+    if (m_view) {
         m_view->setPosition(pos);
+        syncCursorSurface();
+    }
+}
+
+void QmlFloatingToolbar::syncCursorSurface()
+{
+    if (!m_view || m_cursorSurfaceId.isEmpty() || m_cursorOwnerId.isEmpty()) {
+        return;
+    }
+
+    if (!m_view->isVisible()) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        return;
+    }
+
+    const QRect bounds(m_view->position(), m_view->size());
+    if (!bounds.contains(QCursor::pos())) {
+        CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        return;
+    }
+
+    CursorSurfaceSupport::syncWindowSurface(
+        m_view, m_cursorSurfaceId, m_cursorOwnerId, CursorRequestSource::Overlay);
 }
 
 // ── Event filter (cursor management) ──
@@ -375,16 +415,19 @@ bool QmlFloatingToolbar::eventFilter(QObject* obj, QEvent* event)
     if (obj == m_view) {
         switch (event->type()) {
         case QEvent::Enter:
+        case QEvent::HoverEnter:
         case QEvent::HoverMove:
         case QEvent::MouseMove:
         case QEvent::MouseButtonPress:
         case QEvent::MouseButtonRelease:
-            emit cursorSyncRequested();
+        case QEvent::Show:
+            syncCursorSurface();
             break;
         case QEvent::Leave:
         case QEvent::Hide:
+        case QEvent::Close:
             hideTooltip();
-            emit cursorRestoreRequested();
+            CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
             break;
         default:
             break;
@@ -401,7 +444,7 @@ void QmlFloatingToolbar::onButtonHovered(int buttonId, double anchorX, double an
     if (!m_view)
         return;
 
-    emit cursorSyncRequested();
+    syncCursorSurface();
 
     // Find tooltip text from ViewModel's button list
     QString tip;
@@ -498,12 +541,14 @@ void QmlFloatingToolbar::onDragStarted()
         m_dragStartViewPos = m_view->position();
     m_dragStartCursorPos = QCursor::pos();
     hideTooltip();
+    syncCursorSurface();
     emit dragStarted();
 }
 
 void QmlFloatingToolbar::onDragFinished()
 {
     m_isDragging = false;
+    syncCursorSurface();
     emit dragFinished();
 }
 
@@ -526,6 +571,7 @@ void QmlFloatingToolbar::onDragMoved(double deltaX, double deltaY)
     }
 
     m_view->setPosition(newPos);
+    syncCursorSurface();
     hideTooltip();
     const QPoint cursorDelta = QCursor::pos() - m_dragStartCursorPos;
     emit dragMoved(cursorDelta.x(), cursorDelta.y());

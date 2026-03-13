@@ -15,7 +15,6 @@
 #include "annotations/AllAnnotations.h"
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
-#include "cursor/CursorSurfaceSupport.h"
 #include "GlassRenderer.h"
 #include "ToolbarStyle.h"
 #include "IconRenderer.h"
@@ -110,11 +109,6 @@ CursorStyleSpec cursorSpecForWidget(const QWidget* widget)
 {
     return widget ? CursorStyleSpec::fromCursor(widget->cursor())
                   : CursorStyleSpec::fromShape(Qt::ArrowCursor);
-}
-
-CursorStyleSpec cursorSpecForWindow(const QWindow* window)
-{
-    return CursorSurfaceSupport::currentCursorSpecForWindow(window);
 }
 
 } // namespace
@@ -418,23 +412,6 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::dragFinished,
         this, [this]() { m_toolbarUserDragged = true; });
 
-    // Leave/Hide from detached QML overlay windows can arrive before the global cursor
-    // position has switched back to the region surface. Queue restore to avoid
-    // sampling a stale overlay position and leaving Arrow override stuck.
-    const auto queueFloatingUiCursorRestore = [this]() {
-        QTimer::singleShot(0, this, &RegionSelector::syncFloatingUiCursor);
-    };
-
-    // Keep floating UI and native popup cursor ownership aligned with the region surface.
-    connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::cursorRestoreRequested,
-        this, queueFloatingUiCursorRestore);
-    connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::cursorSyncRequested,
-        this, &RegionSelector::syncFloatingUiCursor);
-    connect(m_qmlSubToolbar.get(), &SnapTray::QmlFloatingSubToolbar::cursorRestoreRequested,
-        this, queueFloatingUiCursorRestore);
-    connect(m_qmlSubToolbar.get(), &SnapTray::QmlFloatingSubToolbar::cursorSyncRequested,
-        this, &RegionSelector::syncFloatingUiCursor);
-
     connect(m_qmlSubToolbar.get(), &SnapTray::QmlFloatingSubToolbar::emojiPickerRequested,
         this, [this]() { showEmojiPickerPopup(); });
     connect(m_annotationLayer, &AnnotationLayer::changed,
@@ -486,10 +463,6 @@ RegionSelector::RegionSelector(QWidget* parent)
         QUrl(QStringLiteral("qrc:/SnapTrayQml/panels/RegionControlPanel.qml")),
         m_regionControlViewModel, QStringLiteral("viewModel"));
     m_regionControlPanel->setParentWidget(this);
-    connect(m_regionControlPanel.get(), &SnapTray::QmlOverlayPanel::cursorRestoreRequested,
-        this, queueFloatingUiCursorRestore);
-    connect(m_regionControlPanel.get(), &SnapTray::QmlOverlayPanel::cursorSyncRequested,
-        this, &RegionSelector::syncFloatingUiCursor);
 
     connect(m_regionControlViewModel, &RegionControlViewModel::radiusEnabledChanged,
         this, [](bool enabled) {
@@ -537,10 +510,6 @@ RegionSelector::RegionSelector(QWidget* parent)
         QUrl(QStringLiteral("qrc:/SnapTrayQml/panels/MultiRegionListPanel.qml")),
         m_multiRegionListViewModel, QStringLiteral("viewModel"));
     m_multiRegionListPanel->setParentWidget(this);
-    connect(m_multiRegionListPanel.get(), &SnapTray::QmlOverlayPanel::cursorRestoreRequested,
-        this, queueFloatingUiCursorRestore);
-    connect(m_multiRegionListPanel.get(), &SnapTray::QmlOverlayPanel::cursorSyncRequested,
-        this, &RegionSelector::syncFloatingUiCursor);
 
     connect(m_multiRegionListViewModel, &MultiRegionListViewModel::regionActivated,
         this, [this](int index) {
@@ -1099,12 +1068,6 @@ void RegionSelector::showEmojiPickerPopup()
                     handler->setCurrentEmoji(emoji);
                 }
             });
-        connect(m_emojiPickerPopup, &SnapTray::QmlEmojiPickerPopup::cursorRestoreRequested,
-            this, [this]() {
-                QTimer::singleShot(0, this, &RegionSelector::syncFloatingUiCursor);
-            });
-        connect(m_emojiPickerPopup, &SnapTray::QmlEmojiPickerPopup::cursorSyncRequested,
-            this, &RegionSelector::syncFloatingUiCursor);
     }
     QRect anchor = m_qmlToolbar ? m_qmlToolbar->geometry() : QRect();
     m_emojiPickerPopup->showAt(anchor);
@@ -2142,60 +2105,17 @@ void RegionSelector::syncFloatingUiCursor()
         authority.clearWidgetRequest(this, QStringLiteral("floating.popup"));
     }
 
-    bool overlayMatched = false;
-    auto submitOverlay = [&](const char* ownerId, const QWindow* window) {
-        if (!window) {
-            return false;
-        }
-        authority.submitWidgetRequest(
-            this,
-            QString::fromLatin1(ownerId),
-            CursorRequestSource::Overlay,
-            cursorSpecForWindow(window));
-        overlayMatched = true;
-        return true;
-    };
-
     authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.toolbar"));
     authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.subtoolbar"));
     authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.regioncontrol"));
     authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.multiregion"));
     authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.emoji"));
 
-    if (m_qmlToolbar && m_qmlToolbar->isVisible() && m_qmlToolbar->geometry().contains(globalPos)) {
-        submitOverlay("floating.overlay.toolbar", m_qmlToolbar->window());
-    } else if (m_qmlSubToolbar && m_qmlSubToolbar->isVisible() &&
-               m_qmlSubToolbar->geometry().contains(globalPos)) {
-        submitOverlay("floating.overlay.subtoolbar", m_qmlSubToolbar->window());
-    } else if (m_regionControlPanel && m_regionControlPanel->containsGlobalPoint(globalPos)) {
-        submitOverlay("floating.overlay.regioncontrol", m_regionControlPanel->view());
-    } else if (m_multiRegionListPanel && m_multiRegionListPanel->containsGlobalPoint(globalPos)) {
-        submitOverlay("floating.overlay.multiregion", m_multiRegionListPanel->view());
-    } else if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible() &&
-               m_emojiPickerPopup->geometry().contains(globalPos)) {
-        authority.submitWidgetRequest(
-            this,
-            QStringLiteral("floating.overlay.emoji"),
-            CursorRequestSource::Popup,
-            cursorSpecForWindow(m_emojiPickerPopup->window()));
-        popupMatched = true;
-    }
-
     if (isGlobalPosOverFloatingUi(globalPos)) {
         if (m_magnifierOverlay) {
             m_magnifierOverlay->hideOverlay();
         }
-        const CursorRequestSource resolvedSource = authority.resolvedSourceForWidget(this);
-        if (authority.modeForWidget(this) == CursorSurfaceMode::Authority &&
-            (resolvedSource == CursorRequestSource::Overlay ||
-             resolvedSource == CursorRequestSource::Popup ||
-             popupMatched || overlayMatched)) {
-            cursorManager.reapplyCursorForWidget(this);
-            return;
-        }
-
-        cursorManager.pushCursorForWidget(this, CursorContext::Override, Qt::ArrowCursor);
-        cursorManager.reapplyCursorForWidget(this);
+        cursorManager.popCursorForWidget(this, CursorContext::Override);
         return;
     }
 

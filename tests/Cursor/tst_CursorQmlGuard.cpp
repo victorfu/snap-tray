@@ -12,6 +12,8 @@ private slots:
     void testNoRawQmlCursorShapeLiterals();
     void testNoDirectNativeForceCallsOutsidePlatformLayer();
     void testNoRawSetCursorOutsidePlatformApplier();
+    void testNoDirectWindowCursorApplyOutsideCursorSurfaceSupport();
+    void testNoLegacyCursorBridgeConnectionsInHostSurfaces();
 };
 
 void TestCursorQmlGuard::testNoRawQmlCursorShapeLiterals()
@@ -88,6 +90,60 @@ void TestCursorQmlGuard::testNoRawSetCursorOutsidePlatformApplier()
                  qPrintable(path + QStringLiteral(": failed to open")));
         const QString content = QString::fromUtf8(file.readAll());
         if (setCursorPattern.match(content).hasMatch()) {
+            offenders << path;
+        }
+    }
+
+    QVERIFY2(offenders.isEmpty(), qPrintable(offenders.join(QLatin1Char('\n'))));
+}
+
+void TestCursorQmlGuard::testNoDirectWindowCursorApplyOutsideCursorSurfaceSupport()
+{
+    const QRegularExpression applyPattern(
+        QStringLiteral("\\bCursorPlatformApplier::applyWindowCursor\\s*\\("));
+    QStringList offenders;
+
+    QDirIterator it(QStringLiteral(CURSOR_GUARD_SOURCE_ROOT),
+                    QStringList() << QStringLiteral("*.cpp")
+                                  << QStringLiteral("*.mm")
+                                  << QStringLiteral("*.h"),
+                    QDir::Files, QDirIterator::Subdirectories);
+    while (it.hasNext()) {
+        const QString path = it.next();
+        if (path.endsWith(QStringLiteral("/src/cursor/CursorPlatformApplier.cpp")) ||
+            path.endsWith(QStringLiteral("/include/cursor/CursorSurfaceSupport.h"))) {
+            continue;
+        }
+
+        QFile file(path);
+        QVERIFY2(file.open(QIODevice::ReadOnly | QIODevice::Text),
+                 qPrintable(path + QStringLiteral(": failed to open")));
+        const QString content = QString::fromUtf8(file.readAll());
+        if (applyPattern.match(content).hasMatch()) {
+            offenders << path;
+        }
+    }
+
+    QVERIFY2(offenders.isEmpty(), qPrintable(offenders.join(QLatin1Char('\n'))));
+}
+
+void TestCursorQmlGuard::testNoLegacyCursorBridgeConnectionsInHostSurfaces()
+{
+    const QStringList hostFiles = {
+        QStringLiteral(CURSOR_GUARD_SOURCE_ROOT "/RegionSelector.cpp"),
+        QStringLiteral(CURSOR_GUARD_SOURCE_ROOT "/ScreenCanvas.cpp"),
+        QStringLiteral(CURSOR_GUARD_SOURCE_ROOT "/PinWindow.cpp"),
+    };
+    const QRegularExpression bridgePattern(
+        QStringLiteral("&SnapTray::Qml[A-Za-z0-9_]+::cursor(?:Restore|Sync)Requested"));
+    QStringList offenders;
+
+    for (const QString& path : hostFiles) {
+        QFile file(path);
+        QVERIFY2(file.open(QIODevice::ReadOnly | QIODevice::Text),
+                 qPrintable(path + QStringLiteral(": failed to open")));
+        const QString content = QString::fromUtf8(file.readAll());
+        if (bridgePattern.match(content).hasMatch()) {
             offenders << path;
         }
     }
