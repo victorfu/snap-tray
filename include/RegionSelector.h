@@ -11,6 +11,7 @@
 #include <QPointer>
 #include <memory>
 #include <optional>
+#include <functional>
 
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ShapeAnnotation.h"
@@ -233,6 +234,10 @@ private:
     void restoreAfterDialogCancelled();
     bool hasBlockingTransientUiOpen() const;
     void trackBlockingDialog(SnapTray::QmlDialog* dialog);
+    SnapTray::QmlDialog* createTransientDialog(const QUrl& qmlSource,
+                                               QObject* viewModel,
+                                               const QString& contextPropertyName);
+    SnapTray::QmlEmojiPickerPopup* createEmojiPickerPopup();
     void syncSelectionToolbarHoverState(const QPoint& globalPos);
     bool isCursorOverSelectionToolbar(const QPoint& globalPos) const;
     bool isGlobalPosOverFloatingUi(const QPoint& globalPos) const;
@@ -395,6 +400,13 @@ private:
 
     // Shared annotation setup/signals helper
     std::unique_ptr<AnnotationContext> m_annotationContext;
+
+    std::function<SnapTray::QmlDialog*(const QUrl&, QObject*, const QString&, QObject*)>
+        m_dialogFactory;
+    std::function<SnapTray::QmlEmojiPickerPopup*(QObject*)> m_emojiPickerFactory;
+    std::function<std::unique_ptr<snaptray::colorwidgets::ColorPickerDialogCompat>()>
+        m_colorPickerDialogFactory;
+    std::function<void()> m_restoreAfterDialogCancelledHook;
 };
 
 #endif // REGIONSELECTOR_H

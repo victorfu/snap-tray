@@ -5,6 +5,7 @@
 #include <QPoint>
 #include <QColor>
 #include <QString>
+#include <functional>
 
 class QWidget;
 class QMenu;
@@ -80,6 +81,7 @@ private:
     void populateLineStyleMenu(QMenu* menu, LineStyle currentStyle);
 
     QWidget* m_parentWidget = nullptr;
+    std::function<bool(QMenu*, const QPoint&)> m_menuPresenter;
 };
 
 #endif // REGIONSETTINGSHELPER_H

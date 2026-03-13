@@ -20,8 +20,8 @@ public:
               const QString& contextPropertyName, QObject* parent = nullptr);
     ~QmlDialog() override;
 
-    void showAt(const QPoint& pos = QPoint());
-    void close();
+    virtual void showAt(const QPoint& pos = QPoint());
+    virtual void close();
     void setModal(bool modal);
 
 signals:

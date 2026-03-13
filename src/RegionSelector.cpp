@@ -659,9 +659,9 @@ RegionSelector::RegionSelector(QWidget* parent)
             auto* vm = new ShareResultViewModel(this);
             vm->setResult(url, expiresAt, isProtected, m_pendingSharePassword);
             m_pendingSharePassword.clear();
-            auto* dialog = new SnapTray::QmlDialog(
+            auto* dialog = createTransientDialog(
                 QUrl("qrc:/SnapTrayQml/dialogs/ShareResultDialog.qml"),
-                vm, "viewModel", this);
+                vm, "viewModel");
             trackBlockingDialog(dialog);
             connect(vm, &ShareResultViewModel::dialogClosed, this, [this, dialog]() {
                 dialog->close();
@@ -1022,7 +1022,8 @@ void RegionSelector::onMoreColorsRequested()
         geometry().center(),
         [this](const QColor& color) {
             syncColorToAllWidgets(color);
-        });
+        },
+        m_colorPickerDialogFactory);
 }
 
 void RegionSelector::onLineWidthChanged(int width)
@@ -1059,7 +1060,7 @@ void RegionSelector::onCornerRadiusChanged(int radius)
 void RegionSelector::showEmojiPickerPopup()
 {
     if (!m_emojiPickerPopup) {
-        m_emojiPickerPopup = new SnapTray::QmlEmojiPickerPopup(this);
+        m_emojiPickerPopup = createEmojiPickerPopup();
         m_emojiPickerPopup->setParentWidget(this);
         connect(m_emojiPickerPopup, &SnapTray::QmlEmojiPickerPopup::emojiSelected,
             this, [this](const QString& emoji) {
@@ -1986,6 +1987,11 @@ void RegionSelector::hideDetachedFloatingUi()
 
 void RegionSelector::restoreAfterDialogCancelled()
 {
+    if (m_restoreAfterDialogCancelledHook) {
+        m_restoreAfterDialogCancelledHook();
+        return;
+    }
+
     show();
     activateWindow();
     raise();
@@ -2013,6 +2019,26 @@ bool RegionSelector::hasBlockingTransientUiOpen() const
     }
 
     return false;
+}
+
+SnapTray::QmlDialog* RegionSelector::createTransientDialog(const QUrl& qmlSource,
+                                                           QObject* viewModel,
+                                                           const QString& contextPropertyName)
+{
+    if (m_dialogFactory) {
+        return m_dialogFactory(qmlSource, viewModel, contextPropertyName, this);
+    }
+
+    return new SnapTray::QmlDialog(qmlSource, viewModel, contextPropertyName, this);
+}
+
+SnapTray::QmlEmojiPickerPopup* RegionSelector::createEmojiPickerPopup()
+{
+    if (m_emojiPickerFactory) {
+        return m_emojiPickerFactory(this);
+    }
+
+    return new SnapTray::QmlEmojiPickerPopup(this);
 }
 
 void RegionSelector::trackBlockingDialog(SnapTray::QmlDialog* dialog)
@@ -2347,9 +2373,9 @@ void RegionSelector::shareToUrl()
     }
 
     auto* vm = new SharePasswordViewModel(this);
-    auto* dialog = new SnapTray::QmlDialog(
+    auto* dialog = createTransientDialog(
         QUrl("qrc:/SnapTrayQml/dialogs/SharePasswordDialog.qml"),
-        vm, "viewModel", this);
+        vm, "viewModel");
     trackBlockingDialog(dialog);
     connect(vm, &SharePasswordViewModel::accepted, this, [this, vm, dialog, selectedRegion]() {
         dialog->close();
@@ -2920,9 +2946,9 @@ void RegionSelector::showOCRResultDialog(const OCRResult& result)
     auto* vm = new OCRResultViewModel(this);
     vm->setOCRResult(result);
 
-    auto* dialog = new SnapTray::QmlDialog(
+    auto* dialog = createTransientDialog(
         QUrl("qrc:/SnapTrayQml/dialogs/OCRResultDialog.qml"),
-        vm, "viewModel", this);
+        vm, "viewModel");
     trackBlockingDialog(dialog);
 
     connect(vm, &OCRResultViewModel::textCopied, this, [this](const QString& copiedText) {
@@ -2994,9 +3020,9 @@ void RegionSelector::onQRCodeComplete(bool success, const QString& text, const Q
         const QPoint selectionGlobalTopLeft =
             localToGlobal(m_selectionManager->selectionRect().topLeft());
 
-        auto* dialog = new SnapTray::QmlDialog(
+        auto* dialog = createTransientDialog(
             QUrl("qrc:/SnapTrayQml/dialogs/QRCodeResultDialog.qml"),
-            vm, "viewModel", this);
+            vm, "viewModel");
         trackBlockingDialog(dialog);
 
         connect(vm, &QRCodeResultViewModel::textCopied, this, [](const QString& copiedText) {

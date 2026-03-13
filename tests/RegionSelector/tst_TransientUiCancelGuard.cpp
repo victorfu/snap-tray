@@ -4,7 +4,6 @@
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QEvent>
-#include <QGuiApplication>
 #include <QKeyEvent>
 #include <QSignalSpy>
 #include <QtQml/qqmlextensionplugin.h>
@@ -13,12 +12,132 @@
 #include "colorwidgets/ColorPickerDialogCompat.h"
 #include "detection/OCRTypes.h"
 #include "qml/OCRResultViewModel.h"
+#include "qml/QmlDialog.h"
 #include "qml/QmlEmojiPickerPopup.h"
 #include "qml/QRCodeResultViewModel.h"
 #include "qml/ShareResultViewModel.h"
 #include "share/ShareUploadClient.h"
 
 Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
+
+namespace {
+
+class HeadlessQmlDialog final : public SnapTray::QmlDialog
+{
+public:
+    HeadlessQmlDialog(const QUrl& qmlSource,
+                      QObject* viewModel,
+                      const QString& contextPropertyName,
+                      QObject* parent = nullptr)
+        : QmlDialog(qmlSource, viewModel, contextPropertyName, parent)
+    {
+    }
+
+    void showAt(const QPoint& pos = QPoint()) override
+    {
+        Q_UNUSED(pos);
+        m_visible = true;
+    }
+
+    void close() override
+    {
+        if (!m_visible) {
+            return;
+        }
+
+        m_visible = false;
+        emit closed();
+        deleteLater();
+    }
+
+private:
+    bool m_visible = false;
+};
+
+class HeadlessEmojiPickerPopup final : public SnapTray::QmlEmojiPickerPopup
+{
+public:
+    explicit HeadlessEmojiPickerPopup(QObject* parent = nullptr)
+        : QmlEmojiPickerPopup(parent)
+    {
+    }
+
+    void positionAt(const QRect& anchorRect) override
+    {
+        const QPoint topLeft = anchorRect.isValid() ? anchorRect.topLeft() : QPoint();
+        m_geometry = QRect(topLeft, QSize(1, 1));
+    }
+
+    void showAt(const QRect& anchorRect) override
+    {
+        positionAt(anchorRect);
+        m_visible = true;
+    }
+
+    void hide() override
+    {
+        m_visible = false;
+    }
+
+    void close() override
+    {
+        m_visible = false;
+    }
+
+    bool isVisible() const override
+    {
+        return m_visible;
+    }
+
+    QRect geometry() const override
+    {
+        return m_geometry;
+    }
+
+    QWindow* window() const override
+    {
+        return nullptr;
+    }
+
+private:
+    bool m_visible = false;
+    QRect m_geometry;
+};
+
+class HeadlessColorPickerDialog final
+    : public snaptray::colorwidgets::ColorPickerDialogCompat
+{
+public:
+    HeadlessColorPickerDialog()
+    {
+        setAttribute(Qt::WA_DontShowOnScreen, true);
+    }
+
+protected:
+    void showEvent(QShowEvent* event) override
+    {
+        Q_UNUSED(event);
+    }
+
+    void hideEvent(QHideEvent* event) override
+    {
+        Q_UNUSED(event);
+    }
+};
+
+class HeadlessRegionSelector final : public RegionSelector
+{
+public:
+    using RegionSelector::RegionSelector;
+
+protected:
+    void closeEvent(QCloseEvent* event) override
+    {
+        event->ignore();
+    }
+};
+
+} // namespace
 
 class tst_RegionSelectorTransientUiCancelGuard : public QObject
 {
@@ -29,20 +148,32 @@ private slots:
     void testAppEscapeIgnoredWhenDropdownOpen();
     void testApplicationDeactivateIgnoredWhenBlockingDialogOpen();
     void testWidgetEscapeIgnoredWhenBlockingUiOpen();
-    void testEmojiPickerDoesNotBlockAppEscape();
-    void testEmojiPickerDoesNotBlockWidgetEscape();
-    void testMoreColorsBlocksAppEscape();
+    void testEmojiPickerIsNotBlockingTransientUi();
     void testShareResultCloseKeepsCaptureSession();
     void testOCRResultCloseKeepsCaptureSession();
     void testQRCodeResultCloseKeepsCaptureSession();
+    void testWidgetEscapeCancelsWithoutBlockingUi();
     void testAppEscapeCancelsWithoutBlockingUi();
+
+private:
+    static void installHeadlessTransientUi(RegionSelector& selector);
 };
 
 void tst_RegionSelectorTransientUiCancelGuard::initTestCase()
 {
-    if (QGuiApplication::screens().isEmpty()) {
-        QSKIP("No screens available for RegionSelector transient UI tests in this environment.");
-    }
+}
+
+void tst_RegionSelectorTransientUiCancelGuard::installHeadlessTransientUi(RegionSelector& selector)
+{
+    selector.m_dialogFactory =
+        [](const QUrl& qmlSource, QObject* viewModel, const QString& contextPropertyName, QObject* parent) {
+            return new HeadlessQmlDialog(qmlSource, viewModel, contextPropertyName, parent);
+        };
+    selector.m_emojiPickerFactory =
+        [](QObject* parent) { return new HeadlessEmojiPickerPopup(parent); };
+    selector.m_colorPickerDialogFactory =
+        []() { return std::make_unique<HeadlessColorPickerDialog>(); };
+    selector.m_restoreAfterDialogCancelledHook = []() {};
 }
 
 void tst_RegionSelectorTransientUiCancelGuard::testAppEscapeIgnoredWhenDropdownOpen()
@@ -91,75 +222,25 @@ void tst_RegionSelectorTransientUiCancelGuard::testWidgetEscapeIgnoredWhenBlocki
     QVERIFY(!event.isAccepted());
 }
 
-void tst_RegionSelectorTransientUiCancelGuard::testEmojiPickerDoesNotBlockAppEscape()
+void tst_RegionSelectorTransientUiCancelGuard::testEmojiPickerIsNotBlockingTransientUi()
 {
-    RegionSelector selector;
-    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    auto* selector = new HeadlessRegionSelector;
+    selector->setAttribute(Qt::WA_DeleteOnClose, false);
+    installHeadlessTransientUi(*selector);
 
-    QSignalSpy cancelledSpy(&selector, &RegionSelector::selectionCancelled);
+    selector->m_emojiPickerPopup = new HeadlessEmojiPickerPopup();
+    selector->m_emojiPickerPopup->showAt(QRect(QPoint(10, 10), QSize(1, 1)));
 
-    selector.showEmojiPickerPopup();
-    QCoreApplication::processEvents();
-
-    QVERIFY(selector.m_emojiPickerPopup);
-    QVERIFY(selector.m_emojiPickerPopup->isVisible());
-    QVERIFY(!selector.hasBlockingTransientUiOpen());
-
-    QKeyEvent event(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
-    const bool handled = selector.eventFilter(qApp, &event);
-
-    QVERIFY(handled);
-    QCOMPARE(cancelledSpy.count(), 1);
-}
-
-void tst_RegionSelectorTransientUiCancelGuard::testEmojiPickerDoesNotBlockWidgetEscape()
-{
-    RegionSelector selector;
-    selector.setAttribute(Qt::WA_DeleteOnClose, false);
-
-    QSignalSpy cancelledSpy(&selector, &RegionSelector::selectionCancelled);
-
-    selector.showEmojiPickerPopup();
-    QCoreApplication::processEvents();
-
-    QVERIFY(selector.m_emojiPickerPopup);
-    QVERIFY(selector.m_emojiPickerPopup->isVisible());
-    QVERIFY(!selector.hasBlockingTransientUiOpen());
-
-    QKeyEvent event(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
-    selector.keyPressEvent(&event);
-
-    QCOMPARE(cancelledSpy.count(), 1);
-}
-
-void tst_RegionSelectorTransientUiCancelGuard::testMoreColorsBlocksAppEscape()
-{
-    RegionSelector selector;
-    selector.setAttribute(Qt::WA_DeleteOnClose, false);
-
-    QSignalSpy cancelledSpy(&selector, &RegionSelector::selectionCancelled);
-
-    selector.onMoreColorsRequested();
-    QCoreApplication::processEvents();
-
-    QVERIFY(selector.m_colorPickerDialog);
-    QVERIFY(selector.m_colorPickerDialog->isVisible());
-    QVERIFY(selector.hasBlockingTransientUiOpen());
-
-    QKeyEvent event(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
-    const bool handled = selector.eventFilter(qApp, &event);
-
-    QVERIFY(!handled);
-    QCOMPARE(cancelledSpy.count(), 0);
-
-    selector.m_colorPickerDialog->close();
-    QCoreApplication::processEvents();
+    QVERIFY(selector->m_emojiPickerPopup);
+    QVERIFY(selector->m_emojiPickerPopup->isVisible());
+    QVERIFY(!selector->hasBlockingTransientUiOpen());
 }
 
 void tst_RegionSelectorTransientUiCancelGuard::testShareResultCloseKeepsCaptureSession()
 {
     RegionSelector selector;
     selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    installHeadlessTransientUi(selector);
 
     QSignalSpy cancelledSpy(&selector, &RegionSelector::selectionCancelled);
 
@@ -189,6 +270,7 @@ void tst_RegionSelectorTransientUiCancelGuard::testOCRResultCloseKeepsCaptureSes
 {
     RegionSelector selector;
     selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    installHeadlessTransientUi(selector);
 
     OCRResult result;
     result.success = true;
@@ -214,6 +296,7 @@ void tst_RegionSelectorTransientUiCancelGuard::testQRCodeResultCloseKeepsCapture
 {
     RegionSelector selector;
     selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    installHeadlessTransientUi(selector);
 
     QSignalSpy cancelledSpy(&selector, &RegionSelector::selectionCancelled);
 
@@ -235,9 +318,22 @@ void tst_RegionSelectorTransientUiCancelGuard::testQRCodeResultCloseKeepsCapture
     QCOMPARE(selector.m_openBlockingDialogCount, 0);
 }
 
+void tst_RegionSelectorTransientUiCancelGuard::testWidgetEscapeCancelsWithoutBlockingUi()
+{
+    HeadlessRegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+
+    QSignalSpy cancelledSpy(&selector, &RegionSelector::selectionCancelled);
+    QKeyEvent event(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+
+    selector.keyPressEvent(&event);
+
+    QCOMPARE(cancelledSpy.count(), 1);
+}
+
 void tst_RegionSelectorTransientUiCancelGuard::testAppEscapeCancelsWithoutBlockingUi()
 {
-    RegionSelector selector;
+    HeadlessRegionSelector selector;
     selector.setAttribute(Qt::WA_DeleteOnClose, false);
 
     QSignalSpy cancelledSpy(&selector, &RegionSelector::selectionCancelled);

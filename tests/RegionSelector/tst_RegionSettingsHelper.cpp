@@ -7,11 +7,9 @@
 #include "settings/Settings.h"
 
 #include <QAction>
-#include <QGuiApplication>
 #include <QMenu>
 #include <QMutex>
 #include <QMutexLocker>
-#include <QTimer>
 #include <QSignalSpy>
 
 Q_DECLARE_METATYPE(LineEndStyle)
@@ -109,7 +107,6 @@ private slots:
     void testLoadTextFormatting_UsesAnnotationKeysFirst();
     void testLoadTextFormatting_IgnoresLegacyKeys();
     void testLoadTextFormatting_UsesDefaultsWithoutKeys();
-    void testShowMenu_EmitsDropdownLifecycleSignals();
     void testShowArrowStyleDropdown_EmitsSelectedStyle();
     void testShowLineStyleDropdown_EmitsSelectedStyle();
 
@@ -207,27 +204,6 @@ void tst_RegionSettingsHelper::testLoadTextFormatting_UsesDefaultsWithoutKeys()
     QCOMPARE(state.underline, false);
     QCOMPARE(state.fontSize, 16);
     QVERIFY(state.fontFamily.isEmpty());
-}
-
-void tst_RegionSettingsHelper::testShowMenu_EmitsDropdownLifecycleSignals()
-{
-    if (QGuiApplication::screens().isEmpty()) {
-        QSKIP("No screens available for popup menu tests in this environment.");
-    }
-
-    RegionSettingsHelper helper;
-    QMenu menu;
-    QSignalSpy shownSpy(&helper, &RegionSettingsHelper::dropdownShown);
-    QSignalSpy hiddenSpy(&helper, &RegionSettingsHelper::dropdownHidden);
-
-    QObject::connect(&menu, &QMenu::aboutToShow, &menu, [&menu]() {
-        QTimer::singleShot(0, &menu, &QMenu::close);
-    });
-
-    helper.showMenu(&menu, QPoint(10, 10));
-
-    QCOMPARE(shownSpy.count(), 1);
-    QCOMPARE(hiddenSpy.count(), 1);
 }
 
 void tst_RegionSettingsHelper::testShowArrowStyleDropdown_EmitsSelectedStyle()

@@ -284,6 +284,23 @@ void RegionSettingsHelper::showLineStyleDropdown(const QPoint& pos, LineStyle cu
 void RegionSettingsHelper::showMenu(QMenu* menu, const QPoint& globalPos)
 {
     bool menuWasShown = false;
+
+    if (m_menuPresenter) {
+        menuWasShown = m_menuPresenter(menu, globalPos);
+        if (menuWasShown) {
+            emit dropdownShown();
+            emit dropdownHidden();
+        }
+        if (menu) {
+            menu->deleteLater();
+        }
+        return;
+    }
+
+    if (!menu) {
+        return;
+    }
+
     auto bringToFront = [menu]() {
         if (!menu || !menu->isVisible()) {
             return;

@@ -103,14 +103,15 @@ void AnnotationContext::showColorPickerDialog(
     std::unique_ptr<ColorPickerDialogCompat>& dialog,
     const QColor& currentColor,
     const QPoint& centerPoint,
-    const std::function<void(const QColor&)>& onColorSelected)
+    const std::function<void(const QColor&)>& onColorSelected,
+    const std::function<std::unique_ptr<ColorPickerDialogCompat>()>& dialogFactory)
 {
     if (!hostWidget) {
         return;
     }
 
     if (!dialog) {
-        dialog = std::make_unique<ColorPickerDialogCompat>();
+        dialog = dialogFactory ? dialogFactory() : std::make_unique<ColorPickerDialogCompat>();
 
         QObject::connect(dialog.get(),
                          &ColorPickerDialogCompat::colorSelected,

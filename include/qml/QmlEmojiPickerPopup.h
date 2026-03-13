@@ -23,15 +23,15 @@ public:
     explicit QmlEmojiPickerPopup(QObject* parent = nullptr);
     ~QmlEmojiPickerPopup() override;
 
-    void positionAt(const QRect& anchorRect);
-    void showAt(const QRect& anchorRect);
-    void hide();
-    void close();
-    void setParentWidget(QWidget* parent);
+    virtual void positionAt(const QRect& anchorRect);
+    virtual void showAt(const QRect& anchorRect);
+    virtual void hide();
+    virtual void close();
+    virtual void setParentWidget(QWidget* parent);
 
-    bool isVisible() const;
-    QRect geometry() const;
-    QWindow* window() const;
+    virtual bool isVisible() const;
+    virtual QRect geometry() const;
+    virtual QWindow* window() const;
 
 signals:
     void emojiSelected(const QString& emoji);

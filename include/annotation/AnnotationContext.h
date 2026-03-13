@@ -35,7 +35,9 @@ public:
         std::unique_ptr<snaptray::colorwidgets::ColorPickerDialogCompat>& dialog,
         const QColor& currentColor,
         const QPoint& centerPoint,
-        const std::function<void(const QColor&)>& onColorSelected);
+        const std::function<void(const QColor&)>& onColorSelected,
+        const std::function<std::unique_ptr<snaptray::colorwidgets::ColorPickerDialogCompat>()>&
+            dialogFactory = {});
 
 private:
     AnnotationHostAdapter& m_host;
