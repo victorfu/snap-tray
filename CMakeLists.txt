@@ -631,10 +631,8 @@ add_library(snaptray_ui STATIC
     # Hotkey management system
     src/hotkey/HotkeyManager.cpp
     src/widgets/TypeHotkeyDialog.cpp
-    src/widgets/HotkeySettingsTab.cpp
     include/hotkey/HotkeyManager.h
     include/widgets/TypeHotkeyDialog.h
-    include/widgets/HotkeySettingsTab.h
 
     # Region selection
     src/RegionSelector.cpp
@@ -683,9 +681,7 @@ add_library(snaptray_ui STATIC
 
     # Global UI components
     src/ui/DesignTokens.cpp
-    src/ui/GlassTooltip.cpp
     include/ui/DesignTokens.h
-    include/ui/GlassTooltip.h
     include/share/ShareUploadClient.h
     include/region/MagnifierOverlay.h
 
