@@ -111,7 +111,7 @@ private slots:
     void onPeriodicCheck();
 
 private:
-    void parseReleaseResponse(const QByteArray& data);
+    bool parseReleaseResponse(const QByteArray& data);
     ReleaseInfo parseReleaseJson(const QJsonObject& json);
     QString extractVersionFromTag(const QString& tagName);
 
@@ -120,6 +120,8 @@ private:
     InstallSource m_installSource;
     bool m_isChecking;
     bool m_silentCheck;
+
+    friend class tst_UpdateChecker;
 };
 
 #endif // UPDATECHECKER_H

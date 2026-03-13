@@ -147,10 +147,9 @@ void UpdateChecker::onNetworkReply(QNetworkReply* reply)
     }
 
     QByteArray data = reply->readAll();
-    parseReleaseResponse(data);
-
-    // Update last check time
-    UpdateSettingsManager::instance().setLastCheckTime(QDateTime::currentDateTime());
+    if (parseReleaseResponse(data)) {
+        UpdateSettingsManager::instance().setLastCheckTime(QDateTime::currentDateTime());
+    }
 }
 
 void UpdateChecker::onPeriodicCheck()
@@ -169,8 +168,9 @@ void UpdateChecker::onPeriodicCheck()
     checkForUpdates(true);  // Silent check
 }
 
-void UpdateChecker::parseReleaseResponse(const QByteArray& data)
+bool UpdateChecker::parseReleaseResponse(const QByteArray& data)
 {
+    // Returns true when a valid release payload was processed, not only when an update exists.
     QJsonParseError parseError;
     QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
 
@@ -179,7 +179,7 @@ void UpdateChecker::parseReleaseResponse(const QByteArray& data)
         if (!m_silentCheck) {
             emit checkFailed(tr("Failed to parse update information"));
         }
-        return;
+        return false;
     }
 
     if (!doc.isObject()) {
@@ -187,7 +187,7 @@ void UpdateChecker::parseReleaseResponse(const QByteArray& data)
         if (!m_silentCheck) {
             emit checkFailed(tr("Invalid update response"));
         }
-        return;
+        return false;
     }
 
     ReleaseInfo release = parseReleaseJson(doc.object());
@@ -197,7 +197,7 @@ void UpdateChecker::parseReleaseResponse(const QByteArray& data)
         if (!m_silentCheck) {
             emit checkFailed(tr("Could not parse release information"));
         }
-        return;
+        return false;
     }
 
     // Check if this version is skipped
@@ -207,7 +207,7 @@ void UpdateChecker::parseReleaseResponse(const QByteArray& data)
         if (!m_silentCheck) {
             emit noUpdateAvailable();
         }
-        return;
+        return true;
     }
 
     // Compare versions
@@ -223,6 +223,8 @@ void UpdateChecker::parseReleaseResponse(const QByteArray& data)
             emit noUpdateAvailable();
         }
     }
+
+    return true;
 }
 
 ReleaseInfo UpdateChecker::parseReleaseJson(const QJsonObject& json)

@@ -1,6 +1,41 @@
 #include <QtTest>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QSignalSpy>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QTemporaryFile>
 #include <QVersionNumber>
 #include "update/UpdateChecker.h"
+#include "update/UpdateSettingsManager.h"
+#include "settings/Settings.h"
+
+Q_DECLARE_METATYPE(ReleaseInfo)
+
+namespace {
+
+void clearUpdateSettings()
+{
+    auto settings = SnapTray::getSettings();
+    settings.remove("update/autoCheck");
+    settings.remove("update/checkIntervalHours");
+    settings.remove("update/lastCheckTime");
+    settings.remove("update/skippedVersion");
+    settings.sync();
+}
+
+QByteArray makeReleasePayload(const QString& tagName)
+{
+    const QJsonObject payload{
+        {QStringLiteral("tag_name"), tagName},
+        {QStringLiteral("body"), QStringLiteral("Release notes")},
+        {QStringLiteral("html_url"), QStringLiteral("https://example.com/releases/%1").arg(tagName)},
+        {QStringLiteral("published_at"), QStringLiteral("2026-03-13T12:00:00Z")}
+    };
+    return QJsonDocument(payload).toJson(QJsonDocument::Compact);
+}
+
+} // namespace
 
 /**
  * @brief Unit tests for UpdateChecker class.
@@ -13,6 +48,10 @@ class tst_UpdateChecker : public QObject
     Q_OBJECT
 
 private slots:
+    void initTestCase();
+    void init();
+    void cleanup();
+
     // Version comparison tests
     void testIsNewerVersion_BasicComparison();
     void testIsNewerVersion_MajorVersionDiff();
@@ -28,7 +67,74 @@ private slots:
 
     // Install source tests
     void testInstallSource_Valid();
+
+    // Reply handling tests
+    void testOnNetworkReply_MalformedJson_DoesNotUpdateLastCheckTime();
+    void testOnNetworkReply_NonObjectJson_DoesNotUpdateLastCheckTime();
+    void testOnNetworkReply_InvalidRelease_DoesNotUpdateLastCheckTime();
+    void testOnNetworkReply_SkippedVersion_UpdatesLastCheckTime();
+    void testOnNetworkReply_ValidNoUpdate_UpdatesLastCheckTime();
+    void testOnNetworkReply_ValidUpdate_UpdatesLastCheckTime();
+
+private:
+    void invokeReply(UpdateChecker& checker, QNetworkReply* reply, bool silent);
+    void verifyLastCheckUpdated() const;
 };
+
+namespace {
+
+class FileReplyContext
+{
+public:
+    QNetworkReply* createReply(const QByteArray& payload)
+    {
+        if (!file.open()) {
+            return nullptr;
+        }
+
+        if (file.write(payload) != payload.size()) {
+            return nullptr;
+        }
+
+        file.flush();
+        return networkAccessManager.get(QNetworkRequest(QUrl::fromLocalFile(file.fileName())));
+    }
+
+    QTemporaryFile file;
+    QNetworkAccessManager networkAccessManager;
+};
+
+} // namespace
+
+void tst_UpdateChecker::initTestCase()
+{
+    qRegisterMetaType<ReleaseInfo>("ReleaseInfo");
+}
+
+void tst_UpdateChecker::init()
+{
+    clearUpdateSettings();
+}
+
+void tst_UpdateChecker::cleanup()
+{
+    clearUpdateSettings();
+}
+
+void tst_UpdateChecker::invokeReply(UpdateChecker& checker, QNetworkReply* reply, bool silent)
+{
+    checker.m_silentCheck = silent;
+    checker.m_isChecking = true;
+    checker.onNetworkReply(reply);
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void tst_UpdateChecker::verifyLastCheckUpdated() const
+{
+    const QDateTime lastCheckTime = UpdateSettingsManager::instance().lastCheckTime();
+    QVERIFY(lastCheckTime.isValid());
+    QVERIFY(qAbs(lastCheckTime.secsTo(QDateTime::currentDateTime())) <= 1);
+}
 
 // ============================================================================
 // Version comparison tests
@@ -121,6 +227,109 @@ void tst_UpdateChecker::testInstallSource_Valid()
     // Should return a valid enum value
     QVERIFY(source >= InstallSource::MicrosoftStore);
     QVERIFY(source <= InstallSource::Unknown);
+}
+
+// ============================================================================
+// Reply handling tests
+// ============================================================================
+
+void tst_UpdateChecker::testOnNetworkReply_MalformedJson_DoesNotUpdateLastCheckTime()
+{
+    UpdateChecker checker;
+    FileReplyContext replyContext;
+    QSignalSpy failedSpy(&checker, &UpdateChecker::checkFailed);
+    QNetworkReply* reply = replyContext.createReply("not json");
+
+    QVERIFY(reply != nullptr);
+    QSignalSpy finishedSpy(reply, &QNetworkReply::finished);
+    QVERIFY(finishedSpy.wait());
+    invokeReply(checker, reply, false);
+
+    QCOMPARE(failedSpy.count(), 1);
+    QVERIFY(!UpdateSettingsManager::instance().lastCheckTime().isValid());
+}
+
+void tst_UpdateChecker::testOnNetworkReply_NonObjectJson_DoesNotUpdateLastCheckTime()
+{
+    UpdateChecker checker;
+    FileReplyContext replyContext;
+    QSignalSpy failedSpy(&checker, &UpdateChecker::checkFailed);
+    QNetworkReply* reply = replyContext.createReply("[\"unexpected\"]");
+
+    QVERIFY(reply != nullptr);
+    QSignalSpy finishedSpy(reply, &QNetworkReply::finished);
+    QVERIFY(finishedSpy.wait());
+    invokeReply(checker, reply, false);
+
+    QCOMPARE(failedSpy.count(), 1);
+    QVERIFY(!UpdateSettingsManager::instance().lastCheckTime().isValid());
+}
+
+void tst_UpdateChecker::testOnNetworkReply_InvalidRelease_DoesNotUpdateLastCheckTime()
+{
+    UpdateChecker checker;
+    FileReplyContext replyContext;
+    QSignalSpy failedSpy(&checker, &UpdateChecker::checkFailed);
+    QNetworkReply* reply = replyContext.createReply("{\"body\":\"missing tag\"}");
+
+    QVERIFY(reply != nullptr);
+    QSignalSpy finishedSpy(reply, &QNetworkReply::finished);
+    QVERIFY(finishedSpy.wait());
+    invokeReply(checker, reply, false);
+
+    QCOMPARE(failedSpy.count(), 1);
+    QVERIFY(!UpdateSettingsManager::instance().lastCheckTime().isValid());
+}
+
+void tst_UpdateChecker::testOnNetworkReply_SkippedVersion_UpdatesLastCheckTime()
+{
+    UpdateChecker checker;
+    FileReplyContext replyContext;
+    QSignalSpy noUpdateSpy(&checker, &UpdateChecker::noUpdateAvailable);
+
+    UpdateSettingsManager::instance().setSkippedVersion("999.0.0");
+    QNetworkReply* reply = replyContext.createReply(makeReleasePayload("v999.0.0"));
+
+    QVERIFY(reply != nullptr);
+    QSignalSpy finishedSpy(reply, &QNetworkReply::finished);
+    QVERIFY(finishedSpy.wait());
+    invokeReply(checker, reply, false);
+
+    QCOMPARE(noUpdateSpy.count(), 1);
+    verifyLastCheckUpdated();
+}
+
+void tst_UpdateChecker::testOnNetworkReply_ValidNoUpdate_UpdatesLastCheckTime()
+{
+    UpdateChecker checker;
+    FileReplyContext replyContext;
+    QSignalSpy noUpdateSpy(&checker, &UpdateChecker::noUpdateAvailable);
+    const QString currentVersion = UpdateChecker::currentVersion();
+    QNetworkReply* reply = replyContext.createReply(makeReleasePayload("v" + currentVersion));
+
+    QVERIFY(reply != nullptr);
+    QSignalSpy finishedSpy(reply, &QNetworkReply::finished);
+    QVERIFY(finishedSpy.wait());
+    invokeReply(checker, reply, false);
+
+    QCOMPARE(noUpdateSpy.count(), 1);
+    verifyLastCheckUpdated();
+}
+
+void tst_UpdateChecker::testOnNetworkReply_ValidUpdate_UpdatesLastCheckTime()
+{
+    UpdateChecker checker;
+    FileReplyContext replyContext;
+    QSignalSpy updateSpy(&checker, &UpdateChecker::updateAvailable);
+    QNetworkReply* reply = replyContext.createReply(makeReleasePayload("v999.0.0"));
+
+    QVERIFY(reply != nullptr);
+    QSignalSpy finishedSpy(reply, &QNetworkReply::finished);
+    QVERIFY(finishedSpy.wait());
+    invokeReply(checker, reply, false);
+
+    QCOMPARE(updateSpy.count(), 1);
+    verifyLastCheckUpdated();
 }
 
 QTEST_MAIN(tst_UpdateChecker)
