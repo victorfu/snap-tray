@@ -48,9 +48,6 @@ void ScreenCanvasManager::toggle()
     m_session = new ScreenCanvasSession(this);
     connect(m_session, &ScreenCanvasSession::closed,
             this, &ScreenCanvasManager::onSessionClosed);
-    connect(m_session, &QObject::destroyed, this, [this]() {
-        m_session = nullptr;
-    });
 
     m_session->open(targetScreen);
     if (m_session && m_session->isOpen()) {
