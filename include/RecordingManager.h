@@ -95,6 +95,10 @@ private slots:
     void updateDuration();
 
 private:
+    // Grant targeted access to unit tests without altering access-specifier mangling.
+    friend class TestRecordingManagerStateMachine;
+    friend class TestRecordingManagerLifecycle;
+
     void startFrameCapture();
     void beginAsyncInitialization();   // Start async initialization
     void onInitializationComplete(const QSharedPointer<RecordingInitTask> &task,

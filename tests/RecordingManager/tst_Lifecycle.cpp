@@ -1,9 +1,7 @@
 #include <QtTest/QtTest>
 #include <QSignalSpy>
 
-#define private public
 #include "RecordingManager.h"
-#undef private
 
 /**
  * @brief Tests for RecordingManager resource lifecycle
