@@ -374,7 +374,7 @@ void QmlWindowedToolbar::positionNear(const QRect& pinWindowRect)
     syncCursorSurface();
 }
 
-void QmlWindowedToolbar::syncCursorSurface()
+void QmlWindowedToolbar::syncCursorSurface(const CursorStyleSpec* explicitStyle)
 {
     if (!m_view || m_cursorSurfaceId.isEmpty() || m_cursorOwnerId.isEmpty()) {
         return;
@@ -391,8 +391,11 @@ void QmlWindowedToolbar::syncCursorSurface()
         return;
     }
 
+    const CursorStyleSpec dragStyle = CursorStyleSpec::fromShape(Qt::ClosedHandCursor);
+    const CursorStyleSpec* resolvedStyle = explicitStyle ? explicitStyle
+                                                         : (m_isDragging ? &dragStyle : nullptr);
     CursorSurfaceSupport::syncWindowSurface(
-        m_view, m_cursorSurfaceId, m_cursorOwnerId, CursorRequestSource::Overlay);
+        m_view, m_cursorSurfaceId, m_cursorOwnerId, CursorRequestSource::Overlay, resolvedStyle);
 }
 
 // ── Click-outside detection ──
@@ -593,7 +596,13 @@ void QmlWindowedToolbar::onDragStarted()
 void QmlWindowedToolbar::onDragFinished()
 {
     m_isDragging = false;
-    syncCursorSurface();
+    QTimer::singleShot(0, this, [this]() {
+        const CursorStyleSpec idleStyle = CursorStyleSpec::fromShape(Qt::ArrowCursor);
+        syncCursorSurface(&idleStyle);
+        if (m_associatedPinWindow) {
+            CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_associatedPinWindow);
+        }
+    });
 }
 
 void QmlWindowedToolbar::onDragMoved(double deltaX, double deltaY)

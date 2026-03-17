@@ -340,14 +340,17 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
         // Handle selection release
         if (m_selectionManager->isSelecting()) {
             handleSelectionRelease(event->pos());
+            clearSelectionDrag();
             emit updateRequested();
         }
         else if (m_selectionManager->isResizing()) {
             m_selectionManager->finishResize();
+            clearSelectionDrag();
             emit updateRequested();
         }
         else if (m_selectionManager->isMoving()) {
             m_selectionManager->finishMove();
+            clearSelectionDrag();
             emit updateRequested();
         }
         else if (state().isDrawing) {
@@ -521,6 +524,7 @@ bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
             auto handle = m_selectionManager->hitTestHandle(pos);
             if (handle != SelectionStateManager::ResizeHandle::None) {
                 m_lastSelectionRect = m_selectionManager->selectionRect();
+                clearSelectionDrag();
                 m_selectionManager->startResize(pos, handle);
                 emit updateRequested();
                 return true;
@@ -529,6 +533,7 @@ bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
             if (m_selectionManager->hitTestMove(pos)) {
                 m_lastSelectionRect = m_selectionManager->selectionRect();
                 m_selectionManager->startMove(pos);
+                beginSelectionDrag();
                 emit updateRequested();
                 return true;
             }
@@ -544,6 +549,7 @@ bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
             auto handle = m_selectionManager->hitTestHandle(pos);
             if (handle != SelectionStateManager::ResizeHandle::None) {
                 m_lastSelectionRect = m_selectionManager->selectionRect();
+                clearSelectionDrag();
                 m_selectionManager->startResize(pos, handle);
                 emit updateRequested();
                 return true;
@@ -560,6 +566,7 @@ bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
     auto handle = m_selectionManager->hitTestHandle(pos);
     if (handle != SelectionStateManager::ResizeHandle::None) {
         m_lastSelectionRect = m_selectionManager->selectionRect();
+        clearSelectionDrag();
         m_selectionManager->startResize(pos, handle);
         emit updateRequested();
         return true;
@@ -568,6 +575,7 @@ bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
     if (m_selectionManager->hitTestMove(pos)) {
         m_lastSelectionRect = m_selectionManager->selectionRect();
         m_selectionManager->startMove(pos);
+        beginSelectionDrag();
         emit updateRequested();
         return true;
     }
@@ -584,6 +592,7 @@ bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
 
 void RegionInputHandler::handleNewSelectionPress(const QPoint& pos)
 {
+    clearSelectionDrag();
     m_selectionManager->startSelection(pos);
     m_startPoint = pos;
     state().currentPoint = pos;
@@ -606,6 +615,7 @@ void RegionInputHandler::handleNewSelectionPress(const QPoint& pos)
 void RegionInputHandler::handleRightButtonPress(const QPoint& pos)
 {
     if (state().multiRegionMode && m_multiRegionManager) {
+        clearSelectionDrag();
         int hitIndex = m_multiRegionManager->hitTest(pos);
         if (hitIndex >= 0) {
             m_multiRegionManager->removeRegion(hitIndex);
@@ -624,6 +634,7 @@ void RegionInputHandler::handleRightButtonPress(const QPoint& pos)
 
     // Cancel capture if still selecting or not yet started
     if (m_selectionManager->isSelecting() || !m_selectionManager->isComplete()) {
+        clearSelectionDrag();
         m_selectionManager->clearSelection();
         m_pendingWindowClickActive = false;
         m_pendingWindowClickRect = QRect();
@@ -645,9 +656,11 @@ void RegionInputHandler::handleRightButtonPress(const QPoint& pos)
         }
         if (m_selectionManager->isResizing() || m_selectionManager->isMoving()) {
             m_selectionManager->cancelResizeOrMove();
+            clearSelectionDrag();
             emit updateRequested();
             return;
         }
+        clearSelectionDrag();
         m_selectionManager->clearSelection();
         m_annotationLayer->clear();
         CursorManager::instance().setInputStateForWidget(m_parentWidget, InputState::Selecting);
@@ -1199,6 +1212,26 @@ void RegionInputHandler::finishAnnotation()
         state().isDrawing = false;
     }
     emit drawingStateChanged(state().isDrawing);
+}
+
+void RegionInputHandler::beginSelectionDrag()
+{
+    if (!m_parentWidget) {
+        return;
+    }
+
+    CursorManager::instance().setDragStateForWidget(
+        m_parentWidget, DragState::SelectionDrag);
+}
+
+void RegionInputHandler::clearSelectionDrag()
+{
+    if (!m_parentWidget) {
+        return;
+    }
+
+    CursorManager::instance().setDragStateForWidget(
+        m_parentWidget, DragState::None);
 }
 
 // ============================================================================

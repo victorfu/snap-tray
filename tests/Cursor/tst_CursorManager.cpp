@@ -17,6 +17,7 @@ class TestCursorManager : public QObject
 private slots:
     void testShadowModeKeepsLegacyCursor();
     void testAuthorityModeUsesResolvedCursorAndRestores();
+    void testSelectionDragUsesClosedHandAndRestores();
 };
 
 void TestCursorManager::testShadowModeKeepsLegacyCursor()
@@ -65,6 +66,29 @@ void TestCursorManager::testAuthorityModeUsesResolvedCursorAndRestores()
 
     authority.clearWidgetRequest(&widget, QStringLiteral("floating.overlay"));
     manager.reapplyCursorForWidget(&widget);
+    QCOMPARE(widget.cursor().shape(), Qt::CrossCursor);
+
+    manager.unregisterWidget(&widget);
+}
+
+void TestCursorManager::testSelectionDragUsesClosedHandAndRestores()
+{
+    TestCursorManagerWidget widget;
+    auto& manager = CursorManager::instance();
+    auto& authority = CursorAuthority::instance();
+
+    manager.registerWidget(&widget);
+    authority.registerWidgetSurface(&widget, QStringLiteral("RegionSelector"),
+                                    CursorSurfaceMode::Authority);
+
+    manager.pushCursorForWidget(&widget, CursorContext::Tool, Qt::CrossCursor);
+    manager.reapplyCursorForWidget(&widget);
+    QCOMPARE(widget.cursor().shape(), Qt::CrossCursor);
+
+    manager.setDragStateForWidget(&widget, DragState::SelectionDrag);
+    QCOMPARE(widget.cursor().shape(), Qt::ClosedHandCursor);
+
+    manager.setDragStateForWidget(&widget, DragState::None);
     QCOMPARE(widget.cursor().shape(), Qt::CrossCursor);
 
     manager.unregisterWidget(&widget);

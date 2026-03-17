@@ -227,7 +227,8 @@ void RecordingManager::setState(State newState)
 bool RecordingManager::isActive() const
 {
     return isSelectingRegion() || isRecording() || isPaused() || isPreviewing() ||
-           (m_state == State::Preparing) || (m_state == State::Encoding) ||
+           (m_state == State::Preparing) || (m_state == State::Countdown) ||
+           (m_state == State::Encoding) ||
            m_initFuture.isRunning();
 }
 
@@ -1209,10 +1210,15 @@ void RecordingManager::stopRecording()
 
 void RecordingManager::cancelRecording()
 {
-    if (m_state != State::Recording && m_state != State::Paused &&
+    if (m_state != State::Selecting &&
+        m_state != State::Recording && m_state != State::Paused &&
         m_state != State::Encoding && m_state != State::Preparing &&
         m_state != State::Countdown) {
         return;
+    }
+
+    if (m_state == State::Selecting) {
+        destroyRegionSelector();
     }
 
     // Cancel countdown overlay if active

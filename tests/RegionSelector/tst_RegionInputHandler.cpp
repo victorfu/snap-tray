@@ -2,7 +2,10 @@
 
 #include <QMouseEvent>
 #include <QSignalSpy>
+#include <QWidget>
 
+#include "annotations/AnnotationLayer.h"
+#include "cursor/CursorManager.h"
 #include "region/RegionInputHandler.h"
 #include "region/RegionInputState.h"
 #include "region/SelectionStateManager.h"
@@ -32,10 +35,14 @@ private slots:
     void testNoMoveKeepsDetectedWindowSelection();
     void testTinyMoveWithoutDetectionFallsBackToFullScreen();
     void testLargeDragUsesDragSelectionInsteadOfPendingWindow();
+    void testSelectionMoveSetsAndClearsDragStateOnRelease();
+    void testSelectionMoveClearsDragStateOnRightClickCancel();
 
 private:
     RegionInputHandler* m_handler = nullptr;
     SelectionStateManager* m_selectionManager = nullptr;
+    AnnotationLayer* m_annotationLayer = nullptr;
+    QWidget* m_parentWidget = nullptr;
     RegionInputState m_state;
 };
 
@@ -43,15 +50,28 @@ void tst_RegionInputHandler::init()
 {
     m_handler = new RegionInputHandler();
     m_selectionManager = new SelectionStateManager();
+    m_annotationLayer = new AnnotationLayer();
+    m_parentWidget = new QWidget();
     m_selectionManager->setBounds(QRect(0, 0, 1920, 1080));
+    CursorManager::instance().registerWidget(m_parentWidget);
 
     m_state = RegionInputState();
     m_handler->setSelectionManager(m_selectionManager);
+    m_handler->setAnnotationLayer(m_annotationLayer);
+    m_handler->setParentWidget(m_parentWidget);
     m_handler->setSharedState(&m_state);
 }
 
 void tst_RegionInputHandler::cleanup()
 {
+    CursorManager::instance().unregisterWidget(m_parentWidget);
+
+    delete m_parentWidget;
+    m_parentWidget = nullptr;
+
+    delete m_annotationLayer;
+    m_annotationLayer = nullptr;
+
     delete m_selectionManager;
     m_selectionManager = nullptr;
 
@@ -152,6 +172,44 @@ void tst_RegionInputHandler::testLargeDragUsesDragSelectionInsteadOfPendingWindo
     QVERIFY(selectedRect.width() > 5);
     QVERIFY(selectedRect.height() > 5);
     QVERIFY(selectedRect != detectedWindow);
+}
+
+void tst_RegionInputHandler::testSelectionMoveSetsAndClearsDragStateOnRelease()
+{
+    m_state.currentTool = ToolId::Selection;
+    m_selectionManager->setSelectionRect(QRect(100, 120, 200, 160));
+    QVERIFY(m_selectionManager->isComplete());
+
+    auto pressEvent = makeMouseEvent(QEvent::MouseButtonPress, QPoint(160, 180), Qt::LeftButton, Qt::LeftButton);
+    m_handler->handleMousePress(&pressEvent);
+
+    QCOMPARE(m_selectionManager->state(), SelectionStateManager::State::Moving);
+    QCOMPARE(CursorManager::instance().dragStateForWidget(m_parentWidget), DragState::SelectionDrag);
+
+    auto releaseEvent = makeMouseEvent(QEvent::MouseButtonRelease, QPoint(160, 180), Qt::LeftButton, Qt::NoButton);
+    m_handler->handleMouseRelease(&releaseEvent);
+
+    QCOMPARE(m_selectionManager->state(), SelectionStateManager::State::Complete);
+    QCOMPARE(CursorManager::instance().dragStateForWidget(m_parentWidget), DragState::None);
+}
+
+void tst_RegionInputHandler::testSelectionMoveClearsDragStateOnRightClickCancel()
+{
+    m_state.currentTool = ToolId::Selection;
+    m_selectionManager->setSelectionRect(QRect(100, 120, 200, 160));
+    QVERIFY(m_selectionManager->isComplete());
+
+    auto pressEvent = makeMouseEvent(QEvent::MouseButtonPress, QPoint(160, 180), Qt::LeftButton, Qt::LeftButton);
+    m_handler->handleMousePress(&pressEvent);
+
+    QCOMPARE(m_selectionManager->state(), SelectionStateManager::State::Moving);
+    QCOMPARE(CursorManager::instance().dragStateForWidget(m_parentWidget), DragState::SelectionDrag);
+
+    auto cancelEvent = makeMouseEvent(QEvent::MouseButtonPress, QPoint(160, 180), Qt::RightButton, Qt::RightButton);
+    m_handler->handleMousePress(&cancelEvent);
+
+    QCOMPARE(m_selectionManager->state(), SelectionStateManager::State::None);
+    QCOMPARE(CursorManager::instance().dragStateForWidget(m_parentWidget), DragState::None);
 }
 
 QTEST_MAIN(tst_RegionInputHandler)

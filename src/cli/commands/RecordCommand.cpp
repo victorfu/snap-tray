@@ -1,5 +1,8 @@
 #include "cli/commands/RecordCommand.h"
 
+#include <QGuiApplication>
+#include <QScreen>
+
 namespace SnapTray {
 namespace CLI {
 
@@ -15,17 +18,6 @@ void RecordCommand::setupOptions(QCommandLineParser& parser)
 
 CLIResult RecordCommand::execute(const QCommandLineParser& parser)
 {
-    if (parser.isSet("screen")) {
-        const QString screenValue = parser.value("screen");
-        bool ok = false;
-        int screenNum = screenValue.toInt(&ok);
-        if (!ok || screenNum < 0) {
-            return CLIResult::error(
-                CLIResult::Code::InvalidArguments,
-                QString("Invalid screen number: %1").arg(screenValue));
-        }
-    }
-
     const QStringList positional = parser.positionalArguments();
     if (positional.size() > 1) {
         return CLIResult::error(
@@ -44,6 +36,26 @@ CLIResult RecordCommand::execute(const QCommandLineParser& parser)
             QString("Invalid record action: %1 (allowed: start, stop, toggle)").arg(action));
     }
 
+    if (action == "start" && parser.isSet("screen")) {
+        const QString screenValue = parser.value("screen");
+        bool ok = false;
+        int screenNum = screenValue.toInt(&ok);
+        if (!ok || screenNum < 0) {
+            return CLIResult::error(
+                CLIResult::Code::InvalidArguments,
+                QString("Invalid screen number: %1").arg(screenValue));
+        }
+
+        const QList<QScreen*> screens = QGuiApplication::screens();
+        if (!screens.isEmpty() && screenNum >= screens.size()) {
+            return CLIResult::error(
+                CLIResult::Code::InvalidArguments,
+                QString("Invalid screen number: %1 (available: 0-%2)")
+                    .arg(screenValue)
+                    .arg(screens.size() - 1));
+        }
+    }
+
     // This command is executed via IPC, not locally
     return CLIResult::success("Recording started");
 }
@@ -60,7 +72,8 @@ QJsonObject RecordCommand::buildIPCMessage(const QCommandLineParser& parser) con
         }
     }
 
-    if (parser.isSet("screen")) {
+    const QString action = options.value("action").toString();
+    if (action == "start" && parser.isSet("screen")) {
         bool ok = false;
         int screenNum = parser.value("screen").toInt(&ok);
         if (ok) {

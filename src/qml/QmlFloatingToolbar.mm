@@ -472,7 +472,7 @@ QPoint QmlFloatingToolbar::clampTopLeftToBounds(const QPoint& desiredTopLeft,
     return foundBounds ? bestPosition : desiredTopLeft;
 }
 
-void QmlFloatingToolbar::syncCursorSurface()
+void QmlFloatingToolbar::syncCursorSurface(const CursorStyleSpec* explicitStyle)
 {
     if (!m_view || m_cursorSurfaceId.isEmpty() || m_cursorOwnerId.isEmpty()) {
         return;
@@ -489,8 +489,11 @@ void QmlFloatingToolbar::syncCursorSurface()
         return;
     }
 
+    const CursorStyleSpec dragStyle = CursorStyleSpec::fromShape(Qt::ClosedHandCursor);
+    const CursorStyleSpec* resolvedStyle = explicitStyle ? explicitStyle
+                                                         : (m_isDragging ? &dragStyle : nullptr);
     CursorSurfaceSupport::syncWindowSurface(
-        m_view, m_cursorSurfaceId, m_cursorOwnerId, CursorRequestSource::Overlay);
+        m_view, m_cursorSurfaceId, m_cursorOwnerId, CursorRequestSource::Overlay, resolvedStyle);
 }
 
 // ── Event filter (cursor management) ──
@@ -633,7 +636,13 @@ void QmlFloatingToolbar::onDragStarted()
 void QmlFloatingToolbar::onDragFinished()
 {
     m_isDragging = false;
-    syncCursorSurface();
+    QTimer::singleShot(0, this, [this]() {
+        const CursorStyleSpec idleStyle = CursorStyleSpec::fromShape(Qt::ArrowCursor);
+        syncCursorSurface(&idleStyle);
+        if (m_parentWidget) {
+            CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_parentWidget);
+        }
+    });
     emit dragFinished();
 }
 

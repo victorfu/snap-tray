@@ -1,6 +1,9 @@
 #include <QtTest/QtTest>
 #include <QSignalSpy>
+
+#define private public
 #include "RecordingManager.h"
+#undef private
 
 /**
  * @brief Tests for RecordingManager state machine
@@ -39,6 +42,7 @@ private slots:
     void testIsActiveInRecording();
     void testIsActiveInPaused();
     void testIsActiveInPreparing();
+    void testIsActiveInCountdown();
     void testIsActiveInEncoding();
 
     // State transition signal tests
@@ -190,6 +194,14 @@ void TestRecordingManagerStateMachine::testIsActiveInPreparing()
     // Can't easily get to Preparing state
     // Document expected: isActive() = true in Preparing state
     QCOMPARE(m_manager->state(), RecordingManager::State::Idle);
+}
+
+void TestRecordingManagerStateMachine::testIsActiveInCountdown()
+{
+    m_manager->setState(RecordingManager::State::Countdown);
+
+    QCOMPARE(m_manager->state(), RecordingManager::State::Countdown);
+    QVERIFY(m_manager->isActive());
 }
 
 void TestRecordingManagerStateMachine::testIsActiveInEncoding()

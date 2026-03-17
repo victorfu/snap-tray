@@ -9,6 +9,8 @@
 #include <QColor>
 #include <QString>
 
+#include "cursor/CursorTypes.h"
+
 class QQuickView;
 class QQuickItem;
 class QWidget;
@@ -124,7 +126,7 @@ private:
     void applyAppearance();
     void applyPlatformWindowFlags();
     void applyTooltipWindowFlags();
-    void syncCursorSurface();
+    void syncCursorSurface(const CursorStyleSpec* explicitStyle = nullptr);
 
     void showTooltip(const QString& text, const QRect& anchorRect);
     void hideTooltip();

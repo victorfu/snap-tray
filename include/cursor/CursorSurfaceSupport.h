@@ -56,7 +56,8 @@ inline QString registerManagedSurface(QWindow* window, const QString& group)
 }
 
 inline void syncWindowSurface(QWindow* window, const QString& surfaceId,
-                              const QString& ownerId, CursorRequestSource source)
+                              const QString& ownerId, CursorRequestSource source,
+                              const CursorStyleSpec* explicitStyle = nullptr)
 {
     if (!window || surfaceId.isEmpty() || ownerId.isEmpty()) {
         return;
@@ -64,7 +65,8 @@ inline void syncWindowSurface(QWindow* window, const QString& surfaceId,
 
     auto& authority = CursorAuthority::instance();
     const CursorStyleSpec legacyStyle = currentCursorSpecForWindow(window);
-    authority.submitRequest(surfaceId, ownerId, source, legacyStyle);
+    const CursorStyleSpec requestStyle = explicitStyle ? *explicitStyle : legacyStyle;
+    authority.submitRequest(surfaceId, ownerId, source, requestStyle);
     authority.recordLegacyApplied(surfaceId, legacyStyle);
 
     if (authority.surfaceMode(surfaceId) == CursorSurfaceMode::Authority) {

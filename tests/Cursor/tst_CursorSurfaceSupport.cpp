@@ -13,6 +13,7 @@ private slots:
     void initTestCase();
     void testPointerRefreshClassification();
     void testWindowSurfaceAuthoritySync();
+    void testWindowSurfaceExplicitOverride();
 };
 
 void TestCursorSurfaceSupport::initTestCase()
@@ -58,6 +59,34 @@ void TestCursorSurfaceSupport::testWindowSurfaceAuthoritySync()
         &window, surfaceId, ownerId, CursorRequestSource::SurfaceDefault);
     QCOMPARE(window.cursor().shape(), Qt::PointingHandCursor);
     QCOMPARE(authority.resolvedOwner(surfaceId), ownerId);
+
+    CursorSurfaceSupport::clearWindowSurface(surfaceId, ownerId);
+    authority.unregisterSurface(surfaceId);
+}
+
+void TestCursorSurfaceSupport::testWindowSurfaceExplicitOverride()
+{
+    QWindow window;
+    window.setCursor(QCursor(Qt::ArrowCursor));
+
+    auto& authority = CursorAuthority::instance();
+    const QString surfaceId = CursorSurfaceSupport::registerManagedSurface(
+        &window, QStringLiteral("QmlFloatingToolbar"));
+    const QString ownerId = CursorSurfaceSupport::defaultOwnerId(QStringLiteral("QmlFloatingToolbar"));
+    const CursorStyleSpec closedHandSpec = CursorStyleSpec::fromShape(Qt::ClosedHandCursor);
+
+    CursorSurfaceSupport::syncWindowSurface(
+        &window, surfaceId, ownerId, CursorRequestSource::Overlay, &closedHandSpec);
+    QCOMPARE(window.cursor().shape(), Qt::ClosedHandCursor);
+    QCOMPARE(authority.resolvedOwner(surfaceId), ownerId);
+    QCOMPARE(authority.resolvedStyle(surfaceId).styleId, CursorStyleId::ClosedHand);
+
+    window.setCursor(QCursor(Qt::PointingHandCursor));
+    CursorSurfaceSupport::syncWindowSurface(
+        &window, surfaceId, ownerId, CursorRequestSource::Overlay);
+    QCOMPARE(window.cursor().shape(), Qt::PointingHandCursor);
+    QCOMPARE(authority.resolvedOwner(surfaceId), ownerId);
+    QCOMPARE(authority.resolvedStyle(surfaceId).styleId, CursorStyleId::PointingHand);
 
     CursorSurfaceSupport::clearWindowSurface(surfaceId, ownerId);
     authority.unregisterSurface(surfaceId);

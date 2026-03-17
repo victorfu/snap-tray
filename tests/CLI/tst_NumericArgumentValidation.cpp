@@ -1,6 +1,8 @@
 #include <QtTest>
 
 #include <QFile>
+#include <QGuiApplication>
+#include <QScreen>
 #include <QTemporaryDir>
 
 #include "cli/CLIHandler.h"
@@ -28,13 +30,17 @@ private slots:
     void regionCommand_rejectsNonNumericDelayOption();
     void fullCommand_rejectsNonNumericScreenOption();
     void fullCommand_rejectsNonNumericDelayOption();
-    void recordCommand_rejectsNonNumericScreenOption();
+    void recordCommand_rejectsNonNumericScreenOptionForStart();
+    void recordCommand_rejectsOutOfRangeScreenOptionForStart();
+    void recordCommand_allowsOutOfRangeScreenOptionForStop();
     void recordCommand_rejectsUnknownAction();
     void pinCommand_rejectsNonNumericPosition();
     void pinCommand_rejectsNonImageFile();
-    void recordCommand_buildIPCMessage_skipsInvalidScreenValue();
+    void recordCommand_buildIPCMessage_skipsInvalidScreenValueForStart();
+    void recordCommand_buildIPCMessage_omitsScreenForStop();
     void pinCommand_buildIPCMessage_skipsInvalidPositionValues();
     void cliHandler_validatesGUICommandArgumentsBeforeIPC();
+    void cliHandler_rejectsOutOfRangeRecordScreenForStartBeforeIPC();
     void cliHandler_rejectsUnknownRecordActionBeforeIPC();
     void captureCommands_rejectUnsupportedCursorOption_data();
     void captureCommands_rejectUnsupportedCursorOption();
@@ -105,17 +111,52 @@ void tst_NumericArgumentValidation::fullCommand_rejectsNonNumericDelayOption()
     QVERIFY(result.message.contains("Invalid delay value: abc"));
 }
 
-void tst_NumericArgumentValidation::recordCommand_rejectsNonNumericScreenOption()
+void tst_NumericArgumentValidation::recordCommand_rejectsNonNumericScreenOptionForStart()
 {
     RecordCommand command;
     QCommandLineParser parser;
     command.setupOptions(parser);
 
-    QVERIFY(parser.parse({"snaptray", "--screen", "abc"}));
+    QVERIFY(parser.parse({"snaptray", "start", "--screen", "abc"}));
     CLIResult result = command.execute(parser);
 
     QCOMPARE(result.code, CLIResult::Code::InvalidArguments);
     QVERIFY(result.message.contains("Invalid screen number: abc"));
+}
+
+void tst_NumericArgumentValidation::recordCommand_rejectsOutOfRangeScreenOptionForStart()
+{
+    const int screenCount = QGuiApplication::screens().size();
+    if (screenCount <= 0) {
+        QSKIP("No screens available in test environment");
+    }
+
+    RecordCommand command;
+    QCommandLineParser parser;
+    command.setupOptions(parser);
+
+    const QString invalidScreen = QString::number(screenCount);
+    QVERIFY(parser.parse({"snaptray", "start", "--screen", invalidScreen}));
+    CLIResult result = command.execute(parser);
+
+    QCOMPARE(result.code, CLIResult::Code::InvalidArguments);
+    QVERIFY(result.message.contains(
+        QString("Invalid screen number: %1").arg(invalidScreen)));
+}
+
+void tst_NumericArgumentValidation::recordCommand_allowsOutOfRangeScreenOptionForStop()
+{
+    const int screenCount = QGuiApplication::screens().size();
+    const QString staleScreen = QString::number(qMax(screenCount, 0));
+
+    RecordCommand command;
+    QCommandLineParser parser;
+    command.setupOptions(parser);
+
+    QVERIFY(parser.parse({"snaptray", "stop", "--screen", staleScreen}));
+    CLIResult result = command.execute(parser);
+
+    QCOMPARE(result.code, CLIResult::Code::Success);
 }
 
 void tst_NumericArgumentValidation::recordCommand_rejectsUnknownAction()
@@ -166,14 +207,27 @@ void tst_NumericArgumentValidation::pinCommand_rejectsNonImageFile()
     QVERIFY(result.message.contains("Unsupported or invalid image file"));
 }
 
-void tst_NumericArgumentValidation::recordCommand_buildIPCMessage_skipsInvalidScreenValue()
+void tst_NumericArgumentValidation::recordCommand_buildIPCMessage_skipsInvalidScreenValueForStart()
 {
     RecordCommand command;
     QCommandLineParser parser;
     command.setupOptions(parser);
 
-    QVERIFY(parser.parse({"snaptray", "--screen", "abc"}));
+    QVERIFY(parser.parse({"snaptray", "start", "--screen", "abc"}));
     const QJsonObject options = command.buildIPCMessage(parser);
+    QVERIFY(!options.contains("screen"));
+}
+
+void tst_NumericArgumentValidation::recordCommand_buildIPCMessage_omitsScreenForStop()
+{
+    RecordCommand command;
+    QCommandLineParser parser;
+    command.setupOptions(parser);
+
+    QVERIFY(parser.parse({"snaptray", "stop", "--screen", "3"}));
+    const QJsonObject options = command.buildIPCMessage(parser);
+
+    QCOMPARE(options.value("action").toString(), QString("stop"));
     QVERIFY(!options.contains("screen"));
 }
 
@@ -194,13 +248,29 @@ void tst_NumericArgumentValidation::cliHandler_validatesGUICommandArgumentsBefor
 {
     CLIHandler handler;
 
-    CLIResult recordResult = handler.process({"snaptray", "record", "--screen", "abc"});
+    CLIResult recordResult = handler.process({"snaptray", "record", "start", "--screen", "abc"});
     QCOMPARE(recordResult.code, CLIResult::Code::InvalidArguments);
     QVERIFY(recordResult.message.contains("Invalid screen number: abc"));
 
     CLIResult pinResult = handler.process({"snaptray", "pin", "--clipboard", "--pos-y", "bad"});
     QCOMPARE(pinResult.code, CLIResult::Code::InvalidArguments);
     QVERIFY(pinResult.message.contains("Invalid y position: bad"));
+}
+
+void tst_NumericArgumentValidation::cliHandler_rejectsOutOfRangeRecordScreenForStartBeforeIPC()
+{
+    const int screenCount = QGuiApplication::screens().size();
+    if (screenCount <= 0) {
+        QSKIP("No screens available in test environment");
+    }
+
+    CLIHandler handler;
+    const QString invalidScreen = QString::number(screenCount);
+
+    const CLIResult result = handler.process({"snaptray", "record", "start", "--screen", invalidScreen});
+    QCOMPARE(result.code, CLIResult::Code::InvalidArguments);
+    QVERIFY(result.message.contains(
+        QString("Invalid screen number: %1").arg(invalidScreen)));
 }
 
 void tst_NumericArgumentValidation::cliHandler_rejectsUnknownRecordActionBeforeIPC()

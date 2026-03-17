@@ -165,6 +165,23 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
     }
     else if (msg.command == "record") {
         QString action = msg.options["action"].toString().toLower();
+        const auto stopOrCancelRecording = [this]() {
+            switch (m_recordingManager->state()) {
+            case RecordingManager::State::Recording:
+            case RecordingManager::State::Paused:
+                m_recordingManager->stopRecording();
+                break;
+            case RecordingManager::State::Selecting:
+            case RecordingManager::State::Preparing:
+            case RecordingManager::State::Countdown:
+                m_recordingManager->cancelRecording();
+                break;
+            case RecordingManager::State::Encoding:
+            case RecordingManager::State::Idle:
+            case RecordingManager::State::Previewing:
+                break;
+            }
+        };
 
         if (action == "start") {
             if (!m_recordingManager->isActive()) {
@@ -179,12 +196,10 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
                         }
                         else {
                             qWarning() << "Invalid screen number:" << screenNum;
-                            onFullScreenRecording();
                         }
                     }
                     else {
                         qWarning() << "Invalid screen option value:" << msg.options.value("screen");
-                        onFullScreenRecording();
                     }
                 }
                 else {
@@ -194,13 +209,13 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
         }
         else if (action == "stop") {
             if (m_recordingManager->isActive()) {
-                m_recordingManager->stopRecording();
+                stopOrCancelRecording();
             }
         }
         else if (action.isEmpty() || action == "toggle") {
             // Default action (no explicit action provided): toggle
             if (m_recordingManager->isActive()) {
-                m_recordingManager->stopRecording();
+                stopOrCancelRecording();
             }
             else {
                 onFullScreenRecording();

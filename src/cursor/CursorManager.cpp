@@ -326,8 +326,6 @@ void CursorManager::updateCursorFromStateForWidget(QWidget* widget)
             break;
         case DragState::AnnotationDrag:
         case DragState::SelectionDrag:
-            dragCursor = Qt::SizeAllCursor;
-            break;
         case DragState::WidgetDrag:
             dragCursor = Qt::ClosedHandCursor;
             break;

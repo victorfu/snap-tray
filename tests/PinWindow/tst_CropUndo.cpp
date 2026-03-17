@@ -119,7 +119,7 @@ void TestPinWindowCropUndo::testApplyCrop_ZoomedState_CropsExpectedSourceRegion(
     PinWindow window(source, QPoint(0, 0), nullptr, false);
 
     window.setZoomLevel(2.0);
-    window.toggleToolbar();
+    window.showToolbar();
     QVERIFY(window.m_annotationLayer != nullptr);
 
     QVector<QPoint> points = {QPoint(100, 70), QPoint(130, 90)};
@@ -190,7 +190,7 @@ void TestPinWindowCropUndo::testUndoCrop_ZoomedState_RestoresAnnotationPosition(
     PinWindow window(source, QPoint(0, 0), nullptr, false);
 
     window.setZoomLevel(2.0);
-    window.toggleToolbar();
+    window.showToolbar();
     QVERIFY(window.m_annotationLayer != nullptr);
 
     QVector<QPoint> points = {QPoint(100, 70), QPoint(130, 90)};
@@ -244,7 +244,7 @@ void TestPinWindowCropUndo::testUndoCrop_RestoresAnnotationPosition()
     QPixmap source(220, 140);
     source.fill(Qt::white);
     PinWindow window(source, QPoint(0, 0), nullptr, false);
-    window.toggleToolbar();
+    window.showToolbar();
 
     QVERIFY(window.m_annotationLayer != nullptr);
 
@@ -277,7 +277,7 @@ void TestPinWindowCropUndo::testApplyCrop_MarkerStroke_RemainsAlignedAfterTransl
 {
     QPixmap source = createPatternPixmap(260, 180);
     PinWindow window(source, QPoint(0, 0), nullptr, false);
-    window.toggleToolbar();
+    window.showToolbar();
     QVERIFY(window.m_annotationLayer != nullptr);
 
     const QVector<QPointF> markerPoints = {
@@ -319,7 +319,7 @@ void TestPinWindowCropUndo::testUndoCrop_MarkerStroke_RestoresOriginalPosition()
 {
     QPixmap source = createPatternPixmap(260, 180);
     PinWindow window(source, QPoint(0, 0), nullptr, false);
-    window.toggleToolbar();
+    window.showToolbar();
     QVERIFY(window.m_annotationLayer != nullptr);
 
     const QVector<QPointF> markerPoints = {
@@ -357,7 +357,7 @@ void TestPinWindowCropUndo::testApplyCrop_RefreshesMosaicSourceInsideErasedGroup
 {
     QPixmap source = createPatternPixmap(240, 160);
     PinWindow window(source, QPoint(0, 0), nullptr, false);
-    window.toggleToolbar();
+    window.showToolbar();
     QVERIFY(window.m_annotationLayer != nullptr);
     QVERIFY(window.m_sharedSourcePixmap != nullptr);
 
@@ -423,7 +423,7 @@ void TestPinWindowCropUndo::testHandleToolbarUndo_PrioritizesCropWhenNoPostCropA
 {
     QPixmap source = createPatternPixmap(220, 140);
     PinWindow window(source, QPoint(0, 0), nullptr, false);
-    window.toggleToolbar();
+    window.showToolbar();
     QVERIFY(window.m_annotationLayer != nullptr);
 
     QVector<QPoint> points = {QPoint(40, 35), QPoint(120, 55)};
@@ -447,7 +447,7 @@ void TestPinWindowCropUndo::testHandleToolbarUndo_PrioritizesPostCropAnnotations
 {
     QPixmap source = createPatternPixmap(220, 140);
     PinWindow window(source, QPoint(0, 0), nullptr, false);
-    window.toggleToolbar();
+    window.showToolbar();
     QVERIFY(window.m_annotationLayer != nullptr);
 
     QVector<QPoint> preCropPoints = {QPoint(40, 35), QPoint(120, 55)};
@@ -479,7 +479,7 @@ void TestPinWindowCropUndo::testHandleToolbarUndo_UsesStableCropBoundaryAfterAnn
 {
     QPixmap source = createPatternPixmap(260, 180);
     PinWindow window(source, QPoint(0, 0), nullptr, false);
-    window.toggleToolbar();
+    window.showToolbar();
     QVERIFY(window.m_annotationLayer != nullptr);
 
     // Fill annotation history to capacity so the first post-crop add trims from the front.
@@ -564,7 +564,7 @@ void TestPinWindowCropUndo::testHandleToolbarRedo_PrioritizesCropBeforePostCropA
 {
     QPixmap source = createPatternPixmap(220, 140);
     PinWindow window(source, QPoint(0, 0), nullptr, false);
-    window.toggleToolbar();
+    window.showToolbar();
     QVERIFY(window.m_annotationLayer != nullptr);
 
     const QVector<QPoint> preCropPoints = {QPoint(40, 35), QPoint(120, 55)};
@@ -599,7 +599,7 @@ void TestPinWindowCropUndo::testHandleToolbarRedo_UsesStableCropBoundaryAfterAnn
 {
     QPixmap source = createPatternPixmap(260, 180);
     PinWindow window(source, QPoint(0, 0), nullptr, false);
-    window.toggleToolbar();
+    window.showToolbar();
     QVERIFY(window.m_annotationLayer != nullptr);
 
     // Fill annotation history to capacity so post-crop add triggers trimHistory().
@@ -639,7 +639,7 @@ void TestPinWindowCropUndo::testHandleToolbarUndo_InPlaceCacheInvalidationDoesNo
 {
     QPixmap source = createPatternPixmap(220, 140);
     PinWindow window(source, QPoint(0, 0), nullptr, false);
-    window.toggleToolbar();
+    window.showToolbar();
     QVERIFY(window.m_annotationLayer != nullptr);
 
     const QVector<QPoint> preCropPoints = {QPoint(40, 35), QPoint(120, 55)};

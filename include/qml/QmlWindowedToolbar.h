@@ -7,6 +7,8 @@
 #include <QElapsedTimer>
 #include <QString>
 
+#include "cursor/CursorTypes.h"
+
 class QWidget;
 class QWindow;
 class QQuickView;
@@ -72,7 +74,7 @@ private:
     void setupConnections();
     void applyPlatformWindowFlags();
     void applyTooltipWindowFlags();
-    void syncCursorSurface();
+    void syncCursorSurface(const CursorStyleSpec* explicitStyle = nullptr);
 
     void showTooltip(const QString& text, const QRect& anchorRect);
     void hideTooltip();

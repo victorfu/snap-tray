@@ -122,6 +122,8 @@ private:
     void startAnnotation(const QPoint& pos);
     void updateAnnotation(const QPoint& pos);
     void finishAnnotation();
+    void beginSelectionDrag();
+    void clearSelectionDrag();
 
     // Selection helpers
     SelectionStateManager::ResizeHandle determineHandleFromOutsideClick(

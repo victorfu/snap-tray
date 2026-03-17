@@ -496,6 +496,15 @@ PinWindow::PinWindow(const QPixmap& screenshot,
     m_clickThroughHoverTimer = new QTimer(this);
     m_clickThroughHoverTimer->setInterval(50);  // Click-through hover check
     connect(m_clickThroughHoverTimer, &QTimer::timeout, this, &PinWindow::updateClickThroughForCursor);
+
+    // Defer auto-opening until the event loop returns so the floating QML toolbar
+    // is created after the host widget has fully settled.
+    QTimer::singleShot(0, this, [this]() {
+        if (!isVisible() || m_toolbarVisible || isRegionLayoutMode() || m_isLiveMode) {
+            return;
+        }
+        showToolbar();
+    });
 }
 
 PinWindow::~PinWindow()

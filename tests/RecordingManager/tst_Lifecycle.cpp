@@ -1,6 +1,9 @@
 #include <QtTest/QtTest>
 #include <QSignalSpy>
+
+#define private public
 #include "RecordingManager.h"
+#undef private
 
 /**
  * @brief Tests for RecordingManager resource lifecycle
@@ -31,6 +34,7 @@ private slots:
     // Resource cleanup tests
     void testCleanupInIdleState();
     void testStopRecordingInIdleState();
+    void testCancelRecordingInSelectingState();
 
     // Error handling tests
     void testErrorSignalOnInvalidOperation();
@@ -126,6 +130,19 @@ void TestRecordingManagerLifecycle::testStopRecordingInIdleState()
     // Should not emit stopped signal when not recording
     QCOMPARE(stoppedSpy.count(), 0);
     QCOMPARE(m_manager->state(), RecordingManager::State::Idle);
+}
+
+void TestRecordingManagerLifecycle::testCancelRecordingInSelectingState()
+{
+    QSignalSpy cancelledSpy(m_manager, &RecordingManager::recordingCancelled);
+
+    m_manager->setState(RecordingManager::State::Selecting);
+    QCOMPARE(m_manager->state(), RecordingManager::State::Selecting);
+
+    m_manager->cancelRecording();
+
+    QCOMPARE(m_manager->state(), RecordingManager::State::Idle);
+    QCOMPARE(cancelledSpy.count(), 1);
 }
 
 // ============================================================================
