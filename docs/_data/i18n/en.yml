@@ -40,7 +40,7 @@ features:
       body: Precision crosshair and magnifier targeting. Press F2 to start instantly.
     - kind: Canvas
       title: Screen Canvas
-      body: Draw directly on top of your desktop with Ctrl+F2 and annotate in place.
+      body: Draw directly on top of your desktop with Ctrl+F2 / Cmd+F2 and annotate in place.
     - kind: Pinning
       title: Pin to Screen
       body: Keep reference images visible above other windows. Resize and rotate freely.

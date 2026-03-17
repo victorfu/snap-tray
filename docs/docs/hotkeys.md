@@ -14,7 +14,7 @@ doc_order: 3
 | Action | Default |
 |---|---|
 | Region Capture | `F2` |
-| Screen Canvas | `Ctrl+F2` |
+| Screen Canvas | `Ctrl+F2 / Cmd+F2` |
 | Paste | `F3` |
 | Quick Pin | `Shift+F2` |
 

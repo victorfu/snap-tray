@@ -8,9 +8,12 @@
 
 
 
+
+
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>首頁 | SnapTray</title>
+<title>SnapTray</title>
 <meta name="description" content="SnapTray 是 macOS 與 Windows 的現代化截圖與錄影工具。">
 <meta name="theme-color" content="#0a1326">
 <meta name="snaptray-lang" content="zh-tw">
@@ -20,44 +23,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 
 <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
-<link rel="canonical" href="http://localhost:4000/zh-tw/">
+<link rel="canonical" href="https://snaptray.cc/zh-tw/">
 
 
-<link rel="alternate" hreflang="en" href="http://localhost:4000/">
-<link rel="alternate" hreflang="zh-TW" href="http://localhost:4000/zh-tw/">
-<link rel="alternate" hreflang="x-default" href="http://localhost:4000/">
+<link rel="alternate" hreflang="en" href="https://snaptray.cc/">
+<link rel="alternate" hreflang="zh-TW" href="https://snaptray.cc/zh-tw/">
+<link rel="alternate" hreflang="x-default" href="https://snaptray.cc/">
 
 
-<meta property="og:title" content="首頁">
+<meta property="og:title" content="SnapTray">
 <meta property="og:description" content="SnapTray 是 macOS 與 Windows 的現代化截圖與錄影工具。">
 <meta property="og:type" content="website">
-<meta property="og:url" content="http://localhost:4000/zh-tw/">
-<meta property="og:image" content="http://localhost:4000/assets/images/logo.svg">
+<meta property="og:url" content="https://snaptray.cc/zh-tw/">
 <meta property="og:locale" content="zh_TW">
 
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="首頁">
-<meta name="twitter:description" content="SnapTray 是 macOS 與 Windows 的現代化截圖與錄影工具。">
-
 <link rel="stylesheet" href="/assets/css/style.css">
-
-<!-- Begin Jekyll SEO tag v2.8.0 -->
-<title>首頁 | SnapTray</title>
-<meta name="generator" content="Jekyll v3.10.0" />
-<meta property="og:title" content="首頁" />
-<meta property="og:locale" content="zh_tw" />
-<meta name="description" content="SnapTray 是 macOS 與 Windows 的現代化截圖與錄影工具。" />
-<meta property="og:description" content="SnapTray 是 macOS 與 Windows 的現代化截圖與錄影工具。" />
-<link rel="canonical" href="http://localhost:4000/zh-tw/" />
-<meta property="og:url" content="http://localhost:4000/zh-tw/" />
-<meta property="og:site_name" content="SnapTray" />
-<meta property="og:type" content="website" />
-<meta name="twitter:card" content="summary" />
-<meta property="twitter:title" content="首頁" />
-<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebPage","description":"SnapTray 是 macOS 與 Windows 的現代化截圖與錄影工具。","headline":"首頁","url":"http://localhost:4000/zh-tw/"}</script>
-<!-- End Jekyll SEO tag -->
-
 
 </head>
 <body data-lang="zh-tw" data-route-key="home" data-layout="default">
@@ -174,7 +154,7 @@
       <article class="feature-card" data-reveal="">
         <p class="feature-kind">畫布</p>
         <h3>Screen Canvas</h3>
-        <p>按 Ctrl+F2 直接在桌面上繪製與標註。</p>
+        <p>按 Ctrl+F2 / Cmd+F2 直接在桌面上繪製與標註。</p>
       </article>
       
       <article class="feature-card" data-reveal="">
@@ -192,7 +172,7 @@
       <article class="feature-card" data-reveal="">
         <p class="feature-kind">自動化</p>
         <h3>OCR + Auto Blur</h3>
-        <p>擷取文字並自動模糊敏感臉孔，提升分享安全性。</p>
+        <p>擷取文字並自動模糊敏感臉孔與憑證等資訊，提升分享安全性。</p>
       </article>
       
       <article class="feature-card" data-reveal="">
@@ -220,9 +200,9 @@
       </article>
       
       <article class="feature-card" data-reveal="">
-        <p class="feature-kind">監看</p>
-        <h3>Live Capture</h3>
-        <p>透過釘選視窗即時監看任意區域。</p>
+        <p class="feature-kind">分享</p>
+        <h3>Share URL</h3>
+        <p>上傳截圖後產生分享連結，並可加上密碼保護。</p>
       </article>
       
       <article class="feature-card" data-reveal="">
@@ -234,11 +214,12 @@
       <article class="feature-card" data-reveal="">
         <p class="feature-kind">工作流</p>
         <h3>Hotkey First</h3>
-        <p>Region Capture、Canvas、Paste、Quick Pin 都是一鍵即達。</p>
+        <p>Region Capture、Canvas、Paste、Quick Pin、Hide/Show Pins 都是一鍵即達。</p>
       </article>
       
     </div>
 
+    
   </div>
 </section>
 
@@ -259,7 +240,8 @@
         <a id="download-macos" href="#" class="btn btn-primary btn-download" hidden="">
           下載 .dmg <span class="version"></span>
         </a>
-        <p id="no-macos-release" class="status-text">目前尚無可用版本</p>
+        <p id="no-macos-release" class="status-text">DMG 安裝檔即將推出</p>
+        <a id="macos-source-link" href="https://github.com/victorfu/snap-tray#build--run" class="btn btn-ghost btn-download-alt">從 GitHub 原始碼建置</a>
       </article>
 
       <article class="download-card" data-reveal="">
@@ -284,6 +266,7 @@
       </article>
     </div>
 
+    
   </div>
 </section>
 

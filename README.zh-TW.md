@@ -2,14 +2,14 @@
 
 [English](README.md) | **繁體中文**
 
-SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區域截圖、螢幕標註與快速錄影。預設以 F2 進入區域截圖，Ctrl+F2 開啟螢幕畫布。
+SnapTray 是一個在系統托盤常駐的截圖與錄影小工具，提供區域截圖、螢幕標註與快速錄影。預設以 `F2` 進入區域截圖，`Ctrl+F2 / Cmd+F2` 開啟螢幕畫布。
 
 ## 功能特色
 
 - **系統托盤選單**：`Region Capture` (顯示當前熱鍵)、`Screen Canvas` (顯示當前熱鍵)、`Pin from Image...`、`Pin History`、`Hide/Show All Pins`、`Close All Pins`、`Record Full Screen`、`Settings`、`Exit`
 - **全域快捷鍵**：可於設定中自定義，支援即時更新熱鍵註冊。
   - 區域截圖：預設 `F2`
-  - 螢幕畫布：預設 `Ctrl+F2`
+  - 螢幕畫布：預設 `Ctrl+F2 / Cmd+F2`
   - 其他可設定動作：`Paste`（預設 `F3`）、`Quick Pin`（預設 `Shift+F2`）、`Pin from Image`、`Pin History`、`Hide/Show All Pins`、`Record Full Screen`
 - **區域截圖覆蓋層**：
   - 十字線＋放大鏡（支援像素級檢視）
@@ -338,7 +338,7 @@ CMake 會自動偵測並使用編譯器快取，無需額外設定。
 ## 使用方式
 
 1. 啟動後托盤會出現 SnapTray 圖示。
-2. 按下區域截圖熱鍵（預設 `F2`）進入截圖模式；或按下螢幕畫布熱鍵（預設 `Ctrl+F2`）進入螢幕畫布模式。
+2. 按下區域截圖熱鍵（預設 `F2`）進入截圖模式；或按下螢幕畫布熱鍵（預設 `Ctrl+F2 / Cmd+F2`）進入螢幕畫布模式。
 3. **截圖模式操作**：
    - 拖曳滑鼠選取區域
    - 單擊可快速選取偵測到的視窗（macOS/Windows）

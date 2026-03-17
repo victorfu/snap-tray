@@ -8,10 +8,13 @@
 
 
 
+
+
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Privacy Policy | SnapTray</title>
-<meta name="description" content="SnapTray privacy policy. All capture and recording workflows stay on your local device.">
+<meta name="description" content="SnapTray privacy policy. Local-first with no telemetry or tracking.">
 <meta name="theme-color" content="#0a1326">
 <meta name="snaptray-lang" content="en">
 
@@ -20,44 +23,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 
 <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
-<link rel="canonical" href="http://localhost:4000/privacy/">
+<link rel="canonical" href="https://snaptray.cc/privacy/">
 
 
-<link rel="alternate" hreflang="en" href="http://localhost:4000/privacy/">
-<link rel="alternate" hreflang="zh-TW" href="http://localhost:4000/zh-tw/privacy/">
-<link rel="alternate" hreflang="x-default" href="http://localhost:4000/privacy/">
+<link rel="alternate" hreflang="en" href="https://snaptray.cc/privacy/">
+<link rel="alternate" hreflang="zh-TW" href="https://snaptray.cc/zh-tw/privacy/">
+<link rel="alternate" hreflang="x-default" href="https://snaptray.cc/privacy/">
 
 
 <meta property="og:title" content="Privacy Policy">
-<meta property="og:description" content="SnapTray privacy policy. All capture and recording workflows stay on your local device.">
+<meta property="og:description" content="SnapTray privacy policy. Local-first with no telemetry or tracking.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="http://localhost:4000/privacy/">
-<meta property="og:image" content="http://localhost:4000/assets/images/logo.svg">
+<meta property="og:url" content="https://snaptray.cc/privacy/">
 <meta property="og:locale" content="en_US">
 
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Privacy Policy">
-<meta name="twitter:description" content="SnapTray privacy policy. All capture and recording workflows stay on your local device.">
-
 <link rel="stylesheet" href="/assets/css/style.css">
-
-<!-- Begin Jekyll SEO tag v2.8.0 -->
-<title>Privacy Policy | SnapTray</title>
-<meta name="generator" content="Jekyll v3.10.0" />
-<meta property="og:title" content="Privacy Policy" />
-<meta property="og:locale" content="en" />
-<meta name="description" content="SnapTray privacy policy. All capture and recording workflows stay on your local device." />
-<meta property="og:description" content="SnapTray privacy policy. All capture and recording workflows stay on your local device." />
-<link rel="canonical" href="http://localhost:4000/privacy/" />
-<meta property="og:url" content="http://localhost:4000/privacy/" />
-<meta property="og:site_name" content="SnapTray" />
-<meta property="og:type" content="website" />
-<meta name="twitter:card" content="summary" />
-<meta property="twitter:title" content="Privacy Policy" />
-<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebPage","description":"SnapTray privacy policy. All capture and recording workflows stay on your local device.","headline":"Privacy Policy","url":"http://localhost:4000/privacy/"}</script>
-<!-- End Jekyll SEO tag -->
-
 
 </head>
 <body data-lang="en" data-route-key="privacy" data-layout="page">
@@ -124,13 +104,13 @@
         <h1>Privacy Policy</h1>
       </header>
       <div class="content-prose">
-        <p><strong>Last Updated:</strong> January 2026</p>
+        <p><strong>Last Updated:</strong> March 2026</p>
 
 <h2 id="overview">Overview</h2>
 
-<p>SnapTray is a screenshot and screen recording application that operates entirely on your local device. We are committed to protecting your privacy and being transparent about our practices.</p>
+<p>SnapTray is a local-first screenshot and screen recording application. It only connects to the network when you explicitly trigger a Share URL upload or when the optional update checker runs. We are committed to protecting your privacy and being transparent about our practices.</p>
 
-<p><strong>The short version:</strong> SnapTray does not collect, transmit, or share any of your data. Everything stays on your device.</p>
+<p><strong>The short version:</strong> SnapTray is local-first with no telemetry, tracking, or analytics. Network access is limited to two explicit features: Share URL (user-triggered image upload) and optional update checking (version string only).</p>
 
 <h2 id="data-collection">Data Collection</h2>
 
@@ -140,7 +120,6 @@
   <li>No telemetry or usage analytics</li>
   <li>No crash reports sent to external servers</li>
   <li>No user tracking or unique identifiers</li>
-  <li>No network communication of any kind</li>
 </ul>
 
 <h2 id="data-storage">Data Storage</h2>
@@ -228,15 +207,24 @@
   <li>Microphone access is requested only if you choose to record audio.</li>
 </ul>
 
-<h2 id="third-party-services">Third-Party Services</h2>
+<h2 id="network-communication">Network Communication</h2>
 
-<p>SnapTray does not integrate with any third-party services, analytics platforms, or cloud storage providers. The application:</p>
+<p>SnapTray connects to the network only for two explicit features:</p>
+
+<h3 id="share-url">Share URL</h3>
+
+<p>When you explicitly use the Share URL action, your captured image is uploaded to <code class="language-plaintext highlighter-rouge">x.snaptray.cc</code>. You may optionally set a password. Shared links expire automatically. No upload happens unless you trigger it.</p>
+
+<h3 id="update-check">Update Check</h3>
+
+<p>SnapTray checks <code class="language-plaintext highlighter-rouge">api.github.com</code> for new releases. This check is enabled by default and can be disabled in Settings. Only the app version string is sent. No personal data, usage information, or device identifiers are transmitted. Update checks are skipped for Store installs (e.g., Microsoft Store, Mac App Store).</p>
+
+<h3 id="what-snaptray-does-not-do">What SnapTray does not do</h3>
 
 <ul>
-  <li>Does not connect to the internet</li>
-  <li>Does not send data to any servers</li>
-  <li>Does not include any tracking SDKs</li>
+  <li>Does not include any tracking SDKs or analytics</li>
   <li>Does not use cookies or similar technologies</li>
+  <li>Does not send telemetry or crash reports</li>
 </ul>
 
 <h2 id="open-source">Open Source</h2>
@@ -253,7 +241,7 @@
 
 <h2 id="changes-to-this-policy">Changes to This Policy</h2>
 
-<p>If we make changes to this privacy policy, we will update the “Last Updated” date at the top of this page. Since SnapTray has no network connectivity, you need to check this page manually or review release notes for updates.</p>
+<p>If we make changes to this privacy policy, we will update the “Last Updated” date at the top of this page. You can check this page periodically, review release notes, or enable update notifications in Settings to stay informed.</p>
 
 <h2 id="contact">Contact</h2>
 
@@ -277,7 +265,7 @@
     </tr>
     <tr>
       <td>Does SnapTray send data to servers?</td>
-      <td>No</td>
+      <td>Only when you use Share URL, or if update checking is enabled (version string only)</td>
     </tr>
     <tr>
       <td>Does SnapTray track my usage?</td>
@@ -286,6 +274,10 @@
     <tr>
       <td>Does SnapTray include analytics?</td>
       <td>No</td>
+    </tr>
+    <tr>
+      <td>Does SnapTray phone home?</td>
+      <td>No. Update checks are opt-out and send only the version number</td>
     </tr>
     <tr>
       <td>Where are my files stored?</td>

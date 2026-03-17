@@ -186,12 +186,15 @@ async function populateDownloadButtons() {
   const links = getDownloadLinks(latest);
   const version = latest.tag_name || '';
 
+  const macSourceLink = document.getElementById('macos-source-link');
+
   if (macButton && links.macos) {
     macButton.href = links.macos;
     const versionNode = macButton.querySelector('.version');
     if (versionNode) versionNode.textContent = version;
     setDownloadVisibility(macButton, true);
     if (macFallback) macFallback.hidden = true;
+    if (macSourceLink) macSourceLink.hidden = true;
   }
 
   if (windowsButton && links.windows) {

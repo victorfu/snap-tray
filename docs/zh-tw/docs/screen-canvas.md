@@ -11,7 +11,7 @@ doc_order: 3
 
 ## 進入畫布模式
 
-按預設 `Ctrl+F2`，或從托盤選單啟動 Screen Canvas。
+按預設 `Ctrl+F2 / Cmd+F2`，或從托盤選單啟動 Screen Canvas。
 
 ## 可用工具
 

@@ -40,7 +40,7 @@ features:
       body: 十字準星搭配放大鏡精準定位，按 F2 即刻開始。
     - kind: 畫布
       title: Screen Canvas
-      body: 按 Ctrl+F2 直接在桌面上繪製與標註。
+      body: 按 Ctrl+F2 / Cmd+F2 直接在桌面上繪製與標註。
     - kind: 釘選
       title: Pin to Screen
       body: 將參考圖片固定在最上層，可自由縮放與旋轉。

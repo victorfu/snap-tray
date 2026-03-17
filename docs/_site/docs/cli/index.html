@@ -8,10 +8,13 @@
 
 
 
+
+
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CLI | SnapTray</title>
-<meta name="description" content="Automate capture workflows with local and IPC command-line operations.">
+<meta name="description" content="The official automation interface for scripting capture, recording, and pin workflows.">
 <meta name="theme-color" content="#0a1326">
 <meta name="snaptray-lang" content="en">
 
@@ -20,44 +23,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 
 <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
-<link rel="canonical" href="http://localhost:4000/docs/cli/">
+<link rel="canonical" href="https://snaptray.cc/docs/cli/">
 
 
-<link rel="alternate" hreflang="en" href="http://localhost:4000/docs/cli/">
-<link rel="alternate" hreflang="zh-TW" href="http://localhost:4000/zh-tw/docs/cli/">
-<link rel="alternate" hreflang="x-default" href="http://localhost:4000/docs/cli/">
+<link rel="alternate" hreflang="en" href="https://snaptray.cc/docs/cli/">
+<link rel="alternate" hreflang="zh-TW" href="https://snaptray.cc/zh-tw/docs/cli/">
+<link rel="alternate" hreflang="x-default" href="https://snaptray.cc/docs/cli/">
 
 
 <meta property="og:title" content="CLI">
-<meta property="og:description" content="Automate capture workflows with local and IPC command-line operations.">
+<meta property="og:description" content="The official automation interface for scripting capture, recording, and pin workflows.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="http://localhost:4000/docs/cli/">
-<meta property="og:image" content="http://localhost:4000/assets/images/logo.svg">
+<meta property="og:url" content="https://snaptray.cc/docs/cli/">
 <meta property="og:locale" content="en_US">
 
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="CLI">
-<meta name="twitter:description" content="Automate capture workflows with local and IPC command-line operations.">
-
 <link rel="stylesheet" href="/assets/css/style.css">
-
-<!-- Begin Jekyll SEO tag v2.8.0 -->
-<title>CLI | SnapTray</title>
-<meta name="generator" content="Jekyll v3.10.0" />
-<meta property="og:title" content="CLI" />
-<meta property="og:locale" content="en" />
-<meta name="description" content="Automate capture workflows with local and IPC command-line operations." />
-<meta property="og:description" content="Automate capture workflows with local and IPC command-line operations." />
-<link rel="canonical" href="http://localhost:4000/docs/cli/" />
-<meta property="og:url" content="http://localhost:4000/docs/cli/" />
-<meta property="og:site_name" content="SnapTray" />
-<meta property="og:type" content="website" />
-<meta name="twitter:card" content="summary" />
-<meta property="twitter:title" content="CLI" />
-<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebPage","description":"Automate capture workflows with local and IPC command-line operations.","headline":"CLI","url":"http://localhost:4000/docs/cli/"}</script>
-<!-- End Jekyll SEO tag -->
-
 
 </head>
 <body data-lang="en" data-route-key="docs_cli" data-layout="docs">
@@ -289,38 +269,96 @@
         <p class="eyebrow">Documentation</p>
         <h1>CLI</h1>
         
-        <p>Automate capture workflows with local and IPC command-line operations.</p>
+        <p>The official automation interface for scripting capture, recording, and pin workflows.</p>
         
         <button class="docs-sidebar-toggle" type="button" aria-expanded="false" aria-controls="docs-sidebar-panel" data-docs-sidebar-toggle>
           Docs Menu
         </button>
       </header>
       <div class="docs-prose">
-        <h2 id="install-cli-helper">Install CLI helper</h2>
+        <p>The CLI is SnapTray’s official automation interface. Use it to script capture workflows, control recordings, and manage pins from any shell or CI pipeline.</p>
+
+<h2 id="install-cli-helper">Install CLI helper</h2>
 
 <p>Open Settings &gt; General and use the CLI install option to add <code class="language-plaintext highlighter-rouge">snaptray</code> command support.</p>
 
-<h2 id="command-groups">Command groups</h2>
+<h2 id="commands">Commands</h2>
 
-<h3 id="local-capture-commands">Local capture commands</h3>
-
-<p>Run without main instance for direct capture operations.</p>
-
-<h3 id="ipc-commands">IPC commands</h3>
-
-<p>Send actions to running SnapTray instance (GUI, canvas, pin, record).</p>
-
-<h3 id="config-commands">Config commands</h3>
-
-<p>Read or update settings from scripts.</p>
+<table>
+  <thead>
+    <tr>
+      <th>Command</th>
+      <th>Description</th>
+      <th>Requires main SnapTray instance</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">full</code></td>
+      <td>Capture full screen</td>
+      <td>No</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">screen</code></td>
+      <td>Capture specified screen</td>
+      <td>No</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">region</code></td>
+      <td>Capture specified region</td>
+      <td>No</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">gui</code></td>
+      <td>Open region capture GUI</td>
+      <td>Yes</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">canvas</code></td>
+      <td>Open/toggle Screen Canvas</td>
+      <td>Yes</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">record</code></td>
+      <td><code class="language-plaintext highlighter-rouge">start</code> / <code class="language-plaintext highlighter-rouge">stop</code> / <code class="language-plaintext highlighter-rouge">toggle</code> recording</td>
+      <td>Yes</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">pin</code></td>
+      <td>Pin image from file or clipboard</td>
+      <td>Yes</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">config</code></td>
+      <td>List/get/set/reset config (<code class="language-plaintext highlighter-rouge">config</code> alone opens Settings)</td>
+      <td>Partial</td>
+    </tr>
+  </tbody>
+</table>
 
 <h2 id="example-commands">Example commands</h2>
 
-<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>snaptray <span class="nt">--help</span>
-snaptray region <span class="nt">--copy</span>
-snaptray screen <span class="nt">--save</span>
-snaptray gui <span class="nt">--show</span>
-snaptray config <span class="nt">--get</span> files.screenshotPath
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Global</span>
+snaptray <span class="nt">--help</span>
+snaptray <span class="nt">--version</span>
+
+<span class="c"># Local capture commands</span>
+snaptray full <span class="nt">-c</span>
+snaptray screen <span class="nt">--list</span>
+snaptray screen 1 <span class="nt">-o</span> screen1.png
+snaptray region <span class="nt">-r</span> 100,100,400,300 <span class="nt">-o</span> region.png
+
+<span class="c"># IPC commands</span>
+snaptray gui <span class="nt">-d</span> 1500
+snaptray canvas
+snaptray record start <span class="nt">-n</span> 0
+snaptray pin <span class="nt">-f</span> image.png <span class="nt">--center</span>
+
+<span class="c"># Config commands</span>
+snaptray config <span class="nt">--list</span>
+snaptray config <span class="nt">--get</span> hotkey
+snaptray config <span class="nt">--set</span> hotkey F6
+snaptray config <span class="nt">--reset</span>
 </code></pre></div></div>
 
 <h2 id="return-codes">Return codes</h2>

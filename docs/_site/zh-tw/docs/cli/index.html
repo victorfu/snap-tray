@@ -8,10 +8,13 @@
 
 
 
+
+
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>命令列 | SnapTray</title>
-<meta name="description" content="使用 CLI 進行本地擷取與 IPC 控制，建立自動化流程。">
+<meta name="description" content="官方自動化介面，可透過腳本控制擷取、錄影與釘選。">
 <meta name="theme-color" content="#0a1326">
 <meta name="snaptray-lang" content="zh-tw">
 
@@ -20,44 +23,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 
 <link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
-<link rel="canonical" href="http://localhost:4000/zh-tw/docs/cli/">
+<link rel="canonical" href="https://snaptray.cc/zh-tw/docs/cli/">
 
 
-<link rel="alternate" hreflang="en" href="http://localhost:4000/docs/cli/">
-<link rel="alternate" hreflang="zh-TW" href="http://localhost:4000/zh-tw/docs/cli/">
-<link rel="alternate" hreflang="x-default" href="http://localhost:4000/docs/cli/">
+<link rel="alternate" hreflang="en" href="https://snaptray.cc/docs/cli/">
+<link rel="alternate" hreflang="zh-TW" href="https://snaptray.cc/zh-tw/docs/cli/">
+<link rel="alternate" hreflang="x-default" href="https://snaptray.cc/docs/cli/">
 
 
 <meta property="og:title" content="命令列">
-<meta property="og:description" content="使用 CLI 進行本地擷取與 IPC 控制，建立自動化流程。">
+<meta property="og:description" content="官方自動化介面，可透過腳本控制擷取、錄影與釘選。">
 <meta property="og:type" content="website">
-<meta property="og:url" content="http://localhost:4000/zh-tw/docs/cli/">
-<meta property="og:image" content="http://localhost:4000/assets/images/logo.svg">
+<meta property="og:url" content="https://snaptray.cc/zh-tw/docs/cli/">
 <meta property="og:locale" content="zh_TW">
 
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="命令列">
-<meta name="twitter:description" content="使用 CLI 進行本地擷取與 IPC 控制，建立自動化流程。">
-
 <link rel="stylesheet" href="/assets/css/style.css">
-
-<!-- Begin Jekyll SEO tag v2.8.0 -->
-<title>命令列 | SnapTray</title>
-<meta name="generator" content="Jekyll v3.10.0" />
-<meta property="og:title" content="命令列" />
-<meta property="og:locale" content="zh_tw" />
-<meta name="description" content="使用 CLI 進行本地擷取與 IPC 控制，建立自動化流程。" />
-<meta property="og:description" content="使用 CLI 進行本地擷取與 IPC 控制，建立自動化流程。" />
-<link rel="canonical" href="http://localhost:4000/zh-tw/docs/cli/" />
-<meta property="og:url" content="http://localhost:4000/zh-tw/docs/cli/" />
-<meta property="og:site_name" content="SnapTray" />
-<meta property="og:type" content="website" />
-<meta name="twitter:card" content="summary" />
-<meta property="twitter:title" content="命令列" />
-<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebPage","description":"使用 CLI 進行本地擷取與 IPC 控制，建立自動化流程。","headline":"命令列","url":"http://localhost:4000/zh-tw/docs/cli/"}</script>
-<!-- End Jekyll SEO tag -->
-
 
 </head>
 <body data-lang="zh-tw" data-route-key="docs_cli" data-layout="docs">
@@ -289,38 +269,96 @@
         <p class="eyebrow">文件中心</p>
         <h1>命令列</h1>
         
-        <p>使用 CLI 進行本地擷取與 IPC 控制，建立自動化流程。</p>
+        <p>官方自動化介面，可透過腳本控制擷取、錄影與釘選。</p>
         
         <button class="docs-sidebar-toggle" type="button" aria-expanded="false" aria-controls="docs-sidebar-panel" data-docs-sidebar-toggle>
           開啟文件目錄
         </button>
       </header>
       <div class="docs-prose">
-        <h2 id="安裝-cli-helper">安裝 CLI helper</h2>
+        <p>CLI 是 SnapTray 的官方自動化介面。你可以用它來編寫擷取腳本、控制錄影，以及從任何 shell 或 CI 流程管理釘選視窗。</p>
+
+<h2 id="安裝-cli-helper">安裝 CLI helper</h2>
 
 <p>在 Settings &gt; General 使用 CLI 安裝功能，啟用 <code class="language-plaintext highlighter-rouge">snaptray</code> 指令。</p>
 
-<h2 id="指令群組">指令群組</h2>
+<h2 id="指令列表">指令列表</h2>
 
-<h3 id="本地擷取指令">本地擷取指令</h3>
-
-<p>不需主程式常駐即可執行指定擷取動作。</p>
-
-<h3 id="ipc-指令">IPC 指令</h3>
-
-<p>向正在執行中的 SnapTray 發送 GUI、畫布、釘選、錄影命令。</p>
-
-<h3 id="設定指令">設定指令</h3>
-
-<p>可在腳本中讀取或更新設定值。</p>
+<table>
+  <thead>
+    <tr>
+      <th>指令</th>
+      <th>說明</th>
+      <th>是否需要 SnapTray 主程式執行中</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">full</code></td>
+      <td>擷取全螢幕</td>
+      <td>否</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">screen</code></td>
+      <td>擷取指定螢幕</td>
+      <td>否</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">region</code></td>
+      <td>擷取指定區域</td>
+      <td>否</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">gui</code></td>
+      <td>開啟區域截圖 GUI</td>
+      <td>是</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">canvas</code></td>
+      <td>開啟/切換 Screen Canvas</td>
+      <td>是</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">record</code></td>
+      <td><code class="language-plaintext highlighter-rouge">start</code> / <code class="language-plaintext highlighter-rouge">stop</code> / <code class="language-plaintext highlighter-rouge">toggle</code> 錄影</td>
+      <td>是</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">pin</code></td>
+      <td>從檔案或剪貼簿建立釘選</td>
+      <td>是</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">config</code></td>
+      <td>列出/讀取/寫入/重設設定（單獨 <code class="language-plaintext highlighter-rouge">config</code> 會開啟設定視窗）</td>
+      <td>部分</td>
+    </tr>
+  </tbody>
+</table>
 
 <h2 id="指令範例">指令範例</h2>
 
-<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>snaptray <span class="nt">--help</span>
-snaptray region <span class="nt">--copy</span>
-snaptray screen <span class="nt">--save</span>
-snaptray gui <span class="nt">--show</span>
-snaptray config <span class="nt">--get</span> files.screenshotPath
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># 全域</span>
+snaptray <span class="nt">--help</span>
+snaptray <span class="nt">--version</span>
+
+<span class="c"># 本地擷取指令</span>
+snaptray full <span class="nt">-c</span>
+snaptray screen <span class="nt">--list</span>
+snaptray screen 1 <span class="nt">-o</span> screen1.png
+snaptray region <span class="nt">-r</span> 100,100,400,300 <span class="nt">-o</span> region.png
+
+<span class="c"># IPC 指令</span>
+snaptray gui <span class="nt">-d</span> 1500
+snaptray canvas
+snaptray record start <span class="nt">-n</span> 0
+snaptray pin <span class="nt">-f</span> image.png <span class="nt">--center</span>
+
+<span class="c"># 設定指令</span>
+snaptray config <span class="nt">--list</span>
+snaptray config <span class="nt">--get</span> hotkey
+snaptray config <span class="nt">--set</span> hotkey F6
+snaptray config <span class="nt">--reset</span>
 </code></pre></div></div>
 
 <h2 id="回傳碼">回傳碼</h2>

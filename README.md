@@ -2,14 +2,14 @@
 
 **English** | [繁體中文](README.zh-TW.md)
 
-SnapTray is a lightweight tray utility for region screenshots, on-screen annotations, and quick screen recordings. Press F2 (default) to capture a region, or Ctrl+F2 for Screen Canvas.
+SnapTray is a lightweight tray utility for region screenshots, on-screen annotations, and quick screen recordings. Press `F2` (default) to capture a region, or `Ctrl+F2 / Cmd+F2` for Screen Canvas.
 
 ## Features
 
 - **System Tray Menu**: `Region Capture` (shows current hotkey), `Screen Canvas` (shows current hotkey), `Pin from Image...`, `Pin History`, `Hide/Show All Pins`, `Close All Pins`, `Record Full Screen`, `Settings`, `Exit`
 - **Global Hotkeys**: Customizable in settings with live hotkey registration
   - Region Capture: Default `F2`
-  - Screen Canvas: Default `Ctrl+F2`
+  - Screen Canvas: Default `Ctrl+F2 / Cmd+F2`
   - Additional configurable actions: `Paste` (default `F3`), `Quick Pin` (default `Shift+F2`), `Pin from Image`, `Pin History`, `Hide/Show All Pins`, `Record Full Screen`
 - **Region Capture Overlay**:
   - Crosshair + magnifier (pixel-level precision)
@@ -338,7 +338,7 @@ CMake automatically detects and uses the compiler cache when available. No addit
 ## Usage
 
 1. After launch, the SnapTray icon appears in the system tray.
-2. Press the region capture hotkey (default `F2`) to enter capture mode; or press the screen canvas hotkey (default `Ctrl+F2`) for Screen Canvas mode.
+2. Press the region capture hotkey (default `F2`) to enter capture mode; or press the screen canvas hotkey (default `Ctrl+F2 / Cmd+F2`) for Screen Canvas mode.
 3. **Capture Mode**:
    - Drag mouse to select a region
    - Single-click to quickly select a detected window (macOS/Windows)

@@ -11,7 +11,7 @@ doc_order: 3
 
 ## Enter canvas mode
 
-Press `Ctrl+F2` (default) or use tray menu "Screen Canvas".
+Press `Ctrl+F2 / Cmd+F2` (default) or use tray menu "Screen Canvas".
 
 ## Available tools
 
