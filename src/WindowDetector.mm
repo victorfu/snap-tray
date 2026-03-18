@@ -676,7 +676,6 @@ void WindowDetector::refreshWindowList()
 
     enumerateWindows();
 
-    qDebug() << "WindowDetector: Refreshed window list, found" << m_windowCache.size() << "windows";
 }
 
 void WindowDetector::enumerateWindows()

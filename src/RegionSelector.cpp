@@ -1232,8 +1232,6 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     m_initialWindowDetectionMode = WindowDetector::QueryMode::TopLevelOnly;
     m_postShowInitializationPending = true;
 
-    qDebug() << "RegionSelector: pre-show initializeForScreen elapsedMs="
-             << initTimer.elapsed();
 }
 
 void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
@@ -1931,7 +1929,6 @@ void RegionSelector::runDeferredPostShowInitialization(
 {
     if (m_postShowInitializationToken != token || m_isClosing || m_historyReplayActive ||
         !isVisible() || !isScreenValid()) {
-        qDebug() << "RegionSelector: skipping stale post-show init token=" << token;
         return;
     }
 
@@ -1945,10 +1942,6 @@ void RegionSelector::runDeferredPostShowInitialization(
     m_magnifierPanel->invalidateCache();
     m_magnifierPanel->preWarmCache(initialCursorPos, m_backgroundPixmap);
     const qint64 magnifierWarmupMs = timer.restart();
-
-    qDebug() << "RegionSelector: post-show warmup token=" << token
-             << "dimmedCacheMs=" << dimmedCacheMs
-             << "magnifierWarmupMs=" << magnifierWarmupMs;
 
     scheduleDeferredInitialWindowDetection(token, initialQueryMode, initialCursorPos);
 }
@@ -1965,30 +1958,19 @@ void RegionSelector::scheduleDeferredInitialWindowDetection(
     const auto runDetection = [this, token, queryMode, initialCursorPos]() {
         if (m_postShowInitializationToken != token || m_isClosing || m_historyReplayActive ||
             !isVisible() || !isScreenValid()) {
-            qDebug() << "RegionSelector: skipping stale initial detection token=" << token;
             return;
         }
 
         if (m_inputState.currentPoint != initialCursorPos) {
-            qDebug() << "RegionSelector: refreshing initial detection at moved cursor"
-                     << "token=" << token
-                     << "initialCursorPos=" << initialCursorPos
-                     << "currentCursorPos=" << m_inputState.currentPoint;
             QElapsedTimer timer;
             timer.start();
             updateWindowDetection(m_inputState.currentPoint, queryMode);
-            qDebug() << "RegionSelector: moved-cursor detection token=" << token
-                     << "queryMode=" << static_cast<int>(queryMode)
-                     << "elapsedMs=" << timer.elapsed();
             return;
         }
 
         QElapsedTimer timer;
         timer.start();
         refreshWindowDetectionAtCursor(queryMode);
-        qDebug() << "RegionSelector: initial detection token=" << token
-                 << "queryMode=" << static_cast<int>(queryMode)
-                 << "elapsedMs=" << timer.elapsed();
     };
 
     if (m_windowDetector->isRefreshComplete()) {

@@ -489,7 +489,6 @@ void WindowDetector::enumerateWindows()
         }
     }
 
-    qDebug() << "WindowDetector: Enumerated" << m_windowCache.size() << "windows";
 }
 
 void WindowDetector::enumerateWindowsInternal(std::vector<DetectedElement>& cache, qreal dpr, DetectionFlags flags)
@@ -545,7 +544,6 @@ void WindowDetector::enumerateWindowsInternal(std::vector<DetectedElement>& cach
         }
     }
 
-    qDebug() << "WindowDetector: Enumerated" << cache.size() << "windows (async)";
 }
 
 std::optional<DetectedElement> WindowDetector::detectChildElementAt(

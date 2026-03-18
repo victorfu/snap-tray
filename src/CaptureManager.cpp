@@ -231,7 +231,6 @@ void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortc
     QElapsedTimer grabTimer;
     grabTimer.start();
     QPixmap preCapture = targetScreen->grabWindow(0);
-    qDebug() << "CaptureManager: preCapture grabWindow elapsedMs=" << grabTimer.elapsed();
 
     // 4. Close popup/modal AFTER screenshot
     if (popup) {
@@ -247,8 +246,6 @@ void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortc
 
     const bool quickPinMode = (mode == CaptureEntryMode::QuickPin);
     initializeRegionSelector(targetScreen, preCapture, quickPinMode, showShortcutHintsOnEntry);
-    qDebug() << "CaptureManager: startCaptureInternal first-show pipeline elapsedMs="
-             << captureTimer.elapsed();
 }
 
 void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &globalPosition, const QRect &globalRect)
@@ -427,6 +424,4 @@ void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
     // cursor was set before widget visibility, then Qt reset it to ArrowCursor
     m_regionSelector->ensureCrossCursor();
 
-    qDebug() << "CaptureManager: initializeRegionSelector elapsedMs="
-             << initTimer.elapsed();
 }
