@@ -6,6 +6,7 @@
 #include <QPoint>
 #include <QRect>
 #include <QPointer>
+#include <QString>
 
 class RegionSelector;
 class QScreen;
@@ -25,6 +26,7 @@ public:
     void triggerFinishSelection();
     void cancelCapture();
     void cycleOrSwitchCaptureScreenByCursor();
+    bool startHistoryReplay(const QString& entryId);
 
 public slots:
     void startRegionCapture(bool showShortcutHintsOnEntry = false);

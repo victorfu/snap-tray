@@ -59,15 +59,25 @@ target_link_libraries(PinWindow_RegionLayoutManager PRIVATE snaptray_ui Qt6::Tes
 add_test(NAME PinWindow_RegionLayoutManager COMMAND PinWindow_RegionLayoutManager)
 set_tests_properties(PinWindow_RegionLayoutManager PROPERTIES TIMEOUT 60 LABELS "unit")
 
-add_executable(PinWindow_PinHistoryStore PinWindow/tst_PinHistoryStore.cpp)
-target_link_libraries(PinWindow_PinHistoryStore PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME PinWindow_PinHistoryStore COMMAND PinWindow_PinHistoryStore)
-set_tests_properties(PinWindow_PinHistoryStore PROPERTIES TIMEOUT 60 LABELS "unit")
+add_executable(PinWindow_HistoryStore PinWindow/tst_HistoryStore.cpp)
+target_link_libraries(PinWindow_HistoryStore PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_HistoryStore COMMAND PinWindow_HistoryStore)
+set_tests_properties(PinWindow_HistoryStore PROPERTIES TIMEOUT 60 LABELS "unit")
 
-add_executable(PinWindow_PinHistoryModel PinWindow/tst_PinHistoryModel.cpp)
-target_link_libraries(PinWindow_PinHistoryModel PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME PinWindow_PinHistoryModel COMMAND PinWindow_PinHistoryModel)
-set_tests_properties(PinWindow_PinHistoryModel PROPERTIES TIMEOUT 60 LABELS "unit")
+add_executable(PinWindow_HistoryModel PinWindow/tst_HistoryModel.cpp)
+target_link_libraries(PinWindow_HistoryModel PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_HistoryModel COMMAND PinWindow_HistoryModel)
+set_tests_properties(PinWindow_HistoryModel PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(PinWindow_HistoryRecorder PinWindow/tst_HistoryRecorder.cpp)
+target_link_libraries(PinWindow_HistoryRecorder PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_HistoryRecorder COMMAND PinWindow_HistoryRecorder)
+set_tests_properties(PinWindow_HistoryRecorder PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(PinWindow_AnnotationSerializer PinWindow/tst_AnnotationSerializer.cpp)
+target_link_libraries(PinWindow_AnnotationSerializer PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_AnnotationSerializer COMMAND PinWindow_AnnotationSerializer)
+set_tests_properties(PinWindow_AnnotationSerializer PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(PinWindow_PinMergeHelper PinWindow/tst_PinMergeHelper.cpp)
 target_link_libraries(PinWindow_PinMergeHelper PRIVATE snaptray_ui Qt6::Test)
@@ -187,6 +197,11 @@ add_executable(RegionSelector_TransientUiCancelGuard RegionSelector/tst_Transien
 target_link_libraries(RegionSelector_TransientUiCancelGuard PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
 add_test(NAME RegionSelector_TransientUiCancelGuard COMMAND RegionSelector_TransientUiCancelGuard)
 set_tests_properties(RegionSelector_TransientUiCancelGuard PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RegionSelector_HistoryReplay RegionSelector/tst_HistoryReplay.cpp)
+target_link_libraries(RegionSelector_HistoryReplay PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME RegionSelector_HistoryReplay COMMAND RegionSelector_HistoryReplay)
+set_tests_properties(RegionSelector_HistoryReplay PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(RegionSelector_StyleSync RegionSelector/tst_StyleSync.cpp)
 target_link_libraries(RegionSelector_StyleSync PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)

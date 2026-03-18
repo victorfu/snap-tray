@@ -39,6 +39,35 @@ int MultiRegionManager::addRegion(const QRect& rect)
     return newIndex;
 }
 
+void MultiRegionManager::setRegions(const QVector<Region>& regions)
+{
+    m_regions = regions;
+
+    int activeIndex = -1;
+    for (int i = 0; i < m_regions.size(); ++i) {
+        m_regions[i].rect = m_regions[i].rect.normalized();
+        if (!m_regions[i].rect.isValid() || m_regions[i].rect.isEmpty()) {
+            m_regions[i].rect = QRect();
+        }
+        if (m_regions[i].isActive && activeIndex < 0) {
+            activeIndex = i;
+        }
+    }
+
+    if (m_regions.isEmpty()) {
+        applyActiveState(-1, false);
+        emit regionsCleared();
+        return;
+    }
+
+    if (activeIndex < 0) {
+        activeIndex = qMin(m_activeIndex, m_regions.size() - 1);
+    }
+
+    applyActiveState(activeIndex, false);
+    emit regionsCleared();
+}
+
 bool MultiRegionManager::moveRegion(int fromIndex, int toIndex)
 {
     if (fromIndex < 0 || fromIndex >= m_regions.size() ||

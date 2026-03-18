@@ -2,6 +2,7 @@
 #define REGIONSELECTOR_H
 
 #include <QWidget>
+#include <QImage>
 #include <QPixmap>
 #include <QPoint>
 #include <QPointF>
@@ -24,6 +25,7 @@
 #include "TransformationGizmo.h"
 #include "TextFormattingState.h"
 #include "annotation/AnnotationHostAdapter.h"
+#include "history/HistoryStore.h"
 #include "tools/ToolId.h"
 #include "tools/ToolManager.h"
 #include "region/SelectionStateManager.h"
@@ -79,6 +81,7 @@ class RegionSelector : public QWidget, public AnnotationHostAdapter
 
     friend class tst_RegionSelectorMultiRegionSubToolbar;
     friend class tst_RegionSelectorMagnifierToolbarVisibility;
+    friend class tst_RegionSelectorHistoryReplay;
     friend class tst_RegionSelectorTransientUiCancelGuard;
     friend class TestRegionSelectorStyleSync;
 
@@ -100,6 +103,7 @@ public:
 
     // Switch capture context to another screen while selector is active.
     void switchToScreen(QScreen *screen, bool preserveCompletedSelection = true);
+    bool beginHistoryReplay(const QString& entryId);
 
     // Check if selection is complete (for external queries)
     bool isSelectionComplete() const;
@@ -205,9 +209,26 @@ private:
     void hideShortcutHints();
     void positionRegionControlPanel();
     void positionMultiRegionListPanel();
+    void applyCanvasGeometry(const QSize& logicalSize);
     void maybeDismissShortcutHintsAfterSelectionCompleted();
     void updateShortcutHintsHoverVisibilityDuringSelection(const QPoint& localPos);
     static bool isPureModifierKey(int key);
+    bool canNavigateHistoryReplay() const;
+    void navigateHistoryReplay(int direction);
+    void snapshotLiveReplaySlot();
+    void restoreLiveReplaySlot();
+    bool loadHistoryReplayIndex(int index);
+    bool applyHistoryReplayEntry(const SnapTray::HistoryEntry& entry);
+    void clearHistoryReplaySelectionState();
+    void recordCaptureSession(const QPixmap& resultPixmap);
+    void recordCaptureSession(const QImage& resultImage);
+    struct HistoryCaptureSnapshot;
+    struct PendingHistorySubmission;
+    std::optional<HistoryCaptureSnapshot> makeHistoryCaptureSnapshot(
+        const QDateTime& createdAt = QDateTime::currentDateTime()) const;
+    void submitPendingHistorySubmission(PendingHistorySubmission submission) const;
+    QRect currentHistorySelectionRect() const;
+    QVector<MultiRegionManager::Region> currentHistoryCaptureRegions() const;
 
     // Initialization helpers
     void setupScreenGeometry(QScreen* screen);
@@ -361,6 +382,41 @@ private:
 
     // Screen switch monitoring
     QTimer* m_screenSwitchTimer = nullptr;
+
+    struct HistoryCaptureSnapshot {
+        QPixmap backgroundPixmap;
+        QRect selectionRect;
+        QVector<MultiRegionManager::Region> captureRegions;
+        QByteArray annotationsJson;
+        qreal devicePixelRatio = 1.0;
+        QSize canvasLogicalSize;
+        int cornerRadius = 0;
+        int maxEntries = 20;
+        QDateTime createdAt;
+    };
+
+    struct PendingHistorySubmission {
+        HistoryCaptureSnapshot snapshot;
+        QImage resultImage;
+    };
+
+    struct HistoryLiveSlot {
+        bool valid = false;
+        QSize canvasLogicalSize;
+        QPixmap backgroundPixmap;
+        qreal devicePixelRatio = 1.0;
+        QRect selectionRect;
+        bool multiRegionMode = false;
+        QVector<MultiRegionManager::Region> multiRegions;
+        QByteArray annotationsJson;
+        int cornerRadius = 0;
+    };
+
+    QList<SnapTray::HistoryEntry> m_historyReplayEntries;
+    HistoryLiveSlot m_historyLiveSlot;
+    int m_historyReplayIndex = -1;  // -1 = current live slot
+    bool m_historyReplayActive = false;
+    std::optional<PendingHistorySubmission> m_pendingShareSubmission;
 
     // Preserve completed selection when cursor switches to another screen.
     bool m_hasPreservedSelection = false;

@@ -24,6 +24,10 @@ public:
 
     void addPoint(const QPointF &point);
     void finalize();
+    QVector<QPointF> points() const { return m_points; }
+    QColor color() const { return m_color; }
+    int width() const { return m_width; }
+    LineStyle lineStyle() const { return m_lineStyle; }
 
     // Collision detection for eraser (path-based intersection)
     bool intersectsCircle(const QPoint &center, int radius) const;

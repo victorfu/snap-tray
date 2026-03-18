@@ -95,7 +95,7 @@ void tst_HotkeyManager::clearAllTestSettings()
     clearSetting(SnapTray::kSettingsKeyPasteHotkey);
     clearSetting(SnapTray::kSettingsKeyQuickPinHotkey);
     clearSetting(SnapTray::kSettingsKeyPinFromImageHotkey);
-    clearSetting(SnapTray::kSettingsKeyPinHistoryHotkey);
+    clearSetting(SnapTray::kSettingsKeyHistoryWindowHotkey);
     clearSetting(SnapTray::kSettingsKeyTogglePinsVisibilityHotkey);
     clearSetting(SnapTray::kSettingsKeyRecordFullScreenHotkey);
 }
@@ -152,7 +152,7 @@ void tst_HotkeyManager::testGetConfig_AllActionsExist()
     QVERIFY(!manager().getConfig(HotkeyAction::PasteFromClipboard).displayName.isEmpty());
     QVERIFY(!manager().getConfig(HotkeyAction::QuickPin).displayName.isEmpty());
     QVERIFY(!manager().getConfig(HotkeyAction::PinFromImage).displayName.isEmpty());
-    QVERIFY(!manager().getConfig(HotkeyAction::PinHistory).displayName.isEmpty());
+    QVERIFY(!manager().getConfig(HotkeyAction::HistoryWindow).displayName.isEmpty());
     QVERIFY(!manager().getConfig(HotkeyAction::TogglePinsVisibility).displayName.isEmpty());
     QVERIFY(!manager().getConfig(HotkeyAction::RecordFullScreen).displayName.isEmpty());
 }
@@ -177,7 +177,7 @@ void tst_HotkeyManager::testGetConfig_CategoryAssignment()
     QCOMPARE(manager().getConfig(HotkeyAction::PasteFromClipboard).category, HotkeyCategory::Clipboard);
     QCOMPARE(manager().getConfig(HotkeyAction::QuickPin).category, HotkeyCategory::Pin);
     QCOMPARE(manager().getConfig(HotkeyAction::PinFromImage).category, HotkeyCategory::Pin);
-    QCOMPARE(manager().getConfig(HotkeyAction::PinHistory).category, HotkeyCategory::Pin);
+    QCOMPARE(manager().getConfig(HotkeyAction::HistoryWindow).category, HotkeyCategory::Pin);
     QCOMPARE(manager().getConfig(HotkeyAction::TogglePinsVisibility).category, HotkeyCategory::Pin);
     QCOMPARE(manager().getConfig(HotkeyAction::RecordFullScreen).category, HotkeyCategory::Recording);
 }
@@ -201,7 +201,7 @@ void tst_HotkeyManager::testGetConfigsByCategory_FilterCorrectly()
     QCOMPARE(captureConfigs.first().action, HotkeyAction::RegionCapture);
 
     auto pinConfigs = manager().getConfigsByCategory(HotkeyCategory::Pin);
-    QCOMPARE(pinConfigs.size(), 4);  // QuickPin, PinFromImage, PinHistory, TogglePinsVisibility
+    QCOMPARE(pinConfigs.size(), 4);  // QuickPin, PinFromImage, HistoryWindow, TogglePinsVisibility
 }
 
 // ============================================================================

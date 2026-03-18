@@ -43,6 +43,9 @@ public:
     QRect rect() const { return m_rect.toAlignedRect(); }
     QRectF rectF() const { return m_rect; }
     ShapeType shapeType() const { return m_type; }
+    QColor color() const { return m_color; }
+    int width() const { return m_width; }
+    bool filled() const { return m_filled; }
     qreal rotation() const { return m_rotation; }
     qreal scaleX() const { return m_scaleX; }
     qreal scaleY() const { return m_scaleY; }

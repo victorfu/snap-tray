@@ -6,7 +6,7 @@
 #include "PlatformFeatures.h"
 #include "RecordingManager.h"
 #include "ScreenCanvasManager.h"
-#include "qml/QmlPinHistoryWindow.h"
+#include "qml/QmlHistoryWindow.h"
 #include "qml/QmlSettingsWindow.h"
 #include "pinwindow/PinWindowPlacement.h"
 #include "ImageColorSpaceHelper.h"
@@ -107,7 +107,7 @@ MainApplication::MainApplication(QObject* parent)
     , m_regionCaptureAction(nullptr)
     , m_screenCanvasAction(nullptr)
     , m_pinFromImageAction(nullptr)
-    , m_pinHistoryAction(nullptr)
+    , m_historyAction(nullptr)
     , m_togglePinsVisibilityAction(nullptr)
     , m_closeAllPinsAction(nullptr)
     , m_fullScreenRecordingAction(nullptr)
@@ -378,8 +378,8 @@ void MainApplication::initialize()
     m_pinFromImageAction = m_trayMenu->addAction(tr("Pin from Image..."));
     connect(m_pinFromImageAction, &QAction::triggered, this, &MainApplication::onPinFromImage);
 
-    m_pinHistoryAction = m_trayMenu->addAction(tr("Pin History"));
-    connect(m_pinHistoryAction, &QAction::triggered, this, &MainApplication::onPinHistory);
+    m_historyAction = m_trayMenu->addAction(tr("History"));
+    connect(m_historyAction, &QAction::triggered, this, &MainApplication::onHistoryWindow);
 
     m_togglePinsVisibilityAction = m_trayMenu->addAction(tr("Hide All Pins"));
     connect(m_togglePinsVisibilityAction, &QAction::triggered, this, &MainApplication::onToggleAllPinsVisibility);
@@ -631,24 +631,29 @@ void MainApplication::onPinFromImage()
     });
 }
 
-void MainApplication::onPinHistory()
+void MainApplication::onHistoryWindow()
 {
-    if (m_pinHistoryWindow) {
-        if (m_pinHistoryWindow->isMinimized()) {
-            m_pinHistoryWindow->showNormal();
+    if (m_historyWindow) {
+        if (m_historyWindow->isMinimized()) {
+            m_historyWindow->showNormal();
         }
-        else if (!m_pinHistoryWindow->isVisible()) {
-            m_pinHistoryWindow->show();
+        else if (!m_historyWindow->isVisible()) {
+            m_historyWindow->show();
         }
-        m_pinHistoryWindow->raise();
-        m_pinHistoryWindow->activateWindow();
+        m_historyWindow->raise();
+        m_historyWindow->activateWindow();
         return;
     }
 
-    m_pinHistoryWindow = new SnapTray::QmlPinHistoryWindow(m_pinWindowManager, this);
-    m_pinHistoryWindow->show();
-    m_pinHistoryWindow->raise();
-    m_pinHistoryWindow->activateWindow();
+    m_historyWindow = new SnapTray::QmlHistoryWindow(
+        m_pinWindowManager,
+        [captureManager = m_captureManager](const QString& entryId) {
+            return captureManager && captureManager->startHistoryReplay(entryId);
+        },
+        this);
+    m_historyWindow->show();
+    m_historyWindow->raise();
+    m_historyWindow->activateWindow();
 }
 
 void MainApplication::onImageLoaded(const QString &filePath, const QImage &image)
@@ -755,8 +760,8 @@ void MainApplication::onHotkeyAction(SnapTray::HotkeyAction action)
     case HotkeyAction::PinFromImage:
         onPinFromImage();
         break;
-    case HotkeyAction::PinHistory:
-        onPinHistory();
+    case HotkeyAction::HistoryWindow:
+        onHistoryWindow();
         break;
     case HotkeyAction::TogglePinsVisibility:
         onToggleAllPinsVisibility();
@@ -975,9 +980,9 @@ void MainApplication::updateTrayMenuHotkeyText()
     updateActionHotkeyText(m_pinFromImageAction,
                            SnapTray::HotkeyAction::PinFromImage,
                            tr("Pin from Image..."));
-    updateActionHotkeyText(m_pinHistoryAction,
-                           SnapTray::HotkeyAction::PinHistory,
-                           tr("Pin History"));
+    updateActionHotkeyText(m_historyAction,
+                           SnapTray::HotkeyAction::HistoryWindow,
+                           tr("History"));
     updateActionHotkeyText(m_fullScreenRecordingAction,
                            SnapTray::HotkeyAction::RecordFullScreen,
                            tr("Record Full Screen"));

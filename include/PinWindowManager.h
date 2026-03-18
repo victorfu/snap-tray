@@ -17,8 +17,7 @@ public:
     ~PinWindowManager();
 
     PinWindow* createPinWindow(const QPixmap &screenshot,
-                               const QPoint &position,
-                               bool autoSaveToCache = true);
+                               const QPoint &position);
     void closeAllWindows();
     void closeWindows(const QList<PinWindow*>& windows);
     void setAllPinsVisible(bool visible);

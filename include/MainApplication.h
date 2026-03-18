@@ -24,7 +24,7 @@ struct ReleaseInfo;
 
 namespace SnapTray {
 class QmlSettingsWindow;
-class QmlPinHistoryWindow;
+class QmlHistoryWindow;
 }
 
 #ifdef SNAPTRAY_ENABLE_MCP
@@ -58,7 +58,7 @@ private slots:
     void onToggleAllPinsVisibility();
     void onCloseAllPins();
     void onPinFromImage();
-    void onPinHistory();
+    void onHistoryWindow();
     void onImageLoaded(const QString &filePath, const QImage &image);
     void onSettings();
     void showRecordingPreview(const QString &videoPath, int defaultOutputFormat);
@@ -94,12 +94,12 @@ private:
     QAction *m_regionCaptureAction;
     QAction *m_screenCanvasAction;
     QAction *m_pinFromImageAction;
-    QAction *m_pinHistoryAction;
+    QAction *m_historyAction;
     QAction *m_togglePinsVisibilityAction;
     QAction *m_closeAllPinsAction;
     QAction *m_fullScreenRecordingAction;
     QPointer<SnapTray::QmlSettingsWindow> m_settingsWindow;
-    QPointer<SnapTray::QmlPinHistoryWindow> m_pinHistoryWindow;
+    QPointer<SnapTray::QmlHistoryWindow> m_historyWindow;
     RecordingPreviewBackend *m_previewBackend = nullptr;
     UpdateChecker *m_updateChecker;
 #ifdef SNAPTRAY_ENABLE_MCP

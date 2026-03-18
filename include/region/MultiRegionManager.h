@@ -26,6 +26,7 @@ public:
     explicit MultiRegionManager(QObject* parent = nullptr);
 
     int addRegion(const QRect& rect);
+    void setRegions(const QVector<Region>& regions);
     bool moveRegion(int fromIndex, int toIndex);
     void removeRegion(int index);
     void updateRegion(int index, const QRect& rect);

@@ -653,13 +653,15 @@ add_library(snaptray_ui STATIC
     src/region/SelectionResizeHelper.cpp
     src/region/RegionExportManager.cpp
     src/region/CaptureShortcutHintsOverlay.cpp
+    src/history/AnnotationSerializer.cpp
+    src/history/HistoryRecorder.cpp
+    src/history/HistoryStore.cpp
     # PinWindow
     src/PinWindow.cpp
     src/PinWindowManager.cpp
-    src/pinwindow/PinHistoryStore.cpp
-    src/qml/PinHistoryModel.cpp
-    src/qml/PinHistoryBackend.cpp
-    src/qml/QmlPinHistoryWindow.cpp
+    src/qml/HistoryModel.cpp
+    src/qml/HistoryBackend.cpp
+    src/qml/QmlHistoryWindow.cpp
     src/pinwindow/PinWindowPlacement.cpp
     src/pinwindow/ResizeHandler.cpp
     src/pinwindow/UIIndicators.cpp
@@ -728,12 +730,12 @@ add_library(snaptray_ui STATIC
     include/region/RegionSettingsHelper.h
     include/region/RegionExportManager.h
     include/region/CaptureShortcutHintsOverlay.h
+    include/history/HistoryStore.h
     include/PinWindow.h
     include/PinWindowManager.h
-    include/pinwindow/PinHistoryStore.h
-    include/qml/PinHistoryModel.h
-    include/qml/PinHistoryBackend.h
-    include/qml/QmlPinHistoryWindow.h
+    include/qml/HistoryModel.h
+    include/qml/HistoryBackend.h
+    include/qml/QmlHistoryWindow.h
     include/pinwindow/PinWindowPlacement.h
     include/pinwindow/ResizeHandler.h
     include/pinwindow/UIIndicators.h
@@ -908,7 +910,7 @@ set_source_files_properties(src/qml/recording/RecordingControlBar.qml PROPERTIES
 set_source_files_properties(src/qml/recording/RecordingRegionSelector.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingRegionSelector.qml)
 set_source_files_properties(src/qml/panels/BeautifyPanel.qml PROPERTIES QT_RESOURCE_ALIAS panels/BeautifyPanel.qml)
 set_source_files_properties(src/qml/panels/EmojiPickerPopup.qml PROPERTIES QT_RESOURCE_ALIAS panels/EmojiPickerPopup.qml)
-set_source_files_properties(src/qml/panels/PinHistoryWindow.qml PROPERTIES QT_RESOURCE_ALIAS panels/PinHistoryWindow.qml)
+set_source_files_properties(src/qml/panels/HistoryWindow.qml PROPERTIES QT_RESOURCE_ALIAS panels/HistoryWindow.qml)
 
 # Capture overlay panels
 set_source_files_properties(src/qml/panels/ShortcutHintsPanel.qml PROPERTIES QT_RESOURCE_ALIAS panels/ShortcutHintsPanel.qml)
@@ -966,7 +968,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/recording/RecordingRegionSelector.qml
         src/qml/panels/BeautifyPanel.qml
         src/qml/panels/EmojiPickerPopup.qml
-        src/qml/panels/PinHistoryWindow.qml
+        src/qml/panels/HistoryWindow.qml
         src/qml/dialogs/SharePasswordDialog.qml
         src/qml/dialogs/ShareResultDialog.qml
         src/qml/dialogs/OCRResultDialog.qml

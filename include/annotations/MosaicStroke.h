@@ -30,6 +30,9 @@ public:
     void setSourcePixmap(SharedPixmap pixmap);
 
     void addPoint(const QPoint &point);
+    QVector<QPoint> points() const { return m_points; }
+    int width() const { return m_width; }
+    int blockSize() const { return m_blockSize; }
     BlurType blurType() const { return m_blurType; }
 
     // Collision detection for eraser (path-based intersection)

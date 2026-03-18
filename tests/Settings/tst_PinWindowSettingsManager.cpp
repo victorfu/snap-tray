@@ -12,7 +12,7 @@
  * - Opacity step settings
  * - Zoom step settings
  * - Shadow enabled settings
- * - Max cache files settings
+ * - Max history entries settings
  * - Value clamping/validation
  */
 class tst_PinWindowSettingsManager : public QObject
@@ -82,7 +82,7 @@ void tst_PinWindowSettingsManager::clearAllTestSettings()
     settings.remove("pinWindow/opacityStep");
     settings.remove("pinWindow/zoomStep");
     settings.remove("pinWindow/shadowEnabled");
-    settings.remove("pinWindow/maxCacheFiles");
+    settings.remove("history/maxEntries");
     settings.sync();
 }
 
@@ -278,7 +278,7 @@ void tst_PinWindowSettingsManager::testSaveLoadShadowEnabled_False()
 }
 
 // ============================================================================
-// Max Cache Files Tests
+// Max History Entries Tests
 // ============================================================================
 
 void tst_PinWindowSettingsManager::testLoadMaxCacheFiles_DefaultValue()
@@ -302,7 +302,7 @@ void tst_PinWindowSettingsManager::testSaveLoadMaxCacheFiles_Roundtrip()
 void tst_PinWindowSettingsManager::testLoadMaxCacheFiles_ClampMin()
 {
     auto settings = SnapTray::getSettings();
-    settings.setValue("pinWindow/maxCacheFiles", 2);  // Below minimum
+    settings.setValue("history/maxEntries", 2);  // Below minimum
     settings.sync();
 
     int maxFiles = PinWindowSettingsManager::instance().loadMaxCacheFiles();
@@ -312,7 +312,7 @@ void tst_PinWindowSettingsManager::testLoadMaxCacheFiles_ClampMin()
 void tst_PinWindowSettingsManager::testLoadMaxCacheFiles_ClampMax()
 {
     auto settings = SnapTray::getSettings();
-    settings.setValue("pinWindow/maxCacheFiles", 500);  // Above maximum
+    settings.setValue("history/maxEntries", 500);  // Above maximum
     settings.sync();
 
     int maxFiles = PinWindowSettingsManager::instance().loadMaxCacheFiles();

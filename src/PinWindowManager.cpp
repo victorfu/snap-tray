@@ -14,10 +14,9 @@ PinWindowManager::~PinWindowManager()
 }
 
 PinWindow* PinWindowManager::createPinWindow(const QPixmap &screenshot,
-                                             const QPoint &position,
-                                             bool autoSaveToCache)
+                                             const QPoint &position)
 {
-    PinWindow *window = new PinWindow(screenshot, position, nullptr, autoSaveToCache);
+    PinWindow *window = new PinWindow(screenshot, position, nullptr);
     window->setPinWindowManager(this);
 
     connect(window, &PinWindow::closed, this, &PinWindowManager::onWindowClosed);

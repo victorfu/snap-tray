@@ -87,8 +87,8 @@
         </message>
     <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="95" />
-        <source>Max cache files</source>
-        <translation>最大快取檔案數：</translation>
+        <source>Max history entries</source>
+        <translation>最大歷程項目數：</translation>
         </message>
 </context>
 <context>
@@ -211,6 +211,10 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Replay capture history</source>
+        <translation>重播截圖歷程</translation>
+    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -513,8 +517,8 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
     <message>
         <location filename="../src/MainApplication.cpp" line="365" />
         <location filename="../src/MainApplication.cpp" line="964" />
-        <source>Pin History</source>
-        <translation>釘選歷史</translation>
+        <source>History</source>
+        <translation>歷程</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="368" />
@@ -877,6 +881,47 @@ Size: %2</source>
     </message>
 </context>
 <context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>歷程</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>開啟歷程資料夾</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>尚無歷程項目</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Size: %2</source>
+        <translation>時間：%1
+尺寸：%2</translation>
+    </message>
+    <message>
+        <source>Capture</source>
+        <translation>截圖</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>釘選</translation>
+    </message>
+    <message>
+        <source>All</source>
+        <translation>全部</translation>
+    </message>
+    <message>
+        <source>Captures</source>
+        <translation>截圖</translation>
+    </message>
+    <message>
+        <source>Pins</source>
+        <translation>釘選</translation>
+    </message>
+</context>
+<context>
     <name>PinWindow</name>
     <message>
         <location filename="../src/PinWindow.cpp" line="887" />
@@ -905,8 +950,8 @@ Size: %2</source>
     </message>
     <message>
         <location filename="../src/PinWindow.cpp" line="910" />
-        <source>Open Cache Folder</source>
-        <translation>開啟快取資料夾</translation>
+        <source>Open History Folder</source>
+        <translation>開啟歷程資料夾</translation>
     </message>
     <message>
         <location filename="../src/PinWindow.cpp" line="913" />

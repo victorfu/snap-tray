@@ -5,6 +5,7 @@
 #include "platform/WindowLevel.h"
 #include "WindowDetector.h"
 #include "PlatformFeatures.h"
+#include "history/HistoryStore.h"
 #include "region/MultiRegionManager.h"
 #include "pinwindow/RegionLayoutManager.h"
 
@@ -15,6 +16,33 @@
 #include <QCursor>
 #include <QKeyEvent>
 #include <QDialog>
+
+namespace {
+
+QScreen* fallbackReplayScreen()
+{
+    QScreen* screen = QGuiApplication::screenAt(QCursor::pos());
+    if (!screen) {
+        screen = QGuiApplication::primaryScreen();
+    }
+    return screen;
+}
+
+QScreen* chooseReplayScreen(const SnapTray::HistoryEntry& entry)
+{
+    if (entry.canvasLogicalSize.isValid()) {
+        const auto screens = QGuiApplication::screens();
+        for (QScreen* screen : screens) {
+            if (screen && screen->geometry().size() == entry.canvasLogicalSize) {
+                return screen;
+            }
+        }
+    }
+
+    return fallbackReplayScreen();
+}
+
+} // namespace
 
 CaptureManager::CaptureManager(PinWindowManager *pinManager, QObject *parent)
     : QObject(parent)
@@ -74,6 +102,70 @@ void CaptureManager::cycleOrSwitchCaptureScreenByCursor()
     }
 
     m_regionSelector->switchToScreen(cursorScreen, true);
+}
+
+bool CaptureManager::startHistoryReplay(const QString& entryId)
+{
+    if (entryId.isEmpty()) {
+        return false;
+    }
+
+    if (m_regionSelector && m_regionSelector->isVisible()) {
+        return m_regionSelector->beginHistoryReplay(entryId);
+    }
+
+    if (m_regionSelector) {
+        m_regionSelector->close();
+    }
+
+    const auto entry = SnapTray::HistoryStore::loadEntry(entryId);
+    if (!entry.has_value()) {
+        return false;
+    }
+
+    emit captureStarted();
+
+    QScreen* targetScreen = chooseReplayScreen(*entry);
+    if (!targetScreen) {
+        qCritical() << "CaptureManager: No valid screen available for history replay";
+        emit captureCancelled();
+        return false;
+    }
+
+    if (m_windowDetector) {
+        m_windowDetector->setScreen(targetScreen);
+#ifdef Q_OS_MACOS
+        m_windowDetector->refreshWindowList();
+#else
+        m_windowDetector->refreshWindowListAsync();
+#endif
+    }
+
+    QWidget* popup = QApplication::activePopupWidget();
+    QWidget* modal = QApplication::activeModalWidget();
+    const QPixmap preCapture = targetScreen->grabWindow(0);
+
+    if (popup) {
+        popup->close();
+    }
+    if (modal) {
+        if (QDialog* dialog = qobject_cast<QDialog*>(modal)) {
+            dialog->reject();
+        } else {
+            modal->close();
+        }
+    }
+
+    initializeRegionSelector(targetScreen, preCapture, false, false);
+    if (!m_regionSelector || !m_regionSelector->beginHistoryReplay(entryId)) {
+        if (m_regionSelector) {
+            m_regionSelector->close();
+        }
+        emit captureCancelled();
+        return false;
+    }
+
+    return true;
 }
 
 void CaptureManager::startRegionCapture(bool showShortcutHintsOnEntry)

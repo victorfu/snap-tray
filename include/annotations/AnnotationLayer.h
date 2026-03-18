@@ -38,6 +38,8 @@ public:
     void translateAll(const QPointF& delta);
     void forEachItem(const std::function<void(AnnotationItem*)>& visitor,
                      bool includeRedoStack = false);
+    void forEachItem(const std::function<void(const AnnotationItem*)>& visitor,
+                     bool includeRedoStack = false) const;
 
     bool canUndo() const;
     bool canRedo() const;

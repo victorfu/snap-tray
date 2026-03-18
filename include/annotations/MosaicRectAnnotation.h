@@ -31,6 +31,8 @@ public:
     void translate(const QPointF& delta) override;
     void setSourcePixmap(SharedPixmap pixmap);
 
+    QRect rect() const { return m_rect; }
+    int blockSize() const { return m_blockSize; }
     BlurType blurType() const { return m_blurType; }
 
 private:

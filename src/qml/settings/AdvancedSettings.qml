@@ -92,7 +92,7 @@ Flickable {
         }
 
         SettingsSlider {
-            label: qsTr("Max cache files")
+            label: qsTr("Max history entries")
             value: settingsBackend.pinMaxCacheFiles
             from: 5
             to: 200

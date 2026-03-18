@@ -81,7 +81,7 @@ public:
     explicit PinWindow(const QPixmap& screenshot,
                        const QPoint& position,
                        QWidget* parent = nullptr,
-                       bool autoSaveToCache = true);
+                       bool persistHistorySnapshot = false);
     ~PinWindow();
 
     void setZoomLevel(qreal zoom);
@@ -227,7 +227,6 @@ private:
     // Cache folder methods
     static QString cacheFolderPath();
     void openCacheFolder();
-    void saveToCacheAsync();
 
     // Toolbar and annotation methods
     void showToolbar();

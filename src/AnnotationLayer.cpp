@@ -212,6 +212,25 @@ void AnnotationLayer::forEachItem(const std::function<void(AnnotationItem*)>& vi
     }
 }
 
+void AnnotationLayer::forEachItem(const std::function<void(const AnnotationItem*)>& visitor,
+                                  bool includeRedoStack) const
+{
+    if (!visitor) {
+        return;
+    }
+
+    auto visitItems = [&visitor](const std::vector<std::unique_ptr<AnnotationItem>>& items) {
+        for (const auto& item : items) {
+            visitor(item.get());
+        }
+    };
+
+    visitItems(m_items);
+    if (includeRedoStack) {
+        visitItems(m_redoStack);
+    }
+}
+
 void AnnotationLayer::draw(QPainter &painter) const
 {
     if (m_items.empty()) return;

@@ -51,6 +51,7 @@ public:
 
     // Box manipulation (for resize operations)
     QRectF box() const { return m_box; }
+    void setBox(const QRectF& box);
 
     // Position (top-left of box in world coordinates)
     void setPosition(const QPointF &position);

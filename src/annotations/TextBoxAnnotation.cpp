@@ -253,6 +253,12 @@ void TextBoxAnnotation::setPosition(const QPointF &position)
     invalidateCache();
 }
 
+void TextBoxAnnotation::setBox(const QRectF& box)
+{
+    m_box = box;
+    invalidateCache();
+}
+
 void TextBoxAnnotation::moveBy(const QPointF &delta)
 {
     m_position += delta;

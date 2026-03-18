@@ -23,6 +23,9 @@ public:
     void translate(const QPointF& delta) override;
 
     void addPoint(const QPointF &point);
+    QVector<QPointF> points() const { return m_points; }
+    QColor color() const { return m_color; }
+    int width() const { return m_width; }
 
     // Collision detection for eraser (path-based intersection)
     bool intersectsCircle(const QPoint &center, int radius) const;

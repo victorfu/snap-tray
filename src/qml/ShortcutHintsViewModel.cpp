@@ -22,6 +22,7 @@ ShortcutHintsViewModel::ShortcutHintsViewModel(QObject* parent)
     const HintRow rows[] = {
         {{QStringLiteral("Esc")}, "Cancel capture"},
         {{QStringLiteral("Enter")}, "Confirm selection (after selection)"},
+        {{QStringLiteral(", / .")}, "Replay capture history"},
         {{QStringLiteral("M")}, "Toggle multi-region mode"},
         {{QStringLiteral("Shift")}, "Switch RGB/HEX (when magnifier visible)"},
         {{QStringLiteral("C")}, "Copy color value (before selection)"},

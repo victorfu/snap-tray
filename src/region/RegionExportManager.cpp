@@ -139,14 +139,15 @@ void RegionExportManager::copyToClipboard(const QRect &selectionRect, int corner
         return;
     }
 
+    const QImage selectedImage = selectedRegion.toImage();
     const QImage taggedImage =
-        tagImageWithScreenColorSpace(selectedRegion.toImage(), m_sourceScreen.data());
+        tagImageWithScreenColorSpace(selectedImage, m_sourceScreen.data());
     if (!PlatformFeatures::instance().copyImageToClipboard(taggedImage)) {
         QGuiApplication::clipboard()->setImage(taggedImage);
     }
     qDebug() << "RegionExportManager: Copied to clipboard";
 
-    emit copyCompleted(selectedRegion);
+    emit copyCompleted(selectedRegion, selectedImage);
 }
 
 bool RegionExportManager::saveToFile(const QRect &selectionRect, int cornerRadius, QWidget *parentWidget)
@@ -181,13 +182,14 @@ bool RegionExportManager::saveToFile(const QRect &selectionRect, int cornerRadiu
             savePath, templateValue, context, 100, &renderError);
 
         ImageSaveUtils::Error saveError;
+        const QImage selectedImage = selectedRegion.toImage();
         const QImage taggedImage =
-            tagImageWithScreenColorSpace(selectedRegion.toImage(), m_sourceScreen.data());
+            tagImageWithScreenColorSpace(selectedImage, m_sourceScreen.data());
         bool success = ImageSaveUtils::saveImageAtomically(
             taggedImage, filePath, QByteArray(), &saveError);
         if (success) {
             qDebug() << "RegionExportManager: Auto-saved to" << filePath;
-            emit saveCompleted(selectedRegion, filePath);
+            emit saveCompleted(selectedRegion, selectedImage, filePath);
         } else {
             qWarning() << "RegionExportManager: Failed to auto-save to" << filePath;
             if (!saveError.stage.isEmpty() || !saveError.message.isEmpty()) {
@@ -227,13 +229,14 @@ bool RegionExportManager::saveToFile(const QRect &selectionRect, int cornerRadiu
         }
 
         ImageSaveUtils::Error saveError;
+        const QImage selectedImage = selectedRegion.toImage();
         const QImage taggedImage =
-            tagImageWithScreenColorSpace(selectedRegion.toImage(), m_sourceScreen.data());
+            tagImageWithScreenColorSpace(selectedImage, m_sourceScreen.data());
         bool success = ImageSaveUtils::saveImageAtomically(
             taggedImage, filePath, QByteArray(), &saveError);
         if (success) {
             qDebug() << "RegionExportManager: Saved to" << filePath;
-            emit saveCompleted(selectedRegion, filePath);
+            emit saveCompleted(selectedRegion, selectedImage, filePath);
         } else {
             qWarning() << "RegionExportManager: Failed to save to" << filePath;
             if (!saveError.stage.isEmpty() || !saveError.message.isEmpty()) {

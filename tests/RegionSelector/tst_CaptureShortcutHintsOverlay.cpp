@@ -14,7 +14,7 @@ private slots:
 void tst_CaptureShortcutHintsOverlay::testRowCount()
 {
     CaptureShortcutHintsOverlay overlay;
-    QCOMPARE(overlay.rowCount(), 7);
+    QCOMPARE(overlay.rowCount(), 8);
 }
 
 void tst_CaptureShortcutHintsOverlay::testLayoutMetrics()

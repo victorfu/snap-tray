@@ -40,7 +40,7 @@ enum class HotkeyAction {
     // Pin actions (400-499)
     QuickPin = 400,
     PinFromImage = 401,
-    PinHistory = 402,
+    HistoryWindow = 402,
     TogglePinsVisibility = 403,
 
     // Recording actions (500-599)
@@ -145,11 +145,11 @@ inline constexpr HotkeyMetadata kDefaultHotkeys[] = {
         ""                     // Optional, no default
     },
     {
-        HotkeyAction::PinHistory,
+        HotkeyAction::HistoryWindow,
         HotkeyCategory::Pin,
-        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Pin History"),
-        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Open pin history window"),
-        "pinHistoryHotkey",  // kSettingsKeyPinHistoryHotkey
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "History"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Open history window"),
+        "historyWindowHotkey",  // kSettingsKeyHistoryWindowHotkey
         ""                   // Optional, no default
     },
     {

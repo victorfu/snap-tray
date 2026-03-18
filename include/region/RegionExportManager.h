@@ -2,6 +2,7 @@
 #define REGIONEXPORTMANAGER_H
 
 #include <QObject>
+#include <QImage>
 #include <QPointer>
 #include <QPixmap>
 #include <QRect>
@@ -75,12 +76,12 @@ signals:
     /**
      * @brief Emitted when screenshot is copied to clipboard
      */
-    void copyCompleted(const QPixmap &pixmap);
+    void copyCompleted(const QPixmap &pixmap, const QImage& image);
 
     /**
      * @brief Emitted when screenshot is saved to file
      */
-    void saveCompleted(const QPixmap &pixmap, const QString &filePath);
+    void saveCompleted(const QPixmap &pixmap, const QImage& image, const QString &filePath);
 
     /**
      * @brief Emitted when auto-save fails

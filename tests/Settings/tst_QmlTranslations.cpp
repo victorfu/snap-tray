@@ -72,10 +72,10 @@ void tst_QmlTranslations::testPhase4PanelContexts()
              QString::fromUtf8("線性漸層"));
     QCOMPARE(QCoreApplication::translate("BeautifyPanel", "Select Color"),
              QString::fromUtf8("選擇顏色"));
-    QCOMPARE(QCoreApplication::translate("PinHistoryWindow", "Open Cache Folder"),
-             QString::fromUtf8("開啟快取資料夾"));
-    QCOMPARE(QCoreApplication::translate("PinHistoryWindow", "No pinned screenshots yet"),
-             QString::fromUtf8("尚無釘選的螢幕截圖"));
+    QCOMPARE(QCoreApplication::translate("HistoryWindow", "Open History Folder"),
+             QString::fromUtf8("開啟歷程資料夾"));
+    QCOMPARE(QCoreApplication::translate("HistoryWindow", "No history items yet"),
+             QString::fromUtf8("尚無歷程項目"));
 }
 
 QTEST_MAIN(tst_QmlTranslations)

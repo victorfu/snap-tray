@@ -1,5 +1,7 @@
 #include "RegionSelector.h"
 #include "annotation/AnnotationContext.h"
+#include "history/AnnotationSerializer.h"
+#include "history/HistoryRecorder.h"
 #include "platform/WindowLevel.h"
 #include "region/RegionPainter.h"
 #include "region/RegionInputHandler.h"
@@ -35,6 +37,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "settings/AutoBlurSettingsManager.h"
 #include "settings/FileSettingsManager.h"
 #include "settings/OCRSettingsManager.h"
+#include "settings/PinWindowSettingsManager.h"
 #include "settings/RegionCaptureSettingsManager.h"
 #include "qml/OCRResultViewModel.h"
 #include "qml/QRCodeResultViewModel.h"
@@ -615,7 +618,8 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_exportManager = new RegionExportManager(this);
     m_exportManager->setAnnotationLayer(m_annotationLayer);
     connect(m_exportManager, &RegionExportManager::copyCompleted,
-        this, [this](const QPixmap& pixmap) {
+        this, [this](const QPixmap& pixmap, const QImage& image) {
+            recordCaptureSession(image);
             emit copyRequested(pixmap);
             close();
         });
@@ -633,7 +637,8 @@ RegionSelector::RegionSelector(QWidget* parent)
             }
         });
     connect(m_exportManager, &RegionExportManager::saveCompleted,
-        this, [this](const QPixmap& pixmap, const QString& filePath) {
+        this, [this](const QPixmap& pixmap, const QImage& image, const QString& filePath) {
+            recordCaptureSession(image);
             emit saveCompleted(pixmap, filePath);
             close();
         });
@@ -655,6 +660,11 @@ RegionSelector::RegionSelector(QWidget* parent)
                 m_loadingSpinner->stop();
             }
             update();
+
+            if (m_pendingShareSubmission.has_value()) {
+                submitPendingHistorySubmission(std::move(*m_pendingShareSubmission));
+                m_pendingShareSubmission.reset();
+            }
 
             auto* vm = new ShareResultViewModel(this);
             vm->setResult(url, expiresAt, isProtected, m_pendingSharePassword);
@@ -683,6 +693,7 @@ RegionSelector::RegionSelector(QWidget* parent)
                 errorMessage.isEmpty() ? tr("Failed to share screenshot") : errorMessage,
                 m_selectionManager->selectionRect());
             m_pendingSharePassword.clear();
+            m_pendingShareSubmission.reset();
             update();
         });
 
@@ -1122,10 +1133,7 @@ void RegionSelector::setupScreenGeometry(QScreen* screen)
     m_devicePixelRatio = m_currentScreen->devicePixelRatio();
 
     QRect screenGeom = m_currentScreen->geometry();
-    setFixedSize(screenGeom.size());
-    positionMultiRegionListPanel();
-    m_selectionManager->setBounds(QRect(0, 0, screenGeom.width(), screenGeom.height()));
-    m_toolManager->setTextEditingBounds(rect());
+    applyCanvasGeometry(screenGeom.size());
 
     if (m_exportManager) {
         const int monitorIndex = QGuiApplication::screens().indexOf(m_currentScreen.data());
@@ -1135,8 +1143,32 @@ void RegionSelector::setupScreenGeometry(QScreen* screen)
     }
 }
 
+void RegionSelector::applyCanvasGeometry(const QSize& logicalSize)
+{
+    if (!logicalSize.isValid() || logicalSize.isEmpty()) {
+        return;
+    }
+
+    if (m_currentScreen) {
+        setGeometry(QRect(m_currentScreen->geometry().topLeft(), logicalSize));
+    }
+    setFixedSize(logicalSize);
+
+    const QRect canvasRect(QPoint(0, 0), logicalSize);
+    positionMultiRegionListPanel();
+    m_selectionManager->setBounds(canvasRect);
+    m_toolManager->setTextEditingBounds(canvasRect);
+
+    m_inputState.currentPoint.setX(qBound(0, m_inputState.currentPoint.x(), qMax(0, logicalSize.width() - 1)));
+    m_inputState.currentPoint.setY(qBound(0, m_inputState.currentPoint.y(), qMax(0, logicalSize.height() - 1)));
+}
+
 void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapture)
 {
+    m_historyReplayEntries.clear();
+    m_historyLiveSlot = {};
+    m_historyReplayIndex = -1;
+    m_historyReplayActive = false;
     clearPreservedSelection();
     m_shortcutHintsVisible = false;
     m_shortcutHintsTemporarilyHiddenByHover = false;
@@ -1182,12 +1214,7 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     QRect screenGeom = m_currentScreen->geometry();
     QPoint globalCursor = QCursor::pos();
     m_inputState.currentPoint = globalCursor - screenGeom.topLeft();
-
-    // 鎖定視窗大小，防止 macOS 原生 resize 行為
-    setFixedSize(screenGeom.size());
-
-    // Set bounds for selection manager
-    m_selectionManager->setBounds(QRect(0, 0, screenGeom.width(), screenGeom.height()));
+    applyCanvasGeometry(screenGeom.size());
 
     // Configure magnifier panel with device pixel ratio
     m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
@@ -1224,6 +1251,10 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
 
 void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
 {
+    m_historyReplayEntries.clear();
+    m_historyLiveSlot = {};
+    m_historyReplayIndex = -1;
+    m_historyReplayActive = false;
     clearPreservedSelection();
     m_shortcutHintsVisible = false;
     m_shortcutHintsTemporarilyHiddenByHover = false;
@@ -1279,6 +1310,397 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     if (m_screenSwitchTimer && !m_screenSwitchTimer->isActive()) {
         m_screenSwitchTimer->start();
     }
+}
+
+bool RegionSelector::beginHistoryReplay(const QString& entryId)
+{
+    m_historyReplayEntries = SnapTray::HistoryStore::loadEntries();
+
+    int entryIndex = -1;
+    for (int i = 0; i < m_historyReplayEntries.size(); ++i) {
+        if (m_historyReplayEntries.at(i).id == entryId) {
+            entryIndex = i;
+            break;
+        }
+    }
+
+    if (entryIndex < 0) {
+        return false;
+    }
+
+    if (!m_historyLiveSlot.valid) {
+        snapshotLiveReplaySlot();
+    }
+
+    return loadHistoryReplayIndex(entryIndex);
+}
+
+bool RegionSelector::canNavigateHistoryReplay() const
+{
+    if (hasBlockingTransientUiOpen()) {
+        return false;
+    }
+    if (m_textEditor->isEditing() ||
+        (m_textAnnotationEditor && m_textAnnotationEditor->isEditing())) {
+        return false;
+    }
+    if (m_selectionManager->isSelecting() ||
+        m_selectionManager->isResizing() ||
+        m_selectionManager->isMoving() ||
+        m_inputState.isDrawing ||
+        m_inputState.replaceTargetIndex >= 0) {
+        return false;
+    }
+    return true;
+}
+
+void RegionSelector::navigateHistoryReplay(int direction)
+{
+    if (direction == 0 || !canNavigateHistoryReplay()) {
+        return;
+    }
+
+    if (m_historyReplayEntries.isEmpty()) {
+        m_historyReplayEntries = SnapTray::HistoryStore::loadEntries();
+    }
+    if (m_historyReplayEntries.isEmpty()) {
+        return;
+    }
+
+    if (!m_historyLiveSlot.valid) {
+        snapshotLiveReplaySlot();
+    }
+
+    int targetIndex = m_historyReplayIndex;
+    if (direction < 0) {
+        targetIndex = (m_historyReplayIndex < 0)
+            ? 0
+            : qMin(m_historyReplayIndex + 1, m_historyReplayEntries.size() - 1);
+    }
+    else {
+        targetIndex = (m_historyReplayIndex <= 0) ? -1 : (m_historyReplayIndex - 1);
+    }
+
+    if (targetIndex == m_historyReplayIndex) {
+        return;
+    }
+
+    if (targetIndex < 0) {
+        restoreLiveReplaySlot();
+        return;
+    }
+
+    loadHistoryReplayIndex(targetIndex);
+}
+
+void RegionSelector::snapshotLiveReplaySlot()
+{
+    m_historyLiveSlot.valid = true;
+    m_historyLiveSlot.canvasLogicalSize = size();
+    m_historyLiveSlot.backgroundPixmap = m_backgroundPixmap;
+    m_historyLiveSlot.devicePixelRatio = m_devicePixelRatio;
+    m_historyLiveSlot.selectionRect = currentHistorySelectionRect();
+    m_historyLiveSlot.multiRegionMode = m_inputState.multiRegionMode;
+    m_historyLiveSlot.multiRegions = currentHistoryCaptureRegions();
+    m_historyLiveSlot.annotationsJson = SnapTray::serializeAnnotationLayer(*m_annotationLayer);
+    m_historyLiveSlot.cornerRadius = m_cornerRadius;
+}
+
+void RegionSelector::restoreLiveReplaySlot()
+{
+    if (!m_historyLiveSlot.valid) {
+        return;
+    }
+
+    clearHistoryReplaySelectionState();
+    applyCanvasGeometry(m_historyLiveSlot.canvasLogicalSize);
+
+    m_backgroundPixmap = m_historyLiveSlot.backgroundPixmap;
+    m_devicePixelRatio = m_historyLiveSlot.devicePixelRatio;
+    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_backgroundPixmap);
+    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
+    m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
+    m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
+    m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
+    m_exportManager->setSourceScreen(m_currentScreen.data());
+    if (m_multiRegionListViewModel) {
+        m_multiRegionListViewModel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
+    }
+
+    m_painter->buildDimmedCache(m_backgroundPixmap);
+    m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
+    m_magnifierPanel->invalidateCache();
+    m_magnifierPanel->preWarmCache(m_inputState.currentPoint, m_backgroundPixmap);
+
+    m_cornerRadius = m_historyLiveSlot.cornerRadius;
+    m_regionControlViewModel->setCurrentRadius(m_cornerRadius);
+    m_painter->setCornerRadius(m_cornerRadius);
+
+    if (m_historyLiveSlot.multiRegionMode) {
+        setMultiRegionMode(true);
+        if (m_multiRegionManager) {
+            m_multiRegionManager->setRegions(m_historyLiveSlot.multiRegions);
+            refreshMultiRegionListPanel();
+        }
+        m_selectionManager->clearSelection();
+    }
+    else {
+        if (m_inputState.multiRegionMode) {
+            setMultiRegionMode(false);
+        }
+        if (m_historyLiveSlot.selectionRect.isValid() && !m_historyLiveSlot.selectionRect.isEmpty()) {
+            m_selectionManager->setSelectionRect(m_historyLiveSlot.selectionRect);
+            m_selectionManager->setFromDetectedWindow(m_historyLiveSlot.selectionRect);
+        }
+        else {
+            m_selectionManager->clearSelection();
+        }
+    }
+
+    m_annotationLayer->clear();
+    if (!m_historyLiveSlot.annotationsJson.isEmpty()) {
+        QString errorMessage;
+        SnapTray::deserializeAnnotationLayer(
+            m_historyLiveSlot.annotationsJson, m_annotationLayer, m_sharedSourcePixmap, &errorMessage);
+    }
+
+    m_historyReplayIndex = -1;
+    m_historyReplayActive = false;
+    update();
+}
+
+bool RegionSelector::loadHistoryReplayIndex(int index)
+{
+    if (index < 0 || index >= m_historyReplayEntries.size()) {
+        return false;
+    }
+
+    if (!applyHistoryReplayEntry(m_historyReplayEntries.at(index))) {
+        return false;
+    }
+
+    m_historyReplayIndex = index;
+    m_historyReplayActive = true;
+    return true;
+}
+
+bool RegionSelector::applyHistoryReplayEntry(const SnapTray::HistoryEntry& entry)
+{
+    if (!entry.replayAvailable || entry.canvasPath.isEmpty()) {
+        return false;
+    }
+
+    QPixmap canvas(entry.canvasPath);
+    if (canvas.isNull()) {
+        return false;
+    }
+    if (entry.devicePixelRatio > 0.0) {
+        canvas.setDevicePixelRatio(entry.devicePixelRatio);
+    }
+
+    QByteArray annotationsData;
+    if (!entry.annotationsPath.isEmpty()) {
+        QFile annotationsFile(entry.annotationsPath);
+        if (annotationsFile.open(QIODevice::ReadOnly)) {
+            annotationsData = annotationsFile.readAll();
+        }
+    }
+
+    clearHistoryReplaySelectionState();
+    const QSize replayCanvasSize = entry.canvasLogicalSize.isValid()
+        ? entry.canvasLogicalSize
+        : CoordinateHelper::toLogical(
+            canvas.size(),
+            entry.devicePixelRatio > 0.0 ? entry.devicePixelRatio : 1.0);
+    applyCanvasGeometry(replayCanvasSize);
+
+    m_backgroundPixmap = canvas;
+    m_devicePixelRatio = entry.devicePixelRatio > 0.0 ? entry.devicePixelRatio : 1.0;
+    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_backgroundPixmap);
+    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
+    m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
+    m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
+    m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
+    m_exportManager->setSourceScreen(m_currentScreen.data());
+    if (m_multiRegionListViewModel) {
+        m_multiRegionListViewModel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
+    }
+
+    m_painter->buildDimmedCache(m_backgroundPixmap);
+    m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
+    m_magnifierPanel->invalidateCache();
+    m_magnifierPanel->preWarmCache(m_inputState.currentPoint, m_backgroundPixmap);
+
+    m_cornerRadius = entry.cornerRadius;
+    m_regionControlViewModel->setCurrentRadius(m_cornerRadius);
+    m_painter->setCornerRadius(m_cornerRadius);
+
+    if (!entry.captureRegions.isEmpty()) {
+        setMultiRegionMode(true);
+        if (m_multiRegionManager) {
+            m_multiRegionManager->setRegions(entry.captureRegions);
+            refreshMultiRegionListPanel();
+        }
+        m_selectionManager->clearSelection();
+    }
+    else {
+        if (m_inputState.multiRegionMode) {
+            setMultiRegionMode(false);
+        }
+        if (entry.selectionRect.isValid() && !entry.selectionRect.isEmpty()) {
+            m_selectionManager->setSelectionRect(entry.selectionRect);
+            m_selectionManager->setFromDetectedWindow(entry.selectionRect);
+        }
+    }
+
+    m_annotationLayer->clear();
+    if (!annotationsData.isEmpty()) {
+        QString errorMessage;
+        if (!SnapTray::deserializeAnnotationLayer(
+                annotationsData, m_annotationLayer, m_sharedSourcePixmap, &errorMessage)) {
+            m_annotationLayer->clear();
+            return false;
+        }
+    }
+
+    update();
+    return true;
+}
+
+void RegionSelector::clearHistoryReplaySelectionState()
+{
+    clearPreservedSelection();
+    cancelMultiRegionReplace(false);
+    m_inputState.highlightedWindowRect = QRect();
+    m_inputState.hasDetectedWindow = false;
+    m_detectedWindow.reset();
+    if (m_multiRegionManager) {
+        m_multiRegionManager->clear();
+    }
+    m_selectionManager->clearSelection();
+    m_annotationLayer->clear();
+}
+
+void RegionSelector::recordCaptureSession(const QPixmap& resultPixmap)
+{
+    if (resultPixmap.isNull()) {
+        return;
+    }
+
+    auto snapshot = makeHistoryCaptureSnapshot();
+    if (!snapshot.has_value()) {
+        return;
+    }
+
+    const QPixmap resultPixmapCopy = resultPixmap;
+    QTimer::singleShot(0, qApp, [snapshot = std::move(*snapshot), resultPixmapCopy]() mutable {
+        if (resultPixmapCopy.isNull()) {
+            return;
+        }
+        PendingHistorySubmission submission{
+            std::move(snapshot),
+            resultPixmapCopy.toImage()
+        };
+        if (submission.resultImage.isNull() || submission.snapshot.backgroundPixmap.isNull()) {
+            return;
+        }
+
+        SnapTray::CaptureSessionWriteRequest request;
+        request.canvasImage = submission.snapshot.backgroundPixmap.toImage();
+        request.resultImage = submission.resultImage;
+        request.selectionRect = submission.snapshot.selectionRect;
+        request.captureRegions = submission.snapshot.captureRegions;
+        request.annotationsJson = submission.snapshot.annotationsJson;
+        request.devicePixelRatio = submission.snapshot.devicePixelRatio;
+        request.canvasLogicalSize = submission.snapshot.canvasLogicalSize;
+        request.cornerRadius = submission.snapshot.cornerRadius;
+        request.maxEntries = submission.snapshot.maxEntries;
+        request.createdAt = submission.snapshot.createdAt;
+        SnapTray::HistoryRecorder::instance().submitCaptureSession(std::move(request));
+    });
+}
+
+void RegionSelector::recordCaptureSession(const QImage& resultImage)
+{
+    if (resultImage.isNull()) {
+        return;
+    }
+
+    auto snapshot = makeHistoryCaptureSnapshot();
+    if (!snapshot.has_value()) {
+        return;
+    }
+
+    submitPendingHistorySubmission(PendingHistorySubmission{
+        std::move(*snapshot),
+        resultImage
+    });
+}
+
+std::optional<RegionSelector::HistoryCaptureSnapshot> RegionSelector::makeHistoryCaptureSnapshot(
+    const QDateTime& createdAt) const
+{
+    if (m_backgroundPixmap.isNull() || !m_annotationLayer) {
+        return std::nullopt;
+    }
+
+    const QRect selectionRect = currentHistorySelectionRect();
+    if (!selectionRect.isValid() || selectionRect.isEmpty()) {
+        return std::nullopt;
+    }
+
+    HistoryCaptureSnapshot snapshot;
+    snapshot.backgroundPixmap = m_backgroundPixmap;
+    snapshot.selectionRect = selectionRect;
+    snapshot.captureRegions = currentHistoryCaptureRegions();
+    snapshot.annotationsJson = SnapTray::serializeAnnotationLayer(*m_annotationLayer);
+    snapshot.devicePixelRatio = m_devicePixelRatio;
+    snapshot.canvasLogicalSize = size();
+    snapshot.cornerRadius = m_cornerRadius;
+    snapshot.maxEntries = PinWindowSettingsManager::instance().loadMaxCacheFiles();
+    snapshot.createdAt = createdAt;
+    return snapshot;
+}
+
+void RegionSelector::submitPendingHistorySubmission(PendingHistorySubmission submission) const
+{
+    QTimer::singleShot(0, qApp, [submission = std::move(submission)]() mutable {
+        if (submission.resultImage.isNull() ||
+            submission.snapshot.backgroundPixmap.isNull() ||
+            !submission.snapshot.selectionRect.isValid() ||
+            submission.snapshot.selectionRect.isEmpty()) {
+            return;
+        }
+
+        SnapTray::CaptureSessionWriteRequest request;
+        request.canvasImage = submission.snapshot.backgroundPixmap.toImage();
+        request.resultImage = submission.resultImage;
+        request.selectionRect = submission.snapshot.selectionRect;
+        request.captureRegions = submission.snapshot.captureRegions;
+        request.annotationsJson = submission.snapshot.annotationsJson;
+        request.devicePixelRatio = submission.snapshot.devicePixelRatio;
+        request.canvasLogicalSize = submission.snapshot.canvasLogicalSize;
+        request.cornerRadius = submission.snapshot.cornerRadius;
+        request.maxEntries = submission.snapshot.maxEntries;
+        request.createdAt = submission.snapshot.createdAt;
+        SnapTray::HistoryRecorder::instance().submitCaptureSession(std::move(request));
+    });
+}
+
+QRect RegionSelector::currentHistorySelectionRect() const
+{
+    if (m_inputState.multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0) {
+        return m_multiRegionManager->boundingBox();
+    }
+    return m_selectionManager->selectionRect();
+}
+
+QVector<MultiRegionManager::Region> RegionSelector::currentHistoryCaptureRegions() const
+{
+    if (m_inputState.multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0) {
+        return m_multiRegionManager->regions();
+    }
+    return {};
 }
 
 void RegionSelector::setQuickPinMode(bool enabled)
@@ -1401,7 +1823,7 @@ void RegionSelector::switchToScreen(QScreen* screen, bool preserveCompletedSelec
 
 void RegionSelector::handleCursorScreenSwitch()
 {
-    if (m_isClosing || !isVisible() || !isScreenValid()) {
+    if (m_isClosing || !isVisible() || !isScreenValid() || m_historyReplayActive) {
         return;
     }
     if (hasBlockingTransientUiOpen()) {
@@ -2304,6 +2726,7 @@ void RegionSelector::completeMultiRegionCapture()
     pixmap.setDevicePixelRatio(m_devicePixelRatio);
     QRect bounds = m_multiRegionManager->boundingBox();
     QRect globalBounds(localToGlobal(bounds.topLeft()), bounds.size());
+    recordCaptureSession(pixmap);
     emit regionSelected(pixmap, localToGlobal(bounds.topLeft()), globalBounds);
     close();
 }
@@ -2384,6 +2807,15 @@ void RegionSelector::shareToUrl()
         }
 
         m_pendingSharePassword = vm->password();
+        auto snapshot = makeHistoryCaptureSnapshot(QDateTime::currentDateTime());
+        if (snapshot.has_value()) {
+            m_pendingShareSubmission = PendingHistorySubmission{
+                std::move(*snapshot),
+                selectedRegion.toImage()
+            };
+        } else {
+            m_pendingShareSubmission.reset();
+        }
 
         m_shareInProgress = true;
         if (m_toolbarHandler) {
@@ -2397,6 +2829,7 @@ void RegionSelector::shareToUrl()
     });
     connect(vm, &SharePasswordViewModel::rejected, this, [this, dialog]() {
         m_pendingSharePassword.clear();
+        m_pendingShareSubmission.reset();
         dialog->close();
         restoreAfterDialogCancelled();
     });
@@ -2414,6 +2847,7 @@ void RegionSelector::finishSelection()
     QPixmap selectedRegion = m_exportManager->getSelectedRegion(sel, effectiveCornerRadius());
 
     QRect globalRect(localToGlobal(sel.topLeft()), sel.size());
+    recordCaptureSession(selectedRegion);
     emit regionSelected(selectedRegion, localToGlobal(sel.topLeft()), globalRect);
     close();
 }
@@ -2558,6 +2992,18 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
             }
             // Let QTextEdit handle other keys (including Enter for newlines)
         }
+        return;
+    }
+
+    if (!event->modifiers() && event->key() == Qt::Key_Comma) {
+        navigateHistoryReplay(-1);
+        event->accept();
+        return;
+    }
+
+    if (!event->modifiers() && event->key() == Qt::Key_Period) {
+        navigateHistoryReplay(1);
+        event->accept();
         return;
     }
 
@@ -2720,6 +3166,8 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
 void RegionSelector::closeEvent(QCloseEvent* event)
 {
     m_isClosing = true;
+    m_pendingSharePassword.clear();
+    m_pendingShareSubmission.reset();
     if (m_qmlToolbar) m_qmlToolbar->hide();
     if (m_qmlSubToolbar) m_qmlSubToolbar->hide();
     if (m_magnifierOverlay) m_magnifierOverlay->hideOverlay();

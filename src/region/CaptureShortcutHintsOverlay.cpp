@@ -38,6 +38,7 @@ QVector<QPair<QStringList, QString>> CaptureShortcutHintsOverlay::hintRows() con
     return {
         {QStringList{QStringLiteral("Esc")}, trOverlay("Cancel capture")},
         {QStringList{QStringLiteral("Enter")}, trOverlay("Confirm selection (after selection)")},
+        {QStringList{QStringLiteral(", / .")}, trOverlay("Replay capture history")},
         {QStringList{QStringLiteral("M")}, trOverlay("Toggle multi-region mode")},
         {QStringList{QStringLiteral("Shift")}, trOverlay("Switch RGB/HEX (when magnifier visible)")},
         {QStringList{QStringLiteral("C")}, trOverlay("Copy color value (before selection)")},

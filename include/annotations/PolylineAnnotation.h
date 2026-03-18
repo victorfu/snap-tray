@@ -44,6 +44,7 @@ public:
     // Style accessors
     void setLineEndStyle(LineEndStyle style) { m_lineEndStyle = style; }
     LineEndStyle lineEndStyle() const { return m_lineEndStyle; }
+    LineStyle lineStyle() const { return m_lineStyle; }
     QColor color() const { return m_color; }
     int width() const { return m_width; }
 

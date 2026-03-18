@@ -47,6 +47,9 @@ public:
     QPoint start() const { return m_start; }
     QPoint end() const { return m_end; }
     QPoint controlPoint() const { return m_controlPoint; }
+    QColor color() const { return m_color; }
+    int width() const { return m_width; }
+    LineStyle lineStyle() const { return m_lineStyle; }
 
     // Line end style
     void setLineEndStyle(LineEndStyle style) { m_lineEndStyle = style; }

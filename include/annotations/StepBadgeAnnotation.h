@@ -34,6 +34,8 @@ public:
     void translate(const QPointF& delta) override;
 
     void setNumber(int number);
+    QPoint position() const { return m_position; }
+    QColor color() const { return m_color; }
     int number() const { return m_number; }
     int radius() const { return m_radius; }
     void setRotation(qreal degrees);

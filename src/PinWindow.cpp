@@ -18,7 +18,7 @@
 #include "pinwindow/RegionLayoutManager.h"
 #include "pinwindow/RegionLayoutRenderer.h"
 #include "pinwindow/PinMergeHelper.h"
-#include "pinwindow/PinHistoryStore.h"
+#include "history/HistoryStore.h"
 #include "pinwindow/PinWindowPlacement.h"
 #include "qml/QmlFloatingSubToolbar.h"
 #include "qml/PinToolOptionsViewModel.h"
@@ -99,7 +99,6 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QActionGroup>
 #include <QDesktopServices>
 #include <QUrl>
-#include <QThreadPool>
 #include <QFutureWatcher>
 #include <QtConcurrent/QtConcurrentRun>
 #include <limits>
@@ -365,7 +364,7 @@ namespace {
 PinWindow::PinWindow(const QPixmap& screenshot,
                      const QPoint& position,
                      QWidget* parent,
-                     bool autoSaveToCache)
+                     bool persistHistorySnapshot)
     : QWidget(parent)
     , m_originalPixmap(screenshot)
     , m_zoomLevel(1.0)
@@ -384,6 +383,8 @@ PinWindow::PinWindow(const QPixmap& screenshot,
     , m_smoothing(true)
     , m_clickThrough(false)
 {
+    Q_UNUSED(persistHistorySnapshot);
+
     // Frameless, always on top
     // Note: Removed Qt::Tool flag as it causes the window to hide when app loses focus on macOS
     setWindowFlags(Qt::FramelessWindowHint |
@@ -417,11 +418,6 @@ PinWindow::PinWindow(const QPixmap& screenshot,
     m_watermarkSettings = WatermarkSettingsManager::instance().load();
 
     // Context menu is now created lazily in contextMenuEvent() to improve initial performance
-
-    // Auto-save to cache folder asynchronously (can be deferred by caller).
-    if (autoSaveToCache) {
-        saveToCacheAsync();
-    }
 
     // OCR manager is now created lazily in performOCR() to improve initial performance
 
@@ -944,7 +940,7 @@ void PinWindow::createContextMenu()
     saveAction->setShortcut(QKeySequence::Save);
     connect(saveAction, &QAction::triggered, this, &PinWindow::saveToFile);
 
-    QAction* openCacheFolderAction = m_contextMenu->addAction(tr("Open Cache Folder"));
+    QAction* openCacheFolderAction = m_contextMenu->addAction(tr("Open History Folder"));
     connect(openCacheFolderAction, &QAction::triggered, this, &PinWindow::openCacheFolder);
 
     QAction* beautifyAction = m_contextMenu->addAction(tr("Beautify"));
@@ -1339,18 +1335,14 @@ void PinWindow::mergePinsFromContextMenu()
     const QSize logicalSize = logicalSizeFromPixmap(result.composedPixmap);
     const QPoint position = screenGeometry.center() - QPoint(logicalSize.width() / 2, logicalSize.height() / 2);
 
-    // Defer cache save until multi-region metadata is attached, otherwise the
-    // initial cache snapshot misses the .snpr sidecar.
-    PinWindow* mergedWindow = m_pinWindowManager->createPinWindow(result.composedPixmap, position, false);
+    PinWindow* mergedWindow = m_pinWindowManager->createPinWindow(result.composedPixmap, position);
     if (!mergedWindow) {
         SnapTray::QmlToast::screenToast().showToast(SnapTray::QmlToast::Level::Error,
                                           tr("Merge Pins"),
                                           tr("Failed to create merged pin"));
         return;
     }
-
     mergedWindow->setMultiRegionData(result.regions);
-    mergedWindow->saveToCacheAsync();
     m_pinWindowManager->closeWindows(result.mergedWindows);
 }
 
@@ -1716,7 +1708,7 @@ void PinWindow::copyAllInfo()
 
 QString PinWindow::cacheFolderPath()
 {
-    return PinHistoryStore::historyFolderPath();
+    return SnapTray::HistoryStore::historyRootPath();
 }
 
 void PinWindow::openCacheFolder()
@@ -1732,78 +1724,6 @@ void PinWindow::openCacheFolder()
     }
 
     QDesktopServices::openUrl(QUrl::fromLocalFile(path));
-}
-
-void PinWindow::saveToCacheAsync()
-{
-    QPixmap pixmapToSave = m_originalPixmap;
-    // QPixmap is GUI-thread bound on many platforms; convert before dispatching worker thread work.
-    const QImage imageToSave = pixmapToSave.toImage();
-    int maxCacheFiles = PinWindowSettingsManager::instance().loadMaxCacheFiles();
-    const qreal sourceDpr = (pixmapToSave.devicePixelRatio() > 0.0)
-        ? pixmapToSave.devicePixelRatio()
-        : 1.0;
-
-    // Prepare region metadata if multi-region data exists
-    QByteArray regionMetadata;
-    if (m_hasMultiRegionData && !m_storedRegions.isEmpty()) {
-        regionMetadata = RegionLayoutManager::serializeRegions(m_storedRegions);
-    }
-
-    QThreadPool::globalInstance()->start([imageToSave, maxCacheFiles, regionMetadata, sourceDpr]() {
-        QString path = cacheFolderPath();
-        QDir dir(path);
-        if (!dir.exists()) {
-            if (!dir.mkpath(".")) {
-                qWarning() << "PinWindow: Failed to create cache folder:" << path;
-                return;
-            }
-        }
-
-        QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss_zzz");
-        QString filename = QString("cache_%1.png").arg(timestamp);
-        QString filePath = dir.filePath(filename);
-
-        ImageSaveUtils::Error saveError;
-        if (ImageSaveUtils::saveImageAtomically(
-                imageToSave, filePath, QByteArrayLiteral("PNG"), &saveError)) {
-            // Persist DPR sidecar so history re-pin restores logical sizing on HiDPI displays.
-            const QString dprMetadataPath = PinHistoryStore::dprMetadataPathForImage(filePath);
-            QFile dprFile(dprMetadataPath);
-            if (dprFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-                const QByteArray dprText = QByteArray::number(sourceDpr, 'f', 4);
-                dprFile.write(dprText);
-                dprFile.close();
-            }
-
-            // Save region metadata sidecar file if available
-            if (!regionMetadata.isEmpty()) {
-                const QString metadataPath = PinHistoryStore::regionMetadataPathForImage(filePath);
-                QFile metaFile(metadataPath);
-                if (metaFile.open(QIODevice::WriteOnly)) {
-                    metaFile.write(regionMetadata);
-                    metaFile.close();
-                }
-            }
-
-            // Clean up old cache files exceeding the limit
-            QStringList filters;
-            filters << "cache_*.png";
-            QFileInfoList files = dir.entryInfoList(filters, QDir::Files, QDir::Time);
-
-            // QDir::Time sorts by modification time, newest first
-            while (files.size() > maxCacheFiles) {
-                const QFileInfo& oldest = files.takeLast();
-                QFile::remove(oldest.filePath());
-                // Also remove associated metadata file
-                QFile::remove(PinHistoryStore::regionMetadataPathForImage(oldest.filePath()));
-                QFile::remove(PinHistoryStore::dprMetadataPathForImage(oldest.filePath()));
-            }
-        }
-        else {
-            qWarning() << "PinWindow: Failed to save to cache:" << filePath << saveErrorDetail(saveError);
-        }
-    });
 }
 
 void PinWindow::applyClickThroughState(bool enabled)
@@ -3366,8 +3286,6 @@ void PinWindow::applyCrop(const QRect& cropRect)
     syncCropHandlerImageSize();
     updateUndoRedoState();
 
-    // Save to cache
-    saveToCacheAsync();
 }
 
 void PinWindow::undoCrop()
@@ -3407,8 +3325,6 @@ void PinWindow::undoCrop()
     syncCropHandlerImageSize();
     updateUndoRedoState();
 
-    // Save to cache
-    saveToCacheAsync();
 }
 
 void PinWindow::redoCrop()
@@ -3445,7 +3361,6 @@ void PinWindow::redoCrop()
     syncCropHandlerImageSize();
     updateUndoRedoState();
 
-    saveToCacheAsync();
 }
 
 bool PinWindow::canUndoCrop() const
@@ -4920,8 +4835,6 @@ void PinWindow::exitRegionLayoutMode(bool apply)
                 m_annotationLayer->invalidateCache();
             }
 
-            // Save to cache
-            saveToCacheAsync();
         }
     } else {
         // Cancel - restore annotations

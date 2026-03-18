@@ -12,11 +12,13 @@ Item {
     property string titleText: ""
     property string subtitleText: ""
     property string tooltipText: ""
+    property string badgeText: ""
     property bool selected: false
     property bool broken: false
     property int imageWidthHint: 180
     property int imageHeightHint: 120
 
+    signal clicked()
     signal activated()
     signal contextMenuRequested(real globalX, real globalY)
 
@@ -67,6 +69,29 @@ Item {
         border.width: 1
         border.color: ComponentTokens.beautifyPreviewFrame
         clip: true
+    }
+
+    Rectangle {
+        visible: root.badgeText !== ""
+        anchors.top: imageFrame.top
+        anchors.left: imageFrame.left
+        anchors.margins: SemanticTokens.spacing8
+        radius: SemanticTokens.radiusSmall
+        color: ComponentTokens.thumbnailCardSelected
+        border.width: 1
+        border.color: ComponentTokens.thumbnailCardSelectedBorder
+        width: badgeLabel.implicitWidth + SemanticTokens.spacing8
+        height: badgeLabel.implicitHeight + SemanticTokens.spacing4
+
+        Text {
+            id: badgeLabel
+            anchors.centerIn: parent
+            text: root.badgeText
+            color: SemanticTokens.textPrimary
+            font.pixelSize: SemanticTokens.fontSizeSmall
+            font.family: SemanticTokens.fontFamily
+            font.weight: Font.DemiBold
+        }
     }
 
     Rectangle {
@@ -147,7 +172,7 @@ Item {
                 root.contextMenuRequested(point.x, point.y)
                 return
             }
-            root.activated()
+            root.clicked()
         }
     }
 }

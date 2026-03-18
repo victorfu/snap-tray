@@ -30,7 +30,7 @@ public:
     bool loadShadowEnabled() const;
     void saveShadowEnabled(bool enabled);
 
-    // Max cache files (5 - 200)
+    // Max history entries (5 - 200)
     int loadMaxCacheFiles() const;
     void saveMaxCacheFiles(int maxFiles);
 
@@ -50,7 +50,7 @@ private:
     static constexpr const char* kSettingsKeyOpacityStep = "pinWindow/opacityStep";
     static constexpr const char* kSettingsKeyZoomStep = "pinWindow/zoomStep";
     static constexpr const char* kSettingsKeyShadowEnabled = "pinWindow/shadowEnabled";
-    static constexpr const char* kSettingsKeyMaxCacheFiles = "pinWindow/maxCacheFiles";
+    static constexpr const char* kSettingsKeyMaxCacheFiles = "history/maxEntries";
 };
 
 #endif // PINWINDOWSETTINGSMANAGER_H
