@@ -57,6 +57,11 @@ class WindowDetector : public QObject
     Q_OBJECT
 
 public:
+    enum class QueryMode {
+        TopLevelOnly,
+        IncludeChildControls
+    };
+
     explicit WindowDetector(QObject *parent = nullptr);
     ~WindowDetector();
 
@@ -78,13 +83,21 @@ public:
     bool isRefreshComplete() const;
 
     // Find window at point (screen coordinates)
-    std::optional<DetectedElement> detectWindowAt(const QPoint &screenPos) const;
+    std::optional<DetectedElement> detectWindowAt(
+        const QPoint &screenPos,
+        QueryMode queryMode = QueryMode::IncludeChildControls) const;
 
     // Detection mode control
     DetectionFlags detectionFlags() const;
 
 signals:
     void windowListReady();
+
+protected:
+    virtual std::optional<DetectedElement> detectChildElementAt(
+        const QPoint &screenPos,
+        const DetectedElement &topWindow,
+        size_t topLevelIndex) const;
 
 private:
     void enumerateWindows();
@@ -106,6 +119,9 @@ private:
     mutable QElapsedTimer m_axCacheTimer;
     mutable bool m_accessibilityPromptRequested{false};
 #endif
+
+    friend class tst_WindowDetectorQueryMode;
+    friend class tst_RegionSelectorDeferredInitialization;
 };
 
 #endif // WINDOWDETECTOR_H

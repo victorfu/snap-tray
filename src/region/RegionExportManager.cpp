@@ -1,6 +1,5 @@
 #include "region/RegionExportManager.h"
 #include "ImageColorSpaceHelper.h"
-#include "PlatformFeatures.h"
 #include "annotations/AnnotationLayer.h"
 #include "settings/FileSettingsManager.h"
 #include "utils/CoordinateHelper.h"
@@ -8,20 +7,43 @@
 #include "utils/ImageSaveUtils.h"
 #include "utils/NativeFileDialogUtils.h"
 
-#include <QClipboard>
 #include <QDateTime>
 #include <QDebug>
-#include <QDir>
-#include <QFile>
-#include <QGuiApplication>
 #include <QImage>
+#include <QFutureWatcher>
 #include <QPainter>
 #include <QPainterPath>
 #include <QScreen>
+#include <QtConcurrent/QtConcurrentRun>
+
+namespace {
+
+struct SaveTaskResult {
+    QString filePath;
+    QString renderWarning;
+    ImageSaveUtils::Error saveError;
+    bool success = false;
+};
+
+QString saveErrorDetail(const ImageSaveUtils::Error& saveError)
+{
+    return saveError.stage.isEmpty()
+        ? (saveError.message.isEmpty() ? QStringLiteral("Unknown error") : saveError.message)
+        : QStringLiteral("%1: %2").arg(saveError.stage, saveError.message);
+}
+
+} // namespace
 
 RegionExportManager::RegionExportManager(QObject *parent)
     : QObject(parent)
 {
+}
+
+RegionExportManager::~RegionExportManager()
+{
+    if (m_saveWatcher) {
+        m_saveWatcher->waitForFinished();
+    }
 }
 
 void RegionExportManager::setBackgroundPixmap(const QPixmap &pixmap)
@@ -103,6 +125,20 @@ QPixmap RegionExportManager::getSelectedRegion(const QRect &selectionRect, int c
     return selectedRegion;
 }
 
+RegionExportManager::PreparedExport RegionExportManager::prepareExport(
+    const QRect& selectionRect,
+    int cornerRadius)
+{
+    PreparedExport prepared;
+    prepared.pixmap = getSelectedRegion(selectionRect, cornerRadius);
+    if (prepared.pixmap.isNull()) {
+        return prepared;
+    }
+
+    prepared.image = normalizeImageForExport(prepared.pixmap.toImage(), m_sourceScreen.data());
+    return prepared;
+}
+
 QPixmap RegionExportManager::applyRoundedCorners(const QPixmap &source, int radius, const QRect &logicalRect)
 {
     // Use an explicit alpha mask to guarantee transparent corners across platforms
@@ -131,27 +167,12 @@ QPixmap RegionExportManager::applyRoundedCorners(const QPixmap &source, int radi
     return maskedPixmap;
 }
 
-void RegionExportManager::copyToClipboard(const QRect &selectionRect, int cornerRadius)
+RegionExportManager::SaveRequest RegionExportManager::createSaveRequest(
+    const QRect& selectionRect,
+    QWidget* parentWidget) const
 {
-    QPixmap selectedRegion = getSelectedRegion(selectionRect, cornerRadius);
-    if (selectedRegion.isNull()) {
-        qWarning() << "RegionExportManager: Cannot copy - no valid selection";
-        return;
-    }
+    SaveRequest request;
 
-    const QImage selectedImage = selectedRegion.toImage();
-    const QImage taggedImage =
-        tagImageWithScreenColorSpace(selectedImage, m_sourceScreen.data());
-    if (!PlatformFeatures::instance().copyImageToClipboard(taggedImage)) {
-        QGuiApplication::clipboard()->setImage(taggedImage);
-    }
-    qDebug() << "RegionExportManager: Copied to clipboard";
-
-    emit copyCompleted(selectedRegion, selectedImage);
-}
-
-bool RegionExportManager::saveToFile(const QRect &selectionRect, int cornerRadius, QWidget *parentWidget)
-{
     // Get file settings
     auto &fileSettings = FileSettingsManager::instance();
     QString savePath = fileSettings.loadScreenshotPath();
@@ -171,87 +192,85 @@ bool RegionExportManager::saveToFile(const QRect &selectionRect, int cornerRadiu
 
     // Check auto-save setting
     if (fileSettings.loadAutoSaveScreenshots()) {
-        QPixmap selectedRegion = getSelectedRegion(selectionRect, cornerRadius);
-        if (selectedRegion.isNull()) {
-            qWarning() << "RegionExportManager: Cannot save - no valid selection";
-            return false;
+        request.filePath = FilenameTemplateEngine::buildUniqueFilePath(
+            savePath, templateValue, context, 100, &request.renderWarning);
+        request.autoSave = true;
+        if (request.filePath.isEmpty()) {
+            request.error = request.renderWarning.isEmpty()
+                ? tr("Failed to determine screenshot output path")
+                : request.renderWarning;
         }
-
-        QString renderError;
-        QString filePath = FilenameTemplateEngine::buildUniqueFilePath(
-            savePath, templateValue, context, 100, &renderError);
-
-        ImageSaveUtils::Error saveError;
-        const QImage selectedImage = selectedRegion.toImage();
-        const QImage taggedImage =
-            tagImageWithScreenColorSpace(selectedImage, m_sourceScreen.data());
-        bool success = ImageSaveUtils::saveImageAtomically(
-            taggedImage, filePath, QByteArray(), &saveError);
-        if (success) {
-            qDebug() << "RegionExportManager: Auto-saved to" << filePath;
-            emit saveCompleted(selectedRegion, selectedImage, filePath);
-        } else {
-            qWarning() << "RegionExportManager: Failed to auto-save to" << filePath;
-            if (!saveError.stage.isEmpty() || !saveError.message.isEmpty()) {
-                qWarning() << "RegionExportManager: save error:" << saveError.stage << saveError.message;
-            }
-            if (!renderError.isEmpty()) {
-                qWarning() << "RegionExportManager: template warning:" << renderError;
-            }
-            const QString detail = saveError.stage.isEmpty()
-                ? (saveError.message.isEmpty() ? QStringLiteral("Unknown error") : saveError.message)
-                : QStringLiteral("%1: %2").arg(saveError.stage, saveError.message);
-            emit saveFailed(filePath, tr("Failed to save screenshot: %1").arg(detail));
-        }
-        return success;
+        return request;
     }
 
     // Show save dialog
     const QString defaultName = FilenameTemplateEngine::buildUniqueFilePath(
         savePath, templateValue, context, 1);
-
-    // Notify parent before showing dialog
-    emit saveDialogOpening();
-
-    const QString filePath = NativeFileDialogUtils::getSaveFileName(
+    request.filePath = NativeFileDialogUtils::getSaveFileName(
         parentWidget,
         tr("Save Screenshot"),
         defaultName,
         tr("PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)"));
+    request.cancelled = request.filePath.isEmpty();
+    return request;
+}
 
-    if (!filePath.isEmpty()) {
-        QPixmap selectedRegion = getSelectedRegion(selectionRect, cornerRadius);
-        if (selectedRegion.isNull()) {
-            qWarning() << "RegionExportManager: Cannot save selected region after dialog";
-            emit saveFailed(filePath, tr("Failed to save screenshot: unable to process selection"));
-            emit saveDialogClosed(false);
-            return false;
-        }
-
-        ImageSaveUtils::Error saveError;
-        const QImage selectedImage = selectedRegion.toImage();
-        const QImage taggedImage =
-            tagImageWithScreenColorSpace(selectedImage, m_sourceScreen.data());
-        bool success = ImageSaveUtils::saveImageAtomically(
-            taggedImage, filePath, QByteArray(), &saveError);
-        if (success) {
-            qDebug() << "RegionExportManager: Saved to" << filePath;
-            emit saveCompleted(selectedRegion, selectedImage, filePath);
-        } else {
-            qWarning() << "RegionExportManager: Failed to save to" << filePath;
-            if (!saveError.stage.isEmpty() || !saveError.message.isEmpty()) {
-                qWarning() << "RegionExportManager: save error:" << saveError.stage << saveError.message;
-            }
-            const QString detail = saveError.stage.isEmpty()
-                ? (saveError.message.isEmpty() ? QStringLiteral("Unknown error") : saveError.message)
-                : QStringLiteral("%1: %2").arg(saveError.stage, saveError.message);
-            emit saveFailed(filePath, tr("Failed to save screenshot: %1").arg(detail));
-        }
-        emit saveDialogClosed(success);
-        return success;
+void RegionExportManager::savePreparedExportAsync(PreparedExport prepared,
+                                                  const QString& filePath,
+                                                  const QString& renderWarning)
+{
+    if (!prepared.isValid()) {
+        emit saveFailed(filePath, tr("Failed to save screenshot: unable to process selection"));
+        return;
     }
 
-    // User cancelled
-    emit saveDialogClosed(false);
-    return false;
+    if (filePath.isEmpty()) {
+        emit saveFailed(QString(), tr("Failed to save screenshot: output path is empty"));
+        return;
+    }
+
+    if (m_saveWatcher) {
+        qWarning() << "RegionExportManager: save already in progress";
+        emit saveFailed(filePath, tr("Failed to save screenshot: another save is already in progress"));
+        return;
+    }
+
+    auto* watcher = new QFutureWatcher<SaveTaskResult>(this);
+    m_saveWatcher = watcher;
+    const QImage image = prepared.image;
+    connect(watcher, &QFutureWatcher<SaveTaskResult>::finished, this,
+        [this, watcher, prepared = std::move(prepared)]() mutable {
+            const SaveTaskResult result = watcher->result();
+            if (m_saveWatcher == watcher) {
+                m_saveWatcher.clear();
+            }
+            watcher->deleteLater();
+
+            if (result.success) {
+                qDebug() << "RegionExportManager: Saved to" << result.filePath;
+                emit saveCompleted(prepared.pixmap, prepared.image, result.filePath);
+                return;
+            }
+
+            qWarning() << "RegionExportManager: Failed to save to" << result.filePath;
+            if (!result.saveError.stage.isEmpty() || !result.saveError.message.isEmpty()) {
+                qWarning() << "RegionExportManager: save error:"
+                           << result.saveError.stage << result.saveError.message;
+            }
+            if (!result.renderWarning.isEmpty()) {
+                qWarning() << "RegionExportManager: template warning:" << result.renderWarning;
+            }
+            emit saveFailed(
+                result.filePath,
+                tr("Failed to save screenshot: %1").arg(saveErrorDetail(result.saveError)));
+        });
+
+    watcher->setFuture(QtConcurrent::run([image, filePath, renderWarning]() {
+        SaveTaskResult result;
+        result.filePath = filePath;
+        result.renderWarning = renderWarning;
+        result.success = ImageSaveUtils::saveImageAtomically(
+            image, filePath, QByteArray(), &result.saveError);
+        return result;
+    }));
 }

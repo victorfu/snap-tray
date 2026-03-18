@@ -493,14 +493,6 @@ PinWindow::PinWindow(const QPixmap& screenshot,
     m_clickThroughHoverTimer->setInterval(50);  // Click-through hover check
     connect(m_clickThroughHoverTimer, &QTimer::timeout, this, &PinWindow::updateClickThroughForCursor);
 
-    // Defer auto-opening until the event loop returns so the floating QML toolbar
-    // is created after the host widget has fully settled.
-    QTimer::singleShot(0, this, [this]() {
-        if (!isVisible() || m_toolbarVisible || isRegionLayoutMode() || m_isLiveMode) {
-            return;
-        }
-        showToolbar();
-    });
 }
 
 PinWindow::~PinWindow()
@@ -1460,10 +1452,8 @@ void PinWindow::copyToClipboard()
         exportScreen = screen();
     }
 
-    const QImage taggedImage = tagImageWithScreenColorSpace(pixmapToCopy.toImage(), exportScreen);
-    if (!PlatformFeatures::instance().copyImageToClipboard(taggedImage)) {
-        QGuiApplication::clipboard()->setImage(taggedImage);
-    }
+    const QImage clipboardImage = normalizeImageForExport(pixmapToCopy.toImage(), exportScreen);
+    PlatformFeatures::instance().copyImageToClipboardForGui(clipboardImage);
     m_toast->showToast(SnapTray::QmlToast::Level::Success, tr("Copied to clipboard"));
 }
 
@@ -4901,10 +4891,8 @@ void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
     if (!exportScreen) {
         exportScreen = screen();
     }
-    const QImage taggedImage = tagImageWithScreenColorSpace(result.toImage(), exportScreen);
-    if (!PlatformFeatures::instance().copyImageToClipboard(taggedImage)) {
-        QGuiApplication::clipboard()->setImage(taggedImage);
-    }
+    const QImage clipboardImage = normalizeImageForExport(result.toImage(), exportScreen);
+    PlatformFeatures::instance().copyImageToClipboardForGui(clipboardImage);
     m_toast->showToast(SnapTray::QmlToast::Level::Success, tr("Beautified image copied"));
 }
 

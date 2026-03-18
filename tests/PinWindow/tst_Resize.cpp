@@ -139,6 +139,15 @@ private slots:
         QVERIFY(window.testAttribute(Qt::WA_DeleteOnClose));
     }
 
+    void testToolbarStartsHidden() {
+        QPixmap pixmap = createTestPixmap(100, 100);
+        PinWindow window(pixmap, QPoint(0, 0));
+
+        QCoreApplication::processEvents();
+
+        QVERIFY(!window.isToolbarVisible());
+    }
+
     // =========================================================================
     // Mouse Tracking Tests
     // =========================================================================

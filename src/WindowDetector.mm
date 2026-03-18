@@ -8,9 +8,18 @@
 #include <QtConcurrent>
 #include <unistd.h>
 
+#import <Foundation/Foundation.h>
 #import <ApplicationServices/ApplicationServices.h>
 #import <CoreGraphics/CoreGraphics.h>
 #import <AppKit/AppKit.h>
+#import <dispatch/dispatch.h>
+
+#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 120300
+#define HAS_SCREENCAPTUREKIT 1
+#import <ScreenCaptureKit/ScreenCaptureKit.h>
+#else
+#define HAS_SCREENCAPTUREKIT 0
+#endif
 
 namespace {
 
@@ -192,23 +201,108 @@ bool shouldRefinePopupBoundsFromImage(ElementType elementType, const QRect &boun
     return bounds.width() >= 120 && bounds.height() >= 200;
 }
 
+QImage captureWindowImage(CGWindowID windowId)
+{
+#if HAS_SCREENCAPTUREKIT
+    if (@available(macOS 14.0, *)) {
+        dispatch_semaphore_t contentSemaphore = dispatch_semaphore_create(0);
+        __block SCShareableContent *shareableContent = nil;
+        __block NSError *shareableContentError = nil;
+
+        [SCShareableContent getShareableContentExcludingDesktopWindows:YES
+                                                   onScreenWindowsOnly:YES
+                                                     completionHandler:^(
+            SCShareableContent *content, NSError *error) {
+            shareableContent = [content retain];
+            shareableContentError = [error retain];
+            dispatch_semaphore_signal(contentSemaphore);
+        }];
+
+        const long contentWaitResult = dispatch_semaphore_wait(
+            contentSemaphore,
+            dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC));
+        if (contentWaitResult != 0 || !shareableContent || shareableContentError) {
+            [shareableContent release];
+            [shareableContentError release];
+            return QImage();
+        }
+
+        SCWindow *targetWindow = nil;
+        for (SCWindow *window in shareableContent.windows) {
+            if (window.windowID == windowId) {
+                targetWindow = [window retain];
+                break;
+            }
+        }
+
+        [shareableContent release];
+        [shareableContentError release];
+
+        if (!targetWindow) {
+            return QImage();
+        }
+
+        SCContentFilter *filter = [[SCContentFilter alloc] initWithDesktopIndependentWindow:targetWindow];
+        SCShareableContentInfo *filterInfo = [SCShareableContent infoForFilter:filter];
+        const CGRect contentRect = filterInfo ? filterInfo.contentRect : targetWindow.frame;
+        const qreal pointPixelScale = filterInfo ? static_cast<qreal>(filterInfo.pointPixelScale) : 1.0;
+
+        SCStreamConfiguration *config = [[SCStreamConfiguration alloc] init];
+        config.width = static_cast<size_t>(qMax(1, qRound(CGRectGetWidth(contentRect) * pointPixelScale)));
+        config.height = static_cast<size_t>(qMax(1, qRound(CGRectGetHeight(contentRect) * pointPixelScale)));
+        config.showsCursor = NO;
+        config.ignoreShadowsSingleWindow = YES;
+        if (@available(macOS 14.2, *)) {
+            config.includeChildWindows = YES;
+        }
+
+        dispatch_semaphore_t captureSemaphore = dispatch_semaphore_create(0);
+        __block CGImageRef capturedImage = nil;
+        __block NSError *captureError = nil;
+
+        [SCScreenshotManager captureImageWithFilter:filter
+                                      configuration:config
+                                  completionHandler:^(
+            CGImageRef image, NSError *error) {
+            if (image) {
+                capturedImage = CGImageRetain(image);
+            }
+            captureError = [error retain];
+            dispatch_semaphore_signal(captureSemaphore);
+        }];
+
+        [config release];
+        [filter release];
+        [targetWindow release];
+
+        const long captureWaitResult = dispatch_semaphore_wait(
+            captureSemaphore,
+            dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC));
+        if (captureWaitResult != 0 || !capturedImage || captureError) {
+            if (capturedImage) {
+                CGImageRelease(capturedImage);
+            }
+            [captureError release];
+            return QImage();
+        }
+
+        const QImage image = createQImageFromCGImage(capturedImage);
+        CGImageRelease(capturedImage);
+        [captureError release];
+        return image;
+    }
+#endif
+
+    return QImage();
+}
+
 QRect refineVisibleBoundsFromWindowImage(CGWindowID windowId, const QRect &rawBounds)
 {
     if (windowId == 0 || !rawBounds.isValid() || rawBounds.isEmpty()) {
         return QRect();
     }
 
-    CGImageRef windowImage = CGWindowListCreateImage(
-        CGRectNull,
-        kCGWindowListOptionIncludingWindow,
-        windowId,
-        kCGWindowImageBoundsIgnoreFraming | kCGWindowImageBestResolution);
-    if (!windowImage) {
-        return QRect();
-    }
-
-    const QImage image = createQImageFromCGImage(windowImage);
-    CGImageRelease(windowImage);
+    const QImage image = captureWindowImage(windowId);
     if (image.isNull()) {
         return QRect();
     }
@@ -746,7 +840,18 @@ std::optional<DetectedElement> WindowDetector::detectChildElementAt(
     return result;
 }
 
-std::optional<DetectedElement> WindowDetector::detectWindowAt(const QPoint &screenPos) const
+std::optional<DetectedElement> WindowDetector::detectChildElementAt(
+    const QPoint &screenPos,
+    const DetectedElement &topWindow,
+    size_t topLevelIndex) const
+{
+    Q_UNUSED(topLevelIndex);
+    return detectChildElementAt(screenPos, topWindow.ownerPid, topWindow.bounds);
+}
+
+std::optional<DetectedElement> WindowDetector::detectWindowAt(
+    const QPoint &screenPos,
+    QueryMode queryMode) const
 {
     if (!m_enabled) {
         return std::nullopt;
@@ -793,8 +898,10 @@ std::optional<DetectedElement> WindowDetector::detectWindowAt(const QPoint &scre
     // Step 2: Try child element detection using the window's PID.
     // AXUIElementCreateApplication(pid) scopes the hit-test to the target app,
     // bypassing our own overlay which blocks system-wide AX queries.
-    if (m_detectionFlags.testFlag(DetectionFlag::ChildControls) && topWindow->ownerPid > 0) {
-        auto childElement = detectChildElementAt(screenPos, topWindow->ownerPid, topWindow->bounds);
+    if (queryMode == QueryMode::IncludeChildControls &&
+        m_detectionFlags.testFlag(DetectionFlag::ChildControls) &&
+        topWindow->ownerPid > 0) {
+        auto childElement = detectChildElementAt(screenPos, *topWindow, 0);
         if (childElement.has_value()) {
             return childElement;
         }

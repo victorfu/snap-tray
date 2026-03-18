@@ -10,7 +10,9 @@
 #include <QString>
 
 class AnnotationLayer;
+class QFutureWatcherBase;
 class QScreen;
+class QWidget;
 
 /**
  * @brief Manages screenshot export operations (copy, save, finish)
@@ -26,7 +28,31 @@ class RegionExportManager : public QObject
     Q_OBJECT
 
 public:
+    struct PreparedExport {
+        QPixmap pixmap;
+        QImage image;
+
+        bool isValid() const
+        {
+            return !pixmap.isNull() && !image.isNull();
+        }
+    };
+
+    struct SaveRequest {
+        QString filePath;
+        QString renderWarning;
+        QString error;
+        bool autoSave = false;
+        bool cancelled = false;
+
+        bool isValid() const
+        {
+            return error.isEmpty() && !cancelled && !filePath.isEmpty();
+        }
+    };
+
     explicit RegionExportManager(QObject *parent = nullptr);
+    ~RegionExportManager() override;
 
     /**
      * @brief Set the background pixmap to crop from
@@ -52,20 +78,24 @@ public:
     QPixmap getSelectedRegion(const QRect &selectionRect, int cornerRadius = 0);
 
     /**
-     * @brief Copy selection to clipboard
-     * @param selectionRect The selection rectangle in logical coordinates
-     * @param cornerRadius Corner radius for rounded corners
+     * @brief Prepare a normalized export payload for clipboard/save operations
      */
-    void copyToClipboard(const QRect &selectionRect, int cornerRadius = 0);
+    PreparedExport prepareExport(const QRect &selectionRect, int cornerRadius = 0);
 
     /**
-     * @brief Show save dialog and save to file
+     * @brief Resolve the output target for a save request
      * @param selectionRect The selection rectangle in logical coordinates
-     * @param cornerRadius Corner radius for rounded corners
      * @param parentWidget Widget to use as dialog parent (nullptr for no parent)
-     * @return true if saved successfully, false if cancelled or failed
+     * @return Save target metadata for async save execution
      */
-    bool saveToFile(const QRect &selectionRect, int cornerRadius = 0, QWidget *parentWidget = nullptr);
+    SaveRequest createSaveRequest(const QRect &selectionRect, QWidget *parentWidget = nullptr) const;
+
+    /**
+     * @brief Save a prepared export asynchronously
+     */
+    void savePreparedExportAsync(PreparedExport prepared,
+                                 const QString& filePath,
+                                 const QString& renderWarning = QString());
 
     void setMonitorIdentifier(const QString& monitor);
     void setWindowMetadata(const QString& windowTitle, const QString& appName = QString());
@@ -73,11 +103,6 @@ public:
     void setSourceScreen(QScreen* screen);
 
 signals:
-    /**
-     * @brief Emitted when screenshot is copied to clipboard
-     */
-    void copyCompleted(const QPixmap &pixmap, const QImage& image);
-
     /**
      * @brief Emitted when screenshot is saved to file
      */
@@ -87,17 +112,6 @@ signals:
      * @brief Emitted when auto-save fails
      */
     void saveFailed(const QString &filePath, const QString &error);
-
-    /**
-     * @brief Emitted before showing save dialog (so parent can hide)
-     */
-    void saveDialogOpening();
-
-    /**
-     * @brief Emitted after save dialog closes (so parent can restore)
-     * @param saved true if file was saved, false if cancelled
-     */
-    void saveDialogClosed(bool saved);
 
 private:
     /**
@@ -113,6 +127,7 @@ private:
     QString m_appName;
     int m_regionIndex = -1;
     QPointer<QScreen> m_sourceScreen;
+    QPointer<QFutureWatcherBase> m_saveWatcher;
 };
 
 #endif // REGIONEXPORTMANAGER_H

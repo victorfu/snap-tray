@@ -548,7 +548,48 @@ void WindowDetector::enumerateWindowsInternal(std::vector<DetectedElement>& cach
     qDebug() << "WindowDetector: Enumerated" << cache.size() << "windows (async)";
 }
 
-std::optional<DetectedElement> WindowDetector::detectWindowAt(const QPoint &screenPos) const
+std::optional<DetectedElement> WindowDetector::detectChildElementAt(
+    const QPoint &screenPos,
+    const DetectedElement &topWindow,
+    size_t topLevelIndex) const
+{
+    std::optional<DetectedElement> bestChild;
+    qint64 bestChildArea = std::numeric_limits<qint64>::max();
+    const qint64 windowArea =
+        static_cast<qint64>(topWindow.bounds.width()) * topWindow.bounds.height();
+
+    for (size_t j = topLevelIndex + 1; j < m_windowCache.size(); ++j) {
+        const auto &child = m_windowCache[j];
+
+        // Stop when we reach the next top-level window
+        if (child.windowLayer == 0) {
+            break;
+        }
+
+        if (!child.bounds.contains(screenPos)) {
+            continue;
+        }
+
+        // Skip child elements that cover >= 90% of the parent window area
+        // (they provide no additional precision over whole-window detection)
+        const qint64 childArea =
+            static_cast<qint64>(child.bounds.width()) * child.bounds.height();
+        if (windowArea > 0 && childArea * 100 / windowArea >= 90) {
+            continue;
+        }
+
+        if (childArea < bestChildArea) {
+            bestChildArea = childArea;
+            bestChild = child;
+        }
+    }
+
+    return bestChild;
+}
+
+std::optional<DetectedElement> WindowDetector::detectWindowAt(
+    const QPoint &screenPos,
+    QueryMode queryMode) const
 {
     if (!m_enabled) {
         return std::nullopt;
@@ -564,7 +605,9 @@ std::optional<DetectedElement> WindowDetector::detectWindowAt(const QPoint &scre
     // Lock mutex for thread-safe cache access
     QMutexLocker locker(&m_cacheMutex);
 
-    const bool detectChildren = m_detectionFlags.testFlag(DetectionFlag::ChildControls);
+    const bool detectChildren =
+        queryMode == QueryMode::IncludeChildControls &&
+        m_detectionFlags.testFlag(DetectionFlag::ChildControls);
 
     // Iterate through cached elements in z-order (topmost first).
     // Layout: [Window A, Child A1, Child A2, Window B, Child B1, ...]
@@ -597,35 +640,7 @@ std::optional<DetectedElement> WindowDetector::detectWindowAt(const QPoint &scre
         // Found the topmost window containing the cursor.
         // If child detection is enabled, scan its child elements for a better match.
         if (detectChildren) {
-            std::optional<DetectedElement> bestChild;
-            qint64 bestChildArea = std::numeric_limits<qint64>::max();
-            const qint64 windowArea = static_cast<qint64>(element.bounds.width()) * element.bounds.height();
-
-            for (size_t j = i + 1; j < m_windowCache.size(); ++j) {
-                const auto &child = m_windowCache[j];
-
-                // Stop when we reach the next top-level window
-                if (child.windowLayer == 0) {
-                    break;
-                }
-
-                if (!child.bounds.contains(screenPos)) {
-                    continue;
-                }
-
-                // Skip child elements that cover >= 90% of the parent window area
-                // (they provide no additional precision over whole-window detection)
-                const qint64 childArea = static_cast<qint64>(child.bounds.width()) * child.bounds.height();
-                if (windowArea > 0 && childArea * 100 / windowArea >= 90) {
-                    continue;
-                }
-
-                if (childArea < bestChildArea) {
-                    bestChildArea = childArea;
-                    bestChild = child;
-                }
-            }
-
+            const auto bestChild = detectChildElementAt(screenPos, element, i);
             if (bestChild.has_value()) {
                 return bestChild;
             }

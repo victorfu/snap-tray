@@ -16,6 +16,7 @@
 #include <QCursor>
 #include <QKeyEvent>
 #include <QDialog>
+#include <QElapsedTimer>
 
 namespace {
 
@@ -180,6 +181,9 @@ void CaptureManager::startQuickPinCapture()
 
 void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortcutHintsOnEntry)
 {
+    QElapsedTimer captureTimer;
+    captureTimer.start();
+
     // Skip if already in capture mode
     if (m_regionSelector && m_regionSelector->isVisible()) {
         return;
@@ -224,7 +228,10 @@ void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortc
     QWidget *popup = QApplication::activePopupWidget();
     QWidget *modal = QApplication::activeModalWidget();
 
+    QElapsedTimer grabTimer;
+    grabTimer.start();
     QPixmap preCapture = targetScreen->grabWindow(0);
+    qDebug() << "CaptureManager: preCapture grabWindow elapsedMs=" << grabTimer.elapsed();
 
     // 4. Close popup/modal AFTER screenshot
     if (popup) {
@@ -240,6 +247,8 @@ void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortc
 
     const bool quickPinMode = (mode == CaptureEntryMode::QuickPin);
     initializeRegionSelector(targetScreen, preCapture, quickPinMode, showShortcutHintsOnEntry);
+    qDebug() << "CaptureManager: startCaptureInternal first-show pipeline elapsedMs="
+             << captureTimer.elapsed();
 }
 
 void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &globalPosition, const QRect &globalRect)
@@ -375,6 +384,9 @@ void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
                                               bool quickPinMode,
                                               bool showShortcutHintsOnEntry)
 {
+    QElapsedTimer initTimer;
+    initTimer.start();
+
     m_regionSelector = new RegionSelector();
     m_regionSelector->setShowShortcutHintsOnEntry(showShortcutHintsOnEntry);
 
@@ -404,26 +416,6 @@ void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
                 this, &CaptureManager::saveFailed);
     }
 
-    // Trigger initial window highlight once the async window list is ready.
-    if (m_windowDetector && m_windowDetector->isEnabled()) {
-        const auto regionSelector = m_regionSelector;
-        const auto triggerDetection = [regionSelector]() {
-            if (!regionSelector) {
-                return;
-            }
-            regionSelector->refreshWindowDetectionAtCursor();
-        };
-
-        if (m_windowDetector->isRefreshComplete()) {
-            triggerDetection();
-        } else {
-            connect(m_windowDetector, &WindowDetector::windowListReady,
-                    m_regionSelector, [triggerDetection]() {
-                        triggerDetection();
-                    });
-        }
-    }
-
     m_regionSelector->setGeometry(targetScreen->geometry());
     m_regionSelector->show();
     raiseWindowAboveMenuBar(m_regionSelector);
@@ -434,4 +426,7 @@ void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
     // Ensure cursor is set AFTER show/activate to fix race condition where
     // cursor was set before widget visibility, then Qt reset it to ArrowCursor
     m_regionSelector->ensureCrossCursor();
+
+    qDebug() << "CaptureManager: initializeRegionSelector elapsedMs="
+             << initTimer.elapsed();
 }

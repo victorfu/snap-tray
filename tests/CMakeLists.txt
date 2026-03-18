@@ -198,10 +198,10 @@ target_link_libraries(RegionSelector_TransientUiCancelGuard PRIVATE snaptray_ui 
 add_test(NAME RegionSelector_TransientUiCancelGuard COMMAND RegionSelector_TransientUiCancelGuard)
 set_tests_properties(RegionSelector_TransientUiCancelGuard PROPERTIES TIMEOUT 60 LABELS "unit")
 
-add_executable(RegionSelector_HistoryReplay RegionSelector/tst_HistoryReplay.cpp)
-target_link_libraries(RegionSelector_HistoryReplay PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
-add_test(NAME RegionSelector_HistoryReplay COMMAND RegionSelector_HistoryReplay)
-set_tests_properties(RegionSelector_HistoryReplay PROPERTIES TIMEOUT 60 LABELS "unit")
+add_executable(RegionSelector_RegionExportManager RegionSelector/tst_RegionExportManager.cpp)
+target_link_libraries(RegionSelector_RegionExportManager PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME RegionSelector_RegionExportManager COMMAND RegionSelector_RegionExportManager)
+set_tests_properties(RegionSelector_RegionExportManager PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(RegionSelector_StyleSync RegionSelector/tst_StyleSync.cpp)
 target_link_libraries(RegionSelector_StyleSync PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
@@ -261,6 +261,11 @@ if(APPLE)
     add_test(NAME Detection_WindowDetectorMacFilters COMMAND Detection_WindowDetectorMacFilters)
     set_tests_properties(Detection_WindowDetectorMacFilters PROPERTIES TIMEOUT 60 LABELS "unit")
 endif()
+
+add_executable(Detection_WindowDetectorQueryMode Detection/tst_WindowDetectorQueryMode.cpp)
+target_link_libraries(Detection_WindowDetectorQueryMode PRIVATE snaptray_platform Qt6::Widgets Qt6::Test)
+add_test(NAME Detection_WindowDetectorQueryMode COMMAND Detection_WindowDetectorQueryMode)
+set_tests_properties(Detection_WindowDetectorQueryMode PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
 # Utils Tests (link snaptray_core)

@@ -15,4 +15,9 @@ QImage convertImageForDisplay(const QImage& image);
 // On other platforms this returns the original image.
 QImage tagImageWithScreenColorSpace(const QImage& image, const QScreen* sourceScreen);
 
+// Normalize an exported image for clipboard/save flows.
+// This removes device-pixel scaling metadata so GUI clipboard consumers treat the
+// pixel buffer as an exact cropped image, then reapplies display color-space tags.
+QImage normalizeImageForExport(const QImage& image, const QScreen* sourceScreen);
+
 #endif // IMAGECOLORSPACEHELPER_H

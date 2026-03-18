@@ -93,7 +93,7 @@ QIcon PlatformFeatures::createTrayIcon() const
     return QIcon(pixmap);
 }
 
-bool PlatformFeatures::copyImageToClipboard(const QImage& image) const
+bool PlatformFeatures::copyImageToClipboardPersistently(const QImage& image) const
 {
     if (image.isNull()) {
         return false;

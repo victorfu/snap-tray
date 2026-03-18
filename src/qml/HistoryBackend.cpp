@@ -124,10 +124,8 @@ void HistoryBackend::copy(int index)
     }
 
     QScreen* exportScreen = QGuiApplication::primaryScreen();
-    const QImage taggedImage = tagImageWithScreenColorSpace(pixmap.toImage(), exportScreen);
-    if (!PlatformFeatures::instance().copyImageToClipboard(taggedImage)) {
-        QGuiApplication::clipboard()->setImage(taggedImage);
-    }
+    const QImage clipboardImage = normalizeImageForExport(pixmap.toImage(), exportScreen);
+    PlatformFeatures::instance().copyImageToClipboardForGui(clipboardImage);
 
     emit closeRequested();
 }

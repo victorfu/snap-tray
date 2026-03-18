@@ -84,6 +84,7 @@ class RegionSelector : public QWidget, public AnnotationHostAdapter
     friend class tst_RegionSelectorHistoryReplay;
     friend class tst_RegionSelectorTransientUiCancelGuard;
     friend class TestRegionSelectorStyleSync;
+    friend class tst_RegionSelectorDeferredInitialization;
 
 public:
     explicit RegionSelector(QWidget *parent = nullptr);
@@ -241,6 +242,16 @@ private:
     void beginMultiRegionReplace(int index);
     void cancelMultiRegionReplace(bool restoreSelection);
     void syncRegionSubToolbar(bool refreshContent);
+    void scheduleDeferredPostShowInitialization(WindowDetector::QueryMode initialQueryMode,
+                                                const QPoint& initialCursorPos);
+    void runDeferredPostShowInitialization(quint64 token,
+                                           WindowDetector::QueryMode initialQueryMode,
+                                           const QPoint& initialCursorPos);
+    void scheduleDeferredInitialWindowDetection(quint64 token,
+                                                WindowDetector::QueryMode queryMode,
+                                                const QPoint& initialCursorPos);
+    void refreshWindowDetectionAtCursor(WindowDetector::QueryMode queryMode);
+    void updateWindowDetection(const QPoint &localPos, WindowDetector::QueryMode queryMode);
 
     // Screen lifecycle management
     void onScreenRemoved(QScreen *screen);
@@ -323,6 +334,7 @@ private:
     OCRManager *m_ocrManager;
     bool m_ocrInProgress;
     bool m_shareInProgress = false;
+    bool m_exportInProgress = false;
     QString m_pendingSharePassword;
     LoadingSpinnerRenderer *m_loadingSpinner = nullptr;
     SnapTray::QmlToast *m_selectionToast = nullptr;
@@ -372,6 +384,9 @@ private:
     bool m_shortcutHintsVisible = false;
     bool m_shortcutHintsTemporarilyHiddenByHover = false;
     std::unique_ptr<CaptureShortcutHintsOverlay> m_shortcutHintsOverlay;
+    bool m_postShowInitializationPending = false;
+    WindowDetector::QueryMode m_initialWindowDetectionMode = WindowDetector::QueryMode::IncludeChildControls;
+    quint64 m_postShowInitializationToken = 0;
 
     // Update throttling component
     UpdateThrottler m_updateThrottler;
@@ -463,6 +478,7 @@ private:
     std::function<std::unique_ptr<snaptray::colorwidgets::ColorPickerDialogCompat>()>
         m_colorPickerDialogFactory;
     std::function<void()> m_restoreAfterDialogCancelledHook;
+    std::function<bool(const QImage&)> m_guiClipboardWriter;
 };
 
 #endif // REGIONSELECTOR_H

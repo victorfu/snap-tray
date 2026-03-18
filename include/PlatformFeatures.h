@@ -4,6 +4,8 @@
 #include <QObject>
 #include <QString>
 #include <QIcon>
+#include <QClipboard>
+#include <QGuiApplication>
 #include <QImage>
 
 class OCRManager;
@@ -21,8 +23,23 @@ public:
 
     QIcon createTrayIcon() const;
 
-    // Copy image to clipboard using native APIs (for CLI mode where Qt clipboard may not persist)
-    bool copyImageToClipboard(const QImage& image) const;
+    // Copy image to clipboard using native APIs for flows that must survive process exit,
+    // such as the CLI capture command.
+    bool copyImageToClipboardPersistently(const QImage& image) const;
+
+    // Copy image to clipboard for interactive GUI flows.
+    bool copyImageToClipboardForGui(const QImage& image) const
+    {
+        if (image.isNull()) {
+            return false;
+        }
+
+        if (QClipboard* clipboard = QGuiApplication::clipboard()) {
+            clipboard->setImage(image);
+            return true;
+        }
+        return false;
+    }
 
     // CLI installation
     bool isCLIInstalled() const;
