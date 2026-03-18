@@ -306,6 +306,7 @@ signals:
     void updateAvailable(const QString& version, const QString& notes,
                          const QString& releaseUrl);
     void noUpdateAvailable();
+    void updateCheckUnavailable(const QString& reason);
     void updateCheckFailed(const QString& error);
 
     // Hotkeys

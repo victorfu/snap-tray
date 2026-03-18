@@ -9,6 +9,7 @@
 class QNetworkAccessManager;
 class QNetworkReply;
 class QTimer;
+class tst_SettingsBackend;
 
 /**
  * @brief Information about a GitHub release.
@@ -79,6 +80,16 @@ public:
      */
     static bool isNewerVersion(const QString& remote, const QString& local);
 
+    /**
+     * @brief Check whether the given install source should use GitHub release checks.
+     */
+    static bool isUpdateCheckSupported(InstallSource source);
+
+    /**
+     * @brief User-facing reason why GitHub release checks are disabled for a source.
+     */
+    static QString updateCheckDisabledReason(InstallSource source);
+
     // GitHub repository configuration
     static constexpr const char* kGitHubOwner = "victorfu";
     static constexpr const char* kGitHubRepo = "snap-tray";
@@ -106,6 +117,12 @@ signals:
      */
     void checkFailed(const QString& error);
 
+    /**
+     * @brief Emitted when update checks are not available for this installation.
+     * @param reason User-facing reason why update checks are disabled.
+     */
+    void checkUnavailable(const QString& reason);
+
 private slots:
     void onNetworkReply(QNetworkReply* reply);
     void onPeriodicCheck();
@@ -122,6 +139,7 @@ private:
     bool m_silentCheck;
 
     friend class tst_UpdateChecker;
+    friend class tst_SettingsBackend;
 };
 
 #endif // UPDATECHECKER_H

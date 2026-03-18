@@ -127,6 +127,12 @@ void QmlSettingsWindow::ensureView()
                          UpdateDialogViewModel::createUpToDate(this),
                          m_backend);
     });
+    connect(m_backend, &SettingsBackend::updateCheckUnavailable,
+            this, [this](const QString& reason) {
+        showUpdateDialog(this,
+                         UpdateDialogViewModel::createInfo(reason, this),
+                         m_backend);
+    });
     connect(m_backend, &SettingsBackend::updateCheckFailed,
             this, [this](const QString& error) {
         showUpdateDialog(this,

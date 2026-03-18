@@ -67,6 +67,7 @@ private slots:
 
     // Install source tests
     void testInstallSource_Valid();
+    void testCheckForUpdates_UnsupportedInstallSource_EmitsUnavailable();
 
     // Reply handling tests
     void testOnNetworkReply_MalformedJson_DoesNotUpdateLastCheckTime();
@@ -227,6 +228,26 @@ void tst_UpdateChecker::testInstallSource_Valid()
     // Should return a valid enum value
     QVERIFY(source >= InstallSource::MicrosoftStore);
     QVERIFY(source <= InstallSource::Unknown);
+}
+
+void tst_UpdateChecker::testCheckForUpdates_UnsupportedInstallSource_EmitsUnavailable()
+{
+    UpdateChecker checker;
+    checker.m_installSource = InstallSource::MicrosoftStore;
+
+    QSignalSpy startedSpy(&checker, &UpdateChecker::checkStarted);
+    QSignalSpy unavailableSpy(&checker, &UpdateChecker::checkUnavailable);
+    QSignalSpy failedSpy(&checker, &UpdateChecker::checkFailed);
+
+    checker.checkForUpdates(false);
+
+    QCOMPARE(startedSpy.count(), 0);
+    QCOMPARE(unavailableSpy.count(), 1);
+    QCOMPARE(failedSpy.count(), 0);
+    QCOMPARE(unavailableSpy.at(0).at(0).toString(),
+             UpdateChecker::updateCheckDisabledReason(InstallSource::MicrosoftStore));
+    QVERIFY(!checker.m_isChecking);
+    QVERIFY(!UpdateSettingsManager::instance().lastCheckTime().isValid());
 }
 
 // ============================================================================

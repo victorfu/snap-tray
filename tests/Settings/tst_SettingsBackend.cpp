@@ -4,6 +4,7 @@
 #include "qml/SettingsBackend.h"
 #include "settings/RecordingSettingsManager.h"
 #include "settings/Settings.h"
+#include "update/UpdateChecker.h"
 
 using SnapTray::SettingsBackend;
 
@@ -17,6 +18,7 @@ private slots:
 
     void testNormalizeRecordingAudioSettings_PreservesUnavailableLoadedDevice();
     void testBlurTypeMapping_RoundTripMatchesUiIndices();
+    void testCheckForUpdates_UnsupportedInstallSource_EmitsUnavailable();
 
 private:
     void clearTestSettings();
@@ -82,6 +84,24 @@ void tst_SettingsBackend::testBlurTypeMapping_RoundTripMatchesUiIndices()
 
     reloadedBackend.setBlurType(1);
     QCOMPARE(settings.value("detection/blurType").toString(), QStringLiteral("gaussian"));
+}
+
+void tst_SettingsBackend::testCheckForUpdates_UnsupportedInstallSource_EmitsUnavailable()
+{
+    SettingsBackend backend;
+    backend.m_updateChecker = new UpdateChecker(&backend);
+    backend.m_updateChecker->m_installSource = InstallSource::MicrosoftStore;
+
+    QSignalSpy unavailableSpy(&backend, &SettingsBackend::updateCheckUnavailable);
+    QSignalSpy failedSpy(&backend, &SettingsBackend::updateCheckFailed);
+
+    backend.checkForUpdates();
+
+    QCOMPARE(unavailableSpy.count(), 1);
+    QCOMPARE(failedSpy.count(), 0);
+    QCOMPARE(unavailableSpy.at(0).at(0).toString(),
+             UpdateChecker::updateCheckDisabledReason(InstallSource::MicrosoftStore));
+    QVERIFY(!backend.isCheckingForUpdates());
 }
 
 QTEST_MAIN(tst_SettingsBackend)

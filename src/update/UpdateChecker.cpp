@@ -45,15 +45,13 @@ void UpdateChecker::checkForUpdates(bool silent)
         return;
     }
 
-    // Don't check for store installs or development builds in silent mode
-    if (silent) {
-        if (m_installSource == InstallSource::MicrosoftStore ||
-            m_installSource == InstallSource::MacAppStore ||
-            m_installSource == InstallSource::Development) {
-            qDebug() << "UpdateChecker: Skipping check for"
-                     << InstallSourceDetector::getSourceDisplayName(m_installSource);
-            return;
+    if (!isUpdateCheckSupported(m_installSource)) {
+        qDebug() << "UpdateChecker: Skipping check for"
+                 << InstallSourceDetector::getSourceDisplayName(m_installSource);
+        if (!silent) {
+            emit checkUnavailable(updateCheckDisabledReason(m_installSource));
         }
+        return;
     }
 
     m_isChecking = true;
@@ -75,10 +73,7 @@ void UpdateChecker::checkForUpdates(bool silent)
 
 void UpdateChecker::startPeriodicCheck()
 {
-    // Don't start periodic checks for store installs or development builds
-    if (m_installSource == InstallSource::MicrosoftStore ||
-        m_installSource == InstallSource::MacAppStore ||
-        m_installSource == InstallSource::Development) {
+    if (!isUpdateCheckSupported(m_installSource)) {
         qDebug() << "UpdateChecker: Periodic check disabled for"
                  << InstallSourceDetector::getSourceDisplayName(m_installSource);
         return;
@@ -130,6 +125,30 @@ bool UpdateChecker::isNewerVersion(const QString& remote, const QString& local)
     }
 
     return remoteVersion > localVersion;
+}
+
+bool UpdateChecker::isUpdateCheckSupported(InstallSource source)
+{
+    return source != InstallSource::MicrosoftStore &&
+           source != InstallSource::MacAppStore &&
+           source != InstallSource::Development;
+}
+
+QString UpdateChecker::updateCheckDisabledReason(InstallSource source)
+{
+    switch (source) {
+    case InstallSource::MicrosoftStore:
+    case InstallSource::MacAppStore:
+        return tr("Updates for this installation are managed by %1.")
+            .arg(InstallSourceDetector::getSourceDisplayName(source));
+    case InstallSource::Development:
+        return tr("GitHub update checks are unavailable for development builds.");
+    case InstallSource::DirectDownload:
+    case InstallSource::Homebrew:
+    case InstallSource::Unknown:
+    default:
+        return tr("Update checks are unavailable for this installation.");
+    }
 }
 
 void UpdateChecker::onNetworkReply(QNetworkReply* reply)

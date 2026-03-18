@@ -701,6 +701,14 @@ void SettingsBackend::checkForUpdates()
     if (m_isCheckingForUpdates)
         return;
 
+    const InstallSource installSource = m_updateChecker
+        ? m_updateChecker->installSource()
+        : InstallSourceDetector::detect();
+    if (!UpdateChecker::isUpdateCheckSupported(installSource)) {
+        emit updateCheckUnavailable(UpdateChecker::updateCheckDisabledReason(installSource));
+        return;
+    }
+
     if (!m_updateChecker) {
         m_updateChecker = new UpdateChecker(this);
 
@@ -724,6 +732,13 @@ void SettingsBackend::checkForUpdates()
             emit lastCheckedTextChanged();
             emit noUpdateAvailable();
         });
+
+        connect(m_updateChecker, &UpdateChecker::checkUnavailable, this,
+                [this](const QString& reason) {
+                    m_isCheckingForUpdates = false;
+                    emit isCheckingForUpdatesChanged();
+                    emit updateCheckUnavailable(reason);
+                });
 
         connect(m_updateChecker, &UpdateChecker::checkFailed, this,
                 [this](const QString& error) {

@@ -33,6 +33,14 @@ UpdateDialogViewModel* UpdateDialogViewModel::createError(const QString& message
     return vm;
 }
 
+UpdateDialogViewModel* UpdateDialogViewModel::createInfo(const QString& message, QObject* parent)
+{
+    auto* vm = new UpdateDialogViewModel(parent);
+    vm->m_mode = Info;
+    vm->m_errorMessage = message;
+    return vm;
+}
+
 int UpdateDialogViewModel::mode() const { return static_cast<int>(m_mode); }
 QString UpdateDialogViewModel::version() const { return m_release.version; }
 QString UpdateDialogViewModel::currentVersion() const { return UpdateChecker::currentVersion(); }

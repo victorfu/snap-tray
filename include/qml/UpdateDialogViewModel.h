@@ -15,12 +15,13 @@ class UpdateDialogViewModel : public QObject
     Q_PROPERTY(QString appName READ appName CONSTANT)
 
 public:
-    enum Mode { UpdateAvailable = 0, UpToDate = 1, Error = 2 };
+    enum Mode { UpdateAvailable = 0, UpToDate = 1, Error = 2, Info = 3 };
     Q_ENUM(Mode)
 
     static UpdateDialogViewModel* createForRelease(const ReleaseInfo& release, QObject* parent = nullptr);
     static UpdateDialogViewModel* createUpToDate(QObject* parent = nullptr);
     static UpdateDialogViewModel* createError(const QString& message, QObject* parent = nullptr);
+    static UpdateDialogViewModel* createInfo(const QString& message, QObject* parent = nullptr);
 
     int mode() const;
     QString version() const;

@@ -12,6 +12,7 @@ DialogBase {
         if (!viewModel) return ""
         if (viewModel.mode === 0) return qsTr("New Version Available!")
         if (viewModel.mode === 1) return qsTr("You're up to date!")
+        if (viewModel.mode === 3) return qsTr("Update Checks Unavailable")
         return qsTr("Unable to check for updates")
     }
     subtitle: {
@@ -28,6 +29,7 @@ DialogBase {
         if (!viewModel) return ""
         if (viewModel.mode === 0) return "\uD83C\uDF89"  // party
         if (viewModel.mode === 1) return "\u2713"          // check
+        if (viewModel.mode === 3) return "\u2139"          // info
         return "\u26A0"                                     // warning
     }
     dialogWidth: (viewModel && viewModel.mode === 0)
@@ -47,6 +49,7 @@ DialogBase {
                     if (!viewModel) return emptyContent
                     if (viewModel.mode === 0) return updateAvailableContent
                     if (viewModel.mode === 1) return upToDateContent
+                    if (viewModel.mode === 3) return errorContent
                     return errorContent
                 }
             }
@@ -148,6 +151,7 @@ DialogBase {
                     if (!viewModel) return emptyButtons
                     if (viewModel.mode === 0) return updateButtons
                     if (viewModel.mode === 1) return okButton
+                    if (viewModel.mode === 3) return okButton
                     return errorButtons
                 }
             }
