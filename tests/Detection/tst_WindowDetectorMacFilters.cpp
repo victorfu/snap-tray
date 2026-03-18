@@ -12,6 +12,8 @@ private slots:
     void testTopLevelKeepsVisibleWindow();
     void testAXRejectsHiddenElement();
     void testAXRejectsVisibleFalseElement();
+    void testMenuContainerRoleClassification();
+    void testMenuItemRoleClassification();
     void testAXRejectsContainerAtOrAboveRatioLimit();
     void testAXKeepsRegularRoleBelowRatioLimit();
 };
@@ -39,6 +41,19 @@ void tst_WindowDetectorMacFilters::testAXRejectsHiddenElement()
 void tst_WindowDetectorMacFilters::testAXRejectsVisibleFalseElement()
 {
     QVERIFY(WindowDetectorMacFilters::shouldRejectAxByVisibility(false, false));
+}
+
+void tst_WindowDetectorMacFilters::testMenuContainerRoleClassification()
+{
+    QVERIFY(WindowDetectorMacFilters::isMenuContainerRole(QStringLiteral("AXMenu")));
+    QVERIFY(!WindowDetectorMacFilters::isMenuContainerRole(QStringLiteral("AXButton")));
+}
+
+void tst_WindowDetectorMacFilters::testMenuItemRoleClassification()
+{
+    QVERIFY(WindowDetectorMacFilters::isMenuItemRole(QStringLiteral("AXMenuItem")));
+    QVERIFY(WindowDetectorMacFilters::isMenuItemRole(QStringLiteral("AXMenuBarItem")));
+    QVERIFY(!WindowDetectorMacFilters::isMenuItemRole(QStringLiteral("AXRow")));
 }
 
 void tst_WindowDetectorMacFilters::testAXRejectsContainerAtOrAboveRatioLimit()

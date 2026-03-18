@@ -21,7 +21,10 @@ QRect clampRectToScreen(const QRect& screenRect, const QPoint& center, const QSi
     return QRect(QPoint(x, y), size);
 }
 
-DetectedElement makeElement(const QRect& bounds, int layer = 0)
+DetectedElement makeElement(
+    const QRect& bounds,
+    int layer = 0,
+    ElementType elementType = ElementType::Window)
 {
     DetectedElement element;
     element.bounds = bounds;
@@ -29,7 +32,7 @@ DetectedElement makeElement(const QRect& bounds, int layer = 0)
     element.ownerApp = QStringLiteral("SnapTrayTests");
     element.windowLayer = layer;
     element.windowId = static_cast<uint32_t>(layer + 1);
-    element.elementType = ElementType::Window;
+    element.elementType = elementType;
     element.ownerPid = 4242;
     return element;
 }
@@ -65,6 +68,7 @@ class tst_WindowDetectorQueryMode : public QObject
 private slots:
     void testTopLevelOnlySkipsChildQuery();
     void testIncludeChildControlsUsesChildQuery();
+    void testContextMenuPrefersTopLevelBounds();
 };
 
 void tst_WindowDetectorQueryMode::testTopLevelOnlySkipsChildQuery()
@@ -120,6 +124,35 @@ void tst_WindowDetectorQueryMode::testIncludeChildControlsUsesChildQuery()
     QVERIFY(result.has_value());
     QCOMPARE(result->bounds, childBounds);
     QCOMPARE(detector.childQueryCount, 1);
+}
+
+void tst_WindowDetectorQueryMode::testContextMenuPrefersTopLevelBounds()
+{
+    QScreen* screen = QGuiApplication::screenAt(QCursor::pos());
+    if (!screen) {
+        screen = QGuiApplication::primaryScreen();
+    }
+    if (!screen) {
+        QSKIP("No screen available for WindowDetector query mode test.");
+    }
+
+    const QRect topBounds = clampRectToScreen(screen->geometry(), screen->geometry().center(), QSize(220, 260));
+    const QPoint hitPoint = topBounds.center();
+    const QRect rowBounds = QRect(hitPoint.x() - 100, hitPoint.y() - 12, 200, 24);
+
+    TestWindowDetector detector;
+    detector.m_enabled = true;
+    detector.setScreen(screen);
+    detector.m_refreshComplete = true;
+    detector.m_windowCache = {makeElement(topBounds, 100, ElementType::ContextMenu)};
+    detector.childResult = makeElement(rowBounds, 101);
+
+    const auto result = detector.detectWindowAt(hitPoint, WindowDetector::QueryMode::IncludeChildControls);
+
+    QVERIFY(result.has_value());
+    QCOMPARE(result->bounds, topBounds);
+    QCOMPARE(result->elementType, ElementType::ContextMenu);
+    QCOMPARE(detector.childQueryCount, 0);
 }
 
 QTEST_MAIN(tst_WindowDetectorQueryMode)

@@ -42,6 +42,17 @@ inline bool isContainerRole(const QString &role)
            role == QStringLiteral("AXScrollArea");
 }
 
+inline bool isMenuContainerRole(const QString &role)
+{
+    return role == QStringLiteral("AXMenu");
+}
+
+inline bool isMenuItemRole(const QString &role)
+{
+    return role == QStringLiteral("AXMenuItem") ||
+           role == QStringLiteral("AXMenuBarItem");
+}
+
 inline double maxAreaRatioForRole(const QString &role)
 {
     return isContainerRole(role) ? kContainerRoleAreaRatioLimit : kRegularRoleAreaRatioLimit;

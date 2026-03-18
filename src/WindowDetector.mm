@@ -201,6 +201,22 @@ bool shouldRefinePopupBoundsFromImage(ElementType elementType, const QRect &boun
     return bounds.width() >= 120 && bounds.height() >= 200;
 }
 
+bool shouldPreferTopLevelBoundsForElementType(ElementType elementType)
+{
+    switch (elementType) {
+    case ElementType::ContextMenu:
+    case ElementType::PopupMenu:
+    case ElementType::StatusBarItem:
+        return true;
+    case ElementType::Window:
+    case ElementType::Dialog:
+    case ElementType::Unknown:
+        return false;
+    }
+
+    return false;
+}
+
 QImage captureWindowImage(CGWindowID windowId)
 {
 #if HAS_SCREENCAPTUREKIT
@@ -758,6 +774,7 @@ std::optional<DetectedElement> WindowDetector::detectChildElementAt(
     constexpr CGFloat kMinElementSize = 10.0;
 
     std::optional<DetectedElement> result;
+    std::optional<DetectedElement> menuItemFallback;
 
     for (int depth = 0; depth < kMaxWalkDepth && current; ++depth) {
         // Stop at window/application level -- those are handled by CGWindowList
@@ -801,8 +818,27 @@ std::optional<DetectedElement> WindowDetector::detectChildElementAt(
                     element.elementType = ElementType::Window;
                     element.ownerPid = targetPid;
 
-                    result = element;
-                    break;
+                    if (WindowDetectorMacFilters::isMenuContainerRole(role)) {
+                        result = element;
+                        break;
+                    }
+
+                    if (WindowDetectorMacFilters::isMenuItemRole(role)) {
+                        menuItemFallback = element;
+                    } else {
+                        result = element;
+                        break;
+                    }
+                }
+
+                if (WindowDetectorMacFilters::isMenuItemRole(role)) {
+                    // Keep walking to find the enclosing AXMenu so menu hit-testing
+                    // prefers the full menu bounds over the hovered row.
+                    AXUIElementRef parent = nullptr;
+                    AXUIElementCopyAttributeValue(current, kAXParentAttribute, (CFTypeRef *)&parent);
+                    CFRelease(current);
+                    current = parent;
+                    continue;
                 }
 
                 if (windowArea > 0.0) {
@@ -824,6 +860,10 @@ std::optional<DetectedElement> WindowDetector::detectChildElementAt(
         AXUIElementCopyAttributeValue(current, kAXParentAttribute, (CFTypeRef *)&parent);
         CFRelease(current);
         current = parent;
+    }
+
+    if (!result.has_value() && menuItemFallback.has_value()) {
+        result = menuItemFallback;
     }
 
     if (current) {
@@ -893,6 +933,13 @@ std::optional<DetectedElement> WindowDetector::detectWindowAt(
 
     if (!topWindow.has_value()) {
         return std::nullopt;
+    }
+
+    // For transient menu-like surfaces, the top-level CGWindow bounds represent
+    // the full menu better than AX child hit-testing, which often resolves to a
+    // single row or cell under the cursor.
+    if (shouldPreferTopLevelBoundsForElementType(topWindow->elementType)) {
+        return topWindow;
     }
 
     // Step 2: Try child element detection using the window's PID.
