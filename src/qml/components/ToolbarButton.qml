@@ -78,7 +78,7 @@ Item {
         color: {
             if (root.isActive)
                 return root.iconActiveColor;
-            if (root.isCancel || root.isRecord)
+            if (root.isCancel)
                 return root.iconCancelColor;
             if (root.isAction)
                 return root.iconActionColor;
