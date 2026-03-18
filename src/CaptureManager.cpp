@@ -16,7 +16,6 @@
 #include <QCursor>
 #include <QKeyEvent>
 #include <QDialog>
-#include <QElapsedTimer>
 
 namespace {
 
@@ -181,9 +180,6 @@ void CaptureManager::startQuickPinCapture()
 
 void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortcutHintsOnEntry)
 {
-    QElapsedTimer captureTimer;
-    captureTimer.start();
-
     // Skip if already in capture mode
     if (m_regionSelector && m_regionSelector->isVisible()) {
         return;
@@ -228,8 +224,6 @@ void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortc
     QWidget *popup = QApplication::activePopupWidget();
     QWidget *modal = QApplication::activeModalWidget();
 
-    QElapsedTimer grabTimer;
-    grabTimer.start();
     QPixmap preCapture = targetScreen->grabWindow(0);
 
     // 4. Close popup/modal AFTER screenshot
@@ -381,9 +375,6 @@ void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
                                               bool quickPinMode,
                                               bool showShortcutHintsOnEntry)
 {
-    QElapsedTimer initTimer;
-    initTimer.start();
-
     m_regionSelector = new RegionSelector();
     m_regionSelector->setShowShortcutHintsOnEntry(showShortcutHintsOnEntry);
 

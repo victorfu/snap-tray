@@ -84,7 +84,6 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QLabel>
 #include <QTimer>
 #include <QSettings>
-#include <QElapsedTimer>
 #include <QtMath>
 #include <QMenu>
 #include <QFontDatabase>
@@ -1153,9 +1152,6 @@ void RegionSelector::applyCanvasGeometry(const QSize& logicalSize)
 
 void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapture)
 {
-    QElapsedTimer initTimer;
-    initTimer.start();
-
     m_historyReplayEntries.clear();
     m_historyLiveSlot = {};
     m_historyReplayIndex = -1;
@@ -1932,16 +1928,11 @@ void RegionSelector::runDeferredPostShowInitialization(
         return;
     }
 
-    QElapsedTimer timer;
-    timer.start();
-
     m_painter->buildDimmedCache(m_backgroundPixmap);
-    const qint64 dimmedCacheMs = timer.restart();
 
     m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
     m_magnifierPanel->invalidateCache();
     m_magnifierPanel->preWarmCache(initialCursorPos, m_backgroundPixmap);
-    const qint64 magnifierWarmupMs = timer.restart();
 
     scheduleDeferredInitialWindowDetection(token, initialQueryMode, initialCursorPos);
 }
@@ -1962,14 +1953,10 @@ void RegionSelector::scheduleDeferredInitialWindowDetection(
         }
 
         if (m_inputState.currentPoint != initialCursorPos) {
-            QElapsedTimer timer;
-            timer.start();
             updateWindowDetection(m_inputState.currentPoint, queryMode);
             return;
         }
 
-        QElapsedTimer timer;
-        timer.start();
         refreshWindowDetectionAtCursor(queryMode);
     };
 
