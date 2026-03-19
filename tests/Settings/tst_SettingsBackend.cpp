@@ -4,7 +4,9 @@
 #include "qml/SettingsBackend.h"
 #include "settings/RecordingSettingsManager.h"
 #include "settings/Settings.h"
-#include "update/UpdateChecker.h"
+#include "update/IUpdateService.h"
+#include "update/InstallSourceDetector.h"
+#include "update/UpdateCoordinator.h"
 
 using SnapTray::SettingsBackend;
 
@@ -19,6 +21,7 @@ private slots:
     void testNormalizeRecordingAudioSettings_PreservesUnavailableLoadedDevice();
     void testBlurTypeMapping_RoundTripMatchesUiIndices();
     void testCheckForUpdates_UnsupportedInstallSource_EmitsUnavailable();
+    void testLastCheckedTextChanged_WhenCoordinatorRecordsSuccessfulCheck();
 
 private:
     void clearTestSettings();
@@ -27,11 +30,15 @@ private:
 void tst_SettingsBackend::init()
 {
     clearTestSettings();
+    InstallSourceDetector::clearDetectedSourceForTests();
+    UpdateCoordinator::resetForTests();
 }
 
 void tst_SettingsBackend::cleanup()
 {
     clearTestSettings();
+    InstallSourceDetector::clearDetectedSourceForTests();
+    UpdateCoordinator::resetForTests();
 }
 
 void tst_SettingsBackend::clearTestSettings()
@@ -39,6 +46,7 @@ void tst_SettingsBackend::clearTestSettings()
     auto settings = SnapTray::getSettings();
     settings.remove("recording/audioDevice");
     settings.remove("detection/blurType");
+    settings.remove("update/lastCheckTime");
     settings.sync();
 }
 
@@ -88,20 +96,38 @@ void tst_SettingsBackend::testBlurTypeMapping_RoundTripMatchesUiIndices()
 
 void tst_SettingsBackend::testCheckForUpdates_UnsupportedInstallSource_EmitsUnavailable()
 {
+    InstallSourceDetector::setDetectedSourceForTests(InstallSource::MicrosoftStore);
+    UpdateCoordinator::resetForTests();
+
     SettingsBackend backend;
-    backend.m_updateChecker = new UpdateChecker(&backend);
-    backend.m_updateChecker->m_installSource = InstallSource::MicrosoftStore;
 
     QSignalSpy unavailableSpy(&backend, &SettingsBackend::updateCheckUnavailable);
     QSignalSpy failedSpy(&backend, &SettingsBackend::updateCheckFailed);
+
+    QVERIFY(backend.updatesExternallyManaged());
+    QCOMPARE(backend.updateChannelLabel(), QStringLiteral("Microsoft Store"));
+    QCOMPARE(backend.updateStatusMessage(),
+             updateManagementMessageForSource(InstallSource::MicrosoftStore));
 
     backend.checkForUpdates();
 
     QCOMPARE(unavailableSpy.count(), 1);
     QCOMPARE(failedSpy.count(), 0);
     QCOMPARE(unavailableSpy.at(0).at(0).toString(),
-             UpdateChecker::updateCheckDisabledReason(InstallSource::MicrosoftStore));
+             updateManagementMessageForSource(InstallSource::MicrosoftStore));
     QVERIFY(!backend.isCheckingForUpdates());
+}
+
+void tst_SettingsBackend::testLastCheckedTextChanged_WhenCoordinatorRecordsSuccessfulCheck()
+{
+    SettingsBackend backend;
+
+    QSignalSpy lastCheckedSpy(&backend, &SettingsBackend::lastCheckedTextChanged);
+
+    UpdateCoordinator::instance().recordSuccessfulCheck();
+
+    QCOMPARE(lastCheckedSpy.count(), 1);
+    QVERIFY(backend.lastCheckedText() != QStringLiteral("Never"));
 }
 
 QTEST_MAIN(tst_SettingsBackend)

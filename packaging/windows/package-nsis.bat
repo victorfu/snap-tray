@@ -17,6 +17,9 @@ REM Environment variables:
 REM   QT_PATH              - Path to Qt installation (e.g., C:\Qt\6.6.1\msvc2019_64)
 REM   CODESIGN_CERT        - Path to .pfx certificate file (optional)
 REM   CODESIGN_PASSWORD    - Certificate password (optional)
+REM   WINSPARKLE_DLL       - Absolute path to WinSparkle.dll
+REM   SNAPTRAY_WINSPARKLE_APPCAST_URL - WinSparkle appcast URL compiled into the app
+REM   SNAPTRAY_WINSPARKLE_PUBLIC_KEY   - WinSparkle EdDSA public key compiled into the app
 
 set SCRIPT_DIR=%~dp0
 set PROJECT_ROOT=%SCRIPT_DIR%..\..
@@ -39,6 +42,32 @@ echo Version: %VERSION%
 echo Build directory: %BUILD_DIR%
 echo Output directory: %OUTPUT_DIR%
 echo.
+
+if "%SNAPTRAY_WINSPARKLE_APPCAST_URL%"=="" (
+    echo ERROR: SNAPTRAY_WINSPARKLE_APPCAST_URL is required for direct-download packaging.
+    exit /b 1
+)
+
+if "%SNAPTRAY_WINSPARKLE_PUBLIC_KEY%"=="" (
+    echo ERROR: SNAPTRAY_WINSPARKLE_PUBLIC_KEY is required for direct-download packaging.
+    exit /b 1
+)
+
+if "%WINSPARKLE_DLL%"=="" (
+    if exist "%PROJECT_ROOT%\third_party\WinSparkle\WinSparkle.dll" (
+        set WINSPARKLE_DLL=%PROJECT_ROOT%\third_party\WinSparkle\WinSparkle.dll
+    ) else if exist "%PROJECT_ROOT%\vendor\WinSparkle\WinSparkle.dll" (
+        set WINSPARKLE_DLL=%PROJECT_ROOT%\vendor\WinSparkle\WinSparkle.dll
+    ) else (
+        echo ERROR: WINSPARKLE_DLL not set and no vendored WinSparkle.dll was found.
+        exit /b 1
+    )
+)
+
+if not exist "%WINSPARKLE_DLL%" (
+    echo ERROR: WinSparkle DLL not found: %WINSPARKLE_DLL%
+    exit /b 1
+)
 
 REM Check for Qt
 if "%QT_PATH%"=="" (
@@ -85,6 +114,8 @@ if not errorlevel 1 (
 cmake -S "%PROJECT_ROOT%" -B "%BUILD_DIR%" -G Ninja ^
     -DCMAKE_BUILD_TYPE=Release ^
     -DCMAKE_PREFIX_PATH="%QT_PATH%" ^
+    -DSNAPTRAY_WINSPARKLE_APPCAST_URL="%SNAPTRAY_WINSPARKLE_APPCAST_URL%" ^
+    -DSNAPTRAY_WINSPARKLE_PUBLIC_KEY="%SNAPTRAY_WINSPARKLE_PUBLIC_KEY%" ^
     %SCCACHE_ARGS%
 if errorlevel 1 (
     echo ERROR: CMake configure failed
@@ -114,6 +145,7 @@ echo [2/5] Preparing staging directory...
 if exist "%STAGING_DIR%" rmdir /s /q "%STAGING_DIR%"
 mkdir "%STAGING_DIR%"
 copy "%EXE_PATH%" "%STAGING_DIR%\" >nul
+copy "%WINSPARKLE_DLL%" "%STAGING_DIR%\WinSparkle.dll" >nul
 
 REM Step 3: Run windeployqt
 echo.
@@ -137,6 +169,11 @@ if defined CODESIGN_CERT (
     ) else (
         echo Executable signed successfully
     )
+    echo Signing WinSparkle.dll...
+    signtool sign /f "%CODESIGN_CERT%" /p "%CODESIGN_PASSWORD%" ^
+        /t http://timestamp.digicert.com ^
+        /d "WinSparkle" ^
+        "%STAGING_DIR%\WinSparkle.dll"
 ) else (
     echo [4/5] Skipping code signing (CODESIGN_CERT not set)
 )

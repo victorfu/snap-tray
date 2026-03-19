@@ -8,7 +8,8 @@
 ; Installer attributes
 Name "${APP_NAME}"
 OutFile "${OUTPUT_DIR}\${APP_NAME}-${VERSION}-Setup.exe"
-; Use $PROGRAMFILES which resolves to Program Files on 64-bit Windows when installer is 64-bit
+; Keep the historical machine-wide install root so upgrades replace
+; existing direct-download installs instead of side-by-side installing.
 InstallDir "$PROGRAMFILES\${APP_NAME}"
 InstallDirRegKey HKLM "Software\${APP_NAME}" "InstallDir"
 RequestExecutionLevel admin
@@ -44,6 +45,11 @@ VIAddVersionKey "ProductVersion" "${VERSION}"
 
 ; Installation section
 Section "Install"
+    CreateDirectory "$INSTDIR"
+
+    ; Close any running instance before overwriting files
+    nsExec::ExecToLog 'taskkill /F /IM ${APP_NAME}.exe'
+
     SetOutPath "$INSTDIR"
 
     ; Copy all files from staging directory
@@ -65,7 +71,9 @@ Section "Install"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" \
                      "DisplayName" "${APP_NAME}"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" \
-                     "UninstallString" "$INSTDIR\uninstall.exe"
+                     "UninstallString" '"$INSTDIR\uninstall.exe"'
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" \
+                     "QuietUninstallString" '"$INSTDIR\uninstall.exe" /S'
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" \
                      "InstallLocation" "$INSTDIR"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" \

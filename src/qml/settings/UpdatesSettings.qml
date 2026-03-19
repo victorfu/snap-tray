@@ -32,13 +32,26 @@ Flickable {
         SettingsRow {
             label: qsTr("Current Version")
 
-            Text {
-                text: settingsBackend.currentVersion
-                color: SemanticTokens.textPrimary
-                font.pixelSize: SemanticTokens.fontSizeBody
-                font.family: SemanticTokens.fontFamily
-                font.letterSpacing: SemanticTokens.letterSpacingDefault
+            Column {
                 anchors.verticalCenter: parent ? parent.verticalCenter : undefined
+                spacing: 4
+
+                Text {
+                    text: settingsBackend.currentVersion
+                    color: SemanticTokens.textPrimary
+                    font.pixelSize: SemanticTokens.fontSizeBody
+                    font.family: SemanticTokens.fontFamily
+                    font.letterSpacing: SemanticTokens.letterSpacingDefault
+                }
+
+                Text {
+                    text: settingsBackend.updateChannelLabel
+                    visible: settingsBackend.updateChannelLabel.length > 0
+                    color: SemanticTokens.textSecondary
+                    font.pixelSize: SemanticTokens.fontSizeCaption
+                    font.family: SemanticTokens.fontFamily
+                    font.letterSpacing: SemanticTokens.letterSpacingDefault
+                }
             }
         }
 
@@ -47,6 +60,7 @@ Flickable {
         SettingsToggle {
             label: qsTr("Auto-check updates")
             checked: settingsBackend.autoCheckUpdates
+            enabled: !settingsBackend.updatesExternallyManaged
             onToggled: function(checked) { settingsBackend.autoCheckUpdates = checked }
         }
 
@@ -60,7 +74,7 @@ Flickable {
                 { text: qsTr("Every month"), value: 720 }
             ]
             currentIndex: root.frequencyToIndex(settingsBackend.checkFrequencyHours)
-            enabled: settingsBackend.autoCheckUpdates
+            enabled: settingsBackend.autoCheckUpdates && !settingsBackend.updatesExternallyManaged
             onActivated: function(index) {
                 settingsBackend.checkFrequencyHours = root.frequencyHours[index]
             }
@@ -80,7 +94,9 @@ Flickable {
         // Last checked text
         Text {
             width: parent.width - 2 * ComponentTokens.settingsContentPadding
-            text: settingsBackend.lastCheckedText
+            text: settingsBackend.updatesExternallyManaged
+                ? settingsBackend.updateStatusMessage
+                : settingsBackend.lastCheckedText
             color: SemanticTokens.textSecondary
             font.pixelSize: SemanticTokens.fontSizeCaption
             font.family: SemanticTokens.fontFamily
@@ -101,6 +117,7 @@ Flickable {
                     ? qsTr("Checking...") : qsTr("Check Now")
                 primary: true
                 enabled: !settingsBackend.isCheckingForUpdates
+                    && !settingsBackend.updatesExternallyManaged
                 onClicked: settingsBackend.checkForUpdates()
             }
         }

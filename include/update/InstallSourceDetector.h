@@ -55,6 +55,16 @@ public:
      */
     static bool isDevelopmentBuild();
 
+    /**
+     * @brief Override the detected source in tests.
+     */
+    static void setDetectedSourceForTests(InstallSource source);
+
+    /**
+     * @brief Clear any test override and force re-detection on next access.
+     */
+    static void clearDetectedSourceForTests();
+
 private:
     InstallSourceDetector() = default;
 

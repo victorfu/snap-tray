@@ -110,23 +110,6 @@ void QmlSettingsWindow::ensureView()
             QString(),
             2000);
     });
-    connect(m_backend, &SettingsBackend::updateAvailable,
-            this, [this](const QString& version, const QString& notes,
-                         const QString& releaseUrl) {
-        ReleaseInfo release;
-        release.version = version;
-        release.releaseNotes = notes;
-        release.htmlUrl = releaseUrl;
-        showUpdateDialog(this,
-                         UpdateDialogViewModel::createForRelease(release, this),
-                         m_backend);
-    });
-    connect(m_backend, &SettingsBackend::noUpdateAvailable,
-            this, [this]() {
-        showUpdateDialog(this,
-                         UpdateDialogViewModel::createUpToDate(this),
-                         m_backend);
-    });
     connect(m_backend, &SettingsBackend::updateCheckUnavailable,
             this, [this](const QString& reason) {
         showUpdateDialog(this,

@@ -7,6 +7,7 @@
 
 # Find Qt6 Test component for unit tests
 find_package(Qt6 REQUIRED COMPONENTS Test)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 # Enable automoc for tests
 set(CMAKE_AUTOMOC ON)
@@ -661,10 +662,23 @@ target_link_libraries(Update_UpdateChecker PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Update_UpdateChecker COMMAND Update_UpdateChecker)
 set_tests_properties(Update_UpdateChecker PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Update_UpdateCoordinator Update/tst_UpdateCoordinator.cpp)
+target_link_libraries(Update_UpdateCoordinator PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Update_UpdateCoordinator COMMAND Update_UpdateCoordinator)
+set_tests_properties(Update_UpdateCoordinator PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Update_InstallSourceDetector Update/tst_InstallSourceDetector.cpp)
 target_link_libraries(Update_InstallSourceDetector PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Update_InstallSourceDetector COMMAND Update_InstallSourceDetector)
 set_tests_properties(Update_InstallSourceDetector PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_test(
+    NAME Update_GenerateAppcast
+    COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/Update/tst_generate_appcast.py
+            ${CMAKE_SOURCE_DIR}/scripts/generate_appcast.py
+)
+set_tests_properties(Update_GenerateAppcast PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
 # CTest Label Summary

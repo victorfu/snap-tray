@@ -48,6 +48,21 @@ configure_file(
     @ONLY
 )
 
+set(SNAPTRAY_SPARKLE_FEED_URL "$ENV{SNAPTRAY_SPARKLE_FEED_URL}" CACHE STRING
+    "Sparkle appcast feed URL for macOS direct-download builds")
+set(SNAPTRAY_SPARKLE_PUBLIC_KEY "$ENV{SNAPTRAY_SPARKLE_PUBLIC_KEY}" CACHE STRING
+    "Sparkle EdDSA public key for macOS direct-download builds")
+set(SNAPTRAY_WINSPARKLE_APPCAST_URL "$ENV{SNAPTRAY_WINSPARKLE_APPCAST_URL}" CACHE STRING
+    "WinSparkle appcast feed URL for Windows direct-download builds")
+set(SNAPTRAY_WINSPARKLE_PUBLIC_KEY "$ENV{SNAPTRAY_WINSPARKLE_PUBLIC_KEY}" CACHE STRING
+    "WinSparkle EdDSA public key for Windows direct-download builds")
+
+configure_file(
+    "${CMAKE_SOURCE_DIR}/cmake/update_config.h.in"
+    "${CMAKE_BINARY_DIR}/generated/update_config.h"
+    @ONLY
+)
+
 # Platform-specific version file generation
 if(APPLE)
     # Set variables for Info.plist.in template
@@ -695,17 +710,22 @@ add_library(snaptray_ui STATIC
 
     # Update system
     src/update/InstallSourceDetector.cpp
+    src/update/UpdateCoordinator.cpp
     src/update/UpdateChecker.cpp
+    include/update/IUpdateService.h
     include/update/InstallSourceDetector.h
+    include/update/UpdateCoordinator.h
     include/update/UpdateChecker.h
     include/update/UpdateSettingsManager.h
 
     # Platform-specific update sources
     $<$<PLATFORM_ID:Darwin>:
         src/update/InstallSourceDetector_mac.mm
+        src/update/SparkleUpdateService_mac.mm
     >
     $<$<PLATFORM_ID:Windows>:
         src/update/InstallSourceDetector_win.cpp
+        src/update/WinSparkleUpdateService_win.cpp
     >
 
     # macOS-only UI

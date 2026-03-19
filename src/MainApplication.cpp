@@ -14,9 +14,7 @@
 #include "hotkey/HotkeyManager.h"
 #include "qml/QmlToast.h"
 #include "qml/RecordingPreviewBackend.h"
-#include "update/UpdateChecker.h"
-#include "qml/UpdateDialogViewModel.h"
-#include "qml/QmlDialog.h"
+#include "update/UpdateCoordinator.h"
 #include "utils/CoordinateHelper.h"
 #ifdef SNAPTRAY_ENABLE_MCP
 #include "mcp/MCPServer.h"
@@ -60,6 +58,24 @@ const QColor kTextAnnotationForeground{40, 40, 40}; // Dark gray text
 
 // Toast timeout
 constexpr int kUIToastTimeout = 2000;
+
+bool isBlockingUpdateRecordingState(RecordingManager::State state)
+{
+    switch (state) {
+    case RecordingManager::State::Recording:
+    case RecordingManager::State::Paused:
+    case RecordingManager::State::Encoding:
+    case RecordingManager::State::Previewing:
+        return true;
+    case RecordingManager::State::Idle:
+    case RecordingManager::State::Selecting:
+    case RecordingManager::State::Preparing:
+    case RecordingManager::State::Countdown:
+        return false;
+    }
+
+    return false;
+}
 
 bool tryReadJsonInt(const QJsonObject& options, const QString& key, int* value)
 {
@@ -111,12 +127,14 @@ MainApplication::MainApplication(QObject* parent)
     , m_togglePinsVisibilityAction(nullptr)
     , m_closeAllPinsAction(nullptr)
     , m_fullScreenRecordingAction(nullptr)
-    , m_updateChecker(nullptr)
 {
 }
 
 MainApplication::~MainApplication()
 {
+    UpdateCoordinator::setShutdownHooks(UpdateCoordinator::ShutdownGuardFn(),
+                                        UpdateCoordinator::ShutdownRequestFn());
+
     // Shutdown hotkey manager to unregister all hotkeys before destruction
     SnapTray::HotkeyManager::instance().shutdown();
 
@@ -439,17 +457,55 @@ void MainApplication::initialize()
     updateTrayMenuHotkeyText();
     updatePinsVisibilityActionText();
 
-    // Initialize update checker for automatic update checks
-    m_updateChecker = new UpdateChecker(this);
-    connect(m_updateChecker, &UpdateChecker::updateAvailable,
-            this, &MainApplication::onUpdateAvailable);
-    m_updateChecker->startPeriodicCheck();
+    UpdateCoordinator::setShutdownHooks(
+        [this]() { return canShutdownForUpdate(); },
+        [this]() { prepareForUpdateShutdown(); });
+    UpdateCoordinator::instance().startAutomaticChecks();
 
 #ifdef SNAPTRAY_ENABLE_MCP
     if (MCPSettingsManager::instance().isEnabled()) {
         startMcpServer();
     }
 #endif
+}
+
+bool MainApplication::canShutdownForUpdate() const
+{
+    return !m_recordingManager || !isBlockingUpdateRecordingState(m_recordingManager->state());
+}
+
+void MainApplication::prepareForUpdateShutdown()
+{
+    if (m_recordingManager && isBlockingUpdateRecordingState(m_recordingManager->state())) {
+        qWarning() << "MainApplication: Refusing updater shutdown while recording work is active";
+        return;
+    }
+
+    if (m_captureManager && m_captureManager->isActive()) {
+        m_captureManager->cancelCapture();
+    }
+
+    if (m_screenCanvasManager && m_screenCanvasManager->isActive()) {
+        m_screenCanvasManager->toggle();
+    }
+
+    if (m_recordingManager) {
+        switch (m_recordingManager->state()) {
+        case RecordingManager::State::Selecting:
+        case RecordingManager::State::Preparing:
+        case RecordingManager::State::Countdown:
+            m_recordingManager->cancelRecording();
+            break;
+        case RecordingManager::State::Idle:
+        case RecordingManager::State::Recording:
+        case RecordingManager::State::Paused:
+        case RecordingManager::State::Encoding:
+        case RecordingManager::State::Previewing:
+            break;
+        }
+    }
+
+    QCoreApplication::quit();
 }
 
 #ifdef SNAPTRAY_ENABLE_MCP
@@ -986,18 +1042,4 @@ void MainApplication::updateTrayMenuHotkeyText()
     updateActionHotkeyText(m_fullScreenRecordingAction,
                            SnapTray::HotkeyAction::RecordFullScreen,
                            tr("Record Full Screen"));
-}
-
-void MainApplication::onUpdateAvailable(const ReleaseInfo& release)
-{
-    qDebug() << "MainApplication: Update available -" << release.version;
-
-    auto* vm = UpdateDialogViewModel::createForRelease(release, this);
-    auto* dlg = new SnapTray::QmlDialog(
-        QUrl("qrc:/SnapTrayQml/dialogs/UpdateDialog.qml"),
-        vm, "viewModel", this);
-    connect(vm, &UpdateDialogViewModel::closeRequested, this, [dlg]() {
-        dlg->close();
-    });
-    dlg->showAt();
 }

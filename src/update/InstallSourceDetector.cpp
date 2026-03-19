@@ -52,6 +52,18 @@ bool InstallSourceDetector::isDevelopmentBuild()
 #endif
 }
 
+void InstallSourceDetector::setDetectedSourceForTests(InstallSource source)
+{
+    s_cachedSource = source;
+    s_detected = true;
+}
+
+void InstallSourceDetector::clearDetectedSourceForTests()
+{
+    s_cachedSource = InstallSource::Unknown;
+    s_detected = false;
+}
+
 // Platform-specific detect() implementation is in:
 // - InstallSourceDetector_win.cpp (Windows)
 // - InstallSourceDetector_mac.mm (macOS)

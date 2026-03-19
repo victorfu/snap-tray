@@ -18,9 +18,10 @@
 #include "OCRManager.h"
 #include "ToolbarStyle.h"
 #include "qml/ThemeManager.h"
-#include "update/UpdateChecker.h"
+#include "update/UpdateCoordinator.h"
 #include "update/UpdateSettingsManager.h"
 #include "utils/FilenameTemplateEngine.h"
+#include "version.h"
 #include "widgets/TypeHotkeyDialog.h"
 
 #include <QFileDialog>
@@ -93,6 +94,8 @@ namespace SnapTray {
 SettingsBackend::SettingsBackend(QObject* parent)
     : QObject(parent)
 {
+    connect(&UpdateCoordinator::instance(), &UpdateCoordinator::lastCheckTimeChanged,
+            this, &SettingsBackend::lastCheckedTextChanged);
     loadAllSettings();
 }
 
@@ -560,7 +563,7 @@ void SettingsBackend::setAutoSaveRecordings(bool v) {
 
 QString SettingsBackend::currentVersion() const
 {
-    return UpdateChecker::currentVersion();
+    return QString::fromLatin1(SNAPTRAY_VERSION);
 }
 
 bool SettingsBackend::autoCheckUpdates() const { return m_autoCheckUpdates; }
@@ -568,6 +571,7 @@ void SettingsBackend::setAutoCheckUpdates(bool v) {
     if (m_autoCheckUpdates != v) {
         m_autoCheckUpdates = v;
         UpdateSettingsManager::instance().setAutoCheckEnabled(v);
+        UpdateCoordinator::instance().syncSettings(m_autoCheckUpdates, m_checkFrequencyHours);
         emit autoCheckUpdatesChanged();
     }
 }
@@ -577,19 +581,35 @@ void SettingsBackend::setCheckFrequencyHours(int v) {
     if (m_checkFrequencyHours != v) {
         m_checkFrequencyHours = v;
         UpdateSettingsManager::instance().setCheckIntervalHours(v);
+        UpdateCoordinator::instance().syncSettings(m_autoCheckUpdates, m_checkFrequencyHours);
         emit checkFrequencyHoursChanged();
     }
 }
 
 QString SettingsBackend::lastCheckedText() const
 {
-    const QDateTime lastCheck = UpdateSettingsManager::instance().lastCheckTime();
+    const QDateTime lastCheck = UpdateCoordinator::instance().lastCheckTime();
     if (!lastCheck.isValid())
         return tr("Never");
     return QLocale().toString(lastCheck, QLocale::ShortFormat);
 }
 
 bool SettingsBackend::isCheckingForUpdates() const { return m_isCheckingForUpdates; }
+
+bool SettingsBackend::updatesExternallyManaged() const
+{
+    return UpdateCoordinator::instance().isExternallyManaged();
+}
+
+QString SettingsBackend::updateChannelLabel() const
+{
+    return UpdateCoordinator::instance().updateChannelLabel();
+}
+
+QString SettingsBackend::updateStatusMessage() const
+{
+    return UpdateCoordinator::instance().managementMessage();
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // About property accessors
@@ -602,7 +622,7 @@ QString SettingsBackend::appName() const
 
 QString SettingsBackend::appVersion() const
 {
-    return UpdateChecker::currentVersion();
+    return QString::fromLatin1(SNAPTRAY_VERSION);
 }
 
 bool SettingsBackend::ocrSupported() const
@@ -701,54 +721,24 @@ void SettingsBackend::checkForUpdates()
     if (m_isCheckingForUpdates)
         return;
 
-    const InstallSource installSource = m_updateChecker
-        ? m_updateChecker->installSource()
-        : InstallSourceDetector::detect();
-    if (!UpdateChecker::isUpdateCheckSupported(installSource)) {
-        emit updateCheckUnavailable(UpdateChecker::updateCheckDisabledReason(installSource));
+    m_isCheckingForUpdates = true;
+    emit isCheckingForUpdatesChanged();
+
+    const UpdateCheckResult result = UpdateCoordinator::instance().checkForUpdatesInteractive();
+
+    m_isCheckingForUpdates = false;
+    emit isCheckingForUpdatesChanged();
+
+    if (result.isStarted()) {
         return;
     }
 
-    if (!m_updateChecker) {
-        m_updateChecker = new UpdateChecker(this);
-
-        connect(m_updateChecker, &UpdateChecker::checkStarted, this, [this]() {
-            m_isCheckingForUpdates = true;
-            emit isCheckingForUpdatesChanged();
-        });
-
-        connect(m_updateChecker, &UpdateChecker::updateAvailable, this,
-                [this](const ReleaseInfo& release) {
-                    m_isCheckingForUpdates = false;
-                    emit isCheckingForUpdatesChanged();
-                    emit lastCheckedTextChanged();
-                    emit updateAvailable(release.version, release.releaseNotes,
-                                         release.htmlUrl);
-                });
-
-        connect(m_updateChecker, &UpdateChecker::noUpdateAvailable, this, [this]() {
-            m_isCheckingForUpdates = false;
-            emit isCheckingForUpdatesChanged();
-            emit lastCheckedTextChanged();
-            emit noUpdateAvailable();
-        });
-
-        connect(m_updateChecker, &UpdateChecker::checkUnavailable, this,
-                [this](const QString& reason) {
-                    m_isCheckingForUpdates = false;
-                    emit isCheckingForUpdatesChanged();
-                    emit updateCheckUnavailable(reason);
-                });
-
-        connect(m_updateChecker, &UpdateChecker::checkFailed, this,
-                [this](const QString& error) {
-                    m_isCheckingForUpdates = false;
-                    emit isCheckingForUpdatesChanged();
-                    emit updateCheckFailed(error);
-                });
+    if (result.status == UpdateCheckResult::Status::Unavailable) {
+        emit updateCheckUnavailable(result.message);
+        return;
     }
 
-    m_updateChecker->checkForUpdates(false);
+    emit updateCheckFailed(result.message);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

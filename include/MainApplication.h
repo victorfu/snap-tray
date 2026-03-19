@@ -19,8 +19,6 @@ class PinWindowManager;
 class ScreenCanvasManager;
 class RecordingManager;
 class RecordingPreviewBackend;
-class UpdateChecker;
-struct ReleaseInfo;
 
 namespace SnapTray {
 class QmlSettingsWindow;
@@ -67,13 +65,14 @@ private slots:
     void onHotkeyAction(SnapTray::HotkeyAction action);
     void onHotkeyChanged(SnapTray::HotkeyAction action, const SnapTray::HotkeyConfig& config);
     void onHotkeyInitializationCompleted(const QStringList& failedHotkeys);
-    void onUpdateAvailable(const ReleaseInfo& release);
 #ifdef SNAPTRAY_ENABLE_MCP
     void onMcpEnabledChanged(bool enabled);
 #endif
 
 private:
     void startRegionCapture(bool showShortcutHintsOnEntry);
+    bool canShutdownForUpdate() const;
+    void prepareForUpdateShutdown();
 #ifdef SNAPTRAY_ENABLE_MCP
     bool startMcpServer();
     void stopMcpServer();
@@ -101,7 +100,6 @@ private:
     QPointer<SnapTray::QmlSettingsWindow> m_settingsWindow;
     QPointer<SnapTray::QmlHistoryWindow> m_historyWindow;
     RecordingPreviewBackend *m_previewBackend = nullptr;
-    UpdateChecker *m_updateChecker;
 #ifdef SNAPTRAY_ENABLE_MCP
     std::unique_ptr<SnapTray::MCP::MCPServer> m_mcpServer;
 #endif

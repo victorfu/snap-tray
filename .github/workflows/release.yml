@@ -13,6 +13,8 @@ on:
 
 env:
   APP_NAME: SnapTray
+  SPARKLE_VERSION: '2.7.3'
+  WINSPARKLE_VERSION: '0.9.2'
 
 jobs:
   prepare:
@@ -20,12 +22,18 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       tag_name: ${{ steps.version.outputs.tag_name }}
+      appcast_base_url: ${{ steps.version.outputs.appcast_base_url }}
+      macos_appcast_url: ${{ steps.version.outputs.macos_appcast_url }}
+      windows_appcast_url: ${{ steps.version.outputs.windows_appcast_url }}
+      release_page_url: ${{ steps.version.outputs.release_page_url }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Determine version
         id: version
+        env:
+          APPCAST_BASE_URL_OVERRIDE: ${{ vars.SNAPTRAY_APPCAST_BASE_URL }}
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
             # Extract version from tag (remove 'v' prefix)
@@ -37,8 +45,25 @@ jobs:
             VERSION=$(grep "project(SnapTray VERSION" CMakeLists.txt | \
                       sed -E 's/.*VERSION ([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
           fi
+
+          if [ -n "$APPCAST_BASE_URL_OVERRIDE" ]; then
+            APPCAST_BASE_URL="${APPCAST_BASE_URL_OVERRIDE%/}"
+          else
+            OWNER="${GITHUB_REPOSITORY_OWNER}"
+            REPO_NAME="${GITHUB_REPOSITORY#*/}"
+            if [ "$REPO_NAME" = "${OWNER}.github.io" ]; then
+              APPCAST_BASE_URL="https://${OWNER}.github.io"
+            else
+              APPCAST_BASE_URL="https://${OWNER}.github.io/${REPO_NAME}"
+            fi
+          fi
+
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag_name=v$VERSION" >> $GITHUB_OUTPUT
+          echo "appcast_base_url=$APPCAST_BASE_URL" >> $GITHUB_OUTPUT
+          echo "macos_appcast_url=$APPCAST_BASE_URL/updates/macos.xml" >> $GITHUB_OUTPUT
+          echo "windows_appcast_url=$APPCAST_BASE_URL/updates/windows.xml" >> $GITHUB_OUTPUT
+          echo "release_page_url=https://github.com/${GITHUB_REPOSITORY}/releases/tag/v$VERSION" >> $GITHUB_OUTPUT
           echo "Releasing version: $VERSION"
 
       - name: Validate version consistency
@@ -63,6 +88,8 @@ jobs:
       APPLE_ID: ${{ secrets.APPLE_ID }}
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+      SNAPTRAY_SPARKLE_PUBLIC_KEY: ${{ secrets.SNAPTRAY_SPARKLE_PUBLIC_KEY }}
+      SNAPTRAY_SPARKLE_PRIVATE_KEY: ${{ secrets.SNAPTRAY_SPARKLE_PRIVATE_KEY }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -146,6 +173,7 @@ jobs:
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security default-keychain -d user -s "$KEYCHAIN_PATH"
 
           # Import certificate
           echo "$APPLE_CERTIFICATE" | base64 --decode > $RUNNER_TEMP/certificate.p12
@@ -163,24 +191,118 @@ jobs:
           IDENTITY=$(security find-identity -v -p codesigning | grep "Developer ID Application" | head -1 | awk -F'"' '{print $2}')
           echo "identity=$IDENTITY" >> $GITHUB_OUTPUT
 
+      - name: Validate Sparkle updater secrets
+        run: |
+          set -euo pipefail
+          for VAR_NAME in SNAPTRAY_SPARKLE_PUBLIC_KEY SNAPTRAY_SPARKLE_PRIVATE_KEY; do
+            if [ -z "${!VAR_NAME}" ]; then
+              echo "::error::Missing required secret: $VAR_NAME"
+              exit 1
+            fi
+          done
+
+      - name: Download Sparkle distribution
+        id: sparkle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          DIST_DIR="$RUNNER_TEMP/sparkle"
+          mkdir -p "$DIST_DIR"
+
+          gh release download "${{ env.SPARKLE_VERSION }}" \
+            --repo sparkle-project/Sparkle \
+            --pattern 'Sparkle-*.tar.xz' \
+            --dir "$DIST_DIR"
+
+          ARCHIVE_PATH=$(find "$DIST_DIR" -maxdepth 1 -name 'Sparkle-*.tar.xz' | head -1)
+          if [ -z "$ARCHIVE_PATH" ]; then
+            echo "::error::Failed to download Sparkle distribution archive."
+            exit 1
+          fi
+
+          tar -xf "$ARCHIVE_PATH" -C "$DIST_DIR"
+
+          SPARKLE_ROOT=$(find "$DIST_DIR" -maxdepth 1 -type d -name 'Sparkle-*' | head -1)
+          if [ -z "$SPARKLE_ROOT" ]; then
+            echo "::error::Failed to extract Sparkle distribution."
+            exit 1
+          fi
+
+          echo "root_dir=$SPARKLE_ROOT" >> "$GITHUB_OUTPUT"
+          echo "framework=$SPARKLE_ROOT/Sparkle.framework" >> "$GITHUB_OUTPUT"
+          echo "bin_dir=$SPARKLE_ROOT/bin" >> "$GITHUB_OUTPUT"
+
+      - name: Import Sparkle EdDSA private key
+        run: |
+          set -euo pipefail
+          PRIVATE_KEY_PATH="$RUNNER_TEMP/sparkle_private_key.pem"
+          printf '%s' "$SNAPTRAY_SPARKLE_PRIVATE_KEY" > "$PRIVATE_KEY_PATH"
+          "${{ steps.sparkle.outputs.bin_dir }}/generate_keys" -f "$PRIVATE_KEY_PATH"
+
       - name: Build and Package
         env:
           CODESIGN_IDENTITY: ${{ steps.get-identity.outputs.identity }}
           NOTARIZE_APPLE_ID: ${{ env.APPLE_ID }}
           NOTARIZE_TEAM_ID: ${{ env.APPLE_TEAM_ID }}
           NOTARIZE_PASSWORD: ${{ env.APPLE_APP_PASSWORD }}
+          SPARKLE_FRAMEWORK: ${{ steps.sparkle.outputs.framework }}
+          SNAPTRAY_SPARKLE_FEED_URL: ${{ needs.prepare.outputs.macos_appcast_url }}
+          SNAPTRAY_SPARKLE_PUBLIC_KEY: ${{ env.SNAPTRAY_SPARKLE_PUBLIC_KEY }}
         run: ./packaging/macos/package.sh
 
-      - name: Upload macOS artifact
+      - name: Generate macOS appcast
+        env:
+          RELEASE_DOWNLOAD_BASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ needs.prepare.outputs.tag_name }}
+          RELEASE_NOTES_URL: ${{ needs.prepare.outputs.release_page_url }}
+        run: |
+          set -euo pipefail
+          ARCHIVE_PATH=$(find dist -maxdepth 1 -name '*-macOS.dmg' | head -1)
+          if [ -z "$ARCHIVE_PATH" ]; then
+            echo "::error::macOS DMG not found in dist/."
+            exit 1
+          fi
+
+          SIGN_OUTPUT="$("${{ steps.sparkle.outputs.bin_dir }}/sign_update" "$ARCHIVE_PATH")"
+          SIGNATURE=$(printf '%s\n' "$SIGN_OUTPUT" | sed -n 's/.*sparkle:edSignature="\([^"]*\)".*/\1/p')
+          LENGTH=$(printf '%s\n' "$SIGN_OUTPUT" | sed -n 's/.*length="\([^"]*\)".*/\1/p')
+
+          if [ -z "$SIGNATURE" ] || [ -z "$LENGTH" ]; then
+            echo "::error::Failed to parse Sparkle signature output: $SIGN_OUTPUT"
+            exit 1
+          fi
+
+          python3 scripts/generate_appcast.py \
+            --platform macos \
+            --version "${{ needs.prepare.outputs.version }}" \
+            --download-url "$RELEASE_DOWNLOAD_BASE_URL/$(basename "$ARCHIVE_PATH")" \
+            --signature "$SIGNATURE" \
+            --length "$LENGTH" \
+            --release-notes-url "$RELEASE_NOTES_URL" \
+            --minimum-system-version "14.0.0" \
+            --output dist/macos.xml
+
+      - name: Upload macOS DMG
         uses: actions/upload-artifact@v4
         with:
           name: macos-dmg
-          path: dist/*.dmg
+          path: |
+            dist/*.dmg
+          retention-days: 5
+
+      - name: Upload macOS appcast
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-appcast
+          path: dist/macos.xml
           retention-days: 5
 
   build-windows:
     needs: prepare
     runs-on: windows-latest
+    env:
+      SNAPTRAY_WINSPARKLE_PUBLIC_KEY: ${{ secrets.SNAPTRAY_WINSPARKLE_PUBLIC_KEY }}
+      SNAPTRAY_WINSPARKLE_PRIVATE_KEY: ${{ secrets.SNAPTRAY_WINSPARKLE_PRIVATE_KEY }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -251,23 +373,112 @@ jobs:
             exit 1
           }
 
+      - name: Validate WinSparkle updater secrets
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:SNAPTRAY_WINSPARKLE_PUBLIC_KEY)) {
+            throw "Missing required secret: SNAPTRAY_WINSPARKLE_PUBLIC_KEY"
+          }
+          if ([string]::IsNullOrWhiteSpace($env:SNAPTRAY_WINSPARKLE_PRIVATE_KEY)) {
+            throw "Missing required secret: SNAPTRAY_WINSPARKLE_PRIVATE_KEY"
+          }
+
+      - name: Download WinSparkle distribution
+        id: winsparkle
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $distDir = Join-Path $env:RUNNER_TEMP "winsparkle"
+          New-Item -ItemType Directory -Force -Path $distDir | Out-Null
+
+          gh release download "v${{ env.WINSPARKLE_VERSION }}" `
+            --repo vslavik/winsparkle `
+            --pattern "WinSparkle-*.zip" `
+            --dir $distDir
+
+          $archive = Get-ChildItem -Path $distDir -Filter "WinSparkle-*.zip" | Select-Object -First 1
+          if (-not $archive) {
+            throw "Failed to download WinSparkle binary archive."
+          }
+
+          $extractDir = Join-Path $distDir "extracted"
+          Expand-Archive -Path $archive.FullName -DestinationPath $extractDir -Force
+
+          $dll = Get-ChildItem -Path $extractDir -Recurse -Filter "WinSparkle.dll" |
+            Where-Object { $_.FullName -match '([\\/])(x64|amd64)([\\/])' } |
+            Select-Object -First 1
+          if (-not $dll) {
+            $dll = Get-ChildItem -Path $extractDir -Recurse -Filter "WinSparkle.dll" | Select-Object -First 1
+          }
+
+          $tool = Get-ChildItem -Path $extractDir -Recurse -Filter "winsparkle-tool.exe" | Select-Object -First 1
+
+          if (-not $dll -or -not $tool) {
+            throw "Failed to locate WinSparkle.dll or winsparkle-tool.exe in the downloaded archive."
+          }
+
+          "dll_path=$($dll.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "tool_path=$($tool.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
       - name: Build and Package NSIS
         shell: cmd
         env:
           QT_PATH: ${{ env.QT_ROOT_DIR }}
           SCCACHE_GHA_ENABLED: "true"
+          WINSPARKLE_DLL: ${{ steps.winsparkle.outputs.dll_path }}
+          SNAPTRAY_WINSPARKLE_APPCAST_URL: ${{ needs.prepare.outputs.windows_appcast_url }}
+          SNAPTRAY_WINSPARKLE_PUBLIC_KEY: ${{ env.SNAPTRAY_WINSPARKLE_PUBLIC_KEY }}
         run: packaging\windows\package.bat nsis
+
+      - name: Generate Windows appcast
+        shell: pwsh
+        env:
+          RELEASE_DOWNLOAD_BASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ needs.prepare.outputs.tag_name }}
+          RELEASE_NOTES_URL: ${{ needs.prepare.outputs.release_page_url }}
+        run: |
+          $setupExe = Get-ChildItem -Path dist -Filter "*-Setup.exe" | Select-Object -First 1
+          if (-not $setupExe) {
+            throw "NSIS setup executable not found in dist\."
+          }
+
+          $privateKeyPath = Join-Path $env:RUNNER_TEMP "winsparkle-private.key"
+          Set-Content -Path $privateKeyPath -Value $env:SNAPTRAY_WINSPARKLE_PRIVATE_KEY -Encoding utf8NoBOM
+
+          $signOutput = & "${{ steps.winsparkle.outputs.tool_path }}" sign --file $privateKeyPath $setupExe.FullName
+          $signatureMatch = [regex]::Match($signOutput, 'sparkle:edSignature="([^"]+)"')
+          $lengthMatch = [regex]::Match($signOutput, 'length="([^"]+)"')
+
+          if (-not $signatureMatch.Success -or -not $lengthMatch.Success) {
+            throw "Failed to parse WinSparkle signature output: $signOutput"
+          }
+
+          python scripts/generate_appcast.py `
+            --platform windows `
+            --version "${{ needs.prepare.outputs.version }}" `
+            --download-url "$env:RELEASE_DOWNLOAD_BASE_URL/$($setupExe.Name)" `
+            --signature $signatureMatch.Groups[1].Value `
+            --length $lengthMatch.Groups[1].Value `
+            --release-notes-url "$env:RELEASE_NOTES_URL" `
+            --output dist/windows.xml
 
       - name: Show sccache stats
         if: always()
         shell: cmd
         run: sccache --show-stats
 
-      - name: Upload Windows artifact
+      - name: Upload Windows packages
         uses: actions/upload-artifact@v4
         with:
           name: windows-nsis
           path: dist/*.exe
+          retention-days: 5
+
+      - name: Upload Windows appcast
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-appcast
+          path: dist/windows.xml
           retention-days: 5
 
   release:
@@ -295,3 +506,38 @@ jobs:
           files: |
             artifacts/macos-dmg/*.dmg
             artifacts/windows-nsis/*.exe
+
+  deploy-appcasts:
+    needs: [release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Download appcast artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Assemble Pages site
+        run: |
+          set -euo pipefail
+          mkdir -p site/updates
+          cp artifacts/macos-appcast/macos.xml site/updates/macos.xml
+          cp artifacts/windows-appcast/windows.xml site/updates/windows.xml
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

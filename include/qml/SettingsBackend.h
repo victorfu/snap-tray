@@ -8,7 +8,6 @@
 #include <QVariantList>
 
 class tst_SettingsBackend;
-class UpdateChecker;
 template<typename T>
 class QFutureWatcher;
 struct OCRLanguageInfo;
@@ -85,6 +84,9 @@ class SettingsBackend : public QObject
     Q_PROPERTY(int checkFrequencyHours READ checkFrequencyHours WRITE setCheckFrequencyHours NOTIFY checkFrequencyHoursChanged)
     Q_PROPERTY(QString lastCheckedText READ lastCheckedText NOTIFY lastCheckedTextChanged)
     Q_PROPERTY(bool isCheckingForUpdates READ isCheckingForUpdates NOTIFY isCheckingForUpdatesChanged)
+    Q_PROPERTY(bool updatesExternallyManaged READ updatesExternallyManaged CONSTANT)
+    Q_PROPERTY(QString updateChannelLabel READ updateChannelLabel CONSTANT)
+    Q_PROPERTY(QString updateStatusMessage READ updateStatusMessage CONSTANT)
 
     // ──── About ────
     Q_PROPERTY(QString appName READ appName CONSTANT)
@@ -201,6 +203,9 @@ public:
     void setCheckFrequencyHours(int v);
     QString lastCheckedText() const;
     bool isCheckingForUpdates() const;
+    bool updatesExternallyManaged() const;
+    QString updateChannelLabel() const;
+    QString updateStatusMessage() const;
 
     // ──── About ────
     QString appName() const;
@@ -402,7 +407,6 @@ private:
     QHash<QString, QString> m_ocrDisplayNamesByCode;
     QFutureWatcher<OCRLanguageQueryResult>* m_ocrLanguageWatcher = nullptr;
 
-    UpdateChecker* m_updateChecker = nullptr;
 };
 
 } // namespace SnapTray

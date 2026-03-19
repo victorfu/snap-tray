@@ -19,7 +19,7 @@
     <key>CFBundleShortVersionString</key>
     <string>@PROJECT_VERSION@</string>
     <key>CFBundleVersion</key>
-    <string>@PROJECT_VERSION_MAJOR@</string>
+    <string>@PROJECT_VERSION@</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
     <key>LSUIElement</key>
@@ -30,5 +30,11 @@
     <string>SnapTray needs screen recording permission to capture screenshots.</string>
     <key>NSAccessibilityUsageDescription</key>
     <string>SnapTray needs accessibility permission to detect windows for smart capture.</string>
+    <key>SUFeedURL</key>
+    <string>@SNAPTRAY_SPARKLE_FEED_URL@</string>
+    <key>SUPublicEDKey</key>
+    <string>@SNAPTRAY_SPARKLE_PUBLIC_KEY@</string>
+    <key>SUEnableAutomaticChecks</key>
+    <true/>
 </dict>
 </plist>

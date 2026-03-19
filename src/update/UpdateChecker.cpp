@@ -131,6 +131,7 @@ bool UpdateChecker::isUpdateCheckSupported(InstallSource source)
 {
     return source != InstallSource::MicrosoftStore &&
            source != InstallSource::MacAppStore &&
+           source != InstallSource::Homebrew &&
            source != InstallSource::Development;
 }
 
@@ -141,10 +142,11 @@ QString UpdateChecker::updateCheckDisabledReason(InstallSource source)
     case InstallSource::MacAppStore:
         return tr("Updates for this installation are managed by %1.")
             .arg(InstallSourceDetector::getSourceDisplayName(source));
+    case InstallSource::Homebrew:
+        return tr("Updates for this installation are managed by Homebrew.");
     case InstallSource::Development:
         return tr("GitHub update checks are unavailable for development builds.");
     case InstallSource::DirectDownload:
-    case InstallSource::Homebrew:
     case InstallSource::Unknown:
     default:
         return tr("Update checks are unavailable for this installation.");
