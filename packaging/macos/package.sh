@@ -182,6 +182,38 @@ echo -e "${YELLOW}[2/8] Running macdeployqt...${NC}"
     -qmlimport="$QML_IMPORT_DIR" \
     -verbose=1
 
+echo "Removing optional Qt modules pulled in by Homebrew macdeployqt..."
+OPTIONAL_QML_PATHS=(
+    "$APP_PATH/Contents/Resources/qml/Qt3D"
+    "$APP_PATH/Contents/Resources/qml/QtPdf"
+    "$APP_PATH/Contents/Resources/qml/QtQuick/Scene3D"
+    "$APP_PATH/Contents/Resources/qml/QtQuick/Timeline"
+    "$APP_PATH/Contents/Resources/qml/QtQuick/VirtualKeyboard"
+    "$APP_PATH/Contents/Resources/qml/QtQuick3D"
+    "$APP_PATH/Contents/Resources/qml/QtQml/StateMachine"
+)
+
+for path in "${OPTIONAL_QML_PATHS[@]}"; do
+    if [ -e "$path" ]; then
+        echo "  Removing $path"
+        rm -rf "$path"
+    fi
+done
+
+OPTIONAL_PLUGIN_GLOBS=(
+    "$APP_PATH/Contents/PlugIns/quick/libqtvkb*.dylib"
+    "$APP_PATH/Contents/PlugIns/quick/libqthunspellinputmethodplugin.dylib"
+)
+
+for pattern in "${OPTIONAL_PLUGIN_GLOBS[@]}"; do
+    for plugin in $pattern; do
+        if [ -e "$plugin" ]; then
+            echo "  Removing $plugin"
+            rm -f "$plugin"
+        fi
+    done
+done
+
 # Fix brotli dependencies not handled by macdeployqt (QTBUG-100686)
 echo "Fixing brotli dependencies..."
 FRAMEWORKS_DIR="$APP_PATH/Contents/Frameworks"

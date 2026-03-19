@@ -439,8 +439,8 @@ jobs:
             throw "Failed to locate WinSparkle.dll or winsparkle-tool.exe in the downloaded archive."
           }
 
-          "dll_path=$($dll.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          "tool_path=$($tool.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "dll_path=$dll" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "tool_path=$tool" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Build and Package NSIS
         shell: cmd
@@ -458,9 +458,10 @@ jobs:
           RELEASE_DOWNLOAD_BASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ needs.prepare.outputs.tag_name }}
           RELEASE_NOTES_URL: ${{ needs.prepare.outputs.release_page_url }}
         run: |
-          $setupExe = Get-ChildItem -Path dist -Filter "*-Setup.exe" | Select-Object -First 1
+          $setupExe = Get-ChildItem -Path . -Recurse -Filter "*-Setup.exe" |
+            Select-Object -First 1
           if (-not $setupExe) {
-            throw "NSIS setup executable not found in dist\."
+            throw "NSIS setup executable not found in the workspace."
           }
 
           $privateKeyPath = Join-Path $env:RUNNER_TEMP "winsparkle-private.key"
