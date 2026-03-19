@@ -212,10 +212,10 @@ jobs:
 
           gh release download "${{ env.SPARKLE_VERSION }}" \
             --repo sparkle-project/Sparkle \
-            --pattern 'Sparkle-*.tar.xz' \
+            --pattern "Sparkle-${{ env.SPARKLE_VERSION }}.tar.xz" \
             --dir "$DIST_DIR"
 
-          ARCHIVE_PATH=$(find "$DIST_DIR" -maxdepth 1 -name 'Sparkle-*.tar.xz' | head -1)
+          ARCHIVE_PATH=$(find "$DIST_DIR" -maxdepth 1 -name "Sparkle-${{ env.SPARKLE_VERSION }}.tar.xz" | head -1)
           if [ -z "$ARCHIVE_PATH" ]; then
             echo "::error::Failed to download Sparkle distribution archive."
             exit 1
@@ -223,15 +223,19 @@ jobs:
 
           tar -xf "$ARCHIVE_PATH" -C "$DIST_DIR"
 
-          SPARKLE_ROOT=$(find "$DIST_DIR" -maxdepth 1 -type d -name 'Sparkle-*' | head -1)
-          if [ -z "$SPARKLE_ROOT" ]; then
+          FRAMEWORK_PATH=$(find "$DIST_DIR" -maxdepth 2 -type d -name 'Sparkle.framework' \
+            ! -path '*/sparkle.app/*' \
+            ! -path '*/Sparkle Test App.app/*' | head -1)
+          BIN_DIR=$(find "$DIST_DIR" -maxdepth 2 -type d -name 'bin' | head -1)
+          if [ -z "$FRAMEWORK_PATH" ] || [ -z "$BIN_DIR" ]; then
             echo "::error::Failed to extract Sparkle distribution."
             exit 1
           fi
 
+          SPARKLE_ROOT=$(dirname "$FRAMEWORK_PATH")
           echo "root_dir=$SPARKLE_ROOT" >> "$GITHUB_OUTPUT"
-          echo "framework=$SPARKLE_ROOT/Sparkle.framework" >> "$GITHUB_OUTPUT"
-          echo "bin_dir=$SPARKLE_ROOT/bin" >> "$GITHUB_OUTPUT"
+          echo "framework=$FRAMEWORK_PATH" >> "$GITHUB_OUTPUT"
+          echo "bin_dir=$BIN_DIR" >> "$GITHUB_OUTPUT"
 
       - name: Import Sparkle EdDSA private key
         run: |
@@ -394,10 +398,10 @@ jobs:
 
           gh release download "v${{ env.WINSPARKLE_VERSION }}" `
             --repo vslavik/winsparkle `
-            --pattern "WinSparkle-*.zip" `
+            --pattern "WinSparkle-${{ env.WINSPARKLE_VERSION }}.zip" `
             --dir $distDir
 
-          $archive = Get-ChildItem -Path $distDir -Filter "WinSparkle-*.zip" | Select-Object -First 1
+          $archive = Get-ChildItem -Path $distDir -Filter "WinSparkle-${{ env.WINSPARKLE_VERSION }}.zip" | Select-Object -First 1
           if (-not $archive) {
             throw "Failed to download WinSparkle binary archive."
           }
@@ -405,14 +409,31 @@ jobs:
           $extractDir = Join-Path $distDir "extracted"
           Expand-Archive -Path $archive.FullName -DestinationPath $extractDir -Force
 
-          $dll = Get-ChildItem -Path $extractDir -Recurse -Filter "WinSparkle.dll" |
-            Where-Object { $_.FullName -match '([\\/])(x64|amd64)([\\/])' } |
+          $rootDir = Get-ChildItem -Path $extractDir -Directory |
+            Where-Object { $_.Name -like "WinSparkle-*" } |
             Select-Object -First 1
-          if (-not $dll) {
-            $dll = Get-ChildItem -Path $extractDir -Recurse -Filter "WinSparkle.dll" | Select-Object -First 1
+          if (-not $rootDir) {
+            throw "Failed to locate extracted WinSparkle root directory."
           }
 
-          $tool = Get-ChildItem -Path $extractDir -Recurse -Filter "winsparkle-tool.exe" | Select-Object -First 1
+          $dllCandidates = @(
+            (Join-Path $rootDir.FullName "x64/Release/WinSparkle.dll"),
+            (Join-Path $rootDir.FullName "Release/WinSparkle.dll"),
+            (Join-Path $rootDir.FullName "ARM64/Release/WinSparkle.dll")
+          )
+          $dll = $dllCandidates |
+            Where-Object { Test-Path $_ } |
+            Select-Object -First 1
+          if (-not $dll) {
+            $dll = Get-ChildItem -Path $rootDir.FullName -Recurse -Filter "WinSparkle.dll" |
+              Select-Object -ExpandProperty FullName -First 1
+          }
+
+          $tool = Join-Path $rootDir.FullName "bin/winsparkle-tool.exe"
+          if (-not (Test-Path $tool)) {
+            $tool = Get-ChildItem -Path $rootDir.FullName -Recurse -Filter "winsparkle-tool.exe" |
+              Select-Object -ExpandProperty FullName -First 1
+          }
 
           if (-not $dll -or -not $tool) {
             throw "Failed to locate WinSparkle.dll or winsparkle-tool.exe in the downloaded archive."
