@@ -186,6 +186,7 @@ echo "Removing optional Qt modules pulled in by Homebrew macdeployqt..."
 OPTIONAL_QML_PATHS=(
     "$APP_PATH/Contents/Resources/qml/Qt3D"
     "$APP_PATH/Contents/Resources/qml/QtPdf"
+    "$APP_PATH/Contents/Resources/qml/QtQml/XmlListModel"
     "$APP_PATH/Contents/Resources/qml/QtQuick/Scene3D"
     "$APP_PATH/Contents/Resources/qml/QtQuick/Timeline"
     "$APP_PATH/Contents/Resources/qml/QtQuick/VirtualKeyboard"
@@ -201,6 +202,7 @@ for path in "${OPTIONAL_QML_PATHS[@]}"; do
 done
 
 OPTIONAL_PLUGIN_GLOBS=(
+    "$APP_PATH/Contents/PlugIns/quick/libqmlxmllistmodelplugin.dylib"
     "$APP_PATH/Contents/PlugIns/quick/libqtvkb*.dylib"
     "$APP_PATH/Contents/PlugIns/quick/libqthunspellinputmethodplugin.dylib"
 )
@@ -323,7 +325,7 @@ if [ -d "$SPARKLE_CURRENT/Updater.app" ]; then
 fi
 
 codesign_runtime "$SPARKLE_DEST"
-codesign_runtime "$APP_PATH" --entitlements "$SCRIPT_DIR/entitlements.plist"
+codesign_runtime "$APP_PATH" --deep --entitlements "$SCRIPT_DIR/entitlements.plist"
 
 echo "Verifying signature..."
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"

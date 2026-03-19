@@ -467,7 +467,7 @@ jobs:
           $privateKeyPath = Join-Path $env:RUNNER_TEMP "winsparkle-private.key"
           Set-Content -Path $privateKeyPath -Value $env:SNAPTRAY_WINSPARKLE_PRIVATE_KEY -Encoding utf8NoBOM
 
-          $signOutput = & "${{ steps.winsparkle.outputs.tool_path }}" sign --file $privateKeyPath $setupExe.FullName
+          $signOutput = & "${{ steps.winsparkle.outputs.tool_path }}" sign -f $privateKeyPath $setupExe.FullName
           $signatureMatch = [regex]::Match($signOutput, 'sparkle:edSignature="([^"]+)"')
           $lengthMatch = [regex]::Match($signOutput, 'length="([^"]+)"')
 
