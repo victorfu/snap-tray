@@ -237,13 +237,6 @@ jobs:
           echo "framework=$FRAMEWORK_PATH" >> "$GITHUB_OUTPUT"
           echo "bin_dir=$BIN_DIR" >> "$GITHUB_OUTPUT"
 
-      - name: Import Sparkle EdDSA private key
-        run: |
-          set -euo pipefail
-          PRIVATE_KEY_PATH="$RUNNER_TEMP/sparkle_private_key.pem"
-          printf '%s' "$SNAPTRAY_SPARKLE_PRIVATE_KEY" > "$PRIVATE_KEY_PATH"
-          "${{ steps.sparkle.outputs.bin_dir }}/generate_keys" -f "$PRIVATE_KEY_PATH"
-
       - name: Build and Package
         env:
           CODESIGN_IDENTITY: ${{ steps.get-identity.outputs.identity }}
@@ -259,6 +252,7 @@ jobs:
         env:
           RELEASE_DOWNLOAD_BASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ needs.prepare.outputs.tag_name }}
           RELEASE_NOTES_URL: ${{ needs.prepare.outputs.release_page_url }}
+          SNAPTRAY_SPARKLE_PRIVATE_KEY: ${{ env.SNAPTRAY_SPARKLE_PRIVATE_KEY }}
         run: |
           set -euo pipefail
           ARCHIVE_PATH=$(find dist -maxdepth 1 -name '*-macOS.dmg' | head -1)
@@ -267,7 +261,10 @@ jobs:
             exit 1
           fi
 
-          SIGN_OUTPUT="$("${{ steps.sparkle.outputs.bin_dir }}/sign_update" "$ARCHIVE_PATH")"
+          PRIVATE_KEY_PATH="$RUNNER_TEMP/sparkle_private_key.pem"
+          printf '%s' "$SNAPTRAY_SPARKLE_PRIVATE_KEY" > "$PRIVATE_KEY_PATH"
+
+          SIGN_OUTPUT="$("${{ steps.sparkle.outputs.bin_dir }}/sign_update" -s "$PRIVATE_KEY_PATH" "$ARCHIVE_PATH")"
           SIGNATURE=$(printf '%s\n' "$SIGN_OUTPUT" | sed -n 's/.*sparkle:edSignature="\([^"]*\)".*/\1/p')
           LENGTH=$(printf '%s\n' "$SIGN_OUTPUT" | sed -n 's/.*length="\([^"]*\)".*/\1/p')
 
