@@ -251,33 +251,12 @@ jobs:
             exit 1
           }
 
-      - name: Verify Windows SDK
-        shell: pwsh
-        run: |
-          $sdkVersions = @("10.0.26100.0", "10.0.22621.0", "10.0.22000.0", "10.0.19041.0")
-          $found = $false
-          foreach ($ver in $sdkVersions) {
-            $makeappx = "C:\Program Files (x86)\Windows Kits\10\bin\$ver\x64\makeappx.exe"
-            if (Test-Path $makeappx) {
-              Write-Output "Windows SDK found: $ver"
-              Write-Output "MakeAppx: $makeappx"
-              $found = $true
-              break
-            }
-          }
-          if (-not $found) {
-            Write-Error "Windows SDK not found"
-            exit 1
-          }
-
-      - name: Build and Package
+      - name: Build and Package NSIS
         shell: cmd
         env:
           QT_PATH: ${{ env.QT_ROOT_DIR }}
           SCCACHE_GHA_ENABLED: "true"
-          IDENTITY_NAME: ${{ secrets.MSIX_IDENTITY_NAME || 'VictorFu.3115791294772' }}
-          PUBLISHER_ID: ${{ secrets.MSIX_PUBLISHER_ID || 'CN=88BB68F4-693F-45D9-BF2F-3CF9C709619F' }}
-        run: packaging\windows\package.bat
+        run: packaging\windows\package.bat nsis
 
       - name: Show sccache stats
         if: always()
@@ -287,11 +266,8 @@ jobs:
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
-          name: windows-packages
-          path: |
-            dist/*.exe
-            dist/*.msix
-            dist/*.msixupload
+          name: windows-nsis
+          path: dist/*.exe
           retention-days: 5
 
   release:
@@ -318,5 +294,4 @@ jobs:
           generate_release_notes: true
           files: |
             artifacts/macos-dmg/*.dmg
-            artifacts/windows-packages/*.exe
-            artifacts/windows-packages/*.msix
+            artifacts/windows-nsis/*.exe

@@ -1,0 +1,143 @@
+name: Store MSIX
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  APP_NAME: SnapTray
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION=$(grep "project(SnapTray VERSION" CMakeLists.txt | \
+                      sed -E 's/.*VERSION ([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Packaging Store MSIX version: $VERSION"
+
+      - name: Validate version consistency
+        if: github.event_name == 'push'
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          CMAKE_VERSION=$(grep "project(SnapTray VERSION" CMakeLists.txt | \
+                          sed -E 's/.*VERSION ([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+          if [ "$TAG_VERSION" != "$CMAKE_VERSION" ]; then
+            echo "::error::Version mismatch! Tag version ($TAG_VERSION) != CMakeLists.txt version ($CMAKE_VERSION)"
+            echo "Please update CMakeLists.txt to match the tag, or use the correct tag."
+            exit 1
+          fi
+          echo "Version validated: $TAG_VERSION"
+
+  build-msix:
+    needs: prepare
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Qt via aqtinstall
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.10.1'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2022_64'
+          cache: true
+
+      # ========================================
+      # Compiler Cache
+      # ========================================
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
+        env:
+          SCCACHE_GHA_ENABLED: "true"
+
+      - name: Setup MSVC Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Ninja
+        run: choco install ninja -y
+
+      # ========================================
+      # FetchContent Dependencies Cache
+      # ========================================
+      - name: Generate deps cache key
+        id: deps-key
+        shell: bash
+        run: |
+          DEPS_HASH=$(grep -E "GIT_TAG\s+" CMakeLists.txt | sort | sha256sum | cut -c1-16)
+          echo "hash=$DEPS_HASH" >> $GITHUB_OUTPUT
+
+      - name: Cache FetchContent dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/_deps/opencv-src
+            build/_deps/opencv-build
+            build/_deps/opencv-subbuild
+            build/_deps/libwebp-src
+            build/_deps/libwebp-build
+            build/_deps/libwebp-subbuild
+            build/_deps/qhotkey-src
+            build/_deps/qhotkey-build
+            build/_deps/qhotkey-subbuild
+          key: deps-windows-${{ steps.deps-key.outputs.hash }}
+          restore-keys: |
+            deps-windows-
+
+      - name: Verify Windows SDK
+        shell: pwsh
+        run: |
+          $sdkVersions = @("10.0.26100.0", "10.0.22621.0", "10.0.22000.0", "10.0.19041.0")
+          $found = $false
+          foreach ($ver in $sdkVersions) {
+            $makeappx = "C:\Program Files (x86)\Windows Kits\10\bin\$ver\x64\makeappx.exe"
+            if (Test-Path $makeappx) {
+              Write-Output "Windows SDK found: $ver"
+              Write-Output "MakeAppx: $makeappx"
+              $found = $true
+              break
+            }
+          }
+          if (-not $found) {
+            Write-Error "Windows SDK not found"
+            exit 1
+          }
+
+      - name: Build and Package MSIX
+        shell: cmd
+        env:
+          QT_PATH: ${{ env.QT_ROOT_DIR }}
+          SCCACHE_GHA_ENABLED: "true"
+          IDENTITY_NAME: ${{ secrets.MSIX_IDENTITY_NAME || 'VictorFu.3115791294772' }}
+          PUBLISHER_ID: ${{ secrets.MSIX_PUBLISHER_ID || 'CN=88BB68F4-693F-45D9-BF2F-3CF9C709619F' }}
+        run: packaging\windows\package.bat msix
+
+      - name: Show sccache stats
+        if: always()
+        shell: cmd
+        run: sccache --show-stats
+
+      - name: Upload Store MSIX artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-msix-store
+          path: |
+            dist/*.msix
+            dist/*.msixupload
+          retention-days: 5
