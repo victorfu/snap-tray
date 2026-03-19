@@ -685,6 +685,14 @@ add_test(
 )
 set_tests_properties(Update_GenerateAppcast PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_test(
+    NAME Update_RenderReleaseNotesPage
+    COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/Update/tst_render_release_notes_page.py
+            ${CMAKE_SOURCE_DIR}/scripts/render_release_notes_page.py
+)
+set_tests_properties(Update_RenderReleaseNotesPage PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # CTest Label Summary
 # ============================================================================

@@ -25,6 +25,7 @@ jobs:
       appcast_base_url: ${{ steps.version.outputs.appcast_base_url }}
       macos_appcast_url: ${{ steps.version.outputs.macos_appcast_url }}
       windows_appcast_url: ${{ steps.version.outputs.windows_appcast_url }}
+      release_notes_url: ${{ steps.version.outputs.release_notes_url }}
       release_page_url: ${{ steps.version.outputs.release_page_url }}
     steps:
       - name: Checkout repository
@@ -63,6 +64,7 @@ jobs:
           echo "appcast_base_url=$APPCAST_BASE_URL" >> $GITHUB_OUTPUT
           echo "macos_appcast_url=$APPCAST_BASE_URL/updates/macos.xml" >> $GITHUB_OUTPUT
           echo "windows_appcast_url=$APPCAST_BASE_URL/updates/windows.xml" >> $GITHUB_OUTPUT
+          echo "release_notes_url=$APPCAST_BASE_URL/releases/$VERSION/" >> $GITHUB_OUTPUT
           echo "release_page_url=https://github.com/${GITHUB_REPOSITORY}/releases/tag/v$VERSION" >> $GITHUB_OUTPUT
           echo "Releasing version: $VERSION"
 
@@ -251,7 +253,7 @@ jobs:
       - name: Generate macOS appcast
         env:
           RELEASE_DOWNLOAD_BASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ needs.prepare.outputs.tag_name }}
-          RELEASE_NOTES_URL: ${{ needs.prepare.outputs.release_page_url }}
+          RELEASE_NOTES_URL: ${{ needs.prepare.outputs.release_notes_url }}
           SNAPTRAY_SPARKLE_PRIVATE_KEY: ${{ env.SNAPTRAY_SPARKLE_PRIVATE_KEY }}
         run: |
           set -euo pipefail
@@ -452,7 +454,7 @@ jobs:
         shell: pwsh
         env:
           RELEASE_DOWNLOAD_BASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ needs.prepare.outputs.tag_name }}
-          RELEASE_NOTES_URL: ${{ needs.prepare.outputs.release_page_url }}
+          RELEASE_NOTES_URL: ${{ needs.prepare.outputs.release_notes_url }}
         run: |
           $setupExe = Get-ChildItem -Path . -Recurse -Filter "*-Setup.exe" |
             Select-Object -First 1
@@ -552,21 +554,31 @@ jobs:
 
       - name: Update appcasts in pages branch
         env:
+          GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.prepare.outputs.tag_name }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+          RELEASE_NOTES_URL: ${{ needs.prepare.outputs.release_notes_url }}
         run: |
           set -euo pipefail
           mkdir -p pages-site/docs/updates
           cp artifacts/macos-appcast/macos.xml pages-site/docs/updates/macos.xml
           cp artifacts/windows-appcast/windows.xml pages-site/docs/updates/windows.xml
+          mkdir -p "pages-site/docs/releases/${RELEASE_VERSION}"
+
+          gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" > "$RUNNER_TEMP/release.json"
+          python3 scripts/render_release_notes_page.py \
+            --release-json "$RUNNER_TEMP/release.json" \
+            --canonical-url "$RELEASE_NOTES_URL" \
+            --output "pages-site/docs/releases/${RELEASE_VERSION}/index.html"
 
           git -C pages-site config user.name "github-actions[bot]"
           git -C pages-site config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          if [ -z "$(git -C pages-site status --porcelain -- docs/updates/macos.xml docs/updates/windows.xml)" ]; then
+          if [ -z "$(git -C pages-site status --porcelain -- docs/updates/macos.xml docs/updates/windows.xml docs/releases/${RELEASE_VERSION}/index.html)" ]; then
             echo "Appcasts are already up to date."
             exit 0
           fi
 
-          git -C pages-site add docs/updates/macos.xml docs/updates/windows.xml
+          git -C pages-site add docs/updates/macos.xml docs/updates/windows.xml "docs/releases/${RELEASE_VERSION}/index.html"
           git -C pages-site commit -m "Update appcasts for ${RELEASE_TAG}"
           git -C pages-site push origin HEAD:pages
