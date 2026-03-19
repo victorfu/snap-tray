@@ -133,11 +133,9 @@ jobs:
         shell: cmd
         run: sccache --show-stats
 
-      - name: Upload Store MSIX artifacts
+      - name: Upload Store MSIX artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-msix-store
-          path: |
-            dist/*.msix
-            dist/*.msixupload
+          path: dist/*.msix
           retention-days: 5
