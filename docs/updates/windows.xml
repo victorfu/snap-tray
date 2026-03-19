@@ -4,20 +4,20 @@
      xmlns:dc="http://purl.org/dc/elements/1.1/">
   <channel>
     <title>SnapTray windows</title>
-    <link>https://github.com/victorfu/snap-tray/releases/download/v1.0.34/SnapTray-1.0.34-Setup.exe</link>
+    <link>https://github.com/victorfu/snap-tray/releases/download/v1.0.35/SnapTray-1.0.35-Setup.exe</link>
     <description>SnapTray update feed for windows</description>
     <language>en</language>
     <item>
-      <title>Version 1.0.34</title>
-      <pubDate>Thu, 19 Mar 2026 13:16:29 GMT</pubDate>
+      <title>Version 1.0.35</title>
+      <pubDate>Thu, 19 Mar 2026 14:37:26 GMT</pubDate>
 
-      <sparkle:releaseNotesLink>https://github.com/victorfu/snap-tray/releases/tag/v1.0.34</sparkle:releaseNotesLink>
+      <sparkle:releaseNotesLink>https://github.com/victorfu/snap-tray/releases/tag/v1.0.35</sparkle:releaseNotesLink>
       <enclosure
-          url="https://github.com/victorfu/snap-tray/releases/download/v1.0.34/SnapTray-1.0.34-Setup.exe"
-          sparkle:version="1.0.34"
-          sparkle:shortVersionString="1.0.34"
-          sparkle:edSignature="/S0wTszlLIbDoqWegMOJ4r8ozdXUKpKWh7mxzv99mttQN4pmeOvGyyDGPg6lBe2JObj71aa7I3iQLhI8vEw0Bg=="
-          length="69907661"
+          url="https://github.com/victorfu/snap-tray/releases/download/v1.0.35/SnapTray-1.0.35-Setup.exe"
+          sparkle:version="1.0.35"
+          sparkle:shortVersionString="1.0.35"
+          sparkle:edSignature="Vav8jd0DrATMDuIMTNkgQjxLcKMw2XiBNQsFY7woToAiyYPH9WX6ybBXI01Qjwz36gLVxMWlE2JUnwAilnz+CA=="
+          length="69907640"
           type="application/x-msdownload" />
     </item>
   </channel>
