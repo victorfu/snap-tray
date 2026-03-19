@@ -46,6 +46,7 @@ void tst_SettingsBackend::clearTestSettings()
     auto settings = SnapTray::getSettings();
     settings.remove("recording/audioDevice");
     settings.remove("detection/blurType");
+    settings.remove("general/startOnLogin");
     settings.remove("update/lastCheckTime");
     settings.sync();
 }

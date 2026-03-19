@@ -389,6 +389,11 @@ target_link_libraries(Settings_SettingsStorageLocation PRIVATE snaptray_core Qt6
 add_test(NAME Settings_SettingsStorageLocation COMMAND Settings_SettingsStorageLocation)
 set_tests_properties(Settings_SettingsStorageLocation PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Settings_AutoLaunchSyncPolicy Settings/tst_AutoLaunchSyncPolicy.cpp)
+target_link_libraries(Settings_AutoLaunchSyncPolicy PRIVATE snaptray_core Qt6::Test)
+add_test(NAME Settings_AutoLaunchSyncPolicy COMMAND Settings_AutoLaunchSyncPolicy)
+set_tests_properties(Settings_AutoLaunchSyncPolicy PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Settings_SettingsBackend
     Settings/tst_SettingsBackend.cpp
     ${CMAKE_SOURCE_DIR}/src/qml/SettingsBackend.cpp

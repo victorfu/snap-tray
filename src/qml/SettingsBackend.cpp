@@ -5,6 +5,7 @@
 #include "capture/IAudioCaptureEngine.h"
 #include "hotkey/HotkeyManager.h"
 #include "hotkey/HotkeyTypes.h"
+#include "settings/AutoLaunchSettingsManager.h"
 #include "settings/AutoBlurSettingsManager.h"
 #include "settings/FileSettingsManager.h"
 #include "settings/LanguageManager.h"
@@ -108,7 +109,7 @@ SettingsBackend::~SettingsBackend() = default;
 void SettingsBackend::loadAllSettings()
 {
     // General
-    m_startOnLogin = AutoLaunchManager::isEnabled();
+    m_startOnLogin = AutoLaunchManager::syncWithPreference();
     m_language = LanguageManager::instance().loadLanguage();
     m_appTheme = static_cast<int>(ToolbarStyleConfig::loadStyle());
     m_cliInstalled = PlatformFeatures::instance().isCLIInstalled();
@@ -177,9 +178,14 @@ void SettingsBackend::loadAllSettings()
 bool SettingsBackend::startOnLogin() const { return m_startOnLogin; }
 void SettingsBackend::setStartOnLogin(bool v) {
     if (m_startOnLogin != v) {
-        m_startOnLogin = v;
-        AutoLaunchManager::setEnabled(v);
-        emit startOnLoginChanged();
+        AutoLaunchSettingsManager::instance().savePreferredEnabled(v);
+        (void)AutoLaunchManager::setEnabled(v);
+        const bool actualValue = AutoLaunchManager::isEnabled();
+        const bool shouldNotify = (m_startOnLogin != actualValue) || (actualValue != v);
+        m_startOnLogin = actualValue;
+        if (shouldNotify) {
+            emit startOnLoginChanged();
+        }
     }
 }
 

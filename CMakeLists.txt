@@ -296,6 +296,8 @@ add_library(snaptray_core STATIC
     src/annotations/ErasedItemsGroup.cpp
     src/annotations/TextBoxAnnotation.cpp
     src/settings/AnnotationSettingsManager.cpp
+    src/settings/AutoLaunchSyncPolicy.cpp
+    src/settings/AutoLaunchSettingsManager.cpp
     src/settings/AutoBlurSettingsManager.cpp
     src/settings/FileSettingsManager.cpp
     src/settings/MCPSettingsManager.cpp
@@ -332,6 +334,8 @@ add_library(snaptray_core STATIC
     src/cli/commands/ConfigCommand.cpp
     # Headers with Q_OBJECT for MOC processing
     include/settings/AnnotationSettingsManager.h
+    include/settings/AutoLaunchSyncPolicy.h
+    include/settings/AutoLaunchSettingsManager.h
     include/settings/FileSettingsManager.h
     include/settings/MCPSettingsManager.h
     include/settings/PinWindowSettingsManager.h

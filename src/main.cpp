@@ -1,4 +1,5 @@
 #include "MainApplication.h"
+#include "AutoLaunchManager.h"
 #include "SingleInstanceGuard.h"
 #include "cli/CLIHandler.h"
 #include "settings/LanguageManager.h"
@@ -94,6 +95,8 @@ int main(int argc, char* argv[])
         guard.sendActivateMessage();
         return 0;
     }
+
+    AutoLaunchManager::syncWithPreference();
 
     MainApplication mainApp;
 

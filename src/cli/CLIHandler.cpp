@@ -17,6 +17,15 @@
 namespace SnapTray {
 namespace CLI {
 
+namespace {
+
+bool isCompatibilityStartupArgument(const QString& argument)
+{
+    return argument.compare(QStringLiteral("--minimized"), Qt::CaseInsensitive) == 0;
+}
+
+}
+
 CLIHandler::CLIHandler() { registerCommands(); }
 
 CLIHandler::~CLIHandler() = default;
@@ -37,8 +46,13 @@ void CLIHandler::registerCommands()
 
 bool CLIHandler::hasArguments(const QStringList& arguments)
 {
-    // Exclude program name, check if there are other arguments
-    return arguments.size() > 1;
+    for (int i = 1; i < arguments.size(); ++i) {
+        if (!isCompatibilityStartupArgument(arguments.at(i))) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 CLIResult CLIHandler::process(const QStringList& arguments)

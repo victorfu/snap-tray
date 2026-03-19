@@ -1,4 +1,8 @@
 #include "AutoLaunchManager.h"
+
+#include "settings/AutoLaunchSyncPolicy.h"
+#include "settings/AutoLaunchSettingsManager.h"
+
 #import <ServiceManagement/ServiceManagement.h>
 #include <QDebug>
 
@@ -12,6 +16,24 @@ bool AutoLaunchManager::isEnabled()
         // Full implementation would require LSSharedFileList APIs
         return false;
     }
+}
+
+bool AutoLaunchManager::syncWithPreference()
+{
+    auto& settingsManager = AutoLaunchSettingsManager::instance();
+    const std::optional<bool> preferredEnabled = settingsManager.loadPreferredEnabled();
+    const bool currentlyEnabled = isEnabled();
+    const SnapTray::AutoLaunchSyncState state = currentlyEnabled
+        ? SnapTray::AutoLaunchSyncState::EnabledCurrentCanonical
+        : SnapTray::AutoLaunchSyncState::Disabled;
+    const SnapTray::AutoLaunchSyncPlan plan =
+        SnapTray::buildAutoLaunchStartupSyncPlan(preferredEnabled, state);
+
+    if (plan.shouldApplyChange && !setEnabled(plan.targetEnabled)) {
+        return isEnabled();
+    }
+
+    return isEnabled();
 }
 
 bool AutoLaunchManager::setEnabled(bool enabled)
