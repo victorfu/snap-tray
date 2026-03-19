@@ -49,6 +49,22 @@ bool shouldIncludeElementType(ElementType type, DetectionFlags flags)
     return false;
 }
 
+bool shouldPreferTopLevelBoundsForElementType(ElementType elementType)
+{
+    switch (elementType) {
+    case ElementType::ContextMenu:
+    case ElementType::PopupMenu:
+    case ElementType::StatusBarItem:
+        return true;
+    case ElementType::Window:
+    case ElementType::Dialog:
+    case ElementType::Unknown:
+        return false;
+    }
+
+    return false;
+}
+
 // Get minimum size for element type
 int getMinimumSize(ElementType type)
 {
@@ -636,6 +652,12 @@ std::optional<DetectedElement> WindowDetector::detectWindowAt(
         }
 
         // Found the topmost window containing the cursor.
+        // Menu-like transient surfaces are more useful as their full top-level
+        // bounds than as a single row/control under the cursor.
+        if (shouldPreferTopLevelBoundsForElementType(element.elementType)) {
+            return element;
+        }
+
         // If child detection is enabled, scan its child elements for a better match.
         if (detectChildren) {
             const auto bestChild = detectChildElementAt(screenPos, element, i);
