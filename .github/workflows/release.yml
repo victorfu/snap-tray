@@ -537,33 +537,36 @@ jobs:
     needs: [release]
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      contents: write
     steps:
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
+      - name: Checkout pages branch
+        uses: actions/checkout@v4
+        with:
+          ref: pages
+          path: pages-site
 
       - name: Download appcast artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
-      - name: Assemble Pages site
+      - name: Update appcasts in pages branch
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag_name }}
         run: |
           set -euo pipefail
-          mkdir -p site/updates
-          cp artifacts/macos-appcast/macos.xml site/updates/macos.xml
-          cp artifacts/windows-appcast/windows.xml site/updates/windows.xml
+          mkdir -p pages-site/docs/updates
+          cp artifacts/macos-appcast/macos.xml pages-site/docs/updates/macos.xml
+          cp artifacts/windows-appcast/windows.xml pages-site/docs/updates/windows.xml
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: site
+          git -C pages-site config user.name "github-actions[bot]"
+          git -C pages-site config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          if [ -z "$(git -C pages-site status --porcelain -- docs/updates/macos.xml docs/updates/windows.xml)" ]; then
+            echo "Appcasts are already up to date."
+            exit 0
+          fi
+
+          git -C pages-site add docs/updates/macos.xml docs/updates/windows.xml
+          git -C pages-site commit -m "Update appcasts for ${RELEASE_TAG}"
+          git -C pages-site push origin HEAD:pages
