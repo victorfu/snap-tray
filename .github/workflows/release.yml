@@ -467,20 +467,28 @@ jobs:
           $privateKeyPath = Join-Path $env:RUNNER_TEMP "winsparkle-private.key"
           Set-Content -Path $privateKeyPath -Value $env:SNAPTRAY_WINSPARKLE_PRIVATE_KEY -Encoding utf8NoBOM
 
-          $signOutput = & "${{ steps.winsparkle.outputs.tool_path }}" sign -f $privateKeyPath $setupExe.FullName
+          $signOutput = & "${{ steps.winsparkle.outputs.tool_path }}" sign --verbose -f $privateKeyPath $setupExe.FullName
           $signatureMatch = [regex]::Match($signOutput, 'sparkle:edSignature="([^"]+)"')
           $lengthMatch = [regex]::Match($signOutput, 'length="([^"]+)"')
 
-          if (-not $signatureMatch.Success -or -not $lengthMatch.Success) {
-            throw "Failed to parse WinSparkle signature output: $signOutput"
+          if ($signatureMatch.Success -and $lengthMatch.Success) {
+            $signature = $signatureMatch.Groups[1].Value
+            $length = $lengthMatch.Groups[1].Value
+          } else {
+            $rawSignature = ($signOutput | Out-String).Trim()
+            if ([string]::IsNullOrWhiteSpace($rawSignature)) {
+              throw "WinSparkle signing returned empty output."
+            }
+            $signature = $rawSignature
+            $length = (Get-Item $setupExe.FullName).Length
           }
 
           python scripts/generate_appcast.py `
             --platform windows `
             --version "${{ needs.prepare.outputs.version }}" `
             --download-url "$env:RELEASE_DOWNLOAD_BASE_URL/$($setupExe.Name)" `
-            --signature $signatureMatch.Groups[1].Value `
-            --length $lengthMatch.Groups[1].Value `
+            --signature $signature `
+            --length $length `
             --release-notes-url "$env:RELEASE_NOTES_URL" `
             --output dist/windows.xml
 
