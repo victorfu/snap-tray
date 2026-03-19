@@ -109,7 +109,7 @@ public:
             }
 
             SEL allocSel = sel_registerName("alloc");
-            SEL initSel = sel_registerName("initStartingUpdater:updaterDelegate:userDriverDelegate:");
+            SEL initSel = sel_registerName("initWithStartingUpdater:updaterDelegate:userDriverDelegate:");
             m_delegate = [[SnapTraySparkleUpdaterDelegate alloc] init];
             id controllerAlloc = ((id(*)(id, SEL))objc_msgSend)(controllerClass, allocSel);
             m_controller = ((id(*)(id, SEL, BOOL, id, id))objc_msgSend)(
