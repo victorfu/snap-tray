@@ -78,9 +78,6 @@ public:
 
     QRect lastDimensionInfoRect() const { return m_lastDimensionInfoRect; }
 
-    void buildDimmedCache(const QPixmap& background);
-    const QPixmap& dimmedCache() const { return m_dimmedCache; }
-
 private:
     // Drawing methods (extracted from RegionSelector)
     void drawOverlay(QPainter& painter);
@@ -128,9 +125,6 @@ private:
     QRect m_cachedSelectionRect;
     QRect m_cachedHighlightRect;
     bool m_overlayCacheValid = false;
-
-    QPixmap m_dimmedCache;
-    bool m_dimmedCacheReady = false;
 
     QRect m_lastDimensionInfoRect;
 };

@@ -91,17 +91,6 @@ void RegionPainter::setReplacePreview(int targetIndex, const QRect& previewRect)
 void RegionPainter::invalidateOverlayCache()
 {
     m_overlayCacheValid = false;
-    m_dimmedCacheReady = false;
-}
-
-void RegionPainter::buildDimmedCache(const QPixmap& background)
-{
-    m_dimmedCache = background.copy();
-    QPainter p(&m_dimmedCache);
-    p.setCompositionMode(QPainter::CompositionMode_SourceOver);
-    p.fillRect(m_dimmedCache.rect(), QColor(0, 0, 0, 100));
-    p.end();
-    m_dimmedCacheReady = true;
 }
 
 void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QRect& dirtyRect)

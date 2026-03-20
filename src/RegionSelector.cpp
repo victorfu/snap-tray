@@ -84,6 +84,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QLabel>
 #include <QTimer>
 #include <QSettings>
+#include <QElapsedTimer>
 #include <QtMath>
 #include <QMenu>
 #include <QFontDatabase>
@@ -110,6 +111,21 @@ CursorStyleSpec cursorSpecForWidget(const QWidget* widget)
 {
     return widget ? CursorStyleSpec::fromCursor(widget->cursor())
                   : CursorStyleSpec::fromShape(Qt::ArrowCursor);
+}
+
+constexpr qint64 kSlowRegionSelectorGrabWarningThresholdMs = 25;
+constexpr qint64 kSlowMagnifierWarmupWarningThresholdMs = 12;
+
+void logSlowRegionSelectorPath(const char* stage, qint64 elapsedMs, const QString& details = {})
+{
+    if (elapsedMs < 0) {
+        return;
+    }
+
+    qWarning().nospace()
+        << "RegionSelector: slow " << stage
+        << " elapsedMs=" << elapsedMs
+        << (details.isEmpty() ? QString() : QStringLiteral(" ") + details);
 }
 
 } // namespace
@@ -1183,7 +1199,18 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
         m_backgroundPixmap = preCapture;
     }
     else {
+        QElapsedTimer captureTimer;
+        captureTimer.start();
         m_backgroundPixmap = m_currentScreen->grabWindow(0);
+        if (captureTimer.elapsed() >= kSlowRegionSelectorGrabWarningThresholdMs) {
+            logSlowRegionSelectorPath(
+                "grabWindow(0)",
+                captureTimer.elapsed(),
+                QStringLiteral("context=initializeForScreen size=%1x%2 dpr=%3")
+                    .arg(m_currentScreen->geometry().width())
+                    .arg(m_currentScreen->geometry().height())
+                    .arg(m_devicePixelRatio, 0, 'f', 2));
+        }
     }
 
     // Create shared pixmap for mosaic tool (explicit sharing to avoid memory duplication)
@@ -1274,9 +1301,6 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     if (m_multiRegionListViewModel) {
         m_multiRegionListViewModel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
     }
-
-    // Pre-compose dimmed background cache for fast painting on high-DPI screens
-    m_painter->buildDimmedCache(m_backgroundPixmap);
 
     // Convert global region to local coordinates
     QRect screenGeom = m_currentScreen->geometry();
@@ -1418,7 +1442,6 @@ void RegionSelector::restoreLiveReplaySlot()
         m_multiRegionListViewModel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
     }
 
-    m_painter->buildDimmedCache(m_backgroundPixmap);
     m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
     m_magnifierPanel->invalidateCache();
     m_magnifierPanel->preWarmCache(m_inputState.currentPoint, m_backgroundPixmap);
@@ -1517,7 +1540,6 @@ bool RegionSelector::applyHistoryReplayEntry(const SnapTray::HistoryEntry& entry
         m_multiRegionListViewModel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
     }
 
-    m_painter->buildDimmedCache(m_backgroundPixmap);
     m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
     m_magnifierPanel->invalidateCache();
     m_magnifierPanel->preWarmCache(m_inputState.currentPoint, m_backgroundPixmap);
@@ -1747,8 +1769,6 @@ void RegionSelector::switchToScreen(QScreen* screen, bool preserveCompletedSelec
     const QRect targetGeometry = targetScreen->geometry();
     const qreal targetDpr = targetScreen->devicePixelRatio();
 
-    m_painter->buildDimmedCache(newBackground);
-
     QPoint localCursor = QCursor::pos() - targetGeometry.topLeft();
     localCursor.setX(qBound(0, localCursor.x(), qMax(0, targetGeometry.width() - 1)));
     localCursor.setY(qBound(0, localCursor.y(), qMax(0, targetGeometry.height() - 1)));
@@ -1933,11 +1953,22 @@ void RegionSelector::runDeferredPostShowInitialization(
         return;
     }
 
-    m_painter->buildDimmedCache(m_backgroundPixmap);
-
+    QElapsedTimer magnifierWarmupTimer;
+    magnifierWarmupTimer.start();
     m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
     m_magnifierPanel->invalidateCache();
     m_magnifierPanel->preWarmCache(initialCursorPos, m_backgroundPixmap);
+    if (magnifierWarmupTimer.elapsed() >= kSlowMagnifierWarmupWarningThresholdMs) {
+        logSlowRegionSelectorPath(
+            "magnifier warmup",
+            magnifierWarmupTimer.elapsed(),
+            QStringLiteral("cursor=%1,%2 canvas=%3x%4 dpr=%5")
+                .arg(initialCursorPos.x())
+                .arg(initialCursorPos.y())
+                .arg(width())
+                .arg(height())
+                .arg(m_devicePixelRatio, 0, 'f', 2));
+    }
 
     scheduleDeferredInitialWindowDetection(token, initialQueryMode, initialCursorPos);
 }

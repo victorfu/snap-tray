@@ -457,6 +457,13 @@ void MainApplication::initialize()
     updateTrayMenuHotkeyText();
     updatePinsVisibilityActionText();
 
+    QTimer::singleShot(0, this, [captureManager = QPointer<CaptureManager>(m_captureManager)]() {
+        if (!captureManager) {
+            return;
+        }
+        QMetaObject::invokeMethod(captureManager, "prewarmWindowDetector", Qt::DirectConnection);
+    });
+
     UpdateCoordinator::setShutdownHooks(
         [this]() { return canShutdownForUpdate(); },
         [this]() { prepareForUpdateShutdown(); });

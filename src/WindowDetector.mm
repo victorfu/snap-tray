@@ -5,6 +5,7 @@
 #include <QScreen>
 #include <QDebug>
 #include <QByteArray>
+#include <QElapsedTimer>
 #include <QtConcurrent>
 #include <unistd.h>
 
@@ -24,6 +25,7 @@
 namespace {
 
 const CFStringRef kAXVisibleAttributeCompat = CFSTR("AXVisible");
+constexpr qint64 kSlowWindowRefreshWarningThresholdMs = 25;
 
 // Classify element type based on window layer and characteristics
 ElementType classifyElementType(int windowLayer, CFDictionaryRef windowInfo, CGRect bounds)
@@ -113,6 +115,22 @@ int getMinimumSize(ElementType type)
         return 50;
     }
     return 50;
+}
+
+void logSlowWindowRefresh(const char* stage,
+                          qint64 elapsedMs,
+                          CFIndex windowCount,
+                          DetectionFlags flags)
+{
+    if (elapsedMs < 0) {
+        return;
+    }
+
+    qWarning().nospace()
+        << "WindowDetector: slow " << stage
+        << " elapsedMs=" << elapsedMs
+        << " windowCount=" << windowCount
+        << " flags=0x" << Qt::hex << static_cast<int>(flags) << Qt::dec;
 }
 
 QImage createQImageFromCGImage(CGImageRef sourceImage)
@@ -667,15 +685,27 @@ DetectionFlags WindowDetector::detectionFlags() const
 
 void WindowDetector::refreshWindowList()
 {
+    ++m_refreshRequestId;
+    m_refreshComplete = false;
+
     QMutexLocker locker(&m_cacheMutex);
     m_windowCache.clear();
 
     if (!m_enabled) {
+        m_refreshComplete = true;
         return;
     }
 
+    QElapsedTimer timer;
+    timer.start();
     enumerateWindows();
+    const qint64 elapsedMs = timer.elapsed();
+    if (elapsedMs >= kSlowWindowRefreshWarningThresholdMs) {
+        logSlowWindowRefresh("refreshWindowList", elapsedMs, static_cast<CFIndex>(m_windowCache.size()),
+                             m_detectionFlags);
+    }
 
+    m_refreshComplete = true;
 }
 
 void WindowDetector::enumerateWindows()
@@ -966,6 +996,8 @@ void WindowDetector::refreshWindowListAsync()
     const DetectionFlags flags = m_detectionFlags;
 
     m_refreshFuture = QtConcurrent::run([this, requestId, flags]() {
+        QElapsedTimer timer;
+        timer.start();
         std::vector<DetectedElement> newCache;
 
         // Determine CGWindowList options based on detection flags
@@ -1004,9 +1036,15 @@ void WindowDetector::refreshWindowListAsync()
             return;
         }
 
+        const CFIndex newWindowCount = static_cast<CFIndex>(newCache.size());
         {
             QMutexLocker locker(&m_cacheMutex);
             m_windowCache = std::move(newCache);
+        }
+
+        const qint64 elapsedMs = timer.elapsed();
+        if (elapsedMs >= kSlowWindowRefreshWarningThresholdMs) {
+            logSlowWindowRefresh("refreshWindowListAsync", elapsedMs, newWindowCount, flags);
         }
 
         m_refreshComplete = true;

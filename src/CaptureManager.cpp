@@ -16,8 +16,204 @@
 #include <QCursor>
 #include <QKeyEvent>
 #include <QDialog>
+#include <QElapsedTimer>
+#include <QImage>
+
+#ifdef Q_OS_MACOS
+#include <ApplicationServices/ApplicationServices.h>
+#endif
 
 namespace {
+
+constexpr qint64 kSlowGrabWindowWarningThresholdMs = 25;
+constexpr qint64 kSlowRegionSelectorConstructionWarningThresholdMs = 25;
+
+struct ScreenSnapshotResult {
+    QPixmap pixmap;
+    const char* stageName = "grabWindow(0)";
+    QString details;
+};
+
+void logSlowCapturePath(const char* stage, qint64 elapsedMs, const QString& details = {})
+{
+    if (elapsedMs < 0) {
+        return;
+    }
+
+    qWarning().nospace()
+        << "CaptureManager: slow " << stage
+        << " elapsedMs=" << elapsedMs
+        << (details.isEmpty() ? QString() : QStringLiteral(" ") + details);
+}
+
+#ifdef Q_OS_MACOS
+struct NativeDisplaySnapshotResult {
+    QPixmap pixmap;
+    QString details;
+    const char* failureStage = nullptr;
+};
+
+QImage createQImageFromCGImage(CGImageRef sourceImage)
+{
+    if (!sourceImage) {
+        return {};
+    }
+
+    const size_t width = CGImageGetWidth(sourceImage);
+    const size_t height = CGImageGetHeight(sourceImage);
+    if (width == 0 || height == 0) {
+        return {};
+    }
+
+    QImage target(static_cast<int>(width), static_cast<int>(height),
+                  QImage::Format_RGBA8888_Premultiplied);
+    if (target.isNull()) {
+        return {};
+    }
+
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    if (!colorSpace) {
+        return {};
+    }
+
+    CGContextRef context = CGBitmapContextCreate(
+        target.bits(),
+        width,
+        height,
+        8,
+        static_cast<size_t>(target.bytesPerLine()),
+        colorSpace,
+        kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(colorSpace);
+
+    if (!context) {
+        return {};
+    }
+
+    CGContextSetBlendMode(context, kCGBlendModeCopy);
+    CGContextDrawImage(context,
+                       CGRectMake(0.0, 0.0, static_cast<CGFloat>(width), static_cast<CGFloat>(height)),
+                       sourceImage);
+    CGContextRelease(context);
+    return target;
+}
+
+std::optional<CGDirectDisplayID> displayIdForScreen(QScreen* screen)
+{
+    if (!screen) {
+        return std::nullopt;
+    }
+
+    uint32_t displayCount = 0;
+    CGDirectDisplayID displays[16];
+    if (CGGetActiveDisplayList(16, displays, &displayCount) != kCGErrorSuccess) {
+        return std::nullopt;
+    }
+
+    const QRect targetGeometry = screen->geometry();
+    for (uint32_t i = 0; i < displayCount; ++i) {
+        const CGRect bounds = CGDisplayBounds(displays[i]);
+        if (static_cast<int>(bounds.origin.x) == targetGeometry.x() &&
+            static_cast<int>(bounds.origin.y) == targetGeometry.y() &&
+            static_cast<int>(bounds.size.width) == targetGeometry.width() &&
+            static_cast<int>(bounds.size.height) == targetGeometry.height()) {
+            return displays[i];
+        }
+    }
+
+    return std::nullopt;
+}
+
+NativeDisplaySnapshotResult captureScreenViaNativeDisplay(QScreen* screen)
+{
+    NativeDisplaySnapshotResult result;
+    QElapsedTimer timer;
+    timer.start();
+
+    const auto displayId = displayIdForScreen(screen);
+    if (!displayId.has_value()) {
+        result.failureStage = "displayIdForScreen";
+        return result;
+    }
+    const qint64 displayLookupMs = timer.restart();
+
+    CGImageRef displayImage = CGDisplayCreateImage(*displayId);
+    if (!displayImage) {
+        result.failureStage = "CGDisplayCreateImage";
+        result.details = QStringLiteral("displayLookupMs=%1").arg(displayLookupMs);
+        return result;
+    }
+    const qint64 displayCaptureMs = timer.restart();
+
+    const QImage image = createQImageFromCGImage(displayImage);
+    CGImageRelease(displayImage);
+    if (image.isNull()) {
+        result.failureStage = "createQImageFromCGImage";
+        result.details = QStringLiteral("displayLookupMs=%1 captureMs=%2")
+                             .arg(displayLookupMs)
+                             .arg(displayCaptureMs);
+        return result;
+    }
+    const qint64 imageConversionMs = timer.restart();
+
+    QPixmap pixmap = QPixmap::fromImage(image, Qt::NoOpaqueDetection);
+    if (pixmap.isNull()) {
+        result.failureStage = "QPixmap::fromImage";
+        result.details = QStringLiteral("displayLookupMs=%1 captureMs=%2 imageConversionMs=%3")
+                             .arg(displayLookupMs)
+                             .arg(displayCaptureMs)
+                             .arg(imageConversionMs);
+        return result;
+    }
+    const qint64 pixmapConversionMs = timer.restart();
+
+    const qreal dpr = screen->devicePixelRatio() > 0.0 ? screen->devicePixelRatio() : 1.0;
+    pixmap.setDevicePixelRatio(dpr);
+    const qint64 setDprMs = timer.elapsed();
+
+    result.pixmap = pixmap;
+    result.details = QStringLiteral(
+        "displayLookupMs=%1 captureMs=%2 imageConversionMs=%3 pixmapConversionMs=%4 setDprMs=%5")
+                         .arg(displayLookupMs)
+                         .arg(displayCaptureMs)
+                         .arg(imageConversionMs)
+                         .arg(pixmapConversionMs)
+                         .arg(setDprMs);
+    return result;
+}
+#endif
+
+ScreenSnapshotResult captureScreenSnapshot(QScreen* screen)
+{
+    if (!screen) {
+        return {};
+    }
+
+    ScreenSnapshotResult result;
+
+#ifdef Q_OS_MACOS
+    const NativeDisplaySnapshotResult nativeResult = captureScreenViaNativeDisplay(screen);
+    result.pixmap = nativeResult.pixmap;
+    result.details = nativeResult.details;
+    if (!result.pixmap.isNull()) {
+        result.stageName = "CGDisplayCreateImage";
+        return result;
+    }
+    if (nativeResult.failureStage) {
+        result.details = QStringLiteral("nativeFailureStage=%1 %2")
+                             .arg(QString::fromUtf8(nativeResult.failureStage),
+                                  nativeResult.details);
+    }
+#endif
+
+    result.pixmap = screen->grabWindow(0);
+    if (result.details.isEmpty()) {
+        result.details = QStringLiteral("fallback=QtGrabWindow");
+    } else {
+        result.details += QStringLiteral(" fallback=QtGrabWindow");
+    }
+    return result;
+}
 
 QScreen* fallbackReplayScreen()
 {
@@ -132,18 +328,24 @@ bool CaptureManager::startHistoryReplay(const QString& entryId)
         return false;
     }
 
-    if (m_windowDetector) {
-        m_windowDetector->setScreen(targetScreen);
-#ifdef Q_OS_MACOS
-        m_windowDetector->refreshWindowList();
-#else
-        m_windowDetector->refreshWindowListAsync();
-#endif
-    }
+    refreshWindowDetectorForCapture(targetScreen);
 
     QWidget* popup = QApplication::activePopupWidget();
     QWidget* modal = QApplication::activeModalWidget();
-    const QPixmap preCapture = targetScreen->grabWindow(0);
+    QElapsedTimer preCaptureTimer;
+    preCaptureTimer.start();
+    const ScreenSnapshotResult preCaptureResult = captureScreenSnapshot(targetScreen);
+    const QPixmap preCapture = preCaptureResult.pixmap;
+    if (preCaptureTimer.elapsed() >= kSlowGrabWindowWarningThresholdMs) {
+        logSlowCapturePath(
+            preCaptureResult.stageName,
+            preCaptureTimer.elapsed(),
+            QStringLiteral("context=historyReplay size=%1x%2 dpr=%3 %4")
+                .arg(targetScreen->geometry().width())
+                .arg(targetScreen->geometry().height())
+                .arg(targetScreen->devicePixelRatio(), 0, 'f', 2)
+                .arg(preCaptureResult.details));
+    }
 
     if (popup) {
         popup->close();
@@ -207,24 +409,29 @@ void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortc
         return;
     }
 
-    // 2. Prime window detection before we capture the screen.
-    // On macOS, transient UI such as menu-bar popups can disappear as soon as
-    // the capture overlay activates. Refresh synchronously here so the
-    // detector cache matches the same UI snapshot used for preCapture.
-    if (m_windowDetector) {
-        m_windowDetector->setScreen(targetScreen);
-#ifdef Q_OS_MACOS
-        m_windowDetector->refreshWindowList();
-#else
-        m_windowDetector->refreshWindowListAsync();
-#endif
-    }
+    // 2. Keep detector state in sync with the frame we capture.
+    refreshWindowDetectorForCapture(targetScreen);
 
     // 3. Capture screenshot while popup/modal is still visible
     QWidget *popup = QApplication::activePopupWidget();
     QWidget *modal = QApplication::activeModalWidget();
 
-    QPixmap preCapture = targetScreen->grabWindow(0);
+    QElapsedTimer preCaptureTimer;
+    preCaptureTimer.start();
+    const ScreenSnapshotResult preCaptureResult = captureScreenSnapshot(targetScreen);
+    QPixmap preCapture = preCaptureResult.pixmap;
+    if (preCaptureTimer.elapsed() >= kSlowGrabWindowWarningThresholdMs) {
+        logSlowCapturePath(
+            preCaptureResult.stageName,
+            preCaptureTimer.elapsed(),
+            QStringLiteral("context=%1 size=%2x%3 dpr=%4 %5")
+                .arg(mode == CaptureEntryMode::QuickPin ? QStringLiteral("quickPin")
+                                                        : QStringLiteral("regionCapture"))
+                .arg(targetScreen->geometry().width())
+                .arg(targetScreen->geometry().height())
+                .arg(targetScreen->devicePixelRatio(), 0, 'f', 2)
+                .arg(preCaptureResult.details));
+    }
 
     // 4. Close popup/modal AFTER screenshot
     if (popup) {
@@ -317,14 +524,12 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
     emit captureStarted();
 
     // Create RegionSelector
-    m_regionSelector = new RegionSelector();
-    m_regionSelector->setShowShortcutHintsOnEntry(false);
+    m_regionSelector = createRegionSelector(false);
 
     // Setup window detector if available
     // Use async version to avoid blocking UI startup
-    if (m_windowDetector) {
-        m_windowDetector->setScreen(screen);
-        m_windowDetector->refreshWindowListAsync();
+    if (m_windowDetector && screen) {
+        refreshWindowDetectorAsync(screen);
         m_regionSelector->setWindowDetector(m_windowDetector);
 
         // Trigger initial window highlight once the async window list is ready.
@@ -375,8 +580,7 @@ void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
                                               bool quickPinMode,
                                               bool showShortcutHintsOnEntry)
 {
-    m_regionSelector = new RegionSelector();
-    m_regionSelector->setShowShortcutHintsOnEntry(showShortcutHintsOnEntry);
+    m_regionSelector = createRegionSelector(showShortcutHintsOnEntry);
 
     if (quickPinMode) {
         m_regionSelector->setQuickPinMode(true);
@@ -415,4 +619,62 @@ void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
     // cursor was set before widget visibility, then Qt reset it to ArrowCursor
     m_regionSelector->ensureCrossCursor();
 
+}
+
+void CaptureManager::prewarmWindowDetector()
+{
+    if (!m_windowDetector) {
+        return;
+    }
+
+    QScreen *targetScreen = QGuiApplication::screenAt(QCursor::pos());
+    if (!targetScreen) {
+        targetScreen = QGuiApplication::primaryScreen();
+    }
+    if (!targetScreen) {
+        return;
+    }
+
+    refreshWindowDetectorAsync(targetScreen);
+}
+
+void CaptureManager::refreshWindowDetectorForCapture(QScreen *screen)
+{
+    if (!m_windowDetector || !screen) {
+        return;
+    }
+
+    m_windowDetector->setScreen(screen);
+#ifdef Q_OS_MACOS
+    m_windowDetector->refreshWindowList();
+#else
+    m_windowDetector->refreshWindowListAsync();
+#endif
+}
+
+void CaptureManager::refreshWindowDetectorAsync(QScreen *screen)
+{
+    if (!m_windowDetector || !screen) {
+        return;
+    }
+
+    m_windowDetector->setScreen(screen);
+    m_windowDetector->refreshWindowListAsync();
+}
+
+RegionSelector *CaptureManager::createRegionSelector(bool showShortcutHintsOnEntry)
+{
+    QElapsedTimer timer;
+    timer.start();
+    auto *selector = new RegionSelector();
+    const qint64 elapsedMs = timer.elapsed();
+    if (elapsedMs >= kSlowRegionSelectorConstructionWarningThresholdMs) {
+        logSlowCapturePath(
+            "RegionSelector construction",
+            elapsedMs,
+            QStringLiteral("screenCount=%1").arg(QGuiApplication::screens().size()));
+    }
+
+    selector->setShowShortcutHintsOnEntry(showShortcutHintsOnEntry);
+    return selector;
 }
