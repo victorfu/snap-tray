@@ -18,6 +18,7 @@
 #include "settings/WatermarkSettingsManager.h"
 #include "OCRManager.h"
 #include "ToolbarStyle.h"
+#include "qml/QmlToast.h"
 #include "qml/ThemeManager.h"
 #include "update/UpdateCoordinator.h"
 #include "update/UpdateSettingsManager.h"
@@ -87,6 +88,45 @@ AutoBlurSettingsManager::BlurType blurTypeFromUiIndex(int index)
     return (index == 1)
         ? AutoBlurSettingsManager::BlurType::Gaussian
         : AutoBlurSettingsManager::BlurType::Pixelate;
+}
+
+void showHotkeyRegistrationWarning(SnapTray::HotkeyManager& manager,
+                                   SnapTray::HotkeyAction action)
+{
+    const SnapTray::HotkeyConfig config = manager.getConfig(action);
+    if (config.status != SnapTray::HotkeyStatus::Failed) {
+        return;
+    }
+
+    const QString conflictDescription = manager.getConflictDescription(config.keySequence, action);
+    const QString message = conflictDescription.isEmpty()
+        ? SnapTray::SettingsBackend::tr(
+              "%1 was saved, but it could not be activated because the shortcut is already in use by another app or the system.")
+              .arg(config.displayName)
+        : SnapTray::SettingsBackend::tr("%1 was saved, but it could not be activated. %2")
+              .arg(config.displayName, conflictDescription);
+
+    SnapTray::QmlToast::screenToast().showToast(
+        SnapTray::QmlToast::Level::Warning,
+        SnapTray::SettingsBackend::tr("Hotkey Conflict"),
+        message,
+        4000);
+}
+
+void showRestoreAllHotkeyWarning(const QStringList& failedHotkeys)
+{
+    if (failedHotkeys.isEmpty()) {
+        return;
+    }
+
+    const QString message = SnapTray::SettingsBackend::tr(
+        "Defaults were restored, but these shortcuts are still inactive: %1")
+        .arg(failedHotkeys.join(QStringLiteral(", ")));
+    SnapTray::QmlToast::screenToast().showToast(
+        SnapTray::QmlToast::Level::Warning,
+        SnapTray::SettingsBackend::tr("Hotkey Conflict"),
+        message,
+        4500);
 }
 }
 
@@ -948,8 +988,12 @@ void SettingsBackend::editHotkey(int action)
     mgr.resumeRegistration();
 
     if (dialogResult == QDialog::Accepted) {
-        mgr.updateHotkey(static_cast<HotkeyAction>(action), dialog.keySequence());
+        const auto hotkeyAction = static_cast<HotkeyAction>(action);
+        const bool updated = mgr.updateHotkey(hotkeyAction, dialog.keySequence());
         emit hotkeysChanged();
+        if (!updated) {
+            showHotkeyRegistrationWarning(mgr, hotkeyAction);
+        }
     }
 }
 
@@ -963,14 +1007,19 @@ void SettingsBackend::clearHotkey(int action)
 void SettingsBackend::resetHotkey(int action)
 {
     auto& mgr = HotkeyManager::instance();
-    mgr.resetToDefault(static_cast<HotkeyAction>(action));
+    const auto hotkeyAction = static_cast<HotkeyAction>(action);
+    const bool reset = mgr.resetToDefault(hotkeyAction);
     emit hotkeysChanged();
+    if (!reset) {
+        showHotkeyRegistrationWarning(mgr, hotkeyAction);
+    }
 }
 
 void SettingsBackend::restoreAllHotkeys()
 {
-    HotkeyManager::instance().resetAllToDefaults();
+    const QStringList failedHotkeys = HotkeyManager::instance().resetAllToDefaults();
     emit hotkeysChanged();
+    showRestoreAllHotkeyWarning(failedHotkeys);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

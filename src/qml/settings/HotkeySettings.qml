@@ -174,6 +174,8 @@ Flickable {
                                     return qsTr("Conflict")
                                 if (modelData.status === 1)
                                     return qsTr("Active")
+                                if (modelData.status === 3)
+                                    return qsTr("Disabled")
                                 return qsTr("Not Set")
                             }
                             color: {

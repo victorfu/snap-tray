@@ -27,6 +27,10 @@ inline constexpr const char* kSettingsKeyPinFromImageHotkey = "pinFromImageHotke
 inline constexpr const char* kSettingsKeyHistoryWindowHotkey = "historyWindowHotkey";
 inline constexpr const char* kSettingsKeyTogglePinsVisibilityHotkey = "togglePinsVisibilityHotkey";
 inline constexpr const char* kSettingsKeyRecordFullScreenHotkey = "recordFullScreenHotkey";
+inline constexpr const char* kSettingsKeyHotkeyEnabledSuffix = "_enabled";
+inline constexpr const char* kSettingsKeyHotkeyRegistrationOrderSuffix = "_registrationOrder";
+inline constexpr const char* kSettingsKeyHotkeyRegistrationCounter =
+    "__meta/hotkeyRegistrationOrderCounter";
 
 // Hotkey default values
 inline constexpr const char* kDefaultHotkey = "F2";

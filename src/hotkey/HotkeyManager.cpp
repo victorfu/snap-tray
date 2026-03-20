@@ -12,6 +12,8 @@
 #include <QKeySequence>
 #include <QSettings>
 
+#include <algorithm>
+
 namespace SnapTray {
 
 namespace {
@@ -32,6 +34,11 @@ QString translateHotkeyText(const char* sourceText)
     }
 
     return source;
+}
+
+QString normalizeKeySequence(const QString& keySequence)
+{
+    return keySequence.toLower().simplified();
 }
 }  // namespace
 
@@ -69,16 +76,10 @@ void HotkeyManager::initialize()
     // Register all enabled hotkeys and update their status
     QStringList failedHotkeys;
     for (auto it = m_configs.begin(); it != m_configs.end(); ++it) {
-        HotkeyConfig& config = it.value();
+        refreshStatusAndRegistration(it.key());
 
-        if (config.keySequence.isEmpty()) {
-            config.status = HotkeyStatus::Unset;
-        } else if (!config.enabled) {
-            config.status = HotkeyStatus::Disabled;
-        } else if (registerHotkey(it.key())) {
-            config.status = HotkeyStatus::Registered;
-        } else {
-            config.status = HotkeyStatus::Failed;
+        const HotkeyConfig& config = it.value();
+        if (config.status == HotkeyStatus::Failed) {
             failedHotkeys << config.displayName;
         }
     }
@@ -105,6 +106,8 @@ void HotkeyManager::shutdown()
 void HotkeyManager::initializeConfigs()
 {
     m_configs.clear();
+    m_registrationOrders.clear();
+    m_nextRegistrationOrder = 1;
 
     for (size_t i = 0; i < kDefaultHotkeyCount; ++i) {
         const auto& meta = kDefaultHotkeys[i];
@@ -121,12 +124,14 @@ void HotkeyManager::initializeConfigs()
         config.status = HotkeyStatus::Unset;
 
         m_configs[meta.action] = config;
+        m_registrationOrders[meta.action] = 0;
     }
 }
 
 void HotkeyManager::loadFromSettings()
 {
     QSettings settings = getSettings();
+    quint64 highestRegistrationOrder = 0;
 
     for (auto it = m_configs.begin(); it != m_configs.end(); ++it) {
         HotkeyConfig& config = it.value();
@@ -136,16 +141,29 @@ void HotkeyManager::loadFromSettings()
         config.keySequence = storedValue;
 
         // Load enabled state (stored as "<key>_enabled")
-        QString enabledKey = config.settingsKey + QStringLiteral("_enabled");
+        const QString enabledKey = enabledSettingsKey(config);
         config.enabled = settings.value(enabledKey, true).toBool();
+
+        const QString registrationOrderKey = registrationOrderSettingsKey(config);
+        const quint64 registrationOrderValue =
+            settings.value(registrationOrderKey, 0).toULongLong();
+        m_registrationOrders[it.key()] = registrationOrderValue;
+        highestRegistrationOrder = std::max(highestRegistrationOrder, registrationOrderValue);
 
         // Update status based on configuration
         if (config.keySequence.isEmpty()) {
             config.status = HotkeyStatus::Unset;
         } else if (!config.enabled) {
             config.status = HotkeyStatus::Disabled;
+        } else {
+            config.status = HotkeyStatus::Failed;
         }
     }
+
+    const quint64 storedNextRegistrationOrder =
+        settings.value(QString::fromLatin1(kSettingsKeyHotkeyRegistrationCounter), 1).toULongLong();
+    m_nextRegistrationOrder = std::max<quint64>(
+        std::max<quint64>(storedNextRegistrationOrder, highestRegistrationOrder + 1), 1);
 }
 
 void HotkeyManager::saveToSettings(HotkeyAction action)
@@ -160,8 +178,128 @@ void HotkeyManager::saveToSettings(HotkeyAction action)
 
     settings.setValue(config.settingsKey, config.keySequence);
 
-    QString enabledKey = config.settingsKey + QStringLiteral("_enabled");
+    const QString enabledKey = enabledSettingsKey(config);
     settings.setValue(enabledKey, config.enabled);
+
+    const QString registrationOrderKey = registrationOrderSettingsKey(config);
+    const quint64 order = registrationOrder(action);
+    if (order == 0) {
+        settings.remove(registrationOrderKey);
+    } else {
+        settings.setValue(registrationOrderKey, order);
+    }
+    settings.setValue(QString::fromLatin1(kSettingsKeyHotkeyRegistrationCounter),
+                      m_nextRegistrationOrder);
+}
+
+QString HotkeyManager::enabledSettingsKey(const HotkeyConfig& config) const
+{
+    return config.settingsKey + QString::fromLatin1(kSettingsKeyHotkeyEnabledSuffix);
+}
+
+QString HotkeyManager::registrationOrderSettingsKey(const HotkeyConfig& config) const
+{
+    return config.settingsKey + QString::fromLatin1(kSettingsKeyHotkeyRegistrationOrderSuffix);
+}
+
+quint64 HotkeyManager::registrationOrder(HotkeyAction action) const
+{
+    return m_registrationOrders.value(action, 0);
+}
+
+bool HotkeyManager::hasHigherRegistrationPriority(HotkeyAction lhs, HotkeyAction rhs) const
+{
+    const quint64 lhsOrder = registrationOrder(lhs);
+    const quint64 rhsOrder = registrationOrder(rhs);
+    if (lhsOrder != rhsOrder) {
+        return lhsOrder > rhsOrder;
+    }
+
+    return static_cast<int>(lhs) < static_cast<int>(rhs);
+}
+
+std::optional<HotkeyAction> HotkeyManager::preferredConflictOwner(HotkeyAction action) const
+{
+    const auto configIt = m_configs.find(action);
+    if (configIt == m_configs.end()) {
+        return std::nullopt;
+    }
+
+    const HotkeyConfig& config = configIt.value();
+    if (config.keySequence.isEmpty() || !config.enabled) {
+        return std::nullopt;
+    }
+
+    const QString normalizedSequence = normalizeKeySequence(config.keySequence);
+    HotkeyAction preferredOwner = action;
+
+    for (auto it = m_configs.begin(); it != m_configs.end(); ++it) {
+        if (it.key() == action) {
+            continue;
+        }
+
+        const HotkeyConfig& other = it.value();
+        if (other.keySequence.isEmpty() || !other.enabled) {
+            continue;
+        }
+
+        if (normalizeKeySequence(other.keySequence) != normalizedSequence) {
+            continue;
+        }
+
+        if (hasHigherRegistrationPriority(it.key(), preferredOwner)) {
+            preferredOwner = it.key();
+        }
+    }
+
+    if (preferredOwner == action) {
+        return std::nullopt;
+    }
+
+    return preferredOwner;
+}
+
+void HotkeyManager::promoteRegistrationOrder(HotkeyAction action)
+{
+    m_registrationOrders[action] = m_nextRegistrationOrder++;
+}
+
+void HotkeyManager::clearRegistrationOrder(HotkeyAction action)
+{
+    m_registrationOrders[action] = 0;
+}
+
+void HotkeyManager::refreshStatusAndRegistration(HotkeyAction action, bool emitSignals)
+{
+    auto it = m_configs.find(action);
+    if (it == m_configs.end()) {
+        return;
+    }
+
+    HotkeyConfig& config = it.value();
+
+    unregisterHotkey(action);
+
+    if (config.keySequence.isEmpty()) {
+        config.status = HotkeyStatus::Unset;
+    } else if (!config.enabled) {
+        config.status = HotkeyStatus::Disabled;
+    } else if (preferredConflictOwner(action).has_value()) {
+        config.status = HotkeyStatus::Failed;
+    } else if (registerHotkey(action)) {
+        config.status = HotkeyStatus::Registered;
+        if (registrationOrder(action) == 0) {
+            promoteRegistrationOrder(action);
+            saveToSettings(action);
+        }
+    } else {
+        config.status = HotkeyStatus::Failed;
+    }
+
+    if (emitSignals) {
+        emit hotkeyChanged(action, config);
+        emit registrationStatusChanged(action, config.status);
+    }
 }
 
 HotkeyConfig HotkeyManager::getConfig(HotkeyAction action) const
@@ -209,7 +347,6 @@ bool HotkeyManager::updateHotkey(HotkeyAction action, const QString& keySequence
     }
 
     HotkeyConfig& config = it.value();
-    QString oldSequence = config.keySequence;
 
     // Unregister old hotkey if it exists
     unregisterHotkey(action);
@@ -220,37 +357,36 @@ bool HotkeyManager::updateHotkey(HotkeyAction action, const QString& keySequence
     if (keySequence.isEmpty()) {
         // Clearing the hotkey
         config.status = HotkeyStatus::Unset;
+        clearRegistrationOrder(action);
         saveToSettings(action);
         emit hotkeyChanged(action, config);
         emit registrationStatusChanged(action, config.status);
         return true;
     }
 
-    // Try to register the new hotkey
-    if (config.enabled && registerHotkey(action)) {
-        config.status = HotkeyStatus::Registered;
-        saveToSettings(action);
-        emit hotkeyChanged(action, config);
-        emit registrationStatusChanged(action, config.status);
-        return true;
-    }
-
-    // Registration failed - revert to old sequence and restore runtime status.
-    config.keySequence = oldSequence;
-
-    if (config.keySequence.isEmpty()) {
-        config.status = HotkeyStatus::Unset;
-    } else if (!config.enabled) {
+    if (!config.enabled) {
         config.status = HotkeyStatus::Disabled;
-    } else {
-        const bool restored = registerHotkey(action);
-        config.status = restored ? HotkeyStatus::Registered : HotkeyStatus::Failed;
+        clearRegistrationOrder(action);
+        saveToSettings(action);
+        emit hotkeyChanged(action, config);
+        emit registrationStatusChanged(action, config.status);
+        return true;
     }
 
+    const bool hasInternalConflict = preferredConflictOwner(action).has_value();
+    const bool registered = !hasInternalConflict && registerHotkey(action);
+    if (registered) {
+        config.status = HotkeyStatus::Registered;
+        promoteRegistrationOrder(action);
+    } else {
+        config.status = HotkeyStatus::Failed;
+        clearRegistrationOrder(action);
+    }
+
+    saveToSettings(action);
     emit hotkeyChanged(action, config);
     emit registrationStatusChanged(action, config.status);
-    // Requested update failed, even if rollback restored the previous hotkey.
-    return false;
+    return registered;
 }
 
 bool HotkeyManager::setHotkeyEnabled(HotkeyAction action, bool enabled)
@@ -268,16 +404,22 @@ bool HotkeyManager::setHotkeyEnabled(HotkeyAction action, bool enabled)
     config.enabled = enabled;
 
     if (enabled && !config.keySequence.isEmpty()) {
-        // Enable: try to register
-        if (registerHotkey(action)) {
+        const bool hasInternalConflict = preferredConflictOwner(action).has_value();
+        if (!hasInternalConflict && registerHotkey(action)) {
             config.status = HotkeyStatus::Registered;
+            promoteRegistrationOrder(action);
         } else {
             config.status = HotkeyStatus::Failed;
+            clearRegistrationOrder(action);
         }
     } else if (!enabled) {
         // Disable: unregister
         unregisterHotkey(action);
         config.status = HotkeyStatus::Disabled;
+        clearRegistrationOrder(action);
+    } else {
+        config.status = HotkeyStatus::Unset;
+        clearRegistrationOrder(action);
     }
 
     saveToSettings(action);
@@ -298,11 +440,39 @@ bool HotkeyManager::resetToDefault(HotkeyAction action)
     return updateHotkey(action, config.defaultKeySequence);
 }
 
-void HotkeyManager::resetAllToDefaults()
+QStringList HotkeyManager::resetAllToDefaults()
 {
-    for (auto it = m_configs.begin(); it != m_configs.end(); ++it) {
-        resetToDefault(it.key());
+    const QList<HotkeyAction> actions = m_configs.keys();
+
+    unregisterAllHotkeys();
+    for (HotkeyAction action : actions) {
+        auto it = m_configs.find(action);
+        if (it == m_configs.end()) {
+            continue;
+        }
+
+        HotkeyConfig& config = it.value();
+        config.enabled = true;
+        config.keySequence = config.defaultKeySequence;
+        clearRegistrationOrder(action);
+        saveToSettings(action);
     }
+
+    QStringList failedHotkeys;
+    for (HotkeyAction action : actions) {
+        refreshStatusAndRegistration(action);
+
+        const HotkeyConfig& config = m_configs.value(action);
+        saveToSettings(action);
+        emit hotkeyChanged(action, config);
+        emit registrationStatusChanged(action, config.status);
+
+        if (config.status == HotkeyStatus::Failed) {
+            failedHotkeys << config.displayName;
+        }
+    }
+
+    return failedHotkeys;
 }
 
 void HotkeyManager::suspendRegistration()
@@ -334,7 +504,8 @@ std::optional<HotkeyAction> HotkeyManager::hasConflict(const QString& keySequenc
         return std::nullopt;
     }
 
-    QString normalizedSequence = keySequence.toLower().simplified();
+    const QString normalizedSequence = normalizeKeySequence(keySequence);
+    std::optional<HotkeyAction> preferredConflict;
 
     for (auto it = m_configs.begin(); it != m_configs.end(); ++it) {
         if (excludeAction && it.key() == *excludeAction) {
@@ -346,13 +517,15 @@ std::optional<HotkeyAction> HotkeyManager::hasConflict(const QString& keySequenc
             continue;
         }
 
-        QString otherNormalized = config.keySequence.toLower().simplified();
+        const QString otherNormalized = normalizeKeySequence(config.keySequence);
         if (normalizedSequence == otherNormalized) {
-            return it.key();
+            if (!preferredConflict || hasHigherRegistrationPriority(it.key(), *preferredConflict)) {
+                preferredConflict = it.key();
+            }
         }
     }
 
-    return std::nullopt;
+    return preferredConflict;
 }
 
 QString HotkeyManager::getConflictDescription(const QString& keySequence,
