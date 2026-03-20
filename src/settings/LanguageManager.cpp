@@ -21,6 +21,7 @@ QVector<LanguageInfo> LanguageManager::availableLanguages() const
         {QStringLiteral("zh_CN"), QStringLiteral("\u7B80\u4F53\u4E2D\u6587")},
         {QStringLiteral("ja"),    QStringLiteral("\u65E5\u672C\u8A9E")},
         {QStringLiteral("ko"),    QStringLiteral("\uD55C\uAD6D\uC5B4")},
+        {QStringLiteral("th"),    QStringLiteral("\u0E44\u0E17\u0E22")},
         {QStringLiteral("ar"),    QStringLiteral("\u0627\u0644\u0639\u0631\u0628\u064A\u0629")},
         {QStringLiteral("cs"),    QStringLiteral("\u010De\u0161tina")},
         {QStringLiteral("de"),    QStringLiteral("Deutsch")},

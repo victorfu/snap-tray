@@ -57,7 +57,7 @@ void tst_SettingsBackend::testAvailableLanguages_PrioritizesConfiguredAsianLangu
     const SettingsBackend backend;
     const QVariantList languages = backend.availableLanguages();
 
-    QVERIFY(languages.size() >= 6);
+    QVERIFY(languages.size() >= 7);
 
     const QStringList expectedLeadingCodes = {
         QStringLiteral("en"),
@@ -66,6 +66,7 @@ void tst_SettingsBackend::testAvailableLanguages_PrioritizesConfiguredAsianLangu
         QStringLiteral("zh_CN"),
         QStringLiteral("ja"),
         QStringLiteral("ko"),
+        QStringLiteral("th"),
     };
 
     QStringList actualCodes;

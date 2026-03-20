@@ -1235,6 +1235,7 @@ set(TS_FILES
     translations/snaptray_ru.ts
     translations/snaptray_sr.ts
     translations/snaptray_sv.ts
+    translations/snaptray_th.ts
     translations/snaptray_tr.ts
     translations/snaptray_vi.ts
     translations/snaptray_zh_CN.ts
