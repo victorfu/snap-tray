@@ -418,6 +418,11 @@ bool QmlWindowedToolbar::eventFilter(QObject* obj, QEvent* event)
         case QEvent::Close:
             hideTooltip();
             CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+            if (m_associatedPinWindow) {
+                QTimer::singleShot(0, this, [this]() {
+                    CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_associatedPinWindow);
+                });
+            }
             break;
         default:
             break;

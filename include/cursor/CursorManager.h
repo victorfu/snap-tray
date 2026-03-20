@@ -52,6 +52,8 @@ enum class HoverTarget {
     Toolbar,        // Hovering over toolbar background
     ToolbarButton,  // Hovering over toolbar button
     ResizeHandle,   // Hovering over resize handle
+    WindowEdge,     // Hovering over a PinWindow resize edge
+    SelectionBody,  // Hovering over the completed selection body
     GizmoHandle,    // Hovering over gizmo rotation/scale handle
     Annotation,     // Hovering over annotation
     ColorPalette,   // Hovering over color palette

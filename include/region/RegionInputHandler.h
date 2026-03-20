@@ -113,8 +113,8 @@ private:
 
     // Mouse release helpers
     bool handleTextEditorRelease(const QPoint& pos);
-    bool handleEmojiStickerRelease();
-    bool handleArrowAnnotationRelease();
+    bool handleEmojiStickerRelease(const QPoint& pos);
+    bool handleArrowAnnotationRelease(const QPoint& pos);
     void handleSelectionRelease(const QPoint& pos);
     void handleAnnotationRelease();
 
@@ -187,7 +187,7 @@ private:
     PolylineAnnotation* getSelectedPolylineAnnotation() const;
     bool handlePolylineAnnotationPress(const QPoint& pos);
     bool handlePolylineAnnotationMove(const QPoint& pos);
-    bool handlePolylineAnnotationRelease();
+    bool handlePolylineAnnotationRelease(const QPoint& pos);
 
     // Keyboard modifiers from current event (for angle snapping)
     Qt::KeyboardModifiers m_currentModifiers = Qt::NoModifier;

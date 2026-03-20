@@ -318,7 +318,7 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
         }
 
         // Handle emoji sticker drag/scale release
-        if (handleEmojiStickerRelease()) {
+        if (handleEmojiStickerRelease(event->pos())) {
             return;
         }
 
@@ -328,12 +328,12 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
         }
 
         // Handle arrow annotation drag/handle release
-        if (handleArrowAnnotationRelease()) {
+        if (handleArrowAnnotationRelease(event->pos())) {
             return;
         }
 
         // Handle polyline annotation drag/vertex release
-        if (handlePolylineAnnotationRelease()) {
+        if (handlePolylineAnnotationRelease(event->pos())) {
             return;
         }
 
@@ -899,7 +899,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
 
         // Check if hovering inside selection for move (displays SizeAllCursor)
         if (m_selectionManager->hitTestMove(pos)) {
-            cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::Annotation);
+            cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::SelectionBody);
             return;
         }
     }
@@ -1082,7 +1082,7 @@ bool RegionInputHandler::handleTextEditorRelease(const QPoint& pos)
     return false;
 }
 
-bool RegionInputHandler::handleEmojiStickerRelease()
+bool RegionInputHandler::handleEmojiStickerRelease(const QPoint& pos)
 {
     if (m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating) {
         m_isEmojiDragging = false;
@@ -1093,6 +1093,7 @@ bool RegionInputHandler::handleEmojiStickerRelease()
         m_emojiStartAngle = 0.0;
         // Reset input state to let hover logic take over (consistent with arrow/polyline)
         CursorManager::instance().setInputStateForWidget(m_parentWidget,InputState::Idle);
+        syncHoverCursorAt(pos);
         return true;
     }
     return false;
@@ -1413,7 +1414,7 @@ bool RegionInputHandler::handleArrowAnnotationMove(const QPoint& pos)
     return true;
 }
 
-bool RegionInputHandler::handleArrowAnnotationRelease()
+bool RegionInputHandler::handleArrowAnnotationRelease(const QPoint& pos)
 {
     if (!m_isArrowDragging) {
         return false;
@@ -1423,6 +1424,7 @@ bool RegionInputHandler::handleArrowAnnotationRelease()
     m_activeArrowHandle = GizmoHandle::None;
     // Reset input state to let hover logic take over
     CursorManager::instance().setInputStateForWidget(m_parentWidget,InputState::Idle);
+    syncHoverCursorAt(pos);
     return true;
 }
 
@@ -1514,12 +1516,13 @@ bool RegionInputHandler::handlePolylineAnnotationMove(const QPoint& pos) {
     return false;
 }
 
-bool RegionInputHandler::handlePolylineAnnotationRelease() {
+bool RegionInputHandler::handlePolylineAnnotationRelease(const QPoint& pos) {
     if (m_isPolylineDragging) {
         m_isPolylineDragging = false;
         m_activePolylineVertexIndex = -1;
         // Reset input state to let hover logic take over
         CursorManager::instance().setInputStateForWidget(m_parentWidget,InputState::Idle);
+        syncHoverCursorAt(pos);
         emit updateRequested();
         return true;
     }

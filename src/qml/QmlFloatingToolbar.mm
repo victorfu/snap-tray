@@ -571,6 +571,11 @@ bool QmlFloatingToolbar::eventFilter(QObject* obj, QEvent* event)
         case QEvent::Close:
             hideTooltip();
             CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+            if (m_parentWidget) {
+                QTimer::singleShot(0, this, [this]() {
+                    CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_parentWidget);
+                });
+            }
             break;
         default:
             break;

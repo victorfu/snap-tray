@@ -426,6 +426,7 @@ PinWindow::PinWindow(const QPixmap& screenshot,
 
     // Register immediately so drag/resize cursor states work before toolbar init.
     CursorManager::instance().registerWidget(this);
+    CursorManager::instance().pushCursorForWidget(this, CursorContext::Tool, Qt::ArrowCursor);
 
     // Initialize components
     m_resizeHandler = new ResizeHandler(0, kMinPinSize, this);
@@ -1970,8 +1971,8 @@ void PinWindow::paintEvent(QPaintEvent*)
 
 void PinWindow::enterEvent(QEnterEvent* event)
 {
-    if (m_annotationMode) {
-        restoreAnnotationCursorAt(event->position().toPoint());
+    if (!isRegionLayoutMode()) {
+        rebuildManagedCursorAt(event->position().toPoint());
     }
     QWidget::enterEvent(event);
 }
@@ -2299,7 +2300,7 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
         if (!m_annotationMode) {
             ResizeHandler::Edge edge = m_resizeHandler->getEdgeAt(event->pos(), size());
             if (edge != ResizeHandler::Edge::None) {
-                cm.setHoverTargetForWidget(this, HoverTarget::ResizeHandle, static_cast<int>(edge));
+                cm.setHoverTargetForWidget(this, HoverTarget::WindowEdge, static_cast<int>(edge));
             } else {
                 cm.setHoverTargetForWidget(this, HoverTarget::None);
             }
@@ -2408,14 +2409,12 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
         if (m_isResizing) {
             m_isResizing = false;
             m_resizeHandler->finishResize();
+            rebuildManagedCursorAt(event->pos());
         }
         if (m_isDragging) {
             m_isDragging = false;
             CursorManager::instance().setDragStateForWidget(this, DragState::None);
-            if (m_annotationMode) {
-                // Refresh tool cursor after drag ends
-                updateCursorForTool();
-            }
+            rebuildManagedCursorAt(event->pos());
         }
         if (m_clickThrough) {
             updateClickThroughForCursor();
@@ -2965,25 +2964,18 @@ void PinWindow::enterAnnotationMode()
 
     m_annotationMode = true;
     CursorManager::instance().clearAllForWidget(this);
-    updateCursorForTool();
+    CursorManager::instance().resetStateForWidget(this);
+    rebuildManagedCursorAt(mapFromGlobal(QCursor::pos()));
     update();
 }
 
 void PinWindow::updateCursorForTool()
 {
-    auto& cursorManager = CursorManager::instance();
-
-    if (!m_annotationMode) {
-        cursorManager.clearAllForWidget(this);
+    if (isRegionLayoutMode()) {
         return;
     }
 
-    if (m_toolManager) {
-        cursorManager.updateToolCursorForWidget(this);
-    } else {
-        cursorManager.pushCursorForWidget(this, CursorContext::Tool, Qt::CrossCursor);
-    }
-    cursorManager.reapplyCursorForWidget(this);
+    rebuildManagedCursorAt(mapFromGlobal(QCursor::pos()));
 }
 
 void PinWindow::exitAnnotationMode()
@@ -2994,7 +2986,8 @@ void PinWindow::exitAnnotationMode()
 
     m_annotationMode = false;
     m_currentToolId = ToolId::Selection;
-    CursorManager::instance().clearAllForWidget(this);
+    CursorManager::instance().clearAllForWidget(this, Qt::ArrowCursor);
+    CursorManager::instance().resetStateForWidget(this);
 
     if (m_toolbar) {
         m_toolbar->viewModel()->setActiveTool(-1);
@@ -3003,6 +2996,7 @@ void PinWindow::exitAnnotationMode()
     // Hide sub-toolbar when exiting annotation mode
     hideSubToolbar();
 
+    rebuildManagedCursorAt(mapFromGlobal(QCursor::pos()));
     update();
 }
 
@@ -3578,39 +3572,52 @@ void PinWindow::syncFloatingUiCursor()
         authority.clearWidgetRequest(this, QStringLiteral("floating.overlay.emoji"));
     }
 
-    const QPoint localPos = mapFromGlobal(globalPos);
-    if (!rect().contains(localPos)) {
-        cursorManager.popCursorForWidget(this, CursorContext::Override);
-        cursorManager.setHoverTargetForWidget(this, HoverTarget::None);
-        return;
-    }
-
-    restoreAnnotationCursorAt(localPos);
+    rebuildManagedCursorAt(mapFromGlobal(globalPos));
 }
 
-void PinWindow::restoreAnnotationCursorAt(const QPoint& localPos)
+void PinWindow::rebuildManagedCursorAt(const QPoint& localPos)
 {
-    auto& cursorManager = CursorManager::instance();
-
-    if (!m_annotationMode) {
-        cursorManager.popCursorForWidget(this, CursorContext::Override);
+    if (isRegionLayoutMode()) {
         return;
     }
 
-    if (m_toolManager) {
-        cursorManager.updateToolCursorForWidget(this);
-    } else {
-        cursorManager.pushCursorForWidget(this, CursorContext::Tool, Qt::CrossCursor);
-    }
+    auto& cursorManager = CursorManager::instance();
 
-    if (rect().contains(localPos)) {
-        updateAnnotationCursor(localPos);
+    if (m_annotationMode) {
+        if (m_toolManager) {
+            cursorManager.updateToolCursorForWidget(this);
+        } else {
+            cursorManager.pushCursorForWidget(this, CursorContext::Tool, Qt::CrossCursor);
+        }
+
+        if (rect().contains(localPos)) {
+            updateAnnotationCursor(localPos);
+        } else {
+            cursorManager.setHoverTargetForWidget(this, HoverTarget::None);
+        }
     } else {
-        cursorManager.setHoverTargetForWidget(this, HoverTarget::None);
+        cursorManager.pushCursorForWidget(this, CursorContext::Tool, Qt::ArrowCursor);
+
+        if (rect().contains(localPos) && m_resizeHandler) {
+            ResizeHandler::Edge edge = m_resizeHandler->getEdgeAt(localPos, size());
+            if (edge != ResizeHandler::Edge::None) {
+                cursorManager.setHoverTargetForWidget(
+                    this, HoverTarget::WindowEdge, static_cast<int>(edge));
+            } else {
+                cursorManager.setHoverTargetForWidget(this, HoverTarget::None);
+            }
+        } else {
+            cursorManager.setHoverTargetForWidget(this, HoverTarget::None);
+        }
     }
 
     cursorManager.popCursorForWidget(this, CursorContext::Override);
     cursorManager.reapplyCursorForWidget(this);
+}
+
+void PinWindow::restoreAnnotationCursorAt(const QPoint& localPos)
+{
+    rebuildManagedCursorAt(localPos);
 }
 
 QWidget* PinWindow::annotationHostWidget() const
@@ -4207,7 +4214,6 @@ bool PinWindow::handleEmojiStickerAnnotationMove(const QPoint& pos)
 
 bool PinWindow::handleEmojiStickerAnnotationRelease(const QPoint& pos)
 {
-    Q_UNUSED(pos);
     if (!m_isEmojiDragging && !m_isEmojiScaling && !m_isEmojiRotating) {
         return false;
     }
@@ -4219,6 +4225,7 @@ bool PinWindow::handleEmojiStickerAnnotationRelease(const QPoint& pos)
     m_emojiStartDistance = 0.0;
     m_emojiStartAngle = 0.0;
     CursorManager::instance().setInputStateForWidget(this, InputState::Idle);
+    rebuildManagedCursorAt(pos);
     update();
     return true;
 }
@@ -4486,18 +4493,25 @@ ArrowAnnotation* PinWindow::getSelectedArrowAnnotation()
 
 bool PinWindow::handleArrowAnnotationPress(const QPoint& pos)
 {
+    auto& cursorManager = CursorManager::instance();
+
     // Use mapped position (Original Coords)
     QPoint mappedPos = mapToOriginalCoords(pos);
 
     if (auto* arrowItem = getSelectedArrowAnnotation()) {
         GizmoHandle handle = TransformationGizmo::hitTest(arrowItem, mappedPos);
         if (handle != GizmoHandle::None) {
-             m_isArrowDragging = true;
-             m_arrowDragHandle = handle;
-             m_annotationDragStartPos = mappedPos;
-             // Set appropriate cursor based on handle if needed
-             update(); 
-             return true;
+            m_isArrowDragging = true;
+            m_arrowDragHandle = handle;
+            m_annotationDragStartPos = mappedPos;
+            if (handle == GizmoHandle::Body) {
+                cursorManager.setInputStateForWidget(this, InputState::Moving);
+            } else {
+                cursorManager.setHoverTargetForWidget(
+                    this, HoverTarget::GizmoHandle, static_cast<int>(handle));
+            }
+            update();
+            return true;
         }
     }
 
@@ -4512,11 +4526,17 @@ bool PinWindow::handleArrowAnnotationPress(const QPoint& pos)
         // Refine potential handle hit
         if (auto* arrowItem = getSelectedArrowAnnotation()) {
              GizmoHandle handle = TransformationGizmo::hitTest(arrowItem, mappedPos);
-             if (handle != GizmoHandle::None) {
-                 m_arrowDragHandle = handle;
-             }
+            if (handle != GizmoHandle::None) {
+                m_arrowDragHandle = handle;
+            }
         }
-        
+
+        if (m_arrowDragHandle == GizmoHandle::Body) {
+            cursorManager.setInputStateForWidget(this, InputState::Moving);
+        } else {
+            cursorManager.setHoverTargetForWidget(
+                this, HoverTarget::GizmoHandle, static_cast<int>(m_arrowDragHandle));
+        }
         update();
         return true;
     }
@@ -4557,11 +4577,11 @@ bool PinWindow::handleArrowAnnotationMove(const QPoint& pos)
 
 bool PinWindow::handleArrowAnnotationRelease(const QPoint& pos)
 {
-    Q_UNUSED(pos);
     if (m_isArrowDragging) {
         m_isArrowDragging = false;
         m_arrowDragHandle = GizmoHandle::None;
-        updateCursorForTool(); // Restore tool cursor
+        CursorManager::instance().setInputStateForWidget(this, InputState::Idle);
+        rebuildManagedCursorAt(pos);
         update();
         return true;
     }
@@ -4580,6 +4600,8 @@ PolylineAnnotation* PinWindow::getSelectedPolylineAnnotation()
 
 bool PinWindow::handlePolylineAnnotationPress(const QPoint& pos)
 {
+    auto& cursorManager = CursorManager::instance();
+
     // Use mapped position (Original Coords)
     QPoint mappedPos = mapToOriginalCoords(pos);
 
@@ -4590,15 +4612,18 @@ bool PinWindow::handlePolylineAnnotationPress(const QPoint& pos)
             m_isPolylineDragging = true;
             m_activePolylineVertexIndex = vertexIndex;
             m_annotationDragStartPos = mappedPos;
+            cursorManager.setHoverTargetForWidget(
+                this, HoverTarget::GizmoHandle, static_cast<int>(GizmoHandle::ArrowStart));
             update();
             return true;
         } else if (vertexIndex == -1) {
-             // Body hit
-             m_isPolylineDragging = true;
-             m_activePolylineVertexIndex = -1;
-             m_annotationDragStartPos = mappedPos;
-             update();
-             return true;
+            // Body hit
+            m_isPolylineDragging = true;
+            m_activePolylineVertexIndex = -1;
+            m_annotationDragStartPos = mappedPos;
+            cursorManager.setInputStateForWidget(this, InputState::Moving);
+            update();
+            return true;
         }
     }
 
@@ -4612,12 +4637,18 @@ bool PinWindow::handlePolylineAnnotationPress(const QPoint& pos)
 
         // Check if we actually hit a vertex though
         if (auto* polylineItem = getSelectedPolylineAnnotation()) {
-             int vertexIndex = TransformationGizmo::hitTestVertex(polylineItem, mappedPos);
-             if (vertexIndex >= 0) {
-                 m_activePolylineVertexIndex = vertexIndex;
-             }
+            int vertexIndex = TransformationGizmo::hitTestVertex(polylineItem, mappedPos);
+            if (vertexIndex >= 0) {
+                m_activePolylineVertexIndex = vertexIndex;
+            }
         }
-        
+
+        if (m_activePolylineVertexIndex >= 0) {
+            cursorManager.setHoverTargetForWidget(
+                this, HoverTarget::GizmoHandle, static_cast<int>(GizmoHandle::ArrowStart));
+        } else {
+            cursorManager.setInputStateForWidget(this, InputState::Moving);
+        }
         update();
         return true;
     }
@@ -4651,11 +4682,11 @@ bool PinWindow::handlePolylineAnnotationMove(const QPoint& pos)
 
 bool PinWindow::handlePolylineAnnotationRelease(const QPoint& pos)
 {
-    Q_UNUSED(pos);
     if (m_isPolylineDragging) {
         m_isPolylineDragging = false;
         m_activePolylineVertexIndex = -1;
-        updateCursorForTool();
+        CursorManager::instance().setInputStateForWidget(this, InputState::Idle);
+        rebuildManagedCursorAt(pos);
         update();
         return true;
     }
@@ -4841,6 +4872,8 @@ void PinWindow::exitRegionLayoutMode(bool apply)
     }
 
     m_regionLayoutManager->exitLayoutMode(apply);
+    CursorAuthority::instance().clearWidgetRequest(this, QStringLiteral("pin.layout"));
+    rebuildManagedCursorAt(mapFromGlobal(QCursor::pos()));
     update();
 }
 

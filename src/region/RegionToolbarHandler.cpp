@@ -86,6 +86,9 @@ void RegionToolbarHandler::handleSelectionTool(ToolId button)
 {
     m_currentTool = button;
     m_showSubToolbar = true;
+    if (m_toolManager) {
+        m_toolManager->setCurrentTool(button);
+    }
     emit toolChanged(m_currentTool, m_showSubToolbar);
     emit updateRequested();
 }

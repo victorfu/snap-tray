@@ -286,6 +286,11 @@ bool QmlOverlayPanel::eventFilter(QObject* watched, QEvent* event)
         case QEvent::Hide:
         case QEvent::Close:
             CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+            if (m_parentWidget) {
+                QTimer::singleShot(0, this, [this]() {
+                    CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_parentWidget);
+                });
+            }
             break;
         default:
             break;

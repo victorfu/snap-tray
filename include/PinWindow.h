@@ -248,6 +248,7 @@ private:
     void hideSubToolbar();
     void showEmojiPickerPopup();
     bool isGlobalPosOverFloatingUi(const QPoint& globalPos) const;
+    void rebuildManagedCursorAt(const QPoint& localPos);
     void restoreAnnotationCursorAt(const QPoint& localPos);
     void syncFloatingUiCursor();
     void applyCrop(const QRect& cropRect);

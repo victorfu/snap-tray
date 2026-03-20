@@ -734,6 +734,8 @@ RegionSelector::RegionSelector(QWidget* parent)
             // Quick Pin mode: directly pin without showing toolbar
             if (m_quickPinMode && !m_inputState.multiRegionMode) {
                 finishSelection();
+            } else {
+                syncFloatingUiCursor();
             }
         });
     connect(m_inputHandler, &RegionInputHandler::fullScreenSelectionRequested,
@@ -757,6 +759,8 @@ RegionSelector::RegionSelector(QWidget* parent)
             // Quick Pin mode: directly pin without showing toolbar
             if (m_quickPinMode && !m_inputState.multiRegionMode) {
                 finishSelection();
+            } else {
+                syncFloatingUiCursor();
             }
         });
     connect(m_inputHandler, &RegionInputHandler::detectionCleared,
@@ -799,6 +803,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             m_inputState.showSubToolbar = showSubToolbar;
             m_toolbarViewModel->setActiveTool(showSubToolbar ? static_cast<int>(tool) : -1);
             syncRegionSubToolbar(true);
+            QTimer::singleShot(0, this, &RegionSelector::syncFloatingUiCursor);
         });
     connect(m_toolbarHandler, &RegionToolbarHandler::updateRequested,
         this, qOverload<>(&QWidget::update));
@@ -1995,6 +2000,9 @@ void RegionSelector::beginMultiRegionReplace(int index)
     }
 
     m_inputState.currentTool = ToolId::Selection;
+    if (m_toolManager) {
+        m_toolManager->setCurrentTool(ToolId::Selection);
+    }
     m_inputState.showSubToolbar = false;
     m_inputState.replaceTargetIndex = index;
     syncRegionSubToolbar(true);
@@ -2003,6 +2011,7 @@ void RegionSelector::beginMultiRegionReplace(int index)
     m_multiRegionManager->setActiveIndex(index);
     m_selectionManager->clearSelection();
     m_selectionManager->setSelectionRect(m_replaceOriginalRect);
+    syncFloatingUiCursor();
     update();
 }
 
@@ -2757,6 +2766,9 @@ void RegionSelector::setMultiRegionMode(bool enabled)
         }
         m_annotationLayer->clear();
         m_inputState.currentTool = ToolId::Selection;
+        if (m_toolManager) {
+            m_toolManager->setCurrentTool(ToolId::Selection);
+        }
         m_inputState.showSubToolbar = false;
         syncRegionSubToolbar(true);
         if (m_multiRegionListViewModel) {
@@ -2767,6 +2779,7 @@ void RegionSelector::setMultiRegionMode(bool enabled)
             positionMultiRegionListPanel();
         }
         refreshMultiRegionListPanel();
+        syncFloatingUiCursor();
     }
     else {
         m_multiRegionManager->clear();

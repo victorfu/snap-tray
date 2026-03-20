@@ -241,6 +241,11 @@ bool QmlEmojiPickerPopup::eventFilter(QObject* obj, QEvent* event)
             event->type() == QEvent::Hide ||
             event->type() == QEvent::Close) {
             CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+            if (m_parentWidget) {
+                QTimer::singleShot(0, this, [this]() {
+                    CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_parentWidget);
+                });
+            }
         }
         return false;
     }
