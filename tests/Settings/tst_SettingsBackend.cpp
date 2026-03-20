@@ -18,6 +18,7 @@ private slots:
     void init();
     void cleanup();
 
+    void testAvailableLanguages_PrioritizesConfiguredAsianLanguages();
     void testNormalizeRecordingAudioSettings_PreservesUnavailableLoadedDevice();
     void testBlurTypeMapping_RoundTripMatchesUiIndices();
     void testCheckForUpdates_UnsupportedInstallSource_EmitsUnavailable();
@@ -49,6 +50,34 @@ void tst_SettingsBackend::clearTestSettings()
     settings.remove("general/startOnLogin");
     settings.remove("update/lastCheckTime");
     settings.sync();
+}
+
+void tst_SettingsBackend::testAvailableLanguages_PrioritizesConfiguredAsianLanguages()
+{
+    const SettingsBackend backend;
+    const QVariantList languages = backend.availableLanguages();
+
+    QVERIFY(languages.size() >= 6);
+
+    const QStringList expectedLeadingCodes = {
+        QStringLiteral("en"),
+        QStringLiteral("zh_TW"),
+        QStringLiteral("zh_HK"),
+        QStringLiteral("zh_CN"),
+        QStringLiteral("ja"),
+        QStringLiteral("ko"),
+    };
+
+    QStringList actualCodes;
+    actualCodes.reserve(languages.size());
+    for (const QVariant& language : languages) {
+        actualCodes.append(language.toMap().value(QStringLiteral("code")).toString());
+    }
+
+    QCOMPARE(actualCodes.first(expectedLeadingCodes.size()), expectedLeadingCodes);
+    QVERIFY(actualCodes.indexOf(QStringLiteral("ar")) < actualCodes.indexOf(QStringLiteral("cs")));
+    QVERIFY(actualCodes.indexOf(QStringLiteral("pt")) < actualCodes.indexOf(QStringLiteral("pt_PT")));
+    QCOMPARE(actualCodes.last(), QStringLiteral("vi"));
 }
 
 void tst_SettingsBackend::testNormalizeRecordingAudioSettings_PreservesUnavailableLoadedDevice()

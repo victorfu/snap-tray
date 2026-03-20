@@ -16,6 +16,11 @@ QVector<LanguageInfo> LanguageManager::availableLanguages() const
 {
     return {
         {QStringLiteral("en"),    QStringLiteral("English")},
+        {QStringLiteral("zh_TW"), QStringLiteral("\u7E41\u9AD4\u4E2D\u6587\uFF08\u53F0\u7063\uFF09")},
+        {QStringLiteral("zh_HK"), QStringLiteral("\u7E41\u9AD4\u4E2D\u6587\uFF08\u9999\u6E2F\uFF09")},
+        {QStringLiteral("zh_CN"), QStringLiteral("\u7B80\u4F53\u4E2D\u6587")},
+        {QStringLiteral("ja"),    QStringLiteral("\u65E5\u672C\u8A9E")},
+        {QStringLiteral("ko"),    QStringLiteral("\uD55C\uAD6D\uC5B4")},
         {QStringLiteral("ar"),    QStringLiteral("\u0627\u0644\u0639\u0631\u0628\u064A\u0629")},
         {QStringLiteral("cs"),    QStringLiteral("\u010De\u0161tina")},
         {QStringLiteral("de"),    QStringLiteral("Deutsch")},
@@ -24,8 +29,6 @@ QVector<LanguageInfo> LanguageManager::availableLanguages() const
         {QStringLiteral("fi"),    QStringLiteral("suomi")},
         {QStringLiteral("fr"),    QStringLiteral("fran\u00E7ais")},
         {QStringLiteral("it"),    QStringLiteral("italiano")},
-        {QStringLiteral("ja"),    QStringLiteral("\u65E5\u672C\u8A9E")},
-        {QStringLiteral("ko"),    QStringLiteral("\uD55C\uAD6D\uC5B4")},
         {QStringLiteral("lt"),    QStringLiteral("lietuvi\u0173")},
         {QStringLiteral("nl"),    QStringLiteral("Nederlands")},
         {QStringLiteral("pl"),    QStringLiteral("polski")},
@@ -36,9 +39,6 @@ QVector<LanguageInfo> LanguageManager::availableLanguages() const
         {QStringLiteral("sv"),    QStringLiteral("svenska")},
         {QStringLiteral("tr"),    QStringLiteral("T\u00FCrk\u00E7e")},
         {QStringLiteral("vi"),    QStringLiteral("Ti\u1EBFng Vi\u1EC7t")},
-        {QStringLiteral("zh_CN"), QStringLiteral("\u7B80\u4F53\u4E2D\u6587")},
-        {QStringLiteral("zh_HK"), QStringLiteral("\u7E41\u9AD4\u4E2D\u6587\uFF08\u9999\u6E2F\uFF09")},
-        {QStringLiteral("zh_TW"), QStringLiteral("\u7E41\u9AD4\u4E2D\u6587\uFF08\u53F0\u7063\uFF09")},
     };
 }
 
