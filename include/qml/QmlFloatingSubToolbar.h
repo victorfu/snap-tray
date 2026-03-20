@@ -69,6 +69,7 @@ signals:
 private:
     void ensureView();
     void applyPlatformWindowFlags();
+    void syncTransientParent();
     void syncCursorSurface();
     bool eventFilter(QObject* obj, QEvent* event) override;
 

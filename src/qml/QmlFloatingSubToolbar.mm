@@ -139,6 +139,7 @@ void QmlFloatingSubToolbar::show()
     if (!m_rootItem)
         return;
 
+    syncTransientParent();
     m_view->show();
     applyPlatformWindowFlags();
     QmlOverlayManager::enableNativeShadow(m_view);
@@ -198,6 +199,21 @@ PinToolOptionsViewModel* QmlFloatingSubToolbar::viewModel() const
 void QmlFloatingSubToolbar::setParentWidget(QWidget* parent)
 {
     m_parentWidget = parent;
+    syncTransientParent();
+}
+
+void QmlFloatingSubToolbar::syncTransientParent()
+{
+    if (!m_view) {
+        return;
+    }
+
+    QWidget* hostWindow = m_parentWidget ? m_parentWidget->window() : nullptr;
+    if (hostWindow && hostWindow->windowHandle()) {
+        m_view->setTransientParent(hostWindow->windowHandle());
+    } else {
+        m_view->setTransientParent(nullptr);
+    }
 }
 
 void QmlFloatingSubToolbar::syncCursorSurface()

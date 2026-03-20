@@ -170,6 +170,7 @@ private:
     void connectApplicationStateSignal();
     void handleApplicationStateChanged(Qt::ApplicationState state);
     void restoreSurfaceVisibilityAndStacking(bool refocusActiveSurface);
+    void raiseFloatingUiWindows();
     void closeForScreenTopologyChange(const QString& reason);
     void setBackgroundMode(CanvasBackgroundMode mode);
     void showEmojiPickerPopup();

@@ -128,6 +128,7 @@ private:
     void applyAppearance();
     void applyPlatformWindowFlags();
     void applyTooltipWindowFlags();
+    void syncTransientParent();
     void syncCursorSurface(const CursorStyleSpec* explicitStyle = nullptr);
 
     void showTooltip(const QString& text, const QRect& anchorRect);

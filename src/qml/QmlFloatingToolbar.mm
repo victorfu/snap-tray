@@ -280,6 +280,7 @@ void QmlFloatingToolbar::show()
     if (!m_rootItem)
         return;
 
+    syncTransientParent();
     const QSize resolvedSize = sizeHint();
     if (!resolvedSize.isEmpty() && m_view->size() != resolvedSize) {
         m_view->resize(resolvedSize);
@@ -357,6 +358,7 @@ QWindow* QmlFloatingToolbar::tooltipWindow() const
 void QmlFloatingToolbar::setParentWidget(QWidget* parent)
 {
     m_parentWidget = parent;
+    syncTransientParent();
 }
 
 QSize QmlFloatingToolbar::sizeHint()
@@ -383,6 +385,20 @@ QSize QmlFloatingToolbar::sizeHint()
         m_view->resize(size);
     }
     return size;
+}
+
+void QmlFloatingToolbar::syncTransientParent()
+{
+    if (!m_view) {
+        return;
+    }
+
+    QWidget* hostWindow = m_parentWidget ? m_parentWidget->window() : nullptr;
+    if (hostWindow && hostWindow->windowHandle()) {
+        m_view->setTransientParent(hostWindow->windowHandle());
+    } else {
+        m_view->setTransientParent(nullptr);
+    }
 }
 
 // ── Positioning ──

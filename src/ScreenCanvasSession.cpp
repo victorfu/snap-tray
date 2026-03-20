@@ -394,6 +394,7 @@ void ScreenCanvasSession::open(QScreen* activationScreen)
         m_activeSurface->activateWindow();
         m_activeSurface->setFocus(Qt::OtherFocusReason);
         m_activeSurface->raise();
+        raiseFloatingUiWindows();
     }
 }
 
@@ -893,6 +894,26 @@ void ScreenCanvasSession::restoreSurfaceVisibilityAndStacking(bool refocusActive
         m_activeSurface->activateWindow();
         m_activeSurface->setFocus(Qt::OtherFocusReason);
         m_activeSurface->raise();
+    }
+    raiseFloatingUiWindows();
+}
+
+void ScreenCanvasSession::raiseFloatingUiWindows()
+{
+    if (m_qmlToolbar && m_qmlToolbar->isVisible()) {
+        if (QWindow* toolbarWindow = m_qmlToolbar->window()) {
+            toolbarWindow->raise();
+        }
+    }
+    if (m_qmlSubToolbar && m_qmlSubToolbar->isVisible()) {
+        if (QWindow* subToolbarWindow = m_qmlSubToolbar->window()) {
+            subToolbarWindow->raise();
+        }
+    }
+    if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+        if (QWindow* emojiWindow = m_emojiPickerPopup->window()) {
+            emojiWindow->raise();
+        }
     }
 }
 
@@ -1837,6 +1858,7 @@ void ScreenCanvasSession::relayoutFloatingUi(bool restoreToolbarPosition)
     if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
         m_emojiPickerPopup->positionAt(m_qmlToolbar->geometry());
     }
+    raiseFloatingUiWindows();
 }
 
 void ScreenCanvasSession::saveToolbarPlacement() const
