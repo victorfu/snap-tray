@@ -121,3 +121,44 @@ void raiseTransientWindowAboveParent(QWindow *, QWidget *)
 {
     // Windows doesn't need special handling for transient popup z-order here.
 }
+
+void reinforceFramelessToolWindow(QWindow *window)
+{
+#ifdef Q_OS_WIN
+    if (!window) {
+        return;
+    }
+
+    HWND hwnd = reinterpret_cast<HWND>(window->winId());
+    if (!hwnd) {
+        return;
+    }
+
+    LONG_PTR style = GetWindowLongPtr(hwnd, GWL_STYLE);
+    const LONG_PTR cleanedStyle = (style | WS_POPUP)
+        & ~(WS_CAPTION | WS_THICKFRAME | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
+    if (cleanedStyle != style) {
+        SetWindowLongPtr(hwnd, GWL_STYLE, cleanedStyle);
+    }
+
+    LONG_PTR exStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+    LONG_PTR cleanedExStyle = (exStyle | WS_EX_TOOLWINDOW) & ~WS_EX_APPWINDOW;
+    if (window->flags().testFlag(Qt::WindowDoesNotAcceptFocus)) {
+        cleanedExStyle |= WS_EX_NOACTIVATE;
+    }
+    if (cleanedExStyle != exStyle) {
+        SetWindowLongPtr(hwnd, GWL_EXSTYLE, cleanedExStyle);
+    }
+
+    const HWND insertAfter = window->flags().testFlag(Qt::WindowStaysOnTopHint)
+        ? HWND_TOPMOST
+        : nullptr;
+    UINT flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_FRAMECHANGED | SWP_NOOWNERZORDER;
+    if (!insertAfter) {
+        flags |= SWP_NOZORDER;
+    }
+    SetWindowPos(hwnd, insertAfter, 0, 0, 0, 0, flags);
+#else
+    Q_UNUSED(window)
+#endif
+}

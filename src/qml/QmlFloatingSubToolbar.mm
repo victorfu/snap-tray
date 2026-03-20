@@ -1,5 +1,6 @@
 #include "qml/QmlFloatingSubToolbar.h"
 #include "cursor/CursorSurfaceSupport.h"
+#include "platform/WindowLevel.h"
 #include "qml/QmlOverlayManager.h"
 #include "qml/PinToolOptionsViewModel.h"
 
@@ -128,6 +129,8 @@ void QmlFloatingSubToolbar::applyPlatformWindowFlags()
     mask &= ~NSWindowStyleMaskResizable;
     [window setStyleMask:mask];
 #endif
+
+    reinforceFramelessToolWindow(m_view);
 }
 
 // ── Show / Hide / Close ──

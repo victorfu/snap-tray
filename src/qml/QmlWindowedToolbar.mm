@@ -1,5 +1,6 @@
 #include "qml/QmlWindowedToolbar.h"
 #include "cursor/CursorSurfaceSupport.h"
+#include "platform/WindowLevel.h"
 #include "qml/QmlFloatingSubToolbar.h"
 #include "qml/QmlOverlayManager.h"
 #include "qml/PinToolbarViewModel.h"
@@ -210,6 +211,8 @@ void QmlWindowedToolbar::applyPlatformWindowFlags()
     mask &= ~NSWindowStyleMaskResizable;
     [window setStyleMask:mask];
 #endif
+
+    reinforceFramelessToolWindow(m_view);
 }
 
 void QmlWindowedToolbar::applyTooltipWindowFlags()

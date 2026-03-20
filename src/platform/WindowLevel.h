@@ -53,4 +53,9 @@ void raiseWindowAboveOverlays(QWidget *widget);
 // On Windows: No-op (Qt::WindowStaysOnTopHint is sufficient)
 void raiseTransientWindowAboveParent(QWindow *window, QWidget *parentWidget);
 
+// Reapplies native frameless-tool-window styles to an overlay QWindow.
+// On Windows: strips caption/control-box bits that can resurface after owner/transient changes.
+// On macOS: no-op.
+void reinforceFramelessToolWindow(QWindow *window);
+
 #endif // WINDOWLEVEL_H

@@ -1,5 +1,6 @@
 #include "qml/QmlFloatingToolbar.h"
 #include "cursor/CursorSurfaceSupport.h"
+#include "platform/WindowLevel.h"
 #include "qml/QmlOverlayManager.h"
 
 #include <QQuickView>
@@ -236,6 +237,8 @@ void QmlFloatingToolbar::applyPlatformWindowFlags()
     mask &= ~NSWindowStyleMaskResizable;
     [window setStyleMask:mask];
 #endif
+
+    reinforceFramelessToolWindow(m_view);
 }
 
 void QmlFloatingToolbar::applyTooltipWindowFlags()

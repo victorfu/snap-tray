@@ -267,3 +267,8 @@ void raiseTransientWindowAboveParent(QWindow *window, QWidget *parentWidget)
     [nsWindow setLevel:targetLevel];
     [nsWindow setHidesOnDeactivate:NO];
 }
+
+void reinforceFramelessToolWindow(QWindow *window)
+{
+    Q_UNUSED(window)
+}

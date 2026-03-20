@@ -7,6 +7,34 @@
 
 #include "qml/CanvasToolbarViewModel.h"
 #include "qml/QmlFloatingToolbar.h"
+#include "qml/QmlWindowedToolbar.h"
+
+#ifdef Q_OS_WIN
+#include <Windows.h>
+#endif
+
+namespace {
+#ifdef Q_OS_WIN
+void verifyFramelessToolWindow(QWindow* window)
+{
+    QVERIFY(window != nullptr);
+
+    HWND hwnd = reinterpret_cast<HWND>(window->winId());
+    QVERIFY(hwnd != nullptr);
+
+    const LONG_PTR style = GetWindowLongPtr(hwnd, GWL_STYLE);
+    QVERIFY((style & WS_CAPTION) == 0);
+    QVERIFY((style & WS_THICKFRAME) == 0);
+    QVERIFY((style & WS_SYSMENU) == 0);
+    QVERIFY((style & WS_MINIMIZEBOX) == 0);
+    QVERIFY((style & WS_MAXIMIZEBOX) == 0);
+
+    const LONG_PTR exStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+    QVERIFY((exStyle & WS_EX_TOOLWINDOW) != 0);
+    QVERIFY((exStyle & WS_EX_APPWINDOW) == 0);
+}
+#endif
+} // namespace
 
 class tst_QmlFloatingToolbar : public QObject
 {
@@ -16,6 +44,10 @@ private slots:
     void initTestCase();
     void testSizeHintAndPreShowPosition();
     void testDragHandleSignalsReachBridge();
+#ifdef Q_OS_WIN
+    void testFloatingToolbarStripsNativeWindowChromeOnWindows();
+    void testWindowedToolbarStripsNativeWindowChromeOnWindows();
+#endif
 };
 
 void tst_QmlFloatingToolbar::initTestCase()
@@ -69,6 +101,31 @@ void tst_QmlFloatingToolbar::testDragHandleSignalsReachBridge()
     QCOMPARE(movedSpy.count(), 1);
     QCOMPARE(finishedSpy.count(), 1);
 }
+
+#ifdef Q_OS_WIN
+void tst_QmlFloatingToolbar::testFloatingToolbarStripsNativeWindowChromeOnWindows()
+{
+    CanvasToolbarViewModel viewModel;
+    SnapTray::QmlFloatingToolbar toolbar(&viewModel);
+
+    toolbar.show();
+    QCoreApplication::processEvents();
+
+    verifyFramelessToolWindow(toolbar.window());
+    toolbar.close();
+}
+
+void tst_QmlFloatingToolbar::testWindowedToolbarStripsNativeWindowChromeOnWindows()
+{
+    SnapTray::QmlWindowedToolbar toolbar;
+
+    toolbar.show();
+    QCoreApplication::processEvents();
+
+    verifyFramelessToolWindow(toolbar.window());
+    toolbar.close();
+}
+#endif
 
 QTEST_MAIN(tst_QmlFloatingToolbar)
 #include "tst_FloatingToolbar.moc"

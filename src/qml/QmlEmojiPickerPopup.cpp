@@ -180,6 +180,7 @@ QWindow* QmlEmojiPickerPopup::window() const
 
 void QmlEmojiPickerPopup::applyPlatformWindowFlags()
 {
+    reinforceFramelessToolWindow(m_view);
     raiseTransientWindowAboveParent(m_view, m_parentWidget.data());
 }
 
