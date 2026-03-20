@@ -825,66 +825,30 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
         }
     }
 
-    // Check text annotation hover
-    if (m_annotationLayer->hitTestText(pos) >= 0) {
-        cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::Annotation);
-        return;
-    }
-
-    // Check emoji sticker gizmo handles (only for selected emoji)
-    if (state().currentTool != ToolId::EmojiSticker) {
-        if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
-            GizmoHandle handle = TransformationGizmo::hitTest(emojiItem, pos);
-            if (handle != GizmoHandle::None) {
-                cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::GizmoHandle, static_cast<int>(handle));
-                return;
-            }
-        }
-    }
-
-    // Check Arrow gizmo handles (for selected arrows)
-    if (auto* arrowItem = getSelectedArrowAnnotation()) {
-        GizmoHandle handle = TransformationGizmo::hitTest(arrowItem, pos);
-        if (handle != GizmoHandle::None) {
-            cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::GizmoHandle, static_cast<int>(handle));
-            return;
-        }
-    } else {
-        // Check hover on unselected arrow (show move cursor)
-        if (m_annotationLayer->hitTestArrow(pos) >= 0) {
-            cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::Annotation);
-            return;
-        }
-    }
-
-    // Check Polyline gizmo handles (for selected polylines)
-    if (auto* polylineItem = getSelectedPolylineAnnotation()) {
-        int vertexIndex = TransformationGizmo::hitTestVertex(polylineItem, pos);
-        if (vertexIndex >= 0) {
-            // Vertex handle - use GizmoHandle type (will show CrossCursor via CursorManager)
-            cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::GizmoHandle, static_cast<int>(GizmoHandle::ArrowStart));
-            return;
-        } else if (vertexIndex == -1) {
-            // Body hit - show move cursor
-            cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::Annotation);
-            return;
-        }
-    } else {
-        // Check hover on unselected polyline
-        if (m_annotationLayer->hitTestPolyline(pos) >= 0) {
-            cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::Annotation);
-            return;
-        }
-    }
-
-    // Check shape gizmo handles and shape body hover after arrow/polyline.
+    // Check shape gizmo handles first, then fall back to the shared
+    // annotation hover path used by PinWindow and ScreenCanvas.
     if (auto* shapeItem = getSelectedShapeAnnotation()) {
         GizmoHandle handle = TransformationGizmo::hitTest(shapeItem, pos);
         if (handle != GizmoHandle::None) {
             cm.setHoverTargetForWidget(m_parentWidget, HoverTarget::GizmoHandle, static_cast<int>(handle));
             return;
         }
-    } else if (m_annotationLayer->hitTestShape(pos) >= 0) {
+    }
+
+    const auto annotationHit = CursorManager::hitTestAnnotations(
+        pos,
+        m_annotationLayer,
+        getSelectedEmojiStickerAnnotation(),
+        getSelectedArrowAnnotation(),
+        getSelectedPolylineAnnotation(),
+        state().currentTool != ToolId::EmojiSticker);
+    if (annotationHit.hit) {
+        cm.setHoverTargetForWidget(
+            m_parentWidget, annotationHit.target, annotationHit.handleIndex);
+        return;
+    }
+
+    if (m_annotationLayer->hitTestShape(pos) >= 0) {
         cm.setHoverTargetForWidget(m_parentWidget, HoverTarget::Annotation);
         return;
     }
@@ -1325,7 +1289,8 @@ bool RegionInputHandler::handleArrowAnnotationPress(const QPoint& pos)
             if (handle == GizmoHandle::Body) {
                 cm.setInputStateForWidget(m_parentWidget, InputState::Moving);
             } else if (handle == GizmoHandle::ArrowControl) {
-                cm.pushCursorForWidget(m_parentWidget, CursorContext::Selection, Qt::PointingHandCursor);
+                cm.setHoverTargetForWidget(
+                    m_parentWidget, HoverTarget::GizmoHandle, static_cast<int>(handle));
             } else {
                 cm.setInputStateForWidget(m_parentWidget, InputState::Selecting);
             }

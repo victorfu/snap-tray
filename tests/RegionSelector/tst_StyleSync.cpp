@@ -1,22 +1,54 @@
 #include <QtTest/QtTest>
 
+#include <memory>
+
 #include "RegionSelector.h"
+#include "annotations/ArrowAnnotation.h"
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
 #include "region/RegionInputHandler.h"
 #include "tools/ToolManager.h"
 
+namespace {
+const QRect kSelectionRect(40, 40, 160, 120);
+const QPoint kSelectionBodyPos(180, 140);
+const QPoint kArrowControlHandlePos(100, 80);
+const QPoint kArrowDraggedControlPos(110, 86);
+}  // namespace
+
 class TestRegionSelectorStyleSync : public QObject
 {
     Q_OBJECT
+
+private:
+    static void prepareSelectionTool(RegionSelector& selector);
+    static void addSelectedCurvedArrow(RegionSelector& selector);
 
 private slots:
     void testUsesAuthorityModeByDefault();
     void testSelectionBodyHoverUsesMoveCursor();
     void testSelectionDragUsesClosedHandCursor();
+    void testArrowControlReleaseRestoresSelectionBodyCursor();
+    void testRestoreRegionCursorAfterArrowControlHoverReturnsSelectionBodyCursor();
     void testPopupRestoreReturnsSelectionBodyCursor();
     void testPopupRestoreReturnsMosaicCursor();
 };
+
+void TestRegionSelectorStyleSync::prepareSelectionTool(RegionSelector& selector)
+{
+    selector.m_selectionManager->setSelectionRect(kSelectionRect);
+    selector.m_inputState.currentTool = ToolId::Selection;
+    selector.m_toolManager->setCurrentTool(ToolId::Selection);
+}
+
+void TestRegionSelectorStyleSync::addSelectedCurvedArrow(RegionSelector& selector)
+{
+    auto arrow = std::make_unique<ArrowAnnotation>(
+        QPoint(60, 100), QPoint(140, 100), Qt::green, 3);
+    arrow->setControlPoint(QPoint(100, 60));
+    selector.m_annotationLayer->addItem(std::move(arrow));
+    selector.m_annotationLayer->setSelectedIndex(0);
+}
 
 void TestRegionSelectorStyleSync::testUsesAuthorityModeByDefault()
 {
@@ -29,11 +61,9 @@ void TestRegionSelectorStyleSync::testSelectionBodyHoverUsesMoveCursor()
     RegionSelector selector;
     auto& cursorManager = CursorManager::instance();
 
-    selector.m_selectionManager->setSelectionRect(QRect(40, 40, 160, 120));
-    selector.m_inputState.currentTool = ToolId::Selection;
-    selector.m_toolManager->setCurrentTool(ToolId::Selection);
+    prepareSelectionTool(selector);
 
-    selector.m_inputHandler->syncHoverCursorAt(QPoint(120, 100));
+    selector.m_inputHandler->syncHoverCursorAt(kSelectionBodyPos);
     cursorManager.reapplyCursorForWidget(&selector);
 
     QCOMPARE(selector.cursor().shape(), Qt::SizeAllCursor);
@@ -43,20 +73,58 @@ void TestRegionSelectorStyleSync::testSelectionDragUsesClosedHandCursor()
 {
     RegionSelector selector;
 
-    selector.m_selectionManager->setSelectionRect(QRect(40, 40, 160, 120));
-    selector.m_inputState.currentTool = ToolId::Selection;
-    selector.m_toolManager->setCurrentTool(ToolId::Selection);
+    prepareSelectionTool(selector);
 
-    const QPoint bodyPos(120, 100);
-    QMouseEvent pressEvent(QEvent::MouseButtonPress, bodyPos, bodyPos,
+    QMouseEvent pressEvent(QEvent::MouseButtonPress, kSelectionBodyPos, kSelectionBodyPos,
                            Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
     selector.m_inputHandler->handleMousePress(&pressEvent);
 
     QCOMPARE(selector.cursor().shape(), Qt::ClosedHandCursor);
 
-    QMouseEvent releaseEvent(QEvent::MouseButtonRelease, bodyPos, bodyPos,
+    QMouseEvent releaseEvent(QEvent::MouseButtonRelease, kSelectionBodyPos, kSelectionBodyPos,
                              Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
     selector.m_inputHandler->handleMouseRelease(&releaseEvent);
+}
+
+void TestRegionSelectorStyleSync::testArrowControlReleaseRestoresSelectionBodyCursor()
+{
+    RegionSelector selector;
+    auto& cursorManager = CursorManager::instance();
+
+    prepareSelectionTool(selector);
+    addSelectedCurvedArrow(selector);
+
+    QMouseEvent pressEvent(QEvent::MouseButtonPress, kArrowControlHandlePos, kArrowControlHandlePos,
+                           Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+    selector.m_inputHandler->handleMousePress(&pressEvent);
+    QCOMPARE(selector.cursor().shape(), Qt::PointingHandCursor);
+
+    QMouseEvent moveEvent(QEvent::MouseMove, kArrowDraggedControlPos, kArrowDraggedControlPos,
+                          Qt::NoButton, Qt::LeftButton, Qt::NoModifier);
+    selector.m_inputHandler->handleMouseMove(&moveEvent);
+
+    QMouseEvent releaseEvent(QEvent::MouseButtonRelease, kSelectionBodyPos, kSelectionBodyPos,
+                             Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+    selector.m_inputHandler->handleMouseRelease(&releaseEvent);
+    cursorManager.reapplyCursorForWidget(&selector);
+
+    QCOMPARE(selector.cursor().shape(), Qt::SizeAllCursor);
+}
+
+void TestRegionSelectorStyleSync::testRestoreRegionCursorAfterArrowControlHoverReturnsSelectionBodyCursor()
+{
+    RegionSelector selector;
+    auto& cursorManager = CursorManager::instance();
+
+    prepareSelectionTool(selector);
+    addSelectedCurvedArrow(selector);
+
+    selector.m_inputHandler->syncHoverCursorAt(kArrowControlHandlePos);
+    cursorManager.reapplyCursorForWidget(&selector);
+    QCOMPARE(selector.cursor().shape(), Qt::PointingHandCursor);
+
+    selector.restoreRegionCursorAt(kSelectionBodyPos);
+    QCOMPARE(selector.cursor().shape(), Qt::SizeAllCursor);
 }
 
 void TestRegionSelectorStyleSync::testPopupRestoreReturnsSelectionBodyCursor()
@@ -65,10 +133,8 @@ void TestRegionSelectorStyleSync::testPopupRestoreReturnsSelectionBodyCursor()
     auto& authority = CursorAuthority::instance();
     auto& cursorManager = CursorManager::instance();
 
-    selector.m_selectionManager->setSelectionRect(QRect(40, 40, 160, 120));
-    selector.m_inputState.currentTool = ToolId::Selection;
-    selector.m_toolManager->setCurrentTool(ToolId::Selection);
-    selector.restoreRegionCursorAt(QPoint(120, 100));
+    prepareSelectionTool(selector);
+    selector.restoreRegionCursorAt(kSelectionBodyPos);
 
     QCOMPARE(selector.cursor().shape(), Qt::SizeAllCursor);
 
@@ -79,7 +145,7 @@ void TestRegionSelectorStyleSync::testPopupRestoreReturnsSelectionBodyCursor()
     QCOMPARE(selector.cursor().shape(), Qt::ArrowCursor);
 
     authority.clearWidgetRequest(&selector, QStringLiteral("floating.popup"));
-    selector.restoreRegionCursorAt(QPoint(120, 100));
+    selector.restoreRegionCursorAt(kSelectionBodyPos);
     QCOMPARE(selector.cursor().shape(), Qt::SizeAllCursor);
 }
 
@@ -89,7 +155,7 @@ void TestRegionSelectorStyleSync::testPopupRestoreReturnsMosaicCursor()
     auto& authority = CursorAuthority::instance();
     auto& cursorManager = CursorManager::instance();
 
-    selector.m_selectionManager->setSelectionRect(QRect(40, 40, 160, 120));
+    selector.m_selectionManager->setSelectionRect(kSelectionRect);
     selector.m_toolManager->setCurrentTool(ToolId::Mosaic);
     selector.m_toolManager->setWidth(18);
     cursorManager.updateToolCursorForWidget(&selector);
