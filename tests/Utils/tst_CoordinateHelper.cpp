@@ -39,6 +39,7 @@ private slots:
     void testToPhysicalRect_DPR1_5();
     void testToPhysicalRect_DPR1_25();
     void testToPhysicalCoveringRect_DPR1_5();
+    void testToPhysicalCoveringRect_FractionalLeftEdgePreventsPartialRepaintGap();
     void testToPhysicalCoveringRect_RightEdgeFractionalDpr();
     void testToPhysicalRect_NegativePosition();
 
@@ -207,6 +208,20 @@ void tst_CoordinateHelper::testToPhysicalCoveringRect_DPR1_5()
     QRect logical(1, 1, 3, 3);
     QRect covering = CoordinateHelper::toPhysicalCoveringRect(logical, 1.5);
     QCOMPARE(covering, QRect(1, 1, 5, 5));
+}
+
+void tst_CoordinateHelper::testToPhysicalCoveringRect_FractionalLeftEdgePreventsPartialRepaintGap()
+{
+    const qreal dpr = 1.5;
+    const QRect logicalDirty(101, 20, 200, 80);
+    const QRect rounded = CoordinateHelper::toPhysical(logicalDirty, dpr);
+    const QRect covering = CoordinateHelper::toPhysicalCoveringRect(logicalDirty, dpr);
+
+    QCOMPARE(rounded.left(), 152);
+    QCOMPARE(covering.left(), 151);
+    QVERIFY(!rounded.contains(QPoint(151, 40)));
+    QVERIFY(covering.contains(QPoint(151, 40)));
+    QVERIFY(covering.right() >= rounded.right());
 }
 
 void tst_CoordinateHelper::testToPhysicalCoveringRect_RightEdgeFractionalDpr()

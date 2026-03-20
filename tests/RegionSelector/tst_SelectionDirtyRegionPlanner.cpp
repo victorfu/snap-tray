@@ -4,6 +4,11 @@
 
 namespace {
 constexpr int kCrosshairMargin = 2;
+
+QRect probeRectInside(const QRect& rect)
+{
+    return QRect(rect.topLeft() + QPoint(20, 20), QSize(16, 16));
+}
 }
 
 class tst_SelectionDirtyRegionPlanner : public QObject
@@ -14,6 +19,7 @@ private slots:
     void testMagnifierRectFlipsNearEdges();
     void testSelectionDragIncludesExpandedSelectionRects();
     void testSelectionDragIncludesToolbarAndRegionControlHistory();
+    void testSelectionDragSuppressionSkipsFloatingUiRects();
     void testHoverRegionIncludesOldAndNewMagnifier();
 };
 
@@ -100,6 +106,44 @@ void tst_SelectionDirtyRegionPlanner::testSelectionDragIncludesToolbarAndRegionC
     QVERIFY(dirty.contains(params.lastToolbarRect.adjusted(-padding, -padding, padding, padding)));
     QVERIFY(dirty.contains(params.currentRegionControlRect.adjusted(-padding, -padding, padding, padding)));
     QVERIFY(dirty.contains(params.lastRegionControlRect.adjusted(-padding, -padding, padding, padding)));
+}
+
+void tst_SelectionDirtyRegionPlanner::testSelectionDragSuppressionSkipsFloatingUiRects()
+{
+    SelectionDirtyRegionPlanner planner;
+    SelectionDirtyRegionPlanner::SelectionDragParams params;
+
+    params.currentSelectionRect = QRect(240, 180, 160, 100);
+    params.lastSelectionRect = QRect(220, 180, 160, 100);
+    params.currentToolbarRect = QRect(1020, 520, 240, 44);
+    params.lastToolbarRect = QRect(980, 500, 240, 44);
+    params.currentRegionControlRect = QRect(1090, 120, 110, 32);
+    params.lastRegionControlRect = QRect(1040, 120, 110, 32);
+    params.currentMagnifierRect = QRect(640, 150, 190, 215);
+    params.lastMagnifierRect = QRect(520, 150, 190, 215);
+    params.currentCursorPos = QPoint(320, 230);
+    params.lastCursorPos = QPoint(300, 230);
+    params.viewportSize = QSize(1440, 900);
+    params.suppressFloatingUi = true;
+    params.includeMagnifier = false;
+
+    const QRegion dirty = planner.planSelectionDragRegion(params);
+    const int margin = SelectionDirtyRegionPlanner::kSelectionHandleMargin;
+    const int dimPadding = SelectionDirtyRegionPlanner::kDimensionInfoPadding;
+
+    QVERIFY(dirty.contains(params.currentSelectionRect.adjusted(-margin, -margin, margin, margin)));
+    QVERIFY(dirty.contains(params.lastSelectionRect.adjusted(-margin, -margin, margin, margin)));
+
+    const QRect currentDimInfo = planner.dimensionInfoRectForSelection(params.currentSelectionRect);
+    QVERIFY(dirty.contains(currentDimInfo.adjusted(
+        -dimPadding, -dimPadding, dimPadding, dimPadding)));
+
+    QVERIFY(!dirty.contains(probeRectInside(params.currentToolbarRect)));
+    QVERIFY(!dirty.contains(probeRectInside(params.lastToolbarRect)));
+    QVERIFY(!dirty.contains(probeRectInside(params.currentRegionControlRect)));
+    QVERIFY(!dirty.contains(probeRectInside(params.lastRegionControlRect)));
+    QVERIFY(!dirty.contains(probeRectInside(params.currentMagnifierRect)));
+    QVERIFY(!dirty.contains(probeRectInside(params.lastMagnifierRect)));
 }
 
 void tst_SelectionDirtyRegionPlanner::testHoverRegionIncludesOldAndNewMagnifier()

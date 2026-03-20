@@ -29,6 +29,7 @@ public:
         QPoint lastCursorPos;
         QSize viewportSize;
         bool includeMagnifier = true;
+        bool suppressFloatingUi = false;
     };
 
     struct HoverParams {

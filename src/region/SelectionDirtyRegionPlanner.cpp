@@ -90,7 +90,7 @@ QRegion SelectionDirtyRegionPlanner::planSelectionDragRegion(const SelectionDrag
     addPaddedDimensionInfoRect(params.currentSelectionRect);
     addPaddedDimensionInfoRect(params.lastSelectionRect);
 
-    if (params.includeMagnifier) {
+    if (params.includeMagnifier && !params.suppressFloatingUi) {
         addRect(params.currentMagnifierRect);
         addRect(params.lastMagnifierRect);
     }
@@ -101,10 +101,12 @@ QRegion SelectionDirtyRegionPlanner::planSelectionDragRegion(const SelectionDrag
                 -kWidgetPadding, -kWidgetPadding, kWidgetPadding, kWidgetPadding));
         }
     };
-    addPaddedRect(params.currentToolbarRect);
-    addPaddedRect(params.lastToolbarRect);
-    addPaddedRect(params.currentRegionControlRect);
-    addPaddedRect(params.lastRegionControlRect);
+    if (!params.suppressFloatingUi) {
+        addPaddedRect(params.currentToolbarRect);
+        addPaddedRect(params.lastToolbarRect);
+        addPaddedRect(params.currentRegionControlRect);
+        addPaddedRect(params.lastRegionControlRect);
+    }
 
     dirtyRegion += crosshairStripRegion(params.lastCursorPos, params.viewportSize);
     dirtyRegion += crosshairStripRegion(params.currentCursorPos, params.viewportSize);

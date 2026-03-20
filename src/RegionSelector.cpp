@@ -112,6 +112,13 @@ CursorStyleSpec cursorSpecForWidget(const QWidget* widget)
                   : CursorStyleSpec::fromShape(Qt::ArrowCursor);
 }
 
+bool shouldSuppressCompletedSelectionDragUi(const SelectionStateManager* selectionManager)
+{
+    return selectionManager &&
+           selectionManager->hasSelection() &&
+           (selectionManager->isMoving() || selectionManager->isResizing());
+}
+
 } // namespace
 
 RegionSelector::RegionSelector(QWidget* parent)
@@ -150,10 +157,21 @@ RegionSelector::RegionSelector(QWidget* parent)
                     m_multiRegionManager->updateRegion(activeIndex, rect);
                 }
             }
+            if (m_inputState.completedSelectionDragUiSuppressed && m_toolbarUserDragged) {
+                m_toolbarUserDragged = false;
+            }
             // Removed update() - repaints now handled by RegionInputHandler's throttled path
         });
     connect(m_selectionManager, &SelectionStateManager::stateChanged,
         this, [this](SelectionStateManager::State newState) {
+            const bool suppressionBefore = m_inputState.completedSelectionDragUiSuppressed;
+            const bool suppressionAfter = shouldSuppressCompletedSelectionDragUi(m_selectionManager);
+
+            if (suppressionBefore != suppressionAfter) {
+                m_inputState.completedSelectionDragUiSuppressed = suppressionAfter;
+                updateCompletedSelectionDragUiSuppression();
+            }
+
             if (m_inputState.multiRegionMode &&
                 newState == SelectionStateManager::State::Complete &&
                 m_multiRegionListRefreshPending) {
@@ -2147,11 +2165,12 @@ void RegionSelector::paintEvent(QPaintEvent* event)
         m_selectionManager->hasActiveSelection() &&
         selectionRect.isValid() &&
         m_selectionManager->hasSelection();
+    const bool suppressSelectionFloatingUi = completedSelectionDragUiSuppressed();
     const bool shouldShowSelectionUi = hasSelectableCapture && !m_exportInProgress;
     const bool shouldDrawBusySpinner = hasSelectableCapture &&
         (m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress ||
          m_shareInProgress || m_exportInProgress);
-    if (shouldShowSelectionUi) {
+    if (shouldShowSelectionUi && !suppressSelectionFloatingUi) {
         // Position and show QML toolbar
         if (m_qmlToolbar && !m_qmlToolbar->isVisible()) {
             m_qmlToolbar->show();
@@ -2209,20 +2228,14 @@ void RegionSelector::paintEvent(QPaintEvent* event)
         }
     }
     else {
-        m_toolbarUserDragged = false;
         m_cursorOverSelectionToolbar = false;
-        if (m_qmlToolbar) {
-            m_qmlToolbar->hide();
+        if (!hasSelectableCapture || m_exportInProgress) {
+            m_toolbarUserDragged = false;
         }
-        if (m_toolOptionsViewModel) {
+        if (m_toolOptionsViewModel && (!hasSelectableCapture || m_exportInProgress)) {
             m_toolOptionsViewModel->clearSections();
         }
-        if (m_qmlSubToolbar) {
-            m_qmlSubToolbar->hide();
-        }
-        if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
-            m_emojiPickerPopup->hide();
-        }
+        hideSelectionFloatingUi(hasSelectableCapture && !m_exportInProgress);
     }
 
     if (shouldDrawBusySpinner && m_loadingSpinner) {
@@ -2258,7 +2271,10 @@ void RegionSelector::positionRegionControlPanel()
     if (!m_regionControlPanel)
         return;
 
-    bool shouldShow = m_selectionManager && m_selectionManager->hasSelection() && !m_exportInProgress;
+    bool shouldShow = m_selectionManager &&
+                      m_selectionManager->hasSelection() &&
+                      !m_exportInProgress &&
+                      !completedSelectionDragUiSuppressed();
     if (shouldShow != m_regionControlPanel->isVisible()) {
         shouldShow ? m_regionControlPanel->show() : m_regionControlPanel->hide();
     }
@@ -2293,6 +2309,46 @@ void RegionSelector::positionMultiRegionListPanel()
     QPoint pos = mapToGlobal(QPoint(margin, margin));
     m_multiRegionListPanel->setPosition(pos);
     m_multiRegionListPanel->resize(QSize(280, height() - 2 * margin));
+}
+
+void RegionSelector::hideSelectionFloatingUi(bool preserveToolState)
+{
+    if (m_qmlToolbar) {
+        m_qmlToolbar->hide();
+    }
+    if (m_qmlSubToolbar) {
+        m_qmlSubToolbar->hide();
+    }
+    if (m_regionControlPanel) {
+        m_regionControlPanel->hide();
+    }
+    if (!preserveToolState && m_toolOptionsViewModel) {
+        m_toolOptionsViewModel->clearSections();
+    }
+    if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+        m_emojiPickerPopup->hide();
+    }
+    m_cursorOverSelectionToolbar = false;
+    m_lastMagnifierRect = QRect();
+}
+
+void RegionSelector::updateCompletedSelectionDragUiSuppression()
+{
+    if (m_inputState.completedSelectionDragUiSuppressed) {
+        hideSelectionFloatingUi(true);
+    }
+
+    update();
+    syncMagnifierOverlay();
+
+    if (!m_inputState.completedSelectionDragUiSuppressed) {
+        QTimer::singleShot(0, this, &RegionSelector::syncFloatingUiCursor);
+    }
+}
+
+bool RegionSelector::completedSelectionDragUiSuppressed() const
+{
+    return m_inputState.completedSelectionDragUiSuppressed;
 }
 
 void RegionSelector::hideShortcutHints()
@@ -2559,6 +2615,10 @@ bool RegionSelector::shouldShowMagnifier() const
         return false;
     }
 
+    if (completedSelectionDragUiSuppressed()) {
+        return false;
+    }
+
     if (m_inputState.isDrawing || isAnnotationTool(m_inputState.currentTool)) {
         return false;
     }
@@ -2695,10 +2755,13 @@ void RegionSelector::syncRegionSubToolbar(bool refreshContent)
     }
 
     const bool allowSubToolbar = m_inputState.showSubToolbar &&
+                                 !completedSelectionDragUiSuppressed() &&
                                  !m_inputState.multiRegionMode &&
                                  m_inputState.replaceTargetIndex < 0;
     if (!allowSubToolbar) {
-        m_toolOptionsViewModel->showForTool(-1);
+        if (!completedSelectionDragUiSuppressed()) {
+            m_toolOptionsViewModel->showForTool(-1);
+        }
         m_qmlSubToolbar->hide();
         return;
     }

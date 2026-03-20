@@ -210,6 +210,9 @@ private:
     void hideShortcutHints();
     void positionRegionControlPanel();
     void positionMultiRegionListPanel();
+    void hideSelectionFloatingUi(bool preserveToolState);
+    void updateCompletedSelectionDragUiSuppression();
+    bool completedSelectionDragUiSuppressed() const;
     void applyCanvasGeometry(const QSize& logicalSize);
     void maybeDismissShortcutHintsAfterSelectionCompleted();
     void updateShortcutHintsHoverVisibilityDuringSelection(const QPoint& localPos);

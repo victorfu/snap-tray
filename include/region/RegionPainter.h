@@ -7,6 +7,7 @@
 #include <QPixmap>
 #include <QString>
 #include <QFont>
+#include <QRectF>
 #include <QSize>
 
 class QPainter;
@@ -92,6 +93,7 @@ private:
     QRect drawDimensionInfoPanel(QPainter& painter, const QRect& selectionRect, const QString& label) const;
     void drawRegionBadge(QPainter& painter, const QRect& selectionRect, const QColor& color,
                          int index, bool isActive) const;
+    QRectF alignedSelectionBorderRect(const QRect& selectionRect, qreal penWidth) const;
 
     // Helper methods
     int effectiveCornerRadius() const;

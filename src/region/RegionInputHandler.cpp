@@ -36,6 +36,14 @@ qreal normalizeAngleDelta(qreal deltaDegrees)
     }
     return deltaDegrees;
 }
+
+bool shouldSuppressCompletedSelectionDragUi(const RegionInputState& state,
+                                            const SelectionStateManager* selectionManager)
+{
+    return selectionManager &&
+           state.completedSelectionDragUiSuppressed &&
+           selectionManager->hasSelection();
+}
 } // namespace
 
 RegionInputHandler::RegionInputHandler(QObject* parent)
@@ -905,8 +913,11 @@ void RegionInputHandler::handleThrottledUpdate()
 
     if (m_selectionManager->isSelecting() || m_selectionManager->isResizing() || m_selectionManager->isMoving()) {
         const QRect currentSelectionRect = m_selectionManager->selectionRect().normalized();
-        const QRect currentMagnifierRect = m_dirtyRegionPlanner.magnifierRectForCursor(
-            state().currentPoint, m_parentWidget->size());
+        const bool suppressFloatingUi =
+            shouldSuppressCompletedSelectionDragUi(state(), m_selectionManager);
+        const QRect currentMagnifierRect = suppressFloatingUi
+            ? QRect()
+            : m_dirtyRegionPlanner.magnifierRectForCursor(state().currentPoint, m_parentWidget->size());
         QRect currentToolbarRect;
         QRect currentRegionControlRect;
 
@@ -922,6 +933,8 @@ void RegionInputHandler::handleThrottledUpdate()
         params.currentCursorPos = state().currentPoint;
         params.lastCursorPos = m_lastCrosshairPoint;
         params.viewportSize = m_parentWidget->size();
+        params.suppressFloatingUi = suppressFloatingUi;
+        params.includeMagnifier = !suppressFloatingUi;
         const QRegion dirtyRegion = m_dirtyRegionPlanner.planSelectionDragRegion(params);
         m_parentWidget->update(dirtyRegion);
         m_lastSelectionRect = currentSelectionRect;

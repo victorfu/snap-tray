@@ -129,7 +129,7 @@ add_test(NAME RegionSelector_MagnifierPanel COMMAND RegionSelector_MagnifierPane
 set_tests_properties(RegionSelector_MagnifierPanel PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(RegionSelector_MagnifierToolbarVisibility RegionSelector/tst_MagnifierToolbarVisibility.cpp)
-target_link_libraries(RegionSelector_MagnifierToolbarVisibility PRIVATE snaptray_ui Qt6::Test)
+target_link_libraries(RegionSelector_MagnifierToolbarVisibility PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
 add_test(NAME RegionSelector_MagnifierToolbarVisibility COMMAND RegionSelector_MagnifierToolbarVisibility)
 set_tests_properties(RegionSelector_MagnifierToolbarVisibility PROPERTIES TIMEOUT 60 LABELS "unit")
 

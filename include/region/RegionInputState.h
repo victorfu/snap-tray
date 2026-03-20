@@ -13,6 +13,7 @@
 struct RegionInputState {
     ToolId currentTool = ToolId::Selection;
     bool showSubToolbar = true;
+    bool completedSelectionDragUiSuppressed = false;
 
     QRect highlightedWindowRect;
     bool hasDetectedWindow = false;

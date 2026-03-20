@@ -18,6 +18,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QWidget>
+#include <QDebug>
 #include <QtMath>
 
 RegionPainter::RegionPainter(QObject* parent)
@@ -106,7 +107,21 @@ void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QR
     // Draw only the dirty portion of the background
     if (!background.isNull()) {
         const qreal dpr = background.devicePixelRatio();
-        const QRect sourceRect = CoordinateHelper::toPhysical(updateRect, dpr);
+        const QRect sourceRect =
+            CoordinateHelper::toPhysicalCoveringRect(updateRect, dpr).intersected(background.rect());
+#ifdef Q_OS_WIN
+#ifndef QT_NO_DEBUG
+        const qreal roundedDpr = qRound(dpr);
+        const bool fractionalDpr = !qFuzzyCompare(dpr, roundedDpr);
+        const bool partialRepaint = !dirtyRect.isEmpty() && dirtyRect != m_parentWidget->rect();
+        if (fractionalDpr && partialRepaint) {
+            qDebug() << "RegionPainter partial repaint"
+                     << "logicalDirty=" << updateRect
+                     << "physicalDirty=" << sourceRect
+                     << "backgroundDpr=" << dpr;
+        }
+#endif
+#endif
         painter.drawPixmap(updateRect, background, sourceRect);
     }
 
@@ -192,12 +207,17 @@ void RegionPainter::drawSelection(QPainter& painter)
     int radius = effectiveCornerRadius();
 
     // Draw selection border
-    painter.setPen(QPen(QColor(0, 174, 255), 2));
+    static constexpr qreal kSelectionBorderWidth = 2.0;
+    QPen borderPen(QColor(0, 174, 255), kSelectionBorderWidth);
+    borderPen.setJoinStyle(Qt::MiterJoin);
+    borderPen.setCapStyle(Qt::SquareCap);
+    painter.setPen(borderPen);
     painter.setBrush(Qt::NoBrush);
+    const QRectF borderRect = alignedSelectionBorderRect(sel, borderPen.widthF());
     if (radius > 0) {
-        painter.drawRoundedRect(sel, radius, radius);
+        painter.drawRoundedRect(borderRect, radius, radius);
     } else {
-        painter.drawRect(sel);
+        painter.drawRect(borderRect);
     }
 
     // Draw corner and edge handles
@@ -222,6 +242,18 @@ void RegionPainter::drawSelection(QPainter& painter)
     drawHandle(sel.center().x(), sel.bottom());
     drawHandle(sel.left(), sel.center().y());
     drawHandle(sel.right(), sel.center().y());
+}
+
+QRectF RegionPainter::alignedSelectionBorderRect(const QRect& selectionRect, qreal penWidth) const
+{
+    QRectF borderRect = QRectF(selectionRect.normalized()).adjusted(0.5, 0.5, -0.5, -0.5);
+    const qreal dpr = m_devicePixelRatio > 0.0 ? m_devicePixelRatio : 1.0;
+    const int physicalPenWidth = qMax(1, qRound(penWidth * dpr));
+    if ((physicalPenWidth % 2) != 0) {
+        const qreal offset = 0.5 / dpr;
+        borderRect.translate(offset, offset);
+    }
+    return borderRect;
 }
 
 void RegionPainter::drawDimensionInfo(QPainter& painter)
