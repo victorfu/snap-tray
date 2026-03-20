@@ -28,6 +28,7 @@ private slots:
     void testUsesAuthorityModeByDefault();
     void testSelectionBodyHoverUsesMoveCursor();
     void testSelectionDragUsesClosedHandCursor();
+    void testOverlayRestoreReturnsArrowToolCursor();
     void testArrowControlReleaseRestoresSelectionBodyCursor();
     void testRestoreRegionCursorAfterArrowControlHoverReturnsSelectionBodyCursor();
     void testPopupRestoreReturnsSelectionBodyCursor();
@@ -84,6 +85,30 @@ void TestRegionSelectorStyleSync::testSelectionDragUsesClosedHandCursor()
     QMouseEvent releaseEvent(QEvent::MouseButtonRelease, kSelectionBodyPos, kSelectionBodyPos,
                              Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
     selector.m_inputHandler->handleMouseRelease(&releaseEvent);
+}
+
+void TestRegionSelectorStyleSync::testOverlayRestoreReturnsArrowToolCursor()
+{
+    RegionSelector selector;
+    auto& authority = CursorAuthority::instance();
+    auto& cursorManager = CursorManager::instance();
+
+    selector.m_selectionManager->setSelectionRect(kSelectionRect);
+    selector.m_inputState.currentTool = ToolId::Arrow;
+    selector.m_toolManager->setCurrentTool(ToolId::Arrow);
+    selector.restoreRegionCursorAt(kSelectionBodyPos);
+
+    QCOMPARE(selector.cursor().shape(), Qt::CrossCursor);
+
+    authority.submitWidgetRequest(
+        &selector, QStringLiteral("floating.overlay.toolbar"), CursorRequestSource::Overlay,
+        CursorStyleSpec::fromShape(Qt::ArrowCursor));
+    cursorManager.reapplyCursorForWidget(&selector);
+    QCOMPARE(selector.cursor().shape(), Qt::ArrowCursor);
+
+    authority.clearWidgetRequest(&selector, QStringLiteral("floating.overlay.toolbar"));
+    selector.restoreRegionCursorAt(kSelectionBodyPos);
+    QCOMPARE(selector.cursor().shape(), Qt::CrossCursor);
 }
 
 void TestRegionSelectorStyleSync::testArrowControlReleaseRestoresSelectionBodyCursor()

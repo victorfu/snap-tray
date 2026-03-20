@@ -26,6 +26,7 @@ private slots:
     void initTestCase();
     void testUsesAuthorityModeByDefault();
     void testNonAnnotationEdgeHoverUsesCorrectResizeCursor();
+    void testOverlayRestoreReturnsArrowToolCursor();
     void testPolylineReleaseRecomputesHoverCursor();
     void testPopupRestoreReturnsMosaicCursor();
     void testRegionLayoutMoveCursorUsesAuthority();
@@ -65,6 +66,35 @@ void TestPinWindowStyleSync::testNonAnnotationEdgeHoverUsesCorrectResizeCursor()
                            Qt::NoButton, Qt::NoButton, Qt::NoModifier);
     QCoreApplication::sendEvent(&window, &cornerMove);
     QCOMPARE(window.cursor().shape(), Qt::SizeFDiagCursor);
+}
+
+void TestPinWindowStyleSync::testOverlayRestoreReturnsArrowToolCursor()
+{
+    PinWindow window(createTestPixmap(240, 160), QPoint(0, 0));
+    auto& authority = CursorAuthority::instance();
+    auto& cursorManager = CursorManager::instance();
+
+    if (!window.m_toolManager) {
+        window.initializeAnnotationComponents();
+    }
+
+    window.enterAnnotationMode();
+    window.m_currentToolId = ToolId::Arrow;
+    window.m_toolManager->setCurrentTool(ToolId::Arrow);
+
+    const QPoint bodyPos(70, 40);
+    window.restoreAnnotationCursorAt(bodyPos);
+    QCOMPARE(window.cursor().shape(), Qt::CrossCursor);
+
+    authority.submitWidgetRequest(
+        &window, QStringLiteral("floating.overlay.toolbar"), CursorRequestSource::Overlay,
+        CursorStyleSpec::fromShape(Qt::ArrowCursor));
+    cursorManager.reapplyCursorForWidget(&window);
+    QCOMPARE(window.cursor().shape(), Qt::ArrowCursor);
+
+    authority.clearWidgetRequest(&window, QStringLiteral("floating.overlay.toolbar"));
+    window.restoreAnnotationCursorAt(bodyPos);
+    QCOMPARE(window.cursor().shape(), Qt::CrossCursor);
 }
 
 void TestPinWindowStyleSync::testPolylineReleaseRecomputesHoverCursor()

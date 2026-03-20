@@ -262,7 +262,7 @@ void RegionPainter::drawDimensionInfo(QPainter& painter)
         QRect activeInfoRect;
         const auto regions = m_multiRegionManager->regions();
         for (const auto& region : regions) {
-            QString dimensions = tr("%1 x %2 pt").arg(region.rect.width()).arg(region.rect.height());
+            const QString dimensions = selectionSizeLabel(region.rect);
             QRect infoRect = drawDimensionInfoPanel(painter, region.rect, dimensions);
             if (region.isActive) {
                 activeInfoRect = infoRect;
@@ -272,7 +272,7 @@ void RegionPainter::drawDimensionInfo(QPainter& painter)
         if (activeInfoRect.isNull() && m_selectionManager->isSelecting()) {
             QRect sel = m_selectionManager->selectionRect();
             if (sel.isValid()) {
-                QString dimensions = tr("%1 x %2 pt").arg(sel.width()).arg(sel.height());
+                const QString dimensions = selectionSizeLabel(sel);
                 activeInfoRect = drawDimensionInfoPanel(painter, sel, dimensions);
             }
         }
@@ -282,7 +282,7 @@ void RegionPainter::drawDimensionInfo(QPainter& painter)
     }
 
     QRect sel = m_selectionManager->selectionRect();
-    QString dimensions = tr("%1 x %2 pt").arg(sel.width()).arg(sel.height());
+    const QString dimensions = selectionSizeLabel(sel);
     QRect textRect = drawDimensionInfoPanel(painter, sel, dimensions);
     m_lastDimensionInfoRect = textRect;
 }
@@ -351,8 +351,8 @@ QRect RegionPainter::drawDimensionInfoPanel(QPainter& painter, const QRect& sele
 
     QFontMetrics fm(font);
 
-    // Calculate fixed minimum width for localized "9999 x 9999 pt" to prevent jittering
-    const QString maxWidthText = tr("%1 x %2 pt").arg(9999).arg(9999);
+    // Calculate fixed minimum width for localized "99999 x 99999 px" to prevent jittering.
+    const QString maxWidthText = tr("%1 x %2 px").arg(99999).arg(99999);
     int fixedWidth = fm.horizontalAdvance(maxWidthText) + 24;  // +24 for padding
 
     int actualWidth = fm.horizontalAdvance(label) + 24;
@@ -378,6 +378,18 @@ QRect RegionPainter::drawDimensionInfoPanel(QPainter& painter, const QRect& sele
     painter.drawText(textRect, Qt::AlignCenter, label);
 
     return textRect;
+}
+
+QRect RegionPainter::physicalSelectionRect(const QRect& selectionRect) const
+{
+    const qreal dpr = m_devicePixelRatio > 0.0 ? m_devicePixelRatio : 1.0;
+    return CoordinateHelper::toPhysicalCoveringRect(selectionRect.normalized(), dpr);
+}
+
+QString RegionPainter::selectionSizeLabel(const QRect& selectionRect) const
+{
+    const QSize physicalSize = physicalSelectionRect(selectionRect).size();
+    return tr("%1 x %2 px").arg(physicalSize.width()).arg(physicalSize.height());
 }
 
 void RegionPainter::drawRegionBadge(QPainter& painter, const QRect& selectionRect, const QColor& color,

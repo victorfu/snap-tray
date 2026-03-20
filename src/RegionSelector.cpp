@@ -119,6 +119,19 @@ bool shouldSuppressCompletedSelectionDragUi(const SelectionStateManager* selecti
            (selectionManager->isMoving() || selectionManager->isResizing());
 }
 
+QString physicalPixelSizeLabel(const QRect& logicalRect, qreal dpr)
+{
+    if (!logicalRect.isValid()) {
+        return {};
+    }
+
+    const qreal effectiveDpr = dpr > 0.0 ? dpr : 1.0;
+    const QSize physicalSize =
+        CoordinateHelper::toPhysicalCoveringRect(logicalRect.normalized(), effectiveDpr).size();
+    return QCoreApplication::translate(
+        "RegionSelector", "%1 x %2 px").arg(physicalSize.width()).arg(physicalSize.height());
+}
+
 } // namespace
 
 RegionSelector::RegionSelector(QWidget* parent)
@@ -785,9 +798,8 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, [this](const QRect& previousHighlightRect) {
             QRect oldVisualRect;
             if (!previousHighlightRect.isNull()) {
-                const QString oldTitle = QString("%1x%2")
-                    .arg(previousHighlightRect.width())
-                    .arg(previousHighlightRect.height());
+                const QString oldTitle =
+                    physicalPixelSizeLabel(previousHighlightRect, m_devicePixelRatio);
                 oldVisualRect = m_painter->getWindowHighlightVisualRect(previousHighlightRect, oldTitle);
             }
 
@@ -2086,7 +2098,7 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos,
             // Calculate old visual rect for partial update
             QString oldTitle;
             if (!m_inputState.highlightedWindowRect.isNull()) {
-                oldTitle = QString("%1x%2").arg(m_inputState.highlightedWindowRect.width()).arg(m_inputState.highlightedWindowRect.height());
+                oldTitle = physicalPixelSizeLabel(m_inputState.highlightedWindowRect, m_devicePixelRatio);
             }
             QRect oldVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect, oldTitle);
 
@@ -2094,7 +2106,7 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos,
             m_detectedWindow = detected;
 
             // Calculate new visual rect (use clipped local bounds, not global bounds)
-            QString newTitle = QString("%1x%2").arg(localBounds.width()).arg(localBounds.height());
+            const QString newTitle = physicalPixelSizeLabel(localBounds, m_devicePixelRatio);
             QRect newVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect, newTitle);
 
             // Update only changed regions
@@ -2108,7 +2120,7 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos,
             // Calculate old visual rect for partial update (use clipped local bounds)
             QString oldTitle;
             if (!m_inputState.highlightedWindowRect.isNull()) {
-                oldTitle = QString("%1x%2").arg(m_inputState.highlightedWindowRect.width()).arg(m_inputState.highlightedWindowRect.height());
+                oldTitle = physicalPixelSizeLabel(m_inputState.highlightedWindowRect, m_devicePixelRatio);
             }
             QRect oldVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect, oldTitle);
 
@@ -2141,7 +2153,7 @@ void RegionSelector::paintEvent(QPaintEvent* event)
     m_painter->setHighlightedWindowRect(m_inputState.highlightedWindowRect);
     m_painter->setDetectedWindowTitle(
         !m_inputState.highlightedWindowRect.isNull()
-        ? QString("%1x%2").arg(m_inputState.highlightedWindowRect.width()).arg(m_inputState.highlightedWindowRect.height())
+        ? physicalPixelSizeLabel(m_inputState.highlightedWindowRect, m_devicePixelRatio)
         : QString());
     m_painter->setCornerRadius(m_cornerRadius);
     m_painter->setShowSubToolbar(m_inputState.showSubToolbar);

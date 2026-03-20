@@ -151,6 +151,11 @@ namespace {
         return CoordinateHelper::toLogical(pixmap.size(), dpr);
     }
 
+    QSize physicalSizeFromPixmap(const QPixmap& pixmap)
+    {
+        return pixmap.isNull() ? QSize() : pixmap.size();
+    }
+
     QString saveErrorDetail(const ImageSaveUtils::Error& error)
     {
         if (error.stage.isEmpty()) {
@@ -1080,30 +1085,29 @@ void PinWindow::createContextMenu()
         });
 
     // Info submenu - displays image properties
-    QSize logicalSize = logicalSizeFromPixmap(m_originalPixmap);
-    QMenu* infoMenu = m_contextMenu->addMenu(
-        QString("%1 × %2").arg(logicalSize.width()).arg(logicalSize.height()));
+    m_infoMenu = m_contextMenu->addMenu(currentPhysicalSizeText());
 
     // Copy all info action
-    QAction* copyAllInfoAction = infoMenu->addAction(tr("Copy All"));
+    QAction* copyAllInfoAction = m_infoMenu->addAction(tr("Copy All"));
     connect(copyAllInfoAction, &QAction::triggered, this, &PinWindow::copyAllInfo);
 
-    infoMenu->addSeparator();
+    m_infoMenu->addSeparator();
 
     // Info items - clicking copies that value
-    auto addInfoItem = [infoMenu](const QString& label, const QString& value) {
-        QAction* action = infoMenu->addAction(QString("%1: %2").arg(label, value));
+    auto addInfoItem = [this](const QString& label, const QString& value) {
+        QAction* action = m_infoMenu->addAction(QString("%1: %2").arg(label, value));
         QObject::connect(action, &QAction::triggered, [value]() {
             QGuiApplication::clipboard()->setText(value);
             });
+        return action;
         };
 
-    addInfoItem(tr("Size"), QString("%1 × %2").arg(logicalSize.width()).arg(logicalSize.height()));
-    addInfoItem(tr("Zoom"), QString("%1%").arg(qRound(m_zoomLevel * 100)));
-    addInfoItem(tr("Rotation"), QString::fromUtf8("%1°").arg(m_rotationAngle));
-    addInfoItem(tr("Opacity"), QString("%1%").arg(qRound(m_opacity * 100)));
-    addInfoItem(tr("X-mirror"), m_flipHorizontal ? tr("Yes") : tr("No"));
-    addInfoItem(tr("Y-mirror"), m_flipVertical ? tr("Yes") : tr("No"));
+    m_sizeInfoAction = addInfoItem(tr("Size"), currentPhysicalSizeText());
+    m_zoomInfoAction = addInfoItem(tr("Zoom"), QString("%1%").arg(qRound(m_zoomLevel * 100)));
+    m_rotationInfoAction = addInfoItem(tr("Rotation"), QString::fromUtf8("%1°").arg(m_rotationAngle));
+    m_opacityInfoAction = addInfoItem(tr("Opacity"), QString("%1%").arg(qRound(m_opacity * 100)));
+    m_flipHorizontalInfoAction = addInfoItem(tr("X-mirror"), m_flipHorizontal ? tr("Yes") : tr("No"));
+    m_flipVerticalInfoAction = addInfoItem(tr("Y-mirror"), m_flipVertical ? tr("Yes") : tr("No"));
 
     // Live capture section - actions are updated dynamically in contextMenuEvent
     m_contextMenu->addSeparator();
@@ -1685,9 +1689,8 @@ void PinWindow::updateOcrLanguages(const QStringList& languages)
 
 void PinWindow::copyAllInfo()
 {
-    QSize logicalSize = logicalSizeFromPixmap(m_originalPixmap);
     QStringList info;
-    info << tr("Size: %1 × %2").arg(logicalSize.width()).arg(logicalSize.height());
+    info << tr("Size: %1").arg(currentPhysicalSizeText());
     info << tr("Zoom: %1%").arg(qRound(m_zoomLevel * 100));
     info << tr("Rotation: %1°").arg(m_rotationAngle);
     info << tr("Opacity: %1%").arg(qRound(m_opacity * 100));
@@ -1695,6 +1698,36 @@ void PinWindow::copyAllInfo()
     info << tr("Y-mirror: %1").arg(m_flipVertical ? tr("Yes") : tr("No"));
 
     QGuiApplication::clipboard()->setText(info.join("\n"));
+}
+
+QString PinWindow::currentPhysicalSizeText() const
+{
+    const QSize physicalSize = physicalSizeFromPixmap(m_originalPixmap);
+    return tr("%1 × %2 px").arg(physicalSize.width()).arg(physicalSize.height());
+}
+
+void PinWindow::refreshInfoMenu()
+{
+    if (!m_infoMenu) {
+        return;
+    }
+
+    const QString sizeText = currentPhysicalSizeText();
+    m_infoMenu->setTitle(sizeText);
+
+    auto updateInfoAction = [](QAction* action, const QString& label, const QString& value) {
+        if (!action) {
+            return;
+        }
+        action->setText(QString("%1: %2").arg(label, value));
+    };
+
+    updateInfoAction(m_sizeInfoAction, tr("Size"), sizeText);
+    updateInfoAction(m_zoomInfoAction, tr("Zoom"), QString("%1%").arg(qRound(m_zoomLevel * 100)));
+    updateInfoAction(m_rotationInfoAction, tr("Rotation"), QString::fromUtf8("%1°").arg(m_rotationAngle));
+    updateInfoAction(m_opacityInfoAction, tr("Opacity"), QString("%1%").arg(qRound(m_opacity * 100)));
+    updateInfoAction(m_flipHorizontalInfoAction, tr("X-mirror"), m_flipHorizontal ? tr("Yes") : tr("No"));
+    updateInfoAction(m_flipVerticalInfoAction, tr("Y-mirror"), m_flipVertical ? tr("Yes") : tr("No"));
 }
 
 QString PinWindow::cacheFolderPath()
@@ -2520,6 +2553,8 @@ void PinWindow::contextMenuEvent(QContextMenuEvent* event)
             action->setChecked(action->data().toInt() == m_captureFrameRate);
         }
     }
+
+    refreshInfoMenu();
 
     // Use popup() instead of exec() to avoid blocking the event loop.
     // This prevents UI freeze when global hotkeys (like F2) are pressed

@@ -94,6 +94,8 @@ private:
     void drawRegionBadge(QPainter& painter, const QRect& selectionRect, const QColor& color,
                          int index, bool isActive) const;
     QRectF alignedSelectionBorderRect(const QRect& selectionRect, qreal penWidth) const;
+    QRect physicalSelectionRect(const QRect& selectionRect) const;
+    QString selectionSizeLabel(const QRect& selectionRect) const;
 
     // Helper methods
     int effectiveCornerRadius() const;

@@ -223,6 +223,8 @@ private:
 
     // Info methods
     void copyAllInfo();
+    void refreshInfoMenu();
+    QString currentPhysicalSizeText() const;
 
     // Cache folder methods
     static QString cacheFolderPath();
@@ -343,11 +345,18 @@ private:
     bool m_isDragging;
     QMenu* m_contextMenu;
     QMenu* m_moveToScreenMenu = nullptr;
+    QMenu* m_infoMenu = nullptr;
     QAction* m_showToolbarAction = nullptr;
     QAction* m_clickThroughAction = nullptr;
     QAction* m_showBorderAction = nullptr;
     QAction* m_adjustRegionLayoutAction = nullptr;
     QAction* m_mergePinsAction = nullptr;
+    QAction* m_sizeInfoAction = nullptr;
+    QAction* m_zoomInfoAction = nullptr;
+    QAction* m_rotationInfoAction = nullptr;
+    QAction* m_opacityInfoAction = nullptr;
+    QAction* m_flipHorizontalInfoAction = nullptr;
+    QAction* m_flipVerticalInfoAction = nullptr;
 
     // Live capture context menu items
     QAction* m_startLiveAction = nullptr;
