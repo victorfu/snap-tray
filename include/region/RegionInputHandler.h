@@ -69,7 +69,6 @@ public:
 
 signals:
     void toolCursorRequested();
-    void currentPointUpdated(const QPoint& point);
 
     // Repaint requests
     void updateRequested();
@@ -154,7 +153,6 @@ private:
     QPoint m_startPoint;
     QPoint m_lastWindowDetectionPos;
     QPoint m_pendingWindowClickStartPos;
-    QPoint m_lastCrosshairPoint;  // Previous pointer position (retained for repaint tracking state)
     QRect m_pendingWindowClickRect;
     QRect m_lastSelectionRect;
     QRect m_lastMagnifierRect;
