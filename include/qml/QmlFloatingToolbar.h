@@ -5,6 +5,7 @@
 #include <QPoint>
 #include <QElapsedTimer>
 #include <QList>
+#include <QSize>
 #include <QWindow>
 #include <QColor>
 #include <QString>
@@ -89,6 +90,7 @@ public:
      * @brief Move the toolbar to a screen position.
      */
     void setPosition(const QPoint& pos);
+    QSize sizeHint();
     void setDragBounds(const QList<QRect>& bounds);
     void clearDragBounds();
     static QPoint clampTopLeftToBounds(const QPoint& desiredTopLeft,

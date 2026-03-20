@@ -101,6 +101,11 @@ void setWindowVisibleOnAllWorkspaces(QWidget *widget, bool enabled)
 #endif
 }
 
+void preventWindowHideOnDeactivate(QWidget *widget)
+{
+    Q_UNUSED(widget)
+}
+
 void forceNativeCursor(const QCursor&, QWidget *)
 {
     // Windows doesn't need separate native reassertion here.

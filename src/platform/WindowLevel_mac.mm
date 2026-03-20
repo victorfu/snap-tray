@@ -196,6 +196,25 @@ void setWindowVisibleOnAllWorkspaces(QWidget *widget, bool enabled)
     }
 }
 
+void preventWindowHideOnDeactivate(QWidget *widget)
+{
+    if (!widget) {
+        return;
+    }
+
+    NSView *view = reinterpret_cast<NSView *>(widget->winId());
+    if (!view) {
+        return;
+    }
+
+    NSWindow *window = [view window];
+    if (!window) {
+        return;
+    }
+
+    [window setHidesOnDeactivate:NO];
+}
+
 void forceNativeCursor(const QCursor& cursor, QWidget *)
 {
     if (NSCursor* nsCursor = nsCursorForQtCursor(cursor)) {

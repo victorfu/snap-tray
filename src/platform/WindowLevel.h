@@ -33,6 +33,11 @@ void setWindowExcludedFromCapture(QWidget *widget, bool excluded);
 // On Windows: Uses WS_EX_TOOLWINDOW style
 void setWindowVisibleOnAllWorkspaces(QWidget *widget, bool enabled);
 
+// Prevents a native window from hiding automatically when the app deactivates.
+// On macOS: Sets NSWindow.hidesOnDeactivate = NO after the native window exists.
+// On Windows: No-op.
+void preventWindowHideOnDeactivate(QWidget *widget);
+
 // Reasserts a Qt cursor at the native platform layer.
 // On macOS: maps system shapes or uploads custom pixmap cursors.
 // On Windows: currently no-op (policy is still unified at the Qt layer).

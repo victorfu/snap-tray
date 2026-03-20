@@ -36,6 +36,11 @@ target_link_libraries(Qml_EmojiPickerBackend PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_EmojiPickerBackend COMMAND Qml_EmojiPickerBackend)
 set_tests_properties(Qml_EmojiPickerBackend PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_FloatingToolbar Qml/tst_FloatingToolbar.cpp)
+target_link_libraries(Qml_FloatingToolbar PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME Qml_FloatingToolbar COMMAND Qml_FloatingToolbar)
+set_tests_properties(Qml_FloatingToolbar PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 # ============================================================================
 # PinWindow Tests (link snaptray_ui which includes snaptray_platform)
 # ============================================================================
@@ -108,6 +113,11 @@ add_executable(ScreenCanvas_Placement ScreenCanvas/tst_Placement.cpp)
 target_link_libraries(ScreenCanvas_Placement PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
 add_test(NAME ScreenCanvas_Placement COMMAND ScreenCanvas_Placement)
 set_tests_properties(ScreenCanvas_Placement PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
+add_executable(ScreenCanvas_SessionRecovery ScreenCanvas/tst_SessionRecovery.cpp)
+target_link_libraries(ScreenCanvas_SessionRecovery PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME ScreenCanvas_SessionRecovery COMMAND ScreenCanvas_SessionRecovery)
+set_tests_properties(ScreenCanvas_SessionRecovery PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
 # ============================================================================
 # RegionSelector Tests

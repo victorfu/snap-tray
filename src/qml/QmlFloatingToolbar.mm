@@ -280,6 +280,11 @@ void QmlFloatingToolbar::show()
     if (!m_rootItem)
         return;
 
+    const QSize resolvedSize = sizeHint();
+    if (!resolvedSize.isEmpty() && m_view->size() != resolvedSize) {
+        m_view->resize(resolvedSize);
+    }
+
     m_view->show();
     applyPlatformWindowFlags();
     QmlOverlayManager::enableNativeShadow(m_view);
@@ -354,6 +359,32 @@ void QmlFloatingToolbar::setParentWidget(QWidget* parent)
     m_parentWidget = parent;
 }
 
+QSize QmlFloatingToolbar::sizeHint()
+{
+    ensureView();
+    if (!m_view) {
+        return {};
+    }
+
+    QSize size = m_view->size();
+    if (!size.isEmpty()) {
+        return size;
+    }
+
+    if (!m_rootItem) {
+        return size;
+    }
+
+    size = QSize(qRound(m_rootItem->width()), qRound(m_rootItem->height()));
+    if (size.isEmpty()) {
+        size = QSize(qRound(m_rootItem->implicitWidth()), qRound(m_rootItem->implicitHeight()));
+    }
+    if (!size.isEmpty()) {
+        m_view->resize(size);
+    }
+    return size;
+}
+
 // ── Positioning ──
 
 void QmlFloatingToolbar::positionForSelection(const QRect& selectionRect,
@@ -423,10 +454,18 @@ void QmlFloatingToolbar::positionAt(int centerX, int bottomY)
 
 void QmlFloatingToolbar::setPosition(const QPoint& pos)
 {
-    if (m_view) {
-        m_view->setPosition(pos);
-        syncCursorSurface();
+    ensureView();
+    if (!m_view) {
+        return;
     }
+
+    const QSize resolvedSize = sizeHint();
+    if (!resolvedSize.isEmpty() && m_view->size() != resolvedSize) {
+        m_view->resize(resolvedSize);
+    }
+
+    m_view->setPosition(pos);
+    syncCursorSurface();
 }
 
 void QmlFloatingToolbar::setDragBounds(const QList<QRect>& bounds)

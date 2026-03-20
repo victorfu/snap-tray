@@ -15,6 +15,9 @@ private slots:
     void initTestCase();
     void testUsesAuthorityModeByDefault();
     void testPopupRestoreReturnsEraserCursor();
+#ifdef Q_OS_MACOS
+    void testMacSurfaceAvoidsToolWindowHideBehavior();
+#endif
 };
 
 void TestScreenCanvasStyleSync::initTestCase()
@@ -60,6 +63,15 @@ void TestScreenCanvasStyleSync::testPopupRestoreReturnsEraserCursor()
     QCOMPARE(canvas.cursor().pixmap().cacheKey(), toolCursor.pixmap().cacheKey());
     QCOMPARE(canvas.cursor().hotSpot(), toolCursor.hotSpot());
 }
+
+#ifdef Q_OS_MACOS
+void TestScreenCanvasStyleSync::testMacSurfaceAvoidsToolWindowHideBehavior()
+{
+    ScreenCanvas canvas;
+    QVERIFY(canvas.testAttribute(Qt::WA_MacAlwaysShowToolWindow));
+    QVERIFY(!canvas.windowFlags().testFlag(Qt::Tool));
+}
+#endif
 
 QTEST_MAIN(TestScreenCanvasStyleSync)
 #include "tst_StyleSync.moc"
