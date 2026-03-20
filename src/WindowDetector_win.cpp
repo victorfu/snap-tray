@@ -2,7 +2,6 @@
 #include "utils/CoordinateHelper.h"
 #include <QScreen>
 #include <QDebug>
-#include <QElapsedTimer>
 #include <QFileInfo>
 #include <QtConcurrent>
 #include <QMutexLocker>
@@ -18,24 +17,6 @@
 #pragma comment(lib, "psapi.lib")
 
 namespace {
-
-constexpr qint64 kSlowWindowRefreshWarningThresholdMs = 25;
-
-void logSlowWindowRefresh(const char* stage,
-                          qint64 elapsedMs,
-                          size_t windowCount,
-                          DetectionFlags flags)
-{
-    if (elapsedMs < 0) {
-        return;
-    }
-
-    qWarning().nospace()
-        << "WindowDetector: slow " << stage
-        << " elapsedMs=" << elapsedMs
-        << " windowCount=" << windowCount
-        << " flags=0x" << Qt::hex << static_cast<int>(flags) << Qt::dec;
-}
 
 struct EnumWindowsContext {
     std::vector<DetectedElement> *windowCache;
@@ -431,13 +412,7 @@ void WindowDetector::refreshWindowList()
 
     QMutexLocker locker(&m_cacheMutex);
     m_windowCache.clear();
-    QElapsedTimer timer;
-    timer.start();
     enumerateWindows();
-    const qint64 elapsedMs = timer.elapsed();
-    if (elapsedMs >= kSlowWindowRefreshWarningThresholdMs) {
-        logSlowWindowRefresh("refreshWindowList", elapsedMs, m_windowCache.size(), m_detectionFlags);
-    }
 
     m_refreshComplete = true;
 }
@@ -453,8 +428,6 @@ void WindowDetector::refreshWindowListAsync()
     const DetectionFlags flags = m_detectionFlags;
 
     m_refreshFuture = QtConcurrent::run([this, dpr, requestId, flags]() {
-        QElapsedTimer timer;
-        timer.start();
         std::vector<DetectedElement> newCache;
         enumerateWindowsInternal(newCache, dpr, flags);
 
@@ -463,15 +436,9 @@ void WindowDetector::refreshWindowListAsync()
             return;
         }
 
-        const size_t newWindowCount = newCache.size();
         {
             QMutexLocker locker(&m_cacheMutex);
             m_windowCache = std::move(newCache);
-        }
-
-        const qint64 elapsedMs = timer.elapsed();
-        if (elapsedMs >= kSlowWindowRefreshWarningThresholdMs) {
-            logSlowWindowRefresh("refreshWindowListAsync", elapsedMs, newWindowCount, flags);
         }
 
         m_refreshComplete = true;

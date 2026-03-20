@@ -84,7 +84,6 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QLabel>
 #include <QTimer>
 #include <QSettings>
-#include <QElapsedTimer>
 #include <QtMath>
 #include <QMenu>
 #include <QFontDatabase>
@@ -111,21 +110,6 @@ CursorStyleSpec cursorSpecForWidget(const QWidget* widget)
 {
     return widget ? CursorStyleSpec::fromCursor(widget->cursor())
                   : CursorStyleSpec::fromShape(Qt::ArrowCursor);
-}
-
-constexpr qint64 kSlowRegionSelectorGrabWarningThresholdMs = 25;
-constexpr qint64 kSlowMagnifierWarmupWarningThresholdMs = 12;
-
-void logSlowRegionSelectorPath(const char* stage, qint64 elapsedMs, const QString& details = {})
-{
-    if (elapsedMs < 0) {
-        return;
-    }
-
-    qWarning().nospace()
-        << "RegionSelector: slow " << stage
-        << " elapsedMs=" << elapsedMs
-        << (details.isEmpty() ? QString() : QStringLiteral(" ") + details);
 }
 
 } // namespace
@@ -1199,18 +1183,7 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
         m_backgroundPixmap = preCapture;
     }
     else {
-        QElapsedTimer captureTimer;
-        captureTimer.start();
         m_backgroundPixmap = m_currentScreen->grabWindow(0);
-        if (captureTimer.elapsed() >= kSlowRegionSelectorGrabWarningThresholdMs) {
-            logSlowRegionSelectorPath(
-                "grabWindow(0)",
-                captureTimer.elapsed(),
-                QStringLiteral("context=initializeForScreen size=%1x%2 dpr=%3")
-                    .arg(m_currentScreen->geometry().width())
-                    .arg(m_currentScreen->geometry().height())
-                    .arg(m_devicePixelRatio, 0, 'f', 2));
-        }
     }
 
     // Create shared pixmap for mosaic tool (explicit sharing to avoid memory duplication)
@@ -1953,22 +1926,9 @@ void RegionSelector::runDeferredPostShowInitialization(
         return;
     }
 
-    QElapsedTimer magnifierWarmupTimer;
-    magnifierWarmupTimer.start();
     m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
     m_magnifierPanel->invalidateCache();
     m_magnifierPanel->preWarmCache(initialCursorPos, m_backgroundPixmap);
-    if (magnifierWarmupTimer.elapsed() >= kSlowMagnifierWarmupWarningThresholdMs) {
-        logSlowRegionSelectorPath(
-            "magnifier warmup",
-            magnifierWarmupTimer.elapsed(),
-            QStringLiteral("cursor=%1,%2 canvas=%3x%4 dpr=%5")
-                .arg(initialCursorPos.x())
-                .arg(initialCursorPos.y())
-                .arg(width())
-                .arg(height())
-                .arg(m_devicePixelRatio, 0, 'f', 2));
-    }
 
     scheduleDeferredInitialWindowDetection(token, initialQueryMode, initialCursorPos);
 }

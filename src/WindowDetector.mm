@@ -5,7 +5,6 @@
 #include <QScreen>
 #include <QDebug>
 #include <QByteArray>
-#include <QElapsedTimer>
 #include <QtConcurrent>
 #include <unistd.h>
 
@@ -25,7 +24,6 @@
 namespace {
 
 const CFStringRef kAXVisibleAttributeCompat = CFSTR("AXVisible");
-constexpr qint64 kSlowWindowRefreshWarningThresholdMs = 25;
 
 // Classify element type based on window layer and characteristics
 ElementType classifyElementType(int windowLayer, CFDictionaryRef windowInfo, CGRect bounds)
@@ -115,22 +113,6 @@ int getMinimumSize(ElementType type)
         return 50;
     }
     return 50;
-}
-
-void logSlowWindowRefresh(const char* stage,
-                          qint64 elapsedMs,
-                          CFIndex windowCount,
-                          DetectionFlags flags)
-{
-    if (elapsedMs < 0) {
-        return;
-    }
-
-    qWarning().nospace()
-        << "WindowDetector: slow " << stage
-        << " elapsedMs=" << elapsedMs
-        << " windowCount=" << windowCount
-        << " flags=0x" << Qt::hex << static_cast<int>(flags) << Qt::dec;
 }
 
 QImage createQImageFromCGImage(CGImageRef sourceImage)
@@ -470,68 +452,6 @@ QString readWindowString(CFDictionaryRef windowInfo, const void *key)
     return QString::fromCFString(strRef);
 }
 
-bool isWindowDetectorDebugEnabled()
-{
-    static const bool enabled = []() {
-        const QByteArray rawValue = qgetenv("SNAPTRAY_DEBUG_WINDOW_DETECTOR").trimmed().toLower();
-        return !rawValue.isEmpty() &&
-               rawValue != "0" &&
-               rawValue != "false" &&
-               rawValue != "no" &&
-               rawValue != "off";
-    }();
-    return enabled;
-}
-
-void logTopLevelFilterDrop(const char *reason, CFDictionaryRef windowInfo, int windowLayer, const QRect &bounds, const QString &detail = QString())
-{
-    if (!isWindowDetectorDebugEnabled()) {
-        return;
-    }
-
-    pid_t pid = 0;
-    readCFNumberValue(windowInfo, kCGWindowOwnerPID, kCFNumberIntType, pid);
-    int windowId = 0;
-    readCFNumberValue(windowInfo, kCGWindowNumber, kCFNumberIntType, windowId);
-
-    const QString ownerName = readWindowString(windowInfo, kCGWindowOwnerName);
-    const QString title = readWindowString(windowInfo, kCGWindowName);
-    const QString detailSuffix = detail.isEmpty() ? QString() : QStringLiteral(" (%1)").arg(detail);
-
-    qDebug().noquote()
-        << QStringLiteral("WindowDetector(mac): dropped top-level window reason=%1%2 id=%3 pid=%4 owner=\"%5\" title=\"%6\" layer=%7 bounds=%8,%9 %10x%11")
-              .arg(QString::fromLatin1(reason))
-              .arg(detailSuffix)
-              .arg(windowId)
-              .arg(pid)
-              .arg(ownerName)
-              .arg(title)
-              .arg(windowLayer)
-              .arg(bounds.x())
-              .arg(bounds.y())
-              .arg(bounds.width())
-              .arg(bounds.height());
-}
-
-void logAXFilterDrop(const char *reason, qint64 pid, const QString &role, const CGRect &frame, const QString &detail = QString())
-{
-    if (!isWindowDetectorDebugEnabled()) {
-        return;
-    }
-
-    const QString detailSuffix = detail.isEmpty() ? QString() : QStringLiteral(" (%1)").arg(detail);
-    qDebug().noquote()
-        << QStringLiteral("WindowDetector(mac): dropped AX element reason=%1%2 pid=%3 role=\"%4\" frame=%5,%6 %7x%8")
-              .arg(QString::fromLatin1(reason))
-              .arg(detailSuffix)
-              .arg(pid)
-              .arg(role)
-              .arg(frame.origin.x, 0, 'f', 1)
-              .arg(frame.origin.y, 0, 'f', 1)
-              .arg(frame.size.width, 0, 'f', 1)
-              .arg(frame.size.height, 0, 'f', 1);
-}
-
 std::optional<bool> copyAXBooleanAttribute(AXUIElementRef element, CFStringRef attribute)
 {
     if (!element || !attribute) {
@@ -576,13 +496,11 @@ std::optional<DetectedElement> buildDetectedTopLevelElement(
 
     CFDictionaryRef boundsDict = static_cast<CFDictionaryRef>(CFDictionaryGetValue(windowInfo, kCGWindowBounds));
     if (!boundsDict) {
-        logTopLevelFilterDrop("missing-bounds", windowInfo, windowLayer, QRect());
         return std::nullopt;
     }
 
     CGRect cgBounds;
     if (!CGRectMakeWithDictionaryRepresentation(boundsDict, &cgBounds)) {
-        logTopLevelFilterDrop("invalid-bounds", windowInfo, windowLayer, QRect());
         return std::nullopt;
     }
 
@@ -594,17 +512,11 @@ std::optional<DetectedElement> buildDetectedTopLevelElement(
 
     const std::optional<double> alpha = readWindowAlpha(windowInfo);
     if (WindowDetectorMacFilters::shouldRejectTopLevelByAlpha(alpha)) {
-        logTopLevelFilterDrop("alpha", windowInfo, windowLayer, bounds,
-                              QStringLiteral("alpha=%1 threshold=%2")
-                                  .arg(*alpha, 0, 'f', 3)
-                                  .arg(WindowDetectorMacFilters::kMinVisibleWindowAlpha, 0, 'f', 3));
         return std::nullopt;
     }
 
     const std::optional<bool> isOnscreen = readCFBooleanValue(windowInfo, kCGWindowIsOnscreen);
     if (WindowDetectorMacFilters::shouldRejectTopLevelByOnscreen(isOnscreen)) {
-        logTopLevelFilterDrop("onscreen", windowInfo, windowLayer, bounds,
-                              QStringLiteral("value=false"));
         return std::nullopt;
     }
 
@@ -696,14 +608,7 @@ void WindowDetector::refreshWindowList()
         return;
     }
 
-    QElapsedTimer timer;
-    timer.start();
     enumerateWindows();
-    const qint64 elapsedMs = timer.elapsed();
-    if (elapsedMs >= kSlowWindowRefreshWarningThresholdMs) {
-        logSlowWindowRefresh("refreshWindowList", elapsedMs, static_cast<CFIndex>(m_windowCache.size()),
-                             m_detectionFlags);
-    }
 
     m_refreshComplete = true;
 }
@@ -815,11 +720,6 @@ std::optional<DetectedElement> WindowDetector::detectChildElementAt(
         const std::optional<bool> isHiddenAttr = copyAXBooleanAttribute(current, kAXHiddenAttribute);
         const std::optional<bool> isVisibleAttr = copyAXBooleanAttribute(current, kAXVisibleAttributeCompat);
         if (WindowDetectorMacFilters::shouldRejectAxByVisibility(isHiddenAttr.value_or(false), isVisibleAttr)) {
-            if (isHiddenAttr.value_or(false)) {
-                logAXFilterDrop("ax-hidden", targetPid, role, CGRectZero);
-            } else {
-                logAXFilterDrop("ax-visible-false", targetPid, role, CGRectZero);
-            }
         } else {
             // Check if this element has usable bounds
             CGRect frame;
@@ -871,15 +771,6 @@ std::optional<DetectedElement> WindowDetector::detectChildElementAt(
                 }
 
                 if (windowArea > 0.0) {
-                    const double ratio = elementArea / windowArea;
-                    const double limit = WindowDetectorMacFilters::maxAreaRatioForRole(role);
-                    logAXFilterDrop("area-ratio", targetPid, role, frame,
-                                    QStringLiteral("ratio=%1 limit=%2")
-                                        .arg(ratio, 0, 'f', 3)
-                                        .arg(limit, 0, 'f', 3));
-                } else {
-                    logAXFilterDrop("area-ratio", targetPid, role, frame,
-                                    QStringLiteral("window-area<=0"));
                 }
             }
         }
@@ -996,8 +887,6 @@ void WindowDetector::refreshWindowListAsync()
     const DetectionFlags flags = m_detectionFlags;
 
     m_refreshFuture = QtConcurrent::run([this, requestId, flags]() {
-        QElapsedTimer timer;
-        timer.start();
         std::vector<DetectedElement> newCache;
 
         // Determine CGWindowList options based on detection flags
@@ -1036,15 +925,9 @@ void WindowDetector::refreshWindowListAsync()
             return;
         }
 
-        const CFIndex newWindowCount = static_cast<CFIndex>(newCache.size());
         {
             QMutexLocker locker(&m_cacheMutex);
             m_windowCache = std::move(newCache);
-        }
-
-        const qint64 elapsedMs = timer.elapsed();
-        if (elapsedMs >= kSlowWindowRefreshWarningThresholdMs) {
-            logSlowWindowRefresh("refreshWindowListAsync", elapsedMs, newWindowCount, flags);
         }
 
         m_refreshComplete = true;

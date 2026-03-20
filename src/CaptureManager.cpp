@@ -16,7 +16,6 @@
 #include <QCursor>
 #include <QKeyEvent>
 #include <QDialog>
-#include <QElapsedTimer>
 #include <QImage>
 
 #ifdef Q_OS_MACOS
@@ -25,34 +24,7 @@
 
 namespace {
 
-constexpr qint64 kSlowGrabWindowWarningThresholdMs = 25;
-constexpr qint64 kSlowRegionSelectorConstructionWarningThresholdMs = 25;
-
-struct ScreenSnapshotResult {
-    QPixmap pixmap;
-    const char* stageName = "grabWindow(0)";
-    QString details;
-};
-
-void logSlowCapturePath(const char* stage, qint64 elapsedMs, const QString& details = {})
-{
-    if (elapsedMs < 0) {
-        return;
-    }
-
-    qWarning().nospace()
-        << "CaptureManager: slow " << stage
-        << " elapsedMs=" << elapsedMs
-        << (details.isEmpty() ? QString() : QStringLiteral(" ") + details);
-}
-
 #ifdef Q_OS_MACOS
-struct NativeDisplaySnapshotResult {
-    QPixmap pixmap;
-    QString details;
-    const char* failureStage = nullptr;
-};
-
 QImage createQImageFromCGImage(CGImageRef sourceImage)
 {
     if (!sourceImage) {
@@ -124,95 +96,49 @@ std::optional<CGDirectDisplayID> displayIdForScreen(QScreen* screen)
     return std::nullopt;
 }
 
-NativeDisplaySnapshotResult captureScreenViaNativeDisplay(QScreen* screen)
+QPixmap captureScreenViaNativeDisplay(QScreen* screen)
 {
-    NativeDisplaySnapshotResult result;
-    QElapsedTimer timer;
-    timer.start();
-
     const auto displayId = displayIdForScreen(screen);
     if (!displayId.has_value()) {
-        result.failureStage = "displayIdForScreen";
-        return result;
+        return {};
     }
-    const qint64 displayLookupMs = timer.restart();
 
     CGImageRef displayImage = CGDisplayCreateImage(*displayId);
     if (!displayImage) {
-        result.failureStage = "CGDisplayCreateImage";
-        result.details = QStringLiteral("displayLookupMs=%1").arg(displayLookupMs);
-        return result;
+        return {};
     }
-    const qint64 displayCaptureMs = timer.restart();
 
     const QImage image = createQImageFromCGImage(displayImage);
     CGImageRelease(displayImage);
     if (image.isNull()) {
-        result.failureStage = "createQImageFromCGImage";
-        result.details = QStringLiteral("displayLookupMs=%1 captureMs=%2")
-                             .arg(displayLookupMs)
-                             .arg(displayCaptureMs);
-        return result;
+        return {};
     }
-    const qint64 imageConversionMs = timer.restart();
 
     QPixmap pixmap = QPixmap::fromImage(image, Qt::NoOpaqueDetection);
     if (pixmap.isNull()) {
-        result.failureStage = "QPixmap::fromImage";
-        result.details = QStringLiteral("displayLookupMs=%1 captureMs=%2 imageConversionMs=%3")
-                             .arg(displayLookupMs)
-                             .arg(displayCaptureMs)
-                             .arg(imageConversionMs);
-        return result;
+        return {};
     }
-    const qint64 pixmapConversionMs = timer.restart();
 
     const qreal dpr = screen->devicePixelRatio() > 0.0 ? screen->devicePixelRatio() : 1.0;
     pixmap.setDevicePixelRatio(dpr);
-    const qint64 setDprMs = timer.elapsed();
-
-    result.pixmap = pixmap;
-    result.details = QStringLiteral(
-        "displayLookupMs=%1 captureMs=%2 imageConversionMs=%3 pixmapConversionMs=%4 setDprMs=%5")
-                         .arg(displayLookupMs)
-                         .arg(displayCaptureMs)
-                         .arg(imageConversionMs)
-                         .arg(pixmapConversionMs)
-                         .arg(setDprMs);
-    return result;
+    return pixmap;
 }
 #endif
 
-ScreenSnapshotResult captureScreenSnapshot(QScreen* screen)
+QPixmap captureScreenSnapshot(QScreen* screen)
 {
     if (!screen) {
         return {};
     }
 
-    ScreenSnapshotResult result;
-
 #ifdef Q_OS_MACOS
-    const NativeDisplaySnapshotResult nativeResult = captureScreenViaNativeDisplay(screen);
-    result.pixmap = nativeResult.pixmap;
-    result.details = nativeResult.details;
-    if (!result.pixmap.isNull()) {
-        result.stageName = "CGDisplayCreateImage";
-        return result;
-    }
-    if (nativeResult.failureStage) {
-        result.details = QStringLiteral("nativeFailureStage=%1 %2")
-                             .arg(QString::fromUtf8(nativeResult.failureStage),
-                                  nativeResult.details);
+    QPixmap nativePixmap = captureScreenViaNativeDisplay(screen);
+    if (!nativePixmap.isNull()) {
+        return nativePixmap;
     }
 #endif
 
-    result.pixmap = screen->grabWindow(0);
-    if (result.details.isEmpty()) {
-        result.details = QStringLiteral("fallback=QtGrabWindow");
-    } else {
-        result.details += QStringLiteral(" fallback=QtGrabWindow");
-    }
-    return result;
+    return screen->grabWindow(0);
 }
 
 QScreen* fallbackReplayScreen()
@@ -332,20 +258,7 @@ bool CaptureManager::startHistoryReplay(const QString& entryId)
 
     QWidget* popup = QApplication::activePopupWidget();
     QWidget* modal = QApplication::activeModalWidget();
-    QElapsedTimer preCaptureTimer;
-    preCaptureTimer.start();
-    const ScreenSnapshotResult preCaptureResult = captureScreenSnapshot(targetScreen);
-    const QPixmap preCapture = preCaptureResult.pixmap;
-    if (preCaptureTimer.elapsed() >= kSlowGrabWindowWarningThresholdMs) {
-        logSlowCapturePath(
-            preCaptureResult.stageName,
-            preCaptureTimer.elapsed(),
-            QStringLiteral("context=historyReplay size=%1x%2 dpr=%3 %4")
-                .arg(targetScreen->geometry().width())
-                .arg(targetScreen->geometry().height())
-                .arg(targetScreen->devicePixelRatio(), 0, 'f', 2)
-                .arg(preCaptureResult.details));
-    }
+    const QPixmap preCapture = captureScreenSnapshot(targetScreen);
 
     if (popup) {
         popup->close();
@@ -416,22 +329,7 @@ void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortc
     QWidget *popup = QApplication::activePopupWidget();
     QWidget *modal = QApplication::activeModalWidget();
 
-    QElapsedTimer preCaptureTimer;
-    preCaptureTimer.start();
-    const ScreenSnapshotResult preCaptureResult = captureScreenSnapshot(targetScreen);
-    QPixmap preCapture = preCaptureResult.pixmap;
-    if (preCaptureTimer.elapsed() >= kSlowGrabWindowWarningThresholdMs) {
-        logSlowCapturePath(
-            preCaptureResult.stageName,
-            preCaptureTimer.elapsed(),
-            QStringLiteral("context=%1 size=%2x%3 dpr=%4 %5")
-                .arg(mode == CaptureEntryMode::QuickPin ? QStringLiteral("quickPin")
-                                                        : QStringLiteral("regionCapture"))
-                .arg(targetScreen->geometry().width())
-                .arg(targetScreen->geometry().height())
-                .arg(targetScreen->devicePixelRatio(), 0, 'f', 2)
-                .arg(preCaptureResult.details));
-    }
+    QPixmap preCapture = captureScreenSnapshot(targetScreen);
 
     // 4. Close popup/modal AFTER screenshot
     if (popup) {
@@ -664,17 +562,7 @@ void CaptureManager::refreshWindowDetectorAsync(QScreen *screen)
 
 RegionSelector *CaptureManager::createRegionSelector(bool showShortcutHintsOnEntry)
 {
-    QElapsedTimer timer;
-    timer.start();
     auto *selector = new RegionSelector();
-    const qint64 elapsedMs = timer.elapsed();
-    if (elapsedMs >= kSlowRegionSelectorConstructionWarningThresholdMs) {
-        logSlowCapturePath(
-            "RegionSelector construction",
-            elapsedMs,
-            QStringLiteral("screenCount=%1").arg(QGuiApplication::screens().size()));
-    }
-
     selector->setShowShortcutHintsOnEntry(showShortcutHintsOnEntry);
     return selector;
 }
