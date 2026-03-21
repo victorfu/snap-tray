@@ -8,6 +8,7 @@
 
 class QEvent;
 class QQuickView;
+class QWidget;
 
 namespace SnapTray {
 
@@ -29,6 +30,9 @@ signals:
 
 private:
     void ensureView();
+    QWidget* hostWidget() const;
+    void syncTransientParent();
+    void applyPlatformWindowFlags();
     void syncCursorSurface();
     bool eventFilter(QObject* watched, QEvent* event) override;
 

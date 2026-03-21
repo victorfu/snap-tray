@@ -1,19 +1,23 @@
 #include <QtTest/QtTest>
 
 #include <QGuiApplication>
+#include <QPointer>
 #include <QQuickItem>
 #include <QQuickView>
 #include <QSignalSpy>
+#include <QDateTime>
 #include <QVariantList>
 #include <QWidget>
 
 #include "qml/CanvasToolbarViewModel.h"
 #include "qml/PinToolbarViewModel.h"
 #include "qml/PinToolOptionsViewModel.h"
+#include "qml/QmlDialog.h"
 #include "qml/QmlEmojiPickerPopup.h"
 #include "qml/QmlFloatingSubToolbar.h"
 #include "qml/QmlFloatingToolbar.h"
 #include "qml/QmlWindowedToolbar.h"
+#include "qml/ShareResultViewModel.h"
 
 #ifdef Q_OS_WIN
 #include <Windows.h>
@@ -39,6 +43,17 @@ void verifyFramelessToolWindow(QWindow* window)
     QVERIFY((exStyle & WS_EX_TOOLWINDOW) != 0);
     QVERIFY((exStyle & WS_EX_APPWINDOW) == 0);
 }
+
+QWindow* findNewVisibleTopLevelWindow(const QList<QWindow*>& before)
+{
+    const auto windows = QGuiApplication::topLevelWindows();
+    for (QWindow* window : windows) {
+        if (!before.contains(window) && window && window->isVisible()) {
+            return window;
+        }
+    }
+    return nullptr;
+}
 #endif
 } // namespace
 
@@ -58,6 +73,7 @@ private slots:
     void testWindowedToolbarStripsNativeWindowChromeOnWindows();
     void testWindowedToolbarUsesAssociatedPinWindowAsTransientParentOnWindows();
     void testWindowedToolbarTooltipUsesToolbarAsTransientParentOnWindows();
+    void testQmlDialogUsesParentWidgetAsTransientParentOnWindows();
 #endif
 };
 
@@ -249,6 +265,35 @@ void tst_QmlFloatingToolbar::testWindowedToolbarTooltipUsesToolbarAsTransientPar
     QCOMPARE(toolbar.tooltipWindow()->transientParent(), toolbar.window());
     verifyFramelessToolWindow(toolbar.tooltipWindow());
     toolbar.close();
+}
+
+void tst_QmlFloatingToolbar::testQmlDialogUsesParentWidgetAsTransientParentOnWindows()
+{
+    QWidget host;
+    host.show();
+    QTRY_VERIFY(host.windowHandle() != nullptr);
+
+    ShareResultViewModel viewModel;
+    viewModel.setResult(QStringLiteral("https://example.com/share/abc"),
+                        QDateTime::currentDateTimeUtc().addDays(1),
+                        false);
+
+    const QList<QWindow*> beforeWindows = QGuiApplication::topLevelWindows();
+
+    QPointer<SnapTray::QmlDialog> dialog = new SnapTray::QmlDialog(
+        QUrl(QStringLiteral("qrc:/SnapTrayQml/dialogs/ShareResultDialog.qml")),
+        &viewModel,
+        QStringLiteral("viewModel"),
+        &host);
+    dialog->showAt();
+
+    QWindow* dialogWindow = nullptr;
+    QTRY_VERIFY((dialogWindow = findNewVisibleTopLevelWindow(beforeWindows)) != nullptr);
+
+    QCOMPARE(dialogWindow->transientParent(), host.windowHandle());
+    verifyFramelessToolWindow(dialogWindow);
+    dialog->close();
+    QTRY_VERIFY(dialog.isNull());
 }
 #endif
 
