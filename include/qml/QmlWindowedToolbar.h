@@ -72,6 +72,8 @@ private:
     void ensureView();
     void ensureTooltipView();
     void setupConnections();
+    void syncTransientParent();
+    void syncTooltipTransientParent();
     void applyPlatformWindowFlags();
     void applyTooltipWindowFlags();
     void syncCursorSurface(const CursorStyleSpec* explicitStyle = nullptr);

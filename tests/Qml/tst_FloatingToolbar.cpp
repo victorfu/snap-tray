@@ -4,9 +4,11 @@
 #include <QQuickItem>
 #include <QQuickView>
 #include <QSignalSpy>
+#include <QVariantList>
 #include <QWidget>
 
 #include "qml/CanvasToolbarViewModel.h"
+#include "qml/PinToolbarViewModel.h"
 #include "qml/PinToolOptionsViewModel.h"
 #include "qml/QmlEmojiPickerPopup.h"
 #include "qml/QmlFloatingSubToolbar.h"
@@ -54,6 +56,8 @@ private slots:
     void testFloatingSubToolbarRetainsFramelessChromeAfterParentChangeOnWindows();
     void testEmojiPickerRetainsFramelessChromeAfterParentChangeOnWindows();
     void testWindowedToolbarStripsNativeWindowChromeOnWindows();
+    void testWindowedToolbarUsesAssociatedPinWindowAsTransientParentOnWindows();
+    void testWindowedToolbarTooltipUsesToolbarAsTransientParentOnWindows();
 #endif
 };
 
@@ -193,6 +197,57 @@ void tst_QmlFloatingToolbar::testWindowedToolbarStripsNativeWindowChromeOnWindow
     QCoreApplication::processEvents();
 
     verifyFramelessToolWindow(toolbar.window());
+    toolbar.close();
+}
+
+void tst_QmlFloatingToolbar::testWindowedToolbarUsesAssociatedPinWindowAsTransientParentOnWindows()
+{
+    SnapTray::QmlWindowedToolbar toolbar;
+    QWidget host;
+
+    host.show();
+    QTRY_VERIFY(host.windowHandle() != nullptr);
+
+    toolbar.setAssociatedWidgets(&host, nullptr);
+    toolbar.show();
+    QCoreApplication::processEvents();
+
+    QVERIFY(toolbar.window() != nullptr);
+    QCOMPARE(toolbar.window()->transientParent(), host.windowHandle());
+    verifyFramelessToolWindow(toolbar.window());
+    toolbar.close();
+}
+
+void tst_QmlFloatingToolbar::testWindowedToolbarTooltipUsesToolbarAsTransientParentOnWindows()
+{
+    SnapTray::QmlWindowedToolbar toolbar;
+    toolbar.show();
+    QCoreApplication::processEvents();
+
+    auto* view = qobject_cast<QQuickView*>(toolbar.window());
+    QVERIFY(view != nullptr);
+
+    QQuickItem* root = view->rootObject();
+    QVERIFY(root != nullptr);
+
+    const QVariantList buttons = toolbar.viewModel()->buttons();
+    QVERIFY(!buttons.isEmpty());
+    const int buttonId = buttons.constFirst().toMap().value(QStringLiteral("id")).toInt();
+
+    QVERIFY(QMetaObject::invokeMethod(
+        root,
+        "buttonHovered",
+        Q_ARG(int, buttonId),
+        Q_ARG(double, 10.0),
+        Q_ARG(double, 8.0),
+        Q_ARG(double, 28.0),
+        Q_ARG(double, 24.0)));
+
+    QTRY_VERIFY(toolbar.tooltipWindow() != nullptr);
+    QTRY_VERIFY(toolbar.tooltipWindow()->isVisible());
+
+    QCOMPARE(toolbar.tooltipWindow()->transientParent(), toolbar.window());
+    verifyFramelessToolWindow(toolbar.tooltipWindow());
     toolbar.close();
 }
 #endif

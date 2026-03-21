@@ -153,6 +153,7 @@ void QmlWindowedToolbar::ensureTooltipView()
     }
 
     m_tooltipRootItem = m_tooltipView->rootObject();
+    syncTooltipTransientParent();
 }
 
 void QmlWindowedToolbar::setupConnections()
@@ -241,6 +242,8 @@ void QmlWindowedToolbar::applyTooltipWindowFlags()
 #elif defined(Q_OS_WIN)
     Q_UNUSED(m_tooltipView)
 #endif
+
+    reinforceFramelessToolWindow(m_tooltipView);
 }
 
 // ── Show / Hide / Close ──
@@ -254,6 +257,7 @@ void QmlWindowedToolbar::show()
         return;
     }
 
+    syncTransientParent();
     m_view->show();
     applyPlatformWindowFlags();
     QmlOverlayManager::enableNativeShadow(m_view);
@@ -330,6 +334,7 @@ void QmlWindowedToolbar::setAssociatedWidgets(QWidget* pinWindow, QmlFloatingSub
 {
     m_associatedPinWindow = pinWindow;
     m_associatedSubToolbar = subToolbar;
+    syncTransientParent();
 }
 
 void QmlWindowedToolbar::setAssociatedTransientWidget(QWidget* widget)
@@ -340,6 +345,45 @@ void QmlWindowedToolbar::setAssociatedTransientWidget(QWidget* widget)
 void QmlWindowedToolbar::setAssociatedTransientWindow(QWindow* window)
 {
     m_associatedTransientWindow = window;
+}
+
+void QmlWindowedToolbar::syncTransientParent()
+{
+    if (!m_view) {
+        return;
+    }
+
+    QWidget* hostWindow = m_associatedPinWindow ? m_associatedPinWindow->window() : nullptr;
+    if (hostWindow && hostWindow->windowHandle()) {
+        m_view->setTransientParent(hostWindow->windowHandle());
+    } else {
+        m_view->setTransientParent(nullptr);
+    }
+
+    // Owner/transient changes on Windows can reintroduce native caption bits.
+    // Reapply frameless tool-window styles after every parent sync.
+    reinforceFramelessToolWindow(m_view);
+    if (m_view->isVisible()) {
+        applyPlatformWindowFlags();
+    }
+}
+
+void QmlWindowedToolbar::syncTooltipTransientParent()
+{
+    if (!m_tooltipView) {
+        return;
+    }
+
+    if (m_view) {
+        m_tooltipView->setTransientParent(m_view);
+    } else {
+        m_tooltipView->setTransientParent(nullptr);
+    }
+
+    reinforceFramelessToolWindow(m_tooltipView);
+    if (m_tooltipView->isVisible()) {
+        applyTooltipWindowFlags();
+    }
 }
 
 // ── Positioning ──
@@ -533,6 +577,8 @@ void QmlWindowedToolbar::showTooltip(const QString& text, const QRect& anchorRec
     ensureTooltipView();
     if (!m_tooltipView || !m_tooltipRootItem || !m_view)
         return;
+
+    syncTooltipTransientParent();
 
     const quint64 requestId = ++m_tooltipRequestId;
     m_tooltipRootItem->setProperty("tooltipText", text);
