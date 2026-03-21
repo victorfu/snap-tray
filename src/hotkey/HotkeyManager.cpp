@@ -11,6 +11,7 @@
 #include <QHotkey>
 #include <QKeySequence>
 #include <QSettings>
+#include <QSet>
 
 #include <algorithm>
 
@@ -302,6 +303,41 @@ void HotkeyManager::refreshStatusAndRegistration(HotkeyAction action, bool emitS
     }
 }
 
+void HotkeyManager::refreshAffectedConflicts(const QString& oldSequence,
+                                             const QString& newSequence,
+                                             std::optional<HotkeyAction> excludeAction)
+{
+    QSet<QString> affectedSequences;
+    if (!oldSequence.isEmpty()) {
+        affectedSequences.insert(normalizeKeySequence(oldSequence));
+    }
+    if (!newSequence.isEmpty()) {
+        affectedSequences.insert(normalizeKeySequence(newSequence));
+    }
+
+    if (affectedSequences.isEmpty()) {
+        return;
+    }
+
+    for (auto it = m_configs.begin(); it != m_configs.end(); ++it) {
+        if (excludeAction && it.key() == *excludeAction) {
+            continue;
+        }
+
+        const HotkeyConfig& config = it.value();
+        if (config.keySequence.isEmpty()) {
+            continue;
+        }
+
+        if (!affectedSequences.contains(normalizeKeySequence(config.keySequence))) {
+            continue;
+        }
+
+        refreshStatusAndRegistration(it.key(), true);
+        saveToSettings(it.key());
+    }
+}
+
 HotkeyConfig HotkeyManager::getConfig(HotkeyAction action) const
 {
     return m_configs.value(action);
@@ -347,6 +383,7 @@ bool HotkeyManager::updateHotkey(HotkeyAction action, const QString& keySequence
     }
 
     HotkeyConfig& config = it.value();
+    const QString oldSequence = config.keySequence;
 
     // Unregister old hotkey if it exists
     unregisterHotkey(action);
@@ -386,6 +423,7 @@ bool HotkeyManager::updateHotkey(HotkeyAction action, const QString& keySequence
     saveToSettings(action);
     emit hotkeyChanged(action, config);
     emit registrationStatusChanged(action, config.status);
+    refreshAffectedConflicts(oldSequence, config.keySequence, action);
     return registered;
 }
 
@@ -397,6 +435,7 @@ bool HotkeyManager::setHotkeyEnabled(HotkeyAction action, bool enabled)
     }
 
     HotkeyConfig& config = it.value();
+    const QString affectedSequence = config.keySequence;
     if (config.enabled == enabled) {
         return true;  // No change needed
     }
@@ -425,6 +464,7 @@ bool HotkeyManager::setHotkeyEnabled(HotkeyAction action, bool enabled)
     saveToSettings(action);
     emit hotkeyChanged(action, config);
     emit registrationStatusChanged(action, config.status);
+    refreshAffectedConflicts(affectedSequence, affectedSequence, action);
     return true;
 }
 
@@ -554,6 +594,10 @@ bool HotkeyManager::registerHotkey(HotkeyAction action)
     HotkeyConfig& config = configIt.value();
     if (config.keySequence.isEmpty()) {
         return false;
+    }
+
+    if (m_registerHotkeyOverride) {
+        return m_registerHotkeyOverride(action, config.keySequence);
     }
 
     // Remove existing instance if any

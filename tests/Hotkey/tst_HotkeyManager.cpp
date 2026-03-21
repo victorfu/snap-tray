@@ -46,6 +46,7 @@ private slots:
     void testUpdateHotkey_ClearsHotkey();
     void testUpdateHotkey_DisabledRollbackStatus();
     void testUpdateHotkey_ConflictPersistsDesiredSequence();
+    void testUpdateHotkey_ReleasesPersistedConflictForOtherAction();
 
     // Conflict detection tests
     void testHasConflict_NoConflict();
@@ -82,6 +83,7 @@ void tst_HotkeyManager::init()
 void tst_HotkeyManager::cleanup()
 {
     // Reset all hotkeys to defaults to ensure clean state
+    manager().m_registerHotkeyOverride = {};
     manager().resetAllToDefaults();
     clearAllTestSettings();
 }
@@ -90,6 +92,7 @@ void tst_HotkeyManager::cleanup()
 void tst_HotkeyManager::cleanupTestCase()
 {
     // Shutdown manager to properly unregister all hotkeys before test exit
+    manager().m_registerHotkeyOverride = {};
     manager().shutdown();
 }
 
@@ -340,6 +343,33 @@ void tst_HotkeyManager::testUpdateHotkey_ConflictPersistsDesiredSequence()
     QCOMPARE(config.keySequence, blockedSequence);
     QCOMPARE(config.status, HotkeyStatus::Failed);
     QVERIFY(config.enabled);
+}
+
+void tst_HotkeyManager::testUpdateHotkey_ReleasesPersistedConflictForOtherAction()
+{
+    using namespace SnapTray;
+
+    manager().shutdown();
+    clearAllTestSettings();
+    manager().m_registerHotkeyOverride = [](HotkeyAction, const QString&) {
+        return true;
+    };
+    manager().initialize();
+
+    constexpr HotkeyAction owner = HotkeyAction::PinFromImage;
+    constexpr HotkeyAction blocked = HotkeyAction::HistoryWindow;
+    const QString sharedSequence = QStringLiteral("Ctrl+Alt+1");
+
+    QVERIFY(manager().updateHotkey(owner, sharedSequence));
+    QVERIFY(!manager().updateHotkey(blocked, sharedSequence));
+    QCOMPARE(manager().getConfig(blocked).status, HotkeyStatus::Failed);
+
+    QVERIFY(manager().updateHotkey(owner, QStringLiteral("Ctrl+Alt+2")));
+
+    const HotkeyConfig recovered = manager().getConfig(blocked);
+    QCOMPARE(recovered.keySequence, sharedSequence);
+    QCOMPARE(recovered.status, HotkeyStatus::Registered);
+    QVERIFY(manager().m_registrationOrders.value(blocked, 0) > 0);
 }
 
 // ============================================================================

@@ -216,6 +216,11 @@ void QmlFloatingSubToolbar::syncTransientParent()
     } else {
         m_view->setTransientParent(nullptr);
     }
+
+    reinforceFramelessToolWindow(m_view);
+    if (m_view->isVisible()) {
+        applyPlatformWindowFlags();
+    }
 }
 
 void QmlFloatingSubToolbar::syncCursorSurface()

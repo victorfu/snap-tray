@@ -4,8 +4,12 @@
 #include <QQuickItem>
 #include <QQuickView>
 #include <QSignalSpy>
+#include <QWidget>
 
 #include "qml/CanvasToolbarViewModel.h"
+#include "qml/PinToolOptionsViewModel.h"
+#include "qml/QmlEmojiPickerPopup.h"
+#include "qml/QmlFloatingSubToolbar.h"
 #include "qml/QmlFloatingToolbar.h"
 #include "qml/QmlWindowedToolbar.h"
 
@@ -46,6 +50,9 @@ private slots:
     void testDragHandleSignalsReachBridge();
 #ifdef Q_OS_WIN
     void testFloatingToolbarStripsNativeWindowChromeOnWindows();
+    void testFloatingToolbarRetainsFramelessChromeAfterParentChangeOnWindows();
+    void testFloatingSubToolbarRetainsFramelessChromeAfterParentChangeOnWindows();
+    void testEmojiPickerRetainsFramelessChromeAfterParentChangeOnWindows();
     void testWindowedToolbarStripsNativeWindowChromeOnWindows();
 #endif
 };
@@ -113,6 +120,69 @@ void tst_QmlFloatingToolbar::testFloatingToolbarStripsNativeWindowChromeOnWindow
 
     verifyFramelessToolWindow(toolbar.window());
     toolbar.close();
+}
+
+void tst_QmlFloatingToolbar::testFloatingToolbarRetainsFramelessChromeAfterParentChangeOnWindows()
+{
+    CanvasToolbarViewModel viewModel;
+    SnapTray::QmlFloatingToolbar toolbar(&viewModel);
+    QWidget host;
+
+    host.show();
+    QTRY_VERIFY(host.windowHandle() != nullptr);
+
+    toolbar.show();
+    QCoreApplication::processEvents();
+    verifyFramelessToolWindow(toolbar.window());
+
+    toolbar.setParentWidget(&host);
+    QCoreApplication::processEvents();
+
+    verifyFramelessToolWindow(toolbar.window());
+    toolbar.close();
+}
+
+void tst_QmlFloatingToolbar::testFloatingSubToolbarRetainsFramelessChromeAfterParentChangeOnWindows()
+{
+    PinToolOptionsViewModel viewModel;
+    SnapTray::QmlFloatingSubToolbar toolbar(&viewModel);
+    QWidget host;
+
+    host.show();
+    QTRY_VERIFY(host.windowHandle() != nullptr);
+
+    toolbar.show();
+    QCoreApplication::processEvents();
+    verifyFramelessToolWindow(toolbar.window());
+
+    toolbar.setParentWidget(&host);
+    QCoreApplication::processEvents();
+
+    verifyFramelessToolWindow(toolbar.window());
+    toolbar.close();
+}
+
+void tst_QmlFloatingToolbar::testEmojiPickerRetainsFramelessChromeAfterParentChangeOnWindows()
+{
+    SnapTray::QmlEmojiPickerPopup popup;
+    QWidget firstHost;
+    QWidget secondHost;
+
+    firstHost.show();
+    secondHost.show();
+    QTRY_VERIFY(firstHost.windowHandle() != nullptr);
+    QTRY_VERIFY(secondHost.windowHandle() != nullptr);
+
+    popup.setParentWidget(&firstHost);
+    popup.showAt(QRect(160, 120, 40, 40));
+    QCoreApplication::processEvents();
+    verifyFramelessToolWindow(popup.window());
+
+    popup.setParentWidget(&secondHost);
+    QCoreApplication::processEvents();
+
+    verifyFramelessToolWindow(popup.window());
+    popup.close();
 }
 
 void tst_QmlFloatingToolbar::testWindowedToolbarStripsNativeWindowChromeOnWindows()

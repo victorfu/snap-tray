@@ -402,6 +402,13 @@ void QmlFloatingToolbar::syncTransientParent()
     } else {
         m_view->setTransientParent(nullptr);
     }
+
+    // Owner/transient changes on Windows can reintroduce native caption bits.
+    // Reapply frameless tool-window styles after every parent sync.
+    reinforceFramelessToolWindow(m_view);
+    if (m_view->isVisible()) {
+        applyPlatformWindowFlags();
+    }
 }
 
 // ── Positioning ──

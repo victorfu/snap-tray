@@ -158,6 +158,11 @@ void QmlEmojiPickerPopup::setParentWidget(QWidget* parent)
     } else {
         m_view->setTransientParent(nullptr);
     }
+
+    reinforceFramelessToolWindow(m_view);
+    if (m_view->isVisible()) {
+        applyPlatformWindowFlags();
+    }
 }
 
 bool QmlEmojiPickerPopup::isVisible() const

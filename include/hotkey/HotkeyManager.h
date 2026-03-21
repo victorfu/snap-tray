@@ -12,6 +12,7 @@
 #include <QObject>
 #include <QMap>
 #include <QStringList>
+#include <functional>
 #include <optional>
 
 class QHotkey;
@@ -215,6 +216,9 @@ private:
     void promoteRegistrationOrder(HotkeyAction action);
     void clearRegistrationOrder(HotkeyAction action);
     void refreshStatusAndRegistration(HotkeyAction action, bool emitSignals = false);
+    void refreshAffectedConflicts(const QString& oldSequence,
+                                  const QString& newSequence,
+                                  std::optional<HotkeyAction> excludeAction);
 
     bool registerHotkey(HotkeyAction action);
     void unregisterHotkey(HotkeyAction action);
@@ -229,6 +233,7 @@ private:
     QMap<HotkeyAction, HotkeyConfig> m_configs;
     QMap<HotkeyAction, QHotkey*> m_hotkeys;
     QMap<HotkeyAction, quint64> m_registrationOrders;
+    std::function<bool(HotkeyAction, const QString&)> m_registerHotkeyOverride;
     quint64 m_nextRegistrationOrder = 1;
     bool m_initialized = false;
 };
