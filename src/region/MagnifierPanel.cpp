@@ -136,6 +136,13 @@ QString MagnifierPanel::colorString() const
     }
 }
 
+QString MagnifierPanel::coordinateString() const
+{
+    const qreal dpr = m_devicePixelRatio > 0.0 ? m_devicePixelRatio : 1.0;
+    const QPoint physicalPos = CoordinateHelper::toPhysical(m_currentCursorPos, dpr);
+    return QString("(%1 , %2)").arg(physicalPos.x()).arg(physicalPos.y());
+}
+
 void MagnifierPanel::updateMagnifierCache(const QPoint& cursorPos, const QPixmap& backgroundPixmap)
 {
     // 1. Check position cache FIRST to avoid unnecessary work
@@ -291,8 +298,7 @@ void MagnifierPanel::drawInfoPanel(QPainter& painter, int panelX, int infoY, int
     font.setPointSize(11);
     painter.setFont(font);
 
-    QString coordText = QString("(%1 , %2)").arg(m_currentCursorPos.x()).arg(m_currentCursorPos.y());
-    painter.drawText(panelX, infoY, panelWidth, 20, Qt::AlignCenter, coordText);
+    painter.drawText(panelX, infoY, panelWidth, 20, Qt::AlignCenter, coordinateString());
 
     // 2. Color preview + RGB/HEX (centered)
     infoY += 20;

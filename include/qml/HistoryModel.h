@@ -42,7 +42,7 @@ private:
     QString capturedAtText(const HistoryEntry& entry) const;
     QString sizeText(const HistoryEntry& entry) const;
     QString tooltipText(const HistoryEntry& entry) const;
-    QSize logicalSize(const HistoryEntry& entry) const;
+    QSize pixelSize(const HistoryEntry& entry) const;
 
     QList<HistoryEntry> m_entries;
 };
