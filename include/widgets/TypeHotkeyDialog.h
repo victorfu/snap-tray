@@ -80,9 +80,7 @@ private:
     // State
     QString m_keySequence;
     QString m_initialKeySequence;
-    QString m_actionName;
     Qt::KeyboardModifiers m_currentModifiers;
-    int m_currentKey;
     bool m_hasKey;
 
     // Constants

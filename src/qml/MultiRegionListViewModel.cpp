@@ -27,7 +27,6 @@ void MultiRegionListViewModel::setCaptureContext(const QPixmap& background, qrea
 {
     const qreal normalizedDpr = dpr > 0.0 ? dpr : 1.0;
     m_backgroundPixmap = background;
-    m_backgroundCacheKey = background.cacheKey();
     m_devicePixelRatio = normalizedDpr;
 }
 

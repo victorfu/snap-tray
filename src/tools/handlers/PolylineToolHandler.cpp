@@ -32,7 +32,6 @@ void PolylineToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos)
         m_currentPolyline->addPoint(pos);
         // Add a second point for the preview line
         m_currentPolyline->addPoint(pos);
-        m_currentMousePos = pos;
         m_clickTimer.start();
     } else {
         if (!m_currentPolyline)
@@ -80,7 +79,6 @@ void PolylineToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos)
         snappedPos = AngleSnap::snapTo45Degrees(lastConfirmed, pos);
     }
     m_currentPolyline->updateLastPoint(snappedPos);
-    m_currentMousePos = pos;
     ctx->repaint();
 }
 

@@ -204,7 +204,6 @@ private:
     void finalizePolylineForToolbarInteraction();
 
     // Cursor helpers
-    QCursor getMosaicCursor(int width);
     void setToolCursor();
     void hideShortcutHints();
     void positionRegionControlPanel();
@@ -317,10 +316,6 @@ private:
     AnnotationLayer *m_annotationLayer; // Qt parent owns lifetime
     ToolManager *m_toolManager;
     StepBadgeSize m_stepBadgeSize = StepBadgeSize::Medium;
-
-    // Mosaic cursor cache (avoid recreating on every mouse move)
-    QCursor m_mosaicCursorCache;
-    int m_mosaicCursorCacheWidth = -1;
 
     // Selection state flags
     bool m_isClosing;

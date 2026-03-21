@@ -43,7 +43,6 @@ private:
     void finishPolyline(ToolContext* ctx);
 
     bool m_isDrawing = false;
-    QPoint m_currentMousePos;
     std::unique_ptr<PolylineAnnotation> m_currentPolyline;
     QElapsedTimer m_clickTimer;
     static constexpr int DOUBLE_CLICK_INTERVAL = 300;  // ms

@@ -89,11 +89,6 @@ void RegionPainter::setReplacePreview(int targetIndex, const QRect& previewRect)
     m_replacePreviewRect = previewRect;
 }
 
-void RegionPainter::invalidateOverlayCache()
-{
-    m_overlayCacheValid = false;
-}
-
 void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QRect& dirtyRect)
 {
     if (!m_parentWidget || !m_selectionManager) {

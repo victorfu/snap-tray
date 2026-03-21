@@ -48,7 +48,6 @@ QmlFloatingSubToolbar::QmlFloatingSubToolbar(PinToolOptionsViewModel* viewModel,
 QmlFloatingSubToolbar::QmlFloatingSubToolbar(QObject* parent)
     : QObject(parent)
     , m_viewModel(new PinToolOptionsViewModel(this))
-    , m_ownsViewModel(true)
 {
     connect(m_viewModel, &PinToolOptionsViewModel::emojiPickerRequested,
             this, &QmlFloatingSubToolbar::emojiPickerRequested);

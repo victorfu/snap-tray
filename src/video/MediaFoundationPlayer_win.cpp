@@ -425,8 +425,6 @@ private:
 
     // Frame timing
     int m_frameIntervalMs = 33;
-    qint64 m_playbackStartTime = 0;
-    qint64 m_playbackStartPosition = 0;
 
     // Stride for RGB32 frame data
     int m_stride = 0;
@@ -846,9 +844,6 @@ void MediaFoundationPlayer::play()
 
     if (!m_readerThread || !m_hasVideo) return;
 
-    m_playbackStartTime = QDateTime::currentMSecsSinceEpoch();
-    m_playbackStartPosition = m_position;
-
     m_readerThread->setPlaybackRate(m_playbackRate);
     m_readerThread->requestResume();
     m_positionTimer->start();
@@ -886,8 +881,6 @@ void MediaFoundationPlayer::seek(qint64 positionMs)
 
     positionMs = qBound(0LL, positionMs, m_duration);
     m_position = positionMs;
-    m_playbackStartPosition = positionMs;
-    m_playbackStartTime = QDateTime::currentMSecsSinceEpoch();
 
     if (m_readerThread) {
         m_readerThread->requestSeek(positionMs);

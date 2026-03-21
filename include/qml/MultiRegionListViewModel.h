@@ -49,6 +49,5 @@ private:
     int m_thumbnailCacheBuster = 0;
 
     QPixmap m_backgroundPixmap;
-    qint64 m_backgroundCacheKey = 0;
     qreal m_devicePixelRatio = 1.0;
 };

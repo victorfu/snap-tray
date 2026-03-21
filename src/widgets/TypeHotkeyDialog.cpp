@@ -27,7 +27,6 @@ TypeHotkeyDialog::TypeHotkeyDialog(QWidget* parent)
     , m_okBtn(nullptr)
     , m_cancelBtn(nullptr)
     , m_currentModifiers(Qt::NoModifier)
-    , m_currentKey(0)
     , m_hasKey(false)
 {
     setupUi();
@@ -193,7 +192,6 @@ void TypeHotkeyDialog::setInitialKeySequence(const QString& sequence)
 
 void TypeHotkeyDialog::setActionName(const QString& name)
 {
-    m_actionName = name;
     if (m_titleLabel) {
         m_titleLabel->setText(tr("Set Hotkey for: %1").arg(name));
     }
@@ -259,7 +257,6 @@ void TypeHotkeyDialog::keyPressEvent(QKeyEvent* event)
 
     // Regular key press: build the sequence
     m_currentModifiers = modifiers;
-    m_currentKey = key;
     m_hasKey = true;
 
     m_keySequence = modifiersToString(modifiers) + keyToString(key);

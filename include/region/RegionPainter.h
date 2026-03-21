@@ -71,12 +71,6 @@ public:
      */
     QRect getWindowHighlightVisualRect(const QRect& windowRect, const QString& title) const;
 
-    /**
-     * @brief Invalidate caches when selection changes.
-     * Call this when the selection rect is modified.
-     */
-    void invalidateOverlayCache();
-
     QRect lastDimensionInfoRect() const { return m_lastDimensionInfoRect; }
 
 private:
@@ -122,13 +116,6 @@ private:
     bool m_multiRegionMode = false;
     int m_replaceTargetIndex = -1;
     QRect m_replacePreviewRect;
-
-    // Performance caches
-    // Overlay cache: background + dimming overlay composited together
-    QPixmap m_overlayCache;
-    QRect m_cachedSelectionRect;
-    QRect m_cachedHighlightRect;
-    bool m_overlayCacheValid = false;
 
     QRect m_lastDimensionInfoRect;
 };

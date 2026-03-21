@@ -606,12 +606,10 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Connect multi-region signals that depend on m_painter (must be after m_painter init)
     connect(m_multiRegionManager, &MultiRegionManager::regionAdded,
         this, [this](int) {
-            m_painter->invalidateOverlayCache();
             refreshMultiRegionListPanel();
         });
     connect(m_multiRegionManager, &MultiRegionManager::regionRemoved,
         this, [this](int removedIndex) {
-            m_painter->invalidateOverlayCache();
             if (m_inputState.replaceTargetIndex == removedIndex) {
                 cancelMultiRegionReplace(false);
             } else if (m_inputState.replaceTargetIndex > removedIndex) {
@@ -621,7 +619,6 @@ RegionSelector::RegionSelector(QWidget* parent)
         });
     connect(m_multiRegionManager, &MultiRegionManager::regionUpdated,
         this, [this](int) {
-            m_painter->invalidateOverlayCache();
             const bool isSelectionInteracting = m_selectionManager &&
                 (m_selectionManager->isSelecting() ||
                  m_selectionManager->isResizing() ||
@@ -634,12 +631,10 @@ RegionSelector::RegionSelector(QWidget* parent)
         });
     connect(m_multiRegionManager, &MultiRegionManager::regionsReordered,
         this, [this]() {
-            m_painter->invalidateOverlayCache();
             refreshMultiRegionListPanel();
         });
     connect(m_multiRegionManager, &MultiRegionManager::regionsCleared,
         this, [this]() {
-            m_painter->invalidateOverlayCache();
             refreshMultiRegionListPanel();
         });
 
@@ -2435,18 +2430,6 @@ bool RegionSelector::isPureModifierKey(int key)
     default:
         return false;
     }
-}
-
-QCursor RegionSelector::getMosaicCursor(int width)
-{
-    // Use centralized CursorManager for mosaic cursor
-    // Use 2x width for mosaic cursor (UI shows half the actual drawing size)
-    int effectiveWidth = width * 2;
-    if (effectiveWidth != m_mosaicCursorCacheWidth) {
-        m_mosaicCursorCache = CursorManager::createMosaicCursor(effectiveWidth);
-        m_mosaicCursorCacheWidth = effectiveWidth;
-    }
-    return m_mosaicCursorCache;
 }
 
 void RegionSelector::setToolCursor()
