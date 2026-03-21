@@ -6,7 +6,7 @@ if(APPLE)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "14.0" CACHE STRING "Minimum macOS deployment target" FORCE)
 endif()
 
-project(SnapTray VERSION 1.0.37 LANGUAGES CXX)
+project(SnapTray VERSION 1.0.38 LANGUAGES CXX)
 
 # ============================================================================
 # Compiler Cache (ccache/sccache) for faster incremental builds
