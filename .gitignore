@@ -64,3 +64,5 @@ audit.log
 firebase-debug.log
 
 /certs/
+
+openspec/
