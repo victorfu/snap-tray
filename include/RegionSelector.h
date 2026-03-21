@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QImage>
+#include <QMetaObject>
 #include <QPixmap>
 #include <QPoint>
 #include <QPointF>
@@ -243,14 +244,14 @@ private:
     void beginMultiRegionReplace(int index);
     void cancelMultiRegionReplace(bool restoreSelection);
     void syncRegionSubToolbar(bool refreshContent);
-    void scheduleDeferredPostShowInitialization(WindowDetector::QueryMode initialQueryMode,
-                                                const QPoint& initialCursorPos);
-    void runDeferredPostShowInitialization(quint64 token,
-                                           WindowDetector::QueryMode initialQueryMode,
-                                           const QPoint& initialCursorPos);
-    void scheduleDeferredInitialWindowDetection(quint64 token,
-                                                WindowDetector::QueryMode queryMode,
-                                                const QPoint& initialCursorPos);
+    void resetInitialRevealState();
+    void beginInitialRevealPreparation(WindowDetector::QueryMode initialQueryMode);
+    void maybeStartInitialRevealWait();
+    void handleInitialRevealDetectorReady();
+    void handleInitialRevealTimeout();
+    void applyInitialWindowDetection(WindowDetector::QueryMode queryMode);
+    void commitInitialReveal();
+    void scheduleInitialRevealRefinement();
     void refreshWindowDetectionAtCursor(WindowDetector::QueryMode queryMode);
     void updateWindowDetection(const QPoint &localPos, WindowDetector::QueryMode queryMode);
 
@@ -377,13 +378,22 @@ private:
     // Keep shortcut hints painter-based and in-window. A prior QML top-level
     // overlay version regressed on macOS by flashing and disappearing during
     // RegionSelector activation/screen-overlay transitions.
+    enum class InitialRevealState {
+        Preparing,
+        ReadyToReveal,
+        Revealed
+    };
+
     bool m_showShortcutHintsOnEntry = false;
     bool m_shortcutHintsVisible = false;
     bool m_shortcutHintsTemporarilyHiddenByHover = false;
     std::unique_ptr<CaptureShortcutHintsOverlay> m_shortcutHintsOverlay;
-    bool m_postShowInitializationPending = false;
+    InitialRevealState m_initialRevealState = InitialRevealState::Revealed;
     WindowDetector::QueryMode m_initialWindowDetectionMode = WindowDetector::QueryMode::IncludeChildControls;
-    quint64 m_postShowInitializationToken = 0;
+    QPoint m_initialRevealCursorPos;
+    quint64 m_initialRevealToken = 0;
+    QTimer* m_initialRevealTimer = nullptr;
+    QMetaObject::Connection m_initialRevealWindowListReadyConnection;
 
     // Update throttling component
     UpdateThrottler m_updateThrottler;

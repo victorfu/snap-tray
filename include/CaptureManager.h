@@ -57,6 +57,7 @@ private:
                                   const QPixmap &preCapture,
                                   bool quickPinMode,
                                   bool showShortcutHintsOnEntry);
+    void showPreparedRegionSelector(QScreen *targetScreen);
     void refreshWindowDetectorForCapture(QScreen *screen);
     void refreshWindowDetectorAsync(QScreen *screen);
     RegionSelector *createRegionSelector(bool showShortcutHintsOnEntry);

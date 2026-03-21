@@ -424,31 +424,10 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
     // Create RegionSelector
     m_regionSelector = createRegionSelector(false);
 
-    // Setup window detector if available
-    // Use async version to avoid blocking UI startup
+    // Keep detector state aligned with the prepared reveal flow used by normal region entry.
     if (m_windowDetector && screen) {
-        refreshWindowDetectorAsync(screen);
+        refreshWindowDetectorForCapture(screen);
         m_regionSelector->setWindowDetector(m_windowDetector);
-
-        // Trigger initial window highlight once the async window list is ready.
-        if (m_windowDetector->isEnabled()) {
-            const auto regionSelector = m_regionSelector;
-            const auto triggerDetection = [regionSelector]() {
-                if (!regionSelector) {
-                    return;
-                }
-                regionSelector->refreshWindowDetectionAtCursor();
-            };
-
-            if (m_windowDetector->isRefreshComplete()) {
-                triggerDetection();
-            } else {
-                connect(m_windowDetector, &WindowDetector::windowListReady,
-                        m_regionSelector, [triggerDetection]() {
-                            triggerDetection();
-                        });
-            }
-        }
     }
 
     // Initialize with preset region
@@ -465,12 +444,7 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
     connect(m_regionSelector, &RegionSelector::saveFailed,
             this, &CaptureManager::saveFailed);
 
-    m_regionSelector->setGeometry(screen->geometry());
-    m_regionSelector->show();
-    raiseWindowAboveMenuBar(m_regionSelector);
-
-    m_regionSelector->activateWindow();
-    m_regionSelector->raise();
+    showPreparedRegionSelector(screen);
 }
 
 void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
@@ -506,6 +480,15 @@ void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
                 this, &CaptureManager::saveFailed);
     }
 
+    showPreparedRegionSelector(targetScreen);
+}
+
+void CaptureManager::showPreparedRegionSelector(QScreen *targetScreen)
+{
+    if (!m_regionSelector || !targetScreen) {
+        return;
+    }
+
     m_regionSelector->setGeometry(targetScreen->geometry());
     m_regionSelector->show();
     raiseWindowAboveMenuBar(m_regionSelector);
@@ -516,7 +499,6 @@ void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
     // Ensure cursor is set AFTER show/activate to fix race condition where
     // cursor was set before widget visibility, then Qt reset it to ArrowCursor
     m_regionSelector->ensureCrossCursor();
-
 }
 
 void CaptureManager::prewarmWindowDetector()

@@ -82,6 +82,10 @@ public:
     // Check if async refresh is complete
     bool isRefreshComplete() const;
 
+    // Check whether the current screen already has a usable cache snapshot,
+    // even if a newer async refresh is still in flight.
+    bool isWindowCacheReady() const;
+
     // Find window at point (screen coordinates)
     std::optional<DetectedElement> detectWindowAt(
         const QPoint &screenPos,
@@ -111,6 +115,8 @@ private:
     QFuture<void> m_refreshFuture;
     std::atomic<bool> m_refreshComplete{true};
     std::atomic<uint64_t> m_refreshRequestId{0};
+    bool m_cacheReady = false;
+    QScreen* m_cacheScreen = nullptr;
 
 #ifdef Q_OS_MACOS
     std::optional<DetectedElement> detectChildElementAt(const QPoint &screenPos, qint64 targetPid, const QRect &windowBounds) const;

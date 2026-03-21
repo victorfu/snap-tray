@@ -602,13 +602,19 @@ void WindowDetector::refreshWindowList()
 
     QMutexLocker locker(&m_cacheMutex);
     m_windowCache.clear();
+    m_cacheReady = false;
+    m_cacheScreen = nullptr;
 
     if (!m_enabled) {
+        m_cacheScreen = m_currentScreen.data();
+        m_cacheReady = true;
         m_refreshComplete = true;
         return;
     }
 
     enumerateWindows();
+    m_cacheScreen = m_currentScreen.data();
+    m_cacheReady = true;
 
     m_refreshComplete = true;
 }
@@ -829,6 +835,10 @@ std::optional<DetectedElement> WindowDetector::detectWindowAt(
     {
         QMutexLocker locker(&m_cacheMutex);
 
+        if (!m_cacheReady || m_cacheScreen != m_currentScreen.data()) {
+            return std::nullopt;
+        }
+
         if (m_windowCache.empty()) {
             return std::nullopt;
         }
@@ -880,13 +890,21 @@ std::optional<DetectedElement> WindowDetector::detectWindowAt(
 void WindowDetector::refreshWindowListAsync()
 {
     uint64_t requestId = ++m_refreshRequestId;
+    QScreen* targetScreen = m_currentScreen.data();
 
     m_refreshComplete = false;
 
     // Snapshot detection flags to avoid data race with main thread
     const DetectionFlags flags = m_detectionFlags;
 
-    m_refreshFuture = QtConcurrent::run([this, requestId, flags]() {
+    {
+        QMutexLocker locker(&m_cacheMutex);
+        if (m_cacheScreen != targetScreen) {
+            m_cacheReady = false;
+        }
+    }
+
+    m_refreshFuture = QtConcurrent::run([this, requestId, flags, targetScreen]() {
         std::vector<DetectedElement> newCache;
 
         // Determine CGWindowList options based on detection flags
@@ -928,6 +946,8 @@ void WindowDetector::refreshWindowListAsync()
         {
             QMutexLocker locker(&m_cacheMutex);
             m_windowCache = std::move(newCache);
+            m_cacheScreen = targetScreen;
+            m_cacheReady = true;
         }
 
         m_refreshComplete = true;
@@ -940,4 +960,10 @@ void WindowDetector::refreshWindowListAsync()
 bool WindowDetector::isRefreshComplete() const
 {
     return m_refreshComplete.load();
+}
+
+bool WindowDetector::isWindowCacheReady() const
+{
+    QMutexLocker locker(&m_cacheMutex);
+    return m_cacheReady && m_cacheScreen == m_currentScreen.data();
 }
