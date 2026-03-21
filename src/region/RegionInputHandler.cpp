@@ -114,6 +114,7 @@ const RegionInputState& RegionInputHandler::state() const
 void RegionInputHandler::resetDirtyTracking()
 {
     m_lastMagnifierRect = QRect();
+    m_lastCrosshairPoint = QPoint();
     m_lastSelectionRect = QRect();
     m_lastToolbarRect = QRect();
     m_pendingWindowClickActive = false;
@@ -893,10 +894,11 @@ void RegionInputHandler::handleThrottledUpdate()
 
     updateDragFramePump();
 
-    // First frame after initialization: the initial show() may already have painted
-    // the magnifier at the current cursor position, but m_lastMagnifierRect is still
-    // unset. Do a full widget repaint once, then switch to localized updates.
+    // First frame after initialization: the initial show() painted magnifier + crosshair
+    // at the initial cursor position, but m_lastMagnifierRect is still null (unset).
+    // Do a full widget repaint to clear the initial content, then initialize tracking state.
     if (m_lastMagnifierRect.isNull()) {
+        m_lastCrosshairPoint = state().currentPoint;
         m_lastSelectionRect = m_selectionManager->selectionRect().normalized();
         m_lastMagnifierRect = m_dirtyRegionPlanner.magnifierRectForCursor(
             state().currentPoint, m_parentWidget->size());
@@ -928,6 +930,8 @@ void RegionInputHandler::handleThrottledUpdate()
         params.lastRegionControlRect = QRect();
         params.currentMagnifierRect = currentMagnifierRect;
         params.lastMagnifierRect = m_lastMagnifierRect;
+        params.currentCursorPos = state().currentPoint;
+        params.lastCursorPos = m_lastCrosshairPoint;
         params.viewportSize = m_parentWidget->size();
         params.suppressFloatingUi = suppressFloatingUi;
         params.includeMagnifier = !suppressFloatingUi;
@@ -936,6 +940,7 @@ void RegionInputHandler::handleThrottledUpdate()
         m_lastSelectionRect = currentSelectionRect;
         m_lastMagnifierRect = currentMagnifierRect;
         m_lastToolbarRect = currentToolbarRect;
+        m_lastCrosshairPoint = state().currentPoint;
     }
     else if (state().isDrawing) {
         if (m_updateThrottler->shouldUpdate(UpdateThrottler::ThrottleType::Annotation)) {
@@ -957,10 +962,13 @@ void RegionInputHandler::handleThrottledUpdate()
         SelectionDirtyRegionPlanner::HoverParams params;
         params.currentMagnifierRect = currentMagnifierRect;
         params.lastMagnifierRect = m_lastMagnifierRect;
+        params.currentCursorPos = state().currentPoint;
+        params.lastCursorPos = m_lastCrosshairPoint;
         params.viewportSize = m_parentWidget->size();
         const QRegion dirtyRegion = m_dirtyRegionPlanner.planHoverRegion(params);
         m_parentWidget->update(dirtyRegion);
         m_lastMagnifierRect = currentMagnifierRect;
+        m_lastCrosshairPoint = state().currentPoint;
     }
 }
 
@@ -1006,6 +1014,7 @@ void RegionInputHandler::onDragFrameTick()
     }
 
     state().currentPoint = localPos;
+    emit currentPointUpdated(localPos);
     if (m_selectionManager->isSelecting()) {
         handleSelectionMove(localPos);
     }

@@ -1229,7 +1229,7 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     // 不預設選取整個螢幕，等待用戶操作
     m_selectionManager->clearSelection();
 
-    // 將 cursor 全域座標轉換為 widget 本地座標，用於 magnifier 初始位置
+    // 將 cursor 全域座標轉換為 widget 本地座標，用於 crosshair/magnifier 初始位置
     QRect screenGeom = m_currentScreen->geometry();
     QPoint globalCursor = QCursor::pos();
     m_inputState.currentPoint = globalCursor - screenGeom.topLeft();
@@ -2133,7 +2133,8 @@ void RegionSelector::paintEvent(QPaintEvent* event)
 
     // Use QRegion-based clipping for efficient partial repainting.
     // When update(QRegion) is used, QPaintEvent::region() contains the individual rects
-    // rather than inflating to a bounding box. This keeps partial repaints localized.
+    // rather than inflating to a bounding box. This dramatically reduces repaint area
+    // for crosshair strips on high-DPI screens.
     const QRegion dirtyRegion = event->region();
     const QRect dirtyRect = dirtyRegion.boundingRect();
     painter.setClipRegion(dirtyRegion);
