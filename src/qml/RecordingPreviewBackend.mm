@@ -64,10 +64,8 @@ void RecordingPreviewBackend::ensureView()
         return;
 
     auto& mgr = SnapTray::QmlOverlayManager::instance();
-    auto* engine = mgr.engine();
-
-    m_view = new QQuickView(engine, nullptr);
-    m_view->setFlags(Qt::Window | Qt::WindowStaysOnTopHint);
+    m_view = mgr.createUtilityWindow();
+    m_view->setFlag(Qt::WindowStaysOnTopHint, true);
     m_view->setMinimumSize(QSize(640, 480));
     m_view->setResizeMode(QQuickView::SizeRootObjectToView);
     m_view->setTitle(tr("Recording Preview"));

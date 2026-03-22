@@ -50,9 +50,8 @@ void QmlRecordingRegionSelector::ensureView()
     if (m_view)
         return;
 
-    m_view = new QQuickView(QmlOverlayManager::instance().engine(), nullptr);
+    m_view = QmlOverlayManager::instance().createScreenOverlay();
     m_view->setFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Window);
-    m_view->setColor(Qt::transparent);
     m_view->setResizeMode(QQuickView::SizeRootObjectToView);
     m_view->installEventFilter(this);
     m_view->setSource(QUrl(QStringLiteral("qrc:/SnapTrayQml/recording/RecordingRegionSelector.qml")));

@@ -7,7 +7,9 @@ class tst_CaptureShortcutHintsOverlay : public QObject
 
 private slots:
     void testRowCount();
+    void testRowCountWithoutMagnifierHints();
     void testLayoutMetrics();
+    void testLayoutMetricsWithoutMagnifierHints();
     void testPanelRectWithinViewport();
 };
 
@@ -17,9 +19,29 @@ void tst_CaptureShortcutHintsOverlay::testRowCount()
     QCOMPARE(overlay.rowCount(), 8);
 }
 
+void tst_CaptureShortcutHintsOverlay::testRowCountWithoutMagnifierHints()
+{
+    CaptureShortcutHintsOverlay overlay;
+    overlay.setMagnifierEnabled(false);
+    QCOMPARE(overlay.rowCount(), 6);
+}
+
 void tst_CaptureShortcutHintsOverlay::testLayoutMetrics()
 {
     CaptureShortcutHintsOverlay overlay;
+    const auto metrics = overlay.layoutMetrics();
+
+    QVERIFY(metrics.keyColumnWidth > 0);
+    QVERIFY(metrics.textColumnWidth > 0);
+    QVERIFY(metrics.rowHeight > 0);
+    QVERIFY(metrics.panelWidth > 0);
+    QVERIFY(metrics.panelHeight > 0);
+}
+
+void tst_CaptureShortcutHintsOverlay::testLayoutMetricsWithoutMagnifierHints()
+{
+    CaptureShortcutHintsOverlay overlay;
+    overlay.setMagnifierEnabled(false);
     const auto metrics = overlay.layoutMetrics();
 
     QVERIFY(metrics.keyColumnWidth > 0);

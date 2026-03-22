@@ -272,3 +272,13 @@ void reinforceFramelessToolWindow(QWindow *window)
 {
     Q_UNUSED(window)
 }
+
+void hideNativeWindowTitleBarIcon(QWindow *window)
+{
+    Q_UNUSED(window)
+}
+
+void hideNativeWindowTitleBarIcon(QWidget *widget)
+{
+    Q_UNUSED(widget)
+}

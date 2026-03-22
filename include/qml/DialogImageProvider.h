@@ -19,8 +19,8 @@ public:
     static void removeImage(const QString& id);
 
 private:
-    static QMutex s_mutex;
-    static QHash<QString, QImage> s_images;
+    static QMutex& mutex();
+    static QHash<QString, QImage>& images();
 };
 
 } // namespace SnapTray

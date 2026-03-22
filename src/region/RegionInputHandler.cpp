@@ -230,6 +230,7 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
     // Qt doesn't fire mousePressEvent for already-pressed buttons, so we detect
     // this broken state here and synthesize the missing selection start
     if (!m_selectionManager->hasActiveSelection() &&
+        !m_pendingWindowClickActive &&
         (event->buttons() & Qt::LeftButton)) {
         qDebug() << "RegionInputHandler: Recovering from race condition - "
                  << "starting selection from mouseMoveEvent";
@@ -275,8 +276,24 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
         return;
     }
 
+    if (m_pendingWindowClickActive && !m_selectionManager->hasActiveSelection()) {
+        const int dx = event->pos().x() - m_pendingWindowClickStartPos.x();
+        const int dy = event->pos().y() - m_pendingWindowClickStartPos.y();
+        if ((dx * dx + dy * dy) > WINDOW_CLICK_MAX_DISTANCE_SQ) {
+            m_selectionManager->startSelection(m_pendingWindowClickStartPos);
+            m_lastSelectionRect = QRect();
+            clearDetectionAndNotify();
+            m_selectionManager->updateSelection(event->pos());
+            m_pendingWindowClickActive = false;
+            m_pendingWindowClickRect = QRect();
+            m_pendingWindowClickStartPos = QPoint();
+        }
+    }
+
     // Window detection during hover
-    handleWindowDetectionMove(event->pos());
+    if (!m_pendingWindowClickActive) {
+        handleWindowDetectionMove(event->pos());
+    }
 
     // Handle selection states
     if (m_selectionManager->isSelecting()) {
@@ -349,6 +366,10 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
         if (m_selectionManager->isSelecting()) {
             handleSelectionRelease(event->pos());
             clearSelectionDrag();
+            emit updateRequested();
+        }
+        else if (m_pendingWindowClickActive) {
+            handleSelectionRelease(event->pos());
             emit updateRequested();
         }
         else if (m_selectionManager->isResizing()) {
@@ -601,10 +622,6 @@ bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
 void RegionInputHandler::handleNewSelectionPress(const QPoint& pos)
 {
     clearSelectionDrag();
-    m_selectionManager->startSelection(pos);
-    m_startPoint = pos;
-    state().currentPoint = pos;
-    m_lastSelectionRect = QRect();
 
     // Preserve the highlighted window at press time so minor pointer drift
     // still resolves as window-click instead of falling back to full screen.
@@ -612,12 +629,18 @@ void RegionInputHandler::handleNewSelectionPress(const QPoint& pos)
         m_pendingWindowClickActive = true;
         m_pendingWindowClickRect = state().highlightedWindowRect;
         m_pendingWindowClickStartPos = pos;
+        m_startPoint = pos;
+        state().currentPoint = pos;
+        return;
     }
-    else {
-        m_pendingWindowClickActive = false;
-        m_pendingWindowClickRect = QRect();
-        m_pendingWindowClickStartPos = QPoint();
-    }
+
+    m_selectionManager->startSelection(pos);
+    m_startPoint = pos;
+    state().currentPoint = pos;
+    m_lastSelectionRect = QRect();
+    m_pendingWindowClickActive = false;
+    m_pendingWindowClickRect = QRect();
+    m_pendingWindowClickStartPos = QPoint();
 }
 
 void RegionInputHandler::handleRightButtonPress(const QPoint& pos)

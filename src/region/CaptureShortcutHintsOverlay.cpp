@@ -35,17 +35,24 @@ QString trOverlay(const char* text)
 
 QVector<QPair<QStringList, QString>> CaptureShortcutHintsOverlay::hintRows() const
 {
-    return {
+    QVector<QPair<QStringList, QString>> rows = {
         {QStringList{QStringLiteral("Esc")}, trOverlay("Cancel capture")},
         {QStringList{QStringLiteral("Enter")}, trOverlay("Confirm selection (after selection)")},
         {QStringList{QStringLiteral(", / .")}, trOverlay("Replay capture history")},
         {QStringList{QStringLiteral("M")}, trOverlay("Toggle multi-region mode")},
-        {QStringList{QStringLiteral("Shift")}, trOverlay("Switch RGB/HEX (when magnifier visible)")},
-        {QStringList{QStringLiteral("C")}, trOverlay("Copy color value (before selection)")},
         {QStringList{QStringLiteral("Arrow")}, trOverlay("Move selection by 1 pixel (after selection)")},
         {QStringList{QStringLiteral("Shift"), QStringLiteral("Arrow")},
             trOverlay("Resize selection by 1 pixel (after selection)")}
     };
+
+    if (m_magnifierEnabled) {
+        rows.insert(4, {QStringList{QStringLiteral("Shift")},
+                        trOverlay("Switch RGB/HEX (when magnifier visible)")});
+        rows.insert(5, {QStringList{QStringLiteral("C")},
+                        trOverlay("Copy color value (before selection)")});
+    }
+
+    return rows;
 }
 
 int CaptureShortcutHintsOverlay::rowCount() const

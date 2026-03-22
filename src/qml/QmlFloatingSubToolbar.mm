@@ -129,7 +129,7 @@ void QmlFloatingSubToolbar::applyPlatformWindowFlags()
     [window setStyleMask:mask];
 #endif
 
-    reinforceFramelessToolWindow(m_view);
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
 }
 
 // ── Show / Hide / Close ──
@@ -217,7 +217,7 @@ void QmlFloatingSubToolbar::syncTransientParent()
         m_view->setTransientParent(nullptr);
     }
 
-    reinforceFramelessToolWindow(m_view);
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
     if (m_view->isVisible()) {
         applyPlatformWindowFlags();
     }

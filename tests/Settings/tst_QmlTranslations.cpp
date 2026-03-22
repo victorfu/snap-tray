@@ -41,6 +41,8 @@ void tst_QmlTranslations::testQmlSettingsContexts()
              QString::fromUtf8("設定"));
     QCOMPARE(QCoreApplication::translate("GeneralSettings", "Start on login"),
              QString::fromUtf8("登入時啟動"));
+    QCOMPARE(QCoreApplication::translate("AdvancedSettings", "Show magnifier"),
+             QString::fromUtf8("顯示放大鏡"));
     QCOMPARE(QCoreApplication::translate("SettingsSidebar", "General"),
              QString::fromUtf8("一般"));
     QCOMPARE(QCoreApplication::translate("SettingsPermissionRow", "Granted"),

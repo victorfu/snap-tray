@@ -119,19 +119,6 @@ bool shouldSuppressCompletedSelectionDragUi(const SelectionStateManager* selecti
            (selectionManager->isMoving() || selectionManager->isResizing());
 }
 
-QString physicalPixelSizeLabel(const QRect& logicalRect, qreal dpr)
-{
-    if (!logicalRect.isValid()) {
-        return {};
-    }
-
-    const qreal effectiveDpr = dpr > 0.0 ? dpr : 1.0;
-    const QSize physicalSize =
-        CoordinateHelper::toPhysicalCoveringRect(logicalRect.normalized(), effectiveDpr).size();
-    return QCoreApplication::translate(
-        "RegionSelector", "%1 x %2 px").arg(physicalSize.width()).arg(physicalSize.height());
-}
-
 constexpr int kInitialRevealTimeoutMs = 120;
 
 } // namespace
@@ -504,6 +491,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Deliberately not a QML overlay window: this hint panel must share the
     // RegionSelector paint/lifecycle path to avoid native window ordering bugs.
     m_shortcutHintsOverlay = std::make_unique<CaptureShortcutHintsOverlay>();
+    syncMagnifierEnabledFromSettings();
 
     // Region control panel (QML - combines radius toggle + aspect ratio lock)
     m_regionControlViewModel = new RegionControlViewModel(this);
@@ -818,9 +806,7 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, [this](const QRect& previousHighlightRect) {
             QRect oldVisualRect;
             if (!previousHighlightRect.isNull()) {
-                const QString oldTitle =
-                    physicalPixelSizeLabel(previousHighlightRect, m_devicePixelRatio);
-                oldVisualRect = m_painter->getWindowHighlightVisualRect(previousHighlightRect, oldTitle);
+                oldVisualRect = m_painter->getWindowHighlightVisualRect(previousHighlightRect);
             }
 
             m_inputState.highlightedWindowRect = QRect();
@@ -1257,6 +1243,7 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     m_inputState.highlightedWindowRect = QRect();
     m_inputState.hasDetectedWindow = false;
     m_detectedWindow.reset();
+    syncMagnifierEnabledFromSettings();
 
     // 將 cursor 全域座標轉換為 widget 本地座標，用於 crosshair/magnifier 初始位置
     QRect screenGeom = m_currentScreen->geometry();
@@ -1339,6 +1326,7 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     m_inputState.highlightedWindowRect = QRect();
     m_inputState.hasDetectedWindow = false;
     m_detectedWindow.reset();
+    syncMagnifierEnabledFromSettings();
 
     // Set cursor position
     QPoint globalCursor = QCursor::pos();
@@ -1758,6 +1746,14 @@ void RegionSelector::setQuickPinMode(bool enabled)
 void RegionSelector::setShowShortcutHintsOnEntry(bool enabled)
 {
     m_showShortcutHintsOnEntry = enabled;
+}
+
+void RegionSelector::syncMagnifierEnabledFromSettings()
+{
+    m_magnifierEnabled = RegionCaptureSettingsManager::instance().isMagnifierEnabled();
+    if (m_shortcutHintsOverlay) {
+        m_shortcutHintsOverlay->setMagnifierEnabled(m_magnifierEnabled);
+    }
 }
 
 bool RegionSelector::isSelectionComplete() const
@@ -2263,18 +2259,13 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos,
 
         if (localBounds != m_inputState.highlightedWindowRect) {
             // Calculate old visual rect for partial update
-            QString oldTitle;
-            if (!m_inputState.highlightedWindowRect.isNull()) {
-                oldTitle = physicalPixelSizeLabel(m_inputState.highlightedWindowRect, m_devicePixelRatio);
-            }
-            QRect oldVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect, oldTitle);
+            QRect oldVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect);
 
             m_inputState.highlightedWindowRect = localBounds;
             m_detectedWindow = detected;
 
             // Calculate new visual rect (use clipped local bounds, not global bounds)
-            const QString newTitle = physicalPixelSizeLabel(localBounds, m_devicePixelRatio);
-            QRect newVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect, newTitle);
+            QRect newVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect);
 
             // Update only changed regions
             if (!oldVisualRect.isNull()) update(oldVisualRect);
@@ -2285,11 +2276,7 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos,
         m_inputState.hasDetectedWindow = false;
         if (!m_inputState.highlightedWindowRect.isNull()) {
             // Calculate old visual rect for partial update (use clipped local bounds)
-            QString oldTitle;
-            if (!m_inputState.highlightedWindowRect.isNull()) {
-                oldTitle = physicalPixelSizeLabel(m_inputState.highlightedWindowRect, m_devicePixelRatio);
-            }
-            QRect oldVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect, oldTitle);
+            QRect oldVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect);
 
             m_inputState.highlightedWindowRect = QRect();
             m_detectedWindow.reset();
@@ -2318,10 +2305,6 @@ void RegionSelector::paintEvent(QPaintEvent* event)
 
     // Update painter state before painting
     m_painter->setHighlightedWindowRect(m_inputState.highlightedWindowRect);
-    m_painter->setDetectedWindowTitle(
-        !m_inputState.highlightedWindowRect.isNull()
-        ? physicalPixelSizeLabel(m_inputState.highlightedWindowRect, m_devicePixelRatio)
-        : QString());
     m_painter->setCornerRadius(m_cornerRadius);
     m_painter->setShowSubToolbar(m_inputState.showSubToolbar);
     m_painter->setCurrentTool(static_cast<int>(m_inputState.currentTool));
@@ -2792,6 +2775,10 @@ void RegionSelector::trackBlockingDialog(SnapTray::QmlDialog* dialog)
 
 bool RegionSelector::shouldShowMagnifier() const
 {
+    if (!m_magnifierEnabled) {
+        return false;
+    }
+
     if (m_exportInProgress) {
         return false;
     }
@@ -3480,13 +3467,13 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
     }
     else if (event->key() == Qt::Key_Shift) {
         // Switch RGB/HEX color format display (only when magnifier is shown)
-        if (shouldShowMagnifier()) {
+        if (m_magnifierEnabled && shouldShowMagnifier()) {
             m_magnifierPanel->toggleColorFormat();
             syncMagnifierOverlay();
             update();
         }
     }
-    else if (event->key() == Qt::Key_C && !m_selectionManager->isComplete()) {
+    else if (event->key() == Qt::Key_C && m_magnifierEnabled && !m_selectionManager->isComplete()) {
         // Copy color to clipboard (only when selection not complete)
         // Use the color already calculated by MagnifierPanel
         QString colorText = m_magnifierPanel->colorString();

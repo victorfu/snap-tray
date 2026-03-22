@@ -1,6 +1,7 @@
 #include "qml/QmlOverlayManager.h"
 #include "qml/DialogImageProvider.h"
 #include "qml/ThemeManager.h"
+#include "platform/WindowLevel.h"
 
 #include <QQmlContext>
 #include <QQmlEngine>
@@ -12,6 +13,38 @@
 #endif
 
 namespace SnapTray {
+
+namespace {
+
+enum class WindowPolicyKind {
+    Overlay,
+    Standard
+};
+
+void attachShownWindowPolicy(QQuickView* view, WindowPolicyKind policyKind)
+{
+    if (!view) {
+        return;
+    }
+
+    QObject::connect(view, &QWindow::visibleChanged, view,
+                     [view, policyKind](bool visible) {
+        if (!visible) {
+            return;
+        }
+
+        switch (policyKind) {
+        case WindowPolicyKind::Overlay:
+            QmlOverlayManager::applyShownOverlayWindowPolicy(view);
+            break;
+        case WindowPolicyKind::Standard:
+            QmlOverlayManager::applyShownStandardWindowPolicy(view);
+            break;
+        }
+    });
+}
+
+} // namespace
 
 QmlOverlayManager::QmlOverlayManager(QObject* parent)
     : QObject(parent)
@@ -63,6 +96,7 @@ QQuickView* QmlOverlayManager::createScreenOverlay()
     view->setFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     view->setColor(Qt::transparent);
     view->setResizeMode(QQuickView::SizeViewToRootObject);
+    attachShownWindowPolicy(view, WindowPolicyKind::Overlay);
 
     return view;
 }
@@ -84,6 +118,7 @@ QQuickView* QmlOverlayManager::createPopupWindow()
     view->setColor(Qt::transparent);
     view->setResizeMode(QQuickView::SizeViewToRootObject);
     view->setFlag(Qt::WindowDoesNotAcceptFocus, true);
+    attachShownWindowPolicy(view, WindowPolicyKind::Overlay);
 
     return view;
 }
@@ -105,6 +140,7 @@ QQuickView* QmlOverlayManager::createParentOverlay(const QUrl& qmlUrl, QWidget* 
     view->setColor(Qt::transparent);
     view->setResizeMode(QQuickView::SizeViewToRootObject);
     view->setSource(qmlUrl);
+    attachShownWindowPolicy(view, WindowPolicyKind::Overlay);
 
     return view;
 }
@@ -117,6 +153,7 @@ QQuickView* QmlOverlayManager::createSettingsWindow()
     view->setFlags(Qt::Window);
     view->setMinimumSize(QSize(860, 560));
     view->setResizeMode(QQuickView::SizeRootObjectToView);
+    attachShownWindowPolicy(view, WindowPolicyKind::Standard);
     // Note: setSource() is NOT called here. The caller (QmlSettingsWindow::ensureView)
     // must set context properties first, then call setSource() to avoid
     // "settingsBackend is not defined" errors during QML component creation.
@@ -131,8 +168,19 @@ QQuickView* QmlOverlayManager::createUtilityWindow()
     auto* view = new QQuickView(m_engine, nullptr);
     view->setFlags(Qt::Window);
     view->setResizeMode(QQuickView::SizeRootObjectToView);
+    attachShownWindowPolicy(view, WindowPolicyKind::Standard);
 
     return view;
+}
+
+void QmlOverlayManager::applyShownStandardWindowPolicy(QQuickView* view)
+{
+    hideNativeWindowTitleBarIcon(view);
+}
+
+void QmlOverlayManager::applyShownOverlayWindowPolicy(QQuickView* view)
+{
+    reinforceFramelessToolWindow(view);
 }
 
 void QmlOverlayManager::preventWindowHideOnDeactivate(QQuickView* view)

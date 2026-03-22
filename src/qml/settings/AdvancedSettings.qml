@@ -21,6 +21,12 @@ Flickable {
         SettingsSection { title: qsTr("Capture") }
 
         SettingsToggle {
+            label: qsTr("Show magnifier")
+            checked: settingsBackend.magnifierEnabled
+            onToggled: function(checked) { settingsBackend.magnifierEnabled = checked }
+        }
+
+        SettingsToggle {
             label: qsTr("Show shortcut hints")
             checked: settingsBackend.shortcutHintsEnabled
             onToggled: function(checked) { settingsBackend.shortcutHintsEnabled = checked }

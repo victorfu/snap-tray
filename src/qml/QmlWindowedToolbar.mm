@@ -213,7 +213,7 @@ void QmlWindowedToolbar::applyPlatformWindowFlags()
     [window setStyleMask:mask];
 #endif
 
-    reinforceFramelessToolWindow(m_view);
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
 }
 
 void QmlWindowedToolbar::applyTooltipWindowFlags()
@@ -243,7 +243,7 @@ void QmlWindowedToolbar::applyTooltipWindowFlags()
     Q_UNUSED(m_tooltipView)
 #endif
 
-    reinforceFramelessToolWindow(m_tooltipView);
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_tooltipView);
 }
 
 // ── Show / Hide / Close ──
@@ -362,7 +362,7 @@ void QmlWindowedToolbar::syncTransientParent()
 
     // Owner/transient changes on Windows can reintroduce native caption bits.
     // Reapply frameless tool-window styles after every parent sync.
-    reinforceFramelessToolWindow(m_view);
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
     if (m_view->isVisible()) {
         applyPlatformWindowFlags();
     }
@@ -380,7 +380,7 @@ void QmlWindowedToolbar::syncTooltipTransientParent()
         m_tooltipView->setTransientParent(nullptr);
     }
 
-    reinforceFramelessToolWindow(m_tooltipView);
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_tooltipView);
     if (m_tooltipView->isVisible()) {
         applyTooltipWindowFlags();
     }

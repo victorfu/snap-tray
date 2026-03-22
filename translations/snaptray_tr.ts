@@ -21,6 +21,11 @@
 <context>
     <name>AdvancedSettings</name>
     <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="24" />
+        <source>Show magnifier</source>
+        <translation>Büyüteci göster</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="21" />
         <source>Capture</source>
         <translation>Yakalama</translation>
@@ -3202,3 +3207,5 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
     </message>
 </context>
 </TS>
+
+

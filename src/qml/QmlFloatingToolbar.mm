@@ -238,7 +238,7 @@ void QmlFloatingToolbar::applyPlatformWindowFlags()
     [window setStyleMask:mask];
 #endif
 
-    reinforceFramelessToolWindow(m_view);
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
 }
 
 void QmlFloatingToolbar::applyTooltipWindowFlags()
@@ -405,7 +405,7 @@ void QmlFloatingToolbar::syncTransientParent()
 
     // Owner/transient changes on Windows can reintroduce native caption bits.
     // Reapply frameless tool-window styles after every parent sync.
-    reinforceFramelessToolWindow(m_view);
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
     if (m_view->isVisible()) {
         applyPlatformWindowFlags();
     }

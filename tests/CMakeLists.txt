@@ -36,6 +36,20 @@ target_link_libraries(Qml_EmojiPickerBackend PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_EmojiPickerBackend COMMAND Qml_EmojiPickerBackend)
 set_tests_properties(Qml_EmojiPickerBackend PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_WindowPolicyGuard Qml/tst_WindowPolicyGuard.cpp)
+target_link_libraries(Qml_WindowPolicyGuard PRIVATE Qt6::Core Qt6::Test)
+target_compile_definitions(Qml_WindowPolicyGuard PRIVATE
+    WINDOW_POLICY_GUARD_SOURCE_ROOT="${CMAKE_SOURCE_DIR}/src")
+add_test(NAME Qml_WindowPolicyGuard COMMAND Qml_WindowPolicyGuard)
+set_tests_properties(Qml_WindowPolicyGuard PROPERTIES TIMEOUT 60 LABELS "unit")
+
+if(WIN32)
+    add_executable(Qml_WindowPolicyWin Qml/tst_WindowPolicyWin.cpp)
+    target_link_libraries(Qml_WindowPolicyWin PRIVATE snaptray_ui snaptray_qml Qt6::Test)
+    add_test(NAME Qml_WindowPolicyWin COMMAND Qml_WindowPolicyWin)
+    set_tests_properties(Qml_WindowPolicyWin PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+endif()
+
 # ============================================================================
 # PinWindow Tests (link snaptray_ui which includes snaptray_platform)
 # ============================================================================
@@ -127,6 +141,11 @@ add_executable(RegionSelector_CaptureShortcutHintsOverlay RegionSelector/tst_Cap
 target_link_libraries(RegionSelector_CaptureShortcutHintsOverlay PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME RegionSelector_CaptureShortcutHintsOverlay COMMAND RegionSelector_CaptureShortcutHintsOverlay)
 set_tests_properties(RegionSelector_CaptureShortcutHintsOverlay PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RegionSelector_RegionPainterChrome RegionSelector/tst_RegionPainterChrome.cpp)
+target_link_libraries(RegionSelector_RegionPainterChrome PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME RegionSelector_RegionPainterChrome COMMAND RegionSelector_RegionPainterChrome)
+set_tests_properties(RegionSelector_RegionPainterChrome PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(RegionSelector_UpdateThrottler RegionSelector/tst_UpdateThrottler.cpp)
 target_link_libraries(RegionSelector_UpdateThrottler PRIVATE snaptray_ui Qt6::Test)

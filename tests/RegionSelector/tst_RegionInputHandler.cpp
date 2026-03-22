@@ -35,6 +35,8 @@ private slots:
     void testNoMoveKeepsDetectedWindowSelection();
     void testTinyMoveWithoutDetectionFallsBackToFullScreen();
     void testLargeDragUsesDragSelectionInsteadOfPendingWindow();
+    void testDetectedWindowClickDefersSelectionUntilRealDrag();
+    void testDetectedWindowRealDragClearsDetectionAndStartsSelection();
     void testSelectionMoveSetsAndClearsDragStateOnRelease();
     void testSelectionMoveClearsDragStateOnRightClickCancel();
 
@@ -172,6 +174,46 @@ void tst_RegionInputHandler::testLargeDragUsesDragSelectionInsteadOfPendingWindo
     QVERIFY(selectedRect.width() > 5);
     QVERIFY(selectedRect.height() > 5);
     QVERIFY(selectedRect != detectedWindow);
+}
+
+void tst_RegionInputHandler::testDetectedWindowClickDefersSelectionUntilRealDrag()
+{
+    const QRect detectedWindow(120, 140, 220, 160);
+    m_state.hasDetectedWindow = true;
+    m_state.highlightedWindowRect = detectedWindow;
+
+    QSignalSpy detectionClearedSpy(m_handler, &RegionInputHandler::detectionCleared);
+
+    auto pressEvent = makeMouseEvent(QEvent::MouseButtonPress, QPoint(160, 180), Qt::LeftButton, Qt::LeftButton);
+    m_handler->handleMousePress(&pressEvent);
+
+    QVERIFY(!m_selectionManager->hasActiveSelection());
+    QCOMPARE(detectionClearedSpy.count(), 0);
+
+    auto moveEvent = makeMouseEvent(QEvent::MouseMove, QPoint(163, 182), Qt::NoButton, Qt::LeftButton);
+    m_handler->handleMouseMove(&moveEvent);
+
+    QVERIFY(!m_selectionManager->hasActiveSelection());
+    QCOMPARE(detectionClearedSpy.count(), 0);
+}
+
+void tst_RegionInputHandler::testDetectedWindowRealDragClearsDetectionAndStartsSelection()
+{
+    const QRect detectedWindow(120, 140, 220, 160);
+    m_state.hasDetectedWindow = true;
+    m_state.highlightedWindowRect = detectedWindow;
+
+    QSignalSpy detectionClearedSpy(m_handler, &RegionInputHandler::detectionCleared);
+
+    auto pressEvent = makeMouseEvent(QEvent::MouseButtonPress, QPoint(160, 180), Qt::LeftButton, Qt::LeftButton);
+    m_handler->handleMousePress(&pressEvent);
+
+    auto moveEvent = makeMouseEvent(QEvent::MouseMove, QPoint(210, 230), Qt::NoButton, Qt::LeftButton);
+    m_handler->handleMouseMove(&moveEvent);
+
+    QVERIFY(m_selectionManager->isSelecting());
+    QCOMPARE(detectionClearedSpy.count(), 1);
+    QCOMPARE(detectionClearedSpy.takeFirst().at(0).toRect(), detectedWindow);
 }
 
 void tst_RegionInputHandler::testSelectionMoveSetsAndClearsDragStateOnRelease()

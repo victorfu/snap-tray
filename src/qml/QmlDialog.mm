@@ -91,7 +91,7 @@ void QmlDialog::syncTransientParent()
         m_view->setTransientParent(nullptr);
     }
 
-    reinforceFramelessToolWindow(m_view);
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
 
     if (m_view->isVisible()) {
         applyPlatformWindowFlags();
@@ -120,7 +120,7 @@ void QmlDialog::applyPlatformWindowFlags()
     }
 #endif
 
-    reinforceFramelessToolWindow(m_view);
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
     raiseTransientWindowAboveParent(m_view, hostWidget());
 }
 

@@ -160,6 +160,7 @@ void SettingsBackend::loadAllSettings()
 #endif
 
     // Advanced
+    m_magnifierEnabled = RegionCaptureSettingsManager::instance().isMagnifierEnabled();
     m_shortcutHintsEnabled = RegionCaptureSettingsManager::instance().isShortcutHintsEnabled();
 #ifdef SNAPTRAY_ENABLE_MCP
     m_mcpEnabled = MCPSettingsManager::instance().isEnabled();
@@ -285,6 +286,8 @@ bool SettingsBackend::hasAccessibilityPermission() const { return m_hasAccessibi
 // Advanced property accessors
 // ─────────────────────────────────────────────────────────────────────────────
 
+bool SettingsBackend::magnifierEnabled() const { return m_magnifierEnabled; }
+
 bool SettingsBackend::shortcutHintsEnabled() const { return m_shortcutHintsEnabled; }
 
 bool SettingsBackend::isMcpBuild() const
@@ -294,6 +297,14 @@ bool SettingsBackend::isMcpBuild() const
 #else
     return false;
 #endif
+}
+
+void SettingsBackend::setMagnifierEnabled(bool v) {
+    if (m_magnifierEnabled != v) {
+        m_magnifierEnabled = v;
+        RegionCaptureSettingsManager::instance().setMagnifierEnabled(v);
+        emit magnifierEnabledChanged();
+    }
 }
 
 void SettingsBackend::setShortcutHintsEnabled(bool v) {

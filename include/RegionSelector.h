@@ -215,6 +215,7 @@ private:
     void applyCanvasGeometry(const QSize& logicalSize);
     void maybeDismissShortcutHintsAfterSelectionCompleted();
     void updateShortcutHintsHoverVisibilityDuringSelection(const QPoint& localPos);
+    void syncMagnifierEnabledFromSettings();
     static bool isPureModifierKey(int key);
     bool canNavigateHistoryReplay() const;
     void navigateHistoryReplay(int direction);
@@ -374,6 +375,7 @@ private:
     // Magnifier panel component
     MagnifierPanel* m_magnifierPanel;
     std::unique_ptr<MagnifierOverlay> m_magnifierOverlay;
+    bool m_magnifierEnabled = true;
 
     // Keep shortcut hints painter-based and in-window. A prior QML top-level
     // overlay version regressed on macOS by flashing and disappearing during

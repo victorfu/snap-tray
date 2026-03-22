@@ -19,6 +19,7 @@ private slots:
     void cleanup();
 
     void testAvailableLanguages_PrioritizesConfiguredAsianLanguages();
+    void testMagnifierEnabled_RoundTripPersistsAndSignals();
     void testNormalizeRecordingAudioSettings_PreservesUnavailableLoadedDevice();
     void testBlurTypeMapping_RoundTripMatchesUiIndices();
     void testCheckForUpdates_UnsupportedInstallSource_EmitsUnavailable();
@@ -48,6 +49,7 @@ void tst_SettingsBackend::clearTestSettings()
     settings.remove("recording/audioDevice");
     settings.remove("detection/blurType");
     settings.remove("general/startOnLogin");
+    settings.remove("regionCapture/showMagnifier");
     settings.remove("update/lastCheckTime");
     settings.sync();
 }
@@ -79,6 +81,24 @@ void tst_SettingsBackend::testAvailableLanguages_PrioritizesConfiguredAsianLangu
     QVERIFY(actualCodes.indexOf(QStringLiteral("ar")) < actualCodes.indexOf(QStringLiteral("cs")));
     QVERIFY(actualCodes.indexOf(QStringLiteral("pt")) < actualCodes.indexOf(QStringLiteral("pt_PT")));
     QCOMPARE(actualCodes.last(), QStringLiteral("vi"));
+}
+
+void tst_SettingsBackend::testMagnifierEnabled_RoundTripPersistsAndSignals()
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue("regionCapture/showMagnifier", false);
+    settings.sync();
+
+    SettingsBackend backend;
+    QCOMPARE(backend.magnifierEnabled(), false);
+
+    QSignalSpy changedSpy(&backend, &SettingsBackend::magnifierEnabledChanged);
+
+    backend.setMagnifierEnabled(true);
+
+    QCOMPARE(backend.magnifierEnabled(), true);
+    QCOMPARE(settings.value("regionCapture/showMagnifier").toBool(), true);
+    QCOMPARE(changedSpy.count(), 1);
 }
 
 void tst_SettingsBackend::testNormalizeRecordingAudioSettings_PreservesUnavailableLoadedDevice()

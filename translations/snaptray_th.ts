@@ -22,6 +22,11 @@
 <context>
     <name>AdvancedSettings</name>
     <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="24" />
+        <source>Show magnifier</source>
+        <translation>แสดงแว่นขยาย</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="21"/>
         <source>Capture</source>
         <translation>จับภาพ</translation>
@@ -2997,3 +3002,5 @@ Password: %2</source>
     </message>
 </context>
 </TS>
+
+

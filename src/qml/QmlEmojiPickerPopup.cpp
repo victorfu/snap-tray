@@ -159,7 +159,7 @@ void QmlEmojiPickerPopup::setParentWidget(QWidget* parent)
         m_view->setTransientParent(nullptr);
     }
 
-    reinforceFramelessToolWindow(m_view);
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
     if (m_view->isVisible()) {
         applyPlatformWindowFlags();
     }
@@ -185,7 +185,7 @@ QWindow* QmlEmojiPickerPopup::window() const
 
 void QmlEmojiPickerPopup::applyPlatformWindowFlags()
 {
-    reinforceFramelessToolWindow(m_view);
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
     raiseTransientWindowAboveParent(m_view, m_parentWidget.data());
 }
 

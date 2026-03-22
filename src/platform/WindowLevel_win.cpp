@@ -162,3 +162,46 @@ void reinforceFramelessToolWindow(QWindow *window)
     Q_UNUSED(window)
 #endif
 }
+
+void hideNativeWindowTitleBarIcon(QWindow *window)
+{
+#ifdef Q_OS_WIN
+    if (!window) {
+        return;
+    }
+
+    HWND hwnd = reinterpret_cast<HWND>(window->winId());
+    if (!hwnd) {
+        return;
+    }
+
+    const LONG_PTR exStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+    const LONG_PTR cleanedExStyle = exStyle | WS_EX_DLGMODALFRAME;
+    if (cleanedExStyle != exStyle) {
+        SetWindowLongPtr(hwnd, GWL_EXSTYLE, cleanedExStyle);
+    }
+
+    SendMessageW(hwnd, WM_SETICON, ICON_SMALL, 0);
+    SendMessageW(hwnd, WM_SETICON, ICON_BIG, 0);
+    SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+                 SWP_NOACTIVATE | SWP_FRAMECHANGED);
+#else
+    Q_UNUSED(window)
+#endif
+}
+
+void hideNativeWindowTitleBarIcon(QWidget *widget)
+{
+    if (!widget) {
+        return;
+    }
+
+    QWindow *window = widget->window()->windowHandle();
+    if (!window) {
+        widget->winId();
+        window = widget->window()->windowHandle();
+    }
+
+    hideNativeWindowTitleBarIcon(window);
+}

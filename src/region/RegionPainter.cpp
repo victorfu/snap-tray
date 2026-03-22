@@ -21,6 +21,19 @@
 #include <QDebug>
 #include <QtMath>
 
+namespace {
+
+constexpr qreal kSelectionBorderWidth = 2.0;
+constexpr int kSelectionHandleDiameter = 8;
+constexpr int kSelectionHandleRadius = kSelectionHandleDiameter / 2;
+constexpr int kSelectionChromeMargin = kSelectionHandleRadius + 1;
+constexpr int kDimensionPanelHeight = 28;
+constexpr int kDimensionPanelPadding = 24;
+constexpr int kDimensionPanelTopGap = 8;
+constexpr int kDimensionPanelInset = 5;
+
+}
+
 RegionPainter::RegionPainter(QObject* parent)
     : QObject(parent)
 {
@@ -56,11 +69,6 @@ void RegionPainter::setMultiRegionManager(MultiRegionManager* manager)
 void RegionPainter::setHighlightedWindowRect(const QRect& rect)
 {
     m_highlightedWindowRect = rect;
-}
-
-void RegionPainter::setDetectedWindowTitle(const QString& title)
-{
-    m_detectedWindowTitle = title;
 }
 
 void RegionPainter::setCornerRadius(int radius)
@@ -198,45 +206,7 @@ void RegionPainter::drawSelection(QPainter& painter)
         return;
     }
 
-    QRect sel = m_selectionManager->selectionRect();
-    int radius = effectiveCornerRadius();
-
-    // Draw selection border
-    static constexpr qreal kSelectionBorderWidth = 2.0;
-    QPen borderPen(QColor(0, 174, 255), kSelectionBorderWidth);
-    borderPen.setJoinStyle(Qt::MiterJoin);
-    borderPen.setCapStyle(Qt::SquareCap);
-    painter.setPen(borderPen);
-    painter.setBrush(Qt::NoBrush);
-    const QRectF borderRect = alignedSelectionBorderRect(sel, borderPen.widthF());
-    if (radius > 0) {
-        painter.drawRoundedRect(borderRect, radius, radius);
-    } else {
-        painter.drawRect(borderRect);
-    }
-
-    // Draw corner and edge handles
-    const int handleSize = 8;
-    QColor handleColor(0, 174, 255);
-    painter.setBrush(handleColor);
-    painter.setPen(Qt::white);
-
-    // Corner handles (circles for Snipaste style)
-    // Skip corner handles when corner radius is large (they would overlap the rounded corner)
-    auto drawHandle = [&](int x, int y) {
-        painter.drawEllipse(QPoint(x, y), handleSize / 2, handleSize / 2);
-    };
-
-    if (radius < 10) {
-        drawHandle(sel.left(), sel.top());
-        drawHandle(sel.right(), sel.top());
-        drawHandle(sel.left(), sel.bottom());
-        drawHandle(sel.right(), sel.bottom());
-    }
-    drawHandle(sel.center().x(), sel.top());
-    drawHandle(sel.center().x(), sel.bottom());
-    drawHandle(sel.left(), sel.center().y());
-    drawHandle(sel.right(), sel.center().y());
+    drawSelectionChrome(painter, m_selectionManager->selectionRect());
 }
 
 QRectF RegionPainter::alignedSelectionBorderRect(const QRect& selectionRect, qreal penWidth) const
@@ -249,6 +219,46 @@ QRectF RegionPainter::alignedSelectionBorderRect(const QRect& selectionRect, qre
         borderRect.translate(offset, offset);
     }
     return borderRect;
+}
+
+void RegionPainter::drawSelectionChrome(QPainter& painter, const QRect& selectionRect) const
+{
+    const QRect sel = selectionRect.normalized();
+    if (!sel.isValid() || sel.isEmpty()) {
+        return;
+    }
+
+    const int radius = effectiveCornerRadius(sel);
+
+    QPen borderPen(QColor(0, 174, 255), kSelectionBorderWidth);
+    borderPen.setJoinStyle(Qt::MiterJoin);
+    borderPen.setCapStyle(Qt::SquareCap);
+    painter.setPen(borderPen);
+    painter.setBrush(Qt::NoBrush);
+    const QRectF borderRect = alignedSelectionBorderRect(sel, borderPen.widthF());
+    if (radius > 0) {
+        painter.drawRoundedRect(borderRect, radius, radius);
+    } else {
+        painter.drawRect(borderRect);
+    }
+
+    painter.setBrush(QColor(0, 174, 255));
+    painter.setPen(Qt::white);
+
+    auto drawHandle = [&](int x, int y) {
+        painter.drawEllipse(QPoint(x, y), kSelectionHandleRadius, kSelectionHandleRadius);
+    };
+
+    if (radius < 10) {
+        drawHandle(sel.left(), sel.top());
+        drawHandle(sel.right(), sel.top());
+        drawHandle(sel.left(), sel.bottom());
+        drawHandle(sel.right(), sel.bottom());
+    }
+    drawHandle(sel.center().x(), sel.top());
+    drawHandle(sel.center().x(), sel.bottom());
+    drawHandle(sel.left(), sel.center().y());
+    drawHandle(sel.right(), sel.center().y());
 }
 
 void RegionPainter::drawDimensionInfo(QPainter& painter)
@@ -343,28 +353,7 @@ QRect RegionPainter::drawDimensionInfoPanel(QPainter& painter, const QRect& sele
     QFont font = painter.font();
     font.setPointSize(12);
     painter.setFont(font);
-
-    QFontMetrics fm(font);
-
-    // Calculate fixed minimum width for localized "99999 x 99999 px" to prevent jittering.
-    const QString maxWidthText = tr("%1 x %2 px").arg(99999).arg(99999);
-    int fixedWidth = fm.horizontalAdvance(maxWidthText) + 24;  // +24 for padding
-
-    int actualWidth = fm.horizontalAdvance(label) + 24;
-    int width = qMax(fixedWidth, actualWidth);
-
-    // Use fixed height 28px to match RegionControlWidget
-    static constexpr int PANEL_HEIGHT = 28;
-    QRect textRect(0, 0, width, PANEL_HEIGHT);
-
-    int textX = selectionRect.left();
-    int textY = selectionRect.top() - textRect.height() - 8;
-    if (textY < 5) {
-        textY = selectionRect.top() + 5;
-        textX = selectionRect.left() + 5;
-    }
-
-    textRect.moveTo(textX, textY);
+    const QRect textRect = dimensionInfoPanelRect(selectionRect, label, font);
 
     auto styleConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
     GlassRenderer::drawGlassPanel(painter, textRect, styleConfig, 6);
@@ -373,6 +362,63 @@ QRect RegionPainter::drawDimensionInfoPanel(QPainter& painter, const QRect& sele
     painter.drawText(textRect, Qt::AlignCenter, label);
 
     return textRect;
+}
+
+QRect RegionPainter::dimensionInfoPanelRect(const QRect& selectionRect, const QString& label,
+                                            const QFont& baseFont) const
+{
+    const QRect sel = selectionRect.normalized();
+    if (!m_parentWidget || !sel.isValid() || sel.isEmpty()) {
+        return QRect();
+    }
+
+    QFont font(baseFont);
+    font.setPointSize(12);
+    QFontMetrics fm(font);
+
+    const QString maxWidthText = tr("%1 x %2 px").arg(99999).arg(99999);
+    const int fixedWidth = fm.horizontalAdvance(maxWidthText) + kDimensionPanelPadding;
+    const int actualWidth = fm.horizontalAdvance(label) + kDimensionPanelPadding;
+    const int width = qMax(fixedWidth, actualWidth);
+
+    QRect textRect(0, 0, width, kDimensionPanelHeight);
+
+    int textX = sel.left();
+    int textY = sel.top() - textRect.height() - kDimensionPanelTopGap;
+    if (textY < kDimensionPanelInset) {
+        textY = sel.top() + kDimensionPanelInset;
+        textX = sel.left() + kDimensionPanelInset;
+    }
+
+    textRect.moveTo(textX, textY);
+
+    const int maxX = m_parentWidget->width() - kDimensionPanelInset;
+    const int maxY = m_parentWidget->height() - kDimensionPanelInset;
+    if (textRect.right() > maxX) {
+        textRect.moveRight(maxX);
+    }
+    if (textRect.left() < kDimensionPanelInset) {
+        textRect.moveLeft(kDimensionPanelInset);
+    }
+    if (textRect.bottom() > maxY) {
+        textRect.moveBottom(maxY);
+    }
+    if (textRect.top() < kDimensionPanelInset) {
+        textRect.moveTop(kDimensionPanelInset);
+    }
+
+    return textRect;
+}
+
+QRect RegionPainter::selectionChromeBounds(const QRect& selectionRect) const
+{
+    const QRect sel = selectionRect.normalized();
+    if (!sel.isValid() || sel.isEmpty()) {
+        return QRect();
+    }
+
+    return sel.adjusted(-kSelectionChromeMargin, -kSelectionChromeMargin,
+                        kSelectionChromeMargin, kSelectionChromeMargin);
 }
 
 QRect RegionPainter::physicalSelectionRect(const QRect& selectionRect) const
@@ -417,88 +463,9 @@ void RegionPainter::drawDetectedWindow(QPainter& painter)
         return;
     }
 
-    // Dashed border to distinguish from final selection
-    QPen dashedPen(QColor(0, 174, 255), 2, Qt::DashLine);
-    painter.setPen(dashedPen);
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRect(m_highlightedWindowRect);
-
-    // Show window dimensions hint
-    if (!m_detectedWindowTitle.isEmpty()) {
-        drawWindowHint(painter, m_detectedWindowTitle);
-    }
-}
-
-void RegionPainter::drawWindowHint(QPainter& painter, const QString& title)
-{
-    QFont font = painter.font();
-    font.setPointSize(11);
-    painter.setFont(font);
-
-    QFontMetrics fm(font);
-    QString displayTitle = fm.elidedText(title, Qt::ElideRight, 200);
-    QRect textRect = fm.boundingRect(displayTitle);
-    textRect.adjust(-8, -4, 8, 4);
-
-    int w = m_parentWidget->width();
-    int h = m_parentWidget->height();
-
-    // For small elements (like menu bar icons), position to the right
-    // For larger windows, position below
-    bool isSmallElement = m_highlightedWindowRect.width() < 60 || m_highlightedWindowRect.height() < 60;
-
-    int hintX, hintY;
-
-    if (isSmallElement) {
-        // Position to the right of the element
-        hintX = m_highlightedWindowRect.right() + 4;
-        hintY = m_highlightedWindowRect.top();
-
-        // If no space on right, try left
-        if (hintX + textRect.width() > w - 5) {
-            hintX = m_highlightedWindowRect.left() - textRect.width() - 4;
-        }
-        // If no space on left either, position below
-        if (hintX < 5) {
-            hintX = m_highlightedWindowRect.left();
-            hintY = m_highlightedWindowRect.bottom() + 4;
-        }
-    }
-    else {
-        // Position below the detected window
-        hintX = m_highlightedWindowRect.left();
-        hintY = m_highlightedWindowRect.bottom() + 4;
-
-        // If no space below, position above
-        if (hintY + textRect.height() > h - 5) {
-            hintY = m_highlightedWindowRect.top() - textRect.height() - 4;
-        }
-    }
-
-    textRect.moveTo(hintX, hintY);
-
-    // Keep on screen
-    if (textRect.right() > w - 5) {
-        textRect.moveRight(w - 5);
-    }
-    if (textRect.left() < 5) {
-        textRect.moveLeft(5);
-    }
-    if (textRect.bottom() > h - 5) {
-        textRect.moveBottom(h - 5);
-    }
-    if (textRect.top() < 5) {
-        textRect.moveTop(5);
-    }
-
-    // Draw background pill
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0, 0, 0, 180));
-    painter.drawRoundedRect(textRect, 4, 4);
-
-    // Draw text
-    painter.setPen(Qt::white);
-    painter.drawText(textRect, Qt::AlignCenter, displayTitle);
+    drawSelectionChrome(painter, m_highlightedWindowRect);
+    const QString dimensions = selectionSizeLabel(m_highlightedWindowRect);
+    drawDimensionInfoPanel(painter, m_highlightedWindowRect, dimensions);
 }
 
 void RegionPainter::drawAnnotations(QPainter& painter)
@@ -569,78 +536,21 @@ void RegionPainter::drawCurrentAnnotation(QPainter& painter)
     }
 }
 
-QRect RegionPainter::getWindowHighlightVisualRect(const QRect& windowRect, const QString& title) const
+QRect RegionPainter::getWindowHighlightVisualRect(const QRect& windowRect) const
 {
     if (!m_parentWidget || windowRect.isNull()) {
         return QRect();
     }
 
-    // Start with the window rect itself (this covers the highlight border)
-    // Add a small margin for the border (2px width + potential antialiasing)
-    QRect visualRect = windowRect.adjusted(-2, -2, 2, 2);
-
-    if (title.isEmpty()) {
-        return visualRect;
-    }
-
-    // Logic duplicating drawWindowHint to determine hint position
-    QFont font; 
-    font.setPointSize(11);
-    
-    QFontMetrics fm(font);
-    QString displayTitle = fm.elidedText(title, Qt::ElideRight, 200);
-    QRect textRect = fm.boundingRect(displayTitle);
-    textRect.adjust(-8, -4, 8, 4);
-
-    int w = m_parentWidget->width();
-    int h = m_parentWidget->height();
-
-    bool isSmallElement = windowRect.width() < 60 || windowRect.height() < 60;
-
-    int hintX, hintY;
-
-    if (isSmallElement) {
-        hintX = windowRect.right() + 4;
-        hintY = windowRect.top();
-
-        if (hintX + textRect.width() > w - 5) {
-            hintX = windowRect.left() - textRect.width() - 4;
-        }
-        if (hintX < 5) {
-            hintX = windowRect.left();
-            hintY = windowRect.bottom() + 4;
-        }
-    }
-    else {
-        hintX = windowRect.left();
-        hintY = windowRect.bottom() + 4;
-
-        if (hintY + textRect.height() > h - 5) {
-            hintY = windowRect.top() - textRect.height() - 4;
-        }
-    }
-
-    textRect.moveTo(hintX, hintY);
-
-    if (textRect.right() > w - 5) {
-        textRect.moveRight(w - 5);
-    }
-    if (textRect.left() < 5) {
-        textRect.moveLeft(5);
-    }
-    if (textRect.bottom() > h - 5) {
-        textRect.moveBottom(h - 5);
-    }
-    if (textRect.top() < 5) {
-        textRect.moveTop(5);
-    }
-
-    return visualRect.united(textRect);
+    const QString dimensions = selectionSizeLabel(windowRect);
+    const QFont baseFont;
+    const QRect panelRect = dimensionInfoPanelRect(windowRect, dimensions, baseFont);
+    return selectionChromeBounds(windowRect).united(panelRect);
 }
 
-int RegionPainter::effectiveCornerRadius() const
+int RegionPainter::effectiveCornerRadius(const QRect& selectionRect) const
 {
-    QRect sel = m_selectionManager->selectionRect();
+    QRect sel = selectionRect.normalized();
     if (sel.isEmpty()) return 0;
     // Cap radius at half the smaller dimension
     int maxRadius = qMin(sel.width(), sel.height()) / 2;

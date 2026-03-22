@@ -1,5 +1,6 @@
 #include "qml/QmlOverlayPanel.h"
 #include "cursor/CursorSurfaceSupport.h"
+#include "platform/WindowLevel.h"
 #include "qml/QmlOverlayManager.h"
 
 #include <QEvent>
@@ -134,6 +135,8 @@ void QmlOverlayPanel::applyPlatformWindowFlags()
 
     [window setOpaque:NO];
 #endif
+
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
 }
 
 void QmlOverlayPanel::show()

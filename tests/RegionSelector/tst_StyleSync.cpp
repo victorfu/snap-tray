@@ -2,10 +2,15 @@
 
 #include <memory>
 
+#include <QClipboard>
+#include <QGuiApplication>
+#include <QScreen>
+
 #include "RegionSelector.h"
 #include "annotations/ArrowAnnotation.h"
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
+#include "settings/RegionCaptureSettingsManager.h"
 #include "region/RegionInputHandler.h"
 #include "tools/ToolManager.h"
 
@@ -33,6 +38,8 @@ private slots:
     void testRestoreRegionCursorAfterArrowControlHoverReturnsSelectionBodyCursor();
     void testPopupRestoreReturnsSelectionBodyCursor();
     void testPopupRestoreReturnsMosaicCursor();
+    void testInitializeForScreen_DisabledMagnifierPreventsVisibility();
+    void testDisabledMagnifierIgnoresShiftAndCopyShortcuts();
 };
 
 void TestRegionSelectorStyleSync::prepareSelectionTool(RegionSelector& selector)
@@ -204,6 +211,59 @@ void TestRegionSelectorStyleSync::testPopupRestoreReturnsMosaicCursor()
     QCOMPARE(restoredCursor.hotSpot(), toolCursor.hotSpot());
     QCOMPARE(restoredCursor.pixmap().deviceIndependentSize(),
              toolCursor.pixmap().deviceIndependentSize());
+}
+
+void TestRegionSelectorStyleSync::testInitializeForScreen_DisabledMagnifierPreventsVisibility()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        QSKIP("No screens available for RegionSelector magnifier setting test.");
+    }
+
+    auto& settings = RegionCaptureSettingsManager::instance();
+    settings.setMagnifierEnabled(false);
+
+    RegionSelector selector;
+    const QSize size = screen->geometry().size().boundedTo(QSize(320, 240));
+    QPixmap preCapture(size);
+    preCapture.fill(Qt::red);
+
+    selector.initializeForScreen(screen, preCapture);
+
+    QVERIFY(!selector.shouldShowMagnifier());
+    QCOMPARE(selector.m_magnifierEnabled, false);
+
+    settings.setMagnifierEnabled(true);
+}
+
+void TestRegionSelectorStyleSync::testDisabledMagnifierIgnoresShiftAndCopyShortcuts()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        QSKIP("No screens available for RegionSelector magnifier shortcut test.");
+    }
+
+    auto& settings = RegionCaptureSettingsManager::instance();
+    settings.setMagnifierEnabled(false);
+
+    RegionSelector selector;
+    const QSize size = screen->geometry().size().boundedTo(QSize(320, 240));
+    QPixmap preCapture(size);
+    preCapture.fill(Qt::blue);
+    selector.initializeForScreen(screen, preCapture);
+
+    selector.m_magnifierPanel->setShowHexColor(false);
+    QGuiApplication::clipboard()->setText(QStringLiteral("keep-me"));
+
+    QKeyEvent shiftEvent(QEvent::KeyPress, Qt::Key_Shift, Qt::NoModifier);
+    selector.keyPressEvent(&shiftEvent);
+    QCOMPARE(selector.m_magnifierPanel->showHexColor(), false);
+
+    QKeyEvent copyEvent(QEvent::KeyPress, Qt::Key_C, Qt::NoModifier);
+    selector.keyPressEvent(&copyEvent);
+    QCOMPARE(QGuiApplication::clipboard()->text(), QStringLiteral("keep-me"));
+
+    settings.setMagnifierEnabled(true);
 }
 
 QTEST_MAIN(TestRegionSelectorStyleSync)
