@@ -134,6 +134,10 @@ QString physicalPixelSizeLabel(const QRect& logicalRect, qreal dpr)
 
 constexpr int kInitialRevealTimeoutMs = 120;
 
+// Margin around selection rect for annotation-scoped repaints.
+// Covers max stroke width (20px) + selection handles (8px) + antialiasing (2px).
+constexpr int kAnnotationRepaintMargin = 30;
+
 } // namespace
 
 RegionSelector::RegionSelector(QWidget* parent)
@@ -279,7 +283,15 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_toolManager->setArrowStyle(m_inputState.arrowStyle);
     m_toolManager->setLineStyle(m_inputState.lineStyle);
     m_toolManager->setMosaicBlurType(mosaicBlurType);
-    connect(m_toolManager, &ToolManager::needsRepaint, this, QOverload<>::of(&QWidget::update));
+    connect(m_toolManager, &ToolManager::needsRepaint, this, [this]() {
+        if (m_inputState.isDrawing && m_selectionManager && m_selectionManager->hasSelection()) {
+            update(m_selectionManager->selectionRect().adjusted(
+                -kAnnotationRepaintMargin, -kAnnotationRepaintMargin,
+                kAnnotationRepaintMargin, kAnnotationRepaintMargin));
+        } else {
+            update();
+        }
+    });
 
     // Initialize cursor manager for centralized cursor handling
     auto& cursorManager = CursorManager::instance();
@@ -454,7 +466,13 @@ RegionSelector::RegionSelector(QWidget* parent)
                 m_toolbarViewModel->setCanUndo(m_annotationLayer && m_annotationLayer->canUndo());
                 m_toolbarViewModel->setCanRedo(m_annotationLayer && m_annotationLayer->canRedo());
             }
-            update();
+            if (m_selectionManager && m_selectionManager->hasSelection()) {
+                update(m_selectionManager->selectionRect().adjusted(
+                    -kAnnotationRepaintMargin, -kAnnotationRepaintMargin,
+                    kAnnotationRepaintMargin, kAnnotationRepaintMargin));
+            } else {
+                update();
+            }
         });
 
     // EmojiPickerPopup is lazy-initialized via showEmojiPickerPopup() when first needed

@@ -945,7 +945,14 @@ void RegionInputHandler::handleThrottledUpdate()
     else if (state().isDrawing) {
         if (m_updateThrottler->shouldUpdate(UpdateThrottler::ThrottleType::Annotation)) {
             m_updateThrottler->reset(UpdateThrottler::ThrottleType::Annotation);
-            emit updateRequested();
+            if (m_selectionManager && m_selectionManager->hasSelection()) {
+                static constexpr int kAnnotationRepaintMargin = 30;
+                emit updateRequested(m_selectionManager->selectionRect().adjusted(
+                    -kAnnotationRepaintMargin, -kAnnotationRepaintMargin,
+                    kAnnotationRepaintMargin, kAnnotationRepaintMargin));
+            } else {
+                emit updateRequested();
+            }
         }
     }
     else if (m_selectionManager->isComplete()) {
