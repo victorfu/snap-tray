@@ -60,7 +60,7 @@ private:
     void showPreparedRegionSelector(QScreen *targetScreen);
     void refreshWindowDetectorForCapture(QScreen *screen);
     void refreshWindowDetectorAsync(QScreen *screen);
-    RegionSelector *createRegionSelector(bool showShortcutHintsOnEntry);
+    RegionSelector *ensureRegionSelector();
 
     QPointer<RegionSelector> m_regionSelector;
     PinWindowManager *m_pinManager;

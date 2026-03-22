@@ -162,7 +162,6 @@ RegionSelector::RegionSelector(QWidget* parent)
     , m_shortcutHintsOverlay(nullptr)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
-    setAttribute(Qt::WA_DeleteOnClose);
     setMouseTracking(true);
 
     // Initialize selection state manager
@@ -1205,20 +1204,111 @@ void RegionSelector::applyCanvasGeometry(const QSize& logicalSize)
     m_inputState.currentPoint.setY(qBound(0, m_inputState.currentPoint.y(), qMax(0, logicalSize.height() - 1)));
 }
 
-void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapture)
+void RegionSelector::resetForCapture()
 {
+    // Re-enable the widget after a previous close() set m_isClosing = true
+    m_isClosing = false;
+
+    // History replay state
     m_historyReplayEntries.clear();
     m_historyLiveSlot = {};
     m_historyReplayIndex = -1;
     m_historyReplayActive = false;
+
+    // Initial reveal state machine
     resetInitialRevealState();
+
+    // Preserved selection from screen switch
     clearPreservedSelection();
+
+    // Floating UI (toolbars, sub-toolbars, emoji picker, region control)
     hideSelectionFloatingUi(false);
+    m_toolbarUserDragged = false;
+
+    // Shortcut hints
     m_shortcutHintsVisible = false;
     m_shortcutHintsTemporarilyHiddenByHover = false;
+
+    // Selection state
+    m_selectionManager->clearSelection();
+    m_inputState.highlightedWindowRect = QRect();
+    m_inputState.hasDetectedWindow = false;
+    m_detectedWindow.reset();
+
+    // Multi-region state
+    if (m_multiRegionManager) {
+        m_multiRegionManager->clear();
+    }
+    m_inputState.multiRegionMode = false;
+    m_inputState.replaceTargetIndex = -1;
+    m_multiRegionListRefreshPending = false;
+
+    // Annotation layer
+    if (m_annotationLayer) {
+        m_annotationLayer->clear();
+    }
+
+    // Tool state — reset to default (Selection)
+    if (m_toolManager) {
+        m_toolManager->setCurrentTool(ToolId::Selection);
+    }
+    m_inputState.currentTool = ToolId::Selection;
+    m_inputState.isDrawing = false;
+    m_inputState.showSubToolbar = false;
+    if (m_toolbarViewModel) {
+        m_toolbarViewModel->setActiveTool(-1);
+        m_toolbarViewModel->setCanUndo(false);
+        m_toolbarViewModel->setCanRedo(false);
+    }
+
+    // OCR / QR / auto-blur in-progress flags
+    m_ocrInProgress = false;
+    m_qrCodeInProgress = false;
+    m_autoBlurInProgress = false;
+    m_shareInProgress = false;
+    m_exportInProgress = false;
+    m_pendingSharePassword.clear();
+    m_pendingShareSubmission.reset();
+    if (m_autoBlurWatcher) {
+        m_autoBlurWatcher->cancel();
+        m_autoBlurWatcher = nullptr;
+    }
+
+    // Magnifier
+    if (m_magnifierOverlay) {
+        m_magnifierOverlay->hideOverlay();
+    }
+    if (m_magnifierPanel) {
+        m_magnifierPanel->invalidateCache();
+    }
+
+    // QML panels
     if (m_regionControlPanel) m_regionControlPanel->hide();
-    if (m_magnifierOverlay) m_magnifierOverlay->hideOverlay();
+    if (m_multiRegionListPanel) m_multiRegionListPanel->hide();
+
+    // Dialog state
+    m_saveDialogOpen = false;
+    m_dropdownOpen = false;
+    m_openBlockingDialogCount = 0;
+    m_activationCount = 0;
+
+    // Corner radius — keep persisted value, just reset completedSelectionDrag suppression
+    m_inputState.completedSelectionDragUiSuppressed = false;
+
+    // Window detector — will be re-set by CaptureManager
+    m_windowDetector = nullptr;
+
+    // Quick pin mode — will be re-set by CaptureManager if needed
+    m_quickPinMode = false;
+
+    // Cursor state — clear all contexts so ensureCrossCursor can start fresh
+    CursorManager::instance().clearAllForWidget(this);
+
     setWindowOpacity(0.0);
+}
+
+void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapture)
+{
 
     setupScreenGeometry(screen);
     if (!isScreenValid()) {
@@ -1290,19 +1380,6 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
 
 void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
 {
-    m_historyReplayEntries.clear();
-    m_historyLiveSlot = {};
-    m_historyReplayIndex = -1;
-    m_historyReplayActive = false;
-    resetInitialRevealState();
-    clearPreservedSelection();
-    hideSelectionFloatingUi(false);
-    m_shortcutHintsVisible = false;
-    m_shortcutHintsTemporarilyHiddenByHover = false;
-    if (m_regionControlPanel) m_regionControlPanel->hide();
-    if (m_magnifierOverlay) m_magnifierOverlay->hideOverlay();
-    setWindowOpacity(0.0);
-
     setupScreenGeometry(screen);
     if (!isScreenValid()) {
         qWarning() << "RegionSelector: Cannot initialize with region, no valid screen";
@@ -2000,7 +2077,9 @@ void RegionSelector::beginInitialRevealPreparation(WindowDetector::QueryMode ini
 
     m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
     m_magnifierPanel->invalidateCache();
-    m_magnifierPanel->preWarmCache(m_initialRevealCursorPos, m_backgroundPixmap);
+
+    // preWarmCache is called later in commitInitialReveal() at the
+    // re-sampled cursor position, right before the first visible paint.
 
     const bool skipInitialWindowDetection =
         m_historyReplayActive ||
@@ -2127,6 +2206,20 @@ void RegionSelector::commitInitialReveal()
     if (m_initialRevealTimer) {
         m_initialRevealTimer->stop();
     }
+
+    // Re-sample cursor position right before the first visible paint.
+    // The position captured in initializeForScreen() goes stale during the
+    // synchronous blocking work (screen grab, widget init).  Using the
+    // freshest OS cursor position eliminates the visible magnifier/crosshair
+    // jump that occurs when queued mouse events catch up after show().
+    if (m_currentScreen) {
+        const QPoint globalCursor = QCursor::pos();
+        m_inputState.currentPoint = globalCursor - m_currentScreen->geometry().topLeft();
+    }
+
+    // Pre-warm magnifier cache at the fresh cursor position so the first
+    // paint has a cache hit (avoids QPixmap::toImage() during paintEvent).
+    m_magnifierPanel->preWarmCache(m_inputState.currentPoint, m_backgroundPixmap);
 
     repaint();
     setWindowOpacity(1.0);
@@ -3595,11 +3688,12 @@ void RegionSelector::closeEvent(QCloseEvent* event)
     if (m_qmlToolbar) m_qmlToolbar->hide();
     if (m_qmlSubToolbar) m_qmlSubToolbar->hide();
     if (m_magnifierOverlay) m_magnifierOverlay->hideOverlay();
-    if (m_emojiPickerPopup) {
-        m_emojiPickerPopup->close();
-        delete m_emojiPickerPopup;
-        m_emojiPickerPopup = nullptr;
+    if (m_regionControlPanel) m_regionControlPanel->hide();
+    if (m_multiRegionListPanel) m_multiRegionListPanel->hide();
+    if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+        m_emojiPickerPopup->hide();
     }
+    if (m_colorPickerDialog) m_colorPickerDialog->close();
     if (m_screenSwitchTimer) {
         m_screenSwitchTimer->stop();
     }

@@ -90,6 +90,9 @@ public:
     explicit RegionSelector(QWidget *parent = nullptr);
     ~RegionSelector();
 
+    // Reset all per-session state so the pooled widget can be reused for a new capture.
+    void resetForCapture();
+
     // 初始化指定螢幕的截圖 (由 CaptureManager 調用)
     void initializeForScreen(QScreen *screen, const QPixmap &preCapture = QPixmap());
 

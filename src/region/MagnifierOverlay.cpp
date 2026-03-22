@@ -50,6 +50,10 @@ void MagnifierOverlay::syncToHost(QWidget* host,
     if (!isVisible()) {
         show();
         raise();
+        // Clear stale back-buffer content from previous capture at old position.
+        if (!m_lastMagnifierRect.isNull() && m_lastMagnifierRect != currentMagnifierRect) {
+            update(m_lastMagnifierRect);
+        }
         m_lastMagnifierRect = currentMagnifierRect;
         update(currentMagnifierRect);
         return;
@@ -67,7 +71,7 @@ void MagnifierOverlay::syncToHost(QWidget* host,
 
 void MagnifierOverlay::hideOverlay()
 {
-    m_lastMagnifierRect = QRect();
+    // Keep m_lastMagnifierRect so re-show can clear stale back-buffer content.
     hide();
 }
 

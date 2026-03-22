@@ -176,6 +176,7 @@ CaptureManager::CaptureManager(PinWindowManager *pinManager, QObject *parent)
 
 CaptureManager::~CaptureManager()
 {
+    delete m_regionSelector;
 }
 
 bool CaptureManager::isActive() const
@@ -234,10 +235,6 @@ bool CaptureManager::startHistoryReplay(const QString& entryId)
 
     if (m_regionSelector && m_regionSelector->isVisible()) {
         return m_regionSelector->beginHistoryReplay(entryId);
-    }
-
-    if (m_regionSelector) {
-        m_regionSelector->close();
     }
 
     const auto entry = SnapTray::HistoryStore::loadEntry(entryId);
@@ -300,10 +297,7 @@ void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortc
         return;
     }
 
-    // Clean up any existing selector (QPointer auto-nulls when deleted)
-    if (m_regionSelector) {
-        m_regionSelector->close();
-    }
+    // Pooled selector will be reset via resetForCapture() in initializeRegionSelector().
 
     emit captureStarted();
 
@@ -349,8 +343,6 @@ void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortc
 
 void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &globalPosition, const QRect &globalRect)
 {
-    // m_regionSelector will auto-null via QPointer when WA_DeleteOnClose triggers
-
     // Use the global coordinates computed by RegionSelector
     if (m_pinManager) {
         QScreen *targetScreen = nullptr;
@@ -402,8 +394,6 @@ void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &g
 
 void CaptureManager::onSelectionCancelled()
 {
-    // m_regionSelector will auto-null via QPointer when WA_DeleteOnClose triggers
-
     emit captureCancelled();
 }
 
@@ -414,15 +404,10 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
         return;
     }
 
-    // Clean up any existing selector
-    if (m_regionSelector) {
-        m_regionSelector->close();
-    }
-
     emit captureStarted();
 
-    // Create RegionSelector
-    m_regionSelector = createRegionSelector(false);
+    ensureRegionSelector();
+    m_regionSelector->resetForCapture();
 
     // Keep detector state aligned with the prepared reveal flow used by normal region entry.
     if (m_windowDetector && screen) {
@@ -433,16 +418,7 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
     // Initialize with preset region
     m_regionSelector->initializeWithRegion(screen, region);
 
-    connect(m_regionSelector, &RegionSelector::regionSelected,
-            this, &CaptureManager::onRegionSelected);
-    connect(m_regionSelector, &RegionSelector::selectionCancelled,
-            this, &CaptureManager::onSelectionCancelled);
-    connect(m_regionSelector, &RegionSelector::recordingRequested,
-            this, &CaptureManager::recordingRequested);
-    connect(m_regionSelector, &RegionSelector::saveCompleted,
-            this, &CaptureManager::saveCompleted);
-    connect(m_regionSelector, &RegionSelector::saveFailed,
-            this, &CaptureManager::saveFailed);
+    // Signals are wired once in ensureRegionSelector().
 
     showPreparedRegionSelector(screen);
 }
@@ -452,7 +428,10 @@ void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
                                               bool quickPinMode,
                                               bool showShortcutHintsOnEntry)
 {
-    m_regionSelector = createRegionSelector(showShortcutHintsOnEntry);
+    ensureRegionSelector();
+
+    m_regionSelector->resetForCapture();
+    m_regionSelector->setShowShortcutHintsOnEntry(showShortcutHintsOnEntry);
 
     if (quickPinMode) {
         m_regionSelector->setQuickPinMode(true);
@@ -464,21 +443,7 @@ void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
 
     m_regionSelector->initializeForScreen(targetScreen, preCapture);
 
-    // Core signals (always connected)
-    connect(m_regionSelector, &RegionSelector::regionSelected,
-            this, &CaptureManager::onRegionSelected);
-    connect(m_regionSelector, &RegionSelector::selectionCancelled,
-            this, &CaptureManager::onSelectionCancelled);
-
-    // Additional signals for full region capture mode
-    if (!quickPinMode) {
-        connect(m_regionSelector, &RegionSelector::recordingRequested,
-                this, &CaptureManager::recordingRequested);
-        connect(m_regionSelector, &RegionSelector::saveCompleted,
-                this, &CaptureManager::saveCompleted);
-        connect(m_regionSelector, &RegionSelector::saveFailed,
-                this, &CaptureManager::saveFailed);
-    }
+    // Signals are wired once in ensureRegionSelector().
 
     showPreparedRegionSelector(targetScreen);
 }
@@ -542,9 +507,22 @@ void CaptureManager::refreshWindowDetectorAsync(QScreen *screen)
     m_windowDetector->refreshWindowListAsync();
 }
 
-RegionSelector *CaptureManager::createRegionSelector(bool showShortcutHintsOnEntry)
+RegionSelector *CaptureManager::ensureRegionSelector()
 {
-    auto *selector = new RegionSelector();
-    selector->setShowShortcutHintsOnEntry(showShortcutHintsOnEntry);
-    return selector;
+    if (!m_regionSelector) {
+        m_regionSelector = new RegionSelector();
+
+        // Wire signals once — they persist across captures.
+        connect(m_regionSelector, &RegionSelector::regionSelected,
+                this, &CaptureManager::onRegionSelected);
+        connect(m_regionSelector, &RegionSelector::selectionCancelled,
+                this, &CaptureManager::onSelectionCancelled);
+        connect(m_regionSelector, &RegionSelector::recordingRequested,
+                this, &CaptureManager::recordingRequested);
+        connect(m_regionSelector, &RegionSelector::saveCompleted,
+                this, &CaptureManager::saveCompleted);
+        connect(m_regionSelector, &RegionSelector::saveFailed,
+                this, &CaptureManager::saveFailed);
+    }
+    return m_regionSelector;
 }
