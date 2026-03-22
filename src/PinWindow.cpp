@@ -2101,7 +2101,7 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
         if (m_annotationMode && isAnnotationTool(m_currentToolId)) {
             // Text tool: start new text editing
             if (m_currentToolId == ToolId::Text && m_textAnnotationEditor) {
-                m_textAnnotationEditor->startEditing(event->pos(), rect(), m_annotationColor);
+                m_textAnnotationEditor->startEditing(mapToOriginalCoords(event->pos()), rect(), m_annotationColor);
                 update();
                 return;
             }
