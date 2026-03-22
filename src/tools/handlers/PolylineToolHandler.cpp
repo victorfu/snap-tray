@@ -1,5 +1,6 @@
 #include "tools/handlers/PolylineToolHandler.h"
 #include "tools/ToolContext.h"
+#include "TransformationGizmo.h"
 #include "utils/AngleSnap.h"
 
 #include <QPainter>
@@ -17,7 +18,6 @@ void PolylineToolHandler::onDeactivate(ToolContext* ctx)
     // Cancel any in-progress drawing when switching tools
     if (m_isDrawing) {
         cancelDrawing();
-        ctx->repaint();
     }
 }
 
@@ -62,7 +62,6 @@ void PolylineToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos)
         m_clickTimer.restart();
     }
 
-    ctx->repaint();
 }
 
 void PolylineToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos)
@@ -79,7 +78,6 @@ void PolylineToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos)
         snappedPos = AngleSnap::snapTo45Degrees(lastConfirmed, pos);
     }
     m_currentPolyline->updateLastPoint(snappedPos);
-    ctx->repaint();
 }
 
 void PolylineToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos)
@@ -124,7 +122,6 @@ void PolylineToolHandler::finishPolyline(ToolContext* ctx)
     // Reset state
     m_isDrawing = false;
     m_currentPolyline.reset();
-    ctx->repaint();
 }
 
 void PolylineToolHandler::drawPreview(QPainter& painter) const
@@ -132,6 +129,12 @@ void PolylineToolHandler::drawPreview(QPainter& painter) const
     if (m_isDrawing && m_currentPolyline) {
         m_currentPolyline->draw(painter);
     }
+}
+
+QRect PolylineToolHandler::previewBounds(const ToolContext* ctx) const
+{
+    Q_UNUSED(ctx);
+    return m_currentPolyline ? m_currentPolyline->boundingRect() : QRect();
 }
 
 void PolylineToolHandler::cancelDrawing()
@@ -147,4 +150,130 @@ bool PolylineToolHandler::handleEscape(ToolContext* ctx)
         return true;
     }
     return false;
+}
+
+bool PolylineToolHandler::handleInteractionPress(ToolContext* ctx,
+                                                 const QPoint& pos,
+                                                 Qt::KeyboardModifiers modifiers)
+{
+    Q_UNUSED(modifiers);
+
+    if (!canHandleInteraction(ctx)) {
+        return false;
+    }
+
+    auto* layer = ctx->annotationLayer;
+    if (auto* polylineItem = selectedPolyline(ctx)) {
+        const int vertexIndex = TransformationGizmo::hitTestVertex(polylineItem, pos);
+        if (vertexIndex >= 0 || vertexIndex == -1) {
+            m_isPolylineDragging = true;
+            m_activePolylineVertexIndex = vertexIndex >= 0 ? vertexIndex : -1;
+            m_polylineDragStart = pos;
+            if (ctx->requestHostFocus) {
+                ctx->requestHostFocus();
+            }
+            return true;
+        }
+    }
+
+    const int hitIndex = layer->hitTestPolyline(pos);
+    if (hitIndex < 0) {
+        return false;
+    }
+
+    layer->setSelectedIndex(hitIndex);
+    if (auto* polylineItem = selectedPolyline(ctx)) {
+        m_isPolylineDragging = true;
+        m_activePolylineVertexIndex = -1;
+        m_polylineDragStart = pos;
+        const int vertexIndex = TransformationGizmo::hitTestVertex(polylineItem, pos);
+        if (vertexIndex >= 0) {
+            m_activePolylineVertexIndex = vertexIndex;
+        }
+    }
+
+    if (ctx->requestHostFocus) {
+        ctx->requestHostFocus();
+    }
+    return true;
+}
+
+bool PolylineToolHandler::handleInteractionMove(ToolContext* ctx,
+                                                const QPoint& pos,
+                                                Qt::KeyboardModifiers modifiers)
+{
+    Q_UNUSED(modifiers);
+
+    if (!m_isPolylineDragging || !canHandleInteraction(ctx)) {
+        return false;
+    }
+
+    auto* polylineItem = selectedPolyline(ctx);
+    if (!polylineItem) {
+        return false;
+    }
+
+    if (m_activePolylineVertexIndex >= 0) {
+        polylineItem->setPoint(m_activePolylineVertexIndex, pos);
+    } else {
+        const QPoint delta = pos - m_polylineDragStart;
+        polylineItem->moveBy(delta);
+        m_polylineDragStart = pos;
+    }
+
+    ctx->annotationLayer->invalidateCache();
+    return true;
+}
+
+bool PolylineToolHandler::handleInteractionRelease(ToolContext* ctx,
+                                                   const QPoint& pos,
+                                                   Qt::KeyboardModifiers modifiers)
+{
+    Q_UNUSED(ctx);
+    Q_UNUSED(pos);
+    Q_UNUSED(modifiers);
+
+    if (!m_isPolylineDragging) {
+        return false;
+    }
+
+    m_isPolylineDragging = false;
+    m_activePolylineVertexIndex = -1;
+    return true;
+}
+
+QRect PolylineToolHandler::interactionBounds(const ToolContext* ctx) const
+{
+    auto* polylineItem = selectedPolyline(const_cast<ToolContext*>(ctx));
+    if (!polylineItem) {
+        return QRect();
+    }
+
+    return TransformationGizmo::visualBounds(polylineItem);
+}
+
+AnnotationInteractionKind PolylineToolHandler::activeInteractionKind(const ToolContext* ctx) const
+{
+    Q_UNUSED(ctx);
+
+    if (!m_isPolylineDragging) {
+        return AnnotationInteractionKind::None;
+    }
+
+    return m_activePolylineVertexIndex >= 0
+        ? AnnotationInteractionKind::SelectedTransform
+        : AnnotationInteractionKind::SelectedDrag;
+}
+
+bool PolylineToolHandler::canHandleInteraction(ToolContext* ctx) const
+{
+    return ctx && ctx->annotationLayer;
+}
+
+PolylineAnnotation* PolylineToolHandler::selectedPolyline(ToolContext* ctx) const
+{
+    if (!ctx || !ctx->annotationLayer) {
+        return nullptr;
+    }
+    return dynamic_cast<PolylineAnnotation*>(ctx->annotationLayer->selectedItem());
 }

@@ -1,9 +1,17 @@
 #include "tools/handlers/ArrowToolHandler.h"
 #include "tools/ToolContext.h"
+#include "TransformationGizmo.h"
 #include "utils/AngleSnap.h"
 
 #include <QPainter>
 #include <QDebug>
+
+namespace {
+bool shouldRequestLegacyRepaint(const ToolContext* ctx)
+{
+    return ctx && !ctx->annotationSurface && !ctx->requestRectRepaint;
+}
+} // namespace
 
 void ArrowToolHandler::onActivate(ToolContext* ctx) {
     Q_UNUSED(ctx);
@@ -19,7 +27,6 @@ void ArrowToolHandler::onDeactivate(ToolContext* ctx) {
     // Cancel any in-progress drawing when switching tools
     if (m_isDrawing || m_isPolylineMode) {
         cancelDrawing();
-        ctx->repaint();
     }
 }
 
@@ -51,14 +58,18 @@ void ArrowToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
         m_currentPolyline->updateLastPoint(snappedPos);  // Confirm current preview position
         m_currentPolyline->addPoint(snappedPos);  // Add new preview point
         m_clickTimer.restart();
-        ctx->repaint();
+        if (shouldRequestLegacyRepaint(ctx)) {
+            ctx->repaint(m_currentPolyline->boundingRect());
+        }
     } else {
         // Start new drawing - could become drag (arrow) or click (polyline)
         m_isDrawing = true;
         m_hasDragged = false;
         m_startPoint = pos;
         m_currentArrow.reset();
-        ctx->repaint();
+        if (shouldRequestLegacyRepaint(ctx)) {
+            ctx->repaint();
+        }
     }
 }
 
@@ -73,7 +84,9 @@ void ArrowToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
                 snappedPos = AngleSnap::snapTo45Degrees(lastConfirmed, pos);
             }
             m_currentPolyline->updateLastPoint(snappedPos);
-            ctx->repaint();
+            if (shouldRequestLegacyRepaint(ctx)) {
+                ctx->repaint(m_currentPolyline->boundingRect());
+            }
         }
         return;
     }
@@ -94,13 +107,15 @@ void ArrowToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
 
         // Create or update straight arrow
         if (!m_currentArrow) {
-            m_currentArrow = std::make_unique<ArrowAnnotation>(
+        m_currentArrow = std::make_unique<ArrowAnnotation>(
                 m_startPoint, endPos, ctx->color, ctx->width, ctx->arrowStyle, ctx->lineStyle
             );
         } else {
             m_currentArrow->setEnd(endPos);
         }
-        ctx->repaint();
+        if (shouldRequestLegacyRepaint(ctx)) {
+            ctx->repaint(m_currentArrow->boundingRect());
+        }
     }
 }
 
@@ -115,6 +130,7 @@ void ArrowToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
     }
 
     if (m_hasDragged) {
+        const QRect dirtyBounds = m_currentArrow ? m_currentArrow->boundingRect() : QRect();
         // This was a drag - finalize the arrow
         QPoint diff = pos - m_startPoint;
         if (diff.manhattanLength() > 5) {
@@ -132,6 +148,13 @@ void ArrowToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
         m_isDrawing = false;
         m_hasDragged = false;
         m_currentArrow.reset();
+        if (shouldRequestLegacyRepaint(ctx)) {
+            if (dirtyBounds.isValid()) {
+                ctx->repaint(dirtyBounds);
+            } else {
+                ctx->repaint();
+            }
+        }
     } else {
         // This was a click (no significant drag) - enter polyline mode
         m_isPolylineMode = true;
@@ -145,9 +168,11 @@ void ArrowToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
         m_currentPolyline->addPoint(pos);  // Preview point (same as start initially)
 
         m_clickTimer.restart();
+        if (shouldRequestLegacyRepaint(ctx)) {
+            ctx->repaint(m_currentPolyline->boundingRect());
+        }
     }
 
-    ctx->repaint();
 }
 
 void ArrowToolHandler::onDoubleClick(ToolContext* ctx, const QPoint& pos) {
@@ -171,6 +196,8 @@ void ArrowToolHandler::finishPolyline(ToolContext* ctx) {
         return;
     }
 
+    const QRect dirtyBounds = m_currentPolyline->boundingRect();
+
     // Remove the preview point (the last point that follows the cursor)
     m_currentPolyline->removeLastPoint();
 
@@ -184,7 +211,14 @@ void ArrowToolHandler::finishPolyline(ToolContext* ctx) {
     m_hasDragged = false;
     m_isPolylineMode = false;
     m_currentPolyline.reset();
-    ctx->repaint();
+
+    if (shouldRequestLegacyRepaint(ctx)) {
+        if (dirtyBounds.isValid()) {
+            ctx->repaint(dirtyBounds);
+        } else {
+            ctx->repaint();
+        }
+    }
 }
 
 void ArrowToolHandler::drawPreview(QPainter& painter) const {
@@ -194,6 +228,19 @@ void ArrowToolHandler::drawPreview(QPainter& painter) const {
     if (m_currentPolyline) {
         m_currentPolyline->draw(painter);
     }
+}
+
+QRect ArrowToolHandler::previewBounds(const ToolContext* ctx) const
+{
+    Q_UNUSED(ctx);
+    QRect bounds;
+    if (m_currentArrow) {
+        bounds = bounds.united(m_currentArrow->boundingRect());
+    }
+    if (m_currentPolyline) {
+        bounds = bounds.united(m_currentPolyline->boundingRect());
+    }
+    return bounds;
 }
 
 void ArrowToolHandler::cancelDrawing() {
@@ -211,8 +258,142 @@ bool ArrowToolHandler::handleEscape(ToolContext* ctx) {
     }
     if (m_isDrawing) {
         cancelDrawing();
-        ctx->repaint();
         return true;
     }
     return false;
+}
+
+bool ArrowToolHandler::handleInteractionPress(ToolContext* ctx,
+                                              const QPoint& pos,
+                                              Qt::KeyboardModifiers modifiers)
+{
+    Q_UNUSED(modifiers);
+
+    if (!canHandleInteraction(ctx)) {
+        return false;
+    }
+
+    auto* layer = ctx->annotationLayer;
+    if (auto* arrowItem = selectedArrow(ctx)) {
+        const GizmoHandle handle = TransformationGizmo::hitTest(arrowItem, pos);
+        if (handle != GizmoHandle::None) {
+            m_isArrowDragging = true;
+            m_arrowDragHandle = handle;
+            m_arrowDragStart = pos;
+            if (ctx->requestHostFocus) {
+                ctx->requestHostFocus();
+            }
+            return true;
+        }
+    }
+
+    const int hitIndex = layer->hitTestArrow(pos);
+    if (hitIndex < 0) {
+        return false;
+    }
+
+    layer->setSelectedIndex(hitIndex);
+    if (auto* arrowItem = selectedArrow(ctx)) {
+        m_isArrowDragging = true;
+        m_arrowDragHandle = GizmoHandle::Body;
+        m_arrowDragStart = pos;
+        const GizmoHandle handle = TransformationGizmo::hitTest(arrowItem, pos);
+        if (handle != GizmoHandle::None) {
+            m_arrowDragHandle = handle;
+        }
+    }
+
+    if (ctx->requestHostFocus) {
+        ctx->requestHostFocus();
+    }
+    return true;
+}
+
+bool ArrowToolHandler::handleInteractionMove(ToolContext* ctx,
+                                             const QPoint& pos,
+                                             Qt::KeyboardModifiers modifiers)
+{
+    Q_UNUSED(modifiers);
+
+    if (!m_isArrowDragging || !canHandleInteraction(ctx)) {
+        return false;
+    }
+
+    auto* arrowItem = selectedArrow(ctx);
+    if (!arrowItem) {
+        return false;
+    }
+
+    if (m_arrowDragHandle == GizmoHandle::Body) {
+        const QPoint delta = pos - m_arrowDragStart;
+        arrowItem->moveBy(delta);
+        m_arrowDragStart = pos;
+    } else if (m_arrowDragHandle == GizmoHandle::ArrowStart) {
+        arrowItem->setStart(pos);
+    } else if (m_arrowDragHandle == GizmoHandle::ArrowEnd) {
+        arrowItem->setEnd(pos);
+    } else if (m_arrowDragHandle == GizmoHandle::ArrowControl) {
+        const QPointF start = arrowItem->start();
+        const QPointF end = arrowItem->end();
+        const QPointF newControl = 2.0 * QPointF(pos) - 0.5 * (start + end);
+        arrowItem->setControlPoint(newControl.toPoint());
+    } else {
+        return false;
+    }
+
+    ctx->annotationLayer->invalidateCache();
+    return true;
+}
+
+bool ArrowToolHandler::handleInteractionRelease(ToolContext* ctx,
+                                                const QPoint& pos,
+                                                Qt::KeyboardModifiers modifiers)
+{
+    Q_UNUSED(ctx);
+    Q_UNUSED(pos);
+    Q_UNUSED(modifiers);
+
+    if (!m_isArrowDragging) {
+        return false;
+    }
+
+    m_isArrowDragging = false;
+    m_arrowDragHandle = GizmoHandle::None;
+    return true;
+}
+
+QRect ArrowToolHandler::interactionBounds(const ToolContext* ctx) const
+{
+    auto* arrowItem = selectedArrow(const_cast<ToolContext*>(ctx));
+    if (!arrowItem) {
+        return QRect();
+    }
+
+    return TransformationGizmo::visualBounds(arrowItem);
+}
+
+AnnotationInteractionKind ArrowToolHandler::activeInteractionKind(const ToolContext* ctx) const
+{
+    Q_UNUSED(ctx);
+
+    if (!m_isArrowDragging) {
+        return AnnotationInteractionKind::None;
+    }
+
+    return m_arrowDragHandle == GizmoHandle::Body
+        ? AnnotationInteractionKind::SelectedDrag
+        : AnnotationInteractionKind::SelectedTransform;
+}
+
+bool ArrowToolHandler::canHandleInteraction(ToolContext* ctx) const
+{
+    return ctx && ctx->annotationLayer;
+}
+
+ArrowAnnotation* ArrowToolHandler::selectedArrow(ToolContext* ctx) const
+{
+    if (!ctx || !ctx->annotationLayer) {
+        return nullptr;
+    }
+    return dynamic_cast<ArrowAnnotation*>(ctx->annotationLayer->selectedItem());
 }

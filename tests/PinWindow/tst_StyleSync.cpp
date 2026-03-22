@@ -1,12 +1,15 @@
 #include <QtTest/QtTest>
 
 #include <QGuiApplication>
+#include <QSignalSpy>
 
 #include "PinWindow.h"
 #include "annotations/PolylineAnnotation.h"
+#include "annotations/TextBoxAnnotation.h"
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
 #include "pinwindow/RegionLayoutManager.h"
+#include "region/TextAnnotationEditor.h"
 #include "tools/ToolManager.h"
 
 namespace {
@@ -27,7 +30,9 @@ private slots:
     void testUsesAuthorityModeByDefault();
     void testNonAnnotationEdgeHoverUsesCorrectResizeCursor();
     void testOverlayRestoreReturnsArrowToolCursor();
+    void testTextDoubleClickStartsReEditInAnnotationMode();
     void testPolylineReleaseRecomputesHoverCursor();
+    void testAnnotationSurfaceFallsBackToFullRepaintForPencilPreview();
     void testPopupRestoreReturnsMosaicCursor();
     void testRegionLayoutMoveCursorUsesAuthority();
 };
@@ -97,6 +102,35 @@ void TestPinWindowStyleSync::testOverlayRestoreReturnsArrowToolCursor()
     QCOMPARE(window.cursor().shape(), Qt::CrossCursor);
 }
 
+void TestPinWindowStyleSync::testTextDoubleClickStartsReEditInAnnotationMode()
+{
+    PinWindow window(createTestPixmap(240, 160), QPoint(0, 0));
+
+    if (!window.m_toolManager) {
+        window.initializeAnnotationComponents();
+    }
+
+    window.enterAnnotationMode();
+
+    auto text = std::make_unique<TextBoxAnnotation>(QPointF(32, 28), QStringLiteral("hello"), QFont(), Qt::yellow);
+    window.m_annotationLayer->addItem(std::move(text));
+
+    auto* textItem = dynamic_cast<TextBoxAnnotation*>(window.m_annotationLayer->itemAt(0));
+    QVERIFY(textItem);
+
+    const QPoint localPos = window.mapFromOriginalCoords(textItem->boundingRect().center());
+    QMouseEvent dblClick(QEvent::MouseButtonDblClick,
+                         localPos,
+                         window.mapToGlobal(localPos),
+                         Qt::LeftButton,
+                         Qt::LeftButton,
+                         Qt::NoModifier);
+
+    QCoreApplication::sendEvent(&window, &dblClick);
+
+    QVERIFY(window.m_textAnnotationEditor->isEditing());
+}
+
 void TestPinWindowStyleSync::testPolylineReleaseRecomputesHoverCursor()
 {
     PinWindow window(createTestPixmap(240, 160), QPoint(0, 0));
@@ -116,11 +150,49 @@ void TestPinWindowStyleSync::testPolylineReleaseRecomputesHoverCursor()
     window.m_annotationLayer->setSelectedIndex(0);
 
     const QPoint bodyPos(70, 40);
-    QVERIFY(window.handlePolylineAnnotationPress(bodyPos));
-    QVERIFY(window.m_isPolylineDragging);
+    QMouseEvent press(QEvent::MouseButtonPress,
+                      bodyPos,
+                      window.mapToGlobal(bodyPos),
+                      Qt::LeftButton,
+                      Qt::LeftButton,
+                      Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &press);
+    QCOMPARE(window.m_toolManager->activeInteractionKind(), AnnotationInteractionKind::SelectedDrag);
 
-    QVERIFY(window.handlePolylineAnnotationRelease(bodyPos));
+    QMouseEvent release(QEvent::MouseButtonRelease,
+                        bodyPos,
+                        window.mapToGlobal(bodyPos),
+                        Qt::LeftButton,
+                        Qt::NoButton,
+                        Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &release);
+    QCOMPARE(window.m_toolManager->activeInteractionKind(), AnnotationInteractionKind::None);
     QCOMPARE(window.cursor().shape(), Qt::SizeAllCursor);
+}
+
+void TestPinWindowStyleSync::testAnnotationSurfaceFallsBackToFullRepaintForPencilPreview()
+{
+    PinWindow window(createTestPixmap(240, 160), QPoint(0, 0));
+
+    if (!window.m_toolManager) {
+        window.initializeAnnotationComponents();
+    }
+
+    QVERIFY(window.m_annotationSurfaceAdapter);
+    QVERIFY(!window.m_annotationSurfaceAdapter->supportsAnnotationRectUpdate());
+
+    window.enterAnnotationMode();
+    window.m_currentToolId = ToolId::Pencil;
+    window.m_toolManager->setCurrentTool(ToolId::Pencil);
+
+    QSignalSpy rectSpy(window.m_toolManager, qOverload<const QRect&>(&ToolManager::needsRepaint));
+    QSignalSpy fullSpy(window.m_toolManager, qOverload<>(&ToolManager::needsRepaint));
+
+    window.m_toolManager->handleMousePress(QPoint(20, 20));
+    window.m_toolManager->handleMouseMove(QPoint(60, 40));
+
+    QCOMPARE(rectSpy.count(), 0);
+    QVERIFY(fullSpy.count() >= 1);
 }
 
 void TestPinWindowStyleSync::testPopupRestoreReturnsMosaicCursor()

@@ -70,6 +70,7 @@ public:
      * @param backgroundPixmap The background pixmap to magnify
      */
     void preWarmCache(const QPoint& cursorPos, const QPixmap& backgroundPixmap);
+    void warmBackgroundImageCache(const QPixmap& backgroundPixmap, bool logIfSlow = false);
 
     // Layout constants
     static constexpr int kWidth = 180;
@@ -81,6 +82,9 @@ public:
 private:
     void initializeGridCache();
     void ensureBackgroundImageCache(const QPixmap& backgroundPixmap, bool logIfSlow, const char* context);
+    QImage createSampleImageFromPixmap(const QPoint& cursorPos, const QPixmap& backgroundPixmap) const;
+    QImage createSampleImageFromCachedBackground(const QPoint& devicePos) const;
+    void updateCacheFromSampleImage(const QPoint& devicePos, const QImage& sampleImage);
     void updateMagnifierCache(const QPoint& cursorPos, const QPixmap& backgroundPixmap);
     void drawInfoPanel(QPainter& painter, int panelX, int infoY, int panelWidth);
 

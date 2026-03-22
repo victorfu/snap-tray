@@ -1,5 +1,7 @@
 #include "RegionSelector.h"
 #include "annotation/AnnotationContext.h"
+#include "annotation/AnnotationPerfTrace.h"
+#include "annotation/FunctionalAnnotationSurfaceAdapter.h"
 #include "history/AnnotationSerializer.h"
 #include "history/HistoryRecorder.h"
 #include "platform/WindowLevel.h"
@@ -77,6 +79,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QPushButton>
 #include <QStandardPaths>
 #include <QDateTime>
+#include <QElapsedTimer>
 #include <numeric>
 #include <QToolTip>
 #include <QPointer>
@@ -106,6 +109,37 @@ bool containsGlobalPoint(const QWidget* widget, const QPoint& globalPos)
     return widget && widget->isVisible() && widget->frameGeometry().contains(globalPos);
 }
 
+qint64 dirtyAreaForRegion(const QRegion& region)
+{
+    qint64 totalArea = 0;
+    for (const QRect& rect : region) {
+        totalArea += static_cast<qint64>(rect.width()) * static_cast<qint64>(rect.height());
+    }
+    return totalArea;
+}
+
+QString interactionLabelForToolManager(const ToolManager* toolManager)
+{
+    if (!toolManager) {
+        return QStringLiteral("idle");
+    }
+
+    if (toolManager->isDrawing()) {
+        return QStringLiteral("preview");
+    }
+
+    switch (toolManager->activeInteractionKind()) {
+    case AnnotationInteractionKind::SelectedDrag:
+        return QStringLiteral("selected-drag");
+    case AnnotationInteractionKind::SelectedTransform:
+        return QStringLiteral("selected-transform");
+    case AnnotationInteractionKind::None:
+        break;
+    }
+
+    return QStringLiteral("idle");
+}
+
 CursorStyleSpec cursorSpecForWidget(const QWidget* widget)
 {
     return widget ? CursorStyleSpec::fromCursor(widget->cursor())
@@ -132,11 +166,29 @@ QString physicalPixelSizeLabel(const QRect& logicalRect, qreal dpr)
         "RegionSelector", "%1 x %2 px").arg(physicalSize.width()).arg(physicalSize.height());
 }
 
-constexpr int kInitialRevealTimeoutMs = 120;
+constexpr int kDeferredMagnifierCacheWarmupDelayMs = 75;
 
 // Margin around selection rect for annotation-scoped repaints.
 // Covers max stroke width (20px) + selection handles (8px) + antialiasing (2px).
 constexpr int kAnnotationRepaintMargin = 30;
+
+bool regionEntryTraceEnabled()
+{
+    return AnnotationPerfTrace::isEnabled("SNAPTRAY_REGION_PERF_TRACE");
+}
+
+void logRegionEntryTrace(const QString& stage, const QStringList& fields = {})
+{
+    if (!regionEntryTraceEnabled()) {
+        return;
+    }
+
+    QStringList parts;
+    parts.reserve(fields.size() + 2);
+    parts << QStringLiteral("RegionEntryTrace") << QStringLiteral("stage=%1").arg(stage);
+    parts << fields;
+    qDebug().noquote() << parts.join(QLatin1Char(' '));
+}
 
 } // namespace
 
@@ -283,15 +335,20 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_toolManager->setArrowStyle(m_inputState.arrowStyle);
     m_toolManager->setLineStyle(m_inputState.lineStyle);
     m_toolManager->setMosaicBlurType(mosaicBlurType);
-    connect(m_toolManager, &ToolManager::needsRepaint, this, [this]() {
-        if (m_inputState.isDrawing && m_selectionManager && m_selectionManager->hasSelection()) {
-            update(m_selectionManager->selectionRect().adjusted(
-                -kAnnotationRepaintMargin, -kAnnotationRepaintMargin,
-                kAnnotationRepaintMargin, kAnnotationRepaintMargin));
-        } else {
-            update();
-        }
-    });
+    auto annotationSurfaceAdapter = std::make_unique<FunctionalAnnotationSurfaceAdapter>();
+    annotationSurfaceAdapter->requestFullUpdate = [this]() { update(); };
+    annotationSurfaceAdapter->requestRectUpdate = [this](const QRect& annotationRect) {
+        update(annotationRect);
+    };
+    annotationSurfaceAdapter->supportsRectUpdate = []() { return true; };
+    annotationSurfaceAdapter->mapRectToHost = [](const QRect& annotationRect) {
+        return annotationRect;
+    };
+    annotationSurfaceAdapter->viewportProvider = [this]() { return rect(); };
+    m_annotationSurfaceAdapter = std::move(annotationSurfaceAdapter);
+    m_toolManager->setAnnotationSurfaceAdapter(m_annotationSurfaceAdapter.get());
+    connect(m_toolManager, qOverload<>(&ToolManager::needsRepaint), this, QOverload<>::of(&QWidget::update));
+    connect(m_toolManager, qOverload<const QRect&>(&ToolManager::needsRepaint), this, QOverload<const QRect&>::of(&QWidget::update));
 
     // Initialize cursor manager for centralized cursor handling
     auto& cursorManager = CursorManager::instance();
@@ -1978,10 +2035,21 @@ void RegionSelector::resetInitialRevealState()
         disconnect(m_initialRevealWindowListReadyConnection);
         m_initialRevealWindowListReadyConnection = {};
     }
+
+    m_initialRevealPerfTimer.invalidate();
+    m_initialRevealPerfTimerActive = false;
+    m_initialRevealDetectorPending = false;
 }
 
 void RegionSelector::beginInitialRevealPreparation(WindowDetector::QueryMode initialQueryMode)
 {
+    QElapsedTimer prepTimer;
+    if (regionEntryTraceEnabled()) {
+        prepTimer.start();
+        m_initialRevealPerfTimer.start();
+        m_initialRevealPerfTimerActive = true;
+    }
+
     m_initialRevealState = InitialRevealState::Preparing;
     m_initialWindowDetectionMode = initialQueryMode;
     m_initialRevealCursorPos = m_inputState.currentPoint;
@@ -2008,20 +2076,29 @@ void RegionSelector::beginInitialRevealPreparation(WindowDetector::QueryMode ini
         !m_windowDetector ||
         !m_windowDetector->isEnabled();
 
+    maybeStartInitialRevealWait();
+
     if (skipInitialWindowDetection) {
-        m_initialRevealState = InitialRevealState::ReadyToReveal;
+        m_initialRevealDetectorPending = false;
     } else if (m_windowDetector->isWindowCacheReady() ||
                m_windowDetector->isRefreshComplete()) {
         applyInitialWindowDetection(initialQueryMode);
-        m_initialRevealState = InitialRevealState::ReadyToReveal;
+        m_initialRevealDetectorPending = false;
     }
 
-    maybeStartInitialRevealWait();
+    m_initialRevealState = InitialRevealState::ReadyToReveal;
+
+    if (prepTimer.isValid()) {
+        logRegionEntryTrace(QStringLiteral("initialRevealPrepared"),
+                            {QStringLiteral("elapsedMs=%1").arg(prepTimer.elapsed()),
+                             QStringLiteral("detectorPending=%1").arg(m_initialRevealDetectorPending ? 1 : 0)});
+    }
 }
 
 void RegionSelector::maybeStartInitialRevealWait()
 {
     if (!m_windowDetector || !m_windowDetector->isEnabled() || m_historyReplayActive) {
+        m_initialRevealDetectorPending = false;
         return;
     }
 
@@ -2031,6 +2108,7 @@ void RegionSelector::maybeStartInitialRevealWait()
     }
 
     if (!m_windowDetector->isRefreshComplete()) {
+        m_initialRevealDetectorPending = true;
         const quint64 token = m_initialRevealToken;
         m_initialRevealWindowListReadyConnection = connect(
             m_windowDetector,
@@ -2043,23 +2121,10 @@ void RegionSelector::maybeStartInitialRevealWait()
                 handleInitialRevealDetectorReady();
             },
             Qt::SingleShotConnection);
-    }
-
-    if (m_initialRevealState != InitialRevealState::Preparing) {
-        if (m_initialRevealTimer) {
-            m_initialRevealTimer->stop();
-        }
         return;
     }
 
-    if (m_windowDetector->isWindowCacheReady() || m_windowDetector->isRefreshComplete()) {
-        handleInitialRevealDetectorReady();
-        return;
-    }
-
-    if (m_initialRevealTimer && !m_initialRevealTimer->isActive()) {
-        m_initialRevealTimer->start(kInitialRevealTimeoutMs);
-    }
+    m_initialRevealDetectorPending = false;
 }
 
 void RegionSelector::handleInitialRevealDetectorReady()
@@ -2067,6 +2132,14 @@ void RegionSelector::handleInitialRevealDetectorReady()
     if (m_isClosing || !isScreenValid()) {
         return;
     }
+
+    if (m_initialRevealDetectorPending && m_initialRevealPerfTimerActive &&
+        m_initialRevealPerfTimer.isValid()) {
+        logRegionEntryTrace(QStringLiteral("detectorReady"),
+                            {QStringLiteral("waitMs=%1").arg(m_initialRevealPerfTimer.elapsed()),
+                             QStringLiteral("state=%1").arg(static_cast<int>(m_initialRevealState))});
+    }
+    m_initialRevealDetectorPending = false;
 
     if (m_initialRevealState == InitialRevealState::Preparing) {
         applyInitialWindowDetection(m_initialWindowDetectionMode);
@@ -2085,21 +2158,7 @@ void RegionSelector::handleInitialRevealDetectorReady()
 
 void RegionSelector::handleInitialRevealTimeout()
 {
-    if (m_initialRevealState != InitialRevealState::Preparing ||
-        m_isClosing ||
-        !isScreenValid()) {
-        return;
-    }
-
-    if (m_windowDetector &&
-        m_windowDetector->isEnabled() &&
-        (m_windowDetector->isWindowCacheReady() || m_windowDetector->isRefreshComplete())) {
-        handleInitialRevealDetectorReady();
-        return;
-    }
-
-    m_initialRevealState = InitialRevealState::ReadyToReveal;
-    commitInitialReveal();
+    // Initial reveal no longer waits on detector readiness.
 }
 
 void RegionSelector::applyInitialWindowDetection(WindowDetector::QueryMode queryMode)
@@ -2131,8 +2190,28 @@ void RegionSelector::commitInitialReveal()
     repaint();
     setWindowOpacity(1.0);
     m_initialRevealState = InitialRevealState::Revealed;
+    if (m_inputHandler) {
+        m_inputHandler->seedDirtyTrackingForCurrentState();
+    }
     syncMagnifierOverlay();
     QTimer::singleShot(0, this, &RegionSelector::syncFloatingUiCursor);
+    const quint64 token = m_initialRevealToken;
+    QTimer::singleShot(kDeferredMagnifierCacheWarmupDelayMs, this, [this, token]() {
+        if (token != m_initialRevealToken ||
+            m_isClosing ||
+            !isVisible() ||
+            m_backgroundPixmap.isNull() ||
+            !m_magnifierPanel) {
+            return;
+        }
+
+        m_magnifierPanel->warmBackgroundImageCache(m_backgroundPixmap, true);
+    });
+    if (m_initialRevealPerfTimerActive && m_initialRevealPerfTimer.isValid()) {
+        logRegionEntryTrace(QStringLiteral("initialRevealCommitted"),
+                            {QStringLiteral("elapsedMs=%1").arg(m_initialRevealPerfTimer.elapsed()),
+                             QStringLiteral("detectorPending=%1").arg(m_initialRevealDetectorPending ? 1 : 0)});
+    }
     scheduleInitialRevealRefinement();
 }
 
@@ -2301,6 +2380,9 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos,
 
 void RegionSelector::paintEvent(QPaintEvent* event)
 {
+    QElapsedTimer frameTimer;
+    frameTimer.start();
+
     QPainter painter(this);
 
     // Use QRegion-based clipping for efficient partial repainting.
@@ -2434,6 +2516,33 @@ void RegionSelector::paintEvent(QPaintEvent* event)
 
     // Position region control panel after paint (painter computes dimension info rect)
     positionRegionControlPanel();
+
+    if (AnnotationPerfTrace::isEnabled("SNAPTRAY_REGION_PERF_TRACE")) {
+        const RegionPainter::PaintStats& stats = m_painter->lastPaintStats();
+        const ToolId perfTool =
+            (m_toolManager && m_toolManager->hasActiveInteraction())
+                ? m_toolManager->activeInteractionTool()
+                : m_inputState.currentTool;
+        AnnotationPerfTrace::Sample sample;
+        sample.host = QStringLiteral("region");
+        sample.tool = perfTool;
+        sample.interaction = interactionLabelForToolManager(m_toolManager);
+        sample.updateMode = dirtyRect == rect()
+            ? AnnotationPerfTrace::UpdateMode::Full
+            : AnnotationPerfTrace::UpdateMode::Rect;
+        sample.dirtyBounds = dirtyRect;
+        sample.dirtyArea = dirtyAreaForRegion(dirtyRegion);
+        sample.bgMs = stats.bgMs;
+        sample.committedMs = stats.committedMs;
+        sample.previewMs = stats.previewMs;
+        sample.overlayMs = stats.overlayMs;
+        sample.totalMs =
+            static_cast<qreal>(frameTimer.nsecsElapsed()) / 1000000.0;
+        sample.dpr = m_devicePixelRatio;
+        sample.annoCount = m_annotationLayer ? static_cast<int>(m_annotationLayer->itemCount()) : 0;
+        sample.baseCacheHit = stats.usedBaseLayerCache;
+        AnnotationPerfTrace::logFrame(sample, "SNAPTRAY_REGION_PERF_TRACE");
+    }
 }
 
 void RegionSelector::syncMagnifierOverlay()

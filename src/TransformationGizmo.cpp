@@ -7,6 +7,69 @@
 #include <QtMath>
 #include <QLineF>
 
+namespace {
+
+constexpr qreal kGizmoVisualMargin = 4.0;
+
+QRectF rectAroundPoint(const QPointF& point, qreal radius)
+{
+    return QRectF(
+        point.x() - radius,
+        point.y() - radius,
+        radius * 2.0,
+        radius * 2.0);
+}
+
+QRectF rectAroundSegment(const QPointF& start, const QPointF& end, qreal margin)
+{
+    return QRectF(start, end).normalized().adjusted(-margin, -margin, margin, margin);
+}
+
+QPointF rotationHandlePositionForPolygon(const QPolygonF& poly, const QPointF& center)
+{
+    if (poly.size() < 2) {
+        return QPointF();
+    }
+
+    const QPointF topCenter = (poly.at(0) + poly.at(1)) / 2.0;
+    QPointF direction = topCenter - center;
+    const qreal length = qSqrt(direction.x() * direction.x() + direction.y() * direction.y());
+
+    if (length > 0.0) {
+        direction /= length;
+    } else {
+        direction = QPointF(0, -1);
+    }
+
+    return topCenter + direction * TransformationGizmo::kRotationHandleDistance;
+}
+
+QRect visualBoundsFromPolygon(const QPolygonF& poly, const QPointF& center)
+{
+    if (poly.size() < 4) {
+        return QRect();
+    }
+
+    QRectF bounds = poly.boundingRect().adjusted(
+        -kGizmoVisualMargin, -kGizmoVisualMargin, kGizmoVisualMargin, kGizmoVisualMargin);
+
+    for (int i = 0; i < 4; ++i) {
+        bounds = bounds.united(
+            rectAroundPoint(poly.at(i), TransformationGizmo::kHandleRadius + kGizmoVisualMargin));
+    }
+
+    const QPointF topCenter = (poly.at(0) + poly.at(1)) / 2.0;
+    const QPointF rotationHandle = rotationHandlePositionForPolygon(poly, center);
+    bounds = bounds.united(rectAroundSegment(topCenter, rotationHandle, kGizmoVisualMargin));
+    bounds = bounds.united(rectAroundPoint(
+        rotationHandle,
+        TransformationGizmo::kRotationHandleRadius + kGizmoVisualMargin));
+
+    return bounds.toAlignedRect();
+}
+
+} // namespace
+
 void TransformationGizmo::draw(QPainter &painter, const TextBoxAnnotation *annotation)
 {
     if (!annotation) return;
@@ -101,6 +164,16 @@ QPointF TransformationGizmo::rotationHandlePosition(const TextBoxAnnotation *ann
 
     QPolygonF poly = annotation->transformedBoundingPolygon();
     return rotationHandlePosition(poly, annotation->center());
+}
+
+QRect TransformationGizmo::visualBounds(const TextBoxAnnotation *annotation)
+{
+    if (!annotation) {
+        return QRect();
+    }
+
+    return visualBoundsFromPolygon(
+        annotation->transformedBoundingPolygon(), annotation->center());
 }
 
 QVector<QPointF> TransformationGizmo::cornerHandlePositions(const TextBoxAnnotation *annotation)
@@ -208,6 +281,16 @@ QPointF TransformationGizmo::rotationHandlePosition(const EmojiStickerAnnotation
     return rotationHandlePosition(poly, annotation->center());
 }
 
+QRect TransformationGizmo::visualBounds(const EmojiStickerAnnotation *annotation)
+{
+    if (!annotation) {
+        return QRect();
+    }
+
+    return visualBoundsFromPolygon(
+        annotation->transformedBoundingPolygon(), annotation->center());
+}
+
 QVector<QPointF> TransformationGizmo::cornerHandlePositions(const EmojiStickerAnnotation *annotation)
 {
     QVector<QPointF> corners;
@@ -301,6 +384,16 @@ QPointF TransformationGizmo::rotationHandlePosition(const ShapeAnnotation *annot
 
     QPolygonF poly = annotation->transformedBoundingPolygon();
     return rotationHandlePosition(poly, annotation->center());
+}
+
+QRect TransformationGizmo::visualBounds(const ShapeAnnotation *annotation)
+{
+    if (!annotation) {
+        return QRect();
+    }
+
+    return visualBoundsFromPolygon(
+        annotation->transformedBoundingPolygon(), annotation->center());
 }
 
 GizmoHandle TransformationGizmo::hitTest(const ShapeAnnotation *annotation, const QPoint &point)
@@ -430,6 +523,28 @@ GizmoHandle TransformationGizmo::hitTest(const ArrowAnnotation *annotation, cons
     return GizmoHandle::None;
 }
 
+QRect TransformationGizmo::visualBounds(const ArrowAnnotation *annotation)
+{
+    if (!annotation) {
+        return QRect();
+    }
+
+    QRectF bounds = QRectF(annotation->boundingRect());
+    const QPointF start = annotation->start();
+    const QPointF end = annotation->end();
+    const QPointF control = annotation->controlPoint();
+    const QPointF curveMidpoint = 0.25 * start + 0.5 * control + 0.25 * end;
+
+    bounds = bounds.united(
+        rectAroundPoint(start, kArrowHandleRadius + kGizmoVisualMargin));
+    bounds = bounds.united(
+        rectAroundPoint(end, kArrowHandleRadius + kGizmoVisualMargin));
+    bounds = bounds.united(
+        rectAroundPoint(curveMidpoint, kControlHandleRadius + kGizmoVisualMargin));
+
+    return bounds.toAlignedRect();
+}
+
 // ============================================================================
 // PolylineAnnotation overloads
 // ============================================================================
@@ -470,4 +585,20 @@ int TransformationGizmo::hitTestVertex(const PolylineAnnotation *annotation, con
     }
 
     return -2; // Nothing hit
+}
+
+QRect TransformationGizmo::visualBounds(const PolylineAnnotation *annotation)
+{
+    if (!annotation) {
+        return QRect();
+    }
+
+    QRectF bounds = QRectF(annotation->boundingRect());
+    const QVector<QPoint> points = annotation->points();
+    for (const QPoint& point : points) {
+        bounds = bounds.united(
+            rectAroundPoint(point, kArrowHandleRadius + kGizmoVisualMargin));
+    }
+
+    return bounds.toAlignedRect();
 }

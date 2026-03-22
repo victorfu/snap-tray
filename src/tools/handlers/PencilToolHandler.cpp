@@ -4,6 +4,13 @@
 #include <QPainter>
 #include <QtMath>
 
+namespace {
+bool shouldRequestLegacyRepaint(const ToolContext* ctx)
+{
+    return ctx && !ctx->annotationSurface && !ctx->requestRectRepaint;
+}
+} // namespace
+
 void PencilToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
     m_isDrawing = true;
     m_currentPath.clear();
@@ -21,7 +28,9 @@ void PencilToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
         m_currentPath, ctx->color, ctx->width, ctx->lineStyle
     );
 
-    ctx->repaint();
+    if (shouldRequestLegacyRepaint(ctx)) {
+        ctx->repaint();
+    }
 }
 
 void PencilToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
@@ -72,7 +81,9 @@ void PencilToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
     m_currentPath.append(m_smoothedPoint);
     m_currentStroke->addPoint(m_smoothedPoint);
 
-    ctx->repaint();
+    if (shouldRequestLegacyRepaint(ctx)) {
+        ctx->repaint(m_currentStroke->boundingRect());
+    }
 }
 
 void PencilToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
@@ -85,9 +96,11 @@ void PencilToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
     if (m_currentPath.isEmpty() || m_currentPath.last() != finalPoint) {
         m_currentPath.append(finalPoint);
         if (m_currentStroke) {
-            m_currentStroke->addPoint(finalPoint);
+        m_currentStroke->addPoint(finalPoint);
         }
     }
+
+    const QRect dirtyBounds = m_currentStroke ? m_currentStroke->boundingRect() : QRect();
 
     // Add to annotation layer if we have a valid stroke
     if (m_currentStroke && m_currentPath.size() >= 2) {
@@ -101,13 +114,25 @@ void PencilToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
     m_currentStroke.reset();
     m_hasSmoothedPoint = false;
 
-    ctx->repaint();
+    if (shouldRequestLegacyRepaint(ctx)) {
+        if (dirtyBounds.isValid()) {
+            ctx->repaint(dirtyBounds);
+        } else {
+            ctx->repaint();
+        }
+    }
 }
 
 void PencilToolHandler::drawPreview(QPainter& painter) const {
     if (m_isDrawing && m_currentStroke) {
         m_currentStroke->draw(painter);
     }
+}
+
+QRect PencilToolHandler::previewBounds(const ToolContext* ctx) const
+{
+    Q_UNUSED(ctx);
+    return m_currentStroke ? m_currentStroke->boundingRect() : QRect();
 }
 
 void PencilToolHandler::cancelDrawing() {

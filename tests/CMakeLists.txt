@@ -12,6 +12,30 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 # Enable automoc for tests
 set(CMAKE_AUTOMOC ON)
 
+if(WIN32)
+    # Deploy the Qt test runtime next to the test executables so Windows can
+    # load it regardless of how the tests are launched.
+    if(CMAKE_BUILD_TYPE)
+        string(TOUPPER "${CMAKE_BUILD_TYPE}" SNAPTRAY_TEST_QT_CONFIG)
+        get_target_property(SNAPTRAY_TEST_QT_DLL Qt6::Test "IMPORTED_LOCATION_${SNAPTRAY_TEST_QT_CONFIG}")
+    endif()
+    if(NOT SNAPTRAY_TEST_QT_DLL)
+        get_target_property(SNAPTRAY_TEST_QT_DLL Qt6::Test IMPORTED_LOCATION_DEBUG)
+    endif()
+    if(NOT SNAPTRAY_TEST_QT_DLL)
+        get_target_property(SNAPTRAY_TEST_QT_DLL Qt6::Test IMPORTED_LOCATION_RELEASE)
+    endif()
+    if(SNAPTRAY_TEST_QT_DLL)
+        get_filename_component(SNAPTRAY_TEST_QT_DLL_NAME "${SNAPTRAY_TEST_QT_DLL}" NAME)
+        file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+        configure_file(
+            "${SNAPTRAY_TEST_QT_DLL}"
+            "${CMAKE_BINARY_DIR}/bin/${SNAPTRAY_TEST_QT_DLL_NAME}"
+            COPYONLY
+        )
+    endif()
+endif()
+
 # ============================================================================
 # QML ViewModel Tests
 # ============================================================================
@@ -164,10 +188,20 @@ target_link_libraries(RegionSelector_SelectionDirtyRegionPlanner PRIVATE snaptra
 add_test(NAME RegionSelector_SelectionDirtyRegionPlanner COMMAND RegionSelector_SelectionDirtyRegionPlanner)
 set_tests_properties(RegionSelector_SelectionDirtyRegionPlanner PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RegionSelector_DeferredInitialization RegionSelector/tst_DeferredInitialization.cpp)
+target_link_libraries(RegionSelector_DeferredInitialization PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME RegionSelector_DeferredInitialization COMMAND RegionSelector_DeferredInitialization)
+set_tests_properties(RegionSelector_DeferredInitialization PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(RegionSelector_RegionInputHandler RegionSelector/tst_RegionInputHandler.cpp)
 target_link_libraries(RegionSelector_RegionInputHandler PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME RegionSelector_RegionInputHandler COMMAND RegionSelector_RegionInputHandler)
 set_tests_properties(RegionSelector_RegionInputHandler PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RegionSelector_RegionPainter RegionSelector/tst_RegionPainter.cpp)
+target_link_libraries(RegionSelector_RegionPainter PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME RegionSelector_RegionPainter COMMAND RegionSelector_RegionPainter)
+set_tests_properties(RegionSelector_RegionPainter PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(RegionSelector_MultiRegionManagerReorder RegionSelector/tst_MultiRegionManagerReorder.cpp)
 target_link_libraries(RegionSelector_MultiRegionManagerReorder PRIVATE snaptray_ui Qt6::Test)
@@ -208,6 +242,15 @@ add_executable(RegionSelector_StyleSync RegionSelector/tst_StyleSync.cpp)
 target_link_libraries(RegionSelector_StyleSync PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
 add_test(NAME RegionSelector_StyleSync COMMAND RegionSelector_StyleSync)
 set_tests_properties(RegionSelector_StyleSync PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
+# ============================================================================
+# Tool system tests
+# ============================================================================
+
+add_executable(Tools_ToolManagerRepaint Tools/tst_ToolManagerRepaint.cpp)
+target_link_libraries(Tools_ToolManagerRepaint PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Tools_ToolManagerRepaint COMMAND Tools_ToolManagerRepaint)
+set_tests_properties(Tools_ToolManagerRepaint PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
 # Encoding Tests (link snaptray_platform)

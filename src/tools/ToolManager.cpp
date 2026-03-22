@@ -9,13 +9,28 @@ ToolManager::ToolManager(QObject* parent)
     : QObject(parent)
     , m_context(std::make_unique<ToolContext>())
 {
-    // Set up the repaint callback to emit our signal
     m_context->requestRepaint = [this]() {
-        emit needsRepaint();
+        emitFullRepaint();
+    };
+    m_context->requestRectRepaint = [this](const QRect& rect) {
+        emitAnnotationRepaint(rect);
     };
 }
 
 ToolManager::~ToolManager() = default;
+
+namespace {
+QRect combineDirtyBounds(const QRect& first, const QRect& second)
+{
+    if (!first.isValid()) {
+        return second;
+    }
+    if (!second.isValid()) {
+        return first;
+    }
+    return first.united(second);
+}
+} // namespace
 
 void ToolManager::registerHandler(std::unique_ptr<IToolHandler> handler) {
     if (handler) {
@@ -46,6 +61,8 @@ void ToolManager::setCurrentTool(ToolId id) {
         return;
     }
 
+    const QRect oldPreviewBounds = previewBoundsForHandler(currentHandler());
+
     // Deactivate current handler
     if (auto* current = currentHandler()) {
         current->onDeactivate(m_context.get());
@@ -58,6 +75,8 @@ void ToolManager::setCurrentTool(ToolId id) {
         newHandler->onActivate(m_context.get());
     }
 
+    const QRect newPreviewBounds = previewBoundsForHandler(currentHandler());
+    emitBoundsDiff(oldPreviewBounds, newPreviewBounds);
     emit toolChanged(m_currentToolId);
 }
 
@@ -76,151 +95,212 @@ IToolHandler* ToolManager::handler(ToolId id) {
 void ToolManager::handleMousePress(const QPoint& pos, Qt::KeyboardModifiers modifiers) {
     m_context->shiftPressed = modifiers & Qt::ShiftModifier;
     if (auto* h = currentHandler()) {
+        const QRect oldPreviewBounds = previewBoundsForHandler(h);
         m_wasDrawing = h->isDrawing();
         h->onMousePress(m_context.get(), pos);
         if (!m_wasDrawing && h->isDrawing()) {
             emit drawingStarted();
         }
+        emitBoundsDiff(oldPreviewBounds, previewBoundsForHandler(h));
     }
 }
 
 void ToolManager::handleMouseMove(const QPoint& pos, Qt::KeyboardModifiers modifiers) {
     m_context->shiftPressed = modifiers & Qt::ShiftModifier;
     if (auto* h = currentHandler()) {
+        const QRect oldPreviewBounds = previewBoundsForHandler(h);
         h->onMouseMove(m_context.get(), pos);
+        emitBoundsDiff(oldPreviewBounds, previewBoundsForHandler(h));
     }
 }
 
 void ToolManager::handleMouseRelease(const QPoint& pos, Qt::KeyboardModifiers modifiers) {
     m_context->shiftPressed = modifiers & Qt::ShiftModifier;
     if (auto* h = currentHandler()) {
+        const QRect oldPreviewBounds = previewBoundsForHandler(h);
         bool wasDrawing = h->isDrawing();
         h->onMouseRelease(m_context.get(), pos);
         if (wasDrawing && !h->isDrawing()) {
             emit drawingFinished();
         }
+        emitBoundsDiff(oldPreviewBounds, previewBoundsForHandler(h));
     }
 }
 
 void ToolManager::handleDoubleClick(const QPoint& pos) {
     if (auto* h = currentHandler()) {
+        const QRect oldPreviewBounds = previewBoundsForHandler(h);
         bool wasDrawing = h->isDrawing();
         h->onDoubleClick(m_context.get(), pos);
         if (wasDrawing && !h->isDrawing()) {
             emit drawingFinished();
         }
+        emitBoundsDiff(oldPreviewBounds, previewBoundsForHandler(h));
     }
 }
 
 bool ToolManager::handleTextInteractionPress(const QPoint& pos, Qt::KeyboardModifiers modifiers)
 {
-    m_context->shiftPressed = modifiers & Qt::ShiftModifier;
-    auto it = m_handlers.find(ToolId::Text);
-    if (it == m_handlers.end()) {
-        return false;
-    }
-
-    auto* textHandler = dynamic_cast<TextToolHandler*>(it->second.get());
-    if (!textHandler) {
-        return false;
-    }
-
-    return textHandler->handleInteractionPress(m_context.get(), pos, false);
+    return dispatchInteraction(ToolId::Text, [this, pos, modifiers](IToolHandler* handler) {
+        m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+        return handler->handleInteractionPress(m_context.get(), pos, modifiers);
+    });
 }
 
 bool ToolManager::handleTextInteractionMove(const QPoint& pos, Qt::KeyboardModifiers modifiers)
 {
-    m_context->shiftPressed = modifiers & Qt::ShiftModifier;
-    auto it = m_handlers.find(ToolId::Text);
-    if (it == m_handlers.end()) {
-        return false;
-    }
-
-    auto* textHandler = dynamic_cast<TextToolHandler*>(it->second.get());
-    if (!textHandler) {
-        return false;
-    }
-
-    return textHandler->handleInteractionMove(m_context.get(), pos);
+    return dispatchInteraction(ToolId::Text, [this, pos, modifiers](IToolHandler* handler) {
+        m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+        return handler->handleInteractionMove(m_context.get(), pos, modifiers);
+    });
 }
 
 bool ToolManager::handleTextInteractionRelease(const QPoint& pos, Qt::KeyboardModifiers modifiers)
 {
-    m_context->shiftPressed = modifiers & Qt::ShiftModifier;
-    auto it = m_handlers.find(ToolId::Text);
-    if (it == m_handlers.end()) {
-        return false;
-    }
-
-    auto* textHandler = dynamic_cast<TextToolHandler*>(it->second.get());
-    if (!textHandler) {
-        return false;
-    }
-
-    return textHandler->handleInteractionRelease(m_context.get(), pos);
+    return dispatchInteraction(ToolId::Text, [this, pos, modifiers](IToolHandler* handler) {
+        m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+        return handler->handleInteractionRelease(m_context.get(), pos, modifiers);
+    });
 }
 
 bool ToolManager::handleTextInteractionDoubleClick(const QPoint& pos)
 {
-    auto it = m_handlers.find(ToolId::Text);
-    if (it == m_handlers.end()) {
-        return false;
-    }
-
-    auto* textHandler = dynamic_cast<TextToolHandler*>(it->second.get());
-    if (!textHandler) {
-        return false;
-    }
-
-    return textHandler->handleInteractionDoubleClick(m_context.get(), pos);
+    return dispatchInteraction(ToolId::Text, [this, pos](IToolHandler* handler) {
+        return handler->handleInteractionDoubleClick(m_context.get(), pos);
+    });
 }
 
 bool ToolManager::handleShapeInteractionPress(const QPoint& pos, Qt::KeyboardModifiers modifiers)
 {
-    m_context->shiftPressed = modifiers & Qt::ShiftModifier;
-    auto it = m_handlers.find(ToolId::Shape);
-    if (it == m_handlers.end()) {
-        return false;
-    }
-
-    auto* shapeHandler = dynamic_cast<ShapeToolHandler*>(it->second.get());
-    if (!shapeHandler) {
-        return false;
-    }
-
-    return shapeHandler->handleInteractionPress(m_context.get(), pos);
+    return dispatchInteraction(ToolId::Shape, [this, pos, modifiers](IToolHandler* handler) {
+        m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+        return handler->handleInteractionPress(m_context.get(), pos, modifiers);
+    });
 }
 
 bool ToolManager::handleShapeInteractionMove(const QPoint& pos, Qt::KeyboardModifiers modifiers)
 {
-    m_context->shiftPressed = modifiers & Qt::ShiftModifier;
-    auto it = m_handlers.find(ToolId::Shape);
-    if (it == m_handlers.end()) {
-        return false;
-    }
-
-    auto* shapeHandler = dynamic_cast<ShapeToolHandler*>(it->second.get());
-    if (!shapeHandler) {
-        return false;
-    }
-
-    return shapeHandler->handleInteractionMove(m_context.get(), pos);
+    return dispatchInteraction(ToolId::Shape, [this, pos, modifiers](IToolHandler* handler) {
+        m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+        return handler->handleInteractionMove(m_context.get(), pos, modifiers);
+    });
 }
 
 bool ToolManager::handleShapeInteractionRelease(const QPoint& pos, Qt::KeyboardModifiers modifiers)
 {
-    m_context->shiftPressed = modifiers & Qt::ShiftModifier;
-    auto it = m_handlers.find(ToolId::Shape);
-    if (it == m_handlers.end()) {
-        return false;
+    return dispatchInteraction(ToolId::Shape, [this, pos, modifiers](IToolHandler* handler) {
+        m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+        return handler->handleInteractionRelease(m_context.get(), pos, modifiers);
+    });
+}
+
+bool ToolManager::handleArrowInteractionPress(const QPoint& pos, Qt::KeyboardModifiers modifiers)
+{
+    return dispatchInteraction(ToolId::Arrow, [this, pos, modifiers](IToolHandler* handler) {
+        m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+        return handler->handleInteractionPress(m_context.get(), pos, modifiers);
+    });
+}
+
+bool ToolManager::handleArrowInteractionMove(const QPoint& pos, Qt::KeyboardModifiers modifiers)
+{
+    return dispatchInteraction(ToolId::Arrow, [this, pos, modifiers](IToolHandler* handler) {
+        m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+        return handler->handleInteractionMove(m_context.get(), pos, modifiers);
+    });
+}
+
+bool ToolManager::handleArrowInteractionRelease(const QPoint& pos, Qt::KeyboardModifiers modifiers)
+{
+    return dispatchInteraction(ToolId::Arrow, [this, pos, modifiers](IToolHandler* handler) {
+        m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+        return handler->handleInteractionRelease(m_context.get(), pos, modifiers);
+    });
+}
+
+bool ToolManager::handlePolylineInteractionPress(const QPoint& pos, Qt::KeyboardModifiers modifiers)
+{
+    return dispatchInteraction(ToolId::Polyline, [this, pos, modifiers](IToolHandler* handler) {
+        m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+        return handler->handleInteractionPress(m_context.get(), pos, modifiers);
+    });
+}
+
+bool ToolManager::handlePolylineInteractionMove(const QPoint& pos, Qt::KeyboardModifiers modifiers)
+{
+    return dispatchInteraction(ToolId::Polyline, [this, pos, modifiers](IToolHandler* handler) {
+        m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+        return handler->handleInteractionMove(m_context.get(), pos, modifiers);
+    });
+}
+
+bool ToolManager::handlePolylineInteractionRelease(const QPoint& pos, Qt::KeyboardModifiers modifiers)
+{
+    return dispatchInteraction(ToolId::Polyline, [this, pos, modifiers](IToolHandler* handler) {
+        m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+        return handler->handleInteractionRelease(m_context.get(), pos, modifiers);
+    });
+}
+
+bool ToolManager::handleEmojiInteractionPress(const QPoint& pos, Qt::KeyboardModifiers modifiers)
+{
+    return dispatchInteraction(ToolId::EmojiSticker, [this, pos, modifiers](IToolHandler* handler) {
+        m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+        return handler->handleInteractionPress(m_context.get(), pos, modifiers);
+    });
+}
+
+bool ToolManager::handleEmojiInteractionMove(const QPoint& pos, Qt::KeyboardModifiers modifiers)
+{
+    return dispatchInteraction(ToolId::EmojiSticker, [this, pos, modifiers](IToolHandler* handler) {
+        m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+        return handler->handleInteractionMove(m_context.get(), pos, modifiers);
+    });
+}
+
+bool ToolManager::handleEmojiInteractionRelease(const QPoint& pos, Qt::KeyboardModifiers modifiers)
+{
+    return dispatchInteraction(ToolId::EmojiSticker, [this, pos, modifiers](IToolHandler* handler) {
+        m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+        return handler->handleInteractionRelease(m_context.get(), pos, modifiers);
+    });
+}
+
+bool ToolManager::hasActiveInteraction() const
+{
+    return activeInteractionKind() != AnnotationInteractionKind::None;
+}
+
+AnnotationInteractionKind ToolManager::activeInteractionKind() const
+{
+    for (const auto& [toolId, handler] : m_handlers) {
+        Q_UNUSED(toolId);
+        if (!handler) {
+            continue;
+        }
+
+        const AnnotationInteractionKind kind = interactionKindForHandler(handler.get());
+        if (kind != AnnotationInteractionKind::None) {
+            return kind;
+        }
     }
 
-    auto* shapeHandler = dynamic_cast<ShapeToolHandler*>(it->second.get());
-    if (!shapeHandler) {
-        return false;
+    return AnnotationInteractionKind::None;
+}
+
+ToolId ToolManager::activeInteractionTool() const
+{
+    for (const auto& [toolId, handler] : m_handlers) {
+        if (!handler) {
+            continue;
+        }
+
+        if (interactionKindForHandler(handler.get()) != AnnotationInteractionKind::None) {
+            return toolId;
+        }
     }
 
-    return shapeHandler->handleInteractionRelease(m_context.get(), pos);
+    return m_currentToolId;
 }
 
 void ToolManager::drawCurrentPreview(QPainter& painter) const {
@@ -245,10 +325,32 @@ void ToolManager::cancelDrawing() {
 }
 
 bool ToolManager::handleEscape() {
-    if (auto* h = currentHandler()) {
-        if (h->handleEscape(m_context.get())) {
+    auto dispatchEscape = [this](IToolHandler* handler) {
+        if (!handler) {
+            return false;
+        }
+
+        const QRect oldBounds = combineDirtyBounds(
+            previewBoundsForHandler(handler),
+            interactionBoundsForHandler(handler));
+        if (handler->handleEscape(m_context.get())) {
+            const QRect newBounds = combineDirtyBounds(
+                previewBoundsForHandler(handler),
+                interactionBoundsForHandler(handler));
+            emitBoundsDiff(oldBounds, newBounds);
             return true;
         }
+        return false;
+    };
+
+    if (dispatchEscape(currentHandler())) {
+        return true;
+    }
+
+    const ToolId interactionTool = activeInteractionTool();
+    if (interactionTool != m_currentToolId &&
+        dispatchEscape(handler(interactionTool))) {
+        return true;
     }
 
     if (m_context && m_context->annotationLayer &&
@@ -308,6 +410,11 @@ void ToolManager::setTextReEditStartedCallback(std::function<void()> callback)
     m_context->notifyTextReEditStarted = std::move(callback);
 }
 
+void ToolManager::setAnnotationSurfaceAdapter(AnnotationSurfaceAdapter* adapter)
+{
+    m_context->annotationSurface = adapter;
+}
+
 void ToolManager::setColor(const QColor& color) {
     m_context->color = color;
 }
@@ -334,4 +441,102 @@ void ToolManager::setShapeFillMode(int mode) {
 
 void ToolManager::setMosaicBlurType(MosaicBlurType type) {
     m_context->mosaicBlurType = type;
+}
+
+void ToolManager::emitFullRepaint()
+{
+    emit needsRepaint();
+}
+
+void ToolManager::emitAnnotationRepaint(const QRect& annotationRect)
+{
+    if (!annotationRect.isValid()) {
+        emitFullRepaint();
+        return;
+    }
+
+    if (m_context && m_context->annotationSurface) {
+        if (!m_context->annotationSurface->supportsAnnotationRectUpdate()) {
+            emitFullRepaint();
+            return;
+        }
+
+        const QRect hostRect = m_context->annotationSurface->mapAnnotationRectToHostUpdate(annotationRect)
+                                   .intersected(m_context->annotationSurface->annotationViewport());
+        if (!hostRect.isValid()) {
+            emitFullRepaint();
+            return;
+        }
+        emit needsRepaint(hostRect);
+        return;
+    }
+
+    emit needsRepaint(annotationRect);
+}
+
+void ToolManager::emitBoundsDiff(const QRect& before, const QRect& after)
+{
+    if (before.isNull() && after.isNull()) {
+        return;
+    }
+
+    if (!before.isValid() && !after.isValid()) {
+        return;
+    }
+
+    if (!before.isValid()) {
+        emitAnnotationRepaint(after);
+        return;
+    }
+
+    if (!after.isValid()) {
+        emitAnnotationRepaint(before);
+        return;
+    }
+
+    emitAnnotationRepaint(before.united(after));
+}
+
+QRect ToolManager::previewBoundsForHandler(const IToolHandler* handler) const
+{
+    if (!handler || !m_context) {
+        return QRect();
+    }
+    return handler->previewBounds(m_context.get());
+}
+
+QRect ToolManager::interactionBoundsForHandler(const IToolHandler* handler) const
+{
+    if (!handler || !m_context) {
+        return QRect();
+    }
+    return handler->interactionBounds(m_context.get());
+}
+
+AnnotationInteractionKind ToolManager::interactionKindForHandler(const IToolHandler* handler) const
+{
+    if (!handler || !m_context) {
+        return AnnotationInteractionKind::None;
+    }
+
+    return handler->activeInteractionKind(m_context.get());
+}
+
+bool ToolManager::dispatchInteraction(ToolId id,
+                                      const std::function<bool(IToolHandler*)>& callback)
+{
+    auto it = m_handlers.find(id);
+    if (it == m_handlers.end() || !callback) {
+        return false;
+    }
+
+    IToolHandler* handler = it->second.get();
+    const QRect oldBounds = interactionBoundsForHandler(handler);
+    const bool handled = callback(handler);
+    if (!handled) {
+        return false;
+    }
+
+    emitBoundsDiff(oldBounds, interactionBoundsForHandler(handler));
+    return true;
 }

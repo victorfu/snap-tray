@@ -19,7 +19,17 @@
 #include <QPainterPath>
 #include <QWidget>
 #include <QDebug>
+#include <QElapsedTimer>
 #include <QtMath>
+
+namespace {
+
+qreal elapsedMs(const QElapsedTimer& timer)
+{
+    return static_cast<qreal>(timer.nsecsElapsed()) / 1000000.0;
+}
+
+}
 
 RegionPainter::RegionPainter(QObject* parent)
     : QObject(parent)
@@ -95,50 +105,164 @@ void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QR
         return;
     }
 
+    m_lastPaintStats = PaintStats{};
+    QElapsedTimer totalTimer;
+    totalTimer.start();
+
     // Use dirty rect for optimized partial repainting
     // Only draw the background portion that needs updating
     const QRect updateRect = dirtyRect.isEmpty() ? m_parentWidget->rect() : dirtyRect;
+    const bool useBaseLayerCache = canUseBaseLayerCache();
 
-    // Draw only the dirty portion of the background
-    if (!background.isNull()) {
-        const qreal dpr = background.devicePixelRatio();
-        const QRect sourceRect =
-            CoordinateHelper::toPhysicalCoveringRect(updateRect, dpr).intersected(background.rect());
+    if (useBaseLayerCache) {
+        m_lastPaintStats.usedBaseLayerCache = ensureBaseLayerCache(background);
+
+        QElapsedTimer baseBlitTimer;
+        baseBlitTimer.start();
+        painter.drawPixmap(QPoint(0, 0), m_baseLayerCache);
+        m_lastPaintStats.bgMs += elapsedMs(baseBlitTimer);
+        m_lastDimensionInfoRect = m_cachedDimensionInfoRect;
+    } else {
+        QElapsedTimer bgTimer;
+        bgTimer.start();
+        drawBackground(painter, background, updateRect, &m_lastPaintStats.usedDirectBackgroundBlit);
+        m_lastPaintStats.bgMs = elapsedMs(bgTimer);
+
+        QElapsedTimer overlayTimer;
+        overlayTimer.start();
+        drawOverlay(painter);
+
+        // Draw detected window highlight (only during hover, before any selection)
+        if (!m_selectionManager->hasActiveSelection()) {
+            drawDetectedWindow(painter);
+        }
+
+        // Draw selection if active or complete
+        QRect selectionRect = m_selectionManager->selectionRect();
+        if (m_selectionManager->hasActiveSelection() && selectionRect.isValid()) {
+            drawSelection(painter);
+            drawDimensionInfo(painter);
+        }
+        m_lastPaintStats.overlayMs = elapsedMs(overlayTimer);
+    }
+
+    const QRect selectionRect = m_selectionManager->selectionRect();
+    if (m_selectionManager->hasActiveSelection() && selectionRect.isValid() &&
+        !m_multiRegionMode && m_selectionManager->hasSelection()) {
+        QElapsedTimer committedTimer;
+        committedTimer.start();
+        drawAnnotations(painter);
+        m_lastPaintStats.committedMs = elapsedMs(committedTimer);
+
+        QElapsedTimer previewTimer;
+        previewTimer.start();
+        drawCurrentAnnotation(painter);
+        m_lastPaintStats.previewMs = elapsedMs(previewTimer);
+    }
+
+    m_lastPaintStats.totalMs = elapsedMs(totalTimer);
+}
+
+bool RegionPainter::canUseBaseLayerCache() const
+{
+    if (!m_parentWidget || !m_selectionManager) {
+        return false;
+    }
+
+    return !m_multiRegionMode &&
+           m_selectionManager->hasSelection() &&
+           !m_selectionManager->isSelecting() &&
+           !m_selectionManager->isManipulating();
+}
+
+bool RegionPainter::ensureBaseLayerCache(const QPixmap& background)
+{
+    const QRect selectionRect = m_selectionManager->selectionRect();
+    const QSize logicalSize = m_parentWidget->size();
+    const quint64 backgroundKey = background.cacheKey();
+    const bool cacheMatches =
+        m_baseLayerCacheValid &&
+        m_baseLayerLogicalSize == logicalSize &&
+        m_baseLayerSelectionRect == selectionRect &&
+        qFuzzyCompare(m_baseLayerDevicePixelRatio, m_devicePixelRatio) &&
+        m_baseLayerBackgroundKey == backgroundKey &&
+        m_baseLayerCornerRadius == m_cornerRadius;
+
+    if (cacheMatches) {
+        return true;
+    }
+
+    const QSize physicalSize = CoordinateHelper::toPhysical(logicalSize, m_devicePixelRatio);
+    m_baseLayerCache = QPixmap(physicalSize);
+    m_baseLayerCache.setDevicePixelRatio(m_devicePixelRatio);
+    m_baseLayerCache.fill(Qt::transparent);
+
+    QPainter cachePainter(&m_baseLayerCache);
+    cachePainter.setRenderHint(QPainter::Antialiasing);
+
+    drawBackground(cachePainter, background, m_parentWidget->rect());
+    drawOverlay(cachePainter);
+    drawSelection(cachePainter);
+    drawDimensionInfo(cachePainter);
+
+    m_cachedDimensionInfoRect = m_lastDimensionInfoRect;
+    m_baseLayerLogicalSize = logicalSize;
+    m_baseLayerSelectionRect = selectionRect;
+    m_baseLayerDevicePixelRatio = m_devicePixelRatio;
+    m_baseLayerBackgroundKey = backgroundKey;
+    m_baseLayerCornerRadius = m_cornerRadius;
+    m_baseLayerCacheValid = true;
+    return false;
+}
+
+void RegionPainter::drawBackground(QPainter& painter,
+                                   const QPixmap& background,
+                                   const QRect& updateRect,
+                                   bool* usedDirectBlit) const
+{
+    if (usedDirectBlit) {
+        *usedDirectBlit = false;
+    }
+
+    if (background.isNull()) {
+        return;
+    }
+
+    const qreal dpr = background.devicePixelRatio();
+    const QSize logicalBackgroundSize = background.deviceIndependentSize().toSize();
+    const bool directDprBlit =
+        qFuzzyCompare(dpr, m_devicePixelRatio) &&
+        logicalBackgroundSize == m_parentWidget->size();
+
+    if (usedDirectBlit) {
+        *usedDirectBlit = directDprBlit;
+    }
+
 #ifdef Q_OS_WIN
 #ifndef QT_NO_DEBUG
-        const qreal roundedDpr = qRound(dpr);
-        const bool fractionalDpr = !qFuzzyCompare(dpr, roundedDpr);
-        const bool partialRepaint = !dirtyRect.isEmpty() && dirtyRect != m_parentWidget->rect();
-        if (fractionalDpr && partialRepaint) {
-            qDebug() << "RegionPainter partial repaint"
-                     << "logicalDirty=" << updateRect
-                     << "physicalDirty=" << sourceRect
-                     << "backgroundDpr=" << dpr;
-        }
+    const qreal roundedDpr = qRound(dpr);
+    const bool fractionalDpr = !qFuzzyCompare(dpr, roundedDpr);
+    const bool partialRepaint = !updateRect.isEmpty() && updateRect != m_parentWidget->rect();
+    if (fractionalDpr && partialRepaint) {
+        qDebug() << "RegionPainter partial repaint"
+                 << "logicalDirty=" << updateRect
+                 << "physicalDirty="
+                 << (directDprBlit
+                         ? QRect(
+                               CoordinateHelper::toPhysical(updateRect.topLeft(), dpr),
+                               CoordinateHelper::toPhysical(updateRect.size(), dpr))
+                         : CoordinateHelper::toPhysicalCoveringRect(updateRect, dpr).intersected(background.rect()))
+                 << "backgroundDpr=" << dpr
+                 << "mode=" << (directDprBlit ? "direct" : "sourceRect");
+    }
 #endif
 #endif
+    if (directDprBlit) {
+        painter.drawPixmap(QPoint(0, 0), background);
+    } else {
+        const QRect sourceRect =
+            CoordinateHelper::toPhysicalCoveringRect(updateRect, dpr).intersected(background.rect());
         painter.drawPixmap(updateRect, background, sourceRect);
-    }
-
-    // Draw dimmed overlay
-    drawOverlay(painter);
-
-    // Draw detected window highlight (only during hover, before any selection)
-    if (!m_selectionManager->hasActiveSelection()) {
-        drawDetectedWindow(painter);
-    }
-
-    // Draw selection if active or complete
-    QRect selectionRect = m_selectionManager->selectionRect();
-    if (m_selectionManager->hasActiveSelection() && selectionRect.isValid()) {
-        drawSelection(painter);
-        drawDimensionInfo(painter);
-
-        // Draw annotations on top of selection (only when selection is established)
-        if (!m_multiRegionMode && m_selectionManager->hasSelection()) {
-            drawAnnotations(painter);
-            drawCurrentAnnotation(painter);
-        }
     }
 }
 
@@ -507,7 +631,19 @@ void RegionPainter::drawAnnotations(QPainter& painter)
         return;
     }
 
-    m_annotationLayer->draw(painter);
+    const int selectedIndex = m_annotationLayer->selectedIndex();
+    if (selectedIndex >= 0) {
+        m_annotationLayer->drawWithDirtyRegion(
+            painter,
+            m_parentWidget->size(),
+            m_devicePixelRatio,
+            selectedIndex);
+    } else {
+        m_annotationLayer->drawCached(
+            painter,
+            m_parentWidget->size(),
+            m_devicePixelRatio);
+    }
 
     // Draw transformation gizmo for selected text annotation
     if (auto* textItem = getSelectedTextAnnotation()) {

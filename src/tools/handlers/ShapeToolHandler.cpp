@@ -24,7 +24,6 @@ void ShapeToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
         rect, m_shapeType, ctx->color, ctx->width, filled
     );
 
-    ctx->repaint();
 }
 
 void ShapeToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
@@ -33,7 +32,6 @@ void ShapeToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
     }
 
     updateCurrentShape(pos);
-    ctx->repaint();
 }
 
 void ShapeToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
@@ -60,7 +58,6 @@ void ShapeToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
     m_isDrawing = false;
     m_currentShape.reset();
 
-    ctx->repaint();
 }
 
 bool ShapeToolHandler::handleEscape(ToolContext* ctx)
@@ -71,13 +68,11 @@ bool ShapeToolHandler::handleEscape(ToolContext* ctx)
 
     if (ctx->shapeAnnotationEditor->isTransforming()) {
         ctx->shapeAnnotationEditor->finishTransformation();
-        ctx->repaint();
         return true;
     }
 
     if (ctx->shapeAnnotationEditor->isDragging()) {
         ctx->shapeAnnotationEditor->finishDragging();
-        ctx->repaint();
         return true;
     }
 
@@ -92,13 +87,23 @@ void ShapeToolHandler::drawPreview(QPainter& painter) const {
     m_currentShape->draw(painter);
 }
 
+QRect ShapeToolHandler::previewBounds(const ToolContext* ctx) const
+{
+    Q_UNUSED(ctx);
+    return m_currentShape ? m_currentShape->boundingRect() : QRect();
+}
+
 void ShapeToolHandler::cancelDrawing() {
     m_isDrawing = false;
     m_currentShape.reset();
 }
 
-bool ShapeToolHandler::handleInteractionPress(ToolContext* ctx, const QPoint& pos)
+bool ShapeToolHandler::handleInteractionPress(ToolContext* ctx,
+                                             const QPoint& pos,
+                                             Qt::KeyboardModifiers modifiers)
 {
+    Q_UNUSED(modifiers);
+
     if (!canHandle(ctx)) {
         return false;
     }
@@ -119,7 +124,6 @@ bool ShapeToolHandler::handleInteractionPress(ToolContext* ctx, const QPoint& po
             if (ctx->requestHostFocus) {
                 ctx->requestHostFocus();
             }
-            ctx->repaint();
             return true;
         }
     }
@@ -145,12 +149,15 @@ bool ShapeToolHandler::handleInteractionPress(ToolContext* ctx, const QPoint& po
     if (ctx->requestHostFocus) {
         ctx->requestHostFocus();
     }
-    ctx->repaint();
     return true;
 }
 
-bool ShapeToolHandler::handleInteractionMove(ToolContext* ctx, const QPoint& pos)
+bool ShapeToolHandler::handleInteractionMove(ToolContext* ctx,
+                                            const QPoint& pos,
+                                            Qt::KeyboardModifiers modifiers)
 {
+    Q_UNUSED(modifiers);
+
     if (!canHandle(ctx)) {
         return false;
     }
@@ -160,22 +167,23 @@ bool ShapeToolHandler::handleInteractionMove(ToolContext* ctx, const QPoint& pos
 
     if (shapeEditor->isTransforming() && layer->selectedIndex() >= 0) {
         shapeEditor->updateTransformation(pos);
-        ctx->repaint();
         return true;
     }
 
     if (shapeEditor->isDragging() && layer->selectedIndex() >= 0) {
         shapeEditor->updateDragging(pos);
-        ctx->repaint();
         return true;
     }
 
     return false;
 }
 
-bool ShapeToolHandler::handleInteractionRelease(ToolContext* ctx, const QPoint& pos)
+bool ShapeToolHandler::handleInteractionRelease(ToolContext* ctx,
+                                               const QPoint& pos,
+                                               Qt::KeyboardModifiers modifiers)
 {
     Q_UNUSED(pos);
+    Q_UNUSED(modifiers);
 
     if (!canHandle(ctx)) {
         return false;
@@ -193,6 +201,37 @@ bool ShapeToolHandler::handleInteractionRelease(ToolContext* ctx, const QPoint& 
     }
 
     return false;
+}
+
+QRect ShapeToolHandler::interactionBounds(const ToolContext* ctx) const
+{
+    if (!ctx || !ctx->annotationLayer) {
+        return QRect();
+    }
+
+    auto* shapeItem = dynamic_cast<ShapeAnnotation*>(ctx->annotationLayer->selectedItem());
+    if (!shapeItem) {
+        return QRect();
+    }
+
+    return TransformationGizmo::visualBounds(shapeItem);
+}
+
+AnnotationInteractionKind ShapeToolHandler::activeInteractionKind(const ToolContext* ctx) const
+{
+    if (!ctx || !ctx->shapeAnnotationEditor) {
+        return AnnotationInteractionKind::None;
+    }
+
+    if (ctx->shapeAnnotationEditor->isDragging()) {
+        return AnnotationInteractionKind::SelectedDrag;
+    }
+
+    if (ctx->shapeAnnotationEditor->isTransforming()) {
+        return AnnotationInteractionKind::SelectedTransform;
+    }
+
+    return AnnotationInteractionKind::None;
 }
 
 QRect ShapeToolHandler::makeRect(const QPoint& start, const QPoint& end) const {

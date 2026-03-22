@@ -2,6 +2,7 @@
 #define ARROWTOOLHANDLER_H
 
 #include "../IToolHandler.h"
+#include "TransformationGizmo.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/PolylineAnnotation.h"
@@ -35,9 +36,15 @@ public:
     void onDoubleClick(ToolContext* ctx, const QPoint& pos) override;
 
     void drawPreview(QPainter& painter) const override;
+    QRect previewBounds(const ToolContext* ctx) const override;
     bool isDrawing() const override { return m_isDrawing || m_isPolylineMode; }
     void cancelDrawing() override;
     bool handleEscape(ToolContext* ctx) override;
+    bool handleInteractionPress(ToolContext* ctx, const QPoint& pos, Qt::KeyboardModifiers modifiers) override;
+    bool handleInteractionMove(ToolContext* ctx, const QPoint& pos, Qt::KeyboardModifiers modifiers) override;
+    bool handleInteractionRelease(ToolContext* ctx, const QPoint& pos, Qt::KeyboardModifiers modifiers) override;
+    QRect interactionBounds(const ToolContext* ctx) const override;
+    AnnotationInteractionKind activeInteractionKind(const ToolContext* ctx) const override;
 
     bool supportsColor() const override { return true; }
     bool supportsWidth() const override { return true; }
@@ -46,6 +53,8 @@ public:
 
 private:
     void finishPolyline(ToolContext* ctx);
+    bool canHandleInteraction(ToolContext* ctx) const;
+    ArrowAnnotation* selectedArrow(ToolContext* ctx) const;
 
     bool m_isDrawing = false;
     bool m_hasDragged = false;      // True if mouse moved significantly during press
@@ -59,6 +68,10 @@ private:
     std::unique_ptr<PolylineAnnotation> m_currentPolyline;
     QElapsedTimer m_clickTimer;
     static constexpr int DOUBLE_CLICK_INTERVAL = 300;  // ms
+
+    bool m_isArrowDragging = false;
+    GizmoHandle m_arrowDragHandle = GizmoHandle::None;
+    QPoint m_arrowDragStart;
 };
 
 #endif // ARROWTOOLHANDLER_H

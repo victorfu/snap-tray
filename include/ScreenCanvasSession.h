@@ -39,6 +39,7 @@ class ShapeAnnotation;
 class TextAnnotationEditor;
 class TextBoxAnnotation;
 class ToolManager;
+class AnnotationSurfaceAdapter;
 
 namespace snaptray {
 namespace colorwidgets {
@@ -116,6 +117,7 @@ private:
     void configureSurface(ScreenCanvas* surface);
     void destroySurfaces();
     void updateAllSurfaces();
+    void updateSurfacesForAnnotationRect(const QRect& annotationRect);
 
     void activateSurface(ScreenCanvas* surface);
     void beginMouseGrab(ScreenCanvas* surface);
@@ -181,16 +183,6 @@ private:
     ArrowAnnotation* getSelectedArrowAnnotation();
     PolylineAnnotation* getSelectedPolylineAnnotation();
 
-    bool handleEmojiStickerAnnotationPress(const QPoint& pos);
-    bool handleEmojiStickerAnnotationMove(const QPoint& pos);
-    bool handleEmojiStickerAnnotationRelease(const QPoint& pos);
-    bool handleArrowAnnotationPress(const QPoint& pos);
-    bool handleArrowAnnotationMove(const QPoint& pos);
-    bool handleArrowAnnotationRelease(const QPoint& pos);
-    bool handlePolylineAnnotationPress(const QPoint& pos);
-    bool handlePolylineAnnotationMove(const QPoint& pos);
-    bool handlePolylineAnnotationRelease(const QPoint& pos);
-
     QPoint annotationPointForEvent(ScreenCanvas* surface, QMouseEvent* event) const;
     QPoint annotationPointForCurrentCursor() const;
 
@@ -202,6 +194,7 @@ private:
 
     AnnotationLayer* m_annotationLayer = nullptr;
     ToolManager* m_toolManager = nullptr;
+    std::unique_ptr<AnnotationSurfaceAdapter> m_annotationSurfaceAdapter;
     ToolId m_currentToolId = ToolId::Pencil;
     bool m_laserPointerActive = false;
 
@@ -226,23 +219,6 @@ private:
     ShapeFillMode m_shapeFillMode = ShapeFillMode::Outline;
     StepBadgeSize m_stepBadgeSize = StepBadgeSize::Medium;
     CanvasBackgroundMode m_bgMode = CanvasBackgroundMode::Screen;
-
-    bool m_isEmojiDragging = false;
-    bool m_isEmojiScaling = false;
-    bool m_isEmojiRotating = false;
-    GizmoHandle m_activeEmojiHandle = GizmoHandle::None;
-    QPoint m_emojiDragStart;
-    qreal m_emojiStartScale = 1.0;
-    qreal m_emojiStartDistance = 0.0;
-    QPointF m_emojiStartCenter;
-    qreal m_emojiStartRotation = 0.0;
-    qreal m_emojiStartAngle = 0.0;
-
-    bool m_isArrowDragging = false;
-    GizmoHandle m_arrowDragHandle = GizmoHandle::None;
-    bool m_isPolylineDragging = false;
-    int m_activePolylineVertexIndex = -1;
-    QPoint m_dragStartPos;
     bool m_consumeNextToolRelease = false;
 };
 

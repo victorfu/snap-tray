@@ -36,6 +36,46 @@ private:
     int m_escapeCallCount = 0;
 };
 
+class FakeInteractionEscapeHandler : public IToolHandler
+{
+public:
+    ToolId toolId() const override
+    {
+        return ToolId::Text;
+    }
+
+    bool handleEscape(ToolContext* ctx) override
+    {
+        Q_UNUSED(ctx);
+        ++m_escapeCallCount;
+        m_interactionActive = false;
+        return true;
+    }
+
+    QRect interactionBounds(const ToolContext* ctx) const override
+    {
+        Q_UNUSED(ctx);
+        return m_interactionActive ? QRect(20, 30, 40, 50) : QRect();
+    }
+
+    AnnotationInteractionKind activeInteractionKind(const ToolContext* ctx) const override
+    {
+        Q_UNUSED(ctx);
+        return m_interactionActive
+            ? AnnotationInteractionKind::SelectedTransform
+            : AnnotationInteractionKind::None;
+    }
+
+    int escapeCallCount() const
+    {
+        return m_escapeCallCount;
+    }
+
+private:
+    bool m_interactionActive = true;
+    int m_escapeCallCount = 0;
+};
+
 class TestToolManagerEscape : public QObject
 {
     Q_OBJECT
@@ -43,6 +83,8 @@ class TestToolManagerEscape : public QObject
 private slots:
     void testHandleEscape_ClearsSelectionWhenHandlerIgnoresEscape();
     void testHandleEscape_PreservesSelectionWhenHandlerConsumesEscape();
+    void testHandleEscape_RepaintsActiveInteractionBounds();
+    void testHandleEscape_DispatchesToActiveInteractionTool();
     void testHandleEscape_ReturnsFalseWhenNothingHandled();
 
 private:
@@ -68,7 +110,7 @@ void TestToolManagerEscape::testHandleEscape_ClearsSelectionWhenHandlerIgnoresEs
     addSelectableArrow(layer);
     QCOMPARE(layer.selectedIndex(), 0);
 
-    QSignalSpy repaintSpy(&manager, &ToolManager::needsRepaint);
+    QSignalSpy repaintSpy(&manager, qOverload<>(&ToolManager::needsRepaint));
 
     const bool handled = manager.handleEscape();
     QVERIFY(handled);
@@ -90,13 +132,50 @@ void TestToolManagerEscape::testHandleEscape_PreservesSelectionWhenHandlerConsum
     addSelectableArrow(layer);
     QCOMPARE(layer.selectedIndex(), 0);
 
-    QSignalSpy repaintSpy(&manager, &ToolManager::needsRepaint);
+    QSignalSpy repaintSpy(&manager, qOverload<>(&ToolManager::needsRepaint));
 
     const bool handled = manager.handleEscape();
     QVERIFY(handled);
     QCOMPARE(handler->escapeCallCount(), 1);
     QCOMPARE(layer.selectedIndex(), 0);
     QCOMPARE(repaintSpy.count(), 0);
+}
+
+void TestToolManagerEscape::testHandleEscape_RepaintsActiveInteractionBounds()
+{
+    ToolManager manager;
+    manager.registerHandler(std::make_unique<FakeInteractionEscapeHandler>());
+    manager.setCurrentTool(ToolId::Text);
+
+    QSignalSpy fullSpy(&manager, qOverload<>(&ToolManager::needsRepaint));
+    QSignalSpy rectSpy(&manager, qOverload<const QRect&>(&ToolManager::needsRepaint));
+
+    const bool handled = manager.handleEscape();
+    QVERIFY(handled);
+    QCOMPARE(fullSpy.count(), 0);
+    QCOMPARE(rectSpy.count(), 1);
+    QCOMPARE(rectSpy.takeFirst().at(0).toRect(), QRect(20, 30, 40, 50));
+}
+
+void TestToolManagerEscape::testHandleEscape_DispatchesToActiveInteractionTool()
+{
+    ToolManager manager;
+    auto* currentHandler = new FakeEscapeHandler(false);
+    auto* interactionHandler = new FakeInteractionEscapeHandler();
+    manager.registerHandler(std::unique_ptr<IToolHandler>(currentHandler));
+    manager.registerHandler(std::unique_ptr<IToolHandler>(interactionHandler));
+    manager.setCurrentTool(ToolId::Pencil);
+
+    QSignalSpy fullSpy(&manager, qOverload<>(&ToolManager::needsRepaint));
+    QSignalSpy rectSpy(&manager, qOverload<const QRect&>(&ToolManager::needsRepaint));
+
+    const bool handled = manager.handleEscape();
+    QVERIFY(handled);
+    QCOMPARE(currentHandler->escapeCallCount(), 1);
+    QCOMPARE(interactionHandler->escapeCallCount(), 1);
+    QCOMPARE(fullSpy.count(), 0);
+    QCOMPARE(rectSpy.count(), 1);
+    QCOMPARE(rectSpy.takeFirst().at(0).toRect(), QRect(20, 30, 40, 50));
 }
 
 void TestToolManagerEscape::testHandleEscape_ReturnsFalseWhenNothingHandled()
@@ -109,7 +188,7 @@ void TestToolManagerEscape::testHandleEscape_ReturnsFalseWhenNothingHandled()
     manager.registerHandler(std::unique_ptr<IToolHandler>(handler));
     manager.setCurrentTool(ToolId::Pencil);
 
-    QSignalSpy repaintSpy(&manager, &ToolManager::needsRepaint);
+    QSignalSpy repaintSpy(&manager, qOverload<>(&ToolManager::needsRepaint));
 
     const bool handled = manager.handleEscape();
     QVERIFY(!handled);

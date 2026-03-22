@@ -28,6 +28,11 @@ public:
     void onDoubleClick(ToolContext* ctx, const QPoint& pos) override;
 
     bool handleEscape(ToolContext* ctx) override;
+    bool handleInteractionPress(ToolContext* ctx, const QPoint& pos, Qt::KeyboardModifiers modifiers) override;
+    bool handleInteractionMove(ToolContext* ctx, const QPoint& pos, Qt::KeyboardModifiers modifiers) override;
+    bool handleInteractionRelease(ToolContext* ctx, const QPoint& pos, Qt::KeyboardModifiers modifiers) override;
+    QRect interactionBounds(const ToolContext* ctx) const override;
+    AnnotationInteractionKind activeInteractionKind(const ToolContext* ctx) const override;
 
     bool supportsColor() const override { return true; }
     bool supportsTextFormatting() const override { return true; }
@@ -37,7 +42,7 @@ public:
     bool handleInteractionPress(ToolContext* ctx, const QPoint& pos, bool allowStartEditing);
     bool handleInteractionMove(ToolContext* ctx, const QPoint& pos);
     bool handleInteractionRelease(ToolContext* ctx, const QPoint& pos);
-    bool handleInteractionDoubleClick(ToolContext* ctx, const QPoint& pos);
+    bool handleInteractionDoubleClick(ToolContext* ctx, const QPoint& pos) override;
 
 private:
     bool startReEditAtIndex(ToolContext* ctx, int annotationIndex);

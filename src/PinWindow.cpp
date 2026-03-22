@@ -1,6 +1,8 @@
 #include "PinWindow.h"
 #include "ui/DesignSystem.h"
 #include "annotation/AnnotationContext.h"
+#include "annotation/AnnotationPerfTrace.h"
+#include "annotation/FunctionalAnnotationSurfaceAdapter.h"
 #include "PinWindowManager.h"
 #include "OCRManager.h"
 #include "QRCodeManager.h"
@@ -110,15 +112,35 @@ namespace {
     constexpr qreal kMergeTargetWidthRatio = 0.9;
     constexpr int kMergeMinRowWidth = 320;
 
-    qreal normalizeAngleDelta(qreal deltaDegrees)
+    qint64 dirtyAreaForRegion(const QRegion& region)
     {
-        while (deltaDegrees > 180.0) {
-            deltaDegrees -= 360.0;
+        qint64 totalArea = 0;
+        for (const QRect& rect : region) {
+            totalArea += static_cast<qint64>(rect.width()) * static_cast<qint64>(rect.height());
         }
-        while (deltaDegrees < -180.0) {
-            deltaDegrees += 360.0;
+        return totalArea;
+    }
+
+    QString interactionLabelForToolManager(const ToolManager* toolManager)
+    {
+        if (!toolManager) {
+            return QStringLiteral("idle");
         }
-        return deltaDegrees;
+
+        if (toolManager->isDrawing()) {
+            return QStringLiteral("preview");
+        }
+
+        switch (toolManager->activeInteractionKind()) {
+        case AnnotationInteractionKind::SelectedDrag:
+            return QStringLiteral("selected-drag");
+        case AnnotationInteractionKind::SelectedTransform:
+            return QStringLiteral("selected-transform");
+        case AnnotationInteractionKind::None:
+            break;
+        }
+
+        return QStringLiteral("idle");
     }
 
     bool containsGlobalPoint(const QWidget* widget, const QPoint& globalPos)
@@ -1822,23 +1844,45 @@ void PinWindow::setShowBorder(bool enabled)
     }
 }
 
-void PinWindow::paintEvent(QPaintEvent*)
+void PinWindow::paintEvent(QPaintEvent* event)
 {
+    QElapsedTimer frameTimer;
+    frameTimer.start();
+
+    const QRegion dirtyRegion = event ? event->region() : QRegion(rect());
+    const QRect dirtyBounds = dirtyRegion.boundingRect();
+
     QPainter painter(this);
+    painter.setClipRegion(dirtyRegion);
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
     painter.setRenderHint(QPainter::Antialiasing);
 
     QRect pixmapRect = rect();
+    qreal bgMs = 0.0;
+    qreal committedMs = 0.0;
+    qreal previewMs = 0.0;
+    qreal overlayMs = 0.0;
 
     // Draw the screenshot (skip in layout mode - regions are drawn separately)
+    QElapsedTimer bgTimer;
+    bgTimer.start();
     if (!isRegionLayoutMode()) {
-        painter.drawPixmap(pixmapRect, m_displayPixmap);
+        if (dirtyBounds.isValid() &&
+            dirtyBounds != pixmapRect &&
+            logicalSizeFromPixmap(m_displayPixmap) == pixmapRect.size()) {
+            painter.drawPixmap(dirtyBounds, m_displayPixmap, dirtyBounds);
+        } else {
+            painter.drawPixmap(pixmapRect, m_displayPixmap);
+        }
     } else {
         // Draw solid background for layout mode
         painter.fillRect(pixmapRect, QColor(40, 40, 40));
     }
+    bgMs = static_cast<qreal>(bgTimer.nsecsElapsed()) / 1000000.0;
 
     // Draw annotations with the same rotation/flip transform as the pixmap
+    QElapsedTimer committedTimer;
+    committedTimer.start();
     if (m_annotationLayer && !m_annotationLayer->isEmpty()) {
         painter.save();
 
@@ -1880,8 +1924,11 @@ void PinWindow::paintEvent(QPaintEvent*)
 
         painter.restore();
     }
+    committedMs = static_cast<qreal>(committedTimer.nsecsElapsed()) / 1000000.0;
 
     // Draw annotation preview (current stroke in progress)
+    QElapsedTimer previewTimer;
+    previewTimer.start();
     if (m_annotationMode && m_toolManager) {
         painter.save();
 
@@ -1895,8 +1942,11 @@ void PinWindow::paintEvent(QPaintEvent*)
         m_toolManager->drawCurrentPreview(painter);
         painter.restore();
     }
+    previewMs = static_cast<qreal>(previewTimer.nsecsElapsed()) / 1000000.0;
 
     // Draw border if enabled
+    QElapsedTimer overlayTimer;
+    overlayTimer.start();
     if (m_showBorder) {
         int cornerRadius = effectiveCornerRadius(size());
         // Define colors inline (previously in Constants.h but only used here)
@@ -2000,6 +2050,31 @@ void PinWindow::paintEvent(QPaintEvent*)
         QRect canvasBounds = m_regionLayoutManager->canvasBounds();
         RegionLayoutRenderer::drawConfirmCancelButtons(painter, canvasBounds, m_layoutModeMousePos);
     }
+
+    overlayMs = static_cast<qreal>(overlayTimer.nsecsElapsed()) / 1000000.0;
+
+    if (AnnotationPerfTrace::isEnabled()) {
+        AnnotationPerfTrace::Sample sample;
+        sample.host = QStringLiteral("pin");
+        sample.tool =
+            (m_toolManager && m_toolManager->hasActiveInteraction())
+                ? m_toolManager->activeInteractionTool()
+                : m_currentToolId;
+        sample.interaction = interactionLabelForToolManager(m_toolManager);
+        sample.updateMode = dirtyBounds == rect()
+            ? AnnotationPerfTrace::UpdateMode::Full
+            : AnnotationPerfTrace::UpdateMode::Rect;
+        sample.dirtyBounds = dirtyBounds;
+        sample.dirtyArea = dirtyAreaForRegion(dirtyRegion);
+        sample.bgMs = bgMs;
+        sample.committedMs = committedMs;
+        sample.previewMs = previewMs;
+        sample.overlayMs = overlayMs;
+        sample.totalMs = static_cast<qreal>(frameTimer.nsecsElapsed()) / 1000000.0;
+        sample.dpr = devicePixelRatioF();
+        sample.annoCount = m_annotationLayer ? static_cast<int>(m_annotationLayer->itemCount()) : 0;
+        AnnotationPerfTrace::logFrame(sample);
+    }
 }
 
 void PinWindow::enterEvent(QEnterEvent* event)
@@ -2059,18 +2134,17 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
             return;
         }
 
-        // 2. Handle gizmo interaction (scale/rotate selected text)
-        if (m_annotationMode && handleGizmoPress(event->pos())) {
+        if (m_annotationMode &&
+            m_toolManager &&
+            m_toolManager->handleTextInteractionPress(
+                mapToOriginalCoords(event->pos()), event->modifiers())) {
             return;
         }
 
-        // 3. Handle clicking on existing text annotations
-        if (m_annotationMode && handleTextAnnotationPress(event->pos())) {
-            return;
-        }
-
-        // 3.5 Handle emoji sticker interaction before clearing selection.
-        if (m_annotationMode && handleEmojiStickerAnnotationPress(event->pos())) {
+        if (m_annotationMode &&
+            m_toolManager &&
+            m_toolManager->handleEmojiInteractionPress(
+                mapToOriginalCoords(event->pos()), event->modifiers())) {
             return;
         }
 
@@ -2106,13 +2180,15 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
                 return;
             }
 
-            // Check for Arrow annotation interaction (original coords handled inside)
-            if (handleArrowAnnotationPress(event->pos())) {
+            if (m_toolManager &&
+                m_toolManager->handleArrowInteractionPress(
+                    mapToOriginalCoords(event->pos()), event->modifiers())) {
                 return;
             }
 
-            // Check for Polyline annotation interaction (original coords handled inside)
-            if (handlePolylineAnnotationPress(event->pos())) {
+            if (m_toolManager &&
+                m_toolManager->handlePolylineInteractionPress(
+                    mapToOriginalCoords(event->pos()), event->modifiers())) {
                 return;
             }
 
@@ -2133,7 +2209,6 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
                 // This is needed because annotations are stored in original space
                 // but rendered with rotation/flip transforms applied
                 m_toolManager->handleMousePress(mapToOriginalCoords(event->pos()), event->modifiers());
-                update();
                 return;
             }
         }
@@ -2238,49 +2313,39 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
         return;
     }
 
-    // Handle TextAnnotationEditor transformation (rotate/scale)
-    if (m_textAnnotationEditor && m_textAnnotationEditor->isTransforming()) {
-        m_textAnnotationEditor->updateTransformation(mapToOriginalCoords(event->pos()));
-        update();
+    if (m_toolManager &&
+        m_toolManager->handleTextInteractionMove(
+            mapToOriginalCoords(event->pos()), event->modifiers())) {
         return;
     }
 
-    // Handle TextAnnotationEditor dragging
-    if (m_textAnnotationEditor && m_textAnnotationEditor->isDragging()) {
-        m_textAnnotationEditor->updateDragging(mapToOriginalCoords(event->pos()));
-        update();
-        return;
-    }
-
-    // Handle Emoji sticker dragging/scaling/rotating
-    if (m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating) {
-        handleEmojiStickerAnnotationMove(event->pos());
+    if (m_toolManager &&
+        m_toolManager->handleEmojiInteractionMove(
+            mapToOriginalCoords(event->pos()), event->modifiers())) {
         return;
     }
 
     if (m_toolManager &&
         m_toolManager->handleShapeInteractionMove(
             mapToOriginalCoords(event->pos()), event->modifiers())) {
-        update();
         return;
     }
 
-    // Handle Arrow dragging
-    if (m_isArrowDragging) {
-        handleArrowAnnotationMove(event->pos());
+    if (m_toolManager &&
+        m_toolManager->handleArrowInteractionMove(
+            mapToOriginalCoords(event->pos()), event->modifiers())) {
         return;
     }
 
-    // Handle Polyline dragging
-    if (m_isPolylineDragging) {
-        handlePolylineAnnotationMove(event->pos());
+    if (m_toolManager &&
+        m_toolManager->handlePolylineInteractionMove(
+            mapToOriginalCoords(event->pos()), event->modifiers())) {
         return;
     }
 
     // In annotation mode with active drawing, route to ToolManager
     if (m_annotationMode && m_toolManager && m_toolManager->isDrawing()) {
         m_toolManager->handleMouseMove(mapToOriginalCoords(event->pos()), event->modifiers());
-        update();
         return;
     }
 
@@ -2370,24 +2435,18 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
             return;
         }
 
-        // Handle TextAnnotationEditor transformation/dragging end
-        if (m_textAnnotationEditor) {
-            if (m_textAnnotationEditor->isTransforming()) {
-                m_textAnnotationEditor->finishTransformation();
-                updateUndoRedoState();
-                update();
-                return;
-            }
-            if (m_textAnnotationEditor->isDragging()) {
-                m_textAnnotationEditor->finishDragging();
-                updateUndoRedoState();
-                update();
-                return;
-            }
+        if (m_toolManager &&
+            m_toolManager->handleTextInteractionRelease(
+                mapToOriginalCoords(event->pos()), event->modifiers())) {
+            updateUndoRedoState();
+            rebuildManagedCursorAt(event->pos());
+            return;
         }
 
-        // Handle emoji sticker release
-        if (handleEmojiStickerAnnotationRelease(event->pos())) {
+        if (m_toolManager &&
+            m_toolManager->handleEmojiInteractionRelease(
+                mapToOriginalCoords(event->pos()), event->modifiers())) {
+            rebuildManagedCursorAt(event->pos());
             return;
         }
 
@@ -2395,22 +2454,27 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
             m_toolManager->handleShapeInteractionRelease(
                 mapToOriginalCoords(event->pos()), event->modifiers())) {
             updateUndoRedoState();
-            update();
+            rebuildManagedCursorAt(event->pos());
             return;
         }
 
-        // Handle Arrow release
-        if (handleArrowAnnotationRelease(event->pos())) {
+        if (m_toolManager &&
+            m_toolManager->handleArrowInteractionRelease(
+                mapToOriginalCoords(event->pos()), event->modifiers())) {
+            rebuildManagedCursorAt(event->pos());
             return;
         }
 
-        // Handle Polyline release
-        if (handlePolylineAnnotationRelease(event->pos())) {
+        if (m_toolManager &&
+            m_toolManager->handlePolylineInteractionRelease(
+                mapToOriginalCoords(event->pos()), event->modifiers())) {
+            rebuildManagedCursorAt(event->pos());
             return;
         }
 
         if (m_consumeNextToolRelease) {
             m_consumeNextToolRelease = false;
+            rebuildManagedCursorAt(event->pos());
             return;
         }
 
@@ -2434,7 +2498,6 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
                     compensateNewestStepBadgeIfNeeded(previousLastItem);
                 }
                 updateUndoRedoState();
-                update();
                 return;
             }
         }
@@ -2461,20 +2524,14 @@ void PinWindow::mouseDoubleClickEvent(QMouseEvent* event)
         // In annotation mode with active drawing, forward to tool handler
         // (e.g., polyline mode uses double-click to finish drawing)
         if (m_annotationMode && m_toolManager && m_toolManager->isDrawing()) {
-            m_toolManager->handleDoubleClick(event->pos());
-            update();
+            m_toolManager->handleDoubleClick(mapToOriginalCoords(event->pos()));
             return;
         }
 
-        // Check if double-click is on a text annotation (for re-editing)
-        if (m_annotationMode && m_annotationLayer) {
-            int hitIndex = m_annotationLayer->hitTestText(mapToOriginalCoords(event->pos()));
-            if (hitIndex >= 0) {
-                m_annotationLayer->setSelectedIndex(hitIndex);
-                m_textAnnotationEditor->startReEditing(hitIndex, m_annotationColor);
-                update();
-                return;
-            }
+        if (m_annotationMode &&
+            m_toolManager &&
+            m_toolManager->handleTextInteractionDoubleClick(mapToOriginalCoords(event->pos()))) {
+            return;
         }
 
         // Otherwise, close the window (default behavior)
@@ -2763,10 +2820,55 @@ void PinWindow::initializeAnnotationComponents()
     m_toolManager->setWidth(m_annotationWidth);
     m_toolManager->setArrowStyle(savedArrowStyle);
     m_toolManager->setLineStyle(savedLineStyle);
+    auto mapAnnotationRectToDisplayRect = [this](const QRect& annotationRect) {
+        if (!annotationRect.isValid()) {
+            return QRect();
+        }
+
+        const QRect expanded = annotationRect.adjusted(-8, -8, 8, 8);
+        const QPointF topLeft = mapFromOriginalCoords(QPointF(expanded.topLeft()));
+        const QPointF topRight = mapFromOriginalCoords(QPointF(expanded.right(), expanded.top()));
+        const QPointF bottomLeft = mapFromOriginalCoords(QPointF(expanded.left(), expanded.bottom()));
+        const QPointF bottomRight = mapFromOriginalCoords(QPointF(expanded.bottomRight()));
+
+        qreal minX = topLeft.x();
+        qreal maxX = topLeft.x();
+        qreal minY = topLeft.y();
+        qreal maxY = topLeft.y();
+        const QPointF points[] = { topRight, bottomLeft, bottomRight };
+        for (const QPointF& point : points) {
+            minX = (std::min)(minX, point.x());
+            maxX = (std::max)(maxX, point.x());
+            minY = (std::min)(minY, point.y());
+            maxY = (std::max)(maxY, point.y());
+        }
+
+        return QRect(
+            qFloor(minX),
+            qFloor(minY),
+            qCeil(maxX - minX) + 1,
+            qCeil(maxY - minY) + 1);
+    };
+    auto annotationSurfaceAdapter = std::make_unique<FunctionalAnnotationSurfaceAdapter>();
+    annotationSurfaceAdapter->requestFullUpdate = [this]() { update(); };
+    annotationSurfaceAdapter->requestRectUpdate = [this](const QRect& annotationRect) {
+        Q_UNUSED(annotationRect);
+        update();
+    };
+    annotationSurfaceAdapter->supportsRectUpdate = []() { return false; };
+    annotationSurfaceAdapter->mapRectToHost = mapAnnotationRectToDisplayRect;
+    annotationSurfaceAdapter->viewportProvider = [this]() { return rect(); };
+    m_annotationSurfaceAdapter = std::move(annotationSurfaceAdapter);
+    m_toolManager->setAnnotationSurfaceAdapter(m_annotationSurfaceAdapter.get());
 
     // Connect tool manager signals
-    connect(m_toolManager, &ToolManager::needsRepaint,
+    connect(m_toolManager, qOverload<>(&ToolManager::needsRepaint),
         this, QOverload<>::of(&QWidget::update));
+    connect(m_toolManager, qOverload<const QRect&>(&ToolManager::needsRepaint),
+        this, [this](const QRect& dirtyRect) {
+            Q_UNUSED(dirtyRect);
+            update();
+        });
 
     // Tool manager is created lazily; bind it to the already-registered widget now.
     auto& cursorManager = CursorManager::instance();
@@ -2780,7 +2882,22 @@ void PinWindow::initializeAnnotationComponents()
     m_textAnnotationEditor->setCoordinateMappers(
         [this](const QPointF& displayPos) { return mapToOriginalCoords(displayPos); },
         [this](const QPointF& originalPos) { return mapFromOriginalCoords(originalPos); });
+    m_toolManager->setInlineTextEditor(m_textEditor);
+    m_toolManager->setTextAnnotationEditor(m_textAnnotationEditor);
     m_toolManager->setShapeAnnotationEditor(m_shapeAnnotationEditor.get());
+    m_toolManager->setTextEditingBounds(rect());
+    m_toolManager->setTextColorSyncCallback([this](const QColor& color) {
+        m_annotationColor = color;
+        if (m_toolManager) {
+            m_toolManager->setColor(color);
+        }
+        if (m_subToolbar && m_subToolbar->viewModel()) {
+            m_subToolbar->viewModel()->setCurrentColor(color);
+        }
+    });
+    m_toolManager->setHostFocusCallback([this]() {
+        setFocus(Qt::OtherFocusReason);
+    });
 
     m_annotationContext = std::make_unique<AnnotationContext>(*this);
     m_annotationContext->setupTextAnnotationEditor(false);
@@ -4119,152 +4236,6 @@ ShapeAnnotation* PinWindow::getSelectedShapeAnnotation()
     return dynamic_cast<ShapeAnnotation*>(m_annotationLayer->itemAt(idx));
 }
 
-bool PinWindow::handleEmojiStickerAnnotationPress(const QPoint& pos)
-{
-    if (!m_annotationLayer) {
-        return false;
-    }
-
-    auto& cursorManager = CursorManager::instance();
-    QPoint mappedPos = mapToOriginalCoords(pos);
-
-    // First prefer handles/body on an already-selected emoji.
-    if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
-        GizmoHandle handle = TransformationGizmo::hitTest(emojiItem, mappedPos);
-        if (handle != GizmoHandle::None) {
-            m_isEmojiDragging = false;
-            m_isEmojiScaling = false;
-            m_isEmojiRotating = false;
-            if (handle == GizmoHandle::Body) {
-                m_isEmojiDragging = true;
-                m_emojiStartPos = mappedPos;
-                cursorManager.setInputStateForWidget(this, InputState::Moving);
-            } else if (handle == GizmoHandle::Rotation) {
-                m_isEmojiRotating = true;
-                m_emojiDragHandle = handle;
-                m_emojiStartCenter = emojiItem->center();
-                m_emojiStartRotation = emojiItem->rotation();
-                QPointF delta = QPointF(mappedPos) - m_emojiStartCenter;
-                m_emojiStartAngle = qRadiansToDegrees(qAtan2(delta.y(), delta.x()));
-                cursorManager.setHoverTargetForWidget(
-                    this,
-                    HoverTarget::GizmoHandle,
-                    static_cast<int>(handle));
-            } else {
-                m_isEmojiScaling = true;
-                m_emojiDragHandle = handle;
-                m_emojiStartCenter = emojiItem->center();
-                m_emojiStartScale = emojiItem->scale();
-                QPointF delta = QPointF(mappedPos) - m_emojiStartCenter;
-                m_emojiStartDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
-                cursorManager.setHoverTargetForWidget(
-                    this,
-                    HoverTarget::GizmoHandle,
-                    static_cast<int>(handle));
-            }
-            update();
-            return true;
-        }
-    }
-
-    int hitIndex = m_annotationLayer->hitTestEmojiSticker(mappedPos);
-    if (hitIndex < 0) {
-        return false;
-    }
-
-    m_annotationLayer->setSelectedIndex(hitIndex);
-    if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
-        m_isEmojiDragging = false;
-        m_isEmojiScaling = false;
-        m_isEmojiRotating = false;
-        GizmoHandle handle = TransformationGizmo::hitTest(emojiItem, mappedPos);
-        if (handle == GizmoHandle::Body || handle == GizmoHandle::None) {
-            m_isEmojiDragging = true;
-            m_emojiStartPos = mappedPos;
-            cursorManager.setInputStateForWidget(this, InputState::Moving);
-        } else if (handle == GizmoHandle::Rotation) {
-            m_isEmojiRotating = true;
-            m_emojiDragHandle = handle;
-            m_emojiStartCenter = emojiItem->center();
-            m_emojiStartRotation = emojiItem->rotation();
-            QPointF delta = QPointF(mappedPos) - m_emojiStartCenter;
-            m_emojiStartAngle = qRadiansToDegrees(qAtan2(delta.y(), delta.x()));
-            cursorManager.setHoverTargetForWidget(
-                this,
-                HoverTarget::GizmoHandle,
-                static_cast<int>(handle));
-        } else {
-            m_isEmojiScaling = true;
-            m_emojiDragHandle = handle;
-            m_emojiStartCenter = emojiItem->center();
-            m_emojiStartScale = emojiItem->scale();
-            QPointF delta = QPointF(mappedPos) - m_emojiStartCenter;
-            m_emojiStartDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
-            cursorManager.setHoverTargetForWidget(
-                this,
-                HoverTarget::GizmoHandle,
-                static_cast<int>(handle));
-        }
-    }
-
-    update();
-    return true;
-}
-
-bool PinWindow::handleEmojiStickerAnnotationMove(const QPoint& pos)
-{
-    QPoint mappedPos = mapToOriginalCoords(pos);
-    if ((!m_isEmojiDragging && !m_isEmojiScaling && !m_isEmojiRotating) ||
-        m_annotationLayer->selectedIndex() < 0) {
-        return false;
-    }
-
-    auto* emojiItem = getSelectedEmojiStickerAnnotation();
-    if (!emojiItem) {
-        return false;
-    }
-
-    if (m_isEmojiDragging) {
-        QPoint delta = mappedPos - m_emojiStartPos;
-        emojiItem->moveBy(delta);
-        m_emojiStartPos = mappedPos;
-    } else if (m_isEmojiRotating) {
-        QPointF delta = QPointF(mappedPos) - m_emojiStartCenter;
-        qreal currentAngle = qRadiansToDegrees(qAtan2(delta.y(), delta.x()));
-        qreal angleDelta = normalizeAngleDelta(currentAngle - m_emojiStartAngle);
-        emojiItem->setRotation(m_emojiStartRotation + angleDelta);
-    } else if (m_emojiStartDistance > 0.0) {
-        QPointF delta = QPointF(mappedPos) - m_emojiStartCenter;
-        qreal currentDistance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
-        qreal scaleFactor = currentDistance / m_emojiStartDistance;
-        emojiItem->setScale(m_emojiStartScale * scaleFactor);
-    } else {
-        return false;
-    }
-
-    m_annotationLayer->invalidateCache();
-    update();
-    return true;
-}
-
-bool PinWindow::handleEmojiStickerAnnotationRelease(const QPoint& pos)
-{
-    if (!m_isEmojiDragging && !m_isEmojiScaling && !m_isEmojiRotating) {
-        return false;
-    }
-
-    m_isEmojiDragging = false;
-    m_isEmojiScaling = false;
-    m_isEmojiRotating = false;
-    m_emojiDragHandle = GizmoHandle::None;
-    m_emojiStartDistance = 0.0;
-    m_emojiStartAngle = 0.0;
-    CursorManager::instance().setInputStateForWidget(this, InputState::Idle);
-    rebuildManagedCursorAt(pos);
-    update();
-    return true;
-}
-
 bool PinWindow::handleTextEditorPress(const QPoint& pos)
 {
     if (!m_textEditor || !m_textEditor->isEditing()) {
@@ -4291,68 +4262,6 @@ bool PinWindow::handleTextEditorPress(const QPoint& pos)
         return false;
     }
 
-    return true;
-}
-
-bool PinWindow::handleTextAnnotationPress(const QPoint& pos)
-{
-    if (!m_annotationLayer) return false;
-
-    QPoint mappedPos = mapToOriginalCoords(pos);
-    int hitIndex = m_annotationLayer->hitTestText(mappedPos);
-    if (hitIndex < 0) return false;
-
-    qint64 now = QDateTime::currentMSecsSinceEpoch();
-    // Double-click on ANY text annotation triggers re-edit (no need to be pre-selected)
-    if (m_textAnnotationEditor->isDoubleClick(mappedPos, now)) {
-        m_annotationLayer->setSelectedIndex(hitIndex);
-        m_textAnnotationEditor->startReEditing(hitIndex, m_annotationColor);
-        m_textAnnotationEditor->recordClick(QPoint(), 0);
-        return true;
-    }
-    m_textAnnotationEditor->recordClick(mappedPos, now);
-
-    // Single click: select and start dragging
-    m_annotationLayer->setSelectedIndex(hitIndex);
-    if (auto* textItem = getSelectedTextAnnotation()) {
-        GizmoHandle handle = TransformationGizmo::hitTest(textItem, mappedPos);
-        if (handle == GizmoHandle::Body || handle == GizmoHandle::None) {
-            m_textAnnotationEditor->startDragging(mappedPos);
-        }
-        else {
-            m_textAnnotationEditor->startTransformation(mappedPos, handle);
-        }
-    }
-
-    update();
-    return true;
-}
-
-bool PinWindow::handleGizmoPress(const QPoint& pos)
-{
-    auto* textItem = getSelectedTextAnnotation();
-    if (!textItem) return false;
-
-    QPoint mappedPos = mapToOriginalCoords(pos);
-    GizmoHandle handle = TransformationGizmo::hitTest(textItem, mappedPos);
-    if (handle == GizmoHandle::None) return false;
-
-    if (handle == GizmoHandle::Body) {
-        qint64 now = QDateTime::currentMSecsSinceEpoch();
-        if (m_textAnnotationEditor->isDoubleClick(mappedPos, now)) {
-            m_textAnnotationEditor->startReEditing(
-                m_annotationLayer->selectedIndex(), m_annotationColor);
-            m_textAnnotationEditor->recordClick(QPoint(), 0);
-            return true;
-        }
-        m_textAnnotationEditor->recordClick(mappedPos, now);
-        m_textAnnotationEditor->startDragging(mappedPos);
-    }
-    else {
-        m_textAnnotationEditor->startTransformation(mappedPos, handle);
-    }
-
-    update();
     return true;
 }
 
@@ -4512,10 +4421,6 @@ void PinWindow::updateLiveFrame()
     }
 }
 
-// ============================================================================
-// Arrow and Polyline Handling
-// ============================================================================
-
 ArrowAnnotation* PinWindow::getSelectedArrowAnnotation()
 {
     if (!m_annotationLayer) return nullptr;
@@ -4526,103 +4431,6 @@ ArrowAnnotation* PinWindow::getSelectedArrowAnnotation()
     return nullptr;
 }
 
-bool PinWindow::handleArrowAnnotationPress(const QPoint& pos)
-{
-    auto& cursorManager = CursorManager::instance();
-
-    // Use mapped position (Original Coords)
-    QPoint mappedPos = mapToOriginalCoords(pos);
-
-    if (auto* arrowItem = getSelectedArrowAnnotation()) {
-        GizmoHandle handle = TransformationGizmo::hitTest(arrowItem, mappedPos);
-        if (handle != GizmoHandle::None) {
-            m_isArrowDragging = true;
-            m_arrowDragHandle = handle;
-            m_annotationDragStartPos = mappedPos;
-            if (handle == GizmoHandle::Body) {
-                cursorManager.setInputStateForWidget(this, InputState::Moving);
-            } else {
-                cursorManager.setHoverTargetForWidget(
-                    this, HoverTarget::GizmoHandle, static_cast<int>(handle));
-            }
-            update();
-            return true;
-        }
-    }
-
-    // Check hit test for unselected items
-    int hitIndex = m_annotationLayer->hitTestArrow(mappedPos);
-    if (hitIndex >= 0) {
-        m_annotationLayer->setSelectedIndex(hitIndex);
-        m_isArrowDragging = true;
-        m_arrowDragHandle = GizmoHandle::Body; // Default to body drag on selection
-        m_annotationDragStartPos = mappedPos;
-        
-        // Refine potential handle hit
-        if (auto* arrowItem = getSelectedArrowAnnotation()) {
-             GizmoHandle handle = TransformationGizmo::hitTest(arrowItem, mappedPos);
-            if (handle != GizmoHandle::None) {
-                m_arrowDragHandle = handle;
-            }
-        }
-
-        if (m_arrowDragHandle == GizmoHandle::Body) {
-            cursorManager.setInputStateForWidget(this, InputState::Moving);
-        } else {
-            cursorManager.setHoverTargetForWidget(
-                this, HoverTarget::GizmoHandle, static_cast<int>(m_arrowDragHandle));
-        }
-        update();
-        return true;
-    }
-    return false;
-}
-
-bool PinWindow::handleArrowAnnotationMove(const QPoint& pos)
-{
-    // Use mapped position (Original Coords)
-    QPoint mappedPos = mapToOriginalCoords(pos);
-
-    if (m_isArrowDragging && m_annotationLayer->selectedIndex() >= 0) {
-        auto* arrowItem = getSelectedArrowAnnotation();
-        if (arrowItem) {
-            if (m_arrowDragHandle == GizmoHandle::Body) {
-                QPoint delta = mappedPos - m_annotationDragStartPos;
-                arrowItem->moveBy(delta);
-                m_annotationDragStartPos = mappedPos;
-            } else if (m_arrowDragHandle == GizmoHandle::ArrowStart) {
-                arrowItem->setStart(mappedPos);
-            } else if (m_arrowDragHandle == GizmoHandle::ArrowEnd) {
-                arrowItem->setEnd(mappedPos);
-            } else if (m_arrowDragHandle == GizmoHandle::ArrowControl) {
-                // User drags the curve midpoint (t=0.5), calculate actual Bézier control point
-                // P1 = 2*Mid - 0.5*(Start + End)
-                QPointF start = arrowItem->start();
-                QPointF end = arrowItem->end();
-                QPointF newControl = 2.0 * QPointF(mappedPos) - 0.5 * (start + end);
-                arrowItem->setControlPoint(newControl.toPoint());
-            }
-            m_annotationLayer->invalidateCache();
-            update();
-            return true;
-        }
-    }
-    return false;
-}
-
-bool PinWindow::handleArrowAnnotationRelease(const QPoint& pos)
-{
-    if (m_isArrowDragging) {
-        m_isArrowDragging = false;
-        m_arrowDragHandle = GizmoHandle::None;
-        CursorManager::instance().setInputStateForWidget(this, InputState::Idle);
-        rebuildManagedCursorAt(pos);
-        update();
-        return true;
-    }
-    return false;
-}
-
 PolylineAnnotation* PinWindow::getSelectedPolylineAnnotation()
 {
     if (!m_annotationLayer) return nullptr;
@@ -4631,101 +4439,6 @@ PolylineAnnotation* PinWindow::getSelectedPolylineAnnotation()
         return dynamic_cast<PolylineAnnotation*>(m_annotationLayer->itemAt(index));
     }
     return nullptr;
-}
-
-bool PinWindow::handlePolylineAnnotationPress(const QPoint& pos)
-{
-    auto& cursorManager = CursorManager::instance();
-
-    // Use mapped position (Original Coords)
-    QPoint mappedPos = mapToOriginalCoords(pos);
-
-    if (auto* polylineItem = getSelectedPolylineAnnotation()) {
-        int vertexIndex = TransformationGizmo::hitTestVertex(polylineItem, mappedPos);
-        if (vertexIndex >= 0) {
-            // Vertex hit
-            m_isPolylineDragging = true;
-            m_activePolylineVertexIndex = vertexIndex;
-            m_annotationDragStartPos = mappedPos;
-            cursorManager.setHoverTargetForWidget(
-                this, HoverTarget::GizmoHandle, static_cast<int>(GizmoHandle::ArrowStart));
-            update();
-            return true;
-        } else if (vertexIndex == -1) {
-            // Body hit
-            m_isPolylineDragging = true;
-            m_activePolylineVertexIndex = -1;
-            m_annotationDragStartPos = mappedPos;
-            cursorManager.setInputStateForWidget(this, InputState::Moving);
-            update();
-            return true;
-        }
-    }
-
-    // Check hit test for unselected items
-    int hitIndex = m_annotationLayer->hitTestPolyline(mappedPos);
-    if (hitIndex >= 0) {
-        m_annotationLayer->setSelectedIndex(hitIndex);
-        m_isPolylineDragging = true;
-        m_activePolylineVertexIndex = -1; // Default to body drag
-        m_annotationDragStartPos = mappedPos;
-
-        // Check if we actually hit a vertex though
-        if (auto* polylineItem = getSelectedPolylineAnnotation()) {
-            int vertexIndex = TransformationGizmo::hitTestVertex(polylineItem, mappedPos);
-            if (vertexIndex >= 0) {
-                m_activePolylineVertexIndex = vertexIndex;
-            }
-        }
-
-        if (m_activePolylineVertexIndex >= 0) {
-            cursorManager.setHoverTargetForWidget(
-                this, HoverTarget::GizmoHandle, static_cast<int>(GizmoHandle::ArrowStart));
-        } else {
-            cursorManager.setInputStateForWidget(this, InputState::Moving);
-        }
-        update();
-        return true;
-    }
-    return false;
-}
-
-bool PinWindow::handlePolylineAnnotationMove(const QPoint& pos)
-{
-    // Use mapped position (Original Coords)
-    QPoint mappedPos = mapToOriginalCoords(pos);
-
-    if (m_isPolylineDragging && m_annotationLayer->selectedIndex() >= 0) {
-        auto* polylineItem = getSelectedPolylineAnnotation();
-        if (polylineItem) {
-             if (m_activePolylineVertexIndex >= 0) {
-                 // Move specific vertex
-                 polylineItem->setPoint(m_activePolylineVertexIndex, mappedPos);
-             } else {
-                 // Move entire polyline
-                 QPoint delta = mappedPos - m_annotationDragStartPos;
-                 polylineItem->moveBy(delta);
-                 m_annotationDragStartPos = mappedPos;
-             }
-             m_annotationLayer->invalidateCache();
-             update();
-             return true;
-        }
-    }
-    return false;
-}
-
-bool PinWindow::handlePolylineAnnotationRelease(const QPoint& pos)
-{
-    if (m_isPolylineDragging) {
-        m_isPolylineDragging = false;
-        m_activePolylineVertexIndex = -1;
-        CursorManager::instance().setInputStateForWidget(this, InputState::Idle);
-        rebuildManagedCursorAt(pos);
-        update();
-        return true;
-    }
-    return false;
 }
 
 void PinWindow::updateAnnotationCursor(const QPoint& pos)

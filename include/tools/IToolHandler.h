@@ -11,6 +11,12 @@
 class QPainter;
 class ToolContext;
 
+enum class AnnotationInteractionKind {
+    None,
+    SelectedDrag,
+    SelectedTransform
+};
+
 /**
  * @brief Abstract interface for tool behavior handlers.
  *
@@ -75,6 +81,17 @@ public:
     virtual void drawPreview(QPainter& painter) const { Q_UNUSED(painter); }
 
     /**
+     * @brief Bounds of the in-progress preview in annotation/widget logical coordinates.
+     *
+     * When invalid, ToolManager falls back to full repaint signaling.
+     */
+    virtual QRect previewBounds(const ToolContext* ctx) const
+    {
+        Q_UNUSED(ctx);
+        return QRect();
+    }
+
+    /**
      * @brief Check if currently drawing an annotation.
      */
     virtual bool isDrawing() const { return false; }
@@ -91,6 +108,64 @@ public:
     virtual bool handleEscape(ToolContext* ctx) { 
         Q_UNUSED(ctx);
         return false; 
+    }
+
+    /**
+     * @brief Optional shared selected-annotation interaction hooks.
+     */
+    virtual bool handleInteractionPress(ToolContext* ctx,
+                                        const QPoint& pos,
+                                        Qt::KeyboardModifiers modifiers)
+    {
+        Q_UNUSED(ctx);
+        Q_UNUSED(pos);
+        Q_UNUSED(modifiers);
+        return false;
+    }
+
+    virtual bool handleInteractionMove(ToolContext* ctx,
+                                       const QPoint& pos,
+                                       Qt::KeyboardModifiers modifiers)
+    {
+        Q_UNUSED(ctx);
+        Q_UNUSED(pos);
+        Q_UNUSED(modifiers);
+        return false;
+    }
+
+    virtual bool handleInteractionRelease(ToolContext* ctx,
+                                          const QPoint& pos,
+                                          Qt::KeyboardModifiers modifiers)
+    {
+        Q_UNUSED(ctx);
+        Q_UNUSED(pos);
+        Q_UNUSED(modifiers);
+        return false;
+    }
+
+    virtual bool handleInteractionDoubleClick(ToolContext* ctx, const QPoint& pos)
+    {
+        Q_UNUSED(ctx);
+        Q_UNUSED(pos);
+        return false;
+    }
+
+    /**
+     * @brief Bounds of the active selected-annotation interaction in annotation coordinates.
+     */
+    virtual QRect interactionBounds(const ToolContext* ctx) const
+    {
+        Q_UNUSED(ctx);
+        return QRect();
+    }
+
+    /**
+     * @brief Active interaction kind for a selected annotation, if any.
+     */
+    virtual AnnotationInteractionKind activeInteractionKind(const ToolContext* ctx) const
+    {
+        Q_UNUSED(ctx);
+        return AnnotationInteractionKind::None;
     }
 
     /**

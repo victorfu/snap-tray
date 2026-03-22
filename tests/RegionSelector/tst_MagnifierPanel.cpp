@@ -34,6 +34,7 @@ private slots:
     void testPixelSamplingWithHighDPI();
     void testPixelSamplingWithRGB32Format();
     void testCoordinateStringUsesPhysicalPixels();
+    void testPreWarmCacheSamplesHighDpiCursorColor();
 
 private:
     MagnifierPanel* m_panel;
@@ -342,6 +343,31 @@ void tst_MagnifierPanel::testCoordinateStringUsesPhysicalPixels()
     m_panel->draw(outputPainter, QPoint(100, 150), QSize(600, 600), testPixmap);
 
     QCOMPARE(m_panel->coordinateString(), QStringLiteral("(200 , 300)"));
+}
+
+void tst_MagnifierPanel::testPreWarmCacheSamplesHighDpiCursorColor()
+{
+    QImage image(400, 400, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::black);
+
+    QPainter painter(&image);
+    painter.fillRect(0, 0, 200, 200, Qt::red);
+    painter.fillRect(200, 0, 200, 200, Qt::green);
+    painter.fillRect(0, 200, 200, 200, Qt::blue);
+    painter.fillRect(200, 200, 200, 200, Qt::yellow);
+    painter.end();
+
+    QPixmap testPixmap = QPixmap::fromImage(image);
+    testPixmap.setDevicePixelRatio(2.0);
+
+    m_panel->setDevicePixelRatio(2.0);
+    m_panel->invalidateCache();
+    m_panel->preWarmCache(QPoint(150, 150), testPixmap);
+
+    const QColor sampledColor = m_panel->currentColor();
+    QCOMPARE(sampledColor.red(), 255);
+    QCOMPARE(sampledColor.green(), 255);
+    QCOMPARE(sampledColor.blue(), 0);
 }
 
 QTEST_MAIN(tst_MagnifierPanel)

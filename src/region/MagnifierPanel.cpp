@@ -8,6 +8,14 @@
 namespace {
 constexpr qint64 kSlowToImageWarningThresholdMs = 8;
 constexpr qreal kBytesPerMiB = 1024.0 * 1024.0;
+
+QSize deviceGridSize(qreal dpr)
+{
+    const qreal effectiveDpr = dpr > 0.0 ? dpr : 1.0;
+    const QSize physicalGrid = CoordinateHelper::toPhysical(
+        QSize(MagnifierPanel::kGridCountX, MagnifierPanel::kGridCountY), effectiveDpr);
+    return QSize(qMax(1, physicalGrid.width()), qMax(1, physicalGrid.height()));
+}
 }
 
 MagnifierPanel::MagnifierPanel(QObject* parent)
@@ -113,12 +121,88 @@ void MagnifierPanel::ensureBackgroundImageCache(const QPixmap& backgroundPixmap,
 
 void MagnifierPanel::preWarmCache(const QPoint& cursorPos, const QPixmap& backgroundPixmap)
 {
-    // Pre-convert the background pixmap to QImage.
-    // Keep startup quiet: skip slow-path warning here.
-    ensureBackgroundImageCache(backgroundPixmap, false, "preWarmCache");
+    const QPoint devicePos = CoordinateHelper::toPhysical(cursorPos, m_devicePixelRatio);
+    updateCacheFromSampleImage(devicePos, createSampleImageFromPixmap(cursorPos, backgroundPixmap));
+}
 
-    // Pre-compute the magnifier cache for the initial position
-    updateMagnifierCache(cursorPos, backgroundPixmap);
+void MagnifierPanel::warmBackgroundImageCache(const QPixmap& backgroundPixmap, bool logIfSlow)
+{
+    ensureBackgroundImageCache(backgroundPixmap, logIfSlow, "warmBackgroundImageCache");
+}
+
+QImage MagnifierPanel::createSampleImageFromPixmap(const QPoint& cursorPos,
+                                                   const QPixmap& backgroundPixmap) const
+{
+    const QPoint devicePos = CoordinateHelper::toPhysical(cursorPos, m_devicePixelRatio);
+    const QSize gridSize = deviceGridSize(m_devicePixelRatio);
+    const QRect sourceBounds(QPoint(0, 0), backgroundPixmap.size());
+    const QRect sampleRect(
+        QPoint(devicePos.x() - gridSize.width() / 2, devicePos.y() - gridSize.height() / 2),
+        gridSize);
+    const QRect validRect = sampleRect.intersected(sourceBounds);
+
+    QImage sampleImage(gridSize, QImage::Format_ARGB32_Premultiplied);
+    sampleImage.fill(Qt::black);
+
+    if (validRect.isEmpty()) {
+        return sampleImage;
+    }
+
+    const QImage copiedImage = backgroundPixmap.copy(validRect).toImage()
+        .convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    QPainter samplePainter(&sampleImage);
+    samplePainter.drawImage(validRect.x() - sampleRect.x(), validRect.y() - sampleRect.y(), copiedImage);
+    return sampleImage;
+}
+
+QImage MagnifierPanel::createSampleImageFromCachedBackground(const QPoint& devicePos) const
+{
+    const QSize gridSize = deviceGridSize(m_devicePixelRatio);
+    int sampleX = devicePos.x() - gridSize.width() / 2;
+    int sampleY = devicePos.y() - gridSize.height() / 2;
+
+    const QImage& backgroundImage = m_backgroundImageCache;
+    QImage sampleImage(gridSize, backgroundImage.format());
+    sampleImage.fill(Qt::black);
+
+    QRect srcRect(sampleX, sampleY, gridSize.width(), gridSize.height());
+    QRect validSrcRect = srcRect.intersected(backgroundImage.rect());
+
+    if (!validSrcRect.isEmpty()) {
+        int dstX = validSrcRect.x() - sampleX;
+        int dstY = validSrcRect.y() - sampleY;
+        int bytesPerPixel = backgroundImage.depth() / 8;
+
+        for (int y = 0; y < validSrcRect.height(); ++y) {
+            const uchar* srcLine = backgroundImage.constScanLine(validSrcRect.y() + y);
+            uchar* dstLine = sampleImage.scanLine(dstY + y);
+
+            std::memcpy(
+                dstLine + (dstX * bytesPerPixel),
+                srcLine + (validSrcRect.x() * bytesPerPixel),
+                validSrcRect.width() * bytesPerPixel
+            );
+        }
+    }
+
+    return sampleImage;
+}
+
+void MagnifierPanel::updateCacheFromSampleImage(const QPoint& devicePos, const QImage& sampleImage)
+{
+    const int centerX = sampleImage.width() / 2;
+    const int centerY = sampleImage.height() / 2;
+    if (centerX >= 0 && centerX < sampleImage.width() &&
+        centerY >= 0 && centerY < sampleImage.height()) {
+        m_currentColor = sampleImage.pixelColor(centerX, centerY);
+    } else {
+        m_currentColor = Qt::black;
+    }
+
+    m_magnifierPixmapCache = QPixmap::fromImage(sampleImage).scaled(
+        kWidth, kHeight, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+    m_cachedDevicePosition = devicePos;
+    m_cacheValid = true;
 }
 
 QString MagnifierPanel::colorString() const
@@ -145,69 +229,19 @@ QString MagnifierPanel::coordinateString() const
 
 void MagnifierPanel::updateMagnifierCache(const QPoint& cursorPos, const QPixmap& backgroundPixmap)
 {
-    // 1. Check position cache FIRST to avoid unnecessary work
     const QPoint currentDevicePos = CoordinateHelper::toPhysical(cursorPos, m_devicePixelRatio);
-    const int deviceX = currentDevicePos.x();
-    const int deviceY = currentDevicePos.y();
     if (m_cacheValid && m_cachedDevicePosition == currentDevicePos) {
-        return;  // Cache still valid, skip all work
+        return;
     }
 
-    // 2. Only convert to QImage when background has changed (cache invalidated)
-    // Draw path logs if conversion unexpectedly becomes expensive.
-    ensureBackgroundImageCache(backgroundPixmap, true, "updateMagnifierCache");
-
-    const QSize deviceGridCount = CoordinateHelper::toPhysical(QSize(kGridCountX, kGridCountY), m_devicePixelRatio);
-    const int deviceGridCountX = qMax(1, deviceGridCount.width());
-    const int deviceGridCountY = qMax(1, deviceGridCount.height());
-    int sampleX = deviceX - deviceGridCountX / 2;
-    int sampleY = deviceY - deviceGridCountY / 2;
-
-    // Use cached QImage for pixel access
-    const QImage& backgroundImage = m_backgroundImageCache;
-
-    // Create sample image with SAME format as background to avoid conversion issues
-    QImage sampleImage(deviceGridCountX, deviceGridCountY, backgroundImage.format());
-    sampleImage.fill(Qt::black);
-
-    // Calculate valid source rect
-    QRect srcRect(sampleX, sampleY, deviceGridCountX, deviceGridCountY);
-    QRect validSrcRect = srcRect.intersected(backgroundImage.rect());
-
-    if (!validSrcRect.isEmpty()) {
-        // Direct pixel copy - avoid QPainter entirely to prevent any painter state issues
-        int dstX = validSrcRect.x() - sampleX;
-        int dstY = validSrcRect.y() - sampleY;
-        int bytesPerPixel = backgroundImage.depth() / 8;
-
-        for (int y = 0; y < validSrcRect.height(); ++y) {
-            const uchar* srcLine = backgroundImage.constScanLine(validSrcRect.y() + y);
-            uchar* dstLine = sampleImage.scanLine(dstY + y);
-
-            std::memcpy(
-                dstLine + (dstX * bytesPerPixel),
-                srcLine + (validSrcRect.x() * bytesPerPixel),
-                validSrcRect.width() * bytesPerPixel
-            );
-        }
+    if (!m_backgroundImageCache.isNull()) {
+        updateCacheFromSampleImage(currentDevicePos,
+                                   createSampleImageFromCachedBackground(currentDevicePos));
+        return;
     }
 
-    // Update current color from center pixel
-    int centerX = deviceGridCountX / 2;
-    int centerY = deviceGridCountY / 2;
-    if (centerX >= 0 && centerX < sampleImage.width() &&
-        centerY >= 0 && centerY < sampleImage.height()) {
-        m_currentColor = sampleImage.pixelColor(centerX, centerY);
-    } else {
-        m_currentColor = Qt::black;
-    }
-
-    m_magnifierPixmapCache = QPixmap::fromImage(sampleImage).scaled(kWidth, kHeight,
-        Qt::IgnoreAspectRatio,
-        Qt::FastTransformation);
-
-    m_cachedDevicePosition = currentDevicePos;
-    m_cacheValid = true;
+    updateCacheFromSampleImage(currentDevicePos,
+                               createSampleImageFromPixmap(cursorPos, backgroundPixmap));
 }
 
 void MagnifierPanel::draw(QPainter& painter, const QPoint& cursorPos,

@@ -42,13 +42,11 @@ bool TextToolHandler::handleEscape(ToolContext* ctx)
 
     if (ctx->textAnnotationEditor && ctx->textAnnotationEditor->isTransforming()) {
         ctx->textAnnotationEditor->finishTransformation();
-        ctx->repaint();
         return true;
     }
 
     if (ctx->textAnnotationEditor && ctx->textAnnotationEditor->isDragging()) {
         ctx->textAnnotationEditor->finishDragging();
-        ctx->repaint();
         return true;
     }
 
@@ -58,6 +56,61 @@ bool TextToolHandler::handleEscape(ToolContext* ctx)
 QCursor TextToolHandler::cursor() const
 {
     return Qt::CrossCursor;
+}
+
+bool TextToolHandler::handleInteractionPress(ToolContext* ctx,
+                                             const QPoint& pos,
+                                             Qt::KeyboardModifiers modifiers)
+{
+    Q_UNUSED(modifiers);
+    return handleInteractionPress(ctx, pos, false);
+}
+
+bool TextToolHandler::handleInteractionMove(ToolContext* ctx,
+                                            const QPoint& pos,
+                                            Qt::KeyboardModifiers modifiers)
+{
+    Q_UNUSED(modifiers);
+    return handleInteractionMove(ctx, pos);
+}
+
+bool TextToolHandler::handleInteractionRelease(ToolContext* ctx,
+                                               const QPoint& pos,
+                                               Qt::KeyboardModifiers modifiers)
+{
+    Q_UNUSED(modifiers);
+    return handleInteractionRelease(ctx, pos);
+}
+
+QRect TextToolHandler::interactionBounds(const ToolContext* ctx) const
+{
+    if (!ctx || !ctx->annotationLayer) {
+        return QRect();
+    }
+
+    auto* textItem = dynamic_cast<TextBoxAnnotation*>(ctx->annotationLayer->selectedItem());
+    if (!textItem) {
+        return QRect();
+    }
+
+    return TransformationGizmo::visualBounds(textItem);
+}
+
+AnnotationInteractionKind TextToolHandler::activeInteractionKind(const ToolContext* ctx) const
+{
+    if (!ctx || !ctx->textAnnotationEditor) {
+        return AnnotationInteractionKind::None;
+    }
+
+    if (ctx->textAnnotationEditor->isDragging()) {
+        return AnnotationInteractionKind::SelectedDrag;
+    }
+
+    if (ctx->textAnnotationEditor->isTransforming()) {
+        return AnnotationInteractionKind::SelectedTransform;
+    }
+
+    return AnnotationInteractionKind::None;
 }
 
 bool TextToolHandler::handleInteractionPress(ToolContext* ctx,
@@ -93,7 +146,6 @@ bool TextToolHandler::handleInteractionPress(ToolContext* ctx,
             if (ctx->requestHostFocus) {
                 ctx->requestHostFocus();
             }
-            ctx->repaint();
             return true;
         }
     }
@@ -123,7 +175,6 @@ bool TextToolHandler::handleInteractionPress(ToolContext* ctx,
         if (ctx->requestHostFocus) {
             ctx->requestHostFocus();
         }
-        ctx->repaint();
         return true;
     }
 
@@ -132,7 +183,6 @@ bool TextToolHandler::handleInteractionPress(ToolContext* ctx,
             ? ctx->textEditingBounds
             : QRect();
         textEditor->startEditing(pos, bounds, ctx->color);
-        ctx->repaint();
         return true;
     }
 
@@ -151,14 +201,12 @@ bool TextToolHandler::handleInteractionMove(ToolContext* ctx, const QPoint& pos)
     if (textEditor->isTransforming() && layer->selectedIndex() >= 0) {
         textEditor->updateTransformation(pos);
         layer->invalidateCache();
-        ctx->repaint();
         return true;
     }
 
     if (textEditor->isDragging() && layer->selectedIndex() >= 0) {
         textEditor->updateDragging(pos);
         layer->invalidateCache();
-        ctx->repaint();
         return true;
     }
 
@@ -225,7 +273,6 @@ bool TextToolHandler::startReEditAtIndex(ToolContext* ctx, int annotationIndex)
         ctx->notifyTextReEditStarted();
     }
     ctx->textAnnotationEditor->startReEditing(annotationIndex, ctx->color);
-    ctx->repaint();
     return true;
 }
 

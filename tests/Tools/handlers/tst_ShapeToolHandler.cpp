@@ -1,6 +1,7 @@
 #include <QtTest/QtTest>
 #include <QPainter>
 #include <QImage>
+#include "TransformationGizmo.h"
 #include "tools/handlers/ShapeToolHandler.h"
 #include "tools/ToolContext.h"
 #include "annotations/AnnotationLayer.h"
@@ -56,6 +57,7 @@ private slots:
     // Cancellation tests
     void testCancelDrawing();
     void testOnMouseRelease_SelectsCreatedShape();
+    void testInteractionBoundsCoverRotationHandle();
 
 private:
     ShapeToolHandler* m_handler = nullptr;
@@ -161,22 +163,25 @@ void TestShapeToolHandler::testIsDrawing_AfterRelease()
 
 void TestShapeToolHandler::testOnMousePress_StartsDrawing()
 {
-    int initialRepaintCount = m_repaintCount;
+    const QRect initialBounds = m_handler->previewBounds(m_context);
 
     m_handler->onMousePress(m_context, QPoint(100, 100));
 
     QVERIFY(m_handler->isDrawing());
-    QVERIFY(m_repaintCount > initialRepaintCount);
+    QVERIFY(!m_handler->previewBounds(m_context).isEmpty());
+    QVERIFY(initialBounds != m_handler->previewBounds(m_context));
 }
 
 void TestShapeToolHandler::testOnMouseMove_UpdatesShape()
 {
     m_handler->onMousePress(m_context, QPoint(100, 100));
-    int repaintAfterPress = m_repaintCount;
+    const QRect boundsAfterPress = m_handler->previewBounds(m_context);
 
     m_handler->onMouseMove(m_context, QPoint(200, 200));
 
-    QVERIFY(m_repaintCount > repaintAfterPress);
+    const QRect boundsAfterMove = m_handler->previewBounds(m_context);
+    QVERIFY(boundsAfterMove.isValid());
+    QVERIFY(boundsAfterMove != boundsAfterPress);
 }
 
 void TestShapeToolHandler::testOnMouseRelease_CreatesShape()
@@ -286,6 +291,38 @@ void TestShapeToolHandler::testOnMouseRelease_SelectsCreatedShape()
 
     QCOMPARE(m_layer->itemCount(), static_cast<size_t>(1));
     QCOMPARE(m_layer->selectedIndex(), 0);
+}
+
+void TestShapeToolHandler::testInteractionBoundsCoverRotationHandle()
+{
+    auto shape = std::make_unique<ShapeAnnotation>(
+        QRect(100, 120, 140, 80), ShapeType::Rectangle, Qt::red, 3, false);
+    auto* shapePtr = shape.get();
+    m_layer->addItem(std::move(shape));
+    m_layer->setSelectedIndex(0);
+
+    const QRect bounds = m_handler->interactionBounds(m_context);
+    const QPointF rotationHandle = TransformationGizmo::rotationHandlePosition(shapePtr);
+    const int handleMargin = TransformationGizmo::kRotationHandleRadius + 2;
+    const QRect expectedHandleRect(
+        qFloor(rotationHandle.x()) - handleMargin,
+        qFloor(rotationHandle.y()) - handleMargin,
+        handleMargin * 2 + 1,
+        handleMargin * 2 + 1);
+
+    QVERIFY2(
+        bounds.contains(expectedHandleRect),
+        qPrintable(QStringLiteral("interactionBounds=%1 expectedHandleRect=%2")
+                       .arg(QString::fromLatin1("%1,%2 %3x%4")
+                                .arg(bounds.x())
+                                .arg(bounds.y())
+                                .arg(bounds.width())
+                                .arg(bounds.height()))
+                       .arg(QString::fromLatin1("%1,%2 %3x%4")
+                                .arg(expectedHandleRect.x())
+                                .arg(expectedHandleRect.y())
+                                .arg(expectedHandleRect.width())
+                                .arg(expectedHandleRect.height()))));
 }
 
 QTEST_MAIN(TestShapeToolHandler)

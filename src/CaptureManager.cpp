@@ -5,6 +5,7 @@
 #include "platform/WindowLevel.h"
 #include "WindowDetector.h"
 #include "PlatformFeatures.h"
+#include "annotation/AnnotationPerfTrace.h"
 #include "history/HistoryStore.h"
 #include "region/MultiRegionManager.h"
 #include "pinwindow/RegionLayoutManager.h"
@@ -16,6 +17,7 @@
 #include <QCursor>
 #include <QKeyEvent>
 #include <QDialog>
+#include <QElapsedTimer>
 #include <QImage>
 
 #ifdef Q_OS_MACOS
@@ -329,7 +331,22 @@ void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortc
     QWidget *popup = QApplication::activePopupWidget();
     QWidget *modal = QApplication::activeModalWidget();
 
+    QElapsedTimer captureTimer;
+    if (AnnotationPerfTrace::isEnabled("SNAPTRAY_REGION_PERF_TRACE")) {
+        captureTimer.start();
+    }
+
     QPixmap preCapture = captureScreenSnapshot(targetScreen);
+
+    if (captureTimer.isValid()) {
+        qDebug().noquote()
+            << QStringLiteral("RegionEntryTrace")
+            << QStringLiteral("stage=screenshotCaptured")
+            << QStringLiteral("elapsedMs=%1").arg(captureTimer.elapsed())
+            << QStringLiteral("screen=%1x%2")
+                   .arg(targetScreen->geometry().width())
+                   .arg(targetScreen->geometry().height());
+    }
 
     // 4. Close popup/modal AFTER screenshot
     if (popup) {

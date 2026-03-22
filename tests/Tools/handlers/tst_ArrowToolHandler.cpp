@@ -1,9 +1,11 @@
 #include <QtTest/QtTest>
 #include <QPainter>
 #include <QImage>
+#include "TransformationGizmo.h"
 #include "tools/handlers/ArrowToolHandler.h"
 #include "tools/ToolContext.h"
 #include "annotations/AnnotationLayer.h"
+#include "annotations/ArrowAnnotation.h"
 
 /**
  * @brief Tests for ArrowToolHandler class
@@ -60,6 +62,7 @@ private slots:
     void testCancelDrawing_ClickMode();
     void testHandleEscape_DragMode();
     void testHandleEscape_NotDrawing();
+    void testInteractionBoundsCoverControlHandle();
 
 private:
     ArrowToolHandler* m_handler = nullptr;
@@ -332,6 +335,42 @@ void TestArrowToolHandler::testHandleEscape_NotDrawing()
     bool handled = m_handler->handleEscape(m_context);
 
     QVERIFY(!handled);
+}
+
+void TestArrowToolHandler::testInteractionBoundsCoverControlHandle()
+{
+    auto arrow = std::make_unique<ArrowAnnotation>(
+        QPoint(100, 160), QPoint(260, 160), Qt::red, 3, LineEndStyle::EndArrow, LineStyle::Solid);
+    arrow->setControlPoint(QPoint(180, 70));
+    auto* arrowPtr = arrow.get();
+    m_layer->addItem(std::move(arrow));
+    m_layer->setSelectedIndex(0);
+
+    const QRect bounds = m_handler->interactionBounds(m_context);
+    const QPointF curveMidpoint =
+        0.25 * QPointF(arrowPtr->start()) +
+        0.5 * QPointF(arrowPtr->controlPoint()) +
+        0.25 * QPointF(arrowPtr->end());
+    const int handleMargin = TransformationGizmo::kControlHandleRadius + 2;
+    const QRect expectedHandleRect(
+        qFloor(curveMidpoint.x()) - handleMargin,
+        qFloor(curveMidpoint.y()) - handleMargin,
+        handleMargin * 2 + 1,
+        handleMargin * 2 + 1);
+
+    QVERIFY2(
+        bounds.contains(expectedHandleRect),
+        qPrintable(QStringLiteral("interactionBounds=%1 expectedHandleRect=%2")
+                       .arg(QString::fromLatin1("%1,%2 %3x%4")
+                                .arg(bounds.x())
+                                .arg(bounds.y())
+                                .arg(bounds.width())
+                                .arg(bounds.height()))
+                       .arg(QString::fromLatin1("%1,%2 %3x%4")
+                                .arg(expectedHandleRect.x())
+                                .arg(expectedHandleRect.y())
+                                .arg(expectedHandleRect.width())
+                                .arg(expectedHandleRect.height()))));
 }
 
 QTEST_MAIN(TestArrowToolHandler)

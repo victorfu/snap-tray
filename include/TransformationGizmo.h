@@ -76,6 +76,7 @@ public:
      * @return The position of the rotation handle circle center
      */
     static QPointF rotationHandlePosition(const TextBoxAnnotation *annotation);
+    static QRect visualBounds(const TextBoxAnnotation *annotation);
 
     /**
      * @brief Get the positions of the four corner handles.
@@ -89,12 +90,14 @@ public:
     static GizmoHandle hitTest(const EmojiStickerAnnotation *annotation, const QPoint &point);
     static QPointF rotationHandlePosition(const EmojiStickerAnnotation *annotation);
     static QVector<QPointF> cornerHandlePositions(const EmojiStickerAnnotation *annotation);
+    static QRect visualBounds(const EmojiStickerAnnotation *annotation);
 
     // ShapeAnnotation overloads
     static void draw(QPainter &painter, const ShapeAnnotation *annotation);
     static GizmoHandle hitTest(const ShapeAnnotation *annotation, const QPoint &point);
     static QPointF rotationHandlePosition(const ShapeAnnotation *annotation);
     static QVector<QPointF> cornerHandlePositions(const ShapeAnnotation *annotation);
+    static QRect visualBounds(const ShapeAnnotation *annotation);
 
     // ArrowAnnotation overloads
     /**
@@ -112,6 +115,7 @@ public:
      * @return ArrowStart, ArrowEnd, ArrowControl, Body, or None
      */
     static GizmoHandle hitTest(const ArrowAnnotation *annotation, const QPoint &point);
+    static QRect visualBounds(const ArrowAnnotation *annotation);
 
     // PolylineAnnotation overloads
     static void draw(QPainter &painter, const PolylineAnnotation *annotation);
@@ -122,6 +126,7 @@ public:
      * Note: This returns an int index, not GizmoHandle, because polylines have dynamic vertices.
      */
     static int hitTestVertex(const PolylineAnnotation *annotation, const QPoint &point);
+    static QRect visualBounds(const PolylineAnnotation *annotation);
 
 private:
     static QPointF rotationHandlePosition(const QPolygonF &poly, const QPointF &center);

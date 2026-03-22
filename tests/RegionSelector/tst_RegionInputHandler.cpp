@@ -5,10 +5,14 @@
 #include <QWidget>
 
 #include "annotations/AnnotationLayer.h"
+#include "annotations/ArrowAnnotation.h"
+#include "annotations/EmojiStickerAnnotation.h"
+#include "annotations/PolylineAnnotation.h"
 #include "cursor/CursorManager.h"
 #include "region/RegionInputHandler.h"
 #include "region/RegionInputState.h"
 #include "region/SelectionStateManager.h"
+#include "tools/ToolManager.h"
 
 namespace {
 
@@ -37,12 +41,20 @@ private slots:
     void testLargeDragUsesDragSelectionInsteadOfPendingWindow();
     void testSelectionMoveSetsAndClearsDragStateOnRelease();
     void testSelectionMoveClearsDragStateOnRightClickCancel();
+    void testDrawingMoveDoesNotEmitLegacyFullUpdate();
+    void testArrowInteractionDoesNotEmitLegacyFullUpdate();
+    void testEmojiInteractionDoesNotEmitLegacyFullUpdate();
+    void testPolylineInteractionDoesNotEmitLegacyFullUpdate();
+    void testSeedDirtyTrackingInitializesHoverState();
+    void testEmojiInteractionPressAndReleaseRefreshHoverCursor();
+    void testPolylineInteractionPressAndReleaseRefreshHoverCursor();
 
 private:
     RegionInputHandler* m_handler = nullptr;
     SelectionStateManager* m_selectionManager = nullptr;
     AnnotationLayer* m_annotationLayer = nullptr;
     QWidget* m_parentWidget = nullptr;
+    ToolManager* m_toolManager = nullptr;
     RegionInputState m_state;
 };
 
@@ -52,12 +64,18 @@ void tst_RegionInputHandler::init()
     m_selectionManager = new SelectionStateManager();
     m_annotationLayer = new AnnotationLayer();
     m_parentWidget = new QWidget();
+    m_toolManager = new ToolManager();
     m_selectionManager->setBounds(QRect(0, 0, 1920, 1080));
+    m_parentWidget->resize(1920, 1080);
     CursorManager::instance().registerWidget(m_parentWidget);
+
+    m_toolManager->registerDefaultHandlers();
+    m_toolManager->setAnnotationLayer(m_annotationLayer);
 
     m_state = RegionInputState();
     m_handler->setSelectionManager(m_selectionManager);
     m_handler->setAnnotationLayer(m_annotationLayer);
+    m_handler->setToolManager(m_toolManager);
     m_handler->setParentWidget(m_parentWidget);
     m_handler->setSharedState(&m_state);
 }
@@ -71,6 +89,9 @@ void tst_RegionInputHandler::cleanup()
 
     delete m_annotationLayer;
     m_annotationLayer = nullptr;
+
+    delete m_toolManager;
+    m_toolManager = nullptr;
 
     delete m_selectionManager;
     m_selectionManager = nullptr;
@@ -210,6 +231,180 @@ void tst_RegionInputHandler::testSelectionMoveClearsDragStateOnRightClickCancel(
 
     QCOMPARE(m_selectionManager->state(), SelectionStateManager::State::None);
     QCOMPARE(CursorManager::instance().dragStateForWidget(m_parentWidget), DragState::None);
+}
+
+void tst_RegionInputHandler::testDrawingMoveDoesNotEmitLegacyFullUpdate()
+{
+    m_state.currentTool = ToolId::Pencil;
+    m_selectionManager->setSelectionRect(QRect(100, 120, 300, 200));
+    QVERIFY(m_selectionManager->isComplete());
+
+    auto pressEvent = makeMouseEvent(
+        QEvent::MouseButtonPress, QPoint(160, 180), Qt::LeftButton, Qt::LeftButton);
+    m_handler->handleMousePress(&pressEvent);
+    QVERIFY(m_state.isDrawing);
+
+    QSignalSpy fullUpdateSpy(m_handler, qOverload<>(&RegionInputHandler::updateRequested));
+    QSignalSpy rectUpdateSpy(m_handler, qOverload<const QRect&>(&RegionInputHandler::updateRequested));
+
+    auto moveEvent = makeMouseEvent(
+        QEvent::MouseMove, QPoint(190, 205), Qt::NoButton, Qt::LeftButton);
+    m_handler->handleMouseMove(&moveEvent);
+
+    QCOMPARE(fullUpdateSpy.count(), 0);
+    QCOMPARE(rectUpdateSpy.count(), 0);
+}
+
+void tst_RegionInputHandler::testArrowInteractionDoesNotEmitLegacyFullUpdate()
+{
+    m_state.currentTool = ToolId::Arrow;
+    m_selectionManager->setSelectionRect(QRect(100, 120, 300, 200));
+    QVERIFY(m_selectionManager->isComplete());
+
+    auto arrow = std::make_unique<ArrowAnnotation>(
+        QPoint(150, 170), QPoint(260, 230), Qt::red, 3);
+    m_annotationLayer->addItem(std::move(arrow));
+    m_annotationLayer->setSelectedIndex(0);
+
+    QSignalSpy fullUpdateSpy(m_handler, qOverload<>(&RegionInputHandler::updateRequested));
+    QSignalSpy rectUpdateSpy(m_handler, qOverload<const QRect&>(&RegionInputHandler::updateRequested));
+
+    auto pressEvent = makeMouseEvent(
+        QEvent::MouseButtonPress, QPoint(200, 200), Qt::LeftButton, Qt::LeftButton);
+    m_handler->handleMousePress(&pressEvent);
+
+    auto releaseEvent = makeMouseEvent(
+        QEvent::MouseButtonRelease, QPoint(200, 200), Qt::LeftButton, Qt::NoButton);
+    m_handler->handleMouseRelease(&releaseEvent);
+
+    QCOMPARE(fullUpdateSpy.count(), 0);
+    QCOMPARE(rectUpdateSpy.count(), 0);
+}
+
+void tst_RegionInputHandler::testEmojiInteractionDoesNotEmitLegacyFullUpdate()
+{
+    m_state.currentTool = ToolId::EmojiSticker;
+    m_selectionManager->setSelectionRect(QRect(100, 120, 300, 200));
+    QVERIFY(m_selectionManager->isComplete());
+
+    auto emoji = std::make_unique<EmojiStickerAnnotation>(QPoint(220, 210), QStringLiteral("🙂"));
+    m_annotationLayer->addItem(std::move(emoji));
+    m_annotationLayer->setSelectedIndex(0);
+
+    QSignalSpy fullUpdateSpy(m_handler, qOverload<>(&RegionInputHandler::updateRequested));
+    QSignalSpy rectUpdateSpy(m_handler, qOverload<const QRect&>(&RegionInputHandler::updateRequested));
+
+    auto pressEvent = makeMouseEvent(
+        QEvent::MouseButtonPress, QPoint(220, 210), Qt::LeftButton, Qt::LeftButton);
+    m_handler->handleMousePress(&pressEvent);
+
+    auto releaseEvent = makeMouseEvent(
+        QEvent::MouseButtonRelease, QPoint(220, 210), Qt::LeftButton, Qt::NoButton);
+    m_handler->handleMouseRelease(&releaseEvent);
+
+    QCOMPARE(fullUpdateSpy.count(), 0);
+    QCOMPARE(rectUpdateSpy.count(), 0);
+}
+
+void tst_RegionInputHandler::testPolylineInteractionDoesNotEmitLegacyFullUpdate()
+{
+    m_state.currentTool = ToolId::Polyline;
+    m_selectionManager->setSelectionRect(QRect(100, 120, 300, 200));
+    QVERIFY(m_selectionManager->isComplete());
+
+    auto polyline = std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{QPoint(160, 170), QPoint(220, 210), QPoint(280, 230)},
+        Qt::red,
+        3);
+    m_annotationLayer->addItem(std::move(polyline));
+    m_annotationLayer->setSelectedIndex(0);
+
+    QSignalSpy fullUpdateSpy(m_handler, qOverload<>(&RegionInputHandler::updateRequested));
+    QSignalSpy rectUpdateSpy(m_handler, qOverload<const QRect&>(&RegionInputHandler::updateRequested));
+
+    auto pressEvent = makeMouseEvent(
+        QEvent::MouseButtonPress, QPoint(220, 210), Qt::LeftButton, Qt::LeftButton);
+    m_handler->handleMousePress(&pressEvent);
+
+    auto releaseEvent = makeMouseEvent(
+        QEvent::MouseButtonRelease, QPoint(220, 210), Qt::LeftButton, Qt::NoButton);
+    m_handler->handleMouseRelease(&releaseEvent);
+
+    QCOMPARE(fullUpdateSpy.count(), 0);
+    QCOMPARE(rectUpdateSpy.count(), 0);
+}
+
+void tst_RegionInputHandler::testSeedDirtyTrackingInitializesHoverState()
+{
+    m_state.currentPoint = QPoint(320, 240);
+    m_selectionManager->setSelectionRect(QRect(QPoint(420, 360), QPoint(180, 150)));
+
+    m_handler->seedDirtyTrackingForCurrentState();
+
+    QCOMPARE(m_handler->m_lastCrosshairPoint, m_state.currentPoint);
+    QCOMPARE(m_handler->m_lastSelectionRect, m_selectionManager->selectionRect().normalized());
+    QCOMPARE(
+        m_handler->m_lastMagnifierRect,
+        m_handler->m_dirtyRegionPlanner.magnifierRectForCursor(m_state.currentPoint, m_parentWidget->size()));
+    QVERIFY(m_handler->m_lastToolbarRect.isNull());
+}
+
+void tst_RegionInputHandler::testEmojiInteractionPressAndReleaseRefreshHoverCursor()
+{
+    m_state.currentTool = ToolId::Selection;
+    m_selectionManager->setSelectionRect(QRect(100, 120, 300, 200));
+    QVERIFY(m_selectionManager->isComplete());
+
+    auto emoji = std::make_unique<EmojiStickerAnnotation>(QPoint(220, 210), QStringLiteral("🙂"));
+    auto* emojiPtr = emoji.get();
+    m_annotationLayer->addItem(std::move(emoji));
+    m_annotationLayer->setSelectedIndex(0);
+
+    const QPoint interactionPos = emojiPtr->center().toPoint();
+
+    CursorManager::instance().setHoverTargetForWidget(m_parentWidget, HoverTarget::ToolbarButton);
+    auto pressEvent = makeMouseEvent(
+        QEvent::MouseButtonPress, interactionPos, Qt::LeftButton, Qt::LeftButton);
+    m_handler->handleMousePress(&pressEvent);
+
+    QCOMPARE(CursorManager::instance().hoverTargetForWidget(m_parentWidget), HoverTarget::GizmoHandle);
+
+    CursorManager::instance().setHoverTargetForWidget(m_parentWidget, HoverTarget::ToolbarButton);
+    auto releaseEvent = makeMouseEvent(
+        QEvent::MouseButtonRelease, interactionPos, Qt::LeftButton, Qt::NoButton);
+    m_handler->handleMouseRelease(&releaseEvent);
+
+    QCOMPARE(CursorManager::instance().hoverTargetForWidget(m_parentWidget), HoverTarget::GizmoHandle);
+}
+
+void tst_RegionInputHandler::testPolylineInteractionPressAndReleaseRefreshHoverCursor()
+{
+    m_state.currentTool = ToolId::Selection;
+    m_selectionManager->setSelectionRect(QRect(100, 120, 300, 200));
+    QVERIFY(m_selectionManager->isComplete());
+
+    auto polyline = std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{QPoint(160, 170), QPoint(220, 210), QPoint(280, 230)},
+        Qt::red,
+        3);
+    m_annotationLayer->addItem(std::move(polyline));
+    m_annotationLayer->setSelectedIndex(0);
+
+    const QPoint interactionPos(220, 210);
+
+    CursorManager::instance().setHoverTargetForWidget(m_parentWidget, HoverTarget::ToolbarButton);
+    auto pressEvent = makeMouseEvent(
+        QEvent::MouseButtonPress, interactionPos, Qt::LeftButton, Qt::LeftButton);
+    m_handler->handleMousePress(&pressEvent);
+
+    QCOMPARE(CursorManager::instance().hoverTargetForWidget(m_parentWidget), HoverTarget::GizmoHandle);
+
+    CursorManager::instance().setHoverTargetForWidget(m_parentWidget, HoverTarget::ToolbarButton);
+    auto releaseEvent = makeMouseEvent(
+        QEvent::MouseButtonRelease, interactionPos, Qt::LeftButton, Qt::NoButton);
+    m_handler->handleMouseRelease(&releaseEvent);
+
+    QCOMPARE(CursorManager::instance().hoverTargetForWidget(m_parentWidget), HoverTarget::GizmoHandle);
 }
 
 QTEST_MAIN(tst_RegionInputHandler)

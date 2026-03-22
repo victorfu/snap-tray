@@ -9,6 +9,7 @@
 #include <memory>
 
 #include "ToolId.h"
+#include "annotation/AnnotationSurfaceAdapter.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/LineStyle.h"
@@ -68,10 +69,12 @@ public:
 
     // Callbacks
     std::function<void()> requestRepaint;
+    std::function<void(const QRect&)> requestRectRepaint;
     std::function<void(std::unique_ptr<AnnotationItem>)> addAnnotation;
     std::function<void(const QColor&)> syncColorToHost;
     std::function<void()> requestHostFocus;
     std::function<void()> notifyTextReEditStarted;
+    AnnotationSurfaceAdapter* annotationSurface = nullptr;
 
     /**
      * @brief Add an annotation to the layer.
@@ -90,9 +93,34 @@ public:
      * @brief Request a repaint of the canvas.
      */
     void repaint() {
-        if (requestRepaint) {
+        if (annotationSurface) {
+            annotationSurface->requestFullAnnotationUpdate();
+        } else if (requestRepaint) {
             requestRepaint();
         }
+    }
+
+    void repaint(const QRect& annotationRect) {
+        if (!annotationRect.isValid()) {
+            repaint();
+            return;
+        }
+
+        if (annotationSurface) {
+            if (annotationSurface->supportsAnnotationRectUpdate()) {
+                annotationSurface->requestAnnotationUpdate(annotationRect);
+            } else {
+                annotationSurface->requestFullAnnotationUpdate();
+            }
+            return;
+        }
+
+        if (requestRectRepaint) {
+            requestRectRepaint(annotationRect);
+            return;
+        }
+
+        repaint();
     }
 };
 

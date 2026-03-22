@@ -38,6 +38,9 @@ class RegionInputHandler : public QObject
 {
     Q_OBJECT
 
+    friend class RegionSelector;
+    friend class tst_RegionInputHandler;
+
 public:
     explicit RegionInputHandler(QObject* parent = nullptr);
 
@@ -90,8 +93,6 @@ signals:
 private:
     // Mouse press helpers
     bool handleTextEditorPress(const QPoint& pos);
-    bool handleEmojiStickerAnnotationPress(const QPoint& pos);
-    bool handleArrowAnnotationPress(const QPoint& pos);
     bool handleAnnotationToolPress(const QPoint& pos);
     bool handleSelectionToolPress(const QPoint& pos);
     void handleNewSelectionPress(const QPoint& pos);
@@ -99,8 +100,6 @@ private:
 
     // Mouse move helpers
     bool handleTextEditorMove(const QPoint& pos);
-    bool handleEmojiStickerMove(const QPoint& pos);
-    bool handleArrowAnnotationMove(const QPoint& pos);
     void handleWindowDetectionMove(const QPoint& pos);
     void clearDetectionAndNotify();
     void handleSelectionMove(const QPoint& pos);
@@ -110,11 +109,10 @@ private:
     void updateDragFramePump();
     void onDragFrameTick();
     QPoint currentCursorLocalPos() const;
+    void seedDirtyTrackingForCurrentState();
 
     // Mouse release helpers
     bool handleTextEditorRelease(const QPoint& pos);
-    bool handleEmojiStickerRelease(const QPoint& pos);
-    bool handleArrowAnnotationRelease(const QPoint& pos);
     void handleSelectionRelease(const QPoint& pos);
     void handleAnnotationRelease();
 
@@ -161,33 +159,8 @@ private:
     QRect m_lastToolbarRect;
     bool m_pendingWindowClickActive = false;
 
-    // Emoji sticker transformation state
-    bool m_isEmojiDragging = false;
-    bool m_isEmojiScaling = false;
-    bool m_isEmojiRotating = false;
-    GizmoHandle m_activeEmojiHandle = GizmoHandle::None;
-    QPoint m_emojiDragStart;
-    qreal m_emojiStartScale = 1.0;
-    qreal m_emojiStartDistance = 0.0;
-    QPointF m_emojiStartCenter;
-    qreal m_emojiStartRotation = 0.0;
-    qreal m_emojiStartAngle = 0.0;
-
-    // Arrow annotation transformation state
-    bool m_isArrowDragging = false;
-    GizmoHandle m_activeArrowHandle = GizmoHandle::None;
-    QPoint m_arrowDragStart;
-
-    // Polyline annotation transformation state
-    bool m_isPolylineDragging = false;
-    int m_activePolylineVertexIndex = -1; // -1 for body move, >= 0 for vertex move
-    QPoint m_polylineDragStart;
-
     // Utility
     PolylineAnnotation* getSelectedPolylineAnnotation() const;
-    bool handlePolylineAnnotationPress(const QPoint& pos);
-    bool handlePolylineAnnotationMove(const QPoint& pos);
-    bool handlePolylineAnnotationRelease(const QPoint& pos);
 
     // Keyboard modifiers from current event (for angle snapping)
     Qt::KeyboardModifiers m_currentModifiers = Qt::NoModifier;

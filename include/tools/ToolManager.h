@@ -14,6 +14,7 @@
 
 class QPainter;
 class AnnotationLayer;
+class AnnotationSurfaceAdapter;
 class InlineTextEditor;
 class TextAnnotationEditor;
 class ShapeAnnotationEditor;
@@ -80,6 +81,19 @@ public:
     bool handleShapeInteractionPress(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
     bool handleShapeInteractionMove(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
     bool handleShapeInteractionRelease(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    bool handleArrowInteractionPress(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    bool handleArrowInteractionMove(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    bool handleArrowInteractionRelease(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    bool handlePolylineInteractionPress(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    bool handlePolylineInteractionMove(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    bool handlePolylineInteractionRelease(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    bool handleEmojiInteractionPress(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    bool handleEmojiInteractionMove(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    bool handleEmojiInteractionRelease(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+
+    bool hasActiveInteraction() const;
+    AnnotationInteractionKind activeInteractionKind() const;
+    ToolId activeInteractionTool() const;
 
     /**
      * @brief Draw the current tool preview.
@@ -115,6 +129,7 @@ public:
     void setTextColorSyncCallback(std::function<void(const QColor&)> callback);
     void setHostFocusCallback(std::function<void()> callback);
     void setTextReEditStartedCallback(std::function<void()> callback);
+    void setAnnotationSurfaceAdapter(AnnotationSurfaceAdapter* adapter);
 
     // Drawing settings
     void setColor(const QColor& color);
@@ -158,8 +173,18 @@ signals:
      * @brief Emitted when a repaint is needed.
      */
     void needsRepaint();
+    void needsRepaint(const QRect& rect);
 
 private:
+    void emitFullRepaint();
+    void emitAnnotationRepaint(const QRect& annotationRect);
+    void emitBoundsDiff(const QRect& before, const QRect& after);
+    QRect previewBoundsForHandler(const IToolHandler* handler) const;
+    QRect interactionBoundsForHandler(const IToolHandler* handler) const;
+    AnnotationInteractionKind interactionKindForHandler(const IToolHandler* handler) const;
+    bool dispatchInteraction(ToolId id,
+                             const std::function<bool(IToolHandler*)>& callback);
+
     std::map<ToolId, std::unique_ptr<IToolHandler>> m_handlers;
     std::unique_ptr<ToolContext> m_context;
     ToolId m_currentToolId = ToolId::Selection;

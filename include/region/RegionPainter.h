@@ -34,6 +34,16 @@ class RegionPainter : public QObject
     Q_OBJECT
 
 public:
+    struct PaintStats {
+        qreal totalMs = 0.0;
+        qreal bgMs = 0.0;
+        qreal overlayMs = 0.0;
+        qreal committedMs = 0.0;
+        qreal previewMs = 0.0;
+        bool usedBaseLayerCache = false;
+        bool usedDirectBackgroundBlit = false;
+    };
+
     explicit RegionPainter(QObject* parent = nullptr);
     ~RegionPainter() override = default;
 
@@ -72,6 +82,7 @@ public:
     QRect getWindowHighlightVisualRect(const QRect& windowRect, const QString& title) const;
 
     QRect lastDimensionInfoRect() const { return m_lastDimensionInfoRect; }
+    const PaintStats& lastPaintStats() const { return m_lastPaintStats; }
 
 private:
     // Drawing methods (extracted from RegionSelector)
@@ -90,6 +101,12 @@ private:
     QRectF alignedSelectionBorderRect(const QRect& selectionRect, qreal penWidth) const;
     QRect physicalSelectionRect(const QRect& selectionRect) const;
     QString selectionSizeLabel(const QRect& selectionRect) const;
+    bool canUseBaseLayerCache() const;
+    bool ensureBaseLayerCache(const QPixmap& background);
+    void drawBackground(QPainter& painter,
+                        const QPixmap& background,
+                        const QRect& updateRect,
+                        bool* usedDirectBlit = nullptr) const;
 
     // Helper methods
     int effectiveCornerRadius() const;
@@ -118,6 +135,15 @@ private:
     QRect m_replacePreviewRect;
 
     QRect m_lastDimensionInfoRect;
+    QRect m_cachedDimensionInfoRect;
+    PaintStats m_lastPaintStats;
+    QPixmap m_baseLayerCache;
+    QSize m_baseLayerLogicalSize;
+    QRect m_baseLayerSelectionRect;
+    qreal m_baseLayerDevicePixelRatio = 0.0;
+    quint64 m_baseLayerBackgroundKey = 0;
+    int m_baseLayerCornerRadius = 0;
+    bool m_baseLayerCacheValid = false;
 };
 
 #endif // REGIONPAINTER_H

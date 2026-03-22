@@ -298,9 +298,8 @@ void QmlWindowedToolbar::close()
             CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_associatedPinWindow);
         });
     }
-    destroyQuickView(m_view, m_rootItem);
-
     destroyQuickView(m_tooltipView, m_tooltipRootItem);
+    destroyQuickView(m_view, m_rootItem);
 }
 
 bool QmlWindowedToolbar::isVisible() const

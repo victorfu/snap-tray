@@ -15,7 +15,6 @@ void MarkerToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
         m_currentPath, ctx->color, kMarkerWidth
     );
 
-    ctx->repaint();
 }
 
 void MarkerToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
@@ -26,7 +25,6 @@ void MarkerToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
     m_currentPath.append(QPointF(pos));
     m_currentStroke->addPoint(QPointF(pos));
 
-    ctx->repaint();
 }
 
 void MarkerToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
@@ -51,13 +49,18 @@ void MarkerToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
     m_currentPath.clear();
     m_currentStroke.reset();
 
-    ctx->repaint();
 }
 
 void MarkerToolHandler::drawPreview(QPainter& painter) const {
     if (m_isDrawing && m_currentStroke) {
         m_currentStroke->draw(painter);
     }
+}
+
+QRect MarkerToolHandler::previewBounds(const ToolContext* ctx) const
+{
+    Q_UNUSED(ctx);
+    return m_currentStroke ? m_currentStroke->boundingRect() : QRect();
 }
 
 void MarkerToolHandler::cancelDrawing() {

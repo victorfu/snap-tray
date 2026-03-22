@@ -27,17 +27,19 @@ public:
     bool handleEscape(ToolContext* ctx) override;
 
     void drawPreview(QPainter& painter) const override;
+    QRect previewBounds(const ToolContext* ctx) const override;
     bool isDrawing() const override { return m_isDrawing; }
     void cancelDrawing() override;
+    bool handleInteractionPress(ToolContext* ctx, const QPoint& pos, Qt::KeyboardModifiers modifiers) override;
+    bool handleInteractionMove(ToolContext* ctx, const QPoint& pos, Qt::KeyboardModifiers modifiers) override;
+    bool handleInteractionRelease(ToolContext* ctx, const QPoint& pos, Qt::KeyboardModifiers modifiers) override;
+    QRect interactionBounds(const ToolContext* ctx) const override;
+    AnnotationInteractionKind activeInteractionKind(const ToolContext* ctx) const override;
 
     bool supportsColor() const override { return true; }
     bool supportsWidth() const override { return true; }
     bool supportsShapeType() const override { return true; }
     bool supportsFillMode() const override { return true; }
-
-    bool handleInteractionPress(ToolContext* ctx, const QPoint& pos);
-    bool handleInteractionMove(ToolContext* ctx, const QPoint& pos);
-    bool handleInteractionRelease(ToolContext* ctx, const QPoint& pos);
 
 private:
     QRect makeRect(const QPoint& start, const QPoint& end) const;

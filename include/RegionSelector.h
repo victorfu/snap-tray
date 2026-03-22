@@ -9,6 +9,7 @@
 #include <QPointF>
 #include <QRect>
 #include <QColor>
+#include <QElapsedTimer>
 #include <QSettings>
 #include <QPointer>
 #include <memory>
@@ -66,6 +67,7 @@ class RegionInputHandler;
 class RegionToolbarHandler;
 class RegionSettingsHelper;
 class RegionExportManager;
+class AnnotationSurfaceAdapter;
 class MagnifierOverlay;
 class AnnotationContext;
 class CaptureShortcutHintsOverlay;
@@ -316,6 +318,7 @@ private:
     // Annotation layer and tool manager
     AnnotationLayer *m_annotationLayer; // Qt parent owns lifetime
     ToolManager *m_toolManager;
+    std::unique_ptr<AnnotationSurfaceAdapter> m_annotationSurfaceAdapter;
     StepBadgeSize m_stepBadgeSize = StepBadgeSize::Medium;
 
     // Selection state flags
@@ -394,6 +397,9 @@ private:
     quint64 m_initialRevealToken = 0;
     QTimer* m_initialRevealTimer = nullptr;
     QMetaObject::Connection m_initialRevealWindowListReadyConnection;
+    QElapsedTimer m_initialRevealPerfTimer;
+    bool m_initialRevealPerfTimerActive = false;
+    bool m_initialRevealDetectorPending = false;
 
     // Update throttling component
     UpdateThrottler m_updateThrottler;
