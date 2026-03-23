@@ -2,6 +2,7 @@
 #include "AutoLaunchManager.h"
 #include "SingleInstanceGuard.h"
 #include "cli/CLIHandler.h"
+#include "platform/QtQuickBackendPolicy.h"
 #include "settings/LanguageManager.h"
 #include "settings/Settings.h"
 #include "version.h"
@@ -9,6 +10,7 @@
 #include <QApplication>
 #include <QDebug>
 #include <QFile>
+#include <QOperatingSystemVersion>
 #include <QTextStream>
 #include <QTimer>
 #include <QtQml/qqmlextensionplugin.h>
@@ -18,6 +20,21 @@ Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
 
 int main(int argc, char* argv[])
 {
+    const QOperatingSystemVersion currentOsVersion = QOperatingSystemVersion::current();
+    const auto qtQuickBackendPolicy =
+        SnapTray::selectQtQuickGraphicsBackendPolicy(currentOsVersion);
+    SnapTray::applyQtQuickGraphicsBackendPolicy(qtQuickBackendPolicy);
+
+#ifndef QT_NO_DEBUG_OUTPUT
+    qDebug().nospace()
+        << "Qt Quick backend policy: "
+        << SnapTray::qtQuickGraphicsBackendPolicyName(qtQuickBackendPolicy)
+        << " on " << currentOsVersion.name() << ' '
+        << currentOsVersion.majorVersion() << '.'
+        << currentOsVersion.minorVersion() << '.'
+        << currentOsVersion.microVersion();
+#endif
+
     // Check for CLI arguments before creating QApplication
     QStringList arguments;
     for (int i = 0; i < argc; ++i) {

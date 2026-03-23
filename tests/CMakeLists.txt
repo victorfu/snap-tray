@@ -43,7 +43,17 @@ target_compile_definitions(Qml_WindowPolicyGuard PRIVATE
 add_test(NAME Qml_WindowPolicyGuard COMMAND Qml_WindowPolicyGuard)
 set_tests_properties(Qml_WindowPolicyGuard PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_QtQuickBackendPolicy Qml/tst_QtQuickBackendPolicy.cpp)
+target_link_libraries(Qml_QtQuickBackendPolicy PRIVATE snaptray_platform Qt6::Test)
+add_test(NAME Qml_QtQuickBackendPolicy COMMAND Qml_QtQuickBackendPolicy)
+set_tests_properties(Qml_QtQuickBackendPolicy PROPERTIES TIMEOUT 60 LABELS "unit")
+
 if(WIN32)
+    add_executable(Qml_QtQuickBackendWin Qml/tst_QtQuickBackendWin.cpp)
+    target_link_libraries(Qml_QtQuickBackendWin PRIVATE snaptray_platform Qt6::Qml Qt6::Quick Qt6::Test)
+    add_test(NAME Qml_QtQuickBackendWin COMMAND Qml_QtQuickBackendWin)
+    set_tests_properties(Qml_QtQuickBackendWin PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
     add_executable(Qml_WindowPolicyWin Qml/tst_WindowPolicyWin.cpp)
     target_link_libraries(Qml_WindowPolicyWin PRIVATE snaptray_ui snaptray_qml Qt6::Test)
     add_test(NAME Qml_WindowPolicyWin COMMAND Qml_WindowPolicyWin)

@@ -487,6 +487,7 @@ add_library(snaptray_platform STATIC
     src/video/VideoTrimmer.cpp
     src/VideoEncoderFactory.cpp
     src/QRCodeManager.cpp
+    src/platform/QtQuickBackendPolicy.cpp
     $<$<NOT:$<PLATFORM_ID:Darwin>>:
         src/ImageColorSpaceHelper.cpp
     >
@@ -501,6 +502,7 @@ add_library(snaptray_platform STATIC
     include/video/VideoTrimmer.h
     include/QRCodeManager.h
     include/ImageColorSpaceHelper.h
+    include/platform/QtQuickBackendPolicy.h
 
     # macOS sources
     $<$<PLATFORM_ID:Darwin>:
@@ -570,6 +572,7 @@ target_link_libraries(snaptray_platform
         snaptray_core
         Qt6::Widgets
         Qt6::Gui
+        Qt6::Quick
         Qt6::Concurrent
         webp
         libwebpmux
