@@ -11,6 +11,8 @@
 #include "tools/ToolManager.h"
 
 namespace {
+constexpr int kToolbarOutsideClickGuardMs = 350;
+
 QPixmap createTestPixmap(int width = 160, int height = 120)
 {
     QPixmap pixmap(width, height);
@@ -292,6 +294,7 @@ void TestPinWindowStyleSync::testOutsideClickHidesEmojiPickerWithToolbar()
                               window.frameGeometry().bottom() + 200,
                               40, 40);
     outsideTarget.show();
+    QTest::qWait(kToolbarOutsideClickGuardMs);
 
     const QPoint localPos(5, 5);
     const QPoint globalPos = outsideTarget.mapToGlobal(localPos);
@@ -304,8 +307,8 @@ void TestPinWindowStyleSync::testOutsideClickHidesEmojiPickerWithToolbar()
     QCoreApplication::sendEvent(&outsideTarget, &pressEvent);
     QCoreApplication::processEvents();
 
-    QVERIFY(!window.isToolbarVisible());
-    QVERIFY(!window.m_emojiPickerPopup->isVisible());
+    QTRY_VERIFY(!window.isToolbarVisible());
+    QTRY_VERIFY(!window.m_emojiPickerPopup->isVisible());
 }
 
 void TestPinWindowStyleSync::testApplicationDeactivateHidesEmojiPickerWithToolbar()
