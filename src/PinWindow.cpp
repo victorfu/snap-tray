@@ -402,6 +402,9 @@ PinWindow::PinWindow(const QPixmap& screenshot,
     setAttribute(Qt::WA_MacAlwaysShowToolWindow);
 #endif
 
+    connect(qApp, &QGuiApplication::applicationStateChanged,
+            this, &PinWindow::handleApplicationStateChanged);
+
     // Initial size matches screenshot (use logical size for HiDPI)
     m_displayPixmap = m_originalPixmap;
     QSize logicalSize = logicalSizeFromPixmap(m_displayPixmap);
@@ -1233,6 +1236,25 @@ void PinWindow::moveToScreen(QScreen* targetScreen)
         sourceScreen ? sourceScreen->availableGeometry() : QRect(),
         targetScreen->availableGeometry());
     move(targetTopLeft);
+}
+
+void PinWindow::handleApplicationStateChanged(Qt::ApplicationState state)
+{
+    if (state == Qt::ApplicationActive) {
+        return;
+    }
+
+    const bool emojiPopupVisible = m_emojiPickerPopup && m_emojiPickerPopup->isVisible();
+    if (!emojiPopupVisible) {
+        return;
+    }
+
+    if (m_toolbarVisible) {
+        hideToolbarPreservingToolState();
+        return;
+    }
+
+    m_emojiPickerPopup->hide();
 }
 
 QString PinWindow::screenMenuLabel(QScreen* screenItem, int index, bool isPrimary) const
@@ -2929,7 +2951,7 @@ void PinWindow::initializeAnnotationComponents()
 void PinWindow::toggleToolbar()
 {
     if (m_toolbarVisible) {
-        hideToolbar();
+        hideToolbarPreservingToolState();
     }
     else {
         showToolbar();
@@ -2950,7 +2972,7 @@ void PinWindow::showToolbar()
 
     // Connect close request signal
     connect(m_toolbar.get(), &SnapTray::QmlWindowedToolbar::closeRequested,
-        this, &PinWindow::hideToolbar, Qt::UniqueConnection);
+        this, &PinWindow::hideToolbarPreservingToolState, Qt::UniqueConnection);
 
     updateUndoRedoState();
     m_toolbar->viewModel()->setShareInProgress(m_shareInProgress);
@@ -2964,6 +2986,10 @@ void PinWindow::showToolbar()
 
     // Position AFTER show to ensure correct geometry on macOS
     updateToolbarPosition();
+
+    if (!m_annotationMode && isAnnotationTool(m_currentToolId)) {
+        handleToolbarToolSelected(static_cast<int>(m_currentToolId));
+    }
 }
 
 void PinWindow::hideToolbar()
@@ -2973,6 +2999,15 @@ void PinWindow::hideToolbar()
     }
     m_toolbarVisible = false;
     exitAnnotationMode();
+}
+
+void PinWindow::hideToolbarPreservingToolState()
+{
+    if (m_toolbar) {
+        m_toolbar->hide();
+    }
+    m_toolbarVisible = false;
+    exitAnnotationMode(false);
 }
 
 void PinWindow::updateToolbarPosition()
@@ -3013,18 +3048,24 @@ void PinWindow::updateCursorForTool()
     rebuildManagedCursorAt(mapFromGlobal(QCursor::pos()));
 }
 
-void PinWindow::exitAnnotationMode()
+void PinWindow::exitAnnotationMode(bool clearActiveTool)
 {
     if (!m_annotationMode) {
         return;
     }
 
     m_annotationMode = false;
-    m_currentToolId = ToolId::Selection;
+    if (clearActiveTool) {
+        m_currentToolId = ToolId::Selection;
+        if (m_toolManager) {
+            m_toolManager->setCurrentTool(ToolId::Selection);
+        }
+    }
+
     CursorManager::instance().clearAllForWidget(this, Qt::ArrowCursor);
     CursorManager::instance().resetStateForWidget(this);
 
-    if (m_toolbar) {
+    if (clearActiveTool && m_toolbar) {
         m_toolbar->viewModel()->setActiveTool(-1);
     }
 

@@ -39,8 +39,16 @@ bool containsGlobalPoint(const QWidget* widget, const QPoint& globalPos)
 
 bool containsGlobalPoint(const QWindow* window, const QPoint& globalPos)
 {
-    return window && window->isVisible()
-        && QRect(window->position(), window->size()).contains(globalPos);
+    if (!window || !window->isVisible()) {
+        return false;
+    }
+
+    const QRect frameRect = window->frameGeometry();
+    if (frameRect.isValid() && !frameRect.isEmpty()) {
+        return frameRect.contains(globalPos);
+    }
+
+    return QRect(window->position(), window->size()).contains(globalPos);
 }
 
 bool isTransientPopup(const QWidget* widget)

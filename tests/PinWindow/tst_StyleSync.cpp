@@ -3,6 +3,7 @@
 #include <QGuiApplication>
 
 #include "PinWindow.h"
+#include "qml/QmlEmojiPickerPopup.h"
 #include "annotations/PolylineAnnotation.h"
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
@@ -16,6 +17,56 @@ QPixmap createTestPixmap(int width = 160, int height = 120)
     pixmap.fill(Qt::red);
     return pixmap;
 }
+
+class HeadlessEmojiPickerPopup final : public SnapTray::QmlEmojiPickerPopup
+{
+public:
+    explicit HeadlessEmojiPickerPopup(QObject* parent = nullptr)
+        : QmlEmojiPickerPopup(parent)
+    {
+    }
+
+    void positionAt(const QRect& anchorRect) override
+    {
+        const QPoint topLeft = anchorRect.isValid() ? anchorRect.topLeft() : QPoint();
+        m_geometry = QRect(topLeft, QSize(1, 1));
+    }
+
+    void showAt(const QRect& anchorRect) override
+    {
+        positionAt(anchorRect);
+        m_visible = true;
+    }
+
+    void hide() override
+    {
+        m_visible = false;
+    }
+
+    void close() override
+    {
+        m_visible = false;
+    }
+
+    bool isVisible() const override
+    {
+        return m_visible;
+    }
+
+    QRect geometry() const override
+    {
+        return m_geometry;
+    }
+
+    QWindow* window() const override
+    {
+        return nullptr;
+    }
+
+private:
+    bool m_visible = false;
+    QRect m_geometry;
+};
 }  // namespace
 
 class TestPinWindowStyleSync : public QObject
@@ -29,6 +80,11 @@ private slots:
     void testOverlayRestoreReturnsArrowToolCursor();
     void testPolylineReleaseRecomputesHoverCursor();
     void testPopupRestoreReturnsMosaicCursor();
+    void testTemporaryToolbarHideRestoresEmojiPicker();
+    void testExplicitToolbarHideClearsEmojiToolState();
+    void testOutsideClickHidesEmojiPickerWithToolbar();
+    void testApplicationDeactivateHidesEmojiPickerWithToolbar();
+    void testClickingEmojiPopupDoesNotCloseToolbar();
     void testRegionLayoutMoveCursorUsesAuthority();
 };
 
@@ -152,6 +208,163 @@ void TestPinWindowStyleSync::testPopupRestoreReturnsMosaicCursor()
 
     QCOMPARE(window.cursor().pixmap().cacheKey(), toolCursor.pixmap().cacheKey());
     QCOMPARE(window.cursor().hotSpot(), toolCursor.hotSpot());
+}
+
+void TestPinWindowStyleSync::testTemporaryToolbarHideRestoresEmojiPicker()
+{
+    PinWindow window(createTestPixmap(), QPoint(0, 0));
+
+    if (!window.m_toolManager) {
+        window.initializeAnnotationComponents();
+    }
+
+    auto* popup = new HeadlessEmojiPickerPopup(&window);
+    popup->showAt(QRect(QPoint(10, 10), QSize(1, 1)));
+    window.m_emojiPickerPopup = popup;
+
+    window.showToolbar();
+    QVERIFY(window.isToolbarVisible());
+
+    window.enterAnnotationMode();
+    window.m_currentToolId = ToolId::EmojiSticker;
+    window.m_toolManager->setCurrentTool(ToolId::EmojiSticker);
+
+    QVERIFY(window.m_emojiPickerPopup->isVisible());
+
+    window.hideToolbarPreservingToolState();
+    QVERIFY(!window.isToolbarVisible());
+    QVERIFY(!window.m_emojiPickerPopup->isVisible());
+
+    window.showToolbar();
+    QVERIFY(window.isToolbarVisible());
+    QVERIFY(window.m_emojiPickerPopup->isVisible());
+    QCOMPARE(window.m_currentToolId, ToolId::EmojiSticker);
+}
+
+void TestPinWindowStyleSync::testExplicitToolbarHideClearsEmojiToolState()
+{
+    PinWindow window(createTestPixmap(), QPoint(0, 0));
+
+    if (!window.m_toolManager) {
+        window.initializeAnnotationComponents();
+    }
+
+    auto* popup = new HeadlessEmojiPickerPopup(&window);
+    popup->showAt(QRect(QPoint(10, 10), QSize(1, 1)));
+    window.m_emojiPickerPopup = popup;
+
+    window.showToolbar();
+    window.enterAnnotationMode();
+    window.m_currentToolId = ToolId::EmojiSticker;
+    window.m_toolManager->setCurrentTool(ToolId::EmojiSticker);
+
+    window.hideToolbar();
+    QVERIFY(!window.isToolbarVisible());
+    QCOMPARE(window.m_currentToolId, ToolId::Selection);
+
+    window.showToolbar();
+    QVERIFY(window.isToolbarVisible());
+    QVERIFY(!window.m_emojiPickerPopup->isVisible());
+    QCOMPARE(window.m_currentToolId, ToolId::Selection);
+}
+
+void TestPinWindowStyleSync::testOutsideClickHidesEmojiPickerWithToolbar()
+{
+    PinWindow window(createTestPixmap(), QPoint(0, 0));
+
+    if (!window.m_toolManager) {
+        window.initializeAnnotationComponents();
+    }
+
+    auto* popup = new HeadlessEmojiPickerPopup(&window);
+    window.m_emojiPickerPopup = popup;
+
+    window.showToolbar();
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::EmojiSticker));
+
+    QVERIFY(window.isToolbarVisible());
+    QVERIFY(window.m_annotationMode);
+    QVERIFY(window.m_emojiPickerPopup->isVisible());
+
+    QWidget outsideTarget;
+    outsideTarget.setAttribute(Qt::WA_DontShowOnScreen, true);
+    outsideTarget.setGeometry(window.frameGeometry().right() + 200,
+                              window.frameGeometry().bottom() + 200,
+                              40, 40);
+    outsideTarget.show();
+
+    const QPoint localPos(5, 5);
+    const QPoint globalPos = outsideTarget.mapToGlobal(localPos);
+    QMouseEvent pressEvent(QEvent::MouseButtonPress,
+                           localPos,
+                           globalPos,
+                           Qt::LeftButton,
+                           Qt::LeftButton,
+                           Qt::NoModifier);
+    QCoreApplication::sendEvent(&outsideTarget, &pressEvent);
+    QCoreApplication::processEvents();
+
+    QVERIFY(!window.isToolbarVisible());
+    QVERIFY(!window.m_emojiPickerPopup->isVisible());
+}
+
+void TestPinWindowStyleSync::testApplicationDeactivateHidesEmojiPickerWithToolbar()
+{
+    PinWindow window(createTestPixmap(), QPoint(0, 0));
+
+    if (!window.m_toolManager) {
+        window.initializeAnnotationComponents();
+    }
+
+    auto* popup = new HeadlessEmojiPickerPopup(&window);
+    window.m_emojiPickerPopup = popup;
+
+    window.showToolbar();
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::EmojiSticker));
+
+    QVERIFY(window.isToolbarVisible());
+    QVERIFY(window.m_annotationMode);
+    QVERIFY(window.m_emojiPickerPopup->isVisible());
+
+    window.handleApplicationStateChanged(Qt::ApplicationInactive);
+
+    QVERIFY(!window.isToolbarVisible());
+    QVERIFY(!window.m_emojiPickerPopup->isVisible());
+    QCOMPARE(window.m_currentToolId, ToolId::EmojiSticker);
+}
+
+void TestPinWindowStyleSync::testClickingEmojiPopupDoesNotCloseToolbar()
+{
+    PinWindow window(createTestPixmap(), QPoint(0, 0));
+
+    if (!window.m_toolManager) {
+        window.initializeAnnotationComponents();
+    }
+
+    window.showToolbar();
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::EmojiSticker));
+    QCoreApplication::processEvents();
+
+    QVERIFY(window.isToolbarVisible());
+    QVERIFY(window.m_emojiPickerPopup);
+    QVERIFY(window.m_emojiPickerPopup->isVisible());
+
+    QWindow* popupWindow = window.m_emojiPickerPopup->window();
+    QVERIFY(popupWindow);
+    QVERIFY(popupWindow->isVisible());
+
+    const QPoint localPos = popupWindow->geometry().center() - popupWindow->geometry().topLeft();
+    const QPoint globalPos = popupWindow->geometry().center();
+    QMouseEvent pressEvent(QEvent::MouseButtonPress,
+                           localPos,
+                           globalPos,
+                           Qt::LeftButton,
+                           Qt::LeftButton,
+                           Qt::NoModifier);
+    QCoreApplication::sendEvent(popupWindow, &pressEvent);
+    QCoreApplication::processEvents();
+
+    QVERIFY(window.isToolbarVisible());
 }
 
 void TestPinWindowStyleSync::testRegionLayoutMoveCursorUsesAuthority()

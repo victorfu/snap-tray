@@ -185,6 +185,7 @@ private:
     void createContextMenu();
     void refreshMoveToScreenMenu();
     void moveToScreen(QScreen* targetScreen);
+    void handleApplicationStateChanged(Qt::ApplicationState state);
     QString screenMenuLabel(QScreen* screen, int index, bool isPrimary) const;
     void mergePinsFromContextMenu();
     int eligibleMergePinCount() const;
@@ -233,10 +234,11 @@ private:
     // Toolbar and annotation methods
     void showToolbar();
     void hideToolbar();
+    void hideToolbarPreservingToolState();
     void initializeAnnotationComponents();
     void updateToolbarPosition();
     void enterAnnotationMode();
-    void exitAnnotationMode();
+    void exitAnnotationMode(bool clearActiveTool = true);
     void updateCursorForTool();
     void handleToolbarToolSelected(int toolId);
     void handleToolbarUndo();
