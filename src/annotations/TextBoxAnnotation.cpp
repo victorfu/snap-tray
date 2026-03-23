@@ -250,7 +250,9 @@ void TextBoxAnnotation::setText(const QString &text)
 void TextBoxAnnotation::setPosition(const QPointF &position)
 {
     m_position = position;
-    invalidateCache();
+    // Only update blit origin — cached pixmap content is position-independent
+    // (rendered at local coordinates 0,0 to boxWidth,boxHeight).
+    m_cachedOrigin = m_position;
 }
 
 void TextBoxAnnotation::setBox(const QRectF& box)
@@ -262,7 +264,8 @@ void TextBoxAnnotation::setBox(const QRectF& box)
 void TextBoxAnnotation::moveBy(const QPointF &delta)
 {
     m_position += delta;
-    invalidateCache();
+    // Only update blit origin — cached pixmap content is position-independent.
+    m_cachedOrigin = m_position;
 }
 
 void TextBoxAnnotation::translate(const QPointF& delta)

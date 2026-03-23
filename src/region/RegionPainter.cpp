@@ -507,7 +507,26 @@ void RegionPainter::drawAnnotations(QPainter& painter)
         return;
     }
 
-    m_annotationLayer->draw(painter);
+    // Use cached rendering to avoid re-drawing all annotations every frame.
+    // drawCached() renders committed annotations to a QPixmap once, then blits it
+    // on subsequent frames until invalidateCache() is called (on add/undo/redo/clear).
+    // drawWithDirtyRegion() is used when an item is selected (potentially being dragged) —
+    // it caches all items except the selected one and draws the selected item live.
+    if (m_parentWidget) {
+        const QSize canvasSize = m_parentWidget->size();
+        const qreal dpr = m_devicePixelRatio > 0.0 ? m_devicePixelRatio : 1.0;
+        const int selectedIdx = m_annotationLayer->selectedIndex();
+
+        if (selectedIdx >= 0) {
+            m_annotationLayer->drawWithDirtyRegion(
+                painter, canvasSize, dpr, selectedIdx, QPoint(0, 0));
+        } else {
+            m_annotationLayer->drawCached(
+                painter, canvasSize, dpr, QPoint(0, 0));
+        }
+    } else {
+        m_annotationLayer->draw(painter);
+    }
 
     // Draw transformation gizmo for selected text annotation
     if (auto* textItem = getSelectedTextAnnotation()) {
