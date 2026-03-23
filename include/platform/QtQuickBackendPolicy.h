@@ -16,6 +16,4 @@ QtQuickGraphicsBackendPolicy currentQtQuickGraphicsBackendPolicy();
 
 void applyQtQuickGraphicsBackendPolicy(QtQuickGraphicsBackendPolicy policy);
 
-const char* qtQuickGraphicsBackendPolicyName(QtQuickGraphicsBackendPolicy policy);
-
 } // namespace SnapTray

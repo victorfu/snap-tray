@@ -20,20 +20,8 @@ Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
 
 int main(int argc, char* argv[])
 {
-    const QOperatingSystemVersion currentOsVersion = QOperatingSystemVersion::current();
-    const auto qtQuickBackendPolicy =
-        SnapTray::selectQtQuickGraphicsBackendPolicy(currentOsVersion);
-    SnapTray::applyQtQuickGraphicsBackendPolicy(qtQuickBackendPolicy);
-
-#ifndef QT_NO_DEBUG_OUTPUT
-    qDebug().nospace()
-        << "Qt Quick backend policy: "
-        << SnapTray::qtQuickGraphicsBackendPolicyName(qtQuickBackendPolicy)
-        << " on " << currentOsVersion.name() << ' '
-        << currentOsVersion.majorVersion() << '.'
-        << currentOsVersion.minorVersion() << '.'
-        << currentOsVersion.microVersion();
-#endif
+    SnapTray::applyQtQuickGraphicsBackendPolicy(
+        SnapTray::selectQtQuickGraphicsBackendPolicy(QOperatingSystemVersion::current()));
 
     // Check for CLI arguments before creating QApplication
     QStringList arguments;

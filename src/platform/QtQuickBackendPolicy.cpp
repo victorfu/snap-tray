@@ -38,16 +38,4 @@ void applyQtQuickGraphicsBackendPolicy(QtQuickGraphicsBackendPolicy policy)
     }
 }
 
-const char* qtQuickGraphicsBackendPolicyName(QtQuickGraphicsBackendPolicy policy)
-{
-    switch (policy) {
-    case QtQuickGraphicsBackendPolicy::Software:
-        return "Software";
-    case QtQuickGraphicsBackendPolicy::PlatformDefault:
-        return "PlatformDefault";
-    }
-
-    return "Unknown";
-}
-
 } // namespace SnapTray
