@@ -12,9 +12,9 @@ Item {
     width: 236
     height: 64
 
-    PanelSurface {
+    GlassSurface {
         anchors.fill: parent
-        radius: 6
+        glassRadius: 6
     }
 
     Grid {
