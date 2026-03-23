@@ -134,10 +134,6 @@ QString physicalPixelSizeLabel(const QRect& logicalRect, qreal dpr)
 
 constexpr int kInitialRevealTimeoutMs = 120;
 
-// Margin around selection rect for annotation-scoped repaints.
-// Covers max stroke width (20px) + selection handles (8px) + antialiasing (2px).
-constexpr int kAnnotationRepaintMargin = 30;
-
 } // namespace
 
 RegionSelector::RegionSelector(QWidget* parent)
@@ -286,8 +282,10 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_toolManager, &ToolManager::needsRepaint, this, [this]() {
         if (m_inputState.isDrawing && m_selectionManager && m_selectionManager->hasSelection()) {
             update(m_selectionManager->selectionRect().adjusted(
-                -kAnnotationRepaintMargin, -kAnnotationRepaintMargin,
-                kAnnotationRepaintMargin, kAnnotationRepaintMargin));
+                -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+                -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+                SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+                SelectionDirtyRegionPlanner::kAnnotationRepaintMargin));
         } else {
             update();
         }
@@ -468,8 +466,10 @@ RegionSelector::RegionSelector(QWidget* parent)
             }
             if (m_selectionManager && m_selectionManager->hasSelection()) {
                 update(m_selectionManager->selectionRect().adjusted(
-                    -kAnnotationRepaintMargin, -kAnnotationRepaintMargin,
-                    kAnnotationRepaintMargin, kAnnotationRepaintMargin));
+                    -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+                    -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+                    SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+                    SelectionDirtyRegionPlanner::kAnnotationRepaintMargin));
             } else {
                 update();
             }

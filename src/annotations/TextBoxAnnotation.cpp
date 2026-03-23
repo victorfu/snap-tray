@@ -252,6 +252,7 @@ void TextBoxAnnotation::setPosition(const QPointF &position)
     m_position = position;
     // Only update blit origin — cached pixmap content is position-independent
     // (rendered at local coordinates 0,0 to boxWidth,boxHeight).
+    // Text, font, color, or box-size changes invalidate the cache via their setters.
     m_cachedOrigin = m_position;
 }
 

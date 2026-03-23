@@ -49,6 +49,11 @@ public:
     static constexpr int kWidgetPadding = 6;
     static constexpr int kDragFrameIntervalMs = 8;  // ~120Hz
 
+    // Margin around selection rect for annotation-scoped repaints.
+    // Must cover stroke overshoot, selection/gizmo handles, and antialiasing.
+    // Any clipping beyond this margin is corrected on drawing finish (full repaint).
+    static constexpr int kAnnotationRepaintMargin = 30;
+
     QRect magnifierRectForCursor(const QPoint& cursorPos, const QSize& viewportSize) const;
     QRect dimensionInfoRectForSelection(const QRect& selectionRect) const;
 

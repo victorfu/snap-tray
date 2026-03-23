@@ -509,7 +509,7 @@ void RegionPainter::drawAnnotations(QPainter& painter)
 
     // Use cached rendering to avoid re-drawing all annotations every frame.
     // drawCached() renders committed annotations to a QPixmap once, then blits it
-    // on subsequent frames until invalidateCache() is called (on add/undo/redo/clear).
+    // on subsequent frames until invalidateCache() is called (when the annotation list changes).
     // drawWithDirtyRegion() is used when an item is selected (potentially being dragged) —
     // it caches all items except the selected one and draws the selected item live.
     if (m_parentWidget) {
@@ -525,6 +525,8 @@ void RegionPainter::drawAnnotations(QPainter& painter)
                 painter, canvasSize, dpr, QPoint(0, 0));
         }
     } else {
+        qWarning() << "RegionPainter::drawAnnotations: m_parentWidget is null, "
+                      "falling back to uncached draw";
         m_annotationLayer->draw(painter);
     }
 

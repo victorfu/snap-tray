@@ -946,10 +946,11 @@ void RegionInputHandler::handleThrottledUpdate()
         if (m_updateThrottler->shouldUpdate(UpdateThrottler::ThrottleType::Annotation)) {
             m_updateThrottler->reset(UpdateThrottler::ThrottleType::Annotation);
             if (m_selectionManager && m_selectionManager->hasSelection()) {
-                static constexpr int kAnnotationRepaintMargin = 30;
                 emit updateRequested(m_selectionManager->selectionRect().adjusted(
-                    -kAnnotationRepaintMargin, -kAnnotationRepaintMargin,
-                    kAnnotationRepaintMargin, kAnnotationRepaintMargin));
+                    -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+                    -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+                    SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+                    SelectionDirtyRegionPlanner::kAnnotationRepaintMargin));
             } else {
                 emit updateRequested();
             }
