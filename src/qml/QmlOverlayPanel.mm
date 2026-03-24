@@ -208,7 +208,9 @@ bool QmlOverlayPanel::containsGlobalPoint(const QPoint& globalPos) const
 void QmlOverlayPanel::setPosition(const QPoint& globalPos)
 {
     if (m_view) {
-        m_view->setPosition(globalPos);
+        if (m_view->position() != globalPos) {
+            m_view->setPosition(globalPos);
+        }
         syncCursorSurface();
     }
 }
@@ -218,10 +220,16 @@ void QmlOverlayPanel::resize(const QSize& size)
     if (!m_view)
         return;
 
-    if (m_rootItem) {
-        m_rootItem->setSize(QSizeF(size));
-    } else {
-        m_view->resize(size);
+    const bool viewSizeChanged = m_view->size() != size;
+    const bool rootSizeChanged =
+        m_rootItem && m_rootItem->size() != QSizeF(size);
+
+    if (viewSizeChanged || rootSizeChanged) {
+        if (m_rootItem) {
+            m_rootItem->setSize(QSizeF(size));
+        } else {
+            m_view->resize(size);
+        }
     }
 
     syncCursorSurface();

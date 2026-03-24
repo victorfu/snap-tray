@@ -98,35 +98,45 @@ void RegionPainter::setReplacePreview(int targetIndex, const QRect& previewRect)
     m_replacePreviewRect = previewRect;
 }
 
-void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QRect& dirtyRect)
+void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QRegion& dirtyRegion)
 {
     if (!m_parentWidget || !m_selectionManager) {
         return;
     }
 
-    // Use dirty rect for optimized partial repainting
-    // Only draw the background portion that needs updating
-    const QRect updateRect = dirtyRect.isEmpty() ? m_parentWidget->rect() : dirtyRect;
+    const QRegion updateRegion = dirtyRegion.isEmpty()
+        ? QRegion(m_parentWidget->rect())
+        : dirtyRegion;
+    const QRect updateBounds = updateRegion.boundingRect();
 
-    // Draw only the dirty portion of the background
     if (!background.isNull()) {
         const qreal dpr = background.devicePixelRatio();
-        const QRect sourceRect =
-            CoordinateHelper::toPhysicalCoveringRect(updateRect, dpr).intersected(background.rect());
 #ifdef Q_OS_WIN
 #ifndef QT_NO_DEBUG
         const qreal roundedDpr = qRound(dpr);
         const bool fractionalDpr = !qFuzzyCompare(dpr, roundedDpr);
-        const bool partialRepaint = !dirtyRect.isEmpty() && dirtyRect != m_parentWidget->rect();
+        const bool partialRepaint =
+            !dirtyRegion.isEmpty() && updateBounds != m_parentWidget->rect();
         if (fractionalDpr && partialRepaint) {
             qDebug() << "RegionPainter partial repaint"
-                     << "logicalDirty=" << updateRect
-                     << "physicalDirty=" << sourceRect
+                     << "logicalDirty=" << updateBounds
+                     << "rectCount=" << updateRegion.rectCount()
                      << "backgroundDpr=" << dpr;
         }
 #endif
 #endif
-        painter.drawPixmap(updateRect, background, sourceRect);
+        for (QRegion::const_iterator it = updateRegion.begin(); it != updateRegion.end(); ++it) {
+            const QRect updateRect = *it;
+            if (!updateRect.isValid() || updateRect.isEmpty()) {
+                continue;
+            }
+            const QRect sourceRect =
+                CoordinateHelper::toPhysicalCoveringRect(updateRect, dpr).intersected(background.rect());
+            if (!sourceRect.isValid() || sourceRect.isEmpty()) {
+                continue;
+            }
+            painter.drawPixmap(updateRect, background, sourceRect);
+        }
     }
 
     // Draw dimmed overlay

@@ -8,6 +8,7 @@
 #include <QString>
 #include <QFont>
 #include <QRectF>
+#include <QRegion>
 #include <QSize>
 
 class QPainter;
@@ -52,9 +53,9 @@ public:
      *
      * @param painter The painter to draw with
      * @param background The captured background pixmap
-     * @param dirtyRect Optional dirty rect for partial updates (empty = full repaint)
+     * @param dirtyRegion Optional dirty region for partial updates (empty = full repaint)
      */
-    void paint(QPainter& painter, const QPixmap& background, const QRect& dirtyRect = QRect());
+    void paint(QPainter& painter, const QPixmap& background, const QRegion& dirtyRegion = QRegion());
 
     // Configuration setters (call before paint)
     void setHighlightedWindowRect(const QRect& rect);

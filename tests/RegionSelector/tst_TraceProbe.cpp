@@ -1,6 +1,7 @@
 #include <QtTest/QtTest>
 
 #include <QGuiApplication>
+#include <QTest>
 #include <QtQml/qqmlextensionplugin.h>
 
 #include "RegionSelectorTestAccess.h"
@@ -19,6 +20,7 @@ private slots:
     void testPaintRecordsDirtyRegionAndFloatingUiSnapshot();
     void testSwitchToScreenSameScreenDoesNotRecordAdditionalCaptureContext();
     void testHandleInitialRevealTimeoutRevealsVisibleSelector();
+    void testCompletedSelectionHoverUsesPartialDirtyRegionRepaint();
 };
 
 void tst_RegionSelectorTraceProbe::initTestCase()
@@ -135,6 +137,34 @@ void tst_RegionSelectorTraceProbe::testHandleInitialRevealTimeoutRevealsVisibleS
 
     QVERIFY(RegionSelectorTestAccess::initialRevealStateIsRevealed(selector));
     QCOMPARE(selector.windowOpacity(), 1.0);
+}
+
+void tst_RegionSelectorTraceProbe::testCompletedSelectionHoverUsesPartialDirtyRegionRepaint()
+{
+    RegionSelector selector;
+    RegionSelectorTestAccess::TraceProbe probe;
+    RegionSelectorTestAccess::attachTraceProbe(selector, &probe);
+
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+
+    QPixmap preCapture(QSize(320, 240));
+    preCapture.fill(Qt::black);
+    selector.initializeForScreen(screen, preCapture);
+    RegionSelectorTestAccess::showForRevealTests(selector);
+    QCoreApplication::processEvents();
+
+    RegionSelectorTestAccess::markInitialRevealRevealed(selector);
+    RegionSelectorTestAccess::setSelectionRect(selector, QRect(30, 30, 140, 90));
+    probe.paintEvents.clear();
+
+    QTest::qWait(40);
+    RegionSelectorTestAccess::dispatchMouseMove(selector, QPoint(80, 80));
+    QCoreApplication::processEvents();
+    QTRY_VERIFY(!probe.paintEvents.isEmpty());
+
+    const auto& region = probe.paintEvents.constLast().dirtyRegion;
+    QVERIFY(region.rectCount() > 1);
 }
 
 QTEST_MAIN(tst_RegionSelectorTraceProbe)

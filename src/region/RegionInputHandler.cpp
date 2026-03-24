@@ -982,7 +982,19 @@ void RegionInputHandler::handleThrottledUpdate()
     else if (m_selectionManager->isComplete()) {
         if (m_updateThrottler->shouldUpdate(UpdateThrottler::ThrottleType::Hover)) {
             m_updateThrottler->reset(UpdateThrottler::ThrottleType::Hover);
-            emit updateRequested();
+            const QRect currentMagnifierRect = m_dirtyRegionPlanner.magnifierRectForCursor(
+                state().currentPoint, m_parentWidget->size());
+
+            SelectionDirtyRegionPlanner::HoverParams params;
+            params.currentMagnifierRect = currentMagnifierRect;
+            params.lastMagnifierRect = m_lastMagnifierRect;
+            params.currentCursorPos = state().currentPoint;
+            params.lastCursorPos = m_lastCrosshairPoint;
+            params.viewportSize = m_parentWidget->size();
+            const QRegion dirtyRegion = m_dirtyRegionPlanner.planHoverRegion(params);
+            m_parentWidget->update(dirtyRegion);
+            m_lastMagnifierRect = currentMagnifierRect;
+            m_lastCrosshairPoint = state().currentPoint;
         }
     }
     else {

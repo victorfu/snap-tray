@@ -2263,7 +2263,6 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos,
 
 void RegionSelector::paintSelectorScene(QPainter& painter, const QRegion& dirtyRegion)
 {
-    const QRect dirtyRect = dirtyRegion.boundingRect();
     painter.setClipRegion(dirtyRegion);
 
     // Disable SmoothPixmapTransform for background blit — the background pixmap
@@ -2286,7 +2285,7 @@ void RegionSelector::paintSelectorScene(QPainter& painter, const QRegion& dirtyR
         showReplacePreview ? m_selectionManager->selectionRect().normalized() : QRect());
 
     // Delegate core painting (background, overlay, selection, annotations)
-    m_painter->paint(painter, m_backgroundPixmap, dirtyRect);
+    m_painter->paint(painter, m_backgroundPixmap, dirtyRegion);
 }
 
 void RegionSelector::syncDetachedSelectionUiDuringPaint()

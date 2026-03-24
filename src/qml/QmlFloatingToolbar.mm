@@ -455,7 +455,9 @@ void QmlFloatingToolbar::positionForSelection(const QRect& selectionRect,
         screenPos = m_parentWidget->mapToGlobal(QPoint(x, y));
     }
 
-    m_view->setPosition(screenPos);
+    if (m_view->position() != screenPos) {
+        m_view->setPosition(screenPos);
+    }
     syncCursorSurface();
 }
 
@@ -474,7 +476,9 @@ void QmlFloatingToolbar::positionAt(int centerX, int bottomY)
         pos = m_parentWidget->mapToGlobal(pos);
     }
 
-    m_view->setPosition(pos);
+    if (m_view->position() != pos) {
+        m_view->setPosition(pos);
+    }
     syncCursorSurface();
 }
 
@@ -490,7 +494,9 @@ void QmlFloatingToolbar::setPosition(const QPoint& pos)
         m_view->resize(resolvedSize);
     }
 
-    m_view->setPosition(pos);
+    if (m_view->position() != pos) {
+        m_view->setPosition(pos);
+    }
     syncCursorSurface();
 }
 

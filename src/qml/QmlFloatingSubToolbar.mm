@@ -313,7 +313,10 @@ void QmlFloatingSubToolbar::positionBelow(const QRect& toolbarRect)
 
     x = qBound(screenGeom.left() + 10, x, screenGeom.right() - w - 10);
 
-    m_view->setPosition(x, y);
+    const QPoint targetPos(x, y);
+    if (m_view->position() != targetPos) {
+        m_view->setPosition(targetPos);
+    }
     syncCursorSurface();
 }
 
