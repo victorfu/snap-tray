@@ -236,6 +236,8 @@ private:
     void submitPendingHistorySubmission(PendingHistorySubmission submission) const;
     QRect currentHistorySelectionRect() const;
     QVector<MultiRegionManager::Region> currentHistoryCaptureRegions() const;
+    QPixmap capturePlainSelectionPixmap() const;
+    QImage capturePlainSelectionImage() const;
     void applyCaptureContext(const SelectorCaptureContext& context);
     void refreshMagnifierContext(const QPoint& cursorPos);
     void refreshMagnifierContext(const QPoint& cursorPos,

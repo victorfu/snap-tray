@@ -1721,6 +1721,38 @@ QVector<MultiRegionManager::Region> RegionSelector::currentHistoryCaptureRegions
     return {};
 }
 
+QPixmap RegionSelector::capturePlainSelectionPixmap() const
+{
+    if (!m_selectionManager || m_backgroundPixmap.isNull()) {
+        return {};
+    }
+
+    const QRect sel = m_selectionManager->selectionRect();
+    if (!sel.isValid() || sel.isEmpty()) {
+        return {};
+    }
+
+    const QRect physicalRect = CoordinateHelper::toPhysicalCoveringRect(sel, m_devicePixelRatio);
+    const QRect clampedPhysicalRect = physicalRect.intersected(m_backgroundPixmap.rect());
+    if (clampedPhysicalRect.isEmpty()) {
+        return {};
+    }
+
+    QPixmap selectedRegion = m_backgroundPixmap.copy(clampedPhysicalRect);
+    if (selectedRegion.isNull()) {
+        return {};
+    }
+
+    selectedRegion.setDevicePixelRatio(m_devicePixelRatio);
+    return selectedRegion;
+}
+
+QImage RegionSelector::capturePlainSelectionImage() const
+{
+    const QPixmap selectedPixmap = capturePlainSelectionPixmap();
+    return selectedPixmap.isNull() ? QImage() : selectedPixmap.toImage();
+}
+
 void RegionSelector::setQuickPinMode(bool enabled)
 {
     m_quickPinMode = enabled;
@@ -3780,11 +3812,8 @@ void RegionSelector::performOCR()
     ensureLoadingSpinner()->start();
     update();
 
-    // Get the selected region (without annotations for OCR)
-    const QRect sel = m_selectionManager->selectionRect();
-    const QRect physicalRect = CoordinateHelper::toPhysicalCoveringRect(sel, m_devicePixelRatio);
-    const QRect clampedPhysicalRect = physicalRect.intersected(m_backgroundPixmap.rect());
-    if (clampedPhysicalRect.isEmpty()) {
+    const QPixmap selectedRegion = capturePlainSelectionPixmap();
+    if (selectedRegion.isNull()) {
         m_ocrInProgress = false;
         if (m_loadingSpinner) {
             m_loadingSpinner->stop();
@@ -3794,8 +3823,6 @@ void RegionSelector::performOCR()
         update();
         return;
     }
-    QPixmap selectedRegion = m_backgroundPixmap.copy(clampedPhysicalRect);
-    selectedRegion.setDevicePixelRatio(m_devicePixelRatio);
 
     QPointer<RegionSelector> safeThis = this;
     ocrMgr->recognizeText(selectedRegion,
@@ -3873,11 +3900,8 @@ void RegionSelector::performQRCodeScan()
     ensureLoadingSpinner()->start();
     update();
 
-    // Get the selected region (without annotations)
-    const QRect sel = m_selectionManager->selectionRect();
-    const QRect physicalRect = CoordinateHelper::toPhysicalCoveringRect(sel, m_devicePixelRatio);
-    const QRect clampedPhysicalRect = physicalRect.intersected(m_backgroundPixmap.rect());
-    if (clampedPhysicalRect.isEmpty()) {
+    const QPixmap selectedRegion = capturePlainSelectionPixmap();
+    if (selectedRegion.isNull()) {
         m_qrCodeInProgress = false;
         if (m_loadingSpinner) {
             m_loadingSpinner->stop();
@@ -3887,8 +3911,6 @@ void RegionSelector::performQRCodeScan()
         update();
         return;
     }
-    QPixmap selectedRegion = m_backgroundPixmap.copy(clampedPhysicalRect);
-    selectedRegion.setDevicePixelRatio(m_devicePixelRatio);
 
     QPointer<RegionSelector> safeThis = this;
     qrMgr->decode(selectedRegion,
@@ -3973,11 +3995,12 @@ void RegionSelector::performAutoBlur()
     // Reload latest settings before detection
     m_autoBlurManager->setOptions(AutoBlurSettingsManager::instance().load());
 
-    // Get the selected region as QImage
     const QRect sel = m_selectionManager->selectionRect();
     const QRect physicalRect = CoordinateHelper::toPhysicalCoveringRect(sel, m_devicePixelRatio);
     const QRect clampedPhysicalRect = physicalRect.intersected(m_backgroundPixmap.rect());
-    if (clampedPhysicalRect.isEmpty()) {
+    const QPixmap selectedPixmap = capturePlainSelectionPixmap();
+    const QImage selectedImage = selectedPixmap.toImage();
+    if (selectedImage.isNull() || clampedPhysicalRect.isEmpty()) {
         m_autoBlurInProgress = false;
         updateToolbarAutoBlurState();
         m_toolOptionsViewModel->setAutoBlurProcessing(false);
@@ -3989,8 +4012,6 @@ void RegionSelector::performAutoBlur()
         update();
         return;
     }
-    QPixmap selectedPixmap = m_backgroundPixmap.copy(clampedPhysicalRect);
-    QImage selectedImage = selectedPixmap.toImage();
     const QSize selectedImageSize = selectedImage.size();
 
     const auto opts = m_autoBlurManager->options();
@@ -4152,8 +4173,9 @@ void RegionSelector::performAutoBlur()
     }
 
     if (runCredentialDetection) {
-        selectedPixmap.setDevicePixelRatio(1.0);
-        ocrManager->recognizeText(selectedPixmap,
+        QPixmap ocrSource = selectedPixmap;
+        ocrSource.setDevicePixelRatio(1.0);
+        ocrManager->recognizeText(ocrSource,
             [safeThis, aggregated, finishIfReady, selectedImageSize](const OCRResult& result) {
                 if (!safeThis) {
                     return;
