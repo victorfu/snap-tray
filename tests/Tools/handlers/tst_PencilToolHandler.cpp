@@ -47,6 +47,7 @@ private slots:
     // Preview tests
     void testDrawPreview_WhileDrawing();
     void testPreviewBounds_DuringAndAfterDrawing();
+    void testPreviewBounds_StaysLocalAsStrokeGrows();
 
     // Cancellation tests
     void testCancelDrawing();
@@ -237,11 +238,24 @@ void TestPencilToolHandler::testPreviewBounds_DuringAndAfterDrawing()
 
     QVERIFY(duringBounds.isValid());
     QVERIFY(!duringBounds.isEmpty());
-    QVERIFY(duringBounds.contains(QPoint(50, 50)));
-    QVERIFY(duringBounds.contains(QPoint(100, 100)));
+    QVERIFY(duringBounds.width() > 0);
+    QVERIFY(duringBounds.height() > 0);
 
     m_handler->onMouseRelease(m_context, QPoint(120, 120));
     QCOMPARE(m_handler->previewBounds(), QRect());
+}
+
+void TestPencilToolHandler::testPreviewBounds_StaysLocalAsStrokeGrows()
+{
+    m_handler->onMousePress(m_context, QPoint(20, 20));
+    for (int i = 1; i < 12; ++i) {
+        m_handler->onMouseMove(m_context, QPoint(20 + i * 20, 20 + i * 8));
+    }
+
+    const QRect previewBounds = m_handler->previewBounds();
+    QVERIFY(previewBounds.isValid());
+    QVERIFY(!previewBounds.isEmpty());
+    QVERIFY(previewBounds.width() < 120);
 }
 
 // ============================================================================

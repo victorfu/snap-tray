@@ -6,6 +6,38 @@
 // Marker uses fixed width
 static constexpr int kMarkerWidth = 20;
 
+namespace {
+
+QRect tailDirtyRect(const QVector<QPointF>& points, int width, int tailPointCount = 4)
+{
+    if (points.isEmpty()) {
+        return {};
+    }
+
+    const int startIndex = qMax(0, points.size() - tailPointCount);
+    qreal minX = points[startIndex].x();
+    qreal maxX = points[startIndex].x();
+    qreal minY = points[startIndex].y();
+    qreal maxY = points[startIndex].y();
+
+    for (int i = startIndex + 1; i < points.size(); ++i) {
+        const QPointF& point = points[i];
+        minX = qMin(minX, point.x());
+        maxX = qMax(maxX, point.x());
+        minY = qMin(minY, point.y());
+        maxY = qMax(maxY, point.y());
+    }
+
+    const int margin = width / 2 + 4;
+    return QRect(
+        static_cast<int>(std::floor(minX)) - margin,
+        static_cast<int>(std::floor(minY)) - margin,
+        static_cast<int>(std::ceil(maxX - minX)) + margin * 2,
+        static_cast<int>(std::ceil(maxY - minY)) + margin * 2);
+}
+
+} // namespace
+
 void MarkerToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
     m_isDrawing = true;
     m_currentPath.clear();
@@ -14,6 +46,7 @@ void MarkerToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
     m_currentStroke = std::make_unique<MarkerStroke>(
         m_currentPath, ctx->color, kMarkerWidth
     );
+    m_previewDirtyRect = tailDirtyRect(m_currentPath, kMarkerWidth);
 
     ctx->repaint();
 }
@@ -23,8 +56,12 @@ void MarkerToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
         return;
     }
 
+    const QRect oldTailBounds = tailDirtyRect(m_currentPath, kMarkerWidth);
+
     m_currentPath.append(QPointF(pos));
     m_currentStroke->addPoint(QPointF(pos));
+    const QRect newTailBounds = tailDirtyRect(m_currentPath, kMarkerWidth);
+    m_previewDirtyRect = oldTailBounds.united(newTailBounds);
 
     ctx->repaint();
 }
@@ -50,6 +87,7 @@ void MarkerToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
     m_isDrawing = false;
     m_currentPath.clear();
     m_currentStroke.reset();
+    m_previewDirtyRect = QRect();
 
     ctx->repaint();
 }
@@ -62,14 +100,15 @@ void MarkerToolHandler::drawPreview(QPainter& painter) const {
 
 QRect MarkerToolHandler::previewBounds() const
 {
-    if (!m_isDrawing || !m_currentStroke) {
+    if (!m_isDrawing || m_previewDirtyRect.isEmpty()) {
         return QRect();
     }
-    return m_currentStroke->boundingRect();
+    return m_previewDirtyRect;
 }
 
 void MarkerToolHandler::cancelDrawing() {
     m_isDrawing = false;
     m_currentPath.clear();
     m_currentStroke.reset();
+    m_previewDirtyRect = QRect();
 }

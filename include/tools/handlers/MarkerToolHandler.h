@@ -35,6 +35,7 @@ private:
     bool m_isDrawing = false;
     QVector<QPointF> m_currentPath;
     std::unique_ptr<MarkerStroke> m_currentStroke;
+    QRect m_previewDirtyRect;
 };
 
 #endif // MARKERTOOLHANDLER_H

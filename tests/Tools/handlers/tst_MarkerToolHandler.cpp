@@ -14,6 +14,7 @@ private slots:
     void init();
     void cleanup();
     void testPreviewBounds_DuringAndAfterDrawing();
+    void testPreviewBounds_StaysLocalAsStrokeGrows();
 
 private:
     MarkerToolHandler* m_handler = nullptr;
@@ -62,6 +63,19 @@ void TestMarkerToolHandler::testPreviewBounds_DuringAndAfterDrawing()
 
     m_handler->onMouseRelease(m_context, QPoint(140, 90));
     QCOMPARE(m_handler->previewBounds(), QRect());
+}
+
+void TestMarkerToolHandler::testPreviewBounds_StaysLocalAsStrokeGrows()
+{
+    m_handler->onMousePress(m_context, QPoint(20, 20));
+    for (int i = 1; i < 12; ++i) {
+        m_handler->onMouseMove(m_context, QPoint(20 + i * 20, 20 + i * 10));
+    }
+
+    const QRect previewBounds = m_handler->previewBounds();
+    QVERIFY(previewBounds.isValid());
+    QVERIFY(!previewBounds.isEmpty());
+    QVERIFY(previewBounds.width() < 140);
 }
 
 QTEST_MAIN(TestMarkerToolHandler)
