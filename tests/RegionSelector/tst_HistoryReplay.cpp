@@ -28,45 +28,55 @@ void tst_RegionSelectorHistoryReplay::testBuildCaptureSessionWriteRequestPreserv
 {
     RegionSelector selector;
 
-    RegionSelector::PendingHistorySubmission submission;
-    submission.snapshot.backgroundPixmap = QPixmap(QSize(24, 16));
-    submission.snapshot.backgroundPixmap.fill(Qt::red);
-    submission.snapshot.selectionRect = QRect(1, 2, 3, 4);
-    submission.snapshot.captureRegions = {
+    QPixmap backgroundPixmap(QSize(24, 16));
+    backgroundPixmap.fill(Qt::red);
+    const QVector<MultiRegionManager::Region> captureRegions = {
         MultiRegionManager::Region{QRect(5, 6, 7, 8), QColor(Qt::green), 1, true}
     };
-    submission.snapshot.annotationsJson = QByteArrayLiteral("{\"annotations\":[]}");
-    submission.snapshot.devicePixelRatio = 2.0;
-    submission.snapshot.canvasLogicalSize = QSize(12, 8);
-    submission.snapshot.cornerRadius = 9;
-    submission.snapshot.maxEntries = 13;
-    submission.snapshot.createdAt = QDateTime::currentDateTimeUtc();
-    submission.resultImage = QImage(QSize(9, 7), QImage::Format_ARGB32_Premultiplied);
-    submission.resultImage.fill(Qt::blue);
+    const QByteArray annotationsJson = QByteArrayLiteral("{\"annotations\":[]}");
+    QImage resultImage(QSize(9, 7), QImage::Format_ARGB32_Premultiplied);
+    resultImage.fill(Qt::blue);
+    const QRect selectionRect(1, 2, 3, 4);
+    const QSize canvasLogicalSize(12, 8);
+    const qreal devicePixelRatio = 2.0;
+    const int cornerRadius = 9;
+    const int maxEntries = 13;
+    const QDateTime createdAt = QDateTime::currentDateTimeUtc();
 
     const SnapTray::CaptureSessionWriteRequest request =
-        selector.buildCaptureSessionWriteRequest(submission);
+        RegionSelectorTestAccess::buildCaptureSessionWriteRequest(
+            selector,
+            backgroundPixmap,
+            resultImage,
+            selectionRect,
+            captureRegions,
+            annotationsJson,
+            devicePixelRatio,
+            canvasLogicalSize,
+            cornerRadius,
+            maxEntries,
+            createdAt);
 
-    QCOMPARE(request.canvasImage, submission.snapshot.backgroundPixmap.toImage());
-    QCOMPARE(request.resultImage, submission.resultImage);
-    QCOMPARE(request.selectionRect, submission.snapshot.selectionRect);
-    QCOMPARE(request.captureRegions.size(), submission.snapshot.captureRegions.size());
-    QCOMPARE(request.captureRegions.first().rect, submission.snapshot.captureRegions.first().rect);
-    QCOMPARE(request.captureRegions.first().color, submission.snapshot.captureRegions.first().color);
-    QCOMPARE(request.captureRegions.first().index, submission.snapshot.captureRegions.first().index);
-    QCOMPARE(request.captureRegions.first().isActive, submission.snapshot.captureRegions.first().isActive);
-    QCOMPARE(request.annotationsJson, submission.snapshot.annotationsJson);
-    QCOMPARE(request.devicePixelRatio, submission.snapshot.devicePixelRatio);
-    QCOMPARE(request.canvasLogicalSize, submission.snapshot.canvasLogicalSize);
-    QCOMPARE(request.cornerRadius, submission.snapshot.cornerRadius);
-    QCOMPARE(request.maxEntries, submission.snapshot.maxEntries);
-    QCOMPARE(request.createdAt, submission.snapshot.createdAt);
+    QCOMPARE(request.canvasImage, backgroundPixmap.toImage());
+    QCOMPARE(request.resultImage, resultImage);
+    QCOMPARE(request.selectionRect, selectionRect);
+    QCOMPARE(request.captureRegions.size(), captureRegions.size());
+    QCOMPARE(request.captureRegions.first().rect, captureRegions.first().rect);
+    QCOMPARE(request.captureRegions.first().color, captureRegions.first().color);
+    QCOMPARE(request.captureRegions.first().index, captureRegions.first().index);
+    QCOMPARE(request.captureRegions.first().isActive, captureRegions.first().isActive);
+    QCOMPARE(request.annotationsJson, annotationsJson);
+    QCOMPARE(request.devicePixelRatio, devicePixelRatio);
+    QCOMPARE(request.canvasLogicalSize, canvasLogicalSize);
+    QCOMPARE(request.cornerRadius, cornerRadius);
+    QCOMPARE(request.maxEntries, maxEntries);
+    QCOMPARE(request.createdAt, createdAt);
 }
 
 void tst_RegionSelectorHistoryReplay::testRestoreLiveReplaySlotRecordsCaptureContext()
 {
     RegionSelector selector;
-    RegionSelector::RegionSelectorTraceProbe probe;
+    RegionSelectorTestAccess::TraceProbe probe;
     RegionSelectorTestAccess::attachTraceProbe(selector, &probe);
 
     QScreen* screen = QGuiApplication::primaryScreen();
@@ -80,14 +90,15 @@ void tst_RegionSelectorHistoryReplay::testRestoreLiveReplaySlotRecordsCaptureCon
     replayCapture.fill(Qt::darkMagenta);
     replayCapture.setDevicePixelRatio(2.0);
 
-    selector.m_historyLiveSlot.valid = true;
-    selector.m_historyLiveSlot.canvasLogicalSize = QSize(90, 60);
-    selector.m_historyLiveSlot.backgroundPixmap = replayCapture;
-    selector.m_historyLiveSlot.devicePixelRatio = 2.0;
-    selector.m_historyLiveSlot.selectionRect = QRect(10, 10, 40, 30);
-    selector.m_historyLiveSlot.cornerRadius = 5;
+    RegionSelectorTestAccess::setHistoryLiveSlot(
+        selector,
+        replayCapture,
+        2.0,
+        QSize(90, 60),
+        QRect(10, 10, 40, 30),
+        5);
 
-    selector.restoreLiveReplaySlot();
+    RegionSelectorTestAccess::invokeRestoreLiveReplaySlot(selector);
 
     QVERIFY(!probe.captureContextEvents.isEmpty());
     const auto& record = probe.captureContextEvents.constLast();
@@ -95,15 +106,15 @@ void tst_RegionSelectorHistoryReplay::testRestoreLiveReplaySlotRecordsCaptureCon
     QCOMPARE(record.backgroundLogicalSize, QSize(90, 60));
     QCOMPARE(record.devicePixelRatio, 2.0);
     QVERIFY(record.hasSourceScreen);
-    QCOMPARE(selector.m_backgroundPixmap.size(), replayCapture.size());
-    QCOMPARE(selector.m_devicePixelRatio, 2.0);
-    QCOMPARE(selector.m_selectionManager->selectionRect(), QRect(10, 10, 40, 30));
+    QCOMPARE(RegionSelectorTestAccess::backgroundPixelSize(selector), replayCapture.size());
+    QCOMPARE(RegionSelectorTestAccess::devicePixelRatio(selector), 2.0);
+    QCOMPARE(RegionSelectorTestAccess::selectionRect(selector), QRect(10, 10, 40, 30));
 }
 
 void tst_RegionSelectorHistoryReplay::testApplyHistoryReplayEntryRecordsCaptureContext()
 {
     RegionSelector selector;
-    RegionSelector::RegionSelectorTraceProbe probe;
+    RegionSelectorTestAccess::TraceProbe probe;
     RegionSelectorTestAccess::attachTraceProbe(selector, &probe);
 
     QScreen* screen = QGuiApplication::primaryScreen();
@@ -130,7 +141,7 @@ void tst_RegionSelectorHistoryReplay::testApplyHistoryReplayEntryRecordsCaptureC
     entry.selectionRect = QRect(5, 6, 30, 20);
     entry.cornerRadius = 3;
 
-    QVERIFY(selector.applyHistoryReplayEntry(entry));
+    QVERIFY(RegionSelectorTestAccess::invokeApplyHistoryReplayEntry(selector, entry));
 
     QVERIFY(!probe.captureContextEvents.isEmpty());
     const auto& record = probe.captureContextEvents.constLast();
@@ -138,8 +149,8 @@ void tst_RegionSelectorHistoryReplay::testApplyHistoryReplayEntryRecordsCaptureC
     QCOMPARE(record.backgroundLogicalSize, QSize(80, 50));
     QCOMPARE(record.devicePixelRatio, 2.0);
     QVERIFY(record.hasSourceScreen);
-    QCOMPARE(selector.m_devicePixelRatio, 2.0);
-    QCOMPARE(selector.m_selectionManager->selectionRect(), QRect(5, 6, 30, 20));
+    QCOMPARE(RegionSelectorTestAccess::devicePixelRatio(selector), 2.0);
+    QCOMPARE(RegionSelectorTestAccess::selectionRect(selector), QRect(5, 6, 30, 20));
 }
 
 QTEST_MAIN(tst_RegionSelectorHistoryReplay)
