@@ -21,6 +21,11 @@
 <context>
     <name>AdvancedSettings</name>
     <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="24" />
+        <source>Show magnifier</source>
+        <translation>Näytä suurennuslasi</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="21" />
         <source>Capture</source>
         <translation>Kaappaus</translation>
@@ -3202,3 +3207,5 @@ Se saattaa olla toisen sovelluksen käytössä.</translation>
     </message>
 </context>
 </TS>
+
+

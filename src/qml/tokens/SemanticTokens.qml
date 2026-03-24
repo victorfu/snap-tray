@@ -111,6 +111,7 @@ QtObject {
     // Typography (semantic aliases)
     // ========================================================================
     readonly property string fontFamily: DesignSystem.fontFamily
+    readonly property int fontSizeH1: DesignSystem.fontSizeH1
     readonly property int fontSizeH2: DesignSystem.fontSizeH2
     readonly property int fontSizeH3: DesignSystem.fontSizeH3
     readonly property int fontSizeBody: DesignSystem.fontSizeBody

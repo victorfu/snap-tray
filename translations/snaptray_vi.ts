@@ -21,6 +21,11 @@
 <context>
     <name>AdvancedSettings</name>
     <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="24" />
+        <source>Show magnifier</source>
+        <translation>Hiển thị kính lúp</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="21" />
         <source>Capture</source>
         <translation>Chụp</translation>
@@ -3202,3 +3207,5 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
     </message>
 </context>
 </TS>
+
+

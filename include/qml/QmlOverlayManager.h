@@ -86,6 +86,22 @@ public:
     QQuickView* createUtilityWindow();
 
     /**
+     * @brief Reapply the shared native policy for a shown standard top-level QQuickView.
+     *
+     * On Windows this removes the native title-bar icon while preserving the
+     * normal caption buttons. No-op on other platforms.
+     */
+    static void applyShownStandardWindowPolicy(QQuickView* view);
+
+    /**
+     * @brief Reapply the shared native policy for a shown frameless/tool overlay QQuickView.
+     *
+     * On Windows this restores the frameless/tool-window style bits that can be
+     * lost after owner/transient-parent changes. No-op on other platforms.
+     */
+    static void applyShownOverlayWindowPolicy(QQuickView* view);
+
+    /**
      * @brief Prevent an NSWindow from hiding when the app deactivates.
      *
      * LSUIElement apps hide all windows on deactivation by default.

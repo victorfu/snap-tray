@@ -1,5 +1,6 @@
 #include "qml/QmlDialog.h"
 #include "cursor/CursorSurfaceSupport.h"
+#include "platform/WindowLevel.h"
 #include "qml/QmlOverlayManager.h"
 
 #include <QEvent>
@@ -7,6 +8,7 @@
 #include <QScreen>
 #include <QGuiApplication>
 #include <QVariant>
+#include <QWidget>
 
 #ifdef Q_OS_MACOS
 #import <Cocoa/Cocoa.h>
@@ -67,6 +69,59 @@ void QmlDialog::ensureView()
     connect(m_view, &QQuickView::closing, this, [this]() {
         emit closed();
     });
+
+    syncTransientParent();
+}
+
+QWidget* QmlDialog::hostWidget() const
+{
+    return qobject_cast<QWidget*>(parent());
+}
+
+void QmlDialog::syncTransientParent()
+{
+    if (!m_view) {
+        return;
+    }
+
+    QWidget* hostWindow = hostWidget() ? hostWidget()->window() : nullptr;
+    if (hostWindow && hostWindow->windowHandle()) {
+        m_view->setTransientParent(hostWindow->windowHandle());
+    } else {
+        m_view->setTransientParent(nullptr);
+    }
+
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
+
+    if (m_view->isVisible()) {
+        applyPlatformWindowFlags();
+    }
+}
+
+void QmlDialog::applyPlatformWindowFlags()
+{
+#ifdef Q_OS_MACOS
+    if (!m_view) {
+        return;
+    }
+
+    NSView* nsView = reinterpret_cast<NSView*>(m_view->winId());
+    if (nsView) {
+        NSWindow* nsWindow = [nsView window];
+        if (nsWindow) {
+            [nsWindow setOpaque:NO];
+            [nsWindow setBackgroundColor:[NSColor clearColor]];
+            [nsWindow setLevel:kCGScreenSaverWindowLevel + 2];
+            [nsWindow makeKeyAndOrderFront:nil];
+            if (m_modal) {
+                [nsWindow setHidesOnDeactivate:NO];
+            }
+        }
+    }
+#endif
+
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
+    raiseTransientWindowAboveParent(m_view, hostWidget());
 }
 
 void QmlDialog::showAt(const QPoint& pos)
@@ -90,27 +145,12 @@ void QmlDialog::showAt(const QPoint& pos)
         m_view->setPosition(pos);
     }
 
+    syncTransientParent();
     m_view->show();
+    applyPlatformWindowFlags();
 
     QmlOverlayManager::enableNativeShadow(m_view);
     QmlOverlayManager::preventWindowHideOnDeactivate(m_view);
-
-#ifdef Q_OS_MACOS
-    // Raise above overlays
-    NSView* nsView = reinterpret_cast<NSView*>(m_view->winId());
-    if (nsView) {
-        NSWindow* nsWindow = [nsView window];
-        if (nsWindow) {
-            [nsWindow setOpaque:NO];
-            [nsWindow setBackgroundColor:[NSColor clearColor]];
-            [nsWindow setLevel:kCGScreenSaverWindowLevel + 2];
-            [nsWindow makeKeyAndOrderFront:nil];
-            if (m_modal) {
-                [nsWindow setHidesOnDeactivate:NO];
-            }
-        }
-    }
-#endif
 
     m_view->raise();
     m_view->requestActivate();

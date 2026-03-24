@@ -69,6 +69,7 @@ signals:
 private:
     void ensureView();
     void applyPlatformWindowFlags();
+    void syncTransientParent();
     void syncCursorSurface();
     bool eventFilter(QObject* obj, QEvent* event) override;
 
@@ -76,7 +77,6 @@ private:
     QQuickView* m_view = nullptr;
     QQuickItem* m_rootItem = nullptr;
     QWidget* m_parentWidget = nullptr;
-    bool m_ownsViewModel = false;
     QString m_cursorSurfaceId;
     QString m_cursorOwnerId;
 };

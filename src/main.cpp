@@ -1,6 +1,8 @@
 #include "MainApplication.h"
+#include "AutoLaunchManager.h"
 #include "SingleInstanceGuard.h"
 #include "cli/CLIHandler.h"
+#include "platform/QtQuickBackendPolicy.h"
 #include "settings/LanguageManager.h"
 #include "settings/Settings.h"
 #include "version.h"
@@ -8,6 +10,7 @@
 #include <QApplication>
 #include <QDebug>
 #include <QFile>
+#include <QOperatingSystemVersion>
 #include <QTextStream>
 #include <QTimer>
 #include <QtQml/qqmlextensionplugin.h>
@@ -17,6 +20,9 @@ Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
 
 int main(int argc, char* argv[])
 {
+    SnapTray::applyQtQuickGraphicsBackendPolicy(
+        SnapTray::selectQtQuickGraphicsBackendPolicy(QOperatingSystemVersion::current()));
+
     // Check for CLI arguments before creating QApplication
     QStringList arguments;
     for (int i = 0; i < argc; ++i) {
@@ -94,6 +100,8 @@ int main(int argc, char* argv[])
         guard.sendActivateMessage();
         return 0;
     }
+
+    AutoLaunchManager::syncWithPreference();
 
     MainApplication mainApp;
 

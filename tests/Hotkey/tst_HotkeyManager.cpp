@@ -30,6 +30,7 @@ private slots:
     // Singleton tests
     void testSingletonInstance();
     void testInitialize_EmitsInitializationCompleted();
+    void testInitialize_PersistedConflictKeepsPreferredOwnerActive();
 
     // Config retrieval tests
     void testGetConfig_AllActionsExist();
@@ -44,6 +45,8 @@ private slots:
     void testUpdateHotkey_EmitsSignals();
     void testUpdateHotkey_ClearsHotkey();
     void testUpdateHotkey_DisabledRollbackStatus();
+    void testUpdateHotkey_ConflictPersistsDesiredSequence();
+    void testUpdateHotkey_ReleasesPersistedConflictForOtherAction();
 
     // Conflict detection tests
     void testHasConflict_NoConflict();
@@ -53,6 +56,7 @@ private slots:
     // Reset tests
     void testResetToDefault_RestoresOriginal();
     void testResetAllToDefaults_RestoresAll();
+    void testResetAllToDefaults_ReregistersRecoveredDefaultHotkey();
 
     // Format key sequence tests
     void testFormatKeySequence_StandardSequence();
@@ -62,6 +66,8 @@ private slots:
 private:
     void clearAllTestSettings();
     void clearSetting(const char* key);
+    void setRegistrationOrder(const char* key, quint64 order);
+    QString registrationOrderKey(const char* key) const;
 
     SnapTray::HotkeyManager& manager() { return SnapTray::HotkeyManager::instance(); }
 };
@@ -77,6 +83,7 @@ void tst_HotkeyManager::init()
 void tst_HotkeyManager::cleanup()
 {
     // Reset all hotkeys to defaults to ensure clean state
+    manager().m_registerHotkeyOverride = {};
     manager().resetAllToDefaults();
     clearAllTestSettings();
 }
@@ -85,6 +92,7 @@ void tst_HotkeyManager::cleanup()
 void tst_HotkeyManager::cleanupTestCase()
 {
     // Shutdown manager to properly unregister all hotkeys before test exit
+    manager().m_registerHotkeyOverride = {};
     manager().shutdown();
 }
 
@@ -98,13 +106,29 @@ void tst_HotkeyManager::clearAllTestSettings()
     clearSetting(SnapTray::kSettingsKeyHistoryWindowHotkey);
     clearSetting(SnapTray::kSettingsKeyTogglePinsVisibilityHotkey);
     clearSetting(SnapTray::kSettingsKeyRecordFullScreenHotkey);
+
+    auto settings = SnapTray::getSettings();
+    settings.remove(QString::fromLatin1(SnapTray::kSettingsKeyHotkeyRegistrationCounter));
 }
 
 void tst_HotkeyManager::clearSetting(const char* key)
 {
     auto settings = SnapTray::getSettings();
     settings.remove(key);
-    settings.remove(QString(key) + "_enabled");
+    settings.remove(QString::fromUtf8(key) + QString::fromLatin1(SnapTray::kSettingsKeyHotkeyEnabledSuffix));
+    settings.remove(registrationOrderKey(key));
+}
+
+void tst_HotkeyManager::setRegistrationOrder(const char* key, quint64 order)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(registrationOrderKey(key), order);
+}
+
+QString tst_HotkeyManager::registrationOrderKey(const char* key) const
+{
+    return QString::fromUtf8(key)
+        + QString::fromLatin1(SnapTray::kSettingsKeyHotkeyRegistrationOrderSuffix);
 }
 
 // ============================================================================
@@ -136,6 +160,26 @@ void tst_HotkeyManager::testInitialize_EmitsInitializationCompleted()
     // initialize() is idempotent and should not emit again when already initialized.
     manager().initialize();
     QCOMPARE(initializeSpy.count(), 0);
+}
+
+void tst_HotkeyManager::testInitialize_PersistedConflictKeepsPreferredOwnerActive()
+{
+    using namespace SnapTray;
+
+    manager().shutdown();
+    clearAllTestSettings();
+
+    auto settings = getSettings();
+    settings.setValue(kSettingsKeyHotkey, "Ctrl+Alt+1");
+    settings.setValue(kSettingsKeyPinFromImageHotkey, "Ctrl+Alt+1");
+    setRegistrationOrder(kSettingsKeyHotkey, 7);
+    settings.setValue(QString::fromLatin1(kSettingsKeyHotkeyRegistrationCounter), 8);
+
+    manager().initialize();
+
+    QVERIFY(manager().m_hotkeys.contains(HotkeyAction::RegionCapture));
+    QVERIFY(!manager().m_hotkeys.contains(HotkeyAction::PinFromImage));
+    QCOMPARE(manager().getConfig(HotkeyAction::PinFromImage).status, HotkeyStatus::Failed);
 }
 
 // ============================================================================
@@ -255,7 +299,6 @@ void tst_HotkeyManager::testUpdateHotkey_DisabledRollbackStatus()
     const HotkeyConfig disabledConfig = manager().getConfig(action);
     QCOMPARE(disabledConfig.status, HotkeyStatus::Disabled);
     QVERIFY(!disabledConfig.keySequence.isEmpty());
-    const QString oldSequence = disabledConfig.keySequence;
 
     QSignalSpy changedSpy(&manager(), &HotkeyManager::hotkeyChanged);
     QSignalSpy statusSpy(&manager(), &HotkeyManager::registrationStatusChanged);
@@ -264,10 +307,10 @@ void tst_HotkeyManager::testUpdateHotkey_DisabledRollbackStatus()
 
     const bool result = manager().updateHotkey(action, "Ctrl+Shift+T");
 
-    QVERIFY(!result);
+    QVERIFY(result);
 
     const HotkeyConfig config = manager().getConfig(action);
-    QCOMPARE(config.keySequence, oldSequence);
+    QCOMPARE(config.keySequence, QString("Ctrl+Shift+T"));
     QCOMPARE(config.status, HotkeyStatus::Disabled);
     QCOMPARE(config.enabled, false);
 
@@ -277,12 +320,56 @@ void tst_HotkeyManager::testUpdateHotkey_DisabledRollbackStatus()
     const QList<QVariant> changedArgs = changedSpy.last();
     QCOMPARE(changedArgs.at(0).value<HotkeyAction>(), action);
     const HotkeyConfig emittedConfig = changedArgs.at(1).value<HotkeyConfig>();
-    QCOMPARE(emittedConfig.keySequence, oldSequence);
+    QCOMPARE(emittedConfig.keySequence, QString("Ctrl+Shift+T"));
     QCOMPARE(emittedConfig.status, HotkeyStatus::Disabled);
 
     const QList<QVariant> statusArgs = statusSpy.last();
     QCOMPARE(statusArgs.at(0).value<HotkeyAction>(), action);
     QCOMPARE(statusArgs.at(1).value<HotkeyStatus>(), HotkeyStatus::Disabled);
+}
+
+void tst_HotkeyManager::testUpdateHotkey_ConflictPersistsDesiredSequence()
+{
+    using namespace SnapTray;
+
+    const QString blockedSequence = manager().getConfig(HotkeyAction::ScreenCanvas).keySequence;
+    QVERIFY(!blockedSequence.isEmpty());
+
+    const bool result = manager().updateHotkey(HotkeyAction::PinFromImage, blockedSequence);
+
+    QVERIFY(!result);
+
+    const HotkeyConfig config = manager().getConfig(HotkeyAction::PinFromImage);
+    QCOMPARE(config.keySequence, blockedSequence);
+    QCOMPARE(config.status, HotkeyStatus::Failed);
+    QVERIFY(config.enabled);
+}
+
+void tst_HotkeyManager::testUpdateHotkey_ReleasesPersistedConflictForOtherAction()
+{
+    using namespace SnapTray;
+
+    manager().shutdown();
+    clearAllTestSettings();
+    manager().m_registerHotkeyOverride = [](HotkeyAction, const QString&) {
+        return true;
+    };
+    manager().initialize();
+
+    constexpr HotkeyAction owner = HotkeyAction::PinFromImage;
+    constexpr HotkeyAction blocked = HotkeyAction::HistoryWindow;
+    const QString sharedSequence = QStringLiteral("Ctrl+Alt+1");
+
+    QVERIFY(manager().updateHotkey(owner, sharedSequence));
+    QVERIFY(!manager().updateHotkey(blocked, sharedSequence));
+    QCOMPARE(manager().getConfig(blocked).status, HotkeyStatus::Failed);
+
+    QVERIFY(manager().updateHotkey(owner, QStringLiteral("Ctrl+Alt+2")));
+
+    const HotkeyConfig recovered = manager().getConfig(blocked);
+    QCOMPARE(recovered.keySequence, sharedSequence);
+    QCOMPARE(recovered.status, HotkeyStatus::Registered);
+    QVERIFY(manager().m_registrationOrders.value(blocked, 0) > 0);
 }
 
 // ============================================================================
@@ -332,26 +419,20 @@ void tst_HotkeyManager::testResetToDefault_RestoresOriginal()
 {
     using namespace SnapTray;
 
-    const HotkeyConfig original = manager().getConfig(HotkeyAction::RegionCapture);
-
     // Change the hotkey
     const bool changed = manager().updateHotkey(HotkeyAction::RegionCapture, "Ctrl+Shift+X");
 
     auto modified = manager().getConfig(HotkeyAction::RegionCapture);
-    if (!changed) {
-        // In some environments global hotkey registration is unavailable.
-        // updateHotkey() then rolls back to the original key sequence by design.
-        QCOMPARE(modified.keySequence, original.keySequence);
-        QSKIP("Global hotkey registration unavailable in this environment.");
-    }
-
     QCOMPARE(modified.keySequence, QString("Ctrl+Shift+X"));
+    QCOMPARE(modified.status, changed ? HotkeyStatus::Registered : HotkeyStatus::Failed);
 
     // Reset to default
-    manager().resetToDefault(HotkeyAction::RegionCapture);
+    const bool reset = manager().resetToDefault(HotkeyAction::RegionCapture);
 
     auto restored = manager().getConfig(HotkeyAction::RegionCapture);
     QCOMPARE(restored.keySequence, restored.defaultKeySequence);
+    QCOMPARE(restored.enabled, true);
+    QCOMPARE(restored.status, reset ? HotkeyStatus::Registered : HotkeyStatus::Failed);
 }
 
 void tst_HotkeyManager::testResetAllToDefaults_RestoresAll()
@@ -363,13 +444,37 @@ void tst_HotkeyManager::testResetAllToDefaults_RestoresAll()
     manager().updateHotkey(HotkeyAction::ScreenCanvas, "Ctrl+2");
 
     // Reset all
-    manager().resetAllToDefaults();
+    const QStringList failedHotkeys = manager().resetAllToDefaults();
 
     // Verify all are restored
     auto configs = manager().getAllConfigs();
     for (const auto& config : configs) {
         QCOMPARE(config.keySequence, config.defaultKeySequence);
+        if (failedHotkeys.contains(config.displayName)) {
+            QCOMPARE(config.status, HotkeyStatus::Failed);
+        }
     }
+}
+
+void tst_HotkeyManager::testResetAllToDefaults_ReregistersRecoveredDefaultHotkey()
+{
+    using namespace SnapTray;
+
+    manager().shutdown();
+    clearAllTestSettings();
+
+    auto settings = getSettings();
+    settings.setValue(kSettingsKeyHotkey, QString(kDefaultHotkey));
+    settings.setValue(kSettingsKeyPinFromImageHotkey, QString(kDefaultHotkey));
+
+    manager().initialize();
+    QVERIFY(manager().m_hotkeys.contains(HotkeyAction::RegionCapture));
+
+    manager().resetAllToDefaults();
+
+    QVERIFY(manager().m_hotkeys.contains(HotkeyAction::RegionCapture));
+    QVERIFY(!manager().m_hotkeys.contains(HotkeyAction::PinFromImage));
+    QVERIFY(manager().getConfig(HotkeyAction::PinFromImage).keySequence.isEmpty());
 }
 
 // ============================================================================

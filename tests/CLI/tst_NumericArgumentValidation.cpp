@@ -25,6 +25,7 @@ class tst_NumericArgumentValidation : public QObject
     Q_OBJECT
 
 private slots:
+    void cliHandler_ignoresLegacyStartupCompatibilityArgument();
     void screenCommand_rejectsNonNumericScreenOption();
     void regionCommand_rejectsNonNumericScreenOption();
     void regionCommand_rejectsNonNumericDelayOption();
@@ -57,6 +58,12 @@ void tst_NumericArgumentValidation::screenCommand_rejectsNonNumericScreenOption(
 
     QCOMPARE(result.code, CLIResult::Code::InvalidArguments);
     QVERIFY(result.message.contains("Invalid screen number: abc"));
+}
+
+void tst_NumericArgumentValidation::cliHandler_ignoresLegacyStartupCompatibilityArgument()
+{
+    QVERIFY(!CLIHandler::hasArguments({"snaptray", "--minimized"}));
+    QVERIFY(CLIHandler::hasArguments({"snaptray", "--minimized", "record", "start"}));
 }
 
 void tst_NumericArgumentValidation::regionCommand_rejectsNonNumericScreenOption()

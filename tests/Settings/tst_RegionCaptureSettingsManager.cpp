@@ -13,8 +13,11 @@ private slots:
 
     void testSingletonInstance();
     void testDefaultValueEnabled();
+    void testMagnifierDefaultValueEnabled();
     void testSetDisabledRoundtrip();
     void testSetEnabledRoundtrip();
+    void testSetMagnifierDisabledRoundtrip();
+    void testSetMagnifierEnabledRoundtrip();
 
 private:
     void clearSettings();
@@ -34,6 +37,7 @@ void tst_RegionCaptureSettingsManager::clearSettings()
 {
     auto settings = SnapTray::getSettings();
     settings.remove("regionCapture/showShortcutHints");
+    settings.remove("regionCapture/showMagnifier");
     settings.sync();
 }
 
@@ -47,6 +51,11 @@ void tst_RegionCaptureSettingsManager::testSingletonInstance()
 void tst_RegionCaptureSettingsManager::testDefaultValueEnabled()
 {
     QCOMPARE(RegionCaptureSettingsManager::instance().isShortcutHintsEnabled(), true);
+}
+
+void tst_RegionCaptureSettingsManager::testMagnifierDefaultValueEnabled()
+{
+    QCOMPARE(RegionCaptureSettingsManager::instance().isMagnifierEnabled(), true);
 }
 
 void tst_RegionCaptureSettingsManager::testSetDisabledRoundtrip()
@@ -64,6 +73,23 @@ void tst_RegionCaptureSettingsManager::testSetEnabledRoundtrip()
 
     manager.setShortcutHintsEnabled(true);
     QCOMPARE(manager.isShortcutHintsEnabled(), true);
+}
+
+void tst_RegionCaptureSettingsManager::testSetMagnifierDisabledRoundtrip()
+{
+    auto& manager = RegionCaptureSettingsManager::instance();
+    manager.setMagnifierEnabled(false);
+    QCOMPARE(manager.isMagnifierEnabled(), false);
+}
+
+void tst_RegionCaptureSettingsManager::testSetMagnifierEnabledRoundtrip()
+{
+    auto& manager = RegionCaptureSettingsManager::instance();
+    manager.setMagnifierEnabled(false);
+    QCOMPARE(manager.isMagnifierEnabled(), false);
+
+    manager.setMagnifierEnabled(true);
+    QCOMPARE(manager.isMagnifierEnabled(), true);
 }
 
 QTEST_MAIN(tst_RegionCaptureSettingsManager)

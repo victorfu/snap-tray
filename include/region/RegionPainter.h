@@ -7,6 +7,7 @@
 #include <QPixmap>
 #include <QString>
 #include <QFont>
+#include <QRectF>
 #include <QSize>
 
 class QPainter;
@@ -57,7 +58,6 @@ public:
 
     // Configuration setters (call before paint)
     void setHighlightedWindowRect(const QRect& rect);
-    void setDetectedWindowTitle(const QString& title);
     void setCornerRadius(int radius);
     void setShowSubToolbar(bool show);
     void setCurrentTool(int tool);
@@ -68,18 +68,9 @@ public:
     /**
      * @brief Calculate the visual bounding rect of a window highlight (including the hint label).
      */
-    QRect getWindowHighlightVisualRect(const QRect& windowRect, const QString& title) const;
-
-    /**
-     * @brief Invalidate caches when selection changes.
-     * Call this when the selection rect is modified.
-     */
-    void invalidateOverlayCache();
+    QRect getWindowHighlightVisualRect(const QRect& windowRect) const;
 
     QRect lastDimensionInfoRect() const { return m_lastDimensionInfoRect; }
-
-    void buildDimmedCache(const QPixmap& background);
-    const QPixmap& dimmedCache() const { return m_dimmedCache; }
 
 private:
     // Drawing methods (extracted from RegionSelector)
@@ -88,16 +79,22 @@ private:
     void drawSelection(QPainter& painter);
     void drawDimensionInfo(QPainter& painter);
     void drawDetectedWindow(QPainter& painter);
-    void drawWindowHint(QPainter& painter, const QString& title);
     void drawAnnotations(QPainter& painter);
     void drawCurrentAnnotation(QPainter& painter);
     void drawMultiSelection(QPainter& painter);
+    void drawSelectionChrome(QPainter& painter, const QRect& selectionRect) const;
     QRect drawDimensionInfoPanel(QPainter& painter, const QRect& selectionRect, const QString& label) const;
+    QRect dimensionInfoPanelRect(const QRect& selectionRect, const QString& label,
+                                 const QFont& baseFont) const;
+    QRect selectionChromeBounds(const QRect& selectionRect) const;
     void drawRegionBadge(QPainter& painter, const QRect& selectionRect, const QColor& color,
                          int index, bool isActive) const;
+    QRectF alignedSelectionBorderRect(const QRect& selectionRect, qreal penWidth) const;
+    QRect physicalSelectionRect(const QRect& selectionRect) const;
+    QString selectionSizeLabel(const QRect& selectionRect) const;
 
     // Helper methods
-    int effectiveCornerRadius() const;
+    int effectiveCornerRadius(const QRect& selectionRect) const;
     TextBoxAnnotation* getSelectedTextAnnotation() const;
     EmojiStickerAnnotation* getSelectedEmojiStickerAnnotation() const;
     ShapeAnnotation* getSelectedShapeAnnotation() const;
@@ -113,7 +110,6 @@ private:
 
     // State
     QRect m_highlightedWindowRect;
-    QString m_detectedWindowTitle;
     int m_cornerRadius = 0;
     bool m_showSubToolbar = true;
     int m_currentTool = 0;
@@ -121,16 +117,6 @@ private:
     bool m_multiRegionMode = false;
     int m_replaceTargetIndex = -1;
     QRect m_replacePreviewRect;
-
-    // Performance caches
-    // Overlay cache: background + dimming overlay composited together
-    QPixmap m_overlayCache;
-    QRect m_cachedSelectionRect;
-    QRect m_cachedHighlightRect;
-    bool m_overlayCacheValid = false;
-
-    QPixmap m_dimmedCache;
-    bool m_dimmedCacheReady = false;
 
     QRect m_lastDimensionInfoRect;
 };

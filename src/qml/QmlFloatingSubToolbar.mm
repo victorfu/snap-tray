@@ -1,5 +1,6 @@
 #include "qml/QmlFloatingSubToolbar.h"
 #include "cursor/CursorSurfaceSupport.h"
+#include "platform/WindowLevel.h"
 #include "qml/QmlOverlayManager.h"
 #include "qml/PinToolOptionsViewModel.h"
 
@@ -47,7 +48,6 @@ QmlFloatingSubToolbar::QmlFloatingSubToolbar(PinToolOptionsViewModel* viewModel,
 QmlFloatingSubToolbar::QmlFloatingSubToolbar(QObject* parent)
     : QObject(parent)
     , m_viewModel(new PinToolOptionsViewModel(this))
-    , m_ownsViewModel(true)
 {
     connect(m_viewModel, &PinToolOptionsViewModel::emojiPickerRequested,
             this, &QmlFloatingSubToolbar::emojiPickerRequested);
@@ -128,6 +128,8 @@ void QmlFloatingSubToolbar::applyPlatformWindowFlags()
     mask &= ~NSWindowStyleMaskResizable;
     [window setStyleMask:mask];
 #endif
+
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
 }
 
 // ── Show / Hide / Close ──
@@ -139,6 +141,7 @@ void QmlFloatingSubToolbar::show()
     if (!m_rootItem)
         return;
 
+    syncTransientParent();
     m_view->show();
     applyPlatformWindowFlags();
     QmlOverlayManager::enableNativeShadow(m_view);
@@ -198,6 +201,26 @@ PinToolOptionsViewModel* QmlFloatingSubToolbar::viewModel() const
 void QmlFloatingSubToolbar::setParentWidget(QWidget* parent)
 {
     m_parentWidget = parent;
+    syncTransientParent();
+}
+
+void QmlFloatingSubToolbar::syncTransientParent()
+{
+    if (!m_view) {
+        return;
+    }
+
+    QWidget* hostWindow = m_parentWidget ? m_parentWidget->window() : nullptr;
+    if (hostWindow && hostWindow->windowHandle()) {
+        m_view->setTransientParent(hostWindow->windowHandle());
+    } else {
+        m_view->setTransientParent(nullptr);
+    }
+
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
+    if (m_view->isVisible()) {
+        applyPlatformWindowFlags();
+    }
 }
 
 void QmlFloatingSubToolbar::syncCursorSurface()
@@ -238,6 +261,11 @@ bool QmlFloatingSubToolbar::eventFilter(QObject* obj, QEvent* event)
         case QEvent::Hide:
         case QEvent::Close:
             CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+            if (m_parentWidget) {
+                QTimer::singleShot(0, this, [this]() {
+                    CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_parentWidget);
+                });
+            }
             break;
         default:
             break;

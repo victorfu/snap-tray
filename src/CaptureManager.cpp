@@ -16,8 +16,130 @@
 #include <QCursor>
 #include <QKeyEvent>
 #include <QDialog>
+#include <QImage>
+
+#ifdef Q_OS_MACOS
+#include <ApplicationServices/ApplicationServices.h>
+#endif
 
 namespace {
+
+#ifdef Q_OS_MACOS
+QImage createQImageFromCGImage(CGImageRef sourceImage)
+{
+    if (!sourceImage) {
+        return {};
+    }
+
+    const size_t width = CGImageGetWidth(sourceImage);
+    const size_t height = CGImageGetHeight(sourceImage);
+    if (width == 0 || height == 0) {
+        return {};
+    }
+
+    QImage target(static_cast<int>(width), static_cast<int>(height),
+                  QImage::Format_RGBA8888_Premultiplied);
+    if (target.isNull()) {
+        return {};
+    }
+
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    if (!colorSpace) {
+        return {};
+    }
+
+    CGContextRef context = CGBitmapContextCreate(
+        target.bits(),
+        width,
+        height,
+        8,
+        static_cast<size_t>(target.bytesPerLine()),
+        colorSpace,
+        kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(colorSpace);
+
+    if (!context) {
+        return {};
+    }
+
+    CGContextSetBlendMode(context, kCGBlendModeCopy);
+    CGContextDrawImage(context,
+                       CGRectMake(0.0, 0.0, static_cast<CGFloat>(width), static_cast<CGFloat>(height)),
+                       sourceImage);
+    CGContextRelease(context);
+    return target;
+}
+
+std::optional<CGDirectDisplayID> displayIdForScreen(QScreen* screen)
+{
+    if (!screen) {
+        return std::nullopt;
+    }
+
+    uint32_t displayCount = 0;
+    CGDirectDisplayID displays[16];
+    if (CGGetActiveDisplayList(16, displays, &displayCount) != kCGErrorSuccess) {
+        return std::nullopt;
+    }
+
+    const QRect targetGeometry = screen->geometry();
+    for (uint32_t i = 0; i < displayCount; ++i) {
+        const CGRect bounds = CGDisplayBounds(displays[i]);
+        if (static_cast<int>(bounds.origin.x) == targetGeometry.x() &&
+            static_cast<int>(bounds.origin.y) == targetGeometry.y() &&
+            static_cast<int>(bounds.size.width) == targetGeometry.width() &&
+            static_cast<int>(bounds.size.height) == targetGeometry.height()) {
+            return displays[i];
+        }
+    }
+
+    return std::nullopt;
+}
+
+QPixmap captureScreenViaNativeDisplay(QScreen* screen)
+{
+    const auto displayId = displayIdForScreen(screen);
+    if (!displayId.has_value()) {
+        return {};
+    }
+
+    CGImageRef displayImage = CGDisplayCreateImage(*displayId);
+    if (!displayImage) {
+        return {};
+    }
+
+    const QImage image = createQImageFromCGImage(displayImage);
+    CGImageRelease(displayImage);
+    if (image.isNull()) {
+        return {};
+    }
+
+    QPixmap pixmap = QPixmap::fromImage(image, Qt::NoOpaqueDetection);
+    if (pixmap.isNull()) {
+        return {};
+    }
+
+    const qreal dpr = screen->devicePixelRatio() > 0.0 ? screen->devicePixelRatio() : 1.0;
+    pixmap.setDevicePixelRatio(dpr);
+    return pixmap;
+}
+#endif
+
+QPixmap captureScreenSnapshot(QScreen* screen)
+{
+    if (!screen) {
+        return {};
+    }
+
+#ifdef Q_OS_MACOS
+    QPixmap nativePixmap = captureScreenViaNativeDisplay(screen);
+    if (!nativePixmap.isNull()) {
+        return nativePixmap;
+    }
+#endif
+
+    return screen->grabWindow(0);
+}
 
 QScreen* fallbackReplayScreen()
 {
@@ -132,18 +254,11 @@ bool CaptureManager::startHistoryReplay(const QString& entryId)
         return false;
     }
 
-    if (m_windowDetector) {
-        m_windowDetector->setScreen(targetScreen);
-#ifdef Q_OS_MACOS
-        m_windowDetector->refreshWindowList();
-#else
-        m_windowDetector->refreshWindowListAsync();
-#endif
-    }
+    refreshWindowDetectorForCapture(targetScreen);
 
     QWidget* popup = QApplication::activePopupWidget();
     QWidget* modal = QApplication::activeModalWidget();
-    const QPixmap preCapture = targetScreen->grabWindow(0);
+    const QPixmap preCapture = captureScreenSnapshot(targetScreen);
 
     if (popup) {
         popup->close();
@@ -207,24 +322,14 @@ void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortc
         return;
     }
 
-    // 2. Prime window detection before we capture the screen.
-    // On macOS, transient UI such as menu-bar popups can disappear as soon as
-    // the capture overlay activates. Refresh synchronously here so the
-    // detector cache matches the same UI snapshot used for preCapture.
-    if (m_windowDetector) {
-        m_windowDetector->setScreen(targetScreen);
-#ifdef Q_OS_MACOS
-        m_windowDetector->refreshWindowList();
-#else
-        m_windowDetector->refreshWindowListAsync();
-#endif
-    }
+    // 2. Keep detector state in sync with the frame we capture.
+    refreshWindowDetectorForCapture(targetScreen);
 
     // 3. Capture screenshot while popup/modal is still visible
     QWidget *popup = QApplication::activePopupWidget();
     QWidget *modal = QApplication::activeModalWidget();
 
-    QPixmap preCapture = targetScreen->grabWindow(0);
+    QPixmap preCapture = captureScreenSnapshot(targetScreen);
 
     // 4. Close popup/modal AFTER screenshot
     if (popup) {
@@ -317,35 +422,12 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
     emit captureStarted();
 
     // Create RegionSelector
-    m_regionSelector = new RegionSelector();
-    m_regionSelector->setShowShortcutHintsOnEntry(false);
+    m_regionSelector = createRegionSelector(false);
 
-    // Setup window detector if available
-    // Use async version to avoid blocking UI startup
-    if (m_windowDetector) {
-        m_windowDetector->setScreen(screen);
-        m_windowDetector->refreshWindowListAsync();
+    // Keep detector state aligned with the prepared reveal flow used by normal region entry.
+    if (m_windowDetector && screen) {
+        refreshWindowDetectorForCapture(screen);
         m_regionSelector->setWindowDetector(m_windowDetector);
-
-        // Trigger initial window highlight once the async window list is ready.
-        if (m_windowDetector->isEnabled()) {
-            const auto regionSelector = m_regionSelector;
-            const auto triggerDetection = [regionSelector]() {
-                if (!regionSelector) {
-                    return;
-                }
-                regionSelector->refreshWindowDetectionAtCursor();
-            };
-
-            if (m_windowDetector->isRefreshComplete()) {
-                triggerDetection();
-            } else {
-                connect(m_windowDetector, &WindowDetector::windowListReady,
-                        m_regionSelector, [triggerDetection]() {
-                            triggerDetection();
-                        });
-            }
-        }
     }
 
     // Initialize with preset region
@@ -362,12 +444,7 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
     connect(m_regionSelector, &RegionSelector::saveFailed,
             this, &CaptureManager::saveFailed);
 
-    m_regionSelector->setGeometry(screen->geometry());
-    m_regionSelector->show();
-    raiseWindowAboveMenuBar(m_regionSelector);
-
-    m_regionSelector->activateWindow();
-    m_regionSelector->raise();
+    showPreparedRegionSelector(screen);
 }
 
 void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
@@ -375,8 +452,7 @@ void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
                                               bool quickPinMode,
                                               bool showShortcutHintsOnEntry)
 {
-    m_regionSelector = new RegionSelector();
-    m_regionSelector->setShowShortcutHintsOnEntry(showShortcutHintsOnEntry);
+    m_regionSelector = createRegionSelector(showShortcutHintsOnEntry);
 
     if (quickPinMode) {
         m_regionSelector->setQuickPinMode(true);
@@ -404,6 +480,15 @@ void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
                 this, &CaptureManager::saveFailed);
     }
 
+    showPreparedRegionSelector(targetScreen);
+}
+
+void CaptureManager::showPreparedRegionSelector(QScreen *targetScreen)
+{
+    if (!m_regionSelector || !targetScreen) {
+        return;
+    }
+
     m_regionSelector->setGeometry(targetScreen->geometry());
     m_regionSelector->show();
     raiseWindowAboveMenuBar(m_regionSelector);
@@ -414,5 +499,52 @@ void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
     // Ensure cursor is set AFTER show/activate to fix race condition where
     // cursor was set before widget visibility, then Qt reset it to ArrowCursor
     m_regionSelector->ensureCrossCursor();
+}
 
+void CaptureManager::prewarmWindowDetector()
+{
+    if (!m_windowDetector) {
+        return;
+    }
+
+    QScreen *targetScreen = QGuiApplication::screenAt(QCursor::pos());
+    if (!targetScreen) {
+        targetScreen = QGuiApplication::primaryScreen();
+    }
+    if (!targetScreen) {
+        return;
+    }
+
+    refreshWindowDetectorAsync(targetScreen);
+}
+
+void CaptureManager::refreshWindowDetectorForCapture(QScreen *screen)
+{
+    if (!m_windowDetector || !screen) {
+        return;
+    }
+
+    m_windowDetector->setScreen(screen);
+#ifdef Q_OS_MACOS
+    m_windowDetector->refreshWindowList();
+#else
+    m_windowDetector->refreshWindowListAsync();
+#endif
+}
+
+void CaptureManager::refreshWindowDetectorAsync(QScreen *screen)
+{
+    if (!m_windowDetector || !screen) {
+        return;
+    }
+
+    m_windowDetector->setScreen(screen);
+    m_windowDetector->refreshWindowListAsync();
+}
+
+RegionSelector *CaptureManager::createRegionSelector(bool showShortcutHintsOnEntry)
+{
+    auto *selector = new RegionSelector();
+    selector->setShowShortcutHintsOnEntry(showShortcutHintsOnEntry);
+    return selector;
 }

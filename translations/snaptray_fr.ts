@@ -21,6 +21,11 @@
 <context>
     <name>AdvancedSettings</name>
     <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="24" />
+        <source>Show magnifier</source>
+        <translation>Afficher la loupe</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="21" />
         <source>Capture</source>
         <translation>Capture</translation>
@@ -3208,3 +3213,5 @@ Il est peut-être utilisé par une autre application.</translation>
     </message>
 </context>
 </TS>
+
+

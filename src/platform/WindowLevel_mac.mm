@@ -196,6 +196,25 @@ void setWindowVisibleOnAllWorkspaces(QWidget *widget, bool enabled)
     }
 }
 
+void preventWindowHideOnDeactivate(QWidget *widget)
+{
+    if (!widget) {
+        return;
+    }
+
+    NSView *view = reinterpret_cast<NSView *>(widget->winId());
+    if (!view) {
+        return;
+    }
+
+    NSWindow *window = [view window];
+    if (!window) {
+        return;
+    }
+
+    [window setHidesOnDeactivate:NO];
+}
+
 void forceNativeCursor(const QCursor& cursor, QWidget *)
 {
     if (NSCursor* nsCursor = nsCursorForQtCursor(cursor)) {
@@ -247,4 +266,19 @@ void raiseTransientWindowAboveParent(QWindow *window, QWidget *parentWidget)
 
     [nsWindow setLevel:targetLevel];
     [nsWindow setHidesOnDeactivate:NO];
+}
+
+void reinforceFramelessToolWindow(QWindow *window)
+{
+    Q_UNUSED(window)
+}
+
+void hideNativeWindowTitleBarIcon(QWindow *window)
+{
+    Q_UNUSED(window)
+}
+
+void hideNativeWindowTitleBarIcon(QWidget *widget)
+{
+    Q_UNUSED(widget)
 }

@@ -349,12 +349,18 @@ void CursorManager::updateCursorFromStateForWidget(QWidget* widget)
             hoverCursor = Qt::ArrowCursor;
             break;
         case HoverTarget::Annotation:
+        case HoverTarget::SelectionBody:
             hoverCursor = Qt::SizeAllCursor;
             break;
         case HoverTarget::ResizeHandle:
             if (state.hoverHandleIndex >= 0) {
                 auto handle = static_cast<SelectionStateManager::ResizeHandle>(state.hoverHandleIndex);
                 hoverCursor = cursorForHandle(handle);
+            }
+            break;
+        case HoverTarget::WindowEdge:
+            if (state.hoverHandleIndex >= 0) {
+                hoverCursor = cursorForEdge(static_cast<ResizeHandler::Edge>(state.hoverHandleIndex));
             }
             break;
         case HoverTarget::GizmoHandle:

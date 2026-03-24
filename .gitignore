@@ -64,3 +64,8 @@ audit.log
 firebase-debug.log
 
 /certs/
+
+openspec/
+
+.omc/
+.omx/

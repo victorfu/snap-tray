@@ -407,14 +407,24 @@ DetectionFlags WindowDetector::detectionFlags() const
 
 void WindowDetector::refreshWindowList()
 {
+    ++m_refreshRequestId;
+    m_refreshComplete = false;
+
     QMutexLocker locker(&m_cacheMutex);
     m_windowCache.clear();
+    m_cacheReady = false;
+    m_cacheScreen = nullptr;
     enumerateWindows();
+    m_cacheScreen = m_currentScreen.data();
+    m_cacheReady = true;
+
+    m_refreshComplete = true;
 }
 
 void WindowDetector::refreshWindowListAsync()
 {
     uint64_t requestId = ++m_refreshRequestId;
+    QScreen* targetScreen = m_currentScreen.data();
 
     m_refreshComplete = false;
     qreal dpr = m_currentScreen ? m_currentScreen->devicePixelRatio() : 1.0;
@@ -422,7 +432,14 @@ void WindowDetector::refreshWindowListAsync()
     // Snapshot detection flags to avoid data race with main thread
     const DetectionFlags flags = m_detectionFlags;
 
-    m_refreshFuture = QtConcurrent::run([this, dpr, requestId, flags]() {
+    {
+        QMutexLocker locker(&m_cacheMutex);
+        if (m_cacheScreen != targetScreen) {
+            m_cacheReady = false;
+        }
+    }
+
+    m_refreshFuture = QtConcurrent::run([this, dpr, requestId, flags, targetScreen]() {
         std::vector<DetectedElement> newCache;
         enumerateWindowsInternal(newCache, dpr, flags);
 
@@ -434,6 +451,8 @@ void WindowDetector::refreshWindowListAsync()
         {
             QMutexLocker locker(&m_cacheMutex);
             m_windowCache = std::move(newCache);
+            m_cacheScreen = targetScreen;
+            m_cacheReady = true;
         }
 
         m_refreshComplete = true;
@@ -446,6 +465,12 @@ void WindowDetector::refreshWindowListAsync()
 bool WindowDetector::isRefreshComplete() const
 {
     return m_refreshComplete.load();
+}
+
+bool WindowDetector::isWindowCacheReady() const
+{
+    QMutexLocker locker(&m_cacheMutex);
+    return m_cacheReady && m_cacheScreen == m_currentScreen.data();
 }
 
 void WindowDetector::enumerateWindows()
@@ -618,6 +643,10 @@ std::optional<DetectedElement> WindowDetector::detectWindowAt(
 
     // Lock mutex for thread-safe cache access
     QMutexLocker locker(&m_cacheMutex);
+
+    if (!m_cacheReady || m_cacheScreen != m_currentScreen.data()) {
+        return std::nullopt;
+    }
 
     const bool detectChildren =
         queryMode == QueryMode::IncludeChildControls &&

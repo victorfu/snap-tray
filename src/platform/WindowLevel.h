@@ -33,6 +33,11 @@ void setWindowExcludedFromCapture(QWidget *widget, bool excluded);
 // On Windows: Uses WS_EX_TOOLWINDOW style
 void setWindowVisibleOnAllWorkspaces(QWidget *widget, bool enabled);
 
+// Prevents a native window from hiding automatically when the app deactivates.
+// On macOS: Sets NSWindow.hidesOnDeactivate = NO after the native window exists.
+// On Windows: No-op.
+void preventWindowHideOnDeactivate(QWidget *widget);
+
 // Reasserts a Qt cursor at the native platform layer.
 // On macOS: maps system shapes or uploads custom pixmap cursors.
 // On Windows: currently no-op (policy is still unified at the Qt layer).
@@ -47,5 +52,19 @@ void raiseWindowAboveOverlays(QWidget *widget);
 // On macOS: Sets NSWindow level to max(NSFloatingWindowLevel, parent + 1)
 // On Windows: No-op (Qt::WindowStaysOnTopHint is sufficient)
 void raiseTransientWindowAboveParent(QWindow *window, QWidget *parentWidget);
+
+// Reapplies native frameless-tool-window styles to an overlay QWindow.
+// On Windows: strips caption/control-box bits that can resurface after owner/transient changes.
+// On macOS: no-op.
+void reinforceFramelessToolWindow(QWindow *window);
+
+// Hides the native title-bar icon for standard top-level QWindows.
+// On Windows: removes the caption icon while preserving the normal title bar/buttons.
+// On macOS: no-op.
+void hideNativeWindowTitleBarIcon(QWindow *window);
+
+// Hides the native title-bar icon for standard top-level QWidgets.
+// Delegates to the backing QWindow after the native handle exists.
+void hideNativeWindowTitleBarIcon(QWidget *widget);
 
 #endif // WINDOWLEVEL_H

@@ -35,7 +35,7 @@ Flickable {
         Text {
             text: settingsBackend.appName
             color: SemanticTokens.textPrimary
-            font.pixelSize: SemanticTokens.fontSizeH2
+            font.pixelSize: SemanticTokens.fontSizeH1
             font.weight: Font.Bold
             font.family: SemanticTokens.fontFamily
             font.letterSpacing: SemanticTokens.letterSpacingDefault

@@ -36,6 +36,14 @@ qreal normalizeAngleDelta(qreal deltaDegrees)
     }
     return deltaDegrees;
 }
+
+bool shouldSuppressCompletedSelectionDragUi(const RegionInputState& state,
+                                            const SelectionStateManager* selectionManager)
+{
+    return selectionManager &&
+           state.completedSelectionDragUiSuppressed &&
+           selectionManager->hasSelection();
+}
 } // namespace
 
 RegionInputHandler::RegionInputHandler(QObject* parent)
@@ -222,6 +230,7 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
     // Qt doesn't fire mousePressEvent for already-pressed buttons, so we detect
     // this broken state here and synthesize the missing selection start
     if (!m_selectionManager->hasActiveSelection() &&
+        !m_pendingWindowClickActive &&
         (event->buttons() & Qt::LeftButton)) {
         qDebug() << "RegionInputHandler: Recovering from race condition - "
                  << "starting selection from mouseMoveEvent";
@@ -267,8 +276,24 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
         return;
     }
 
+    if (m_pendingWindowClickActive && !m_selectionManager->hasActiveSelection()) {
+        const int dx = event->pos().x() - m_pendingWindowClickStartPos.x();
+        const int dy = event->pos().y() - m_pendingWindowClickStartPos.y();
+        if ((dx * dx + dy * dy) > WINDOW_CLICK_MAX_DISTANCE_SQ) {
+            m_selectionManager->startSelection(m_pendingWindowClickStartPos);
+            m_lastSelectionRect = QRect();
+            clearDetectionAndNotify();
+            m_selectionManager->updateSelection(event->pos());
+            m_pendingWindowClickActive = false;
+            m_pendingWindowClickRect = QRect();
+            m_pendingWindowClickStartPos = QPoint();
+        }
+    }
+
     // Window detection during hover
-    handleWindowDetectionMove(event->pos());
+    if (!m_pendingWindowClickActive) {
+        handleWindowDetectionMove(event->pos());
+    }
 
     // Handle selection states
     if (m_selectionManager->isSelecting()) {
@@ -318,7 +343,7 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
         }
 
         // Handle emoji sticker drag/scale release
-        if (handleEmojiStickerRelease()) {
+        if (handleEmojiStickerRelease(event->pos())) {
             return;
         }
 
@@ -328,12 +353,12 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
         }
 
         // Handle arrow annotation drag/handle release
-        if (handleArrowAnnotationRelease()) {
+        if (handleArrowAnnotationRelease(event->pos())) {
             return;
         }
 
         // Handle polyline annotation drag/vertex release
-        if (handlePolylineAnnotationRelease()) {
+        if (handlePolylineAnnotationRelease(event->pos())) {
             return;
         }
 
@@ -341,6 +366,10 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
         if (m_selectionManager->isSelecting()) {
             handleSelectionRelease(event->pos());
             clearSelectionDrag();
+            emit updateRequested();
+        }
+        else if (m_pendingWindowClickActive) {
+            handleSelectionRelease(event->pos());
             emit updateRequested();
         }
         else if (m_selectionManager->isResizing()) {
@@ -593,10 +622,6 @@ bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
 void RegionInputHandler::handleNewSelectionPress(const QPoint& pos)
 {
     clearSelectionDrag();
-    m_selectionManager->startSelection(pos);
-    m_startPoint = pos;
-    state().currentPoint = pos;
-    m_lastSelectionRect = QRect();
 
     // Preserve the highlighted window at press time so minor pointer drift
     // still resolves as window-click instead of falling back to full screen.
@@ -604,12 +629,18 @@ void RegionInputHandler::handleNewSelectionPress(const QPoint& pos)
         m_pendingWindowClickActive = true;
         m_pendingWindowClickRect = state().highlightedWindowRect;
         m_pendingWindowClickStartPos = pos;
+        m_startPoint = pos;
+        state().currentPoint = pos;
+        return;
     }
-    else {
-        m_pendingWindowClickActive = false;
-        m_pendingWindowClickRect = QRect();
-        m_pendingWindowClickStartPos = QPoint();
-    }
+
+    m_selectionManager->startSelection(pos);
+    m_startPoint = pos;
+    state().currentPoint = pos;
+    m_lastSelectionRect = QRect();
+    m_pendingWindowClickActive = false;
+    m_pendingWindowClickRect = QRect();
+    m_pendingWindowClickStartPos = QPoint();
 }
 
 void RegionInputHandler::handleRightButtonPress(const QPoint& pos)
@@ -825,66 +856,30 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
         }
     }
 
-    // Check text annotation hover
-    if (m_annotationLayer->hitTestText(pos) >= 0) {
-        cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::Annotation);
-        return;
-    }
-
-    // Check emoji sticker gizmo handles (only for selected emoji)
-    if (state().currentTool != ToolId::EmojiSticker) {
-        if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
-            GizmoHandle handle = TransformationGizmo::hitTest(emojiItem, pos);
-            if (handle != GizmoHandle::None) {
-                cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::GizmoHandle, static_cast<int>(handle));
-                return;
-            }
-        }
-    }
-
-    // Check Arrow gizmo handles (for selected arrows)
-    if (auto* arrowItem = getSelectedArrowAnnotation()) {
-        GizmoHandle handle = TransformationGizmo::hitTest(arrowItem, pos);
-        if (handle != GizmoHandle::None) {
-            cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::GizmoHandle, static_cast<int>(handle));
-            return;
-        }
-    } else {
-        // Check hover on unselected arrow (show move cursor)
-        if (m_annotationLayer->hitTestArrow(pos) >= 0) {
-            cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::Annotation);
-            return;
-        }
-    }
-
-    // Check Polyline gizmo handles (for selected polylines)
-    if (auto* polylineItem = getSelectedPolylineAnnotation()) {
-        int vertexIndex = TransformationGizmo::hitTestVertex(polylineItem, pos);
-        if (vertexIndex >= 0) {
-            // Vertex handle - use GizmoHandle type (will show CrossCursor via CursorManager)
-            cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::GizmoHandle, static_cast<int>(GizmoHandle::ArrowStart));
-            return;
-        } else if (vertexIndex == -1) {
-            // Body hit - show move cursor
-            cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::Annotation);
-            return;
-        }
-    } else {
-        // Check hover on unselected polyline
-        if (m_annotationLayer->hitTestPolyline(pos) >= 0) {
-            cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::Annotation);
-            return;
-        }
-    }
-
-    // Check shape gizmo handles and shape body hover after arrow/polyline.
+    // Check shape gizmo handles first, then fall back to the shared
+    // annotation hover path used by PinWindow and ScreenCanvas.
     if (auto* shapeItem = getSelectedShapeAnnotation()) {
         GizmoHandle handle = TransformationGizmo::hitTest(shapeItem, pos);
         if (handle != GizmoHandle::None) {
             cm.setHoverTargetForWidget(m_parentWidget, HoverTarget::GizmoHandle, static_cast<int>(handle));
             return;
         }
-    } else if (m_annotationLayer->hitTestShape(pos) >= 0) {
+    }
+
+    const auto annotationHit = CursorManager::hitTestAnnotations(
+        pos,
+        m_annotationLayer,
+        getSelectedEmojiStickerAnnotation(),
+        getSelectedArrowAnnotation(),
+        getSelectedPolylineAnnotation(),
+        state().currentTool != ToolId::EmojiSticker);
+    if (annotationHit.hit) {
+        cm.setHoverTargetForWidget(
+            m_parentWidget, annotationHit.target, annotationHit.handleIndex);
+        return;
+    }
+
+    if (m_annotationLayer->hitTestShape(pos) >= 0) {
         cm.setHoverTargetForWidget(m_parentWidget, HoverTarget::Annotation);
         return;
     }
@@ -899,7 +894,7 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
 
         // Check if hovering inside selection for move (displays SizeAllCursor)
         if (m_selectionManager->hitTestMove(pos)) {
-            cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::Annotation);
+            cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::SelectionBody);
             return;
         }
     }
@@ -941,8 +936,11 @@ void RegionInputHandler::handleThrottledUpdate()
 
     if (m_selectionManager->isSelecting() || m_selectionManager->isResizing() || m_selectionManager->isMoving()) {
         const QRect currentSelectionRect = m_selectionManager->selectionRect().normalized();
-        const QRect currentMagnifierRect = m_dirtyRegionPlanner.magnifierRectForCursor(
-            state().currentPoint, m_parentWidget->size());
+        const bool suppressFloatingUi =
+            shouldSuppressCompletedSelectionDragUi(state(), m_selectionManager);
+        const QRect currentMagnifierRect = suppressFloatingUi
+            ? QRect()
+            : m_dirtyRegionPlanner.magnifierRectForCursor(state().currentPoint, m_parentWidget->size());
         QRect currentToolbarRect;
         QRect currentRegionControlRect;
 
@@ -958,6 +956,8 @@ void RegionInputHandler::handleThrottledUpdate()
         params.currentCursorPos = state().currentPoint;
         params.lastCursorPos = m_lastCrosshairPoint;
         params.viewportSize = m_parentWidget->size();
+        params.suppressFloatingUi = suppressFloatingUi;
+        params.includeMagnifier = !suppressFloatingUi;
         const QRegion dirtyRegion = m_dirtyRegionPlanner.planSelectionDragRegion(params);
         m_parentWidget->update(dirtyRegion);
         m_lastSelectionRect = currentSelectionRect;
@@ -968,7 +968,15 @@ void RegionInputHandler::handleThrottledUpdate()
     else if (state().isDrawing) {
         if (m_updateThrottler->shouldUpdate(UpdateThrottler::ThrottleType::Annotation)) {
             m_updateThrottler->reset(UpdateThrottler::ThrottleType::Annotation);
-            emit updateRequested();
+            if (m_selectionManager && m_selectionManager->hasSelection()) {
+                emit updateRequested(m_selectionManager->selectionRect().adjusted(
+                    -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+                    -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+                    SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+                    SelectionDirtyRegionPlanner::kAnnotationRepaintMargin));
+            } else {
+                emit updateRequested();
+            }
         }
     }
     else if (m_selectionManager->isComplete()) {
@@ -1082,7 +1090,7 @@ bool RegionInputHandler::handleTextEditorRelease(const QPoint& pos)
     return false;
 }
 
-bool RegionInputHandler::handleEmojiStickerRelease()
+bool RegionInputHandler::handleEmojiStickerRelease(const QPoint& pos)
 {
     if (m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating) {
         m_isEmojiDragging = false;
@@ -1093,6 +1101,7 @@ bool RegionInputHandler::handleEmojiStickerRelease()
         m_emojiStartAngle = 0.0;
         // Reset input state to let hover logic take over (consistent with arrow/polyline)
         CursorManager::instance().setInputStateForWidget(m_parentWidget,InputState::Idle);
+        syncHoverCursorAt(pos);
         return true;
     }
     return false;
@@ -1324,7 +1333,8 @@ bool RegionInputHandler::handleArrowAnnotationPress(const QPoint& pos)
             if (handle == GizmoHandle::Body) {
                 cm.setInputStateForWidget(m_parentWidget, InputState::Moving);
             } else if (handle == GizmoHandle::ArrowControl) {
-                cm.pushCursorForWidget(m_parentWidget, CursorContext::Selection, Qt::PointingHandCursor);
+                cm.setHoverTargetForWidget(
+                    m_parentWidget, HoverTarget::GizmoHandle, static_cast<int>(handle));
             } else {
                 cm.setInputStateForWidget(m_parentWidget, InputState::Selecting);
             }
@@ -1413,7 +1423,7 @@ bool RegionInputHandler::handleArrowAnnotationMove(const QPoint& pos)
     return true;
 }
 
-bool RegionInputHandler::handleArrowAnnotationRelease()
+bool RegionInputHandler::handleArrowAnnotationRelease(const QPoint& pos)
 {
     if (!m_isArrowDragging) {
         return false;
@@ -1423,6 +1433,7 @@ bool RegionInputHandler::handleArrowAnnotationRelease()
     m_activeArrowHandle = GizmoHandle::None;
     // Reset input state to let hover logic take over
     CursorManager::instance().setInputStateForWidget(m_parentWidget,InputState::Idle);
+    syncHoverCursorAt(pos);
     return true;
 }
 
@@ -1514,12 +1525,13 @@ bool RegionInputHandler::handlePolylineAnnotationMove(const QPoint& pos) {
     return false;
 }
 
-bool RegionInputHandler::handlePolylineAnnotationRelease() {
+bool RegionInputHandler::handlePolylineAnnotationRelease(const QPoint& pos) {
     if (m_isPolylineDragging) {
         m_isPolylineDragging = false;
         m_activePolylineVertexIndex = -1;
         // Reset input state to let hover logic take over
         CursorManager::instance().setInputStateForWidget(m_parentWidget,InputState::Idle);
+        syncHoverCursorAt(pos);
         emit updateRequested();
         return true;
     }

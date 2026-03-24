@@ -112,6 +112,15 @@ CursorStyleSpec cursorSpecForWidget(const QWidget* widget)
                   : CursorStyleSpec::fromShape(Qt::ArrowCursor);
 }
 
+bool shouldSuppressCompletedSelectionDragUi(const SelectionStateManager* selectionManager)
+{
+    return selectionManager &&
+           selectionManager->hasSelection() &&
+           (selectionManager->isMoving() || selectionManager->isResizing());
+}
+
+constexpr int kInitialRevealTimeoutMs = 120;
+
 } // namespace
 
 RegionSelector::RegionSelector(QWidget* parent)
@@ -150,10 +159,21 @@ RegionSelector::RegionSelector(QWidget* parent)
                     m_multiRegionManager->updateRegion(activeIndex, rect);
                 }
             }
+            if (m_inputState.completedSelectionDragUiSuppressed && m_toolbarUserDragged) {
+                m_toolbarUserDragged = false;
+            }
             // Removed update() - repaints now handled by RegionInputHandler's throttled path
         });
     connect(m_selectionManager, &SelectionStateManager::stateChanged,
         this, [this](SelectionStateManager::State newState) {
+            const bool suppressionBefore = m_inputState.completedSelectionDragUiSuppressed;
+            const bool suppressionAfter = shouldSuppressCompletedSelectionDragUi(m_selectionManager);
+
+            if (suppressionBefore != suppressionAfter) {
+                m_inputState.completedSelectionDragUiSuppressed = suppressionAfter;
+                updateCompletedSelectionDragUiSuppression();
+            }
+
             if (m_inputState.multiRegionMode &&
                 newState == SelectionStateManager::State::Complete &&
                 m_multiRegionListRefreshPending) {
@@ -246,7 +266,17 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_toolManager->setArrowStyle(m_inputState.arrowStyle);
     m_toolManager->setLineStyle(m_inputState.lineStyle);
     m_toolManager->setMosaicBlurType(mosaicBlurType);
-    connect(m_toolManager, &ToolManager::needsRepaint, this, QOverload<>::of(&QWidget::update));
+    connect(m_toolManager, &ToolManager::needsRepaint, this, [this]() {
+        if (m_inputState.isDrawing && m_selectionManager && m_selectionManager->hasSelection()) {
+            update(m_selectionManager->selectionRect().adjusted(
+                -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+                -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+                SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+                SelectionDirtyRegionPlanner::kAnnotationRepaintMargin));
+        } else {
+            update();
+        }
+    });
 
     // Initialize cursor manager for centralized cursor handling
     auto& cursorManager = CursorManager::instance();
@@ -421,7 +451,15 @@ RegionSelector::RegionSelector(QWidget* parent)
                 m_toolbarViewModel->setCanUndo(m_annotationLayer && m_annotationLayer->canUndo());
                 m_toolbarViewModel->setCanRedo(m_annotationLayer && m_annotationLayer->canRedo());
             }
-            update();
+            if (m_selectionManager && m_selectionManager->hasSelection()) {
+                update(m_selectionManager->selectionRect().adjusted(
+                    -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+                    -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+                    SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+                    SelectionDirtyRegionPlanner::kAnnotationRepaintMargin));
+            } else {
+                update();
+            }
         });
 
     // EmojiPickerPopup is lazy-initialized via showEmojiPickerPopup() when first needed
@@ -434,6 +472,11 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_screenSwitchTimer->setInterval(50);
     connect(m_screenSwitchTimer, &QTimer::timeout,
             this, &RegionSelector::handleCursorScreenSwitch);
+
+    m_initialRevealTimer = new QTimer(this);
+    m_initialRevealTimer->setSingleShot(true);
+    connect(m_initialRevealTimer, &QTimer::timeout,
+            this, &RegionSelector::handleInitialRevealTimeout);
 
     // Install application-level event filter to capture ESC even when window loses focus
     qApp->installEventFilter(this);
@@ -448,6 +491,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Deliberately not a QML overlay window: this hint panel must share the
     // RegionSelector paint/lifecycle path to avoid native window ordering bugs.
     m_shortcutHintsOverlay = std::make_unique<CaptureShortcutHintsOverlay>();
+    syncMagnifierEnabledFromSettings();
 
     // Region control panel (QML - combines radius toggle + aspect ratio lock)
     m_regionControlViewModel = new RegionControlViewModel(this);
@@ -575,12 +619,10 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Connect multi-region signals that depend on m_painter (must be after m_painter init)
     connect(m_multiRegionManager, &MultiRegionManager::regionAdded,
         this, [this](int) {
-            m_painter->invalidateOverlayCache();
             refreshMultiRegionListPanel();
         });
     connect(m_multiRegionManager, &MultiRegionManager::regionRemoved,
         this, [this](int removedIndex) {
-            m_painter->invalidateOverlayCache();
             if (m_inputState.replaceTargetIndex == removedIndex) {
                 cancelMultiRegionReplace(false);
             } else if (m_inputState.replaceTargetIndex > removedIndex) {
@@ -590,7 +632,6 @@ RegionSelector::RegionSelector(QWidget* parent)
         });
     connect(m_multiRegionManager, &MultiRegionManager::regionUpdated,
         this, [this](int) {
-            m_painter->invalidateOverlayCache();
             const bool isSelectionInteracting = m_selectionManager &&
                 (m_selectionManager->isSelecting() ||
                  m_selectionManager->isResizing() ||
@@ -603,12 +644,10 @@ RegionSelector::RegionSelector(QWidget* parent)
         });
     connect(m_multiRegionManager, &MultiRegionManager::regionsReordered,
         this, [this]() {
-            m_painter->invalidateOverlayCache();
             refreshMultiRegionListPanel();
         });
     connect(m_multiRegionManager, &MultiRegionManager::regionsCleared,
         this, [this]() {
-            m_painter->invalidateOverlayCache();
             refreshMultiRegionListPanel();
         });
 
@@ -734,6 +773,8 @@ RegionSelector::RegionSelector(QWidget* parent)
             // Quick Pin mode: directly pin without showing toolbar
             if (m_quickPinMode && !m_inputState.multiRegionMode) {
                 finishSelection();
+            } else {
+                syncFloatingUiCursor();
             }
         });
     connect(m_inputHandler, &RegionInputHandler::fullScreenSelectionRequested,
@@ -757,16 +798,15 @@ RegionSelector::RegionSelector(QWidget* parent)
             // Quick Pin mode: directly pin without showing toolbar
             if (m_quickPinMode && !m_inputState.multiRegionMode) {
                 finishSelection();
+            } else {
+                syncFloatingUiCursor();
             }
         });
     connect(m_inputHandler, &RegionInputHandler::detectionCleared,
         this, [this](const QRect& previousHighlightRect) {
             QRect oldVisualRect;
             if (!previousHighlightRect.isNull()) {
-                const QString oldTitle = QString("%1x%2")
-                    .arg(previousHighlightRect.width())
-                    .arg(previousHighlightRect.height());
-                oldVisualRect = m_painter->getWindowHighlightVisualRect(previousHighlightRect, oldTitle);
+                oldVisualRect = m_painter->getWindowHighlightVisualRect(previousHighlightRect);
             }
 
             m_inputState.highlightedWindowRect = QRect();
@@ -799,6 +839,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             m_inputState.showSubToolbar = showSubToolbar;
             m_toolbarViewModel->setActiveTool(showSubToolbar ? static_cast<int>(tool) : -1);
             syncRegionSubToolbar(true);
+            QTimer::singleShot(0, this, &RegionSelector::syncFloatingUiCursor);
         });
     connect(m_toolbarHandler, &RegionToolbarHandler::updateRequested,
         this, qOverload<>(&QWidget::update));
@@ -1156,13 +1197,14 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     m_historyLiveSlot = {};
     m_historyReplayIndex = -1;
     m_historyReplayActive = false;
-    ++m_postShowInitializationToken;
-    m_postShowInitializationPending = false;
+    resetInitialRevealState();
     clearPreservedSelection();
+    hideSelectionFloatingUi(false);
     m_shortcutHintsVisible = false;
     m_shortcutHintsTemporarilyHiddenByHover = false;
     if (m_regionControlPanel) m_regionControlPanel->hide();
     if (m_magnifierOverlay) m_magnifierOverlay->hideOverlay();
+    setWindowOpacity(0.0);
 
     setupScreenGeometry(screen);
     if (!isScreenValid()) {
@@ -1198,6 +1240,10 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
 
     // 不預設選取整個螢幕，等待用戶操作
     m_selectionManager->clearSelection();
+    m_inputState.highlightedWindowRect = QRect();
+    m_inputState.hasDetectedWindow = false;
+    m_detectedWindow.reset();
+    syncMagnifierEnabledFromSettings();
 
     // 將 cursor 全域座標轉換為 widget 本地座標，用於 crosshair/magnifier 初始位置
     QRect screenGeom = m_currentScreen->geometry();
@@ -1226,8 +1272,7 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
         RegionCaptureSettingsManager::instance().isShortcutHintsEnabled();
     m_shortcutHintsTemporarilyHiddenByHover = false;
     m_initialWindowDetectionMode = WindowDetector::QueryMode::TopLevelOnly;
-    m_postShowInitializationPending = true;
-
+    beginInitialRevealPreparation(m_initialWindowDetectionMode);
 }
 
 void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
@@ -1236,13 +1281,14 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     m_historyLiveSlot = {};
     m_historyReplayIndex = -1;
     m_historyReplayActive = false;
-    ++m_postShowInitializationToken;
-    m_postShowInitializationPending = false;
+    resetInitialRevealState();
     clearPreservedSelection();
+    hideSelectionFloatingUi(false);
     m_shortcutHintsVisible = false;
     m_shortcutHintsTemporarilyHiddenByHover = false;
     if (m_regionControlPanel) m_regionControlPanel->hide();
     if (m_magnifierOverlay) m_magnifierOverlay->hideOverlay();
+    setWindowOpacity(0.0);
 
     setupScreenGeometry(screen);
     if (!isScreenValid()) {
@@ -1270,9 +1316,6 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
         m_multiRegionListViewModel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
     }
 
-    // Pre-compose dimmed background cache for fast painting on high-DPI screens
-    m_painter->buildDimmedCache(m_backgroundPixmap);
-
     // Convert global region to local coordinates
     QRect screenGeom = m_currentScreen->geometry();
     QRect localRegion = region.translated(-screenGeom.topLeft());
@@ -1280,19 +1323,24 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     // Set selection from the region (this marks selection as complete)
     m_selectionManager->setSelectionRect(localRegion);
     m_selectionManager->setFromDetectedWindow(localRegion);
+    m_inputState.highlightedWindowRect = QRect();
+    m_inputState.hasDetectedWindow = false;
+    m_detectedWindow.reset();
+    syncMagnifierEnabledFromSettings();
 
     // Set cursor position
     QPoint globalCursor = QCursor::pos();
     m_inputState.currentPoint = globalCursor - screenGeom.topLeft();
-
-    // Schedule a repaint so the floating QML toolbar can appear for the new selection.
-    QTimer::singleShot(0, this, [this]() {
-        update();
-        });
+    applyCanvasGeometry(screenGeom.size());
+    m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
+    m_magnifierPanel->invalidateCache();
+    m_inputHandler->resetDirtyTracking();
 
     if (m_screenSwitchTimer && !m_screenSwitchTimer->isActive()) {
         m_screenSwitchTimer->start();
     }
+
+    beginInitialRevealPreparation(WindowDetector::QueryMode::TopLevelOnly);
 }
 
 bool RegionSelector::beginHistoryReplay(const QString& entryId)
@@ -1311,8 +1359,8 @@ bool RegionSelector::beginHistoryReplay(const QString& entryId)
         return false;
     }
 
-    ++m_postShowInitializationToken;
-    m_postShowInitializationPending = false;
+    resetInitialRevealState();
+    m_initialRevealState = InitialRevealState::Revealed;
 
     if (!m_historyLiveSlot.valid) {
         snapshotLiveReplaySlot();
@@ -1413,7 +1461,6 @@ void RegionSelector::restoreLiveReplaySlot()
         m_multiRegionListViewModel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
     }
 
-    m_painter->buildDimmedCache(m_backgroundPixmap);
     m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
     m_magnifierPanel->invalidateCache();
     m_magnifierPanel->preWarmCache(m_inputState.currentPoint, m_backgroundPixmap);
@@ -1512,7 +1559,6 @@ bool RegionSelector::applyHistoryReplayEntry(const SnapTray::HistoryEntry& entry
         m_multiRegionListViewModel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
     }
 
-    m_painter->buildDimmedCache(m_backgroundPixmap);
     m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
     m_magnifierPanel->invalidateCache();
     m_magnifierPanel->preWarmCache(m_inputState.currentPoint, m_backgroundPixmap);
@@ -1702,6 +1748,14 @@ void RegionSelector::setShowShortcutHintsOnEntry(bool enabled)
     m_showShortcutHintsOnEntry = enabled;
 }
 
+void RegionSelector::syncMagnifierEnabledFromSettings()
+{
+    m_magnifierEnabled = RegionCaptureSettingsManager::instance().isMagnifierEnabled();
+    if (m_shortcutHintsOverlay) {
+        m_shortcutHintsOverlay->setMagnifierEnabled(m_magnifierEnabled);
+    }
+}
+
 bool RegionSelector::isSelectionComplete() const
 {
     return m_selectionManager && m_selectionManager->isComplete();
@@ -1714,8 +1768,8 @@ void RegionSelector::setWindowDetector(WindowDetector* detector)
 
 void RegionSelector::switchToScreen(QScreen* screen, bool preserveCompletedSelection)
 {
-    ++m_postShowInitializationToken;
-    m_postShowInitializationPending = false;
+    resetInitialRevealState();
+    m_initialRevealState = InitialRevealState::Revealed;
 
     QScreen* targetScreen = screen ? screen : QGuiApplication::primaryScreen();
     if (!targetScreen) {
@@ -1741,8 +1795,6 @@ void RegionSelector::switchToScreen(QScreen* screen, bool preserveCompletedSelec
     // --- Phase 1: Pre-compute expensive caches BEFORE moving the window ---
     const QRect targetGeometry = targetScreen->geometry();
     const qreal targetDpr = targetScreen->devicePixelRatio();
-
-    m_painter->buildDimmedCache(newBackground);
 
     QPoint localCursor = QCursor::pos() - targetGeometry.topLeft();
     localCursor.setX(qBound(0, localCursor.x(), qMax(0, targetGeometry.width() - 1)));
@@ -1908,66 +1960,203 @@ void RegionSelector::refreshWindowDetectorForCurrentScreen()
     }
 }
 
-void RegionSelector::scheduleDeferredPostShowInitialization(
-    WindowDetector::QueryMode initialQueryMode,
-    const QPoint& initialCursorPos)
+void RegionSelector::resetInitialRevealState()
 {
-    const quint64 token = ++m_postShowInitializationToken;
-    QTimer::singleShot(0, this, [this, token, initialQueryMode, initialCursorPos]() {
-        runDeferredPostShowInitialization(token, initialQueryMode, initialCursorPos);
-    });
-}
+    ++m_initialRevealToken;
+    m_initialRevealState = InitialRevealState::Revealed;
+    m_initialRevealCursorPos = QPoint();
 
-void RegionSelector::runDeferredPostShowInitialization(
-    quint64 token,
-    WindowDetector::QueryMode initialQueryMode,
-    const QPoint& initialCursorPos)
-{
-    if (m_postShowInitializationToken != token || m_isClosing || m_historyReplayActive ||
-        !isVisible() || !isScreenValid()) {
-        return;
+    if (m_initialRevealTimer) {
+        m_initialRevealTimer->stop();
     }
 
-    m_painter->buildDimmedCache(m_backgroundPixmap);
+    if (m_initialRevealWindowListReadyConnection) {
+        disconnect(m_initialRevealWindowListReadyConnection);
+        m_initialRevealWindowListReadyConnection = {};
+    }
+}
+
+void RegionSelector::beginInitialRevealPreparation(WindowDetector::QueryMode initialQueryMode)
+{
+    m_initialRevealState = InitialRevealState::Preparing;
+    m_initialWindowDetectionMode = initialQueryMode;
+    m_initialRevealCursorPos = m_inputState.currentPoint;
+
+    if (!rect().isNull()) {
+        m_initialRevealCursorPos.setX(
+            qBound(0, m_initialRevealCursorPos.x(), qMax(0, width() - 1)));
+        m_initialRevealCursorPos.setY(
+            qBound(0, m_initialRevealCursorPos.y(), qMax(0, height() - 1)));
+    }
+    m_inputState.currentPoint = m_initialRevealCursorPos;
+
+    if (m_magnifierOverlay) {
+        m_magnifierOverlay->hideOverlay();
+    }
 
     m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
     m_magnifierPanel->invalidateCache();
-    m_magnifierPanel->preWarmCache(initialCursorPos, m_backgroundPixmap);
+    m_magnifierPanel->preWarmCache(m_initialRevealCursorPos, m_backgroundPixmap);
 
-    scheduleDeferredInitialWindowDetection(token, initialQueryMode, initialCursorPos);
+    const bool skipInitialWindowDetection =
+        m_historyReplayActive ||
+        (m_selectionManager && m_selectionManager->hasSelection()) ||
+        !m_windowDetector ||
+        !m_windowDetector->isEnabled();
+
+    if (skipInitialWindowDetection) {
+        m_initialRevealState = InitialRevealState::ReadyToReveal;
+    } else if (m_windowDetector->isWindowCacheReady() ||
+               m_windowDetector->isRefreshComplete()) {
+        applyInitialWindowDetection(initialQueryMode);
+        m_initialRevealState = InitialRevealState::ReadyToReveal;
+    }
+
+    maybeStartInitialRevealWait();
 }
 
-void RegionSelector::scheduleDeferredInitialWindowDetection(
-    quint64 token,
-    WindowDetector::QueryMode queryMode,
-    const QPoint& initialCursorPos)
+void RegionSelector::maybeStartInitialRevealWait()
 {
     if (!m_windowDetector || !m_windowDetector->isEnabled() || m_historyReplayActive) {
         return;
     }
 
-    const auto runDetection = [this, token, queryMode, initialCursorPos]() {
-        if (m_postShowInitializationToken != token || m_isClosing || m_historyReplayActive ||
-            !isVisible() || !isScreenValid()) {
-            return;
-        }
-
-        if (m_inputState.currentPoint != initialCursorPos) {
-            updateWindowDetection(m_inputState.currentPoint, queryMode);
-            return;
-        }
-
-        refreshWindowDetectionAtCursor(queryMode);
-    };
-
-    if (m_windowDetector->isRefreshComplete()) {
-        runDetection();
-    } else {
-        connect(m_windowDetector, &WindowDetector::windowListReady,
-                this, [runDetection]() {
-                    runDetection();
-                }, Qt::SingleShotConnection);
+    if (m_initialRevealWindowListReadyConnection) {
+        disconnect(m_initialRevealWindowListReadyConnection);
+        m_initialRevealWindowListReadyConnection = {};
     }
+
+    if (!m_windowDetector->isRefreshComplete()) {
+        const quint64 token = m_initialRevealToken;
+        m_initialRevealWindowListReadyConnection = connect(
+            m_windowDetector,
+            &WindowDetector::windowListReady,
+            this,
+            [this, token]() {
+                if (token != m_initialRevealToken) {
+                    return;
+                }
+                handleInitialRevealDetectorReady();
+            },
+            Qt::SingleShotConnection);
+    }
+
+    if (m_initialRevealState != InitialRevealState::Preparing) {
+        if (m_initialRevealTimer) {
+            m_initialRevealTimer->stop();
+        }
+        return;
+    }
+
+    if (m_windowDetector->isWindowCacheReady() || m_windowDetector->isRefreshComplete()) {
+        handleInitialRevealDetectorReady();
+        return;
+    }
+
+    if (m_initialRevealTimer && !m_initialRevealTimer->isActive()) {
+        m_initialRevealTimer->start(kInitialRevealTimeoutMs);
+    }
+}
+
+void RegionSelector::handleInitialRevealDetectorReady()
+{
+    if (m_isClosing || !isScreenValid()) {
+        return;
+    }
+
+    if (m_initialRevealState == InitialRevealState::Preparing) {
+        applyInitialWindowDetection(m_initialWindowDetectionMode);
+        m_initialRevealState = InitialRevealState::ReadyToReveal;
+        commitInitialReveal();
+        return;
+    }
+
+    if (m_initialRevealState == InitialRevealState::Revealed &&
+        !m_historyReplayActive &&
+        m_selectionManager &&
+        !m_selectionManager->hasSelection()) {
+        refreshWindowDetectionAtCursor(WindowDetector::QueryMode::IncludeChildControls);
+    }
+}
+
+void RegionSelector::handleInitialRevealTimeout()
+{
+    if (m_initialRevealState != InitialRevealState::Preparing ||
+        m_isClosing ||
+        !isScreenValid()) {
+        return;
+    }
+
+    if (m_windowDetector &&
+        m_windowDetector->isEnabled() &&
+        (m_windowDetector->isWindowCacheReady() || m_windowDetector->isRefreshComplete())) {
+        handleInitialRevealDetectorReady();
+        return;
+    }
+
+    m_initialRevealState = InitialRevealState::ReadyToReveal;
+    commitInitialReveal();
+}
+
+void RegionSelector::applyInitialWindowDetection(WindowDetector::QueryMode queryMode)
+{
+    if (!m_windowDetector || !m_windowDetector->isEnabled() || !m_currentScreen) {
+        return;
+    }
+
+    const QPoint detectionPos =
+        m_inputState.currentPoint != m_initialRevealCursorPos
+        ? m_inputState.currentPoint
+        : m_initialRevealCursorPos;
+    updateWindowDetection(detectionPos, queryMode);
+}
+
+void RegionSelector::commitInitialReveal()
+{
+    if (m_initialRevealState != InitialRevealState::ReadyToReveal ||
+        m_isClosing ||
+        !isVisible() ||
+        !isScreenValid()) {
+        return;
+    }
+
+    if (m_initialRevealTimer) {
+        m_initialRevealTimer->stop();
+    }
+
+    repaint();
+    setWindowOpacity(1.0);
+    m_initialRevealState = InitialRevealState::Revealed;
+    syncMagnifierOverlay();
+    QTimer::singleShot(0, this, &RegionSelector::syncFloatingUiCursor);
+    scheduleInitialRevealRefinement();
+}
+
+void RegionSelector::scheduleInitialRevealRefinement()
+{
+    if (m_historyReplayActive ||
+        !m_windowDetector ||
+        !m_windowDetector->isEnabled() ||
+        !m_selectionManager ||
+        m_selectionManager->hasSelection()) {
+        return;
+    }
+
+    const quint64 token = m_initialRevealToken;
+    QTimer::singleShot(0, this, [this, token]() {
+        if (token != m_initialRevealToken ||
+            m_isClosing ||
+            m_initialRevealState != InitialRevealState::Revealed ||
+            !isVisible() ||
+            !isScreenValid() ||
+            !m_windowDetector ||
+            !m_windowDetector->isEnabled() ||
+            !m_windowDetector->isWindowCacheReady()) {
+            return;
+        }
+
+        refreshWindowDetectionAtCursor(WindowDetector::QueryMode::IncludeChildControls);
+    });
 }
 
 void RegionSelector::refreshMultiRegionListPanel()
@@ -1995,6 +2184,9 @@ void RegionSelector::beginMultiRegionReplace(int index)
     }
 
     m_inputState.currentTool = ToolId::Selection;
+    if (m_toolManager) {
+        m_toolManager->setCurrentTool(ToolId::Selection);
+    }
     m_inputState.showSubToolbar = false;
     m_inputState.replaceTargetIndex = index;
     syncRegionSubToolbar(true);
@@ -2003,6 +2195,7 @@ void RegionSelector::beginMultiRegionReplace(int index)
     m_multiRegionManager->setActiveIndex(index);
     m_selectionManager->clearSelection();
     m_selectionManager->setSelectionRect(m_replaceOriginalRect);
+    syncFloatingUiCursor();
     update();
 }
 
@@ -2066,18 +2259,13 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos,
 
         if (localBounds != m_inputState.highlightedWindowRect) {
             // Calculate old visual rect for partial update
-            QString oldTitle;
-            if (!m_inputState.highlightedWindowRect.isNull()) {
-                oldTitle = QString("%1x%2").arg(m_inputState.highlightedWindowRect.width()).arg(m_inputState.highlightedWindowRect.height());
-            }
-            QRect oldVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect, oldTitle);
+            QRect oldVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect);
 
             m_inputState.highlightedWindowRect = localBounds;
             m_detectedWindow = detected;
 
             // Calculate new visual rect (use clipped local bounds, not global bounds)
-            QString newTitle = QString("%1x%2").arg(localBounds.width()).arg(localBounds.height());
-            QRect newVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect, newTitle);
+            QRect newVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect);
 
             // Update only changed regions
             if (!oldVisualRect.isNull()) update(oldVisualRect);
@@ -2088,11 +2276,7 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos,
         m_inputState.hasDetectedWindow = false;
         if (!m_inputState.highlightedWindowRect.isNull()) {
             // Calculate old visual rect for partial update (use clipped local bounds)
-            QString oldTitle;
-            if (!m_inputState.highlightedWindowRect.isNull()) {
-                oldTitle = QString("%1x%2").arg(m_inputState.highlightedWindowRect.width()).arg(m_inputState.highlightedWindowRect.height());
-            }
-            QRect oldVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect, oldTitle);
+            QRect oldVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect);
 
             m_inputState.highlightedWindowRect = QRect();
             m_detectedWindow.reset();
@@ -2121,10 +2305,6 @@ void RegionSelector::paintEvent(QPaintEvent* event)
 
     // Update painter state before painting
     m_painter->setHighlightedWindowRect(m_inputState.highlightedWindowRect);
-    m_painter->setDetectedWindowTitle(
-        !m_inputState.highlightedWindowRect.isNull()
-        ? QString("%1x%2").arg(m_inputState.highlightedWindowRect.width()).arg(m_inputState.highlightedWindowRect.height())
-        : QString());
     m_painter->setCornerRadius(m_cornerRadius);
     m_painter->setShowSubToolbar(m_inputState.showSubToolbar);
     m_painter->setCurrentTool(static_cast<int>(m_inputState.currentTool));
@@ -2143,15 +2323,20 @@ void RegionSelector::paintEvent(QPaintEvent* event)
     // QML toolbars render themselves in separate windows.
     // Show/position them when selection is active.
     QRect selectionRect = m_selectionManager->selectionRect();
+    const bool initialRevealVisible = m_initialRevealState == InitialRevealState::Revealed;
     const bool hasSelectableCapture =
         m_selectionManager->hasActiveSelection() &&
         selectionRect.isValid() &&
         m_selectionManager->hasSelection();
-    const bool shouldShowSelectionUi = hasSelectableCapture && !m_exportInProgress;
+    const bool suppressSelectionFloatingUi = completedSelectionDragUiSuppressed();
+    const bool shouldShowSelectionUi =
+        initialRevealVisible &&
+        hasSelectableCapture &&
+        !m_exportInProgress;
     const bool shouldDrawBusySpinner = hasSelectableCapture &&
         (m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress ||
          m_shareInProgress || m_exportInProgress);
-    if (shouldShowSelectionUi) {
+    if (shouldShowSelectionUi && !suppressSelectionFloatingUi) {
         // Position and show QML toolbar
         if (m_qmlToolbar && !m_qmlToolbar->isVisible()) {
             m_qmlToolbar->show();
@@ -2209,20 +2394,14 @@ void RegionSelector::paintEvent(QPaintEvent* event)
         }
     }
     else {
-        m_toolbarUserDragged = false;
         m_cursorOverSelectionToolbar = false;
-        if (m_qmlToolbar) {
-            m_qmlToolbar->hide();
+        if (!hasSelectableCapture || m_exportInProgress) {
+            m_toolbarUserDragged = false;
         }
-        if (m_toolOptionsViewModel) {
+        if (m_toolOptionsViewModel && (!hasSelectableCapture || m_exportInProgress)) {
             m_toolOptionsViewModel->clearSections();
         }
-        if (m_qmlSubToolbar) {
-            m_qmlSubToolbar->hide();
-        }
-        if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
-            m_emojiPickerPopup->hide();
-        }
+        hideSelectionFloatingUi(hasSelectableCapture && !m_exportInProgress);
     }
 
     if (shouldDrawBusySpinner && m_loadingSpinner) {
@@ -2246,6 +2425,11 @@ void RegionSelector::syncMagnifierOverlay()
         return;
     }
 
+    if (m_initialRevealState != InitialRevealState::Revealed) {
+        m_magnifierOverlay->hideOverlay();
+        return;
+    }
+
     m_magnifierOverlay->syncToHost(
         this,
         m_inputState.currentPoint,
@@ -2258,7 +2442,15 @@ void RegionSelector::positionRegionControlPanel()
     if (!m_regionControlPanel)
         return;
 
-    bool shouldShow = m_selectionManager && m_selectionManager->hasSelection() && !m_exportInProgress;
+    if (m_initialRevealState != InitialRevealState::Revealed) {
+        m_regionControlPanel->hide();
+        return;
+    }
+
+    bool shouldShow = m_selectionManager &&
+                      m_selectionManager->hasSelection() &&
+                      !m_exportInProgress &&
+                      !completedSelectionDragUiSuppressed();
     if (shouldShow != m_regionControlPanel->isVisible()) {
         shouldShow ? m_regionControlPanel->show() : m_regionControlPanel->hide();
     }
@@ -2293,6 +2485,46 @@ void RegionSelector::positionMultiRegionListPanel()
     QPoint pos = mapToGlobal(QPoint(margin, margin));
     m_multiRegionListPanel->setPosition(pos);
     m_multiRegionListPanel->resize(QSize(280, height() - 2 * margin));
+}
+
+void RegionSelector::hideSelectionFloatingUi(bool preserveToolState)
+{
+    if (m_qmlToolbar) {
+        m_qmlToolbar->hide();
+    }
+    if (m_qmlSubToolbar) {
+        m_qmlSubToolbar->hide();
+    }
+    if (m_regionControlPanel) {
+        m_regionControlPanel->hide();
+    }
+    if (!preserveToolState && m_toolOptionsViewModel) {
+        m_toolOptionsViewModel->clearSections();
+    }
+    if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+        m_emojiPickerPopup->hide();
+    }
+    m_cursorOverSelectionToolbar = false;
+    m_lastMagnifierRect = QRect();
+}
+
+void RegionSelector::updateCompletedSelectionDragUiSuppression()
+{
+    if (m_inputState.completedSelectionDragUiSuppressed) {
+        hideSelectionFloatingUi(true);
+    }
+
+    update();
+    syncMagnifierOverlay();
+
+    if (!m_inputState.completedSelectionDragUiSuppressed) {
+        QTimer::singleShot(0, this, &RegionSelector::syncFloatingUiCursor);
+    }
+}
+
+bool RegionSelector::completedSelectionDragUiSuppressed() const
+{
+    return m_inputState.completedSelectionDragUiSuppressed;
 }
 
 void RegionSelector::hideShortcutHints()
@@ -2368,18 +2600,6 @@ bool RegionSelector::isPureModifierKey(int key)
     default:
         return false;
     }
-}
-
-QCursor RegionSelector::getMosaicCursor(int width)
-{
-    // Use centralized CursorManager for mosaic cursor
-    // Use 2x width for mosaic cursor (UI shows half the actual drawing size)
-    int effectiveWidth = width * 2;
-    if (effectiveWidth != m_mosaicCursorCacheWidth) {
-        m_mosaicCursorCache = CursorManager::createMosaicCursor(effectiveWidth);
-        m_mosaicCursorCacheWidth = effectiveWidth;
-    }
-    return m_mosaicCursorCache;
 }
 
 void RegionSelector::setToolCursor()
@@ -2555,7 +2775,15 @@ void RegionSelector::trackBlockingDialog(SnapTray::QmlDialog* dialog)
 
 bool RegionSelector::shouldShowMagnifier() const
 {
+    if (!m_magnifierEnabled) {
+        return false;
+    }
+
     if (m_exportInProgress) {
+        return false;
+    }
+
+    if (completedSelectionDragUiSuppressed()) {
         return false;
     }
 
@@ -2695,10 +2923,13 @@ void RegionSelector::syncRegionSubToolbar(bool refreshContent)
     }
 
     const bool allowSubToolbar = m_inputState.showSubToolbar &&
+                                 !completedSelectionDragUiSuppressed() &&
                                  !m_inputState.multiRegionMode &&
                                  m_inputState.replaceTargetIndex < 0;
     if (!allowSubToolbar) {
-        m_toolOptionsViewModel->showForTool(-1);
+        if (!completedSelectionDragUiSuppressed()) {
+            m_toolOptionsViewModel->showForTool(-1);
+        }
         m_qmlSubToolbar->hide();
         return;
     }
@@ -2757,6 +2988,9 @@ void RegionSelector::setMultiRegionMode(bool enabled)
         }
         m_annotationLayer->clear();
         m_inputState.currentTool = ToolId::Selection;
+        if (m_toolManager) {
+            m_toolManager->setCurrentTool(ToolId::Selection);
+        }
         m_inputState.showSubToolbar = false;
         syncRegionSubToolbar(true);
         if (m_multiRegionListViewModel) {
@@ -2767,6 +3001,7 @@ void RegionSelector::setMultiRegionMode(bool enabled)
             positionMultiRegionListPanel();
         }
         refreshMultiRegionListPanel();
+        syncFloatingUiCursor();
     }
     else {
         m_multiRegionManager->clear();
@@ -3232,13 +3467,13 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
     }
     else if (event->key() == Qt::Key_Shift) {
         // Switch RGB/HEX color format display (only when magnifier is shown)
-        if (shouldShowMagnifier()) {
+        if (m_magnifierEnabled && shouldShowMagnifier()) {
             m_magnifierPanel->toggleColorFormat();
             syncMagnifierOverlay();
             update();
         }
     }
-    else if (event->key() == Qt::Key_C && !m_selectionManager->isComplete()) {
+    else if (event->key() == Qt::Key_C && m_magnifierEnabled && !m_selectionManager->isComplete()) {
         // Copy color to clipboard (only when selection not complete)
         // Use the color already calculated by MagnifierPanel
         QString colorText = m_magnifierPanel->colorString();
@@ -3340,8 +3575,8 @@ void RegionSelector::closeEvent(QCloseEvent* event)
     }
 
     m_isClosing = true;
-    ++m_postShowInitializationToken;
-    m_postShowInitializationPending = false;
+    resetInitialRevealState();
+    m_initialRevealState = InitialRevealState::Revealed;
     m_pendingSharePassword.clear();
     m_pendingShareSubmission.reset();
     if (m_qmlToolbar) m_qmlToolbar->hide();
@@ -3364,13 +3599,15 @@ void RegionSelector::showEvent(QShowEvent* event)
 
     // Set cursor immediately on show (replaces unreliable 100ms timer)
     ensureCrossCursor();
-    syncMagnifierOverlay();
 
-    if (m_postShowInitializationPending) {
-        m_postShowInitializationPending = false;
-        scheduleDeferredPostShowInitialization(m_initialWindowDetectionMode,
-                                               m_inputState.currentPoint);
+    if (m_initialRevealState != InitialRevealState::Revealed) {
+        setWindowOpacity(0.0);
+        maybeStartInitialRevealWait();
+        commitInitialReveal();
+        return;
     }
+
+    syncMagnifierOverlay();
 }
 
 void RegionSelector::resizeEvent(QResizeEvent* event)

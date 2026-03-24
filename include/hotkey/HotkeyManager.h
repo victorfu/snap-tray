@@ -12,9 +12,11 @@
 #include <QObject>
 #include <QMap>
 #include <QStringList>
+#include <functional>
 #include <optional>
 
 class QHotkey;
+class tst_HotkeyManager;
 
 namespace SnapTray {
 
@@ -97,7 +99,10 @@ public:
      *
      * @param action The action to update
      * @param keySequence New key sequence (empty string disables the hotkey)
-     * @return true if registration succeeded or hotkey was cleared
+     * @return true if the desired configuration was persisted and is active or
+     *         intentionally inactive (for example, disabled or unset). Returns
+     *         false when the new sequence was persisted but could not be
+     *         registered with the system.
      */
     bool updateHotkey(HotkeyAction action, const QString& keySequence);
 
@@ -120,8 +125,11 @@ public:
 
     /**
      * @brief Reset all hotkeys to their default values.
+     *
+     * @return Display names of hotkeys whose default sequence was restored in
+     *         settings but could not be registered with the system.
      */
-    void resetAllToDefaults();
+    QStringList resetAllToDefaults();
 
     /**
      * @brief Temporarily suspend all hotkey registrations.
@@ -187,6 +195,8 @@ signals:
     void initializationCompleted(const QStringList& failedHotkeys);
 
 private:
+    friend class ::tst_HotkeyManager;
+
     HotkeyManager();
     ~HotkeyManager() override;
 
@@ -198,6 +208,17 @@ private:
     void initializeConfigs();
     void loadFromSettings();
     void saveToSettings(HotkeyAction action);
+    QString enabledSettingsKey(const HotkeyConfig& config) const;
+    QString registrationOrderSettingsKey(const HotkeyConfig& config) const;
+    quint64 registrationOrder(HotkeyAction action) const;
+    bool hasHigherRegistrationPriority(HotkeyAction lhs, HotkeyAction rhs) const;
+    std::optional<HotkeyAction> preferredConflictOwner(HotkeyAction action) const;
+    void promoteRegistrationOrder(HotkeyAction action);
+    void clearRegistrationOrder(HotkeyAction action);
+    void refreshStatusAndRegistration(HotkeyAction action, bool emitSignals = false);
+    void refreshAffectedConflicts(const QString& oldSequence,
+                                  const QString& newSequence,
+                                  std::optional<HotkeyAction> excludeAction);
 
     bool registerHotkey(HotkeyAction action);
     void unregisterHotkey(HotkeyAction action);
@@ -211,6 +232,9 @@ private:
     // Storage
     QMap<HotkeyAction, HotkeyConfig> m_configs;
     QMap<HotkeyAction, QHotkey*> m_hotkeys;
+    QMap<HotkeyAction, quint64> m_registrationOrders;
+    std::function<bool(HotkeyAction, const QString&)> m_registerHotkeyOverride;
+    quint64 m_nextRegistrationOrder = 1;
     bool m_initialized = false;
 };
 

@@ -1,5 +1,6 @@
 #include "qml/QmlFloatingToolbar.h"
 #include "cursor/CursorSurfaceSupport.h"
+#include "platform/WindowLevel.h"
 #include "qml/QmlOverlayManager.h"
 
 #include <QQuickView>
@@ -236,6 +237,8 @@ void QmlFloatingToolbar::applyPlatformWindowFlags()
     mask &= ~NSWindowStyleMaskResizable;
     [window setStyleMask:mask];
 #endif
+
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
 }
 
 void QmlFloatingToolbar::applyTooltipWindowFlags()
@@ -279,6 +282,12 @@ void QmlFloatingToolbar::show()
 
     if (!m_rootItem)
         return;
+
+    syncTransientParent();
+    const QSize resolvedSize = sizeHint();
+    if (!resolvedSize.isEmpty() && m_view->size() != resolvedSize) {
+        m_view->resize(resolvedSize);
+    }
 
     m_view->show();
     applyPlatformWindowFlags();
@@ -352,6 +361,54 @@ QWindow* QmlFloatingToolbar::tooltipWindow() const
 void QmlFloatingToolbar::setParentWidget(QWidget* parent)
 {
     m_parentWidget = parent;
+    syncTransientParent();
+}
+
+QSize QmlFloatingToolbar::sizeHint()
+{
+    ensureView();
+    if (!m_view) {
+        return {};
+    }
+
+    QSize size = m_view->size();
+    if (!size.isEmpty()) {
+        return size;
+    }
+
+    if (!m_rootItem) {
+        return size;
+    }
+
+    size = QSize(qRound(m_rootItem->width()), qRound(m_rootItem->height()));
+    if (size.isEmpty()) {
+        size = QSize(qRound(m_rootItem->implicitWidth()), qRound(m_rootItem->implicitHeight()));
+    }
+    if (!size.isEmpty()) {
+        m_view->resize(size);
+    }
+    return size;
+}
+
+void QmlFloatingToolbar::syncTransientParent()
+{
+    if (!m_view) {
+        return;
+    }
+
+    QWidget* hostWindow = m_parentWidget ? m_parentWidget->window() : nullptr;
+    if (hostWindow && hostWindow->windowHandle()) {
+        m_view->setTransientParent(hostWindow->windowHandle());
+    } else {
+        m_view->setTransientParent(nullptr);
+    }
+
+    // Owner/transient changes on Windows can reintroduce native caption bits.
+    // Reapply frameless tool-window styles after every parent sync.
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
+    if (m_view->isVisible()) {
+        applyPlatformWindowFlags();
+    }
 }
 
 // ── Positioning ──
@@ -423,10 +480,18 @@ void QmlFloatingToolbar::positionAt(int centerX, int bottomY)
 
 void QmlFloatingToolbar::setPosition(const QPoint& pos)
 {
-    if (m_view) {
-        m_view->setPosition(pos);
-        syncCursorSurface();
+    ensureView();
+    if (!m_view) {
+        return;
     }
+
+    const QSize resolvedSize = sizeHint();
+    if (!resolvedSize.isEmpty() && m_view->size() != resolvedSize) {
+        m_view->resize(resolvedSize);
+    }
+
+    m_view->setPosition(pos);
+    syncCursorSurface();
 }
 
 void QmlFloatingToolbar::setDragBounds(const QList<QRect>& bounds)
@@ -516,6 +581,11 @@ bool QmlFloatingToolbar::eventFilter(QObject* obj, QEvent* event)
         case QEvent::Close:
             hideTooltip();
             CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+            if (m_parentWidget) {
+                QTimer::singleShot(0, this, [this]() {
+                    CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_parentWidget);
+                });
+            }
             break;
         default:
             break;

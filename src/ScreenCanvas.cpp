@@ -3,6 +3,7 @@
 #include "InlineTextEditor.h"
 #include "ScreenCanvasSession.h"
 #include "cursor/CursorManager.h"
+#include "platform/WindowLevel.h"
 #include "region/RegionSettingsHelper.h"
 #include "region/ShapeAnnotationEditor.h"
 #include "region/TextAnnotationEditor.h"
@@ -19,8 +20,14 @@ ScreenCanvas::ScreenCanvas(ScreenCanvasSession* session, QWidget* parent)
     : QWidget(parent)
     , m_session(session)
 {
+#ifdef Q_OS_MACOS
+    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint |
+                   Qt::NoDropShadowWindowHint);
+    setAttribute(Qt::WA_MacAlwaysShowToolWindow);
+#else
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint |
                    Qt::Tool | Qt::NoDropShadowWindowHint);
+#endif
     setAttribute(Qt::WA_TranslucentBackground, true);
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
@@ -213,6 +220,7 @@ void ScreenCanvas::closeEvent(QCloseEvent* event)
 void ScreenCanvas::showEvent(QShowEvent* event)
 {
     QWidget::showEvent(event);
+    preventWindowHideOnDeactivate(this);
     QTimer::singleShot(100, this, [this]() {
         CursorManager::instance().reapplyCursorForWidget(this);
     });

@@ -36,6 +36,30 @@ target_link_libraries(Qml_EmojiPickerBackend PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_EmojiPickerBackend COMMAND Qml_EmojiPickerBackend)
 set_tests_properties(Qml_EmojiPickerBackend PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_WindowPolicyGuard Qml/tst_WindowPolicyGuard.cpp)
+target_link_libraries(Qml_WindowPolicyGuard PRIVATE Qt6::Core Qt6::Test)
+target_compile_definitions(Qml_WindowPolicyGuard PRIVATE
+    WINDOW_POLICY_GUARD_SOURCE_ROOT="${CMAKE_SOURCE_DIR}/src")
+add_test(NAME Qml_WindowPolicyGuard COMMAND Qml_WindowPolicyGuard)
+set_tests_properties(Qml_WindowPolicyGuard PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Qml_QtQuickBackendPolicy Qml/tst_QtQuickBackendPolicy.cpp)
+target_link_libraries(Qml_QtQuickBackendPolicy PRIVATE snaptray_platform Qt6::Test)
+add_test(NAME Qml_QtQuickBackendPolicy COMMAND Qml_QtQuickBackendPolicy)
+set_tests_properties(Qml_QtQuickBackendPolicy PROPERTIES TIMEOUT 60 LABELS "unit")
+
+if(WIN32)
+    add_executable(Qml_QtQuickBackendWin Qml/tst_QtQuickBackendWin.cpp)
+    target_link_libraries(Qml_QtQuickBackendWin PRIVATE snaptray_platform Qt6::Qml Qt6::Quick Qt6::Test)
+    add_test(NAME Qml_QtQuickBackendWin COMMAND Qml_QtQuickBackendWin)
+    set_tests_properties(Qml_QtQuickBackendWin PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
+    add_executable(Qml_WindowPolicyWin Qml/tst_WindowPolicyWin.cpp)
+    target_link_libraries(Qml_WindowPolicyWin PRIVATE snaptray_ui snaptray_qml Qt6::Test)
+    add_test(NAME Qml_WindowPolicyWin COMMAND Qml_WindowPolicyWin)
+    set_tests_properties(Qml_WindowPolicyWin PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+endif()
+
 # ============================================================================
 # PinWindow Tests (link snaptray_ui which includes snaptray_platform)
 # ============================================================================
@@ -109,6 +133,11 @@ target_link_libraries(ScreenCanvas_Placement PRIVATE snaptray_ui snaptray_qmlplu
 add_test(NAME ScreenCanvas_Placement COMMAND ScreenCanvas_Placement)
 set_tests_properties(ScreenCanvas_Placement PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(ScreenCanvas_SessionRecovery ScreenCanvas/tst_SessionRecovery.cpp)
+target_link_libraries(ScreenCanvas_SessionRecovery PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME ScreenCanvas_SessionRecovery COMMAND ScreenCanvas_SessionRecovery)
+set_tests_properties(ScreenCanvas_SessionRecovery PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 # ============================================================================
 # RegionSelector Tests
 # ============================================================================
@@ -118,15 +147,15 @@ target_link_libraries(RegionSelector_MagnifierPanel PRIVATE snaptray_ui Qt6::Tes
 add_test(NAME RegionSelector_MagnifierPanel COMMAND RegionSelector_MagnifierPanel)
 set_tests_properties(RegionSelector_MagnifierPanel PROPERTIES TIMEOUT 60 LABELS "unit")
 
-add_executable(RegionSelector_MagnifierToolbarVisibility RegionSelector/tst_MagnifierToolbarVisibility.cpp)
-target_link_libraries(RegionSelector_MagnifierToolbarVisibility PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME RegionSelector_MagnifierToolbarVisibility COMMAND RegionSelector_MagnifierToolbarVisibility)
-set_tests_properties(RegionSelector_MagnifierToolbarVisibility PROPERTIES TIMEOUT 60 LABELS "unit")
-
 add_executable(RegionSelector_CaptureShortcutHintsOverlay RegionSelector/tst_CaptureShortcutHintsOverlay.cpp)
 target_link_libraries(RegionSelector_CaptureShortcutHintsOverlay PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME RegionSelector_CaptureShortcutHintsOverlay COMMAND RegionSelector_CaptureShortcutHintsOverlay)
 set_tests_properties(RegionSelector_CaptureShortcutHintsOverlay PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RegionSelector_RegionPainterChrome RegionSelector/tst_RegionPainterChrome.cpp)
+target_link_libraries(RegionSelector_RegionPainterChrome PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME RegionSelector_RegionPainterChrome COMMAND RegionSelector_RegionPainterChrome)
+set_tests_properties(RegionSelector_RegionPainterChrome PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(RegionSelector_UpdateThrottler RegionSelector/tst_UpdateThrottler.cpp)
 target_link_libraries(RegionSelector_UpdateThrottler PRIVATE snaptray_ui Qt6::Test)
@@ -388,6 +417,11 @@ add_executable(Settings_SettingsStorageLocation Settings/tst_SettingsStorageLoca
 target_link_libraries(Settings_SettingsStorageLocation PRIVATE snaptray_core Qt6::Test)
 add_test(NAME Settings_SettingsStorageLocation COMMAND Settings_SettingsStorageLocation)
 set_tests_properties(Settings_SettingsStorageLocation PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Settings_AutoLaunchSyncPolicy Settings/tst_AutoLaunchSyncPolicy.cpp)
+target_link_libraries(Settings_AutoLaunchSyncPolicy PRIVATE snaptray_core Qt6::Test)
+add_test(NAME Settings_AutoLaunchSyncPolicy COMMAND Settings_AutoLaunchSyncPolicy)
+set_tests_properties(Settings_AutoLaunchSyncPolicy PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(Settings_SettingsBackend
     Settings/tst_SettingsBackend.cpp
@@ -679,6 +713,14 @@ add_test(
             ${CMAKE_SOURCE_DIR}/scripts/generate_appcast.py
 )
 set_tests_properties(Update_GenerateAppcast PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_test(
+    NAME Update_RenderReleaseNotesPage
+    COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/Update/tst_render_release_notes_page.py
+            ${CMAKE_SOURCE_DIR}/scripts/render_release_notes_page.py
+)
+set_tests_properties(Update_RenderReleaseNotesPage PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
 # CTest Label Summary

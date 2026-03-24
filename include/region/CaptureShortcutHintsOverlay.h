@@ -24,6 +24,7 @@ public:
 
     CaptureShortcutHintsOverlay() = default;
 
+    void setMagnifierEnabled(bool enabled) { m_magnifierEnabled = enabled; }
     void draw(QPainter& painter, const QSize& viewportSize) const;
 
     QRect panelRectForViewport(const QSize& viewportSize) const;
@@ -40,6 +41,8 @@ private:
                       const QFontMetrics& keyFm,
                       int keyCapHeight) const;
     QVector<QPair<QStringList, QString>> hintRows() const;
+
+    bool m_magnifierEnabled = true;
 };
 
 #endif // CAPTURESHORTCUTHINTSOVERLAY_H

@@ -42,6 +42,7 @@ signals:
     void saveFailed(const QString &filePath, const QString &error);
 
 private slots:
+    void prewarmWindowDetector();
     void onRegionSelected(const QPixmap &screenshot, const QPoint &globalPosition, const QRect &globalRect);
     void onSelectionCancelled();
 
@@ -56,6 +57,10 @@ private:
                                   const QPixmap &preCapture,
                                   bool quickPinMode,
                                   bool showShortcutHintsOnEntry);
+    void showPreparedRegionSelector(QScreen *targetScreen);
+    void refreshWindowDetectorForCapture(QScreen *screen);
+    void refreshWindowDetectorAsync(QScreen *screen);
+    RegionSelector *createRegionSelector(bool showShortcutHintsOnEntry);
 
     QPointer<RegionSelector> m_regionSelector;
     PinWindowManager *m_pinManager;

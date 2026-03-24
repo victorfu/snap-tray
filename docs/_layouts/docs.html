@@ -4,22 +4,26 @@ layout: default
 
 {% assign lang = page.lang | default: site.default_lang %}
 {% assign t = site.data.i18n[lang] %}
+{% assign nav_data_key = page.nav_data | default: 'docs_nav' %}
+{% assign nav_data = site.data[nav_data_key] | default: site.data.docs_nav %}
+{% assign copy_key = page.docs_copy_key | default: 'docs' %}
+{% assign copy = t[copy_key] | default: t.docs %}
 
 <section class="docs-shell">
   <div class="container docs-grid">
     <aside class="docs-sidebar" data-docs-sidebar>
-      {% include docs_sidebar.html %}
+      {% include docs_sidebar.html nav_data=nav_data sidebar_title=copy.sidebar_title %}
     </aside>
 
     <article class="docs-content" data-docs-content>
       <header class="docs-content-header">
-        <p class="eyebrow">{{ t.docs.page_label }}</p>
+        <p class="eyebrow">{{ copy.page_label }}</p>
         <h1>{{ page.title }}</h1>
         {% if page.description %}
         <p>{{ page.description }}</p>
         {% endif %}
         <button class="docs-sidebar-toggle" type="button" aria-expanded="false" aria-controls="docs-sidebar-panel" data-docs-sidebar-toggle>
-          {{ t.docs.menu_button }}
+          {{ copy.menu_button }}
         </button>
       </header>
       <div class="docs-prose">

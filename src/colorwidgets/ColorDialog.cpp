@@ -4,6 +4,7 @@
 #include "colorwidgets/ColorPreview.h"
 #include "colorwidgets/ColorWheel.h"
 #include "colorwidgets/GradientSlider.h"
+#include "platform/WindowLevel.h"
 
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -564,6 +565,7 @@ void ColorDialog::setShowButtons(bool show)
 void ColorDialog::showEvent(QShowEvent* event)
 {
     QDialog::showEvent(event);
+    hideNativeWindowTitleBarIcon(this);
     m_originalColor = m_color;
     updatePreview();
 }

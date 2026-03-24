@@ -101,6 +101,11 @@ void setWindowVisibleOnAllWorkspaces(QWidget *widget, bool enabled)
 #endif
 }
 
+void preventWindowHideOnDeactivate(QWidget *widget)
+{
+    Q_UNUSED(widget)
+}
+
 void forceNativeCursor(const QCursor&, QWidget *)
 {
     // Windows doesn't need separate native reassertion here.
@@ -115,4 +120,88 @@ void raiseWindowAboveOverlays(QWidget *)
 void raiseTransientWindowAboveParent(QWindow *, QWidget *)
 {
     // Windows doesn't need special handling for transient popup z-order here.
+}
+
+void reinforceFramelessToolWindow(QWindow *window)
+{
+#ifdef Q_OS_WIN
+    if (!window) {
+        return;
+    }
+
+    HWND hwnd = reinterpret_cast<HWND>(window->winId());
+    if (!hwnd) {
+        return;
+    }
+
+    LONG_PTR style = GetWindowLongPtr(hwnd, GWL_STYLE);
+    const LONG_PTR cleanedStyle = (style | WS_POPUP)
+        & ~(WS_CAPTION | WS_THICKFRAME | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
+    if (cleanedStyle != style) {
+        SetWindowLongPtr(hwnd, GWL_STYLE, cleanedStyle);
+    }
+
+    LONG_PTR exStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+    LONG_PTR cleanedExStyle = (exStyle | WS_EX_TOOLWINDOW) & ~WS_EX_APPWINDOW;
+    if (window->flags().testFlag(Qt::WindowDoesNotAcceptFocus)) {
+        cleanedExStyle |= WS_EX_NOACTIVATE;
+    }
+    if (cleanedExStyle != exStyle) {
+        SetWindowLongPtr(hwnd, GWL_EXSTYLE, cleanedExStyle);
+    }
+
+    const HWND insertAfter = window->flags().testFlag(Qt::WindowStaysOnTopHint)
+        ? HWND_TOPMOST
+        : nullptr;
+    UINT flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_FRAMECHANGED | SWP_NOOWNERZORDER;
+    if (!insertAfter) {
+        flags |= SWP_NOZORDER;
+    }
+    SetWindowPos(hwnd, insertAfter, 0, 0, 0, 0, flags);
+#else
+    Q_UNUSED(window)
+#endif
+}
+
+void hideNativeWindowTitleBarIcon(QWindow *window)
+{
+#ifdef Q_OS_WIN
+    if (!window) {
+        return;
+    }
+
+    HWND hwnd = reinterpret_cast<HWND>(window->winId());
+    if (!hwnd) {
+        return;
+    }
+
+    const LONG_PTR exStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+    const LONG_PTR cleanedExStyle = exStyle | WS_EX_DLGMODALFRAME;
+    if (cleanedExStyle != exStyle) {
+        SetWindowLongPtr(hwnd, GWL_EXSTYLE, cleanedExStyle);
+    }
+
+    SendMessageW(hwnd, WM_SETICON, ICON_SMALL, 0);
+    SendMessageW(hwnd, WM_SETICON, ICON_BIG, 0);
+    SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+                 SWP_NOACTIVATE | SWP_FRAMECHANGED);
+#else
+    Q_UNUSED(window)
+#endif
+}
+
+void hideNativeWindowTitleBarIcon(QWidget *widget)
+{
+    if (!widget) {
+        return;
+    }
+
+    QWindow *window = widget->window()->windowHandle();
+    if (!window) {
+        widget->winId();
+        window = widget->window()->windowHandle();
+    }
+
+    hideNativeWindowTitleBarIcon(window);
 }

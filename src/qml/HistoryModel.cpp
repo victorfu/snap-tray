@@ -50,7 +50,7 @@ QVariant HistoryModel::data(const QModelIndex& index, int role) const
     case CapturedAtTextRole:
         return capturedAtText(entry);
     case ImageSizeRole:
-        return logicalSize(entry);
+        return pixelSize(entry);
     case SizeTextRole:
         return sizeText(entry);
     case TooltipTextRole:
@@ -99,19 +99,14 @@ QString HistoryModel::capturedAtText(const HistoryEntry& entry) const
         : historyText("Unknown time");
 }
 
-QSize HistoryModel::logicalSize(const HistoryEntry& entry) const
+QSize HistoryModel::pixelSize(const HistoryEntry& entry) const
 {
-    if (!entry.resultSize.isValid()) {
-        return {};
-    }
-    const qreal dpr = entry.devicePixelRatio > 0.0 ? entry.devicePixelRatio : 1.0;
-    return QSize(qRound(entry.resultSize.width() / dpr),
-                 qRound(entry.resultSize.height() / dpr));
+    return entry.resultSize;
 }
 
 QString HistoryModel::sizeText(const HistoryEntry& entry) const
 {
-    const QSize size = logicalSize(entry);
+    const QSize size = pixelSize(entry);
     return size.isValid()
         ? historyText("%1 x %2").arg(size.width()).arg(size.height())
         : historyText("Unknown");

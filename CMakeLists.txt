@@ -6,7 +6,7 @@ if(APPLE)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "14.0" CACHE STRING "Minimum macOS deployment target" FORCE)
 endif()
 
-project(SnapTray VERSION 1.0.34 LANGUAGES CXX)
+project(SnapTray VERSION 1.0.39 LANGUAGES CXX)
 
 # ============================================================================
 # Compiler Cache (ccache/sccache) for faster incremental builds
@@ -296,6 +296,8 @@ add_library(snaptray_core STATIC
     src/annotations/ErasedItemsGroup.cpp
     src/annotations/TextBoxAnnotation.cpp
     src/settings/AnnotationSettingsManager.cpp
+    src/settings/AutoLaunchSyncPolicy.cpp
+    src/settings/AutoLaunchSettingsManager.cpp
     src/settings/AutoBlurSettingsManager.cpp
     src/settings/FileSettingsManager.cpp
     src/settings/MCPSettingsManager.cpp
@@ -332,6 +334,8 @@ add_library(snaptray_core STATIC
     src/cli/commands/ConfigCommand.cpp
     # Headers with Q_OBJECT for MOC processing
     include/settings/AnnotationSettingsManager.h
+    include/settings/AutoLaunchSyncPolicy.h
+    include/settings/AutoLaunchSettingsManager.h
     include/settings/FileSettingsManager.h
     include/settings/MCPSettingsManager.h
     include/settings/PinWindowSettingsManager.h
@@ -483,6 +487,7 @@ add_library(snaptray_platform STATIC
     src/video/VideoTrimmer.cpp
     src/VideoEncoderFactory.cpp
     src/QRCodeManager.cpp
+    src/platform/QtQuickBackendPolicy.cpp
     $<$<NOT:$<PLATFORM_ID:Darwin>>:
         src/ImageColorSpaceHelper.cpp
     >
@@ -497,6 +502,7 @@ add_library(snaptray_platform STATIC
     include/video/VideoTrimmer.h
     include/QRCodeManager.h
     include/ImageColorSpaceHelper.h
+    include/platform/QtQuickBackendPolicy.h
 
     # macOS sources
     $<$<PLATFORM_ID:Darwin>:
@@ -566,6 +572,7 @@ target_link_libraries(snaptray_platform
         snaptray_core
         Qt6::Widgets
         Qt6::Gui
+        Qt6::Quick
         Qt6::Concurrent
         webp
         libwebpmux
@@ -1231,6 +1238,7 @@ set(TS_FILES
     translations/snaptray_ru.ts
     translations/snaptray_sr.ts
     translations/snaptray_sv.ts
+    translations/snaptray_th.ts
     translations/snaptray_tr.ts
     translations/snaptray_vi.ts
     translations/snaptray_zh_CN.ts

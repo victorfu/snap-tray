@@ -33,6 +33,7 @@ private slots:
     void testPixelSamplingAllQuadrants();
     void testPixelSamplingWithHighDPI();
     void testPixelSamplingWithRGB32Format();
+    void testCoordinateStringUsesPhysicalPixels();
 
 private:
     MagnifierPanel* m_panel;
@@ -323,6 +324,24 @@ void tst_MagnifierPanel::testPixelSamplingWithRGB32Format()
     QCOMPARE(sampledColor.red(), expectedColor.red());
     QCOMPARE(sampledColor.green(), expectedColor.green());
     QCOMPARE(sampledColor.blue(), expectedColor.blue());
+}
+
+void tst_MagnifierPanel::testCoordinateStringUsesPhysicalPixels()
+{
+    QImage image(800, 800, QImage::Format_RGB32);
+    image.fill(Qt::black);
+
+    QPixmap testPixmap = QPixmap::fromImage(image);
+    testPixmap.setDevicePixelRatio(2.0);
+
+    QPixmap outputPixmap(600, 600);
+    outputPixmap.fill(Qt::transparent);
+    QPainter outputPainter(&outputPixmap);
+
+    m_panel->setDevicePixelRatio(2.0);
+    m_panel->draw(outputPainter, QPoint(100, 150), QSize(600, 600), testPixmap);
+
+    QCOMPARE(m_panel->coordinateString(), QStringLiteral("(200 , 300)"));
 }
 
 QTEST_MAIN(tst_MagnifierPanel)

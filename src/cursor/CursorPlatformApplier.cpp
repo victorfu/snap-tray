@@ -44,10 +44,8 @@ void CursorPlatformApplier::reassertNativeStyle(const CursorStyleSpec& spec, QWi
     case CursorStyleId::Arrow:
     case CursorStyleId::Crosshair:
     case CursorStyleId::PointingHand:
-    case CursorStyleId::OpenHand:
     case CursorStyleId::ClosedHand:
     case CursorStyleId::TextBeam:
-    case CursorStyleId::Move:
     case CursorStyleId::ResizeHorizontal:
     case CursorStyleId::ResizeVertical:
     case CursorStyleId::ResizeDiagonalForward:
@@ -60,6 +58,10 @@ void CursorPlatformApplier::reassertNativeStyle(const CursorStyleSpec& spec, QWi
         if (!spec.legacyCursor.pixmap().isNull() || spec.legacyCursor.shape() == Qt::CrossCursor) {
             forceNativeCursor(spec.legacyCursor, widget);
         }
+        break;
+    case CursorStyleId::Move:
+    case CursorStyleId::OpenHand:
+        // Let Qt keep rendering these so Move does not fall back to macOS open-hand.
         break;
     }
 #else

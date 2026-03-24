@@ -382,21 +382,19 @@ void ScreenCanvasSession::open(QScreen* activationScreen)
         m_qmlToolbar->clearDragBounds();
     }
     connectScreenTopologySignals();
+    connectApplicationStateSignal();
     setToolCursor();
+    const bool toolbarPlacementReady = initializeToolbarPlacement();
     updateQmlToolbarState();
-
-    if (m_qmlToolbar && !m_qmlToolbar->isVisible()) {
-        m_qmlToolbar->show();
-    }
-
-    QTimer::singleShot(0, this, [this]() {
+    if (!toolbarPlacementReady) {
         relayoutFloatingUi(true);
-    });
+    }
 
     if (m_activeSurface) {
         m_activeSurface->activateWindow();
         m_activeSurface->setFocus(Qt::OtherFocusReason);
         m_activeSurface->raise();
+        raiseFloatingUiWindows();
     }
 }
 
@@ -419,6 +417,11 @@ void ScreenCanvasSession::close()
 void ScreenCanvasSession::teardown()
 {
     endMouseGrab();
+
+    if (m_applicationStateChangedConnection) {
+        disconnect(m_applicationStateChangedConnection);
+        m_applicationStateChangedConnection = {};
+    }
 
     if (m_qmlToolbar) {
         m_qmlToolbar->hide();
@@ -462,6 +465,7 @@ void ScreenCanvasSession::createSurfaces(const QList<QScreen*>& screens)
 
         m_surfaces.append(surface);
         surface->show();
+        preventWindowHideOnDeactivate(surface);
         raiseWindowAboveMenuBar(surface);
         setWindowClickThrough(surface, false);
         surface->raise();
@@ -721,6 +725,19 @@ void ScreenCanvasSession::updateAllSurfaces()
     }
 }
 
+void ScreenCanvasSession::connectApplicationStateSignal()
+{
+    if (m_applicationStateChangedConnection) {
+        return;
+    }
+
+    m_applicationStateChangedConnection = connect(
+        qApp,
+        &QGuiApplication::applicationStateChanged,
+        this,
+        &ScreenCanvasSession::handleApplicationStateChanged);
+}
+
 void ScreenCanvasSession::activateSurface(ScreenCanvas* surface)
 {
     if (!surface) {
@@ -839,6 +856,64 @@ void ScreenCanvasSession::refreshFloatingUiParentWidget()
     }
     if (m_emojiPickerPopup) {
         m_emojiPickerPopup->setParentWidget(hostSurface);
+    }
+}
+
+void ScreenCanvasSession::restoreSurfaceVisibilityAndStacking(bool refocusActiveSurface)
+{
+    ScreenCanvas* fallbackSurface = nullptr;
+    for (const QPointer<ScreenCanvas>& surface : m_surfaces) {
+        if (!surface) {
+            continue;
+        }
+
+        if (!fallbackSurface) {
+            fallbackSurface = surface;
+        }
+
+        if (!surface->isVisible()) {
+            surface->show();
+        }
+        preventWindowHideOnDeactivate(surface);
+        raiseWindowAboveMenuBar(surface);
+        setWindowClickThrough(surface, false);
+        surface->raise();
+        surface->update();
+    }
+
+    if (!m_activeSurface) {
+        m_activeSurface = fallbackSurface;
+    }
+
+    refreshFloatingUiParentWidget();
+    relayoutFloatingUi(false);
+    setToolCursor();
+    updateAllSurfaces();
+
+    if (refocusActiveSurface && m_activeSurface) {
+        m_activeSurface->activateWindow();
+        m_activeSurface->setFocus(Qt::OtherFocusReason);
+        m_activeSurface->raise();
+    }
+    raiseFloatingUiWindows();
+}
+
+void ScreenCanvasSession::raiseFloatingUiWindows()
+{
+    if (m_qmlToolbar && m_qmlToolbar->isVisible()) {
+        if (QWindow* toolbarWindow = m_qmlToolbar->window()) {
+            toolbarWindow->raise();
+        }
+    }
+    if (m_qmlSubToolbar && m_qmlSubToolbar->isVisible()) {
+        if (QWindow* subToolbarWindow = m_qmlSubToolbar->window()) {
+            subToolbarWindow->raise();
+        }
+    }
+    if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+        if (QWindow* emojiWindow = m_emojiPickerPopup->window()) {
+            emojiWindow->raise();
+        }
     }
 }
 
@@ -1719,6 +1794,31 @@ void ScreenCanvasSession::updateQmlToolbarState()
     }
 }
 
+bool ScreenCanvasSession::initializeToolbarPlacement()
+{
+    if (!m_qmlToolbar) {
+        return false;
+    }
+
+    const QSize toolbarSize = m_qmlToolbar->sizeHint();
+    if (toolbarSize.isEmpty()) {
+        return false;
+    }
+
+    const ToolbarPlacementResolution resolution = resolveToolbarPlacement(
+        ScreenCanvasSettingsManager::instance().loadToolbarPlacement(),
+        QGuiApplication::screens(),
+        m_activationScreen.data(),
+        toolbarSize);
+    if (resolution.screenId.isEmpty()) {
+        return false;
+    }
+
+    m_qmlToolbar->setPosition(resolution.globalTopLeft);
+    m_toolbarPlacementInitialized = true;
+    return true;
+}
+
 void ScreenCanvasSession::relayoutFloatingUi(bool restoreToolbarPosition)
 {
     if (!m_qmlToolbar) {
@@ -1728,15 +1828,7 @@ void ScreenCanvasSession::relayoutFloatingUi(bool restoreToolbarPosition)
         return;
     }
 
-    refreshFloatingUiParentWidget();
-    if (!m_qmlToolbar->isVisible()) {
-        m_qmlToolbar->show();
-    }
-
-    QSize toolbarSize = m_qmlToolbar->geometry().size();
-    if (toolbarSize.isEmpty()) {
-        toolbarSize = QSize(m_qmlToolbar->width(), m_qmlToolbar->height());
-    }
+    QSize toolbarSize = m_qmlToolbar->sizeHint();
     if (toolbarSize.isEmpty()) {
         QTimer::singleShot(0, this, [this, restoreToolbarPosition]() {
             relayoutFloatingUi(restoreToolbarPosition);
@@ -1757,12 +1849,16 @@ void ScreenCanvasSession::relayoutFloatingUi(bool restoreToolbarPosition)
     }
 
     refreshFloatingUiParentWidget();
+    if (!m_qmlToolbar->isVisible()) {
+        m_qmlToolbar->show();
+    }
     if (m_qmlSubToolbar && m_qmlSubToolbar->isVisible()) {
         m_qmlSubToolbar->positionBelow(m_qmlToolbar->geometry());
     }
     if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
         m_emojiPickerPopup->positionAt(m_qmlToolbar->geometry());
     }
+    raiseFloatingUiWindows();
 }
 
 void ScreenCanvasSession::saveToolbarPlacement() const
@@ -1790,6 +1886,15 @@ void ScreenCanvasSession::saveToolbarPlacement() const
     ScreenCanvasSettingsManager::instance().saveToolbarPlacement(
         ScreenCanvasSettingsManager::screenIdentifier(screen),
         toolbarGeometry.topLeft() - screen->geometry().topLeft());
+}
+
+void ScreenCanvasSession::handleApplicationStateChanged(Qt::ApplicationState state)
+{
+    if (!m_isOpen || m_isClosing || state != Qt::ApplicationActive) {
+        return;
+    }
+
+    restoreSurfaceVisibilityAndStacking(true);
 }
 
 void ScreenCanvasSession::connectScreenTopologySignals()

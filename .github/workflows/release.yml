@@ -25,6 +25,7 @@ jobs:
       appcast_base_url: ${{ steps.version.outputs.appcast_base_url }}
       macos_appcast_url: ${{ steps.version.outputs.macos_appcast_url }}
       windows_appcast_url: ${{ steps.version.outputs.windows_appcast_url }}
+      release_notes_url: ${{ steps.version.outputs.release_notes_url }}
       release_page_url: ${{ steps.version.outputs.release_page_url }}
     steps:
       - name: Checkout repository
@@ -48,7 +49,19 @@ jobs:
 
           if [ -n "$APPCAST_BASE_URL_OVERRIDE" ]; then
             APPCAST_BASE_URL="${APPCAST_BASE_URL_OVERRIDE%/}"
-          else
+          elif [ -f docs/CNAME ]; then
+            CUSTOM_DOMAIN="$(tr -d '\r\n' < docs/CNAME)"
+            if [ -n "$CUSTOM_DOMAIN" ]; then
+              APPCAST_BASE_URL="https://${CUSTOM_DOMAIN}"
+            fi
+          elif [ -f docs/_config.yml ]; then
+            CONFIG_URL="$(grep -E '^url:' docs/_config.yml | head -1 | sed -E 's/^url:[[:space:]]*\"?([^\"#]+)\"?.*/\1/' | tr -d '\r\n')"
+            if [ -n "$CONFIG_URL" ]; then
+              APPCAST_BASE_URL="${CONFIG_URL%/}"
+            fi
+          fi
+
+          if [ -z "$APPCAST_BASE_URL" ]; then
             OWNER="${GITHUB_REPOSITORY_OWNER}"
             REPO_NAME="${GITHUB_REPOSITORY#*/}"
             if [ "$REPO_NAME" = "${OWNER}.github.io" ]; then
@@ -63,6 +76,7 @@ jobs:
           echo "appcast_base_url=$APPCAST_BASE_URL" >> $GITHUB_OUTPUT
           echo "macos_appcast_url=$APPCAST_BASE_URL/updates/macos.xml" >> $GITHUB_OUTPUT
           echo "windows_appcast_url=$APPCAST_BASE_URL/updates/windows.xml" >> $GITHUB_OUTPUT
+          echo "release_notes_url=$APPCAST_BASE_URL/releases/$VERSION/" >> $GITHUB_OUTPUT
           echo "release_page_url=https://github.com/${GITHUB_REPOSITORY}/releases/tag/v$VERSION" >> $GITHUB_OUTPUT
           echo "Releasing version: $VERSION"
 
@@ -251,7 +265,7 @@ jobs:
       - name: Generate macOS appcast
         env:
           RELEASE_DOWNLOAD_BASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ needs.prepare.outputs.tag_name }}
-          RELEASE_NOTES_URL: ${{ needs.prepare.outputs.release_page_url }}
+          RELEASE_NOTES_URL: ${{ needs.prepare.outputs.release_notes_url }}
           SNAPTRAY_SPARKLE_PRIVATE_KEY: ${{ env.SNAPTRAY_SPARKLE_PRIVATE_KEY }}
         run: |
           set -euo pipefail
@@ -452,7 +466,7 @@ jobs:
         shell: pwsh
         env:
           RELEASE_DOWNLOAD_BASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ needs.prepare.outputs.tag_name }}
-          RELEASE_NOTES_URL: ${{ needs.prepare.outputs.release_page_url }}
+          RELEASE_NOTES_URL: ${{ needs.prepare.outputs.release_notes_url }}
         run: |
           $setupExe = Get-ChildItem -Path . -Recurse -Filter "*-Setup.exe" |
             Select-Object -First 1
@@ -513,6 +527,85 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate release notes
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag_name }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          PREVIOUS_TAG="$(
+            git tag --list 'v*' --sort=version:refname | awk -v target="$RELEASE_TAG" '
+              $0 == target {
+                print previous
+                found = 1
+                exit
+              }
+              {
+                previous = $0
+              }
+              END {
+                if (!found && previous != "") {
+                  print previous
+                }
+              }
+            '
+          )"
+
+          END_REF="$RELEASE_TAG"
+          if ! git rev-parse --verify --quiet "$RELEASE_TAG" >/dev/null; then
+            END_REF="HEAD"
+          fi
+
+          LOG_RANGE="$END_REF"
+          if [ -n "$PREVIOUS_TAG" ]; then
+            LOG_RANGE="${PREVIOUS_TAG}..${END_REF}"
+          fi
+
+          FILTERED_COMMITS_FILE="$(mktemp)"
+          trap 'rm -f "$FILTERED_COMMITS_FILE"' EXIT
+
+          git log --no-merges --reverse --format=%s "$LOG_RANGE" | while IFS= read -r SUBJECT; do
+            if [ -z "$SUBJECT" ]; then
+              continue
+            fi
+
+            if printf '%s\n' "$SUBJECT" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+              continue
+            fi
+
+            if printf '%s\n' "$SUBJECT" | grep -Eq '^chore(\(.*\))?:[[:space:]]bump[[:space:]]version[[:space:]]to[[:space:]]'; then
+              continue
+            fi
+
+            if printf '%s\n' "$SUBJECT" | grep -Eq '^Update[[:space:]]appcasts[[:space:]]for($|[[:space:]])'; then
+              continue
+            fi
+
+            printf -- '- %s\n' "$SUBJECT" >> "$FILTERED_COMMITS_FILE"
+          done
+
+          {
+            echo "## What's Changed"
+            echo
+
+            if [ -s "$FILTERED_COMMITS_FILE" ]; then
+              cat "$FILTERED_COMMITS_FILE"
+            else
+              echo "- No notable changes in this release."
+            fi
+
+            if [ -n "$PREVIOUS_TAG" ]; then
+              echo
+              echo "Full Changelog: https://github.com/${GITHUB_REPOSITORY}/compare/${PREVIOUS_TAG}...${RELEASE_TAG}"
+            fi
+          } > release-notes.md
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -528,17 +621,20 @@ jobs:
           name: ${{ env.APP_NAME }} ${{ needs.prepare.outputs.version }}
           draft: false
           prerelease: false
-          generate_release_notes: true
+          body_path: release-notes.md
           files: |
             artifacts/macos-dmg/*.dmg
             artifacts/windows-nsis/*.exe
 
   deploy-appcasts:
-    needs: [release]
+    needs: [prepare, release]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      - name: Checkout release sources
+        uses: actions/checkout@v4
+
       - name: Checkout pages branch
         uses: actions/checkout@v4
         with:
@@ -552,21 +648,31 @@ jobs:
 
       - name: Update appcasts in pages branch
         env:
+          GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.prepare.outputs.tag_name }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+          RELEASE_NOTES_URL: ${{ needs.prepare.outputs.release_notes_url }}
         run: |
           set -euo pipefail
           mkdir -p pages-site/docs/updates
           cp artifacts/macos-appcast/macos.xml pages-site/docs/updates/macos.xml
           cp artifacts/windows-appcast/windows.xml pages-site/docs/updates/windows.xml
+          mkdir -p "pages-site/docs/releases/${RELEASE_VERSION}"
+
+          gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" > "$RUNNER_TEMP/release.json"
+          python3 scripts/render_release_notes_page.py \
+            --release-json "$RUNNER_TEMP/release.json" \
+            --canonical-url "$RELEASE_NOTES_URL" \
+            --output "pages-site/docs/releases/${RELEASE_VERSION}/index.html"
 
           git -C pages-site config user.name "github-actions[bot]"
           git -C pages-site config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          if [ -z "$(git -C pages-site status --porcelain -- docs/updates/macos.xml docs/updates/windows.xml)" ]; then
+          if [ -z "$(git -C pages-site status --porcelain -- docs/updates/macos.xml docs/updates/windows.xml docs/releases/${RELEASE_VERSION}/index.html)" ]; then
             echo "Appcasts are already up to date."
             exit 0
           fi
 
-          git -C pages-site add docs/updates/macos.xml docs/updates/windows.xml
+          git -C pages-site add docs/updates/macos.xml docs/updates/windows.xml "docs/releases/${RELEASE_VERSION}/index.html"
           git -C pages-site commit -m "Update appcasts for ${RELEASE_TAG}"
           git -C pages-site push origin HEAD:pages

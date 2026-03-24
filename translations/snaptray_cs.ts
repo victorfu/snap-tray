@@ -21,6 +21,11 @@
 <context>
     <name>AdvancedSettings</name>
     <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="24" />
+        <source>Show magnifier</source>
+        <translation>Zobrazit lupu</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="21" />
         <source>Capture</source>
         <translation>Zachycení</translation>
@@ -3208,3 +3213,5 @@ Může být používána jinou aplikací.</translation>
     </message>
 </context>
 </TS>
+
+

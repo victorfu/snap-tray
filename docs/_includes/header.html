@@ -2,7 +2,7 @@
 {% assign t = site.data.i18n[lang] %}
 {% assign route_key = page.route_key | default: '' %}
 {% assign is_docs_page = false %}
-{% if route_key contains 'docs_' %}
+{% if route_key contains 'docs_' or route_key contains 'developer_' %}
   {% assign is_docs_page = true %}
 {% endif %}
 {% if lang == 'zh-tw' %}

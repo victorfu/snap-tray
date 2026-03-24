@@ -2,6 +2,7 @@
 #define SCREENCANVASSESSION_H
 
 #include <QList>
+#include <QMetaObject>
 #include <QObject>
 #include <QPoint>
 #include <QPointer>
@@ -56,6 +57,7 @@ class ScreenCanvasSession : public QObject
     Q_OBJECT
 
     friend class TestScreenCanvasPlacement;
+    friend class TestScreenCanvasSessionRecovery;
 
 public:
     struct ToolbarPlacementResolution
@@ -161,9 +163,14 @@ private:
     void syncTextFormattingToSubToolbar();
 
     void updateQmlToolbarState();
+    bool initializeToolbarPlacement();
     void relayoutFloatingUi(bool restoreToolbarPosition = false);
     void saveToolbarPlacement() const;
     void connectScreenTopologySignals();
+    void connectApplicationStateSignal();
+    void handleApplicationStateChanged(Qt::ApplicationState state);
+    void restoreSurfaceVisibilityAndStacking(bool refocusActiveSurface);
+    void raiseFloatingUiWindows();
     void closeForScreenTopologyChange(const QString& reason);
     void setBackgroundMode(CanvasBackgroundMode mode);
     void showEmojiPickerPopup();
@@ -213,6 +220,7 @@ private:
     bool m_showSubToolbar = true;
     bool m_isOpen = false;
     bool m_isClosing = false;
+    QMetaObject::Connection m_applicationStateChangedConnection;
 
     ShapeType m_shapeType = ShapeType::Rectangle;
     ShapeFillMode m_shapeFillMode = ShapeFillMode::Outline;

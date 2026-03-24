@@ -88,6 +88,8 @@ void tst_WindowDetectorQueryMode::testTopLevelOnlySkipsChildQuery()
     detector.m_enabled = true;
     detector.setScreen(screen);
     detector.m_refreshComplete = true;
+    detector.m_cacheReady = true;
+    detector.m_cacheScreen = screen;
     detector.m_windowCache = {makeElement(topBounds)};
     detector.childResult = makeElement(QRect(hitPoint.x() - 20, hitPoint.y() - 15, 40, 30), 1);
 
@@ -116,6 +118,8 @@ void tst_WindowDetectorQueryMode::testIncludeChildControlsUsesChildQuery()
     detector.m_enabled = true;
     detector.setScreen(screen);
     detector.m_refreshComplete = true;
+    detector.m_cacheReady = true;
+    detector.m_cacheScreen = screen;
     detector.m_windowCache = {makeElement(topBounds)};
     detector.childResult = makeElement(childBounds, 1);
 
@@ -144,6 +148,8 @@ void tst_WindowDetectorQueryMode::testContextMenuPrefersTopLevelBounds()
     detector.m_enabled = true;
     detector.setScreen(screen);
     detector.m_refreshComplete = true;
+    detector.m_cacheReady = true;
+    detector.m_cacheScreen = screen;
     detector.m_windowCache = {makeElement(topBounds, 100, ElementType::ContextMenu)};
     detector.childResult = makeElement(rowBounds, 101);
 

@@ -59,14 +59,17 @@ void tst_HistoryModel::testRefreshAndRoles()
     QVERIFY(first.isValid());
     QCOMPARE(model.data(first, SnapTray::HistoryModel::CanEditRole).toBool(), true);
     QCOMPARE(model.data(first, SnapTray::HistoryModel::ReplayAvailableRole).toBool(), true);
-    QCOMPARE(model.data(first, SnapTray::HistoryModel::ImageSizeRole).toSize(), QSize(160, 90));
+    QCOMPARE(model.data(first, SnapTray::HistoryModel::ImageSizeRole).toSize(), QSize(320, 180));
+    QCOMPARE(model.data(first, SnapTray::HistoryModel::SizeTextRole).toString(), QStringLiteral("320 x 180"));
     QVERIFY(model.data(first, SnapTray::HistoryModel::TooltipTextRole).toString().contains(QStringLiteral("Time:")));
     QVERIFY(model.data(first, SnapTray::HistoryModel::TooltipTextRole).toString().contains(QStringLiteral("Size:")));
+    QVERIFY(model.data(first, SnapTray::HistoryModel::TooltipTextRole).toString().contains(QStringLiteral("320 x 180")));
 
     const QModelIndex second = model.index(1, 0);
     QVERIFY(second.isValid());
     QCOMPARE(model.data(second, SnapTray::HistoryModel::CanEditRole).toBool(), true);
-    QCOMPARE(model.data(second, SnapTray::HistoryModel::ImageSizeRole).toSize(), QSize(100, 50));
+    QCOMPARE(model.data(second, SnapTray::HistoryModel::ImageSizeRole).toSize(), QSize(200, 100));
+    QCOMPARE(model.data(second, SnapTray::HistoryModel::SizeTextRole).toString(), QStringLiteral("200 x 100"));
 
     QSignalSpy countSpy(&model, &SnapTray::HistoryModel::countChanged);
     QVERIFY(countSpy.isValid());

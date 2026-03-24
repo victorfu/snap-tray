@@ -185,6 +185,7 @@ private:
     void createContextMenu();
     void refreshMoveToScreenMenu();
     void moveToScreen(QScreen* targetScreen);
+    void handleApplicationStateChanged(Qt::ApplicationState state);
     QString screenMenuLabel(QScreen* screen, int index, bool isPrimary) const;
     void mergePinsFromContextMenu();
     int eligibleMergePinCount() const;
@@ -223,6 +224,8 @@ private:
 
     // Info methods
     void copyAllInfo();
+    void refreshInfoMenu();
+    QString currentPhysicalSizeText() const;
 
     // Cache folder methods
     static QString cacheFolderPath();
@@ -231,10 +234,11 @@ private:
     // Toolbar and annotation methods
     void showToolbar();
     void hideToolbar();
+    void hideToolbarPreservingToolState();
     void initializeAnnotationComponents();
     void updateToolbarPosition();
     void enterAnnotationMode();
-    void exitAnnotationMode();
+    void exitAnnotationMode(bool clearActiveTool = true);
     void updateCursorForTool();
     void handleToolbarToolSelected(int toolId);
     void handleToolbarUndo();
@@ -248,6 +252,7 @@ private:
     void hideSubToolbar();
     void showEmojiPickerPopup();
     bool isGlobalPosOverFloatingUi(const QPoint& globalPos) const;
+    void rebuildManagedCursorAt(const QPoint& localPos);
     void restoreAnnotationCursorAt(const QPoint& localPos);
     void syncFloatingUiCursor();
     void applyCrop(const QRect& cropRect);
@@ -342,11 +347,18 @@ private:
     bool m_isDragging;
     QMenu* m_contextMenu;
     QMenu* m_moveToScreenMenu = nullptr;
+    QMenu* m_infoMenu = nullptr;
     QAction* m_showToolbarAction = nullptr;
     QAction* m_clickThroughAction = nullptr;
     QAction* m_showBorderAction = nullptr;
     QAction* m_adjustRegionLayoutAction = nullptr;
     QAction* m_mergePinsAction = nullptr;
+    QAction* m_sizeInfoAction = nullptr;
+    QAction* m_zoomInfoAction = nullptr;
+    QAction* m_rotationInfoAction = nullptr;
+    QAction* m_opacityInfoAction = nullptr;
+    QAction* m_flipHorizontalInfoAction = nullptr;
+    QAction* m_flipVerticalInfoAction = nullptr;
 
     // Live capture context menu items
     QAction* m_startLiveAction = nullptr;

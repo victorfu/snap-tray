@@ -5,6 +5,7 @@
 #include <QApplication>
 #include <QCursor>
 #include <QGuiApplication>
+#include <QMouseEvent>
 #include <QWidget>
 #include <QWindow>
 
@@ -110,6 +111,16 @@ inline void restoreWidgetCursorIfPointerOver(QWidget* widget)
         }
     }
 
+    const QPoint localPos = widget->mapFromGlobal(globalPos);
+    QMouseEvent moveEvent(
+        QEvent::MouseMove,
+        QPointF(localPos),
+        QPointF(localPos),
+        QPointF(globalPos),
+        Qt::NoButton,
+        Qt::NoButton,
+        Qt::NoModifier);
+    QApplication::sendEvent(widget, &moveEvent);
     CursorManager::instance().reapplyCursorForWidget(widget);
 }
 

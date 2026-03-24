@@ -158,6 +158,11 @@ void QmlEmojiPickerPopup::setParentWidget(QWidget* parent)
     } else {
         m_view->setTransientParent(nullptr);
     }
+
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
+    if (m_view->isVisible()) {
+        applyPlatformWindowFlags();
+    }
 }
 
 bool QmlEmojiPickerPopup::isVisible() const
@@ -180,6 +185,7 @@ QWindow* QmlEmojiPickerPopup::window() const
 
 void QmlEmojiPickerPopup::applyPlatformWindowFlags()
 {
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
     raiseTransientWindowAboveParent(m_view, m_parentWidget.data());
 }
 
@@ -241,6 +247,11 @@ bool QmlEmojiPickerPopup::eventFilter(QObject* obj, QEvent* event)
             event->type() == QEvent::Hide ||
             event->type() == QEvent::Close) {
             CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+            if (m_parentWidget) {
+                QTimer::singleShot(0, this, [this]() {
+                    CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_parentWidget);
+                });
+            }
         }
         return false;
     }

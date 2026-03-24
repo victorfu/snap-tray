@@ -54,6 +54,11 @@ public:
     QString colorString() const;
 
     /**
+     * @brief Get the formatted cursor coordinate string in physical pixels.
+     */
+    QString coordinateString() const;
+
+    /**
      * @brief Invalidate the magnifier cache (call when background changes).
      */
     void invalidateCache();

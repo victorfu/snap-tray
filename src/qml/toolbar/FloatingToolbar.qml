@@ -49,8 +49,10 @@ Item {
     readonly property int separatorWidth: 8
     readonly property int margin: 8
     readonly property int separatorLineHeight: 16
+    readonly property int dragHandleWidth: 16
+    readonly property int contentSpacing: 6
 
-    width: buttonRow.width + margin * 2
+    width: contentRow.width + margin * 2
     height: barHeight
 
     // ── Glass background ──
@@ -59,123 +61,159 @@ Item {
         glassRadius: 8
     }
 
-    // ── Drag area (below buttons) ──
-    MouseArea {
-        id: dragArea
-        anchors.fill: parent
-        z: 0
-        cursorShape: pressed ? CursorTokens.panelDragActive : CursorTokens.panelDragIdle
-
-        property point pressStart
-
-        onPressed: function(mouse) {
-            pressStart = Qt.point(mouse.x, mouse.y)
-            root.dragStarted()
-        }
-
-        onPositionChanged: function(mouse) {
-            if (pressed) {
-                var dx = mouse.x - pressStart.x
-                var dy = mouse.y - pressStart.y
-                root.dragMoved(dx, dy)
-            }
-        }
-
-        onReleased: root.dragFinished()
-    }
-
-    // ── Button row ──
     Row {
-        id: buttonRow
+        id: contentRow
         anchors {
             left: parent.left
             leftMargin: root.margin
             verticalCenter: parent.verticalCenter
         }
-        spacing: root.buttonSpacing
+        spacing: root.contentSpacing
         z: 1
 
-        Repeater {
-            model: root.hasViewModel ? root.viewModel.buttons : []
+        Item {
+            id: dragHandle
+            objectName: "toolbarDragHandle"
+            width: root.dragHandleWidth
+            height: root.barHeight
 
-            Loader {
-                id: delegateLoader
+            Column {
+                anchors.centerIn: parent
+                spacing: 3
 
-                // Unpack model data
-                readonly property var buttonData: modelData
-                readonly property int buttonId: buttonData.id
-                readonly property bool isSeparatorBefore: buttonData.separatorBefore
-                readonly property bool isOCR: buttonData.isOCR
+                Repeater {
+                    model: 4
 
-                // Skip OCR button if not available
-                active: root.hasViewModel && !(isOCR && !root.viewModel.ocrAvailable)
-                visible: active
+                    Row {
+                        spacing: 3
 
-                sourceComponent: Item {
-                    implicitWidth: separatorItem.width + toolbarButton.width
-                    implicitHeight: root.barHeight
-                    width: implicitWidth
-                    height: implicitHeight
+                        Repeater {
+                            model: 2
 
-                    // Separator before (if configured)
-                    Item {
-                        id: separatorItem
-                        width: delegateLoader.isSeparatorBefore ? root.separatorWidth : 0
-                        height: root.barHeight
-                        visible: delegateLoader.isSeparatorBefore
-
-                        // Vertical separator line
-                        Rectangle {
-                            anchors.centerIn: parent
-                            width: 1
-                            height: root.separatorLineHeight
-                            color: ComponentTokens.toolbarSeparator
+                            Rectangle {
+                                width: 2
+                                height: 2
+                                radius: 1
+                                color: ComponentTokens.toolbarIcon
+                                opacity: dragArea.pressed ? 0.85 : 0.45
+                            }
                         }
                     }
+                }
+            }
 
-                    ToolbarButton {
-                        id: toolbarButton
-                        x: separatorItem.width
-                        anchors.verticalCenter: parent.verticalCenter
-                        buttonId: delegateLoader.buttonId
-                        iconSource: delegateLoader.buttonData.iconSource
-                        tooltipText: delegateLoader.buttonData.tooltip
-                        isAction: delegateLoader.buttonData.isAction || false
-                        isCancel: delegateLoader.buttonData.isCancel || false
-                        isRecord: delegateLoader.buttonData.isRecord || false
-                        isActive: root.hasViewModel
-                                  && root.viewModel.activeTool === delegateLoader.buttonId
-                        isDisabled: {
-                            if (!root.hasViewModel)
-                                return true;
-                            if (delegateLoader.buttonData.isUndo)
-                                return !root.viewModel.canUndo;
-                            if (delegateLoader.buttonData.isRedo)
-                                return !root.viewModel.canRedo;
-                            if (delegateLoader.buttonData.isShare)
-                                return root.viewModel.shareInProgress
-                                       || root.viewModel.autoBlurProcessing;
-                            if (delegateLoader.buttonData.isExportAction)
-                                return root.viewModel.autoBlurProcessing;
-                            return false;
+            MouseArea {
+                id: dragArea
+                anchors.fill: parent
+                cursorShape: pressed ? CursorTokens.panelDragActive : CursorTokens.panelDragIdle
+
+                property point pressStart
+
+                onPressed: function(mouse) {
+                    pressStart = Qt.point(mouse.x, mouse.y)
+                    root.dragStarted()
+                }
+
+                onPositionChanged: function(mouse) {
+                    if (pressed) {
+                        var dx = mouse.x - pressStart.x
+                        var dy = mouse.y - pressStart.y
+                        root.dragMoved(dx, dy)
+                    }
+                }
+
+                onReleased: root.dragFinished()
+                onCanceled: root.dragFinished()
+            }
+        }
+
+        // ── Button row ──
+        Row {
+            id: buttonRow
+            spacing: root.buttonSpacing
+
+            Repeater {
+                model: root.hasViewModel ? root.viewModel.buttons : []
+
+                Loader {
+                    id: delegateLoader
+
+                    // Unpack model data
+                    readonly property var buttonData: modelData
+                    readonly property int buttonId: buttonData.id
+                    readonly property bool isSeparatorBefore: buttonData.separatorBefore
+                    readonly property bool isOCR: buttonData.isOCR
+
+                    // Skip OCR button if not available
+                    active: root.hasViewModel && !(isOCR && !root.viewModel.ocrAvailable)
+                    visible: active
+
+                    sourceComponent: Item {
+                        implicitWidth: separatorItem.width + toolbarButton.width
+                        implicitHeight: root.barHeight
+                        width: implicitWidth
+                        height: implicitHeight
+
+                        // Separator before (if configured)
+                        Item {
+                            id: separatorItem
+                            width: delegateLoader.isSeparatorBefore ? root.separatorWidth : 0
+                            height: root.barHeight
+                            visible: delegateLoader.isSeparatorBefore
+
+                            // Vertical separator line
+                            Rectangle {
+                                anchors.centerIn: parent
+                                width: 1
+                                height: root.separatorLineHeight
+                                color: ComponentTokens.toolbarSeparator
+                            }
                         }
-                        iconNormalColor: root.iconNormalColor
-                        iconActionColor: root.iconActionColor
-                        iconCancelColor: root.iconCancelColor
-                        iconActiveColor: root.iconActiveColor
-                        width: root.buttonWidth
-                        height: root.buttonHeight
 
-                        onClicked: function(id) {
-                            if (root.hasViewModel)
-                                root.viewModel.handleButtonClicked(id)
+                        ToolbarButton {
+                            id: toolbarButton
+                            x: separatorItem.width
+                            anchors.verticalCenter: parent.verticalCenter
+                            buttonId: delegateLoader.buttonId
+                            iconSource: delegateLoader.buttonData.iconSource
+                            tooltipText: delegateLoader.buttonData.tooltip
+                            isAction: delegateLoader.buttonData.isAction || false
+                            isCancel: delegateLoader.buttonData.isCancel || false
+                            isRecord: delegateLoader.buttonData.isRecord || false
+                            isActive: root.hasViewModel
+                                      && root.viewModel.activeTool === delegateLoader.buttonId
+                            isDisabled: {
+                                if (!root.hasViewModel)
+                                    return true;
+                                if (delegateLoader.buttonData.isUndo)
+                                    return !root.viewModel.canUndo;
+                                if (delegateLoader.buttonData.isRedo)
+                                    return !root.viewModel.canRedo;
+                                if (delegateLoader.buttonData.isShare)
+                                    return root.viewModel.shareInProgress
+                                           || root.viewModel.autoBlurProcessing;
+                                if (delegateLoader.buttonData.isExportAction)
+                                    return root.viewModel.autoBlurProcessing;
+                                return false;
+                            }
+                            iconNormalColor: root.iconNormalColor
+                            iconActionColor: root.iconActionColor
+                            iconCancelColor: root.iconCancelColor
+                            iconActiveColor: root.iconActiveColor
+                            width: root.buttonWidth
+                            height: root.buttonHeight
+
+                            onClicked: function(id) {
+                                if (root.hasViewModel)
+                                    root.viewModel.handleButtonClicked(id)
+                            }
+
+                            onHovered: function(id, globalX, globalY, w, h) {
+                                root.buttonHovered(id, globalX, globalY, w, h)
+                            }
+
+                            onUnhovered: root.buttonUnhovered()
                         }
-
-                        onHovered: function(id, globalX, globalY, w, h) {
-                            root.buttonHovered(id, globalX, globalY, w, h)
-                        }
-
-                        onUnhovered: root.buttonUnhovered()
                     }
                 }
             }

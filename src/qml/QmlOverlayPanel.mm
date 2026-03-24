@@ -1,5 +1,6 @@
 #include "qml/QmlOverlayPanel.h"
 #include "cursor/CursorSurfaceSupport.h"
+#include "platform/WindowLevel.h"
 #include "qml/QmlOverlayManager.h"
 
 #include <QEvent>
@@ -134,6 +135,8 @@ void QmlOverlayPanel::applyPlatformWindowFlags()
 
     [window setOpaque:NO];
 #endif
+
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
 }
 
 void QmlOverlayPanel::show()
@@ -286,6 +289,11 @@ bool QmlOverlayPanel::eventFilter(QObject* watched, QEvent* event)
         case QEvent::Hide:
         case QEvent::Close:
             CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+            if (m_parentWidget) {
+                QTimer::singleShot(0, this, [this]() {
+                    CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_parentWidget);
+                });
+            }
             break;
         default:
             break;

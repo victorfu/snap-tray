@@ -1,5 +1,6 @@
 #include "qml/QmlWindowedToolbar.h"
 #include "cursor/CursorSurfaceSupport.h"
+#include "platform/WindowLevel.h"
 #include "qml/QmlFloatingSubToolbar.h"
 #include "qml/QmlOverlayManager.h"
 #include "qml/PinToolbarViewModel.h"
@@ -38,8 +39,16 @@ bool containsGlobalPoint(const QWidget* widget, const QPoint& globalPos)
 
 bool containsGlobalPoint(const QWindow* window, const QPoint& globalPos)
 {
-    return window && window->isVisible()
-        && QRect(window->position(), window->size()).contains(globalPos);
+    if (!window || !window->isVisible()) {
+        return false;
+    }
+
+    const QRect frameRect = window->frameGeometry();
+    if (frameRect.isValid() && !frameRect.isEmpty()) {
+        return frameRect.contains(globalPos);
+    }
+
+    return QRect(window->position(), window->size()).contains(globalPos);
 }
 
 bool isTransientPopup(const QWidget* widget)
@@ -152,6 +161,7 @@ void QmlWindowedToolbar::ensureTooltipView()
     }
 
     m_tooltipRootItem = m_tooltipView->rootObject();
+    syncTooltipTransientParent();
 }
 
 void QmlWindowedToolbar::setupConnections()
@@ -210,6 +220,8 @@ void QmlWindowedToolbar::applyPlatformWindowFlags()
     mask &= ~NSWindowStyleMaskResizable;
     [window setStyleMask:mask];
 #endif
+
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
 }
 
 void QmlWindowedToolbar::applyTooltipWindowFlags()
@@ -238,6 +250,8 @@ void QmlWindowedToolbar::applyTooltipWindowFlags()
 #elif defined(Q_OS_WIN)
     Q_UNUSED(m_tooltipView)
 #endif
+
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_tooltipView);
 }
 
 // ── Show / Hide / Close ──
@@ -251,6 +265,7 @@ void QmlWindowedToolbar::show()
         return;
     }
 
+    syncTransientParent();
     m_view->show();
     applyPlatformWindowFlags();
     QmlOverlayManager::enableNativeShadow(m_view);
@@ -327,6 +342,7 @@ void QmlWindowedToolbar::setAssociatedWidgets(QWidget* pinWindow, QmlFloatingSub
 {
     m_associatedPinWindow = pinWindow;
     m_associatedSubToolbar = subToolbar;
+    syncTransientParent();
 }
 
 void QmlWindowedToolbar::setAssociatedTransientWidget(QWidget* widget)
@@ -337,6 +353,45 @@ void QmlWindowedToolbar::setAssociatedTransientWidget(QWidget* widget)
 void QmlWindowedToolbar::setAssociatedTransientWindow(QWindow* window)
 {
     m_associatedTransientWindow = window;
+}
+
+void QmlWindowedToolbar::syncTransientParent()
+{
+    if (!m_view) {
+        return;
+    }
+
+    QWidget* hostWindow = m_associatedPinWindow ? m_associatedPinWindow->window() : nullptr;
+    if (hostWindow && hostWindow->windowHandle()) {
+        m_view->setTransientParent(hostWindow->windowHandle());
+    } else {
+        m_view->setTransientParent(nullptr);
+    }
+
+    // Owner/transient changes on Windows can reintroduce native caption bits.
+    // Reapply frameless tool-window styles after every parent sync.
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
+    if (m_view->isVisible()) {
+        applyPlatformWindowFlags();
+    }
+}
+
+void QmlWindowedToolbar::syncTooltipTransientParent()
+{
+    if (!m_tooltipView) {
+        return;
+    }
+
+    if (m_view) {
+        m_tooltipView->setTransientParent(m_view);
+    } else {
+        m_tooltipView->setTransientParent(nullptr);
+    }
+
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_tooltipView);
+    if (m_tooltipView->isVisible()) {
+        applyTooltipWindowFlags();
+    }
 }
 
 // ── Positioning ──
@@ -418,6 +473,11 @@ bool QmlWindowedToolbar::eventFilter(QObject* obj, QEvent* event)
         case QEvent::Close:
             hideTooltip();
             CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+            if (m_associatedPinWindow) {
+                QTimer::singleShot(0, this, [this]() {
+                    CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_associatedPinWindow);
+                });
+            }
             break;
         default:
             break;
@@ -525,6 +585,8 @@ void QmlWindowedToolbar::showTooltip(const QString& text, const QRect& anchorRec
     ensureTooltipView();
     if (!m_tooltipView || !m_tooltipRootItem || !m_view)
         return;
+
+    syncTooltipTransientParent();
 
     const quint64 requestId = ++m_tooltipRequestId;
     m_tooltipRootItem->setProperty("tooltipText", text);

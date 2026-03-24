@@ -122,5 +122,6 @@ SectionEnd
 ; Optional: Run at startup section
 Section "Run at Startup" SecStartup
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Run" \
-                     "${APP_NAME}" "$INSTDIR\${APP_NAME}.exe --minimized"
+                     "${APP_NAME}" "$\"$INSTDIR\${APP_NAME}.exe$\""
+    WriteRegDWORD HKCU "Software\SnapTray\general" "startOnLogin" 1
 SectionEnd

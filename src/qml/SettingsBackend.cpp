@@ -5,6 +5,7 @@
 #include "capture/IAudioCaptureEngine.h"
 #include "hotkey/HotkeyManager.h"
 #include "hotkey/HotkeyTypes.h"
+#include "settings/AutoLaunchSettingsManager.h"
 #include "settings/AutoBlurSettingsManager.h"
 #include "settings/FileSettingsManager.h"
 #include "settings/LanguageManager.h"
@@ -17,6 +18,7 @@
 #include "settings/WatermarkSettingsManager.h"
 #include "OCRManager.h"
 #include "ToolbarStyle.h"
+#include "qml/QmlToast.h"
 #include "qml/ThemeManager.h"
 #include "update/UpdateCoordinator.h"
 #include "update/UpdateSettingsManager.h"
@@ -87,6 +89,45 @@ AutoBlurSettingsManager::BlurType blurTypeFromUiIndex(int index)
         ? AutoBlurSettingsManager::BlurType::Gaussian
         : AutoBlurSettingsManager::BlurType::Pixelate;
 }
+
+void showHotkeyRegistrationWarning(SnapTray::HotkeyManager& manager,
+                                   SnapTray::HotkeyAction action)
+{
+    const SnapTray::HotkeyConfig config = manager.getConfig(action);
+    if (config.status != SnapTray::HotkeyStatus::Failed) {
+        return;
+    }
+
+    const QString conflictDescription = manager.getConflictDescription(config.keySequence, action);
+    const QString message = conflictDescription.isEmpty()
+        ? SnapTray::SettingsBackend::tr(
+              "%1 was saved, but it could not be activated because the shortcut is already in use by another app or the system.")
+              .arg(config.displayName)
+        : SnapTray::SettingsBackend::tr("%1 was saved, but it could not be activated. %2")
+              .arg(config.displayName, conflictDescription);
+
+    SnapTray::QmlToast::screenToast().showToast(
+        SnapTray::QmlToast::Level::Warning,
+        SnapTray::SettingsBackend::tr("Hotkey Conflict"),
+        message,
+        4000);
+}
+
+void showRestoreAllHotkeyWarning(const QStringList& failedHotkeys)
+{
+    if (failedHotkeys.isEmpty()) {
+        return;
+    }
+
+    const QString message = SnapTray::SettingsBackend::tr(
+        "Defaults were restored, but these shortcuts are still inactive: %1")
+        .arg(failedHotkeys.join(QStringLiteral(", ")));
+    SnapTray::QmlToast::screenToast().showToast(
+        SnapTray::QmlToast::Level::Warning,
+        SnapTray::SettingsBackend::tr("Hotkey Conflict"),
+        message,
+        4500);
+}
 }
 
 namespace SnapTray {
@@ -108,7 +149,7 @@ SettingsBackend::~SettingsBackend() = default;
 void SettingsBackend::loadAllSettings()
 {
     // General
-    m_startOnLogin = AutoLaunchManager::isEnabled();
+    m_startOnLogin = AutoLaunchManager::syncWithPreference();
     m_language = LanguageManager::instance().loadLanguage();
     m_appTheme = static_cast<int>(ToolbarStyleConfig::loadStyle());
     m_cliInstalled = PlatformFeatures::instance().isCLIInstalled();
@@ -119,6 +160,7 @@ void SettingsBackend::loadAllSettings()
 #endif
 
     // Advanced
+    m_magnifierEnabled = RegionCaptureSettingsManager::instance().isMagnifierEnabled();
     m_shortcutHintsEnabled = RegionCaptureSettingsManager::instance().isShortcutHintsEnabled();
 #ifdef SNAPTRAY_ENABLE_MCP
     m_mcpEnabled = MCPSettingsManager::instance().isEnabled();
@@ -177,9 +219,14 @@ void SettingsBackend::loadAllSettings()
 bool SettingsBackend::startOnLogin() const { return m_startOnLogin; }
 void SettingsBackend::setStartOnLogin(bool v) {
     if (m_startOnLogin != v) {
-        m_startOnLogin = v;
-        AutoLaunchManager::setEnabled(v);
-        emit startOnLoginChanged();
+        AutoLaunchSettingsManager::instance().savePreferredEnabled(v);
+        (void)AutoLaunchManager::setEnabled(v);
+        const bool actualValue = AutoLaunchManager::isEnabled();
+        const bool shouldNotify = (m_startOnLogin != actualValue) || (actualValue != v);
+        m_startOnLogin = actualValue;
+        if (shouldNotify) {
+            emit startOnLoginChanged();
+        }
     }
 }
 
@@ -239,6 +286,8 @@ bool SettingsBackend::hasAccessibilityPermission() const { return m_hasAccessibi
 // Advanced property accessors
 // ─────────────────────────────────────────────────────────────────────────────
 
+bool SettingsBackend::magnifierEnabled() const { return m_magnifierEnabled; }
+
 bool SettingsBackend::shortcutHintsEnabled() const { return m_shortcutHintsEnabled; }
 
 bool SettingsBackend::isMcpBuild() const
@@ -248,6 +297,14 @@ bool SettingsBackend::isMcpBuild() const
 #else
     return false;
 #endif
+}
+
+void SettingsBackend::setMagnifierEnabled(bool v) {
+    if (m_magnifierEnabled != v) {
+        m_magnifierEnabled = v;
+        RegionCaptureSettingsManager::instance().setMagnifierEnabled(v);
+        emit magnifierEnabledChanged();
+    }
 }
 
 void SettingsBackend::setShortcutHintsEnabled(bool v) {
@@ -942,8 +999,12 @@ void SettingsBackend::editHotkey(int action)
     mgr.resumeRegistration();
 
     if (dialogResult == QDialog::Accepted) {
-        mgr.updateHotkey(static_cast<HotkeyAction>(action), dialog.keySequence());
+        const auto hotkeyAction = static_cast<HotkeyAction>(action);
+        const bool updated = mgr.updateHotkey(hotkeyAction, dialog.keySequence());
         emit hotkeysChanged();
+        if (!updated) {
+            showHotkeyRegistrationWarning(mgr, hotkeyAction);
+        }
     }
 }
 
@@ -957,14 +1018,19 @@ void SettingsBackend::clearHotkey(int action)
 void SettingsBackend::resetHotkey(int action)
 {
     auto& mgr = HotkeyManager::instance();
-    mgr.resetToDefault(static_cast<HotkeyAction>(action));
+    const auto hotkeyAction = static_cast<HotkeyAction>(action);
+    const bool reset = mgr.resetToDefault(hotkeyAction);
     emit hotkeysChanged();
+    if (!reset) {
+        showHotkeyRegistrationWarning(mgr, hotkeyAction);
+    }
 }
 
 void SettingsBackend::restoreAllHotkeys()
 {
-    HotkeyManager::instance().resetAllToDefaults();
+    const QStringList failedHotkeys = HotkeyManager::instance().resetAllToDefaults();
     emit hotkeysChanged();
+    showRestoreAllHotkeyWarning(failedHotkeys);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
