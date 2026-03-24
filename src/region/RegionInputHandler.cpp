@@ -977,6 +977,13 @@ void RegionInputHandler::handleThrottledUpdate()
         m_lastCrosshairPoint = state().currentPoint;
     }
     else if (state().isDrawing) {
+        const ToolId currentTool =
+            m_toolManager ? m_toolManager->currentTool() : ToolId::Selection;
+        const bool previewOwnsRepaint =
+            currentTool == ToolId::Pencil || currentTool == ToolId::Marker;
+        if (previewOwnsRepaint) {
+            return;
+        }
         if (m_updateThrottler->shouldUpdate(UpdateThrottler::ThrottleType::Annotation)) {
             m_updateThrottler->reset(UpdateThrottler::ThrottleType::Annotation);
             if (m_selectionManager && m_selectionManager->hasSelection()) {

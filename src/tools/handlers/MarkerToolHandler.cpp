@@ -60,6 +60,14 @@ void MarkerToolHandler::drawPreview(QPainter& painter) const {
     }
 }
 
+QRect MarkerToolHandler::previewBounds() const
+{
+    if (!m_isDrawing || !m_currentStroke) {
+        return QRect();
+    }
+    return m_currentStroke->boundingRect();
+}
+
 void MarkerToolHandler::cancelDrawing() {
     m_isDrawing = false;
     m_currentPath.clear();

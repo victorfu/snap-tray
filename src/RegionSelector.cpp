@@ -267,13 +267,31 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_toolManager->setLineStyle(m_inputState.lineStyle);
     m_toolManager->setMosaicBlurType(mosaicBlurType);
     connect(m_toolManager, &ToolManager::needsRepaint, this, [this]() {
+        const ToolId currentTool = m_toolManager ? m_toolManager->currentTool() : ToolId::Selection;
+        const bool localizedPreviewUpdate =
+            currentTool == ToolId::Pencil || currentTool == ToolId::Marker;
+        if (localizedPreviewUpdate && m_toolManager) {
+            if (IToolHandler* handler = m_toolManager->handler(currentTool)) {
+                const QRect previewBounds = handler->previewBounds();
+                if (previewBounds.isValid() && !previewBounds.isEmpty()) {
+                    update(previewBounds.adjusted(
+                        -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+                        -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+                        SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+                        SelectionDirtyRegionPlanner::kAnnotationRepaintMargin));
+                    return;
+                }
+            }
+        }
+
         if (m_inputState.isDrawing && m_selectionManager && m_selectionManager->hasSelection()) {
             update(m_selectionManager->selectionRect().adjusted(
                 -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
                 -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
                 SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
                 SelectionDirtyRegionPlanner::kAnnotationRepaintMargin));
-        } else {
+        }
+        else {
             update();
         }
     });

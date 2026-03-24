@@ -2,6 +2,7 @@
 #define ITOOLHANDLER_H
 
 #include <QPoint>
+#include <QRect>
 #include <QCursor>
 #include <memory>
 
@@ -73,6 +74,13 @@ public:
      * @brief Draw the current in-progress annotation preview.
      */
     virtual void drawPreview(QPainter& painter) const { Q_UNUSED(painter); }
+
+    /**
+     * @brief Bounding rect for the current in-progress preview, if any.
+     *
+     * Used to localize repaints for interactive drawing tools.
+     */
+    virtual QRect previewBounds() const { return QRect(); }
 
     /**
      * @brief Check if currently drawing an annotation.

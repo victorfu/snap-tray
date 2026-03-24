@@ -110,6 +110,14 @@ void PencilToolHandler::drawPreview(QPainter& painter) const {
     }
 }
 
+QRect PencilToolHandler::previewBounds() const
+{
+    if (!m_isDrawing || !m_currentStroke) {
+        return QRect();
+    }
+    return m_currentStroke->boundingRect();
+}
+
 void PencilToolHandler::cancelDrawing() {
     m_isDrawing = false;
     m_currentPath.clear();

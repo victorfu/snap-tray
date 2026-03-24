@@ -532,6 +532,11 @@ target_link_libraries(Annotations_PencilStroke PRIVATE snaptray_core Qt6::Widget
 add_test(NAME Annotations_PencilStroke COMMAND Annotations_PencilStroke)
 set_tests_properties(Annotations_PencilStroke PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Tools_MarkerToolHandler Tools/handlers/tst_MarkerToolHandler.cpp)
+target_link_libraries(Tools_MarkerToolHandler PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Tools_MarkerToolHandler COMMAND Tools_MarkerToolHandler)
+set_tests_properties(Tools_MarkerToolHandler PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Annotations_PolylineAnnotation Annotations/tst_PolylineAnnotation.cpp)
 target_link_libraries(Annotations_PolylineAnnotation PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
 add_test(NAME Annotations_PolylineAnnotation COMMAND Annotations_PolylineAnnotation)

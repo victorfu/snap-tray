@@ -46,6 +46,7 @@ private slots:
 
     // Preview tests
     void testDrawPreview_WhileDrawing();
+    void testPreviewBounds_DuringAndAfterDrawing();
 
     // Cancellation tests
     void testCancelDrawing();
@@ -224,6 +225,23 @@ void TestPencilToolHandler::testDrawPreview_WhileDrawing()
         }
     }
     QVERIFY(hasColor);
+}
+
+void TestPencilToolHandler::testPreviewBounds_DuringAndAfterDrawing()
+{
+    QCOMPARE(m_handler->previewBounds(), QRect());
+
+    m_handler->onMousePress(m_context, QPoint(50, 50));
+    m_handler->onMouseMove(m_context, QPoint(100, 100));
+    const QRect duringBounds = m_handler->previewBounds();
+
+    QVERIFY(duringBounds.isValid());
+    QVERIFY(!duringBounds.isEmpty());
+    QVERIFY(duringBounds.contains(QPoint(50, 50)));
+    QVERIFY(duringBounds.contains(QPoint(100, 100)));
+
+    m_handler->onMouseRelease(m_context, QPoint(120, 120));
+    QCOMPARE(m_handler->previewBounds(), QRect());
 }
 
 // ============================================================================
