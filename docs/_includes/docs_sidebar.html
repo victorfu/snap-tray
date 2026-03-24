@@ -1,10 +1,12 @@
 {% assign lang = page.lang | default: site.default_lang %}
 {% assign t = site.data.i18n[lang] %}
+{% assign nav_data = include.nav_data | default: site.data.docs_nav %}
+{% assign sidebar_title = include.sidebar_title | default: t.docs.sidebar_title %}
 
 <div id="docs-sidebar-panel" class="docs-sidebar-card">
-  <p class="docs-sidebar-title">{{ t.docs.sidebar_title }}</p>
+  <p class="docs-sidebar-title">{{ sidebar_title }}</p>
 
-  {% for group in site.data.docs_nav %}
+  {% for group in nav_data %}
   <section class="docs-nav-group">
     <p class="docs-nav-group-title">{{ group.title[lang] }}</p>
     <ul class="docs-nav-list">

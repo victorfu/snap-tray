@@ -78,6 +78,26 @@ docs_faq:
   en: /docs/faq/
   zh-tw: /zh-tw/docs/faq/
 
+developer_home:
+  en: /developer/
+  zh-tw: /zh-tw/developer/
+
+developer_build_from_source:
+  en: /developer/build-from-source/
+  zh-tw: /zh-tw/developer/build-from-source/
+
+developer_release_packaging:
+  en: /developer/release-packaging/
+  zh-tw: /zh-tw/developer/release-packaging/
+
+developer_architecture:
+  en: /developer/architecture/
+  zh-tw: /zh-tw/developer/architecture/
+
+developer_mcp_debug:
+  en: /developer/mcp-debug/
+  zh-tw: /zh-tw/developer/mcp-debug/
+
 not_found:
   en: /404.html
   zh-tw: /404.html

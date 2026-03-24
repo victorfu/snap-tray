@@ -114,6 +114,7 @@ footer:
   links:
     home: 首頁
     docs: 文件
+    developer: 開發者文件
     releases: 版本
     privacy: 隱私政策
     report_issue: 回報問題
@@ -125,6 +126,11 @@ docs:
   on_this_page: 本頁重點
   toc_empty: 這一頁目前沒有章節標題。
   menu_button: 開啟文件目錄
+
+developer:
+  page_label: 開發者文件
+  sidebar_title: 開發者目錄
+  menu_button: 開啟開發者目錄
 
 error404:
   eyebrow: 錯誤

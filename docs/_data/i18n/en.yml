@@ -114,6 +114,7 @@ footer:
   links:
     home: Home
     docs: Docs
+    developer: Developer Docs
     releases: Releases
     privacy: Privacy Policy
     report_issue: Report Issue
@@ -125,6 +126,11 @@ docs:
   on_this_page: On This Page
   toc_empty: This page has no sections yet.
   menu_button: Docs Menu
+
+developer:
+  page_label: Developer Docs
+  sidebar_title: Developer Docs
+  menu_button: Developer Menu
 
 error404:
   eyebrow: Error
