@@ -2,12 +2,11 @@
 #define MARKERSTROKE_H
 
 #include "AnnotationItem.h"
-#include <QVector>
-#include <QPointF>
 #include <QColor>
 #include <QImage>
-
-class QPainterPath;
+#include <QPainterPath>
+#include <QPointF>
+#include <QVector>
 
 /**
  * @brief Semi-transparent marker/highlighter stroke annotation
@@ -18,6 +17,7 @@ public:
     MarkerStroke(const QVector<QPointF> &points, const QColor &color, int width);
 
     void draw(QPainter &painter) const override;
+    void drawPreview(QPainter &painter) const;
     QRect boundingRect() const override;
     std::unique_ptr<AnnotationItem> clone() const override;
     void translate(const QPointF& delta) override;
@@ -42,9 +42,14 @@ private:
     mutable qreal m_cachedDpr = 0.0;
     mutable int m_cachedPointCount = 0;
 
+    mutable QPainterPath m_cachedPreviewPath;
+    mutable int m_cachedPreviewLastControlIndex = 0;
+
     // Performance optimization: cached bounding rect
     mutable QRect m_boundingRectCache;
     mutable bool m_boundingRectDirty = true;
+
+    void rebuildPreviewPath() const;
 };
 
 #endif // MARKERSTROKE_H

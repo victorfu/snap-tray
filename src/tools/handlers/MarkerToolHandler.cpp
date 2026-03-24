@@ -56,7 +56,7 @@ void MarkerToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
 
 void MarkerToolHandler::drawPreview(QPainter& painter) const {
     if (m_isDrawing && m_currentStroke) {
-        m_currentStroke->draw(painter);
+        m_currentStroke->drawPreview(painter);
     }
 }
 

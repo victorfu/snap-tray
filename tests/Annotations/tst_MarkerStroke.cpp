@@ -59,6 +59,7 @@ private slots:
 
     // Drawing tests
     void testDraw_MultiplePoints();
+    void testDrawPreview_MultiplePoints();
     void testDraw_JitterPath_MatchesMidpointReference();
     void testTranslate_UpdatesBoundingRectAfterCacheWarmup();
     void testTranslate_RebuildsRenderedCacheAtNewPosition();
@@ -477,6 +478,21 @@ void TestMarkerStroke::testDraw_MultiplePoints()
         }
     }
     QVERIFY(hasColor);
+}
+
+void TestMarkerStroke::testDrawPreview_MultiplePoints()
+{
+    QVector<QPointF> points = createTestPoints(10, 5);
+    MarkerStroke stroke(points, Qt::yellow, 20);
+
+    QImage image(200, 200, QImage::Format_ARGB32);
+    image.fill(Qt::white);
+    QPainter painter(&image);
+
+    stroke.drawPreview(painter);
+    painter.end();
+
+    QVERIFY(regionHasNonWhitePixel(image, stroke.boundingRect().adjusted(-2, -2, 2, 2)));
 }
 
 void TestMarkerStroke::testDraw_JitterPath_MatchesMidpointReference()

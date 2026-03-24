@@ -54,6 +54,26 @@ MarkerStroke::MarkerStroke(const QVector<QPointF> &points, const QColor &color, 
 {
 }
 
+void MarkerStroke::rebuildPreviewPath() const
+{
+    m_cachedPreviewPath = QPainterPath();
+    m_cachedPreviewLastControlIndex = 0;
+
+    if (m_points.size() < 3) {
+        return;
+    }
+
+    m_cachedPreviewPath.moveTo(m_points[0]);
+    const QPointF firstMid = (m_points[0] + m_points[1]) / 2.0;
+    m_cachedPreviewPath.lineTo(firstMid);
+
+    for (int i = 1; i < m_points.size() - 1; ++i) {
+        const QPointF mid = (m_points[i] + m_points[i + 1]) / 2.0;
+        m_cachedPreviewPath.quadTo(m_points[i], mid);
+        m_cachedPreviewLastControlIndex = i;
+    }
+}
+
 void MarkerStroke::draw(QPainter &painter) const
 {
     if (m_points.size() < 2) return;
@@ -107,6 +127,40 @@ void MarkerStroke::draw(QPainter &painter) const
     painter.restore();
 }
 
+void MarkerStroke::drawPreview(QPainter &painter) const
+{
+    if (m_points.size() < 2) {
+        return;
+    }
+
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setPen(QPen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter.setBrush(Qt::NoBrush);
+    painter.setOpacity(0.4);
+
+    if (m_points.size() == 2) {
+        painter.drawLine(m_points[0], m_points[1]);
+        painter.restore();
+        return;
+    }
+
+    if (m_cachedPreviewPath.isEmpty() ||
+        m_cachedPreviewLastControlIndex != m_points.size() - 2) {
+        rebuildPreviewPath();
+    }
+
+    if (!m_cachedPreviewPath.isEmpty()) {
+        painter.drawPath(m_cachedPreviewPath);
+        QPainterPath tailPath;
+        tailPath.moveTo(m_cachedPreviewPath.currentPosition());
+        tailPath.quadTo(m_points.last(), m_points.last());
+        painter.drawPath(tailPath);
+    }
+
+    painter.restore();
+}
+
 QRect MarkerStroke::boundingRect() const
 {
     if (m_points.isEmpty()) return QRect();
@@ -134,7 +188,7 @@ QRect MarkerStroke::boundingRect() const
 
 std::unique_ptr<AnnotationItem> MarkerStroke::clone() const
 {
-    return std::make_unique<MarkerStroke>(m_points, m_color, m_width);
+    return std::unique_ptr<AnnotationItem>(new MarkerStroke(m_points, m_color, m_width));
 }
 
 void MarkerStroke::translate(const QPointF& delta)
@@ -153,6 +207,8 @@ void MarkerStroke::translate(const QPointF& delta)
     m_cachedOrigin = QPoint();
     m_cachedDpr = 0.0;
     m_cachedPointCount = 0;
+    m_cachedPreviewPath = QPainterPath();
+    m_cachedPreviewLastControlIndex = 0;
 }
 
 void MarkerStroke::addPoint(const QPointF &point)
@@ -169,6 +225,18 @@ void MarkerStroke::addPoint(const QPointF &point)
         m_boundingRectDirty = false;
     } else {
         m_boundingRectCache = m_boundingRectCache.united(pointRect);
+    }
+
+    if (m_points.size() >= 3) {
+        if (m_cachedPreviewPath.isEmpty() ||
+            m_cachedPreviewLastControlIndex + 1 != m_points.size() - 2) {
+            rebuildPreviewPath();
+        } else {
+            const int controlIndex = m_points.size() - 2;
+            const QPointF mid = (m_points[controlIndex] + m_points[controlIndex + 1]) / 2.0;
+            m_cachedPreviewPath.quadTo(m_points[controlIndex], mid);
+            m_cachedPreviewLastControlIndex = controlIndex;
+        }
     }
 }
 
