@@ -320,6 +320,7 @@ add_library(snaptray_core STATIC
     src/utils/FilenameTemplateEngine.cpp
     src/utils/ImageSaveUtils.cpp
     src/utils/NativeFileDialogUtils.cpp
+    src/utils/ScreenCaptureRegionUtils.cpp
     # CLI sources
     src/cli/CLIHandler.cpp
     src/cli/IPCProtocol.cpp

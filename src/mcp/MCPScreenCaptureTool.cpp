@@ -3,6 +3,7 @@
 #include "ImageColorSpaceHelper.h"
 #include "utils/CoordinateHelper.h"
 #include "utils/ImageSaveUtils.h"
+#include "utils/ScreenCaptureRegionUtils.h"
 
 #include <QCursor>
 #include <QDateTime>
@@ -189,30 +190,12 @@ ToolCallResult ToolImpl::captureScreenshot(const QJsonObject& arguments, const T
     }
 
     if (hasRegion) {
-        const qreal dpr = screenshot.devicePixelRatio() > 0.0 ? screenshot.devicePixelRatio() : 1.0;
-        const QSize logicalScreenSize = CoordinateHelper::toLogical(screenshot.size(), dpr);
-        const QRect logicalScreenRect(QPoint(0, 0), logicalScreenSize);
-        if (!logicalScreenRect.contains(logicalRegion)) {
-            return ToolCallResult{
-                false,
-                {},
-                QStringLiteral("Region (%1,%2,%3,%4) exceeds logical screen bounds (%5x%6)")
-                    .arg(logicalRegion.x())
-                    .arg(logicalRegion.y())
-                    .arg(logicalRegion.width())
-                    .arg(logicalRegion.height())
-                    .arg(logicalScreenRect.width())
-                    .arg(logicalScreenRect.height())};
+        const auto cropResult = SnapTray::ScreenCaptureRegionUtils::cropLogicalRegionFromScreenshot(
+            screenshot, logicalRegion);
+        if (!cropResult.isValid()) {
+            return ToolCallResult{false, {}, cropResult.error};
         }
-
-        const QRect physicalRegion = CoordinateHelper::toPhysicalCoveringRect(logicalRegion, dpr);
-        const QRect clampedPhysicalRegion = physicalRegion.intersected(screenshot.rect());
-        if (clampedPhysicalRegion.isEmpty()) {
-            return ToolCallResult{false, {}, QStringLiteral("Failed to crop region")};
-        }
-
-        screenshot = screenshot.copy(clampedPhysicalRegion);
-        screenshot.setDevicePixelRatio(dpr);
+        screenshot = cropResult.pixmap;
     }
 
     const QString savedPath = saveScreenshotToFile(screenshot, targetScreen, outputPath);

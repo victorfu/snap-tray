@@ -48,6 +48,11 @@ target_link_libraries(Qml_QtQuickBackendPolicy PRIVATE snaptray_platform Qt6::Te
 add_test(NAME Qml_QtQuickBackendPolicy COMMAND Qml_QtQuickBackendPolicy)
 set_tests_properties(Qml_QtQuickBackendPolicy PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Utils_ScreenCaptureRegionUtils Utils/tst_ScreenCaptureRegionUtils.cpp)
+target_link_libraries(Utils_ScreenCaptureRegionUtils PRIVATE snaptray_core Qt6::Test)
+add_test(NAME Utils_ScreenCaptureRegionUtils COMMAND Utils_ScreenCaptureRegionUtils)
+set_tests_properties(Utils_ScreenCaptureRegionUtils PROPERTIES TIMEOUT 60 LABELS "unit")
+
 if(WIN32)
     add_executable(Qml_QtQuickBackendWin Qml/tst_QtQuickBackendWin.cpp)
     target_link_libraries(Qml_QtQuickBackendWin PRIVATE snaptray_platform Qt6::Qml Qt6::Quick Qt6::Test)
