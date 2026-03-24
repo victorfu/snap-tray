@@ -169,5 +169,5 @@ Replace the Qt path if your installation lives elsewhere.
 
 ## Next step
 
-- Go to [Release & Packaging](/developer/release-packaging/) when you need distributable artifacts
-- Go to [Architecture Overview](/developer/architecture/) when you need repository structure or subsystem guidance
+- Go to [Release & Packaging](release-packaging.md) when you need distributable artifacts
+- Go to [Architecture Overview](architecture.md) when you need repository structure or subsystem guidance

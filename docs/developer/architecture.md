@@ -226,6 +226,6 @@ Commands under `include/cli/commands/` include:
 
 ## Related docs
 
-- [Build from Source](/developer/build-from-source/)
-- [Release & Packaging](/developer/release-packaging/)
-- [CLI](/docs/cli/)
+- [Build from Source](build-from-source.md)
+- [Release & Packaging](release-packaging.md)
+- [CLI](../docs/cli.md)

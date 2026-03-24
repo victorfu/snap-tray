@@ -169,5 +169,5 @@ C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray-Debug.exe
 
 ## 下一步
 
-- 需要產出安裝檔時，前往[發佈與打包](/zh-tw/developer/release-packaging/)
-- 需要了解專案結構與 subsystem 時，前往[架構總覽](/zh-tw/developer/architecture/)
+- 需要產出安裝檔時，前往[發佈與打包](release-packaging.md)
+- 需要了解專案結構與 subsystem 時，前往[架構總覽](architecture.md)

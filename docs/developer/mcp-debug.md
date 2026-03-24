@@ -65,5 +65,5 @@ When `capture_screenshot.output_path` is omitted, SnapTray writes to a temp fold
 
 ## Related docs
 
-- [Build from Source](/developer/build-from-source/)
-- [CLI](/docs/cli/)
+- [Build from Source](build-from-source.md)
+- [CLI](../docs/cli.md)

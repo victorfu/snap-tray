@@ -65,5 +65,5 @@ SnapTray 的 MCP server 是 **僅限 Debug build** 的能力。
 
 ## 相關文件
 
-- [從原始碼建置](/zh-tw/developer/build-from-source/)
-- [命令列](/zh-tw/docs/cli/)
+- [從原始碼建置](build-from-source.md)
+- [命令列](../docs/cli.md)
