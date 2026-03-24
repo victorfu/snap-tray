@@ -4,6 +4,7 @@
 #include <QTemporaryDir>
 
 #include "RegionSelector.h"
+#include "RegionSelectorTestAccess.h"
 
 class tst_RegionSelectorHistoryReplay : public QObject
 {
@@ -66,7 +67,7 @@ void tst_RegionSelectorHistoryReplay::testRestoreLiveReplaySlotRecordsCaptureCon
 {
     RegionSelector selector;
     RegionSelector::RegionSelectorTraceProbe probe;
-    selector.m_traceProbe = &probe;
+    RegionSelectorTestAccess::attachTraceProbe(selector, &probe);
 
     QScreen* screen = QGuiApplication::primaryScreen();
     QVERIFY(screen);
@@ -103,7 +104,7 @@ void tst_RegionSelectorHistoryReplay::testApplyHistoryReplayEntryRecordsCaptureC
 {
     RegionSelector selector;
     RegionSelector::RegionSelectorTraceProbe probe;
-    selector.m_traceProbe = &probe;
+    RegionSelectorTestAccess::attachTraceProbe(selector, &probe);
 
     QScreen* screen = QGuiApplication::primaryScreen();
     QVERIFY(screen);
