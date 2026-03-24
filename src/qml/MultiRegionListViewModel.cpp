@@ -80,7 +80,8 @@ void MultiRegionListViewModel::generateThumbnails(const QVector<MultiRegionManag
             continue;
 
         const qreal dpr = m_devicePixelRatio > 0.0 ? m_devicePixelRatio : 1.0;
-        const QRect physicalRect = CoordinateHelper::toPhysicalCoveringRect(region.rect, dpr);
+        const QRect physicalRect = CoordinateHelper::toPhysicalCoveringRect(region.rect, dpr)
+                                       .intersected(m_backgroundPixmap.rect());
         if (!physicalRect.isValid() || physicalRect.isEmpty())
             continue;
 

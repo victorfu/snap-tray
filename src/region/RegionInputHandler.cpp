@@ -99,6 +99,11 @@ void RegionInputHandler::setSharedState(RegionInputState* state)
     m_state = state;
 }
 
+void RegionInputHandler::setMagnifierVisibilityProvider(std::function<bool()> provider)
+{
+    m_shouldRenderMagnifier = std::move(provider);
+}
+
 RegionInputState& RegionInputHandler::state()
 {
     Q_ASSERT(m_state != nullptr);
@@ -921,10 +926,14 @@ void RegionInputHandler::handleThrottledUpdate()
     // at the initial cursor position, but m_lastMagnifierRect is still null (unset).
     // Do a full widget repaint to clear the initial content, then initialize tracking state.
     if (m_lastMagnifierRect.isNull()) {
+        const bool shouldRenderMagnifier =
+            !m_shouldRenderMagnifier || m_shouldRenderMagnifier();
         m_lastCrosshairPoint = state().currentPoint;
         m_lastSelectionRect = m_selectionManager->selectionRect().normalized();
-        m_lastMagnifierRect = m_dirtyRegionPlanner.magnifierRectForCursor(
-            state().currentPoint, m_parentWidget->size());
+        m_lastMagnifierRect = shouldRenderMagnifier
+            ? m_dirtyRegionPlanner.magnifierRectForCursor(
+                state().currentPoint, m_parentWidget->size())
+            : QRect();
         const bool hasRenderableSelection =
             m_selectionManager->hasSelection() && m_lastSelectionRect.isValid();
         // QML toolbar and region control panel position themselves in separate windows
@@ -938,7 +947,9 @@ void RegionInputHandler::handleThrottledUpdate()
         const QRect currentSelectionRect = m_selectionManager->selectionRect().normalized();
         const bool suppressFloatingUi =
             shouldSuppressCompletedSelectionDragUi(state(), m_selectionManager);
-        const QRect currentMagnifierRect = suppressFloatingUi
+        const bool shouldRenderMagnifier =
+            !m_shouldRenderMagnifier || m_shouldRenderMagnifier();
+        const QRect currentMagnifierRect = (suppressFloatingUi || !shouldRenderMagnifier)
             ? QRect()
             : m_dirtyRegionPlanner.magnifierRectForCursor(state().currentPoint, m_parentWidget->size());
         QRect currentToolbarRect;
@@ -957,7 +968,7 @@ void RegionInputHandler::handleThrottledUpdate()
         params.lastCursorPos = m_lastCrosshairPoint;
         params.viewportSize = m_parentWidget->size();
         params.suppressFloatingUi = suppressFloatingUi;
-        params.includeMagnifier = !suppressFloatingUi;
+        params.includeMagnifier = !suppressFloatingUi && shouldRenderMagnifier;
         const QRegion dirtyRegion = m_dirtyRegionPlanner.planSelectionDragRegion(params);
         m_parentWidget->update(dirtyRegion);
         m_lastSelectionRect = currentSelectionRect;
@@ -982,8 +993,11 @@ void RegionInputHandler::handleThrottledUpdate()
     else if (m_selectionManager->isComplete()) {
         if (m_updateThrottler->shouldUpdate(UpdateThrottler::ThrottleType::Hover)) {
             m_updateThrottler->reset(UpdateThrottler::ThrottleType::Hover);
-            const QRect currentMagnifierRect = m_dirtyRegionPlanner.magnifierRectForCursor(
-                state().currentPoint, m_parentWidget->size());
+            const bool shouldRenderMagnifier =
+                !m_shouldRenderMagnifier || m_shouldRenderMagnifier();
+            const QRect currentMagnifierRect = shouldRenderMagnifier
+                ? m_dirtyRegionPlanner.magnifierRectForCursor(state().currentPoint, m_parentWidget->size())
+                : QRect();
 
             SelectionDirtyRegionPlanner::HoverParams params;
             params.currentMagnifierRect = currentMagnifierRect;
@@ -999,8 +1013,11 @@ void RegionInputHandler::handleThrottledUpdate()
     }
     else {
         // No throttle — update on every mouse move for instant magnifier feedback
-        const QRect currentMagnifierRect = m_dirtyRegionPlanner.magnifierRectForCursor(
-            state().currentPoint, m_parentWidget->size());
+        const bool shouldRenderMagnifier =
+            !m_shouldRenderMagnifier || m_shouldRenderMagnifier();
+        const QRect currentMagnifierRect = shouldRenderMagnifier
+            ? m_dirtyRegionPlanner.magnifierRectForCursor(state().currentPoint, m_parentWidget->size())
+            : QRect();
 
         SelectionDirtyRegionPlanner::HoverParams params;
         params.currentMagnifierRect = currentMagnifierRect;

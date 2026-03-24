@@ -735,6 +735,9 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_inputHandler->setUpdateThrottler(&m_updateThrottler);
     m_inputHandler->setParentWidget(this);
     m_inputHandler->setSharedState(&m_inputState);
+    m_inputHandler->setMagnifierVisibilityProvider([this]() {
+        return shouldShowMagnifier();
+    });
 
     // Connect input handler signals
     connect(m_inputHandler, &RegionInputHandler::toolCursorRequested,

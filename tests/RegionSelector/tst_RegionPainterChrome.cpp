@@ -43,6 +43,32 @@ QImage paintImage(RegionPainter& painter,
     return canvas;
 }
 
+QImage paintFractionalDprImage(RegionPainter& painter,
+                               SelectionStateManager& selectionManager,
+                               QWidget& hostWidget,
+                               const QPixmap& background,
+                               const QRegion& dirtyRegion = QRegion())
+{
+    painter.setParentWidget(&hostWidget);
+    painter.setSelectionManager(&selectionManager);
+    painter.setCornerRadius(0);
+    painter.setDevicePixelRatio(background.devicePixelRatio());
+    painter.setHighlightedWindowRect(QRect());
+
+    QImage canvas(hostWidget.size(), QImage::Format_ARGB32_Premultiplied);
+    canvas.fill(Qt::transparent);
+
+    QPainter qp(&canvas);
+    qp.setRenderHint(QPainter::Antialiasing);
+    if (!dirtyRegion.isEmpty()) {
+        qp.setClipRegion(dirtyRegion);
+    }
+    painter.paint(qp, background, dirtyRegion);
+    qp.end();
+
+    return canvas;
+}
+
 } // namespace
 
 class tst_RegionPainterChrome : public QObject
@@ -52,6 +78,7 @@ class tst_RegionPainterChrome : public QObject
 private slots:
     void testDetectedWindowChromeMatchesSelectionChrome();
     void testWindowHighlightVisualRectIncludesHandlesAndPanel();
+    void testFractionalDprPartialBackgroundRepaintMatchesFullPaint();
 };
 
 void tst_RegionPainterChrome::testDetectedWindowChromeMatchesSelectionChrome()
@@ -102,6 +129,41 @@ void tst_RegionPainterChrome::testWindowHighlightVisualRectIncludesHandlesAndPan
 
     QVERIFY(visualRect.contains(handleBounds));
     QVERIFY(visualRect.contains(painter.lastDimensionInfoRect()));
+}
+
+void tst_RegionPainterChrome::testFractionalDprPartialBackgroundRepaintMatchesFullPaint()
+{
+    QWidget hostWidget;
+    hostWidget.resize(QSize(200, 120));
+
+    SelectionStateManager selectionManager;
+    selectionManager.setBounds(QRect(QPoint(0, 0), hostWidget.size()));
+
+    QImage backgroundImage(QSize(300, 180), QImage::Format_ARGB32_Premultiplied);
+    backgroundImage.fill(Qt::black);
+    for (int y = 0; y < backgroundImage.height(); ++y) {
+        backgroundImage.setPixelColor(151, y, Qt::red);
+        backgroundImage.setPixelColor(152, y, Qt::green);
+        backgroundImage.setPixelColor(153, y, Qt::blue);
+    }
+
+    QPixmap background = QPixmap::fromImage(backgroundImage);
+    background.setDevicePixelRatio(1.5);
+
+    RegionPainter painter;
+    const QImage fullCanvas = paintFractionalDprImage(
+        painter, selectionManager, hostWidget, background);
+
+    const QRegion dirtyRegion(QRect(101, 20, 1, 10));
+    const QImage partialCanvas = paintFractionalDprImage(
+        painter, selectionManager, hostWidget, background, dirtyRegion);
+
+    for (int y = dirtyRegion.boundingRect().top(); y <= dirtyRegion.boundingRect().bottom(); ++y) {
+        for (int x = dirtyRegion.boundingRect().left(); x <= dirtyRegion.boundingRect().right(); ++x) {
+            QVERIFY(dirtyRegion.contains(QPoint(x, y)));
+            QCOMPARE(partialCanvas.pixelColor(x, y), fullCanvas.pixelColor(x, y));
+        }
+    }
 }
 
 QTEST_MAIN(tst_RegionPainterChrome)

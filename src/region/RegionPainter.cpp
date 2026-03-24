@@ -135,7 +135,12 @@ void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QR
             if (!sourceRect.isValid() || sourceRect.isEmpty()) {
                 continue;
             }
-            painter.drawPixmap(updateRect, background, sourceRect);
+            const QRectF targetRect(
+                static_cast<qreal>(sourceRect.x()) / dpr,
+                static_cast<qreal>(sourceRect.y()) / dpr,
+                static_cast<qreal>(sourceRect.width()) / dpr,
+                static_cast<qreal>(sourceRect.height()) / dpr);
+            painter.drawPixmap(targetRect, background, QRectF(sourceRect));
         }
     }
 

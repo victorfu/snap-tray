@@ -7,6 +7,7 @@
 #include <QRegion>
 #include <QCursor>
 #include <QTimer>
+#include <functional>
 #include "TransformationGizmo.h"
 #include "region/RegionInputState.h"
 #include "region/SelectionStateManager.h"
@@ -51,6 +52,7 @@ public:
     void setUpdateThrottler(UpdateThrottler* throttler);
     void setParentWidget(QWidget* widget);
     void setSharedState(RegionInputState* state);
+    void setMagnifierVisibilityProvider(std::function<bool()> provider);
 
     // Reset dirty tracking state (call when starting a new capture)
     void resetDirtyTracking();
@@ -149,6 +151,7 @@ private:
     UpdateThrottler* m_updateThrottler = nullptr;
     QWidget* m_parentWidget = nullptr;
     RegionInputState* m_state = nullptr;
+    std::function<bool()> m_shouldRenderMagnifier;
 
     // State
     QPoint m_startPoint;

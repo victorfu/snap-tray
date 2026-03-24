@@ -9,6 +9,7 @@
 #include "region/RegionInputHandler.h"
 #include "region/RegionInputState.h"
 #include "region/SelectionStateManager.h"
+#include "region/UpdateThrottler.h"
 
 namespace {
 
@@ -39,6 +40,7 @@ private slots:
     void testDetectedWindowRealDragClearsDetectionAndStartsSelection();
     void testSelectionMoveSetsAndClearsDragStateOnRelease();
     void testSelectionMoveClearsDragStateOnRightClickCancel();
+    void testCompletedSelectionHoverSkipsMagnifierDirtyRegionWhenDisabled();
 
 private:
     RegionInputHandler* m_handler = nullptr;
@@ -252,6 +254,30 @@ void tst_RegionInputHandler::testSelectionMoveClearsDragStateOnRightClickCancel(
 
     QCOMPARE(m_selectionManager->state(), SelectionStateManager::State::None);
     QCOMPARE(CursorManager::instance().dragStateForWidget(m_parentWidget), DragState::None);
+}
+
+void tst_RegionInputHandler::testCompletedSelectionHoverSkipsMagnifierDirtyRegionWhenDisabled()
+{
+    UpdateThrottler throttler;
+    throttler.startAll();
+    m_handler->setUpdateThrottler(&throttler);
+    m_handler->setMagnifierVisibilityProvider([]() { return false; });
+    m_handler->resetDirtyTracking();
+
+    m_selectionManager->setSelectionRect(QRect(100, 120, 200, 160));
+    QVERIFY(m_selectionManager->isComplete());
+
+    QTest::qWait(UpdateThrottler::kHoverMs + 5);
+
+    auto firstMoveEvent = makeMouseEvent(QEvent::MouseMove, QPoint(160, 180), Qt::NoButton, Qt::NoButton);
+    m_handler->handleMouseMove(&firstMoveEvent);
+
+    QTest::qWait(UpdateThrottler::kHoverMs + 5);
+
+    auto secondMoveEvent = makeMouseEvent(QEvent::MouseMove, QPoint(164, 184), Qt::NoButton, Qt::NoButton);
+    m_handler->handleMouseMove(&secondMoveEvent);
+
+    QVERIFY(m_handler->lastMagnifierRect().isNull());
 }
 
 QTEST_MAIN(tst_RegionInputHandler)
