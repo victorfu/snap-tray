@@ -633,6 +633,7 @@ add_library(snaptray_ui STATIC
     src/InlineTextEditor.cpp
     src/TransformationGizmo.cpp
     src/annotation/AnnotationContext.cpp
+    src/annotation/AnnotationRenderHelper.cpp
 
     # Tool system
     src/tools/ToolRegistry.cpp

@@ -746,7 +746,12 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_inputHandler, &RegionInputHandler::toolbarClickRequested,
         this, [this](int buttonId) { handleToolbarClick(static_cast<ToolId>(buttonId)); });
     connect(m_inputHandler, &RegionInputHandler::windowDetectionRequested,
-        this, [this](const QPoint& localPos) { updateWindowDetection(localPos); });
+        this, [this](const QPoint& localPos) {
+            if (m_traceProbe) {
+                m_traceProbe->windowDetectionRequests.append(localPos);
+            }
+            updateWindowDetection(localPos);
+        });
     connect(m_inputHandler, &RegionInputHandler::selectionFinished,
         this, [this]() {
             m_selectionManager->finishSelection();
@@ -1191,6 +1196,51 @@ void RegionSelector::applyCanvasGeometry(const QSize& logicalSize)
     m_inputState.currentPoint.setY(qBound(0, m_inputState.currentPoint.y(), qMax(0, logicalSize.height() - 1)));
 }
 
+void RegionSelector::applyCaptureContext(const SelectorCaptureContext& context)
+{
+    const qreal normalizedDpr = context.devicePixelRatio > 0.0 ? context.devicePixelRatio : 1.0;
+    m_backgroundPixmap = context.backgroundPixmap;
+    m_devicePixelRatio = normalizedDpr;
+    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_backgroundPixmap);
+    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
+    m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
+    m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
+    m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
+    m_exportManager->setSourceScreen(context.sourceScreen.data());
+    if (m_multiRegionListViewModel) {
+        m_multiRegionListViewModel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
+    }
+
+    if (m_traceProbe) {
+        RegionSelectorTraceProbe::CaptureContextRecord record;
+        record.backgroundPixelSize = m_backgroundPixmap.size();
+        record.backgroundLogicalSize = CoordinateHelper::toLogical(
+            m_backgroundPixmap.size(),
+            m_devicePixelRatio);
+        record.devicePixelRatio = m_devicePixelRatio;
+        record.hasSourceScreen = !context.sourceScreen.isNull();
+        m_traceProbe->captureContextEvents.append(record);
+    }
+}
+
+void RegionSelector::refreshMagnifierContext(const QPoint& cursorPos)
+{
+    refreshMagnifierContext(cursorPos, m_backgroundPixmap, m_devicePixelRatio, true);
+}
+
+void RegionSelector::refreshMagnifierContext(const QPoint& cursorPos,
+                                             const QPixmap& backgroundPixmap,
+                                             qreal devicePixelRatio,
+                                             bool preWarmCache)
+{
+    const qreal normalizedDpr = devicePixelRatio > 0.0 ? devicePixelRatio : 1.0;
+    m_magnifierPanel->setDevicePixelRatio(normalizedDpr);
+    m_magnifierPanel->invalidateCache();
+    if (preWarmCache && !backgroundPixmap.isNull()) {
+        m_magnifierPanel->preWarmCache(cursorPos, backgroundPixmap);
+    }
+}
+
 void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapture)
 {
     m_historyReplayEntries.clear();
@@ -1217,25 +1267,10 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     // Use pre-captured pixmap if provided, otherwise capture now
     // Pre-capture allows including popup menus in the screenshot (like Snipaste)
     if (!preCapture.isNull()) {
-        m_backgroundPixmap = preCapture;
+        applyCaptureContext({preCapture, m_devicePixelRatio, m_currentScreen});
     }
     else {
-        m_backgroundPixmap = m_currentScreen->grabWindow(0);
-    }
-
-    // Create shared pixmap for mosaic tool (explicit sharing to avoid memory duplication)
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_backgroundPixmap);
-
-    // Update tool manager with shared pixmap for mosaic tool
-    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-    m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
-
-    // Update export manager with background pixmap and DPR
-    m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
-    m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
-    m_exportManager->setSourceScreen(m_currentScreen.data());
-    if (m_multiRegionListViewModel) {
-        m_multiRegionListViewModel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
+        applyCaptureContext({m_currentScreen->grabWindow(0), m_devicePixelRatio, m_currentScreen});
     }
 
     // 不預設選取整個螢幕，等待用戶操作
@@ -1252,8 +1287,7 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     applyCanvasGeometry(screenGeom.size());
 
     // Configure magnifier panel with device pixel ratio
-    m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
-    m_magnifierPanel->invalidateCache();
+    refreshMagnifierContext(m_inputState.currentPoint, m_backgroundPixmap, m_devicePixelRatio, false);
 
     // Reset dirty tracking for optimized QRegion-based updates
     m_inputHandler->resetDirtyTracking();
@@ -1299,22 +1333,7 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     }
 
     // Capture the screen first
-    m_backgroundPixmap = m_currentScreen->grabWindow(0);
-
-    // Create shared pixmap for mosaic tool (explicit sharing to avoid memory duplication)
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_backgroundPixmap);
-
-    // Update tool manager with shared pixmap for mosaic tool
-    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-    m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
-
-    // Update export manager with background pixmap and DPR
-    m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
-    m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
-    m_exportManager->setSourceScreen(m_currentScreen.data());
-    if (m_multiRegionListViewModel) {
-        m_multiRegionListViewModel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
-    }
+    applyCaptureContext({m_currentScreen->grabWindow(0), m_devicePixelRatio, m_currentScreen});
 
     // Convert global region to local coordinates
     QRect screenGeom = m_currentScreen->geometry();
@@ -1332,8 +1351,7 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     QPoint globalCursor = QCursor::pos();
     m_inputState.currentPoint = globalCursor - screenGeom.topLeft();
     applyCanvasGeometry(screenGeom.size());
-    m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
-    m_magnifierPanel->invalidateCache();
+    refreshMagnifierContext(m_inputState.currentPoint, m_backgroundPixmap, m_devicePixelRatio, false);
     m_inputHandler->resetDirtyTracking();
 
     if (m_screenSwitchTimer && !m_screenSwitchTimer->isActive()) {
@@ -1449,21 +1467,9 @@ void RegionSelector::restoreLiveReplaySlot()
     clearHistoryReplaySelectionState();
     applyCanvasGeometry(m_historyLiveSlot.canvasLogicalSize);
 
-    m_backgroundPixmap = m_historyLiveSlot.backgroundPixmap;
-    m_devicePixelRatio = m_historyLiveSlot.devicePixelRatio;
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_backgroundPixmap);
-    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-    m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
-    m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
-    m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
-    m_exportManager->setSourceScreen(m_currentScreen.data());
-    if (m_multiRegionListViewModel) {
-        m_multiRegionListViewModel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
-    }
-
-    m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
-    m_magnifierPanel->invalidateCache();
-    m_magnifierPanel->preWarmCache(m_inputState.currentPoint, m_backgroundPixmap);
+    applyCaptureContext(
+        {m_historyLiveSlot.backgroundPixmap, m_historyLiveSlot.devicePixelRatio, m_currentScreen});
+    refreshMagnifierContext(m_inputState.currentPoint);
 
     m_cornerRadius = m_historyLiveSlot.cornerRadius;
     m_regionControlViewModel->setCurrentRadius(m_cornerRadius);
@@ -1547,21 +1553,9 @@ bool RegionSelector::applyHistoryReplayEntry(const SnapTray::HistoryEntry& entry
             entry.devicePixelRatio > 0.0 ? entry.devicePixelRatio : 1.0);
     applyCanvasGeometry(replayCanvasSize);
 
-    m_backgroundPixmap = canvas;
-    m_devicePixelRatio = entry.devicePixelRatio > 0.0 ? entry.devicePixelRatio : 1.0;
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_backgroundPixmap);
-    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-    m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
-    m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
-    m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
-    m_exportManager->setSourceScreen(m_currentScreen.data());
-    if (m_multiRegionListViewModel) {
-        m_multiRegionListViewModel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
-    }
-
-    m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
-    m_magnifierPanel->invalidateCache();
-    m_magnifierPanel->preWarmCache(m_inputState.currentPoint, m_backgroundPixmap);
+    applyCaptureContext(
+        {canvas, entry.devicePixelRatio > 0.0 ? entry.devicePixelRatio : 1.0, m_currentScreen});
+    refreshMagnifierContext(m_inputState.currentPoint);
 
     m_cornerRadius = entry.cornerRadius;
     m_regionControlViewModel->setCurrentRadius(m_cornerRadius);
@@ -1625,30 +1619,16 @@ void RegionSelector::recordCaptureSession(const QPixmap& resultPixmap)
     }
 
     const QPixmap resultPixmapCopy = resultPixmap;
-    QTimer::singleShot(0, qApp, [snapshot = std::move(*snapshot), resultPixmapCopy]() mutable {
+    QTimer::singleShot(0, qApp, [this, snapshot = std::move(*snapshot), resultPixmapCopy]() mutable {
         if (resultPixmapCopy.isNull()) {
             return;
         }
-        PendingHistorySubmission submission{
-            std::move(snapshot),
-            resultPixmapCopy.toImage()
-        };
+        PendingHistorySubmission submission{std::move(snapshot), resultPixmapCopy.toImage()};
         if (submission.resultImage.isNull() || submission.snapshot.backgroundPixmap.isNull()) {
             return;
         }
-
-        SnapTray::CaptureSessionWriteRequest request;
-        request.canvasImage = submission.snapshot.backgroundPixmap.toImage();
-        request.resultImage = submission.resultImage;
-        request.selectionRect = submission.snapshot.selectionRect;
-        request.captureRegions = submission.snapshot.captureRegions;
-        request.annotationsJson = submission.snapshot.annotationsJson;
-        request.devicePixelRatio = submission.snapshot.devicePixelRatio;
-        request.canvasLogicalSize = submission.snapshot.canvasLogicalSize;
-        request.cornerRadius = submission.snapshot.cornerRadius;
-        request.maxEntries = submission.snapshot.maxEntries;
-        request.createdAt = submission.snapshot.createdAt;
-        SnapTray::HistoryRecorder::instance().submitCaptureSession(std::move(request));
+        SnapTray::HistoryRecorder::instance().submitCaptureSession(
+            buildCaptureSessionWriteRequest(submission));
     });
 }
 
@@ -1696,27 +1676,33 @@ std::optional<RegionSelector::HistoryCaptureSnapshot> RegionSelector::makeHistor
 
 void RegionSelector::submitPendingHistorySubmission(PendingHistorySubmission submission) const
 {
-    QTimer::singleShot(0, qApp, [submission = std::move(submission)]() mutable {
+    QTimer::singleShot(0, qApp, [this, submission = std::move(submission)]() mutable {
         if (submission.resultImage.isNull() ||
             submission.snapshot.backgroundPixmap.isNull() ||
             !submission.snapshot.selectionRect.isValid() ||
             submission.snapshot.selectionRect.isEmpty()) {
             return;
         }
-
-        SnapTray::CaptureSessionWriteRequest request;
-        request.canvasImage = submission.snapshot.backgroundPixmap.toImage();
-        request.resultImage = submission.resultImage;
-        request.selectionRect = submission.snapshot.selectionRect;
-        request.captureRegions = submission.snapshot.captureRegions;
-        request.annotationsJson = submission.snapshot.annotationsJson;
-        request.devicePixelRatio = submission.snapshot.devicePixelRatio;
-        request.canvasLogicalSize = submission.snapshot.canvasLogicalSize;
-        request.cornerRadius = submission.snapshot.cornerRadius;
-        request.maxEntries = submission.snapshot.maxEntries;
-        request.createdAt = submission.snapshot.createdAt;
-        SnapTray::HistoryRecorder::instance().submitCaptureSession(std::move(request));
+        SnapTray::HistoryRecorder::instance().submitCaptureSession(
+            buildCaptureSessionWriteRequest(submission));
     });
+}
+
+SnapTray::CaptureSessionWriteRequest RegionSelector::buildCaptureSessionWriteRequest(
+    const PendingHistorySubmission& submission) const
+{
+    SnapTray::CaptureSessionWriteRequest request;
+    request.canvasImage = submission.snapshot.backgroundPixmap.toImage();
+    request.resultImage = submission.resultImage;
+    request.selectionRect = submission.snapshot.selectionRect;
+    request.captureRegions = submission.snapshot.captureRegions;
+    request.annotationsJson = submission.snapshot.annotationsJson;
+    request.devicePixelRatio = submission.snapshot.devicePixelRatio;
+    request.canvasLogicalSize = submission.snapshot.canvasLogicalSize;
+    request.cornerRadius = submission.snapshot.cornerRadius;
+    request.maxEntries = submission.snapshot.maxEntries;
+    request.createdAt = submission.snapshot.createdAt;
+    return request;
 }
 
 QRect RegionSelector::currentHistorySelectionRect() const
@@ -1800,9 +1786,7 @@ void RegionSelector::switchToScreen(QScreen* screen, bool preserveCompletedSelec
     localCursor.setX(qBound(0, localCursor.x(), qMax(0, targetGeometry.width() - 1)));
     localCursor.setY(qBound(0, localCursor.y(), qMax(0, targetGeometry.height() - 1)));
 
-    m_magnifierPanel->setDevicePixelRatio(targetDpr);
-    m_magnifierPanel->invalidateCache();
-    m_magnifierPanel->preWarmCache(localCursor, newBackground);
+    refreshMagnifierContext(localCursor, newBackground, targetDpr, true);
 
     // --- Phase 2: Hide window from DWM, reconfigure geometry + state ---
     // setUpdatesEnabled(false) only suppresses Qt paint events — DWM still composites
@@ -1824,14 +1808,7 @@ void RegionSelector::switchToScreen(QScreen* screen, bool preserveCompletedSelec
 
     setGeometry(targetGeometry);
 
-    m_backgroundPixmap = newBackground;
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_backgroundPixmap);
-    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-    m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
-
-    m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
-    m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
-    m_exportManager->setSourceScreen(m_currentScreen.data());
+    applyCaptureContext({newBackground, m_devicePixelRatio, m_currentScreen});
 
     if (m_multiRegionManager) {
         m_multiRegionManager->clear();
@@ -1994,9 +1971,7 @@ void RegionSelector::beginInitialRevealPreparation(WindowDetector::QueryMode ini
         m_magnifierOverlay->hideOverlay();
     }
 
-    m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
-    m_magnifierPanel->invalidateCache();
-    m_magnifierPanel->preWarmCache(m_initialRevealCursorPos, m_backgroundPixmap);
+    refreshMagnifierContext(m_initialRevealCursorPos);
 
     const bool skipInitialWindowDetection =
         m_historyReplayActive ||
@@ -2286,15 +2261,8 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos,
     }
 }
 
-void RegionSelector::paintEvent(QPaintEvent* event)
+void RegionSelector::paintSelectorScene(QPainter& painter, const QRegion& dirtyRegion)
 {
-    QPainter painter(this);
-
-    // Use QRegion-based clipping for efficient partial repainting.
-    // When update(QRegion) is used, QPaintEvent::region() contains the individual rects
-    // rather than inflating to a bounding box. This dramatically reduces repaint area
-    // for crosshair strips on high-DPI screens.
-    const QRegion dirtyRegion = event->region();
     const QRect dirtyRect = dirtyRegion.boundingRect();
     painter.setClipRegion(dirtyRegion);
 
@@ -2319,9 +2287,105 @@ void RegionSelector::paintEvent(QPaintEvent* event)
 
     // Delegate core painting (background, overlay, selection, annotations)
     m_painter->paint(painter, m_backgroundPixmap, dirtyRect);
+}
 
-    // QML toolbars render themselves in separate windows.
-    // Show/position them when selection is active.
+void RegionSelector::syncDetachedSelectionUiDuringPaint()
+{
+    QRect selectionRect = m_selectionManager->selectionRect();
+    const bool initialRevealVisible = m_initialRevealState == InitialRevealState::Revealed;
+    const bool hasSelectableCapture =
+        m_selectionManager->hasActiveSelection() &&
+        selectionRect.isValid() &&
+        m_selectionManager->hasSelection();
+    const bool suppressSelectionFloatingUi = completedSelectionDragUiSuppressed();
+    const bool shouldShowSelectionUi =
+        initialRevealVisible &&
+        hasSelectableCapture &&
+        !m_exportInProgress;
+
+    if (shouldShowSelectionUi && !suppressSelectionFloatingUi) {
+        if (m_qmlToolbar && !m_qmlToolbar->isVisible()) {
+            m_qmlToolbar->show();
+        }
+        if (m_qmlToolbar) {
+            if (!m_toolbarUserDragged) {
+                m_qmlToolbar->positionForSelection(
+                    selectionRect,
+                    width(),
+                    height(),
+                    SnapTray::QmlFloatingToolbar::HorizontalAlignment::RightEdge);
+            }
+            m_toolbarViewModel->setCanUndo(m_annotationLayer && m_annotationLayer->canUndo());
+            m_toolbarViewModel->setCanRedo(m_annotationLayer && m_annotationLayer->canRedo());
+            m_toolbarViewModel->setAutoBlurProcessing(m_autoBlurInProgress);
+            if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+                m_emojiPickerPopup->positionAt(m_qmlToolbar->geometry());
+            }
+        }
+
+        syncRegionSubToolbar(false);
+
+        if (m_inputState.currentTool != ToolId::EmojiSticker &&
+            m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+            m_emojiPickerPopup->hide();
+        }
+    }
+    else {
+        m_cursorOverSelectionToolbar = false;
+        if (!hasSelectableCapture || m_exportInProgress) {
+            m_toolbarUserDragged = false;
+        }
+        if (m_toolOptionsViewModel && (!hasSelectableCapture || m_exportInProgress)) {
+            m_toolOptionsViewModel->clearSections();
+        }
+        hideSelectionFloatingUi(hasSelectableCapture && !m_exportInProgress);
+    }
+}
+
+void RegionSelector::syncMagnifierOverlayDuringPaint()
+{
+    syncMagnifierOverlay();
+}
+
+void RegionSelector::syncRegionControlPanelDuringPaint()
+{
+    positionRegionControlPanel();
+
+    if (!m_traceProbe) {
+        return;
+    }
+
+    RegionSelectorTraceProbe::FloatingUiSnapshot snapshot;
+    snapshot.toolbarVisible = m_qmlToolbar && m_qmlToolbar->isVisible();
+    snapshot.toolbarGeometry = m_qmlToolbar ? m_qmlToolbar->geometry() : QRect();
+    snapshot.subToolbarVisible = m_qmlSubToolbar && m_qmlSubToolbar->isVisible();
+    snapshot.subToolbarGeometry = m_qmlSubToolbar ? m_qmlSubToolbar->geometry() : QRect();
+    snapshot.regionControlVisible = m_regionControlPanel && m_regionControlPanel->isVisible();
+    snapshot.regionControlGeometry = m_regionControlPanel ? m_regionControlPanel->geometry() : QRect();
+    snapshot.magnifierVisible = m_magnifierOverlay && m_magnifierOverlay->isVisible();
+    snapshot.magnifierGeometry = m_magnifierOverlay ? m_magnifierOverlay->geometry() : QRect();
+    m_traceProbe->floatingUiSnapshots.append(snapshot);
+}
+
+void RegionSelector::paintEvent(QPaintEvent* event)
+{
+    QPainter painter(this);
+
+    // Use QRegion-based clipping for efficient partial repainting.
+    // When update(QRegion) is used, QPaintEvent::region() contains the individual rects
+    // rather than inflating to a bounding box. This dramatically reduces repaint area
+    // for crosshair strips on high-DPI screens.
+    const QRegion dirtyRegion = event->region();
+    if (m_traceProbe) {
+        RegionSelectorTraceProbe::PaintEventRecord record;
+        record.dirtyRegion = dirtyRegion;
+        record.boundingRect = dirtyRegion.boundingRect();
+        m_traceProbe->paintEvents.append(record);
+    }
+
+    paintSelectorScene(painter, dirtyRegion);
+    syncDetachedSelectionUiDuringPaint();
+
     QRect selectionRect = m_selectionManager->selectionRect();
     const bool initialRevealVisible = m_initialRevealState == InitialRevealState::Revealed;
     const bool hasSelectableCapture =
@@ -2337,29 +2401,6 @@ void RegionSelector::paintEvent(QPaintEvent* event)
         (m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress ||
          m_shareInProgress || m_exportInProgress);
     if (shouldShowSelectionUi && !suppressSelectionFloatingUi) {
-        // Position and show QML toolbar
-        if (m_qmlToolbar && !m_qmlToolbar->isVisible()) {
-            m_qmlToolbar->show();
-        }
-        if (m_qmlToolbar) {
-            if (!m_toolbarUserDragged) {
-                m_qmlToolbar->positionForSelection(
-                    selectionRect,
-                    width(),
-                    height(),
-                    SnapTray::QmlFloatingToolbar::HorizontalAlignment::RightEdge);
-            }
-            // Update undo/redo state
-            m_toolbarViewModel->setCanUndo(m_annotationLayer && m_annotationLayer->canUndo());
-            m_toolbarViewModel->setCanRedo(m_annotationLayer && m_annotationLayer->canRedo());
-            m_toolbarViewModel->setAutoBlurProcessing(m_autoBlurInProgress);
-            if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
-                m_emojiPickerPopup->positionAt(m_qmlToolbar->geometry());
-            }
-        }
-
-        syncRegionSubToolbar(false);
-
         if (m_inputState.multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0) {
             const int regionCount = m_multiRegionManager->count();
             QString countText = (regionCount == 1)
@@ -2386,29 +2427,13 @@ void RegionSelector::paintEvent(QPaintEvent* event)
             painter.setPen(styleConfig.textColor);
             painter.drawText(countRect, Qt::AlignCenter, countText);
         }
-
-        // Hide emoji picker popup when tool switches away from EmojiSticker
-        if (m_inputState.currentTool != ToolId::EmojiSticker &&
-            m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
-            m_emojiPickerPopup->hide();
-        }
-    }
-    else {
-        m_cursorOverSelectionToolbar = false;
-        if (!hasSelectableCapture || m_exportInProgress) {
-            m_toolbarUserDragged = false;
-        }
-        if (m_toolOptionsViewModel && (!hasSelectableCapture || m_exportInProgress)) {
-            m_toolOptionsViewModel->clearSections();
-        }
-        hideSelectionFloatingUi(hasSelectableCapture && !m_exportInProgress);
     }
 
     if (shouldDrawBusySpinner && m_loadingSpinner) {
         m_loadingSpinner->draw(painter, selectionRect.center());
     }
 
-    syncMagnifierOverlay();
+    syncMagnifierOverlayDuringPaint();
 
     // Shortcut hints remain painter-based in the RegionSelector host window.
     if (m_shortcutHintsVisible && m_shortcutHintsOverlay) {
@@ -2416,7 +2441,7 @@ void RegionSelector::paintEvent(QPaintEvent* event)
     }
 
     // Position region control panel after paint (painter computes dimension info rect)
-    positionRegionControlPanel();
+    syncRegionControlPanelDuringPaint();
 }
 
 void RegionSelector::syncMagnifierOverlay()

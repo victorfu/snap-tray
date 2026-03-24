@@ -4,6 +4,7 @@
 #include "LaserPointerRenderer.h"
 #include "ScreenCanvas.h"
 #include "annotation/AnnotationContext.h"
+#include "annotation/AnnotationRenderHelper.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/EmojiStickerAnnotation.h"
 #include "annotations/PolylineAnnotation.h"
@@ -934,40 +935,22 @@ void ScreenCanvasSession::drawAnnotations(ScreenCanvas* surface, QPainter& paint
         (interactionSurface->shapeAnnotationEditor()->isDragging() ||
          interactionSurface->shapeAnnotationEditor()->isTransforming());
 
-    if (m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating ||
-        m_isArrowDragging || m_isPolylineDragging || shapeInteractionActive) {
-        m_annotationLayer->drawWithDirtyRegion(
-            painter,
-            surface->size(),
-            devicePixelRatio,
-            m_annotationLayer->selectedIndex(),
-            origin);
-    } else {
-        m_annotationLayer->drawCached(
-            painter,
-            surface->size(),
-            devicePixelRatio,
-            origin);
-    }
+    snaptray::annotation::SelectedAnnotationItems selectedItems;
+    selectedItems.text = getSelectedTextAnnotation();
+    selectedItems.emoji = getSelectedEmojiStickerAnnotation();
+    selectedItems.shape = getSelectedShapeAnnotation();
+    selectedItems.arrow = getSelectedArrowAnnotation();
+    selectedItems.polyline = getSelectedPolylineAnnotation();
 
-    painter.save();
-    painter.translate(-QPointF(origin));
-    if (auto* textItem = getSelectedTextAnnotation()) {
-        TransformationGizmo::draw(painter, textItem);
-    }
-    if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
-        TransformationGizmo::draw(painter, emojiItem);
-    }
-    if (auto* shapeItem = getSelectedShapeAnnotation()) {
-        TransformationGizmo::draw(painter, shapeItem);
-    }
-    if (auto* arrowItem = getSelectedArrowAnnotation()) {
-        TransformationGizmo::draw(painter, arrowItem);
-    }
-    if (auto* polylineItem = getSelectedPolylineAnnotation()) {
-        TransformationGizmo::draw(painter, polylineItem);
-    }
-    painter.restore();
+    snaptray::annotation::drawAnnotationVisuals(
+        painter,
+        m_annotationLayer,
+        surface->size(),
+        devicePixelRatio,
+        origin,
+        m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating ||
+            m_isArrowDragging || m_isPolylineDragging || shapeInteractionActive,
+        selectedItems);
 }
 
 void ScreenCanvasSession::drawCurrentAnnotation(QPainter& painter)

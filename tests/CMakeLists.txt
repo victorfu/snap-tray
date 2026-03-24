@@ -138,6 +138,12 @@ target_link_libraries(ScreenCanvas_SessionRecovery PRIVATE snaptray_ui snaptray_
 add_test(NAME ScreenCanvas_SessionRecovery COMMAND ScreenCanvas_SessionRecovery)
 set_tests_properties(ScreenCanvas_SessionRecovery PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(ScreenCanvas_AnnotationRenderHelper ScreenCanvas/tst_AnnotationRenderHelper.cpp)
+target_link_libraries(ScreenCanvas_AnnotationRenderHelper PRIVATE snaptray_ui Qt6::Test)
+target_include_directories(ScreenCanvas_AnnotationRenderHelper PRIVATE ${CMAKE_SOURCE_DIR}/src)
+add_test(NAME ScreenCanvas_AnnotationRenderHelper COMMAND ScreenCanvas_AnnotationRenderHelper)
+set_tests_properties(ScreenCanvas_AnnotationRenderHelper PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # RegionSelector Tests
 # ============================================================================
@@ -228,6 +234,11 @@ target_link_libraries(RegionSelector_TransientUiCancelGuard PRIVATE snaptray_ui 
 add_test(NAME RegionSelector_TransientUiCancelGuard COMMAND RegionSelector_TransientUiCancelGuard)
 set_tests_properties(RegionSelector_TransientUiCancelGuard PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RegionSelector_HistoryReplay RegionSelector/tst_HistoryReplay.cpp)
+target_link_libraries(RegionSelector_HistoryReplay PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME RegionSelector_HistoryReplay COMMAND RegionSelector_HistoryReplay)
+set_tests_properties(RegionSelector_HistoryReplay PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(RegionSelector_RegionExportManager RegionSelector/tst_RegionExportManager.cpp)
 target_link_libraries(RegionSelector_RegionExportManager PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME RegionSelector_RegionExportManager COMMAND RegionSelector_RegionExportManager)
@@ -237,6 +248,11 @@ add_executable(RegionSelector_StyleSync RegionSelector/tst_StyleSync.cpp)
 target_link_libraries(RegionSelector_StyleSync PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
 add_test(NAME RegionSelector_StyleSync COMMAND RegionSelector_StyleSync)
 set_tests_properties(RegionSelector_StyleSync PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
+add_executable(RegionSelector_TraceProbe RegionSelector/tst_TraceProbe.cpp)
+target_link_libraries(RegionSelector_TraceProbe PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME RegionSelector_TraceProbe COMMAND RegionSelector_TraceProbe)
+set_tests_properties(RegionSelector_TraceProbe PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
 # ============================================================================
 # Encoding Tests (link snaptray_platform)

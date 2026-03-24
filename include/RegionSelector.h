@@ -8,6 +8,7 @@
 #include <QPoint>
 #include <QPointF>
 #include <QRect>
+#include <QRegion>
 #include <QColor>
 #include <QSettings>
 #include <QPointer>
@@ -85,6 +86,8 @@ class RegionSelector : public QWidget, public AnnotationHostAdapter
     friend class tst_RegionSelectorTransientUiCancelGuard;
     friend class TestRegionSelectorStyleSync;
     friend class tst_RegionSelectorDeferredInitialization;
+    friend class RegionSelectorTestAccess;
+    friend class tst_RegionSelectorTraceProbe;
 
 public:
     explicit RegionSelector(QWidget *parent = nullptr);
@@ -226,13 +229,23 @@ private:
     void clearHistoryReplaySelectionState();
     void recordCaptureSession(const QPixmap& resultPixmap);
     void recordCaptureSession(const QImage& resultImage);
+    struct SelectorCaptureContext;
     struct HistoryCaptureSnapshot;
     struct PendingHistorySubmission;
+    struct RegionSelectorTraceProbe;
     std::optional<HistoryCaptureSnapshot> makeHistoryCaptureSnapshot(
         const QDateTime& createdAt = QDateTime::currentDateTime()) const;
     void submitPendingHistorySubmission(PendingHistorySubmission submission) const;
     QRect currentHistorySelectionRect() const;
     QVector<MultiRegionManager::Region> currentHistoryCaptureRegions() const;
+    void applyCaptureContext(const SelectorCaptureContext& context);
+    void refreshMagnifierContext(const QPoint& cursorPos);
+    void refreshMagnifierContext(const QPoint& cursorPos,
+                                 const QPixmap& backgroundPixmap,
+                                 qreal devicePixelRatio,
+                                 bool preWarmCache);
+    SnapTray::CaptureSessionWriteRequest buildCaptureSessionWriteRequest(
+        const PendingHistorySubmission& submission) const;
 
     // Initialization helpers
     void setupScreenGeometry(QScreen* screen);
@@ -264,6 +277,10 @@ private:
     bool isAnnotationTool(ToolId tool) const;
     bool shouldShowMagnifier() const;
     void syncFloatingUiCursor();
+    void paintSelectorScene(QPainter& painter, const QRegion& dirtyRegion);
+    void syncDetachedSelectionUiDuringPaint();
+    void syncMagnifierOverlayDuringPaint();
+    void syncRegionControlPanelDuringPaint();
     void restoreRegionCursorAt(const QPoint& localPos);
     void hideDetachedFloatingUi();
     void restoreAfterDialogCancelled();
@@ -407,6 +424,42 @@ private:
     // Screen switch monitoring
     QTimer* m_screenSwitchTimer = nullptr;
 
+    struct SelectorCaptureContext {
+        QPixmap backgroundPixmap;
+        qreal devicePixelRatio = 1.0;
+        QPointer<QScreen> sourceScreen;
+    };
+
+    struct RegionSelectorTraceProbe {
+        struct PaintEventRecord {
+            QRegion dirtyRegion;
+            QRect boundingRect;
+        };
+
+        struct CaptureContextRecord {
+            QSize backgroundPixelSize;
+            QSize backgroundLogicalSize;
+            qreal devicePixelRatio = 1.0;
+            bool hasSourceScreen = false;
+        };
+
+        struct FloatingUiSnapshot {
+            bool toolbarVisible = false;
+            QRect toolbarGeometry;
+            bool subToolbarVisible = false;
+            QRect subToolbarGeometry;
+            bool regionControlVisible = false;
+            QRect regionControlGeometry;
+            bool magnifierVisible = false;
+            QRect magnifierGeometry;
+        };
+
+        QVector<PaintEventRecord> paintEvents;
+        QVector<CaptureContextRecord> captureContextEvents;
+        QVector<QPoint> windowDetectionRequests;
+        QVector<FloatingUiSnapshot> floatingUiSnapshots;
+    };
+
     struct HistoryCaptureSnapshot {
         QPixmap backgroundPixmap;
         QRect selectionRect;
@@ -488,6 +541,7 @@ private:
         m_colorPickerDialogFactory;
     std::function<void()> m_restoreAfterDialogCancelledHook;
     std::function<bool(const QImage&)> m_guiClipboardWriter;
+    RegionSelectorTraceProbe* m_traceProbe = nullptr;
 };
 
 #endif // REGIONSELECTOR_H

@@ -1,4 +1,5 @@
 #include "region/RegionPainter.h"
+#include "annotation/AnnotationRenderHelper.h"
 #include "region/SelectionStateManager.h"
 #include "region/MultiRegionManager.h"
 #include "annotations/AnnotationLayer.h"
@@ -474,52 +475,27 @@ void RegionPainter::drawAnnotations(QPainter& painter)
         return;
     }
 
-    // Use cached rendering to avoid re-drawing all annotations every frame.
-    // drawCached() renders committed annotations to a QPixmap once, then blits it
-    // on subsequent frames until invalidateCache() is called (when the annotation list changes).
-    // drawWithDirtyRegion() is used when an item is selected (potentially being dragged) —
-    // it caches all items except the selected one and draws the selected item live.
     if (m_parentWidget) {
         const QSize canvasSize = m_parentWidget->size();
         const qreal dpr = m_devicePixelRatio > 0.0 ? m_devicePixelRatio : 1.0;
-        const int selectedIdx = m_annotationLayer->selectedIndex();
-
-        if (selectedIdx >= 0) {
-            m_annotationLayer->drawWithDirtyRegion(
-                painter, canvasSize, dpr, selectedIdx, QPoint(0, 0));
-        } else {
-            m_annotationLayer->drawCached(
-                painter, canvasSize, dpr, QPoint(0, 0));
-        }
+        snaptray::annotation::SelectedAnnotationItems selectedItems;
+        selectedItems.text = getSelectedTextAnnotation();
+        selectedItems.emoji = getSelectedEmojiStickerAnnotation();
+        selectedItems.shape = getSelectedShapeAnnotation();
+        selectedItems.arrow = getSelectedArrowAnnotation();
+        selectedItems.polyline = getSelectedPolylineAnnotation();
+        snaptray::annotation::drawAnnotationVisuals(
+            painter,
+            m_annotationLayer,
+            canvasSize,
+            dpr,
+            QPoint(0, 0),
+            m_annotationLayer->selectedIndex() >= 0,
+            selectedItems);
     } else {
         qWarning() << "RegionPainter::drawAnnotations: m_parentWidget is null, "
                       "falling back to uncached draw";
         m_annotationLayer->draw(painter);
-    }
-
-    // Draw transformation gizmo for selected text annotation
-    if (auto* textItem = getSelectedTextAnnotation()) {
-        TransformationGizmo::draw(painter, textItem);
-    }
-
-    // Draw transformation gizmo for selected emoji sticker annotation
-    if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
-        TransformationGizmo::draw(painter, emojiItem);
-    }
-
-    // Draw transformation gizmo for selected shape annotation
-    if (auto* shapeItem = getSelectedShapeAnnotation()) {
-        TransformationGizmo::draw(painter, shapeItem);
-    }
-
-    // Draw transformation gizmo for selected arrow annotation
-    if (auto* arrowItem = getSelectedArrowAnnotation()) {
-        TransformationGizmo::draw(painter, arrowItem);
-    }
-
-    // Draw transformation gizmo for selected polyline annotation
-    if (auto* polylineItem = getSelectedPolylineAnnotation()) {
-        TransformationGizmo::draw(painter, polylineItem);
     }
 }
 
