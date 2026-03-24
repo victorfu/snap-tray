@@ -59,6 +59,7 @@ private slots:
 
     // Drawing tests
     void testDraw_MultiplePoints();
+    void testDraw_JitterPath_MatchesMidpointReference();
     void testTranslate_UpdatesBoundingRectAfterCacheWarmup();
     void testTranslate_RebuildsRenderedCacheAtNewPosition();
 
@@ -92,6 +93,92 @@ bool regionHasNonWhitePixel(const QImage& image, const QRect& region)
     }
 
     return false;
+}
+
+QPainterPath buildMidpointReferencePath(const QVector<QPointF>& points)
+{
+    QPainterPath path;
+
+    if (points.size() < 2) {
+        return path;
+    }
+
+    if (points.size() == 2) {
+        path.moveTo(points[0]);
+        path.lineTo(points[1]);
+        return path;
+    }
+
+    path.moveTo(points[0]);
+
+    QPointF mid0 = (points[0] + points[1]) / 2.0;
+    path.lineTo(mid0);
+
+    for (int i = 1; i < points.size() - 1; ++i) {
+        QPointF mid = (points[i] + points[i + 1]) / 2.0;
+        path.quadTo(points[i], mid);
+    }
+
+    path.quadTo(points[points.size() - 1], points.last());
+    return path;
+}
+
+QRect markerBoundsForPoints(const QVector<QPointF>& points, int width)
+{
+    if (points.isEmpty()) {
+        return QRect();
+    }
+
+    qreal minX = points[0].x();
+    qreal maxX = points[0].x();
+    qreal minY = points[0].y();
+    qreal maxY = points[0].y();
+
+    for (const QPointF& point : points) {
+        minX = qMin(minX, point.x());
+        maxX = qMax(maxX, point.x());
+        minY = qMin(minY, point.y());
+        maxY = qMax(maxY, point.y());
+    }
+
+    const int margin = width / 2 + 1;
+    return QRect(static_cast<int>(minX) - margin,
+                 static_cast<int>(minY) - margin,
+                 static_cast<int>(maxX - minX) + 2 * margin,
+                 static_cast<int>(maxY - minY) + 2 * margin);
+}
+
+QImage renderMidpointReferenceMarker(const QVector<QPointF>& points,
+                                     const QColor& color,
+                                     int width,
+                                     const QSize& imageSize)
+{
+    QImage image(imageSize, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::white);
+
+    const QRect bounds = markerBoundsForPoints(points, width);
+
+    QImage offscreen(bounds.size(), QImage::Format_ARGB32_Premultiplied);
+    offscreen.fill(Qt::transparent);
+
+    {
+        QPainter offPainter(&offscreen);
+        offPainter.setRenderHint(QPainter::Antialiasing, true);
+        offPainter.setPen(QPen(color, width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        offPainter.setBrush(Qt::NoBrush);
+
+        QPainterPath path = buildMidpointReferencePath(points);
+        path.translate(-bounds.topLeft());
+        offPainter.drawPath(path);
+    }
+
+    {
+        QPainter painter(&image);
+        painter.setOpacity(0.4);
+        painter.drawImage(bounds.topLeft(), offscreen);
+    }
+
+    return image;
 }
 
 // ============================================================================
@@ -390,6 +477,31 @@ void TestMarkerStroke::testDraw_MultiplePoints()
         }
     }
     QVERIFY(hasColor);
+}
+
+void TestMarkerStroke::testDraw_JitterPath_MatchesMidpointReference()
+{
+    const QVector<QPointF> points = {
+        QPointF(40, 110),
+        QPointF(70, 62),
+        QPointF(95, 146),
+        QPointF(124, 84),
+        QPointF(156, 151),
+        QPointF(185, 92),
+        QPointF(212, 136)
+    };
+
+    MarkerStroke stroke(points, Qt::yellow, 20);
+
+    QImage actual(280, 220, QImage::Format_ARGB32_Premultiplied);
+    actual.fill(Qt::white);
+    {
+        QPainter painter(&actual);
+        stroke.draw(painter);
+    }
+
+    const QImage expected = renderMidpointReferenceMarker(points, Qt::yellow, 20, actual.size());
+    QCOMPARE(actual, expected);
 }
 
 void TestMarkerStroke::testTranslate_UpdatesBoundingRectAfterCacheWarmup()
