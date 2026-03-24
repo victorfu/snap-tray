@@ -35,16 +35,14 @@ SnapTray 是一款常駐系統托盤的截圖與錄影工具，支援 macOS 與 
 - macOS 14+
 - Windows 10+
 
-## 下載與文件
+## 文件與發佈
 
-- 官網：[snaptray.cc](https://snaptray.cc/)
 - 發佈版本：[GitHub Releases](https://github.com/victorfu/snap-tray/releases)
-- 使用者文件：[文件首頁](https://snaptray.cc/zh-tw/docs/)
-- 教學總覽：[教學總覽](https://snaptray.cc/zh-tw/docs/tutorials/)
-- CLI 參考：[命令列](https://snaptray.cc/zh-tw/docs/cli/)
-- 疑難排解：[疑難排解](https://snaptray.cc/zh-tw/docs/troubleshooting/)
+- 使用者文件：[文件首頁](docs/zh-tw/docs/index.md)
+- 教學總覽：[教學總覽](docs/zh-tw/docs/tutorials/index.md)
+- CLI 參考：[命令列](docs/zh-tw/docs/cli.md)
+- 疑難排解：[疑難排解](docs/zh-tw/docs/troubleshooting.md)
 - 開發者文件：[開發者文件](docs/zh-tw/developer/index.md)
-- 開發者文件網站入口：[snaptray.cc/zh-tw/developer](https://snaptray.cc/zh-tw/developer/)
 
 ## 從原始碼建置
 
