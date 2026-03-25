@@ -773,7 +773,6 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_inputHandler, &RegionInputHandler::currentPointUpdated,
         this, [this](const QPoint&) {
             syncMagnifierOverlay();
-            syncSelectionPreviewOverlay();
         });
     connect(m_inputHandler, qOverload<>(&RegionInputHandler::updateRequested),
         this, [this]() {
