@@ -665,6 +665,7 @@ add_library(snaptray_ui STATIC
     src/region/SelectionStateManager.cpp
     src/region/MagnifierPanel.cpp
     src/region/MagnifierOverlay.cpp
+    src/region/SelectionDimmingOverlay.cpp
     src/region/SelectionPreviewOverlay.cpp
     src/region/UpdateThrottler.cpp
     src/region/TextAnnotationEditor.cpp

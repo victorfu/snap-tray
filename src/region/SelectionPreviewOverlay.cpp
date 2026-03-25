@@ -194,17 +194,6 @@ void SelectionPreviewOverlay::paintEvent(QPaintEvent* event)
     painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    const QRect sourceRect = CoordinateHelper::toPhysicalCoveringRect(
-        m_selectionRect, m_devicePixelRatio).intersected(m_backgroundPixmap->rect());
-    if (sourceRect.isValid() && !sourceRect.isEmpty()) {
-        const QRectF targetRect(
-            static_cast<qreal>(sourceRect.x()) / m_devicePixelRatio - m_visualRect.left(),
-            static_cast<qreal>(sourceRect.y()) / m_devicePixelRatio - m_visualRect.top(),
-            static_cast<qreal>(sourceRect.width()) / m_devicePixelRatio,
-            static_cast<qreal>(sourceRect.height()) / m_devicePixelRatio);
-        painter.drawPixmap(targetRect, *m_backgroundPixmap, QRectF(sourceRect));
-    }
-
     const QRect localSelectionRect = m_selectionRect.translated(-m_visualRect.topLeft());
     const int maxRadius = qMin(localSelectionRect.width(), localSelectionRect.height()) / 2;
     const int radius = qMin(m_cornerRadius, maxRadius);

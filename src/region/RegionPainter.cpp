@@ -110,7 +110,10 @@ void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QR
         : dirtyRegion;
     const QRect updateBounds = updateRegion.boundingRect();
     const QRect selectionRect = m_selectionManager->selectionRect();
-    const bool singleRegionFastPath = !m_multiRegionMode && !background.isNull();
+    const bool selectionPreviewOwnedByOverlay =
+        m_selectionPreviewActive && m_selectionManager->isSelecting();
+    const bool singleRegionFastPath =
+        !selectionPreviewOwnedByOverlay && !m_multiRegionMode && !background.isNull();
 
     if (singleRegionFastPath) {
         ensureDimmedBackgroundCache(background);
@@ -146,7 +149,7 @@ void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QR
         drawBackgroundTiles(painter, background, updateRegion);
     }
 
-    if (!singleRegionFastPath) {
+    if (!singleRegionFastPath && !selectionPreviewOwnedByOverlay) {
         // Draw dimmed overlay when the host cannot reuse a cached dimmed background.
         drawOverlay(painter);
     }
@@ -158,8 +161,6 @@ void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QR
 
     // Draw selection if active or complete
     if (m_selectionManager->hasActiveSelection() && selectionRect.isValid()) {
-        const bool selectionPreviewOwnedByOverlay =
-            m_selectionPreviewActive && m_selectionManager->isSelecting();
         if (!selectionPreviewOwnedByOverlay) {
             drawSelection(painter);
             drawDimensionInfo(painter);

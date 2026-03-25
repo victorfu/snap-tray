@@ -9,6 +9,7 @@
 #include "region/RegionSettingsHelper.h"
 #include "region/RegionExportManager.h"
 #include "region/MagnifierOverlay.h"
+#include "region/SelectionDimmingOverlay.h"
 #include "region/SelectionPreviewOverlay.h"
 #include "region/CaptureShortcutHintsOverlay.h"
 #include "qml/QmlOverlayPanel.h"
@@ -509,6 +510,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_magnifierPanel = new MagnifierPanel(this);
     m_magnifierOverlay = std::make_unique<MagnifierOverlay>(m_magnifierPanel);
 #ifdef Q_OS_WIN
+    m_selectionDimmingOverlay = std::make_unique<SelectionDimmingOverlay>();
     m_selectionPreviewOverlay = std::make_unique<SelectionPreviewOverlay>();
 #endif
     // Deliberately not a QML overlay window: this hint panel must share the
@@ -2425,7 +2427,7 @@ void RegionSelector::syncMagnifierOverlayDuringPaint()
 
 void RegionSelector::syncSelectionPreviewOverlay()
 {
-    if (!m_selectionPreviewOverlay) {
+    if (!m_selectionPreviewOverlay && !m_selectionDimmingOverlay) {
         return;
     }
 
@@ -2436,13 +2438,19 @@ void RegionSelector::syncSelectionPreviewOverlay()
         m_selectionManager->selectionRect().isValid() &&
         !m_backgroundPixmap.isNull();
 
-    m_selectionPreviewOverlay->syncToHost(
-        this,
-        m_selectionManager ? m_selectionManager->selectionRect() : QRect(),
-        &m_backgroundPixmap,
-        m_devicePixelRatio,
-        m_cornerRadius,
-        shouldShow);
+    const QRect selectionRect = m_selectionManager ? m_selectionManager->selectionRect() : QRect();
+    if (m_selectionDimmingOverlay) {
+        m_selectionDimmingOverlay->syncToHost(this, selectionRect, shouldShow);
+    }
+    if (m_selectionPreviewOverlay) {
+        m_selectionPreviewOverlay->syncToHost(
+            this,
+            selectionRect,
+            &m_backgroundPixmap,
+            m_devicePixelRatio,
+            m_cornerRadius,
+            shouldShow);
+    }
 }
 
 void RegionSelector::syncRegionControlPanelDuringPaint()

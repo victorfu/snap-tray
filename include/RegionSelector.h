@@ -69,6 +69,7 @@ class RegionSettingsHelper;
 class RegionExportManager;
 class MagnifierOverlay;
 class SelectionPreviewOverlay;
+class SelectionDimmingOverlay;
 class AnnotationContext;
 class CaptureShortcutHintsOverlay;
 class RegionControlViewModel;
@@ -399,6 +400,7 @@ private:
     MagnifierPanel* m_magnifierPanel;
     std::unique_ptr<MagnifierOverlay> m_magnifierOverlay;
     std::unique_ptr<SelectionPreviewOverlay> m_selectionPreviewOverlay;
+    std::unique_ptr<SelectionDimmingOverlay> m_selectionDimmingOverlay;
     bool m_magnifierEnabled = true;
 
     // Keep shortcut hints painter-based and in-window. A prior QML top-level
