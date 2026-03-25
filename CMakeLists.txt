@@ -106,6 +106,9 @@ endif()
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Concurrent Network LinguistTools Quick QuickControls2 QuickWidgets)
 
+# Generate extra qmldir files for QML subdirectories used by this module.
+qt_policy(SET QTP0004 NEW)
+
 # Enable AUTOMOC for Qt targets (will be disabled for non-Qt dependencies)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -200,6 +203,7 @@ set(WITH_TIFF OFF CACHE BOOL "" FORCE)
 set(WITH_WEBP OFF CACHE BOOL "" FORCE)
 set(WITH_PNG OFF CACHE BOOL "" FORCE)
 set(WITH_JPEG OFF CACHE BOOL "" FORCE)
+set(WITH_VTK OFF CACHE BOOL "VTK: Not needed" FORCE)
 set(WITH_OBSENSOR OFF CACHE BOOL "" FORCE)
 set(WITH_1394 OFF CACHE BOOL "" FORCE)
 
@@ -959,6 +963,8 @@ qt_add_qml_module(snaptray_qml
     URI SnapTrayQml
     VERSION 1.0
     STATIC
+    OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/SnapTrayQml"
+    RESOURCE_PREFIX "/"
     QML_FILES
         src/qml/tokens/PrimitiveTokens.qml
         src/qml/tokens/SemanticTokens.qml
