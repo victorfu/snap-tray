@@ -88,7 +88,7 @@ signals:
 
     // State change notifications
     void drawingStateChanged(bool isDrawing);
-    void detectionCleared(const QRect& previousHighlightRect);
+    void detectionCleared(const QRect& previousHighlightRect, bool selectionTransition);
     void selectionCancelledByRightClick();
 
 private:
@@ -106,7 +106,7 @@ private:
     bool handleEmojiStickerMove(const QPoint& pos);
     bool handleArrowAnnotationMove(const QPoint& pos);
     void handleWindowDetectionMove(const QPoint& pos);
-    void clearDetectionAndNotify();
+    void clearDetectionAndNotify(bool selectionTransition = false);
     void handleSelectionMove(const QPoint& pos);
     void handleAnnotationMove(const QPoint& pos);
     void handleAnnotationMove(const QPointF& pos);

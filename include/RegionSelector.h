@@ -272,6 +272,10 @@ private:
     void maybeStartInitialRevealWait();
     void handleInitialRevealDetectorReady();
     void handleInitialRevealTimeout();
+    void invalidateWindowHighlightTransition(const QRect& previousHighlightRect,
+                                             const QRect& nextHighlightRect,
+                                             bool preferFullRepaint);
+    bool shouldForceFullWindowHighlightTransitionRepaint(bool preferFullRepaint) const;
     void applyInitialWindowDetection(WindowDetector::QueryMode queryMode);
     void commitInitialReveal();
     void scheduleInitialRevealRefinement();
@@ -294,6 +298,9 @@ private:
     void syncDetachedSelectionUiDuringPaint();
     void syncMagnifierOverlayDuringPaint();
     void syncSelectionPreviewOverlay();
+    void hideSelectionPreviewOverlays();
+    void commitSelectionCompletionHandoffAfterChromePaint();
+    void armDetachedWindowDeactivateGuard();
     void syncRegionControlPanelDuringPaint();
     void restoreRegionCursorAt(const QPoint& localPos);
     void hideDetachedFloatingUi();
@@ -439,6 +446,11 @@ private:
     QRect m_lastSelectionRect;  // Previous selection rect for dirty region calculation
     QRect m_lastMagnifierRect;  // Previous magnifier rect
     QRect m_lastAnnotationInteractionVisualRect;
+    bool m_forceFullRepaintOnNextWindowTransition = false;
+    bool m_selectionCompletionHandoffPending = false;
+    SelectionStateManager::State m_lastSelectionState = SelectionStateManager::State::None;
+    bool m_detachedWindowDeactivateGuardPending = false;
+    quint64 m_detachedWindowDeactivateGuardToken = 0;
 
     // Screen switch monitoring
     QTimer* m_screenSwitchTimer = nullptr;

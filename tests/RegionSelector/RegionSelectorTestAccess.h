@@ -7,9 +7,13 @@
 #include "qml/QmlFloatingSubToolbar.h"
 #include "qml/QmlFloatingToolbar.h"
 #include "qml/QmlOverlayPanel.h"
+#include "region/CaptureChromeWindow.h"
 #include "region/RegionInputHandler.h"
 #include "region/MagnifierOverlay.h"
+#include "region/SelectionDimmingOverlay.h"
+#include "region/SelectionPreviewOverlay.h"
 #include "region/SelectionStateManager.h"
+#include "region/StaticCaptureBackgroundWindow.h"
 
 class RegionSelectorTestAccess
 {
@@ -32,6 +36,42 @@ public:
                               Qt::NoButton,
                               Qt::NoModifier);
         selector.m_inputHandler->handleMouseMove(&moveEvent);
+    }
+
+    static void dispatchMousePress(RegionSelector& selector,
+                                   const QPoint& localPos,
+                                   Qt::MouseButton button = Qt::LeftButton,
+                                   Qt::MouseButtons buttons = Qt::LeftButton)
+    {
+        QMouseEvent pressEvent(QEvent::MouseButtonPress,
+                               QPointF(localPos),
+                               QPointF(localPos),
+                               QPointF(localPos),
+                               button,
+                               buttons,
+                               Qt::NoModifier);
+        selector.m_inputHandler->handleMousePress(&pressEvent);
+    }
+
+    static void dispatchMouseRelease(RegionSelector& selector,
+                                     const QPoint& localPos,
+                                     Qt::MouseButton button = Qt::LeftButton,
+                                     Qt::MouseButtons buttons = Qt::NoButton)
+    {
+        QMouseEvent releaseEvent(QEvent::MouseButtonRelease,
+                                 QPointF(localPos),
+                                 QPointF(localPos),
+                                 QPointF(localPos),
+                                 button,
+                                 buttons,
+                                 Qt::NoModifier);
+        selector.m_inputHandler->handleMouseRelease(&releaseEvent);
+    }
+
+    static void seedDetectedWindowHighlight(RegionSelector& selector, const QRect& rect)
+    {
+        selector.m_inputState.highlightedWindowRect = rect;
+        selector.m_inputState.hasDetectedWindow = rect.isValid() && !rect.isEmpty();
     }
 
     static void setSelectionRect(RegionSelector& selector, const QRect& rect)
@@ -177,5 +217,36 @@ public:
     static QRect magnifierGeometry(const RegionSelector& selector)
     {
         return selector.m_magnifierOverlay ? selector.m_magnifierOverlay->geometry() : QRect();
+    }
+
+    static bool selectionPreviewVisible(const RegionSelector& selector)
+    {
+        return selector.m_selectionPreviewOverlay && selector.m_selectionPreviewOverlay->isVisible();
+    }
+
+    static bool selectionDimmingVisible(const RegionSelector& selector)
+    {
+        return selector.m_selectionDimmingOverlay && selector.m_selectionDimmingOverlay->isVisible();
+    }
+
+    static bool usesDetachedCaptureWindows(const RegionSelector& selector)
+    {
+        return selector.usesDetachedCaptureWindows();
+    }
+
+    static bool captureChromeVisible(const RegionSelector& selector)
+    {
+        return selector.m_captureChromeWindow && selector.m_captureChromeWindow->isVisible();
+    }
+
+    static bool staticCaptureBackgroundVisible(const RegionSelector& selector)
+    {
+        return selector.m_staticCaptureBackgroundWindow &&
+               selector.m_staticCaptureBackgroundWindow->isVisible();
+    }
+
+    static CaptureChromeWindow* captureChromeWindow(RegionSelector& selector)
+    {
+        return selector.m_captureChromeWindow.get();
     }
 };

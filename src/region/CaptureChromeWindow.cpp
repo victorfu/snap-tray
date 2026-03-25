@@ -146,6 +146,8 @@ void CaptureChromeWindow::paintEvent(QPaintEvent* event)
     if (m_showShortcutHints && m_shortcutHintsOverlay) {
         m_shortcutHintsOverlay->draw(painter, size());
     }
+
+    emit framePainted();
 }
 
 void CaptureChromeWindow::showEvent(QShowEvent* event)

@@ -764,6 +764,7 @@ add_library(snaptray_ui STATIC
     include/region/RegionSettingsHelper.h
     include/region/RegionExportManager.h
     include/region/CaptureShortcutHintsOverlay.h
+    include/region/CaptureChromeWindow.h
     include/history/HistoryStore.h
     include/PinWindow.h
     include/PinWindowManager.h

@@ -107,6 +107,8 @@ void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QR
         return;
     }
 
+    m_lastDimensionInfoRect = QRect();
+
     const QRegion updateRegion = dirtyRegion.isEmpty()
         ? QRegion(m_parentWidget->rect())
         : dirtyRegion;
@@ -549,7 +551,7 @@ void RegionPainter::drawDetectedWindow(QPainter& painter)
 
     drawSelectionChrome(painter, m_highlightedWindowRect);
     const QString dimensions = selectionSizeLabel(m_highlightedWindowRect);
-    drawDimensionInfoPanel(painter, m_highlightedWindowRect, dimensions);
+    m_lastDimensionInfoRect = drawDimensionInfoPanel(painter, m_highlightedWindowRect, dimensions);
 }
 
 void RegionPainter::drawAnnotations(QPainter& painter)

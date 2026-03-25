@@ -304,8 +304,9 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
         if ((dx * dx + dy * dy) > WINDOW_CLICK_MAX_DISTANCE_SQ) {
             m_selectionManager->startSelection(m_pendingWindowClickStartPos);
             m_lastSelectionRect = QRect();
-            clearDetectionAndNotify();
-            emit updateRequested();
+            // Crossing the click-drift threshold turns a detected-window click
+            // into a real drag-selection transition.
+            clearDetectionAndNotify(true);
             m_selectionManager->updateSelection(event->pos());
             m_pendingWindowClickActive = false;
             m_pendingWindowClickRect = QRect();
@@ -802,7 +803,7 @@ void RegionInputHandler::handleWindowDetectionMove(const QPoint& pos)
     }
 }
 
-void RegionInputHandler::clearDetectionAndNotify()
+void RegionInputHandler::clearDetectionAndNotify(bool selectionTransition)
 {
     if (!m_state) {
         return;
@@ -815,7 +816,7 @@ void RegionInputHandler::clearDetectionAndNotify()
     const QRect previousHighlightRect = state().highlightedWindowRect;
     state().highlightedWindowRect = QRect();
     state().hasDetectedWindow = false;
-    emit detectionCleared(previousHighlightRect);
+    emit detectionCleared(previousHighlightRect, selectionTransition);
 }
 
 void RegionInputHandler::handleSelectionMove(const QPoint& pos)

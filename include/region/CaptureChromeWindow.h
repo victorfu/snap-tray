@@ -15,6 +15,8 @@ class ToolManager;
 
 class CaptureChromeWindow : public QWidget
 {
+    Q_OBJECT
+
 public:
     explicit CaptureChromeWindow(QWidget* parent = nullptr);
     ~CaptureChromeWindow() override = default;
@@ -39,6 +41,9 @@ public:
     void hideOverlay();
 
     QRect lastDimensionInfoRect() const { return m_lastDimensionInfoRect; }
+
+signals:
+    void framePainted();
 
 protected:
     void paintEvent(QPaintEvent* event) override;

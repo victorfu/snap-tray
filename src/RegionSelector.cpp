@@ -198,6 +198,20 @@ RegionSelector::RegionSelector(QWidget* parent)
         });
     connect(m_selectionManager, &SelectionStateManager::stateChanged,
         this, [this](SelectionStateManager::State newState) {
+            const bool enteringCompletedSelectionHandoff =
+                usesDetachedCaptureWindows() &&
+                m_lastSelectionState == SelectionStateManager::State::Selecting &&
+                newState == SelectionStateManager::State::Complete &&
+                !m_quickPinMode &&
+                !m_exportInProgress &&
+                m_captureChromeWindow;
+            if (newState != SelectionStateManager::State::Complete) {
+                m_selectionCompletionHandoffPending = false;
+            }
+            if (enteringCompletedSelectionHandoff) {
+                m_selectionCompletionHandoffPending = true;
+            }
+
             const bool suppressionBefore = m_inputState.completedSelectionDragUiSuppressed;
             const bool suppressionAfter = shouldSuppressCompletedSelectionDragUi(m_selectionManager);
 
@@ -215,6 +229,7 @@ RegionSelector::RegionSelector(QWidget* parent)
 
             syncSelectionPreviewOverlay();
             syncCaptureChromeWindow();
+            m_lastSelectionState = newState;
 
             auto& cm = CursorManager::instance();
 
@@ -681,6 +696,8 @@ RegionSelector::RegionSelector(QWidget* parent)
         m_captureChromeWindow->setAnnotationLayer(m_annotationLayer);
         m_captureChromeWindow->setToolManager(m_toolManager);
         m_captureChromeWindow->setShortcutHintsOverlay(m_shortcutHintsOverlay.get());
+        connect(m_captureChromeWindow.get(), &CaptureChromeWindow::framePainted,
+                this, &RegionSelector::commitSelectionCompletionHandoffAfterChromePaint);
     }
 #endif
 
@@ -867,7 +884,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             // Quick Pin mode: directly pin without showing toolbar
             if (m_quickPinMode && !m_inputState.multiRegionMode) {
                 finishSelection();
-            } else {
+            } else if (!m_selectionCompletionHandoffPending) {
                 syncFloatingUiCursor();
             }
         });
@@ -892,24 +909,16 @@ RegionSelector::RegionSelector(QWidget* parent)
             // Quick Pin mode: directly pin without showing toolbar
             if (m_quickPinMode && !m_inputState.multiRegionMode) {
                 finishSelection();
-            } else {
+            } else if (!m_selectionCompletionHandoffPending) {
                 syncFloatingUiCursor();
             }
         });
     connect(m_inputHandler, &RegionInputHandler::detectionCleared,
-        this, [this](const QRect& previousHighlightRect) {
-            QRect oldVisualRect;
-            if (!previousHighlightRect.isNull()) {
-                oldVisualRect = paddedWindowHighlightVisualRect(m_painter, previousHighlightRect);
-            }
-
+        this, [this](const QRect& previousHighlightRect, bool selectionTransition) {
             m_inputState.highlightedWindowRect = QRect();
             m_inputState.hasDetectedWindow = false;
             m_detectedWindow.reset();
-
-            if (!oldVisualRect.isNull()) {
-                update(oldVisualRect);
-            }
+            invalidateWindowHighlightTransition(previousHighlightRect, QRect(), selectionTransition);
             syncCaptureChromeWindow();
         });
     connect(m_inputHandler, &RegionInputHandler::selectionCancelledByRightClick,
@@ -1343,6 +1352,7 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     m_historyReplayActive = false;
     resetInitialRevealState();
     clearPreservedSelection();
+    hideSelectionPreviewOverlays();
     hideSelectionFloatingUi(false);
     m_shortcutHintsVisible = false;
     m_shortcutHintsTemporarilyHiddenByHover = false;
@@ -1372,6 +1382,9 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     m_inputState.highlightedWindowRect = QRect();
     m_inputState.hasDetectedWindow = false;
     m_detectedWindow.reset();
+    m_forceFullRepaintOnNextWindowTransition = false;
+    m_lastSelectionState = SelectionStateManager::State::None;
+    m_detachedWindowDeactivateGuardPending = false;
     syncMagnifierEnabledFromSettings();
 
     // 將 cursor 全域座標轉換為 widget 本地座標，用於 crosshair/magnifier 初始位置
@@ -1411,6 +1424,7 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     m_historyReplayActive = false;
     resetInitialRevealState();
     clearPreservedSelection();
+    hideSelectionPreviewOverlays();
     hideSelectionFloatingUi(false);
     m_shortcutHintsVisible = false;
     m_shortcutHintsTemporarilyHiddenByHover = false;
@@ -1439,6 +1453,9 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     m_inputState.highlightedWindowRect = QRect();
     m_inputState.hasDetectedWindow = false;
     m_detectedWindow.reset();
+    m_forceFullRepaintOnNextWindowTransition = false;
+    m_lastSelectionState = m_selectionManager->state();
+    m_detachedWindowDeactivateGuardPending = false;
     syncMagnifierEnabledFromSettings();
 
     // Set cursor position
@@ -1882,6 +1899,7 @@ void RegionSelector::switchToScreen(QScreen* screen, bool preserveCompletedSelec
 {
     resetInitialRevealState();
     m_initialRevealState = InitialRevealState::Revealed;
+    hideSelectionPreviewOverlays();
 
     QScreen* targetScreen = screen ? screen : QGuiApplication::primaryScreen();
     if (!targetScreen) {
@@ -1952,6 +1970,10 @@ void RegionSelector::switchToScreen(QScreen* screen, bool preserveCompletedSelec
     m_detectedWindow.reset();
     m_inputState.currentPoint = localCursor;
     m_inputHandler->resetDirtyTracking();
+    m_forceFullRepaintOnNextWindowTransition = false;
+    m_lastSelectionState = m_selectionManager ? m_selectionManager->state()
+                                              : SelectionStateManager::State::None;
+    m_detachedWindowDeactivateGuardPending = false;
 
     // --- Phase 3: Paint correct content into backing store, then reveal ---
     setUpdatesEnabled(true);
@@ -2068,6 +2090,9 @@ void RegionSelector::resetInitialRevealState()
     ++m_initialRevealToken;
     m_initialRevealState = InitialRevealState::Revealed;
     m_initialRevealCursorPos = QPoint();
+    m_forceFullRepaintOnNextWindowTransition = false;
+    m_selectionCompletionHandoffPending = false;
+    m_detachedWindowDeactivateGuardPending = false;
 
     if (m_initialRevealTimer) {
         m_initialRevealTimer->stop();
@@ -2077,6 +2102,48 @@ void RegionSelector::resetInitialRevealState()
         disconnect(m_initialRevealWindowListReadyConnection);
         m_initialRevealWindowListReadyConnection = {};
     }
+}
+
+void RegionSelector::invalidateWindowHighlightTransition(const QRect& previousHighlightRect,
+                                                         const QRect& nextHighlightRect,
+                                                         bool preferFullRepaint)
+{
+    if (usesDetachedCaptureWindows()) {
+        requestCaptureSceneUpdate();
+        return;
+    }
+
+    if (shouldForceFullWindowHighlightTransitionRepaint(preferFullRepaint)) {
+        m_forceFullRepaintOnNextWindowTransition = true;
+        requestCaptureSceneUpdate();
+        return;
+    }
+
+    const QRect oldVisualRect =
+        paddedWindowHighlightVisualRect(m_painter, previousHighlightRect);
+    const QRect newVisualRect =
+        paddedWindowHighlightVisualRect(m_painter, nextHighlightRect);
+
+    if (!oldVisualRect.isNull()) {
+        requestCaptureSceneUpdate(oldVisualRect);
+    }
+    if (!newVisualRect.isNull()) {
+        requestCaptureSceneUpdate(newVisualRect);
+    }
+}
+
+bool RegionSelector::shouldForceFullWindowHighlightTransitionRepaint(bool preferFullRepaint) const
+{
+#ifdef Q_OS_WIN
+    return !usesDetachedCaptureWindows() &&
+           preferFullRepaint &&
+           m_selectionManager &&
+           (m_selectionManager->isSelecting() ||
+            (m_selectionPreviewOverlay && m_selectionPreviewOverlay->isVisible()));
+#else
+    Q_UNUSED(preferFullRepaint);
+    return false;
+#endif
 }
 
 void RegionSelector::beginInitialRevealPreparation(WindowDetector::QueryMode initialQueryMode)
@@ -2365,40 +2432,25 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos,
 
     if (detected.has_value()) {
         m_inputState.hasDetectedWindow = true;
-        QRect localBounds = globalToLocal(detected->bounds).intersected(rect());
+        const QRect localBounds = globalToLocal(detected->bounds).intersected(rect());
 
         if (localBounds != m_inputState.highlightedWindowRect) {
-            // Calculate old visual rect for partial update
-            QRect oldVisualRect = paddedWindowHighlightVisualRect(
-                m_painter, m_inputState.highlightedWindowRect);
-
+            const QRect previousHighlightRect = m_inputState.highlightedWindowRect;
             m_inputState.highlightedWindowRect = localBounds;
             m_detectedWindow = detected;
-
-            // Calculate new visual rect (use clipped local bounds, not global bounds)
-            QRect newVisualRect = paddedWindowHighlightVisualRect(
-                m_painter, m_inputState.highlightedWindowRect);
-
-            // Update only changed regions
-            if (!usesDetachedCaptureWindows()) {
-                if (!oldVisualRect.isNull()) requestCaptureSceneUpdate(oldVisualRect);
-                if (!newVisualRect.isNull()) requestCaptureSceneUpdate(newVisualRect);
-            }
+            invalidateWindowHighlightTransition(
+                previousHighlightRect,
+                m_inputState.highlightedWindowRect,
+                false);
         }
     }
     else {
         m_inputState.hasDetectedWindow = false;
         if (!m_inputState.highlightedWindowRect.isNull()) {
-            // Calculate old visual rect for partial update (use clipped local bounds)
-            QRect oldVisualRect = paddedWindowHighlightVisualRect(
-                m_painter, m_inputState.highlightedWindowRect);
-
+            const QRect previousHighlightRect = m_inputState.highlightedWindowRect;
             m_inputState.highlightedWindowRect = QRect();
             m_detectedWindow.reset();
-
-            if (!usesDetachedCaptureWindows() && !oldVisualRect.isNull()) {
-                requestCaptureSceneUpdate(oldVisualRect);
-            }
+            invalidateWindowHighlightTransition(previousHighlightRect, QRect(), false);
         }
     }
 
@@ -2442,7 +2494,8 @@ void RegionSelector::syncDetachedSelectionUiDuringPaint()
         m_selectionManager->hasActiveSelection() &&
         selectionRect.isValid() &&
         m_selectionManager->hasSelection();
-    const bool suppressSelectionFloatingUi = completedSelectionDragUiSuppressed();
+    const bool suppressSelectionFloatingUi =
+        completedSelectionDragUiSuppressed() || m_selectionCompletionHandoffPending;
     const bool shouldShowSelectionUi =
         initialRevealVisible &&
         hasSelectableCapture &&
@@ -2528,6 +2581,16 @@ void RegionSelector::requestCaptureSceneUpdate(const QRect& rect)
     }
 }
 
+void RegionSelector::hideSelectionPreviewOverlays()
+{
+    if (m_selectionDimmingOverlay) {
+        m_selectionDimmingOverlay->hideOverlay();
+    }
+    if (m_selectionPreviewOverlay) {
+        m_selectionPreviewOverlay->hideOverlay();
+    }
+}
+
 void RegionSelector::syncSelectionPreviewOverlay()
 {
     if (!m_selectionPreviewOverlay && !m_selectionDimmingOverlay) {
@@ -2535,22 +2598,12 @@ void RegionSelector::syncSelectionPreviewOverlay()
     }
 
     if (usesDetachedCaptureWindows()) {
-        if (m_selectionDimmingOverlay) {
-            m_selectionDimmingOverlay->hideOverlay();
-        }
-        if (m_selectionPreviewOverlay) {
-            m_selectionPreviewOverlay->hideOverlay();
-        }
+        hideSelectionPreviewOverlays();
         return;
     }
 
     if (m_captureChromeWindow && m_captureChromeWindow->isVisible()) {
-        if (m_selectionDimmingOverlay) {
-            m_selectionDimmingOverlay->hideOverlay();
-        }
-        if (m_selectionPreviewOverlay) {
-            m_selectionPreviewOverlay->hideOverlay();
-        }
+        hideSelectionPreviewOverlays();
         return;
     }
 
@@ -2587,7 +2640,13 @@ void RegionSelector::syncStaticCaptureBackgroundWindow()
         usesDetachedCaptureWindows() &&
         m_initialRevealState == InitialRevealState::Revealed &&
         !m_backgroundPixmap.isNull();
+    const bool wasVisible = m_staticCaptureBackgroundWindow->isVisible();
+    const QRect previousGeometry = m_staticCaptureBackgroundWindow->geometry();
     m_staticCaptureBackgroundWindow->syncToHost(this, m_backgroundPixmap, shouldShow);
+    if (shouldShow &&
+        (!wasVisible || previousGeometry != m_staticCaptureBackgroundWindow->geometry())) {
+        armDetachedWindowDeactivateGuard();
+    }
 }
 
 void RegionSelector::syncCaptureChromeWindow()
@@ -2617,6 +2676,8 @@ void RegionSelector::syncCaptureChromeWindow()
         (m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress ||
          m_shareInProgress || m_exportInProgress);
 
+    const bool wasVisible = m_captureChromeWindow->isVisible();
+    const QRect previousGeometry = m_captureChromeWindow->geometry();
     m_captureChromeWindow->syncToHost(
         this,
         selectionRect,
@@ -2630,6 +2691,49 @@ void RegionSelector::syncCaptureChromeWindow()
         shouldDrawBusySpinner,
         selectionRect.center(),
         shouldShow);
+    if (shouldShow &&
+        (!wasVisible || previousGeometry != m_captureChromeWindow->geometry())) {
+        armDetachedWindowDeactivateGuard();
+    }
+}
+
+void RegionSelector::commitSelectionCompletionHandoffAfterChromePaint()
+{
+    if (!m_selectionCompletionHandoffPending ||
+        !usesDetachedCaptureWindows() ||
+        !m_selectionManager ||
+        !m_selectionManager->isComplete() ||
+        !m_selectionManager->hasSelection()) {
+        return;
+    }
+
+    m_selectionCompletionHandoffPending = false;
+    QTimer::singleShot(0, this, [this]() {
+        if (m_isClosing || !isVisible()) {
+            return;
+        }
+
+        syncDetachedSelectionUiDuringPaint();
+        syncRegionControlPanelDuringPaint();
+        syncFloatingUiCursor();
+    });
+}
+
+void RegionSelector::armDetachedWindowDeactivateGuard()
+{
+#ifdef Q_OS_WIN
+    if (!usesDetachedCaptureWindows() || m_isClosing) {
+        return;
+    }
+
+    m_detachedWindowDeactivateGuardPending = true;
+    const quint64 token = ++m_detachedWindowDeactivateGuardToken;
+    QTimer::singleShot(0, this, [this, token]() {
+        if (m_detachedWindowDeactivateGuardToken == token) {
+            m_detachedWindowDeactivateGuardPending = false;
+        }
+    });
+#endif
 }
 
 void RegionSelector::syncRegionControlPanelDuringPaint()
@@ -2661,7 +2765,13 @@ void RegionSelector::paintEvent(QPaintEvent* event)
     // When update(QRegion) is used, QPaintEvent::region() contains the individual rects
     // rather than inflating to a bounding box. This dramatically reduces repaint area
     // for crosshair strips on high-DPI screens.
-    const QRegion dirtyRegion = event->region();
+    QRegion dirtyRegion = event->region();
+#ifdef Q_OS_WIN
+    if (m_forceFullRepaintOnNextWindowTransition) {
+        dirtyRegion = QRegion(rect());
+        m_forceFullRepaintOnNextWindowTransition = false;
+    }
+#endif
     if (m_traceProbe) {
         RegionSelectorTraceProbe::PaintEventRecord record;
         record.dirtyRegion = dirtyRegion;
@@ -2680,7 +2790,7 @@ void RegionSelector::paintEvent(QPaintEvent* event)
         syncStaticCaptureBackgroundWindow();
         syncCaptureChromeWindow();
         painter.setCompositionMode(QPainter::CompositionMode_Source);
-        painter.fillRect(rect(), Qt::transparent);
+        painter.fillRect(rect(), QColor(0, 0, 0, 1));
         painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
     } else {
         paintSelectorScene(painter, dirtyRegion);
@@ -2693,7 +2803,8 @@ void RegionSelector::paintEvent(QPaintEvent* event)
         m_selectionManager->hasActiveSelection() &&
         selectionRect.isValid() &&
         m_selectionManager->hasSelection();
-    const bool suppressSelectionFloatingUi = completedSelectionDragUiSuppressed();
+    const bool suppressSelectionFloatingUi =
+        completedSelectionDragUiSuppressed() || m_selectionCompletionHandoffPending;
     const bool shouldShowSelectionUi =
         initialRevealVisible &&
         hasSelectableCapture &&
@@ -2778,7 +2889,8 @@ void RegionSelector::positionRegionControlPanel()
     bool shouldShow = m_selectionManager &&
                       m_selectionManager->hasSelection() &&
                       !m_exportInProgress &&
-                      !completedSelectionDragUiSuppressed();
+                      !completedSelectionDragUiSuppressed() &&
+                      !m_selectionCompletionHandoffPending;
     if (shouldShow != m_regionControlPanel->isVisible()) {
         shouldShow ? m_regionControlPanel->show() : m_regionControlPanel->hide();
     }
@@ -3020,6 +3132,7 @@ void RegionSelector::hideDetachedFloatingUi()
     if (m_magnifierOverlay) {
         m_magnifierOverlay->hideOverlay();
     }
+    hideSelectionPreviewOverlays();
 }
 
 void RegionSelector::restoreAfterDialogCancelled()
@@ -3960,6 +4073,8 @@ void RegionSelector::closeEvent(QCloseEvent* event)
     m_isClosing = true;
     resetInitialRevealState();
     m_initialRevealState = InitialRevealState::Revealed;
+    m_selectionCompletionHandoffPending = false;
+    m_detachedWindowDeactivateGuardPending = false;
     m_pendingSharePassword.clear();
     m_pendingShareSubmission.reset();
     if (m_qmlToolbar) m_qmlToolbar->hide();
@@ -3967,6 +4082,7 @@ void RegionSelector::closeEvent(QCloseEvent* event)
     if (m_magnifierOverlay) m_magnifierOverlay->hideOverlay();
     if (m_staticCaptureBackgroundWindow) m_staticCaptureBackgroundWindow->hideOverlay();
     if (m_captureChromeWindow) m_captureChromeWindow->hideOverlay();
+    hideSelectionPreviewOverlays();
     if (m_emojiPickerPopup) {
         m_emojiPickerPopup->close();
         delete m_emojiPickerPopup;
@@ -4097,6 +4213,17 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
     else if (event->type() == QEvent::ApplicationDeactivate) {
         // Don't cancel if a dialog is open (e.g., save dialog)
         if (hasBlockingTransientUiOpen()) {
+            return false;
+        }
+        if (m_detachedWindowDeactivateGuardPending) {
+            m_detachedWindowDeactivateGuardPending = false;
+            QTimer::singleShot(0, this, [this]() {
+                if (m_isClosing || !isVisible()) {
+                    return;
+                }
+                activateWindow();
+                raise();
+            });
             return false;
         }
         // Startup protection: ignore deactivation if window hasn't been activated yet

@@ -18,6 +18,7 @@ private slots:
     void testSelectionModeTracksDimensionRect();
     void testHighlightModeTracksDimensionRect();
     void testHideClearsDimensionRect();
+    void testPaintCompletedSignalEmitted();
 };
 
 void tst_CaptureChromeWindow::initTestCase()
@@ -74,7 +75,7 @@ void tst_CaptureChromeWindow::testSelectionModeTracksDimensionRect()
                       true);
 
     QVERIFY(chrome.isVisible());
-    QVERIFY(chrome.lastDimensionInfoRect().isValid());
+    QTRY_VERIFY(chrome.lastDimensionInfoRect().isValid());
     QVERIFY(!chrome.lastDimensionInfoRect().isEmpty());
 }
 
@@ -103,7 +104,7 @@ void tst_CaptureChromeWindow::testHighlightModeTracksDimensionRect()
                       true);
 
     QVERIFY(chrome.isVisible());
-    QVERIFY(chrome.lastDimensionInfoRect().isValid());
+    QTRY_VERIFY(chrome.lastDimensionInfoRect().isValid());
     QVERIFY(!chrome.lastDimensionInfoRect().isEmpty());
 }
 
@@ -131,11 +132,42 @@ void tst_CaptureChromeWindow::testHideClearsDimensionRect()
                       false,
                       QPoint(),
                       true);
-    QVERIFY(chrome.lastDimensionInfoRect().isValid());
+    QTRY_VERIFY(chrome.lastDimensionInfoRect().isValid());
 
     chrome.hideOverlay();
     QVERIFY(!chrome.isVisible());
     QVERIFY(!chrome.lastDimensionInfoRect().isValid());
+}
+
+void tst_CaptureChromeWindow::testPaintCompletedSignalEmitted()
+{
+    QWidget host;
+    host.resize(320, 240);
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+
+    SelectionStateManager selectionManager;
+    selectionManager.setSelectionRect(QRect(24, 36, 100, 70));
+
+    CaptureChromeWindow chrome;
+    chrome.setSelectionManager(&selectionManager);
+
+    QSignalSpy paintSpy(&chrome, SIGNAL(framePainted()));
+
+    chrome.syncToHost(&host,
+                      QRect(24, 36, 100, 70),
+                      true,
+                      QRect(),
+                      1.0,
+                      0,
+                      0,
+                      false,
+                      nullptr,
+                      false,
+                      QPoint(),
+                      true);
+
+    QTRY_VERIFY(!paintSpy.isEmpty());
 }
 
 QTEST_MAIN(tst_CaptureChromeWindow)

@@ -38,7 +38,7 @@ private slots:
     void testLargeDragUsesDragSelectionInsteadOfPendingWindow();
     void testDetectedWindowClickDefersSelectionUntilRealDrag();
     void testDetectedWindowRealDragClearsDetectionAndStartsSelection();
-    void testDetectedWindowRealDragRequestsHostRepaint();
+    void testDetectedWindowRealDragMarksSelectionTransition();
     void testSelectionMoveSetsAndClearsDragStateOnRelease();
     void testSelectionMoveClearsDragStateOnRightClickCancel();
     void testMouseMoveEmitsCurrentPointUpdatedDuringSelectionDrag();
@@ -93,6 +93,7 @@ void tst_RegionInputHandler::testTinyMoveKeepsDetectedWindowSelection()
 
     QSignalSpy fullScreenSpy(m_handler, &RegionInputHandler::fullScreenSelectionRequested);
     QSignalSpy selectionFinishedSpy(m_handler, &RegionInputHandler::selectionFinished);
+    QSignalSpy detectionClearedSpy(m_handler, &RegionInputHandler::detectionCleared);
 
     auto pressEvent = makeMouseEvent(QEvent::MouseButtonPress, QPoint(160, 180), Qt::LeftButton, Qt::LeftButton);
     m_handler->handleMousePress(&pressEvent);
@@ -105,6 +106,10 @@ void tst_RegionInputHandler::testTinyMoveKeepsDetectedWindowSelection()
 
     QCOMPARE(fullScreenSpy.count(), 0);
     QCOMPARE(selectionFinishedSpy.count(), 1);
+    QCOMPARE(detectionClearedSpy.count(), 1);
+    const auto clickClearArgs = detectionClearedSpy.takeFirst();
+    QCOMPARE(clickClearArgs.at(0).toRect(), detectedWindow);
+    QCOMPARE(clickClearArgs.at(1).toBool(), false);
     QVERIFY(m_selectionManager->isComplete());
     QCOMPARE(m_selectionManager->selectionRect(), detectedWindow);
 }
@@ -217,16 +222,18 @@ void tst_RegionInputHandler::testDetectedWindowRealDragClearsDetectionAndStartsS
 
     QVERIFY(m_selectionManager->isSelecting());
     QCOMPARE(detectionClearedSpy.count(), 1);
-    QCOMPARE(detectionClearedSpy.takeFirst().at(0).toRect(), detectedWindow);
+    const auto dragClearArgs = detectionClearedSpy.takeFirst();
+    QCOMPARE(dragClearArgs.at(0).toRect(), detectedWindow);
+    QCOMPARE(dragClearArgs.at(1).toBool(), true);
 }
 
-void tst_RegionInputHandler::testDetectedWindowRealDragRequestsHostRepaint()
+void tst_RegionInputHandler::testDetectedWindowRealDragMarksSelectionTransition()
 {
     const QRect detectedWindow(120, 140, 220, 160);
     m_state.hasDetectedWindow = true;
     m_state.highlightedWindowRect = detectedWindow;
 
-    QSignalSpy updateSpy(m_handler, qOverload<>(&RegionInputHandler::updateRequested));
+    QSignalSpy detectionClearedSpy(m_handler, &RegionInputHandler::detectionCleared);
 
     auto pressEvent = makeMouseEvent(QEvent::MouseButtonPress, QPoint(160, 180), Qt::LeftButton, Qt::LeftButton);
     m_handler->handleMousePress(&pressEvent);
@@ -234,7 +241,10 @@ void tst_RegionInputHandler::testDetectedWindowRealDragRequestsHostRepaint()
     auto moveEvent = makeMouseEvent(QEvent::MouseMove, QPoint(210, 230), Qt::NoButton, Qt::LeftButton);
     m_handler->handleMouseMove(&moveEvent);
 
-    QVERIFY(updateSpy.count() >= 1);
+    QCOMPARE(detectionClearedSpy.count(), 1);
+    const auto clearArgs = detectionClearedSpy.takeFirst();
+    QCOMPARE(clearArgs.at(0).toRect(), detectedWindow);
+    QCOMPARE(clearArgs.at(1).toBool(), true);
 }
 
 void tst_RegionInputHandler::testSelectionMoveSetsAndClearsDragStateOnRelease()

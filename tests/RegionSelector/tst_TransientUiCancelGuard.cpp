@@ -147,6 +147,8 @@ private slots:
     void initTestCase();
     void testAppEscapeIgnoredWhenDropdownOpen();
     void testApplicationDeactivateIgnoredWhenBlockingDialogOpen();
+    void testDetachedWindowDeactivateGuardIgnoresSyntheticDeactivate();
+    void testApplicationDeactivateCancelsWithoutGuard();
     void testWidgetEscapeIgnoredWhenBlockingUiOpen();
     void testEmojiPickerIsNotBlockingTransientUi();
     void testShareResultCloseKeepsCaptureSession();
@@ -205,6 +207,42 @@ void tst_RegionSelectorTransientUiCancelGuard::testApplicationDeactivateIgnoredW
 
     QVERIFY(!handled);
     QCOMPARE(cancelledSpy.count(), 0);
+}
+
+void tst_RegionSelectorTransientUiCancelGuard::testDetachedWindowDeactivateGuardIgnoresSyntheticDeactivate()
+{
+#ifndef Q_OS_WIN
+    QSKIP("Detached capture deactivation guard is Windows-specific.");
+#else
+    HeadlessRegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    selector.m_activationCount = 1;
+    selector.armDetachedWindowDeactivateGuard();
+
+    QSignalSpy cancelledSpy(&selector, &RegionSelector::selectionCancelled);
+    QEvent event(QEvent::ApplicationDeactivate);
+
+    const bool handled = selector.eventFilter(qApp, &event);
+
+    QVERIFY(!handled);
+    QCOMPARE(cancelledSpy.count(), 0);
+    QVERIFY(!selector.m_detachedWindowDeactivateGuardPending);
+#endif
+}
+
+void tst_RegionSelectorTransientUiCancelGuard::testApplicationDeactivateCancelsWithoutGuard()
+{
+    HeadlessRegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    selector.m_activationCount = 1;
+
+    QSignalSpy cancelledSpy(&selector, &RegionSelector::selectionCancelled);
+    QEvent event(QEvent::ApplicationDeactivate);
+
+    const bool handled = selector.eventFilter(qApp, &event);
+
+    QVERIFY(!handled);
+    QCOMPARE(cancelledSpy.count(), 1);
 }
 
 void tst_RegionSelectorTransientUiCancelGuard::testWidgetEscapeIgnoredWhenBlockingUiOpen()

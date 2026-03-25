@@ -69,6 +69,44 @@ QImage paintFractionalDprImage(RegionPainter& painter,
     return canvas;
 }
 
+QImage applyFractionalTransitionPaint(RegionPainter& painter,
+                                      SelectionStateManager& selectionManager,
+                                      QWidget& hostWidget,
+                                      const QPixmap& background,
+                                      const QRect& previousHighlightRect,
+                                      const QRect& currentSelectionRect,
+                                      const QRegion& dirtyRegion)
+{
+    painter.setParentWidget(&hostWidget);
+    painter.setSelectionManager(&selectionManager);
+    painter.setCornerRadius(0);
+    painter.setDevicePixelRatio(background.devicePixelRatio());
+
+    selectionManager.clearSelection();
+    painter.setHighlightedWindowRect(previousHighlightRect);
+
+    QImage canvas(hostWidget.size(), QImage::Format_ARGB32_Premultiplied);
+    canvas.fill(Qt::transparent);
+    {
+        QPainter previousPainter(&canvas);
+        previousPainter.setRenderHint(QPainter::Antialiasing);
+        painter.paint(previousPainter, background);
+    }
+
+    selectionManager.setSelectionRect(currentSelectionRect);
+    painter.setHighlightedWindowRect(QRect());
+
+    QPainter transitionPainter(&canvas);
+    transitionPainter.setRenderHint(QPainter::Antialiasing);
+    if (!dirtyRegion.isEmpty()) {
+        transitionPainter.setClipRegion(dirtyRegion);
+    }
+    painter.paint(transitionPainter, background, dirtyRegion);
+    transitionPainter.end();
+
+    return canvas;
+}
+
 } // namespace
 
 class tst_RegionPainterChrome : public QObject
@@ -79,6 +117,7 @@ private slots:
     void testDetectedWindowChromeMatchesSelectionChrome();
     void testWindowHighlightVisualRectIncludesHandlesAndPanel();
     void testFractionalDprPartialBackgroundRepaintMatchesFullPaint();
+    void testFractionalDprSelectionTransitionNeedsFullRepaint();
 };
 
 void tst_RegionPainterChrome::testDetectedWindowChromeMatchesSelectionChrome()
@@ -164,6 +203,55 @@ void tst_RegionPainterChrome::testFractionalDprPartialBackgroundRepaintMatchesFu
             QCOMPARE(partialCanvas.pixelColor(x, y), fullCanvas.pixelColor(x, y));
         }
     }
+}
+
+void tst_RegionPainterChrome::testFractionalDprSelectionTransitionNeedsFullRepaint()
+{
+    QWidget hostWidget;
+    hostWidget.resize(QSize(200, 120));
+
+    SelectionStateManager selectionManager;
+    selectionManager.setBounds(QRect(QPoint(0, 0), hostWidget.size()));
+
+    QImage backgroundImage(QSize(300, 180), QImage::Format_ARGB32_Premultiplied);
+    backgroundImage.fill(Qt::black);
+    for (int y = 0; y < backgroundImage.height(); ++y) {
+        backgroundImage.setPixelColor(0, y, QColor(64, 96, 160));
+        backgroundImage.setPixelColor(1, y, QColor(128, 160, 224));
+        backgroundImage.setPixelColor(2, y, QColor(32, 64, 128));
+    }
+
+    QPixmap background = QPixmap::fromImage(backgroundImage);
+    background.setDevicePixelRatio(1.5);
+
+    RegionPainter painter;
+    const QRect previousHighlightRect(0, 0, 160, 80);
+    const QRect currentSelectionRect(60, 32, 90, 54);
+
+    selectionManager.setSelectionRect(currentSelectionRect);
+    const QImage fullSelectionCanvas = paintFractionalDprImage(
+        painter, selectionManager, hostWidget, background);
+
+    const QRegion partialDirtyRegion(QRect(56, 28, 98, 62));
+    const QImage partialTransitionCanvas = applyFractionalTransitionPaint(
+        painter,
+        selectionManager,
+        hostWidget,
+        background,
+        previousHighlightRect,
+        currentSelectionRect,
+        partialDirtyRegion);
+    QVERIFY(partialTransitionCanvas != fullSelectionCanvas);
+
+    const QImage fullTransitionCanvas = applyFractionalTransitionPaint(
+        painter,
+        selectionManager,
+        hostWidget,
+        background,
+        previousHighlightRect,
+        currentSelectionRect,
+        QRegion(hostWidget.rect()));
+    QCOMPARE(fullTransitionCanvas, fullSelectionCanvas);
 }
 
 QTEST_MAIN(tst_RegionPainterChrome)
