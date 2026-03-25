@@ -14,6 +14,8 @@
 
 namespace {
 
+constexpr int kActiveVisualRepaintPadding = 2;
+
 bool preferNativeLayeredBackend()
 {
 #if defined(Q_OS_WIN) && !defined(QT_NO_DEBUG_OUTPUT)
@@ -35,7 +37,15 @@ QRect activeVisualRect(RegionPainter& painter,
         return {};
     }
 
-    return painter.getWindowHighlightVisualRect(activeRect);
+    const QRect visualRect = painter.getWindowHighlightVisualRect(activeRect);
+    if (!visualRect.isValid() || visualRect.isEmpty()) {
+        return visualRect;
+    }
+
+    return visualRect.adjusted(-kActiveVisualRepaintPadding,
+                               -kActiveVisualRepaintPadding,
+                               kActiveVisualRepaintPadding,
+                               kActiveVisualRepaintPadding);
 }
 
 QRect spinnerRect(const LoadingSpinnerRenderer* spinner,
