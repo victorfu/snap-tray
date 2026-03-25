@@ -40,6 +40,7 @@ private slots:
     void testDetectedWindowRealDragClearsDetectionAndStartsSelection();
     void testSelectionMoveSetsAndClearsDragStateOnRelease();
     void testSelectionMoveClearsDragStateOnRightClickCancel();
+    void testMouseMoveEmitsCurrentPointUpdatedDuringSelectionDrag();
     void testCompletedSelectionHoverSkipsMagnifierDirtyRegionWhenDisabled();
 
 private:
@@ -254,6 +255,20 @@ void tst_RegionInputHandler::testSelectionMoveClearsDragStateOnRightClickCancel(
 
     QCOMPARE(m_selectionManager->state(), SelectionStateManager::State::None);
     QCOMPARE(CursorManager::instance().dragStateForWidget(m_parentWidget), DragState::None);
+}
+
+void tst_RegionInputHandler::testMouseMoveEmitsCurrentPointUpdatedDuringSelectionDrag()
+{
+    QSignalSpy pointSpy(m_handler, &RegionInputHandler::currentPointUpdated);
+
+    auto pressEvent = makeMouseEvent(QEvent::MouseButtonPress, QPoint(120, 140), Qt::LeftButton, Qt::LeftButton);
+    m_handler->handleMousePress(&pressEvent);
+
+    auto moveEvent = makeMouseEvent(QEvent::MouseMove, QPoint(180, 210), Qt::NoButton, Qt::LeftButton);
+    m_handler->handleMouseMove(&moveEvent);
+
+    QCOMPARE(pointSpy.count(), 1);
+    QCOMPARE(pointSpy.takeFirst().at(0).toPoint(), QPoint(180, 210));
 }
 
 void tst_RegionInputHandler::testCompletedSelectionHoverSkipsMagnifierDirtyRegionWhenDisabled()

@@ -242,7 +242,11 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
 
     m_currentModifiers = event->modifiers();
     m_lastToolEventPos = event->position();
+    const QPoint previousPoint = state().currentPoint;
     state().currentPoint = event->pos();
+    if (state().currentPoint != previousPoint) {
+        emit currentPointUpdated(state().currentPoint);
+    }
 
     // Race condition recovery: mouse button was already pressed when window appeared
     // Qt doesn't fire mousePressEvent for already-pressed buttons, so we detect
