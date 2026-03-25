@@ -44,6 +44,15 @@ bool LoadingSpinnerRenderer::isActive() const
     return m_active;
 }
 
+QRect LoadingSpinnerRenderer::bounds(const QPoint& center) const
+{
+    const int extent = SPINNER_RADIUS + DOT_RADIUS + 2;
+    return QRect(center.x() - extent,
+                 center.y() - extent,
+                 extent * 2,
+                 extent * 2);
+}
+
 void LoadingSpinnerRenderer::draw(QPainter &painter, const QPoint &center) const
 {
     if (!m_active) {

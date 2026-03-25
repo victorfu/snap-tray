@@ -561,7 +561,31 @@ void RegionPainter::drawAnnotations(QPainter& painter)
     }
 
     if (m_parentWidget) {
-        const QSize canvasSize = m_parentWidget->size();
+        QRect annotationViewport = m_annotationViewport.normalized();
+        if (annotationViewport.isValid() && !annotationViewport.isEmpty()) {
+            QRect itemBounds;
+            m_annotationLayer->forEachItem([&itemBounds](const AnnotationItem* item) {
+                if (!item || !item->isVisible()) {
+                    return;
+                }
+
+                if (itemBounds.isValid()) {
+                    itemBounds = itemBounds.united(item->boundingRect());
+                } else {
+                    itemBounds = item->boundingRect();
+                }
+            });
+
+            if (itemBounds.isValid() && !itemBounds.isEmpty()) {
+                annotationViewport = annotationViewport.united(itemBounds);
+            }
+            annotationViewport = annotationViewport.intersected(m_parentWidget->rect());
+        }
+
+        const QSize canvasSize =
+            annotationViewport.isValid() && !annotationViewport.isEmpty()
+            ? annotationViewport.size()
+            : m_parentWidget->size();
         const qreal dpr = m_devicePixelRatio > 0.0 ? m_devicePixelRatio : 1.0;
         snaptray::annotation::SelectedAnnotationItems selectedItems;
         selectedItems.text = getSelectedTextAnnotation();
@@ -569,14 +593,28 @@ void RegionPainter::drawAnnotations(QPainter& painter)
         selectedItems.shape = getSelectedShapeAnnotation();
         selectedItems.arrow = getSelectedArrowAnnotation();
         selectedItems.polyline = getSelectedPolylineAnnotation();
-        snaptray::annotation::drawAnnotationVisuals(
-            painter,
-            m_annotationLayer,
-            canvasSize,
-            dpr,
-            QPoint(0, 0),
-            m_annotationLayer->selectedIndex() >= 0,
-            selectedItems);
+        if (annotationViewport.isValid() && !annotationViewport.isEmpty()) {
+            painter.save();
+            painter.translate(annotationViewport.topLeft());
+            snaptray::annotation::drawAnnotationVisuals(
+                painter,
+                m_annotationLayer,
+                canvasSize,
+                dpr,
+                annotationViewport.topLeft(),
+                m_annotationLayer->selectedIndex() >= 0,
+                selectedItems);
+            painter.restore();
+        } else {
+            snaptray::annotation::drawAnnotationVisuals(
+                painter,
+                m_annotationLayer,
+                canvasSize,
+                dpr,
+                QPoint(0, 0),
+                m_annotationLayer->selectedIndex() >= 0,
+                selectedItems);
+        }
     } else {
         qWarning() << "RegionPainter::drawAnnotations: m_parentWidget is null, "
                       "falling back to uncached draw";
@@ -593,7 +631,14 @@ void RegionPainter::drawCurrentAnnotation(QPainter& painter)
     // Use ToolManager for tools it handles.
     ToolId tool = static_cast<ToolId>(m_currentTool);
     if (ToolTraits::isToolManagerHandledTool(tool)) {
-        m_toolManager->drawCurrentPreview(painter);
+        if (m_annotationViewport.isValid() && !m_annotationViewport.isEmpty()) {
+            painter.save();
+            painter.setClipRect(m_annotationViewport);
+            m_toolManager->drawCurrentPreview(painter);
+            painter.restore();
+        } else {
+            m_toolManager->drawCurrentPreview(painter);
+        }
     }
 }
 

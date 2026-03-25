@@ -45,6 +45,11 @@ void StaticCaptureBackgroundWindow::syncToHost(QWidget* host,
 {
     snaptray::region::CapturePerfScope perfScope("StaticCaptureBackgroundWindow.syncToHost");
 
+    const qint64 previousCacheKey = m_backgroundPixmap.cacheKey();
+    const qreal previousDpr = m_backgroundPixmap.devicePixelRatio();
+    const QRect previousGeometry = geometry();
+    const bool wasVisible = isVisible();
+
     m_host = host;
     m_backgroundPixmap = backgroundPixmap;
 
@@ -54,19 +59,27 @@ void StaticCaptureBackgroundWindow::syncToHost(QWidget* host,
     }
 
     const QRect globalRect(m_host->mapToGlobal(QPoint(0, 0)), m_host->size());
+    const bool geometryChanged = previousGeometry != globalRect;
     if (geometry() != globalRect) {
         setGeometry(globalRect);
     }
 
+    bool becameVisible = false;
     if (!isVisible()) {
         show();
+        becameVisible = true;
     }
 
-    if (m_host) {
+    if (m_host && (becameVisible || geometryChanged)) {
         m_host->raise();
     }
 
-    update();
+    const bool backgroundChanged =
+        previousCacheKey != m_backgroundPixmap.cacheKey() ||
+        !qFuzzyCompare(previousDpr, m_backgroundPixmap.devicePixelRatio());
+    if (backgroundChanged || geometryChanged || becameVisible || !wasVisible) {
+        update();
+    }
 }
 
 void StaticCaptureBackgroundWindow::hideOverlay()
@@ -76,13 +89,13 @@ void StaticCaptureBackgroundWindow::hideOverlay()
 
 void StaticCaptureBackgroundWindow::paintEvent(QPaintEvent* event)
 {
-    Q_UNUSED(event);
-
     if (m_backgroundPixmap.isNull()) {
         return;
     }
 
+    const QRegion dirtyRegion = event ? event->region() : QRegion(rect());
     QPainter painter(this);
+    painter.setClipRegion(dirtyRegion);
     painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
     painter.drawPixmap(QRect(QPoint(0, 0), size()), m_backgroundPixmap);
 }

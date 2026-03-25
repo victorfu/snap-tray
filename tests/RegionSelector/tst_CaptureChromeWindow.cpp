@@ -2,6 +2,7 @@
 
 #include <QApplication>
 #include <QPixmap>
+#include <QSignalSpy>
 #include <QWidget>
 
 #include "region/CaptureChromeWindow.h"
@@ -19,6 +20,7 @@ private slots:
     void testHighlightModeTracksDimensionRect();
     void testHideClearsDimensionRect();
     void testPaintCompletedSignalEmitted();
+    void testSyncWithoutStateChangeSkipsExtraPaint();
 };
 
 void tst_CaptureChromeWindow::initTestCase()
@@ -168,6 +170,52 @@ void tst_CaptureChromeWindow::testPaintCompletedSignalEmitted()
                       true);
 
     QTRY_VERIFY(!paintSpy.isEmpty());
+}
+
+void tst_CaptureChromeWindow::testSyncWithoutStateChangeSkipsExtraPaint()
+{
+    QWidget host;
+    host.resize(320, 240);
+    host.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&host));
+
+    SelectionStateManager selectionManager;
+    selectionManager.setSelectionRect(QRect(24, 36, 100, 70));
+
+    CaptureChromeWindow chrome;
+    chrome.setSelectionManager(&selectionManager);
+
+    QSignalSpy paintSpy(&chrome, SIGNAL(framePainted()));
+
+    chrome.syncToHost(&host,
+                      QRect(24, 36, 100, 70),
+                      true,
+                      QRect(),
+                      1.0,
+                      0,
+                      0,
+                      false,
+                      nullptr,
+                      false,
+                      QPoint(),
+                      true);
+    QTRY_VERIFY(!paintSpy.isEmpty());
+    paintSpy.clear();
+
+    chrome.syncToHost(&host,
+                      QRect(24, 36, 100, 70),
+                      true,
+                      QRect(),
+                      1.0,
+                      0,
+                      0,
+                      false,
+                      nullptr,
+                      false,
+                      QPoint(),
+                      true);
+    QCoreApplication::processEvents();
+    QCOMPARE(paintSpy.count(), 0);
 }
 
 QTEST_MAIN(tst_CaptureChromeWindow)

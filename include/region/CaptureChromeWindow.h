@@ -5,6 +5,7 @@
 
 #include <QPoint>
 #include <QRect>
+#include <QRegion>
 #include <QWidget>
 
 class AnnotationLayer;
@@ -25,6 +26,7 @@ public:
     void setAnnotationLayer(AnnotationLayer* layer);
     void setToolManager(ToolManager* manager);
     void setShortcutHintsOverlay(CaptureShortcutHintsOverlay* overlay);
+    void markDirtyRegion(const QRegion& region);
 
     void syncToHost(QWidget* host,
                     const QRect& selectionRect,
@@ -68,6 +70,7 @@ private:
     QPoint m_busySpinnerCenter;
     QRect m_lastDimensionInfoRect;
     bool m_useNativeLayeredBackend = false;
+    QRegion m_pendingDirtyRegion;
 };
 
 #endif // CAPTURECHROMEWINDOW_H

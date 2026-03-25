@@ -68,6 +68,7 @@ public:
     void setReplacePreview(int targetIndex, const QRect& previewRect);
     void setSelectionPreviewActive(bool active) { m_selectionPreviewActive = active; }
     void setCaptureChromeActive(bool active) { m_captureChromeActive = active; }
+    void setAnnotationViewport(const QRect& viewport) { m_annotationViewport = viewport; }
 
     /**
      * @brief Calculate the visual bounding rect of a window highlight (including the hint label).
@@ -121,6 +122,7 @@ private:
     bool m_multiRegionMode = false;
     bool m_selectionPreviewActive = false;
     bool m_captureChromeActive = false;
+    QRect m_annotationViewport;
     int m_replaceTargetIndex = -1;
     QRect m_replacePreviewRect;
 

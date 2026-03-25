@@ -2475,6 +2475,7 @@ void RegionSelector::paintSelectorScene(QPainter& painter, const QRegion& dirtyR
     m_painter->setMultiRegionMode(m_inputState.multiRegionMode);
     m_painter->setSelectionPreviewActive(m_selectionPreviewOverlay && m_selectionPreviewOverlay->isVisible());
     m_painter->setCaptureChromeActive(m_captureChromeWindow && m_captureChromeWindow->isVisible());
+    m_painter->setAnnotationViewport(QRect());
     const bool showReplacePreview = m_inputState.multiRegionMode &&
         m_inputState.replaceTargetIndex >= 0 &&
         m_selectionManager->isSelecting();
@@ -2559,6 +2560,9 @@ bool RegionSelector::usesDetachedCaptureWindows() const
 void RegionSelector::requestCaptureSceneUpdate()
 {
     if (usesDetachedCaptureWindows()) {
+        if (m_captureChromeWindow) {
+            m_captureChromeWindow->markDirtyRegion(QRegion(rect()));
+        }
         syncCaptureChromeWindow();
         return;
     }
@@ -2569,7 +2573,10 @@ void RegionSelector::requestCaptureSceneUpdate()
 void RegionSelector::requestCaptureSceneUpdate(const QRect& rect)
 {
     if (usesDetachedCaptureWindows()) {
-        Q_UNUSED(rect);
+        if (m_captureChromeWindow) {
+            m_captureChromeWindow->markDirtyRegion(
+                rect.isValid() && !rect.isEmpty() ? QRegion(rect) : QRegion());
+        }
         syncCaptureChromeWindow();
         return;
     }
@@ -2789,8 +2796,9 @@ void RegionSelector::paintEvent(QPaintEvent* event)
     if (detachedCaptureWindowsActive) {
         syncStaticCaptureBackgroundWindow();
         syncCaptureChromeWindow();
+        painter.setClipRegion(dirtyRegion);
         painter.setCompositionMode(QPainter::CompositionMode_Source);
-        painter.fillRect(rect(), QColor(0, 0, 0, 1));
+        painter.fillRect(dirtyRegion.boundingRect(), QColor(0, 0, 0, 1));
         painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
     } else {
         paintSelectorScene(painter, dirtyRegion);
@@ -3274,7 +3282,17 @@ QRect RegionSelector::selectedAnnotationInteractionVisualRect() const
 bool RegionSelector::requestLocalizedAnnotationInteractionUpdate()
 {
     if (usesDetachedCaptureWindows()) {
-        resetAnnotationInteractionTracking();
+        if (m_captureChromeWindow) {
+            const QRect currentVisualRect = selectedAnnotationInteractionVisualRect();
+            QRect dirtyRect = currentVisualRect;
+            if (m_lastAnnotationInteractionVisualRect.isValid()) {
+                dirtyRect = dirtyRect.united(m_lastAnnotationInteractionVisualRect);
+            }
+            if (dirtyRect.isValid() && !dirtyRect.isEmpty()) {
+                m_captureChromeWindow->markDirtyRegion(QRegion(dirtyRect));
+            }
+            m_lastAnnotationInteractionVisualRect = currentVisualRect;
+        }
         syncCaptureChromeWindow();
         return true;
     }
