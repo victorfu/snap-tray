@@ -46,6 +46,7 @@ void ShapeToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
     QRect rect = makeRect(m_startPoint, pos);
 
     // Only add if the shape has some size
+    bool committedShape = false;
     if (rect.width() > 5 || rect.height() > 5) {
         if (m_currentShape) {
             ctx->addItem(std::move(m_currentShape));
@@ -53,6 +54,7 @@ void ShapeToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
                 int newIndex = static_cast<int>(ctx->annotationLayer->itemCount() - 1);
                 ctx->annotationLayer->setSelectedIndex(newIndex);
             }
+            committedShape = true;
         }
     }
 
@@ -60,7 +62,9 @@ void ShapeToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
     m_isDrawing = false;
     m_currentShape.reset();
 
-    ctx->repaint();
+    if (!committedShape) {
+        ctx->repaint();
+    }
 }
 
 bool ShapeToolHandler::handleEscape(ToolContext* ctx)
@@ -90,6 +94,15 @@ void ShapeToolHandler::drawPreview(QPainter& painter) const {
     }
 
     m_currentShape->draw(painter);
+}
+
+QRect ShapeToolHandler::previewBounds() const
+{
+    if (!m_isDrawing || !m_currentShape) {
+        return {};
+    }
+
+    return m_currentShape->boundingRect();
 }
 
 void ShapeToolHandler::cancelDrawing() {

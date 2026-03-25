@@ -47,6 +47,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "qml/ShareResultViewModel.h"
 #include "tools/handlers/MosaicToolHandler.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
+#include "tools/ToolRepaintHelper.h"
 #include "tools/ToolSectionConfig.h"
 #include "tools/ToolTraits.h"
 #include "utils/CoordinateHelper.h"
@@ -268,21 +269,12 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_toolManager->setLineStyle(m_inputState.lineStyle);
     m_toolManager->setMosaicBlurType(mosaicBlurType);
     connect(m_toolManager, &ToolManager::needsRepaint, this, [this]() {
-        const ToolId currentTool = m_toolManager ? m_toolManager->currentTool() : ToolId::Selection;
-        const bool localizedPreviewUpdate =
-            currentTool == ToolId::Pencil || currentTool == ToolId::Marker;
-        if (localizedPreviewUpdate && m_toolManager) {
-            if (IToolHandler* handler = m_toolManager->handler(currentTool)) {
-                const QRect previewBounds = handler->previewBounds();
-                if (previewBounds.isValid() && !previewBounds.isEmpty()) {
-                    update(previewBounds.adjusted(
-                        -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
-                        -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
-                        SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
-                        SelectionDirtyRegionPlanner::kAnnotationRepaintMargin));
-                    return;
-                }
-            }
+        const QRect previewRect = snaptray::tools::previewRepaintRect(
+            m_toolManager,
+            SelectionDirtyRegionPlanner::kAnnotationRepaintMargin);
+        if (previewRect.isValid() && !previewRect.isEmpty()) {
+            update(previewRect);
+            return;
         }
 
         if (requestLocalizedAnnotationInteractionUpdate()) {
@@ -2910,24 +2902,9 @@ bool RegionSelector::hasActiveAnnotationInteraction() const
 
 QRect RegionSelector::selectedAnnotationInteractionVisualRect() const
 {
-    if (!m_annotationLayer) {
-        return {};
-    }
-
-    auto* selectedItem = m_annotationLayer->selectedItem();
-    if (!selectedItem || !selectedItem->isVisible()) {
-        return {};
-    }
-
-    const QRect itemRect = selectedItem->boundingRect();
-    if (!itemRect.isValid() || itemRect.isEmpty()) {
-        return {};
-    }
-
-    return itemRect.adjusted(-kAnnotationInteractionVisualMargin,
-                             -kAnnotationInteractionVisualMargin,
-                             kAnnotationInteractionVisualMargin,
-                             kAnnotationInteractionVisualMargin);
+    return snaptray::tools::selectedAnnotationRepaintRect(
+        m_annotationLayer,
+        kAnnotationInteractionVisualMargin);
 }
 
 bool RegionSelector::requestLocalizedAnnotationInteractionUpdate()

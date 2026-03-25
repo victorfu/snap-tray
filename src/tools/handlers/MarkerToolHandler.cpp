@@ -108,8 +108,10 @@ void MarkerToolHandler::onMouseReleaseF(ToolContext* ctx, const QPointF& pos) {
     }
 
     // Add to annotation layer if we have a valid stroke
+    bool committedStroke = false;
     if (m_currentStroke && m_currentStroke->points().size() >= 2) {
         ctx->addItem(std::move(m_currentStroke));
+        committedStroke = true;
     }
 
     // Reset state
@@ -118,7 +120,9 @@ void MarkerToolHandler::onMouseReleaseF(ToolContext* ctx, const QPointF& pos) {
     m_currentStroke.reset();
     m_previewDirtyRect = QRect();
 
-    ctx->repaint();
+    if (!committedStroke) {
+        ctx->repaint();
+    }
 }
 
 void MarkerToolHandler::drawPreview(QPainter& painter) const {

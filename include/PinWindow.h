@@ -323,6 +323,11 @@ private:
 
     // Cursor update helper
     void updateAnnotationCursor(const QPoint& pos);
+    bool hasActiveAnnotationInteraction() const;
+    QRect mappedAnnotationRect(const QRect& originalRect) const;
+    QRect selectedAnnotationInteractionVisualRect() const;
+    bool requestLocalizedToolRepaint();
+    void resetAnnotationInteractionTracking();
 
     // Coordinate transformation for rotated/flipped state
     QPoint mapToOriginalCoords(const QPoint& displayPos) const;
@@ -343,6 +348,7 @@ private:
     SharedPixmap m_sharedSourcePixmap;  // Shared for mosaic tool memory efficiency
     QPixmap m_displayPixmap;
     qreal m_zoomLevel;
+    QRect m_lastAnnotationInteractionVisualRect;
     QPoint m_dragStartPos;
     bool m_isDragging;
     QMenu* m_contextMenu;

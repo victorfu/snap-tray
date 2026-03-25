@@ -34,6 +34,7 @@
 #include "detection/AutoBlurManager.h"
 #include "detection/CredentialDetector.h"
 #include "tools/ToolManager.h"
+#include "tools/ToolRepaintHelper.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
 #include "tools/handlers/CropToolHandler.h"
 #include "settings/AnnotationSettingsManager.h"
@@ -109,6 +110,8 @@ namespace {
     constexpr qreal kTransformEpsilon = 1e-6;
     constexpr qreal kMergeTargetWidthRatio = 0.9;
     constexpr int kMergeMinRowWidth = 320;
+    constexpr int kToolPreviewRepaintMargin = 30;
+    constexpr int kAnnotationInteractionVisualMargin = 52;
 
     qreal normalizeAngleDelta(qreal deltaDegrees)
     {
@@ -642,6 +645,76 @@ QPointF PinWindow::mapFromOriginalCoords(const QPointF& originalPos) const
 
     QTransform transform = buildPinWindowTransform(rect(), m_rotationAngle, m_flipHorizontal, m_flipVertical);
     return transform.map(originalPos);
+}
+
+bool PinWindow::hasActiveAnnotationInteraction() const
+{
+    const bool textInteraction =
+        m_textAnnotationEditor &&
+        (m_textAnnotationEditor->isDragging() || m_textAnnotationEditor->isTransforming());
+    const bool shapeInteraction =
+        m_shapeAnnotationEditor &&
+        (m_shapeAnnotationEditor->isDragging() || m_shapeAnnotationEditor->isTransforming());
+
+    return textInteraction || shapeInteraction ||
+           m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating ||
+           m_isArrowDragging || m_isPolylineDragging;
+}
+
+QRect PinWindow::mappedAnnotationRect(const QRect& originalRect) const
+{
+    if (!originalRect.isValid() || originalRect.isEmpty()) {
+        return {};
+    }
+
+    QPolygonF polygon;
+    polygon << mapFromOriginalCoords(QPointF(originalRect.topLeft()))
+            << mapFromOriginalCoords(QPointF(originalRect.topRight()))
+            << mapFromOriginalCoords(QPointF(originalRect.bottomRight()))
+            << mapFromOriginalCoords(QPointF(originalRect.bottomLeft()));
+    return polygon.boundingRect().toAlignedRect();
+}
+
+QRect PinWindow::selectedAnnotationInteractionVisualRect() const
+{
+    return mappedAnnotationRect(
+        snaptray::tools::selectedAnnotationRepaintRect(
+            m_annotationLayer,
+            kAnnotationInteractionVisualMargin));
+}
+
+bool PinWindow::requestLocalizedToolRepaint()
+{
+    const QRect previewRect = mappedAnnotationRect(
+        snaptray::tools::previewRepaintRect(m_toolManager, kToolPreviewRepaintMargin));
+    if (previewRect.isValid() && !previewRect.isEmpty()) {
+        update(previewRect);
+        return true;
+    }
+
+    if (!hasActiveAnnotationInteraction()) {
+        resetAnnotationInteractionTracking();
+        return false;
+    }
+
+    const QRect currentVisualRect = selectedAnnotationInteractionVisualRect();
+    QRect dirtyRect = currentVisualRect;
+    if (m_lastAnnotationInteractionVisualRect.isValid()) {
+        dirtyRect = dirtyRect.united(m_lastAnnotationInteractionVisualRect);
+    }
+
+    m_lastAnnotationInteractionVisualRect = currentVisualRect;
+    if (!dirtyRect.isValid() || dirtyRect.isEmpty()) {
+        return false;
+    }
+
+    update(dirtyRect);
+    return true;
+}
+
+void PinWindow::resetAnnotationInteractionTracking()
+{
+    m_lastAnnotationInteractionVisualRect = QRect();
 }
 
 void PinWindow::applyTextOrientationCompensation(TextBoxAnnotation* textItem,
@@ -2155,7 +2228,6 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
                 // This is needed because annotations are stored in original space
                 // but rendered with rotation/flip transforms applied
                 m_toolManager->handleMousePress(mapToOriginalCoords(event->position()), event->modifiers());
-                update();
                 return;
             }
         }
@@ -2263,14 +2335,14 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
     // Handle TextAnnotationEditor transformation (rotate/scale)
     if (m_textAnnotationEditor && m_textAnnotationEditor->isTransforming()) {
         m_textAnnotationEditor->updateTransformation(mapToOriginalCoords(event->pos()));
-        update();
+        requestLocalizedToolRepaint();
         return;
     }
 
     // Handle TextAnnotationEditor dragging
     if (m_textAnnotationEditor && m_textAnnotationEditor->isDragging()) {
         m_textAnnotationEditor->updateDragging(mapToOriginalCoords(event->pos()));
-        update();
+        requestLocalizedToolRepaint();
         return;
     }
 
@@ -2283,7 +2355,6 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
     if (m_toolManager &&
         m_toolManager->handleShapeInteractionMove(
             mapToOriginalCoords(event->pos()), event->modifiers())) {
-        update();
         return;
     }
 
@@ -2302,7 +2373,6 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
     // In annotation mode with active drawing, route to ToolManager
     if (m_annotationMode && m_toolManager && m_toolManager->isDrawing()) {
         m_toolManager->handleMouseMove(mapToOriginalCoords(event->position()), event->modifiers());
-        update();
         return;
     }
 
@@ -2456,7 +2526,6 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
                     compensateNewestStepBadgeIfNeeded(previousLastItem);
                 }
                 updateUndoRedoState();
-                update();
                 return;
             }
         }
@@ -2756,7 +2825,10 @@ void PinWindow::initializeAnnotationComponents()
     // Initialize annotation layer
     m_annotationLayer = new AnnotationLayer(this);
     connect(m_annotationLayer, &AnnotationLayer::changed,
-        this, QOverload<>::of(&QWidget::update));
+        this, [this]() {
+            resetAnnotationInteractionTracking();
+            update();
+        });
 
     // Initialize tool manager
     m_toolManager = new ToolManager(this);
@@ -2787,8 +2859,12 @@ void PinWindow::initializeAnnotationComponents()
     m_toolManager->setLineStyle(savedLineStyle);
 
     // Connect tool manager signals
-    connect(m_toolManager, &ToolManager::needsRepaint,
-        this, QOverload<>::of(&QWidget::update));
+    connect(m_toolManager, &ToolManager::needsRepaint, this, [this]() {
+        if (requestLocalizedToolRepaint()) {
+            return;
+        }
+        update();
+    });
 
     // Tool manager is created lazily; bind it to the already-registered widget now.
     auto& cursorManager = CursorManager::instance();
@@ -4203,7 +4279,7 @@ bool PinWindow::handleEmojiStickerAnnotationPress(const QPoint& pos)
                     HoverTarget::GizmoHandle,
                     static_cast<int>(handle));
             }
-            update();
+            requestLocalizedToolRepaint();
             return true;
         }
     }
@@ -4248,7 +4324,7 @@ bool PinWindow::handleEmojiStickerAnnotationPress(const QPoint& pos)
         }
     }
 
-    update();
+    requestLocalizedToolRepaint();
     return true;
 }
 
@@ -4283,8 +4359,7 @@ bool PinWindow::handleEmojiStickerAnnotationMove(const QPoint& pos)
         return false;
     }
 
-    m_annotationLayer->invalidateCache();
-    update();
+    requestLocalizedToolRepaint();
     return true;
 }
 
@@ -4302,7 +4377,7 @@ bool PinWindow::handleEmojiStickerAnnotationRelease(const QPoint& pos)
     m_emojiStartAngle = 0.0;
     CursorManager::instance().setInputStateForWidget(this, InputState::Idle);
     rebuildManagedCursorAt(pos);
-    update();
+    requestLocalizedToolRepaint();
     return true;
 }
 
@@ -4365,7 +4440,7 @@ bool PinWindow::handleTextAnnotationPress(const QPoint& pos)
         }
     }
 
-    update();
+    requestLocalizedToolRepaint();
     return true;
 }
 
@@ -4586,7 +4661,7 @@ bool PinWindow::handleArrowAnnotationPress(const QPoint& pos)
                 cursorManager.setHoverTargetForWidget(
                     this, HoverTarget::GizmoHandle, static_cast<int>(handle));
             }
-            update();
+            requestLocalizedToolRepaint();
             return true;
         }
     }
@@ -4613,7 +4688,7 @@ bool PinWindow::handleArrowAnnotationPress(const QPoint& pos)
             cursorManager.setHoverTargetForWidget(
                 this, HoverTarget::GizmoHandle, static_cast<int>(m_arrowDragHandle));
         }
-        update();
+        requestLocalizedToolRepaint();
         return true;
     }
     return false;
@@ -4643,8 +4718,7 @@ bool PinWindow::handleArrowAnnotationMove(const QPoint& pos)
                 QPointF newControl = 2.0 * QPointF(mappedPos) - 0.5 * (start + end);
                 arrowItem->setControlPoint(newControl.toPoint());
             }
-            m_annotationLayer->invalidateCache();
-            update();
+            requestLocalizedToolRepaint();
             return true;
         }
     }
@@ -4658,7 +4732,7 @@ bool PinWindow::handleArrowAnnotationRelease(const QPoint& pos)
         m_arrowDragHandle = GizmoHandle::None;
         CursorManager::instance().setInputStateForWidget(this, InputState::Idle);
         rebuildManagedCursorAt(pos);
-        update();
+        requestLocalizedToolRepaint();
         return true;
     }
     return false;
@@ -4690,7 +4764,7 @@ bool PinWindow::handlePolylineAnnotationPress(const QPoint& pos)
             m_annotationDragStartPos = mappedPos;
             cursorManager.setHoverTargetForWidget(
                 this, HoverTarget::GizmoHandle, static_cast<int>(GizmoHandle::ArrowStart));
-            update();
+            requestLocalizedToolRepaint();
             return true;
         } else if (vertexIndex == -1) {
             // Body hit
@@ -4698,7 +4772,7 @@ bool PinWindow::handlePolylineAnnotationPress(const QPoint& pos)
             m_activePolylineVertexIndex = -1;
             m_annotationDragStartPos = mappedPos;
             cursorManager.setInputStateForWidget(this, InputState::Moving);
-            update();
+            requestLocalizedToolRepaint();
             return true;
         }
     }
@@ -4725,7 +4799,7 @@ bool PinWindow::handlePolylineAnnotationPress(const QPoint& pos)
         } else {
             cursorManager.setInputStateForWidget(this, InputState::Moving);
         }
-        update();
+        requestLocalizedToolRepaint();
         return true;
     }
     return false;
@@ -4748,8 +4822,7 @@ bool PinWindow::handlePolylineAnnotationMove(const QPoint& pos)
                  polylineItem->moveBy(delta);
                  m_annotationDragStartPos = mappedPos;
              }
-             m_annotationLayer->invalidateCache();
-             update();
+             requestLocalizedToolRepaint();
              return true;
         }
     }
@@ -4763,7 +4836,7 @@ bool PinWindow::handlePolylineAnnotationRelease(const QPoint& pos)
         m_activePolylineVertexIndex = -1;
         CursorManager::instance().setInputStateForWidget(this, InputState::Idle);
         rebuildManagedCursorAt(pos);
-        update();
+        requestLocalizedToolRepaint();
         return true;
     }
     return false;

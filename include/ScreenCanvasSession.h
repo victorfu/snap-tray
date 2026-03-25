@@ -116,6 +116,11 @@ private:
     void configureSurface(ScreenCanvas* surface);
     void destroySurfaces();
     void updateAllSurfaces();
+    void updateSurfacesForAnnotationRect(const QRect& annotationRect);
+    bool hasActiveAnnotationInteraction() const;
+    QRect selectedAnnotationInteractionRect() const;
+    void requestLocalizedToolRepaint();
+    void resetAnnotationInteractionTracking();
 
     void activateSurface(ScreenCanvas* surface);
     void beginMouseGrab(ScreenCanvas* surface);
@@ -242,6 +247,7 @@ private:
     GizmoHandle m_arrowDragHandle = GizmoHandle::None;
     bool m_isPolylineDragging = false;
     int m_activePolylineVertexIndex = -1;
+    QRect m_lastAnnotationInteractionRect;
     QPoint m_dragStartPos;
     bool m_consumeNextToolRelease = false;
 };

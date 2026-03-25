@@ -143,9 +143,11 @@ void PencilToolHandler::onMouseReleaseF(ToolContext* ctx, const QPointF& pos) {
     }
 
     // Add to annotation layer if we have a valid stroke
+    bool committedStroke = false;
     if (m_currentStroke && m_currentPath.size() >= 2) {
         m_currentStroke->finalize();
         ctx->addItem(std::move(m_currentStroke));
+        committedStroke = true;
     }
 
     // Reset state
@@ -155,7 +157,9 @@ void PencilToolHandler::onMouseReleaseF(ToolContext* ctx, const QPointF& pos) {
     m_hasSmoothedPoint = false;
     m_previewDirtyRect = QRect();
 
-    ctx->repaint();
+    if (!committedStroke) {
+        ctx->repaint();
+    }
 }
 
 void PencilToolHandler::drawPreview(QPainter& painter) const {

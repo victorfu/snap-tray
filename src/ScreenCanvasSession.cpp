@@ -23,6 +23,7 @@
 #include "region/TextAnnotationEditor.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "tools/ToolManager.h"
+#include "tools/ToolRepaintHelper.h"
 #include "tools/ToolSectionConfig.h"
 #include "tools/ToolTraits.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
@@ -46,6 +47,8 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 namespace {
 constexpr int kLaserPointerButtonId = 10001;
 constexpr int kToolbarBottomMargin = 30;
+constexpr int kToolPreviewRepaintMargin = 30;
+constexpr int kAnnotationInteractionVisualMargin = 52;
 
 bool isManagedToolButtonId(int buttonId)
 {
@@ -176,7 +179,7 @@ void ScreenCanvasSession::initializeSharedState()
     m_toolManager->setLineStyle(savedLineStyle);
 
     connect(m_toolManager, &ToolManager::needsRepaint, this, [this]() {
-        updateAllSurfaces();
+        requestLocalizedToolRepaint();
     });
     m_toolManager->setTextColorSyncCallback([this](const QColor& color) {
         syncColorToAllWidgets(color);
@@ -214,6 +217,7 @@ void ScreenCanvasSession::initializeSharedState()
     connect(m_annotationLayer, &AnnotationLayer::changed, this, [this]() {
         m_toolbarViewModel->setCanUndo(m_annotationLayer->canUndo());
         m_toolbarViewModel->setCanRedo(m_annotationLayer->canRedo());
+        resetAnnotationInteractionTracking();
         updateAllSurfaces();
     });
 
@@ -724,6 +728,87 @@ void ScreenCanvasSession::updateAllSurfaces()
             surface->update();
         }
     }
+}
+
+void ScreenCanvasSession::updateSurfacesForAnnotationRect(const QRect& annotationRect)
+{
+    if (!annotationRect.isValid() || annotationRect.isEmpty()) {
+        return;
+    }
+
+    for (const QPointer<ScreenCanvas>& surface : m_surfaces) {
+        if (!surface) {
+            continue;
+        }
+
+        const QRect localRect(
+            surface->toLocalPoint(annotationRect.topLeft()),
+            annotationRect.size());
+        const QRect clippedRect = localRect.intersected(surface->rect());
+        if (clippedRect.isValid() && !clippedRect.isEmpty()) {
+            surface->update(clippedRect);
+        }
+    }
+}
+
+bool ScreenCanvasSession::hasActiveAnnotationInteraction() const
+{
+    const ScreenCanvas* interactionSurface =
+        m_grabbedSurface ? m_grabbedSurface.data() : m_activeSurface.data();
+    const bool textInteraction =
+        interactionSurface &&
+        interactionSurface->textAnnotationEditor() &&
+        (interactionSurface->textAnnotationEditor()->isDragging() ||
+         interactionSurface->textAnnotationEditor()->isTransforming());
+    const bool shapeInteraction =
+        interactionSurface &&
+        interactionSurface->shapeAnnotationEditor() &&
+        (interactionSurface->shapeAnnotationEditor()->isDragging() ||
+         interactionSurface->shapeAnnotationEditor()->isTransforming());
+
+    return textInteraction || shapeInteraction ||
+           m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating ||
+           m_isArrowDragging || m_isPolylineDragging;
+}
+
+QRect ScreenCanvasSession::selectedAnnotationInteractionRect() const
+{
+    return snaptray::tools::selectedAnnotationRepaintRect(
+        m_annotationLayer,
+        kAnnotationInteractionVisualMargin);
+}
+
+void ScreenCanvasSession::requestLocalizedToolRepaint()
+{
+    const QRect previewRect = snaptray::tools::previewRepaintRect(
+        m_toolManager,
+        kToolPreviewRepaintMargin);
+    if (previewRect.isValid() && !previewRect.isEmpty()) {
+        updateSurfacesForAnnotationRect(previewRect);
+        return;
+    }
+
+    if (!hasActiveAnnotationInteraction()) {
+        resetAnnotationInteractionTracking();
+        updateAllSurfaces();
+        return;
+    }
+
+    const QRect currentRect = selectedAnnotationInteractionRect();
+    QRect dirtyRect = currentRect;
+    if (m_lastAnnotationInteractionRect.isValid()) {
+        dirtyRect = dirtyRect.united(m_lastAnnotationInteractionRect);
+    }
+
+    m_lastAnnotationInteractionRect = currentRect;
+    if (dirtyRect.isValid() && !dirtyRect.isEmpty()) {
+        updateSurfacesForAnnotationRect(dirtyRect);
+    }
+}
+
+void ScreenCanvasSession::resetAnnotationInteractionTracking()
+{
+    m_lastAnnotationInteractionRect = QRect();
 }
 
 void ScreenCanvasSession::connectApplicationStateSignal()
@@ -1284,7 +1369,6 @@ void ScreenCanvasSession::handleSurfaceMousePress(ScreenCanvas* surface, QMouseE
         if (m_toolManager && m_toolManager->isDrawing()) {
             beginMouseGrab(surface);
             m_toolManager->handleMousePress(annotationPosF, event->modifiers());
-            updateAllSurfaces();
             return;
         }
 
@@ -1308,7 +1392,6 @@ void ScreenCanvasSession::handleSurfaceMousePress(ScreenCanvas* surface, QMouseE
                  surface->shapeAnnotationEditor()->isTransforming())) {
                 beginMouseGrab(surface);
             }
-            updateAllSurfaces();
             return;
         }
 
@@ -1319,7 +1402,6 @@ void ScreenCanvasSession::handleSurfaceMousePress(ScreenCanvas* surface, QMouseE
                  surface->textAnnotationEditor()->isTransforming())) {
                 beginMouseGrab(surface);
             }
-            updateAllSurfaces();
             return;
         }
 
@@ -1340,7 +1422,6 @@ void ScreenCanvasSession::handleSurfaceMousePress(ScreenCanvas* surface, QMouseE
         if (!m_laserPointerActive && isDrawingTool(m_currentToolId)) {
             beginMouseGrab(surface);
             m_toolManager->handleMousePress(annotationPosF, event->modifiers());
-            updateAllSurfaces();
         }
     } else if (event->button() == Qt::RightButton) {
         if (m_toolManager && m_toolManager->isDrawing()) {
@@ -1376,7 +1457,6 @@ void ScreenCanvasSession::handleSurfaceMouseMove(ScreenCanvas* surface, QMouseEv
 
     if (m_toolManager &&
         m_toolManager->handleTextInteractionMove(annotationPos, event->modifiers())) {
-        updateAllSurfaces();
         return;
     }
 
@@ -1387,7 +1467,6 @@ void ScreenCanvasSession::handleSurfaceMouseMove(ScreenCanvas* surface, QMouseEv
 
     if (m_toolManager &&
         m_toolManager->handleShapeInteractionMove(annotationPos, event->modifiers())) {
-        updateAllSurfaces();
         return;
     }
 
@@ -1402,7 +1481,6 @@ void ScreenCanvasSession::handleSurfaceMouseMove(ScreenCanvas* surface, QMouseEv
 
     if (m_toolManager && m_toolManager->isDrawing()) {
         m_toolManager->handleMouseMove(annotationPosF, event->modifiers());
-        updateAllSurfaces();
     } else {
         syncFloatingUiCursor(surface);
     }
@@ -1478,7 +1556,6 @@ void ScreenCanvasSession::handleSurfaceMouseRelease(ScreenCanvas* surface, QMous
          m_currentToolId == ToolId::StepBadge ||
          m_currentToolId == ToolId::EmojiSticker)) {
         m_toolManager->handleMouseRelease(annotationPosF, event->modifiers());
-        updateAllSurfaces();
     }
 
     endMouseGrab();
@@ -2052,7 +2129,7 @@ bool ScreenCanvasSession::handleEmojiStickerAnnotationPress(const QPoint& pos)
         }
     }
 
-    updateAllSurfaces();
+    requestLocalizedToolRepaint();
     return true;
 }
 
@@ -2084,7 +2161,7 @@ bool ScreenCanvasSession::handleEmojiStickerAnnotationMove(const QPoint& pos)
         return false;
     }
 
-    updateAllSurfaces();
+    requestLocalizedToolRepaint();
     return true;
 }
 
@@ -2104,7 +2181,7 @@ bool ScreenCanvasSession::handleEmojiStickerAnnotationRelease(const QPoint& pos)
     if (m_activeSurface) {
         CursorManager::instance().setInputStateForWidget(m_activeSurface, InputState::Idle);
     }
-    updateAllSurfaces();
+    requestLocalizedToolRepaint();
     return true;
 }
 
@@ -2116,7 +2193,7 @@ bool ScreenCanvasSession::handleArrowAnnotationPress(const QPoint& pos)
             m_isArrowDragging = true;
             m_arrowDragHandle = handle;
             m_dragStartPos = pos;
-            updateAllSurfaces();
+            requestLocalizedToolRepaint();
             return true;
         }
     }
@@ -2135,7 +2212,7 @@ bool ScreenCanvasSession::handleArrowAnnotationPress(const QPoint& pos)
             }
         }
 
-        updateAllSurfaces();
+        requestLocalizedToolRepaint();
         return true;
     }
 
@@ -2168,7 +2245,7 @@ bool ScreenCanvasSession::handleArrowAnnotationMove(const QPoint& pos)
         arrowItem->setControlPoint(newControl.toPoint());
     }
 
-    updateAllSurfaces();
+    requestLocalizedToolRepaint();
     return true;
 }
 
@@ -2182,7 +2259,7 @@ bool ScreenCanvasSession::handleArrowAnnotationRelease(const QPoint& pos)
     m_isArrowDragging = false;
     m_arrowDragHandle = GizmoHandle::None;
     setToolCursor();
-    updateAllSurfaces();
+    requestLocalizedToolRepaint();
     return true;
 }
 
@@ -2194,14 +2271,14 @@ bool ScreenCanvasSession::handlePolylineAnnotationPress(const QPoint& pos)
             m_isPolylineDragging = true;
             m_activePolylineVertexIndex = vertexIndex;
             m_dragStartPos = pos;
-            updateAllSurfaces();
+            requestLocalizedToolRepaint();
             return true;
         }
         if (vertexIndex == -1) {
             m_isPolylineDragging = true;
             m_activePolylineVertexIndex = -1;
             m_dragStartPos = pos;
-            updateAllSurfaces();
+            requestLocalizedToolRepaint();
             return true;
         }
     }
@@ -2220,7 +2297,7 @@ bool ScreenCanvasSession::handlePolylineAnnotationPress(const QPoint& pos)
             }
         }
 
-        updateAllSurfaces();
+        requestLocalizedToolRepaint();
         return true;
     }
 
@@ -2246,7 +2323,7 @@ bool ScreenCanvasSession::handlePolylineAnnotationMove(const QPoint& pos)
         m_dragStartPos = pos;
     }
 
-    updateAllSurfaces();
+    requestLocalizedToolRepaint();
     return true;
 }
 
@@ -2260,7 +2337,7 @@ bool ScreenCanvasSession::handlePolylineAnnotationRelease(const QPoint& pos)
     m_isPolylineDragging = false;
     m_activePolylineVertexIndex = -1;
     setToolCursor();
-    updateAllSurfaces();
+    requestLocalizedToolRepaint();
     return true;
 }
 
