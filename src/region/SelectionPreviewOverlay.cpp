@@ -14,7 +14,7 @@
 
 namespace {
 
-constexpr qreal kSelectionBorderWidth = 2.0;
+constexpr qreal kSelectionBorderPhysicalWidth = 1.0;
 constexpr int kSelectionHandleDiameter = 8;
 constexpr int kSelectionHandleRadius = kSelectionHandleDiameter / 2;
 constexpr int kSelectionChromeMargin = kSelectionHandleRadius + 1;
@@ -25,13 +25,9 @@ constexpr int kDimensionPanelInset = 5;
 
 QRectF alignedSelectionBorderRect(const QRect& selectionRect, qreal penWidth, qreal dpr)
 {
-    QRectF borderRect = QRectF(selectionRect.normalized()).adjusted(0.5, 0.5, -0.5, -0.5);
-    const int physicalPenWidth = qMax(1, qRound(penWidth * dpr));
-    if ((physicalPenWidth % 2) != 0) {
-        const qreal offset = 0.5 / qMax(dpr, 1.0);
-        borderRect.translate(offset, offset);
-    }
-    return borderRect;
+    Q_UNUSED(penWidth);
+    const qreal inset = 0.5 / qMax(dpr, 1.0);
+    return QRectF(selectionRect.normalized()).adjusted(inset, inset, -inset, -inset);
 }
 
 QRect selectionChromeBounds(const QRect& selectionRect)
@@ -197,17 +193,22 @@ void SelectionPreviewOverlay::paintEvent(QPaintEvent* event)
     const int maxRadius = qMin(localSelectionRect.width(), localSelectionRect.height()) / 2;
     const int radius = qMin(m_cornerRadius, maxRadius);
 
-    QPen borderPen(QColor(0, 174, 255), kSelectionBorderWidth);
+    QPen borderPen(QColor(0, 174, 255), kSelectionBorderPhysicalWidth / m_devicePixelRatio);
     borderPen.setJoinStyle(Qt::MiterJoin);
     borderPen.setCapStyle(Qt::SquareCap);
     painter.setPen(borderPen);
     painter.setBrush(Qt::NoBrush);
     const QRectF borderRect = alignedSelectionBorderRect(localSelectionRect, borderPen.widthF(), m_devicePixelRatio);
+    painter.save();
+    if (radius == 0) {
+        painter.setRenderHint(QPainter::Antialiasing, false);
+    }
     if (radius > 0) {
         painter.drawRoundedRect(borderRect, radius, radius);
     } else {
         painter.drawRect(borderRect);
     }
+    painter.restore();
 
     painter.setBrush(QColor(0, 174, 255));
     painter.setPen(Qt::white);
