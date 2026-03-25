@@ -32,6 +32,7 @@ constexpr int kDimensionPanelHeight = 28;
 constexpr int kDimensionPanelPadding = 24;
 constexpr int kDimensionPanelTopGap = 8;
 constexpr int kDimensionPanelInset = 5;
+const QColor kRegionDimColor(0, 0, 0, 100);
 
 }
 
@@ -108,8 +109,25 @@ void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QR
         ? QRegion(m_parentWidget->rect())
         : dirtyRegion;
     const QRect updateBounds = updateRegion.boundingRect();
+    const QRect selectionRect = m_selectionManager->selectionRect();
+    const bool singleRegionFastPath = !m_multiRegionMode && !background.isNull();
 
-    if (!background.isNull()) {
+    if (singleRegionFastPath) {
+        ensureDimmedBackgroundCache(background);
+        drawBackgroundTiles(painter, m_dimmedBackgroundCache, updateRegion);
+
+        QRegion clearRegion;
+        if (m_selectionManager->hasActiveSelection() && selectionRect.isValid()) {
+            clearRegion = updateRegion.intersected(QRegion(selectionRect.normalized()));
+        } else if (!m_highlightedWindowRect.isNull()) {
+            clearRegion = updateRegion.intersected(QRegion(m_highlightedWindowRect));
+        }
+
+        if (!clearRegion.isEmpty()) {
+            drawBackgroundTiles(painter, background, clearRegion);
+        }
+    }
+    else if (!background.isNull()) {
         const qreal dpr = background.devicePixelRatio();
 #ifdef Q_OS_WIN
 #ifndef QT_NO_DEBUG
@@ -125,27 +143,13 @@ void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QR
         }
 #endif
 #endif
-        for (QRegion::const_iterator it = updateRegion.begin(); it != updateRegion.end(); ++it) {
-            const QRect updateRect = *it;
-            if (!updateRect.isValid() || updateRect.isEmpty()) {
-                continue;
-            }
-            const QRect sourceRect =
-                CoordinateHelper::toPhysicalCoveringRect(updateRect, dpr).intersected(background.rect());
-            if (!sourceRect.isValid() || sourceRect.isEmpty()) {
-                continue;
-            }
-            const QRectF targetRect(
-                static_cast<qreal>(sourceRect.x()) / dpr,
-                static_cast<qreal>(sourceRect.y()) / dpr,
-                static_cast<qreal>(sourceRect.width()) / dpr,
-                static_cast<qreal>(sourceRect.height()) / dpr);
-            painter.drawPixmap(targetRect, background, QRectF(sourceRect));
-        }
+        drawBackgroundTiles(painter, background, updateRegion);
     }
 
-    // Draw dimmed overlay
-    drawOverlay(painter);
+    if (!singleRegionFastPath) {
+        // Draw dimmed overlay when the host cannot reuse a cached dimmed background.
+        drawOverlay(painter);
+    }
 
     // Draw detected window highlight (only during hover, before any selection)
     if (!m_selectionManager->hasActiveSelection()) {
@@ -153,7 +157,6 @@ void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QR
     }
 
     // Draw selection if active or complete
-    QRect selectionRect = m_selectionManager->selectionRect();
     if (m_selectionManager->hasActiveSelection() && selectionRect.isValid()) {
         drawSelection(painter);
         drawDimensionInfo(painter);
@@ -176,10 +179,63 @@ void RegionPainter::drawDimmingOverlay(QPainter& painter, const QRect& clearRect
     painter.fillRect(QRect(clearRect.right() + 1, clearRect.top(), w - clearRect.right() - 1, clearRect.height()), dimColor);  // Right
 }
 
+void RegionPainter::ensureDimmedBackgroundCache(const QPixmap& background) const
+{
+    const qreal dpr = background.devicePixelRatio();
+    const qint64 cacheKey = background.cacheKey();
+    if (!m_dimmedBackgroundCache.isNull() &&
+        m_dimmedBackgroundCacheKey == cacheKey &&
+        qFuzzyCompare(m_dimmedBackgroundCacheDpr, dpr)) {
+        return;
+    }
+
+    QPixmap dimmed(background.size());
+    dimmed.setDevicePixelRatio(dpr);
+    dimmed.fill(Qt::transparent);
+
+    QPainter dimPainter(&dimmed);
+    dimPainter.drawPixmap(QPoint(0, 0), background);
+    dimPainter.fillRect(
+        QRectF(0, 0,
+               static_cast<qreal>(background.width()) / dpr,
+               static_cast<qreal>(background.height()) / dpr),
+        kRegionDimColor);
+
+    m_dimmedBackgroundCache = dimmed;
+    m_dimmedBackgroundCacheKey = cacheKey;
+    m_dimmedBackgroundCacheDpr = dpr;
+}
+
+void RegionPainter::drawBackgroundTiles(QPainter& painter,
+                                        const QPixmap& background,
+                                        const QRegion& updateRegion) const
+{
+    if (background.isNull() || updateRegion.isEmpty()) {
+        return;
+    }
+
+    const qreal dpr = background.devicePixelRatio();
+    for (QRegion::const_iterator it = updateRegion.begin(); it != updateRegion.end(); ++it) {
+        const QRect updateRect = *it;
+        if (!updateRect.isValid() || updateRect.isEmpty()) {
+            continue;
+        }
+        const QRect sourceRect =
+            CoordinateHelper::toPhysicalCoveringRect(updateRect, dpr).intersected(background.rect());
+        if (!sourceRect.isValid() || sourceRect.isEmpty()) {
+            continue;
+        }
+        const QRectF targetRect(
+            static_cast<qreal>(sourceRect.x()) / dpr,
+            static_cast<qreal>(sourceRect.y()) / dpr,
+            static_cast<qreal>(sourceRect.width()) / dpr,
+            static_cast<qreal>(sourceRect.height()) / dpr);
+        painter.drawPixmap(targetRect, background, QRectF(sourceRect));
+    }
+}
+
 void RegionPainter::drawOverlay(QPainter& painter)
 {
-    QColor dimColor(0, 0, 0, 100);
-
     QRect sel = m_selectionManager->selectionRect();
     bool hasSelection = m_selectionManager->hasActiveSelection() && sel.isValid();
 
@@ -200,18 +256,18 @@ void RegionPainter::drawOverlay(QPainter& painter)
             selPath.addRect(sel);
             dimPath = dimPath.subtracted(selPath);
         }
-        painter.fillPath(dimPath, dimColor);
+        painter.fillPath(dimPath, kRegionDimColor);
         return;
     }
 
     if (hasSelection) {
-        drawDimmingOverlay(painter, sel, dimColor);
+        drawDimmingOverlay(painter, sel, kRegionDimColor);
     }
     else if (!m_highlightedWindowRect.isNull()) {
-        drawDimmingOverlay(painter, m_highlightedWindowRect, dimColor);
+        drawDimmingOverlay(painter, m_highlightedWindowRect, kRegionDimColor);
     }
     else {
-        painter.fillRect(m_parentWidget->rect(), dimColor);
+        painter.fillRect(m_parentWidget->rect(), kRegionDimColor);
     }
 }
 

@@ -10,6 +10,7 @@
 #include <QRectF>
 #include <QRegion>
 #include <QSize>
+#include <QtGlobal>
 
 class QPainter;
 class QWidget;
@@ -120,6 +121,14 @@ private:
     QRect m_replacePreviewRect;
 
     QRect m_lastDimensionInfoRect;
+
+    mutable QPixmap m_dimmedBackgroundCache;
+    mutable qint64 m_dimmedBackgroundCacheKey = 0;
+    mutable qreal m_dimmedBackgroundCacheDpr = 0.0;
+
+    void ensureDimmedBackgroundCache(const QPixmap& background) const;
+    void drawBackgroundTiles(QPainter& painter, const QPixmap& background,
+                             const QRegion& updateRegion) const;
 };
 
 #endif // REGIONPAINTER_H

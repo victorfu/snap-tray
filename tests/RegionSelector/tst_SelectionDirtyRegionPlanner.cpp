@@ -16,6 +16,7 @@ class tst_SelectionDirtyRegionPlanner : public QObject
 private slots:
     void testMagnifierRectFlipsNearEdges();
     void testSelectionDragIncludesExpandedSelectionRects();
+    void testSelectionDragSkipsStableInterior();
     void testSelectionDragIncludesToolbarAndRegionControlHistory();
     void testSelectionDragSuppressionSkipsFloatingUiRects();
     void testHoverRegionIncludesOldAndNewMagnifier();
@@ -63,6 +64,26 @@ void tst_SelectionDirtyRegionPlanner::testSelectionDragIncludesExpandedSelection
         -dimPadding, -dimPadding, dimPadding, dimPadding)));
     QVERIFY(dirty.contains(lastDimInfo.adjusted(
         -dimPadding, -dimPadding, dimPadding, dimPadding)));
+
+    QVERIFY(dirty.contains(QRect(340, 240, 20, 20))); // Current-only selection growth.
+    QVERIFY(dirty.contains(QRect(140, 110, 20, 20))); // Last-only selection area.
+}
+
+void tst_SelectionDirtyRegionPlanner::testSelectionDragSkipsStableInterior()
+{
+    SelectionDirtyRegionPlanner planner;
+    SelectionDirtyRegionPlanner::SelectionDragParams params;
+
+    params.currentSelectionRect = QRect(100, 100, 320, 220);
+    params.lastSelectionRect = QRect(110, 110, 320, 220);
+    params.currentCursorPos = QPoint(420, 320);
+    params.lastCursorPos = QPoint(430, 330);
+    params.viewportSize = QSize(1600, 900);
+
+    const QRegion dirty = planner.planSelectionDragRegion(params);
+
+    const QRect stableInterior(180, 180, 80, 60);
+    QVERIFY(!dirty.contains(stableInterior));
 }
 
 void tst_SelectionDirtyRegionPlanner::testSelectionDragIncludesToolbarAndRegionControlHistory()
