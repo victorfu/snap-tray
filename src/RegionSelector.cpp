@@ -124,6 +124,24 @@ bool shouldSuppressCompletedSelectionDragUi(const SelectionStateManager* selecti
 
 constexpr int kInitialRevealTimeoutMs = 120;
 constexpr int kAnnotationInteractionVisualMargin = 52;
+constexpr int kWindowHighlightRepaintPadding = 2;
+
+QRect paddedWindowHighlightVisualRect(RegionPainter* painter, const QRect& windowRect)
+{
+    if (!painter || windowRect.isNull()) {
+        return {};
+    }
+
+    const QRect visualRect = painter->getWindowHighlightVisualRect(windowRect);
+    if (!visualRect.isValid() || visualRect.isEmpty()) {
+        return visualRect;
+    }
+
+    return visualRect.adjusted(-kWindowHighlightRepaintPadding,
+                               -kWindowHighlightRepaintPadding,
+                               kWindowHighlightRepaintPadding,
+                               kWindowHighlightRepaintPadding);
+}
 
 } // namespace
 
@@ -854,7 +872,7 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, [this](const QRect& previousHighlightRect) {
             QRect oldVisualRect;
             if (!previousHighlightRect.isNull()) {
-                oldVisualRect = m_painter->getWindowHighlightVisualRect(previousHighlightRect);
+                oldVisualRect = paddedWindowHighlightVisualRect(m_painter, previousHighlightRect);
             }
 
             m_inputState.highlightedWindowRect = QRect();
@@ -2311,13 +2329,15 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos,
 
         if (localBounds != m_inputState.highlightedWindowRect) {
             // Calculate old visual rect for partial update
-            QRect oldVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect);
+            QRect oldVisualRect = paddedWindowHighlightVisualRect(
+                m_painter, m_inputState.highlightedWindowRect);
 
             m_inputState.highlightedWindowRect = localBounds;
             m_detectedWindow = detected;
 
             // Calculate new visual rect (use clipped local bounds, not global bounds)
-            QRect newVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect);
+            QRect newVisualRect = paddedWindowHighlightVisualRect(
+                m_painter, m_inputState.highlightedWindowRect);
 
             // Update only changed regions
             if (!oldVisualRect.isNull()) update(oldVisualRect);
@@ -2328,7 +2348,8 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos,
         m_inputState.hasDetectedWindow = false;
         if (!m_inputState.highlightedWindowRect.isNull()) {
             // Calculate old visual rect for partial update (use clipped local bounds)
-            QRect oldVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect);
+            QRect oldVisualRect = paddedWindowHighlightVisualRect(
+                m_painter, m_inputState.highlightedWindowRect);
 
             m_inputState.highlightedWindowRect = QRect();
             m_detectedWindow.reset();
