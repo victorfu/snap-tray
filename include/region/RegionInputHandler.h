@@ -107,6 +107,7 @@ private:
     void clearDetectionAndNotify();
     void handleSelectionMove(const QPoint& pos);
     void handleAnnotationMove(const QPoint& pos);
+    void handleAnnotationMove(const QPointF& pos);
     void handleHoverMove(const QPoint& pos, Qt::MouseButtons buttons);
     void handleThrottledUpdate();
     void updateDragFramePump();
@@ -122,7 +123,9 @@ private:
 
     // Annotation helpers
     void startAnnotation(const QPoint& pos);
+    void startAnnotation(const QPointF& pos);
     void updateAnnotation(const QPoint& pos);
+    void updateAnnotation(const QPointF& pos);
     void finishAnnotation();
     void beginSelectionDrag();
     void clearSelectionDrag();
@@ -163,6 +166,7 @@ private:
     QRect m_lastMagnifierRect;
     QRect m_lastToolbarRect;
     bool m_pendingWindowClickActive = false;
+    QPointF m_lastToolEventPos;
 
     // Emoji sticker transformation state
     bool m_isEmojiDragging = false;

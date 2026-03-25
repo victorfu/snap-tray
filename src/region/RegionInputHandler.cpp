@@ -140,6 +140,7 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
     }
 
     m_currentModifiers = event->modifiers();
+    m_lastToolEventPos = event->position();
 
     if (event->button() == Qt::LeftButton) {
         if (m_selectionManager->isComplete()) {
@@ -229,6 +230,7 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
     }
 
     m_currentModifiers = event->modifiers();
+    m_lastToolEventPos = event->position();
     state().currentPoint = event->pos();
 
     // Race condition recovery: mouse button was already pressed when window appeared
@@ -311,7 +313,7 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
         m_selectionManager->updateMove(event->pos());
     }
     else if (state().isDrawing) {
-        handleAnnotationMove(event->pos());
+        handleAnnotationMove(event->position());
     }
     else if (m_selectionManager->isComplete() ||
         (state().multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0)) {
@@ -335,6 +337,7 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
     }
 
     m_currentModifiers = event->modifiers();
+    m_lastToolEventPos = event->position();
 
     if (event->button() == Qt::LeftButton) {
         // Handle text editor drag release
@@ -817,6 +820,11 @@ void RegionInputHandler::handleSelectionMove(const QPoint& pos)
 
 void RegionInputHandler::handleAnnotationMove(const QPoint& pos)
 {
+    handleAnnotationMove(QPointF(pos));
+}
+
+void RegionInputHandler::handleAnnotationMove(const QPointF& pos)
+{
     updateAnnotation(pos);
 
     if (state().currentTool == ToolId::Mosaic) {
@@ -1216,6 +1224,11 @@ void RegionInputHandler::handleAnnotationRelease()
 
 void RegionInputHandler::startAnnotation(const QPoint& pos)
 {
+    startAnnotation(m_lastToolEventPos.isNull() ? QPointF(pos) : m_lastToolEventPos);
+}
+
+void RegionInputHandler::startAnnotation(const QPointF& pos)
+{
     if (ToolTraits::isToolManagerHandledTool(state().currentTool)) {
         m_toolManager->setColor(state().annotationColor);
         // Don't overwrite width for StepBadge - it uses a separate radius setting
@@ -1242,6 +1255,11 @@ void RegionInputHandler::startAnnotation(const QPoint& pos)
 
 void RegionInputHandler::updateAnnotation(const QPoint& pos)
 {
+    updateAnnotation(m_lastToolEventPos.isNull() ? QPointF(pos) : m_lastToolEventPos);
+}
+
+void RegionInputHandler::updateAnnotation(const QPointF& pos)
+{
     if (ToolTraits::isToolManagerHandledTool(state().currentTool)) {
         m_toolManager->handleMouseMove(pos, m_currentModifiers);
     }
@@ -1250,7 +1268,9 @@ void RegionInputHandler::updateAnnotation(const QPoint& pos)
 void RegionInputHandler::finishAnnotation()
 {
     if (ToolTraits::isToolManagerHandledTool(state().currentTool)) {
-        m_toolManager->handleMouseRelease(state().currentPoint, m_currentModifiers);
+        const QPointF releasePos =
+            m_lastToolEventPos.isNull() ? QPointF(state().currentPoint) : m_lastToolEventPos;
+        m_toolManager->handleMouseRelease(releasePos, m_currentModifiers);
         state().isDrawing = m_toolManager->isDrawing();
     }
     else {

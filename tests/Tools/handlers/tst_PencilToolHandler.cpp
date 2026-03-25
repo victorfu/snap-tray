@@ -48,6 +48,7 @@ private slots:
     void testDrawPreview_WhileDrawing();
     void testPreviewBounds_DuringAndAfterDrawing();
     void testPreviewBounds_StaysLocalAsStrokeGrows();
+    void testFloatInputPreservesFractionalPoints();
 
     // Cancellation tests
     void testCancelDrawing();
@@ -256,6 +257,29 @@ void TestPencilToolHandler::testPreviewBounds_StaysLocalAsStrokeGrows()
     QVERIFY(previewBounds.isValid());
     QVERIFY(!previewBounds.isEmpty());
     QVERIFY(previewBounds.width() < 120);
+}
+
+void TestPencilToolHandler::testFloatInputPreservesFractionalPoints()
+{
+    m_handler->onMousePressF(m_context, QPointF(10.25, 10.75));
+    m_handler->onMouseMoveF(m_context, QPointF(13.5, 14.25));
+    m_handler->onMouseReleaseF(m_context, QPointF(17.75, 18.5));
+
+    QCOMPARE(m_layer->itemCount(), size_t(1));
+    auto* stroke = dynamic_cast<PencilStroke*>(m_layer->itemAt(0));
+    QVERIFY(stroke != nullptr);
+    const QVector<QPointF> points = stroke->points();
+    QVERIFY(!points.isEmpty());
+
+    bool hasFractionalPoint = false;
+    for (const QPointF& point : points) {
+        if (!qFuzzyCompare(point.x(), qRound(point.x())) ||
+            !qFuzzyCompare(point.y(), qRound(point.y()))) {
+            hasFractionalPoint = true;
+            break;
+        }
+    }
+    QVERIFY(hasFractionalPoint);
 }
 
 // ============================================================================

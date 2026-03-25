@@ -1272,6 +1272,7 @@ void ScreenCanvasSession::handleSurfaceMousePress(ScreenCanvas* surface, QMouseE
         }
 
         const QPoint annotationPos = surface->toAnnotationPoint(event->position().toPoint());
+        const QPointF annotationPosF = surface->toAnnotationPointF(event->position());
 
         if (m_laserPointerActive) {
             beginMouseGrab(surface);
@@ -1282,7 +1283,7 @@ void ScreenCanvasSession::handleSurfaceMousePress(ScreenCanvas* surface, QMouseE
 
         if (m_toolManager && m_toolManager->isDrawing()) {
             beginMouseGrab(surface);
-            m_toolManager->handleMousePress(annotationPos, event->modifiers());
+            m_toolManager->handleMousePress(annotationPosF, event->modifiers());
             updateAllSurfaces();
             return;
         }
@@ -1338,7 +1339,7 @@ void ScreenCanvasSession::handleSurfaceMousePress(ScreenCanvas* surface, QMouseE
 
         if (!m_laserPointerActive && isDrawingTool(m_currentToolId)) {
             beginMouseGrab(surface);
-            m_toolManager->handleMousePress(annotationPos, event->modifiers());
+            m_toolManager->handleMousePress(annotationPosF, event->modifiers());
             updateAllSurfaces();
         }
     } else if (event->button() == Qt::RightButton) {
@@ -1365,6 +1366,7 @@ void ScreenCanvasSession::handleSurfaceMouseMove(ScreenCanvas* surface, QMouseEv
     }
 
     const QPoint annotationPos = annotationPointForEvent(inputSurface, event);
+    const QPointF annotationPosF = inputSurface->toAnnotationPointF(event->position());
 
     if (m_laserPointerActive && m_laserRenderer->isDrawing()) {
         m_laserRenderer->updateDrawing(annotationPos);
@@ -1399,7 +1401,7 @@ void ScreenCanvasSession::handleSurfaceMouseMove(ScreenCanvas* surface, QMouseEv
     }
 
     if (m_toolManager && m_toolManager->isDrawing()) {
-        m_toolManager->handleMouseMove(annotationPos, event->modifiers());
+        m_toolManager->handleMouseMove(annotationPosF, event->modifiers());
         updateAllSurfaces();
     } else {
         syncFloatingUiCursor(surface);
@@ -1424,6 +1426,7 @@ void ScreenCanvasSession::handleSurfaceMouseRelease(ScreenCanvas* surface, QMous
     }
 
     const QPoint annotationPos = annotationPointForEvent(inputSurface, event);
+    const QPointF annotationPosF = inputSurface->toAnnotationPointF(event->position());
 
     if (m_laserPointerActive && m_laserRenderer->isDrawing()) {
         m_laserRenderer->stopDrawing();
@@ -1474,7 +1477,7 @@ void ScreenCanvasSession::handleSurfaceMouseRelease(ScreenCanvas* surface, QMous
         (m_toolManager->isDrawing() ||
          m_currentToolId == ToolId::StepBadge ||
          m_currentToolId == ToolId::EmojiSticker)) {
-        m_toolManager->handleMouseRelease(annotationPos, event->modifiers());
+        m_toolManager->handleMouseRelease(annotationPosF, event->modifiers());
         updateAllSurfaces();
     }
 

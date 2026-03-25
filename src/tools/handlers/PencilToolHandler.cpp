@@ -37,16 +37,18 @@ QRect tailDirtyRect(const QVector<QPointF>& points, int width, int tailPointCoun
 } // namespace
 
 void PencilToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
+    onMousePressF(ctx, QPointF(pos));
+}
+
+void PencilToolHandler::onMousePressF(ToolContext* ctx, const QPointF& pos) {
     m_isDrawing = true;
     m_currentPath.clear();
-
-    QPointF startPoint(pos);
-    m_currentPath.append(startPoint);
+    m_currentPath.append(pos);
 
     // Initialize smoothing state
-    m_smoothedPoint = startPoint;
+    m_smoothedPoint = pos;
     m_smoothedVelocity = QPointF(0, 0);
-    m_lastRawPoint = startPoint;
+    m_lastRawPoint = pos;
     m_hasSmoothedPoint = true;
 
     m_currentStroke = std::make_unique<PencilStroke>(
@@ -58,11 +60,15 @@ void PencilToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
 }
 
 void PencilToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
+    onMouseMoveF(ctx, QPointF(pos));
+}
+
+void PencilToolHandler::onMouseMoveF(ToolContext* ctx, const QPointF& pos) {
     if (!m_isDrawing || !m_currentStroke || !m_hasSmoothedPoint) {
         return;
     }
 
-    QPointF rawPoint(pos);
+    const QPointF rawPoint = pos;
 
     // Calculate raw velocity (displacement since last event)
     QPointF rawVelocity = rawPoint - m_lastRawPoint;
@@ -113,12 +119,16 @@ void PencilToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
 }
 
 void PencilToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
+    onMouseReleaseF(ctx, QPointF(pos));
+}
+
+void PencilToolHandler::onMouseReleaseF(ToolContext* ctx, const QPointF& pos) {
     if (!m_isDrawing) {
         return;
     }
 
     // Add final point (use raw position for accurate endpoint)
-    QPointF finalPoint(pos);
+    const QPointF finalPoint = pos;
     if (m_currentPath.isEmpty() || m_currentPath.last() != finalPoint) {
         m_currentPath.append(finalPoint);
         if (m_currentStroke) {

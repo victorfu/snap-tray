@@ -23,8 +23,11 @@ public:
     ToolId toolId() const override { return ToolId::Pencil; }
 
     void onMousePress(ToolContext* ctx, const QPoint& pos) override;
+    void onMousePressF(ToolContext* ctx, const QPointF& pos) override;
     void onMouseMove(ToolContext* ctx, const QPoint& pos) override;
+    void onMouseMoveF(ToolContext* ctx, const QPointF& pos) override;
     void onMouseRelease(ToolContext* ctx, const QPoint& pos) override;
+    void onMouseReleaseF(ToolContext* ctx, const QPointF& pos) override;
 
     void drawPreview(QPainter& painter) const override;
     QRect previewBounds() const override;

@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QPoint>
+#include <QPointF>
 #include <QRect>
 #include <memory>
 #include <map>
@@ -68,8 +69,11 @@ public:
 
     // Event dispatch methods
     void handleMousePress(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    void handleMousePress(const QPointF& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
     void handleMouseMove(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    void handleMouseMove(const QPointF& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
     void handleMouseRelease(const QPoint& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    void handleMouseRelease(const QPointF& pos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
     void handleDoubleClick(const QPoint& pos);
 
     // Global text interaction dispatch (works regardless of current tool)

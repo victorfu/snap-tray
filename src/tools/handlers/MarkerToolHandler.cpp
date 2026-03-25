@@ -39,9 +39,13 @@ QRect tailDirtyRect(const QVector<QPointF>& points, int width, int tailPointCoun
 } // namespace
 
 void MarkerToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
+    onMousePressF(ctx, QPointF(pos));
+}
+
+void MarkerToolHandler::onMousePressF(ToolContext* ctx, const QPointF& pos) {
     m_isDrawing = true;
     m_currentPath.clear();
-    m_currentPath.append(QPointF(pos));
+    m_currentPath.append(pos);
 
     m_currentStroke = std::make_unique<MarkerStroke>(
         m_currentPath, ctx->color, kMarkerWidth
@@ -52,14 +56,18 @@ void MarkerToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
 }
 
 void MarkerToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
+    onMouseMoveF(ctx, QPointF(pos));
+}
+
+void MarkerToolHandler::onMouseMoveF(ToolContext* ctx, const QPointF& pos) {
     if (!m_isDrawing || !m_currentStroke) {
         return;
     }
 
     const QRect oldTailBounds = tailDirtyRect(m_currentPath, kMarkerWidth);
 
-    m_currentPath.append(QPointF(pos));
-    m_currentStroke->addPoint(QPointF(pos));
+    m_currentPath.append(pos);
+    m_currentStroke->addPoint(pos);
     const QRect newTailBounds = tailDirtyRect(m_currentPath, kMarkerWidth);
     m_previewDirtyRect = oldTailBounds.united(newTailBounds);
 
@@ -67,14 +75,18 @@ void MarkerToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
 }
 
 void MarkerToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
+    onMouseReleaseF(ctx, QPointF(pos));
+}
+
+void MarkerToolHandler::onMouseReleaseF(ToolContext* ctx, const QPointF& pos) {
     if (!m_isDrawing) {
         return;
     }
 
     // Add final point if different from last
-    if (m_currentPath.isEmpty() || m_currentPath.last() != QPointF(pos)) {
+    if (m_currentPath.isEmpty() || m_currentPath.last() != pos) {
         if (m_currentStroke) {
-            m_currentStroke->addPoint(QPointF(pos));
+            m_currentStroke->addPoint(pos);
         }
     }
 
