@@ -6,6 +6,7 @@
 #include <QWidget>
 
 #include "region/RegionPainter.h"
+#include "region/SelectionDimensionLabel.h"
 #include "region/SelectionStateManager.h"
 
 namespace {
@@ -115,6 +116,7 @@ class tst_RegionPainterChrome : public QObject
 
 private slots:
     void testDetectedWindowChromeMatchesSelectionChrome();
+    void testSelectionDimensionLabelUsesPlatformUnits();
     void testWindowHighlightVisualRectIncludesHandlesAndPanel();
     void testFractionalDprPartialBackgroundRepaintMatchesFullPaint();
     void testFractionalDprSelectionTransitionNeedsFullRepaint();
@@ -136,6 +138,32 @@ void tst_RegionPainterChrome::testDetectedWindowChromeMatchesSelectionChrome()
         paintImage(painter, selectionManager, hostWidget, false);
 
     QCOMPARE(detectedImage, selectionImage);
+}
+
+void tst_RegionPainterChrome::testSelectionDimensionLabelUsesPlatformUnits()
+{
+    const QRect logicalRect(1, 1, 3, 3);
+    const QSize physicalSize(5120, 2820);
+    const auto metrics = SelectionDimensionLabel::displayMetrics(logicalRect, 1.5);
+
+#ifdef Q_OS_MACOS
+    QCOMPARE(metrics.size, QSize(3, 3));
+    QCOMPARE(metrics.unit, QStringLiteral("pt"));
+    QCOMPARE(SelectionDimensionLabel::displayMetrics(physicalSize, 2.0).size, QSize(2560, 1410));
+    QCOMPARE(SelectionDimensionLabel::displayMetrics(physicalSize, 2.0).unit, QStringLiteral("pt"));
+    QCOMPARE(SelectionDimensionLabel::label(QRect(0, 0, 2560, 1410), 2.0),
+             QStringLiteral("2560 x 1410 pt"));
+    QCOMPARE(SelectionDimensionLabel::label(physicalSize, 2.0), QStringLiteral("2560 x 1410 pt"));
+    QCOMPARE(SelectionDimensionLabel::sampleLabel(), QStringLiteral("99999 x 99999 pt"));
+#else
+    QCOMPARE(metrics.size, QSize(5, 5));
+    QCOMPARE(metrics.unit, QStringLiteral("px"));
+    QCOMPARE(SelectionDimensionLabel::displayMetrics(physicalSize, 2.0).size, physicalSize);
+    QCOMPARE(SelectionDimensionLabel::displayMetrics(physicalSize, 2.0).unit, QStringLiteral("px"));
+    QCOMPARE(SelectionDimensionLabel::label(logicalRect, 1.5), QStringLiteral("5 x 5 px"));
+    QCOMPARE(SelectionDimensionLabel::label(physicalSize, 2.0), QStringLiteral("5120 x 2820 px"));
+    QCOMPARE(SelectionDimensionLabel::sampleLabel(), QStringLiteral("99999 x 99999 px"));
+#endif
 }
 
 void tst_RegionPainterChrome::testWindowHighlightVisualRectIncludesHandlesAndPanel()

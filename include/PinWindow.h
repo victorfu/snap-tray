@@ -225,7 +225,7 @@ private:
     // Info methods
     void copyAllInfo();
     void refreshInfoMenu();
-    QString currentPhysicalSizeText() const;
+    QString currentDisplaySizeText() const;
 
     // Cache folder methods
     static QString cacheFolderPath();

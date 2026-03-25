@@ -56,6 +56,7 @@
 #include "InlineTextEditor.h"
 #include "region/TextAnnotationEditor.h"
 #include "region/RegionSettingsHelper.h"
+#include "region/SelectionDimensionLabel.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "TransformationGizmo.h"
 #include "annotations/ArrowAnnotation.h"
@@ -1161,7 +1162,7 @@ void PinWindow::createContextMenu()
         });
 
     // Info submenu - displays image properties
-    m_infoMenu = m_contextMenu->addMenu(currentPhysicalSizeText());
+    m_infoMenu = m_contextMenu->addMenu(currentDisplaySizeText());
 
     // Copy all info action
     QAction* copyAllInfoAction = m_infoMenu->addAction(tr("Copy All"));
@@ -1178,7 +1179,7 @@ void PinWindow::createContextMenu()
         return action;
         };
 
-    m_sizeInfoAction = addInfoItem(tr("Size"), currentPhysicalSizeText());
+    m_sizeInfoAction = addInfoItem(tr("Size"), currentDisplaySizeText());
     m_zoomInfoAction = addInfoItem(tr("Zoom"), QString("%1%").arg(qRound(m_zoomLevel * 100)));
     m_rotationInfoAction = addInfoItem(tr("Rotation"), QString::fromUtf8("%1°").arg(m_rotationAngle));
     m_opacityInfoAction = addInfoItem(tr("Opacity"), QString("%1%").arg(qRound(m_opacity * 100)));
@@ -1785,7 +1786,7 @@ void PinWindow::updateOcrLanguages(const QStringList& languages)
 void PinWindow::copyAllInfo()
 {
     QStringList info;
-    info << tr("Size: %1").arg(currentPhysicalSizeText());
+    info << tr("Size: %1").arg(currentDisplaySizeText());
     info << tr("Zoom: %1%").arg(qRound(m_zoomLevel * 100));
     info << tr("Rotation: %1°").arg(m_rotationAngle);
     info << tr("Opacity: %1%").arg(qRound(m_opacity * 100));
@@ -1795,10 +1796,15 @@ void PinWindow::copyAllInfo()
     QGuiApplication::clipboard()->setText(info.join("\n"));
 }
 
-QString PinWindow::currentPhysicalSizeText() const
+QString PinWindow::currentDisplaySizeText() const
 {
     const QSize physicalSize = physicalSizeFromPixmap(m_originalPixmap);
-    return tr("%1 × %2 px").arg(physicalSize.width()).arg(physicalSize.height());
+    qreal dpr = m_originalPixmap.devicePixelRatio();
+    if (dpr <= 0.0) {
+        dpr = 1.0;
+    }
+    return SelectionDimensionLabel::label(physicalSize, dpr).replace(QStringLiteral(" x "),
+                                                                     QStringLiteral(" × "));
 }
 
 void PinWindow::refreshInfoMenu()
@@ -1807,7 +1813,7 @@ void PinWindow::refreshInfoMenu()
         return;
     }
 
-    const QString sizeText = currentPhysicalSizeText();
+    const QString sizeText = currentDisplaySizeText();
     m_infoMenu->setTitle(sizeText);
 
     auto updateInfoAction = [](QAction* action, const QString& label, const QString& value) {

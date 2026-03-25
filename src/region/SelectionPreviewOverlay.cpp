@@ -1,10 +1,10 @@
 #include "region/SelectionPreviewOverlay.h"
 
 #include "region/CapturePerfRecorder.h"
+#include "region/SelectionDimensionLabel.h"
 #include "GlassRenderer.h"
 #include "ToolbarStyle.h"
 #include "platform/WindowLevel.h"
-#include "utils/CoordinateHelper.h"
 
 #include <QFont>
 #include <QFontMetrics>
@@ -23,6 +23,18 @@ constexpr int kDimensionPanelHeight = 28;
 constexpr int kDimensionPanelPadding = 24;
 constexpr int kDimensionPanelTopGap = 8;
 constexpr int kDimensionPanelInset = 5;
+
+QColor dimensionLabelTextColor(const ToolbarStyleConfig& styleConfig)
+{
+    return styleConfig.glassBackgroundColor.lightness() < 128
+        ? QColor(255, 255, 255, 245)
+        : QColor(20, 20, 20, 235);
+}
+
+QColor dimensionLabelShadowColor(const QColor& textColor)
+{
+    return textColor.lightness() > 160 ? QColor(0, 0, 0, 160) : QColor(255, 255, 255, 110);
+}
 
 QRectF alignedSelectionBorderRect(const QRect& selectionRect, qreal penWidth, qreal dpr)
 {
@@ -45,17 +57,6 @@ QRect selectionChromeBounds(const QRect& selectionRect)
                         kSelectionChromeMargin, kSelectionChromeMargin);
 }
 
-QRect physicalSelectionRect(const QRect& selectionRect, qreal dpr)
-{
-    return CoordinateHelper::toPhysicalCoveringRect(selectionRect.normalized(), dpr);
-}
-
-QString selectionSizeLabel(const QRect& selectionRect, qreal dpr)
-{
-    const QSize physicalSize = physicalSelectionRect(selectionRect, dpr).size();
-    return QObject::tr("%1 x %2 px").arg(physicalSize.width()).arg(physicalSize.height());
-}
-
 QRect dimensionInfoPanelRect(const QRect& selectionRect,
                              const QString& label,
                              const QFont& baseFont,
@@ -70,7 +71,7 @@ QRect dimensionInfoPanelRect(const QRect& selectionRect,
     font.setPointSize(12);
     QFontMetrics fm(font);
 
-    const QString maxWidthText = QObject::tr("%1 x %2 px").arg(99999).arg(99999);
+    const QString maxWidthText = SelectionDimensionLabel::sampleLabel();
     const int fixedWidth = fm.horizontalAdvance(maxWidthText) + kDimensionPanelPadding;
     const int actualWidth = fm.horizontalAdvance(label) + kDimensionPanelPadding;
     const int width = qMax(fixedWidth, actualWidth);
@@ -115,7 +116,7 @@ QRect selectionVisualRect(const QRect& selectionRect, const QSize& viewportSize,
     font.setPointSize(12);
     const QRect dimRect = dimensionInfoPanelRect(
         selectionRect,
-        selectionSizeLabel(selectionRect, dpr),
+        SelectionDimensionLabel::label(selectionRect, dpr),
         font,
         viewportSize);
     return dimRect.isValid() ? chromeRect.united(dimRect) : chromeRect;
@@ -227,9 +228,10 @@ void SelectionPreviewOverlay::paintEvent(QPaintEvent* event)
     drawHandle(localSelectionRect.left(), localSelectionRect.center().y());
     drawHandle(localSelectionRect.right(), localSelectionRect.center().y());
 
-    const QString dimensions = selectionSizeLabel(m_selectionRect, m_devicePixelRatio);
+    const QString dimensions = SelectionDimensionLabel::label(m_selectionRect, m_devicePixelRatio);
     QFont font = painter.font();
     font.setPointSize(12);
+    font.setBold(true);
     painter.setFont(font);
     QRect dimRect = dimensionInfoPanelRect(
         m_selectionRect,
@@ -240,7 +242,10 @@ void SelectionPreviewOverlay::paintEvent(QPaintEvent* event)
 
     auto styleConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
     GlassRenderer::drawGlassPanel(painter, dimRect, styleConfig, 6);
-    painter.setPen(styleConfig.textColor);
+    const QColor textColor = dimensionLabelTextColor(styleConfig);
+    painter.setPen(dimensionLabelShadowColor(textColor));
+    painter.drawText(dimRect.translated(0, 1), Qt::AlignCenter, dimensions);
+    painter.setPen(textColor);
     painter.drawText(dimRect, Qt::AlignCenter, dimensions);
 }
 

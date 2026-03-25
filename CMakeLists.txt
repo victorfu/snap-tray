@@ -669,6 +669,7 @@ add_library(snaptray_ui STATIC
     src/region/StaticCaptureBackgroundWindow.cpp
     src/region/CaptureChromeWindow.cpp
     src/region/SelectionDimmingOverlay.cpp
+    src/region/SelectionDimensionLabel.cpp
     src/region/SelectionPreviewOverlay.cpp
     src/region/UpdateThrottler.cpp
     src/region/TextAnnotationEditor.cpp

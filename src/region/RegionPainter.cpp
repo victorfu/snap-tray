@@ -1,6 +1,7 @@
 #include "region/RegionPainter.h"
 #include "annotation/AnnotationRenderHelper.h"
 #include "region/CapturePerfRecorder.h"
+#include "region/SelectionDimensionLabel.h"
 #include "region/SelectionStateManager.h"
 #include "region/MultiRegionManager.h"
 #include "annotations/AnnotationLayer.h"
@@ -34,6 +35,18 @@ constexpr int kDimensionPanelPadding = 24;
 constexpr int kDimensionPanelTopGap = 8;
 constexpr int kDimensionPanelInset = 5;
 const QColor kRegionDimColor(0, 0, 0, 100);
+
+QColor dimensionLabelTextColor(const ToolbarStyleConfig& styleConfig)
+{
+    return styleConfig.glassBackgroundColor.lightness() < 128
+        ? QColor(255, 255, 255, 245)
+        : QColor(20, 20, 20, 235);
+}
+
+QColor dimensionLabelShadowColor(const QColor& textColor)
+{
+    return textColor.lightness() > 160 ? QColor(0, 0, 0, 160) : QColor(255, 255, 255, 110);
+}
 
 }
 
@@ -353,7 +366,7 @@ void RegionPainter::drawDimensionInfo(QPainter& painter)
         QRect activeInfoRect;
         const auto regions = m_multiRegionManager->regions();
         for (const auto& region : regions) {
-            const QString dimensions = selectionSizeLabel(region.rect);
+            const QString dimensions = SelectionDimensionLabel::label(region.rect, m_devicePixelRatio);
             QRect infoRect = drawDimensionInfoPanel(painter, region.rect, dimensions);
             if (region.isActive) {
                 activeInfoRect = infoRect;
@@ -363,7 +376,7 @@ void RegionPainter::drawDimensionInfo(QPainter& painter)
         if (activeInfoRect.isNull() && m_selectionManager->isSelecting()) {
             QRect sel = m_selectionManager->selectionRect();
             if (sel.isValid()) {
-                const QString dimensions = selectionSizeLabel(sel);
+                const QString dimensions = SelectionDimensionLabel::label(sel, m_devicePixelRatio);
                 activeInfoRect = drawDimensionInfoPanel(painter, sel, dimensions);
             }
         }
@@ -373,7 +386,7 @@ void RegionPainter::drawDimensionInfo(QPainter& painter)
     }
 
     QRect sel = m_selectionManager->selectionRect();
-    const QString dimensions = selectionSizeLabel(sel);
+    const QString dimensions = SelectionDimensionLabel::label(sel, m_devicePixelRatio);
     QRect textRect = drawDimensionInfoPanel(painter, sel, dimensions);
     m_lastDimensionInfoRect = textRect;
 }
@@ -438,13 +451,17 @@ QRect RegionPainter::drawDimensionInfoPanel(QPainter& painter, const QRect& sele
 {
     QFont font = painter.font();
     font.setPointSize(12);
+    font.setBold(true);
     painter.setFont(font);
     const QRect textRect = dimensionInfoPanelRect(selectionRect, label, font);
 
     auto styleConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
     GlassRenderer::drawGlassPanel(painter, textRect, styleConfig, 6);
 
-    painter.setPen(styleConfig.textColor);
+    const QColor textColor = dimensionLabelTextColor(styleConfig);
+    painter.setPen(dimensionLabelShadowColor(textColor));
+    painter.drawText(textRect.translated(0, 1), Qt::AlignCenter, label);
+    painter.setPen(textColor);
     painter.drawText(textRect, Qt::AlignCenter, label);
 
     return textRect;
@@ -462,7 +479,7 @@ QRect RegionPainter::dimensionInfoPanelRect(const QRect& selectionRect, const QS
     font.setPointSize(12);
     QFontMetrics fm(font);
 
-    const QString maxWidthText = tr("%1 x %2 px").arg(99999).arg(99999);
+    const QString maxWidthText = SelectionDimensionLabel::sampleLabel();
     const int fixedWidth = fm.horizontalAdvance(maxWidthText) + kDimensionPanelPadding;
     const int actualWidth = fm.horizontalAdvance(label) + kDimensionPanelPadding;
     const int width = qMax(fixedWidth, actualWidth);
@@ -507,18 +524,6 @@ QRect RegionPainter::selectionChromeBounds(const QRect& selectionRect) const
                         kSelectionChromeMargin, kSelectionChromeMargin);
 }
 
-QRect RegionPainter::physicalSelectionRect(const QRect& selectionRect) const
-{
-    const qreal dpr = m_devicePixelRatio > 0.0 ? m_devicePixelRatio : 1.0;
-    return CoordinateHelper::toPhysicalCoveringRect(selectionRect.normalized(), dpr);
-}
-
-QString RegionPainter::selectionSizeLabel(const QRect& selectionRect) const
-{
-    const QSize physicalSize = physicalSelectionRect(selectionRect).size();
-    return tr("%1 x %2 px").arg(physicalSize.width()).arg(physicalSize.height());
-}
-
 void RegionPainter::drawRegionBadge(QPainter& painter, const QRect& selectionRect, const QColor& color,
                                     int index, bool isActive) const
 {
@@ -550,7 +555,8 @@ void RegionPainter::drawDetectedWindow(QPainter& painter)
     }
 
     drawSelectionChrome(painter, m_highlightedWindowRect);
-    const QString dimensions = selectionSizeLabel(m_highlightedWindowRect);
+    const QString dimensions =
+        SelectionDimensionLabel::label(m_highlightedWindowRect, m_devicePixelRatio);
     m_lastDimensionInfoRect = drawDimensionInfoPanel(painter, m_highlightedWindowRect, dimensions);
 }
 
@@ -648,7 +654,7 @@ QRect RegionPainter::getWindowHighlightVisualRect(const QRect& windowRect) const
         return QRect();
     }
 
-    const QString dimensions = selectionSizeLabel(windowRect);
+    const QString dimensions = SelectionDimensionLabel::label(windowRect, m_devicePixelRatio);
     const QFont baseFont;
     const QRect panelRect = dimensionInfoPanelRect(windowRect, dimensions, baseFont);
     return selectionChromeBounds(windowRect).united(panelRect);
