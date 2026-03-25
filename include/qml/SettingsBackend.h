@@ -35,6 +35,7 @@ class SettingsBackend : public QObject
 
     // ──── Advanced ────
     Q_PROPERTY(bool magnifierEnabled READ magnifierEnabled WRITE setMagnifierEnabled NOTIFY magnifierEnabledChanged)
+    Q_PROPERTY(int cursorCompanionStyle READ cursorCompanionStyle WRITE setCursorCompanionStyle NOTIFY cursorCompanionStyleChanged)
     Q_PROPERTY(bool shortcutHintsEnabled READ shortcutHintsEnabled WRITE setShortcutHintsEnabled NOTIFY shortcutHintsEnabledChanged)
     Q_PROPERTY(bool isMcpBuild READ isMcpBuild CONSTANT)
 #ifdef SNAPTRAY_ENABLE_MCP
@@ -125,6 +126,8 @@ public:
     // ──── Advanced ────
     bool magnifierEnabled() const;
     void setMagnifierEnabled(bool v);
+    int cursorCompanionStyle() const;
+    void setCursorCompanionStyle(int v);
     bool shortcutHintsEnabled() const;
     void setShortcutHintsEnabled(bool v);
     bool isMcpBuild() const;
@@ -266,6 +269,7 @@ signals:
 
     // Advanced
     void magnifierEnabledChanged();
+    void cursorCompanionStyleChanged();
     void shortcutHintsEnabledChanged();
     void mcpEnabledChanged(bool enabled);
     void blurIntensityChanged();
@@ -354,7 +358,7 @@ private:
 #endif
 
     // Advanced
-    bool m_magnifierEnabled = true;
+    int m_cursorCompanionStyle = 2;
     bool m_shortcutHintsEnabled = true;
 #ifdef SNAPTRAY_ENABLE_MCP
     bool m_mcpEnabled = false;

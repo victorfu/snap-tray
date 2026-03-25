@@ -41,8 +41,10 @@ void tst_QmlTranslations::testQmlSettingsContexts()
              QString::fromUtf8("設定"));
     QCOMPARE(QCoreApplication::translate("GeneralSettings", "Start on login"),
              QString::fromUtf8("登入時啟動"));
-    QCOMPARE(QCoreApplication::translate("AdvancedSettings", "Show magnifier"),
-             QString::fromUtf8("顯示放大鏡"));
+    QCOMPARE(QCoreApplication::translate("AdvancedSettings", "Cursor companion"),
+             QString::fromUtf8("游標旁輔助視覺"));
+    QCOMPARE(QCoreApplication::translate("AdvancedSettings", "Beaver"),
+             QString::fromUtf8("海狸"));
     QCOMPARE(QCoreApplication::translate("SettingsSidebar", "General"),
              QString::fromUtf8("一般"));
     QCOMPARE(QCoreApplication::translate("SettingsPermissionRow", "Granted"),

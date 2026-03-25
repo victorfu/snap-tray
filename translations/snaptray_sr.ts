@@ -21,10 +21,25 @@
 <context>
     <name>AdvancedSettings</name>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="24" />
-        <source>Show magnifier</source>
-        <translation>Prikaži lupu</translation>
-        </message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="24"/>
+        <source>Cursor companion</source>
+        <translation>Пратилац курсора</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="26"/>
+        <source>Off</source>
+        <translation>Искључено</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="27"/>
+        <source>Magnifier</source>
+        <translation>Лупа</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="28"/>
+        <source>Beaver</source>
+        <translation>Дабар</translation>
+    </message>
     <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="21" />
         <source>Capture</source>

@@ -21,10 +21,25 @@
 <context>
     <name>AdvancedSettings</name>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="24" />
-        <source>Show magnifier</source>
-        <translation>Rodyti didintuvą</translation>
-        </message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="24"/>
+        <source>Cursor companion</source>
+        <translation>Kursoriaus pagalbinis rodinys</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="26"/>
+        <source>Off</source>
+        <translation>Išjungta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="27"/>
+        <source>Magnifier</source>
+        <translation>Didinamasis stiklas</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="28"/>
+        <source>Beaver</source>
+        <translation>Bebras</translation>
+    </message>
     <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="21" />
         <source>Capture</source>

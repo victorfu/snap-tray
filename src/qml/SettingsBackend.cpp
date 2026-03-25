@@ -90,6 +90,27 @@ AutoBlurSettingsManager::BlurType blurTypeFromUiIndex(int index)
         : AutoBlurSettingsManager::BlurType::Pixelate;
 }
 
+using CursorCompanionStyle = RegionCaptureSettingsManager::CursorCompanionStyle;
+
+int cursorCompanionStyleToUiValue(CursorCompanionStyle style)
+{
+    return static_cast<int>(style);
+}
+
+CursorCompanionStyle cursorCompanionStyleFromUiValue(int value)
+{
+    switch (value) {
+    case static_cast<int>(CursorCompanionStyle::None):
+        return CursorCompanionStyle::None;
+    case static_cast<int>(CursorCompanionStyle::Magnifier):
+        return CursorCompanionStyle::Magnifier;
+    case static_cast<int>(CursorCompanionStyle::Beaver):
+        return CursorCompanionStyle::Beaver;
+    default:
+        return RegionCaptureSettingsManager::kDefaultCursorCompanionStyle;
+    }
+}
+
 void showHotkeyRegistrationWarning(SnapTray::HotkeyManager& manager,
                                    SnapTray::HotkeyAction action)
 {
@@ -160,7 +181,8 @@ void SettingsBackend::loadAllSettings()
 #endif
 
     // Advanced
-    m_magnifierEnabled = RegionCaptureSettingsManager::instance().isMagnifierEnabled();
+    m_cursorCompanionStyle = cursorCompanionStyleToUiValue(
+        RegionCaptureSettingsManager::instance().cursorCompanionStyle());
     m_shortcutHintsEnabled = RegionCaptureSettingsManager::instance().isShortcutHintsEnabled();
 #ifdef SNAPTRAY_ENABLE_MCP
     m_mcpEnabled = MCPSettingsManager::instance().isEnabled();
@@ -286,7 +308,13 @@ bool SettingsBackend::hasAccessibilityPermission() const { return m_hasAccessibi
 // Advanced property accessors
 // ─────────────────────────────────────────────────────────────────────────────
 
-bool SettingsBackend::magnifierEnabled() const { return m_magnifierEnabled; }
+bool SettingsBackend::magnifierEnabled() const
+{
+    return m_cursorCompanionStyle ==
+        static_cast<int>(CursorCompanionStyle::Magnifier);
+}
+
+int SettingsBackend::cursorCompanionStyle() const { return m_cursorCompanionStyle; }
 
 bool SettingsBackend::shortcutHintsEnabled() const { return m_shortcutHintsEnabled; }
 
@@ -300,9 +328,28 @@ bool SettingsBackend::isMcpBuild() const
 }
 
 void SettingsBackend::setMagnifierEnabled(bool v) {
-    if (m_magnifierEnabled != v) {
-        m_magnifierEnabled = v;
-        RegionCaptureSettingsManager::instance().setMagnifierEnabled(v);
+    setCursorCompanionStyle(
+        v ? static_cast<int>(CursorCompanionStyle::Magnifier)
+          : static_cast<int>(CursorCompanionStyle::None));
+}
+
+void SettingsBackend::setCursorCompanionStyle(int v)
+{
+    v = qBound(
+        static_cast<int>(CursorCompanionStyle::None),
+        v,
+        static_cast<int>(CursorCompanionStyle::Beaver));
+
+    if (m_cursorCompanionStyle == v) {
+        return;
+    }
+
+    const bool previousMagnifierEnabled = magnifierEnabled();
+    m_cursorCompanionStyle = v;
+    RegionCaptureSettingsManager::instance().setCursorCompanionStyle(
+        cursorCompanionStyleFromUiValue(v));
+    emit cursorCompanionStyleChanged();
+    if (previousMagnifierEnabled != magnifierEnabled()) {
         emit magnifierEnabledChanged();
     }
 }

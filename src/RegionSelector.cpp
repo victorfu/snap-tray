@@ -821,7 +821,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_inputHandler->setParentWidget(this);
     m_inputHandler->setSharedState(&m_inputState);
     m_inputHandler->setMagnifierVisibilityProvider([this]() {
-        return shouldShowMagnifier();
+        return shouldShowCursorCompanion();
     });
     m_inputHandler->setSelectionPreviewOverlayActiveProvider([this]() {
         return usesDetachedCaptureWindows() ||
@@ -1879,7 +1879,11 @@ void RegionSelector::setShowShortcutHintsOnEntry(bool enabled)
 
 void RegionSelector::syncMagnifierEnabledFromSettings()
 {
-    m_magnifierEnabled = RegionCaptureSettingsManager::instance().isMagnifierEnabled();
+    m_cursorCompanionStyle =
+        RegionCaptureSettingsManager::instance().cursorCompanionStyle();
+    m_magnifierEnabled =
+        m_cursorCompanionStyle ==
+        RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier;
     if (m_shortcutHintsOverlay) {
         m_shortcutHintsOverlay->setMagnifierEnabled(m_magnifierEnabled);
     }
@@ -2899,7 +2903,8 @@ void RegionSelector::syncMagnifierOverlay()
         this,
         m_inputState.currentPoint,
         &m_backgroundPixmap,
-        shouldShowMagnifier());
+        m_cursorCompanionStyle,
+        shouldShowCursorCompanion());
 }
 
 void RegionSelector::positionRegionControlPanel()
@@ -3250,9 +3255,10 @@ void RegionSelector::trackBlockingDialog(SnapTray::QmlDialog* dialog)
     connect(dialog, &QObject::destroyed, this, release);
 }
 
-bool RegionSelector::shouldShowMagnifier() const
+bool RegionSelector::shouldShowCursorCompanion() const
 {
-    if (!m_magnifierEnabled) {
+    if (m_cursorCompanionStyle ==
+        RegionCaptureSettingsManager::CursorCompanionStyle::None) {
         return false;
     }
 
@@ -3279,6 +3285,11 @@ bool RegionSelector::shouldShowMagnifier() const
     const QRect selectionRect = m_selectionManager->selectionRect();
     return selectionRect.contains(m_inputState.currentPoint) &&
            !m_cursorOverSelectionToolbar;
+}
+
+bool RegionSelector::shouldShowMagnifier() const
+{
+    return m_magnifierEnabled && shouldShowCursorCompanion();
 }
 
 bool RegionSelector::hasActiveAnnotationInteraction() const
@@ -4004,7 +4015,7 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
     }
     else if (event->key() == Qt::Key_Shift) {
         // Switch RGB/HEX color format display (only when magnifier is shown)
-        if (m_magnifierEnabled && shouldShowMagnifier()) {
+        if (shouldShowMagnifier()) {
             m_magnifierPanel->toggleColorFormat();
             syncMagnifierOverlay();
             update();

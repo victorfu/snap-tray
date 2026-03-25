@@ -21,10 +21,25 @@
 <context>
     <name>AdvancedSettings</name>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="24" />
-        <source>Show magnifier</source>
-        <translation>Vergrootglas tonen</translation>
-        </message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="24"/>
+        <source>Cursor companion</source>
+        <translation>Cursorhulp</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="26"/>
+        <source>Off</source>
+        <translation>Uit</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="27"/>
+        <source>Magnifier</source>
+        <translation>Vergrootglas</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="28"/>
+        <source>Beaver</source>
+        <translation>Bever</translation>
+    </message>
     <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="21" />
         <source>Capture</source>

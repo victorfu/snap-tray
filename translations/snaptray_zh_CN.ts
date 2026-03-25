@@ -21,10 +21,25 @@
 <context>
     <name>AdvancedSettings</name>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="24" />
-        <source>Show magnifier</source>
-        <translation>显示放大镜</translation>
-        </message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="24"/>
+        <source>Cursor companion</source>
+        <translation>光标辅助显示</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="26"/>
+        <source>Off</source>
+        <translation>关闭</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="27"/>
+        <source>Magnifier</source>
+        <translation>放大镜</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="28"/>
+        <source>Beaver</source>
+        <translation>海狸</translation>
+    </message>
     <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="21" />
         <source>Capture</source>

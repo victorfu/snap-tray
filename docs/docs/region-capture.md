@@ -11,13 +11,13 @@ doc_order: 1
 
 ## Start capture
 
-Press `F2` (default) to enter Region Capture. The cursor switches to crosshair, and the magnifier panel appears only when `Show magnifier` is enabled in Settings.
+Press `F2` (default) to enter Region Capture. The cursor switches to crosshair, and the cursor companion appears according to the `Cursor companion` setting in Settings.
 
 ## Selection behavior
 
 ### Precision targeting
 
-- Magnifier provides pixel-level feedback when enabled
+- Magnifier mode provides pixel-level feedback
 - Width and height are shown near the selection
 - Hold `Shift` to constrain aspect ratio
 
@@ -48,7 +48,7 @@ After the selection is complete, the toolbar supports:
 | Action | Shortcut |
 |---|---|
 | Start Region Capture | `F2` |
-| Copy color code under cursor (when magnifier enabled) | `C` |
+| Copy color code under cursor (when magnifier mode is active) | `C` |
 | Constrain ratio | Hold `Shift` |
 | Toggle multi-region | `M` |
 | Start recording from region | `R` |

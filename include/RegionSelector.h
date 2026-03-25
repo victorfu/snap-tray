@@ -37,6 +37,7 @@
 #include "region/ShapeAnnotationEditor.h"
 #include "region/MultiRegionManager.h"
 #include "region/RegionInputState.h"
+#include "settings/RegionCaptureSettingsManager.h"
 
 class QScreen;
 class RegionToolbarViewModel;
@@ -288,6 +289,7 @@ private:
 
     // Annotation helpers
     bool isAnnotationTool(ToolId tool) const;
+    bool shouldShowCursorCompanion() const;
     bool shouldShowMagnifier() const;
     bool hasActiveAnnotationInteraction() const;
     QRect selectedAnnotationInteractionVisualRect() const;
@@ -418,6 +420,8 @@ private:
     std::unique_ptr<SelectionDimmingOverlay> m_selectionDimmingOverlay;
     std::unique_ptr<StaticCaptureBackgroundWindow> m_staticCaptureBackgroundWindow;
     std::unique_ptr<CaptureChromeWindow> m_captureChromeWindow;
+    RegionCaptureSettingsManager::CursorCompanionStyle m_cursorCompanionStyle =
+        RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier;
     bool m_magnifierEnabled = true;
 
     // Keep shortcut hints painter-based and in-window. A prior QML top-level

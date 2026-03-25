@@ -65,6 +65,46 @@ QRect SelectionDirtyRegionPlanner::magnifierRectForCursor(
         totalHeight + (kMagnifierOuterPadding * 2));
 }
 
+QRect SelectionDirtyRegionPlanner::beaverRectForCursor(
+    const QPoint& cursorPos, const QSize& viewportSize) const
+{
+    int iconX = cursorPos.x() + kBeaverOffset;
+    int iconY = cursorPos.y() + kBeaverOffset;
+
+    if (iconX + kBeaverSize + kViewportMargin > viewportSize.width()) {
+        iconX = cursorPos.x() - kBeaverSize - kBeaverOffset;
+    }
+    if (iconY + kBeaverSize + kViewportMargin > viewportSize.height()) {
+        iconY = cursorPos.y() - kBeaverSize - kBeaverOffset;
+    }
+
+    iconX = qMax(kViewportMargin, iconX);
+    iconY = qMax(kViewportMargin, iconY);
+
+    return QRect(
+        iconX - kBeaverOuterPadding,
+        iconY - kBeaverOuterPadding,
+        kBeaverSize + (kBeaverOuterPadding * 2),
+        kBeaverSize + (kBeaverOuterPadding * 2));
+}
+
+QRect SelectionDirtyRegionPlanner::cursorCompanionRectForCursor(
+    RegionCaptureSettingsManager::CursorCompanionStyle style,
+    const QPoint& cursorPos,
+    const QSize& viewportSize) const
+{
+    switch (style) {
+    case RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier:
+        return magnifierRectForCursor(cursorPos, viewportSize);
+    case RegionCaptureSettingsManager::CursorCompanionStyle::Beaver:
+        return beaverRectForCursor(cursorPos, viewportSize);
+    case RegionCaptureSettingsManager::CursorCompanionStyle::None:
+        return QRect();
+    }
+
+    return QRect();
+}
+
 QRect SelectionDirtyRegionPlanner::dimensionInfoRectForSelection(const QRect& selectionRect) const
 {
     if (!selectionRect.isValid()) {

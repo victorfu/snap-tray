@@ -6,6 +6,8 @@
 #include <QRegion>
 #include <QSize>
 
+#include "settings/RegionCaptureSettingsManager.h"
+
 /**
  * @brief Builds dirty regions for RegionSelector drag/hover repaint optimization.
  *
@@ -54,7 +56,12 @@ public:
     // Any clipping beyond this margin is corrected on drawing finish (full repaint).
     static constexpr int kAnnotationRepaintMargin = 30;
 
+    QRect cursorCompanionRectForCursor(
+        RegionCaptureSettingsManager::CursorCompanionStyle style,
+        const QPoint& cursorPos,
+        const QSize& viewportSize) const;
     QRect magnifierRectForCursor(const QPoint& cursorPos, const QSize& viewportSize) const;
+    QRect beaverRectForCursor(const QPoint& cursorPos, const QSize& viewportSize) const;
     QRect dimensionInfoRectForSelection(const QRect& selectionRect) const;
 
     QRegion planSelectionDragRegion(const SelectionDragParams& params) const;
@@ -69,6 +76,9 @@ private:
     static constexpr int kMagnifierInfoHeight = 85;
     static constexpr int kMagnifierOffset = 20;
     static constexpr int kMagnifierOuterPadding = 5;
+    static constexpr int kBeaverSize = 88;
+    static constexpr int kBeaverOffset = 4;
+    static constexpr int kBeaverOuterPadding = 0;
     static constexpr int kCrosshairMargin = 2;
     static constexpr int kViewportMargin = 10;
 

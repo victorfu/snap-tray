@@ -6,6 +6,7 @@
 #include <QWidget>
 
 #include "region/SelectionDirtyRegionPlanner.h"
+#include "settings/RegionCaptureSettingsManager.h"
 
 class MagnifierPanel;
 class QPixmap;
@@ -30,6 +31,7 @@ public:
     void syncToHost(QWidget* host,
                     const QPoint& cursorPos,
                     const QPixmap* backgroundPixmap,
+                    RegionCaptureSettingsManager::CursorCompanionStyle style,
                     bool shouldShow);
     void hideOverlay();
 
@@ -39,12 +41,16 @@ protected:
 
 private:
     QRect hostGlobalRect() const;
+    void drawBeaver(QPainter& painter);
 
     MagnifierPanel* m_panel = nullptr;
     QWidget* m_host = nullptr;
     const QPixmap* m_backgroundPixmap = nullptr;
     QPoint m_cursorPos;
     QRect m_lastMagnifierRect;
+    RegionCaptureSettingsManager::CursorCompanionStyle m_style =
+        RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier;
+    QPixmap m_beaverPixmap;
     SelectionDirtyRegionPlanner m_dirtyRegionPlanner;
 };
 

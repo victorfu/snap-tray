@@ -19,6 +19,7 @@ private slots:
     void cleanup();
 
     void testAvailableLanguages_PrioritizesConfiguredAsianLanguages();
+    void testCursorCompanionStyle_RoundTripPersistsAndSignals();
     void testMagnifierEnabled_RoundTripPersistsAndSignals();
     void testNormalizeRecordingAudioSettings_PreservesUnavailableLoadedDevice();
     void testBlurTypeMapping_RoundTripMatchesUiIndices();
@@ -49,6 +50,7 @@ void tst_SettingsBackend::clearTestSettings()
     settings.remove("recording/audioDevice");
     settings.remove("detection/blurType");
     settings.remove("general/startOnLogin");
+    settings.remove("regionCapture/cursorCompanionStyle");
     settings.remove("regionCapture/showMagnifier");
     settings.remove("update/lastCheckTime");
     settings.sync();
@@ -99,6 +101,26 @@ void tst_SettingsBackend::testMagnifierEnabled_RoundTripPersistsAndSignals()
     QCOMPARE(backend.magnifierEnabled(), true);
     QCOMPARE(settings.value("regionCapture/showMagnifier").toBool(), true);
     QCOMPARE(changedSpy.count(), 1);
+}
+
+void tst_SettingsBackend::testCursorCompanionStyle_RoundTripPersistsAndSignals()
+{
+    SettingsBackend backend;
+    QCOMPARE(backend.cursorCompanionStyle(), 2);
+
+    QSignalSpy styleChangedSpy(&backend, &SettingsBackend::cursorCompanionStyleChanged);
+    QSignalSpy magnifierChangedSpy(&backend, &SettingsBackend::magnifierEnabledChanged);
+
+    backend.setCursorCompanionStyle(2);
+
+    QCOMPARE(backend.cursorCompanionStyle(), 2);
+    QCOMPARE(backend.magnifierEnabled(), false);
+
+    auto settings = SnapTray::getSettings();
+    QCOMPARE(settings.value("regionCapture/cursorCompanionStyle").toInt(), 2);
+    QCOMPARE(settings.value("regionCapture/showMagnifier").toBool(), true);
+    QCOMPARE(styleChangedSpy.count(), 1);
+    QCOMPARE(magnifierChangedSpy.count(), 1);
 }
 
 void tst_SettingsBackend::testNormalizeRecordingAudioSettings_PreservesUnavailableLoadedDevice()

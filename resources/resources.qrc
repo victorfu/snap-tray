@@ -3,6 +3,7 @@
     <qresource prefix="/icons">
         <file>icons/snaptray.svg</file>
         <file>icons/snaptray.png</file>
+        <file>icons/cursor-beaver.png</file>
         <file>icons/selection.svg</file>
         <file>icons/arrow.svg</file>
         <file>icons/polyline.svg</file>
