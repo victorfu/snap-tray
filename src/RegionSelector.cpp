@@ -757,6 +757,10 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Connect input handler signals
     connect(m_inputHandler, &RegionInputHandler::toolCursorRequested,
         this, &RegionSelector::setToolCursor);
+    connect(m_inputHandler, &RegionInputHandler::currentPointUpdated,
+        this, [this](const QPoint&) {
+            syncMagnifierOverlay();
+        });
     connect(m_inputHandler, qOverload<>(&RegionInputHandler::updateRequested),
         this, [this]() {
             if (requestLocalizedAnnotationInteractionUpdate()) {

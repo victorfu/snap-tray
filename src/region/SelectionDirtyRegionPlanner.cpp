@@ -90,11 +90,6 @@ QRegion SelectionDirtyRegionPlanner::planSelectionDragRegion(const SelectionDrag
     addPaddedDimensionInfoRect(params.currentSelectionRect);
     addPaddedDimensionInfoRect(params.lastSelectionRect);
 
-    if (params.includeMagnifier && !params.suppressFloatingUi) {
-        addRect(params.currentMagnifierRect);
-        addRect(params.lastMagnifierRect);
-    }
-
     auto addPaddedRect = [&addRect](const QRect& rect) {
         if (!rect.isEmpty()) {
             addRect(rect.adjusted(
@@ -108,25 +103,12 @@ QRegion SelectionDirtyRegionPlanner::planSelectionDragRegion(const SelectionDrag
         addPaddedRect(params.lastRegionControlRect);
     }
 
-    dirtyRegion += crosshairStripRegion(params.lastCursorPos, params.viewportSize);
-    dirtyRegion += crosshairStripRegion(params.currentCursorPos, params.viewportSize);
-
     return clippedToViewport(dirtyRegion, params.viewportSize);
 }
 
 QRegion SelectionDirtyRegionPlanner::planHoverRegion(const HoverParams& params) const
 {
     QRegion dirtyRegion;
-    if (!params.currentMagnifierRect.isEmpty()) {
-        dirtyRegion += params.currentMagnifierRect;
-    }
-    if (!params.lastMagnifierRect.isEmpty()) {
-        dirtyRegion += params.lastMagnifierRect;
-    }
-
-    dirtyRegion += crosshairStripRegion(params.lastCursorPos, params.viewportSize);
-    dirtyRegion += crosshairStripRegion(params.currentCursorPos, params.viewportSize);
-
     return clippedToViewport(dirtyRegion, params.viewportSize);
 }
 
