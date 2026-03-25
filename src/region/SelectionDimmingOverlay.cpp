@@ -1,5 +1,6 @@
 #include "region/SelectionDimmingOverlay.h"
 
+#include "region/CapturePerfRecorder.h"
 #include "platform/WindowLevel.h"
 
 #include <QPaintEvent>
@@ -26,6 +27,7 @@ SelectionDimmingOverlay::SelectionDimmingOverlay(QWidget* parent)
 
 void SelectionDimmingOverlay::syncToHost(QWidget* host, const QRect& selectionRect, bool shouldShow)
 {
+    snaptray::region::CapturePerfScope perfScope("SelectionDimmingOverlay.syncToHost");
     m_host = host;
     m_selectionRect = selectionRect.normalized();
 

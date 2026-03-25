@@ -1,5 +1,6 @@
 #include "region/RegionPainter.h"
 #include "annotation/AnnotationRenderHelper.h"
+#include "region/CapturePerfRecorder.h"
 #include "region/SelectionStateManager.h"
 #include "region/MultiRegionManager.h"
 #include "annotations/AnnotationLayer.h"
@@ -101,6 +102,7 @@ void RegionPainter::setReplacePreview(int targetIndex, const QRect& previewRect)
 
 void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QRegion& dirtyRegion)
 {
+    snaptray::region::CapturePerfScope perfScope("RegionPainter.paint");
     if (!m_parentWidget || !m_selectionManager) {
         return;
     }
@@ -110,10 +112,14 @@ void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QR
         : dirtyRegion;
     const QRect updateBounds = updateRegion.boundingRect();
     const QRect selectionRect = m_selectionManager->selectionRect();
+    const bool captureChromeActive = m_captureChromeActive;
     const bool selectionPreviewOwnedByOverlay =
         m_selectionPreviewActive && m_selectionManager->isSelecting();
     const bool singleRegionFastPath =
-        !selectionPreviewOwnedByOverlay && !m_multiRegionMode && !background.isNull();
+        !captureChromeActive &&
+        !selectionPreviewOwnedByOverlay &&
+        !m_multiRegionMode &&
+        !background.isNull();
 
     if (singleRegionFastPath) {
         ensureDimmedBackgroundCache(background);
@@ -149,19 +155,19 @@ void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QR
         drawBackgroundTiles(painter, background, updateRegion);
     }
 
-    if (!singleRegionFastPath && !selectionPreviewOwnedByOverlay) {
+    if (!captureChromeActive && !singleRegionFastPath && !selectionPreviewOwnedByOverlay) {
         // Draw dimmed overlay when the host cannot reuse a cached dimmed background.
         drawOverlay(painter);
     }
 
     // Draw detected window highlight (only during hover, before any selection)
-    if (!m_selectionManager->hasActiveSelection()) {
+    if (!captureChromeActive && !m_selectionManager->hasActiveSelection()) {
         drawDetectedWindow(painter);
     }
 
     // Draw selection if active or complete
     if (m_selectionManager->hasActiveSelection() && selectionRect.isValid()) {
-        if (!selectionPreviewOwnedByOverlay) {
+        if (!captureChromeActive && !selectionPreviewOwnedByOverlay) {
             drawSelection(painter);
             drawDimensionInfo(painter);
         }
@@ -241,6 +247,7 @@ void RegionPainter::drawBackgroundTiles(QPainter& painter,
 
 void RegionPainter::drawOverlay(QPainter& painter)
 {
+    snaptray::region::CapturePerfScope perfScope("RegionPainter.drawOverlay");
     QRect sel = m_selectionManager->selectionRect();
     bool hasSelection = m_selectionManager->hasActiveSelection() && sel.isValid();
 

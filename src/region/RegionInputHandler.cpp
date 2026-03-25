@@ -971,15 +971,16 @@ void RegionInputHandler::handleThrottledUpdate()
         return;
     }
 
+    if (selectionPreviewOverlayActive) {
+        m_lastSelectionRect = m_selectionManager->selectionRect().normalized();
+        m_lastMagnifierRect = QRect();
+        m_lastToolbarRect = QRect();
+        m_lastCrosshairPoint = state().currentPoint;
+        return;
+    }
+
     if (m_selectionManager->isSelecting() || m_selectionManager->isResizing() || m_selectionManager->isMoving()) {
         const QRect currentSelectionRect = m_selectionManager->selectionRect().normalized();
-        if (selectionPreviewOverlayActive) {
-            m_lastSelectionRect = currentSelectionRect;
-            m_lastMagnifierRect = QRect();
-            m_lastToolbarRect = QRect();
-            m_lastCrosshairPoint = state().currentPoint;
-            return;
-        }
         const bool suppressFloatingUi =
             shouldSuppressCompletedSelectionDragUi(state(), m_selectionManager);
         const bool shouldRenderMagnifier =
@@ -1004,11 +1005,9 @@ void RegionInputHandler::handleThrottledUpdate()
         params.viewportSize = m_parentWidget->size();
         params.suppressFloatingUi = suppressFloatingUi;
         params.includeMagnifier = !suppressFloatingUi && shouldRenderMagnifier;
-        if (!selectionPreviewOverlayActive) {
-            const QRegion dirtyRegion = m_dirtyRegionPlanner.planSelectionDragRegion(params);
-            if (!dirtyRegion.isEmpty()) {
+        const QRegion dirtyRegion = m_dirtyRegionPlanner.planSelectionDragRegion(params);
+        if (!dirtyRegion.isEmpty()) {
             m_parentWidget->update(dirtyRegion);
-            }
         }
         m_lastSelectionRect = currentSelectionRect;
         m_lastMagnifierRect = currentMagnifierRect;

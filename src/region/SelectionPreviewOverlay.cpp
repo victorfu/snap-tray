@@ -1,5 +1,6 @@
 #include "region/SelectionPreviewOverlay.h"
 
+#include "region/CapturePerfRecorder.h"
 #include "GlassRenderer.h"
 #include "ToolbarStyle.h"
 #include "platform/WindowLevel.h"
@@ -143,6 +144,7 @@ void SelectionPreviewOverlay::syncToHost(QWidget* host,
                                          int cornerRadius,
                                          bool shouldShow)
 {
+    snaptray::region::CapturePerfScope perfScope("SelectionPreviewOverlay.syncToHost");
     m_host = host;
     m_backgroundPixmap = backgroundPixmap;
     m_selectionRect = selectionRect.normalized();

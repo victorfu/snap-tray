@@ -67,6 +67,7 @@ public:
     void setMultiRegionMode(bool enabled) { m_multiRegionMode = enabled; }
     void setReplacePreview(int targetIndex, const QRect& previewRect);
     void setSelectionPreviewActive(bool active) { m_selectionPreviewActive = active; }
+    void setCaptureChromeActive(bool active) { m_captureChromeActive = active; }
 
     /**
      * @brief Calculate the visual bounding rect of a window highlight (including the hint label).
@@ -119,6 +120,7 @@ private:
     qreal m_devicePixelRatio = 1.0;
     bool m_multiRegionMode = false;
     bool m_selectionPreviewActive = false;
+    bool m_captureChromeActive = false;
     int m_replaceTargetIndex = -1;
     QRect m_replacePreviewRect;
 

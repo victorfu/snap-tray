@@ -70,6 +70,8 @@ class RegionExportManager;
 class MagnifierOverlay;
 class SelectionPreviewOverlay;
 class SelectionDimmingOverlay;
+class StaticCaptureBackgroundWindow;
+class CaptureChromeWindow;
 class AnnotationContext;
 class CaptureShortcutHintsOverlay;
 class RegionControlViewModel;
@@ -164,6 +166,11 @@ private:
     void onContextTextEditingCancelled() override;
 
     void syncMagnifierOverlay();
+    void syncStaticCaptureBackgroundWindow();
+    void syncCaptureChromeWindow();
+    bool usesDetachedCaptureWindows() const;
+    void requestCaptureSceneUpdate();
+    void requestCaptureSceneUpdate(const QRect& rect);
 
     // Corner radius helpers
     void onCornerRadiusChanged(int radius);
@@ -401,6 +408,8 @@ private:
     std::unique_ptr<MagnifierOverlay> m_magnifierOverlay;
     std::unique_ptr<SelectionPreviewOverlay> m_selectionPreviewOverlay;
     std::unique_ptr<SelectionDimmingOverlay> m_selectionDimmingOverlay;
+    std::unique_ptr<StaticCaptureBackgroundWindow> m_staticCaptureBackgroundWindow;
+    std::unique_ptr<CaptureChromeWindow> m_captureChromeWindow;
     bool m_magnifierEnabled = true;
 
     // Keep shortcut hints painter-based and in-window. A prior QML top-level
