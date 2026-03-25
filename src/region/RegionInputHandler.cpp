@@ -54,6 +54,12 @@ RegionInputHandler::RegionInputHandler(QObject* parent)
     connect(&m_dragFrameTimer, &QTimer::timeout, this, &RegionInputHandler::onDragFrameTick);
 }
 
+bool RegionInputHandler::isManipulatingAnnotation() const
+{
+    return m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating ||
+           m_isArrowDragging || m_isPolylineDragging;
+}
+
 void RegionInputHandler::setSelectionManager(SelectionStateManager* manager)
 {
     m_selectionManager = manager;
@@ -1474,7 +1480,6 @@ bool RegionInputHandler::handleArrowAnnotationMove(const QPoint& pos)
     }
 
     m_arrowDragStart = pos;
-    m_annotationLayer->invalidateCache();
     emit updateRequested();
     return true;
 }
@@ -1573,7 +1578,6 @@ bool RegionInputHandler::handlePolylineAnnotationMove(const QPoint& pos) {
              }
              
              m_polylineDragStart = pos;
-             m_annotationLayer->invalidateCache();
              emit updateRequested();
              return true;
         }

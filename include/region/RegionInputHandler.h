@@ -67,6 +67,7 @@ public:
     QPoint currentPoint() const { return m_state ? m_state->currentPoint : QPoint(); }
     QPoint startPoint() const { return m_startPoint; }
     bool isDrawing() const { return m_state && m_state->isDrawing; }
+    bool isManipulatingAnnotation() const;
     QRect lastMagnifierRect() const { return m_lastMagnifierRect; }
 
 signals:

@@ -120,6 +120,7 @@ bool shouldSuppressCompletedSelectionDragUi(const SelectionStateManager* selecti
 }
 
 constexpr int kInitialRevealTimeoutMs = 120;
+constexpr int kAnnotationInteractionVisualMargin = 52;
 
 } // namespace
 
@@ -282,6 +283,10 @@ RegionSelector::RegionSelector(QWidget* parent)
                     return;
                 }
             }
+        }
+
+        if (requestLocalizedAnnotationInteractionUpdate()) {
+            return;
         }
 
         if (m_inputState.isDrawing && m_selectionManager && m_selectionManager->hasSelection()) {
@@ -761,9 +766,17 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_inputHandler, &RegionInputHandler::toolCursorRequested,
         this, &RegionSelector::setToolCursor);
     connect(m_inputHandler, qOverload<>(&RegionInputHandler::updateRequested),
-        this, qOverload<>(&QWidget::update));
+        this, [this]() {
+            if (requestLocalizedAnnotationInteractionUpdate()) {
+                return;
+            }
+            update();
+        });
     connect(m_inputHandler, qOverload<const QRect&>(&RegionInputHandler::updateRequested),
-        this, qOverload<const QRect&>(&QWidget::update));
+        this, [this](const QRect& rect) {
+            resetAnnotationInteractionTracking();
+            update(rect);
+        });
     connect(m_inputHandler, &RegionInputHandler::toolbarClickRequested,
         this, [this](int buttonId) { handleToolbarClick(static_cast<ToolId>(buttonId)); });
     connect(m_inputHandler, &RegionInputHandler::windowDetectionRequested,
@@ -2879,6 +2892,69 @@ bool RegionSelector::shouldShowMagnifier() const
     const QRect selectionRect = m_selectionManager->selectionRect();
     return selectionRect.contains(m_inputState.currentPoint) &&
            !m_cursorOverSelectionToolbar;
+}
+
+bool RegionSelector::hasActiveAnnotationInteraction() const
+{
+    const bool inputHandlerInteraction =
+        m_inputHandler && m_inputHandler->isManipulatingAnnotation();
+    const bool textInteraction =
+        m_textAnnotationEditor &&
+        (m_textAnnotationEditor->isDragging() || m_textAnnotationEditor->isTransforming());
+    const bool shapeInteraction =
+        m_shapeAnnotationEditor &&
+        (m_shapeAnnotationEditor->isDragging() || m_shapeAnnotationEditor->isTransforming());
+
+    return inputHandlerInteraction || textInteraction || shapeInteraction;
+}
+
+QRect RegionSelector::selectedAnnotationInteractionVisualRect() const
+{
+    if (!m_annotationLayer) {
+        return {};
+    }
+
+    auto* selectedItem = m_annotationLayer->selectedItem();
+    if (!selectedItem || !selectedItem->isVisible()) {
+        return {};
+    }
+
+    const QRect itemRect = selectedItem->boundingRect();
+    if (!itemRect.isValid() || itemRect.isEmpty()) {
+        return {};
+    }
+
+    return itemRect.adjusted(-kAnnotationInteractionVisualMargin,
+                             -kAnnotationInteractionVisualMargin,
+                             kAnnotationInteractionVisualMargin,
+                             kAnnotationInteractionVisualMargin);
+}
+
+bool RegionSelector::requestLocalizedAnnotationInteractionUpdate()
+{
+    if (!hasActiveAnnotationInteraction()) {
+        resetAnnotationInteractionTracking();
+        return false;
+    }
+
+    const QRect currentVisualRect = selectedAnnotationInteractionVisualRect();
+    QRect dirtyRect = currentVisualRect;
+    if (m_lastAnnotationInteractionVisualRect.isValid()) {
+        dirtyRect = dirtyRect.united(m_lastAnnotationInteractionVisualRect);
+    }
+
+    m_lastAnnotationInteractionVisualRect = currentVisualRect;
+    if (!dirtyRect.isValid() || dirtyRect.isEmpty()) {
+        return false;
+    }
+
+    update(dirtyRect);
+    return true;
+}
+
+void RegionSelector::resetAnnotationInteractionTracking()
+{
+    m_lastAnnotationInteractionVisualRect = QRect();
 }
 
 void RegionSelector::syncSelectionToolbarHoverState(const QPoint& globalPos)

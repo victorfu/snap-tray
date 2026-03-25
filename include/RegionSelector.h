@@ -276,6 +276,10 @@ private:
     // Annotation helpers
     bool isAnnotationTool(ToolId tool) const;
     bool shouldShowMagnifier() const;
+    bool hasActiveAnnotationInteraction() const;
+    QRect selectedAnnotationInteractionVisualRect() const;
+    bool requestLocalizedAnnotationInteractionUpdate();
+    void resetAnnotationInteractionTracking();
     void syncFloatingUiCursor();
     void paintSelectorScene(QPainter& painter, const QRegion& dirtyRegion);
     void syncDetachedSelectionUiDuringPaint();
@@ -420,6 +424,7 @@ private:
     // Dirty region tracking for partial updates
     QRect m_lastSelectionRect;  // Previous selection rect for dirty region calculation
     QRect m_lastMagnifierRect;  // Previous magnifier rect
+    QRect m_lastAnnotationInteractionVisualRect;
 
     // Screen switch monitoring
     QTimer* m_screenSwitchTimer = nullptr;
