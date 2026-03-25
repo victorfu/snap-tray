@@ -944,6 +944,8 @@ void RegionInputHandler::handleThrottledUpdate()
     }
 
     updateDragFramePump();
+    const bool selectionPreviewOverlayActive =
+        m_isSelectionPreviewOverlayActive && m_isSelectionPreviewOverlayActive();
 
     // First frame after initialization: the initial show() painted magnifier + crosshair
     // at the initial cursor position, but m_lastMagnifierRect is still null (unset).
@@ -962,14 +964,21 @@ void RegionInputHandler::handleThrottledUpdate()
         // QML toolbar and region control panel position themselves in separate windows
         m_lastToolbarRect = QRect();
 
-        m_parentWidget->update();  // Full repaint for first frame
+        if (!selectionPreviewOverlayActive) {
+            m_parentWidget->update();  // Full repaint for first frame
+        }
         return;
     }
 
     if (m_selectionManager->isSelecting() || m_selectionManager->isResizing() || m_selectionManager->isMoving()) {
         const QRect currentSelectionRect = m_selectionManager->selectionRect().normalized();
-        const bool selectionPreviewOverlayActive =
-            m_isSelectionPreviewOverlayActive && m_isSelectionPreviewOverlayActive();
+        if (selectionPreviewOverlayActive) {
+            m_lastSelectionRect = currentSelectionRect;
+            m_lastMagnifierRect = QRect();
+            m_lastToolbarRect = QRect();
+            m_lastCrosshairPoint = state().currentPoint;
+            return;
+        }
         const bool suppressFloatingUi =
             shouldSuppressCompletedSelectionDragUi(state(), m_selectionManager);
         const bool shouldRenderMagnifier =
@@ -996,7 +1005,9 @@ void RegionInputHandler::handleThrottledUpdate()
         params.includeMagnifier = !suppressFloatingUi && shouldRenderMagnifier;
         if (!selectionPreviewOverlayActive) {
             const QRegion dirtyRegion = m_dirtyRegionPlanner.planSelectionDragRegion(params);
+            if (!dirtyRegion.isEmpty()) {
             m_parentWidget->update(dirtyRegion);
+            }
         }
         m_lastSelectionRect = currentSelectionRect;
         m_lastMagnifierRect = currentMagnifierRect;
@@ -1040,7 +1051,9 @@ void RegionInputHandler::handleThrottledUpdate()
             params.lastCursorPos = m_lastCrosshairPoint;
             params.viewportSize = m_parentWidget->size();
             const QRegion dirtyRegion = m_dirtyRegionPlanner.planHoverRegion(params);
-            m_parentWidget->update(dirtyRegion);
+            if (!dirtyRegion.isEmpty()) {
+                m_parentWidget->update(dirtyRegion);
+            }
             m_lastMagnifierRect = currentMagnifierRect;
             m_lastCrosshairPoint = state().currentPoint;
         }
@@ -1060,7 +1073,9 @@ void RegionInputHandler::handleThrottledUpdate()
         params.lastCursorPos = m_lastCrosshairPoint;
         params.viewportSize = m_parentWidget->size();
         const QRegion dirtyRegion = m_dirtyRegionPlanner.planHoverRegion(params);
-        m_parentWidget->update(dirtyRegion);
+        if (!dirtyRegion.isEmpty()) {
+            m_parentWidget->update(dirtyRegion);
+        }
         m_lastMagnifierRect = currentMagnifierRect;
         m_lastCrosshairPoint = state().currentPoint;
     }
@@ -1069,6 +1084,13 @@ void RegionInputHandler::handleThrottledUpdate()
 void RegionInputHandler::updateDragFramePump()
 {
     if (!m_selectionManager || !m_parentWidget) {
+        m_dragFrameTimer.stop();
+        return;
+    }
+
+    const bool selectionPreviewOverlayActive =
+        m_isSelectionPreviewOverlayActive && m_isSelectionPreviewOverlayActive();
+    if (selectionPreviewOverlayActive) {
         m_dragFrameTimer.stop();
         return;
     }
