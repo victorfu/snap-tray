@@ -6,6 +6,12 @@
 
 namespace {
 
+qreal effectiveMinPointDistance(const ToolContext* ctx, qreal targetPhysicalDistance)
+{
+    const qreal dpr = (ctx && ctx->devicePixelRatio > 0.0) ? ctx->devicePixelRatio : 1.0;
+    return targetPhysicalDistance / dpr;
+}
+
 QRect tailDirtyRect(const QVector<QPointF>& points, int width, int tailPointCount = 4)
 {
     if (points.isEmpty()) {
@@ -103,7 +109,7 @@ void PencilToolHandler::onMouseMoveF(ToolContext* ctx, const QPointF& pos) {
         QPointF delta = m_smoothedPoint - m_currentPath.last();
         qreal distance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
 
-        if (distance < kMinPointDistance) {
+        if (distance < effectiveMinPointDistance(ctx, kMinPointDistancePhysical)) {
             return;
         }
     }

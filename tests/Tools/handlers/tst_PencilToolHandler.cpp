@@ -49,6 +49,7 @@ private slots:
     void testPreviewBounds_DuringAndAfterDrawing();
     void testPreviewBounds_StaysLocalAsStrokeGrows();
     void testFloatInputPreservesFractionalPoints();
+    void testHighDpiAllowsCloserPoints();
 
     // Cancellation tests
     void testCancelDrawing();
@@ -280,6 +281,21 @@ void TestPencilToolHandler::testFloatInputPreservesFractionalPoints()
         }
     }
     QVERIFY(hasFractionalPoint);
+}
+
+void TestPencilToolHandler::testHighDpiAllowsCloserPoints()
+{
+    m_context->devicePixelRatio = 2.0;
+
+    m_handler->onMousePressF(m_context, QPointF(10.0, 10.0));
+    m_handler->onMouseMoveF(m_context, QPointF(11.0, 11.0));
+    m_handler->onMouseMoveF(m_context, QPointF(11.8, 11.8));
+    m_handler->onMouseReleaseF(m_context, QPointF(12.6, 12.6));
+
+    QCOMPARE(m_layer->itemCount(), size_t(1));
+    auto* stroke = dynamic_cast<PencilStroke*>(m_layer->itemAt(0));
+    QVERIFY(stroke != nullptr);
+    QVERIFY(stroke->points().size() >= 3);
 }
 
 // ============================================================================

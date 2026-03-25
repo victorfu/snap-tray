@@ -50,8 +50,9 @@ private:
     QPointF m_lastRawPoint;       // Previous raw input for velocity calculation
     bool m_hasSmoothedPoint = false;
 
-    // Minimum distance threshold to add a new point
-    static constexpr qreal kMinPointDistance = 2.0;
+    // Minimum physical distance threshold before committing another point.
+    // Keep spacing stable across mixed-DPI setups instead of hard-coding logical pixels.
+    static constexpr qreal kMinPointDistancePhysical = 2.0;
 
     // Smoothing parameters
     // Base smoothing factor (0 = max smooth, 1 = no smooth)

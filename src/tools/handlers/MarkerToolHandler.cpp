@@ -8,6 +8,14 @@ static constexpr int kMarkerWidth = 20;
 
 namespace {
 
+qreal effectiveMinPointDistance(const ToolContext* ctx, qreal targetPhysicalDistance)
+{
+    const qreal dpr = (ctx && ctx->devicePixelRatio > 0.0) ? ctx->devicePixelRatio : 1.0;
+    return targetPhysicalDistance / dpr;
+}
+
+constexpr qreal kMarkerMinPointDistancePhysical = 2.5;
+
 QRect tailDirtyRect(const QVector<QPointF>& points, int width, int tailPointCount = 4)
 {
     if (points.isEmpty()) {
@@ -64,6 +72,14 @@ void MarkerToolHandler::onMouseMoveF(ToolContext* ctx, const QPointF& pos) {
         return;
     }
 
+    if (!m_currentPath.isEmpty()) {
+        const QPointF delta = pos - m_currentPath.last();
+        const qreal distance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
+        if (distance < effectiveMinPointDistance(ctx, kMarkerMinPointDistancePhysical)) {
+            return;
+        }
+    }
+
     const QRect oldTailBounds = tailDirtyRect(m_currentPath, kMarkerWidth);
 
     m_currentPath.append(pos);
@@ -85,13 +101,14 @@ void MarkerToolHandler::onMouseReleaseF(ToolContext* ctx, const QPointF& pos) {
 
     // Add final point if different from last
     if (m_currentPath.isEmpty() || m_currentPath.last() != pos) {
+        m_currentPath.append(pos);
         if (m_currentStroke) {
             m_currentStroke->addPoint(pos);
         }
     }
 
     // Add to annotation layer if we have a valid stroke
-    if (m_currentStroke && m_currentPath.size() >= 2) {
+    if (m_currentStroke && m_currentStroke->points().size() >= 2) {
         ctx->addItem(std::move(m_currentStroke));
     }
 
