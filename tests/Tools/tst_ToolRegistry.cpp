@@ -243,13 +243,22 @@ void TestToolRegistry::testGetToolsForToolbar_ScreenCanvas()
     QVERIFY(tools.contains(ToolId::CanvasWhiteboard));
     QVERIFY(tools.contains(ToolId::CanvasBlackboard));
     QVERIFY(tools.contains(ToolId::Clear));
+    QVERIFY(tools.contains(ToolId::Copy));
     QVERIFY(tools.contains(ToolId::Exit));
 
     // Should NOT include RegionSelector-only tools
     QVERIFY(!tools.contains(ToolId::Save));
-    QVERIFY(!tools.contains(ToolId::Copy));
     QVERIFY(!tools.contains(ToolId::Pin));
     QVERIFY(!tools.contains(ToolId::Record));
+
+    const int clearIndex = tools.indexOf(ToolId::Clear);
+    const int copyIndex = tools.indexOf(ToolId::Copy);
+    const int exitIndex = tools.indexOf(ToolId::Exit);
+    QVERIFY(clearIndex >= 0);
+    QVERIFY(copyIndex >= 0);
+    QVERIFY(exitIndex >= 0);
+    QVERIFY2(clearIndex < copyIndex, "Clear should appear to the left of Copy in ScreenCanvas toolbar");
+    QVERIFY2(copyIndex < exitIndex, "Copy should appear to the left of Exit in ScreenCanvas toolbar");
 }
 
 void TestToolRegistry::testGetToolsForToolbar_PinWindow()

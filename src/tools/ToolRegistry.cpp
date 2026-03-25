@@ -436,6 +436,7 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
             ToolId::Undo,
             ToolId::Redo,
             ToolId::Clear,
+            ToolId::Copy,
             ToolId::Exit
         };
         break;

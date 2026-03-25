@@ -22,6 +22,7 @@ signals:
     void undoClicked();
     void redoClicked();
     void clearClicked();
+    void copyClicked();
     void exitClicked();
     void canvasWhiteboardClicked();
     void canvasBlackboardClicked();

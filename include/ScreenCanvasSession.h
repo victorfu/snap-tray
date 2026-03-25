@@ -6,7 +6,9 @@
 #include <QObject>
 #include <QPoint>
 #include <QPointer>
+#include <QPixmap>
 #include <QRect>
+#include <functional>
 #include <map>
 #include <memory>
 
@@ -58,6 +60,7 @@ class ScreenCanvasSession : public QObject
 
     friend class TestScreenCanvasPlacement;
     friend class TestScreenCanvasSessionRecovery;
+    friend class TestScreenCanvasCopyExport;
 
 public:
     struct ToolbarPlacementResolution
@@ -121,6 +124,12 @@ private:
     QRect selectedAnnotationInteractionRect() const;
     void requestLocalizedToolRepaint();
     void resetAnnotationInteractionTracking();
+    struct FloatingUiVisibilityState {
+        bool toolbarVisible = false;
+        bool emojiPickerVisible = false;
+    };
+    FloatingUiVisibilityState hideFloatingUiForCapture();
+    void restoreFloatingUiAfterCapture(const FloatingUiVisibilityState& state);
 
     void activateSurface(ScreenCanvas* surface);
     void beginMouseGrab(ScreenCanvas* surface);
@@ -143,9 +152,13 @@ private:
     void handleUndoAction(ToolId toolId);
     void handleRedoAction(ToolId toolId);
     void handleClearAction(ToolId toolId);
+    void handleCopyAction(ToolId toolId);
     void handleExitAction(ToolId toolId);
     void finalizePolylineForToolbarInteraction();
     bool isDrawingTool(ToolId toolId) const;
+    QScreen* resolveCopyTargetScreen() const;
+    QPixmap buildCopyExportBasePixmap(QScreen* screen) const;
+    QPixmap exportCanvasPixmapForScreen(QScreen* screen) const;
 
     void setToolCursor();
     void syncFloatingUiCursor(ScreenCanvas* surface);
@@ -250,6 +263,8 @@ private:
     QRect m_lastAnnotationInteractionRect;
     QPoint m_dragStartPos;
     bool m_consumeNextToolRelease = false;
+    std::function<bool(const QImage&)> m_guiClipboardWriter;
+    std::function<QPixmap(QScreen*)> m_screenSnapshotProvider;
 };
 
 #endif // SCREENCANVASSESSION_H

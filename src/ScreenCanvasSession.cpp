@@ -2,22 +2,26 @@
 
 #include "InlineTextEditor.h"
 #include "LaserPointerRenderer.h"
+#include "PlatformFeatures.h"
 #include "ScreenCanvas.h"
 #include "annotation/AnnotationContext.h"
 #include "annotation/AnnotationRenderHelper.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/EmojiStickerAnnotation.h"
+#include "capture/ScreenSnapshot.h"
 #include "annotations/PolylineAnnotation.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "colorwidgets/ColorPickerDialogCompat.h"
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
+#include "ImageColorSpaceHelper.h"
 #include "platform/WindowLevel.h"
 #include "qml/CanvasToolbarViewModel.h"
 #include "qml/PinToolOptionsViewModel.h"
 #include "qml/QmlEmojiPickerPopup.h"
 #include "qml/QmlFloatingSubToolbar.h"
 #include "qml/QmlFloatingToolbar.h"
+#include "qml/QmlToast.h"
 #include "region/RegionSettingsHelper.h"
 #include "region/ShapeAnnotationEditor.h"
 #include "region/TextAnnotationEditor.h"
@@ -27,6 +31,7 @@
 #include "tools/ToolSectionConfig.h"
 #include "tools/ToolTraits.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
+#include "utils/CoordinateHelper.h"
 
 #include <QApplication>
 #include <QCloseEvent>
@@ -99,6 +104,24 @@ QString screenIdentityPrefix(const QString& screenId)
     const qsizetype geometryMarker = trimmed.indexOf(QStringLiteral("|geom:"));
     return geometryMarker >= 0 ? trimmed.left(geometryMarker) : trimmed;
 }
+
+QPixmap createSolidCanvasPixmap(const QSize& logicalSize, qreal devicePixelRatio, const QColor& color)
+{
+    const qreal normalizedDpr = devicePixelRatio > 0.0 ? devicePixelRatio : 1.0;
+    const QSize physicalSize = CoordinateHelper::toPhysical(logicalSize, normalizedDpr);
+    if (logicalSize.isEmpty() || physicalSize.isEmpty()) {
+        return {};
+    }
+
+    QPixmap result(physicalSize);
+    if (result.isNull()) {
+        return {};
+    }
+
+    result.setDevicePixelRatio(normalizedDpr);
+    result.fill(color);
+    return result;
+}
 } // namespace
 
 const std::map<ToolId, ScreenCanvasSession::ToolbarClickHandler>&
@@ -118,6 +141,7 @@ ScreenCanvasSession::toolbarDispatchTable()
         {ToolId::Undo, &ScreenCanvasSession::handleActionToolClick},
         {ToolId::Redo, &ScreenCanvasSession::handleActionToolClick},
         {ToolId::Clear, &ScreenCanvasSession::handleActionToolClick},
+        {ToolId::Copy, &ScreenCanvasSession::handleActionToolClick},
         {ToolId::Exit, &ScreenCanvasSession::handleActionToolClick},
     };
     return kDispatch;
@@ -130,6 +154,7 @@ ScreenCanvasSession::actionDispatchTable()
         {ToolId::Undo, &ScreenCanvasSession::handleUndoAction},
         {ToolId::Redo, &ScreenCanvasSession::handleRedoAction},
         {ToolId::Clear, &ScreenCanvasSession::handleClearAction},
+        {ToolId::Copy, &ScreenCanvasSession::handleCopyAction},
         {ToolId::Exit, &ScreenCanvasSession::handleExitAction},
     };
     return kDispatch;
@@ -207,6 +232,8 @@ void ScreenCanvasSession::initializeSharedState()
             this, [this]() { handleToolbarClick(static_cast<int>(ToolId::Redo)); });
     connect(m_toolbarViewModel, &CanvasToolbarViewModel::clearClicked,
             this, [this]() { handleToolbarClick(static_cast<int>(ToolId::Clear)); });
+    connect(m_toolbarViewModel, &CanvasToolbarViewModel::copyClicked,
+            this, [this]() { handleToolbarClick(static_cast<int>(ToolId::Copy)); });
     connect(m_toolbarViewModel, &CanvasToolbarViewModel::exitClicked,
             this, [this]() { handleToolbarClick(static_cast<int>(ToolId::Exit)); });
     connect(m_toolbarViewModel, &CanvasToolbarViewModel::canvasWhiteboardClicked,
@@ -811,6 +838,48 @@ void ScreenCanvasSession::resetAnnotationInteractionTracking()
     m_lastAnnotationInteractionRect = QRect();
 }
 
+ScreenCanvasSession::FloatingUiVisibilityState ScreenCanvasSession::hideFloatingUiForCapture()
+{
+    FloatingUiVisibilityState state;
+    if (m_qmlToolbar) {
+        state.toolbarVisible = m_qmlToolbar->isVisible();
+        if (state.toolbarVisible) {
+            m_qmlToolbar->hide();
+        }
+    }
+
+    if (m_qmlSubToolbar && m_qmlSubToolbar->isVisible()) {
+        m_qmlSubToolbar->hide();
+    }
+
+    if (m_emojiPickerPopup) {
+        state.emojiPickerVisible = m_emojiPickerPopup->isVisible();
+        if (state.emojiPickerVisible) {
+            m_emojiPickerPopup->hide();
+        }
+    }
+
+    qApp->processEvents();
+    return state;
+}
+
+void ScreenCanvasSession::restoreFloatingUiAfterCapture(const FloatingUiVisibilityState& state)
+{
+    if (!m_isOpen) {
+        return;
+    }
+
+    if (state.toolbarVisible && m_qmlToolbar) {
+        m_qmlToolbar->show();
+    }
+
+    updateQmlToolbarState();
+    if (state.emojiPickerVisible) {
+        showEmojiPickerPopup();
+    }
+    raiseFloatingUiWindows();
+}
+
 void ScreenCanvasSession::connectApplicationStateSignal()
 {
     if (m_applicationStateChangedConnection) {
@@ -1194,6 +1263,31 @@ void ScreenCanvasSession::handleClearAction(ToolId)
     updateAllSurfaces();
 }
 
+void ScreenCanvasSession::handleCopyAction(ToolId)
+{
+    finalizePolylineForToolbarInteraction();
+
+    QScreen* targetScreen = resolveCopyTargetScreen();
+    const QPixmap exportPixmap = exportCanvasPixmapForScreen(targetScreen);
+    if (exportPixmap.isNull() || !targetScreen) {
+        SnapTray::QmlToast::screenToast().showToast(
+            SnapTray::QmlToast::Level::Error,
+            tr("Copy failed"));
+        return;
+    }
+
+    const QImage clipboardImage = normalizeImageForExport(exportPixmap.toImage(), targetScreen);
+    const auto clipboardWriter = m_guiClipboardWriter;
+    QTimer::singleShot(0, qApp, [clipboardImage, clipboardWriter]() {
+        if (clipboardWriter) {
+            clipboardWriter(clipboardImage);
+            return;
+        }
+        PlatformFeatures::instance().copyImageToClipboardForGui(clipboardImage);
+    });
+    close();
+}
+
 void ScreenCanvasSession::handleExitAction(ToolId)
 {
     close();
@@ -1202,6 +1296,82 @@ void ScreenCanvasSession::handleExitAction(ToolId)
 bool ScreenCanvasSession::isDrawingTool(ToolId toolId) const
 {
     return ToolTraits::isDrawingTool(toolId);
+}
+
+QScreen* ScreenCanvasSession::resolveCopyTargetScreen() const
+{
+    if (QScreen* cursorScreen = QGuiApplication::screenAt(QCursor::pos())) {
+        return cursorScreen;
+    }
+
+    if (m_activeSurface && m_activeSurface->canvasScreen()) {
+        return m_activeSurface->canvasScreen();
+    }
+
+    if (m_activationScreen) {
+        return m_activationScreen.data();
+    }
+
+    return QGuiApplication::primaryScreen();
+}
+
+QPixmap ScreenCanvasSession::buildCopyExportBasePixmap(QScreen* screen) const
+{
+    if (!screen) {
+        return {};
+    }
+
+    if (m_bgMode == CanvasBackgroundMode::Screen) {
+        auto* mutableThis = const_cast<ScreenCanvasSession*>(this);
+        const FloatingUiVisibilityState uiState = mutableThis->hideFloatingUiForCapture();
+        QPixmap snapshot;
+        if (m_screenSnapshotProvider) {
+            snapshot = m_screenSnapshotProvider(screen);
+        } else {
+            snapshot = snaptray::capture::captureScreenSnapshot(screen);
+        }
+        mutableThis->restoreFloatingUiAfterCapture(uiState);
+        return snapshot;
+    }
+
+    const QColor fillColor = m_bgMode == CanvasBackgroundMode::Whiteboard ? Qt::white : Qt::black;
+    return createSolidCanvasPixmap(
+        screen->geometry().size(),
+        screen->devicePixelRatio(),
+        fillColor);
+}
+
+QPixmap ScreenCanvasSession::exportCanvasPixmapForScreen(QScreen* screen) const
+{
+    if (!screen) {
+        return {};
+    }
+
+    QPixmap result = buildCopyExportBasePixmap(screen);
+    if (result.isNull()) {
+        return result;
+    }
+
+    if (!m_annotationLayer || m_annotationLayer->isEmpty()) {
+        return result;
+    }
+
+    const QRect desktopGeometry = m_desktopGeometry.isValid() ? m_desktopGeometry : screen->geometry();
+    const QPoint origin = screen->geometry().topLeft() - desktopGeometry.topLeft();
+    const qreal devicePixelRatio =
+        result.devicePixelRatio() > 0.0 ? result.devicePixelRatio() : screen->devicePixelRatio();
+
+    QPainter painter(&result);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform);
+    m_annotationLayer->drawCached(
+        painter,
+        screen->geometry().size(),
+        devicePixelRatio > 0.0 ? devicePixelRatio : 1.0,
+        origin);
+    painter.end();
+
+    return result;
 }
 
 void ScreenCanvasSession::setToolCursor()
@@ -1639,6 +1809,8 @@ void ScreenCanvasSession::handleSurfaceKeyPress(ScreenCanvas* surface, QKeyEvent
         setBackgroundMode(m_bgMode == CanvasBackgroundMode::Blackboard
                               ? CanvasBackgroundMode::Screen
                               : CanvasBackgroundMode::Blackboard);
+    } else if (event->matches(QKeySequence::Copy)) {
+        handleCopyAction(ToolId::Copy);
     } else if (event->matches(QKeySequence::Undo)) {
         if (m_annotationLayer->canUndo()) {
             m_annotationLayer->undo();

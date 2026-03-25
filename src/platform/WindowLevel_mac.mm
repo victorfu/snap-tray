@@ -177,6 +177,21 @@ void setWindowExcludedFromCapture(QWidget *widget, bool excluded)
     }
 }
 
+void setWindowExcludedFromCapture(QWindow *window, bool excluded)
+{
+    if (!window) {
+        return;
+    }
+
+    NSView *view = reinterpret_cast<NSView *>(window->winId());
+    if (view) {
+        NSWindow *nsWindow = [view window];
+        if (nsWindow) {
+            [nsWindow setSharingType:excluded ? NSWindowSharingNone : NSWindowSharingReadOnly];
+        }
+    }
+}
+
 void setWindowVisibleOnAllWorkspaces(QWidget *widget, bool enabled)
 {
     if (!widget) {

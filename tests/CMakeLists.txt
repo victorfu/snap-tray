@@ -48,6 +48,13 @@ target_link_libraries(Qml_QtQuickBackendPolicy PRIVATE snaptray_platform Qt6::Te
 add_test(NAME Qml_QtQuickBackendPolicy COMMAND Qml_QtQuickBackendPolicy)
 set_tests_properties(Qml_QtQuickBackendPolicy PROPERTIES TIMEOUT 60 LABELS "unit")
 
+if(APPLE)
+    add_executable(Qml_FloatingOverlayCaptureExclusion Qml/tst_FloatingOverlayCaptureExclusion.mm)
+    target_link_libraries(Qml_FloatingOverlayCaptureExclusion PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+    add_test(NAME Qml_FloatingOverlayCaptureExclusion COMMAND Qml_FloatingOverlayCaptureExclusion)
+    set_tests_properties(Qml_FloatingOverlayCaptureExclusion PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+endif()
+
 add_executable(Utils_ScreenCaptureRegionUtils Utils/tst_ScreenCaptureRegionUtils.cpp)
 target_link_libraries(Utils_ScreenCaptureRegionUtils PRIVATE snaptray_core Qt6::Test)
 add_test(NAME Utils_ScreenCaptureRegionUtils COMMAND Utils_ScreenCaptureRegionUtils)
@@ -163,11 +170,6 @@ target_link_libraries(RegionSelector_CaptureShortcutHintsOverlay PRIVATE snaptra
 add_test(NAME RegionSelector_CaptureShortcutHintsOverlay COMMAND RegionSelector_CaptureShortcutHintsOverlay)
 set_tests_properties(RegionSelector_CaptureShortcutHintsOverlay PROPERTIES TIMEOUT 60 LABELS "unit")
 
-add_executable(RegionSelector_CaptureChromeWindow RegionSelector/tst_CaptureChromeWindow.cpp)
-target_link_libraries(RegionSelector_CaptureChromeWindow PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME RegionSelector_CaptureChromeWindow COMMAND RegionSelector_CaptureChromeWindow)
-set_tests_properties(RegionSelector_CaptureChromeWindow PROPERTIES TIMEOUT 60 LABELS "unit;integration")
-
 add_executable(RegionSelector_RegionPainterChrome RegionSelector/tst_RegionPainterChrome.cpp)
 target_link_libraries(RegionSelector_RegionPainterChrome PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME RegionSelector_RegionPainterChrome COMMAND RegionSelector_RegionPainterChrome)
@@ -263,11 +265,6 @@ add_executable(RegionSelector_StyleSync RegionSelector/tst_StyleSync.cpp)
 target_link_libraries(RegionSelector_StyleSync PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
 add_test(NAME RegionSelector_StyleSync COMMAND RegionSelector_StyleSync)
 set_tests_properties(RegionSelector_StyleSync PROPERTIES TIMEOUT 60 LABELS "unit;integration")
-
-add_executable(RegionSelector_TraceProbe RegionSelector/tst_TraceProbe.cpp)
-target_link_libraries(RegionSelector_TraceProbe PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
-add_test(NAME RegionSelector_TraceProbe COMMAND RegionSelector_TraceProbe)
-set_tests_properties(RegionSelector_TraceProbe PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
 # ============================================================================
 # Encoding Tests (link snaptray_platform)

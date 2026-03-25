@@ -27,6 +27,7 @@ void setWindowFloatingWithoutFocus(QWidget *widget);
 //   - Does NOT affect ScreenCaptureKit on macOS 15+ (use SCContentFilter's
 //     excludingWindows parameter for SCK exclusion)
 void setWindowExcludedFromCapture(QWidget *widget, bool excluded);
+void setWindowExcludedFromCapture(QWindow *window, bool excluded);
 
 // Sets window to be visible on all virtual desktops/workspaces
 // On macOS: Uses NSWindowCollectionBehaviorCanJoinAllSpaces

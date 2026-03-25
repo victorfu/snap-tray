@@ -79,6 +79,25 @@ void setWindowExcludedFromCapture(QWidget *widget, bool excluded)
 #endif
 }
 
+void setWindowExcludedFromCapture(QWindow *window, bool excluded)
+{
+#ifdef Q_OS_WIN
+    if (!window) {
+        return;
+    }
+
+    HWND hwnd = reinterpret_cast<HWND>(window->winId());
+    if (hwnd) {
+        constexpr DWORD WDA_EXCLUDEFROMCAPTURE_VALUE = 0x00000011;
+        DWORD affinity = excluded ? WDA_EXCLUDEFROMCAPTURE_VALUE : WDA_NONE;
+        SetWindowDisplayAffinity(hwnd, affinity);
+    }
+#else
+    Q_UNUSED(window)
+    Q_UNUSED(excluded)
+#endif
+}
+
 void setWindowVisibleOnAllWorkspaces(QWidget *widget, bool enabled)
 {
 #ifdef Q_OS_WIN

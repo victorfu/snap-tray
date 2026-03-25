@@ -38,6 +38,7 @@ class tst_CanvasToolbarViewModel : public QObject
 private slots:
     void testLaserPointerInsertedBeforeCanvasModeToggle();
     void testLaserPointerButtonRoutesThroughToolSelected();
+    void testCopyButtonEmitsCopySignal();
     void testCanvasModeButtonsEmitActionSignals();
 };
 
@@ -74,6 +75,21 @@ void tst_CanvasToolbarViewModel::testLaserPointerButtonRoutesThroughToolSelected
 
     QCOMPARE(toolSpy.count(), 1);
     QCOMPARE(toolSpy.at(0).at(0).toInt(), laserButtonId);
+}
+
+void tst_CanvasToolbarViewModel::testCopyButtonEmitsCopySignal()
+{
+    CanvasToolbarViewModel viewModel;
+    const int copyButtonId = static_cast<int>(ToolId::Copy);
+    QVERIFY(indexOfButtonId(viewModel.buttons(), copyButtonId) >= 0);
+
+    QSignalSpy toolSpy(&viewModel, &CanvasToolbarViewModel::toolSelected);
+    QSignalSpy copySpy(&viewModel, &CanvasToolbarViewModel::copyClicked);
+
+    viewModel.handleButtonClicked(copyButtonId);
+
+    QCOMPARE(toolSpy.count(), 0);
+    QCOMPARE(copySpy.count(), 1);
 }
 
 void tst_CanvasToolbarViewModel::testCanvasModeButtonsEmitActionSignals()

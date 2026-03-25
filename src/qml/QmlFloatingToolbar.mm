@@ -228,6 +228,7 @@ void QmlFloatingToolbar::applyPlatformWindowFlags()
     }
     [window setLevel:targetLevel];
     [window setHidesOnDeactivate:NO];
+    [window setSharingType:NSWindowSharingNone];
 
     if ([window isKindOfClass:[NSPanel class]]) {
         [(NSPanel*)window setBecomesKeyOnlyIfNeeded:YES];

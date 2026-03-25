@@ -484,6 +484,7 @@ add_library(snaptray_platform STATIC
     # Common sources
     src/capture/ICaptureEngine.cpp
     src/capture/IAudioCaptureEngine.cpp
+    src/capture/ScreenSnapshot.cpp
     src/capture/QtCaptureEngine.cpp
     src/encoding/EncoderFactory.cpp
     src/encoding/NativeGifEncoder.cpp
@@ -502,6 +503,7 @@ add_library(snaptray_platform STATIC
     include/encoding/WebPAnimEncoder.h
     include/capture/ICaptureEngine.h
     include/capture/IAudioCaptureEngine.h
+    include/capture/ScreenSnapshot.h
     include/capture/QtCaptureEngine.h
     include/video/IVideoPlayer.h
     include/video/VideoTrimmer.h
