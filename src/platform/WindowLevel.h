@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Victor Fu. All rights reserved.
+// Copyright (c) 2026 Victor Fu. All rights reserved.
 // Use of this source code is governed by an MIT-style license that can be
 // found in the LICENSE file.
 

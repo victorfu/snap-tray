@@ -18,7 +18,7 @@ RequestExecutionLevel admin
 VIProductVersion "${VERSION}.0"
 VIAddVersionKey "ProductName" "${APP_NAME}"
 VIAddVersionKey "CompanyName" "Victor Fu"
-VIAddVersionKey "LegalCopyright" "Copyright (c) 2025 Victor Fu. MIT License."
+VIAddVersionKey "LegalCopyright" "Copyright (c) 2026 Victor Fu. MIT License."
 VIAddVersionKey "FileDescription" "${APP_NAME} Screenshot Utility"
 VIAddVersionKey "FileVersion" "${VERSION}"
 VIAddVersionKey "ProductVersion" "${VERSION}"
