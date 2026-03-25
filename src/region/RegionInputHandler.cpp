@@ -305,6 +305,7 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
             m_selectionManager->startSelection(m_pendingWindowClickStartPos);
             m_lastSelectionRect = QRect();
             clearDetectionAndNotify();
+            emit updateRequested();
             m_selectionManager->updateSelection(event->pos());
             m_pendingWindowClickActive = false;
             m_pendingWindowClickRect = QRect();
