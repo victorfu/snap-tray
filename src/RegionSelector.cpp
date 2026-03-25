@@ -9,6 +9,7 @@
 #include "region/RegionSettingsHelper.h"
 #include "region/RegionExportManager.h"
 #include "region/MagnifierOverlay.h"
+#include "region/SelectionPreviewOverlay.h"
 #include "region/CaptureShortcutHintsOverlay.h"
 #include "qml/QmlOverlayPanel.h"
 #include "qml/RegionControlViewModel.h"
@@ -148,6 +149,7 @@ RegionSelector::RegionSelector(QWidget* parent)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     setAttribute(Qt::WA_DeleteOnClose);
+    setAttribute(Qt::WA_OpaquePaintEvent);
     setMouseTracking(true);
 
     // Initialize selection state manager
@@ -161,11 +163,12 @@ RegionSelector::RegionSelector(QWidget* parent)
                     m_multiRegionManager->updateRegion(activeIndex, rect);
                 }
             }
-            if (m_inputState.completedSelectionDragUiSuppressed && m_toolbarUserDragged) {
-                m_toolbarUserDragged = false;
-            }
-            // Removed update() - repaints now handled by RegionInputHandler's throttled path
-        });
+        if (m_inputState.completedSelectionDragUiSuppressed && m_toolbarUserDragged) {
+            m_toolbarUserDragged = false;
+        }
+        syncSelectionPreviewOverlay();
+        // Removed update() - repaints now handled by RegionInputHandler's throttled path
+    });
     connect(m_selectionManager, &SelectionStateManager::stateChanged,
         this, [this](SelectionStateManager::State newState) {
             const bool suppressionBefore = m_inputState.completedSelectionDragUiSuppressed;
@@ -182,6 +185,8 @@ RegionSelector::RegionSelector(QWidget* parent)
                 m_multiRegionListRefreshPending = false;
                 refreshMultiRegionListPanel();
             }
+
+            syncSelectionPreviewOverlay();
 
             auto& cm = CursorManager::instance();
 
@@ -503,6 +508,9 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Initialize magnifier panel component
     m_magnifierPanel = new MagnifierPanel(this);
     m_magnifierOverlay = std::make_unique<MagnifierOverlay>(m_magnifierPanel);
+#ifdef Q_OS_WIN
+    m_selectionPreviewOverlay = std::make_unique<SelectionPreviewOverlay>();
+#endif
     // Deliberately not a QML overlay window: this hint panel must share the
     // RegionSelector paint/lifecycle path to avoid native window ordering bugs.
     m_shortcutHintsOverlay = std::make_unique<CaptureShortcutHintsOverlay>();
@@ -753,6 +761,9 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_inputHandler->setMagnifierVisibilityProvider([this]() {
         return shouldShowMagnifier();
     });
+    m_inputHandler->setSelectionPreviewOverlayActiveProvider([this]() {
+        return m_selectionPreviewOverlay && m_selectionPreviewOverlay->isVisible();
+    });
 
     // Connect input handler signals
     connect(m_inputHandler, &RegionInputHandler::toolCursorRequested,
@@ -760,6 +771,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_inputHandler, &RegionInputHandler::currentPointUpdated,
         this, [this](const QPoint&) {
             syncMagnifierOverlay();
+            syncSelectionPreviewOverlay();
         });
     connect(m_inputHandler, qOverload<>(&RegionInputHandler::updateRequested),
         this, [this]() {
@@ -1251,6 +1263,8 @@ void RegionSelector::applyCaptureContext(const SelectorCaptureContext& context)
         record.hasSourceScreen = !context.sourceScreen.isNull();
         m_traceProbe->captureContextEvents.append(record);
     }
+
+    syncSelectionPreviewOverlay();
 }
 
 void RegionSelector::refreshMagnifierContext(const QPoint& cursorPos)
@@ -2339,6 +2353,7 @@ void RegionSelector::paintSelectorScene(QPainter& painter, const QRegion& dirtyR
     m_painter->setCurrentTool(static_cast<int>(m_inputState.currentTool));
     m_painter->setDevicePixelRatio(m_devicePixelRatio);
     m_painter->setMultiRegionMode(m_inputState.multiRegionMode);
+    m_painter->setSelectionPreviewActive(m_selectionPreviewOverlay && m_selectionPreviewOverlay->isVisible());
     const bool showReplacePreview = m_inputState.multiRegionMode &&
         m_inputState.replaceTargetIndex >= 0 &&
         m_selectionManager->isSelecting();
@@ -2406,6 +2421,28 @@ void RegionSelector::syncDetachedSelectionUiDuringPaint()
 void RegionSelector::syncMagnifierOverlayDuringPaint()
 {
     syncMagnifierOverlay();
+}
+
+void RegionSelector::syncSelectionPreviewOverlay()
+{
+    if (!m_selectionPreviewOverlay) {
+        return;
+    }
+
+    const bool shouldShow =
+        m_initialRevealState == InitialRevealState::Revealed &&
+        m_selectionManager &&
+        m_selectionManager->isSelecting() &&
+        m_selectionManager->selectionRect().isValid() &&
+        !m_backgroundPixmap.isNull();
+
+    m_selectionPreviewOverlay->syncToHost(
+        this,
+        m_selectionManager ? m_selectionManager->selectionRect() : QRect(),
+        &m_backgroundPixmap,
+        m_devicePixelRatio,
+        m_cornerRadius,
+        shouldShow);
 }
 
 void RegionSelector::syncRegionControlPanelDuringPaint()

@@ -110,6 +110,11 @@ void RegionInputHandler::setMagnifierVisibilityProvider(std::function<bool()> pr
     m_shouldRenderMagnifier = std::move(provider);
 }
 
+void RegionInputHandler::setSelectionPreviewOverlayActiveProvider(std::function<bool()> provider)
+{
+    m_isSelectionPreviewOverlayActive = std::move(provider);
+}
+
 RegionInputState& RegionInputHandler::state()
 {
     Q_ASSERT(m_state != nullptr);
@@ -959,6 +964,8 @@ void RegionInputHandler::handleThrottledUpdate()
 
     if (m_selectionManager->isSelecting() || m_selectionManager->isResizing() || m_selectionManager->isMoving()) {
         const QRect currentSelectionRect = m_selectionManager->selectionRect().normalized();
+        const bool selectionPreviewOverlayActive =
+            m_isSelectionPreviewOverlayActive && m_isSelectionPreviewOverlayActive();
         const bool suppressFloatingUi =
             shouldSuppressCompletedSelectionDragUi(state(), m_selectionManager);
         const bool shouldRenderMagnifier =
@@ -983,8 +990,10 @@ void RegionInputHandler::handleThrottledUpdate()
         params.viewportSize = m_parentWidget->size();
         params.suppressFloatingUi = suppressFloatingUi;
         params.includeMagnifier = !suppressFloatingUi && shouldRenderMagnifier;
-        const QRegion dirtyRegion = m_dirtyRegionPlanner.planSelectionDragRegion(params);
-        m_parentWidget->update(dirtyRegion);
+        if (!selectionPreviewOverlayActive) {
+            const QRegion dirtyRegion = m_dirtyRegionPlanner.planSelectionDragRegion(params);
+            m_parentWidget->update(dirtyRegion);
+        }
         m_lastSelectionRect = currentSelectionRect;
         m_lastMagnifierRect = currentMagnifierRect;
         m_lastToolbarRect = currentToolbarRect;

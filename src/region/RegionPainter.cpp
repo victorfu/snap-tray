@@ -158,8 +158,12 @@ void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QR
 
     // Draw selection if active or complete
     if (m_selectionManager->hasActiveSelection() && selectionRect.isValid()) {
-        drawSelection(painter);
-        drawDimensionInfo(painter);
+        const bool selectionPreviewOwnedByOverlay =
+            m_selectionPreviewActive && m_selectionManager->isSelecting();
+        if (!selectionPreviewOwnedByOverlay) {
+            drawSelection(painter);
+            drawDimensionInfo(painter);
+        }
 
         // Draw annotations on top of selection (only when selection is established)
         if (!m_multiRegionMode && m_selectionManager->hasSelection()) {

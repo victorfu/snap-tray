@@ -53,6 +53,7 @@ public:
     void setParentWidget(QWidget* widget);
     void setSharedState(RegionInputState* state);
     void setMagnifierVisibilityProvider(std::function<bool()> provider);
+    void setSelectionPreviewOverlayActiveProvider(std::function<bool()> provider);
 
     // Reset dirty tracking state (call when starting a new capture)
     void resetDirtyTracking();
@@ -156,6 +157,7 @@ private:
     QWidget* m_parentWidget = nullptr;
     RegionInputState* m_state = nullptr;
     std::function<bool()> m_shouldRenderMagnifier;
+    std::function<bool()> m_isSelectionPreviewOverlayActive;
 
     // State
     QPoint m_startPoint;

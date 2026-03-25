@@ -66,6 +66,7 @@ public:
     void setDevicePixelRatio(qreal ratio);
     void setMultiRegionMode(bool enabled) { m_multiRegionMode = enabled; }
     void setReplacePreview(int targetIndex, const QRect& previewRect);
+    void setSelectionPreviewActive(bool active) { m_selectionPreviewActive = active; }
 
     /**
      * @brief Calculate the visual bounding rect of a window highlight (including the hint label).
@@ -117,6 +118,7 @@ private:
     int m_currentTool = 0;
     qreal m_devicePixelRatio = 1.0;
     bool m_multiRegionMode = false;
+    bool m_selectionPreviewActive = false;
     int m_replaceTargetIndex = -1;
     QRect m_replacePreviewRect;
 
