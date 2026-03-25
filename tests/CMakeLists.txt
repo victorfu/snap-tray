@@ -347,6 +347,11 @@ target_link_libraries(Utils_ImageSaveUtils PRIVATE snaptray_core Qt6::Test)
 add_test(NAME Utils_ImageSaveUtils COMMAND Utils_ImageSaveUtils)
 set_tests_properties(Utils_ImageSaveUtils PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Utils_TrayTooltipFormatter Utils/tst_TrayTooltipFormatter.cpp)
+target_link_libraries(Utils_TrayTooltipFormatter PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Utils_TrayTooltipFormatter COMMAND Utils_TrayTooltipFormatter)
+set_tests_properties(Utils_TrayTooltipFormatter PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # CLI Tests (link snaptray_platform for PlatformFeatures symbols)
 # ============================================================================

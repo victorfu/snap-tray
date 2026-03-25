@@ -14,6 +14,8 @@
 #include "hotkey/HotkeyManager.h"
 #include "qml/QmlToast.h"
 #include "qml/RecordingPreviewBackend.h"
+#include "ui/TrayTooltipFormatter.h"
+#include "update/InstallSourceDetector.h"
 #include "update/UpdateCoordinator.h"
 #include "utils/CoordinateHelper.h"
 #ifdef SNAPTRAY_ENABLE_MCP
@@ -109,6 +111,13 @@ bool tryReadJsonInt(const QJsonObject& options, const QString& key, int* value)
     }
 
     return false;
+}
+
+QString hotkeyDisplayTextOrFallback(SnapTray::HotkeyAction action, const QString& fallbackText)
+{
+    const auto config = SnapTray::HotkeyManager::instance().getConfig(action);
+    const QString displayHotkey = SnapTray::HotkeyManager::formatKeySequence(config.keySequence);
+    return displayHotkey.isEmpty() ? fallbackText : displayHotkey;
 }
 }
 
@@ -455,6 +464,7 @@ void MainApplication::initialize()
 
     // Update tray menu with current hotkey text
     updateTrayMenuHotkeyText();
+    updateTrayToolTip();
     updatePinsVisibilityActionText();
 
     QTimer::singleShot(0, this, [captureManager = QPointer<CaptureManager>(m_captureManager)]() {
@@ -840,6 +850,7 @@ void MainApplication::onHotkeyAction(SnapTray::HotkeyAction action)
 void MainApplication::onHotkeyChanged(SnapTray::HotkeyAction, const SnapTray::HotkeyConfig&)
 {
     updateTrayMenuHotkeyText();
+    updateTrayToolTip();
     updatePinsVisibilityActionText();
 }
 
@@ -1049,4 +1060,39 @@ void MainApplication::updateTrayMenuHotkeyText()
     updateActionHotkeyText(m_fullScreenRecordingAction,
                            SnapTray::HotkeyAction::RecordFullScreen,
                            tr("Record Full Screen"));
+}
+
+void MainApplication::updateTrayToolTip()
+{
+    if (!m_trayIcon) {
+        return;
+    }
+
+#ifdef Q_OS_WIN
+    const QString notSetText = tr("Not set");
+    const QList<SnapTray::TrayTooltipHotkeyLine> hotkeyLines{
+        {tr("Region Capture hotkey"),
+         hotkeyDisplayTextOrFallback(SnapTray::HotkeyAction::RegionCapture, notSetText)},
+        {tr("Paste hotkey"),
+         hotkeyDisplayTextOrFallback(SnapTray::HotkeyAction::PasteFromClipboard, notSetText)},
+        {tr("Screen Canvas hotkey"),
+         hotkeyDisplayTextOrFallback(SnapTray::HotkeyAction::ScreenCanvas, notSetText)},
+    };
+
+    const QString applicationName = QCoreApplication::applicationName().isEmpty()
+        ? QStringLiteral("SnapTray")
+        : QCoreApplication::applicationName();
+    const QString version = QCoreApplication::applicationVersion();
+    const QString installSource = InstallSourceDetector::getSourceDisplayName(
+        InstallSourceDetector::detect());
+
+    m_trayIcon->setToolTip(SnapTray::formatWindowsTrayTooltip(
+        applicationName,
+        version,
+        installSource,
+        hotkeyLines,
+        notSetText));
+#else
+    m_trayIcon->setToolTip(tr("SnapTray - Screenshot Utility"));
+#endif
 }
