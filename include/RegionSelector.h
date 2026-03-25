@@ -296,6 +296,7 @@ private:
     void syncFloatingUiCursor();
     void paintSelectorScene(QPainter& painter, const QRegion& dirtyRegion);
     void syncDetachedSelectionUiDuringPaint();
+    void restoreDetachedSelectionFloatingUiIfNeeded();
     void syncMagnifierOverlayDuringPaint();
     void syncSelectionPreviewOverlay();
     void hideSelectionPreviewOverlays();

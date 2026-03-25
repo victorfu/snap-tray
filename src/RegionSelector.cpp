@@ -2541,6 +2541,24 @@ void RegionSelector::syncDetachedSelectionUiDuringPaint()
     }
 }
 
+void RegionSelector::restoreDetachedSelectionFloatingUiIfNeeded()
+{
+    if (!usesDetachedCaptureWindows() ||
+        m_isClosing ||
+        m_selectionCompletionHandoffPending ||
+        !m_selectionManager ||
+        !m_selectionManager->isComplete() ||
+        !m_selectionManager->hasSelection() ||
+        completedSelectionDragUiSuppressed() ||
+        m_exportInProgress) {
+        return;
+    }
+
+    syncDetachedSelectionUiDuringPaint();
+    syncRegionControlPanelDuringPaint();
+    syncFloatingUiCursor();
+}
+
 void RegionSelector::syncMagnifierOverlayDuringPaint()
 {
     syncMagnifierOverlay();
@@ -2969,7 +2987,12 @@ void RegionSelector::updateCompletedSelectionDragUiSuppression()
     syncCaptureChromeWindow();
 
     if (!m_inputState.completedSelectionDragUiSuppressed) {
-        QTimer::singleShot(0, this, &RegionSelector::syncFloatingUiCursor);
+        QTimer::singleShot(0, this, [this]() {
+            restoreDetachedSelectionFloatingUiIfNeeded();
+            if (!usesDetachedCaptureWindows()) {
+                syncFloatingUiCursor();
+            }
+        });
     }
 }
 

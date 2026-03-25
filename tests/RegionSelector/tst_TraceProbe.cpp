@@ -27,6 +27,7 @@ private slots:
     void testCompletedSelectionHoverDoesNotTriggerHostPaint();
     void testDetectedWindowDragTransitionUsesDetachedChromeOrFullHostPaint();
     void testSelectionCompletionDefersFloatingUiUntilChromePaint();
+    void testCompletedSelectionDragRestoresFloatingUiAfterRelease();
 
 private:
     bool m_originalMagnifierEnabled = RegionCaptureSettingsManager::kDefaultMagnifierEnabled;
@@ -282,6 +283,48 @@ void tst_RegionSelectorTraceProbe::testSelectionCompletionDefersFloatingUiUntilC
 
     QTRY_VERIFY(!paintSpy.isEmpty());
     QTRY_VERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+}
+
+void tst_RegionSelectorTraceProbe::testCompletedSelectionDragRestoresFloatingUiAfterRelease()
+{
+#ifndef Q_OS_WIN
+    QSKIP("Detached floating UI restore regression is Windows-specific.");
+#else
+    RegionSelector selector;
+    RegionSelectorTestAccess::TraceProbe probe;
+    RegionSelectorTestAccess::attachTraceProbe(selector, &probe);
+
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+
+    QPixmap preCapture(QSize(320, 240));
+    preCapture.fill(Qt::black);
+    selector.initializeForScreen(screen, preCapture);
+    RegionSelectorTestAccess::showForRevealTests(selector);
+    QCoreApplication::processEvents();
+
+    RegionSelectorTestAccess::markInitialRevealRevealed(selector);
+    if (!RegionSelectorTestAccess::usesDetachedCaptureWindows(selector)) {
+        QSKIP("Detached capture windows are not active in this environment.");
+    }
+
+    RegionSelectorTestAccess::setSelectionRect(selector, QRect(40, 40, 120, 90));
+    RegionSelectorTestAccess::invokePaint(selector, QRegion(selector.rect()));
+    QTRY_VERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+    QTRY_VERIFY(RegionSelectorTestAccess::regionControlVisible(selector));
+
+    RegionSelectorTestAccess::dispatchMousePress(selector, QPoint(80, 80));
+    RegionSelectorTestAccess::dispatchMouseMove(selector, QPoint(110, 110));
+    QCoreApplication::processEvents();
+    QTRY_VERIFY(!RegionSelectorTestAccess::toolbarVisible(selector));
+    QTRY_VERIFY(!RegionSelectorTestAccess::regionControlVisible(selector));
+
+    RegionSelectorTestAccess::dispatchMouseRelease(selector, QPoint(110, 110));
+    QCoreApplication::processEvents();
+
+    QTRY_VERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+    QTRY_VERIFY(RegionSelectorTestAccess::regionControlVisible(selector));
+#endif
 }
 
 QTEST_MAIN(tst_RegionSelectorTraceProbe)
