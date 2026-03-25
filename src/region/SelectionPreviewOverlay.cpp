@@ -170,7 +170,6 @@ void SelectionPreviewOverlay::syncToHost(QWidget* host,
         show();
     }
 
-    raise();
     update();
 }
 

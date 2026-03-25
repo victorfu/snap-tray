@@ -79,7 +79,6 @@ void SelectionDimmingOverlay::syncStrip(int index, const QRect& globalRect)
     if (!strip->isVisible()) {
         strip->show();
     }
-    strip->raise();
     strip->update();
 }
 
