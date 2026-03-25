@@ -1,14 +1,13 @@
 #include "annotations/EmojiStickerAnnotation.h"
+#include "utils/CoordinateHelper.h"
 #include <QFontMetrics>
 #include <QPainter>
 #include <cmath>
 #include <QtMath>
 
 namespace {
-QFont emojiFontForScale(qreal scale)
+QFont emojiBaseFont()
 {
-    const int fontSize = qMax(1, qRound(EmojiStickerAnnotation::kBaseSize * scale));
-
     QFont font;
 #ifdef Q_OS_MAC
     font.setFamily("Apple Color Emoji");
@@ -17,7 +16,7 @@ QFont emojiFontForScale(qreal scale)
 #else
     font.setFamily("Noto Color Emoji");
 #endif
-    font.setPointSize(fontSize);
+    font.setPointSize(EmojiStickerAnnotation::kBaseSize);
     return font;
 }
 
@@ -29,10 +28,10 @@ struct EmojiGlyphLayout
     QRectF inkRect;     // Glyph bounding rect in widget coordinates.
 };
 
-EmojiGlyphLayout computeEmojiGlyphLayout(const QPoint& center, const QString& emoji, qreal scale)
+EmojiGlyphLayout computeEmojiGlyphLayout(const QPointF& center, const QString& emoji)
 {
     EmojiGlyphLayout layout;
-    layout.font = emojiFontForScale(scale);
+    layout.font = emojiBaseFont();
 
     QFontMetrics fm(layout.font);
     layout.textRect = fm.boundingRect(emoji);
@@ -97,8 +96,14 @@ QPointF EmojiStickerAnnotation::center() const
 
 QRectF EmojiStickerAnnotation::glyphRect() const
 {
-    const EmojiGlyphLayout layout = computeEmojiGlyphLayout(m_position, m_emoji, m_scale);
-    return layout.inkRect;
+    if (m_cachedBaseGlyphRect.isNull()) {
+        regenerateCache(1.0);
+    }
+
+    QRectF rect = m_cachedBaseGlyphRect;
+    const QPointF c = QPointF(m_position);
+    rect.translate(c - rect.center());
+    return rect;
 }
 
 QTransform EmojiStickerAnnotation::localLinearTransform() const
@@ -109,6 +114,9 @@ QTransform EmojiStickerAnnotation::localLinearTransform() const
     }
     if (m_mirrorX || m_mirrorY) {
         t.scale(m_mirrorX ? -1.0 : 1.0, m_mirrorY ? -1.0 : 1.0);
+    }
+    if (!qFuzzyCompare(m_scale, 1.0)) {
+        t.scale(m_scale, m_scale);
     }
     return t;
 }
@@ -141,19 +149,21 @@ void EmojiStickerAnnotation::draw(QPainter &painter) const
 {
     if (m_emoji.isEmpty()) return;
 
+    const qreal dpr = painter.device()->devicePixelRatio();
+    if (!isCacheValid(dpr)) {
+        regenerateCache(dpr);
+    }
+
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
 
-    const EmojiGlyphLayout layout = computeEmojiGlyphLayout(m_position, m_emoji, m_scale);
-    painter.setFont(layout.font);
-
-    QRectF rect = layout.inkRect;
-    QPointF c = rect.center();
+    const QPointF c = QPointF(m_position);
     painter.translate(c);
     painter.setTransform(localLinearTransform(), true);
     painter.translate(-c);
-
-    painter.drawText(layout.drawOrigin, m_emoji);
+    const QPointF currentOrigin = QPointF(m_position) + m_cachedBaseGlyphRect.topLeft();
+    painter.drawPixmap(currentOrigin, m_cachedPixmap);
 
     painter.restore();
 }
@@ -178,4 +188,43 @@ std::unique_ptr<AnnotationItem> EmojiStickerAnnotation::clone() const
 void EmojiStickerAnnotation::translate(const QPointF& delta)
 {
     moveBy(delta.toPoint());
+}
+
+bool EmojiStickerAnnotation::isCacheValid(qreal dpr) const
+{
+    return !m_cachedPixmap.isNull() &&
+           qFuzzyCompare(m_cachedDpr, dpr) &&
+           m_cachedEmoji == m_emoji;
+}
+
+void EmojiStickerAnnotation::regenerateCache(qreal dpr) const
+{
+    const EmojiGlyphLayout layout = computeEmojiGlyphLayout(QPointF(0.0, 0.0), m_emoji);
+    QRectF inkRect = layout.inkRect;
+    if (!inkRect.isValid() || inkRect.isEmpty()) {
+        m_cachedPixmap = QPixmap();
+        m_cachedOrigin = QPointF();
+        m_cachedBaseGlyphRect = QRectF();
+        m_cachedDpr = dpr;
+        m_cachedEmoji = m_emoji;
+        return;
+    }
+
+    const QRect alignedInkRect = inkRect.toAlignedRect();
+    m_cachedPixmap = QPixmap(CoordinateHelper::toPhysical(alignedInkRect.size(), dpr));
+    m_cachedPixmap.setDevicePixelRatio(dpr);
+    m_cachedPixmap.fill(Qt::transparent);
+
+    {
+        QPainter offPainter(&m_cachedPixmap);
+        offPainter.setRenderHint(QPainter::Antialiasing, true);
+        offPainter.setRenderHint(QPainter::TextAntialiasing, true);
+        offPainter.setFont(layout.font);
+        offPainter.drawText(layout.drawOrigin - alignedInkRect.topLeft(), m_emoji);
+    }
+
+    m_cachedOrigin = QPointF(m_position) + alignedInkRect.topLeft();
+    m_cachedBaseGlyphRect = QRectF(alignedInkRect);
+    m_cachedDpr = dpr;
+    m_cachedEmoji = m_emoji;
 }
