@@ -164,7 +164,8 @@ void tst_RegionSelectorTraceProbe::testCompletedSelectionHoverUsesPartialDirtyRe
     QTRY_VERIFY(!probe.paintEvents.isEmpty());
 
     const auto& region = probe.paintEvents.constLast().dirtyRegion;
-    QVERIFY(region.rectCount() > 1);
+    QVERIFY(!region.isEmpty());
+    QVERIFY(region.boundingRect() != selector.rect());
 }
 
 QTEST_MAIN(tst_RegionSelectorTraceProbe)
