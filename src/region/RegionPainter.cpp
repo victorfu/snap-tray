@@ -24,7 +24,7 @@
 
 namespace {
 
-constexpr qreal kSelectionBorderPhysicalWidth = 1.0;
+constexpr qreal kSelectionBorderWidth = 2.0;
 constexpr int kSelectionHandleDiameter = 8;
 constexpr int kSelectionHandleRadius = kSelectionHandleDiameter / 2;
 constexpr int kSelectionChromeMargin = kSelectionHandleRadius + 1;
@@ -289,9 +289,12 @@ void RegionPainter::drawSelection(QPainter& painter)
 QRectF RegionPainter::alignedSelectionBorderRect(const QRect& selectionRect, qreal penWidth) const
 {
     const qreal dpr = m_devicePixelRatio > 0.0 ? m_devicePixelRatio : 1.0;
-    Q_UNUSED(penWidth);
-    const qreal inset = 0.5 / dpr;
-    QRectF borderRect = QRectF(selectionRect.normalized()).adjusted(inset, inset, -inset, -inset);
+    QRectF borderRect = QRectF(selectionRect.normalized()).adjusted(0.5, 0.5, -0.5, -0.5);
+    const int physicalPenWidth = qMax(1, qRound(penWidth * dpr));
+    if ((physicalPenWidth % 2) != 0) {
+        const qreal offset = 0.5 / dpr;
+        borderRect.translate(offset, offset);
+    }
     return borderRect;
 }
 
@@ -304,23 +307,17 @@ void RegionPainter::drawSelectionChrome(QPainter& painter, const QRect& selectio
 
     const int radius = effectiveCornerRadius(sel);
 
-    const qreal dpr = m_devicePixelRatio > 0.0 ? m_devicePixelRatio : 1.0;
-    QPen borderPen(QColor(0, 174, 255), kSelectionBorderPhysicalWidth / dpr);
+    QPen borderPen(QColor(0, 174, 255), kSelectionBorderWidth);
     borderPen.setJoinStyle(Qt::MiterJoin);
     borderPen.setCapStyle(Qt::SquareCap);
     painter.setPen(borderPen);
     painter.setBrush(Qt::NoBrush);
     const QRectF borderRect = alignedSelectionBorderRect(sel, borderPen.widthF());
-    painter.save();
-    if (radius == 0) {
-        painter.setRenderHint(QPainter::Antialiasing, false);
-    }
     if (radius > 0) {
         painter.drawRoundedRect(borderRect, radius, radius);
     } else {
         painter.drawRect(borderRect);
     }
-    painter.restore();
 
     painter.setBrush(QColor(0, 174, 255));
     painter.setPen(Qt::white);

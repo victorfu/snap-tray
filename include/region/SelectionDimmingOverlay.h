@@ -2,27 +2,24 @@
 #define SELECTIONDIMMINGOVERLAY_H
 
 #include <QRect>
-#include <array>
-#include <memory>
+#include <QWidget>
 
-class QWidget;
-class SelectionDimmingStripWindow;
-
-class SelectionDimmingOverlay
+class SelectionDimmingOverlay : public QWidget
 {
 public:
     explicit SelectionDimmingOverlay(QWidget* parent = nullptr);
-    ~SelectionDimmingOverlay();
+    ~SelectionDimmingOverlay() override = default;
 
     void syncToHost(QWidget* host, const QRect& selectionRect, bool shouldShow);
     void hideOverlay();
 
-private:
-    void syncStrip(int index, const QRect& globalRect);
+protected:
+    void paintEvent(QPaintEvent* event) override;
+    void showEvent(QShowEvent* event) override;
 
+private:
     QWidget* m_host = nullptr;
     QRect m_selectionRect;
-    std::array<std::unique_ptr<SelectionDimmingStripWindow>, 4> m_strips;
 };
 
 #endif // SELECTIONDIMMINGOVERLAY_H
