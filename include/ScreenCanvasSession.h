@@ -128,8 +128,14 @@ private:
         bool toolbarVisible = false;
         bool emojiPickerVisible = false;
     };
+    struct ScreenSnapshotVisibilityState {
+        FloatingUiVisibilityState floatingUi;
+        QList<QPointer<ScreenCanvas>> visibleSurfaces;
+    };
     FloatingUiVisibilityState hideFloatingUiForCapture();
     void restoreFloatingUiAfterCapture(const FloatingUiVisibilityState& state);
+    ScreenSnapshotVisibilityState hideUiForScreenSnapshot();
+    void restoreUiAfterScreenSnapshot(const ScreenSnapshotVisibilityState& state);
 
     void activateSurface(ScreenCanvas* surface);
     void beginMouseGrab(ScreenCanvas* surface);

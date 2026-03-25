@@ -150,6 +150,11 @@ target_link_libraries(ScreenCanvas_SessionRecovery PRIVATE snaptray_ui snaptray_
 add_test(NAME ScreenCanvas_SessionRecovery COMMAND ScreenCanvas_SessionRecovery)
 set_tests_properties(ScreenCanvas_SessionRecovery PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(ScreenCanvas_CopyExport ScreenCanvas/tst_CopyExport.cpp)
+target_link_libraries(ScreenCanvas_CopyExport PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME ScreenCanvas_CopyExport COMMAND ScreenCanvas_CopyExport)
+set_tests_properties(ScreenCanvas_CopyExport PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 add_executable(ScreenCanvas_AnnotationRenderHelper ScreenCanvas/tst_AnnotationRenderHelper.cpp)
 target_link_libraries(ScreenCanvas_AnnotationRenderHelper PRIVATE snaptray_ui Qt6::Test)
 target_include_directories(ScreenCanvas_AnnotationRenderHelper PRIVATE ${CMAKE_SOURCE_DIR}/src)

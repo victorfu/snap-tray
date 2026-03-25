@@ -880,6 +880,58 @@ void ScreenCanvasSession::restoreFloatingUiAfterCapture(const FloatingUiVisibili
     raiseFloatingUiWindows();
 }
 
+ScreenCanvasSession::ScreenSnapshotVisibilityState ScreenCanvasSession::hideUiForScreenSnapshot()
+{
+    ScreenSnapshotVisibilityState state;
+    state.floatingUi = hideFloatingUiForCapture();
+
+    for (const QPointer<ScreenCanvas>& surface : m_surfaces) {
+        if (!surface || !surface->isVisible()) {
+            continue;
+        }
+
+        state.visibleSurfaces.append(surface);
+        surface->hide();
+    }
+
+    if (!state.visibleSurfaces.isEmpty()) {
+        qApp->processEvents();
+    }
+
+    return state;
+}
+
+void ScreenCanvasSession::restoreUiAfterScreenSnapshot(
+    const ScreenSnapshotVisibilityState& state)
+{
+    if (!m_isOpen) {
+        return;
+    }
+
+    for (const QPointer<ScreenCanvas>& surface : state.visibleSurfaces) {
+        if (!surface) {
+            continue;
+        }
+
+        if (!surface->isVisible()) {
+            surface->show();
+        }
+        preventWindowHideOnDeactivate(surface);
+        raiseWindowAboveMenuBar(surface);
+        setWindowClickThrough(surface, false);
+        surface->raise();
+        surface->update();
+    }
+
+    if (!m_activeSurface && !state.visibleSurfaces.isEmpty()) {
+        m_activeSurface = state.visibleSurfaces.first();
+    }
+
+    refreshFloatingUiParentWidget();
+    setToolCursor();
+    restoreFloatingUiAfterCapture(state.floatingUi);
+}
+
 void ScreenCanvasSession::connectApplicationStateSignal()
 {
     if (m_applicationStateChangedConnection) {
@@ -1323,14 +1375,14 @@ QPixmap ScreenCanvasSession::buildCopyExportBasePixmap(QScreen* screen) const
 
     if (m_bgMode == CanvasBackgroundMode::Screen) {
         auto* mutableThis = const_cast<ScreenCanvasSession*>(this);
-        const FloatingUiVisibilityState uiState = mutableThis->hideFloatingUiForCapture();
+        const ScreenSnapshotVisibilityState uiState = mutableThis->hideUiForScreenSnapshot();
         QPixmap snapshot;
         if (m_screenSnapshotProvider) {
             snapshot = m_screenSnapshotProvider(screen);
         } else {
             snapshot = snaptray::capture::captureScreenSnapshot(screen);
         }
-        mutableThis->restoreFloatingUiAfterCapture(uiState);
+        mutableThis->restoreUiAfterScreenSnapshot(uiState);
         return snapshot;
     }
 
