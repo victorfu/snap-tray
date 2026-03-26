@@ -1,6 +1,6 @@
 # SnapTray Project
 
-SnapTray is a Qt 6 screenshot and recording application for macOS and Windows. It provides region capture, on-screen annotation, pin windows, screen canvas mode, and high-quality recording with optional audio capture.
+SnapTray is a Qt 6 screenshot and recording application for macOS and Windows. It provides region capture, on-screen annotation, pin windows, screen canvas mode, MP4 recording with optional audio capture, and GIF/WebP export workflows.
 
 ## Canonical Docs
 

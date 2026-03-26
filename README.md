@@ -9,7 +9,7 @@ SnapTray is a tray-native screenshot and recording tool for macOS and Windows. I
 - **Capture fast**: precision region selection with magnifier, window detection, multi-region capture, cursor inclusion, and color picking
 - **Annotate clearly**: arrow, pencil, marker, shapes, text, mosaic, step badges, emoji, undo/redo, OCR, QR scan, and auto blur
 - **Stay in context**: pin screenshots above other windows, resize and rotate them, and annotate directly on pinned images
-- **Record what matters**: capture full screen or a selected region and export MP4, GIF, or WebP with optional audio
+- **Record what matters**: capture full screen or a selected region and export MP4 with optional audio, or GIF/WebP for silent clips
 - **Automate repeat work**: use global hotkeys, the CLI, and debug-build MCP tooling for local automation flows
 
 ## Core Workflows

@@ -31,11 +31,13 @@ doc_order: 2
 
 ## Audio options
 
-Depending on platform support:
+Audio capture is available for MP4 recordings when supported by the current platform and source:
 
 - Microphone
 - System audio
 - Mixed capture
+
+GIF and WebP exports are silent.
 
 ## Quality tuning
 

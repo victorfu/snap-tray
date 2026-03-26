@@ -55,7 +55,7 @@ features:
       body: Quickly select windows without manually dragging exact bounds.
     - kind: Recording
       title: Screen Recording
-      body: Capture any region and export MP4, GIF, or WebP with optional audio.
+      body: Capture any region and export MP4 with optional audio, or GIF/WebP for silent clips.
     - kind: Utility
       title: Color Picker
       body: Pick on-screen colors, switch HEX/RGB with Shift, copy instantly with C.
