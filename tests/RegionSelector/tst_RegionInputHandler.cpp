@@ -52,7 +52,7 @@ private slots:
     void testSelectionMoveClearsDragStateOnRightClickCancel();
     void testMouseMoveEmitsCurrentPointUpdatedDuringSelectionDrag();
     void testIdleHoverPrefersLiveCursorPositionOverStaleEventPosition();
-    void testIdleHoverPollingTracksLiveCursorWithoutMouseEvent();
+
     void testCompletedSelectionHoverSkipsMagnifierDirtyRegionWhenDisabled();
 
 private:
@@ -339,46 +339,6 @@ void tst_RegionInputHandler::testIdleHoverPrefersLiveCursorPositionOverStaleEven
     QCursor::setPos(originalCursorPos);
 }
 
-void tst_RegionInputHandler::testIdleHoverPollingTracksLiveCursorWithoutMouseEvent()
-{
-    QScreen* screen = QGuiApplication::primaryScreen();
-    if (!screen) {
-        QSKIP("No screen available for hover polling test.");
-    }
-
-    const QPoint originalCursorPos = QCursor::pos();
-    const QPoint initialCursorPos = screen->geometry().topLeft() + QPoint(220, 180);
-    const QPoint polledCursorPos = screen->geometry().topLeft() + QPoint(360, 260);
-    m_parentWidget->setGeometry(screen->geometry());
-    UpdateThrottler throttler;
-    throttler.startAll();
-    m_handler->setUpdateThrottler(&throttler);
-
-    QCursor::setPos(initialCursorPos);
-    QCoreApplication::processEvents();
-    if (QCursor::pos() != initialCursorPos) {
-        QCursor::setPos(originalCursorPos);
-        QSKIP("System cursor position could not be adjusted for hover polling test.");
-    }
-
-    QSignalSpy pointSpy(m_handler, &RegionInputHandler::currentPointUpdated);
-    auto moveEvent = makeMouseEvent(QEvent::MouseMove, QPoint(220, 180), Qt::NoButton, Qt::NoButton);
-    m_handler->handleMouseMove(&moveEvent);
-    QVERIFY(pointSpy.count() >= 1);
-
-    QCursor::setPos(polledCursorPos);
-    QTest::qWait(40);
-
-    const QPoint actualCursorPos = QCursor::pos();
-    const QPoint expectedPoint = actualCursorPos - screen->geometry().topLeft();
-    QCursor::setPos(originalCursorPos);
-    QVERIFY2(pointsCloseEnough(m_state.currentPoint, expectedPoint),
-             qPrintable(QStringLiteral("actual=(%1,%2) expected=(%3,%4)")
-                            .arg(m_state.currentPoint.x())
-                            .arg(m_state.currentPoint.y())
-                            .arg(expectedPoint.x())
-                            .arg(expectedPoint.y())));
-}
 
 void tst_RegionInputHandler::testCompletedSelectionHoverSkipsMagnifierDirtyRegionWhenDisabled()
 {

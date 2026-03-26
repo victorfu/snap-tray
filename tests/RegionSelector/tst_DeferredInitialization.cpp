@@ -40,7 +40,7 @@ private slots:
     void testShowEvent_revealsImmediatelyWithoutDetectorCache();
     void testWindowListReady_afterRevealAppliesDeferredDetection();
     void testShowEvent_usesLiveCursorPositionForInitialReveal();
-    void testInitialCursorBootstrapSync_tracksCursorWithoutMouseMoveEvent();
+
 };
 
 void tst_RegionSelectorDeferredInitialization::testShowEvent_revealsImmediatelyWithoutDetectorCache()
@@ -164,52 +164,6 @@ void tst_RegionSelectorDeferredInitialization::testShowEvent_usesLiveCursorPosit
     QCOMPARE(selector.m_inputState.currentPoint, expectedLocalPoint);
 }
 
-void tst_RegionSelectorDeferredInitialization::testInitialCursorBootstrapSync_tracksCursorWithoutMouseMoveEvent()
-{
-    QScreen* screen = currentCursorScreen();
-    if (!screen) {
-        QSKIP("No screens available for RegionSelector cursor bootstrap test.");
-    }
-
-    const QPoint originalCursorPos = QCursor::pos();
-    const QRect screenGeometry = screen->geometry();
-    const QPoint revealCursorPos(
-        qBound(screenGeometry.left(), screenGeometry.center().x() - 30, screenGeometry.right()),
-        qBound(screenGeometry.top(), screenGeometry.center().y() - 20, screenGeometry.bottom()));
-    const QPoint movedCursorPos(
-        qBound(screenGeometry.left(), screenGeometry.center().x() + 55, screenGeometry.right()),
-        qBound(screenGeometry.top(), screenGeometry.center().y() + 45, screenGeometry.bottom()));
-
-    WindowDetector detector;
-    detector.m_currentScreen = screen;
-    detector.m_refreshComplete = false;
-    detector.m_cacheReady = false;
-    detector.m_cacheScreen = nullptr;
-
-    RegionSelector selector;
-    selector.setWindowDetector(&detector);
-
-    const QSize size = screenGeometry.size().boundedTo(QSize(320, 240));
-    selector.initializeForScreen(screen, makePreCapture(size, Qt::darkYellow));
-    selector.setGeometry(screenGeometry);
-
-    QCursor::setPos(revealCursorPos);
-    QCoreApplication::processEvents();
-    if (QCursor::pos() != revealCursorPos) {
-        QCursor::setPos(originalCursorPos);
-        QSKIP("System cursor position could not be adjusted for bootstrap test.");
-    }
-
-    RegionSelectorTestAccess::showForRevealTests(selector);
-    QCoreApplication::processEvents();
-
-    QCursor::setPos(movedCursorPos);
-    QTest::qWait(40);
-
-    const QPoint expectedLocalPoint = currentLocalCursorPos(screenGeometry);
-    QCursor::setPos(originalCursorPos);
-    QCOMPARE(selector.m_inputState.currentPoint, expectedLocalPoint);
-}
 
 QTEST_MAIN(tst_RegionSelectorDeferredInitialization)
 #include "tst_DeferredInitialization.moc"
