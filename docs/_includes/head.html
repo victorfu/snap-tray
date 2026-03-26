@@ -5,7 +5,7 @@
 {% assign social_description = page.social_description | default: page.description | default: site.description %}
 
 {% if page.route_key == 'home' %}
-  {% assign social_title = site.title %}
+  {% assign social_title = site.title | append: " — " | append: site.description %}
 {% else %}
   {% assign social_title = page.social_title | default: page.title | default: site.title %}
 {% endif %}
