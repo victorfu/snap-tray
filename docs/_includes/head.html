@@ -56,7 +56,7 @@
 
 <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
 
-{% if page.route_key == 'home' %}
+{% if page.route_key == 'home' or page.layout == 'landing' %}
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
