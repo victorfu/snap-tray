@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-26
 layout: docs
 title: 錄影
 description: 使用 MP4、GIF、WebP 輸出全螢幕或指定區域錄影。

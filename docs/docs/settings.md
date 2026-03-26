@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-26
 layout: docs
 title: Settings
 description: Tune SnapTray behavior for files, OCR, watermarking, recording quality, and updates.

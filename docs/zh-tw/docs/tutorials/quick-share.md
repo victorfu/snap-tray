@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-02-26
 layout: docs
 title: 30 秒快速分享
 description: 在 30 秒內完成截圖、標註並送出一張可讀性高的畫面。

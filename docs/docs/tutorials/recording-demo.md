@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-02-24
 layout: docs
 title: Recording Demo
 description: Create a concise recording for demos, onboarding, or issue explanation.

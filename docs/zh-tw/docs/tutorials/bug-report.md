@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-02-24
 layout: docs
 title: Bug 回報流程
 description: 用清楚截圖、步驟與短影片，建立可重現的問題回報。

@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-26
 layout: docs
 title: 從原始碼建置
 description: 在 macOS 或 Windows 依官方支援方式建置 SnapTray，包含腳本流程、手動 CMake 與編譯快取設定。

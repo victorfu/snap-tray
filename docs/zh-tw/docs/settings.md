@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-26
 layout: docs
 title: 設定
 description: 調整檔案路徑、OCR、浮水印、錄影品質與更新策略。

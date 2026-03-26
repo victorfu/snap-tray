@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-24
 layout: docs
 title: 命令列
 description: 官方自動化介面，可用於擷取、錄影、釘選與設定操作。

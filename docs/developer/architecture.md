@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-24
 layout: docs
 title: Architecture Overview
 description: Repository structure, library boundaries, subsystem responsibilities, platform abstractions, and contributor-facing development conventions.

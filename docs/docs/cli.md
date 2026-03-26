@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-24
 layout: docs
 title: CLI
 description: The official automation interface for scripting capture, recording, pin, and settings workflows.

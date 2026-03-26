@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-02-24
 layout: docs
 title: Tutorials
 description: Learn SnapTray through real-world, end-to-end workflows instead of isolated features.

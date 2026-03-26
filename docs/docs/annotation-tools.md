@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-02-26
 layout: docs
 title: Annotation Tools
 description: Use drawing, text, mosaic, and step tools to communicate clearly.

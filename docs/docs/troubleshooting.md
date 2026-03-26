@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-24
 layout: docs
 title: Troubleshooting
 description: Fix permission, startup, Qt deployment, encoding, recording, and hotkey issues on macOS and Windows.

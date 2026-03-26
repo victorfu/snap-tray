@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-17
 layout: docs
 title: Screen Canvas
 description: Full-screen annotation mode for demos, walkthroughs, and live explanation.

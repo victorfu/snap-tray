@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-26
 layout: docs
 title: Recording
 description: Record full-screen or selected region with MP4, GIF, and WebP outputs.

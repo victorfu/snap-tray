@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-26
 layout: docs
 title: FAQ
 description: Common questions about privacy, formats, OCR, hotkeys, automation, and platform-specific limitations.

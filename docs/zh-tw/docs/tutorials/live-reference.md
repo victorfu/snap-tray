@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-02-24
 layout: docs
 title: Pin 長駐參考
 description: 將設計稿、規格或錯誤畫面固定在畫面上，減少反覆切視窗。

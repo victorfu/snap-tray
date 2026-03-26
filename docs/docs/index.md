@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-02-24
 layout: docs
 title: Documentation
 description: Learn SnapTray through task-driven tutorials and feature references in one place.

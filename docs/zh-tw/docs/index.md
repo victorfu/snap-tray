@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-02-24
 layout: docs
 title: 文件首頁
 description: 以任務導向教學搭配功能參考，完整掌握 SnapTray。

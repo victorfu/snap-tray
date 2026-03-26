@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-17
 layout: docs
 title: Hotkeys
 description: Configure capture and recording shortcuts through centralized hotkey management.

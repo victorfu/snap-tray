@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-25
 layout: docs
 title: Region Capture
 description: Precision region selection with magnifier, window detection, multi-region support, and quick share/export actions.

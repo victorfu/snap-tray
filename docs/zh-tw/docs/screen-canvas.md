@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-17
 layout: docs
 title: 螢幕畫布
 description: 進入全螢幕標註模式，適合直播講解與操作示範。

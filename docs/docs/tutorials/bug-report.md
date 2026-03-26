@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-02-24
 layout: docs
 title: Bug Report Workflow
 description: Build a reproducible bug report with clear visuals, steps, and optional recording.

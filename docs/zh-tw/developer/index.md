@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-24
 layout: docs
 title: 開發者文件
 description: SnapTray 的技術文件主入口，集中整理建置、打包、架構與除錯整合資訊，不再把 GitHub README 撐成長文總表。

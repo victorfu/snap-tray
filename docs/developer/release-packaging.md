@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-24
 layout: docs
 title: Release & Packaging
 description: Create distributable macOS and Windows packages, sign them, and prepare app-store or direct-download releases.

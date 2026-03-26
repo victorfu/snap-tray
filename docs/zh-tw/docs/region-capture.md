@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-25
 layout: docs
 title: 區域截圖
 description: 透過放大鏡、視窗偵測、多區域模式與分享輸出動作完成高精度擷取。

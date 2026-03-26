@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-24
 layout: docs
 title: 發佈與打包
 description: 產生 macOS 與 Windows 可發佈安裝檔，並整理簽章、公證與商店提交流程。

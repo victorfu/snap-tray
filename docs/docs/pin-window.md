@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-02-26
 layout: docs
 title: Pin Window
 description: Keep image references always visible with zoom, opacity, merge/layout controls, and inline annotation tools.

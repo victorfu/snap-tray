@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-24
 layout: docs
 title: 架構總覽
 description: 整理專案結構、library 邊界、主要 subsystem、平台抽象與貢獻者需要遵守的開發慣例。

@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-02-26
 layout: docs
 title: Quick Share (30s)
 description: Capture, annotate, and send a clear screenshot in under 30 seconds.

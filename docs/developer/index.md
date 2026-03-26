@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-24
 layout: docs
 title: Developer Docs
 description: Canonical technical documentation for building, packaging, and extending SnapTray without overloading the GitHub README.

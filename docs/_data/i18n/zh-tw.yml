@@ -16,8 +16,9 @@ language:
 
 hero:
   eyebrow: 擷取・標註・錄影
-  title: 為進階使用者打造的現代螢幕工作流。
+  title: 快速截圖工具｜Mac 與 Windows
   tagline: SnapTray 常駐於系統托盤，需要時即刻啟動，提供精準截圖、完整標註與高品質錄影。
+  subtitle: SnapTray 是一款輕量截圖工具，讓你即時擷取、標註與分享螢幕畫面。
   cta_download: 立即下載
   cta_github: 查看 GitHub
   pills:
@@ -105,6 +106,17 @@ downloads:
         - Windows 10 以上
         - 需 Full-trust 能力以支援擷取與編碼
         - 僅在錄音時需要麥克風權限
+
+faq:
+  eyebrow: 常見問題
+  title: 常見問題
+  items:
+    - q: SnapTray 是什麼？
+      a: SnapTray 是一款免費、輕量的截圖與螢幕錄影工具，支援 macOS 與 Windows。常駐系統托盤，可擷取區域、標註截圖、釘選圖片、錄製 MP4/GIF/WebP，並即時分享。
+    - q: SnapTray 是免費的嗎？
+      a: 是的，SnapTray 完全免費且開源，採用 MIT 授權。沒有廣告、訂閱或隱藏費用。
+    - q: SnapTray 和 Windows 內建截圖工具有什麼不同？
+      a: SnapTray 提供螢幕標註工具、釘選視窗、螢幕畫布模式、支援音訊的 MP4 錄影、GIF/WebP 匯出、OCR 文字辨識、敏感內容自動模糊、QR Code 掃描，以及完整的 CLI 自動化功能，遠超基本截圖。
 
 footer:
   product_title: SnapTray

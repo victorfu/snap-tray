@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-24
 layout: docs
 title: Getting Started
 description: Complete a reliable 10-minute setup so screenshots, pin windows, OCR, and recording workflows work on day one.

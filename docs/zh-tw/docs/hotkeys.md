@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-17
 layout: docs
 title: 快捷鍵
 description: 透過集中式 Hotkey 管理，建立穩定且高效率的操作習慣。

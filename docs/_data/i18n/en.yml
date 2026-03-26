@@ -16,8 +16,9 @@ language:
 
 hero:
   eyebrow: Capture. Annotate. Record.
-  title: Modern screen workflows for power users.
+  title: Fast Screenshot Tool for Mac & Windows
   tagline: SnapTray lives in your system tray and launches instantly when you need precise captures, polished annotations, and high-quality recordings.
+  subtitle: SnapTray is a lightweight screenshot tool for capturing, annotating, and sharing screenshots instantly.
   cta_download: Download
   cta_github: View on GitHub
   pills:
@@ -105,6 +106,17 @@ downloads:
         - Windows 10 or later
         - Full-trust capability for capture and encoding stack
         - Microphone permission only when recording audio
+
+faq:
+  eyebrow: FAQ
+  title: Frequently Asked Questions
+  items:
+    - q: What is SnapTray?
+      a: SnapTray is a free, lightweight screenshot and screen recording tool for macOS and Windows. It lives in your system tray and lets you capture regions, annotate screenshots, pin images, record your screen to MP4/GIF/WebP, and share results instantly.
+    - q: Is SnapTray free?
+      a: Yes, SnapTray is completely free and open source under the MIT license. There are no ads, subscriptions, or hidden costs.
+    - q: How is SnapTray different from Snipping Tool?
+      a: SnapTray goes beyond basic screen capture by offering on-screen annotation tools, pin windows for always-on-top references, screen canvas mode, MP4 recording with audio, GIF/WebP export, OCR text extraction, auto blur for sensitive content, QR code scanning, and a full CLI for automation.
 
 footer:
   product_title: SnapTray

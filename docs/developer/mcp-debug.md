@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-24
 layout: docs
 title: MCP (Debug Builds)
 description: The built-in localhost MCP server is available only in debug builds and is intended for local automation and tooling workflows.

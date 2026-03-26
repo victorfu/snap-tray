@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-24
 layout: docs
 title: 疑難排解
 description: 快速解決權限、啟動、Qt 部署、錄影與快捷鍵衝突問題。

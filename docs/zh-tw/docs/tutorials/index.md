@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-02-24
 layout: docs
 title: 教學總覽
 description: 以真實工作情境學 SnapTray，不只看功能清單。

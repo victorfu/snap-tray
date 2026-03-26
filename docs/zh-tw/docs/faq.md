@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-26
 layout: docs
 title: 常見問題
 description: 收錄隱私、格式、OCR、快捷鍵、自動化與平台限制等常見問答。

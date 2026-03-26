@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-24
 layout: docs
 title: MCP（僅 Debug Build）
 description: 內建 localhost MCP server 只在 Debug build 可用，主要供本地自動化與開發者工具整合使用。

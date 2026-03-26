@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-02-24
 layout: docs
 title: Live Reference with Pin
 description: Keep design specs, logs, or bug screenshots visible while you work in another app.

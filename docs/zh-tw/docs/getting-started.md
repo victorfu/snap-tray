@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-03-24
 layout: docs
 title: 快速開始
 description: 用 10 分鐘完成穩定初始化，確保截圖、釘選、OCR 與錄影第一天就可用。

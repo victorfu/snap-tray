@@ -1,4 +1,5 @@
 ---
+last_modified_at: 2026-02-26
 layout: docs
 title: 釘選視窗
 description: 將參考圖片固定在最上層，並使用縮放、透明度、合併/版面與即時標註工具。

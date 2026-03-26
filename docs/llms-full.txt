@@ -1,0 +1,416 @@
+---
+layout: null
+permalink: /llms-full.txt
+sitemap: false
+---
+# SnapTray — Full Documentation
+
+> Powerful screenshot and recording tool that lives in your system tray.
+
+SnapTray is a free, native desktop application for macOS and Windows built with Qt 6. It provides region capture, on-screen annotation, pin windows, screen canvas mode, MP4 recording with optional audio capture, and GIF/WebP export.
+
+## Platform Support
+
+- macOS 14+ (Apple Silicon and Intel)
+- Windows 10+ (x64)
+
+## Links
+
+- Website: https://snaptray.cc
+- Documentation: https://snaptray.cc/docs/
+- Getting Started: https://snaptray.cc/docs/getting-started/
+- FAQ: https://snaptray.cc/docs/faq/
+- Release Notes: https://snaptray.cc/releases/
+- Privacy Policy: https://snaptray.cc/privacy/
+- Source Code: https://github.com/victorfu/snap-tray
+
+---
+
+## Getting Started
+
+### What you will complete in 10 minutes
+
+- Permission setup
+- First screenshot and annotation
+- First pin window
+- First recording export
+- Hotkey conflict check
+
+### Runtime prerequisites
+
+#### macOS
+
+- macOS 14+
+- Screen Recording permission
+- Accessibility permission recommended for window detection and smoother workflows
+
+#### Windows
+
+- Windows 10+
+- Microphone permission only when recording audio
+
+### Permission checklist
+
+#### macOS
+
+Before your first serious capture session, verify:
+
+1. `System Settings > Privacy & Security > Screen Recording`
+2. `System Settings > Privacy & Security > Accessibility`
+
+Enable SnapTray in both places, then restart the app if you changed permissions.
+
+#### Windows
+
+Most runtime permissions are handled by the OS and installer shape. If you record audio, confirm the selected microphone or audio source is available and permitted.
+
+### Step 1: Verify tray runtime (1 min)
+
+1. Launch SnapTray.
+2. Confirm the tray icon is visible.
+3. Open the menu and verify these entries exist: Region Capture, Screen Canvas, Settings.
+
+### Step 2: Test screenshot flow (2 min)
+
+1. Press `F2`.
+2. Drag any region and confirm the magnifier and size overlay appear.
+3. Add one arrow annotation.
+4. Press `Ctrl/Cmd + C` and paste into a text editor.
+5. Press `Ctrl/Cmd + S` and confirm the file was written.
+
+### Step 3: Test pin workflow (2 min)
+
+1. Capture again with `F2`.
+2. Press `Enter` to pin the result.
+3. Move, resize, and zoom the pin window.
+4. Switch apps and confirm the pin stays visible.
+
+### Step 4: Test recording flow (3 min)
+
+1. Start recording from the tray menu or press `R` from the capture toolbar.
+2. Record 5 to 10 seconds.
+3. Stop and export MP4.
+4. Confirm the output path in Settings > Files.
+
+### Step 5: Resolve hotkey conflicts (2 min)
+
+Open Settings > Hotkeys and rebind any conflicting actions.
+
+---
+
+## Region Capture
+
+Press `F2` (default) to enter Region Capture. The cursor switches to crosshair, and the cursor companion appears.
+
+### Selection behavior
+
+- Magnifier mode provides pixel-level feedback
+- Width and height are shown near the selection
+- Hold `Shift` to constrain aspect ratio
+- Window detection allows one-click window selection
+- Right-click or `Esc` to cancel
+
+### Multi-region workflow
+
+Press `M` to toggle multi-region capture mode for collecting multiple regions.
+
+### Post-selection actions
+
+- Annotation tools (Arrow/Pencil/Marker/Shape/Text/Mosaic/Step Badge/Emoji/Eraser)
+- OCR and QR Code Scan
+- Auto Blur (faces + credentials)
+- Share URL
+- Pin, Save, Copy, and Record
+
+### Shortcuts
+
+| Action | Shortcut |
+|---|---|
+| Start Region Capture | `F2` |
+| Copy color code | `C` |
+| Constrain ratio | Hold `Shift` |
+| Toggle multi-region | `M` |
+| Start recording | `R` |
+| Cancel | `Esc` |
+
+---
+
+## Annotation Tools
+
+### Tool categories
+
+#### Drawing
+
+- Pencil
+- Marker
+- Arrow (single-line and polyline modes)
+- Shape (rectangle/ellipse)
+
+#### Markup and guidance
+
+- Text
+- Step Badge
+- Emoji Sticker
+
+#### Privacy and correction
+
+- Mosaic
+- Eraser
+
+### Editing workflow
+
+1. Draw rough annotations first.
+2. Adjust color and width globally.
+3. Add text and step badges for sequence.
+4. Apply mosaic to sensitive areas.
+5. Use Undo/Redo before export.
+
+### Export actions
+
+- `Enter` to pin result
+- `Ctrl/Cmd + C` to copy
+- `Ctrl/Cmd + S` to save
+
+---
+
+## Pin Window
+
+### Create a pin window
+
+Pin from capture result (`Enter`) or from tray menu using "Pin from Image...".
+
+### Mouse actions
+
+- Drag to move
+- Mouse wheel to zoom
+- `Ctrl` + wheel to adjust opacity
+- Drag edge to resize
+
+### Keyboard actions
+
+| Action | Key |
+|---|---|
+| Rotate clockwise | `1` |
+| Rotate counter-clockwise | `2` |
+| Flip horizontal | `3` |
+| Flip vertical | `4` |
+| Close | `Esc` |
+
+### Context menu actions
+
+- View/layout: Show Toolbar, Show Border, Move to Screen, Merge Pins, Adjust Region Layout
+- Image controls: Zoom presets, image processing, smoothing
+- Output/workflow: Copy, Save, Open Cache Folder, Beautify, Watermark, Live Update
+- Interaction/close: Click-through, Close, Close All Pins
+
+### Annotation in pin window
+
+Drawing tools: Pencil, Marker, Arrow, Shape, Text, Mosaic, Step Badge, Emoji, Eraser
+Utility tools: Crop, Measure
+Action tools: OCR, QR Code Scan, Share URL, Save, Copy
+
+---
+
+## Screen Canvas
+
+Press `Ctrl+F2 / Cmd+F2` (default) or use tray menu "Screen Canvas".
+
+### Available tools
+
+- Pencil / Marker / Arrow / Shape
+- Text / Step Badge / Emoji
+- Laser Pointer for presentation
+
+### Background modes
+
+- Whiteboard: Best for dark room projection or clean note visuals
+- Blackboard: Better contrast when highlighting bright colors
+
+### Session controls
+
+- Undo / Redo
+- Clear canvas
+- `Esc` to exit
+
+---
+
+## Recording
+
+### Entry points
+
+- Tray menu: Record Full Screen
+- Region capture toolbar: press `R`
+
+### Recording lifecycle
+
+1. Pick region or full-screen target.
+2. Click Start.
+3. Use floating control bar to Pause/Resume.
+4. Click Stop to export.
+
+### Output formats
+
+| Format | Typical use |
+|---|---|
+| MP4 (H.264) | Tutorials, long recordings |
+| GIF | Short looping demos |
+| WebP | Lightweight animated snippets |
+
+### Audio options (MP4 only)
+
+- Microphone
+- System audio
+- Mixed capture
+
+GIF and WebP exports are silent.
+
+---
+
+## Hotkeys
+
+### Default hotkeys
+
+| Action | Default |
+|---|---|
+| Region Capture | `F2` |
+| Screen Canvas | `Ctrl+F2 / Cmd+F2` |
+| Paste | `F3` |
+| Quick Pin | `Shift+F2` |
+
+### Additional configurable actions (no default)
+
+- Pin from Image
+- Pin History
+- Toggle Hide/Show All Pins
+- Record Full Screen
+
+### Hotkey categories
+
+Capture, Canvas, Clipboard, Pin, Recording
+
+---
+
+## CLI
+
+The CLI is SnapTray's official automation interface for scripting capture workflows, IPC control, and settings management.
+
+### Install CLI helper
+
+- macOS: Settings > General > CLI install (creates `/usr/local/bin/snaptray`)
+- Windows: Settings > General > CLI install (adds to PATH)
+
+### Command matrix
+
+| Command | Description | Requires main instance |
+|---|---|---|
+| `full` | Capture full screen | No |
+| `screen` | Capture specific screen | No |
+| `region` | Capture region | No |
+| `gui` | Open region capture GUI | Yes |
+| `canvas` | Toggle Screen Canvas | Yes |
+| `record` | Start/stop/toggle recording | Yes |
+| `pin` | Pin an image file or clipboard | Yes |
+| `config` | Manage settings | Partial |
+
+### Example commands
+
+```bash
+snaptray full                         # Capture screen under cursor
+snaptray full -c                      # Copy to clipboard
+snaptray full -d 1000 -o shot.png     # Delay 1s, save
+snaptray screen --list                # List screens
+snaptray region -r 0,0,800,600 -c     # Capture region to clipboard
+snaptray gui                          # Open region selector
+snaptray canvas                       # Toggle Screen Canvas
+snaptray record start                 # Start recording
+snaptray record stop                  # Stop recording
+snaptray pin -f image.png             # Pin image file
+snaptray pin -c --center              # Pin clipboard centered
+snaptray config --list                # List settings
+snaptray config --set files/filenamePrefix SnapTray
+```
+
+### Return codes
+
+| Code | Meaning |
+|---|---|
+| `0` | Success |
+| `1` | General error |
+| `2` | Invalid arguments |
+| `3` | File error |
+| `4` | Instance error |
+
+---
+
+## Settings
+
+### Tabs
+
+- **General**: Launch at startup, language, theme, CLI install
+- **Hotkeys**: Centralized hotkey editor by category
+- **Advanced**: Magnifier, blur, pin defaults, MCP toggle
+- **Watermark**: Image, opacity, scale, margin, position
+- **OCR**: Language order, post-recognition behavior
+- **Recording**: Frame rate, format, preview, audio, countdown
+- **Files**: Screenshot/recording folders, filename templates
+- **Updates**: Version, auto-check interval, manual check
+- **About**: App info, version, copyright
+
+---
+
+## FAQ
+
+### What is SnapTray?
+
+SnapTray is a free, lightweight screenshot and screen recording tool for macOS and Windows. It lives in your system tray and lets you capture regions, annotate screenshots, pin images, record your screen to MP4/GIF/WebP, and share results instantly.
+
+### Is SnapTray free?
+
+Yes, SnapTray is completely free and open source under the MIT license. There are no ads, subscriptions, or hidden costs.
+
+### How is SnapTray different from Snipping Tool?
+
+SnapTray goes beyond basic screen capture by offering on-screen annotation tools, pin windows for always-on-top references, screen canvas mode, MP4 recording with audio, GIF/WebP export, OCR text extraction, auto blur for sensitive content, QR code scanning, and a full CLI for automation.
+
+### Does SnapTray upload my captures?
+
+No automatic upload happens by default. Everything stays local unless you explicitly use the Share URL action.
+
+### Which output format should I use?
+
+- MP4 for long videos and tutorials
+- GIF for short loops or small demos
+- WebP for lighter animated snippets
+
+### Can I use SnapTray from scripts?
+
+Yes. The CLI is the official automation interface. See the CLI section above for the complete command reference.
+
+### Where should I report bugs?
+
+Open an issue on GitHub with OS version, SnapTray version, reproducible steps, and screenshots or recordings when relevant.
+
+---
+
+## Troubleshooting
+
+### Capture does not start
+
+- macOS: Verify Screen Recording and Accessibility permissions, restart after changes
+- Windows: Update GPU drivers, confirm runtime dependencies
+
+### Tray icon does not appear
+
+- Relaunch SnapTray
+- Confirm no OS security prompts blocked the app
+
+### Hotkey not responding
+
+- Check Settings > Hotkeys for conflicts
+- Rebind and test immediately
+
+### Recording issues
+
+- Lower frame rate for dropped frames
+- Prefer MP4 for longer recordings
+- macOS system audio requires macOS 13+ or BlackHole
