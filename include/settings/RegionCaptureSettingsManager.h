@@ -20,7 +20,6 @@ public:
     bool isShortcutHintsEnabled() const;
     void setShortcutHintsEnabled(bool enabled);
 
-    static constexpr bool kDefaultMagnifierEnabled = false;
     static constexpr bool kDefaultShortcutHintsEnabled = true;
     static constexpr CursorCompanionStyle kDefaultCursorCompanionStyle =
         CursorCompanionStyle::Beaver;
@@ -33,8 +32,6 @@ private:
 
     static constexpr const char* kSettingsKeyCursorCompanionStyle =
         "regionCapture/cursorCompanionStyle";
-    static constexpr const char* kSettingsKeyShowMagnifier =
-        "regionCapture/showMagnifier";
     static constexpr const char* kSettingsKeyShowShortcutHints =
         "regionCapture/showShortcutHints";
 };

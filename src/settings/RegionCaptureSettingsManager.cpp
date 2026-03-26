@@ -46,7 +46,6 @@ void RegionCaptureSettingsManager::setCursorCompanionStyle(CursorCompanionStyle 
 {
     auto settings = SnapTray::getSettings();
     settings.setValue(kSettingsKeyCursorCompanionStyle, static_cast<int>(style));
-    settings.setValue(kSettingsKeyShowMagnifier, style != CursorCompanionStyle::None);
 }
 
 bool RegionCaptureSettingsManager::isMagnifierEnabled() const

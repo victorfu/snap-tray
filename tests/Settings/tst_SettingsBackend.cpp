@@ -51,7 +51,6 @@ void tst_SettingsBackend::clearTestSettings()
     settings.remove("detection/blurType");
     settings.remove("general/startOnLogin");
     settings.remove("regionCapture/cursorCompanionStyle");
-    settings.remove("regionCapture/showMagnifier");
     settings.remove("update/lastCheckTime");
     settings.sync();
 }
@@ -88,8 +87,6 @@ void tst_SettingsBackend::testAvailableLanguages_PrioritizesConfiguredAsianLangu
 void tst_SettingsBackend::testMagnifierEnabled_RoundTripPersistsAndSignals()
 {
     auto settings = SnapTray::getSettings();
-    settings.setValue("regionCapture/showMagnifier", false);
-    settings.sync();
 
     SettingsBackend backend;
     QCOMPARE(backend.magnifierEnabled(), false);
@@ -99,14 +96,22 @@ void tst_SettingsBackend::testMagnifierEnabled_RoundTripPersistsAndSignals()
     backend.setMagnifierEnabled(true);
 
     QCOMPARE(backend.magnifierEnabled(), true);
-    QCOMPARE(settings.value("regionCapture/showMagnifier").toBool(), true);
+    QCOMPARE(settings.value("regionCapture/cursorCompanionStyle").toInt(), 1);
     QCOMPARE(changedSpy.count(), 1);
+
+    backend.setMagnifierEnabled(false);
+
+    QCOMPARE(backend.magnifierEnabled(), false);
+    QCOMPARE(settings.value("regionCapture/cursorCompanionStyle").toInt(), 0);
+    QCOMPARE(changedSpy.count(), 2);
 }
 
 void tst_SettingsBackend::testCursorCompanionStyle_RoundTripPersistsAndSignals()
 {
+    auto settings = SnapTray::getSettings();
     SettingsBackend backend;
     QCOMPARE(backend.cursorCompanionStyle(), 2);
+    QVERIFY(!settings.contains("regionCapture/cursorCompanionStyle"));
 
     QSignalSpy styleChangedSpy(&backend, &SettingsBackend::cursorCompanionStyleChanged);
     QSignalSpy magnifierChangedSpy(&backend, &SettingsBackend::magnifierEnabledChanged);
@@ -115,12 +120,25 @@ void tst_SettingsBackend::testCursorCompanionStyle_RoundTripPersistsAndSignals()
 
     QCOMPARE(backend.cursorCompanionStyle(), 2);
     QCOMPARE(backend.magnifierEnabled(), false);
+    QVERIFY(!settings.contains("regionCapture/cursorCompanionStyle"));
+    QCOMPARE(styleChangedSpy.count(), 0);
+    QCOMPARE(magnifierChangedSpy.count(), 0);
 
-    auto settings = SnapTray::getSettings();
-    QCOMPARE(settings.value("regionCapture/cursorCompanionStyle").toInt(), 2);
-    QCOMPARE(settings.value("regionCapture/showMagnifier").toBool(), true);
+    backend.setCursorCompanionStyle(1);
+
+    QCOMPARE(backend.cursorCompanionStyle(), 1);
+    QCOMPARE(backend.magnifierEnabled(), true);
+    QCOMPARE(settings.value("regionCapture/cursorCompanionStyle").toInt(), 1);
     QCOMPARE(styleChangedSpy.count(), 1);
     QCOMPARE(magnifierChangedSpy.count(), 1);
+
+    backend.setCursorCompanionStyle(2);
+
+    QCOMPARE(settings.value("regionCapture/cursorCompanionStyle").toInt(), 2);
+    QCOMPARE(backend.cursorCompanionStyle(), 2);
+    QCOMPARE(backend.magnifierEnabled(), false);
+    QCOMPARE(styleChangedSpy.count(), 2);
+    QCOMPARE(magnifierChangedSpy.count(), 2);
 }
 
 void tst_SettingsBackend::testNormalizeRecordingAudioSettings_PreservesUnavailableLoadedDevice()

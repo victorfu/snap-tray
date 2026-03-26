@@ -20,7 +20,6 @@ private slots:
     void testSetMagnifierDisabledRoundtrip();
     void testSetMagnifierEnabledRoundtrip();
     void testSetCursorCompanionStyleBeaverRoundtrip();
-    void testCursorCompanionStyleIgnoresLegacyMagnifierSettingWhenStyleMissing();
 
 private:
     void clearSettings();
@@ -41,7 +40,6 @@ void tst_RegionCaptureSettingsManager::clearSettings()
     auto settings = SnapTray::getSettings();
     settings.remove("regionCapture/cursorCompanionStyle");
     settings.remove("regionCapture/showShortcutHints");
-    settings.remove("regionCapture/showMagnifier");
     settings.sync();
 }
 
@@ -88,23 +86,28 @@ void tst_RegionCaptureSettingsManager::testSetEnabledRoundtrip()
 
 void tst_RegionCaptureSettingsManager::testSetMagnifierDisabledRoundtrip()
 {
+    auto settings = SnapTray::getSettings();
     auto& manager = RegionCaptureSettingsManager::instance();
     manager.setMagnifierEnabled(false);
     QCOMPARE(manager.isMagnifierEnabled(), false);
+    QCOMPARE(settings.value("regionCapture/cursorCompanionStyle").toInt(), 0);
 }
 
 void tst_RegionCaptureSettingsManager::testSetMagnifierEnabledRoundtrip()
 {
+    auto settings = SnapTray::getSettings();
     auto& manager = RegionCaptureSettingsManager::instance();
     manager.setMagnifierEnabled(false);
     QCOMPARE(manager.isMagnifierEnabled(), false);
 
     manager.setMagnifierEnabled(true);
     QCOMPARE(manager.isMagnifierEnabled(), true);
+    QCOMPARE(settings.value("regionCapture/cursorCompanionStyle").toInt(), 1);
 }
 
 void tst_RegionCaptureSettingsManager::testSetCursorCompanionStyleBeaverRoundtrip()
 {
+    auto settings = SnapTray::getSettings();
     auto& manager = RegionCaptureSettingsManager::instance();
     manager.setCursorCompanionStyle(
         RegionCaptureSettingsManager::CursorCompanionStyle::Beaver);
@@ -113,17 +116,7 @@ void tst_RegionCaptureSettingsManager::testSetCursorCompanionStyleBeaverRoundtri
         manager.cursorCompanionStyle(),
         RegionCaptureSettingsManager::CursorCompanionStyle::Beaver);
     QCOMPARE(manager.isMagnifierEnabled(), false);
-}
-
-void tst_RegionCaptureSettingsManager::testCursorCompanionStyleIgnoresLegacyMagnifierSettingWhenStyleMissing()
-{
-    auto settings = SnapTray::getSettings();
-    settings.setValue("regionCapture/showMagnifier", false);
-    settings.sync();
-
-    QCOMPARE(
-        RegionCaptureSettingsManager::instance().cursorCompanionStyle(),
-        RegionCaptureSettingsManager::CursorCompanionStyle::Beaver);
+    QCOMPARE(settings.value("regionCapture/cursorCompanionStyle").toInt(), 2);
 }
 
 QTEST_MAIN(tst_RegionCaptureSettingsManager)
