@@ -98,15 +98,22 @@ void tst_RegionSelectorDeferredInitialization::testWindowListReady_afterRevealAp
     element.windowId = 1;
     element.elementType = ElementType::Window;
 
+    const QPoint originalCursorPos = QCursor::pos();
+    const QPoint cursorPos = screen->geometry().center();
+    QCursor::setPos(cursorPos);
+    QCoreApplication::processEvents();
+
     detector.m_windowCache.clear();
     detector.m_windowCache.push_back(element);
     detector.m_cacheScreen = screen;
     detector.m_cacheReady = true;
+    detector.m_cacheQueryMode = WindowDetector::QueryMode::IncludeChildControls;
     detector.m_refreshComplete = true;
 
     detector.windowListReady();
     QCoreApplication::processEvents();
 
+    QCursor::setPos(originalCursorPos);
     QVERIFY(selector.m_inputState.hasDetectedWindow);
     QVERIFY(!selector.m_inputState.highlightedWindowRect.isNull());
 }

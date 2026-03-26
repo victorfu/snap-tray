@@ -301,6 +301,15 @@ void TestRegionSelectorStyleSync::testInitializeForScreen_MagnifierStylePrewarms
         QSKIP("No screens available for RegionSelector cursor companion setting test.");
     }
 
+    const QPoint originalCursorPos = QCursor::pos();
+    const QPoint cursorPos = screen->geometry().topLeft() + QPoint(100, 100);
+    QCursor::setPos(cursorPos);
+    QCoreApplication::processEvents();
+    if (QCursor::pos() != cursorPos) {
+        QCursor::setPos(originalCursorPos);
+        QSKIP("System cursor position could not be adjusted for magnifier prewarm test.");
+    }
+
     auto& settings = RegionCaptureSettingsManager::instance();
     settings.setCursorCompanionStyle(
         RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier);
@@ -314,6 +323,7 @@ void TestRegionSelectorStyleSync::testInitializeForScreen_MagnifierStylePrewarms
 
     QCOMPARE(selector.m_cursorCompanionStyle,
              RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier);
+    QCursor::setPos(originalCursorPos);
     QCOMPARE(selector.m_magnifierPanel->currentColor(), QColor(Qt::magenta));
 }
 

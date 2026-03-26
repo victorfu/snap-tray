@@ -344,6 +344,9 @@ void tst_RegionInputHandler::testIdleHoverPollingTracksLiveCursorWithoutMouseEve
     const QPoint initialCursorPos = screen->geometry().topLeft() + QPoint(220, 180);
     const QPoint polledCursorPos = screen->geometry().topLeft() + QPoint(360, 260);
     m_parentWidget->setGeometry(screen->geometry());
+    UpdateThrottler throttler;
+    throttler.startAll();
+    m_handler->setUpdateThrottler(&throttler);
 
     QCursor::setPos(initialCursorPos);
     QCoreApplication::processEvents();
