@@ -1,0 +1,15 @@
+{% assign lang = page.lang | default: site.default_lang %}
+{% assign t = site.data.i18n[lang][page.landing_key] %}
+
+<section class="landing-hero" id="top">
+  <div class="container">
+    <div class="landing-hero-copy" data-reveal>
+      <h1>{{ t.hero.title }}</h1>
+      <p class="landing-intro">{{ t.hero.intro }}</p>
+      <div class="hero-actions">
+        <a href="#download" class="btn btn-primary">{{ t.hero.cta_download }}</a>
+        <a href="{{ site.data.routes.docs_home[lang] | relative_url }}" class="btn btn-ghost">{{ t.hero.cta_docs }}</a>
+      </div>
+    </div>
+  </div>
+</section>

@@ -62,7 +62,7 @@
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "SnapTray",
-  "description": "{{ site.description }}",
+  "description": "{{ page.description | default: site.description }}",
   "operatingSystem": ["macOS 14+", "Windows 10+"],
   "applicationCategory": "MultimediaApplication",
   "offers": {

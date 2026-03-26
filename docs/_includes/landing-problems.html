@@ -1,0 +1,20 @@
+{% assign lang = page.lang | default: site.default_lang %}
+{% assign t = site.data.i18n[lang][page.landing_key] %}
+
+<section class="landing-problems">
+  <div class="container">
+    <div class="section-heading" data-reveal>
+      <p class="eyebrow">{{ t.problems.eyebrow }}</p>
+      <h2>{{ t.problems.title }}</h2>
+      <p>{{ t.problems.subtitle }}</p>
+    </div>
+    <div class="problems-grid">
+      {% for item in t.problems.items %}
+      <article class="problem-card" data-reveal>
+        <h3>{{ item.pain }}</h3>
+        <p>{{ item.detail }}</p>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>

@@ -98,6 +98,18 @@ developer_mcp_debug:
   en: /developer/mcp-debug/
   zh-tw: /zh-tw/developer/mcp-debug/
 
+screenshot_tool:
+  en: /screenshot-tool/
+  zh-tw: /zh-tw/screenshot-tool/
+
+screenshot_tool_mac:
+  en: /screenshot-tool-mac/
+  zh-tw: /zh-tw/screenshot-tool-mac/
+
+screenshot_tool_windows:
+  en: /screenshot-tool-windows/
+  zh-tw: /zh-tw/screenshot-tool-windows/
+
 not_found:
   en: /404.html
   zh-tw: /404.html

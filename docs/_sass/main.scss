@@ -1598,6 +1598,338 @@ svg {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Landing Pages
+// ---------------------------------------------------------------------------
+
+.landing-hero {
+  padding: clamp(4rem, 7vw, 7rem) 0 clamp(2.5rem, 4vw, 4rem);
+  text-align: center;
+}
+
+.landing-hero-copy {
+  max-width: 780px;
+  margin: 0 auto;
+
+  h1 {
+    font-family: $font-display;
+    font-size: clamp(2rem, 4.5vw, 3.2rem);
+    font-weight: 700;
+    line-height: 1.15;
+    color: $text-primary;
+    margin-bottom: $space-md;
+  }
+}
+
+.landing-intro {
+  font-size: clamp(1.05rem, 1.6vw, 1.2rem);
+  color: $text-secondary;
+  line-height: 1.7;
+  margin-bottom: $space-xl;
+}
+
+.landing-features,
+.landing-problems,
+.landing-compare,
+.landing-usecases,
+.landing-setup,
+.landing-faq,
+.landing-cta {
+  padding: clamp(2.3rem, 3.6vw, 3.8rem) 0;
+}
+
+// Feature steps grid
+.landing-features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: $space-md;
+  margin-top: $space-xl;
+}
+
+.landing-feature-card {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+  border: 1px solid $border-glass;
+  border-radius: $radius-lg;
+  padding: clamp(1.2rem, 2vw, 1.8rem);
+  box-shadow: $shadow-soft;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: $shadow-glow;
+  }
+
+  h3 {
+    font-family: $font-display;
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    color: $text-secondary;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+}
+
+.landing-feature-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, $accent-primary, $accent-secondary);
+  color: #fff;
+  font-family: $font-display;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: $space-sm;
+}
+
+// Problems grid
+.problems-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $space-md;
+  margin-top: $space-xl;
+}
+
+.problem-card {
+  background: rgba(255, 240, 240, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 112, 112, 0.2);
+  border-radius: $radius-lg;
+  padding: clamp(1.2rem, 2vw, 1.8rem);
+
+  h3 {
+    font-family: $font-display;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: $accent-danger;
+    margin-bottom: 0.4rem;
+  }
+
+  p {
+    color: $text-secondary;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+}
+
+// Comparison table
+.compare-table-wrap {
+  overflow-x: auto;
+  margin-top: $space-xl;
+  border-radius: $radius-lg;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+  border: 1px solid $border-glass;
+  box-shadow: $shadow-soft;
+}
+
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+
+  th, td {
+    padding: 0.85rem 1.1rem;
+    text-align: center;
+    border-bottom: 1px solid $border-light;
+  }
+
+  th {
+    font-family: $font-display;
+    font-weight: 600;
+    background: rgba(232, 240, 255, 0.5);
+    position: sticky;
+    top: 0;
+  }
+
+  th:first-child,
+  td:first-child {
+    text-align: left;
+    font-weight: 500;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  tr:hover td {
+    background: rgba(232, 240, 255, 0.3);
+  }
+}
+
+.compare-yes {
+  color: $accent-primary;
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+
+.compare-no {
+  color: $text-secondary;
+  opacity: 0.4;
+  font-size: 1.15rem;
+}
+
+// Use cases grid
+.usecases-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $space-md;
+  margin-top: $space-xl;
+}
+
+.usecase-card {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+  border: 1px solid $border-glass;
+  border-radius: $radius-lg;
+  padding: clamp(1.2rem, 2vw, 1.8rem);
+  box-shadow: $shadow-soft;
+
+  h3 {
+    font-family: $font-display;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: $accent-secondary;
+    margin-bottom: 0.4rem;
+  }
+
+  p {
+    color: $text-secondary;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+}
+
+// Setup steps
+.setup-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: $space-md;
+  margin-top: $space-xl;
+}
+
+.setup-step {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+  border: 1px solid $border-glass;
+  border-radius: $radius-lg;
+  padding: clamp(1.2rem, 2vw, 1.8rem);
+  box-shadow: $shadow-soft;
+
+  h3 {
+    font-family: $font-display;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+  }
+
+  p {
+    color: $text-secondary;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+}
+
+.setup-step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, $accent-primary, $accent-secondary);
+  color: #fff;
+  font-family: $font-display;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: $space-sm;
+}
+
+// FAQ (landing variant reuses homepage .faq-list styles)
+.landing-faq .faq-list,
+.faq .faq-list {
+  max-width: 780px;
+  margin: $space-xl auto 0;
+}
+
+.faq-item {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+  border: 1px solid $border-glass;
+  border-radius: $radius-md;
+  padding: clamp(1rem, 1.8vw, 1.5rem);
+  margin-bottom: $space-sm;
+
+  dt {
+    font-family: $font-display;
+    font-weight: 600;
+    font-size: 1.05rem;
+    margin-bottom: 0.4rem;
+  }
+
+  dd {
+    color: $text-secondary;
+    font-size: 0.95rem;
+    line-height: 1.65;
+    margin: 0;
+  }
+}
+
+// CTA section
+.landing-cta {
+  text-align: center;
+}
+
+.landing-cta-actions {
+  display: flex;
+  gap: $space-md;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: $space-lg;
+}
+
+// Responsive
+@media (max-width: $breakpoint-md) {
+  .landing-features-grid,
+  .setup-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: $breakpoint-sm) {
+  .landing-features-grid,
+  .problems-grid,
+  .usecases-grid,
+  .setup-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-cta-actions {
+    flex-direction: column;
+    align-items: center;
+
+    .btn {
+      width: 100%;
+      max-width: 320px;
+    }
+  }
+
+  .compare-table {
+    font-size: 0.85rem;
+
+    th, td {
+      padding: 0.6rem 0.7rem;
+    }
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;

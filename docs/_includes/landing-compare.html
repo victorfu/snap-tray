@@ -1,0 +1,33 @@
+{% assign lang = page.lang | default: site.default_lang %}
+{% assign t = site.data.i18n[lang][page.landing_key] %}
+
+<section class="landing-compare">
+  <div class="container">
+    <div class="section-heading" data-reveal>
+      <p class="eyebrow">{{ t.compare.eyebrow }}</p>
+      <h2>{{ t.compare.title }}</h2>
+    </div>
+    <div class="compare-table-wrap" data-reveal>
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>{{ t.compare.feature_label }}</th>
+            {% for tool in t.compare.tools %}
+            <th>{{ tool }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in t.compare.rows %}
+          <tr>
+            <td>{{ row.feature }}</td>
+            {% for val in row.values %}
+            <td>{% if val == true %}<span class="compare-yes" aria-label="Yes">&#10003;</span>{% elsif val == false %}<span class="compare-no" aria-label="No">&#10005;</span>{% else %}{{ val }}{% endif %}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

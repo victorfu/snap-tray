@@ -1,0 +1,20 @@
+{% assign lang = page.lang | default: site.default_lang %}
+{% assign t = site.data.i18n[lang][page.landing_key] %}
+
+<section class="landing-setup">
+  <div class="container">
+    <div class="section-heading" data-reveal>
+      <p class="eyebrow">{{ t.setup.eyebrow }}</p>
+      <h2>{{ t.setup.title }}</h2>
+    </div>
+    <div class="setup-steps">
+      {% for step in t.setup.steps %}
+      <article class="setup-step" data-reveal>
+        <div class="setup-step-number">{{ forloop.index }}</div>
+        <h3>{{ step.title }}</h3>
+        <p>{{ step.detail }}</p>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>

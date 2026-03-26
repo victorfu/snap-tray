@@ -1,0 +1,21 @@
+{% assign lang = page.lang | default: site.default_lang %}
+{% assign t = site.data.i18n[lang][page.landing_key] %}
+
+<section class="landing-features">
+  <div class="container">
+    <div class="section-heading" data-reveal>
+      <p class="eyebrow">{{ t.features.eyebrow }}</p>
+      <h2>{{ t.features.title }}</h2>
+      <p>{{ t.features.subtitle }}</p>
+    </div>
+    <div class="landing-features-grid">
+      {% for item in t.features.items %}
+      <article class="landing-feature-card" data-reveal>
+        <div class="landing-feature-step">{{ forloop.index }}</div>
+        <h3>{{ item.title }}</h3>
+        <p>{{ item.body }}</p>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>

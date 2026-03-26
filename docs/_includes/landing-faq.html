@@ -1,0 +1,38 @@
+{% assign lang = page.lang | default: site.default_lang %}
+{% assign t = site.data.i18n[lang][page.landing_key] %}
+
+<section class="landing-faq" id="faq">
+  <div class="container">
+    <div class="section-heading" data-reveal>
+      <p class="eyebrow">{{ t.faq.eyebrow }}</p>
+      <h2>{{ t.faq.title }}</h2>
+    </div>
+    <dl class="faq-list" data-reveal>
+      {% for item in t.faq.items %}
+      <div class="faq-item">
+        <dt>{{ item.q }}</dt>
+        <dd>{{ item.a }}</dd>
+      </div>
+      {% endfor %}
+    </dl>
+  </div>
+</section>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {% for item in t.faq.items %}
+    {
+      "@type": "Question",
+      "name": {{ item.q | jsonify }},
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": {{ item.a | jsonify }}
+      }
+    }{% unless forloop.last %},{% endunless %}
+    {% endfor %}
+  ]
+}
+</script>

@@ -1,0 +1,21 @@
+---
+layout: default
+---
+
+{% assign lang = page.lang | default: site.default_lang %}
+{% assign t = site.data.i18n[lang][page.landing_key] %}
+
+{% include landing-hero.html %}
+{% if t.problems %}
+{% include landing-problems.html %}
+{% endif %}
+{% include landing-features.html %}
+{% include landing-compare.html %}
+{% if t.usecases %}
+{% include landing-usecases.html %}
+{% endif %}
+{% if t.setup %}
+{% include landing-setup.html %}
+{% endif %}
+{% include landing-faq.html %}
+{% include landing-cta.html %}

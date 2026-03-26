@@ -1,0 +1,19 @@
+{% assign lang = page.lang | default: site.default_lang %}
+{% assign t = site.data.i18n[lang][page.landing_key] %}
+
+<section class="landing-usecases">
+  <div class="container">
+    <div class="section-heading" data-reveal>
+      <p class="eyebrow">{{ t.usecases.eyebrow }}</p>
+      <h2>{{ t.usecases.title }}</h2>
+    </div>
+    <div class="usecases-grid">
+      {% for item in t.usecases.items %}
+      <article class="usecase-card" data-reveal>
+        <h3>{{ item.role }}</h3>
+        <p>{{ item.scenario }}</p>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
