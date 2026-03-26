@@ -2055,7 +2055,21 @@ void ScreenCanvasSession::updateQmlToolbarState()
     if (m_bgMode == CanvasBackgroundMode::Blackboard) {
         activeToolId = static_cast<int>(ToolId::CanvasBlackboard);
     }
-    m_toolbarViewModel->setActiveTool(activeToolId);
+    if (m_toolbarViewModel) {
+        m_toolbarViewModel->setActiveTool(activeToolId);
+    }
+
+    if (!m_toolOptionsViewModel || !m_qmlSubToolbar) {
+        if ((m_laserPointerActive || m_currentToolId != ToolId::EmojiSticker || !m_showSubToolbar) &&
+            m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+            m_emojiPickerPopup->hide();
+        }
+
+        if (m_isOpen && m_toolbarPlacementInitialized && !m_toolbarDragging) {
+            relayoutFloatingUi(false);
+        }
+        return;
+    }
 
     if (m_showSubToolbar && !m_laserPointerActive) {
         m_qmlSubToolbar->showForTool(static_cast<int>(m_currentToolId));
