@@ -10,7 +10,7 @@
     <div class="setup-steps">
       {% for step in t.setup.steps %}
       <article class="setup-step" data-reveal>
-        <div class="setup-step-number">{{ forloop.index }}</div>
+        <p class="setup-step-number">Step {{ forloop.index }}</p>
         <h3>{{ step.title }}</h3>
         <p>{{ step.detail }}</p>
       </article>

@@ -1603,29 +1603,37 @@ svg {
 // ---------------------------------------------------------------------------
 
 .landing-hero {
-  padding: clamp(4rem, 7vw, 7rem) 0 clamp(2.5rem, 4vw, 4rem);
-  text-align: center;
+  padding: clamp(4.2rem, 7vw, 7rem) 0 clamp(3.3rem, 5vw, 5rem);
 }
 
 .landing-hero-copy {
   max-width: 780px;
   margin: 0 auto;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: $radius-lg;
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-soft);
+  padding: clamp(2rem, 4vw, 3.5rem);
+  text-align: center;
 
   h1 {
     font-family: $font-display;
-    font-size: clamp(2rem, 4.5vw, 3.2rem);
+    font-size: clamp(2rem, 5vw, 3.2rem);
     font-weight: 700;
-    line-height: 1.15;
-    color: $text-primary;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    color: #09172f;
     margin-bottom: $space-md;
   }
 }
 
 .landing-intro {
-  font-size: clamp(1.05rem, 1.6vw, 1.2rem);
-  color: $text-secondary;
+  max-width: 58ch;
+  margin: 0 auto $space-xl;
+  color: #324d73;
+  font-size: 1.08rem;
   line-height: 1.7;
-  margin-bottom: $space-xl;
 }
 
 .landing-features,
@@ -1638,39 +1646,40 @@ svg {
   padding: clamp(2.3rem, 3.6vw, 3.8rem) 0;
 }
 
-// Feature steps grid
+// Feature steps grid - matches homepage .features-grid / .feature-card
 .landing-features-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: $space-md;
-  margin-top: $space-xl;
 }
 
 .landing-feature-card {
+  grid-column: span 4;
+  padding: $space-lg;
+  border-radius: $radius-md;
+  border: 1px solid rgba(96, 132, 193, 0.24);
   background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(10px);
-  border: 1px solid $border-glass;
-  border-radius: $radius-lg;
-  padding: clamp(1.2rem, 2vw, 1.8rem);
-  box-shadow: $shadow-soft;
-  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 22px rgba(28, 56, 102, 0.1);
+  transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
 
   &:hover {
     transform: translateY(-3px);
-    box-shadow: $shadow-glow;
+    border-color: rgba(38, 209, 200, 0.5);
+    box-shadow: 0 18px 34px rgba(20, 76, 128, 0.18);
   }
 
   h3 {
     font-family: $font-display;
-    font-size: 1.15rem;
-    font-weight: 600;
+    font-size: 1.2rem;
+    letter-spacing: -0.01em;
+    color: #102546;
     margin-bottom: 0.5rem;
   }
 
   p {
-    color: $text-secondary;
+    color: #425a7c;
     font-size: 0.95rem;
-    line-height: 1.6;
   }
 }
 
@@ -1678,15 +1687,16 @@ svg {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 50%;
-  background: linear-gradient(135deg, $accent-primary, $accent-secondary);
-  color: #fff;
+  border-radius: 999px;
+  padding: 0.23rem 0.58rem;
+  margin-bottom: 0.78rem;
   font-family: $font-display;
+  font-size: 0.7rem;
   font-weight: 700;
-  font-size: 0.9rem;
-  margin-bottom: $space-sm;
+  letter-spacing: 0.1em;
+  color: #1a6280;
+  background: rgba(38, 209, 200, 0.16);
+  border: 1px solid rgba(38, 209, 200, 0.3);
 }
 
 // Problems grid
@@ -1694,26 +1704,33 @@ svg {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: $space-md;
-  margin-top: $space-xl;
 }
 
 .problem-card {
-  background: rgba(255, 240, 240, 0.6);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 112, 112, 0.2);
-  border-radius: $radius-lg;
-  padding: clamp(1.2rem, 2vw, 1.8rem);
+  padding: $space-lg;
+  border-radius: $radius-md;
+  border: 1px solid rgba(255, 112, 112, 0.22);
+  background: rgba(255, 245, 245, 0.72);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 22px rgba(28, 56, 102, 0.06);
+  transition: transform 220ms ease, box-shadow 220ms ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 28px rgba(28, 56, 102, 0.1);
+  }
 
   h3 {
     font-family: $font-display;
     font-size: 1.1rem;
     font-weight: 600;
-    color: $accent-danger;
-    margin-bottom: 0.4rem;
+    color: #b44040;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.5rem;
   }
 
   p {
-    color: $text-secondary;
+    color: #425a7c;
     font-size: 0.95rem;
     line-height: 1.6;
   }
@@ -1722,12 +1739,11 @@ svg {
 // Comparison table
 .compare-table-wrap {
   overflow-x: auto;
-  margin-top: $space-xl;
-  border-radius: $radius-lg;
+  border-radius: $radius-md;
   background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(10px);
-  border: 1px solid $border-glass;
-  box-shadow: $shadow-soft;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(96, 132, 193, 0.24);
+  box-shadow: 0 8px 22px rgba(28, 56, 102, 0.1);
 }
 
 .compare-table {
@@ -1736,23 +1752,25 @@ svg {
   font-size: 0.95rem;
 
   th, td {
-    padding: 0.85rem 1.1rem;
+    padding: 0.9rem 1.2rem;
     text-align: center;
-    border-bottom: 1px solid $border-light;
+    border-bottom: 1px solid rgba(15, 26, 47, 0.07);
   }
 
   th {
     font-family: $font-display;
     font-weight: 600;
-    background: rgba(232, 240, 255, 0.5);
-    position: sticky;
-    top: 0;
+    font-size: 0.88rem;
+    letter-spacing: 0.01em;
+    color: #102546;
+    background: rgba(232, 240, 255, 0.55);
   }
 
   th:first-child,
   td:first-child {
     text-align: left;
     font-weight: 500;
+    color: #102546;
   }
 
   tr:last-child td {
@@ -1760,78 +1778,99 @@ svg {
   }
 
   tr:hover td {
-    background: rgba(232, 240, 255, 0.3);
+    background: rgba(232, 240, 255, 0.25);
   }
 }
 
 .compare-yes {
   color: $accent-primary;
   font-weight: 700;
-  font-size: 1.15rem;
+  font-size: 1.2rem;
 }
 
 .compare-no {
-  color: $text-secondary;
-  opacity: 0.4;
-  font-size: 1.15rem;
+  color: #a0b0c8;
+  font-size: 1.1rem;
 }
 
-// Use cases grid
+// Use cases grid - matches feature-card pattern
 .usecases-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: $space-md;
-  margin-top: $space-xl;
 }
 
 .usecase-card {
+  grid-column: span 6;
+  padding: $space-lg;
+  border-radius: $radius-md;
+  border: 1px solid rgba(96, 132, 193, 0.24);
   background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(10px);
-  border: 1px solid $border-glass;
-  border-radius: $radius-lg;
-  padding: clamp(1.2rem, 2vw, 1.8rem);
-  box-shadow: $shadow-soft;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 22px rgba(28, 56, 102, 0.1);
+  transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+
+  &:hover {
+    transform: translateY(-3px);
+    border-color: rgba(88, 166, 255, 0.5);
+    box-shadow: 0 18px 34px rgba(20, 76, 128, 0.18);
+  }
 
   h3 {
+    display: inline-flex;
+    border-radius: 999px;
+    padding: 0.23rem 0.58rem;
+    margin-bottom: 0.78rem;
     font-family: $font-display;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: $accent-secondary;
-    margin-bottom: 0.4rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #1a4a80;
+    background: rgba(88, 166, 255, 0.14);
+    border: 1px solid rgba(88, 166, 255, 0.28);
   }
 
   p {
-    color: $text-secondary;
+    color: #425a7c;
     font-size: 0.95rem;
     line-height: 1.6;
   }
 }
 
-// Setup steps
+// Setup steps - matches feature-card pattern
 .setup-steps {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: $space-md;
-  margin-top: $space-xl;
 }
 
 .setup-step {
+  grid-column: span 4;
+  padding: $space-lg;
+  border-radius: $radius-md;
+  border: 1px solid rgba(96, 132, 193, 0.24);
   background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(10px);
-  border: 1px solid $border-glass;
-  border-radius: $radius-lg;
-  padding: clamp(1.2rem, 2vw, 1.8rem);
-  box-shadow: $shadow-soft;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 22px rgba(28, 56, 102, 0.1);
+  transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+
+  &:hover {
+    transform: translateY(-3px);
+    border-color: rgba(38, 209, 200, 0.5);
+    box-shadow: 0 18px 34px rgba(20, 76, 128, 0.18);
+  }
 
   h3 {
     font-family: $font-display;
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin-bottom: 0.4rem;
+    font-size: 1.2rem;
+    letter-spacing: -0.01em;
+    color: #102546;
+    margin-bottom: 0.5rem;
   }
 
   p {
-    color: $text-secondary;
+    color: #425a7c;
     font-size: 0.95rem;
     line-height: 1.6;
   }
@@ -1841,50 +1880,81 @@ svg {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 50%;
-  background: linear-gradient(135deg, $accent-primary, $accent-secondary);
-  color: #fff;
+  border-radius: 999px;
+  padding: 0.23rem 0.58rem;
+  margin-bottom: 0.78rem;
   font-family: $font-display;
+  font-size: 0.7rem;
   font-weight: 700;
-  font-size: 0.9rem;
-  margin-bottom: $space-sm;
+  letter-spacing: 0.1em;
+  color: #1a6280;
+  background: rgba(38, 209, 200, 0.16);
+  border: 1px solid rgba(38, 209, 200, 0.3);
 }
 
-// FAQ (landing variant reuses homepage .faq-list styles)
+// FAQ - glass card items matching site design
 .landing-faq .faq-list,
 .faq .faq-list {
   max-width: 780px;
-  margin: $space-xl auto 0;
+  margin: 0 auto;
 }
 
 .faq-item {
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(10px);
-  border: 1px solid $border-glass;
+  padding: $space-lg;
   border-radius: $radius-md;
-  padding: clamp(1rem, 1.8vw, 1.5rem);
-  margin-bottom: $space-sm;
+  border: 1px solid rgba(96, 132, 193, 0.24);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 22px rgba(28, 56, 102, 0.1);
+  margin-bottom: $space-md;
+  transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: rgba(38, 209, 200, 0.5);
+    box-shadow: 0 18px 34px rgba(20, 76, 128, 0.18);
+  }
 
   dt {
     font-family: $font-display;
     font-weight: 600;
-    font-size: 1.05rem;
-    margin-bottom: 0.4rem;
+    font-size: 1.12rem;
+    letter-spacing: -0.01em;
+    color: #102546;
+    margin-bottom: 0.5rem;
   }
 
   dd {
-    color: $text-secondary;
+    color: #425a7c;
     font-size: 0.95rem;
     line-height: 1.65;
     margin: 0;
   }
 }
 
-// CTA section
+// CTA section - glass card wrapper
 .landing-cta {
   text-align: center;
+
+  .section-heading {
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+// Center section headings on all landing sections
+.landing-hero,
+.landing-features,
+.landing-problems,
+.landing-compare,
+.landing-usecases,
+.landing-setup,
+.landing-faq {
+  .section-heading {
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+  }
 }
 
 .landing-cta-actions {
@@ -1895,19 +1965,26 @@ svg {
   margin-top: $space-lg;
 }
 
-// Responsive
+// Responsive - landing pages
 @media (max-width: $breakpoint-md) {
-  .landing-features-grid,
-  .setup-steps {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .landing-feature-card,
+  .setup-step {
+    grid-column: span 6;
+  }
+
+  .usecase-card {
+    grid-column: span 12;
   }
 }
 
 @media (max-width: $breakpoint-sm) {
-  .landing-features-grid,
-  .problems-grid,
-  .usecases-grid,
-  .setup-steps {
+  .landing-feature-card,
+  .setup-step,
+  .usecase-card {
+    grid-column: span 12;
+  }
+
+  .problems-grid {
     grid-template-columns: 1fr;
   }
 

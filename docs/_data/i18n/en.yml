@@ -230,9 +230,7 @@ landing_screenshot_tool:
     eyebrow: Get Started
     title: Download SnapTray — Free and Open Source
     subtitle: Available for macOS and Windows. No account required.
-    download_all: true
-    download_all_mac: Download for macOS
-    download_all_win: Download for Windows
+    button: Download Now
     learn_more: Visit Homepage
 
 landing_mac:
@@ -321,7 +319,7 @@ landing_mac:
     eyebrow: Get Started
     title: Download SnapTray for macOS
     subtitle: Free, open source, and native on Apple Silicon.
-    download_mac: Download .dmg
+    button: Download .dmg
     learn_more: Visit Homepage
 
 landing_windows:
@@ -412,5 +410,5 @@ landing_windows:
     eyebrow: Get Started
     title: Download SnapTray for Windows
     subtitle: Free from Microsoft Store or direct download. No account required.
-    download_win: Download for Windows
+    button: Download for Windows
     learn_more: Visit Homepage

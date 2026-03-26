@@ -230,9 +230,7 @@ landing_screenshot_tool:
     eyebrow: 立即開始
     title: 下載 SnapTray — 免費且開源
     subtitle: 支援 macOS 與 Windows，無需註冊。
-    download_all: true
-    download_all_mac: 下載 macOS 版
-    download_all_win: 下載 Windows 版
+    button: 立即下載
     learn_more: 前往首頁
 
 landing_mac:
@@ -321,7 +319,7 @@ landing_mac:
     eyebrow: 立即開始
     title: 下載 SnapTray macOS 版
     subtitle: 免費、開源，Apple Silicon 原生支援。
-    download_mac: 下載 .dmg
+    button: 下載 .dmg
     learn_more: 前往首頁
 
 landing_windows:
@@ -412,5 +410,5 @@ landing_windows:
     eyebrow: 立即開始
     title: 下載 SnapTray Windows 版
     subtitle: Microsoft Store 免費下載或直接安裝。無需註冊。
-    download_win: 下載 Windows 版
+    button: 下載 Windows 版
     learn_more: 前往首頁

@@ -9,16 +9,7 @@
       <p>{{ t.cta.subtitle }}</p>
     </div>
     <div class="landing-cta-actions" data-reveal>
-      {% if t.cta.download_mac %}
-      <a id="landing-download-macos" href="#" class="btn btn-primary btn-download" style="display:none;">{{ t.cta.download_mac }}</a>
-      {% endif %}
-      {% if t.cta.download_win %}
-      <a id="landing-download-windows" href="#" class="btn btn-primary btn-download" style="display:none;">{{ t.cta.download_win }}</a>
-      {% endif %}
-      {% if t.cta.download_all %}
-      <a id="landing-download-macos" href="#" class="btn btn-primary btn-download" style="display:none;">{{ t.cta.download_all_mac }}</a>
-      <a id="landing-download-windows" href="#" class="btn btn-primary btn-download" style="display:none;">{{ t.cta.download_all_win }}</a>
-      {% endif %}
+      <a href="{{ site.data.routes.home[lang] | relative_url }}#download" class="btn btn-primary">{{ t.cta.button }}</a>
       <a href="{{ site.data.routes.home[lang] | relative_url }}" class="btn btn-ghost">{{ t.cta.learn_more }}</a>
     </div>
   </div>

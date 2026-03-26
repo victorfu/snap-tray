@@ -11,7 +11,7 @@
     <div class="landing-features-grid">
       {% for item in t.features.items %}
       <article class="landing-feature-card" data-reveal>
-        <div class="landing-feature-step">{{ forloop.index }}</div>
+        <p class="landing-feature-step">Step {{ forloop.index }}</p>
         <h3>{{ item.title }}</h3>
         <p>{{ item.body }}</p>
       </article>
