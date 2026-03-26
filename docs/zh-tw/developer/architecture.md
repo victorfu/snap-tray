@@ -226,6 +226,6 @@ SnapTray 以模組化 static-library 風格組織：
 
 ## 相關文件
 
-- [從原始碼建置](/zh-tw/developer/build-from-source/)
-- [發佈與打包](/zh-tw/developer/release-packaging/)
-- [命令列](/zh-tw/docs/cli/)
+- [從原始碼建置](build-from-source.md)
+- [發佈與打包](release-packaging.md)
+- [命令列](../docs/cli.md)

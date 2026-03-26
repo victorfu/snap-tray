@@ -23,10 +23,14 @@ public:
     ToolId toolId() const override { return ToolId::Pencil; }
 
     void onMousePress(ToolContext* ctx, const QPoint& pos) override;
+    void onMousePressF(ToolContext* ctx, const QPointF& pos) override;
     void onMouseMove(ToolContext* ctx, const QPoint& pos) override;
+    void onMouseMoveF(ToolContext* ctx, const QPointF& pos) override;
     void onMouseRelease(ToolContext* ctx, const QPoint& pos) override;
+    void onMouseReleaseF(ToolContext* ctx, const QPointF& pos) override;
 
     void drawPreview(QPainter& painter) const override;
+    QRect previewBounds() const override;
     bool isDrawing() const override { return m_isDrawing; }
     void cancelDrawing() override;
 
@@ -38,6 +42,7 @@ private:
     bool m_isDrawing = false;
     QVector<QPointF> m_currentPath;
     std::unique_ptr<PencilStroke> m_currentStroke;
+    QRect m_previewDirtyRect;
 
     // Smoothing state
     QPointF m_smoothedPoint;      // EMA-smoothed position
@@ -45,8 +50,9 @@ private:
     QPointF m_lastRawPoint;       // Previous raw input for velocity calculation
     bool m_hasSmoothedPoint = false;
 
-    // Minimum distance threshold to add a new point
-    static constexpr qreal kMinPointDistance = 2.0;
+    // Minimum physical distance threshold before committing another point.
+    // Keep spacing stable across mixed-DPI setups instead of hard-coding logical pixels.
+    static constexpr qreal kMinPointDistancePhysical = 2.0;
 
     // Smoothing parameters
     // Base smoothing factor (0 = max smooth, 1 = no smooth)

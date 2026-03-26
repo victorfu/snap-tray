@@ -2,6 +2,7 @@
 #include "RegionSelector.h"
 #include "PinWindowManager.h"
 #include "PinWindow.h"
+#include "capture/ScreenSnapshot.h"
 #include "platform/WindowLevel.h"
 #include "WindowDetector.h"
 #include "PlatformFeatures.h"
@@ -18,128 +19,7 @@
 #include <QDialog>
 #include <QImage>
 
-#ifdef Q_OS_MACOS
-#include <ApplicationServices/ApplicationServices.h>
-#endif
-
 namespace {
-
-#ifdef Q_OS_MACOS
-QImage createQImageFromCGImage(CGImageRef sourceImage)
-{
-    if (!sourceImage) {
-        return {};
-    }
-
-    const size_t width = CGImageGetWidth(sourceImage);
-    const size_t height = CGImageGetHeight(sourceImage);
-    if (width == 0 || height == 0) {
-        return {};
-    }
-
-    QImage target(static_cast<int>(width), static_cast<int>(height),
-                  QImage::Format_RGBA8888_Premultiplied);
-    if (target.isNull()) {
-        return {};
-    }
-
-    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-    if (!colorSpace) {
-        return {};
-    }
-
-    CGContextRef context = CGBitmapContextCreate(
-        target.bits(),
-        width,
-        height,
-        8,
-        static_cast<size_t>(target.bytesPerLine()),
-        colorSpace,
-        kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
-    CGColorSpaceRelease(colorSpace);
-
-    if (!context) {
-        return {};
-    }
-
-    CGContextSetBlendMode(context, kCGBlendModeCopy);
-    CGContextDrawImage(context,
-                       CGRectMake(0.0, 0.0, static_cast<CGFloat>(width), static_cast<CGFloat>(height)),
-                       sourceImage);
-    CGContextRelease(context);
-    return target;
-}
-
-std::optional<CGDirectDisplayID> displayIdForScreen(QScreen* screen)
-{
-    if (!screen) {
-        return std::nullopt;
-    }
-
-    uint32_t displayCount = 0;
-    CGDirectDisplayID displays[16];
-    if (CGGetActiveDisplayList(16, displays, &displayCount) != kCGErrorSuccess) {
-        return std::nullopt;
-    }
-
-    const QRect targetGeometry = screen->geometry();
-    for (uint32_t i = 0; i < displayCount; ++i) {
-        const CGRect bounds = CGDisplayBounds(displays[i]);
-        if (static_cast<int>(bounds.origin.x) == targetGeometry.x() &&
-            static_cast<int>(bounds.origin.y) == targetGeometry.y() &&
-            static_cast<int>(bounds.size.width) == targetGeometry.width() &&
-            static_cast<int>(bounds.size.height) == targetGeometry.height()) {
-            return displays[i];
-        }
-    }
-
-    return std::nullopt;
-}
-
-QPixmap captureScreenViaNativeDisplay(QScreen* screen)
-{
-    const auto displayId = displayIdForScreen(screen);
-    if (!displayId.has_value()) {
-        return {};
-    }
-
-    CGImageRef displayImage = CGDisplayCreateImage(*displayId);
-    if (!displayImage) {
-        return {};
-    }
-
-    const QImage image = createQImageFromCGImage(displayImage);
-    CGImageRelease(displayImage);
-    if (image.isNull()) {
-        return {};
-    }
-
-    QPixmap pixmap = QPixmap::fromImage(image, Qt::NoOpaqueDetection);
-    if (pixmap.isNull()) {
-        return {};
-    }
-
-    const qreal dpr = screen->devicePixelRatio() > 0.0 ? screen->devicePixelRatio() : 1.0;
-    pixmap.setDevicePixelRatio(dpr);
-    return pixmap;
-}
-#endif
-
-QPixmap captureScreenSnapshot(QScreen* screen)
-{
-    if (!screen) {
-        return {};
-    }
-
-#ifdef Q_OS_MACOS
-    QPixmap nativePixmap = captureScreenViaNativeDisplay(screen);
-    if (!nativePixmap.isNull()) {
-        return nativePixmap;
-    }
-#endif
-
-    return screen->grabWindow(0);
-}
 
 QScreen* fallbackReplayScreen()
 {
@@ -258,7 +138,7 @@ bool CaptureManager::startHistoryReplay(const QString& entryId)
 
     QWidget* popup = QApplication::activePopupWidget();
     QWidget* modal = QApplication::activeModalWidget();
-    const QPixmap preCapture = captureScreenSnapshot(targetScreen);
+    const QPixmap preCapture = snaptray::capture::captureScreenSnapshot(targetScreen);
 
     if (popup) {
         popup->close();
@@ -329,7 +209,7 @@ void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortc
     QWidget *popup = QApplication::activePopupWidget();
     QWidget *modal = QApplication::activeModalWidget();
 
-    QPixmap preCapture = captureScreenSnapshot(targetScreen);
+    QPixmap preCapture = snaptray::capture::captureScreenSnapshot(targetScreen);
 
     // 4. Close popup/modal AFTER screenshot
     if (popup) {
@@ -526,9 +406,9 @@ void CaptureManager::refreshWindowDetectorForCapture(QScreen *screen)
 
     m_windowDetector->setScreen(screen);
 #ifdef Q_OS_MACOS
-    m_windowDetector->refreshWindowList();
+    m_windowDetector->refreshWindowList(WindowDetector::QueryMode::TopLevelOnly);
 #else
-    m_windowDetector->refreshWindowListAsync();
+    m_windowDetector->refreshWindowListAsync(WindowDetector::QueryMode::TopLevelOnly);
 #endif
 }
 
@@ -539,7 +419,7 @@ void CaptureManager::refreshWindowDetectorAsync(QScreen *screen)
     }
 
     m_windowDetector->setScreen(screen);
-    m_windowDetector->refreshWindowListAsync();
+    m_windowDetector->refreshWindowListAsync(WindowDetector::QueryMode::TopLevelOnly);
 }
 
 RegionSelector *CaptureManager::createRegionSelector(bool showShortcutHintsOnEntry)

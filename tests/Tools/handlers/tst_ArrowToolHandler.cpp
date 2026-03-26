@@ -54,6 +54,8 @@ private slots:
     // Preview tests
     void testDrawPreview_DragMode();
     void testDrawPreview_ClickMode();
+    void testPreviewBounds_DragMode();
+    void testPreviewBounds_ClickMode();
 
     // Cancellation tests
     void testCancelDrawing_DragMode();
@@ -287,6 +289,35 @@ void TestArrowToolHandler::testDrawPreview_ClickMode()
         }
     }
     QVERIFY(hasColor);
+}
+
+void TestArrowToolHandler::testPreviewBounds_DragMode()
+{
+    m_handler->onMousePress(m_context, QPoint(40, 30));
+    m_handler->onMouseMove(m_context, QPoint(120, 70));
+
+    const QRect previewBounds = m_handler->previewBounds();
+    QVERIFY(previewBounds.isValid());
+    QVERIFY(!previewBounds.isEmpty());
+    QVERIFY(previewBounds.left() <= 40);
+    QVERIFY(previewBounds.top() <= 30);
+    QVERIFY(previewBounds.right() >= 120);
+    QVERIFY(previewBounds.bottom() >= 70);
+}
+
+void TestArrowToolHandler::testPreviewBounds_ClickMode()
+{
+    m_handler->onMousePress(m_context, QPoint(20, 20));
+    m_handler->onMouseRelease(m_context, QPoint(20, 20));
+    m_handler->onMouseMove(m_context, QPoint(80, 50));
+
+    const QRect previewBounds = m_handler->previewBounds();
+    QVERIFY(previewBounds.isValid());
+    QVERIFY(!previewBounds.isEmpty());
+    QVERIFY(previewBounds.left() <= 20);
+    QVERIFY(previewBounds.top() <= 20);
+    QVERIFY(previewBounds.right() >= 80);
+    QVERIFY(previewBounds.bottom() >= 50);
 }
 
 // ============================================================================

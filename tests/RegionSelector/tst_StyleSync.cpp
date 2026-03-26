@@ -39,7 +39,11 @@ private slots:
     void testPopupRestoreReturnsSelectionBodyCursor();
     void testPopupRestoreReturnsMosaicCursor();
     void testInitializeForScreen_DisabledMagnifierPreventsVisibility();
+    void testInitializeForScreen_BeaverStyleDisablesMagnifierMode();
+    void testInitializeForScreen_BeaverStyleSkipsMagnifierPrewarm();
+    void testInitializeForScreen_MagnifierStylePrewarmsCache();
     void testDisabledMagnifierIgnoresShiftAndCopyShortcuts();
+    void testBeaverStyleIgnoresShiftAndCopyShortcuts();
 };
 
 void TestRegionSelectorStyleSync::prepareSelectionTool(RegionSelector& selector)
@@ -236,6 +240,93 @@ void TestRegionSelectorStyleSync::testInitializeForScreen_DisabledMagnifierPreve
     settings.setMagnifierEnabled(true);
 }
 
+void TestRegionSelectorStyleSync::testInitializeForScreen_BeaverStyleDisablesMagnifierMode()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        QSKIP("No screens available for RegionSelector cursor companion setting test.");
+    }
+
+    auto& settings = RegionCaptureSettingsManager::instance();
+    settings.setCursorCompanionStyle(
+        RegionCaptureSettingsManager::CursorCompanionStyle::Beaver);
+
+    RegionSelector selector;
+    const QSize size = screen->geometry().size().boundedTo(QSize(320, 240));
+    QPixmap preCapture(size);
+    preCapture.fill(Qt::darkYellow);
+
+    selector.initializeForScreen(screen, preCapture);
+
+    QCOMPARE(
+        selector.m_cursorCompanionStyle,
+        RegionCaptureSettingsManager::CursorCompanionStyle::Beaver);
+    QCOMPARE(selector.m_magnifierEnabled, false);
+    QVERIFY(!selector.shouldShowMagnifier());
+
+    settings.setCursorCompanionStyle(
+        RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier);
+}
+
+void TestRegionSelectorStyleSync::testInitializeForScreen_BeaverStyleSkipsMagnifierPrewarm()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        QSKIP("No screens available for RegionSelector cursor companion setting test.");
+    }
+
+    auto& settings = RegionCaptureSettingsManager::instance();
+    settings.setCursorCompanionStyle(
+        RegionCaptureSettingsManager::CursorCompanionStyle::Beaver);
+
+    RegionSelector selector;
+    const QSize size = screen->geometry().size().boundedTo(QSize(320, 240));
+    QPixmap preCapture(size);
+    preCapture.fill(Qt::cyan);
+
+    selector.initializeForScreen(screen, preCapture);
+
+    QCOMPARE(selector.m_cursorCompanionStyle,
+             RegionCaptureSettingsManager::CursorCompanionStyle::Beaver);
+    QCOMPARE(selector.m_magnifierPanel->currentColor(), QColor());
+
+    settings.setCursorCompanionStyle(
+        RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier);
+}
+
+void TestRegionSelectorStyleSync::testInitializeForScreen_MagnifierStylePrewarmsCache()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        QSKIP("No screens available for RegionSelector cursor companion setting test.");
+    }
+
+    const QPoint originalCursorPos = QCursor::pos();
+    const QPoint cursorPos = screen->geometry().topLeft() + QPoint(100, 100);
+    QCursor::setPos(cursorPos);
+    QCoreApplication::processEvents();
+    if (QCursor::pos() != cursorPos) {
+        QCursor::setPos(originalCursorPos);
+        QSKIP("System cursor position could not be adjusted for magnifier prewarm test.");
+    }
+
+    auto& settings = RegionCaptureSettingsManager::instance();
+    settings.setCursorCompanionStyle(
+        RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier);
+
+    RegionSelector selector;
+    const QSize size = screen->geometry().size().boundedTo(QSize(320, 240));
+    QPixmap preCapture(size);
+    preCapture.fill(Qt::magenta);
+
+    selector.initializeForScreen(screen, preCapture);
+
+    QCOMPARE(selector.m_cursorCompanionStyle,
+             RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier);
+    QCursor::setPos(originalCursorPos);
+    QCOMPARE(selector.m_magnifierPanel->currentColor(), QColor(Qt::magenta));
+}
+
 void TestRegionSelectorStyleSync::testDisabledMagnifierIgnoresShiftAndCopyShortcuts()
 {
     QScreen* screen = QGuiApplication::primaryScreen();
@@ -264,6 +355,38 @@ void TestRegionSelectorStyleSync::testDisabledMagnifierIgnoresShiftAndCopyShortc
     QCOMPARE(QGuiApplication::clipboard()->text(), QStringLiteral("keep-me"));
 
     settings.setMagnifierEnabled(true);
+}
+
+void TestRegionSelectorStyleSync::testBeaverStyleIgnoresShiftAndCopyShortcuts()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        QSKIP("No screens available for RegionSelector favicon shortcut test.");
+    }
+
+    auto& settings = RegionCaptureSettingsManager::instance();
+    settings.setCursorCompanionStyle(
+        RegionCaptureSettingsManager::CursorCompanionStyle::Beaver);
+
+    RegionSelector selector;
+    const QSize size = screen->geometry().size().boundedTo(QSize(320, 240));
+    QPixmap preCapture(size);
+    preCapture.fill(Qt::darkGreen);
+    selector.initializeForScreen(screen, preCapture);
+
+    selector.m_magnifierPanel->setShowHexColor(false);
+    QGuiApplication::clipboard()->setText(QStringLiteral("keep-me"));
+
+    QKeyEvent shiftEvent(QEvent::KeyPress, Qt::Key_Shift, Qt::NoModifier);
+    selector.keyPressEvent(&shiftEvent);
+    QCOMPARE(selector.m_magnifierPanel->showHexColor(), false);
+
+    QKeyEvent copyEvent(QEvent::KeyPress, Qt::Key_C, Qt::NoModifier);
+    selector.keyPressEvent(&copyEvent);
+    QCOMPARE(QGuiApplication::clipboard()->text(), QStringLiteral("keep-me"));
+
+    settings.setCursorCompanionStyle(
+        RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier);
 }
 
 QTEST_MAIN(TestRegionSelectorStyleSync)

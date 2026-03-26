@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Victor Fu. All rights reserved.
+// Copyright (c) 2026 Victor Fu. All rights reserved.
 // Use of this source code is governed by an MIT-style license that can be
 // found in the LICENSE file.
 
@@ -27,6 +27,7 @@ void setWindowFloatingWithoutFocus(QWidget *widget);
 //   - Does NOT affect ScreenCaptureKit on macOS 15+ (use SCContentFilter's
 //     excludingWindows parameter for SCK exclusion)
 void setWindowExcludedFromCapture(QWidget *widget, bool excluded);
+void setWindowExcludedFromCapture(QWindow *window, bool excluded);
 
 // Sets window to be visible on all virtual desktops/workspaces
 // On macOS: Uses NSWindowCollectionBehaviorCanJoinAllSpaces

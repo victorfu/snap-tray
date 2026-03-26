@@ -35,6 +35,7 @@ public:
     void onDoubleClick(ToolContext* ctx, const QPoint& pos) override;
 
     void drawPreview(QPainter& painter) const override;
+    QRect previewBounds() const override;
     bool isDrawing() const override { return m_isDrawing || m_isPolylineMode; }
     void cancelDrawing() override;
     bool handleEscape(ToolContext* ctx) override;

@@ -1,4 +1,7 @@
 #include "region/RegionPainter.h"
+#include "annotation/AnnotationRenderHelper.h"
+#include "region/CapturePerfRecorder.h"
+#include "region/SelectionDimensionLabel.h"
 #include "region/SelectionStateManager.h"
 #include "region/MultiRegionManager.h"
 #include "annotations/AnnotationLayer.h"
@@ -31,6 +34,19 @@ constexpr int kDimensionPanelHeight = 28;
 constexpr int kDimensionPanelPadding = 24;
 constexpr int kDimensionPanelTopGap = 8;
 constexpr int kDimensionPanelInset = 5;
+const QColor kRegionDimColor(0, 0, 0, 100);
+
+QColor dimensionLabelTextColor(const ToolbarStyleConfig& styleConfig)
+{
+    return styleConfig.glassBackgroundColor.lightness() < 128
+        ? QColor(255, 255, 255, 245)
+        : QColor(20, 20, 20, 235);
+}
+
+QColor dimensionLabelShadowColor(const QColor& textColor)
+{
+    return textColor.lightness() > 160 ? QColor(0, 0, 0, 160) : QColor(255, 255, 255, 110);
+}
 
 }
 
@@ -97,50 +113,79 @@ void RegionPainter::setReplacePreview(int targetIndex, const QRect& previewRect)
     m_replacePreviewRect = previewRect;
 }
 
-void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QRect& dirtyRect)
+void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QRegion& dirtyRegion)
 {
+    snaptray::region::CapturePerfScope perfScope("RegionPainter.paint");
     if (!m_parentWidget || !m_selectionManager) {
         return;
     }
 
-    // Use dirty rect for optimized partial repainting
-    // Only draw the background portion that needs updating
-    const QRect updateRect = dirtyRect.isEmpty() ? m_parentWidget->rect() : dirtyRect;
+    m_lastDimensionInfoRect = QRect();
 
-    // Draw only the dirty portion of the background
-    if (!background.isNull()) {
+    const QRegion updateRegion = dirtyRegion.isEmpty()
+        ? QRegion(m_parentWidget->rect())
+        : dirtyRegion;
+    const QRect updateBounds = updateRegion.boundingRect();
+    const QRect selectionRect = m_selectionManager->selectionRect();
+    const bool captureChromeActive = m_captureChromeActive;
+    const bool selectionPreviewOwnedByOverlay =
+        m_selectionPreviewActive && m_selectionManager->isSelecting();
+    const bool singleRegionFastPath =
+        !captureChromeActive &&
+        !selectionPreviewOwnedByOverlay &&
+        !m_multiRegionMode &&
+        !background.isNull();
+
+    if (singleRegionFastPath) {
+        ensureDimmedBackgroundCache(background);
+        drawBackgroundTiles(painter, m_dimmedBackgroundCache, updateRegion);
+
+        QRegion clearRegion;
+        if (m_selectionManager->hasActiveSelection() && selectionRect.isValid()) {
+            clearRegion = updateRegion.intersected(QRegion(selectionRect.normalized()));
+        } else if (!m_highlightedWindowRect.isNull()) {
+            clearRegion = updateRegion.intersected(QRegion(m_highlightedWindowRect));
+        }
+
+        if (!clearRegion.isEmpty()) {
+            drawBackgroundTiles(painter, background, clearRegion);
+        }
+    }
+    else if (!background.isNull()) {
         const qreal dpr = background.devicePixelRatio();
-        const QRect sourceRect =
-            CoordinateHelper::toPhysicalCoveringRect(updateRect, dpr).intersected(background.rect());
 #ifdef Q_OS_WIN
 #ifndef QT_NO_DEBUG
         const qreal roundedDpr = qRound(dpr);
         const bool fractionalDpr = !qFuzzyCompare(dpr, roundedDpr);
-        const bool partialRepaint = !dirtyRect.isEmpty() && dirtyRect != m_parentWidget->rect();
+        const bool partialRepaint =
+            !dirtyRegion.isEmpty() && updateBounds != m_parentWidget->rect();
         if (fractionalDpr && partialRepaint) {
             qDebug() << "RegionPainter partial repaint"
-                     << "logicalDirty=" << updateRect
-                     << "physicalDirty=" << sourceRect
+                     << "logicalDirty=" << updateBounds
+                     << "rectCount=" << updateRegion.rectCount()
                      << "backgroundDpr=" << dpr;
         }
 #endif
 #endif
-        painter.drawPixmap(updateRect, background, sourceRect);
+        drawBackgroundTiles(painter, background, updateRegion);
     }
 
-    // Draw dimmed overlay
-    drawOverlay(painter);
+    if (!captureChromeActive && !singleRegionFastPath && !selectionPreviewOwnedByOverlay) {
+        // Draw dimmed overlay when the host cannot reuse a cached dimmed background.
+        drawOverlay(painter);
+    }
 
     // Draw detected window highlight (only during hover, before any selection)
-    if (!m_selectionManager->hasActiveSelection()) {
+    if (!captureChromeActive && !m_selectionManager->hasActiveSelection()) {
         drawDetectedWindow(painter);
     }
 
     // Draw selection if active or complete
-    QRect selectionRect = m_selectionManager->selectionRect();
     if (m_selectionManager->hasActiveSelection() && selectionRect.isValid()) {
-        drawSelection(painter);
-        drawDimensionInfo(painter);
+        if (!captureChromeActive && !selectionPreviewOwnedByOverlay) {
+            drawSelection(painter);
+            drawDimensionInfo(painter);
+        }
 
         // Draw annotations on top of selection (only when selection is established)
         if (!m_multiRegionMode && m_selectionManager->hasSelection()) {
@@ -160,10 +205,64 @@ void RegionPainter::drawDimmingOverlay(QPainter& painter, const QRect& clearRect
     painter.fillRect(QRect(clearRect.right() + 1, clearRect.top(), w - clearRect.right() - 1, clearRect.height()), dimColor);  // Right
 }
 
+void RegionPainter::ensureDimmedBackgroundCache(const QPixmap& background) const
+{
+    const qreal dpr = background.devicePixelRatio();
+    const qint64 cacheKey = background.cacheKey();
+    if (!m_dimmedBackgroundCache.isNull() &&
+        m_dimmedBackgroundCacheKey == cacheKey &&
+        qFuzzyCompare(m_dimmedBackgroundCacheDpr, dpr)) {
+        return;
+    }
+
+    QPixmap dimmed(background.size());
+    dimmed.setDevicePixelRatio(dpr);
+    dimmed.fill(Qt::transparent);
+
+    QPainter dimPainter(&dimmed);
+    dimPainter.drawPixmap(QPoint(0, 0), background);
+    dimPainter.fillRect(
+        QRectF(0, 0,
+               static_cast<qreal>(background.width()) / dpr,
+               static_cast<qreal>(background.height()) / dpr),
+        kRegionDimColor);
+
+    m_dimmedBackgroundCache = dimmed;
+    m_dimmedBackgroundCacheKey = cacheKey;
+    m_dimmedBackgroundCacheDpr = dpr;
+}
+
+void RegionPainter::drawBackgroundTiles(QPainter& painter,
+                                        const QPixmap& background,
+                                        const QRegion& updateRegion) const
+{
+    if (background.isNull() || updateRegion.isEmpty()) {
+        return;
+    }
+
+    const qreal dpr = background.devicePixelRatio();
+    for (QRegion::const_iterator it = updateRegion.begin(); it != updateRegion.end(); ++it) {
+        const QRect updateRect = *it;
+        if (!updateRect.isValid() || updateRect.isEmpty()) {
+            continue;
+        }
+        const QRect sourceRect =
+            CoordinateHelper::toPhysicalCoveringRect(updateRect, dpr).intersected(background.rect());
+        if (!sourceRect.isValid() || sourceRect.isEmpty()) {
+            continue;
+        }
+        const QRectF targetRect(
+            static_cast<qreal>(sourceRect.x()) / dpr,
+            static_cast<qreal>(sourceRect.y()) / dpr,
+            static_cast<qreal>(sourceRect.width()) / dpr,
+            static_cast<qreal>(sourceRect.height()) / dpr);
+        painter.drawPixmap(targetRect, background, QRectF(sourceRect));
+    }
+}
+
 void RegionPainter::drawOverlay(QPainter& painter)
 {
-    QColor dimColor(0, 0, 0, 100);
-
+    snaptray::region::CapturePerfScope perfScope("RegionPainter.drawOverlay");
     QRect sel = m_selectionManager->selectionRect();
     bool hasSelection = m_selectionManager->hasActiveSelection() && sel.isValid();
 
@@ -184,18 +283,18 @@ void RegionPainter::drawOverlay(QPainter& painter)
             selPath.addRect(sel);
             dimPath = dimPath.subtracted(selPath);
         }
-        painter.fillPath(dimPath, dimColor);
+        painter.fillPath(dimPath, kRegionDimColor);
         return;
     }
 
     if (hasSelection) {
-        drawDimmingOverlay(painter, sel, dimColor);
+        drawDimmingOverlay(painter, sel, kRegionDimColor);
     }
     else if (!m_highlightedWindowRect.isNull()) {
-        drawDimmingOverlay(painter, m_highlightedWindowRect, dimColor);
+        drawDimmingOverlay(painter, m_highlightedWindowRect, kRegionDimColor);
     }
     else {
-        painter.fillRect(m_parentWidget->rect(), dimColor);
+        painter.fillRect(m_parentWidget->rect(), kRegionDimColor);
     }
 }
 
@@ -211,8 +310,8 @@ void RegionPainter::drawSelection(QPainter& painter)
 
 QRectF RegionPainter::alignedSelectionBorderRect(const QRect& selectionRect, qreal penWidth) const
 {
-    QRectF borderRect = QRectF(selectionRect.normalized()).adjusted(0.5, 0.5, -0.5, -0.5);
     const qreal dpr = m_devicePixelRatio > 0.0 ? m_devicePixelRatio : 1.0;
+    QRectF borderRect = QRectF(selectionRect.normalized()).adjusted(0.5, 0.5, -0.5, -0.5);
     const int physicalPenWidth = qMax(1, qRound(penWidth * dpr));
     if ((physicalPenWidth % 2) != 0) {
         const qreal offset = 0.5 / dpr;
@@ -267,7 +366,7 @@ void RegionPainter::drawDimensionInfo(QPainter& painter)
         QRect activeInfoRect;
         const auto regions = m_multiRegionManager->regions();
         for (const auto& region : regions) {
-            const QString dimensions = selectionSizeLabel(region.rect);
+            const QString dimensions = SelectionDimensionLabel::label(region.rect, m_devicePixelRatio);
             QRect infoRect = drawDimensionInfoPanel(painter, region.rect, dimensions);
             if (region.isActive) {
                 activeInfoRect = infoRect;
@@ -277,7 +376,7 @@ void RegionPainter::drawDimensionInfo(QPainter& painter)
         if (activeInfoRect.isNull() && m_selectionManager->isSelecting()) {
             QRect sel = m_selectionManager->selectionRect();
             if (sel.isValid()) {
-                const QString dimensions = selectionSizeLabel(sel);
+                const QString dimensions = SelectionDimensionLabel::label(sel, m_devicePixelRatio);
                 activeInfoRect = drawDimensionInfoPanel(painter, sel, dimensions);
             }
         }
@@ -287,7 +386,7 @@ void RegionPainter::drawDimensionInfo(QPainter& painter)
     }
 
     QRect sel = m_selectionManager->selectionRect();
-    const QString dimensions = selectionSizeLabel(sel);
+    const QString dimensions = SelectionDimensionLabel::label(sel, m_devicePixelRatio);
     QRect textRect = drawDimensionInfoPanel(painter, sel, dimensions);
     m_lastDimensionInfoRect = textRect;
 }
@@ -352,13 +451,17 @@ QRect RegionPainter::drawDimensionInfoPanel(QPainter& painter, const QRect& sele
 {
     QFont font = painter.font();
     font.setPointSize(12);
+    font.setBold(true);
     painter.setFont(font);
     const QRect textRect = dimensionInfoPanelRect(selectionRect, label, font);
 
     auto styleConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
     GlassRenderer::drawGlassPanel(painter, textRect, styleConfig, 6);
 
-    painter.setPen(styleConfig.textColor);
+    const QColor textColor = dimensionLabelTextColor(styleConfig);
+    painter.setPen(dimensionLabelShadowColor(textColor));
+    painter.drawText(textRect.translated(0, 1), Qt::AlignCenter, label);
+    painter.setPen(textColor);
     painter.drawText(textRect, Qt::AlignCenter, label);
 
     return textRect;
@@ -376,7 +479,7 @@ QRect RegionPainter::dimensionInfoPanelRect(const QRect& selectionRect, const QS
     font.setPointSize(12);
     QFontMetrics fm(font);
 
-    const QString maxWidthText = tr("%1 x %2 px").arg(99999).arg(99999);
+    const QString maxWidthText = SelectionDimensionLabel::sampleLabel();
     const int fixedWidth = fm.horizontalAdvance(maxWidthText) + kDimensionPanelPadding;
     const int actualWidth = fm.horizontalAdvance(label) + kDimensionPanelPadding;
     const int width = qMax(fixedWidth, actualWidth);
@@ -421,18 +524,6 @@ QRect RegionPainter::selectionChromeBounds(const QRect& selectionRect) const
                         kSelectionChromeMargin, kSelectionChromeMargin);
 }
 
-QRect RegionPainter::physicalSelectionRect(const QRect& selectionRect) const
-{
-    const qreal dpr = m_devicePixelRatio > 0.0 ? m_devicePixelRatio : 1.0;
-    return CoordinateHelper::toPhysicalCoveringRect(selectionRect.normalized(), dpr);
-}
-
-QString RegionPainter::selectionSizeLabel(const QRect& selectionRect) const
-{
-    const QSize physicalSize = physicalSelectionRect(selectionRect).size();
-    return tr("%1 x %2 px").arg(physicalSize.width()).arg(physicalSize.height());
-}
-
 void RegionPainter::drawRegionBadge(QPainter& painter, const QRect& selectionRect, const QColor& color,
                                     int index, bool isActive) const
 {
@@ -464,8 +555,9 @@ void RegionPainter::drawDetectedWindow(QPainter& painter)
     }
 
     drawSelectionChrome(painter, m_highlightedWindowRect);
-    const QString dimensions = selectionSizeLabel(m_highlightedWindowRect);
-    drawDimensionInfoPanel(painter, m_highlightedWindowRect, dimensions);
+    const QString dimensions =
+        SelectionDimensionLabel::label(m_highlightedWindowRect, m_devicePixelRatio);
+    m_lastDimensionInfoRect = drawDimensionInfoPanel(painter, m_highlightedWindowRect, dimensions);
 }
 
 void RegionPainter::drawAnnotations(QPainter& painter)
@@ -474,52 +566,65 @@ void RegionPainter::drawAnnotations(QPainter& painter)
         return;
     }
 
-    // Use cached rendering to avoid re-drawing all annotations every frame.
-    // drawCached() renders committed annotations to a QPixmap once, then blits it
-    // on subsequent frames until invalidateCache() is called (when the annotation list changes).
-    // drawWithDirtyRegion() is used when an item is selected (potentially being dragged) —
-    // it caches all items except the selected one and draws the selected item live.
     if (m_parentWidget) {
-        const QSize canvasSize = m_parentWidget->size();
-        const qreal dpr = m_devicePixelRatio > 0.0 ? m_devicePixelRatio : 1.0;
-        const int selectedIdx = m_annotationLayer->selectedIndex();
+        QRect annotationViewport = m_annotationViewport.normalized();
+        if (annotationViewport.isValid() && !annotationViewport.isEmpty()) {
+            QRect itemBounds;
+            m_annotationLayer->forEachItem([&itemBounds](const AnnotationItem* item) {
+                if (!item || !item->isVisible()) {
+                    return;
+                }
 
-        if (selectedIdx >= 0) {
-            m_annotationLayer->drawWithDirtyRegion(
-                painter, canvasSize, dpr, selectedIdx, QPoint(0, 0));
+                if (itemBounds.isValid()) {
+                    itemBounds = itemBounds.united(item->boundingRect());
+                } else {
+                    itemBounds = item->boundingRect();
+                }
+            });
+
+            if (itemBounds.isValid() && !itemBounds.isEmpty()) {
+                annotationViewport = annotationViewport.united(itemBounds);
+            }
+            annotationViewport = annotationViewport.intersected(m_parentWidget->rect());
+        }
+
+        const QSize canvasSize =
+            annotationViewport.isValid() && !annotationViewport.isEmpty()
+            ? annotationViewport.size()
+            : m_parentWidget->size();
+        const qreal dpr = m_devicePixelRatio > 0.0 ? m_devicePixelRatio : 1.0;
+        snaptray::annotation::SelectedAnnotationItems selectedItems;
+        selectedItems.text = getSelectedTextAnnotation();
+        selectedItems.emoji = getSelectedEmojiStickerAnnotation();
+        selectedItems.shape = getSelectedShapeAnnotation();
+        selectedItems.arrow = getSelectedArrowAnnotation();
+        selectedItems.polyline = getSelectedPolylineAnnotation();
+        if (annotationViewport.isValid() && !annotationViewport.isEmpty()) {
+            painter.save();
+            painter.translate(annotationViewport.topLeft());
+            snaptray::annotation::drawAnnotationVisuals(
+                painter,
+                m_annotationLayer,
+                canvasSize,
+                dpr,
+                annotationViewport.topLeft(),
+                m_annotationLayer->selectedIndex() >= 0,
+                selectedItems);
+            painter.restore();
         } else {
-            m_annotationLayer->drawCached(
-                painter, canvasSize, dpr, QPoint(0, 0));
+            snaptray::annotation::drawAnnotationVisuals(
+                painter,
+                m_annotationLayer,
+                canvasSize,
+                dpr,
+                QPoint(0, 0),
+                m_annotationLayer->selectedIndex() >= 0,
+                selectedItems);
         }
     } else {
         qWarning() << "RegionPainter::drawAnnotations: m_parentWidget is null, "
                       "falling back to uncached draw";
         m_annotationLayer->draw(painter);
-    }
-
-    // Draw transformation gizmo for selected text annotation
-    if (auto* textItem = getSelectedTextAnnotation()) {
-        TransformationGizmo::draw(painter, textItem);
-    }
-
-    // Draw transformation gizmo for selected emoji sticker annotation
-    if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
-        TransformationGizmo::draw(painter, emojiItem);
-    }
-
-    // Draw transformation gizmo for selected shape annotation
-    if (auto* shapeItem = getSelectedShapeAnnotation()) {
-        TransformationGizmo::draw(painter, shapeItem);
-    }
-
-    // Draw transformation gizmo for selected arrow annotation
-    if (auto* arrowItem = getSelectedArrowAnnotation()) {
-        TransformationGizmo::draw(painter, arrowItem);
-    }
-
-    // Draw transformation gizmo for selected polyline annotation
-    if (auto* polylineItem = getSelectedPolylineAnnotation()) {
-        TransformationGizmo::draw(painter, polylineItem);
     }
 }
 
@@ -532,7 +637,14 @@ void RegionPainter::drawCurrentAnnotation(QPainter& painter)
     // Use ToolManager for tools it handles.
     ToolId tool = static_cast<ToolId>(m_currentTool);
     if (ToolTraits::isToolManagerHandledTool(tool)) {
-        m_toolManager->drawCurrentPreview(painter);
+        if (m_annotationViewport.isValid() && !m_annotationViewport.isEmpty()) {
+            painter.save();
+            painter.setClipRect(m_annotationViewport);
+            m_toolManager->drawCurrentPreview(painter);
+            painter.restore();
+        } else {
+            m_toolManager->drawCurrentPreview(painter);
+        }
     }
 }
 
@@ -542,7 +654,7 @@ QRect RegionPainter::getWindowHighlightVisualRect(const QRect& windowRect) const
         return QRect();
     }
 
-    const QString dimensions = selectionSizeLabel(windowRect);
+    const QString dimensions = SelectionDimensionLabel::label(windowRect, m_devicePixelRatio);
     const QFont baseFont;
     const QRect panelRect = dimensionInfoPanelRect(windowRect, dimensions, baseFont);
     return selectionChromeBounds(windowRect).united(panelRect);

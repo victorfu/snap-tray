@@ -7,6 +7,7 @@
 #include <QRegion>
 #include <QCursor>
 #include <QTimer>
+#include <functional>
 #include "TransformationGizmo.h"
 #include "region/RegionInputState.h"
 #include "region/SelectionStateManager.h"
@@ -51,6 +52,8 @@ public:
     void setUpdateThrottler(UpdateThrottler* throttler);
     void setParentWidget(QWidget* widget);
     void setSharedState(RegionInputState* state);
+    void setMagnifierVisibilityProvider(std::function<bool()> provider);
+    void setSelectionPreviewOverlayActiveProvider(std::function<bool()> provider);
 
     // Reset dirty tracking state (call when starting a new capture)
     void resetDirtyTracking();
@@ -65,6 +68,7 @@ public:
     QPoint currentPoint() const { return m_state ? m_state->currentPoint : QPoint(); }
     QPoint startPoint() const { return m_startPoint; }
     bool isDrawing() const { return m_state && m_state->isDrawing; }
+    bool isManipulatingAnnotation() const;
     QRect lastMagnifierRect() const { return m_lastMagnifierRect; }
 
 signals:
@@ -84,7 +88,7 @@ signals:
 
     // State change notifications
     void drawingStateChanged(bool isDrawing);
-    void detectionCleared(const QRect& previousHighlightRect);
+    void detectionCleared(const QRect& previousHighlightRect, bool selectionTransition);
     void selectionCancelledByRightClick();
 
 private:
@@ -102,9 +106,10 @@ private:
     bool handleEmojiStickerMove(const QPoint& pos);
     bool handleArrowAnnotationMove(const QPoint& pos);
     void handleWindowDetectionMove(const QPoint& pos);
-    void clearDetectionAndNotify();
+    void clearDetectionAndNotify(bool selectionTransition = false);
     void handleSelectionMove(const QPoint& pos);
     void handleAnnotationMove(const QPoint& pos);
+    void handleAnnotationMove(const QPointF& pos);
     void handleHoverMove(const QPoint& pos, Qt::MouseButtons buttons);
     void handleThrottledUpdate();
     void updateDragFramePump();
@@ -120,7 +125,9 @@ private:
 
     // Annotation helpers
     void startAnnotation(const QPoint& pos);
+    void startAnnotation(const QPointF& pos);
     void updateAnnotation(const QPoint& pos);
+    void updateAnnotation(const QPointF& pos);
     void finishAnnotation();
     void beginSelectionDrag();
     void clearSelectionDrag();
@@ -149,6 +156,8 @@ private:
     UpdateThrottler* m_updateThrottler = nullptr;
     QWidget* m_parentWidget = nullptr;
     RegionInputState* m_state = nullptr;
+    std::function<bool()> m_shouldRenderMagnifier;
+    std::function<bool()> m_isSelectionPreviewOverlayActive;
 
     // State
     QPoint m_startPoint;
@@ -160,6 +169,7 @@ private:
     QRect m_lastMagnifierRect;
     QRect m_lastToolbarRect;
     bool m_pendingWindowClickActive = false;
+    QPointF m_lastToolEventPos;
 
     // Emoji sticker transformation state
     bool m_isEmojiDragging = false;

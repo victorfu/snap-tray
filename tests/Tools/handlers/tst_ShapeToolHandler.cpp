@@ -52,6 +52,7 @@ private slots:
 
     // Preview tests
     void testDrawPreview_WhileDrawing();
+    void testPreviewBounds_WhileDrawing();
 
     // Cancellation tests
     void testCancelDrawing();
@@ -260,6 +261,20 @@ void TestShapeToolHandler::testDrawPreview_WhileDrawing()
         }
     }
     QVERIFY(hasColor);
+}
+
+void TestShapeToolHandler::testPreviewBounds_WhileDrawing()
+{
+    m_handler->onMousePress(m_context, QPoint(50, 60));
+    m_handler->onMouseMove(m_context, QPoint(140, 160));
+
+    const QRect previewBounds = m_handler->previewBounds();
+    QVERIFY(previewBounds.isValid());
+    QVERIFY(!previewBounds.isEmpty());
+    QVERIFY(previewBounds.left() <= 50);
+    QVERIFY(previewBounds.top() <= 60);
+    QVERIFY(previewBounds.right() >= 140);
+    QVERIFY(previewBounds.bottom() >= 160);
 }
 
 // ============================================================================

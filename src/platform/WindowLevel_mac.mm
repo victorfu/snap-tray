@@ -1,8 +1,10 @@
-// Copyright (c) 2025 Victor Fu. All rights reserved.
+// Copyright (c) 2026 Victor Fu. All rights reserved.
 // Use of this source code is governed by an MIT-style license that can be
 // found in the LICENSE file.
 
 #include "WindowLevel.h"
+
+#include <QGuiApplication>
 
 #import <Cocoa/Cocoa.h>
 
@@ -101,14 +103,37 @@ NSCursor* nsCursorForQtCursor(const QCursor& cursor)
     return [[NSCursor alloc] initWithImage:nsImage
                                    hotSpot:NSMakePoint(hotspot.x(), hotspot.y())];
 }
+
+bool canUseNativeMacWindowApis()
+{
+    return QGuiApplication::instance() &&
+        QGuiApplication::platformName() == QStringLiteral("cocoa");
+}
+
+NSView* nsViewForWidget(QWidget* widget)
+{
+    if (!widget || !canUseNativeMacWindowApis()) {
+        return nil;
+    }
+
+    const WId wid = widget->winId();
+    return wid ? reinterpret_cast<NSView*>(wid) : nil;
+}
+
+NSView* nsViewForWindow(QWindow* window)
+{
+    if (!window || !canUseNativeMacWindowApis()) {
+        return nil;
+    }
+
+    const WId wid = window->winId();
+    return wid ? reinterpret_cast<NSView*>(wid) : nil;
+}
 }  // namespace
 
 void raiseWindowAboveMenuBar(QWidget *widget)
 {
-    if (!widget) {
-        return;
-    }
-    NSView *view = reinterpret_cast<NSView *>(widget->winId());
+    NSView *view = nsViewForWidget(widget);
     if (view) {
         NSWindow *window = [view window];
         [window setLevel:kCGScreenSaverWindowLevel]; // level 1000
@@ -117,10 +142,7 @@ void raiseWindowAboveMenuBar(QWidget *widget)
 
 void setWindowClickThrough(QWidget *widget, bool enabled)
 {
-    if (!widget) {
-        return;
-    }
-    NSView *view = reinterpret_cast<NSView *>(widget->winId());
+    NSView *view = nsViewForWidget(widget);
     if (view) {
         NSWindow *window = [view window];
         [window setIgnoresMouseEvents:enabled];
@@ -129,15 +151,12 @@ void setWindowClickThrough(QWidget *widget, bool enabled)
 
 void setWindowFloatingWithoutFocus(QWidget *widget)
 {
-    if (!widget) {
-        return;
-    }
-    NSView *view = reinterpret_cast<NSView *>(widget->winId());
+    NSView *view = nsViewForWidget(widget);
     if (view) {
         NSWindow *window = [view window];
         NSInteger targetLevel = NSFloatingWindowLevel;
         if (auto *parentWidget = widget->parentWidget()) {
-            NSView *parentView = reinterpret_cast<NSView *>(parentWidget->winId());
+            NSView *parentView = nsViewForWidget(parentWidget);
             if (parentView) {
                 NSWindow *parentWindow = [parentView window];
                 if (parentWindow) {
@@ -160,10 +179,7 @@ void setWindowFloatingWithoutFocus(QWidget *widget)
 
 void setWindowExcludedFromCapture(QWidget *widget, bool excluded)
 {
-    if (!widget) {
-        return;
-    }
-    NSView *view = reinterpret_cast<NSView *>(widget->winId());
+    NSView *view = nsViewForWidget(widget);
     if (view) {
         NSWindow *window = [view window];
         if (window) {
@@ -177,12 +193,20 @@ void setWindowExcludedFromCapture(QWidget *widget, bool excluded)
     }
 }
 
+void setWindowExcludedFromCapture(QWindow *window, bool excluded)
+{
+    NSView *view = nsViewForWindow(window);
+    if (view) {
+        NSWindow *nsWindow = [view window];
+        if (nsWindow) {
+            [nsWindow setSharingType:excluded ? NSWindowSharingNone : NSWindowSharingReadOnly];
+        }
+    }
+}
+
 void setWindowVisibleOnAllWorkspaces(QWidget *widget, bool enabled)
 {
-    if (!widget) {
-        return;
-    }
-    NSView *view = reinterpret_cast<NSView *>(widget->winId());
+    NSView *view = nsViewForWidget(widget);
     if (view) {
         NSWindow *window = [view window];
         NSWindowCollectionBehavior behavior = [window collectionBehavior];
@@ -198,11 +222,7 @@ void setWindowVisibleOnAllWorkspaces(QWidget *widget, bool enabled)
 
 void preventWindowHideOnDeactivate(QWidget *widget)
 {
-    if (!widget) {
-        return;
-    }
-
-    NSView *view = reinterpret_cast<NSView *>(widget->winId());
+    NSView *view = nsViewForWidget(widget);
     if (!view) {
         return;
     }
@@ -224,10 +244,7 @@ void forceNativeCursor(const QCursor& cursor, QWidget *)
 
 void raiseWindowAboveOverlays(QWidget *widget)
 {
-    if (!widget) {
-        return;
-    }
-    NSView *view = reinterpret_cast<NSView *>(widget->winId());
+    NSView *view = nsViewForWidget(widget);
     if (view) {
         NSWindow *window = [view window];
         // RegionSelector / ScreenCanvas live at kCGScreenSaverWindowLevel and
@@ -239,11 +256,7 @@ void raiseWindowAboveOverlays(QWidget *widget)
 
 void raiseTransientWindowAboveParent(QWindow *window, QWidget *parentWidget)
 {
-    if (!window) {
-        return;
-    }
-
-    NSView *view = reinterpret_cast<NSView *>(window->winId());
+    NSView *view = nsViewForWindow(window);
     if (!view) {
         return;
     }
@@ -255,7 +268,7 @@ void raiseTransientWindowAboveParent(QWindow *window, QWidget *parentWidget)
 
     NSInteger targetLevel = NSFloatingWindowLevel;
     if (parentWidget) {
-        NSView *parentView = reinterpret_cast<NSView *>(parentWidget->winId());
+        NSView *parentView = nsViewForWidget(parentWidget);
         if (parentView) {
             NSWindow *parentWindow = [parentView window];
             if (parentWindow) {

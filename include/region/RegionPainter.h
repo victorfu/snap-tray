@@ -8,7 +8,9 @@
 #include <QString>
 #include <QFont>
 #include <QRectF>
+#include <QRegion>
 #include <QSize>
+#include <QtGlobal>
 
 class QPainter;
 class QWidget;
@@ -52,9 +54,9 @@ public:
      *
      * @param painter The painter to draw with
      * @param background The captured background pixmap
-     * @param dirtyRect Optional dirty rect for partial updates (empty = full repaint)
+     * @param dirtyRegion Optional dirty region for partial updates (empty = full repaint)
      */
-    void paint(QPainter& painter, const QPixmap& background, const QRect& dirtyRect = QRect());
+    void paint(QPainter& painter, const QPixmap& background, const QRegion& dirtyRegion = QRegion());
 
     // Configuration setters (call before paint)
     void setHighlightedWindowRect(const QRect& rect);
@@ -64,6 +66,9 @@ public:
     void setDevicePixelRatio(qreal ratio);
     void setMultiRegionMode(bool enabled) { m_multiRegionMode = enabled; }
     void setReplacePreview(int targetIndex, const QRect& previewRect);
+    void setSelectionPreviewActive(bool active) { m_selectionPreviewActive = active; }
+    void setCaptureChromeActive(bool active) { m_captureChromeActive = active; }
+    void setAnnotationViewport(const QRect& viewport) { m_annotationViewport = viewport; }
 
     /**
      * @brief Calculate the visual bounding rect of a window highlight (including the hint label).
@@ -90,8 +95,6 @@ private:
     void drawRegionBadge(QPainter& painter, const QRect& selectionRect, const QColor& color,
                          int index, bool isActive) const;
     QRectF alignedSelectionBorderRect(const QRect& selectionRect, qreal penWidth) const;
-    QRect physicalSelectionRect(const QRect& selectionRect) const;
-    QString selectionSizeLabel(const QRect& selectionRect) const;
 
     // Helper methods
     int effectiveCornerRadius(const QRect& selectionRect) const;
@@ -115,10 +118,21 @@ private:
     int m_currentTool = 0;
     qreal m_devicePixelRatio = 1.0;
     bool m_multiRegionMode = false;
+    bool m_selectionPreviewActive = false;
+    bool m_captureChromeActive = false;
+    QRect m_annotationViewport;
     int m_replaceTargetIndex = -1;
     QRect m_replacePreviewRect;
 
     QRect m_lastDimensionInfoRect;
+
+    mutable QPixmap m_dimmedBackgroundCache;
+    mutable qint64 m_dimmedBackgroundCacheKey = 0;
+    mutable qreal m_dimmedBackgroundCacheDpr = 0.0;
+
+    void ensureDimmedBackgroundCache(const QPixmap& background) const;
+    void drawBackgroundTiles(QPainter& painter, const QPixmap& background,
+                             const QRegion& updateRegion) const;
 };
 
 #endif // REGIONPAINTER_H

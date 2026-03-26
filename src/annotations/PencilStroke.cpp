@@ -3,21 +3,61 @@
 #include <QPainterPath>
 #include <QtMath>
 
-// ============================================================================
-// Helper: Append a single Catmull-Rom segment as cubic Bezier
-// Catmull-Rom guarantees C1 continuity (smooth tangents at all control points)
-// ============================================================================
+namespace {
 
-static void appendCatmullRomSegment(QPainterPath &path,
-    const QPointF &p0, const QPointF &p1,
-    const QPointF &p2, const QPointF &p3)
+constexpr qreal kCatmullRomAlpha = 0.5;
+constexpr qreal kParameterEpsilon = 1e-3;
+
+qreal parameterStep(const QPointF& a, const QPointF& b)
 {
-    // Catmull-Rom to Bezier conversion factor (tension = 1.0)
-    constexpr qreal alpha = 1.0 / 6.0;
-    QPointF c1 = p1 + alpha * (p2 - p0);
-    QPointF c2 = p2 - alpha * (p3 - p1);
+    const qreal dx = b.x() - a.x();
+    const qreal dy = b.y() - a.y();
+    const qreal distance = qSqrt(dx * dx + dy * dy);
+    return qMax(kParameterEpsilon, qPow(distance, kCatmullRomAlpha));
+}
+
+QPointF safeDivide(const QPointF& value, qreal divisor)
+{
+    return value / qMax(divisor, kParameterEpsilon);
+}
+
+// ============================================================================
+// Helper: Append a single centripetal Catmull-Rom segment as cubic Bezier.
+// This keeps the freehand line stable under uneven sample spacing, which is
+// common on Windows fractional-DPI input paths.
+// ============================================================================
+void appendCentripetalCatmullRomSegment(QPainterPath& path,
+                                        const QPointF& p0,
+                                        const QPointF& p1,
+                                        const QPointF& p2,
+                                        const QPointF& p3)
+{
+    const qreal t0 = 0.0;
+    const qreal t1 = t0 + parameterStep(p0, p1);
+    const qreal t2 = t1 + parameterStep(p1, p2);
+    const qreal t3 = t2 + parameterStep(p2, p3);
+    const qreal segmentSpan = t2 - t1;
+
+    if (segmentSpan <= kParameterEpsilon) {
+        path.lineTo(p2);
+        return;
+    }
+
+    const QPointF m1 = segmentSpan * (
+        safeDivide(p1 - p0, t1 - t0) -
+        safeDivide(p2 - p0, t2 - t0) +
+        safeDivide(p2 - p1, t2 - t1));
+    const QPointF m2 = segmentSpan * (
+        safeDivide(p2 - p1, t2 - t1) -
+        safeDivide(p3 - p1, t3 - t1) +
+        safeDivide(p3 - p2, t3 - t2));
+
+    const QPointF c1 = p1 + m1 / 3.0;
+    const QPointF c2 = p2 - m2 / 3.0;
     path.cubicTo(c1, c2, p2);
 }
+
+} // namespace
 
 // ============================================================================
 // PencilStroke Implementation
@@ -86,7 +126,7 @@ void PencilStroke::draw(QPainter &painter) const
                 ? m_points[i + 1] * 2.0 - m_points[i]  // Reflect for last segment
                 : m_points[i + 2];
 
-            appendCatmullRomSegment(tailPath, p0, p1, p2, p3);
+            appendCentripetalCatmullRomSegment(tailPath, p0, p1, p2, p3);
         }
 
         painter.drawPath(tailPath);
@@ -167,7 +207,7 @@ void PencilStroke::addPoint(const QPointF &point)
         const QPointF &p2 = m_points[i + 1];
         const QPointF &p3 = m_points[i + 2];  // Guaranteed to exist
 
-        appendCatmullRomSegment(m_cachedPath, p0, p1, p2, p3);
+        appendCentripetalCatmullRomSegment(m_cachedPath, p0, p1, p2, p3);
         m_cachedSegmentCount++;
     }
 

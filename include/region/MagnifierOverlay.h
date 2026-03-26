@@ -6,9 +6,11 @@
 #include <QWidget>
 
 #include "region/SelectionDirtyRegionPlanner.h"
+#include "settings/RegionCaptureSettingsManager.h"
 
 class MagnifierPanel;
 class QPixmap;
+class QPainter;
 
 /**
  * @brief Transparent top-level window that renders the RegionSelector magnifier.
@@ -30,8 +32,11 @@ public:
     void syncToHost(QWidget* host,
                     const QPoint& cursorPos,
                     const QPixmap* backgroundPixmap,
+                    RegionCaptureSettingsManager::CursorCompanionStyle style,
                     bool shouldShow);
     void hideOverlay();
+    bool hasPaintedSinceShow() const { return m_hasPaintedSinceShow; }
+    void paintFallback(QPainter& painter);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -39,13 +44,20 @@ protected:
 
 private:
     QRect hostGlobalRect() const;
+    QPoint currentHostCursorPos() const;
+    void drawBeaver(QPainter& painter);
+    void paintCurrentStyle(QPainter& painter);
 
     MagnifierPanel* m_panel = nullptr;
     QWidget* m_host = nullptr;
     const QPixmap* m_backgroundPixmap = nullptr;
     QPoint m_cursorPos;
     QRect m_lastMagnifierRect;
+    RegionCaptureSettingsManager::CursorCompanionStyle m_style =
+        RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier;
+    QPixmap m_beaverPixmap;
     SelectionDirtyRegionPlanner m_dirtyRegionPlanner;
+    bool m_hasPaintedSinceShow = false;
 };
 
 #endif // MAGNIFIEROVERLAY_H

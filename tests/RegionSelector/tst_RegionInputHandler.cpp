@@ -1,14 +1,18 @@
 #include <QtTest>
 
+#include <QCursor>
 #include <QMouseEvent>
 #include <QSignalSpy>
 #include <QWidget>
+#include <QScreen>
+#include <QGuiApplication>
 
 #include "annotations/AnnotationLayer.h"
 #include "cursor/CursorManager.h"
 #include "region/RegionInputHandler.h"
 #include "region/RegionInputState.h"
 #include "region/SelectionStateManager.h"
+#include "region/UpdateThrottler.h"
 
 namespace {
 
@@ -19,6 +23,12 @@ QMouseEvent makeMouseEvent(QEvent::Type type,
 {
     const QPointF point(pos);
     return QMouseEvent(type, point, point, point, button, buttons, Qt::NoModifier);
+}
+
+bool pointsCloseEnough(const QPoint& actual, const QPoint& expected, int tolerance = 4)
+{
+    return qAbs(actual.x() - expected.x()) <= tolerance &&
+           qAbs(actual.y() - expected.y()) <= tolerance;
 }
 
 } // namespace
@@ -37,8 +47,13 @@ private slots:
     void testLargeDragUsesDragSelectionInsteadOfPendingWindow();
     void testDetectedWindowClickDefersSelectionUntilRealDrag();
     void testDetectedWindowRealDragClearsDetectionAndStartsSelection();
+    void testDetectedWindowRealDragMarksSelectionTransition();
     void testSelectionMoveSetsAndClearsDragStateOnRelease();
     void testSelectionMoveClearsDragStateOnRightClickCancel();
+    void testMouseMoveEmitsCurrentPointUpdatedDuringSelectionDrag();
+    void testIdleHoverPrefersLiveCursorPositionOverStaleEventPosition();
+
+    void testCompletedSelectionHoverSkipsMagnifierDirtyRegionWhenDisabled();
 
 private:
     RegionInputHandler* m_handler = nullptr;
@@ -89,6 +104,7 @@ void tst_RegionInputHandler::testTinyMoveKeepsDetectedWindowSelection()
 
     QSignalSpy fullScreenSpy(m_handler, &RegionInputHandler::fullScreenSelectionRequested);
     QSignalSpy selectionFinishedSpy(m_handler, &RegionInputHandler::selectionFinished);
+    QSignalSpy detectionClearedSpy(m_handler, &RegionInputHandler::detectionCleared);
 
     auto pressEvent = makeMouseEvent(QEvent::MouseButtonPress, QPoint(160, 180), Qt::LeftButton, Qt::LeftButton);
     m_handler->handleMousePress(&pressEvent);
@@ -101,6 +117,10 @@ void tst_RegionInputHandler::testTinyMoveKeepsDetectedWindowSelection()
 
     QCOMPARE(fullScreenSpy.count(), 0);
     QCOMPARE(selectionFinishedSpy.count(), 1);
+    QCOMPARE(detectionClearedSpy.count(), 1);
+    const auto clickClearArgs = detectionClearedSpy.takeFirst();
+    QCOMPARE(clickClearArgs.at(0).toRect(), detectedWindow);
+    QCOMPARE(clickClearArgs.at(1).toBool(), false);
     QVERIFY(m_selectionManager->isComplete());
     QCOMPARE(m_selectionManager->selectionRect(), detectedWindow);
 }
@@ -213,7 +233,29 @@ void tst_RegionInputHandler::testDetectedWindowRealDragClearsDetectionAndStartsS
 
     QVERIFY(m_selectionManager->isSelecting());
     QCOMPARE(detectionClearedSpy.count(), 1);
-    QCOMPARE(detectionClearedSpy.takeFirst().at(0).toRect(), detectedWindow);
+    const auto dragClearArgs = detectionClearedSpy.takeFirst();
+    QCOMPARE(dragClearArgs.at(0).toRect(), detectedWindow);
+    QCOMPARE(dragClearArgs.at(1).toBool(), true);
+}
+
+void tst_RegionInputHandler::testDetectedWindowRealDragMarksSelectionTransition()
+{
+    const QRect detectedWindow(120, 140, 220, 160);
+    m_state.hasDetectedWindow = true;
+    m_state.highlightedWindowRect = detectedWindow;
+
+    QSignalSpy detectionClearedSpy(m_handler, &RegionInputHandler::detectionCleared);
+
+    auto pressEvent = makeMouseEvent(QEvent::MouseButtonPress, QPoint(160, 180), Qt::LeftButton, Qt::LeftButton);
+    m_handler->handleMousePress(&pressEvent);
+
+    auto moveEvent = makeMouseEvent(QEvent::MouseMove, QPoint(210, 230), Qt::NoButton, Qt::LeftButton);
+    m_handler->handleMouseMove(&moveEvent);
+
+    QCOMPARE(detectionClearedSpy.count(), 1);
+    const auto clearArgs = detectionClearedSpy.takeFirst();
+    QCOMPARE(clearArgs.at(0).toRect(), detectedWindow);
+    QCOMPARE(clearArgs.at(1).toBool(), true);
 }
 
 void tst_RegionInputHandler::testSelectionMoveSetsAndClearsDragStateOnRelease()
@@ -252,6 +294,74 @@ void tst_RegionInputHandler::testSelectionMoveClearsDragStateOnRightClickCancel(
 
     QCOMPARE(m_selectionManager->state(), SelectionStateManager::State::None);
     QCOMPARE(CursorManager::instance().dragStateForWidget(m_parentWidget), DragState::None);
+}
+
+void tst_RegionInputHandler::testMouseMoveEmitsCurrentPointUpdatedDuringSelectionDrag()
+{
+    QSignalSpy pointSpy(m_handler, &RegionInputHandler::currentPointUpdated);
+
+    auto pressEvent = makeMouseEvent(QEvent::MouseButtonPress, QPoint(120, 140), Qt::LeftButton, Qt::LeftButton);
+    m_handler->handleMousePress(&pressEvent);
+
+    auto moveEvent = makeMouseEvent(QEvent::MouseMove, QPoint(180, 210), Qt::NoButton, Qt::LeftButton);
+    m_handler->handleMouseMove(&moveEvent);
+
+    QCOMPARE(pointSpy.count(), 1);
+    QCOMPARE(pointSpy.takeFirst().at(0).toPoint(), QPoint(180, 210));
+}
+
+void tst_RegionInputHandler::testIdleHoverPrefersLiveCursorPositionOverStaleEventPosition()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        QSKIP("No screen available for live cursor hover test.");
+    }
+
+    const QPoint originalCursorPos = QCursor::pos();
+    const QPoint liveCursorPos = screen->geometry().topLeft() + QPoint(320, 240);
+    m_parentWidget->setGeometry(screen->geometry());
+
+    QCursor::setPos(liveCursorPos);
+    QCoreApplication::processEvents();
+    if (QCursor::pos() != liveCursorPos) {
+        QCursor::setPos(originalCursorPos);
+        QSKIP("System cursor position could not be adjusted for live cursor hover test.");
+    }
+
+    QSignalSpy pointSpy(m_handler, &RegionInputHandler::currentPointUpdated);
+    auto moveEvent = makeMouseEvent(QEvent::MouseMove, QPoint(100, 120), Qt::NoButton, Qt::NoButton);
+    m_handler->handleMouseMove(&moveEvent);
+
+    QCOMPARE(pointSpy.count(), 1);
+    QCOMPARE(pointSpy.takeFirst().at(0).toPoint(), QPoint(320, 240));
+    QCOMPARE(m_state.currentPoint, QPoint(320, 240));
+
+    QCursor::setPos(originalCursorPos);
+}
+
+
+void tst_RegionInputHandler::testCompletedSelectionHoverSkipsMagnifierDirtyRegionWhenDisabled()
+{
+    UpdateThrottler throttler;
+    throttler.startAll();
+    m_handler->setUpdateThrottler(&throttler);
+    m_handler->setMagnifierVisibilityProvider([]() { return false; });
+    m_handler->resetDirtyTracking();
+
+    m_selectionManager->setSelectionRect(QRect(100, 120, 200, 160));
+    QVERIFY(m_selectionManager->isComplete());
+
+    QTest::qWait(UpdateThrottler::kHoverMs + 5);
+
+    auto firstMoveEvent = makeMouseEvent(QEvent::MouseMove, QPoint(160, 180), Qt::NoButton, Qt::NoButton);
+    m_handler->handleMouseMove(&firstMoveEvent);
+
+    QTest::qWait(UpdateThrottler::kHoverMs + 5);
+
+    auto secondMoveEvent = makeMouseEvent(QEvent::MouseMove, QPoint(164, 184), Qt::NoButton, Qt::NoButton);
+    m_handler->handleMouseMove(&secondMoveEvent);
+
+    QVERIFY(m_handler->lastMagnifierRect().isNull());
 }
 
 QTEST_MAIN(tst_RegionInputHandler)

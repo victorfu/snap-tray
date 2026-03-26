@@ -6,7 +6,7 @@ if(APPLE)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "14.0" CACHE STRING "Minimum macOS deployment target" FORCE)
 endif()
 
-project(SnapTray VERSION 1.0.39 LANGUAGES CXX)
+project(SnapTray VERSION 1.0.40 LANGUAGES CXX)
 
 # ============================================================================
 # Compiler Cache (ccache/sccache) for faster incremental builds
@@ -106,6 +106,9 @@ endif()
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Svg Concurrent Network LinguistTools Quick QuickControls2 QuickWidgets)
 
+# Generate extra qmldir files for QML subdirectories used by this module.
+qt_policy(SET QTP0004 NEW)
+
 # Enable AUTOMOC for Qt targets (will be disabled for non-Qt dependencies)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -200,6 +203,7 @@ set(WITH_TIFF OFF CACHE BOOL "" FORCE)
 set(WITH_WEBP OFF CACHE BOOL "" FORCE)
 set(WITH_PNG OFF CACHE BOOL "" FORCE)
 set(WITH_JPEG OFF CACHE BOOL "" FORCE)
+set(WITH_VTK OFF CACHE BOOL "VTK: Not needed" FORCE)
 set(WITH_OBSENSOR OFF CACHE BOOL "" FORCE)
 set(WITH_1394 OFF CACHE BOOL "" FORCE)
 
@@ -320,6 +324,7 @@ add_library(snaptray_core STATIC
     src/utils/FilenameTemplateEngine.cpp
     src/utils/ImageSaveUtils.cpp
     src/utils/NativeFileDialogUtils.cpp
+    src/utils/ScreenCaptureRegionUtils.cpp
     # CLI sources
     src/cli/CLIHandler.cpp
     src/cli/IPCProtocol.cpp
@@ -479,6 +484,7 @@ add_library(snaptray_platform STATIC
     # Common sources
     src/capture/ICaptureEngine.cpp
     src/capture/IAudioCaptureEngine.cpp
+    src/capture/ScreenSnapshot.cpp
     src/capture/QtCaptureEngine.cpp
     src/encoding/EncoderFactory.cpp
     src/encoding/NativeGifEncoder.cpp
@@ -497,6 +503,7 @@ add_library(snaptray_platform STATIC
     include/encoding/WebPAnimEncoder.h
     include/capture/ICaptureEngine.h
     include/capture/IAudioCaptureEngine.h
+    include/capture/ScreenSnapshot.h
     include/capture/QtCaptureEngine.h
     include/video/IVideoPlayer.h
     include/video/VideoTrimmer.h
@@ -633,6 +640,7 @@ add_library(snaptray_ui STATIC
     src/InlineTextEditor.cpp
     src/TransformationGizmo.cpp
     src/annotation/AnnotationContext.cpp
+    src/annotation/AnnotationRenderHelper.cpp
 
     # Tool system
     src/tools/ToolRegistry.cpp
@@ -663,6 +671,12 @@ add_library(snaptray_ui STATIC
     src/region/SelectionStateManager.cpp
     src/region/MagnifierPanel.cpp
     src/region/MagnifierOverlay.cpp
+    src/region/CapturePerfRecorder.cpp
+    src/region/StaticCaptureBackgroundWindow.cpp
+    src/region/CaptureChromeWindow.cpp
+    src/region/SelectionDimmingOverlay.cpp
+    src/region/SelectionDimensionLabel.cpp
+    src/region/SelectionPreviewOverlay.cpp
     src/region/UpdateThrottler.cpp
     src/region/TextAnnotationEditor.cpp
     src/region/ShapeAnnotationEditor.cpp
@@ -711,7 +725,9 @@ add_library(snaptray_ui STATIC
 
     # Global UI components
     src/ui/DesignTokens.cpp
+    src/ui/TrayTooltipFormatter.cpp
     include/ui/DesignTokens.h
+    include/ui/TrayTooltipFormatter.h
     include/share/ShareUploadClient.h
     include/region/MagnifierOverlay.h
 
@@ -757,6 +773,7 @@ add_library(snaptray_ui STATIC
     include/region/RegionSettingsHelper.h
     include/region/RegionExportManager.h
     include/region/CaptureShortcutHintsOverlay.h
+    include/region/CaptureChromeWindow.h
     include/history/HistoryStore.h
     include/PinWindow.h
     include/PinWindowManager.h
@@ -948,6 +965,8 @@ qt_add_qml_module(snaptray_qml
     URI SnapTrayQml
     VERSION 1.0
     STATIC
+    OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/SnapTrayQml"
+    RESOURCE_PREFIX "/"
     QML_FILES
         src/qml/tokens/PrimitiveTokens.qml
         src/qml/tokens/SemanticTokens.qml

@@ -65,6 +65,7 @@ void CanvasToolbarViewModel::handleButtonClicked(int buttonId)
     case static_cast<int>(ToolId::Undo):             emit undoClicked(); break;
     case static_cast<int>(ToolId::Redo):              emit redoClicked(); break;
     case static_cast<int>(ToolId::Clear):             emit clearClicked(); break;
+    case static_cast<int>(ToolId::Copy):              emit copyClicked(); break;
     case static_cast<int>(ToolId::Exit):              emit exitClicked(); break;
     case static_cast<int>(ToolId::CanvasWhiteboard):  emit canvasWhiteboardClicked(); break;
     case static_cast<int>(ToolId::CanvasBlackboard):  emit canvasBlackboardClicked(); break;

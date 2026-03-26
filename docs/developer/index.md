@@ -13,10 +13,10 @@ This section is the canonical home for SnapTray's technical documentation. The r
 
 ## What lives here
 
-- [Build from Source](/developer/build-from-source/): prerequisites, scripts, manual CMake flows, cache setup, and local build troubleshooting
-- [Release & Packaging](/developer/release-packaging/): DMG / NSIS / MSIX packaging, signing, notarization, Store submission, and icon asset workflow
-- [Architecture Overview](/developer/architecture/): repository structure, library boundaries, architecture patterns, platform-specific code, and development conventions
-- [MCP (Debug Builds)](/developer/mcp-debug/): the built-in localhost MCP server, tool contracts, and integration notes
+- [Build from Source](build-from-source.md): prerequisites, scripts, manual CMake flows, cache setup, and local build troubleshooting
+- [Release & Packaging](release-packaging.md): DMG / NSIS / MSIX packaging, signing, notarization, Store submission, and icon asset workflow
+- [Architecture Overview](architecture.md): repository structure, library boundaries, architecture patterns, platform-specific code, and development conventions
+- [MCP (Debug Builds)](mcp-debug.md): the built-in localhost MCP server, tool contracts, and integration notes
 
 ## Audience split
 
@@ -33,14 +33,14 @@ This section is the canonical home for SnapTray's technical documentation. The r
 
 ## Recommended reading order
 
-1. [Build from Source](/developer/build-from-source/)
-2. [Architecture Overview](/developer/architecture/)
-3. [Release & Packaging](/developer/release-packaging/)
-4. [MCP (Debug Builds)](/developer/mcp-debug/) if you need debug automation
+1. [Build from Source](build-from-source.md)
+2. [Architecture Overview](architecture.md)
+3. [Release & Packaging](release-packaging.md)
+4. [MCP (Debug Builds)](mcp-debug.md) if you need debug automation
 
 ## Related user docs
 
-- [Getting Started](/docs/getting-started/)
-- [CLI](/docs/cli/)
-- [Troubleshooting](/docs/troubleshooting/)
-- [FAQ](/docs/faq/)
+- [Getting Started](../docs/getting-started.md)
+- [CLI](../docs/cli.md)
+- [Troubleshooting](../docs/troubleshooting.md)
+- [FAQ](../docs/faq.md)

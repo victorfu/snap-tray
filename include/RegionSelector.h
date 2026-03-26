@@ -8,6 +8,7 @@
 #include <QPoint>
 #include <QPointF>
 #include <QRect>
+#include <QRegion>
 #include <QColor>
 #include <QSettings>
 #include <QPointer>
@@ -36,6 +37,7 @@
 #include "region/ShapeAnnotationEditor.h"
 #include "region/MultiRegionManager.h"
 #include "region/RegionInputState.h"
+#include "settings/RegionCaptureSettingsManager.h"
 
 class QScreen;
 class RegionToolbarViewModel;
@@ -67,6 +69,10 @@ class RegionToolbarHandler;
 class RegionSettingsHelper;
 class RegionExportManager;
 class MagnifierOverlay;
+class SelectionPreviewOverlay;
+class SelectionDimmingOverlay;
+class StaticCaptureBackgroundWindow;
+class CaptureChromeWindow;
 class AnnotationContext;
 class CaptureShortcutHintsOverlay;
 class RegionControlViewModel;
@@ -81,10 +87,10 @@ class RegionSelector : public QWidget, public AnnotationHostAdapter
     Q_OBJECT
 
     friend class tst_RegionSelectorMultiRegionSubToolbar;
-    friend class tst_RegionSelectorHistoryReplay;
     friend class tst_RegionSelectorTransientUiCancelGuard;
     friend class TestRegionSelectorStyleSync;
     friend class tst_RegionSelectorDeferredInitialization;
+    friend class RegionSelectorTestAccess;
 
 public:
     explicit RegionSelector(QWidget *parent = nullptr);
@@ -161,6 +167,11 @@ private:
     void onContextTextEditingCancelled() override;
 
     void syncMagnifierOverlay();
+    void syncStaticCaptureBackgroundWindow();
+    void syncCaptureChromeWindow();
+    bool usesDetachedCaptureWindows() const;
+    void requestCaptureSceneUpdate();
+    void requestCaptureSceneUpdate(const QRect& rect);
 
     // Corner radius helpers
     void onCornerRadiusChanged(int radius);
@@ -226,13 +237,25 @@ private:
     void clearHistoryReplaySelectionState();
     void recordCaptureSession(const QPixmap& resultPixmap);
     void recordCaptureSession(const QImage& resultImage);
+    struct SelectorCaptureContext;
     struct HistoryCaptureSnapshot;
     struct PendingHistorySubmission;
+    struct RegionSelectorTraceProbe;
     std::optional<HistoryCaptureSnapshot> makeHistoryCaptureSnapshot(
         const QDateTime& createdAt = QDateTime::currentDateTime()) const;
     void submitPendingHistorySubmission(PendingHistorySubmission submission) const;
     QRect currentHistorySelectionRect() const;
     QVector<MultiRegionManager::Region> currentHistoryCaptureRegions() const;
+    QPixmap capturePlainSelectionPixmap() const;
+    QImage capturePlainSelectionImage() const;
+    void applyCaptureContext(const SelectorCaptureContext& context);
+    void refreshMagnifierContext(const QPoint& cursorPos);
+    void refreshMagnifierContext(const QPoint& cursorPos,
+                                 const QPixmap& backgroundPixmap,
+                                 qreal devicePixelRatio,
+                                 bool preWarmCache);
+    SnapTray::CaptureSessionWriteRequest buildCaptureSessionWriteRequest(
+        const PendingHistorySubmission& submission) const;
 
     // Initialization helpers
     void setupScreenGeometry(QScreen* screen);
@@ -250,6 +273,14 @@ private:
     void maybeStartInitialRevealWait();
     void handleInitialRevealDetectorReady();
     void handleInitialRevealTimeout();
+    void syncCurrentPointToLiveCursor(bool preWarmMagnifierCache);
+    void startInitialCursorBootstrapSync();
+    void stopInitialCursorBootstrapSync();
+    void handleInitialCursorBootstrapTick();
+    void invalidateWindowHighlightTransition(const QRect& previousHighlightRect,
+                                             const QRect& nextHighlightRect,
+                                             bool preferFullRepaint);
+    bool shouldForceFullWindowHighlightTransitionRepaint(bool preferFullRepaint) const;
     void applyInitialWindowDetection(WindowDetector::QueryMode queryMode);
     void commitInitialReveal();
     void scheduleInitialRevealRefinement();
@@ -262,8 +293,22 @@ private:
 
     // Annotation helpers
     bool isAnnotationTool(ToolId tool) const;
+    bool shouldShowCursorCompanion() const;
     bool shouldShowMagnifier() const;
+    bool hasActiveAnnotationInteraction() const;
+    QRect selectedAnnotationInteractionVisualRect() const;
+    bool requestLocalizedAnnotationInteractionUpdate();
+    void resetAnnotationInteractionTracking();
     void syncFloatingUiCursor();
+    void paintSelectorScene(QPainter& painter, const QRegion& dirtyRegion);
+    void syncDetachedSelectionUiDuringPaint();
+    void restoreDetachedSelectionFloatingUiIfNeeded();
+    void syncMagnifierOverlayDuringPaint();
+    void syncSelectionPreviewOverlay();
+    void hideSelectionPreviewOverlays();
+    void commitSelectionCompletionHandoffAfterChromePaint();
+    void armDetachedWindowDeactivateGuard();
+    void syncRegionControlPanelDuringPaint();
     void restoreRegionCursorAt(const QPoint& localPos);
     void hideDetachedFloatingUi();
     void restoreAfterDialogCancelled();
@@ -375,6 +420,12 @@ private:
     // Magnifier panel component
     MagnifierPanel* m_magnifierPanel;
     std::unique_ptr<MagnifierOverlay> m_magnifierOverlay;
+    std::unique_ptr<SelectionPreviewOverlay> m_selectionPreviewOverlay;
+    std::unique_ptr<SelectionDimmingOverlay> m_selectionDimmingOverlay;
+    std::unique_ptr<StaticCaptureBackgroundWindow> m_staticCaptureBackgroundWindow;
+    std::unique_ptr<CaptureChromeWindow> m_captureChromeWindow;
+    RegionCaptureSettingsManager::CursorCompanionStyle m_cursorCompanionStyle =
+        RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier;
     bool m_magnifierEnabled = true;
 
     // Keep shortcut hints painter-based and in-window. A prior QML top-level
@@ -403,9 +454,55 @@ private:
     // Dirty region tracking for partial updates
     QRect m_lastSelectionRect;  // Previous selection rect for dirty region calculation
     QRect m_lastMagnifierRect;  // Previous magnifier rect
+    QRect m_hostFallbackCursorCompanionRect;
+    QRect m_lastAnnotationInteractionVisualRect;
+    bool m_forceFullRepaintOnNextWindowTransition = false;
+    bool m_detachedCaptureWindowsNeedFullClear = false;
+    bool m_selectionCompletionHandoffPending = false;
+    SelectionStateManager::State m_lastSelectionState = SelectionStateManager::State::None;
+    bool m_detachedWindowDeactivateGuardPending = false;
+    quint64 m_detachedWindowDeactivateGuardToken = 0;
 
     // Screen switch monitoring
     QTimer* m_screenSwitchTimer = nullptr;
+    QTimer* m_initialCursorBootstrapTimer = nullptr;
+    int m_initialCursorBootstrapTicksRemaining = 0;
+
+    struct SelectorCaptureContext {
+        QPixmap backgroundPixmap;
+        qreal devicePixelRatio = 1.0;
+        QPointer<QScreen> sourceScreen;
+    };
+
+    struct RegionSelectorTraceProbe {
+        struct PaintEventRecord {
+            QRegion dirtyRegion;
+            QRect boundingRect;
+        };
+
+        struct CaptureContextRecord {
+            QSize backgroundPixelSize;
+            QSize backgroundLogicalSize;
+            qreal devicePixelRatio = 1.0;
+            bool hasSourceScreen = false;
+        };
+
+        struct FloatingUiSnapshot {
+            bool toolbarVisible = false;
+            QRect toolbarGeometry;
+            bool subToolbarVisible = false;
+            QRect subToolbarGeometry;
+            bool regionControlVisible = false;
+            QRect regionControlGeometry;
+            bool magnifierVisible = false;
+            QRect magnifierGeometry;
+        };
+
+        QVector<PaintEventRecord> paintEvents;
+        QVector<CaptureContextRecord> captureContextEvents;
+        QVector<QPoint> windowDetectionRequests;
+        QVector<FloatingUiSnapshot> floatingUiSnapshots;
+    };
 
     struct HistoryCaptureSnapshot {
         QPixmap backgroundPixmap;
@@ -488,6 +585,7 @@ private:
         m_colorPickerDialogFactory;
     std::function<void()> m_restoreAfterDialogCancelledHook;
     std::function<bool(const QImage&)> m_guiClipboardWriter;
+    RegionSelectorTraceProbe* m_traceProbe = nullptr;
 };
 
 #endif // REGIONSELECTOR_H

@@ -48,6 +48,18 @@ target_link_libraries(Qml_QtQuickBackendPolicy PRIVATE snaptray_platform Qt6::Te
 add_test(NAME Qml_QtQuickBackendPolicy COMMAND Qml_QtQuickBackendPolicy)
 set_tests_properties(Qml_QtQuickBackendPolicy PROPERTIES TIMEOUT 60 LABELS "unit")
 
+if(APPLE)
+    add_executable(Qml_FloatingOverlayCaptureExclusion Qml/tst_FloatingOverlayCaptureExclusion.mm)
+    target_link_libraries(Qml_FloatingOverlayCaptureExclusion PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+    add_test(NAME Qml_FloatingOverlayCaptureExclusion COMMAND Qml_FloatingOverlayCaptureExclusion)
+    set_tests_properties(Qml_FloatingOverlayCaptureExclusion PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+endif()
+
+add_executable(Utils_ScreenCaptureRegionUtils Utils/tst_ScreenCaptureRegionUtils.cpp)
+target_link_libraries(Utils_ScreenCaptureRegionUtils PRIVATE snaptray_core Qt6::Test)
+add_test(NAME Utils_ScreenCaptureRegionUtils COMMAND Utils_ScreenCaptureRegionUtils)
+set_tests_properties(Utils_ScreenCaptureRegionUtils PROPERTIES TIMEOUT 60 LABELS "unit")
+
 if(WIN32)
     add_executable(Qml_QtQuickBackendWin Qml/tst_QtQuickBackendWin.cpp)
     target_link_libraries(Qml_QtQuickBackendWin PRIVATE snaptray_platform Qt6::Qml Qt6::Quick Qt6::Test)
@@ -138,6 +150,17 @@ target_link_libraries(ScreenCanvas_SessionRecovery PRIVATE snaptray_ui snaptray_
 add_test(NAME ScreenCanvas_SessionRecovery COMMAND ScreenCanvas_SessionRecovery)
 set_tests_properties(ScreenCanvas_SessionRecovery PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(ScreenCanvas_CopyExport ScreenCanvas/tst_CopyExport.cpp)
+target_link_libraries(ScreenCanvas_CopyExport PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME ScreenCanvas_CopyExport COMMAND ScreenCanvas_CopyExport)
+set_tests_properties(ScreenCanvas_CopyExport PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
+add_executable(ScreenCanvas_AnnotationRenderHelper ScreenCanvas/tst_AnnotationRenderHelper.cpp)
+target_link_libraries(ScreenCanvas_AnnotationRenderHelper PRIVATE snaptray_ui Qt6::Test)
+target_include_directories(ScreenCanvas_AnnotationRenderHelper PRIVATE ${CMAKE_SOURCE_DIR}/src)
+add_test(NAME ScreenCanvas_AnnotationRenderHelper COMMAND ScreenCanvas_AnnotationRenderHelper)
+set_tests_properties(ScreenCanvas_AnnotationRenderHelper PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # RegionSelector Tests
 # ============================================================================
@@ -146,6 +169,11 @@ add_executable(RegionSelector_MagnifierPanel RegionSelector/tst_MagnifierPanel.c
 target_link_libraries(RegionSelector_MagnifierPanel PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME RegionSelector_MagnifierPanel COMMAND RegionSelector_MagnifierPanel)
 set_tests_properties(RegionSelector_MagnifierPanel PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RegionSelector_DeferredInitialization RegionSelector/tst_DeferredInitialization.cpp)
+target_link_libraries(RegionSelector_DeferredInitialization PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME RegionSelector_DeferredInitialization COMMAND RegionSelector_DeferredInitialization)
+set_tests_properties(RegionSelector_DeferredInitialization PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
 add_executable(RegionSelector_CaptureShortcutHintsOverlay RegionSelector/tst_CaptureShortcutHintsOverlay.cpp)
 target_link_libraries(RegionSelector_CaptureShortcutHintsOverlay PRIVATE snaptray_ui Qt6::Test)
@@ -208,6 +236,11 @@ target_link_libraries(RegionSelector_MultiRegionManagerDeleteReindex PRIVATE sna
 add_test(NAME RegionSelector_MultiRegionManagerDeleteReindex COMMAND RegionSelector_MultiRegionManagerDeleteReindex)
 set_tests_properties(RegionSelector_MultiRegionManagerDeleteReindex PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RegionSelector_MultiRegionManagerImages RegionSelector/tst_MultiRegionManagerImages.cpp)
+target_link_libraries(RegionSelector_MultiRegionManagerImages PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME RegionSelector_MultiRegionManagerImages COMMAND RegionSelector_MultiRegionManagerImages)
+set_tests_properties(RegionSelector_MultiRegionManagerImages PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(RegionSelector_MultiRegionListPanel RegionSelector/tst_MultiRegionListPanel.cpp)
 target_link_libraries(RegionSelector_MultiRegionListPanel PRIVATE snaptray_qml snaptray_ui Qt6::Test)
 add_test(NAME RegionSelector_MultiRegionListPanel COMMAND RegionSelector_MultiRegionListPanel)
@@ -227,6 +260,11 @@ add_executable(RegionSelector_TransientUiCancelGuard RegionSelector/tst_Transien
 target_link_libraries(RegionSelector_TransientUiCancelGuard PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
 add_test(NAME RegionSelector_TransientUiCancelGuard COMMAND RegionSelector_TransientUiCancelGuard)
 set_tests_properties(RegionSelector_TransientUiCancelGuard PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RegionSelector_HistoryReplay RegionSelector/tst_HistoryReplay.cpp)
+target_link_libraries(RegionSelector_HistoryReplay PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME RegionSelector_HistoryReplay COMMAND RegionSelector_HistoryReplay)
+set_tests_properties(RegionSelector_HistoryReplay PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(RegionSelector_RegionExportManager RegionSelector/tst_RegionExportManager.cpp)
 target_link_libraries(RegionSelector_RegionExportManager PRIVATE snaptray_ui Qt6::Test)
@@ -315,6 +353,11 @@ add_executable(Utils_ImageSaveUtils Utils/tst_ImageSaveUtils.cpp)
 target_link_libraries(Utils_ImageSaveUtils PRIVATE snaptray_core Qt6::Test)
 add_test(NAME Utils_ImageSaveUtils COMMAND Utils_ImageSaveUtils)
 set_tests_properties(Utils_ImageSaveUtils PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Utils_TrayTooltipFormatter Utils/tst_TrayTooltipFormatter.cpp)
+target_link_libraries(Utils_TrayTooltipFormatter PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Utils_TrayTooltipFormatter COMMAND Utils_TrayTooltipFormatter)
+set_tests_properties(Utils_TrayTooltipFormatter PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
 # CLI Tests (link snaptray_platform for PlatformFeatures symbols)
@@ -505,6 +548,11 @@ add_executable(Annotations_PencilStroke Annotations/tst_PencilStroke.cpp)
 target_link_libraries(Annotations_PencilStroke PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
 add_test(NAME Annotations_PencilStroke COMMAND Annotations_PencilStroke)
 set_tests_properties(Annotations_PencilStroke PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Tools_MarkerToolHandler Tools/handlers/tst_MarkerToolHandler.cpp)
+target_link_libraries(Tools_MarkerToolHandler PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Tools_MarkerToolHandler COMMAND Tools_MarkerToolHandler)
+set_tests_properties(Tools_MarkerToolHandler PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(Annotations_PolylineAnnotation Annotations/tst_PolylineAnnotation.cpp)
 target_link_libraries(Annotations_PolylineAnnotation PRIVATE snaptray_core Qt6::Widgets Qt6::Test)

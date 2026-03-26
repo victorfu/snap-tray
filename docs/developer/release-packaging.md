@@ -178,5 +178,5 @@ magick snaptray.png -define icon:auto-resize=256,128,64,48,32,16 snaptray.ico
 
 ## Next step
 
-- Go to [Build from Source](/developer/build-from-source/) for local dev setup
-- Go to [Architecture Overview](/developer/architecture/) for repository and subsystem structure
+- Go to [Build from Source](build-from-source.md) for local dev setup
+- Go to [Architecture Overview](architecture.md) for repository and subsystem structure

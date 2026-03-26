@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Victor Fu. All rights reserved.
+// Copyright (c) 2026 Victor Fu. All rights reserved.
 // Use of this source code is governed by an MIT-style license that can be
 // found in the LICENSE file.
 
@@ -75,6 +75,25 @@ void setWindowExcludedFromCapture(QWidget *widget, bool excluded)
     }
 #else
     Q_UNUSED(widget)
+    Q_UNUSED(excluded)
+#endif
+}
+
+void setWindowExcludedFromCapture(QWindow *window, bool excluded)
+{
+#ifdef Q_OS_WIN
+    if (!window) {
+        return;
+    }
+
+    HWND hwnd = reinterpret_cast<HWND>(window->winId());
+    if (hwnd) {
+        constexpr DWORD WDA_EXCLUDEFROMCAPTURE_VALUE = 0x00000011;
+        DWORD affinity = excluded ? WDA_EXCLUDEFROMCAPTURE_VALUE : WDA_NONE;
+        SetWindowDisplayAffinity(hwnd, affinity);
+    }
+#else
+    Q_UNUSED(window)
     Q_UNUSED(excluded)
 #endif
 }

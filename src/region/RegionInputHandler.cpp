@@ -20,12 +20,14 @@
 #include <QMouseEvent>
 #include <QWidget>
 #include <QDebug>
+#include <QApplication>
 #include <QTextEdit>
 #include <QCursor>
 #include <QtGlobal>
 #include <QtMath>
 
 namespace {
+
 qreal normalizeAngleDelta(qreal deltaDegrees)
 {
     while (deltaDegrees > 180.0) {
@@ -52,6 +54,12 @@ RegionInputHandler::RegionInputHandler(QObject* parent)
     m_dragFrameTimer.setTimerType(Qt::PreciseTimer);
     m_dragFrameTimer.setInterval(SelectionDirtyRegionPlanner::kDragFrameIntervalMs);
     connect(&m_dragFrameTimer, &QTimer::timeout, this, &RegionInputHandler::onDragFrameTick);
+}
+
+bool RegionInputHandler::isManipulatingAnnotation() const
+{
+    return m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating ||
+           m_isArrowDragging || m_isPolylineDragging;
 }
 
 void RegionInputHandler::setSelectionManager(SelectionStateManager* manager)
@@ -99,6 +107,16 @@ void RegionInputHandler::setSharedState(RegionInputState* state)
     m_state = state;
 }
 
+void RegionInputHandler::setMagnifierVisibilityProvider(std::function<bool()> provider)
+{
+    m_shouldRenderMagnifier = std::move(provider);
+}
+
+void RegionInputHandler::setSelectionPreviewOverlayActiveProvider(std::function<bool()> provider)
+{
+    m_isSelectionPreviewOverlayActive = std::move(provider);
+}
+
 RegionInputState& RegionInputHandler::state()
 {
     Q_ASSERT(m_state != nullptr);
@@ -135,6 +153,7 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
     }
 
     m_currentModifiers = event->modifiers();
+    m_lastToolEventPos = event->position();
 
     if (event->button() == Qt::LeftButton) {
         if (m_selectionManager->isComplete()) {
@@ -224,7 +243,24 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
     }
 
     m_currentModifiers = event->modifiers();
-    state().currentPoint = event->pos();
+    m_lastToolEventPos = event->position();
+    const bool shouldPreferLiveCursor =
+        event->buttons() == Qt::NoButton &&
+        !m_pendingWindowClickActive &&
+        !m_selectionManager->isSelecting() &&
+        !m_selectionManager->isResizing() &&
+        !m_selectionManager->isMoving() &&
+        !state().isDrawing &&
+        !isManipulatingAnnotation();
+    const QPoint effectivePos = shouldPreferLiveCursor
+        ? currentCursorLocalPos()
+        : event->pos();
+
+    const QPoint previousPoint = state().currentPoint;
+    state().currentPoint = effectivePos;
+    if (state().currentPoint != previousPoint) {
+        emit currentPointUpdated(state().currentPoint);
+    }
 
     // Race condition recovery: mouse button was already pressed when window appeared
     // Qt doesn't fire mousePressEvent for already-pressed buttons, so we detect
@@ -234,7 +270,7 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
         (event->buttons() & Qt::LeftButton)) {
         qDebug() << "RegionInputHandler: Recovering from race condition - "
                  << "starting selection from mouseMoveEvent";
-        handleNewSelectionPress(event->pos());
+        handleNewSelectionPress(effectivePos);
     }
 
     // Keep crosshair sticky during pre-selection idle.
@@ -247,43 +283,45 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
     }
 
     // Handle text editor in confirm mode
-    if (handleTextEditorMove(event->pos())) {
+    if (handleTextEditorMove(effectivePos)) {
         return;
     }
 
     if (m_toolManager &&
-        m_toolManager->handleTextInteractionMove(event->pos(), event->modifiers())) {
+        m_toolManager->handleTextInteractionMove(effectivePos, event->modifiers())) {
         return;
     }
 
     // Handle emoji sticker dragging/scaling
-    if (handleEmojiStickerMove(event->pos())) {
+    if (handleEmojiStickerMove(effectivePos)) {
         return;
     }
 
     if (m_toolManager &&
-        m_toolManager->handleShapeInteractionMove(event->pos(), event->modifiers())) {
+        m_toolManager->handleShapeInteractionMove(effectivePos, event->modifiers())) {
         return;
     }
 
     // Handle arrow annotation dragging/handle manipulation
-    if (handleArrowAnnotationMove(event->pos())) {
+    if (handleArrowAnnotationMove(effectivePos)) {
         return;
     }
 
     // Handle polyline annotation dragging/vertex manipulation
-    if (handlePolylineAnnotationMove(event->pos())) {
+    if (handlePolylineAnnotationMove(effectivePos)) {
         return;
     }
 
     if (m_pendingWindowClickActive && !m_selectionManager->hasActiveSelection()) {
-        const int dx = event->pos().x() - m_pendingWindowClickStartPos.x();
-        const int dy = event->pos().y() - m_pendingWindowClickStartPos.y();
+        const int dx = effectivePos.x() - m_pendingWindowClickStartPos.x();
+        const int dy = effectivePos.y() - m_pendingWindowClickStartPos.y();
         if ((dx * dx + dy * dy) > WINDOW_CLICK_MAX_DISTANCE_SQ) {
             m_selectionManager->startSelection(m_pendingWindowClickStartPos);
             m_lastSelectionRect = QRect();
-            clearDetectionAndNotify();
-            m_selectionManager->updateSelection(event->pos());
+            // Crossing the click-drift threshold turns a detected-window click
+            // into a real drag-selection transition.
+            clearDetectionAndNotify(true);
+            m_selectionManager->updateSelection(effectivePos);
             m_pendingWindowClickActive = false;
             m_pendingWindowClickRect = QRect();
             m_pendingWindowClickStartPos = QPoint();
@@ -292,25 +330,25 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
 
     // Window detection during hover
     if (!m_pendingWindowClickActive) {
-        handleWindowDetectionMove(event->pos());
+        handleWindowDetectionMove(effectivePos);
     }
 
     // Handle selection states
     if (m_selectionManager->isSelecting()) {
-        handleSelectionMove(event->pos());
+        handleSelectionMove(effectivePos);
     }
     else if (m_selectionManager->isResizing()) {
-        m_selectionManager->updateResize(event->pos());
+        m_selectionManager->updateResize(effectivePos);
     }
     else if (m_selectionManager->isMoving()) {
-        m_selectionManager->updateMove(event->pos());
+        m_selectionManager->updateMove(effectivePos);
     }
     else if (state().isDrawing) {
-        handleAnnotationMove(event->pos());
+        handleAnnotationMove(QPointF(effectivePos));
     }
     else if (m_selectionManager->isComplete() ||
         (state().multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0)) {
-        handleHoverMove(event->pos(), event->buttons());
+        handleHoverMove(effectivePos, event->buttons());
     }
 
     // Throttled updates
@@ -330,6 +368,7 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
     }
 
     m_currentModifiers = event->modifiers();
+    m_lastToolEventPos = event->position();
 
     if (event->button() == Qt::LeftButton) {
         // Handle text editor drag release
@@ -778,7 +817,7 @@ void RegionInputHandler::handleWindowDetectionMove(const QPoint& pos)
     }
 }
 
-void RegionInputHandler::clearDetectionAndNotify()
+void RegionInputHandler::clearDetectionAndNotify(bool selectionTransition)
 {
     if (!m_state) {
         return;
@@ -791,7 +830,7 @@ void RegionInputHandler::clearDetectionAndNotify()
     const QRect previousHighlightRect = state().highlightedWindowRect;
     state().highlightedWindowRect = QRect();
     state().hasDetectedWindow = false;
-    emit detectionCleared(previousHighlightRect);
+    emit detectionCleared(previousHighlightRect, selectionTransition);
 }
 
 void RegionInputHandler::handleSelectionMove(const QPoint& pos)
@@ -811,6 +850,11 @@ void RegionInputHandler::handleSelectionMove(const QPoint& pos)
 }
 
 void RegionInputHandler::handleAnnotationMove(const QPoint& pos)
+{
+    handleAnnotationMove(QPointF(pos));
+}
+
+void RegionInputHandler::handleAnnotationMove(const QPointF& pos)
 {
     updateAnnotation(pos);
 
@@ -916,21 +960,37 @@ void RegionInputHandler::handleThrottledUpdate()
     }
 
     updateDragFramePump();
+    const bool selectionPreviewOverlayActive =
+        m_isSelectionPreviewOverlayActive && m_isSelectionPreviewOverlayActive();
 
     // First frame after initialization: the initial show() painted magnifier + crosshair
     // at the initial cursor position, but m_lastMagnifierRect is still null (unset).
     // Do a full widget repaint to clear the initial content, then initialize tracking state.
     if (m_lastMagnifierRect.isNull()) {
+        const bool shouldRenderMagnifier =
+            !m_shouldRenderMagnifier || m_shouldRenderMagnifier();
         m_lastCrosshairPoint = state().currentPoint;
         m_lastSelectionRect = m_selectionManager->selectionRect().normalized();
-        m_lastMagnifierRect = m_dirtyRegionPlanner.magnifierRectForCursor(
-            state().currentPoint, m_parentWidget->size());
+        m_lastMagnifierRect = shouldRenderMagnifier
+            ? m_dirtyRegionPlanner.magnifierRectForCursor(
+                state().currentPoint, m_parentWidget->size())
+            : QRect();
         const bool hasRenderableSelection =
             m_selectionManager->hasSelection() && m_lastSelectionRect.isValid();
         // QML toolbar and region control panel position themselves in separate windows
         m_lastToolbarRect = QRect();
 
-        m_parentWidget->update();  // Full repaint for first frame
+        if (!selectionPreviewOverlayActive) {
+            m_parentWidget->update();  // Full repaint for first frame
+        }
+        return;
+    }
+
+    if (selectionPreviewOverlayActive) {
+        m_lastSelectionRect = m_selectionManager->selectionRect().normalized();
+        m_lastMagnifierRect = QRect();
+        m_lastToolbarRect = QRect();
+        m_lastCrosshairPoint = state().currentPoint;
         return;
     }
 
@@ -938,7 +998,9 @@ void RegionInputHandler::handleThrottledUpdate()
         const QRect currentSelectionRect = m_selectionManager->selectionRect().normalized();
         const bool suppressFloatingUi =
             shouldSuppressCompletedSelectionDragUi(state(), m_selectionManager);
-        const QRect currentMagnifierRect = suppressFloatingUi
+        const bool shouldRenderMagnifier =
+            !m_shouldRenderMagnifier || m_shouldRenderMagnifier();
+        const QRect currentMagnifierRect = (suppressFloatingUi || !shouldRenderMagnifier)
             ? QRect()
             : m_dirtyRegionPlanner.magnifierRectForCursor(state().currentPoint, m_parentWidget->size());
         QRect currentToolbarRect;
@@ -957,15 +1019,24 @@ void RegionInputHandler::handleThrottledUpdate()
         params.lastCursorPos = m_lastCrosshairPoint;
         params.viewportSize = m_parentWidget->size();
         params.suppressFloatingUi = suppressFloatingUi;
-        params.includeMagnifier = !suppressFloatingUi;
+        params.includeMagnifier = !suppressFloatingUi && shouldRenderMagnifier;
         const QRegion dirtyRegion = m_dirtyRegionPlanner.planSelectionDragRegion(params);
-        m_parentWidget->update(dirtyRegion);
+        if (!dirtyRegion.isEmpty()) {
+            m_parentWidget->update(dirtyRegion);
+        }
         m_lastSelectionRect = currentSelectionRect;
         m_lastMagnifierRect = currentMagnifierRect;
         m_lastToolbarRect = currentToolbarRect;
         m_lastCrosshairPoint = state().currentPoint;
     }
     else if (state().isDrawing) {
+        const ToolId currentTool =
+            m_toolManager ? m_toolManager->currentTool() : ToolId::Selection;
+        const bool previewOwnsRepaint =
+            currentTool == ToolId::Pencil || currentTool == ToolId::Marker;
+        if (previewOwnsRepaint) {
+            return;
+        }
         if (m_updateThrottler->shouldUpdate(UpdateThrottler::ThrottleType::Annotation)) {
             m_updateThrottler->reset(UpdateThrottler::ThrottleType::Annotation);
             if (m_selectionManager && m_selectionManager->hasSelection()) {
@@ -982,13 +1053,33 @@ void RegionInputHandler::handleThrottledUpdate()
     else if (m_selectionManager->isComplete()) {
         if (m_updateThrottler->shouldUpdate(UpdateThrottler::ThrottleType::Hover)) {
             m_updateThrottler->reset(UpdateThrottler::ThrottleType::Hover);
-            emit updateRequested();
+            const bool shouldRenderMagnifier =
+                !m_shouldRenderMagnifier || m_shouldRenderMagnifier();
+            const QRect currentMagnifierRect = shouldRenderMagnifier
+                ? m_dirtyRegionPlanner.magnifierRectForCursor(state().currentPoint, m_parentWidget->size())
+                : QRect();
+
+            SelectionDirtyRegionPlanner::HoverParams params;
+            params.currentMagnifierRect = currentMagnifierRect;
+            params.lastMagnifierRect = m_lastMagnifierRect;
+            params.currentCursorPos = state().currentPoint;
+            params.lastCursorPos = m_lastCrosshairPoint;
+            params.viewportSize = m_parentWidget->size();
+            const QRegion dirtyRegion = m_dirtyRegionPlanner.planHoverRegion(params);
+            if (!dirtyRegion.isEmpty()) {
+                m_parentWidget->update(dirtyRegion);
+            }
+            m_lastMagnifierRect = currentMagnifierRect;
+            m_lastCrosshairPoint = state().currentPoint;
         }
     }
     else {
         // No throttle — update on every mouse move for instant magnifier feedback
-        const QRect currentMagnifierRect = m_dirtyRegionPlanner.magnifierRectForCursor(
-            state().currentPoint, m_parentWidget->size());
+        const bool shouldRenderMagnifier =
+            !m_shouldRenderMagnifier || m_shouldRenderMagnifier();
+        const QRect currentMagnifierRect = shouldRenderMagnifier
+            ? m_dirtyRegionPlanner.magnifierRectForCursor(state().currentPoint, m_parentWidget->size())
+            : QRect();
 
         SelectionDirtyRegionPlanner::HoverParams params;
         params.currentMagnifierRect = currentMagnifierRect;
@@ -997,7 +1088,9 @@ void RegionInputHandler::handleThrottledUpdate()
         params.lastCursorPos = m_lastCrosshairPoint;
         params.viewportSize = m_parentWidget->size();
         const QRegion dirtyRegion = m_dirtyRegionPlanner.planHoverRegion(params);
-        m_parentWidget->update(dirtyRegion);
+        if (!dirtyRegion.isEmpty()) {
+            m_parentWidget->update(dirtyRegion);
+        }
         m_lastMagnifierRect = currentMagnifierRect;
         m_lastCrosshairPoint = state().currentPoint;
     }
@@ -1010,9 +1103,20 @@ void RegionInputHandler::updateDragFramePump()
         return;
     }
 
+    const bool shouldPollHoverCursor =
+        m_state &&
+        QApplication::mouseButtons() == Qt::NoButton &&
+        !m_selectionManager->isSelecting() &&
+        !m_selectionManager->isResizing() &&
+        !m_selectionManager->isMoving() &&
+        !m_pendingWindowClickActive &&
+        !state().isDrawing &&
+        !isManipulatingAnnotation();
+
     const bool shouldRun = m_selectionManager->isSelecting() ||
                            m_selectionManager->isResizing() ||
-                           m_selectionManager->isMoving();
+                           m_selectionManager->isMoving() ||
+                           shouldPollHoverCursor;
     if (shouldRun) {
         if (!m_dragFrameTimer.isActive()) {
             m_dragFrameTimer.start();
@@ -1032,9 +1136,17 @@ void RegionInputHandler::onDragFrameTick()
         return;
     }
 
-    if (!m_selectionManager->isSelecting() &&
-        !m_selectionManager->isResizing() &&
-        !m_selectionManager->isMoving()) {
+    const bool isSelectionInteraction =
+        m_selectionManager->isSelecting() ||
+        m_selectionManager->isResizing() ||
+        m_selectionManager->isMoving();
+    const bool shouldPollHoverCursor =
+        QApplication::mouseButtons() == Qt::NoButton &&
+        !m_pendingWindowClickActive &&
+        !state().isDrawing &&
+        !isManipulatingAnnotation();
+
+    if (!isSelectionInteraction && !shouldPollHoverCursor) {
         m_dragFrameTimer.stop();
         return;
     }
@@ -1054,6 +1166,16 @@ void RegionInputHandler::onDragFrameTick()
     }
     else if (m_selectionManager->isMoving()) {
         m_selectionManager->updateMove(localPos);
+    }
+    else {
+        if (!m_pendingWindowClickActive) {
+            handleWindowDetectionMove(localPos);
+        }
+
+        if (m_selectionManager->isComplete() ||
+            (state().multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0)) {
+            handleHoverMove(localPos, Qt::NoButton);
+        }
     }
 
     handleThrottledUpdate();
@@ -1180,6 +1302,11 @@ void RegionInputHandler::handleAnnotationRelease()
 
 void RegionInputHandler::startAnnotation(const QPoint& pos)
 {
+    startAnnotation(m_lastToolEventPos.isNull() ? QPointF(pos) : m_lastToolEventPos);
+}
+
+void RegionInputHandler::startAnnotation(const QPointF& pos)
+{
     if (ToolTraits::isToolManagerHandledTool(state().currentTool)) {
         m_toolManager->setColor(state().annotationColor);
         // Don't overwrite width for StepBadge - it uses a separate radius setting
@@ -1206,6 +1333,11 @@ void RegionInputHandler::startAnnotation(const QPoint& pos)
 
 void RegionInputHandler::updateAnnotation(const QPoint& pos)
 {
+    updateAnnotation(m_lastToolEventPos.isNull() ? QPointF(pos) : m_lastToolEventPos);
+}
+
+void RegionInputHandler::updateAnnotation(const QPointF& pos)
+{
     if (ToolTraits::isToolManagerHandledTool(state().currentTool)) {
         m_toolManager->handleMouseMove(pos, m_currentModifiers);
     }
@@ -1214,7 +1346,9 @@ void RegionInputHandler::updateAnnotation(const QPoint& pos)
 void RegionInputHandler::finishAnnotation()
 {
     if (ToolTraits::isToolManagerHandledTool(state().currentTool)) {
-        m_toolManager->handleMouseRelease(state().currentPoint, m_currentModifiers);
+        const QPointF releasePos =
+            m_lastToolEventPos.isNull() ? QPointF(state().currentPoint) : m_lastToolEventPos;
+        m_toolManager->handleMouseRelease(releasePos, m_currentModifiers);
         state().isDrawing = m_toolManager->isDrawing();
     }
     else {
@@ -1418,7 +1552,6 @@ bool RegionInputHandler::handleArrowAnnotationMove(const QPoint& pos)
     }
 
     m_arrowDragStart = pos;
-    m_annotationLayer->invalidateCache();
     emit updateRequested();
     return true;
 }
@@ -1517,7 +1650,6 @@ bool RegionInputHandler::handlePolylineAnnotationMove(const QPoint& pos) {
              }
              
              m_polylineDragStart = pos;
-             m_annotationLayer->invalidateCache();
              emit updateRequested();
              return true;
         }

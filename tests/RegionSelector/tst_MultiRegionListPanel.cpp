@@ -1,8 +1,11 @@
 #include <QtTest/QtTest>
+#include <QImage>
+#include <QPainter>
 #include <QVariantList>
 #include <QVariantMap>
 #include <QSignalSpy>
 
+#include "qml/DialogImageProvider.h"
 #include "qml/MultiRegionListViewModel.h"
 
 class tst_MultiRegionListPanel : public QObject
@@ -15,6 +18,8 @@ private slots:
     void testActiveIndex();
     void testSignals();
     void testMoveSignal();
+    void testFractionalDprThumbnailUsesCoveringCrop();
+    void testEdgeThumbnailCropIsClampedToBackgroundBounds();
 };
 
 void tst_MultiRegionListPanel::testRegionCount()
@@ -112,6 +117,78 @@ void tst_MultiRegionListPanel::testMoveSignal()
     const QList<QVariant> args = moveSpy.takeFirst();
     QCOMPARE(args.at(0).toInt(), 0);
     QCOMPARE(args.at(1).toInt(), 2);
+}
+
+void tst_MultiRegionListPanel::testFractionalDprThumbnailUsesCoveringCrop()
+{
+    QImage sourceImage(QSize(300, 150), QImage::Format_ARGB32_Premultiplied);
+    sourceImage.fill(Qt::blue);
+
+    for (int y = 0; y < sourceImage.height(); ++y) {
+        sourceImage.setPixelColor(151, y, Qt::red);
+        sourceImage.setPixelColor(152, y, Qt::blue);
+        sourceImage.setPixelColor(153, y, Qt::blue);
+    }
+
+    QPixmap background = QPixmap::fromImage(sourceImage);
+    background.setDevicePixelRatio(1.5);
+
+    MultiRegionListViewModel vm;
+    vm.setCaptureContext(background, 1.5);
+
+    QVector<MultiRegionManager::Region> regions;
+    MultiRegionManager::Region region;
+    region.rect = QRect(101, 20, 1, 10);
+    region.index = 1;
+    region.color = QColor(0, 174, 255);
+    regions.push_back(region);
+
+    vm.setRegions(regions);
+
+    SnapTray::DialogImageProvider provider;
+    QSize size;
+    const QImage thumbnail = provider.requestImage(QStringLiteral("region_1"), &size, QSize());
+    QVERIFY(!thumbnail.isNull());
+    QCOMPARE(size, thumbnail.size());
+
+    const QColor leftPixel = thumbnail.pixelColor(0, thumbnail.height() / 2);
+    QVERIFY2(leftPixel.red() > leftPixel.blue(),
+             "Expected covering crop to preserve the left fractional-DPR edge pixel.");
+}
+
+void tst_MultiRegionListPanel::testEdgeThumbnailCropIsClampedToBackgroundBounds()
+{
+    QImage sourceImage(QSize(300, 150), QImage::Format_ARGB32_Premultiplied);
+    sourceImage.fill(Qt::blue);
+
+    for (int y = 0; y < sourceImage.height(); ++y) {
+        sourceImage.setPixelColor(298, y, Qt::green);
+        sourceImage.setPixelColor(299, y, Qt::red);
+    }
+
+    QPixmap background = QPixmap::fromImage(sourceImage);
+    background.setDevicePixelRatio(1.5);
+
+    MultiRegionListViewModel vm;
+    vm.setCaptureContext(background, 1.5);
+
+    QVector<MultiRegionManager::Region> regions;
+    MultiRegionManager::Region region;
+    region.rect = QRect(199, 20, 1, 10);
+    region.index = 1;
+    region.color = QColor(0, 174, 255);
+    regions.push_back(region);
+
+    vm.setRegions(regions);
+
+    SnapTray::DialogImageProvider provider;
+    QSize size;
+    const QImage thumbnail = provider.requestImage(QStringLiteral("region_1"), &size, QSize());
+    QVERIFY(!thumbnail.isNull());
+
+    const QColor rightPixel = thumbnail.pixelColor(thumbnail.width() - 1, thumbnail.height() / 2);
+    QVERIFY2(rightPixel.red() > rightPixel.blue(),
+             "Expected the clamped right edge to remain sourced from the captured pixmap.");
 }
 
 QTEST_MAIN(tst_MultiRegionListPanel)

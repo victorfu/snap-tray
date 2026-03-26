@@ -5,6 +5,42 @@
 #include <QFontMetrics>
 #include <QString>
 
+namespace {
+
+QRegion selectionDeltaRegion(const QRect& currentSelectionRect, const QRect& lastSelectionRect)
+{
+    QRegion region;
+    const QRect current = currentSelectionRect.normalized();
+    const QRect last = lastSelectionRect.normalized();
+
+    if (current.isValid() && !current.isEmpty()) {
+        region += QRegion(current).subtracted(QRegion(last));
+    }
+    if (last.isValid() && !last.isEmpty()) {
+        region += QRegion(last).subtracted(QRegion(current));
+    }
+
+    return region;
+}
+
+QRegion selectionChromeRegion(const QRect& selectionRect, int margin)
+{
+    const QRect normalized = selectionRect.normalized();
+    if (!normalized.isValid() || normalized.isEmpty()) {
+        return {};
+    }
+
+    const QRect expanded = normalized.adjusted(-margin, -margin, margin, margin);
+    const QRect stableInterior = normalized.adjusted(margin, margin, -margin, -margin);
+    if (!stableInterior.isValid() || stableInterior.isEmpty()) {
+        return QRegion(expanded);
+    }
+
+    return QRegion(expanded).subtracted(QRegion(stableInterior));
+}
+
+} // namespace
+
 QRect SelectionDirtyRegionPlanner::magnifierRectForCursor(
     const QPoint& cursorPos, const QSize& viewportSize) const
 {
@@ -27,6 +63,46 @@ QRect SelectionDirtyRegionPlanner::magnifierRectForCursor(
         panelY - kMagnifierOuterPadding,
         kMagnifierWidth + (kMagnifierOuterPadding * 2),
         totalHeight + (kMagnifierOuterPadding * 2));
+}
+
+QRect SelectionDirtyRegionPlanner::beaverRectForCursor(
+    const QPoint& cursorPos, const QSize& viewportSize) const
+{
+    int iconX = cursorPos.x() + kBeaverOffset;
+    int iconY = cursorPos.y() + kBeaverOffset;
+
+    if (iconX + kBeaverSize + kViewportMargin > viewportSize.width()) {
+        iconX = cursorPos.x() - kBeaverSize - kBeaverOffset;
+    }
+    if (iconY + kBeaverSize + kViewportMargin > viewportSize.height()) {
+        iconY = cursorPos.y() - kBeaverSize - kBeaverOffset;
+    }
+
+    iconX = qMax(kViewportMargin, iconX);
+    iconY = qMax(kViewportMargin, iconY);
+
+    return QRect(
+        iconX - kBeaverOuterPadding,
+        iconY - kBeaverOuterPadding,
+        kBeaverSize + (kBeaverOuterPadding * 2),
+        kBeaverSize + (kBeaverOuterPadding * 2));
+}
+
+QRect SelectionDirtyRegionPlanner::cursorCompanionRectForCursor(
+    RegionCaptureSettingsManager::CursorCompanionStyle style,
+    const QPoint& cursorPos,
+    const QSize& viewportSize) const
+{
+    switch (style) {
+    case RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier:
+        return magnifierRectForCursor(cursorPos, viewportSize);
+    case RegionCaptureSettingsManager::CursorCompanionStyle::Beaver:
+        return beaverRectForCursor(cursorPos, viewportSize);
+    case RegionCaptureSettingsManager::CursorCompanionStyle::None:
+        return QRect();
+    }
+
+    return QRect();
 }
 
 QRect SelectionDirtyRegionPlanner::dimensionInfoRectForSelection(const QRect& selectionRect) const
@@ -68,16 +144,9 @@ QRegion SelectionDirtyRegionPlanner::planSelectionDragRegion(const SelectionDrag
         }
     };
 
-    if (params.currentSelectionRect.isValid()) {
-        addRect(params.currentSelectionRect.normalized().adjusted(
-            -kSelectionHandleMargin, -kSelectionHandleMargin,
-            kSelectionHandleMargin, kSelectionHandleMargin));
-    }
-    if (params.lastSelectionRect.isValid()) {
-        addRect(params.lastSelectionRect.normalized().adjusted(
-            -kSelectionHandleMargin, -kSelectionHandleMargin,
-            kSelectionHandleMargin, kSelectionHandleMargin));
-    }
+    dirtyRegion += selectionDeltaRegion(params.currentSelectionRect, params.lastSelectionRect);
+    dirtyRegion += selectionChromeRegion(params.currentSelectionRect, kSelectionHandleMargin);
+    dirtyRegion += selectionChromeRegion(params.lastSelectionRect, kSelectionHandleMargin);
 
     auto addPaddedDimensionInfoRect = [this, &addRect](const QRect& selectionRect) {
         const QRect infoRect = dimensionInfoRectForSelection(selectionRect);
@@ -89,11 +158,6 @@ QRegion SelectionDirtyRegionPlanner::planSelectionDragRegion(const SelectionDrag
     };
     addPaddedDimensionInfoRect(params.currentSelectionRect);
     addPaddedDimensionInfoRect(params.lastSelectionRect);
-
-    if (params.includeMagnifier && !params.suppressFloatingUi) {
-        addRect(params.currentMagnifierRect);
-        addRect(params.lastMagnifierRect);
-    }
 
     auto addPaddedRect = [&addRect](const QRect& rect) {
         if (!rect.isEmpty()) {
@@ -108,25 +172,12 @@ QRegion SelectionDirtyRegionPlanner::planSelectionDragRegion(const SelectionDrag
         addPaddedRect(params.lastRegionControlRect);
     }
 
-    dirtyRegion += crosshairStripRegion(params.lastCursorPos, params.viewportSize);
-    dirtyRegion += crosshairStripRegion(params.currentCursorPos, params.viewportSize);
-
     return clippedToViewport(dirtyRegion, params.viewportSize);
 }
 
 QRegion SelectionDirtyRegionPlanner::planHoverRegion(const HoverParams& params) const
 {
     QRegion dirtyRegion;
-    if (!params.currentMagnifierRect.isEmpty()) {
-        dirtyRegion += params.currentMagnifierRect;
-    }
-    if (!params.lastMagnifierRect.isEmpty()) {
-        dirtyRegion += params.lastMagnifierRect;
-    }
-
-    dirtyRegion += crosshairStripRegion(params.lastCursorPos, params.viewportSize);
-    dirtyRegion += crosshairStripRegion(params.currentCursorPos, params.viewportSize);
-
     return clippedToViewport(dirtyRegion, params.viewportSize);
 }
 

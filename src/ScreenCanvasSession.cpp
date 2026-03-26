@@ -2,29 +2,36 @@
 
 #include "InlineTextEditor.h"
 #include "LaserPointerRenderer.h"
+#include "PlatformFeatures.h"
 #include "ScreenCanvas.h"
 #include "annotation/AnnotationContext.h"
+#include "annotation/AnnotationRenderHelper.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/EmojiStickerAnnotation.h"
+#include "capture/ScreenSnapshot.h"
 #include "annotations/PolylineAnnotation.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "colorwidgets/ColorPickerDialogCompat.h"
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
+#include "ImageColorSpaceHelper.h"
 #include "platform/WindowLevel.h"
 #include "qml/CanvasToolbarViewModel.h"
 #include "qml/PinToolOptionsViewModel.h"
 #include "qml/QmlEmojiPickerPopup.h"
 #include "qml/QmlFloatingSubToolbar.h"
 #include "qml/QmlFloatingToolbar.h"
+#include "qml/QmlToast.h"
 #include "region/RegionSettingsHelper.h"
 #include "region/ShapeAnnotationEditor.h"
 #include "region/TextAnnotationEditor.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "tools/ToolManager.h"
+#include "tools/ToolRepaintHelper.h"
 #include "tools/ToolSectionConfig.h"
 #include "tools/ToolTraits.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
+#include "utils/CoordinateHelper.h"
 
 #include <QApplication>
 #include <QCloseEvent>
@@ -45,6 +52,8 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 namespace {
 constexpr int kLaserPointerButtonId = 10001;
 constexpr int kToolbarBottomMargin = 30;
+constexpr int kToolPreviewRepaintMargin = 30;
+constexpr int kAnnotationInteractionVisualMargin = 52;
 
 bool isManagedToolButtonId(int buttonId)
 {
@@ -95,6 +104,24 @@ QString screenIdentityPrefix(const QString& screenId)
     const qsizetype geometryMarker = trimmed.indexOf(QStringLiteral("|geom:"));
     return geometryMarker >= 0 ? trimmed.left(geometryMarker) : trimmed;
 }
+
+QPixmap createSolidCanvasPixmap(const QSize& logicalSize, qreal devicePixelRatio, const QColor& color)
+{
+    const qreal normalizedDpr = devicePixelRatio > 0.0 ? devicePixelRatio : 1.0;
+    const QSize physicalSize = CoordinateHelper::toPhysical(logicalSize, normalizedDpr);
+    if (logicalSize.isEmpty() || physicalSize.isEmpty()) {
+        return {};
+    }
+
+    QPixmap result(physicalSize);
+    if (result.isNull()) {
+        return {};
+    }
+
+    result.setDevicePixelRatio(normalizedDpr);
+    result.fill(color);
+    return result;
+}
 } // namespace
 
 const std::map<ToolId, ScreenCanvasSession::ToolbarClickHandler>&
@@ -114,6 +141,7 @@ ScreenCanvasSession::toolbarDispatchTable()
         {ToolId::Undo, &ScreenCanvasSession::handleActionToolClick},
         {ToolId::Redo, &ScreenCanvasSession::handleActionToolClick},
         {ToolId::Clear, &ScreenCanvasSession::handleActionToolClick},
+        {ToolId::Copy, &ScreenCanvasSession::handleActionToolClick},
         {ToolId::Exit, &ScreenCanvasSession::handleActionToolClick},
     };
     return kDispatch;
@@ -126,6 +154,7 @@ ScreenCanvasSession::actionDispatchTable()
         {ToolId::Undo, &ScreenCanvasSession::handleUndoAction},
         {ToolId::Redo, &ScreenCanvasSession::handleRedoAction},
         {ToolId::Clear, &ScreenCanvasSession::handleClearAction},
+        {ToolId::Copy, &ScreenCanvasSession::handleCopyAction},
         {ToolId::Exit, &ScreenCanvasSession::handleExitAction},
     };
     return kDispatch;
@@ -175,7 +204,7 @@ void ScreenCanvasSession::initializeSharedState()
     m_toolManager->setLineStyle(savedLineStyle);
 
     connect(m_toolManager, &ToolManager::needsRepaint, this, [this]() {
-        updateAllSurfaces();
+        requestLocalizedToolRepaint();
     });
     m_toolManager->setTextColorSyncCallback([this](const QColor& color) {
         syncColorToAllWidgets(color);
@@ -203,6 +232,8 @@ void ScreenCanvasSession::initializeSharedState()
             this, [this]() { handleToolbarClick(static_cast<int>(ToolId::Redo)); });
     connect(m_toolbarViewModel, &CanvasToolbarViewModel::clearClicked,
             this, [this]() { handleToolbarClick(static_cast<int>(ToolId::Clear)); });
+    connect(m_toolbarViewModel, &CanvasToolbarViewModel::copyClicked,
+            this, [this]() { handleToolbarClick(static_cast<int>(ToolId::Copy)); });
     connect(m_toolbarViewModel, &CanvasToolbarViewModel::exitClicked,
             this, [this]() { handleToolbarClick(static_cast<int>(ToolId::Exit)); });
     connect(m_toolbarViewModel, &CanvasToolbarViewModel::canvasWhiteboardClicked,
@@ -213,6 +244,7 @@ void ScreenCanvasSession::initializeSharedState()
     connect(m_annotationLayer, &AnnotationLayer::changed, this, [this]() {
         m_toolbarViewModel->setCanUndo(m_annotationLayer->canUndo());
         m_toolbarViewModel->setCanRedo(m_annotationLayer->canRedo());
+        resetAnnotationInteractionTracking();
         updateAllSurfaces();
     });
 
@@ -725,6 +757,181 @@ void ScreenCanvasSession::updateAllSurfaces()
     }
 }
 
+void ScreenCanvasSession::updateSurfacesForAnnotationRect(const QRect& annotationRect)
+{
+    if (!annotationRect.isValid() || annotationRect.isEmpty()) {
+        return;
+    }
+
+    for (const QPointer<ScreenCanvas>& surface : m_surfaces) {
+        if (!surface) {
+            continue;
+        }
+
+        const QRect localRect(
+            surface->toLocalPoint(annotationRect.topLeft()),
+            annotationRect.size());
+        const QRect clippedRect = localRect.intersected(surface->rect());
+        if (clippedRect.isValid() && !clippedRect.isEmpty()) {
+            surface->update(clippedRect);
+        }
+    }
+}
+
+bool ScreenCanvasSession::hasActiveAnnotationInteraction() const
+{
+    const ScreenCanvas* interactionSurface =
+        m_grabbedSurface ? m_grabbedSurface.data() : m_activeSurface.data();
+    const bool textInteraction =
+        interactionSurface &&
+        interactionSurface->textAnnotationEditor() &&
+        (interactionSurface->textAnnotationEditor()->isDragging() ||
+         interactionSurface->textAnnotationEditor()->isTransforming());
+    const bool shapeInteraction =
+        interactionSurface &&
+        interactionSurface->shapeAnnotationEditor() &&
+        (interactionSurface->shapeAnnotationEditor()->isDragging() ||
+         interactionSurface->shapeAnnotationEditor()->isTransforming());
+
+    return textInteraction || shapeInteraction ||
+           m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating ||
+           m_isArrowDragging || m_isPolylineDragging;
+}
+
+QRect ScreenCanvasSession::selectedAnnotationInteractionRect() const
+{
+    return snaptray::tools::selectedAnnotationRepaintRect(
+        m_annotationLayer,
+        kAnnotationInteractionVisualMargin);
+}
+
+void ScreenCanvasSession::requestLocalizedToolRepaint()
+{
+    const QRect previewRect = snaptray::tools::previewRepaintRect(
+        m_toolManager,
+        kToolPreviewRepaintMargin);
+    if (previewRect.isValid() && !previewRect.isEmpty()) {
+        updateSurfacesForAnnotationRect(previewRect);
+        return;
+    }
+
+    if (!hasActiveAnnotationInteraction()) {
+        resetAnnotationInteractionTracking();
+        updateAllSurfaces();
+        return;
+    }
+
+    const QRect currentRect = selectedAnnotationInteractionRect();
+    QRect dirtyRect = currentRect;
+    if (m_lastAnnotationInteractionRect.isValid()) {
+        dirtyRect = dirtyRect.united(m_lastAnnotationInteractionRect);
+    }
+
+    m_lastAnnotationInteractionRect = currentRect;
+    if (dirtyRect.isValid() && !dirtyRect.isEmpty()) {
+        updateSurfacesForAnnotationRect(dirtyRect);
+    }
+}
+
+void ScreenCanvasSession::resetAnnotationInteractionTracking()
+{
+    m_lastAnnotationInteractionRect = QRect();
+}
+
+ScreenCanvasSession::FloatingUiVisibilityState ScreenCanvasSession::hideFloatingUiForCapture()
+{
+    FloatingUiVisibilityState state;
+    if (m_qmlToolbar) {
+        state.toolbarVisible = m_qmlToolbar->isVisible();
+        if (state.toolbarVisible) {
+            m_qmlToolbar->hide();
+        }
+    }
+
+    if (m_qmlSubToolbar && m_qmlSubToolbar->isVisible()) {
+        m_qmlSubToolbar->hide();
+    }
+
+    if (m_emojiPickerPopup) {
+        state.emojiPickerVisible = m_emojiPickerPopup->isVisible();
+        if (state.emojiPickerVisible) {
+            m_emojiPickerPopup->hide();
+        }
+    }
+
+    qApp->processEvents();
+    return state;
+}
+
+void ScreenCanvasSession::restoreFloatingUiAfterCapture(const FloatingUiVisibilityState& state)
+{
+    if (!m_isOpen) {
+        return;
+    }
+
+    if (state.toolbarVisible && m_qmlToolbar) {
+        m_qmlToolbar->show();
+    }
+
+    updateQmlToolbarState();
+    if (state.emojiPickerVisible) {
+        showEmojiPickerPopup();
+    }
+    raiseFloatingUiWindows();
+}
+
+ScreenCanvasSession::ScreenSnapshotVisibilityState ScreenCanvasSession::hideUiForScreenSnapshot()
+{
+    ScreenSnapshotVisibilityState state;
+    state.floatingUi = hideFloatingUiForCapture();
+
+    for (const QPointer<ScreenCanvas>& surface : m_surfaces) {
+        if (!surface || !surface->isVisible()) {
+            continue;
+        }
+
+        state.visibleSurfaces.append(surface);
+        surface->hide();
+    }
+
+    if (!state.visibleSurfaces.isEmpty()) {
+        qApp->processEvents();
+    }
+
+    return state;
+}
+
+void ScreenCanvasSession::restoreUiAfterScreenSnapshot(
+    const ScreenSnapshotVisibilityState& state)
+{
+    if (!m_isOpen) {
+        return;
+    }
+
+    for (const QPointer<ScreenCanvas>& surface : state.visibleSurfaces) {
+        if (!surface) {
+            continue;
+        }
+
+        if (!surface->isVisible()) {
+            surface->show();
+        }
+        preventWindowHideOnDeactivate(surface);
+        raiseWindowAboveMenuBar(surface);
+        setWindowClickThrough(surface, false);
+        surface->raise();
+        surface->update();
+    }
+
+    if (!m_activeSurface && !state.visibleSurfaces.isEmpty()) {
+        m_activeSurface = state.visibleSurfaces.first();
+    }
+
+    refreshFloatingUiParentWidget();
+    setToolCursor();
+    restoreFloatingUiAfterCapture(state.floatingUi);
+}
+
 void ScreenCanvasSession::connectApplicationStateSignal()
 {
     if (m_applicationStateChangedConnection) {
@@ -934,40 +1141,22 @@ void ScreenCanvasSession::drawAnnotations(ScreenCanvas* surface, QPainter& paint
         (interactionSurface->shapeAnnotationEditor()->isDragging() ||
          interactionSurface->shapeAnnotationEditor()->isTransforming());
 
-    if (m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating ||
-        m_isArrowDragging || m_isPolylineDragging || shapeInteractionActive) {
-        m_annotationLayer->drawWithDirtyRegion(
-            painter,
-            surface->size(),
-            devicePixelRatio,
-            m_annotationLayer->selectedIndex(),
-            origin);
-    } else {
-        m_annotationLayer->drawCached(
-            painter,
-            surface->size(),
-            devicePixelRatio,
-            origin);
-    }
+    snaptray::annotation::SelectedAnnotationItems selectedItems;
+    selectedItems.text = getSelectedTextAnnotation();
+    selectedItems.emoji = getSelectedEmojiStickerAnnotation();
+    selectedItems.shape = getSelectedShapeAnnotation();
+    selectedItems.arrow = getSelectedArrowAnnotation();
+    selectedItems.polyline = getSelectedPolylineAnnotation();
 
-    painter.save();
-    painter.translate(-QPointF(origin));
-    if (auto* textItem = getSelectedTextAnnotation()) {
-        TransformationGizmo::draw(painter, textItem);
-    }
-    if (auto* emojiItem = getSelectedEmojiStickerAnnotation()) {
-        TransformationGizmo::draw(painter, emojiItem);
-    }
-    if (auto* shapeItem = getSelectedShapeAnnotation()) {
-        TransformationGizmo::draw(painter, shapeItem);
-    }
-    if (auto* arrowItem = getSelectedArrowAnnotation()) {
-        TransformationGizmo::draw(painter, arrowItem);
-    }
-    if (auto* polylineItem = getSelectedPolylineAnnotation()) {
-        TransformationGizmo::draw(painter, polylineItem);
-    }
-    painter.restore();
+    snaptray::annotation::drawAnnotationVisuals(
+        painter,
+        m_annotationLayer,
+        surface->size(),
+        devicePixelRatio,
+        origin,
+        m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating ||
+            m_isArrowDragging || m_isPolylineDragging || shapeInteractionActive,
+        selectedItems);
 }
 
 void ScreenCanvasSession::drawCurrentAnnotation(QPainter& painter)
@@ -1126,6 +1315,43 @@ void ScreenCanvasSession::handleClearAction(ToolId)
     updateAllSurfaces();
 }
 
+void ScreenCanvasSession::handleCopyAction(ToolId)
+{
+    finalizePolylineForToolbarInteraction();
+
+    QScreen* targetScreen = resolveCopyTargetScreen();
+    ScreenSnapshotVisibilityState hiddenUiState;
+    const bool screenSnapshotUiAlreadyHidden =
+        targetScreen && m_bgMode == CanvasBackgroundMode::Screen;
+    if (screenSnapshotUiAlreadyHidden) {
+        hiddenUiState = hideUiForScreenSnapshot();
+    }
+
+    const QPixmap exportPixmap = exportCanvasPixmapForScreen(
+        targetScreen,
+        screenSnapshotUiAlreadyHidden);
+    if (exportPixmap.isNull() || !targetScreen) {
+        if (screenSnapshotUiAlreadyHidden) {
+            restoreUiAfterScreenSnapshot(hiddenUiState);
+        }
+        SnapTray::QmlToast::screenToast().showToast(
+            SnapTray::QmlToast::Level::Error,
+            tr("Copy failed"));
+        return;
+    }
+
+    const QImage clipboardImage = normalizeImageForExport(exportPixmap.toImage(), targetScreen);
+    const auto clipboardWriter = m_guiClipboardWriter;
+    QTimer::singleShot(0, qApp, [clipboardImage, clipboardWriter]() {
+        if (clipboardWriter) {
+            clipboardWriter(clipboardImage);
+            return;
+        }
+        PlatformFeatures::instance().copyImageToClipboardForGui(clipboardImage);
+    });
+    close();
+}
+
 void ScreenCanvasSession::handleExitAction(ToolId)
 {
     close();
@@ -1134,6 +1360,91 @@ void ScreenCanvasSession::handleExitAction(ToolId)
 bool ScreenCanvasSession::isDrawingTool(ToolId toolId) const
 {
     return ToolTraits::isDrawingTool(toolId);
+}
+
+QScreen* ScreenCanvasSession::resolveCopyTargetScreen() const
+{
+    if (QScreen* cursorScreen = QGuiApplication::screenAt(QCursor::pos())) {
+        return cursorScreen;
+    }
+
+    if (m_activeSurface && m_activeSurface->canvasScreen()) {
+        return m_activeSurface->canvasScreen();
+    }
+
+    if (m_activationScreen) {
+        return m_activationScreen.data();
+    }
+
+    return QGuiApplication::primaryScreen();
+}
+
+QPixmap ScreenCanvasSession::buildCopyExportBasePixmap(QScreen* screen,
+                                                       bool screenSnapshotUiAlreadyHidden) const
+{
+    if (!screen) {
+        return {};
+    }
+
+    if (m_bgMode == CanvasBackgroundMode::Screen) {
+        if (screenSnapshotUiAlreadyHidden) {
+            if (m_screenSnapshotProvider) {
+                return m_screenSnapshotProvider(screen);
+            }
+            return snaptray::capture::captureScreenSnapshot(screen);
+        }
+
+        auto* mutableThis = const_cast<ScreenCanvasSession*>(this);
+        const ScreenSnapshotVisibilityState uiState = mutableThis->hideUiForScreenSnapshot();
+        QPixmap snapshot;
+        if (m_screenSnapshotProvider) {
+            snapshot = m_screenSnapshotProvider(screen);
+        } else {
+            snapshot = snaptray::capture::captureScreenSnapshot(screen);
+        }
+        mutableThis->restoreUiAfterScreenSnapshot(uiState);
+        return snapshot;
+    }
+
+    const QColor fillColor = m_bgMode == CanvasBackgroundMode::Whiteboard ? Qt::white : Qt::black;
+    return createSolidCanvasPixmap(
+        screen->geometry().size(),
+        screen->devicePixelRatio(),
+        fillColor);
+}
+
+QPixmap ScreenCanvasSession::exportCanvasPixmapForScreen(QScreen* screen,
+                                                         bool screenSnapshotUiAlreadyHidden) const
+{
+    if (!screen) {
+        return {};
+    }
+
+    QPixmap result = buildCopyExportBasePixmap(screen, screenSnapshotUiAlreadyHidden);
+    if (result.isNull()) {
+        return result;
+    }
+
+    if (!m_annotationLayer || m_annotationLayer->isEmpty()) {
+        return result;
+    }
+
+    const QRect desktopGeometry = m_desktopGeometry.isValid() ? m_desktopGeometry : screen->geometry();
+    const QPoint origin = screen->geometry().topLeft() - desktopGeometry.topLeft();
+    const qreal devicePixelRatio =
+        result.devicePixelRatio() > 0.0 ? result.devicePixelRatio() : screen->devicePixelRatio();
+
+    QPainter painter(&result);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform);
+    m_annotationLayer->drawCached(
+        painter,
+        screen->geometry().size(),
+        devicePixelRatio > 0.0 ? devicePixelRatio : 1.0,
+        origin);
+    painter.end();
+
+    return result;
 }
 
 void ScreenCanvasSession::setToolCursor()
@@ -1289,6 +1600,7 @@ void ScreenCanvasSession::handleSurfaceMousePress(ScreenCanvas* surface, QMouseE
         }
 
         const QPoint annotationPos = surface->toAnnotationPoint(event->position().toPoint());
+        const QPointF annotationPosF = surface->toAnnotationPointF(event->position());
 
         if (m_laserPointerActive) {
             beginMouseGrab(surface);
@@ -1299,8 +1611,7 @@ void ScreenCanvasSession::handleSurfaceMousePress(ScreenCanvas* surface, QMouseE
 
         if (m_toolManager && m_toolManager->isDrawing()) {
             beginMouseGrab(surface);
-            m_toolManager->handleMousePress(annotationPos, event->modifiers());
-            updateAllSurfaces();
+            m_toolManager->handleMousePress(annotationPosF, event->modifiers());
             return;
         }
 
@@ -1324,7 +1635,6 @@ void ScreenCanvasSession::handleSurfaceMousePress(ScreenCanvas* surface, QMouseE
                  surface->shapeAnnotationEditor()->isTransforming())) {
                 beginMouseGrab(surface);
             }
-            updateAllSurfaces();
             return;
         }
 
@@ -1335,7 +1645,6 @@ void ScreenCanvasSession::handleSurfaceMousePress(ScreenCanvas* surface, QMouseE
                  surface->textAnnotationEditor()->isTransforming())) {
                 beginMouseGrab(surface);
             }
-            updateAllSurfaces();
             return;
         }
 
@@ -1355,8 +1664,7 @@ void ScreenCanvasSession::handleSurfaceMousePress(ScreenCanvas* surface, QMouseE
 
         if (!m_laserPointerActive && isDrawingTool(m_currentToolId)) {
             beginMouseGrab(surface);
-            m_toolManager->handleMousePress(annotationPos, event->modifiers());
-            updateAllSurfaces();
+            m_toolManager->handleMousePress(annotationPosF, event->modifiers());
         }
     } else if (event->button() == Qt::RightButton) {
         if (m_toolManager && m_toolManager->isDrawing()) {
@@ -1382,6 +1690,7 @@ void ScreenCanvasSession::handleSurfaceMouseMove(ScreenCanvas* surface, QMouseEv
     }
 
     const QPoint annotationPos = annotationPointForEvent(inputSurface, event);
+    const QPointF annotationPosF = inputSurface->toAnnotationPointF(event->position());
 
     if (m_laserPointerActive && m_laserRenderer->isDrawing()) {
         m_laserRenderer->updateDrawing(annotationPos);
@@ -1391,7 +1700,6 @@ void ScreenCanvasSession::handleSurfaceMouseMove(ScreenCanvas* surface, QMouseEv
 
     if (m_toolManager &&
         m_toolManager->handleTextInteractionMove(annotationPos, event->modifiers())) {
-        updateAllSurfaces();
         return;
     }
 
@@ -1402,7 +1710,6 @@ void ScreenCanvasSession::handleSurfaceMouseMove(ScreenCanvas* surface, QMouseEv
 
     if (m_toolManager &&
         m_toolManager->handleShapeInteractionMove(annotationPos, event->modifiers())) {
-        updateAllSurfaces();
         return;
     }
 
@@ -1416,8 +1723,7 @@ void ScreenCanvasSession::handleSurfaceMouseMove(ScreenCanvas* surface, QMouseEv
     }
 
     if (m_toolManager && m_toolManager->isDrawing()) {
-        m_toolManager->handleMouseMove(annotationPos, event->modifiers());
-        updateAllSurfaces();
+        m_toolManager->handleMouseMove(annotationPosF, event->modifiers());
     } else {
         syncFloatingUiCursor(surface);
     }
@@ -1441,6 +1747,7 @@ void ScreenCanvasSession::handleSurfaceMouseRelease(ScreenCanvas* surface, QMous
     }
 
     const QPoint annotationPos = annotationPointForEvent(inputSurface, event);
+    const QPointF annotationPosF = inputSurface->toAnnotationPointF(event->position());
 
     if (m_laserPointerActive && m_laserRenderer->isDrawing()) {
         m_laserRenderer->stopDrawing();
@@ -1491,8 +1798,7 @@ void ScreenCanvasSession::handleSurfaceMouseRelease(ScreenCanvas* surface, QMous
         (m_toolManager->isDrawing() ||
          m_currentToolId == ToolId::StepBadge ||
          m_currentToolId == ToolId::EmojiSticker)) {
-        m_toolManager->handleMouseRelease(annotationPos, event->modifiers());
-        updateAllSurfaces();
+        m_toolManager->handleMouseRelease(annotationPosF, event->modifiers());
     }
 
     endMouseGrab();
@@ -1576,6 +1882,8 @@ void ScreenCanvasSession::handleSurfaceKeyPress(ScreenCanvas* surface, QKeyEvent
         setBackgroundMode(m_bgMode == CanvasBackgroundMode::Blackboard
                               ? CanvasBackgroundMode::Screen
                               : CanvasBackgroundMode::Blackboard);
+    } else if (event->matches(QKeySequence::Copy)) {
+        handleCopyAction(ToolId::Copy);
     } else if (event->matches(QKeySequence::Undo)) {
         if (m_annotationLayer->canUndo()) {
             m_annotationLayer->undo();
@@ -1768,7 +2076,21 @@ void ScreenCanvasSession::updateQmlToolbarState()
     if (m_bgMode == CanvasBackgroundMode::Blackboard) {
         activeToolId = static_cast<int>(ToolId::CanvasBlackboard);
     }
-    m_toolbarViewModel->setActiveTool(activeToolId);
+    if (m_toolbarViewModel) {
+        m_toolbarViewModel->setActiveTool(activeToolId);
+    }
+
+    if (!m_toolOptionsViewModel || !m_qmlSubToolbar) {
+        if ((m_laserPointerActive || m_currentToolId != ToolId::EmojiSticker || !m_showSubToolbar) &&
+            m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+            m_emojiPickerPopup->hide();
+        }
+
+        if (m_isOpen && m_toolbarPlacementInitialized && !m_toolbarDragging) {
+            relayoutFloatingUi(false);
+        }
+        return;
+    }
 
     if (m_showSubToolbar && !m_laserPointerActive) {
         m_qmlSubToolbar->showForTool(static_cast<int>(m_currentToolId));
@@ -2066,7 +2388,7 @@ bool ScreenCanvasSession::handleEmojiStickerAnnotationPress(const QPoint& pos)
         }
     }
 
-    updateAllSurfaces();
+    requestLocalizedToolRepaint();
     return true;
 }
 
@@ -2098,7 +2420,7 @@ bool ScreenCanvasSession::handleEmojiStickerAnnotationMove(const QPoint& pos)
         return false;
     }
 
-    updateAllSurfaces();
+    requestLocalizedToolRepaint();
     return true;
 }
 
@@ -2118,7 +2440,7 @@ bool ScreenCanvasSession::handleEmojiStickerAnnotationRelease(const QPoint& pos)
     if (m_activeSurface) {
         CursorManager::instance().setInputStateForWidget(m_activeSurface, InputState::Idle);
     }
-    updateAllSurfaces();
+    requestLocalizedToolRepaint();
     return true;
 }
 
@@ -2130,7 +2452,7 @@ bool ScreenCanvasSession::handleArrowAnnotationPress(const QPoint& pos)
             m_isArrowDragging = true;
             m_arrowDragHandle = handle;
             m_dragStartPos = pos;
-            updateAllSurfaces();
+            requestLocalizedToolRepaint();
             return true;
         }
     }
@@ -2149,7 +2471,7 @@ bool ScreenCanvasSession::handleArrowAnnotationPress(const QPoint& pos)
             }
         }
 
-        updateAllSurfaces();
+        requestLocalizedToolRepaint();
         return true;
     }
 
@@ -2182,7 +2504,7 @@ bool ScreenCanvasSession::handleArrowAnnotationMove(const QPoint& pos)
         arrowItem->setControlPoint(newControl.toPoint());
     }
 
-    updateAllSurfaces();
+    requestLocalizedToolRepaint();
     return true;
 }
 
@@ -2196,7 +2518,7 @@ bool ScreenCanvasSession::handleArrowAnnotationRelease(const QPoint& pos)
     m_isArrowDragging = false;
     m_arrowDragHandle = GizmoHandle::None;
     setToolCursor();
-    updateAllSurfaces();
+    requestLocalizedToolRepaint();
     return true;
 }
 
@@ -2208,14 +2530,14 @@ bool ScreenCanvasSession::handlePolylineAnnotationPress(const QPoint& pos)
             m_isPolylineDragging = true;
             m_activePolylineVertexIndex = vertexIndex;
             m_dragStartPos = pos;
-            updateAllSurfaces();
+            requestLocalizedToolRepaint();
             return true;
         }
         if (vertexIndex == -1) {
             m_isPolylineDragging = true;
             m_activePolylineVertexIndex = -1;
             m_dragStartPos = pos;
-            updateAllSurfaces();
+            requestLocalizedToolRepaint();
             return true;
         }
     }
@@ -2234,7 +2556,7 @@ bool ScreenCanvasSession::handlePolylineAnnotationPress(const QPoint& pos)
             }
         }
 
-        updateAllSurfaces();
+        requestLocalizedToolRepaint();
         return true;
     }
 
@@ -2260,7 +2582,7 @@ bool ScreenCanvasSession::handlePolylineAnnotationMove(const QPoint& pos)
         m_dragStartPos = pos;
     }
 
-    updateAllSurfaces();
+    requestLocalizedToolRepaint();
     return true;
 }
 
@@ -2274,7 +2596,7 @@ bool ScreenCanvasSession::handlePolylineAnnotationRelease(const QPoint& pos)
     m_isPolylineDragging = false;
     m_activePolylineVertexIndex = -1;
     setToolCursor();
-    updateAllSurfaces();
+    requestLocalizedToolRepaint();
     return true;
 }
 

@@ -2,6 +2,8 @@
 #define ITOOLHANDLER_H
 
 #include <QPoint>
+#include <QPointF>
+#include <QRect>
 #include <QCursor>
 #include <memory>
 
@@ -45,6 +47,10 @@ public:
         Q_UNUSED(pos);
     }
 
+    virtual void onMousePressF(ToolContext* ctx, const QPointF& pos) {
+        onMousePress(ctx, pos.toPoint());
+    }
+
     /**
      * @brief Called when mouse is moved (while pressed or not).
      */
@@ -53,12 +59,20 @@ public:
         Q_UNUSED(pos);
     }
 
+    virtual void onMouseMoveF(ToolContext* ctx, const QPointF& pos) {
+        onMouseMove(ctx, pos.toPoint());
+    }
+
     /**
      * @brief Called when mouse button is released.
      */
     virtual void onMouseRelease(ToolContext* ctx, const QPoint& pos) {
         Q_UNUSED(ctx);
         Q_UNUSED(pos);
+    }
+
+    virtual void onMouseReleaseF(ToolContext* ctx, const QPointF& pos) {
+        onMouseRelease(ctx, pos.toPoint());
     }
 
     /**
@@ -73,6 +87,13 @@ public:
      * @brief Draw the current in-progress annotation preview.
      */
     virtual void drawPreview(QPainter& painter) const { Q_UNUSED(painter); }
+
+    /**
+     * @brief Bounding rect for the current in-progress preview, if any.
+     *
+     * Used to localize repaints for interactive drawing tools.
+     */
+    virtual QRect previewBounds() const { return QRect(); }
 
     /**
      * @brief Check if currently drawing an annotation.

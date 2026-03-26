@@ -46,6 +46,10 @@ private slots:
 
     // Preview tests
     void testDrawPreview_WhileDrawing();
+    void testPreviewBounds_DuringAndAfterDrawing();
+    void testPreviewBounds_StaysLocalAsStrokeGrows();
+    void testFloatInputPreservesFractionalPoints();
+    void testHighDpiAllowsCloserPoints();
 
     // Cancellation tests
     void testCancelDrawing();
@@ -224,6 +228,74 @@ void TestPencilToolHandler::testDrawPreview_WhileDrawing()
         }
     }
     QVERIFY(hasColor);
+}
+
+void TestPencilToolHandler::testPreviewBounds_DuringAndAfterDrawing()
+{
+    QCOMPARE(m_handler->previewBounds(), QRect());
+
+    m_handler->onMousePress(m_context, QPoint(50, 50));
+    m_handler->onMouseMove(m_context, QPoint(100, 100));
+    const QRect duringBounds = m_handler->previewBounds();
+
+    QVERIFY(duringBounds.isValid());
+    QVERIFY(!duringBounds.isEmpty());
+    QVERIFY(duringBounds.width() > 0);
+    QVERIFY(duringBounds.height() > 0);
+
+    m_handler->onMouseRelease(m_context, QPoint(120, 120));
+    QCOMPARE(m_handler->previewBounds(), QRect());
+}
+
+void TestPencilToolHandler::testPreviewBounds_StaysLocalAsStrokeGrows()
+{
+    m_handler->onMousePress(m_context, QPoint(20, 20));
+    for (int i = 1; i < 12; ++i) {
+        m_handler->onMouseMove(m_context, QPoint(20 + i * 20, 20 + i * 8));
+    }
+
+    const QRect previewBounds = m_handler->previewBounds();
+    QVERIFY(previewBounds.isValid());
+    QVERIFY(!previewBounds.isEmpty());
+    QVERIFY(previewBounds.width() < 120);
+}
+
+void TestPencilToolHandler::testFloatInputPreservesFractionalPoints()
+{
+    m_handler->onMousePressF(m_context, QPointF(10.25, 10.75));
+    m_handler->onMouseMoveF(m_context, QPointF(13.5, 14.25));
+    m_handler->onMouseReleaseF(m_context, QPointF(17.75, 18.5));
+
+    QCOMPARE(m_layer->itemCount(), size_t(1));
+    auto* stroke = dynamic_cast<PencilStroke*>(m_layer->itemAt(0));
+    QVERIFY(stroke != nullptr);
+    const QVector<QPointF> points = stroke->points();
+    QVERIFY(!points.isEmpty());
+
+    bool hasFractionalPoint = false;
+    for (const QPointF& point : points) {
+        if (!qFuzzyCompare(point.x(), qRound(point.x())) ||
+            !qFuzzyCompare(point.y(), qRound(point.y()))) {
+            hasFractionalPoint = true;
+            break;
+        }
+    }
+    QVERIFY(hasFractionalPoint);
+}
+
+void TestPencilToolHandler::testHighDpiAllowsCloserPoints()
+{
+    m_context->devicePixelRatio = 2.0;
+
+    m_handler->onMousePressF(m_context, QPointF(10.0, 10.0));
+    m_handler->onMouseMoveF(m_context, QPointF(11.0, 11.0));
+    m_handler->onMouseMoveF(m_context, QPointF(11.8, 11.8));
+    m_handler->onMouseReleaseF(m_context, QPointF(12.6, 12.6));
+
+    QCOMPARE(m_layer->itemCount(), size_t(1));
+    auto* stroke = dynamic_cast<PencilStroke*>(m_layer->itemAt(0));
+    QVERIFY(stroke != nullptr);
+    QVERIFY(stroke->points().size() >= 3);
 }
 
 // ============================================================================

@@ -9,6 +9,11 @@
 #include "region/RegionSettingsHelper.h"
 #include "region/RegionExportManager.h"
 #include "region/MagnifierOverlay.h"
+#include "region/CapturePerfRecorder.h"
+#include "region/StaticCaptureBackgroundWindow.h"
+#include "region/CaptureChromeWindow.h"
+#include "region/SelectionDimmingOverlay.h"
+#include "region/SelectionPreviewOverlay.h"
 #include "region/CaptureShortcutHintsOverlay.h"
 #include "qml/QmlOverlayPanel.h"
 #include "qml/RegionControlViewModel.h"
@@ -47,6 +52,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "qml/ShareResultViewModel.h"
 #include "tools/handlers/MosaicToolHandler.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
+#include "tools/ToolRepaintHelper.h"
 #include "tools/ToolSectionConfig.h"
 #include "tools/ToolTraits.h"
 #include "utils/CoordinateHelper.h"
@@ -120,6 +126,28 @@ bool shouldSuppressCompletedSelectionDragUi(const SelectionStateManager* selecti
 }
 
 constexpr int kInitialRevealTimeoutMs = 120;
+constexpr int kInitialCursorBootstrapIntervalMs = 16;
+constexpr int kInitialCursorBootstrapDurationMs = 160;
+constexpr int kAnnotationInteractionVisualMargin = 52;
+constexpr int kWindowHighlightRepaintPadding = 2;
+SelectionDirtyRegionPlanner g_cursorCompanionDirtyRegionPlanner;
+
+QRect paddedWindowHighlightVisualRect(RegionPainter* painter, const QRect& windowRect)
+{
+    if (!painter || windowRect.isNull()) {
+        return {};
+    }
+
+    const QRect visualRect = painter->getWindowHighlightVisualRect(windowRect);
+    if (!visualRect.isValid() || visualRect.isEmpty()) {
+        return visualRect;
+    }
+
+    return visualRect.adjusted(-kWindowHighlightRepaintPadding,
+                               -kWindowHighlightRepaintPadding,
+                               kWindowHighlightRepaintPadding,
+                               kWindowHighlightRepaintPadding);
+}
 
 } // namespace
 
@@ -146,6 +174,11 @@ RegionSelector::RegionSelector(QWidget* parent)
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     setAttribute(Qt::WA_DeleteOnClose);
+#ifdef Q_OS_WIN
+    setAttribute(Qt::WA_TranslucentBackground);
+#else
+    setAttribute(Qt::WA_OpaquePaintEvent);
+#endif
     setMouseTracking(true);
 
     // Initialize selection state manager
@@ -162,10 +195,26 @@ RegionSelector::RegionSelector(QWidget* parent)
             if (m_inputState.completedSelectionDragUiSuppressed && m_toolbarUserDragged) {
                 m_toolbarUserDragged = false;
             }
+            syncSelectionPreviewOverlay();
+            syncCaptureChromeWindow();
             // Removed update() - repaints now handled by RegionInputHandler's throttled path
         });
     connect(m_selectionManager, &SelectionStateManager::stateChanged,
         this, [this](SelectionStateManager::State newState) {
+            const bool enteringCompletedSelectionHandoff =
+                usesDetachedCaptureWindows() &&
+                m_lastSelectionState == SelectionStateManager::State::Selecting &&
+                newState == SelectionStateManager::State::Complete &&
+                !m_quickPinMode &&
+                !m_exportInProgress &&
+                m_captureChromeWindow;
+            if (newState != SelectionStateManager::State::Complete) {
+                m_selectionCompletionHandoffPending = false;
+            }
+            if (enteringCompletedSelectionHandoff) {
+                m_selectionCompletionHandoffPending = true;
+            }
+
             const bool suppressionBefore = m_inputState.completedSelectionDragUiSuppressed;
             const bool suppressionAfter = shouldSuppressCompletedSelectionDragUi(m_selectionManager);
 
@@ -180,6 +229,10 @@ RegionSelector::RegionSelector(QWidget* parent)
                 m_multiRegionListRefreshPending = false;
                 refreshMultiRegionListPanel();
             }
+
+            syncSelectionPreviewOverlay();
+            syncCaptureChromeWindow();
+            m_lastSelectionState = newState;
 
             auto& cm = CursorManager::instance();
 
@@ -267,14 +320,35 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_toolManager->setLineStyle(m_inputState.lineStyle);
     m_toolManager->setMosaicBlurType(mosaicBlurType);
     connect(m_toolManager, &ToolManager::needsRepaint, this, [this]() {
+        snaptray::region::CapturePerfRecorder::recordValue(
+            "ToolManager.needsRepaint.hostReaction",
+            QStringLiteral("tool=%1").arg(static_cast<int>(
+                m_toolManager ? m_toolManager->currentTool() : ToolId::Selection)));
+        if (usesDetachedCaptureWindows()) {
+            syncCaptureChromeWindow();
+            return;
+        }
+        const QRect previewRect = snaptray::tools::previewRepaintRect(
+            m_toolManager,
+            SelectionDirtyRegionPlanner::kAnnotationRepaintMargin);
+        if (previewRect.isValid() && !previewRect.isEmpty()) {
+            requestCaptureSceneUpdate(previewRect);
+            return;
+        }
+
+        if (requestLocalizedAnnotationInteractionUpdate()) {
+            return;
+        }
+
         if (m_inputState.isDrawing && m_selectionManager && m_selectionManager->hasSelection()) {
-            update(m_selectionManager->selectionRect().adjusted(
+            requestCaptureSceneUpdate(m_selectionManager->selectionRect().adjusted(
                 -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
                 -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
                 SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
                 SelectionDirtyRegionPlanner::kAnnotationRepaintMargin));
-        } else {
-            update();
+        }
+        else {
+            requestCaptureSceneUpdate();
         }
     });
 
@@ -478,6 +552,12 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_initialRevealTimer, &QTimer::timeout,
             this, &RegionSelector::handleInitialRevealTimeout);
 
+    m_initialCursorBootstrapTimer = new QTimer(this);
+    m_initialCursorBootstrapTimer->setTimerType(Qt::PreciseTimer);
+    m_initialCursorBootstrapTimer->setInterval(kInitialCursorBootstrapIntervalMs);
+    connect(m_initialCursorBootstrapTimer, &QTimer::timeout,
+            this, &RegionSelector::handleInitialCursorBootstrapTick);
+
     // Install application-level event filter to capture ESC even when window loses focus
     qApp->installEventFilter(this);
 
@@ -488,6 +568,10 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Initialize magnifier panel component
     m_magnifierPanel = new MagnifierPanel(this);
     m_magnifierOverlay = std::make_unique<MagnifierOverlay>(m_magnifierPanel);
+#ifdef Q_OS_WIN
+    m_staticCaptureBackgroundWindow = std::make_unique<StaticCaptureBackgroundWindow>();
+    m_captureChromeWindow = std::make_unique<CaptureChromeWindow>();
+#endif
     // Deliberately not a QML overlay window: this hint panel must share the
     // RegionSelector paint/lifecycle path to avoid native window ordering bugs.
     m_shortcutHintsOverlay = std::make_unique<CaptureShortcutHintsOverlay>();
@@ -615,6 +699,16 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_painter->setToolManager(m_toolManager);
     m_painter->setMultiRegionManager(m_multiRegionManager);
     m_painter->setParentWidget(this);
+#ifdef Q_OS_WIN
+    if (m_captureChromeWindow) {
+        m_captureChromeWindow->setSelectionManager(m_selectionManager);
+        m_captureChromeWindow->setAnnotationLayer(m_annotationLayer);
+        m_captureChromeWindow->setToolManager(m_toolManager);
+        m_captureChromeWindow->setShortcutHintsOverlay(m_shortcutHintsOverlay.get());
+        connect(m_captureChromeWindow.get(), &CaptureChromeWindow::framePainted,
+                this, &RegionSelector::commitSelectionCompletionHandoffAfterChromePaint);
+    }
+#endif
 
     // Connect multi-region signals that depend on m_painter (must be after m_painter init)
     connect(m_multiRegionManager, &MultiRegionManager::regionAdded,
@@ -735,18 +829,44 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_inputHandler->setUpdateThrottler(&m_updateThrottler);
     m_inputHandler->setParentWidget(this);
     m_inputHandler->setSharedState(&m_inputState);
+    m_inputHandler->setMagnifierVisibilityProvider([this]() {
+        return shouldShowCursorCompanion();
+    });
+    m_inputHandler->setSelectionPreviewOverlayActiveProvider([this]() {
+        return usesDetachedCaptureWindows() ||
+               (m_captureChromeWindow && m_captureChromeWindow->isVisible()) ||
+               (m_selectionPreviewOverlay && m_selectionPreviewOverlay->isVisible());
+    });
 
     // Connect input handler signals
     connect(m_inputHandler, &RegionInputHandler::toolCursorRequested,
         this, &RegionSelector::setToolCursor);
+    connect(m_inputHandler, &RegionInputHandler::currentPointUpdated,
+        this, [this](const QPoint&) {
+            syncMagnifierOverlay();
+            syncCaptureChromeWindow();
+        });
     connect(m_inputHandler, qOverload<>(&RegionInputHandler::updateRequested),
-        this, qOverload<>(&QWidget::update));
+        this, [this]() {
+            if (requestLocalizedAnnotationInteractionUpdate()) {
+                return;
+            }
+            requestCaptureSceneUpdate();
+        });
     connect(m_inputHandler, qOverload<const QRect&>(&RegionInputHandler::updateRequested),
-        this, qOverload<const QRect&>(&QWidget::update));
+        this, [this](const QRect& rect) {
+            resetAnnotationInteractionTracking();
+            requestCaptureSceneUpdate(rect);
+        });
     connect(m_inputHandler, &RegionInputHandler::toolbarClickRequested,
         this, [this](int buttonId) { handleToolbarClick(static_cast<ToolId>(buttonId)); });
     connect(m_inputHandler, &RegionInputHandler::windowDetectionRequested,
-        this, [this](const QPoint& localPos) { updateWindowDetection(localPos); });
+        this, [this](const QPoint& localPos) {
+            if (m_traceProbe) {
+                m_traceProbe->windowDetectionRequests.append(localPos);
+            }
+            updateWindowDetection(localPos);
+        });
     connect(m_inputHandler, &RegionInputHandler::selectionFinished,
         this, [this]() {
             m_selectionManager->finishSelection();
@@ -773,7 +893,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             // Quick Pin mode: directly pin without showing toolbar
             if (m_quickPinMode && !m_inputState.multiRegionMode) {
                 finishSelection();
-            } else {
+            } else if (!m_selectionCompletionHandoffPending) {
                 syncFloatingUiCursor();
             }
         });
@@ -798,24 +918,17 @@ RegionSelector::RegionSelector(QWidget* parent)
             // Quick Pin mode: directly pin without showing toolbar
             if (m_quickPinMode && !m_inputState.multiRegionMode) {
                 finishSelection();
-            } else {
+            } else if (!m_selectionCompletionHandoffPending) {
                 syncFloatingUiCursor();
             }
         });
     connect(m_inputHandler, &RegionInputHandler::detectionCleared,
-        this, [this](const QRect& previousHighlightRect) {
-            QRect oldVisualRect;
-            if (!previousHighlightRect.isNull()) {
-                oldVisualRect = m_painter->getWindowHighlightVisualRect(previousHighlightRect);
-            }
-
+        this, [this](const QRect& previousHighlightRect, bool selectionTransition) {
             m_inputState.highlightedWindowRect = QRect();
             m_inputState.hasDetectedWindow = false;
             m_detectedWindow.reset();
-
-            if (!oldVisualRect.isNull()) {
-                update(oldVisualRect);
-            }
+            invalidateWindowHighlightTransition(previousHighlightRect, QRect(), selectionTransition);
+            syncCaptureChromeWindow();
         });
     connect(m_inputHandler, &RegionInputHandler::selectionCancelledByRightClick,
         this, [this]() {
@@ -1042,7 +1155,7 @@ void RegionSelector::syncColorToRuntimeState(const QColor& color)
     if (m_textEditor->isEditing()) {
         m_textEditor->setColor(color);
     }
-    update();
+    requestCaptureSceneUpdate();
 }
 
 void RegionSelector::onColorSelected(const QColor& color)
@@ -1078,7 +1191,7 @@ void RegionSelector::onLineWidthChanged(int width)
         AnnotationSettingsManager::instance().saveWidth(width);
     }
     m_toolManager->setWidth(width);
-    update();
+    requestCaptureSceneUpdate();
 }
 
 void RegionSelector::onStepBadgeSizeChanged(StepBadgeSize size)
@@ -1086,14 +1199,14 @@ void RegionSelector::onStepBadgeSizeChanged(StepBadgeSize size)
     m_stepBadgeSize = size;
     // Save to settings - StepBadgeToolHandler reads from AnnotationSettingsManager
     AnnotationSettingsManager::instance().saveStepBadgeSize(size);
-    update();
+    requestCaptureSceneUpdate();
 }
 
 void RegionSelector::onCornerRadiusChanged(int radius)
 {
     m_cornerRadius = radius;
     AnnotationSettingsManager::instance().saveCornerRadius(radius);
-    update();
+    requestCaptureSceneUpdate();
 }
 
 void RegionSelector::showEmojiPickerPopup()
@@ -1137,7 +1250,7 @@ LoadingSpinnerRenderer* RegionSelector::ensureLoadingSpinner()
     if (!m_loadingSpinner) {
         m_loadingSpinner = new LoadingSpinnerRenderer(this);
         connect(m_loadingSpinner, &LoadingSpinnerRenderer::needsRepaint,
-            this, QOverload<>::of(&QWidget::update));
+            this, [this]() { requestCaptureSceneUpdate(); });
     }
     return m_loadingSpinner;
 }
@@ -1191,6 +1304,58 @@ void RegionSelector::applyCanvasGeometry(const QSize& logicalSize)
     m_inputState.currentPoint.setY(qBound(0, m_inputState.currentPoint.y(), qMax(0, logicalSize.height() - 1)));
 }
 
+void RegionSelector::applyCaptureContext(const SelectorCaptureContext& context)
+{
+    const qreal normalizedDpr = context.devicePixelRatio > 0.0 ? context.devicePixelRatio : 1.0;
+    m_backgroundPixmap = context.backgroundPixmap;
+    m_devicePixelRatio = normalizedDpr;
+    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_backgroundPixmap);
+    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
+    m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
+    m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
+    m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
+    m_exportManager->setSourceScreen(context.sourceScreen.data());
+    if (m_multiRegionListViewModel) {
+        m_multiRegionListViewModel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
+    }
+
+    if (m_traceProbe) {
+        RegionSelectorTraceProbe::CaptureContextRecord record;
+        record.backgroundPixelSize = m_backgroundPixmap.size();
+        record.backgroundLogicalSize = CoordinateHelper::toLogical(
+            m_backgroundPixmap.size(),
+            m_devicePixelRatio);
+        record.devicePixelRatio = m_devicePixelRatio;
+        record.hasSourceScreen = !context.sourceScreen.isNull();
+        m_traceProbe->captureContextEvents.append(record);
+    }
+
+    syncStaticCaptureBackgroundWindow();
+    syncSelectionPreviewOverlay();
+    syncCaptureChromeWindow();
+}
+
+void RegionSelector::refreshMagnifierContext(const QPoint& cursorPos)
+{
+    refreshMagnifierContext(cursorPos, m_backgroundPixmap, m_devicePixelRatio, true);
+}
+
+void RegionSelector::refreshMagnifierContext(const QPoint& cursorPos,
+                                             const QPixmap& backgroundPixmap,
+                                             qreal devicePixelRatio,
+                                             bool preWarmCache)
+{
+    const qreal normalizedDpr = devicePixelRatio > 0.0 ? devicePixelRatio : 1.0;
+    m_magnifierPanel->setDevicePixelRatio(normalizedDpr);
+    m_magnifierPanel->invalidateCache();
+    const bool shouldPreWarmMagnifier =
+        preWarmCache &&
+        m_cursorCompanionStyle == RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier;
+    if (shouldPreWarmMagnifier && !backgroundPixmap.isNull()) {
+        m_magnifierPanel->preWarmCache(cursorPos, backgroundPixmap);
+    }
+}
+
 void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapture)
 {
     m_historyReplayEntries.clear();
@@ -1199,6 +1364,7 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     m_historyReplayActive = false;
     resetInitialRevealState();
     clearPreservedSelection();
+    hideSelectionPreviewOverlays();
     hideSelectionFloatingUi(false);
     m_shortcutHintsVisible = false;
     m_shortcutHintsTemporarilyHiddenByHover = false;
@@ -1217,25 +1383,10 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     // Use pre-captured pixmap if provided, otherwise capture now
     // Pre-capture allows including popup menus in the screenshot (like Snipaste)
     if (!preCapture.isNull()) {
-        m_backgroundPixmap = preCapture;
+        applyCaptureContext({preCapture, m_devicePixelRatio, m_currentScreen});
     }
     else {
-        m_backgroundPixmap = m_currentScreen->grabWindow(0);
-    }
-
-    // Create shared pixmap for mosaic tool (explicit sharing to avoid memory duplication)
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_backgroundPixmap);
-
-    // Update tool manager with shared pixmap for mosaic tool
-    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-    m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
-
-    // Update export manager with background pixmap and DPR
-    m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
-    m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
-    m_exportManager->setSourceScreen(m_currentScreen.data());
-    if (m_multiRegionListViewModel) {
-        m_multiRegionListViewModel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
+        applyCaptureContext({m_currentScreen->grabWindow(0), m_devicePixelRatio, m_currentScreen});
     }
 
     // 不預設選取整個螢幕，等待用戶操作
@@ -1243,6 +1394,9 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     m_inputState.highlightedWindowRect = QRect();
     m_inputState.hasDetectedWindow = false;
     m_detectedWindow.reset();
+    m_forceFullRepaintOnNextWindowTransition = false;
+    m_lastSelectionState = SelectionStateManager::State::None;
+    m_detachedWindowDeactivateGuardPending = false;
     syncMagnifierEnabledFromSettings();
 
     // 將 cursor 全域座標轉換為 widget 本地座標，用於 crosshair/magnifier 初始位置
@@ -1252,8 +1406,7 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     applyCanvasGeometry(screenGeom.size());
 
     // Configure magnifier panel with device pixel ratio
-    m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
-    m_magnifierPanel->invalidateCache();
+    refreshMagnifierContext(m_inputState.currentPoint, m_backgroundPixmap, m_devicePixelRatio, false);
 
     // Reset dirty tracking for optimized QRegion-based updates
     m_inputHandler->resetDirtyTracking();
@@ -1283,6 +1436,7 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     m_historyReplayActive = false;
     resetInitialRevealState();
     clearPreservedSelection();
+    hideSelectionPreviewOverlays();
     hideSelectionFloatingUi(false);
     m_shortcutHintsVisible = false;
     m_shortcutHintsTemporarilyHiddenByHover = false;
@@ -1299,22 +1453,7 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     }
 
     // Capture the screen first
-    m_backgroundPixmap = m_currentScreen->grabWindow(0);
-
-    // Create shared pixmap for mosaic tool (explicit sharing to avoid memory duplication)
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_backgroundPixmap);
-
-    // Update tool manager with shared pixmap for mosaic tool
-    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-    m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
-
-    // Update export manager with background pixmap and DPR
-    m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
-    m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
-    m_exportManager->setSourceScreen(m_currentScreen.data());
-    if (m_multiRegionListViewModel) {
-        m_multiRegionListViewModel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
-    }
+    applyCaptureContext({m_currentScreen->grabWindow(0), m_devicePixelRatio, m_currentScreen});
 
     // Convert global region to local coordinates
     QRect screenGeom = m_currentScreen->geometry();
@@ -1326,14 +1465,16 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
     m_inputState.highlightedWindowRect = QRect();
     m_inputState.hasDetectedWindow = false;
     m_detectedWindow.reset();
+    m_forceFullRepaintOnNextWindowTransition = false;
+    m_lastSelectionState = m_selectionManager->state();
+    m_detachedWindowDeactivateGuardPending = false;
     syncMagnifierEnabledFromSettings();
 
     // Set cursor position
     QPoint globalCursor = QCursor::pos();
     m_inputState.currentPoint = globalCursor - screenGeom.topLeft();
     applyCanvasGeometry(screenGeom.size());
-    m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
-    m_magnifierPanel->invalidateCache();
+    refreshMagnifierContext(m_inputState.currentPoint, m_backgroundPixmap, m_devicePixelRatio, false);
     m_inputHandler->resetDirtyTracking();
 
     if (m_screenSwitchTimer && !m_screenSwitchTimer->isActive()) {
@@ -1449,21 +1590,9 @@ void RegionSelector::restoreLiveReplaySlot()
     clearHistoryReplaySelectionState();
     applyCanvasGeometry(m_historyLiveSlot.canvasLogicalSize);
 
-    m_backgroundPixmap = m_historyLiveSlot.backgroundPixmap;
-    m_devicePixelRatio = m_historyLiveSlot.devicePixelRatio;
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_backgroundPixmap);
-    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-    m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
-    m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
-    m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
-    m_exportManager->setSourceScreen(m_currentScreen.data());
-    if (m_multiRegionListViewModel) {
-        m_multiRegionListViewModel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
-    }
-
-    m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
-    m_magnifierPanel->invalidateCache();
-    m_magnifierPanel->preWarmCache(m_inputState.currentPoint, m_backgroundPixmap);
+    applyCaptureContext(
+        {m_historyLiveSlot.backgroundPixmap, m_historyLiveSlot.devicePixelRatio, m_currentScreen});
+    refreshMagnifierContext(m_inputState.currentPoint);
 
     m_cornerRadius = m_historyLiveSlot.cornerRadius;
     m_regionControlViewModel->setCurrentRadius(m_cornerRadius);
@@ -1547,21 +1676,9 @@ bool RegionSelector::applyHistoryReplayEntry(const SnapTray::HistoryEntry& entry
             entry.devicePixelRatio > 0.0 ? entry.devicePixelRatio : 1.0);
     applyCanvasGeometry(replayCanvasSize);
 
-    m_backgroundPixmap = canvas;
-    m_devicePixelRatio = entry.devicePixelRatio > 0.0 ? entry.devicePixelRatio : 1.0;
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_backgroundPixmap);
-    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-    m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
-    m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
-    m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
-    m_exportManager->setSourceScreen(m_currentScreen.data());
-    if (m_multiRegionListViewModel) {
-        m_multiRegionListViewModel->setCaptureContext(m_backgroundPixmap, m_devicePixelRatio);
-    }
-
-    m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
-    m_magnifierPanel->invalidateCache();
-    m_magnifierPanel->preWarmCache(m_inputState.currentPoint, m_backgroundPixmap);
+    applyCaptureContext(
+        {canvas, entry.devicePixelRatio > 0.0 ? entry.devicePixelRatio : 1.0, m_currentScreen});
+    refreshMagnifierContext(m_inputState.currentPoint);
 
     m_cornerRadius = entry.cornerRadius;
     m_regionControlViewModel->setCurrentRadius(m_cornerRadius);
@@ -1625,30 +1742,16 @@ void RegionSelector::recordCaptureSession(const QPixmap& resultPixmap)
     }
 
     const QPixmap resultPixmapCopy = resultPixmap;
-    QTimer::singleShot(0, qApp, [snapshot = std::move(*snapshot), resultPixmapCopy]() mutable {
+    QTimer::singleShot(0, qApp, [this, snapshot = std::move(*snapshot), resultPixmapCopy]() mutable {
         if (resultPixmapCopy.isNull()) {
             return;
         }
-        PendingHistorySubmission submission{
-            std::move(snapshot),
-            resultPixmapCopy.toImage()
-        };
+        PendingHistorySubmission submission{std::move(snapshot), resultPixmapCopy.toImage()};
         if (submission.resultImage.isNull() || submission.snapshot.backgroundPixmap.isNull()) {
             return;
         }
-
-        SnapTray::CaptureSessionWriteRequest request;
-        request.canvasImage = submission.snapshot.backgroundPixmap.toImage();
-        request.resultImage = submission.resultImage;
-        request.selectionRect = submission.snapshot.selectionRect;
-        request.captureRegions = submission.snapshot.captureRegions;
-        request.annotationsJson = submission.snapshot.annotationsJson;
-        request.devicePixelRatio = submission.snapshot.devicePixelRatio;
-        request.canvasLogicalSize = submission.snapshot.canvasLogicalSize;
-        request.cornerRadius = submission.snapshot.cornerRadius;
-        request.maxEntries = submission.snapshot.maxEntries;
-        request.createdAt = submission.snapshot.createdAt;
-        SnapTray::HistoryRecorder::instance().submitCaptureSession(std::move(request));
+        SnapTray::HistoryRecorder::instance().submitCaptureSession(
+            buildCaptureSessionWriteRequest(submission));
     });
 }
 
@@ -1696,27 +1799,33 @@ std::optional<RegionSelector::HistoryCaptureSnapshot> RegionSelector::makeHistor
 
 void RegionSelector::submitPendingHistorySubmission(PendingHistorySubmission submission) const
 {
-    QTimer::singleShot(0, qApp, [submission = std::move(submission)]() mutable {
+    QTimer::singleShot(0, qApp, [this, submission = std::move(submission)]() mutable {
         if (submission.resultImage.isNull() ||
             submission.snapshot.backgroundPixmap.isNull() ||
             !submission.snapshot.selectionRect.isValid() ||
             submission.snapshot.selectionRect.isEmpty()) {
             return;
         }
-
-        SnapTray::CaptureSessionWriteRequest request;
-        request.canvasImage = submission.snapshot.backgroundPixmap.toImage();
-        request.resultImage = submission.resultImage;
-        request.selectionRect = submission.snapshot.selectionRect;
-        request.captureRegions = submission.snapshot.captureRegions;
-        request.annotationsJson = submission.snapshot.annotationsJson;
-        request.devicePixelRatio = submission.snapshot.devicePixelRatio;
-        request.canvasLogicalSize = submission.snapshot.canvasLogicalSize;
-        request.cornerRadius = submission.snapshot.cornerRadius;
-        request.maxEntries = submission.snapshot.maxEntries;
-        request.createdAt = submission.snapshot.createdAt;
-        SnapTray::HistoryRecorder::instance().submitCaptureSession(std::move(request));
+        SnapTray::HistoryRecorder::instance().submitCaptureSession(
+            buildCaptureSessionWriteRequest(submission));
     });
+}
+
+SnapTray::CaptureSessionWriteRequest RegionSelector::buildCaptureSessionWriteRequest(
+    const PendingHistorySubmission& submission) const
+{
+    SnapTray::CaptureSessionWriteRequest request;
+    request.canvasImage = submission.snapshot.backgroundPixmap.toImage();
+    request.resultImage = submission.resultImage;
+    request.selectionRect = submission.snapshot.selectionRect;
+    request.captureRegions = submission.snapshot.captureRegions;
+    request.annotationsJson = submission.snapshot.annotationsJson;
+    request.devicePixelRatio = submission.snapshot.devicePixelRatio;
+    request.canvasLogicalSize = submission.snapshot.canvasLogicalSize;
+    request.cornerRadius = submission.snapshot.cornerRadius;
+    request.maxEntries = submission.snapshot.maxEntries;
+    request.createdAt = submission.snapshot.createdAt;
+    return request;
 }
 
 QRect RegionSelector::currentHistorySelectionRect() const
@@ -1735,6 +1844,38 @@ QVector<MultiRegionManager::Region> RegionSelector::currentHistoryCaptureRegions
     return {};
 }
 
+QPixmap RegionSelector::capturePlainSelectionPixmap() const
+{
+    if (!m_selectionManager || m_backgroundPixmap.isNull()) {
+        return {};
+    }
+
+    const QRect sel = m_selectionManager->selectionRect();
+    if (!sel.isValid() || sel.isEmpty()) {
+        return {};
+    }
+
+    const QRect physicalRect = CoordinateHelper::toPhysicalCoveringRect(sel, m_devicePixelRatio);
+    const QRect clampedPhysicalRect = physicalRect.intersected(m_backgroundPixmap.rect());
+    if (clampedPhysicalRect.isEmpty()) {
+        return {};
+    }
+
+    QPixmap selectedRegion = m_backgroundPixmap.copy(clampedPhysicalRect);
+    if (selectedRegion.isNull()) {
+        return {};
+    }
+
+    selectedRegion.setDevicePixelRatio(m_devicePixelRatio);
+    return selectedRegion;
+}
+
+QImage RegionSelector::capturePlainSelectionImage() const
+{
+    const QPixmap selectedPixmap = capturePlainSelectionPixmap();
+    return selectedPixmap.isNull() ? QImage() : selectedPixmap.toImage();
+}
+
 void RegionSelector::setQuickPinMode(bool enabled)
 {
     m_quickPinMode = enabled;
@@ -1750,7 +1891,11 @@ void RegionSelector::setShowShortcutHintsOnEntry(bool enabled)
 
 void RegionSelector::syncMagnifierEnabledFromSettings()
 {
-    m_magnifierEnabled = RegionCaptureSettingsManager::instance().isMagnifierEnabled();
+    m_cursorCompanionStyle =
+        RegionCaptureSettingsManager::instance().cursorCompanionStyle();
+    m_magnifierEnabled =
+        m_cursorCompanionStyle ==
+        RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier;
     if (m_shortcutHintsOverlay) {
         m_shortcutHintsOverlay->setMagnifierEnabled(m_magnifierEnabled);
     }
@@ -1770,6 +1915,7 @@ void RegionSelector::switchToScreen(QScreen* screen, bool preserveCompletedSelec
 {
     resetInitialRevealState();
     m_initialRevealState = InitialRevealState::Revealed;
+    hideSelectionPreviewOverlays();
 
     QScreen* targetScreen = screen ? screen : QGuiApplication::primaryScreen();
     if (!targetScreen) {
@@ -1800,9 +1946,7 @@ void RegionSelector::switchToScreen(QScreen* screen, bool preserveCompletedSelec
     localCursor.setX(qBound(0, localCursor.x(), qMax(0, targetGeometry.width() - 1)));
     localCursor.setY(qBound(0, localCursor.y(), qMax(0, targetGeometry.height() - 1)));
 
-    m_magnifierPanel->setDevicePixelRatio(targetDpr);
-    m_magnifierPanel->invalidateCache();
-    m_magnifierPanel->preWarmCache(localCursor, newBackground);
+    refreshMagnifierContext(localCursor, newBackground, targetDpr, true);
 
     // --- Phase 2: Hide window from DWM, reconfigure geometry + state ---
     // setUpdatesEnabled(false) only suppresses Qt paint events — DWM still composites
@@ -1824,14 +1968,7 @@ void RegionSelector::switchToScreen(QScreen* screen, bool preserveCompletedSelec
 
     setGeometry(targetGeometry);
 
-    m_backgroundPixmap = newBackground;
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_backgroundPixmap);
-    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-    m_toolManager->setDevicePixelRatio(m_devicePixelRatio);
-
-    m_exportManager->setBackgroundPixmap(m_backgroundPixmap);
-    m_exportManager->setDevicePixelRatio(m_devicePixelRatio);
-    m_exportManager->setSourceScreen(m_currentScreen.data());
+    applyCaptureContext({newBackground, m_devicePixelRatio, m_currentScreen});
 
     if (m_multiRegionManager) {
         m_multiRegionManager->clear();
@@ -1849,6 +1986,10 @@ void RegionSelector::switchToScreen(QScreen* screen, bool preserveCompletedSelec
     m_detectedWindow.reset();
     m_inputState.currentPoint = localCursor;
     m_inputHandler->resetDirtyTracking();
+    m_forceFullRepaintOnNextWindowTransition = false;
+    m_lastSelectionState = m_selectionManager ? m_selectionManager->state()
+                                              : SelectionStateManager::State::None;
+    m_detachedWindowDeactivateGuardPending = false;
 
     // --- Phase 3: Paint correct content into backing store, then reveal ---
     setUpdatesEnabled(true);
@@ -1948,14 +2089,15 @@ void RegionSelector::refreshWindowDetectorForCurrentScreen()
     }
 
     m_windowDetector->setScreen(m_currentScreen.data());
-    m_windowDetector->refreshWindowListAsync();
+    m_windowDetector->refreshWindowListAsync(WindowDetector::QueryMode::TopLevelOnly);
 
-    if (m_windowDetector->isRefreshComplete()) {
-        refreshWindowDetectionAtCursor();
+    if (m_windowDetector->isWindowCacheReady(WindowDetector::QueryMode::TopLevelOnly) ||
+        m_windowDetector->isRefreshComplete()) {
+        refreshWindowDetectionAtCursor(WindowDetector::QueryMode::TopLevelOnly);
     } else {
         connect(m_windowDetector, &WindowDetector::windowListReady,
                 this, [this]() {
-                    refreshWindowDetectionAtCursor();
+                    refreshWindowDetectionAtCursor(WindowDetector::QueryMode::TopLevelOnly);
                 }, Qt::SingleShotConnection);
     }
 }
@@ -1965,6 +2107,11 @@ void RegionSelector::resetInitialRevealState()
     ++m_initialRevealToken;
     m_initialRevealState = InitialRevealState::Revealed;
     m_initialRevealCursorPos = QPoint();
+    m_forceFullRepaintOnNextWindowTransition = false;
+    m_detachedCaptureWindowsNeedFullClear = false;
+    m_selectionCompletionHandoffPending = false;
+    m_detachedWindowDeactivateGuardPending = false;
+    m_hostFallbackCursorCompanionRect = QRect();
 
     if (m_initialRevealTimer) {
         m_initialRevealTimer->stop();
@@ -1974,6 +2121,50 @@ void RegionSelector::resetInitialRevealState()
         disconnect(m_initialRevealWindowListReadyConnection);
         m_initialRevealWindowListReadyConnection = {};
     }
+
+    stopInitialCursorBootstrapSync();
+}
+
+void RegionSelector::invalidateWindowHighlightTransition(const QRect& previousHighlightRect,
+                                                         const QRect& nextHighlightRect,
+                                                         bool preferFullRepaint)
+{
+    if (usesDetachedCaptureWindows()) {
+        requestCaptureSceneUpdate();
+        return;
+    }
+
+    if (shouldForceFullWindowHighlightTransitionRepaint(preferFullRepaint)) {
+        m_forceFullRepaintOnNextWindowTransition = true;
+        requestCaptureSceneUpdate();
+        return;
+    }
+
+    const QRect oldVisualRect =
+        paddedWindowHighlightVisualRect(m_painter, previousHighlightRect);
+    const QRect newVisualRect =
+        paddedWindowHighlightVisualRect(m_painter, nextHighlightRect);
+
+    if (!oldVisualRect.isNull()) {
+        requestCaptureSceneUpdate(oldVisualRect);
+    }
+    if (!newVisualRect.isNull()) {
+        requestCaptureSceneUpdate(newVisualRect);
+    }
+}
+
+bool RegionSelector::shouldForceFullWindowHighlightTransitionRepaint(bool preferFullRepaint) const
+{
+#ifdef Q_OS_WIN
+    return !usesDetachedCaptureWindows() &&
+           preferFullRepaint &&
+           m_selectionManager &&
+           (m_selectionManager->isSelecting() ||
+            (m_selectionPreviewOverlay && m_selectionPreviewOverlay->isVisible()));
+#else
+    Q_UNUSED(preferFullRepaint);
+    return false;
+#endif
 }
 
 void RegionSelector::beginInitialRevealPreparation(WindowDetector::QueryMode initialQueryMode)
@@ -1993,10 +2184,14 @@ void RegionSelector::beginInitialRevealPreparation(WindowDetector::QueryMode ini
     if (m_magnifierOverlay) {
         m_magnifierOverlay->hideOverlay();
     }
+    if (m_staticCaptureBackgroundWindow) {
+        m_staticCaptureBackgroundWindow->hideOverlay();
+    }
+    if (m_captureChromeWindow) {
+        m_captureChromeWindow->hideOverlay();
+    }
 
-    m_magnifierPanel->setDevicePixelRatio(m_devicePixelRatio);
-    m_magnifierPanel->invalidateCache();
-    m_magnifierPanel->preWarmCache(m_initialRevealCursorPos, m_backgroundPixmap);
+    refreshMagnifierContext(m_initialRevealCursorPos);
 
     const bool skipInitialWindowDetection =
         m_historyReplayActive ||
@@ -2004,14 +2199,13 @@ void RegionSelector::beginInitialRevealPreparation(WindowDetector::QueryMode ini
         !m_windowDetector ||
         !m_windowDetector->isEnabled();
 
-    if (skipInitialWindowDetection) {
-        m_initialRevealState = InitialRevealState::ReadyToReveal;
-    } else if (m_windowDetector->isWindowCacheReady() ||
-               m_windowDetector->isRefreshComplete()) {
+    if (!skipInitialWindowDetection &&
+        (m_windowDetector->isWindowCacheReady(WindowDetector::QueryMode::TopLevelOnly) ||
+         m_windowDetector->isRefreshComplete())) {
         applyInitialWindowDetection(initialQueryMode);
-        m_initialRevealState = InitialRevealState::ReadyToReveal;
     }
 
+    m_initialRevealState = InitialRevealState::ReadyToReveal;
     maybeStartInitialRevealWait();
 }
 
@@ -2026,7 +2220,8 @@ void RegionSelector::maybeStartInitialRevealWait()
         m_initialRevealWindowListReadyConnection = {};
     }
 
-    if (!m_windowDetector->isRefreshComplete()) {
+    if (!m_windowDetector->isWindowCacheReady(WindowDetector::QueryMode::TopLevelOnly) &&
+        !m_windowDetector->isRefreshComplete()) {
         const quint64 token = m_initialRevealToken;
         m_initialRevealWindowListReadyConnection = connect(
             m_windowDetector,
@@ -2039,22 +2234,18 @@ void RegionSelector::maybeStartInitialRevealWait()
                 handleInitialRevealDetectorReady();
             },
             Qt::SingleShotConnection);
-    }
-
-    if (m_initialRevealState != InitialRevealState::Preparing) {
         if (m_initialRevealTimer) {
             m_initialRevealTimer->stop();
         }
         return;
     }
 
-    if (m_windowDetector->isWindowCacheReady() || m_windowDetector->isRefreshComplete()) {
+    if (m_initialRevealState == InitialRevealState::ReadyToReveal ||
+        m_windowDetector->isWindowCacheReady(WindowDetector::QueryMode::TopLevelOnly) ||
+        m_windowDetector->isRefreshComplete()) {
         handleInitialRevealDetectorReady();
-        return;
-    }
-
-    if (m_initialRevealTimer && !m_initialRevealTimer->isActive()) {
-        m_initialRevealTimer->start(kInitialRevealTimeoutMs);
+    } else if (m_initialRevealTimer) {
+        m_initialRevealTimer->stop();
     }
 }
 
@@ -2064,7 +2255,9 @@ void RegionSelector::handleInitialRevealDetectorReady()
         return;
     }
 
-    if (m_initialRevealState == InitialRevealState::Preparing) {
+    if (m_initialRevealState == InitialRevealState::Preparing ||
+        m_initialRevealState == InitialRevealState::ReadyToReveal) {
+        syncCurrentPointToLiveCursor(true);
         applyInitialWindowDetection(m_initialWindowDetectionMode);
         m_initialRevealState = InitialRevealState::ReadyToReveal;
         commitInitialReveal();
@@ -2075,6 +2268,13 @@ void RegionSelector::handleInitialRevealDetectorReady()
         !m_historyReplayActive &&
         m_selectionManager &&
         !m_selectionManager->hasSelection()) {
+        if (!m_windowDetector->isWindowCacheReady(
+                WindowDetector::QueryMode::IncludeChildControls)) {
+            m_windowDetector->refreshWindowListAsync(
+                WindowDetector::QueryMode::IncludeChildControls);
+            maybeStartInitialRevealWait();
+            return;
+        }
         refreshWindowDetectionAtCursor(WindowDetector::QueryMode::IncludeChildControls);
     }
 }
@@ -2089,13 +2289,80 @@ void RegionSelector::handleInitialRevealTimeout()
 
     if (m_windowDetector &&
         m_windowDetector->isEnabled() &&
-        (m_windowDetector->isWindowCacheReady() || m_windowDetector->isRefreshComplete())) {
+        (m_windowDetector->isWindowCacheReady(WindowDetector::QueryMode::TopLevelOnly) ||
+         m_windowDetector->isRefreshComplete())) {
         handleInitialRevealDetectorReady();
         return;
     }
 
     m_initialRevealState = InitialRevealState::ReadyToReveal;
     commitInitialReveal();
+}
+
+void RegionSelector::syncCurrentPointToLiveCursor(bool preWarmMagnifierCache)
+{
+    if (!isScreenValid()) {
+        return;
+    }
+
+    const QRect screenGeometry = m_currentScreen->geometry();
+    QPoint localCursor = QCursor::pos() - screenGeometry.topLeft();
+    localCursor.setX(qBound(0, localCursor.x(), qMax(0, width() - 1)));
+    localCursor.setY(qBound(0, localCursor.y(), qMax(0, height() - 1)));
+
+    const QPoint previousPoint = m_inputState.currentPoint;
+    if (localCursor == previousPoint) {
+        return;
+    }
+
+    m_inputState.currentPoint = localCursor;
+    if (preWarmMagnifierCache) {
+        refreshMagnifierContext(localCursor, m_backgroundPixmap, m_devicePixelRatio, true);
+    }
+}
+
+void RegionSelector::startInitialCursorBootstrapSync()
+{
+    if (!m_initialCursorBootstrapTimer) {
+        return;
+    }
+
+    m_initialCursorBootstrapTicksRemaining =
+        qMax(1, kInitialCursorBootstrapDurationMs / kInitialCursorBootstrapIntervalMs);
+    m_initialCursorBootstrapTimer->start();
+}
+
+void RegionSelector::stopInitialCursorBootstrapSync()
+{
+    m_initialCursorBootstrapTicksRemaining = 0;
+    if (m_initialCursorBootstrapTimer) {
+        m_initialCursorBootstrapTimer->stop();
+    }
+}
+
+void RegionSelector::handleInitialCursorBootstrapTick()
+{
+    if (!m_initialCursorBootstrapTimer ||
+        !m_initialCursorBootstrapTimer->isActive() ||
+        m_isClosing ||
+        !isVisible() ||
+        m_initialRevealState != InitialRevealState::Revealed ||
+        !isScreenValid()) {
+        stopInitialCursorBootstrapSync();
+        return;
+    }
+
+    const QPoint previousPoint = m_inputState.currentPoint;
+    syncCurrentPointToLiveCursor(false);
+    if (m_inputState.currentPoint != previousPoint) {
+        syncMagnifierOverlay();
+        syncCaptureChromeWindow();
+        requestCaptureSceneUpdate();
+    }
+
+    if (--m_initialCursorBootstrapTicksRemaining <= 0) {
+        stopInitialCursorBootstrapSync();
+    }
 }
 
 void RegionSelector::applyInitialWindowDetection(WindowDetector::QueryMode queryMode)
@@ -2124,10 +2391,14 @@ void RegionSelector::commitInitialReveal()
         m_initialRevealTimer->stop();
     }
 
-    repaint();
+    syncCurrentPointToLiveCursor(true);
     setWindowOpacity(1.0);
     m_initialRevealState = InitialRevealState::Revealed;
+    syncStaticCaptureBackgroundWindow();
+    syncCaptureChromeWindow();
     syncMagnifierOverlay();
+    repaint();
+    startInitialCursorBootstrapSync();
     QTimer::singleShot(0, this, &RegionSelector::syncFloatingUiCursor);
     scheduleInitialRevealRefinement();
 }
@@ -2151,7 +2422,15 @@ void RegionSelector::scheduleInitialRevealRefinement()
             !isScreenValid() ||
             !m_windowDetector ||
             !m_windowDetector->isEnabled() ||
-            !m_windowDetector->isWindowCacheReady()) {
+            !m_windowDetector->isWindowCacheReady(WindowDetector::QueryMode::TopLevelOnly)) {
+            return;
+        }
+
+        if (!m_windowDetector->isWindowCacheReady(
+                WindowDetector::QueryMode::IncludeChildControls)) {
+            m_windowDetector->refreshWindowListAsync(
+                WindowDetector::QueryMode::IncludeChildControls);
+            maybeStartInitialRevealWait();
             return;
         }
 
@@ -2251,51 +2530,38 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos,
         return;
     }
 
+    snaptray::region::CapturePerfScope perfScope("RegionSelector.updateWindowDetection");
     auto detected = m_windowDetector->detectWindowAt(localToGlobal(localPos), queryMode);
 
     if (detected.has_value()) {
         m_inputState.hasDetectedWindow = true;
-        QRect localBounds = globalToLocal(detected->bounds).intersected(rect());
+        const QRect localBounds = globalToLocal(detected->bounds).intersected(rect());
 
         if (localBounds != m_inputState.highlightedWindowRect) {
-            // Calculate old visual rect for partial update
-            QRect oldVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect);
-
+            const QRect previousHighlightRect = m_inputState.highlightedWindowRect;
             m_inputState.highlightedWindowRect = localBounds;
             m_detectedWindow = detected;
-
-            // Calculate new visual rect (use clipped local bounds, not global bounds)
-            QRect newVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect);
-
-            // Update only changed regions
-            if (!oldVisualRect.isNull()) update(oldVisualRect);
-            if (!newVisualRect.isNull()) update(newVisualRect);
+            invalidateWindowHighlightTransition(
+                previousHighlightRect,
+                m_inputState.highlightedWindowRect,
+                false);
         }
     }
     else {
         m_inputState.hasDetectedWindow = false;
         if (!m_inputState.highlightedWindowRect.isNull()) {
-            // Calculate old visual rect for partial update (use clipped local bounds)
-            QRect oldVisualRect = m_painter->getWindowHighlightVisualRect(m_inputState.highlightedWindowRect);
-
+            const QRect previousHighlightRect = m_inputState.highlightedWindowRect;
             m_inputState.highlightedWindowRect = QRect();
             m_detectedWindow.reset();
-            
-            if (!oldVisualRect.isNull()) update(oldVisualRect);
+            invalidateWindowHighlightTransition(previousHighlightRect, QRect(), false);
         }
     }
+
+    syncCaptureChromeWindow();
 }
 
-void RegionSelector::paintEvent(QPaintEvent* event)
+void RegionSelector::paintSelectorScene(QPainter& painter, const QRegion& dirtyRegion)
 {
-    QPainter painter(this);
-
-    // Use QRegion-based clipping for efficient partial repainting.
-    // When update(QRegion) is used, QPaintEvent::region() contains the individual rects
-    // rather than inflating to a bounding box. This dramatically reduces repaint area
-    // for crosshair strips on high-DPI screens.
-    const QRegion dirtyRegion = event->region();
-    const QRect dirtyRect = dirtyRegion.boundingRect();
     painter.setClipRegion(dirtyRegion);
 
     // Disable SmoothPixmapTransform for background blit — the background pixmap
@@ -2310,6 +2576,9 @@ void RegionSelector::paintEvent(QPaintEvent* event)
     m_painter->setCurrentTool(static_cast<int>(m_inputState.currentTool));
     m_painter->setDevicePixelRatio(m_devicePixelRatio);
     m_painter->setMultiRegionMode(m_inputState.multiRegionMode);
+    m_painter->setSelectionPreviewActive(m_selectionPreviewOverlay && m_selectionPreviewOverlay->isVisible());
+    m_painter->setCaptureChromeActive(m_captureChromeWindow && m_captureChromeWindow->isVisible());
+    m_painter->setAnnotationViewport(QRect());
     const bool showReplacePreview = m_inputState.multiRegionMode &&
         m_inputState.replaceTargetIndex >= 0 &&
         m_selectionManager->isSelecting();
@@ -2318,26 +2587,25 @@ void RegionSelector::paintEvent(QPaintEvent* event)
         showReplacePreview ? m_selectionManager->selectionRect().normalized() : QRect());
 
     // Delegate core painting (background, overlay, selection, annotations)
-    m_painter->paint(painter, m_backgroundPixmap, dirtyRect);
+    m_painter->paint(painter, m_backgroundPixmap, dirtyRegion);
+}
 
-    // QML toolbars render themselves in separate windows.
-    // Show/position them when selection is active.
+void RegionSelector::syncDetachedSelectionUiDuringPaint()
+{
     QRect selectionRect = m_selectionManager->selectionRect();
     const bool initialRevealVisible = m_initialRevealState == InitialRevealState::Revealed;
     const bool hasSelectableCapture =
         m_selectionManager->hasActiveSelection() &&
         selectionRect.isValid() &&
         m_selectionManager->hasSelection();
-    const bool suppressSelectionFloatingUi = completedSelectionDragUiSuppressed();
+    const bool suppressSelectionFloatingUi =
+        completedSelectionDragUiSuppressed() || m_selectionCompletionHandoffPending;
     const bool shouldShowSelectionUi =
         initialRevealVisible &&
         hasSelectableCapture &&
         !m_exportInProgress;
-    const bool shouldDrawBusySpinner = hasSelectableCapture &&
-        (m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress ||
-         m_shareInProgress || m_exportInProgress);
+
     if (shouldShowSelectionUi && !suppressSelectionFloatingUi) {
-        // Position and show QML toolbar
         if (m_qmlToolbar && !m_qmlToolbar->isVisible()) {
             m_qmlToolbar->show();
         }
@@ -2349,7 +2617,6 @@ void RegionSelector::paintEvent(QPaintEvent* event)
                     height(),
                     SnapTray::QmlFloatingToolbar::HorizontalAlignment::RightEdge);
             }
-            // Update undo/redo state
             m_toolbarViewModel->setCanUndo(m_annotationLayer && m_annotationLayer->canUndo());
             m_toolbarViewModel->setCanRedo(m_annotationLayer && m_annotationLayer->canRedo());
             m_toolbarViewModel->setAutoBlurProcessing(m_autoBlurInProgress);
@@ -2360,6 +2627,346 @@ void RegionSelector::paintEvent(QPaintEvent* event)
 
         syncRegionSubToolbar(false);
 
+        if (m_inputState.currentTool != ToolId::EmojiSticker &&
+            m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+            m_emojiPickerPopup->hide();
+        }
+    }
+    else {
+        m_cursorOverSelectionToolbar = false;
+        if (!hasSelectableCapture || m_exportInProgress) {
+            m_toolbarUserDragged = false;
+        }
+        if (m_toolOptionsViewModel && (!hasSelectableCapture || m_exportInProgress)) {
+            m_toolOptionsViewModel->clearSections();
+        }
+        hideSelectionFloatingUi(hasSelectableCapture && !m_exportInProgress);
+    }
+}
+
+void RegionSelector::restoreDetachedSelectionFloatingUiIfNeeded()
+{
+    if (!usesDetachedCaptureWindows() ||
+        m_isClosing ||
+        m_selectionCompletionHandoffPending ||
+        !m_selectionManager ||
+        !m_selectionManager->isComplete() ||
+        !m_selectionManager->hasSelection() ||
+        completedSelectionDragUiSuppressed() ||
+        m_exportInProgress) {
+        return;
+    }
+
+    syncDetachedSelectionUiDuringPaint();
+    syncRegionControlPanelDuringPaint();
+    syncFloatingUiCursor();
+}
+
+void RegionSelector::syncMagnifierOverlayDuringPaint()
+{
+    syncMagnifierOverlay();
+}
+
+bool RegionSelector::usesDetachedCaptureWindows() const
+{
+#ifdef Q_OS_WIN
+    return m_staticCaptureBackgroundWindow &&
+           m_captureChromeWindow &&
+           !m_inputState.multiRegionMode;
+#else
+    return false;
+#endif
+}
+
+void RegionSelector::requestCaptureSceneUpdate()
+{
+    if (usesDetachedCaptureWindows()) {
+        if (m_captureChromeWindow) {
+            m_captureChromeWindow->markDirtyRegion(QRegion(rect()));
+        }
+        syncCaptureChromeWindow();
+        return;
+    }
+
+    update();
+}
+
+void RegionSelector::requestCaptureSceneUpdate(const QRect& rect)
+{
+    if (usesDetachedCaptureWindows()) {
+        if (m_captureChromeWindow) {
+            m_captureChromeWindow->markDirtyRegion(
+                rect.isValid() && !rect.isEmpty() ? QRegion(rect) : QRegion());
+        }
+        syncCaptureChromeWindow();
+        return;
+    }
+
+    if (rect.isValid() && !rect.isEmpty()) {
+        update(rect);
+    } else {
+        update();
+    }
+}
+
+void RegionSelector::hideSelectionPreviewOverlays()
+{
+    if (m_selectionDimmingOverlay) {
+        m_selectionDimmingOverlay->hideOverlay();
+    }
+    if (m_selectionPreviewOverlay) {
+        m_selectionPreviewOverlay->hideOverlay();
+    }
+}
+
+void RegionSelector::syncSelectionPreviewOverlay()
+{
+    if (!m_selectionPreviewOverlay && !m_selectionDimmingOverlay) {
+        return;
+    }
+
+    if (usesDetachedCaptureWindows()) {
+        hideSelectionPreviewOverlays();
+        return;
+    }
+
+    if (m_captureChromeWindow && m_captureChromeWindow->isVisible()) {
+        hideSelectionPreviewOverlays();
+        return;
+    }
+
+    const bool shouldShow =
+        m_initialRevealState == InitialRevealState::Revealed &&
+        m_selectionManager &&
+        m_selectionManager->isSelecting() &&
+        m_selectionManager->selectionRect().isValid() &&
+        !m_backgroundPixmap.isNull();
+
+    const QRect selectionRect = m_selectionManager ? m_selectionManager->selectionRect() : QRect();
+    if (m_selectionDimmingOverlay) {
+        m_selectionDimmingOverlay->syncToHost(this, selectionRect, shouldShow);
+    }
+    if (m_selectionPreviewOverlay) {
+        m_selectionPreviewOverlay->syncToHost(
+            this,
+            selectionRect,
+            &m_backgroundPixmap,
+            m_devicePixelRatio,
+            m_cornerRadius,
+            shouldShow);
+    }
+}
+
+void RegionSelector::syncStaticCaptureBackgroundWindow()
+{
+    snaptray::region::CapturePerfScope perfScope("RegionSelector.syncStaticCaptureBackgroundWindow");
+    if (!m_staticCaptureBackgroundWindow) {
+        return;
+    }
+
+    const bool shouldShow =
+        usesDetachedCaptureWindows() &&
+        m_initialRevealState == InitialRevealState::Revealed &&
+        !m_backgroundPixmap.isNull();
+    const bool wasVisible = m_staticCaptureBackgroundWindow->isVisible();
+    const QRect previousGeometry = m_staticCaptureBackgroundWindow->geometry();
+    m_staticCaptureBackgroundWindow->syncToHost(this, m_backgroundPixmap, shouldShow);
+    if (shouldShow &&
+        (!wasVisible || previousGeometry != m_staticCaptureBackgroundWindow->geometry())) {
+        m_detachedCaptureWindowsNeedFullClear = true;
+        update();
+        armDetachedWindowDeactivateGuard();
+    }
+}
+
+void RegionSelector::syncCaptureChromeWindow()
+{
+    snaptray::region::CapturePerfScope perfScope("RegionSelector.syncCaptureChromeWindow");
+    if (!m_captureChromeWindow) {
+        return;
+    }
+
+    if (!usesDetachedCaptureWindows()) {
+        m_captureChromeWindow->hideOverlay();
+        return;
+    }
+
+    const bool shouldShow =
+        m_initialRevealState == InitialRevealState::Revealed &&
+        !m_exportInProgress &&
+        !m_backgroundPixmap.isNull();
+
+    QRect selectionRect = m_selectionManager ? m_selectionManager->selectionRect() : QRect();
+    const bool hasSelectableCapture =
+        m_selectionManager &&
+        m_selectionManager->hasActiveSelection() &&
+        selectionRect.isValid() &&
+        m_selectionManager->hasSelection();
+    const bool shouldDrawBusySpinner = hasSelectableCapture &&
+        (m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress ||
+         m_shareInProgress || m_exportInProgress);
+
+    const bool wasVisible = m_captureChromeWindow->isVisible();
+    const QRect previousGeometry = m_captureChromeWindow->geometry();
+    m_captureChromeWindow->syncToHost(
+        this,
+        selectionRect,
+        m_selectionManager && m_selectionManager->hasActiveSelection(),
+        m_inputState.highlightedWindowRect,
+        m_devicePixelRatio,
+        m_cornerRadius,
+        static_cast<int>(m_inputState.currentTool),
+        m_shortcutHintsVisible,
+        m_loadingSpinner,
+        shouldDrawBusySpinner,
+        selectionRect.center(),
+        shouldShow);
+    if (shouldShow &&
+        (!wasVisible || previousGeometry != m_captureChromeWindow->geometry())) {
+        m_detachedCaptureWindowsNeedFullClear = true;
+        update();
+        armDetachedWindowDeactivateGuard();
+    }
+}
+
+void RegionSelector::commitSelectionCompletionHandoffAfterChromePaint()
+{
+    if (!m_selectionCompletionHandoffPending ||
+        !usesDetachedCaptureWindows() ||
+        !m_selectionManager ||
+        !m_selectionManager->isComplete() ||
+        !m_selectionManager->hasSelection()) {
+        return;
+    }
+
+    m_selectionCompletionHandoffPending = false;
+    QTimer::singleShot(0, this, [this]() {
+        if (m_isClosing || !isVisible()) {
+            return;
+        }
+
+        syncDetachedSelectionUiDuringPaint();
+        syncRegionControlPanelDuringPaint();
+        syncFloatingUiCursor();
+    });
+}
+
+void RegionSelector::armDetachedWindowDeactivateGuard()
+{
+#ifdef Q_OS_WIN
+    if (!usesDetachedCaptureWindows() || m_isClosing) {
+        return;
+    }
+
+    m_detachedWindowDeactivateGuardPending = true;
+    const quint64 token = ++m_detachedWindowDeactivateGuardToken;
+    QTimer::singleShot(0, this, [this, token]() {
+        if (m_detachedWindowDeactivateGuardToken == token) {
+            m_detachedWindowDeactivateGuardPending = false;
+        }
+    });
+#endif
+}
+
+void RegionSelector::syncRegionControlPanelDuringPaint()
+{
+    positionRegionControlPanel();
+
+    if (!m_traceProbe) {
+        return;
+    }
+
+    RegionSelectorTraceProbe::FloatingUiSnapshot snapshot;
+    snapshot.toolbarVisible = m_qmlToolbar && m_qmlToolbar->isVisible();
+    snapshot.toolbarGeometry = m_qmlToolbar ? m_qmlToolbar->geometry() : QRect();
+    snapshot.subToolbarVisible = m_qmlSubToolbar && m_qmlSubToolbar->isVisible();
+    snapshot.subToolbarGeometry = m_qmlSubToolbar ? m_qmlSubToolbar->geometry() : QRect();
+    snapshot.regionControlVisible = m_regionControlPanel && m_regionControlPanel->isVisible();
+    snapshot.regionControlGeometry = m_regionControlPanel ? m_regionControlPanel->geometry() : QRect();
+    snapshot.magnifierVisible = m_magnifierOverlay && m_magnifierOverlay->isVisible();
+    snapshot.magnifierGeometry = m_magnifierOverlay ? m_magnifierOverlay->geometry() : QRect();
+    m_traceProbe->floatingUiSnapshots.append(snapshot);
+}
+
+void RegionSelector::paintEvent(QPaintEvent* event)
+{
+    snaptray::region::CapturePerfScope perfScope("RegionSelector.paintEvent");
+    QPainter painter(this);
+
+    // Use QRegion-based clipping for efficient partial repainting.
+    // When update(QRegion) is used, QPaintEvent::region() contains the individual rects
+    // rather than inflating to a bounding box. This dramatically reduces repaint area
+    // for crosshair strips on high-DPI screens.
+    QRegion dirtyRegion = event->region();
+#ifdef Q_OS_WIN
+    if (m_forceFullRepaintOnNextWindowTransition) {
+        dirtyRegion = QRegion(rect());
+        m_forceFullRepaintOnNextWindowTransition = false;
+    }
+    if (m_detachedCaptureWindowsNeedFullClear) {
+        dirtyRegion = QRegion(rect());
+        m_detachedCaptureWindowsNeedFullClear = false;
+    }
+#endif
+    if (m_traceProbe) {
+        RegionSelectorTraceProbe::PaintEventRecord record;
+        record.dirtyRegion = dirtyRegion;
+        record.boundingRect = dirtyRegion.boundingRect();
+        m_traceProbe->paintEvents.append(record);
+    }
+    snaptray::region::CapturePerfRecorder::recordRegion("RegionSelector.paintEvent.region", dirtyRegion);
+
+    const bool detachedCaptureWindowsActive =
+        usesDetachedCaptureWindows() &&
+        m_staticCaptureBackgroundWindow &&
+        m_staticCaptureBackgroundWindow->isVisible() &&
+        m_captureChromeWindow &&
+        m_captureChromeWindow->isVisible();
+    if (detachedCaptureWindowsActive) {
+        syncStaticCaptureBackgroundWindow();
+        syncCaptureChromeWindow();
+        painter.setClipRegion(dirtyRegion);
+        painter.setCompositionMode(QPainter::CompositionMode_Source);
+        painter.fillRect(dirtyRegion.boundingRect(), QColor(0, 0, 0, 1));
+        painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+    } else {
+        paintSelectorScene(painter, dirtyRegion);
+    }
+
+    if (m_magnifierOverlay &&
+        !m_magnifierOverlay->hasPaintedSinceShow() &&
+        m_initialRevealState == InitialRevealState::Revealed &&
+        shouldShowCursorCompanion()) {
+        if (m_hostFallbackCursorCompanionRect.isValid()) {
+            painter.save();
+            painter.setClipRect(m_hostFallbackCursorCompanionRect);
+            m_magnifierOverlay->paintFallback(painter);
+            painter.restore();
+        }
+    } else if (m_hostFallbackCursorCompanionRect.isValid()) {
+        const QRect fallbackRect = m_hostFallbackCursorCompanionRect;
+        m_hostFallbackCursorCompanionRect = QRect();
+        requestCaptureSceneUpdate(fallbackRect);
+    }
+
+    syncDetachedSelectionUiDuringPaint();
+
+    QRect selectionRect = m_selectionManager->selectionRect();
+    const bool initialRevealVisible = m_initialRevealState == InitialRevealState::Revealed;
+    const bool hasSelectableCapture =
+        m_selectionManager->hasActiveSelection() &&
+        selectionRect.isValid() &&
+        m_selectionManager->hasSelection();
+    const bool suppressSelectionFloatingUi =
+        completedSelectionDragUiSuppressed() || m_selectionCompletionHandoffPending;
+    const bool shouldShowSelectionUi =
+        initialRevealVisible &&
+        hasSelectableCapture &&
+        !m_exportInProgress;
+    const bool shouldDrawBusySpinner = hasSelectableCapture &&
+        (m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress ||
+         m_shareInProgress || m_exportInProgress);
+    if (shouldShowSelectionUi && !suppressSelectionFloatingUi) {
         if (m_inputState.multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0) {
             const int regionCount = m_multiRegionManager->count();
             QString countText = (regionCount == 1)
@@ -2386,37 +2993,21 @@ void RegionSelector::paintEvent(QPaintEvent* event)
             painter.setPen(styleConfig.textColor);
             painter.drawText(countRect, Qt::AlignCenter, countText);
         }
-
-        // Hide emoji picker popup when tool switches away from EmojiSticker
-        if (m_inputState.currentTool != ToolId::EmojiSticker &&
-            m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
-            m_emojiPickerPopup->hide();
-        }
-    }
-    else {
-        m_cursorOverSelectionToolbar = false;
-        if (!hasSelectableCapture || m_exportInProgress) {
-            m_toolbarUserDragged = false;
-        }
-        if (m_toolOptionsViewModel && (!hasSelectableCapture || m_exportInProgress)) {
-            m_toolOptionsViewModel->clearSections();
-        }
-        hideSelectionFloatingUi(hasSelectableCapture && !m_exportInProgress);
     }
 
-    if (shouldDrawBusySpinner && m_loadingSpinner) {
+    if (!detachedCaptureWindowsActive && shouldDrawBusySpinner && m_loadingSpinner) {
         m_loadingSpinner->draw(painter, selectionRect.center());
     }
 
-    syncMagnifierOverlay();
+    syncMagnifierOverlayDuringPaint();
 
     // Shortcut hints remain painter-based in the RegionSelector host window.
-    if (m_shortcutHintsVisible && m_shortcutHintsOverlay) {
+    if (!detachedCaptureWindowsActive && m_shortcutHintsVisible && m_shortcutHintsOverlay) {
         m_shortcutHintsOverlay->draw(painter, size());
     }
 
     // Position region control panel after paint (painter computes dimension info rect)
-    positionRegionControlPanel();
+    syncRegionControlPanelDuringPaint();
 }
 
 void RegionSelector::syncMagnifierOverlay()
@@ -2425,8 +3016,32 @@ void RegionSelector::syncMagnifierOverlay()
         return;
     }
 
+    snaptray::region::CapturePerfScope perfScope("RegionSelector.syncMagnifierOverlay");
+
+    const bool shouldTrackHostFallback =
+        m_initialRevealState == InitialRevealState::Revealed &&
+        shouldShowCursorCompanion() &&
+        !m_magnifierOverlay->hasPaintedSinceShow();
+    const QRect currentFallbackRect = shouldTrackHostFallback
+        ? g_cursorCompanionDirtyRegionPlanner.cursorCompanionRectForCursor(
+            m_cursorCompanionStyle, m_inputState.currentPoint, size())
+        : QRect();
+    if (currentFallbackRect != m_hostFallbackCursorCompanionRect) {
+        QRect dirtyRect = currentFallbackRect;
+        if (m_hostFallbackCursorCompanionRect.isValid()) {
+            dirtyRect = dirtyRect.isValid()
+                ? dirtyRect.united(m_hostFallbackCursorCompanionRect)
+                : m_hostFallbackCursorCompanionRect;
+        }
+        if (dirtyRect.isValid() && !dirtyRect.isEmpty()) {
+            requestCaptureSceneUpdate(dirtyRect);
+        }
+        m_hostFallbackCursorCompanionRect = currentFallbackRect;
+    }
+
     if (m_initialRevealState != InitialRevealState::Revealed) {
         m_magnifierOverlay->hideOverlay();
+        m_hostFallbackCursorCompanionRect = QRect();
         return;
     }
 
@@ -2434,7 +3049,8 @@ void RegionSelector::syncMagnifierOverlay()
         this,
         m_inputState.currentPoint,
         &m_backgroundPixmap,
-        shouldShowMagnifier());
+        m_cursorCompanionStyle,
+        shouldShowCursorCompanion());
 }
 
 void RegionSelector::positionRegionControlPanel()
@@ -2450,14 +3066,17 @@ void RegionSelector::positionRegionControlPanel()
     bool shouldShow = m_selectionManager &&
                       m_selectionManager->hasSelection() &&
                       !m_exportInProgress &&
-                      !completedSelectionDragUiSuppressed();
+                      !completedSelectionDragUiSuppressed() &&
+                      !m_selectionCompletionHandoffPending;
     if (shouldShow != m_regionControlPanel->isVisible()) {
         shouldShow ? m_regionControlPanel->show() : m_regionControlPanel->hide();
     }
     if (!shouldShow)
         return;
 
-    QRect dimRect = m_painter->lastDimensionInfoRect();
+    QRect dimRect = m_captureChromeWindow && m_captureChromeWindow->isVisible()
+        ? m_captureChromeWindow->lastDimensionInfoRect()
+        : m_painter->lastDimensionInfoRect();
     if (!dimRect.isValid())
         return;
 
@@ -2514,11 +3133,17 @@ void RegionSelector::updateCompletedSelectionDragUiSuppression()
         hideSelectionFloatingUi(true);
     }
 
-    update();
+    requestCaptureSceneUpdate();
     syncMagnifierOverlay();
+    syncCaptureChromeWindow();
 
     if (!m_inputState.completedSelectionDragUiSuppressed) {
-        QTimer::singleShot(0, this, &RegionSelector::syncFloatingUiCursor);
+        QTimer::singleShot(0, this, [this]() {
+            restoreDetachedSelectionFloatingUiIfNeeded();
+            if (!usesDetachedCaptureWindows()) {
+                syncFloatingUiCursor();
+            }
+        });
     }
 }
 
@@ -2536,7 +3161,7 @@ void RegionSelector::hideShortcutHints()
 
     m_shortcutHintsVisible = false;
     m_shortcutHintsTemporarilyHiddenByHover = false;
-    update();
+    requestCaptureSceneUpdate();
 }
 
 void RegionSelector::maybeDismissShortcutHintsAfterSelectionCompleted()
@@ -2576,7 +3201,7 @@ void RegionSelector::updateShortcutHintsHoverVisibilityDuringSelection(const QPo
         if (!shouldTemporarilyHide && !m_shortcutHintsVisible) {
             m_shortcutHintsVisible = true;
             m_shortcutHintsTemporarilyHiddenByHover = false;
-            update(panelRect);
+            requestCaptureSceneUpdate(panelRect);
         }
         return;
     }
@@ -2584,7 +3209,7 @@ void RegionSelector::updateShortcutHintsHoverVisibilityDuringSelection(const QPo
     if (shouldTemporarilyHide && m_shortcutHintsVisible) {
         m_shortcutHintsVisible = false;
         m_shortcutHintsTemporarilyHiddenByHover = true;
-        update(panelRect);
+        requestCaptureSceneUpdate(panelRect);
     }
 }
 
@@ -2689,6 +3314,7 @@ void RegionSelector::hideDetachedFloatingUi()
     if (m_magnifierOverlay) {
         m_magnifierOverlay->hideOverlay();
     }
+    hideSelectionPreviewOverlays();
 }
 
 void RegionSelector::restoreAfterDialogCancelled()
@@ -2708,7 +3334,9 @@ void RegionSelector::restoreAfterDialogCancelled()
         m_multiRegionListPanel->show();
         positionMultiRegionListPanel();
     }
-    update();
+    requestCaptureSceneUpdate();
+    syncStaticCaptureBackgroundWindow();
+    syncCaptureChromeWindow();
     syncMagnifierOverlay();
     syncFloatingUiCursor();
 }
@@ -2773,9 +3401,10 @@ void RegionSelector::trackBlockingDialog(SnapTray::QmlDialog* dialog)
     connect(dialog, &QObject::destroyed, this, release);
 }
 
-bool RegionSelector::shouldShowMagnifier() const
+bool RegionSelector::shouldShowCursorCompanion() const
 {
-    if (!m_magnifierEnabled) {
+    if (m_cursorCompanionStyle ==
+        RegionCaptureSettingsManager::CursorCompanionStyle::None) {
         return false;
     }
 
@@ -2804,6 +3433,75 @@ bool RegionSelector::shouldShowMagnifier() const
            !m_cursorOverSelectionToolbar;
 }
 
+bool RegionSelector::shouldShowMagnifier() const
+{
+    return m_magnifierEnabled && shouldShowCursorCompanion();
+}
+
+bool RegionSelector::hasActiveAnnotationInteraction() const
+{
+    const bool inputHandlerInteraction =
+        m_inputHandler && m_inputHandler->isManipulatingAnnotation();
+    const bool textInteraction =
+        m_textAnnotationEditor &&
+        (m_textAnnotationEditor->isDragging() || m_textAnnotationEditor->isTransforming());
+    const bool shapeInteraction =
+        m_shapeAnnotationEditor &&
+        (m_shapeAnnotationEditor->isDragging() || m_shapeAnnotationEditor->isTransforming());
+
+    return inputHandlerInteraction || textInteraction || shapeInteraction;
+}
+
+QRect RegionSelector::selectedAnnotationInteractionVisualRect() const
+{
+    return snaptray::tools::selectedAnnotationRepaintRect(
+        m_annotationLayer,
+        kAnnotationInteractionVisualMargin);
+}
+
+bool RegionSelector::requestLocalizedAnnotationInteractionUpdate()
+{
+    if (usesDetachedCaptureWindows()) {
+        if (m_captureChromeWindow) {
+            const QRect currentVisualRect = selectedAnnotationInteractionVisualRect();
+            QRect dirtyRect = currentVisualRect;
+            if (m_lastAnnotationInteractionVisualRect.isValid()) {
+                dirtyRect = dirtyRect.united(m_lastAnnotationInteractionVisualRect);
+            }
+            if (dirtyRect.isValid() && !dirtyRect.isEmpty()) {
+                m_captureChromeWindow->markDirtyRegion(QRegion(dirtyRect));
+            }
+            m_lastAnnotationInteractionVisualRect = currentVisualRect;
+        }
+        syncCaptureChromeWindow();
+        return true;
+    }
+
+    if (!hasActiveAnnotationInteraction()) {
+        resetAnnotationInteractionTracking();
+        return false;
+    }
+
+    const QRect currentVisualRect = selectedAnnotationInteractionVisualRect();
+    QRect dirtyRect = currentVisualRect;
+    if (m_lastAnnotationInteractionVisualRect.isValid()) {
+        dirtyRect = dirtyRect.united(m_lastAnnotationInteractionVisualRect);
+    }
+
+    m_lastAnnotationInteractionVisualRect = currentVisualRect;
+    if (!dirtyRect.isValid() || dirtyRect.isEmpty()) {
+        return false;
+    }
+
+    update(dirtyRect);
+    return true;
+}
+
+void RegionSelector::resetAnnotationInteractionTracking()
+{
+    m_lastAnnotationInteractionVisualRect = QRect();
+}
+
 void RegionSelector::syncSelectionToolbarHoverState(const QPoint& globalPos)
 {
     const bool cursorOverSelectionToolbar = isCursorOverSelectionToolbar(globalPos);
@@ -2813,13 +3511,9 @@ void RegionSelector::syncSelectionToolbarHoverState(const QPoint& globalPos)
 
     m_cursorOverSelectionToolbar = cursorOverSelectionToolbar;
 
-    if (!m_lastMagnifierRect.isNull()) {
-        update(m_lastMagnifierRect);
-    } else {
-        update();
-    }
-
+    requestCaptureSceneUpdate(m_lastMagnifierRect);
     syncMagnifierOverlay();
+    syncCaptureChromeWindow();
 }
 
 bool RegionSelector::isCursorOverSelectionToolbar(const QPoint& globalPos) const
@@ -3262,6 +3956,8 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
         return;
     }
 
+    stopInitialCursorBootstrapSync();
+
     if (isGlobalPosOverFloatingUi(event->globalPosition().toPoint())) {
         syncFloatingUiCursor();
         return;
@@ -3467,7 +4163,7 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
     }
     else if (event->key() == Qt::Key_Shift) {
         // Switch RGB/HEX color format display (only when magnifier is shown)
-        if (m_magnifierEnabled && shouldShowMagnifier()) {
+        if (shouldShowMagnifier()) {
             m_magnifierPanel->toggleColorFormat();
             syncMagnifierOverlay();
             update();
@@ -3495,13 +4191,13 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
         }
         else if (m_selectionManager->isComplete() && m_annotationLayer->canUndo()) {
             m_annotationLayer->undo();
-            update();
+            requestCaptureSceneUpdate();
         }
     }
     else if (event->matches(QKeySequence::Redo)) {
         if (m_selectionManager->isComplete() && m_annotationLayer->canRedo()) {
             m_annotationLayer->redo();
-            update();
+            requestCaptureSceneUpdate();
         }
     }
     else if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
@@ -3514,7 +4210,7 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
         // Delete selected text annotation
         else if (m_selectionManager->isComplete() && m_annotationLayer->selectedIndex() >= 0) {
             m_annotationLayer->removeSelectedItem();
-            update();
+            requestCaptureSceneUpdate();
         }
     }
     // Arrow keys for precise selection adjustment
@@ -3534,7 +4230,7 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
             }
             if (handled && newRect.width() >= 10 && newRect.height() >= 10) {
                 m_selectionManager->setSelectionRect(newRect);
-                update();
+                requestCaptureSceneUpdate();
             }
         }
         else {
@@ -3561,7 +4257,7 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
                         newRect.moveBottom(bounds.bottom());
                 }
                 m_selectionManager->setSelectionRect(newRect);
-                update();
+                requestCaptureSceneUpdate();
             }
         }
     }
@@ -3577,11 +4273,16 @@ void RegionSelector::closeEvent(QCloseEvent* event)
     m_isClosing = true;
     resetInitialRevealState();
     m_initialRevealState = InitialRevealState::Revealed;
+    m_selectionCompletionHandoffPending = false;
+    m_detachedWindowDeactivateGuardPending = false;
     m_pendingSharePassword.clear();
     m_pendingShareSubmission.reset();
     if (m_qmlToolbar) m_qmlToolbar->hide();
     if (m_qmlSubToolbar) m_qmlSubToolbar->hide();
     if (m_magnifierOverlay) m_magnifierOverlay->hideOverlay();
+    if (m_staticCaptureBackgroundWindow) m_staticCaptureBackgroundWindow->hideOverlay();
+    if (m_captureChromeWindow) m_captureChromeWindow->hideOverlay();
+    hideSelectionPreviewOverlays();
     if (m_emojiPickerPopup) {
         m_emojiPickerPopup->close();
         delete m_emojiPickerPopup;
@@ -3607,6 +4308,8 @@ void RegionSelector::showEvent(QShowEvent* event)
         return;
     }
 
+    syncStaticCaptureBackgroundWindow();
+    syncCaptureChromeWindow();
     syncMagnifierOverlay();
 }
 
@@ -3614,6 +4317,8 @@ void RegionSelector::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
     positionMultiRegionListPanel();
+    syncStaticCaptureBackgroundWindow();
+    syncCaptureChromeWindow();
     syncMagnifierOverlay();
 }
 
@@ -3710,6 +4415,17 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
         if (hasBlockingTransientUiOpen()) {
             return false;
         }
+        if (m_detachedWindowDeactivateGuardPending) {
+            m_detachedWindowDeactivateGuardPending = false;
+            QTimer::singleShot(0, this, [this]() {
+                if (m_isClosing || !isVisible()) {
+                    return;
+                }
+                activateWindow();
+                raise();
+            });
+            return false;
+        }
         // Startup protection: ignore deactivation if window hasn't been activated yet
         // This prevents false cancellation when popup menus close during startup or
         // when window manager focus changes are still settling
@@ -3756,11 +4472,8 @@ void RegionSelector::performOCR()
     ensureLoadingSpinner()->start();
     update();
 
-    // Get the selected region (without annotations for OCR)
-    const QRect sel = m_selectionManager->selectionRect();
-    const QRect physicalRect = CoordinateHelper::toPhysicalCoveringRect(sel, m_devicePixelRatio);
-    const QRect clampedPhysicalRect = physicalRect.intersected(m_backgroundPixmap.rect());
-    if (clampedPhysicalRect.isEmpty()) {
+    const QPixmap selectedRegion = capturePlainSelectionPixmap();
+    if (selectedRegion.isNull()) {
         m_ocrInProgress = false;
         if (m_loadingSpinner) {
             m_loadingSpinner->stop();
@@ -3770,8 +4483,6 @@ void RegionSelector::performOCR()
         update();
         return;
     }
-    QPixmap selectedRegion = m_backgroundPixmap.copy(clampedPhysicalRect);
-    selectedRegion.setDevicePixelRatio(m_devicePixelRatio);
 
     QPointer<RegionSelector> safeThis = this;
     ocrMgr->recognizeText(selectedRegion,
@@ -3849,11 +4560,8 @@ void RegionSelector::performQRCodeScan()
     ensureLoadingSpinner()->start();
     update();
 
-    // Get the selected region (without annotations)
-    const QRect sel = m_selectionManager->selectionRect();
-    const QRect physicalRect = CoordinateHelper::toPhysicalCoveringRect(sel, m_devicePixelRatio);
-    const QRect clampedPhysicalRect = physicalRect.intersected(m_backgroundPixmap.rect());
-    if (clampedPhysicalRect.isEmpty()) {
+    const QPixmap selectedRegion = capturePlainSelectionPixmap();
+    if (selectedRegion.isNull()) {
         m_qrCodeInProgress = false;
         if (m_loadingSpinner) {
             m_loadingSpinner->stop();
@@ -3863,8 +4571,6 @@ void RegionSelector::performQRCodeScan()
         update();
         return;
     }
-    QPixmap selectedRegion = m_backgroundPixmap.copy(clampedPhysicalRect);
-    selectedRegion.setDevicePixelRatio(m_devicePixelRatio);
 
     QPointer<RegionSelector> safeThis = this;
     qrMgr->decode(selectedRegion,
@@ -3949,11 +4655,12 @@ void RegionSelector::performAutoBlur()
     // Reload latest settings before detection
     m_autoBlurManager->setOptions(AutoBlurSettingsManager::instance().load());
 
-    // Get the selected region as QImage
     const QRect sel = m_selectionManager->selectionRect();
     const QRect physicalRect = CoordinateHelper::toPhysicalCoveringRect(sel, m_devicePixelRatio);
     const QRect clampedPhysicalRect = physicalRect.intersected(m_backgroundPixmap.rect());
-    if (clampedPhysicalRect.isEmpty()) {
+    const QPixmap selectedPixmap = capturePlainSelectionPixmap();
+    const QImage selectedImage = selectedPixmap.toImage();
+    if (selectedImage.isNull() || clampedPhysicalRect.isEmpty()) {
         m_autoBlurInProgress = false;
         updateToolbarAutoBlurState();
         m_toolOptionsViewModel->setAutoBlurProcessing(false);
@@ -3965,8 +4672,6 @@ void RegionSelector::performAutoBlur()
         update();
         return;
     }
-    QPixmap selectedPixmap = m_backgroundPixmap.copy(clampedPhysicalRect);
-    QImage selectedImage = selectedPixmap.toImage();
     const QSize selectedImageSize = selectedImage.size();
 
     const auto opts = m_autoBlurManager->options();
@@ -4128,8 +4833,9 @@ void RegionSelector::performAutoBlur()
     }
 
     if (runCredentialDetection) {
-        selectedPixmap.setDevicePixelRatio(1.0);
-        ocrManager->recognizeText(selectedPixmap,
+        QPixmap ocrSource = selectedPixmap;
+        ocrSource.setDevicePixelRatio(1.0);
+        ocrManager->recognizeText(ocrSource,
             [safeThis, aggregated, finishIfReady, selectedImageSize](const OCRResult& result) {
                 if (!safeThis) {
                     return;

@@ -20,7 +20,6 @@ void EmojiStickerToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos
     auto sticker = std::make_unique<EmojiStickerAnnotation>(pos, m_currentEmoji);
 
     ctx->addItem(std::move(sticker));
-    ctx->repaint();
 }
 
 QCursor EmojiStickerToolHandler::cursor() const {

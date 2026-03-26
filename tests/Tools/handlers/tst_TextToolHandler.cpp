@@ -21,6 +21,7 @@ private slots:
     void testGlobalDoubleClick_StartsReEditAndSyncsColor();
     void testHandleEscape_CancelsInlineEditing();
     void testInteractionMethods_ReturnFalseWithoutContext();
+    void testInteractionMove_DoesNotInvalidateLayerCache();
 
 private:
     TextToolHandler* m_handler = nullptr;
@@ -140,6 +141,22 @@ void TestTextToolHandler::testInteractionMethods_ReturnFalseWithoutContext()
     QVERIFY(!m_handler->handleInteractionMove(&emptyContext, QPoint(1, 1)));
     QVERIFY(!m_handler->handleInteractionRelease(&emptyContext, QPoint(1, 1)));
     QVERIFY(!m_handler->handleInteractionDoubleClick(&emptyContext, QPoint(1, 1)));
+}
+
+void TestTextToolHandler::testInteractionMove_DoesNotInvalidateLayerCache()
+{
+    QFont font;
+    font.setPointSize(14);
+    auto item = std::make_unique<TextBoxAnnotation>(QPointF(100, 100), "drag me", font, Qt::green);
+    const QPoint hitPoint = item->boundingRect().center();
+    m_layer->addItem(std::move(item));
+
+    QVERIFY(m_handler->handleInteractionPress(m_context, hitPoint, false));
+    QCOMPARE(m_layer->selectedIndex(), 0);
+
+    const std::uint64_t revisionBeforeMove = m_layer->revision();
+    QVERIFY(m_handler->handleInteractionMove(m_context, hitPoint + QPoint(24, 12)));
+    QCOMPARE(m_layer->revision(), revisionBeforeMove);
 }
 
 QTEST_MAIN(TestTextToolHandler)

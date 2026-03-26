@@ -1,7 +1,7 @@
 #include "cli/commands/RegionCommand.h"
 
 #include "cli/CaptureOutputHelper.h"
-#include "utils/CoordinateHelper.h"
+#include "utils/ScreenCaptureRegionUtils.h"
 
 #include <QGuiApplication>
 #include <QPixmap>
@@ -106,34 +106,14 @@ CLIResult RegionCommand::execute(const QCommandLineParser& parser)
         return CLIResult::error(CLIResult::Code::GeneralError, "Failed to capture screen");
     }
 
-    // Region option uses logical coordinates. Validate against logical screen bounds.
-    const qreal dpr = fullScreenshot.devicePixelRatio() > 0.0 ? fullScreenshot.devicePixelRatio() : 1.0;
-    const QSize logicalScreenSize = CoordinateHelper::toLogical(fullScreenshot.size(), dpr);
-    const QRect logicalScreenRect(QPoint(0, 0), logicalScreenSize);
-    if (!logicalScreenRect.contains(region)) {
+    const auto cropResult =
+        SnapTray::ScreenCaptureRegionUtils::cropLogicalRegionFromScreenshot(fullScreenshot, region);
+    if (!cropResult.isValid()) {
         return CLIResult::error(
             CLIResult::Code::InvalidArguments,
-            QString("Region (%1,%2,%3,%4) exceeds logical screen bounds (%5x%6)")
-                .arg(region.x())
-                .arg(region.y())
-                .arg(region.width())
-                .arg(region.height())
-                .arg(logicalScreenRect.width())
-                .arg(logicalScreenRect.height()));
+            cropResult.error);
     }
-
-    // Crop using edge-aligned physical coordinates derived from logical region.
-    const QRect physicalRegion = CoordinateHelper::toPhysicalCoveringRect(region, dpr);
-    const QRect clampedPhysicalRegion = physicalRegion.intersected(fullScreenshot.rect());
-    if (clampedPhysicalRegion.isEmpty()) {
-        return CLIResult::error(CLIResult::Code::GeneralError, "Failed to crop region");
-    }
-    QPixmap screenshot = fullScreenshot.copy(clampedPhysicalRegion);
-    screenshot.setDevicePixelRatio(dpr);
-
-    if (screenshot.isNull()) {
-        return CLIResult::error(CLIResult::Code::GeneralError, "Failed to crop region");
-    }
+    QPixmap screenshot = cropResult.pixmap;
 
     CaptureOutputOptions options;
     options.savePath = savePath;

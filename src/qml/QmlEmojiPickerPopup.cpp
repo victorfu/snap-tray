@@ -185,6 +185,7 @@ QWindow* QmlEmojiPickerPopup::window() const
 
 void QmlEmojiPickerPopup::applyPlatformWindowFlags()
 {
+    setWindowExcludedFromCapture(m_view, true);
     QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
     raiseTransientWindowAboveParent(m_view, m_parentWidget.data());
 }

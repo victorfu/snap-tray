@@ -55,7 +55,7 @@ features:
       body: 快速選取視窗，不必手動拖拉邊界。
     - kind: 錄影
       title: Screen Recording
-      body: 擷取任意區域並輸出 MP4、GIF、WebP，支援音訊。
+      body: 擷取任意區域並輸出可帶音訊的 MP4，或適合無音訊片段的 GIF、WebP。
     - kind: 工具
       title: Color Picker
       body: 擷取螢幕色彩，Shift 切換 HEX/RGB，C 一鍵複製。

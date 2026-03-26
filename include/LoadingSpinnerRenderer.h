@@ -21,6 +21,7 @@ public:
     bool isActive() const;
 
     void draw(QPainter &painter, const QPoint &center) const;
+    QRect bounds(const QPoint& center) const;
 
 signals:
     void needsRepaint();

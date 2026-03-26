@@ -114,6 +114,7 @@ void ArrowToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
         return;
     }
 
+    bool committedAnnotation = false;
     if (m_hasDragged) {
         // This was a drag - finalize the arrow
         QPoint diff = pos - m_startPoint;
@@ -125,6 +126,7 @@ void ArrowToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
                     : pos;
                 m_currentArrow->setEnd(endPos);
                 ctx->addItem(std::move(m_currentArrow));
+                committedAnnotation = true;
             }
         }
 
@@ -147,7 +149,9 @@ void ArrowToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
         m_clickTimer.restart();
     }
 
-    ctx->repaint();
+    if (!committedAnnotation) {
+        ctx->repaint();
+    }
 }
 
 void ArrowToolHandler::onDoubleClick(ToolContext* ctx, const QPoint& pos) {
@@ -175,8 +179,10 @@ void ArrowToolHandler::finishPolyline(ToolContext* ctx) {
     m_currentPolyline->removeLastPoint();
 
     // Only add if we have at least 2 points
+    bool committedAnnotation = false;
     if (m_currentPolyline->pointCount() >= 2) {
         ctx->addItem(std::move(m_currentPolyline));
+        committedAnnotation = true;
     }
 
     // Reset all state
@@ -184,7 +190,9 @@ void ArrowToolHandler::finishPolyline(ToolContext* ctx) {
     m_hasDragged = false;
     m_isPolylineMode = false;
     m_currentPolyline.reset();
-    ctx->repaint();
+    if (!committedAnnotation) {
+        ctx->repaint();
+    }
 }
 
 void ArrowToolHandler::drawPreview(QPainter& painter) const {
@@ -194,6 +202,20 @@ void ArrowToolHandler::drawPreview(QPainter& painter) const {
     if (m_currentPolyline) {
         m_currentPolyline->draw(painter);
     }
+}
+
+QRect ArrowToolHandler::previewBounds() const
+{
+    QRect bounds;
+    if (m_currentArrow) {
+        bounds = m_currentArrow->boundingRect();
+    }
+    if (m_currentPolyline) {
+        bounds = bounds.isValid() && !bounds.isEmpty()
+            ? bounds.united(m_currentPolyline->boundingRect())
+            : m_currentPolyline->boundingRect();
+    }
+    return bounds;
 }
 
 void ArrowToolHandler::cancelDrawing() {

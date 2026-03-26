@@ -150,14 +150,12 @@ bool TextToolHandler::handleInteractionMove(ToolContext* ctx, const QPoint& pos)
 
     if (textEditor->isTransforming() && layer->selectedIndex() >= 0) {
         textEditor->updateTransformation(pos);
-        layer->invalidateCache();
         ctx->repaint();
         return true;
     }
 
     if (textEditor->isDragging() && layer->selectedIndex() >= 0) {
         textEditor->updateDragging(pos);
-        layer->invalidateCache();
         ctx->repaint();
         return true;
     }

@@ -5,6 +5,7 @@
 #include <QPoint>
 #include <QPointF>
 #include <QPolygonF>
+#include <QPixmap>
 #include <QRectF>
 #include <QString>
 #include <QTransform>
@@ -53,9 +54,18 @@ private:
     bool m_mirrorX = false;
     bool m_mirrorY = false;
 
+    mutable QPixmap m_cachedPixmap;
+    mutable QPointF m_cachedOrigin;
+    mutable QRectF m_cachedBaseGlyphRect;
+    mutable qreal m_cachedDpr = 0.0;
+    mutable QString m_cachedEmoji;
+
     QSize emojiSize() const;
     QRectF glyphRect() const;
     QTransform localLinearTransform() const;
+    void regenerateCache(qreal dpr) const;
+    bool isCacheValid(qreal dpr) const;
+    void invalidateCache() const { m_cachedPixmap = QPixmap(); }
 };
 
 #endif // EMOJISTICKERANNOTATION_H

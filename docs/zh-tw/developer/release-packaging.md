@@ -178,5 +178,5 @@ magick snaptray.png -define icon:auto-resize=256,128,64,48,32,16 snaptray.ico
 
 ## 下一步
 
-- 回到[從原始碼建置](/zh-tw/developer/build-from-source/)處理本地開發
-- 前往[架構總覽](/zh-tw/developer/architecture/)掌握 repo 與 subsystem 結構
+- 回到[從原始碼建置](build-from-source.md)處理本地開發
+- 前往[架構總覽](architecture.md)掌握 repo 與 subsystem 結構

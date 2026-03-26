@@ -20,10 +20,15 @@ Flickable {
 
         SettingsSection { title: qsTr("Capture") }
 
-        SettingsToggle {
-            label: qsTr("Show magnifier")
-            checked: settingsBackend.magnifierEnabled
-            onToggled: function(checked) { settingsBackend.magnifierEnabled = checked }
+        SettingsCombo {
+            label: qsTr("Cursor companion")
+            model: [
+                { text: qsTr("Off"), value: 0 },
+                { text: qsTr("Magnifier"), value: 1 },
+                { text: qsTr("Beaver"), value: 2 }
+            ]
+            currentIndex: settingsBackend.cursorCompanionStyle
+            onActivated: function(index) { settingsBackend.cursorCompanionStyle = index }
         }
 
         SettingsToggle {

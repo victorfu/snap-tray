@@ -9,7 +9,7 @@ SnapTray is a tray-native screenshot and recording tool for macOS and Windows. I
 - **Capture fast**: precision region selection with magnifier, window detection, multi-region capture, cursor inclusion, and color picking
 - **Annotate clearly**: arrow, pencil, marker, shapes, text, mosaic, step badges, emoji, undo/redo, OCR, QR scan, and auto blur
 - **Stay in context**: pin screenshots above other windows, resize and rotate them, and annotate directly on pinned images
-- **Record what matters**: capture full screen or a selected region and export MP4, GIF, or WebP with optional audio
+- **Record what matters**: capture full screen or a selected region and export MP4 with optional audio, or GIF/WebP for silent clips
 - **Automate repeat work**: use global hotkeys, the CLI, and debug-build MCP tooling for local automation flows
 
 ## Core Workflows
@@ -35,16 +35,14 @@ Start recording from the tray or the capture toolbar. Use the floating control b
 - macOS 14+
 - Windows 10+
 
-## Downloads & Docs
+## Docs & Releases
 
-- Website: [snaptray.cc](https://snaptray.cc/)
 - Releases: [GitHub Releases](https://github.com/victorfu/snap-tray/releases)
-- User docs: [Documentation Home](https://snaptray.cc/docs/)
-- Tutorials: [Tutorial Hub](https://snaptray.cc/docs/tutorials/)
-- CLI reference: [CLI](https://snaptray.cc/docs/cli/)
-- Troubleshooting: [Troubleshooting](https://snaptray.cc/docs/troubleshooting/)
+- User docs: [Documentation Home](docs/docs/index.md)
+- Tutorials: [Tutorial Hub](docs/docs/tutorials/index.md)
+- CLI reference: [CLI](docs/docs/cli.md)
+- Troubleshooting: [Troubleshooting](docs/docs/troubleshooting.md)
 - Developer docs: [Developer Docs](docs/developer/index.md)
-- Developer docs on website: [snaptray.cc/developer](https://snaptray.cc/developer/)
 
 ## Build from Source
 

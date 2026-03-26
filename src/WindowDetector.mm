@@ -25,6 +25,14 @@ namespace {
 
 const CFStringRef kAXVisibleAttributeCompat = CFSTR("AXVisible");
 
+DetectionFlags flagsForQueryMode(DetectionFlags baseFlags, WindowDetector::QueryMode queryMode)
+{
+    if (queryMode == WindowDetector::QueryMode::TopLevelOnly) {
+        baseFlags &= ~DetectionFlags(DetectionFlag::ChildControls);
+    }
+    return baseFlags;
+}
+
 // Classify element type based on window layer and characteristics
 ElementType classifyElementType(int windowLayer, CFDictionaryRef windowInfo, CGRect bounds)
 {
@@ -595,10 +603,11 @@ DetectionFlags WindowDetector::detectionFlags() const
     return m_detectionFlags;
 }
 
-void WindowDetector::refreshWindowList()
+void WindowDetector::refreshWindowList(QueryMode queryMode)
 {
     ++m_refreshRequestId;
     m_refreshComplete = false;
+    const DetectionFlags flags = flagsForQueryMode(m_detectionFlags, queryMode);
 
     QMutexLocker locker(&m_cacheMutex);
     m_windowCache.clear();
@@ -612,8 +621,37 @@ void WindowDetector::refreshWindowList()
         return;
     }
 
-    enumerateWindows();
+    // Determine CGWindowList options based on detection flags
+    CGWindowListOption options = kCGWindowListOptionOnScreenOnly;
+    bool detectingSystemUI = flags & DetectionFlag::AllSystemUI;
+    if (!detectingSystemUI) {
+        options |= kCGWindowListExcludeDesktopElements;
+    }
+
+    CFArrayRef windowList = CGWindowListCopyWindowInfo(options, kCGNullWindowID);
+
+    if (!windowList) {
+        qWarning() << "WindowDetector: Failed to get window list";
+        m_cacheScreen = m_currentScreen.data();
+        m_cacheQueryMode = queryMode;
+        m_cacheReady = true;
+        m_refreshComplete = true;
+        return;
+    }
+
+    const CFIndex count = CFArrayGetCount(windowList);
+    const pid_t myPid = [[NSProcessInfo processInfo] processIdentifier];
+
+    for (CFIndex i = 0; i < count; ++i) {
+        CFDictionaryRef windowInfo = static_cast<CFDictionaryRef>(CFArrayGetValueAtIndex(windowList, i));
+        if (auto element = buildDetectedTopLevelElement(windowInfo, myPid, flags)) {
+            m_windowCache.push_back(*element);
+        }
+    }
+
+    CFRelease(windowList);
     m_cacheScreen = m_currentScreen.data();
+    m_cacheQueryMode = queryMode;
     m_cacheReady = true;
 
     m_refreshComplete = true;
@@ -876,6 +914,7 @@ std::optional<DetectedElement> WindowDetector::detectWindowAt(
     // AXUIElementCreateApplication(pid) scopes the hit-test to the target app,
     // bypassing our own overlay which blocks system-wide AX queries.
     if (queryMode == QueryMode::IncludeChildControls &&
+        m_cacheQueryMode == QueryMode::IncludeChildControls &&
         m_detectionFlags.testFlag(DetectionFlag::ChildControls) &&
         topWindow->ownerPid > 0) {
         auto childElement = detectChildElementAt(screenPos, *topWindow, 0);
@@ -887,7 +926,7 @@ std::optional<DetectedElement> WindowDetector::detectWindowAt(
     return topWindow;
 }
 
-void WindowDetector::refreshWindowListAsync()
+void WindowDetector::refreshWindowListAsync(QueryMode queryMode)
 {
     uint64_t requestId = ++m_refreshRequestId;
     QScreen* targetScreen = m_currentScreen.data();
@@ -895,16 +934,17 @@ void WindowDetector::refreshWindowListAsync()
     m_refreshComplete = false;
 
     // Snapshot detection flags to avoid data race with main thread
-    const DetectionFlags flags = m_detectionFlags;
+    const DetectionFlags flags = flagsForQueryMode(m_detectionFlags, queryMode);
 
     {
         QMutexLocker locker(&m_cacheMutex);
-        if (m_cacheScreen != targetScreen) {
+        if (m_cacheScreen != targetScreen ||
+            static_cast<int>(m_cacheQueryMode) < static_cast<int>(queryMode)) {
             m_cacheReady = false;
         }
     }
 
-    m_refreshFuture = QtConcurrent::run([this, requestId, flags, targetScreen]() {
+    m_refreshFuture = QtConcurrent::run([this, requestId, flags, targetScreen, queryMode]() {
         std::vector<DetectedElement> newCache;
 
         // Determine CGWindowList options based on detection flags
@@ -947,6 +987,7 @@ void WindowDetector::refreshWindowListAsync()
             QMutexLocker locker(&m_cacheMutex);
             m_windowCache = std::move(newCache);
             m_cacheScreen = targetScreen;
+            m_cacheQueryMode = queryMode;
             m_cacheReady = true;
         }
 
@@ -962,8 +1003,10 @@ bool WindowDetector::isRefreshComplete() const
     return m_refreshComplete.load();
 }
 
-bool WindowDetector::isWindowCacheReady() const
+bool WindowDetector::isWindowCacheReady(QueryMode queryMode) const
 {
     QMutexLocker locker(&m_cacheMutex);
-    return m_cacheReady && m_cacheScreen == m_currentScreen.data();
+    return m_cacheReady &&
+           m_cacheScreen == m_currentScreen.data() &&
+           static_cast<int>(m_cacheQueryMode) >= static_cast<int>(queryMode);
 }

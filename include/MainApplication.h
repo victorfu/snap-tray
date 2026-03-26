@@ -78,6 +78,7 @@ private:
     void stopMcpServer();
 #endif
     void updateTrayMenuHotkeyText();
+    void updateTrayToolTip();
     void updatePinsVisibilityActionText();
     void updateActionHotkeyText(QAction* action,
                                 SnapTray::HotkeyAction hotkeyAction,

@@ -5,9 +5,9 @@
 #include <QtMath>
 
 // ============================================================================
-// Helper: Build smooth path using Catmull-Rom splines converted to cubic Bezier
-// Catmull-Rom guarantees C1 continuity (smooth tangents at all control points)
-// and interpolates through the original points.
+// Helper: Build smooth path using quadratic Bezier with midpoints.
+// This keeps the marker stroke smooth without the Catmull-Rom overshoot
+// that can create visible gaps inside semi-transparent wide strokes.
 // ============================================================================
 
 static QPainterPath buildSmoothPath(const QVector<QPointF> &points)
@@ -24,34 +24,21 @@ static QPainterPath buildSmoothPath(const QVector<QPointF> &points)
         return path;
     }
 
-    if (points.size() == 3) {
-        path.moveTo(points[0]);
-        path.quadTo(points[1], points[2]);
-        return path;
-    }
-
+    // Start at first point.
     path.moveTo(points[0]);
 
-    // Catmull-Rom to Bezier conversion factor (tension = 1.0)
-    constexpr qreal alpha = 1.0 / 6.0;
+    // First segment: line to the first midpoint for a smooth start.
+    QPointF mid0 = (points[0] + points[1]) / 2.0;
+    path.lineTo(mid0);
 
-    for (int i = 0; i < points.size() - 1; ++i) {
-        // Get four points for Catmull-Rom segment, using reflection at boundaries
-        const QPointF p0 = (i == 0)
-            ? points[0] * 2.0 - points[1]
-            : points[i - 1];
-        const QPointF& p1 = points[i];
-        const QPointF& p2 = points[i + 1];
-        const QPointF p3 = (i == points.size() - 2)
-            ? points[i + 1] * 2.0 - points[i]
-            : points[i + 2];
-
-        // Convert to cubic Bezier control points
-        QPointF c1 = p1 + alpha * (p2 - p0);
-        QPointF c2 = p2 - alpha * (p3 - p1);
-
-        path.cubicTo(c1, c2, p2);
+    // Middle segments: midpoint-to-midpoint quadratic curves.
+    for (int i = 1; i < points.size() - 1; ++i) {
+        QPointF mid = (points[i] + points[i + 1]) / 2.0;
+        path.quadTo(points[i], mid);
     }
+
+    // Final segment ends at the last input point.
+    path.quadTo(points[points.size() - 1], points.last());
 
     return path;
 }
@@ -65,6 +52,26 @@ MarkerStroke::MarkerStroke(const QVector<QPointF> &points, const QColor &color, 
     , m_color(color)
     , m_width(width)
 {
+}
+
+void MarkerStroke::rebuildPreviewPath() const
+{
+    m_cachedPreviewPath = QPainterPath();
+    m_cachedPreviewLastControlIndex = 0;
+
+    if (m_points.size() < 3) {
+        return;
+    }
+
+    m_cachedPreviewPath.moveTo(m_points[0]);
+    const QPointF firstMid = (m_points[0] + m_points[1]) / 2.0;
+    m_cachedPreviewPath.lineTo(firstMid);
+
+    for (int i = 1; i < m_points.size() - 1; ++i) {
+        const QPointF mid = (m_points[i] + m_points[i + 1]) / 2.0;
+        m_cachedPreviewPath.quadTo(m_points[i], mid);
+        m_cachedPreviewLastControlIndex = i;
+    }
 }
 
 void MarkerStroke::draw(QPainter &painter) const
@@ -120,6 +127,40 @@ void MarkerStroke::draw(QPainter &painter) const
     painter.restore();
 }
 
+void MarkerStroke::drawPreview(QPainter &painter) const
+{
+    if (m_points.size() < 2) {
+        return;
+    }
+
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setPen(QPen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter.setBrush(Qt::NoBrush);
+    painter.setOpacity(0.4);
+
+    if (m_points.size() == 2) {
+        painter.drawLine(m_points[0], m_points[1]);
+        painter.restore();
+        return;
+    }
+
+    if (m_cachedPreviewPath.isEmpty() ||
+        m_cachedPreviewLastControlIndex != m_points.size() - 2) {
+        rebuildPreviewPath();
+    }
+
+    if (!m_cachedPreviewPath.isEmpty()) {
+        painter.drawPath(m_cachedPreviewPath);
+        QPainterPath tailPath;
+        tailPath.moveTo(m_cachedPreviewPath.currentPosition());
+        tailPath.quadTo(m_points.last(), m_points.last());
+        painter.drawPath(tailPath);
+    }
+
+    painter.restore();
+}
+
 QRect MarkerStroke::boundingRect() const
 {
     if (m_points.isEmpty()) return QRect();
@@ -147,7 +188,7 @@ QRect MarkerStroke::boundingRect() const
 
 std::unique_ptr<AnnotationItem> MarkerStroke::clone() const
 {
-    return std::make_unique<MarkerStroke>(m_points, m_color, m_width);
+    return std::unique_ptr<AnnotationItem>(new MarkerStroke(m_points, m_color, m_width));
 }
 
 void MarkerStroke::translate(const QPointF& delta)
@@ -166,6 +207,8 @@ void MarkerStroke::translate(const QPointF& delta)
     m_cachedOrigin = QPoint();
     m_cachedDpr = 0.0;
     m_cachedPointCount = 0;
+    m_cachedPreviewPath = QPainterPath();
+    m_cachedPreviewLastControlIndex = 0;
 }
 
 void MarkerStroke::addPoint(const QPointF &point)
@@ -182,6 +225,18 @@ void MarkerStroke::addPoint(const QPointF &point)
         m_boundingRectDirty = false;
     } else {
         m_boundingRectCache = m_boundingRectCache.united(pointRect);
+    }
+
+    if (m_points.size() >= 3) {
+        if (m_cachedPreviewPath.isEmpty() ||
+            m_cachedPreviewLastControlIndex + 1 != m_points.size() - 2) {
+            rebuildPreviewPath();
+        } else {
+            const int controlIndex = m_points.size() - 2;
+            const QPointF mid = (m_points[controlIndex] + m_points[controlIndex + 1]) / 2.0;
+            m_cachedPreviewPath.quadTo(m_points[controlIndex], mid);
+            m_cachedPreviewLastControlIndex = controlIndex;
+        }
     }
 }
 

@@ -28,7 +28,6 @@ void StepBadgeToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
     );
 
     ctx->addItem(std::move(badge));
-    ctx->repaint();
 }
 
 QCursor StepBadgeToolHandler::cursor() const {

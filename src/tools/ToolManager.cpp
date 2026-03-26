@@ -74,10 +74,14 @@ IToolHandler* ToolManager::handler(ToolId id) {
 }
 
 void ToolManager::handleMousePress(const QPoint& pos, Qt::KeyboardModifiers modifiers) {
+    handleMousePress(QPointF(pos), modifiers);
+}
+
+void ToolManager::handleMousePress(const QPointF& pos, Qt::KeyboardModifiers modifiers) {
     m_context->shiftPressed = modifiers & Qt::ShiftModifier;
     if (auto* h = currentHandler()) {
         m_wasDrawing = h->isDrawing();
-        h->onMousePress(m_context.get(), pos);
+        h->onMousePressF(m_context.get(), pos);
         if (!m_wasDrawing && h->isDrawing()) {
             emit drawingStarted();
         }
@@ -85,17 +89,25 @@ void ToolManager::handleMousePress(const QPoint& pos, Qt::KeyboardModifiers modi
 }
 
 void ToolManager::handleMouseMove(const QPoint& pos, Qt::KeyboardModifiers modifiers) {
+    handleMouseMove(QPointF(pos), modifiers);
+}
+
+void ToolManager::handleMouseMove(const QPointF& pos, Qt::KeyboardModifiers modifiers) {
     m_context->shiftPressed = modifiers & Qt::ShiftModifier;
     if (auto* h = currentHandler()) {
-        h->onMouseMove(m_context.get(), pos);
+        h->onMouseMoveF(m_context.get(), pos);
     }
 }
 
 void ToolManager::handleMouseRelease(const QPoint& pos, Qt::KeyboardModifiers modifiers) {
+    handleMouseRelease(QPointF(pos), modifiers);
+}
+
+void ToolManager::handleMouseRelease(const QPointF& pos, Qt::KeyboardModifiers modifiers) {
     m_context->shiftPressed = modifiers & Qt::ShiftModifier;
     if (auto* h = currentHandler()) {
         bool wasDrawing = h->isDrawing();
-        h->onMouseRelease(m_context.get(), pos);
+        h->onMouseReleaseF(m_context.get(), pos);
         if (wasDrawing && !h->isDrawing()) {
             emit drawingFinished();
         }

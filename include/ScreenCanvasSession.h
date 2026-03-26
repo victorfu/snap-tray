@@ -6,7 +6,9 @@
 #include <QObject>
 #include <QPoint>
 #include <QPointer>
+#include <QPixmap>
 #include <QRect>
+#include <functional>
 #include <map>
 #include <memory>
 
@@ -58,6 +60,7 @@ class ScreenCanvasSession : public QObject
 
     friend class TestScreenCanvasPlacement;
     friend class TestScreenCanvasSessionRecovery;
+    friend class TestScreenCanvasCopyExport;
 
 public:
     struct ToolbarPlacementResolution
@@ -116,6 +119,23 @@ private:
     void configureSurface(ScreenCanvas* surface);
     void destroySurfaces();
     void updateAllSurfaces();
+    void updateSurfacesForAnnotationRect(const QRect& annotationRect);
+    bool hasActiveAnnotationInteraction() const;
+    QRect selectedAnnotationInteractionRect() const;
+    void requestLocalizedToolRepaint();
+    void resetAnnotationInteractionTracking();
+    struct FloatingUiVisibilityState {
+        bool toolbarVisible = false;
+        bool emojiPickerVisible = false;
+    };
+    struct ScreenSnapshotVisibilityState {
+        FloatingUiVisibilityState floatingUi;
+        QList<QPointer<ScreenCanvas>> visibleSurfaces;
+    };
+    FloatingUiVisibilityState hideFloatingUiForCapture();
+    void restoreFloatingUiAfterCapture(const FloatingUiVisibilityState& state);
+    ScreenSnapshotVisibilityState hideUiForScreenSnapshot();
+    void restoreUiAfterScreenSnapshot(const ScreenSnapshotVisibilityState& state);
 
     void activateSurface(ScreenCanvas* surface);
     void beginMouseGrab(ScreenCanvas* surface);
@@ -138,9 +158,15 @@ private:
     void handleUndoAction(ToolId toolId);
     void handleRedoAction(ToolId toolId);
     void handleClearAction(ToolId toolId);
+    void handleCopyAction(ToolId toolId);
     void handleExitAction(ToolId toolId);
     void finalizePolylineForToolbarInteraction();
     bool isDrawingTool(ToolId toolId) const;
+    QScreen* resolveCopyTargetScreen() const;
+    QPixmap buildCopyExportBasePixmap(QScreen* screen,
+                                      bool screenSnapshotUiAlreadyHidden = false) const;
+    QPixmap exportCanvasPixmapForScreen(QScreen* screen,
+                                        bool screenSnapshotUiAlreadyHidden = false) const;
 
     void setToolCursor();
     void syncFloatingUiCursor(ScreenCanvas* surface);
@@ -242,8 +268,11 @@ private:
     GizmoHandle m_arrowDragHandle = GizmoHandle::None;
     bool m_isPolylineDragging = false;
     int m_activePolylineVertexIndex = -1;
+    QRect m_lastAnnotationInteractionRect;
     QPoint m_dragStartPos;
     bool m_consumeNextToolRelease = false;
+    std::function<bool(const QImage&)> m_guiClipboardWriter;
+    std::function<QPixmap(QScreen*)> m_screenSnapshotProvider;
 };
 
 #endif // SCREENCANVASSESSION_H
