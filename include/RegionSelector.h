@@ -273,6 +273,10 @@ private:
     void maybeStartInitialRevealWait();
     void handleInitialRevealDetectorReady();
     void handleInitialRevealTimeout();
+    void syncCurrentPointToLiveCursor(bool preWarmMagnifierCache);
+    void startInitialCursorBootstrapSync();
+    void stopInitialCursorBootstrapSync();
+    void handleInitialCursorBootstrapTick();
     void invalidateWindowHighlightTransition(const QRect& previousHighlightRect,
                                              const QRect& nextHighlightRect,
                                              bool preferFullRepaint);
@@ -450,8 +454,10 @@ private:
     // Dirty region tracking for partial updates
     QRect m_lastSelectionRect;  // Previous selection rect for dirty region calculation
     QRect m_lastMagnifierRect;  // Previous magnifier rect
+    QRect m_hostFallbackCursorCompanionRect;
     QRect m_lastAnnotationInteractionVisualRect;
     bool m_forceFullRepaintOnNextWindowTransition = false;
+    bool m_detachedCaptureWindowsNeedFullClear = false;
     bool m_selectionCompletionHandoffPending = false;
     SelectionStateManager::State m_lastSelectionState = SelectionStateManager::State::None;
     bool m_detachedWindowDeactivateGuardPending = false;
@@ -459,6 +465,8 @@ private:
 
     // Screen switch monitoring
     QTimer* m_screenSwitchTimer = nullptr;
+    QTimer* m_initialCursorBootstrapTimer = nullptr;
+    int m_initialCursorBootstrapTicksRemaining = 0;
 
     struct SelectorCaptureContext {
         QPixmap backgroundPixmap;

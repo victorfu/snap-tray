@@ -1,8 +1,11 @@
 #include <QtTest>
 
+#include <QCursor>
 #include <QMouseEvent>
 #include <QSignalSpy>
 #include <QWidget>
+#include <QScreen>
+#include <QGuiApplication>
 
 #include "annotations/AnnotationLayer.h"
 #include "cursor/CursorManager.h"
@@ -42,6 +45,8 @@ private slots:
     void testSelectionMoveSetsAndClearsDragStateOnRelease();
     void testSelectionMoveClearsDragStateOnRightClickCancel();
     void testMouseMoveEmitsCurrentPointUpdatedDuringSelectionDrag();
+    void testIdleHoverPrefersLiveCursorPositionOverStaleEventPosition();
+    void testIdleHoverPollingTracksLiveCursorWithoutMouseEvent();
     void testCompletedSelectionHoverSkipsMagnifierDirtyRegionWhenDisabled();
 
 private:
@@ -297,6 +302,67 @@ void tst_RegionInputHandler::testMouseMoveEmitsCurrentPointUpdatedDuringSelectio
 
     QCOMPARE(pointSpy.count(), 1);
     QCOMPARE(pointSpy.takeFirst().at(0).toPoint(), QPoint(180, 210));
+}
+
+void tst_RegionInputHandler::testIdleHoverPrefersLiveCursorPositionOverStaleEventPosition()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        QSKIP("No screen available for live cursor hover test.");
+    }
+
+    const QPoint originalCursorPos = QCursor::pos();
+    const QPoint liveCursorPos = screen->geometry().topLeft() + QPoint(320, 240);
+    m_parentWidget->setGeometry(screen->geometry());
+
+    QCursor::setPos(liveCursorPos);
+    QCoreApplication::processEvents();
+    if (QCursor::pos() != liveCursorPos) {
+        QCursor::setPos(originalCursorPos);
+        QSKIP("System cursor position could not be adjusted for live cursor hover test.");
+    }
+
+    QSignalSpy pointSpy(m_handler, &RegionInputHandler::currentPointUpdated);
+    auto moveEvent = makeMouseEvent(QEvent::MouseMove, QPoint(100, 120), Qt::NoButton, Qt::NoButton);
+    m_handler->handleMouseMove(&moveEvent);
+
+    QCOMPARE(pointSpy.count(), 1);
+    QCOMPARE(pointSpy.takeFirst().at(0).toPoint(), QPoint(320, 240));
+    QCOMPARE(m_state.currentPoint, QPoint(320, 240));
+
+    QCursor::setPos(originalCursorPos);
+}
+
+void tst_RegionInputHandler::testIdleHoverPollingTracksLiveCursorWithoutMouseEvent()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        QSKIP("No screen available for hover polling test.");
+    }
+
+    const QPoint originalCursorPos = QCursor::pos();
+    const QPoint initialCursorPos = screen->geometry().topLeft() + QPoint(220, 180);
+    const QPoint polledCursorPos = screen->geometry().topLeft() + QPoint(360, 260);
+    m_parentWidget->setGeometry(screen->geometry());
+
+    QCursor::setPos(initialCursorPos);
+    QCoreApplication::processEvents();
+    if (QCursor::pos() != initialCursorPos) {
+        QCursor::setPos(originalCursorPos);
+        QSKIP("System cursor position could not be adjusted for hover polling test.");
+    }
+
+    QSignalSpy pointSpy(m_handler, &RegionInputHandler::currentPointUpdated);
+    auto moveEvent = makeMouseEvent(QEvent::MouseMove, QPoint(220, 180), Qt::NoButton, Qt::NoButton);
+    m_handler->handleMouseMove(&moveEvent);
+    QVERIFY(pointSpy.count() >= 1);
+
+    QCursor::setPos(polledCursorPos);
+    QTest::qWait(40);
+
+    const QPoint expectedPoint = QPoint(360, 260);
+    QCursor::setPos(originalCursorPos);
+    QCOMPARE(m_state.currentPoint, expectedPoint);
 }
 
 void tst_RegionInputHandler::testCompletedSelectionHoverSkipsMagnifierDirtyRegionWhenDisabled()

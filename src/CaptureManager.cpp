@@ -406,9 +406,9 @@ void CaptureManager::refreshWindowDetectorForCapture(QScreen *screen)
 
     m_windowDetector->setScreen(screen);
 #ifdef Q_OS_MACOS
-    m_windowDetector->refreshWindowList();
+    m_windowDetector->refreshWindowList(WindowDetector::QueryMode::TopLevelOnly);
 #else
-    m_windowDetector->refreshWindowListAsync();
+    m_windowDetector->refreshWindowListAsync(WindowDetector::QueryMode::TopLevelOnly);
 #endif
 }
 
@@ -419,7 +419,7 @@ void CaptureManager::refreshWindowDetectorAsync(QScreen *screen)
     }
 
     m_windowDetector->setScreen(screen);
-    m_windowDetector->refreshWindowListAsync();
+    m_windowDetector->refreshWindowListAsync(WindowDetector::QueryMode::TopLevelOnly);
 }
 
 RegionSelector *CaptureManager::createRegionSelector(bool showShortcutHintsOnEntry)

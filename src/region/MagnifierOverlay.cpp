@@ -7,6 +7,7 @@
 #include <QPainter>
 #include <QPixmap>
 #include <QShowEvent>
+#include <QCursor>
 
 MagnifierOverlay::MagnifierOverlay(MagnifierPanel* panel, QWidget* parent)
     : QWidget(nullptr,
@@ -32,7 +33,9 @@ void MagnifierOverlay::syncToHost(QWidget* host,
 {
     m_host = host;
     m_backgroundPixmap = backgroundPixmap;
-    m_cursorPos = cursorPos;
+    const QPoint liveCursorPos = currentHostCursorPos();
+    const QPoint effectiveCursorPos = liveCursorPos.isNull() ? cursorPos : liveCursorPos;
+    m_cursorPos = effectiveCursorPos;
     m_style = style;
 
     const bool canRenderMagnifier =
@@ -57,33 +60,44 @@ void MagnifierOverlay::syncToHost(QWidget* host,
 
     const QRect currentMagnifierRect =
         m_dirtyRegionPlanner.cursorCompanionRectForCursor(m_style, m_cursorPos, m_host->size());
+    QRect dirtyRect = currentMagnifierRect;
+    if (!m_lastMagnifierRect.isNull() && m_lastMagnifierRect != currentMagnifierRect) {
+        dirtyRect = dirtyRect.united(m_lastMagnifierRect);
+    }
 
     if (!isVisible()) {
         show();
         raise();
+        m_hasPaintedSinceShow = false;
         m_lastMagnifierRect = currentMagnifierRect;
-        update(currentMagnifierRect);
+        repaint();
         return;
     }
 
-    if (geometryChanged || (!m_lastMagnifierRect.isNull() &&
-                            m_lastMagnifierRect != currentMagnifierRect)) {
-        update(m_lastMagnifierRect);
-    }
-
     m_lastMagnifierRect = currentMagnifierRect;
-    update(currentMagnifierRect);
-    raise();
+    if (dirtyRect.isValid() && !dirtyRect.isEmpty()) {
+        repaint(dirtyRect);
+    } else if (geometryChanged) {
+        repaint();
+    }
 }
 
 void MagnifierOverlay::hideOverlay()
 {
     m_lastMagnifierRect = QRect();
+    m_hasPaintedSinceShow = false;
     hide();
 }
 
 void MagnifierOverlay::paintEvent(QPaintEvent* event)
 {
+    if (!m_hasPaintedSinceShow) {
+        const QPoint liveCursorPos = currentHostCursorPos();
+        if (!liveCursorPos.isNull() && liveCursorPos != m_cursorPos) {
+            m_cursorPos = liveCursorPos;
+        }
+    }
+
     QPainter painter(this);
     painter.setClipRegion(event->region());
     painter.setCompositionMode(QPainter::CompositionMode_Source);
@@ -91,7 +105,18 @@ void MagnifierOverlay::paintEvent(QPaintEvent* event)
     painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
     painter.setRenderHint(QPainter::Antialiasing);
     painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+    m_hasPaintedSinceShow = true;
 
+    paintCurrentStyle(painter);
+}
+
+void MagnifierOverlay::paintFallback(QPainter& painter)
+{
+    paintCurrentStyle(painter);
+}
+
+void MagnifierOverlay::paintCurrentStyle(QPainter& painter)
+{
     if (m_style == RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier) {
         if (!m_panel || !m_backgroundPixmap || m_backgroundPixmap->isNull()) {
             return;
@@ -124,6 +149,20 @@ QRect MagnifierOverlay::hostGlobalRect() const
     }
 
     return QRect(m_host->mapToGlobal(QPoint(0, 0)), m_host->size());
+}
+
+QPoint MagnifierOverlay::currentHostCursorPos() const
+{
+    if (!m_host || !m_host->isVisible()) {
+        return QPoint();
+    }
+
+    QPoint localPos = m_host->mapFromGlobal(QCursor::pos());
+    const int maxX = qMax(0, m_host->width() - 1);
+    const int maxY = qMax(0, m_host->height() - 1);
+    localPos.setX(qBound(0, localPos.x(), maxX));
+    localPos.setY(qBound(0, localPos.y(), maxY));
+    return localPos;
 }
 
 void MagnifierOverlay::drawBeaver(QPainter& painter)

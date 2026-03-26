@@ -56,6 +56,7 @@ public:
 private:
     void ensureView();
     void applyPlatformWindowFlags();
+    void syncTransientParent();
     void updateWindowMask();
     void syncCursorSurface();
     bool eventFilter(QObject* watched, QEvent* event) override;

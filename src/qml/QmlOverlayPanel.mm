@@ -139,12 +139,34 @@ void QmlOverlayPanel::applyPlatformWindowFlags()
     QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
 }
 
+void QmlOverlayPanel::syncTransientParent()
+{
+    if (!m_view) {
+        return;
+    }
+
+    QWidget* hostWindow = m_parentWidget ? m_parentWidget->window() : nullptr;
+    if (hostWindow && hostWindow->windowHandle()) {
+        m_view->setTransientParent(hostWindow->windowHandle());
+    } else {
+        m_view->setTransientParent(nullptr);
+    }
+
+    // Owner/transient changes on Windows can reintroduce native caption bits
+    // or destabilize frameless overlay behavior. Reapply policy after each sync.
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
+    if (m_view->isVisible()) {
+        applyPlatformWindowFlags();
+    }
+}
+
 void QmlOverlayPanel::show()
 {
     ensureView();
     if (!m_rootItem)
         return;
 
+    syncTransientParent();
     m_view->show();
     applyPlatformWindowFlags();
     QmlOverlayManager::enableNativeShadow(m_view);
@@ -238,6 +260,7 @@ void QmlOverlayPanel::resize(const QSize& size)
 void QmlOverlayPanel::setParentWidget(QWidget* parent)
 {
     m_parentWidget = parent;
+    syncTransientParent();
 }
 
 void QmlOverlayPanel::updateWindowMask()

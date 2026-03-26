@@ -20,12 +20,14 @@
 #include <QMouseEvent>
 #include <QWidget>
 #include <QDebug>
+#include <QApplication>
 #include <QTextEdit>
 #include <QCursor>
 #include <QtGlobal>
 #include <QtMath>
 
 namespace {
+
 qreal normalizeAngleDelta(qreal deltaDegrees)
 {
     while (deltaDegrees > 180.0) {
@@ -242,8 +244,20 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
 
     m_currentModifiers = event->modifiers();
     m_lastToolEventPos = event->position();
+    const bool shouldPreferLiveCursor =
+        event->buttons() == Qt::NoButton &&
+        !m_pendingWindowClickActive &&
+        !m_selectionManager->isSelecting() &&
+        !m_selectionManager->isResizing() &&
+        !m_selectionManager->isMoving() &&
+        !state().isDrawing &&
+        !isManipulatingAnnotation();
+    const QPoint effectivePos = shouldPreferLiveCursor
+        ? currentCursorLocalPos()
+        : event->pos();
+
     const QPoint previousPoint = state().currentPoint;
-    state().currentPoint = event->pos();
+    state().currentPoint = effectivePos;
     if (state().currentPoint != previousPoint) {
         emit currentPointUpdated(state().currentPoint);
     }
@@ -256,7 +270,7 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
         (event->buttons() & Qt::LeftButton)) {
         qDebug() << "RegionInputHandler: Recovering from race condition - "
                  << "starting selection from mouseMoveEvent";
-        handleNewSelectionPress(event->pos());
+        handleNewSelectionPress(effectivePos);
     }
 
     // Keep crosshair sticky during pre-selection idle.
@@ -269,45 +283,45 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
     }
 
     // Handle text editor in confirm mode
-    if (handleTextEditorMove(event->pos())) {
+    if (handleTextEditorMove(effectivePos)) {
         return;
     }
 
     if (m_toolManager &&
-        m_toolManager->handleTextInteractionMove(event->pos(), event->modifiers())) {
+        m_toolManager->handleTextInteractionMove(effectivePos, event->modifiers())) {
         return;
     }
 
     // Handle emoji sticker dragging/scaling
-    if (handleEmojiStickerMove(event->pos())) {
+    if (handleEmojiStickerMove(effectivePos)) {
         return;
     }
 
     if (m_toolManager &&
-        m_toolManager->handleShapeInteractionMove(event->pos(), event->modifiers())) {
+        m_toolManager->handleShapeInteractionMove(effectivePos, event->modifiers())) {
         return;
     }
 
     // Handle arrow annotation dragging/handle manipulation
-    if (handleArrowAnnotationMove(event->pos())) {
+    if (handleArrowAnnotationMove(effectivePos)) {
         return;
     }
 
     // Handle polyline annotation dragging/vertex manipulation
-    if (handlePolylineAnnotationMove(event->pos())) {
+    if (handlePolylineAnnotationMove(effectivePos)) {
         return;
     }
 
     if (m_pendingWindowClickActive && !m_selectionManager->hasActiveSelection()) {
-        const int dx = event->pos().x() - m_pendingWindowClickStartPos.x();
-        const int dy = event->pos().y() - m_pendingWindowClickStartPos.y();
+        const int dx = effectivePos.x() - m_pendingWindowClickStartPos.x();
+        const int dy = effectivePos.y() - m_pendingWindowClickStartPos.y();
         if ((dx * dx + dy * dy) > WINDOW_CLICK_MAX_DISTANCE_SQ) {
             m_selectionManager->startSelection(m_pendingWindowClickStartPos);
             m_lastSelectionRect = QRect();
             // Crossing the click-drift threshold turns a detected-window click
             // into a real drag-selection transition.
             clearDetectionAndNotify(true);
-            m_selectionManager->updateSelection(event->pos());
+            m_selectionManager->updateSelection(effectivePos);
             m_pendingWindowClickActive = false;
             m_pendingWindowClickRect = QRect();
             m_pendingWindowClickStartPos = QPoint();
@@ -316,25 +330,25 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
 
     // Window detection during hover
     if (!m_pendingWindowClickActive) {
-        handleWindowDetectionMove(event->pos());
+        handleWindowDetectionMove(effectivePos);
     }
 
     // Handle selection states
     if (m_selectionManager->isSelecting()) {
-        handleSelectionMove(event->pos());
+        handleSelectionMove(effectivePos);
     }
     else if (m_selectionManager->isResizing()) {
-        m_selectionManager->updateResize(event->pos());
+        m_selectionManager->updateResize(effectivePos);
     }
     else if (m_selectionManager->isMoving()) {
-        m_selectionManager->updateMove(event->pos());
+        m_selectionManager->updateMove(effectivePos);
     }
     else if (state().isDrawing) {
-        handleAnnotationMove(event->position());
+        handleAnnotationMove(QPointF(effectivePos));
     }
     else if (m_selectionManager->isComplete() ||
         (state().multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0)) {
-        handleHoverMove(event->pos(), event->buttons());
+        handleHoverMove(effectivePos, event->buttons());
     }
 
     // Throttled updates
@@ -1089,16 +1103,20 @@ void RegionInputHandler::updateDragFramePump()
         return;
     }
 
-    const bool selectionPreviewOverlayActive =
-        m_isSelectionPreviewOverlayActive && m_isSelectionPreviewOverlayActive();
-    if (selectionPreviewOverlayActive) {
-        m_dragFrameTimer.stop();
-        return;
-    }
+    const bool shouldPollHoverCursor =
+        m_state &&
+        QApplication::mouseButtons() == Qt::NoButton &&
+        !m_selectionManager->isSelecting() &&
+        !m_selectionManager->isResizing() &&
+        !m_selectionManager->isMoving() &&
+        !m_pendingWindowClickActive &&
+        !state().isDrawing &&
+        !isManipulatingAnnotation();
 
     const bool shouldRun = m_selectionManager->isSelecting() ||
                            m_selectionManager->isResizing() ||
-                           m_selectionManager->isMoving();
+                           m_selectionManager->isMoving() ||
+                           shouldPollHoverCursor;
     if (shouldRun) {
         if (!m_dragFrameTimer.isActive()) {
             m_dragFrameTimer.start();
@@ -1118,9 +1136,17 @@ void RegionInputHandler::onDragFrameTick()
         return;
     }
 
-    if (!m_selectionManager->isSelecting() &&
-        !m_selectionManager->isResizing() &&
-        !m_selectionManager->isMoving()) {
+    const bool isSelectionInteraction =
+        m_selectionManager->isSelecting() ||
+        m_selectionManager->isResizing() ||
+        m_selectionManager->isMoving();
+    const bool shouldPollHoverCursor =
+        QApplication::mouseButtons() == Qt::NoButton &&
+        !m_pendingWindowClickActive &&
+        !state().isDrawing &&
+        !isManipulatingAnnotation();
+
+    if (!isSelectionInteraction && !shouldPollHoverCursor) {
         m_dragFrameTimer.stop();
         return;
     }
@@ -1140,6 +1166,16 @@ void RegionInputHandler::onDragFrameTick()
     }
     else if (m_selectionManager->isMoving()) {
         m_selectionManager->updateMove(localPos);
+    }
+    else {
+        if (!m_pendingWindowClickActive) {
+            handleWindowDetectionMove(localPos);
+        }
+
+        if (m_selectionManager->isComplete() ||
+            (state().multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0)) {
+            handleHoverMove(localPos, Qt::NoButton);
+        }
     }
 
     handleThrottledUpdate();

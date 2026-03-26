@@ -67,6 +67,7 @@ class tst_WindowDetectorQueryMode : public QObject
 
 private slots:
     void testTopLevelOnlySkipsChildQuery();
+    void testTopLevelCacheDoesNotPretendChildControlsAreReady();
     void testIncludeChildControlsUsesChildQuery();
     void testContextMenuPrefersTopLevelBounds();
 };
@@ -100,6 +101,39 @@ void tst_WindowDetectorQueryMode::testTopLevelOnlySkipsChildQuery()
     QCOMPARE(detector.childQueryCount, 0);
 }
 
+void tst_WindowDetectorQueryMode::testTopLevelCacheDoesNotPretendChildControlsAreReady()
+{
+    QScreen* screen = QGuiApplication::screenAt(QCursor::pos());
+    if (!screen) {
+        screen = QGuiApplication::primaryScreen();
+    }
+    if (!screen) {
+        QSKIP("No screen available for WindowDetector cache readiness test.");
+    }
+
+    const QRect topBounds = clampRectToScreen(screen->geometry(), screen->geometry().center(), QSize(220, 160));
+    const QPoint hitPoint = topBounds.center();
+
+    TestWindowDetector detector;
+    detector.m_enabled = true;
+    detector.setScreen(screen);
+    detector.m_refreshComplete = true;
+    detector.m_cacheReady = true;
+    detector.m_cacheScreen = screen;
+    detector.m_cacheQueryMode = WindowDetector::QueryMode::TopLevelOnly;
+    detector.m_windowCache = {makeElement(topBounds)};
+    detector.childResult = makeElement(QRect(hitPoint.x() - 20, hitPoint.y() - 15, 40, 30), 1);
+
+    QVERIFY(detector.isWindowCacheReady(WindowDetector::QueryMode::TopLevelOnly));
+    QVERIFY(!detector.isWindowCacheReady(WindowDetector::QueryMode::IncludeChildControls));
+
+    const auto result = detector.detectWindowAt(hitPoint, WindowDetector::QueryMode::IncludeChildControls);
+
+    QVERIFY(result.has_value());
+    QCOMPARE(result->bounds, topBounds);
+    QCOMPARE(detector.childQueryCount, 0);
+}
+
 void tst_WindowDetectorQueryMode::testIncludeChildControlsUsesChildQuery()
 {
     QScreen* screen = QGuiApplication::screenAt(QCursor::pos());
@@ -120,6 +154,7 @@ void tst_WindowDetectorQueryMode::testIncludeChildControlsUsesChildQuery()
     detector.m_refreshComplete = true;
     detector.m_cacheReady = true;
     detector.m_cacheScreen = screen;
+    detector.m_cacheQueryMode = WindowDetector::QueryMode::IncludeChildControls;
     detector.m_windowCache = {makeElement(topBounds)};
     detector.childResult = makeElement(childBounds, 1);
 
@@ -150,6 +185,7 @@ void tst_WindowDetectorQueryMode::testContextMenuPrefersTopLevelBounds()
     detector.m_refreshComplete = true;
     detector.m_cacheReady = true;
     detector.m_cacheScreen = screen;
+    detector.m_cacheQueryMode = WindowDetector::QueryMode::IncludeChildControls;
     detector.m_windowCache = {makeElement(topBounds, 100, ElementType::ContextMenu)};
     detector.childResult = makeElement(rowBounds, 101);
 

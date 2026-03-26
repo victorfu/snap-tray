@@ -187,6 +187,12 @@ void CaptureChromeWindow::syncToHost(QWidget* host,
     QRegion dirtyRegion = m_pendingDirtyRegion;
     m_pendingDirtyRegion = QRegion();
 
+#ifdef Q_OS_WIN
+    // The dimension label and selection chrome can leave trails on some
+    // Windows compositions when partial dirty regions under-clear the previous
+    // glass/chrome footprint. Favor correctness over micro-optimization here.
+    dirtyRegion = QRegion(rect());
+#else
     if (geometryChanged || becameVisible || !wasVisible) {
         dirtyRegion = QRegion(rect());
     } else {
@@ -236,6 +242,7 @@ void CaptureChromeWindow::syncToHost(QWidget* host,
             dirtyRegion += newShortcutHintsRect;
         }
     }
+#endif
 
     if (!dirtyRegion.isEmpty()) {
         update(dirtyRegion);

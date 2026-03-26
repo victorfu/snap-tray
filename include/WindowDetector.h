@@ -74,17 +74,17 @@ public:
     bool isEnabled() const;
 
     // Refresh window list (call before capture session starts)
-    void refreshWindowList();
+    void refreshWindowList(QueryMode queryMode = QueryMode::IncludeChildControls);
 
     // Async version - enumerate windows in background thread
-    void refreshWindowListAsync();
+    void refreshWindowListAsync(QueryMode queryMode = QueryMode::IncludeChildControls);
 
     // Check if async refresh is complete
     bool isRefreshComplete() const;
 
     // Check whether the current screen already has a usable cache snapshot,
     // even if a newer async refresh is still in flight.
-    bool isWindowCacheReady() const;
+    bool isWindowCacheReady(QueryMode queryMode = QueryMode::TopLevelOnly) const;
 
     // Find window at point (screen coordinates)
     std::optional<DetectedElement> detectWindowAt(
@@ -117,6 +117,7 @@ private:
     std::atomic<uint64_t> m_refreshRequestId{0};
     bool m_cacheReady = false;
     QScreen* m_cacheScreen = nullptr;
+    QueryMode m_cacheQueryMode = QueryMode::TopLevelOnly;
 
 #ifdef Q_OS_MACOS
     std::optional<DetectedElement> detectChildElementAt(const QPoint &screenPos, qint64 targetPid, const QRect &windowBounds) const;

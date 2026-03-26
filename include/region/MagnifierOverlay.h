@@ -10,6 +10,7 @@
 
 class MagnifierPanel;
 class QPixmap;
+class QPainter;
 
 /**
  * @brief Transparent top-level window that renders the RegionSelector magnifier.
@@ -34,6 +35,8 @@ public:
                     RegionCaptureSettingsManager::CursorCompanionStyle style,
                     bool shouldShow);
     void hideOverlay();
+    bool hasPaintedSinceShow() const { return m_hasPaintedSinceShow; }
+    void paintFallback(QPainter& painter);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -41,7 +44,9 @@ protected:
 
 private:
     QRect hostGlobalRect() const;
+    QPoint currentHostCursorPos() const;
     void drawBeaver(QPainter& painter);
+    void paintCurrentStyle(QPainter& painter);
 
     MagnifierPanel* m_panel = nullptr;
     QWidget* m_host = nullptr;
@@ -52,6 +57,7 @@ private:
         RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier;
     QPixmap m_beaverPixmap;
     SelectionDirtyRegionPlanner m_dirtyRegionPlanner;
+    bool m_hasPaintedSinceShow = false;
 };
 
 #endif // MAGNIFIEROVERLAY_H

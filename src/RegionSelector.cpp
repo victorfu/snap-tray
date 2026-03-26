@@ -126,8 +126,11 @@ bool shouldSuppressCompletedSelectionDragUi(const SelectionStateManager* selecti
 }
 
 constexpr int kInitialRevealTimeoutMs = 120;
+constexpr int kInitialCursorBootstrapIntervalMs = 16;
+constexpr int kInitialCursorBootstrapDurationMs = 160;
 constexpr int kAnnotationInteractionVisualMargin = 52;
 constexpr int kWindowHighlightRepaintPadding = 2;
+SelectionDirtyRegionPlanner g_cursorCompanionDirtyRegionPlanner;
 
 QRect paddedWindowHighlightVisualRect(RegionPainter* painter, const QRect& windowRect)
 {
@@ -548,6 +551,12 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_initialRevealTimer->setSingleShot(true);
     connect(m_initialRevealTimer, &QTimer::timeout,
             this, &RegionSelector::handleInitialRevealTimeout);
+
+    m_initialCursorBootstrapTimer = new QTimer(this);
+    m_initialCursorBootstrapTimer->setTimerType(Qt::PreciseTimer);
+    m_initialCursorBootstrapTimer->setInterval(kInitialCursorBootstrapIntervalMs);
+    connect(m_initialCursorBootstrapTimer, &QTimer::timeout,
+            this, &RegionSelector::handleInitialCursorBootstrapTick);
 
     // Install application-level event filter to capture ESC even when window loses focus
     qApp->installEventFilter(this);
@@ -1339,7 +1348,10 @@ void RegionSelector::refreshMagnifierContext(const QPoint& cursorPos,
     const qreal normalizedDpr = devicePixelRatio > 0.0 ? devicePixelRatio : 1.0;
     m_magnifierPanel->setDevicePixelRatio(normalizedDpr);
     m_magnifierPanel->invalidateCache();
-    if (preWarmCache && !backgroundPixmap.isNull()) {
+    const bool shouldPreWarmMagnifier =
+        preWarmCache &&
+        m_cursorCompanionStyle == RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier;
+    if (shouldPreWarmMagnifier && !backgroundPixmap.isNull()) {
         m_magnifierPanel->preWarmCache(cursorPos, backgroundPixmap);
     }
 }
@@ -2077,14 +2089,15 @@ void RegionSelector::refreshWindowDetectorForCurrentScreen()
     }
 
     m_windowDetector->setScreen(m_currentScreen.data());
-    m_windowDetector->refreshWindowListAsync();
+    m_windowDetector->refreshWindowListAsync(WindowDetector::QueryMode::TopLevelOnly);
 
-    if (m_windowDetector->isRefreshComplete()) {
-        refreshWindowDetectionAtCursor();
+    if (m_windowDetector->isWindowCacheReady(WindowDetector::QueryMode::TopLevelOnly) ||
+        m_windowDetector->isRefreshComplete()) {
+        refreshWindowDetectionAtCursor(WindowDetector::QueryMode::TopLevelOnly);
     } else {
         connect(m_windowDetector, &WindowDetector::windowListReady,
                 this, [this]() {
-                    refreshWindowDetectionAtCursor();
+                    refreshWindowDetectionAtCursor(WindowDetector::QueryMode::TopLevelOnly);
                 }, Qt::SingleShotConnection);
     }
 }
@@ -2095,8 +2108,10 @@ void RegionSelector::resetInitialRevealState()
     m_initialRevealState = InitialRevealState::Revealed;
     m_initialRevealCursorPos = QPoint();
     m_forceFullRepaintOnNextWindowTransition = false;
+    m_detachedCaptureWindowsNeedFullClear = false;
     m_selectionCompletionHandoffPending = false;
     m_detachedWindowDeactivateGuardPending = false;
+    m_hostFallbackCursorCompanionRect = QRect();
 
     if (m_initialRevealTimer) {
         m_initialRevealTimer->stop();
@@ -2106,6 +2121,8 @@ void RegionSelector::resetInitialRevealState()
         disconnect(m_initialRevealWindowListReadyConnection);
         m_initialRevealWindowListReadyConnection = {};
     }
+
+    stopInitialCursorBootstrapSync();
 }
 
 void RegionSelector::invalidateWindowHighlightTransition(const QRect& previousHighlightRect,
@@ -2182,14 +2199,13 @@ void RegionSelector::beginInitialRevealPreparation(WindowDetector::QueryMode ini
         !m_windowDetector ||
         !m_windowDetector->isEnabled();
 
-    if (skipInitialWindowDetection) {
-        m_initialRevealState = InitialRevealState::ReadyToReveal;
-    } else if (m_windowDetector->isWindowCacheReady() ||
-               m_windowDetector->isRefreshComplete()) {
+    if (!skipInitialWindowDetection &&
+        (m_windowDetector->isWindowCacheReady(WindowDetector::QueryMode::TopLevelOnly) ||
+         m_windowDetector->isRefreshComplete())) {
         applyInitialWindowDetection(initialQueryMode);
-        m_initialRevealState = InitialRevealState::ReadyToReveal;
     }
 
+    m_initialRevealState = InitialRevealState::ReadyToReveal;
     maybeStartInitialRevealWait();
 }
 
@@ -2204,7 +2220,8 @@ void RegionSelector::maybeStartInitialRevealWait()
         m_initialRevealWindowListReadyConnection = {};
     }
 
-    if (!m_windowDetector->isRefreshComplete()) {
+    if (!m_windowDetector->isWindowCacheReady(WindowDetector::QueryMode::TopLevelOnly) &&
+        !m_windowDetector->isRefreshComplete()) {
         const quint64 token = m_initialRevealToken;
         m_initialRevealWindowListReadyConnection = connect(
             m_windowDetector,
@@ -2217,22 +2234,18 @@ void RegionSelector::maybeStartInitialRevealWait()
                 handleInitialRevealDetectorReady();
             },
             Qt::SingleShotConnection);
-    }
-
-    if (m_initialRevealState != InitialRevealState::Preparing) {
         if (m_initialRevealTimer) {
             m_initialRevealTimer->stop();
         }
         return;
     }
 
-    if (m_windowDetector->isWindowCacheReady() || m_windowDetector->isRefreshComplete()) {
+    if (m_initialRevealState == InitialRevealState::ReadyToReveal ||
+        m_windowDetector->isWindowCacheReady(WindowDetector::QueryMode::TopLevelOnly) ||
+        m_windowDetector->isRefreshComplete()) {
         handleInitialRevealDetectorReady();
-        return;
-    }
-
-    if (m_initialRevealTimer && !m_initialRevealTimer->isActive()) {
-        m_initialRevealTimer->start(kInitialRevealTimeoutMs);
+    } else if (m_initialRevealTimer) {
+        m_initialRevealTimer->stop();
     }
 }
 
@@ -2242,7 +2255,9 @@ void RegionSelector::handleInitialRevealDetectorReady()
         return;
     }
 
-    if (m_initialRevealState == InitialRevealState::Preparing) {
+    if (m_initialRevealState == InitialRevealState::Preparing ||
+        m_initialRevealState == InitialRevealState::ReadyToReveal) {
+        syncCurrentPointToLiveCursor(true);
         applyInitialWindowDetection(m_initialWindowDetectionMode);
         m_initialRevealState = InitialRevealState::ReadyToReveal;
         commitInitialReveal();
@@ -2253,6 +2268,13 @@ void RegionSelector::handleInitialRevealDetectorReady()
         !m_historyReplayActive &&
         m_selectionManager &&
         !m_selectionManager->hasSelection()) {
+        if (!m_windowDetector->isWindowCacheReady(
+                WindowDetector::QueryMode::IncludeChildControls)) {
+            m_windowDetector->refreshWindowListAsync(
+                WindowDetector::QueryMode::IncludeChildControls);
+            maybeStartInitialRevealWait();
+            return;
+        }
         refreshWindowDetectionAtCursor(WindowDetector::QueryMode::IncludeChildControls);
     }
 }
@@ -2267,13 +2289,80 @@ void RegionSelector::handleInitialRevealTimeout()
 
     if (m_windowDetector &&
         m_windowDetector->isEnabled() &&
-        (m_windowDetector->isWindowCacheReady() || m_windowDetector->isRefreshComplete())) {
+        (m_windowDetector->isWindowCacheReady(WindowDetector::QueryMode::TopLevelOnly) ||
+         m_windowDetector->isRefreshComplete())) {
         handleInitialRevealDetectorReady();
         return;
     }
 
     m_initialRevealState = InitialRevealState::ReadyToReveal;
     commitInitialReveal();
+}
+
+void RegionSelector::syncCurrentPointToLiveCursor(bool preWarmMagnifierCache)
+{
+    if (!isScreenValid()) {
+        return;
+    }
+
+    const QRect screenGeometry = m_currentScreen->geometry();
+    QPoint localCursor = QCursor::pos() - screenGeometry.topLeft();
+    localCursor.setX(qBound(0, localCursor.x(), qMax(0, width() - 1)));
+    localCursor.setY(qBound(0, localCursor.y(), qMax(0, height() - 1)));
+
+    const QPoint previousPoint = m_inputState.currentPoint;
+    if (localCursor == previousPoint) {
+        return;
+    }
+
+    m_inputState.currentPoint = localCursor;
+    if (preWarmMagnifierCache) {
+        refreshMagnifierContext(localCursor, m_backgroundPixmap, m_devicePixelRatio, true);
+    }
+}
+
+void RegionSelector::startInitialCursorBootstrapSync()
+{
+    if (!m_initialCursorBootstrapTimer) {
+        return;
+    }
+
+    m_initialCursorBootstrapTicksRemaining =
+        qMax(1, kInitialCursorBootstrapDurationMs / kInitialCursorBootstrapIntervalMs);
+    m_initialCursorBootstrapTimer->start();
+}
+
+void RegionSelector::stopInitialCursorBootstrapSync()
+{
+    m_initialCursorBootstrapTicksRemaining = 0;
+    if (m_initialCursorBootstrapTimer) {
+        m_initialCursorBootstrapTimer->stop();
+    }
+}
+
+void RegionSelector::handleInitialCursorBootstrapTick()
+{
+    if (!m_initialCursorBootstrapTimer ||
+        !m_initialCursorBootstrapTimer->isActive() ||
+        m_isClosing ||
+        !isVisible() ||
+        m_initialRevealState != InitialRevealState::Revealed ||
+        !isScreenValid()) {
+        stopInitialCursorBootstrapSync();
+        return;
+    }
+
+    const QPoint previousPoint = m_inputState.currentPoint;
+    syncCurrentPointToLiveCursor(false);
+    if (m_inputState.currentPoint != previousPoint) {
+        syncMagnifierOverlay();
+        syncCaptureChromeWindow();
+        requestCaptureSceneUpdate();
+    }
+
+    if (--m_initialCursorBootstrapTicksRemaining <= 0) {
+        stopInitialCursorBootstrapSync();
+    }
 }
 
 void RegionSelector::applyInitialWindowDetection(WindowDetector::QueryMode queryMode)
@@ -2302,12 +2391,14 @@ void RegionSelector::commitInitialReveal()
         m_initialRevealTimer->stop();
     }
 
-    repaint();
+    syncCurrentPointToLiveCursor(true);
     setWindowOpacity(1.0);
     m_initialRevealState = InitialRevealState::Revealed;
     syncStaticCaptureBackgroundWindow();
     syncCaptureChromeWindow();
     syncMagnifierOverlay();
+    repaint();
+    startInitialCursorBootstrapSync();
     QTimer::singleShot(0, this, &RegionSelector::syncFloatingUiCursor);
     scheduleInitialRevealRefinement();
 }
@@ -2331,7 +2422,15 @@ void RegionSelector::scheduleInitialRevealRefinement()
             !isScreenValid() ||
             !m_windowDetector ||
             !m_windowDetector->isEnabled() ||
-            !m_windowDetector->isWindowCacheReady()) {
+            !m_windowDetector->isWindowCacheReady(WindowDetector::QueryMode::TopLevelOnly)) {
+            return;
+        }
+
+        if (!m_windowDetector->isWindowCacheReady(
+                WindowDetector::QueryMode::IncludeChildControls)) {
+            m_windowDetector->refreshWindowListAsync(
+                WindowDetector::QueryMode::IncludeChildControls);
+            maybeStartInitialRevealWait();
             return;
         }
 
@@ -2674,6 +2773,8 @@ void RegionSelector::syncStaticCaptureBackgroundWindow()
     m_staticCaptureBackgroundWindow->syncToHost(this, m_backgroundPixmap, shouldShow);
     if (shouldShow &&
         (!wasVisible || previousGeometry != m_staticCaptureBackgroundWindow->geometry())) {
+        m_detachedCaptureWindowsNeedFullClear = true;
+        update();
         armDetachedWindowDeactivateGuard();
     }
 }
@@ -2722,6 +2823,8 @@ void RegionSelector::syncCaptureChromeWindow()
         shouldShow);
     if (shouldShow &&
         (!wasVisible || previousGeometry != m_captureChromeWindow->geometry())) {
+        m_detachedCaptureWindowsNeedFullClear = true;
+        update();
         armDetachedWindowDeactivateGuard();
     }
 }
@@ -2800,6 +2903,10 @@ void RegionSelector::paintEvent(QPaintEvent* event)
         dirtyRegion = QRegion(rect());
         m_forceFullRepaintOnNextWindowTransition = false;
     }
+    if (m_detachedCaptureWindowsNeedFullClear) {
+        dirtyRegion = QRegion(rect());
+        m_detachedCaptureWindowsNeedFullClear = false;
+    }
 #endif
     if (m_traceProbe) {
         RegionSelectorTraceProbe::PaintEventRecord record;
@@ -2825,6 +2932,23 @@ void RegionSelector::paintEvent(QPaintEvent* event)
     } else {
         paintSelectorScene(painter, dirtyRegion);
     }
+
+    if (m_magnifierOverlay &&
+        !m_magnifierOverlay->hasPaintedSinceShow() &&
+        m_initialRevealState == InitialRevealState::Revealed &&
+        shouldShowCursorCompanion()) {
+        if (m_hostFallbackCursorCompanionRect.isValid()) {
+            painter.save();
+            painter.setClipRect(m_hostFallbackCursorCompanionRect);
+            m_magnifierOverlay->paintFallback(painter);
+            painter.restore();
+        }
+    } else if (m_hostFallbackCursorCompanionRect.isValid()) {
+        const QRect fallbackRect = m_hostFallbackCursorCompanionRect;
+        m_hostFallbackCursorCompanionRect = QRect();
+        requestCaptureSceneUpdate(fallbackRect);
+    }
+
     syncDetachedSelectionUiDuringPaint();
 
     QRect selectionRect = m_selectionManager->selectionRect();
@@ -2894,8 +3018,30 @@ void RegionSelector::syncMagnifierOverlay()
 
     snaptray::region::CapturePerfScope perfScope("RegionSelector.syncMagnifierOverlay");
 
+    const bool shouldTrackHostFallback =
+        m_initialRevealState == InitialRevealState::Revealed &&
+        shouldShowCursorCompanion() &&
+        !m_magnifierOverlay->hasPaintedSinceShow();
+    const QRect currentFallbackRect = shouldTrackHostFallback
+        ? g_cursorCompanionDirtyRegionPlanner.cursorCompanionRectForCursor(
+            m_cursorCompanionStyle, m_inputState.currentPoint, size())
+        : QRect();
+    if (currentFallbackRect != m_hostFallbackCursorCompanionRect) {
+        QRect dirtyRect = currentFallbackRect;
+        if (m_hostFallbackCursorCompanionRect.isValid()) {
+            dirtyRect = dirtyRect.isValid()
+                ? dirtyRect.united(m_hostFallbackCursorCompanionRect)
+                : m_hostFallbackCursorCompanionRect;
+        }
+        if (dirtyRect.isValid() && !dirtyRect.isEmpty()) {
+            requestCaptureSceneUpdate(dirtyRect);
+        }
+        m_hostFallbackCursorCompanionRect = currentFallbackRect;
+    }
+
     if (m_initialRevealState != InitialRevealState::Revealed) {
         m_magnifierOverlay->hideOverlay();
+        m_hostFallbackCursorCompanionRect = QRect();
         return;
     }
 
@@ -3809,6 +3955,8 @@ void RegionSelector::mouseMoveEvent(QMouseEvent* event)
         event->ignore();
         return;
     }
+
+    stopInitialCursorBootstrapSync();
 
     if (isGlobalPosOverFloatingUi(event->globalPosition().toPoint())) {
         syncFloatingUiCursor();
