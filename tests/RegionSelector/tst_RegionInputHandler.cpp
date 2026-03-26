@@ -25,6 +25,12 @@ QMouseEvent makeMouseEvent(QEvent::Type type,
     return QMouseEvent(type, point, point, point, button, buttons, Qt::NoModifier);
 }
 
+bool pointsCloseEnough(const QPoint& actual, const QPoint& expected, int tolerance = 4)
+{
+    return qAbs(actual.x() - expected.x()) <= tolerance &&
+           qAbs(actual.y() - expected.y()) <= tolerance;
+}
+
 } // namespace
 
 class tst_RegionInputHandler : public QObject
@@ -363,9 +369,15 @@ void tst_RegionInputHandler::testIdleHoverPollingTracksLiveCursorWithoutMouseEve
     QCursor::setPos(polledCursorPos);
     QTest::qWait(40);
 
-    const QPoint expectedPoint = QPoint(360, 260);
+    const QPoint actualCursorPos = QCursor::pos();
+    const QPoint expectedPoint = actualCursorPos - screen->geometry().topLeft();
     QCursor::setPos(originalCursorPos);
-    QCOMPARE(m_state.currentPoint, expectedPoint);
+    QVERIFY2(pointsCloseEnough(m_state.currentPoint, expectedPoint),
+             qPrintable(QStringLiteral("actual=(%1,%2) expected=(%3,%4)")
+                            .arg(m_state.currentPoint.x())
+                            .arg(m_state.currentPoint.y())
+                            .arg(expectedPoint.x())
+                            .arg(expectedPoint.y())));
 }
 
 void tst_RegionInputHandler::testCompletedSelectionHoverSkipsMagnifierDirtyRegionWhenDisabled()

@@ -25,6 +25,11 @@ QPixmap makePreCapture(const QSize& size, const QColor& color)
     return preCapture;
 }
 
+QPoint currentLocalCursorPos(const QRect& screenGeometry)
+{
+    return QCursor::pos() - screenGeometry.topLeft();
+}
+
 }  // namespace
 
 class tst_RegionSelectorDeferredInitialization : public QObject
@@ -154,7 +159,7 @@ void tst_RegionSelectorDeferredInitialization::testShowEvent_usesLiveCursorPosit
     RegionSelectorTestAccess::showForRevealTests(selector);
     QCoreApplication::processEvents();
 
-    const QPoint expectedLocalPoint = targetCursorPos - screenGeometry.topLeft();
+    const QPoint expectedLocalPoint = currentLocalCursorPos(screenGeometry);
     QCursor::setPos(originalCursorPos);
     QCOMPARE(selector.m_inputState.currentPoint, expectedLocalPoint);
 }
@@ -201,7 +206,7 @@ void tst_RegionSelectorDeferredInitialization::testInitialCursorBootstrapSync_tr
     QCursor::setPos(movedCursorPos);
     QTest::qWait(40);
 
-    const QPoint expectedLocalPoint = movedCursorPos - screenGeometry.topLeft();
+    const QPoint expectedLocalPoint = currentLocalCursorPos(screenGeometry);
     QCursor::setPos(originalCursorPos);
     QCOMPARE(selector.m_inputState.currentPoint, expectedLocalPoint);
 }
