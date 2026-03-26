@@ -107,6 +107,7 @@ Use `GlassRenderer` and existing toolbar style helpers for floating panels inste
 - Run build, test, and relevant checks before claiming completion
 - Prefer `scripts/build.sh` or `scripts/build.bat` for compile verification
 - Prefer `scripts/run-tests.sh` or `scripts/run-tests.bat` after substantive changes
+- On Windows, if you invoke `ctest` or a Qt test binary directly, prepend `%QT_PATH%\bin` to `PATH` first so `Qt6Testd.dll` and other debug Qt DLLs resolve; `scripts/run-tests.bat` is the canonical example
 - If a change touches packaging, signing, or release behavior, verify against `docs/developer/release-packaging.md`
 - If a change touches MCP, remember it is a debug-build-only feature
 

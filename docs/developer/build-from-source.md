@@ -58,6 +58,8 @@ scripts\build-and-run.bat           REM Debug build + run app
 scripts\build-and-run-release.bat   REM Release build + run app
 ```
 
+`scripts\run-tests.bat` prepends `%QT_PATH%\bin` to `PATH` before `ctest`. If you run Windows debug tests manually, do the same first so `Qt6Testd.dll` and other Qt debug DLLs can be found.
+
 For validation, prefer `build.sh` / `build.bat` and the test scripts. Running the app is useful for manual QA but not required for every change.
 
 ## PowerShell with MSVC
@@ -146,6 +148,8 @@ Preferred validation sequence:
 1. Run the platform build script
 2. Run the platform test script
 3. Manually open the app only when UI or runtime behavior needs verification
+
+On Windows debug builds, manual `ctest` runs should inherit a `PATH` that starts with `%QT_PATH%\bin`, matching `scripts\run-tests.bat`.
 
 ## Build troubleshooting
 

@@ -1320,8 +1320,20 @@ void ScreenCanvasSession::handleCopyAction(ToolId)
     finalizePolylineForToolbarInteraction();
 
     QScreen* targetScreen = resolveCopyTargetScreen();
-    const QPixmap exportPixmap = exportCanvasPixmapForScreen(targetScreen);
+    ScreenSnapshotVisibilityState hiddenUiState;
+    const bool screenSnapshotUiAlreadyHidden =
+        targetScreen && m_bgMode == CanvasBackgroundMode::Screen;
+    if (screenSnapshotUiAlreadyHidden) {
+        hiddenUiState = hideUiForScreenSnapshot();
+    }
+
+    const QPixmap exportPixmap = exportCanvasPixmapForScreen(
+        targetScreen,
+        screenSnapshotUiAlreadyHidden);
     if (exportPixmap.isNull() || !targetScreen) {
+        if (screenSnapshotUiAlreadyHidden) {
+            restoreUiAfterScreenSnapshot(hiddenUiState);
+        }
         SnapTray::QmlToast::screenToast().showToast(
             SnapTray::QmlToast::Level::Error,
             tr("Copy failed"));
@@ -1367,13 +1379,21 @@ QScreen* ScreenCanvasSession::resolveCopyTargetScreen() const
     return QGuiApplication::primaryScreen();
 }
 
-QPixmap ScreenCanvasSession::buildCopyExportBasePixmap(QScreen* screen) const
+QPixmap ScreenCanvasSession::buildCopyExportBasePixmap(QScreen* screen,
+                                                       bool screenSnapshotUiAlreadyHidden) const
 {
     if (!screen) {
         return {};
     }
 
     if (m_bgMode == CanvasBackgroundMode::Screen) {
+        if (screenSnapshotUiAlreadyHidden) {
+            if (m_screenSnapshotProvider) {
+                return m_screenSnapshotProvider(screen);
+            }
+            return snaptray::capture::captureScreenSnapshot(screen);
+        }
+
         auto* mutableThis = const_cast<ScreenCanvasSession*>(this);
         const ScreenSnapshotVisibilityState uiState = mutableThis->hideUiForScreenSnapshot();
         QPixmap snapshot;
@@ -1393,13 +1413,14 @@ QPixmap ScreenCanvasSession::buildCopyExportBasePixmap(QScreen* screen) const
         fillColor);
 }
 
-QPixmap ScreenCanvasSession::exportCanvasPixmapForScreen(QScreen* screen) const
+QPixmap ScreenCanvasSession::exportCanvasPixmapForScreen(QScreen* screen,
+                                                         bool screenSnapshotUiAlreadyHidden) const
 {
     if (!screen) {
         return {};
     }
 
-    QPixmap result = buildCopyExportBasePixmap(screen);
+    QPixmap result = buildCopyExportBasePixmap(screen, screenSnapshotUiAlreadyHidden);
     if (result.isNull()) {
         return result;
     }

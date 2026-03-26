@@ -58,6 +58,8 @@ scripts\build-and-run.bat           REM Debug 建置 + 執行 app
 scripts\build-and-run-release.bat   REM Release 建置 + 執行 app
 ```
 
+`scripts\run-tests.bat` 會在執行 `ctest` 前先把 `%QT_PATH%\bin` 加到 `PATH` 前面。若你要在 Windows 的 debug build 手動跑測試，也要先做同樣設定，否則 `Qt6Testd.dll` 與其他 Qt debug DLL 可能找不到。
+
 日常驗證以 `build.sh` / `build.bat` 與測試腳本為主；只有在需要手動 UI 驗證時才一定要執行 app。
 
 ## PowerShell 與 MSVC
@@ -146,6 +148,8 @@ scoop install sccache
 1. 跑平台對應 build script
 2. 跑平台對應 test script
 3. 只有在 UI 或 runtime 需要人工確認時才開 app
+
+在 Windows debug build 上若手動執行 `ctest`，請讓 `PATH` 以 `%QT_PATH%\bin` 開頭，做法與 `scripts\run-tests.bat` 一致。
 
 ## 建置排錯
 

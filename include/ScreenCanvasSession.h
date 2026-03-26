@@ -163,8 +163,10 @@ private:
     void finalizePolylineForToolbarInteraction();
     bool isDrawingTool(ToolId toolId) const;
     QScreen* resolveCopyTargetScreen() const;
-    QPixmap buildCopyExportBasePixmap(QScreen* screen) const;
-    QPixmap exportCanvasPixmapForScreen(QScreen* screen) const;
+    QPixmap buildCopyExportBasePixmap(QScreen* screen,
+                                      bool screenSnapshotUiAlreadyHidden = false) const;
+    QPixmap exportCanvasPixmapForScreen(QScreen* screen,
+                                        bool screenSnapshotUiAlreadyHidden = false) const;
 
     void setToolCursor();
     void syncFloatingUiCursor(ScreenCanvas* surface);
