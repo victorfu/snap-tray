@@ -34,3 +34,7 @@ defaults:
       path: "favicon.ico"
     values:
       sitemap: false
+  - scope:
+      path: "552776bc517f41109e28b11ca261ed1d.txt"
+    values:
+      sitemap: false
