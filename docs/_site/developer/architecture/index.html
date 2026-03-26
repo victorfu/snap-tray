@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+  
+
+
+
+
+
+
+
+
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Architecture Overview | SnapTray</title>
+<meta name="description" content="Repository structure, library boundaries, subsystem responsibilities, platform abstractions, and contributor-facing development conventions.">
+<meta name="theme-color" content="#0a1326">
+<meta name="snaptray-lang" content="en">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+<link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+<link rel="canonical" href="https://snaptray.cc/developer/architecture/">
+
+
+<link rel="alternate" hreflang="en" href="https://snaptray.cc/developer/architecture/">
+<link rel="alternate" hreflang="zh-TW" href="https://snaptray.cc/zh-tw/developer/architecture/">
+<link rel="alternate" hreflang="x-default" href="https://snaptray.cc/developer/architecture/">
+
+
+<meta property="og:site_name" content="SnapTray">
+<meta property="og:title" content="Architecture Overview">
+<meta property="og:description" content="Repository structure, library boundaries, subsystem responsibilities, platform abstractions, and contributor-facing development conventions.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://snaptray.cc/developer/architecture/">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://snaptray.cc/assets/images/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Architecture Overview">
+<meta name="twitter:description" content="Repository structure, library boundaries, subsystem responsibilities, platform abstractions, and contributor-facing development conventions.">
+<meta name="twitter:image" content="https://snaptray.cc/assets/images/og-image.png">
+
+<link rel="stylesheet" href="/assets/css/style.css">
+
+
+
+
+
+</head>
+<body data-lang="en" data-route-key="developer_architecture" data-layout="docs">
+  
+  <a class="skip-link" href="#main-content">Skip to content</a>
+
+  <div class="site-background" aria-hidden="true">
+    <span class="bg-orb orb-a"></span>
+    <span class="bg-orb orb-b"></span>
+    <span class="bg-grid"></span>
+  </div>
+
+  
+
+
+
+
+
+
+<header class="site-header" data-header>
+  <div class="container header-inner">
+    <a href="/" class="site-logo" aria-label="SnapTray home">
+      <img src="/assets/images/logo.svg" alt="" width="32" height="32">
+      <span>SnapTray</span>
+    </a>
+
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Open navigation" data-nav-toggle>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="sr-only" data-nav-toggle-label>Open navigation</span>
+    </button>
+
+    <nav id="primary-nav" class="site-nav" aria-label="Primary navigation" data-nav>
+      <a href="/" >Home</a>
+      <a href="/docs/" class="is-active">Docs</a>
+      <a href="/releases/" >Releases</a>
+      <a href="/privacy/" >Privacy</a>
+      
+
+
+
+
+<div class="language-switcher" aria-label="Language">
+  <a href="/developer/architecture/" class="lang-link is-active">EN</a>
+  <a href="/zh-tw/developer/architecture/" class="lang-link ">繁中</a>
+</div>
+
+      <a class="nav-github" href="https://github.com/victorfu/snap-tray" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+
+  <main id="main-content" class="site-main">
+    
+
+
+
+
+
+
+<section class="docs-shell">
+  <div class="container docs-grid">
+    <aside class="docs-sidebar" data-docs-sidebar>
+      
+
+
+
+
+<div id="docs-sidebar-panel" class="docs-sidebar-card">
+  <p class="docs-sidebar-title">Developer Docs</p>
+
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">Start Here</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/developer/" class="">Developer Home</a>
+      </li>
+      
+      
+      
+      
+      <li>
+        <a href="/developer/build-from-source/" class="">Build from Source</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">Release</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/developer/release-packaging/" class="">Release & Packaging</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">Architecture</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/developer/architecture/" class="is-active">Architecture Overview</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">Automation</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/developer/mcp-debug/" class="">MCP (Debug Builds)</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+</div>
+
+    </aside>
+
+    <article class="docs-content" data-docs-content>
+      <header class="docs-content-header">
+        <p class="eyebrow">Developer Docs</p>
+        <h1>Architecture Overview</h1>
+        
+        <p>Repository structure, library boundaries, subsystem responsibilities, platform abstractions, and contributor-facing development conventions.</p>
+        
+        <button class="docs-sidebar-toggle" type="button" aria-expanded="false" aria-controls="docs-sidebar-panel" data-docs-sidebar-toggle>
+          Developer Menu
+        </button>
+      </header>
+      <div class="docs-prose">
+        <h2 id="tech-stack">Tech stack</h2>
+
+<ul>
+  <li>Language: C++17</li>
+  <li>Framework: Qt 6</li>
+  <li>Build system: CMake + Ninja</li>
+  <li>UI technologies: Qt Widgets plus QML overlays and settings surfaces</li>
+  <li>Packaging targets: macOS DMG, Windows NSIS, Windows MSIX</li>
+</ul>
+
+<h2 id="repository-structure">Repository structure</h2>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>snap-tray/
+├── include/                    # Public headers and subsystem interfaces
+│   ├── annotation/             # Annotation context and host adapter
+│   ├── annotations/            # Annotation item types
+│   ├── beautify/               # Beautify interfaces and settings
+│   ├── capture/                # Capture engine interfaces
+│   ├── cli/                    # CLI handler, commands, IPC protocol
+│   ├── colorwidgets/           # Custom color widgets
+│   ├── cursor/                 # Cursor management
+│   ├── detection/              # Face / table / credential detection
+│   ├── encoding/               # Video, GIF, WebP encoders
+│   ├── history/                # History data models and helpers
+│   ├── hotkey/                 # Hotkey manager and action types
+│   ├── mcp/                    # Debug-only MCP server contracts
+│   ├── metal/                  # Apple Metal capture / rendering helpers
+│   ├── pinwindow/              # Pin window components
+│   ├── platform/               # Platform abstraction layer
+│   ├── qml/                    # QML bridges and view models
+│   ├── region/                 # Region selector components
+│   ├── settings/               # Settings managers
+│   ├── share/                  # Share upload client
+│   ├── tools/                  # Tool registry and handlers
+│   ├── ui/                     # Cross-cutting UI helpers and theme
+│   ├── update/                 # Auto-update classes
+│   ├── utils/                  # Utility helpers
+│   ├── video/                  # Playback and recording UI
+│   └── widgets/                # Custom widgets and dialogs
+├── src/                        # Implementations mirroring include/
+│   ├── qml/components/         # Shared QML blocks
+│   ├── qml/controls/           # Reusable controls
+│   ├── qml/dialogs/            # Dialog surfaces
+│   ├── qml/panels/             # Capture overlay panels
+│   ├── qml/recording/          # Recording overlays
+│   ├── qml/settings/           # Settings pages
+│   ├── qml/tokens/             # QML design tokens
+│   └── qml/toolbar/            # Floating toolbar surfaces
+├── tests/                      # Qt Test suites by subsystem
+├── docs/                       # Website, user docs, and developer docs
+├── packaging/                  # macOS and Windows packaging
+├── resources/                  # Icons, cascades, shaders, and resources.qrc
+├── scripts/                    # Build, run, test, and i18n scripts
+├── translations/               # Translation sources and outputs
+└── CMakeLists.txt              # Top-level configuration and dependency setup
+</code></pre></div></div>
+
+<h2 id="library-architecture">Library architecture</h2>
+
+<p>SnapTray uses a modular static-library-oriented structure:</p>
+
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">snaptray_core</code>: annotations, settings, cursor management, utilities, CLI-adjacent shared logic</li>
+  <li><code class="language-plaintext highlighter-rouge">snaptray_colorwidgets</code>: custom color picking UI</li>
+  <li><code class="language-plaintext highlighter-rouge">snaptray_algorithms</code>: detection and image analysis</li>
+  <li><code class="language-plaintext highlighter-rouge">snaptray_platform</code>: platform-specific capture, encoding, playback, install source, and OS integration</li>
+  <li><code class="language-plaintext highlighter-rouge">snaptray_ui</code>: region selector, pin windows, recording workflow, toolbar, settings surfaces</li>
+  <li><code class="language-plaintext highlighter-rouge">snaptray_mcp</code>: debug-only MCP transport and tools</li>
+  <li><code class="language-plaintext highlighter-rouge">SnapTray</code>: main executable</li>
+</ol>
+
+<h2 id="architecture-patterns">Architecture patterns</h2>
+
+<h3 id="settings-managers-are-the-preferred-configuration-boundary">Settings managers are the preferred configuration boundary</h3>
+
+<p>Use subsystem-specific settings managers instead of ad-hoc <code class="language-plaintext highlighter-rouge">QSettings</code> access.</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">AnnotationSettingsManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">FileSettingsManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">PinWindowSettingsManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">AutoBlurSettingsManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">OCRSettingsManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">WatermarkSettingsManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RecordingSettingsManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">UpdateSettingsManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">BeautifySettingsManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RegionCaptureSettingsManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">LanguageManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">MCPSettingsManager</code></li>
+</ul>
+
+<h3 id="hotkey-registration-is-centralized">Hotkey registration is centralized</h3>
+
+<p>Use <code class="language-plaintext highlighter-rouge">HotkeyManager</code> rather than constructing <code class="language-plaintext highlighter-rouge">QHotkey</code> objects directly in feature code. Actions are grouped by category in <code class="language-plaintext highlighter-rouge">HotkeyAction</code>.</p>
+
+<h3 id="tool-behavior-is-data-driven">Tool behavior is data-driven</h3>
+
+<p>Tools are defined by <code class="language-plaintext highlighter-rouge">ToolId</code>, <code class="language-plaintext highlighter-rouge">ToolDefinition</code>, handlers, and the <code class="language-plaintext highlighter-rouge">ToolRegistry</code>. Prefer lookup tables and capability maps over large <code class="language-plaintext highlighter-rouge">switch</code> statements.</p>
+
+<h3 id="platform-abstraction-is-explicit">Platform abstraction is explicit</h3>
+
+<p>Use <code class="language-plaintext highlighter-rouge">PlatformFeatures</code> and the platform-specific implementation layer instead of sprinkling OS checks across feature code.</p>
+
+<h3 id="floating-glass-panels-use-shared-rendering-helpers">Floating glass panels use shared rendering helpers</h3>
+
+<p>Use <code class="language-plaintext highlighter-rouge">GlassRenderer</code> and the existing toolbar style configuration rather than local one-off panel rendering logic.</p>
+
+<h2 id="platform-specific-code-map">Platform-specific code map</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Feature</th>
+      <th>Windows</th>
+      <th>macOS</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Screen capture</td>
+      <td><code class="language-plaintext highlighter-rouge">DXGICaptureEngine_win.cpp</code></td>
+      <td><code class="language-plaintext highlighter-rouge">SCKCaptureEngine_mac.mm</code></td>
+    </tr>
+    <tr>
+      <td>Video encoding</td>
+      <td><code class="language-plaintext highlighter-rouge">MediaFoundationEncoder.cpp</code></td>
+      <td><code class="language-plaintext highlighter-rouge">AVFoundationEncoder.mm</code></td>
+    </tr>
+    <tr>
+      <td>Audio capture</td>
+      <td><code class="language-plaintext highlighter-rouge">WASAPIAudioCaptureEngine_win.cpp</code></td>
+      <td><code class="language-plaintext highlighter-rouge">CoreAudioCaptureEngine_mac.mm</code></td>
+    </tr>
+    <tr>
+      <td>Video playback</td>
+      <td><code class="language-plaintext highlighter-rouge">MediaFoundationPlayer_win.cpp</code></td>
+      <td><code class="language-plaintext highlighter-rouge">AVFoundationPlayer_mac.mm</code></td>
+    </tr>
+    <tr>
+      <td>Window detection</td>
+      <td><code class="language-plaintext highlighter-rouge">WindowDetector_win.cpp</code></td>
+      <td><code class="language-plaintext highlighter-rouge">WindowDetector.mm</code></td>
+    </tr>
+    <tr>
+      <td>OCR</td>
+      <td><code class="language-plaintext highlighter-rouge">OCRManager_win.cpp</code></td>
+      <td><code class="language-plaintext highlighter-rouge">OCRManager.mm</code></td>
+    </tr>
+    <tr>
+      <td>Window level</td>
+      <td><code class="language-plaintext highlighter-rouge">WindowLevel_win.cpp</code></td>
+      <td><code class="language-plaintext highlighter-rouge">WindowLevel_mac.mm</code></td>
+    </tr>
+    <tr>
+      <td>Platform features</td>
+      <td><code class="language-plaintext highlighter-rouge">PlatformFeatures_win.cpp</code></td>
+      <td><code class="language-plaintext highlighter-rouge">PlatformFeatures_mac.mm</code></td>
+    </tr>
+    <tr>
+      <td>Auto-launch</td>
+      <td><code class="language-plaintext highlighter-rouge">AutoLaunchManager_win.cpp</code></td>
+      <td><code class="language-plaintext highlighter-rouge">AutoLaunchManager_mac.mm</code></td>
+    </tr>
+    <tr>
+      <td>Install source</td>
+      <td><code class="language-plaintext highlighter-rouge">InstallSourceDetector_win.cpp</code></td>
+      <td><code class="language-plaintext highlighter-rouge">InstallSourceDetector_mac.mm</code></td>
+    </tr>
+    <tr>
+      <td>PATH utilities</td>
+      <td><code class="language-plaintext highlighter-rouge">PathEnvUtils_win.cpp</code></td>
+      <td>N/A</td>
+    </tr>
+    <tr>
+      <td>Image color space</td>
+      <td>N/A</td>
+      <td><code class="language-plaintext highlighter-rouge">ImageColorSpaceHelper_mac.mm</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="key-components">Key components</h2>
+
+<h3 id="core-managers">Core managers</h3>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">CaptureManager</code>: entry point for region capture workflow</li>
+  <li><code class="language-plaintext highlighter-rouge">PinWindowManager</code>: lifecycle of floating pin windows</li>
+  <li><code class="language-plaintext highlighter-rouge">ScreenCanvasManager</code>: full-screen annotation sessions</li>
+  <li><code class="language-plaintext highlighter-rouge">RecordingManager</code>: recording state machine</li>
+  <li><code class="language-plaintext highlighter-rouge">SingleInstanceGuard</code>: single-instance enforcement</li>
+  <li><code class="language-plaintext highlighter-rouge">HotkeyManager</code>: global hotkey registration</li>
+  <li><code class="language-plaintext highlighter-rouge">CLIHandler</code>: command parsing and IPC dispatch</li>
+  <li><code class="language-plaintext highlighter-rouge">UpdateChecker</code>: release checking logic</li>
+</ul>
+
+<h3 id="region-selector-subsystem">Region selector subsystem</h3>
+
+<p>Important extracted parts under <code class="language-plaintext highlighter-rouge">src/region/</code>:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">SelectionStateManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">MagnifierPanel</code></li>
+  <li><code class="language-plaintext highlighter-rouge">UpdateThrottler</code></li>
+  <li><code class="language-plaintext highlighter-rouge">TextAnnotationEditor</code></li>
+  <li><code class="language-plaintext highlighter-rouge">ShapeAnnotationEditor</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RegionExportManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RegionInputHandler</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RegionPainter</code></li>
+  <li><code class="language-plaintext highlighter-rouge">MultiRegionManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RegionToolbarHandler</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RegionSettingsHelper</code></li>
+  <li><code class="language-plaintext highlighter-rouge">SelectionDirtyRegionPlanner</code></li>
+  <li><code class="language-plaintext highlighter-rouge">SelectionResizeHelper</code></li>
+  <li><code class="language-plaintext highlighter-rouge">CaptureShortcutHintsOverlay</code></li>
+</ul>
+
+<h3 id="pin-window-subsystem">Pin window subsystem</h3>
+
+<p>Important extracted parts under <code class="language-plaintext highlighter-rouge">src/pinwindow/</code>:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">ResizeHandler</code></li>
+  <li><code class="language-plaintext highlighter-rouge">UIIndicators</code></li>
+  <li><code class="language-plaintext highlighter-rouge">PinWindowPlacement</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RegionLayoutManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RegionLayoutRenderer</code></li>
+  <li><code class="language-plaintext highlighter-rouge">PinMergeHelper</code></li>
+  <li><code class="language-plaintext highlighter-rouge">PinHistoryStore</code></li>
+  <li><code class="language-plaintext highlighter-rouge">PinHistoryWindow</code></li>
+</ul>
+
+<h3 id="recording-subsystem">Recording subsystem</h3>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">RecordingRegionSelector</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RecordingControlBar</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RecordingBoundaryOverlay</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RecordingInitTask</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RecordingRegionNormalizer</code></li>
+</ul>
+
+<h3 id="cli-subsystem">CLI subsystem</h3>
+
+<p>Commands under <code class="language-plaintext highlighter-rouge">include/cli/commands/</code> include:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">FullCommand</code></li>
+  <li><code class="language-plaintext highlighter-rouge">ScreenCommand</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RegionCommand</code></li>
+  <li><code class="language-plaintext highlighter-rouge">GuiCommand</code></li>
+  <li><code class="language-plaintext highlighter-rouge">CanvasCommand</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RecordCommand</code></li>
+  <li><code class="language-plaintext highlighter-rouge">PinCommand</code></li>
+  <li><code class="language-plaintext highlighter-rouge">ConfigCommand</code></li>
+</ul>
+
+<h2 id="development-guidelines">Development guidelines</h2>
+
+<h3 id="logging">Logging</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Function</th>
+      <th>Purpose</th>
+      <th>Release behavior</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">qDebug()</code></td>
+      <td>Development diagnostics</td>
+      <td>Suppressed</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">qWarning()</code></td>
+      <td>Hardware or API failures</td>
+      <td>Emitted</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">qCritical()</code></td>
+      <td>Critical failures</td>
+      <td>Emitted</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="code-style">Code style</h3>
+
+<ul>
+  <li>Use C++17 features where they clarify the code</li>
+  <li>Prefer <code class="language-plaintext highlighter-rouge">auto</code> for complex types and explicit types for simple primitives</li>
+  <li>Use <code class="language-plaintext highlighter-rouge">nullptr</code> instead of <code class="language-plaintext highlighter-rouge">NULL</code></li>
+  <li>Prefer <code class="language-plaintext highlighter-rouge">QPoint</code> / <code class="language-plaintext highlighter-rouge">QRect</code> over loose coordinate tuples</li>
+</ul>
+
+<h3 id="testing">Testing</h3>
+
+<ul>
+  <li>Test files use <code class="language-plaintext highlighter-rouge">tests/&lt;Component&gt;/tst_&lt;Name&gt;.cpp</code></li>
+  <li>The suite uses Qt Test primitives such as <code class="language-plaintext highlighter-rouge">QCOMPARE</code> and <code class="language-plaintext highlighter-rouge">QVERIFY</code></li>
+  <li>Tests are organized by subsystem folders including <code class="language-plaintext highlighter-rouge">Annotations</code>, <code class="language-plaintext highlighter-rouge">Beautify</code>, <code class="language-plaintext highlighter-rouge">CLI</code>, <code class="language-plaintext highlighter-rouge">Cursor</code>, <code class="language-plaintext highlighter-rouge">Detection</code>, <code class="language-plaintext highlighter-rouge">Encoding</code>, <code class="language-plaintext highlighter-rouge">Hotkey</code>, <code class="language-plaintext highlighter-rouge">IPC</code>, <code class="language-plaintext highlighter-rouge">MCP</code>, <code class="language-plaintext highlighter-rouge">PinWindow</code>, <code class="language-plaintext highlighter-rouge">Qml</code>, <code class="language-plaintext highlighter-rouge">RecordingManager</code>, <code class="language-plaintext highlighter-rouge">RegionSelector</code>, <code class="language-plaintext highlighter-rouge">ScreenCanvas</code>, <code class="language-plaintext highlighter-rouge">Settings</code>, <code class="language-plaintext highlighter-rouge">Share</code>, <code class="language-plaintext highlighter-rouge">Tools</code>, <code class="language-plaintext highlighter-rouge">Update</code>, and <code class="language-plaintext highlighter-rouge">Utils</code></li>
+</ul>
+
+<h3 id="common-patterns-to-avoid">Common patterns to avoid</h3>
+
+<ul>
+  <li>Direct <code class="language-plaintext highlighter-rouge">QSettings</code> access where a settings manager already exists</li>
+  <li>Large repetitive <code class="language-plaintext highlighter-rouge">switch</code> statements where a lookup table is clearer</li>
+  <li>Inline magic numbers without named constants</li>
+</ul>
+
+<h2 id="related-docs">Related docs</h2>
+
+<ul>
+  <li><a href="/developer/build-from-source/">Build from Source</a></li>
+  <li><a href="/developer/release-packaging/">Release &amp; Packaging</a></li>
+  <li><a href="/docs/cli/">CLI</a></li>
+</ul>
+
+      </div>
+    </article>
+
+  </div>
+</section>
+
+  </main>
+
+  
+
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <section>
+      <p class="footer-title">SnapTray</p>
+      <p class="footer-copy">Desktop-grade screenshot and recording workflows, designed for speed and clarity.</p>
+      <p class="footer-meta">Made with Qt 6 and C++17</p>
+    </section>
+
+    <section>
+      <p class="footer-title">Resources</p>
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="/docs/">Docs</a>
+        <a href="/developer/">Developer Docs</a>
+        <a href="/releases/">Releases</a>
+        <a href="/privacy/">Privacy Policy</a>
+      </div>
+    </section>
+
+    <section>
+      <p class="footer-title">Community</p>
+      <div class="footer-links">
+        <a href="https://github.com/victorfu/snap-tray" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/victorfu/snap-tray/issues" target="_blank" rel="noopener">Report Issue</a>
+        <a href="https://github.com/victorfu/snap-tray/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+      </div>
+    </section>
+  </div>
+  <div class="container footer-bottom">
+    <p>&copy; <span id="current-year"></span> SnapTray</p>
+  </div>
+</footer>
+
+
+  <script src="/assets/js/site.js"></script>
+</body>
+</html>

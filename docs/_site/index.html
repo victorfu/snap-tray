@@ -14,7 +14,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnapTray</title>
-<meta name="description" content="SnapTray is a modern screenshot and recording tool for macOS and Windows.">
+<meta name="description" content="Screenshot, annotate, pin, and record your screen — with OCR, GIF export, and CLI automation. Free for macOS and Windows.">
 <meta name="theme-color" content="#0a1326">
 <meta name="snaptray-lang" content="en">
 
@@ -31,13 +31,44 @@
 <link rel="alternate" hreflang="x-default" href="https://snaptray.cc/">
 
 
+<meta property="og:site_name" content="SnapTray">
 <meta property="og:title" content="SnapTray">
-<meta property="og:description" content="SnapTray is a modern screenshot and recording tool for macOS and Windows.">
+<meta property="og:description" content="Screenshot, annotate, pin, and record your screen — with OCR, GIF export, and CLI automation. Free for macOS and Windows.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://snaptray.cc/">
 <meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://snaptray.cc/assets/images/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SnapTray">
+<meta name="twitter:description" content="Screenshot, annotate, pin, and record your screen — with OCR, GIF export, and CLI automation. Free for macOS and Windows.">
+<meta name="twitter:image" content="https://snaptray.cc/assets/images/og-image.png">
 
 <link rel="stylesheet" href="/assets/css/style.css">
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "SnapTray",
+  "description": "Screenshot, annotate, pin, and record your screen — with OCR, GIF export, and CLI automation. Free for macOS and Windows.",
+  "operatingSystem": ["macOS 14+", "Windows 10+"],
+  "applicationCategory": "MultimediaApplication",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "url": "https://snaptray.cc/",
+  "image": "https://snaptray.cc/assets/images/logo.svg"
+}
+</script>
+
+
+
 
 </head>
 <body data-lang="en" data-route-key="home" data-layout="default">
@@ -184,7 +215,7 @@
       <article class="feature-card" data-reveal="">
         <p class="feature-kind">Recording</p>
         <h3>Screen Recording</h3>
-        <p>Capture any region and export MP4, GIF, or WebP with optional audio.</p>
+        <p>Capture any region and export MP4 with optional audio, or GIF/WebP for silent clips.</p>
       </article>
       
       <article class="feature-card" data-reveal="">
@@ -330,6 +361,7 @@
       <div class="footer-links">
         <a href="/">Home</a>
         <a href="/docs/">Docs</a>
+        <a href="/developer/">Developer Docs</a>
         <a href="/releases/">Releases</a>
         <a href="/privacy/">Privacy Policy</a>
       </div>

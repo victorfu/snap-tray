@@ -1,6 +1,6 @@
 ---
 layout: default
-description: SnapTray is a modern screenshot and recording tool for macOS and Windows.
+description: "Screenshot, annotate, pin, and record your screen — with OCR, GIF export, and CLI automation. Free for macOS and Windows."
 lang: en
 route_key: home
 ---

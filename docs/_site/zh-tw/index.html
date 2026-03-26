@@ -14,7 +14,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SnapTray</title>
-<meta name="description" content="SnapTray 是 macOS 與 Windows 的現代化截圖與錄影工具。">
+<meta name="description" content="截圖、標註、釘選、錄影 — 支援 OCR 文字辨識、GIF 匯出與 CLI 自動化。免費支援 macOS 與 Windows。">
 <meta name="theme-color" content="#0a1326">
 <meta name="snaptray-lang" content="zh-tw">
 
@@ -31,13 +31,44 @@
 <link rel="alternate" hreflang="x-default" href="https://snaptray.cc/">
 
 
+<meta property="og:site_name" content="SnapTray">
 <meta property="og:title" content="SnapTray">
-<meta property="og:description" content="SnapTray 是 macOS 與 Windows 的現代化截圖與錄影工具。">
+<meta property="og:description" content="截圖、標註、釘選、錄影 — 支援 OCR 文字辨識、GIF 匯出與 CLI 自動化。免費支援 macOS 與 Windows。">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://snaptray.cc/zh-tw/">
 <meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://snaptray.cc/assets/images/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SnapTray">
+<meta name="twitter:description" content="截圖、標註、釘選、錄影 — 支援 OCR 文字辨識、GIF 匯出與 CLI 自動化。免費支援 macOS 與 Windows。">
+<meta name="twitter:image" content="https://snaptray.cc/assets/images/og-image.png">
 
 <link rel="stylesheet" href="/assets/css/style.css">
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "SnapTray",
+  "description": "Screenshot, annotate, pin, and record your screen — with OCR, GIF export, and CLI automation. Free for macOS and Windows.",
+  "operatingSystem": ["macOS 14+", "Windows 10+"],
+  "applicationCategory": "MultimediaApplication",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "url": "https://snaptray.cc/",
+  "image": "https://snaptray.cc/assets/images/logo.svg"
+}
+</script>
+
+
+
 
 </head>
 <body data-lang="zh-tw" data-route-key="home" data-layout="default">
@@ -184,7 +215,7 @@
       <article class="feature-card" data-reveal="">
         <p class="feature-kind">錄影</p>
         <h3>Screen Recording</h3>
-        <p>擷取任意區域並輸出 MP4、GIF、WebP，支援音訊。</p>
+        <p>擷取任意區域並輸出可帶音訊的 MP4，或適合無音訊片段的 GIF、WebP。</p>
       </article>
       
       <article class="feature-card" data-reveal="">
@@ -330,6 +361,7 @@
       <div class="footer-links">
         <a href="/zh-tw/">首頁</a>
         <a href="/zh-tw/docs/">文件</a>
+        <a href="/zh-tw/developer/">開發者文件</a>
         <a href="/zh-tw/releases/">版本</a>
         <a href="/zh-tw/privacy/">隱私政策</a>
       </div>

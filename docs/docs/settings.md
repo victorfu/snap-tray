@@ -53,7 +53,7 @@ App name, version, copyright, author, and website link.
 
 - 30 FPS MP4 for standard tutorials
 - Dedicated folders for screenshots and recordings
-- Auto update checks enabled weekly
+- Auto update checks enabled daily
 
 ## Next step
 

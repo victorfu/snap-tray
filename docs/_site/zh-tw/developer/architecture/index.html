@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-tw" class="no-js">
+<head>
+  
+
+
+
+
+
+
+
+
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>架構總覽 | SnapTray</title>
+<meta name="description" content="整理專案結構、library 邊界、主要 subsystem、平台抽象與貢獻者需要遵守的開發慣例。">
+<meta name="theme-color" content="#0a1326">
+<meta name="snaptray-lang" content="zh-tw">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+<link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+<link rel="canonical" href="https://snaptray.cc/zh-tw/developer/architecture/">
+
+
+<link rel="alternate" hreflang="en" href="https://snaptray.cc/developer/architecture/">
+<link rel="alternate" hreflang="zh-TW" href="https://snaptray.cc/zh-tw/developer/architecture/">
+<link rel="alternate" hreflang="x-default" href="https://snaptray.cc/developer/architecture/">
+
+
+<meta property="og:site_name" content="SnapTray">
+<meta property="og:title" content="架構總覽">
+<meta property="og:description" content="整理專案結構、library 邊界、主要 subsystem、平台抽象與貢獻者需要遵守的開發慣例。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://snaptray.cc/zh-tw/developer/architecture/">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://snaptray.cc/assets/images/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="架構總覽">
+<meta name="twitter:description" content="整理專案結構、library 邊界、主要 subsystem、平台抽象與貢獻者需要遵守的開發慣例。">
+<meta name="twitter:image" content="https://snaptray.cc/assets/images/og-image.png">
+
+<link rel="stylesheet" href="/assets/css/style.css">
+
+
+
+
+
+</head>
+<body data-lang="zh-tw" data-route-key="developer_architecture" data-layout="docs">
+  
+  <a class="skip-link" href="#main-content">跳到主要內容</a>
+
+  <div class="site-background" aria-hidden="true">
+    <span class="bg-orb orb-a"></span>
+    <span class="bg-orb orb-b"></span>
+    <span class="bg-grid"></span>
+  </div>
+
+  
+
+
+
+
+
+
+<header class="site-header" data-header>
+  <div class="container header-inner">
+    <a href="/zh-tw/" class="site-logo" aria-label="SnapTray 首頁">
+      <img src="/assets/images/logo.svg" alt="" width="32" height="32">
+      <span>SnapTray</span>
+    </a>
+
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="開啟導覽選單" data-nav-toggle>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="sr-only" data-nav-toggle-label>開啟導覽選單</span>
+    </button>
+
+    <nav id="primary-nav" class="site-nav" aria-label="主要導覽" data-nav>
+      <a href="/zh-tw/" >首頁</a>
+      <a href="/zh-tw/docs/" class="is-active">文件</a>
+      <a href="/zh-tw/releases/" >版本</a>
+      <a href="/zh-tw/privacy/" >隱私</a>
+      
+
+
+
+
+<div class="language-switcher" aria-label="語言">
+  <a href="/developer/architecture/" class="lang-link ">EN</a>
+  <a href="/zh-tw/developer/architecture/" class="lang-link is-active">繁中</a>
+</div>
+
+      <a class="nav-github" href="https://github.com/victorfu/snap-tray" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+
+  <main id="main-content" class="site-main">
+    
+
+
+
+
+
+
+<section class="docs-shell">
+  <div class="container docs-grid">
+    <aside class="docs-sidebar" data-docs-sidebar>
+      
+
+
+
+
+<div id="docs-sidebar-panel" class="docs-sidebar-card">
+  <p class="docs-sidebar-title">開發者目錄</p>
+
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">從這裡開始</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/zh-tw/developer/" class="">開發者首頁</a>
+      </li>
+      
+      
+      
+      
+      <li>
+        <a href="/zh-tw/developer/build-from-source/" class="">從原始碼建置</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">發佈</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/zh-tw/developer/release-packaging/" class="">發佈與打包</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">架構</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/zh-tw/developer/architecture/" class="is-active">架構總覽</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">自動化</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/zh-tw/developer/mcp-debug/" class="">MCP（僅 Debug Build）</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+</div>
+
+    </aside>
+
+    <article class="docs-content" data-docs-content>
+      <header class="docs-content-header">
+        <p class="eyebrow">開發者文件</p>
+        <h1>架構總覽</h1>
+        
+        <p>整理專案結構、library 邊界、主要 subsystem、平台抽象與貢獻者需要遵守的開發慣例。</p>
+        
+        <button class="docs-sidebar-toggle" type="button" aria-expanded="false" aria-controls="docs-sidebar-panel" data-docs-sidebar-toggle>
+          開啟開發者目錄
+        </button>
+      </header>
+      <div class="docs-prose">
+        <h2 id="技術棧">技術棧</h2>
+
+<ul>
+  <li>語言：C++17</li>
+  <li>框架：Qt 6</li>
+  <li>建置系統：CMake + Ninja</li>
+  <li>UI 技術：Qt Widgets 搭配 QML overlays 與 settings surfaces</li>
+  <li>打包目標：macOS DMG、Windows NSIS、Windows MSIX</li>
+</ul>
+
+<h2 id="專案結構">專案結構</h2>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>snap-tray/
+├── include/                    # 公開標頭與 subsystem 介面
+│   ├── annotation/             # Annotation context 與 host adapter
+│   ├── annotations/            # 各種 annotation item
+│   ├── beautify/               # Beautify 介面與設定
+│   ├── capture/                # 擷取引擎介面
+│   ├── cli/                    # CLI handler、commands、IPC protocol
+│   ├── colorwidgets/           # 自訂色彩元件
+│   ├── cursor/                 # 游標管理
+│   ├── detection/              # Face / table / credential detection
+│   ├── encoding/               # Video、GIF、WebP encoders
+│   ├── history/                # 歷史資料模型與輔助物件
+│   ├── hotkey/                 # Hotkey manager 與 action types
+│   ├── mcp/                    # 僅 Debug build 的 MCP server contract
+│   ├── metal/                  # Apple Metal capture / rendering helpers
+│   ├── pinwindow/              # 釘選視窗元件
+│   ├── platform/               # 平台抽象層
+│   ├── qml/                    # QML bridges 與 view models
+│   ├── region/                 # Region selector 元件
+│   ├── settings/               # Settings managers
+│   ├── share/                  # Share upload client
+│   ├── tools/                  # Tool registry 與 handlers
+│   ├── ui/                     # 共用 UI helper 與 theme
+│   ├── update/                 # Auto-update 類別
+│   ├── utils/                  # 工具函式
+│   ├── video/                  # 播放與錄影 UI
+│   └── widgets/                # 自訂 widgets 與 dialogs
+├── src/                        # 與 include/ 對應的實作
+│   ├── qml/components/         # 共用 QML 區塊
+│   ├── qml/controls/           # 可重用 control
+│   ├── qml/dialogs/            # Dialog surfaces
+│   ├── qml/panels/             # Capture overlay 面板
+│   ├── qml/recording/          # Recording overlays
+│   ├── qml/settings/           # Settings pages
+│   ├── qml/tokens/             # QML design tokens
+│   └── qml/toolbar/            # Floating toolbar surfaces
+├── tests/                      # 依 subsystem 分組的 Qt Test
+├── docs/                       # 網站、使用者文件、開發者文件
+├── packaging/                  # macOS 與 Windows 打包
+├── resources/                  # Icons、cascades、shaders、resources.qrc
+├── scripts/                    # build、run、test、i18n 腳本
+├── translations/               # 翻譯來源與輸出
+└── CMakeLists.txt              # 最上層設定與依賴管理
+</code></pre></div></div>
+
+<h2 id="library-架構">Library 架構</h2>
+
+<p>SnapTray 以模組化 static-library 風格組織：</p>
+
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">snaptray_core</code>：annotations、settings、cursor、utilities、CLI 共用邏輯</li>
+  <li><code class="language-plaintext highlighter-rouge">snaptray_colorwidgets</code>：自訂色彩選擇 UI</li>
+  <li><code class="language-plaintext highlighter-rouge">snaptray_algorithms</code>：偵測與影像分析</li>
+  <li><code class="language-plaintext highlighter-rouge">snaptray_platform</code>：平台特定擷取、編碼、播放、安裝來源與 OS 整合</li>
+  <li><code class="language-plaintext highlighter-rouge">snaptray_ui</code>：region selector、pin windows、recording workflow、toolbar、settings surfaces</li>
+  <li><code class="language-plaintext highlighter-rouge">snaptray_mcp</code>：僅 Debug build 的 MCP transport 與 tools</li>
+  <li><code class="language-plaintext highlighter-rouge">SnapTray</code>：主程式 executable</li>
+</ol>
+
+<h2 id="架構模式">架構模式</h2>
+
+<h3 id="設定邊界以-settings-manager-為主">設定邊界以 settings manager 為主</h3>
+
+<p>請優先使用 subsystem 專屬 settings manager，而不是零散直接存取 <code class="language-plaintext highlighter-rouge">QSettings</code>。</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">AnnotationSettingsManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">FileSettingsManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">PinWindowSettingsManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">AutoBlurSettingsManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">OCRSettingsManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">WatermarkSettingsManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RecordingSettingsManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">UpdateSettingsManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">BeautifySettingsManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RegionCaptureSettingsManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">LanguageManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">MCPSettingsManager</code></li>
+</ul>
+
+<h3 id="hotkey-註冊集中管理">Hotkey 註冊集中管理</h3>
+
+<p>請經由 <code class="language-plaintext highlighter-rouge">HotkeyManager</code> 處理，不要在 feature code 直接 new <code class="language-plaintext highlighter-rouge">QHotkey</code>。動作分類由 <code class="language-plaintext highlighter-rouge">HotkeyAction</code> 管理。</p>
+
+<h3 id="tool-系統採資料驅動">Tool 系統採資料驅動</h3>
+
+<p>工具由 <code class="language-plaintext highlighter-rouge">ToolId</code>、<code class="language-plaintext highlighter-rouge">ToolDefinition</code>、handlers 與 <code class="language-plaintext highlighter-rouge">ToolRegistry</code> 組成。能用 lookup table / capability map，就不要堆大段 <code class="language-plaintext highlighter-rouge">switch</code>。</p>
+
+<h3 id="平台抽象要明確">平台抽象要明確</h3>
+
+<p>請透過 <code class="language-plaintext highlighter-rouge">PlatformFeatures</code> 與 platform-specific implementation layer 存取能力，不要把 OS 判斷灑在 feature code 裡。</p>
+
+<h3 id="浮動玻璃面板使用共用-renderer">浮動玻璃面板使用共用 renderer</h3>
+
+<p>請優先使用 <code class="language-plaintext highlighter-rouge">GlassRenderer</code> 與既有 toolbar style config，不要在各 widget 重寫一套面板渲染。</p>
+
+<h2 id="平台特定程式碼對照">平台特定程式碼對照</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>功能</th>
+      <th>Windows</th>
+      <th>macOS</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>螢幕擷取</td>
+      <td><code class="language-plaintext highlighter-rouge">DXGICaptureEngine_win.cpp</code></td>
+      <td><code class="language-plaintext highlighter-rouge">SCKCaptureEngine_mac.mm</code></td>
+    </tr>
+    <tr>
+      <td>影片編碼</td>
+      <td><code class="language-plaintext highlighter-rouge">MediaFoundationEncoder.cpp</code></td>
+      <td><code class="language-plaintext highlighter-rouge">AVFoundationEncoder.mm</code></td>
+    </tr>
+    <tr>
+      <td>音訊擷取</td>
+      <td><code class="language-plaintext highlighter-rouge">WASAPIAudioCaptureEngine_win.cpp</code></td>
+      <td><code class="language-plaintext highlighter-rouge">CoreAudioCaptureEngine_mac.mm</code></td>
+    </tr>
+    <tr>
+      <td>影片播放</td>
+      <td><code class="language-plaintext highlighter-rouge">MediaFoundationPlayer_win.cpp</code></td>
+      <td><code class="language-plaintext highlighter-rouge">AVFoundationPlayer_mac.mm</code></td>
+    </tr>
+    <tr>
+      <td>視窗偵測</td>
+      <td><code class="language-plaintext highlighter-rouge">WindowDetector_win.cpp</code></td>
+      <td><code class="language-plaintext highlighter-rouge">WindowDetector.mm</code></td>
+    </tr>
+    <tr>
+      <td>OCR</td>
+      <td><code class="language-plaintext highlighter-rouge">OCRManager_win.cpp</code></td>
+      <td><code class="language-plaintext highlighter-rouge">OCRManager.mm</code></td>
+    </tr>
+    <tr>
+      <td>Window level</td>
+      <td><code class="language-plaintext highlighter-rouge">WindowLevel_win.cpp</code></td>
+      <td><code class="language-plaintext highlighter-rouge">WindowLevel_mac.mm</code></td>
+    </tr>
+    <tr>
+      <td>Platform features</td>
+      <td><code class="language-plaintext highlighter-rouge">PlatformFeatures_win.cpp</code></td>
+      <td><code class="language-plaintext highlighter-rouge">PlatformFeatures_mac.mm</code></td>
+    </tr>
+    <tr>
+      <td>Auto-launch</td>
+      <td><code class="language-plaintext highlighter-rouge">AutoLaunchManager_win.cpp</code></td>
+      <td><code class="language-plaintext highlighter-rouge">AutoLaunchManager_mac.mm</code></td>
+    </tr>
+    <tr>
+      <td>Install source</td>
+      <td><code class="language-plaintext highlighter-rouge">InstallSourceDetector_win.cpp</code></td>
+      <td><code class="language-plaintext highlighter-rouge">InstallSourceDetector_mac.mm</code></td>
+    </tr>
+    <tr>
+      <td>PATH utilities</td>
+      <td><code class="language-plaintext highlighter-rouge">PathEnvUtils_win.cpp</code></td>
+      <td>N/A</td>
+    </tr>
+    <tr>
+      <td>Image color space</td>
+      <td>N/A</td>
+      <td><code class="language-plaintext highlighter-rouge">ImageColorSpaceHelper_mac.mm</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="主要元件">主要元件</h2>
+
+<h3 id="core-managers">Core managers</h3>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">CaptureManager</code>：區域擷取工作流入口</li>
+  <li><code class="language-plaintext highlighter-rouge">PinWindowManager</code>：釘選視窗生命週期</li>
+  <li><code class="language-plaintext highlighter-rouge">ScreenCanvasManager</code>：全螢幕標註 session</li>
+  <li><code class="language-plaintext highlighter-rouge">RecordingManager</code>：錄影 state machine</li>
+  <li><code class="language-plaintext highlighter-rouge">SingleInstanceGuard</code>：single-instance 保護</li>
+  <li><code class="language-plaintext highlighter-rouge">HotkeyManager</code>：全域熱鍵註冊</li>
+  <li><code class="language-plaintext highlighter-rouge">CLIHandler</code>：指令解析與 IPC 分派</li>
+  <li><code class="language-plaintext highlighter-rouge">UpdateChecker</code>：版本更新檢查</li>
+</ul>
+
+<h3 id="region-selector-subsystem">Region selector subsystem</h3>
+
+<p><code class="language-plaintext highlighter-rouge">src/region/</code> 內的重要抽取元件：</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">SelectionStateManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">MagnifierPanel</code></li>
+  <li><code class="language-plaintext highlighter-rouge">UpdateThrottler</code></li>
+  <li><code class="language-plaintext highlighter-rouge">TextAnnotationEditor</code></li>
+  <li><code class="language-plaintext highlighter-rouge">ShapeAnnotationEditor</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RegionExportManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RegionInputHandler</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RegionPainter</code></li>
+  <li><code class="language-plaintext highlighter-rouge">MultiRegionManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RegionToolbarHandler</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RegionSettingsHelper</code></li>
+  <li><code class="language-plaintext highlighter-rouge">SelectionDirtyRegionPlanner</code></li>
+  <li><code class="language-plaintext highlighter-rouge">SelectionResizeHelper</code></li>
+  <li><code class="language-plaintext highlighter-rouge">CaptureShortcutHintsOverlay</code></li>
+</ul>
+
+<h3 id="pin-window-subsystem">Pin window subsystem</h3>
+
+<p><code class="language-plaintext highlighter-rouge">src/pinwindow/</code> 內的重要抽取元件：</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">ResizeHandler</code></li>
+  <li><code class="language-plaintext highlighter-rouge">UIIndicators</code></li>
+  <li><code class="language-plaintext highlighter-rouge">PinWindowPlacement</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RegionLayoutManager</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RegionLayoutRenderer</code></li>
+  <li><code class="language-plaintext highlighter-rouge">PinMergeHelper</code></li>
+  <li><code class="language-plaintext highlighter-rouge">PinHistoryStore</code></li>
+  <li><code class="language-plaintext highlighter-rouge">PinHistoryWindow</code></li>
+</ul>
+
+<h3 id="recording-subsystem">Recording subsystem</h3>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">RecordingRegionSelector</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RecordingControlBar</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RecordingBoundaryOverlay</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RecordingInitTask</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RecordingRegionNormalizer</code></li>
+</ul>
+
+<h3 id="cli-subsystem">CLI subsystem</h3>
+
+<p><code class="language-plaintext highlighter-rouge">include/cli/commands/</code> 內的主要 commands：</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">FullCommand</code></li>
+  <li><code class="language-plaintext highlighter-rouge">ScreenCommand</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RegionCommand</code></li>
+  <li><code class="language-plaintext highlighter-rouge">GuiCommand</code></li>
+  <li><code class="language-plaintext highlighter-rouge">CanvasCommand</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RecordCommand</code></li>
+  <li><code class="language-plaintext highlighter-rouge">PinCommand</code></li>
+  <li><code class="language-plaintext highlighter-rouge">ConfigCommand</code></li>
+</ul>
+
+<h2 id="開發規範">開發規範</h2>
+
+<h3 id="logging">Logging</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>函式</th>
+      <th>用途</th>
+      <th>Release 行為</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">qDebug()</code></td>
+      <td>開發診斷訊息</td>
+      <td>抑制</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">qWarning()</code></td>
+      <td>硬體或 API 失敗</td>
+      <td>會輸出</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">qCritical()</code></td>
+      <td>致命錯誤</td>
+      <td>會輸出</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="code-style">Code style</h3>
+
+<ul>
+  <li>適度使用 C++17 特性提升可讀性</li>
+  <li>複雜型別用 <code class="language-plaintext highlighter-rouge">auto</code>，簡單 primitive 保持顯式型別</li>
+  <li>使用 <code class="language-plaintext highlighter-rouge">nullptr</code>，不要用 <code class="language-plaintext highlighter-rouge">NULL</code></li>
+  <li>優先使用 <code class="language-plaintext highlighter-rouge">QPoint</code> / <code class="language-plaintext highlighter-rouge">QRect</code>，避免鬆散座標組</li>
+</ul>
+
+<h3 id="測試">測試</h3>
+
+<ul>
+  <li>測試檔命名為 <code class="language-plaintext highlighter-rouge">tests/&lt;Component&gt;/tst_&lt;Name&gt;.cpp</code></li>
+  <li>測試框架使用 Qt Test，例如 <code class="language-plaintext highlighter-rouge">QCOMPARE</code>、<code class="language-plaintext highlighter-rouge">QVERIFY</code></li>
+  <li>目前測試資料夾包含 <code class="language-plaintext highlighter-rouge">Annotations</code>、<code class="language-plaintext highlighter-rouge">Beautify</code>、<code class="language-plaintext highlighter-rouge">CLI</code>、<code class="language-plaintext highlighter-rouge">Cursor</code>、<code class="language-plaintext highlighter-rouge">Detection</code>、<code class="language-plaintext highlighter-rouge">Encoding</code>、<code class="language-plaintext highlighter-rouge">Hotkey</code>、<code class="language-plaintext highlighter-rouge">IPC</code>、<code class="language-plaintext highlighter-rouge">MCP</code>、<code class="language-plaintext highlighter-rouge">PinWindow</code>、<code class="language-plaintext highlighter-rouge">Qml</code>、<code class="language-plaintext highlighter-rouge">RecordingManager</code>、<code class="language-plaintext highlighter-rouge">RegionSelector</code>、<code class="language-plaintext highlighter-rouge">ScreenCanvas</code>、<code class="language-plaintext highlighter-rouge">Settings</code>、<code class="language-plaintext highlighter-rouge">Share</code>、<code class="language-plaintext highlighter-rouge">Tools</code>、<code class="language-plaintext highlighter-rouge">Update</code>、<code class="language-plaintext highlighter-rouge">Utils</code></li>
+</ul>
+
+<h3 id="避免的模式">避免的模式</h3>
+
+<ul>
+  <li>已有 settings manager 卻直接存取 <code class="language-plaintext highlighter-rouge">QSettings</code></li>
+  <li>大量重複 <code class="language-plaintext highlighter-rouge">switch</code></li>
+  <li>沒有命名常數的 magic numbers</li>
+</ul>
+
+<h2 id="相關文件">相關文件</h2>
+
+<ul>
+  <li><a href="/zh-tw/developer/build-from-source/">從原始碼建置</a></li>
+  <li><a href="/zh-tw/developer/release-packaging/">發佈與打包</a></li>
+  <li><a href="/zh-tw/docs/cli/">命令列</a></li>
+</ul>
+
+      </div>
+    </article>
+
+  </div>
+</section>
+
+  </main>
+
+  
+
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <section>
+      <p class="footer-title">SnapTray</p>
+      <p class="footer-copy">桌機等級的截圖與錄影流程，為速度與清晰而設計。</p>
+      <p class="footer-meta">以 Qt 6 與 C++17 打造</p>
+    </section>
+
+    <section>
+      <p class="footer-title">資源</p>
+      <div class="footer-links">
+        <a href="/zh-tw/">首頁</a>
+        <a href="/zh-tw/docs/">文件</a>
+        <a href="/zh-tw/developer/">開發者文件</a>
+        <a href="/zh-tw/releases/">版本</a>
+        <a href="/zh-tw/privacy/">隱私政策</a>
+      </div>
+    </section>
+
+    <section>
+      <p class="footer-title">社群</p>
+      <div class="footer-links">
+        <a href="https://github.com/victorfu/snap-tray" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/victorfu/snap-tray/issues" target="_blank" rel="noopener">回報問題</a>
+        <a href="https://github.com/victorfu/snap-tray/blob/main/LICENSE" target="_blank" rel="noopener">MIT 授權</a>
+      </div>
+    </section>
+  </div>
+  <div class="container footer-bottom">
+    <p>&copy; <span id="current-year"></span> SnapTray</p>
+  </div>
+</footer>
+
+
+  <script src="/assets/js/site.js"></script>
+</body>
+</html>

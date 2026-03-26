@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-tw" class="no-js">
+<head>
+  
+
+
+
+
+
+
+
+
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>發佈與打包 | SnapTray</title>
+<meta name="description" content="產生 macOS 與 Windows 可發佈安裝檔，並整理簽章、公證與商店提交流程。">
+<meta name="theme-color" content="#0a1326">
+<meta name="snaptray-lang" content="zh-tw">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+<link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+<link rel="canonical" href="https://snaptray.cc/zh-tw/developer/release-packaging/">
+
+
+<link rel="alternate" hreflang="en" href="https://snaptray.cc/developer/release-packaging/">
+<link rel="alternate" hreflang="zh-TW" href="https://snaptray.cc/zh-tw/developer/release-packaging/">
+<link rel="alternate" hreflang="x-default" href="https://snaptray.cc/developer/release-packaging/">
+
+
+<meta property="og:site_name" content="SnapTray">
+<meta property="og:title" content="發佈與打包">
+<meta property="og:description" content="產生 macOS 與 Windows 可發佈安裝檔，並整理簽章、公證與商店提交流程。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://snaptray.cc/zh-tw/developer/release-packaging/">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://snaptray.cc/assets/images/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="發佈與打包">
+<meta name="twitter:description" content="產生 macOS 與 Windows 可發佈安裝檔，並整理簽章、公證與商店提交流程。">
+<meta name="twitter:image" content="https://snaptray.cc/assets/images/og-image.png">
+
+<link rel="stylesheet" href="/assets/css/style.css">
+
+
+
+
+
+</head>
+<body data-lang="zh-tw" data-route-key="developer_release_packaging" data-layout="docs">
+  
+  <a class="skip-link" href="#main-content">跳到主要內容</a>
+
+  <div class="site-background" aria-hidden="true">
+    <span class="bg-orb orb-a"></span>
+    <span class="bg-orb orb-b"></span>
+    <span class="bg-grid"></span>
+  </div>
+
+  
+
+
+
+
+
+
+<header class="site-header" data-header>
+  <div class="container header-inner">
+    <a href="/zh-tw/" class="site-logo" aria-label="SnapTray 首頁">
+      <img src="/assets/images/logo.svg" alt="" width="32" height="32">
+      <span>SnapTray</span>
+    </a>
+
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="開啟導覽選單" data-nav-toggle>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="sr-only" data-nav-toggle-label>開啟導覽選單</span>
+    </button>
+
+    <nav id="primary-nav" class="site-nav" aria-label="主要導覽" data-nav>
+      <a href="/zh-tw/" >首頁</a>
+      <a href="/zh-tw/docs/" class="is-active">文件</a>
+      <a href="/zh-tw/releases/" >版本</a>
+      <a href="/zh-tw/privacy/" >隱私</a>
+      
+
+
+
+
+<div class="language-switcher" aria-label="語言">
+  <a href="/developer/release-packaging/" class="lang-link ">EN</a>
+  <a href="/zh-tw/developer/release-packaging/" class="lang-link is-active">繁中</a>
+</div>
+
+      <a class="nav-github" href="https://github.com/victorfu/snap-tray" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+
+  <main id="main-content" class="site-main">
+    
+
+
+
+
+
+
+<section class="docs-shell">
+  <div class="container docs-grid">
+    <aside class="docs-sidebar" data-docs-sidebar>
+      
+
+
+
+
+<div id="docs-sidebar-panel" class="docs-sidebar-card">
+  <p class="docs-sidebar-title">開發者目錄</p>
+
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">從這裡開始</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/zh-tw/developer/" class="">開發者首頁</a>
+      </li>
+      
+      
+      
+      
+      <li>
+        <a href="/zh-tw/developer/build-from-source/" class="">從原始碼建置</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">發佈</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/zh-tw/developer/release-packaging/" class="is-active">發佈與打包</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">架構</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/zh-tw/developer/architecture/" class="">架構總覽</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">自動化</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/zh-tw/developer/mcp-debug/" class="">MCP（僅 Debug Build）</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+</div>
+
+    </aside>
+
+    <article class="docs-content" data-docs-content>
+      <header class="docs-content-header">
+        <p class="eyebrow">開發者文件</p>
+        <h1>發佈與打包</h1>
+        
+        <p>產生 macOS 與 Windows 可發佈安裝檔，並整理簽章、公證與商店提交流程。</p>
+        
+        <button class="docs-sidebar-toggle" type="button" aria-expanded="false" aria-controls="docs-sidebar-panel" data-docs-sidebar-toggle>
+          開啟開發者目錄
+        </button>
+      </header>
+      <div class="docs-prose">
+        <h2 id="打包腳本">打包腳本</h2>
+
+<p>打包腳本會自動執行 Release 建置、部署 Qt 相依套件，並產出可安裝的發佈物。</p>
+
+<h3 id="macos">macOS</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>./packaging/macos/package.sh
+<span class="c"># 輸出：dist/SnapTray-&lt;version&gt;-macOS.dmg</span>
+</code></pre></div></div>
+
+<p>可選工具：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>brew <span class="nb">install </span>create-dmg
+</code></pre></div></div>
+
+<h3 id="windows">Windows</h3>
+
+<div class="language-batch highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">packaging</span>\windows\package.bat           <span class="c">REM 同時建置 NSIS 與 MSIX</span>
+<span class="kd">packaging</span>\windows\package.bat <span class="kd">nsis</span>      <span class="c">REM 只建置 NSIS</span>
+<span class="kd">packaging</span>\windows\package.bat <span class="kd">msix</span>      <span class="c">REM 只建置 MSIX</span>
+</code></pre></div></div>
+
+<p>典型輸出：</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">dist\SnapTray-&lt;version&gt;-Setup.exe</code></li>
+  <li><code class="language-plaintext highlighter-rouge">dist\SnapTray-&lt;version&gt;.msix</code></li>
+  <li><code class="language-plaintext highlighter-rouge">dist\SnapTray-&lt;version&gt;.msixupload</code></li>
+</ul>
+
+<h2 id="打包前置需求">打包前置需求</h2>
+
+<h3 id="macos-1">macOS</h3>
+
+<ul>
+  <li>已安裝 Qt 6</li>
+  <li>Xcode Command Line Tools</li>
+  <li>可選 <code class="language-plaintext highlighter-rouge">create-dmg</code> 以美化 DMG 視覺</li>
+</ul>
+
+<h3 id="windows-1">Windows</h3>
+
+<ul>
+  <li>已安裝 Qt 6</li>
+  <li>Visual Studio Build Tools 或 Visual Studio</li>
+  <li>NSIS（產出 NSIS 安裝程式）</li>
+  <li>Windows 10 SDK（產出 MSIX）</li>
+</ul>
+
+<p>若 Qt 不是安裝在預設路徑，可設定：</p>
+
+<div class="language-batch highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">set</span> <span class="kd">QT_PATH</span><span class="o">=</span><span class="kd">C</span>:\Qt\6.10.1\msvc2022_64
+</code></pre></div></div>
+
+<h2 id="簽章與公證">簽章與公證</h2>
+
+<p>未簽章安裝檔在作業系統上會產生信任警告。只要是公開發佈，強烈建議完成簽章流程。</p>
+
+<h3 id="macos-簽章與公證">macOS 簽章與公證</h3>
+
+<p>一次性儲存 notarytool 憑證：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun notarytool store-credentials <span class="s2">"snaptray-notary"</span> <span class="se">\</span>
+  <span class="nt">--apple-id</span> <span class="s2">"your@email.com"</span> <span class="se">\</span>
+  <span class="nt">--team-id</span> <span class="s2">"YOURTEAMID"</span> <span class="se">\</span>
+  <span class="nt">--password</span> <span class="s2">"xxxx-xxxx-xxxx-xxxx"</span>
+</code></pre></div></div>
+
+<p>建置、簽章、公證與 staple：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">export </span><span class="nv">CODESIGN_IDENTITY</span><span class="o">=</span><span class="s2">"Developer ID Application: Your Name (TEAMID)"</span>
+<span class="nb">export </span><span class="nv">NOTARIZE_KEYCHAIN_PROFILE</span><span class="o">=</span><span class="s2">"snaptray-notary"</span>
+./packaging/macos/package.sh
+</code></pre></div></div>
+
+<p>驗證 Gatekeeper：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>spctl <span class="nt">-a</span> <span class="nt">-vv</span> <span class="nt">-t</span> open <span class="s2">"dist/SnapTray-&lt;version&gt;-macOS.dmg"</span>
+</code></pre></div></div>
+
+<p>舊式 CI 環境變數仍可使用：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">export </span><span class="nv">NOTARIZE_APPLE_ID</span><span class="o">=</span><span class="s2">"your@email.com"</span>
+<span class="nb">export </span><span class="nv">NOTARIZE_TEAM_ID</span><span class="o">=</span><span class="s2">"YOURTEAMID"</span>
+<span class="nb">export </span><span class="nv">NOTARIZE_PASSWORD</span><span class="o">=</span><span class="s2">"xxxx-xxxx-xxxx-xxxx"</span>
+</code></pre></div></div>
+
+<h3 id="windows-簽章">Windows 簽章</h3>
+
+<p>NSIS 安裝程式簽章：</p>
+
+<div class="language-batch highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">set</span> <span class="kd">CODESIGN_CERT</span><span class="o">=</span><span class="nb">path</span>\to\certificate.pfx
+<span class="kd">set</span> <span class="kd">CODESIGN_PASSWORD</span><span class="o">=</span><span class="kd">your</span><span class="na">-password
+</span><span class="kd">packaging</span>\windows\package.bat <span class="kd">nsis</span>
+</code></pre></div></div>
+
+<p>MSIX 側載 / 企業部署簽章：</p>
+
+<div class="language-batch highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">set</span> <span class="kd">MSIX_SIGN_CERT</span><span class="o">=</span><span class="nb">path</span>\to\certificate.pfx
+<span class="kd">set</span> <span class="kd">MSIX_SIGN_PASSWORD</span><span class="o">=</span><span class="kd">your</span><span class="na">-password
+</span><span class="kd">set</span> <span class="kd">PUBLISHER_ID</span><span class="o">=</span><span class="kd">CN</span><span class="o">=</span><span class="kd">SnapTray</span> <span class="kd">Dev</span>
+<span class="kd">packaging</span>\windows\package.bat <span class="kd">msix</span>
+</code></pre></div></div>
+
+<p>若是上架 Microsoft Store，Microsoft 會在認證階段替你簽章，因此不需要額外為 Store 流程做 MSIX 簽章。</p>
+
+<h2 id="msix-本地測試">MSIX 本地測試</h2>
+
+<p>安裝未簽章 MSIX：</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Add-AppPackage</span><span class="w"> </span><span class="nt">-Path</span><span class="w"> </span><span class="s2">"dist\SnapTray-&lt;version&gt;.msix"</span><span class="w"> </span><span class="nt">-AllowUnsigned</span><span class="w">
+</span></code></pre></div></div>
+
+<p>解除安裝：</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Get-AppPackage</span><span class="w"> </span><span class="nx">SnapTray</span><span class="o">*</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Remove-AppPackage</span><span class="w">
+</span></code></pre></div></div>
+
+<h2 id="microsoft-store-提交">Microsoft Store 提交</h2>
+
+<ol>
+  <li>登入 Partner Center</li>
+  <li>建立或選擇 app reservation</li>
+  <li>建立新的 submission</li>
+  <li>上傳 <code class="language-plaintext highlighter-rouge">.msixupload</code></li>
+  <li>補齊 listing、pricing、age rating</li>
+  <li>送出認證</li>
+</ol>
+
+<h2 id="app-圖示流程">App 圖示流程</h2>
+
+<p>請先準備 1024x1024 的來源 PNG，再生成平台所需資產。</p>
+
+<h3 id="macos-icns">macOS <code class="language-plaintext highlighter-rouge">.icns</code></h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cd </span>resources/icons
+<span class="nb">mkdir </span>snaptray.iconset
+sips <span class="nt">-z</span> 16 16     snaptray.png <span class="nt">--out</span> snaptray.iconset/icon_16x16.png
+sips <span class="nt">-z</span> 32 32     snaptray.png <span class="nt">--out</span> snaptray.iconset/icon_16x16@2x.png
+sips <span class="nt">-z</span> 32 32     snaptray.png <span class="nt">--out</span> snaptray.iconset/icon_32x32.png
+sips <span class="nt">-z</span> 64 64     snaptray.png <span class="nt">--out</span> snaptray.iconset/icon_32x32@2x.png
+sips <span class="nt">-z</span> 128 128   snaptray.png <span class="nt">--out</span> snaptray.iconset/icon_128x128.png
+sips <span class="nt">-z</span> 256 256   snaptray.png <span class="nt">--out</span> snaptray.iconset/icon_128x128@2x.png
+sips <span class="nt">-z</span> 256 256   snaptray.png <span class="nt">--out</span> snaptray.iconset/icon_256x256.png
+sips <span class="nt">-z</span> 512 512   snaptray.png <span class="nt">--out</span> snaptray.iconset/icon_256x256@2x.png
+sips <span class="nt">-z</span> 512 512   snaptray.png <span class="nt">--out</span> snaptray.iconset/icon_512x512.png
+sips <span class="nt">-z</span> 1024 1024 snaptray.png <span class="nt">--out</span> snaptray.iconset/icon_512x512@2x.png
+iconutil <span class="nt">-c</span> icns snaptray.iconset
+<span class="nb">rm</span> <span class="nt">-rf</span> snaptray.iconset
+</code></pre></div></div>
+
+<h3 id="windows-ico">Windows <code class="language-plaintext highlighter-rouge">.ico</code></h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>magick snaptray.png <span class="nt">-define</span> icon:auto-resize<span class="o">=</span>256,128,64,48,32,16 snaptray.ico
+</code></pre></div></div>
+
+<h2 id="與發佈相關的網站內容">與發佈相關的網站內容</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">docs/updates/*.xml</code> 是 Sparkle / WinSparkle 使用的 appcast feeds</li>
+  <li>GitHub Actions release workflow 會更新網站上的 release pages 與 appcast 檔案</li>
+</ul>
+
+<h2 id="下一步">下一步</h2>
+
+<ul>
+  <li>回到<a href="/zh-tw/developer/build-from-source/">從原始碼建置</a>處理本地開發</li>
+  <li>前往<a href="/zh-tw/developer/architecture/">架構總覽</a>掌握 repo 與 subsystem 結構</li>
+</ul>
+
+      </div>
+    </article>
+
+  </div>
+</section>
+
+  </main>
+
+  
+
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <section>
+      <p class="footer-title">SnapTray</p>
+      <p class="footer-copy">桌機等級的截圖與錄影流程，為速度與清晰而設計。</p>
+      <p class="footer-meta">以 Qt 6 與 C++17 打造</p>
+    </section>
+
+    <section>
+      <p class="footer-title">資源</p>
+      <div class="footer-links">
+        <a href="/zh-tw/">首頁</a>
+        <a href="/zh-tw/docs/">文件</a>
+        <a href="/zh-tw/developer/">開發者文件</a>
+        <a href="/zh-tw/releases/">版本</a>
+        <a href="/zh-tw/privacy/">隱私政策</a>
+      </div>
+    </section>
+
+    <section>
+      <p class="footer-title">社群</p>
+      <div class="footer-links">
+        <a href="https://github.com/victorfu/snap-tray" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/victorfu/snap-tray/issues" target="_blank" rel="noopener">回報問題</a>
+        <a href="https://github.com/victorfu/snap-tray/blob/main/LICENSE" target="_blank" rel="noopener">MIT 授權</a>
+      </div>
+    </section>
+  </div>
+  <div class="container footer-bottom">
+    <p>&copy; <span id="current-year"></span> SnapTray</p>
+  </div>
+</footer>
+
+
+  <script src="/assets/js/site.js"></script>
+</body>
+</html>

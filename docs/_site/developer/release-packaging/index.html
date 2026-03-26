@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+  
+
+
+
+
+
+
+
+
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Release & Packaging | SnapTray</title>
+<meta name="description" content="Create distributable macOS and Windows packages, sign them, and prepare app-store or direct-download releases.">
+<meta name="theme-color" content="#0a1326">
+<meta name="snaptray-lang" content="en">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+<link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+<link rel="canonical" href="https://snaptray.cc/developer/release-packaging/">
+
+
+<link rel="alternate" hreflang="en" href="https://snaptray.cc/developer/release-packaging/">
+<link rel="alternate" hreflang="zh-TW" href="https://snaptray.cc/zh-tw/developer/release-packaging/">
+<link rel="alternate" hreflang="x-default" href="https://snaptray.cc/developer/release-packaging/">
+
+
+<meta property="og:site_name" content="SnapTray">
+<meta property="og:title" content="Release & Packaging">
+<meta property="og:description" content="Create distributable macOS and Windows packages, sign them, and prepare app-store or direct-download releases.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://snaptray.cc/developer/release-packaging/">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://snaptray.cc/assets/images/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Release & Packaging">
+<meta name="twitter:description" content="Create distributable macOS and Windows packages, sign them, and prepare app-store or direct-download releases.">
+<meta name="twitter:image" content="https://snaptray.cc/assets/images/og-image.png">
+
+<link rel="stylesheet" href="/assets/css/style.css">
+
+
+
+
+
+</head>
+<body data-lang="en" data-route-key="developer_release_packaging" data-layout="docs">
+  
+  <a class="skip-link" href="#main-content">Skip to content</a>
+
+  <div class="site-background" aria-hidden="true">
+    <span class="bg-orb orb-a"></span>
+    <span class="bg-orb orb-b"></span>
+    <span class="bg-grid"></span>
+  </div>
+
+  
+
+
+
+
+
+
+<header class="site-header" data-header>
+  <div class="container header-inner">
+    <a href="/" class="site-logo" aria-label="SnapTray home">
+      <img src="/assets/images/logo.svg" alt="" width="32" height="32">
+      <span>SnapTray</span>
+    </a>
+
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Open navigation" data-nav-toggle>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="sr-only" data-nav-toggle-label>Open navigation</span>
+    </button>
+
+    <nav id="primary-nav" class="site-nav" aria-label="Primary navigation" data-nav>
+      <a href="/" >Home</a>
+      <a href="/docs/" class="is-active">Docs</a>
+      <a href="/releases/" >Releases</a>
+      <a href="/privacy/" >Privacy</a>
+      
+
+
+
+
+<div class="language-switcher" aria-label="Language">
+  <a href="/developer/release-packaging/" class="lang-link is-active">EN</a>
+  <a href="/zh-tw/developer/release-packaging/" class="lang-link ">繁中</a>
+</div>
+
+      <a class="nav-github" href="https://github.com/victorfu/snap-tray" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+
+  <main id="main-content" class="site-main">
+    
+
+
+
+
+
+
+<section class="docs-shell">
+  <div class="container docs-grid">
+    <aside class="docs-sidebar" data-docs-sidebar>
+      
+
+
+
+
+<div id="docs-sidebar-panel" class="docs-sidebar-card">
+  <p class="docs-sidebar-title">Developer Docs</p>
+
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">Start Here</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/developer/" class="">Developer Home</a>
+      </li>
+      
+      
+      
+      
+      <li>
+        <a href="/developer/build-from-source/" class="">Build from Source</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">Release</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/developer/release-packaging/" class="is-active">Release & Packaging</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">Architecture</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/developer/architecture/" class="">Architecture Overview</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">Automation</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/developer/mcp-debug/" class="">MCP (Debug Builds)</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+</div>
+
+    </aside>
+
+    <article class="docs-content" data-docs-content>
+      <header class="docs-content-header">
+        <p class="eyebrow">Developer Docs</p>
+        <h1>Release & Packaging</h1>
+        
+        <p>Create distributable macOS and Windows packages, sign them, and prepare app-store or direct-download releases.</p>
+        
+        <button class="docs-sidebar-toggle" type="button" aria-expanded="false" aria-controls="docs-sidebar-panel" data-docs-sidebar-toggle>
+          Developer Menu
+        </button>
+      </header>
+      <div class="docs-prose">
+        <h2 id="packaging-scripts">Packaging scripts</h2>
+
+<p>Packaging scripts run Release builds, deploy Qt dependencies, and produce installable artifacts.</p>
+
+<h3 id="macos">macOS</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>./packaging/macos/package.sh
+<span class="c"># Output: dist/SnapTray-&lt;version&gt;-macOS.dmg</span>
+</code></pre></div></div>
+
+<p>Optional helper:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>brew <span class="nb">install </span>create-dmg
+</code></pre></div></div>
+
+<h3 id="windows">Windows</h3>
+
+<div class="language-batch highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">packaging</span>\windows\package.bat           <span class="c">REM Build both NSIS and MSIX</span>
+<span class="kd">packaging</span>\windows\package.bat <span class="kd">nsis</span>      <span class="c">REM NSIS installer only</span>
+<span class="kd">packaging</span>\windows\package.bat <span class="kd">msix</span>      <span class="c">REM MSIX package only</span>
+</code></pre></div></div>
+
+<p>Typical outputs:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">dist\SnapTray-&lt;version&gt;-Setup.exe</code></li>
+  <li><code class="language-plaintext highlighter-rouge">dist\SnapTray-&lt;version&gt;.msix</code></li>
+  <li><code class="language-plaintext highlighter-rouge">dist\SnapTray-&lt;version&gt;.msixupload</code></li>
+</ul>
+
+<h2 id="packaging-prerequisites">Packaging prerequisites</h2>
+
+<h3 id="macos-1">macOS</h3>
+
+<ul>
+  <li>Qt 6 installed</li>
+  <li>Xcode Command Line Tools</li>
+  <li>Optional <code class="language-plaintext highlighter-rouge">create-dmg</code> for nicer DMG presentation</li>
+</ul>
+
+<h3 id="windows-1">Windows</h3>
+
+<ul>
+  <li>Qt 6 installed</li>
+  <li>Visual Studio Build Tools or Visual Studio</li>
+  <li>NSIS for NSIS installers</li>
+  <li>Windows 10 SDK for MSIX packaging</li>
+</ul>
+
+<p>If Qt is not installed in the default location, set:</p>
+
+<div class="language-batch highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">set</span> <span class="kd">QT_PATH</span><span class="o">=</span><span class="kd">C</span>:\Qt\6.10.1\msvc2022_64
+</code></pre></div></div>
+
+<h2 id="code-signing-and-notarization">Code signing and notarization</h2>
+
+<p>Unsigned installers will generate OS trust warnings. Signed artifacts are strongly recommended for any public distribution.</p>
+
+<h3 id="macos-signing-and-notarization">macOS signing and notarization</h3>
+
+<p>One-time credential setup:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xcrun notarytool store-credentials <span class="s2">"snaptray-notary"</span> <span class="se">\</span>
+  <span class="nt">--apple-id</span> <span class="s2">"your@email.com"</span> <span class="se">\</span>
+  <span class="nt">--team-id</span> <span class="s2">"YOURTEAMID"</span> <span class="se">\</span>
+  <span class="nt">--password</span> <span class="s2">"xxxx-xxxx-xxxx-xxxx"</span>
+</code></pre></div></div>
+
+<p>Build, sign, notarize, and staple:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">export </span><span class="nv">CODESIGN_IDENTITY</span><span class="o">=</span><span class="s2">"Developer ID Application: Your Name (TEAMID)"</span>
+<span class="nb">export </span><span class="nv">NOTARIZE_KEYCHAIN_PROFILE</span><span class="o">=</span><span class="s2">"snaptray-notary"</span>
+./packaging/macos/package.sh
+</code></pre></div></div>
+
+<p>Verify Gatekeeper acceptance:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>spctl <span class="nt">-a</span> <span class="nt">-vv</span> <span class="nt">-t</span> open <span class="s2">"dist/SnapTray-&lt;version&gt;-macOS.dmg"</span>
+</code></pre></div></div>
+
+<p>Legacy CI-style environment variables remain supported:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">export </span><span class="nv">NOTARIZE_APPLE_ID</span><span class="o">=</span><span class="s2">"your@email.com"</span>
+<span class="nb">export </span><span class="nv">NOTARIZE_TEAM_ID</span><span class="o">=</span><span class="s2">"YOURTEAMID"</span>
+<span class="nb">export </span><span class="nv">NOTARIZE_PASSWORD</span><span class="o">=</span><span class="s2">"xxxx-xxxx-xxxx-xxxx"</span>
+</code></pre></div></div>
+
+<h3 id="windows-signing">Windows signing</h3>
+
+<p>NSIS installer signing:</p>
+
+<div class="language-batch highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">set</span> <span class="kd">CODESIGN_CERT</span><span class="o">=</span><span class="nb">path</span>\to\certificate.pfx
+<span class="kd">set</span> <span class="kd">CODESIGN_PASSWORD</span><span class="o">=</span><span class="kd">your</span><span class="na">-password
+</span><span class="kd">packaging</span>\windows\package.bat <span class="kd">nsis</span>
+</code></pre></div></div>
+
+<p>MSIX sideload / enterprise signing:</p>
+
+<div class="language-batch highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">set</span> <span class="kd">MSIX_SIGN_CERT</span><span class="o">=</span><span class="nb">path</span>\to\certificate.pfx
+<span class="kd">set</span> <span class="kd">MSIX_SIGN_PASSWORD</span><span class="o">=</span><span class="kd">your</span><span class="na">-password
+</span><span class="kd">set</span> <span class="kd">PUBLISHER_ID</span><span class="o">=</span><span class="kd">CN</span><span class="o">=</span><span class="kd">SnapTray</span> <span class="kd">Dev</span>
+<span class="kd">packaging</span>\windows\package.bat <span class="kd">msix</span>
+</code></pre></div></div>
+
+<p>For Microsoft Store submission, Microsoft signs the package during certification, so separate MSIX signing is not required for Store delivery.</p>
+
+<h2 id="local-msix-testing">Local MSIX testing</h2>
+
+<p>Install an unsigned MSIX locally:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Add-AppPackage</span><span class="w"> </span><span class="nt">-Path</span><span class="w"> </span><span class="s2">"dist\SnapTray-&lt;version&gt;.msix"</span><span class="w"> </span><span class="nt">-AllowUnsigned</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Uninstall:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Get-AppPackage</span><span class="w"> </span><span class="nx">SnapTray</span><span class="o">*</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Remove-AppPackage</span><span class="w">
+</span></code></pre></div></div>
+
+<h2 id="microsoft-store-submission">Microsoft Store submission</h2>
+
+<ol>
+  <li>Sign in to Partner Center</li>
+  <li>Create or select the app reservation</li>
+  <li>Create a new submission</li>
+  <li>Upload the <code class="language-plaintext highlighter-rouge">.msixupload</code></li>
+  <li>Complete listing, pricing, and age rating details</li>
+  <li>Submit for certification</li>
+</ol>
+
+<h2 id="app-icon-workflow">App icon workflow</h2>
+
+<p>Prepare a 1024x1024 source PNG and regenerate the platform packaging assets from it.</p>
+
+<h3 id="macos-icns">macOS <code class="language-plaintext highlighter-rouge">.icns</code></h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cd </span>resources/icons
+<span class="nb">mkdir </span>snaptray.iconset
+sips <span class="nt">-z</span> 16 16     snaptray.png <span class="nt">--out</span> snaptray.iconset/icon_16x16.png
+sips <span class="nt">-z</span> 32 32     snaptray.png <span class="nt">--out</span> snaptray.iconset/icon_16x16@2x.png
+sips <span class="nt">-z</span> 32 32     snaptray.png <span class="nt">--out</span> snaptray.iconset/icon_32x32.png
+sips <span class="nt">-z</span> 64 64     snaptray.png <span class="nt">--out</span> snaptray.iconset/icon_32x32@2x.png
+sips <span class="nt">-z</span> 128 128   snaptray.png <span class="nt">--out</span> snaptray.iconset/icon_128x128.png
+sips <span class="nt">-z</span> 256 256   snaptray.png <span class="nt">--out</span> snaptray.iconset/icon_128x128@2x.png
+sips <span class="nt">-z</span> 256 256   snaptray.png <span class="nt">--out</span> snaptray.iconset/icon_256x256.png
+sips <span class="nt">-z</span> 512 512   snaptray.png <span class="nt">--out</span> snaptray.iconset/icon_256x256@2x.png
+sips <span class="nt">-z</span> 512 512   snaptray.png <span class="nt">--out</span> snaptray.iconset/icon_512x512.png
+sips <span class="nt">-z</span> 1024 1024 snaptray.png <span class="nt">--out</span> snaptray.iconset/icon_512x512@2x.png
+iconutil <span class="nt">-c</span> icns snaptray.iconset
+<span class="nb">rm</span> <span class="nt">-rf</span> snaptray.iconset
+</code></pre></div></div>
+
+<h3 id="windows-ico">Windows <code class="language-plaintext highlighter-rouge">.ico</code></h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>magick snaptray.png <span class="nt">-define</span> icon:auto-resize<span class="o">=</span>256,128,64,48,32,16 snaptray.ico
+</code></pre></div></div>
+
+<h2 id="related-release-infrastructure">Related release infrastructure</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">docs/updates/*.xml</code> holds appcast feeds used by Sparkle / WinSparkle release flows</li>
+  <li>GitHub Actions release automation populates release pages and appcast files for the website</li>
+</ul>
+
+<h2 id="next-step">Next step</h2>
+
+<ul>
+  <li>Go to <a href="/developer/build-from-source/">Build from Source</a> for local dev setup</li>
+  <li>Go to <a href="/developer/architecture/">Architecture Overview</a> for repository and subsystem structure</li>
+</ul>
+
+      </div>
+    </article>
+
+  </div>
+</section>
+
+  </main>
+
+  
+
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <section>
+      <p class="footer-title">SnapTray</p>
+      <p class="footer-copy">Desktop-grade screenshot and recording workflows, designed for speed and clarity.</p>
+      <p class="footer-meta">Made with Qt 6 and C++17</p>
+    </section>
+
+    <section>
+      <p class="footer-title">Resources</p>
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="/docs/">Docs</a>
+        <a href="/developer/">Developer Docs</a>
+        <a href="/releases/">Releases</a>
+        <a href="/privacy/">Privacy Policy</a>
+      </div>
+    </section>
+
+    <section>
+      <p class="footer-title">Community</p>
+      <div class="footer-links">
+        <a href="https://github.com/victorfu/snap-tray" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/victorfu/snap-tray/issues" target="_blank" rel="noopener">Report Issue</a>
+        <a href="https://github.com/victorfu/snap-tray/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+      </div>
+    </section>
+  </div>
+  <div class="container footer-bottom">
+    <p>&copy; <span id="current-year"></span> SnapTray</p>
+  </div>
+</footer>
+
+
+  <script src="/assets/js/site.js"></script>
+</body>
+</html>

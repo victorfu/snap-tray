@@ -14,7 +14,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>快速開始 | SnapTray</title>
-<meta name="description" content="用 10 分鐘完成穩定初始化，確保截圖、釘選、錄影第一天就可用。">
+<meta name="description" content="用 10 分鐘完成穩定初始化，確保截圖、釘選、OCR 與錄影第一天就可用。">
 <meta name="theme-color" content="#0a1326">
 <meta name="snaptray-lang" content="zh-tw">
 
@@ -31,13 +31,26 @@
 <link rel="alternate" hreflang="x-default" href="https://snaptray.cc/docs/getting-started/">
 
 
+<meta property="og:site_name" content="SnapTray">
 <meta property="og:title" content="快速開始">
-<meta property="og:description" content="用 10 分鐘完成穩定初始化，確保截圖、釘選、錄影第一天就可用。">
+<meta property="og:description" content="用 10 分鐘完成穩定初始化，確保截圖、釘選、OCR 與錄影第一天就可用。">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://snaptray.cc/zh-tw/docs/getting-started/">
 <meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://snaptray.cc/assets/images/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="快速開始">
+<meta name="twitter:description" content="用 10 分鐘完成穩定初始化，確保截圖、釘選、OCR 與錄影第一天就可用。">
+<meta name="twitter:image" content="https://snaptray.cc/assets/images/og-image.png">
 
 <link rel="stylesheet" href="/assets/css/style.css">
+
+
+
+
 
 </head>
 <body data-lang="zh-tw" data-route-key="docs_getting_started" data-layout="docs">
@@ -96,10 +109,16 @@
     
 
 
+
+
+
+
 <section class="docs-shell">
   <div class="container docs-grid">
     <aside class="docs-sidebar" data-docs-sidebar>
       
+
+
 
 
 <div id="docs-sidebar-panel" class="docs-sidebar-card">
@@ -269,7 +288,7 @@
         <p class="eyebrow">文件中心</p>
         <h1>快速開始</h1>
         
-        <p>用 10 分鐘完成穩定初始化，確保截圖、釘選、錄影第一天就可用。</p>
+        <p>用 10 分鐘完成穩定初始化，確保截圖、釘選、OCR 與錄影第一天就可用。</p>
         
         <button class="docs-sidebar-toggle" type="button" aria-expanded="false" aria-controls="docs-sidebar-panel" data-docs-sidebar-toggle>
           開啟文件目錄
@@ -286,13 +305,39 @@
   <li>快捷鍵衝突確認</li>
 </ul>
 
-<h2 id="前置條件">前置條件</h2>
+<h2 id="執行前置條件">執行前置條件</h2>
+
+<h3 id="macos">macOS</h3>
 
 <ul>
-  <li>macOS 14+ 或 Windows 10+</li>
+  <li>macOS 14+</li>
   <li>Screen Recording 權限</li>
-  <li>建議開啟 Accessibility 權限（視窗偵測與流程操作更順）</li>
+  <li>建議開啟 Accessibility 權限，以支援視窗偵測與更順的工作流</li>
 </ul>
+
+<h3 id="windows">Windows</h3>
+
+<ul>
+  <li>Windows 10+</li>
+  <li>只有在錄音時才需要確認麥克風權限</li>
+</ul>
+
+<h2 id="權限檢查清單">權限檢查清單</h2>
+
+<h3 id="macos-1">macOS</h3>
+
+<p>第一次正式使用前，請先確認：</p>
+
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">System Settings &gt; Privacy &amp; Security &gt; Screen Recording</code></li>
+  <li><code class="language-plaintext highlighter-rouge">System Settings &gt; Privacy &amp; Security &gt; Accessibility</code></li>
+</ol>
+
+<p>若剛剛有變更權限，請重新啟動 SnapTray。</p>
+
+<h3 id="windows-1">Windows</h3>
+
+<p>大多數執行權限由作業系統與安裝方式處理。若要錄製音訊，請確認選定的麥克風或音訊來源可用且已授權。</p>
 
 <h2 id="步驟-1確認托盤執行狀態1-分鐘">步驟 1：確認托盤執行狀態（1 分鐘）</h2>
 
@@ -313,7 +358,7 @@
 <h2 id="步驟-2測試截圖流程2-分鐘">步驟 2：測試截圖流程（2 分鐘）</h2>
 
 <ol>
-  <li>按 <code class="language-plaintext highlighter-rouge">F2</code> 截圖。</li>
+  <li>按 <code class="language-plaintext highlighter-rouge">F2</code>。</li>
   <li>拖曳任一區域，確認有放大鏡與尺寸資訊。</li>
   <li>加一個箭頭標註。</li>
   <li>按 <code class="language-plaintext highlighter-rouge">Ctrl/Cmd + C</code>，貼到任一文字編輯器。</li>
@@ -324,23 +369,23 @@
 
 <ol>
   <li>再按一次 <code class="language-plaintext highlighter-rouge">F2</code> 截圖。</li>
-  <li>按 <code class="language-plaintext highlighter-rouge">Enter</code> 將畫面釘選。</li>
-  <li>測試縮放、移動。</li>
+  <li>按 <code class="language-plaintext highlighter-rouge">Enter</code> 將結果釘選。</li>
+  <li>測試移動、調整大小與縮放。</li>
   <li>切換 App，確認釘選仍可見。</li>
 </ol>
 
 <h2 id="步驟-4測試錄影流程3-分鐘">步驟 4：測試錄影流程（3 分鐘）</h2>
 
 <ol>
-  <li>從托盤啟動錄影，或在選區按 <code class="language-plaintext highlighter-rouge">R</code>。</li>
-  <li>錄 5-10 秒。</li>
+  <li>從托盤啟動錄影，或在擷取工具列按 <code class="language-plaintext highlighter-rouge">R</code>。</li>
+  <li>錄 5 到 10 秒。</li>
   <li>停止並輸出 MP4。</li>
   <li>在 Settings &gt; Files 確認輸出路徑。</li>
 </ol>
 
 <h2 id="步驟-5處理快捷鍵衝突2-分鐘">步驟 5：處理快捷鍵衝突（2 分鐘）</h2>
 
-<p>開啟 Settings &gt; Hotkeys，調整衝突按鍵。</p>
+<p>到 Settings &gt; Hotkeys 調整衝突按鍵。</p>
 
 <p>最低建議先確認這四個：</p>
 
@@ -392,6 +437,7 @@
       <div class="footer-links">
         <a href="/zh-tw/">首頁</a>
         <a href="/zh-tw/docs/">文件</a>
+        <a href="/zh-tw/developer/">開發者文件</a>
         <a href="/zh-tw/releases/">版本</a>
         <a href="/zh-tw/privacy/">隱私政策</a>
       </div>

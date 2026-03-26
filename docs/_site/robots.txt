@@ -1,0 +1,45 @@
+# 傳統搜尋引擎
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+# === OpenAI (ChatGPT) ===
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+# === Anthropic (Claude) ===
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: claude-web
+Allow: /
+
+# === Google (Gemini) ===
+User-agent: Google-Extended
+Allow: /
+
+# === Perplexity ===
+User-agent: PerplexityBot
+Allow: /
+
+# === 其他 AI 爬蟲 ===
+User-agent: Applebot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+# Sitemap & LLMs
+Sitemap: https://snaptray.cc/sitemap.xml
+Sitemap: https://snaptray.cc/llms.txt

@@ -36,10 +36,60 @@
 <link rel="alternate" hreflang="x-default" href="{{ route.en | absolute_url }}">
 {% endif %}
 
+<meta property="og:site_name" content="{{ site.title }}">
 <meta property="og:title" content="{{ social_title }}">
 <meta property="og:description" content="{{ social_description }}">
 <meta property="og:type" content="website">
 <meta property="og:url" content="{{ canonical_path | absolute_url }}">
 <meta property="og:locale" content="{{ og_locale }}">
+<meta property="og:image" content="{{ '/assets/images/og-image.png' | absolute_url }}">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ social_title }}">
+<meta name="twitter:description" content="{{ social_description }}">
+<meta name="twitter:image" content="{{ '/assets/images/og-image.png' | absolute_url }}">
 
 <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+
+{% if page.route_key == 'home' %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "SnapTray",
+  "description": "{{ site.description }}",
+  "operatingSystem": ["macOS 14+", "Windows 10+"],
+  "applicationCategory": "MultimediaApplication",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "url": "{{ site.url }}/",
+  "image": "{{ '/assets/images/logo.svg' | absolute_url }}"
+}
+</script>
+{% endif %}
+
+{% if page.faq_schema %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {% for item in page.faq_schema %}
+    {
+      "@type": "Question",
+      "name": {{ item.question | jsonify }},
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": {{ item.answer | jsonify }}
+      }
+    }{% unless forloop.last %},{% endunless %}
+    {% endfor %}
+  ]
+}
+</script>
+{% endif %}

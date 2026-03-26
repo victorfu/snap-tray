@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-tw" class="no-js">
+<head>
+  
+
+
+
+
+
+
+
+
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>開發者文件 | SnapTray</title>
+<meta name="description" content="SnapTray 的技術文件主入口，集中整理建置、打包、架構與除錯整合資訊，不再把 GitHub README 撐成長文總表。">
+<meta name="theme-color" content="#0a1326">
+<meta name="snaptray-lang" content="zh-tw">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+<link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+<link rel="canonical" href="https://snaptray.cc/zh-tw/developer/">
+
+
+<link rel="alternate" hreflang="en" href="https://snaptray.cc/developer/">
+<link rel="alternate" hreflang="zh-TW" href="https://snaptray.cc/zh-tw/developer/">
+<link rel="alternate" hreflang="x-default" href="https://snaptray.cc/developer/">
+
+
+<meta property="og:site_name" content="SnapTray">
+<meta property="og:title" content="開發者文件">
+<meta property="og:description" content="SnapTray 的技術文件主入口，集中整理建置、打包、架構與除錯整合資訊，不再把 GitHub README 撐成長文總表。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://snaptray.cc/zh-tw/developer/">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://snaptray.cc/assets/images/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="開發者文件">
+<meta name="twitter:description" content="SnapTray 的技術文件主入口，集中整理建置、打包、架構與除錯整合資訊，不再把 GitHub README 撐成長文總表。">
+<meta name="twitter:image" content="https://snaptray.cc/assets/images/og-image.png">
+
+<link rel="stylesheet" href="/assets/css/style.css">
+
+
+
+
+
+</head>
+<body data-lang="zh-tw" data-route-key="developer_home" data-layout="docs">
+  
+  <a class="skip-link" href="#main-content">跳到主要內容</a>
+
+  <div class="site-background" aria-hidden="true">
+    <span class="bg-orb orb-a"></span>
+    <span class="bg-orb orb-b"></span>
+    <span class="bg-grid"></span>
+  </div>
+
+  
+
+
+
+
+
+
+<header class="site-header" data-header>
+  <div class="container header-inner">
+    <a href="/zh-tw/" class="site-logo" aria-label="SnapTray 首頁">
+      <img src="/assets/images/logo.svg" alt="" width="32" height="32">
+      <span>SnapTray</span>
+    </a>
+
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="開啟導覽選單" data-nav-toggle>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="sr-only" data-nav-toggle-label>開啟導覽選單</span>
+    </button>
+
+    <nav id="primary-nav" class="site-nav" aria-label="主要導覽" data-nav>
+      <a href="/zh-tw/" >首頁</a>
+      <a href="/zh-tw/docs/" class="is-active">文件</a>
+      <a href="/zh-tw/releases/" >版本</a>
+      <a href="/zh-tw/privacy/" >隱私</a>
+      
+
+
+
+
+<div class="language-switcher" aria-label="語言">
+  <a href="/developer/" class="lang-link ">EN</a>
+  <a href="/zh-tw/developer/" class="lang-link is-active">繁中</a>
+</div>
+
+      <a class="nav-github" href="https://github.com/victorfu/snap-tray" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+
+  <main id="main-content" class="site-main">
+    
+
+
+
+
+
+
+<section class="docs-shell">
+  <div class="container docs-grid">
+    <aside class="docs-sidebar" data-docs-sidebar>
+      
+
+
+
+
+<div id="docs-sidebar-panel" class="docs-sidebar-card">
+  <p class="docs-sidebar-title">開發者目錄</p>
+
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">從這裡開始</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/zh-tw/developer/" class="is-active">開發者首頁</a>
+      </li>
+      
+      
+      
+      
+      <li>
+        <a href="/zh-tw/developer/build-from-source/" class="">從原始碼建置</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">發佈</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/zh-tw/developer/release-packaging/" class="">發佈與打包</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">架構</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/zh-tw/developer/architecture/" class="">架構總覽</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">自動化</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/zh-tw/developer/mcp-debug/" class="">MCP（僅 Debug Build）</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+</div>
+
+    </aside>
+
+    <article class="docs-content" data-docs-content>
+      <header class="docs-content-header">
+        <p class="eyebrow">開發者文件</p>
+        <h1>開發者文件</h1>
+        
+        <p>SnapTray 的技術文件主入口，集中整理建置、打包、架構與除錯整合資訊，不再把 GitHub README 撐成長文總表。</p>
+        
+        <button class="docs-sidebar-toggle" type="button" aria-expanded="false" aria-controls="docs-sidebar-panel" data-docs-sidebar-toggle>
+          開啟開發者目錄
+        </button>
+      </header>
+      <div class="docs-prose">
+        <p>這裡是 SnapTray 技術文件的主入口。根 README 會保持產品導向；原本放在 README 與 AGENTS 的技術長文，現在集中整理於此。</p>
+
+<h2 id="這裡收錄什麼">這裡收錄什麼</h2>
+
+<ul>
+  <li><a href="/zh-tw/developer/build-from-source/">從原始碼建置</a>：前置需求、腳本、手動 CMake 流程、快取工具與本地建置排錯</li>
+  <li><a href="/zh-tw/developer/release-packaging/">發佈與打包</a>：DMG / NSIS / MSIX 打包、簽章、公證、Store 提交流程與圖示資產</li>
+  <li><a href="/zh-tw/developer/architecture/">架構總覽</a>：專案結構、library 邊界、架構模式、平台對照與開發慣例</li>
+  <li><a href="/zh-tw/developer/mcp-debug/">MCP（僅 Debug Build）</a>：內建 localhost MCP server、tool contract 與整合方式</li>
+</ul>
+
+<h2 id="受眾分工">受眾分工</h2>
+
+<ul>
+  <li>GitHub <code class="language-plaintext highlighter-rouge">README</code>：產品著陸頁、下載入口與高階工作流概覽</li>
+  <li><code class="language-plaintext highlighter-rouge">/docs/*</code>：使用者教學、功能參考、疑難排解、FAQ 與 CLI 使用方式</li>
+  <li><code class="language-plaintext highlighter-rouge">/developer/*</code>：貢獻者與 agent 需要的技術參考</li>
+</ul>
+
+<h2 id="真實來源原則">真實來源原則</h2>
+
+<ul>
+  <li>產品介紹與價值主張放在 README 與網站首頁</li>
+  <li>使用者操作細節放在 <code class="language-plaintext highlighter-rouge">/docs/*</code></li>
+  <li>建置、打包、架構、debug-only 整合資訊放在 <code class="language-plaintext highlighter-rouge">/developer/*</code></li>
+  <li><code class="language-plaintext highlighter-rouge">AGENTS.md</code> 只保留精簡操作索引，避免重複維護會漂移的長清單</li>
+</ul>
+
+<h2 id="建議閱讀順序">建議閱讀順序</h2>
+
+<ol>
+  <li><a href="/zh-tw/developer/build-from-source/">從原始碼建置</a></li>
+  <li><a href="/zh-tw/developer/architecture/">架構總覽</a></li>
+  <li><a href="/zh-tw/developer/release-packaging/">發佈與打包</a></li>
+  <li>需要 debug 自動化時再看 <a href="/zh-tw/developer/mcp-debug/">MCP（僅 Debug Build）</a></li>
+</ol>
+
+<h2 id="相關使用者文件">相關使用者文件</h2>
+
+<ul>
+  <li><a href="/zh-tw/docs/getting-started/">快速開始</a></li>
+  <li><a href="/zh-tw/docs/cli/">命令列</a></li>
+  <li><a href="/zh-tw/docs/troubleshooting/">疑難排解</a></li>
+  <li><a href="/zh-tw/docs/faq/">常見問題</a></li>
+</ul>
+
+      </div>
+    </article>
+
+  </div>
+</section>
+
+  </main>
+
+  
+
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <section>
+      <p class="footer-title">SnapTray</p>
+      <p class="footer-copy">桌機等級的截圖與錄影流程，為速度與清晰而設計。</p>
+      <p class="footer-meta">以 Qt 6 與 C++17 打造</p>
+    </section>
+
+    <section>
+      <p class="footer-title">資源</p>
+      <div class="footer-links">
+        <a href="/zh-tw/">首頁</a>
+        <a href="/zh-tw/docs/">文件</a>
+        <a href="/zh-tw/developer/">開發者文件</a>
+        <a href="/zh-tw/releases/">版本</a>
+        <a href="/zh-tw/privacy/">隱私政策</a>
+      </div>
+    </section>
+
+    <section>
+      <p class="footer-title">社群</p>
+      <div class="footer-links">
+        <a href="https://github.com/victorfu/snap-tray" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/victorfu/snap-tray/issues" target="_blank" rel="noopener">回報問題</a>
+        <a href="https://github.com/victorfu/snap-tray/blob/main/LICENSE" target="_blank" rel="noopener">MIT 授權</a>
+      </div>
+    </section>
+  </div>
+  <div class="container footer-bottom">
+    <p>&copy; <span id="current-year"></span> SnapTray</p>
+  </div>
+</footer>
+
+
+  <script src="/assets/js/site.js"></script>
+</body>
+</html>

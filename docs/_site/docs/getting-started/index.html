@@ -14,7 +14,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Getting Started | SnapTray</title>
-<meta name="description" content="Complete a reliable 10-minute setup so every capture, pin, and recording flow works on day one.">
+<meta name="description" content="Complete a reliable 10-minute setup so screenshots, pin windows, OCR, and recording workflows work on day one.">
 <meta name="theme-color" content="#0a1326">
 <meta name="snaptray-lang" content="en">
 
@@ -31,13 +31,26 @@
 <link rel="alternate" hreflang="x-default" href="https://snaptray.cc/docs/getting-started/">
 
 
+<meta property="og:site_name" content="SnapTray">
 <meta property="og:title" content="Getting Started">
-<meta property="og:description" content="Complete a reliable 10-minute setup so every capture, pin, and recording flow works on day one.">
+<meta property="og:description" content="Complete a reliable 10-minute setup so screenshots, pin windows, OCR, and recording workflows work on day one.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://snaptray.cc/docs/getting-started/">
 <meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://snaptray.cc/assets/images/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Getting Started">
+<meta name="twitter:description" content="Complete a reliable 10-minute setup so screenshots, pin windows, OCR, and recording workflows work on day one.">
+<meta name="twitter:image" content="https://snaptray.cc/assets/images/og-image.png">
 
 <link rel="stylesheet" href="/assets/css/style.css">
+
+
+
+
 
 </head>
 <body data-lang="en" data-route-key="docs_getting_started" data-layout="docs">
@@ -96,10 +109,16 @@
     
 
 
+
+
+
+
 <section class="docs-shell">
   <div class="container docs-grid">
     <aside class="docs-sidebar" data-docs-sidebar>
       
+
+
 
 
 <div id="docs-sidebar-panel" class="docs-sidebar-card">
@@ -269,7 +288,7 @@
         <p class="eyebrow">Documentation</p>
         <h1>Getting Started</h1>
         
-        <p>Complete a reliable 10-minute setup so every capture, pin, and recording flow works on day one.</p>
+        <p>Complete a reliable 10-minute setup so screenshots, pin windows, OCR, and recording workflows work on day one.</p>
         
         <button class="docs-sidebar-toggle" type="button" aria-expanded="false" aria-controls="docs-sidebar-panel" data-docs-sidebar-toggle>
           Docs Menu
@@ -283,23 +302,49 @@
   <li>First screenshot and annotation</li>
   <li>First pin window</li>
   <li>First recording export</li>
-  <li>Hotkey sanity check</li>
+  <li>Hotkey conflict check</li>
 </ul>
 
-<h2 id="prerequisites">Prerequisites</h2>
+<h2 id="runtime-prerequisites">Runtime prerequisites</h2>
+
+<h3 id="macos">macOS</h3>
 
 <ul>
-  <li>macOS 14+ or Windows 10+</li>
+  <li>macOS 14+</li>
   <li>Screen Recording permission</li>
-  <li>Accessibility permission (recommended for window detection and workflow automation)</li>
+  <li>Accessibility permission recommended for window detection and smoother workflows</li>
 </ul>
+
+<h3 id="windows">Windows</h3>
+
+<ul>
+  <li>Windows 10+</li>
+  <li>Microphone permission only when recording audio</li>
+</ul>
+
+<h2 id="permission-checklist">Permission checklist</h2>
+
+<h3 id="macos-1">macOS</h3>
+
+<p>Before your first serious capture session, verify:</p>
+
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">System Settings &gt; Privacy &amp; Security &gt; Screen Recording</code></li>
+  <li><code class="language-plaintext highlighter-rouge">System Settings &gt; Privacy &amp; Security &gt; Accessibility</code></li>
+</ol>
+
+<p>Enable SnapTray in both places, then restart the app if you changed permissions.</p>
+
+<h3 id="windows-1">Windows</h3>
+
+<p>Most runtime permissions are handled by the OS and installer shape. If you record audio, confirm the selected microphone or audio source is available and permitted.</p>
 
 <h2 id="step-1-verify-tray-runtime-1-min">Step 1: Verify tray runtime (1 min)</h2>
 
 <ol>
   <li>Launch SnapTray.</li>
-  <li>Confirm tray icon is visible.</li>
-  <li>Open tray menu and verify these entries exist:
+  <li>Confirm the tray icon is visible.</li>
+  <li>Open the menu and verify these entries exist:
     <ul>
       <li>Region Capture</li>
       <li>Screen Canvas</li>
@@ -308,41 +353,41 @@
   </li>
 </ol>
 
-<p>If tray icon does not appear, see <a href="/docs/troubleshooting/">Troubleshooting</a>.</p>
+<p>If the tray icon does not appear, continue with <a href="/docs/troubleshooting/">Troubleshooting</a>.</p>
 
 <h2 id="step-2-test-screenshot-flow-2-min">Step 2: Test screenshot flow (2 min)</h2>
 
 <ol>
   <li>Press <code class="language-plaintext highlighter-rouge">F2</code>.</li>
-  <li>Drag any region and verify magnifier + size overlay.</li>
-  <li>Draw one arrow annotation.</li>
-  <li>Press <code class="language-plaintext highlighter-rouge">Ctrl/Cmd + C</code> and paste into any text editor.</li>
-  <li>Press <code class="language-plaintext highlighter-rouge">Ctrl/Cmd + S</code> and confirm file is created.</li>
+  <li>Drag any region and confirm the magnifier and size overlay appear.</li>
+  <li>Add one arrow annotation.</li>
+  <li>Press <code class="language-plaintext highlighter-rouge">Ctrl/Cmd + C</code> and paste into a text editor.</li>
+  <li>Press <code class="language-plaintext highlighter-rouge">Ctrl/Cmd + S</code> and confirm the file was written.</li>
 </ol>
 
 <h2 id="step-3-test-pin-workflow-2-min">Step 3: Test pin workflow (2 min)</h2>
 
 <ol>
   <li>Capture again with <code class="language-plaintext highlighter-rouge">F2</code>.</li>
-  <li>Press <code class="language-plaintext highlighter-rouge">Enter</code> to pin the capture.</li>
-  <li>Resize and move the pin window.</li>
-  <li>Confirm it stays visible while switching apps.</li>
+  <li>Press <code class="language-plaintext highlighter-rouge">Enter</code> to pin the result.</li>
+  <li>Move, resize, and zoom the pin window.</li>
+  <li>Switch apps and confirm the pin stays visible.</li>
 </ol>
 
 <h2 id="step-4-test-recording-flow-3-min">Step 4: Test recording flow (3 min)</h2>
 
 <ol>
-  <li>Start recording from tray menu or press <code class="language-plaintext highlighter-rouge">R</code> from capture region.</li>
-  <li>Record 5-10 seconds.</li>
+  <li>Start recording from the tray menu or press <code class="language-plaintext highlighter-rouge">R</code> from the capture toolbar.</li>
+  <li>Record 5 to 10 seconds.</li>
   <li>Stop and export MP4.</li>
-  <li>Confirm output file path in Settings &gt; Files.</li>
+  <li>Confirm the output path in Settings &gt; Files.</li>
 </ol>
 
 <h2 id="step-5-resolve-hotkey-conflicts-2-min">Step 5: Resolve hotkey conflicts (2 min)</h2>
 
-<p>Open Settings &gt; Hotkeys and rebind conflicting actions.</p>
+<p>Open Settings &gt; Hotkeys and rebind any conflicting actions.</p>
 
-<p>Minimum recommended setup:</p>
+<p>Minimum recommended actions:</p>
 
 <ul>
   <li>Region Capture</li>
@@ -392,6 +437,7 @@
       <div class="footer-links">
         <a href="/">Home</a>
         <a href="/docs/">Docs</a>
+        <a href="/developer/">Developer Docs</a>
         <a href="/releases/">Releases</a>
         <a href="/privacy/">Privacy Policy</a>
       </div>

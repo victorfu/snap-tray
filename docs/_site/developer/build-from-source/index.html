@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+  
+
+
+
+
+
+
+
+
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build from Source | SnapTray</title>
+<meta name="description" content="Build SnapTray locally on macOS or Windows with the supported scripts, toolchains, and manual CMake flows.">
+<meta name="theme-color" content="#0a1326">
+<meta name="snaptray-lang" content="en">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+<link rel="icon" type="image/svg+xml" href="/assets/images/logo.svg">
+<link rel="canonical" href="https://snaptray.cc/developer/build-from-source/">
+
+
+<link rel="alternate" hreflang="en" href="https://snaptray.cc/developer/build-from-source/">
+<link rel="alternate" hreflang="zh-TW" href="https://snaptray.cc/zh-tw/developer/build-from-source/">
+<link rel="alternate" hreflang="x-default" href="https://snaptray.cc/developer/build-from-source/">
+
+
+<meta property="og:site_name" content="SnapTray">
+<meta property="og:title" content="Build from Source">
+<meta property="og:description" content="Build SnapTray locally on macOS or Windows with the supported scripts, toolchains, and manual CMake flows.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://snaptray.cc/developer/build-from-source/">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://snaptray.cc/assets/images/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Build from Source">
+<meta name="twitter:description" content="Build SnapTray locally on macOS or Windows with the supported scripts, toolchains, and manual CMake flows.">
+<meta name="twitter:image" content="https://snaptray.cc/assets/images/og-image.png">
+
+<link rel="stylesheet" href="/assets/css/style.css">
+
+
+
+
+
+</head>
+<body data-lang="en" data-route-key="developer_build_from_source" data-layout="docs">
+  
+  <a class="skip-link" href="#main-content">Skip to content</a>
+
+  <div class="site-background" aria-hidden="true">
+    <span class="bg-orb orb-a"></span>
+    <span class="bg-orb orb-b"></span>
+    <span class="bg-grid"></span>
+  </div>
+
+  
+
+
+
+
+
+
+<header class="site-header" data-header>
+  <div class="container header-inner">
+    <a href="/" class="site-logo" aria-label="SnapTray home">
+      <img src="/assets/images/logo.svg" alt="" width="32" height="32">
+      <span>SnapTray</span>
+    </a>
+
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Open navigation" data-nav-toggle>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="nav-toggle__line" aria-hidden="true"></span>
+      <span class="sr-only" data-nav-toggle-label>Open navigation</span>
+    </button>
+
+    <nav id="primary-nav" class="site-nav" aria-label="Primary navigation" data-nav>
+      <a href="/" >Home</a>
+      <a href="/docs/" class="is-active">Docs</a>
+      <a href="/releases/" >Releases</a>
+      <a href="/privacy/" >Privacy</a>
+      
+
+
+
+
+<div class="language-switcher" aria-label="Language">
+  <a href="/developer/build-from-source/" class="lang-link is-active">EN</a>
+  <a href="/zh-tw/developer/build-from-source/" class="lang-link ">繁中</a>
+</div>
+
+      <a class="nav-github" href="https://github.com/victorfu/snap-tray" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+
+  <main id="main-content" class="site-main">
+    
+
+
+
+
+
+
+<section class="docs-shell">
+  <div class="container docs-grid">
+    <aside class="docs-sidebar" data-docs-sidebar>
+      
+
+
+
+
+<div id="docs-sidebar-panel" class="docs-sidebar-card">
+  <p class="docs-sidebar-title">Developer Docs</p>
+
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">Start Here</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/developer/" class="">Developer Home</a>
+      </li>
+      
+      
+      
+      
+      <li>
+        <a href="/developer/build-from-source/" class="is-active">Build from Source</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">Release</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/developer/release-packaging/" class="">Release & Packaging</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">Architecture</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/developer/architecture/" class="">Architecture Overview</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+  <section class="docs-nav-group">
+    <p class="docs-nav-group-title">Automation</p>
+    <ul class="docs-nav-list">
+      
+      
+      
+      <li>
+        <a href="/developer/mcp-debug/" class="">MCP (Debug Builds)</a>
+      </li>
+      
+      
+    </ul>
+  </section>
+  
+</div>
+
+    </aside>
+
+    <article class="docs-content" data-docs-content>
+      <header class="docs-content-header">
+        <p class="eyebrow">Developer Docs</p>
+        <h1>Build from Source</h1>
+        
+        <p>Build SnapTray locally on macOS or Windows with the supported scripts, toolchains, and manual CMake flows.</p>
+        
+        <button class="docs-sidebar-toggle" type="button" aria-expanded="false" aria-controls="docs-sidebar-panel" data-docs-sidebar-toggle>
+          Developer Menu
+        </button>
+      </header>
+      <div class="docs-prose">
+        <h2 id="supported-platforms">Supported platforms</h2>
+
+<p>SnapTray currently supports macOS and Windows only.</p>
+
+<h3 id="runtime-targets">Runtime targets</h3>
+
+<ul>
+  <li>macOS 14.0+</li>
+  <li>Windows 10+</li>
+</ul>
+
+<h3 id="development-prerequisites">Development prerequisites</h3>
+
+<ul>
+  <li>Qt 6.10.1 with Widgets, Gui, Svg, Concurrent, Network, Quick, QuickControls2, and QuickWidgets</li>
+  <li>CMake 3.16+</li>
+  <li>Ninja</li>
+  <li>Git for FetchContent dependencies</li>
+  <li>macOS: Xcode Command Line Tools</li>
+  <li>Windows: Visual Studio 2022 Build Tools and Windows SDK</li>
+</ul>
+
+<h3 id="auto-fetched-dependencies">Auto-fetched dependencies</h3>
+
+<ul>
+  <li><a href="https://github.com/Skycoder42/QHotkey">QHotkey</a> for global hotkeys</li>
+  <li><a href="https://github.com/opencv/opencv">OpenCV 4.10.0</a> for face and structure detection</li>
+  <li><a href="https://github.com/webmproject/libwebp">libwebp 1.3.2</a> for WebP animation encoding</li>
+  <li><a href="https://github.com/zxing-cpp/zxing-cpp">ZXing-CPP v2.2.1</a> for QR and barcode processing</li>
+</ul>
+
+<h2 id="recommended-build-scripts">Recommended build scripts</h2>
+
+<p>Use the repository scripts for day-to-day development. They encode the supported build shape and are the default verification path for agents and contributors.</p>
+
+<h3 id="macos">macOS</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>./scripts/build.sh                  <span class="c"># Debug build</span>
+./scripts/build-release.sh          <span class="c"># Release build</span>
+./scripts/run-tests.sh              <span class="c"># Build and run tests</span>
+./scripts/build-and-run.sh          <span class="c"># Debug build + run app</span>
+./scripts/build-and-run-release.sh  <span class="c"># Release build + run app</span>
+</code></pre></div></div>
+
+<h3 id="windows">Windows</h3>
+
+<div class="language-batch highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">scripts</span>\build.bat                   <span class="c">REM Debug build</span>
+<span class="kd">scripts</span>\build<span class="na">-release</span>.bat           <span class="c">REM Release build</span>
+<span class="kd">scripts</span>\run<span class="na">-tests</span>.bat               <span class="c">REM Build and run tests</span>
+<span class="kd">scripts</span>\build<span class="na">-and-run</span>.bat           <span class="c">REM Debug build + run app</span>
+<span class="kd">scripts</span>\build<span class="na">-and-run-release</span>.bat   <span class="c">REM Release build + run app</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">scripts\run-tests.bat</code> prepends <code class="language-plaintext highlighter-rouge">%QT_PATH%\bin</code> to <code class="language-plaintext highlighter-rouge">PATH</code> before <code class="language-plaintext highlighter-rouge">ctest</code>. If you run Windows debug tests manually, do the same first so <code class="language-plaintext highlighter-rouge">Qt6Testd.dll</code> and other Qt debug DLLs can be found.</p>
+
+<p>For validation, prefer <code class="language-plaintext highlighter-rouge">build.sh</code> / <code class="language-plaintext highlighter-rouge">build.bat</code> and the test scripts. Running the app is useful for manual QA but not required for every change.</p>
+
+<h2 id="powershell-with-msvc">PowerShell with MSVC</h2>
+
+<p>If you build on Windows from PowerShell, load the Visual Studio developer shell first:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Import-Module</span><span class="w"> </span><span class="s2">"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\Microsoft.VisualStudio.DevShell.dll"</span><span class="w">
+</span><span class="n">Enter-VsDevShell</span><span class="w"> </span><span class="nt">-VsInstallPath</span><span class="w"> </span><span class="s2">"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools"</span><span class="w"> </span><span class="nt">-DevCmdArguments</span><span class="w"> </span><span class="s1">'-arch=x64'</span><span class="w"> </span><span class="nt">-SkipAutomaticLocation</span><span class="w">
+</span></code></pre></div></div>
+
+<h2 id="manual-cmake-flows">Manual CMake flows</h2>
+
+<p>Use manual configure/build only when you need custom flags or when debugging the build itself.</p>
+
+<h3 id="macos-debug">macOS (Debug)</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cmake <span class="nt">-S</span> <span class="nb">.</span> <span class="nt">-B</span> build <span class="nt">-DCMAKE_BUILD_TYPE</span><span class="o">=</span>Debug <span class="nt">-DCMAKE_PREFIX_PATH</span><span class="o">=</span><span class="s2">"</span><span class="si">$(</span>brew <span class="nt">--prefix</span> qt<span class="si">)</span><span class="s2">"</span>
+cmake <span class="nt">--build</span> build <span class="nt">--parallel</span>
+<span class="c"># Output: build/bin/SnapTray-Debug.app</span>
+</code></pre></div></div>
+
+<h3 id="macos-release">macOS (Release)</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cmake <span class="nt">-S</span> <span class="nb">.</span> <span class="nt">-B</span> release <span class="nt">-DCMAKE_BUILD_TYPE</span><span class="o">=</span>Release <span class="nt">-DCMAKE_PREFIX_PATH</span><span class="o">=</span><span class="s2">"</span><span class="si">$(</span>brew <span class="nt">--prefix</span> qt<span class="si">)</span><span class="s2">"</span>
+cmake <span class="nt">--build</span> release <span class="nt">--parallel</span>
+<span class="c"># Output: release/bin/SnapTray.app</span>
+</code></pre></div></div>
+
+<h3 id="windows-debug">Windows (Debug)</h3>
+
+<div class="language-batch highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">cmake</span> <span class="na">-S </span>. <span class="na">-B </span><span class="kd">build</span> <span class="na">-G </span><span class="kd">Ninja</span> <span class="na">-DCMAKE</span>_BUILD_TYPE<span class="o">=</span><span class="kd">Debug</span> <span class="na">-DCMAKE</span>_PREFIX_PATH<span class="o">=</span><span class="kd">C</span>:/Qt/6.10.1/msvc2022_64
+<span class="kd">cmake</span> <span class="na">--build </span><span class="kd">build</span> <span class="na">--parallel
+</span><span class="kd">C</span>:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe <span class="kd">build</span>\bin\SnapTray<span class="na">-Debug</span>.exe
+</code></pre></div></div>
+
+<h3 id="windows-release">Windows (Release)</h3>
+
+<div class="language-batch highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">cmake</span> <span class="na">-S </span>. <span class="na">-B </span><span class="kd">release</span> <span class="na">-G </span><span class="kd">Ninja</span> <span class="na">-DCMAKE</span>_BUILD_TYPE<span class="o">=</span><span class="kd">Release</span> <span class="na">-DCMAKE</span>_PREFIX_PATH<span class="o">=</span><span class="kd">C</span>:/Qt/6.10.1/msvc2022_64
+<span class="kd">cmake</span> <span class="na">--build </span><span class="kd">release</span> <span class="na">--parallel
+</span><span class="kd">C</span>:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe <span class="na">--release </span><span class="kd">release</span>\bin\SnapTray.exe
+</code></pre></div></div>
+
+<h2 id="build-outputs-and-build-modes">Build outputs and build modes</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">Debug</code> builds use the display name <code class="language-plaintext highlighter-rouge">SnapTray-Debug</code> and a debug bundle identifier on macOS</li>
+  <li><code class="language-plaintext highlighter-rouge">Release</code> builds use the shipping app name <code class="language-plaintext highlighter-rouge">SnapTray</code></li>
+  <li>MCP support is compiled only in <code class="language-plaintext highlighter-rouge">Debug</code> builds via <code class="language-plaintext highlighter-rouge">SNAPTRAY_ENABLE_MCP</code></li>
+</ul>
+
+<h2 id="build-optimization">Build optimization</h2>
+
+<p>The build system automatically uses compiler caching when available.</p>
+
+<h3 id="local-cache-tools">Local cache tools</h3>
+
+<h4 id="macos-1">macOS</h4>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>brew <span class="nb">install </span>ccache
+</code></pre></div></div>
+
+<h4 id="windows-1">Windows</h4>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>scoop <span class="nb">install </span>sccache
+</code></pre></div></div>
+
+<h3 id="current-optimization-strategy">Current optimization strategy</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Optimization</th>
+      <th>Where</th>
+      <th>Effect</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">ccache</code> / <code class="language-plaintext highlighter-rouge">sccache</code> auto-detection</td>
+      <td><code class="language-plaintext highlighter-rouge">CMakeLists.txt</code></td>
+      <td>Faster incremental builds</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">/Z7</code> debug info for MSVC</td>
+      <td><code class="language-plaintext highlighter-rouge">CMakeLists.txt</code></td>
+      <td>Improves cacheability for Windows debug builds</td>
+    </tr>
+    <tr>
+      <td>FetchContent dependency caching</td>
+      <td>CI</td>
+      <td>Reduces repeated third-party rebuild cost</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Precompiled headers and Unity builds are intentionally avoided because they conflict poorly with Objective-C++ compilation on macOS.</p>
+
+<h2 id="local-verification">Local verification</h2>
+
+<p>Preferred validation sequence:</p>
+
+<ol>
+  <li>Run the platform build script</li>
+  <li>Run the platform test script</li>
+  <li>Manually open the app only when UI or runtime behavior needs verification</li>
+</ol>
+
+<p>On Windows debug builds, manual <code class="language-plaintext highlighter-rouge">ctest</code> runs should inherit a <code class="language-plaintext highlighter-rouge">PATH</code> that starts with <code class="language-plaintext highlighter-rouge">%QT_PATH%\bin</code>, matching <code class="language-plaintext highlighter-rouge">scripts\run-tests.bat</code>.</p>
+
+<h2 id="build-troubleshooting">Build troubleshooting</h2>
+
+<h3 id="macos-app-blocked-by-gatekeeper">macOS: app blocked by Gatekeeper</h3>
+
+<p>For official signed and notarized releases, Gatekeeper warnings should not appear. For local ad-hoc builds, you can clear quarantine attributes if needed:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>xattr <span class="nt">-cr</span> /Applications/SnapTray.app
+</code></pre></div></div>
+
+<h3 id="windows-missing-dll-or-qt-platform-plugin">Windows: missing DLL or Qt platform plugin</h3>
+
+<p>If you see errors such as <code class="language-plaintext highlighter-rouge">Qt6Core.dll was not found</code> or <code class="language-plaintext highlighter-rouge">no Qt platform plugin could be initialized</code>, deploy Qt dependencies with <code class="language-plaintext highlighter-rouge">windeployqt</code>:</p>
+
+<div class="language-batch highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">C</span>:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe <span class="kd">build</span>\bin\SnapTray<span class="na">-Debug</span>.exe
+</code></pre></div></div>
+
+<p>Replace the Qt path if your installation lives elsewhere.</p>
+
+<h2 id="next-step">Next step</h2>
+
+<ul>
+  <li>Go to <a href="/developer/release-packaging/">Release &amp; Packaging</a> when you need distributable artifacts</li>
+  <li>Go to <a href="/developer/architecture/">Architecture Overview</a> when you need repository structure or subsystem guidance</li>
+</ul>
+
+      </div>
+    </article>
+
+  </div>
+</section>
+
+  </main>
+
+  
+
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <section>
+      <p class="footer-title">SnapTray</p>
+      <p class="footer-copy">Desktop-grade screenshot and recording workflows, designed for speed and clarity.</p>
+      <p class="footer-meta">Made with Qt 6 and C++17</p>
+    </section>
+
+    <section>
+      <p class="footer-title">Resources</p>
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="/docs/">Docs</a>
+        <a href="/developer/">Developer Docs</a>
+        <a href="/releases/">Releases</a>
+        <a href="/privacy/">Privacy Policy</a>
+      </div>
+    </section>
+
+    <section>
+      <p class="footer-title">Community</p>
+      <div class="footer-links">
+        <a href="https://github.com/victorfu/snap-tray" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/victorfu/snap-tray/issues" target="_blank" rel="noopener">Report Issue</a>
+        <a href="https://github.com/victorfu/snap-tray/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+      </div>
+    </section>
+  </div>
+  <div class="container footer-bottom">
+    <p>&copy; <span id="current-year"></span> SnapTray</p>
+  </div>
+</footer>
+
+
+  <script src="/assets/js/site.js"></script>
+</body>
+</html>

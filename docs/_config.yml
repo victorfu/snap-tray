@@ -1,5 +1,5 @@
 title: SnapTray
-description: Powerful screenshot tool that lives in your system tray
+description: "Screenshot, annotate, pin, and record your screen — with OCR, GIF export, and CLI automation. Free for macOS and Windows."
 url: "https://snaptray.cc"
 baseurl: ""
 default_lang: en
@@ -13,6 +13,7 @@ permalink: pretty
 
 plugins:
   - jekyll-seo-tag
+  - jekyll-sitemap
 
 github:
   repo_owner: "victorfu"
