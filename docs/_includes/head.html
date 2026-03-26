@@ -4,8 +4,9 @@
 {% assign route = site.data.routes[page.route_key] %}
 {% assign social_description = page.social_description | default: page.description | default: site.description %}
 
-{% if page.route_key == 'home' %}
-  {% assign social_title = site.title | append: " — " | append: site.description %}
+{% assign tagline = site.data.i18n[lang].site.tagline %}
+{% if page.route_key == 'home' and tagline %}
+  {% assign social_title = site.title | append: " — " | append: tagline %}
 {% else %}
   {% assign social_title = page.social_title | default: page.title | default: site.title %}
 {% endif %}
@@ -18,7 +19,8 @@
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% if page.title %}{{ page.title }} | {% endif %}{{ site.title }}</title>
+{% assign tagline = site.data.i18n[lang].site.tagline %}
+<title>{% if page.title %}{{ page.title }} | {{ site.title }}{% elsif tagline %}{{ site.title }} — {{ tagline }}{% else %}{{ site.title }}{% endif %}</title>
 <meta name="description" content="{{ page.description | default: site.description }}">
 <meta name="theme-color" content="#0a1326">
 <meta name="snaptray-lang" content="{{ lang }}">
@@ -50,7 +52,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{{ social_title }}">
 <meta name="twitter:description" content="{{ social_description }}">
-<meta name="twitter:image" content="{{ '/assets/images/og-image.png' | absolute_url }}">
+<meta name="twitter:image" content="{{ '/assets/images/og-image.jpg' | absolute_url }}">
 
 <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
 

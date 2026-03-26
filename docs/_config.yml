@@ -24,3 +24,13 @@ exclude:
   - Gemfile.lock
   - node_modules
   - vendor
+
+defaults:
+  - scope:
+      path: "googlef5650c4c1be55237.html"
+    values:
+      sitemap: false
+  - scope:
+      path: "favicon.ico"
+    values:
+      sitemap: false

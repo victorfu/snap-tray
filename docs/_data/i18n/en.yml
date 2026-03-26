@@ -1,5 +1,6 @@
 site:
   locale: en-US
+  tagline: "Free Screenshot & Screen Recording Tool for macOS & Windows"
 
 nav:
   home: Home

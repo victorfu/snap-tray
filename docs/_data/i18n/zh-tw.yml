@@ -1,5 +1,6 @@
 site:
   locale: zh-TW
+  tagline: "免費截圖與螢幕錄影工具｜macOS 與 Windows"
 
 nav:
   home: 首頁
