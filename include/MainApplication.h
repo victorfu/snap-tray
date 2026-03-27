@@ -93,6 +93,7 @@ private:
     RecordingManager *m_recordingManager;
     QAction *m_regionCaptureAction;
     QAction *m_screenCanvasAction;
+    QAction *m_pasteAction;
     QAction *m_pinFromImageAction;
     QAction *m_historyAction;
     QAction *m_togglePinsVisibilityAction;

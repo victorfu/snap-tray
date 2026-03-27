@@ -131,6 +131,7 @@ MainApplication::MainApplication(QObject* parent)
     , m_recordingManager(nullptr)
     , m_regionCaptureAction(nullptr)
     , m_screenCanvasAction(nullptr)
+    , m_pasteAction(nullptr)
     , m_pinFromImageAction(nullptr)
     , m_historyAction(nullptr)
     , m_togglePinsVisibilityAction(nullptr)
@@ -401,6 +402,9 @@ void MainApplication::initialize()
 
     m_screenCanvasAction = m_trayMenu->addAction(tr("Screen Canvas"));
     connect(m_screenCanvasAction, &QAction::triggered, this, &MainApplication::onScreenCanvas);
+
+    m_pasteAction = m_trayMenu->addAction(tr("Paste"));
+    connect(m_pasteAction, &QAction::triggered, this, &MainApplication::onPasteFromClipboard);
 
     m_pinFromImageAction = m_trayMenu->addAction(tr("Pin from Image..."));
     connect(m_pinFromImageAction, &QAction::triggered, this, &MainApplication::onPinFromImage);
@@ -1051,6 +1055,9 @@ void MainApplication::updateTrayMenuHotkeyText()
     updateActionHotkeyText(m_screenCanvasAction,
                            SnapTray::HotkeyAction::ScreenCanvas,
                            tr("Screen Canvas"));
+    updateActionHotkeyText(m_pasteAction,
+                           SnapTray::HotkeyAction::PasteFromClipboard,
+                           tr("Paste"));
     updateActionHotkeyText(m_pinFromImageAction,
                            SnapTray::HotkeyAction::PinFromImage,
                            tr("Pin from Image..."));

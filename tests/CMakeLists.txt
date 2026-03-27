@@ -60,6 +60,37 @@ target_link_libraries(Utils_ScreenCaptureRegionUtils PRIVATE snaptray_core Qt6::
 add_test(NAME Utils_ScreenCaptureRegionUtils COMMAND Utils_ScreenCaptureRegionUtils)
 set_tests_properties(Utils_ScreenCaptureRegionUtils PROPERTIES TIMEOUT 60 LABELS "unit")
 
+set(APP_MainApplicationTrayMenu_SOURCES ${APP_SOURCES})
+list(FILTER APP_MainApplicationTrayMenu_SOURCES EXCLUDE REGEX "^src/main\\.cpp$")
+list(TRANSFORM APP_MainApplicationTrayMenu_SOURCES PREPEND "${CMAKE_SOURCE_DIR}/")
+
+set(APP_MainApplicationTrayMenu_HEADERS ${APP_HEADERS})
+list(TRANSFORM APP_MainApplicationTrayMenu_HEADERS PREPEND "${CMAKE_SOURCE_DIR}/")
+
+add_executable(App_MainApplicationTrayMenu
+    App/tst_MainApplicationTrayMenu.cpp
+    ${APP_MainApplicationTrayMenu_SOURCES}
+    ${APP_MainApplicationTrayMenu_HEADERS}
+)
+target_include_directories(App_MainApplicationTrayMenu PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_BINARY_DIR}/generated
+    ${CMAKE_BINARY_DIR}
+)
+target_link_libraries(App_MainApplicationTrayMenu PRIVATE
+    $<$<CONFIG:Debug>:snaptray_mcp>
+    snaptray_ui
+    snaptray_platform
+    snaptray_algorithms
+    snaptray_core
+    snaptray_qmlplugin
+    Qt6::Network
+    Qt6::Test
+)
+add_test(NAME App_MainApplicationTrayMenu COMMAND App_MainApplicationTrayMenu)
+set_tests_properties(App_MainApplicationTrayMenu PROPERTIES TIMEOUT 60 LABELS "unit")
+
 if(WIN32)
     add_executable(Qml_QtQuickBackendWin Qml/tst_QtQuickBackendWin.cpp)
     target_link_libraries(Qml_QtQuickBackendWin PRIVATE snaptray_platform Qt6::Qml Qt6::Quick Qt6::Test)
