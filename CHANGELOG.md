@@ -8,6 +8,16 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 - No unreleased entries yet.
 
+## [1.0.42] - 2026-03-28
+
+### Added
+
+- Added `Paste from Clipboard` and `Check for Updates` actions to the tray menu so both flows are reachable directly from the menu.
+
+### Improved
+
+- Simplified the update-check path to rely on the platform update coordinator, reducing duplicate updater logic and keeping tray-triggered checks aligned with the existing settings backend.
+
 ## [1.0.41] - 2026-03-26
 
 ### Added
