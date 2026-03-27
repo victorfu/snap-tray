@@ -137,6 +137,7 @@ MainApplication::MainApplication(QObject* parent)
     , m_togglePinsVisibilityAction(nullptr)
     , m_closeAllPinsAction(nullptr)
     , m_fullScreenRecordingAction(nullptr)
+    , m_checkForUpdatesAction(nullptr)
 {
 }
 
@@ -431,6 +432,11 @@ void MainApplication::initialize()
     connect(m_fullScreenRecordingAction, &QAction::triggered, this, &MainApplication::onFullScreenRecording);
 
     m_trayMenu->addSeparator();
+
+    m_checkForUpdatesAction = m_trayMenu->addAction(
+        QCoreApplication::translate("UpdatesSettings", "Check Now"));
+    m_checkForUpdatesAction->setEnabled(!UpdateCoordinator::instance().isExternallyManaged());
+    connect(m_checkForUpdatesAction, &QAction::triggered, this, &MainApplication::onCheckForUpdates);
 
     QAction* settingsAction = m_trayMenu->addAction(tr("Settings"));
     connect(settingsAction, &QAction::triggered, this, &MainApplication::onSettings);
@@ -777,28 +783,48 @@ void MainApplication::onImageLoaded(const QString &filePath, const QImage &image
 
 void MainApplication::onSettings()
 {
-    // If window already open, bring it to front
-    if (m_settingsWindow && m_settingsWindow->isVisible()) {
-        m_settingsWindow->raise();
-        m_settingsWindow->activateWindow();
+    SnapTray::QmlSettingsWindow* settingsWindow = ensureSettingsWindow();
+    if (!settingsWindow) {
         return;
     }
 
-    // Clean up any previous (closed) settings window
-    delete m_settingsWindow;
+    if (settingsWindow->isVisible()) {
+        settingsWindow->raise();
+        settingsWindow->activateWindow();
+        return;
+    }
 
-    // Create QML settings window
+    settingsWindow->show();
+}
+
+void MainApplication::onCheckForUpdates()
+{
+    if (UpdateCoordinator::instance().isExternallyManaged()) {
+        return;
+    }
+
+    SnapTray::QmlSettingsWindow* settingsWindow = ensureSettingsWindow();
+    if (settingsWindow) {
+        settingsWindow->checkForUpdates();
+    }
+}
+
+SnapTray::QmlSettingsWindow* MainApplication::ensureSettingsWindow()
+{
+    if (m_settingsWindow) {
+        return m_settingsWindow;
+    }
+
     m_settingsWindow = new SnapTray::QmlSettingsWindow(this);
 
-    // Connect OCR languages change signal
     connect(m_settingsWindow, &SnapTray::QmlSettingsWindow::ocrLanguagesChanged,
-        m_pinWindowManager, &PinWindowManager::updateOcrLanguages);
+            m_pinWindowManager, &PinWindowManager::updateOcrLanguages);
 #ifdef SNAPTRAY_ENABLE_MCP
     connect(m_settingsWindow, &SnapTray::QmlSettingsWindow::mcpEnabledChanged,
-        this, &MainApplication::onMcpEnabledChanged);
+            this, &MainApplication::onMcpEnabledChanged);
 #endif
 
-    m_settingsWindow->show();
+    return m_settingsWindow;
 }
 
 #ifdef SNAPTRAY_ENABLE_MCP

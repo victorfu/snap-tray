@@ -16,6 +16,7 @@ public:
     explicit QmlSettingsWindow(QObject* parent = nullptr);
     ~QmlSettingsWindow();
 
+    void checkForUpdates();
     void show();
     void raise();
     void activateWindow();

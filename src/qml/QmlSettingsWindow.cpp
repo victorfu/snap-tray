@@ -66,6 +66,14 @@ QmlSettingsWindow::~QmlSettingsWindow()
     delete m_view.data();
 }
 
+void QmlSettingsWindow::checkForUpdates()
+{
+    ensureView();
+    if (m_backend) {
+        m_backend->checkForUpdates();
+    }
+}
+
 void QmlSettingsWindow::ensureView()
 {
     if (m_view)

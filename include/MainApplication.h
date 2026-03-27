@@ -52,6 +52,7 @@ private slots:
     void onQuickPin();
     void onScreenCanvas();
     void onPasteFromClipboard();
+    void onCheckForUpdates();
     void onFullScreenRecording();
     void onToggleAllPinsVisibility();
     void onCloseAllPins();
@@ -82,6 +83,7 @@ private:
     void updateTrayMenuHotkeyText();
     void updateTrayToolTip();
     void updatePinsVisibilityActionText();
+    SnapTray::QmlSettingsWindow* ensureSettingsWindow();
     void updateActionHotkeyText(QAction* action,
                                 SnapTray::HotkeyAction hotkeyAction,
                                 const QString& baseName);
@@ -101,6 +103,7 @@ private:
     QAction *m_togglePinsVisibilityAction;
     QAction *m_closeAllPinsAction;
     QAction *m_fullScreenRecordingAction;
+    QAction *m_checkForUpdatesAction;
     QPointer<SnapTray::QmlSettingsWindow> m_settingsWindow;
     QPointer<SnapTray::QmlHistoryWindow> m_historyWindow;
     RecordingPreviewBackend *m_previewBackend = nullptr;
