@@ -44,38 +44,3 @@ void UpdateSettingsManager::setLastCheckTime(const QDateTime& time)
     auto settings = SnapTray::getSettings();
     settings.setValue(kSettingsKeyLastCheckTime, time);
 }
-
-QString UpdateSettingsManager::skippedVersion() const
-{
-    auto settings = SnapTray::getSettings();
-    return settings.value(kSettingsKeySkippedVersion).toString();
-}
-
-void UpdateSettingsManager::setSkippedVersion(const QString& version)
-{
-    auto settings = SnapTray::getSettings();
-    settings.setValue(kSettingsKeySkippedVersion, version);
-}
-
-void UpdateSettingsManager::clearSkippedVersion()
-{
-    auto settings = SnapTray::getSettings();
-    settings.remove(kSettingsKeySkippedVersion);
-}
-
-bool UpdateSettingsManager::shouldCheckForUpdates() const
-{
-    if (!isAutoCheckEnabled()) {
-        return false;
-    }
-
-    QDateTime lastCheck = lastCheckTime();
-    if (!lastCheck.isValid()) {
-        // Never checked before
-        return true;
-    }
-
-    int intervalHours = checkIntervalHours();
-    QDateTime nextCheck = lastCheck.addSecs(intervalHours * 3600);
-    return QDateTime::currentDateTime() >= nextCheck;
-}

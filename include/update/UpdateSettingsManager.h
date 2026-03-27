@@ -8,7 +8,7 @@
  * @brief Singleton class for managing auto-update settings.
  *
  * This class provides centralized access to update-related settings
- * such as auto-check enabled, check interval, skipped versions, etc.
+ * such as auto-check enabled, check interval, and last successful check time.
  */
 class UpdateSettingsManager
 {
@@ -27,14 +27,6 @@ public:
     QDateTime lastCheckTime() const;
     void setLastCheckTime(const QDateTime& time);
 
-    // Skipped version (user chose to skip this version)
-    QString skippedVersion() const;
-    void setSkippedVersion(const QString& version);
-    void clearSkippedVersion();
-
-    // Check if it's time to check for updates
-    bool shouldCheckForUpdates() const;
-
     // Default values
     static constexpr bool kDefaultAutoCheck = true;
     static constexpr int kDefaultCheckIntervalHours = 24;
@@ -47,7 +39,6 @@ private:
     static constexpr const char* kSettingsKeyAutoCheck = "update/autoCheck";
     static constexpr const char* kSettingsKeyCheckIntervalHours = "update/checkIntervalHours";
     static constexpr const char* kSettingsKeyLastCheckTime = "update/lastCheckTime";
-    static constexpr const char* kSettingsKeySkippedVersion = "update/skippedVersion";
 };
 
 #endif // UPDATESETTINGSMANAGER_H

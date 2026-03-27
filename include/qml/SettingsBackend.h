@@ -315,10 +315,6 @@ signals:
     void lastCheckedTextChanged();
     void isCheckingForUpdatesChanged();
 
-    // Update check results
-    void updateAvailable(const QString& version, const QString& notes,
-                         const QString& releaseUrl);
-    void noUpdateAvailable();
     void updateCheckUnavailable(const QString& reason);
     void updateCheckFailed(const QString& error);
 

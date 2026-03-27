@@ -31,6 +31,11 @@ target_link_libraries(Qml_BeautifyPanelBackend PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_BeautifyPanelBackend COMMAND Qml_BeautifyPanelBackend)
 set_tests_properties(Qml_BeautifyPanelBackend PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_UpdateDialogViewModel Qml/tst_UpdateDialogViewModel.cpp)
+target_link_libraries(Qml_UpdateDialogViewModel PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Qml_UpdateDialogViewModel COMMAND Qml_UpdateDialogViewModel)
+set_tests_properties(Qml_UpdateDialogViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Qml_EmojiPickerBackend Qml/tst_EmojiPickerBackend.cpp)
 target_link_libraries(Qml_EmojiPickerBackend PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_EmojiPickerBackend COMMAND Qml_EmojiPickerBackend)
@@ -769,11 +774,6 @@ add_executable(Update_UpdateSettingsManager Update/tst_UpdateSettingsManager.cpp
 target_link_libraries(Update_UpdateSettingsManager PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Update_UpdateSettingsManager COMMAND Update_UpdateSettingsManager)
 set_tests_properties(Update_UpdateSettingsManager PROPERTIES TIMEOUT 60 LABELS "unit")
-
-add_executable(Update_UpdateChecker Update/tst_UpdateChecker.cpp)
-target_link_libraries(Update_UpdateChecker PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME Update_UpdateChecker COMMAND Update_UpdateChecker)
-set_tests_properties(Update_UpdateChecker PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(Update_UpdateCoordinator Update/tst_UpdateCoordinator.cpp)
 target_link_libraries(Update_UpdateCoordinator PRIVATE snaptray_ui Qt6::Test)

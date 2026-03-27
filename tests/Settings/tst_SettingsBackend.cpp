@@ -10,6 +10,50 @@
 
 using SnapTray::SettingsBackend;
 
+namespace {
+
+class FakeUpdateService final : public IUpdateService
+{
+public:
+    UpdateServiceKind kind() const override { return UpdateServiceKind::Unsupported; }
+    InstallSource installSource() const override { return InstallSource::DirectDownload; }
+    bool isExternallyManaged() const override { return false; }
+    QString managementMessage() const override { return QString(); }
+
+    bool initialize(QString* errorMessage) override
+    {
+        if (errorMessage) {
+            *errorMessage = QString();
+        }
+        initializeCalled = true;
+        return true;
+    }
+
+    void startAutomaticChecks() override {}
+
+    void syncSettings(bool autoCheckEnabled, int checkIntervalHours) override
+    {
+        lastAutoCheckEnabled = autoCheckEnabled;
+        lastCheckIntervalHours = checkIntervalHours;
+    }
+
+    UpdateCheckResult checkForUpdatesInteractive() override
+    {
+        ++interactiveCheckCount;
+        return interactiveResult;
+    }
+
+    UpdateCheckResult interactiveResult = UpdateCheckResult::started();
+    bool initializeCalled = false;
+    int interactiveCheckCount = 0;
+    bool lastAutoCheckEnabled = true;
+    int lastCheckIntervalHours = 24;
+};
+
+FakeUpdateService* g_fakeUpdateService = nullptr;
+
+} // namespace
+
 class tst_SettingsBackend : public QObject
 {
     Q_OBJECT
@@ -23,11 +67,14 @@ private slots:
     void testMagnifierEnabled_RoundTripPersistsAndSignals();
     void testNormalizeRecordingAudioSettings_PreservesUnavailableLoadedDevice();
     void testBlurTypeMapping_RoundTripMatchesUiIndices();
+    void testCheckForUpdates_Started_EmitsNoTerminalSignals();
+    void testCheckForUpdates_Failed_EmitsFailure();
     void testCheckForUpdates_UnsupportedInstallSource_EmitsUnavailable();
     void testLastCheckedTextChanged_WhenCoordinatorRecordsSuccessfulCheck();
 
 private:
     void clearTestSettings();
+    void installFakeUpdateService(UpdateCheckResult result);
 };
 
 void tst_SettingsBackend::init()
@@ -35,6 +82,7 @@ void tst_SettingsBackend::init()
     clearTestSettings();
     InstallSourceDetector::clearDetectedSourceForTests();
     UpdateCoordinator::resetForTests();
+    g_fakeUpdateService = nullptr;
 }
 
 void tst_SettingsBackend::cleanup()
@@ -42,6 +90,7 @@ void tst_SettingsBackend::cleanup()
     clearTestSettings();
     InstallSourceDetector::clearDetectedSourceForTests();
     UpdateCoordinator::resetForTests();
+    g_fakeUpdateService = nullptr;
 }
 
 void tst_SettingsBackend::clearTestSettings()
@@ -53,6 +102,18 @@ void tst_SettingsBackend::clearTestSettings()
     settings.remove("regionCapture/cursorCompanionStyle");
     settings.remove("update/lastCheckTime");
     settings.sync();
+}
+
+void tst_SettingsBackend::installFakeUpdateService(UpdateCheckResult result)
+{
+    InstallSourceDetector::setDetectedSourceForTests(InstallSource::DirectDownload);
+    UpdateCoordinator::setServiceFactoryForTests(
+        [result](UpdateServiceKind, InstallSource) -> std::unique_ptr<IUpdateService> {
+            auto service = std::make_unique<FakeUpdateService>();
+            service->interactiveResult = result;
+            g_fakeUpdateService = service.get();
+            return service;
+        });
 }
 
 void tst_SettingsBackend::testAvailableLanguages_PrioritizesConfiguredAsianLanguages()
@@ -183,6 +244,43 @@ void tst_SettingsBackend::testBlurTypeMapping_RoundTripMatchesUiIndices()
 
     reloadedBackend.setBlurType(1);
     QCOMPARE(settings.value("detection/blurType").toString(), QStringLiteral("gaussian"));
+}
+
+void tst_SettingsBackend::testCheckForUpdates_Started_EmitsNoTerminalSignals()
+{
+    installFakeUpdateService(UpdateCheckResult::started());
+    SettingsBackend backend;
+
+    QSignalSpy unavailableSpy(&backend, &SettingsBackend::updateCheckUnavailable);
+    QSignalSpy failedSpy(&backend, &SettingsBackend::updateCheckFailed);
+
+    backend.checkForUpdates();
+
+    QVERIFY(g_fakeUpdateService != nullptr);
+    QVERIFY(g_fakeUpdateService->initializeCalled);
+    QCOMPARE(g_fakeUpdateService->interactiveCheckCount, 1);
+    QCOMPARE(unavailableSpy.count(), 0);
+    QCOMPARE(failedSpy.count(), 0);
+    QVERIFY(!backend.isCheckingForUpdates());
+}
+
+void tst_SettingsBackend::testCheckForUpdates_Failed_EmitsFailure()
+{
+    installFakeUpdateService(UpdateCheckResult::failed(QStringLiteral("Native updater unavailable")));
+    SettingsBackend backend;
+
+    QSignalSpy unavailableSpy(&backend, &SettingsBackend::updateCheckUnavailable);
+    QSignalSpy failedSpy(&backend, &SettingsBackend::updateCheckFailed);
+
+    backend.checkForUpdates();
+
+    QVERIFY(g_fakeUpdateService != nullptr);
+    QVERIFY(g_fakeUpdateService->initializeCalled);
+    QCOMPARE(g_fakeUpdateService->interactiveCheckCount, 1);
+    QCOMPARE(unavailableSpy.count(), 0);
+    QCOMPARE(failedSpy.count(), 1);
+    QCOMPARE(failedSpy.at(0).at(0).toString(), QStringLiteral("Native updater unavailable"));
+    QVERIFY(!backend.isCheckingForUpdates());
 }
 
 void tst_SettingsBackend::testCheckForUpdates_UnsupportedInstallSource_EmitsUnavailable()

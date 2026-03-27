@@ -10,9 +10,7 @@
  * Tests settings persistence including:
  * - Auto-check enabled/disabled
  * - Check interval hours
- * - Skipped version
  * - Last check time
- * - Should check logic
  */
 class tst_UpdateSettingsManager : public QObject
 {
@@ -38,17 +36,6 @@ private slots:
     void testLastCheckTime_DefaultInvalid();
     void testSetLastCheckTime_Roundtrip();
 
-    // Skipped version tests
-    void testSkippedVersion_DefaultEmpty();
-    void testSetSkippedVersion_Roundtrip();
-    void testClearSkippedVersion();
-
-    // Should check logic tests
-    void testShouldCheckForUpdates_AutoCheckDisabled();
-    void testShouldCheckForUpdates_NeverChecked();
-    void testShouldCheckForUpdates_RecentlyChecked();
-    void testShouldCheckForUpdates_IntervalPassed();
-
 private:
     void clearAllTestSettings();
 };
@@ -69,7 +56,6 @@ void tst_UpdateSettingsManager::clearAllTestSettings()
     settings.remove("update/autoCheck");
     settings.remove("update/checkIntervalHours");
     settings.remove("update/lastCheckTime");
-    settings.remove("update/skippedVersion");
     settings.sync();
 }
 
@@ -166,85 +152,6 @@ void tst_UpdateSettingsManager::testSetLastCheckTime_Roundtrip()
     QVERIFY(loaded.isValid());
     // Allow 1 second tolerance for serialization
     QVERIFY(qAbs(loaded.secsTo(testTime)) <= 1);
-}
-
-// ============================================================================
-// Skipped version tests
-// ============================================================================
-
-void tst_UpdateSettingsManager::testSkippedVersion_DefaultEmpty()
-{
-    QString version = UpdateSettingsManager::instance().skippedVersion();
-    QVERIFY(version.isEmpty());
-}
-
-void tst_UpdateSettingsManager::testSetSkippedVersion_Roundtrip()
-{
-    UpdateSettingsManager& manager = UpdateSettingsManager::instance();
-
-    manager.setSkippedVersion("1.2.0");
-    QCOMPARE(manager.skippedVersion(), "1.2.0");
-
-    manager.setSkippedVersion("2.0.0-beta");
-    QCOMPARE(manager.skippedVersion(), "2.0.0-beta");
-}
-
-void tst_UpdateSettingsManager::testClearSkippedVersion()
-{
-    UpdateSettingsManager& manager = UpdateSettingsManager::instance();
-
-    manager.setSkippedVersion("1.2.0");
-    QCOMPARE(manager.skippedVersion(), "1.2.0");
-
-    manager.clearSkippedVersion();
-    QVERIFY(manager.skippedVersion().isEmpty());
-}
-
-// ============================================================================
-// Should check logic tests
-// ============================================================================
-
-void tst_UpdateSettingsManager::testShouldCheckForUpdates_AutoCheckDisabled()
-{
-    UpdateSettingsManager& manager = UpdateSettingsManager::instance();
-
-    manager.setAutoCheckEnabled(false);
-    QCOMPARE(manager.shouldCheckForUpdates(), false);
-}
-
-void tst_UpdateSettingsManager::testShouldCheckForUpdates_NeverChecked()
-{
-    UpdateSettingsManager& manager = UpdateSettingsManager::instance();
-
-    manager.setAutoCheckEnabled(true);
-    // Don't set lastCheckTime - it should be invalid/empty
-
-    QCOMPARE(manager.shouldCheckForUpdates(), true);
-}
-
-void tst_UpdateSettingsManager::testShouldCheckForUpdates_RecentlyChecked()
-{
-    UpdateSettingsManager& manager = UpdateSettingsManager::instance();
-
-    manager.setAutoCheckEnabled(true);
-    manager.setCheckIntervalHours(24);
-    manager.setLastCheckTime(QDateTime::currentDateTime());  // Just checked
-
-    QCOMPARE(manager.shouldCheckForUpdates(), false);
-}
-
-void tst_UpdateSettingsManager::testShouldCheckForUpdates_IntervalPassed()
-{
-    UpdateSettingsManager& manager = UpdateSettingsManager::instance();
-
-    manager.setAutoCheckEnabled(true);
-    manager.setCheckIntervalHours(24);
-
-    // Set last check time to 25 hours ago
-    QDateTime pastTime = QDateTime::currentDateTime().addSecs(-25 * 3600);
-    manager.setLastCheckTime(pastTime);
-
-    QCOMPARE(manager.shouldCheckForUpdates(), true);
 }
 
 QTEST_MAIN(tst_UpdateSettingsManager)

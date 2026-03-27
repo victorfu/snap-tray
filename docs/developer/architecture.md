@@ -141,7 +141,7 @@ Use `GlassRenderer` and the existing toolbar style configuration rather than loc
 - `SingleInstanceGuard`: single-instance enforcement
 - `HotkeyManager`: global hotkey registration
 - `CLIHandler`: command parsing and IPC dispatch
-- `UpdateChecker`: release checking logic
+- `UpdateCoordinator`: native update orchestration
 
 ### Region selector subsystem
 

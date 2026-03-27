@@ -141,7 +141,7 @@ SnapTray 以模組化 static-library 風格組織：
 - `SingleInstanceGuard`：single-instance 保護
 - `HotkeyManager`：全域熱鍵註冊
 - `CLIHandler`：指令解析與 IPC 分派
-- `UpdateChecker`：版本更新檢查
+- `UpdateCoordinator`：原生更新流程協調器
 
 ### Region selector subsystem
 

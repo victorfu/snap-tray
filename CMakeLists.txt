@@ -734,11 +734,9 @@ add_library(snaptray_ui STATIC
     # Update system
     src/update/InstallSourceDetector.cpp
     src/update/UpdateCoordinator.cpp
-    src/update/UpdateChecker.cpp
     include/update/IUpdateService.h
     include/update/InstallSourceDetector.h
     include/update/UpdateCoordinator.h
-    include/update/UpdateChecker.h
     include/update/UpdateSettingsManager.h
 
     # Platform-specific update sources
