@@ -18,7 +18,6 @@ hero:
   eyebrow: 擷取・標註・錄影
   title: 快速截圖工具｜Mac 與 Windows
   tagline: SnapTray 常駐於系統托盤，需要時即刻啟動，提供精準截圖、完整標註與高品質錄影。
-  subtitle: SnapTray 是一款輕量截圖工具，讓你即時擷取、標註與分享螢幕畫面。
   cta_download: 立即下載
   cta_github: 查看 GitHub
   pills:
@@ -157,24 +156,35 @@ error404:
 
 landing_screenshot_tool:
   hero:
-    title: 快速截圖工具 — 擷取、標註、分享一氣呵成
-    intro: "不用再切換多個應用程式來截圖、標註和分享。SnapTray 常駐系統托盤，一秒內啟動 — 按 F2、拖曳區域、標註重點、立即發送。無需等待載入、無需註冊、完全離線運作。"
+    title: 最佳截圖工具 — 快速擷取螢幕畫面
+    intro: "截圖工具可以將螢幕上的任何區域擷取為圖片 — 用於文件、錯誤回報、教學或快速分享。大多數作業系統都內建基本截圖功能，但內建工具止步於擷取。如果你經常需要標註、錄影或分享截圖，你需要一個為這些工作流程而打造的工具。SnapTray 是一款免費開源的截圖工具，支援 macOS 與 Windows，將擷取、標註、錄影和分享整合在一個應用程式中。"
     cta_download: 免費下載
     cta_docs: 閱讀文件
-  features:
-    eyebrow: 使用流程
-    title: 三步完成：從螢幕到分享
-    subtitle: 精簡的截圖流程，消除傳統工具的繁瑣操作。
+  problems:
+    eyebrow: 問題所在
+    title: 為什麼內建截圖工具不夠用
+    subtitle: Windows 和 macOS 的預設工具是為偶爾使用而設計，不適合每天的工作流程。
     items:
-      - title: 擷取任意區域
-        body: 按下 F2 拖曳選取。放大鏡提供像素級精準度，視窗偵測讓你一鍵選取整個視窗。
-      - title: 即時標註
-        body: 箭頭、形狀、文字、步驟標記、馬賽克模糊 — 截圖後立即可用，不需開啟其他編輯器。
-      - title: 立即分享或儲存
-        body: 複製到剪貼簿、存檔、釘選為浮動參考、或上傳取得分享連結。每個動作只需一個快捷鍵。
+      - pain: Windows 剪取工具既慢又陽春
+        detail: 剪取工具需要先開啟完整視窗才能擷取。標註只有畫筆和螢光筆 — 沒有箭頭、形狀或文字。沒有 CLI、沒有釘選功能、沒有錄影管線。
+      - pain: Mac 截圖缺少後製工具
+        detail: Cmd+Shift+4 可以擷取區域，但也僅止於此。要標註必須開啟預覽程式或第三方編輯器。沒有釘選視窗、沒有區域錄影、沒有 OCR。
+      - pain: 第三方工具臃腫或需要付費
+        detail: 許多替代方案需要帳號、雲端訂閱，或以笨重的 Electron 應用程式運行。簡單的擷取標註工作流程不應該需要 500 MB 記憶體或月費。
+  features:
+    eyebrow: 解決方案
+    title: SnapTray 如何解決這些問題
+    subtitle: 一個輕量的常駐托盤工具，三步驟取代你的內建截圖工作流程。
+    items:
+      - title: 即時擷取任意區域
+        body: 按 F2 啟動擷取覆蓋層。放大鏡提供像素級精準度，視窗偵測讓你一鍵選取整個視窗。不需切換應用程式，不需等待載入。
+      - title: 不離開擷取畫面直接標註
+        body: 箭頭、形狀、文字、步驟標記、馬賽克模糊和貼圖都在同一個覆蓋層中。不需開啟其他編輯器或貼到別的應用程式。
+      - title: 分享、儲存或釘選結果
+        body: 複製到剪貼簿、存檔、上傳取得分享連結，或釘選為浮動參考視窗。螢幕錄影可匯出 MP4、GIF 或 WebP。每個動作只需一個快捷鍵。
   compare:
     eyebrow: 工具比較
-    title: SnapTray 與其他截圖工具的差異
+    title: "SnapTray vs 剪取工具 vs Lightshot vs ShareX"
     feature_label: 功能
     tools:
       - SnapTray
@@ -204,28 +214,44 @@ landing_screenshot_tool:
         values: [true, true, true, true]
   usecases:
     eyebrow: 使用情境
-    title: 為每天都在截圖的人而打造
+    title: 誰每天都在使用截圖工具
     items:
       - role: 開發者
         scenario: 擷取錯誤訊息、標註架構圖、錄製重現步驟 — 直接貼到 GitHub Issue 或 Slack。
-      - role: 客服團隊
-        scenario: 截圖客戶問題、加上步驟標記、模糊敏感資料、分享連結 — 全程不離開對話視窗。
       - role: 設計師
         scenario: 釘選參考圖、並排比較版面、量測像素距離、匯出標註回饋給開發者。
+      - role: 客服團隊
+        scenario: 截圖客戶問題、加上步驟標記、模糊敏感資料、分享連結 — 全程不離開對話視窗。
       - role: 教育工作者
         scenario: 錄製教學影片、用螢幕畫布在簡報上即時標註、匯出 GIF 嵌入文件。
+  setup:
+    eyebrow: 快速開始
+    title: 如何開始使用 SnapTray
+    steps:
+      - title: 下載與安裝
+        detail: 從 GitHub Releases 取得 SnapTray（macOS DMG 或 Windows 安裝檔）或從 Microsoft Store 安裝。啟動後托盤圖示立即出現。
+      - title: 擷取第一張截圖
+        detail: 按 F2 開啟擷取覆蓋層。拖曳選取區域，或點擊偵測到的視窗。標註工具列自動出現。
+      - title: 標註、儲存與分享
+        detail: 加上箭頭、文字、形狀或模糊效果。按 Ctrl+C / Cmd+C 複製、Ctrl+S / Cmd+S 儲存，或 Enter 釘選在螢幕上。可上傳取得附密碼的分享連結。
   faq:
     eyebrow: 常見問題
-    title: 關於 SnapTray 的常見問題
+    title: 截圖工具 — 常見問題
     items:
-      - q: SnapTray 需要註冊帳號或訂閱嗎？
-        a: 不需要。SnapTray 是免費開源軟體，採用 MIT 授權。沒有帳號、訂閱、追蹤或廣告。直接下載使用。
-      - q: 可以用腳本自動化截圖嗎？
-        a: 可以。SnapTray 內建完整 CLI：擷取區域、錄製螢幕、釘選圖片、管理設定 — 全部可從終端機或 CI 流程操作。
-      - q: SnapTray 比其他截圖工具快在哪裡？
-        a: SnapTray 以常駐程式運行，按下 F2 立即開始擷取 — 無需等待應用程式啟動、無需切換視窗。標註在同一個覆蓋層中完成，匯出只需一個按鍵。
+      - q: 什麼是截圖工具？
+        a: 截圖工具是一種能擷取螢幕部分或全部畫面為圖片的軟體。基本工具只能儲存圖片。進階截圖工具如 SnapTray 還能標註、錄影、釘選截圖到螢幕，以及透過連結分享。
+      - q: SnapTray 是什麼？
+        a: SnapTray 是一款免費開源的截圖與螢幕錄影工具，支援 macOS 與 Windows。常駐系統托盤，提供即時區域擷取、豐富標註、釘選視窗、MP4/GIF/WebP 錄影、OCR、自動模糊和 CLI 自動化。
+      - q: SnapTray 是免費的嗎？
+        a: 是的。SnapTray 完全免費且開源，採用 MIT 授權。沒有廣告、訂閱、帳號或隱藏費用。
+      - q: SnapTray 和剪取工具有什麼不同？
+        a: 剪取工具提供基本擷取和極少的標註功能。SnapTray 額外提供放大鏡、完整標註工具組（箭頭、形狀、文字、步驟標記、馬賽克模糊）、釘選視窗、螢幕錄影、GIF/WebP 匯出、OCR、自動模糊和 CLI 自動化 — 全部免費且跨平台。
+      - q: SnapTray 和 Lightshot 有什麼不同？
+        a: Lightshot 提供快速擷取和簡單標註，但缺少螢幕錄影、釘選視窗、OCR、自動模糊和 CLI 支援。SnapTray 包含所有這些功能，同時保持免費、開源且完全離線。
       - q: SnapTray 支援 macOS 和 Windows 嗎？
         a: 是的。SnapTray 支援 macOS 14+（Apple Silicon 和 Intel）以及 Windows 10+（x64）。兩個平台提供相同功能。
+      - q: 可以用腳本自動化截圖嗎？
+        a: 可以。SnapTray 內建完整 CLI：snaptray full、snaptray region、snaptray record、snaptray pin 和 snaptray config。可整合 Shell 腳本、CI 流程或自動化工作流。
   cta:
     eyebrow: 立即開始
     title: 下載 SnapTray — 免費且開源
@@ -236,7 +262,7 @@ landing_screenshot_tool:
 landing_mac:
   hero:
     title: Mac 最佳截圖工具
-    intro: "macOS 給你 Cmd+Shift+4 — 然後就沒有了。沒有標註、沒有釘選視窗、沒有錄影、沒有 OCR。SnapTray 用一個常駐托盤的應用程式填補所有不足，完美融入你的 Mac 使用體驗。"
+    intro: "macOS 內建 Cmd+Shift+4 進行基本截圖，但也僅止於此 — 沒有標註、沒有釘選視窗、沒有區域錄影、沒有 OCR。如果你每天都在截圖工作，你需要一個能處理完整流程的工具。SnapTray 是一款免費開源的截圖工具，為你的 Mac 增添專業擷取、標註、錄影和分享功能。"
     cta_download: 下載 .dmg
     cta_docs: 閱讀文件
   problems:
@@ -245,29 +271,29 @@ landing_mac:
     subtitle: macOS 內建截圖工具可以處理基本擷取，但無法滿足專業工作流程。
     items:
       - pain: 截圖後無法標註
-        detail: macOS 只儲存原始圖片。要加箭頭、文字或模糊效果，必須開啟預覽程式或第三方編輯器 — 打斷你的工作流程。
+        detail: macOS 只儲存原始圖片。要加箭頭、文字或模糊效果，每次都必須開啟預覽程式或第三方編輯器 — 打斷你的工作流程。
       - pain: 無法釘選或浮動參考
         detail: 截圖無法保持在其他視窗上方顯示。每次擷取都消失在檔案中，迫使你不斷切換視窗。
       - pain: 沒有螢幕錄影管線
-        detail: QuickTime Player 只能全螢幕錄影，沒有區域選取、暫停/繼續功能，也無法匯出 GIF 或 WebP。
+        detail: QuickTime Player 只能全螢幕錄影，沒有區域選取、暫停/繼續功能，也無法匯出 GIF 或 WebP 快速分享。
       - pain: 沒有 OCR 或 QR Code 掃描
         detail: 從截圖中提取文字意味著手動重新輸入。也沒有內建方式掃描螢幕上的 QR Code。
   features:
-    eyebrow: Mac 優勢
-    title: SnapTray 為你的 Mac 增添什麼
+    eyebrow: 如何在 Mac 上更好地截圖
+    title: SnapTray 為你的 Mac 工作流程增添什麼
     subtitle: 在 Apple Silicon 和 Intel 上原生運行，深度整合 macOS。
     items:
       - title: Retina 品質擷取
-        body: SnapTray 以原生 Retina 解析度渲染。HiDPI 顯示器的每個像素都完整保留在輸出圖片中。
-      - title: 系統托盤整合
-        body: 常駐選單列，即時啟動。沒有 Dock 圖示干擾，無需切換應用程式 — 在任何情境下按 F2 即可。
-      - title: 權限感知設定
-        body: SnapTray 引導你完成螢幕錄影和輔助使用權限設定，提供一鍵捷徑前往系統設定。
-      - title: 輕量且原生
-        body: 使用 Qt 6 和 C++17 建構。沒有 Electron、沒有網頁執行環境。極小記憶體佔用，在 M 系列晶片上瞬間啟動。
+        body: SnapTray 以原生 Retina 解析度渲染。HiDPI 顯示器的每個像素都完整保留在輸出圖片中 — 沒有縮放異常。
+      - title: 選單列即時啟動
+        body: 常駐選單列，按 F2 即時啟動。沒有 Dock 圖示干擾，無需切換應用程式。在任何情境下都能不中斷地擷取。
+      - title: 在擷取覆蓋層中直接標註
+        body: 箭頭、形狀、文字、步驟標記、馬賽克模糊和貼圖在截圖後立即可用。不需開啟預覽程式或其他編輯器。
+      - title: 釘選、錄影與分享
+        body: 將截圖釘選為浮動參考、錄製任意區域為 MP4/GIF/WebP、用 OCR 擷取文字，或上傳取得分享連結 — 全部在同一個工具中完成。
   compare:
     eyebrow: 工具比較
-    title: SnapTray 與 Mac 截圖替代方案比較
+    title: "SnapTray vs macOS 內建 vs Shottr vs CleanShot X"
     feature_label: 功能
     tools:
       - SnapTray
@@ -294,27 +320,31 @@ landing_mac:
       - feature: 免費且開源
         values: [true, true, "免費版", false]
   setup:
-    eyebrow: 快速開始
-    title: 三步驟在 Mac 上開始使用
+    eyebrow: 教學
+    title: 如何在 Mac 上使用 SnapTray
     steps:
-      - title: 安裝
-        detail: 下載 DMG，將 SnapTray 拖至應用程式資料夾並啟動。依提示授予螢幕錄影權限。
-      - title: 擷取
-        detail: 按下 F2 開始第一次區域擷取。放大鏡覆蓋層立即出現 — 拖曳選取區域。
-      - title: 標註與分享
-        detail: 加上箭頭或文字，然後按 Cmd+C 複製或 Cmd+S 儲存。按 Enter 將截圖釘選在螢幕上。
+      - title: 從 DMG 安裝
+        detail: 從 GitHub Releases 下載 DMG，將 SnapTray 拖至應用程式資料夾並啟動。依 macOS 提示授予螢幕錄影權限。
+      - title: 擷取區域
+        detail: 按 F2 開啟擷取覆蓋層。放大鏡立即出現 — 拖曳選取區域，或點擊偵測到的視窗進行擷取。
+      - title: 標註與匯出
+        detail: 使用工具列加上箭頭、文字、形狀或模糊效果。按 Cmd+C 複製、Cmd+S 儲存，或 Enter 釘選在螢幕上。需要時可上傳取得分享連結。
   faq:
     eyebrow: 常見問題
-    title: Mac 相關問題
+    title: Mac 截圖工具 — 常見問題
     items:
+      - q: 如何在 Mac 上截圖？
+        a: macOS 提供 Cmd+Shift+4 進行區域擷取、Cmd+Shift+3 擷取全螢幕。如需標註、錄影和分享等進階工作流程，安裝 SnapTray 後按 F2 — 提供放大鏡精準度、即時標註和一鍵匯出。
       - q: SnapTray 在 Apple Silicon 上是原生運行嗎？
         a: 是的。SnapTray 以通用二進位檔發布，在 Apple Silicon（M1/M2/M3/M4）和 Intel Mac 上都是原生運行，不需要 Rosetta 轉譯。
       - q: 為什麼 macOS 要求螢幕錄影權限？
         a: macOS 要求任何擷取螢幕內容的應用程式都必須取得螢幕錄影權限。SnapTray 需要此權限才能運作。請在系統設定 > 隱私權與安全性 > 螢幕錄影中授予。
       - q: SnapTray 和 CleanShot X 相比如何？
         a: CleanShot X 是付費應用程式，附帶雲端功能。SnapTray 免費、開源且完全離線。兩者都提供標註、錄影和 OCR — 但 SnapTray 額外提供 CLI 自動化和跨平台支援，而且完全免費。
-      - q: 可以在 Mac 上錄製系統音訊嗎？
-        a: macOS 系統音訊擷取需要 macOS 13+ 或虛擬音訊裝置（如 BlackHole）。麥克風擷取則開箱即用。
+      - q: 可以用 SnapTray 在 Mac 上錄製螢幕嗎？
+        a: 可以。SnapTray 可錄製任意區域為 MP4（可選音訊），或匯出 GIF/WebP 無音訊片段。系統音訊擷取需要 macOS 13+ 或虛擬音訊裝置（如 BlackHole）。
+      - q: SnapTray 比 Shottr 好嗎？
+        a: Shottr 快速且輕量，但缺少螢幕錄影、釘選視窗和 CLI 自動化。SnapTray 包含所有這些功能，加上自動模糊、浮水印和跨平台支援 — 同時保持免費且開源。
   cta:
     eyebrow: 立即開始
     title: 下載 SnapTray macOS 版
@@ -325,7 +355,7 @@ landing_mac:
 landing_windows:
   hero:
     title: Windows 最佳截圖工具
-    intro: "Windows 剪取工具十年來幾乎沒有改變。啟動慢、標註功能有限、沒有錄影管線、沒有 CLI。SnapTray 用現代化的擷取工作流程取代它 — 一秒內啟動，絕不打擾你的工作。"
+    intro: "Windows 剪取工具可以進行基本擷取，但啟動速度慢、標註功能有限、沒有錄影功能，不足以應付每天的使用。如果你需要為文件、錯誤回報或設計回饋截圖，你需要更好的工具。SnapTray 是一款免費開源的截圖工具，用即時擷取、豐富標註、錄影和 CLI 自動化取代剪取工具。"
     cta_download: 下載 Windows 版
     cta_docs: 閱讀文件
   problems:
@@ -338,25 +368,25 @@ landing_windows:
       - pain: 標註功能陽春
         detail: 只有一支筆和一個螢光筆。沒有箭頭、形狀、步驟標記、文字工具或馬賽克模糊 — 完全不適合專業標註。
       - pain: 無法釘選或浮動參考
-        detail: 每次擷取都進入視窗或檔案。你無法讓截圖保持在其他應用程式上方快速參考。
+        detail: 每次擷取都進入視窗或檔案。你無法讓截圖保持在其他應用程式上方，一邊工作一邊快速參考。
       - pain: 沒有 CLI 或自動化
         detail: 沒有命令列介面。無法用腳本擷取、整合 CI，也無法自動化重複的截圖工作流程。
   features:
-    eyebrow: Windows 優勢
-    title: 為什麼 SnapTray 在 Windows 上更好
+    eyebrow: 如何在 Windows 上更好地截圖
+    title: 為什麼 SnapTray 能取代剪取工具
     subtitle: 高 DPI 支援、多螢幕處理、Microsoft Store 上架。
     items:
-      - title: 高 DPI 與多螢幕
-        body: SnapTray 正確處理混合 DPI 設定和多螢幕環境。不會有模糊擷取、偏移區域或縮放異常。
       - title: 托盤即時啟動
-        body: 常駐系統托盤，按 F2 立即擷取。不需開啟視窗、不需切換應用程式 — 比 Win+Shift+S 更快。
-      - title: Microsoft Store 上架
-        body: 從 Microsoft Store 安裝，享受自動更新和沙盒安全性，或從 GitHub 下載獨立安裝程式。
-      - title: 完整 CLI 自動化
-        body: 用 PowerShell 或 cmd 腳本擷取螢幕、控制錄影、釘選圖片和管理設定。可整合 CI 流程和客服工作流。
+        body: 常駐系統托盤，按 F2 立即擷取。不需開啟視窗、不需切換應用程式 — 比剪取工具和 Win+Shift+S 都更快。
+      - title: 完整標註工具組
+        body: 箭頭、形狀、文字、步驟標記、馬賽克模糊、貼圖和復原/重做。直接在擷取覆蓋層中標註，不需開啟其他編輯器。
+      - title: 高 DPI 與多螢幕
+        body: SnapTray 正確處理混合 DPI 設定和多螢幕環境。4K 顯示器上不會有模糊擷取、偏移區域或縮放異常。
+      - title: 錄影、釘選與自動化
+        body: 錄製任意區域為 MP4/GIF/WebP、釘選截圖為浮動參考、用 OCR 擷取文字，並透過 CLI 腳本化所有操作：snaptray region、snaptray record、snaptray pin。
   compare:
     eyebrow: 工具比較
-    title: SnapTray 與 Windows 截圖替代方案比較
+    title: "SnapTray vs 剪取工具 vs ShareX vs Greenshot"
     feature_label: 功能
     tools:
       - SnapTray
@@ -385,25 +415,29 @@ landing_windows:
       - feature: 免費且開源
         values: [true, true, true, true]
   setup:
-    eyebrow: 快速開始
-    title: 三步驟在 Windows 上開始使用
+    eyebrow: 教學
+    title: 如何在 Windows 上使用 SnapTray
     steps:
-      - title: 安裝
-        detail: 從 Microsoft Store 或 GitHub 下載 SnapTray。啟動後托盤圖示立即出現。
-      - title: 擷取
-        detail: 按下 F2 開始第一次擷取。拖曳區域或點擊偵測到的視窗。工具列隨即出現，標註工具就緒。
-      - title: 自訂
-        detail: 開啟設定，配置快捷鍵、輸出資料夾、錄影格式和檔名規則。設定一次，永久使用。
+      - title: 從商店或 GitHub 安裝
+        detail: 從 Microsoft Store 安裝享受自動更新，或從 GitHub Releases 下載獨立安裝程式。啟動後托盤圖示立即出現。
+      - title: 擷取區域
+        detail: 按 F2 開啟擷取覆蓋層。拖曳選取區域，或點擊偵測到的視窗。標註工具列自動出現，所有工具就緒。
+      - title: 標註與匯出
+        detail: 加上箭頭、文字、形狀或模糊效果。按 Ctrl+C 複製、Ctrl+S 儲存，或 Enter 釘選在螢幕上。在設定中配置輸出資料夾和快捷鍵，打造你的專屬工作流程。
   faq:
     eyebrow: 常見問題
-    title: Windows 相關問題
+    title: Windows 截圖工具 — 常見問題
     items:
+      - q: 如何在 Windows 上截圖？
+        a: Windows 提供 Win+Shift+S 進行基本區域擷取、Print Screen 擷取全螢幕。如需標註、錄影和自動化等進階工作流程，安裝 SnapTray 後按 F2 — 提供放大鏡精準度、即時標註和一鍵匯出。
       - q: SnapTray 支援高 DPI 和 4K 螢幕嗎？
         a: 是的。SnapTray 具備 DPI 感知能力，能正確處理混合 DPI 的多螢幕環境。擷取以原生解析度渲染，不會有縮放異常。
       - q: SnapTray 在 Microsoft Store 上架了嗎？
-        a: 是的。你可以從 Microsoft Store 安裝 SnapTray 享受自動更新，或從 GitHub Releases 下載獨立安裝程式。
+        a: 是的。從 Microsoft Store 安裝 SnapTray 享受自動更新和沙盒安全性，或從 GitHub Releases 下載獨立安裝程式。
       - q: SnapTray 和 ShareX 有什麼不同？
         a: ShareX 功能強大但設定複雜，有數百個選項。SnapTray 專注於速度和簡潔 — 托盤原生啟動、乾淨的標註工具、釘選視窗和跨平台支援。兩者都是免費開源。
+      - q: SnapTray 和 Greenshot 有什麼不同？
+        a: Greenshot 提供基本擷取和標註，但缺少螢幕錄影、釘選視窗、OCR、自動模糊和 CLI 自動化。SnapTray 包含所有這些功能，同時還支援 macOS。
       - q: 可以在腳本和自動化中使用 SnapTray 嗎？
         a: 可以。SnapTray 內建完整 CLI：snaptray full、snaptray region、snaptray record、snaptray pin 和 snaptray config。可整合 PowerShell 腳本、批次檔或 CI 流程。
   cta:

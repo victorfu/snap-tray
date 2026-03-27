@@ -1,6 +1,6 @@
 ---
 layout: landing
-title: "Screenshot Tool for Fast Capture and Sharing"
+title: "Best Screenshot Tool for Fast Capture"
 description: "SnapTray is a free, open-source screenshot tool for macOS and Windows. Capture any region, annotate with arrows and shapes, pin to screen, record MP4/GIF, and automate with CLI."
 lang: en
 landing_key: landing_screenshot_tool
