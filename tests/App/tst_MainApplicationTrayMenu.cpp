@@ -1,6 +1,4 @@
-#define private public
 #include "MainApplication.h"
-#undef private
 
 #include "hotkey/HotkeyManager.h"
 #include "settings/Settings.h"

@@ -70,6 +70,8 @@ private slots:
 #endif
 
 private:
+    friend class tst_MainApplicationTrayMenu;
+
     void startRegionCapture(bool showShortcutHintsOnEntry);
     bool canShutdownForUpdate() const;
     void prepareForUpdateShutdown();
