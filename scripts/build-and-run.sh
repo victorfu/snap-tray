@@ -31,9 +31,9 @@ configure_build_dir() {
 
 configure_build_dir "$BUILD_DIR" "build" "Debug"
 
-# Build all targets (including tests)
-echo "Building all targets..."
-cmake --build build
+# Build only the app target
+echo "Building SnapTray target..."
+cmake --build build --target SnapTray
 
 # Run (Debug builds use SnapTray-Debug.app)
 echo ""

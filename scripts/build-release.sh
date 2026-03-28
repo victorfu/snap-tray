@@ -31,9 +31,9 @@ configure_build_dir() {
 
 configure_build_dir "$BUILD_DIR" "release" "Release"
 
-# Build all targets
-echo "Building all targets..."
-cmake --build release
+# Build only the app target
+echo "Building SnapTray target..."
+cmake --build release --target SnapTray
 
 echo ""
 echo "Build complete: $BUILD_DIR/bin/SnapTray.app"
