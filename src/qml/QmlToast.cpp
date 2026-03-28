@@ -1,11 +1,14 @@
 #include "qml/QmlToast.h"
 #include "qml/QmlOverlayManager.h"
 
+#include <QApplication>
+#include <QCursor>
 #include <QGuiApplication>
 #include <QQuickItem>
 #include <QQuickView>
 #include <QScreen>
 #include <QTimer>
+#include <QWindow>
 #include <QWidget>
 
 namespace SnapTray {
@@ -45,6 +48,33 @@ QmlToast::QmlToast(QWidget* parent, int shadowMargin)
 QmlToast::~QmlToast()
 {
     delete m_view;
+}
+
+QRect QmlToast::preferredScreenGeometryForScreenToast(const QRect& activeWindowGeometry,
+                                                      const QRect& cursorScreenGeometry,
+                                                      const QRect& primaryScreenGeometry)
+{
+    if (activeWindowGeometry.isValid()) {
+        return activeWindowGeometry;
+    }
+    if (cursorScreenGeometry.isValid()) {
+        return cursorScreenGeometry;
+    }
+    return primaryScreenGeometry;
+}
+
+QPoint QmlToast::screenTopRightPositionForGeometry(const QRect& geometry,
+                                                   const QSize& toastSize,
+                                                   int margin)
+{
+    if (!geometry.isValid() || !toastSize.isValid()) {
+        return {};
+    }
+
+    return {
+        geometry.right() - toastSize.width() - margin,
+        geometry.top() + margin
+    };
 }
 
 // ============================================================================
@@ -153,14 +183,44 @@ void QmlToast::positionAndShow()
 
 void QmlToast::positionScreenTopRight()
 {
-    QScreen* screen = QGuiApplication::primaryScreen();
-    if (!screen) return;
-
     int toastW = qRound(m_rootItem->width());
-    QRect geo = screen->availableGeometry();
-    int x = geo.right() - toastW - kScreenMargin;
-    int y = geo.top() + kScreenMargin;
-    m_view->setPosition(x, y);
+    int toastH = qRound(m_rootItem->height());
+
+    QRect activeWindowGeometry;
+    if (QWindow* activeWindow = QGuiApplication::focusWindow()) {
+        if (QScreen* activeScreen = activeWindow->screen()) {
+            activeWindowGeometry = activeScreen->availableGeometry();
+        }
+    } else if (QWidget* activeWidget = QApplication::activeWindow()) {
+        if (QWindow* activeWindow = activeWidget->windowHandle();
+            activeWindow && activeWindow->screen()) {
+            QScreen* activeScreen = activeWindow->screen();
+            activeWindowGeometry = activeScreen->availableGeometry();
+        }
+    }
+
+    QRect cursorScreenGeometry;
+    if (QScreen* cursorScreen = QGuiApplication::screenAt(QCursor::pos())) {
+        cursorScreenGeometry = cursorScreen->availableGeometry();
+    }
+
+    QRect primaryScreenGeometry;
+    if (QScreen* primaryScreen = QGuiApplication::primaryScreen()) {
+        primaryScreenGeometry = primaryScreen->availableGeometry();
+    }
+
+    const QRect targetGeometry = preferredScreenGeometryForScreenToast(
+        activeWindowGeometry,
+        cursorScreenGeometry,
+        primaryScreenGeometry);
+    if (!targetGeometry.isValid()) {
+        return;
+    }
+
+    m_view->setPosition(screenTopRightPositionForGeometry(
+        targetGeometry,
+        QSize(toastW, toastH),
+        kScreenMargin));
 }
 
 void QmlToast::positionParentTopCenter()

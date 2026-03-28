@@ -2,6 +2,9 @@
 #define SNAPTRAY_COLOR_PICKER_DIALOG_COMPAT_H
 
 #include <QColor>
+#include <QPoint>
+#include <QRect>
+#include <QSize>
 #include <QWidget>
 
 namespace snaptray {
@@ -47,6 +50,12 @@ public:
     // Compatible API with original ColorPickerDialog
     void setCurrentColor(const QColor& color);
     QColor currentColor() const;
+    void setPlacementAnchor(const QPoint& globalPoint);
+
+    static QRect preferredPlacementBounds(const QRect& parentBounds,
+                                          const QRect& anchorBounds,
+                                          const QRect& primaryBounds);
+    static QPoint centeredTopLeftForBounds(const QRect& bounds, const QSize& dialogSize);
 
 signals:
     void colorSelected(const QColor& color);
@@ -63,6 +72,8 @@ private:
 
     StyledColorDialog* m_dialog = nullptr;
     QColor m_currentColor = Qt::red;
+    QPoint m_placementAnchor;
+    bool m_hasPlacementAnchor = false;
 };
 
 // For easier migration, you can use this typedef

@@ -1,7 +1,9 @@
 #pragma once
 
 #include <QObject>
+#include <QPoint>
 #include <QRect>
+#include <QSize>
 #include <QString>
 #include <QPointer>
 
@@ -69,6 +71,13 @@ public:
                       const QRect& anchorRect, int durationMs = 2500);
 
     void setShadowMargin(int margin) { m_shadowMargin = margin; }
+
+    static QRect preferredScreenGeometryForScreenToast(const QRect& activeWindowGeometry,
+                                                       const QRect& cursorScreenGeometry,
+                                                       const QRect& primaryScreenGeometry);
+    static QPoint screenTopRightPositionForGeometry(const QRect& geometry,
+                                                    const QSize& toastSize,
+                                                    int margin);
 
 private:
     /// Private constructor for screen-level singleton

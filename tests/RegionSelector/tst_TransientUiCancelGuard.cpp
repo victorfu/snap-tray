@@ -4,11 +4,15 @@
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QEvent>
+#include <QGuiApplication>
 #include <QKeyEvent>
+#include <QPixmap>
+#include <QScreen>
 #include <QSignalSpy>
 #include <QtQml/qqmlextensionplugin.h>
 
 #include "RegionSelector.h"
+#include "RegionSelectorTestAccess.h"
 #include "colorwidgets/ColorPickerDialogCompat.h"
 #include "detection/OCRTypes.h"
 #include "qml/OCRResultViewModel.h"
@@ -22,20 +26,53 @@ Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
 
 namespace {
 
+QScreen* primaryOrSkip()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        return nullptr;
+    }
+    return screen;
+}
+
+QPixmap makePreCapture(const QSize& size, const QColor& color)
+{
+    QPixmap pixmap(size);
+    pixmap.fill(color);
+    return pixmap;
+}
+
 class HeadlessQmlDialog final : public SnapTray::QmlDialog
 {
 public:
+    enum class ShowMode {
+        None,
+        Absolute,
+        CenteredOnScreen
+    };
+
     HeadlessQmlDialog(const QUrl& qmlSource,
                       QObject* viewModel,
                       const QString& contextPropertyName,
                       QObject* parent = nullptr)
         : QmlDialog(qmlSource, viewModel, contextPropertyName, parent)
+        , m_qmlSource(qmlSource)
     {
     }
 
     void showAt(const QPoint& pos = QPoint()) override
     {
-        Q_UNUSED(pos);
+        m_showMode = ShowMode::Absolute;
+        m_lastPos = pos;
+        m_lastScreen = nullptr;
+        m_visible = true;
+    }
+
+    void showCenteredOnScreen(QScreen* screen) override
+    {
+        m_showMode = ShowMode::CenteredOnScreen;
+        m_lastScreen = screen;
+        m_lastPos = {};
         m_visible = true;
     }
 
@@ -50,8 +87,27 @@ public:
         deleteLater();
     }
 
+    ShowMode showMode() const
+    {
+        return m_showMode;
+    }
+
+    QUrl qmlSource() const
+    {
+        return m_qmlSource;
+    }
+
+    QScreen* lastScreen() const
+    {
+        return m_lastScreen;
+    }
+
 private:
     bool m_visible = false;
+    ShowMode m_showMode = ShowMode::None;
+    QUrl m_qmlSource;
+    QPoint m_lastPos;
+    QScreen* m_lastScreen = nullptr;
 };
 
 class HeadlessEmojiPickerPopup final : public SnapTray::QmlEmojiPickerPopup
@@ -151,6 +207,7 @@ private slots:
     void testApplicationDeactivateCancelsWithoutGuard();
     void testWidgetEscapeIgnoredWhenBlockingUiOpen();
     void testEmojiPickerIsNotBlockingTransientUi();
+    void testSharePasswordUsesCenteredScreenApi();
     void testShareResultCloseKeepsCaptureSession();
     void testOCRResultCloseKeepsCaptureSession();
     void testQRCodeResultCloseKeepsCaptureSession();
@@ -159,6 +216,7 @@ private slots:
 
 private:
     static void installHeadlessTransientUi(RegionSelector& selector);
+    static HeadlessQmlDialog* findHeadlessDialog(const RegionSelector& selector, const QString& suffix);
 };
 
 void tst_RegionSelectorTransientUiCancelGuard::initTestCase()
@@ -176,6 +234,20 @@ void tst_RegionSelectorTransientUiCancelGuard::installHeadlessTransientUi(Region
     selector.m_colorPickerDialogFactory =
         []() { return std::make_unique<HeadlessColorPickerDialog>(); };
     selector.m_restoreAfterDialogCancelledHook = []() {};
+}
+
+HeadlessQmlDialog* tst_RegionSelectorTransientUiCancelGuard::findHeadlessDialog(
+    const RegionSelector& selector,
+    const QString& suffix)
+{
+    const auto dialogs = selector.findChildren<SnapTray::QmlDialog*>();
+    for (auto it = dialogs.crbegin(); it != dialogs.crend(); ++it) {
+        if (auto* dialog = dynamic_cast<HeadlessQmlDialog*>(*it);
+            dialog && dialog->qmlSource().toString().endsWith(suffix)) {
+            return dialog;
+        }
+    }
+    return nullptr;
 }
 
 void tst_RegionSelectorTransientUiCancelGuard::testAppEscapeIgnoredWhenDropdownOpen()
@@ -274,6 +346,30 @@ void tst_RegionSelectorTransientUiCancelGuard::testEmojiPickerIsNotBlockingTrans
     QVERIFY(!selector->hasBlockingTransientUiOpen());
 }
 
+void tst_RegionSelectorTransientUiCancelGuard::testSharePasswordUsesCenteredScreenApi()
+{
+    QScreen* screen = primaryOrSkip();
+    if (!screen) {
+        QSKIP("No screens available for RegionSelector share password test.");
+    }
+
+    RegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    installHeadlessTransientUi(selector);
+
+    const QSize preCaptureSize = screen->geometry().size().boundedTo(QSize(320, 240));
+    selector.initializeForScreen(screen, makePreCapture(preCaptureSize, Qt::darkGreen));
+    RegionSelectorTestAccess::setSelectionRect(selector, QRect(20, 20, 80, 60));
+
+    selector.shareToUrl();
+    QCoreApplication::processEvents();
+
+    auto* dialog = findHeadlessDialog(selector, QStringLiteral("SharePasswordDialog.qml"));
+    QVERIFY(dialog);
+    QCOMPARE(dialog->showMode(), HeadlessQmlDialog::ShowMode::CenteredOnScreen);
+    QCOMPARE(dialog->lastScreen(), screen);
+}
+
 void tst_RegionSelectorTransientUiCancelGuard::testShareResultCloseKeepsCaptureSession()
 {
     RegionSelector selector;
@@ -295,6 +391,9 @@ void tst_RegionSelectorTransientUiCancelGuard::testShareResultCloseKeepsCaptureS
 
     auto* vm = selector.findChild<ShareResultViewModel*>();
     QVERIFY(vm);
+    auto* dialog = findHeadlessDialog(selector, QStringLiteral("ShareResultDialog.qml"));
+    QVERIFY(dialog);
+    QCOMPARE(dialog->showMode(), HeadlessQmlDialog::ShowMode::CenteredOnScreen);
     QVERIFY(selector.m_openBlockingDialogCount > 0);
 
     vm->close();
@@ -321,6 +420,9 @@ void tst_RegionSelectorTransientUiCancelGuard::testOCRResultCloseKeepsCaptureSes
 
     auto* vm = selector.findChild<OCRResultViewModel*>();
     QVERIFY(vm);
+    auto* dialog = findHeadlessDialog(selector, QStringLiteral("OCRResultDialog.qml"));
+    QVERIFY(dialog);
+    QCOMPARE(dialog->showMode(), HeadlessQmlDialog::ShowMode::CenteredOnScreen);
     QVERIFY(selector.m_openBlockingDialogCount > 0);
 
     vm->close();
@@ -347,6 +449,9 @@ void tst_RegionSelectorTransientUiCancelGuard::testQRCodeResultCloseKeepsCapture
 
     auto* vm = selector.findChild<QRCodeResultViewModel*>();
     QVERIFY(vm);
+    auto* dialog = findHeadlessDialog(selector, QStringLiteral("QRCodeResultDialog.qml"));
+    QVERIFY(dialog);
+    QCOMPARE(dialog->showMode(), HeadlessQmlDialog::ShowMode::CenteredOnScreen);
     QVERIFY(selector.m_openBlockingDialogCount > 0);
 
     vm->close();

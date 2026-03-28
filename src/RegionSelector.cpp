@@ -797,7 +797,7 @@ RegionSelector::RegionSelector(QWidget* parent)
                 dialog->close();
                 restoreAfterDialogCancelled();
             });
-            dialog->showAt();
+            dialog->showCenteredOnScreen(m_currentScreen.data());
         });
     connect(m_shareClient, &ShareUploadClient::uploadFailed,
         this, [this](const QString& errorMessage) {
@@ -3902,7 +3902,7 @@ void RegionSelector::shareToUrl()
         restoreAfterDialogCancelled();
     });
     dialog->setModal(true);
-    dialog->showAt();
+    dialog->showCenteredOnScreen(m_currentScreen.data());
 }
 
 void RegionSelector::finishSelection()
@@ -4545,7 +4545,7 @@ void RegionSelector::showOCRResultDialog(const OCRResult& result)
         restoreAfterDialogCancelled();
     });
 
-    dialog->showAt();
+    dialog->showCenteredOnScreen(m_currentScreen.data());
 }
 
 void RegionSelector::performQRCodeScan()
@@ -4628,7 +4628,7 @@ void RegionSelector::onQRCodeComplete(bool success, const QString& text, const Q
             restoreAfterDialogCancelled();
         });
 
-        dialog->showAt();
+        dialog->showCenteredOnScreen(m_currentScreen.data());
     }
     else {
         QString msg = error.isEmpty() ? tr("No QR code found") : error;

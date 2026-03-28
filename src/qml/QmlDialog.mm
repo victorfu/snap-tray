@@ -16,6 +16,18 @@
 
 namespace SnapTray {
 
+QPoint QmlDialog::centeredTopLeftForBounds(const QRect& bounds, const QSize& viewSize)
+{
+    if (!bounds.isValid() || viewSize.isEmpty()) {
+        return {};
+    }
+
+    return {
+        bounds.center().x() - viewSize.width() / 2,
+        bounds.center().y() - viewSize.height() / 2
+    };
+}
+
 QmlDialog::QmlDialog(const QUrl& qmlSource, QObject* viewModel,
                      const QString& contextPropertyName, QObject* parent)
     : QObject(parent)
@@ -135,14 +147,35 @@ void QmlDialog::showAt(const QPoint& pos)
         // Center on primary screen
         QScreen* screen = QGuiApplication::primaryScreen();
         if (screen) {
-            const QRect screenGeometry = screen->geometry();
-            const QSize viewSize = m_view->size();
-            const int x = screenGeometry.center().x() - viewSize.width() / 2;
-            const int y = screenGeometry.center().y() - viewSize.height() / 2;
-            m_view->setPosition(x, y);
+            m_view->setPosition(centeredTopLeftForBounds(screen->geometry(), m_view->size()));
         }
     } else {
         m_view->setPosition(pos);
+    }
+
+    showPreparedView();
+}
+
+void QmlDialog::showCenteredOnScreen(QScreen* screen)
+{
+    ensureView();
+
+    if (!m_view) {
+        return;
+    }
+
+    QScreen* targetScreen = screen ? screen : QGuiApplication::primaryScreen();
+    if (targetScreen) {
+        m_view->setPosition(centeredTopLeftForBounds(targetScreen->geometry(), m_view->size()));
+    }
+
+    showPreparedView();
+}
+
+void QmlDialog::showPreparedView()
+{
+    if (!m_view) {
+        return;
     }
 
     syncTransientParent();
