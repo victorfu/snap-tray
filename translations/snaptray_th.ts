@@ -503,14 +503,20 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>ผืนผ้าใบบนหน้าจอ</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="407" />
+        <location filename="../src/MainApplication.cpp" line="1086" />
+        <source>Paste</source>
+        <translation>วาง</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="396"/>
         <location filename="../src/MainApplication.cpp" line="1038"/>
         <source>Pin from Image...</source>
         <translation>ปักหมุดจากรูปภาพ...</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="399"/>
-        <location filename="../src/MainApplication.cpp" line="1041"/>
+        <location filename="../src/MainApplication.cpp" line="413" />
+        <location filename="../src/MainApplication.cpp" line="1092" />
         <source>History</source>
         <translation>ประวัติ</translation>
     </message>
@@ -550,6 +556,26 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/MainApplication.cpp" line="432"/>
         <source>SnapTray - Screenshot Utility</source>
         <translation>SnapTray - เครื่องมือจับภาพหน้าจอ</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1105" />
+        <source>Not set</source>
+        <translation>ไม่ได้ตั้งค่า</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1107" />
+        <source>Region Capture hotkey</source>
+        <translation>คีย์ลัดจับภาพแบบเลือกพื้นที่</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1109" />
+        <source>Paste hotkey</source>
+        <translation>คีย์ลัดวาง</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1111" />
+        <source>Screen Canvas hotkey</source>
+        <translation>คีย์ลัดผืนผ้าใบบนหน้าจอ</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="441"/>

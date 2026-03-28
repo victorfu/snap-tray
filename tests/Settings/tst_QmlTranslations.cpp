@@ -22,6 +22,7 @@ private slots:
     void testQmlSettingsContexts();
     void testRecordingControlBarContext();
     void testPhase4PanelContexts();
+    void testMainApplicationTrayContext();
 
 private:
     QTranslator m_translator;
@@ -80,6 +81,22 @@ void tst_QmlTranslations::testPhase4PanelContexts()
              QString::fromUtf8("開啟歷程資料夾"));
     QCOMPARE(QCoreApplication::translate("HistoryWindow", "No history items yet"),
              QString::fromUtf8("尚無歷程項目"));
+}
+
+void tst_QmlTranslations::testMainApplicationTrayContext()
+{
+    QCOMPARE(QCoreApplication::translate("MainApplication", "Paste"),
+             QString::fromUtf8("貼上"));
+    QCOMPARE(QCoreApplication::translate("MainApplication", "History"),
+             QString::fromUtf8("歷程"));
+    QCOMPARE(QCoreApplication::translate("MainApplication", "Region Capture hotkey"),
+             QString::fromUtf8("區域擷取快捷鍵"));
+    QCOMPARE(QCoreApplication::translate("MainApplication", "Paste hotkey"),
+             QString::fromUtf8("貼上快捷鍵"));
+    QCOMPARE(QCoreApplication::translate("MainApplication", "Screen Canvas hotkey"),
+             QString::fromUtf8("螢幕畫布快捷鍵"));
+    QCOMPARE(QCoreApplication::translate("MainApplication", "Not set"),
+             QString::fromUtf8("未設定"));
 }
 
 QTEST_MAIN(tst_QmlTranslations)

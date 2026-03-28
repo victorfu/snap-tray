@@ -516,16 +516,22 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>屏幕画布</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="407" />
+        <location filename="../src/MainApplication.cpp" line="1086" />
+        <source>Paste</source>
+        <translation>粘贴</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="362" />
         <location filename="../src/MainApplication.cpp" line="961" />
         <source>Pin from Image...</source>
         <translation>从图片贴图…</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="365" />
-        <location filename="../src/MainApplication.cpp" line="964" />
-        <source>Pin History</source>
-        <translation>贴图历史</translation>
+        <location filename="../src/MainApplication.cpp" line="413" />
+        <location filename="../src/MainApplication.cpp" line="1092" />
+        <source>History</source>
+        <translation>历史</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="368" />
@@ -563,6 +569,26 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/MainApplication.cpp" line="398" />
         <source>SnapTray - Screenshot Utility</source>
         <translation>SnapTray - 截图工具</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1105" />
+        <source>Not set</source>
+        <translation>未设置</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1107" />
+        <source>Region Capture hotkey</source>
+        <translation>区域截图快捷键</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1109" />
+        <source>Paste hotkey</source>
+        <translation>粘贴快捷键</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1111" />
+        <source>Screen Canvas hotkey</source>
+        <translation>屏幕画布快捷键</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="407" />

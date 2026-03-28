@@ -525,16 +525,22 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>スクリーンキャンバス</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="407" />
+        <location filename="../src/MainApplication.cpp" line="1086" />
+        <source>Paste</source>
+        <translation>貼り付け</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="362" />
         <location filename="../src/MainApplication.cpp" line="961" />
         <source>Pin from Image...</source>
         <translation>画像からピン留め...</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="365" />
-        <location filename="../src/MainApplication.cpp" line="964" />
-        <source>Pin History</source>
-        <translation>ピン履歴</translation>
+        <location filename="../src/MainApplication.cpp" line="413" />
+        <location filename="../src/MainApplication.cpp" line="1092" />
+        <source>History</source>
+        <translation>履歴</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="368" />
@@ -572,6 +578,26 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/MainApplication.cpp" line="398" />
         <source>SnapTray - Screenshot Utility</source>
         <translation>SnapTray - スクリーンショットユーティリティ</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1105" />
+        <source>Not set</source>
+        <translation>未設定</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1107" />
+        <source>Region Capture hotkey</source>
+        <translation>範囲キャプチャのホットキー</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1109" />
+        <source>Paste hotkey</source>
+        <translation>貼り付けのホットキー</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1111" />
+        <source>Screen Canvas hotkey</source>
+        <translation>スクリーンキャンバスのホットキー</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="407" />

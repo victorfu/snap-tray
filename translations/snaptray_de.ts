@@ -525,16 +525,22 @@ Datums-Tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} oder {date}</translation
         <translation>Bildschirm-Leinwand</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="407" />
+        <location filename="../src/MainApplication.cpp" line="1086" />
+        <source>Paste</source>
+        <translation>Einfügen</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="362" />
         <location filename="../src/MainApplication.cpp" line="961" />
         <source>Pin from Image...</source>
         <translation>Aus Bild anheften...</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="365" />
-        <location filename="../src/MainApplication.cpp" line="964" />
-        <source>Pin History</source>
-        <translation>Anheftverlauf</translation>
+        <location filename="../src/MainApplication.cpp" line="413" />
+        <location filename="../src/MainApplication.cpp" line="1092" />
+        <source>History</source>
+        <translation>Verlauf</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="368" />
@@ -572,6 +578,26 @@ Datums-Tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} oder {date}</translation
         <location filename="../src/MainApplication.cpp" line="398" />
         <source>SnapTray - Screenshot Utility</source>
         <translation>SnapTray - Screenshot-Werkzeug</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1105" />
+        <source>Not set</source>
+        <translation>Nicht festgelegt</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1107" />
+        <source>Region Capture hotkey</source>
+        <translation>Tastenkombination für Bereichsaufnahme</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1109" />
+        <source>Paste hotkey</source>
+        <translation>Tastenkombination für Einfügen</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1111" />
+        <source>Screen Canvas hotkey</source>
+        <translation>Tastenkombination für Bildschirm-Leinwand</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="407" />

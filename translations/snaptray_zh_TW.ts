@@ -529,14 +529,20 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>螢幕畫布</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="407" />
+        <location filename="../src/MainApplication.cpp" line="1086" />
+        <source>Paste</source>
+        <translation>貼上</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="362" />
         <location filename="../src/MainApplication.cpp" line="961" />
         <source>Pin from Image...</source>
         <translation>從圖片釘選…</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="365" />
-        <location filename="../src/MainApplication.cpp" line="964" />
+        <location filename="../src/MainApplication.cpp" line="413" />
+        <location filename="../src/MainApplication.cpp" line="1092" />
         <source>History</source>
         <translation>歷程</translation>
     </message>
@@ -576,6 +582,26 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/MainApplication.cpp" line="398" />
         <source>SnapTray - Screenshot Utility</source>
         <translation>SnapTray - 螢幕截圖工具</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1105" />
+        <source>Not set</source>
+        <translation>未設定</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1107" />
+        <source>Region Capture hotkey</source>
+        <translation>區域擷取快捷鍵</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1109" />
+        <source>Paste hotkey</source>
+        <translation>貼上快捷鍵</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1111" />
+        <source>Screen Canvas hotkey</source>
+        <translation>螢幕畫布快捷鍵</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="407" />

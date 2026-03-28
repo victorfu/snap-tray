@@ -525,16 +525,22 @@ Tokeny data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} nebo {date}</translation>
         <translation>Plátno obrazovky</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="407" />
+        <location filename="../src/MainApplication.cpp" line="1086" />
+        <source>Paste</source>
+        <translation>Vložit</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="362" />
         <location filename="../src/MainApplication.cpp" line="961" />
         <source>Pin from Image...</source>
         <translation>Připnout z obrázku...</translation>
     </message>
     <message>
-        <location filename="../src/MainApplication.cpp" line="365" />
-        <location filename="../src/MainApplication.cpp" line="964" />
-        <source>Pin History</source>
-        <translation>Historie připnutí</translation>
+        <location filename="../src/MainApplication.cpp" line="413" />
+        <location filename="../src/MainApplication.cpp" line="1092" />
+        <source>History</source>
+        <translation>Historie</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="368" />
@@ -572,6 +578,26 @@ Tokeny data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} nebo {date}</translation>
         <location filename="../src/MainApplication.cpp" line="398" />
         <source>SnapTray - Screenshot Utility</source>
         <translation>SnapTray - Nástroj pro snímky obrazovky</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1105" />
+        <source>Not set</source>
+        <translation>Nenastaveno</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1107" />
+        <source>Region Capture hotkey</source>
+        <translation>Klávesová zkratka pro zachycení oblasti</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1109" />
+        <source>Paste hotkey</source>
+        <translation>Klávesová zkratka pro vložení</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1111" />
+        <source>Screen Canvas hotkey</source>
+        <translation>Klávesová zkratka pro plátno obrazovky</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="407" />
