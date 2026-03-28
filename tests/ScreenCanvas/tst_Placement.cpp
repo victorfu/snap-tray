@@ -327,7 +327,9 @@ void TestScreenCanvasPlacement::testSelectionToolbarPlacementUsesWidgetTopForAbo
 
 void TestScreenCanvasPlacement::testSelectionToolbarPlacementAvoidsSelectionOverlapInBottomRightCorner()
 {
-    const QRect selectionRect(390, 20, 220, 430);
+    // Keep the selection pinned to the bottom-right while leaving enough
+    // headroom for the "above selection" placement this test is asserting.
+    const QRect selectionRect(390, 60, 220, 390);
     const QSize toolbarSize(220, 32);
     const QRect viewportRect(0, 0, 640, 480);
     const QRect forbiddenRect = selectionRect.adjusted(-8, -8, 8, 8);
