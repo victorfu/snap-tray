@@ -548,6 +548,11 @@ Datumtoken: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} eller {date}</translation>
         <translation>Spela in helskärm</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="436" />
+        <source>Check for Updates</source>
+        <translation>Uppdateringskontroll</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="388" />
         <source>Settings</source>
         <translation>Inställningar</translation>
@@ -2935,12 +2940,6 @@ Den kan användas av ett annat program.</translation>
         <location filename="../src/update/UpdateDialog.cpp" line="183" />
         <source>Skip Version</source>
         <translation>Hoppa över version</translation>
-    </message>
-    <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="193" />
-        <location filename="../src/update/UpdateDialog.cpp" line="251" />
-        <source>Update Check</source>
-        <translation>Uppdateringskontroll</translation>
     </message>
     <message>
         <location filename="../src/update/UpdateDialog.cpp" line="218" />

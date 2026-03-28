@@ -554,6 +554,11 @@ Token di data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} o {date}</translation>
         <translation>Registra schermo intero</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="436" />
+        <source>Check for Updates</source>
+        <translation>Controllo aggiornamenti</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="388" />
         <source>Settings</source>
         <translation>Impostazioni</translation>
@@ -2941,12 +2946,6 @@ Potrebbe essere in uso da un'altra applicazione.</translation>
         <location filename="../src/update/UpdateDialog.cpp" line="183" />
         <source>Skip Version</source>
         <translation>Salta versione</translation>
-    </message>
-    <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="193" />
-        <location filename="../src/update/UpdateDialog.cpp" line="251" />
-        <source>Update Check</source>
-        <translation>Controllo aggiornamenti</translation>
     </message>
     <message>
         <location filename="../src/update/UpdateDialog.cpp" line="218" />

@@ -433,8 +433,7 @@ void MainApplication::initialize()
 
     m_trayMenu->addSeparator();
 
-    m_checkForUpdatesAction = m_trayMenu->addAction(
-        QCoreApplication::translate("UpdatesSettings", "Check Now"));
+    m_checkForUpdatesAction = m_trayMenu->addAction(tr("Check for Updates"));
     m_checkForUpdatesAction->setEnabled(!UpdateCoordinator::instance().isExternallyManaged());
     connect(m_checkForUpdatesAction, &QAction::triggered, this, &MainApplication::onCheckForUpdates);
 

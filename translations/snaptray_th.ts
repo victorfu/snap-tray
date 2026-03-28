@@ -532,6 +532,11 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>บันทึกเต็มหน้าจอ</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="436"/>
+        <source>Check for Updates</source>
+        <translation>ตรวจสอบการอัปเดต</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="422"/>
         <source>Settings</source>
         <translation>การตั้งค่า</translation>

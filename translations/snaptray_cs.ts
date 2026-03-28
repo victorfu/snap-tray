@@ -554,6 +554,11 @@ Tokeny data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} nebo {date}</translation>
         <translation>Nahrát celou obrazovku</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="436" />
+        <source>Check for Updates</source>
+        <translation>Kontrola aktualizací</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="388" />
         <source>Settings</source>
         <translation>Nastavení</translation>
@@ -2941,12 +2946,6 @@ Může být používána jinou aplikací.</translation>
         <location filename="../src/update/UpdateDialog.cpp" line="183" />
         <source>Skip Version</source>
         <translation>Přeskočit verzi</translation>
-    </message>
-    <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="193" />
-        <location filename="../src/update/UpdateDialog.cpp" line="251" />
-        <source>Update Check</source>
-        <translation>Kontrola aktualizací</translation>
     </message>
     <message>
         <location filename="../src/update/UpdateDialog.cpp" line="218" />

@@ -548,6 +548,11 @@ Tokens de data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} ou {date}</translation>
         <translation>Gravar ecrã inteiro</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="436" />
+        <source>Check for Updates</source>
+        <translation>Verificação de atualização</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="388" />
         <source>Settings</source>
         <translation>Definições</translation>
@@ -2935,12 +2940,6 @@ Pode estar a ser utilizado por outra aplicação.</translation>
         <location filename="../src/update/UpdateDialog.cpp" line="183" />
         <source>Skip Version</source>
         <translation>Ignorar versão</translation>
-    </message>
-    <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="193" />
-        <location filename="../src/update/UpdateDialog.cpp" line="251" />
-        <source>Update Check</source>
-        <translation>Verificação de atualização</translation>
     </message>
     <message>
         <location filename="../src/update/UpdateDialog.cpp" line="218" />

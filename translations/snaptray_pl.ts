@@ -554,6 +554,11 @@ Tokeny daty: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} lub {date}</translation>
         <translation>Nagrywaj pełny ekran</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="436" />
+        <source>Check for Updates</source>
+        <translation>Sprawdzanie aktualizacji</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="388" />
         <source>Settings</source>
         <translation>Ustawienia</translation>
@@ -2941,12 +2946,6 @@ Może być używany przez inną aplikację.</translation>
         <location filename="../src/update/UpdateDialog.cpp" line="183" />
         <source>Skip Version</source>
         <translation>Pomiń wersję</translation>
-    </message>
-    <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="193" />
-        <location filename="../src/update/UpdateDialog.cpp" line="251" />
-        <source>Update Check</source>
-        <translation>Sprawdzanie aktualizacji</translation>
     </message>
     <message>
         <location filename="../src/update/UpdateDialog.cpp" line="218" />

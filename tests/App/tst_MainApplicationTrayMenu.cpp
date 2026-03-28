@@ -150,7 +150,7 @@ void tst_MainApplicationTrayMenu::initialize_directDownload_addsEnabledCheckForU
     QVERIFY(application.m_checkForUpdatesAction != nullptr);
     QVERIFY(application.m_checkForUpdatesAction->isEnabled());
     QCOMPARE(application.m_checkForUpdatesAction->text(),
-             QCoreApplication::translate("UpdatesSettings", "Check Now"));
+             MainApplication::tr("Check for Updates"));
 
     const QList<QAction*> actions = application.m_trayMenu->actions();
     const int checkIndex = actions.indexOf(application.m_checkForUpdatesAction);

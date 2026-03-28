@@ -548,6 +548,11 @@ Token ngày: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, hoặc {date}</translatio
         <translation>Ghi toàn màn hình</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="436" />
+        <source>Check for Updates</source>
+        <translation>Kiểm tra cập nhật</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="388" />
         <source>Settings</source>
         <translation>Cài đặt</translation>
@@ -2935,12 +2940,6 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
         <location filename="../src/update/UpdateDialog.cpp" line="183" />
         <source>Skip Version</source>
         <translation>Bỏ qua phiên bản này</translation>
-    </message>
-    <message>
-        <location filename="../src/update/UpdateDialog.cpp" line="193" />
-        <location filename="../src/update/UpdateDialog.cpp" line="251" />
-        <source>Update Check</source>
-        <translation>Kiểm tra cập nhật</translation>
     </message>
     <message>
         <location filename="../src/update/UpdateDialog.cpp" line="218" />
