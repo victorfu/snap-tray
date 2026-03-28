@@ -79,7 +79,18 @@ public:
      */
     void positionForSelection(const QRect& selectionRect,
                               int viewportWidth, int viewportHeight,
-                              HorizontalAlignment alignment = HorizontalAlignment::Center);
+                              HorizontalAlignment alignment = HorizontalAlignment::Center,
+                              const QRect& avoidRect = QRect());
+
+    /**
+     * @brief Resolve a toolbar top-left that prefers staying visible and not
+     *        overlapping the selection when alternatives exist.
+     */
+    static QPoint resolveTopLeftForSelection(const QRect& selectionRect,
+                                             const QSize& toolbarSize,
+                                             const QRect& viewportRect,
+                                             HorizontalAlignment alignment = HorizontalAlignment::Center,
+                                             const QRect& avoidRect = QRect());
 
     /**
      * @brief Position toolbar at a specific point (centered horizontally).

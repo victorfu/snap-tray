@@ -2611,11 +2611,15 @@ void RegionSelector::syncDetachedSelectionUiDuringPaint()
         }
         if (m_qmlToolbar) {
             if (!m_toolbarUserDragged) {
+                const QRect dimensionInfoRect = m_captureChromeWindow && m_captureChromeWindow->isVisible()
+                    ? m_captureChromeWindow->lastDimensionInfoRect()
+                    : m_painter->lastDimensionInfoRect();
                 m_qmlToolbar->positionForSelection(
                     selectionRect,
                     width(),
                     height(),
-                    SnapTray::QmlFloatingToolbar::HorizontalAlignment::RightEdge);
+                    SnapTray::QmlFloatingToolbar::HorizontalAlignment::RightEdge,
+                    dimensionInfoRect);
             }
             m_toolbarViewModel->setCanUndo(m_annotationLayer && m_annotationLayer->canUndo());
             m_toolbarViewModel->setCanRedo(m_annotationLayer && m_annotationLayer->canRedo());

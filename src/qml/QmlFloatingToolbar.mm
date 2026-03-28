@@ -64,6 +64,26 @@ qint64 squaredDistanceToRect(const QPoint& point, const QRect& rect)
     return (dx * dx) + (dy * dy);
 }
 
+qint64 overlapArea(const QRect& a, const QRect& b)
+{
+    const QRect intersection = a.intersected(b);
+    if (!intersection.isValid() || intersection.isEmpty()) {
+        return 0;
+    }
+
+    return static_cast<qint64>(intersection.width()) * intersection.height();
+}
+
+QRect insetViewportRect(const QRect& viewportRect, int inset)
+{
+    if (!viewportRect.isValid()) {
+        return {};
+    }
+
+    const QRect insetRect = viewportRect.adjusted(inset, inset, -inset, -inset);
+    return insetRect.isValid() && !insetRect.isEmpty() ? insetRect : viewportRect;
+}
+
 void destroyQuickView(QQuickView*& view, QQuickItem*& rootItem)
 {
     if (!view)
@@ -416,7 +436,8 @@ void QmlFloatingToolbar::syncTransientParent()
 
 void QmlFloatingToolbar::positionForSelection(const QRect& selectionRect,
                                               int viewportWidth, int viewportHeight,
-                                              HorizontalAlignment alignment)
+                                              HorizontalAlignment alignment,
+                                              const QRect& avoidRect)
 {
     ensureView();
     if (!m_view)
@@ -424,42 +445,95 @@ void QmlFloatingToolbar::positionForSelection(const QRect& selectionRect,
 
     const int w = m_view->width();
     const int h = m_view->height();
-    constexpr int kMargin = 8;
-
-    int x = 0;
-    switch (alignment) {
-    case HorizontalAlignment::RightEdge:
-        // QRect::right() is inclusive; add 1 to align the toolbar's right edge.
-        x = selectionRect.right() + 1 - w;
-        break;
-    case HorizontalAlignment::Center:
-    default:
-        x = selectionRect.center().x() - w / 2;
-        break;
-    }
-    int y = selectionRect.bottom() + kMargin;
-
-    // If toolbar would go off bottom, position above
-    if (y + h > viewportHeight - 10)
-        y = selectionRect.top() - h - kMargin;
-
-    // If still off screen, position inside at bottom
-    if (y < 10)
-        y = selectionRect.bottom() - h - 10;
-
-    // Keep on screen horizontally
-    x = qBound(10, x, viewportWidth - w - 10);
+    const QPoint topLeft = resolveTopLeftForSelection(
+        selectionRect,
+        QSize(w, h),
+        QRect(0, 0, viewportWidth, viewportHeight),
+        alignment,
+        avoidRect);
 
     // Convert from widget-local to screen coordinates if we have a parent widget
-    QPoint screenPos(x, y);
+    QPoint screenPos = topLeft;
     if (m_parentWidget) {
-        screenPos = m_parentWidget->mapToGlobal(QPoint(x, y));
+        screenPos = m_parentWidget->mapToGlobal(topLeft);
     }
 
     if (m_view->position() != screenPos) {
         m_view->setPosition(screenPos);
     }
     syncCursorSurface();
+}
+
+QPoint QmlFloatingToolbar::resolveTopLeftForSelection(const QRect& selectionRect,
+                                                      const QSize& toolbarSize,
+                                                      const QRect& viewportRect,
+                                                      HorizontalAlignment alignment,
+                                                      const QRect& avoidRect)
+{
+    constexpr int kMargin = 8;
+    constexpr int kViewportInset = 10;
+
+    if (!selectionRect.isValid() || selectionRect.isEmpty()) {
+        return clampTopLeftToRect(QPoint(), toolbarSize, insetViewportRect(viewportRect, kViewportInset));
+    }
+
+    const QRect boundedViewport = insetViewportRect(viewportRect, kViewportInset);
+    const QRect normalizedSelectionRect = selectionRect.normalized();
+    const QRect obstructionRect =
+        avoidRect.isValid() && !avoidRect.isEmpty()
+        ? normalizedSelectionRect.united(avoidRect.normalized())
+        : normalizedSelectionRect;
+    const QRect forbiddenRect = obstructionRect.adjusted(-kMargin, -kMargin, kMargin, kMargin);
+    const int width = qMax(1, toolbarSize.width());
+    const int height = qMax(1, toolbarSize.height());
+    const int yBelow = normalizedSelectionRect.bottom() + kMargin;
+    const int yAbove = obstructionRect.top() - height - kMargin;
+
+    const int preferredX = [&]() {
+        switch (alignment) {
+        case HorizontalAlignment::RightEdge:
+            // QRect::right() is inclusive; add 1 to align the toolbar's right edge.
+            return normalizedSelectionRect.right() + 1 - width;
+        case HorizontalAlignment::Center:
+        default:
+            return normalizedSelectionRect.center().x() - width / 2;
+        }
+    }();
+
+    const int clampedX = clampTopLeftToRect(QPoint(preferredX, boundedViewport.top()),
+                                            toolbarSize,
+                                            boundedViewport).x();
+
+    const QPoint belowTopLeft(clampedX, yBelow);
+    const QRect belowRect(belowTopLeft, QSize(width, height));
+    if (belowRect.top() == yBelow && boundedViewport.contains(belowRect)) {
+        return belowRect.topLeft();
+    }
+
+    const QPoint aboveTopLeft(clampedX, yAbove);
+    const QRect aboveRect(aboveTopLeft, QSize(width, height));
+    if (aboveRect.top() == yAbove && boundedViewport.contains(aboveRect)) {
+        return aboveRect.topLeft();
+    }
+
+    const QPoint clampedAboveTopLeft(
+        clampedX,
+        qBound(boundedViewport.top(), yAbove, boundedViewport.bottom() - height + 1));
+    const QPoint clampedBelowTopLeft(
+        clampedX,
+        qBound(boundedViewport.top(), yBelow, boundedViewport.bottom() - height + 1));
+
+    const QRect clampedAboveRect(clampedAboveTopLeft, QSize(width, height));
+    const QRect clampedBelowRect(clampedBelowTopLeft, QSize(width, height));
+
+    const qint64 aboveOverlap = overlapArea(clampedAboveRect, forbiddenRect);
+    const qint64 belowOverlap = overlapArea(clampedBelowRect, forbiddenRect);
+
+    if (aboveOverlap <= belowOverlap) {
+        return clampedAboveRect.topLeft();
+    }
+
+    return clampedBelowRect.topLeft();
 }
 
 void QmlFloatingToolbar::positionAt(int centerX, int bottomY)
