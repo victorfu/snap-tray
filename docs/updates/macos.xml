@@ -4,21 +4,21 @@
      xmlns:dc="http://purl.org/dc/elements/1.1/">
   <channel>
     <title>SnapTray macos</title>
-    <link>https://github.com/victorfu/snap-tray/releases/download/v1.0.41/SnapTray-1.0.41-macOS.dmg</link>
+    <link>https://github.com/victorfu/snap-tray/releases/download/v1.0.42/SnapTray-1.0.42-macOS.dmg</link>
     <description>SnapTray update feed for macos</description>
     <language>en</language>
     <item>
-      <title>Version 1.0.41</title>
-      <pubDate>Thu, 26 Mar 2026 11:59:48 GMT</pubDate>
+      <title>Version 1.0.42</title>
+      <pubDate>Fri, 27 Mar 2026 16:33:41 GMT</pubDate>
 
       <sparkle:minimumSystemVersion>14.0.0</sparkle:minimumSystemVersion>
-      <sparkle:releaseNotesLink>https://snaptray.cc/releases/1.0.41/</sparkle:releaseNotesLink>
+      <sparkle:releaseNotesLink>https://snaptray.cc/releases/1.0.42/</sparkle:releaseNotesLink>
       <enclosure
-          url="https://github.com/victorfu/snap-tray/releases/download/v1.0.41/SnapTray-1.0.41-macOS.dmg"
-          sparkle:version="1.0.41"
-          sparkle:shortVersionString="1.0.41"
-          sparkle:edSignature="OjkWV9jyl3MPA4UyPKQY4DjEJnv4IPsMCD5iTHyeu13OBn8Q3SRKFsYk+PGz09/dNqwsM66iZU9lZJKc63DkAw=="
-          length="51583653"
+          url="https://github.com/victorfu/snap-tray/releases/download/v1.0.42/SnapTray-1.0.42-macOS.dmg"
+          sparkle:version="1.0.42"
+          sparkle:shortVersionString="1.0.42"
+          sparkle:edSignature="5e0c5QI1YvOn93l8FUOOmL5bd6HfmgMoGoif9IMY/npHShCcqKooaxuVWQ6tzuO29thEPf5U4hBlYjClc6xxBg=="
+          length="51596464"
           type="application/x-apple-diskimage" />
     </item>
   </channel>
