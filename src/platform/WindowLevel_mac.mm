@@ -20,6 +20,9 @@ NSCursor* frameResizeCursor(NSCursorFrameResizePosition position)
 
 NSCursor* nsCursorForQtCursor(const QCursor& cursor)
 {
+    QPixmap pixmap;
+    QPoint hotspot = cursor.hotSpot();
+
     switch (cursor.shape()) {
     case Qt::ArrowCursor:
         return [NSCursor arrowCursor];
@@ -34,7 +37,12 @@ NSCursor* nsCursorForQtCursor(const QCursor& cursor)
     case Qt::IBeamCursor:
         return [NSCursor IBeamCursor];
     case Qt::SizeAllCursor:
-        return [NSCursor openHandCursor];
+        pixmap = QPixmap(QStringLiteral(":/icons/icons/sizeallcursor.png"));
+        if (pixmap.isNull()) {
+            return nil;
+        }
+        hotspot = QPoint(pixmap.width() / 2, pixmap.height() / 2);
+        break;
     case Qt::SizeHorCursor:
         return [NSCursor resizeLeftRightCursor];
     case Qt::SizeVerCursor:
@@ -57,12 +65,13 @@ NSCursor* nsCursorForQtCursor(const QCursor& cursor)
         break;
     }
 
-    QPixmap pixmap = cursor.pixmap();
+    if (pixmap.isNull()) {
+        pixmap = cursor.pixmap();
+    }
     if (pixmap.isNull()) {
         const QBitmap bitmap = cursor.bitmap();
         const QBitmap mask = cursor.mask();
         if (!bitmap.isNull() && !mask.isNull()) {
-            const QPoint hotspot = cursor.hotSpot();
             const QCursor bitmapCursor(bitmap, mask, hotspot.x(), hotspot.y());
             pixmap = bitmapCursor.pixmap();
         }
@@ -99,7 +108,6 @@ NSCursor* nsCursorForQtCursor(const QCursor& cursor)
         initWithSize:NSMakeSize(image.width() / dpr, image.height() / dpr)];
     [nsImage addRepresentation:rep];
 
-    const QPoint hotspot = cursor.hotSpot();
     return [[NSCursor alloc] initWithImage:nsImage
                                    hotSpot:NSMakePoint(hotspot.x(), hotspot.y())];
 }
