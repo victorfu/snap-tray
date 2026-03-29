@@ -837,6 +837,12 @@ RegionSelector::RegionSelector(QWidget* parent)
                (m_captureChromeWindow && m_captureChromeWindow->isVisible()) ||
                (m_selectionPreviewOverlay && m_selectionPreviewOverlay->isVisible());
     });
+    m_inputHandler->setFloatingUiHoverProvider([this]() {
+        return isGlobalPosOverFloatingUi(QCursor::pos());
+    });
+    m_inputHandler->setSelectionMoveExtensionProvider([this](const QPoint& localPos) {
+        return isSelectionMoveHoverExtensionAt(localPos);
+    });
 
     // Connect input handler signals
     connect(m_inputHandler, &RegionInputHandler::toolCursorRequested,
@@ -3527,6 +3533,59 @@ bool RegionSelector::isCursorOverSelectionToolbar(const QPoint& globalPos) const
            m_selectionManager &&
            m_selectionManager->hasSelection() &&
            m_qmlToolbar->geometry().contains(globalPos);
+}
+
+bool RegionSelector::isSelectionMoveHoverExtensionAt(const QPoint& localPos) const
+{
+    if (!m_selectionManager || !m_selectionManager->hasSelection()) {
+        return false;
+    }
+
+    const QRect selectionRect = m_selectionManager->selectionRect().normalized();
+    if (!selectionRect.isValid() || selectionRect.isEmpty()) {
+        return false;
+    }
+
+    const auto bridgeToFloatingRect = [&](const QRect& floatingGlobalRect) {
+        if (!floatingGlobalRect.isValid() || floatingGlobalRect.isEmpty()) {
+            return QRect();
+        }
+
+        const QRect floatingRect = globalToLocal(floatingGlobalRect).normalized();
+        const int bridgeLeft = qMax(selectionRect.left(), floatingRect.left());
+        const int bridgeRight = qMin(selectionRect.right(), floatingRect.right());
+        if (bridgeLeft > bridgeRight) {
+            return QRect();
+        }
+
+        if (floatingRect.top() > selectionRect.bottom() + 1) {
+            const int bridgeTop = selectionRect.bottom() + 1;
+            const int bridgeBottom = floatingRect.top() - 1;
+            if (bridgeTop <= bridgeBottom) {
+                return QRect(QPoint(bridgeLeft, bridgeTop), QPoint(bridgeRight, bridgeBottom));
+            }
+        }
+
+        if (floatingRect.bottom() < selectionRect.top() - 1) {
+            const int bridgeTop = floatingRect.bottom() + 1;
+            const int bridgeBottom = selectionRect.top() - 1;
+            if (bridgeTop <= bridgeBottom) {
+                return QRect(QPoint(bridgeLeft, bridgeTop), QPoint(bridgeRight, bridgeBottom));
+            }
+        }
+
+        return QRect();
+    };
+
+    const QRect toolbarBridge =
+        bridgeToFloatingRect(m_qmlToolbar ? m_qmlToolbar->geometry() : QRect());
+    if (toolbarBridge.contains(localPos)) {
+        return true;
+    }
+
+    const QRect subToolbarBridge =
+        bridgeToFloatingRect(m_qmlSubToolbar ? m_qmlSubToolbar->geometry() : QRect());
+    return subToolbarBridge.contains(localPos);
 }
 
 void RegionSelector::syncFloatingUiCursor()

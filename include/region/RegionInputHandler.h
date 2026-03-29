@@ -54,6 +54,8 @@ public:
     void setSharedState(RegionInputState* state);
     void setMagnifierVisibilityProvider(std::function<bool()> provider);
     void setSelectionPreviewOverlayActiveProvider(std::function<bool()> provider);
+    void setFloatingUiHoverProvider(std::function<bool()> provider);
+    void setSelectionMoveExtensionProvider(std::function<bool(const QPoint&)> provider);
 
     // Reset dirty tracking state (call when starting a new capture)
     void resetDirtyTracking();
@@ -158,6 +160,8 @@ private:
     RegionInputState* m_state = nullptr;
     std::function<bool()> m_shouldRenderMagnifier;
     std::function<bool()> m_isSelectionPreviewOverlayActive;
+    std::function<bool()> m_isFloatingUiHovered;
+    std::function<bool(const QPoint&)> m_isSelectionMoveExtensionAt;
 
     // State
     QPoint m_startPoint;

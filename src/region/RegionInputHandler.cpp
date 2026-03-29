@@ -46,6 +46,8 @@ bool shouldSuppressCompletedSelectionDragUi(const RegionInputState& state,
            state.completedSelectionDragUiSuppressed &&
            selectionManager->hasSelection();
 }
+
+constexpr int kLiveCursorDriftTolerancePx = 4;
 } // namespace
 
 RegionInputHandler::RegionInputHandler(QObject* parent)
@@ -115,6 +117,16 @@ void RegionInputHandler::setMagnifierVisibilityProvider(std::function<bool()> pr
 void RegionInputHandler::setSelectionPreviewOverlayActiveProvider(std::function<bool()> provider)
 {
     m_isSelectionPreviewOverlayActive = std::move(provider);
+}
+
+void RegionInputHandler::setFloatingUiHoverProvider(std::function<bool()> provider)
+{
+    m_isFloatingUiHovered = std::move(provider);
+}
+
+void RegionInputHandler::setSelectionMoveExtensionProvider(std::function<bool(const QPoint&)> provider)
+{
+    m_isSelectionMoveExtensionAt = std::move(provider);
 }
 
 RegionInputState& RegionInputHandler::state()
@@ -252,9 +264,19 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
         !m_selectionManager->isMoving() &&
         !state().isDrawing &&
         !isManipulatingAnnotation();
-    const QPoint effectivePos = shouldPreferLiveCursor
-        ? currentCursorLocalPos()
-        : event->pos();
+    QPoint effectivePos = event->pos();
+    if (shouldPreferLiveCursor) {
+        const QPoint liveCursorPos = currentCursorLocalPos();
+        const int drift = (liveCursorPos - event->pos()).manhattanLength();
+
+        // Detached floating UI can hand control back before QCursor::pos() fully
+        // converges on the first host move event. In that case trust the event-local
+        // position so selection hover/drag resolves against the region, not the stale
+        // toolbar position.
+        if (drift <= kLiveCursorDriftTolerancePx) {
+            effectivePos = liveCursorPos;
+        }
+    }
 
     const QPoint previousPoint = state().currentPoint;
     state().currentPoint = effectivePos;
@@ -598,7 +620,10 @@ bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
                 return true;
             }
 
-            if (m_selectionManager->hitTestMove(pos)) {
+            const bool moveHit =
+                m_selectionManager->hitTestMove(pos) ||
+                (m_isSelectionMoveExtensionAt && m_isSelectionMoveExtensionAt(pos));
+            if (moveHit) {
                 m_lastSelectionRect = m_selectionManager->selectionRect();
                 m_selectionManager->startMove(pos);
                 beginSelectionDrag();
@@ -640,7 +665,10 @@ bool RegionInputHandler::handleSelectionToolPress(const QPoint& pos)
         return true;
     }
 
-    if (m_selectionManager->hitTestMove(pos)) {
+    const bool moveHit =
+        m_selectionManager->hitTestMove(pos) ||
+        (m_isSelectionMoveExtensionAt && m_isSelectionMoveExtensionAt(pos));
+    if (moveHit) {
         m_lastSelectionRect = m_selectionManager->selectionRect();
         m_selectionManager->startMove(pos);
         beginSelectionDrag();
@@ -937,7 +965,10 @@ void RegionInputHandler::handleHoverMove(const QPoint& pos, Qt::MouseButtons but
         }
 
         // Check if hovering inside selection for move (displays SizeAllCursor)
-        if (m_selectionManager->hitTestMove(pos)) {
+        const bool moveHit =
+            m_selectionManager->hitTestMove(pos) ||
+            (m_isSelectionMoveExtensionAt && m_isSelectionMoveExtensionAt(pos));
+        if (moveHit) {
             cm.setHoverTargetForWidget(m_parentWidget,HoverTarget::SelectionBody);
             return;
         }
@@ -1148,6 +1179,12 @@ void RegionInputHandler::onDragFrameTick()
 
     if (!isSelectionInteraction && !shouldPollHoverCursor) {
         m_dragFrameTimer.stop();
+        return;
+    }
+
+    if (!isSelectionInteraction &&
+        m_isFloatingUiHovered &&
+        m_isFloatingUiHovered()) {
         return;
     }
 
