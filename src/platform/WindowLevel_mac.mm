@@ -5,6 +5,9 @@
 #include "WindowLevel.h"
 
 #include <QGuiApplication>
+#include <QCursor>
+
+#include "cursor/CursorSurfaceSupport.h"
 
 #import <Cocoa/Cocoa.h>
 
@@ -243,8 +246,15 @@ void preventWindowHideOnDeactivate(QWidget *widget)
     [window setHidesOnDeactivate:NO];
 }
 
-void forceNativeCursor(const QCursor& cursor, QWidget *)
+void forceNativeCursor(const QCursor& cursor, QWidget *widget)
 {
+    if (widget &&
+        CursorSurfaceSupport::isPointerOverOtherVisibleTopLevelWindow(
+            widget->windowHandle(),
+            QCursor::pos())) {
+        return;
+    }
+
     if (NSCursor* nsCursor = nsCursorForQtCursor(cursor)) {
         [nsCursor set];
     }

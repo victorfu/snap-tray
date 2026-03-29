@@ -24,6 +24,9 @@
 namespace SnapTray {
 
 namespace {
+constexpr int kParentCursorRestoreRetryDelayMs = 16;
+constexpr int kParentCursorRestoreMaxAttempts = 6;
+
 QPoint clampTopLeftToRect(const QPoint& desiredTopLeft,
                          const QSize& windowSize,
                          const QRect& bounds)
@@ -322,6 +325,7 @@ void QmlFloatingToolbar::hide()
     hideTooltip();
     if (m_view) {
         m_view->hide();
+        m_view->unsetCursor();
     }
     CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
     if (m_parentWidget) {
@@ -337,6 +341,7 @@ void QmlFloatingToolbar::close()
     if (m_view) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->removeEventFilter(this);
+        m_view->unsetCursor();
     }
     if (m_parentWidget) {
         QTimer::singleShot(0, this, [this]() {
@@ -626,20 +631,63 @@ void QmlFloatingToolbar::syncCursorSurface(const CursorStyleSpec* explicitStyle)
 
     if (!m_view->isVisible()) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        m_view->unsetCursor();
         return;
     }
 
     const QRect bounds(m_view->position(), m_view->size());
     if (!bounds.contains(QCursor::pos())) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        m_view->unsetCursor();
         return;
     }
+
+    cancelParentCursorRestore();
 
     const CursorStyleSpec dragStyle = CursorStyleSpec::fromShape(Qt::ClosedHandCursor);
     const CursorStyleSpec* resolvedStyle = explicitStyle ? explicitStyle
                                                          : (m_isDragging ? &dragStyle : nullptr);
     CursorSurfaceSupport::syncWindowSurface(
         m_view, m_cursorSurfaceId, m_cursorOwnerId, CursorRequestSource::Overlay, resolvedStyle);
+}
+
+void QmlFloatingToolbar::cancelParentCursorRestore()
+{
+    ++m_parentCursorRestoreToken;
+}
+
+void QmlFloatingToolbar::scheduleParentCursorRestore()
+{
+    if (!m_parentWidget) {
+        return;
+    }
+
+    const quint64 token = ++m_parentCursorRestoreToken;
+    QTimer::singleShot(0, this, [this, token]() {
+        attemptParentCursorRestore(token, kParentCursorRestoreMaxAttempts);
+    });
+}
+
+void QmlFloatingToolbar::attemptParentCursorRestore(quint64 token, int remainingAttempts)
+{
+    if (token != m_parentCursorRestoreToken || !m_parentWidget) {
+        return;
+    }
+
+    const bool pointerStillWithinToolbar =
+        m_view &&
+        m_view->isVisible() &&
+        QRect(m_view->position(), m_view->size()).contains(QCursor::pos());
+    if (pointerStillWithinToolbar) {
+        if (remainingAttempts > 0) {
+            QTimer::singleShot(kParentCursorRestoreRetryDelayMs, this, [this, token, remainingAttempts]() {
+                attemptParentCursorRestore(token, remainingAttempts - 1);
+            });
+        }
+        return;
+    }
+
+    CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_parentWidget);
 }
 
 // ── Event filter (cursor management) ──
@@ -662,11 +710,8 @@ bool QmlFloatingToolbar::eventFilter(QObject* obj, QEvent* event)
         case QEvent::Close:
             hideTooltip();
             CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
-            if (m_parentWidget) {
-                QTimer::singleShot(0, this, [this]() {
-                    CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_parentWidget);
-                });
-            }
+            m_view->unsetCursor();
+            scheduleParentCursorRestore();
             break;
         default:
             break;

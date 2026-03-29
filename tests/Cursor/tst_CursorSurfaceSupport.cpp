@@ -12,6 +12,7 @@ class TestCursorSurfaceSupport : public QObject
 private slots:
     void initTestCase();
     void testPointerRefreshClassification();
+    void testTopLevelOcclusionDetection();
     void testWindowSurfaceAuthoritySync();
     void testWindowSurfaceExplicitOverride();
 };
@@ -31,6 +32,38 @@ void TestCursorSurfaceSupport::testPointerRefreshClassification()
     QVERIFY(!CursorSurfaceSupport::isPointerRefreshEvent(QEvent::FocusOut));
     QVERIFY(!CursorSurfaceSupport::isPointerRefreshEvent(QEvent::WindowDeactivate));
     QVERIFY(!CursorSurfaceSupport::isPointerRefreshEvent(QEvent::Paint));
+}
+
+void TestCursorSurfaceSupport::testTopLevelOcclusionDetection()
+{
+    QWindow hostWindow;
+    hostWindow.setGeometry(40, 40, 160, 120);
+    hostWindow.show();
+
+    QWindow overlayWindow;
+    overlayWindow.setGeometry(70, 70, 80, 60);
+    overlayWindow.show();
+
+    QWindow transparentOverlay;
+    transparentOverlay.setFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowTransparentForInput);
+    transparentOverlay.setGeometry(150, 90, 30, 30);
+    transparentOverlay.show();
+
+    QCoreApplication::processEvents();
+
+    QVERIFY(!CursorSurfaceSupport::isPointerOverOtherVisibleTopLevelWindow(
+        &hostWindow, QPoint(50, 50)));
+    QVERIFY(CursorSurfaceSupport::isPointerOverOtherVisibleTopLevelWindow(
+        &hostWindow, QPoint(90, 90)));
+    QVERIFY(!CursorSurfaceSupport::isPointerOverOtherVisibleTopLevelWindow(
+        &hostWindow, QPoint(160, 100)));
+    QVERIFY(!CursorSurfaceSupport::isPointerOverOtherVisibleTopLevelWindow(
+        &overlayWindow, QPoint(90, 90)));
+
+    overlayWindow.hide();
+    QCoreApplication::processEvents();
+    QVERIFY(!CursorSurfaceSupport::isPointerOverOtherVisibleTopLevelWindow(
+        &hostWindow, QPoint(160, 100)));
 }
 
 void TestCursorSurfaceSupport::testWindowSurfaceAuthoritySync()

@@ -83,6 +83,25 @@ inline void clearWindowSurface(const QString& surfaceId, const QString& ownerId)
     CursorAuthority::instance().clearRequest(surfaceId, ownerId);
 }
 
+inline bool isPointerOverOtherVisibleTopLevelWindow(QWindow* hostWindow, const QPoint& globalPos)
+{
+    for (QWindow* window : QGuiApplication::topLevelWindows()) {
+        if (!window || !window->isVisible() || window == hostWindow) {
+            continue;
+        }
+
+        if (window->flags().testFlag(Qt::WindowTransparentForInput)) {
+            continue;
+        }
+
+        if (QRect(window->position(), window->size()).contains(globalPos)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 inline void restoreWidgetCursorIfPointerOver(QWidget* widget)
 {
     if (!widget || !widget->isVisible()) {
@@ -101,14 +120,8 @@ inline void restoreWidgetCursorIfPointerOver(QWidget* widget)
     }
 
     QWindow* hostWindow = widget->windowHandle();
-    for (QWindow* window : QGuiApplication::topLevelWindows()) {
-        if (!window || !window->isVisible() || window == hostWindow) {
-            continue;
-        }
-
-        if (QRect(window->position(), window->size()).contains(globalPos)) {
-            return;
-        }
+    if (isPointerOverOtherVisibleTopLevelWindow(hostWindow, globalPos)) {
+        return;
     }
 
     const QPoint localPos = widget->mapFromGlobal(globalPos);
