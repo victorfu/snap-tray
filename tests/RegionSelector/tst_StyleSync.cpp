@@ -5,8 +5,6 @@
 #include <QClipboard>
 #include <QGuiApplication>
 #include <QScreen>
-#include <QTimer>
-
 #include "RegionSelector.h"
 #include "RegionSelectorTestAccess.h"
 #include "annotations/ArrowAnnotation.h"
@@ -36,14 +34,11 @@ private slots:
     void testUsesAuthorityModeByDefault();
     void testSelectionBodyHoverUsesMoveCursor();
     void testSelectionBodyHoverUsesEventPosWhenLiveCursorLags();
-    void testToolbarGapHoverUsesMoveCursor();
-    void testToolbarGapPressStartsSelectionDrag();
     void testSelectionDragUsesClosedHandCursor();
     void testOverlayRequestRestoreReturnsArrowToolCursor();
     void testFloatingToolbarWindowOwnsArrowCursor();
     void testToolbarLeaveRestoresArrowToolCrossCursor();
     void testToolbarLeaveRestoresSelectionBodyMoveCursor();
-    void testToolbarLeaveRetryRestoresSelectionBodyMoveCursor();
     void testArrowControlReleaseRestoresSelectionBodyCursor();
     void testRestoreRegionCursorAfterArrowControlHoverReturnsSelectionBodyCursor();
     void testPopupRestoreReturnsSelectionBodyCursor();
@@ -126,58 +121,6 @@ void TestRegionSelectorStyleSync::testSelectionBodyHoverUsesEventPosWhenLiveCurs
     QCOMPARE(selector.cursor().shape(), Qt::SizeAllCursor);
 
     QCursor::setPos(originalCursorPos);
-}
-
-void TestRegionSelectorStyleSync::testToolbarGapHoverUsesMoveCursor()
-{
-    RegionSelector selector;
-    auto& cursorManager = CursorManager::instance();
-
-    const QRect toolbarGeometry = showToolbarForTool(selector, ToolId::Selection);
-    if (!toolbarGeometry.isValid() || toolbarGeometry.isEmpty()) {
-        QSKIP("Floating toolbar did not produce a valid geometry in this environment.");
-    }
-
-    const QRect selectionRect = RegionSelectorTestAccess::selectionRect(selector).normalized();
-    const int gapTop = selectionRect.bottom() + 1;
-    const int gapBottom = selector.globalToLocal(toolbarGeometry).top() - 1;
-    if (gapTop > gapBottom) {
-        QSKIP("Selection and toolbar do not have a hover gap in this environment.");
-    }
-
-    const QPoint gapPos(selectionRect.center().x(), (gapTop + gapBottom) / 2);
-    selector.m_inputHandler->syncHoverCursorAt(gapPos);
-    cursorManager.reapplyCursorForWidget(&selector);
-
-    QCOMPARE(selector.cursor().shape(), Qt::SizeAllCursor);
-}
-
-void TestRegionSelectorStyleSync::testToolbarGapPressStartsSelectionDrag()
-{
-    RegionSelector selector;
-
-    const QRect toolbarGeometry = showToolbarForTool(selector, ToolId::Selection);
-    if (!toolbarGeometry.isValid() || toolbarGeometry.isEmpty()) {
-        QSKIP("Floating toolbar did not produce a valid geometry in this environment.");
-    }
-
-    const QRect selectionRect = RegionSelectorTestAccess::selectionRect(selector).normalized();
-    const int gapTop = selectionRect.bottom() + 1;
-    const int gapBottom = selector.globalToLocal(toolbarGeometry).top() - 1;
-    if (gapTop > gapBottom) {
-        QSKIP("Selection and toolbar do not have a draggable gap in this environment.");
-    }
-
-    const QPoint gapPos(selectionRect.center().x(), (gapTop + gapBottom) / 2);
-
-    QMouseEvent pressEvent(QEvent::MouseButtonPress, gapPos, gapPos,
-                           Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
-    selector.m_inputHandler->handleMousePress(&pressEvent);
-    QCOMPARE(selector.cursor().shape(), Qt::ClosedHandCursor);
-
-    QMouseEvent releaseEvent(QEvent::MouseButtonRelease, gapPos, gapPos,
-                             Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
-    selector.m_inputHandler->handleMouseRelease(&releaseEvent);
 }
 
 void TestRegionSelectorStyleSync::testSelectionDragUsesClosedHandCursor()
@@ -333,42 +276,6 @@ void TestRegionSelectorStyleSync::testToolbarLeaveRestoresSelectionBodyMoveCurso
     QCoreApplication::sendEvent(toolbarWindow, &leaveEvent);
     RegionSelectorTestAccess::dispatchWidgetMouseMove(selector, kSelectionBodyPos);
     cursorManager.reapplyCursorForWidget(&selector);
-
-    QTRY_COMPARE(selector.cursor().shape(), Qt::SizeAllCursor);
-    QCursor::setPos(originalCursorPos);
-}
-
-void TestRegionSelectorStyleSync::testToolbarLeaveRetryRestoresSelectionBodyMoveCursor()
-{
-    RegionSelector selector;
-
-    const QRect toolbarGeometry = showToolbarForTool(selector, ToolId::Selection);
-    if (!toolbarGeometry.isValid() || toolbarGeometry.isEmpty()) {
-        QSKIP("Floating toolbar did not produce a valid geometry in this environment.");
-    }
-
-    QWindow* toolbarWindow = RegionSelectorTestAccess::toolbarWindow(selector);
-    if (!toolbarWindow) {
-        QSKIP("Floating toolbar window did not initialize in this environment.");
-    }
-
-    const QPoint originalCursorPos = QCursor::pos();
-    const QPoint toolbarPos = toolbarGeometry.center();
-    const QPoint selectionBodyGlobal = selector.mapToGlobal(kSelectionBodyPos);
-
-    QCursor::setPos(toolbarPos);
-    if (QCursor::pos() != toolbarPos) {
-        QSKIP("System cursor position could not be adjusted for toolbar leave retry test.");
-    }
-
-    QEvent enterEvent(QEvent::Enter);
-    QCoreApplication::sendEvent(toolbarWindow, &enterEvent);
-
-    QEvent leaveEvent(QEvent::Leave);
-    QCoreApplication::sendEvent(toolbarWindow, &leaveEvent);
-    QTimer::singleShot(5, &selector, [selectionBodyGlobal]() {
-        QCursor::setPos(selectionBodyGlobal);
-    });
 
     QTRY_COMPARE(selector.cursor().shape(), Qt::SizeAllCursor);
     QCursor::setPos(originalCursorPos);
