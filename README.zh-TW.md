@@ -1,52 +1,68 @@
-# SnapTray
+<p align="center">
+  <img src="resources/icons/snaptray.png" alt="SnapTray logo" width="144" />
+</p>
 
-[English](README.md) | **繁體中文**
+<h1 align="center">SnapTray</h1>
 
-SnapTray 是一款常駐系統托盤的截圖與錄影工具，支援 macOS 與 Windows。它的核心目標是讓你在桌面上完成整條工作流：按 `F2` 擷取區域、按 `Ctrl+F2 / Cmd+F2` 進入螢幕畫布，直接標註、釘選參考圖、輸出高品質錄影，不必切換一堆工具。
+<p align="center">
+  <a href="README.md">English</a> | <strong>繁體中文</strong>
+</p>
 
-## 為什麼用 SnapTray
+---
 
-- **擷取更快**：提供放大鏡精準選取、視窗偵測、多區域擷取、包含游標與取色能力
-- **標註更清楚**：箭頭、鉛筆、螢光筆、形狀、文字、馬賽克、步驟標記、貼圖、Undo/Redo、OCR、QR 掃描與自動模糊
-- **工作不離開上下文**：可把截圖釘選在其他視窗上方，支援縮放、旋轉，還能直接在 pin window 裡標註
-- **錄影更完整**：可從托盤或擷取工具列啟動錄影，輸出可帶音訊的 MP4，或適合無音訊片段的 GIF、WebP
-- **重複工作可自動化**：提供全域快捷鍵、CLI，以及 debug build 專用的 MCP 本地自動化介面
+<p align="center">
+  在桌面上完成截圖、標註、釘選與錄影，不必切換工具。
+</p>
 
-## 核心工作流
+<p align="center">
+  macOS 14+ · Windows 10+
+</p>
 
-### 區域截圖
+<p align="center">
+  <a href="https://github.com/victorfu/snap-tray/releases">下載</a> ·
+  <a href="docs/zh-tw/docs/index.md">文件</a> ·
+  <a href="docs/zh-tw/docs/tutorials/index.md">教學</a>
+</p>
 
-按 `F2` 後拖曳選區，接著在同一條工具列完成標註、複製、存檔、釘選、分享、OCR、自動模糊，或直接開始錄影。
+SnapTray 是一款支援 macOS 與 Windows 的常駐系統托盤截圖與螢幕錄影工具。它是為了快速桌面工作流而設計：擷取畫面、立即說明重點、把參考圖釘在畫面上，或直接把同一個畫面輸出成可分享的圖片與影片。
 
-### 螢幕畫布
+## 為什麼選擇 SnapTray
 
-按 `Ctrl+F2 / Cmd+F2` 直接在桌面上畫。適合講解、簡報與即時示範，包含 marker、shape、text、step badge 與 laser pointer。
+- 擷取更快：支援放大鏡精準選取、視窗偵測、多區域擷取、包含游標與取色
+- 標註更快：內建箭頭、螢光筆、形狀、文字、馬賽克、步驟標記、貼圖、OCR、QR 掃描與自動模糊
+- 工作不中斷：可把截圖釘選在其他視窗上方，讓參考畫面持續可見
+- 錄影更完整：可錄全螢幕或指定區域，輸出含音訊的 MP4，或輸出 GIF、WebP 短片
+- 重複流程更順手：可從全域快捷鍵、托盤選單或 CLI 啟動常用流程
 
-### 釘選視窗
+## 為真實工作流而設計
 
-把截圖固定在畫面上當參考。支援縮放、透明度、旋轉、翻轉、合併/版面控制，以及獨立的標註工具列。
+### 一次完成擷取與標註
 
-### 錄影
+按下 `F2` 後拖曳選區，即可在同一條工具列完成複製、存檔、釘選、分享、OCR、自動模糊，或直接開始錄影。
 
-可從托盤或擷取工具列啟動。透過浮動控制列暫停、恢復、停止或取消，再輸出成最適合的格式。
+### 直接在桌面上說明
 
-## 支援平台
+按 `Ctrl+F2 / Cmd+F2` 開啟螢幕畫布，適合示範、教學、簡報與即時說明。
 
-- macOS 14+
-- Windows 10+
+### 把參考圖留在眼前
 
-## 文件與發佈
+釘選後的圖片會固定在其他 App 上方，並支援縮放、透明度、旋轉、翻轉、合併/版面控制與內嵌標註。
+
+### 錄下真正重要的內容
+
+可從托盤或擷取工具列啟動錄影，再透過浮動控制列暫停、恢復、停止或取消。
+
+## 進一步了解
 
 - 發佈版本：[GitHub Releases](https://github.com/victorfu/snap-tray/releases)
 - 使用者文件：[文件首頁](docs/zh-tw/docs/index.md)
 - 教學總覽：[教學總覽](docs/zh-tw/docs/tutorials/index.md)
 - CLI 參考：[命令列](docs/zh-tw/docs/cli.md)
 - 疑難排解：[疑難排解](docs/zh-tw/docs/troubleshooting.md)
-- 開發者文件：[開發者文件](docs/zh-tw/developer/index.md)
 
-## 從原始碼建置
+## 開發者資訊
 
-完整的建置、打包、簽章、架構與 debug-only MCP 文件已移到 [開發者文件](docs/zh-tw/developer/index.md)。
+若你要從原始碼建置 SnapTray，或要直接參與開發，請從 [開發者文件](docs/zh-tw/developer/index.md) 開始。
 
 快速入口：
 
@@ -62,7 +78,7 @@ scripts\build.bat
 scripts\run-tests.bat
 ```
 
-若要看前置需求、手動 CMake、打包、公證、Store 提交與 repo 架構，請直接前往：
+更多開發文件：
 
 - [從原始碼建置](docs/zh-tw/developer/build-from-source.md)
 - [發佈與打包](docs/zh-tw/developer/release-packaging.md)
