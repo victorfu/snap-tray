@@ -8,6 +8,17 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 - No unreleased entries yet.
 
+## [1.0.43] - 2026-03-30
+
+### Improved
+
+- Improved region capture toolbar placement and hover behavior so detached controls stay out of the way while selection movement remains predictable.
+
+### Fixed
+
+- Fixed the macOS move cursor to use a dedicated Size All cursor during region adjustments.
+- Fixed the tray menu translation for `Check for Updates`.
+
 ## [1.0.42] - 2026-03-28
 
 ### Added
