@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SnapTray 1.0.43</title>
+  <meta name="description" content="Release notes for SnapTray 1.0.43.">
+  <link rel="canonical" href="https://snaptray.cc/releases/1.0.43/">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --line: #d9e0ea;
+      --text: #152033;
+      --muted: #5d6b82;
+      --accent: #2f66ff;
+      --accent-soft: #edf3ff;
+      --code-bg: #eef2f7;
+      --shadow: 0 20px 40px rgba(20, 32, 51, 0.08);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at top right, rgba(47, 102, 255, 0.14), transparent 32%),
+        linear-gradient(180deg, #f9fbff 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+    .shell {
+      background: var(--card);
+      border: 1px solid rgba(217, 224, 234, 0.85);
+      border-radius: 22px;
+      padding: 28px 28px 20px;
+      box-shadow: var(--shadow);
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 14px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.1;
+    }
+    .meta {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .meta-link {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .meta-link:hover {
+      text-decoration: underline;
+    }
+    .content {
+      margin-top: 26px;
+      font-size: 16px;
+      line-height: 1.65;
+    }
+    .content h2,
+    .content h3,
+    .content h4 {
+      margin: 24px 0 10px;
+      line-height: 1.25;
+    }
+    .content p {
+      margin: 0 0 14px;
+    }
+    .content ul {
+      margin: 0 0 18px;
+      padding-left: 22px;
+    }
+    .content li {
+      margin-bottom: 8px;
+    }
+    .content a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .content a:hover {
+      text-decoration: underline;
+    }
+    .content code {
+      padding: 2px 6px;
+      border-radius: 8px;
+      background: var(--code-bg);
+      font-size: 0.92em;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    @media (max-width: 560px) {
+      main {
+        padding: 16px 12px 24px;
+      }
+      .shell {
+        border-radius: 16px;
+        padding: 18px 16px 12px;
+      }
+      h1 {
+        font-size: 24px;
+      }
+      .content {
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="shell">
+      <p class="eyebrow">SnapTray Release Notes</p>
+      <h1>SnapTray 1.0.43</h1>
+      <p class="meta">March 30, 2026 · <a class="meta-link" href="https://github.com/victorfu/snap-tray/releases/tag/v1.0.43" target="_blank" rel="noopener">View on GitHub</a></p>
+      <div class="content">
+<h4>Improved</h4>
+<ul>
+<li>Improved region capture toolbar placement and hover behavior so detached controls stay out of the way while selection movement remains predictable.</li>
+</ul>
+<h4>Fixed</h4>
+<ul>
+<li>Fixed the macOS move cursor to use a dedicated Size All cursor during region adjustments.</li>
+<li>Fixed the tray menu translation for <code>Check for Updates</code>.</li>
+</ul>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
