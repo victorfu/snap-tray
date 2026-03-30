@@ -2,6 +2,7 @@
 #include "qml/QmlOverlayManager.h"
 
 #include <QApplication>
+#include <QCoreApplication>
 #include <QCursor>
 #include <QGuiApplication>
 #include <QQuickItem>
@@ -21,8 +22,16 @@ static const QUrl kToastQmlUrl(QStringLiteral("qrc:/SnapTrayQml/components/Toast
 
 QmlToast& QmlToast::screenToast()
 {
-    static QmlToast instance;
-    return instance;
+    static QmlToast* instance = []() {
+        auto* toast = new QmlToast();
+        if (auto* app = QCoreApplication::instance()) {
+            QObject::connect(app, &QCoreApplication::aboutToQuit,
+                             toast, &QmlToast::cleanupForShutdown,
+                             Qt::DirectConnection);
+        }
+        return toast;
+    }();
+    return *instance;
 }
 
 // Private constructor for screen-level toast
@@ -47,7 +56,36 @@ QmlToast::QmlToast(QWidget* parent, int shadowMargin)
 
 QmlToast::~QmlToast()
 {
+    if (!m_view) {
+        return;
+    }
+
+    // Screen-level toasts are cleaned up from aboutToQuit while Qt/Cocoa are
+    // still intact. During global/static teardown, skip deleting native windows.
+    if (!QCoreApplication::instance() || QCoreApplication::closingDown()) {
+        m_view = nullptr;
+        m_rootItem = nullptr;
+        return;
+    }
+
+    destroyView();
+}
+
+void QmlToast::cleanupForShutdown()
+{
+    destroyView();
+}
+
+void QmlToast::destroyView()
+{
+    if (!m_view) {
+        return;
+    }
+
+    m_view->close();
     delete m_view;
+    m_view = nullptr;
+    m_rootItem = nullptr;
 }
 
 QRect QmlToast::preferredScreenGeometryForScreenToast(const QRect& activeWindowGeometry,

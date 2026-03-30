@@ -83,7 +83,12 @@ private:
     /// Private constructor for screen-level singleton
     QmlToast();
 
+private slots:
+    void cleanupForShutdown();
+
+private:
     void ensureView();
+    void destroyView();
     void setQmlProperties(Level level, const QString& title, const QString& message, int durationMs);
     void positionAndShow();
     void positionScreenTopRight();

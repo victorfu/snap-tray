@@ -4,6 +4,8 @@
 #include "qml/QmlDialog.h"
 #include "qml/QmlToast.h"
 
+#include <QGuiApplication>
+
 class tst_PlacementHelpers : public QObject
 {
     Q_OBJECT
@@ -14,6 +16,7 @@ private slots:
     void testColorPicker_centeredTopLeftForBounds();
     void testQmlToast_preferredScreenGeometryForScreenToast();
     void testQmlToast_screenTopRightPositionForGeometry();
+    void testQmlToast_screenToastCleanupForShutdown();
 };
 
 void tst_PlacementHelpers::testQmlDialog_centeredTopLeftForBounds()
@@ -83,6 +86,32 @@ void tst_PlacementHelpers::testQmlToast_screenTopRightPositionForGeometry()
         20);
 
     QCOMPARE(topLeft, QPoint(679, 220));
+}
+
+void tst_PlacementHelpers::testQmlToast_screenToastCleanupForShutdown()
+{
+    if (QGuiApplication::screens().isEmpty()) {
+        QSKIP("QQuickView shutdown cleanup requires a real screen");
+    }
+
+    auto& toast = SnapTray::QmlToast::screenToast();
+
+    toast.showToast(SnapTray::QmlToast::Level::Info,
+                    QStringLiteral("Test title"),
+                    QStringLiteral("Test message"),
+                    100);
+    QCoreApplication::processEvents();
+
+    QVERIFY(QMetaObject::invokeMethod(&toast, "cleanupForShutdown", Qt::DirectConnection));
+    QVERIFY(QMetaObject::invokeMethod(&toast, "cleanupForShutdown", Qt::DirectConnection));
+
+    toast.showToast(SnapTray::QmlToast::Level::Success,
+                    QStringLiteral("Shown again"),
+                    QStringLiteral("Recreated after cleanup"),
+                    100);
+    QCoreApplication::processEvents();
+
+    QVERIFY(QMetaObject::invokeMethod(&toast, "cleanupForShutdown", Qt::DirectConnection));
 }
 
 QTEST_MAIN(tst_PlacementHelpers)
