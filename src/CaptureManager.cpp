@@ -244,7 +244,7 @@ void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &g
             targetScreen = m_regionSelector->screen();
         }
 
-        PinWindow *window = m_pinManager->createPinWindow(screenshot, globalPosition);
+        PinWindow *window = m_pinManager->createPinWindow(screenshot, globalPosition, false);
         if (window && !globalRect.isEmpty() && targetScreen) {
             window->setSourceRegion(globalRect, targetScreen);
         }
@@ -273,6 +273,13 @@ void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &g
                 }
 
                 window->setMultiRegionData(layoutRegions);
+            }
+        }
+
+        if (window) {
+            window->showPreparedWindow();
+            if (m_pinManager->arePinsHidden()) {
+                m_pinManager->setAllPinsVisible(true);
             }
         }
     }

@@ -148,6 +148,19 @@ private slots:
         QVERIFY(!window.isToolbarVisible());
     }
 
+    void testDeferredShowWaitsUntilPrepared() {
+        QPixmap pixmap = createTestPixmap(100, 100);
+        PinWindow window(pixmap, QPoint(12, 34), nullptr, false, false);
+
+        QVERIFY(!window.isVisible());
+
+        window.showPreparedWindow();
+        QCoreApplication::processEvents();
+
+        QVERIFY(window.isVisible());
+        QCOMPARE(window.pos(), QPoint(12, 34));
+    }
+
     // =========================================================================
     // Mouse Tracking Tests
     // =========================================================================

@@ -82,8 +82,10 @@ public:
     explicit PinWindow(const QPixmap& screenshot,
                        const QPoint& position,
                        QWidget* parent = nullptr,
-                       bool persistHistorySnapshot = false);
+                       bool persistHistorySnapshot = false,
+                       bool showImmediately = true);
     ~PinWindow();
+    void showPreparedWindow();
 
     void setZoomLevel(qreal zoom);
     qreal zoomLevel() const { return m_zoomLevel; }
@@ -236,6 +238,9 @@ private:
     QRectF transformedSourceSampleRect() const;
     void resetSourceSampleRect();
     void setSourceSampleRect(const QRectF& sampleRect);
+    static QRectF displaySourceRectForTarget(const QRectF& sampleRect,
+                                             const QSize& sourcePixelSize,
+                                             const QSize& targetPixelSize);
     QPixmap buildDisplayPixmap(const QSize& logicalSize, Qt::TransformationMode mode) const;
 
     // Cache folder methods
@@ -366,6 +371,8 @@ private:
     qreal m_zoomLevel;
     QRect m_lastAnnotationInteractionVisualRect;
     QPoint m_dragStartPos;
+    QPoint m_initialPosition;
+    bool m_hasPerformedInitialShow = false;
     bool m_isDragging;
     QMenu* m_contextMenu;
     QMenu* m_moveToScreenMenu = nullptr;

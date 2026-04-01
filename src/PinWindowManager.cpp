@@ -14,9 +14,10 @@ PinWindowManager::~PinWindowManager()
 }
 
 PinWindow* PinWindowManager::createPinWindow(const QPixmap &screenshot,
-                                             const QPoint &position)
+                                             const QPoint &position,
+                                             bool showImmediately)
 {
-    PinWindow *window = new PinWindow(screenshot, position, nullptr);
+    PinWindow *window = new PinWindow(screenshot, position, nullptr, false, showImmediately);
     window->setPinWindowManager(this);
 
     connect(window, &PinWindow::closed, this, &PinWindowManager::onWindowClosed);
@@ -27,8 +28,8 @@ PinWindow* PinWindowManager::createPinWindow(const QPixmap &screenshot,
     m_windows.append(window);
     // Note: show() is called in PinWindow constructor
 
-    // New pins should make all hidden pins visible again.
-    if (m_pinsHidden) {
+    // New visible pins should make all hidden pins visible again.
+    if (showImmediately && m_pinsHidden) {
         setAllPinsVisible(true);
     }
 

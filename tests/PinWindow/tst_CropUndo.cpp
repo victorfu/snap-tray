@@ -80,6 +80,7 @@ private slots:
     void testApplyCrop_RefreshesMosaicSourceInsideErasedGroup();
     void testApplyCrop_EdgeEndpointCoordinate_ClampsToLastPixelColumn();
     void testPreciseSourceSampleRectForRegion_UsesScreenLocalCoordinates();
+    void testDisplaySourceRectForTarget_PrefersTranslationOverScaling();
     void testSetSourceRegion_FractionalDpr_PreservesExactLogicalSize();
     void testCropUndoRedo_FractionalDpr_RestoresExactLogicalSize();
     void testHandleToolbarUndo_PrioritizesCropWhenNoPostCropAnnotations();
@@ -433,6 +434,17 @@ void TestPinWindowCropUndo::testPreciseSourceSampleRectForRegion_UsesScreenLocal
         PinWindow::preciseSourceSampleRectForRegion(globalRegion, screenGeometry, 1.25);
 
     QCOMPARE(sampleRect, QRectF(0.25, 0.0, 125.0, 80.0));
+}
+
+void TestPinWindowCropUndo::testDisplaySourceRectForTarget_PrefersTranslationOverScaling()
+{
+    const QRectF sampleRect(0.5, 0.5, 958.75, 421.25);
+    const QRectF resolved = PinWindow::displaySourceRectForTarget(
+        sampleRect,
+        QSize(960, 422),
+        QSize(959, 421));
+
+    QCOMPARE(resolved, QRectF(1.0, 1.0, 959.0, 421.0));
 }
 
 void TestPinWindowCropUndo::testSetSourceRegion_FractionalDpr_PreservesExactLogicalSize()

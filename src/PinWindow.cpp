@@ -421,10 +421,12 @@ namespace {
 PinWindow::PinWindow(const QPixmap& screenshot,
                      const QPoint& position,
                      QWidget* parent,
-                     bool persistHistorySnapshot)
+                     bool persistHistorySnapshot,
+                     bool showImmediately)
     : QWidget(parent)
     , m_originalPixmap(screenshot)
     , m_zoomLevel(1.0)
+    , m_initialPosition(position)
     , m_isDragging(false)
     , m_contextMenu(nullptr)
     , m_isResizing(false)
@@ -497,14 +499,9 @@ PinWindow::PinWindow(const QPixmap& screenshot,
     connect(m_uiIndicators, &UIIndicators::exitClickThroughRequested,
         this, [this]() { setClickThrough(false); });
 
-    // Must show() first, then move() to get correct positioning on macOS
-    // Moving before show() can result in incorrect window placement
-    show();
-
-    // Enable visibility on all virtual desktops/workspaces
-    setWindowVisibleOnAllWorkspaces(this, true);
-
-    move(position);
+    if (showImmediately) {
+        showPreparedWindow();
+    }
 
     // Apply default opacity (90%)
     setWindowOpacity(m_opacity);
@@ -904,6 +901,24 @@ void PinWindow::onResizeFinished()
         m_pendingHighQualityUpdate = false;
         update();
     }
+}
+
+void PinWindow::showPreparedWindow()
+{
+    if (m_hasPerformedInitialShow) {
+        show();
+        return;
+    }
+
+    // Must show() first, then move() to get correct positioning on macOS.
+    // Moving before show() can result in incorrect window placement.
+    show();
+
+    // Enable visibility on all virtual desktops/workspaces.
+    setWindowVisibleOnAllWorkspaces(this, true);
+
+    move(m_initialPosition);
+    m_hasPerformedInitialShow = true;
 }
 
 int PinWindow::effectiveCornerRadius(const QSize& contentSize) const
@@ -1896,6 +1911,42 @@ void PinWindow::setSourceSampleRect(const QRectF& sampleRect)
     resetSourceSampleRect();
 }
 
+QRectF PinWindow::displaySourceRectForTarget(const QRectF& sampleRect,
+                                             const QSize& sourcePixelSize,
+                                             const QSize& targetPixelSize)
+{
+    if (!sampleRect.isValid() || sampleRect.isEmpty() || sourcePixelSize.isEmpty() || targetPixelSize.isEmpty()) {
+        return QRectF();
+    }
+
+    auto resolveAxis = [](qreal origin,
+                          qreal extent,
+                          int sourceExtent,
+                          int targetExtent) -> std::pair<qreal, qreal> {
+        if (sourceExtent <= 0 || targetExtent <= 0) {
+            return {0.0, 0.0};
+        }
+
+        qreal resolvedOrigin = origin;
+        qreal resolvedExtent = extent;
+        if (qAbs(extent - targetExtent) < 1.0) {
+            resolvedExtent = static_cast<qreal>(targetExtent);
+            resolvedOrigin = static_cast<qreal>(qRound(origin));
+        }
+
+        const qreal maxOrigin = qMax(0.0, static_cast<qreal>(sourceExtent) - resolvedExtent);
+        resolvedOrigin = qBound(0.0, resolvedOrigin, maxOrigin);
+        return {resolvedOrigin, resolvedExtent};
+    };
+
+    const auto [resolvedX, resolvedWidth] = resolveAxis(
+        sampleRect.x(), sampleRect.width(), sourcePixelSize.width(), targetPixelSize.width());
+    const auto [resolvedY, resolvedHeight] = resolveAxis(
+        sampleRect.y(), sampleRect.height(), sourcePixelSize.height(), targetPixelSize.height());
+
+    return QRectF(resolvedX, resolvedY, resolvedWidth, resolvedHeight);
+}
+
 QPixmap PinWindow::buildDisplayPixmap(const QSize& logicalSize, Qt::TransformationMode mode) const
 {
     ensureTransformCacheValid();
@@ -1914,9 +1965,11 @@ QPixmap PinWindow::buildDisplayPixmap(const QSize& logicalSize, Qt::Transformati
 
     QPainter painter(&result);
     painter.setRenderHint(QPainter::SmoothPixmapTransform, mode == Qt::SmoothTransformation);
+    const QRectF sourceRect = displaySourceRectForTarget(
+        transformedSourceSampleRect(), m_transformedCache.size(), deviceSize);
     painter.drawPixmap(QRectF(QPointF(0.0, 0.0), QSizeF(logicalSize)),
                        m_transformedCache,
-                       transformedSourceSampleRect());
+                       sourceRect);
     painter.end();
 
     return result;
@@ -4720,7 +4773,8 @@ void PinWindow::setSourceRegion(const QRect& region, QScreen* screen)
             dpr = 1.0;
         }
         const QRect screenGeometry = screen ? screen->geometry() : QRect(QPoint(0, 0), region.size());
-        setSourceSampleRect(preciseSourceSampleRectForRegion(region, screenGeometry, dpr));
+        const QRectF sampleRect = preciseSourceSampleRectForRegion(region, screenGeometry, dpr);
+        setSourceSampleRect(sampleRect);
         if (!m_isLiveMode) {
             updateSize();
             updateToolbarPosition();
