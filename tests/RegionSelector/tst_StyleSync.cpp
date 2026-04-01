@@ -186,8 +186,7 @@ void TestRegionSelectorStyleSync::testFloatingToolbarWindowOwnsArrowCursor()
         QSKIP("System cursor position could not be adjusted for toolbar hover test.");
     }
 
-    QEvent enterEvent(QEvent::Enter);
-    QCoreApplication::sendEvent(toolbarWindow, &enterEvent);
+    RegionSelectorTestAccess::dispatchWindowEnter(toolbarWindow, toolbarPos);
 
     QCOMPARE(authority.resolvedStyleForWindow(toolbarWindow).styleId, CursorStyleId::Arrow);
     QCOMPARE(selector.cursor().shape(), Qt::CrossCursor);
@@ -221,8 +220,7 @@ void TestRegionSelectorStyleSync::testToolbarLeaveRestoresArrowToolCrossCursor()
         QSKIP("System cursor position could not be adjusted for toolbar round-trip test.");
     }
 
-    QEvent enterEvent(QEvent::Enter);
-    QCoreApplication::sendEvent(toolbarWindow, &enterEvent);
+    RegionSelectorTestAccess::dispatchWindowEnter(toolbarWindow, toolbarPos);
 
     QCursor::setPos(selectionBodyGlobal);
     if (QCursor::pos() != selectionBodyGlobal) {
@@ -263,8 +261,7 @@ void TestRegionSelectorStyleSync::testToolbarLeaveRestoresSelectionBodyMoveCurso
         QSKIP("System cursor position could not be adjusted for selection restore test.");
     }
 
-    QEvent enterEvent(QEvent::Enter);
-    QCoreApplication::sendEvent(toolbarWindow, &enterEvent);
+    RegionSelectorTestAccess::dispatchWindowEnter(toolbarWindow, toolbarPos);
 
     QCursor::setPos(selectionBodyGlobal);
     if (QCursor::pos() != selectionBodyGlobal) {

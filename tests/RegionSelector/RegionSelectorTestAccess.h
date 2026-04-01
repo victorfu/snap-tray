@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QCoreApplication>
+#include <QEnterEvent>
 #include <QPaintEvent>
 #include <QRegion>
 
@@ -51,6 +53,19 @@ public:
                               buttons,
                               Qt::NoModifier);
         selector.mouseMoveEvent(&moveEvent);
+    }
+
+    static void dispatchWindowEnter(QWindow* window, const QPoint& globalPos)
+    {
+        if (!window) {
+            return;
+        }
+
+        const QPoint localPos = window->mapFromGlobal(globalPos);
+        const QPointF localPosF(localPos);
+        const QPointF globalPosF(globalPos);
+        QEnterEvent enterEvent{localPosF, localPosF, globalPosF};
+        QCoreApplication::sendEvent(window, &enterEvent);
     }
 
     static void dispatchMousePress(RegionSelector& selector,
