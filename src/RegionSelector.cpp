@@ -131,6 +131,14 @@ QSize regionControlPanelSizeHint(const SnapTray::QmlOverlayPanel* panel)
         : QSize(kRegionControlPanelFallbackWidth, kRegionControlPanelFallbackHeight);
 }
 
+QRect regionControlPanelAnchorRect(const SnapTray::QmlOverlayPanel* panel)
+{
+    const QRect anchorRect = panel ? panel->anchorRect() : QRect();
+    return anchorRect.isValid() && !anchorRect.isEmpty()
+        ? anchorRect
+        : QRect(QPoint(), regionControlPanelSizeHint(panel));
+}
+
 QPoint clampTopLeftToRect(const QPoint& desiredTopLeft,
                           const QSize& windowSize,
                           const QRect& bounds)
@@ -3130,19 +3138,14 @@ void RegionSelector::positionRegionControlPanel()
     if (!dimRect.isValid())
         return;
 
-    QRect panelGeom = m_regionControlPanel->geometry();
-    if (!panelGeom.isValid() || panelGeom.isEmpty()) {
-        panelGeom = QRect(QPoint(), regionControlPanelSizeHint(m_regionControlPanel.get()));
-    }
+    const QRect panelAnchorRect = regionControlPanelAnchorRect(m_regionControlPanel.get());
+    const QSize panelAnchorSize = panelAnchorRect.size();
+    const QPoint panelAnchorOffset = panelAnchorRect.topLeft();
     int gap = kFloatingAttachmentGap;
-    // The QML root is 60px tall: [popup 28] [gap 4] [main panel 28]
-    // The visible main panel is the bottom 28px. Align it with dim label.
-    int mainPanelHeight = 28;
-    int popupOverhead = panelGeom.height() - mainPanelHeight;
-    const QPoint preferredLocalPos(
+    const QPoint preferredAnchorLocalPos(
         dimRect.right() + gap,
-        dimRect.top() + (dimRect.height() - mainPanelHeight) / 2 - popupOverhead);
-    const QRect preferredLocalRect(preferredLocalPos, panelGeom.size());
+        dimRect.top() + (dimRect.height() - panelAnchorSize.height()) / 2);
+    const QRect preferredAnchorLocalRect(preferredAnchorLocalPos, panelAnchorSize);
     const QRect toolbarLocalRect = floatingToolbarRectInLocalCoords();
     const QRect selectionRect = m_selectionManager
         ? m_selectionManager->selectionRect().normalized()
@@ -3152,33 +3155,34 @@ void RegionSelector::positionRegionControlPanel()
         selectionRect.isValid() &&
         toolbarLocalRect.bottom() < selectionRect.top();
     const bool controlWouldOverlapToolbar =
-        toolbarOnTopRow && preferredLocalRect.intersects(toolbarLocalRect);
+        toolbarOnTopRow && preferredAnchorLocalRect.intersects(toolbarLocalRect);
 
-    QPoint pos = mapToGlobal(preferredLocalPos);
+    QPoint pos = mapToGlobal(preferredAnchorLocalPos - panelAnchorOffset);
 
     if (controlWouldOverlapToolbar && selectionRect.isValid() && !selectionRect.isEmpty()) {
         const QRect insideBounds = selectionRect.adjusted(
             kFloatingAttachmentInset,
-            kFloatingAttachmentInset - popupOverhead,
+            kFloatingAttachmentInset,
             -kFloatingAttachmentInset,
             -kFloatingAttachmentInset);
         const QRect clampBounds = insideBounds.isValid() && !insideBounds.isEmpty()
             ? insideBounds
             : selectionRect;
-        const QPoint insideTopRight(
-            selectionRect.right() + 1 - kFloatingAttachmentInset - panelGeom.width(),
-            selectionRect.top() + kFloatingAttachmentInset - popupOverhead);
-        const QPoint insideLocalPos = clampTopLeftToRect(
-            insideTopRight,
-            panelGeom.size(),
+        const QPoint insideAnchorTopRight(
+            selectionRect.right() + 1 - kFloatingAttachmentInset - panelAnchorSize.width(),
+            selectionRect.top() + kFloatingAttachmentInset);
+        const QPoint insideAnchorLocalPos = clampTopLeftToRect(
+            insideAnchorTopRight,
+            panelAnchorSize,
             clampBounds);
-        pos = mapToGlobal(insideLocalPos);
+        pos = mapToGlobal(insideAnchorLocalPos - panelAnchorOffset);
     }
 
     // Fallback if off-screen right
     if (!controlWouldOverlapToolbar &&
-        pos.x() + panelGeom.width() > mapToGlobal(QPoint(width(), 0)).x()) {
-        pos = mapToGlobal(QPoint(dimRect.left(), dimRect.bottom() + 4 - popupOverhead));
+        preferredAnchorLocalRect.right() >= width()) {
+        const QPoint belowAnchorLocalPos(dimRect.left(), dimRect.bottom() + 4);
+        pos = mapToGlobal(belowAnchorLocalPos - panelAnchorOffset);
     }
     m_regionControlPanel->setPosition(pos);
 }

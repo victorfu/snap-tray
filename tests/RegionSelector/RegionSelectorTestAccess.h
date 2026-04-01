@@ -252,6 +252,11 @@ public:
         return selector.m_regionControlPanel ? selector.m_regionControlPanel->geometry() : QRect();
     }
 
+    static QRect regionControlAnchorRect(const RegionSelector& selector)
+    {
+        return selector.m_regionControlPanel ? selector.m_regionControlPanel->anchorRect() : QRect();
+    }
+
     static QRect dimensionInfoRect(const RegionSelector& selector)
     {
         if (selector.m_captureChromeWindow && selector.m_captureChromeWindow->isVisible()) {

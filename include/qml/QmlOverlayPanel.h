@@ -47,6 +47,7 @@ public:
     void close();
     bool isVisible() const;
     QRect geometry() const;
+    QRect anchorRect() const;
     bool containsGlobalPoint(const QPoint& globalPos) const;
     void setPosition(const QPoint& globalPos);
     void resize(const QSize& size);
