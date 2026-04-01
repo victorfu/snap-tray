@@ -55,5 +55,5 @@ QString SelectionDimensionLabel::label(const QRect& logicalRect, qreal dpr)
 
 QString SelectionDimensionLabel::sampleLabel()
 {
-    return label(QSize(99999, 99999), 1.0);
+    return label(QSize(9999, 9999), 1.0);
 }

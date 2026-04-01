@@ -42,6 +42,15 @@ QPixmap makePreCapture(const QSize& size, const QColor& color)
     return pixmap;
 }
 
+OCRTextBlock makeOcrBlock(const QString& text, qreal x, qreal y, qreal width = 0.08, qreal height = 0.03)
+{
+    OCRTextBlock block;
+    block.text = text;
+    block.boundingRect = QRectF(x, y, width, height);
+    block.confidence = 0.9f;
+    return block;
+}
+
 class HeadlessQmlDialog final : public SnapTray::QmlDialog
 {
 public:
@@ -210,6 +219,8 @@ private slots:
     void testSharePasswordUsesCenteredScreenApi();
     void testShareResultCloseKeepsCaptureSession();
     void testOCRResultCloseKeepsCaptureSession();
+    void testOCRResultCopyTextClosesViewModel();
+    void testOCRResultCopyAsTsvClosesViewModel();
     void testQRCodeResultCloseKeepsCaptureSession();
     void testWidgetEscapeCancelsWithoutBlockingUi();
     void testAppEscapeCancelsWithoutBlockingUi();
@@ -430,6 +441,57 @@ void tst_RegionSelectorTransientUiCancelGuard::testOCRResultCloseKeepsCaptureSes
 
     QCOMPARE(cancelledSpy.count(), 0);
     QCOMPARE(selector.m_openBlockingDialogCount, 0);
+}
+
+void tst_RegionSelectorTransientUiCancelGuard::testOCRResultCopyTextClosesViewModel()
+{
+    OCRResult result;
+    result.success = true;
+    result.text = QStringLiteral("Detected text");
+
+    OCRResultViewModel vm;
+    vm.setOCRResult(result);
+
+    QSignalSpy copiedSpy(&vm, &OCRResultViewModel::textCopied);
+    QSignalSpy closedSpy(&vm, &OCRResultViewModel::dialogClosed);
+
+    vm.copyText();
+
+    QCOMPARE(copiedSpy.count(), 1);
+    QCOMPARE(copiedSpy.takeFirst().at(0).toString(), QStringLiteral("Detected text"));
+    QCOMPARE(closedSpy.count(), 1);
+}
+
+void tst_RegionSelectorTransientUiCancelGuard::testOCRResultCopyAsTsvClosesViewModel()
+{
+    OCRResult result;
+    result.success = true;
+    result.text = QStringLiteral("Name Score Rank\nAlice 95 1\nBob 88 2");
+    result.blocks = {
+        makeOcrBlock(QStringLiteral("Name"), 0.10, 0.10),
+        makeOcrBlock(QStringLiteral("Score"), 0.315, 0.102),
+        makeOcrBlock(QStringLiteral("Rank"), 0.57, 0.099),
+        makeOcrBlock(QStringLiteral("Alice"), 0.102, 0.145),
+        makeOcrBlock(QStringLiteral("95"), 0.318, 0.147),
+        makeOcrBlock(QStringLiteral("1"), 0.572, 0.143),
+        makeOcrBlock(QStringLiteral("Bob"), 0.098, 0.19),
+        makeOcrBlock(QStringLiteral("88"), 0.314, 0.191),
+        makeOcrBlock(QStringLiteral("2"), 0.568, 0.189),
+    };
+
+    OCRResultViewModel vm;
+    vm.setOCRResult(result);
+    QVERIFY(vm.hasTsv());
+
+    QSignalSpy copiedSpy(&vm, &OCRResultViewModel::textCopied);
+    QSignalSpy closedSpy(&vm, &OCRResultViewModel::dialogClosed);
+
+    vm.copyAsTsv();
+
+    QCOMPARE(copiedSpy.count(), 1);
+    QCOMPARE(copiedSpy.takeFirst().at(0).toString(),
+             QStringLiteral("Name\tScore\tRank\nAlice\t95\t1\nBob\t88\t2"));
+    QCOMPARE(closedSpy.count(), 1);
 }
 
 void tst_RegionSelectorTransientUiCancelGuard::testQRCodeResultCloseKeepsCaptureSession()

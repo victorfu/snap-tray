@@ -66,6 +66,7 @@ void OCRResultViewModel::copyText()
 
     m_copyFeedbackActive = true;
     emit copyFeedbackActiveChanged();
+    emit dialogClosed();
     QTimer::singleShot(1500, this, [this]() {
         m_copyFeedbackActive = false;
         emit copyFeedbackActiveChanged();
@@ -81,6 +82,7 @@ void OCRResultViewModel::copyAsTsv()
 
     m_copyFeedbackActive = true;
     emit copyFeedbackActiveChanged();
+    emit dialogClosed();
     QTimer::singleShot(1500, this, [this]() {
         m_copyFeedbackActive = false;
         emit copyFeedbackActiveChanged();
