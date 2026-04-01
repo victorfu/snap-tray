@@ -6,6 +6,7 @@
 #include <QDateTime>
 #include <QImage>
 #include <QList>
+#include <QtGlobal>
 #include <QRect>
 #include <QSize>
 #include <QString>
@@ -23,6 +24,7 @@ struct HistoryEntry
     QString resultPath;
     bool replayAvailable = true;
     QSize resultSize;
+    qint64 fileSizeBytes = 0;
     qreal devicePixelRatio = 1.0;
 
     QString canvasPath;

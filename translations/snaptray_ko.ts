@@ -3252,6 +3252,131 @@ It may be in use by another application.</source>
         <translation>색상 선택</translation>
     </message>
 </context>
+<context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>기록</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>기록 폴더 열기</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>아직 기록 항목이 없습니다</translation>
+    </message>
+    <message>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>SnapTray에서 캡처한 스크린샷이 여기에 표시됩니다.</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>결과 없음</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>다른 스마트 폴더를 시도해 보세요.</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>스마트 폴더</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>모든 스크린샷</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>최근 7일</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>큰 파일</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>다시 재생 가능</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>편집</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>고정</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>복사</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>다른 이름으로 저장</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>삭제</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>최신순</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>오래된순</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>큰 파일순</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>미리 보기를 사용할 수 없습니다</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>스크린샷</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>스크린샷 %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>오늘</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>어제</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>%1일 전</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>알 수 없는 시간</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>알 수 없음</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>알 수 없는 크기</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>시간: %1
+해상도: %2
+파일 크기: %3</translation>
+    </message>
+</context>
 </TS>
-
-

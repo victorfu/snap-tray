@@ -3252,6 +3252,131 @@ Sie wird möglicherweise von einer anderen Anwendung verwendet.</translation>
         <translation>Farbe auswählen</translation>
     </message>
 </context>
+<context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>Verlauf</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>Verlaufsordner öffnen</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>Noch keine Verlaufseinträge</translation>
+    </message>
+    <message>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>Hier erscheinen Bildschirmaufnahmen, die Sie in SnapTray erstellen.</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>Keine Ergebnisse</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>Versuchen Sie einen anderen intelligenten Ordner.</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>Intelligente Ordner</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>Alle Bildschirmaufnahmen</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>Letzte 7 Tage</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>Große Dateien</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>Wiederherstellbar</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Bearbeiten</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Anheften</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopieren</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>Speichern unter</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Löschen</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>Neueste zuerst</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>Älteste zuerst</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>Größte zuerst</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>Vorschau nicht verfügbar</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>Bildschirmaufnahme</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>Bildschirmaufnahme %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>Heute</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>Gestern</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>Vor %1 Tagen</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>Unbekannte Zeit</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Unbekannt</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>Unbekannte Größe</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>Zeit: %1
+Auflösung: %2
+Dateigröße: %3</translation>
+    </message>
+</context>
 </TS>
-
-

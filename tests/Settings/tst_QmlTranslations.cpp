@@ -81,6 +81,24 @@ void tst_QmlTranslations::testPhase4PanelContexts()
              QString::fromUtf8("開啟歷程資料夾"));
     QCOMPARE(QCoreApplication::translate("HistoryWindow", "No history items yet"),
              QString::fromUtf8("尚無歷程項目"));
+    QCOMPARE(QCoreApplication::translate("HistoryWindow", "Smart Folders"),
+             QString::fromUtf8("智慧資料夾"));
+    QCOMPARE(QCoreApplication::translate("HistoryWindow", "Last 7 Days"),
+             QString::fromUtf8("最近 7 天"));
+    QCOMPARE(QCoreApplication::translate("HistoryWindow", "Large Files"),
+             QString::fromUtf8("大型檔案"));
+    QCOMPARE(QCoreApplication::translate("HistoryWindow", "Replayable"),
+             QString::fromUtf8("可重播"));
+    QCOMPARE(QCoreApplication::translate("HistoryWindow", "Newest First"),
+             QString::fromUtf8("最新優先"));
+    QCOMPARE(QCoreApplication::translate("HistoryWindow", "Oldest First"),
+             QString::fromUtf8("最舊優先"));
+    QCOMPARE(QCoreApplication::translate("HistoryWindow", "Largest First"),
+             QString::fromUtf8("最大檔案優先"));
+    QCOMPARE(QCoreApplication::translate("HistoryWindow", "No results"),
+             QString::fromUtf8("沒有結果"));
+    QCOMPARE(QCoreApplication::translate("HistoryWindow", "Try a different smart folder."),
+             QString::fromUtf8("試試其他智慧資料夾。"));
 }
 
 void tst_QmlTranslations::testMainApplicationTrayContext()

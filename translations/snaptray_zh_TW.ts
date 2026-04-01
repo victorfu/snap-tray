@@ -946,30 +946,116 @@ Size: %2</source>
         <translation>尚無歷程項目</translation>
     </message>
     <message>
-        <source>Time: %1
-Size: %2</source>
-        <translation>時間：%1
-尺寸：%2</translation>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>你在 SnapTray 擷取的截圖會顯示在這裡。</translation>
     </message>
     <message>
-        <source>Capture</source>
-        <translation>截圖</translation>
+        <source>No results</source>
+        <translation>沒有結果</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>試試其他智慧資料夾。</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>智慧資料夾</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>所有截圖</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>最近 7 天</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>大型檔案</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>可重播</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>編輯</translation>
     </message>
     <message>
         <source>Pin</source>
         <translation>釘選</translation>
     </message>
     <message>
-        <source>All</source>
-        <translation>全部</translation>
+        <source>Copy</source>
+        <translation>複製</translation>
     </message>
     <message>
-        <source>Captures</source>
+        <source>Save As</source>
+        <translation>另存新檔</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>刪除</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>最新優先</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>最舊優先</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>最大檔案優先</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>預覽無法顯示</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
         <translation>截圖</translation>
     </message>
     <message>
-        <source>Pins</source>
-        <translation>釘選</translation>
+        <source>Screenshot %1</source>
+        <translation>截圖 %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>今天</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>昨天</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>%1 天前</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>未知時間</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>未知</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>未知大小</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>時間：%1
+解析度：%2
+檔案大小：%3</translation>
     </message>
 </context>
 <context>
@@ -3298,5 +3384,3 @@ It may be in use by another application.</source>
     </message>
 </context>
 </TS>
-
-

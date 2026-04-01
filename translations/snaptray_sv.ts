@@ -3246,6 +3246,131 @@ Den kan användas av ett annat program.</translation>
         <translation>Välj färg</translation>
     </message>
 </context>
+<context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>Historik</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>Öppna historikmapp</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>Inga historikposter ännu</translation>
+    </message>
+    <message>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>Skärmbilder som du tar i SnapTray visas här.</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>Inga resultat</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>Prova en annan smart mapp.</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>Smarta mappar</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>Alla skärmbilder</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>Senaste 7 dagarna</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>Stora filer</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>Kan spelas upp igen</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Redigera</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Fäst</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopiera</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>Spara som</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Ta bort</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>Nyast först</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>Äldst först</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>Störst först</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>Förhandsvisning ej tillgänglig</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>Skärmbild</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>Skärmbild %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>Idag</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>Igår</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>För %1 dagar sedan</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>Okänd tid</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Okänd</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>Okänd storlek</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>Tid: %1
+Upplösning: %2
+Filstorlek: %3</translation>
+    </message>
+</context>
 </TS>
-
-

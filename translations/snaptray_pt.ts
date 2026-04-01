@@ -3252,6 +3252,131 @@ Ele pode estar em uso por outro aplicativo.</translation>
         <translation>Selecionar cor</translation>
     </message>
 </context>
+<context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>Histórico</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>Abrir pasta do histórico</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>Ainda não há itens no histórico</translation>
+    </message>
+    <message>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>As capturas de tela feitas no SnapTray aparecerão aqui.</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>Nenhum resultado</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>Tente uma pasta inteligente diferente.</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>Pastas inteligentes</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>Todas as capturas de tela</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>Últimos 7 dias</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>Arquivos grandes</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>Reproduzível</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Editar</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Fixar</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Copiar</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>Salvar como</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Excluir</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>Mais recentes primeiro</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>Mais antigas primeiro</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>Maiores primeiro</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>Pré-visualização indisponível</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>Captura de tela</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>Captura de tela %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>Hoje</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>Ontem</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>Há %1 dias</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>Hora desconhecida</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Desconhecido</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>Tamanho desconhecido</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>Hora: %1
+Resolução: %2
+Tamanho do arquivo: %3</translation>
+    </message>
+</context>
 </TS>
-
-

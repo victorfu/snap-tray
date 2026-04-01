@@ -343,44 +343,128 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 <context>
     <name>HistoryWindow</name>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="34"/>
         <source>History</source>
         <translation>ประวัติ</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="50"/>
         <source>Open History Folder</source>
         <translation>เปิดโฟลเดอร์ประวัติ</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="61"/>
         <source>No history items yet</source>
         <translation>ยังไม่มีรายการประวัติ</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="112"/>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>ภาพหน้าจอที่คุณจับด้วย SnapTray จะแสดงที่นี่</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>ไม่พบผลลัพธ์</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>ลองใช้โฟลเดอร์อัจฉริยะอื่น</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>โฟลเดอร์อัจฉริยะ</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>ภาพหน้าจอทั้งหมด</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>7 วันที่ผ่านมา</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>ไฟล์ขนาดใหญ่</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>เล่นซ้ำได้</translation>
+    </message>
+    <message>
         <source>Edit</source>
         <translation>แก้ไข</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="113"/>
         <source>Pin</source>
         <translation>ปักหมุด</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="114"/>
         <source>Copy</source>
         <translation>คัดลอก</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="115"/>
         <source>Save As</source>
         <translation>บันทึกเป็น</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="117"/>
         <source>Delete</source>
         <translation>ลบ</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>ใหม่ล่าสุดก่อน</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>เก่าสุดก่อน</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>ใหญ่ที่สุดก่อน</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>ไม่สามารถแสดงตัวอย่างได้</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>ภาพหน้าจอ</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>ภาพหน้าจอ %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>วันนี้</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>เมื่อวาน</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>%1 วันที่แล้ว</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>ไม่ทราบเวลา</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>ไม่ทราบ</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>ไม่ทราบขนาด</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>เวลา: %1
+ความละเอียด: %2
+ขนาดไฟล์: %3</translation>
     </message>
 </context>
 <context>
@@ -3048,5 +3132,4 @@ Password: %2</source>
     </message>
 </context>
 </TS>
-
 

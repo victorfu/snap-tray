@@ -3246,6 +3246,131 @@ Jį gali naudoti kita programa.</translation>
         <translation>Pasirinkti spalvą</translation>
     </message>
 </context>
+<context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>Istorija</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>Atverti istorijos aplanką</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>Istorijoje dar nėra įrašų</translation>
+    </message>
+    <message>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>Čia bus rodomos „SnapTray“ padarytos ekrano kopijos.</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>Rezultatų nėra</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>Išbandykite kitą išmanųjį aplanką.</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>Išmanieji aplankai</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>Visos ekrano kopijos</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>Paskutinės 7 dienos</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>Dideli failai</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>Atkuriama</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Redaguoti</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Prisegti</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopijuoti</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>Išsaugoti kaip</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Ištrinti</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>Naujausi pirmiausia</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>Seniausi pirmiausia</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>Didžiausi pirmiausia</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>Peržiūra nepasiekiama</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>Ekrano kopija</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>Ekrano kopija %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>Šiandien</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>Vakar</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>Prieš %1 dienas</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>Nežinomas laikas</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Nežinoma</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>Nežinomas dydis</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>Laikas: %1
+Raiška: %2
+Failo dydis: %3</translation>
+    </message>
+</context>
 </TS>
-
-

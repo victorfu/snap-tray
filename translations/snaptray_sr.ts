@@ -3252,6 +3252,131 @@ It may be in use by another application.</source>
         <translation>Изаберите боју</translation>
     </message>
 </context>
+<context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>Историја</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>Отвори фасциклу историје</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>Још нема ставки у историји</translation>
+    </message>
+    <message>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>Снимци екрана које направите у SnapTray-у појавиће се овде.</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>Нема резултата</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>Пробајте другу паметну фасциклу.</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>Паметне фасцикле</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>Сви снимци екрана</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>Последњих 7 дана</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>Велике датотеке</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>Може поново да се отвори</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Уреди</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Закачи</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Копирај</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>Сачувај као</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Обриши</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>Најновије прво</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>Најстарије прво</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>Највеће прво</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>Преглед није доступан</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>Снимак екрана</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>Снимак екрана %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>Данас</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>Јуче</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>Пре %1 дана</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>Непознато време</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Непознато</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>Непозната величина</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>Време: %1
+Резолуција: %2
+Величина датотеке: %3</translation>
+    </message>
+</context>
 </TS>
-
-

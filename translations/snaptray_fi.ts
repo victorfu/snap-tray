@@ -3246,6 +3246,131 @@ Se saattaa olla toisen sovelluksen käytössä.</translation>
         <translation>Valitse väri</translation>
     </message>
 </context>
+<context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>Historia</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>Avaa historiakansio</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>Historiakohteita ei ole vielä</translation>
+    </message>
+    <message>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>SnapTraylla ottamasi kuvakaappaukset näkyvät täällä.</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>Ei tuloksia</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>Kokeile toista älykansiota.</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>Älykansiot</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>Kaikki kuvakaappaukset</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>Viimeiset 7 päivää</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>Suuret tiedostot</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>Toistettavissa</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Muokkaa</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Kiinnitä</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopioi</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>Tallenna nimellä</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Poista</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>Uusimmat ensin</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>Vanhimmat ensin</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>Suurimmat ensin</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>Esikatselu ei ole saatavilla</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>Kuvakaappaus</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>Kuvakaappaus %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>Tänään</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>Eilen</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>%1 päivää sitten</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>Tuntematon aika</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Tuntematon</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>Tuntematon koko</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>Aika: %1
+Resoluutio: %2
+Tiedoston koko: %3</translation>
+    </message>
+</context>
 </TS>
-
-

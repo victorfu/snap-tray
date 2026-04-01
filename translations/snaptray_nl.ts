@@ -3252,6 +3252,131 @@ Deze wordt mogelijk gebruikt door een andere applicatie.</translation>
         <translation>Kleur selecteren</translation>
     </message>
 </context>
+<context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>Geschiedenis</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>Geschiedenismap openen</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>Nog geen items in de geschiedenis</translation>
+    </message>
+    <message>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>Schermafbeeldingen die je in SnapTray maakt, verschijnen hier.</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>Geen resultaten</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>Probeer een andere slimme map.</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>Slimme mappen</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>Alle schermafbeeldingen</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>Laatste 7 dagen</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>Grote bestanden</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>Opnieuw afspeelbaar</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Bewerken</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Vastmaken</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopiëren</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>Opslaan als</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Verwijderen</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>Nieuwste eerst</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>Oudste eerst</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>Grootste eerst</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>Voorvertoning niet beschikbaar</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>Schermafbeelding</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>Schermafbeelding %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>Vandaag</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>Gisteren</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>%1 dagen geleden</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>Onbekende tijd</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Onbekend</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>Onbekende grootte</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>Tijd: %1
+Resolutie: %2
+Bestandsgrootte: %3</translation>
+    </message>
+</context>
 </TS>
-
-

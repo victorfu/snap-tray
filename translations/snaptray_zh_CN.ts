@@ -3243,6 +3243,131 @@ It may be in use by another application.</source>
         <translation>选择颜色</translation>
     </message>
 </context>
+<context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>历程</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>打开历史文件夹</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>还没有历史记录项</translation>
+    </message>
+    <message>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>你在 SnapTray 中截取的截图会显示在这里。</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>没有结果</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>试试其他智能文件夹。</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>智能文件夹</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>所有截图</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>最近 7 天</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>大文件</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>可重播</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>编辑</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>固定</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>复制</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>另存为</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>删除</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>最新优先</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>最旧优先</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>最大文件优先</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>预览不可用</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>截图</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>截图 %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>今天</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>昨天</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>%1 天前</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>未知时间</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>未知</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>未知大小</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>时间：%1
+分辨率：%2
+文件大小：%3</translation>
+    </message>
+</context>
 </TS>
-
-

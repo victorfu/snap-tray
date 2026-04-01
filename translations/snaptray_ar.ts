@@ -3246,6 +3246,131 @@ It may be in use by another application.</source>
         <translation>اختر لونًا</translation>
     </message>
 </context>
+<context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>السجل</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>افتح مجلد السجل</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>لا توجد عناصر في السجل بعد</translation>
+    </message>
+    <message>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>ستظهر هنا لقطات الشاشة التي تلتقطها في SnapTray.</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>لا توجد نتائج</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>جرّب مجلدًا ذكيًا آخر.</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>المجلدات الذكية</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>كل لقطات الشاشة</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>آخر 7 أيام</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>الملفات الكبيرة</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>قابل لإعادة التشغيل</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>تحرير</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>تثبيت</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>نسخ</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>حفظ باسم</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>حذف</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>الأحدث أولاً</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>الأقدم أولاً</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>الأكبر أولاً</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>المعاينة غير متاحة</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>لقطة شاشة</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>لقطة شاشة %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>اليوم</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>أمس</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>منذ %1 يومًا</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>وقت غير معروف</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>غير معروف</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>حجم غير معروف</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>الوقت: %1
+الدقة: %2
+حجم الملف: %3</translation>
+    </message>
+</context>
 </TS>
-
-

@@ -3246,6 +3246,131 @@ It may be in use by another application.</source>
         <translation>Επιλογή χρώματος</translation>
     </message>
 </context>
+<context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>Ιστορικό</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>Άνοιγμα φακέλου ιστορικού</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>Δεν υπάρχουν ακόμη στοιχεία ιστορικού</translation>
+    </message>
+    <message>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>Τα στιγμιότυπα οθόνης που τραβάτε στο SnapTray θα εμφανίζονται εδώ.</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>Δεν βρέθηκαν αποτελέσματα</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>Δοκιμάστε έναν διαφορετικό έξυπνο φάκελο.</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>Έξυπνοι φάκελοι</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>Όλα τα στιγμιότυπα οθόνης</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>Τελευταίες 7 ημέρες</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>Μεγάλα αρχεία</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>Με δυνατότητα επανάληψης</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Επεξεργασία</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Καρφίτσωμα</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Αντιγραφή</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>Αποθήκευση ως</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Διαγραφή</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>Νεότερα πρώτα</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>Παλιότερα πρώτα</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>Μεγαλύτερα πρώτα</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>Η προεπισκόπηση δεν είναι διαθέσιμη</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>Στιγμιότυπο οθόνης</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>Στιγμιότυπο οθόνης %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>Σήμερα</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>Χθες</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>Πριν από %1 ημέρες</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>Άγνωστη ώρα</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Άγνωστο</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>Άγνωστο μέγεθος</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>Ώρα: %1
+Ανάλυση: %2
+Μέγεθος αρχείου: %3</translation>
+    </message>
+</context>
 </TS>
-
-

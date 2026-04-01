@@ -302,6 +302,7 @@ std::optional<HistoryEntry> HistoryStore::loadEntryFromDirectory(const QString& 
     entry.resultPath = dir.filePath(manifest.value(QStringLiteral("resultPath")).toString());
     entry.replayAvailable = manifest.value(QStringLiteral("replayAvailable")).toBool(false);
     entry.resultSize = deserializeSize(manifest.value(QStringLiteral("resultSize")));
+    entry.fileSizeBytes = QFileInfo(entry.resultPath).size();
     entry.devicePixelRatio = manifest.value(QStringLiteral("devicePixelRatio")).toDouble(1.0);
 
     entry.canvasPath = dir.filePath(manifest.value(QStringLiteral("canvasPath")).toString());
