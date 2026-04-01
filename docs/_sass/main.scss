@@ -182,8 +182,8 @@ svg {
   top: 0;
   z-index: 50;
   margin: 0 auto;
-  backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
   background: rgba(255, 255, 255, 0.66);
   will-change: transform;
   border-bottom: 1px solid rgba(134, 162, 207, 0.34);
@@ -293,6 +293,7 @@ svg {
   border-radius: 1rem;
   border: 1px solid rgba(90, 123, 173, 0.36);
   background: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   box-shadow: 0 8px 18px rgba(15, 42, 89, 0.16);
   align-items: center;
@@ -363,6 +364,7 @@ svg {
   background: var(--bg-glass);
   border: 1px solid var(--border-glass);
   border-radius: $radius-lg;
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   box-shadow: var(--shadow-soft);
 }
@@ -559,6 +561,7 @@ svg {
   border-radius: $radius-md;
   border: 1px solid rgba(96, 132, 193, 0.24);
   background: rgba(255, 255, 255, 0.82);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   box-shadow: 0 8px 22px rgba(28, 56, 102, 0.1);
   transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
@@ -618,6 +621,7 @@ svg {
   border-radius: $radius-md;
   border: 1px solid rgba(100, 135, 197, 0.27);
   background: rgba(255, 255, 255, 0.83);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   box-shadow: var(--shadow-soft);
   padding: clamp(1.4rem, 2.3vw, 2rem);
@@ -731,6 +735,7 @@ svg {
   border-radius: $radius-md;
   border: 1px solid rgba(94, 131, 194, 0.23);
   background: rgba(255, 255, 255, 0.86);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   box-shadow: 0 12px 30px rgba(20, 55, 108, 0.11);
   padding: clamp(1.2rem, 2.5vw, 1.9rem);
@@ -867,6 +872,7 @@ svg {
   border-radius: $radius-lg;
   border: 1px solid rgba(90, 129, 195, 0.24);
   background: rgba(255, 255, 255, 0.86);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   box-shadow: var(--shadow-soft);
   padding: clamp(1.3rem, 3.2vw, 2.3rem);
@@ -985,8 +991,8 @@ svg {
   border-radius: $radius-md;
   border: 1px solid rgba(90, 131, 196, 0.24);
   background: rgba(255, 255, 255, 0.87);
-  backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   box-shadow: 0 10px 26px rgba(19, 53, 101, 0.12);
 }
 
@@ -1268,6 +1274,7 @@ svg {
   z-index: 2;
   border-top: 1px solid rgba(108, 146, 205, 0.25);
   background: rgba(245, 250, 255, 0.74);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   padding: clamp(2.2rem, 4.4vw, 3.3rem) 0 1.2rem;
 }
@@ -1350,6 +1357,7 @@ svg {
     width: min(92vw, 340px);
     border-radius: $radius-md;
     background: rgba(255, 255, 255, 0.94);
+    -webkit-backdrop-filter: blur(14px);
     backdrop-filter: blur(14px);
     border: 1px solid rgba(102, 141, 199, 0.34);
     box-shadow: 0 18px 42px rgba(17, 45, 88, 0.24);
@@ -1617,6 +1625,7 @@ svg {
   background: var(--bg-glass);
   border: 1px solid var(--border-glass);
   border-radius: $radius-lg;
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   box-shadow: var(--shadow-soft);
   padding: clamp(2rem, 4vw, 3.5rem);
@@ -1664,6 +1673,7 @@ svg {
   border-radius: $radius-md;
   border: 1px solid rgba(96, 132, 193, 0.24);
   background: rgba(255, 255, 255, 0.82);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   box-shadow: 0 8px 22px rgba(28, 56, 102, 0.1);
   transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
@@ -1716,6 +1726,7 @@ svg {
   border-radius: $radius-md;
   border: 1px solid rgba(255, 112, 112, 0.22);
   background: rgba(255, 245, 245, 0.72);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   box-shadow: 0 8px 22px rgba(28, 56, 102, 0.06);
   transition: transform 220ms ease, box-shadow 220ms ease;
@@ -1746,6 +1757,7 @@ svg {
   overflow-x: auto;
   border-radius: $radius-md;
   background: rgba(255, 255, 255, 0.82);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(96, 132, 193, 0.24);
   box-shadow: 0 8px 22px rgba(28, 56, 102, 0.1);
@@ -1811,6 +1823,7 @@ svg {
   border-radius: $radius-md;
   border: 1px solid rgba(96, 132, 193, 0.24);
   background: rgba(255, 255, 255, 0.82);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   box-shadow: 0 8px 22px rgba(28, 56, 102, 0.1);
   transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
@@ -1856,6 +1869,7 @@ svg {
   border-radius: $radius-md;
   border: 1px solid rgba(96, 132, 193, 0.24);
   background: rgba(255, 255, 255, 0.82);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   box-shadow: 0 8px 22px rgba(28, 56, 102, 0.1);
   transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
@@ -1909,6 +1923,7 @@ svg {
   border-radius: $radius-md;
   border: 1px solid rgba(96, 132, 193, 0.24);
   background: rgba(255, 255, 255, 0.82);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   box-shadow: 0 8px 22px rgba(28, 56, 102, 0.1);
   margin-bottom: $space-md;
