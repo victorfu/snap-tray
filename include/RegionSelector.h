@@ -320,6 +320,7 @@ private:
     SnapTray::QmlEmojiPickerPopup* createEmojiPickerPopup();
     void syncSelectionToolbarHoverState(const QPoint& globalPos);
     bool isCursorOverSelectionToolbar(const QPoint& globalPos) const;
+    bool isSelectionMoveHoverExtensionAt(const QPoint& localPos) const;
     bool isGlobalPosOverFloatingUi(const QPoint& globalPos) const;
 
     // Inline text editing handlers

@@ -7,10 +7,13 @@
 #include "qml/UpdateDialogViewModel.h"
 #include "PlatformFeatures.h"
 
+#include <QCursor>
 #include <QDebug>
 #include <QEvent>
+#include <QGuiApplication>
 #include <QQmlContext>
 #include <QQuickView>
+#include <QScreen>
 
 namespace SnapTray {
 
@@ -33,7 +36,7 @@ void logQmlViewErrors(QQuickView* view, const QString& context)
     }
 }
 
-void showUpdateDialog(QObject* parent, UpdateDialogViewModel* viewModel,
+void showUpdateDialog(QObject* parent, QScreen* screen, UpdateDialogViewModel* viewModel,
                       SettingsBackend* backend)
 {
     auto* dialog = new QmlDialog(
@@ -51,7 +54,7 @@ void showUpdateDialog(QObject* parent, UpdateDialogViewModel* viewModel,
         dialog->close();
     });
 
-    dialog->showAt();
+    dialog->showCenteredOnScreen(screen);
 }
 }
 
@@ -120,13 +123,17 @@ void QmlSettingsWindow::ensureView()
     });
     connect(m_backend, &SettingsBackend::updateCheckUnavailable,
             this, [this](const QString& reason) {
+        QScreen* screen = m_view ? m_view->screen() : QGuiApplication::screenAt(QCursor::pos());
         showUpdateDialog(this,
+                         screen,
                          UpdateDialogViewModel::createInfo(reason, this),
                          m_backend);
     });
     connect(m_backend, &SettingsBackend::updateCheckFailed,
             this, [this](const QString& error) {
+        QScreen* screen = m_view ? m_view->screen() : QGuiApplication::screenAt(QCursor::pos());
         showUpdateDialog(this,
+                         screen,
                          UpdateDialogViewModel::createError(error, this),
                          m_backend);
     });

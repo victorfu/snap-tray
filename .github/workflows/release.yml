@@ -81,17 +81,28 @@ jobs:
           echo "Releasing version: $VERSION"
 
       - name: Validate version consistency
-        if: github.event_name == 'push'
         run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
           CMAKE_VERSION=$(grep "project(SnapTray VERSION" CMakeLists.txt | \
                           sed -E 's/.*VERSION ([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
-          if [ "$TAG_VERSION" != "$CMAKE_VERSION" ]; then
-            echo "::error::Version mismatch! Tag version ($TAG_VERSION) != CMakeLists.txt version ($CMAKE_VERSION)"
-            echo "Please update CMakeLists.txt to match the tag, or use the correct tag."
+
+          if [ "${{ github.event_name }}" = "push" ]; then
+            RELEASE_VERSION="${GITHUB_REF_NAME#v}"
+            SOURCE_LABEL="tag"
+          elif [ -n "${{ github.event.inputs.version }}" ]; then
+            RELEASE_VERSION="${{ github.event.inputs.version }}"
+            SOURCE_LABEL="workflow input"
+          else
+            RELEASE_VERSION="$CMAKE_VERSION"
+            SOURCE_LABEL="CMakeLists.txt"
+          fi
+
+          if [ "$RELEASE_VERSION" != "$CMAKE_VERSION" ]; then
+            echo "::error::Version mismatch! ${SOURCE_LABEL} version ($RELEASE_VERSION) != CMakeLists.txt version ($CMAKE_VERSION)"
+            echo "Please update CMakeLists.txt to match the release version, or use the correct release version."
             exit 1
           fi
-          echo "Version validated: $TAG_VERSION"
+
+          echo "Version validated: $RELEASE_VERSION"
 
   build-macos:
     needs: prepare
@@ -534,77 +545,13 @@ jobs:
 
       - name: Generate release notes
         env:
-          RELEASE_TAG: ${{ needs.prepare.outputs.tag_name }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           set -euo pipefail
-
-          PREVIOUS_TAG="$(
-            git tag --list 'v*' --sort=version:refname | awk -v target="$RELEASE_TAG" '
-              $0 == target {
-                print previous
-                found = 1
-                exit
-              }
-              {
-                previous = $0
-              }
-              END {
-                if (!found && previous != "") {
-                  print previous
-                }
-              }
-            '
-          )"
-
-          END_REF="$RELEASE_TAG"
-          if ! git rev-parse --verify --quiet "$RELEASE_TAG" >/dev/null; then
-            END_REF="HEAD"
-          fi
-
-          LOG_RANGE="$END_REF"
-          if [ -n "$PREVIOUS_TAG" ]; then
-            LOG_RANGE="${PREVIOUS_TAG}..${END_REF}"
-          fi
-
-          FILTERED_COMMITS_FILE="$(mktemp)"
-          trap 'rm -f "$FILTERED_COMMITS_FILE"' EXIT
-
-          git log --no-merges --reverse --format=%s "$LOG_RANGE" | while IFS= read -r SUBJECT; do
-            if [ -z "$SUBJECT" ]; then
-              continue
-            fi
-
-            if printf '%s\n' "$SUBJECT" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-              continue
-            fi
-
-            if printf '%s\n' "$SUBJECT" | grep -Eq '^chore(\(.*\))?:[[:space:]]bump[[:space:]]version[[:space:]]to[[:space:]]'; then
-              continue
-            fi
-
-            if printf '%s\n' "$SUBJECT" | grep -Eq '^Update[[:space:]]appcasts[[:space:]]for($|[[:space:]])'; then
-              continue
-            fi
-
-            printf -- '- %s\n' "$SUBJECT" >> "$FILTERED_COMMITS_FILE"
-          done
-
-          {
-            echo "## What's Changed"
-            echo
-
-            if [ -s "$FILTERED_COMMITS_FILE" ]; then
-              cat "$FILTERED_COMMITS_FILE"
-            else
-              echo "- No notable changes in this release."
-            fi
-
-            if [ -n "$PREVIOUS_TAG" ]; then
-              echo
-              echo "Full Changelog: https://github.com/${GITHUB_REPOSITORY}/compare/${PREVIOUS_TAG}...${RELEASE_TAG}"
-            fi
-          } > release-notes.md
+          python3 scripts/extract_changelog_entry.py \
+            "$RELEASE_VERSION" \
+            --input CHANGELOG.md \
+            --output release-notes.md
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4

@@ -111,6 +111,15 @@ Use `GlassRenderer` and existing toolbar style helpers for floating panels inste
 - If a change touches packaging, signing, or release behavior, verify against `docs/developer/release-packaging.md`
 - If a change touches MCP, remember it is a debug-build-only feature
 
+## Release Workflow
+
+- `CHANGELOG.md` is the source of truth for curated release notes. Add or update the matching version section before preparing or pushing a release tag.
+- Keep `project(SnapTray VERSION ...)` in `CMakeLists.txt` in sync with the tag name `vX.Y.Z`. The release workflow fails if the tag version and CMake version do not match.
+- For release tags, create the local tag with `git tag vX.Y.Z`. Leave pushing the tag to manual execution.
+- GitHub Actions handles the rest: macOS and Windows builds, signing/notarization, GitHub Release creation, appcast updates, and website release page generation.
+- Do not add Xcode or `MARKETING_VERSION` guidance. SnapTray release versioning is CMake-driven.
+- For the full release procedure, use `docs/developer/release-packaging.md`.
+
 ## Logging and Style
 
 ### Logging

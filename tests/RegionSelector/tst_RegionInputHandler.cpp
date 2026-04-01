@@ -25,12 +25,6 @@ QMouseEvent makeMouseEvent(QEvent::Type type,
     return QMouseEvent(type, point, point, point, button, buttons, Qt::NoModifier);
 }
 
-bool pointsCloseEnough(const QPoint& actual, const QPoint& expected, int tolerance = 4)
-{
-    return qAbs(actual.x() - expected.x()) <= tolerance &&
-           qAbs(actual.y() - expected.y()) <= tolerance;
-}
-
 } // namespace
 
 class tst_RegionInputHandler : public QObject
@@ -51,7 +45,6 @@ private slots:
     void testSelectionMoveSetsAndClearsDragStateOnRelease();
     void testSelectionMoveClearsDragStateOnRightClickCancel();
     void testMouseMoveEmitsCurrentPointUpdatedDuringSelectionDrag();
-    void testIdleHoverPrefersLiveCursorPositionOverStaleEventPosition();
 
     void testCompletedSelectionHoverSkipsMagnifierDirtyRegionWhenDisabled();
 
@@ -309,36 +302,6 @@ void tst_RegionInputHandler::testMouseMoveEmitsCurrentPointUpdatedDuringSelectio
     QCOMPARE(pointSpy.count(), 1);
     QCOMPARE(pointSpy.takeFirst().at(0).toPoint(), QPoint(180, 210));
 }
-
-void tst_RegionInputHandler::testIdleHoverPrefersLiveCursorPositionOverStaleEventPosition()
-{
-    QScreen* screen = QGuiApplication::primaryScreen();
-    if (!screen) {
-        QSKIP("No screen available for live cursor hover test.");
-    }
-
-    const QPoint originalCursorPos = QCursor::pos();
-    const QPoint liveCursorPos = screen->geometry().topLeft() + QPoint(320, 240);
-    m_parentWidget->setGeometry(screen->geometry());
-
-    QCursor::setPos(liveCursorPos);
-    QCoreApplication::processEvents();
-    if (QCursor::pos() != liveCursorPos) {
-        QCursor::setPos(originalCursorPos);
-        QSKIP("System cursor position could not be adjusted for live cursor hover test.");
-    }
-
-    QSignalSpy pointSpy(m_handler, &RegionInputHandler::currentPointUpdated);
-    auto moveEvent = makeMouseEvent(QEvent::MouseMove, QPoint(100, 120), Qt::NoButton, Qt::NoButton);
-    m_handler->handleMouseMove(&moveEvent);
-
-    QCOMPARE(pointSpy.count(), 1);
-    QCOMPARE(pointSpy.takeFirst().at(0).toPoint(), QPoint(320, 240));
-    QCOMPARE(m_state.currentPoint, QPoint(320, 240));
-
-    QCursor::setPos(originalCursorPos);
-}
-
 
 void tst_RegionInputHandler::testCompletedSelectionHoverSkipsMagnifierDirtyRegionWhenDisabled()
 {

@@ -154,7 +154,7 @@ void tst_RegionPainterChrome::testSelectionDimensionLabelUsesPlatformUnits()
     QCOMPARE(SelectionDimensionLabel::label(QRect(0, 0, 2560, 1410), 2.0),
              QStringLiteral("2560 x 1410 pt"));
     QCOMPARE(SelectionDimensionLabel::label(physicalSize, 2.0), QStringLiteral("2560 x 1410 pt"));
-    QCOMPARE(SelectionDimensionLabel::sampleLabel(), QStringLiteral("99999 x 99999 pt"));
+    QCOMPARE(SelectionDimensionLabel::sampleLabel(), QStringLiteral("9999 x 9999 pt"));
 #else
     QCOMPARE(metrics.size, QSize(5, 5));
     QCOMPARE(metrics.unit, QStringLiteral("px"));
@@ -162,7 +162,7 @@ void tst_RegionPainterChrome::testSelectionDimensionLabelUsesPlatformUnits()
     QCOMPARE(SelectionDimensionLabel::displayMetrics(physicalSize, 2.0).unit, QStringLiteral("px"));
     QCOMPARE(SelectionDimensionLabel::label(logicalRect, 1.5), QStringLiteral("5 x 5 px"));
     QCOMPARE(SelectionDimensionLabel::label(physicalSize, 2.0), QStringLiteral("5120 x 2820 px"));
-    QCOMPARE(SelectionDimensionLabel::sampleLabel(), QStringLiteral("99999 x 99999 px"));
+    QCOMPARE(SelectionDimensionLabel::sampleLabel(), QStringLiteral("9999 x 9999 px"));
 #endif
 }
 

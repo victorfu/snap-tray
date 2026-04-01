@@ -797,7 +797,7 @@ RegionSelector::RegionSelector(QWidget* parent)
                 dialog->close();
                 restoreAfterDialogCancelled();
             });
-            dialog->showAt();
+            dialog->showCenteredOnScreen(m_currentScreen.data());
         });
     connect(m_shareClient, &ShareUploadClient::uploadFailed,
         this, [this](const QString& errorMessage) {
@@ -836,6 +836,12 @@ RegionSelector::RegionSelector(QWidget* parent)
         return usesDetachedCaptureWindows() ||
                (m_captureChromeWindow && m_captureChromeWindow->isVisible()) ||
                (m_selectionPreviewOverlay && m_selectionPreviewOverlay->isVisible());
+    });
+    m_inputHandler->setFloatingUiHoverProvider([this]() {
+        return isGlobalPosOverFloatingUi(QCursor::pos());
+    });
+    m_inputHandler->setSelectionMoveExtensionProvider([this](const QPoint& localPos) {
+        return isSelectionMoveHoverExtensionAt(localPos);
     });
 
     // Connect input handler signals
@@ -2611,11 +2617,15 @@ void RegionSelector::syncDetachedSelectionUiDuringPaint()
         }
         if (m_qmlToolbar) {
             if (!m_toolbarUserDragged) {
+                const QRect dimensionInfoRect = m_captureChromeWindow && m_captureChromeWindow->isVisible()
+                    ? m_captureChromeWindow->lastDimensionInfoRect()
+                    : m_painter->lastDimensionInfoRect();
                 m_qmlToolbar->positionForSelection(
                     selectionRect,
                     width(),
                     height(),
-                    SnapTray::QmlFloatingToolbar::HorizontalAlignment::RightEdge);
+                    SnapTray::QmlFloatingToolbar::HorizontalAlignment::RightEdge,
+                    dimensionInfoRect);
             }
             m_toolbarViewModel->setCanUndo(m_annotationLayer && m_annotationLayer->canUndo());
             m_toolbarViewModel->setCanRedo(m_annotationLayer && m_annotationLayer->canRedo());
@@ -3525,6 +3535,59 @@ bool RegionSelector::isCursorOverSelectionToolbar(const QPoint& globalPos) const
            m_qmlToolbar->geometry().contains(globalPos);
 }
 
+bool RegionSelector::isSelectionMoveHoverExtensionAt(const QPoint& localPos) const
+{
+    if (!m_selectionManager || !m_selectionManager->hasSelection()) {
+        return false;
+    }
+
+    const QRect selectionRect = m_selectionManager->selectionRect().normalized();
+    if (!selectionRect.isValid() || selectionRect.isEmpty()) {
+        return false;
+    }
+
+    const auto bridgeToFloatingRect = [&](const QRect& floatingGlobalRect) {
+        if (!floatingGlobalRect.isValid() || floatingGlobalRect.isEmpty()) {
+            return QRect();
+        }
+
+        const QRect floatingRect = globalToLocal(floatingGlobalRect).normalized();
+        const int bridgeLeft = qMax(selectionRect.left(), floatingRect.left());
+        const int bridgeRight = qMin(selectionRect.right(), floatingRect.right());
+        if (bridgeLeft > bridgeRight) {
+            return QRect();
+        }
+
+        if (floatingRect.top() > selectionRect.bottom() + 1) {
+            const int bridgeTop = selectionRect.bottom() + 1;
+            const int bridgeBottom = floatingRect.top() - 1;
+            if (bridgeTop <= bridgeBottom) {
+                return QRect(QPoint(bridgeLeft, bridgeTop), QPoint(bridgeRight, bridgeBottom));
+            }
+        }
+
+        if (floatingRect.bottom() < selectionRect.top() - 1) {
+            const int bridgeTop = floatingRect.bottom() + 1;
+            const int bridgeBottom = selectionRect.top() - 1;
+            if (bridgeTop <= bridgeBottom) {
+                return QRect(QPoint(bridgeLeft, bridgeTop), QPoint(bridgeRight, bridgeBottom));
+            }
+        }
+
+        return QRect();
+    };
+
+    const QRect toolbarBridge =
+        bridgeToFloatingRect(m_qmlToolbar ? m_qmlToolbar->geometry() : QRect());
+    if (toolbarBridge.contains(localPos)) {
+        return true;
+    }
+
+    const QRect subToolbarBridge =
+        bridgeToFloatingRect(m_qmlSubToolbar ? m_qmlSubToolbar->geometry() : QRect());
+    return subToolbarBridge.contains(localPos);
+}
+
 void RegionSelector::syncFloatingUiCursor()
 {
     auto& cursorManager = CursorManager::instance();
@@ -3902,7 +3965,7 @@ void RegionSelector::shareToUrl()
         restoreAfterDialogCancelled();
     });
     dialog->setModal(true);
-    dialog->showAt();
+    dialog->showCenteredOnScreen(m_currentScreen.data());
 }
 
 void RegionSelector::finishSelection()
@@ -4545,7 +4608,7 @@ void RegionSelector::showOCRResultDialog(const OCRResult& result)
         restoreAfterDialogCancelled();
     });
 
-    dialog->showAt();
+    dialog->showCenteredOnScreen(m_currentScreen.data());
 }
 
 void RegionSelector::performQRCodeScan()
@@ -4628,7 +4691,7 @@ void RegionSelector::onQRCodeComplete(bool success, const QString& text, const Q
             restoreAfterDialogCancelled();
         });
 
-        dialog->showAt();
+        dialog->showCenteredOnScreen(m_currentScreen.data());
     }
     else {
         QString msg = error.isEmpty() ? tr("No QR code found") : error;

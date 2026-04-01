@@ -1,7 +1,9 @@
 #pragma once
 
 #include <QObject>
+#include <QPoint>
 #include <QRect>
+#include <QSize>
 #include <QString>
 #include <QPointer>
 
@@ -70,11 +72,23 @@ public:
 
     void setShadowMargin(int margin) { m_shadowMargin = margin; }
 
+    static QRect preferredScreenGeometryForScreenToast(const QRect& activeWindowGeometry,
+                                                       const QRect& cursorScreenGeometry,
+                                                       const QRect& primaryScreenGeometry);
+    static QPoint screenTopRightPositionForGeometry(const QRect& geometry,
+                                                    const QSize& toastSize,
+                                                    int margin);
+
 private:
     /// Private constructor for screen-level singleton
     QmlToast();
 
+private slots:
+    void cleanupForShutdown();
+
+private:
     void ensureView();
+    void destroyView();
     void setQmlProperties(Level level, const QString& title, const QString& message, int durationMs);
     void positionAndShow();
     void positionScreenTopRight();

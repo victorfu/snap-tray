@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-03-24
+last_modified_at: 2026-03-27
 layout: docs
 title: 發佈與打包
 description: 產生 macOS 與 Windows 可發佈安裝檔，並整理簽章、公證與商店提交流程。
@@ -61,6 +61,45 @@ packaging\windows\package.bat msix      REM 只建置 MSIX
 ```batch
 set QT_PATH=C:\Qt\6.10.1\msvc2022_64
 ```
+
+## Release Notes 與版本規則
+
+SnapTray 的發佈版本由 CMake 管理，版本真源是 `CMakeLists.txt` 裡的 `project(SnapTray VERSION ...)`：
+
+```cmake
+project(SnapTray VERSION <version> LANGUAGES CXX)
+```
+
+人工整理過的 release notes 放在 repo 根目錄的 `CHANGELOG.md`。
+
+- 正式版本段落請使用 `## [1.0.42] - 2026-03-27` 這種格式
+- 可以保留一個 `## [Unreleased]` 區段放在最上方
+- GitHub Releases 與網站 release page 都會使用 `CHANGELOG.md` 裡對應版本的段落
+- changelog 請維持在標題、段落、單層清單、粗斜體與連結這類簡單 markdown，避免網站 release renderer 呈現失真
+
+一般 tag 發版流程，例如 `v1.0.42`：
+
+1. 先把 `CMakeLists.txt` 更新到新版本
+2. 新增或更新 `CHANGELOG.md` 的對應版本段落
+3. 建立本地 tag：
+
+```bash
+git tag v1.0.42
+```
+
+4. 準備好要觸發 CI 時，再手動 push release tag。
+   例如：`git push origin v1.0.42`
+
+之後 release workflow 會：
+
+- 驗證 tag 版本與 `CMakeLists.txt` 是否一致
+- 從 `CHANGELOG.md` 抽出對應版本段落作為 GitHub Release notes
+- 建置 macOS 與 Windows 發佈物
+- 對發佈資產進行簽章 / 公證
+- 發布 GitHub Release
+- 更新 appcasts 與網站 release page
+
+不要為 SnapTray release 文件加入 Xcode 或 `MARKETING_VERSION` 的說明。這個 repo 的發版版本不是由 Xcode project 管理。
 
 ## 簽章與公證
 
@@ -175,7 +214,8 @@ magick snaptray.png -define icon:auto-resize=256,128,64,48,32,16 snaptray.ico
 ## 與發佈相關的網站內容
 
 - `docs/updates/*.xml` 是 Sparkle / WinSparkle 使用的 appcast feeds
-- GitHub Actions release workflow 會更新網站上的 release pages 與 appcast 檔案
+- `scripts/extract_changelog_entry.py` 會從 `CHANGELOG.md` 抽出特定版本的 release notes
+- GitHub Actions release workflow 會更新 GitHub Releases、網站 release pages 與 appcast 檔案
 
 ## 下一步
 

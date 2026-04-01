@@ -9,6 +9,31 @@
 namespace snaptray {
 namespace colorwidgets {
 
+QRect ColorPickerDialogCompat::preferredPlacementBounds(const QRect& parentBounds,
+                                                        const QRect& anchorBounds,
+                                                        const QRect& primaryBounds)
+{
+    if (parentBounds.isValid()) {
+        return parentBounds;
+    }
+    if (anchorBounds.isValid()) {
+        return anchorBounds;
+    }
+    return primaryBounds;
+}
+
+QPoint ColorPickerDialogCompat::centeredTopLeftForBounds(const QRect& bounds, const QSize& dialogSize)
+{
+    if (!bounds.isValid() || !dialogSize.isValid()) {
+        return {};
+    }
+
+    return {
+        bounds.x() + (bounds.width() - dialogSize.width()) / 2,
+        bounds.y() + (bounds.height() - dialogSize.height()) / 2
+    };
+}
+
 ColorPickerDialogCompat::ColorPickerDialogCompat(QWidget* parent) : QWidget(parent)
 {
     // Make this widget invisible - it's just a wrapper
@@ -55,6 +80,12 @@ QColor ColorPickerDialogCompat::currentColor() const
     return m_dialog ? m_dialog->color() : m_currentColor;
 }
 
+void ColorPickerDialogCompat::setPlacementAnchor(const QPoint& globalPoint)
+{
+    m_placementAnchor = globalPoint;
+    m_hasPlacementAnchor = true;
+}
+
 void ColorPickerDialogCompat::showEvent(QShowEvent* event)
 {
     QWidget::showEvent(event);
@@ -99,20 +130,26 @@ void ColorPickerDialogCompat::positionDialog()
     if (!m_dialog)
         return;
 
-    // Position the dialog centered on the primary screen or parent
-    QScreen* screen = QGuiApplication::primaryScreen();
-    if (parentWidget()) {
-        screen = parentWidget()->screen();
+    QRect parentBounds;
+    if (parentWidget() && parentWidget()->screen()) {
+        parentBounds = parentWidget()->screen()->availableGeometry();
     }
 
-    if (screen) {
-        QRect screenGeometry = screen->availableGeometry();
-        QSize dialogSize = m_dialog->sizeHint();
+    QRect anchorBounds;
+    if (m_hasPlacementAnchor) {
+        if (QScreen* anchorScreen = QGuiApplication::screenAt(m_placementAnchor)) {
+            anchorBounds = anchorScreen->availableGeometry();
+        }
+    }
 
-        int x = screenGeometry.x() + (screenGeometry.width() - dialogSize.width()) / 2;
-        int y = screenGeometry.y() + (screenGeometry.height() - dialogSize.height()) / 2;
+    QRect primaryBounds;
+    if (QScreen* primaryScreen = QGuiApplication::primaryScreen()) {
+        primaryBounds = primaryScreen->availableGeometry();
+    }
 
-        m_dialog->move(x, y);
+    const QRect placementBounds = preferredPlacementBounds(parentBounds, anchorBounds, primaryBounds);
+    if (placementBounds.isValid()) {
+        m_dialog->move(centeredTopLeftForBounds(placementBounds, m_dialog->sizeHint()));
     }
 }
 

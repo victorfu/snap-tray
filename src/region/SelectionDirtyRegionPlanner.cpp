@@ -1,4 +1,5 @@
 #include "region/SelectionDirtyRegionPlanner.h"
+#include "region/SelectionDimensionLabel.h"
 
 #include <QtGlobal>
 #include <QFont>
@@ -119,7 +120,7 @@ QRect SelectionDirtyRegionPlanner::dimensionInfoRectForSelection(const QRect& se
     const QString dimensionsLabel = QStringLiteral("%1 x %2 px")
         .arg(normalized.width())
         .arg(normalized.height());
-    const int fixedWidth = fm.horizontalAdvance(QStringLiteral("99999 x 99999 px")) + 24;
+    const int fixedWidth = fm.horizontalAdvance(SelectionDimensionLabel::sampleLabel()) + 24;
     const int actualWidth = fm.horizontalAdvance(dimensionsLabel) + 24;
     const int panelWidth = qMax(fixedWidth, actualWidth);
     const int panelHeight = 28;

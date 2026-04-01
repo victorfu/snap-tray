@@ -124,6 +124,7 @@ void AnnotationContext::showColorPickerDialog(
     }
 
     dialog->setCurrentColor(currentColor);
+    dialog->setPlacementAnchor(centerPoint);
     dialog->move(centerPoint.x() - 170, centerPoint.y() - 210);
     dialog->show();
     dialog->raise();

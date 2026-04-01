@@ -8,11 +8,19 @@
 #include "update/UpdateCoordinator.h"
 
 #include <QAction>
+#include <QDir>
 #include <QMenu>
 #include <QSettings>
+#include <QTranslator>
 #include <QtTest>
 
 namespace {
+
+QString translationFilePath()
+{
+    return QDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR))
+        .filePath(QStringLiteral("snaptray_zh_TW.qm"));
+}
 
 class FakeUpdateService final : public IUpdateService
 {
@@ -83,6 +91,7 @@ private slots:
     void cleanupTestCase();
 
     void updateTrayMenuHotkeyText_updatesPasteAction();
+    void updateTrayMenuHotkeyText_usesTranslatedPasteLabel();
     void initialize_directDownload_addsEnabledCheckForUpdatesActionBeforeSettings();
     void onCheckForUpdates_usesSharedSettingsWindowFlowWithoutShowingSettings();
     void initialize_externalManaged_disablesCheckForUpdatesAction();
@@ -138,6 +147,33 @@ void tst_MainApplicationTrayMenu::updateTrayMenuHotkeyText_updatesPasteAction()
     QCOMPARE(pasteAction.text(), MainApplication::tr("%1 (%2)").arg(baseName, displayHotkey));
 }
 
+void tst_MainApplicationTrayMenu::updateTrayMenuHotkeyText_usesTranslatedPasteLabel()
+{
+    QTranslator translator;
+    QVERIFY2(translator.load(translationFilePath()),
+             qPrintable(QStringLiteral("Failed to load translation file: %1")
+                            .arg(translationFilePath())));
+    QVERIFY(QCoreApplication::installTranslator(&translator));
+
+    MainApplication application;
+    QAction pasteAction(&application);
+    application.m_pasteAction = &pasteAction;
+
+    application.updateTrayMenuHotkeyText();
+
+    const QString translatedBaseName = QCoreApplication::translate("MainApplication", "Paste");
+    const QString displayHotkey = SnapTray::HotkeyManager::formatKeySequence(
+        manager().getConfig(SnapTray::HotkeyAction::PasteFromClipboard).keySequence);
+
+    QCOMPARE(translatedBaseName, QString::fromUtf8("貼上"));
+    QVERIFY(!displayHotkey.isEmpty());
+    QCOMPARE(pasteAction.text(),
+             QCoreApplication::translate("MainApplication", "%1 (%2)")
+                 .arg(translatedBaseName, displayHotkey));
+
+    QCoreApplication::removeTranslator(&translator);
+}
+
 void tst_MainApplicationTrayMenu::initialize_directDownload_addsEnabledCheckForUpdatesActionBeforeSettings()
 {
     installFakeUpdateService(InstallSource::DirectDownload, false);
@@ -150,7 +186,7 @@ void tst_MainApplicationTrayMenu::initialize_directDownload_addsEnabledCheckForU
     QVERIFY(application.m_checkForUpdatesAction != nullptr);
     QVERIFY(application.m_checkForUpdatesAction->isEnabled());
     QCOMPARE(application.m_checkForUpdatesAction->text(),
-             QCoreApplication::translate("UpdatesSettings", "Check Now"));
+             MainApplication::tr("Check for Updates"));
 
     const QList<QAction*> actions = application.m_trayMenu->actions();
     const int checkIndex = actions.indexOf(application.m_checkForUpdatesAction);

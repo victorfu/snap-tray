@@ -38,6 +38,21 @@ public:
         selector.m_inputHandler->handleMouseMove(&moveEvent);
     }
 
+    static void dispatchWidgetMouseMove(RegionSelector& selector,
+                                        const QPoint& localPos,
+                                        Qt::MouseButtons buttons = Qt::NoButton)
+    {
+        const QPoint globalPos = selector.mapToGlobal(localPos);
+        QMouseEvent moveEvent(QEvent::MouseMove,
+                              QPointF(localPos),
+                              QPointF(localPos),
+                              QPointF(globalPos),
+                              Qt::NoButton,
+                              buttons,
+                              Qt::NoModifier);
+        selector.mouseMoveEvent(&moveEvent);
+    }
+
     static void dispatchMousePress(RegionSelector& selector,
                                    const QPoint& localPos,
                                    Qt::MouseButton button = Qt::LeftButton,
@@ -192,6 +207,11 @@ public:
     static QRect toolbarGeometry(const RegionSelector& selector)
     {
         return selector.m_qmlToolbar ? selector.m_qmlToolbar->geometry() : QRect();
+    }
+
+    static QWindow* toolbarWindow(const RegionSelector& selector)
+    {
+        return selector.m_qmlToolbar ? selector.m_qmlToolbar->window() : nullptr;
     }
 
     static bool subToolbarVisible(const RegionSelector& selector)

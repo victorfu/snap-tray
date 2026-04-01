@@ -1,52 +1,68 @@
-# SnapTray
+<p align="center">
+  <img src="resources/icons/snaptray.png" alt="SnapTray logo" width="144" />
+</p>
 
-**English** | [繁體中文](README.zh-TW.md)
+<h1 align="center">SnapTray</h1>
 
-SnapTray is a tray-native screenshot and recording tool for macOS and Windows. It is built for fast capture workflows: press `F2` to grab a region, `Ctrl+F2 / Cmd+F2` to enter Screen Canvas, annotate immediately, pin references on screen, and export high-quality recordings without leaving the desktop.
+<p align="center">
+  <strong>English</strong> | <a href="README.zh-TW.md">繁體中文</a>
+</p>
+
+---
+
+<p align="center">
+  Capture, annotate, pin, and record your screen without leaving the desktop.
+</p>
+
+<p align="center">
+  macOS 14+ · Windows 10+
+</p>
+
+<p align="center">
+  <a href="https://github.com/victorfu/snap-tray/releases">Download</a> ·
+  <a href="docs/docs/index.md">Documentation</a> ·
+  <a href="docs/docs/tutorials/index.md">Tutorials</a>
+</p>
+
+SnapTray is a tray-native screenshot and screen recording app for macOS and Windows. It is built for fast desktop workflows: capture a region, explain it instantly, keep references on screen, and turn the same moment into a shareable image or video.
 
 ## Why SnapTray
 
-- **Capture fast**: precision region selection with magnifier, window detection, multi-region capture, cursor inclusion, and color picking
-- **Annotate clearly**: arrow, pencil, marker, shapes, text, mosaic, step badges, emoji, undo/redo, OCR, QR scan, and auto blur
-- **Stay in context**: pin screenshots above other windows, resize and rotate them, and annotate directly on pinned images
-- **Record what matters**: capture full screen or a selected region and export MP4 with optional audio, or GIF/WebP for silent clips
-- **Automate repeat work**: use global hotkeys, the CLI, and debug-build MCP tooling for local automation flows
+- Capture quickly with magnified selection, window detection, multi-region capture, cursor inclusion, and color picking
+- Annotate immediately with arrows, marker, shapes, text, mosaic, step badges, emoji, OCR, QR scan, and auto blur
+- Pin screenshots above other windows so references stay visible while you work
+- Record the full screen or a selected region as MP4 with optional audio, or export short silent clips as GIF or WebP
+- Launch repeatable flows from global hotkeys, the tray menu, or the CLI
 
-## Core Workflows
+## Built for Real Work
 
-### Region Capture
+### Capture and mark up in one pass
 
-Start with `F2`, drag a region, annotate it, then copy, save, pin, share, OCR, blur, or start a recording from the same toolbar.
+Press `F2`, drag a region, then copy, save, pin, share, OCR, blur, or start recording from the same toolbar.
 
-### Screen Canvas
+### Draw directly on the desktop
 
-Use `Ctrl+F2 / Cmd+F2` to draw directly on the desktop with live presentation tools such as marker, shape, text, step badges, and laser pointer.
+Use `Ctrl+F2 / Cmd+F2` to open Screen Canvas for demos, walkthroughs, presentations, and live explanation.
 
-### Pin Window
+### Keep references where you need them
 
-Keep screenshots visible while working. Pins support zoom, opacity, rotation, flip, merge/layout controls, and a dedicated inline annotation toolbar.
+Pinned images stay above other apps and support zoom, opacity, rotation, flip, merge/layout controls, and inline annotation.
 
-### Recording
+### Record what matters
 
-Start recording from the tray or the capture toolbar. Use the floating control bar to pause, resume, stop, or cancel, then export in the format that fits your use case.
+Start from the tray or capture toolbar, then pause, resume, stop, or cancel from the floating control bar.
 
-## Platforms
-
-- macOS 14+
-- Windows 10+
-
-## Docs & Releases
+## Learn More
 
 - Releases: [GitHub Releases](https://github.com/victorfu/snap-tray/releases)
 - User docs: [Documentation Home](docs/docs/index.md)
 - Tutorials: [Tutorial Hub](docs/docs/tutorials/index.md)
-- CLI reference: [CLI](docs/docs/cli.md)
+- CLI: [CLI Reference](docs/docs/cli.md)
 - Troubleshooting: [Troubleshooting](docs/docs/troubleshooting.md)
-- Developer docs: [Developer Docs](docs/developer/index.md)
 
-## Build from Source
+## For Developers
 
-The full build, packaging, signing, architecture, and debug-only MCP documentation now lives in [Developer Docs](docs/developer/index.md).
+If you want to build SnapTray from source or work on the codebase, start with [Developer Docs](docs/developer/index.md).
 
 Quick entry points:
 
@@ -62,7 +78,7 @@ scripts\build.bat
 scripts\run-tests.bat
 ```
 
-For prerequisites, manual CMake flows, packaging, notarization, Store submission, and repository architecture, use:
+More developer references:
 
 - [Build from Source](docs/developer/build-from-source.md)
 - [Release & Packaging](docs/developer/release-packaging.md)

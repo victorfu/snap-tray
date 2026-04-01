@@ -79,7 +79,18 @@ public:
      */
     void positionForSelection(const QRect& selectionRect,
                               int viewportWidth, int viewportHeight,
-                              HorizontalAlignment alignment = HorizontalAlignment::Center);
+                              HorizontalAlignment alignment = HorizontalAlignment::Center,
+                              const QRect& avoidRect = QRect());
+
+    /**
+     * @brief Resolve a toolbar top-left that prefers staying visible and not
+     *        overlapping the selection when alternatives exist.
+     */
+    static QPoint resolveTopLeftForSelection(const QRect& selectionRect,
+                                             const QSize& toolbarSize,
+                                             const QRect& viewportRect,
+                                             HorizontalAlignment alignment = HorizontalAlignment::Center,
+                                             const QRect& avoidRect = QRect());
 
     /**
      * @brief Position toolbar at a specific point (centered horizontally).
@@ -130,6 +141,9 @@ private:
     void applyTooltipWindowFlags();
     void syncTransientParent();
     void syncCursorSurface(const CursorStyleSpec* explicitStyle = nullptr);
+    void cancelParentCursorRestore();
+    void scheduleParentCursorRestore();
+    void attemptParentCursorRestore(quint64 token, int remainingAttempts);
 
     void showTooltip(const QString& text, const QRect& anchorRect);
     void hideTooltip();
@@ -151,6 +165,7 @@ private:
     bool m_isDragging = false;
 
     quint64 m_tooltipRequestId = 0;
+    quint64 m_parentCursorRestoreToken = 0;
     QString m_cursorSurfaceId;
     QString m_cursorOwnerId;
 };

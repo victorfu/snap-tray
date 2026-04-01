@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-03-24
+last_modified_at: 2026-03-27
 layout: docs
 title: Release & Packaging
 description: Create distributable macOS and Windows packages, sign them, and prepare app-store or direct-download releases.
@@ -61,6 +61,45 @@ If Qt is not installed in the default location, set:
 ```batch
 set QT_PATH=C:\Qt\6.10.1\msvc2022_64
 ```
+
+## Release notes and versioning
+
+SnapTray release versioning is CMake-driven. The source of truth is the `project(SnapTray VERSION ...)` line in `CMakeLists.txt`:
+
+```cmake
+project(SnapTray VERSION <version> LANGUAGES CXX)
+```
+
+Curated release notes live in the repository root `CHANGELOG.md`.
+
+- Keep release entries in the format `## [1.0.42] - 2026-03-27`
+- You may keep a single `## [Unreleased]` section at the top for upcoming work
+- GitHub Releases and the website release pages use the matching version section from `CHANGELOG.md`
+- Keep changelog markdown to headings, paragraphs, flat bullet lists, emphasis, and links so the website release renderer stays faithful
+
+For a normal tagged release such as `v1.0.42`:
+
+1. Update `CMakeLists.txt` to the new version
+2. Add or update the matching `CHANGELOG.md` entry
+3. Create the local tag:
+
+```bash
+git tag v1.0.42
+```
+
+4. Manually push the release tag when you are ready to trigger CI.
+   For example: `git push origin v1.0.42`
+
+The release workflow then:
+
+- validates that the tag version matches `CMakeLists.txt`
+- extracts the matching `CHANGELOG.md` section for GitHub Release notes
+- builds macOS and Windows artifacts
+- signs / notarizes release assets
+- publishes the GitHub Release
+- updates appcasts and the website release page
+
+Do not add Xcode or `MARKETING_VERSION` guidance to SnapTray release docs. This repository does not use an Xcode project as the release version source.
 
 ## Code signing and notarization
 
@@ -175,7 +214,8 @@ magick snaptray.png -define icon:auto-resize=256,128,64,48,32,16 snaptray.ico
 ## Related release infrastructure
 
 - `docs/updates/*.xml` holds appcast feeds used by Sparkle / WinSparkle release flows
-- GitHub Actions release automation populates release pages and appcast files for the website
+- `scripts/extract_changelog_entry.py` extracts version-specific release notes from `CHANGELOG.md`
+- GitHub Actions release automation populates GitHub Releases, website release pages, and appcast files
 
 ## Next step
 

@@ -71,12 +71,16 @@ private:
     void applyPlatformWindowFlags();
     void syncTransientParent();
     void syncCursorSurface();
+    void cancelParentCursorRestore();
+    void scheduleParentCursorRestore();
+    void attemptParentCursorRestore(quint64 token, int remainingAttempts);
     bool eventFilter(QObject* obj, QEvent* event) override;
 
     PinToolOptionsViewModel* m_viewModel = nullptr;
     QQuickView* m_view = nullptr;
     QQuickItem* m_rootItem = nullptr;
     QWidget* m_parentWidget = nullptr;
+    quint64 m_parentCursorRestoreToken = 0;
     QString m_cursorSurfaceId;
     QString m_cursorOwnerId;
 };

@@ -482,7 +482,7 @@ PinWindow::PinWindow(const QPixmap& screenshot,
             connect(vm, &ShareResultViewModel::dialogClosed, this, [dlg]() {
                 dlg->close();
             });
-            dlg->showAt();
+            dlg->showCenteredOnScreen(QGuiApplication::screenAt(frameGeometry().center()));
         });
     connect(m_shareClient, &ShareUploadClient::uploadFailed,
         this, [this](const QString& errorMessage) {
@@ -1610,7 +1610,7 @@ void PinWindow::shareToUrl()
         dlg->close();
     });
     dlg->setModal(true);
-    dlg->showAt();
+    dlg->showCenteredOnScreen(QGuiApplication::screenAt(frameGeometry().center()));
 }
 
 OCRManager* PinWindow::ensureOCRManager()
@@ -1714,7 +1714,7 @@ void PinWindow::showOCRResultDialog(const OCRResult& result)
         dlg->close();
     });
 
-    dlg->showAt();
+    dlg->showCenteredOnScreen(QGuiApplication::screenAt(frameGeometry().center()));
 }
 
 void PinWindow::performQRCodeScan()
@@ -1768,7 +1768,7 @@ void PinWindow::onQRCodeComplete(bool success, const QString& text, const QStrin
             dlg->close();
         });
 
-        dlg->showAt();
+        dlg->showCenteredOnScreen(QGuiApplication::screenAt(frameGeometry().center()));
     }
     else {
         QString msg = error.isEmpty() ? tr("No QR code found") : error;

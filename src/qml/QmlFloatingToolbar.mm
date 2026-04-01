@@ -24,6 +24,9 @@
 namespace SnapTray {
 
 namespace {
+constexpr int kParentCursorRestoreRetryDelayMs = 16;
+constexpr int kParentCursorRestoreMaxAttempts = 6;
+
 QPoint clampTopLeftToRect(const QPoint& desiredTopLeft,
                          const QSize& windowSize,
                          const QRect& bounds)
@@ -62,6 +65,26 @@ qint64 squaredDistanceToRect(const QPoint& point, const QRect& rect)
     const qint64 dx = axisDistanceToRange(point.x(), rect.left(), rect.right());
     const qint64 dy = axisDistanceToRange(point.y(), rect.top(), rect.bottom());
     return (dx * dx) + (dy * dy);
+}
+
+qint64 overlapArea(const QRect& a, const QRect& b)
+{
+    const QRect intersection = a.intersected(b);
+    if (!intersection.isValid() || intersection.isEmpty()) {
+        return 0;
+    }
+
+    return static_cast<qint64>(intersection.width()) * intersection.height();
+}
+
+QRect insetViewportRect(const QRect& viewportRect, int inset)
+{
+    if (!viewportRect.isValid()) {
+        return {};
+    }
+
+    const QRect insetRect = viewportRect.adjusted(inset, inset, -inset, -inset);
+    return insetRect.isValid() && !insetRect.isEmpty() ? insetRect : viewportRect;
 }
 
 void destroyQuickView(QQuickView*& view, QQuickItem*& rootItem)
@@ -302,6 +325,7 @@ void QmlFloatingToolbar::hide()
     hideTooltip();
     if (m_view) {
         m_view->hide();
+        m_view->unsetCursor();
     }
     CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
     if (m_parentWidget) {
@@ -317,6 +341,7 @@ void QmlFloatingToolbar::close()
     if (m_view) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->removeEventFilter(this);
+        m_view->unsetCursor();
     }
     if (m_parentWidget) {
         QTimer::singleShot(0, this, [this]() {
@@ -416,7 +441,8 @@ void QmlFloatingToolbar::syncTransientParent()
 
 void QmlFloatingToolbar::positionForSelection(const QRect& selectionRect,
                                               int viewportWidth, int viewportHeight,
-                                              HorizontalAlignment alignment)
+                                              HorizontalAlignment alignment,
+                                              const QRect& avoidRect)
 {
     ensureView();
     if (!m_view)
@@ -424,42 +450,95 @@ void QmlFloatingToolbar::positionForSelection(const QRect& selectionRect,
 
     const int w = m_view->width();
     const int h = m_view->height();
-    constexpr int kMargin = 8;
-
-    int x = 0;
-    switch (alignment) {
-    case HorizontalAlignment::RightEdge:
-        // QRect::right() is inclusive; add 1 to align the toolbar's right edge.
-        x = selectionRect.right() + 1 - w;
-        break;
-    case HorizontalAlignment::Center:
-    default:
-        x = selectionRect.center().x() - w / 2;
-        break;
-    }
-    int y = selectionRect.bottom() + kMargin;
-
-    // If toolbar would go off bottom, position above
-    if (y + h > viewportHeight - 10)
-        y = selectionRect.top() - h - kMargin;
-
-    // If still off screen, position inside at bottom
-    if (y < 10)
-        y = selectionRect.bottom() - h - 10;
-
-    // Keep on screen horizontally
-    x = qBound(10, x, viewportWidth - w - 10);
+    const QPoint topLeft = resolveTopLeftForSelection(
+        selectionRect,
+        QSize(w, h),
+        QRect(0, 0, viewportWidth, viewportHeight),
+        alignment,
+        avoidRect);
 
     // Convert from widget-local to screen coordinates if we have a parent widget
-    QPoint screenPos(x, y);
+    QPoint screenPos = topLeft;
     if (m_parentWidget) {
-        screenPos = m_parentWidget->mapToGlobal(QPoint(x, y));
+        screenPos = m_parentWidget->mapToGlobal(topLeft);
     }
 
     if (m_view->position() != screenPos) {
         m_view->setPosition(screenPos);
     }
     syncCursorSurface();
+}
+
+QPoint QmlFloatingToolbar::resolveTopLeftForSelection(const QRect& selectionRect,
+                                                      const QSize& toolbarSize,
+                                                      const QRect& viewportRect,
+                                                      HorizontalAlignment alignment,
+                                                      const QRect& avoidRect)
+{
+    constexpr int kMargin = 8;
+    constexpr int kViewportInset = 10;
+
+    if (!selectionRect.isValid() || selectionRect.isEmpty()) {
+        return clampTopLeftToRect(QPoint(), toolbarSize, insetViewportRect(viewportRect, kViewportInset));
+    }
+
+    const QRect boundedViewport = insetViewportRect(viewportRect, kViewportInset);
+    const QRect normalizedSelectionRect = selectionRect.normalized();
+    const QRect obstructionRect =
+        avoidRect.isValid() && !avoidRect.isEmpty()
+        ? normalizedSelectionRect.united(avoidRect.normalized())
+        : normalizedSelectionRect;
+    const QRect forbiddenRect = obstructionRect.adjusted(-kMargin, -kMargin, kMargin, kMargin);
+    const int width = qMax(1, toolbarSize.width());
+    const int height = qMax(1, toolbarSize.height());
+    const int yBelow = normalizedSelectionRect.bottom() + kMargin;
+    const int yAbove = obstructionRect.top() - height - kMargin;
+
+    const int preferredX = [&]() {
+        switch (alignment) {
+        case HorizontalAlignment::RightEdge:
+            // QRect::right() is inclusive; add 1 to align the toolbar's right edge.
+            return normalizedSelectionRect.right() + 1 - width;
+        case HorizontalAlignment::Center:
+        default:
+            return normalizedSelectionRect.center().x() - width / 2;
+        }
+    }();
+
+    const int clampedX = clampTopLeftToRect(QPoint(preferredX, boundedViewport.top()),
+                                            toolbarSize,
+                                            boundedViewport).x();
+
+    const QPoint belowTopLeft(clampedX, yBelow);
+    const QRect belowRect(belowTopLeft, QSize(width, height));
+    if (belowRect.top() == yBelow && boundedViewport.contains(belowRect)) {
+        return belowRect.topLeft();
+    }
+
+    const QPoint aboveTopLeft(clampedX, yAbove);
+    const QRect aboveRect(aboveTopLeft, QSize(width, height));
+    if (aboveRect.top() == yAbove && boundedViewport.contains(aboveRect)) {
+        return aboveRect.topLeft();
+    }
+
+    const QPoint clampedAboveTopLeft(
+        clampedX,
+        qBound(boundedViewport.top(), yAbove, boundedViewport.bottom() - height + 1));
+    const QPoint clampedBelowTopLeft(
+        clampedX,
+        qBound(boundedViewport.top(), yBelow, boundedViewport.bottom() - height + 1));
+
+    const QRect clampedAboveRect(clampedAboveTopLeft, QSize(width, height));
+    const QRect clampedBelowRect(clampedBelowTopLeft, QSize(width, height));
+
+    const qint64 aboveOverlap = overlapArea(clampedAboveRect, forbiddenRect);
+    const qint64 belowOverlap = overlapArea(clampedBelowRect, forbiddenRect);
+
+    if (aboveOverlap <= belowOverlap) {
+        return clampedAboveRect.topLeft();
+    }
+
+    return clampedBelowRect.topLeft();
 }
 
 void QmlFloatingToolbar::positionAt(int centerX, int bottomY)
@@ -552,20 +631,63 @@ void QmlFloatingToolbar::syncCursorSurface(const CursorStyleSpec* explicitStyle)
 
     if (!m_view->isVisible()) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        m_view->unsetCursor();
         return;
     }
 
     const QRect bounds(m_view->position(), m_view->size());
     if (!bounds.contains(QCursor::pos())) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
+        m_view->unsetCursor();
         return;
     }
+
+    cancelParentCursorRestore();
 
     const CursorStyleSpec dragStyle = CursorStyleSpec::fromShape(Qt::ClosedHandCursor);
     const CursorStyleSpec* resolvedStyle = explicitStyle ? explicitStyle
                                                          : (m_isDragging ? &dragStyle : nullptr);
     CursorSurfaceSupport::syncWindowSurface(
         m_view, m_cursorSurfaceId, m_cursorOwnerId, CursorRequestSource::Overlay, resolvedStyle);
+}
+
+void QmlFloatingToolbar::cancelParentCursorRestore()
+{
+    ++m_parentCursorRestoreToken;
+}
+
+void QmlFloatingToolbar::scheduleParentCursorRestore()
+{
+    if (!m_parentWidget) {
+        return;
+    }
+
+    const quint64 token = ++m_parentCursorRestoreToken;
+    QTimer::singleShot(0, this, [this, token]() {
+        attemptParentCursorRestore(token, kParentCursorRestoreMaxAttempts);
+    });
+}
+
+void QmlFloatingToolbar::attemptParentCursorRestore(quint64 token, int remainingAttempts)
+{
+    if (token != m_parentCursorRestoreToken || !m_parentWidget) {
+        return;
+    }
+
+    const bool pointerStillWithinToolbar =
+        m_view &&
+        m_view->isVisible() &&
+        QRect(m_view->position(), m_view->size()).contains(QCursor::pos());
+    if (pointerStillWithinToolbar) {
+        if (remainingAttempts > 0) {
+            QTimer::singleShot(kParentCursorRestoreRetryDelayMs, this, [this, token, remainingAttempts]() {
+                attemptParentCursorRestore(token, remainingAttempts - 1);
+            });
+        }
+        return;
+    }
+
+    CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_parentWidget);
 }
 
 // ── Event filter (cursor management) ──
@@ -588,11 +710,8 @@ bool QmlFloatingToolbar::eventFilter(QObject* obj, QEvent* event)
         case QEvent::Close:
             hideTooltip();
             CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
-            if (m_parentWidget) {
-                QTimer::singleShot(0, this, [this]() {
-                    CursorSurfaceSupport::restoreWidgetCursorIfPointerOver(m_parentWidget);
-                });
-            }
+            m_view->unsetCursor();
+            scheduleParentCursorRestore();
             break;
         default:
             break;

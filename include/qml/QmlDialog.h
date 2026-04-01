@@ -3,11 +3,14 @@
 #include <QObject>
 #include <QPoint>
 #include <QPointer>
+#include <QRect>
+#include <QSize>
 #include <QString>
 #include <QUrl>
 
 class QEvent;
 class QQuickView;
+class QScreen;
 class QWidget;
 
 namespace SnapTray {
@@ -22,14 +25,18 @@ public:
     ~QmlDialog() override;
 
     virtual void showAt(const QPoint& pos = QPoint());
+    virtual void showCenteredOnScreen(QScreen* screen);
     virtual void close();
     void setModal(bool modal);
+
+    static QPoint centeredTopLeftForBounds(const QRect& bounds, const QSize& viewSize);
 
 signals:
     void closed();
 
 private:
     void ensureView();
+    void showPreparedView();
     QWidget* hostWidget() const;
     void syncTransientParent();
     void applyPlatformWindowFlags();

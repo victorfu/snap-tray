@@ -36,6 +36,11 @@ target_link_libraries(Qml_UpdateDialogViewModel PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_UpdateDialogViewModel COMMAND Qml_UpdateDialogViewModel)
 set_tests_properties(Qml_UpdateDialogViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_PlacementHelpers Qml/tst_PlacementHelpers.cpp)
+target_link_libraries(Qml_PlacementHelpers PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Qml_PlacementHelpers COMMAND Qml_PlacementHelpers)
+set_tests_properties(Qml_PlacementHelpers PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Qml_EmojiPickerBackend Qml/tst_EmojiPickerBackend.cpp)
 target_link_libraries(Qml_EmojiPickerBackend PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_EmojiPickerBackend COMMAND Qml_EmojiPickerBackend)
@@ -77,6 +82,9 @@ add_executable(App_MainApplicationTrayMenu
     ${APP_MainApplicationTrayMenu_SOURCES}
     ${APP_MainApplicationTrayMenu_HEADERS}
 )
+target_compile_definitions(App_MainApplicationTrayMenu PRIVATE
+    SNAPTRAY_TEST_TRANSLATION_DIR="${CMAKE_BINARY_DIR}"
+)
 target_include_directories(App_MainApplicationTrayMenu PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/src
@@ -93,6 +101,7 @@ target_link_libraries(App_MainApplicationTrayMenu PRIVATE
     Qt6::Network
     Qt6::Test
 )
+add_dependencies(App_MainApplicationTrayMenu SnapTray_lrelease)
 add_test(NAME App_MainApplicationTrayMenu COMMAND App_MainApplicationTrayMenu)
 set_tests_properties(App_MainApplicationTrayMenu PROPERTIES TIMEOUT 60 LABELS "unit")
 
