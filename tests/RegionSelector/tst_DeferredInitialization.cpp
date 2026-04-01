@@ -40,6 +40,8 @@ private slots:
     void testShowEvent_revealsImmediatelyWithoutDetectorCache();
     void testWindowListReady_afterRevealAppliesDeferredDetection();
     void testShowEvent_usesLiveCursorPositionForInitialReveal();
+    void testDetectedWindowClickOnDetachedWindowsArmsSelectionCompletionHandoff();
+    void testDetectedWindowClickOnMacKeepsImmediateToolbarBehavior();
 
 };
 
@@ -162,6 +164,96 @@ void tst_RegionSelectorDeferredInitialization::testShowEvent_usesLiveCursorPosit
     const QPoint expectedLocalPoint = currentLocalCursorPos(screenGeometry);
     QCursor::setPos(originalCursorPos);
     QCOMPARE(selector.m_inputState.currentPoint, expectedLocalPoint);
+}
+
+void tst_RegionSelectorDeferredInitialization::
+testDetectedWindowClickOnDetachedWindowsArmsSelectionCompletionHandoff()
+{
+#ifndef Q_OS_WIN
+    QSKIP("Detached capture window handoff regression only applies on Windows.");
+#else
+    QScreen* screen = currentCursorScreen();
+    if (!screen) {
+        QSKIP("No screens available for RegionSelector detected-window handoff test.");
+    }
+
+    RegionSelector selector;
+    const QRect screenGeometry = screen->geometry();
+    const QSize size = screenGeometry.size().boundedTo(QSize(320, 240));
+    selector.initializeForScreen(screen, makePreCapture(size, Qt::darkGreen));
+    selector.setGeometry(screenGeometry);
+    RegionSelectorTestAccess::showForRevealTests(selector);
+    QCoreApplication::processEvents();
+
+    if (!RegionSelectorTestAccess::usesDetachedCaptureWindows(selector)) {
+        QSKIP("Detached capture windows are not active in this environment.");
+    }
+
+    const QRect detectedRect(40, 40, 160, 120);
+    const QPoint clickPos = detectedRect.center();
+    RegionSelectorTestAccess::seedDetectedWindowHighlight(selector, detectedRect);
+    RegionSelectorTestAccess::dispatchMousePress(selector, clickPos);
+    RegionSelectorTestAccess::dispatchMouseRelease(selector, clickPos);
+
+    QVERIFY(RegionSelectorTestAccess::selectionCompletionHandoffPending(selector));
+    QCoreApplication::processEvents();
+
+    QVERIFY(selector.m_selectionManager->isComplete());
+    QCOMPARE(RegionSelectorTestAccess::selectionRect(selector), detectedRect);
+    QTRY_VERIFY_WITH_TIMEOUT(
+        RegionSelectorTestAccess::toolbarVisible(selector) ||
+        RegionSelectorTestAccess::toolbarWindow(selector) == nullptr,
+        1000);
+
+    if (!RegionSelectorTestAccess::toolbarVisible(selector) &&
+        !RegionSelectorTestAccess::toolbarWindow(selector)) {
+        QSKIP("Floating toolbar window did not initialize in this environment.");
+    }
+    QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+#endif
+}
+
+void tst_RegionSelectorDeferredInitialization::
+testDetectedWindowClickOnMacKeepsImmediateToolbarBehavior()
+{
+#ifndef Q_OS_MACOS
+    QSKIP("Inline detected-window toolbar regression only applies to macOS.");
+#else
+    QScreen* screen = currentCursorScreen();
+    if (!screen) {
+        QSKIP("No screens available for RegionSelector macOS toolbar test.");
+    }
+
+    RegionSelector selector;
+    const QRect screenGeometry = screen->geometry();
+    const QSize size = screenGeometry.size().boundedTo(QSize(320, 240));
+    selector.initializeForScreen(screen, makePreCapture(size, Qt::darkYellow));
+    selector.setGeometry(screenGeometry);
+    RegionSelectorTestAccess::showForRevealTests(selector);
+    QCoreApplication::processEvents();
+
+    QVERIFY(!RegionSelectorTestAccess::usesDetachedCaptureWindows(selector));
+
+    const QRect detectedRect(40, 40, 160, 120);
+    const QPoint clickPos = detectedRect.center();
+    RegionSelectorTestAccess::seedDetectedWindowHighlight(selector, detectedRect);
+    RegionSelectorTestAccess::dispatchMousePress(selector, clickPos);
+    RegionSelectorTestAccess::dispatchMouseRelease(selector, clickPos);
+    QCoreApplication::processEvents();
+
+    QVERIFY(selector.m_selectionManager->isComplete());
+    QCOMPARE(RegionSelectorTestAccess::selectionRect(selector), detectedRect);
+    QTRY_VERIFY_WITH_TIMEOUT(
+        RegionSelectorTestAccess::toolbarVisible(selector) ||
+        RegionSelectorTestAccess::toolbarWindow(selector) == nullptr,
+        1000);
+
+    if (!RegionSelectorTestAccess::toolbarVisible(selector) &&
+        !RegionSelectorTestAccess::toolbarWindow(selector)) {
+        QSKIP("Floating toolbar window did not initialize in this environment.");
+    }
+    QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+#endif
 }
 
 

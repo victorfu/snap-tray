@@ -259,6 +259,11 @@ public:
         return selector.m_captureChromeWindow && selector.m_captureChromeWindow->isVisible();
     }
 
+    static bool selectionCompletionHandoffPending(const RegionSelector& selector)
+    {
+        return selector.m_selectionCompletionHandoffPending;
+    }
+
     static bool staticCaptureBackgroundVisible(const RegionSelector& selector)
     {
         return selector.m_staticCaptureBackgroundWindow &&

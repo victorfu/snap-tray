@@ -201,10 +201,15 @@ RegionSelector::RegionSelector(QWidget* parent)
         });
     connect(m_selectionManager, &SelectionStateManager::stateChanged,
         this, [this](SelectionStateManager::State newState) {
+            // Detached capture window handoff is Windows-only. macOS keeps the
+            // in-window toolbar path, so this branch must stay inert there.
             const bool enteringCompletedSelectionHandoff =
                 usesDetachedCaptureWindows() &&
-                m_lastSelectionState == SelectionStateManager::State::Selecting &&
                 newState == SelectionStateManager::State::Complete &&
+                (m_lastSelectionState == SelectionStateManager::State::Selecting ||
+                 (m_lastSelectionState == SelectionStateManager::State::None &&
+                  m_inputState.hasDetectedWindow &&
+                  m_inputState.highlightedWindowRect.isValid())) &&
                 !m_quickPinMode &&
                 !m_exportInProgress &&
                 m_captureChromeWindow;
