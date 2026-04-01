@@ -15,6 +15,7 @@
 #include <QVariant>
 #include <QtMath>
 
+#include <array>
 #include <limits>
 
 #ifdef Q_OS_MACOS
@@ -26,6 +27,9 @@ namespace SnapTray {
 namespace {
 constexpr int kParentCursorRestoreRetryDelayMs = 16;
 constexpr int kParentCursorRestoreMaxAttempts = 6;
+constexpr int kToolbarPlacementMargin = 8;
+constexpr int kToolbarPlacementViewportInset = 10;
+constexpr int kToolbarPlacementInsideInset = 8;
 
 QPoint clampTopLeftToRect(const QPoint& desiredTopLeft,
                          const QSize& windowSize,
@@ -85,6 +89,129 @@ QRect insetViewportRect(const QRect& viewportRect, int inset)
 
     const QRect insetRect = viewportRect.adjusted(inset, inset, -inset, -inset);
     return insetRect.isValid() && !insetRect.isEmpty() ? insetRect : viewportRect;
+}
+
+QRect insideSafeRect(const QRect& selectionRect)
+{
+    if (!selectionRect.isValid() || selectionRect.isEmpty()) {
+        return {};
+    }
+
+    const QRect safeRect = selectionRect.adjusted(
+        kToolbarPlacementInsideInset,
+        kToolbarPlacementInsideInset,
+        -kToolbarPlacementInsideInset,
+        -kToolbarPlacementInsideInset);
+    return safeRect.isValid() && !safeRect.isEmpty() ? safeRect : QRect();
+}
+
+qint64 selectionEdgeOverlapArea(const QRect& candidateRect,
+                                const QRect& selectionRect,
+                                const QRect& safeRect)
+{
+    const qint64 selectionOverlap = overlapArea(candidateRect, selectionRect);
+    const qint64 safeOverlap = safeRect.isValid() ? overlapArea(candidateRect, safeRect) : 0;
+    return qMax<qint64>(0, selectionOverlap - safeOverlap);
+}
+
+qint64 manhattanDistance(const QPoint& a, const QPoint& b)
+{
+    return static_cast<qint64>(qAbs(a.x() - b.x())) + qAbs(a.y() - b.y());
+}
+
+enum class SelectionToolbarCandidateKind
+{
+    OutsideBelowRight = 0,
+    OutsideAboveRight = 1,
+    InsideBottomRight = 2,
+    InsideTopRight = 3,
+};
+
+struct SelectionToolbarCandidate
+{
+    QPoint desiredTopLeft;
+    QRect rect;
+    qint64 edgeOverlap = 0;
+    qint64 avoidOverlap = 0;
+    qint64 obstructionOverlap = 0;
+    qint64 anchorDistance = 0;
+    SelectionToolbarCandidateKind kind = SelectionToolbarCandidateKind::OutsideBelowRight;
+};
+
+int preferredSelectionX(const QRect& selectionRect,
+                        const QSize& toolbarSize,
+                        QmlFloatingToolbar::HorizontalAlignment alignment)
+{
+    switch (alignment) {
+    case QmlFloatingToolbar::HorizontalAlignment::RightEdge:
+        // QRect::right() is inclusive; add 1 to align the toolbar's right edge.
+        return selectionRect.right() + 1 - toolbarSize.width();
+    case QmlFloatingToolbar::HorizontalAlignment::Center:
+    default:
+        return selectionRect.center().x() - toolbarSize.width() / 2;
+    }
+}
+
+SelectionToolbarCandidate buildSelectionToolbarCandidate(
+    SelectionToolbarCandidateKind kind,
+    const QPoint& desiredTopLeft,
+    const QSize& toolbarSize,
+    const QRect& boundedViewport,
+    const QRect& selectionRect,
+    const QRect& safeRect,
+    const QRect& avoidRect,
+    const QRect& obstructionRect)
+{
+    SelectionToolbarCandidate candidate;
+    candidate.kind = kind;
+    candidate.desiredTopLeft = desiredTopLeft;
+    candidate.rect = QRect(
+        clampTopLeftToRect(desiredTopLeft, toolbarSize, boundedViewport),
+        QSize(qMax(1, toolbarSize.width()), qMax(1, toolbarSize.height())));
+    candidate.edgeOverlap = selectionEdgeOverlapArea(candidate.rect, selectionRect, safeRect);
+    candidate.avoidOverlap = avoidRect.isValid() && !avoidRect.isEmpty()
+        ? overlapArea(candidate.rect, avoidRect)
+        : 0;
+    candidate.obstructionOverlap = overlapArea(candidate.rect, obstructionRect);
+    candidate.anchorDistance = manhattanDistance(candidate.rect.topLeft(), desiredTopLeft);
+    return candidate;
+}
+
+bool isCleanOutsideCandidate(const SelectionToolbarCandidate& candidate,
+                             const QRect& boundedViewport,
+                             const QRect& obstructionRect)
+{
+    return boundedViewport.contains(candidate.rect)
+        && overlapArea(candidate.rect, obstructionRect) == 0;
+}
+
+bool isCleanInsideCandidate(const SelectionToolbarCandidate& candidate,
+                            const QRect& boundedViewport,
+                            const QRect& safeRect)
+{
+    return safeRect.isValid()
+        && boundedViewport.contains(candidate.rect)
+        && safeRect.contains(candidate.rect)
+        && candidate.edgeOverlap == 0
+        && candidate.avoidOverlap == 0;
+}
+
+bool isBetterFallbackCandidate(const SelectionToolbarCandidate& lhs,
+                               const SelectionToolbarCandidate& rhs)
+{
+    if (lhs.edgeOverlap != rhs.edgeOverlap) {
+        return lhs.edgeOverlap < rhs.edgeOverlap;
+    }
+    if (lhs.avoidOverlap != rhs.avoidOverlap) {
+        return lhs.avoidOverlap < rhs.avoidOverlap;
+    }
+    if (lhs.obstructionOverlap != rhs.obstructionOverlap) {
+        return lhs.obstructionOverlap < rhs.obstructionOverlap;
+    }
+    if (lhs.anchorDistance != rhs.anchorDistance) {
+        return lhs.anchorDistance < rhs.anchorDistance;
+    }
+    return static_cast<int>(lhs.kind) < static_cast<int>(rhs.kind);
 }
 
 void destroyQuickView(QQuickView*& view, QQuickItem*& rootItem)
@@ -475,70 +602,106 @@ QPoint QmlFloatingToolbar::resolveTopLeftForSelection(const QRect& selectionRect
                                                       HorizontalAlignment alignment,
                                                       const QRect& avoidRect)
 {
-    constexpr int kMargin = 8;
-    constexpr int kViewportInset = 10;
-
     if (!selectionRect.isValid() || selectionRect.isEmpty()) {
-        return clampTopLeftToRect(QPoint(), toolbarSize, insetViewportRect(viewportRect, kViewportInset));
+        return clampTopLeftToRect(
+            QPoint(),
+            toolbarSize,
+            insetViewportRect(viewportRect, kToolbarPlacementViewportInset));
     }
 
-    const QRect boundedViewport = insetViewportRect(viewportRect, kViewportInset);
+    const QRect boundedViewport = insetViewportRect(viewportRect, kToolbarPlacementViewportInset);
     const QRect normalizedSelectionRect = selectionRect.normalized();
-    const QRect obstructionRect =
-        avoidRect.isValid() && !avoidRect.isEmpty()
-        ? normalizedSelectionRect.united(avoidRect.normalized())
+    const QRect normalizedAvoidRect = avoidRect.isValid() && !avoidRect.isEmpty()
+        ? avoidRect.normalized()
+        : QRect();
+    const QRect obstructionRect = normalizedAvoidRect.isValid()
+        ? normalizedSelectionRect.united(normalizedAvoidRect)
         : normalizedSelectionRect;
-    const QRect forbiddenRect = obstructionRect.adjusted(-kMargin, -kMargin, kMargin, kMargin);
+    const QRect safeRect = insideSafeRect(normalizedSelectionRect);
     const int width = qMax(1, toolbarSize.width());
     const int height = qMax(1, toolbarSize.height());
-    const int yBelow = normalizedSelectionRect.bottom() + kMargin;
-    const int yAbove = obstructionRect.top() - height - kMargin;
 
-    const int preferredX = [&]() {
-        switch (alignment) {
-        case HorizontalAlignment::RightEdge:
-            // QRect::right() is inclusive; add 1 to align the toolbar's right edge.
-            return normalizedSelectionRect.right() + 1 - width;
-        case HorizontalAlignment::Center:
-        default:
-            return normalizedSelectionRect.center().x() - width / 2;
+    const int outsidePreferredX = clampTopLeftToRect(
+        QPoint(preferredSelectionX(normalizedSelectionRect, toolbarSize, alignment),
+               boundedViewport.top()),
+        toolbarSize,
+        boundedViewport).x();
+    const int insidePreferredX = safeRect.isValid()
+        ? clampTopLeftToRect(
+            QPoint(preferredSelectionX(normalizedSelectionRect, toolbarSize, alignment),
+                   safeRect.top()),
+            toolbarSize,
+            safeRect).x()
+        : preferredSelectionX(normalizedSelectionRect, toolbarSize, alignment);
+
+    const SelectionToolbarCandidate outsideBelow = buildSelectionToolbarCandidate(
+        SelectionToolbarCandidateKind::OutsideBelowRight,
+        QPoint(outsidePreferredX, normalizedSelectionRect.bottom() + kToolbarPlacementMargin),
+        toolbarSize,
+        boundedViewport,
+        normalizedSelectionRect,
+        safeRect,
+        normalizedAvoidRect,
+        obstructionRect);
+    if (isCleanOutsideCandidate(outsideBelow, boundedViewport, obstructionRect)) {
+        return outsideBelow.rect.topLeft();
+    }
+
+    const SelectionToolbarCandidate outsideAbove = buildSelectionToolbarCandidate(
+        SelectionToolbarCandidateKind::OutsideAboveRight,
+        QPoint(outsidePreferredX, obstructionRect.top() - height - kToolbarPlacementMargin),
+        toolbarSize,
+        boundedViewport,
+        normalizedSelectionRect,
+        safeRect,
+        normalizedAvoidRect,
+        obstructionRect);
+    if (isCleanOutsideCandidate(outsideAbove, boundedViewport, obstructionRect)) {
+        return outsideAbove.rect.topLeft();
+    }
+
+    const SelectionToolbarCandidate insideBottom = buildSelectionToolbarCandidate(
+        SelectionToolbarCandidateKind::InsideBottomRight,
+        QPoint(insidePreferredX,
+               normalizedSelectionRect.bottom() + 1 - kToolbarPlacementInsideInset - height),
+        toolbarSize,
+        boundedViewport,
+        normalizedSelectionRect,
+        safeRect,
+        normalizedAvoidRect,
+        obstructionRect);
+    if (isCleanInsideCandidate(insideBottom, boundedViewport, safeRect)) {
+        return insideBottom.rect.topLeft();
+    }
+
+    const SelectionToolbarCandidate insideTop = buildSelectionToolbarCandidate(
+        SelectionToolbarCandidateKind::InsideTopRight,
+        QPoint(insidePreferredX, normalizedSelectionRect.top() + kToolbarPlacementInsideInset),
+        toolbarSize,
+        boundedViewport,
+        normalizedSelectionRect,
+        safeRect,
+        normalizedAvoidRect,
+        obstructionRect);
+    if (isCleanInsideCandidate(insideTop, boundedViewport, safeRect)) {
+        return insideTop.rect.topLeft();
+    }
+
+    const std::array<SelectionToolbarCandidate, 4> candidates{
+        outsideBelow,
+        outsideAbove,
+        insideBottom,
+        insideTop,
+    };
+
+    const SelectionToolbarCandidate* bestCandidate = &candidates.front();
+    for (const SelectionToolbarCandidate& candidate : candidates) {
+        if (isBetterFallbackCandidate(candidate, *bestCandidate)) {
+            bestCandidate = &candidate;
         }
-    }();
-
-    const int clampedX = clampTopLeftToRect(QPoint(preferredX, boundedViewport.top()),
-                                            toolbarSize,
-                                            boundedViewport).x();
-
-    const QPoint belowTopLeft(clampedX, yBelow);
-    const QRect belowRect(belowTopLeft, QSize(width, height));
-    if (belowRect.top() == yBelow && boundedViewport.contains(belowRect)) {
-        return belowRect.topLeft();
     }
 
-    const QPoint aboveTopLeft(clampedX, yAbove);
-    const QRect aboveRect(aboveTopLeft, QSize(width, height));
-    if (aboveRect.top() == yAbove && boundedViewport.contains(aboveRect)) {
-        return aboveRect.topLeft();
-    }
-
-    const QPoint clampedAboveTopLeft(
-        clampedX,
-        qBound(boundedViewport.top(), yAbove, boundedViewport.bottom() - height + 1));
-    const QPoint clampedBelowTopLeft(
-        clampedX,
-        qBound(boundedViewport.top(), yBelow, boundedViewport.bottom() - height + 1));
-
-    const QRect clampedAboveRect(clampedAboveTopLeft, QSize(width, height));
-    const QRect clampedBelowRect(clampedBelowTopLeft, QSize(width, height));
-
-    const qint64 aboveOverlap = overlapArea(clampedAboveRect, forbiddenRect);
-    const qint64 belowOverlap = overlapArea(clampedBelowRect, forbiddenRect);
-
-    if (aboveOverlap <= belowOverlap) {
-        return clampedAboveRect.topLeft();
-    }
-
-    return clampedBelowRect.topLeft();
+    return bestCandidate->rect.topLeft();
 }
 
 void QmlFloatingToolbar::positionAt(int centerX, int bottomY)
