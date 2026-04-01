@@ -183,7 +183,9 @@ svg {
   z-index: 50;
   margin: 0 auto;
   backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   background: rgba(255, 255, 255, 0.66);
+  will-change: transform;
   border-bottom: 1px solid rgba(134, 162, 207, 0.34);
 
   .header-inner {
@@ -974,6 +976,7 @@ svg {
   position: sticky;
   top: calc(78px + 1rem);
   z-index: 20;
+  will-change: transform;
 }
 
 .docs-sidebar-card,
@@ -983,6 +986,7 @@ svg {
   border: 1px solid rgba(90, 131, 196, 0.24);
   background: rgba(255, 255, 255, 0.87);
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   box-shadow: 0 10px 26px rgba(19, 53, 101, 0.12);
 }
 
@@ -1190,6 +1194,7 @@ svg {
 .docs-toc {
   position: sticky;
   top: calc(78px + 1rem);
+  will-change: transform;
 }
 
 .docs-toc-card {
