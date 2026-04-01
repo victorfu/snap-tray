@@ -87,6 +87,11 @@ QRect QmlBeautifyPanel::geometry() const
     return QRect(m_view->position(), m_view->size());
 }
 
+QWindow* QmlBeautifyPanel::window() const
+{
+    return m_view;
+}
+
 void QmlBeautifyPanel::onDragStarted()
 {
     if (!m_view) {

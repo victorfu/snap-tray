@@ -47,6 +47,9 @@ enum class ToolId {
     MultiRegion,        // Multi-region capture mode
     MultiRegionDone,    // Complete multi-region capture
 
+    // Panel / workflow actions
+    Beautify,           // Open beautify panel for styled export / copy
+
     Count
 };
 

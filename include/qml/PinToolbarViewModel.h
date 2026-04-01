@@ -27,6 +27,7 @@ signals:
     void ocrClicked();
     void qrCodeClicked();
     void shareClicked();
+    void beautifyClicked();
     void copyClicked();
     void saveClicked();
     void doneClicked();

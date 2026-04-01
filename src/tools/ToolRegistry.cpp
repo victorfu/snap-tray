@@ -373,6 +373,17 @@ void ToolRegistry::registerTools() {
         false, false, false,  // UI visibility: none
         false, QColor()
     });
+
+    registerTool({
+        ToolId::Beautify,
+        "beautify",
+        QCoreApplication::translate("ToolRegistry", "Beautify"),
+        "",
+        ToolCategory::Action,
+        false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
+        false, QColor()
+    });
 }
 
 void ToolRegistry::registerTool(const ToolDefinition& def) {
@@ -453,6 +464,7 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
             ToolId::Eraser,
             ToolId::StepBadge,
             ToolId::EmojiSticker,
+            ToolId::Beautify,
             ToolId::Crop,
             ToolId::Measure,
             ToolId::Undo,

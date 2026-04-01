@@ -236,6 +236,9 @@ private:
     void hideToolbar();
     void hideToolbarPreservingToolState();
     void initializeAnnotationComponents();
+    void dismissBeautifyPanelIfVisible();
+    void clearSelectedToolForBeautify();
+    void syncToolbarActiveButtonForVisibleState();
     void updateToolbarPosition();
     void enterAnnotationMode();
     void exitAnnotationMode(bool clearActiveTool = true);

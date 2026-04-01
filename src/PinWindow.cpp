@@ -2900,21 +2900,47 @@ void PinWindow::initializeAnnotationComponents()
     connect(vm, &PinToolbarViewModel::toolSelected,
         this, &PinWindow::handleToolbarToolSelected);
     connect(vm, &PinToolbarViewModel::undoClicked,
-        this, &PinWindow::handleToolbarUndo);
+        this, [this]() {
+            dismissBeautifyPanelIfVisible();
+            handleToolbarUndo();
+        });
     connect(vm, &PinToolbarViewModel::redoClicked,
-        this, &PinWindow::handleToolbarRedo);
+        this, [this]() {
+            dismissBeautifyPanelIfVisible();
+            handleToolbarRedo();
+        });
     connect(vm, &PinToolbarViewModel::ocrClicked,
-        this, &PinWindow::performOCR);
+        this, [this]() {
+            dismissBeautifyPanelIfVisible();
+            performOCR();
+        });
     connect(vm, &PinToolbarViewModel::qrCodeClicked,
-        this, &PinWindow::performQRCodeScan);
+        this, [this]() {
+            dismissBeautifyPanelIfVisible();
+            performQRCodeScan();
+        });
     connect(vm, &PinToolbarViewModel::shareClicked,
-        this, &PinWindow::shareToUrl);
+        this, [this]() {
+            dismissBeautifyPanelIfVisible();
+            shareToUrl();
+        });
+    connect(vm, &PinToolbarViewModel::beautifyClicked,
+        this, &PinWindow::showBeautifyPanel);
     connect(vm, &PinToolbarViewModel::copyClicked,
-        this, &PinWindow::copyToClipboard);
+        this, [this]() {
+            dismissBeautifyPanelIfVisible();
+            copyToClipboard();
+        });
     connect(vm, &PinToolbarViewModel::saveClicked,
-        this, &PinWindow::saveToFile);
+        this, [this]() {
+            dismissBeautifyPanelIfVisible();
+            saveToFile();
+        });
     connect(vm, &PinToolbarViewModel::doneClicked,
-        this, &PinWindow::hideToolbar);
+        this, [this]() {
+            dismissBeautifyPanelIfVisible();
+            hideToolbar();
+        });
 
     // Initialize QML sub-toolbar
     m_subToolbar = std::make_unique<SnapTray::QmlFloatingSubToolbar>(static_cast<QObject*>(nullptr));
@@ -3050,7 +3076,13 @@ void PinWindow::showToolbar()
     // Set associated widgets for click-outside detection
     m_toolbar->setAssociatedWidgets(this, m_subToolbar.get());
     m_toolbar->setAssociatedTransientWidget(nullptr);
-    m_toolbar->setAssociatedTransientWindow(m_emojiPickerPopup ? m_emojiPickerPopup->window() : nullptr);
+    if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+        m_toolbar->setAssociatedTransientWindow(m_emojiPickerPopup->window());
+    } else if (m_beautifyPanel && m_beautifyPanel->isVisible()) {
+        m_toolbar->setAssociatedTransientWindow(m_beautifyPanel->window());
+    } else {
+        m_toolbar->setAssociatedTransientWindow(nullptr);
+    }
 
     // Connect close request signal
     connect(m_toolbar.get(), &SnapTray::QmlWindowedToolbar::closeRequested,
@@ -3072,10 +3104,13 @@ void PinWindow::showToolbar()
     if (!m_annotationMode && isAnnotationTool(m_currentToolId)) {
         handleToolbarToolSelected(static_cast<int>(m_currentToolId));
     }
+
+    syncToolbarActiveButtonForVisibleState();
 }
 
 void PinWindow::hideToolbar()
 {
+    dismissBeautifyPanelIfVisible();
     if (m_toolbar) {
         m_toolbar->hide();
     }
@@ -3085,6 +3120,7 @@ void PinWindow::hideToolbar()
 
 void PinWindow::hideToolbarPreservingToolState()
 {
+    dismissBeautifyPanelIfVisible();
     if (m_toolbar) {
         m_toolbar->hide();
     }
@@ -3154,8 +3190,65 @@ void PinWindow::exitAnnotationMode(bool clearActiveTool)
     // Hide sub-toolbar when exiting annotation mode
     hideSubToolbar();
 
+    syncToolbarActiveButtonForVisibleState();
     rebuildManagedCursorAt(mapFromGlobal(QCursor::pos()));
     update();
+}
+
+void PinWindow::syncToolbarActiveButtonForVisibleState()
+{
+    if (!m_toolbar) {
+        return;
+    }
+
+    if (m_beautifyPanel && m_beautifyPanel->isVisible()) {
+        m_toolbar->viewModel()->setActiveTool(static_cast<int>(ToolId::Beautify));
+        return;
+    }
+
+    if (m_annotationMode && isAnnotationTool(m_currentToolId)) {
+        m_toolbar->viewModel()->setActiveTool(static_cast<int>(m_currentToolId));
+        return;
+    }
+
+    m_toolbar->viewModel()->setActiveTool(-1);
+}
+
+void PinWindow::dismissBeautifyPanelIfVisible()
+{
+    if (!m_beautifyPanel || !m_beautifyPanel->isVisible()) {
+        return;
+    }
+
+    m_beautifyPanel->hide();
+
+    if (m_toolbar) {
+        if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+            m_toolbar->setAssociatedTransientWindow(m_emojiPickerPopup->window());
+        } else {
+            m_toolbar->setAssociatedTransientWindow(nullptr);
+        }
+    }
+
+    syncToolbarActiveButtonForVisibleState();
+}
+
+void PinWindow::clearSelectedToolForBeautify()
+{
+    if (m_annotationMode) {
+        exitAnnotationMode();
+        return;
+    }
+
+    if (isAnnotationTool(m_currentToolId)) {
+        m_currentToolId = ToolId::Selection;
+        if (m_toolManager) {
+            m_toolManager->setCurrentTool(ToolId::Selection);
+        }
+    }
+
+    hideSubToolbar();
+    syncToolbarActiveButtonForVisibleState();
 }
 
 void PinWindow::handleToolbarToolSelected(int toolId)
@@ -3165,6 +3258,10 @@ void PinWindow::handleToolbarToolSelected(int toolId)
     }
     ToolId tool = static_cast<ToolId>(toolId);
     const bool emojiPickerVisible = m_emojiPickerPopup && m_emojiPickerPopup->isVisible();
+
+    if (tool != ToolId::Beautify) {
+        dismissBeautifyPanelIfVisible();
+    }
 
     // Check if same tool clicked - toggle sub-toolbar visibility (matches RegionSelector behavior)
     bool sameToolClicked = (m_currentToolId == tool && m_annotationMode);
@@ -5043,6 +5140,8 @@ bool PinWindow::isRegionLayoutMode() const
 
 void PinWindow::showBeautifyPanel()
 {
+    clearSelectedToolForBeautify();
+
     if (!m_beautifyPanel) {
         m_beautifyPanel = std::make_unique<SnapTray::QmlBeautifyPanel>(this);
 
@@ -5050,11 +5149,26 @@ void PinWindow::showBeautifyPanel()
                 this, &PinWindow::onBeautifyCopy);
         connect(m_beautifyPanel.get(), &SnapTray::QmlBeautifyPanel::saveRequested,
                 this, &PinWindow::onBeautifySave);
+        connect(m_beautifyPanel.get(), &SnapTray::QmlBeautifyPanel::closeRequested,
+                this, [this]() {
+                    if (m_toolbar) {
+                        if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+                            m_toolbar->setAssociatedTransientWindow(m_emojiPickerPopup->window());
+                        } else {
+                            m_toolbar->setAssociatedTransientWindow(nullptr);
+                        }
+                    }
+                    syncToolbarActiveButtonForVisibleState();
+                });
     }
 
     m_beautifyPanel->setSourcePixmap(getExportPixmapWithAnnotations());
     m_beautifyPanel->setSettings(BeautifySettingsManager::instance().loadSettings());
     m_beautifyPanel->showNear(frameGeometry());
+    if (m_toolbar) {
+        m_toolbar->setAssociatedTransientWindow(m_beautifyPanel->window());
+    }
+    syncToolbarActiveButtonForVisibleState();
 }
 
 void PinWindow::onBeautifyCopy(const BeautifySettings& settings)

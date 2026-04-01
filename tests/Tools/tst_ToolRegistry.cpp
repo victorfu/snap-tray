@@ -134,7 +134,7 @@ void TestToolRegistry::testIsActionTool_ActionTools()
         ToolId::Undo, ToolId::Redo, ToolId::Clear,
         ToolId::Cancel, ToolId::OCR, ToolId::QRCode,
         ToolId::Pin, ToolId::Record, ToolId::Share, ToolId::Save,
-        ToolId::Copy, ToolId::Exit,
+        ToolId::Copy, ToolId::Exit, ToolId::Beautify,
         ToolId::MultiRegion, ToolId::MultiRegionDone
     };
 
@@ -274,6 +274,7 @@ void TestToolRegistry::testGetToolsForToolbar_PinWindow()
     QVERIFY(tools.contains(ToolId::Eraser));
     QVERIFY(tools.contains(ToolId::StepBadge));
     QVERIFY(tools.contains(ToolId::EmojiSticker));
+    QVERIFY(tools.contains(ToolId::Beautify));
     QVERIFY(tools.contains(ToolId::Undo));
     QVERIFY(tools.contains(ToolId::Redo));
     QVERIFY(tools.contains(ToolId::OCR));
@@ -287,6 +288,13 @@ void TestToolRegistry::testGetToolsForToolbar_PinWindow()
     QVERIFY(!tools.contains(ToolId::Cancel));
     QVERIFY(!tools.contains(ToolId::Record));
     QVERIFY(!tools.contains(ToolId::MultiRegion));
+
+    const int beautifyIndex = tools.indexOf(ToolId::Beautify);
+    const int cropIndex = tools.indexOf(ToolId::Crop);
+    QVERIFY(beautifyIndex >= 0);
+    QVERIFY(cropIndex >= 0);
+    QVERIFY2(beautifyIndex < cropIndex, "Beautify should appear to the left of Crop in PinWindow toolbar");
+    QCOMPARE(registry().getIconKey(ToolId::Beautify), QString("beautify"));
 }
 
 // ============================================================================
