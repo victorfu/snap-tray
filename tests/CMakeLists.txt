@@ -235,6 +235,11 @@ target_link_libraries(RegionSelector_RegionPainterChrome PRIVATE snaptray_ui Qt6
 add_test(NAME RegionSelector_RegionPainterChrome COMMAND RegionSelector_RegionPainterChrome)
 set_tests_properties(RegionSelector_RegionPainterChrome PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RegionSelector_AttachmentLayout RegionSelector/tst_AttachmentLayout.cpp)
+target_link_libraries(RegionSelector_AttachmentLayout PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME RegionSelector_AttachmentLayout COMMAND RegionSelector_AttachmentLayout)
+set_tests_properties(RegionSelector_AttachmentLayout PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 add_executable(RegionSelector_UpdateThrottler RegionSelector/tst_UpdateThrottler.cpp)
 target_link_libraries(RegionSelector_UpdateThrottler PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME RegionSelector_UpdateThrottler COMMAND RegionSelector_UpdateThrottler)

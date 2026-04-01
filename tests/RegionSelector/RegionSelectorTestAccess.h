@@ -109,6 +109,14 @@ public:
         selector.m_selectionManager->setSelectionRect(rect);
     }
 
+    static void setCurrentTool(RegionSelector& selector, ToolId tool)
+    {
+        selector.m_inputState.currentTool = tool;
+        if (selector.m_toolManager) {
+            selector.m_toolManager->setCurrentTool(tool);
+        }
+    }
+
     static void markInitialRevealRevealed(RegionSelector& selector)
     {
         selector.m_initialRevealState = RegionSelector::InitialRevealState::Revealed;
@@ -242,6 +250,14 @@ public:
     static QRect regionControlGeometry(const RegionSelector& selector)
     {
         return selector.m_regionControlPanel ? selector.m_regionControlPanel->geometry() : QRect();
+    }
+
+    static QRect dimensionInfoRect(const RegionSelector& selector)
+    {
+        if (selector.m_captureChromeWindow && selector.m_captureChromeWindow->isVisible()) {
+            return selector.m_captureChromeWindow->lastDimensionInfoRect();
+        }
+        return selector.m_painter ? selector.m_painter->lastDimensionInfoRect() : QRect();
     }
 
     static bool magnifierVisible(const RegionSelector& selector)

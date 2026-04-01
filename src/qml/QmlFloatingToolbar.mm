@@ -122,9 +122,10 @@ qint64 manhattanDistance(const QPoint& a, const QPoint& b)
 enum class SelectionToolbarCandidateKind
 {
     OutsideBelowRight = 0,
-    OutsideAboveRight = 1,
-    InsideBottomRight = 2,
-    InsideTopRight = 3,
+    OutsideAboveSharedRowRight = 1,
+    OutsideAboveRight = 2,
+    InsideBottomRight = 3,
+    InsideTopRight = 4,
 };
 
 struct SelectionToolbarCandidate
@@ -181,8 +182,19 @@ bool isCleanOutsideCandidate(const SelectionToolbarCandidate& candidate,
                              const QRect& boundedViewport,
                              const QRect& obstructionRect)
 {
+    Q_UNUSED(obstructionRect);
     return boundedViewport.contains(candidate.rect)
-        && overlapArea(candidate.rect, obstructionRect) == 0;
+        && candidate.edgeOverlap == 0
+        && candidate.avoidOverlap == 0;
+}
+
+bool canShareTopRowWithAvoidRect(const QRect& avoidRect, const QRect& selectionRect)
+{
+    return avoidRect.isValid() &&
+        !avoidRect.isEmpty() &&
+        selectionRect.isValid() &&
+        !selectionRect.isEmpty() &&
+        avoidRect.bottom() < selectionRect.top();
 }
 
 bool isCleanInsideCandidate(const SelectionToolbarCandidate& candidate,
@@ -645,6 +657,25 @@ QPoint QmlFloatingToolbar::resolveTopLeftForSelection(const QRect& selectionRect
         obstructionRect);
     if (isCleanOutsideCandidate(outsideBelow, boundedViewport, obstructionRect)) {
         return outsideBelow.rect.topLeft();
+    }
+
+    if (canShareTopRowWithAvoidRect(normalizedAvoidRect, normalizedSelectionRect)) {
+        const SelectionToolbarCandidate outsideSharedRow = buildSelectionToolbarCandidate(
+            SelectionToolbarCandidateKind::OutsideAboveSharedRowRight,
+            QPoint(
+                qMax(
+                    preferredSelectionX(normalizedSelectionRect, toolbarSize, alignment),
+                    normalizedAvoidRect.right() + 1 + kToolbarPlacementMargin),
+                normalizedAvoidRect.top() + (normalizedAvoidRect.height() - height) / 2),
+            toolbarSize,
+            boundedViewport,
+            normalizedSelectionRect,
+            safeRect,
+            normalizedAvoidRect,
+            obstructionRect);
+        if (isCleanOutsideCandidate(outsideSharedRow, boundedViewport, obstructionRect)) {
+            return outsideSharedRow.rect.topLeft();
+        }
     }
 
     const SelectionToolbarCandidate outsideAbove = buildSelectionToolbarCandidate(

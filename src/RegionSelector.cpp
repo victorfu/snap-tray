@@ -118,6 +118,41 @@ CursorStyleSpec cursorSpecForWidget(const QWidget* widget)
                   : CursorStyleSpec::fromShape(Qt::ArrowCursor);
 }
 
+constexpr int kFloatingAttachmentGap = 8;
+constexpr int kFloatingAttachmentInset = 8;
+constexpr int kRegionControlPanelFallbackWidth = 200;
+constexpr int kRegionControlPanelFallbackHeight = 60;
+
+QSize regionControlPanelSizeHint(const SnapTray::QmlOverlayPanel* panel)
+{
+    const QSize geometrySize = panel ? panel->geometry().size() : QSize();
+    return geometrySize.isValid() && !geometrySize.isEmpty()
+        ? geometrySize
+        : QSize(kRegionControlPanelFallbackWidth, kRegionControlPanelFallbackHeight);
+}
+
+QPoint clampTopLeftToRect(const QPoint& desiredTopLeft,
+                          const QSize& windowSize,
+                          const QRect& bounds)
+{
+    if (!bounds.isValid()) {
+        return desiredTopLeft;
+    }
+
+    const int width = qMax(1, windowSize.width());
+    const int height = qMax(1, windowSize.height());
+    const int maxX = bounds.right() - width + 1;
+    const int maxY = bounds.bottom() - height + 1;
+
+    const int clampedX = (width >= bounds.width())
+        ? bounds.left()
+        : qBound(bounds.left(), desiredTopLeft.x(), maxX);
+    const int clampedY = (height >= bounds.height())
+        ? bounds.top()
+        : qBound(bounds.top(), desiredTopLeft.y(), maxY);
+    return QPoint(clampedX, clampedY);
+}
+
 bool shouldSuppressCompletedSelectionDragUi(const SelectionStateManager* selectionManager)
 {
     return selectionManager &&
@@ -3096,16 +3131,53 @@ void RegionSelector::positionRegionControlPanel()
         return;
 
     QRect panelGeom = m_regionControlPanel->geometry();
-    int gap = 8;
+    if (!panelGeom.isValid() || panelGeom.isEmpty()) {
+        panelGeom = QRect(QPoint(), regionControlPanelSizeHint(m_regionControlPanel.get()));
+    }
+    int gap = kFloatingAttachmentGap;
     // The QML root is 60px tall: [popup 28] [gap 4] [main panel 28]
     // The visible main panel is the bottom 28px. Align it with dim label.
     int mainPanelHeight = 28;
     int popupOverhead = panelGeom.height() - mainPanelHeight;
-    QPoint pos = mapToGlobal(QPoint(dimRect.right() + gap,
-        dimRect.top() + (dimRect.height() - mainPanelHeight) / 2 - popupOverhead));
+    const QPoint preferredLocalPos(
+        dimRect.right() + gap,
+        dimRect.top() + (dimRect.height() - mainPanelHeight) / 2 - popupOverhead);
+    const QRect preferredLocalRect(preferredLocalPos, panelGeom.size());
+    const QRect toolbarLocalRect = floatingToolbarRectInLocalCoords();
+    const QRect selectionRect = m_selectionManager
+        ? m_selectionManager->selectionRect().normalized()
+        : QRect();
+    const bool toolbarOnTopRow =
+        toolbarLocalRect.isValid() &&
+        selectionRect.isValid() &&
+        toolbarLocalRect.bottom() < selectionRect.top();
+    const bool controlWouldOverlapToolbar =
+        toolbarOnTopRow && preferredLocalRect.intersects(toolbarLocalRect);
+
+    QPoint pos = mapToGlobal(preferredLocalPos);
+
+    if (controlWouldOverlapToolbar && selectionRect.isValid() && !selectionRect.isEmpty()) {
+        const QRect insideBounds = selectionRect.adjusted(
+            kFloatingAttachmentInset,
+            kFloatingAttachmentInset - popupOverhead,
+            -kFloatingAttachmentInset,
+            -kFloatingAttachmentInset);
+        const QRect clampBounds = insideBounds.isValid() && !insideBounds.isEmpty()
+            ? insideBounds
+            : selectionRect;
+        const QPoint insideTopRight(
+            selectionRect.right() + 1 - kFloatingAttachmentInset - panelGeom.width(),
+            selectionRect.top() + kFloatingAttachmentInset - popupOverhead);
+        const QPoint insideLocalPos = clampTopLeftToRect(
+            insideTopRight,
+            panelGeom.size(),
+            clampBounds);
+        pos = mapToGlobal(insideLocalPos);
+    }
 
     // Fallback if off-screen right
-    if (pos.x() + panelGeom.width() > mapToGlobal(QPoint(width(), 0)).x()) {
+    if (!controlWouldOverlapToolbar &&
+        pos.x() + panelGeom.width() > mapToGlobal(QPoint(width(), 0)).x()) {
         pos = mapToGlobal(QPoint(dimRect.left(), dimRect.bottom() + 4 - popupOverhead));
     }
     m_regionControlPanel->setPosition(pos);

@@ -98,6 +98,16 @@ QPoint insideTopRightTopLeft(const QRect& selectionRect, const QSize& toolbarSiz
                   selectionRect.top() + kInsideInset);
 }
 
+QPoint outsideAboveSharedRowRightTopLeft(const QRect& selectionRect,
+                                         const QSize& toolbarSize,
+                                         const QRect& avoidRect)
+{
+    return QPoint(
+        qMax(selectionRect.right() + 1 - toolbarSize.width(),
+             avoidRect.right() + 1 + kToolbarMargin),
+        avoidRect.top() + (avoidRect.height() - toolbarSize.height()) / 2);
+}
+
 }
 
 class TestScreenCanvasPlacement : public QObject
@@ -119,6 +129,7 @@ private slots:
     void testToolbarDragClampSnapsToNearestVisibleScreen();
     void testSelectionToolbarPlacementPrefersBelowRightWhenClear();
     void testSelectionToolbarPlacementUsesAboveRightWhenBottomSpaceTight();
+    void testSelectionToolbarPlacementSharesTopRowWithAvoidRectWhenWidthAllows();
     void testSelectionToolbarPlacementPrefersOutsideBelowWhenOnlyAboveBlocked();
     void testSelectionToolbarPlacementUsesWidgetTopForAboveFallback();
     void testSelectionToolbarPlacementUsesInsideBottomRightWhenOutsideCandidatesBlocked();
@@ -359,6 +370,27 @@ void TestScreenCanvasPlacement::testSelectionToolbarPlacementUsesAboveRightWhenB
                               selectionRect.top() - toolbarSize.height() - 8));
 }
 
+void TestScreenCanvasPlacement::testSelectionToolbarPlacementSharesTopRowWithAvoidRectWhenWidthAllows()
+{
+    const QRect selectionRect(160, 360, 240, 100);
+    const QRect avoidRect(160, 324, 120, 28);
+    const QSize toolbarSize(180, 32);
+    const QRect viewportRect(0, 0, 640, 480);
+
+    const QPoint topLeft = SnapTray::QmlFloatingToolbar::resolveTopLeftForSelection(
+        selectionRect,
+        toolbarSize,
+        viewportRect,
+        SnapTray::QmlFloatingToolbar::HorizontalAlignment::RightEdge,
+        avoidRect);
+    const QRect toolbarRect(topLeft, toolbarSize);
+
+    QCOMPARE(topLeft, outsideAboveSharedRowRightTopLeft(selectionRect, toolbarSize, avoidRect));
+    QCOMPARE(overlapArea(toolbarRect, avoidRect), 0);
+    QVERIFY(toolbarRect.bottom() >= avoidRect.top());
+    QVERIFY(toolbarRect.top() <= avoidRect.bottom());
+}
+
 void TestScreenCanvasPlacement::testSelectionToolbarPlacementPrefersOutsideBelowWhenOnlyAboveBlocked()
 {
     const QRect selectionRect(180, 30, 220, 100);
@@ -379,7 +411,7 @@ void TestScreenCanvasPlacement::testSelectionToolbarPlacementUsesWidgetTopForAbo
     const QRect selectionRect(180, 120, 220, 190);
     const QRect widgetRect(180, 72, 120, 28);
     const QSize toolbarSize(220, 32);
-    const QRect viewportRect(0, 0, 640, 320);
+    const QRect viewportRect(0, 0, 500, 320);
 
     const QPoint topLeft = SnapTray::QmlFloatingToolbar::resolveTopLeftForSelection(
         selectionRect,
