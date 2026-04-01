@@ -1262,6 +1262,7 @@ set(TS_FILES
     translations/snaptray_zh_HK.ts
     translations/snaptray_zh_TW.ts
 )
+list(TRANSFORM TS_FILES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 
 qt_add_translations(${PROJECT_NAME}
     TS_FILES ${TS_FILES}
