@@ -83,6 +83,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QCoreApplication>
 #include <QGuiApplication>
 #include <QApplication>
 #include <QClipboard>
@@ -1031,7 +1032,10 @@ void PinWindow::createContextMenu()
     saveAction->setShortcut(QKeySequence::Save);
     connect(saveAction, &QAction::triggered, this, &PinWindow::saveToFile);
 
-    QAction* openCacheFolderAction = m_contextMenu->addAction(tr("Open History Folder"));
+    // Reuse the HistoryWindow translation context for the shared label so PinWindow
+    // stays aligned with the existing QML translation catalogs.
+    QAction* openCacheFolderAction = m_contextMenu->addAction(
+        QCoreApplication::translate("HistoryWindow", "Open History Folder"));
     connect(openCacheFolderAction, &QAction::triggered, this, &PinWindow::openCacheFolder);
 
     QAction* beautifyAction = m_contextMenu->addAction(tr("Beautify"));

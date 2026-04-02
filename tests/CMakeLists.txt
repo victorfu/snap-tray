@@ -190,6 +190,16 @@ target_link_libraries(PinWindow_StyleSync PRIVATE snaptray_ui snaptray_qmlplugin
 add_test(NAME PinWindow_StyleSync COMMAND PinWindow_StyleSync)
 set_tests_properties(PinWindow_StyleSync PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(PinWindow_ContextMenuTranslations PinWindow/tst_ContextMenuTranslations.cpp)
+target_link_libraries(PinWindow_ContextMenuTranslations PRIVATE Qt6::Core Qt6::Test)
+target_compile_definitions(PinWindow_ContextMenuTranslations PRIVATE
+    SNAPTRAY_TEST_TRANSLATION_DIR="${CMAKE_BINARY_DIR}"
+    SNAPTRAY_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+add_dependencies(PinWindow_ContextMenuTranslations SnapTray_lrelease)
+add_test(NAME PinWindow_ContextMenuTranslations COMMAND PinWindow_ContextMenuTranslations)
+set_tests_properties(PinWindow_ContextMenuTranslations PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # ScreenCanvas Tests
 # ============================================================================
