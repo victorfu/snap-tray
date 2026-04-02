@@ -7,6 +7,7 @@
 #include <QQmlEngine>
 #include <QQuickStyle>
 #include <QQuickView>
+#include <QWidget>
 
 #ifdef Q_OS_MACOS
 #import <Cocoa/Cocoa.h>
@@ -131,7 +132,7 @@ QQuickView* QmlOverlayManager::createScreenOverlay(const QUrl& qmlUrl)
     return view;
 }
 
-QQuickView* QmlOverlayManager::createParentOverlay(const QUrl& qmlUrl, QWidget* /*parent*/)
+QQuickView* QmlOverlayManager::createParentOverlay(const QUrl& qmlUrl, QWidget* parent)
 {
     ensureEngine();
 
@@ -139,6 +140,12 @@ QQuickView* QmlOverlayManager::createParentOverlay(const QUrl& qmlUrl, QWidget* 
     view->setFlags(Qt::ToolTip | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     view->setColor(Qt::transparent);
     view->setResizeMode(QQuickView::SizeViewToRootObject);
+    if (parent) {
+        QWidget* hostWindow = parent->window();
+        if (hostWindow && hostWindow->windowHandle()) {
+            view->setTransientParent(hostWindow->windowHandle());
+        }
+    }
     view->setSource(qmlUrl);
     attachShownWindowPolicy(view, WindowPolicyKind::Overlay);
 

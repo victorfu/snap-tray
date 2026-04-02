@@ -62,7 +62,8 @@ QmlToast::~QmlToast()
 
     // Screen-level toasts are cleaned up from aboutToQuit while Qt/Cocoa are
     // still intact. During global/static teardown, skip deleting native windows.
-    if (!QCoreApplication::instance() || QCoreApplication::closingDown()) {
+    if (m_shutdownCleanupStarted ||
+        !QCoreApplication::instance() || QCoreApplication::closingDown()) {
         m_view = nullptr;
         m_rootItem = nullptr;
         return;
@@ -73,7 +74,12 @@ QmlToast::~QmlToast()
 
 void QmlToast::cleanupForShutdown()
 {
-    destroyView();
+    m_shutdownCleanupStarted = true;
+    if (m_view) {
+        m_view->hide();
+    }
+    m_view = nullptr;
+    m_rootItem = nullptr;
 }
 
 void QmlToast::destroyView()
@@ -82,10 +88,15 @@ void QmlToast::destroyView()
         return;
     }
 
-    m_view->close();
-    delete m_view;
+    QQuickView* view = m_view.data();
     m_view = nullptr;
     m_rootItem = nullptr;
+    if (!view) {
+        return;
+    }
+
+    view->close();
+    view->deleteLater();
 }
 
 QRect QmlToast::preferredScreenGeometryForScreenToast(const QRect& activeWindowGeometry,
@@ -155,6 +166,11 @@ void QmlToast::ensureView()
     } else {
         m_view = QmlOverlayManager::instance().createParentOverlay(kToastQmlUrl, m_parentWidget);
     }
+
+    connect(m_view, &QObject::destroyed, this, [this]() {
+        m_view = nullptr;
+        m_rootItem = nullptr;
+    });
 
     if (m_view->status() != QQuickView::Ready) {
         qWarning() << "QmlToast: Failed to load Toast.qml:" << m_view->errors();

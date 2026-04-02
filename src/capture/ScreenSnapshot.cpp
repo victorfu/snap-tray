@@ -1,5 +1,7 @@
 #include "capture/ScreenSnapshot.h"
 
+#include <QByteArray>
+#include <QColorSpace>
 #include <QImage>
 #include <QScreen>
 #include <optional>
@@ -13,7 +15,64 @@ namespace snaptray::capture {
 namespace {
 
 #ifdef Q_OS_MACOS
-QImage createQImageFromCGImage(CGImageRef sourceImage)
+QColorSpace qtColorSpaceFromCGColorSpace(CGColorSpaceRef colorSpace)
+{
+    if (!colorSpace) {
+        return {};
+    }
+
+    CFDataRef iccData = CGColorSpaceCopyICCData(colorSpace);
+    if (!iccData) {
+        return {};
+    }
+
+    const QByteArray iccProfile(
+        reinterpret_cast<const char*>(CFDataGetBytePtr(iccData)),
+        static_cast<int>(CFDataGetLength(iccData)));
+    CFRelease(iccData);
+
+    return QColorSpace::fromIccProfile(iccProfile);
+}
+
+CGColorSpaceRef copySnapshotColorSpace(CGImageRef sourceImage,
+                                       std::optional<CGDirectDisplayID> displayId,
+                                       QColorSpace* qtColorSpace)
+{
+    if (CGColorSpaceRef imageColorSpace = CGImageGetColorSpace(sourceImage)) {
+        if (qtColorSpace) {
+            *qtColorSpace = qtColorSpaceFromCGColorSpace(imageColorSpace);
+            if (!qtColorSpace->isValid() && displayId.has_value()) {
+                if (CGColorSpaceRef displayColorSpace = CGDisplayCopyColorSpace(*displayId)) {
+                    *qtColorSpace = qtColorSpaceFromCGColorSpace(displayColorSpace);
+                    CGColorSpaceRelease(displayColorSpace);
+                }
+            }
+        }
+        return CGColorSpaceRetain(imageColorSpace);
+    }
+
+    if (displayId.has_value()) {
+        if (CGColorSpaceRef displayColorSpace = CGDisplayCopyColorSpace(*displayId)) {
+            if (qtColorSpace) {
+                *qtColorSpace = qtColorSpaceFromCGColorSpace(displayColorSpace);
+            }
+            return displayColorSpace;
+        }
+    }
+
+    if (qtColorSpace) {
+        const QColorSpace sRgb(QColorSpace::SRgb);
+        *qtColorSpace = sRgb.isValid() ? sRgb : QColorSpace();
+    }
+
+    CGColorSpaceRef sRgbColorSpace = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    if (sRgbColorSpace) {
+        return sRgbColorSpace;
+    }
+    return CGColorSpaceCreateDeviceRGB();
+}
+
+QImage createQImageFromCGImage(CGImageRef sourceImage, std::optional<CGDirectDisplayID> displayId)
 {
     if (!sourceImage) {
         return {};
@@ -31,7 +90,8 @@ QImage createQImageFromCGImage(CGImageRef sourceImage)
         return {};
     }
 
-    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    QColorSpace qtColorSpace;
+    CGColorSpaceRef colorSpace = copySnapshotColorSpace(sourceImage, displayId, &qtColorSpace);
     if (!colorSpace) {
         return {};
     }
@@ -55,6 +115,10 @@ QImage createQImageFromCGImage(CGImageRef sourceImage)
                        CGRectMake(0.0, 0.0, static_cast<CGFloat>(width), static_cast<CGFloat>(height)),
                        sourceImage);
     CGContextRelease(context);
+
+    if (qtColorSpace.isValid()) {
+        target.setColorSpace(qtColorSpace);
+    }
     return target;
 }
 
@@ -96,7 +160,7 @@ QPixmap captureScreenViaNativeDisplay(QScreen* screen)
         return {};
     }
 
-    const QImage image = createQImageFromCGImage(displayImage);
+    const QImage image = createQImageFromCGImage(displayImage, displayId);
     CGImageRelease(displayImage);
     if (image.isNull()) {
         return {};

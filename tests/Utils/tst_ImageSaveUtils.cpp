@@ -24,6 +24,8 @@ private slots:
     void testOverwriteWithReadOnlyDirectoryUsesFallback();
     void testSaveImageWithColorSpacePreservesProfile();
 #ifdef Q_OS_MAC
+    void testPixmapRoundTripPreservesTaggedColorSpace();
+    void testSavePixmapPreservesTaggedColorSpace();
     void testSavePixmapAppliesScreenColorSpaceWhenMissing();
 #endif
 };
@@ -191,6 +193,66 @@ void tst_ImageSaveUtils::testSaveImageWithColorSpacePreservesProfile()
 }
 
 #ifdef Q_OS_MAC
+void tst_ImageSaveUtils::testPixmapRoundTripPreservesTaggedColorSpace()
+{
+    QColorSpace sourceColorSpace = QColorSpace(QColorSpace::DisplayP3);
+    if (!sourceColorSpace.isValid()) {
+        sourceColorSpace = QColorSpace(QColorSpace::SRgb);
+    }
+    QVERIFY(sourceColorSpace.isValid());
+
+    QImage taggedImage(18, 18, QImage::Format_ARGB32);
+    taggedImage.fill(QColor(80, 160, 255, 255));
+    taggedImage.setColorSpace(sourceColorSpace);
+
+    const QPixmap pixmap = QPixmap::fromImage(taggedImage);
+    QVERIFY(!pixmap.isNull());
+
+    const QImage roundTrip = pixmap.toImage();
+    QVERIFY(roundTrip.colorSpace().isValid());
+
+    const QByteArray sourceIcc = sourceColorSpace.iccProfile();
+    if (!sourceIcc.isEmpty()) {
+        QCOMPARE(roundTrip.colorSpace().iccProfile(), sourceIcc);
+    } else {
+        QCOMPARE(roundTrip.colorSpace(), sourceColorSpace);
+    }
+}
+
+void tst_ImageSaveUtils::testSavePixmapPreservesTaggedColorSpace()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    QColorSpace sourceColorSpace = QColorSpace(QColorSpace::DisplayP3);
+    if (!sourceColorSpace.isValid()) {
+        sourceColorSpace = QColorSpace(QColorSpace::SRgb);
+    }
+    QVERIFY(sourceColorSpace.isValid());
+
+    QImage taggedImage(20, 20, QImage::Format_ARGB32);
+    taggedImage.fill(QColor(255, 120, 80, 255));
+    taggedImage.setColorSpace(sourceColorSpace);
+
+    const QPixmap pixmap = QPixmap::fromImage(taggedImage);
+    QVERIFY(!pixmap.isNull());
+
+    const QString filePath = tempDir.filePath("tagged_pixmap.png");
+    ImageSaveUtils::Error error;
+    QVERIFY(ImageSaveUtils::savePixmapAtomically(pixmap, filePath, QByteArrayLiteral("PNG"), &error));
+
+    QImage loaded(filePath);
+    QVERIFY(!loaded.isNull());
+    QVERIFY(loaded.colorSpace().isValid());
+
+    const QByteArray sourceIcc = sourceColorSpace.iccProfile();
+    if (!sourceIcc.isEmpty()) {
+        QCOMPARE(loaded.colorSpace().iccProfile(), sourceIcc);
+    } else {
+        QCOMPARE(loaded.colorSpace(), sourceColorSpace);
+    }
+}
+
 void tst_ImageSaveUtils::testSavePixmapAppliesScreenColorSpaceWhenMissing()
 {
     QScreen* sourceScreen = QGuiApplication::primaryScreen();
