@@ -8,6 +8,24 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 - No unreleased entries yet.
 
+## [1.0.44] - 2026-04-02
+
+### Added
+
+- Added a richer History window with smart-folder sidebar filters, sorting, and grid/list browsing so recent captures are easier to find.
+- Added Beautify as a Pin toolbar action and expanded toolbar fallback placement so controls can stay attached to the selection even when outside positions are blocked.
+
+### Improved
+
+- Improved floating toolbar placement and attachment anchoring so region capture controls stay aligned to the active selection without covering as much working space.
+- Declared the supported app localizations in the macOS bundle so system surfaces can present SnapTray in the languages the app ships.
+
+### Fixed
+
+- Fixed PinWindow initialization timing and reduced Windows pin drift so pinned captures open more reliably in the intended region.
+- Fixed translation coverage for shared PinWindow actions, detected-window selection completion, and OCR copy cleanup to keep capture flows consistent across locales.
+- Fixed a toast teardown crash caused by QQuickView destruction during static shutdown.
+
 ## [1.0.43] - 2026-03-30
 
 ### Improved
