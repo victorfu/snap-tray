@@ -122,14 +122,17 @@ ToolbarViewModelBase::ToolButtonOptions ToolbarViewModelBase::defaultToolButtonO
 }
 
 QVariantMap ToolbarViewModelBase::buildToolButtonEntry(ToolId toolId,
-                                                       const ToolButtonOptions& options) const
+                                                       const ToolButtonOptions& options,
+                                                       QString tooltipOverride) const
 {
     auto& registry = ToolRegistry::instance();
     const auto& def = registry.get(toolId);
     return buildCustomButtonEntry(static_cast<int>(toolId),
                                   def.iconKey,
                                   QStringLiteral("qrc:/icons/icons/%1.svg").arg(def.iconKey),
-                                  registry.getTooltipWithShortcut(toolId),
+                                  tooltipOverride.isNull()
+                                      ? registry.getTooltipWithShortcut(toolId)
+                                      : tooltipOverride,
                                   options);
 }
 

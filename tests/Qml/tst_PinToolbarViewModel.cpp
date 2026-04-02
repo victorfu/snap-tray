@@ -2,9 +2,18 @@
 
 #include "qml/PinToolbarViewModel.h"
 
+#include <QCoreApplication>
+#include <QDir>
 #include <QSignalSpy>
+#include <QTranslator>
 
 namespace {
+
+QString translationFilePath()
+{
+    return QDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR))
+        .filePath(QStringLiteral("snaptray_zh_TW.qm"));
+}
 
 QVariantMap findButtonById(const QVariantList& buttons, int buttonId)
 {
@@ -38,6 +47,7 @@ class tst_PinToolbarViewModel : public QObject
 private slots:
     void testBeautifyStartsProcessingSectionBeforeCropAndMeasure();
     void testBeautifyUsesDefaultIconStyling();
+    void testBeautifyTooltipUsesPinWindowTranslation();
     void testBeautifyButtonEmitsBeautifySignal();
 };
 
@@ -83,6 +93,27 @@ void tst_PinToolbarViewModel::testBeautifyUsesDefaultIconStyling()
     QVERIFY(!beautifyButton.value(QStringLiteral("isAction")).toBool());
     QCOMPARE(beautifyButton.value(QStringLiteral("iconSource")).toString(),
              QStringLiteral("qrc:/icons/icons/beautify.svg"));
+}
+
+void tst_PinToolbarViewModel::testBeautifyTooltipUsesPinWindowTranslation()
+{
+    QTranslator translator;
+    QVERIFY2(translator.load(translationFilePath()),
+             qPrintable(QStringLiteral("Failed to load translation file: %1")
+                            .arg(translationFilePath())));
+    QVERIFY(QCoreApplication::installTranslator(&translator));
+
+    PinToolbarViewModel viewModel;
+    const QVariantMap beautifyButton = findButtonById(
+        viewModel.buttons(), static_cast<int>(ToolId::Beautify));
+
+    QVERIFY(!beautifyButton.isEmpty());
+    QCOMPARE(beautifyButton.value(QStringLiteral("tooltip")).toString(),
+             QCoreApplication::translate("PinWindow", "Beautify"));
+    QCOMPARE(beautifyButton.value(QStringLiteral("tooltip")).toString(),
+             QString::fromUtf8("美化"));
+
+    QCoreApplication::removeTranslator(&translator);
 }
 
 void tst_PinToolbarViewModel::testBeautifyButtonEmitsBeautifySignal()

@@ -71,7 +71,9 @@ signals:
 
 protected:
     ToolButtonOptions defaultToolButtonOptions(ToolId toolId) const;
-    QVariantMap buildToolButtonEntry(ToolId toolId, const ToolButtonOptions& options) const;
+    QVariantMap buildToolButtonEntry(ToolId toolId,
+                                     const ToolButtonOptions& options,
+                                     QString tooltipOverride = QString()) const;
     QVariantMap buildCustomButtonEntry(int id,
                                        const QString& iconKey,
                                        const QString& iconSource,

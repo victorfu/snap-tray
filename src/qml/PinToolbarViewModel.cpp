@@ -2,6 +2,8 @@
 #include "tools/ToolRegistry.h"
 #include "tools/ToolTraits.h"
 
+#include <QCoreApplication>
+
 PinToolbarViewModel::PinToolbarViewModel(QObject* parent)
     : ToolbarViewModelBase(parent)
 {
@@ -24,7 +26,10 @@ void PinToolbarViewModel::buildButtonList()
                                       && toolId != ToolId::Crop);
         options.isAction = (toolId == ToolId::Save
                             || toolId == ToolId::Copy);
-        buttons.append(buildToolButtonEntry(toolId, options));
+        const QString tooltipOverride = (toolId == ToolId::Beautify)
+            ? QCoreApplication::translate("PinWindow", "Beautify")
+            : QString();
+        buttons.append(buildToolButtonEntry(toolId, options, tooltipOverride));
     }
 
     // "Done" — local toolbar-only action

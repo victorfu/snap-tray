@@ -28,6 +28,10 @@ set_tests_properties(Qml_CanvasToolbarViewModel PROPERTIES TIMEOUT 60 LABELS "un
 
 add_executable(Qml_PinToolbarViewModel Qml/tst_PinToolbarViewModel.cpp)
 target_link_libraries(Qml_PinToolbarViewModel PRIVATE snaptray_ui Qt6::Test)
+target_compile_definitions(Qml_PinToolbarViewModel PRIVATE
+    SNAPTRAY_TEST_TRANSLATION_DIR="${CMAKE_BINARY_DIR}"
+)
+add_dependencies(Qml_PinToolbarViewModel SnapTray_lrelease)
 add_test(NAME Qml_PinToolbarViewModel COMMAND Qml_PinToolbarViewModel)
 set_tests_properties(Qml_PinToolbarViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
