@@ -31,6 +31,11 @@ target_link_libraries(Qml_PinToolbarViewModel PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_PinToolbarViewModel COMMAND Qml_PinToolbarViewModel)
 set_tests_properties(Qml_PinToolbarViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_RegionToolbarViewModel Qml/tst_RegionToolbarViewModel.cpp)
+target_link_libraries(Qml_RegionToolbarViewModel PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Qml_RegionToolbarViewModel COMMAND Qml_RegionToolbarViewModel)
+set_tests_properties(Qml_RegionToolbarViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Qml_BeautifyPanelBackend Qml/tst_BeautifyPanelBackend.cpp)
 target_link_libraries(Qml_BeautifyPanelBackend PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_BeautifyPanelBackend COMMAND Qml_BeautifyPanelBackend)

@@ -207,8 +207,8 @@ void TestToolRegistry::testGetToolsForToolbar_RegionSelector()
 {
     QVector<ToolId> tools = registry().getToolsForToolbar(ToolbarType::RegionSelector);
 
-    // Should include essential tools
-    QVERIFY(tools.contains(ToolId::Selection));
+    // Should include essential tools and omit implicit Selection mode
+    QVERIFY(!tools.contains(ToolId::Selection));
     QVERIFY(tools.contains(ToolId::Pencil));
     QVERIFY(tools.contains(ToolId::Arrow));
     QVERIFY(tools.contains(ToolId::Shape));
@@ -216,6 +216,7 @@ void TestToolRegistry::testGetToolsForToolbar_RegionSelector()
     QVERIFY(tools.contains(ToolId::Mosaic));
     QVERIFY(tools.contains(ToolId::Undo));
     QVERIFY(tools.contains(ToolId::Redo));
+    QVERIFY(!tools.contains(ToolId::Cancel));
     QVERIFY(tools.contains(ToolId::QRCode));
     QVERIFY(tools.contains(ToolId::MultiRegion));
     QVERIFY(tools.contains(ToolId::Share));

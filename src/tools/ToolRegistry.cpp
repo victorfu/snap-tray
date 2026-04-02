@@ -406,7 +406,6 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
         // Full toolbar for screenshot mode
         // Note: Polyline is accessed via Arrow tool's polyline mode toggle
         tools = {
-            ToolId::Selection,
             ToolId::Shape,
             ToolId::Arrow,
             ToolId::Pencil,
@@ -418,7 +417,6 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
             ToolId::EmojiSticker,
             ToolId::Undo,
             ToolId::Redo,
-            ToolId::Cancel,
             ToolId::OCR,
             ToolId::QRCode,
             ToolId::Share,
