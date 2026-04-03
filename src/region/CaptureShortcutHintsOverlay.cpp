@@ -8,24 +8,24 @@
 
 namespace {
 constexpr int kPanelMargin = 12;
-constexpr int kPanelCornerRadius = 14;
-constexpr int kPanelPaddingX = 14;
-constexpr int kPanelPaddingY = 12;
-constexpr int kColumnGap = 16;
-constexpr int kRowGap = 8;
-constexpr int kKeyCapPaddingX = 9;
-constexpr int kKeyCapHeight = 28;
-constexpr int kKeyCapRadius = 7;
-constexpr int kKeyCapMinWidth = 30;
-constexpr int kPlusSpacing = 6;
+constexpr int kPanelCornerRadius = 12;
+constexpr int kPanelPaddingX = 12;
+constexpr int kPanelPaddingY = 10;
+constexpr int kColumnGap = 12;
+constexpr int kRowGap = 6;
+constexpr int kKeyCapPaddingX = 8;
+constexpr int kKeyCapHeight = 26;
+constexpr int kKeyCapRadius = 6;
+constexpr int kKeyCapMinWidth = 28;
+constexpr int kPlusSpacing = 5;
 
-constexpr QRgb kPanelBg = qRgba(52, 54, 60, 220);
-constexpr QRgb kPanelBorder = qRgba(255, 255, 255, 58);
-constexpr QRgb kKeyCapBg = qRgba(75, 77, 84, 228);
-constexpr QRgb kKeyCapBorder = qRgba(235, 235, 235, 165);
-constexpr QRgb kKeyText = qRgba(250, 250, 250, 255);
-constexpr QRgb kDescriptionText = qRgba(244, 244, 244, 255);
-constexpr QRgb kPlusText = qRgba(210, 210, 210, 230);
+constexpr QRgb kPanelBg = qRgba(10, 10, 12, 244);
+constexpr QRgb kPanelBorder = qRgba(255, 255, 255, 70);
+constexpr QRgb kKeyCapBg = qRgba(18, 18, 20, 248);
+constexpr QRgb kKeyCapBorder = qRgba(240, 240, 240, 196);
+constexpr QRgb kKeyText = qRgba(255, 255, 255, 255);
+constexpr QRgb kDescriptionText = qRgba(250, 250, 250, 255);
+constexpr QRgb kPlusText = qRgba(232, 232, 232, 235);
 
 QString trOverlay(const char* text)
 {

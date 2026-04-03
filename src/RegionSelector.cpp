@@ -3132,6 +3132,8 @@ void RegionSelector::positionRegionControlPanel()
         ? m_selectionManager->selectionRect().normalized()
         : QRect();
     const QString dimensions = SelectionDimensionLabel::widgetLabel(selectionRect, m_devicePixelRatio);
+    const QSize controlAnchorSize = SelectionDimensionLabel::controlAnchorSize(
+        m_selectionManager && m_selectionManager->aspectRatio() > 0.0);
     QFont font;
     font.setPointSize(12);
     font.setBold(true);
@@ -3140,9 +3142,12 @@ void RegionSelector::positionRegionControlPanel()
         dimensions,
         font,
         size(),
-        SelectionDimensionLabel::controlAnchorSize(
-            m_selectionManager && m_selectionManager->aspectRatio() > 0.0));
-    shouldShow = shouldShow && !attachmentLayout.compactRegion;
+        controlAnchorSize);
+    const bool narrowWidthForControl =
+        selectionRect.isValid() &&
+        !selectionRect.isEmpty() &&
+        selectionRect.width() < attachmentLayout.panelRect.width() + kFloatingAttachmentGap + controlAnchorSize.width();
+    shouldShow = shouldShow && !attachmentLayout.compactRegion && !narrowWidthForControl;
 
     if (shouldShow != m_regionControlPanel->isVisible()) {
         shouldShow ? m_regionControlPanel->show() : m_regionControlPanel->hide();

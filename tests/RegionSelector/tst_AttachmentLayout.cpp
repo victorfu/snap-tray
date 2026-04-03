@@ -58,6 +58,7 @@ private slots:
     void testRegionControlPanelMovesInsideSelectionWhenTopToolbarOverlaps();
     void testRegionControlPanelStaysBesideDimensionLabelWhenOnlyPopupWidthWouldOverlap();
     void testWideShortSelectionKeepsRegionControlPanelVisible();
+    void testTallNarrowSelectionHidesRegionControlPanelButKeepsStandardSizeWidgetPlacement();
     void testSmallRegionHidesRegionControlPanelAndPlacesDimensionLabelLeftOfSelection();
     void testSmallRegionClampsDimensionLabelToViewportLeftWithoutInsideFallback();
 };
@@ -213,6 +214,56 @@ void tst_RegionSelectorAttachmentLayout::testWideShortSelectionKeepsRegionContro
     QVERIFY(RegionSelectorTestAccess::regionControlVisible(selector));
     QVERIFY(dimensionInfoGeometry.bottom() < selectionGlobalRect.top());
     QVERIFY(dimensionInfoGeometry.left() >= selectionGlobalRect.left());
+}
+
+void tst_RegionSelectorAttachmentLayout::testTallNarrowSelectionHidesRegionControlPanelButKeepsStandardSizeWidgetPlacement()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+
+    const QRect hostGeometry = screen->availableGeometry().adjusted(40, 40, -40, -120);
+    if (hostGeometry.width() < 760 || hostGeometry.height() < 420) {
+        QSKIP("Primary screen is too small for tall-narrow selection verification.");
+    }
+
+    RegionSelector selector;
+    prepareCompletedSelection(selector, hostGeometry, QRect(80, hostGeometry.height() - 320, 420, 220));
+
+    const QRect seedRegionControlAnchorRect = RegionSelectorTestAccess::regionControlAnchorRect(selector);
+    const QRect seedDimensionInfoGeometry =
+        toGlobalRect(selector, RegionSelectorTestAccess::dimensionInfoRect(selector));
+
+    if (!seedRegionControlAnchorRect.isValid() || seedRegionControlAnchorRect.isEmpty() ||
+        !seedDimensionInfoGeometry.isValid() || seedDimensionInfoGeometry.isEmpty()) {
+        QSKIP("Seed geometry did not stabilize for tall-narrow selection verification.");
+    }
+
+    const int targetWidth =
+        seedDimensionInfoGeometry.width() + kAttachmentGap + (seedRegionControlAnchorRect.width() / 2);
+    if (targetWidth <= seedDimensionInfoGeometry.width() + 10 ||
+        targetWidth >= seedDimensionInfoGeometry.width() + kAttachmentGap + seedRegionControlAnchorRect.width()) {
+        QSKIP("Could not derive a stable narrow-width-for-control scenario.");
+    }
+
+    const QRect selectionRect(80, hostGeometry.height() - 320, targetWidth, 220);
+    RegionSelectorTestAccess::setSelectionRect(selector, selectionRect);
+    RegionSelectorTestAccess::setCurrentTool(selector, ToolId::Arrow);
+    RegionSelectorTestAccess::invokePaint(selector, QRegion(selector.rect()));
+    QCoreApplication::processEvents();
+    RegionSelectorTestAccess::invokePaint(selector, QRegion(selector.rect()));
+    QCoreApplication::processEvents();
+
+    const QRect dimensionInfoGeometry =
+        toGlobalRect(selector, RegionSelectorTestAccess::dimensionInfoRect(selector));
+    const QRect selectionGlobalRect = toGlobalRect(selector, selectionRect);
+
+    if (!dimensionInfoGeometry.isValid() || dimensionInfoGeometry.isEmpty()) {
+        QSKIP("Tall-narrow attachment geometry did not stabilize in this environment.");
+    }
+
+    QVERIFY(!RegionSelectorTestAccess::regionControlVisible(selector));
+    QCOMPARE(dimensionInfoGeometry.left(), selectionGlobalRect.left());
+    QVERIFY(dimensionInfoGeometry.bottom() < selectionGlobalRect.top());
 }
 
 void tst_RegionSelectorAttachmentLayout::testSmallRegionHidesRegionControlPanelAndPlacesDimensionLabelLeftOfSelection()
