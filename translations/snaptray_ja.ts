@@ -231,6 +231,38 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>キャプチャをキャンセル</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>選択を確定（選択後）</translation>
+    </message>
+    <message>
+        <source>Replay capture history</source>
+        <translation>キャプチャ履歴を再生</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>複数領域モードを切り替え</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>RGB/HEX を切り替え（拡大鏡表示時）</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>色の値をコピー（選択前）</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>選択範囲を 1 ピクセル移動（選択後）</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>選択範囲のサイズを 1 ピクセル変更（選択後）</translation>
+    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>

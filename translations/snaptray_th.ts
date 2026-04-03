@@ -243,6 +243,41 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
     </message>
 </context>
 <context>
+    <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>ยกเลิกการจับภาพ</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>ยืนยันการเลือก (หลังเลือกแล้ว)</translation>
+    </message>
+    <message>
+        <source>Replay capture history</source>
+        <translation>เล่นประวัติการจับภาพซ้ำ</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>สลับโหมดหลายพื้นที่</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>สลับ RGB/HEX (เมื่อแสดงแว่นขยาย)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>คัดลอกค่าสี (ก่อนเลือก)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>เลื่อนพื้นที่ที่เลือก 1 พิกเซล (หลังเลือกแล้ว)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>ปรับขนาดพื้นที่ที่เลือก 1 พิกเซล (หลังเลือกแล้ว)</translation>
+    </message>
+</context>
+<context>
     <name>GeneralSettings</name>
     <message>
         <location filename="../src/qml/settings/GeneralSettings.qml" line="31"/>
@@ -3132,4 +3167,3 @@ Password: %2</source>
     </message>
 </context>
 </TS>
-

@@ -231,6 +231,38 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Peruuta kaappaus</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Vahvista valinta (valinnan jälkeen)</translation>
+    </message>
+    <message>
+        <source>Replay capture history</source>
+        <translation>Toista kaappaushistoria</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Vaihda monialuetila</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>Vaihda RGB/HEX (kun suurennuslasi on näkyvissä)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Kopioi värin arvo (ennen valintaa)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Siirrä valintaa 1 pikseli (valinnan jälkeen)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Muuta valinnan kokoa 1 pikseli (valinnan jälkeen)</translation>
+    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>

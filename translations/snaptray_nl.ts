@@ -231,6 +231,38 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Opname annuleren</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Selectie bevestigen (na selecteren)</translation>
+    </message>
+    <message>
+        <source>Replay capture history</source>
+        <translation>Opnamegeschiedenis opnieuw afspelen</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Modus voor meerdere gebieden wisselen</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>RGB/HEX wisselen (wanneer het vergrootglas zichtbaar is)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Kleurwaarde kopiëren (vóór selecteren)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Selectie 1 pixel verplaatsen (na selecteren)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Grootte van selectie 1 pixel aanpassen (na selecteren)</translation>
+    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>

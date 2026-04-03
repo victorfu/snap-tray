@@ -244,8 +244,16 @@ target_link_libraries(RegionSelector_DeferredInitialization PRIVATE snaptray_ui 
 add_test(NAME RegionSelector_DeferredInitialization COMMAND RegionSelector_DeferredInitialization)
 set_tests_properties(RegionSelector_DeferredInitialization PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
-add_executable(RegionSelector_CaptureShortcutHintsOverlay RegionSelector/tst_CaptureShortcutHintsOverlay.cpp)
+add_executable(RegionSelector_CaptureShortcutHintsOverlay
+    RegionSelector/tst_CaptureShortcutHintsOverlay.cpp
+    RegionSelector/tst_CaptureShortcutHintsOverlay.h
+)
 target_link_libraries(RegionSelector_CaptureShortcutHintsOverlay PRIVATE snaptray_ui Qt6::Test)
+target_compile_definitions(RegionSelector_CaptureShortcutHintsOverlay PRIVATE
+    SNAPTRAY_TEST_TRANSLATION_DIR="${CMAKE_BINARY_DIR}"
+    SNAPTRAY_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+add_dependencies(RegionSelector_CaptureShortcutHintsOverlay SnapTray_lrelease)
 add_test(NAME RegionSelector_CaptureShortcutHintsOverlay COMMAND RegionSelector_CaptureShortcutHintsOverlay)
 set_tests_properties(RegionSelector_CaptureShortcutHintsOverlay PROPERTIES TIMEOUT 60 LABELS "unit")
 

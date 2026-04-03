@@ -231,6 +231,38 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>إلغاء الالتقاط</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>تأكيد التحديد (بعد إتمام التحديد)</translation>
+    </message>
+    <message>
+        <source>Replay capture history</source>
+        <translation>إعادة تشغيل سجل الالتقاط</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>تبديل وضع المناطق المتعددة</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>التبديل بين RGB/HEX (عند ظهور المكبرة)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>نسخ قيمة اللون (قبل التحديد)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>تحريك التحديد بمقدار بكسل واحد (بعد التحديد)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>تغيير حجم التحديد بمقدار بكسل واحد (بعد التحديد)</translation>
+    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>

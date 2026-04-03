@@ -231,6 +231,38 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Ακύρωση λήψης</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Επιβεβαίωση επιλογής (μετά την ολοκλήρωση της επιλογής)</translation>
+    </message>
+    <message>
+        <source>Replay capture history</source>
+        <translation>Επανάληψη ιστορικού λήψεων</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Εναλλαγή λειτουργίας πολλαπλών περιοχών</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>Εναλλαγή RGB/HEX (όταν εμφανίζεται ο μεγεθυντικός φακός)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Αντιγραφή τιμής χρώματος (πριν από την επιλογή)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Μετακίνηση επιλογής κατά 1 εικονοστοιχείο (μετά την ολοκλήρωση της επιλογής)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Αλλαγή μεγέθους επιλογής κατά 1 εικονοστοιχείο (μετά την ολοκλήρωση της επιλογής)</translation>
+    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>

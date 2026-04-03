@@ -231,6 +231,38 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Zrušit snímání</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Potvrdit výběr (po dokončení výběru)</translation>
+    </message>
+    <message>
+        <source>Replay capture history</source>
+        <translation>Znovu přehrát historii snímání</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Přepnout režim více oblastí</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>Přepnout RGB/HEX (když je vidět lupa)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Kopírovat hodnotu barvy (před výběrem)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Posunout výběr o 1 pixel (po dokončení výběru)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Změnit velikost výběru o 1 pixel (po dokončení výběru)</translation>
+    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>

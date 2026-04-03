@@ -231,6 +231,38 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Annulla cattura</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Conferma selezione (dopo la selezione)</translation>
+    </message>
+    <message>
+        <source>Replay capture history</source>
+        <translation>Ripeti cronologia catture</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Attiva/disattiva modalità multi-area</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>Passa da RGB a HEX (quando la lente è visibile)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Copia valore colore (prima della selezione)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Sposta la selezione di 1 pixel (dopo la selezione)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Ridimensiona la selezione di 1 pixel (dopo la selezione)</translation>
+    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>

@@ -231,6 +231,38 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Aufnahme abbrechen</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Auswahl bestätigen (nach dem Auswählen)</translation>
+    </message>
+    <message>
+        <source>Replay capture history</source>
+        <translation>Aufnahmeverlauf erneut abspielen</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Mehrbereichsmodus umschalten</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>RGB/HEX umschalten (wenn die Lupe sichtbar ist)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Farbwert kopieren (vor der Auswahl)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Auswahl um 1 Pixel verschieben (nach dem Auswählen)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Größe der Auswahl um 1 Pixel ändern (nach dem Auswählen)</translation>
+    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>

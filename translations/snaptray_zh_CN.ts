@@ -231,6 +231,38 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>取消截取</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>确认选区（完成选取后）</translation>
+    </message>
+    <message>
+        <source>Replay capture history</source>
+        <translation>重播截图历史</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>切换多区域模式</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>切换 RGB/HEX（显示放大镜时）</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>复制颜色值（选取前）</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>移动选区 1 像素（完成选取后）</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>调整选区大小 1 像素（完成选取后）</translation>
+    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
