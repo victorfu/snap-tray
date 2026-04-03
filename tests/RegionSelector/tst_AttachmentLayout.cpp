@@ -57,6 +57,9 @@ private slots:
     void initTestCase();
     void testRegionControlPanelMovesInsideSelectionWhenTopToolbarOverlaps();
     void testRegionControlPanelStaysBesideDimensionLabelWhenOnlyPopupWidthWouldOverlap();
+    void testWideShortSelectionKeepsRegionControlPanelVisible();
+    void testSmallRegionHidesRegionControlPanelAndPlacesDimensionLabelLeftOfSelection();
+    void testSmallRegionClampsDimensionLabelToViewportLeftWithoutInsideFallback();
 };
 
 void tst_RegionSelectorAttachmentLayout::initTestCase()
@@ -182,6 +185,93 @@ void tst_RegionSelectorAttachmentLayout::testRegionControlPanelStaysBesideDimens
     QVERIFY(!defaultExternalAnchorRect.intersects(toolbarGeometry));
     QCOMPARE(regionControlAnchorGeometry.topLeft(), defaultExternalAnchorRect.topLeft());
     QVERIFY(regionControlAnchorGeometry.bottom() < selectionGlobalRect.top());
+}
+
+void tst_RegionSelectorAttachmentLayout::testWideShortSelectionKeepsRegionControlPanelVisible()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+
+    const QRect hostGeometry = screen->availableGeometry().adjusted(40, 40, -40, -120);
+    if (hostGeometry.width() < 920 || hostGeometry.height() < 260) {
+        QSKIP("Primary screen is too small for wide-short selection verification.");
+    }
+
+    const QRect selectionRect(80, hostGeometry.height() - 120, 600, 30);
+
+    RegionSelector selector;
+    prepareCompletedSelection(selector, hostGeometry, selectionRect);
+
+    const QRect dimensionInfoGeometry =
+        toGlobalRect(selector, RegionSelectorTestAccess::dimensionInfoRect(selector));
+    const QRect selectionGlobalRect = toGlobalRect(selector, selectionRect);
+
+    if (!dimensionInfoGeometry.isValid() || dimensionInfoGeometry.isEmpty()) {
+        QSKIP("Wide-short attachment geometry did not stabilize in this environment.");
+    }
+
+    QVERIFY(RegionSelectorTestAccess::regionControlVisible(selector));
+    QVERIFY(dimensionInfoGeometry.bottom() < selectionGlobalRect.top());
+    QVERIFY(dimensionInfoGeometry.left() >= selectionGlobalRect.left());
+}
+
+void tst_RegionSelectorAttachmentLayout::testSmallRegionHidesRegionControlPanelAndPlacesDimensionLabelLeftOfSelection()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+
+    const QRect hostGeometry = screen->availableGeometry().adjusted(40, 40, -40, -120);
+    if (hostGeometry.width() < 520 || hostGeometry.height() < 260) {
+        QSKIP("Primary screen is too small for compact attachment verification.");
+    }
+
+    const QRect selectionRect(80, hostGeometry.height() - 120, 120, 30);
+
+    RegionSelector selector;
+    prepareCompletedSelection(selector, hostGeometry, selectionRect);
+
+    const QRect dimensionInfoGeometry =
+        toGlobalRect(selector, RegionSelectorTestAccess::dimensionInfoRect(selector));
+    const QRect selectionGlobalRect = toGlobalRect(selector, selectionRect);
+
+    if (!dimensionInfoGeometry.isValid() || dimensionInfoGeometry.isEmpty()) {
+        QSKIP("Compact attachment geometry did not stabilize in this environment.");
+    }
+
+    QVERIFY(!RegionSelectorTestAccess::regionControlVisible(selector));
+    QCOMPARE(dimensionInfoGeometry.top(), selectionGlobalRect.top());
+    QVERIFY(dimensionInfoGeometry.right() < selectionGlobalRect.left());
+    QVERIFY(selectionGlobalRect.left() - dimensionInfoGeometry.right() >= 8);
+}
+
+void tst_RegionSelectorAttachmentLayout::testSmallRegionClampsDimensionLabelToViewportLeftWithoutInsideFallback()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+
+    const QRect hostGeometry = screen->availableGeometry().adjusted(40, 40, -40, -120);
+    if (hostGeometry.width() < 520 || hostGeometry.height() < 220) {
+        QSKIP("Primary screen is too small for compact top-edge verification.");
+    }
+
+    const QRect selectionRect(6, 80, 120, 30);
+
+    RegionSelector selector;
+    prepareCompletedSelection(selector, hostGeometry, selectionRect);
+
+    const QRect dimensionInfoGeometry =
+        toGlobalRect(selector, RegionSelectorTestAccess::dimensionInfoRect(selector));
+    const QRect selectionGlobalRect = toGlobalRect(selector, selectionRect);
+
+    if (!dimensionInfoGeometry.isValid() || dimensionInfoGeometry.isEmpty()) {
+        QSKIP("Compact top-edge attachment geometry did not stabilize in this environment.");
+    }
+
+    QVERIFY(!RegionSelectorTestAccess::regionControlVisible(selector));
+    QCOMPARE(dimensionInfoGeometry.left(), hostGeometry.left() + 5);
+    QCOMPARE(dimensionInfoGeometry.top(), selectionGlobalRect.top());
+    QVERIFY(dimensionInfoGeometry.right() >= selectionGlobalRect.left());
+    QVERIFY(dimensionInfoGeometry.top() != selectionGlobalRect.top() + 5);
 }
 
 QTEST_MAIN(tst_RegionSelectorAttachmentLayout)

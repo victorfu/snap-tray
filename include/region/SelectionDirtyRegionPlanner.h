@@ -5,6 +5,7 @@
 #include <QRect>
 #include <QRegion>
 #include <QSize>
+#include <QtGlobal>
 
 #include "settings/RegionCaptureSettingsManager.h"
 
@@ -30,6 +31,8 @@ public:
         QPoint currentCursorPos;
         QPoint lastCursorPos;
         QSize viewportSize;
+        qreal devicePixelRatio = 1.0;
+        bool ratioLocked = false;
         bool includeMagnifier = true;
         bool suppressFloatingUi = false;
     };
@@ -62,7 +65,10 @@ public:
         const QSize& viewportSize) const;
     QRect magnifierRectForCursor(const QPoint& cursorPos, const QSize& viewportSize) const;
     QRect beaverRectForCursor(const QPoint& cursorPos, const QSize& viewportSize) const;
-    QRect dimensionInfoRectForSelection(const QRect& selectionRect) const;
+    QRect dimensionInfoRectForSelection(const QRect& selectionRect,
+                                        const QSize& viewportSize,
+                                        qreal devicePixelRatio,
+                                        bool ratioLocked) const;
 
     QRegion planSelectionDragRegion(const SelectionDragParams& params) const;
     QRegion planHoverRegion(const HoverParams& params) const;

@@ -386,8 +386,28 @@ void RegionPainter::drawDimensionInfo(QPainter& painter)
     }
 
     QRect sel = m_selectionManager->selectionRect();
-    const QString dimensions = SelectionDimensionLabel::label(sel, m_devicePixelRatio);
-    QRect textRect = drawDimensionInfoPanel(painter, sel, dimensions);
+    const QString dimensions = SelectionDimensionLabel::widgetLabel(sel, m_devicePixelRatio);
+    QFont font = painter.font();
+    font.setPointSize(12);
+    font.setBold(true);
+    painter.setFont(font);
+
+    const QRect textRect = SelectionDimensionLabel::selectionPanelLayout(
+        sel,
+        dimensions,
+        font,
+        m_parentWidget ? m_parentWidget->size() : QSize(),
+        SelectionDimensionLabel::controlAnchorSize(
+            m_selectionManager && m_selectionManager->aspectRatio() > 0.0)).panelRect;
+
+    auto styleConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    GlassRenderer::drawGlassPanel(painter, textRect, styleConfig, 6);
+
+    const QColor textColor = dimensionLabelTextColor(styleConfig);
+    painter.setPen(dimensionLabelShadowColor(textColor));
+    painter.drawText(textRect.translated(0, 1), Qt::AlignCenter, dimensions);
+    painter.setPen(textColor);
+    painter.drawText(textRect, Qt::AlignCenter, dimensions);
     m_lastDimensionInfoRect = textRect;
 }
 

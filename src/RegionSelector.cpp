@@ -13,6 +13,7 @@
 #include "region/StaticCaptureBackgroundWindow.h"
 #include "region/CaptureChromeWindow.h"
 #include "region/SelectionDimmingOverlay.h"
+#include "region/SelectionDimensionLabel.h"
 #include "region/SelectionPreviewOverlay.h"
 #include "region/CaptureShortcutHintsOverlay.h"
 #include "qml/QmlOverlayPanel.h"
@@ -2811,6 +2812,7 @@ void RegionSelector::syncSelectionPreviewOverlay()
             &m_backgroundPixmap,
             m_devicePixelRatio,
             m_cornerRadius,
+            m_selectionManager && m_selectionManager->aspectRatio() > 0.0,
             shouldShow);
     }
 }
@@ -3126,13 +3128,29 @@ void RegionSelector::positionRegionControlPanel()
                       !m_exportInProgress &&
                       !completedSelectionDragUiSuppressed() &&
                       !m_selectionCompletionHandoffPending;
+    const QRect selectionRect = m_selectionManager
+        ? m_selectionManager->selectionRect().normalized()
+        : QRect();
+    const QString dimensions = SelectionDimensionLabel::widgetLabel(selectionRect, m_devicePixelRatio);
+    QFont font;
+    font.setPointSize(12);
+    font.setBold(true);
+    const auto attachmentLayout = SelectionDimensionLabel::selectionPanelLayout(
+        selectionRect,
+        dimensions,
+        font,
+        size(),
+        SelectionDimensionLabel::controlAnchorSize(
+            m_selectionManager && m_selectionManager->aspectRatio() > 0.0));
+    shouldShow = shouldShow && !attachmentLayout.compactRegion;
+
     if (shouldShow != m_regionControlPanel->isVisible()) {
         shouldShow ? m_regionControlPanel->show() : m_regionControlPanel->hide();
     }
     if (!shouldShow)
         return;
 
-    QRect dimRect = m_captureChromeWindow && m_captureChromeWindow->isVisible()
+    const QRect dimRect = m_captureChromeWindow && m_captureChromeWindow->isVisible()
         ? m_captureChromeWindow->lastDimensionInfoRect()
         : m_painter->lastDimensionInfoRect();
     if (!dimRect.isValid())
@@ -3147,9 +3165,6 @@ void RegionSelector::positionRegionControlPanel()
         dimRect.top() + (dimRect.height() - panelAnchorSize.height()) / 2);
     const QRect preferredAnchorLocalRect(preferredAnchorLocalPos, panelAnchorSize);
     const QRect toolbarLocalRect = floatingToolbarRectInLocalCoords();
-    const QRect selectionRect = m_selectionManager
-        ? m_selectionManager->selectionRect().normalized()
-        : QRect();
     const bool toolbarOnTopRow =
         toolbarLocalRect.isValid() &&
         selectionRect.isValid() &&

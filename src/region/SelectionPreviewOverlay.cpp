@@ -7,7 +7,6 @@
 #include "platform/WindowLevel.h"
 
 #include <QFont>
-#include <QFontMetrics>
 #include <QPainter>
 #include <QPaintEvent>
 #include <QPixmap>
@@ -19,11 +18,6 @@ constexpr qreal kSelectionBorderWidth = 2.0;
 constexpr int kSelectionHandleDiameter = 8;
 constexpr int kSelectionHandleRadius = kSelectionHandleDiameter / 2;
 constexpr int kSelectionChromeMargin = kSelectionHandleRadius + 1;
-constexpr int kDimensionPanelHeight = 28;
-constexpr int kDimensionPanelPadding = 24;
-constexpr int kDimensionPanelTopGap = 8;
-constexpr int kDimensionPanelInset = 5;
-
 QColor dimensionLabelTextColor(const ToolbarStyleConfig& styleConfig)
 {
     return styleConfig.glassBackgroundColor.lightness() < 128
@@ -57,55 +51,10 @@ QRect selectionChromeBounds(const QRect& selectionRect)
                         kSelectionChromeMargin, kSelectionChromeMargin);
 }
 
-QRect dimensionInfoPanelRect(const QRect& selectionRect,
-                             const QString& label,
-                             const QFont& baseFont,
-                             const QSize& viewportSize)
-{
-    const QRect sel = selectionRect.normalized();
-    if (!sel.isValid() || sel.isEmpty()) {
-        return {};
-    }
-
-    QFont font(baseFont);
-    font.setPointSize(12);
-    QFontMetrics fm(font);
-
-    const QString maxWidthText = SelectionDimensionLabel::sampleLabel();
-    const int fixedWidth = fm.horizontalAdvance(maxWidthText) + kDimensionPanelPadding;
-    const int actualWidth = fm.horizontalAdvance(label) + kDimensionPanelPadding;
-    const int width = qMax(fixedWidth, actualWidth);
-
-    QRect textRect(0, 0, width, kDimensionPanelHeight);
-
-    int textX = sel.left();
-    int textY = sel.top() - textRect.height() - kDimensionPanelTopGap;
-    if (textY < kDimensionPanelInset) {
-        textY = sel.top() + kDimensionPanelInset;
-        textX = sel.left() + kDimensionPanelInset;
-    }
-
-    textRect.moveTo(textX, textY);
-
-    const int maxX = viewportSize.width() - kDimensionPanelInset;
-    const int maxY = viewportSize.height() - kDimensionPanelInset;
-    if (textRect.right() > maxX) {
-        textRect.moveRight(maxX);
-    }
-    if (textRect.left() < kDimensionPanelInset) {
-        textRect.moveLeft(kDimensionPanelInset);
-    }
-    if (textRect.bottom() > maxY) {
-        textRect.moveBottom(maxY);
-    }
-    if (textRect.top() < kDimensionPanelInset) {
-        textRect.moveTop(kDimensionPanelInset);
-    }
-
-    return textRect;
-}
-
-QRect selectionVisualRect(const QRect& selectionRect, const QSize& viewportSize, qreal dpr)
+QRect selectionVisualRect(const QRect& selectionRect,
+                          const QSize& viewportSize,
+                          qreal dpr,
+                          bool ratioLocked)
 {
     const QRect chromeRect = selectionChromeBounds(selectionRect);
     if (!chromeRect.isValid() || chromeRect.isEmpty()) {
@@ -114,11 +63,12 @@ QRect selectionVisualRect(const QRect& selectionRect, const QSize& viewportSize,
 
     QFont font;
     font.setPointSize(12);
-    const QRect dimRect = dimensionInfoPanelRect(
+    const QRect dimRect = SelectionDimensionLabel::selectionPanelLayout(
         selectionRect,
-        SelectionDimensionLabel::label(selectionRect, dpr),
+        SelectionDimensionLabel::widgetLabel(selectionRect, dpr),
         font,
-        viewportSize);
+        viewportSize,
+        SelectionDimensionLabel::controlAnchorSize(ratioLocked)).panelRect;
     return dimRect.isValid() ? chromeRect.united(dimRect) : chromeRect;
 }
 
@@ -143,6 +93,7 @@ void SelectionPreviewOverlay::syncToHost(QWidget* host,
                                          const QPixmap* backgroundPixmap,
                                          qreal devicePixelRatio,
                                          int cornerRadius,
+                                         bool ratioLocked,
                                          bool shouldShow)
 {
     snaptray::region::CapturePerfScope perfScope("SelectionPreviewOverlay.syncToHost");
@@ -151,6 +102,7 @@ void SelectionPreviewOverlay::syncToHost(QWidget* host,
     m_selectionRect = selectionRect.normalized();
     m_devicePixelRatio = devicePixelRatio > 0.0 ? devicePixelRatio : 1.0;
     m_cornerRadius = cornerRadius;
+    m_ratioLocked = ratioLocked;
 
     if (!m_host || !m_host->isVisible() || !m_backgroundPixmap || m_backgroundPixmap->isNull() ||
         !shouldShow || !m_selectionRect.isValid() || m_selectionRect.isEmpty()) {
@@ -158,7 +110,8 @@ void SelectionPreviewOverlay::syncToHost(QWidget* host,
         return;
     }
 
-    m_visualRect = selectionVisualRect(m_selectionRect, m_host->size(), m_devicePixelRatio);
+    m_visualRect = selectionVisualRect(
+        m_selectionRect, m_host->size(), m_devicePixelRatio, m_ratioLocked);
     if (!m_visualRect.isValid() || m_visualRect.isEmpty()) {
         hideOverlay();
         return;
@@ -228,16 +181,17 @@ void SelectionPreviewOverlay::paintEvent(QPaintEvent* event)
     drawHandle(localSelectionRect.left(), localSelectionRect.center().y());
     drawHandle(localSelectionRect.right(), localSelectionRect.center().y());
 
-    const QString dimensions = SelectionDimensionLabel::label(m_selectionRect, m_devicePixelRatio);
+    const QString dimensions = SelectionDimensionLabel::widgetLabel(m_selectionRect, m_devicePixelRatio);
     QFont font = painter.font();
     font.setPointSize(12);
     font.setBold(true);
     painter.setFont(font);
-    QRect dimRect = dimensionInfoPanelRect(
+    QRect dimRect = SelectionDimensionLabel::selectionPanelLayout(
         m_selectionRect,
         dimensions,
         font,
-        m_host ? m_host->size() : size());
+        m_host ? m_host->size() : size(),
+        SelectionDimensionLabel::controlAnchorSize(m_ratioLocked)).panelRect;
     dimRect.translate(-m_visualRect.topLeft());
 
     auto styleConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
