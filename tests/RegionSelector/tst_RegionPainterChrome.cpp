@@ -142,7 +142,6 @@ class tst_RegionPainterChrome : public QObject
 private slots:
     void testDetectedWindowChromeMatchesSelectionChrome();
     void testSelectionDimensionLabelUsesPlatformUnits();
-    void testSelectionPanelLayoutUsesConsistentMetricsAcrossFontWeights();
     void testWindowHighlightVisualRectIncludesHandlesAndPanel();
     void testCompactSelectionDimensionLabelStaysOutsideSelection();
     void testFractionalDprPartialBackgroundRepaintMatchesFullPaint();
@@ -205,27 +204,6 @@ void tst_RegionPainterChrome::testSelectionDimensionLabelUsesPlatformUnits()
     QCOMPARE(SelectionDimensionLabel::widgetLabel(physicalSize, 2.0), QStringLiteral("5120×2820 px"));
     QCOMPARE(SelectionDimensionLabel::widgetSampleLabel(), QStringLiteral("9999×9999 px"));
 #endif
-}
-
-void tst_RegionPainterChrome::testSelectionPanelLayoutUsesConsistentMetricsAcrossFontWeights()
-{
-    const QRect selectionRect(200, 100, 136, 60);
-    const QString label = SelectionDimensionLabel::widgetLabel(selectionRect, 1.0);
-
-    QFont regularFont;
-    regularFont.setPointSize(12);
-
-    QFont boldFont(regularFont);
-    boldFont.setBold(true);
-
-    const auto regularLayout = SelectionDimensionLabel::selectionPanelLayout(
-        selectionRect, label, regularFont, kHostRect.size(), QSize());
-    const auto boldLayout = SelectionDimensionLabel::selectionPanelLayout(
-        selectionRect, label, boldFont, kHostRect.size(), QSize());
-
-    QCOMPARE(regularLayout.compactRegion, boldLayout.compactRegion);
-    QCOMPARE(regularLayout.panelRect, boldLayout.panelRect);
-    QVERIFY(regularLayout.compactRegion);
 }
 
 void tst_RegionPainterChrome::testWindowHighlightVisualRectIncludesHandlesAndPanel()

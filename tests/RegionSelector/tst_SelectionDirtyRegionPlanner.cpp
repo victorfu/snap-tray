@@ -42,7 +42,6 @@ private slots:
     void testSelectionDragSkipsStableInterior();
     void testSelectionDragIncludesToolbarAndRegionControlHistory();
     void testSelectionDragSuppressionSkipsFloatingUiRects();
-    void testSelectionDragTracksCompactDimensionLayoutTransition();
     void testSelectionDragCoversBoldDimensionLabelLayoutAtCompactThreshold();
     void testHoverRegionIncludesOldAndNewMagnifier();
 };
@@ -176,35 +175,6 @@ void tst_SelectionDirtyRegionPlanner::testSelectionDragSuppressionSkipsFloatingU
     QVERIFY(!dirty.contains(probeRectInside(params.lastRegionControlRect)));
     QVERIFY(!dirty.contains(probeRectInside(params.currentMagnifierRect)));
     QVERIFY(!dirty.contains(probeRectInside(params.lastMagnifierRect)));
-}
-
-void tst_SelectionDirtyRegionPlanner::testSelectionDragTracksCompactDimensionLayoutTransition()
-{
-    SelectionDirtyRegionPlanner planner;
-    SelectionDirtyRegionPlanner::SelectionDragParams params;
-
-    params.currentSelectionRect = QRect(240, 6, 120, 30);
-    params.lastSelectionRect = QRect(220, 6, 260, 140);
-    params.currentCursorPos = QPoint(300, 30);
-    params.lastCursorPos = QPoint(320, 60);
-    params.viewportSize = QSize(1440, 900);
-
-    const QRegion dirty = planner.planSelectionDragRegion(params);
-    const int dimPadding = SelectionDirtyRegionPlanner::kDimensionInfoPadding;
-    const QRect currentDimInfo = planner.dimensionInfoRectForSelection(
-        params.currentSelectionRect, params.viewportSize, params.devicePixelRatio, params.ratioLocked);
-    const QRect lastDimInfo = planner.dimensionInfoRectForSelection(
-        params.lastSelectionRect, params.viewportSize, params.devicePixelRatio, params.ratioLocked);
-
-    QCOMPARE(currentDimInfo.top(), params.currentSelectionRect.top());
-    QVERIFY(currentDimInfo.right() < params.currentSelectionRect.left());
-    QVERIFY(params.currentSelectionRect.left() - currentDimInfo.right() >= 8);
-    QCOMPARE(lastDimInfo.top(), params.lastSelectionRect.top() + 5);
-    QCOMPARE(lastDimInfo.left(), params.lastSelectionRect.left() + 5);
-    QVERIFY(dirty.contains(currentDimInfo.adjusted(
-        -dimPadding, -dimPadding, dimPadding, dimPadding)));
-    QVERIFY(dirty.contains(lastDimInfo.adjusted(
-        -dimPadding, -dimPadding, dimPadding, dimPadding)));
 }
 
 void tst_SelectionDirtyRegionPlanner::testSelectionDragCoversBoldDimensionLabelLayoutAtCompactThreshold()

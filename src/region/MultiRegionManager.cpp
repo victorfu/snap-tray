@@ -1,4 +1,5 @@
 #include "region/MultiRegionManager.h"
+#include "ui/DesignSystem.h"
 #include "utils/CoordinateHelper.h"
 
 #include <QDebug>
@@ -6,11 +7,10 @@
 
 namespace {
 const QVector<QColor> kRegionColors = {
-    QColor(0, 174, 255),   // Blue
     QColor(52, 199, 89),   // Green
     QColor(255, 149, 0),   // Orange
     QColor(255, 59, 48),   // Red
-    QColor(175, 82, 222),  // Purple
+    QColor(0, 174, 255),   // Blue
     QColor(90, 200, 250)   // Light blue
 };
 }
@@ -269,10 +269,14 @@ QVector<QImage> MultiRegionManager::separateImages(const QPixmap& background, qr
 
 QColor MultiRegionManager::colorForIndex(int index) const
 {
-    if (kRegionColors.isEmpty()) {
-        return QColor(0, 174, 255);
+    if (index <= 0) {
+        return DesignSystem::instance().captureSelectionAccent();
     }
-    return kRegionColors[index % kRegionColors.size()];
+
+    if (kRegionColors.isEmpty()) {
+        return DesignSystem::instance().captureSelectionAccent();
+    }
+    return kRegionColors[(index - 1) % kRegionColors.size()];
 }
 
 void MultiRegionManager::refreshIndices()

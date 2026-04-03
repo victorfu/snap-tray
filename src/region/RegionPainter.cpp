@@ -16,6 +16,7 @@
 #include "ToolbarStyle.h"
 #include "TransformationGizmo.h"
 #include "tools/ToolTraits.h"
+#include "ui/DesignSystem.h"
 #include "utils/CoordinateHelper.h"
 
 #include <QPainter>
@@ -328,8 +329,9 @@ void RegionPainter::drawSelectionChrome(QPainter& painter, const QRect& selectio
     }
 
     const int radius = effectiveCornerRadius(sel);
+    const QColor selectionAccent = DesignSystem::instance().captureSelectionAccent();
 
-    QPen borderPen(QColor(0, 174, 255), kSelectionBorderWidth);
+    QPen borderPen(selectionAccent, kSelectionBorderWidth);
     borderPen.setJoinStyle(Qt::MiterJoin);
     borderPen.setCapStyle(Qt::SquareCap);
     painter.setPen(borderPen);
@@ -341,7 +343,7 @@ void RegionPainter::drawSelectionChrome(QPainter& painter, const QRect& selectio
         painter.drawRect(borderRect);
     }
 
-    painter.setBrush(QColor(0, 174, 255));
+    painter.setBrush(selectionAccent);
     painter.setPen(Qt::white);
 
     auto drawHandle = [&](int x, int y) {

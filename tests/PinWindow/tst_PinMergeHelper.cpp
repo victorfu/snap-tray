@@ -5,6 +5,7 @@
 
 #include "PinWindow.h"
 #include "pinwindow/PinMergeHelper.h"
+#include "ui/DesignSystem.h"
 #include "utils/CoordinateHelper.h"
 
 class TestPinMergeHelper : public QObject
@@ -54,6 +55,8 @@ private slots:
         QCOMPARE(result.regions.size(), 2);
         QCOMPARE(result.regions[0].rect, QRect(0, 0, 100, 100));
         QCOMPARE(result.regions[1].rect, QRect(108, 0, 100, 100));
+        QCOMPARE(result.regions[0].color, DesignSystem::instance().captureSelectionAccent());
+        QCOMPARE(result.regions[1].color, QColor(52, 199, 89));
     }
 
     void testMergeDifferentHeights()

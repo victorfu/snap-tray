@@ -5,6 +5,7 @@
 #include "GlassRenderer.h"
 #include "ToolbarStyle.h"
 #include "platform/WindowLevel.h"
+#include "ui/DesignSystem.h"
 
 #include <QFont>
 #include <QPainter>
@@ -152,8 +153,9 @@ void SelectionPreviewOverlay::paintEvent(QPaintEvent* event)
     const QRect localSelectionRect = m_selectionRect.translated(-m_visualRect.topLeft());
     const int maxRadius = qMin(localSelectionRect.width(), localSelectionRect.height()) / 2;
     const int radius = qMin(m_cornerRadius, maxRadius);
+    const QColor selectionAccent = DesignSystem::instance().captureSelectionAccent();
 
-    QPen borderPen(QColor(0, 174, 255), kSelectionBorderWidth);
+    QPen borderPen(selectionAccent, kSelectionBorderWidth);
     borderPen.setJoinStyle(Qt::MiterJoin);
     borderPen.setCapStyle(Qt::SquareCap);
     painter.setPen(borderPen);
@@ -165,7 +167,7 @@ void SelectionPreviewOverlay::paintEvent(QPaintEvent* event)
         painter.drawRect(borderRect);
     }
 
-    painter.setBrush(QColor(0, 174, 255));
+    painter.setBrush(selectionAccent);
     painter.setPen(Qt::white);
     auto drawHandle = [&](int x, int y) {
         painter.drawEllipse(QPoint(x, y), kSelectionHandleRadius, kSelectionHandleRadius);
