@@ -8,6 +8,19 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 - No unreleased entries yet.
 
+## [1.0.45] - 2026-04-04
+
+### Improved
+
+- Improved narrow-region capture layout with a compact size label and automatic control-panel hiding so small selections stay readable instead of overlapping the capture chrome.
+- Updated the capture selection accent to follow the shared design-system palette for more consistent selection visuals across capture and pin workflows.
+
+### Fixed
+
+- Fixed shortcut-hint overlay rendering and made its labels translatable so capture help stays cleaner and localized across supported languages.
+- Fixed macOS snapshot color preservation so captures, saved PNGs, and Pin windows better match the source display.
+- Fixed a macOS toast overlay shutdown crash and restored proper enabled-state propagation for shared dialog and settings buttons.
+
 ## [1.0.44] - 2026-04-02
 
 ### Added
