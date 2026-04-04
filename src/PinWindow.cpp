@@ -1038,9 +1038,6 @@ void PinWindow::createContextMenu()
         QCoreApplication::translate("HistoryWindow", "Open History Folder"));
     connect(openCacheFolderAction, &QAction::triggered, this, &PinWindow::openCacheFolder);
 
-    QAction* beautifyAction = m_contextMenu->addAction(tr("Beautify"));
-    connect(beautifyAction, &QAction::triggered, this, &PinWindow::showBeautifyPanel);
-
     // Click-through option
     m_clickThroughAction = m_contextMenu->addAction(tr("Click-through"));
     m_clickThroughAction->setCheckable(true);

@@ -107,6 +107,8 @@ void tst_QmlTranslations::testMainApplicationTrayContext()
              QString::fromUtf8("貼上"));
     QCOMPARE(QCoreApplication::translate("MainApplication", "History"),
              QString::fromUtf8("歷程"));
+    QCOMPARE(QCoreApplication::translate("MainApplication", "Record Screen"),
+             QString::fromUtf8("錄製全螢幕"));
     QCOMPARE(QCoreApplication::translate("MainApplication", "Region Capture hotkey"),
              QString::fromUtf8("區域擷取快捷鍵"));
     QCOMPARE(QCoreApplication::translate("MainApplication", "Paste hotkey"),

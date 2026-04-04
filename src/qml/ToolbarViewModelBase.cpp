@@ -156,7 +156,6 @@ QVariantMap ToolbarViewModelBase::buildCustomButtonEntry(int id,
     entry[QStringLiteral("isAction")] = options.isAction;
     entry[QStringLiteral("isExportAction")] = options.isExportAction;
     entry[QStringLiteral("isCancel")] = options.isCancel;
-    entry[QStringLiteral("isRecord")] = options.isRecord;
     return entry;
 }
 

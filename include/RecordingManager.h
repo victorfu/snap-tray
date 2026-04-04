@@ -16,11 +16,8 @@
 #include "utils/ResourceCleanupHelper.h"
 
 class RecordingInitTask;
-
 namespace SnapTray {
-class QmlRecordingBoundary;
 class QmlRecordingControlBar;
-class QmlRecordingRegionSelector;
 }
 class QmlCountdownOverlay;
 class NativeGifEncoder;
@@ -41,7 +38,6 @@ public:
      */
     enum class State {
         Idle,       // No recording activity
-        Selecting,  // Region selection in progress
         Preparing,  // Initializing capture/encoder (async)
         Countdown,  // Countdown before recording
         Recording,  // Actively capturing frames
@@ -55,15 +51,15 @@ public:
     ~RecordingManager();
 
     // State queries
-    bool isActive() const;          // Region selection or recording in progress
+    bool isActive() const;          // Recording or post-record workflow in progress
     bool isRecording() const;       // Actively recording frames
-    bool isSelectingRegion() const; // In region selection mode
     bool isPaused() const;          // Recording is paused
     bool isPreviewing() const;      // Preview window is open
+    QString activeScreenSummary() const;
     State state() const { return m_state; }
 
 public slots:
-    void startRegionSelectionWithPreset(const QRect &region, QScreen *screen);  // Use preset region
+    void startScreenRecording(QScreen* screen = nullptr);  // Record full screen using screen-first semantics
     void startFullScreenRecording(QScreen* screen = nullptr);  // Record entire screen (cursor position or specified)
     void stopRecording();           // Stop and save recording
     void cancelRecording();         // Cancel without saving
@@ -82,13 +78,9 @@ signals:
     void recordingPaused();
     void recordingResumed();
     void stateChanged(State state);
-    void selectionCancelledWithRegion(const QRect &region, QScreen *screen);
     void previewRequested(const QString &tempVideoPath, int defaultOutputFormat);
 
 private slots:
-    void onRegionSelected(const QRect &region, QScreen *screen);
-    void onRegionCancelledWithRegion(const QRect &region, QScreen *screen);
-    void onRegionCancelled();  // Handle cancel without valid region
     void captureFrame();
     void onEncodingFinished(bool success, const QString &outputPath);
     void onEncodingError(const QString &error);
@@ -111,8 +103,6 @@ private:
     QString generateOutputPath() const;
     void setState(State newState);
     void showSaveDialog(const QString &tempOutputPath);
-    SnapTray::QmlRecordingRegionSelector* createRegionSelector();
-    void destroyRegionSelector();
     void loadAndValidateFrameRate();
     void resetPauseTracking();
     bool shouldUseDedicatedEncodingThread(bool hasNativeEncoder) const;
@@ -124,12 +114,8 @@ private:
     void onCountdownCancelled();              // Handle countdown cancellation
 
 private:
-    // Region selection
-    QPointer<SnapTray::QmlRecordingRegionSelector> m_regionSelector;
-
     // Recording state
     QPointer<SnapTray::QmlRecordingControlBar> m_controlBar;
-    QPointer<SnapTray::QmlRecordingBoundary> m_boundaryOverlay;
     QString m_tempVideoPath;
     std::unique_ptr<EncodingWorker> m_encodingWorker;  // Offloads encoding to worker thread
     std::unique_ptr<QThread> m_encodingThread;         // Dedicated encoding thread for encoding workload

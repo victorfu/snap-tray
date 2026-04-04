@@ -433,8 +433,6 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, [this]() { handleToolbarClick(ToolId::Cancel); });
     connect(m_toolbarViewModel, &RegionToolbarViewModel::pinClicked,
         this, [this]() { handleToolbarClick(ToolId::Pin); });
-    connect(m_toolbarViewModel, &RegionToolbarViewModel::recordClicked,
-        this, [this]() { handleToolbarClick(ToolId::Record); });
     connect(m_toolbarViewModel, &RegionToolbarViewModel::saveClicked,
         this, [this]() { handleToolbarClick(ToolId::Save); });
     connect(m_toolbarViewModel, &RegionToolbarViewModel::copyClicked,
@@ -1022,18 +1020,6 @@ RegionSelector::RegionSelector(QWidget* parent)
         });
     connect(m_toolbarHandler, &RegionToolbarHandler::pinRequested,
         this, &RegionSelector::finishSelection);
-    connect(m_toolbarHandler, &RegionToolbarHandler::recordRequested,
-        this, [this]() {
-            if (!isScreenValid()) {
-                qWarning() << "RegionSelector: Screen invalid, cannot start recording";
-                emit selectionCancelled();
-                close();
-                return;
-            }
-
-            emit recordingRequested(localToGlobal(m_selectionManager->selectionRect()), m_currentScreen.data());
-            close();
-        });
     connect(m_toolbarHandler, &RegionToolbarHandler::saveRequested,
         this, &RegionSelector::saveToFile);
     connect(m_toolbarHandler, &RegionToolbarHandler::copyRequested,
@@ -4319,11 +4305,6 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
     }
     else if (event->key() == Qt::Key_M) {
         setMultiRegionMode(!m_inputState.multiRegionMode);
-    }
-    else if (event->key() == Qt::Key_R && !event->modifiers()) {
-        if (m_selectionManager->isComplete()) {
-            handleToolbarClick(ToolId::Record);
-        }
     }
     else if (event->key() == Qt::Key_Shift) {
         // Switch RGB/HEX color format display (only when magnifier is shown)

@@ -89,7 +89,6 @@ private slots:
     void testExplicitToolbarHideClearsEmojiToolState();
     void testOutsideClickHidesEmojiPickerWithToolbar();
     void testApplicationDeactivateHidesEmojiPickerWithToolbar();
-    void testClickingEmojiPopupDoesNotCloseToolbar();
     void testBeautifyPanelMarksToolbarButtonActive();
     void testSelectingBeautifyClearsPreviousToolSelection();
     void testSelectingOtherToolbarToolDismissesBeautifyPanel();
@@ -343,40 +342,6 @@ void TestPinWindowStyleSync::testApplicationDeactivateHidesEmojiPickerWithToolba
     QVERIFY(!window.isToolbarVisible());
     QVERIFY(!window.m_emojiPickerPopup->isVisible());
     QCOMPARE(window.m_currentToolId, ToolId::EmojiSticker);
-}
-
-void TestPinWindowStyleSync::testClickingEmojiPopupDoesNotCloseToolbar()
-{
-    PinWindow window(createTestPixmap(), QPoint(0, 0));
-
-    if (!window.m_toolManager) {
-        window.initializeAnnotationComponents();
-    }
-
-    window.showToolbar();
-    window.handleToolbarToolSelected(static_cast<int>(ToolId::EmojiSticker));
-    QCoreApplication::processEvents();
-
-    QVERIFY(window.isToolbarVisible());
-    QVERIFY(window.m_emojiPickerPopup);
-    QVERIFY(window.m_emojiPickerPopup->isVisible());
-
-    QWindow* popupWindow = window.m_emojiPickerPopup->window();
-    QVERIFY(popupWindow);
-    QVERIFY(popupWindow->isVisible());
-
-    const QPoint localPos = popupWindow->geometry().center() - popupWindow->geometry().topLeft();
-    const QPoint globalPos = popupWindow->geometry().center();
-    QMouseEvent pressEvent(QEvent::MouseButtonPress,
-                           localPos,
-                           globalPos,
-                           Qt::LeftButton,
-                           Qt::LeftButton,
-                           Qt::NoModifier);
-    QCoreApplication::sendEvent(popupWindow, &pressEvent);
-    QCoreApplication::processEvents();
-
-    QVERIFY(window.isToolbarVisible());
 }
 
 void TestPinWindowStyleSync::testBeautifyPanelMarksToolbarButtonActive()

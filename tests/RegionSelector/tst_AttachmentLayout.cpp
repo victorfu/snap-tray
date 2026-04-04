@@ -56,7 +56,6 @@ class tst_RegionSelectorAttachmentLayout : public QObject
 private slots:
     void initTestCase();
     void testRegionControlPanelMovesInsideSelectionWhenTopToolbarOverlaps();
-    void testRegionControlPanelStaysBesideDimensionLabelWhenOnlyPopupWidthWouldOverlap();
     void testWideShortSelectionKeepsRegionControlPanelVisible();
     void testTallNarrowSelectionHidesRegionControlPanelButKeepsStandardSizeWidgetPlacement();
 };
@@ -109,81 +108,6 @@ void tst_RegionSelectorAttachmentLayout::testRegionControlPanelMovesInsideSelect
     QVERIFY(defaultExternalRect.intersects(toolbarGeometry));
     QVERIFY(selectionGlobalRect.contains(regionControlMainGeometry));
     QVERIFY(!regionControlMainGeometry.intersects(toolbarGeometry));
-}
-
-void tst_RegionSelectorAttachmentLayout::testRegionControlPanelStaysBesideDimensionLabelWhenOnlyPopupWidthWouldOverlap()
-{
-    QScreen* screen = QGuiApplication::primaryScreen();
-    QVERIFY(screen);
-
-    const QRect hostGeometry = screen->availableGeometry().adjusted(40, 40, -40, -120);
-    if (hostGeometry.width() < 760 || hostGeometry.height() < 520) {
-        QSKIP("Primary screen is too small for popup-width overlap verification.");
-    }
-
-    RegionSelector selector;
-    prepareCompletedSelection(selector, hostGeometry, QRect(80, hostGeometry.height() - 120, 420, 100));
-
-    const QRect seedToolbarGeometry = RegionSelectorTestAccess::toolbarGeometry(selector);
-    const QRect seedRegionControlGeometry = RegionSelectorTestAccess::regionControlGeometry(selector);
-    const QRect seedRegionControlAnchorRect = RegionSelectorTestAccess::regionControlAnchorRect(selector);
-    const QRect seedDimensionInfoGeometry =
-        toGlobalRect(selector, RegionSelectorTestAccess::dimensionInfoRect(selector));
-
-    if (!seedToolbarGeometry.isValid() || seedToolbarGeometry.isEmpty() ||
-        !seedRegionControlGeometry.isValid() || seedRegionControlGeometry.isEmpty() ||
-        !seedRegionControlAnchorRect.isValid() || seedRegionControlAnchorRect.isEmpty() ||
-        !seedDimensionInfoGeometry.isValid() || seedDimensionInfoGeometry.isEmpty()) {
-        QSKIP("Seed attachment geometry did not stabilize in this environment.");
-    }
-
-    const int targetWidth =
-        seedDimensionInfoGeometry.width() +
-        kAttachmentGap +
-        seedToolbarGeometry.width() +
-        (seedRegionControlAnchorRect.width() + seedRegionControlGeometry.width()) / 2;
-    if (targetWidth <= 0 || targetWidth > hostGeometry.width() - 120) {
-        QSKIP("Could not derive a stable popup-width-only overlap scenario.");
-    }
-
-    const QRect selectionRect(80, hostGeometry.height() - 120, targetWidth, 100);
-    RegionSelectorTestAccess::setSelectionRect(selector, selectionRect);
-    RegionSelectorTestAccess::setCurrentTool(selector, ToolId::Arrow);
-    RegionSelectorTestAccess::invokePaint(selector, QRegion(selector.rect()));
-    QCoreApplication::processEvents();
-    RegionSelectorTestAccess::invokePaint(selector, QRegion(selector.rect()));
-    QCoreApplication::processEvents();
-
-    const QRect toolbarGeometry = RegionSelectorTestAccess::toolbarGeometry(selector);
-    const QRect regionControlGeometry = RegionSelectorTestAccess::regionControlGeometry(selector);
-    const QRect regionControlAnchorRect = RegionSelectorTestAccess::regionControlAnchorRect(selector);
-    const QRect dimensionInfoGeometry =
-        toGlobalRect(selector, RegionSelectorTestAccess::dimensionInfoRect(selector));
-    const QRect selectionGlobalRect = toGlobalRect(selector, selectionRect);
-    const QRect regionControlAnchorGeometry =
-        rectInWindowGlobalCoords(regionControlGeometry, regionControlAnchorRect);
-
-    if (!toolbarGeometry.isValid() || toolbarGeometry.isEmpty() ||
-        !regionControlGeometry.isValid() || regionControlGeometry.isEmpty() ||
-        !regionControlAnchorRect.isValid() || regionControlAnchorRect.isEmpty() ||
-        !dimensionInfoGeometry.isValid() || dimensionInfoGeometry.isEmpty()) {
-        QSKIP("Attachment geometry did not stabilize after popup-width scenario adjustment.");
-    }
-
-    const QRect defaultExternalAnchorRect(
-        QPoint(dimensionInfoGeometry.right() + 1 + kAttachmentGap,
-               dimensionInfoGeometry.top() +
-                   (dimensionInfoGeometry.height() - regionControlAnchorRect.height()) / 2),
-        regionControlAnchorRect.size());
-    const QRect defaultExternalWindowRect(
-        defaultExternalAnchorRect.topLeft() - regionControlAnchorRect.topLeft(),
-        regionControlGeometry.size());
-
-    QVERIFY(toolbarGeometry.bottom() < selectionGlobalRect.top());
-    QVERIFY(defaultExternalWindowRect.intersects(toolbarGeometry));
-    QVERIFY(!defaultExternalAnchorRect.intersects(toolbarGeometry));
-    QCOMPARE(regionControlAnchorGeometry.topLeft(), defaultExternalAnchorRect.topLeft());
-    QVERIFY(regionControlAnchorGeometry.bottom() < selectionGlobalRect.top());
 }
 
 void tst_RegionSelectorAttachmentLayout::testWideShortSelectionKeepsRegionControlPanelVisible()

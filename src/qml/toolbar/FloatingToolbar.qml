@@ -179,7 +179,6 @@ Item {
                             tooltipText: delegateLoader.buttonData.tooltip
                             isAction: delegateLoader.buttonData.isAction || false
                             isCancel: delegateLoader.buttonData.isCancel || false
-                            isRecord: delegateLoader.buttonData.isRecord || false
                             isActive: root.hasViewModel
                                       && root.viewModel.activeTool === delegateLoader.buttonId
                             isDisabled: {

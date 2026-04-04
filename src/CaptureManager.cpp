@@ -126,7 +126,6 @@ bool CaptureManager::startHistoryReplay(const QString& entryId)
     }
 
     emit captureStarted();
-
     QScreen* targetScreen = chooseReplayScreen(*entry);
     if (!targetScreen) {
         qCritical() << "CaptureManager: No valid screen available for history replay";
@@ -186,7 +185,6 @@ void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortc
     }
 
     emit captureStarted();
-
     // 1. Determine target screen (the screen where cursor is located)
     QScreen *targetScreen = QGuiApplication::screenAt(QCursor::pos());
     if (!targetScreen) {
@@ -290,7 +288,6 @@ void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &g
 void CaptureManager::onSelectionCancelled()
 {
     // m_regionSelector will auto-null via QPointer when WA_DeleteOnClose triggers
-
     emit captureCancelled();
 }
 
@@ -324,8 +321,6 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
             this, &CaptureManager::onRegionSelected);
     connect(m_regionSelector, &RegionSelector::selectionCancelled,
             this, &CaptureManager::onSelectionCancelled);
-    connect(m_regionSelector, &RegionSelector::recordingRequested,
-            this, &CaptureManager::recordingRequested);
     connect(m_regionSelector, &RegionSelector::saveCompleted,
             this, &CaptureManager::saveCompleted);
     connect(m_regionSelector, &RegionSelector::saveFailed,
@@ -359,8 +354,6 @@ void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
 
     // Additional signals for full region capture mode
     if (!quickPinMode) {
-        connect(m_regionSelector, &RegionSelector::recordingRequested,
-                this, &CaptureManager::recordingRequested);
         connect(m_regionSelector, &RegionSelector::saveCompleted,
                 this, &CaptureManager::saveCompleted);
         connect(m_regionSelector, &RegionSelector::saveFailed,

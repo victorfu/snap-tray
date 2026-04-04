@@ -653,7 +653,7 @@ File size: %3</source>
     <message>
         <location filename="../src/MainApplication.cpp" line="417"/>
         <location filename="../src/MainApplication.cpp" line="1044"/>
-        <source>Record Full Screen</source>
+        <source>Record Screen</source>
         <translation>บันทึกเต็มหน้าจอ</translation>
     </message>
     <message>
@@ -2498,7 +2498,7 @@ Password: %2</source>
     </message>
     <message>
         <location filename="../include/hotkey/HotkeyTypes.h" line="166"/>
-        <source>Record Full Screen</source>
+        <source>Record Screen</source>
         <translation>บันทึกเต็มหน้าจอ</translation>
     </message>
     <message>

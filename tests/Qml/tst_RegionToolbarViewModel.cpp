@@ -16,6 +16,18 @@ QVariantMap findButtonById(const QVariantList& buttons, int buttonId)
     return {};
 }
 
+bool containsButtonWithIconKey(const QVariantList& buttons, const QString& iconKey)
+{
+    for (const QVariant& button : buttons) {
+        const QVariantMap entry = button.toMap();
+        if (entry.value(QStringLiteral("iconKey")).toString() == iconKey) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 } // namespace
 
 class tst_RegionToolbarViewModel : public QObject
@@ -23,10 +35,10 @@ class tst_RegionToolbarViewModel : public QObject
     Q_OBJECT
 
 private slots:
-    void testNormalToolbarOmitsCancelAndKeepsOcrSeparated();
+    void testNormalToolbarOmitsCancelRecordAndKeepsOcrSeparated();
 };
 
-void tst_RegionToolbarViewModel::testNormalToolbarOmitsCancelAndKeepsOcrSeparated()
+void tst_RegionToolbarViewModel::testNormalToolbarOmitsCancelRecordAndKeepsOcrSeparated()
 {
     RegionToolbarViewModel viewModel;
     const QVariantList buttons = viewModel.buttons();
@@ -35,6 +47,7 @@ void tst_RegionToolbarViewModel::testNormalToolbarOmitsCancelAndKeepsOcrSeparate
     const QVariantMap ocrButton = findButtonById(buttons, static_cast<int>(ToolId::OCR));
 
     QVERIFY(cancelButton.isEmpty());
+    QVERIFY(!containsButtonWithIconKey(buttons, QStringLiteral("record")));
     QVERIFY(!ocrButton.isEmpty());
     QVERIFY(ocrButton.value(QStringLiteral("separatorBefore")).toBool());
 }

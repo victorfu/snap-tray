@@ -133,7 +133,7 @@ void TestToolRegistry::testIsActionTool_ActionTools()
     QList<ToolId> actionTools = {
         ToolId::Undo, ToolId::Redo, ToolId::Clear,
         ToolId::Cancel, ToolId::OCR, ToolId::QRCode,
-        ToolId::Pin, ToolId::Record, ToolId::Share, ToolId::Save,
+        ToolId::Pin, ToolId::Share, ToolId::Save,
         ToolId::Copy, ToolId::Exit, ToolId::Beautify,
         ToolId::MultiRegion, ToolId::MultiRegionDone
     };
@@ -250,8 +250,6 @@ void TestToolRegistry::testGetToolsForToolbar_ScreenCanvas()
     // Should NOT include RegionSelector-only tools
     QVERIFY(!tools.contains(ToolId::Save));
     QVERIFY(!tools.contains(ToolId::Pin));
-    QVERIFY(!tools.contains(ToolId::Record));
-
     const int clearIndex = tools.indexOf(ToolId::Clear);
     const int copyIndex = tools.indexOf(ToolId::Copy);
     const int exitIndex = tools.indexOf(ToolId::Exit);
@@ -287,7 +285,6 @@ void TestToolRegistry::testGetToolsForToolbar_PinWindow()
     // PinWindow toolbar should not expose capture-only actions.
     QVERIFY(!tools.contains(ToolId::Selection));
     QVERIFY(!tools.contains(ToolId::Cancel));
-    QVERIFY(!tools.contains(ToolId::Record));
     QVERIFY(!tools.contains(ToolId::MultiRegion));
 
     const int beautifyIndex = tools.indexOf(ToolId::Beautify);

@@ -34,7 +34,6 @@ signals:
     void ocrClicked();
     void qrCodeClicked();
     void pinClicked();
-    void recordClicked();
     void shareClicked();
     void saveClicked();
     void copyClicked();

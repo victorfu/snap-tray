@@ -37,7 +37,6 @@ signals:
     void captureStarted();
     void captureCompleted(const QPixmap &screenshot);
     void captureCancelled();
-    void recordingRequested(const QRect &region, QScreen *screen);
     void saveCompleted(const QPixmap &screenshot, const QString &filePath);
     void saveFailed(const QString &filePath, const QString &error);
 

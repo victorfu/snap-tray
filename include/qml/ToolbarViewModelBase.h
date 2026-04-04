@@ -35,7 +35,6 @@ public:
         bool isAction = false;
         bool isExportAction = false;
         bool isCancel = false;
-        bool isRecord = false;
     };
 
     explicit ToolbarViewModelBase(QObject* parent = nullptr);

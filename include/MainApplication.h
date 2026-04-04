@@ -19,10 +19,13 @@ class PinWindowManager;
 class ScreenCanvasManager;
 class RecordingManager;
 class RecordingPreviewBackend;
+class QScreen;
 
 namespace SnapTray {
 class QmlSettingsWindow;
 class QmlHistoryWindow;
+class QmlDialog;
+class ScreenPickerViewModel;
 }
 
 #ifdef SNAPTRAY_ENABLE_MCP
@@ -83,7 +86,15 @@ private:
     void updateTrayMenuHotkeyText();
     void updateTrayToolTip();
     void updatePinsVisibilityActionText();
+    void updateRecordingActionText();
     SnapTray::QmlSettingsWindow* ensureSettingsWindow();
+    void startScreenRecordingFlow(QScreen* preferredScreen = nullptr);
+    void attachScreenPicker(SnapTray::QmlDialog* dialog,
+                            SnapTray::ScreenPickerViewModel* viewModel);
+    void onScreenPickerChosen(QScreen* screen);
+    void onScreenPickerCancelled();
+    void onScreenPickerClosed(SnapTray::QmlDialog* dialog);
+    void closeScreenPicker();
     void updateActionHotkeyText(QAction* action,
                                 SnapTray::HotkeyAction hotkeyAction,
                                 const QString& baseName);
@@ -106,6 +117,8 @@ private:
     QAction *m_checkForUpdatesAction;
     QPointer<SnapTray::QmlSettingsWindow> m_settingsWindow;
     QPointer<SnapTray::QmlHistoryWindow> m_historyWindow;
+    QPointer<SnapTray::QmlDialog> m_screenPickerDialog;
+    QPointer<SnapTray::ScreenPickerViewModel> m_screenPickerViewModel;
     RecordingPreviewBackend *m_previewBackend = nullptr;
 #ifdef SNAPTRAY_ENABLE_MCP
     std::unique_ptr<SnapTray::MCP::MCPServer> m_mcpServer;

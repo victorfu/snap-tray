@@ -60,6 +60,11 @@ target_link_libraries(Qml_EmojiPickerBackend PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_EmojiPickerBackend COMMAND Qml_EmojiPickerBackend)
 set_tests_properties(Qml_EmojiPickerBackend PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_ScreenPickerViewModel Qml/tst_ScreenPickerViewModel.cpp)
+target_link_libraries(Qml_ScreenPickerViewModel PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Qml_ScreenPickerViewModel COMMAND Qml_ScreenPickerViewModel)
+set_tests_properties(Qml_ScreenPickerViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Qml_WindowPolicyGuard Qml/tst_WindowPolicyGuard.cpp)
 target_link_libraries(Qml_WindowPolicyGuard PRIVATE Qt6::Core Qt6::Test)
 target_compile_definitions(Qml_WindowPolicyGuard PRIVATE
@@ -95,6 +100,9 @@ add_executable(App_MainApplicationTrayMenu
     App/tst_MainApplicationTrayMenu.cpp
     ${APP_MainApplicationTrayMenu_SOURCES}
     ${APP_MainApplicationTrayMenu_HEADERS}
+)
+set_target_properties(App_MainApplicationTrayMenu PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 target_compile_definitions(App_MainApplicationTrayMenu PRIVATE
     SNAPTRAY_TEST_TRANSLATION_DIR="${CMAKE_BINARY_DIR}"
@@ -757,6 +765,11 @@ add_executable(RecordingManager_RegionSizing RecordingManager/tst_RegionSizing.c
 target_link_libraries(RecordingManager_RegionSizing PRIVATE snaptray_ui snaptray_platform Qt6::Test)
 add_test(NAME RecordingManager_RegionSizing COMMAND RecordingManager_RegionSizing)
 set_tests_properties(RecordingManager_RegionSizing PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RecordingManager_ScreenSourceService RecordingManager/tst_ScreenSourceService.cpp)
+target_link_libraries(RecordingManager_ScreenSourceService PRIVATE snaptray_ui snaptray_platform Qt6::Test)
+add_test(NAME RecordingManager_ScreenSourceService COMMAND RecordingManager_ScreenSourceService)
+set_tests_properties(RecordingManager_ScreenSourceService PROPERTIES TIMEOUT 60 LABELS "unit")
 
 if(WIN32)
 add_executable(RecordingManager_DXGICaptureEngineThreadLifecycle

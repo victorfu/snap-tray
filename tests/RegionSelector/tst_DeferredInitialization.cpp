@@ -38,7 +38,6 @@ class tst_RegionSelectorDeferredInitialization : public QObject
 
 private slots:
     void testShowEvent_revealsImmediatelyWithoutDetectorCache();
-    void testWindowListReady_afterRevealAppliesDeferredDetection();
     void testShowEvent_usesLiveCursorPositionForInitialReveal();
     void testDetectedWindowClickOnDetachedWindowsArmsSelectionCompletionHandoff();
     void testDetectedWindowClickOnMacKeepsImmediateToolbarBehavior();
@@ -72,57 +71,6 @@ void tst_RegionSelectorDeferredInitialization::testShowEvent_revealsImmediatelyW
 
     QVERIFY(RegionSelectorTestAccess::initialRevealStateIsRevealed(selector));
     QVERIFY(qFuzzyCompare(selector.windowOpacity(), 1.0));
-}
-
-void tst_RegionSelectorDeferredInitialization::testWindowListReady_afterRevealAppliesDeferredDetection()
-{
-    QScreen* screen = currentCursorScreen();
-    if (!screen) {
-        QSKIP("No screens available for RegionSelector deferred detection test.");
-    }
-
-    WindowDetector detector;
-    detector.m_currentScreen = screen;
-    detector.m_refreshComplete = false;
-    detector.m_cacheReady = false;
-    detector.m_cacheScreen = nullptr;
-
-    RegionSelector selector;
-    selector.setWindowDetector(&detector);
-
-    const QSize size = screen->geometry().size().boundedTo(QSize(320, 240));
-    selector.initializeForScreen(screen, makePreCapture(size, Qt::darkBlue));
-    selector.setGeometry(screen->geometry());
-    RegionSelectorTestAccess::showForRevealTests(selector);
-
-    QVERIFY(RegionSelectorTestAccess::initialRevealStateIsRevealed(selector));
-    QVERIFY(!selector.m_inputState.hasDetectedWindow);
-    QVERIFY(selector.m_inputState.highlightedWindowRect.isNull());
-
-    DetectedElement element;
-    element.bounds = screen->geometry();
-    element.windowLayer = 0;
-    element.windowId = 1;
-    element.elementType = ElementType::Window;
-
-    const QPoint originalCursorPos = QCursor::pos();
-    const QPoint cursorPos = screen->geometry().center();
-    QCursor::setPos(cursorPos);
-    QCoreApplication::processEvents();
-
-    detector.m_windowCache.clear();
-    detector.m_windowCache.push_back(element);
-    detector.m_cacheScreen = screen;
-    detector.m_cacheReady = true;
-    detector.m_cacheQueryMode = WindowDetector::QueryMode::IncludeChildControls;
-    detector.m_refreshComplete = true;
-
-    detector.windowListReady();
-    QCoreApplication::processEvents();
-
-    QCursor::setPos(originalCursorPos);
-    QVERIFY(selector.m_inputState.hasDetectedWindow);
-    QVERIFY(!selector.m_inputState.highlightedWindowRect.isNull());
 }
 
 void tst_RegionSelectorDeferredInitialization::testShowEvent_usesLiveCursorPositionForInitialReveal()

@@ -9,6 +9,7 @@ class tst_TrayTooltipFormatter : public QObject
 private slots:
     void testFormatWindowsTrayTooltip_AllValuesPresent();
     void testFormatWindowsTrayTooltip_EmptyHotkeyUsesNotSet();
+    void testFormatWindowsTrayTooltip_AppendsStatusLine();
 };
 
 void tst_TrayTooltipFormatter::testFormatWindowsTrayTooltip_AllValuesPresent()
@@ -53,6 +54,26 @@ void tst_TrayTooltipFormatter::testFormatWindowsTrayTooltip_EmptyHotkeyUsesNotSe
                             "Region Capture hotkey: Not set\n"
                             "Paste hotkey: F3\n"
                             "Screen Canvas hotkey: Not set"));
+}
+
+void tst_TrayTooltipFormatter::testFormatWindowsTrayTooltip_AppendsStatusLine()
+{
+    const QList<SnapTray::TrayTooltipHotkeyLine> hotkeyLines{
+        {QStringLiteral("Region Capture hotkey"), QStringLiteral("F2")},
+    };
+
+    const QString tooltip = SnapTray::formatWindowsTrayTooltip(
+        QStringLiteral("SnapTray"),
+        QStringLiteral("2.11.3"),
+        QString(),
+        hotkeyLines,
+        QStringLiteral("Not set"),
+        QStringLiteral("Recording: Display 2 (3840 x 2160)"));
+
+    QCOMPARE(tooltip,
+             QStringLiteral("SnapTray 2.11.3\n"
+                            "Region Capture hotkey: F2\n"
+                            "Recording: Display 2 (3840 x 2160)"));
 }
 
 QTEST_MAIN(tst_TrayTooltipFormatter)

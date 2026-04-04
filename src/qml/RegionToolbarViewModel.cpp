@@ -29,7 +29,6 @@ void RegionToolbarViewModel::buildButtonList()
                             || toolId == ToolId::Save
                             || toolId == ToolId::Copy);
         options.isCancel = (toolId == ToolId::Cancel);
-        options.isRecord = (toolId == ToolId::Record);
         buttons.append(buildToolButtonEntry(toolId, options));
     }
 
@@ -84,7 +83,6 @@ void RegionToolbarViewModel::handleButtonClicked(int buttonId)
     case static_cast<int>(ToolId::OCR):              emit ocrClicked(); break;
     case static_cast<int>(ToolId::QRCode):           emit qrCodeClicked(); break;
     case static_cast<int>(ToolId::Pin):              emit pinClicked(); break;
-    case static_cast<int>(ToolId::Record):           emit recordClicked(); break;
     case static_cast<int>(ToolId::Share):            emit shareClicked(); break;
     case static_cast<int>(ToolId::Save):             emit saveClicked(); break;
     case static_cast<int>(ToolId::Copy):             emit copyClicked(); break;

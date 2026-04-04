@@ -2,7 +2,7 @@
 last_modified_at: 2026-03-26
 layout: docs
 title: 錄影
-description: 使用 MP4、GIF、WebP 輸出全螢幕或指定區域錄影。
+description: 使用 MP4、GIF、WebP 輸出全螢幕來源錄影。
 permalink: /zh-tw/docs/recording/
 lang: zh-tw
 route_key: docs_recording
@@ -12,14 +12,14 @@ doc_order: 2
 
 ## 錄影入口
 
-- 托盤選單：Record Full Screen
-- 截圖工具列：按 `R`
+- 托盤選單：Record Screen
+- CLI：`snaptray record start [--screen N]`
 
 ## 錄影生命週期
 
-1. 選擇區域或全螢幕目標。
-2. 按 Start 開始。
-3. 透過浮動控制列 Pause/Resume。
+1. 多螢幕環境下，依提示選擇要錄製的螢幕。
+2. 錄影會在選定螢幕上直接開始。
+3. 透過浮動控制列查看時間並停止錄影。
 4. 按 Stop 匯出檔案。
 
 ## 輸出格式

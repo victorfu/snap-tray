@@ -125,7 +125,6 @@ public:
     bool isMultiRegionCapture() const;
     MultiRegionManager* multiRegionManager() const { return m_multiRegionManager; }
     const QPixmap& backgroundPixmap() const { return m_backgroundPixmap; }
-
 signals:
     void regionSelected(const QPixmap &screenshot, const QPoint &globalPosition, const QRect &globalRect);
     void selectionCancelled();
@@ -133,7 +132,6 @@ signals:
     void saveCompleted(const QPixmap &screenshot, const QString &filePath);
     void saveFailed(const QString &filePath, const QString &error);
     void copyRequested(const QPixmap &screenshot);
-    void recordingRequested(const QRect &region, QScreen *screen);
 
 protected:
     void paintEvent(QPaintEvent *event) override;

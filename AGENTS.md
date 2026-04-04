@@ -98,6 +98,10 @@ Use `ToolId`, `ToolDefinition`, handlers, and `ToolRegistry`. Prefer lookup tabl
 
 Use `PlatformFeatures` and the platform layer instead of scattering OS-specific checks through feature code.
 
+### Recording is screen-first
+
+Recording entry is tray/CLI driven and always records a full screen source. Region Selector remains screenshot-only and must not regain region-recording semantics.
+
 ### Shared glass UI stays shared
 
 Use `GlassRenderer` and existing toolbar style helpers for floating panels instead of inventing new local visual systems.

@@ -38,6 +38,7 @@ class TestPinWindowContextMenuTranslations : public QObject
 
 private slots:
     void testOpenHistoryFolderActionUsesSharedHistoryWindowTranslation();
+    void testContextMenuDoesNotExposeBeautifyAction();
 };
 
 void TestPinWindowContextMenuTranslations::
@@ -66,6 +67,21 @@ void TestPinWindowContextMenuTranslations::
                             .arg(pinWindowSourcePath())));
 
     QCoreApplication::removeTranslator(&translator);
+}
+
+void TestPinWindowContextMenuTranslations::testContextMenuDoesNotExposeBeautifyAction()
+{
+    const QString pinWindowSource = readTextFile(pinWindowSourcePath());
+    QVERIFY2(!pinWindowSource.isEmpty(),
+             qPrintable(QStringLiteral("Failed to read source file: %1")
+                            .arg(pinWindowSourcePath())));
+
+    const QRegularExpression beautifyActionPattern(
+        QStringLiteral(R"(addAction\(\s*tr\("Beautify"\)\s*\))"));
+    QVERIFY2(!beautifyActionPattern.match(pinWindowSource).hasMatch(),
+             qPrintable(QStringLiteral(
+                 "PinWindow context menu should not expose a Beautify action in %1")
+                            .arg(pinWindowSourcePath())));
 }
 
 QTEST_MAIN(TestPinWindowContextMenuTranslations)

@@ -794,10 +794,12 @@ add_library(snaptray_ui STATIC
     src/RecordingManager.cpp
     src/RecordingInitTask.cpp
     src/RecordingRegionNormalizer.cpp
+    src/recording/ScreenSourceService.cpp
     src/encoding/EncodingWorker.cpp
     include/RecordingManager.h
     include/RecordingInitTask.h
     include/RecordingRegionNormalizer.h
+    include/recording/ScreenSourceService.h
     include/encoding/EncodingWorker.h
 )
 
@@ -943,13 +945,13 @@ set_source_files_properties(src/qml/dialogs/ShareResultDialog.qml PROPERTIES QT_
 set_source_files_properties(src/qml/dialogs/OCRResultDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/OCRResultDialog.qml)
 set_source_files_properties(src/qml/dialogs/UpdateDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/UpdateDialog.qml)
 set_source_files_properties(src/qml/dialogs/QRCodeResultDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/QRCodeResultDialog.qml)
+set_source_files_properties(src/qml/dialogs/ScreenPickerDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/ScreenPickerDialog.qml)
 
 # Recording preview
 set_source_files_properties(src/qml/recording/RecordingPreview.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingPreview.qml)
 
 # Recording control bar
 set_source_files_properties(src/qml/recording/RecordingControlBar.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingControlBar.qml)
-set_source_files_properties(src/qml/recording/RecordingRegionSelector.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingRegionSelector.qml)
 set_source_files_properties(src/qml/panels/BeautifyPanel.qml PROPERTIES QT_RESOURCE_ALIAS panels/BeautifyPanel.qml)
 set_source_files_properties(src/qml/panels/EmojiPickerPopup.qml PROPERTIES QT_RESOURCE_ALIAS panels/EmojiPickerPopup.qml)
 set_source_files_properties(src/qml/panels/HistoryWindow.qml PROPERTIES QT_RESOURCE_ALIAS panels/HistoryWindow.qml)
@@ -1009,7 +1011,6 @@ qt_add_qml_module(snaptray_qml
         src/qml/settings/AboutSettings.qml
         src/qml/recording/RecordingPreview.qml
         src/qml/recording/RecordingControlBar.qml
-        src/qml/recording/RecordingRegionSelector.qml
         src/qml/panels/BeautifyPanel.qml
         src/qml/panels/EmojiPickerPopup.qml
         src/qml/panels/HistoryWindow.qml
@@ -1018,6 +1019,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/dialogs/OCRResultDialog.qml
         src/qml/dialogs/UpdateDialog.qml
         src/qml/dialogs/QRCodeResultDialog.qml
+        src/qml/dialogs/ScreenPickerDialog.qml
         src/qml/toolbar/FloatingToolbar.qml
         src/qml/toolbar/ToolOptionsStrip.qml
         src/qml/toolbar/ColorPaletteSection.qml
@@ -1056,8 +1058,6 @@ qt_add_qml_module(snaptray_qml
         include/qml/QmlRecordingBoundary.h
         src/qml/QmlRecordingControlBar.mm
         include/qml/QmlRecordingControlBar.h
-        src/qml/QmlRecordingRegionSelector.mm
-        include/qml/QmlRecordingRegionSelector.h
         src/qml/QmlCountdownOverlay.mm
         include/qml/QmlCountdownOverlay.h
         src/qml/VideoPlaybackItem.cpp
@@ -1086,6 +1086,8 @@ qt_add_qml_module(snaptray_qml
         include/qml/QmlDialog.h
         src/qml/DialogImageProvider.cpp
         include/qml/DialogImageProvider.h
+        src/qml/ScreenPickerViewModel.cpp
+        include/qml/ScreenPickerViewModel.h
         src/qml/SharePasswordViewModel.cpp
         include/qml/SharePasswordViewModel.h
         src/qml/ShareResultViewModel.cpp

@@ -32,7 +32,6 @@ private slots:
     // Resource cleanup tests
     void testCleanupInIdleState();
     void testStopRecordingInIdleState();
-    void testCancelRecordingInSelectingState();
 
     // Error handling tests
     void testErrorSignalOnInvalidOperation();
@@ -72,7 +71,6 @@ void TestRecordingManagerLifecycle::testConstructorInitializesState()
     QVERIFY(!manager.isActive());
     QVERIFY(!manager.isRecording());
     QVERIFY(!manager.isPaused());
-    QVERIFY(!manager.isSelectingRegion());
 }
 
 void TestRecordingManagerLifecycle::testMultipleInstances()
@@ -128,19 +126,6 @@ void TestRecordingManagerLifecycle::testStopRecordingInIdleState()
     // Should not emit stopped signal when not recording
     QCOMPARE(stoppedSpy.count(), 0);
     QCOMPARE(m_manager->state(), RecordingManager::State::Idle);
-}
-
-void TestRecordingManagerLifecycle::testCancelRecordingInSelectingState()
-{
-    QSignalSpy cancelledSpy(m_manager, &RecordingManager::recordingCancelled);
-
-    m_manager->setState(RecordingManager::State::Selecting);
-    QCOMPARE(m_manager->state(), RecordingManager::State::Selecting);
-
-    m_manager->cancelRecording();
-
-    QCOMPARE(m_manager->state(), RecordingManager::State::Idle);
-    QCOMPARE(cancelledSpy.count(), 1);
 }
 
 // ============================================================================

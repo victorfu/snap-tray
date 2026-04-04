@@ -5,8 +5,11 @@
 #include "PinWindowManager.h"
 #include "PlatformFeatures.h"
 #include "RecordingManager.h"
+#include "recording/ScreenSourceService.h"
 #include "ScreenCanvasManager.h"
+#include "qml/QmlDialog.h"
 #include "qml/QmlHistoryWindow.h"
+#include "qml/ScreenPickerViewModel.h"
 #include "qml/QmlSettingsWindow.h"
 #include "pinwindow/PinWindowPlacement.h"
 #include "ImageColorSpaceHelper.h"
@@ -47,6 +50,7 @@
 #include <QFontMetrics>
 #include <QtConcurrent>
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 
@@ -70,7 +74,6 @@ bool isBlockingUpdateRecordingState(RecordingManager::State state)
     case RecordingManager::State::Previewing:
         return true;
     case RecordingManager::State::Idle:
-    case RecordingManager::State::Selecting:
     case RecordingManager::State::Preparing:
     case RecordingManager::State::Countdown:
         return false;
@@ -138,6 +141,8 @@ MainApplication::MainApplication(QObject* parent)
     , m_closeAllPinsAction(nullptr)
     , m_fullScreenRecordingAction(nullptr)
     , m_checkForUpdatesAction(nullptr)
+    , m_screenPickerDialog(nullptr)
+    , m_screenPickerViewModel(nullptr)
 {
 }
 
@@ -149,6 +154,7 @@ MainApplication::~MainApplication()
     // Shutdown hotkey manager to unregister all hotkeys before destruction
     SnapTray::HotkeyManager::instance().shutdown();
 
+    closeScreenPicker();
     delete m_trayMenu;
 }
 
@@ -172,6 +178,7 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
     qDebug() << "  captureManager->isActive():" << m_captureManager->isActive();
     qDebug() << "  screenCanvasManager->isActive():" << m_screenCanvasManager->isActive();
     qDebug() << "  recordingManager->isActive():" << m_recordingManager->isActive();
+    qDebug() << "  screenPickerDialog active:" << static_cast<bool>(m_screenPickerDialog);
 
     // CLI commands should preempt existing capture mode
     // This ensures CLI commands work reliably even if RegionSelector is stuck
@@ -194,13 +201,25 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
     }
     else if (msg.command == "record") {
         QString action = msg.options["action"].toString().toLower();
+        const auto isRecordingFlowActive = [this]() {
+            return m_screenPickerDialog
+                || (m_recordingManager && m_recordingManager->isActive());
+        };
         const auto stopOrCancelRecording = [this]() {
+            if (m_screenPickerDialog) {
+                closeScreenPicker();
+                return;
+            }
+
+            if (!m_recordingManager) {
+                return;
+            }
+
             switch (m_recordingManager->state()) {
             case RecordingManager::State::Recording:
             case RecordingManager::State::Paused:
                 m_recordingManager->stopRecording();
                 break;
-            case RecordingManager::State::Selecting:
             case RecordingManager::State::Preparing:
             case RecordingManager::State::Countdown:
                 m_recordingManager->cancelRecording();
@@ -213,7 +232,7 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
         };
 
         if (action == "start") {
-            if (!m_recordingManager->isActive()) {
+            if (!isRecordingFlowActive()) {
                 // Check if a specific screen is requested
                 if (msg.options.contains("screen")) {
                     int screenNum = -1;
@@ -237,13 +256,13 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
             }
         }
         else if (action == "stop") {
-            if (m_recordingManager->isActive()) {
+            if (isRecordingFlowActive()) {
                 stopOrCancelRecording();
             }
         }
         else if (action.isEmpty() || action == "toggle") {
             // Default action (no explicit action provided): toggle
-            if (m_recordingManager->isActive()) {
+            if (isRecordingFlowActive()) {
                 stopOrCancelRecording();
             }
             else {
@@ -370,25 +389,22 @@ void MainApplication::initialize()
     connect(m_recordingManager, &RecordingManager::previewRequested,
         this, &MainApplication::showRecordingPreview);
 
-    // Connect capture manager's recording request to recording manager
-    connect(m_captureManager, &CaptureManager::recordingRequested,
-        m_recordingManager, &RecordingManager::startRegionSelectionWithPreset);
+    connect(m_recordingManager, &RecordingManager::stateChanged,
+        this, [this](RecordingManager::State state) {
+            switch (state) {
+            case RecordingManager::State::Preparing:
+            case RecordingManager::State::Countdown:
+            case RecordingManager::State::Recording:
+            case RecordingManager::State::Paused:
+            case RecordingManager::State::Encoding:
+            case RecordingManager::State::Previewing:
+                break;
+            case RecordingManager::State::Idle:
+                break;
+            }
 
-    // Connect recording cancellation to return to capture mode
-    // Use delay to ensure RecordingRegionSelector is fully closed before capturing new screenshot
-    connect(m_recordingManager, &RecordingManager::selectionCancelledWithRegion,
-        this, [this](const QRect& region, QScreen* screen) {
-            // Use QPointer to guard against screen being deleted during the delay
-            QPointer<QScreen> safeScreen = screen;
-            QTimer::singleShot(50, this, [this, region, safeScreen]() {
-                // Check if screen is still valid before using it
-                if (safeScreen) {
-                    m_captureManager->startRegionCaptureWithPreset(region, safeScreen);
-                }
-                else {
-                    qWarning() << "MainApplication: Screen was deleted during delay, skipping capture";
-                }
-                });
+            updateRecordingActionText();
+            updateTrayToolTip();
         });
 
     // Create system tray icon
@@ -428,7 +444,7 @@ void MainApplication::initialize()
     connect(m_pinWindowManager, &PinWindowManager::allPinsVisibilityChanged,
             this, [this](bool) { updatePinsVisibilityActionText(); });
 
-    m_fullScreenRecordingAction = m_trayMenu->addAction(tr("Record Full Screen"));
+    m_fullScreenRecordingAction = m_trayMenu->addAction(tr("Record Screen"));
     connect(m_fullScreenRecordingAction, &QAction::triggered, this, &MainApplication::onFullScreenRecording);
 
     m_trayMenu->addSeparator();
@@ -497,7 +513,8 @@ void MainApplication::initialize()
 
 bool MainApplication::canShutdownForUpdate() const
 {
-    return !m_recordingManager || !isBlockingUpdateRecordingState(m_recordingManager->state());
+    return !m_screenPickerDialog &&
+           (!m_recordingManager || !isBlockingUpdateRecordingState(m_recordingManager->state()));
 }
 
 void MainApplication::prepareForUpdateShutdown()
@@ -511,13 +528,14 @@ void MainApplication::prepareForUpdateShutdown()
         m_captureManager->cancelCapture();
     }
 
+    closeScreenPicker();
+
     if (m_screenCanvasManager && m_screenCanvasManager->isActive()) {
         m_screenCanvasManager->toggle();
     }
 
     if (m_recordingManager) {
         switch (m_recordingManager->state()) {
-        case RecordingManager::State::Selecting:
         case RecordingManager::State::Preparing:
         case RecordingManager::State::Countdown:
             m_recordingManager->cancelRecording();
@@ -588,6 +606,10 @@ void MainApplication::startRegionCapture(bool showShortcutHintsOnEntry)
         qDebug() << "onRegionCapture: blocked by recordingManager";
         return;
     }
+    if (m_screenPickerDialog) {
+        qDebug() << "onRegionCapture: blocked by screen picker";
+        return;
+    }
 
     // Note: Don't close popup menus - allow capturing them (like Snipaste)
     // Modal dialogs (QMessageBox) are handled by CaptureManager
@@ -610,6 +632,9 @@ void MainApplication::onQuickPin()
     if (m_recordingManager->isActive()) {
         return;
     }
+    if (m_screenPickerDialog) {
+        return;
+    }
 
     // Note: Don't close popup menus - allow capturing them (like Snipaste)
     // Modal dialogs (QMessageBox) are handled by CaptureManager
@@ -629,6 +654,10 @@ void MainApplication::onScreenCanvas()
         qDebug() << "onScreenCanvas: blocked by recordingManager";
         return;
     }
+    if (m_screenPickerDialog) {
+        qDebug() << "onScreenCanvas: blocked by screen picker";
+        return;
+    }
 
     // Close any open popup menus to prevent focus conflicts
     if (QWidget* popup = QApplication::activePopupWidget()) {
@@ -640,17 +669,33 @@ void MainApplication::onScreenCanvas()
 
 void MainApplication::onFullScreenRecording()
 {
+    if (m_screenPickerDialog) {
+        closeScreenPicker();
+        return;
+    }
+
     // Don't trigger if screen canvas is active
     if (m_screenCanvasManager->isActive()) {
         return;
     }
 
-    // Don't trigger if already recording
-    if (m_recordingManager->isActive()) {
+    // Don't trigger if capture is active
+    switch (m_recordingManager->state()) {
+    case RecordingManager::State::Recording:
+    case RecordingManager::State::Paused:
+        m_recordingManager->stopRecording();
         return;
+    case RecordingManager::State::Preparing:
+    case RecordingManager::State::Countdown:
+        m_recordingManager->cancelRecording();
+        return;
+    case RecordingManager::State::Encoding:
+    case RecordingManager::State::Previewing:
+        return;
+    case RecordingManager::State::Idle:
+        break;
     }
 
-    // Don't trigger if capture is active
     if (m_captureManager->isActive()) {
         return;
     }
@@ -660,7 +705,7 @@ void MainApplication::onFullScreenRecording()
         popup->close();
     }
 
-    m_recordingManager->startFullScreenRecording();
+    startScreenRecordingFlow(nullptr);
 }
 
 void MainApplication::onToggleAllPinsVisibility()
@@ -944,6 +989,10 @@ QPixmap MainApplication::renderTextToPixmap(const QString &text)
 
 void MainApplication::onPasteFromClipboard()
 {
+    if (m_screenPickerDialog) {
+        return;
+    }
+
     // If region selection is active with complete selection, trigger pin (same as Enter)
     if (m_captureManager && m_captureManager->hasCompleteSelection()) {
         m_captureManager->triggerFinishSelection();
@@ -1089,9 +1138,55 @@ void MainApplication::updateTrayMenuHotkeyText()
     updateActionHotkeyText(m_historyAction,
                            SnapTray::HotkeyAction::HistoryWindow,
                            tr("History"));
-    updateActionHotkeyText(m_fullScreenRecordingAction,
-                           SnapTray::HotkeyAction::RecordFullScreen,
-                           tr("Record Full Screen"));
+    updateRecordingActionText();
+}
+
+void MainApplication::updateRecordingActionText()
+{
+    if (!m_fullScreenRecordingAction) {
+        return;
+    }
+
+    const QString recordScreenText = tr("Record Screen");
+    QString baseName = recordScreenText;
+    bool includeHotkey = true;
+
+    if (!m_recordingManager && !m_screenPickerDialog) {
+        updateActionHotkeyText(m_fullScreenRecordingAction,
+                               SnapTray::HotkeyAction::RecordFullScreen,
+                               recordScreenText);
+        return;
+    }
+
+    if (m_screenPickerDialog) {
+        baseName = tr("Cancel Recording");
+        includeHotkey = false;
+    } else if (m_recordingManager) {
+        switch (m_recordingManager->state()) {
+        case RecordingManager::State::Recording:
+        case RecordingManager::State::Paused:
+            baseName = tr("Stop Recording");
+            includeHotkey = false;
+            break;
+        case RecordingManager::State::Preparing:
+        case RecordingManager::State::Countdown:
+            baseName = tr("Cancel Recording");
+            includeHotkey = false;
+            break;
+        case RecordingManager::State::Idle:
+        case RecordingManager::State::Encoding:
+        case RecordingManager::State::Previewing:
+            break;
+        }
+    }
+
+    if (includeHotkey) {
+        updateActionHotkeyText(m_fullScreenRecordingAction,
+                               SnapTray::HotkeyAction::RecordFullScreen,
+                               baseName);
+    } else {
+        m_fullScreenRecordingAction->setText(baseName);
+    }
 }
 
 void MainApplication::updateTrayToolTip()
@@ -1099,6 +1194,13 @@ void MainApplication::updateTrayToolTip()
     if (!m_trayIcon) {
         return;
     }
+
+    const QString recordingSummary = m_recordingManager
+        ? m_recordingManager->activeScreenSummary()
+        : QString();
+    const QString statusLine = recordingSummary.isEmpty()
+        ? QString()
+        : tr("Record Screen") + QStringLiteral(": ") + recordingSummary;
 
 #ifdef Q_OS_WIN
     const QString notSetText = tr("Not set");
@@ -1123,8 +1225,133 @@ void MainApplication::updateTrayToolTip()
         version,
         installSource,
         hotkeyLines,
-        notSetText));
+        notSetText,
+        statusLine));
 #else
-    m_trayIcon->setToolTip(tr("SnapTray - Screenshot Utility"));
+    if (!statusLine.isEmpty()) {
+        m_trayIcon->setToolTip(tr("SnapTray - Screenshot Utility") + QStringLiteral("\n") + statusLine);
+    } else {
+        m_trayIcon->setToolTip(tr("SnapTray - Screenshot Utility"));
+    }
 #endif
+}
+
+void MainApplication::startScreenRecordingFlow(QScreen* preferredScreen)
+{
+    if (m_screenPickerDialog) {
+        m_screenPickerDialog->showCenteredOnScreen(
+            preferredScreen ? preferredScreen : QGuiApplication::primaryScreen());
+        return;
+    }
+
+    QVector<SnapTray::ScreenSource> sources = SnapTray::ScreenSourceService::availableSources(true);
+    if (sources.isEmpty()) {
+        SnapTray::QmlToast::screenToast().showToast(
+            SnapTray::QmlToast::Level::Error,
+            tr("Recording Error"),
+            tr("No screen available for recording."),
+            5000);
+        return;
+    }
+
+    if (preferredScreen) {
+        const int preferredIndex = qMax(0, QGuiApplication::screens().indexOf(preferredScreen));
+        const QString preferredId = SnapTray::ScreenSourceService::sourceId(preferredScreen, preferredIndex);
+        auto preferredIt = std::find_if(
+            sources.begin(),
+            sources.end(),
+            [&preferredId](const SnapTray::ScreenSource& source) {
+                return source.id == preferredId;
+            });
+        if (preferredIt != sources.end() && preferredIt != sources.begin()) {
+            const SnapTray::ScreenSource preferredSource = *preferredIt;
+            sources.erase(preferredIt);
+            sources.prepend(preferredSource);
+        }
+    }
+
+    if (sources.size() == 1) {
+        m_recordingManager->startScreenRecording(sources.first().screen.data());
+        return;
+    }
+
+    auto* viewModel = new SnapTray::ScreenPickerViewModel(sources, this);
+
+    auto* dialog = new SnapTray::QmlDialog(
+        QUrl(QStringLiteral("qrc:/SnapTrayQml/dialogs/ScreenPickerDialog.qml")),
+        viewModel,
+        QStringLiteral("viewModel"),
+        this);
+    dialog->setModal(true);
+    attachScreenPicker(dialog, viewModel);
+    dialog->showCenteredOnScreen(preferredScreen ? preferredScreen : QGuiApplication::primaryScreen());
+    updateRecordingActionText();
+}
+
+void MainApplication::attachScreenPicker(SnapTray::QmlDialog* dialog,
+                                         SnapTray::ScreenPickerViewModel* viewModel)
+{
+    m_screenPickerDialog = dialog;
+    m_screenPickerViewModel = viewModel;
+
+    if (!dialog || !viewModel) {
+        return;
+    }
+
+    connect(viewModel, &SnapTray::ScreenPickerViewModel::screenChosen,
+            this, &MainApplication::onScreenPickerChosen);
+    connect(viewModel, &SnapTray::ScreenPickerViewModel::cancelled,
+            this, &MainApplication::onScreenPickerCancelled);
+    connect(dialog, &SnapTray::QmlDialog::closed,
+            this, [this, dialogPointer = QPointer<SnapTray::QmlDialog>(dialog)]() {
+                onScreenPickerClosed(dialogPointer);
+            });
+}
+
+void MainApplication::onScreenPickerChosen(QScreen* screen)
+{
+    closeScreenPicker();
+
+    if (!screen) {
+        SnapTray::QmlToast::screenToast().showToast(
+            SnapTray::QmlToast::Level::Error,
+            tr("Recording Error"),
+            tr("No screen available for recording."),
+            5000);
+        return;
+    }
+
+    m_recordingManager->startScreenRecording(screen);
+}
+
+void MainApplication::onScreenPickerCancelled()
+{
+    closeScreenPicker();
+}
+
+void MainApplication::onScreenPickerClosed(SnapTray::QmlDialog* dialog)
+{
+    if (m_screenPickerDialog == dialog) {
+        m_screenPickerDialog = nullptr;
+        m_screenPickerViewModel = nullptr;
+    }
+
+    if (dialog) {
+        dialog->deleteLater();
+    }
+
+    updateRecordingActionText();
+}
+
+void MainApplication::closeScreenPicker()
+{
+    QPointer<SnapTray::QmlDialog> dialog = m_screenPickerDialog;
+    m_screenPickerDialog = nullptr;
+    m_screenPickerViewModel = nullptr;
+
+    if (dialog) {
+        dialog->close();
+    }
+
+    updateRecordingActionText();
 }

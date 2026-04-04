@@ -8,7 +8,8 @@ QString formatWindowsTrayTooltip(const QString& applicationName,
                                  const QString& version,
                                  const QString& installSource,
                                  const QList<TrayTooltipHotkeyLine>& hotkeyLines,
-                                 const QString& emptyHotkeyText)
+                                 const QString& emptyHotkeyText,
+                                 const QString& statusLine)
 {
     QString title = applicationName;
     if (!version.isEmpty()) {
@@ -30,6 +31,10 @@ QString formatWindowsTrayTooltip(const QString& applicationName,
             ? emptyHotkeyText
             : hotkeyLine.hotkey;
         lines.append(QStringLiteral("%1: %2").arg(hotkeyLine.label, displayHotkey));
+    }
+
+    if (!statusLine.isEmpty()) {
+        lines.append(statusLine);
     }
 
     return lines.join(QLatin1Char('\n'));
