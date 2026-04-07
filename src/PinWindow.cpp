@@ -1723,7 +1723,8 @@ void PinWindow::showOCRResultDialog(const OCRResult& result)
 
     connect(vm, &OCRResultViewModel::textCopied, this, [this](const QString& copiedText) {
         qDebug() << "OCR text copied:" << copiedText.length() << "characters";
-        m_toast->showToast(SnapTray::QmlToast::Level::Success, tr("Copied %1 characters").arg(copiedText.length()));
+        // Route OCR copy feedback through the shared completion path so PinWindow
+        // does not stack a second local toast on top of the global notification.
         emit ocrCompleted(true, tr("Text copied"));
     });
 
