@@ -53,7 +53,28 @@ configure_build_dir() {
     fi
 }
 
+repair_ninja_metadata_if_needed() {
+    local build_dir="$1"
+    local buildsystem_file="$build_dir/build.ninja"
+    local recompact_output=""
+
+    if [ ! -f "$buildsystem_file" ] || [ ! -f "$build_dir/.ninja_deps" ] || [ ! -f "$build_dir/.ninja_log" ]; then
+        return
+    fi
+
+    if ! recompact_output="$(ninja -C "$build_dir" -t recompact 2>&1)"; then
+        printf '%s\n' "$recompact_output"
+        return 1
+    fi
+
+    if [[ "$recompact_output" == *"premature end of file; recovering"* ]]; then
+        echo "Detected corrupted Ninja metadata; resetting incremental build state..."
+        rm -f "$build_dir/.ninja_deps" "$build_dir/.ninja_log"
+    fi
+}
+
 configure_build_dir "$BUILD_DIR" "$(basename "$BUILD_DIR")" "Debug"
+repair_ninja_metadata_if_needed "$BUILD_DIR"
 
 # Build only the app target
 echo "Building SnapTray target..."
