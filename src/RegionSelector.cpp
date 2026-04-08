@@ -2261,8 +2261,7 @@ void RegionSelector::maybeStartInitialRevealWait()
         m_initialRevealWindowListReadyConnection = {};
     }
 
-    if (!m_windowDetector->isWindowCacheReady(WindowDetector::QueryMode::TopLevelOnly) &&
-        !m_windowDetector->isRefreshComplete()) {
+    if (!m_windowDetector->isRefreshComplete()) {
         const quint64 token = m_initialRevealToken;
         m_initialRevealWindowListReadyConnection = connect(
             m_windowDetector,
@@ -2311,8 +2310,10 @@ void RegionSelector::handleInitialRevealDetectorReady()
         !m_selectionManager->hasSelection()) {
         if (!m_windowDetector->isWindowCacheReady(
                 WindowDetector::QueryMode::IncludeChildControls)) {
-            m_windowDetector->refreshWindowListAsync(
-                WindowDetector::QueryMode::IncludeChildControls);
+            if (m_windowDetector->isRefreshComplete()) {
+                m_windowDetector->refreshWindowListAsync(
+                    WindowDetector::QueryMode::IncludeChildControls);
+            }
             maybeStartInitialRevealWait();
             return;
         }
@@ -2473,8 +2474,10 @@ void RegionSelector::scheduleInitialRevealRefinement()
 
         if (!m_windowDetector->isWindowCacheReady(
                 WindowDetector::QueryMode::IncludeChildControls)) {
-            m_windowDetector->refreshWindowListAsync(
-                WindowDetector::QueryMode::IncludeChildControls);
+            if (m_windowDetector->isRefreshComplete()) {
+                m_windowDetector->refreshWindowListAsync(
+                    WindowDetector::QueryMode::IncludeChildControls);
+            }
             maybeStartInitialRevealWait();
             return;
         }

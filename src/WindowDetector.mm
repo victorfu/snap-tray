@@ -6,7 +6,6 @@
 #include <QDebug>
 #include <QByteArray>
 #include <QtConcurrent>
-#include <algorithm>
 #include <unistd.h>
 
 #import <Foundation/Foundation.h>
@@ -224,24 +223,6 @@ bool shouldPreferTopLevelBoundsForElementType(ElementType elementType)
     }
 
     return false;
-}
-
-bool topLevelElementsLikelyMatch(const DetectedElement &lhs, const DetectedElement &rhs)
-{
-    if (lhs.windowId != 0 && rhs.windowId != 0) {
-        return lhs.windowId == rhs.windowId;
-    }
-
-    if (lhs.ownerPid > 0 && rhs.ownerPid > 0 && lhs.ownerPid != rhs.ownerPid) {
-        return false;
-    }
-
-    const QRect lhsSlack = lhs.bounds.adjusted(-6, -6, 6, 6);
-    const QRect rhsSlack = rhs.bounds.adjusted(-6, -6, 6, 6);
-    return lhsSlack.intersects(rhs.bounds) ||
-           rhsSlack.intersects(lhs.bounds) ||
-           lhsSlack.contains(rhs.bounds.center()) ||
-           rhsSlack.contains(lhs.bounds.center());
 }
 
 QImage captureWindowImage(CGWindowID windowId)
@@ -1041,8 +1022,7 @@ void WindowDetector::refreshWindowListAsync(QueryMode queryMode)
         previousCache = m_windowCache;
         previousScreen = m_cacheScreen;
         previousQueryMode = m_cacheQueryMode;
-        if (m_cacheScreen != targetScreen ||
-            static_cast<int>(m_cacheQueryMode) < static_cast<int>(queryMode)) {
+        if (m_cacheScreen != targetScreen) {
             m_cacheReady = false;
         }
     }
@@ -1131,32 +1111,4 @@ bool WindowDetector::isWindowCacheReady(QueryMode queryMode) const
     return m_cacheReady &&
            m_cacheScreen == m_currentScreen.data() &&
            static_cast<int>(m_cacheQueryMode) >= static_cast<int>(queryMode);
-}
-
-void WindowDetector::mergePreservedTopLevelElements(
-    std::vector<DetectedElement>& newCache,
-    const std::vector<DetectedElement>& previousCache,
-    QueryMode previousQueryMode,
-    QScreen* previousScreen,
-    QueryMode newQueryMode,
-    QScreen* newScreen)
-{
-    if (previousQueryMode != QueryMode::TopLevelOnly ||
-        newQueryMode != QueryMode::IncludeChildControls ||
-        !newScreen ||
-        previousScreen != newScreen) {
-        return;
-    }
-
-    for (const auto& previousElement : previousCache) {
-        const bool alreadyPresent = std::any_of(
-            newCache.begin(),
-            newCache.end(),
-            [&previousElement](const DetectedElement& currentElement) {
-                return topLevelElementsLikelyMatch(previousElement, currentElement);
-            });
-        if (!alreadyPresent) {
-            newCache.push_back(previousElement);
-        }
-    }
 }

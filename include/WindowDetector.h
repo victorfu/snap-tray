@@ -10,6 +10,7 @@
 #include <QFuture>
 #include <QPointer>
 #include <QElapsedTimer>
+#include <algorithm>
 #include <vector>
 #include <optional>
 
@@ -112,7 +113,44 @@ private:
         QueryMode previousQueryMode,
         QScreen* previousScreen,
         QueryMode newQueryMode,
-        QScreen* newScreen);
+        QScreen* newScreen)
+    {
+        if (previousQueryMode != QueryMode::TopLevelOnly ||
+            newQueryMode != QueryMode::IncludeChildControls ||
+            !newScreen ||
+            previousScreen != newScreen) {
+            return;
+        }
+
+        for (const auto& previousElement : previousCache) {
+            const bool alreadyPresent = std::any_of(
+                newCache.cbegin(),
+                newCache.cend(),
+                [&previousElement](const DetectedElement& currentElement) {
+                    if (previousElement.windowId != 0 && currentElement.windowId != 0) {
+                        return previousElement.windowId == currentElement.windowId;
+                    }
+
+                    if (previousElement.ownerPid > 0 &&
+                        currentElement.ownerPid > 0 &&
+                        previousElement.ownerPid != currentElement.ownerPid) {
+                        return false;
+                    }
+
+                    const QRect previousSlack =
+                        previousElement.bounds.adjusted(-6, -6, 6, 6);
+                    const QRect currentSlack =
+                        currentElement.bounds.adjusted(-6, -6, 6, 6);
+                    return previousSlack.intersects(currentElement.bounds) ||
+                           currentSlack.intersects(previousElement.bounds) ||
+                           previousSlack.contains(currentElement.bounds.center()) ||
+                           currentSlack.contains(previousElement.bounds.center());
+                });
+            if (!alreadyPresent) {
+                newCache.push_back(previousElement);
+            }
+        }
+    }
 
     std::vector<DetectedElement> m_windowCache;
     mutable QMutex m_cacheMutex;

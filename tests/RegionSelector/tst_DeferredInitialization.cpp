@@ -200,7 +200,13 @@ testWindowDetection_restartsChildRefreshAfterLeavingStatusBarSurface()
         qBound(screenGeometry.top(), cursorPos.y() - 60, screenGeometry.bottom() - 120),
         240,
         120);
+    const QRect appBounds(
+        qBound(screenGeometry.left(), statusBarBounds.left() - 80, screenGeometry.right() - 400),
+        qBound(screenGeometry.top(), statusBarBounds.top() - 40, screenGeometry.bottom() - 260),
+        400,
+        260);
     detector.m_windowCache = {
+        makeDetectedElement(appBounds, ElementType::Window, 0),
         makeDetectedElement(statusBarBounds, ElementType::StatusBarItem, 101)
     };
 
@@ -214,14 +220,21 @@ testWindowDetection_restartsChildRefreshAfterLeavingStatusBarSurface()
     RegionSelectorTestAccess::showForRevealTests(selector);
     QCoreApplication::processEvents();
 
-    const QPoint outsideLocalPoint(
-        qBound(0, statusBarBounds.right() - screenGeometry.left() + 40, selector.width() - 1),
-        qBound(0, statusBarBounds.bottom() - screenGeometry.top() + 40, selector.height() - 1));
+    const QPoint outsideGlobalPoint(
+        qBound(appBounds.left(), statusBarBounds.right() + 20, appBounds.right() - 10),
+        qBound(appBounds.top(), statusBarBounds.bottom() + 20, appBounds.bottom() - 10));
+    const QPoint outsideLocalPoint = outsideGlobalPoint - screenGeometry.topLeft();
 
     RegionSelectorTestAccess::dispatchMouseMove(selector, outsideLocalPoint);
     QCoreApplication::processEvents();
 
+    QVERIFY(detector.m_cacheReady);
     QVERIFY(detector.m_refreshRequestId.load() > 0);
+    QVERIFY(selector.m_detectedWindow.has_value());
+    QCOMPARE(selector.m_detectedWindow->elementType, ElementType::Window);
+    QCOMPARE(selector.m_detectedWindow->bounds, appBounds);
+    QCOMPARE(selector.m_inputState.highlightedWindowRect,
+             QRect(appBounds.topLeft() - screenGeometry.topLeft(), appBounds.size()));
 }
 
 void tst_RegionSelectorDeferredInitialization::

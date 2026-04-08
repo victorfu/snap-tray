@@ -447,8 +447,7 @@ void WindowDetector::refreshWindowListAsync(QueryMode queryMode)
 
     {
         QMutexLocker locker(&m_cacheMutex);
-        if (m_cacheScreen != targetScreen ||
-            static_cast<int>(m_cacheQueryMode) < static_cast<int>(queryMode)) {
+        if (m_cacheScreen != targetScreen) {
             m_cacheReady = false;
         }
     }
