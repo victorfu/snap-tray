@@ -4,6 +4,24 @@
 
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
+#include "cursor/CursorStyleCatalog.h"
+
+namespace {
+void verifyMoveCursor(const QCursor& cursor)
+{
+#ifdef Q_OS_MACOS
+    const QCursor expected =
+        CursorStyleCatalog::instance().cursorForStyle(CursorStyleSpec::fromShape(Qt::SizeAllCursor));
+    QCOMPARE(cursor.shape(), Qt::BitmapCursor);
+    QVERIFY(!cursor.pixmap().isNull());
+    QCOMPARE(cursor.hotSpot(), expected.hotSpot());
+    QCOMPARE(cursor.pixmap().deviceIndependentSize(),
+             expected.pixmap().deviceIndependentSize());
+#else
+    QCOMPARE(cursor.shape(), Qt::SizeAllCursor);
+#endif
+}
+}  // namespace
 
 class TestCursorManagerWidget : public QWidget
 {
@@ -109,13 +127,13 @@ void TestCursorManager::testSelectionBodyUsesMoveCursor()
 
     manager.pushCursorForWidget(&widget, CursorContext::Tool, Qt::CrossCursor);
     manager.setHoverTargetForWidget(&widget, HoverTarget::SelectionBody);
-    QCOMPARE(widget.cursor().shape(), Qt::SizeAllCursor);
+    verifyMoveCursor(widget.cursor());
 
     manager.setDragStateForWidget(&widget, DragState::SelectionDrag);
     QCOMPARE(widget.cursor().shape(), Qt::ClosedHandCursor);
 
     manager.setDragStateForWidget(&widget, DragState::None);
-    QCOMPARE(widget.cursor().shape(), Qt::SizeAllCursor);
+    verifyMoveCursor(widget.cursor());
 
     manager.unregisterWidget(&widget);
 }

@@ -356,6 +356,7 @@ add_library(snaptray_core STATIC
     include/utils/FilenameTemplateEngine.h
     include/utils/ImageSaveUtils.h
     include/utils/NativeFileDialogUtils.h
+    resources/cursor_resources.qrc
 )
 
 target_include_directories(snaptray_core

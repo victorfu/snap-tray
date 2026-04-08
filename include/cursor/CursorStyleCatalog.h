@@ -21,7 +21,7 @@ public:
 private:
     CursorStyleCatalog() = default;
 
-    QCursor cachedBrushCursor(const QString& family, int logicalSize) const;
+    QCursor cachedCustomCursor(const QString& family, int logicalSize) const;
 
     mutable QHash<QString, QCursor> m_brushCursorCache;
 };

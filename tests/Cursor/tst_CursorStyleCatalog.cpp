@@ -2,12 +2,30 @@
 
 #include "cursor/CursorStyleCatalog.h"
 
+namespace {
+void verifyMoveCursor(const QCursor& cursor)
+{
+#ifdef Q_OS_MACOS
+    const QCursor expected =
+        CursorStyleCatalog::instance().cursorForStyle(CursorStyleSpec::fromShape(Qt::SizeAllCursor));
+    QCOMPARE(cursor.shape(), Qt::BitmapCursor);
+    QVERIFY(!cursor.pixmap().isNull());
+    QCOMPARE(cursor.hotSpot(), expected.hotSpot());
+    QCOMPARE(cursor.pixmap().deviceIndependentSize(),
+             expected.pixmap().deviceIndependentSize());
+#else
+    QCOMPARE(cursor.shape(), Qt::SizeAllCursor);
+#endif
+}
+}  // namespace
+
 class TestCursorStyleCatalog : public QObject
 {
     Q_OBJECT
 
 private slots:
     void testSystemShapeMapping();
+    void testMoveCursorUsesPlatformSafeMapping();
     void testLegacyCursorPassthrough();
     void testMosaicBrushUsesCenteredHotspot();
     void testEraserBrushUsesCenteredHotspot();
@@ -20,6 +38,13 @@ void TestCursorStyleCatalog::testSystemShapeMapping()
     const auto spec = CursorStyleSpec::fromShape(Qt::PointingHandCursor);
     QCOMPARE(spec.styleId, CursorStyleId::PointingHand);
     QCOMPARE(CursorStyleCatalog::instance().cursorForStyle(spec).shape(), Qt::PointingHandCursor);
+}
+
+void TestCursorStyleCatalog::testMoveCursorUsesPlatformSafeMapping()
+{
+    const auto spec = CursorStyleSpec::fromShape(Qt::SizeAllCursor);
+    QCOMPARE(spec.styleId, CursorStyleId::Move);
+    verifyMoveCursor(CursorStyleCatalog::instance().cursorForStyle(spec));
 }
 
 void TestCursorStyleCatalog::testLegacyCursorPassthrough()

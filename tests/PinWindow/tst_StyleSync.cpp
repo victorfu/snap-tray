@@ -10,6 +10,7 @@
 #include "annotations/PolylineAnnotation.h"
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
+#include "cursor/CursorStyleCatalog.h"
 #include "pinwindow/RegionLayoutManager.h"
 #include "tools/ToolManager.h"
 
@@ -21,6 +22,21 @@ QPixmap createTestPixmap(int width = 160, int height = 120)
     QPixmap pixmap(width, height);
     pixmap.fill(Qt::red);
     return pixmap;
+}
+
+void verifyMoveCursor(const QCursor& cursor)
+{
+#ifdef Q_OS_MACOS
+    const QCursor expected =
+        CursorStyleCatalog::instance().cursorForStyle(CursorStyleSpec::fromShape(Qt::SizeAllCursor));
+    QCOMPARE(cursor.shape(), Qt::BitmapCursor);
+    QVERIFY(!cursor.pixmap().isNull());
+    QCOMPARE(cursor.hotSpot(), expected.hotSpot());
+    QCOMPARE(cursor.pixmap().deviceIndependentSize(),
+             expected.pixmap().deviceIndependentSize());
+#else
+    QCOMPARE(cursor.shape(), Qt::SizeAllCursor);
+#endif
 }
 
 class HeadlessEmojiPickerPopup final : public SnapTray::QmlEmojiPickerPopup
@@ -186,7 +202,7 @@ void TestPinWindowStyleSync::testPolylineReleaseRecomputesHoverCursor()
     QVERIFY(window.m_isPolylineDragging);
 
     QVERIFY(window.handlePolylineAnnotationRelease(bodyPos));
-    QCOMPARE(window.cursor().shape(), Qt::SizeAllCursor);
+    verifyMoveCursor(window.cursor());
 }
 
 void TestPinWindowStyleSync::testPopupRestoreReturnsMosaicCursor()
@@ -472,7 +488,7 @@ void TestPinWindowStyleSync::testRegionLayoutMoveCursorUsesAuthority()
 
     QCOMPARE(authority.resolvedSourceForWidget(&window), CursorRequestSource::LayoutMode);
     QCOMPARE(authority.resolvedStyleForWidget(&window).styleId, CursorStyleId::Move);
-    QCOMPARE(window.cursor().shape(), Qt::SizeAllCursor);
+    verifyMoveCursor(window.cursor());
 }
 
 QTEST_MAIN(TestPinWindowStyleSync)
