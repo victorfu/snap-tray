@@ -751,7 +751,14 @@ std::optional<DetectedElement> WindowDetector::detectChildElementAt(
     constexpr int kMaxWalkDepth = 12;
     constexpr CGFloat kMinElementSize = 10.0;
 
-    std::optional<DetectedElement> result;
+    struct AxCandidate {
+        DetectedElement element;
+        WindowDetectorMacFilters::AxCandidateTier tier = WindowDetectorMacFilters::AxCandidateTier::None;
+        double area = 0.0;
+        int depth = 0;
+    };
+
+    std::optional<AxCandidate> bestCandidate;
     std::optional<DetectedElement> menuItemFallback;
 
     for (int depth = 0; depth < kMaxWalkDepth && current; ++depth) {
@@ -772,18 +779,26 @@ std::optional<DetectedElement> WindowDetector::detectChildElementAt(
                 frame.size.height >= kMinElementSize;
 
             if (hasUsableBounds) {
-                // For container-like roles, require a stricter max-area ratio.
+                const QRect elementBounds(
+                    static_cast<int>(frame.origin.x),
+                    static_cast<int>(frame.origin.y),
+                    static_cast<int>(frame.size.width),
+                    static_cast<int>(frame.size.height));
                 const CGFloat windowArea = containingWindowFrame.size.width * containingWindowFrame.size.height;
                 const CGFloat elementArea = frame.size.width * frame.size.height;
                 const bool areaAllowed = WindowDetectorMacFilters::isAreaRatioAllowed(role, elementArea, windowArea);
+                const bool isMenuContainerRole = WindowDetectorMacFilters::isMenuContainerRole(role);
+                const bool isMenuItemRole = WindowDetectorMacFilters::isMenuItemRole(role);
+                const auto candidateTier = WindowDetectorMacFilters::candidateTierForRole(role);
+                const bool boundsAccepted = WindowDetectorMacFilters::shouldAcceptCandidateBounds(
+                    windowBounds,
+                    elementBounds,
+                    screenPos,
+                    static_cast<int>(kMinElementSize));
 
-                if (areaAllowed) {
+                if (areaAllowed && isMenuContainerRole) {
                     DetectedElement element;
-                    element.bounds = QRect(
-                        static_cast<int>(frame.origin.x),
-                        static_cast<int>(frame.origin.y),
-                        static_cast<int>(frame.size.width),
-                        static_cast<int>(frame.size.height));
+                    element.bounds = elementBounds;
                     element.windowTitle = role;
                     element.ownerApp = ownerApp;
                     element.windowLayer = 1;
@@ -791,20 +806,26 @@ std::optional<DetectedElement> WindowDetector::detectChildElementAt(
                     element.elementType = ElementType::Window;
                     element.ownerPid = targetPid;
 
-                    if (WindowDetectorMacFilters::isMenuContainerRole(role)) {
-                        result = element;
-                        break;
+                    m_axCacheValid = true;
+                    m_axCache = element;
+                    m_axCacheTimer.start();
+                    if (current) {
+                        CFRelease(current);
                     }
-
-                    if (WindowDetectorMacFilters::isMenuItemRole(role)) {
-                        menuItemFallback = element;
-                    } else {
-                        result = element;
-                        break;
-                    }
+                    return element;
                 }
 
-                if (WindowDetectorMacFilters::isMenuItemRole(role)) {
+                if (areaAllowed && isMenuItemRole) {
+                    DetectedElement element;
+                    element.bounds = elementBounds;
+                    element.windowTitle = role;
+                    element.ownerApp = ownerApp;
+                    element.windowLayer = 1;
+                    element.windowId = 0;
+                    element.elementType = ElementType::Window;
+                    element.ownerPid = targetPid;
+                    menuItemFallback = element;
+
                     // Keep walking to find the enclosing AXMenu so menu hit-testing
                     // prefers the full menu bounds over the hovered row.
                     AXUIElementRef parent = nullptr;
@@ -812,6 +833,34 @@ std::optional<DetectedElement> WindowDetector::detectChildElementAt(
                     CFRelease(current);
                     current = parent;
                     continue;
+                }
+
+                if (areaAllowed && boundsAccepted &&
+                    candidateTier != WindowDetectorMacFilters::AxCandidateTier::None) {
+                    DetectedElement element;
+                    element.bounds = elementBounds;
+                    element.windowTitle = role;
+                    element.ownerApp = ownerApp;
+                    element.windowLayer = 1;
+                    element.windowId = 0;
+                    element.elementType = ElementType::Window;
+                    element.ownerPid = targetPid;
+
+                    if (!bestCandidate.has_value() ||
+                        WindowDetectorMacFilters::shouldPreferAxCandidate(
+                            candidateTier,
+                            static_cast<double>(elementArea),
+                            depth,
+                            bestCandidate->tier,
+                            bestCandidate->area,
+                            bestCandidate->depth)) {
+                        AxCandidate candidate;
+                        candidate.element = element;
+                        candidate.tier = candidateTier;
+                        candidate.area = static_cast<double>(elementArea);
+                        candidate.depth = depth;
+                        bestCandidate = candidate;
+                    }
                 }
 
                 if (windowArea > 0.0) {
@@ -826,7 +875,10 @@ std::optional<DetectedElement> WindowDetector::detectChildElementAt(
         current = parent;
     }
 
-    if (!result.has_value() && menuItemFallback.has_value()) {
+    std::optional<DetectedElement> result;
+    if (bestCandidate.has_value()) {
+        result = bestCandidate->element;
+    } else if (menuItemFallback.has_value()) {
         result = menuItemFallback;
     }
 
@@ -915,11 +967,12 @@ std::optional<DetectedElement> WindowDetector::detectWindowAt(
     // bypassing our own overlay which blocks system-wide AX queries.
     if (queryMode == QueryMode::IncludeChildControls &&
         m_cacheQueryMode == QueryMode::IncludeChildControls &&
-        m_detectionFlags.testFlag(DetectionFlag::ChildControls) &&
-        topWindow->ownerPid > 0) {
-        auto childElement = detectChildElementAt(screenPos, *topWindow, 0);
-        if (childElement.has_value()) {
-            return childElement;
+        m_detectionFlags.testFlag(DetectionFlag::ChildControls)) {
+        if (topWindow->ownerPid > 0) {
+            auto childElement = detectChildElementAt(screenPos, *topWindow, 0);
+            if (childElement.has_value()) {
+                return childElement;
+            }
         }
     }
 
