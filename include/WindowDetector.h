@@ -106,6 +106,13 @@ protected:
 private:
     void enumerateWindows();
     void enumerateWindowsInternal(std::vector<DetectedElement>& cache, qreal dpr, DetectionFlags flags);
+    static void mergePreservedTopLevelElements(
+        std::vector<DetectedElement>& newCache,
+        const std::vector<DetectedElement>& previousCache,
+        QueryMode previousQueryMode,
+        QScreen* previousScreen,
+        QueryMode newQueryMode,
+        QScreen* newScreen);
 
     std::vector<DetectedElement> m_windowCache;
     mutable QMutex m_cacheMutex;

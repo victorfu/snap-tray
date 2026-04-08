@@ -2467,6 +2467,10 @@ void RegionSelector::scheduleInitialRevealRefinement()
             return;
         }
 
+        if (shouldKeepTopLevelWindowDetection(m_inputState.currentPoint)) {
+            return;
+        }
+
         if (!m_windowDetector->isWindowCacheReady(
                 WindowDetector::QueryMode::IncludeChildControls)) {
             m_windowDetector->refreshWindowListAsync(
@@ -2571,8 +2575,18 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos,
         return;
     }
 
+    const WindowDetector::QueryMode effectiveQueryMode =
+        effectiveWindowDetectionQueryMode(localPos, queryMode);
+
+    if (effectiveQueryMode == WindowDetector::QueryMode::IncludeChildControls &&
+        !m_windowDetector->isWindowCacheReady(WindowDetector::QueryMode::IncludeChildControls) &&
+        m_windowDetector->isRefreshComplete()) {
+        m_windowDetector->refreshWindowListAsync(
+            WindowDetector::QueryMode::IncludeChildControls);
+    }
+
     snaptray::region::CapturePerfScope perfScope("RegionSelector.updateWindowDetection");
-    auto detected = m_windowDetector->detectWindowAt(localToGlobal(localPos), queryMode);
+    auto detected = m_windowDetector->detectWindowAt(localToGlobal(localPos), effectiveQueryMode);
 
     if (detected.has_value()) {
         m_inputState.hasDetectedWindow = true;
@@ -2599,6 +2613,46 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos,
     }
 
     syncCaptureChromeWindow();
+}
+
+bool RegionSelector::isTransientTopLevelElementType(ElementType elementType) const
+{
+    switch (elementType) {
+    case ElementType::ContextMenu:
+    case ElementType::PopupMenu:
+    case ElementType::StatusBarItem:
+        return true;
+    case ElementType::Window:
+    case ElementType::Dialog:
+    case ElementType::Unknown:
+        return false;
+    }
+
+    return false;
+}
+
+bool RegionSelector::shouldKeepTopLevelWindowDetection(const QPoint &localPos) const
+{
+    if (!m_detectedWindow.has_value() ||
+        !isTransientTopLevelElementType(m_detectedWindow->elementType) ||
+        !m_inputState.highlightedWindowRect.isValid() ||
+        m_inputState.highlightedWindowRect.isEmpty()) {
+        return false;
+    }
+
+    return m_inputState.highlightedWindowRect.contains(localPos);
+}
+
+WindowDetector::QueryMode RegionSelector::effectiveWindowDetectionQueryMode(
+    const QPoint &localPos,
+    WindowDetector::QueryMode requestedMode) const
+{
+    if (requestedMode == WindowDetector::QueryMode::IncludeChildControls &&
+        shouldKeepTopLevelWindowDetection(localPos)) {
+        return WindowDetector::QueryMode::TopLevelOnly;
+    }
+
+    return requestedMode;
 }
 
 void RegionSelector::paintSelectorScene(QPainter& painter, const QRegion& dirtyRegion)

@@ -6,6 +6,7 @@
 #include <QDebug>
 #include <QByteArray>
 #include <QtConcurrent>
+#include <algorithm>
 #include <unistd.h>
 
 #import <Foundation/Foundation.h>
@@ -223,6 +224,24 @@ bool shouldPreferTopLevelBoundsForElementType(ElementType elementType)
     }
 
     return false;
+}
+
+bool topLevelElementsLikelyMatch(const DetectedElement &lhs, const DetectedElement &rhs)
+{
+    if (lhs.windowId != 0 && rhs.windowId != 0) {
+        return lhs.windowId == rhs.windowId;
+    }
+
+    if (lhs.ownerPid > 0 && rhs.ownerPid > 0 && lhs.ownerPid != rhs.ownerPid) {
+        return false;
+    }
+
+    const QRect lhsSlack = lhs.bounds.adjusted(-6, -6, 6, 6);
+    const QRect rhsSlack = rhs.bounds.adjusted(-6, -6, 6, 6);
+    return lhsSlack.intersects(rhs.bounds) ||
+           rhsSlack.intersects(lhs.bounds) ||
+           lhsSlack.contains(rhs.bounds.center()) ||
+           rhsSlack.contains(lhs.bounds.center());
 }
 
 QImage captureWindowImage(CGWindowID windowId)
@@ -609,13 +628,24 @@ void WindowDetector::refreshWindowList(QueryMode queryMode)
     m_refreshComplete = false;
     const DetectionFlags flags = flagsForQueryMode(m_detectionFlags, queryMode);
 
-    QMutexLocker locker(&m_cacheMutex);
-    m_windowCache.clear();
-    m_cacheReady = false;
-    m_cacheScreen = nullptr;
+    std::vector<DetectedElement> previousCache;
+    QScreen* previousScreen = nullptr;
+    QueryMode previousQueryMode = QueryMode::TopLevelOnly;
+
+    {
+        QMutexLocker locker(&m_cacheMutex);
+        previousCache = m_windowCache;
+        previousScreen = m_cacheScreen;
+        previousQueryMode = m_cacheQueryMode;
+        m_windowCache.clear();
+        m_cacheReady = false;
+        m_cacheScreen = nullptr;
+    }
 
     if (!m_enabled) {
+        QMutexLocker locker(&m_cacheMutex);
         m_cacheScreen = m_currentScreen.data();
+        m_cacheQueryMode = queryMode;
         m_cacheReady = true;
         m_refreshComplete = true;
         return;
@@ -632,6 +662,7 @@ void WindowDetector::refreshWindowList(QueryMode queryMode)
 
     if (!windowList) {
         qWarning() << "WindowDetector: Failed to get window list";
+        QMutexLocker locker(&m_cacheMutex);
         m_cacheScreen = m_currentScreen.data();
         m_cacheQueryMode = queryMode;
         m_cacheReady = true;
@@ -641,18 +672,31 @@ void WindowDetector::refreshWindowList(QueryMode queryMode)
 
     const CFIndex count = CFArrayGetCount(windowList);
     const pid_t myPid = [[NSProcessInfo processInfo] processIdentifier];
+    std::vector<DetectedElement> newCache;
 
     for (CFIndex i = 0; i < count; ++i) {
         CFDictionaryRef windowInfo = static_cast<CFDictionaryRef>(CFArrayGetValueAtIndex(windowList, i));
         if (auto element = buildDetectedTopLevelElement(windowInfo, myPid, flags)) {
-            m_windowCache.push_back(*element);
+            newCache.push_back(*element);
         }
     }
 
     CFRelease(windowList);
-    m_cacheScreen = m_currentScreen.data();
-    m_cacheQueryMode = queryMode;
-    m_cacheReady = true;
+    mergePreservedTopLevelElements(
+        newCache,
+        previousCache,
+        previousQueryMode,
+        previousScreen,
+        queryMode,
+        m_currentScreen.data());
+
+    {
+        QMutexLocker locker(&m_cacheMutex);
+        m_windowCache = std::move(newCache);
+        m_cacheScreen = m_currentScreen.data();
+        m_cacheQueryMode = queryMode;
+        m_cacheReady = true;
+    }
 
     m_refreshComplete = true;
 }
@@ -988,16 +1032,31 @@ void WindowDetector::refreshWindowListAsync(QueryMode queryMode)
 
     // Snapshot detection flags to avoid data race with main thread
     const DetectionFlags flags = flagsForQueryMode(m_detectionFlags, queryMode);
+    std::vector<DetectedElement> previousCache;
+    QScreen* previousScreen = nullptr;
+    QueryMode previousQueryMode = QueryMode::TopLevelOnly;
 
     {
         QMutexLocker locker(&m_cacheMutex);
+        previousCache = m_windowCache;
+        previousScreen = m_cacheScreen;
+        previousQueryMode = m_cacheQueryMode;
         if (m_cacheScreen != targetScreen ||
             static_cast<int>(m_cacheQueryMode) < static_cast<int>(queryMode)) {
             m_cacheReady = false;
         }
     }
 
-    m_refreshFuture = QtConcurrent::run([this, requestId, flags, targetScreen, queryMode]() {
+    m_refreshFuture = QtConcurrent::run([
+        this,
+        requestId,
+        flags,
+        targetScreen,
+        queryMode,
+        previousCache = std::move(previousCache),
+        previousScreen,
+        previousQueryMode
+    ]() mutable {
         std::vector<DetectedElement> newCache;
 
         // Determine CGWindowList options based on detection flags
@@ -1030,6 +1089,16 @@ void WindowDetector::refreshWindowListAsync(QueryMode queryMode)
         }
 
         CFRelease(windowList);
+        // Region capture uses a frozen pre-capture screenshot, so when we upgrade
+        // from a top-level-only snapshot to child-control queries we must keep any
+        // top-level windows that vanished after our overlay activated.
+        mergePreservedTopLevelElements(
+            newCache,
+            previousCache,
+            previousQueryMode,
+            previousScreen,
+            queryMode,
+            targetScreen);
 
         if (m_refreshRequestId.load() != requestId) {
             qDebug() << "WindowDetector: Discarding stale refresh result";
@@ -1062,4 +1131,32 @@ bool WindowDetector::isWindowCacheReady(QueryMode queryMode) const
     return m_cacheReady &&
            m_cacheScreen == m_currentScreen.data() &&
            static_cast<int>(m_cacheQueryMode) >= static_cast<int>(queryMode);
+}
+
+void WindowDetector::mergePreservedTopLevelElements(
+    std::vector<DetectedElement>& newCache,
+    const std::vector<DetectedElement>& previousCache,
+    QueryMode previousQueryMode,
+    QScreen* previousScreen,
+    QueryMode newQueryMode,
+    QScreen* newScreen)
+{
+    if (previousQueryMode != QueryMode::TopLevelOnly ||
+        newQueryMode != QueryMode::IncludeChildControls ||
+        !newScreen ||
+        previousScreen != newScreen) {
+        return;
+    }
+
+    for (const auto& previousElement : previousCache) {
+        const bool alreadyPresent = std::any_of(
+            newCache.begin(),
+            newCache.end(),
+            [&previousElement](const DetectedElement& currentElement) {
+                return topLevelElementsLikelyMatch(previousElement, currentElement);
+            });
+        if (!alreadyPresent) {
+            newCache.push_back(previousElement);
+        }
+    }
 }

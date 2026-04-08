@@ -1,5 +1,6 @@
 #include <QtTest/QtTest>
 
+#include <algorithm>
 #include <QCursor>
 #include <QGuiApplication>
 #include <QScreen>
@@ -70,6 +71,8 @@ private slots:
     void testTopLevelCacheDoesNotPretendChildControlsAreReady();
     void testIncludeChildControlsUsesChildQuery();
     void testContextMenuPrefersTopLevelBounds();
+    void testQueryUpgradePreservesMissingTopLevelElements();
+    void testQueryUpgradeDoesNotDuplicateMatchingTopLevelElements();
 };
 
 void tst_WindowDetectorQueryMode::testTopLevelOnlySkipsChildQuery()
@@ -194,6 +197,83 @@ void tst_WindowDetectorQueryMode::testContextMenuPrefersTopLevelBounds()
     QCOMPARE(result->bounds, topBounds);
     QCOMPARE(result->elementType, ElementType::ContextMenu);
     QCOMPARE(detector.childQueryCount, 0);
+}
+
+void tst_WindowDetectorQueryMode::testQueryUpgradePreservesMissingTopLevelElements()
+{
+    QScreen* screen = QGuiApplication::screenAt(QCursor::pos());
+    if (!screen) {
+        screen = QGuiApplication::primaryScreen();
+    }
+    if (!screen) {
+        QSKIP("No screen available for WindowDetector query mode test.");
+    }
+
+    const QRect appBounds = clampRectToScreen(screen->geometry(), screen->geometry().center(), QSize(320, 240));
+    const QRect popupBounds = clampRectToScreen(
+        screen->geometry(),
+        QPoint(screen->geometry().center().x(), screen->geometry().top() + 80),
+        QSize(260, 180));
+
+    std::vector<DetectedElement> newCache{makeElement(appBounds, 0, ElementType::Window)};
+    DetectedElement preservedPopup = makeElement(popupBounds, 27, ElementType::StatusBarItem);
+    preservedPopup.windowId = 777;
+    preservedPopup.ownerPid = 5150;
+
+    WindowDetector::mergePreservedTopLevelElements(
+        newCache,
+        {preservedPopup},
+        WindowDetector::QueryMode::TopLevelOnly,
+        screen,
+        WindowDetector::QueryMode::IncludeChildControls,
+        screen);
+
+    QCOMPARE(newCache.size(), size_t(2));
+    QVERIFY(std::any_of(
+        newCache.cbegin(),
+        newCache.cend(),
+        [&popupBounds](const DetectedElement& element) {
+            return element.bounds == popupBounds &&
+                   element.elementType == ElementType::StatusBarItem;
+        }));
+}
+
+void tst_WindowDetectorQueryMode::testQueryUpgradeDoesNotDuplicateMatchingTopLevelElements()
+{
+    QScreen* screen = QGuiApplication::screenAt(QCursor::pos());
+    if (!screen) {
+        screen = QGuiApplication::primaryScreen();
+    }
+    if (!screen) {
+        QSKIP("No screen available for WindowDetector query mode test.");
+    }
+
+    const QRect popupBounds = clampRectToScreen(
+        screen->geometry(),
+        QPoint(screen->geometry().center().x(), screen->geometry().top() + 80),
+        QSize(260, 180));
+
+    DetectedElement preservedPopup = makeElement(popupBounds, 27, ElementType::StatusBarItem);
+    preservedPopup.windowId = 777;
+    preservedPopup.ownerPid = 5150;
+
+    DetectedElement livePopup = makeElement(popupBounds.adjusted(2, 1, 2, 1), 27, ElementType::StatusBarItem);
+    livePopup.windowId = 0;
+    livePopup.ownerPid = 5150;
+
+    std::vector<DetectedElement> newCache{livePopup};
+
+    WindowDetector::mergePreservedTopLevelElements(
+        newCache,
+        {preservedPopup},
+        WindowDetector::QueryMode::TopLevelOnly,
+        screen,
+        WindowDetector::QueryMode::IncludeChildControls,
+        screen);
+
+    QCOMPARE(newCache.size(), size_t(1));
+    QCOMPARE(newCache.front().bounds, livePopup.bounds);
+    QCOMPARE(newCache.front().ownerPid, livePopup.ownerPid);
 }
 
 QTEST_MAIN(tst_WindowDetectorQueryMode)

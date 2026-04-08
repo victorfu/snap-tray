@@ -25,6 +25,22 @@ QPixmap makePreCapture(const QSize& size, const QColor& color)
     return preCapture;
 }
 
+DetectedElement makeDetectedElement(
+    const QRect& bounds,
+    ElementType elementType,
+    int windowLayer = 100)
+{
+    DetectedElement element;
+    element.bounds = bounds;
+    element.windowTitle = QStringLiteral("test");
+    element.ownerApp = QStringLiteral("DeferredInitTests");
+    element.windowLayer = windowLayer;
+    element.windowId = static_cast<uint32_t>(windowLayer + 1);
+    element.elementType = elementType;
+    element.ownerPid = 4242;
+    return element;
+}
+
 QPoint currentLocalCursorPos(const QRect& screenGeometry)
 {
     return QCursor::pos() - screenGeometry.topLeft();
@@ -39,6 +55,8 @@ class tst_RegionSelectorDeferredInitialization : public QObject
 private slots:
     void testShowEvent_revealsImmediatelyWithoutDetectorCache();
     void testShowEvent_usesLiveCursorPositionForInitialReveal();
+    void testInitialReveal_skipsChildRefreshForStatusBarSurface();
+    void testWindowDetection_restartsChildRefreshAfterLeavingStatusBarSurface();
     void testDetectedWindowClickOnDetachedWindowsArmsSelectionCompletionHandoff();
     void testDetectedWindowClickOnMacKeepsImmediateToolbarBehavior();
 
@@ -112,6 +130,98 @@ void tst_RegionSelectorDeferredInitialization::testShowEvent_usesLiveCursorPosit
     const QPoint expectedLocalPoint = currentLocalCursorPos(screenGeometry);
     QCursor::setPos(originalCursorPos);
     QCOMPARE(selector.m_inputState.currentPoint, expectedLocalPoint);
+}
+
+void tst_RegionSelectorDeferredInitialization::testInitialReveal_skipsChildRefreshForStatusBarSurface()
+{
+    QScreen* screen = currentCursorScreen();
+    if (!screen) {
+        QSKIP("No screens available for RegionSelector status bar refinement test.");
+    }
+
+    WindowDetector detector;
+    detector.m_enabled = true;
+    detector.setScreen(screen);
+    detector.m_refreshComplete = true;
+    detector.m_cacheReady = true;
+    detector.m_cacheScreen = screen;
+    detector.m_cacheQueryMode = WindowDetector::QueryMode::TopLevelOnly;
+
+    const QRect screenGeometry = screen->geometry();
+    const QPoint cursorPos = QCursor::pos();
+    const QRect statusBarBounds(
+        qBound(screenGeometry.left(), cursorPos.x() - 120, screenGeometry.right() - 240),
+        qBound(screenGeometry.top(), cursorPos.y() - 60, screenGeometry.bottom() - 120),
+        240,
+        120);
+    detector.m_windowCache = {
+        makeDetectedElement(statusBarBounds, ElementType::StatusBarItem, 101)
+    };
+
+    RegionSelector selector;
+    selector.setWindowDetector(&detector);
+    selector.initializeForScreen(
+        screen,
+        makePreCapture(screenGeometry.size().boundedTo(QSize(320, 240)), Qt::darkBlue));
+    selector.setGeometry(screenGeometry);
+
+    RegionSelectorTestAccess::showForRevealTests(selector);
+    QCoreApplication::processEvents();
+
+    QVERIFY(selector.m_detectedWindow.has_value());
+    QCOMPARE(selector.m_detectedWindow->elementType, ElementType::StatusBarItem);
+    QCOMPARE(selector.m_detectedWindow->bounds, statusBarBounds);
+    QCOMPARE(selector.m_inputState.highlightedWindowRect,
+             QRect(statusBarBounds.topLeft() - screenGeometry.topLeft(), statusBarBounds.size()));
+    QCOMPARE(detector.m_refreshRequestId.load(), uint64_t(0));
+    QCOMPARE(detector.m_cacheQueryMode, WindowDetector::QueryMode::TopLevelOnly);
+}
+
+void tst_RegionSelectorDeferredInitialization::
+testWindowDetection_restartsChildRefreshAfterLeavingStatusBarSurface()
+{
+    QScreen* screen = currentCursorScreen();
+    if (!screen) {
+        QSKIP("No screens available for RegionSelector status bar refinement exit test.");
+    }
+
+    WindowDetector detector;
+    detector.m_enabled = true;
+    detector.setScreen(screen);
+    detector.m_refreshComplete = true;
+    detector.m_cacheReady = true;
+    detector.m_cacheScreen = screen;
+    detector.m_cacheQueryMode = WindowDetector::QueryMode::TopLevelOnly;
+
+    const QRect screenGeometry = screen->geometry();
+    const QPoint cursorPos = QCursor::pos();
+    const QRect statusBarBounds(
+        qBound(screenGeometry.left(), cursorPos.x() - 120, screenGeometry.right() - 240),
+        qBound(screenGeometry.top(), cursorPos.y() - 60, screenGeometry.bottom() - 120),
+        240,
+        120);
+    detector.m_windowCache = {
+        makeDetectedElement(statusBarBounds, ElementType::StatusBarItem, 101)
+    };
+
+    RegionSelector selector;
+    selector.setWindowDetector(&detector);
+    selector.initializeForScreen(
+        screen,
+        makePreCapture(screenGeometry.size().boundedTo(QSize(320, 240)), Qt::darkRed));
+    selector.setGeometry(screenGeometry);
+
+    RegionSelectorTestAccess::showForRevealTests(selector);
+    QCoreApplication::processEvents();
+
+    const QPoint outsideLocalPoint(
+        qBound(0, statusBarBounds.right() - screenGeometry.left() + 40, selector.width() - 1),
+        qBound(0, statusBarBounds.bottom() - screenGeometry.top() + 40, selector.height() - 1));
+
+    RegionSelectorTestAccess::dispatchMouseMove(selector, outsideLocalPoint);
+    QCoreApplication::processEvents();
+
+    QVERIFY(detector.m_refreshRequestId.load() > 0);
 }
 
 void tst_RegionSelectorDeferredInitialization::

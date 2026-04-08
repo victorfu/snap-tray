@@ -202,6 +202,11 @@ private:
 
     // Window detection
     void updateWindowDetection(const QPoint &localPos);
+    bool isTransientTopLevelElementType(ElementType elementType) const;
+    bool shouldKeepTopLevelWindowDetection(const QPoint &localPos) const;
+    WindowDetector::QueryMode effectiveWindowDetectionQueryMode(
+        const QPoint &localPos,
+        WindowDetector::QueryMode requestedMode) const;
     void setMultiRegionMode(bool enabled);
     void completeMultiRegionCapture();
     void cancelMultiRegionCapture();
