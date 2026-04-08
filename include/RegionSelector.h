@@ -89,7 +89,6 @@ class RegionSelector : public QWidget, public AnnotationHostAdapter
     friend class tst_RegionSelectorMultiRegionSubToolbar;
     friend class tst_RegionSelectorTransientUiCancelGuard;
     friend class TestRegionSelectorStyleSync;
-    friend class tst_RegionSelectorDeferredInitialization;
     friend class RegionSelectorTestAccess;
 
 public:

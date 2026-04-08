@@ -173,7 +173,6 @@ private:
 #endif
 
     friend class tst_WindowDetectorQueryMode;
-    friend class tst_RegionSelectorDeferredInitialization;
 };
 
 #endif // WINDOWDETECTOR_H
