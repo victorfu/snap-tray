@@ -108,8 +108,6 @@ void QmlSettingsWindow::ensureView()
 
     connect(m_backend, &SettingsBackend::ocrLanguagesChanged,
             this, &QmlSettingsWindow::ocrLanguagesChanged);
-    connect(m_backend, &SettingsBackend::mcpEnabledChanged,
-            this, &QmlSettingsWindow::mcpEnabledChanged);
     connect(m_backend, &SettingsBackend::languageChanged,
             this, [this]() {
         if (!m_view || !m_view->isVisible())

@@ -24,7 +24,6 @@ public:
 
 signals:
     void ocrLanguagesChanged(const QStringList& languages);
-    void mcpEnabledChanged(bool enabled);
 
 private:
     void ensureView();

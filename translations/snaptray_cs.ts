@@ -51,16 +51,6 @@
         <translation>Zobrazovat nápovědu klávesových zkratek</translation>
         </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="31" />
-        <source>MCP</source>
-        <translation>MCP</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="36" />
-        <source>Enable MCP server</source>
-        <translation>Povolit server MCP</translation>
-        </message>
-    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
         <source>Blur</source>
         <translation>Rozmazání</translation>
@@ -640,16 +630,6 @@ Tokeny data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} nebo {date}</translation>
         <location filename="../src/MainApplication.cpp" line="408" />
         <source>OCR Failed</source>
         <translation>OCR selhalo</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="458" />
-        <source>MCP Server Unavailable</source>
-        <translation>Server MCP není dostupný</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="459" />
-        <source>Unable to start MCP HTTP server on 127.0.0.1:%1</source>
-        <translation>Nepodařilo se spustit HTTP server MCP na 127.0.0.1:%1</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="584" />

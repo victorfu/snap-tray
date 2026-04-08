@@ -3,7 +3,7 @@ import QtQuick.Controls.Basic
 import SnapTrayQml
 
 /**
- * AdvancedSettings: Capture hints, MCP, blur, pin window options.
+ * AdvancedSettings: Capture hints, blur, and pin window options.
  */
 Flickable {
     id: root
@@ -35,22 +35,6 @@ Flickable {
             label: qsTr("Show shortcut hints")
             checked: settingsBackend.shortcutHintsEnabled
             onToggled: function(checked) { settingsBackend.shortcutHintsEnabled = checked }
-        }
-
-        // MCP section (debug builds only)
-        SettingsSection {
-            title: qsTr("MCP")
-            visible: settingsBackend.isMcpBuild
-        }
-
-        SettingsToggle {
-            label: qsTr("Enable MCP server")
-            checked: settingsBackend.isMcpBuild ? settingsBackend.mcpEnabled : false
-            visible: settingsBackend.isMcpBuild
-            onToggled: function(checked) {
-                if (settingsBackend.isMcpBuild)
-                    settingsBackend.mcpEnabled = checked
-            }
         }
 
         SettingsSection { title: qsTr("Blur") }

@@ -34,7 +34,6 @@ snap-tray/
 │   ├── encoding/               # Video, GIF, WebP encoders
 │   ├── history/                # History data models and helpers
 │   ├── hotkey/                 # Hotkey manager and action types
-│   ├── mcp/                    # Debug-only MCP server contracts
 │   ├── metal/                  # Apple Metal capture / rendering helpers
 │   ├── pinwindow/              # Pin window components
 │   ├── platform/               # Platform abstraction layer
@@ -75,8 +74,7 @@ SnapTray uses a modular static-library-oriented structure:
 3. `snaptray_algorithms`: detection and image analysis
 4. `snaptray_platform`: platform-specific capture, encoding, playback, install source, and OS integration
 5. `snaptray_ui`: region selector, pin windows, recording workflow, toolbar, settings surfaces
-6. `snaptray_mcp`: debug-only MCP transport and tools
-7. `SnapTray`: main executable
+6. `SnapTray`: main executable
 
 ## Architecture patterns
 
@@ -95,7 +93,6 @@ Use subsystem-specific settings managers instead of ad-hoc `QSettings` access.
 - `BeautifySettingsManager`
 - `RegionCaptureSettingsManager`
 - `LanguageManager`
-- `MCPSettingsManager`
 
 ### Hotkey registration is centralized
 
@@ -217,7 +214,7 @@ Commands under `include/cli/commands/` include:
 
 - Test files use `tests/<Component>/tst_<Name>.cpp`
 - The suite uses Qt Test primitives such as `QCOMPARE` and `QVERIFY`
-- Tests are organized by subsystem folders including `Annotations`, `Beautify`, `CLI`, `Cursor`, `Detection`, `Encoding`, `Hotkey`, `IPC`, `MCP`, `PinWindow`, `Qml`, `RecordingManager`, `RegionSelector`, `ScreenCanvas`, `Settings`, `Share`, `Tools`, `Update`, and `Utils`
+- Tests are organized by subsystem folders including `Annotations`, `Beautify`, `CLI`, `Cursor`, `Detection`, `Encoding`, `Hotkey`, `IPC`, `PinWindow`, `Qml`, `RecordingManager`, `RegionSelector`, `ScreenCanvas`, `Settings`, `Share`, `Tools`, `Update`, and `Utils`
 
 ### Common patterns to avoid
 

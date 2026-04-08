@@ -112,7 +112,6 @@ C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe --release release\bin\SnapTray.exe
 
 - `Debug` builds use the display name `SnapTray-Debug` and a debug bundle identifier on macOS
 - `Release` builds use the shipping app name `SnapTray`
-- MCP support is compiled only in `Debug` builds via `SNAPTRAY_ENABLE_MCP`
 
 ## Build optimization
 

@@ -52,16 +52,6 @@
         <translation>แสดงคำแนะนำคีย์ลัด</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="31"/>
-        <source>MCP</source>
-        <translation>MCP</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="36"/>
-        <source>Enable MCP server</source>
-        <translation>เปิดใช้งานเซิร์ฟเวอร์ MCP</translation>
-    </message>
-    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="45"/>
         <source>Blur</source>
         <translation>เบลอ</translation>
@@ -705,16 +695,6 @@ File size: %3</source>
         <location filename="../src/MainApplication.cpp" line="442"/>
         <source>OCR Failed</source>
         <translation>OCR ล้มเหลว</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="530"/>
-        <source>MCP Server Unavailable</source>
-        <translation>เซิร์ฟเวอร์ MCP ไม่พร้อมใช้งาน</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="531"/>
-        <source>Unable to start MCP HTTP server on 127.0.0.1:%1</source>
-        <translation>ไม่สามารถเริ่มเซิร์ฟเวอร์ MCP HTTP บน 127.0.0.1:%1 ได้</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="656"/>

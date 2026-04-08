@@ -51,16 +51,6 @@
         <translation>Kısayol ipuçlarını göster</translation>
         </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="31" />
-        <source>MCP</source>
-        <translation>MCP</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="36" />
-        <source>Enable MCP server</source>
-        <translation>MCP sunucusunu etkinleştir</translation>
-        </message>
-    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
         <source>Blur</source>
         <translation>Bulanıklaştırma</translation>
@@ -634,16 +624,6 @@ Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</trans
         <location filename="../src/MainApplication.cpp" line="408" />
         <source>OCR Failed</source>
         <translation>OCR Başarısız</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="458" />
-        <source>MCP Server Unavailable</source>
-        <translation>MCP sunucusu kullanılamıyor</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="459" />
-        <source>Unable to start MCP HTTP server on 127.0.0.1:%1</source>
-        <translation>MCP HTTP sunucusu 127.0.0.1:%1 üzerinde başlatılamadı</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="584" />

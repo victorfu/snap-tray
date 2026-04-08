@@ -114,7 +114,6 @@ target_include_directories(App_MainApplicationTrayMenu PRIVATE
     ${CMAKE_BINARY_DIR}
 )
 target_link_libraries(App_MainApplicationTrayMenu PRIVATE
-    $<$<CONFIG:Debug>:snaptray_mcp>
     snaptray_ui
     snaptray_platform
     snaptray_algorithms
@@ -541,11 +540,6 @@ target_link_libraries(Settings_RegionCaptureSettingsManager PRIVATE snaptray_cor
 add_test(NAME Settings_RegionCaptureSettingsManager COMMAND Settings_RegionCaptureSettingsManager)
 set_tests_properties(Settings_RegionCaptureSettingsManager PROPERTIES TIMEOUT 60 LABELS "unit")
 
-add_executable(Settings_MCPSettingsManager Settings/tst_MCPSettingsManager.cpp)
-target_link_libraries(Settings_MCPSettingsManager PRIVATE snaptray_core Qt6::Test)
-add_test(NAME Settings_MCPSettingsManager COMMAND Settings_MCPSettingsManager)
-set_tests_properties(Settings_MCPSettingsManager PROPERTIES TIMEOUT 60 LABELS "unit")
-
 add_executable(Settings_SettingsStorageLocation Settings/tst_SettingsStorageLocation.cpp)
 target_link_libraries(Settings_SettingsStorageLocation PRIVATE snaptray_core Qt6::Test)
 add_test(NAME Settings_SettingsStorageLocation COMMAND Settings_SettingsStorageLocation)
@@ -810,20 +804,6 @@ add_executable(Share_ShareUploadClient Share/tst_ShareUploadClient.cpp)
 target_link_libraries(Share_ShareUploadClient PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Share_ShareUploadClient COMMAND Share_ShareUploadClient)
 set_tests_properties(Share_ShareUploadClient PROPERTIES TIMEOUT 60 LABELS "unit")
-
-# ============================================================================
-# MCP Tests
-# ============================================================================
-
-add_executable(MCP_ServerProtocol MCP/tst_ServerProtocol.cpp)
-target_link_libraries(MCP_ServerProtocol PRIVATE snaptray_mcp Qt6::Network Qt6::Test)
-add_test(NAME MCP_ServerProtocol COMMAND MCP_ServerProtocol)
-set_tests_properties(MCP_ServerProtocol PROPERTIES TIMEOUT 60 LABELS "unit;integration")
-
-add_executable(MCP_Tools MCP/tst_Tools.cpp)
-target_link_libraries(MCP_Tools PRIVATE snaptray_mcp snaptray_ui Qt6::Test)
-add_test(NAME MCP_Tools COMMAND MCP_Tools)
-set_tests_properties(MCP_Tools PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
 # ============================================================================
 # Update Tests (link snaptray_ui for update components)

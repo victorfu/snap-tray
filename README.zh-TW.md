@@ -83,7 +83,6 @@ scripts\run-tests.bat
 - [從原始碼建置](docs/zh-tw/developer/build-from-source.md)
 - [發佈與打包](docs/zh-tw/developer/release-packaging.md)
 - [架構總覽](docs/zh-tw/developer/architecture.md)
-- [MCP（僅 Debug Build）](docs/zh-tw/developer/mcp-debug.md)
 
 ## 授權條款
 

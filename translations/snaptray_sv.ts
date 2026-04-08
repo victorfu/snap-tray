@@ -51,16 +51,6 @@
         <translation>Visa genvägstips</translation>
         </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="31" />
-        <source>MCP</source>
-        <translation>MCP</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="36" />
-        <source>Enable MCP server</source>
-        <translation>Aktivera MCP-server</translation>
-        </message>
-    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
         <source>Blur</source>
         <translation>Oskärpa</translation>
@@ -634,16 +624,6 @@ Datumtoken: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} eller {date}</translation>
         <location filename="../src/MainApplication.cpp" line="408" />
         <source>OCR Failed</source>
         <translation>OCR misslyckades</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="458" />
-        <source>MCP Server Unavailable</source>
-        <translation>MCP-servern är inte tillgänglig</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="459" />
-        <source>Unable to start MCP HTTP server on 127.0.0.1:%1</source>
-        <translation>Kunde inte starta MCP HTTP-servern på 127.0.0.1:%1</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="584" />

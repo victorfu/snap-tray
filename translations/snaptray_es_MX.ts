@@ -51,16 +51,6 @@
         <translation>Mostrar sugerencias de atajos</translation>
         </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="31" />
-        <source>MCP</source>
-        <translation>MCP</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="36" />
-        <source>Enable MCP server</source>
-        <translation>Habilitar servidor MCP</translation>
-        </message>
-    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
         <source>Blur</source>
         <translation>Difuminado</translation>
@@ -640,16 +630,6 @@ Tokens de fecha: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, o {date}</translation
         <location filename="../src/MainApplication.cpp" line="408" />
         <source>OCR Failed</source>
         <translation>OCR fallido</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="458" />
-        <source>MCP Server Unavailable</source>
-        <translation>Servidor MCP no disponible</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="459" />
-        <source>Unable to start MCP HTTP server on 127.0.0.1:%1</source>
-        <translation>No se pudo iniciar el servidor HTTP de MCP en 127.0.0.1:%1</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="584" />

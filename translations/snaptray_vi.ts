@@ -51,16 +51,6 @@
         <translation>Hiển thị gợi ý phím tắt</translation>
         </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="31" />
-        <source>MCP</source>
-        <translation>MCP</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="36" />
-        <source>Enable MCP server</source>
-        <translation>Bật máy chủ MCP</translation>
-        </message>
-    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
         <source>Blur</source>
         <translation>Làm mờ</translation>
@@ -634,16 +624,6 @@ Token ngày: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, hoặc {date}</translatio
         <location filename="../src/MainApplication.cpp" line="408" />
         <source>OCR Failed</source>
         <translation>OCR thất bại</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="458" />
-        <source>MCP Server Unavailable</source>
-        <translation>Máy chủ MCP không khả dụng</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="459" />
-        <source>Unable to start MCP HTTP server on 127.0.0.1:%1</source>
-        <translation>Không thể khởi động máy chủ MCP HTTP tại 127.0.0.1:%1</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="584" />

@@ -34,7 +34,6 @@ snap-tray/
 │   ├── encoding/               # Video、GIF、WebP encoders
 │   ├── history/                # 歷史資料模型與輔助物件
 │   ├── hotkey/                 # Hotkey manager 與 action types
-│   ├── mcp/                    # 僅 Debug build 的 MCP server contract
 │   ├── metal/                  # Apple Metal capture / rendering helpers
 │   ├── pinwindow/              # 釘選視窗元件
 │   ├── platform/               # 平台抽象層
@@ -75,8 +74,7 @@ SnapTray 以模組化 static-library 風格組織：
 3. `snaptray_algorithms`：偵測與影像分析
 4. `snaptray_platform`：平台特定擷取、編碼、播放、安裝來源與 OS 整合
 5. `snaptray_ui`：region selector、pin windows、recording workflow、toolbar、settings surfaces
-6. `snaptray_mcp`：僅 Debug build 的 MCP transport 與 tools
-7. `SnapTray`：主程式 executable
+6. `SnapTray`：主程式 executable
 
 ## 架構模式
 
@@ -95,7 +93,6 @@ SnapTray 以模組化 static-library 風格組織：
 - `BeautifySettingsManager`
 - `RegionCaptureSettingsManager`
 - `LanguageManager`
-- `MCPSettingsManager`
 
 ### Hotkey 註冊集中管理
 
@@ -217,7 +214,7 @@ SnapTray 以模組化 static-library 風格組織：
 
 - 測試檔命名為 `tests/<Component>/tst_<Name>.cpp`
 - 測試框架使用 Qt Test，例如 `QCOMPARE`、`QVERIFY`
-- 目前測試資料夾包含 `Annotations`、`Beautify`、`CLI`、`Cursor`、`Detection`、`Encoding`、`Hotkey`、`IPC`、`MCP`、`PinWindow`、`Qml`、`RecordingManager`、`RegionSelector`、`ScreenCanvas`、`Settings`、`Share`、`Tools`、`Update`、`Utils`
+- 目前測試資料夾包含 `Annotations`、`Beautify`、`CLI`、`Cursor`、`Detection`、`Encoding`、`Hotkey`、`IPC`、`PinWindow`、`Qml`、`RecordingManager`、`RegionSelector`、`ScreenCanvas`、`Settings`、`Share`、`Tools`、`Update`、`Utils`
 
 ### 避免的模式
 

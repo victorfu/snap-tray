@@ -17,7 +17,6 @@ docs_copy_key: developer
 - [從原始碼建置](build-from-source.md)：前置需求、腳本、手動 CMake 流程、快取工具與本地建置排錯
 - [發佈與打包](release-packaging.md)：DMG / NSIS / MSIX 打包、簽章、公證、Store 提交流程與圖示資產
 - [架構總覽](architecture.md)：專案結構、library 邊界、架構模式、平台對照與開發慣例
-- [MCP（僅 Debug Build）](mcp-debug.md)：內建 localhost MCP server、tool contract 與整合方式
 
 ## 受眾分工
 
@@ -37,7 +36,6 @@ docs_copy_key: developer
 1. [從原始碼建置](build-from-source.md)
 2. [架構總覽](architecture.md)
 3. [發佈與打包](release-packaging.md)
-4. 需要 debug 自動化時再看 [MCP（僅 Debug Build）](mcp-debug.md)
 
 ## 相關使用者文件
 

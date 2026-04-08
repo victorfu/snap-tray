@@ -31,13 +31,3 @@
       title:
         en: Architecture Overview
         zh-tw: 架構總覽
-
-- id: automation
-  title:
-    en: Automation
-    zh-tw: 自動化
-  items:
-    - route_key: developer_mcp_debug
-      title:
-        en: MCP (Debug Builds)
-        zh-tw: MCP（僅 Debug Build）

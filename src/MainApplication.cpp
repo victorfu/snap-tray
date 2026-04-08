@@ -21,10 +21,6 @@
 #include "update/InstallSourceDetector.h"
 #include "update/UpdateCoordinator.h"
 #include "utils/CoordinateHelper.h"
-#ifdef SNAPTRAY_ENABLE_MCP
-#include "mcp/MCPServer.h"
-#include "settings/MCPSettingsManager.h"
-#endif
 
 #include <QFile>
 #include <QJsonDocument>
@@ -504,11 +500,6 @@ void MainApplication::initialize()
         [this]() { prepareForUpdateShutdown(); });
     UpdateCoordinator::instance().startAutomaticChecks();
 
-#ifdef SNAPTRAY_ENABLE_MCP
-    if (MCPSettingsManager::instance().isEnabled()) {
-        startMcpServer();
-    }
-#endif
 }
 
 bool MainApplication::canShutdownForUpdate() const
@@ -551,47 +542,6 @@ void MainApplication::prepareForUpdateShutdown()
 
     QCoreApplication::quit();
 }
-
-#ifdef SNAPTRAY_ENABLE_MCP
-bool MainApplication::startMcpServer()
-{
-    if (!m_mcpServer) {
-        SnapTray::MCP::ToolCallContext toolContext;
-        toolContext.pinWindowManager = m_pinWindowManager;
-        toolContext.parentObject = this;
-        m_mcpServer = std::make_unique<SnapTray::MCP::MCPServer>(toolContext, this);
-    }
-
-    if (m_mcpServer->isListening()) {
-        return true;
-    }
-
-    QString mcpError;
-    if (!m_mcpServer->start(SnapTray::MCP::MCPServer::kDefaultPort, &mcpError)) {
-        qWarning() << "MainApplication: Failed to start MCP server:" << mcpError;
-        SnapTray::QmlToast::screenToast().showToast(
-            SnapTray::QmlToast::Level::Error,
-            tr("MCP Server Unavailable"),
-            tr("Unable to start MCP HTTP server on 127.0.0.1:%1")
-                .arg(SnapTray::MCP::MCPServer::kDefaultPort),
-            5000);
-        return false;
-    }
-
-    qDebug() << "MainApplication: MCP server listening on 127.0.0.1:" << m_mcpServer->port();
-    return true;
-}
-
-void MainApplication::stopMcpServer()
-{
-    if (!m_mcpServer || !m_mcpServer->isListening()) {
-        return;
-    }
-
-    m_mcpServer->stop();
-    qDebug() << "MainApplication: MCP server stopped";
-}
-#endif
 
 void MainApplication::startRegionCapture(bool showShortcutHintsOnEntry)
 {
@@ -863,25 +813,9 @@ SnapTray::QmlSettingsWindow* MainApplication::ensureSettingsWindow()
 
     connect(m_settingsWindow, &SnapTray::QmlSettingsWindow::ocrLanguagesChanged,
             m_pinWindowManager, &PinWindowManager::updateOcrLanguages);
-#ifdef SNAPTRAY_ENABLE_MCP
-    connect(m_settingsWindow, &SnapTray::QmlSettingsWindow::mcpEnabledChanged,
-            this, &MainApplication::onMcpEnabledChanged);
-#endif
 
     return m_settingsWindow;
 }
-
-#ifdef SNAPTRAY_ENABLE_MCP
-void MainApplication::onMcpEnabledChanged(bool enabled)
-{
-    if (enabled) {
-        startMcpServer();
-    }
-    else {
-        stopMcpServer();
-    }
-}
-#endif
 
 void MainApplication::onHotkeyAction(SnapTray::HotkeyAction action)
 {

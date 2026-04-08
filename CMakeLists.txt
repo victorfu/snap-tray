@@ -89,9 +89,6 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# MCP features are only available in Debug builds.
-add_compile_definitions($<$<CONFIG:Debug>:SNAPTRAY_ENABLE_MCP>)
-
 # ============================================================================
 # MSVC sccache Compatibility: Use /Z7 instead of /Zi for cacheable debug info
 # ============================================================================
@@ -304,7 +301,6 @@ add_library(snaptray_core STATIC
     src/settings/AutoLaunchSettingsManager.cpp
     src/settings/AutoBlurSettingsManager.cpp
     src/settings/FileSettingsManager.cpp
-    src/settings/MCPSettingsManager.cpp
     src/settings/OCRSettingsManager.cpp
     src/settings/PinWindowSettingsManager.cpp
     src/settings/RecordingSettingsManager.cpp
@@ -342,7 +338,6 @@ add_library(snaptray_core STATIC
     include/settings/AutoLaunchSyncPolicy.h
     include/settings/AutoLaunchSettingsManager.h
     include/settings/FileSettingsManager.h
-    include/settings/MCPSettingsManager.h
     include/settings/PinWindowSettingsManager.h
     include/settings/RegionCaptureSettingsManager.h
     include/settings/ScreenCanvasSettingsManager.h
@@ -832,42 +827,6 @@ target_compile_definitions(snaptray_ui PRIVATE
 )
 
 # ----------------------------------------------------------------------------
-# snaptray_mcp: MCP HTTP server and tool handlers
-# ----------------------------------------------------------------------------
-add_library(snaptray_mcp STATIC
-    src/mcp/MCPServer.cpp
-    src/mcp/MCPHttpTransport.cpp
-    src/mcp/MCPTools.cpp
-    src/mcp/MCPScreenCaptureTool.cpp
-    src/mcp/MCPPinTool.cpp
-    src/mcp/MCPShareTool.cpp
-    include/mcp/MCPServer.h
-    include/mcp/MCPHttpTransport.h
-    include/mcp/MCPTools.h
-)
-
-target_include_directories(snaptray_mcp
-    PUBLIC
-        ${CMAKE_SOURCE_DIR}/include
-    PRIVATE
-        ${CMAKE_SOURCE_DIR}/src
-        ${CMAKE_BINARY_DIR}/generated
-        ${CMAKE_BINARY_DIR}
-)
-
-target_link_libraries(snaptray_mcp
-    PUBLIC
-        snaptray_ui
-        Qt6::Network
-        Qt6::Gui
-        Qt6::Widgets
-)
-
-target_compile_definitions(snaptray_mcp PRIVATE
-    $<$<NOT:$<CONFIG:Debug>>:QT_NO_DEBUG_OUTPUT>
-)
-
-# ----------------------------------------------------------------------------
 # snaptray_qml: QML/Qt Quick module (annotation canvas, QML UI)
 # ----------------------------------------------------------------------------
 # Token singletons: flatten into module root so they are accessible as
@@ -1193,7 +1152,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 # Link all library targets - they handle their own dependencies
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    $<$<CONFIG:Debug>:snaptray_mcp>
     snaptray_ui
     snaptray_platform
     snaptray_algorithms

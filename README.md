@@ -83,7 +83,6 @@ More developer references:
 - [Build from Source](docs/developer/build-from-source.md)
 - [Release & Packaging](docs/developer/release-packaging.md)
 - [Architecture Overview](docs/developer/architecture.md)
-- [MCP (Debug Builds)](docs/developer/mcp-debug.md)
 
 ## License
 

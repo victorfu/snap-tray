@@ -9,7 +9,6 @@
 #include <QPixmap>
 #include <QPointer>
 #include <QStringList>
-#include <memory>
 
 class QSystemTrayIcon;
 class QMenu;
@@ -27,14 +26,6 @@ class QmlHistoryWindow;
 class QmlDialog;
 class ScreenPickerViewModel;
 }
-
-#ifdef SNAPTRAY_ENABLE_MCP
-namespace SnapTray {
-namespace MCP {
-class MCPServer;
-}
-}
-#endif
 
 class MainApplication : public QObject
 {
@@ -69,9 +60,6 @@ private slots:
     void onHotkeyAction(SnapTray::HotkeyAction action);
     void onHotkeyChanged(SnapTray::HotkeyAction action, const SnapTray::HotkeyConfig& config);
     void onHotkeyInitializationCompleted(const QStringList& failedHotkeys);
-#ifdef SNAPTRAY_ENABLE_MCP
-    void onMcpEnabledChanged(bool enabled);
-#endif
 
 private:
     friend class tst_MainApplicationTrayMenu;
@@ -79,10 +67,6 @@ private:
     void startRegionCapture(bool showShortcutHintsOnEntry);
     bool canShutdownForUpdate() const;
     void prepareForUpdateShutdown();
-#ifdef SNAPTRAY_ENABLE_MCP
-    bool startMcpServer();
-    void stopMcpServer();
-#endif
     void updateTrayMenuHotkeyText();
     void updateTrayToolTip();
     void updatePinsVisibilityActionText();
@@ -120,9 +104,6 @@ private:
     QPointer<SnapTray::QmlDialog> m_screenPickerDialog;
     QPointer<SnapTray::ScreenPickerViewModel> m_screenPickerViewModel;
     RecordingPreviewBackend *m_previewBackend = nullptr;
-#ifdef SNAPTRAY_ENABLE_MCP
-    std::unique_ptr<SnapTray::MCP::MCPServer> m_mcpServer;
-#endif
 };
 
 #endif // MAINAPPLICATION_H
