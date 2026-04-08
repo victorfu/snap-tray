@@ -8,6 +8,23 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 - No unreleased entries yet.
 
+## [1.0.46] - 2026-04-08
+
+### Added
+
+- Added a screen picker dialog before recording starts so full-screen recordings can target the intended display explicitly.
+
+### Improved
+
+- Improved recording flows to use a consistent screen-first workflow, keeping tray and hotkey recording entry points aligned around full-screen capture.
+- Improved macOS detected-window targeting by ranking accessibility matches in tiers so automatic selection is more likely to lock onto the intended window.
+- Removed an unsupported automation surface from the app settings so unsupported controls no longer appear in the UI.
+
+### Fixed
+
+- Fixed OCR copy feedback to use the shared toast path so repeated copy actions no longer stack duplicate notifications.
+- Fixed a macOS cursor-restore crash when the floating toolbar brings back the move cursor after capture interactions.
+
 ## [1.0.45] - 2026-04-04
 
 ### Improved
