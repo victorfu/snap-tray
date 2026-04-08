@@ -15,7 +15,8 @@ QString formatWindowsTrayTooltip(const QString& applicationName,
                                  const QString& version,
                                  const QString& installSource,
                                  const QList<TrayTooltipHotkeyLine>& hotkeyLines,
-                                 const QString& emptyHotkeyText);
+                                 const QString& emptyHotkeyText,
+                                 const QString& statusLine = QString());
 
 } // namespace SnapTray
 

@@ -51,16 +51,6 @@
         <translation>Показывать подсказки сочетаний клавиш</translation>
         </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="31" />
-        <source>MCP</source>
-        <translation>MCP</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="36" />
-        <source>Enable MCP server</source>
-        <translation>Включить сервер MCP</translation>
-        </message>
-    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
         <source>Blur</source>
         <translation>Размытие</translation>
@@ -231,6 +221,38 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Отменить захват</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Подтвердить выделение (после выделения)</translation>
+    </message>
+    <message>
+        <source>Replay capture history</source>
+        <translation>Повторить историю захватов</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Переключить режим нескольких областей</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>Переключить RGB/HEX (когда лупа видима)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Скопировать значение цвета (до выделения)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Переместить выделение на 1 пиксель (после выделения)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Изменить размер выделения на 1 пиксель (после выделения)</translation>
+    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -556,7 +578,7 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
     <message>
         <location filename="../src/MainApplication.cpp" line="383" />
         <location filename="../src/MainApplication.cpp" line="967" />
-        <source>Record Full Screen</source>
+        <source>Record Screen</source>
         <translation>Запись полного экрана</translation>
     </message>
     <message>
@@ -608,16 +630,6 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/MainApplication.cpp" line="408" />
         <source>OCR Failed</source>
         <translation>Ошибка OCR</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="458" />
-        <source>MCP Server Unavailable</source>
-        <translation>Сервер MCP недоступен</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="459" />
-        <source>Unable to start MCP HTTP server on 127.0.0.1:%1</source>
-        <translation>Не удалось запустить HTTP-сервер MCP на 127.0.0.1:%1</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="584" />
@@ -3252,6 +3264,131 @@ It may be in use by another application.</source>
         <translation>Выбор цвета</translation>
     </message>
 </context>
+<context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>История</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>Открыть папку истории</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>Пока нет элементов истории</translation>
+    </message>
+    <message>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>Здесь будут показаны снимки экрана, сделанные в SnapTray.</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>Нет результатов</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>Попробуйте другую умную папку.</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>Умные папки</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>Все снимки экрана</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>Последние 7 дней</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>Большие файлы</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>Доступно для повторного воспроизведения</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Изменить</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Закрепить</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Копировать</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>Сохранить как</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Удалить</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>Сначала новые</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>Сначала старые</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>Сначала большие</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>Предпросмотр недоступен</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>Снимок экрана</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>Снимок экрана %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>Сегодня</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>Вчера</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>%1 дней назад</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>Неизвестное время</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Неизвестно</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>Неизвестный размер</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>Время: %1
+Разрешение: %2
+Размер файла: %3</translation>
+    </message>
+</context>
 </TS>
-
-

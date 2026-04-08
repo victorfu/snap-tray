@@ -3,8 +3,6 @@
 
 #include <QtGlobal>
 #include <QFont>
-#include <QFontMetrics>
-#include <QString>
 
 namespace {
 
@@ -106,7 +104,10 @@ QRect SelectionDirtyRegionPlanner::cursorCompanionRectForCursor(
     return QRect();
 }
 
-QRect SelectionDirtyRegionPlanner::dimensionInfoRectForSelection(const QRect& selectionRect) const
+QRect SelectionDirtyRegionPlanner::dimensionInfoRectForSelection(const QRect& selectionRect,
+                                                                 const QSize& viewportSize,
+                                                                 qreal devicePixelRatio,
+                                                                 bool ratioLocked) const
 {
     if (!selectionRect.isValid()) {
         return QRect();
@@ -115,24 +116,12 @@ QRect SelectionDirtyRegionPlanner::dimensionInfoRectForSelection(const QRect& se
     const QRect normalized = selectionRect.normalized();
     QFont font;
     font.setPointSize(12);
-    QFontMetrics fm(font);
-
-    const QString dimensionsLabel = QStringLiteral("%1 x %2 px")
-        .arg(normalized.width())
-        .arg(normalized.height());
-    const int fixedWidth = fm.horizontalAdvance(SelectionDimensionLabel::sampleLabel()) + 24;
-    const int actualWidth = fm.horizontalAdvance(dimensionsLabel) + 24;
-    const int panelWidth = qMax(fixedWidth, actualWidth);
-    const int panelHeight = 28;
-
-    int textX = normalized.left();
-    int textY = normalized.top() - panelHeight - 8;
-    if (textY < 5) {
-        textY = normalized.top() + 5;
-        textX = normalized.left() + 5;
-    }
-
-    return QRect(textX, textY, panelWidth, panelHeight);
+    return SelectionDimensionLabel::selectionPanelLayout(
+        normalized,
+        SelectionDimensionLabel::widgetLabel(normalized, devicePixelRatio),
+        font,
+        viewportSize,
+        SelectionDimensionLabel::controlAnchorSize(ratioLocked)).panelRect;
 }
 
 QRegion SelectionDirtyRegionPlanner::planSelectionDragRegion(const SelectionDragParams& params) const
@@ -149,8 +138,13 @@ QRegion SelectionDirtyRegionPlanner::planSelectionDragRegion(const SelectionDrag
     dirtyRegion += selectionChromeRegion(params.currentSelectionRect, kSelectionHandleMargin);
     dirtyRegion += selectionChromeRegion(params.lastSelectionRect, kSelectionHandleMargin);
 
-    auto addPaddedDimensionInfoRect = [this, &addRect](const QRect& selectionRect) {
-        const QRect infoRect = dimensionInfoRectForSelection(selectionRect);
+    auto addPaddedDimensionInfoRect = [this, &addRect, &params](const QRect& selectionRect) {
+        const QRect infoRect =
+            dimensionInfoRectForSelection(
+                selectionRect,
+                params.viewportSize,
+                params.devicePixelRatio,
+                params.ratioLocked);
         if (!infoRect.isEmpty()) {
             addRect(infoRect.adjusted(
                 -kDimensionInfoPadding, -kDimensionInfoPadding,

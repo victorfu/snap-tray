@@ -58,6 +58,7 @@ class DesignSystem : public QObject
     Q_PROPERTY(QColor dimOverlay READ dimOverlay CONSTANT)
     Q_PROPERTY(QColor crosshair READ crosshair CONSTANT)
     Q_PROPERTY(QColor selectionBorder READ selectionBorder CONSTANT)
+    Q_PROPERTY(QColor captureSelectionAccent READ captureSelectionAccent CONSTANT)
     Q_PROPERTY(QColor dimensionLabel READ dimensionLabel CONSTANT)
 
     // ====================================================================
@@ -665,6 +666,7 @@ public:
     QColor dimOverlay() const;
     QColor crosshair() const;
     QColor selectionBorder() const;
+    QColor captureSelectionAccent() const;
     QColor dimensionLabel() const;
 
     // -- Primitive: Neutral palette ---------------------------------------

@@ -37,10 +37,6 @@ class SettingsBackend : public QObject
     Q_PROPERTY(bool magnifierEnabled READ magnifierEnabled WRITE setMagnifierEnabled NOTIFY magnifierEnabledChanged)
     Q_PROPERTY(int cursorCompanionStyle READ cursorCompanionStyle WRITE setCursorCompanionStyle NOTIFY cursorCompanionStyleChanged)
     Q_PROPERTY(bool shortcutHintsEnabled READ shortcutHintsEnabled WRITE setShortcutHintsEnabled NOTIFY shortcutHintsEnabledChanged)
-    Q_PROPERTY(bool isMcpBuild READ isMcpBuild CONSTANT)
-#ifdef SNAPTRAY_ENABLE_MCP
-    Q_PROPERTY(bool mcpEnabled READ mcpEnabled WRITE setMcpEnabled NOTIFY mcpEnabledChanged)
-#endif
     Q_PROPERTY(int blurIntensity READ blurIntensity WRITE setBlurIntensity NOTIFY blurIntensityChanged)
     Q_PROPERTY(int blurType READ blurType WRITE setBlurType NOTIFY blurTypeChanged)
     Q_PROPERTY(int pinDefaultOpacity READ pinDefaultOpacity WRITE setPinDefaultOpacity NOTIFY pinDefaultOpacityChanged)
@@ -130,11 +126,6 @@ public:
     void setCursorCompanionStyle(int v);
     bool shortcutHintsEnabled() const;
     void setShortcutHintsEnabled(bool v);
-    bool isMcpBuild() const;
-#ifdef SNAPTRAY_ENABLE_MCP
-    bool mcpEnabled() const;
-    void setMcpEnabled(bool v);
-#endif
     int blurIntensity() const;
     void setBlurIntensity(int v);
     int blurType() const;
@@ -271,7 +262,6 @@ signals:
     void magnifierEnabledChanged();
     void cursorCompanionStyleChanged();
     void shortcutHintsEnabledChanged();
-    void mcpEnabledChanged(bool enabled);
     void blurIntensityChanged();
     void blurTypeChanged();
     void pinDefaultOpacityChanged();
@@ -356,9 +346,6 @@ private:
     // Advanced
     int m_cursorCompanionStyle = 2;
     bool m_shortcutHintsEnabled = true;
-#ifdef SNAPTRAY_ENABLE_MCP
-    bool m_mcpEnabled = false;
-#endif
     int m_blurIntensity = 50;
     int m_blurType = 0;
     int m_pinDefaultOpacity = 100;

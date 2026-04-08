@@ -13,6 +13,7 @@
 #include "region/StaticCaptureBackgroundWindow.h"
 #include "region/CaptureChromeWindow.h"
 #include "region/SelectionDimmingOverlay.h"
+#include "region/SelectionDimensionLabel.h"
 #include "region/SelectionPreviewOverlay.h"
 #include "region/CaptureShortcutHintsOverlay.h"
 #include "qml/QmlOverlayPanel.h"
@@ -118,6 +119,49 @@ CursorStyleSpec cursorSpecForWidget(const QWidget* widget)
                   : CursorStyleSpec::fromShape(Qt::ArrowCursor);
 }
 
+constexpr int kFloatingAttachmentGap = 8;
+constexpr int kFloatingAttachmentInset = 8;
+constexpr int kRegionControlPanelFallbackWidth = 200;
+constexpr int kRegionControlPanelFallbackHeight = 60;
+
+QSize regionControlPanelSizeHint(const SnapTray::QmlOverlayPanel* panel)
+{
+    const QSize geometrySize = panel ? panel->geometry().size() : QSize();
+    return geometrySize.isValid() && !geometrySize.isEmpty()
+        ? geometrySize
+        : QSize(kRegionControlPanelFallbackWidth, kRegionControlPanelFallbackHeight);
+}
+
+QRect regionControlPanelAnchorRect(const SnapTray::QmlOverlayPanel* panel)
+{
+    const QRect anchorRect = panel ? panel->anchorRect() : QRect();
+    return anchorRect.isValid() && !anchorRect.isEmpty()
+        ? anchorRect
+        : QRect(QPoint(), regionControlPanelSizeHint(panel));
+}
+
+QPoint clampTopLeftToRect(const QPoint& desiredTopLeft,
+                          const QSize& windowSize,
+                          const QRect& bounds)
+{
+    if (!bounds.isValid()) {
+        return desiredTopLeft;
+    }
+
+    const int width = qMax(1, windowSize.width());
+    const int height = qMax(1, windowSize.height());
+    const int maxX = bounds.right() - width + 1;
+    const int maxY = bounds.bottom() - height + 1;
+
+    const int clampedX = (width >= bounds.width())
+        ? bounds.left()
+        : qBound(bounds.left(), desiredTopLeft.x(), maxX);
+    const int clampedY = (height >= bounds.height())
+        ? bounds.top()
+        : qBound(bounds.top(), desiredTopLeft.y(), maxY);
+    return QPoint(clampedX, clampedY);
+}
+
 bool shouldSuppressCompletedSelectionDragUi(const SelectionStateManager* selectionManager)
 {
     return selectionManager &&
@@ -201,10 +245,15 @@ RegionSelector::RegionSelector(QWidget* parent)
         });
     connect(m_selectionManager, &SelectionStateManager::stateChanged,
         this, [this](SelectionStateManager::State newState) {
+            // Detached capture window handoff is Windows-only. macOS keeps the
+            // in-window toolbar path, so this branch must stay inert there.
             const bool enteringCompletedSelectionHandoff =
                 usesDetachedCaptureWindows() &&
-                m_lastSelectionState == SelectionStateManager::State::Selecting &&
                 newState == SelectionStateManager::State::Complete &&
+                (m_lastSelectionState == SelectionStateManager::State::Selecting ||
+                 (m_lastSelectionState == SelectionStateManager::State::None &&
+                  m_inputState.hasDetectedWindow &&
+                  m_inputState.highlightedWindowRect.isValid())) &&
                 !m_quickPinMode &&
                 !m_exportInProgress &&
                 m_captureChromeWindow;
@@ -384,8 +433,6 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, [this]() { handleToolbarClick(ToolId::Cancel); });
     connect(m_toolbarViewModel, &RegionToolbarViewModel::pinClicked,
         this, [this]() { handleToolbarClick(ToolId::Pin); });
-    connect(m_toolbarViewModel, &RegionToolbarViewModel::recordClicked,
-        this, [this]() { handleToolbarClick(ToolId::Record); });
     connect(m_toolbarViewModel, &RegionToolbarViewModel::saveClicked,
         this, [this]() { handleToolbarClick(ToolId::Save); });
     connect(m_toolbarViewModel, &RegionToolbarViewModel::copyClicked,
@@ -973,18 +1020,6 @@ RegionSelector::RegionSelector(QWidget* parent)
         });
     connect(m_toolbarHandler, &RegionToolbarHandler::pinRequested,
         this, &RegionSelector::finishSelection);
-    connect(m_toolbarHandler, &RegionToolbarHandler::recordRequested,
-        this, [this]() {
-            if (!isScreenValid()) {
-                qWarning() << "RegionSelector: Screen invalid, cannot start recording";
-                emit selectionCancelled();
-                close();
-                return;
-            }
-
-            emit recordingRequested(localToGlobal(m_selectionManager->selectionRect()), m_currentScreen.data());
-            close();
-        });
     connect(m_toolbarHandler, &RegionToolbarHandler::saveRequested,
         this, &RegionSelector::saveToFile);
     connect(m_toolbarHandler, &RegionToolbarHandler::copyRequested,
@@ -2763,6 +2798,7 @@ void RegionSelector::syncSelectionPreviewOverlay()
             &m_backgroundPixmap,
             m_devicePixelRatio,
             m_cornerRadius,
+            m_selectionManager && m_selectionManager->aspectRatio() > 0.0,
             shouldShow);
     }
 }
@@ -3078,30 +3114,81 @@ void RegionSelector::positionRegionControlPanel()
                       !m_exportInProgress &&
                       !completedSelectionDragUiSuppressed() &&
                       !m_selectionCompletionHandoffPending;
+    const QRect selectionRect = m_selectionManager
+        ? m_selectionManager->selectionRect().normalized()
+        : QRect();
+    const QString dimensions = SelectionDimensionLabel::widgetLabel(selectionRect, m_devicePixelRatio);
+    const QSize controlAnchorSize = SelectionDimensionLabel::controlAnchorSize(
+        m_selectionManager && m_selectionManager->aspectRatio() > 0.0);
+    QFont font;
+    font.setPointSize(12);
+    font.setBold(true);
+    const auto attachmentLayout = SelectionDimensionLabel::selectionPanelLayout(
+        selectionRect,
+        dimensions,
+        font,
+        size(),
+        controlAnchorSize);
+    const bool narrowWidthForControl =
+        selectionRect.isValid() &&
+        !selectionRect.isEmpty() &&
+        selectionRect.width() < attachmentLayout.panelRect.width() + kFloatingAttachmentGap + controlAnchorSize.width();
+    shouldShow = shouldShow && !attachmentLayout.compactRegion && !narrowWidthForControl;
+
     if (shouldShow != m_regionControlPanel->isVisible()) {
         shouldShow ? m_regionControlPanel->show() : m_regionControlPanel->hide();
     }
     if (!shouldShow)
         return;
 
-    QRect dimRect = m_captureChromeWindow && m_captureChromeWindow->isVisible()
+    const QRect dimRect = m_captureChromeWindow && m_captureChromeWindow->isVisible()
         ? m_captureChromeWindow->lastDimensionInfoRect()
         : m_painter->lastDimensionInfoRect();
     if (!dimRect.isValid())
         return;
 
-    QRect panelGeom = m_regionControlPanel->geometry();
-    int gap = 8;
-    // The QML root is 60px tall: [popup 28] [gap 4] [main panel 28]
-    // The visible main panel is the bottom 28px. Align it with dim label.
-    int mainPanelHeight = 28;
-    int popupOverhead = panelGeom.height() - mainPanelHeight;
-    QPoint pos = mapToGlobal(QPoint(dimRect.right() + gap,
-        dimRect.top() + (dimRect.height() - mainPanelHeight) / 2 - popupOverhead));
+    const QRect panelAnchorRect = regionControlPanelAnchorRect(m_regionControlPanel.get());
+    const QSize panelAnchorSize = panelAnchorRect.size();
+    const QPoint panelAnchorOffset = panelAnchorRect.topLeft();
+    int gap = kFloatingAttachmentGap;
+    const QPoint preferredAnchorLocalPos(
+        dimRect.right() + gap,
+        dimRect.top() + (dimRect.height() - panelAnchorSize.height()) / 2);
+    const QRect preferredAnchorLocalRect(preferredAnchorLocalPos, panelAnchorSize);
+    const QRect toolbarLocalRect = floatingToolbarRectInLocalCoords();
+    const bool toolbarOnTopRow =
+        toolbarLocalRect.isValid() &&
+        selectionRect.isValid() &&
+        toolbarLocalRect.bottom() < selectionRect.top();
+    const bool controlWouldOverlapToolbar =
+        toolbarOnTopRow && preferredAnchorLocalRect.intersects(toolbarLocalRect);
+
+    QPoint pos = mapToGlobal(preferredAnchorLocalPos - panelAnchorOffset);
+
+    if (controlWouldOverlapToolbar && selectionRect.isValid() && !selectionRect.isEmpty()) {
+        const QRect insideBounds = selectionRect.adjusted(
+            kFloatingAttachmentInset,
+            kFloatingAttachmentInset,
+            -kFloatingAttachmentInset,
+            -kFloatingAttachmentInset);
+        const QRect clampBounds = insideBounds.isValid() && !insideBounds.isEmpty()
+            ? insideBounds
+            : selectionRect;
+        const QPoint insideAnchorTopRight(
+            selectionRect.right() + 1 - kFloatingAttachmentInset - panelAnchorSize.width(),
+            selectionRect.top() + kFloatingAttachmentInset);
+        const QPoint insideAnchorLocalPos = clampTopLeftToRect(
+            insideAnchorTopRight,
+            panelAnchorSize,
+            clampBounds);
+        pos = mapToGlobal(insideAnchorLocalPos - panelAnchorOffset);
+    }
 
     // Fallback if off-screen right
-    if (pos.x() + panelGeom.width() > mapToGlobal(QPoint(width(), 0)).x()) {
-        pos = mapToGlobal(QPoint(dimRect.left(), dimRect.bottom() + 4 - popupOverhead));
+    if (!controlWouldOverlapToolbar &&
+        preferredAnchorLocalRect.right() >= width()) {
+        const QPoint belowAnchorLocalPos(dimRect.left(), dimRect.bottom() + 4);
+        pos = mapToGlobal(belowAnchorLocalPos - panelAnchorOffset);
     }
     m_regionControlPanel->setPosition(pos);
 }
@@ -4218,11 +4305,6 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
     }
     else if (event->key() == Qt::Key_M) {
         setMultiRegionMode(!m_inputState.multiRegionMode);
-    }
-    else if (event->key() == Qt::Key_R && !event->modifiers()) {
-        if (m_selectionManager->isComplete()) {
-            handleToolbarClick(ToolId::Record);
-        }
     }
     else if (event->key() == Qt::Key_Shift) {
         // Switch RGB/HEX color format display (only when magnifier is shown)

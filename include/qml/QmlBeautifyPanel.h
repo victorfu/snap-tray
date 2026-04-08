@@ -12,6 +12,7 @@ class QEvent;
 class QPixmap;
 class QQuickItem;
 class QQuickView;
+class QWindow;
 
 namespace SnapTray {
 
@@ -32,6 +33,7 @@ public:
     void close();
     bool isVisible() const;
     QRect geometry() const;
+    QWindow* window() const;
 
 signals:
     void copyRequested(const BeautifySettings& settings);

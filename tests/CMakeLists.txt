@@ -26,6 +26,20 @@ target_link_libraries(Qml_CanvasToolbarViewModel PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_CanvasToolbarViewModel COMMAND Qml_CanvasToolbarViewModel)
 set_tests_properties(Qml_CanvasToolbarViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_PinToolbarViewModel Qml/tst_PinToolbarViewModel.cpp)
+target_link_libraries(Qml_PinToolbarViewModel PRIVATE snaptray_ui Qt6::Test)
+target_compile_definitions(Qml_PinToolbarViewModel PRIVATE
+    SNAPTRAY_TEST_TRANSLATION_DIR="${CMAKE_BINARY_DIR}"
+)
+add_dependencies(Qml_PinToolbarViewModel SnapTray_lrelease)
+add_test(NAME Qml_PinToolbarViewModel COMMAND Qml_PinToolbarViewModel)
+set_tests_properties(Qml_PinToolbarViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Qml_RegionToolbarViewModel Qml/tst_RegionToolbarViewModel.cpp)
+target_link_libraries(Qml_RegionToolbarViewModel PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Qml_RegionToolbarViewModel COMMAND Qml_RegionToolbarViewModel)
+set_tests_properties(Qml_RegionToolbarViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Qml_BeautifyPanelBackend Qml/tst_BeautifyPanelBackend.cpp)
 target_link_libraries(Qml_BeautifyPanelBackend PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_BeautifyPanelBackend COMMAND Qml_BeautifyPanelBackend)
@@ -45,6 +59,11 @@ add_executable(Qml_EmojiPickerBackend Qml/tst_EmojiPickerBackend.cpp)
 target_link_libraries(Qml_EmojiPickerBackend PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_EmojiPickerBackend COMMAND Qml_EmojiPickerBackend)
 set_tests_properties(Qml_EmojiPickerBackend PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Qml_ScreenPickerViewModel Qml/tst_ScreenPickerViewModel.cpp)
+target_link_libraries(Qml_ScreenPickerViewModel PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Qml_ScreenPickerViewModel COMMAND Qml_ScreenPickerViewModel)
+set_tests_properties(Qml_ScreenPickerViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(Qml_WindowPolicyGuard Qml/tst_WindowPolicyGuard.cpp)
 target_link_libraries(Qml_WindowPolicyGuard PRIVATE Qt6::Core Qt6::Test)
@@ -82,6 +101,9 @@ add_executable(App_MainApplicationTrayMenu
     ${APP_MainApplicationTrayMenu_SOURCES}
     ${APP_MainApplicationTrayMenu_HEADERS}
 )
+set_target_properties(App_MainApplicationTrayMenu PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
 target_compile_definitions(App_MainApplicationTrayMenu PRIVATE
     SNAPTRAY_TEST_TRANSLATION_DIR="${CMAKE_BINARY_DIR}"
 )
@@ -92,7 +114,6 @@ target_include_directories(App_MainApplicationTrayMenu PRIVATE
     ${CMAKE_BINARY_DIR}
 )
 target_link_libraries(App_MainApplicationTrayMenu PRIVATE
-    $<$<CONFIG:Debug>:snaptray_mcp>
     snaptray_ui
     snaptray_platform
     snaptray_algorithms
@@ -176,6 +197,16 @@ target_link_libraries(PinWindow_StyleSync PRIVATE snaptray_ui snaptray_qmlplugin
 add_test(NAME PinWindow_StyleSync COMMAND PinWindow_StyleSync)
 set_tests_properties(PinWindow_StyleSync PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(PinWindow_ContextMenuTranslations PinWindow/tst_ContextMenuTranslations.cpp)
+target_link_libraries(PinWindow_ContextMenuTranslations PRIVATE Qt6::Core Qt6::Test)
+target_compile_definitions(PinWindow_ContextMenuTranslations PRIVATE
+    SNAPTRAY_TEST_TRANSLATION_DIR="${CMAKE_BINARY_DIR}"
+    SNAPTRAY_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+add_dependencies(PinWindow_ContextMenuTranslations SnapTray_lrelease)
+add_test(NAME PinWindow_ContextMenuTranslations COMMAND PinWindow_ContextMenuTranslations)
+set_tests_properties(PinWindow_ContextMenuTranslations PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # ScreenCanvas Tests
 # ============================================================================
@@ -220,8 +251,16 @@ target_link_libraries(RegionSelector_DeferredInitialization PRIVATE snaptray_ui 
 add_test(NAME RegionSelector_DeferredInitialization COMMAND RegionSelector_DeferredInitialization)
 set_tests_properties(RegionSelector_DeferredInitialization PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
-add_executable(RegionSelector_CaptureShortcutHintsOverlay RegionSelector/tst_CaptureShortcutHintsOverlay.cpp)
+add_executable(RegionSelector_CaptureShortcutHintsOverlay
+    RegionSelector/tst_CaptureShortcutHintsOverlay.cpp
+    RegionSelector/tst_CaptureShortcutHintsOverlay.h
+)
 target_link_libraries(RegionSelector_CaptureShortcutHintsOverlay PRIVATE snaptray_ui Qt6::Test)
+target_compile_definitions(RegionSelector_CaptureShortcutHintsOverlay PRIVATE
+    SNAPTRAY_TEST_TRANSLATION_DIR="${CMAKE_BINARY_DIR}"
+    SNAPTRAY_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+add_dependencies(RegionSelector_CaptureShortcutHintsOverlay SnapTray_lrelease)
 add_test(NAME RegionSelector_CaptureShortcutHintsOverlay COMMAND RegionSelector_CaptureShortcutHintsOverlay)
 set_tests_properties(RegionSelector_CaptureShortcutHintsOverlay PROPERTIES TIMEOUT 60 LABELS "unit")
 
@@ -229,6 +268,11 @@ add_executable(RegionSelector_RegionPainterChrome RegionSelector/tst_RegionPaint
 target_link_libraries(RegionSelector_RegionPainterChrome PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME RegionSelector_RegionPainterChrome COMMAND RegionSelector_RegionPainterChrome)
 set_tests_properties(RegionSelector_RegionPainterChrome PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RegionSelector_AttachmentLayout RegionSelector/tst_AttachmentLayout.cpp)
+target_link_libraries(RegionSelector_AttachmentLayout PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME RegionSelector_AttachmentLayout COMMAND RegionSelector_AttachmentLayout)
+set_tests_properties(RegionSelector_AttachmentLayout PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
 add_executable(RegionSelector_UpdateThrottler RegionSelector/tst_UpdateThrottler.cpp)
 target_link_libraries(RegionSelector_UpdateThrottler PRIVATE snaptray_ui Qt6::Test)
@@ -496,11 +540,6 @@ target_link_libraries(Settings_RegionCaptureSettingsManager PRIVATE snaptray_cor
 add_test(NAME Settings_RegionCaptureSettingsManager COMMAND Settings_RegionCaptureSettingsManager)
 set_tests_properties(Settings_RegionCaptureSettingsManager PROPERTIES TIMEOUT 60 LABELS "unit")
 
-add_executable(Settings_MCPSettingsManager Settings/tst_MCPSettingsManager.cpp)
-target_link_libraries(Settings_MCPSettingsManager PRIVATE snaptray_core Qt6::Test)
-add_test(NAME Settings_MCPSettingsManager COMMAND Settings_MCPSettingsManager)
-set_tests_properties(Settings_MCPSettingsManager PROPERTIES TIMEOUT 60 LABELS "unit")
-
 add_executable(Settings_SettingsStorageLocation Settings/tst_SettingsStorageLocation.cpp)
 target_link_libraries(Settings_SettingsStorageLocation PRIVATE snaptray_core Qt6::Test)
 add_test(NAME Settings_SettingsStorageLocation COMMAND Settings_SettingsStorageLocation)
@@ -721,6 +760,11 @@ target_link_libraries(RecordingManager_RegionSizing PRIVATE snaptray_ui snaptray
 add_test(NAME RecordingManager_RegionSizing COMMAND RecordingManager_RegionSizing)
 set_tests_properties(RecordingManager_RegionSizing PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RecordingManager_ScreenSourceService RecordingManager/tst_ScreenSourceService.cpp)
+target_link_libraries(RecordingManager_ScreenSourceService PRIVATE snaptray_ui snaptray_platform Qt6::Test)
+add_test(NAME RecordingManager_ScreenSourceService COMMAND RecordingManager_ScreenSourceService)
+set_tests_properties(RecordingManager_ScreenSourceService PROPERTIES TIMEOUT 60 LABELS "unit")
+
 if(WIN32)
 add_executable(RecordingManager_DXGICaptureEngineThreadLifecycle
     RecordingManager/tst_DXGICaptureEngineThreadLifecycle_win.cpp
@@ -760,20 +804,6 @@ add_executable(Share_ShareUploadClient Share/tst_ShareUploadClient.cpp)
 target_link_libraries(Share_ShareUploadClient PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Share_ShareUploadClient COMMAND Share_ShareUploadClient)
 set_tests_properties(Share_ShareUploadClient PROPERTIES TIMEOUT 60 LABELS "unit")
-
-# ============================================================================
-# MCP Tests
-# ============================================================================
-
-add_executable(MCP_ServerProtocol MCP/tst_ServerProtocol.cpp)
-target_link_libraries(MCP_ServerProtocol PRIVATE snaptray_mcp Qt6::Network Qt6::Test)
-add_test(NAME MCP_ServerProtocol COMMAND MCP_ServerProtocol)
-set_tests_properties(MCP_ServerProtocol PROPERTIES TIMEOUT 60 LABELS "unit;integration")
-
-add_executable(MCP_Tools MCP/tst_Tools.cpp)
-target_link_libraries(MCP_Tools PRIVATE snaptray_mcp snaptray_ui Qt6::Test)
-add_test(NAME MCP_Tools COMMAND MCP_Tools)
-set_tests_properties(MCP_Tools PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
 # ============================================================================
 # Update Tests (link snaptray_ui for update components)

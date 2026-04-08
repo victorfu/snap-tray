@@ -10,7 +10,6 @@ Use these as the source of truth instead of growing this file into a second READ
 - Build from source: `docs/developer/build-from-source.md`
 - Release and packaging: `docs/developer/release-packaging.md`
 - Architecture overview: `docs/developer/architecture.md`
-- MCP for debug builds: `docs/developer/mcp-debug.md`
 - User docs home: `docs/docs/index.md`
 
 ## Build Instructions
@@ -84,7 +83,6 @@ Common examples:
 - `BeautifySettingsManager`
 - `RegionCaptureSettingsManager`
 - `LanguageManager`
-- `MCPSettingsManager`
 
 ### Hotkeys are centralized
 
@@ -98,6 +96,10 @@ Use `ToolId`, `ToolDefinition`, handlers, and `ToolRegistry`. Prefer lookup tabl
 
 Use `PlatformFeatures` and the platform layer instead of scattering OS-specific checks through feature code.
 
+### Recording is screen-first
+
+Recording entry is tray/CLI driven and always records a full screen source. Region Selector remains screenshot-only and must not regain region-recording semantics.
+
 ### Shared glass UI stays shared
 
 Use `GlassRenderer` and existing toolbar style helpers for floating panels instead of inventing new local visual systems.
@@ -109,7 +111,6 @@ Use `GlassRenderer` and existing toolbar style helpers for floating panels inste
 - Prefer `scripts/run-tests.sh` or `scripts/run-tests.bat` after substantive changes
 - On Windows, if you invoke `ctest` or a Qt test binary directly, prepend `%QT_PATH%\bin` to `PATH` first so `Qt6Testd.dll` and other debug Qt DLLs resolve; `scripts/run-tests.bat` is the canonical example
 - If a change touches packaging, signing, or release behavior, verify against `docs/developer/release-packaging.md`
-- If a change touches MCP, remember it is a debug-build-only feature
 
 ## Release Workflow
 
@@ -139,7 +140,7 @@ Use `GlassRenderer` and existing toolbar style helpers for floating panels inste
 
 - Tests live under `tests/<Component>/tst_<Name>.cpp`
 - The suite uses Qt Test with helpers such as `QCOMPARE` and `QVERIFY`
-- Important test areas include CLI, Cursor, Detection, Encoding, Hotkey, MCP, PinWindow, Qml, RecordingManager, RegionSelector, ScreenCanvas, Settings, Share, Tools, Update, and Utils
+- Important test areas include CLI, Cursor, Detection, Encoding, Hotkey, PinWindow, Qml, RecordingManager, RegionSelector, ScreenCanvas, Settings, Share, Tools, Update, and Utils
 
 ## Patterns to Avoid
 
@@ -154,4 +155,3 @@ Do not re-expand this file with long project inventories unless the information 
 - Build and toolchain detail: `docs/developer/build-from-source.md`
 - Packaging and signing: `docs/developer/release-packaging.md`
 - Repository structure and subsystem ownership: `docs/developer/architecture.md`
-- Debug-only MCP behavior: `docs/developer/mcp-debug.md`

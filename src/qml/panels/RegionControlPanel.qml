@@ -22,6 +22,11 @@ Item {
     readonly property int gapHeight: 4
     readonly property int mainHeight: 28
     readonly property int popupWidth: 200
+    readonly property rect attachmentAnchorRect: Qt.rect(
+        0,
+        root.popupHeight + root.gapHeight,
+        mainRow.width,
+        root.mainHeight)
 
     implicitWidth: Math.max(mainRow.implicitWidth, popupWidth)
     implicitHeight: popupHeight + gapHeight + mainHeight

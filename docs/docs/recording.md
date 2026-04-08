@@ -2,7 +2,7 @@
 last_modified_at: 2026-03-26
 layout: docs
 title: Recording
-description: Record full-screen or selected region with MP4, GIF, and WebP outputs.
+description: Record full screen sources with MP4, GIF, and WebP outputs.
 permalink: /docs/recording/
 lang: en
 route_key: docs_recording
@@ -12,14 +12,14 @@ doc_order: 2
 
 ## Recording entry points
 
-- Tray menu: Record Full Screen
-- Region capture toolbar: press `R`
+- Tray menu: Record Screen
+- CLI: `snaptray record start [--screen N]`
 
 ## Recording lifecycle
 
-1. Pick region or full-screen target.
-2. Click Start.
-3. Use floating control bar to Pause/Resume.
+1. Choose the screen to record when prompted on multi-display setups.
+2. Recording starts immediately on the selected screen.
+3. Use the floating control bar to monitor duration and stop recording.
 4. Click Stop to export.
 
 ## Output formats

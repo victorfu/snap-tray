@@ -51,16 +51,6 @@
         <translation>顯示快捷鍵提示</translation>
         </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="31" />
-        <source>MCP</source>
-        <translation>MCP</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="36" />
-        <source>Enable MCP server</source>
-        <translation>啟用 MCP 伺服器</translation>
-        </message>
-    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
         <source>Blur</source>
         <translation>模糊</translation>
@@ -232,8 +222,36 @@
 <context>
     <name>CaptureShortcutHintsOverlay</name>
     <message>
+        <source>Cancel capture</source>
+        <translation>取消擷取</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>確認選取範圍（完成選取後）</translation>
+    </message>
+    <message>
         <source>Replay capture history</source>
         <translation>重播截圖歷程</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>切換多區域模式</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>切換 RGB/HEX（顯示放大鏡時）</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>複製顏色值（選取前）</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>移動選取範圍 1 像素（完成選取後）</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>調整選取範圍大小 1 像素（完成選取後）</translation>
     </message>
 </context>
 <context>
@@ -560,7 +578,7 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
     <message>
         <location filename="../src/MainApplication.cpp" line="383" />
         <location filename="../src/MainApplication.cpp" line="967" />
-        <source>Record Full Screen</source>
+        <source>Record Screen</source>
         <translation>錄製全螢幕</translation>
     </message>
     <message>
@@ -612,16 +630,6 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/MainApplication.cpp" line="408" />
         <source>OCR Failed</source>
         <translation>OCR 失敗</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="458" />
-        <source>MCP Server Unavailable</source>
-        <translation>MCP 伺服器無法使用</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="459" />
-        <source>Unable to start MCP HTTP server on 127.0.0.1:%1</source>
-        <translation>無法在 127.0.0.1:%1 啟動 MCP HTTP 伺服器</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="584" />
@@ -946,30 +954,116 @@ Size: %2</source>
         <translation>尚無歷程項目</translation>
     </message>
     <message>
-        <source>Time: %1
-Size: %2</source>
-        <translation>時間：%1
-尺寸：%2</translation>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>你在 SnapTray 擷取的截圖會顯示在這裡。</translation>
     </message>
     <message>
-        <source>Capture</source>
-        <translation>截圖</translation>
+        <source>No results</source>
+        <translation>沒有結果</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>試試其他智慧資料夾。</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>智慧資料夾</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>所有截圖</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>最近 7 天</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>大型檔案</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>可重播</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>編輯</translation>
     </message>
     <message>
         <source>Pin</source>
         <translation>釘選</translation>
     </message>
     <message>
-        <source>All</source>
-        <translation>全部</translation>
+        <source>Copy</source>
+        <translation>複製</translation>
     </message>
     <message>
-        <source>Captures</source>
+        <source>Save As</source>
+        <translation>另存新檔</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>刪除</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>最新優先</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>最舊優先</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>最大檔案優先</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>預覽無法顯示</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
         <translation>截圖</translation>
     </message>
     <message>
-        <source>Pins</source>
-        <translation>釘選</translation>
+        <source>Screenshot %1</source>
+        <translation>截圖 %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>今天</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>昨天</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>%1 天前</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>未知時間</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>未知</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>未知大小</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>時間：%1
+解析度：%2
+檔案大小：%3</translation>
     </message>
 </context>
 <context>
@@ -3298,5 +3392,3 @@ It may be in use by another application.</source>
     </message>
 </context>
 </TS>
-
-

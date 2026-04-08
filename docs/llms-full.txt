@@ -348,7 +348,7 @@ snaptray config --set files/filenamePrefix SnapTray
 
 - **General**: Launch at startup, language, theme, CLI install
 - **Hotkeys**: Centralized hotkey editor by category
-- **Advanced**: Magnifier, blur, pin defaults, MCP toggle
+- **Advanced**: Magnifier, blur, pin defaults
 - **Watermark**: Image, opacity, scale, margin, position
 - **OCR**: Language order, post-recognition behavior
 - **Recording**: Frame rate, format, preview, audio, countdown

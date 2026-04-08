@@ -7,7 +7,7 @@
  * @brief Tests for RecordingManager state machine
  *
  * Covers:
- * - State transitions: Idle → Selecting → Preparing → Recording → Encoding
+ * - State transitions: Idle → Preparing → Recording → Encoding
  * - Pause/resume logic
  * - Bug #1 prevention: testCaptureFrame_EncoderNullDuringCapture
  * - Bug #2 context: null pointer checks
@@ -28,15 +28,12 @@ private slots:
     void testInitialStateIsNotActive();
     void testInitialStateIsNotRecording();
     void testInitialStateIsNotPaused();
-    void testInitialStateIsNotSelecting();
-
     // State enum tests
     void testStateEnumValues();
     void testStateEnumCount();
 
     // State query tests
     void testIsActiveInIdle();
-    void testIsActiveInSelecting();
     void testIsActiveInRecording();
     void testIsActiveInPaused();
     void testIsActiveInPreparing();
@@ -108,11 +105,6 @@ void TestRecordingManagerStateMachine::testInitialStateIsNotPaused()
     QVERIFY(!m_manager->isPaused());
 }
 
-void TestRecordingManagerStateMachine::testInitialStateIsNotSelecting()
-{
-    QVERIFY(!m_manager->isSelectingRegion());
-}
-
 // ============================================================================
 // State Enum Tests
 // ============================================================================
@@ -120,27 +112,23 @@ void TestRecordingManagerStateMachine::testInitialStateIsNotSelecting()
 void TestRecordingManagerStateMachine::testStateEnumValues()
 {
     // Verify expected state values exist
-    // Order: Idle, Selecting, Preparing, Countdown, Recording, Paused, Encoding, Previewing
+    // Order: Idle, Preparing, Countdown, Recording, Paused, Encoding, Previewing
     QCOMPARE(static_cast<int>(RecordingManager::State::Idle), 0);
-    QCOMPARE(static_cast<int>(RecordingManager::State::Selecting), 1);
-    QCOMPARE(static_cast<int>(RecordingManager::State::Preparing), 2);
-    QCOMPARE(static_cast<int>(RecordingManager::State::Countdown), 3);
-    QCOMPARE(static_cast<int>(RecordingManager::State::Recording), 4);
-    QCOMPARE(static_cast<int>(RecordingManager::State::Paused), 5);
-    QCOMPARE(static_cast<int>(RecordingManager::State::Encoding), 6);
-    QCOMPARE(static_cast<int>(RecordingManager::State::Previewing), 7);
+    QCOMPARE(static_cast<int>(RecordingManager::State::Preparing), 1);
+    QCOMPARE(static_cast<int>(RecordingManager::State::Countdown), 2);
+    QCOMPARE(static_cast<int>(RecordingManager::State::Recording), 3);
+    QCOMPARE(static_cast<int>(RecordingManager::State::Paused), 4);
+    QCOMPARE(static_cast<int>(RecordingManager::State::Encoding), 5);
+    QCOMPARE(static_cast<int>(RecordingManager::State::Previewing), 6);
 }
 
 void TestRecordingManagerStateMachine::testStateEnumCount()
 {
-    // Verify we have the expected number of states
-    // This catches accidental additions without test updates
-    int expectedStates = 8;  // Idle, Selecting, Preparing, Countdown, Recording, Paused, Encoding, Previewing
+    int expectedStates = 7;  // Idle, Preparing, Countdown, Recording, Paused, Encoding, Previewing
 
     // Create a set of known state values
     QSet<int> stateValues;
     stateValues.insert(static_cast<int>(RecordingManager::State::Idle));
-    stateValues.insert(static_cast<int>(RecordingManager::State::Selecting));
     stateValues.insert(static_cast<int>(RecordingManager::State::Preparing));
     stateValues.insert(static_cast<int>(RecordingManager::State::Countdown));
     stateValues.insert(static_cast<int>(RecordingManager::State::Recording));
@@ -158,17 +146,6 @@ void TestRecordingManagerStateMachine::testStateEnumCount()
 void TestRecordingManagerStateMachine::testIsActiveInIdle()
 {
     QCOMPARE(m_manager->state(), RecordingManager::State::Idle);
-    QVERIFY(!m_manager->isActive());
-}
-
-void TestRecordingManagerStateMachine::testIsActiveInSelecting()
-{
-    // Note: Can't easily test without UI components
-    // This documents the expected behavior based on code review:
-    // isActive() returns true when isSelectingRegion() is true
-
-    // From code: return isSelectingRegion() || isRecording() || isPaused() ||
-    //            (m_state == State::Preparing) || (m_state == State::Encoding);
     QVERIFY(!m_manager->isActive());
 }
 
@@ -326,7 +303,6 @@ void TestRecordingManagerStateMachine::testStateQueriesConsistency()
     // In Idle state:
     QVERIFY(!m_manager->isRecording());  // Only true in Recording state
     QVERIFY(!m_manager->isPaused());     // Only true in Paused state
-    QVERIFY(!m_manager->isSelectingRegion());  // Depends on m_regionSelector
 
     // isActive should be false when nothing is happening
     QVERIFY(!m_manager->isActive());

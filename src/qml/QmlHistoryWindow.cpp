@@ -7,9 +7,11 @@
 #include "qml/QmlToast.h"
 
 #include <QEvent>
+#include <QGuiApplication>
 #include <QKeyEvent>
 #include <QQmlContext>
 #include <QQuickView>
+#include <QScreen>
 #include <QUrl>
 
 namespace SnapTray {
@@ -92,8 +94,22 @@ void QmlHistoryWindow::ensureView()
         m_view,
         this);
     m_view->setTitle(tr("History"));
-    m_view->setMinimumSize(QSize(520, 340));
-    m_view->resize(820, 560);
+
+    const QSize preferredMinimumSize(960, 560);
+    const QSize preferredInitialSize(1240, 820);
+    QSize minimumSize = preferredMinimumSize;
+    QSize initialSize = preferredInitialSize;
+
+    if (QScreen* screen = QGuiApplication::primaryScreen()) {
+        const QSize availableSize = screen->availableGeometry().size();
+        const QSize paddedAvailableSize(qMax(availableSize.width() - 48, 1),
+                                        qMax(availableSize.height() - 64, 1));
+        minimumSize = preferredMinimumSize.boundedTo(paddedAvailableSize);
+        initialSize = preferredInitialSize.boundedTo(paddedAvailableSize).expandedTo(minimumSize);
+    }
+
+    m_view->setMinimumSize(minimumSize);
+    m_view->resize(initialSize);
     m_view->rootContext()->setContextProperty(QStringLiteral("historyModel"), m_model);
     m_view->rootContext()->setContextProperty(QStringLiteral("historyBackend"), m_backend);
     m_view->setSource(QUrl(QStringLiteral("qrc:/SnapTrayQml/panels/HistoryWindow.qml")));

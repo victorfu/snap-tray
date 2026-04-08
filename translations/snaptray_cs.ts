@@ -51,16 +51,6 @@
         <translation>Zobrazovat nápovědu klávesových zkratek</translation>
         </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="31" />
-        <source>MCP</source>
-        <translation>MCP</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="36" />
-        <source>Enable MCP server</source>
-        <translation>Povolit server MCP</translation>
-        </message>
-    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
         <source>Blur</source>
         <translation>Rozmazání</translation>
@@ -231,6 +221,38 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Zrušit snímání</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Potvrdit výběr (po dokončení výběru)</translation>
+    </message>
+    <message>
+        <source>Replay capture history</source>
+        <translation>Znovu přehrát historii snímání</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Přepnout režim více oblastí</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>Přepnout RGB/HEX (když je vidět lupa)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Kopírovat hodnotu barvy (před výběrem)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Posunout výběr o 1 pixel (po dokončení výběru)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Změnit velikost výběru o 1 pixel (po dokončení výběru)</translation>
+    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -556,7 +578,7 @@ Tokeny data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} nebo {date}</translation>
     <message>
         <location filename="../src/MainApplication.cpp" line="383" />
         <location filename="../src/MainApplication.cpp" line="967" />
-        <source>Record Full Screen</source>
+        <source>Record Screen</source>
         <translation>Nahrát celou obrazovku</translation>
     </message>
     <message>
@@ -608,16 +630,6 @@ Tokeny data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} nebo {date}</translation>
         <location filename="../src/MainApplication.cpp" line="408" />
         <source>OCR Failed</source>
         <translation>OCR selhalo</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="458" />
-        <source>MCP Server Unavailable</source>
-        <translation>Server MCP není dostupný</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="459" />
-        <source>Unable to start MCP HTTP server on 127.0.0.1:%1</source>
-        <translation>Nepodařilo se spustit HTTP server MCP na 127.0.0.1:%1</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="584" />
@@ -3252,6 +3264,131 @@ Může být používána jinou aplikací.</translation>
         <translation>Vyberte barvu</translation>
     </message>
 </context>
+<context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>Historie</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>Otevřít složku historie</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>Zatím žádné položky historie</translation>
+    </message>
+    <message>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>Snímky obrazovky pořízené v SnapTray se zobrazí zde.</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>Žádné výsledky</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>Zkuste jinou chytrou složku.</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>Chytré složky</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>Všechny snímky obrazovky</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>Posledních 7 dní</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>Velké soubory</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>Lze znovu přehrát</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Upravit</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Připnout</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopírovat</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>Uložit jako</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Smazat</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>Nejnovější první</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>Nejstarší první</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>Největší první</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>Náhled není k dispozici</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>Snímek obrazovky</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>Snímek obrazovky %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>Dnes</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>Včera</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>Před %1 dny</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>Neznámý čas</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Neznámé</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>Neznámá velikost</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>Čas: %1
+Rozlišení: %2
+Velikost souboru: %3</translation>
+    </message>
+</context>
 </TS>
-
-

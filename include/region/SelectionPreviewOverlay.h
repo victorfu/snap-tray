@@ -17,6 +17,7 @@ public:
                     const QPixmap* backgroundPixmap,
                     qreal devicePixelRatio,
                     int cornerRadius,
+                    bool ratioLocked,
                     bool shouldShow);
     void hideOverlay();
 
@@ -31,6 +32,7 @@ private:
     QRect m_visualRect;
     qreal m_devicePixelRatio = 1.0;
     int m_cornerRadius = 0;
+    bool m_ratioLocked = false;
 };
 
 #endif // SELECTIONPREVIEWOVERLAY_H

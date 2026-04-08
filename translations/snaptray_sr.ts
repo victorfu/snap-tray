@@ -51,16 +51,6 @@
         <translation>Прикажи савете за пречице</translation>
         </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="31" />
-        <source>MCP</source>
-        <translation>MCP</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="36" />
-        <source>Enable MCP server</source>
-        <translation>Омогући MCP сервер</translation>
-        </message>
-    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
         <source>Blur</source>
         <translation>Замућење</translation>
@@ -231,6 +221,38 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Откажи снимање</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Потврди избор (након избора)</translation>
+    </message>
+    <message>
+        <source>Replay capture history</source>
+        <translation>Поново прикажи историју снимања</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Пребаци режим више области</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>Пребаци RGB/HEX (када је лупа видљива)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Копирај вредност боје (пре избора)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Помери избор за 1 пиксел (након избора)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Промени величину избора за 1 пиксел (након избора)</translation>
+    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -556,7 +578,7 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
     <message>
         <location filename="../src/MainApplication.cpp" line="383" />
         <location filename="../src/MainApplication.cpp" line="967" />
-        <source>Record Full Screen</source>
+        <source>Record Screen</source>
         <translation>Сними цео екран</translation>
     </message>
     <message>
@@ -608,16 +630,6 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/MainApplication.cpp" line="408" />
         <source>OCR Failed</source>
         <translation>OCR неуспешно</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="458" />
-        <source>MCP Server Unavailable</source>
-        <translation>MCP сервер није доступан</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="459" />
-        <source>Unable to start MCP HTTP server on 127.0.0.1:%1</source>
-        <translation>Није могуће покренути MCP HTTP сервер на 127.0.0.1:%1</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="584" />
@@ -3252,6 +3264,131 @@ It may be in use by another application.</source>
         <translation>Изаберите боју</translation>
     </message>
 </context>
+<context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>Историја</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>Отвори фасциклу историје</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>Још нема ставки у историји</translation>
+    </message>
+    <message>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>Снимци екрана које направите у SnapTray-у појавиће се овде.</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>Нема резултата</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>Пробајте другу паметну фасциклу.</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>Паметне фасцикле</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>Сви снимци екрана</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>Последњих 7 дана</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>Велике датотеке</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>Може поново да се отвори</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Уреди</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Закачи</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Копирај</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>Сачувај као</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Обриши</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>Најновије прво</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>Најстарије прво</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>Највеће прво</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>Преглед није доступан</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>Снимак екрана</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>Снимак екрана %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>Данас</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>Јуче</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>Пре %1 дана</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>Непознато време</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Непознато</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>Непозната величина</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>Време: %1
+Резолуција: %2
+Величина датотеке: %3</translation>
+    </message>
+</context>
 </TS>
-
-

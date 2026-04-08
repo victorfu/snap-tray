@@ -51,16 +51,6 @@
         <translation>ショートカットのヒントを表示</translation>
         </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="31" />
-        <source>MCP</source>
-        <translation>MCP</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="36" />
-        <source>Enable MCP server</source>
-        <translation>MCP サーバーを有効にする</translation>
-        </message>
-    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
         <source>Blur</source>
         <translation>ぼかし</translation>
@@ -231,6 +221,38 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>キャプチャをキャンセル</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>選択を確定（選択後）</translation>
+    </message>
+    <message>
+        <source>Replay capture history</source>
+        <translation>キャプチャ履歴を再生</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>複数領域モードを切り替え</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>RGB/HEX を切り替え（拡大鏡表示時）</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>色の値をコピー（選択前）</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>選択範囲を 1 ピクセル移動（選択後）</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>選択範囲のサイズを 1 ピクセル変更（選択後）</translation>
+    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -556,7 +578,7 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
     <message>
         <location filename="../src/MainApplication.cpp" line="383" />
         <location filename="../src/MainApplication.cpp" line="967" />
-        <source>Record Full Screen</source>
+        <source>Record Screen</source>
         <translation>全画面を録画</translation>
     </message>
     <message>
@@ -608,16 +630,6 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/MainApplication.cpp" line="408" />
         <source>OCR Failed</source>
         <translation>OCR 失敗</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="458" />
-        <source>MCP Server Unavailable</source>
-        <translation>MCP サーバーは利用できません</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="459" />
-        <source>Unable to start MCP HTTP server on 127.0.0.1:%1</source>
-        <translation>127.0.0.1:%1 で MCP HTTP サーバーを起動できませんでした</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="584" />
@@ -3252,6 +3264,131 @@ It may be in use by another application.</source>
         <translation>色を選択</translation>
     </message>
 </context>
+<context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>履歴</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>履歴フォルダーを開く</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>履歴項目はまだありません</translation>
+    </message>
+    <message>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>SnapTrayで撮影したスクリーンショットがここに表示されます。</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>結果がありません</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>別のスマートフォルダーを試してください。</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>スマートフォルダー</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>すべてのスクリーンショット</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>過去7日間</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>大きいファイル</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>再生可能</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>編集</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>ピン留め</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>コピー</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>名前を付けて保存</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>削除</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>新しい順</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>古い順</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>サイズが大きい順</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>プレビューを表示できません</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>スクリーンショット</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>スクリーンショット %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>今日</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>昨日</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>%1日前</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>不明な時刻</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>不明</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>不明なサイズ</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>時刻: %1
+解像度: %2
+ファイルサイズ: %3</translation>
+    </message>
+</context>
 </TS>
-
-

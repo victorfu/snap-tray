@@ -1,0 +1,6 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/cursor">
+        <file alias="sizeallcursor.png">icons/sizeallcursor.png</file>
+    </qresource>
+</RCC>

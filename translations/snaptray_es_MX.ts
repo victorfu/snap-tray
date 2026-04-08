@@ -51,16 +51,6 @@
         <translation>Mostrar sugerencias de atajos</translation>
         </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="31" />
-        <source>MCP</source>
-        <translation>MCP</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="36" />
-        <source>Enable MCP server</source>
-        <translation>Habilitar servidor MCP</translation>
-        </message>
-    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
         <source>Blur</source>
         <translation>Difuminado</translation>
@@ -231,6 +221,38 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Cancelar captura</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Confirmar selección (después de seleccionar)</translation>
+    </message>
+    <message>
+        <source>Replay capture history</source>
+        <translation>Repetir historial de capturas</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Alternar modo multirregión</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>Cambiar RGB/HEX (cuando la lupa está visible)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Copiar valor del color (antes de seleccionar)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Mover selección 1 píxel (después de seleccionar)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Cambiar tamaño de la selección 1 píxel (después de seleccionar)</translation>
+    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -556,7 +578,7 @@ Tokens de fecha: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, o {date}</translation
     <message>
         <location filename="../src/MainApplication.cpp" line="383" />
         <location filename="../src/MainApplication.cpp" line="967" />
-        <source>Record Full Screen</source>
+        <source>Record Screen</source>
         <translation>Grabar pantalla completa</translation>
     </message>
     <message>
@@ -608,16 +630,6 @@ Tokens de fecha: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, o {date}</translation
         <location filename="../src/MainApplication.cpp" line="408" />
         <source>OCR Failed</source>
         <translation>OCR fallido</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="458" />
-        <source>MCP Server Unavailable</source>
-        <translation>Servidor MCP no disponible</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="459" />
-        <source>Unable to start MCP HTTP server on 127.0.0.1:%1</source>
-        <translation>No se pudo iniciar el servidor HTTP de MCP en 127.0.0.1:%1</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="584" />
@@ -3252,6 +3264,131 @@ Puede estar en uso por otra aplicación.</translation>
         <translation>Seleccionar color</translation>
     </message>
 </context>
+<context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>Historial</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>Abrir carpeta del historial</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>Aún no hay elementos en el historial</translation>
+    </message>
+    <message>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>Las capturas de pantalla que tomes en SnapTray aparecerán aquí.</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>Sin resultados</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>Prueba otra carpeta inteligente.</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>Carpetas inteligentes</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>Todas las capturas de pantalla</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>Últimos 7 días</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>Archivos grandes</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>Reproducible</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Editar</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Anclar</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Copiar</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>Guardar como</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Eliminar</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>Más recientes primero</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>Más antiguas primero</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>Más grandes primero</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>Vista previa no disponible</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>Captura de pantalla</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>Captura de pantalla %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>Hoy</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>Ayer</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>Hace %1 días</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>Hora desconocida</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Desconocido</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>Tamaño desconocido</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>Hora: %1
+Resolución: %2
+Tamaño del archivo: %3</translation>
+    </message>
+</context>
 </TS>
-
-

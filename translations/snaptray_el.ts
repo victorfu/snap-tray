@@ -51,16 +51,6 @@
         <translation>Εμφάνιση υποδείξεων συντομεύσεων</translation>
         </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="31" />
-        <source>MCP</source>
-        <translation>MCP</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="36" />
-        <source>Enable MCP server</source>
-        <translation>Ενεργοποίηση διακομιστή MCP</translation>
-        </message>
-    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
         <source>Blur</source>
         <translation>Θόλωμα</translation>
@@ -231,6 +221,38 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Ακύρωση λήψης</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Επιβεβαίωση επιλογής (μετά την ολοκλήρωση της επιλογής)</translation>
+    </message>
+    <message>
+        <source>Replay capture history</source>
+        <translation>Επανάληψη ιστορικού λήψεων</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Εναλλαγή λειτουργίας πολλαπλών περιοχών</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>Εναλλαγή RGB/HEX (όταν εμφανίζεται ο μεγεθυντικός φακός)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Αντιγραφή τιμής χρώματος (πριν από την επιλογή)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Μετακίνηση επιλογής κατά 1 εικονοστοιχείο (μετά την ολοκλήρωση της επιλογής)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Αλλαγή μεγέθους επιλογής κατά 1 εικονοστοιχείο (μετά την ολοκλήρωση της επιλογής)</translation>
+    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -550,7 +572,7 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
     <message>
         <location filename="../src/MainApplication.cpp" line="383" />
         <location filename="../src/MainApplication.cpp" line="967" />
-        <source>Record Full Screen</source>
+        <source>Record Screen</source>
         <translation>Εγγραφή πλήρους οθόνης</translation>
     </message>
     <message>
@@ -602,16 +624,6 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/MainApplication.cpp" line="408" />
         <source>OCR Failed</source>
         <translation>Αποτυχία OCR</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="458" />
-        <source>MCP Server Unavailable</source>
-        <translation>Ο διακομιστής MCP δεν είναι διαθέσιμος</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="459" />
-        <source>Unable to start MCP HTTP server on 127.0.0.1:%1</source>
-        <translation>Δεν ήταν δυνατή η εκκίνηση του διακομιστή MCP HTTP στη διεύθυνση 127.0.0.1:%1</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="584" />
@@ -3246,6 +3258,131 @@ It may be in use by another application.</source>
         <translation>Επιλογή χρώματος</translation>
     </message>
 </context>
+<context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>Ιστορικό</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>Άνοιγμα φακέλου ιστορικού</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>Δεν υπάρχουν ακόμη στοιχεία ιστορικού</translation>
+    </message>
+    <message>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>Τα στιγμιότυπα οθόνης που τραβάτε στο SnapTray θα εμφανίζονται εδώ.</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>Δεν βρέθηκαν αποτελέσματα</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>Δοκιμάστε έναν διαφορετικό έξυπνο φάκελο.</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>Έξυπνοι φάκελοι</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>Όλα τα στιγμιότυπα οθόνης</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>Τελευταίες 7 ημέρες</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>Μεγάλα αρχεία</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>Με δυνατότητα επανάληψης</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Επεξεργασία</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Καρφίτσωμα</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Αντιγραφή</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>Αποθήκευση ως</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Διαγραφή</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>Νεότερα πρώτα</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>Παλιότερα πρώτα</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>Μεγαλύτερα πρώτα</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>Η προεπισκόπηση δεν είναι διαθέσιμη</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>Στιγμιότυπο οθόνης</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>Στιγμιότυπο οθόνης %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>Σήμερα</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>Χθες</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>Πριν από %1 ημέρες</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>Άγνωστη ώρα</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Άγνωστο</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>Άγνωστο μέγεθος</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>Ώρα: %1
+Ανάλυση: %2
+Μέγεθος αρχείου: %3</translation>
+    </message>
+</context>
 </TS>
-
-

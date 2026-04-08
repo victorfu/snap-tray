@@ -1,32 +1,174 @@
 #include <QtTest/QtTest>
+
+#include <QCoreApplication>
+#include <QDir>
+#include <QFile>
+#include <QRegularExpression>
+#include <QTranslator>
+
+#include "tst_CaptureShortcutHintsOverlay.h"
 #include "region/CaptureShortcutHintsOverlay.h"
 
-class tst_CaptureShortcutHintsOverlay : public QObject
+namespace {
+
+QString translationFilePath()
 {
-    Q_OBJECT
+    return QDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR))
+        .filePath(QStringLiteral("snaptray_zh_TW.qm"));
+}
 
-private slots:
-    void testRowCount();
-    void testRowCountWithoutMagnifierHints();
-    void testLayoutMetrics();
-    void testLayoutMetricsWithoutMagnifierHints();
-    void testPanelRectWithinViewport();
-};
+QString translationsDirPath()
+{
+    return QDir(QString::fromUtf8(SNAPTRAY_SOURCE_DIR))
+        .filePath(QStringLiteral("translations"));
+}
 
-void tst_CaptureShortcutHintsOverlay::testRowCount()
+QString captureShortcutHintsOverlaySourcePath()
+{
+    return QDir(QString::fromUtf8(SNAPTRAY_SOURCE_DIR))
+        .filePath(QStringLiteral("src/region/CaptureShortcutHintsOverlay.cpp"));
+}
+
+QString shortcutHintsViewModelSourcePath()
+{
+    return QDir(QString::fromUtf8(SNAPTRAY_SOURCE_DIR))
+        .filePath(QStringLiteral("src/qml/ShortcutHintsViewModel.cpp"));
+}
+
+QString readTextFile(const QString& path)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return {};
+    }
+
+    return QString::fromUtf8(file.readAll());
+}
+
+QStringList expectedHintSourceTexts()
+{
+    return {
+        QStringLiteral("Cancel capture"),
+        QStringLiteral("Confirm selection (after selection)"),
+        QStringLiteral("Replay capture history"),
+        QStringLiteral("Toggle multi-region mode"),
+        QStringLiteral("Switch RGB/HEX (when magnifier visible)"),
+        QStringLiteral("Copy color value (before selection)"),
+        QStringLiteral("Move selection by 1 pixel (after selection)"),
+        QStringLiteral("Resize selection by 1 pixel (after selection)")
+    };
+}
+
+QStringList extractNoopStrings(const QString& sourcePath)
+{
+    const QString contents = readTextFile(sourcePath);
+    if (contents.isEmpty()) {
+        return {};
+    }
+
+    const QRegularExpression pattern(
+        QStringLiteral(
+            R"rx(QT_TRANSLATE_NOOP\("CaptureShortcutHintsOverlay",\s*"([^"]+)"\))rx"));
+
+    QStringList matches;
+    QRegularExpressionMatchIterator it = pattern.globalMatch(contents);
+    while (it.hasNext()) {
+        matches.append(it.next().captured(1));
+    }
+    return matches;
+}
+
+} // namespace
+
+void TestCaptureShortcutHintsOverlay::testRuntimeTranslationLookup()
+{
+    QTranslator translator;
+    QVERIFY2(translator.load(translationFilePath()),
+             qPrintable(QStringLiteral("Failed to load translation file: %1")
+                            .arg(translationFilePath())));
+    QVERIFY(QCoreApplication::installTranslator(&translator));
+
+    const QStringList expectedSources = expectedHintSourceTexts();
+    const QStringList expectedDescriptions{
+        QString::fromUtf8("取消擷取"),
+        QString::fromUtf8("確認選取範圍（完成選取後）"),
+        QString::fromUtf8("重播截圖歷程"),
+        QString::fromUtf8("切換多區域模式"),
+        QString::fromUtf8("切換 RGB/HEX（顯示放大鏡時）"),
+        QString::fromUtf8("複製顏色值（選取前）"),
+        QString::fromUtf8("移動選取範圍 1 像素（完成選取後）"),
+        QString::fromUtf8("調整選取範圍大小 1 像素（完成選取後）")
+    };
+
+    QCOMPARE(expectedSources.size(), expectedDescriptions.size());
+    for (int i = 0; i < expectedSources.size(); ++i) {
+        QCOMPARE(QCoreApplication::translate("CaptureShortcutHintsOverlay",
+                                             qPrintable(expectedSources.at(i))),
+                 expectedDescriptions.at(i));
+    }
+
+    QCoreApplication::removeTranslator(&translator);
+}
+
+void TestCaptureShortcutHintsOverlay::testTranslationSourcesPresentInAllCatalogs()
+{
+    const QDir translationsDir(translationsDirPath());
+    QVERIFY2(translationsDir.exists(),
+             qPrintable(QStringLiteral("Translations directory not found: %1")
+                            .arg(translationsDirPath())));
+
+    const QStringList translationFiles =
+        translationsDir.entryList(QStringList{QStringLiteral("snaptray_*.ts")}, QDir::Files);
+    QVERIFY(!translationFiles.isEmpty());
+
+    const QString contextMarker = QStringLiteral("<name>CaptureShortcutHintsOverlay</name>");
+    const QStringList expectedSources = expectedHintSourceTexts();
+
+    for (const QString& fileName : translationFiles) {
+        const QString path = translationsDir.filePath(fileName);
+        const QString contents = readTextFile(path);
+        QVERIFY2(!contents.isEmpty(),
+                 qPrintable(QStringLiteral("Failed to read translation source: %1").arg(path)));
+        QVERIFY2(contents.contains(contextMarker),
+                 qPrintable(QStringLiteral("Missing CaptureShortcutHintsOverlay context in %1")
+                                .arg(path)));
+
+        for (const QString& sourceText : expectedSources) {
+            const QString sourceMarker =
+                QStringLiteral("<source>%1</source>").arg(sourceText);
+            QVERIFY2(contents.contains(sourceMarker),
+                     qPrintable(QStringLiteral("Missing shortcut hint source '%1' in %2")
+                                    .arg(sourceText, path)));
+        }
+    }
+}
+
+void TestCaptureShortcutHintsOverlay::testOverlayAndQmlHintSourcesStayInSync()
+{
+    const QStringList expectedSources = expectedHintSourceTexts();
+    const QStringList overlaySources =
+        extractNoopStrings(captureShortcutHintsOverlaySourcePath());
+    const QStringList qmlSources =
+        extractNoopStrings(shortcutHintsViewModelSourcePath());
+
+    QCOMPARE(overlaySources, expectedSources);
+    QCOMPARE(qmlSources, expectedSources);
+}
+
+void TestCaptureShortcutHintsOverlay::testRowCount()
 {
     CaptureShortcutHintsOverlay overlay;
     QCOMPARE(overlay.rowCount(), 8);
 }
 
-void tst_CaptureShortcutHintsOverlay::testRowCountWithoutMagnifierHints()
+void TestCaptureShortcutHintsOverlay::testRowCountWithoutMagnifierHints()
 {
     CaptureShortcutHintsOverlay overlay;
     overlay.setMagnifierEnabled(false);
     QCOMPARE(overlay.rowCount(), 6);
 }
 
-void tst_CaptureShortcutHintsOverlay::testLayoutMetrics()
+void TestCaptureShortcutHintsOverlay::testLayoutMetrics()
 {
     CaptureShortcutHintsOverlay overlay;
     const auto metrics = overlay.layoutMetrics();
@@ -38,7 +180,7 @@ void tst_CaptureShortcutHintsOverlay::testLayoutMetrics()
     QVERIFY(metrics.panelHeight > 0);
 }
 
-void tst_CaptureShortcutHintsOverlay::testLayoutMetricsWithoutMagnifierHints()
+void TestCaptureShortcutHintsOverlay::testLayoutMetricsWithoutMagnifierHints()
 {
     CaptureShortcutHintsOverlay overlay;
     overlay.setMagnifierEnabled(false);
@@ -51,7 +193,7 @@ void tst_CaptureShortcutHintsOverlay::testLayoutMetricsWithoutMagnifierHints()
     QVERIFY(metrics.panelHeight > 0);
 }
 
-void tst_CaptureShortcutHintsOverlay::testPanelRectWithinViewport()
+void TestCaptureShortcutHintsOverlay::testPanelRectWithinViewport()
 {
     CaptureShortcutHintsOverlay overlay;
 
@@ -71,5 +213,4 @@ void tst_CaptureShortcutHintsOverlay::testPanelRectWithinViewport()
     }
 }
 
-QTEST_MAIN(tst_CaptureShortcutHintsOverlay)
-#include "tst_CaptureShortcutHintsOverlay.moc"
+QTEST_MAIN(TestCaptureShortcutHintsOverlay)

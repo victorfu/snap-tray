@@ -195,6 +195,11 @@ void CaptureChromeWindow::syncToHost(QWidget* host,
 #else
     if (geometryChanged || becameVisible || !wasVisible) {
         dirtyRegion = QRegion(rect());
+    } else if (previousShowShortcutHints != m_showShortcutHints) {
+        // Hint-overlay show/hide transitions can leave stale detached chrome
+        // when only the prior panel rect is repainted. Refresh the full window
+        // so the overlay dismisses cleanly under hover and overlap transitions.
+        dirtyRegion = QRegion(rect());
     } else {
         const QRect oldActiveRect = activeVisualRect(
             m_regionPainter,

@@ -273,17 +273,6 @@ void ToolRegistry::registerTools() {
     });
 
     registerTool({
-        ToolId::Record,
-        "record",
-        QCoreApplication::translate("ToolRegistry", "Screen Recording"),
-        "",
-        ToolCategory::Action,
-        false, false, false, false, false, false,
-        false, false, false,  // UI visibility: none
-        false, QColor(255, 80, 80)  // red icon
-    });
-
-    registerTool({
         ToolId::Share,
         "share",
         QCoreApplication::translate("ToolRegistry", "Share URL"),
@@ -373,6 +362,17 @@ void ToolRegistry::registerTools() {
         false, false, false,  // UI visibility: none
         false, QColor()
     });
+
+    registerTool({
+        ToolId::Beautify,
+        "beautify",
+        QCoreApplication::translate("ToolRegistry", "Beautify"),
+        "",
+        ToolCategory::Action,
+        false, false, false, false, false, false,
+        false, false, false,  // UI visibility: none
+        false, QColor()
+    });
 }
 
 void ToolRegistry::registerTool(const ToolDefinition& def) {
@@ -395,7 +395,6 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
         // Full toolbar for screenshot mode
         // Note: Polyline is accessed via Arrow tool's polyline mode toggle
         tools = {
-            ToolId::Selection,
             ToolId::Shape,
             ToolId::Arrow,
             ToolId::Pencil,
@@ -407,12 +406,10 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
             ToolId::EmojiSticker,
             ToolId::Undo,
             ToolId::Redo,
-            ToolId::Cancel,
             ToolId::OCR,
             ToolId::QRCode,
             ToolId::Share,
             ToolId::MultiRegion,
-            ToolId::Record,
             ToolId::Pin,
             ToolId::Save,
             ToolId::Copy
@@ -453,6 +450,7 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
             ToolId::Eraser,
             ToolId::StepBadge,
             ToolId::EmojiSticker,
+            ToolId::Beautify,
             ToolId::Crop,
             ToolId::Measure,
             ToolId::Undo,

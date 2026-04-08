@@ -3,10 +3,14 @@
 #include <QGuiApplication>
 
 #include "PinWindow.h"
+#include "qml/PinToolbarViewModel.h"
 #include "qml/QmlEmojiPickerPopup.h"
+#include "qml/QmlBeautifyPanel.h"
+#include "qml/QmlWindowedToolbar.h"
 #include "annotations/PolylineAnnotation.h"
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
+#include "cursor/CursorStyleCatalog.h"
 #include "pinwindow/RegionLayoutManager.h"
 #include "tools/ToolManager.h"
 
@@ -18,6 +22,21 @@ QPixmap createTestPixmap(int width = 160, int height = 120)
     QPixmap pixmap(width, height);
     pixmap.fill(Qt::red);
     return pixmap;
+}
+
+void verifyMoveCursor(const QCursor& cursor)
+{
+#ifdef Q_OS_MACOS
+    const QCursor expected =
+        CursorStyleCatalog::instance().cursorForStyle(CursorStyleSpec::fromShape(Qt::SizeAllCursor));
+    QCOMPARE(cursor.shape(), Qt::BitmapCursor);
+    QVERIFY(!cursor.pixmap().isNull());
+    QCOMPARE(cursor.hotSpot(), expected.hotSpot());
+    QCOMPARE(cursor.pixmap().deviceIndependentSize(),
+             expected.pixmap().deviceIndependentSize());
+#else
+    QCOMPARE(cursor.shape(), Qt::SizeAllCursor);
+#endif
 }
 
 class HeadlessEmojiPickerPopup final : public SnapTray::QmlEmojiPickerPopup
@@ -86,7 +105,12 @@ private slots:
     void testExplicitToolbarHideClearsEmojiToolState();
     void testOutsideClickHidesEmojiPickerWithToolbar();
     void testApplicationDeactivateHidesEmojiPickerWithToolbar();
-    void testClickingEmojiPopupDoesNotCloseToolbar();
+    void testBeautifyPanelMarksToolbarButtonActive();
+    void testSelectingBeautifyClearsPreviousToolSelection();
+    void testSelectingOtherToolbarToolDismissesBeautifyPanel();
+    void testTriggeringToolbarActionDismissesBeautifyPanel();
+    void testSpaceShortcutDismissesBeautifyPanelWithToolbar();
+    void testEscapeShortcutDismissesBeautifyPanelWithToolbar();
     void testRegionLayoutMoveCursorUsesAuthority();
 };
 
@@ -178,7 +202,7 @@ void TestPinWindowStyleSync::testPolylineReleaseRecomputesHoverCursor()
     QVERIFY(window.m_isPolylineDragging);
 
     QVERIFY(window.handlePolylineAnnotationRelease(bodyPos));
-    QCOMPARE(window.cursor().shape(), Qt::SizeAllCursor);
+    verifyMoveCursor(window.cursor());
 }
 
 void TestPinWindowStyleSync::testPopupRestoreReturnsMosaicCursor()
@@ -336,7 +360,19 @@ void TestPinWindowStyleSync::testApplicationDeactivateHidesEmojiPickerWithToolba
     QCOMPARE(window.m_currentToolId, ToolId::EmojiSticker);
 }
 
-void TestPinWindowStyleSync::testClickingEmojiPopupDoesNotCloseToolbar()
+void TestPinWindowStyleSync::testBeautifyPanelMarksToolbarButtonActive()
+{
+    PinWindow window(createTestPixmap(), QPoint(0, 0));
+    window.showToolbar();
+
+    QVERIFY(window.m_toolbar);
+    window.showBeautifyPanel();
+
+    QCOMPARE(window.m_toolbar->viewModel()->activeTool(),
+             static_cast<int>(ToolId::Beautify));
+}
+
+void TestPinWindowStyleSync::testSelectingBeautifyClearsPreviousToolSelection()
 {
     PinWindow window(createTestPixmap(), QPoint(0, 0));
 
@@ -345,29 +381,87 @@ void TestPinWindowStyleSync::testClickingEmojiPopupDoesNotCloseToolbar()
     }
 
     window.showToolbar();
-    window.handleToolbarToolSelected(static_cast<int>(ToolId::EmojiSticker));
-    QCoreApplication::processEvents();
+    window.enterAnnotationMode();
+    window.m_currentToolId = ToolId::Crop;
+    window.m_toolManager->setCurrentTool(ToolId::Crop);
+    window.m_toolbar->viewModel()->setActiveTool(static_cast<int>(ToolId::Crop));
+
+    window.showBeautifyPanel();
+    QVERIFY(!window.isAnnotationMode());
+    QCOMPARE(window.m_currentToolId, ToolId::Selection);
+    QCOMPARE(window.m_toolbar->viewModel()->activeTool(),
+             static_cast<int>(ToolId::Beautify));
+
+    QVERIFY(window.m_beautifyPanel);
+    window.m_beautifyPanel->hide();
+    window.syncToolbarActiveButtonForVisibleState();
+
+    QCOMPARE(window.m_toolbar->viewModel()->activeTool(), -1);
+}
+
+void TestPinWindowStyleSync::testSelectingOtherToolbarToolDismissesBeautifyPanel()
+{
+    PinWindow window(createTestPixmap(), QPoint(0, 0));
+    window.showToolbar();
+    window.showBeautifyPanel();
+
+    QVERIFY(window.m_beautifyPanel);
+    QVERIFY(window.m_beautifyPanel->isVisible());
+
+    window.m_toolbar->viewModel()->handleButtonClicked(static_cast<int>(ToolId::Crop));
+
+    QVERIFY(!window.m_beautifyPanel->isVisible());
+    QCOMPARE(window.m_toolbar->viewModel()->activeTool(),
+             static_cast<int>(ToolId::Crop));
+}
+
+void TestPinWindowStyleSync::testTriggeringToolbarActionDismissesBeautifyPanel()
+{
+    PinWindow window(createTestPixmap(), QPoint(0, 0));
+    window.showToolbar();
+    window.showBeautifyPanel();
+
+    QVERIFY(window.m_beautifyPanel);
+    QVERIFY(window.m_beautifyPanel->isVisible());
+
+    window.m_toolbar->viewModel()->handleButtonClicked(static_cast<int>(ToolId::Undo));
+
+    QVERIFY(!window.m_beautifyPanel->isVisible());
+    QCOMPARE(window.m_toolbar->viewModel()->activeTool(), -1);
+}
+
+void TestPinWindowStyleSync::testSpaceShortcutDismissesBeautifyPanelWithToolbar()
+{
+    PinWindow window(createTestPixmap(), QPoint(0, 0));
+    window.showToolbar();
+    window.showBeautifyPanel();
 
     QVERIFY(window.isToolbarVisible());
-    QVERIFY(window.m_emojiPickerPopup);
-    QVERIFY(window.m_emojiPickerPopup->isVisible());
+    QVERIFY(window.m_beautifyPanel);
+    QVERIFY(window.m_beautifyPanel->isVisible());
 
-    QWindow* popupWindow = window.m_emojiPickerPopup->window();
-    QVERIFY(popupWindow);
-    QVERIFY(popupWindow->isVisible());
+    QKeyEvent event(QEvent::KeyPress, Qt::Key_Space, Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &event);
 
-    const QPoint localPos = popupWindow->geometry().center() - popupWindow->geometry().topLeft();
-    const QPoint globalPos = popupWindow->geometry().center();
-    QMouseEvent pressEvent(QEvent::MouseButtonPress,
-                           localPos,
-                           globalPos,
-                           Qt::LeftButton,
-                           Qt::LeftButton,
-                           Qt::NoModifier);
-    QCoreApplication::sendEvent(popupWindow, &pressEvent);
-    QCoreApplication::processEvents();
+    QVERIFY(!window.isToolbarVisible());
+    QVERIFY(!window.m_beautifyPanel->isVisible());
+}
+
+void TestPinWindowStyleSync::testEscapeShortcutDismissesBeautifyPanelWithToolbar()
+{
+    PinWindow window(createTestPixmap(), QPoint(0, 0));
+    window.showToolbar();
+    window.showBeautifyPanel();
 
     QVERIFY(window.isToolbarVisible());
+    QVERIFY(window.m_beautifyPanel);
+    QVERIFY(window.m_beautifyPanel->isVisible());
+
+    QKeyEvent event(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &event);
+
+    QVERIFY(!window.isToolbarVisible());
+    QVERIFY(!window.m_beautifyPanel->isVisible());
 }
 
 void TestPinWindowStyleSync::testRegionLayoutMoveCursorUsesAuthority()
@@ -394,7 +488,7 @@ void TestPinWindowStyleSync::testRegionLayoutMoveCursorUsesAuthority()
 
     QCOMPARE(authority.resolvedSourceForWidget(&window), CursorRequestSource::LayoutMode);
     QCOMPARE(authority.resolvedStyleForWidget(&window).styleId, CursorStyleId::Move);
-    QCOMPARE(window.cursor().shape(), Qt::SizeAllCursor);
+    verifyMoveCursor(window.cursor());
 }
 
 QTEST_MAIN(TestPinWindowStyleSync)

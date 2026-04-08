@@ -103,9 +103,10 @@ private:
     bool m_isScreenLevel = false;
 
     // QML view
-    QQuickView* m_view = nullptr;
-    QQuickItem* m_rootItem = nullptr;
+    QPointer<QQuickView> m_view;
+    QPointer<QQuickItem> m_rootItem;
     QPointer<QWidget> m_parentWidget;
+    bool m_shutdownCleanupStarted = false;
 
     // Layout constants (matching UnifiedToast)
     static constexpr int kScreenMargin = 20;

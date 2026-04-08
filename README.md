@@ -31,14 +31,14 @@ SnapTray is a tray-native screenshot and screen recording app for macOS and Wind
 - Capture quickly with magnified selection, window detection, multi-region capture, cursor inclusion, and color picking
 - Annotate immediately with arrows, marker, shapes, text, mosaic, step badges, emoji, OCR, QR scan, and auto blur
 - Pin screenshots above other windows so references stay visible while you work
-- Record the full screen or a selected region as MP4 with optional audio, or export short silent clips as GIF or WebP
+- Record a full screen source from the tray menu or CLI, with direct start on single-display setups and screen picking on multi-display setups
 - Launch repeatable flows from global hotkeys, the tray menu, or the CLI
 
 ## Built for Real Work
 
 ### Capture and mark up in one pass
 
-Press `F2`, drag a region, then copy, save, pin, share, OCR, blur, or start recording from the same toolbar.
+Press `F2`, drag a region, then copy, save, pin, share, OCR, or blur from the same toolbar.
 
 ### Draw directly on the desktop
 
@@ -50,7 +50,7 @@ Pinned images stay above other apps and support zoom, opacity, rotation, flip, m
 
 ### Record what matters
 
-Start from the tray or capture toolbar, then pause, resume, stop, or cancel from the floating control bar.
+Start from the tray menu or CLI, choose a screen when needed, then use the floating control bar to monitor duration and stop recording.
 
 ## Learn More
 
@@ -83,7 +83,6 @@ More developer references:
 - [Build from Source](docs/developer/build-from-source.md)
 - [Release & Packaging](docs/developer/release-packaging.md)
 - [Architecture Overview](docs/developer/architecture.md)
-- [MCP (Debug Builds)](docs/developer/mcp-debug.md)
 
 ## License
 

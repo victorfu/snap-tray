@@ -113,7 +113,6 @@ void tst_WindowDetectorQueryMode::testTopLevelCacheDoesNotPretendChildControlsAr
 
     const QRect topBounds = clampRectToScreen(screen->geometry(), screen->geometry().center(), QSize(220, 160));
     const QPoint hitPoint = topBounds.center();
-
     TestWindowDetector detector;
     detector.m_enabled = true;
     detector.setScreen(screen);

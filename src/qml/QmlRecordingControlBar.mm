@@ -458,13 +458,8 @@ void QmlRecordingControlBar::onButtonUnhovered()
 QString QmlRecordingControlBar::tooltipForButton(int buttonId) const
 {
     switch (buttonId) {
-    case 0: // Pause
-        return m_isPaused ? translateRecordingControlBar(kResumeRecordingText)
-                          : translateRecordingControlBar(kPauseRecordingText);
-    case 1: // Stop
+    case 0: // Stop
         return translateRecordingControlBar(kStopRecordingText);
-    case 2: // Cancel
-        return translateRecordingControlBar(kCancelRecordingText);
     default:
         return QString();
     }

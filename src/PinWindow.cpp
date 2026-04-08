@@ -83,6 +83,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QCoreApplication>
 #include <QGuiApplication>
 #include <QApplication>
 #include <QClipboard>
@@ -155,9 +156,57 @@ namespace {
         return CoordinateHelper::toLogical(pixmap.size(), dpr);
     }
 
-    QSize physicalSizeFromPixmap(const QPixmap& pixmap)
+    QSize transformedLogicalSizeForRotation(const QSize& logicalSize, int rotationAngle)
     {
-        return pixmap.isNull() ? QSize() : pixmap.size();
+        const int normalizedRotation = ((rotationAngle % 360) + 360) % 360;
+        if (normalizedRotation == 90 || normalizedRotation == 270) {
+            return QSize(logicalSize.height(), logicalSize.width());
+        }
+        return logicalSize;
+    }
+
+    QSize regionBoundsSize(const QVector<LayoutRegion>& regions)
+    {
+        QRect bounds;
+        for (const auto& region : regions) {
+            bounds = bounds.isNull() ? region.rect : bounds.united(region.rect);
+        }
+        return bounds.isEmpty() ? QSize() : bounds.size();
+    }
+
+    QRectF fullSampleRectForPixmap(const QPixmap& pixmap)
+    {
+        return pixmap.isNull()
+            ? QRectF()
+            : QRectF(QPointF(0.0, 0.0),
+                     QSizeF(static_cast<qreal>(pixmap.width()),
+                            static_cast<qreal>(pixmap.height())));
+    }
+
+    QRect coveringRectForRectF(const QRectF& rect)
+    {
+        if (!rect.isValid() || rect.isEmpty()) {
+            return QRect();
+        }
+
+        const int left = qFloor(rect.left());
+        const int top = qFloor(rect.top());
+        const int right = qCeil(rect.left() + rect.width()) - 1;
+        const int bottom = qCeil(rect.top() + rect.height()) - 1;
+        return QRect(QPoint(left, top), QPoint(right, bottom));
+    }
+
+    QRectF preciseSampleRectForLocalRegion(const QRect& localRegion, qreal dpr)
+    {
+        if (!localRegion.isValid() || localRegion.isEmpty()) {
+            return QRectF();
+        }
+
+        const QRect coveringRect = CoordinateHelper::toPhysicalCoveringRect(localRegion, dpr);
+        return QRectF(localRegion.x() * dpr - coveringRect.left(),
+                      localRegion.y() * dpr - coveringRect.top(),
+                      localRegion.width() * dpr,
+                      localRegion.height() * dpr);
     }
 
     QString saveErrorDetail(const ImageSaveUtils::Error& error)
@@ -373,10 +422,12 @@ namespace {
 PinWindow::PinWindow(const QPixmap& screenshot,
                      const QPoint& position,
                      QWidget* parent,
-                     bool persistHistorySnapshot)
+                     bool persistHistorySnapshot,
+                     bool showImmediately)
     : QWidget(parent)
     , m_originalPixmap(screenshot)
     , m_zoomLevel(1.0)
+    , m_initialPosition(position)
     , m_isDragging(false)
     , m_contextMenu(nullptr)
     , m_isResizing(false)
@@ -411,7 +462,9 @@ PinWindow::PinWindow(const QPixmap& screenshot,
 
     // Initial size matches screenshot (use logical size for HiDPI)
     m_displayPixmap = m_originalPixmap;
-    QSize logicalSize = logicalSizeFromPixmap(m_displayPixmap);
+    m_contentLogicalSize = logicalSizeFromPixmap(m_displayPixmap);
+    resetSourceSampleRect();
+    QSize logicalSize = transformedContentLogicalSize();
     setFixedSize(logicalSize);
 
     // Cache the base corner radius so pin window chrome matches rounded captures.
@@ -447,14 +500,9 @@ PinWindow::PinWindow(const QPixmap& screenshot,
     connect(m_uiIndicators, &UIIndicators::exitClickThroughRequested,
         this, [this]() { setClickThrough(false); });
 
-    // Must show() first, then move() to get correct positioning on macOS
-    // Moving before show() can result in incorrect window placement
-    show();
-
-    // Enable visibility on all virtual desktops/workspaces
-    setWindowVisibleOnAllWorkspaces(this, true);
-
-    move(position);
+    if (showImmediately) {
+        showPreparedWindow();
+    }
 
     // Apply default opacity (90%)
     setWindowOpacity(m_opacity);
@@ -849,22 +897,29 @@ void PinWindow::onResizeFinished()
 {
     if (m_pendingHighQualityUpdate && !m_isResizing) {
         // Perform high-quality scaling after resize is complete
-        ensureTransformCacheValid();
-
-        qreal dpr = m_transformedCache.devicePixelRatio();
-        if (dpr <= 0.0) {
-            dpr = 1.0;
-        }
-        QSize newDeviceSize = CoordinateHelper::toPhysical(size(), dpr);
-
-        m_displayPixmap = m_transformedCache.scaled(newDeviceSize,
-            Qt::KeepAspectRatio,
-            Qt::SmoothTransformation);
-        m_displayPixmap.setDevicePixelRatio(dpr);
+        m_displayPixmap = buildDisplayPixmap(size(), Qt::SmoothTransformation);
 
         m_pendingHighQualityUpdate = false;
         update();
     }
+}
+
+void PinWindow::showPreparedWindow()
+{
+    if (m_hasPerformedInitialShow) {
+        show();
+        return;
+    }
+
+    // Must show() first, then move() to get correct positioning on macOS.
+    // Moving before show() can result in incorrect window placement.
+    show();
+
+    // Enable visibility on all virtual desktops/workspaces.
+    setWindowVisibleOnAllWorkspaces(this, true);
+
+    move(m_initialPosition);
+    m_hasPerformedInitialShow = true;
 }
 
 int PinWindow::effectiveCornerRadius(const QSize& contentSize) const
@@ -873,14 +928,7 @@ int PinWindow::effectiveCornerRadius(const QSize& contentSize) const
         return 0;
     }
 
-    QSize baseLogicalSize;
-    if (!m_transformedCache.isNull()) {
-        baseLogicalSize = logicalSizeFromPixmap(m_transformedCache);
-    }
-    else {
-        baseLogicalSize = logicalSizeFromPixmap(m_originalPixmap);
-    }
-
+    const QSize baseLogicalSize = transformedContentLogicalSize();
     if (baseLogicalSize.isEmpty()) {
         return 0;
     }
@@ -896,52 +944,21 @@ int PinWindow::effectiveCornerRadius(const QSize& contentSize) const
 
 void PinWindow::updateSize()
 {
-    // Use cached transform (only rebuild if rotation/flip changed)
-    ensureTransformCacheValid();
-
-    // For 90/270 degree rotations, swap width and height
-    const qreal dpr = m_transformedCache.devicePixelRatio() > 0.0
-        ? m_transformedCache.devicePixelRatio()
-        : 1.0;
-    QSize transformedLogicalSize = logicalSizeFromPixmap(m_transformedCache);
+    const QSize transformedLogicalSize = transformedContentLogicalSize();
     QSize newLogicalSize = transformedLogicalSize * m_zoomLevel;
 
-    // Scale to device pixels for the actual pixmap
-    QSize newDeviceSize = CoordinateHelper::toPhysical(newLogicalSize, dpr);
     Qt::TransformationMode mode = m_smoothing ? Qt::SmoothTransformation : Qt::FastTransformation;
-    m_displayPixmap = m_transformedCache.scaled(newDeviceSize,
-        Qt::KeepAspectRatio,
-        mode);
-    m_displayPixmap.setDevicePixelRatio(dpr);
+    m_displayPixmap = buildDisplayPixmap(newLogicalSize, mode);
 
     setFixedSize(newLogicalSize);
     update();
 }
 
-QPixmap PinWindow::getTransformedPixmap() const
-{
-    ensureTransformCacheValid();
-
-    if (m_transformedCache.isNull()) {
-        return m_originalPixmap;
-    }
-    return m_transformedCache;
-}
-
 QPixmap PinWindow::getExportPixmapCore(bool includeDisplayEffects) const
 {
-    // 1. Get current display size (includes zoom)
-    QSize exportSize = m_displayPixmap.size();
-
-    // 2. Get transformed pixmap (rotation/flip) and scale to current size
-    QPixmap basePixmap = getTransformedPixmap();
-
-    QPixmap scaledPixmap = basePixmap.scaled(
-        exportSize,
-        Qt::IgnoreAspectRatio,
-        Qt::SmoothTransformation
-    );
-    scaledPixmap.setDevicePixelRatio(basePixmap.devicePixelRatio());
+    const QPixmap scaledPixmapSource =
+        buildDisplayPixmap(size(), Qt::SmoothTransformation);
+    QPixmap scaledPixmap = scaledPixmapSource;
 
     if (includeDisplayEffects) {
         // 3. If opacity is adjusted, paint with opacity
@@ -1015,11 +1032,11 @@ void PinWindow::createContextMenu()
     saveAction->setShortcut(QKeySequence::Save);
     connect(saveAction, &QAction::triggered, this, &PinWindow::saveToFile);
 
-    QAction* openCacheFolderAction = m_contextMenu->addAction(tr("Open History Folder"));
+    // Reuse the HistoryWindow translation context for the shared label so PinWindow
+    // stays aligned with the existing QML translation catalogs.
+    QAction* openCacheFolderAction = m_contextMenu->addAction(
+        QCoreApplication::translate("HistoryWindow", "Open History Folder"));
     connect(openCacheFolderAction, &QAction::triggered, this, &PinWindow::openCacheFolder);
-
-    QAction* beautifyAction = m_contextMenu->addAction(tr("Beautify"));
-    connect(beautifyAction, &QAction::triggered, this, &PinWindow::showBeautifyPanel);
 
     // Click-through option
     m_clickThroughAction = m_contextMenu->addAction(tr("Click-through"));
@@ -1706,7 +1723,8 @@ void PinWindow::showOCRResultDialog(const OCRResult& result)
 
     connect(vm, &OCRResultViewModel::textCopied, this, [this](const QString& copiedText) {
         qDebug() << "OCR text copied:" << copiedText.length() << "characters";
-        m_toast->showToast(SnapTray::QmlToast::Level::Success, tr("Copied %1 characters").arg(copiedText.length()));
+        // Route OCR copy feedback through the shared completion path so PinWindow
+        // does not stack a second local toast on top of the global notification.
         emit ocrCompleted(true, tr("Text copied"));
     });
 
@@ -1798,13 +1816,165 @@ void PinWindow::copyAllInfo()
 
 QString PinWindow::currentDisplaySizeText() const
 {
-    const QSize physicalSize = physicalSizeFromPixmap(m_originalPixmap);
     qreal dpr = m_originalPixmap.devicePixelRatio();
     if (dpr <= 0.0) {
         dpr = 1.0;
     }
-    return SelectionDimensionLabel::label(physicalSize, dpr).replace(QStringLiteral(" x "),
-                                                                     QStringLiteral(" × "));
+    const QSize logicalSize = baseContentLogicalSize();
+    if (logicalSize.isEmpty()) {
+        return QString();
+    }
+    const QSize physicalSize = CoordinateHelper::toPhysical(logicalSize, dpr);
+    return SelectionDimensionLabel::label(physicalSize, dpr)
+        .replace(QStringLiteral(" x "), QStringLiteral(" × "));
+}
+
+QSize PinWindow::baseContentLogicalSize() const
+{
+    if (m_contentLogicalSize.isValid() && !m_contentLogicalSize.isEmpty()) {
+        return m_contentLogicalSize;
+    }
+    return logicalSizeFromPixmap(m_originalPixmap);
+}
+
+QSize PinWindow::transformedContentLogicalSize() const
+{
+    return transformedLogicalSizeForRotation(baseContentLogicalSize(), m_rotationAngle);
+}
+
+void PinWindow::setContentLogicalSize(const QSize& logicalSize)
+{
+    if (logicalSize.isValid() && !logicalSize.isEmpty()) {
+        m_contentLogicalSize = logicalSize;
+        return;
+    }
+
+    m_contentLogicalSize = logicalSizeFromPixmap(m_originalPixmap);
+}
+
+QRectF PinWindow::preciseSourceSampleRectForRegion(const QRect& globalRegion,
+                                                   const QRect& screenGeometry,
+                                                   qreal dpr)
+{
+    if (!globalRegion.isValid() || globalRegion.isEmpty()) {
+        return QRectF();
+    }
+
+    const QRect localRegion = globalRegion.translated(-screenGeometry.topLeft());
+    return preciseSampleRectForLocalRegion(localRegion, dpr);
+}
+
+QRectF PinWindow::sourceSampleRect() const
+{
+    if (m_sourceSampleRect.isValid() && !m_sourceSampleRect.isEmpty()) {
+        return m_sourceSampleRect;
+    }
+    return fullSampleRectForPixmap(m_originalPixmap);
+}
+
+QRectF PinWindow::transformedSourceSampleRect() const
+{
+    const QRectF sampleRect = sourceSampleRect();
+    if (sampleRect.isEmpty() || sampleRect.isNull()) {
+        return sampleRect;
+    }
+
+    if (m_rotationAngle == 0 && !m_flipHorizontal && !m_flipVertical) {
+        return sampleRect;
+    }
+
+    QTransform transform;
+    if (m_rotationAngle != 0) {
+        transform.rotate(m_rotationAngle);
+    }
+    if (m_flipHorizontal || m_flipVertical) {
+        transform.scale(m_flipHorizontal ? -1.0 : 1.0, m_flipVertical ? -1.0 : 1.0);
+    }
+
+    const QTransform mappedTransform =
+        QPixmap::trueMatrix(transform, m_originalPixmap.width(), m_originalPixmap.height());
+    return mappedTransform.mapRect(sampleRect);
+}
+
+void PinWindow::resetSourceSampleRect()
+{
+    m_sourceSampleRect = fullSampleRectForPixmap(m_originalPixmap);
+}
+
+void PinWindow::setSourceSampleRect(const QRectF& sampleRect)
+{
+    const QRectF fullRect = fullSampleRectForPixmap(m_originalPixmap);
+    const QRectF normalized = sampleRect.intersected(fullRect);
+    if (normalized.isValid() && !normalized.isEmpty()) {
+        m_sourceSampleRect = normalized;
+        return;
+    }
+
+    resetSourceSampleRect();
+}
+
+QRectF PinWindow::displaySourceRectForTarget(const QRectF& sampleRect,
+                                             const QSize& sourcePixelSize,
+                                             const QSize& targetPixelSize)
+{
+    if (!sampleRect.isValid() || sampleRect.isEmpty() || sourcePixelSize.isEmpty() || targetPixelSize.isEmpty()) {
+        return QRectF();
+    }
+
+    auto resolveAxis = [](qreal origin,
+                          qreal extent,
+                          int sourceExtent,
+                          int targetExtent) -> std::pair<qreal, qreal> {
+        if (sourceExtent <= 0 || targetExtent <= 0) {
+            return {0.0, 0.0};
+        }
+
+        qreal resolvedOrigin = origin;
+        qreal resolvedExtent = extent;
+        if (qAbs(extent - targetExtent) < 1.0) {
+            resolvedExtent = static_cast<qreal>(targetExtent);
+            resolvedOrigin = static_cast<qreal>(qRound(origin));
+        }
+
+        const qreal maxOrigin = qMax(0.0, static_cast<qreal>(sourceExtent) - resolvedExtent);
+        resolvedOrigin = qBound(0.0, resolvedOrigin, maxOrigin);
+        return {resolvedOrigin, resolvedExtent};
+    };
+
+    const auto [resolvedX, resolvedWidth] = resolveAxis(
+        sampleRect.x(), sampleRect.width(), sourcePixelSize.width(), targetPixelSize.width());
+    const auto [resolvedY, resolvedHeight] = resolveAxis(
+        sampleRect.y(), sampleRect.height(), sourcePixelSize.height(), targetPixelSize.height());
+
+    return QRectF(resolvedX, resolvedY, resolvedWidth, resolvedHeight);
+}
+
+QPixmap PinWindow::buildDisplayPixmap(const QSize& logicalSize, Qt::TransformationMode mode) const
+{
+    ensureTransformCacheValid();
+
+    const qreal dpr = m_transformedCache.devicePixelRatio() > 0.0
+        ? m_transformedCache.devicePixelRatio()
+        : 1.0;
+    const QSize deviceSize = CoordinateHelper::toPhysical(logicalSize, dpr);
+    if (deviceSize.isEmpty()) {
+        return QPixmap();
+    }
+
+    QPixmap result(deviceSize);
+    result.setDevicePixelRatio(dpr);
+    result.fill(Qt::transparent);
+
+    QPainter painter(&result);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, mode == Qt::SmoothTransformation);
+    const QRectF sourceRect = displaySourceRectForTarget(
+        transformedSourceSampleRect(), m_transformedCache.size(), deviceSize);
+    painter.drawPixmap(QRectF(QPointF(0.0, 0.0), QSizeF(logicalSize)),
+                       m_transformedCache,
+                       sourceRect);
+    painter.end();
+
+    return result;
 }
 
 void PinWindow::refreshInfoMenu()
@@ -2396,17 +2566,9 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
         qreal scaleY = static_cast<qreal>(newSize.height()) / transformedLogicalSize.height();
         m_zoomLevel = qMin(scaleX, scaleY);
 
-        // Use FastTransformation during resize for responsiveness
-        // High-quality scaling will be done after resize is complete
-        qreal dpr = m_transformedCache.devicePixelRatio();
-        if (dpr <= 0.0) {
-            dpr = 1.0;
-        }
-        QSize newDeviceSize = CoordinateHelper::toPhysical(newSize, dpr);
-        m_displayPixmap = m_transformedCache.scaled(newDeviceSize,
-            Qt::KeepAspectRatio,
-            Qt::FastTransformation);
-        m_displayPixmap.setDevicePixelRatio(dpr);
+        // Use FastTransformation during resize for responsiveness.
+        // High-quality scaling will be done after resize is complete.
+        m_displayPixmap = buildDisplayPixmap(newSize, Qt::FastTransformation);
 
         // Schedule high-quality update after resize ends
         m_pendingHighQualityUpdate = true;
@@ -2900,21 +3062,47 @@ void PinWindow::initializeAnnotationComponents()
     connect(vm, &PinToolbarViewModel::toolSelected,
         this, &PinWindow::handleToolbarToolSelected);
     connect(vm, &PinToolbarViewModel::undoClicked,
-        this, &PinWindow::handleToolbarUndo);
+        this, [this]() {
+            dismissBeautifyPanelIfVisible();
+            handleToolbarUndo();
+        });
     connect(vm, &PinToolbarViewModel::redoClicked,
-        this, &PinWindow::handleToolbarRedo);
+        this, [this]() {
+            dismissBeautifyPanelIfVisible();
+            handleToolbarRedo();
+        });
     connect(vm, &PinToolbarViewModel::ocrClicked,
-        this, &PinWindow::performOCR);
+        this, [this]() {
+            dismissBeautifyPanelIfVisible();
+            performOCR();
+        });
     connect(vm, &PinToolbarViewModel::qrCodeClicked,
-        this, &PinWindow::performQRCodeScan);
+        this, [this]() {
+            dismissBeautifyPanelIfVisible();
+            performQRCodeScan();
+        });
     connect(vm, &PinToolbarViewModel::shareClicked,
-        this, &PinWindow::shareToUrl);
+        this, [this]() {
+            dismissBeautifyPanelIfVisible();
+            shareToUrl();
+        });
+    connect(vm, &PinToolbarViewModel::beautifyClicked,
+        this, &PinWindow::showBeautifyPanel);
     connect(vm, &PinToolbarViewModel::copyClicked,
-        this, &PinWindow::copyToClipboard);
+        this, [this]() {
+            dismissBeautifyPanelIfVisible();
+            copyToClipboard();
+        });
     connect(vm, &PinToolbarViewModel::saveClicked,
-        this, &PinWindow::saveToFile);
+        this, [this]() {
+            dismissBeautifyPanelIfVisible();
+            saveToFile();
+        });
     connect(vm, &PinToolbarViewModel::doneClicked,
-        this, &PinWindow::hideToolbar);
+        this, [this]() {
+            dismissBeautifyPanelIfVisible();
+            hideToolbar();
+        });
 
     // Initialize QML sub-toolbar
     m_subToolbar = std::make_unique<SnapTray::QmlFloatingSubToolbar>(static_cast<QObject*>(nullptr));
@@ -3050,7 +3238,13 @@ void PinWindow::showToolbar()
     // Set associated widgets for click-outside detection
     m_toolbar->setAssociatedWidgets(this, m_subToolbar.get());
     m_toolbar->setAssociatedTransientWidget(nullptr);
-    m_toolbar->setAssociatedTransientWindow(m_emojiPickerPopup ? m_emojiPickerPopup->window() : nullptr);
+    if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+        m_toolbar->setAssociatedTransientWindow(m_emojiPickerPopup->window());
+    } else if (m_beautifyPanel && m_beautifyPanel->isVisible()) {
+        m_toolbar->setAssociatedTransientWindow(m_beautifyPanel->window());
+    } else {
+        m_toolbar->setAssociatedTransientWindow(nullptr);
+    }
 
     // Connect close request signal
     connect(m_toolbar.get(), &SnapTray::QmlWindowedToolbar::closeRequested,
@@ -3072,10 +3266,13 @@ void PinWindow::showToolbar()
     if (!m_annotationMode && isAnnotationTool(m_currentToolId)) {
         handleToolbarToolSelected(static_cast<int>(m_currentToolId));
     }
+
+    syncToolbarActiveButtonForVisibleState();
 }
 
 void PinWindow::hideToolbar()
 {
+    dismissBeautifyPanelIfVisible();
     if (m_toolbar) {
         m_toolbar->hide();
     }
@@ -3085,6 +3282,7 @@ void PinWindow::hideToolbar()
 
 void PinWindow::hideToolbarPreservingToolState()
 {
+    dismissBeautifyPanelIfVisible();
     if (m_toolbar) {
         m_toolbar->hide();
     }
@@ -3154,8 +3352,65 @@ void PinWindow::exitAnnotationMode(bool clearActiveTool)
     // Hide sub-toolbar when exiting annotation mode
     hideSubToolbar();
 
+    syncToolbarActiveButtonForVisibleState();
     rebuildManagedCursorAt(mapFromGlobal(QCursor::pos()));
     update();
+}
+
+void PinWindow::syncToolbarActiveButtonForVisibleState()
+{
+    if (!m_toolbar) {
+        return;
+    }
+
+    if (m_beautifyPanel && m_beautifyPanel->isVisible()) {
+        m_toolbar->viewModel()->setActiveTool(static_cast<int>(ToolId::Beautify));
+        return;
+    }
+
+    if (m_annotationMode && isAnnotationTool(m_currentToolId)) {
+        m_toolbar->viewModel()->setActiveTool(static_cast<int>(m_currentToolId));
+        return;
+    }
+
+    m_toolbar->viewModel()->setActiveTool(-1);
+}
+
+void PinWindow::dismissBeautifyPanelIfVisible()
+{
+    if (!m_beautifyPanel || !m_beautifyPanel->isVisible()) {
+        return;
+    }
+
+    m_beautifyPanel->hide();
+
+    if (m_toolbar) {
+        if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+            m_toolbar->setAssociatedTransientWindow(m_emojiPickerPopup->window());
+        } else {
+            m_toolbar->setAssociatedTransientWindow(nullptr);
+        }
+    }
+
+    syncToolbarActiveButtonForVisibleState();
+}
+
+void PinWindow::clearSelectedToolForBeautify()
+{
+    if (m_annotationMode) {
+        exitAnnotationMode();
+        return;
+    }
+
+    if (isAnnotationTool(m_currentToolId)) {
+        m_currentToolId = ToolId::Selection;
+        if (m_toolManager) {
+            m_toolManager->setCurrentTool(ToolId::Selection);
+        }
+    }
+
+    hideSubToolbar();
+    syncToolbarActiveButtonForVisibleState();
 }
 
 void PinWindow::handleToolbarToolSelected(int toolId)
@@ -3165,6 +3420,10 @@ void PinWindow::handleToolbarToolSelected(int toolId)
     }
     ToolId tool = static_cast<ToolId>(toolId);
     const bool emojiPickerVisible = m_emojiPickerPopup && m_emojiPickerPopup->isVisible();
+
+    if (tool != ToolId::Beautify) {
+        dismissBeautifyPanelIfVisible();
+    }
 
     // Check if same tool clicked - toggle sub-toolbar visibility (matches RegionSelector behavior)
     bool sameToolClicked = (m_currentToolId == tool && m_annotationMode);
@@ -3311,7 +3570,7 @@ void PinWindow::applyCrop(const QRect& cropRect)
         return;
     }
 
-    const QSize sourceLogicalSize = logicalSizeFromPixmap(m_originalPixmap);
+    const QSize sourceLogicalSize = baseContentLogicalSize();
     if (sourceLogicalSize.isEmpty()) {
         qWarning() << "PinWindow::applyCrop: source logical size is empty.";
         return;
@@ -3343,8 +3602,21 @@ void PinWindow::applyCrop(const QRect& cropRect)
         qRound(static_cast<qreal>(sourceOffset.x()) * toolImageSize.width() / sourceLogicalSize.width()),
         qRound(static_cast<qreal>(sourceOffset.y()) * toolImageSize.height() / sourceLogicalSize.height()));
 
-    // Convert logical crop rect to a covering device rect for QPixmap::copy.
-    const QRect deviceRect = CoordinateHelper::toPhysicalCoveringRect(sourceLogicalRect, dpr);
+    const QRectF previousSampleRect = sourceSampleRect();
+    const QRectF exactPhysicalCropRect(
+        previousSampleRect.left()
+            + (static_cast<qreal>(sourceLogicalRect.left()) * previousSampleRect.width()
+               / sourceLogicalSize.width()),
+        previousSampleRect.top()
+            + (static_cast<qreal>(sourceLogicalRect.top()) * previousSampleRect.height()
+               / sourceLogicalSize.height()),
+        static_cast<qreal>(sourceLogicalRect.width()) * previousSampleRect.width()
+            / sourceLogicalSize.width(),
+        static_cast<qreal>(sourceLogicalRect.height()) * previousSampleRect.height()
+            / sourceLogicalSize.height());
+
+    // Convert the exact sampled crop into a covering device rect for QPixmap::copy.
+    const QRect deviceRect = coveringRectForRectF(exactPhysicalCropRect);
 
     // Validate device rect against actual pixmap bounds
     QRect pixmapBounds(0, 0, m_originalPixmap.width(), m_originalPixmap.height());
@@ -3364,6 +3636,8 @@ void PinWindow::applyCrop(const QRect& cropRect)
     // Save current state for undo AFTER validation succeeds
     CropUndoEntry entry;
     entry.pixmap = m_originalPixmap;
+    entry.contentLogicalSize = baseContentLogicalSize();
+    entry.sourceSampleRect = previousSampleRect;
     entry.rotationAngle = m_rotationAngle;
     entry.flipH = m_flipHorizontal;
     entry.flipV = m_flipVertical;
@@ -3374,12 +3648,16 @@ void PinWindow::applyCrop(const QRect& cropRect)
     // Apply the cropped pixmap
     m_originalPixmap = cropped;
     m_originalPixmap.setDevicePixelRatio(dpr);
+    setContentLogicalSize(sourceLogicalRect.size());
+    setSourceSampleRect(exactPhysicalCropRect.translated(-clampedDeviceRect.topLeft()));
 
     // Cropping changes the canvas bounds/origin, so stored multi-region layout
     // metadata no longer matches the image.
     m_storedRegions.clear();
     m_hasMultiRegionData = false;
     entry.croppedPixmap = m_originalPixmap;
+    entry.croppedContentLogicalSize = baseContentLogicalSize();
+    entry.croppedSourceSampleRect = sourceSampleRect();
     entry.croppedRotationAngle = m_rotationAngle;
     entry.croppedFlipH = m_flipHorizontal;
     entry.croppedFlipV = m_flipVertical;
@@ -3437,6 +3715,8 @@ void PinWindow::undoCrop()
     // Restore previous state
     CropUndoEntry entry = m_cropUndoStack.takeLast();
     m_originalPixmap = entry.pixmap;
+    setContentLogicalSize(entry.contentLogicalSize);
+    setSourceSampleRect(entry.sourceSampleRect);
     m_rotationAngle = entry.rotationAngle;
     m_flipHorizontal = entry.flipH;
     m_flipVertical = entry.flipV;
@@ -3475,6 +3755,8 @@ void PinWindow::redoCrop()
 
     CropUndoEntry entry = m_cropRedoStack.takeLast();
     m_originalPixmap = entry.croppedPixmap;
+    setContentLogicalSize(entry.croppedContentLogicalSize);
+    setSourceSampleRect(entry.croppedSourceSampleRect);
     m_rotationAngle = entry.croppedRotationAngle;
     m_flipHorizontal = entry.croppedFlipH;
     m_flipVertical = entry.croppedFlipV;
@@ -4486,6 +4768,22 @@ void PinWindow::setSourceRegion(const QRect& region, QScreen* screen)
 {
     m_sourceRegion = region;
     m_sourceScreen = screen;
+    if (region.isValid() && !region.isEmpty()) {
+        setContentLogicalSize(region.size());
+        qreal dpr = m_originalPixmap.devicePixelRatio();
+        if (dpr <= 0.0) {
+            dpr = 1.0;
+        }
+        const QRect screenGeometry = screen ? screen->geometry() : QRect(QPoint(0, 0), region.size());
+        const QRectF sampleRect = preciseSourceSampleRectForRegion(region, screenGeometry, dpr);
+        setSourceSampleRect(sampleRect);
+        if (!m_isLiveMode) {
+            updateSize();
+            updateToolbarPosition();
+            syncCropHandlerImageSize();
+            refreshInfoMenu();
+        }
+    }
 }
 
 void PinWindow::startLiveCapture()
@@ -4618,6 +4916,10 @@ void PinWindow::updateLiveFrame()
     if (!frame.isNull()) {
         m_originalPixmap = QPixmap::fromImage(frame);
         m_originalPixmap.setDevicePixelRatio(sourceScreen->devicePixelRatio());
+        setContentLogicalSize(!m_sourceRegion.isEmpty()
+            ? m_sourceRegion.size()
+            : logicalSizeFromPixmap(m_originalPixmap));
+        resetSourceSampleRect();
         clearCropUndoHistory();
 
         // Update shared pixmap for mosaic tool to use latest frame
@@ -4903,6 +5205,14 @@ void PinWindow::setMultiRegionData(const QVector<LayoutRegion>& regions)
 {
     m_storedRegions = regions;
     m_hasMultiRegionData = !regions.isEmpty() && regions.size() <= LayoutModeConstants::kMaxRegionCount;
+    if (m_hasMultiRegionData) {
+        setContentLogicalSize(regionBoundsSize(regions));
+        resetSourceSampleRect();
+        updateSize();
+        updateToolbarPosition();
+        syncCropHandlerImageSize();
+        refreshInfoMenu();
+    }
 }
 
 void PinWindow::prepareForMerge()
@@ -4947,7 +5257,7 @@ void PinWindow::enterRegionLayoutMode()
     }
 
     // Enter layout mode with stored regions
-    QSize canvasSize = logicalSizeFromPixmap(m_originalPixmap);
+    QSize canvasSize = baseContentLogicalSize();
     m_regionLayoutManager->enterLayoutMode(m_storedRegions, canvasSize);
 
     // Bind annotations if annotation layer exists
@@ -4993,6 +5303,8 @@ void PinWindow::exitRegionLayoutMode(bool apply)
             }
 
             m_originalPixmap = newPixmap;
+            setContentLogicalSize(bounds.size());
+            resetSourceSampleRect();
             m_displayPixmap = newPixmap;
             clearCropUndoHistory();
 
@@ -5043,6 +5355,8 @@ bool PinWindow::isRegionLayoutMode() const
 
 void PinWindow::showBeautifyPanel()
 {
+    clearSelectedToolForBeautify();
+
     if (!m_beautifyPanel) {
         m_beautifyPanel = std::make_unique<SnapTray::QmlBeautifyPanel>(this);
 
@@ -5050,11 +5364,37 @@ void PinWindow::showBeautifyPanel()
                 this, &PinWindow::onBeautifyCopy);
         connect(m_beautifyPanel.get(), &SnapTray::QmlBeautifyPanel::saveRequested,
                 this, &PinWindow::onBeautifySave);
+        connect(m_beautifyPanel.get(), &SnapTray::QmlBeautifyPanel::closeRequested,
+                this, [this]() {
+                    if (m_toolbar) {
+                        if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+                            m_toolbar->setAssociatedTransientWindow(m_emojiPickerPopup->window());
+                        } else {
+                            m_toolbar->setAssociatedTransientWindow(nullptr);
+                        }
+                    }
+                    syncToolbarActiveButtonForVisibleState();
+                });
     }
 
-    m_beautifyPanel->setSourcePixmap(getExportPixmapWithAnnotations());
+    // Clear any stale preview first so the panel can appear before export work completes.
+    m_beautifyPanel->setSourcePixmap(QPixmap());
     m_beautifyPanel->setSettings(BeautifySettingsManager::instance().loadSettings());
     m_beautifyPanel->showNear(frameGeometry());
+    if (m_toolbar) {
+        m_toolbar->setAssociatedTransientWindow(m_beautifyPanel->window());
+    }
+    syncToolbarActiveButtonForVisibleState();
+
+    QPointer<PinWindow> safeThis = this;
+    QPointer<SnapTray::QmlBeautifyPanel> beautifyPanel = m_beautifyPanel.get();
+    QTimer::singleShot(0, this, [safeThis, beautifyPanel]() {
+        if (!safeThis || !beautifyPanel || !beautifyPanel->isVisible()) {
+            return;
+        }
+
+        beautifyPanel->setSourcePixmap(safeThis->getExportPixmapWithAnnotations());
+    });
 }
 
 void PinWindow::onBeautifyCopy(const BeautifySettings& settings)

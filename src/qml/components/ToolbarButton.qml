@@ -24,7 +24,6 @@ Item {
     property string iconSource: ""
     property bool isAction: false
     property bool isCancel: false
-    property bool isRecord: false
     property bool isActive: false
     property bool isDisabled: false
     property string tooltipText: ""

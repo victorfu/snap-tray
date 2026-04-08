@@ -35,7 +35,6 @@ public:
         bool isAction = false;
         bool isExportAction = false;
         bool isCancel = false;
-        bool isRecord = false;
     };
 
     explicit ToolbarViewModelBase(QObject* parent = nullptr);
@@ -71,7 +70,9 @@ signals:
 
 protected:
     ToolButtonOptions defaultToolButtonOptions(ToolId toolId) const;
-    QVariantMap buildToolButtonEntry(ToolId toolId, const ToolButtonOptions& options) const;
+    QVariantMap buildToolButtonEntry(ToolId toolId,
+                                     const ToolButtonOptions& options,
+                                     QString tooltipOverride = QString()) const;
     QVariantMap buildCustomButtonEntry(int id,
                                        const QString& iconKey,
                                        const QString& iconSource,

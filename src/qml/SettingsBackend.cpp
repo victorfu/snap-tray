@@ -9,7 +9,6 @@
 #include "settings/AutoBlurSettingsManager.h"
 #include "settings/FileSettingsManager.h"
 #include "settings/LanguageManager.h"
-#include "settings/MCPSettingsManager.h"
 #include "settings/OCRSettingsManager.h"
 #include "settings/PinWindowSettingsManager.h"
 #include "settings/RecordingSettingsManager.h"
@@ -184,9 +183,6 @@ void SettingsBackend::loadAllSettings()
     m_cursorCompanionStyle = cursorCompanionStyleToUiValue(
         RegionCaptureSettingsManager::instance().cursorCompanionStyle());
     m_shortcutHintsEnabled = RegionCaptureSettingsManager::instance().isShortcutHintsEnabled();
-#ifdef SNAPTRAY_ENABLE_MCP
-    m_mcpEnabled = MCPSettingsManager::instance().isEnabled();
-#endif
 
     auto blurOpts = AutoBlurSettingsManager::instance().load();
     m_blurIntensity = blurOpts.blurIntensity;
@@ -318,15 +314,6 @@ int SettingsBackend::cursorCompanionStyle() const { return m_cursorCompanionStyl
 
 bool SettingsBackend::shortcutHintsEnabled() const { return m_shortcutHintsEnabled; }
 
-bool SettingsBackend::isMcpBuild() const
-{
-#ifdef SNAPTRAY_ENABLE_MCP
-    return true;
-#else
-    return false;
-#endif
-}
-
 void SettingsBackend::setMagnifierEnabled(bool v) {
     setCursorCompanionStyle(
         v ? static_cast<int>(CursorCompanionStyle::Magnifier)
@@ -361,17 +348,6 @@ void SettingsBackend::setShortcutHintsEnabled(bool v) {
         emit shortcutHintsEnabledChanged();
     }
 }
-
-#ifdef SNAPTRAY_ENABLE_MCP
-bool SettingsBackend::mcpEnabled() const { return m_mcpEnabled; }
-void SettingsBackend::setMcpEnabled(bool v) {
-    if (m_mcpEnabled != v) {
-        m_mcpEnabled = v;
-        MCPSettingsManager::instance().setEnabled(v);
-        emit mcpEnabledChanged(v);
-    }
-}
-#endif
 
 int SettingsBackend::blurIntensity() const { return m_blurIntensity; }
 void SettingsBackend::setBlurIntensity(int v) {

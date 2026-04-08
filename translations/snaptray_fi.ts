@@ -51,16 +51,6 @@
         <translation>Näytä pikanäppäinvihjeet</translation>
         </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="31" />
-        <source>MCP</source>
-        <translation>MCP</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="36" />
-        <source>Enable MCP server</source>
-        <translation>Ota MCP-palvelin käyttöön</translation>
-        </message>
-    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
         <source>Blur</source>
         <translation>Sumennus</translation>
@@ -231,6 +221,38 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Peruuta kaappaus</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Vahvista valinta (valinnan jälkeen)</translation>
+    </message>
+    <message>
+        <source>Replay capture history</source>
+        <translation>Toista kaappaushistoria</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Vaihda monialuetila</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>Vaihda RGB/HEX (kun suurennuslasi on näkyvissä)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Kopioi värin arvo (ennen valintaa)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Siirrä valintaa 1 pikseli (valinnan jälkeen)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Muuta valinnan kokoa 1 pikseli (valinnan jälkeen)</translation>
+    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -550,7 +572,7 @@ Päivämäärätunnisteet: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} tai {date}</
     <message>
         <location filename="../src/MainApplication.cpp" line="383" />
         <location filename="../src/MainApplication.cpp" line="967" />
-        <source>Record Full Screen</source>
+        <source>Record Screen</source>
         <translation>Tallenna koko näyttö</translation>
     </message>
     <message>
@@ -602,16 +624,6 @@ Päivämäärätunnisteet: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} tai {date}</
         <location filename="../src/MainApplication.cpp" line="408" />
         <source>OCR Failed</source>
         <translation>OCR epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="458" />
-        <source>MCP Server Unavailable</source>
-        <translation>MCP-palvelin ei ole käytettävissä</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="459" />
-        <source>Unable to start MCP HTTP server on 127.0.0.1:%1</source>
-        <translation>MCP HTTP -palvelinta ei voitu käynnistää osoitteessa 127.0.0.1:%1</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="584" />
@@ -3246,6 +3258,131 @@ Se saattaa olla toisen sovelluksen käytössä.</translation>
         <translation>Valitse väri</translation>
     </message>
 </context>
+<context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>Historia</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>Avaa historiakansio</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>Historiakohteita ei ole vielä</translation>
+    </message>
+    <message>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>SnapTraylla ottamasi kuvakaappaukset näkyvät täällä.</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>Ei tuloksia</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>Kokeile toista älykansiota.</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>Älykansiot</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>Kaikki kuvakaappaukset</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>Viimeiset 7 päivää</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>Suuret tiedostot</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>Toistettavissa</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Muokkaa</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Kiinnitä</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopioi</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>Tallenna nimellä</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Poista</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>Uusimmat ensin</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>Vanhimmat ensin</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>Suurimmat ensin</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>Esikatselu ei ole saatavilla</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>Kuvakaappaus</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>Kuvakaappaus %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>Tänään</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>Eilen</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>%1 päivää sitten</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>Tuntematon aika</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Tuntematon</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>Tuntematon koko</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>Aika: %1
+Resoluutio: %2
+Tiedoston koko: %3</translation>
+    </message>
+</context>
 </TS>
-
-

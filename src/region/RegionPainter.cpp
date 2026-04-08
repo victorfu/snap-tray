@@ -16,6 +16,7 @@
 #include "ToolbarStyle.h"
 #include "TransformationGizmo.h"
 #include "tools/ToolTraits.h"
+#include "ui/DesignSystem.h"
 #include "utils/CoordinateHelper.h"
 
 #include <QPainter>
@@ -328,8 +329,9 @@ void RegionPainter::drawSelectionChrome(QPainter& painter, const QRect& selectio
     }
 
     const int radius = effectiveCornerRadius(sel);
+    const QColor selectionAccent = DesignSystem::instance().captureSelectionAccent();
 
-    QPen borderPen(QColor(0, 174, 255), kSelectionBorderWidth);
+    QPen borderPen(selectionAccent, kSelectionBorderWidth);
     borderPen.setJoinStyle(Qt::MiterJoin);
     borderPen.setCapStyle(Qt::SquareCap);
     painter.setPen(borderPen);
@@ -341,7 +343,7 @@ void RegionPainter::drawSelectionChrome(QPainter& painter, const QRect& selectio
         painter.drawRect(borderRect);
     }
 
-    painter.setBrush(QColor(0, 174, 255));
+    painter.setBrush(selectionAccent);
     painter.setPen(Qt::white);
 
     auto drawHandle = [&](int x, int y) {
@@ -386,8 +388,28 @@ void RegionPainter::drawDimensionInfo(QPainter& painter)
     }
 
     QRect sel = m_selectionManager->selectionRect();
-    const QString dimensions = SelectionDimensionLabel::label(sel, m_devicePixelRatio);
-    QRect textRect = drawDimensionInfoPanel(painter, sel, dimensions);
+    const QString dimensions = SelectionDimensionLabel::widgetLabel(sel, m_devicePixelRatio);
+    QFont font = painter.font();
+    font.setPointSize(12);
+    font.setBold(true);
+    painter.setFont(font);
+
+    const QRect textRect = SelectionDimensionLabel::selectionPanelLayout(
+        sel,
+        dimensions,
+        font,
+        m_parentWidget ? m_parentWidget->size() : QSize(),
+        SelectionDimensionLabel::controlAnchorSize(
+            m_selectionManager && m_selectionManager->aspectRatio() > 0.0)).panelRect;
+
+    auto styleConfig = ToolbarStyleConfig::getStyle(ToolbarStyleConfig::loadStyle());
+    GlassRenderer::drawGlassPanel(painter, textRect, styleConfig, 6);
+
+    const QColor textColor = dimensionLabelTextColor(styleConfig);
+    painter.setPen(dimensionLabelShadowColor(textColor));
+    painter.drawText(textRect.translated(0, 1), Qt::AlignCenter, dimensions);
+    painter.setPen(textColor);
+    painter.drawText(textRect, Qt::AlignCenter, dimensions);
     m_lastDimensionInfoRect = textRect;
 }
 

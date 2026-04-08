@@ -15,7 +15,7 @@
 
 namespace {
 
-QPixmap createPatternPixmap(int width, int height)
+QPixmap createPatternPixmap(int width, int height, qreal dpr = 1.0)
 {
     QImage image(width, height, QImage::Format_ARGB32_Premultiplied);
     for (int y = 0; y < height; ++y) {
@@ -23,7 +23,9 @@ QPixmap createPatternPixmap(int width, int height)
             image.setPixelColor(x, y, QColor(x % 256, y % 256, (x + y) % 256, 255));
         }
     }
-    return QPixmap::fromImage(image);
+    QPixmap pixmap = QPixmap::fromImage(image);
+    pixmap.setDevicePixelRatio(dpr);
+    return pixmap;
 }
 
 bool pixmapsEqual(const QPixmap& lhs, const QPixmap& rhs)
@@ -77,6 +79,10 @@ private slots:
     void testUndoCrop_MarkerStroke_RestoresOriginalPosition();
     void testApplyCrop_RefreshesMosaicSourceInsideErasedGroup();
     void testApplyCrop_EdgeEndpointCoordinate_ClampsToLastPixelColumn();
+    void testPreciseSourceSampleRectForRegion_UsesScreenLocalCoordinates();
+    void testDisplaySourceRectForTarget_PrefersTranslationOverScaling();
+    void testSetSourceRegion_FractionalDpr_PreservesExactLogicalSize();
+    void testCropUndoRedo_FractionalDpr_RestoresExactLogicalSize();
     void testHandleToolbarUndo_PrioritizesCropWhenNoPostCropAnnotations();
     void testHandleToolbarUndo_PrioritizesPostCropAnnotationsFirst();
     void testHandleToolbarUndo_UsesStableCropBoundaryAfterAnnotationTrim();
@@ -417,6 +423,76 @@ void TestPinWindowCropUndo::testApplyCrop_EdgeEndpointCoordinate_ClampsToLastPix
     window.applyCrop(endpointRect);
 
     QVERIFY(pixmapsEqual(window.m_originalPixmap, expected));
+}
+
+void TestPinWindowCropUndo::testPreciseSourceSampleRectForRegion_UsesScreenLocalCoordinates()
+{
+    const QRect globalRegion(2025, 40, 100, 64);
+    const QRect screenGeometry(1920, 0, 1536, 864);
+
+    const QRectF sampleRect =
+        PinWindow::preciseSourceSampleRectForRegion(globalRegion, screenGeometry, 1.25);
+
+    QCOMPARE(sampleRect, QRectF(0.25, 0.0, 125.0, 80.0));
+}
+
+void TestPinWindowCropUndo::testDisplaySourceRectForTarget_PrefersTranslationOverScaling()
+{
+    const QRectF sampleRect(0.5, 0.5, 958.75, 421.25);
+    const QRectF resolved = PinWindow::displaySourceRectForTarget(
+        sampleRect,
+        QSize(960, 422),
+        QSize(959, 421));
+
+    QCOMPARE(resolved, QRectF(1.0, 1.0, 959.0, 421.0));
+}
+
+void TestPinWindowCropUndo::testSetSourceRegion_FractionalDpr_PreservesExactLogicalSize()
+{
+    QPixmap source = createPatternPixmap(126, 80, 1.25);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen != nullptr);
+
+    const QRect sourceRegion(25, 40, 100, 64);
+    window.setSourceRegion(sourceRegion, screen);
+
+    QCOMPARE(window.m_contentLogicalSize, sourceRegion.size());
+    QCOMPARE(window.size(), sourceRegion.size());
+    QCOMPARE(window.cropToolImageSize(), sourceRegion.size());
+    QCOMPARE(window.m_sourceSampleRect, QRectF(0.25, 0.0, 125.0, 80.0));
+    QCOMPARE(window.m_displayPixmap.size(), QSize(125, 80));
+    QVERIFY(qFuzzyCompare(window.m_displayPixmap.devicePixelRatio(), 1.25));
+}
+
+void TestPinWindowCropUndo::testCropUndoRedo_FractionalDpr_RestoresExactLogicalSize()
+{
+    QPixmap source = createPatternPixmap(126, 80, 1.25);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen != nullptr);
+
+    const QRect sourceRegion(25, 40, 100, 64);
+    window.setSourceRegion(sourceRegion, screen);
+
+    const QRect cropRect(20, 10, 40, 30);
+    window.applyCrop(cropRect);
+
+    QCOMPARE(window.m_contentLogicalSize, cropRect.size());
+    QCOMPARE(window.size(), cropRect.size());
+    QCOMPARE(window.m_sourceSampleRect, QRectF(0.25, 0.5, 50.0, 37.5));
+
+    window.undoCrop();
+    QCOMPARE(window.m_contentLogicalSize, sourceRegion.size());
+    QCOMPARE(window.size(), sourceRegion.size());
+    QCOMPARE(window.m_sourceSampleRect, QRectF(0.25, 0.0, 125.0, 80.0));
+
+    window.redoCrop();
+    QCOMPARE(window.m_contentLogicalSize, cropRect.size());
+    QCOMPARE(window.size(), cropRect.size());
+    QCOMPARE(window.m_sourceSampleRect, QRectF(0.25, 0.5, 50.0, 37.5));
 }
 
 void TestPinWindowCropUndo::testHandleToolbarUndo_PrioritizesCropWhenNoPostCropAnnotations()

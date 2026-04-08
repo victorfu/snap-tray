@@ -8,10 +8,20 @@
 
 #include <algorithm>
 
+static void ensureCursorResourcesLoaded()
+{
+    static const bool loaded = []() {
+        Q_INIT_RESOURCE(cursor_resources);
+        return true;
+    }();
+    Q_UNUSED(loaded);
+}
+
 namespace {
 constexpr qreal kCursorRenderDprFloor = 2.0;
 constexpr qreal kCursorOutlineWidth = 2.0;
 constexpr int kCursorPadding = 4;
+constexpr int kMoveCursorLogicalSize = 16;
 const QColor kCursorOutlineColor(0x6C, 0x5C, 0xE7);
 
 qreal cursorRenderDpr()
@@ -40,7 +50,7 @@ QPixmap createCursorCanvas(const QSize& logicalSize, qreal dpr)
     return pixmap;
 }
 
-QString brushCacheKey(QStringView family, int logicalSize, qreal dpr)
+QString customCursorCacheKey(QStringView family, int logicalSize, qreal dpr)
 {
     return QStringLiteral("%1:%2:%3")
         .arg(family)
@@ -93,6 +103,27 @@ QCursor renderCircleBrushCursor(int diameter)
     const QPoint hotspot(logicalSize.width() / 2, logicalSize.height() / 2);
     return QCursor(pixmap, hotspot.x(), hotspot.y());
 }
+
+QCursor renderMoveCursor()
+{
+    ensureCursorResourcesLoaded();
+
+    QPixmap basePixmap(QStringLiteral(":/cursor/sizeallcursor.png"));
+    if (basePixmap.isNull()) {
+        return QCursor(Qt::SizeAllCursor);
+    }
+
+    const QSize logicalSize(kMoveCursorLogicalSize, kMoveCursorLogicalSize);
+    const qreal dpr = cursorRenderDpr();
+    QPixmap pixmap = createCursorCanvas(logicalSize, dpr);
+
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+    painter.drawPixmap(QRect(QPoint(0, 0), logicalSize), basePixmap);
+
+    const QPoint hotspot(logicalSize.width() / 2, logicalSize.height() / 2);
+    return QCursor(pixmap, hotspot.x(), hotspot.y());
+}
 }  // namespace
 
 CursorStyleCatalog& CursorStyleCatalog::instance()
@@ -119,7 +150,11 @@ QCursor CursorStyleCatalog::cursorForStyle(const CursorStyleSpec& spec) const
     case CursorStyleId::TextBeam:
         return QCursor(Qt::IBeamCursor);
     case CursorStyleId::Move:
+#ifdef Q_OS_MACOS
+        return cachedCustomCursor(QStringLiteral("move"), kMoveCursorLogicalSize);
+#else
         return QCursor(Qt::SizeAllCursor);
+#endif
     case CursorStyleId::ResizeHorizontal:
         return QCursor(Qt::SizeHorCursor);
     case CursorStyleId::ResizeVertical:
@@ -139,28 +174,34 @@ QCursor CursorStyleCatalog::cursorForStyle(const CursorStyleSpec& spec) const
 
 QCursor CursorStyleCatalog::mosaicCursor(int size) const
 {
-    return cachedBrushCursor(QStringLiteral("mosaic"), size);
+    return cachedCustomCursor(QStringLiteral("mosaic"), size);
 }
 
 QCursor CursorStyleCatalog::eraserCursor(int diameter) const
 {
-    return cachedBrushCursor(QStringLiteral("eraser"), diameter);
+    return cachedCustomCursor(QStringLiteral("eraser"), diameter);
 }
 
-QCursor CursorStyleCatalog::cachedBrushCursor(const QString& family, int logicalSize) const
+QCursor CursorStyleCatalog::cachedCustomCursor(const QString& family, int logicalSize) const
 {
     const int clampedSize = std::max(logicalSize, 2);
     const qreal dpr = cursorRenderDpr();
-    const QString key = brushCacheKey(family, clampedSize, dpr);
+    const QString key = customCursorCacheKey(family, clampedSize, dpr);
 
     auto it = m_brushCursorCache.constFind(key);
     if (it != m_brushCursorCache.cend()) {
         return it.value();
     }
 
-    const QCursor cursor = (family == QStringLiteral("mosaic"))
-        ? renderSquareBrushCursor(clampedSize)
-        : renderCircleBrushCursor(clampedSize);
+    QCursor cursor;
+    if (family == QStringLiteral("mosaic")) {
+        cursor = renderSquareBrushCursor(clampedSize);
+    } else if (family == QStringLiteral("eraser")) {
+        cursor = renderCircleBrushCursor(clampedSize);
+    } else {
+        cursor = renderMoveCursor();
+    }
+
     m_brushCursorCache.insert(key, cursor);
     return cursor;
 }

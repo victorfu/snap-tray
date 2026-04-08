@@ -107,4 +107,3 @@ snaptray config --reset
 
 - [Getting Started](/docs/getting-started/)
 - [Troubleshooting](/docs/troubleshooting/)
-- [MCP (Debug Builds)](/developer/mcp-debug/) for debug-only localhost automation

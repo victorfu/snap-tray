@@ -51,16 +51,6 @@
         <translation>바로가기 힌트 표시</translation>
         </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="31" />
-        <source>MCP</source>
-        <translation>MCP</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="36" />
-        <source>Enable MCP server</source>
-        <translation>MCP 서버 활성화</translation>
-        </message>
-    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
         <source>Blur</source>
         <translation>흐림</translation>
@@ -231,6 +221,38 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>캡처 취소</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>선택 확정(선택 후)</translation>
+    </message>
+    <message>
+        <source>Replay capture history</source>
+        <translation>캡처 기록 다시 재생</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>다중 영역 모드 전환</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>RGB/HEX 전환(돋보기가 보일 때)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>색상 값 복사(선택 전)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>선택 영역 1픽셀 이동(선택 후)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>선택 영역 크기 1픽셀 조정(선택 후)</translation>
+    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -556,7 +578,7 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
     <message>
         <location filename="../src/MainApplication.cpp" line="383" />
         <location filename="../src/MainApplication.cpp" line="967" />
-        <source>Record Full Screen</source>
+        <source>Record Screen</source>
         <translation>전체 화면 녹화</translation>
     </message>
     <message>
@@ -608,16 +630,6 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/MainApplication.cpp" line="408" />
         <source>OCR Failed</source>
         <translation>OCR 실패</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="458" />
-        <source>MCP Server Unavailable</source>
-        <translation>MCP 서버를 사용할 수 없음</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="459" />
-        <source>Unable to start MCP HTTP server on 127.0.0.1:%1</source>
-        <translation>127.0.0.1:%1에서 MCP HTTP 서버를 시작할 수 없습니다</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="584" />
@@ -3252,6 +3264,131 @@ It may be in use by another application.</source>
         <translation>색상 선택</translation>
     </message>
 </context>
+<context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>기록</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>기록 폴더 열기</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>아직 기록 항목이 없습니다</translation>
+    </message>
+    <message>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>SnapTray에서 캡처한 스크린샷이 여기에 표시됩니다.</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>결과 없음</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>다른 스마트 폴더를 시도해 보세요.</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>스마트 폴더</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>모든 스크린샷</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>최근 7일</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>큰 파일</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>다시 재생 가능</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>편집</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>고정</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>복사</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>다른 이름으로 저장</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>삭제</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>최신순</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>오래된순</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>큰 파일순</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>미리 보기를 사용할 수 없습니다</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>스크린샷</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>스크린샷 %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>오늘</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>어제</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>%1일 전</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>알 수 없는 시간</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>알 수 없음</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>알 수 없는 크기</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>시간: %1
+해상도: %2
+파일 크기: %3</translation>
+    </message>
+</context>
 </TS>
-
-

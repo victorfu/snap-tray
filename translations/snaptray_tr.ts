@@ -51,16 +51,6 @@
         <translation>Kısayol ipuçlarını göster</translation>
         </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="31" />
-        <source>MCP</source>
-        <translation>MCP</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="36" />
-        <source>Enable MCP server</source>
-        <translation>MCP sunucusunu etkinleştir</translation>
-        </message>
-    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
         <source>Blur</source>
         <translation>Bulanıklaştırma</translation>
@@ -231,6 +221,38 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Yakalamayı iptal et</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Seçimi onayla (seçimden sonra)</translation>
+    </message>
+    <message>
+        <source>Replay capture history</source>
+        <translation>Yakalama geçmişini yeniden oynat</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Çok bölgeli modu değiştir</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>RGB/HEX geçişi yap (büyüteç görünürken)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Renk değerini kopyala (seçimden önce)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Seçimi 1 piksel taşı (seçimden sonra)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Seçimin boyutunu 1 piksel değiştir (seçimden sonra)</translation>
+    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -550,7 +572,7 @@ Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</trans
     <message>
         <location filename="../src/MainApplication.cpp" line="383" />
         <location filename="../src/MainApplication.cpp" line="967" />
-        <source>Record Full Screen</source>
+        <source>Record Screen</source>
         <translation>Tam Ekran Kaydet</translation>
     </message>
     <message>
@@ -602,16 +624,6 @@ Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</trans
         <location filename="../src/MainApplication.cpp" line="408" />
         <source>OCR Failed</source>
         <translation>OCR Başarısız</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="458" />
-        <source>MCP Server Unavailable</source>
-        <translation>MCP sunucusu kullanılamıyor</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="459" />
-        <source>Unable to start MCP HTTP server on 127.0.0.1:%1</source>
-        <translation>MCP HTTP sunucusu 127.0.0.1:%1 üzerinde başlatılamadı</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="584" />
@@ -3246,6 +3258,131 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
         <translation>Renk Seç</translation>
     </message>
 </context>
+<context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>Geçmiş</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>Geçmiş klasörünü aç</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>Henüz geçmiş öğesi yok</translation>
+    </message>
+    <message>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>SnapTray ile aldığınız ekran görüntüleri burada görünecek.</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>Sonuç yok</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>Farklı bir akıllı klasör deneyin.</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>Akıllı klasörler</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>Tüm ekran görüntüleri</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>Son 7 gün</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>Büyük dosyalar</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>Yeniden oynatılabilir</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Düzenle</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Sabitle</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopyala</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>Farklı kaydet</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Sil</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>En yeniler önce</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>En eskiler önce</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>En büyükler önce</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>Önizleme kullanılamıyor</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>Ekran görüntüsü</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>Ekran görüntüsü %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>Bugün</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>Dün</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>%1 gün önce</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>Bilinmeyen zaman</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Bilinmiyor</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>Bilinmeyen boyut</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>Zaman: %1
+Çözünürlük: %2
+Dosya boyutu: %3</translation>
+    </message>
+</context>
 </TS>
-
-

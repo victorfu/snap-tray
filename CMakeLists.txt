@@ -6,7 +6,7 @@ if(APPLE)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "14.0" CACHE STRING "Minimum macOS deployment target" FORCE)
 endif()
 
-project(SnapTray VERSION 1.0.43 LANGUAGES CXX)
+project(SnapTray VERSION 1.0.46 LANGUAGES CXX)
 
 # ============================================================================
 # Compiler Cache (ccache/sccache) for faster incremental builds
@@ -88,9 +88,6 @@ endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# MCP features are only available in Debug builds.
-add_compile_definitions($<$<CONFIG:Debug>:SNAPTRAY_ENABLE_MCP>)
 
 # ============================================================================
 # MSVC sccache Compatibility: Use /Z7 instead of /Zi for cacheable debug info
@@ -304,7 +301,6 @@ add_library(snaptray_core STATIC
     src/settings/AutoLaunchSettingsManager.cpp
     src/settings/AutoBlurSettingsManager.cpp
     src/settings/FileSettingsManager.cpp
-    src/settings/MCPSettingsManager.cpp
     src/settings/OCRSettingsManager.cpp
     src/settings/PinWindowSettingsManager.cpp
     src/settings/RecordingSettingsManager.cpp
@@ -342,7 +338,6 @@ add_library(snaptray_core STATIC
     include/settings/AutoLaunchSyncPolicy.h
     include/settings/AutoLaunchSettingsManager.h
     include/settings/FileSettingsManager.h
-    include/settings/MCPSettingsManager.h
     include/settings/PinWindowSettingsManager.h
     include/settings/RegionCaptureSettingsManager.h
     include/settings/ScreenCanvasSettingsManager.h
@@ -356,6 +351,7 @@ add_library(snaptray_core STATIC
     include/utils/FilenameTemplateEngine.h
     include/utils/ImageSaveUtils.h
     include/utils/NativeFileDialogUtils.h
+    resources/cursor_resources.qrc
 )
 
 target_include_directories(snaptray_core
@@ -794,10 +790,12 @@ add_library(snaptray_ui STATIC
     src/RecordingManager.cpp
     src/RecordingInitTask.cpp
     src/RecordingRegionNormalizer.cpp
+    src/recording/ScreenSourceService.cpp
     src/encoding/EncodingWorker.cpp
     include/RecordingManager.h
     include/RecordingInitTask.h
     include/RecordingRegionNormalizer.h
+    include/recording/ScreenSourceService.h
     include/encoding/EncodingWorker.h
 )
 
@@ -826,42 +824,6 @@ target_link_libraries(snaptray_ui
 target_compile_definitions(snaptray_ui PRIVATE
     $<$<NOT:$<CONFIG:Debug>>:QT_NO_DEBUG_OUTPUT>
     $<$<CONFIG:Debug>:SNAPTRAY_ENABLE_DEV_FEATURES>
-)
-
-# ----------------------------------------------------------------------------
-# snaptray_mcp: MCP HTTP server and tool handlers
-# ----------------------------------------------------------------------------
-add_library(snaptray_mcp STATIC
-    src/mcp/MCPServer.cpp
-    src/mcp/MCPHttpTransport.cpp
-    src/mcp/MCPTools.cpp
-    src/mcp/MCPScreenCaptureTool.cpp
-    src/mcp/MCPPinTool.cpp
-    src/mcp/MCPShareTool.cpp
-    include/mcp/MCPServer.h
-    include/mcp/MCPHttpTransport.h
-    include/mcp/MCPTools.h
-)
-
-target_include_directories(snaptray_mcp
-    PUBLIC
-        ${CMAKE_SOURCE_DIR}/include
-    PRIVATE
-        ${CMAKE_SOURCE_DIR}/src
-        ${CMAKE_BINARY_DIR}/generated
-        ${CMAKE_BINARY_DIR}
-)
-
-target_link_libraries(snaptray_mcp
-    PUBLIC
-        snaptray_ui
-        Qt6::Network
-        Qt6::Gui
-        Qt6::Widgets
-)
-
-target_compile_definitions(snaptray_mcp PRIVATE
-    $<$<NOT:$<CONFIG:Debug>>:QT_NO_DEBUG_OUTPUT>
 )
 
 # ----------------------------------------------------------------------------
@@ -943,13 +905,13 @@ set_source_files_properties(src/qml/dialogs/ShareResultDialog.qml PROPERTIES QT_
 set_source_files_properties(src/qml/dialogs/OCRResultDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/OCRResultDialog.qml)
 set_source_files_properties(src/qml/dialogs/UpdateDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/UpdateDialog.qml)
 set_source_files_properties(src/qml/dialogs/QRCodeResultDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/QRCodeResultDialog.qml)
+set_source_files_properties(src/qml/dialogs/ScreenPickerDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/ScreenPickerDialog.qml)
 
 # Recording preview
 set_source_files_properties(src/qml/recording/RecordingPreview.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingPreview.qml)
 
 # Recording control bar
 set_source_files_properties(src/qml/recording/RecordingControlBar.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingControlBar.qml)
-set_source_files_properties(src/qml/recording/RecordingRegionSelector.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingRegionSelector.qml)
 set_source_files_properties(src/qml/panels/BeautifyPanel.qml PROPERTIES QT_RESOURCE_ALIAS panels/BeautifyPanel.qml)
 set_source_files_properties(src/qml/panels/EmojiPickerPopup.qml PROPERTIES QT_RESOURCE_ALIAS panels/EmojiPickerPopup.qml)
 set_source_files_properties(src/qml/panels/HistoryWindow.qml PROPERTIES QT_RESOURCE_ALIAS panels/HistoryWindow.qml)
@@ -1009,7 +971,6 @@ qt_add_qml_module(snaptray_qml
         src/qml/settings/AboutSettings.qml
         src/qml/recording/RecordingPreview.qml
         src/qml/recording/RecordingControlBar.qml
-        src/qml/recording/RecordingRegionSelector.qml
         src/qml/panels/BeautifyPanel.qml
         src/qml/panels/EmojiPickerPopup.qml
         src/qml/panels/HistoryWindow.qml
@@ -1018,6 +979,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/dialogs/OCRResultDialog.qml
         src/qml/dialogs/UpdateDialog.qml
         src/qml/dialogs/QRCodeResultDialog.qml
+        src/qml/dialogs/ScreenPickerDialog.qml
         src/qml/toolbar/FloatingToolbar.qml
         src/qml/toolbar/ToolOptionsStrip.qml
         src/qml/toolbar/ColorPaletteSection.qml
@@ -1056,8 +1018,6 @@ qt_add_qml_module(snaptray_qml
         include/qml/QmlRecordingBoundary.h
         src/qml/QmlRecordingControlBar.mm
         include/qml/QmlRecordingControlBar.h
-        src/qml/QmlRecordingRegionSelector.mm
-        include/qml/QmlRecordingRegionSelector.h
         src/qml/QmlCountdownOverlay.mm
         include/qml/QmlCountdownOverlay.h
         src/qml/VideoPlaybackItem.cpp
@@ -1086,6 +1046,8 @@ qt_add_qml_module(snaptray_qml
         include/qml/QmlDialog.h
         src/qml/DialogImageProvider.cpp
         include/qml/DialogImageProvider.h
+        src/qml/ScreenPickerViewModel.cpp
+        include/qml/ScreenPickerViewModel.h
         src/qml/SharePasswordViewModel.cpp
         include/qml/SharePasswordViewModel.h
         src/qml/ShareResultViewModel.cpp
@@ -1190,7 +1152,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 # Link all library targets - they handle their own dependencies
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    $<$<CONFIG:Debug>:snaptray_mcp>
     snaptray_ui
     snaptray_platform
     snaptray_algorithms
@@ -1262,6 +1223,7 @@ set(TS_FILES
     translations/snaptray_zh_HK.ts
     translations/snaptray_zh_TW.ts
 )
+list(TRANSFORM TS_FILES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 
 qt_add_translations(${PROJECT_NAME}
     TS_FILES ${TS_FILES}

@@ -17,7 +17,8 @@ const QRect kSelectionRect(90, 80, 180, 120);
 QImage paintImage(RegionPainter& painter,
                   SelectionStateManager& selectionManager,
                   QWidget& hostWidget,
-                  bool detectedWindow)
+                  bool detectedWindow,
+                  QRect* dimensionRect = nullptr)
 {
     selectionManager.clearSelection();
     if (!detectedWindow) {
@@ -41,7 +42,31 @@ QImage paintImage(RegionPainter& painter,
     painter.paint(qp, background);
     qp.end();
 
+    if (dimensionRect) {
+        *dimensionRect = painter.lastDimensionInfoRect();
+    }
+
     return canvas;
+}
+
+bool imagesEqualOutsideRect(const QImage& lhs, const QImage& rhs, const QRect& ignoredRect)
+{
+    if (lhs.size() != rhs.size()) {
+        return false;
+    }
+
+    for (int y = 0; y < lhs.height(); ++y) {
+        for (int x = 0; x < lhs.width(); ++x) {
+            if (ignoredRect.contains(x, y)) {
+                continue;
+            }
+            if (lhs.pixelColor(x, y) != rhs.pixelColor(x, y)) {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 QImage paintFractionalDprImage(RegionPainter& painter,
@@ -118,6 +143,7 @@ private slots:
     void testDetectedWindowChromeMatchesSelectionChrome();
     void testSelectionDimensionLabelUsesPlatformUnits();
     void testWindowHighlightVisualRectIncludesHandlesAndPanel();
+    void testCompactSelectionDimensionLabelStaysOutsideSelection();
     void testFractionalDprPartialBackgroundRepaintMatchesFullPaint();
     void testFractionalDprSelectionTransitionNeedsFullRepaint();
 };
@@ -131,13 +157,22 @@ void tst_RegionPainterChrome::testDetectedWindowChromeMatchesSelectionChrome()
     selectionManager.setBounds(kHostRect);
 
     RegionPainter painter;
+    QRect detectedDimensionRect;
+    QRect selectionDimensionRect;
 
     const QImage detectedImage =
-        paintImage(painter, selectionManager, hostWidget, true);
+        paintImage(painter, selectionManager, hostWidget, true, &detectedDimensionRect);
     const QImage selectionImage =
-        paintImage(painter, selectionManager, hostWidget, false);
+        paintImage(painter, selectionManager, hostWidget, false, &selectionDimensionRect);
 
-    QCOMPARE(detectedImage, selectionImage);
+    const QRect ignoredRect = detectedDimensionRect
+        .united(selectionDimensionRect)
+        .adjusted(-8, -8, 8, 8)
+        .intersected(QRect(QPoint(0, 0), hostWidget.size()));
+    QVERIFY(imagesEqualOutsideRect(
+        detectedImage,
+        selectionImage,
+        ignoredRect));
 }
 
 void tst_RegionPainterChrome::testSelectionDimensionLabelUsesPlatformUnits()
@@ -155,6 +190,9 @@ void tst_RegionPainterChrome::testSelectionDimensionLabelUsesPlatformUnits()
              QStringLiteral("2560 x 1410 pt"));
     QCOMPARE(SelectionDimensionLabel::label(physicalSize, 2.0), QStringLiteral("2560 x 1410 pt"));
     QCOMPARE(SelectionDimensionLabel::sampleLabel(), QStringLiteral("9999 x 9999 pt"));
+    QCOMPARE(SelectionDimensionLabel::widgetLabel(QRect(0, 0, 2560, 1410), 2.0),
+             QStringLiteral("2560×1410 pt"));
+    QCOMPARE(SelectionDimensionLabel::widgetSampleLabel(), QStringLiteral("9999×9999 pt"));
 #else
     QCOMPARE(metrics.size, QSize(5, 5));
     QCOMPARE(metrics.unit, QStringLiteral("px"));
@@ -163,6 +201,8 @@ void tst_RegionPainterChrome::testSelectionDimensionLabelUsesPlatformUnits()
     QCOMPARE(SelectionDimensionLabel::label(logicalRect, 1.5), QStringLiteral("5 x 5 px"));
     QCOMPARE(SelectionDimensionLabel::label(physicalSize, 2.0), QStringLiteral("5120 x 2820 px"));
     QCOMPARE(SelectionDimensionLabel::sampleLabel(), QStringLiteral("9999 x 9999 px"));
+    QCOMPARE(SelectionDimensionLabel::widgetLabel(physicalSize, 2.0), QStringLiteral("5120×2820 px"));
+    QCOMPARE(SelectionDimensionLabel::widgetSampleLabel(), QStringLiteral("9999×9999 px"));
 #endif
 }
 
@@ -196,6 +236,40 @@ void tst_RegionPainterChrome::testWindowHighlightVisualRectIncludesHandlesAndPan
 
     QVERIFY(visualRect.contains(handleBounds));
     QVERIFY(visualRect.contains(painter.lastDimensionInfoRect()));
+}
+
+void tst_RegionPainterChrome::testCompactSelectionDimensionLabelStaysOutsideSelection()
+{
+    QWidget hostWidget;
+    hostWidget.resize(kHostRect.size());
+
+    SelectionStateManager selectionManager;
+    selectionManager.setBounds(kHostRect);
+    const QRect compactSelectionRect(180, 160, 120, 30);
+    selectionManager.setSelectionRect(compactSelectionRect);
+
+    RegionPainter painter;
+    painter.setParentWidget(&hostWidget);
+    painter.setSelectionManager(&selectionManager);
+    painter.setCornerRadius(0);
+    painter.setDevicePixelRatio(1.0);
+
+    QPixmap background(hostWidget.size());
+    background.fill(Qt::white);
+
+    QImage canvas(hostWidget.size(), QImage::Format_ARGB32_Premultiplied);
+    canvas.fill(Qt::transparent);
+    QPainter qp(&canvas);
+    qp.setRenderHint(QPainter::Antialiasing);
+    painter.paint(qp, background);
+    qp.end();
+
+    const QRect dimensionRect = painter.lastDimensionInfoRect();
+    QVERIFY(dimensionRect.isValid());
+    QCOMPARE(dimensionRect.top(), compactSelectionRect.top());
+    QVERIFY(dimensionRect.right() < compactSelectionRect.left());
+    QVERIFY(compactSelectionRect.left() - dimensionRect.right() >= 8);
+    QVERIFY(!compactSelectionRect.contains(dimensionRect));
 }
 
 void tst_RegionPainterChrome::testFractionalDprPartialBackgroundRepaintMatchesFullPaint()

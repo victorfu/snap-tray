@@ -6,7 +6,6 @@ Rectangle {
 
     property string text: ""
     property string style: "secondary"  // "primary", "secondary", "ghost"
-    property bool enabled: true
     property string feedbackText: ""
     property bool feedbackActive: false
 

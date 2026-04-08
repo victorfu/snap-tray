@@ -51,16 +51,6 @@
         <translation>Rodyti sparčiųjų klavišų užuominas</translation>
         </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="31" />
-        <source>MCP</source>
-        <translation>MCP</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="36" />
-        <source>Enable MCP server</source>
-        <translation>Įjungti MCP serverį</translation>
-        </message>
-    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
         <source>Blur</source>
         <translation>Suliejimas</translation>
@@ -231,6 +221,38 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Atšaukti fiksavimą</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Patvirtinti pasirinkimą (po pasirinkimo)</translation>
+    </message>
+    <message>
+        <source>Replay capture history</source>
+        <translation>Atkurti fiksavimo istoriją</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Perjungti kelių sričių režimą</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>Perjungti RGB/HEX (kai matomas didintuvas)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Nukopijuoti spalvos reikšmę (prieš pasirenkant)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Perkelti pasirinkimą 1 pikseliu (po pasirinkimo)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Keisti pasirinkimo dydį 1 pikseliu (po pasirinkimo)</translation>
+    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -550,7 +572,7 @@ Datos žetonai: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} arba {date}</translatio
     <message>
         <location filename="../src/MainApplication.cpp" line="383" />
         <location filename="../src/MainApplication.cpp" line="967" />
-        <source>Record Full Screen</source>
+        <source>Record Screen</source>
         <translation>Įrašyti visą ekraną</translation>
     </message>
     <message>
@@ -602,16 +624,6 @@ Datos žetonai: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} arba {date}</translatio
         <location filename="../src/MainApplication.cpp" line="408" />
         <source>OCR Failed</source>
         <translation>OCR nepavyko</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="458" />
-        <source>MCP Server Unavailable</source>
-        <translation>MCP serveris nepasiekiamas</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="459" />
-        <source>Unable to start MCP HTTP server on 127.0.0.1:%1</source>
-        <translation>Nepavyko paleisti MCP HTTP serverio adresu 127.0.0.1:%1</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="584" />
@@ -3246,6 +3258,131 @@ Jį gali naudoti kita programa.</translation>
         <translation>Pasirinkti spalvą</translation>
     </message>
 </context>
+<context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>Istorija</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>Atverti istorijos aplanką</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>Istorijoje dar nėra įrašų</translation>
+    </message>
+    <message>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>Čia bus rodomos „SnapTray“ padarytos ekrano kopijos.</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>Rezultatų nėra</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>Išbandykite kitą išmanųjį aplanką.</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>Išmanieji aplankai</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>Visos ekrano kopijos</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>Paskutinės 7 dienos</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>Dideli failai</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>Atkuriama</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Redaguoti</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Prisegti</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopijuoti</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>Išsaugoti kaip</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Ištrinti</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>Naujausi pirmiausia</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>Seniausi pirmiausia</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>Didžiausi pirmiausia</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>Peržiūra nepasiekiama</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>Ekrano kopija</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>Ekrano kopija %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>Šiandien</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>Vakar</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>Prieš %1 dienas</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>Nežinomas laikas</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Nežinoma</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>Nežinomas dydis</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>Laikas: %1
+Raiška: %2
+Failo dydis: %3</translation>
+    </message>
+</context>
 </TS>
-
-

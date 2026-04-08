@@ -1049,6 +1049,8 @@ void RegionInputHandler::handleThrottledUpdate()
         params.currentCursorPos = state().currentPoint;
         params.lastCursorPos = m_lastCrosshairPoint;
         params.viewportSize = m_parentWidget->size();
+        params.devicePixelRatio = m_parentWidget ? m_parentWidget->devicePixelRatioF() : 1.0;
+        params.ratioLocked = m_selectionManager && m_selectionManager->aspectRatio() > 0.0;
         params.suppressFloatingUi = suppressFloatingUi;
         params.includeMagnifier = !suppressFloatingUi && shouldRenderMagnifier;
         const QRegion dirtyRegion = m_dirtyRegionPlanner.planSelectionDragRegion(params);

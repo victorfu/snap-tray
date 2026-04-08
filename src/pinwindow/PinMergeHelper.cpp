@@ -2,6 +2,7 @@
 
 #include "PinWindow.h"
 #include "pinwindow/RegionLayoutManager.h"
+#include "ui/DesignSystem.h"
 #include "utils/CoordinateHelper.h"
 
 #include <QColor>
@@ -14,11 +15,10 @@ namespace {
 constexpr int kMaxMergeCount = LayoutModeConstants::kMaxRegionCount;
 
 const QColor kRegionColors[] = {
-    QColor(0, 174, 255),   // Blue
     QColor(52, 199, 89),   // Green
     QColor(255, 149, 0),   // Orange
     QColor(255, 59, 48),   // Red
-    QColor(175, 82, 222),  // Purple
+    QColor(0, 174, 255),   // Blue
     QColor(90, 200, 250),  // Light blue
 };
 
@@ -303,9 +303,13 @@ QList<PinWindow*> PinMergeHelper::sortByCreationOrder(const QList<PinWindow*>& w
 
 QColor PinMergeHelper::regionColor(int index)
 {
+    if (index <= 0) {
+        return DesignSystem::instance().captureSelectionAccent();
+    }
+
     constexpr int colorCount = static_cast<int>(sizeof(kRegionColors) / sizeof(kRegionColors[0]));
     if (colorCount <= 0) {
-        return QColor(0, 174, 255);
+        return DesignSystem::instance().captureSelectionAccent();
     }
-    return kRegionColors[index % colorCount];
+    return kRegionColors[(index - 1) % colorCount];
 }

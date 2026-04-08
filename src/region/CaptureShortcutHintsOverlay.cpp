@@ -8,48 +8,66 @@
 
 namespace {
 constexpr int kPanelMargin = 12;
-constexpr int kPanelCornerRadius = 14;
-constexpr int kPanelPaddingX = 14;
-constexpr int kPanelPaddingY = 12;
-constexpr int kColumnGap = 16;
-constexpr int kRowGap = 8;
-constexpr int kKeyCapPaddingX = 9;
-constexpr int kKeyCapHeight = 28;
-constexpr int kKeyCapRadius = 7;
-constexpr int kKeyCapMinWidth = 30;
-constexpr int kPlusSpacing = 6;
+constexpr int kPanelCornerRadius = 12;
+constexpr int kPanelPaddingX = 12;
+constexpr int kPanelPaddingY = 10;
+constexpr int kColumnGap = 12;
+constexpr int kRowGap = 6;
+constexpr int kKeyCapPaddingX = 8;
+constexpr int kKeyCapHeight = 26;
+constexpr int kKeyCapRadius = 6;
+constexpr int kKeyCapMinWidth = 28;
+constexpr int kPlusSpacing = 5;
 
-constexpr QRgb kPanelBg = qRgba(52, 54, 60, 220);
-constexpr QRgb kPanelBorder = qRgba(255, 255, 255, 58);
-constexpr QRgb kKeyCapBg = qRgba(75, 77, 84, 228);
-constexpr QRgb kKeyCapBorder = qRgba(235, 235, 235, 165);
-constexpr QRgb kKeyText = qRgba(250, 250, 250, 255);
-constexpr QRgb kDescriptionText = qRgba(244, 244, 244, 255);
-constexpr QRgb kPlusText = qRgba(210, 210, 210, 230);
+constexpr QRgb kPanelBg = qRgba(10, 10, 12, 244);
+constexpr QRgb kPanelBorder = qRgba(255, 255, 255, 70);
+constexpr QRgb kKeyCapBg = qRgba(18, 18, 20, 248);
+constexpr QRgb kKeyCapBorder = qRgba(240, 240, 240, 196);
+constexpr QRgb kKeyText = qRgba(255, 255, 255, 255);
+constexpr QRgb kDescriptionText = qRgba(250, 250, 250, 255);
+constexpr QRgb kPlusText = qRgba(232, 232, 232, 235);
+
+constexpr char kTranslationContext[] = "CaptureShortcutHintsOverlay";
+constexpr char kCancelCapture[] =
+    QT_TRANSLATE_NOOP("CaptureShortcutHintsOverlay", "Cancel capture");
+constexpr char kConfirmSelection[] =
+    QT_TRANSLATE_NOOP("CaptureShortcutHintsOverlay", "Confirm selection (after selection)");
+constexpr char kReplayCaptureHistory[] =
+    QT_TRANSLATE_NOOP("CaptureShortcutHintsOverlay", "Replay capture history");
+constexpr char kToggleMultiRegionMode[] =
+    QT_TRANSLATE_NOOP("CaptureShortcutHintsOverlay", "Toggle multi-region mode");
+constexpr char kSwitchRgbHex[] =
+    QT_TRANSLATE_NOOP("CaptureShortcutHintsOverlay", "Switch RGB/HEX (when magnifier visible)");
+constexpr char kCopyColorValue[] =
+    QT_TRANSLATE_NOOP("CaptureShortcutHintsOverlay", "Copy color value (before selection)");
+constexpr char kMoveSelection[] =
+    QT_TRANSLATE_NOOP("CaptureShortcutHintsOverlay", "Move selection by 1 pixel (after selection)");
+constexpr char kResizeSelection[] =
+    QT_TRANSLATE_NOOP("CaptureShortcutHintsOverlay", "Resize selection by 1 pixel (after selection)");
 
 QString trOverlay(const char* text)
 {
-    return QCoreApplication::translate("CaptureShortcutHintsOverlay", text);
+    return QCoreApplication::translate(kTranslationContext, text);
 }
 } // namespace
 
 QVector<QPair<QStringList, QString>> CaptureShortcutHintsOverlay::hintRows() const
 {
     QVector<QPair<QStringList, QString>> rows = {
-        {QStringList{QStringLiteral("Esc")}, trOverlay("Cancel capture")},
-        {QStringList{QStringLiteral("Enter")}, trOverlay("Confirm selection (after selection)")},
-        {QStringList{QStringLiteral(", / .")}, trOverlay("Replay capture history")},
-        {QStringList{QStringLiteral("M")}, trOverlay("Toggle multi-region mode")},
-        {QStringList{QStringLiteral("Arrow")}, trOverlay("Move selection by 1 pixel (after selection)")},
+        {QStringList{QStringLiteral("Esc")}, trOverlay(kCancelCapture)},
+        {QStringList{QStringLiteral("Enter")}, trOverlay(kConfirmSelection)},
+        {QStringList{QStringLiteral(", / .")}, trOverlay(kReplayCaptureHistory)},
+        {QStringList{QStringLiteral("M")}, trOverlay(kToggleMultiRegionMode)},
+        {QStringList{QStringLiteral("Arrow")}, trOverlay(kMoveSelection)},
         {QStringList{QStringLiteral("Shift"), QStringLiteral("Arrow")},
-            trOverlay("Resize selection by 1 pixel (after selection)")}
+            trOverlay(kResizeSelection)}
     };
 
     if (m_magnifierEnabled) {
         rows.insert(4, {QStringList{QStringLiteral("Shift")},
-                        trOverlay("Switch RGB/HEX (when magnifier visible)")});
+                        trOverlay(kSwitchRgbHex)});
         rows.insert(5, {QStringList{QStringLiteral("C")},
-                        trOverlay("Copy color value (before selection)")});
+                        trOverlay(kCopyColorValue)});
     }
 
     return rows;

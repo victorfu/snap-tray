@@ -1,7 +1,11 @@
 #include "MainApplication.h"
 
+#include "cli/IPCProtocol.h"
 #include "hotkey/HotkeyManager.h"
+#include "qml/QmlDialog.h"
+#include "qml/ScreenPickerViewModel.h"
 #include "qml/QmlSettingsWindow.h"
+#include "RecordingManager.h"
 #include "settings/Settings.h"
 #include "update/IUpdateService.h"
 #include "update/InstallSourceDetector.h"
@@ -79,6 +83,31 @@ public:
 
 FakeUpdateService* g_fakeUpdateService = nullptr;
 
+class DummyScreenPickerDialog final : public SnapTray::QmlDialog
+{
+public:
+    explicit DummyScreenPickerDialog(QObject* viewModel, QObject* parent = nullptr)
+        : SnapTray::QmlDialog(QUrl(), viewModel, QStringLiteral("viewModel"), parent)
+    {
+    }
+
+    void showCenteredOnScreen(QScreen* screen) override
+    {
+        Q_UNUSED(screen);
+    }
+
+    void close() override
+    {
+        emit closed();
+        deleteLater();
+    }
+
+    void simulateExternalClose()
+    {
+        emit closed();
+    }
+};
+
 } // namespace
 
 class tst_MainApplicationTrayMenu : public QObject
@@ -95,6 +124,9 @@ private slots:
     void initialize_directDownload_addsEnabledCheckForUpdatesActionBeforeSettings();
     void onCheckForUpdates_usesSharedSettingsWindowFlowWithoutShowingSettings();
     void initialize_externalManaged_disablesCheckForUpdatesAction();
+    void handleCLICommand_recordToggle_closesScreenPicker();
+    void handleCLICommand_recordStart_doesNothingWhilePickerOpen();
+    void screenPickerClosed_deletesWrapperAndViewModel();
 
 private:
     void clearAllTestSettings();
@@ -229,6 +261,70 @@ void tst_MainApplicationTrayMenu::initialize_externalManaged_disablesCheckForUpd
 
     QVERIFY(application.m_checkForUpdatesAction != nullptr);
     QVERIFY(!application.m_checkForUpdatesAction->isEnabled());
+}
+
+void tst_MainApplicationTrayMenu::handleCLICommand_recordToggle_closesScreenPicker()
+{
+    using namespace SnapTray::CLI;
+
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+
+    MainApplication application;
+    application.initialize();
+    application.m_screenPickerDialog = new DummyScreenPickerDialog(new QObject(), &application);
+
+    IPCMessage message;
+    message.command = QStringLiteral("record");
+    message.options = QJsonObject{{QStringLiteral("action"), QStringLiteral("toggle")}};
+
+    application.handleCLICommand(message.toJson());
+
+    QVERIFY(application.m_screenPickerDialog.isNull());
+    QCOMPARE(application.m_recordingManager->state(), RecordingManager::State::Idle);
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void tst_MainApplicationTrayMenu::handleCLICommand_recordStart_doesNothingWhilePickerOpen()
+{
+    using namespace SnapTray::CLI;
+
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+
+    MainApplication application;
+    application.initialize();
+    application.m_screenPickerDialog = new DummyScreenPickerDialog(new QObject(), &application);
+
+    IPCMessage message;
+    message.command = QStringLiteral("record");
+    message.options = QJsonObject{{QStringLiteral("action"), QStringLiteral("start")}};
+
+    application.handleCLICommand(message.toJson());
+
+    QVERIFY(application.m_screenPickerDialog != nullptr);
+    QCOMPARE(application.m_recordingManager->state(), RecordingManager::State::Idle);
+
+    application.closeScreenPicker();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void tst_MainApplicationTrayMenu::screenPickerClosed_deletesWrapperAndViewModel()
+{
+    MainApplication application;
+    auto* viewModel = new SnapTray::ScreenPickerViewModel();
+    auto* dialog = new DummyScreenPickerDialog(viewModel, &application);
+
+    QPointer<SnapTray::ScreenPickerViewModel> viewModelGuard(viewModel);
+    QPointer<DummyScreenPickerDialog> dialogGuard(dialog);
+
+    application.attachScreenPicker(dialog, viewModel);
+    dialog->simulateExternalClose();
+
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+
+    QVERIFY(application.m_screenPickerDialog.isNull());
+    QVERIFY(application.m_screenPickerViewModel.isNull());
+    QVERIFY(dialogGuard.isNull());
+    QVERIFY(viewModelGuard.isNull());
 }
 
 void tst_MainApplicationTrayMenu::clearAllTestSettings()

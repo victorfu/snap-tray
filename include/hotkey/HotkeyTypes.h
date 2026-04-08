@@ -163,8 +163,8 @@ inline constexpr HotkeyMetadata kDefaultHotkeys[] = {
     {
         HotkeyAction::RecordFullScreen,
         HotkeyCategory::Recording,
-        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Record Full Screen"),
-        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Start full screen recording"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Record Screen"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Start screen recording"),
         "recordFullScreenHotkey",  // kSettingsKeyRecordFullScreenHotkey
         ""                         // Optional, no default
     },

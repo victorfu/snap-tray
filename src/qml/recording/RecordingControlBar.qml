@@ -8,8 +8,8 @@ import SnapTrayQml
  * Features:
  *   - Glass-effect background (gradient + border + highlight)
  *   - Animated recording indicator (conical gradient / paused / preparing)
- *   - Duration, region size, FPS labels
- *   - Pause/Resume, Stop, Cancel buttons with hover states
+ *   - Duration label
+ *   - Stop button with hover state
  *   - Draggable window repositioning
  *
  * Properties set from C++ (QmlRecordingControlBar):
@@ -247,15 +247,6 @@ Item {
             }
         }
 
-        // ── Audio indicator (Lucide mic icon, visible when audioEnabled) ──
-        SvgIcon {
-            Layout.preferredWidth: ComponentTokens.recordingControlBarIndicatorSize
-            Layout.preferredHeight: ComponentTokens.recordingControlBarIndicatorSize
-            visible: root.audioEnabled
-            source: "qrc:/icons/icons/mic.svg"
-            color: ComponentTokens.recordingAudioActive
-        }
-
         // ── Duration label ──
         Text {
             id: durationLabel
@@ -272,41 +263,10 @@ Item {
             Layout.preferredWidth: Math.max(implicitWidth, 55)
         }
 
-        // ── Separator 1 ──
-        Text {
-            text: "|"
-            font.pixelSize: ComponentTokens.recordingControlBarFontSize
-            color: root.themeSeparator
-        }
-
-        // ── Size label ──
-        Text {
-            text: root.regionSize
-            font.family: root.monoFont
-            font.pixelSize: ComponentTokens.recordingControlBarFontSizeSmall
-            color: root.themeText
-            Layout.preferredWidth: Math.max(implicitWidth, 70)
-        }
-
-        // ── Separator 2 ──
-        Text {
-            text: "|"
-            font.pixelSize: ComponentTokens.recordingControlBarFontSize
-            color: root.themeSeparator
-        }
-
-        // ── FPS label ──
-        Text {
-            text: root.fpsText
-            font.family: root.monoFont
-            font.pixelSize: ComponentTokens.recordingControlBarFontSizeSmall
-            color: root.themeText
-            Layout.preferredWidth: Math.max(implicitWidth, 45)
-        }
     }
 
     // ========================================================================
-    // Button area (right side: pause, stop, cancel)
+    // Button area (right side: stop)
     // ========================================================================
     Row {
         id: buttonArea
@@ -317,57 +277,6 @@ Item {
         }
         spacing: root.buttonSpacing
         z: 2
-
-        // ── Pause/Resume button ──
-        Item {
-            width: root.buttonSize
-            height: root.buttonSize
-            opacity: root.isPreparing ? 0.5 : 1.0
-
-            Rectangle {
-                id: pauseHoverBg
-                anchors.fill: parent
-                anchors.margins: 2
-                radius: ComponentTokens.recordingControlBarButtonRadius
-                color: root.themeHoverBg
-                visible: pauseMouseArea.containsMouse && !root.isPreparing
-            }
-
-            SvgIcon {
-                anchors.centerIn: parent
-                source: root.isPaused
-                    ? "qrc:/icons/icons/play.svg"
-                    : "qrc:/icons/icons/pause.svg"
-                iconSize: ComponentTokens.recordingControlBarIconSize
-                color: pauseMouseArea.containsMouse && !root.isPreparing
-                    ? root.themeIconActive : root.themeIconNormal
-            }
-
-            MouseArea {
-                id: pauseMouseArea
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: CursorTokens.toolbarControl
-                enabled: !root.isPreparing
-
-                onClicked: {
-                    if (root.isPaused)
-                        root.resumeRequested()
-                    else
-                        root.pauseRequested()
-                }
-
-                onContainsMouseChanged: {
-                    if (containsMouse) {
-                        var mapped = parent.mapToItem(root, 0, 0)
-                        root.buttonHovered(0, mapped.x, mapped.y,
-                                           parent.width, parent.height)
-                    } else {
-                        root.buttonUnhovered()
-                    }
-                }
-            }
-        }
 
         // ── Stop button ──
         Item {
@@ -402,48 +311,7 @@ Item {
                 onContainsMouseChanged: {
                     if (containsMouse) {
                         var mapped = parent.mapToItem(root, 0, 0)
-                        root.buttonHovered(1, mapped.x, mapped.y,
-                                           parent.width, parent.height)
-                    } else {
-                        root.buttonUnhovered()
-                    }
-                }
-            }
-        }
-
-        // ── Cancel button ──
-        Item {
-            width: root.buttonSize
-            height: root.buttonSize
-
-            Rectangle {
-                anchors.fill: parent
-                anchors.margins: 2
-                radius: ComponentTokens.recordingControlBarButtonRadius
-                color: root.themeHoverBg
-                visible: cancelMouseArea.containsMouse
-            }
-
-            SvgIcon {
-                anchors.centerIn: parent
-                source: "qrc:/icons/icons/cancel.svg"
-                iconSize: ComponentTokens.recordingControlBarIconSize
-                color: cancelMouseArea.containsMouse
-                    ? root.themeIconCancel : root.themeIconNormal
-            }
-
-            MouseArea {
-                id: cancelMouseArea
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: CursorTokens.toolbarControl
-
-                onClicked: root.cancelRequested()
-
-                onContainsMouseChanged: {
-                    if (containsMouse) {
-                        var mapped = parent.mapToItem(root, 0, 0)
-                        root.buttonHovered(2, mapped.x, mapped.y,
+                        root.buttonHovered(0, mapped.x, mapped.y,
                                            parent.width, parent.height)
                     } else {
                         root.buttonUnhovered()

@@ -11,18 +11,29 @@
 
 #import <Cocoa/Cocoa.h>
 
+static void ensureCursorResourcesLoaded()
+{
+    static const bool loaded = []() {
+        Q_INIT_RESOURCE(cursor_resources);
+        return true;
+    }();
+    Q_UNUSED(loaded);
+}
+
 namespace {
 #if defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 150000
 API_AVAILABLE(macos(15.0))
 NSCursor* frameResizeCursor(NSCursorFrameResizePosition position)
 {
-    return [NSCursor frameResizeCursorFromPosition:position
+        return [NSCursor frameResizeCursorFromPosition:position
                                      inDirections:NSCursorFrameResizeDirectionsAll];
 }
 #endif
 
 NSCursor* nsCursorForQtCursor(const QCursor& cursor)
 {
+    ensureCursorResourcesLoaded();
+
     QPixmap pixmap;
     QPoint hotspot = cursor.hotSpot();
 
@@ -40,7 +51,7 @@ NSCursor* nsCursorForQtCursor(const QCursor& cursor)
     case Qt::IBeamCursor:
         return [NSCursor IBeamCursor];
     case Qt::SizeAllCursor:
-        pixmap = QPixmap(QStringLiteral(":/icons/icons/sizeallcursor.png"));
+        pixmap = QPixmap(QStringLiteral(":/cursor/sizeallcursor.png"));
         if (pixmap.isNull()) {
             return nil;
         }

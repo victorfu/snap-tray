@@ -12,8 +12,16 @@ void CursorPlatformApplier::applyWidgetCursor(QWidget* widget, const QCursor& cu
         return;
     }
 
+    const CursorStyleSpec spec = CursorStyleSpec::fromCursor(cursor);
+#ifdef Q_OS_MACOS
+    const QCursor appliedCursor = spec.styleId == CursorStyleId::Move
+        ? CursorStyleCatalog::instance().cursorForStyle(spec)
+        : cursor;
+    widget->setCursor(appliedCursor);
+#else
     widget->setCursor(cursor);
-    reassertNativeStyle(CursorStyleSpec::fromCursor(cursor), widget, nullptr);
+#endif
+    reassertNativeStyle(spec, widget, nullptr);
 }
 
 void CursorPlatformApplier::applyWidgetCursor(QWidget* widget, const CursorStyleSpec& spec)

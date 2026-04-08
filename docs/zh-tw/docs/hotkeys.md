@@ -24,7 +24,7 @@ doc_order: 3
 - Pin from Image
 - Pin History
 - Toggle Hide/Show All Pins
-- Record Full Screen
+- Record Screen
 
 ## 分類管理
 

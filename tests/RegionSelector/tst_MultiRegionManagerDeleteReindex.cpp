@@ -1,12 +1,14 @@
 #include <QtTest>
 
 #include "region/MultiRegionManager.h"
+#include "ui/DesignSystem.h"
 
 class tst_MultiRegionManagerDeleteReindex : public QObject
 {
     Q_OBJECT
 
 private slots:
+    void testFirstRegionUsesCaptureSelectionAccent();
     void testDeleteCompactsIndicesAndColors();
     void testDeleteActiveRegionEmitsAndReassignsWhenIndexMatches();
     void testDeleteLastActiveRegionEmitsAndMovesToPrevious();
@@ -14,6 +16,18 @@ private slots:
     void testClearFromNonEmptyResetsActiveAndEmits();
     void testClearWithoutActiveDoesNotEmitActiveSignal();
 };
+
+void tst_MultiRegionManagerDeleteReindex::testFirstRegionUsesCaptureSelectionAccent()
+{
+    MultiRegionManager manager;
+    manager.addRegion(QRect(10, 10, 100, 70));
+    manager.addRegion(QRect(130, 10, 110, 70));
+
+    const QVector<MultiRegionManager::Region> regions = manager.regions();
+    QCOMPARE(regions.size(), 2);
+    QCOMPARE(regions[0].color, DesignSystem::instance().captureSelectionAccent());
+    QCOMPARE(regions[1].color, QColor(52, 199, 89));
+}
 
 void tst_MultiRegionManagerDeleteReindex::testDeleteCompactsIndicesAndColors()
 {
@@ -42,7 +56,7 @@ void tst_MultiRegionManagerDeleteReindex::testDeleteCompactsIndicesAndColors()
     // Delete path reindexes and recolors.
     QCOMPARE(after[0].index, 1);
     QCOMPARE(after[1].index, 2);
-    QCOMPARE(after[0].color, QColor(0, 174, 255));
+    QCOMPARE(after[0].color, DesignSystem::instance().captureSelectionAccent());
     QCOMPARE(after[1].color, QColor(52, 199, 89));
 }
 

@@ -10,6 +10,7 @@
 #include "annotations/ArrowAnnotation.h"
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
+#include "cursor/CursorStyleCatalog.h"
 #include "settings/RegionCaptureSettingsManager.h"
 #include "region/RegionInputHandler.h"
 #include "tools/ToolManager.h"
@@ -19,6 +20,36 @@ const QRect kSelectionRect(40, 40, 160, 120);
 const QPoint kSelectionBodyPos(180, 140);
 const QPoint kArrowControlHandlePos(100, 80);
 const QPoint kArrowDraggedControlPos(110, 86);
+
+void verifyMoveCursor(const QCursor& cursor)
+{
+#ifdef Q_OS_MACOS
+    const QCursor expected =
+        CursorStyleCatalog::instance().cursorForStyle(CursorStyleSpec::fromShape(Qt::SizeAllCursor));
+    QCOMPARE(cursor.shape(), Qt::BitmapCursor);
+    QVERIFY(!cursor.pixmap().isNull());
+    QCOMPARE(cursor.hotSpot(), expected.hotSpot());
+    QCOMPARE(cursor.pixmap().deviceIndependentSize(),
+             expected.pixmap().deviceIndependentSize());
+#else
+    QCOMPARE(cursor.shape(), Qt::SizeAllCursor);
+#endif
+}
+
+bool isMoveCursor(const QCursor& cursor)
+{
+#ifdef Q_OS_MACOS
+    const QCursor expected =
+        CursorStyleCatalog::instance().cursorForStyle(CursorStyleSpec::fromShape(Qt::SizeAllCursor));
+    return cursor.shape() == Qt::BitmapCursor &&
+           !cursor.pixmap().isNull() &&
+           cursor.hotSpot() == expected.hotSpot() &&
+           cursor.pixmap().deviceIndependentSize() ==
+               expected.pixmap().deviceIndependentSize();
+#else
+    return cursor.shape() == Qt::SizeAllCursor;
+#endif
+}
 }  // namespace
 
 class TestRegionSelectorStyleSync : public QObject
@@ -99,7 +130,7 @@ void TestRegionSelectorStyleSync::testSelectionBodyHoverUsesMoveCursor()
     selector.m_inputHandler->syncHoverCursorAt(kSelectionBodyPos);
     cursorManager.reapplyCursorForWidget(&selector);
 
-    QCOMPARE(selector.cursor().shape(), Qt::SizeAllCursor);
+    verifyMoveCursor(selector.cursor());
 }
 
 void TestRegionSelectorStyleSync::testSelectionBodyHoverUsesEventPosWhenLiveCursorLags()
@@ -118,7 +149,7 @@ void TestRegionSelectorStyleSync::testSelectionBodyHoverUsesEventPosWhenLiveCurs
 
     RegionSelectorTestAccess::dispatchWidgetMouseMove(selector, kSelectionBodyPos);
 
-    QCOMPARE(selector.cursor().shape(), Qt::SizeAllCursor);
+    verifyMoveCursor(selector.cursor());
 
     QCursor::setPos(originalCursorPos);
 }
@@ -186,8 +217,7 @@ void TestRegionSelectorStyleSync::testFloatingToolbarWindowOwnsArrowCursor()
         QSKIP("System cursor position could not be adjusted for toolbar hover test.");
     }
 
-    QEvent enterEvent(QEvent::Enter);
-    QCoreApplication::sendEvent(toolbarWindow, &enterEvent);
+    RegionSelectorTestAccess::dispatchWindowEnter(toolbarWindow, toolbarPos);
 
     QCOMPARE(authority.resolvedStyleForWindow(toolbarWindow).styleId, CursorStyleId::Arrow);
     QCOMPARE(selector.cursor().shape(), Qt::CrossCursor);
@@ -221,8 +251,7 @@ void TestRegionSelectorStyleSync::testToolbarLeaveRestoresArrowToolCrossCursor()
         QSKIP("System cursor position could not be adjusted for toolbar round-trip test.");
     }
 
-    QEvent enterEvent(QEvent::Enter);
-    QCoreApplication::sendEvent(toolbarWindow, &enterEvent);
+    RegionSelectorTestAccess::dispatchWindowEnter(toolbarWindow, toolbarPos);
 
     QCursor::setPos(selectionBodyGlobal);
     if (QCursor::pos() != selectionBodyGlobal) {
@@ -263,8 +292,7 @@ void TestRegionSelectorStyleSync::testToolbarLeaveRestoresSelectionBodyMoveCurso
         QSKIP("System cursor position could not be adjusted for selection restore test.");
     }
 
-    QEvent enterEvent(QEvent::Enter);
-    QCoreApplication::sendEvent(toolbarWindow, &enterEvent);
+    RegionSelectorTestAccess::dispatchWindowEnter(toolbarWindow, toolbarPos);
 
     QCursor::setPos(selectionBodyGlobal);
     if (QCursor::pos() != selectionBodyGlobal) {
@@ -277,7 +305,7 @@ void TestRegionSelectorStyleSync::testToolbarLeaveRestoresSelectionBodyMoveCurso
     RegionSelectorTestAccess::dispatchWidgetMouseMove(selector, kSelectionBodyPos);
     cursorManager.reapplyCursorForWidget(&selector);
 
-    QTRY_COMPARE(selector.cursor().shape(), Qt::SizeAllCursor);
+    QTRY_VERIFY(isMoveCursor(selector.cursor()));
     QCursor::setPos(originalCursorPos);
 }
 
@@ -303,7 +331,7 @@ void TestRegionSelectorStyleSync::testArrowControlReleaseRestoresSelectionBodyCu
     selector.m_inputHandler->handleMouseRelease(&releaseEvent);
     cursorManager.reapplyCursorForWidget(&selector);
 
-    QCOMPARE(selector.cursor().shape(), Qt::SizeAllCursor);
+    verifyMoveCursor(selector.cursor());
 }
 
 void TestRegionSelectorStyleSync::testRestoreRegionCursorAfterArrowControlHoverReturnsSelectionBodyCursor()
@@ -319,7 +347,7 @@ void TestRegionSelectorStyleSync::testRestoreRegionCursorAfterArrowControlHoverR
     QCOMPARE(selector.cursor().shape(), Qt::PointingHandCursor);
 
     selector.restoreRegionCursorAt(kSelectionBodyPos);
-    QCOMPARE(selector.cursor().shape(), Qt::SizeAllCursor);
+    verifyMoveCursor(selector.cursor());
 }
 
 void TestRegionSelectorStyleSync::testPopupRestoreReturnsSelectionBodyCursor()
@@ -331,7 +359,7 @@ void TestRegionSelectorStyleSync::testPopupRestoreReturnsSelectionBodyCursor()
     prepareSelectionTool(selector);
     selector.restoreRegionCursorAt(kSelectionBodyPos);
 
-    QCOMPARE(selector.cursor().shape(), Qt::SizeAllCursor);
+    verifyMoveCursor(selector.cursor());
 
     authority.submitWidgetRequest(
         &selector, QStringLiteral("floating.popup"), CursorRequestSource::Popup,
@@ -341,7 +369,7 @@ void TestRegionSelectorStyleSync::testPopupRestoreReturnsSelectionBodyCursor()
 
     authority.clearWidgetRequest(&selector, QStringLiteral("floating.popup"));
     selector.restoreRegionCursorAt(kSelectionBodyPos);
-    QCOMPARE(selector.cursor().shape(), Qt::SizeAllCursor);
+    verifyMoveCursor(selector.cursor());
 }
 
 void TestRegionSelectorStyleSync::testPopupRestoreReturnsMosaicCursor()

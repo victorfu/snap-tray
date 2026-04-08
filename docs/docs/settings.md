@@ -24,7 +24,7 @@ Centralized hotkey editor by functional category.
 
 ### Advanced
 
-Region capture magnifier toggle, capture shortcut hints, blur intensity/type, pin window defaults (opacity, opacity step, zoom step, cache limits), and the debug-build MCP toggle.
+Region capture magnifier toggle, capture shortcut hints, blur intensity/type, and pin window defaults (opacity, opacity step, zoom step, cache limits).
 
 ### Watermark
 

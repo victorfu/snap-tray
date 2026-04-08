@@ -2,6 +2,8 @@
 #include "tools/ToolRegistry.h"
 #include "tools/ToolTraits.h"
 
+#include <QCoreApplication>
+
 PinToolbarViewModel::PinToolbarViewModel(QObject* parent)
     : ToolbarViewModelBase(parent)
 {
@@ -16,11 +18,18 @@ void PinToolbarViewModel::buildButtonList()
 
     for (ToolId toolId : tools) {
         auto options = defaultToolButtonOptions(toolId);
-        options.separatorBefore = registry.get(toolId).showSeparatorBefore
-                                  || toolId == ToolId::OCR;
+        // Keep Beautify/Crop/Measure in one processing section without
+        // using the accent-colored action styling.
+        options.separatorBefore = (toolId == ToolId::Beautify)
+                                  || ((registry.get(toolId).showSeparatorBefore
+                                       || toolId == ToolId::OCR)
+                                      && toolId != ToolId::Crop);
         options.isAction = (toolId == ToolId::Save
                             || toolId == ToolId::Copy);
-        buttons.append(buildToolButtonEntry(toolId, options));
+        const QString tooltipOverride = (toolId == ToolId::Beautify)
+            ? QCoreApplication::translate("PinWindow", "Beautify")
+            : QString();
+        buttons.append(buildToolButtonEntry(toolId, options, tooltipOverride));
     }
 
     // "Done" — local toolbar-only action
@@ -53,6 +62,7 @@ void PinToolbarViewModel::handleButtonClicked(int buttonId)
     case static_cast<int>(ToolId::OCR):     emit ocrClicked(); break;
     case static_cast<int>(ToolId::QRCode):  emit qrCodeClicked(); break;
     case static_cast<int>(ToolId::Share):   emit shareClicked(); break;
+    case static_cast<int>(ToolId::Beautify): emit beautifyClicked(); break;
     case static_cast<int>(ToolId::Copy):    emit copyClicked(); break;
     case static_cast<int>(ToolId::Save):    emit saveClicked(); break;
     case ButtonDone:                        emit doneClicked(); break;

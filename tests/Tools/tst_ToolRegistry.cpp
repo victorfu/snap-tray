@@ -133,8 +133,8 @@ void TestToolRegistry::testIsActionTool_ActionTools()
     QList<ToolId> actionTools = {
         ToolId::Undo, ToolId::Redo, ToolId::Clear,
         ToolId::Cancel, ToolId::OCR, ToolId::QRCode,
-        ToolId::Pin, ToolId::Record, ToolId::Share, ToolId::Save,
-        ToolId::Copy, ToolId::Exit,
+        ToolId::Pin, ToolId::Share, ToolId::Save,
+        ToolId::Copy, ToolId::Exit, ToolId::Beautify,
         ToolId::MultiRegion, ToolId::MultiRegionDone
     };
 
@@ -207,8 +207,8 @@ void TestToolRegistry::testGetToolsForToolbar_RegionSelector()
 {
     QVector<ToolId> tools = registry().getToolsForToolbar(ToolbarType::RegionSelector);
 
-    // Should include essential tools
-    QVERIFY(tools.contains(ToolId::Selection));
+    // Should include essential tools and omit implicit Selection mode
+    QVERIFY(!tools.contains(ToolId::Selection));
     QVERIFY(tools.contains(ToolId::Pencil));
     QVERIFY(tools.contains(ToolId::Arrow));
     QVERIFY(tools.contains(ToolId::Shape));
@@ -216,6 +216,7 @@ void TestToolRegistry::testGetToolsForToolbar_RegionSelector()
     QVERIFY(tools.contains(ToolId::Mosaic));
     QVERIFY(tools.contains(ToolId::Undo));
     QVERIFY(tools.contains(ToolId::Redo));
+    QVERIFY(!tools.contains(ToolId::Cancel));
     QVERIFY(tools.contains(ToolId::QRCode));
     QVERIFY(tools.contains(ToolId::MultiRegion));
     QVERIFY(tools.contains(ToolId::Share));
@@ -249,8 +250,6 @@ void TestToolRegistry::testGetToolsForToolbar_ScreenCanvas()
     // Should NOT include RegionSelector-only tools
     QVERIFY(!tools.contains(ToolId::Save));
     QVERIFY(!tools.contains(ToolId::Pin));
-    QVERIFY(!tools.contains(ToolId::Record));
-
     const int clearIndex = tools.indexOf(ToolId::Clear);
     const int copyIndex = tools.indexOf(ToolId::Copy);
     const int exitIndex = tools.indexOf(ToolId::Exit);
@@ -274,6 +273,7 @@ void TestToolRegistry::testGetToolsForToolbar_PinWindow()
     QVERIFY(tools.contains(ToolId::Eraser));
     QVERIFY(tools.contains(ToolId::StepBadge));
     QVERIFY(tools.contains(ToolId::EmojiSticker));
+    QVERIFY(tools.contains(ToolId::Beautify));
     QVERIFY(tools.contains(ToolId::Undo));
     QVERIFY(tools.contains(ToolId::Redo));
     QVERIFY(tools.contains(ToolId::OCR));
@@ -285,8 +285,14 @@ void TestToolRegistry::testGetToolsForToolbar_PinWindow()
     // PinWindow toolbar should not expose capture-only actions.
     QVERIFY(!tools.contains(ToolId::Selection));
     QVERIFY(!tools.contains(ToolId::Cancel));
-    QVERIFY(!tools.contains(ToolId::Record));
     QVERIFY(!tools.contains(ToolId::MultiRegion));
+
+    const int beautifyIndex = tools.indexOf(ToolId::Beautify);
+    const int cropIndex = tools.indexOf(ToolId::Crop);
+    QVERIFY(beautifyIndex >= 0);
+    QVERIFY(cropIndex >= 0);
+    QVERIFY2(beautifyIndex < cropIndex, "Beautify should appear to the left of Crop in PinWindow toolbar");
+    QCOMPARE(registry().getIconKey(ToolId::Beautify), QString("beautify"));
 }
 
 // ============================================================================

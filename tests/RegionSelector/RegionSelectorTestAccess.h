@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QCoreApplication>
+#include <QEnterEvent>
 #include <QPaintEvent>
 #include <QRegion>
 
@@ -53,6 +55,19 @@ public:
         selector.mouseMoveEvent(&moveEvent);
     }
 
+    static void dispatchWindowEnter(QWindow* window, const QPoint& globalPos)
+    {
+        if (!window) {
+            return;
+        }
+
+        const QPoint localPos = window->mapFromGlobal(globalPos);
+        const QPointF localPosF(localPos);
+        const QPointF globalPosF(globalPos);
+        QEnterEvent enterEvent{localPosF, localPosF, globalPosF};
+        QCoreApplication::sendEvent(window, &enterEvent);
+    }
+
     static void dispatchMousePress(RegionSelector& selector,
                                    const QPoint& localPos,
                                    Qt::MouseButton button = Qt::LeftButton,
@@ -92,6 +107,14 @@ public:
     static void setSelectionRect(RegionSelector& selector, const QRect& rect)
     {
         selector.m_selectionManager->setSelectionRect(rect);
+    }
+
+    static void setCurrentTool(RegionSelector& selector, ToolId tool)
+    {
+        selector.m_inputState.currentTool = tool;
+        if (selector.m_toolManager) {
+            selector.m_toolManager->setCurrentTool(tool);
+        }
     }
 
     static void markInitialRevealRevealed(RegionSelector& selector)
@@ -229,6 +252,19 @@ public:
         return selector.m_regionControlPanel ? selector.m_regionControlPanel->geometry() : QRect();
     }
 
+    static QRect regionControlAnchorRect(const RegionSelector& selector)
+    {
+        return selector.m_regionControlPanel ? selector.m_regionControlPanel->anchorRect() : QRect();
+    }
+
+    static QRect dimensionInfoRect(const RegionSelector& selector)
+    {
+        if (selector.m_captureChromeWindow && selector.m_captureChromeWindow->isVisible()) {
+            return selector.m_captureChromeWindow->lastDimensionInfoRect();
+        }
+        return selector.m_painter ? selector.m_painter->lastDimensionInfoRect() : QRect();
+    }
+
     static bool magnifierVisible(const RegionSelector& selector)
     {
         return selector.m_magnifierOverlay && selector.m_magnifierOverlay->isVisible();
@@ -257,6 +293,11 @@ public:
     static bool captureChromeVisible(const RegionSelector& selector)
     {
         return selector.m_captureChromeWindow && selector.m_captureChromeWindow->isVisible();
+    }
+
+    static bool selectionCompletionHandoffPending(const RegionSelector& selector)
+    {
+        return selector.m_selectionCompletionHandoffPending;
     }
 
     static bool staticCaptureBackgroundVisible(const RegionSelector& selector)

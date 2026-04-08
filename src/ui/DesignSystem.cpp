@@ -121,6 +121,7 @@ QColor DesignSystem::annotationWhite() const  { return QColor(0xFF, 0xFF, 0xFF);
 QColor DesignSystem::dimOverlay() const      { return QColor::fromRgbF(0, 0, 0, 0.45); }
 QColor DesignSystem::crosshair() const       { return QColor(0x00, 0xFF, 0x00); }
 QColor DesignSystem::selectionBorder() const { return QColor(0xFF, 0xFF, 0xFF); }
+QColor DesignSystem::captureSelectionAccent() const { return primaryPurple(); }
 QColor DesignSystem::dimensionLabel() const  { return QColor::fromRgbF(0, 0, 0, 0.75); }
 
 // ============================================================================

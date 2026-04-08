@@ -5,6 +5,23 @@
 #include <QVariantMap>
 
 namespace {
+constexpr char kCancelCapture[] =
+    QT_TRANSLATE_NOOP("CaptureShortcutHintsOverlay", "Cancel capture");
+constexpr char kConfirmSelection[] =
+    QT_TRANSLATE_NOOP("CaptureShortcutHintsOverlay", "Confirm selection (after selection)");
+constexpr char kReplayCaptureHistory[] =
+    QT_TRANSLATE_NOOP("CaptureShortcutHintsOverlay", "Replay capture history");
+constexpr char kToggleMultiRegionMode[] =
+    QT_TRANSLATE_NOOP("CaptureShortcutHintsOverlay", "Toggle multi-region mode");
+constexpr char kSwitchRgbHex[] =
+    QT_TRANSLATE_NOOP("CaptureShortcutHintsOverlay", "Switch RGB/HEX (when magnifier visible)");
+constexpr char kCopyColorValue[] =
+    QT_TRANSLATE_NOOP("CaptureShortcutHintsOverlay", "Copy color value (before selection)");
+constexpr char kMoveSelection[] =
+    QT_TRANSLATE_NOOP("CaptureShortcutHintsOverlay", "Move selection by 1 pixel (after selection)");
+constexpr char kResizeSelection[] =
+    QT_TRANSLATE_NOOP("CaptureShortcutHintsOverlay", "Resize selection by 1 pixel (after selection)");
+
 QString trOverlay(const char* text)
 {
     return QCoreApplication::translate("CaptureShortcutHintsOverlay", text);
@@ -20,14 +37,14 @@ ShortcutHintsViewModel::ShortcutHintsViewModel(QObject* parent)
     };
 
     const HintRow rows[] = {
-        {{QStringLiteral("Esc")}, "Cancel capture"},
-        {{QStringLiteral("Enter")}, "Confirm selection (after selection)"},
-        {{QStringLiteral(", / .")}, "Replay capture history"},
-        {{QStringLiteral("M")}, "Toggle multi-region mode"},
-        {{QStringLiteral("Shift")}, "Switch RGB/HEX (when magnifier visible)"},
-        {{QStringLiteral("C")}, "Copy color value (before selection)"},
-        {{QStringLiteral("Arrow")}, "Move selection by 1 pixel (after selection)"},
-        {{QStringLiteral("Shift"), QStringLiteral("Arrow")}, "Resize selection by 1 pixel (after selection)"},
+        {{QStringLiteral("Esc")}, kCancelCapture},
+        {{QStringLiteral("Enter")}, kConfirmSelection},
+        {{QStringLiteral(", / .")}, kReplayCaptureHistory},
+        {{QStringLiteral("M")}, kToggleMultiRegionMode},
+        {{QStringLiteral("Shift")}, kSwitchRgbHex},
+        {{QStringLiteral("C")}, kCopyColorValue},
+        {{QStringLiteral("Arrow")}, kMoveSelection},
+        {{QStringLiteral("Shift"), QStringLiteral("Arrow")}, kResizeSelection},
     };
 
     for (const auto& row : rows) {

@@ -51,16 +51,6 @@
         <translation>Visa genvägstips</translation>
         </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="31" />
-        <source>MCP</source>
-        <translation>MCP</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="36" />
-        <source>Enable MCP server</source>
-        <translation>Aktivera MCP-server</translation>
-        </message>
-    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
         <source>Blur</source>
         <translation>Oskärpa</translation>
@@ -231,6 +221,38 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Avbryt fångst</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Bekräfta markering (efter markering)</translation>
+    </message>
+    <message>
+        <source>Replay capture history</source>
+        <translation>Spela upp fångsthistoriken igen</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Växla flersområdesläge</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>Växla RGB/HEX (när förstoringsglaset visas)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Kopiera färgvärde (före markering)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Flytta markering 1 pixel (efter markering)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Ändra storlek på markering med 1 pixel (efter markering)</translation>
+    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -550,7 +572,7 @@ Datumtoken: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} eller {date}</translation>
     <message>
         <location filename="../src/MainApplication.cpp" line="383" />
         <location filename="../src/MainApplication.cpp" line="967" />
-        <source>Record Full Screen</source>
+        <source>Record Screen</source>
         <translation>Spela in helskärm</translation>
     </message>
     <message>
@@ -602,16 +624,6 @@ Datumtoken: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} eller {date}</translation>
         <location filename="../src/MainApplication.cpp" line="408" />
         <source>OCR Failed</source>
         <translation>OCR misslyckades</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="458" />
-        <source>MCP Server Unavailable</source>
-        <translation>MCP-servern är inte tillgänglig</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="459" />
-        <source>Unable to start MCP HTTP server on 127.0.0.1:%1</source>
-        <translation>Kunde inte starta MCP HTTP-servern på 127.0.0.1:%1</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="584" />
@@ -3246,6 +3258,131 @@ Den kan användas av ett annat program.</translation>
         <translation>Välj färg</translation>
     </message>
 </context>
+<context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>Historik</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>Öppna historikmapp</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>Inga historikposter ännu</translation>
+    </message>
+    <message>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>Skärmbilder som du tar i SnapTray visas här.</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>Inga resultat</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>Prova en annan smart mapp.</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>Smarta mappar</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>Alla skärmbilder</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>Senaste 7 dagarna</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>Stora filer</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>Kan spelas upp igen</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Redigera</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Fäst</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopiera</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>Spara som</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Ta bort</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>Nyast först</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>Äldst först</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>Störst först</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>Förhandsvisning ej tillgänglig</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>Skärmbild</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>Skärmbild %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>Idag</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>Igår</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>För %1 dagar sedan</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>Okänd tid</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Okänd</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>Okänd storlek</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>Tid: %1
+Upplösning: %2
+Filstorlek: %3</translation>
+    </message>
+</context>
 </TS>
-
-

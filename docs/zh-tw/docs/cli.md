@@ -107,4 +107,3 @@ snaptray config --reset
 
 - [快速開始](/zh-tw/docs/getting-started/)
 - [疑難排解](/zh-tw/docs/troubleshooting/)
-- [MCP（僅 Debug Build）](/zh-tw/developer/mcp-debug/) 供 debug-only 本地自動化使用

@@ -51,16 +51,6 @@
         <translation>Hiển thị gợi ý phím tắt</translation>
         </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="31" />
-        <source>MCP</source>
-        <translation>MCP</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="36" />
-        <source>Enable MCP server</source>
-        <translation>Bật máy chủ MCP</translation>
-        </message>
-    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
         <source>Blur</source>
         <translation>Làm mờ</translation>
@@ -231,6 +221,38 @@
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>Hủy chụp</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>Xác nhận vùng chọn (sau khi chọn)</translation>
+    </message>
+    <message>
+        <source>Replay capture history</source>
+        <translation>Phát lại lịch sử chụp</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>Chuyển chế độ nhiều vùng</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>Chuyển RGB/HEX (khi kính lúp hiển thị)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>Sao chép giá trị màu (trước khi chọn)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>Di chuyển vùng chọn 1 pixel (sau khi chọn)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>Thay đổi kích thước vùng chọn 1 pixel (sau khi chọn)</translation>
+    </message>
 </context>
 <context>
     <name>ClickThroughExitButton</name>
@@ -550,7 +572,7 @@ Token ngày: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, hoặc {date}</translatio
     <message>
         <location filename="../src/MainApplication.cpp" line="383" />
         <location filename="../src/MainApplication.cpp" line="967" />
-        <source>Record Full Screen</source>
+        <source>Record Screen</source>
         <translation>Ghi toàn màn hình</translation>
     </message>
     <message>
@@ -602,16 +624,6 @@ Token ngày: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, hoặc {date}</translatio
         <location filename="../src/MainApplication.cpp" line="408" />
         <source>OCR Failed</source>
         <translation>OCR thất bại</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="458" />
-        <source>MCP Server Unavailable</source>
-        <translation>Máy chủ MCP không khả dụng</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="459" />
-        <source>Unable to start MCP HTTP server on 127.0.0.1:%1</source>
-        <translation>Không thể khởi động máy chủ MCP HTTP tại 127.0.0.1:%1</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="584" />
@@ -3246,6 +3258,131 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
         <translation>Chọn màu</translation>
     </message>
 </context>
+<context>
+    <name>HistoryWindow</name>
+    <message>
+        <source>History</source>
+        <translation>Lịch sử</translation>
+    </message>
+    <message>
+        <source>Open History Folder</source>
+        <translation>Mở thư mục lịch sử</translation>
+    </message>
+    <message>
+        <source>No history items yet</source>
+        <translation>Chưa có mục lịch sử nào</translation>
+    </message>
+    <message>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>Ảnh chụp màn hình bạn chụp trong SnapTray sẽ xuất hiện ở đây.</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>Không có kết quả</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>Hãy thử một thư mục thông minh khác.</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>Thư mục thông minh</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>Tất cả ảnh chụp màn hình</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>7 ngày qua</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>Tệp lớn</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>Có thể phát lại</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Chỉnh sửa</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Ghim</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Sao chép</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation>Lưu thành</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Xóa</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>Mới nhất trước</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>Cũ nhất trước</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>Lớn nhất trước</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>Không có bản xem trước</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>Ảnh chụp màn hình</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>Ảnh chụp màn hình %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>Hôm nay</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>Hôm qua</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>%1 ngày trước</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>Thời gian không xác định</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>Không xác định</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>Kích thước không xác định</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>Thời gian: %1
+Độ phân giải: %2
+Kích thước tệp: %3</translation>
+    </message>
+</context>
 </TS>
-
-

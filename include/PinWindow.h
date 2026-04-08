@@ -6,6 +6,7 @@
 #include <QPoint>
 #include <QPointF>
 #include <QRect>
+#include <QRectF>
 #include <QElapsedTimer>
 #include <QPointer>
 #include <QVector>
@@ -81,8 +82,10 @@ public:
     explicit PinWindow(const QPixmap& screenshot,
                        const QPoint& position,
                        QWidget* parent = nullptr,
-                       bool persistHistorySnapshot = false);
+                       bool persistHistorySnapshot = false,
+                       bool showImmediately = true);
     ~PinWindow();
+    void showPreparedWindow();
 
     void setZoomLevel(qreal zoom);
     qreal zoomLevel() const { return m_zoomLevel; }
@@ -194,7 +197,6 @@ private:
     void copyToClipboard();
     void shareToUrl();
     bool ensureAutoBlurReadyForExport();
-    QPixmap getTransformedPixmap() const;
     QPixmap getExportPixmapCore(bool includeDisplayEffects) const;
     void drawAnnotationsForExport(QPainter& painter, const QSize& logicalSize) const;
     QPixmap getExportPixmap() const;
@@ -226,6 +228,20 @@ private:
     void copyAllInfo();
     void refreshInfoMenu();
     QString currentDisplaySizeText() const;
+    QSize baseContentLogicalSize() const;
+    QSize transformedContentLogicalSize() const;
+    void setContentLogicalSize(const QSize& logicalSize);
+    static QRectF preciseSourceSampleRectForRegion(const QRect& globalRegion,
+                                                   const QRect& screenGeometry,
+                                                   qreal dpr);
+    QRectF sourceSampleRect() const;
+    QRectF transformedSourceSampleRect() const;
+    void resetSourceSampleRect();
+    void setSourceSampleRect(const QRectF& sampleRect);
+    static QRectF displaySourceRectForTarget(const QRectF& sampleRect,
+                                             const QSize& sourcePixelSize,
+                                             const QSize& targetPixelSize);
+    QPixmap buildDisplayPixmap(const QSize& logicalSize, Qt::TransformationMode mode) const;
 
     // Cache folder methods
     static QString cacheFolderPath();
@@ -236,6 +252,9 @@ private:
     void hideToolbar();
     void hideToolbarPreservingToolState();
     void initializeAnnotationComponents();
+    void dismissBeautifyPanelIfVisible();
+    void clearSelectedToolForBeautify();
+    void syncToolbarActiveButtonForVisibleState();
     void updateToolbarPosition();
     void enterAnnotationMode();
     void exitAnnotationMode(bool clearActiveTool = true);
@@ -347,9 +366,13 @@ private:
     QPixmap m_originalPixmap;
     SharedPixmap m_sharedSourcePixmap;  // Shared for mosaic tool memory efficiency
     QPixmap m_displayPixmap;
+    QSize m_contentLogicalSize;
+    QRectF m_sourceSampleRect;
     qreal m_zoomLevel;
     QRect m_lastAnnotationInteractionVisualRect;
     QPoint m_dragStartPos;
+    QPoint m_initialPosition;
+    bool m_hasPerformedInitialShow = false;
     bool m_isDragging;
     QMenu* m_contextMenu;
     QMenu* m_moveToScreenMenu = nullptr;
@@ -444,12 +467,16 @@ private:
     bool m_annotationMode = false;
     struct CropUndoEntry {
         QPixmap pixmap;
+        QSize contentLogicalSize;
+        QRectF sourceSampleRect;
         int rotationAngle;
         bool flipH;
         bool flipV;
         QVector<LayoutRegion> storedRegions;
         bool hasMultiRegionData = false;
         QPixmap croppedPixmap;
+        QSize croppedContentLogicalSize;
+        QRectF croppedSourceSampleRect;
         int croppedRotationAngle = 0;
         bool croppedFlipH = false;
         bool croppedFlipV = false;

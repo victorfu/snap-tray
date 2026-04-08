@@ -17,7 +17,6 @@ This section is the canonical home for SnapTray's technical documentation. The r
 - [Build from Source](build-from-source.md): prerequisites, scripts, manual CMake flows, cache setup, and local build troubleshooting
 - [Release & Packaging](release-packaging.md): DMG / NSIS / MSIX packaging, signing, notarization, Store submission, and icon asset workflow
 - [Architecture Overview](architecture.md): repository structure, library boundaries, architecture patterns, platform-specific code, and development conventions
-- [MCP (Debug Builds)](mcp-debug.md): the built-in localhost MCP server, tool contracts, and integration notes
 
 ## Audience split
 
@@ -37,7 +36,6 @@ This section is the canonical home for SnapTray's technical documentation. The r
 1. [Build from Source](build-from-source.md)
 2. [Architecture Overview](architecture.md)
 3. [Release & Packaging](release-packaging.md)
-4. [MCP (Debug Builds)](mcp-debug.md) if you need debug automation
 
 ## Related user docs
 

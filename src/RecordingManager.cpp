@@ -1,7 +1,6 @@
 #include "RecordingManager.h"
-#include "qml/QmlRecordingRegionSelector.h"
+#include "recording/ScreenSourceService.h"
 #include "qml/QmlRecordingControlBar.h"
-#include "qml/QmlRecordingBoundary.h"
 #include "RecordingInitTask.h"
 #include "RecordingRegionNormalizer.h"
 #include "qml/QmlCountdownOverlay.h"
@@ -50,7 +49,6 @@ constexpr int kDefaultAudioChannels = 2;
 constexpr int kDefaultAudioBitsPerSample = 16;
 constexpr int kOverlayRenderDelay = 100;  // ms, delay before capture to allow overlay render
 constexpr int kDurationUpdate = 100;      // ms, recording duration UI update interval
-
 QScreen* resolveTargetScreen(QScreen* preferred)
 {
     if (preferred) {
@@ -226,7 +224,7 @@ void RecordingManager::setState(State newState)
 
 bool RecordingManager::isActive() const
 {
-    return isSelectingRegion() || isRecording() || isPaused() || isPreviewing() ||
+    return isRecording() || isPaused() || isPreviewing() ||
            (m_state == State::Preparing) || (m_state == State::Countdown) ||
            (m_state == State::Encoding) ||
            m_initFuture.isRunning();
@@ -235,11 +233,6 @@ bool RecordingManager::isActive() const
 bool RecordingManager::isRecording() const
 {
     return m_state == State::Recording;
-}
-
-bool RecordingManager::isSelectingRegion() const
-{
-    return m_regionSelector && m_regionSelector->isVisible();
 }
 
 bool RecordingManager::isPaused() const
@@ -252,33 +245,61 @@ bool RecordingManager::isPreviewing() const
     return m_state == State::Previewing;
 }
 
-SnapTray::QmlRecordingRegionSelector* RecordingManager::createRegionSelector()
+QString RecordingManager::activeScreenSummary() const
 {
-    if (m_regionSelector && m_regionSelector->isVisible()) {
-        return nullptr;
+    switch (m_state) {
+    case State::Preparing:
+    case State::Countdown:
+    case State::Recording:
+    case State::Paused:
+        break;
+    case State::Idle:
+    case State::Encoding:
+    case State::Previewing:
+        return {};
     }
 
+    QScreen* screen = m_targetScreen.data();
+    if (!isScreenAvailable(screen)) {
+        return {};
+    }
+
+    const QList<QScreen*> screens = QGuiApplication::screens();
+    const int index = screens.indexOf(screen);
+    return QStringLiteral("%1 (%2)")
+        .arg(SnapTray::ScreenSourceService::displayName(screen, qMax(index, 0)))
+        .arg(SnapTray::ScreenSourceService::resolutionText(
+            screen->geometry(),
+            screen->devicePixelRatio() > 0.0 ? screen->devicePixelRatio() : 1.0));
+}
+
+void RecordingManager::startScreenRecording(QScreen* screen)
+{
     if (m_state == State::Recording || m_state == State::Paused ||
         m_state == State::Encoding || m_state == State::Preparing ||
-        m_initFuture.isRunning()) {
-        return nullptr;
+        m_state == State::Countdown || m_initFuture.isRunning()) {
+        return;
     }
 
-    // Clean up any existing selector
-    destroyRegionSelector();
+    QScreen* targetScreen = resolveTargetScreen(screen);
+    if (!targetScreen) {
+        emit recordingError(tr("No screen available for recording."));
+        setState(State::Idle);
+        return;
+    }
 
-    setState(State::Selecting);
+    m_recordingRegion = normalizeRecordingRegionForScreen(targetScreen->geometry(), targetScreen);
+    if (m_recordingRegion.isEmpty()) {
+        emit recordingError(tr("Failed to normalize recording region."));
+        setState(State::Idle);
+        return;
+    }
+    m_targetScreen = targetScreen;
 
-    m_regionSelector = new SnapTray::QmlRecordingRegionSelector(this);
+    loadAndValidateFrameRate();
+    resetPauseTracking();
 
-    connect(m_regionSelector, &SnapTray::QmlRecordingRegionSelector::regionSelected,
-            this, &RecordingManager::onRegionSelected);
-    connect(m_regionSelector, &SnapTray::QmlRecordingRegionSelector::cancelledWithRegion,
-            this, &RecordingManager::onRegionCancelledWithRegion);
-    connect(m_regionSelector, &SnapTray::QmlRecordingRegionSelector::cancelled,
-            this, &RecordingManager::onRegionCancelled);
-
-    return m_regionSelector;
+    startFrameCapture();
 }
 
 void RecordingManager::loadAndValidateFrameRate()
@@ -351,112 +372,9 @@ void RecordingManager::teardownEncodingWorker(bool abortEncoding)
     m_encodingWorker.reset();
 }
 
-void RecordingManager::startRegionSelectionWithPreset(const QRect &region, QScreen *screen)
-{
-    QScreen* targetScreen = resolveTargetScreen(screen);
-    if (!targetScreen) {
-        emit recordingError(tr("No screen available for region selection."));
-        return;
-    }
-
-    auto* selector = createRegionSelector();
-    if (!selector) {
-        return;
-    }
-
-    selector->setGeometry(targetScreen->geometry());
-    selector->initializeWithRegion(targetScreen, region);
-    selector->show();
-    selector->raiseAboveMenuBar();
-    selector->activateWindow();
-    selector->raise();
-}
-
 void RecordingManager::startFullScreenRecording(QScreen* screen)
 {
-    // Check if already active
-    if (m_state == State::Recording || m_state == State::Paused ||
-        m_state == State::Encoding || m_state == State::Preparing ||
-        m_state == State::Countdown || m_initFuture.isRunning()) {
-        return;
-    }
-
-    if (m_regionSelector && m_regionSelector->isVisible()) {
-        return;
-    }
-
-    // Use provided screen or determine from cursor position.
-    QScreen* targetScreen = resolveTargetScreen(screen);
-    if (!targetScreen) {
-        emit recordingError(tr("No screen available for recording."));
-        setState(State::Idle);
-        return;
-    }
-
-    // Use the entire screen as the recording region (normalized to even physical size).
-    m_recordingRegion = normalizeRecordingRegionForScreen(targetScreen->geometry(), targetScreen);
-    if (m_recordingRegion.isEmpty()) {
-        emit recordingError(tr("Failed to normalize recording region."));
-        setState(State::Idle);
-        return;
-    }
-    m_targetScreen = targetScreen;
-
-    loadAndValidateFrameRate();
-    resetPauseTracking();
-
-    // Skip region selection and start recording directly
-    startFrameCapture();
-}
-
-void RecordingManager::destroyRegionSelector()
-{
-    if (!m_regionSelector)
-        return;
-
-    disconnect(m_regionSelector, nullptr, this, nullptr);
-    m_regionSelector->close();
-    m_regionSelector->deleteLater();
-    m_regionSelector = nullptr;
-}
-
-void RecordingManager::onRegionSelected(const QRect &region, QScreen *screen)
-{
-    destroyRegionSelector();
-
-    QScreen* targetScreen = resolveTargetScreen(screen);
-    if (!targetScreen) {
-        emit recordingError(tr("No screen available for recording."));
-        setState(State::Idle);
-        return;
-    }
-
-    m_recordingRegion = normalizeRecordingRegionForScreen(region, targetScreen);
-    if (m_recordingRegion.isEmpty()) {
-        emit recordingError(tr("Failed to normalize recording region."));
-        setState(State::Idle);
-        return;
-    }
-    m_targetScreen = targetScreen;
-
-    loadAndValidateFrameRate();
-    resetPauseTracking();
-
-    // Start recording immediately after selection
-    startFrameCapture();
-}
-
-void RecordingManager::onRegionCancelledWithRegion(const QRect &region, QScreen *screen)
-{
-    destroyRegionSelector();
-    setState(State::Idle);
-    emit selectionCancelledWithRegion(region, screen);
-}
-
-void RecordingManager::onRegionCancelled()
-{
-    destroyRegionSelector();
-    setState(State::Idle);
+    startScreenRecording(screen);
 }
 
 void RecordingManager::startFrameCapture()
@@ -481,18 +399,6 @@ void RecordingManager::startFrameCapture()
 
     // Set state to Preparing and show UI immediately
     setState(State::Preparing);
-    // Show boundary overlay immediately (UI stays responsive)
-    // Clean up any existing overlay first to prevent resource leak
-    if (m_boundaryOverlay) {
-        m_boundaryOverlay->close();
-        m_boundaryOverlay = nullptr;
-    }
-
-    m_boundaryOverlay = new SnapTray::QmlRecordingBoundary();
-    m_boundaryOverlay->setRegion(m_recordingRegion);
-    m_boundaryOverlay->setBorderMode(SnapTray::QmlRecordingBoundary::BorderMode::Recording);
-    m_boundaryOverlay->show();
-
     // Show control bar in preparing state
     // Clean up any existing control bar first to prevent resource leak
     if (m_controlBar) {
@@ -629,12 +535,7 @@ void RecordingManager::beginAsyncInitialization()
     config.frameSize = physicalSize;
     config.quality = recMgr.quality();
 
-    // Collect UI window IDs to exclude from capture
-    // These are set after show() to ensure Qt has created the native window
-    if (m_boundaryOverlay) {
-        config.excludedWindowIds.append(m_boundaryOverlay->winId());
-        m_boundaryOverlay->setExcludedFromCapture(true);
-    }
+    // Collect UI window IDs to exclude from capture.
     if (m_controlBar) {
         config.excludedWindowIds.append(m_controlBar->winId());
         m_controlBar->setExcludedFromCapture(true);
@@ -734,9 +635,6 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
         emit recordingError(result.error);
 
         // Clean up UI
-        if (m_boundaryOverlay) {
-            m_boundaryOverlay->close();
-        }
         if (m_controlBar) {
             m_controlBar->close();
             m_controlBar->deleteLater();
@@ -970,9 +868,6 @@ void RecordingManager::startRecordingAfterCountdown()
     // Initialize state and counters
     m_elapsedTimer.start();
     setState(State::Recording);
-    if (m_boundaryOverlay) {
-        m_boundaryOverlay->setBorderMode(SnapTray::QmlRecordingBoundary::BorderMode::Recording);
-    }
     m_frameCount = 0;
 
     // Start audio capture here to synchronize with video timer
@@ -992,7 +887,7 @@ void RecordingManager::startRecordingAfterCountdown()
         }
     }
 
-    // Delay frame capture start to allow boundary overlay to render fully
+    // Small delay so the control bar is fully rendered before capture starts
     QTimer::singleShot(kOverlayRenderDelay, this, [this]() {
         startCaptureTimers();
     });
@@ -1142,9 +1037,6 @@ void RecordingManager::pauseRecording()
     if (m_controlBar) {
         m_controlBar->setPaused(true);
     }
-    if (m_boundaryOverlay) {
-        m_boundaryOverlay->setBorderMode(SnapTray::QmlRecordingBoundary::BorderMode::Paused);
-    }
 
     emit recordingPaused();
 }
@@ -1175,9 +1067,6 @@ void RecordingManager::resumeRecording()
 
     if (m_controlBar) {
         m_controlBar->setPaused(false);
-    }
-    if (m_boundaryOverlay) {
-        m_boundaryOverlay->setBorderMode(SnapTray::QmlRecordingBoundary::BorderMode::Recording);
     }
 
     emit recordingResumed();
@@ -1210,15 +1099,10 @@ void RecordingManager::stopRecording()
 
 void RecordingManager::cancelRecording()
 {
-    if (m_state != State::Selecting &&
-        m_state != State::Recording && m_state != State::Paused &&
+    if (m_state != State::Recording && m_state != State::Paused &&
         m_state != State::Encoding && m_state != State::Preparing &&
         m_state != State::Countdown) {
         return;
-    }
-
-    if (m_state == State::Selecting) {
-        destroyRegionSelector();
     }
 
     // Cancel countdown overlay if active
@@ -1271,12 +1155,6 @@ void RecordingManager::stopFrameCapture()
     // Custom deleter handles disconnect + stop() + deleteLater()
     m_captureEngine.reset();
 
-    // Close UI overlays
-    if (m_boundaryOverlay) {
-        m_boundaryOverlay->close();
-        m_boundaryOverlay = nullptr;
-    }
-
     if (m_controlBar) {
         m_controlBar->close();
         m_controlBar->deleteLater();
@@ -1294,7 +1172,6 @@ void RecordingManager::cleanupRecording()
     }
     m_usingNativeEncoder = false;
 
-    destroyRegionSelector();
 }
 
 void RecordingManager::cleanupAudio()

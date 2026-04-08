@@ -52,16 +52,6 @@
         <translation>แสดงคำแนะนำคีย์ลัด</translation>
     </message>
     <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="31"/>
-        <source>MCP</source>
-        <translation>MCP</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/settings/AdvancedSettings.qml" line="36"/>
-        <source>Enable MCP server</source>
-        <translation>เปิดใช้งานเซิร์ฟเวอร์ MCP</translation>
-    </message>
-    <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="45"/>
         <source>Blur</source>
         <translation>เบลอ</translation>
@@ -243,6 +233,41 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
     </message>
 </context>
 <context>
+    <name>CaptureShortcutHintsOverlay</name>
+    <message>
+        <source>Cancel capture</source>
+        <translation>ยกเลิกการจับภาพ</translation>
+    </message>
+    <message>
+        <source>Confirm selection (after selection)</source>
+        <translation>ยืนยันการเลือก (หลังเลือกแล้ว)</translation>
+    </message>
+    <message>
+        <source>Replay capture history</source>
+        <translation>เล่นประวัติการจับภาพซ้ำ</translation>
+    </message>
+    <message>
+        <source>Toggle multi-region mode</source>
+        <translation>สลับโหมดหลายพื้นที่</translation>
+    </message>
+    <message>
+        <source>Switch RGB/HEX (when magnifier visible)</source>
+        <translation>สลับ RGB/HEX (เมื่อแสดงแว่นขยาย)</translation>
+    </message>
+    <message>
+        <source>Copy color value (before selection)</source>
+        <translation>คัดลอกค่าสี (ก่อนเลือก)</translation>
+    </message>
+    <message>
+        <source>Move selection by 1 pixel (after selection)</source>
+        <translation>เลื่อนพื้นที่ที่เลือก 1 พิกเซล (หลังเลือกแล้ว)</translation>
+    </message>
+    <message>
+        <source>Resize selection by 1 pixel (after selection)</source>
+        <translation>ปรับขนาดพื้นที่ที่เลือก 1 พิกเซล (หลังเลือกแล้ว)</translation>
+    </message>
+</context>
+<context>
     <name>GeneralSettings</name>
     <message>
         <location filename="../src/qml/settings/GeneralSettings.qml" line="31"/>
@@ -343,44 +368,128 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 <context>
     <name>HistoryWindow</name>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="34"/>
         <source>History</source>
         <translation>ประวัติ</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="50"/>
         <source>Open History Folder</source>
         <translation>เปิดโฟลเดอร์ประวัติ</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="61"/>
         <source>No history items yet</source>
         <translation>ยังไม่มีรายการประวัติ</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="112"/>
+        <source>Screenshots you capture in SnapTray will appear here.</source>
+        <translation>ภาพหน้าจอที่คุณจับด้วย SnapTray จะแสดงที่นี่</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation>ไม่พบผลลัพธ์</translation>
+    </message>
+    <message>
+        <source>Try a different smart folder.</source>
+        <translation>ลองใช้โฟลเดอร์อัจฉริยะอื่น</translation>
+    </message>
+    <message>
+        <source>Smart Folders</source>
+        <translation>โฟลเดอร์อัจฉริยะ</translation>
+    </message>
+    <message>
+        <source>All Screenshots</source>
+        <translation>ภาพหน้าจอทั้งหมด</translation>
+    </message>
+    <message>
+        <source>Last 7 Days</source>
+        <translation>7 วันที่ผ่านมา</translation>
+    </message>
+    <message>
+        <source>Large Files</source>
+        <translation>ไฟล์ขนาดใหญ่</translation>
+    </message>
+    <message>
+        <source>Replayable</source>
+        <translation>เล่นซ้ำได้</translation>
+    </message>
+    <message>
         <source>Edit</source>
         <translation>แก้ไข</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="113"/>
         <source>Pin</source>
         <translation>ปักหมุด</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="114"/>
         <source>Copy</source>
         <translation>คัดลอก</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="115"/>
         <source>Save As</source>
         <translation>บันทึกเป็น</translation>
     </message>
     <message>
-        <location filename="../src/qml/panels/HistoryWindow.qml" line="117"/>
         <source>Delete</source>
         <translation>ลบ</translation>
+    </message>
+    <message>
+        <source>Newest First</source>
+        <translation>ใหม่ล่าสุดก่อน</translation>
+    </message>
+    <message>
+        <source>Oldest First</source>
+        <translation>เก่าสุดก่อน</translation>
+    </message>
+    <message>
+        <source>Largest First</source>
+        <translation>ใหญ่ที่สุดก่อน</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>ไม่สามารถแสดงตัวอย่างได้</translation>
+    </message>
+    <message>
+        <source>Screenshot</source>
+        <translation>ภาพหน้าจอ</translation>
+    </message>
+    <message>
+        <source>Screenshot %1</source>
+        <translation>ภาพหน้าจอ %1</translation>
+    </message>
+    <message>
+        <source>%1 x %2</source>
+        <translation>%1 x %2</translation>
+    </message>
+    <message>
+        <source>Today</source>
+        <translation>วันนี้</translation>
+    </message>
+    <message>
+        <source>Yesterday</source>
+        <translation>เมื่อวาน</translation>
+    </message>
+    <message>
+        <source>%1 days ago</source>
+        <translation>%1 วันที่แล้ว</translation>
+    </message>
+    <message>
+        <source>Unknown time</source>
+        <translation>ไม่ทราบเวลา</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>ไม่ทราบ</translation>
+    </message>
+    <message>
+        <source>Unknown size</source>
+        <translation>ไม่ทราบขนาด</translation>
+    </message>
+    <message>
+        <source>Time: %1
+Resolution: %2
+File size: %3</source>
+        <translation>เวลา: %1
+ความละเอียด: %2
+ขนาดไฟล์: %3</translation>
     </message>
 </context>
 <context>
@@ -534,7 +643,7 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
     <message>
         <location filename="../src/MainApplication.cpp" line="417"/>
         <location filename="../src/MainApplication.cpp" line="1044"/>
-        <source>Record Full Screen</source>
+        <source>Record Screen</source>
         <translation>บันทึกเต็มหน้าจอ</translation>
     </message>
     <message>
@@ -586,16 +695,6 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/MainApplication.cpp" line="442"/>
         <source>OCR Failed</source>
         <translation>OCR ล้มเหลว</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="530"/>
-        <source>MCP Server Unavailable</source>
-        <translation>เซิร์ฟเวอร์ MCP ไม่พร้อมใช้งาน</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="531"/>
-        <source>Unable to start MCP HTTP server on 127.0.0.1:%1</source>
-        <translation>ไม่สามารถเริ่มเซิร์ฟเวอร์ MCP HTTP บน 127.0.0.1:%1 ได้</translation>
     </message>
     <message>
         <location filename="../src/MainApplication.cpp" line="656"/>
@@ -2379,7 +2478,7 @@ Password: %2</source>
     </message>
     <message>
         <location filename="../include/hotkey/HotkeyTypes.h" line="166"/>
-        <source>Record Full Screen</source>
+        <source>Record Screen</source>
         <translation>บันทึกเต็มหน้าจอ</translation>
     </message>
     <message>
@@ -3048,5 +3147,3 @@ Password: %2</source>
     </message>
 </context>
 </TS>
-
-

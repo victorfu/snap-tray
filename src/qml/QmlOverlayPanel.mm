@@ -213,6 +213,30 @@ QRect QmlOverlayPanel::geometry() const
     return QRect(m_view->position(), m_view->size());
 }
 
+QRect QmlOverlayPanel::anchorRect() const
+{
+    if (!m_view) {
+        return QRect();
+    }
+
+    if (m_rootItem) {
+        QVariant anchorVariant = m_rootItem->property("attachmentAnchorRect");
+        QRect rect = anchorVariant.toRect();
+        if ((!rect.isValid() || rect.isEmpty()) && anchorVariant.canConvert<QRectF>()) {
+            rect = anchorVariant.toRectF().toAlignedRect();
+        }
+        if (rect.isValid() && !rect.isEmpty()) {
+            return rect;
+        }
+    }
+
+    if (!m_windowMask.isEmpty()) {
+        return m_windowMask.boundingRect();
+    }
+
+    return QRect(QPoint(), m_view->size());
+}
+
 bool QmlOverlayPanel::containsGlobalPoint(const QPoint& globalPos) const
 {
     if (!m_view || !m_view->isVisible()) {

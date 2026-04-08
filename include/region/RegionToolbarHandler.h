@@ -45,7 +45,6 @@ signals:
     void redoRequested();
     void cancelRequested();
     void pinRequested();
-    void recordRequested();
     void saveRequested();
     void copyRequested();
     void shareRequested();
@@ -78,7 +77,6 @@ private:
     void handleOcrAction(ToolId button);
     void handleQrCodeAction(ToolId button);
     void handlePinAction(ToolId button);
-    void handleRecordAction(ToolId button);
     void handleShareAction(ToolId button);
     void handleSaveAction(ToolId button);
     void handleCopyAction(ToolId button);
