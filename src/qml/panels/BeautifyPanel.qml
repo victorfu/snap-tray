@@ -21,30 +21,6 @@ Item {
         radius: 14
     }
 
-    MouseArea {
-        id: dragArea
-        anchors.fill: parent
-        z: 0
-        cursorShape: pressed ? CursorTokens.panelDragActive : CursorTokens.panelDragIdle
-
-        property point pressStart
-
-        onPressed: function(mouse) {
-            pressStart = Qt.point(mouse.x, mouse.y)
-            root.dragStarted()
-        }
-
-        onPositionChanged: function(mouse) {
-            if (pressed) {
-                var dx = mouse.x - pressStart.x
-                var dy = mouse.y - pressStart.y
-                root.dragMoved(dx, dy)
-            }
-        }
-
-        onReleased: root.dragFinished()
-    }
-
     Column {
         id: contentColumn
         x: 16
@@ -55,59 +31,91 @@ Item {
         property int leftPadding: 0
         property int rightPadding: 0
 
-        Row {
+        Item {
+            id: header
             width: parent.width
             height: 28
-            spacing: 8
 
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: qsTr("Beautify")
-                color: SemanticTokens.textPrimary
-                font.pixelSize: SemanticTokens.fontSizeH3
-                font.family: SemanticTokens.fontFamily
-                font.weight: SemanticTokens.fontWeightSemiBold
-            }
+            MouseArea {
+                id: dragArea
+                anchors {
+                    left: parent.left
+                    top: parent.top
+                    bottom: parent.bottom
+                    right: closeButton.left
+                    rightMargin: 8
+                }
+                z: 0
+                cursorShape: pressed ? CursorTokens.panelDragActive : CursorTokens.panelDragIdle
 
-            Item {
-                width: Math.max(0, parent.width - titleText.width - closeButton.width - 8)
-                height: 1
-            }
+                property point pressStart
 
-            Text {
-                id: titleText
-                visible: false
-                text: qsTr("Beautify")
-            }
-
-            Rectangle {
-                id: closeButton
-                width: 28
-                height: 28
-                radius: 8
-                color: closeMouse.pressed
-                    ? ComponentTokens.buttonGhostBackgroundPressed
-                    : closeMouse.containsMouse
-                        ? ComponentTokens.buttonGhostBackgroundHover
-                        : "transparent"
-
-                Behavior on color {
-                    ColorAnimation { duration: SemanticTokens.durationFast }
+                onPressed: function(mouse) {
+                    pressStart = Qt.point(mouse.x, mouse.y)
+                    root.dragStarted()
                 }
 
-                SvgIcon {
-                    anchors.centerIn: parent
-                    source: "qrc:/icons/icons/close.svg"
-                    iconSize: ComponentTokens.iconSizeMenu
-                    color: SemanticTokens.iconColor
+                onPositionChanged: function(mouse) {
+                    if (pressed) {
+                        var dx = mouse.x - pressStart.x
+                        var dy = mouse.y - pressStart.y
+                        root.dragMoved(dx, dy)
+                    }
                 }
 
-                MouseArea {
-                    id: closeMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: CursorTokens.clickable
-                    onClicked: if (root.backend) root.backend.requestClose()
+                onReleased: root.dragFinished()
+            }
+
+            RowLayout {
+                anchors.fill: parent
+                spacing: 8
+
+                Text {
+                    Layout.alignment: Qt.AlignVCenter
+                    text: qsTr("Beautify")
+                    color: SemanticTokens.textPrimary
+                    font.pixelSize: SemanticTokens.fontSizeH3
+                    font.family: SemanticTokens.fontFamily
+                    font.weight: SemanticTokens.fontWeightSemiBold
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                Rectangle {
+                    id: closeButton
+                    objectName: "beautifyPanelDismissButton"
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.preferredWidth: 28
+                    Layout.preferredHeight: 28
+                    width: 28
+                    height: 28
+                    radius: 8
+                    color: closeMouse.pressed
+                        ? ComponentTokens.buttonGhostBackgroundPressed
+                        : closeMouse.containsMouse
+                            ? ComponentTokens.buttonGhostBackgroundHover
+                            : "transparent"
+
+                    Behavior on color {
+                        ColorAnimation { duration: SemanticTokens.durationFast }
+                    }
+
+                    SvgIcon {
+                        anchors.centerIn: parent
+                        source: "qrc:/icons/icons/close.svg"
+                        iconSize: ComponentTokens.iconSizeMenu
+                        color: SemanticTokens.iconColor
+                    }
+
+                    MouseArea {
+                        id: closeMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: CursorTokens.clickable
+                        onClicked: if (root.backend) root.backend.requestClose()
+                    }
                 }
             }
         }
