@@ -39,6 +39,7 @@ private slots:
     void testDefaultState_UsesBeautifyDefaults();
     void testApplyPreset_UpdatesGradientState();
     void testPreviewDebounce_CoalescesRapidChanges();
+    void testRequestClose_EmitsSignal();
 };
 
 void tst_BeautifyPanelBackend::init()
@@ -102,6 +103,17 @@ void tst_BeautifyPanelBackend::testPreviewDebounce_CoalescesRapidChanges()
     QTRY_COMPARE(previewSpy.count(), 1);
     QTest::qWait(80);
     QCOMPARE(previewSpy.count(), 1);
+}
+
+void tst_BeautifyPanelBackend::testRequestClose_EmitsSignal()
+{
+    SnapTray::BeautifyPanelBackend backend;
+    QSignalSpy closeSpy(&backend, &SnapTray::BeautifyPanelBackend::closeRequested);
+    QVERIFY(closeSpy.isValid());
+
+    backend.requestClose();
+
+    QCOMPARE(closeSpy.count(), 1);
 }
 
 QTEST_MAIN(tst_BeautifyPanelBackend)

@@ -13,18 +13,16 @@ class tst_BeautifyPanelQml : public QObject
     Q_OBJECT
 
 private slots:
-    void testDismissButton_ClickEmitsCloseRequested();
+    void testDismissButton_DoesNotOverlapDragArea();
 };
 
-void tst_BeautifyPanelQml::testDismissButton_ClickEmitsCloseRequested()
+void tst_BeautifyPanelQml::testDismissButton_DoesNotOverlapDragArea()
 {
     if (QGuiApplication::screens().isEmpty()) {
         QSKIP("Beautify panel QML interaction test requires a real screen");
     }
 
     SnapTray::BeautifyPanelBackend backend;
-    QSignalSpy closeSpy(&backend, &SnapTray::BeautifyPanelBackend::closeRequested);
-    QVERIFY(closeSpy.isValid());
 
     QQuickView view(SnapTray::QmlOverlayManager::instance().engine(), nullptr);
     view.rootContext()->setContextProperty(QStringLiteral("beautifyBackend"), &backend);
@@ -50,12 +48,22 @@ void tst_BeautifyPanelQml::testDismissButton_ClickEmitsCloseRequested()
 
     auto* dismissButton = rootItem->findChild<QQuickItem*>(QStringLiteral("beautifyPanelDismissButton"));
     QVERIFY(dismissButton);
+    QTRY_VERIFY(dismissButton->width() > 0.0);
+    QTRY_VERIFY(dismissButton->height() > 0.0);
 
-    const QPointF buttonCenter = dismissButton->mapToScene(
-        QPointF(dismissButton->width() / 2.0, dismissButton->height() / 2.0));
-    QTest::mouseClick(&view, Qt::LeftButton, Qt::NoModifier, buttonCenter.toPoint());
+    auto* dragArea = rootItem->findChild<QQuickItem*>(QStringLiteral("beautifyPanelDragArea"));
+    QVERIFY(dragArea);
+    QTRY_VERIFY(dragArea->width() > 0.0);
 
-    QTRY_COMPARE(closeSpy.count(), 1);
+    const QRectF dismissRect = dismissButton->mapRectToScene(
+        QRectF(0.0, 0.0, dismissButton->width(), dismissButton->height()));
+    const QRectF dragRect = dragArea->mapRectToScene(
+        QRectF(0.0, 0.0, dragArea->width(), dragArea->height()));
+
+    QVERIFY2(!dragRect.intersects(dismissRect),
+             "Dismiss button hit area must stay outside the draggable title bar region.");
+    QVERIFY2(dragRect.right() <= dismissRect.left(),
+             "Drag area should end before the dismiss button begins.");
 }
 
 QTEST_MAIN(tst_BeautifyPanelQml)

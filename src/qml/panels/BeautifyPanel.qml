@@ -38,6 +38,7 @@ Item {
 
             MouseArea {
                 id: dragArea
+                objectName: "beautifyPanelDragArea"
                 anchors {
                     left: parent.left
                     top: parent.top
@@ -111,6 +112,7 @@ Item {
 
                     MouseArea {
                         id: closeMouse
+                        objectName: "beautifyPanelDismissMouseArea"
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: CursorTokens.clickable
