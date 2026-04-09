@@ -8,6 +8,18 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 - No unreleased entries yet.
 
+## [1.0.47] - 2026-04-09
+
+### Improved
+
+- Improved detected-window refresh handling so transient top-level windows stay targetable more reliably while SnapTray updates the available window list.
+
+### Fixed
+
+- Fixed Beautify panel dismissal so the close control remains clickable.
+- Fixed repeat-badge feedback so auto-hidden badges can appear again on the next action instead of getting stuck suppressed.
+- Fixed macOS Settings shutdown warnings triggered by input-method teardown during window close.
+
 ## [1.0.46] - 2026-04-08
 
 ### Added
