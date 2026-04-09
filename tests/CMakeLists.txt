@@ -77,6 +77,11 @@ target_link_libraries(Qml_QtQuickBackendPolicy PRIVATE snaptray_platform Qt6::Te
 add_test(NAME Qml_QtQuickBackendPolicy COMMAND Qml_QtQuickBackendPolicy)
 set_tests_properties(Qml_QtQuickBackendPolicy PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_QmlBadge Qml/tst_QmlBadge.cpp)
+target_link_libraries(Qml_QmlBadge PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME Qml_QmlBadge COMMAND Qml_QmlBadge)
+set_tests_properties(Qml_QmlBadge PROPERTIES TIMEOUT 60 LABELS "unit")
+
 if(APPLE)
     add_executable(Qml_FloatingOverlayCaptureExclusion Qml/tst_FloatingOverlayCaptureExclusion.mm)
     target_link_libraries(Qml_FloatingOverlayCaptureExclusion PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)

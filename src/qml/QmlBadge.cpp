@@ -94,8 +94,8 @@ void QmlBadge::hideBadge()
 
 void QmlBadge::onQmlHidden()
 {
-    if (!m_logicallyVisible)
-        hide();
+    m_logicallyVisible = false;
+    hide();
 }
 
 } // namespace SnapTray
