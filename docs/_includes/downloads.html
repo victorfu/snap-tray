@@ -41,6 +41,9 @@
           {{ t.downloads.windows.button }} <span class="version"></span>
         </a>
         <p id="no-windows-release" class="status-text">{{ t.downloads.windows.empty }}</p>
+        {% if t.downloads.windows.unsigned_note %}
+        <p class="unsigned-note">{{ t.downloads.windows.unsigned_note }}</p>
+        {% endif %}
       </article>
     </div>
 

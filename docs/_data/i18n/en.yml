@@ -92,6 +92,7 @@ downloads:
     store_name: Microsoft Store
     button: Download .exe
     empty: Or download from GitHub releases
+    unsigned_note: The direct-download .exe is currently unsigned, so Windows may show a SmartScreen or other safety warning during install. If you downloaded it from the official SnapTray GitHub Releases page, this is expected and does not mean the file is unsafe.
   req_eyebrow: System Requirements
   req_title: Platform prerequisites
   req_cards:

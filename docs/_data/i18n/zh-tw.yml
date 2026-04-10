@@ -92,6 +92,7 @@ downloads:
     store_name: Microsoft Store
     button: 下載 .exe
     empty: 或從 GitHub releases 下載
+    unsigned_note: 直接下載的 .exe 目前未簽章，安裝時 Windows 可能會跳出 SmartScreen 或「不安全」警告。若你是從官方 GitHub Releases 下載，這是正常現象，不代表檔案有問題，請放心繼續安裝。
   req_eyebrow: 系統需求
   req_title: 平台前置條件
   req_cards:
