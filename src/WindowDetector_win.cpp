@@ -1,5 +1,6 @@
 #include "WindowDetector.h"
 #include "utils/CoordinateHelper.h"
+#include <QCoreApplication>
 #include <QScreen>
 #include <QDebug>
 #include <QFileInfo>
@@ -28,6 +29,62 @@ struct EnumWindowsContext {
 
 // Forward declaration
 BOOL CALLBACK enumChildWindowsProc(HWND hwnd, LPARAM lParam);
+
+std::vector<DetectedElement> enumerateWindowsSnapshot(qreal dpr, DetectionFlags flags)
+{
+    std::vector<DetectedElement> cache;
+    EnumWindowsContext context;
+    context.windowCache = &cache;
+    context.currentProcessId = GetCurrentProcessId();
+    context.devicePixelRatio = dpr;
+    context.detectionFlags = flags;
+
+    // EnumWindows returns windows in z-order (topmost first)
+    EnumWindows(enumWindowsProc, reinterpret_cast<LPARAM>(&context));
+
+    // Additionally enumerate menu windows directly if detecting context menus
+    if (flags.testFlag(DetectionFlag::ContextMenus)) {
+        std::unordered_set<uint32_t> existingIds;
+        existingIds.reserve(cache.size());
+        for (const auto &elem : cache) {
+            existingIds.insert(elem.windowId);
+        }
+
+        HWND menuWnd = FindWindowExW(nullptr, nullptr, L"#32768", nullptr);
+        while (menuWnd) {
+            if (IsWindowVisible(menuWnd)) {
+                RECT rect;
+                if (GetWindowRect(menuWnd, &rect)) {
+                    int width = rect.right - rect.left;
+                    int height = rect.bottom - rect.top;
+                    int minSize = getMinimumSize(ElementType::ContextMenu);
+
+                    if (width >= minSize && height >= minSize) {
+                        uint32_t windowId = reinterpret_cast<uintptr_t>(menuWnd) & 0xFFFFFFFF;
+                        if (existingIds.find(windowId) == existingIds.end()) {
+                            QRect physicalBounds(rect.left, rect.top, width, height);
+                            DetectedElement element;
+                            element.bounds = CoordinateHelper::physicalToQtLogical(physicalBounds, menuWnd);
+                            element.windowTitle = QString();
+                            element.ownerApp = QString();
+                            element.windowLayer = 0;
+                            element.windowId = windowId;
+                            element.elementType = ElementType::ContextMenu;
+                            DWORD menuPid = 0;
+                            GetWindowThreadProcessId(menuWnd, &menuPid);
+                            element.ownerPid = static_cast<qint64>(menuPid);
+                            cache.insert(cache.begin(), element);
+                            existingIds.insert(windowId);
+                        }
+                    }
+                }
+            }
+            menuWnd = FindWindowExW(nullptr, menuWnd, L"#32768", nullptr);
+        }
+    }
+
+    return cache;
+}
 
 // Check if element type should be included based on detection flags
 bool shouldIncludeElementType(ElementType type, DetectionFlags flags)
@@ -437,42 +494,54 @@ void WindowDetector::refreshWindowList(QueryMode queryMode)
 void WindowDetector::refreshWindowListAsync(QueryMode queryMode)
 {
     uint64_t requestId = ++m_refreshRequestId;
-    QScreen* targetScreen = m_currentScreen.data();
+    const QPointer<QScreen> targetScreen = m_currentScreen;
+    QPointer<WindowDetector> guardedThis(this);
+    QPointer<QCoreApplication> app = QCoreApplication::instance();
 
     m_refreshComplete = false;
-    qreal dpr = m_currentScreen ? m_currentScreen->devicePixelRatio() : 1.0;
+    const qreal dpr = m_currentScreen ? m_currentScreen->devicePixelRatio() : 1.0;
 
     // Snapshot detection flags to avoid data race with main thread
     const DetectionFlags flags = flagsForQueryMode(m_detectionFlags, queryMode);
 
     {
         QMutexLocker locker(&m_cacheMutex);
-        if (m_cacheScreen != targetScreen) {
+        if (m_cacheScreen != targetScreen.data()) {
             m_cacheReady = false;
         }
     }
 
-    m_refreshFuture = QtConcurrent::run([this, dpr, requestId, flags, targetScreen, queryMode]() {
-        std::vector<DetectedElement> newCache;
-        enumerateWindowsInternal(newCache, dpr, flags);
+    m_refreshFuture = QtConcurrent::run([guardedThis, app, dpr, requestId, flags, targetScreen, queryMode]() mutable {
+        std::vector<DetectedElement> newCache = enumerateWindowsSnapshot(dpr, flags);
 
-        if (m_refreshRequestId.load() != requestId) {
-            qDebug() << "WindowDetector: Discarding stale refresh result";
+        if (!app) {
             return;
         }
 
-        {
-            QMutexLocker locker(&m_cacheMutex);
-            m_windowCache = std::move(newCache);
-            m_cacheScreen = targetScreen;
-            m_cacheQueryMode = queryMode;
-            m_cacheReady = true;
-        }
+        QMetaObject::invokeMethod(
+            app,
+            [guardedThis, requestId, targetScreen, queryMode, newCache = std::move(newCache)]() mutable {
+                if (!guardedThis) {
+                    return;
+                }
 
-        m_refreshComplete = true;
-        QMetaObject::invokeMethod(this, [this]() {
-            emit windowListReady();
-        }, Qt::QueuedConnection);
+                if (guardedThis->m_refreshRequestId.load() != requestId) {
+                    qDebug() << "WindowDetector: Discarding stale refresh result";
+                    return;
+                }
+
+                {
+                    QMutexLocker locker(&guardedThis->m_cacheMutex);
+                    guardedThis->m_windowCache = std::move(newCache);
+                    guardedThis->m_cacheScreen = targetScreen.data();
+                    guardedThis->m_cacheQueryMode = queryMode;
+                    guardedThis->m_cacheReady = true;
+                }
+
+                guardedThis->m_refreshComplete = true;
+                emit guardedThis->windowListReady();
+            },
+            Qt::QueuedConnection);
     });
 }
 
@@ -550,57 +619,7 @@ void WindowDetector::enumerateWindows()
 
 void WindowDetector::enumerateWindowsInternal(std::vector<DetectedElement>& cache, qreal dpr, DetectionFlags flags)
 {
-    EnumWindowsContext context;
-    context.windowCache = &cache;
-    context.currentProcessId = GetCurrentProcessId();
-    context.devicePixelRatio = dpr;
-    context.detectionFlags = flags;
-
-    // EnumWindows returns windows in z-order (topmost first)
-    EnumWindows(enumWindowsProc, reinterpret_cast<LPARAM>(&context));
-
-    // Additionally enumerate menu windows directly if detecting context menus
-    if (flags.testFlag(DetectionFlag::ContextMenus)) {
-        // Build hash set of existing window IDs for O(1) duplicate checking
-        std::unordered_set<uint32_t> existingIds;
-        existingIds.reserve(cache.size());
-        for (const auto &elem : cache) {
-            existingIds.insert(elem.windowId);
-        }
-
-        HWND menuWnd = FindWindowExW(nullptr, nullptr, L"#32768", nullptr);
-        while (menuWnd) {
-            if (IsWindowVisible(menuWnd)) {
-                RECT rect;
-                if (GetWindowRect(menuWnd, &rect)) {
-                    int width = rect.right - rect.left;
-                    int height = rect.bottom - rect.top;
-                    int minSize = getMinimumSize(ElementType::ContextMenu);
-
-                    if (width >= minSize && height >= minSize) {
-                        uint32_t windowId = reinterpret_cast<uintptr_t>(menuWnd) & 0xFFFFFFFF;
-                        if (existingIds.find(windowId) == existingIds.end()) {
-                            QRect physicalBounds(rect.left, rect.top, width, height);
-                            DetectedElement element;
-                            element.bounds = CoordinateHelper::physicalToQtLogical(physicalBounds, menuWnd);
-                            element.windowTitle = QString();
-                            element.ownerApp = QString();
-                            element.windowLayer = 0;
-                            element.windowId = windowId;
-                            element.elementType = ElementType::ContextMenu;
-                            DWORD menuPid = 0;
-                            GetWindowThreadProcessId(menuWnd, &menuPid);
-                            element.ownerPid = static_cast<qint64>(menuPid);
-                            cache.insert(cache.begin(), element);
-                            existingIds.insert(windowId);  // Update hash set
-                        }
-                    }
-                }
-            }
-            menuWnd = FindWindowExW(nullptr, menuWnd, L"#32768", nullptr);
-        }
-    }
-
+    cache = enumerateWindowsSnapshot(dpr, flags);
 }
 
 std::optional<DetectedElement> WindowDetector::detectChildElementAt(
