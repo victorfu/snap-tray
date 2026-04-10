@@ -8,6 +8,16 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 - No unreleased entries yet.
 
+## [1.0.49] - 2026-04-10
+
+### Improved
+
+- Improved Windows download guidance with a clearer warning when using the unsigned executable package.
+
+### Fixed
+
+- Fixed Windows window-detection handling so SnapTray builds cleanly again and avoids unstable refresh behavior tied to GUI-thread-only APIs.
+
 ## [1.0.48] - 2026-04-10
 
 ### Improved
