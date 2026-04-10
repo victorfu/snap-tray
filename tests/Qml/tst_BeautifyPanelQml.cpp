@@ -7,6 +7,9 @@
 #include <QQuickView>
 #include <QQmlContext>
 #include <QSignalSpy>
+#include <QtQml/qqmlextensionplugin.h>
+
+Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
 
 class tst_BeautifyPanelQml : public QObject
 {

@@ -46,7 +46,7 @@ add_test(NAME Qml_BeautifyPanelBackend COMMAND Qml_BeautifyPanelBackend)
 set_tests_properties(Qml_BeautifyPanelBackend PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(Qml_BeautifyPanelQml Qml/tst_BeautifyPanelQml.cpp)
-target_link_libraries(Qml_BeautifyPanelQml PRIVATE snaptray_ui Qt6::Qml Qt6::Quick Qt6::Test)
+target_link_libraries(Qml_BeautifyPanelQml PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
 add_test(NAME Qml_BeautifyPanelQml COMMAND Qml_BeautifyPanelQml)
 set_tests_properties(Qml_BeautifyPanelQml PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
