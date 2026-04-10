@@ -8,6 +8,16 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 - No unreleased entries yet.
 
+## [1.0.48] - 2026-04-10
+
+### Improved
+
+- Improved Beautify panel close-target layout so the dismiss control remains easier to hit in QML-driven flows.
+
+### Fixed
+
+- Fixed a detected-window refresh lifetime bug that could crash macOS while SnapTray updated the available window list asynchronously.
+
 ## [1.0.47] - 2026-04-09
 
 ### Improved
