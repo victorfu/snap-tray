@@ -8,6 +8,9 @@
 #include <limits>
 #include <unordered_set>
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <windows.h>
 #include <dwmapi.h>
 #include <psapi.h>
@@ -585,7 +588,7 @@ std::optional<DetectedElement> WindowDetector::detectChildElementAt(
     size_t topLevelIndex) const
 {
     std::optional<DetectedElement> bestChild;
-    qint64 bestChildArea = std::numeric_limits<qint64>::max();
+    qint64 bestChildArea = (std::numeric_limits<qint64>::max)();
     const qint64 windowArea =
         static_cast<qint64>(topWindow.bounds.width()) * topWindow.bounds.height();
 
