@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Layouts
 import SnapTrayQml
 
 Item {
@@ -36,9 +35,8 @@ Item {
             width: parent.width
             height: 28
 
-            MouseArea {
-                id: dragArea
-                objectName: "beautifyPanelDragArea"
+            Item {
+                id: titleArea
                 anchors {
                     left: parent.left
                     top: parent.top
@@ -46,6 +44,12 @@ Item {
                     right: closeButton.left
                     rightMargin: 8
                 }
+            }
+
+            MouseArea {
+                id: dragArea
+                objectName: "beautifyPanelDragArea"
+                anchors.fill: titleArea
                 z: 0
                 cursorShape: pressed ? CursorTokens.panelDragActive : CursorTokens.panelDragIdle
 
@@ -67,57 +71,52 @@ Item {
                 onReleased: root.dragFinished()
             }
 
-            RowLayout {
-                anchors.fill: parent
-                spacing: 8
+            Text {
+                anchors {
+                    left: titleArea.left
+                    verticalCenter: parent.verticalCenter
+                }
+                text: qsTr("Beautify")
+                color: SemanticTokens.textPrimary
+                font.pixelSize: SemanticTokens.fontSizeH3
+                font.family: SemanticTokens.fontFamily
+                font.weight: SemanticTokens.fontWeightSemiBold
+            }
 
-                Text {
-                    Layout.alignment: Qt.AlignVCenter
-                    text: qsTr("Beautify")
-                    color: SemanticTokens.textPrimary
-                    font.pixelSize: SemanticTokens.fontSizeH3
-                    font.family: SemanticTokens.fontFamily
-                    font.weight: SemanticTokens.fontWeightSemiBold
+            Rectangle {
+                id: closeButton
+                objectName: "beautifyPanelDismissButton"
+                anchors {
+                    right: parent.right
+                    verticalCenter: parent.verticalCenter
+                }
+                width: 28
+                height: 28
+                radius: 8
+                color: closeMouse.pressed
+                    ? ComponentTokens.buttonGhostBackgroundPressed
+                    : closeMouse.containsMouse
+                        ? ComponentTokens.buttonGhostBackgroundHover
+                        : "transparent"
+
+                Behavior on color {
+                    ColorAnimation { duration: SemanticTokens.durationFast }
                 }
 
-                Item {
-                    Layout.fillWidth: true
+                SvgIcon {
+                    anchors.centerIn: parent
+                    source: "qrc:/icons/icons/close.svg"
+                    iconSize: ComponentTokens.iconSizeMenu
+                    color: SemanticTokens.iconColor
                 }
 
-                Rectangle {
-                    id: closeButton
-                    objectName: "beautifyPanelDismissButton"
-                    Layout.alignment: Qt.AlignVCenter
-                    Layout.preferredWidth: 28
-                    Layout.preferredHeight: 28
-                    width: 28
-                    height: 28
-                    radius: 8
-                    color: closeMouse.pressed
-                        ? ComponentTokens.buttonGhostBackgroundPressed
-                        : closeMouse.containsMouse
-                            ? ComponentTokens.buttonGhostBackgroundHover
-                            : "transparent"
-
-                    Behavior on color {
-                        ColorAnimation { duration: SemanticTokens.durationFast }
-                    }
-
-                    SvgIcon {
-                        anchors.centerIn: parent
-                        source: "qrc:/icons/icons/close.svg"
-                        iconSize: ComponentTokens.iconSizeMenu
-                        color: SemanticTokens.iconColor
-                    }
-
-                    MouseArea {
-                        id: closeMouse
-                        objectName: "beautifyPanelDismissMouseArea"
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: CursorTokens.clickable
-                        onClicked: if (root.backend) root.backend.requestClose()
-                    }
+                MouseArea {
+                    id: closeMouse
+                    objectName: "beautifyPanelDismissMouseArea"
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: CursorTokens.clickable
+                    onClicked: if (root.backend) root.backend.requestClose()
                 }
             }
         }
