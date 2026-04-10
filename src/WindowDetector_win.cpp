@@ -27,8 +27,10 @@ struct EnumWindowsContext {
     DWORD parentProcessId;  // Set per top-level window before EnumChildWindows
 };
 
-// Forward declaration
+// Forward declarations
+BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam);
 BOOL CALLBACK enumChildWindowsProc(HWND hwnd, LPARAM lParam);
+int getMinimumSize(ElementType type);
 
 std::vector<DetectedElement> enumerateWindowsSnapshot(qreal dpr, DetectionFlags flags)
 {
