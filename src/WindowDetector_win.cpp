@@ -1,10 +1,8 @@
 #include "WindowDetector.h"
 #include "utils/CoordinateHelper.h"
-#include <QCoreApplication>
 #include <QScreen>
 #include <QDebug>
 #include <QFileInfo>
-#include <QtConcurrent>
 #include <QMutexLocker>
 
 #include <limits>
@@ -495,56 +493,13 @@ void WindowDetector::refreshWindowList(QueryMode queryMode)
 
 void WindowDetector::refreshWindowListAsync(QueryMode queryMode)
 {
-    uint64_t requestId = ++m_refreshRequestId;
-    const QPointer<QScreen> targetScreen = m_currentScreen;
-    QPointer<WindowDetector> guardedThis(this);
-    QPointer<QCoreApplication> app = QCoreApplication::instance();
-
-    m_refreshComplete = false;
-    const qreal dpr = m_currentScreen ? m_currentScreen->devicePixelRatio() : 1.0;
-
-    // Snapshot detection flags to avoid data race with main thread
-    const DetectionFlags flags = flagsForQueryMode(m_detectionFlags, queryMode);
-
-    {
-        QMutexLocker locker(&m_cacheMutex);
-        if (m_cacheScreen != targetScreen.data()) {
-            m_cacheReady = false;
-        }
-    }
-
-    m_refreshFuture = QtConcurrent::run([guardedThis, app, dpr, requestId, flags, targetScreen, queryMode]() mutable {
-        std::vector<DetectedElement> newCache = enumerateWindowsSnapshot(dpr, flags);
-
-        if (!app) {
-            return;
-        }
-
-        QMetaObject::invokeMethod(
-            app,
-            [guardedThis, requestId, targetScreen, queryMode, newCache = std::move(newCache)]() mutable {
-                if (!guardedThis) {
-                    return;
-                }
-
-                if (guardedThis->m_refreshRequestId.load() != requestId) {
-                    qDebug() << "WindowDetector: Discarding stale refresh result";
-                    return;
-                }
-
-                {
-                    QMutexLocker locker(&guardedThis->m_cacheMutex);
-                    guardedThis->m_windowCache = std::move(newCache);
-                    guardedThis->m_cacheScreen = targetScreen.data();
-                    guardedThis->m_cacheQueryMode = queryMode;
-                    guardedThis->m_cacheReady = true;
-                }
-
-                guardedThis->m_refreshComplete = true;
-                emit guardedThis->windowListReady();
-            },
-            Qt::QueuedConnection);
-    });
+    // CoordinateHelper::physicalToQtLogical() consults QGuiApplication/QScreen
+    // state. Keep Windows window-list refreshes on the GUI thread until the
+    // async path can be redesigned to avoid GUI-thread-only APIs.
+    refreshWindowList(queryMode);
+    QMetaObject::invokeMethod(this, [this]() {
+        emit windowListReady();
+    }, Qt::QueuedConnection);
 }
 
 bool WindowDetector::isRefreshComplete() const
