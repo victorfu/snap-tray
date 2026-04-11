@@ -8,6 +8,17 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 - No unreleased entries yet.
 
+## [1.0.50] - 2026-04-12
+
+### Improved
+
+- Improved marker drawing so dense strokes render more cleanly and avoid unnecessary point noise.
+- Improved shortcut-hint overlay repainting so anti-aliased edges stay clean while capture hints update.
+
+### Fixed
+
+- Fixed a macOS recording-preview crash that could happen when saving from the preview opened the native file dialog.
+
 ## [1.0.49] - 2026-04-10
 
 ### Improved
