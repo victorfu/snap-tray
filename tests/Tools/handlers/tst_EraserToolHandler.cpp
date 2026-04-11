@@ -3,6 +3,7 @@
 #include "tools/ToolContext.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ErasedItemsGroup.h"
+#include "annotations/MarkerStroke.h"
 #include "annotations/PencilStroke.h"
 
 /**
@@ -47,6 +48,7 @@ private slots:
 
     // Eraser functionality tests
     void testErasesIntersectingItems();
+    void testErasesIntersectingMarkerItems();
     void testDoesNotEraseNonIntersecting();
     void testCursor_UsesCenteredPixmapHotspot();
     void testCursor_UsesSingleCrispOutline();
@@ -58,6 +60,7 @@ private:
     int m_repaintCount = 0;
 
     void addTestStroke(const QVector<QPointF>& points);
+    void addTestMarker(const QVector<QPointF>& points);
 };
 
 void TestEraserToolHandler::init()
@@ -89,6 +92,12 @@ void TestEraserToolHandler::cleanup()
 void TestEraserToolHandler::addTestStroke(const QVector<QPointF>& points)
 {
     auto stroke = std::make_unique<PencilStroke>(points, Qt::red, 3);
+    m_layer->addItem(std::move(stroke));
+}
+
+void TestEraserToolHandler::addTestMarker(const QVector<QPointF>& points)
+{
+    auto stroke = std::make_unique<MarkerStroke>(points, Qt::yellow, 20);
     m_layer->addItem(std::move(stroke));
 }
 
@@ -210,6 +219,23 @@ void TestEraserToolHandler::testErasesIntersectingItems()
     m_handler->onMouseRelease(m_context, QPoint(150, 100));
 
     // Eraser stores removed items in an ErasedItemsGroup for undo/redo support.
+    QCOMPARE(m_layer->itemCount(), 1);
+    QVERIFY(dynamic_cast<ErasedItemsGroup*>(m_layer->itemAt(0)) != nullptr);
+}
+
+void TestEraserToolHandler::testErasesIntersectingMarkerItems()
+{
+    const QVector<QPointF> markerPoints = {
+        QPointF(100, 100), QPointF(150, 100), QPointF(200, 100)
+    };
+    addTestMarker(markerPoints);
+
+    QCOMPARE(m_layer->itemCount(), 1);
+
+    m_handler->onMousePress(m_context, QPoint(150, 100));
+    m_handler->onMouseMove(m_context, QPoint(150, 100));
+    m_handler->onMouseRelease(m_context, QPoint(150, 100));
+
     QCOMPARE(m_layer->itemCount(), 1);
     QVERIFY(dynamic_cast<ErasedItemsGroup*>(m_layer->itemAt(0)) != nullptr);
 }

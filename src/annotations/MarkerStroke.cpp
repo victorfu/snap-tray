@@ -1,5 +1,4 @@
 #include "annotations/MarkerStroke.h"
-#include "utils/CoordinateHelper.h"
 #include <QPainter>
 #include <QPainterPath>
 #include <QtMath>
@@ -79,50 +78,11 @@ void MarkerStroke::draw(QPainter &painter) const
     if (m_points.size() < 2) return;
 
     painter.save();
-
-    QRect bounds = boundingRect();
-    if (bounds.isEmpty()) {
-        painter.restore();
-        return;
-    }
-
-    qreal dpr = painter.device()->devicePixelRatio();
-
-    // Check if cache is valid
-    bool cacheValid = !m_cachedImage.isNull()
-        && m_cachedDpr == dpr
-        && m_cachedPointCount == m_points.size();
-
-    if (!cacheValid) {
-        // Regenerate cache
-        // Use QImage to avoid QPixmap halo/blending artifacts on transparent backgrounds
-        QImage offscreen(CoordinateHelper::toPhysical(bounds.size(), dpr), QImage::Format_ARGB32_Premultiplied);
-        offscreen.setDevicePixelRatio(dpr);
-        offscreen.fill(Qt::transparent);
-
-        {
-            QPainter offPainter(&offscreen);
-            offPainter.setRenderHint(QPainter::Antialiasing, true);
-            QPen pen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-            offPainter.setPen(pen);
-            offPainter.setBrush(Qt::NoBrush);
-
-            // Build smooth path and translate to local coordinates
-            QPainterPath path = buildSmoothPath(m_points);
-            path.translate(-bounds.topLeft());
-            offPainter.drawPath(path);
-        }
-
-        // Update cache
-        m_cachedImage = offscreen;
-        m_cachedOrigin = bounds.topLeft();
-        m_cachedDpr = dpr;
-        m_cachedPointCount = m_points.size();
-    }
-
-    // Use cached image
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setPen(QPen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter.setBrush(Qt::NoBrush);
     painter.setOpacity(0.4);
-    painter.drawImage(m_cachedOrigin, m_cachedImage);
+    painter.drawPath(buildSmoothPath(m_points));
 
     painter.restore();
 }
@@ -151,11 +111,9 @@ void MarkerStroke::drawPreview(QPainter &painter) const
     }
 
     if (!m_cachedPreviewPath.isEmpty()) {
-        painter.drawPath(m_cachedPreviewPath);
-        QPainterPath tailPath;
-        tailPath.moveTo(m_cachedPreviewPath.currentPosition());
-        tailPath.quadTo(m_points.last(), m_points.last());
-        painter.drawPath(tailPath);
+        QPainterPath previewPath = m_cachedPreviewPath;
+        previewPath.quadTo(m_points.last(), m_points.last());
+        painter.drawPath(previewPath);
     }
 
     painter.restore();
@@ -178,9 +136,11 @@ QRect MarkerStroke::boundingRect() const
             maxY = qMax(maxY, p.y());
         }
 
-        int margin = m_width / 2 + 1;
-        m_boundingRectCache = QRect(static_cast<int>(minX) - margin, static_cast<int>(minY) - margin,
-                                    static_cast<int>(maxX - minX) + 2 * margin, static_cast<int>(maxY - minY) + 2 * margin);
+        const int margin = m_width / 2 + 1;
+        const QRect pointBounds = QRectF(
+            QPointF(minX, minY),
+            QPointF(maxX, maxY)).normalized().toAlignedRect();
+        m_boundingRectCache = pointBounds.adjusted(-margin, -margin, margin, margin);
         m_boundingRectDirty = false;
     }
     return m_boundingRectCache;
@@ -203,10 +163,6 @@ void MarkerStroke::translate(const QPointF& delta)
 
     // Translation changes both geometry and rendered placement.
     m_boundingRectDirty = true;
-    m_cachedImage = QImage();
-    m_cachedOrigin = QPoint();
-    m_cachedDpr = 0.0;
-    m_cachedPointCount = 0;
     m_cachedPreviewPath = QPainterPath();
     m_cachedPreviewLastControlIndex = 0;
 }
@@ -215,15 +171,14 @@ void MarkerStroke::addPoint(const QPointF &point)
 {
     m_points.append(point);
 
-    // Incrementally update bounding rect cache
-    int margin = m_width / 2 + 1;
-    QRect pointRect(static_cast<int>(point.x()) - margin, static_cast<int>(point.y()) - margin,
-                    margin * 2, margin * 2);
-
-    if (m_boundingRectDirty || m_boundingRectCache.isEmpty()) {
-        m_boundingRectCache = pointRect;
-        m_boundingRectDirty = false;
-    } else {
+    // If the cache is already dirty, keep it dirty so the next boundingRect()
+    // recomputes from all points, including points provided at construction.
+    if (!m_boundingRectDirty) {
+        const int margin = m_width / 2 + 1;
+        const QRect pointRect = QRectF(point, point)
+            .normalized()
+            .toAlignedRect()
+            .adjusted(-margin, -margin, margin, margin);
         m_boundingRectCache = m_boundingRectCache.united(pointRect);
     }
 

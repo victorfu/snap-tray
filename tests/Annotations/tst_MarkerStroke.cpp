@@ -2,6 +2,8 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QImage>
+#include <QtMath>
+#include <algorithm>
 #include "annotations/MarkerStroke.h"
 
 /**
@@ -34,9 +36,11 @@ private slots:
     void testBoundingRect_VerticalLine();
     void testBoundingRect_DiagonalLine();
     void testBoundingRect_IncludesWidth();
+    void testBoundingRect_FractionalPointsUsesCoveringBounds();
 
     // Point addition tests
     void testAddPoint_IncrementsBoundingRect();
+    void testAddPoint_BoundingRectCoversInitialAndFractionalAppendedPoints();
     void testAddPoint_BuildsPath();
     void testAddPoint_MultiplePoints();
 
@@ -60,6 +64,7 @@ private slots:
     // Drawing tests
     void testDraw_MultiplePoints();
     void testDrawPreview_MultiplePoints();
+    void testDrawPreview_MatchesCommittedAcrossDpr();
     void testDraw_JitterPath_MatchesMidpointReference();
     void testTranslate_UpdatesBoundingRectAfterCacheWarmup();
     void testTranslate_RebuildsRenderedCacheAtNewPosition();
@@ -124,31 +129,6 @@ QPainterPath buildMidpointReferencePath(const QVector<QPointF>& points)
     return path;
 }
 
-QRect markerBoundsForPoints(const QVector<QPointF>& points, int width)
-{
-    if (points.isEmpty()) {
-        return QRect();
-    }
-
-    qreal minX = points[0].x();
-    qreal maxX = points[0].x();
-    qreal minY = points[0].y();
-    qreal maxY = points[0].y();
-
-    for (const QPointF& point : points) {
-        minX = qMin(minX, point.x());
-        maxX = qMax(maxX, point.x());
-        minY = qMin(minY, point.y());
-        maxY = qMax(maxY, point.y());
-    }
-
-    const int margin = width / 2 + 1;
-    return QRect(static_cast<int>(minX) - margin,
-                 static_cast<int>(minY) - margin,
-                 static_cast<int>(maxX - minX) + 2 * margin,
-                 static_cast<int>(maxY - minY) + 2 * margin);
-}
-
 QImage renderMidpointReferenceMarker(const QVector<QPointF>& points,
                                      const QColor& color,
                                      int width,
@@ -157,29 +137,71 @@ QImage renderMidpointReferenceMarker(const QVector<QPointF>& points,
     QImage image(imageSize, QImage::Format_ARGB32_Premultiplied);
     image.fill(Qt::white);
 
-    const QRect bounds = markerBoundsForPoints(points, width);
-
-    QImage offscreen(bounds.size(), QImage::Format_ARGB32_Premultiplied);
-    offscreen.fill(Qt::transparent);
-
-    {
-        QPainter offPainter(&offscreen);
-        offPainter.setRenderHint(QPainter::Antialiasing, true);
-        offPainter.setPen(QPen(color, width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-        offPainter.setBrush(Qt::NoBrush);
-
-        QPainterPath path = buildMidpointReferencePath(points);
-        path.translate(-bounds.topLeft());
-        offPainter.drawPath(path);
-    }
-
-    {
-        QPainter painter(&image);
-        painter.setOpacity(0.4);
-        painter.drawImage(bounds.topLeft(), offscreen);
-    }
+    QPainter painter(&image);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setPen(QPen(color, width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter.setBrush(Qt::NoBrush);
+    painter.setOpacity(0.4);
+    painter.drawPath(buildMidpointReferencePath(points));
 
     return image;
+}
+
+QImage renderMarkerStroke(const MarkerStroke& stroke, const QSize& logicalSize,
+                          qreal dpr, bool preview)
+{
+    const QSize physicalSize(qCeil(logicalSize.width() * dpr),
+                             qCeil(logicalSize.height() * dpr));
+    QImage image(physicalSize, QImage::Format_ARGB32_Premultiplied);
+    image.setDevicePixelRatio(dpr);
+    image.fill(Qt::white);
+
+    QPainter painter(&image);
+    if (preview) {
+        stroke.drawPreview(painter);
+    } else {
+        stroke.draw(painter);
+    }
+    painter.end();
+
+    return image;
+}
+
+bool imagesMatchWithinTolerance(const QImage& actual,
+                                const QImage& expected,
+                                const QRect& logicalBounds,
+                                qreal dpr)
+{
+    if (actual.size() != expected.size()) {
+        return false;
+    }
+
+    const QRect physicalBounds = QRect(
+        qFloor(logicalBounds.left() * dpr),
+        qFloor(logicalBounds.top() * dpr),
+        qCeil(logicalBounds.width() * dpr),
+        qCeil(logicalBounds.height() * dpr)).intersected(actual.rect());
+
+    int comparedPixels = 0;
+    int differingPixels = 0;
+    for (int y = physicalBounds.top(); y <= physicalBounds.bottom(); ++y) {
+        for (int x = physicalBounds.left(); x <= physicalBounds.right(); ++x) {
+            ++comparedPixels;
+            const QColor a = actual.pixelColor(x, y);
+            const QColor e = expected.pixelColor(x, y);
+            const int maxDelta = std::max({
+                qAbs(a.red() - e.red()),
+                qAbs(a.green() - e.green()),
+                qAbs(a.blue() - e.blue()),
+                qAbs(a.alpha() - e.alpha())
+            });
+            if (maxDelta > 8) {
+                ++differingPixels;
+            }
+        }
+    }
+
+    return comparedPixels > 0 && differingPixels * 200 <= comparedPixels;
 }
 
 // ============================================================================
@@ -287,6 +309,25 @@ void TestMarkerStroke::testBoundingRect_IncludesWidth()
     QVERIFY(thickStroke.boundingRect().height() > thinStroke.boundingRect().height());
 }
 
+void TestMarkerStroke::testBoundingRect_FractionalPointsUsesCoveringBounds()
+{
+    const QVector<QPointF> points = {
+        QPointF(10.25, 20.75),
+        QPointF(50.8, 24.2),
+        QPointF(75.6, 55.9)
+    };
+    MarkerStroke stroke(points, Qt::yellow, 20);
+
+    const QRect rect = stroke.boundingRect();
+    const int margin = 20 / 2 + 1;
+    const QRect pointBounds = QRectF(
+        QPointF(10.25, 20.75),
+        QPointF(75.6, 55.9)).normalized().toAlignedRect();
+
+    QCOMPARE(rect, pointBounds.adjusted(-margin, -margin, margin, margin));
+    QVERIFY(rect.contains(QPoint(76, 56)));
+}
+
 // ============================================================================
 // Point Addition Tests
 // ============================================================================
@@ -303,6 +344,17 @@ void TestMarkerStroke::testAddPoint_IncrementsBoundingRect()
     stroke.addPoint(QPointF(200, 200));
     QRect rect2 = stroke.boundingRect();
     QVERIFY(rect2.width() > rect1.width() || rect2.height() > rect1.height());
+}
+
+void TestMarkerStroke::testAddPoint_BoundingRectCoversInitialAndFractionalAppendedPoints()
+{
+    MarkerStroke stroke({QPointF(10.25, 20.75)}, Qt::yellow, 20);
+
+    stroke.addPoint(QPointF(80.6, 65.4));
+
+    const QRect rect = stroke.boundingRect();
+    QVERIFY(rect.contains(QPoint(10, 20)));
+    QVERIFY(rect.contains(QPoint(81, 66)));
 }
 
 void TestMarkerStroke::testAddPoint_BuildsPath()
@@ -493,6 +545,31 @@ void TestMarkerStroke::testDrawPreview_MultiplePoints()
     painter.end();
 
     QVERIFY(regionHasNonWhitePixel(image, stroke.boundingRect().adjusted(-2, -2, 2, 2)));
+}
+
+void TestMarkerStroke::testDrawPreview_MatchesCommittedAcrossDpr()
+{
+    const QVector<QPointF> points = {
+        QPointF(35.25, 82.75),
+        QPointF(58.5, 45.25),
+        QPointF(83.75, 112.5),
+        QPointF(125.4, 68.8),
+        QPointF(164.2, 122.6),
+        QPointF(206.6, 76.4)
+    };
+    MarkerStroke stroke(points, Qt::yellow, 20);
+    const QSize logicalSize(260, 180);
+
+    for (const qreal dpr : {1.0, 1.25, 1.5, 2.0}) {
+        const QImage committed = renderMarkerStroke(stroke, logicalSize, dpr, false);
+        const QImage preview = renderMarkerStroke(stroke, logicalSize, dpr, true);
+        QVERIFY2(imagesMatchWithinTolerance(
+                     preview,
+                     committed,
+                     stroke.boundingRect().adjusted(-2, -2, 2, 2),
+                     dpr),
+                 qPrintable(QStringLiteral("Preview and committed marker diverged at DPR %1").arg(dpr)));
+    }
 }
 
 void TestMarkerStroke::testDraw_JitterPath_MatchesMidpointReference()

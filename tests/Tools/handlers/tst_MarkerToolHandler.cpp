@@ -17,6 +17,8 @@ private slots:
     void testPreviewBounds_StaysLocalAsStrokeGrows();
     void testFloatInputPreservesFractionalPoints();
     void testFiltersMicroMoves();
+    void testReleaseFiltersTinyTerminalSegment();
+    void testDprScaledPointFiltering();
 
 private:
     MarkerToolHandler* m_handler = nullptr;
@@ -114,6 +116,53 @@ void TestMarkerToolHandler::testFiltersMicroMoves()
     auto* stroke = dynamic_cast<MarkerStroke*>(m_layer->itemAt(0));
     QVERIFY(stroke != nullptr);
     QCOMPARE(stroke->points().size(), qsizetype(2));
+}
+
+void TestMarkerToolHandler::testReleaseFiltersTinyTerminalSegment()
+{
+    m_handler->onMousePressF(m_context, QPointF(10.0, 10.0));
+    m_handler->onMouseMoveF(m_context, QPointF(20.0, 10.0));
+    m_handler->onMouseReleaseF(m_context, QPointF(21.0, 10.0));
+
+    QCOMPARE(m_layer->itemCount(), size_t(1));
+    auto* stroke = dynamic_cast<MarkerStroke*>(m_layer->itemAt(0));
+    QVERIFY(stroke != nullptr);
+    QCOMPARE(stroke->points().size(), qsizetype(2));
+    QCOMPARE(stroke->points().last(), QPointF(20.0, 10.0));
+}
+
+void TestMarkerToolHandler::testDprScaledPointFiltering()
+{
+    struct Case {
+        qreal dpr;
+        qsizetype expectedPointCount;
+    };
+
+    const Case cases[] = {
+        {1.0, 2},
+        {1.25, 3},
+        {1.5, 3},
+        {2.0, 3}
+    };
+
+    for (const Case& testCase : cases) {
+        MarkerToolHandler handler;
+        AnnotationLayer layer;
+        ToolContext context;
+        context.annotationLayer = &layer;
+        context.color = Qt::yellow;
+        context.devicePixelRatio = testCase.dpr;
+
+        handler.onMousePressF(&context, QPointF(10.0, 10.0));
+        handler.onMouseMoveF(&context, QPointF(12.1, 10.0));
+        handler.onMouseMoveF(&context, QPointF(14.2, 10.0));
+        handler.onMouseReleaseF(&context, QPointF(14.2, 10.0));
+
+        QCOMPARE(layer.itemCount(), size_t(1));
+        auto* stroke = dynamic_cast<MarkerStroke*>(layer.itemAt(0));
+        QVERIFY(stroke != nullptr);
+        QCOMPARE(stroke->points().size(), testCase.expectedPointCount);
+    }
 }
 
 QTEST_MAIN(TestMarkerToolHandler)

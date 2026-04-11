@@ -4,6 +4,7 @@
 #include <QFont>
 
 #include "annotations/AnnotationLayer.h"
+#include "annotations/MarkerStroke.h"
 #include "annotations/PencilStroke.h"
 #include "annotations/PolylineAnnotation.h"
 #include "annotations/TextBoxAnnotation.h"
@@ -30,6 +31,7 @@ private slots:
     void testTranslateAll_TranslatesErasedItemsGroupContents();
     void testRedo_ErasedItemsGroup_ReappliesDeletion();
     void testRemoveItemsIntersecting_AdjacentRemovals_TrackOriginalIndices();
+    void testRemoveItemsIntersecting_MarkerRemovals_TrackOriginalIndices();
     void testRedo_ErasedItemsGroup_AdjacentRemovals_PreservesOrder();
     void testRedo_ErasedItemsGroup_DuplicateIndices_DoesNotOverDelete();
 
@@ -37,6 +39,7 @@ private:
     static bool hasVisiblePixel(const QImage& image, const QRect& probe);
     static std::unique_ptr<PolylineAnnotation> createPolyline(int y);
     static std::unique_ptr<PencilStroke> createPencil(int y);
+    static std::unique_ptr<MarkerStroke> createMarker(int y);
     static std::unique_ptr<TextBoxAnnotation> createTextBox(const QPointF& pos, const QString& text);
 };
 
@@ -70,6 +73,15 @@ std::unique_ptr<PencilStroke> TestAnnotationLayer::createPencil(int y)
         QPointF(140.0, static_cast<qreal>(y))
     };
     return std::make_unique<PencilStroke>(points, QColor(Qt::red), 2, LineStyle::Solid);
+}
+
+std::unique_ptr<MarkerStroke> TestAnnotationLayer::createMarker(int y)
+{
+    QVector<QPointF> points = {
+        QPointF(20.0, static_cast<qreal>(y)),
+        QPointF(140.0, static_cast<qreal>(y))
+    };
+    return std::make_unique<MarkerStroke>(points, QColor(Qt::yellow), 20);
 }
 
 std::unique_ptr<TextBoxAnnotation> TestAnnotationLayer::createTextBox(const QPointF& pos,
@@ -404,6 +416,29 @@ void TestAnnotationLayer::testRemoveItemsIntersecting_AdjacentRemovals_TrackOrig
 
     auto* firstRemaining = dynamic_cast<PencilStroke*>(layer.itemAt(0));
     auto* secondRemaining = dynamic_cast<PencilStroke*>(layer.itemAt(1));
+    QVERIFY(firstRemaining != nullptr);
+    QVERIFY(secondRemaining != nullptr);
+    QVERIFY(firstRemaining->intersectsCircle(QPoint(80, 20), 1));
+    QVERIFY(secondRemaining->intersectsCircle(QPoint(80, 80), 1));
+}
+
+void TestAnnotationLayer::testRemoveItemsIntersecting_MarkerRemovals_TrackOriginalIndices()
+{
+    AnnotationLayer layer;
+    layer.addItem(createMarker(20));
+    layer.addItem(createMarker(40));
+    layer.addItem(createMarker(60));
+    layer.addItem(createMarker(80));
+
+    auto removed = layer.removeItemsIntersecting(QPoint(80, 50), 24);
+
+    QCOMPARE(removed.size(), static_cast<size_t>(2));
+    QCOMPARE(removed[0].originalIndex, static_cast<size_t>(1));
+    QCOMPARE(removed[1].originalIndex, static_cast<size_t>(2));
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
+
+    auto* firstRemaining = dynamic_cast<MarkerStroke*>(layer.itemAt(0));
+    auto* secondRemaining = dynamic_cast<MarkerStroke*>(layer.itemAt(1));
     QVERIFY(firstRemaining != nullptr);
     QVERIFY(secondRemaining != nullptr);
     QVERIFY(firstRemaining->intersectsCircle(QPoint(80, 20), 1));

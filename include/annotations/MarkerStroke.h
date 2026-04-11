@@ -3,7 +3,6 @@
 
 #include "AnnotationItem.h"
 #include <QColor>
-#include <QImage>
 #include <QPainterPath>
 #include <QPointF>
 #include <QVector>
@@ -35,12 +34,6 @@ private:
     QVector<QPointF> m_points;
     QColor m_color;
     int m_width;
-
-    // Image cache for draw() optimization (QImage used to avoid artifacts on some platforms)
-    mutable QImage m_cachedImage;
-    mutable QPoint m_cachedOrigin;
-    mutable qreal m_cachedDpr = 0.0;
-    mutable int m_cachedPointCount = 0;
 
     mutable QPainterPath m_cachedPreviewPath;
     mutable int m_cachedPreviewLastControlIndex = 0;
