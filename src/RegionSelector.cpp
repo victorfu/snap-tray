@@ -3338,7 +3338,8 @@ void RegionSelector::updateShortcutHintsHoverVisibilityDuringSelection(const QPo
     }
 
     const QRect panelRect = m_shortcutHintsOverlay->panelRectForViewport(size());
-    if (!panelRect.isValid()) {
+    const QRect repaintRect = m_shortcutHintsOverlay->repaintRectForViewport(size());
+    if (!panelRect.isValid() || !repaintRect.isValid()) {
         return;
     }
 
@@ -3355,7 +3356,7 @@ void RegionSelector::updateShortcutHintsHoverVisibilityDuringSelection(const QPo
         if (!shouldTemporarilyHide && !m_shortcutHintsVisible) {
             m_shortcutHintsVisible = true;
             m_shortcutHintsTemporarilyHiddenByHover = false;
-            requestCaptureSceneUpdate(panelRect);
+            requestCaptureSceneUpdate(repaintRect);
         }
         return;
     }
@@ -3363,7 +3364,7 @@ void RegionSelector::updateShortcutHintsHoverVisibilityDuringSelection(const QPo
     if (shouldTemporarilyHide && m_shortcutHintsVisible) {
         m_shortcutHintsVisible = false;
         m_shortcutHintsTemporarilyHiddenByHover = true;
-        requestCaptureSceneUpdate(panelRect);
+        requestCaptureSceneUpdate(repaintRect);
     }
 }
 

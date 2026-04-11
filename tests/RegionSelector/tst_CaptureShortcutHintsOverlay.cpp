@@ -213,4 +213,28 @@ void TestCaptureShortcutHintsOverlay::testPanelRectWithinViewport()
     }
 }
 
+void TestCaptureShortcutHintsOverlay::testRepaintRectCoversPanelEdges()
+{
+    CaptureShortcutHintsOverlay overlay;
+
+    const QSize viewport(900, 600);
+    const QRect panelRect = overlay.panelRectForViewport(viewport);
+    const QRect repaintRect = overlay.repaintRectForViewport(viewport);
+
+    QVERIFY2(panelRect.isValid(), "Panel rect should be valid");
+    QVERIFY2(repaintRect.isValid(), "Repaint rect should be valid");
+    QVERIFY2(repaintRect.contains(panelRect),
+             "Repaint rect should include the logical panel rect");
+    QVERIFY2(repaintRect.left() < panelRect.left(),
+             "Repaint rect should cover antialiased pixels left of the panel");
+    QVERIFY2(repaintRect.top() < panelRect.top(),
+             "Repaint rect should cover antialiased pixels above the panel");
+    QVERIFY2(repaintRect.right() > panelRect.right(),
+             "Repaint rect should cover antialiased pixels right of the panel");
+    QVERIFY2(repaintRect.bottom() > panelRect.bottom(),
+             "Repaint rect should cover antialiased pixels below the panel");
+    QVERIFY2(QRect(QPoint(), viewport).contains(repaintRect),
+             "Repaint rect should stay inside the viewport");
+}
+
 QTEST_MAIN(TestCaptureShortcutHintsOverlay)

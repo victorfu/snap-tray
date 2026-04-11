@@ -15,4 +15,5 @@ private slots:
     void testLayoutMetrics();
     void testLayoutMetricsWithoutMagnifierHints();
     void testPanelRectWithinViewport();
+    void testRepaintRectCoversPanelEdges();
 };
