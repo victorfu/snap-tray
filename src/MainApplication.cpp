@@ -985,10 +985,13 @@ void MainApplication::showRecordingPreview(const QString& videoPath, int default
     m_previewBackend = new RecordingPreviewBackend(videoPath, this);
     m_previewBackend->setDefaultOutputFormat(defaultOutputFormat);
 
+    // The save handler opens a native dialog. Keep it out of the QML click/key
+    // handler stack so preview deleteLater() cannot run during a nested dialog
+    // event loop while QML is still handling the action.
     connect(m_previewBackend, &RecordingPreviewBackend::saveRequested,
-        this, &MainApplication::onPreviewSaveRequested);
+        this, &MainApplication::onPreviewSaveRequested, Qt::QueuedConnection);
     connect(m_previewBackend, &RecordingPreviewBackend::discardRequested,
-        this, &MainApplication::onPreviewDiscardRequested);
+        this, &MainApplication::onPreviewDiscardRequested, Qt::QueuedConnection);
     connect(m_previewBackend, &RecordingPreviewBackend::closed,
         this, [this](bool saved) {
             m_recordingManager->onPreviewClosed(saved);
