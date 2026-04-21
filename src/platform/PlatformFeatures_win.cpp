@@ -114,6 +114,19 @@ bool PlatformFeatures::copyImageToClipboardPersistently(const QImage& image) con
     return true;
 }
 
+bool PlatformFeatures::copyImageToClipboardForGui(const QImage& image) const
+{
+    if (image.isNull()) {
+        return false;
+    }
+
+    if (QClipboard* clipboard = QGuiApplication::clipboard()) {
+        clipboard->setImage(image);
+        return true;
+    }
+    return false;
+}
+
 QString PlatformFeatures::getAppExecutablePath() const
 {
     return QCoreApplication::applicationDirPath();

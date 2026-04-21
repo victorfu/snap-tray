@@ -65,6 +65,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <memory>
 #include <QPainter>
 #include <QPainterPath>
+#include <QClipboard>
 #include <QMouseEvent>
 #include <QKeyEvent>
 #include <QCloseEvent>

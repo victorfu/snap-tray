@@ -29,6 +29,28 @@ QString escapeForSingleQuotedShellLiteral(const QString& value)
     return escaped;
 }
 
+bool writePngImageToGeneralPasteboard(const QImage& image)
+{
+    if (image.isNull()) {
+        return false;
+    }
+
+    QByteArray pngData;
+    QBuffer buffer(&pngData);
+    buffer.open(QIODevice::WriteOnly);
+    if (!image.save(&buffer, "PNG")) {
+        return false;
+    }
+
+    @autoreleasepool {
+        NSPasteboard* pasteboard = [NSPasteboard generalPasteboard];
+        [pasteboard clearContents];
+
+        NSData* data = [NSData dataWithBytes:pngData.constData() length:pngData.size()];
+        return [pasteboard setData:data forType:NSPasteboardTypePNG] == YES;
+    }
+}
+
 } // namespace
 
 PlatformFeatures& PlatformFeatures::instance()
@@ -99,30 +121,14 @@ QIcon PlatformFeatures::createTrayIcon() const
 
 bool PlatformFeatures::copyImageToClipboardPersistently(const QImage& image) const
 {
-    if (image.isNull()) {
-        return false;
-    }
+    return writePngImageToGeneralPasteboard(image);
+}
 
-    // Convert QImage to PNG data
-    QByteArray pngData;
-    QBuffer buffer(&pngData);
-    buffer.open(QIODevice::WriteOnly);
-    if (!image.save(&buffer, "PNG")) {
-        return false;
-    }
-
-    // Use NSPasteboard directly to ensure data persists after app exit
-    @autoreleasepool {
-        NSPasteboard* pasteboard = [NSPasteboard generalPasteboard];
-        [pasteboard clearContents];
-
-        NSData* data = [NSData dataWithBytes:pngData.constData() length:pngData.size()];
-
-        // Write PNG data with public.png UTI
-        BOOL success = [pasteboard setData:data forType:NSPasteboardTypePNG];
-
-        return success == YES;
-    }
+bool PlatformFeatures::copyImageToClipboardForGui(const QImage& image) const
+{
+    // Qt 6.11/macOS can trap later while fulfilling promised TIFF data from
+    // QColorSpace-tagged QImages. Eager PNG pasteboard data avoids that path.
+    return writePngImageToGeneralPasteboard(image);
 }
 
 QString PlatformFeatures::getAppExecutablePath() const

@@ -4,8 +4,6 @@
 #include <QObject>
 #include <QString>
 #include <QIcon>
-#include <QClipboard>
-#include <QGuiApplication>
 #include <QImage>
 
 class OCRManager;
@@ -28,18 +26,7 @@ public:
     bool copyImageToClipboardPersistently(const QImage& image) const;
 
     // Copy image to clipboard for interactive GUI flows.
-    bool copyImageToClipboardForGui(const QImage& image) const
-    {
-        if (image.isNull()) {
-            return false;
-        }
-
-        if (QClipboard* clipboard = QGuiApplication::clipboard()) {
-            clipboard->setImage(image);
-            return true;
-        }
-        return false;
-    }
+    bool copyImageToClipboardForGui(const QImage& image) const;
 
     // CLI installation
     bool isCLIInstalled() const;
