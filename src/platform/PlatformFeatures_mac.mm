@@ -90,16 +90,21 @@ WindowDetector* PlatformFeatures::createWindowDetector(QObject* parent) const
 
 QIcon PlatformFeatures::createTrayIcon() const
 {
-    const int size = 32;
-    QPixmap pixmap(size, size);
+    // Render the 32pt-grid design into a narrower canvas so the menu bar item
+    // (and thus the system highlight pill) matches widths like Google Drive.
+    const int logicalSize = 19;
+    const qreal dpr = 2.0;
+    QPixmap pixmap(static_cast<int>(logicalSize * dpr), static_cast<int>(logicalSize * dpr));
+    pixmap.setDevicePixelRatio(dpr);
     pixmap.fill(Qt::transparent);
 
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::Antialiasing);
+    painter.scale(logicalSize / 32.0, logicalSize / 32.0);
 
     // Capsule background
     QPainterPath bgPath;
-    bgPath.addRoundedRect(0, 0, size, size, size / 2, size / 2);
+    bgPath.addRoundedRect(0, 0, 32, 32, 16, 16);
 
     // Lightning bolt cutout
     QPainterPath lightningPath;
