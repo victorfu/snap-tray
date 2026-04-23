@@ -8,6 +8,17 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 - No unreleased entries yet.
 
+## [1.0.51] - 2026-04-23
+
+### Improved
+
+- Refined the macOS menu bar icon sizing so SnapTray better matches native status item proportions.
+- Refreshed the QR code toolbar icon to align with the shared Lucide-style icon set.
+
+### Fixed
+
+- Fixed macOS capture copying by writing PNG data eagerly, avoiding delayed pasteboard fulfillment crashes.
+
 ## [1.0.50] - 2026-04-12
 
 ### Improved
