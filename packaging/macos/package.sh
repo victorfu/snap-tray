@@ -163,7 +163,7 @@ cmake -S "$PROJECT_ROOT" -B "$BUILD_DIR" \
     -DSNAPTRAY_SPARKLE_FEED_URL="$SNAPTRAY_SPARKLE_FEED_URL" \
     -DSNAPTRAY_SPARKLE_PUBLIC_KEY="$SNAPTRAY_SPARKLE_PUBLIC_KEY" \
     $CCACHE_ARGS
-cmake --build "$BUILD_DIR" --config Release --parallel
+cmake --build "$BUILD_DIR" --config Release --parallel 1
 
 # App is built in bin/ subdirectory
 APP_PATH="$BUILD_DIR/bin/${APP_NAME}.app"

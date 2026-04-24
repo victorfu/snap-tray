@@ -61,7 +61,7 @@ jobs:
             -DCMAKE_C_COMPILER_LAUNCHER=ccache
 
       - name: Build
-        run: cmake --build build --config Release
+        run: cmake --build build --config Release --parallel 1
 
       - name: Run Tests
         run: ctest --test-dir build --output-on-failure
