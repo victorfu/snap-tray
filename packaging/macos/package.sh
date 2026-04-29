@@ -146,6 +146,15 @@ if [ -z "$QT_PREFIX" ] || [ ! -d "$QT_PREFIX" ]; then
 fi
 echo "Qt path: $QT_PREFIX"
 
+if [ -z "$MACOS_SDK_PATH" ]; then
+    MACOS_SDK_PATH=$(xcrun --sdk macosx --show-sdk-path)
+fi
+if [ -z "$MACOS_SDK_PATH" ] || [ ! -d "$MACOS_SDK_PATH" ]; then
+    echo -e "${RED}Error: macOS SDK not found. Check xcrun --sdk macosx --show-sdk-path.${NC}"
+    exit 1
+fi
+echo "macOS SDK path: $MACOS_SDK_PATH"
+
 # Step 1: Build Release
 echo ""
 echo -e "${YELLOW}[1/8] Building release...${NC}"
@@ -160,6 +169,7 @@ fi
 cmake -S "$PROJECT_ROOT" -B "$BUILD_DIR" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_PREFIX_PATH="$QT_PREFIX" \
+    -DCMAKE_OSX_SYSROOT="$MACOS_SDK_PATH" \
     -DSNAPTRAY_SPARKLE_FEED_URL="$SNAPTRAY_SPARKLE_FEED_URL" \
     -DSNAPTRAY_SPARKLE_PUBLIC_KEY="$SNAPTRAY_SPARKLE_PUBLIC_KEY" \
     $CCACHE_ARGS

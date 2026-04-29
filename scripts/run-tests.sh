@@ -17,14 +17,17 @@ configure_build_dir() {
     local buildsystem_file="$build_dir/Makefile"
     local cached_type=""
     local cached_generator=""
+    local cached_sysroot=""
     local desired_generator=""
+    local desired_sdk=""
     local needs_reset=0
     local -a cmake_args=(-S . -B "$build_name" -DCMAKE_BUILD_TYPE="$build_type")
 
     if [[ "$OSTYPE" == darwin* ]]; then
         desired_generator="Ninja"
+        desired_sdk="$(xcrun --sdk macosx --show-sdk-path)"
         buildsystem_file="$build_dir/build.ninja"
-        cmake_args=(-G "$desired_generator" "${cmake_args[@]}" -DCMAKE_PREFIX_PATH="$(brew --prefix qt)")
+        cmake_args=(-G "$desired_generator" "${cmake_args[@]}" -DCMAKE_PREFIX_PATH="$(brew --prefix qt)" -DCMAKE_OSX_SYSROOT="$desired_sdk")
     fi
 
     if [ ! -f "$cache_file" ]; then
@@ -35,7 +38,9 @@ configure_build_dir() {
 
     cached_type="$(sed -n 's/^CMAKE_BUILD_TYPE:STRING=//p' "$cache_file" | head -n 1)"
     cached_generator="$(sed -n 's/^CMAKE_GENERATOR:INTERNAL=//p' "$cache_file" | head -n 1)"
+    cached_sysroot="$(sed -n 's/^CMAKE_OSX_SYSROOT:[^=]*=//p' "$cache_file" | head -n 1)"
     if { [ -n "$desired_generator" ] && [ "$cached_generator" != "$desired_generator" ]; } || \
+       { [ -n "$desired_sdk" ] && [ "$cached_sysroot" != "$desired_sdk" ]; } || \
        [ ! -f "$buildsystem_file" ]; then
         needs_reset=1
     fi

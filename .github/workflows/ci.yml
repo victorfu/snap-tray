@@ -33,7 +33,11 @@ jobs:
         run: |
           # Extract GIT_TAG lines and generate stable hash
           DEPS_HASH=$(grep -E "GIT_TAG\s+" CMakeLists.txt | sort | shasum -a 256 | cut -c1-16)
+          SDK_PATH="$(xcrun --sdk macosx --show-sdk-path)"
+          SDK_HASH=$(printf '%s' "$SDK_PATH" | shasum -a 256 | cut -c1-12)
           echo "hash=$DEPS_HASH" >> $GITHUB_OUTPUT
+          echo "sdk_path=$SDK_PATH" >> $GITHUB_OUTPUT
+          echo "sdk_hash=$SDK_HASH" >> $GITHUB_OUTPUT
 
       - name: Cache FetchContent dependencies
         uses: actions/cache@v4
@@ -48,15 +52,14 @@ jobs:
             build/_deps/qhotkey-src
             build/_deps/qhotkey-build
             build/_deps/qhotkey-subbuild
-          key: deps-macos-${{ steps.deps-key.outputs.hash }}
-          restore-keys: |
-            deps-macos-
+          key: deps-macos-${{ steps.deps-key.outputs.hash }}-${{ steps.deps-key.outputs.sdk_hash }}
 
       - name: Configure CMake
         run: |
           cmake -S . -B build \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)" \
+            -DCMAKE_OSX_SYSROOT="${{ steps.deps-key.outputs.sdk_path }}" \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache
 
