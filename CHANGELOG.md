@@ -8,6 +8,18 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 - No unreleased entries yet.
 
+## [1.0.52] - 2026-05-07
+
+### Improved
+
+- Improved macOS build and release reliability by pinning the active SDK path and refreshing cached CMake dependencies when the SDK changes.
+- Moved macOS CI builds back to GitHub-hosted runners for more consistent release validation.
+
+### Fixed
+
+- Fixed annotation color persistence to store portable ARGB strings, keeping saved custom colors readable across machines and Qt settings backends.
+- Fixed the toolbar width preview so the dot stays centered as stroke width changes.
+
 ## [1.0.51] - 2026-04-23
 
 ### Improved
