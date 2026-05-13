@@ -112,11 +112,28 @@ bool tryReadJsonInt(const QJsonObject& options, const QString& key, int* value)
     return false;
 }
 
+QString hotkeyDisplayText(const SnapTray::HotkeyConfig& config, const QString& fallbackText)
+{
+    const QString displayHotkey = SnapTray::HotkeyManager::formatKeySequence(config.keySequence);
+    switch (config.status) {
+    case SnapTray::HotkeyStatus::Registered:
+        return displayHotkey.isEmpty() ? fallbackText : displayHotkey;
+    case SnapTray::HotkeyStatus::Failed:
+        return displayHotkey.isEmpty()
+            ? fallbackText
+            : QCoreApplication::translate("MainApplication", "%1 unavailable").arg(displayHotkey);
+    case SnapTray::HotkeyStatus::Disabled:
+        return QCoreApplication::translate("MainApplication", "Disabled");
+    case SnapTray::HotkeyStatus::Unset:
+        return fallbackText;
+    }
+
+    return fallbackText;
+}
+
 QString hotkeyDisplayTextOrFallback(SnapTray::HotkeyAction action, const QString& fallbackText)
 {
-    const auto config = SnapTray::HotkeyManager::instance().getConfig(action);
-    const QString displayHotkey = SnapTray::HotkeyManager::formatKeySequence(config.keySequence);
-    return displayHotkey.isEmpty() ? fallbackText : displayHotkey;
+    return hotkeyDisplayText(SnapTray::HotkeyManager::instance().getConfig(action), fallbackText);
 }
 }
 
@@ -1026,7 +1043,7 @@ void MainApplication::updateActionHotkeyText(QAction* action,
 
     auto& mgr = SnapTray::HotkeyManager::instance();
     auto config = mgr.getConfig(hotkeyAction);
-    QString displayHotkey = SnapTray::HotkeyManager::formatKeySequence(config.keySequence);
+    QString displayHotkey = hotkeyDisplayText(config, QString());
     if (!displayHotkey.isEmpty()) {
         action->setText(tr("%1 (%2)").arg(baseName, displayHotkey));
     } else {
@@ -1050,7 +1067,7 @@ void MainApplication::updatePinsVisibilityActionText()
 
     const auto config = SnapTray::HotkeyManager::instance().getConfig(
         SnapTray::HotkeyAction::TogglePinsVisibility);
-    const QString displayHotkey = SnapTray::HotkeyManager::formatKeySequence(config.keySequence);
+    const QString displayHotkey = hotkeyDisplayText(config, QString());
     if (!displayHotkey.isEmpty()) {
         m_togglePinsVisibilityAction->setText(tr("%1 (%2)").arg(baseText, displayHotkey));
     } else {

@@ -120,6 +120,7 @@ private slots:
     void cleanupTestCase();
 
     void updateTrayMenuHotkeyText_updatesPasteAction();
+    void updateTrayMenuHotkeyText_marksFailedHotkeyUnavailable();
     void updateTrayMenuHotkeyText_usesTranslatedPasteLabel();
     void initialize_directDownload_addsEnabledCheckForUpdatesActionBeforeSettings();
     void onCheckForUpdates_usesSharedSettingsWindowFlowWithoutShowingSettings();
@@ -142,6 +143,7 @@ private:
 void tst_MainApplicationTrayMenu::init()
 {
     manager().shutdown();
+    manager().m_registerHotkeyOverride = {};
     clearAllTestSettings();
     InstallSourceDetector::clearDetectedSourceForTests();
     UpdateCoordinator::resetForTests();
@@ -152,6 +154,7 @@ void tst_MainApplicationTrayMenu::init()
 void tst_MainApplicationTrayMenu::cleanup()
 {
     manager().shutdown();
+    manager().m_registerHotkeyOverride = {};
     clearAllTestSettings();
     InstallSourceDetector::clearDetectedSourceForTests();
     UpdateCoordinator::resetForTests();
@@ -177,6 +180,32 @@ void tst_MainApplicationTrayMenu::updateTrayMenuHotkeyText_updatesPasteAction()
 
     QVERIFY(!displayHotkey.isEmpty());
     QCOMPARE(pasteAction.text(), MainApplication::tr("%1 (%2)").arg(baseName, displayHotkey));
+}
+
+void tst_MainApplicationTrayMenu::updateTrayMenuHotkeyText_marksFailedHotkeyUnavailable()
+{
+    using namespace SnapTray;
+
+    manager().shutdown();
+    clearAllTestSettings();
+    manager().m_registerHotkeyOverride = [](HotkeyAction, const QString&) {
+        return true;
+    };
+    manager().initialize();
+
+    QVERIFY(manager().updateHotkey(HotkeyAction::PinFromImage, QStringLiteral("F9")));
+    QVERIFY(!manager().updateHotkey(HotkeyAction::RegionCapture, QStringLiteral("F9")));
+    QCOMPARE(manager().getConfig(HotkeyAction::RegionCapture).status, HotkeyStatus::Failed);
+
+    MainApplication application;
+    QAction regionAction(&application);
+    application.m_regionCaptureAction = &regionAction;
+
+    application.updateTrayMenuHotkeyText();
+
+    QCOMPARE(regionAction.text(),
+             MainApplication::tr("%1 (%2)")
+                 .arg(MainApplication::tr("Region Capture"), QStringLiteral("F9 unavailable")));
 }
 
 void tst_MainApplicationTrayMenu::updateTrayMenuHotkeyText_usesTranslatedPasteLabel()
