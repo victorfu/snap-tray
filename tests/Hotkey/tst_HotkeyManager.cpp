@@ -53,6 +53,7 @@ private slots:
     void testHasConflict_NoConflict();
     void testHasConflict_DetectsConflict();
     void testHasConflict_ExcludesSelf();
+    void testHasConflict_TreatsWindowsNativePrintAndPrintAsSameShortcut();
 
     // Reset tests
     void testResetToDefault_RestoresOriginal();
@@ -411,6 +412,29 @@ void tst_HotkeyManager::testHasConflict_ExcludesSelf()
     // When excluding self, should not conflict
     auto conflict = manager().hasConflict(config.keySequence, HotkeyAction::RegionCapture);
     QVERIFY(!conflict.has_value());
+}
+
+void tst_HotkeyManager::testHasConflict_TreatsWindowsNativePrintAndPrintAsSameShortcut()
+{
+#ifndef Q_OS_WIN
+    QSKIP("Windows Print Screen canonicalization is only available on Windows.");
+#else
+    using namespace SnapTray;
+
+    manager().shutdown();
+    clearAllTestSettings();
+    manager().m_registerHotkeyOverride = [](HotkeyAction, const QString&) {
+        return true;
+    };
+    manager().initialize();
+
+    QVERIFY(manager().updateHotkey(HotkeyAction::PinFromImage, QStringLiteral("Native:0x2C")));
+
+    const auto conflict = manager().hasConflict(QStringLiteral("Print"),
+                                                HotkeyAction::RegionCapture);
+    QVERIFY(conflict.has_value());
+    QCOMPARE(*conflict, HotkeyAction::PinFromImage);
+#endif
 }
 
 // ============================================================================
