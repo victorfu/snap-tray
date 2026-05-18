@@ -96,6 +96,26 @@ std::optional<QHotkey::NativeShortcut> windowsNativeShortcutForSequence(const QS
         windowsNativeModifierMask(modifiers));
 }
 #endif
+
+QString conflictKeyForSequence(const QString& keySequence)
+{
+    const QString normalized = normalizeKeySequence(keySequence);
+
+#ifdef Q_OS_WIN
+    if (normalized == QStringLiteral("native:0x2c")) {
+        return QStringLiteral("win-native:0x2c:0");
+    }
+
+    if (const auto nativeShortcut = windowsNativeShortcutForSequence(keySequence);
+        nativeShortcut && nativeShortcut->key == kWindowsVirtualKeySnapshot) {
+        return QStringLiteral("win-native:0x%1:%2")
+            .arg(nativeShortcut->key, 0, 16)
+            .arg(nativeShortcut->modifier);
+    }
+#endif
+
+    return normalized;
+}
 }  // namespace
 
 HotkeyManager::HotkeyManager()
@@ -286,7 +306,7 @@ std::optional<HotkeyAction> HotkeyManager::preferredConflictOwner(HotkeyAction a
         return std::nullopt;
     }
 
-    const QString normalizedSequence = normalizeKeySequence(config.keySequence);
+    const QString normalizedSequence = conflictKeyForSequence(config.keySequence);
     HotkeyAction preferredOwner = action;
 
     for (auto it = m_configs.begin(); it != m_configs.end(); ++it) {
@@ -299,7 +319,7 @@ std::optional<HotkeyAction> HotkeyManager::preferredConflictOwner(HotkeyAction a
             continue;
         }
 
-        if (normalizeKeySequence(other.keySequence) != normalizedSequence) {
+        if (conflictKeyForSequence(other.keySequence) != normalizedSequence) {
             continue;
         }
 
@@ -364,10 +384,10 @@ void HotkeyManager::refreshAffectedConflicts(const QString& oldSequence,
 {
     QSet<QString> affectedSequences;
     if (!oldSequence.isEmpty()) {
-        affectedSequences.insert(normalizeKeySequence(oldSequence));
+        affectedSequences.insert(conflictKeyForSequence(oldSequence));
     }
     if (!newSequence.isEmpty()) {
-        affectedSequences.insert(normalizeKeySequence(newSequence));
+        affectedSequences.insert(conflictKeyForSequence(newSequence));
     }
 
     if (affectedSequences.isEmpty()) {
@@ -384,7 +404,7 @@ void HotkeyManager::refreshAffectedConflicts(const QString& oldSequence,
             continue;
         }
 
-        if (!affectedSequences.contains(normalizeKeySequence(config.keySequence))) {
+        if (!affectedSequences.contains(conflictKeyForSequence(config.keySequence))) {
             continue;
         }
 
@@ -599,7 +619,7 @@ std::optional<HotkeyAction> HotkeyManager::hasConflict(const QString& keySequenc
         return std::nullopt;
     }
 
-    const QString normalizedSequence = normalizeKeySequence(keySequence);
+    const QString normalizedSequence = conflictKeyForSequence(keySequence);
     std::optional<HotkeyAction> preferredConflict;
 
     for (auto it = m_configs.begin(); it != m_configs.end(); ++it) {
@@ -612,7 +632,7 @@ std::optional<HotkeyAction> HotkeyManager::hasConflict(const QString& keySequenc
             continue;
         }
 
-        const QString otherNormalized = normalizeKeySequence(config.keySequence);
+        const QString otherNormalized = conflictKeyForSequence(config.keySequence);
         if (normalizedSequence == otherNormalized) {
             if (!preferredConflict || hasHigherRegistrationPriority(it.key(), *preferredConflict)) {
                 preferredConflict = it.key();
