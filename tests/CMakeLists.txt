@@ -620,6 +620,11 @@ target_link_libraries(Hotkey_HotkeyManager PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Hotkey_HotkeyManager COMMAND Hotkey_HotkeyManager)
 set_tests_properties(Hotkey_HotkeyManager PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Hotkey_TypeHotkeyDialog Hotkey/tst_TypeHotkeyDialog.cpp)
+target_link_libraries(Hotkey_TypeHotkeyDialog PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Hotkey_TypeHotkeyDialog COMMAND Hotkey_TypeHotkeyDialog)
+set_tests_properties(Hotkey_TypeHotkeyDialog PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # Annotations Tests (link snaptray_core for annotation classes)
 # ============================================================================

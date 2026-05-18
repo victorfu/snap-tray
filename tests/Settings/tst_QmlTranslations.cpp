@@ -23,6 +23,7 @@ private slots:
     void testRecordingControlBarContext();
     void testPhase4PanelContexts();
     void testMainApplicationTrayContext();
+    void testHotkeyConflictGuidanceTranslatedForAllLocales();
 
 private:
     QTranslator m_translator;
@@ -117,6 +118,39 @@ void tst_QmlTranslations::testMainApplicationTrayContext()
              QString::fromUtf8("螢幕畫布快捷鍵"));
     QCOMPARE(QCoreApplication::translate("MainApplication", "Not set"),
              QString::fromUtf8("未設定"));
+}
+
+void tst_QmlTranslations::testHotkeyConflictGuidanceTranslatedForAllLocales()
+{
+    const QByteArray context = "SnapTray::SettingsBackend";
+    const QByteArray source =
+        "%1 was saved, but Windows may be using Print Screen for Snipping Tool. "
+        "Turn off Settings > Accessibility > Keyboard > Use the Print screen key to open screen capture, then try again.";
+
+    const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
+    const QStringList qmFiles = translationsDir.entryList(
+        {QStringLiteral("snaptray_*.qm")},
+        QDir::Files,
+        QDir::Name);
+    QVERIFY(!qmFiles.isEmpty());
+
+    for (const QString& qmFile : qmFiles) {
+        QTranslator translator;
+        const QString path = translationsDir.filePath(qmFile);
+        QVERIFY2(translator.load(path),
+                 qPrintable(QStringLiteral("Failed to load translation file: %1").arg(path)));
+
+        const QString translated = translator.translate(context.constData(), source.constData());
+        QVERIFY2(!translated.isEmpty(),
+                 qPrintable(QStringLiteral("%1 is missing Print Screen conflict guidance")
+                                .arg(qmFile)));
+        QVERIFY2(translated != QString::fromUtf8(source),
+                 qPrintable(QStringLiteral("%1 fell back to English for Print Screen conflict guidance")
+                                .arg(qmFile)));
+        QVERIFY2(translated.contains(QStringLiteral("%1")),
+                 qPrintable(QStringLiteral("%1 translation dropped the %%1 placeholder")
+                                .arg(qmFile)));
+    }
 }
 
 QTEST_MAIN(tst_QmlTranslations)

@@ -4,6 +4,7 @@
  */
 
 #include "widgets/TypeHotkeyDialog.h"
+#include "hotkey/HotkeyManager.h"
 #include "settings/SettingsTheme.h"
 
 #include <QApplication>
@@ -284,7 +285,7 @@ void TypeHotkeyDialog::updateDisplay()
 
     if (m_hasKey && !m_keySequence.isEmpty()) {
         // Convert stored portable format to native display format
-        displayText = QKeySequence(m_keySequence).toString(QKeySequence::NativeText);
+        displayText = HotkeyManager::formatKeySequence(m_keySequence);
         m_keyDisplayLabel->setStyleSheet(QStringLiteral(
             "QLabel {"
             "  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;"

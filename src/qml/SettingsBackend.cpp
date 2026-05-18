@@ -110,6 +110,22 @@ CursorCompanionStyle cursorCompanionStyleFromUiValue(int value)
     }
 }
 
+bool isPrintScreenSequence(const QString& keySequence)
+{
+    const QString normalized = keySequence.toLower().simplified();
+    return normalized == QStringLiteral("print")
+        || normalized == QStringLiteral("native:0x2c");
+}
+
+bool isWindowsBuild()
+{
+#ifdef Q_OS_WIN
+    return true;
+#else
+    return false;
+#endif
+}
+
 void showHotkeyRegistrationWarning(SnapTray::HotkeyManager& manager,
                                    SnapTray::HotkeyAction action)
 {
@@ -119,12 +135,10 @@ void showHotkeyRegistrationWarning(SnapTray::HotkeyManager& manager,
     }
 
     const QString conflictDescription = manager.getConflictDescription(config.keySequence, action);
-    const QString message = conflictDescription.isEmpty()
-        ? SnapTray::SettingsBackend::tr(
-              "%1 was saved, but it could not be activated because the shortcut is already in use by another app or the system.")
-              .arg(config.displayName)
-        : SnapTray::SettingsBackend::tr("%1 was saved, but it could not be activated. %2")
-              .arg(config.displayName, conflictDescription);
+    const QString message = SnapTray::SettingsBackend::hotkeyRegistrationWarningMessage(
+        config,
+        conflictDescription,
+        isWindowsBuild());
 
     SnapTray::QmlToast::screenToast().showToast(
         SnapTray::QmlToast::Level::Warning,
@@ -151,6 +165,26 @@ void showRestoreAllHotkeyWarning(const QStringList& failedHotkeys)
 }
 
 namespace SnapTray {
+
+QString SettingsBackend::hotkeyRegistrationWarningMessage(const HotkeyConfig& config,
+                                                          const QString& conflictDescription,
+                                                          bool isWindows)
+{
+    if (conflictDescription.isEmpty() && isWindows && isPrintScreenSequence(config.keySequence)) {
+        return tr(
+            "%1 was saved, but Windows may be using Print Screen for Snipping Tool. Turn off Settings > Accessibility > Keyboard > Use the Print screen key to open screen capture, then try again.")
+            .arg(config.displayName);
+    }
+
+    if (conflictDescription.isEmpty()) {
+        return tr(
+            "%1 was saved, but it could not be activated because the shortcut is already in use by another app or the system.")
+            .arg(config.displayName);
+    }
+
+    return tr("%1 was saved, but it could not be activated. %2")
+        .arg(config.displayName, conflictDescription);
+}
 
 SettingsBackend::SettingsBackend(QObject* parent)
     : QObject(parent)

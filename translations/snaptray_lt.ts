@@ -2717,6 +2717,21 @@ Jį gali naudoti kita programa.</translation>
         <source>Images (*.png *.jpg *.jpeg *.bmp *.svg)</source>
         <translation>Vaizdai (*.png *.jpg *.jpeg *.bmp *.svg)</translation>
         </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="170" />
+        <source>%1 was saved, but Windows may be using Print Screen for Snipping Tool. Turn off Settings > Accessibility > Keyboard > Use the Print screen key to open screen capture, then try again.</source>
+        <translation>%1 išsaugota, bet „Windows“ gali naudoti „Print Screen“ įrankiui „Snipping Tool“. Išjunkite Settings > Accessibility > Keyboard > Use the Print screen key to open screen capture ir bandykite dar kartą.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="170" />
+        <source>%1 was saved, but it could not be activated because the shortcut is already in use by another app or the system.</source>
+        <translation>%1 išsaugota, bet nepavyko suaktyvinti, nes spartųjį klavišą jau naudoja kita programa arba sistema.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="170" />
+        <source>%1 was saved, but it could not be activated. %2</source>
+        <translation>%1 išsaugota, bet nepavyko suaktyvinti. %2</translation>
+        </message>
 </context>
 <context>
     <name>SnapTray::TypeHotkeyDialog</name>

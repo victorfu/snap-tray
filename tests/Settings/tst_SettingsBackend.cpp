@@ -1,6 +1,7 @@
 #include <QtTest>
 #include <QSignalSpy>
 
+#include "hotkey/HotkeyTypes.h"
 #include "qml/SettingsBackend.h"
 #include "settings/RecordingSettingsManager.h"
 #include "settings/Settings.h"
@@ -71,6 +72,7 @@ private slots:
     void testCheckForUpdates_Failed_EmitsFailure();
     void testCheckForUpdates_UnsupportedInstallSource_EmitsUnavailable();
     void testLastCheckedTextChanged_WhenCoordinatorRecordsSuccessfulCheck();
+    void testHotkeyRegistrationWarningMessage_WindowsPrintScreenExplainsSnippingTool();
 
 private:
     void clearTestSettings();
@@ -317,6 +319,24 @@ void tst_SettingsBackend::testLastCheckedTextChanged_WhenCoordinatorRecordsSucce
 
     QCOMPARE(lastCheckedSpy.count(), 1);
     QVERIFY(backend.lastCheckedText() != QStringLiteral("Never"));
+}
+
+void tst_SettingsBackend::testHotkeyRegistrationWarningMessage_WindowsPrintScreenExplainsSnippingTool()
+{
+    SnapTray::HotkeyConfig config;
+    config.displayName = QStringLiteral("Region Capture");
+    config.keySequence = QStringLiteral("Print");
+    config.status = SnapTray::HotkeyStatus::Failed;
+
+    const QString message = SettingsBackend::hotkeyRegistrationWarningMessage(
+        config,
+        QString(),
+        true);
+
+    QVERIFY(message.contains(QStringLiteral("Region Capture")));
+    QVERIFY(message.contains(QStringLiteral("Windows may be using Print Screen for Snipping Tool")));
+    QVERIFY(message.contains(QStringLiteral("Settings > Accessibility > Keyboard")));
+    QVERIFY(message.contains(QStringLiteral("Use the Print screen key to open screen capture")));
 }
 
 QTEST_MAIN(tst_SettingsBackend)

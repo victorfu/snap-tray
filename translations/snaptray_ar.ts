@@ -2717,6 +2717,21 @@ It may be in use by another application.</source>
         <source>Images (*.png *.jpg *.jpeg *.bmp *.svg)</source>
         <translation>صور (*.png *.jpg *.jpeg *.bmp *.svg)</translation>
         </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="170" />
+        <source>%1 was saved, but Windows may be using Print Screen for Snipping Tool. Turn off Settings > Accessibility > Keyboard > Use the Print screen key to open screen capture, then try again.</source>
+        <translation>تم حفظ %1، ولكن قد يكون Windows يستخدم Print Screen لأداة Snipping Tool. أوقف تشغيل Settings > Accessibility > Keyboard > Use the Print screen key to open screen capture، ثم حاول مرة أخرى.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="170" />
+        <source>%1 was saved, but it could not be activated because the shortcut is already in use by another app or the system.</source>
+        <translation>تم حفظ %1، ولكن تعذر تفعيله لأن الاختصار مستخدم بالفعل بواسطة تطبيق آخر أو النظام.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="170" />
+        <source>%1 was saved, but it could not be activated. %2</source>
+        <translation>تم حفظ %1، ولكن تعذر تفعيله. %2</translation>
+        </message>
 </context>
 <context>
     <name>SnapTray::TypeHotkeyDialog</name>

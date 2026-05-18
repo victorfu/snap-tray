@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-03-24
+last_modified_at: 2026-05-18
 layout: docs
 title: Troubleshooting
 description: Fix permission, startup, Qt deployment, encoding, recording, and hotkey issues on macOS and Windows.
@@ -66,6 +66,7 @@ Use the same Qt installation path that you passed to `CMAKE_PREFIX_PATH`.
 - Open Settings > Hotkeys and verify the action is still bound
 - Rebind the action and test immediately
 - Check for conflicts with another global hotkey utility
+- On Windows 11, turn off `Settings > Accessibility > Keyboard > Use the Print screen key to open screen capture` before binding `Print Screen` to SnapTray
 - Keep the most frequent actions on simple single-combo shortcuts
 
 ## Recording issues

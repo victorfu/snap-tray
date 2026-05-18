@@ -2723,6 +2723,21 @@ It may be in use by another application.</source>
         <source>Images (*.png *.jpg *.jpeg *.bmp *.svg)</source>
         <translation>이미지 (*.png *.jpg *.jpeg *.bmp *.svg)</translation>
         </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="170" />
+        <source>%1 was saved, but Windows may be using Print Screen for Snipping Tool. Turn off Settings > Accessibility > Keyboard > Use the Print screen key to open screen capture, then try again.</source>
+        <translation>%1이(가) 저장되었지만 Windows가 Print Screen을 Snipping Tool에 사용 중일 수 있습니다. Settings > Accessibility > Keyboard > Use the Print screen key to open screen capture를 끈 다음 다시 시도하세요.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="170" />
+        <source>%1 was saved, but it could not be activated because the shortcut is already in use by another app or the system.</source>
+        <translation>%1이(가) 저장되었지만 이 단축키가 다른 앱 또는 시스템에서 이미 사용 중이라 활성화할 수 없습니다.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="170" />
+        <source>%1 was saved, but it could not be activated. %2</source>
+        <translation>%1이(가) 저장되었지만 활성화할 수 없습니다. %2</translation>
+        </message>
 </context>
 <context>
     <name>SnapTray::TypeHotkeyDialog</name>

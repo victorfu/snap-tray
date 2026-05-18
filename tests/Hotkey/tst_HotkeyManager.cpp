@@ -14,6 +14,7 @@
 #include <QtTest>
 #include <QSettings>
 #include <QSignalSpy>
+#include <QHotkey>
 #include "hotkey/HotkeyManager.h"
 #include "hotkey/HotkeyTypes.h"
 #include "settings/Settings.h"
@@ -62,6 +63,7 @@ private slots:
     void testFormatKeySequence_StandardSequence();
     void testFormatKeySequence_EmptySequence();
     void testFormatKeySequence_NativeCode();
+    void testPrintSequence_UsesWindowsSnapshotVirtualKey();
 
 private:
     void clearAllTestSettings();
@@ -495,9 +497,23 @@ void tst_HotkeyManager::testFormatKeySequence_EmptySequence()
 
 void tst_HotkeyManager::testFormatKeySequence_NativeCode()
 {
-    // Native keycodes should be preserved as-is
     QString formatted = manager().formatKeySequence("Native:0x2C");
-    QCOMPARE(formatted, QString("Native:0x2C"));
+    QCOMPARE(formatted, QString("Print"));
+}
+
+void tst_HotkeyManager::testPrintSequence_UsesWindowsSnapshotVirtualKey()
+{
+#ifndef Q_OS_WIN
+    QSKIP("Windows virtual-key mapping is only available on Windows.");
+#else
+    using namespace SnapTray;
+
+    manager().updateHotkey(HotkeyAction::RegionCapture, QStringLiteral("Print"));
+
+    QHotkey* hotkey = manager().m_hotkeys.value(HotkeyAction::RegionCapture);
+    QVERIFY(hotkey != nullptr);
+    QCOMPARE(hotkey->currentNativeShortcut().key, quint32(0x2C));
+#endif
 }
 
 QTEST_MAIN(tst_HotkeyManager)

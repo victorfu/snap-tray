@@ -2717,6 +2717,21 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
         <source>Images (*.png *.jpg *.jpeg *.bmp *.svg)</source>
         <translation>Hình ảnh (*.png *.jpg *.jpeg *.bmp *.svg)</translation>
         </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="170" />
+        <source>%1 was saved, but Windows may be using Print Screen for Snipping Tool. Turn off Settings > Accessibility > Keyboard > Use the Print screen key to open screen capture, then try again.</source>
+        <translation>Đã lưu %1, nhưng Windows có thể đang dùng Print Screen cho Snipping Tool. Hãy tắt Settings > Accessibility > Keyboard > Use the Print screen key to open screen capture rồi thử lại.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="170" />
+        <source>%1 was saved, but it could not be activated because the shortcut is already in use by another app or the system.</source>
+        <translation>Đã lưu %1, nhưng không thể kích hoạt vì phím tắt này đang được ứng dụng khác hoặc hệ thống sử dụng.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="170" />
+        <source>%1 was saved, but it could not be activated. %2</source>
+        <translation>Đã lưu %1, nhưng không thể kích hoạt. %2</translation>
+        </message>
 </context>
 <context>
     <name>SnapTray::TypeHotkeyDialog</name>

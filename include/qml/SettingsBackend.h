@@ -15,6 +15,8 @@ struct OCRLanguageQueryResult;
 
 namespace SnapTray {
 
+struct HotkeyConfig;
+
 class SettingsBackend : public QObject
 {
     Q_OBJECT
@@ -101,6 +103,9 @@ class SettingsBackend : public QObject
 public:
     explicit SettingsBackend(QObject* parent = nullptr);
     ~SettingsBackend() override;
+    static QString hotkeyRegistrationWarningMessage(const HotkeyConfig& config,
+                                                    const QString& conflictDescription,
+                                                    bool isWindows);
 
     // ──── General ────
     bool startOnLogin() const;

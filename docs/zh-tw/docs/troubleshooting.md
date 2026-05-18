@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-03-24
+last_modified_at: 2026-05-18
 layout: docs
 title: 疑難排解
 description: 快速解決權限、啟動、Qt 部署、錄影與快捷鍵衝突問題。
@@ -66,6 +66,7 @@ Qt 路徑請與你 configure 時使用的 `CMAKE_PREFIX_PATH` 保持一致。
 - 到 Settings > Hotkeys 確認動作仍有綁定
 - 重新綁定後立即測試
 - 檢查是否被其他全域熱鍵工具攔截
+- 在 Windows 11，若要把 `Print Screen` 綁定給 SnapTray，請先關閉 `Settings > Accessibility > Keyboard > Use the Print screen key to open screen capture`
 - 最常用動作建議保留為單一組合鍵
 
 ## 錄影異常
