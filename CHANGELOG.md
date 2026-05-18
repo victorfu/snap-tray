@@ -6,11 +6,15 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+## [1.0.53] - 2026-05-18
+
+### Added
+
+- Added visible hotkey registration status in UI menus so unavailable shortcuts are easier to diagnose.
+
 ### Fixed
 
-- Fixed Windows `Print Screen` hotkey registration so SnapTray maps Qt's `Print` sequence to the Windows `VK_SNAPSHOT` key.
-- Fixed Windows `Print Screen` hotkey conflict detection for older `Native:0x2C` settings.
-- Improved the Windows `Print Screen` hotkey conflict warning with Snipping Tool settings guidance.
+- Fixed Windows `Print Screen` hotkey binding and conflict detection, including compatibility for older `Native:0x2C` settings and clearer Snipping Tool guidance.
 
 ## [1.0.52] - 2026-05-07
 
