@@ -546,6 +546,14 @@ add_library(snaptray_platform STATIC
         src/MediaFoundationEncoder.cpp
         src/video/MediaFoundationPlayer_win.cpp
     >
+    # Linux sources
+    $<$<PLATFORM_ID:Linux>:
+        src/platform/WindowLevel_linux.cpp
+        src/platform/PlatformFeatures_linux.cpp
+        src/WindowDetector_linux.cpp
+        src/OCRManager_linux.cpp
+        src/AutoLaunchManager_linux.cpp
+    >
     # Windows headers with Q_OBJECT
     $<$<PLATFORM_ID:Windows>:
         include/MediaFoundationEncoder.h
@@ -746,6 +754,10 @@ add_library(snaptray_ui STATIC
         src/update/InstallSourceDetector_win.cpp
         src/update/WinSparkleUpdateService_win.cpp
     >
+    $<$<PLATFORM_ID:Linux>:
+        src/update/InstallSourceDetector_linux.cpp
+        src/update/UpdateServiceFactory_linux.cpp
+    >
 
     # macOS-only UI
 
@@ -923,6 +935,23 @@ set_source_files_properties(src/qml/panels/ShortcutHintsPanel.qml PROPERTIES QT_
 set_source_files_properties(src/qml/panels/RegionControlPanel.qml PROPERTIES QT_RESOURCE_ALIAS panels/RegionControlPanel.qml)
 set_source_files_properties(src/qml/panels/MultiRegionListPanel.qml PROPERTIES QT_RESOURCE_ALIAS panels/MultiRegionListPanel.qml)
 
+set(SNAPTRAY_QML_NATIVE_SOURCES
+    src/qml/QmlOverlayManager.mm
+    src/qml/QmlRecordingBoundary.mm
+    src/qml/QmlRecordingControlBar.mm
+    src/qml/QmlCountdownOverlay.mm
+    src/qml/RecordingPreviewBackend.mm
+    src/qml/QmlWindowedToolbar.mm
+    src/qml/QmlFloatingToolbar.mm
+    src/qml/QmlFloatingSubToolbar.mm
+    src/qml/QmlDialog.mm
+    src/qml/QmlOverlayPanel.mm
+)
+
+if(NOT APPLE)
+    set_source_files_properties(${SNAPTRAY_QML_NATIVE_SOURCES} PROPERTIES LANGUAGE CXX)
+endif()
+
 qt_add_qml_module(snaptray_qml
     URI SnapTrayQml
     VERSION 1.0
@@ -1006,7 +1035,7 @@ qt_add_qml_module(snaptray_qml
         include/qml/BeautifyPreviewItem.h
         src/qml/EmojiPickerBackend.cpp
         include/qml/EmojiPickerBackend.h
-        src/qml/QmlOverlayManager.mm
+        ${SNAPTRAY_QML_NATIVE_SOURCES}
         include/qml/QmlOverlayManager.h
         src/qml/QmlBeautifyPanel.cpp
         include/qml/QmlBeautifyPanel.h
@@ -1016,23 +1045,18 @@ qt_add_qml_module(snaptray_qml
         include/qml/QmlToast.h
         src/qml/QmlBadge.cpp
         include/qml/QmlBadge.h
-        src/qml/QmlRecordingBoundary.mm
         include/qml/QmlRecordingBoundary.h
-        src/qml/QmlRecordingControlBar.mm
         include/qml/QmlRecordingControlBar.h
-        src/qml/QmlCountdownOverlay.mm
         include/qml/QmlCountdownOverlay.h
         src/qml/VideoPlaybackItem.cpp
         include/qml/VideoPlaybackItem.h
         src/qml/SvgIconItem.cpp
         include/qml/SvgIconItem.h
-        src/qml/RecordingPreviewBackend.mm
         include/qml/RecordingPreviewBackend.h
         src/qml/ToolbarViewModelBase.cpp
         include/qml/ToolbarViewModelBase.h
         src/qml/PinToolbarViewModel.cpp
         include/qml/PinToolbarViewModel.h
-        src/qml/QmlWindowedToolbar.mm
         include/qml/QmlWindowedToolbar.h
         src/qml/PinToolOptionsViewModel.cpp
         include/qml/PinToolOptionsViewModel.h
@@ -1040,11 +1064,8 @@ qt_add_qml_module(snaptray_qml
         include/qml/RegionToolbarViewModel.h
         src/qml/CanvasToolbarViewModel.cpp
         include/qml/CanvasToolbarViewModel.h
-        src/qml/QmlFloatingToolbar.mm
         include/qml/QmlFloatingToolbar.h
-        src/qml/QmlFloatingSubToolbar.mm
         include/qml/QmlFloatingSubToolbar.h
-        src/qml/QmlDialog.mm
         include/qml/QmlDialog.h
         src/qml/DialogImageProvider.cpp
         include/qml/DialogImageProvider.h
@@ -1060,7 +1081,6 @@ qt_add_qml_module(snaptray_qml
         include/qml/UpdateDialogViewModel.h
         src/qml/QRCodeResultViewModel.cpp
         include/qml/QRCodeResultViewModel.h
-        src/qml/QmlOverlayPanel.mm
         include/qml/QmlOverlayPanel.h
         src/qml/ShortcutHintsViewModel.cpp
         include/qml/ShortcutHintsViewModel.h
