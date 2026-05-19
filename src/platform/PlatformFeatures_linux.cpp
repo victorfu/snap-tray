@@ -26,6 +26,14 @@ QString cliScriptPath()
     return QDir(binDir).filePath(QStringLiteral("snaptray"));
 }
 
+QString launchableAppPath()
+{
+    const QString appImagePath = qEnvironmentVariable("APPIMAGE").trimmed();
+    return appImagePath.isEmpty()
+        ? QCoreApplication::applicationFilePath()
+        : appImagePath;
+}
+
 QString shellQuote(const QString& value)
 {
     QString escaped = value;
@@ -130,7 +138,7 @@ bool PlatformFeatures::copyImageToClipboardForGui(const QImage& image) const
 
 QString PlatformFeatures::getAppExecutablePath() const
 {
-    return QCoreApplication::applicationFilePath();
+    return launchableAppPath();
 }
 
 bool PlatformFeatures::isCLIInstalled() const
