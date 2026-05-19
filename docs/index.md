@@ -1,7 +1,7 @@
 ---
 last_modified_at: 2026-03-26
 layout: default
-description: "Screenshot, annotate, pin, and record your screen — with OCR, GIF export, and CLI automation. Free for macOS and Windows."
+description: "Screenshot, annotate, and pin on macOS, Windows, and Ubuntu 22.04 X11 Linux beta. Recording and OCR are available on macOS/Windows."
 lang: en
 route_key: home
 ---

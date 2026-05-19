@@ -13,6 +13,7 @@ const RELEASE_I18N = {
     stable: 'Stable',
     downloadMac: 'Download macOS (.dmg)',
     downloadWindows: 'Download Windows (.exe)',
+    downloadLinux: 'Download Linux AppImage',
     viewOnGithub: 'View on GitHub',
     untitledRelease: 'Untitled release'
   },
@@ -26,6 +27,7 @@ const RELEASE_I18N = {
     stable: '穩定版',
     downloadMac: '下載 macOS (.dmg)',
     downloadWindows: '下載 Windows (.exe)',
+    downloadLinux: '下載 Linux AppImage',
     viewOnGithub: '在 GitHub 查看',
     untitledRelease: '未命名版本'
   }
@@ -134,7 +136,8 @@ function getDownloadLinks(release) {
   const assets = release.assets || [];
   return {
     macos: assets.find((asset) => asset.name.endsWith('.dmg'))?.browser_download_url,
-    windows: assets.find((asset) => asset.name.includes('Setup.exe') || asset.name.endsWith('.exe'))?.browser_download_url
+    windows: assets.find((asset) => asset.name.includes('Setup.exe') || asset.name.endsWith('.exe'))?.browser_download_url,
+    linux: assets.find((asset) => asset.name.endsWith('.AppImage'))?.browser_download_url
   };
 }
 
@@ -176,15 +179,21 @@ async function populateDownloadButtons() {
   const macFallback = document.getElementById('no-macos-release');
   const windowsButton = document.getElementById('download-windows');
   const windowsFallback = document.getElementById('no-windows-release');
+  const linuxButton = document.getElementById('download-linux');
+  const linuxFallback = document.getElementById('no-linux-release');
 
   if (!latest) {
     if (macFallback) macFallback.textContent = STRINGS.noReleaseAvailable;
     if (windowsFallback) windowsFallback.textContent = STRINGS.browseReleases;
+    if (linuxFallback) linuxFallback.textContent = STRINGS.browseReleases;
     return;
   }
 
   const links = getDownloadLinks(latest);
   const version = latest.tag_name || '';
+  const latestLinux = links.linux ? latest : releases.find((release) => getDownloadLinks(release).linux);
+  const linuxLinks = latestLinux ? getDownloadLinks(latestLinux) : {};
+  const linuxVersion = latestLinux?.tag_name || '';
 
   const macSourceLink = document.getElementById('macos-source-link');
 
@@ -203,6 +212,14 @@ async function populateDownloadButtons() {
     if (versionNode) versionNode.textContent = version;
     setDownloadVisibility(windowsButton, true);
     if (windowsFallback) windowsFallback.hidden = true;
+  }
+
+  if (linuxButton && linuxLinks.linux) {
+    linuxButton.href = linuxLinks.linux;
+    const versionNode = linuxButton.querySelector('.version');
+    if (versionNode) versionNode.textContent = linuxVersion;
+    setDownloadVisibility(linuxButton, true);
+    if (linuxFallback) linuxFallback.hidden = true;
   }
 }
 
@@ -234,6 +251,7 @@ async function renderReleasesPage() {
         <div class="release-downloads">
           ${links.macos ? `<a href="${links.macos}" class="btn btn-ghost" target="_blank" rel="noopener">${STRINGS.downloadMac}</a>` : ''}
           ${links.windows ? `<a href="${links.windows}" class="btn btn-ghost" target="_blank" rel="noopener">${STRINGS.downloadWindows}</a>` : ''}
+          ${links.linux ? `<a href="${links.linux}" class="btn btn-ghost" target="_blank" rel="noopener">${STRINGS.downloadLinux}</a>` : ''}
           <a href="${release.html_url}" class="btn btn-link" target="_blank" rel="noopener">${STRINGS.viewOnGithub}</a>
         </div>
       </article>

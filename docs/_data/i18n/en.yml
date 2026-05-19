@@ -17,7 +17,7 @@ language:
 hero:
   eyebrow: Capture. Annotate. Record.
   title: Fast Screenshot Tool for Mac, Windows, and Linux beta
-  tagline: SnapTray lives in your system tray and launches instantly when you need precise captures, polished annotations, and high-quality recordings.
+  tagline: SnapTray lives in your system tray and launches instantly for precise captures and polished annotations. Recording and OCR are available on macOS/Windows; Linux beta focuses on screenshots and annotation.
   cta_download: Download
   cta_github: View on GitHub
   pills:
@@ -29,13 +29,13 @@ hero:
   runtime_items:
     - Region Capture with magnifier precision
     - Screen Canvas + rich annotation tools
-    - MP4 / GIF / WebP recording pipeline
-    - OCR, auto blur, watermark, and pin windows
+    - MP4 / GIF / WebP recording on macOS/Windows
+    - OCR on macOS/Windows, plus auto blur, watermark, and pin windows
 
 features:
   eyebrow: Feature Set
   title: Built for fast, professional capture pipelines
-  subtitle: From one-shot screenshots to long recording sessions, SnapTray keeps every operation inside a single tray-native workflow.
+  subtitle: From one-shot screenshots to macOS/Windows recording sessions, SnapTray keeps capture work inside a single tray-native workflow.
   items:
     - kind: Capture
       title: Region Capture
@@ -51,13 +51,13 @@ features:
       body: Arrow, pencil, marker, shapes, text, mosaic, step badges, and emoji stickers.
     - kind: Automation
       title: OCR + Auto Blur
-      body: Extract text and automatically mask sensitive faces or credentials for safer sharing.
+      body: Extract text on macOS/Windows and automatically mask sensitive faces or credentials for safer sharing.
     - kind: Detection
       title: Window Detection
       body: Quickly select windows without manually dragging exact bounds.
     - kind: Recording
       title: Screen Recording
-      body: Capture any region and export MP4 with optional audio, or GIF/WebP for silent clips.
+      body: On macOS/Windows, capture any region and export MP4 with optional audio, or GIF/WebP for silent clips.
     - kind: Utility
       title: Color Picker
       body: Pick on-screen colors, switch HEX/RGB with Shift, copy instantly with C.
@@ -132,7 +132,7 @@ faq:
 
 footer:
   product_title: SnapTray
-  product_copy: Desktop-grade screenshot and recording workflows, designed for speed and clarity.
+  product_copy: Desktop-grade screenshot workflows, designed for speed and clarity.
   product_meta: Made with Qt 6 and C++17
   resources_title: Resources
   community_title: Community
@@ -258,9 +258,9 @@ landing_screenshot_tool:
       - q: Is SnapTray free?
         a: Yes. SnapTray is completely free and open source under the MIT license. There are no ads, subscriptions, accounts, or hidden costs.
       - q: How is SnapTray different from Snipping Tool?
-        a: Snipping Tool offers basic capture with minimal annotation. SnapTray adds a magnifier, full annotation toolkit (arrows, shapes, text, step badges, mosaic blur), pin windows, screen recording, GIF/WebP export, OCR, auto blur, and CLI automation — all free and cross-platform.
+        a: Snipping Tool offers basic capture with minimal annotation. SnapTray adds a magnifier, full annotation toolkit (arrows, shapes, text, step badges, mosaic blur), pin windows, and CLI automation across supported platforms; screen recording, GIF/WebP export, OCR, and auto blur are available on macOS/Windows.
       - q: How is SnapTray different from Lightshot?
-        a: Lightshot provides quick capture and simple annotation, but lacks screen recording, pin windows, OCR, auto blur, and CLI support. SnapTray includes all of these features while remaining free, open source, and fully offline.
+        a: Lightshot provides quick capture and simple annotation, but lacks pin windows and CLI support. SnapTray includes those across supported platforms, with screen recording, OCR, and auto blur on macOS/Windows, while remaining free, open source, and fully offline.
       - q: Which platforms does SnapTray support?
         a: SnapTray supports macOS 14+ (Apple Silicon and Intel), Windows 10+ (x64), and an Ubuntu 22.04 X11 AppImage beta. Recording and OCR are not included in the Linux beta, and Wayland sessions are not supported.
       - q: Can I automate screenshots with scripts?
