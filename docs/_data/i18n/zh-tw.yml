@@ -69,7 +69,7 @@ features:
       body: 上傳截圖後產生分享連結，並可加上密碼保護。
     - kind: 品牌
       title: Watermark
-      body: 套用自訂圖片浮水印到截圖與錄影輸出。
+      body: 套用自訂圖片浮水印到截圖；在 macOS/Windows 也可套用到錄影輸出。
     - kind: 工作流
       title: Hotkey First
       body: Region Capture、Canvas、Paste、Quick Pin、Hide/Show Pins 都是一鍵即達。
@@ -128,7 +128,7 @@ faq:
     - q: SnapTray 是免費的嗎？
       a: 是的，SnapTray 完全免費且開源，採用 MIT 授權。沒有廣告、訂閱或隱藏費用。
     - q: SnapTray 和 Windows 內建截圖工具有什麼不同？
-      a: SnapTray 在支援平台提供螢幕標註工具、釘選視窗、螢幕畫布模式、QR Code 掃描與完整 CLI 自動化；支援音訊的 MP4 錄影、GIF/WebP 匯出、OCR 文字辨識與敏感內容自動模糊支援 macOS/Windows。
+      a: SnapTray 在支援平台提供螢幕標註工具、釘選視窗、螢幕畫布模式、QR Code 掃描與完整 CLI 自動化；支援音訊的 MP4 錄影、GIF/WebP 匯出、OCR 文字辨識與敏感內容自動模糊支援 macOS/Windows，Linux beta 不包含這些功能。
 
 footer:
   product_title: SnapTray
@@ -211,11 +211,11 @@ landing_screenshot_tool:
         values: [true, false, true, true]
       - feature: 釘選至螢幕
         values: [true, false, false, false]
-      - feature: 螢幕錄影 (MP4)
+      - feature: 螢幕錄影（MP4，僅 macOS/Windows）
         values: [true, true, false, true]
-      - feature: GIF / WebP 匯出
+      - feature: GIF / WebP 匯出（僅 macOS/Windows）
         values: [true, false, false, true]
-      - feature: OCR 文字辨識
+      - feature: OCR 文字辨識（僅 macOS/Windows）
         values: [true, false, false, true]
       - feature: 自動模糊（人臉/機敏資料）
         values: [true, false, false, false]
@@ -230,13 +230,13 @@ landing_screenshot_tool:
     title: 誰每天都在使用截圖工具
     items:
       - role: 開發者
-        scenario: 擷取錯誤訊息、標註架構圖、錄製重現步驟 — 直接貼到 GitHub Issue 或 Slack。
+        scenario: 擷取錯誤訊息、標註架構圖，並在 macOS/Windows 錄製重現步驟 — 直接貼到 GitHub Issue 或 Slack。
       - role: 設計師
         scenario: 釘選參考圖、並排比較版面、量測像素距離、匯出標註回饋給開發者。
       - role: 客服團隊
         scenario: 截圖客戶問題、加上步驟標記、模糊敏感資料、分享連結 — 全程不離開對話視窗。
       - role: 教育工作者
-        scenario: 錄製教學影片、用螢幕畫布在簡報上即時標註、匯出 GIF 嵌入文件。
+        scenario: 在 macOS/Windows 錄製教學影片並匯出 GIF 嵌入文件；也可用螢幕畫布在簡報上即時標註。
   setup:
     eyebrow: 快速開始
     title: 如何開始使用 SnapTray
@@ -252,7 +252,7 @@ landing_screenshot_tool:
     title: 截圖工具 — 常見問題
     items:
       - q: 什麼是截圖工具？
-        a: 截圖工具是一種能擷取螢幕部分或全部畫面為圖片的軟體。基本工具只能儲存圖片。進階截圖工具如 SnapTray 還能標註、錄影、釘選截圖到螢幕，以及透過連結分享。
+        a: 截圖工具是一種能擷取螢幕部分或全部畫面為圖片的軟體。基本工具只能儲存圖片。進階截圖工具如 SnapTray 還能標註、釘選截圖到螢幕，以及透過連結分享；SnapTray 錄影支援 macOS/Windows。
       - q: SnapTray 是什麼？
         a: SnapTray 是一款免費開源的截圖與標註工具，支援 macOS、Windows 與 Ubuntu 22.04 X11 beta。常駐系統托盤，提供即時區域擷取、豐富標註、釘選視窗和 CLI 自動化。MP4/GIF/WebP 錄影與 OCR 支援 macOS 與 Windows；Linux beta 以擷取與標註為主。
       - q: SnapTray 是免費的嗎？
@@ -303,7 +303,7 @@ landing_mac:
       - title: 在擷取覆蓋層中直接標註
         body: 箭頭、形狀、文字、步驟標記、馬賽克模糊和貼圖在截圖後立即可用。不需開啟預覽程式或其他編輯器。
       - title: 釘選、錄影與分享
-        body: 將截圖釘選為浮動參考、在 macOS/Windows 將全螢幕錄製為 MP4/GIF/WebP、用 OCR 擷取文字，或上傳取得分享連結 — 全部在同一個工具中完成。
+        body: 將截圖釘選為浮動參考、將全螢幕錄製為 MP4/GIF/WebP、用 OCR 擷取文字，或上傳取得分享連結 — 全部在同一個 Mac 工具中完成。
   compare:
     eyebrow: 工具比較
     title: "SnapTray vs macOS 內建 vs Shottr vs CleanShot X"
@@ -320,11 +320,11 @@ landing_mac:
         values: [true, false, true, true]
       - feature: 釘選至螢幕
         values: [true, false, false, true]
-      - feature: 螢幕錄影
+      - feature: 螢幕錄影（Mac）
         values: [true, "僅 QuickTime", false, true]
-      - feature: GIF / WebP 匯出
+      - feature: GIF / WebP 匯出（Mac）
         values: [true, false, false, true]
-      - feature: OCR 文字辨識
+      - feature: OCR 文字辨識（Mac）
         values: [true, false, true, true]
       - feature: 自動模糊
         values: [true, false, false, true]
@@ -396,7 +396,7 @@ landing_windows:
       - title: 高 DPI 與多螢幕
         body: SnapTray 正確處理混合 DPI 設定和多螢幕環境。4K 顯示器上不會有模糊擷取、偏移區域或縮放異常。
       - title: 錄影、釘選與自動化
-        body: 在 macOS/Windows 將全螢幕錄製為 MP4/GIF/WebP、釘選截圖為浮動參考、用 OCR 擷取文字，並透過 CLI 腳本化所有操作：snaptray region、snaptray record、snaptray pin。
+        body: 將全螢幕錄製為 MP4/GIF/WebP、釘選截圖為浮動參考、用 OCR 擷取文字，並透過 CLI 腳本化所有操作：snaptray region、snaptray record、snaptray pin。
   compare:
     eyebrow: 工具比較
     title: "SnapTray vs 剪取工具 vs ShareX vs Greenshot"
@@ -413,11 +413,11 @@ landing_windows:
         values: [true, "僅畫筆", true, true]
       - feature: 釘選至螢幕
         values: [true, false, false, false]
-      - feature: 螢幕錄影
+      - feature: 螢幕錄影（Windows）
         values: [true, true, true, false]
-      - feature: GIF / WebP 匯出
+      - feature: GIF / WebP 匯出（Windows）
         values: [true, false, true, false]
-      - feature: OCR 文字辨識
+      - feature: OCR 文字辨識（Windows）
         values: [true, false, true, false]
       - feature: 自動模糊
         values: [true, false, false, false]

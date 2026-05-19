@@ -69,7 +69,7 @@ features:
       body: Upload captures and generate share links with optional password protection.
     - kind: Branding
       title: Watermark
-      body: Apply custom image watermark overlays to screenshots and recordings.
+      body: Apply custom image watermark overlays to screenshots and, on macOS/Windows, recordings.
     - kind: Workflow
       title: Hotkey First
       body: Region Capture, Canvas, Paste, Quick Pin, and Hide/Show Pins stay one keystroke away.
@@ -128,7 +128,7 @@ faq:
     - q: Is SnapTray free?
       a: Yes, SnapTray is completely free and open source under the MIT license. There are no ads, subscriptions, or hidden costs.
     - q: How is SnapTray different from Snipping Tool?
-      a: SnapTray goes beyond basic screen capture by offering on-screen annotation tools, pin windows for always-on-top references, screen canvas mode, MP4 recording with audio, GIF/WebP export, OCR text extraction, auto blur for sensitive content, QR code scanning, and a full CLI for automation.
+      a: SnapTray goes beyond basic screen capture by offering on-screen annotation tools, pin windows for always-on-top references, screen canvas mode, QR code scanning, and a full CLI for automation. MP4 recording with audio, GIF/WebP export, OCR text extraction, and auto blur are available on macOS/Windows; they are not included in the Linux beta.
 
 footer:
   product_title: SnapTray
@@ -211,11 +211,11 @@ landing_screenshot_tool:
         values: [true, false, true, true]
       - feature: Pin to screen
         values: [true, false, false, false]
-      - feature: Screen recording (MP4)
+      - feature: Screen recording (MP4, macOS/Windows only)
         values: [true, true, false, true]
-      - feature: GIF / WebP export
+      - feature: GIF / WebP export (macOS/Windows only)
         values: [true, false, false, true]
-      - feature: OCR text extraction
+      - feature: OCR text extraction (macOS/Windows only)
         values: [true, false, false, true]
       - feature: Auto blur (faces / credentials)
         values: [true, false, false, false]
@@ -230,13 +230,13 @@ landing_screenshot_tool:
     title: Who Uses a Screenshot Tool Daily
     items:
       - role: Developers
-        scenario: Capture error traces, annotate architecture diagrams, record reproduction steps for bug reports — then paste directly into GitHub issues or Slack.
+        scenario: Capture error traces, annotate architecture diagrams, and, on macOS/Windows, record reproduction steps for bug reports — then paste directly into GitHub issues or Slack.
       - role: Designers
         scenario: Pin reference images on screen, compare layouts side by side, measure pixel distances, and export annotated feedback for developers.
       - role: Support Teams
         scenario: Screenshot customer issues, add step-badge annotations, blur sensitive data, and share a link — all without leaving the conversation.
       - role: Educators
-        scenario: Record tutorial walkthroughs, annotate slides during live sessions with Screen Canvas, and export GIFs for inline documentation.
+        scenario: On macOS/Windows, record tutorial walkthroughs and export GIFs for inline documentation; use Screen Canvas to annotate slides during live sessions.
   setup:
     eyebrow: Quick Start
     title: How to Start Using SnapTray
@@ -252,7 +252,7 @@ landing_screenshot_tool:
     title: Screenshot Tool — Frequently Asked Questions
     items:
       - q: What is a screenshot tool?
-        a: A screenshot tool is software that captures part or all of your screen as an image. Basic tools only save the image. Advanced screenshot tools like SnapTray also let you annotate, record video, pin captures on screen, and share with a link.
+        a: A screenshot tool is software that captures part or all of your screen as an image. Basic tools only save the image. Advanced screenshot tools like SnapTray also let you annotate, pin captures on screen, and share with a link; SnapTray records video on macOS/Windows.
       - q: What is SnapTray?
         a: SnapTray is a free, open-source screenshot and annotation tool for macOS, Windows, and Ubuntu 22.04 X11 beta. It lives in your system tray and provides instant region capture, rich annotation, pin windows, and CLI automation. MP4/GIF/WebP recording and OCR are available on macOS and Windows; the Linux beta focuses on capture and annotation.
       - q: Is SnapTray free?
@@ -303,7 +303,7 @@ landing_mac:
       - title: Annotate in the Capture Overlay
         body: Arrows, shapes, text, step badges, mosaic blur, and emoji stickers are available immediately after capture. No need to open Preview or another editor.
       - title: Pin, Record, and Share
-        body: Pin captures as floating references, record full screen to MP4/GIF/WebP on macOS/Windows, extract text with OCR, or upload for a share link — all from the same tool.
+        body: Pin captures as floating references, record full screen to MP4/GIF/WebP, extract text with OCR, or upload for a share link — all from the same Mac tool.
   compare:
     eyebrow: Comparison
     title: "SnapTray vs macOS Built-in vs Shottr vs CleanShot X"
@@ -320,11 +320,11 @@ landing_mac:
         values: [true, false, true, true]
       - feature: Pin to screen
         values: [true, false, false, true]
-      - feature: Screen recording
+      - feature: Screen recording (Mac)
         values: [true, "QuickTime only", false, true]
-      - feature: GIF / WebP export
+      - feature: GIF / WebP export (Mac)
         values: [true, false, false, true]
-      - feature: OCR text extraction
+      - feature: OCR text extraction (Mac)
         values: [true, false, true, true]
       - feature: Auto blur
         values: [true, false, false, true]
@@ -396,7 +396,7 @@ landing_windows:
       - title: High-DPI and Multi-Monitor
         body: SnapTray handles mixed-DPI setups and multiple monitors correctly. No blurry captures, no offset regions, no scaling artifacts on 4K displays.
       - title: Record, Pin, and Automate
-        body: "Record full screen to MP4/GIF/WebP on macOS/Windows, pin captures as floating references, extract text with OCR, and script everything via CLI: snaptray region, snaptray record, snaptray pin."
+        body: "Record full screen to MP4/GIF/WebP, pin captures as floating references, extract text with OCR, and script everything via CLI: snaptray region, snaptray record, snaptray pin."
   compare:
     eyebrow: Comparison
     title: "SnapTray vs Snipping Tool vs ShareX vs Greenshot"
@@ -413,11 +413,11 @@ landing_windows:
         values: [true, "Pen only", true, true]
       - feature: Pin to screen
         values: [true, false, false, false]
-      - feature: Screen recording
+      - feature: Screen recording (Windows)
         values: [true, true, true, false]
-      - feature: GIF / WebP export
+      - feature: GIF / WebP export (Windows)
         values: [true, false, true, false]
-      - feature: OCR text extraction
+      - feature: OCR text extraction (Windows)
         values: [true, false, true, false]
       - feature: Auto blur
         values: [true, false, false, false]
