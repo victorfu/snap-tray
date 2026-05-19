@@ -104,7 +104,7 @@ The release workflow then:
 
 - validates that the tag version matches `CMakeLists.txt`
 - extracts the matching `CHANGELOG.md` section for GitHub Release notes
-- builds macOS and Windows artifacts
+- builds macOS, Windows, and Linux AppImage beta artifacts
 - signs / notarizes release assets
 - publishes the GitHub Release
 - updates appcasts and the website release page

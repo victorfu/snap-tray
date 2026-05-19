@@ -103,7 +103,7 @@ git tag v1.0.42
 
 - 驗證 tag 版本與 `CMakeLists.txt` 是否一致
 - 從 `CHANGELOG.md` 抽出對應版本段落作為 GitHub Release notes
-- 建置 macOS 與 Windows 發佈物
+- 建置 macOS、Windows 與 Linux AppImage beta 發佈物
 - 對發佈資產進行簽章 / 公證
 - 發布 GitHub Release
 - 更新 appcasts 與網站 release page
