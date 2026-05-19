@@ -2,7 +2,7 @@
 layout: default
 title: Releases
 permalink: /releases/
-description: Browse SnapTray release notes and download installers for macOS and Windows.
+description: Browse SnapTray release notes and download installers for macOS, Windows, and Linux beta AppImage.
 lang: en
 route_key: releases
 ---

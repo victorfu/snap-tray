@@ -7,12 +7,13 @@ sitemap: false
 
 > Powerful screenshot and recording tool that lives in your system tray.
 
-SnapTray is a free, native desktop application for macOS and Windows built with Qt 6. It provides region capture, on-screen annotation, pin windows, screen canvas mode, MP4 recording with optional audio capture, and GIF/WebP export.
+SnapTray supports macOS, Windows, and Ubuntu 22.04 X11 AppImage beta. It is a free, native desktop application built with Qt 6 for region capture, on-screen annotation, pin windows, and screen canvas mode. Linux beta focuses on screenshots and annotation; recording, GIF/WebP export, and OCR are available on macOS/Windows only.
 
 ## Platform Support
 
 - macOS 14+ (Apple Silicon and Intel)
 - Windows 10+ (x64)
+- Ubuntu 22.04 X11 AppImage beta
 
 ## Links
 
@@ -33,7 +34,7 @@ SnapTray is a free, native desktop application for macOS and Windows built with 
 - Permission setup
 - First screenshot and annotation
 - First pin window
-- First recording export
+- First recording export on macOS/Windows
 - Hotkey conflict check
 
 ### Runtime prerequisites
@@ -48,6 +49,12 @@ SnapTray is a free, native desktop application for macOS and Windows built with 
 
 - Windows 10+
 - Microphone permission only when recording audio
+
+#### Linux beta
+
+- Ubuntu 22.04 X11
+- AppImage build
+- Recording and OCR are not included in the Linux beta
 
 ### Permission checklist
 
@@ -85,7 +92,7 @@ Most runtime permissions are handled by the OS and installer shape. If you recor
 3. Move, resize, and zoom the pin window.
 4. Switch apps and confirm the pin stays visible.
 
-### Step 4: Test recording flow (3 min)
+### Step 4: Test recording flow on macOS/Windows (3 min)
 
 1. Start recording from the tray menu or press `R` from the capture toolbar.
 2. Record 5 to 10 seconds.
@@ -117,10 +124,10 @@ Press `M` to toggle multi-region capture mode for collecting multiple regions.
 ### Post-selection actions
 
 - Annotation tools (Arrow/Pencil/Marker/Shape/Text/Mosaic/Step Badge/Emoji/Eraser)
-- OCR and QR Code Scan
+- OCR (macOS/Windows) and QR Code Scan
 - Auto Blur (faces + credentials)
 - Share URL
-- Pin, Save, Copy, and Record
+- Pin, Save, Copy, and Record (macOS/Windows)
 
 ### Shortcuts
 
@@ -130,7 +137,7 @@ Press `M` to toggle multi-region capture mode for collecting multiple regions.
 | Copy color code | `C` |
 | Constrain ratio | Hold `Shift` |
 | Toggle multi-region | `M` |
-| Start recording | `R` |
+| Start recording on macOS/Windows | `R` |
 | Cancel | `Esc` |
 
 ---
@@ -207,7 +214,7 @@ Pin from capture result (`Enter`) or from tray menu using "Pin from Image...".
 
 Drawing tools: Pencil, Marker, Arrow, Shape, Text, Mosaic, Step Badge, Emoji, Eraser
 Utility tools: Crop, Measure
-Action tools: OCR, QR Code Scan, Share URL, Save, Copy
+Action tools: OCR (macOS/Windows), QR Code Scan, Share URL, Save, Copy
 
 ---
 
@@ -235,6 +242,8 @@ Press `Ctrl+F2 / Cmd+F2` (default) or use tray menu "Screen Canvas".
 ---
 
 ## Recording
+
+Recording is available on macOS and Windows only. Linux beta focuses on screenshots and annotation.
 
 ### Entry points
 
@@ -298,6 +307,7 @@ The CLI is SnapTray's official automation interface for scripting capture workfl
 
 - macOS: Settings > General > CLI install (creates `/usr/local/bin/snaptray`)
 - Windows: Settings > General > CLI install (adds to PATH)
+- Linux beta: AppImage CLI helper support is not included
 
 ### Command matrix
 
@@ -308,7 +318,7 @@ The CLI is SnapTray's official automation interface for scripting capture workfl
 | `region` | Capture region | No |
 | `gui` | Open region capture GUI | Yes |
 | `canvas` | Toggle Screen Canvas | Yes |
-| `record` | Start/stop/toggle recording | Yes |
+| `record` | Start/stop/toggle recording on macOS/Windows | Yes |
 | `pin` | Pin an image file or clipboard | Yes |
 | `config` | Manage settings | Partial |
 
@@ -322,8 +332,8 @@ snaptray screen --list                # List screens
 snaptray region -r 0,0,800,600 -c     # Capture region to clipboard
 snaptray gui                          # Open region selector
 snaptray canvas                       # Toggle Screen Canvas
-snaptray record start                 # Start recording
-snaptray record stop                  # Stop recording
+snaptray record start                 # Start recording on macOS/Windows
+snaptray record stop                  # Stop recording on macOS/Windows
 snaptray pin -f image.png             # Pin image file
 snaptray pin -c --center              # Pin clipboard centered
 snaptray config --list                # List settings
@@ -350,8 +360,8 @@ snaptray config --set files/filenamePrefix SnapTray
 - **Hotkeys**: Centralized hotkey editor by category
 - **Advanced**: Magnifier, blur, pin defaults
 - **Watermark**: Image, opacity, scale, margin, position
-- **OCR**: Language order, post-recognition behavior
-- **Recording**: Frame rate, format, preview, audio, countdown
+- **OCR**: Language order, post-recognition behavior (macOS/Windows)
+- **Recording**: Frame rate, format, preview, audio, countdown (macOS/Windows)
 - **Files**: Screenshot/recording folders, filename templates
 - **Updates**: Version, auto-check interval, manual check
 - **About**: App info, version, copyright
@@ -362,7 +372,7 @@ snaptray config --set files/filenamePrefix SnapTray
 
 ### What is SnapTray?
 
-SnapTray is a free, lightweight screenshot and screen recording tool for macOS and Windows. It lives in your system tray and lets you capture regions, annotate screenshots, pin images, record your screen to MP4/GIF/WebP, and share results instantly.
+SnapTray is a free, lightweight screenshot and annotation tool for macOS, Windows, and Ubuntu 22.04 X11 AppImage beta. It lives in your system tray and lets you capture regions, annotate screenshots, pin images, and share results instantly. Recording to MP4/GIF/WebP is available on macOS/Windows only.
 
 ### Is SnapTray free?
 
@@ -370,7 +380,7 @@ Yes, SnapTray is completely free and open source under the MIT license. There ar
 
 ### How is SnapTray different from Snipping Tool?
 
-SnapTray goes beyond basic screen capture by offering on-screen annotation tools, pin windows for always-on-top references, screen canvas mode, MP4 recording with audio, GIF/WebP export, OCR text extraction, auto blur for sensitive content, QR code scanning, and a full CLI for automation.
+SnapTray goes beyond basic screen capture by offering on-screen annotation tools, pin windows for always-on-top references, screen canvas mode, auto blur for sensitive content, QR code scanning, and a full CLI for automation. MP4 recording with audio, GIF/WebP export, and OCR text extraction are available on macOS/Windows only.
 
 ### Does SnapTray upload my captures?
 
@@ -378,9 +388,9 @@ No automatic upload happens by default. Everything stays local unless you explic
 
 ### Which output format should I use?
 
-- MP4 for long videos and tutorials
-- GIF for short loops or small demos
-- WebP for lighter animated snippets
+- MP4 for long videos and tutorials on macOS/Windows
+- GIF for short loops or small demos on macOS/Windows
+- WebP for lighter animated snippets on macOS/Windows
 
 ### Can I use SnapTray from scripts?
 
@@ -414,3 +424,4 @@ Open an issue on GitHub with OS version, SnapTray version, reproducible steps, a
 - Lower frame rate for dropped frames
 - Prefer MP4 for longer recordings
 - macOS system audio requires macOS 13+ or BlackHole
+- Recording is not included in the Linux beta
