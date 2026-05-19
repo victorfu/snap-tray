@@ -31,6 +31,11 @@ doc_order: 2
 - Windows 10+
 - 只有在錄音時才需要確認麥克風權限
 
+### Linux beta
+
+SnapTray 提供 Ubuntu 22.04 X11 beta AppImage。Linux beta 不包含錄影與 OCR。
+Wayland session 不支援。
+
 ## 權限檢查清單
 
 ### macOS

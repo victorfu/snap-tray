@@ -1,6 +1,6 @@
 site:
   locale: zh-TW
-  tagline: "免費截圖與螢幕錄影工具｜macOS 與 Windows"
+  tagline: "免費截圖與標註工具｜macOS、Windows 與 Linux beta"
 
 nav:
   home: 首頁
@@ -16,13 +16,14 @@ language:
 
 hero:
   eyebrow: 擷取・標註・錄影
-  title: 快速截圖工具｜Mac 與 Windows
+  title: 快速截圖工具｜Mac、Windows 與 Linux beta
   tagline: SnapTray 常駐於系統托盤，需要時即刻啟動，提供精準截圖、完整標註與高品質錄影。
   cta_download: 立即下載
   cta_github: 查看 GitHub
   pills:
     - macOS 14+
     - Windows 10+
+    - Ubuntu 22.04 X11 beta
     - Qt 6.10.1
   runtime_title: SnapTray 執行能力
   runtime_items:
@@ -76,7 +77,7 @@ features:
 downloads:
   eyebrow: 下載
   title: 安裝最新 SnapTray 版本
-  subtitle: 直接從 GitHub 取得最新穩定版本，或透過 Microsoft Store 安裝。
+  subtitle: 直接從 GitHub 取得最新穩定版本、透過 Microsoft Store 安裝，或試用 Linux beta AppImage。
   macos:
     label: macOS
     title: 桌面安裝程式
@@ -93,6 +94,12 @@ downloads:
     button: 下載 .exe
     empty: 或從 GitHub releases 下載
     unsigned_note: 直接下載的 .exe 目前未簽章，安裝時 Windows 可能會跳出 SmartScreen 或「不安全」警告。若你是從官方 GitHub Releases 下載，這是正常現象，不代表檔案有問題，請放心繼續安裝。
+  linux:
+    label: Linux beta
+    title: AppImage
+    requirements: Ubuntu 22.04 X11 session
+    button: 下載 AppImage
+    empty: Linux AppImage beta 即將推出
   req_eyebrow: 系統需求
   req_title: 平台前置條件
   req_cards:
@@ -106,13 +113,18 @@ downloads:
         - Windows 10 以上
         - 需 Full-trust 能力以支援擷取與編碼
         - 僅在錄音時需要麥克風權限
+    - title: Linux beta
+      items:
+        - Ubuntu 22.04 X11 session
+        - 不包含錄影與 OCR
+        - 不支援 Wayland session
 
 faq:
   eyebrow: 常見問題
   title: 常見問題
   items:
     - q: SnapTray 是什麼？
-      a: SnapTray 是一款免費、輕量的截圖與螢幕錄影工具，支援 macOS 與 Windows。常駐系統托盤，可擷取區域、標註截圖、釘選圖片、錄製 MP4/GIF/WebP，並即時分享。
+      a: SnapTray 是一款免費、輕量的截圖與標註工具，支援 macOS、Windows 與 Ubuntu 22.04 X11 beta。常駐系統托盤，可擷取區域、標註截圖、釘選圖片並即時分享。Linux beta 不包含錄影與 OCR。
     - q: SnapTray 是免費的嗎？
       a: 是的，SnapTray 完全免費且開源，採用 MIT 授權。沒有廣告、訂閱或隱藏費用。
     - q: SnapTray 和 Windows 內建截圖工具有什麼不同？
@@ -158,7 +170,7 @@ error404:
 landing_screenshot_tool:
   hero:
     title: 最佳截圖工具 — 快速擷取螢幕畫面
-    intro: "截圖工具可以將螢幕上的任何區域擷取為圖片 — 用於文件、錯誤回報、教學或快速分享。大多數作業系統都內建基本截圖功能，但內建工具止步於擷取。如果你經常需要標註、錄影或分享截圖，你需要一個為這些工作流程而打造的工具。SnapTray 是一款免費開源的截圖工具，支援 macOS 與 Windows，將擷取、標註、錄影和分享整合在一個應用程式中。"
+    intro: "截圖工具可以將螢幕上的任何區域擷取為圖片 — 用於文件、錯誤回報、教學或快速分享。大多數作業系統都內建基本截圖功能，但內建工具止步於擷取。如果你經常需要標註、錄影或分享截圖，你需要一個為這些工作流程而打造的工具。SnapTray 是一款免費開源的截圖工具，支援 macOS、Windows 與 Ubuntu 22.04 X11 beta，將擷取、標註和分享整合在一個應用程式中。錄影功能支援 macOS 與 Windows。"
     cta_download: 免費下載
     cta_docs: 閱讀文件
   problems:
@@ -209,7 +221,7 @@ landing_screenshot_tool:
         values: [true, false, false, false]
       - feature: CLI 自動化
         values: [true, false, false, true]
-      - feature: 跨平台（macOS + Windows）
+      - feature: 跨平台（macOS + Windows + Linux beta）
         values: [true, false, false, false]
       - feature: 免費且開源
         values: [true, true, true, true]
@@ -242,21 +254,21 @@ landing_screenshot_tool:
       - q: 什麼是截圖工具？
         a: 截圖工具是一種能擷取螢幕部分或全部畫面為圖片的軟體。基本工具只能儲存圖片。進階截圖工具如 SnapTray 還能標註、錄影、釘選截圖到螢幕，以及透過連結分享。
       - q: SnapTray 是什麼？
-        a: SnapTray 是一款免費開源的截圖與螢幕錄影工具，支援 macOS 與 Windows。常駐系統托盤，提供即時區域擷取、豐富標註、釘選視窗、MP4/GIF/WebP 錄影、OCR、自動模糊和 CLI 自動化。
+        a: SnapTray 是一款免費開源的截圖與標註工具，支援 macOS、Windows 與 Ubuntu 22.04 X11 beta。常駐系統托盤，提供即時區域擷取、豐富標註、釘選視窗和 CLI 自動化。MP4/GIF/WebP 錄影與 OCR 支援 macOS 與 Windows；Linux beta 以擷取與標註為主。
       - q: SnapTray 是免費的嗎？
         a: 是的。SnapTray 完全免費且開源，採用 MIT 授權。沒有廣告、訂閱、帳號或隱藏費用。
       - q: SnapTray 和剪取工具有什麼不同？
         a: 剪取工具提供基本擷取和極少的標註功能。SnapTray 額外提供放大鏡、完整標註工具組（箭頭、形狀、文字、步驟標記、馬賽克模糊）、釘選視窗、螢幕錄影、GIF/WebP 匯出、OCR、自動模糊和 CLI 自動化 — 全部免費且跨平台。
       - q: SnapTray 和 Lightshot 有什麼不同？
         a: Lightshot 提供快速擷取和簡單標註，但缺少螢幕錄影、釘選視窗、OCR、自動模糊和 CLI 支援。SnapTray 包含所有這些功能，同時保持免費、開源且完全離線。
-      - q: SnapTray 支援 macOS 和 Windows 嗎？
-        a: 是的。SnapTray 支援 macOS 14+（Apple Silicon 和 Intel）以及 Windows 10+（x64）。兩個平台提供相同功能。
+      - q: SnapTray 支援哪些平台？
+        a: SnapTray 支援 macOS 14+（Apple Silicon 和 Intel）、Windows 10+（x64），以及 Ubuntu 22.04 X11 AppImage beta。Linux beta 不包含錄影與 OCR，也不支援 Wayland session。
       - q: 可以用腳本自動化截圖嗎？
         a: 可以。SnapTray 內建完整 CLI：snaptray full、snaptray region、snaptray record、snaptray pin 和 snaptray config。可整合 Shell 腳本、CI 流程或自動化工作流。
   cta:
     eyebrow: 立即開始
     title: 下載 SnapTray — 免費且開源
-    subtitle: 支援 macOS 與 Windows，無需註冊。
+    subtitle: 支援 macOS、Windows 與 Ubuntu 22.04 X11 beta，無需註冊。
     button: 立即下載
     learn_more: 前往首頁
 

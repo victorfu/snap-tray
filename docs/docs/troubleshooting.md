@@ -2,7 +2,7 @@
 last_modified_at: 2026-05-18
 layout: docs
 title: Troubleshooting
-description: Fix permission, startup, Qt deployment, encoding, recording, and hotkey issues on macOS and Windows.
+description: Fix permission, startup, Qt deployment, encoding, recording, and hotkey issues on macOS, Windows, and Linux beta.
 permalink: /docs/troubleshooting/
 lang: en
 route_key: docs_troubleshooting
@@ -68,6 +68,17 @@ Use the same Qt installation path that you passed to `CMAKE_PREFIX_PATH`.
 - Check for conflicts with another global hotkey utility
 - On Windows 11, turn off `Settings > Accessibility > Keyboard > Use the Print screen key to open screen capture` before binding `Print Screen` to SnapTray
 - Keep the most frequent actions on simple single-combo shortcuts
+
+### Linux beta: app exits on Wayland
+
+The Ubuntu 22.04 beta supports X11 sessions only. On the login screen, choose an
+X11 session before launching SnapTray.
+
+### Linux beta: hotkeys do not register
+
+Global hotkeys require an X11 session and may conflict with desktop environment
+shortcuts. Open Settings > Hotkeys to see which shortcut failed and assign a
+different key sequence.
 
 ## Recording issues
 

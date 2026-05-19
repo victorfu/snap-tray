@@ -31,6 +31,11 @@ doc_order: 2
 - Windows 10+
 - Microphone permission only when recording audio
 
+### Linux beta
+
+SnapTray provides an Ubuntu 22.04 X11 beta as an AppImage. Recording and OCR are
+not included in the Linux beta. Wayland sessions are not supported.
+
 ## Permission checklist
 
 ### macOS

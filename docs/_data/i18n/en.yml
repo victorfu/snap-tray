@@ -1,6 +1,6 @@
 site:
   locale: en-US
-  tagline: "Free Screenshot & Screen Recording Tool for macOS & Windows"
+  tagline: "Free Screenshot & Annotation Tool for macOS, Windows, and Linux beta"
 
 nav:
   home: Home
@@ -16,13 +16,14 @@ language:
 
 hero:
   eyebrow: Capture. Annotate. Record.
-  title: Fast Screenshot Tool for Mac & Windows
+  title: Fast Screenshot Tool for Mac, Windows, and Linux beta
   tagline: SnapTray lives in your system tray and launches instantly when you need precise captures, polished annotations, and high-quality recordings.
   cta_download: Download
   cta_github: View on GitHub
   pills:
     - macOS 14+
     - Windows 10+
+    - Ubuntu 22.04 X11 beta
     - Qt 6.10.1
   runtime_title: SnapTray Runtime
   runtime_items:
@@ -76,7 +77,7 @@ features:
 downloads:
   eyebrow: Downloads
   title: Install the latest SnapTray build
-  subtitle: Get the newest stable release directly from GitHub assets or install from Microsoft Store.
+  subtitle: Get the newest stable release directly from GitHub assets, install from Microsoft Store, or try the Linux beta AppImage.
   macos:
     label: macOS
     title: Desktop Installer
@@ -93,6 +94,12 @@ downloads:
     button: Download .exe
     empty: Or download from GitHub releases
     unsigned_note: The direct-download .exe is currently unsigned, so Windows may show a SmartScreen or other safety warning during install. If you downloaded it from the official SnapTray GitHub Releases page, this is expected and does not mean the file is unsafe.
+  linux:
+    label: Linux beta
+    title: AppImage
+    requirements: Ubuntu 22.04 X11 session
+    button: Download AppImage
+    empty: Linux AppImage beta coming soon
   req_eyebrow: System Requirements
   req_title: Platform prerequisites
   req_cards:
@@ -106,13 +113,18 @@ downloads:
         - Windows 10 or later
         - Full-trust capability for capture and encoding stack
         - Microphone permission only when recording audio
+    - title: Linux beta
+      items:
+        - Ubuntu 22.04 X11 session
+        - Recording and OCR are not included
+        - Wayland sessions are not supported
 
 faq:
   eyebrow: FAQ
   title: Frequently Asked Questions
   items:
     - q: What is SnapTray?
-      a: SnapTray is a free, lightweight screenshot and screen recording tool for macOS and Windows. It lives in your system tray and lets you capture regions, annotate screenshots, pin images, record your screen to MP4/GIF/WebP, and share results instantly.
+      a: SnapTray is a free, lightweight screenshot and annotation tool for macOS, Windows, and Ubuntu 22.04 X11 beta. It lives in your system tray and lets you capture regions, annotate screenshots, pin images, and share results instantly. Recording and OCR are not included in the Linux beta.
     - q: Is SnapTray free?
       a: Yes, SnapTray is completely free and open source under the MIT license. There are no ads, subscriptions, or hidden costs.
     - q: How is SnapTray different from Snipping Tool?
@@ -158,7 +170,7 @@ error404:
 landing_screenshot_tool:
   hero:
     title: Best Screenshot Tool for Fast Capture
-    intro: "A screenshot tool captures any part of your screen as an image — for documentation, bug reports, tutorials, or quick sharing. Most operating systems include a basic one, but built-in tools stop at capture. If you annotate, record, or share screenshots regularly, you need a tool built for that workflow. SnapTray is a free, open-source screenshot tool for macOS and Windows that handles capture, annotation, recording, and sharing in one place."
+    intro: "A screenshot tool captures any part of your screen as an image — for documentation, bug reports, tutorials, or quick sharing. Most operating systems include a basic one, but built-in tools stop at capture. If you annotate, record, or share screenshots regularly, you need a tool built for that workflow. SnapTray is a free, open-source screenshot tool for macOS, Windows, and Ubuntu 22.04 X11 beta that handles capture, annotation, and sharing in one place. Recording is available on macOS and Windows."
     cta_download: Download Free
     cta_docs: Read the Docs
   problems:
@@ -209,7 +221,7 @@ landing_screenshot_tool:
         values: [true, false, false, false]
       - feature: CLI automation
         values: [true, false, false, true]
-      - feature: Cross-platform (macOS + Windows)
+      - feature: Cross-platform (macOS + Windows + Linux beta)
         values: [true, false, false, false]
       - feature: Free and open source
         values: [true, true, true, true]
@@ -242,21 +254,21 @@ landing_screenshot_tool:
       - q: What is a screenshot tool?
         a: A screenshot tool is software that captures part or all of your screen as an image. Basic tools only save the image. Advanced screenshot tools like SnapTray also let you annotate, record video, pin captures on screen, and share with a link.
       - q: What is SnapTray?
-        a: SnapTray is a free, open-source screenshot and screen recording tool for macOS and Windows. It lives in your system tray and provides instant region capture, rich annotation, pin windows, MP4/GIF/WebP recording, OCR, auto blur, and CLI automation.
+        a: SnapTray is a free, open-source screenshot and annotation tool for macOS, Windows, and Ubuntu 22.04 X11 beta. It lives in your system tray and provides instant region capture, rich annotation, pin windows, and CLI automation. MP4/GIF/WebP recording and OCR are available on macOS and Windows; the Linux beta focuses on capture and annotation.
       - q: Is SnapTray free?
         a: Yes. SnapTray is completely free and open source under the MIT license. There are no ads, subscriptions, accounts, or hidden costs.
       - q: How is SnapTray different from Snipping Tool?
         a: Snipping Tool offers basic capture with minimal annotation. SnapTray adds a magnifier, full annotation toolkit (arrows, shapes, text, step badges, mosaic blur), pin windows, screen recording, GIF/WebP export, OCR, auto blur, and CLI automation — all free and cross-platform.
       - q: How is SnapTray different from Lightshot?
         a: Lightshot provides quick capture and simple annotation, but lacks screen recording, pin windows, OCR, auto blur, and CLI support. SnapTray includes all of these features while remaining free, open source, and fully offline.
-      - q: Does SnapTray work on both macOS and Windows?
-        a: Yes. SnapTray supports macOS 14+ (Apple Silicon and Intel) and Windows 10+ (x64). The same feature set is available on both platforms.
+      - q: Which platforms does SnapTray support?
+        a: SnapTray supports macOS 14+ (Apple Silicon and Intel), Windows 10+ (x64), and an Ubuntu 22.04 X11 AppImage beta. Recording and OCR are not included in the Linux beta, and Wayland sessions are not supported.
       - q: Can I automate screenshots with scripts?
         a: "Yes. SnapTray includes a full CLI: snaptray full, snaptray region, snaptray record, snaptray pin, and snaptray config. Integrate into shell scripts, CI pipelines, or automation workflows."
   cta:
     eyebrow: Get Started
     title: Download SnapTray — Free and Open Source
-    subtitle: Available for macOS and Windows. No account required.
+    subtitle: Available for macOS, Windows, and Ubuntu 22.04 X11 beta. No account required.
     button: Download Now
     learn_more: Visit Homepage
 

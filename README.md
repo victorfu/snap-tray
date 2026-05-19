@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  macOS 14+ · Windows 10+
+  macOS 14+ · Windows 10+ · Ubuntu 22.04 X11 beta
 </p>
 
 <p align="center">
@@ -24,7 +24,7 @@
   <a href="docs/docs/tutorials/index.md">Tutorials</a>
 </p>
 
-SnapTray is a tray-native screenshot and screen recording app for macOS and Windows. It is built for fast desktop workflows: capture a region, explain it instantly, keep references on screen, and turn the same moment into a shareable image or video.
+SnapTray is a Qt 6 screenshot and annotation app for macOS, Windows, and Ubuntu 22.04 X11 beta. It is built for fast desktop workflows: capture a region, explain it instantly, keep references on screen, and turn the same moment into a shareable image or video.
 
 ## Why SnapTray
 
@@ -33,6 +33,7 @@ SnapTray is a tray-native screenshot and screen recording app for macOS and Wind
 - Pin screenshots above other windows so references stay visible while you work
 - Record a full screen source from the tray menu or CLI, with direct start on single-display setups and screen picking on multi-display setups
 - Launch repeatable flows from global hotkeys, the tray menu, or the CLI
+- Linux beta: Ubuntu 22.04 X11 AppImage; recording and OCR are not shown.
 
 ## Built for Real Work
 

@@ -2,7 +2,7 @@
 last_modified_at: 2026-05-18
 layout: docs
 title: 疑難排解
-description: 快速解決權限、啟動、Qt 部署、錄影與快捷鍵衝突問題。
+description: 快速解決 macOS、Windows 與 Linux beta 的權限、啟動、Qt 部署、錄影與快捷鍵衝突問題。
 permalink: /zh-tw/docs/troubleshooting/
 lang: zh-tw
 route_key: docs_troubleshooting
@@ -68,6 +68,16 @@ Qt 路徑請與你 configure 時使用的 `CMAKE_PREFIX_PATH` 保持一致。
 - 檢查是否被其他全域熱鍵工具攔截
 - 在 Windows 11，若要把 `Print Screen` 綁定給 SnapTray，請先關閉 `Settings > Accessibility > Keyboard > Use the Print screen key to open screen capture`
 - 最常用動作建議保留為單一組合鍵
+
+### Linux beta：Wayland 上 App 會結束
+
+Ubuntu 22.04 beta 只支援 X11 session。啟動 SnapTray 前，請在登入畫面選擇
+X11 session。
+
+### Linux beta：快捷鍵無法註冊
+
+全域快捷鍵需要 X11 session，也可能與桌面環境快捷鍵衝突。請開啟 Settings >
+Hotkeys 查看哪個快捷鍵失敗，並改用不同的按鍵組合。
 
 ## 錄影異常
 
