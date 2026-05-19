@@ -1,0 +1,41 @@
+#pragma once
+
+#include <QString>
+
+namespace SnapTray {
+
+enum class PlatformKind {
+    MacOS,
+    Windows,
+    Linux,
+    Other
+};
+
+enum class DisplayServerKind {
+    Unknown,
+    X11,
+    Wayland,
+    Offscreen,
+    Other
+};
+
+struct PlatformCapabilities {
+    bool supportsRecording = false;
+    bool supportsOCR = false;
+    bool supportsGlobalHotkeys = false;
+    bool supportsWindowDetection = false;
+    bool supportsInAppUpdates = false;
+    bool isRuntimeSupported = false;
+    DisplayServerKind displayServer = DisplayServerKind::Unknown;
+    QString unsupportedRuntimeMessage;
+};
+
+PlatformKind currentPlatformKind();
+DisplayServerKind displayServerKindFromSessionType(const QString& sessionType,
+                                                   const QString& qtPlatformName);
+DisplayServerKind currentDisplayServerKind();
+PlatformCapabilities capabilitiesForPlatform(PlatformKind platform,
+                                             DisplayServerKind displayServer);
+PlatformCapabilities currentPlatformCapabilities();
+
+} // namespace SnapTray

@@ -6,6 +6,8 @@
 #include <QIcon>
 #include <QImage>
 
+#include "platform/PlatformCapabilities.h"
+
 class OCRManager;
 class WindowDetector;
 
@@ -14,6 +16,7 @@ class PlatformFeatures
 public:
     static PlatformFeatures& instance();
 
+    const SnapTray::PlatformCapabilities& capabilities() const;
     bool isOCRAvailable() const;
 
     OCRManager* createOCRManager(QObject* parent = nullptr) const;
@@ -60,6 +63,7 @@ private:
     PlatformFeatures(const PlatformFeatures&) = delete;
     PlatformFeatures& operator=(const PlatformFeatures&) = delete;
 
+    SnapTray::PlatformCapabilities m_capabilities;
     bool m_ocrAvailable;
     bool m_windowDetectionAvailable;
 };

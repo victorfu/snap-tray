@@ -311,6 +311,7 @@ add_library(snaptray_core STATIC
     src/settings/LanguageManager.cpp
     src/beautify/BeautifyRenderer.cpp
     src/update/UpdateSettingsManager.cpp
+    src/platform/PlatformCapabilities.cpp
     src/cursor/CursorManager.cpp
     src/cursor/CursorAuthority.cpp
     src/cursor/CursorPlatformApplier.cpp
@@ -348,6 +349,7 @@ add_library(snaptray_core STATIC
     include/cursor/CursorStyleCatalog.h
     include/cursor/CursorSurfaceSupport.h
     include/cursor/CursorTypes.h
+    include/platform/PlatformCapabilities.h
     include/utils/FilenameTemplateEngine.h
     include/utils/ImageSaveUtils.h
     include/utils/NativeFileDialogUtils.h

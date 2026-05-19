@@ -88,6 +88,11 @@ target_link_libraries(Qml_QtQuickBackendPolicy PRIVATE snaptray_platform Qt6::Te
 add_test(NAME Qml_QtQuickBackendPolicy COMMAND Qml_QtQuickBackendPolicy)
 set_tests_properties(Qml_QtQuickBackendPolicy PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Platform_Capabilities Platform/tst_PlatformCapabilities.cpp)
+target_link_libraries(Platform_Capabilities PRIVATE snaptray_core Qt6::Test)
+add_test(NAME Platform_Capabilities COMMAND Platform_Capabilities)
+set_tests_properties(Platform_Capabilities PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Qml_QmlBadge Qml/tst_QmlBadge.cpp)
 target_link_libraries(Qml_QmlBadge PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
 add_test(NAME Qml_QmlBadge COMMAND Qml_QmlBadge)

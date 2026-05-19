@@ -32,12 +32,18 @@ PlatformFeatures& PlatformFeatures::instance()
 }
 
 PlatformFeatures::PlatformFeatures()
-    : m_ocrAvailable(OCRManager::isAvailable())
-    , m_windowDetectionAvailable(true)
+    : m_capabilities(SnapTray::currentPlatformCapabilities())
+    , m_ocrAvailable(m_capabilities.supportsOCR && OCRManager::isAvailable())
+    , m_windowDetectionAvailable(m_capabilities.supportsWindowDetection)
 {
 }
 
 PlatformFeatures::~PlatformFeatures() = default;
+
+const SnapTray::PlatformCapabilities& PlatformFeatures::capabilities() const
+{
+    return m_capabilities;
+}
 
 bool PlatformFeatures::isOCRAvailable() const
 {
