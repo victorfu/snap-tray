@@ -22,6 +22,10 @@ Open Settings > General and use the CLI install action to create `/usr/local/bin
 
 Open Settings > General and use the CLI install action to add SnapTray's executable directory to the current user's `PATH`. Open a new terminal after install or uninstall.
 
+### Linux beta
+
+Open Settings > General and use the CLI install action to create a `~/.local/bin/snaptray` wrapper for the AppImage. Make sure `~/.local/bin` is in your `PATH`, then open a new terminal after install or uninstall.
+
 ### Packaged Windows builds
 
 Some installers may already expose `snaptray` through `PATH` or App Execution Alias, but the in-app install and remove flow is the canonical behavior described by the current application code.

@@ -68,7 +68,7 @@ If you want to build SnapTray from source or work on the codebase, start with [D
 Quick entry points:
 
 ```bash
-# macOS
+# macOS/Linux beta
 ./scripts/build.sh
 ./scripts/run-tests.sh
 ```

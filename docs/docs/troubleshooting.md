@@ -32,7 +32,7 @@ doc_order: 2
 
 If the app still does not appear, rebuild with:
 
-- macOS: `./scripts/build.sh`
+- macOS/Linux beta: `./scripts/build.sh`
 - Windows: `scripts\build.bat`
 
 ## Gatekeeper blocks app launch on macOS
@@ -94,7 +94,7 @@ Wayland issues, use the Linux beta notes above.
 
 For development environments, validate the full toolchain with repository scripts:
 
-- macOS: `./scripts/build.sh` then `./scripts/run-tests.sh`
+- macOS/Linux beta: `./scripts/build.sh` then `./scripts/run-tests.sh`
 - Windows: `scripts\build.bat` then `scripts\run-tests.bat`
 
 If you are debugging packaging or signing issues, continue in [Release & Packaging](/developer/release-packaging/).
