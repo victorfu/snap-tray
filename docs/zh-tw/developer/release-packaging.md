@@ -2,7 +2,7 @@
 last_modified_at: 2026-03-27
 layout: docs
 title: 發佈與打包
-description: 產生 macOS 與 Windows 可發佈安裝檔，並整理簽章、公證與商店提交流程。
+description: 產生 macOS、Windows 可發佈安裝檔與 Linux AppImage beta，並整理簽章、公證與商店提交流程。
 permalink: /zh-tw/developer/release-packaging/
 lang: zh-tw
 route_key: developer_release_packaging

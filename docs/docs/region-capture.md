@@ -39,10 +39,10 @@ Press `M` to toggle multi-region capture mode. You can collect multiple regions,
 After the selection is complete, the toolbar supports:
 
 - Annotation + edit tools (Arrow/Pencil/Marker/Shape/Text/Mosaic/Step Badge/Emoji/Eraser)
-- `OCR` and `QR Code Scan`
+- `OCR` (macOS/Windows only; hidden on Linux beta) and `QR Code Scan`
 - `Auto Blur` (faces + credentials)
 - `Share URL` (upload selected result and return a share link)
-- `Pin`, `Save`, `Copy`, and `Record`
+- `Pin`, `Save`, and `Copy`
 
 ## Useful shortcuts
 
@@ -52,9 +52,9 @@ After the selection is complete, the toolbar supports:
 | Copy color code under cursor (when magnifier mode is active) | `C` |
 | Constrain ratio | Hold `Shift` |
 | Toggle multi-region | `M` |
-| Start recording from region | `R` |
 | Cancel | `Esc` |
 
 ## Next step
 
 Go to [Annotation Tools](/docs/annotation-tools/) to edit captures before save/copy.
+For full-screen recording on macOS or Windows, use [Recording](/docs/recording/).

@@ -2,7 +2,7 @@
 last_modified_at: 2026-03-24
 layout: docs
 title: Getting Started
-description: Complete a reliable 10-minute setup so screenshots, pin windows, OCR, and recording workflows work on day one.
+description: Complete a reliable 10-minute setup so screenshots, pin windows, and platform-specific extras work on day one.
 permalink: /docs/getting-started/
 lang: en
 route_key: docs_getting_started
@@ -15,7 +15,7 @@ doc_order: 2
 - Permission setup
 - First screenshot and annotation
 - First pin window
-- First recording export
+- Platform-specific feature check
 - Hotkey conflict check
 
 ## Runtime prerequisites
@@ -34,7 +34,8 @@ doc_order: 2
 ### Linux beta
 
 SnapTray provides an Ubuntu 22.04 X11 beta as an AppImage. Recording and OCR are
-not included in the Linux beta. Wayland sessions are not supported.
+not included in the Linux beta and their UI is hidden. Wayland sessions are not
+supported.
 
 ## Permission checklist
 
@@ -77,12 +78,20 @@ If the tray icon does not appear, continue with [Troubleshooting](/docs/troubles
 3. Move, resize, and zoom the pin window.
 4. Switch apps and confirm the pin stays visible.
 
-## Step 4: Test recording flow (3 min)
+## Step 4: Check platform-specific features (3 min)
 
-1. Start recording from the tray menu or press `R` from the capture toolbar.
+### macOS and Windows
+
+1. Start recording from the tray menu or with `snaptray record start`.
 2. Record 5 to 10 seconds.
 3. Stop and export MP4.
 4. Confirm the output path in Settings > Files.
+
+Recording and OCR are available only on macOS and Windows.
+
+### Linux beta
+
+Confirm that OCR and Recording actions are not shown, then continue to hotkey checks.
 
 ## Step 5: Resolve hotkey conflicts (2 min)
 

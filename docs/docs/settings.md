@@ -2,7 +2,7 @@
 last_modified_at: 2026-03-26
 layout: docs
 title: Settings
-description: Tune SnapTray behavior for files, OCR, watermarking, recording quality, and updates.
+description: Tune SnapTray behavior for files, platform-specific OCR and recording, watermarking, and updates.
 permalink: /docs/settings/
 lang: en
 route_key: docs_settings
@@ -11,6 +11,9 @@ doc_order: 4
 ---
 
 ## Settings tabs
+
+OCR and Recording tabs are available on macOS and Windows only. Linux beta hides
+both tabs because those features are not included.
 
 ### General
 
@@ -52,8 +55,8 @@ App name, version, copyright, author, and website link.
 
 ## Recommended baseline profile
 
-- 30 FPS MP4 for standard tutorials
-- Dedicated folders for screenshots and recordings
+- On macOS/Windows, 30 FPS MP4 for standard tutorials
+- Dedicated folders for screenshots and, where available, recordings
 - Auto update checks enabled daily
 
 ## Next step

@@ -2,7 +2,7 @@
 last_modified_at: 2026-03-24
 layout: docs
 title: 快速開始
-description: 用 10 分鐘完成穩定初始化，確保截圖、釘選、OCR 與錄影第一天就可用。
+description: 用 10 分鐘完成穩定初始化，確保截圖、釘選與平台限定功能第一天就可用。
 permalink: /zh-tw/docs/getting-started/
 lang: zh-tw
 route_key: docs_getting_started
@@ -15,7 +15,7 @@ doc_order: 2
 - 權限設定完成
 - 第一張截圖與標註
 - 第一個釘選視窗
-- 第一段錄影輸出
+- 平台限定功能確認
 - 快捷鍵衝突確認
 
 ## 執行前置條件
@@ -33,8 +33,8 @@ doc_order: 2
 
 ### Linux beta
 
-SnapTray 提供 Ubuntu 22.04 X11 beta AppImage。Linux beta 不包含錄影與 OCR。
-Wayland session 不支援。
+SnapTray 提供 Ubuntu 22.04 X11 beta AppImage。Linux beta 不包含錄影與 OCR，
+相關 UI 也會隱藏。Wayland session 不支援。
 
 ## 權限檢查清單
 
@@ -77,12 +77,20 @@ Wayland session 不支援。
 3. 測試移動、調整大小與縮放。
 4. 切換 App，確認釘選仍可見。
 
-## 步驟 4：測試錄影流程（3 分鐘）
+## 步驟 4：確認平台限定功能（3 分鐘）
 
-1. 從托盤啟動錄影，或在擷取工具列按 `R`。
+### macOS 與 Windows
+
+1. 從托盤啟動錄影，或使用 `snaptray record start`。
 2. 錄 5 到 10 秒。
 3. 停止並輸出 MP4。
 4. 在 Settings > Files 確認輸出路徑。
+
+錄影與 OCR 僅 macOS 與 Windows 提供。
+
+### Linux beta
+
+確認 OCR 與 Recording 動作沒有顯示，然後繼續檢查快捷鍵。
 
 ## 步驟 5：處理快捷鍵衝突（2 分鐘）
 

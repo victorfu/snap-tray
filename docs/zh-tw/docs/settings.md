@@ -2,7 +2,7 @@
 last_modified_at: 2026-03-26
 layout: docs
 title: 設定
-description: 調整檔案路徑、OCR、浮水印、錄影品質與更新策略。
+description: 調整檔案路徑、平台限定 OCR 與錄影、浮水印及更新策略。
 permalink: /zh-tw/docs/settings/
 lang: zh-tw
 route_key: docs_settings
@@ -11,6 +11,9 @@ doc_order: 4
 ---
 
 ## 設定分頁
+
+OCR 與 Recording 分頁僅 macOS 與 Windows 提供。Linux beta 不包含這些功能，
+因此會隱藏這兩個分頁。
 
 ### General
 
@@ -52,8 +55,8 @@ App 名稱、版本、版權、作者與網站連結。
 
 ## 推薦基準配置
 
-- 一般教學使用 30 FPS MP4
-- 截圖與錄影分開資料夾管理
+- macOS/Windows 的一般教學使用 30 FPS MP4
+- 截圖與可用時的錄影分開資料夾管理
 - 每天自動檢查更新
 
 ## 下一步

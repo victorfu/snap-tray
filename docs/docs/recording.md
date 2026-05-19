@@ -2,13 +2,16 @@
 last_modified_at: 2026-03-26
 layout: docs
 title: Recording
-description: Record full screen sources with MP4, GIF, and WebP outputs.
+description: macOS/Windows only: record full screen sources with MP4, GIF, and WebP outputs.
 permalink: /docs/recording/
 lang: en
 route_key: docs_recording
 doc_group: workflow
 doc_order: 2
 ---
+
+Recording is available on macOS and Windows only. Linux beta does not include
+recording, and its recording UI and CLI help entries are hidden.
 
 ## Recording entry points
 

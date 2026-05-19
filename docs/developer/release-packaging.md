@@ -2,7 +2,7 @@
 last_modified_at: 2026-03-27
 layout: docs
 title: Release & Packaging
-description: Create distributable macOS and Windows packages, sign them, and prepare app-store or direct-download releases.
+description: Create distributable macOS and Windows packages plus the Linux AppImage beta, sign them, and prepare app-store or direct-download releases.
 permalink: /developer/release-packaging/
 lang: en
 route_key: developer_release_packaging

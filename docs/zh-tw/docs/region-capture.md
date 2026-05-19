@@ -39,10 +39,10 @@ doc_order: 1
 完成選取後，工具列可直接執行：
 
 - 標註與編修工具（Arrow/Pencil/Marker/Shape/Text/Mosaic/Step Badge/Emoji/Eraser）
-- `OCR` 與 `QR Code Scan`
+- `OCR`（僅 macOS/Windows；Linux beta 會隱藏）與 `QR Code Scan`
 - `Auto Blur`（臉孔 + 憑證等敏感資訊）
 - `Share URL`（上傳目前選取結果並產生分享連結）
-- `Pin`、`Save`、`Copy`、`Record`
+- `Pin`、`Save`、`Copy`
 
 ## 常用快捷鍵
 
@@ -52,9 +52,9 @@ doc_order: 1
 | 複製游標下色碼（放大鏡模式啟用時） | `C` |
 | 鎖定比例 | 按住 `Shift` |
 | 切換多區域 | `M` |
-| 由當前區域錄影 | `R` |
 | 取消 | `Esc` |
 
 ## 下一步
 
 前往[標註工具](/zh-tw/docs/annotation-tools/)學習輸出前編修流程。
+若要在 macOS 或 Windows 進行全螢幕錄影，請使用[錄影](/zh-tw/docs/recording/)。
