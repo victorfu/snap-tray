@@ -181,7 +181,7 @@ landing_screenshot_tool:
       - pain: Windows Snipping Tool Is Slow and Basic
         detail: Snipping Tool opens a full window before you can capture. Annotation is limited to a pen and highlighter — no arrows, shapes, or text. There is no CLI, no pin-to-screen, and no recording pipeline.
       - pain: Mac Screenshots Lack Post-Capture Tools
-        detail: Cmd+Shift+4 captures a region, but that is where it ends. To annotate, you need Preview or a third-party editor. There is no pin window, no screen recording with region selection, and no OCR.
+        detail: Cmd+Shift+4 captures a region, but that is where it ends. To annotate, you need Preview or a third-party editor. There is no pin window, no MP4/GIF/WebP recording workflow, and no OCR.
       - pain: Third-Party Tools Are Bloated or Paid
         detail: Many alternatives require accounts, cloud subscriptions, or ship as heavy Electron apps. Simple capture-and-annotate workflows should not need 500 MB of RAM or a monthly fee.
   features:
@@ -264,7 +264,7 @@ landing_screenshot_tool:
       - q: Which platforms does SnapTray support?
         a: SnapTray supports macOS 14+ (Apple Silicon and Intel), Windows 10+ (x64), and an Ubuntu 22.04 X11 AppImage beta. Recording and OCR are not included in the Linux beta, and Wayland sessions are not supported.
       - q: Can I automate screenshots with scripts?
-        a: "Yes. SnapTray includes a full CLI: snaptray full, snaptray region, snaptray record, snaptray pin, and snaptray config. Integrate into shell scripts, CI pipelines, or automation workflows."
+        a: "Yes. SnapTray includes a CLI for automation. On Linux beta, the CLI covers snaptray full, snaptray region, snaptray pin, and snaptray config; snaptray record is available only on macOS/Windows. Integrate into shell scripts, CI pipelines, or automation workflows."
   cta:
     eyebrow: Get Started
     title: Download SnapTray — Free and Open Source
@@ -275,7 +275,7 @@ landing_screenshot_tool:
 landing_mac:
   hero:
     title: Best Screenshot Tool for Mac
-    intro: "macOS includes Cmd+Shift+4 for basic screen capture, but stops there — no annotation, no pin windows, no region recording, no OCR. If you take screenshots daily for work, you need a tool that handles the full workflow. SnapTray is a free, open-source screenshot tool that adds professional capture, annotation, recording, and sharing to your Mac."
+    intro: "macOS includes Cmd+Shift+4 for basic screen capture, but stops there — no annotation, no pin windows, no MP4/GIF/WebP recording workflow, no OCR. If you take screenshots daily for work, you need a tool that handles the full workflow. SnapTray is a free, open-source screenshot tool that adds professional capture, annotation, recording, and sharing to your Mac."
     cta_download: Download .dmg
     cta_docs: Read the Docs
   problems:
@@ -303,7 +303,7 @@ landing_mac:
       - title: Annotate in the Capture Overlay
         body: Arrows, shapes, text, step badges, mosaic blur, and emoji stickers are available immediately after capture. No need to open Preview or another editor.
       - title: Pin, Record, and Share
-        body: Pin captures as floating references, record any region to MP4/GIF/WebP, extract text with OCR, or upload for a share link — all from the same tool.
+        body: Pin captures as floating references, record full screen to MP4/GIF/WebP on macOS/Windows, extract text with OCR, or upload for a share link — all from the same tool.
   compare:
     eyebrow: Comparison
     title: "SnapTray vs macOS Built-in vs Shottr vs CleanShot X"
@@ -355,7 +355,7 @@ landing_mac:
       - q: How does SnapTray compare to CleanShot X?
         a: CleanShot X is a paid app with cloud features. SnapTray is free, open-source, and fully offline. Both offer annotation, recording, and OCR — but SnapTray adds CLI automation and cross-platform support at no cost.
       - q: Can I record my screen on Mac with SnapTray?
-        a: Yes. SnapTray records any region to MP4 with optional audio, or exports as GIF/WebP for silent clips. System audio capture requires macOS 13+ or a virtual audio device like BlackHole.
+        a: Yes. SnapTray records full screen to MP4 with optional audio, or exports as GIF/WebP for silent clips. System audio capture requires macOS 13+ or a virtual audio device like BlackHole.
       - q: Is SnapTray better than Shottr?
         a: "Shottr is fast and lightweight but lacks screen recording, pin windows, and CLI automation. SnapTray includes all of these plus auto blur, watermarks, and cross-platform support — while remaining free and open source."
   cta:
@@ -396,7 +396,7 @@ landing_windows:
       - title: High-DPI and Multi-Monitor
         body: SnapTray handles mixed-DPI setups and multiple monitors correctly. No blurry captures, no offset regions, no scaling artifacts on 4K displays.
       - title: Record, Pin, and Automate
-        body: "Record any region to MP4/GIF/WebP, pin captures as floating references, extract text with OCR, and script everything via CLI: snaptray region, snaptray record, snaptray pin."
+        body: "Record full screen to MP4/GIF/WebP on macOS/Windows, pin captures as floating references, extract text with OCR, and script everything via CLI: snaptray region, snaptray record, snaptray pin."
   compare:
     eyebrow: Comparison
     title: "SnapTray vs Snipping Tool vs ShareX vs Greenshot"
