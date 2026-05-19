@@ -57,7 +57,7 @@ features:
       body: 快速選取視窗，不必手動拖拉邊界。
     - kind: 錄影
       title: Screen Recording
-      body: 在 macOS/Windows 擷取任意區域並輸出可帶音訊的 MP4，或適合無音訊片段的 GIF、WebP。
+      body: 在 macOS/Windows 錄製完整螢幕來源並輸出可帶音訊的 MP4，或適合無音訊片段的 GIF、WebP。
     - kind: 工具
       title: Color Picker
       body: 擷取螢幕色彩，Shift 切換 HEX/RGB，C 一鍵複製。
@@ -194,7 +194,7 @@ landing_screenshot_tool:
       - title: 不離開擷取畫面直接標註
         body: 箭頭、形狀、文字、步驟標記、馬賽克模糊和貼圖都在同一個覆蓋層中。不需開啟其他編輯器或貼到別的應用程式。
       - title: 分享、儲存或釘選結果
-        body: 複製到剪貼簿、存檔、上傳取得分享連結，或釘選為浮動參考視窗。螢幕錄影可匯出 MP4、GIF 或 WebP。每個動作只需一個快捷鍵。
+        body: 複製到剪貼簿、存檔、上傳取得分享連結，或釘選為浮動參考視窗。在 macOS/Windows，完整螢幕錄影可匯出 MP4、GIF 或 WebP。每個動作只需一個快捷鍵。
   compare:
     eyebrow: 工具比較
     title: "SnapTray vs 剪取工具 vs Lightshot vs ShareX"

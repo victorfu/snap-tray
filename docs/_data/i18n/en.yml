@@ -57,7 +57,7 @@ features:
       body: Quickly select windows without manually dragging exact bounds.
     - kind: Recording
       title: Screen Recording
-      body: On macOS/Windows, capture any region and export MP4 with optional audio, or GIF/WebP for silent clips.
+      body: On macOS/Windows, record a full screen source and export MP4 with optional audio, or GIF/WebP for silent clips.
     - kind: Utility
       title: Color Picker
       body: Pick on-screen colors, switch HEX/RGB with Shift, copy instantly with C.
@@ -194,7 +194,7 @@ landing_screenshot_tool:
       - title: Annotate Without Leaving the Capture
         body: Arrows, shapes, text, step badges, mosaic blur, and emoji stickers appear in the same overlay. You do not need to open a separate editor or paste into another app.
       - title: Share, Save, or Pin the Result
-        body: Copy to clipboard, save to disk, upload for a share link, or pin as a floating reference window. Screen recordings export to MP4, GIF, or WebP. Every action is one keystroke away.
+        body: Copy to clipboard, save to disk, upload for a share link, or pin as a floating reference window. On macOS/Windows, full-screen recordings export to MP4, GIF, or WebP. Every action is one keystroke away.
   compare:
     eyebrow: Comparison
     title: "SnapTray vs Snipping Tool vs Lightshot vs ShareX"
