@@ -19,7 +19,7 @@ If your goal is to get work done quickly, start in [Tutorials](/docs/tutorials/)
 1. Need a screenshot in 30 seconds: [Quick Share (30s)](/docs/tutorials/quick-share/)
 2. Need a reproducible issue report: [Bug Report Workflow](/docs/tutorials/bug-report/)
 3. Need always-visible references: [Live Reference with Pin](/docs/tutorials/live-reference/)
-4. Need a short demo video: [Recording Demo](/docs/tutorials/recording-demo/)
+4. Need a short demo video: [Recording Demo (macOS/Windows only)](/docs/tutorials/recording-demo/)
 
 ## Build your foundation
 
@@ -42,7 +42,7 @@ Use these pages when you need complete option details.
 ### Workflow and delivery
 
 - [Pin Window](/docs/pin-window/)
-- [Recording](/docs/recording/)
+- [Recording (macOS/Windows only)](/docs/recording/)
 - [Hotkeys](/docs/hotkeys/)
 
 ### Advanced and support

@@ -35,8 +35,8 @@
         zh-tw: Pin 長駐參考
     - route_key: docs_tutorial_recording_demo
       title:
-        en: Recording Demo
-        zh-tw: 錄影教學示範
+        en: Recording Demo (macOS/Windows only)
+        zh-tw: 錄影教學示範（僅 macOS/Windows）
 
 - id: capture
   title:
@@ -67,8 +67,8 @@
         zh-tw: 釘選視窗
     - route_key: docs_recording
       title:
-        en: Recording
-        zh-tw: 錄影
+        en: Recording (macOS/Windows only)
+        zh-tw: 錄影（僅 macOS/Windows）
     - route_key: docs_hotkeys
       title:
         en: Hotkeys
