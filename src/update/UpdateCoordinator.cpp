@@ -148,6 +148,10 @@ QString updateManagementMessageForSource(InstallSource source)
         return QCoreApplication::translate(
                    "UpdateCoordinator",
                    "Updates for this installation are managed by Homebrew.");
+    case InstallSource::AppImage:
+        return QCoreApplication::translate(
+            "UpdateCoordinator",
+            "Updates for this Linux beta are provided as AppImage downloads.");
     case InstallSource::Development:
         return QCoreApplication::translate(
             "UpdateCoordinator",
@@ -179,6 +183,7 @@ UpdateServiceKind UpdateCoordinator::selectServiceKind(UpdatePlatform platform, 
     case InstallSource::MicrosoftStore:
     case InstallSource::MacAppStore:
     case InstallSource::Homebrew:
+    case InstallSource::AppImage:
     case InstallSource::Development:
         return UpdateServiceKind::ExternalManaged;
     case InstallSource::DirectDownload:

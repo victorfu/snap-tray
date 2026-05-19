@@ -35,6 +35,8 @@ QString InstallSourceDetector::getSourceDisplayName(InstallSource source)
         return QStringLiteral("Direct Download");
     case InstallSource::Homebrew:
         return QStringLiteral("Homebrew");
+    case InstallSource::AppImage:
+        return QStringLiteral("AppImage");
     case InstallSource::Development:
         return QStringLiteral("Development Build");
     case InstallSource::Unknown:
@@ -67,3 +69,4 @@ void InstallSourceDetector::clearDetectedSourceForTests()
 // Platform-specific detect() implementation is in:
 // - InstallSourceDetector_win.cpp (Windows)
 // - InstallSourceDetector_mac.mm (macOS)
+// - InstallSourceDetector_linux.cpp (Linux)
