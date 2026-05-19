@@ -213,6 +213,11 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
         onScreenCanvas();
     }
     else if (msg.command == "record") {
+        if (!PlatformFeatures::instance().capabilities().supportsRecording) {
+            qWarning() << "Ignoring record command on unsupported platform";
+            return;
+        }
+
         QString action = msg.options["action"].toString().toLower();
         const auto isRecordingFlowActive = [this]() {
             return m_screenPickerDialog
@@ -457,8 +462,13 @@ void MainApplication::initialize()
     connect(m_pinWindowManager, &PinWindowManager::allPinsVisibilityChanged,
             this, [this](bool) { updatePinsVisibilityActionText(); });
 
-    m_fullScreenRecordingAction = m_trayMenu->addAction(tr("Record Screen"));
-    connect(m_fullScreenRecordingAction, &QAction::triggered, this, &MainApplication::onFullScreenRecording);
+    if (PlatformFeatures::instance().capabilities().supportsRecording) {
+        m_fullScreenRecordingAction = m_trayMenu->addAction(tr("Record Screen"));
+        connect(m_fullScreenRecordingAction,
+                &QAction::triggered,
+                this,
+                &MainApplication::onFullScreenRecording);
+    }
 
     m_trayMenu->addSeparator();
 
@@ -636,6 +646,10 @@ void MainApplication::onScreenCanvas()
 
 void MainApplication::onFullScreenRecording()
 {
+    if (!PlatformFeatures::instance().capabilities().supportsRecording) {
+        return;
+    }
+
     if (m_screenPickerDialog) {
         closeScreenPicker();
         return;
@@ -865,7 +879,9 @@ void MainApplication::onHotkeyAction(SnapTray::HotkeyAction action)
         onToggleAllPinsVisibility();
         break;
     case HotkeyAction::RecordFullScreen:
-        onFullScreenRecording();
+        if (PlatformFeatures::instance().capabilities().supportsRecording) {
+            onFullScreenRecording();
+        }
         break;
     default:
         break;

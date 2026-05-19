@@ -123,6 +123,7 @@ private slots:
     void updateTrayMenuHotkeyText_marksFailedHotkeyUnavailable();
     void updateTrayMenuHotkeyText_usesTranslatedPasteLabel();
     void initialize_directDownload_addsEnabledCheckForUpdatesActionBeforeSettings();
+    void initialize_hidesRecordingActionWhenUnsupported();
     void onCheckForUpdates_usesSharedSettingsWindowFlowWithoutShowingSettings();
     void initialize_externalManaged_disablesCheckForUpdatesAction();
     void handleCLICommand_recordToggle_closesScreenPicker();
@@ -264,6 +265,25 @@ void tst_MainApplicationTrayMenu::initialize_directDownload_addsEnabledCheckForU
     QCOMPARE(checkIndex + 1, settingsIndex);
 }
 
+void tst_MainApplicationTrayMenu::initialize_hidesRecordingActionWhenUnsupported()
+{
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+
+    MainApplication application;
+    application.initialize();
+
+#ifdef Q_OS_LINUX
+    QVERIFY(application.m_fullScreenRecordingAction == nullptr);
+
+    const QList<QAction*> actions = application.m_trayMenu->actions();
+    for (QAction* action : actions) {
+        QVERIFY(!action || action->text() != MainApplication::tr("Record Screen"));
+    }
+#else
+    QVERIFY(application.m_fullScreenRecordingAction != nullptr);
+#endif
+}
+
 void tst_MainApplicationTrayMenu::onCheckForUpdates_usesSharedSettingsWindowFlowWithoutShowingSettings()
 {
     installFakeUpdateService(InstallSource::DirectDownload, false);
@@ -308,7 +328,12 @@ void tst_MainApplicationTrayMenu::handleCLICommand_recordToggle_closesScreenPick
 
     application.handleCLICommand(message.toJson());
 
+#ifdef Q_OS_LINUX
+    QVERIFY(application.m_screenPickerDialog != nullptr);
+    application.closeScreenPicker();
+#else
     QVERIFY(application.m_screenPickerDialog.isNull());
+#endif
     QCOMPARE(application.m_recordingManager->state(), RecordingManager::State::Idle);
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 }
