@@ -739,9 +739,20 @@ QString SettingsBackend::appVersion() const
     return QString::fromLatin1(SNAPTRAY_VERSION);
 }
 
+bool SettingsBackend::recordingSupported() const
+{
+    return PlatformFeatures::instance().capabilities().supportsRecording;
+}
+
+bool SettingsBackend::ocrSettingsVisible() const
+{
+    return PlatformFeatures::instance().capabilities().supportsOCR;
+}
+
 bool SettingsBackend::ocrSupported() const
 {
-    return PlatformFeatures::instance().isOCRAvailable();
+    return PlatformFeatures::instance().capabilities().supportsOCR
+        && PlatformFeatures::instance().isOCRAvailable();
 }
 
 bool SettingsBackend::ocrLoading() const
@@ -1018,6 +1029,10 @@ QVariantList SettingsBackend::hotkeyCategories() const
         HotkeyCategory::Recording,
     };
     for (auto cat : categories) {
+        if (cat == HotkeyCategory::Recording && !recordingSupported()) {
+            continue;
+        }
+
         QVariantMap entry;
         entry[QStringLiteral("category")] = static_cast<int>(cat);
         entry[QStringLiteral("name")] = getCategoryDisplayName(cat);

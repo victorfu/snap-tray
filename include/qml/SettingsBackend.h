@@ -28,6 +28,8 @@ class SettingsBackend : public QObject
     Q_PROPERTY(int appTheme READ appTheme WRITE setAppTheme NOTIFY appThemeChanged)
     Q_PROPERTY(bool cliInstalled READ cliInstalled NOTIFY cliInstalledChanged)
     Q_PROPERTY(bool isMacOS READ isMacOS CONSTANT)
+    Q_PROPERTY(bool recordingSupported READ recordingSupported CONSTANT)
+    Q_PROPERTY(bool ocrSettingsVisible READ ocrSettingsVisible CONSTANT)
 
 #ifdef Q_OS_MAC
     // ──── macOS Permissions ────
@@ -117,6 +119,8 @@ public:
     void setAppTheme(int v);
     bool cliInstalled() const;
     bool isMacOS() const;
+    bool recordingSupported() const;
+    bool ocrSettingsVisible() const;
 
 #ifdef Q_OS_MAC
     // ──── macOS Permissions ────

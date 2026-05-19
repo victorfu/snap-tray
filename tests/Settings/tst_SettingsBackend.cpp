@@ -73,6 +73,8 @@ private slots:
     void testCheckForUpdates_UnsupportedInstallSource_EmitsUnavailable();
     void testLastCheckedTextChanged_WhenCoordinatorRecordsSuccessfulCheck();
     void testHotkeyRegistrationWarningMessage_WindowsPrintScreenExplainsSnippingTool();
+    void testFeatureSupportPropertiesFollowPlatformCapabilities();
+    void testHotkeyCategoriesHideRecordingWhenUnsupported();
 
 private:
     void clearTestSettings();
@@ -337,6 +339,40 @@ void tst_SettingsBackend::testHotkeyRegistrationWarningMessage_WindowsPrintScree
     QVERIFY(message.contains(QStringLiteral("Windows may be using Print Screen for Snipping Tool")));
     QVERIFY(message.contains(QStringLiteral("Settings > Accessibility > Keyboard")));
     QVERIFY(message.contains(QStringLiteral("Use the Print screen key to open screen capture")));
+}
+
+void tst_SettingsBackend::testFeatureSupportPropertiesFollowPlatformCapabilities()
+{
+    SettingsBackend backend;
+
+#if defined(Q_OS_LINUX)
+    QVERIFY(!backend.recordingSupported());
+    QVERIFY(!backend.ocrSettingsVisible());
+#else
+    QVERIFY(backend.recordingSupported());
+    QVERIFY(backend.ocrSettingsVisible());
+#endif
+}
+
+void tst_SettingsBackend::testHotkeyCategoriesHideRecordingWhenUnsupported()
+{
+    SettingsBackend backend;
+    const QVariantList categories = backend.hotkeyCategories();
+
+    bool sawRecording = false;
+    for (const QVariant& item : categories) {
+        const auto map = item.toMap();
+        if (map.value(QStringLiteral("category")).toInt()
+            == static_cast<int>(SnapTray::HotkeyCategory::Recording)) {
+            sawRecording = true;
+        }
+    }
+
+#if defined(Q_OS_LINUX)
+    QVERIFY(!sawRecording);
+#else
+    QVERIFY(sawRecording);
+#endif
 }
 
 QTEST_MAIN(tst_SettingsBackend)

@@ -56,6 +56,11 @@ target_link_libraries(Qml_WidthSectionQml PRIVATE snaptray_ui snaptray_qmlplugin
 add_test(NAME Qml_WidthSectionQml COMMAND Qml_WidthSectionQml)
 set_tests_properties(Qml_WidthSectionQml PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_SettingsWindowFeatureGating Qml/tst_SettingsWindowFeatureGating.cpp)
+target_link_libraries(Qml_SettingsWindowFeatureGating PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+add_test(NAME Qml_SettingsWindowFeatureGating COMMAND Qml_SettingsWindowFeatureGating)
+set_tests_properties(Qml_SettingsWindowFeatureGating PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Qml_UpdateDialogViewModel Qml/tst_UpdateDialogViewModel.cpp)
 target_link_libraries(Qml_UpdateDialogViewModel PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_UpdateDialogViewModel COMMAND Qml_UpdateDialogViewModel)
