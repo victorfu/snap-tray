@@ -2,7 +2,7 @@
 last_modified_at: 2026-02-24
 layout: docs
 title: 錄影教學示範
-description: 錄製一段短而清楚的操作影片，用於 demo、導覽或問題說明。
+description: 在 macOS/Windows 錄製短而清楚的操作影片，用於 demo、導覽或問題說明；Linux beta 不包含錄影。
 permalink: /zh-tw/docs/tutorials/recording-demo/
 lang: zh-tw
 route_key: docs_tutorial_recording_demo

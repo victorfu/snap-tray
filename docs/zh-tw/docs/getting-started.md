@@ -114,4 +114,4 @@ SnapTray 提供 Ubuntu 22.04 X11 beta AppImage。Linux beta 不包含錄影與 O
 
 - [區域截圖](/zh-tw/docs/region-capture/)
 - [標註工具](/zh-tw/docs/annotation-tools/)
-- [錄影](/zh-tw/docs/recording/)
+- [錄影（僅 macOS/Windows）](/zh-tw/docs/recording/)

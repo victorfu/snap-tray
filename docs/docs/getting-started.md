@@ -115,4 +115,4 @@ If you want feature deep dives:
 
 - [Region Capture](/docs/region-capture/)
 - [Annotation Tools](/docs/annotation-tools/)
-- [Recording](/docs/recording/)
+- [Recording (macOS/Windows only)](/docs/recording/)

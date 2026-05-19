@@ -2,7 +2,7 @@
 last_modified_at: 2026-02-24
 layout: docs
 title: Recording Demo
-description: Create a concise recording for demos, onboarding, or issue explanation.
+description: Create a concise macOS/Windows-only recording for demos, onboarding, or issue explanation; Linux beta does not include recording.
 permalink: /docs/tutorials/recording-demo/
 lang: en
 route_key: docs_tutorial_recording_demo
