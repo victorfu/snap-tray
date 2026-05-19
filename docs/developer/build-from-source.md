@@ -2,7 +2,7 @@
 last_modified_at: 2026-03-26
 layout: docs
 title: Build from Source
-description: Build SnapTray locally on macOS or Windows with the supported scripts, toolchains, and manual CMake flows.
+description: Build SnapTray locally on macOS, Windows, or Ubuntu 22.04 X11 beta with the supported scripts, toolchains, and manual CMake flows.
 permalink: /developer/build-from-source/
 lang: en
 route_key: developer_build_from_source
@@ -12,12 +12,13 @@ docs_copy_key: developer
 
 ## Supported platforms
 
-SnapTray currently supports macOS and Windows only.
+SnapTray currently supports macOS, Windows, and Ubuntu 22.04 X11 beta.
 
 ### Runtime targets
 
 - macOS 14.0+
 - Windows 10+
+- Ubuntu 22.04 X11 beta
 
 ### Development prerequisites
 
@@ -27,6 +28,15 @@ SnapTray currently supports macOS and Windows only.
 - Git for FetchContent dependencies
 - macOS: Xcode Command Line Tools
 - Windows: Visual Studio 2022 Build Tools and Windows SDK
+
+### Linux
+
+- Ubuntu 22.04 X11 session
+- Qt 6.10.1 with Widgets, Gui, Svg, Concurrent, Network, Quick, QuickControls2, and QuickWidgets
+- CMake 3.16+
+- Ninja
+- Git
+- X11 development libraries required by Qt and QHotkey
 
 ### Auto-fetched dependencies
 
@@ -47,6 +57,15 @@ Use the repository scripts for day-to-day development. They encode the supported
 ./scripts/run-tests.sh              # Build and run tests
 ./scripts/build-and-run.sh          # Debug build + run app
 ./scripts/build-and-run-release.sh  # Release build + run app
+```
+
+### Linux
+
+Ubuntu 22.04 X11 beta uses the same shell scripts as macOS:
+
+```bash
+./scripts/build.sh
+./scripts/run-tests.sh
 ```
 
 ### Windows
