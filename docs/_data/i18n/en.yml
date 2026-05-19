@@ -242,7 +242,7 @@ landing_screenshot_tool:
     title: How to Start Using SnapTray
     steps:
       - title: Download and Install
-        detail: Get SnapTray from GitHub releases (macOS DMG or Windows installer) or the Microsoft Store. Launch it — the tray icon appears immediately.
+        detail: Get SnapTray from GitHub releases (macOS DMG, Windows installer, or Linux beta AppImage), or install the Windows version from the Microsoft Store. Launch it — the tray icon appears immediately.
       - title: Take Your First Screenshot
         detail: Press F2 to open the capture overlay. Drag to select a region, or click a detected window. The annotation toolbar appears automatically.
       - title: Annotate, Save, and Share

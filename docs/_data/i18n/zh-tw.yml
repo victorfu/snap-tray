@@ -242,7 +242,7 @@ landing_screenshot_tool:
     title: 如何開始使用 SnapTray
     steps:
       - title: 下載與安裝
-        detail: 從 GitHub Releases 取得 SnapTray（macOS DMG 或 Windows 安裝檔）或從 Microsoft Store 安裝。啟動後托盤圖示立即出現。
+        detail: 從 GitHub Releases 取得 SnapTray（macOS DMG、Windows 安裝檔或 Linux beta AppImage），或從 Microsoft Store 安裝 Windows 版本。啟動後托盤圖示立即出現。
       - title: 擷取第一張截圖
         detail: 按 F2 開啟擷取覆蓋層。拖曳選取區域，或點擊偵測到的視窗。標註工具列自動出現。
       - title: 標註、儲存與分享
