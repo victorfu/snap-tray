@@ -9,6 +9,7 @@ class tst_PlatformCapabilities : public QObject
 private slots:
     void linuxX11BetaCapabilities();
     void linuxWaylandIsUnsupportedRuntime();
+    void unsupportedRuntimeMessageIsEmptyOnlyWhenSupported();
     void macAndWindowsKeepRecordingAndOcrSupport();
     void displayServerDetectionUsesSessionAndQtPlatform();
 };
@@ -38,6 +39,21 @@ void tst_PlatformCapabilities::linuxWaylandIsUnsupportedRuntime()
     QVERIFY(!caps.isRuntimeSupported);
     QVERIFY(caps.unsupportedRuntimeMessage.contains(QStringLiteral("X11")));
     QVERIFY(caps.unsupportedRuntimeMessage.contains(QStringLiteral("Ubuntu 22.04")));
+}
+
+void tst_PlatformCapabilities::unsupportedRuntimeMessageIsEmptyOnlyWhenSupported()
+{
+    const auto linuxX11 = SnapTray::capabilitiesForPlatform(
+        SnapTray::PlatformKind::Linux,
+        SnapTray::DisplayServerKind::X11);
+    QVERIFY(linuxX11.isRuntimeSupported);
+    QVERIFY(linuxX11.unsupportedRuntimeMessage.isEmpty());
+
+    const auto linuxOffscreen = SnapTray::capabilitiesForPlatform(
+        SnapTray::PlatformKind::Linux,
+        SnapTray::DisplayServerKind::Offscreen);
+    QVERIFY(!linuxOffscreen.isRuntimeSupported);
+    QVERIFY(!linuxOffscreen.unsupportedRuntimeMessage.isEmpty());
 }
 
 void tst_PlatformCapabilities::macAndWindowsKeepRecordingAndOcrSupport()

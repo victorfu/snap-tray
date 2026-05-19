@@ -2,6 +2,7 @@
 #include "AutoLaunchManager.h"
 #include "SingleInstanceGuard.h"
 #include "cli/CLIHandler.h"
+#include "platform/PlatformCapabilities.h"
 #include "platform/QtQuickBackendPolicy.h"
 #include "settings/LanguageManager.h"
 #include "settings/Settings.h"
@@ -12,12 +13,33 @@
 #include <QDebug>
 #include <QFile>
 #include <QOperatingSystemVersion>
+#include <QStringList>
 #include <QTextStream>
 #include <QTimer>
 #include <QtQml/qqmlextensionplugin.h>
 
 // Import static QML plugin so the linker includes SnapTrayQml types.
 Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
+
+namespace {
+
+bool shouldBypassRuntimeGuardForMetadataCommand(const QStringList& arguments)
+{
+    return arguments.size() >= 2 &&
+        (arguments.at(1) == QStringLiteral("--help") ||
+         arguments.at(1) == QStringLiteral("-h") ||
+         arguments.at(1) == QStringLiteral("--version") ||
+         arguments.at(1) == QStringLiteral("-v"));
+}
+
+int reportUnsupportedRuntime(const QString& message)
+{
+    QTextStream err(stderr);
+    err << "Error: " << message << "\n";
+    return 1;
+}
+
+} // namespace
 
 int main(int argc, char* argv[])
 {
@@ -30,11 +52,7 @@ int main(int argc, char* argv[])
         arguments.append(QString::fromLocal8Bit(argv[i]));
     }
 
-    if (arguments.size() >= 2 &&
-        (arguments.at(1) == QStringLiteral("--help") ||
-         arguments.at(1) == QStringLiteral("-h") ||
-         arguments.at(1) == QStringLiteral("--version") ||
-         arguments.at(1) == QStringLiteral("-v"))) {
+    if (shouldBypassRuntimeGuardForMetadataCommand(arguments)) {
         QCoreApplication app(argc, argv);
         app.setApplicationName(SnapTray::kApplicationName);
         app.setOrganizationName(SnapTray::kOrganizationName);
@@ -62,6 +80,13 @@ int main(int argc, char* argv[])
         app.setApplicationName(SnapTray::kApplicationName);
         app.setOrganizationName(SnapTray::kOrganizationName);
         app.setApplicationVersion(SNAPTRAY_VERSION);
+
+        const auto capabilities = SnapTray::currentPlatformCapabilities();
+        if (!capabilities.isRuntimeSupported &&
+            !shouldBypassRuntimeGuardForMetadataCommand(arguments)) {
+            return reportUnsupportedRuntime(capabilities.unsupportedRuntimeMessage);
+        }
+
         // Ensure settings migration/cleanup runs in CLI mode as well.
         (void)SnapTray::getSettings();
 
@@ -107,6 +132,12 @@ int main(int argc, char* argv[])
     app.setApplicationName(SnapTray::kApplicationName);
     app.setOrganizationName(SnapTray::kOrganizationName);
     app.setApplicationVersion(SNAPTRAY_VERSION);
+
+    const auto capabilities = SnapTray::currentPlatformCapabilities();
+    if (!capabilities.isRuntimeSupported) {
+        return reportUnsupportedRuntime(capabilities.unsupportedRuntimeMessage);
+    }
+
     // Run settings migration/cleanup during startup.
     (void)SnapTray::getSettings();
 
