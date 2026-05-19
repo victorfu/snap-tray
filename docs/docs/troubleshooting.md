@@ -2,7 +2,7 @@
 last_modified_at: 2026-05-18
 layout: docs
 title: Troubleshooting
-description: Fix permission, startup, Qt deployment, encoding, recording, and hotkey issues on macOS, Windows, and Linux beta.
+description: Fix permission, startup, Qt deployment, encoding, and hotkey issues, plus recording issues on macOS and Windows.
 permalink: /docs/troubleshooting/
 lang: en
 route_key: docs_troubleshooting
@@ -80,7 +80,10 @@ Global hotkeys require an X11 session and may conflict with desktop environment
 shortcuts. Open Settings > Hotkeys to see which shortcut failed and assign a
 different key sequence.
 
-## Recording issues
+## Recording issues (macOS and Windows only)
+
+Linux beta does not include recording. For Linux beta startup, hotkey, or
+Wayland issues, use the Linux beta notes above.
 
 - Lower frame rate if you see dropped frames
 - Prefer MP4 for longer recordings

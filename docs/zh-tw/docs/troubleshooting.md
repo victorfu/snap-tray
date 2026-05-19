@@ -2,7 +2,7 @@
 last_modified_at: 2026-05-18
 layout: docs
 title: 疑難排解
-description: 快速解決 macOS、Windows 與 Linux beta 的權限、啟動、Qt 部署、錄影與快捷鍵衝突問題。
+description: 快速解決權限、啟動、Qt 部署與快捷鍵問題，以及 macOS、Windows 的錄影問題。
 permalink: /zh-tw/docs/troubleshooting/
 lang: zh-tw
 route_key: docs_troubleshooting
@@ -79,7 +79,9 @@ X11 session。
 全域快捷鍵需要 X11 session，也可能與桌面環境快捷鍵衝突。請開啟 Settings >
 Hotkeys 查看哪個快捷鍵失敗，並改用不同的按鍵組合。
 
-## 錄影異常
+## 錄影異常（僅 macOS 與 Windows）
+
+Linux beta 不包含錄影功能。Linux beta 的啟動、快捷鍵或 Wayland 問題，請參考上方 Linux beta 說明。
 
 - 若掉幀，先降低 FPS
 - 長時間錄影優先使用 MP4

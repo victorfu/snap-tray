@@ -11,7 +11,7 @@ route_key: privacy
 
 ## Overview
 
-SnapTray is a local-first screenshot and screen recording application. It only connects to the network when you explicitly trigger a Share URL upload or when the optional update checker runs. We are committed to protecting your privacy and being transparent about our practices.
+SnapTray is a local-first screenshot and annotation application with recording on macOS and Windows. Linux beta supports screenshots and annotation only. It only connects to the network when you explicitly trigger a Share URL upload or when the optional update checker runs. We are committed to protecting your privacy and being transparent about our practices.
 
 **The short version:** SnapTray is local-first with no telemetry, tracking, or analytics. Network access is limited to two explicit features: Share URL (user-triggered image upload) and optional update checking (version string only).
 
@@ -30,12 +30,13 @@ All data generated or used by SnapTray is stored locally on your device:
 | Data Type | Storage Location | Purpose |
 |-----------|------------------|---------|
 | Screenshots | User-specified folder (default: Pictures) | Your captured images |
-| Recordings | User-specified folder (default: Downloads) | Your screen recordings |
+| Recordings | User-specified folder (default: Downloads) | Your screen recordings on macOS and Windows only. Linux beta does not include recording. |
 | Settings | OS settings storage* | Your preferences |
 
 *Settings storage locations:
 - **macOS:** `~/Library/Preferences/cc.snaptray.plist`
 - **Windows:** `HKEY_CURRENT_USER\Software\SnapTray`
+- **Linux beta:** Qt/Linux user configuration storage under the user's config directory, commonly `~/.config/<organization>/<application>.conf`
 - Legacy locations are migrated on first launch of newer builds and cleaned up after migration succeeds.
 
 ## Permissions
