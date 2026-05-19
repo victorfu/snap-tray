@@ -450,7 +450,7 @@ landing_windows:
       - q: SnapTray 和 ShareX 有什麼不同？
         a: ShareX 功能強大但設定複雜，有數百個選項。SnapTray 專注於速度和簡潔 — 托盤原生啟動、乾淨的標註工具、釘選視窗和跨平台支援。兩者都是免費開源。
       - q: SnapTray 和 Greenshot 有什麼不同？
-        a: Greenshot 提供基本擷取和標註，但缺少螢幕錄影、釘選視窗、OCR、自動模糊和 CLI 自動化。SnapTray 包含所有這些功能，同時還支援 macOS。
+        a: Greenshot 提供基本擷取和標註，但缺少螢幕錄影、釘選視窗、OCR、自動模糊和 CLI 自動化。SnapTray 在支援平台提供釘選視窗和 CLI 自動化，並在 macOS/Windows 提供錄影、OCR 和自動模糊；同時也支援 macOS，以及以截圖與標註為主的 Linux beta。
       - q: 可以在腳本和自動化中使用 SnapTray 嗎？
         a: 可以。SnapTray 內建完整 CLI：snaptray full、snaptray region、snaptray record、snaptray pin 和 snaptray config。可整合 PowerShell 腳本、批次檔或 CI 流程。
   cta:

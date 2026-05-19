@@ -2,7 +2,7 @@
 last_modified_at: 2026-02-24
 layout: docs
 title: Bug 回報流程
-description: 用清楚截圖、步驟與短影片，建立可重現的問題回報。
+description: 用清楚截圖、步驟與 macOS/Windows 短影片，建立可重現的問題回報。
 permalink: /zh-tw/docs/tutorials/bug-report/
 lang: zh-tw
 route_key: docs_tutorial_bug_report
@@ -18,7 +18,7 @@ doc_order: 3
 
 - 1 張已標註的截圖
 - 1 份精簡重現步驟
-- 選配：10-30 秒錄影
+- 選配：10-30 秒錄影（僅 macOS/Windows；Linux beta 請略過）
 
 ## 操作流程
 
@@ -74,7 +74,7 @@ Actual:
 
 Attachments:
 - screenshot.png
-- recording.mp4 (optional)
+- recording.mp4 (optional, macOS/Windows only)
 ```
 
 ## 品質檢查清單

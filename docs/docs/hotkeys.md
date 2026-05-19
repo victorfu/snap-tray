@@ -2,7 +2,7 @@
 last_modified_at: 2026-03-17
 layout: docs
 title: Hotkeys
-description: Configure capture and recording shortcuts through centralized hotkey management.
+description: Configure capture shortcuts and platform-specific recording shortcuts through centralized hotkey management.
 permalink: /docs/hotkeys/
 lang: en
 route_key: docs_hotkeys

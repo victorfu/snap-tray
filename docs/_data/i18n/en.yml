@@ -450,7 +450,7 @@ landing_windows:
       - q: How is SnapTray different from ShareX?
         a: ShareX is powerful but complex with hundreds of settings. SnapTray focuses on speed and simplicity — tray-native launch, clean annotation tools, pin windows, and cross-platform support. Both are free and open source.
       - q: How is SnapTray different from Greenshot?
-        a: Greenshot offers basic capture and annotation but lacks screen recording, pin windows, OCR, auto blur, and CLI automation. SnapTray includes all of these features while also supporting macOS.
+        a: Greenshot offers basic capture and annotation but lacks screen recording, pin windows, OCR, auto blur, and CLI automation. SnapTray adds pin windows and CLI automation across supported platforms, with recording, OCR, and auto blur on macOS/Windows. It also supports macOS and a Linux beta for screenshot and annotation workflows.
       - q: Can I use SnapTray in scripts and automation?
         a: "Yes. SnapTray includes a full CLI: snaptray full, snaptray region, snaptray record, snaptray pin, and snaptray config. Integrate into PowerShell scripts, batch files, or CI pipelines."
   cta:

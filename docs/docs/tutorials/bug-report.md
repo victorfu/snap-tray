@@ -2,7 +2,7 @@
 last_modified_at: 2026-02-24
 layout: docs
 title: Bug Report Workflow
-description: Build a reproducible bug report with clear visuals, steps, and optional recording.
+description: Build a reproducible bug report with clear visuals, steps, and optional macOS/Windows recording.
 permalink: /docs/tutorials/bug-report/
 lang: en
 route_key: docs_tutorial_bug_report
@@ -18,7 +18,7 @@ Produce a bug report that engineers can reproduce on the first try.
 
 - 1 annotated screenshot
 - 1 short reproduction step list
-- Optional 10-30 second recording
+- Optional 10-30 second recording (macOS/Windows only; skip on Linux beta)
 
 ## Workflow
 
@@ -74,7 +74,7 @@ Actual:
 
 Attachments:
 - screenshot.png
-- recording.mp4 (optional)
+- recording.mp4 (optional, macOS/Windows only)
 ```
 
 ## Quality checklist
