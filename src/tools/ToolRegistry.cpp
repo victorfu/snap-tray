@@ -1,6 +1,21 @@
 #include "tools/ToolRegistry.h"
 
+#include "platform/PlatformCapabilities.h"
+
 #include <QCoreApplication>
+
+#include <algorithm>
+
+namespace {
+bool isToolSupportedOnCurrentPlatform(ToolId id)
+{
+    const auto caps = SnapTray::currentPlatformCapabilities();
+    if (id == ToolId::OCR) {
+        return caps.supportsOCR;
+    }
+    return true;
+}
+}
 
 ToolRegistry& ToolRegistry::instance() {
     static ToolRegistry registry;
@@ -463,6 +478,10 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
         };
         break;
     }
+
+    tools.erase(std::remove_if(tools.begin(), tools.end(), [](ToolId id) {
+        return !isToolSupportedOnCurrentPlatform(id);
+    }), tools.end());
 
     return tools;
 }
