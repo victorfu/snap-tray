@@ -536,8 +536,45 @@ jobs:
           path: dist/windows.xml
           retention-days: 5
 
+  build-linux-appimage:
+    needs: prepare
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cmake ninja-build ccache git curl patchelf file libfuse2 \
+            libgl1-mesa-dev libxkbcommon-x11-0 libxcb-cursor0 \
+            libxcb-keysyms1-dev libxcb-xinerama0-dev libxcb-render-util0-dev \
+            libxcb-image0-dev libxcb-icccm4-dev libxcb-randr0-dev \
+            libxcb-shape0-dev libxcb-xfixes0-dev libxcb-sync-dev \
+            libxrender-dev libxi-dev libxtst-dev
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.10.1'
+          host: 'linux'
+          target: 'desktop'
+          arch: 'linux_gcc_64'
+          cache: true
+
+      - name: Build AppImage
+        run: ./packaging/linux/package-appimage.sh
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage
+          path: dist/SnapTray-${{ needs.prepare.outputs.version }}-x86_64.AppImage
+          retention-days: 5
+
   release:
-    needs: [prepare, build-macos, build-windows]
+    needs: [prepare, build-macos, build-windows, build-linux-appimage]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -576,6 +613,7 @@ jobs:
           files: |
             artifacts/macos-dmg/*.dmg
             artifacts/windows-nsis/*.exe
+            artifacts/linux-appimage/*.AppImage
 
   deploy-appcasts:
     needs: [prepare, release]

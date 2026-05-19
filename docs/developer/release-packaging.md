@@ -41,6 +41,16 @@ Typical outputs:
 - `dist\SnapTray-<version>.msix`
 - `dist\SnapTray-<version>.msixupload`
 
+### Linux
+
+```bash
+./packaging/linux/package-appimage.sh
+# Output: dist/SnapTray-<version>-x86_64.AppImage
+```
+
+The Linux beta artifact targets Ubuntu 22.04 X11. It does not include in-app
+updates; users download a newer AppImage for upgrades.
+
 ## Packaging prerequisites
 
 ### macOS

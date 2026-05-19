@@ -41,6 +41,15 @@ packaging\windows\package.bat msix      REM 只建置 MSIX
 - `dist\SnapTray-<version>.msix`
 - `dist\SnapTray-<version>.msixupload`
 
+### Linux
+
+```bash
+./packaging/linux/package-appimage.sh
+# Output: dist/SnapTray-<version>-x86_64.AppImage
+```
+
+Linux beta 目標是 Ubuntu 22.04 X11。此版本沒有內建更新，升級方式是下載新的 AppImage。
+
 ## 打包前置需求
 
 ### macOS
