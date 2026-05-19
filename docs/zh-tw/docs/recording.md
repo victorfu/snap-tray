@@ -2,7 +2,7 @@
 last_modified_at: 2026-03-26
 layout: docs
 title: 錄影
-description: 僅 macOS/Windows：使用 MP4、GIF、WebP 輸出全螢幕來源錄影。
+description: "僅 macOS/Windows：使用 MP4、GIF、WebP 輸出全螢幕來源錄影。"
 permalink: /zh-tw/docs/recording/
 lang: zh-tw
 route_key: docs_recording

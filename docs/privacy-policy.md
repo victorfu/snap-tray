@@ -81,7 +81,7 @@ SnapTray checks `api.github.com` for new releases. This check is enabled by defa
 
 SnapTray is open source software released under the MIT License. You can review the complete source code to verify our privacy practices:
 
-- [GitHub Repository](https://github.com/vfxfu/snap-tray)
+- [GitHub Repository](https://github.com/victorfu/snap-tray)
 
 ## Children's Privacy
 
@@ -93,7 +93,7 @@ If we make changes to this privacy policy, we will update the "Last Updated" dat
 
 ## Contact
 
-If you have questions about this privacy policy or SnapTray's privacy practices, open an issue on our [GitHub repository](https://github.com/vfxfu/snap-tray/issues).
+If you have questions about this privacy policy or SnapTray's privacy practices, open an issue on our [GitHub repository](https://github.com/victorfu/snap-tray/issues).
 
 ---
 
