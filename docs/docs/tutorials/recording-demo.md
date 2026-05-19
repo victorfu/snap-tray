@@ -24,10 +24,10 @@ Produce a short, clear screen recording that stakeholders can understand quickly
 
 ### 1. Define recording scope
 
-- Full screen for complete walkthroughs
-- Region for focused demos
+Recording is available on macOS/Windows only. Linux beta does not include recording, so skip this tutorial there.
 
-Start via tray menu or press `R` from region capture.
+- Use full-screen recording for walkthroughs and demos.
+- Start via tray menu or run `snaptray record start`.
 
 ### 2. Configure before recording
 

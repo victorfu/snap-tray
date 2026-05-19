@@ -24,7 +24,7 @@ doc_order: 3
 - Pin from Image
 - Pin History
 - Toggle Hide/Show All Pins
-- Record Screen
+- Record Screen (macOS/Windows only)
 
 ## Hotkey categories
 
@@ -34,7 +34,7 @@ Hotkeys are managed by category inside Settings:
 - Canvas
 - Clipboard
 - Pin
-- Recording
+- Recording (macOS/Windows only; hidden in Linux beta)
 
 ## Conflict strategy
 
