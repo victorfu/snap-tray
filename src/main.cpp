@@ -8,6 +8,7 @@
 #include "version.h"
 
 #include <QApplication>
+#include <QCoreApplication>
 #include <QDebug>
 #include <QFile>
 #include <QOperatingSystemVersion>
@@ -27,6 +28,31 @@ int main(int argc, char* argv[])
     QStringList arguments;
     for (int i = 0; i < argc; ++i) {
         arguments.append(QString::fromLocal8Bit(argv[i]));
+    }
+
+    if (arguments.size() >= 2 &&
+        (arguments.at(1) == QStringLiteral("--help") ||
+         arguments.at(1) == QStringLiteral("-h") ||
+         arguments.at(1) == QStringLiteral("--version") ||
+         arguments.at(1) == QStringLiteral("-v"))) {
+        QCoreApplication app(argc, argv);
+        app.setApplicationName(SnapTray::kApplicationName);
+        app.setOrganizationName(SnapTray::kOrganizationName);
+        app.setApplicationVersion(SNAPTRAY_VERSION);
+
+        SnapTray::CLI::CLIHandler cliHandler;
+        auto result = cliHandler.process(arguments);
+
+        QTextStream out(stdout);
+        QTextStream err(stderr);
+        if (result.isSuccess()) {
+            out << result.message << "\n";
+        }
+        else {
+            err << "Error: " << result.message << "\n";
+        }
+
+        return static_cast<int>(result.code);
     }
 
     // CLI mode: process command and exit

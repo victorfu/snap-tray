@@ -1,5 +1,7 @@
 #include "cli/commands/RecordCommand.h"
 
+#include "platform/PlatformCapabilities.h"
+
 #include <QGuiApplication>
 #include <QScreen>
 
@@ -9,6 +11,16 @@ namespace CLI {
 QString RecordCommand::name() const { return "record"; }
 
 QString RecordCommand::description() const { return "Record screen"; }
+
+bool RecordCommand::isSupported() const
+{
+    return SnapTray::currentPlatformCapabilities().supportsRecording;
+}
+
+QString RecordCommand::unsupportedMessage() const
+{
+    return QStringLiteral("SnapTray Linux beta does not support recording.");
+}
 
 void RecordCommand::setupOptions(QCommandLineParser& parser)
 {
