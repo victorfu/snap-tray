@@ -66,5 +66,4 @@ firebase-debug.log
 
 /certs/
 
-.omc/
-.omx/
+release-linux/
