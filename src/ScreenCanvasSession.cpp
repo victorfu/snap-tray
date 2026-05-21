@@ -496,7 +496,11 @@ void ScreenCanvasSession::createSurfaces(const QList<QScreen*>& screens)
         });
 
         m_surfaces.append(surface);
+#ifdef Q_OS_LINUX
+        surface->showFullScreen();
+#else
         surface->show();
+#endif
         preventWindowHideOnDeactivate(surface);
         raiseWindowAboveMenuBar(surface);
         setWindowClickThrough(surface, false);
@@ -1565,6 +1569,17 @@ QPoint ScreenCanvasSession::annotationPointForEvent(ScreenCanvas* surface, QMous
     return surface->toAnnotationPoint(event->position().toPoint());
 }
 
+QPointF ScreenCanvasSession::annotationPointForEventF(ScreenCanvas* surface, QMouseEvent* event) const
+{
+    if (m_grabbedSurface) {
+        return QPointF(annotationPointForCurrentCursor());
+    }
+    if (!surface || !event) {
+        return {};
+    }
+    return surface->toAnnotationPointF(event->position());
+}
+
 QPoint ScreenCanvasSession::annotationPointForCurrentCursor() const
 {
     return globalToDesktop(QCursor::pos(), m_desktopGeometry);
@@ -1599,8 +1614,8 @@ void ScreenCanvasSession::handleSurfaceMousePress(ScreenCanvas* surface, QMouseE
             }
         }
 
-        const QPoint annotationPos = surface->toAnnotationPoint(event->position().toPoint());
-        const QPointF annotationPosF = surface->toAnnotationPointF(event->position());
+        const QPoint annotationPos = annotationPointForEvent(surface, event);
+        const QPointF annotationPosF = annotationPointForEventF(surface, event);
 
         if (m_laserPointerActive) {
             beginMouseGrab(surface);
@@ -1690,7 +1705,7 @@ void ScreenCanvasSession::handleSurfaceMouseMove(ScreenCanvas* surface, QMouseEv
     }
 
     const QPoint annotationPos = annotationPointForEvent(inputSurface, event);
-    const QPointF annotationPosF = inputSurface->toAnnotationPointF(event->position());
+    const QPointF annotationPosF = annotationPointForEventF(inputSurface, event);
 
     if (m_laserPointerActive && m_laserRenderer->isDrawing()) {
         m_laserRenderer->updateDrawing(annotationPos);
@@ -1747,7 +1762,7 @@ void ScreenCanvasSession::handleSurfaceMouseRelease(ScreenCanvas* surface, QMous
     }
 
     const QPoint annotationPos = annotationPointForEvent(inputSurface, event);
-    const QPointF annotationPosF = inputSurface->toAnnotationPointF(event->position());
+    const QPointF annotationPosF = annotationPointForEventF(inputSurface, event);
 
     if (m_laserPointerActive && m_laserRenderer->isDrawing()) {
         m_laserRenderer->stopDrawing();

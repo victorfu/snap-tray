@@ -218,6 +218,7 @@ private:
     bool handlePolylineAnnotationRelease(const QPoint& pos);
 
     QPoint annotationPointForEvent(ScreenCanvas* surface, QMouseEvent* event) const;
+    QPointF annotationPointForEventF(ScreenCanvas* surface, QMouseEvent* event) const;
     QPoint annotationPointForCurrentCursor() const;
 
     QPointer<QScreen> m_activationScreen;

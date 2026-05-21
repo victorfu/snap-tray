@@ -27,6 +27,33 @@ namespace {
 constexpr int kParentCursorRestoreRetryDelayMs = 16;
 constexpr int kParentCursorRestoreMaxAttempts = 6;
 
+QSize resolvedViewSize(QQuickView* view, QQuickItem* rootItem)
+{
+    if (!view) {
+        return {};
+    }
+
+    QSize size = view->size();
+    if (rootItem) {
+        const qreal rootWidth = rootItem->implicitWidth() > 0.0
+            ? rootItem->implicitWidth()
+            : rootItem->width();
+        const qreal rootHeight = rootItem->implicitHeight() > 0.0
+            ? rootItem->implicitHeight()
+            : rootItem->height();
+        QSize rootSize(
+            qRound(rootWidth),
+            qRound(rootHeight));
+        if (!rootSize.isEmpty()) {
+            size = rootSize;
+            if (view->size() != rootSize) {
+                view->resize(rootSize);
+            }
+        }
+    }
+    return size;
+}
+
 void destroyQuickView(QQuickView*& view, QQuickItem*& rootItem)
 {
     if (!view)
@@ -346,18 +373,27 @@ void QmlFloatingSubToolbar::positionBelow(const QRect& toolbarRect)
     if (!screen)
         screen = QGuiApplication::primaryScreen();
 
-    const QRect screenGeom = screen->geometry();
-    const int w = m_view->width();
-    const int h = m_view->height();
+    const QRect screenGeom = screen->availableGeometry().isValid()
+        ? screen->availableGeometry()
+        : screen->geometry();
+    const QSize viewSize = resolvedViewSize(m_view, m_rootItem);
+    const int w = viewSize.width();
+    const int h = viewSize.height();
     constexpr int kMargin = 4;
+    constexpr int kScreenInset = 10;
 
     int x = toolbarRect.left();
     int y = toolbarRect.bottom() + kMargin;
 
-    if (y + h > screenGeom.bottom() - 10)
+    if (y + h > screenGeom.bottom() - kScreenInset)
         y = toolbarRect.top() - h - kMargin;
 
-    x = qBound(screenGeom.left() + 10, x, screenGeom.right() - w - 10);
+    const int minX = screenGeom.left() + kScreenInset;
+    const int minY = screenGeom.top() + kScreenInset;
+    const int maxX = screenGeom.right() - w - kScreenInset;
+    const int maxY = screenGeom.bottom() - h - kScreenInset;
+    x = maxX < minX ? minX : qBound(minX, x, maxX);
+    y = maxY < minY ? minY : qBound(minY, y, maxY);
 
     const QPoint targetPos(x, y);
     if (m_view->position() != targetPos) {

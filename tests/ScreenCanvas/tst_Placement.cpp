@@ -1,10 +1,16 @@
 #include <QtTest/QtTest>
 
 #include <QGuiApplication>
+#include <QCursor>
+#include <QMouseEvent>
 #include <QScreen>
 
+#include "annotations/AnnotationLayer.h"
+#include "annotations/PencilStroke.h"
 #include "ScreenCanvas.h"
 #include "ScreenCanvasSession.h"
+#include "qml/PinToolOptionsViewModel.h"
+#include "qml/QmlFloatingSubToolbar.h"
 #include "qml/QmlFloatingToolbar.h"
 #include "settings/ScreenCanvasSettingsManager.h"
 
@@ -108,6 +114,15 @@ QPoint outsideAboveSharedRowRightTopLeft(const QRect& selectionRect,
         avoidRect.top() + (avoidRect.height() - toolbarSize.height()) / 2);
 }
 
+QString rectSummary(const QRect& rect)
+{
+    return QStringLiteral("%1,%2 %3x%4")
+        .arg(rect.x())
+        .arg(rect.y())
+        .arg(rect.width())
+        .arg(rect.height());
+}
+
 }
 
 class TestScreenCanvasPlacement : public QObject
@@ -126,6 +141,12 @@ private slots:
     void testVirtualDesktopGeometryMatchesScreenUnion();
     void testDesktopCoordinateRoundTrip();
     void testSurfaceInitializationUsesScreenGeometry();
+#ifdef Q_OS_LINUX
+    void testLinuxOpenKeepsSurfaceAtScreenGeometry();
+#endif
+    void testOpenPositionsSubToolbarAwayFromMainToolbar();
+    void testSubToolbarUsesAvailableScreenBoundsNearBottomPanel();
+    void testGrabbedDrawingUsesCurrentCursorPositionDuringDrag();
     void testToolbarDragClampSnapsToNearestVisibleScreen();
     void testSelectionToolbarPlacementPrefersBelowRightWhenClear();
     void testSelectionToolbarPlacementUsesAboveRightWhenBottomSpaceTight();
@@ -321,6 +342,150 @@ void TestScreenCanvasPlacement::testSurfaceInitializationUsesScreenGeometry()
     QCOMPARE(canvas.size(), activationScreen->geometry().size());
     QCOMPARE(canvas.annotationOffset(),
              activationScreen->geometry().topLeft() - desktopGeometry.topLeft());
+}
+
+#ifdef Q_OS_LINUX
+void TestScreenCanvasPlacement::testLinuxOpenKeepsSurfaceAtScreenGeometry()
+{
+    QScreen* activationScreen = primaryOrFirstScreen();
+    QVERIFY(activationScreen);
+
+    auto* session = new ScreenCanvasSession;
+    session->open(activationScreen);
+    QVERIFY(session->m_activeSurface);
+
+    ScreenCanvas* surface = session->m_activeSurface.data();
+    QTRY_VERIFY(surface->isVisible());
+    QTRY_COMPARE(surface->geometry(), activationScreen->geometry());
+
+    session->close();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+#endif
+
+void TestScreenCanvasPlacement::testOpenPositionsSubToolbarAwayFromMainToolbar()
+{
+    QScreen* activationScreen = primaryOrFirstScreen();
+    QVERIFY(activationScreen);
+
+    auto* session = new ScreenCanvasSession;
+    session->open(activationScreen);
+
+    QVERIFY(session->m_qmlToolbar);
+    QVERIFY(session->m_qmlSubToolbar);
+    QTRY_VERIFY(session->m_qmlToolbar->isVisible());
+    QTRY_VERIFY(session->m_qmlSubToolbar->isVisible());
+
+    const QRect toolbarRect = session->m_qmlToolbar->geometry();
+    const QRect subToolbarRect = session->m_qmlSubToolbar->geometry();
+    QVERIFY(toolbarRect.isValid());
+    QVERIFY(subToolbarRect.isValid());
+    QVERIFY2(!toolbarRect.intersects(subToolbarRect),
+             qPrintable(QStringLiteral("toolbar=%1 subToolbar=%2")
+                            .arg(rectSummary(toolbarRect), rectSummary(subToolbarRect))));
+
+    session->close();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void TestScreenCanvasPlacement::testSubToolbarUsesAvailableScreenBoundsNearBottomPanel()
+{
+    QScreen* screen = primaryOrFirstScreen();
+    QVERIFY(screen);
+
+    const QRect availableBounds = clampBoundsForScreen(screen);
+    const QRect screenBounds = screen->geometry();
+    if (!availableBounds.isValid() ||
+        availableBounds.bottom() >= screenBounds.bottom() - 4) {
+        QSKIP("Screen does not expose a bottom reserved work area.");
+    }
+
+    PinToolOptionsViewModel viewModel;
+    SnapTray::QmlFloatingSubToolbar subToolbar(&viewModel);
+    subToolbar.showForTool(static_cast<int>(ToolId::Pencil));
+    QTRY_VERIFY(subToolbar.isVisible());
+
+    const QRect toolbarRect(
+        QPoint(availableBounds.left() + 120, availableBounds.bottom() - 32 + 1),
+        QSize(260, 32));
+    subToolbar.positionBelow(toolbarRect);
+    QCoreApplication::processEvents();
+
+    const QRect subToolbarRect = subToolbar.geometry();
+    QVERIFY(subToolbarRect.isValid());
+    QVERIFY2(subToolbarRect.bottom() < toolbarRect.top(),
+             qPrintable(QStringLiteral("toolbar=%1,%2 %3x%4 subToolbar=%5,%6 %7x%8")
+                            .arg(toolbarRect.x())
+                            .arg(toolbarRect.y())
+                            .arg(toolbarRect.width())
+                            .arg(toolbarRect.height())
+                            .arg(subToolbarRect.x())
+                            .arg(subToolbarRect.y())
+                            .arg(subToolbarRect.width())
+                            .arg(subToolbarRect.height())));
+
+    subToolbar.close();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void TestScreenCanvasPlacement::testGrabbedDrawingUsesCurrentCursorPositionDuringDrag()
+{
+    QScreen* activationScreen = primaryOrFirstScreen();
+    QVERIFY(activationScreen);
+
+    auto* session = new ScreenCanvasSession;
+    session->open(activationScreen);
+    QVERIFY(session->m_activeSurface);
+    QVERIFY(session->m_annotationLayer);
+
+    ScreenCanvas* surface = session->m_activeSurface.data();
+    QTRY_VERIFY(surface->isVisible());
+
+    const QPoint startLocal(40, 40);
+    const QPoint staleLocal(45, 45);
+    const QPoint cursorLocal(140, 150);
+    const QPoint cursorGlobal = surface->mapToGlobal(cursorLocal);
+
+    QCursor::setPos(cursorGlobal);
+    if (QCursor::pos() != cursorGlobal) {
+        QSKIP("System cursor position could not be adjusted for ScreenCanvas drawing test.");
+    }
+
+    QMouseEvent pressEvent(QEvent::MouseButtonPress,
+                           startLocal,
+                           surface->mapToGlobal(startLocal),
+                           Qt::LeftButton,
+                           Qt::LeftButton,
+                           Qt::NoModifier);
+    session->handleSurfaceMousePress(surface, &pressEvent);
+
+    QMouseEvent moveEvent(QEvent::MouseMove,
+                          staleLocal,
+                          cursorGlobal,
+                          Qt::NoButton,
+                          Qt::LeftButton,
+                          Qt::NoModifier);
+    session->handleSurfaceMouseMove(surface, &moveEvent);
+
+    QMouseEvent releaseEvent(QEvent::MouseButtonRelease,
+                             staleLocal,
+                             cursorGlobal,
+                             Qt::LeftButton,
+                             Qt::NoButton,
+                             Qt::NoModifier);
+    session->handleSurfaceMouseRelease(surface, &releaseEvent);
+
+    QCOMPARE(session->m_annotationLayer->itemCount(), static_cast<size_t>(1));
+    auto* stroke = dynamic_cast<PencilStroke*>(session->m_annotationLayer->itemAt(0));
+    QVERIFY(stroke);
+    QVERIFY(!stroke->points().isEmpty());
+
+    const QPoint expectedAnnotationPoint =
+        ScreenCanvasSession::globalToDesktop(cursorGlobal, session->m_desktopGeometry);
+    QCOMPARE(stroke->points().last(), QPointF(expectedAnnotationPoint));
+
+    session->close();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 }
 
 void TestScreenCanvasPlacement::testToolbarDragClampSnapsToNearestVisibleScreen()
