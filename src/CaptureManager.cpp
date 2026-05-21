@@ -370,7 +370,13 @@ void CaptureManager::showPreparedRegionSelector(QScreen *targetScreen)
     }
 
     m_regionSelector->setGeometry(targetScreen->geometry());
+#ifdef Q_OS_LINUX
+    // Keep the window manager in control on GNOME/X11; bypass windows can render
+    // as a black ARGB fullscreen surface instead of the captured desktop image.
+    m_regionSelector->showFullScreen();
+#else
     m_regionSelector->show();
+#endif
     raiseWindowAboveMenuBar(m_regionSelector);
 
     m_regionSelector->activateWindow();

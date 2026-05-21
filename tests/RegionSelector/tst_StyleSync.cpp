@@ -80,6 +80,10 @@ private slots:
     void testInitializeForScreen_MagnifierStylePrewarmsCache();
     void testDisabledMagnifierIgnoresShiftAndCopyShortcuts();
     void testBeaverStyleIgnoresShiftAndCopyShortcuts();
+#ifdef Q_OS_LINUX
+    void testLinuxCaptureSurfaceRemainsManaged();
+    void testLinuxTransparentCaptureHelpersDoNotBypassWindowManager();
+#endif
 };
 
 void TestRegionSelectorStyleSync::prepareSelectionTool(RegionSelector& selector)
@@ -119,6 +123,27 @@ void TestRegionSelectorStyleSync::testUsesAuthorityModeByDefault()
     RegionSelector selector;
     QCOMPARE(CursorAuthority::instance().modeForWidget(&selector), CursorSurfaceMode::Authority);
 }
+
+#ifdef Q_OS_LINUX
+void TestRegionSelectorStyleSync::testLinuxCaptureSurfaceRemainsManaged()
+{
+    RegionSelector selector;
+    QVERIFY(!selector.windowFlags().testFlag(Qt::X11BypassWindowManagerHint));
+}
+
+void TestRegionSelectorStyleSync::testLinuxTransparentCaptureHelpersDoNotBypassWindowManager()
+{
+    MagnifierOverlay magnifierOverlay(nullptr);
+    SelectionDimmingOverlay dimmingOverlay;
+    SelectionPreviewOverlay previewOverlay;
+    CaptureChromeWindow chromeWindow;
+
+    QVERIFY(!magnifierOverlay.windowFlags().testFlag(Qt::X11BypassWindowManagerHint));
+    QVERIFY(!dimmingOverlay.windowFlags().testFlag(Qt::X11BypassWindowManagerHint));
+    QVERIFY(!previewOverlay.windowFlags().testFlag(Qt::X11BypassWindowManagerHint));
+    QVERIFY(!chromeWindow.windowFlags().testFlag(Qt::X11BypassWindowManagerHint));
+}
+#endif
 
 void TestRegionSelectorStyleSync::testSelectionBodyHoverUsesMoveCursor()
 {

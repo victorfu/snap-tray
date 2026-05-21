@@ -312,6 +312,7 @@ add_library(snaptray_core STATIC
     src/beautify/BeautifyRenderer.cpp
     src/update/UpdateSettingsManager.cpp
     src/platform/PlatformCapabilities.cpp
+    src/tools/ToolSectionConfig.cpp
     src/cursor/CursorManager.cpp
     src/cursor/CursorAuthority.cpp
     src/cursor/CursorPlatformApplier.cpp
@@ -350,6 +351,7 @@ add_library(snaptray_core STATIC
     include/cursor/CursorSurfaceSupport.h
     include/cursor/CursorTypes.h
     include/platform/PlatformCapabilities.h
+    include/tools/ToolSectionConfig.h
     include/utils/FilenameTemplateEngine.h
     include/utils/ImageSaveUtils.h
     include/utils/NativeFileDialogUtils.h
@@ -590,8 +592,11 @@ target_link_libraries(snaptray_platform
         webp
         libwebpmux
         ZXing::ZXing
-    PRIVATE
-        $<$<PLATFORM_ID:Darwin>:
+)
+
+if(APPLE)
+    target_link_libraries(snaptray_platform
+        PRIVATE
             "-framework CoreGraphics"
             "-framework ApplicationServices"
             "-framework AppKit"
@@ -603,8 +608,10 @@ target_link_libraries(snaptray_platform
             "-framework CoreAudio"
             "-framework AudioToolbox"
             "-weak_framework ScreenCaptureKit"
-        >
-        $<$<PLATFORM_ID:Windows>:
+    )
+elseif(WIN32)
+    target_link_libraries(snaptray_platform
+        PRIVATE
             dwmapi
             psapi
             windowsapp
@@ -615,8 +622,8 @@ target_link_libraries(snaptray_platform
             mfuuid
             ole32
             propsys
-        >
-)
+    )
+endif()
 
 # Windows-specific compiler flags
 if(WIN32)
@@ -651,7 +658,6 @@ add_library(snaptray_ui STATIC
     # Tool system
     src/tools/ToolRegistry.cpp
     src/tools/ToolManager.cpp
-    src/tools/ToolSectionConfig.cpp
     src/tools/handlers/PencilToolHandler.cpp
     src/tools/handlers/MarkerToolHandler.cpp
     src/tools/handlers/ArrowToolHandler.cpp
@@ -1105,6 +1111,7 @@ target_link_libraries(snaptray_qml
     PUBLIC
         snaptray_core
         snaptray_platform
+        snaptray_algorithms
         Qt6::Quick
         Qt6::QuickControls2
         Qt6::QuickWidgets
