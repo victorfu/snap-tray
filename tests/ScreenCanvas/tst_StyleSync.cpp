@@ -19,6 +19,10 @@ private slots:
 #ifdef Q_OS_MACOS
     void testMacSurfaceAvoidsToolWindowHideBehavior();
 #endif
+#ifdef Q_OS_LINUX
+    void testLinuxSurfaceAvoidsToolWindowHideBehavior();
+    void testLinuxSurfaceBypassesWindowManagerForPanelOverlay();
+#endif
 };
 
 void TestScreenCanvasStyleSync::initTestCase()
@@ -97,6 +101,20 @@ void TestScreenCanvasStyleSync::testMacSurfaceAvoidsToolWindowHideBehavior()
     ScreenCanvas canvas;
     QVERIFY(canvas.testAttribute(Qt::WA_MacAlwaysShowToolWindow));
     QVERIFY(!canvas.windowFlags().testFlag(Qt::Tool));
+}
+#endif
+
+#ifdef Q_OS_LINUX
+void TestScreenCanvasStyleSync::testLinuxSurfaceAvoidsToolWindowHideBehavior()
+{
+    ScreenCanvas canvas;
+    QVERIFY(!canvas.windowFlags().testFlag(Qt::Tool));
+}
+
+void TestScreenCanvasStyleSync::testLinuxSurfaceBypassesWindowManagerForPanelOverlay()
+{
+    ScreenCanvas canvas;
+    QVERIFY(canvas.windowFlags().testFlag(Qt::X11BypassWindowManagerHint));
 }
 #endif
 

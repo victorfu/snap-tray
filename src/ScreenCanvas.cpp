@@ -24,6 +24,9 @@ ScreenCanvas::ScreenCanvas(ScreenCanvasSession* session, QWidget* parent)
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint |
                    Qt::NoDropShadowWindowHint);
     setAttribute(Qt::WA_MacAlwaysShowToolWindow);
+#elif defined(Q_OS_LINUX)
+    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint |
+                   Qt::X11BypassWindowManagerHint | Qt::NoDropShadowWindowHint);
 #else
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint |
                    Qt::Tool | Qt::NoDropShadowWindowHint);
@@ -104,7 +107,7 @@ QRect ScreenCanvas::screenGeometry() const
 
 QPoint ScreenCanvas::annotationOffset() const
 {
-    const QRect geometry = screenGeometry();
+    const QRect geometry = this->geometry();
     if (!geometry.isValid() || !m_desktopGeometry.isValid()) {
         return {};
     }

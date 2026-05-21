@@ -146,6 +146,7 @@ private:
     ScreenCanvas* surfaceForScreen(QScreen* screen) const;
     RegionSettingsHelper* activeSettingsHelper() const;
     void refreshFloatingUiParentWidget();
+    void updateSurfaceInputMasks();
 
     void drawAnnotations(ScreenCanvas* surface, QPainter& painter);
     void drawCurrentAnnotation(QPainter& painter);

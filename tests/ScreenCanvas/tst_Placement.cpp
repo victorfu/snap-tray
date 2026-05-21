@@ -3,6 +3,7 @@
 #include <QGuiApplication>
 #include <QCursor>
 #include <QMouseEvent>
+#include <QRegion>
 #include <QScreen>
 
 #include "annotations/AnnotationLayer.h"
@@ -38,6 +39,15 @@ QRect clampBoundsForScreen(QScreen* screen)
     return screen->availableGeometry().isValid()
         ? screen->availableGeometry()
         : screen->geometry();
+}
+
+QRect expectedCanvasSurfaceGeometry(QScreen* screen)
+{
+    if (!screen) {
+        return {};
+    }
+
+    return screen->geometry();
 }
 
 qint64 overlapArea(const QRect& a, const QRect& b)
@@ -140,9 +150,11 @@ private slots:
     void testResolveToolbarPlacementDefaultsToActivationScreenBottomCenter();
     void testVirtualDesktopGeometryMatchesScreenUnion();
     void testDesktopCoordinateRoundTrip();
-    void testSurfaceInitializationUsesScreenGeometry();
+    void testSurfaceInitializationUsesExpectedCanvasGeometry();
 #ifdef Q_OS_LINUX
-    void testLinuxOpenKeepsSurfaceAtScreenGeometry();
+    void testLinuxOpenKeepsSurfaceAtFullScreenGeometry();
+    void testLinuxOpenDoesNotRequestFullscreenWindowState();
+    void testLinuxOpenKeepsFloatingUiClickableAboveBypassCanvas();
 #endif
     void testOpenPositionsSubToolbarAwayFromMainToolbar();
     void testSubToolbarUsesAvailableScreenBoundsNearBottomPanel();
@@ -328,7 +340,7 @@ void TestScreenCanvasPlacement::testDesktopCoordinateRoundTrip()
     QCOMPARE(desktopPoint + desktopGeometry.topLeft(), globalPoint);
 }
 
-void TestScreenCanvasPlacement::testSurfaceInitializationUsesScreenGeometry()
+void TestScreenCanvasPlacement::testSurfaceInitializationUsesExpectedCanvasGeometry()
 {
     QScreen* activationScreen = primaryOrFirstScreen();
     QVERIFY(activationScreen);
@@ -338,14 +350,15 @@ void TestScreenCanvasPlacement::testSurfaceInitializationUsesScreenGeometry()
     ScreenCanvas canvas;
     canvas.initializeForScreenSurface(activationScreen, desktopGeometry);
 
-    QCOMPARE(canvas.geometry(), activationScreen->geometry());
-    QCOMPARE(canvas.size(), activationScreen->geometry().size());
+    const QRect expectedGeometry = expectedCanvasSurfaceGeometry(activationScreen);
+    QCOMPARE(canvas.geometry(), expectedGeometry);
+    QCOMPARE(canvas.size(), expectedGeometry.size());
     QCOMPARE(canvas.annotationOffset(),
-             activationScreen->geometry().topLeft() - desktopGeometry.topLeft());
+             expectedGeometry.topLeft() - desktopGeometry.topLeft());
 }
 
 #ifdef Q_OS_LINUX
-void TestScreenCanvasPlacement::testLinuxOpenKeepsSurfaceAtScreenGeometry()
+void TestScreenCanvasPlacement::testLinuxOpenKeepsSurfaceAtFullScreenGeometry()
 {
     QScreen* activationScreen = primaryOrFirstScreen();
     QVERIFY(activationScreen);
@@ -356,7 +369,75 @@ void TestScreenCanvasPlacement::testLinuxOpenKeepsSurfaceAtScreenGeometry()
 
     ScreenCanvas* surface = session->m_activeSurface.data();
     QTRY_VERIFY(surface->isVisible());
-    QTRY_COMPARE(surface->geometry(), activationScreen->geometry());
+    QTRY_COMPARE(surface->geometry(), expectedCanvasSurfaceGeometry(activationScreen));
+
+    session->close();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void TestScreenCanvasPlacement::testLinuxOpenDoesNotRequestFullscreenWindowState()
+{
+    QScreen* activationScreen = primaryOrFirstScreen();
+    QVERIFY(activationScreen);
+
+    auto* session = new ScreenCanvasSession;
+    session->open(activationScreen);
+    QVERIFY(session->m_activeSurface);
+
+    ScreenCanvas* surface = session->m_activeSurface.data();
+    QTRY_VERIFY(surface->isVisible());
+    QVERIFY2(!surface->isFullScreen(),
+             "Screen Canvas must not request fullscreen on Linux because that hides desktop panels.");
+    QVERIFY2(!(surface->windowState() & Qt::WindowFullScreen),
+             "Screen Canvas must stay a normal overlay window so system tray/menu bar remains visible.");
+
+    session->close();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void TestScreenCanvasPlacement::testLinuxOpenKeepsFloatingUiClickableAboveBypassCanvas()
+{
+    QScreen* activationScreen = primaryOrFirstScreen();
+    QVERIFY(activationScreen);
+
+    auto* session = new ScreenCanvasSession;
+    session->open(activationScreen);
+    QVERIFY(session->m_activeSurface);
+    QVERIFY(session->m_qmlToolbar);
+    QVERIFY(session->m_qmlSubToolbar);
+
+    QTRY_VERIFY(session->m_activeSurface->isVisible());
+    QTRY_VERIFY(session->m_qmlToolbar->isVisible());
+    QTRY_VERIFY(session->m_qmlSubToolbar->isVisible());
+
+    QWindow* toolbarWindow = session->m_qmlToolbar->window();
+    QWindow* subToolbarWindow = session->m_qmlSubToolbar->window();
+    QVERIFY(toolbarWindow);
+    QVERIFY(subToolbarWindow);
+    QVERIFY2(!toolbarWindow->flags().testFlag(Qt::X11BypassWindowManagerHint),
+             "Screen Canvas toolbar must stay WM-managed so QML pointer handling works normally.");
+    QVERIFY2(!subToolbarWindow->flags().testFlag(Qt::X11BypassWindowManagerHint),
+             "Screen Canvas sub-toolbar must stay WM-managed so QML pointer handling works normally.");
+
+    const QRegion inputMask = session->m_activeSurface->mask();
+    QVERIFY2(!inputMask.isEmpty(),
+             "Screen Canvas must shape its input region around floating UI on Linux.");
+
+    const QPoint toolbarLocal =
+        session->m_activeSurface->mapFromGlobal(session->m_qmlToolbar->geometry().center());
+    const QPoint subToolbarLocal =
+        session->m_activeSurface->mapFromGlobal(session->m_qmlSubToolbar->geometry().center());
+    QVERIFY2(!inputMask.contains(toolbarLocal),
+             "Canvas input region must leave the main toolbar clickable.");
+    QVERIFY2(!inputMask.contains(subToolbarLocal),
+             "Canvas input region must leave the sub-toolbar clickable.");
+
+    const QPoint canvasPoint(session->m_activeSurface->width() / 2, 20);
+    if (!session->m_qmlToolbar->geometry().contains(session->m_activeSurface->mapToGlobal(canvasPoint)) &&
+        !session->m_qmlSubToolbar->geometry().contains(session->m_activeSurface->mapToGlobal(canvasPoint))) {
+        QVERIFY2(inputMask.contains(canvasPoint),
+                 "Canvas input region must keep drawable canvas areas active.");
+    }
 
     session->close();
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);

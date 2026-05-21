@@ -41,6 +41,7 @@
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QRegion>
 #include <QScreen>
 #include <QTextEdit>
 #include <QTimer>
@@ -54,6 +55,7 @@ constexpr int kLaserPointerButtonId = 10001;
 constexpr int kToolbarBottomMargin = 30;
 constexpr int kToolPreviewRepaintMargin = 30;
 constexpr int kAnnotationInteractionVisualMargin = 52;
+constexpr int kFloatingUiInputHolePadding = 2;
 
 bool isManagedToolButtonId(int buttonId)
 {
@@ -121,6 +123,49 @@ QPixmap createSolidCanvasPixmap(const QSize& logicalSize, qreal devicePixelRatio
     result.setDevicePixelRatio(normalizedDpr);
     result.fill(color);
     return result;
+}
+
+void subtractGlobalRectFromMask(QRegion& mask, ScreenCanvas* surface, const QRect& globalRect)
+{
+    if (!surface || !globalRect.isValid() || globalRect.isEmpty()) {
+        return;
+    }
+
+    const QRect localRect(surface->mapFromGlobal(globalRect.topLeft()), globalRect.size());
+    const QRect clippedRect = localRect
+        .adjusted(-kFloatingUiInputHolePadding,
+                  -kFloatingUiInputHolePadding,
+                  kFloatingUiInputHolePadding,
+                  kFloatingUiInputHolePadding)
+        .intersected(surface->rect());
+    if (!clippedRect.isEmpty()) {
+        mask -= QRegion(clippedRect);
+    }
+}
+
+void showScreenCanvasSurface(ScreenCanvas* surface)
+{
+    if (!surface) {
+        return;
+    }
+
+    const QRect surfaceGeometry = surface->geometry();
+    surface->show();
+
+#ifdef Q_OS_LINUX
+    // Do not use showFullScreen() for Screen Canvas: desktop shells hide panels
+    // for fullscreen windows. The canvas uses an X11 bypass-WM overlay, so it
+    // can cover desktop panels for drawing without becoming a WM fullscreen app.
+    if (surfaceGeometry.isValid()) {
+        surface->setGeometry(surfaceGeometry);
+        QTimer::singleShot(0, surface, [surface, surfaceGeometry]() {
+            surface->setGeometry(surfaceGeometry);
+            surface->raise();
+        });
+    }
+#else
+    Q_UNUSED(surfaceGeometry);
+#endif
 }
 } // namespace
 
@@ -345,6 +390,7 @@ void ScreenCanvasSession::initializeSharedState()
                 if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
                     m_emojiPickerPopup->positionAt(m_qmlToolbar->geometry());
                 }
+                updateSurfaceInputMasks();
             });
     connect(m_qmlToolbar.get(), &SnapTray::QmlFloatingToolbar::dragFinished,
             this, [this]() {
@@ -496,11 +542,7 @@ void ScreenCanvasSession::createSurfaces(const QList<QScreen*>& screens)
         });
 
         m_surfaces.append(surface);
-#ifdef Q_OS_LINUX
-        surface->showFullScreen();
-#else
-        surface->show();
-#endif
+        showScreenCanvasSurface(surface);
         preventWindowHideOnDeactivate(surface);
         raiseWindowAboveMenuBar(surface);
         setWindowClickThrough(surface, false);
@@ -564,10 +606,16 @@ void ScreenCanvasSession::configureSurface(ScreenCanvas* surface)
                         cursorManager.pushCursorForWidget(surface, CursorContext::Override, Qt::ArrowCursor);
                         cursorManager.reapplyCursorForWidget(surface);
                     }
+                    updateSurfaceInputMasks();
+                    QTimer::singleShot(0, this, [this]() {
+                        updateSurfaceInputMasks();
+                    });
                 });
         connect(surface->settingsHelper(), &RegionSettingsHelper::dropdownHidden,
                 this, [this, surface]() {
+                    updateSurfaceInputMasks();
                     QTimer::singleShot(0, this, [this, surface]() {
+                        updateSurfaceInputMasks();
                         syncFloatingUiCursor(surface);
                     });
                 });
@@ -863,6 +911,7 @@ ScreenCanvasSession::FloatingUiVisibilityState ScreenCanvasSession::hideFloating
         }
     }
 
+    updateSurfaceInputMasks();
     qApp->processEvents();
     return state;
 }
@@ -882,6 +931,7 @@ void ScreenCanvasSession::restoreFloatingUiAfterCapture(const FloatingUiVisibili
         showEmojiPickerPopup();
     }
     raiseFloatingUiWindows();
+    updateSurfaceInputMasks();
 }
 
 ScreenCanvasSession::ScreenSnapshotVisibilityState ScreenCanvasSession::hideUiForScreenSnapshot()
@@ -1070,6 +1120,45 @@ void ScreenCanvasSession::refreshFloatingUiParentWidget()
     }
 }
 
+void ScreenCanvasSession::updateSurfaceInputMasks()
+{
+#ifdef Q_OS_LINUX
+    for (const QPointer<ScreenCanvas>& surfacePointer : m_surfaces) {
+        ScreenCanvas* surface = surfacePointer.data();
+        if (!surface) {
+            continue;
+        }
+
+        if (!surface->windowFlags().testFlag(Qt::X11BypassWindowManagerHint)) {
+            surface->clearMask();
+            continue;
+        }
+
+        QRegion mask(surface->rect());
+        if (m_qmlToolbar && m_qmlToolbar->isVisible()) {
+            subtractGlobalRectFromMask(mask, surface, m_qmlToolbar->geometry());
+        }
+        if (m_qmlSubToolbar && m_qmlSubToolbar->isVisible()) {
+            subtractGlobalRectFromMask(mask, surface, m_qmlSubToolbar->geometry());
+        }
+        if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
+            subtractGlobalRectFromMask(mask, surface, m_emojiPickerPopup->geometry());
+        }
+        if (QWidget* popup = QApplication::activePopupWidget(); popup && popup->isVisible()) {
+            subtractGlobalRectFromMask(mask, surface, popup->frameGeometry());
+        }
+
+        surface->setMask(mask);
+    }
+#else
+    for (const QPointer<ScreenCanvas>& surface : m_surfaces) {
+        if (surface) {
+            surface->clearMask();
+        }
+    }
+#endif
+}
+
 void ScreenCanvasSession::restoreSurfaceVisibilityAndStacking(bool refocusActiveSurface)
 {
     ScreenCanvas* fallbackSurface = nullptr;
@@ -1100,6 +1189,7 @@ void ScreenCanvasSession::restoreSurfaceVisibilityAndStacking(bool refocusActive
     relayoutFloatingUi(false);
     setToolCursor();
     updateAllSurfaces();
+    updateSurfaceInputMasks();
 
     if (refocusActiveSurface && m_activeSurface) {
         m_activeSurface->activateWindow();
@@ -2103,6 +2193,8 @@ void ScreenCanvasSession::updateQmlToolbarState()
 
         if (m_isOpen && m_toolbarPlacementInitialized && !m_toolbarDragging) {
             relayoutFloatingUi(false);
+        } else {
+            updateSurfaceInputMasks();
         }
         return;
     }
@@ -2128,6 +2220,8 @@ void ScreenCanvasSession::updateQmlToolbarState()
 
     if (m_isOpen && m_toolbarPlacementInitialized && !m_toolbarDragging) {
         relayoutFloatingUi(false);
+    } else {
+        updateSurfaceInputMasks();
     }
 }
 
@@ -2196,6 +2290,7 @@ void ScreenCanvasSession::relayoutFloatingUi(bool restoreToolbarPosition)
         m_emojiPickerPopup->positionAt(m_qmlToolbar->geometry());
     }
     raiseFloatingUiWindows();
+    updateSurfaceInputMasks();
 }
 
 void ScreenCanvasSession::saveToolbarPlacement() const
@@ -2293,6 +2388,7 @@ void ScreenCanvasSession::showEmojiPickerPopup()
     refreshFloatingUiParentWidget();
     const QRect anchor = m_qmlToolbar ? m_qmlToolbar->geometry() : QRect();
     m_emojiPickerPopup->showAt(anchor);
+    updateSurfaceInputMasks();
 }
 
 TextBoxAnnotation* ScreenCanvasSession::getSelectedTextAnnotation()
