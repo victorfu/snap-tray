@@ -52,7 +52,7 @@ PlatformFeatures& PlatformFeatures::instance()
 PlatformFeatures::PlatformFeatures()
     : m_capabilities(SnapTray::currentPlatformCapabilities())
     , m_ocrAvailable(false)
-    , m_windowDetectionAvailable(false)
+    , m_windowDetectionAvailable(m_capabilities.supportsWindowDetection)
 {
 }
 
@@ -73,9 +73,13 @@ OCRManager* PlatformFeatures::createOCRManager(QObject*) const
     return nullptr;
 }
 
-WindowDetector* PlatformFeatures::createWindowDetector(QObject*) const
+WindowDetector* PlatformFeatures::createWindowDetector(QObject* parent) const
 {
-    return nullptr;
+    if (!m_windowDetectionAvailable) {
+        return nullptr;
+    }
+
+    return new WindowDetector(parent);
 }
 
 QIcon PlatformFeatures::createTrayIcon() const

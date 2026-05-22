@@ -91,7 +91,7 @@ PlatformCapabilities capabilitiesForPlatform(PlatformKind platform,
         caps.supportsRecording = false;
         caps.supportsOCR = false;
         caps.supportsGlobalHotkeys = displayServer == DisplayServerKind::X11;
-        caps.supportsWindowDetection = false;
+        caps.supportsWindowDetection = displayServer == DisplayServerKind::X11;
         caps.supportsInAppUpdates = false;
         caps.isRuntimeSupported = displayServer == DisplayServerKind::X11;
         if (!caps.isRuntimeSupported) {

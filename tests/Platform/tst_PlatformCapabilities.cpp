@@ -24,7 +24,7 @@ void tst_PlatformCapabilities::linuxX11BetaCapabilities()
     QVERIFY(caps.supportsGlobalHotkeys);
     QVERIFY(!caps.supportsRecording);
     QVERIFY(!caps.supportsOCR);
-    QVERIFY(!caps.supportsWindowDetection);
+    QVERIFY(caps.supportsWindowDetection);
     QVERIFY(!caps.supportsInAppUpdates);
     QCOMPARE(caps.displayServer, SnapTray::DisplayServerKind::X11);
     QVERIFY(caps.unsupportedRuntimeMessage.isEmpty());
