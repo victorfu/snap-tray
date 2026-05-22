@@ -144,7 +144,9 @@ private:
 void tst_MainApplicationTrayMenu::init()
 {
     manager().shutdown();
-    manager().m_registerHotkeyOverride = {};
+    manager().m_registerHotkeyOverride = [](SnapTray::HotkeyAction, const QString&) {
+        return true;
+    };
     clearAllTestSettings();
     InstallSourceDetector::clearDetectedSourceForTests();
     UpdateCoordinator::resetForTests();

@@ -153,6 +153,7 @@ target_include_directories(App_MainApplicationTrayMenu PRIVATE
 )
 target_link_libraries(App_MainApplicationTrayMenu PRIVATE
     snaptray_ui
+    snaptray_cli
     snaptray_platform
     snaptray_algorithms
     snaptray_core
@@ -482,21 +483,21 @@ add_test(NAME Utils_TrayTooltipFormatter COMMAND Utils_TrayTooltipFormatter)
 set_tests_properties(Utils_TrayTooltipFormatter PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
-# CLI Tests (link snaptray_platform for PlatformFeatures symbols)
+# CLI Tests
 # ============================================================================
 
 add_executable(CLI_NumericArgumentValidation CLI/tst_NumericArgumentValidation.cpp)
-target_link_libraries(CLI_NumericArgumentValidation PRIVATE snaptray_platform Qt6::Test)
+target_link_libraries(CLI_NumericArgumentValidation PRIVATE snaptray_cli Qt6::Test)
 add_test(NAME CLI_NumericArgumentValidation COMMAND CLI_NumericArgumentValidation)
 set_tests_properties(CLI_NumericArgumentValidation PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(CLI_FeatureGating CLI/tst_CLIHandlerFeatureGating.cpp)
-target_link_libraries(CLI_FeatureGating PRIVATE snaptray_platform Qt6::Test)
+target_link_libraries(CLI_FeatureGating PRIVATE snaptray_cli Qt6::Test)
 add_test(NAME CLI_FeatureGating COMMAND CLI_FeatureGating)
 set_tests_properties(CLI_FeatureGating PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(CLI_CaptureOutputHelper CLI/tst_CaptureOutputHelper.cpp)
-target_link_libraries(CLI_CaptureOutputHelper PRIVATE snaptray_platform Qt6::Test)
+target_link_libraries(CLI_CaptureOutputHelper PRIVATE snaptray_cli Qt6::Test)
 add_test(NAME CLI_CaptureOutputHelper COMMAND CLI_CaptureOutputHelper)
 set_tests_properties(CLI_CaptureOutputHelper PROPERTIES TIMEOUT 60 LABELS "unit")
 
