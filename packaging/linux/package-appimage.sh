@@ -3,6 +3,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+source "$SCRIPT_DIR/appimage-helpers.sh"
+
 BUILD_DIR="$PROJECT_DIR/release-linux"
 APPDIR="$PROJECT_DIR/build/AppDir"
 DIST_DIR="$PROJECT_DIR/dist"
@@ -64,27 +66,6 @@ download_linuxdeploy_qt() {
     -o "$target" \
     "https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage"
   chmod +x "$target"
-}
-
-appimage_squashfs_offset() {
-  local appimage="$1"
-  local offset
-
-  if ! command -v unsquashfs >/dev/null 2>&1; then
-    echo "AppImage extraction requires unsquashfs." >&2
-    echo "Install squashfs-tools, then rerun this script." >&2
-    exit 1
-  fi
-
-  while IFS=: read -r offset _; do
-    if [ -n "$offset" ] && unsquashfs -s -o "$offset" "$appimage" >/dev/null 2>&1; then
-      echo "$offset"
-      return 0
-    fi
-  done < <(LC_ALL=C grep -aob "hsqs" "$appimage" || true)
-
-  echo "Failed to locate SquashFS payload in $appimage." >&2
-  return 1
 }
 
 extract_appimage_tool() {
@@ -163,6 +144,8 @@ cd "$PROJECT_DIR"
   --output appimage
 
 mv "$PROJECT_DIR/$OUTPUT" "$DIST_DIR/$OUTPUT"
+mask_appimage_binfmt_magic "$DIST_DIR/$OUTPUT"
+echo "Masked AppImage binfmt magic for direct launch on Ubuntu 22.04."
 
 VERSION_OUTPUT_FILE="$(mktemp)"
 trap 'rm -f "$VERSION_OUTPUT_FILE"' EXIT

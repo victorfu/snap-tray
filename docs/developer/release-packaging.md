@@ -51,6 +51,10 @@ Typical outputs:
 The Linux beta artifact targets Ubuntu 22.04 X11. It does not include in-app
 updates; users download a newer AppImage for upgrades.
 
+The packaging script masks the AppImage type marker after creation so Ubuntu
+22.04 systems with AppImageLauncher `binfmt_misc` handlers run the embedded
+AppImage runtime directly instead of routing through AppImageLauncher.
+
 ## Packaging prerequisites
 
 ### macOS

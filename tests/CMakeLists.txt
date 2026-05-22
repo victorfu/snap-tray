@@ -9,6 +9,14 @@
 find_package(Qt6 REQUIRED COMPONENTS Test)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
+if(UNIX AND NOT APPLE)
+    add_test(
+        NAME Packaging_AppImageBinfmtBypass
+        COMMAND bash "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_AppImageBinfmtBypass.sh" "${CMAKE_SOURCE_DIR}"
+    )
+    set_tests_properties(Packaging_AppImageBinfmtBypass PROPERTIES TIMEOUT 30 LABELS "unit;packaging")
+endif()
+
 # Enable automoc for tests
 set(CMAKE_AUTOMOC ON)
 
