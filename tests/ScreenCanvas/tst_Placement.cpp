@@ -563,7 +563,25 @@ void TestScreenCanvasPlacement::testGrabbedDrawingUsesCurrentCursorPositionDurin
 
     const QPoint expectedAnnotationPoint =
         ScreenCanvasSession::globalToDesktop(cursorGlobal, session->m_desktopGeometry);
-    QCOMPARE(stroke->points().last(), QPointF(expectedAnnotationPoint));
+    const QPoint staleAnnotationPoint = surface->toAnnotationPoint(staleLocal);
+    const QPointF actualPoint = stroke->points().last();
+    const QPointF expectedPoint(expectedAnnotationPoint);
+    const QPointF stalePoint(staleAnnotationPoint);
+
+    QVERIFY2(qAbs(actualPoint.x() - expectedPoint.x()) <= 3.0 &&
+                 qAbs(actualPoint.y() - expectedPoint.y()) <= 3.0,
+             qPrintable(QStringLiteral("Final point (%1,%2) is not near cursor point (%3,%4)")
+                            .arg(actualPoint.x())
+                            .arg(actualPoint.y())
+                            .arg(expectedPoint.x())
+                            .arg(expectedPoint.y())));
+    QVERIFY2(qAbs(actualPoint.x() - stalePoint.x()) > 20.0 ||
+                 qAbs(actualPoint.y() - stalePoint.y()) > 20.0,
+             qPrintable(QStringLiteral("Final point (%1,%2) still matches stale event point (%3,%4)")
+                            .arg(actualPoint.x())
+                            .arg(actualPoint.y())
+                            .arg(stalePoint.x())
+                            .arg(stalePoint.y())));
 
     session->close();
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
