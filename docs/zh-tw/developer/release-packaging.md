@@ -50,6 +50,10 @@ packaging\windows\package.bat msix      REM 只建置 MSIX
 
 Linux beta 目標是 Ubuntu 22.04 X11。此版本沒有內建更新，升級方式是下載新的 AppImage。
 
+打包腳本會在產生 AppImage 後遮蔽 AppImage type marker，讓有
+AppImageLauncher `binfmt_misc` handler 的 Ubuntu 22.04 系統直接執行內嵌的
+AppImage runtime，而不是先繞進 AppImageLauncher。
+
 ## 打包前置需求
 
 ### macOS
