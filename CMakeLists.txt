@@ -615,6 +615,12 @@ elseif(WIN32)
             ole32
             propsys
     )
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    find_package(X11 REQUIRED)
+    target_link_libraries(snaptray_platform
+        PRIVATE
+            X11::X11
+    )
 endif()
 
 # Windows-specific compiler flags

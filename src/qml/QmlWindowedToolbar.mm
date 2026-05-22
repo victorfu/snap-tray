@@ -362,6 +362,16 @@ void QmlWindowedToolbar::syncTransientParent()
     }
 
     QWidget* hostWindow = m_associatedPinWindow ? m_associatedPinWindow->window() : nullptr;
+#ifdef Q_OS_LINUX
+    if (hostWindow && hostWindow->windowFlags().testFlag(Qt::X11BypassWindowManagerHint)) {
+        m_view->setTransientParent(nullptr);
+        QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
+        if (m_view->isVisible()) {
+            applyPlatformWindowFlags();
+        }
+        return;
+    }
+#endif
     if (hostWindow && hostWindow->windowHandle()) {
         m_view->setTransientParent(hostWindow->windowHandle());
     } else {
