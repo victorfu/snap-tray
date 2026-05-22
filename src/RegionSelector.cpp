@@ -4505,6 +4505,15 @@ void RegionSelector::showEvent(QShowEvent* event)
     // Set cursor immediately on show (replaces unreliable 100ms timer)
     ensureCrossCursor();
 
+#ifdef Q_OS_LINUX
+    QTimer::singleShot(0, this, [this]() {
+        if (m_isClosing || !m_qmlToolbar) {
+            return;
+        }
+        m_qmlToolbar->prewarm();
+    });
+#endif
+
     if (m_initialRevealState != InitialRevealState::Revealed) {
         setWindowOpacity(0.0);
         maybeStartInitialRevealWait();

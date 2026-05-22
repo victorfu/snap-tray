@@ -459,6 +459,25 @@ void QmlFloatingToolbar::show()
     syncCursorSurface();
 }
 
+void QmlFloatingToolbar::prewarm()
+{
+    ensureView();
+
+    if (!m_rootItem) {
+        return;
+    }
+
+    syncTransientParent();
+    const QSize resolvedSize = sizeHint();
+    if (!resolvedSize.isEmpty() && m_view->size() != resolvedSize) {
+        m_view->resize(resolvedSize);
+    }
+
+#ifdef Q_OS_LINUX
+    m_view->create();
+#endif
+}
+
 void QmlFloatingToolbar::hide()
 {
     hideTooltip();

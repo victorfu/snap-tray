@@ -83,6 +83,7 @@ private slots:
 #ifdef Q_OS_LINUX
     void testLinuxCaptureSurfaceRemainsManaged();
     void testLinuxTransparentCaptureHelpersDoNotBypassWindowManager();
+    void testLinuxSelectionToolbarPrewarmsAfterShow();
 #endif
 };
 
@@ -142,6 +143,28 @@ void TestRegionSelectorStyleSync::testLinuxTransparentCaptureHelpersDoNotBypassW
     QVERIFY(!dimmingOverlay.windowFlags().testFlag(Qt::X11BypassWindowManagerHint));
     QVERIFY(!previewOverlay.windowFlags().testFlag(Qt::X11BypassWindowManagerHint));
     QVERIFY(!chromeWindow.windowFlags().testFlag(Qt::X11BypassWindowManagerHint));
+}
+
+void TestRegionSelectorStyleSync::testLinuxSelectionToolbarPrewarmsAfterShow()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        QSKIP("No screen available for toolbar prewarm test.");
+    }
+
+    RegionSelector selector;
+    QVERIFY(!RegionSelectorTestAccess::toolbarWindow(selector));
+
+    QPixmap capture(screen->geometry().size());
+    capture.fill(Qt::black);
+    selector.initializeForScreen(screen, capture);
+    selector.show();
+    QCoreApplication::processEvents();
+
+    QTRY_VERIFY_WITH_TIMEOUT(RegionSelectorTestAccess::toolbarWindow(selector), 1000);
+    QVERIFY(!RegionSelectorTestAccess::toolbarVisible(selector));
+
+    selector.close();
 }
 #endif
 
