@@ -108,6 +108,11 @@ public:
     static QString hotkeyRegistrationWarningMessage(const HotkeyConfig& config,
                                                     const QString& conflictDescription,
                                                     bool isWindows);
+    static bool shouldOfferWindowsPrintScreenSnippingDisable(
+        const HotkeyConfig& config,
+        const QString& conflictDescription,
+        bool isWindows,
+        bool snippingShortcutEnabled);
 
     // ──── General ────
     bool startOnLogin() const;

@@ -2718,9 +2718,35 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
         <translation>Hình ảnh (*.png *.jpg *.jpeg *.bmp *.svg)</translation>
         </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="170" />
-        <source>%1 was saved, but Windows may be using Print Screen for Snipping Tool. Turn off Settings > Accessibility > Keyboard > Use the Print screen key to open screen capture, then try again.</source>
-        <translation>Đã lưu %1, nhưng Windows có thể đang dùng Print Screen cho Snipping Tool. Hãy tắt Settings > Accessibility > Keyboard > Use the Print screen key to open screen capture rồi thử lại.</translation>
+        <location filename="../src/qml/SettingsBackend.cpp" line="149" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="213" />
+        <source>%1 was saved, but Windows is using Print Screen for Snipping Tool. SnapTray can turn off this Windows setting; restart SnapTray, then try again.</source>
+        <translation>Đã lưu %1, nhưng Windows đang dùng Print Screen cho Snipping Tool. SnapTray có thể tắt cài đặt Windows này; khởi động lại SnapTray rồi thử lại.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="147" />
+        <source>Disable Windows Print Screen Shortcut?</source>
+        <translation>Tắt phím tắt Print Screen của Windows?</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="159" />
+        <source>Windows Print Screen Shortcut Disabled</source>
+        <translation>Đã tắt phím tắt Print Screen của Windows</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="161" />
+        <source>Restart SnapTray, then try Print Screen again.</source>
+        <translation>Khởi động lại SnapTray rồi thử Print Screen lần nữa.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="166" />
+        <source>Windows Setting Not Changed</source>
+        <translation>Chưa thay đổi cài đặt Windows</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="168" />
+        <source>SnapTray could not change the Windows Print Screen setting.</source>
+        <translation>SnapTray không thể thay đổi cài đặt Print Screen của Windows.</translation>
         </message>
     <message>
         <location filename="../src/qml/SettingsBackend.cpp" line="170" />

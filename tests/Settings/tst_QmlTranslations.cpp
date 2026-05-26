@@ -123,9 +123,16 @@ void tst_QmlTranslations::testMainApplicationTrayContext()
 void tst_QmlTranslations::testHotkeyConflictGuidanceTranslatedForAllLocales()
 {
     const QByteArray context = "SnapTray::SettingsBackend";
-    const QByteArray source =
-        "%1 was saved, but Windows may be using Print Screen for Snipping Tool. "
-        "Turn off Settings > Accessibility > Keyboard > Use the Print screen key to open screen capture, then try again.";
+    const QList<QByteArray> sources = {
+        QByteArray(
+            "%1 was saved, but Windows is using Print Screen for Snipping Tool. "
+            "SnapTray can turn off this Windows setting; restart SnapTray, then try again."),
+        QByteArray("Disable Windows Print Screen Shortcut?"),
+        QByteArray("Windows Print Screen Shortcut Disabled"),
+        QByteArray("Restart SnapTray, then try Print Screen again."),
+        QByteArray("Windows Setting Not Changed"),
+        QByteArray("SnapTray could not change the Windows Print Screen setting."),
+    };
 
     const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
     const QStringList qmFiles = translationsDir.entryList(
@@ -140,16 +147,22 @@ void tst_QmlTranslations::testHotkeyConflictGuidanceTranslatedForAllLocales()
         QVERIFY2(translator.load(path),
                  qPrintable(QStringLiteral("Failed to load translation file: %1").arg(path)));
 
-        const QString translated = translator.translate(context.constData(), source.constData());
-        QVERIFY2(!translated.isEmpty(),
-                 qPrintable(QStringLiteral("%1 is missing Print Screen conflict guidance")
-                                .arg(qmFile)));
-        QVERIFY2(translated != QString::fromUtf8(source),
-                 qPrintable(QStringLiteral("%1 fell back to English for Print Screen conflict guidance")
-                                .arg(qmFile)));
-        QVERIFY2(translated.contains(QStringLiteral("%1")),
-                 qPrintable(QStringLiteral("%1 translation dropped the %%1 placeholder")
-                                .arg(qmFile)));
+        for (const QByteArray& source : sources) {
+            const QString translated = translator.translate(context.constData(),
+                                                            source.constData());
+            QVERIFY2(!translated.isEmpty(),
+                     qPrintable(QStringLiteral("%1 is missing Print Screen guidance: %2")
+                                    .arg(qmFile, QString::fromUtf8(source))));
+            QVERIFY2(translated != QString::fromUtf8(source),
+                     qPrintable(QStringLiteral(
+                                    "%1 fell back to English for Print Screen guidance: %2")
+                                    .arg(qmFile, QString::fromUtf8(source))));
+            if (source.contains("%1")) {
+                QVERIFY2(translated.contains(QStringLiteral("%1")),
+                         qPrintable(QStringLiteral("%1 translation dropped the %%1 placeholder")
+                                        .arg(qmFile)));
+            }
+        }
     }
 }
 

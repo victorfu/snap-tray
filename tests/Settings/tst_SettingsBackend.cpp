@@ -72,7 +72,8 @@ private slots:
     void testCheckForUpdates_Failed_EmitsFailure();
     void testCheckForUpdates_UnsupportedInstallSource_EmitsUnavailable();
     void testLastCheckedTextChanged_WhenCoordinatorRecordsSuccessfulCheck();
-    void testHotkeyRegistrationWarningMessage_WindowsPrintScreenExplainsSnippingTool();
+    void testHotkeyRegistrationWarningMessage_WindowsPrintScreenUsesGenericFallback();
+    void testShouldOfferWindowsPrintScreenDisable_WhenRegisteredAndSnippingEnabled();
     void testFeatureSupportPropertiesFollowPlatformCapabilities();
     void testHotkeyCategoriesHideRecordingWhenUnsupported();
 
@@ -323,7 +324,7 @@ void tst_SettingsBackend::testLastCheckedTextChanged_WhenCoordinatorRecordsSucce
     QVERIFY(backend.lastCheckedText() != QStringLiteral("Never"));
 }
 
-void tst_SettingsBackend::testHotkeyRegistrationWarningMessage_WindowsPrintScreenExplainsSnippingTool()
+void tst_SettingsBackend::testHotkeyRegistrationWarningMessage_WindowsPrintScreenUsesGenericFallback()
 {
     SnapTray::HotkeyConfig config;
     config.displayName = QStringLiteral("Region Capture");
@@ -336,9 +337,24 @@ void tst_SettingsBackend::testHotkeyRegistrationWarningMessage_WindowsPrintScree
         true);
 
     QVERIFY(message.contains(QStringLiteral("Region Capture")));
-    QVERIFY(message.contains(QStringLiteral("Windows may be using Print Screen for Snipping Tool")));
-    QVERIFY(message.contains(QStringLiteral("Settings > Accessibility > Keyboard")));
-    QVERIFY(message.contains(QStringLiteral("Use the Print screen key to open screen capture")));
+    QVERIFY(message.contains(QStringLiteral(
+        "the shortcut is already in use by another app or the system")));
+    QVERIFY(!message.contains(QStringLiteral("Snipping Tool")));
+    QVERIFY(!message.contains(QStringLiteral("SnapTray can turn off this Windows setting")));
+}
+
+void tst_SettingsBackend::testShouldOfferWindowsPrintScreenDisable_WhenRegisteredAndSnippingEnabled()
+{
+    SnapTray::HotkeyConfig config;
+    config.displayName = QStringLiteral("Region Capture");
+    config.keySequence = QStringLiteral("Print");
+    config.status = SnapTray::HotkeyStatus::Registered;
+
+    QVERIFY(SettingsBackend::shouldOfferWindowsPrintScreenSnippingDisable(
+        config,
+        QString(),
+        true,
+        true));
 }
 
 void tst_SettingsBackend::testFeatureSupportPropertiesFollowPlatformCapabilities()

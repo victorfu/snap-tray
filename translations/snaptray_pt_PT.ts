@@ -2718,9 +2718,35 @@ Pode estar a ser utilizado por outra aplicação.</translation>
         <translation>Imagens (*.png *.jpg *.jpeg *.bmp *.svg)</translation>
         </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="170" />
-        <source>%1 was saved, but Windows may be using Print Screen for Snipping Tool. Turn off Settings > Accessibility > Keyboard > Use the Print screen key to open screen capture, then try again.</source>
-        <translation>%1 foi guardado, mas o Windows pode estar a usar Print Screen para a Ferramenta de Recorte. Desative Settings > Accessibility > Keyboard > Use the Print screen key to open screen capture e tente novamente.</translation>
+        <location filename="../src/qml/SettingsBackend.cpp" line="149" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="213" />
+        <source>%1 was saved, but Windows is using Print Screen for Snipping Tool. SnapTray can turn off this Windows setting; restart SnapTray, then try again.</source>
+        <translation>%1 foi guardado, mas o Windows está a usar Print Screen para a Ferramenta de Recorte. O SnapTray pode desativar esta definição do Windows; reinicie o SnapTray e tente novamente.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="147" />
+        <source>Disable Windows Print Screen Shortcut?</source>
+        <translation>Desativar o atalho Print Screen do Windows?</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="159" />
+        <source>Windows Print Screen Shortcut Disabled</source>
+        <translation>Atalho Print Screen do Windows desativado</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="161" />
+        <source>Restart SnapTray, then try Print Screen again.</source>
+        <translation>Reinicie o SnapTray e tente Print Screen novamente.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="166" />
+        <source>Windows Setting Not Changed</source>
+        <translation>Definição do Windows não alterada</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="168" />
+        <source>SnapTray could not change the Windows Print Screen setting.</source>
+        <translation>O SnapTray não conseguiu alterar a definição de Print Screen do Windows.</translation>
         </message>
     <message>
         <location filename="../src/qml/SettingsBackend.cpp" line="170" />

@@ -589,6 +589,13 @@ target_link_libraries(Settings_AutoLaunchSyncPolicy PRIVATE snaptray_core Qt6::T
 add_test(NAME Settings_AutoLaunchSyncPolicy COMMAND Settings_AutoLaunchSyncPolicy)
 set_tests_properties(Settings_AutoLaunchSyncPolicy PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Settings_WindowsPrintScreenSettingsManager
+    Settings/tst_WindowsPrintScreenSettingsManager.cpp
+)
+target_link_libraries(Settings_WindowsPrintScreenSettingsManager PRIVATE snaptray_core Qt6::Test)
+add_test(NAME Settings_WindowsPrintScreenSettingsManager COMMAND Settings_WindowsPrintScreenSettingsManager)
+set_tests_properties(Settings_WindowsPrintScreenSettingsManager PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Settings_SettingsBackend
     Settings/tst_SettingsBackend.cpp
     ${CMAKE_SOURCE_DIR}/src/qml/SettingsBackend.cpp

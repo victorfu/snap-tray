@@ -2718,9 +2718,35 @@ It may be in use by another application.</source>
         <translation>Εικόνες (*.png *.jpg *.jpeg *.bmp *.svg)</translation>
         </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="170" />
-        <source>%1 was saved, but Windows may be using Print Screen for Snipping Tool. Turn off Settings > Accessibility > Keyboard > Use the Print screen key to open screen capture, then try again.</source>
-        <translation>Το %1 αποθηκεύτηκε, αλλά τα Windows μπορεί να χρησιμοποιούν το Print Screen για το Snipping Tool. Απενεργοποιήστε το Settings > Accessibility > Keyboard > Use the Print screen key to open screen capture και δοκιμάστε ξανά.</translation>
+        <location filename="../src/qml/SettingsBackend.cpp" line="149" />
+        <location filename="../src/qml/SettingsBackend.cpp" line="213" />
+        <source>%1 was saved, but Windows is using Print Screen for Snipping Tool. SnapTray can turn off this Windows setting; restart SnapTray, then try again.</source>
+        <translation>Το %1 αποθηκεύτηκε, αλλά τα Windows χρησιμοποιούν το Print Screen για το Snipping Tool. Το SnapTray μπορεί να απενεργοποιήσει αυτήν τη ρύθμιση των Windows· επανεκκινήστε το SnapTray και δοκιμάστε ξανά.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="147" />
+        <source>Disable Windows Print Screen Shortcut?</source>
+        <translation>Να απενεργοποιηθεί η συντόμευση Print Screen των Windows;</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="159" />
+        <source>Windows Print Screen Shortcut Disabled</source>
+        <translation>Η συντόμευση Print Screen των Windows απενεργοποιήθηκε</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="161" />
+        <source>Restart SnapTray, then try Print Screen again.</source>
+        <translation>Επανεκκινήστε το SnapTray και δοκιμάστε ξανά το Print Screen.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="166" />
+        <source>Windows Setting Not Changed</source>
+        <translation>Η ρύθμιση των Windows δεν άλλαξε</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="168" />
+        <source>SnapTray could not change the Windows Print Screen setting.</source>
+        <translation>Το SnapTray δεν μπόρεσε να αλλάξει τη ρύθμιση Print Screen των Windows.</translation>
         </message>
     <message>
         <location filename="../src/qml/SettingsBackend.cpp" line="170" />

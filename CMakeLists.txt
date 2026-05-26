@@ -310,6 +310,7 @@ add_library(snaptray_core STATIC
     src/settings/ScreenCanvasSettingsManager.cpp
     src/settings/WatermarkSettingsManager.cpp
     src/settings/BeautifySettingsManager.cpp
+    src/settings/WindowsPrintScreenSettingsManager.cpp
     src/settings/LanguageManager.cpp
     src/beautify/BeautifyRenderer.cpp
     src/update/UpdateSettingsManager.cpp
@@ -333,6 +334,7 @@ add_library(snaptray_core STATIC
     include/settings/PinWindowSettingsManager.h
     include/settings/RegionCaptureSettingsManager.h
     include/settings/ScreenCanvasSettingsManager.h
+    include/settings/WindowsPrintScreenSettingsManager.h
     include/settings/SettingsTheme.h
     include/cursor/CursorAuthority.h
     include/cursor/CursorPlatformApplier.h
