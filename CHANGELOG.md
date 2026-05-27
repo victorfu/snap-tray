@@ -6,6 +6,23 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+## [1.0.54] - 2026-05-27
+
+### Added
+
+- Added the Ubuntu 22.04 X11 Linux beta with AppImage packaging, Linux-specific platform capability gating, and CI build coverage.
+
+### Improved
+
+- Improved Linux capture, Screen Canvas, pin toolbar focus, AppImage launch handling, and initial selection-toolbar responsiveness.
+- Improved Linux feature availability so unsupported recording and OCR entry points stay hidden across the tray, CLI, tools, and settings.
+
+### Fixed
+
+- Fixed Capture Mode copy so the selected image is written to the clipboard before the selector closes, avoiding first-copy failures.
+- Fixed Windows Print Screen shortcut conflict handling and compatibility with Snipping Tool-related settings.
+- Fixed Linux AppImage packaging fallbacks and X11 capture overlay behavior.
+
 ## [1.0.53] - 2026-05-18
 
 ### Added
