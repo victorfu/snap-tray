@@ -34,6 +34,9 @@ void prepareCompletedSelection(RegionSelector& selector,
                                const QRect& hostGeometry,
                                const QRect& selectionRect)
 {
+    // RegionSelector is production-owned via WA_DeleteOnClose, but this test
+    // stack-owns it and drives the event loop while floating windows settle.
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
     selector.setGeometry(hostGeometry);
     selector.show();
     QCoreApplication::processEvents();
@@ -41,9 +44,9 @@ void prepareCompletedSelection(RegionSelector& selector,
     RegionSelectorTestAccess::setSelectionRect(selector, selectionRect);
     RegionSelectorTestAccess::setCurrentTool(selector, ToolId::Arrow);
 
-    RegionSelectorTestAccess::invokePaint(selector, QRegion(selector.rect()));
+    RegionSelectorTestAccess::syncFloatingUiLayoutFromPaint(selector, QRegion(selector.rect()));
     QCoreApplication::processEvents();
-    RegionSelectorTestAccess::invokePaint(selector, QRegion(selector.rect()));
+    RegionSelectorTestAccess::syncFloatingUiLayoutFromPaint(selector, QRegion(selector.rect()));
     QCoreApplication::processEvents();
 }
 
@@ -172,9 +175,9 @@ void tst_RegionSelectorAttachmentLayout::testTallNarrowSelectionHidesRegionContr
     const QRect selectionRect(80, hostGeometry.height() - 320, targetWidth, 220);
     RegionSelectorTestAccess::setSelectionRect(selector, selectionRect);
     RegionSelectorTestAccess::setCurrentTool(selector, ToolId::Arrow);
-    RegionSelectorTestAccess::invokePaint(selector, QRegion(selector.rect()));
+    RegionSelectorTestAccess::syncFloatingUiLayoutFromPaint(selector, QRegion(selector.rect()));
     QCoreApplication::processEvents();
-    RegionSelectorTestAccess::invokePaint(selector, QRegion(selector.rect()));
+    RegionSelectorTestAccess::syncFloatingUiLayoutFromPaint(selector, QRegion(selector.rect()));
     QCoreApplication::processEvents();
 
     const QRect dimensionInfoGeometry =
