@@ -3970,18 +3970,16 @@ void RegionSelector::copyToClipboard()
         return;
     }
 
-    recordCaptureSession(prepared.image);
-    emit copyRequested(prepared.pixmap);
-
     const QImage clipboardImage = prepared.image;
     const auto clipboardWriter = m_guiClipboardWriter;
-    QTimer::singleShot(0, qApp, [clipboardImage, clipboardWriter]() {
-        if (clipboardWriter) {
-            clipboardWriter(clipboardImage);
-            return;
-        }
-        PlatformFeatures::instance().copyImageToClipboardForGui(clipboardImage);
-    });
+    if (clipboardWriter) {
+        clipboardWriter(clipboardImage);
+    } else {
+        PlatformFeatures::instance().copyImageToClipboardPersistently(clipboardImage);
+    }
+
+    recordCaptureSession(prepared.image);
+    emit copyRequested(prepared.pixmap);
     close();
 }
 

@@ -300,6 +300,23 @@ public:
         return selector.m_selectionCompletionHandoffPending;
     }
 
+    static bool isClosing(const RegionSelector& selector)
+    {
+        return selector.m_isClosing;
+    }
+
+    static void setGuiClipboardWriter(
+        RegionSelector& selector,
+        std::function<bool(const QImage&)> writer)
+    {
+        selector.m_guiClipboardWriter = std::move(writer);
+    }
+
+    static void invokeCopyToClipboard(RegionSelector& selector)
+    {
+        selector.copyToClipboard();
+    }
+
     static bool staticCaptureBackgroundVisible(const RegionSelector& selector)
     {
         return selector.m_staticCaptureBackgroundWindow &&

@@ -384,6 +384,11 @@ target_link_libraries(RegionSelector_TransientUiCancelGuard PRIVATE snaptray_ui 
 add_test(NAME RegionSelector_TransientUiCancelGuard COMMAND RegionSelector_TransientUiCancelGuard)
 set_tests_properties(RegionSelector_TransientUiCancelGuard PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RegionSelector_CopyToClipboard RegionSelector/tst_CopyToClipboard.cpp)
+target_link_libraries(RegionSelector_CopyToClipboard PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME RegionSelector_CopyToClipboard COMMAND RegionSelector_CopyToClipboard)
+set_tests_properties(RegionSelector_CopyToClipboard PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(RegionSelector_HistoryReplay RegionSelector/tst_HistoryReplay.cpp)
 target_link_libraries(RegionSelector_HistoryReplay PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME RegionSelector_HistoryReplay COMMAND RegionSelector_HistoryReplay)
