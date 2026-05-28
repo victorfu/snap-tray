@@ -30,6 +30,8 @@
 #include <QFutureWatcher>
 #include <QLocale>
 #include <QMessageBox>
+#include <QPushButton>
+#include <QSettings>
 #include <QUrl>
 #include <QVariantMap>
 #include <QtConcurrent/QtConcurrentRun>
@@ -112,13 +114,6 @@ CursorCompanionStyle cursorCompanionStyleFromUiValue(int value)
     }
 }
 
-bool isPrintScreenSequence(const QString& keySequence)
-{
-    const QString normalized = keySequence.toLower().simplified();
-    return normalized == QStringLiteral("print")
-        || normalized == QStringLiteral("native:0x2c");
-}
-
 bool isWindowsBuild()
 {
 #ifdef Q_OS_WIN
@@ -147,55 +142,6 @@ void showHotkeyRegistrationWarning(SnapTray::HotkeyManager& manager,
         SnapTray::SettingsBackend::tr("Hotkey Conflict"),
         message,
         4000);
-}
-
-bool maybeOfferWindowsPrintScreenSnippingDisable(SnapTray::HotkeyManager& manager,
-                                                 SnapTray::HotkeyAction action)
-{
-#ifndef Q_OS_WIN
-    Q_UNUSED(manager)
-    Q_UNUSED(action)
-    return false;
-#else
-    const SnapTray::HotkeyConfig config = manager.getConfig(action);
-    const QString conflictDescription = manager.getConflictDescription(config.keySequence, action);
-    if (!SnapTray::SettingsBackend::shouldOfferWindowsPrintScreenSnippingDisable(
-            config,
-            conflictDescription,
-            true,
-            SnapTray::WindowsPrintScreenSettingsManager::instance().isSnippingShortcutEnabled())) {
-        return false;
-    }
-
-    const QMessageBox::StandardButton choice = QMessageBox::question(
-        nullptr,
-        SnapTray::SettingsBackend::tr("Disable Windows Print Screen Shortcut?"),
-        SnapTray::SettingsBackend::tr(
-            "%1 was saved, but Windows is using Print Screen for Snipping Tool. "
-            "SnapTray can turn off this Windows setting; restart SnapTray, then try again.")
-            .arg(config.displayName),
-        QMessageBox::Yes | QMessageBox::No,
-        QMessageBox::Yes);
-
-    if (choice == QMessageBox::Yes) {
-        if (SnapTray::WindowsPrintScreenSettingsManager::instance().disableSnippingShortcut()) {
-            SnapTray::QmlToast::screenToast().showToast(
-                SnapTray::QmlToast::Level::Success,
-                SnapTray::SettingsBackend::tr("Windows Print Screen Shortcut Disabled"),
-                SnapTray::SettingsBackend::tr("Restart SnapTray, then try Print Screen again."),
-                4500);
-        } else {
-            SnapTray::QmlToast::screenToast().showToast(
-                SnapTray::QmlToast::Level::Error,
-                SnapTray::SettingsBackend::tr("Windows Setting Not Changed"),
-                SnapTray::SettingsBackend::tr(
-                    "SnapTray could not change the Windows Print Screen setting."),
-                4500);
-        }
-    }
-
-    return true;
-#endif
 }
 
 void showRestoreAllHotkeyWarning(const QStringList& failedHotkeys)
@@ -233,16 +179,61 @@ QString SettingsBackend::hotkeyRegistrationWarningMessage(const HotkeyConfig& co
         .arg(config.displayName, conflictDescription);
 }
 
-bool SettingsBackend::shouldOfferWindowsPrintScreenSnippingDisable(
-    const HotkeyConfig& config,
-    const QString& conflictDescription,
+bool SettingsBackend::shouldPromptWindowsPrintScreenSnippingDisable(
     bool isWindows,
-    bool snippingShortcutEnabled)
+    bool snippingShortcutEnabled,
+    bool userDismissed)
 {
-    return isWindows
-        && snippingShortcutEnabled
-        && conflictDescription.isEmpty()
-        && isPrintScreenSequence(config.keySequence);
+    return isWindows && snippingShortcutEnabled && !userDismissed;
+}
+
+void SettingsBackend::checkWindowsPrintScreenSnippingConflict()
+{
+#ifdef Q_OS_WIN
+    auto& manager = WindowsPrintScreenSettingsManager::instance();
+    QSettings settings = getSettings();
+    const bool userDismissed =
+        settings.value(QStringLiteral("hotkeys/ignorePrintScreenSnippingPrompt"), false).toBool();
+
+    if (!shouldPromptWindowsPrintScreenSnippingDisable(
+            true, manager.isSnippingShortcutEnabled(), userDismissed)) {
+        return;
+    }
+
+    QMessageBox msgBox;
+    msgBox.setWindowTitle(tr("Disable Windows Print Screen Shortcut?"));
+    msgBox.setIcon(QMessageBox::Question);
+    msgBox.setText(
+        tr("Windows is using the Print Screen key to open its Snipping Tool, "
+           "which stops SnapTray from using Print Screen as a shortcut. "
+           "Turn this off so SnapTray can use the Print Screen key?")
+        + QStringLiteral("\n\n")
+        + tr("SnapTray must be restarted for the change to take effect."));
+    QPushButton* yesButton = msgBox.addButton(QMessageBox::Yes);
+    msgBox.addButton(QMessageBox::No);
+    QPushButton* dontAskButton =
+        msgBox.addButton(tr("No, don't ask again"), QMessageBox::RejectRole);
+    msgBox.setDefaultButton(yesButton);
+    msgBox.exec();
+
+    if (msgBox.clickedButton() == yesButton) {
+        if (manager.disableSnippingShortcut()) {
+            QmlToast::screenToast().showToast(
+                QmlToast::Level::Success,
+                tr("Windows Print Screen Shortcut Disabled"),
+                tr("Restart SnapTray, then set Print Screen as a shortcut."),
+                4500);
+        } else {
+            QmlToast::screenToast().showToast(
+                QmlToast::Level::Error,
+                tr("Windows Setting Not Changed"),
+                tr("SnapTray could not change the Windows Print Screen setting."),
+                4500);
+        }
+    } else if (msgBox.clickedButton() == dontAskButton) {
+        settings.setValue(QStringLiteral("hotkeys/ignorePrintScreenSnippingPrompt"), true);
+    }
+#endif
 }
 
 SettingsBackend::SettingsBackend(QObject* parent)
@@ -1133,9 +1124,7 @@ void SettingsBackend::editHotkey(int action)
         const auto hotkeyAction = static_cast<HotkeyAction>(action);
         const bool updated = mgr.updateHotkey(hotkeyAction, dialog.keySequence());
         emit hotkeysChanged();
-        const bool offeredSnippingDisable =
-            maybeOfferWindowsPrintScreenSnippingDisable(mgr, hotkeyAction);
-        if (!updated && !offeredSnippingDisable) {
+        if (!updated) {
             showHotkeyRegistrationWarning(mgr, hotkeyAction);
         }
     }
@@ -1154,9 +1143,7 @@ void SettingsBackend::resetHotkey(int action)
     const auto hotkeyAction = static_cast<HotkeyAction>(action);
     const bool reset = mgr.resetToDefault(hotkeyAction);
     emit hotkeysChanged();
-    const bool offeredSnippingDisable =
-        maybeOfferWindowsPrintScreenSnippingDisable(mgr, hotkeyAction);
-    if (!reset && !offeredSnippingDisable) {
+    if (!reset) {
         showHotkeyRegistrationWarning(mgr, hotkeyAction);
     }
 }

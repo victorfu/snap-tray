@@ -108,11 +108,10 @@ public:
     static QString hotkeyRegistrationWarningMessage(const HotkeyConfig& config,
                                                     const QString& conflictDescription,
                                                     bool isWindows);
-    static bool shouldOfferWindowsPrintScreenSnippingDisable(
-        const HotkeyConfig& config,
-        const QString& conflictDescription,
+    static bool shouldPromptWindowsPrintScreenSnippingDisable(
         bool isWindows,
-        bool snippingShortcutEnabled);
+        bool snippingShortcutEnabled,
+        bool userDismissed);
 
     // ──── General ────
     bool startOnLogin() const;
@@ -258,6 +257,9 @@ public:
     Q_INVOKABLE void clearHotkey(int action);
     Q_INVOKABLE void resetHotkey(int action);
     Q_INVOKABLE void restoreAllHotkeys();
+    // Proactively offers to disable the Windows "Print Screen opens Snipping
+    // Tool" shortcut so Print Screen can be bound as a global hotkey.
+    Q_INVOKABLE void checkWindowsPrintScreenSnippingConflict();
 
     Q_INVOKABLE QVariantList audioDevices() const;
 

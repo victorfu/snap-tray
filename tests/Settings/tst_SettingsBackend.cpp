@@ -73,7 +73,7 @@ private slots:
     void testCheckForUpdates_UnsupportedInstallSource_EmitsUnavailable();
     void testLastCheckedTextChanged_WhenCoordinatorRecordsSuccessfulCheck();
     void testHotkeyRegistrationWarningMessage_WindowsPrintScreenUsesGenericFallback();
-    void testShouldOfferWindowsPrintScreenDisable_WhenRegisteredAndSnippingEnabled();
+    void testShouldPromptWindowsPrintScreenDisable_DecisionMatrix();
     void testFeatureSupportPropertiesFollowPlatformCapabilities();
     void testHotkeyCategoriesHideRecordingWhenUnsupported();
 
@@ -343,18 +343,20 @@ void tst_SettingsBackend::testHotkeyRegistrationWarningMessage_WindowsPrintScree
     QVERIFY(!message.contains(QStringLiteral("SnapTray can turn off this Windows setting")));
 }
 
-void tst_SettingsBackend::testShouldOfferWindowsPrintScreenDisable_WhenRegisteredAndSnippingEnabled()
+void tst_SettingsBackend::testShouldPromptWindowsPrintScreenDisable_DecisionMatrix()
 {
-    SnapTray::HotkeyConfig config;
-    config.displayName = QStringLiteral("Region Capture");
-    config.keySequence = QStringLiteral("Print");
-    config.status = SnapTray::HotkeyStatus::Registered;
+    // Prompt only on Windows, when snipping is still enabled, and the user has
+    // not dismissed the prompt before.
+    QVERIFY(SettingsBackend::shouldPromptWindowsPrintScreenSnippingDisable(true, true, false));
 
-    QVERIFY(SettingsBackend::shouldOfferWindowsPrintScreenSnippingDisable(
-        config,
-        QString(),
-        true,
-        true));
+    // Snipping already disabled — nothing to offer.
+    QVERIFY(!SettingsBackend::shouldPromptWindowsPrintScreenSnippingDisable(true, false, false));
+
+    // User chose "don't ask again".
+    QVERIFY(!SettingsBackend::shouldPromptWindowsPrintScreenSnippingDisable(true, true, true));
+
+    // Non-Windows platforms never prompt.
+    QVERIFY(!SettingsBackend::shouldPromptWindowsPrintScreenSnippingDisable(false, true, false));
 }
 
 void tst_SettingsBackend::testFeatureSupportPropertiesFollowPlatformCapabilities()

@@ -13,7 +13,13 @@
 #include <QDialog>
 
 class QLabel;
+class QHideEvent;
 class QPushButton;
+class tst_TypeHotkeyDialog;
+
+#ifdef Q_OS_WIN
+#include <qt_windows.h>
+#endif
 
 namespace SnapTray {
 
@@ -61,8 +67,19 @@ protected:
     bool event(QEvent* e) override;
 
 private:
+    friend class ::tst_TypeHotkeyDialog;
+
     void setupUi();
     void updateDisplay();
+    void captureKey(int key, Qt::KeyboardModifiers modifiers);
+
+#ifdef Q_OS_WIN
+    void hideEvent(QHideEvent* event) override;
+    void installPrintScreenHook();
+    void uninstallPrintScreenHook();
+    void captureWindowsPrintScreen(Qt::KeyboardModifiers modifiers);
+    static LRESULT CALLBACK printScreenHookProc(int code, WPARAM wParam, LPARAM lParam);
+#endif
 
     QString modifiersToString(Qt::KeyboardModifiers modifiers) const;
     QString modifiersToDisplayString(Qt::KeyboardModifiers modifiers) const;
@@ -82,6 +99,11 @@ private:
     QString m_initialKeySequence;
     Qt::KeyboardModifiers m_currentModifiers;
     bool m_hasKey;
+
+#ifdef Q_OS_WIN
+    HHOOK m_printScreenHook = nullptr;
+    static TypeHotkeyDialog* s_printScreenHookDialog;
+#endif
 
     // Constants
     static constexpr int kDialogWidth = 400;

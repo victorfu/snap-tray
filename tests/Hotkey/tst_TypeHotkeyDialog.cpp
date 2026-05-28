@@ -11,6 +11,7 @@ class tst_TypeHotkeyDialog : public QObject
 
 private slots:
     void testPrintKeyCapture_StoresPlatformSequence();
+    void testWindowsPrintScreenNativeCapture_StoresPlatformSequence();
     void testNativePrintScreenFormat_IsReadable();
 };
 
@@ -22,6 +23,19 @@ void tst_TypeHotkeyDialog::testPrintKeyCapture_StoresPlatformSequence()
     QApplication::sendEvent(&dialog, &press);
 
     QCOMPARE(dialog.keySequence(), QStringLiteral("Print"));
+}
+
+void tst_TypeHotkeyDialog::testWindowsPrintScreenNativeCapture_StoresPlatformSequence()
+{
+#ifndef Q_OS_WIN
+    QSKIP("Windows native Print Screen capture is only available on Windows.");
+#else
+    SnapTray::TypeHotkeyDialog dialog;
+
+    dialog.captureWindowsPrintScreen(Qt::ControlModifier | Qt::ShiftModifier);
+
+    QCOMPARE(dialog.keySequence(), QStringLiteral("Ctrl+Shift+Print"));
+#endif
 }
 
 void tst_TypeHotkeyDialog::testNativePrintScreenFormat_IsReadable()
