@@ -118,7 +118,7 @@ jobs:
       # backend before a compiler invocation gives up. The default is 10s, which
       # a single parallel build occasionally exceeds when the GHA cache service
       # is slow, failing one object file and aborting the whole build.
-      SCCACHE_CONF: ${{ runner.temp }}\sccache.toml
+      SCCACHE_CONF: ${{ github.workspace }}\sccache.toml
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
