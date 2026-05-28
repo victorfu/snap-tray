@@ -112,6 +112,13 @@ jobs:
 
   build-windows:
     runs-on: windows-latest
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      # Give the sccache server more time to initialize its GitHub Actions cache
+      # backend before a compiler invocation gives up. The default is 10s, which
+      # a single parallel build occasionally exceeds when the GHA cache service
+      # is slow, failing one object file and aborting the whole build.
+      SCCACHE_CONF: ${{ runner.temp }}\sccache.toml
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -127,8 +134,9 @@ jobs:
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
-        env:
-          SCCACHE_GHA_ENABLED: "true"
+
+      - name: Configure sccache startup timeout
+        run: Set-Content -Path $env:SCCACHE_CONF -Value 'server_startup_timeout_ms = 30000'
 
       - name: Setup MSVC Developer Command Prompt
         uses: ilammy/msvc-dev-cmd@v1
@@ -171,13 +179,9 @@ jobs:
             -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR" `
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache `
             -DCMAKE_C_COMPILER_LAUNCHER=sccache
-        env:
-          SCCACHE_GHA_ENABLED: "true"
 
       - name: Build
         run: cmake --build build --config Release --parallel
-        env:
-          SCCACHE_GHA_ENABLED: "true"
 
       - name: Show sccache stats
         if: always()
