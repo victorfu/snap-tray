@@ -6,6 +6,18 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+## [1.0.55] - 2026-05-28
+
+### Improved
+
+- Improved Windows CI and release-build reliability by keeping sccache configuration inside the workspace and allowing slower server startup.
+- Refreshed release and update metadata after v1.0.54 so the website and in-app update feeds stay aligned.
+
+### Fixed
+
+- Fixed Windows Print Screen capture binding so the shortcut can be registered reliably as a global hotkey.
+- Fixed hidden toast windows so they no longer intercept input when notifications are not visible.
+
 ## [1.0.54] - 2026-05-27
 
 ### Added
