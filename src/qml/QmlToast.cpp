@@ -82,6 +82,13 @@ void QmlToast::cleanupForShutdown()
     m_rootItem = nullptr;
 }
 
+void QmlToast::hideNativeWindow()
+{
+    if (m_view) {
+        m_view->hide();
+    }
+}
+
 void QmlToast::destroyView()
 {
     if (!m_view) {
@@ -167,6 +174,9 @@ void QmlToast::ensureView()
         m_view = QmlOverlayManager::instance().createParentOverlay(kToastQmlUrl, m_parentWidget);
     }
 
+    m_view->setFlag(Qt::WindowDoesNotAcceptFocus, true);
+    m_view->setFlag(Qt::WindowTransparentForInput, true);
+
     connect(m_view, &QObject::destroyed, this, [this]() {
         m_view = nullptr;
         m_rootItem = nullptr;
@@ -179,7 +189,11 @@ void QmlToast::ensureView()
     m_rootItem = m_view->rootObject();
     if (!m_rootItem) {
         qWarning() << "QmlToast: rootObject is null after loading Toast.qml";
+        return;
     }
+
+    connect(m_rootItem, SIGNAL(hideFinished()),
+            this, SLOT(hideNativeWindow()));
 }
 
 void QmlToast::setQmlProperties(Level level, const QString& title,

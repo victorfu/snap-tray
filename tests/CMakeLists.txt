@@ -79,7 +79,7 @@ add_test(NAME Qml_UpdateDialogViewModel COMMAND Qml_UpdateDialogViewModel)
 set_tests_properties(Qml_UpdateDialogViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(Qml_PlacementHelpers Qml/tst_PlacementHelpers.cpp)
-target_link_libraries(Qml_PlacementHelpers PRIVATE snaptray_ui Qt6::Test)
+target_link_libraries(Qml_PlacementHelpers PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
 add_test(NAME Qml_PlacementHelpers COMMAND Qml_PlacementHelpers)
 set_tests_properties(Qml_PlacementHelpers PROPERTIES TIMEOUT 60 LABELS "unit")
 
