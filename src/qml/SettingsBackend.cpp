@@ -208,7 +208,8 @@ void SettingsBackend::checkWindowsPrintScreenSnippingConflict()
            "which stops SnapTray from using Print Screen as a shortcut. "
            "Turn this off so SnapTray can use the Print Screen key?")
         + QStringLiteral("\n\n")
-        + tr("SnapTray must be restarted for the change to take effect."));
+        + tr("After this, restart SnapTray. If Windows still opens the Snipping "
+             "Tool, sign out of Windows (or restart) and try again."));
     QPushButton* yesButton = msgBox.addButton(QMessageBox::Yes);
     msgBox.addButton(QMessageBox::No);
     QPushButton* dontAskButton =
@@ -221,7 +222,8 @@ void SettingsBackend::checkWindowsPrintScreenSnippingConflict()
             QmlToast::screenToast().showToast(
                 QmlToast::Level::Success,
                 tr("Windows Print Screen Shortcut Disabled"),
-                tr("Restart SnapTray, then set Print Screen as a shortcut."),
+                tr("Restart SnapTray to use Print Screen. If it still opens the "
+                   "Snipping Tool, sign out of Windows and back in."),
                 4500);
         } else {
             QmlToast::screenToast().showToast(
