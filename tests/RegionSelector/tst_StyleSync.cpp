@@ -65,6 +65,7 @@ private slots:
     void testUsesAuthorityModeByDefault();
     void testSelectionBodyHoverUsesMoveCursor();
     void testSelectionBodyHoverUsesEventPosWhenLiveCursorLags();
+    void testSelectionCompletionShowsToolbarBeforeNextPaint();
     void testSelectionDragUsesClosedHandCursor();
     void testOverlayRequestRestoreReturnsArrowToolCursor();
     void testFloatingToolbarWindowOwnsArrowCursor();
@@ -200,6 +201,36 @@ void TestRegionSelectorStyleSync::testSelectionBodyHoverUsesEventPosWhenLiveCurs
     verifyMoveCursor(selector.cursor());
 
     QCursor::setPos(originalCursorPos);
+}
+
+void TestRegionSelectorStyleSync::testSelectionCompletionShowsToolbarBeforeNextPaint()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        QSKIP("No screen available for selection completion toolbar test.");
+    }
+
+    RegionSelector selector;
+    QPixmap capture(screen->geometry().size());
+    capture.fill(Qt::black);
+    selector.initializeForScreen(screen, capture);
+    RegionSelectorTestAccess::markInitialRevealRevealed(selector);
+
+    const QPoint start(40, 40);
+    const QPoint end(180, 150);
+    RegionSelectorTestAccess::dispatchMousePress(selector, start);
+
+    QMouseEvent moveEvent(QEvent::MouseMove,
+                          QPointF(end),
+                          QPointF(end),
+                          Qt::NoButton,
+                          Qt::LeftButton,
+                          Qt::NoModifier);
+    selector.m_inputHandler->handleMouseMove(&moveEvent);
+
+    RegionSelectorTestAccess::dispatchMouseRelease(selector, end);
+
+    QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
 }
 
 void TestRegionSelectorStyleSync::testSelectionDragUsesClosedHandCursor()

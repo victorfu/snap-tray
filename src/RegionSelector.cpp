@@ -948,7 +948,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             if (m_quickPinMode && !m_inputState.multiRegionMode) {
                 finishSelection();
             } else if (!m_selectionCompletionHandoffPending) {
-                syncFloatingUiCursor();
+                syncCompletedSelectionFloatingUi();
             }
         });
     connect(m_inputHandler, &RegionInputHandler::fullScreenSelectionRequested,
@@ -973,7 +973,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             if (m_quickPinMode && !m_inputState.multiRegionMode) {
                 finishSelection();
             } else if (!m_selectionCompletionHandoffPending) {
-                syncFloatingUiCursor();
+                syncCompletedSelectionFloatingUi();
             }
         });
     connect(m_inputHandler, &RegionInputHandler::detectionCleared,
@@ -2745,6 +2745,12 @@ void RegionSelector::syncDetachedSelectionUiDuringPaint()
         }
         hideSelectionFloatingUi(hasSelectableCapture && !m_exportInProgress);
     }
+}
+
+void RegionSelector::syncCompletedSelectionFloatingUi()
+{
+    syncDetachedSelectionUiDuringPaint();
+    syncFloatingUiCursor();
 }
 
 void RegionSelector::restoreDetachedSelectionFloatingUiIfNeeded()
