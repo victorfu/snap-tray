@@ -2718,12 +2718,6 @@ Jį gali naudoti kita programa.</translation>
         <translation>Vaizdai (*.png *.jpg *.jpeg *.bmp *.svg)</translation>
         </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="149" />
-        <location filename="../src/qml/SettingsBackend.cpp" line="213" />
-        <source>%1 was saved, but Windows is using Print Screen for Snipping Tool. SnapTray can turn off this Windows setting; restart SnapTray, then try again.</source>
-        <translation>%1 išsaugota, bet „Windows“ naudoja „Print Screen“ įrankiui „Snipping Tool“. „SnapTray“ gali išjungti šį „Windows“ nustatymą; paleiskite „SnapTray“ iš naujo ir bandykite dar kartą.</translation>
-        </message>
-    <message>
         <location filename="../src/qml/SettingsBackend.cpp" line="147" />
         <source>Disable Windows Print Screen Shortcut?</source>
         <translation>Išjungti „Windows“ „Print Screen“ spartųjį klavišą?</translation>
@@ -2732,11 +2726,6 @@ Jį gali naudoti kita programa.</translation>
         <location filename="../src/qml/SettingsBackend.cpp" line="159" />
         <source>Windows Print Screen Shortcut Disabled</source>
         <translation>„Windows“ „Print Screen“ spartusis klavišas išjungtas</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="161" />
-        <source>Restart SnapTray, then try Print Screen again.</source>
-        <translation>Paleiskite „SnapTray“ iš naujo ir dar kartą bandykite „Print Screen“.</translation>
         </message>
     <message>
         <location filename="../src/qml/SettingsBackend.cpp" line="166" />
@@ -2757,6 +2746,26 @@ Jį gali naudoti kita programa.</translation>
         <location filename="../src/qml/SettingsBackend.cpp" line="170" />
         <source>%1 was saved, but it could not be activated. %2</source>
         <translation>%1 išsaugota, bet nepavyko suaktyvinti. %2</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="207" />
+        <source>Windows is using the Print Screen key to open its Snipping Tool, which stops SnapTray from using Print Screen as a shortcut. Turn this off so SnapTray can use the Print Screen key?</source>
+        <translation>„Windows“ naudoja „Print Screen“ klavišą savo „Snipping Tool“ atidaryti, todėl „SnapTray“ negali naudoti „Print Screen“ kaip sparčiojo klavišo. Išjungti tai, kad „SnapTray“ galėtų naudoti „Print Screen“ klavišą?</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="211" />
+        <source>After this, restart SnapTray. If Windows still opens the Snipping Tool, sign out of Windows (or restart) and try again.</source>
+        <translation>Po to paleiskite „SnapTray“ iš naujo. Jei „Windows“ vis tiek atidaro „Snipping Tool“, atsijunkite nuo „Windows“ (arba paleiskite iš naujo) ir bandykite dar kartą.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="215" />
+        <source>No, don't ask again</source>
+        <translation>Ne, daugiau neklausti</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="224" />
+        <source>Restart SnapTray to use Print Screen. If it still opens the Snipping Tool, sign out of Windows and back in.</source>
+        <translation>Paleiskite „SnapTray“ iš naujo, kad galėtumėte naudoti „Print Screen“. Jei „Snipping Tool“ vis tiek atidaromas, atsijunkite nuo „Windows“ ir vėl prisijunkite.</translation>
         </message>
 </context>
 <context>

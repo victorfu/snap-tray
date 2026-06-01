@@ -124,12 +124,19 @@ void tst_QmlTranslations::testHotkeyConflictGuidanceTranslatedForAllLocales()
 {
     const QByteArray context = "SnapTray::SettingsBackend";
     const QList<QByteArray> sources = {
-        QByteArray(
-            "%1 was saved, but Windows is using Print Screen for Snipping Tool. "
-            "SnapTray can turn off this Windows setting; restart SnapTray, then try again."),
         QByteArray("Disable Windows Print Screen Shortcut?"),
+        QByteArray(
+            "Windows is using the Print Screen key to open its Snipping Tool, "
+            "which stops SnapTray from using Print Screen as a shortcut. "
+            "Turn this off so SnapTray can use the Print Screen key?"),
+        QByteArray(
+            "After this, restart SnapTray. If Windows still opens the Snipping "
+            "Tool, sign out of Windows (or restart) and try again."),
+        QByteArray("No, don't ask again"),
         QByteArray("Windows Print Screen Shortcut Disabled"),
-        QByteArray("Restart SnapTray, then try Print Screen again."),
+        QByteArray(
+            "Restart SnapTray to use Print Screen. If it still opens the "
+            "Snipping Tool, sign out of Windows and back in."),
         QByteArray("Windows Setting Not Changed"),
         QByteArray("SnapTray could not change the Windows Print Screen setting."),
     };

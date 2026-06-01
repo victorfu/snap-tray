@@ -2851,12 +2851,6 @@ It may be in use by another application.</source>
         <translation>圖片 (*.png *.jpg *.jpeg *.bmp *.svg)</translation>
         </message>
     <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="149" />
-        <location filename="../src/qml/SettingsBackend.cpp" line="213" />
-        <source>%1 was saved, but Windows is using Print Screen for Snipping Tool. SnapTray can turn off this Windows setting; restart SnapTray, then try again.</source>
-        <translation>已儲存 %1，但 Windows 正將 Print Screen 用於 Snipping Tool。SnapTray 可以關閉此 Windows 設定；請重新啟動 SnapTray，然後再試一次。</translation>
-        </message>
-    <message>
         <location filename="../src/qml/SettingsBackend.cpp" line="147" />
         <source>Disable Windows Print Screen Shortcut?</source>
         <translation>關閉 Windows Print Screen 快捷鍵？</translation>
@@ -2865,11 +2859,6 @@ It may be in use by another application.</source>
         <location filename="../src/qml/SettingsBackend.cpp" line="159" />
         <source>Windows Print Screen Shortcut Disabled</source>
         <translation>已關閉 Windows Print Screen 快捷鍵</translation>
-        </message>
-    <message>
-        <location filename="../src/qml/SettingsBackend.cpp" line="161" />
-        <source>Restart SnapTray, then try Print Screen again.</source>
-        <translation>請重新啟動 SnapTray，然後再試 Print Screen。</translation>
         </message>
     <message>
         <location filename="../src/qml/SettingsBackend.cpp" line="166" />
@@ -2890,6 +2879,26 @@ It may be in use by another application.</source>
         <location filename="../src/qml/SettingsBackend.cpp" line="170" />
         <source>%1 was saved, but it could not be activated. %2</source>
         <translation>已儲存 %1，但無法啟用。%2</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="207" />
+        <source>Windows is using the Print Screen key to open its Snipping Tool, which stops SnapTray from using Print Screen as a shortcut. Turn this off so SnapTray can use the Print Screen key?</source>
+        <translation>Windows 正在使用 Print Screen 鍵開啟其 Snipping Tool，導致 SnapTray 無法將 Print Screen 用作快捷鍵。是否關閉此設定，讓 SnapTray 可以使用 Print Screen 鍵？</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="211" />
+        <source>After this, restart SnapTray. If Windows still opens the Snipping Tool, sign out of Windows (or restart) and try again.</source>
+        <translation>完成後請重新啟動 SnapTray。若 Windows 仍會開啟 Snipping Tool，請登出 Windows（或重新啟動）後再試一次。</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="215" />
+        <source>No, don't ask again</source>
+        <translation>否，不要再詢問</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="224" />
+        <source>Restart SnapTray to use Print Screen. If it still opens the Snipping Tool, sign out of Windows and back in.</source>
+        <translation>重新啟動 SnapTray 即可使用 Print Screen。若仍會開啟 Snipping Tool，請登出 Windows 後重新登入。</translation>
         </message>
 </context>
 <context>
