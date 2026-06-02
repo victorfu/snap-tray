@@ -67,8 +67,8 @@ private slots:
     void testUsesAuthorityModeByDefault();
     void testSelectionBodyHoverUsesMoveCursor();
     void testSelectionBodyHoverUsesEventPosWhenLiveCursorLags();
-    void testSelectionCompletionShowsToolbarBeforeNextPaint();
-    void testSelectionCompletionPositionsToolbarBeforeNextPaint();
+    void testSelectionCompletionShowsToolbarAfterWindowsHandoff();
+    void testSelectionCompletionPositionsToolbarAfterWindowsHandoff();
     void testSelectionDragUsesClosedHandCursor();
     void testOverlayRequestRestoreReturnsArrowToolCursor();
     void testFloatingToolbarWindowOwnsArrowCursor();
@@ -206,7 +206,7 @@ void TestRegionSelectorStyleSync::testSelectionBodyHoverUsesEventPosWhenLiveCurs
     QCursor::setPos(originalCursorPos);
 }
 
-void TestRegionSelectorStyleSync::testSelectionCompletionShowsToolbarBeforeNextPaint()
+void TestRegionSelectorStyleSync::testSelectionCompletionShowsToolbarAfterWindowsHandoff()
 {
     QScreen* screen = QGuiApplication::primaryScreen();
     if (!screen) {
@@ -218,6 +218,10 @@ void TestRegionSelectorStyleSync::testSelectionCompletionShowsToolbarBeforeNextP
     capture.fill(Qt::black);
     selector.initializeForScreen(screen, capture);
     RegionSelectorTestAccess::markInitialRevealRevealed(selector);
+#ifdef Q_OS_WIN
+    selector.show();
+    QCoreApplication::processEvents();
+#endif
 
     const QPoint start(40, 40);
     const QPoint end(180, 150);
@@ -233,10 +237,17 @@ void TestRegionSelectorStyleSync::testSelectionCompletionShowsToolbarBeforeNextP
 
     RegionSelectorTestAccess::dispatchMouseRelease(selector, end);
 
+#ifdef Q_OS_WIN
+    QVERIFY(RegionSelectorTestAccess::selectionCompletionHandoffPending(selector));
+    QVERIFY(!RegionSelectorTestAccess::toolbarVisible(selector));
+    QTRY_VERIFY(!RegionSelectorTestAccess::selectionCompletionHandoffPending(selector));
+    QTRY_VERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+#else
     QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+#endif
 }
 
-void TestRegionSelectorStyleSync::testSelectionCompletionPositionsToolbarBeforeNextPaint()
+void TestRegionSelectorStyleSync::testSelectionCompletionPositionsToolbarAfterWindowsHandoff()
 {
     QScreen* screen = QGuiApplication::primaryScreen();
     if (!screen) {
@@ -248,6 +259,10 @@ void TestRegionSelectorStyleSync::testSelectionCompletionPositionsToolbarBeforeN
     capture.fill(Qt::black);
     selector.initializeForScreen(screen, capture);
     RegionSelectorTestAccess::markInitialRevealRevealed(selector);
+#ifdef Q_OS_WIN
+    selector.show();
+    QCoreApplication::processEvents();
+#endif
 
     const QSize viewportSize = selector.size();
     if (viewportSize.width() < 360 || viewportSize.height() < 260) {
@@ -271,7 +286,14 @@ void TestRegionSelectorStyleSync::testSelectionCompletionPositionsToolbarBeforeN
     selector.m_inputHandler->handleMouseMove(&moveEvent);
     RegionSelectorTestAccess::dispatchMouseRelease(selector, end);
 
+#ifdef Q_OS_WIN
+    QVERIFY(RegionSelectorTestAccess::selectionCompletionHandoffPending(selector));
+    QVERIFY(!RegionSelectorTestAccess::toolbarVisible(selector));
+    QTRY_VERIFY(!RegionSelectorTestAccess::selectionCompletionHandoffPending(selector));
+    QTRY_VERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+#else
     QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+#endif
     const QRect toolbarGeometry = RegionSelectorTestAccess::toolbarGeometry(selector);
     QVERIFY(toolbarGeometry.isValid());
     QVERIFY(!toolbarGeometry.isEmpty());
