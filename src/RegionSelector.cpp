@@ -2689,7 +2689,30 @@ void RegionSelector::paintSelectorScene(QPainter& painter, const QRegion& dirtyR
     m_painter->paint(painter, m_backgroundPixmap, dirtyRegion);
 }
 
-void RegionSelector::syncDetachedSelectionUiDuringPaint()
+QRect RegionSelector::currentSelectionDimensionInfoRect() const
+{
+    if (!m_selectionManager || m_inputState.multiRegionMode) {
+        return {};
+    }
+
+    const QRect selectionRect = m_selectionManager->selectionRect();
+    if (!selectionRect.isValid() || selectionRect.isEmpty()) {
+        return {};
+    }
+
+    QFont font;
+    font.setPointSize(12);
+    font.setBold(true);
+
+    return SelectionDimensionLabel::selectionPanelLayout(
+        selectionRect,
+        SelectionDimensionLabel::widgetLabel(selectionRect, m_devicePixelRatio),
+        font,
+        size(),
+        SelectionDimensionLabel::controlAnchorSize(m_selectionManager->aspectRatio() > 0.0)).panelRect;
+}
+
+void RegionSelector::syncDetachedSelectionUiDuringPaint(const QRect& dimensionInfoRectOverride)
 {
     QRect selectionRect = m_selectionManager->selectionRect();
     const bool initialRevealVisible = m_initialRevealState == InitialRevealState::Revealed;
@@ -2710,9 +2733,12 @@ void RegionSelector::syncDetachedSelectionUiDuringPaint()
         }
         if (m_qmlToolbar) {
             if (!m_toolbarUserDragged) {
-                const QRect dimensionInfoRect = m_captureChromeWindow && m_captureChromeWindow->isVisible()
-                    ? m_captureChromeWindow->lastDimensionInfoRect()
-                    : m_painter->lastDimensionInfoRect();
+                const QRect dimensionInfoRect =
+                    dimensionInfoRectOverride.isValid() && !dimensionInfoRectOverride.isEmpty()
+                        ? dimensionInfoRectOverride
+                        : (m_captureChromeWindow && m_captureChromeWindow->isVisible()
+                            ? m_captureChromeWindow->lastDimensionInfoRect()
+                            : m_painter->lastDimensionInfoRect());
                 m_qmlToolbar->positionForSelection(
                     selectionRect,
                     width(),
@@ -2749,7 +2775,7 @@ void RegionSelector::syncDetachedSelectionUiDuringPaint()
 
 void RegionSelector::syncCompletedSelectionFloatingUi()
 {
-    syncDetachedSelectionUiDuringPaint();
+    syncDetachedSelectionUiDuringPaint(currentSelectionDimensionInfoRect());
     syncFloatingUiCursor();
 }
 

@@ -11,8 +11,10 @@
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
 #include "cursor/CursorStyleCatalog.h"
+#include "qml/QmlFloatingToolbar.h"
 #include "settings/RegionCaptureSettingsManager.h"
 #include "region/RegionInputHandler.h"
+#include "region/SelectionDimensionLabel.h"
 #include "tools/ToolManager.h"
 
 namespace {
@@ -66,6 +68,7 @@ private slots:
     void testSelectionBodyHoverUsesMoveCursor();
     void testSelectionBodyHoverUsesEventPosWhenLiveCursorLags();
     void testSelectionCompletionShowsToolbarBeforeNextPaint();
+    void testSelectionCompletionPositionsToolbarBeforeNextPaint();
     void testSelectionDragUsesClosedHandCursor();
     void testOverlayRequestRestoreReturnsArrowToolCursor();
     void testFloatingToolbarWindowOwnsArrowCursor();
@@ -231,6 +234,72 @@ void TestRegionSelectorStyleSync::testSelectionCompletionShowsToolbarBeforeNextP
     RegionSelectorTestAccess::dispatchMouseRelease(selector, end);
 
     QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+}
+
+void TestRegionSelectorStyleSync::testSelectionCompletionPositionsToolbarBeforeNextPaint()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        QSKIP("No screen available for selection completion toolbar placement test.");
+    }
+
+    RegionSelector selector;
+    QPixmap capture(screen->geometry().size());
+    capture.fill(Qt::black);
+    selector.initializeForScreen(screen, capture);
+    RegionSelectorTestAccess::markInitialRevealRevealed(selector);
+
+    const QSize viewportSize = selector.size();
+    if (viewportSize.width() < 360 || viewportSize.height() < 260) {
+        QSKIP("Screen is too small for deterministic toolbar placement test.");
+    }
+
+    const int selectionWidth = qMin(260, viewportSize.width() - 80);
+    const int selectionHeight = 100;
+    const int left = qMax(40, (viewportSize.width() - selectionWidth) / 2);
+    const int top = viewportSize.height() - selectionHeight - 40;
+    const QPoint start(left, top);
+    const QPoint end(left + selectionWidth, top + selectionHeight);
+
+    RegionSelectorTestAccess::dispatchMousePress(selector, start);
+    QMouseEvent moveEvent(QEvent::MouseMove,
+                          QPointF(end),
+                          QPointF(end),
+                          Qt::NoButton,
+                          Qt::LeftButton,
+                          Qt::NoModifier);
+    selector.m_inputHandler->handleMouseMove(&moveEvent);
+    RegionSelectorTestAccess::dispatchMouseRelease(selector, end);
+
+    QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+    const QRect toolbarGeometry = RegionSelectorTestAccess::toolbarGeometry(selector);
+    QVERIFY(toolbarGeometry.isValid());
+    QVERIFY(!toolbarGeometry.isEmpty());
+
+    const QRect selectionRect = RegionSelectorTestAccess::selectionRect(selector);
+    QFont labelFont;
+    labelFont.setPointSize(12);
+    labelFont.setBold(true);
+    const QString dimensions = SelectionDimensionLabel::widgetLabel(
+        selectionRect,
+        RegionSelectorTestAccess::devicePixelRatio(selector));
+    const QRect dimensionRect = SelectionDimensionLabel::selectionPanelLayout(
+        selectionRect,
+        dimensions,
+        labelFont,
+        viewportSize,
+        SelectionDimensionLabel::controlAnchorSize(false)).panelRect;
+    QVERIFY(dimensionRect.isValid());
+    QVERIFY(!dimensionRect.isEmpty());
+
+    const QPoint expectedLocalTopLeft = SnapTray::QmlFloatingToolbar::resolveTopLeftForSelection(
+        selectionRect,
+        toolbarGeometry.size(),
+        QRect(QPoint(), viewportSize),
+        SnapTray::QmlFloatingToolbar::HorizontalAlignment::RightEdge,
+        dimensionRect);
+
+    QCOMPARE(toolbarGeometry.topLeft(), selector.mapToGlobal(expectedLocalTopLeft));
 }
 
 void TestRegionSelectorStyleSync::testSelectionDragUsesClosedHandCursor()

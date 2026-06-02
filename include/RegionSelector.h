@@ -303,7 +303,8 @@ private:
     void resetAnnotationInteractionTracking();
     void syncFloatingUiCursor();
     void paintSelectorScene(QPainter& painter, const QRegion& dirtyRegion);
-    void syncDetachedSelectionUiDuringPaint();
+    QRect currentSelectionDimensionInfoRect() const;
+    void syncDetachedSelectionUiDuringPaint(const QRect& dimensionInfoRectOverride = QRect());
     void syncCompletedSelectionFloatingUi();
     void restoreDetachedSelectionFloatingUiIfNeeded();
     void syncMagnifierOverlayDuringPaint();
