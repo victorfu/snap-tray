@@ -6,6 +6,15 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+## [1.0.56] - 2026-06-03
+
+### Fixed
+
+- Fixed toolbar copy-to-clipboard flows so large images no longer stall the UI before toast feedback appears.
+- Fixed rapid successive copy actions on macOS so an older, slower image encode can no longer overwrite a newer clipboard copy.
+- Fixed selection-completion toolbar placement so floating controls stay synchronized as capture selections finish, including Windows toolbar handoff.
+- Fixed Windows Print Screen setup prompts and localized guidance so applying the shortcut setting is clearer and more reliable.
+
 ## [1.0.55] - 2026-05-28
 
 ### Improved
