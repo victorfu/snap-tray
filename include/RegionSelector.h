@@ -589,7 +589,7 @@ private:
     std::function<std::unique_ptr<snaptray::colorwidgets::ColorPickerDialogCompat>()>
         m_colorPickerDialogFactory;
     std::function<void()> m_restoreAfterDialogCancelledHook;
-    std::function<bool(const QImage&)> m_guiClipboardWriter;
+    std::function<void(const QImage&, std::function<void(bool)>)> m_guiClipboardWriter;
     RegionSelectorTraceProbe* m_traceProbe = nullptr;
 };
 

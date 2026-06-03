@@ -4005,9 +4005,9 @@ void RegionSelector::copyToClipboard()
     const QImage clipboardImage = prepared.image;
     const auto clipboardWriter = m_guiClipboardWriter;
     if (clipboardWriter) {
-        clipboardWriter(clipboardImage);
+        clipboardWriter(clipboardImage, {});
     } else {
-        PlatformFeatures::instance().copyImageToClipboardPersistently(clipboardImage);
+        PlatformFeatures::instance().copyImageToClipboardForGuiAsync(clipboardImage, qApp);
     }
 
     recordCaptureSession(prepared.image);

@@ -125,7 +125,7 @@ void HistoryBackend::copy(int index)
 
     QScreen* exportScreen = QGuiApplication::primaryScreen();
     const QImage clipboardImage = normalizeImageForExport(pixmap.toImage(), exportScreen);
-    PlatformFeatures::instance().copyImageToClipboardForGui(clipboardImage);
+    PlatformFeatures::instance().copyImageToClipboardForGuiAsync(clipboardImage, qApp);
 
     emit closeRequested();
 }

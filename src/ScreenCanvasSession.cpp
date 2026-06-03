@@ -1436,13 +1436,13 @@ void ScreenCanvasSession::handleCopyAction(ToolId)
 
     const QImage clipboardImage = normalizeImageForExport(exportPixmap.toImage(), targetScreen);
     const auto clipboardWriter = m_guiClipboardWriter;
-    QTimer::singleShot(0, qApp, [clipboardImage, clipboardWriter]() {
-        if (clipboardWriter) {
+    if (clipboardWriter) {
+        QTimer::singleShot(0, qApp, [clipboardImage, clipboardWriter]() {
             clipboardWriter(clipboardImage);
-            return;
-        }
-        PlatformFeatures::instance().copyImageToClipboardForGui(clipboardImage);
-    });
+        });
+    } else {
+        PlatformFeatures::instance().copyImageToClipboardForGuiAsync(clipboardImage, qApp);
+    }
     close();
 }
 

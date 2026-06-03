@@ -6,9 +6,12 @@
 #include <QIcon>
 #include <QImage>
 
+#include <functional>
+
 #include "platform/PlatformCapabilities.h"
 
 class OCRManager;
+class QObject;
 class WindowDetector;
 
 class PlatformFeatures
@@ -30,6 +33,10 @@ public:
 
     // Copy image to clipboard for interactive GUI flows.
     bool copyImageToClipboardForGui(const QImage& image) const;
+    void copyImageToClipboardForGuiAsync(
+        const QImage& image,
+        QObject* context = nullptr,
+        std::function<void(bool)> completion = {}) const;
 
     // CLI installation
     bool isCLIInstalled() const;

@@ -7,6 +7,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QGuiApplication>
+#include <QMetaObject>
 #include <QMimeData>
 #include <QPainter>
 #include <QPainterPath>
@@ -131,6 +132,30 @@ bool PlatformFeatures::copyImageToClipboardForGui(const QImage& image) const
         return true;
     }
     return false;
+}
+
+void PlatformFeatures::copyImageToClipboardForGuiAsync(
+    const QImage& image,
+    QObject* context,
+    std::function<void(bool)> completion) const
+{
+    QObject* target = context ? context : QCoreApplication::instance();
+    if (!target) {
+        const bool success = copyImageToClipboardForGui(image);
+        if (completion) {
+            completion(success);
+        }
+        return;
+    }
+
+    QMetaObject::invokeMethod(target,
+        [this, image, completion = std::move(completion)]() mutable {
+            const bool success = copyImageToClipboardForGui(image);
+            if (completion) {
+                completion(success);
+            }
+        },
+        Qt::QueuedConnection);
 }
 
 QString PlatformFeatures::getAppExecutablePath() const

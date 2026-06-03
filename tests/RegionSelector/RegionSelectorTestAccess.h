@@ -319,7 +319,7 @@ public:
 
     static void setGuiClipboardWriter(
         RegionSelector& selector,
-        std::function<bool(const QImage&)> writer)
+        std::function<void(const QImage&, std::function<void(bool)>)> writer)
     {
         selector.m_guiClipboardWriter = std::move(writer);
     }

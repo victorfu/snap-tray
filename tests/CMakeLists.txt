@@ -110,6 +110,13 @@ target_link_libraries(Platform_Capabilities PRIVATE snaptray_core Qt6::Test)
 add_test(NAME Platform_Capabilities COMMAND Platform_Capabilities)
 set_tests_properties(Platform_Capabilities PROPERTIES TIMEOUT 60 LABELS "unit")
 
+if(APPLE)
+    add_executable(Platform_GuiClipboardOrdering Platform/tst_GuiClipboardOrdering.cpp)
+    target_link_libraries(Platform_GuiClipboardOrdering PRIVATE snaptray_platform Qt6::Test)
+    add_test(NAME Platform_GuiClipboardOrdering COMMAND Platform_GuiClipboardOrdering)
+    set_tests_properties(Platform_GuiClipboardOrdering PROPERTIES TIMEOUT 30 LABELS "unit;integration")
+endif()
+
 add_executable(Qml_QmlBadge Qml/tst_QmlBadge.cpp)
 target_link_libraries(Qml_QmlBadge PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
 add_test(NAME Qml_QmlBadge COMMAND Qml_QmlBadge)

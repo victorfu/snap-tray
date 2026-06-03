@@ -1592,8 +1592,18 @@ void PinWindow::copyToClipboard()
     }
 
     const QImage clipboardImage = normalizeImageForExport(pixmapToCopy.toImage(), exportScreen);
-    PlatformFeatures::instance().copyImageToClipboardForGui(clipboardImage);
-    m_toast->showToast(SnapTray::QmlToast::Level::Success, tr("Copied to clipboard"));
+    QPointer<PinWindow> safeThis(this);
+    PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
+        clipboardImage,
+        qApp,
+        [safeThis](bool success) {
+            if (!safeThis) {
+                return;
+            }
+            safeThis->m_toast->showToast(
+                success ? SnapTray::QmlToast::Level::Success : SnapTray::QmlToast::Level::Error,
+                success ? tr("Copied to clipboard") : tr("Copy failed"));
+        });
 }
 
 bool PinWindow::ensureAutoBlurReadyForExport()
@@ -5452,8 +5462,18 @@ void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
         exportScreen = screen();
     }
     const QImage clipboardImage = normalizeImageForExport(result.toImage(), exportScreen);
-    PlatformFeatures::instance().copyImageToClipboardForGui(clipboardImage);
-    m_toast->showToast(SnapTray::QmlToast::Level::Success, tr("Beautified image copied"));
+    QPointer<PinWindow> safeThis(this);
+    PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
+        clipboardImage,
+        qApp,
+        [safeThis](bool success) {
+            if (!safeThis) {
+                return;
+            }
+            safeThis->m_toast->showToast(
+                success ? SnapTray::QmlToast::Level::Success : SnapTray::QmlToast::Level::Error,
+                success ? tr("Beautified image copied") : tr("Copy failed"));
+        });
 }
 
 void PinWindow::onBeautifySave(const BeautifySettings& settings)

@@ -6,10 +6,15 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QMetaObject>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPixmap>
+#include <QPointer>
 #include <QProcess>
+#include <QtConcurrent/QtConcurrentRun>
+
+#include <atomic>
 
 #import <AppKit/AppKit.h>
 #import <ApplicationServices/ApplicationServices.h>
@@ -22,6 +27,8 @@
 
 namespace {
 
+std::atomic<quint64> g_guiClipboardGeneration{0};
+
 QString escapeForSingleQuotedShellLiteral(const QString& value)
 {
     QString escaped = value;
@@ -29,16 +36,25 @@ QString escapeForSingleQuotedShellLiteral(const QString& value)
     return escaped;
 }
 
-bool writePngImageToGeneralPasteboard(const QImage& image)
+QByteArray encodePngImage(const QImage& image)
 {
     if (image.isNull()) {
-        return false;
+        return {};
     }
 
     QByteArray pngData;
     QBuffer buffer(&pngData);
     buffer.open(QIODevice::WriteOnly);
     if (!image.save(&buffer, "PNG")) {
+        return {};
+    }
+
+    return pngData;
+}
+
+bool writePngDataToGeneralPasteboard(const QByteArray& pngData)
+{
+    if (pngData.isEmpty()) {
         return false;
     }
 
@@ -49,6 +65,30 @@ bool writePngImageToGeneralPasteboard(const QImage& image)
         NSData* data = [NSData dataWithBytes:pngData.constData() length:pngData.size()];
         return [pasteboard setData:data forType:NSPasteboardTypePNG] == YES;
     }
+}
+
+bool writePngImageToGeneralPasteboard(const QImage& image)
+{
+    return writePngDataToGeneralPasteboard(encodePngImage(image));
+}
+
+void invokeClipboardCompletion(QObject* context,
+                               std::function<void(bool)> completion,
+                               bool success)
+{
+    if (!completion) {
+        return;
+    }
+
+    QObject* target = context ? context : QCoreApplication::instance();
+    if (!target) {
+        completion(success);
+        return;
+    }
+
+    QMetaObject::invokeMethod(target, [completion = std::move(completion), success]() mutable {
+        completion(success);
+    }, Qt::QueuedConnection);
 }
 
 } // namespace
@@ -140,6 +180,55 @@ bool PlatformFeatures::copyImageToClipboardForGui(const QImage& image) const
     // Qt 6.11/macOS can trap later while fulfilling promised TIFF data from
     // QColorSpace-tagged QImages. Eager PNG pasteboard data avoids that path.
     return writePngImageToGeneralPasteboard(image);
+}
+
+void PlatformFeatures::copyImageToClipboardForGuiAsync(
+    const QImage& image,
+    QObject* context,
+    std::function<void(bool)> completion) const
+{
+    const quint64 requestGeneration =
+        g_guiClipboardGeneration.fetch_add(1, std::memory_order_acq_rel) + 1;
+
+    if (image.isNull()) {
+        invokeClipboardCompletion(context, std::move(completion), false);
+        return;
+    }
+
+    QObject* target = context ? context : QCoreApplication::instance();
+    if (!target) {
+        const bool success = copyImageToClipboardForGui(image);
+        if (completion) {
+            completion(success);
+        }
+        return;
+    }
+
+    const QImage imageForClipboard = image;
+    const QPointer<QObject> targetGuard(target);
+    (void)QtConcurrent::run([imageForClipboard,
+                             targetGuard,
+                             completion = std::move(completion),
+                             requestGeneration]() mutable {
+        QByteArray pngData = encodePngImage(imageForClipboard);
+        QObject* guardedTarget = targetGuard.data();
+        if (!guardedTarget) {
+            return;
+        }
+
+        QMetaObject::invokeMethod(guardedTarget,
+            [pngData = std::move(pngData), completion = std::move(completion), requestGeneration]() mutable {
+                if (requestGeneration != g_guiClipboardGeneration.load(std::memory_order_acquire)) {
+                    return;
+                }
+
+                const bool success = writePngDataToGeneralPasteboard(pngData);
+                if (completion) {
+                    completion(success);
+                }
+            },
+            Qt::QueuedConnection);
+    });
 }
 
 QString PlatformFeatures::getAppExecutablePath() const
