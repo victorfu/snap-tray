@@ -2,6 +2,7 @@
 last_modified_at: 2026-03-17
 layout: docs
 title: Screen Canvas
+seo_title: "SnapTray Screen Canvas: Annotate Your Screen for Demos"
 description: Full-screen annotation mode for demos, walkthroughs, and live explanation.
 permalink: /docs/screen-canvas/
 lang: en

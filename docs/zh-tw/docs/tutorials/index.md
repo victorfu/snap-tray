@@ -2,6 +2,7 @@
 last_modified_at: 2026-02-24
 layout: docs
 title: 教學總覽
+seo_title: "SnapTray 教學總覽：用真實工作情境學會截圖、標註、釘選與錄影流程"
 description: 以真實工作情境學 SnapTray，不只看功能清單。
 permalink: /zh-tw/docs/tutorials/
 lang: zh-tw

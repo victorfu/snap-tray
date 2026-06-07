@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Releases
+seo_title: "SnapTray Release Notes & Version History — Mac & Windows"
 permalink: /releases/
 description: Browse SnapTray release notes and download installers for macOS and Windows.
 lang: en

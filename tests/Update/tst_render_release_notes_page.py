@@ -51,7 +51,7 @@ def main() -> int:
 
         html = output_path.read_text(encoding="utf-8")
         expected_fragments = [
-            "<title>SnapTray 1.2.3</title>",
+            "<title>SnapTray 1.2.3 Release Notes — Changelog &amp; Downloads</title>",
             'rel="canonical" href="https://snaptray.cc/releases/1.2.3/"',
             "<h1>SnapTray 1.2.3</h1>",
             "March 19, 2026",

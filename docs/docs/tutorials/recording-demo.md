@@ -2,6 +2,7 @@
 last_modified_at: 2026-02-24
 layout: docs
 title: Recording Demo
+seo_title: "SnapTray Recording Demo: Capture Demos & Walkthroughs"
 description: Create a concise recording for demos, onboarding, or issue explanation.
 permalink: /docs/tutorials/recording-demo/
 lang: en

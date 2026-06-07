@@ -2,6 +2,7 @@
 last_modified_at: 2026-03-26
 layout: docs
 title: 錄影
+seo_title: "SnapTray 螢幕錄影：輸出 MP4、GIF 與 WebP，可錄製系統與麥克風音訊"
 description: 使用 MP4、GIF、WebP 輸出全螢幕來源錄影。
 permalink: /zh-tw/docs/recording/
 lang: zh-tw

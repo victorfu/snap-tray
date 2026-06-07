@@ -2,6 +2,7 @@
 last_modified_at: 2026-02-26
 layout: docs
 title: Annotation Tools
+seo_title: "SnapTray Annotation Tools: Draw, Text, Mosaic & Steps"
 description: Use drawing, text, mosaic, and step tools to communicate clearly.
 permalink: /docs/annotation-tools/
 lang: en

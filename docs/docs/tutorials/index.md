@@ -2,6 +2,7 @@
 last_modified_at: 2026-02-24
 layout: docs
 title: Tutorials
+seo_title: "SnapTray Tutorials: Real-World Screenshot Workflows"
 description: Learn SnapTray through real-world, end-to-end workflows instead of isolated features.
 permalink: /docs/tutorials/
 lang: en

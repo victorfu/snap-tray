@@ -1,6 +1,7 @@
 ---
 layout: default
 title: 版本資訊
+seo_title: "SnapTray 版本資訊：瀏覽版本紀錄並下載 macOS 與 Windows 安裝檔"
 permalink: /zh-tw/releases/
 description: 即時瀏覽 SnapTray 的版本資訊與安裝檔下載。
 lang: zh-tw

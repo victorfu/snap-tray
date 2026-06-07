@@ -2,6 +2,7 @@
 last_modified_at: 2026-03-17
 layout: docs
 title: 快捷鍵
+seo_title: "SnapTray 快捷鍵設定：自訂截圖與錄影的全域快速鍵，提升日常操作效率"
 description: 透過集中式 Hotkey 管理，建立穩定且高效率的操作習慣。
 permalink: /zh-tw/docs/hotkeys/
 lang: zh-tw

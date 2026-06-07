@@ -2,6 +2,7 @@
 last_modified_at: 2026-03-26
 layout: docs
 title: Build from Source
+seo_title: "Build SnapTray from Source: macOS & Windows Toolchain"
 description: Build SnapTray locally on macOS or Windows with the supported scripts, toolchains, and manual CMake flows.
 permalink: /developer/build-from-source/
 lang: en

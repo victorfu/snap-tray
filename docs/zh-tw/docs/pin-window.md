@@ -2,6 +2,7 @@
 last_modified_at: 2026-02-26
 layout: docs
 title: 釘選視窗
+seo_title: "SnapTray 釘選視窗：將參考圖片固定在最上層，支援縮放、透明度與即時標註"
 description: 將參考圖片固定在最上層，並使用縮放、透明度、合併/版面與即時標註工具。
 permalink: /zh-tw/docs/pin-window/
 lang: zh-tw

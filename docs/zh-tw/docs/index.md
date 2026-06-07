@@ -2,6 +2,7 @@
 last_modified_at: 2026-02-24
 layout: docs
 title: 文件首頁
+seo_title: "SnapTray 使用文件：以任務導向教學與完整功能參考快速掌握所有功能"
 description: 以任務導向教學搭配功能參考，完整掌握 SnapTray。
 permalink: /zh-tw/docs/
 lang: zh-tw

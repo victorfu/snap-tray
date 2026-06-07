@@ -1,6 +1,7 @@
 site:
   locale: zh-TW
   tagline: "免費截圖與螢幕錄影工具｜macOS 與 Windows"
+  title_suffix: "螢幕截圖與錄影工具"
 
 nav:
   home: 首頁

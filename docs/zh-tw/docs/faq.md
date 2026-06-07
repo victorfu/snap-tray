@@ -2,6 +2,7 @@
 last_modified_at: 2026-03-26
 layout: docs
 title: 常見問題
+seo_title: "SnapTray 常見問題：隱私、檔案格式、OCR、快捷鍵、自動化與平台限制"
 description: 收錄隱私、格式、OCR、快捷鍵、自動化與平台限制等常見問答。
 permalink: /zh-tw/docs/faq/
 lang: zh-tw

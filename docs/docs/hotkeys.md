@@ -2,6 +2,7 @@
 last_modified_at: 2026-03-17
 layout: docs
 title: Hotkeys
+seo_title: "SnapTray Hotkeys: Capture & Recording Keyboard Shortcuts"
 description: Configure capture and recording shortcuts through centralized hotkey management.
 permalink: /docs/hotkeys/
 lang: en

@@ -2,6 +2,7 @@
 last_modified_at: 2026-02-24
 layout: docs
 title: Bug Report Workflow
+seo_title: "SnapTray Bug Report Workflow: Capture Clear Repro Steps"
 description: Build a reproducible bug report with clear visuals, steps, and optional recording.
 permalink: /docs/tutorials/bug-report/
 lang: en

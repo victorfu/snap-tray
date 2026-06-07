@@ -2,6 +2,7 @@
 last_modified_at: 2026-02-24
 layout: docs
 title: Live Reference with Pin
+seo_title: "SnapTray Live Reference: Pin Specs & Notes While You Work"
 description: Keep design specs, logs, or bug screenshots visible while you work in another app.
 permalink: /docs/tutorials/live-reference/
 lang: en

@@ -2,6 +2,7 @@
 last_modified_at: 2026-03-27
 layout: docs
 title: Release & Packaging
+seo_title: "SnapTray Release & Packaging: Sign, Notarize & Ship"
 description: Create distributable macOS and Windows packages, sign them, and prepare app-store or direct-download releases.
 permalink: /developer/release-packaging/
 lang: en

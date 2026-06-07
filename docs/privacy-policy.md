@@ -1,6 +1,7 @@
 ---
 layout: page
 title: Privacy Policy
+seo_title: "SnapTray Privacy Policy: Local-First, No Telemetry"
 permalink: /privacy/
 description: SnapTray privacy policy. Local-first with no telemetry or tracking.
 lang: en

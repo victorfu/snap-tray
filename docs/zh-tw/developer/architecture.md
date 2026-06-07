@@ -2,6 +2,7 @@
 last_modified_at: 2026-03-24
 layout: docs
 title: 架構總覽
+seo_title: "SnapTray 架構總覽：儲存庫結構、函式庫邊界、子系統職責與平台抽象"
 description: 整理專案結構、library 邊界、主要 subsystem、平台抽象與貢獻者需要遵守的開發慣例。
 permalink: /zh-tw/developer/architecture/
 lang: zh-tw
