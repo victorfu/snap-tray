@@ -1,6 +1,7 @@
 site:
   locale: en-US
   tagline: "Free Screenshot & Annotation Tool for macOS, Windows, and Linux beta"
+  title_suffix: "Screenshot & Annotation Tool"
 
 nav:
   home: Home

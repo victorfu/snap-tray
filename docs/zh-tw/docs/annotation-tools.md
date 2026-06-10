@@ -2,6 +2,7 @@
 last_modified_at: 2026-02-26
 layout: docs
 title: 標註工具
+seo_title: "SnapTray 標註工具：用箭頭、文字、馬賽克與步驟標號清楚標示重點"
 description: 使用繪圖、文字、馬賽克與步驟工具清楚傳達畫面重點。
 permalink: /zh-tw/docs/annotation-tools/
 lang: zh-tw

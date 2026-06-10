@@ -2,6 +2,7 @@
 last_modified_at: 2026-02-24
 layout: docs
 title: 錄影教學示範
+seo_title: "SnapTray 錄影示範教學：macOS/Windows 操作示範、導覽與問題說明影片"
 description: 在 macOS/Windows 錄製短而清楚的操作影片，用於 demo、導覽或問題說明；Linux beta 不包含錄影。
 permalink: /zh-tw/docs/tutorials/recording-demo/
 lang: zh-tw

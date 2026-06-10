@@ -1,6 +1,7 @@
 site:
   locale: zh-TW
   tagline: "免費截圖與標註工具｜macOS、Windows 與 Linux beta"
+  title_suffix: "螢幕截圖與標註工具"
 
 nav:
   home: 首頁

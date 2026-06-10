@@ -2,6 +2,7 @@
 last_modified_at: 2026-03-25
 layout: docs
 title: Region Capture
+seo_title: "SnapTray Region Capture: Precise Screenshots & Magnifier"
 description: Precision region selection with magnifier, window detection, multi-region support, and quick share/export actions.
 permalink: /docs/region-capture/
 lang: en

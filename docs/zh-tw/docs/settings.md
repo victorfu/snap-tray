@@ -2,6 +2,7 @@
 last_modified_at: 2026-03-26
 layout: docs
 title: 設定
+seo_title: "SnapTray 設定說明：調整檔案、平台限定 OCR 與錄影、浮水印與更新策略"
 description: 調整檔案路徑、平台限定 OCR 與錄影、浮水印及更新策略。
 permalink: /zh-tw/docs/settings/
 lang: zh-tw

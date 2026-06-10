@@ -1,6 +1,7 @@
 ---
 layout: landing
 title: "Best Screenshot Tool for Mac"
+seo_title: "SnapTray: Best Free Screenshot Tool for Mac (Open Source)"
 description: "Looking for a better screenshot tool on macOS? SnapTray replaces Cmd+Shift+4 with instant capture, annotation, pin windows, screen recording, OCR, and CLI automation. Free and open source."
 lang: en
 landing_key: landing_mac

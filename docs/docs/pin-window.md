@@ -2,6 +2,7 @@
 last_modified_at: 2026-02-26
 layout: docs
 title: Pin Window
+seo_title: "SnapTray Pin Window: Keep Image References Always on Top"
 description: Keep image references always visible with zoom, opacity, merge/layout controls, and inline annotation tools.
 permalink: /docs/pin-window/
 lang: en

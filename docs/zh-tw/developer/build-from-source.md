@@ -2,6 +2,7 @@
 last_modified_at: 2026-03-26
 layout: docs
 title: 從原始碼建置
+seo_title: "SnapTray 從原始碼建置：設定 macOS、Windows 與 Linux beta 工具鏈"
 description: 在 macOS、Windows 或 Ubuntu 22.04 X11 beta 依官方支援方式建置 SnapTray，包含腳本流程、手動 CMake 與編譯快取設定。
 permalink: /zh-tw/developer/build-from-source/
 lang: zh-tw

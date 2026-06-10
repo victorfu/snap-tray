@@ -2,6 +2,7 @@
 last_modified_at: 2026-02-24
 layout: docs
 title: Bug 回報流程
+seo_title: "SnapTray 教學：用截圖、操作步驟與 macOS/Windows 短影片建立可重現 Bug 回報"
 description: 用清楚截圖、步驟與 macOS/Windows 短影片，建立可重現的問題回報。
 permalink: /zh-tw/docs/tutorials/bug-report/
 lang: zh-tw

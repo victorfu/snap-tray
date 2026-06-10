@@ -2,6 +2,7 @@
 last_modified_at: 2026-03-26
 layout: docs
 title: FAQ
+seo_title: "SnapTray FAQ: Privacy, Formats, OCR & Automation Help"
 description: Common questions about privacy, formats, OCR, hotkeys, automation, and platform-specific limitations.
 permalink: /docs/faq/
 lang: en

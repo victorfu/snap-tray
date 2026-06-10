@@ -2,6 +2,7 @@
 last_modified_at: 2026-02-24
 layout: docs
 title: Documentation
+seo_title: "SnapTray Documentation: Tutorials & Feature Reference"
 description: Learn SnapTray through task-driven tutorials and feature references in one place.
 permalink: /docs/
 lang: en

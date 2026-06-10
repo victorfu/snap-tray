@@ -2,6 +2,7 @@
 last_modified_at: 2026-05-18
 layout: docs
 title: Troubleshooting
+seo_title: "SnapTray Troubleshooting: Fix Permissions, Hotkeys & Recording"
 description: Fix permission, startup, Qt deployment, encoding, and hotkey issues, plus recording issues on macOS and Windows.
 permalink: /docs/troubleshooting/
 lang: en

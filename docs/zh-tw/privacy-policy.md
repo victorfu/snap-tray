@@ -1,6 +1,7 @@
 ---
 layout: page
 title: 隱私政策
+seo_title: "SnapTray 隱私政策：本機優先處理，不做遙測、不追蹤、不上傳內容"
 permalink: /zh-tw/privacy/
 description: SnapTray 隱私政策。本機優先，無遙測或追蹤。
 lang: zh-tw

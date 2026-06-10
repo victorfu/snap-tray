@@ -1,8 +1,9 @@
 ---
 layout: default
 title: 版本資訊
+seo_title: "SnapTray 版本資訊：下載 macOS、Windows 與 Linux beta AppImage"
 permalink: /zh-tw/releases/
-description: 即時瀏覽 SnapTray 的版本資訊與安裝檔下載。
+description: 即時瀏覽 SnapTray 的版本資訊，下載 macOS、Windows 與 Linux beta AppImage 安裝檔。
 lang: zh-tw
 route_key: releases
 ---

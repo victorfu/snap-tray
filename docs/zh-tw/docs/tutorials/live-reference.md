@@ -2,6 +2,7 @@
 last_modified_at: 2026-02-24
 layout: docs
 title: Pin 長駐參考
+seo_title: "SnapTray 教學：用 Pin 視窗長駐參考稿與規格，減少反覆切換視窗"
 description: 將設計稿、規格或錯誤畫面固定在畫面上，減少反覆切視窗。
 permalink: /zh-tw/docs/tutorials/live-reference/
 lang: zh-tw

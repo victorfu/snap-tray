@@ -2,6 +2,7 @@
 last_modified_at: 2026-03-24
 layout: docs
 title: CLI
+seo_title: "SnapTray CLI: Automate Screenshots & Platform-Specific Recording"
 description: The official automation interface for scripting capture, platform-specific recording, pin, and settings workflows.
 permalink: /docs/cli/
 lang: en

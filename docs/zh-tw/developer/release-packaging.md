@@ -2,6 +2,7 @@
 last_modified_at: 2026-03-27
 layout: docs
 title: 發佈與打包
+seo_title: "SnapTray 發佈與打包：macOS、Windows 與 Linux AppImage beta"
 description: 產生 macOS、Windows 可發佈安裝檔與 Linux AppImage beta，並整理簽章、公證與商店提交流程。
 permalink: /zh-tw/developer/release-packaging/
 lang: zh-tw

@@ -122,7 +122,7 @@ def render_page(release: dict[str, object], canonical_url: str) -> str:
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{escape(title)}</title>
+  <title>{escape(title)} Release Notes — Changelog &amp; Downloads</title>
   <meta name="description" content="Release notes for SnapTray {escape(version)}.">
 {canonical}  <style>
     :root {{

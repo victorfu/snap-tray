@@ -2,6 +2,7 @@
 last_modified_at: 2026-03-24
 layout: docs
 title: 命令列
+seo_title: "SnapTray 命令列 CLI：用腳本自動化截圖、平台限定錄影與釘選"
 description: 官方自動化介面，可用於擷取、平台限定錄影、釘選與設定操作。
 permalink: /zh-tw/docs/cli/
 lang: zh-tw

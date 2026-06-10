@@ -2,6 +2,7 @@
 last_modified_at: 2026-05-18
 layout: docs
 title: 疑難排解
+seo_title: "SnapTray 疑難排解：修復權限、啟動、Qt 部署、快捷鍵與錄影問題"
 description: 快速解決權限、啟動、Qt 部署與快捷鍵問題，以及 macOS、Windows 的錄影問題。
 permalink: /zh-tw/docs/troubleshooting/
 lang: zh-tw

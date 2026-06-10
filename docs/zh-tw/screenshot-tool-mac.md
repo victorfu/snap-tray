@@ -1,6 +1,7 @@
 ---
 layout: landing
 title: "Mac 最佳截圖工具"
+seo_title: "SnapTray｜Mac 最佳免費截圖工具，取代內建截圖，支援標註與錄影"
 description: "在找更好的 macOS 截圖工具？SnapTray 取代 Cmd+Shift+4，提供即時擷取、標註、釘選視窗、螢幕錄影、OCR 和 CLI 自動化。免費且開源。"
 permalink: /zh-tw/screenshot-tool-mac/
 lang: zh-tw

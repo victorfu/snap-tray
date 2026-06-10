@@ -2,6 +2,7 @@
 last_modified_at: 2026-03-26
 layout: docs
 title: Recording
+seo_title: "SnapTray Screen Recording: MP4, GIF & WebP Capture for macOS & Windows"
 description: "macOS/Windows only: record full screen sources with MP4, GIF, and WebP outputs."
 permalink: /docs/recording/
 lang: en

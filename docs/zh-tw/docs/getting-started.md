@@ -2,6 +2,7 @@
 last_modified_at: 2026-03-24
 layout: docs
 title: 快速開始
+seo_title: "SnapTray 快速開始：10 分鐘完成截圖、釘選與平台限定功能初始設定"
 description: 用 10 分鐘完成穩定初始化，確保截圖、釘選與平台限定功能第一天就可用。
 permalink: /zh-tw/docs/getting-started/
 lang: zh-tw
