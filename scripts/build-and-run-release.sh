@@ -30,6 +30,15 @@ configure_build_dir() {
         cmake_args=(-G "$desired_generator" "${cmake_args[@]}" -DCMAKE_PREFIX_PATH="$(brew --prefix qt)" -DCMAKE_OSX_SYSROOT="$desired_sdk")
     fi
 
+    if [[ "$OSTYPE" == linux* ]]; then
+        desired_generator="Ninja"
+        buildsystem_file="$build_dir/build.ninja"
+        cmake_args=(-G "$desired_generator" "${cmake_args[@]}")
+        if [ -n "${QT_ROOT_DIR:-}" ]; then
+            cmake_args+=("-DCMAKE_PREFIX_PATH=${QT_ROOT_DIR}")
+        fi
+    fi
+
     if [ ! -f "$cache_file" ]; then
         echo "Configuring project ($build_type)..."
         cmake "${cmake_args[@]}"
@@ -88,4 +97,8 @@ cmake --build "$BUILD_DIR" --target SnapTray
 # Run (Release builds use SnapTray.app)
 echo ""
 echo "Launching SnapTray in foreground..."
-"$BUILD_DIR/bin/SnapTray.app/Contents/MacOS/SnapTray"
+if [[ "$OSTYPE" == darwin* ]]; then
+    "$BUILD_DIR/bin/SnapTray.app/Contents/MacOS/SnapTray"
+else
+    "$BUILD_DIR/bin/SnapTray"
+fi

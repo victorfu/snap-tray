@@ -544,6 +544,7 @@ add_library(snaptray_platform STATIC
     >
     # Linux sources
     $<$<PLATFORM_ID:Linux>:
+        src/platform/LinuxDesktopEnvironment_linux.cpp
         src/platform/WindowLevel_linux.cpp
         src/platform/PlatformFeatures_linux.cpp
         src/WindowDetector_linux.cpp

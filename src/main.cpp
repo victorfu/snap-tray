@@ -8,6 +8,10 @@
 #include "settings/Settings.h"
 #include "version.h"
 
+#if defined(Q_OS_LINUX)
+#include "platform/LinuxDesktopEnvironment.h"
+#endif
+
 #include <QApplication>
 #include <QCoreApplication>
 #include <QDebug>
@@ -43,6 +47,10 @@ int reportUnsupportedRuntime(const QString& message)
 
 int main(int argc, char* argv[])
 {
+#if defined(Q_OS_LINUX)
+    SnapTray::applyLinuxDesktopEnvironment();
+#endif
+
     SnapTray::applyQtQuickGraphicsBackendPolicy(
         SnapTray::selectQtQuickGraphicsBackendPolicy(QOperatingSystemVersion::current()));
 

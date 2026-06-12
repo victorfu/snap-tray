@@ -98,5 +98,5 @@ echo ""
 if [[ "$OSTYPE" == darwin* ]]; then
     echo "Build complete: $BUILD_DIR/bin/SnapTray-Debug.app"
 else
-    echo "Build complete: $BUILD_DIR/bin/SnapTray-Debug"
+    echo "Build complete: $BUILD_DIR/bin/SnapTray"
 fi
