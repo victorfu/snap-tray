@@ -626,11 +626,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     )
 endif()
 
-# Windows-specific compiler flags
-if(WIN32)
-    target_compile_options(snaptray_platform PRIVATE /await)
-endif()
-
 target_compile_definitions(snaptray_platform PRIVATE
     $<$<NOT:$<CONFIG:Debug>>:QT_NO_DEBUG_OUTPUT>
 )
