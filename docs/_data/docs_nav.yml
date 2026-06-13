@@ -2,96 +2,118 @@
   title:
     en: Basics
     zh-tw: 基礎
+    ja: 基本
   items:
     - route_key: docs_home
       title:
         en: Documentation Home
         zh-tw: 文件首頁
+        ja: ドキュメントホーム
     - route_key: docs_getting_started
       title:
         en: Getting Started
         zh-tw: 快速開始
+        ja: はじめに
 
 - id: tutorials
   title:
     en: Tutorials
     zh-tw: 教學路徑
+    ja: チュートリアル
   items:
     - route_key: docs_tutorials
       title:
         en: Tutorial Hub
         zh-tw: 教學總覽
+        ja: チュートリアル一覧
     - route_key: docs_tutorial_quick_share
       title:
         en: Quick Share (30s)
         zh-tw: 30 秒快速分享
+        ja: クイック共有（30秒）
     - route_key: docs_tutorial_bug_report
       title:
         en: Bug Report Workflow
         zh-tw: Bug 回報流程
+        ja: バグ報告ワークフロー
     - route_key: docs_tutorial_live_reference
       title:
         en: Live Reference with Pin
         zh-tw: Pin 長駐參考
+        ja: ピン留めで常時参照
     - route_key: docs_tutorial_recording_demo
       title:
         en: Recording Demo (macOS/Windows only)
         zh-tw: 錄影教學示範（僅 macOS/Windows）
+        ja: 録画デモ（macOS/Windows のみ）
 
 - id: capture
   title:
     en: Capture & Annotate
     zh-tw: 擷取與標註
+    ja: キャプチャと注釈
   items:
     - route_key: docs_region_capture
       title:
         en: Region Capture
         zh-tw: 區域截圖
+        ja: 範囲キャプチャ
     - route_key: docs_annotation_tools
       title:
         en: Annotation Tools
         zh-tw: 標註工具
+        ja: 注釈ツール
     - route_key: docs_screen_canvas
       title:
         en: Screen Canvas
         zh-tw: 螢幕畫布
+        ja: スクリーンキャンバス
 
 - id: workflow
   title:
     en: Workflow
     zh-tw: 工作流
+    ja: ワークフロー
   items:
     - route_key: docs_pin_window
       title:
         en: Pin Window
         zh-tw: 釘選視窗
+        ja: ピン留めウィンドウ
     - route_key: docs_recording
       title:
         en: Recording (macOS/Windows only)
         zh-tw: 錄影（僅 macOS/Windows）
+        ja: 録画（macOS/Windows のみ）
     - route_key: docs_hotkeys
       title:
         en: Hotkeys
         zh-tw: 快捷鍵
+        ja: ホットキー
     - route_key: docs_settings
       title:
         en: Settings
         zh-tw: 設定
+        ja: 設定
 
 - id: advanced
   title:
     en: Advanced
     zh-tw: 進階
+    ja: 高度な設定
   items:
     - route_key: docs_cli
       title:
         en: CLI
         zh-tw: 命令列
+        ja: CLI
     - route_key: docs_troubleshooting
       title:
         en: Troubleshooting
         zh-tw: 疑難排解
+        ja: トラブルシューティング
     - route_key: docs_faq
       title:
         en: FAQ
         zh-tw: 常見問題
+        ja: よくある質問

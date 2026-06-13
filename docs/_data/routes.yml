@@ -16,70 +16,87 @@ privacy:
 docs_home:
   en: /docs/
   zh-tw: /zh-tw/docs/
+  ja: /ja/docs/
 
 docs_getting_started:
   en: /docs/getting-started/
   zh-tw: /zh-tw/docs/getting-started/
+  ja: /ja/docs/getting-started/
 
 docs_tutorials:
   en: /docs/tutorials/
   zh-tw: /zh-tw/docs/tutorials/
+  ja: /ja/docs/tutorials/
 
 docs_tutorial_quick_share:
   en: /docs/tutorials/quick-share/
   zh-tw: /zh-tw/docs/tutorials/quick-share/
+  ja: /ja/docs/tutorials/quick-share/
 
 docs_tutorial_bug_report:
   en: /docs/tutorials/bug-report/
   zh-tw: /zh-tw/docs/tutorials/bug-report/
+  ja: /ja/docs/tutorials/bug-report/
 
 docs_tutorial_live_reference:
   en: /docs/tutorials/live-reference/
   zh-tw: /zh-tw/docs/tutorials/live-reference/
+  ja: /ja/docs/tutorials/live-reference/
 
 docs_tutorial_recording_demo:
   en: /docs/tutorials/recording-demo/
   zh-tw: /zh-tw/docs/tutorials/recording-demo/
+  ja: /ja/docs/tutorials/recording-demo/
 
 docs_region_capture:
   en: /docs/region-capture/
   zh-tw: /zh-tw/docs/region-capture/
+  ja: /ja/docs/region-capture/
 
 docs_annotation_tools:
   en: /docs/annotation-tools/
   zh-tw: /zh-tw/docs/annotation-tools/
+  ja: /ja/docs/annotation-tools/
 
 docs_pin_window:
   en: /docs/pin-window/
   zh-tw: /zh-tw/docs/pin-window/
+  ja: /ja/docs/pin-window/
 
 docs_screen_canvas:
   en: /docs/screen-canvas/
   zh-tw: /zh-tw/docs/screen-canvas/
+  ja: /ja/docs/screen-canvas/
 
 docs_recording:
   en: /docs/recording/
   zh-tw: /zh-tw/docs/recording/
+  ja: /ja/docs/recording/
 
 docs_hotkeys:
   en: /docs/hotkeys/
   zh-tw: /zh-tw/docs/hotkeys/
+  ja: /ja/docs/hotkeys/
 
 docs_settings:
   en: /docs/settings/
   zh-tw: /zh-tw/docs/settings/
+  ja: /ja/docs/settings/
 
 docs_cli:
   en: /docs/cli/
   zh-tw: /zh-tw/docs/cli/
+  ja: /ja/docs/cli/
 
 docs_troubleshooting:
   en: /docs/troubleshooting/
   zh-tw: /zh-tw/docs/troubleshooting/
+  ja: /ja/docs/troubleshooting/
 
 docs_faq:
   en: /docs/faq/
   zh-tw: /zh-tw/docs/faq/
+  ja: /ja/docs/faq/
 
 developer_home:
   en: /developer/
