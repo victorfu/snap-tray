@@ -1,14 +1,17 @@
 home:
   en: /
   zh-tw: /zh-tw/
+  ja: /ja/
 
 releases:
   en: /releases/
   zh-tw: /zh-tw/releases/
+  ja: /ja/releases/
 
 privacy:
   en: /privacy/
   zh-tw: /zh-tw/privacy/
+  ja: /ja/privacy/
 
 docs_home:
   en: /docs/
@@ -97,14 +100,17 @@ developer_architecture:
 screenshot_tool:
   en: /screenshot-tool/
   zh-tw: /zh-tw/screenshot-tool/
+  ja: /ja/screenshot-tool/
 
 screenshot_tool_mac:
   en: /screenshot-tool-mac/
   zh-tw: /zh-tw/screenshot-tool-mac/
+  ja: /ja/screenshot-tool-mac/
 
 screenshot_tool_windows:
   en: /screenshot-tool-windows/
   zh-tw: /zh-tw/screenshot-tool-windows/
+  ja: /ja/screenshot-tool-windows/
 
 not_found:
   en: /404.html
