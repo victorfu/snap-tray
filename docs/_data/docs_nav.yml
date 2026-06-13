@@ -4,6 +4,7 @@
     zh-tw: 基礎
     ja: 基本
     ko: 기본
+    th: พื้นฐาน
   items:
     - route_key: docs_home
       title:
@@ -11,12 +12,14 @@
         zh-tw: 文件首頁
         ja: ドキュメントホーム
         ko: 문서 홈
+        th: หน้าหลักเอกสาร
     - route_key: docs_getting_started
       title:
         en: Getting Started
         zh-tw: 快速開始
         ja: はじめに
         ko: 시작하기
+        th: เริ่มต้นใช้งาน
 
 - id: tutorials
   title:
@@ -24,6 +27,7 @@
     zh-tw: 教學路徑
     ja: チュートリアル
     ko: 튜토리얼
+    th: บทช่วยสอน
   items:
     - route_key: docs_tutorials
       title:
@@ -31,30 +35,35 @@
         zh-tw: 教學總覽
         ja: チュートリアル一覧
         ko: 튜토리얼 목록
+        th: รวมบทช่วยสอน
     - route_key: docs_tutorial_quick_share
       title:
         en: Quick Share (30s)
         zh-tw: 30 秒快速分享
         ja: クイック共有（30秒）
         ko: 빠른 공유 (30초)
+        th: แชร์ด่วน (30 วินาที)
     - route_key: docs_tutorial_bug_report
       title:
         en: Bug Report Workflow
         zh-tw: Bug 回報流程
         ja: バグ報告ワークフロー
         ko: 버그 보고 워크플로
+        th: ขั้นตอนรายงานบัก
     - route_key: docs_tutorial_live_reference
       title:
         en: Live Reference with Pin
         zh-tw: Pin 長駐參考
         ja: ピン留めで常時参照
         ko: 핀으로 참조 고정
+        th: อ้างอิงสดด้วยการปักหมุด
     - route_key: docs_tutorial_recording_demo
       title:
         en: Recording Demo (macOS/Windows only)
         zh-tw: 錄影教學示範（僅 macOS/Windows）
         ja: 録画デモ（macOS/Windows のみ）
         ko: 녹화 데모 (macOS/Windows 전용)
+        th: สาธิตการบันทึก (เฉพาะ macOS/Windows)
 
 - id: capture
   title:
@@ -62,6 +71,7 @@
     zh-tw: 擷取與標註
     ja: キャプチャと注釈
     ko: 캡처 및 주석
+    th: จับภาพและมาร์กอัป
   items:
     - route_key: docs_region_capture
       title:
@@ -69,18 +79,21 @@
         zh-tw: 區域截圖
         ja: 範囲キャプチャ
         ko: 영역 캡처
+        th: การจับภาพเฉพาะส่วน
     - route_key: docs_annotation_tools
       title:
         en: Annotation Tools
         zh-tw: 標註工具
         ja: 注釈ツール
         ko: 주석 도구
+        th: เครื่องมือมาร์กอัป
     - route_key: docs_screen_canvas
       title:
         en: Screen Canvas
         zh-tw: 螢幕畫布
         ja: スクリーンキャンバス
         ko: 스크린 캔버스
+        th: สกรีนแคนวาส
 
 - id: workflow
   title:
@@ -88,6 +101,7 @@
     zh-tw: 工作流
     ja: ワークフロー
     ko: 워크플로
+    th: เวิร์กโฟลว์
   items:
     - route_key: docs_pin_window
       title:
@@ -95,24 +109,28 @@
         zh-tw: 釘選視窗
         ja: ピン留めウィンドウ
         ko: 핀 창
+        th: หน้าต่างปักหมุด
     - route_key: docs_recording
       title:
         en: Recording (macOS/Windows only)
         zh-tw: 錄影（僅 macOS/Windows）
         ja: 録画（macOS/Windows のみ）
         ko: 녹화 (macOS/Windows 전용)
+        th: การบันทึกหน้าจอ (เฉพาะ macOS/Windows)
     - route_key: docs_hotkeys
       title:
         en: Hotkeys
         zh-tw: 快捷鍵
         ja: ホットキー
         ko: 단축키
+        th: ปุ่มลัด
     - route_key: docs_settings
       title:
         en: Settings
         zh-tw: 設定
         ja: 設定
         ko: 설정
+        th: การตั้งค่า
 
 - id: advanced
   title:
@@ -120,6 +138,7 @@
     zh-tw: 進階
     ja: 高度な設定
     ko: 고급
+    th: ขั้นสูง
   items:
     - route_key: docs_cli
       title:
@@ -127,15 +146,18 @@
         zh-tw: 命令列
         ja: CLI
         ko: CLI
+        th: CLI
     - route_key: docs_troubleshooting
       title:
         en: Troubleshooting
         zh-tw: 疑難排解
         ja: トラブルシューティング
         ko: 문제 해결
+        th: การแก้ไขปัญหา
     - route_key: docs_faq
       title:
         en: FAQ
         zh-tw: 常見問題
         ja: よくある質問
         ko: 자주 묻는 질문
+        th: คำถามที่พบบ่อย
