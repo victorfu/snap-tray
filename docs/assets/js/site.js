@@ -260,6 +260,47 @@ function initDocsToc() {
   }
 }
 
+function initLanguageSwitcher() {
+  const switcher = document.querySelector('[data-lang-switcher]');
+  const toggle = switcher ? switcher.querySelector('[data-lang-toggle]') : null;
+  if (!switcher || !toggle) {
+    return;
+  }
+
+  const setOpen = (open) => {
+    switcher.classList.toggle('is-open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+  };
+
+  setOpen(false);
+
+  toggle.addEventListener('click', (event) => {
+    event.stopPropagation();
+    setOpen(!switcher.classList.contains('is-open'));
+  });
+
+  switcher.querySelectorAll('a').forEach((link) => {
+    link.addEventListener('click', () => setOpen(false));
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!switcher.classList.contains('is-open')) {
+      return;
+    }
+    if (event.target instanceof Node && switcher.contains(event.target)) {
+      return;
+    }
+    setOpen(false);
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && switcher.classList.contains('is-open')) {
+      setOpen(false);
+      toggle.focus();
+    }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   document.documentElement.classList.remove('no-js');
   initNav();
@@ -267,4 +308,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initYear();
   initDocsSidebar();
   initDocsToc();
+  initLanguageSwitcher();
 });

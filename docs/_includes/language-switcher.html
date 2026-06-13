@@ -1,27 +1,36 @@
 {% assign lang = page.lang | default: site.default_lang %}
 {% assign route = site.data.routes[page.route_key] %}
 {% assign raw_url = page.url | default: '/' %}
+{% assign current_name = lang %}
+{% for l in site.data.languages %}{% if l.code == lang %}{% assign current_name = l.name %}{% endif %}{% endfor %}
 
-<div class="language-switcher" aria-label="{{ site.data.i18n[lang].language.label }}">
+<div class="language-switcher" data-lang-switcher>
+  <button type="button" class="lang-current" aria-haspopup="true" aria-expanded="false" aria-controls="language-menu" aria-label="{{ site.data.i18n[lang].language.label }}" data-lang-toggle>
+    <svg class="lang-current__globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/></svg>
+    <span class="lang-current__label">{{ current_name }}</span>
+    <svg class="lang-current__chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
+  </button>
+  <ul id="language-menu" class="lang-menu" role="menu" data-lang-menu>
 {% for l in site.data.languages %}
-  {% assign code = l.code %}
-  {% assign target = '' %}
-  {% if route and route[code] %}
-    {% assign target = route[code] %}
-  {% elsif code == 'en' %}
-    {% assign target = raw_url | replace_first: '/zh-tw', '' %}
-    {% if target == '' %}{% assign target = '/' %}{% endif %}
-  {% elsif code == 'zh-tw' %}
-    {% if raw_url == '/' %}
-      {% assign target = '/zh-tw/' %}
-    {% elsif raw_url contains '/zh-tw/' %}
-      {% assign target = raw_url %}
-    {% else %}
-      {% assign target = '/zh-tw' | append: raw_url %}
+    {% assign code = l.code %}
+    {% assign target = '' %}
+    {% if route and route[code] %}
+      {% assign target = route[code] %}
+    {% elsif code == 'en' %}
+      {% assign target = raw_url | replace_first: '/zh-tw', '' %}
+      {% if target == '' %}{% assign target = '/' %}{% endif %}
+    {% elsif code == 'zh-tw' %}
+      {% if raw_url == '/' %}
+        {% assign target = '/zh-tw/' %}
+      {% elsif raw_url contains '/zh-tw/' %}
+        {% assign target = raw_url %}
+      {% else %}
+        {% assign target = '/zh-tw' | append: raw_url %}
+      {% endif %}
     {% endif %}
-  {% endif %}
-  {% if target != '' %}
-  <a href="{{ target | relative_url }}" class="lang-link {% if lang == code %}is-active{% endif %}">{{ l.name }}</a>
-  {% endif %}
+    {% if target != '' %}
+    <li role="none"><a role="menuitem" href="{{ target | relative_url }}" class="lang-link{% if lang == code %} is-active{% endif %}"{% if lang == code %} aria-current="true"{% endif %}>{{ l.name }}</a></li>
+    {% endif %}
 {% endfor %}
+  </ul>
 </div>
