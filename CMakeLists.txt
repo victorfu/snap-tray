@@ -630,6 +630,13 @@ target_compile_definitions(snaptray_platform PRIVATE
     $<$<NOT:$<CONFIG:Debug>>:QT_NO_DEBUG_OUTPUT>
 )
 
+# OCRManager_win.cpp consumes the WinRT OCR API via IAsyncOperation::get(), which
+# pulls in <experimental/coroutine> under C++17. MSVC 14.51+ (VS 18) promotes its
+# deprecation to a hard error (STL1011); silence it until a C++20 <coroutine> move.
+if(WIN32)
+    target_compile_definitions(snaptray_platform PRIVATE _SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+endif()
+
 # Suppress duplicate library warnings on macOS
 if(APPLE)
     target_link_options(snaptray_platform PRIVATE "-Wl,-no_warn_duplicate_libraries")
