@@ -6,6 +6,9 @@ default_lang: en
 supported_langs:
   - en
   - zh-tw
+  - ja
+  - ko
+  - th
 
 markdown: kramdown
 highlighter: rouge
@@ -24,6 +27,7 @@ exclude:
   - Gemfile.lock
   - node_modules
   - vendor
+  - superpowers
 
 defaults:
   - scope:

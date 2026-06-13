@@ -1,25 +1,27 @@
 {% assign lang = page.lang | default: site.default_lang %}
 {% assign route = site.data.routes[page.route_key] %}
-
-{% if route %}
-  {% assign en_target = route.en %}
-  {% assign zh_target = route['zh-tw'] %}
-{% else %}
-  {% assign raw_url = page.url | default: '/' %}
-  {% assign en_target = raw_url | replace_first: '/zh-tw', '' %}
-  {% if en_target == '' %}
-    {% assign en_target = '/' %}
-  {% endif %}
-  {% if raw_url == '/' %}
-    {% assign zh_target = '/zh-tw/' %}
-  {% elsif raw_url contains '/zh-tw/' %}
-    {% assign zh_target = raw_url %}
-  {% else %}
-    {% assign zh_target = '/zh-tw' | append: raw_url %}
-  {% endif %}
-{% endif %}
+{% assign raw_url = page.url | default: '/' %}
 
 <div class="language-switcher" aria-label="{{ site.data.i18n[lang].language.label }}">
-  <a href="{{ en_target | relative_url }}" class="lang-link {% if lang == 'en' %}is-active{% endif %}">{{ site.data.i18n[lang].language.en }}</a>
-  <a href="{{ zh_target | relative_url }}" class="lang-link {% if lang == 'zh-tw' %}is-active{% endif %}">{{ site.data.i18n[lang].language.zh_tw }}</a>
+{% for l in site.data.languages %}
+  {% assign code = l.code %}
+  {% assign target = '' %}
+  {% if route and route[code] %}
+    {% assign target = route[code] %}
+  {% elsif code == 'en' %}
+    {% assign target = raw_url | replace_first: '/zh-tw', '' %}
+    {% if target == '' %}{% assign target = '/' %}{% endif %}
+  {% elsif code == 'zh-tw' %}
+    {% if raw_url == '/' %}
+      {% assign target = '/zh-tw/' %}
+    {% elsif raw_url contains '/zh-tw/' %}
+      {% assign target = raw_url %}
+    {% else %}
+      {% assign target = '/zh-tw' | append: raw_url %}
+    {% endif %}
+  {% endif %}
+  {% if target != '' %}
+  <a href="{{ target | relative_url }}" class="lang-link {% if lang == code %}is-active{% endif %}">{{ l.name }}</a>
+  {% endif %}
+{% endfor %}
 </div>

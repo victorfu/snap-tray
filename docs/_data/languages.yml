@@ -1,0 +1,15 @@
+- code: en
+  name: EN
+  hreflang: en
+- code: zh-tw
+  name: 繁中
+  hreflang: zh-TW
+- code: ja
+  name: 日本語
+  hreflang: ja
+- code: ko
+  name: 한국어
+  hreflang: ko
+- code: th
+  name: ไทย
+  hreflang: th

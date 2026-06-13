@@ -34,8 +34,9 @@
 <link rel="canonical" href="{{ canonical_path | absolute_url }}">
 
 {% if route %}
-<link rel="alternate" hreflang="en" href="{{ route.en | absolute_url }}">
-<link rel="alternate" hreflang="zh-TW" href="{{ route['zh-tw'] | absolute_url }}">
+{% for l in site.data.languages %}{% if route[l.code] %}
+<link rel="alternate" hreflang="{{ l.hreflang }}" href="{{ route[l.code] | absolute_url }}">
+{% endif %}{% endfor %}
 <link rel="alternate" hreflang="x-default" href="{{ route.en | absolute_url }}">
 {% endif %}
 
