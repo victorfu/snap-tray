@@ -28,6 +28,7 @@ Flickable {
 
         SettingsPathPicker {
             label: qsTr("Recordings")
+            visible: settingsBackend.recordingSupported
             path: settingsBackend.recordingPath
             onBrowseClicked: settingsBackend.browseRecordingPath()
         }
@@ -98,6 +99,7 @@ Flickable {
 
         SettingsToggle {
             label: qsTr("Auto-save recordings")
+            visible: settingsBackend.recordingSupported
             checked: settingsBackend.autoSaveRecordings
             onToggled: function(checked) { settingsBackend.autoSaveRecordings = checked }
         }

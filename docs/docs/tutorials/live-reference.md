@@ -60,4 +60,4 @@ When context changes frequently, open pin history and restore previous reference
 
 ## Next tutorial
 
-When you need to explain dynamic behavior, continue with [Recording Demo](/docs/tutorials/recording-demo/).
+When you need to explain dynamic behavior on macOS or Windows, continue with [Recording Demo (macOS/Windows only)](/docs/tutorials/recording-demo/). Linux beta users can skip the recording tutorial.

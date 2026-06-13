@@ -17,7 +17,7 @@ docs_copy_key: developer
 - Framework: Qt 6
 - Build system: CMake + Ninja
 - UI technologies: Qt Widgets plus QML overlays and settings surfaces
-- Packaging targets: macOS DMG, Windows NSIS, Windows MSIX
+- Packaging targets: macOS DMG, Windows NSIS, Windows MSIX, Linux AppImage beta
 
 ## Repository structure
 
@@ -59,7 +59,7 @@ snap-tray/
 │   └── qml/toolbar/            # Floating toolbar surfaces
 ├── tests/                      # Qt Test suites by subsystem
 ├── docs/                       # Website, user docs, and developer docs
-├── packaging/                  # macOS and Windows packaging
+├── packaging/                  # Platform packaging
 ├── resources/                  # Icons, cascades, shaders, and resources.qrc
 ├── scripts/                    # Build, run, test, and i18n scripts
 ├── translations/               # Translation sources and outputs
@@ -113,20 +113,20 @@ Use `GlassRenderer` and the existing toolbar style configuration rather than loc
 
 ## Platform-specific code map
 
-| Feature | Windows | macOS |
-|---|---|---|
-| Screen capture | `DXGICaptureEngine_win.cpp` | `SCKCaptureEngine_mac.mm` |
-| Video encoding | `MediaFoundationEncoder.cpp` | `AVFoundationEncoder.mm` |
-| Audio capture | `WASAPIAudioCaptureEngine_win.cpp` | `CoreAudioCaptureEngine_mac.mm` |
-| Video playback | `MediaFoundationPlayer_win.cpp` | `AVFoundationPlayer_mac.mm` |
-| Window detection | `WindowDetector_win.cpp` | `WindowDetector.mm` |
-| OCR | `OCRManager_win.cpp` | `OCRManager.mm` |
-| Window level | `WindowLevel_win.cpp` | `WindowLevel_mac.mm` |
-| Platform features | `PlatformFeatures_win.cpp` | `PlatformFeatures_mac.mm` |
-| Auto-launch | `AutoLaunchManager_win.cpp` | `AutoLaunchManager_mac.mm` |
-| Install source | `InstallSourceDetector_win.cpp` | `InstallSourceDetector_mac.mm` |
-| PATH utilities | `PathEnvUtils_win.cpp` | N/A |
-| Image color space | N/A | `ImageColorSpaceHelper_mac.mm` |
+| Feature | Windows | macOS | Linux beta |
+|---|---|---|---|
+| Screen capture | `DXGICaptureEngine_win.cpp` | `SCKCaptureEngine_mac.mm` | `QtCaptureEngine.cpp` on X11 |
+| Video encoding | `MediaFoundationEncoder.cpp` | `AVFoundationEncoder.mm` | Not supported |
+| Audio capture | `WASAPIAudioCaptureEngine_win.cpp` | `CoreAudioCaptureEngine_mac.mm` | Not supported |
+| Video playback | `MediaFoundationPlayer_win.cpp` | `AVFoundationPlayer_mac.mm` | Not supported |
+| Window detection | `WindowDetector_win.cpp` | `WindowDetector.mm` | Not supported |
+| OCR | `OCRManager_win.cpp` | `OCRManager.mm` | Not supported |
+| Window level | `WindowLevel_win.cpp` | `WindowLevel_mac.mm` | `WindowLevel_linux.cpp` |
+| Platform features | `PlatformFeatures_win.cpp` | `PlatformFeatures_mac.mm` | `PlatformFeatures_linux.cpp` |
+| Auto-launch | `AutoLaunchManager_win.cpp` | `AutoLaunchManager_mac.mm` | `AutoLaunchManager_linux.cpp` |
+| Install source | `InstallSourceDetector_win.cpp` | `InstallSourceDetector_mac.mm` | `InstallSourceDetector_linux.cpp` |
+| PATH utilities | `PathEnvUtils_win.cpp` | N/A | N/A |
+| Image color space | N/A | `ImageColorSpaceHelper_mac.mm` | N/A |
 
 ## Key components
 

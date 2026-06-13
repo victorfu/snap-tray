@@ -34,7 +34,7 @@ QString formatWidgetLabel(const SelectionDimensionLabel::DisplayMetrics& metrics
         .arg(metrics.unit);
 }
 
-bool canFitInsideSelection(const QRect& selectionRect, const QSize& size, int inset)
+bool canFitHorizontallyInsideSelection(const QRect& selectionRect, const QSize& size, int inset)
 {
     if (!selectionRect.isValid() || selectionRect.isEmpty() || !size.isValid() || size.isEmpty()) {
         return false;
@@ -42,6 +42,28 @@ bool canFitInsideSelection(const QRect& selectionRect, const QSize& size, int in
 
     const QRect insideBounds = selectionRect.normalized().adjusted(inset, inset, -inset, -inset);
     return insideBounds.isValid() && insideBounds.width() >= size.width();
+}
+
+bool hasRoomAboveSelection(const QRect& selectionRect, const QSize& size)
+{
+    if (!selectionRect.isValid() || selectionRect.isEmpty() || !size.isValid() || size.isEmpty()) {
+        return false;
+    }
+
+    return selectionRect.normalized().top() - size.height() - kDimensionPanelTopGap >=
+           kDimensionPanelInset;
+}
+
+bool canUseInsideFallback(const QRect& selectionRect, const QSize& size, int inset)
+{
+    if (!selectionRect.isValid() || selectionRect.isEmpty() || !size.isValid() || size.isEmpty()) {
+        return false;
+    }
+
+    const QRect insideBounds = selectionRect.normalized().adjusted(inset, inset, -inset, -inset);
+    return insideBounds.isValid() &&
+           insideBounds.width() >= size.width() &&
+           insideBounds.height() >= size.height() + kDimensionPanelTopGap;
 }
 
 QFont panelFont(const QFont& baseFont)
@@ -142,9 +164,12 @@ SelectionDimensionLabel::AttachmentLayout SelectionDimensionLabel::selectionPane
         return layout;
     }
 
-    // Compact mode is only about horizontal crowding. Vertical placement can sit
-    // above the selection, so short-but-wide captures should keep the standard layout.
-    layout.compactRegion = !canFitInsideSelection(sel, size, kDimensionPanelInset);
+    const bool fitsHorizontallyInside =
+        canFitHorizontallyInsideSelection(sel, size, kDimensionPanelInset);
+    const bool mustFallbackInside = !hasRoomAboveSelection(sel, size);
+    layout.compactRegion =
+        !fitsHorizontallyInside ||
+        (mustFallbackInside && !canUseInsideFallback(sel, size, kDimensionPanelInset));
 
     QRect textRect(QPoint(0, 0), size);
     int textX = sel.left();

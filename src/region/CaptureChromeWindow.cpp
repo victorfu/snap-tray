@@ -67,7 +67,7 @@ QRect shortcutHintsRect(const CaptureShortcutHintsOverlay* overlay,
         return {};
     }
 
-    return overlay->panelRectForViewport(viewportSize);
+    return overlay->repaintRectForViewport(viewportSize);
 }
 
 } // namespace

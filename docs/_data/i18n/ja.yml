@@ -1,0 +1,462 @@
+site:
+  locale: ja-JP
+  tagline: "macOS・Windows・Linux beta 対応の無料スクリーンショット・注釈ツール"
+  title_suffix: "スクリーンショット・注釈ツール"
+
+nav:
+  home: ホーム
+  docs: ドキュメント
+  releases: リリース
+  privacy: プライバシー
+  github: GitHub
+
+language:
+  label: 言語
+  en: EN
+  zh_tw: 繁中
+
+hero:
+  eyebrow: キャプチャ。注釈。録画。
+  title: Mac・Windows・Linux beta 対応の高速スクリーンショットツール
+  tagline: SnapTray はシステムトレイに常駐し、即座に起動して精密なキャプチャと洗練された注釈を実現します。録画と OCR は macOS/Windows で利用可能。Linux beta はスクリーンショットと注釈に特化しています。
+  cta_download: ダウンロード
+  cta_github: GitHub で見る
+  pills:
+    - macOS 14+
+    - Windows 10+
+    - Ubuntu 22.04 X11 beta
+    - Qt 6.10.1
+  runtime_title: SnapTray ランタイム
+  runtime_items:
+    - ルーペ精度付きの範囲キャプチャ
+    - スクリーンキャンバス＋豊富な注釈ツール
+    - macOS/Windows での MP4 / GIF / WebP 録画
+    - macOS/Windows での OCR（文字認識）、自動ぼかし、透かし、ピン留めウィンドウ
+
+features:
+  eyebrow: 機能一覧
+  title: 高速でプロフェッショナルなキャプチャワークフローのために
+  subtitle: ワンショットのスクリーンショットから macOS/Windows の録画セッションまで、SnapTray はすべてのキャプチャ作業をシステムトレイネイティブなワークフローに集約します。
+  items:
+    - kind: Capture
+      title: 範囲キャプチャ
+      body: 精密なクロスヘアとルーペで目標を指定。F2 を押すだけで即座に起動します。
+    - kind: Canvas
+      title: スクリーンキャンバス
+      body: Ctrl+F2 / Cmd+F2 でデスクトップ上に直接描画し、その場で注釈を加えます。
+    - kind: Pinning
+      title: 画面にピン留め
+      body: 参照画像を他のウィンドウの上に常時表示。自由にサイズ変更・回転が可能です。
+    - kind: Annotation
+      title: 豊富なツール群
+      body: 矢印、ペン、マーカー、図形、テキスト、モザイク、ステップバッジ、絵文字スタンプ。
+    - kind: Automation
+      title: OCR（文字認識）＋自動ぼかし
+      body: macOS/Windows でテキストを抽出し、機密性の高い顔や認証情報を自動でマスクして安全に共有できます。
+    - kind: Detection
+      title: ウィンドウ検出
+      body: ウィンドウ範囲を手動でドラッグせずに素早く選択できます。
+    - kind: Recording
+      title: 画面録画
+      body: macOS/Windows では、フル画面を録画して MP4（音声付き可）でエクスポート、または無音クリップ用に GIF/WebP で書き出せます。
+    - kind: Utility
+      title: カラーピッカー
+      body: 画面上の色を取得し、Shift で HEX/RGB を切り替え、C で即座にコピーできます。
+    - kind: Control
+      title: 元に戻す / やり直し
+      body: 注釈操作の完全な操作履歴を保持し、編集をいつでも取り消せます。
+    - kind: Sharing
+      title: 共有 URL
+      body: キャプチャをアップロードして共有リンクを生成。パスワード保護も設定できます。
+    - kind: Branding
+      title: 透かし
+      body: スクリーンショットやmacOS/Windows の録画にカスタム画像の透かしを適用します。
+    - kind: Workflow
+      title: ホットキー優先
+      body: 範囲キャプチャ、キャンバス、貼り付け、クイックピン、ピンの表示/非表示はすべてワンキーで操作できます。
+
+downloads:
+  eyebrow: ダウンロード
+  title: 最新の SnapTray をインストール
+  subtitle: GitHub のアセットから最新の安定版を直接取得するか、Microsoft Store からインストールするか、Linux beta の AppImage をお試しください。
+  macos:
+    label: macOS
+    title: デスクトップインストーラー
+    requirements: macOS 14.0（Sonoma）以降
+    button: .dmg をダウンロード
+    empty: GitHub リリースからダウンロード
+    source_link: GitHub でソースからビルド
+  windows:
+    label: Windows
+    title: ストア＋インストーラー
+    requirements: Windows 10 以降
+    store_prefix: 入手先
+    store_name: Microsoft Store
+    button: .exe をダウンロード
+    empty: GitHub リリースからダウンロード
+    unsigned_note: 直接ダウンロードの .exe は現在署名されていないため、インストール時に Windows の SmartScreen などの安全警告が表示される場合があります。公式の SnapTray GitHub Releases ページからダウンロードした場合、これは想定内の動作であり、ファイルが安全でないことを意味しません。
+  linux:
+    label: Linux beta
+    title: AppImage
+    requirements: Ubuntu 22.04 X11 セッション
+    button: AppImage をダウンロード
+    empty: GitHub リリースからダウンロード
+  req_eyebrow: システム要件
+  req_title: プラットフォーム前提条件
+  req_cards:
+    - title: macOS
+      items:
+        - macOS 14.0（Sonoma）以降
+        - 画面収録の許可が必要
+        - ウィンドウ検出にアクセシビリティの許可が必要
+    - title: Windows
+      items:
+        - Windows 10 以降
+        - キャプチャおよびエンコードスタックにフルトラスト機能が必要
+        - 音声録音時のみマイクの許可が必要
+    - title: Linux beta
+      items:
+        - Ubuntu 22.04 X11 セッション
+        - 録画と OCR は含まれていません
+        - Wayland セッションは非対応です
+
+faq:
+  eyebrow: よくある質問
+  title: よくある質問
+  items:
+    - q: SnapTray とは何ですか？
+      a: SnapTray は、macOS、Windows、および Ubuntu 22.04 X11 beta 向けの無料の軽量スクリーンショット・注釈ツールです。システムトレイに常駐し、範囲キャプチャ、スクリーンショットへの注釈付け、画像のピン留め、結果の即時共有が可能です。録画と OCR は Linux beta には含まれていません。
+    - q: SnapTray は無料ですか？
+      a: はい、SnapTray は MIT ライセンスの下で完全に無料かつオープンソースです。広告、サブスクリプション、隠れたコストは一切ありません。
+    - q: SnapTray と Snipping Tool の違いは何ですか？
+      a: SnapTray は基本的な画面キャプチャを超えた機能を提供します。画面上の注釈ツール、常時表示の参照用ピン留めウィンドウ、スクリーンキャンバスモード、QR コードスキャン、自動化のためのフル CLI を搭載。macOS/Windows では MP4 音声録画、GIF/WebP エクスポート、OCR テキスト抽出、自動ぼかしが利用可能ですが、Linux beta には含まれていません。
+
+footer:
+  product_title: SnapTray
+  product_copy: デスクトップグレードのスクリーンショットワークフロー。速度と明確さのために設計されています。
+  product_meta: Qt 6 と C++17 で開発
+  resources_title: リソース
+  community_title: コミュニティ
+  links:
+    home: ホーム
+    docs: ドキュメント
+    developer: 開発者向けドキュメント
+    releases: リリース
+    privacy: プライバシーポリシー
+    report_issue: 問題を報告
+    license: MIT ライセンス
+
+docs:
+  page_label: ドキュメント
+  sidebar_title: ドキュメント
+  on_this_page: このページの内容
+  toc_empty: このページにはまだセクションがありません。
+  menu_button: ドキュメントメニュー
+
+developer:
+  page_label: 開発者向けドキュメント
+  sidebar_title: 開発者向けドキュメント
+  menu_button: 開発者メニュー
+
+error404:
+  eyebrow: エラー
+  title: "404"
+  message: リクエストされたページは存在しないか、移動されました。
+  back_home: ホームに戻る
+
+# ---------------------------------------------------------------------------
+# Landing Pages
+# ---------------------------------------------------------------------------
+
+landing_screenshot_tool:
+  hero:
+    title: 高速キャプチャのための最高のスクリーンショットツール
+    intro: "スクリーンショットツールは、ドキュメント作成、バグ報告、チュートリアル、クイック共有のために画面の任意の部分を画像としてキャプチャします。ほとんどの OS には基本的なツールが搭載されていますが、組み込みツールはキャプチャ止まりです。注釈、録画、スクリーンショットの共有を日常的に行うなら、そのワークフローに特化したツールが必要です。SnapTray は macOS、Windows、Ubuntu 22.04 X11 beta 向けの無料オープンソースのスクリーンショットツールで、キャプチャ、注釈、共有を一か所で処理します。録画は macOS および Windows で利用可能です。"
+    cta_download: 無料でダウンロード
+    cta_docs: ドキュメントを読む
+  problems:
+    eyebrow: 課題
+    title: 組み込みのスクリーンショットツールが不十分な理由
+    subtitle: Windows と macOS のデフォルトツールは日常的な使用ではなく、時折の使用を想定して設計されています。
+    items:
+      - pain: Windows Snipping Tool は低速で基本的
+        detail: Snipping Tool はキャプチャ前に全ウィンドウを開きます。注釈はペンとハイライターのみに限定され、矢印、図形、テキストはありません。CLI も、画面ピン留めも、録画パイプラインもありません。
+      - pain: Mac のスクリーンショットにはキャプチャ後のツールがない
+        detail: Cmd+Shift+4 で範囲をキャプチャできますが、それで終わりです。注釈を加えるには Preview やサードパーティエディタが必要で、その都度ワークフローが中断されます。ピン留めウィンドウも、MP4/GIF/WebP 録画ワークフローも、OCR もありません。
+      - pain: サードパーティツールは肥大化しているか有料
+        detail: 多くの代替品はアカウント登録、クラウドサブスクリプションを要求するか、重い Electron アプリとして提供されます。シンプルなキャプチャ・注釈ワークフローに 500 MB の RAM や月額料金は不要です。
+  features:
+    eyebrow: 解決策
+    title: SnapTray がどう解決するか
+    subtitle: 組み込みのスクリーンショットワークフローを 3 ステップで置き換える、軽量なトレイ常駐ツール。
+    items:
+      - title: 即座に任意の範囲をキャプチャ
+        body: F2 を押してキャプチャオーバーレイを起動。ルーペでピクセルレベルの精度を実現し、ウィンドウ検出でワンクリックによるウィンドウ全体の選択が可能。アプリの切り替えもロード画面も不要です。
+      - title: キャプチャを離れずに注釈
+        body: 矢印、図形、テキスト、ステップバッジ、モザイクぼかし、絵文字スタンプが同じオーバーレイ内に表示されます。別のエディタを開いたり、他のアプリに貼り付けたりする必要はありません。
+      - title: 共有、保存、またはピン留め
+        body: クリップボードにコピー、ディスクに保存、共有リンク用にアップロード、またはフローティング参照ウィンドウとしてピン留め。macOS/Windows ではフルスクリーン録画を MP4、GIF、WebP にエクスポート。すべての操作がワンキーで可能です。
+  compare:
+    eyebrow: 比較
+    title: "SnapTray vs Snipping Tool vs Lightshot vs ShareX"
+    feature_label: 機能
+    tools:
+      - SnapTray
+      - Snipping Tool
+      - Lightshot
+      - ShareX
+    rows:
+      - feature: ルーペ付き範囲キャプチャ
+        values: [true, false, false, true]
+      - feature: 組み込み注釈ツール
+        values: [true, false, true, true]
+      - feature: 画面へのピン留め
+        values: [true, false, false, false]
+      - feature: 画面録画（MP4、macOS/Windows のみ）
+        values: [true, true, false, true]
+      - feature: GIF / WebP エクスポート（macOS/Windows のみ）
+        values: [true, false, false, true]
+      - feature: OCR テキスト抽出（macOS/Windows のみ）
+        values: [true, false, false, true]
+      - feature: 自動ぼかし（顔・認証情報）
+        values: [true, false, false, false]
+      - feature: CLI 自動化
+        values: [true, false, false, true]
+      - feature: クロスプラットフォーム（macOS + Windows + Linux beta）
+        values: [true, false, false, false]
+      - feature: 無料かつオープンソース
+        values: [true, true, true, true]
+  usecases:
+    eyebrow: ユースケース
+    title: スクリーンショットツールを日常的に使う人たち
+    items:
+      - role: 開発者
+        scenario: エラートレースをキャプチャし、アーキテクチャ図に注釈を付け、macOS/Windows ではバグ報告用の再現手順を録画。GitHub の Issue や Slack に直接貼り付けられます。
+      - role: デザイナー
+        scenario: 参照画像を画面にピン留めし、レイアウトを並べて比較し、ピクセル距離を計測し、開発者向けの注釈付きフィードバックをエクスポートします。
+      - role: サポートチーム
+        scenario: カスタマーの問題をスクリーンショットし、ステップバッジの注釈を追加し、機密データをぼかし、リンクを共有する。すべて会話を離れずに完結します。
+      - role: 教育者
+        scenario: macOS/Windows でチュートリアルのウォークスルーを録画してインラインドキュメント用 GIF にエクスポート。スクリーンキャンバスでライブセッション中にスライドに注釈を付けます。
+  setup:
+    eyebrow: クイックスタート
+    title: SnapTray の使い始め方
+    steps:
+      - title: ダウンロードとインストール
+        detail: GitHub リリースから SnapTray を入手（macOS は DMG、Windows はインストーラー、Linux beta は AppImage）するか、Microsoft Store から Windows 版をインストールします。起動するとトレイアイコンがすぐに表示されます。
+      - title: 最初のスクリーンショットを撮る
+        detail: F2 を押してキャプチャオーバーレイを開きます。ドラッグして範囲を選択するか、検出されたウィンドウをクリックします。注釈ツールバーが自動的に表示されます。
+      - title: 注釈、保存、共有
+        detail: 矢印、テキスト、図形、ぼかしを追加します。Ctrl+C / Cmd+C でコピー、Ctrl+S / Cmd+S で保存、Enter で画面にピン留め。オプションのパスワード付き共有リンクにアップロードすることもできます。
+  faq:
+    eyebrow: よくある質問
+    title: スクリーンショットツールに関するよくある質問
+    items:
+      - q: スクリーンショットツールとは何ですか？
+        a: スクリーンショットツールは、画面の一部または全体を画像としてキャプチャするソフトウェアです。基本的なツールは画像を保存するだけです。SnapTray のような高度なスクリーンショットツールは、注釈付け、画面へのキャプチャのピン留め、リンクでの共有も可能で、SnapTray は macOS/Windows でビデオ録画もできます。
+      - q: SnapTray とは何ですか？
+        a: SnapTray は macOS、Windows、Ubuntu 22.04 X11 beta 向けの無料オープンソースのスクリーンショット・注釈ツールです。システムトレイに常駐し、即座の範囲キャプチャ、豊富な注釈、ピン留めウィンドウ、CLI 自動化を提供します。MP4/GIF/WebP 録画と OCR は macOS および Windows で利用可能。Linux beta はキャプチャと注釈に特化しています。
+      - q: SnapTray は無料ですか？
+        a: はい。SnapTray は MIT ライセンスの下で完全に無料かつオープンソースです。広告、サブスクリプション、アカウント登録、隠れたコストは一切ありません。
+      - q: SnapTray と Snipping Tool の違いは何ですか？
+        a: Snipping Tool は最小限の注釈機能しか持たない基本的なキャプチャを提供します。SnapTray はルーペ、フル注釈ツールキット（矢印、図形、テキスト、ステップバッジ、モザイクぼかし）、ピン留めウィンドウ、CLI 自動化をサポートするプラットフォームで追加。画面録画、GIF/WebP エクスポート、OCR、自動ぼかしは macOS/Windows で利用可能です。
+      - q: SnapTray と Lightshot の違いは何ですか？
+        a: Lightshot はクイックキャプチャとシンプルな注釈を提供しますが、ピン留めウィンドウと CLI サポートが欠けています。SnapTray はサポートするプラットフォームでこれらを備え、macOS/Windows では画面録画、OCR、自動ぼかしを提供しながら、無料でオープンソースかつ完全オフラインです。
+      - q: SnapTray はどのプラットフォームをサポートしていますか？
+        a: SnapTray は macOS 14+（Apple Silicon および Intel）、Windows 10+（x64）、Ubuntu 22.04 X11 AppImage beta をサポートしています。録画と OCR は Linux beta には含まれず、Wayland セッションは非対応です。
+      - q: スクリプトでスクリーンショットを自動化できますか？
+        a: "はい。SnapTray には自動化のための CLI が含まれています。Linux beta では CLI は snaptray full、snaptray region、snaptray pin、snaptray config に対応。snaptray record は macOS/Windows でのみ利用可能です。シェルスクリプト、CI パイプライン、自動化ワークフローに統合できます。"
+  cta:
+    eyebrow: さっそく始めよう
+    title: SnapTray をダウンロード — 無料かつオープンソース
+    subtitle: macOS、Windows、Ubuntu 22.04 X11 beta に対応。アカウント登録不要。
+    button: 今すぐダウンロード
+    learn_more: ホームページへ
+
+landing_mac:
+  hero:
+    title: Mac 向け最高のスクリーンショットツール
+    intro: "macOS には基本的な画面キャプチャ用の Cmd+Shift+4 が搭載されていますが、それ止まりです。注釈もピン留めウィンドウも、MP4/GIF/WebP 録画ワークフローも、OCR もありません。仕事でスクリーンショットを毎日撮るなら、フルワークフローを処理できるツールが必要です。SnapTray は無料のオープンソーススクリーンショットツールで、Mac にプロフェッショナルなキャプチャ、注釈、録画、共有機能を追加します。"
+    cta_download: .dmg をダウンロード
+    cta_docs: ドキュメントを読む
+  problems:
+    eyebrow: 課題
+    title: Cmd+Shift+4 では不十分な理由
+    subtitle: macOS の組み込みスクリーンショットツールは基本的なキャプチャには対応していますが、プロフェッショナルなワークフローには不十分です。
+    items:
+      - pain: キャプチャ後の注釈機能がない
+        detail: macOS は生の画像を保存します。矢印、テキスト、ぼかしを追加するには、Preview やサードパーティエディタを開く必要があり、その都度ワークフローが中断されます。
+      - pain: ピン留めやフローティング参照がない
+        detail: 作業中にスクリーンショットを表示したままにできません。キャプチャしたものはすべてファイルに消えてしまい、常にウィンドウを切り替えることになります。
+      - pain: 画面録画パイプラインがない
+        detail: QuickTime Player はフル画面を録画できますが、範囲選択がなく、一時停止/再開もなく、クイック共有用の GIF や WebP エクスポートもありません。
+      - pain: OCR や QR コードスキャンがない
+        detail: スクリーンショットからテキストを抽出するには手動で再入力する必要があります。画面コンテンツから QR コードをスキャンする組み込みの方法もありません。
+  features:
+    eyebrow: Mac でより良いスクリーンショットを撮る方法
+    title: SnapTray が Mac ワークフローに追加するもの
+    subtitle: Apple Silicon と Intel でネイティブパフォーマンス、深い macOS 統合。
+    items:
+      - title: Retina 品質のキャプチャ
+        body: SnapTray はネイティブ Retina 解像度でレンダリングします。HiDPI ディスプレイのすべてのピクセルが出力画像に保持され、スケーリングによるアーティファクトはありません。
+      - title: 即座のメニューバーアクセス
+        body: メニューバーに常駐し、F2 で即座に起動。Dock アイコンの雑然さもなく、アプリの切り替えも不要。どのコンテキストからでも中断なくキャプチャできます。
+      - title: キャプチャオーバーレイ内で注釈
+        body: 矢印、図形、テキスト、ステップバッジ、モザイクぼかし、絵文字スタンプがキャプチャ直後に利用可能。Preview や別のエディタを開く必要はありません。
+      - title: ピン留め、録画、共有
+        body: キャプチャをフローティング参照としてピン留め、フルスクリーンを MP4/GIF/WebP に録画、OCR でテキストを抽出、または共有リンク用にアップロード。すべて同じ Mac ツールから操作できます。
+  compare:
+    eyebrow: 比較
+    title: "SnapTray vs macOS 標準 vs Shottr vs CleanShot X"
+    feature_label: 機能
+    tools:
+      - SnapTray
+      - macOS 標準
+      - Shottr
+      - CleanShot X
+    rows:
+      - feature: ルーペ付き範囲キャプチャ
+        values: [true, false, true, true]
+      - feature: 注釈ツール
+        values: [true, false, true, true]
+      - feature: 画面へのピン留め
+        values: [true, false, false, true]
+      - feature: 画面録画（Mac）
+        values: [true, "QuickTime のみ", false, true]
+      - feature: GIF / WebP エクスポート（Mac）
+        values: [true, false, false, true]
+      - feature: OCR テキスト抽出（Mac）
+        values: [true, false, true, true]
+      - feature: 自動ぼかし
+        values: [true, false, false, true]
+      - feature: CLI 自動化
+        values: [true, false, false, false]
+      - feature: 無料かつオープンソース
+        values: [true, true, "無料プランあり", false]
+  setup:
+    eyebrow: チュートリアル
+    title: Mac で SnapTray を使う方法
+    steps:
+      - title: DMG からインストール
+        detail: GitHub リリースから DMG をダウンロードし、SnapTray をアプリケーションにドラッグして起動します。macOS のプロンプトが表示されたら画面収録の許可を付与してください。
+      - title: 範囲をキャプチャ
+        detail: F2 を押してキャプチャオーバーレイを開きます。ルーペが即座に表示されます。ドラッグして範囲を選択するか、検出されたウィンドウをクリックしてキャプチャします。
+      - title: 注釈とエクスポート
+        detail: ツールバーを使って矢印、テキスト、図形、ぼかしを追加します。Cmd+C でコピー、Cmd+S で保存、Enter で画面にピン留め。必要に応じて共有リンク用にアップロードします。
+  faq:
+    eyebrow: よくある質問
+    title: Mac スクリーンショットツール — よくある質問
+    items:
+      - q: Mac でスクリーンショットを撮るには？
+        a: "macOS は範囲キャプチャに Cmd+Shift+4、フルスクリーンに Cmd+Shift+3 を提供しています。注釈、録画、共有を含む高度なワークフローには、SnapTray をインストールして F2 を押してください。ルーペ精度、即座の注釈、ワンキーエクスポートを提供します。"
+      - q: SnapTray は Apple Silicon でネイティブ動作しますか？
+        a: はい。SnapTray はユニバーサルバイナリとして提供され、Apple Silicon（M1/M2/M3/M4）と Intel Mac の両方で Rosetta トランスレーションなしにネイティブ動作します。
+      - q: macOS が画面収録の許可を求めるのはなぜですか？
+        a: macOS は画面コンテンツをキャプチャするアプリに対して明示的な画面収録の許可を要求します。SnapTray の動作にはこれが必要です。システム設定 > プライバシーとセキュリティ > 画面収録 で許可してください。
+      - q: SnapTray は CleanShot X と比べてどうですか？
+        a: CleanShot X はクラウド機能を持つ有料アプリです。SnapTray は無料でオープンソース、完全オフラインです。どちらも注釈、録画、OCR を提供しますが、SnapTray は CLI 自動化とクロスプラットフォームサポートを無料で追加します。
+      - q: SnapTray で Mac の画面を録画できますか？
+        a: はい。SnapTray はフルスクリーンを音声付きで MP4 に録画するか、無音クリップ用に GIF/WebP にエクスポートします。システム音声のキャプチャには macOS 13+ または BlackHole などの仮想オーディオデバイスが必要です。
+      - q: SnapTray は Shottr より優れていますか？
+        a: "Shottr は高速で軽量ですが、画面録画、ピン留めウィンドウ、CLI 自動化が欠けています。SnapTray はこれらすべてに加えて自動ぼかし、透かし、クロスプラットフォームサポートを提供しながら、無料でオープンソースです。"
+  cta:
+    eyebrow: さっそく始めよう
+    title: macOS 向け SnapTray をダウンロード
+    subtitle: 無料、オープンソース、Apple Silicon でネイティブ動作。
+    button: .dmg をダウンロード
+    learn_more: ホームページへ
+
+landing_windows:
+  hero:
+    title: Windows 向け最高のスクリーンショットツール
+    intro: "Windows の Snipping Tool は基本的なキャプチャには対応していますが、起動の遅さ、限られた注釈機能、録画機能の欠如により、日常使用には不十分です。ドキュメント作成、バグ報告、デザインフィードバックのためにスクリーンショットを撮るなら、もっと多くの機能が必要です。SnapTray は Snipping Tool を置き換える無料のオープンソーススクリーンショットツールで、即座のキャプチャ、豊富な注釈、録画、CLI 自動化を提供します。"
+    cta_download: Windows 向けダウンロード
+    cta_docs: ドキュメントを読む
+  problems:
+    eyebrow: 課題
+    title: Snipping Tool の問題点
+    subtitle: Windows のデフォルトのスクリーンショット体験はプロフェッショナルなワークフローではなく、時折の使用を想定して設計されています。
+    items:
+      - pain: 起動が遅い
+        detail: Snipping Tool はキャプチャ前に全ウィンドウを開きます。ロードされる頃には、キャプチャしたかった瞬間がすでに過ぎている可能性があります。
+      - pain: 基本的な注釈のみ
+        detail: ペンとハイライターのみ。矢印も、図形も、ステップバッジも、テキストツールも、モザイクぼかしもなく、プロフェッショナルなマークアップに必要なものが何もありません。
+      - pain: ピン留めやフローティング参照がない
+        detail: キャプチャはすべてウィンドウまたはファイルに保存されます。作業中に他のアプリの上でスクリーンショットを表示したままにできません。
+      - pain: CLI や自動化がない
+        detail: コマンドラインインターフェースがありません。キャプチャをスクリプト化したり、CI に統合したり、繰り返しのスクリーンショットワークフローを自動化したりできません。
+  features:
+    eyebrow: Windows でより良いスクリーンショットを撮る方法
+    title: SnapTray が Snipping Tool を置き換える理由
+    subtitle: 高 DPI サポート、マルチモニター対応、Microsoft Store での提供。
+    items:
+      - title: 即座のトレイ起動
+        body: システムトレイで動作し、F2 で即座にキャプチャ。開くウィンドウも、切り替えるアプリもなく、Snipping Tool と Win+Shift+S の両方より高速です。
+      - title: フル注釈ツールキット
+        body: 矢印、図形、テキスト、ステップバッジ、モザイクぼかし、絵文字スタンプ、元に戻す/やり直し。別のエディタを開かずにキャプチャオーバーレイ内で直接注釈を付けます。
+      - title: 高 DPI とマルチモニター対応
+        body: SnapTray は混在した DPI 設定と複数のモニターを正確に処理します。4K ディスプレイでもぼやけたキャプチャ、ずれた範囲、スケーリングのアーティファクトはありません。
+      - title: 録画、ピン留め、自動化
+        body: "フルスクリーンを MP4/GIF/WebP に録画、キャプチャをフローティング参照としてピン留め、OCR でテキストを抽出、CLI ですべてをスクリプト化: snaptray region、snaptray record、snaptray pin。"
+  compare:
+    eyebrow: 比較
+    title: "SnapTray vs Snipping Tool vs ShareX vs Greenshot"
+    feature_label: 機能
+    tools:
+      - SnapTray
+      - Snipping Tool
+      - ShareX
+      - Greenshot
+    rows:
+      - feature: ルーペ付き範囲キャプチャ
+        values: [true, false, true, false]
+      - feature: 注釈ツール
+        values: [true, "ペンのみ", true, true]
+      - feature: 画面へのピン留め
+        values: [true, false, false, false]
+      - feature: 画面録画（Windows）
+        values: [true, true, true, false]
+      - feature: GIF / WebP エクスポート（Windows）
+        values: [true, false, true, false]
+      - feature: OCR テキスト抽出（Windows）
+        values: [true, false, true, false]
+      - feature: 自動ぼかし
+        values: [true, false, false, false]
+      - feature: CLI 自動化
+        values: [true, false, true, false]
+      - feature: クロスプラットフォーム
+        values: [true, false, false, false]
+      - feature: 無料かつオープンソース
+        values: [true, true, true, true]
+  setup:
+    eyebrow: チュートリアル
+    title: Windows で SnapTray を使う方法
+    steps:
+      - title: ストアまたは GitHub からインストール
+        detail: 自動更新のために Microsoft Store から SnapTray を入手するか、GitHub リリースからスタンドアロンインストーラーをダウンロードします。起動するとトレイアイコンがすぐに表示されます。
+      - title: 範囲をキャプチャ
+        detail: F2 を押してキャプチャオーバーレイを開きます。ドラッグして範囲を選択するか、検出されたウィンドウをクリックします。すべてのツールが揃った注釈ツールバーが自動的に表示されます。
+      - title: 注釈とエクスポート
+        detail: 矢印、テキスト、図形、ぼかしを追加します。Ctrl+C でコピー、Ctrl+S で保存、Enter で画面にピン留め。設定でお好みのワークフロー用に出力フォルダとホットキーを設定できます。
+  faq:
+    eyebrow: よくある質問
+    title: Windows スクリーンショットツール — よくある質問
+    items:
+      - q: Windows でスクリーンショットを撮るには？
+        a: "Windows は基本的な範囲キャプチャに Win+Shift+S、フルスクリーンに Print Screen を提供しています。注釈、録画、自動化を含む高度なワークフローには、SnapTray をインストールして F2 を押してください。ルーペ精度、即座の注釈、ワンキーエクスポートを提供します。"
+      - q: SnapTray は高 DPI と 4K ディスプレイに対応していますか？
+        a: はい。SnapTray は DPI 対応で、混在した DPI のマルチモニター設定を正確に処理します。キャプチャはスケーリングのアーティファクトなしにネイティブ解像度でレンダリングされます。
+      - q: SnapTray は Microsoft Store で入手できますか？
+        a: はい。自動更新とサンドボックスセキュリティのために Microsoft Store から SnapTray をインストールするか、GitHub リリースからスタンドアロンインストーラーをダウンロードできます。
+      - q: SnapTray と ShareX の違いは何ですか？
+        a: ShareX は数百の設定を持つ強力ですが複雑なツールです。SnapTray は速度とシンプルさに特化しています。トレイネイティブな起動、クリーンな注釈ツール、ピン留めウィンドウ、クロスプラットフォームサポート。どちらも無料でオープンソースです。
+      - q: SnapTray と Greenshot の違いは何ですか？
+        a: Greenshot は基本的なキャプチャと注釈を提供しますが、画面録画、ピン留めウィンドウ、OCR、自動ぼかし、CLI 自動化が欠けています。SnapTray はサポートするプラットフォームでピン留めウィンドウと CLI 自動化を追加し、macOS/Windows では録画、OCR、自動ぼかしも提供します。さらに macOS と Linux beta（スクリーンショット・注釈ワークフロー向け）もサポートします。
+      - q: SnapTray をスクリプトや自動化で使えますか？
+        a: "はい。SnapTray にはフル CLI が含まれています: snaptray full、snaptray region、snaptray record、snaptray pin、snaptray config。PowerShell スクリプト、バッチファイル、CI パイプラインに統合できます。"
+  cta:
+    eyebrow: さっそく始めよう
+    title: Windows 向け SnapTray をダウンロード
+    subtitle: Microsoft Store から無料で入手するか直接ダウンロード。アカウント登録不要。
+    button: Windows 向けダウンロード
+    learn_more: ホームページへ

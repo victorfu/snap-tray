@@ -59,6 +59,13 @@ void raiseTransientWindowAboveParent(QWindow *window, QWidget *parentWidget);
 // On macOS: no-op.
 void reinforceFramelessToolWindow(QWindow *window);
 
+#ifdef Q_OS_LINUX
+// Requests native keyboard focus for unmanaged/bypass top-level windows.
+// On Linux/X11: uses XSetInputFocus because Qt activation alone does not focus
+// override-redirect windows. No declaration is exposed on other platforms.
+void requestNativeWindowFocus(QWidget *widget);
+#endif
+
 // Hides the native title-bar icon for standard top-level QWindows.
 // On Windows: removes the caption icon while preserving the normal title bar/buttons.
 // On macOS: no-op.

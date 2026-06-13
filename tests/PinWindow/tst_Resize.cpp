@@ -125,6 +125,17 @@ private slots:
         QVERIFY(window.windowFlags() & Qt::WindowStaysOnTopHint);
     }
 
+    void testPinWindowAnimationPolicyIsPlatformScoped() {
+        QPixmap pixmap = createTestPixmap(100, 100);
+        PinWindow window(pixmap, QPoint(0, 0), nullptr, false, false);
+
+#ifdef Q_OS_LINUX
+        QVERIFY(window.windowFlags().testFlag(Qt::X11BypassWindowManagerHint));
+#else
+        QVERIFY(!window.windowFlags().testFlag(Qt::X11BypassWindowManagerHint));
+#endif
+    }
+
     void testWindowHasTranslucentBackground() {
         QPixmap pixmap = createTestPixmap(100, 100);
         PinWindow window(pixmap, QPoint(0, 0));

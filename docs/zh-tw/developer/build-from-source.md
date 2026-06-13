@@ -2,8 +2,8 @@
 last_modified_at: 2026-03-26
 layout: docs
 title: 從原始碼建置
-seo_title: "SnapTray 從原始碼建置：在 macOS 與 Windows 設定工具鏈與編譯流程"
-description: 在 macOS 或 Windows 依官方支援方式建置 SnapTray，包含腳本流程、手動 CMake 與編譯快取設定。
+seo_title: "SnapTray 從原始碼建置：設定 macOS、Windows 與 Linux beta 工具鏈"
+description: 在 macOS、Windows 或 Ubuntu 22.04 X11 beta 依官方支援方式建置 SnapTray，包含腳本流程、手動 CMake 與編譯快取設定。
 permalink: /zh-tw/developer/build-from-source/
 lang: zh-tw
 route_key: developer_build_from_source
@@ -13,12 +13,13 @@ docs_copy_key: developer
 
 ## 支援平台
 
-SnapTray 目前僅支援 macOS 與 Windows。
+SnapTray 目前支援 macOS、Windows 與 Ubuntu 22.04 X11 beta。
 
 ### 執行目標
 
 - macOS 14.0+
 - Windows 10+
+- Ubuntu 22.04 X11 beta
 
 ### 開發前置需求
 
@@ -28,6 +29,15 @@ SnapTray 目前僅支援 macOS 與 Windows。
 - Git（FetchContent 相依套件）
 - macOS：Xcode Command Line Tools
 - Windows：Visual Studio 2022 Build Tools 與 Windows SDK
+
+### Linux
+
+- Ubuntu 22.04 X11 session
+- Qt 6.10.1，需包含 Widgets、Gui、Svg、Concurrent、Network、Quick、QuickControls2、QuickWidgets
+- CMake 3.16+
+- Ninja
+- Git
+- Qt 與 QHotkey 所需的 X11 development libraries
 
 ### 自動抓取的相依套件
 
@@ -48,6 +58,15 @@ SnapTray 目前僅支援 macOS 與 Windows。
 ./scripts/run-tests.sh              # 建置並執行測試
 ./scripts/build-and-run.sh          # Debug 建置 + 執行 app
 ./scripts/build-and-run-release.sh  # Release 建置 + 執行 app
+```
+
+### Linux
+
+Ubuntu 22.04 X11 beta 使用與 macOS 相同的 shell scripts：
+
+```bash
+./scripts/build.sh
+./scripts/run-tests.sh
 ```
 
 ### Windows

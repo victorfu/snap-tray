@@ -16,6 +16,17 @@ qreal effectiveMinPointDistance(const ToolContext* ctx, qreal targetPhysicalDist
 
 constexpr qreal kMarkerMinPointDistancePhysical = 2.5;
 
+bool shouldAppendPoint(const ToolContext* ctx, const QVector<QPointF>& points, const QPointF& point)
+{
+    if (points.isEmpty()) {
+        return true;
+    }
+
+    const QPointF delta = point - points.last();
+    const qreal distance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
+    return distance >= effectiveMinPointDistance(ctx, kMarkerMinPointDistancePhysical);
+}
+
 QRect tailDirtyRect(const QVector<QPointF>& points, int width, int tailPointCount = 4)
 {
     if (points.isEmpty()) {
@@ -72,12 +83,8 @@ void MarkerToolHandler::onMouseMoveF(ToolContext* ctx, const QPointF& pos) {
         return;
     }
 
-    if (!m_currentPath.isEmpty()) {
-        const QPointF delta = pos - m_currentPath.last();
-        const qreal distance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
-        if (distance < effectiveMinPointDistance(ctx, kMarkerMinPointDistancePhysical)) {
-            return;
-        }
+    if (!shouldAppendPoint(ctx, m_currentPath, pos)) {
+        return;
     }
 
     const QRect oldTailBounds = tailDirtyRect(m_currentPath, kMarkerWidth);
@@ -99,8 +106,9 @@ void MarkerToolHandler::onMouseReleaseF(ToolContext* ctx, const QPointF& pos) {
         return;
     }
 
-    // Add final point if different from last
-    if (m_currentPath.isEmpty() || m_currentPath.last() != pos) {
+    // Avoid a tiny release-only terminal segment; with a wide round-cap marker
+    // that can show up as a visible end bump.
+    if (shouldAppendPoint(ctx, m_currentPath, pos)) {
         m_currentPath.append(pos);
         if (m_currentStroke) {
             m_currentStroke->addPoint(pos);

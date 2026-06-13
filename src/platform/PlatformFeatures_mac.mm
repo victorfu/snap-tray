@@ -6,10 +6,15 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QMetaObject>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPixmap>
+#include <QPointer>
 #include <QProcess>
+#include <QtConcurrent/QtConcurrentRun>
+
+#include <atomic>
 
 #import <AppKit/AppKit.h>
 #import <ApplicationServices/ApplicationServices.h>
@@ -22,11 +27,68 @@
 
 namespace {
 
+std::atomic<quint64> g_guiClipboardGeneration{0};
+
 QString escapeForSingleQuotedShellLiteral(const QString& value)
 {
     QString escaped = value;
     escaped.replace('\'', QStringLiteral("'\"'\"'"));
     return escaped;
+}
+
+QByteArray encodePngImage(const QImage& image)
+{
+    if (image.isNull()) {
+        return {};
+    }
+
+    QByteArray pngData;
+    QBuffer buffer(&pngData);
+    buffer.open(QIODevice::WriteOnly);
+    if (!image.save(&buffer, "PNG")) {
+        return {};
+    }
+
+    return pngData;
+}
+
+bool writePngDataToGeneralPasteboard(const QByteArray& pngData)
+{
+    if (pngData.isEmpty()) {
+        return false;
+    }
+
+    @autoreleasepool {
+        NSPasteboard* pasteboard = [NSPasteboard generalPasteboard];
+        [pasteboard clearContents];
+
+        NSData* data = [NSData dataWithBytes:pngData.constData() length:pngData.size()];
+        return [pasteboard setData:data forType:NSPasteboardTypePNG] == YES;
+    }
+}
+
+bool writePngImageToGeneralPasteboard(const QImage& image)
+{
+    return writePngDataToGeneralPasteboard(encodePngImage(image));
+}
+
+void invokeClipboardCompletion(QObject* context,
+                               std::function<void(bool)> completion,
+                               bool success)
+{
+    if (!completion) {
+        return;
+    }
+
+    QObject* target = context ? context : QCoreApplication::instance();
+    if (!target) {
+        completion(success);
+        return;
+    }
+
+    QMetaObject::invokeMethod(target, [completion = std::move(completion), success]() mutable {
+        completion(success);
+    }, Qt::QueuedConnection);
 }
 
 } // namespace
@@ -38,12 +100,18 @@ PlatformFeatures& PlatformFeatures::instance()
 }
 
 PlatformFeatures::PlatformFeatures()
-    : m_ocrAvailable(OCRManager::isAvailable())
-    , m_windowDetectionAvailable(true)
+    : m_capabilities(SnapTray::currentPlatformCapabilities())
+    , m_ocrAvailable(m_capabilities.supportsOCR && OCRManager::isAvailable())
+    , m_windowDetectionAvailable(m_capabilities.supportsWindowDetection)
 {
 }
 
 PlatformFeatures::~PlatformFeatures() = default;
+
+const SnapTray::PlatformCapabilities& PlatformFeatures::capabilities() const
+{
+    return m_capabilities;
+}
 
 bool PlatformFeatures::isOCRAvailable() const
 {
@@ -68,16 +136,21 @@ WindowDetector* PlatformFeatures::createWindowDetector(QObject* parent) const
 
 QIcon PlatformFeatures::createTrayIcon() const
 {
-    const int size = 32;
-    QPixmap pixmap(size, size);
+    // Render the 32pt-grid design into a narrower canvas so the menu bar item
+    // (and thus the system highlight pill) matches widths like Google Drive.
+    const int logicalSize = 19;
+    const qreal dpr = 2.0;
+    QPixmap pixmap(static_cast<int>(logicalSize * dpr), static_cast<int>(logicalSize * dpr));
+    pixmap.setDevicePixelRatio(dpr);
     pixmap.fill(Qt::transparent);
 
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::Antialiasing);
+    painter.scale(logicalSize / 32.0, logicalSize / 32.0);
 
     // Capsule background
     QPainterPath bgPath;
-    bgPath.addRoundedRect(0, 0, size, size, size / 2, size / 2);
+    bgPath.addRoundedRect(0, 0, 32, 32, 16, 16);
 
     // Lightning bolt cutout
     QPainterPath lightningPath;
@@ -99,30 +172,63 @@ QIcon PlatformFeatures::createTrayIcon() const
 
 bool PlatformFeatures::copyImageToClipboardPersistently(const QImage& image) const
 {
+    return writePngImageToGeneralPasteboard(image);
+}
+
+bool PlatformFeatures::copyImageToClipboardForGui(const QImage& image) const
+{
+    // Qt 6.11/macOS can trap later while fulfilling promised TIFF data from
+    // QColorSpace-tagged QImages. Eager PNG pasteboard data avoids that path.
+    return writePngImageToGeneralPasteboard(image);
+}
+
+void PlatformFeatures::copyImageToClipboardForGuiAsync(
+    const QImage& image,
+    QObject* context,
+    std::function<void(bool)> completion) const
+{
+    const quint64 requestGeneration =
+        g_guiClipboardGeneration.fetch_add(1, std::memory_order_acq_rel) + 1;
+
     if (image.isNull()) {
-        return false;
+        invokeClipboardCompletion(context, std::move(completion), false);
+        return;
     }
 
-    // Convert QImage to PNG data
-    QByteArray pngData;
-    QBuffer buffer(&pngData);
-    buffer.open(QIODevice::WriteOnly);
-    if (!image.save(&buffer, "PNG")) {
-        return false;
+    QObject* target = context ? context : QCoreApplication::instance();
+    if (!target) {
+        const bool success = copyImageToClipboardForGui(image);
+        if (completion) {
+            completion(success);
+        }
+        return;
     }
 
-    // Use NSPasteboard directly to ensure data persists after app exit
-    @autoreleasepool {
-        NSPasteboard* pasteboard = [NSPasteboard generalPasteboard];
-        [pasteboard clearContents];
+    const QImage imageForClipboard = image;
+    const QPointer<QObject> targetGuard(target);
+    (void)QtConcurrent::run([imageForClipboard,
+                             targetGuard,
+                             completion = std::move(completion),
+                             requestGeneration]() mutable {
+        QByteArray pngData = encodePngImage(imageForClipboard);
+        QObject* guardedTarget = targetGuard.data();
+        if (!guardedTarget) {
+            return;
+        }
 
-        NSData* data = [NSData dataWithBytes:pngData.constData() length:pngData.size()];
+        QMetaObject::invokeMethod(guardedTarget,
+            [pngData = std::move(pngData), completion = std::move(completion), requestGeneration]() mutable {
+                if (requestGeneration != g_guiClipboardGeneration.load(std::memory_order_acquire)) {
+                    return;
+                }
 
-        // Write PNG data with public.png UTI
-        BOOL success = [pasteboard setData:data forType:NSPasteboardTypePNG];
-
-        return success == YES;
-    }
+                const bool success = writePngDataToGeneralPasteboard(pngData);
+                if (completion) {
+                    completion(success);
+                }
+            },
+            Qt::QueuedConnection);
+    });
 }
 
 QString PlatformFeatures::getAppExecutablePath() const

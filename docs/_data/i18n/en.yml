@@ -1,7 +1,7 @@
 site:
   locale: en-US
-  tagline: "Free Screenshot & Screen Recording Tool for macOS & Windows"
-  title_suffix: "Screenshot & Recording Tool"
+  tagline: "Free Screenshot & Annotation Tool for macOS, Windows, and Linux beta"
+  title_suffix: "Screenshot & Annotation Tool"
 
 nav:
   home: Home
@@ -17,25 +17,26 @@ language:
 
 hero:
   eyebrow: Capture. Annotate. Record.
-  title: Fast Screenshot Tool for Mac & Windows
-  tagline: SnapTray lives in your system tray and launches instantly when you need precise captures, polished annotations, and high-quality recordings.
+  title: Fast Screenshot Tool for Mac, Windows, and Linux beta
+  tagline: SnapTray lives in your system tray and launches instantly for precise captures and polished annotations. Recording and OCR are available on macOS/Windows; Linux beta focuses on screenshots and annotation.
   cta_download: Download
   cta_github: View on GitHub
   pills:
     - macOS 14+
     - Windows 10+
+    - Ubuntu 22.04 X11 beta
     - Qt 6.10.1
   runtime_title: SnapTray Runtime
   runtime_items:
     - Region Capture with magnifier precision
     - Screen Canvas + rich annotation tools
-    - MP4 / GIF / WebP recording pipeline
-    - OCR, auto blur, watermark, and pin windows
+    - MP4 / GIF / WebP recording on macOS/Windows
+    - OCR on macOS/Windows, plus auto blur, watermark, and pin windows
 
 features:
   eyebrow: Feature Set
   title: Built for fast, professional capture pipelines
-  subtitle: From one-shot screenshots to long recording sessions, SnapTray keeps every operation inside a single tray-native workflow.
+  subtitle: From one-shot screenshots to macOS/Windows recording sessions, SnapTray keeps capture work inside a single tray-native workflow.
   items:
     - kind: Capture
       title: Region Capture
@@ -51,13 +52,13 @@ features:
       body: Arrow, pencil, marker, shapes, text, mosaic, step badges, and emoji stickers.
     - kind: Automation
       title: OCR + Auto Blur
-      body: Extract text and automatically mask sensitive faces or credentials for safer sharing.
+      body: Extract text on macOS/Windows and automatically mask sensitive faces or credentials for safer sharing.
     - kind: Detection
       title: Window Detection
       body: Quickly select windows without manually dragging exact bounds.
     - kind: Recording
       title: Screen Recording
-      body: Capture any region and export MP4 with optional audio, or GIF/WebP for silent clips.
+      body: On macOS/Windows, record a full screen source and export MP4 with optional audio, or GIF/WebP for silent clips.
     - kind: Utility
       title: Color Picker
       body: Pick on-screen colors, switch HEX/RGB with Shift, copy instantly with C.
@@ -69,7 +70,7 @@ features:
       body: Upload captures and generate share links with optional password protection.
     - kind: Branding
       title: Watermark
-      body: Apply custom image watermark overlays to screenshots and recordings.
+      body: Apply custom image watermark overlays to screenshots and, on macOS/Windows, recordings.
     - kind: Workflow
       title: Hotkey First
       body: Region Capture, Canvas, Paste, Quick Pin, and Hide/Show Pins stay one keystroke away.
@@ -77,13 +78,13 @@ features:
 downloads:
   eyebrow: Downloads
   title: Install the latest SnapTray build
-  subtitle: Get the newest stable release directly from GitHub assets or install from Microsoft Store.
+  subtitle: Get the newest stable release directly from GitHub assets, install from Microsoft Store, or try the Linux beta AppImage.
   macos:
     label: macOS
     title: Desktop Installer
     requirements: macOS 14.0 (Sonoma) or later
     button: Download .dmg
-    empty: DMG installer coming soon
+    empty: Or download from GitHub releases
     source_link: Build from source on GitHub
   windows:
     label: Windows
@@ -92,6 +93,13 @@ downloads:
     store_prefix: Get it on
     store_name: Microsoft Store
     button: Download .exe
+    empty: Or download from GitHub releases
+    unsigned_note: The direct-download .exe is currently unsigned, so Windows may show a SmartScreen or other safety warning during install. If you downloaded it from the official SnapTray GitHub Releases page, this is expected and does not mean the file is unsafe.
+  linux:
+    label: Linux beta
+    title: AppImage
+    requirements: Ubuntu 22.04 X11 session
+    button: Download AppImage
     empty: Or download from GitHub releases
   req_eyebrow: System Requirements
   req_title: Platform prerequisites
@@ -106,21 +114,26 @@ downloads:
         - Windows 10 or later
         - Full-trust capability for capture and encoding stack
         - Microphone permission only when recording audio
+    - title: Linux beta
+      items:
+        - Ubuntu 22.04 X11 session
+        - Recording and OCR are not included
+        - Wayland sessions are not supported
 
 faq:
   eyebrow: FAQ
   title: Frequently Asked Questions
   items:
     - q: What is SnapTray?
-      a: SnapTray is a free, lightweight screenshot and screen recording tool for macOS and Windows. It lives in your system tray and lets you capture regions, annotate screenshots, pin images, record your screen to MP4/GIF/WebP, and share results instantly.
+      a: SnapTray is a free, lightweight screenshot and annotation tool for macOS, Windows, and Ubuntu 22.04 X11 beta. It lives in your system tray and lets you capture regions, annotate screenshots, pin images, and share results instantly. Recording and OCR are not included in the Linux beta.
     - q: Is SnapTray free?
       a: Yes, SnapTray is completely free and open source under the MIT license. There are no ads, subscriptions, or hidden costs.
     - q: How is SnapTray different from Snipping Tool?
-      a: SnapTray goes beyond basic screen capture by offering on-screen annotation tools, pin windows for always-on-top references, screen canvas mode, MP4 recording with audio, GIF/WebP export, OCR text extraction, auto blur for sensitive content, QR code scanning, and a full CLI for automation.
+      a: SnapTray goes beyond basic screen capture by offering on-screen annotation tools, pin windows for always-on-top references, screen canvas mode, QR code scanning, and a full CLI for automation. MP4 recording with audio, GIF/WebP export, OCR text extraction, and auto blur are available on macOS/Windows; they are not included in the Linux beta.
 
 footer:
   product_title: SnapTray
-  product_copy: Desktop-grade screenshot and recording workflows, designed for speed and clarity.
+  product_copy: Desktop-grade screenshot workflows, designed for speed and clarity.
   product_meta: Made with Qt 6 and C++17
   resources_title: Resources
   community_title: Community
@@ -158,7 +171,7 @@ error404:
 landing_screenshot_tool:
   hero:
     title: Best Screenshot Tool for Fast Capture
-    intro: "A screenshot tool captures any part of your screen as an image — for documentation, bug reports, tutorials, or quick sharing. Most operating systems include a basic one, but built-in tools stop at capture. If you annotate, record, or share screenshots regularly, you need a tool built for that workflow. SnapTray is a free, open-source screenshot tool for macOS and Windows that handles capture, annotation, recording, and sharing in one place."
+    intro: "A screenshot tool captures any part of your screen as an image — for documentation, bug reports, tutorials, or quick sharing. Most operating systems include a basic one, but built-in tools stop at capture. If you annotate, record, or share screenshots regularly, you need a tool built for that workflow. SnapTray is a free, open-source screenshot tool for macOS, Windows, and Ubuntu 22.04 X11 beta that handles capture, annotation, and sharing in one place. Recording is available on macOS and Windows."
     cta_download: Download Free
     cta_docs: Read the Docs
   problems:
@@ -169,7 +182,7 @@ landing_screenshot_tool:
       - pain: Windows Snipping Tool Is Slow and Basic
         detail: Snipping Tool opens a full window before you can capture. Annotation is limited to a pen and highlighter — no arrows, shapes, or text. There is no CLI, no pin-to-screen, and no recording pipeline.
       - pain: Mac Screenshots Lack Post-Capture Tools
-        detail: Cmd+Shift+4 captures a region, but that is where it ends. To annotate, you need Preview or a third-party editor. There is no pin window, no screen recording with region selection, and no OCR.
+        detail: Cmd+Shift+4 captures a region, but that is where it ends. To annotate, you need Preview or a third-party editor. There is no pin window, no MP4/GIF/WebP recording workflow, and no OCR.
       - pain: Third-Party Tools Are Bloated or Paid
         detail: Many alternatives require accounts, cloud subscriptions, or ship as heavy Electron apps. Simple capture-and-annotate workflows should not need 500 MB of RAM or a monthly fee.
   features:
@@ -182,7 +195,7 @@ landing_screenshot_tool:
       - title: Annotate Without Leaving the Capture
         body: Arrows, shapes, text, step badges, mosaic blur, and emoji stickers appear in the same overlay. You do not need to open a separate editor or paste into another app.
       - title: Share, Save, or Pin the Result
-        body: Copy to clipboard, save to disk, upload for a share link, or pin as a floating reference window. Screen recordings export to MP4, GIF, or WebP. Every action is one keystroke away.
+        body: Copy to clipboard, save to disk, upload for a share link, or pin as a floating reference window. On macOS/Windows, full-screen recordings export to MP4, GIF, or WebP. Every action is one keystroke away.
   compare:
     eyebrow: Comparison
     title: "SnapTray vs Snipping Tool vs Lightshot vs ShareX"
@@ -199,17 +212,17 @@ landing_screenshot_tool:
         values: [true, false, true, true]
       - feature: Pin to screen
         values: [true, false, false, false]
-      - feature: Screen recording (MP4)
+      - feature: Screen recording (MP4, macOS/Windows only)
         values: [true, true, false, true]
-      - feature: GIF / WebP export
+      - feature: GIF / WebP export (macOS/Windows only)
         values: [true, false, false, true]
-      - feature: OCR text extraction
+      - feature: OCR text extraction (macOS/Windows only)
         values: [true, false, false, true]
       - feature: Auto blur (faces / credentials)
         values: [true, false, false, false]
       - feature: CLI automation
         values: [true, false, false, true]
-      - feature: Cross-platform (macOS + Windows)
+      - feature: Cross-platform (macOS + Windows + Linux beta)
         values: [true, false, false, false]
       - feature: Free and open source
         values: [true, true, true, true]
@@ -218,19 +231,19 @@ landing_screenshot_tool:
     title: Who Uses a Screenshot Tool Daily
     items:
       - role: Developers
-        scenario: Capture error traces, annotate architecture diagrams, record reproduction steps for bug reports — then paste directly into GitHub issues or Slack.
+        scenario: Capture error traces, annotate architecture diagrams, and, on macOS/Windows, record reproduction steps for bug reports — then paste directly into GitHub issues or Slack.
       - role: Designers
         scenario: Pin reference images on screen, compare layouts side by side, measure pixel distances, and export annotated feedback for developers.
       - role: Support Teams
         scenario: Screenshot customer issues, add step-badge annotations, blur sensitive data, and share a link — all without leaving the conversation.
       - role: Educators
-        scenario: Record tutorial walkthroughs, annotate slides during live sessions with Screen Canvas, and export GIFs for inline documentation.
+        scenario: On macOS/Windows, record tutorial walkthroughs and export GIFs for inline documentation; use Screen Canvas to annotate slides during live sessions.
   setup:
     eyebrow: Quick Start
     title: How to Start Using SnapTray
     steps:
       - title: Download and Install
-        detail: Get SnapTray from GitHub releases (macOS DMG or Windows installer) or the Microsoft Store. Launch it — the tray icon appears immediately.
+        detail: Get SnapTray from GitHub releases (macOS DMG, Windows installer, or Linux beta AppImage), or install the Windows version from the Microsoft Store. Launch it — the tray icon appears immediately.
       - title: Take Your First Screenshot
         detail: Press F2 to open the capture overlay. Drag to select a region, or click a detected window. The annotation toolbar appears automatically.
       - title: Annotate, Save, and Share
@@ -240,30 +253,30 @@ landing_screenshot_tool:
     title: Screenshot Tool — Frequently Asked Questions
     items:
       - q: What is a screenshot tool?
-        a: A screenshot tool is software that captures part or all of your screen as an image. Basic tools only save the image. Advanced screenshot tools like SnapTray also let you annotate, record video, pin captures on screen, and share with a link.
+        a: A screenshot tool is software that captures part or all of your screen as an image. Basic tools only save the image. Advanced screenshot tools like SnapTray also let you annotate, pin captures on screen, and share with a link; SnapTray records video on macOS/Windows.
       - q: What is SnapTray?
-        a: SnapTray is a free, open-source screenshot and screen recording tool for macOS and Windows. It lives in your system tray and provides instant region capture, rich annotation, pin windows, MP4/GIF/WebP recording, OCR, auto blur, and CLI automation.
+        a: SnapTray is a free, open-source screenshot and annotation tool for macOS, Windows, and Ubuntu 22.04 X11 beta. It lives in your system tray and provides instant region capture, rich annotation, pin windows, and CLI automation. MP4/GIF/WebP recording and OCR are available on macOS and Windows; the Linux beta focuses on capture and annotation.
       - q: Is SnapTray free?
         a: Yes. SnapTray is completely free and open source under the MIT license. There are no ads, subscriptions, accounts, or hidden costs.
       - q: How is SnapTray different from Snipping Tool?
-        a: Snipping Tool offers basic capture with minimal annotation. SnapTray adds a magnifier, full annotation toolkit (arrows, shapes, text, step badges, mosaic blur), pin windows, screen recording, GIF/WebP export, OCR, auto blur, and CLI automation — all free and cross-platform.
+        a: Snipping Tool offers basic capture with minimal annotation. SnapTray adds a magnifier, full annotation toolkit (arrows, shapes, text, step badges, mosaic blur), pin windows, and CLI automation across supported platforms; screen recording, GIF/WebP export, OCR, and auto blur are available on macOS/Windows.
       - q: How is SnapTray different from Lightshot?
-        a: Lightshot provides quick capture and simple annotation, but lacks screen recording, pin windows, OCR, auto blur, and CLI support. SnapTray includes all of these features while remaining free, open source, and fully offline.
-      - q: Does SnapTray work on both macOS and Windows?
-        a: Yes. SnapTray supports macOS 14+ (Apple Silicon and Intel) and Windows 10+ (x64). The same feature set is available on both platforms.
+        a: Lightshot provides quick capture and simple annotation, but lacks pin windows and CLI support. SnapTray includes those across supported platforms, with screen recording, OCR, and auto blur on macOS/Windows, while remaining free, open source, and fully offline.
+      - q: Which platforms does SnapTray support?
+        a: SnapTray supports macOS 14+ (Apple Silicon and Intel), Windows 10+ (x64), and an Ubuntu 22.04 X11 AppImage beta. Recording and OCR are not included in the Linux beta, and Wayland sessions are not supported.
       - q: Can I automate screenshots with scripts?
-        a: "Yes. SnapTray includes a full CLI: snaptray full, snaptray region, snaptray record, snaptray pin, and snaptray config. Integrate into shell scripts, CI pipelines, or automation workflows."
+        a: "Yes. SnapTray includes a CLI for automation. On Linux beta, the CLI covers snaptray full, snaptray region, snaptray pin, and snaptray config; snaptray record is available only on macOS/Windows. Integrate into shell scripts, CI pipelines, or automation workflows."
   cta:
     eyebrow: Get Started
     title: Download SnapTray — Free and Open Source
-    subtitle: Available for macOS and Windows. No account required.
+    subtitle: Available for macOS, Windows, and Ubuntu 22.04 X11 beta. No account required.
     button: Download Now
     learn_more: Visit Homepage
 
 landing_mac:
   hero:
     title: Best Screenshot Tool for Mac
-    intro: "macOS includes Cmd+Shift+4 for basic screen capture, but stops there — no annotation, no pin windows, no region recording, no OCR. If you take screenshots daily for work, you need a tool that handles the full workflow. SnapTray is a free, open-source screenshot tool that adds professional capture, annotation, recording, and sharing to your Mac."
+    intro: "macOS includes Cmd+Shift+4 for basic screen capture, but stops there — no annotation, no pin windows, no MP4/GIF/WebP recording workflow, no OCR. If you take screenshots daily for work, you need a tool that handles the full workflow. SnapTray is a free, open-source screenshot tool that adds professional capture, annotation, recording, and sharing to your Mac."
     cta_download: Download .dmg
     cta_docs: Read the Docs
   problems:
@@ -291,7 +304,7 @@ landing_mac:
       - title: Annotate in the Capture Overlay
         body: Arrows, shapes, text, step badges, mosaic blur, and emoji stickers are available immediately after capture. No need to open Preview or another editor.
       - title: Pin, Record, and Share
-        body: Pin captures as floating references, record any region to MP4/GIF/WebP, extract text with OCR, or upload for a share link — all from the same tool.
+        body: Pin captures as floating references, record full screen to MP4/GIF/WebP, extract text with OCR, or upload for a share link — all from the same Mac tool.
   compare:
     eyebrow: Comparison
     title: "SnapTray vs macOS Built-in vs Shottr vs CleanShot X"
@@ -308,11 +321,11 @@ landing_mac:
         values: [true, false, true, true]
       - feature: Pin to screen
         values: [true, false, false, true]
-      - feature: Screen recording
+      - feature: Screen recording (Mac)
         values: [true, "QuickTime only", false, true]
-      - feature: GIF / WebP export
+      - feature: GIF / WebP export (Mac)
         values: [true, false, false, true]
-      - feature: OCR text extraction
+      - feature: OCR text extraction (Mac)
         values: [true, false, true, true]
       - feature: Auto blur
         values: [true, false, false, true]
@@ -343,7 +356,7 @@ landing_mac:
       - q: How does SnapTray compare to CleanShot X?
         a: CleanShot X is a paid app with cloud features. SnapTray is free, open-source, and fully offline. Both offer annotation, recording, and OCR — but SnapTray adds CLI automation and cross-platform support at no cost.
       - q: Can I record my screen on Mac with SnapTray?
-        a: Yes. SnapTray records any region to MP4 with optional audio, or exports as GIF/WebP for silent clips. System audio capture requires macOS 13+ or a virtual audio device like BlackHole.
+        a: Yes. SnapTray records full screen to MP4 with optional audio, or exports as GIF/WebP for silent clips. System audio capture requires macOS 13+ or a virtual audio device like BlackHole.
       - q: Is SnapTray better than Shottr?
         a: "Shottr is fast and lightweight but lacks screen recording, pin windows, and CLI automation. SnapTray includes all of these plus auto blur, watermarks, and cross-platform support — while remaining free and open source."
   cta:
@@ -384,7 +397,7 @@ landing_windows:
       - title: High-DPI and Multi-Monitor
         body: SnapTray handles mixed-DPI setups and multiple monitors correctly. No blurry captures, no offset regions, no scaling artifacts on 4K displays.
       - title: Record, Pin, and Automate
-        body: "Record any region to MP4/GIF/WebP, pin captures as floating references, extract text with OCR, and script everything via CLI: snaptray region, snaptray record, snaptray pin."
+        body: "Record full screen to MP4/GIF/WebP, pin captures as floating references, extract text with OCR, and script everything via CLI: snaptray region, snaptray record, snaptray pin."
   compare:
     eyebrow: Comparison
     title: "SnapTray vs Snipping Tool vs ShareX vs Greenshot"
@@ -401,11 +414,11 @@ landing_windows:
         values: [true, "Pen only", true, true]
       - feature: Pin to screen
         values: [true, false, false, false]
-      - feature: Screen recording
+      - feature: Screen recording (Windows)
         values: [true, true, true, false]
-      - feature: GIF / WebP export
+      - feature: GIF / WebP export (Windows)
         values: [true, false, true, false]
-      - feature: OCR text extraction
+      - feature: OCR text extraction (Windows)
         values: [true, false, true, false]
       - feature: Auto blur
         values: [true, false, false, false]
@@ -438,7 +451,7 @@ landing_windows:
       - q: How is SnapTray different from ShareX?
         a: ShareX is powerful but complex with hundreds of settings. SnapTray focuses on speed and simplicity — tray-native launch, clean annotation tools, pin windows, and cross-platform support. Both are free and open source.
       - q: How is SnapTray different from Greenshot?
-        a: Greenshot offers basic capture and annotation but lacks screen recording, pin windows, OCR, auto blur, and CLI automation. SnapTray includes all of these features while also supporting macOS.
+        a: Greenshot offers basic capture and annotation but lacks screen recording, pin windows, OCR, auto blur, and CLI automation. SnapTray adds pin windows and CLI automation across supported platforms, with recording, OCR, and auto blur on macOS/Windows. It also supports macOS and a Linux beta for screenshot and annotation workflows.
       - q: Can I use SnapTray in scripts and automation?
         a: "Yes. SnapTray includes a full CLI: snaptray full, snaptray region, snaptray record, snaptray pin, and snaptray config. Integrate into PowerShell scripts, batch files, or CI pipelines."
   cta:

@@ -1,9 +1,9 @@
 ---
 layout: default
 title: Releases
-seo_title: "SnapTray Release Notes & Version History — Mac & Windows"
+seo_title: "SnapTray Release Notes & Downloads for macOS, Windows & Linux Beta"
 permalink: /releases/
-description: Browse SnapTray release notes and download installers for macOS and Windows.
+description: Browse SnapTray release notes and download installers for macOS, Windows, and Linux beta AppImage.
 lang: en
 route_key: releases
 ---

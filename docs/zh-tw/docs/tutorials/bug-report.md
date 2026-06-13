@@ -2,8 +2,8 @@
 last_modified_at: 2026-02-24
 layout: docs
 title: Bug 回報流程
-seo_title: "SnapTray 教學：用清楚截圖、操作步驟與短影片建立可重現的 Bug 回報"
-description: 用清楚截圖、步驟與短影片，建立可重現的問題回報。
+seo_title: "SnapTray 教學：用截圖、操作步驟與 macOS/Windows 短影片建立可重現 Bug 回報"
+description: 用清楚截圖、步驟與 macOS/Windows 短影片，建立可重現的問題回報。
 permalink: /zh-tw/docs/tutorials/bug-report/
 lang: zh-tw
 route_key: docs_tutorial_bug_report
@@ -19,7 +19,7 @@ doc_order: 3
 
 - 1 張已標註的截圖
 - 1 份精簡重現步驟
-- 選配：10-30 秒錄影
+- 選配：10-30 秒錄影（僅 macOS/Windows；Linux beta 請略過）
 
 ## 操作流程
 
@@ -50,9 +50,9 @@ doc_order: 3
 
 ### 5. 選配：補一段短錄影
 
-若問題與時序、動畫或互動節奏有關：
+若問題與時序、動畫或互動節奏有關，請只在 macOS/Windows 錄影。Linux beta 不包含錄影，請略過此步驟。
 
-1. 在選取區按 `R`（或從托盤啟動錄影）。
+1. 從托盤啟動全螢幕錄影，或執行 `snaptray record start`。
 2. 錄 10-30 秒。
 3. 停止並輸出 MP4。
 
@@ -75,7 +75,7 @@ Actual:
 
 Attachments:
 - screenshot.png
-- recording.mp4 (optional)
+- recording.mp4 (optional, macOS/Windows only)
 ```
 
 ## 品質檢查清單

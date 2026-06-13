@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Layouts
 import SnapTrayQml
 
 Item {
@@ -21,30 +20,6 @@ Item {
         radius: 14
     }
 
-    MouseArea {
-        id: dragArea
-        anchors.fill: parent
-        z: 0
-        cursorShape: pressed ? CursorTokens.panelDragActive : CursorTokens.panelDragIdle
-
-        property point pressStart
-
-        onPressed: function(mouse) {
-            pressStart = Qt.point(mouse.x, mouse.y)
-            root.dragStarted()
-        }
-
-        onPositionChanged: function(mouse) {
-            if (pressed) {
-                var dx = mouse.x - pressStart.x
-                var dy = mouse.y - pressStart.y
-                root.dragMoved(dx, dy)
-            }
-        }
-
-        onReleased: root.dragFinished()
-    }
-
     Column {
         id: contentColumn
         x: 16
@@ -55,13 +30,52 @@ Item {
         property int leftPadding: 0
         property int rightPadding: 0
 
-        Row {
+        Item {
+            id: header
             width: parent.width
             height: 28
-            spacing: 8
+
+            Item {
+                id: titleArea
+                anchors {
+                    left: parent.left
+                    top: parent.top
+                    bottom: parent.bottom
+                    right: closeButton.left
+                    rightMargin: 8
+                }
+            }
+
+            MouseArea {
+                id: dragArea
+                objectName: "beautifyPanelDragArea"
+                anchors.fill: titleArea
+                z: 0
+                cursorShape: pressed ? CursorTokens.panelDragActive : CursorTokens.panelDragIdle
+
+                property point pressStart
+
+                onPressed: function(mouse) {
+                    pressStart = Qt.point(mouse.x, mouse.y)
+                    root.dragStarted()
+                }
+
+                onPositionChanged: function(mouse) {
+                    if (pressed) {
+                        var dx = mouse.x - pressStart.x
+                        var dy = mouse.y - pressStart.y
+                        root.dragMoved(dx, dy)
+                    }
+                }
+
+                onReleased: root.dragFinished()
+            }
 
             Text {
-                anchors.verticalCenter: parent.verticalCenter
+                anchors {
+                    left: titleArea.left
+                    verticalCenter: parent.verticalCenter
+                }
                 text: qsTr("Beautify")
                 color: SemanticTokens.textPrimary
                 font.pixelSize: SemanticTokens.fontSizeH3
@@ -69,19 +83,13 @@ Item {
                 font.weight: SemanticTokens.fontWeightSemiBold
             }
 
-            Item {
-                width: Math.max(0, parent.width - titleText.width - closeButton.width - 8)
-                height: 1
-            }
-
-            Text {
-                id: titleText
-                visible: false
-                text: qsTr("Beautify")
-            }
-
             Rectangle {
                 id: closeButton
+                objectName: "beautifyPanelDismissButton"
+                anchors {
+                    right: parent.right
+                    verticalCenter: parent.verticalCenter
+                }
                 width: 28
                 height: 28
                 radius: 8
@@ -104,6 +112,7 @@ Item {
 
                 MouseArea {
                     id: closeMouse
+                    objectName: "beautifyPanelDismissMouseArea"
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: CursorTokens.clickable

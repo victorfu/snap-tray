@@ -22,7 +22,7 @@ If you are new to SnapTray, start with **Quick Share (30s)** first. Each tutoria
 | Capture and send screenshots fast | [Quick Share (30s)](/docs/tutorials/quick-share/) | [Region Capture](/docs/region-capture/) |
 | Report bugs with clear evidence | [Bug Report Workflow](/docs/tutorials/bug-report/) | [Annotation Tools](/docs/annotation-tools/) |
 | Keep references visible while working | [Live Reference with Pin](/docs/tutorials/live-reference/) | [Pin Window](/docs/pin-window/) |
-| Record and share product demos | [Recording Demo](/docs/tutorials/recording-demo/) | [Recording](/docs/recording/) |
+| Record and share product demos (macOS/Windows only) | [Recording Demo (macOS/Windows only)](/docs/tutorials/recording-demo/) | [Recording (macOS/Windows only)](/docs/recording/) |
 
 ## Tutorial style
 
@@ -43,5 +43,5 @@ Tutorials focus on outcomes. For full option references, use:
 - [Region Capture](/docs/region-capture/)
 - [Annotation Tools](/docs/annotation-tools/)
 - [Pin Window](/docs/pin-window/)
-- [Recording](/docs/recording/)
+- [Recording (macOS/Windows only)](/docs/recording/)
 - [CLI](/docs/cli/)

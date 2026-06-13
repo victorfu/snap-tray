@@ -11,11 +11,11 @@
 ---
 
 <p align="center">
-  Capture, annotate, pin, and record your screen without leaving the desktop.
+  Capture, annotate, and pin without leaving the desktop; recording is available on macOS/Windows.
 </p>
 
 <p align="center">
-  macOS 14+ · Windows 10+
+  macOS 14+ · Windows 10+ · Ubuntu 22.04 X11 beta
 </p>
 
 <p align="center">
@@ -24,21 +24,22 @@
   <a href="docs/docs/tutorials/index.md">Tutorials</a>
 </p>
 
-SnapTray is a tray-native screenshot and screen recording app for macOS and Windows. It is built for fast desktop workflows: capture a region, explain it instantly, keep references on screen, and turn the same moment into a shareable image or video.
+SnapTray is a Qt 6 screenshot and annotation app for macOS, Windows, and Ubuntu 22.04 X11 beta. It is built for fast desktop workflows: capture a region, explain it instantly, keep references on screen, and turn the same moment into a shareable image. Recording and OCR are macOS/Windows only; they are hidden and not included in the Linux beta.
 
 ## Why SnapTray
 
 - Capture quickly with magnified selection, window detection, multi-region capture, cursor inclusion, and color picking
-- Annotate immediately with arrows, marker, shapes, text, mosaic, step badges, emoji, OCR, QR scan, and auto blur
+- Annotate immediately with arrows, marker, shapes, text, mosaic, step badges, emoji, QR scan, and auto blur; OCR is macOS/Windows only
 - Pin screenshots above other windows so references stay visible while you work
-- Record a full screen source from the tray menu or CLI, with direct start on single-display setups and screen picking on multi-display setups
+- On macOS/Windows, record a full screen source from the tray menu or CLI, with direct start on single-display setups and screen picking on multi-display setups
 - Launch repeatable flows from global hotkeys, the tray menu, or the CLI
+- Linux beta: Ubuntu 22.04 X11 AppImage; recording and OCR are not shown.
 
 ## Built for Real Work
 
 ### Capture and mark up in one pass
 
-Press `F2`, drag a region, then copy, save, pin, share, OCR, or blur from the same toolbar.
+Press `F2`, drag a region, then copy, save, pin, share, or blur from the same toolbar. OCR is also available there on macOS/Windows.
 
 ### Draw directly on the desktop
 
@@ -50,7 +51,7 @@ Pinned images stay above other apps and support zoom, opacity, rotation, flip, m
 
 ### Record what matters
 
-Start from the tray menu or CLI, choose a screen when needed, then use the floating control bar to monitor duration and stop recording.
+On macOS/Windows, start from the tray menu or CLI, choose a screen when needed, then use the floating control bar to monitor duration and stop recording.
 
 ## Learn More
 
@@ -67,7 +68,7 @@ If you want to build SnapTray from source or work on the codebase, start with [D
 Quick entry points:
 
 ```bash
-# macOS
+# macOS/Linux beta
 ./scripts/build.sh
 ./scripts/run-tests.sh
 ```

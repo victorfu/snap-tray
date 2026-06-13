@@ -24,6 +24,7 @@ private slots:
     void testGetSourceDisplayName_MacAppStore();
     void testGetSourceDisplayName_DirectDownload();
     void testGetSourceDisplayName_Homebrew();
+    void testGetSourceDisplayName_AppImage();
     void testGetSourceDisplayName_Development();
     void testGetSourceDisplayName_Unknown();
 
@@ -33,6 +34,7 @@ private slots:
 
     // isStoreInstall tests (depends on current detection)
     void testIsStoreInstall_ReturnsConsistentResult();
+    void testAppImageIsNotStoreInstallWhenForced();
 
     // Development build detection
     void testIsDevelopmentBuild_ReturnsExpectedForBuildType();
@@ -68,6 +70,12 @@ void tst_InstallSourceDetector::testGetSourceDisplayName_Homebrew()
 {
     QString name = InstallSourceDetector::getSourceDisplayName(InstallSource::Homebrew);
     QCOMPARE(name, QStringLiteral("Homebrew"));
+}
+
+void tst_InstallSourceDetector::testGetSourceDisplayName_AppImage()
+{
+    QString name = InstallSourceDetector::getSourceDisplayName(InstallSource::AppImage);
+    QCOMPARE(name, QStringLiteral("AppImage"));
 }
 
 void tst_InstallSourceDetector::testGetSourceDisplayName_Development()
@@ -127,6 +135,14 @@ void tst_InstallSourceDetector::testIsStoreInstall_ReturnsConsistentResult()
     QCOMPARE(isStore, expectedStore);
 }
 
+void tst_InstallSourceDetector::testAppImageIsNotStoreInstallWhenForced()
+{
+    InstallSourceDetector::setDetectedSourceForTests(InstallSource::AppImage);
+    QVERIFY(!InstallSourceDetector::isStoreInstall());
+    QVERIFY(InstallSourceDetector::getStoreName().isEmpty());
+    InstallSourceDetector::clearDetectedSourceForTests();
+}
+
 // ============================================================================
 // Development build detection
 // ============================================================================
@@ -166,6 +182,7 @@ void tst_InstallSourceDetector::testDetect_ReturnsValidEnum()
             source == InstallSource::MacAppStore ||
             source == InstallSource::DirectDownload ||
             source == InstallSource::Homebrew ||
+            source == InstallSource::AppImage ||
             source == InstallSource::Development ||
             source == InstallSource::Unknown);
 }

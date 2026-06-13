@@ -41,6 +41,20 @@
           {{ t.downloads.windows.button }} <span class="version"></span>
         </a>
         <p id="no-windows-release" class="status-text">{{ t.downloads.windows.empty }}</p>
+        {% if t.downloads.windows.unsigned_note %}
+        <p class="unsigned-note">{{ t.downloads.windows.unsigned_note }}</p>
+        {% endif %}
+      </article>
+
+      <article class="download-card" data-reveal>
+        <p class="platform-label">{{ t.downloads.linux.label }}</p>
+        <h3>{{ t.downloads.linux.title }}</h3>
+        <p class="requirements">{{ t.downloads.linux.requirements }}</p>
+
+        <a id="download-linux" href="#" class="btn btn-primary btn-download" hidden>
+          {{ t.downloads.linux.button }} <span class="version"></span>
+        </a>
+        <p id="no-linux-release" class="status-text">{{ t.downloads.linux.empty }}</p>
       </article>
     </div>
 

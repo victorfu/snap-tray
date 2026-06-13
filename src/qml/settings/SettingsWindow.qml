@@ -10,6 +10,16 @@ import SnapTrayQml
 Item {
     id: root
 
+    function stackIndexForKey(key) {
+        var keys = ["general", "hotkeys", "advanced", "watermark", "ocr", "recording", "files", "updates", "about"]
+        for (var i = 0; i < keys.length; i++) {
+            if (keys[i] === key) {
+                return i
+            }
+        }
+        return 0
+    }
+
     // Background fill
     Rectangle {
         anchors.fill: parent
@@ -41,14 +51,14 @@ Item {
             id: contentStack
             Layout.fillWidth: true
             Layout.fillHeight: true
-            currentIndex: sidebar.currentIndex
+            currentIndex: root.stackIndexForKey(sidebar.currentKey)
 
             // Load pages on first selection so opening Settings stays responsive.
             Loader {
                 id: generalPageLoader
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                active: sidebar.currentIndex === 0
+                active: sidebar.currentKey === "general"
                     || status === Loader.Ready
                     || status === Loader.Loading
                 sourceComponent: generalSettingsPage
@@ -58,7 +68,7 @@ Item {
                 id: hotkeyPageLoader
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                active: sidebar.currentIndex === 1
+                active: sidebar.currentKey === "hotkeys"
                     || status === Loader.Ready
                     || status === Loader.Loading
                 sourceComponent: hotkeySettingsPage
@@ -68,7 +78,7 @@ Item {
                 id: advancedPageLoader
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                active: sidebar.currentIndex === 2
+                active: sidebar.currentKey === "advanced"
                     || status === Loader.Ready
                     || status === Loader.Loading
                 sourceComponent: advancedSettingsPage
@@ -78,7 +88,7 @@ Item {
                 id: watermarkPageLoader
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                active: sidebar.currentIndex === 3
+                active: sidebar.currentKey === "watermark"
                     || status === Loader.Ready
                     || status === Loader.Loading
                 sourceComponent: watermarkSettingsPage
@@ -88,9 +98,10 @@ Item {
                 id: ocrPageLoader
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                active: sidebar.currentIndex === 4
+                active: settingsBackend.ocrSettingsVisible
+                    && (sidebar.currentKey === "ocr"
                     || status === Loader.Ready
-                    || status === Loader.Loading
+                    || status === Loader.Loading)
                 sourceComponent: ocrSettingsPage
             }
 
@@ -98,9 +109,10 @@ Item {
                 id: recordingPageLoader
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                active: sidebar.currentIndex === 5
+                active: settingsBackend.recordingSupported
+                    && (sidebar.currentKey === "recording"
                     || status === Loader.Ready
-                    || status === Loader.Loading
+                    || status === Loader.Loading)
                 sourceComponent: recordingSettingsPage
             }
 
@@ -108,7 +120,7 @@ Item {
                 id: filesPageLoader
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                active: sidebar.currentIndex === 6
+                active: sidebar.currentKey === "files"
                     || status === Loader.Ready
                     || status === Loader.Loading
                 sourceComponent: filesSettingsPage
@@ -118,7 +130,7 @@ Item {
                 id: updatesPageLoader
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                active: sidebar.currentIndex === 7
+                active: sidebar.currentKey === "updates"
                     || status === Loader.Ready
                     || status === Loader.Loading
                 sourceComponent: updatesSettingsPage
@@ -128,7 +140,7 @@ Item {
                 id: aboutPageLoader
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                active: sidebar.currentIndex === 8
+                active: sidebar.currentKey === "about"
                     || status === Loader.Ready
                     || status === Loader.Loading
                 sourceComponent: aboutSettingsPage

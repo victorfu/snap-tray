@@ -6,7 +6,119 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
-- No unreleased entries yet.
+## [1.0.56] - 2026-06-03
+
+### Fixed
+
+- Fixed toolbar copy-to-clipboard flows so large images no longer stall the UI before toast feedback appears.
+- Fixed rapid successive copy actions on macOS so an older, slower image encode can no longer overwrite a newer clipboard copy.
+- Fixed selection-completion toolbar placement so floating controls stay synchronized as capture selections finish, including Windows toolbar handoff.
+- Fixed Windows Print Screen setup prompts and localized guidance so applying the shortcut setting is clearer and more reliable.
+
+## [1.0.55] - 2026-05-28
+
+### Improved
+
+- Improved Windows CI and release-build reliability by keeping sccache configuration inside the workspace and allowing slower server startup.
+- Refreshed release and update metadata after v1.0.54 so the website and in-app update feeds stay aligned.
+
+### Fixed
+
+- Fixed Windows Print Screen capture binding so the shortcut can be registered reliably as a global hotkey.
+- Fixed hidden toast windows so they no longer intercept input when notifications are not visible.
+
+## [1.0.54] - 2026-05-27
+
+### Added
+
+- Added the Ubuntu 22.04 X11 Linux beta with AppImage packaging, Linux-specific platform capability gating, and CI build coverage.
+
+### Improved
+
+- Improved Linux capture, Screen Canvas, pin toolbar focus, AppImage launch handling, and initial selection-toolbar responsiveness.
+- Improved Linux feature availability so unsupported recording and OCR entry points stay hidden across the tray, CLI, tools, and settings.
+
+### Fixed
+
+- Fixed Capture Mode copy so the selected image is written to the clipboard before the selector closes, avoiding first-copy failures.
+- Fixed Windows Print Screen shortcut conflict handling and compatibility with Snipping Tool-related settings.
+- Fixed Linux AppImage packaging fallbacks and X11 capture overlay behavior.
+
+## [1.0.53] - 2026-05-18
+
+### Added
+
+- Added visible hotkey registration status in UI menus so unavailable shortcuts are easier to diagnose.
+
+### Fixed
+
+- Fixed Windows `Print Screen` hotkey binding and conflict detection, including compatibility for older `Native:0x2C` settings and clearer Snipping Tool guidance.
+
+## [1.0.52] - 2026-05-07
+
+### Improved
+
+- Improved macOS build and release reliability by pinning the active SDK path and refreshing cached CMake dependencies when the SDK changes.
+- Moved macOS CI builds back to GitHub-hosted runners for more consistent release validation.
+
+### Fixed
+
+- Fixed annotation color persistence to store portable ARGB strings, keeping saved custom colors readable across machines and Qt settings backends.
+- Fixed the toolbar width preview so the dot stays centered as stroke width changes.
+
+## [1.0.51] - 2026-04-23
+
+### Improved
+
+- Refined the macOS menu bar icon sizing so SnapTray better matches native status item proportions.
+- Refreshed the QR code toolbar icon to align with the shared Lucide-style icon set.
+
+### Fixed
+
+- Fixed macOS capture copying by writing PNG data eagerly, avoiding delayed pasteboard fulfillment crashes.
+
+## [1.0.50] - 2026-04-12
+
+### Improved
+
+- Improved marker drawing so dense strokes render more cleanly and avoid unnecessary point noise.
+- Improved shortcut-hint overlay repainting so anti-aliased edges stay clean while capture hints update.
+
+### Fixed
+
+- Fixed a macOS recording-preview crash that could happen when saving from the preview opened the native file dialog.
+
+## [1.0.49] - 2026-04-10
+
+### Improved
+
+- Improved Windows download guidance with a clearer warning when using the unsigned executable package.
+
+### Fixed
+
+- Fixed Windows window-detection handling so SnapTray builds cleanly again and avoids unstable refresh behavior tied to GUI-thread-only APIs.
+
+## [1.0.48] - 2026-04-10
+
+### Improved
+
+- Improved Beautify panel close-target layout so the dismiss control remains easier to hit in QML-driven flows.
+
+### Fixed
+
+- Fixed a detected-window refresh lifetime bug that could crash macOS while SnapTray updated the available window list asynchronously.
+
+## [1.0.47] - 2026-04-09
+
+### Improved
+
+- Improved detected-window refresh handling so transient top-level windows stay targetable more reliably while SnapTray updates the available window list.
+
+### Fixed
+
+- Fixed Beautify panel dismissal so the close control remains clickable.
+- Fixed repeat-badge feedback so auto-hidden badges can appear again on the next action instead of getting stuck suppressed.
+- Fixed macOS Settings shutdown warnings triggered by input-method teardown during window close.
 
 ## [1.0.46] - 2026-04-08
 

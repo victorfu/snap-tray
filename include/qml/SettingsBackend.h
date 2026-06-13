@@ -15,6 +15,8 @@ struct OCRLanguageQueryResult;
 
 namespace SnapTray {
 
+struct HotkeyConfig;
+
 class SettingsBackend : public QObject
 {
     Q_OBJECT
@@ -26,6 +28,8 @@ class SettingsBackend : public QObject
     Q_PROPERTY(int appTheme READ appTheme WRITE setAppTheme NOTIFY appThemeChanged)
     Q_PROPERTY(bool cliInstalled READ cliInstalled NOTIFY cliInstalledChanged)
     Q_PROPERTY(bool isMacOS READ isMacOS CONSTANT)
+    Q_PROPERTY(bool recordingSupported READ recordingSupported CONSTANT)
+    Q_PROPERTY(bool ocrSettingsVisible READ ocrSettingsVisible CONSTANT)
 
 #ifdef Q_OS_MAC
     // ──── macOS Permissions ────
@@ -101,6 +105,13 @@ class SettingsBackend : public QObject
 public:
     explicit SettingsBackend(QObject* parent = nullptr);
     ~SettingsBackend() override;
+    static QString hotkeyRegistrationWarningMessage(const HotkeyConfig& config,
+                                                    const QString& conflictDescription,
+                                                    bool isWindows);
+    static bool shouldPromptWindowsPrintScreenSnippingDisable(
+        bool isWindows,
+        bool snippingShortcutEnabled,
+        bool userDismissed);
 
     // ──── General ────
     bool startOnLogin() const;
@@ -112,6 +123,8 @@ public:
     void setAppTheme(int v);
     bool cliInstalled() const;
     bool isMacOS() const;
+    bool recordingSupported() const;
+    bool ocrSettingsVisible() const;
 
 #ifdef Q_OS_MAC
     // ──── macOS Permissions ────
@@ -244,6 +257,9 @@ public:
     Q_INVOKABLE void clearHotkey(int action);
     Q_INVOKABLE void resetHotkey(int action);
     Q_INVOKABLE void restoreAllHotkeys();
+    // Proactively offers to disable the Windows "Print Screen opens Snipping
+    // Tool" shortcut so Print Screen can be bound as a global hotkey.
+    Q_INVOKABLE void checkWindowsPrintScreenSnippingConflict();
 
     Q_INVOKABLE QVariantList audioDevices() const;
 

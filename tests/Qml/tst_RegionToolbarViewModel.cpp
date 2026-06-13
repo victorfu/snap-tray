@@ -35,10 +35,10 @@ class tst_RegionToolbarViewModel : public QObject
     Q_OBJECT
 
 private slots:
-    void testNormalToolbarOmitsCancelRecordAndKeepsOcrSeparated();
+    void testNormalToolbarOmitsCancelRecordAndHandlesOcrAvailability();
 };
 
-void tst_RegionToolbarViewModel::testNormalToolbarOmitsCancelRecordAndKeepsOcrSeparated()
+void tst_RegionToolbarViewModel::testNormalToolbarOmitsCancelRecordAndHandlesOcrAvailability()
 {
     RegionToolbarViewModel viewModel;
     const QVariantList buttons = viewModel.buttons();
@@ -48,8 +48,12 @@ void tst_RegionToolbarViewModel::testNormalToolbarOmitsCancelRecordAndKeepsOcrSe
 
     QVERIFY(cancelButton.isEmpty());
     QVERIFY(!containsButtonWithIconKey(buttons, QStringLiteral("record")));
+#if defined(Q_OS_LINUX)
+    QVERIFY(ocrButton.isEmpty());
+#else
     QVERIFY(!ocrButton.isEmpty());
     QVERIFY(ocrButton.value(QStringLiteral("separatorBefore")).toBool());
+#endif
 }
 
 QTEST_MAIN(tst_RegionToolbarViewModel)

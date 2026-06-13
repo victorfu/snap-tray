@@ -17,7 +17,7 @@ docs_copy_key: developer
 - 框架：Qt 6
 - 建置系統：CMake + Ninja
 - UI 技術：Qt Widgets 搭配 QML overlays 與 settings surfaces
-- 打包目標：macOS DMG、Windows NSIS、Windows MSIX
+- 打包目標：macOS DMG、Windows NSIS、Windows MSIX、Linux AppImage beta
 
 ## 專案結構
 
@@ -59,7 +59,7 @@ snap-tray/
 │   └── qml/toolbar/            # Floating toolbar surfaces
 ├── tests/                      # 依 subsystem 分組的 Qt Test
 ├── docs/                       # 網站、使用者文件、開發者文件
-├── packaging/                  # macOS 與 Windows 打包
+├── packaging/                  # 平台打包
 ├── resources/                  # Icons、cascades、shaders、resources.qrc
 ├── scripts/                    # build、run、test、i18n 腳本
 ├── translations/               # 翻譯來源與輸出
@@ -113,20 +113,20 @@ SnapTray 以模組化 static-library 風格組織：
 
 ## 平台特定程式碼對照
 
-| 功能 | Windows | macOS |
-|---|---|---|
-| 螢幕擷取 | `DXGICaptureEngine_win.cpp` | `SCKCaptureEngine_mac.mm` |
-| 影片編碼 | `MediaFoundationEncoder.cpp` | `AVFoundationEncoder.mm` |
-| 音訊擷取 | `WASAPIAudioCaptureEngine_win.cpp` | `CoreAudioCaptureEngine_mac.mm` |
-| 影片播放 | `MediaFoundationPlayer_win.cpp` | `AVFoundationPlayer_mac.mm` |
-| 視窗偵測 | `WindowDetector_win.cpp` | `WindowDetector.mm` |
-| OCR | `OCRManager_win.cpp` | `OCRManager.mm` |
-| Window level | `WindowLevel_win.cpp` | `WindowLevel_mac.mm` |
-| Platform features | `PlatformFeatures_win.cpp` | `PlatformFeatures_mac.mm` |
-| Auto-launch | `AutoLaunchManager_win.cpp` | `AutoLaunchManager_mac.mm` |
-| Install source | `InstallSourceDetector_win.cpp` | `InstallSourceDetector_mac.mm` |
-| PATH utilities | `PathEnvUtils_win.cpp` | N/A |
-| Image color space | N/A | `ImageColorSpaceHelper_mac.mm` |
+| 功能 | Windows | macOS | Linux beta |
+|---|---|---|---|
+| 螢幕擷取 | `DXGICaptureEngine_win.cpp` | `SCKCaptureEngine_mac.mm` | X11 上使用 `QtCaptureEngine.cpp` |
+| 影片編碼 | `MediaFoundationEncoder.cpp` | `AVFoundationEncoder.mm` | 不支援 |
+| 音訊擷取 | `WASAPIAudioCaptureEngine_win.cpp` | `CoreAudioCaptureEngine_mac.mm` | 不支援 |
+| 影片播放 | `MediaFoundationPlayer_win.cpp` | `AVFoundationPlayer_mac.mm` | 不支援 |
+| 視窗偵測 | `WindowDetector_win.cpp` | `WindowDetector.mm` | 不支援 |
+| OCR | `OCRManager_win.cpp` | `OCRManager.mm` | 不支援 |
+| Window level | `WindowLevel_win.cpp` | `WindowLevel_mac.mm` | `WindowLevel_linux.cpp` |
+| Platform features | `PlatformFeatures_win.cpp` | `PlatformFeatures_mac.mm` | `PlatformFeatures_linux.cpp` |
+| Auto-launch | `AutoLaunchManager_win.cpp` | `AutoLaunchManager_mac.mm` | `AutoLaunchManager_linux.cpp` |
+| Install source | `InstallSourceDetector_win.cpp` | `InstallSourceDetector_mac.mm` | `InstallSourceDetector_linux.cpp` |
+| PATH utilities | `PathEnvUtils_win.cpp` | N/A | N/A |
+| Image color space | N/A | `ImageColorSpaceHelper_mac.mm` | N/A |
 
 ## 主要元件
 

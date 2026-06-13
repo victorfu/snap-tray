@@ -2,7 +2,7 @@
 last_modified_at: 2026-02-24
 layout: docs
 title: 教學總覽
-seo_title: "SnapTray 教學總覽：用真實工作情境學會截圖、標註、釘選與錄影流程"
+seo_title: "SnapTray 教學總覽：截圖、標註、釘選與平台限定錄影流程"
 description: 以真實工作情境學 SnapTray，不只看功能清單。
 permalink: /zh-tw/docs/tutorials/
 lang: zh-tw
@@ -22,7 +22,7 @@ doc_order: 1
 | 快速截圖並傳給同事 | [30 秒快速分享](/zh-tw/docs/tutorials/quick-share/) | [區域截圖](/zh-tw/docs/region-capture/) |
 | 做出可重現的 bug 回報 | [Bug 回報流程](/zh-tw/docs/tutorials/bug-report/) | [標註工具](/zh-tw/docs/annotation-tools/) |
 | 工作時固定顯示參考圖 | [Pin 長駐參考](/zh-tw/docs/tutorials/live-reference/) | [釘選視窗](/zh-tw/docs/pin-window/) |
-| 錄製可分享的操作示範 | [錄影教學示範](/zh-tw/docs/tutorials/recording-demo/) | [錄影](/zh-tw/docs/recording/) |
+| 錄製可分享的操作示範（僅 macOS/Windows） | [錄影教學示範（僅 macOS/Windows）](/zh-tw/docs/tutorials/recording-demo/) | [錄影（僅 macOS/Windows）](/zh-tw/docs/recording/) |
 
 ## 教學頁撰寫方式
 
@@ -43,5 +43,5 @@ doc_order: 1
 - [區域截圖](/zh-tw/docs/region-capture/)
 - [標註工具](/zh-tw/docs/annotation-tools/)
 - [釘選視窗](/zh-tw/docs/pin-window/)
-- [錄影](/zh-tw/docs/recording/)
+- [錄影（僅 macOS/Windows）](/zh-tw/docs/recording/)
 - [命令列](/zh-tw/docs/cli/)

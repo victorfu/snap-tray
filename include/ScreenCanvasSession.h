@@ -146,6 +146,7 @@ private:
     ScreenCanvas* surfaceForScreen(QScreen* screen) const;
     RegionSettingsHelper* activeSettingsHelper() const;
     void refreshFloatingUiParentWidget();
+    void updateSurfaceInputMasks();
 
     void drawAnnotations(ScreenCanvas* surface, QPainter& painter);
     void drawCurrentAnnotation(QPainter& painter);
@@ -218,6 +219,7 @@ private:
     bool handlePolylineAnnotationRelease(const QPoint& pos);
 
     QPoint annotationPointForEvent(ScreenCanvas* surface, QMouseEvent* event) const;
+    QPointF annotationPointForEventF(ScreenCanvas* surface, QMouseEvent* event) const;
     QPoint annotationPointForCurrentCursor() const;
 
     QPointer<QScreen> m_activationScreen;

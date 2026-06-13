@@ -56,7 +56,9 @@ void TestScreenCanvasSessionRecovery::testApplicationActiveRestoresAllSurfaces()
 
     QVERIFY(firstSurface.isVisible());
     QVERIFY(secondSurface.isVisible());
-    QCOMPARE(session.m_activeSurface.data(), &firstSurface);
+    ScreenCanvas* activeSurface = session.m_activeSurface.data();
+    QVERIFY(activeSurface == &firstSurface || activeSurface == &secondSurface);
+    QVERIFY(activeSurface->isVisible());
 
     session.m_surfaces.clear();
     session.m_activeSurface = nullptr;

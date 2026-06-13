@@ -6,7 +6,7 @@ if(APPLE)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "14.0" CACHE STRING "Minimum macOS deployment target" FORCE)
 endif()
 
-project(SnapTray VERSION 1.0.46 LANGUAGES CXX)
+project(SnapTray VERSION 1.0.56 LANGUAGES CXX)
 
 # ============================================================================
 # Compiler Cache (ccache/sccache) for faster incremental builds
@@ -276,7 +276,9 @@ set(CMAKE_AUTOUIC ON)
 # ============================================================================
 # Dependency graph:
 #   snaptray_app -> snaptray_ui, snaptray_platform, snaptray_algorithms
-#   snaptray_ui -> snaptray_core, snaptray_algorithms, snaptray_platform
+#   snaptray_ui -> snaptray_core, snaptray_algorithms, snaptray_platform, snaptray_qml
+#   snaptray_qml -> snaptray_core, snaptray_platform, snaptray_algorithms
+#   snaptray_cli -> snaptray_core, snaptray_platform
 #   snaptray_platform -> snaptray_core
 #   snaptray_algorithms -> snaptray_core
 #   snaptray_core -> Qt6 only
@@ -308,10 +310,13 @@ add_library(snaptray_core STATIC
     src/settings/ScreenCanvasSettingsManager.cpp
     src/settings/WatermarkSettingsManager.cpp
     src/settings/BeautifySettingsManager.cpp
+    src/settings/WindowsPrintScreenSettingsManager.cpp
     src/settings/LanguageManager.cpp
     src/beautify/BeautifyRenderer.cpp
     src/update/UpdateSettingsManager.cpp
-    src/cursor/CursorManager.cpp
+    src/platform/PlatformCapabilities.cpp
+    src/tools/ToolRegistry.cpp
+    src/tools/ToolSectionConfig.cpp
     src/cursor/CursorAuthority.cpp
     src/cursor/CursorPlatformApplier.cpp
     src/cursor/CursorStyleCatalog.cpp
@@ -321,18 +326,6 @@ add_library(snaptray_core STATIC
     src/utils/ImageSaveUtils.cpp
     src/utils/NativeFileDialogUtils.cpp
     src/utils/ScreenCaptureRegionUtils.cpp
-    # CLI sources
-    src/cli/CLIHandler.cpp
-    src/cli/IPCProtocol.cpp
-    src/cli/CaptureOutputHelper.cpp
-    src/cli/commands/GuiCommand.cpp
-    src/cli/commands/FullCommand.cpp
-    src/cli/commands/ScreenCommand.cpp
-    src/cli/commands/RegionCommand.cpp
-    src/cli/commands/CanvasCommand.cpp
-    src/cli/commands/RecordCommand.cpp
-    src/cli/commands/PinCommand.cpp
-    src/cli/commands/ConfigCommand.cpp
     # Headers with Q_OBJECT for MOC processing
     include/settings/AnnotationSettingsManager.h
     include/settings/AutoLaunchSyncPolicy.h
@@ -341,13 +334,16 @@ add_library(snaptray_core STATIC
     include/settings/PinWindowSettingsManager.h
     include/settings/RegionCaptureSettingsManager.h
     include/settings/ScreenCanvasSettingsManager.h
+    include/settings/WindowsPrintScreenSettingsManager.h
     include/settings/SettingsTheme.h
-    include/cursor/CursorManager.h
     include/cursor/CursorAuthority.h
     include/cursor/CursorPlatformApplier.h
     include/cursor/CursorStyleCatalog.h
     include/cursor/CursorSurfaceSupport.h
     include/cursor/CursorTypes.h
+    include/platform/PlatformCapabilities.h
+    include/tools/ToolRegistry.h
+    include/tools/ToolSectionConfig.h
     include/utils/FilenameTemplateEngine.h
     include/utils/ImageSaveUtils.h
     include/utils/NativeFileDialogUtils.h
@@ -485,6 +481,7 @@ add_library(snaptray_platform STATIC
     src/encoding/EncoderFactory.cpp
     src/encoding/NativeGifEncoder.cpp
     src/encoding/WebPAnimEncoder.cpp
+    src/recording/ScreenSourceService.cpp
     src/video/IVideoPlayer.cpp
     src/video/VideoTrimmer.cpp
     src/VideoEncoderFactory.cpp
@@ -497,6 +494,7 @@ add_library(snaptray_platform STATIC
     include/IVideoEncoder.h
     include/encoding/NativeGifEncoder.h
     include/encoding/WebPAnimEncoder.h
+    include/recording/ScreenSourceService.h
     include/capture/ICaptureEngine.h
     include/capture/IAudioCaptureEngine.h
     include/capture/ScreenSnapshot.h
@@ -544,6 +542,15 @@ add_library(snaptray_platform STATIC
         src/MediaFoundationEncoder.cpp
         src/video/MediaFoundationPlayer_win.cpp
     >
+    # Linux sources
+    $<$<PLATFORM_ID:Linux>:
+        src/platform/LinuxDesktopEnvironment_linux.cpp
+        src/platform/WindowLevel_linux.cpp
+        src/platform/PlatformFeatures_linux.cpp
+        src/WindowDetector_linux.cpp
+        src/OCRManager_linux.cpp
+        src/AutoLaunchManager_linux.cpp
+    >
     # Windows headers with Q_OBJECT
     $<$<PLATFORM_ID:Windows>:
         include/MediaFoundationEncoder.h
@@ -580,8 +587,11 @@ target_link_libraries(snaptray_platform
         webp
         libwebpmux
         ZXing::ZXing
-    PRIVATE
-        $<$<PLATFORM_ID:Darwin>:
+)
+
+if(APPLE)
+    target_link_libraries(snaptray_platform
+        PRIVATE
             "-framework CoreGraphics"
             "-framework ApplicationServices"
             "-framework AppKit"
@@ -593,8 +603,10 @@ target_link_libraries(snaptray_platform
             "-framework CoreAudio"
             "-framework AudioToolbox"
             "-weak_framework ScreenCaptureKit"
-        >
-        $<$<PLATFORM_ID:Windows>:
+    )
+elseif(WIN32)
+    target_link_libraries(snaptray_platform
+        PRIVATE
             dwmapi
             psapi
             windowsapp
@@ -605,8 +617,14 @@ target_link_libraries(snaptray_platform
             mfuuid
             ole32
             propsys
-        >
-)
+    )
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    find_package(X11 REQUIRED)
+    target_link_libraries(snaptray_platform
+        PRIVATE
+            X11::X11
+    )
+endif()
 
 # Windows-specific compiler flags
 if(WIN32)
@@ -623,6 +641,45 @@ if(APPLE)
 endif()
 
 # ----------------------------------------------------------------------------
+# snaptray_cli: Command-line parsing and local CLI execution
+# ----------------------------------------------------------------------------
+add_library(snaptray_cli STATIC
+    src/cli/CLIHandler.cpp
+    src/cli/IPCProtocol.cpp
+    src/cli/CaptureOutputHelper.cpp
+    src/cli/commands/GuiCommand.cpp
+    src/cli/commands/FullCommand.cpp
+    src/cli/commands/ScreenCommand.cpp
+    src/cli/commands/RegionCommand.cpp
+    src/cli/commands/CanvasCommand.cpp
+    src/cli/commands/RecordCommand.cpp
+    src/cli/commands/PinCommand.cpp
+    src/cli/commands/ConfigCommand.cpp
+)
+
+target_include_directories(snaptray_cli
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_BINARY_DIR}/generated
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_BINARY_DIR}
+)
+
+target_link_libraries(snaptray_cli
+    PUBLIC
+        snaptray_core
+        snaptray_platform
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Network
+)
+
+target_compile_definitions(snaptray_cli PRIVATE
+    $<$<NOT:$<CONFIG:Debug>>:QT_NO_DEBUG_OUTPUT>
+)
+
+# ----------------------------------------------------------------------------
 # snaptray_ui: UI components (widgets, tools, renderers)
 # ----------------------------------------------------------------------------
 add_library(snaptray_ui STATIC
@@ -637,11 +694,10 @@ add_library(snaptray_ui STATIC
     src/TransformationGizmo.cpp
     src/annotation/AnnotationContext.cpp
     src/annotation/AnnotationRenderHelper.cpp
+    src/cursor/CursorManager.cpp
 
     # Tool system
-    src/tools/ToolRegistry.cpp
     src/tools/ToolManager.cpp
-    src/tools/ToolSectionConfig.cpp
     src/tools/handlers/PencilToolHandler.cpp
     src/tools/handlers/MarkerToolHandler.cpp
     src/tools/handlers/ArrowToolHandler.cpp
@@ -744,14 +800,18 @@ add_library(snaptray_ui STATIC
         src/update/InstallSourceDetector_win.cpp
         src/update/WinSparkleUpdateService_win.cpp
     >
+    $<$<PLATFORM_ID:Linux>:
+        src/update/InstallSourceDetector_linux.cpp
+        src/update/UpdateServiceFactory_linux.cpp
+    >
 
     # macOS-only UI
 
     # Headers with Q_OBJECT for MOC processing
     include/annotations/AnnotationLayer.h
+    include/cursor/CursorManager.h
     include/InlineTextEditor.h
     include/TransformationGizmo.h
-    include/tools/ToolRegistry.h
     include/tools/ToolManager.h
     include/RegionSelector.h
     include/region/SelectionStateManager.h
@@ -790,12 +850,10 @@ add_library(snaptray_ui STATIC
     src/RecordingManager.cpp
     src/RecordingInitTask.cpp
     src/RecordingRegionNormalizer.cpp
-    src/recording/ScreenSourceService.cpp
     src/encoding/EncodingWorker.cpp
     include/RecordingManager.h
     include/RecordingInitTask.h
     include/RecordingRegionNormalizer.h
-    include/recording/ScreenSourceService.h
     include/encoding/EncodingWorker.h
 )
 
@@ -921,6 +979,23 @@ set_source_files_properties(src/qml/panels/ShortcutHintsPanel.qml PROPERTIES QT_
 set_source_files_properties(src/qml/panels/RegionControlPanel.qml PROPERTIES QT_RESOURCE_ALIAS panels/RegionControlPanel.qml)
 set_source_files_properties(src/qml/panels/MultiRegionListPanel.qml PROPERTIES QT_RESOURCE_ALIAS panels/MultiRegionListPanel.qml)
 
+set(SNAPTRAY_QML_NATIVE_SOURCES
+    src/qml/QmlOverlayManager.mm
+    src/qml/QmlRecordingBoundary.mm
+    src/qml/QmlRecordingControlBar.mm
+    src/qml/QmlCountdownOverlay.mm
+    src/qml/RecordingPreviewBackend.mm
+    src/qml/QmlWindowedToolbar.mm
+    src/qml/QmlFloatingToolbar.mm
+    src/qml/QmlFloatingSubToolbar.mm
+    src/qml/QmlDialog.mm
+    src/qml/QmlOverlayPanel.mm
+)
+
+if(NOT APPLE)
+    set_source_files_properties(${SNAPTRAY_QML_NATIVE_SOURCES} PROPERTIES LANGUAGE CXX)
+endif()
+
 qt_add_qml_module(snaptray_qml
     URI SnapTrayQml
     VERSION 1.0
@@ -1004,7 +1079,7 @@ qt_add_qml_module(snaptray_qml
         include/qml/BeautifyPreviewItem.h
         src/qml/EmojiPickerBackend.cpp
         include/qml/EmojiPickerBackend.h
-        src/qml/QmlOverlayManager.mm
+        ${SNAPTRAY_QML_NATIVE_SOURCES}
         include/qml/QmlOverlayManager.h
         src/qml/QmlBeautifyPanel.cpp
         include/qml/QmlBeautifyPanel.h
@@ -1014,23 +1089,18 @@ qt_add_qml_module(snaptray_qml
         include/qml/QmlToast.h
         src/qml/QmlBadge.cpp
         include/qml/QmlBadge.h
-        src/qml/QmlRecordingBoundary.mm
         include/qml/QmlRecordingBoundary.h
-        src/qml/QmlRecordingControlBar.mm
         include/qml/QmlRecordingControlBar.h
-        src/qml/QmlCountdownOverlay.mm
         include/qml/QmlCountdownOverlay.h
         src/qml/VideoPlaybackItem.cpp
         include/qml/VideoPlaybackItem.h
         src/qml/SvgIconItem.cpp
         include/qml/SvgIconItem.h
-        src/qml/RecordingPreviewBackend.mm
         include/qml/RecordingPreviewBackend.h
         src/qml/ToolbarViewModelBase.cpp
         include/qml/ToolbarViewModelBase.h
         src/qml/PinToolbarViewModel.cpp
         include/qml/PinToolbarViewModel.h
-        src/qml/QmlWindowedToolbar.mm
         include/qml/QmlWindowedToolbar.h
         src/qml/PinToolOptionsViewModel.cpp
         include/qml/PinToolOptionsViewModel.h
@@ -1038,11 +1108,8 @@ qt_add_qml_module(snaptray_qml
         include/qml/RegionToolbarViewModel.h
         src/qml/CanvasToolbarViewModel.cpp
         include/qml/CanvasToolbarViewModel.h
-        src/qml/QmlFloatingToolbar.mm
         include/qml/QmlFloatingToolbar.h
-        src/qml/QmlFloatingSubToolbar.mm
         include/qml/QmlFloatingSubToolbar.h
-        src/qml/QmlDialog.mm
         include/qml/QmlDialog.h
         src/qml/DialogImageProvider.cpp
         include/qml/DialogImageProvider.h
@@ -1058,7 +1125,6 @@ qt_add_qml_module(snaptray_qml
         include/qml/UpdateDialogViewModel.h
         src/qml/QRCodeResultViewModel.cpp
         include/qml/QRCodeResultViewModel.h
-        src/qml/QmlOverlayPanel.mm
         include/qml/QmlOverlayPanel.h
         src/qml/ShortcutHintsViewModel.cpp
         include/qml/ShortcutHintsViewModel.h
@@ -1083,6 +1149,7 @@ target_link_libraries(snaptray_qml
     PUBLIC
         snaptray_core
         snaptray_platform
+        snaptray_algorithms
         Qt6::Quick
         Qt6::QuickControls2
         Qt6::QuickWidgets
@@ -1153,6 +1220,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 # Link all library targets - they handle their own dependencies
 target_link_libraries(${PROJECT_NAME} PRIVATE
     snaptray_ui
+    snaptray_cli
     snaptray_platform
     snaptray_algorithms
     snaptray_core

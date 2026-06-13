@@ -4,11 +4,14 @@
 #include <QObject>
 #include <QString>
 #include <QIcon>
-#include <QClipboard>
-#include <QGuiApplication>
 #include <QImage>
 
+#include <functional>
+
+#include "platform/PlatformCapabilities.h"
+
 class OCRManager;
+class QObject;
 class WindowDetector;
 
 class PlatformFeatures
@@ -16,6 +19,7 @@ class PlatformFeatures
 public:
     static PlatformFeatures& instance();
 
+    const SnapTray::PlatformCapabilities& capabilities() const;
     bool isOCRAvailable() const;
 
     OCRManager* createOCRManager(QObject* parent = nullptr) const;
@@ -28,18 +32,11 @@ public:
     bool copyImageToClipboardPersistently(const QImage& image) const;
 
     // Copy image to clipboard for interactive GUI flows.
-    bool copyImageToClipboardForGui(const QImage& image) const
-    {
-        if (image.isNull()) {
-            return false;
-        }
-
-        if (QClipboard* clipboard = QGuiApplication::clipboard()) {
-            clipboard->setImage(image);
-            return true;
-        }
-        return false;
-    }
+    bool copyImageToClipboardForGui(const QImage& image) const;
+    void copyImageToClipboardForGuiAsync(
+        const QImage& image,
+        QObject* context = nullptr,
+        std::function<void(bool)> completion = {}) const;
 
     // CLI installation
     bool isCLIInstalled() const;
@@ -73,6 +70,7 @@ private:
     PlatformFeatures(const PlatformFeatures&) = delete;
     PlatformFeatures& operator=(const PlatformFeatures&) = delete;
 
+    SnapTray::PlatformCapabilities m_capabilities;
     bool m_ocrAvailable;
     bool m_windowDetectionAvailable;
 };

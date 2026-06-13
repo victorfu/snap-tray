@@ -1,6 +1,7 @@
 #include <QtTest>
 #include <QSettings>
 #include <QColor>
+#include <QMetaType>
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/LineStyle.h"
 #include "settings/AnnotationSettingsManager.h"
@@ -32,6 +33,7 @@ private slots:
     void testSaveLoadColor_Roundtrip();
     void testSaveLoadColor_NamedColors();
     void testSaveLoadColor_ARGB();
+    void testSaveColor_PersistsPortableString();
 
     // Width settings tests
     void testLoadWidth_DefaultValue();
@@ -171,6 +173,20 @@ void tst_AnnotationSettingsManager::testSaveLoadColor_ARGB()
     QCOMPARE(loaded.green(), 0);
     QCOMPARE(loaded.blue(), 0);
     QCOMPARE(loaded.alpha(), 128);
+}
+
+void tst_AnnotationSettingsManager::testSaveColor_PersistsPortableString()
+{
+    AnnotationSettingsManager& manager = AnnotationSettingsManager::instance();
+
+    QColor semiTransparent(255, 240, 120, 192);
+    manager.saveColor(semiTransparent);
+
+    auto settings = SnapTray::getSettings();
+    QVariant rawValue = settings.value("annotationColor");
+    QCOMPARE(rawValue.metaType().id(), QMetaType::QString);
+    QCOMPARE(rawValue.toString(), semiTransparent.name(QColor::HexArgb));
+    QCOMPARE(manager.loadColor(), semiTransparent);
 }
 
 // ============================================================================

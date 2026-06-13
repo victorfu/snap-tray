@@ -84,6 +84,7 @@ private slots:
     void testSelectServiceKind_WindowsDirectDownload_UsesWinSparkle();
     void testSelectServiceKind_StoreManagedSources_UseExternalManaged();
     void testSelectServiceKind_Homebrew_UsesExternalManaged();
+    void testSelectServiceKind_AppImage_UsesExternalManaged();
     void testSelectServiceKind_Unknown_UsesUnsupported();
     void testInitialize_LoadsPersistedSettingsBeforeServiceStarts();
     void testShutdownHooks_DefaultToAllowQuit();
@@ -138,6 +139,13 @@ void tst_UpdateCoordinator::testSelectServiceKind_Homebrew_UsesExternalManaged()
 {
     QCOMPARE(UpdateCoordinator::selectServiceKind(UpdatePlatform::MacOS,
                                                   InstallSource::Homebrew),
+             UpdateServiceKind::ExternalManaged);
+}
+
+void tst_UpdateCoordinator::testSelectServiceKind_AppImage_UsesExternalManaged()
+{
+    QCOMPARE(UpdateCoordinator::selectServiceKind(UpdatePlatform::Other,
+                                                  InstallSource::AppImage),
              UpdateServiceKind::ExternalManaged);
 }
 

@@ -4,10 +4,13 @@
  */
 
 #include "widgets/TypeHotkeyDialog.h"
+#include "hotkey/HotkeyManager.h"
 #include "settings/SettingsTheme.h"
 
 #include <QApplication>
+#include <QDebug>
 #include <QEvent>
+#include <QHideEvent>
 #include <QKeyEvent>
 #include <QLabel>
 #include <QPushButton>
@@ -17,6 +20,41 @@
 #include <QPainterPath>
 
 namespace SnapTray {
+
+#ifdef Q_OS_WIN
+namespace {
+bool isWindowsKeyPressed(int virtualKey)
+{
+    return (GetAsyncKeyState(virtualKey) & 0x8000) != 0;
+}
+
+Qt::KeyboardModifiers currentWindowsKeyboardModifiers()
+{
+    Qt::KeyboardModifiers modifiers = Qt::NoModifier;
+    if (isWindowsKeyPressed(VK_CONTROL) ||
+        isWindowsKeyPressed(VK_LCONTROL) ||
+        isWindowsKeyPressed(VK_RCONTROL)) {
+        modifiers |= Qt::ControlModifier;
+    }
+    if (isWindowsKeyPressed(VK_MENU) ||
+        isWindowsKeyPressed(VK_LMENU) ||
+        isWindowsKeyPressed(VK_RMENU)) {
+        modifiers |= Qt::AltModifier;
+    }
+    if (isWindowsKeyPressed(VK_SHIFT) ||
+        isWindowsKeyPressed(VK_LSHIFT) ||
+        isWindowsKeyPressed(VK_RSHIFT)) {
+        modifiers |= Qt::ShiftModifier;
+    }
+    if (isWindowsKeyPressed(VK_LWIN) || isWindowsKeyPressed(VK_RWIN)) {
+        modifiers |= Qt::MetaModifier;
+    }
+    return modifiers;
+}
+}  // namespace
+
+TypeHotkeyDialog* TypeHotkeyDialog::s_printScreenHookDialog = nullptr;
+#endif
 
 TypeHotkeyDialog::TypeHotkeyDialog(QWidget* parent)
     : QDialog(parent, Qt::FramelessWindowHint | Qt::Dialog)
@@ -36,7 +74,12 @@ TypeHotkeyDialog::TypeHotkeyDialog(QWidget* parent)
     setFocusPolicy(Qt::StrongFocus);
 }
 
-TypeHotkeyDialog::~TypeHotkeyDialog() = default;
+TypeHotkeyDialog::~TypeHotkeyDialog()
+{
+#ifdef Q_OS_WIN
+    uninstallPrintScreenHook();
+#endif
+}
 
 void TypeHotkeyDialog::setupUi()
 {
@@ -209,7 +252,19 @@ void TypeHotkeyDialog::showEvent(QShowEvent* event)
 
     setFocus();
     activateWindow();
+
+#ifdef Q_OS_WIN
+    installPrintScreenHook();
+#endif
 }
+
+#ifdef Q_OS_WIN
+void TypeHotkeyDialog::hideEvent(QHideEvent* event)
+{
+    uninstallPrintScreenHook();
+    QDialog::hideEvent(event);
+}
+#endif
 
 bool TypeHotkeyDialog::event(QEvent* e)
 {
@@ -256,12 +311,7 @@ void TypeHotkeyDialog::keyPressEvent(QKeyEvent* event)
     }
 
     // Regular key press: build the sequence
-    m_currentModifiers = modifiers;
-    m_hasKey = true;
-
-    m_keySequence = modifiersToString(modifiers) + keyToString(key);
-
-    updateDisplay();
+    captureKey(key, modifiers);
     event->accept();
 }
 
@@ -278,13 +328,85 @@ void TypeHotkeyDialog::keyReleaseEvent(QKeyEvent* event)
     event->accept();
 }
 
+void TypeHotkeyDialog::captureKey(int key, Qt::KeyboardModifiers modifiers)
+{
+    m_currentModifiers = modifiers;
+    m_hasKey = true;
+    m_keySequence = modifiersToString(modifiers) + keyToString(key);
+
+    updateDisplay();
+}
+
+#ifdef Q_OS_WIN
+void TypeHotkeyDialog::installPrintScreenHook()
+{
+    if (m_printScreenHook) {
+        return;
+    }
+
+    s_printScreenHookDialog = this;
+    m_printScreenHook = SetWindowsHookExW(
+        WH_KEYBOARD_LL,
+        &TypeHotkeyDialog::printScreenHookProc,
+        GetModuleHandleW(nullptr),
+        0);
+    if (!m_printScreenHook) {
+        s_printScreenHookDialog = nullptr;
+        qWarning() << "TypeHotkeyDialog: failed to install Print Screen keyboard hook";
+    }
+}
+
+void TypeHotkeyDialog::uninstallPrintScreenHook()
+{
+    if (s_printScreenHookDialog == this) {
+        s_printScreenHookDialog = nullptr;
+    }
+
+    if (!m_printScreenHook) {
+        return;
+    }
+
+    UnhookWindowsHookEx(m_printScreenHook);
+    m_printScreenHook = nullptr;
+}
+
+void TypeHotkeyDialog::captureWindowsPrintScreen(Qt::KeyboardModifiers modifiers)
+{
+    captureKey(Qt::Key_Print, modifiers);
+}
+
+LRESULT CALLBACK TypeHotkeyDialog::printScreenHookProc(int code, WPARAM wParam, LPARAM lParam)
+{
+    if (code == HC_ACTION && s_printScreenHookDialog) {
+        const auto* event = reinterpret_cast<const KBDLLHOOKSTRUCT*>(lParam);
+        if (event && event->vkCode == VK_SNAPSHOT) {
+            const bool isPress = (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN);
+            const bool isRelease = (wParam == WM_KEYUP || wParam == WM_SYSKEYUP);
+            if (isPress) {
+                s_printScreenHookDialog->captureWindowsPrintScreen(
+                    currentWindowsKeyboardModifiers());
+            }
+            if (isPress || isRelease) {
+                return 1;
+            }
+        }
+    }
+
+    return CallNextHookEx(
+        s_printScreenHookDialog ? s_printScreenHookDialog->m_printScreenHook : nullptr,
+        code,
+        wParam,
+        lParam);
+}
+#endif
+
 void TypeHotkeyDialog::updateDisplay()
 {
     QString displayText;
 
     if (m_hasKey && !m_keySequence.isEmpty()) {
         // Convert stored portable format to native display format
-        displayText = QKeySequence(m_keySequence).toString(QKeySequence::NativeText);
+        displayText = HotkeyManager::formatKeySequence(m_keySequence);
         m_keyDisplayLabel->setStyleSheet(QStringLiteral(
             "QLabel {"
             "  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;"

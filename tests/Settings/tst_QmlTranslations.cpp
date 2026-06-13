@@ -23,6 +23,7 @@ private slots:
     void testRecordingControlBarContext();
     void testPhase4PanelContexts();
     void testMainApplicationTrayContext();
+    void testHotkeyConflictGuidanceTranslatedForAllLocales();
 
 private:
     QTranslator m_translator;
@@ -117,6 +118,59 @@ void tst_QmlTranslations::testMainApplicationTrayContext()
              QString::fromUtf8("螢幕畫布快捷鍵"));
     QCOMPARE(QCoreApplication::translate("MainApplication", "Not set"),
              QString::fromUtf8("未設定"));
+}
+
+void tst_QmlTranslations::testHotkeyConflictGuidanceTranslatedForAllLocales()
+{
+    const QByteArray context = "SnapTray::SettingsBackend";
+    const QList<QByteArray> sources = {
+        QByteArray("Disable Windows Print Screen Shortcut?"),
+        QByteArray(
+            "Windows is using the Print Screen key to open its Snipping Tool, "
+            "which stops SnapTray from using Print Screen as a shortcut. "
+            "Turn this off so SnapTray can use the Print Screen key?"),
+        QByteArray(
+            "After this, restart SnapTray. If Windows still opens the Snipping "
+            "Tool, sign out of Windows (or restart) and try again."),
+        QByteArray("No, don't ask again"),
+        QByteArray("Windows Print Screen Shortcut Disabled"),
+        QByteArray(
+            "Restart SnapTray to use Print Screen. If it still opens the "
+            "Snipping Tool, sign out of Windows and back in."),
+        QByteArray("Windows Setting Not Changed"),
+        QByteArray("SnapTray could not change the Windows Print Screen setting."),
+    };
+
+    const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
+    const QStringList qmFiles = translationsDir.entryList(
+        {QStringLiteral("snaptray_*.qm")},
+        QDir::Files,
+        QDir::Name);
+    QVERIFY(!qmFiles.isEmpty());
+
+    for (const QString& qmFile : qmFiles) {
+        QTranslator translator;
+        const QString path = translationsDir.filePath(qmFile);
+        QVERIFY2(translator.load(path),
+                 qPrintable(QStringLiteral("Failed to load translation file: %1").arg(path)));
+
+        for (const QByteArray& source : sources) {
+            const QString translated = translator.translate(context.constData(),
+                                                            source.constData());
+            QVERIFY2(!translated.isEmpty(),
+                     qPrintable(QStringLiteral("%1 is missing Print Screen guidance: %2")
+                                    .arg(qmFile, QString::fromUtf8(source))));
+            QVERIFY2(translated != QString::fromUtf8(source),
+                     qPrintable(QStringLiteral(
+                                    "%1 fell back to English for Print Screen guidance: %2")
+                                    .arg(qmFile, QString::fromUtf8(source))));
+            if (source.contains("%1")) {
+                QVERIFY2(translated.contains(QStringLiteral("%1")),
+                         qPrintable(QStringLiteral("%1 translation dropped the %%1 placeholder")
+                                        .arg(qmFile)));
+            }
+        }
+    }
 }
 
 QTEST_MAIN(tst_QmlTranslations)

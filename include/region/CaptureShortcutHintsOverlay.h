@@ -28,6 +28,7 @@ public:
     void draw(QPainter& painter, const QSize& viewportSize) const;
 
     QRect panelRectForViewport(const QSize& viewportSize) const;
+    QRect repaintRectForViewport(const QSize& viewportSize) const;
     int rowCount() const;
     LayoutMetrics layoutMetrics() const;
 

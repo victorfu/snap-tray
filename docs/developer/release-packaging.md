@@ -2,8 +2,8 @@
 last_modified_at: 2026-03-27
 layout: docs
 title: Release & Packaging
-seo_title: "SnapTray Release & Packaging: Sign, Notarize & Ship"
-description: Create distributable macOS and Windows packages, sign them, and prepare app-store or direct-download releases.
+seo_title: "SnapTray Release & Packaging: macOS, Windows & Linux AppImage Beta"
+description: Create distributable macOS and Windows packages plus the Linux AppImage beta, sign them, and prepare app-store or direct-download releases.
 permalink: /developer/release-packaging/
 lang: en
 route_key: developer_release_packaging
@@ -41,6 +41,20 @@ Typical outputs:
 - `dist\SnapTray-<version>-Setup.exe`
 - `dist\SnapTray-<version>.msix`
 - `dist\SnapTray-<version>.msixupload`
+
+### Linux
+
+```bash
+./packaging/linux/package-appimage.sh
+# Output: dist/SnapTray-<version>-x86_64.AppImage
+```
+
+The Linux beta artifact targets Ubuntu 22.04 X11. It does not include in-app
+updates; users download a newer AppImage for upgrades.
+
+The packaging script masks the AppImage type marker after creation so Ubuntu
+22.04 systems with AppImageLauncher `binfmt_misc` handlers run the embedded
+AppImage runtime directly instead of routing through AppImageLauncher.
 
 ## Packaging prerequisites
 
@@ -95,7 +109,7 @@ The release workflow then:
 
 - validates that the tag version matches `CMakeLists.txt`
 - extracts the matching `CHANGELOG.md` section for GitHub Release notes
-- builds macOS and Windows artifacts
+- builds macOS, Windows, and Linux AppImage beta artifacts
 - signs / notarizes release assets
 - publishes the GitHub Release
 - updates appcasts and the website release page

@@ -65,6 +65,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <memory>
 #include <QPainter>
 #include <QPainterPath>
+#include <QClipboard>
 #include <QMouseEvent>
 #include <QKeyEvent>
 #include <QCloseEvent>
@@ -947,7 +948,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             if (m_quickPinMode && !m_inputState.multiRegionMode) {
                 finishSelection();
             } else if (!m_selectionCompletionHandoffPending) {
-                syncFloatingUiCursor();
+                syncCompletedSelectionFloatingUi();
             }
         });
     connect(m_inputHandler, &RegionInputHandler::fullScreenSelectionRequested,
@@ -972,7 +973,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             if (m_quickPinMode && !m_inputState.multiRegionMode) {
                 finishSelection();
             } else if (!m_selectionCompletionHandoffPending) {
-                syncFloatingUiCursor();
+                syncCompletedSelectionFloatingUi();
             }
         });
     connect(m_inputHandler, &RegionInputHandler::detectionCleared,
@@ -2261,8 +2262,7 @@ void RegionSelector::maybeStartInitialRevealWait()
         m_initialRevealWindowListReadyConnection = {};
     }
 
-    if (!m_windowDetector->isWindowCacheReady(WindowDetector::QueryMode::TopLevelOnly) &&
-        !m_windowDetector->isRefreshComplete()) {
+    if (!m_windowDetector->isRefreshComplete()) {
         const quint64 token = m_initialRevealToken;
         m_initialRevealWindowListReadyConnection = connect(
             m_windowDetector,
@@ -2311,8 +2311,10 @@ void RegionSelector::handleInitialRevealDetectorReady()
         !m_selectionManager->hasSelection()) {
         if (!m_windowDetector->isWindowCacheReady(
                 WindowDetector::QueryMode::IncludeChildControls)) {
-            m_windowDetector->refreshWindowListAsync(
-                WindowDetector::QueryMode::IncludeChildControls);
+            if (m_windowDetector->isRefreshComplete()) {
+                m_windowDetector->refreshWindowListAsync(
+                    WindowDetector::QueryMode::IncludeChildControls);
+            }
             maybeStartInitialRevealWait();
             return;
         }
@@ -2467,10 +2469,16 @@ void RegionSelector::scheduleInitialRevealRefinement()
             return;
         }
 
+        if (shouldKeepTopLevelWindowDetection(m_inputState.currentPoint)) {
+            return;
+        }
+
         if (!m_windowDetector->isWindowCacheReady(
                 WindowDetector::QueryMode::IncludeChildControls)) {
-            m_windowDetector->refreshWindowListAsync(
-                WindowDetector::QueryMode::IncludeChildControls);
+            if (m_windowDetector->isRefreshComplete()) {
+                m_windowDetector->refreshWindowListAsync(
+                    WindowDetector::QueryMode::IncludeChildControls);
+            }
             maybeStartInitialRevealWait();
             return;
         }
@@ -2571,8 +2579,18 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos,
         return;
     }
 
+    const WindowDetector::QueryMode effectiveQueryMode =
+        effectiveWindowDetectionQueryMode(localPos, queryMode);
+
+    if (effectiveQueryMode == WindowDetector::QueryMode::IncludeChildControls &&
+        !m_windowDetector->isWindowCacheReady(WindowDetector::QueryMode::IncludeChildControls) &&
+        m_windowDetector->isRefreshComplete()) {
+        m_windowDetector->refreshWindowListAsync(
+            WindowDetector::QueryMode::IncludeChildControls);
+    }
+
     snaptray::region::CapturePerfScope perfScope("RegionSelector.updateWindowDetection");
-    auto detected = m_windowDetector->detectWindowAt(localToGlobal(localPos), queryMode);
+    auto detected = m_windowDetector->detectWindowAt(localToGlobal(localPos), effectiveQueryMode);
 
     if (detected.has_value()) {
         m_inputState.hasDetectedWindow = true;
@@ -2599,6 +2617,46 @@ void RegionSelector::updateWindowDetection(const QPoint& localPos,
     }
 
     syncCaptureChromeWindow();
+}
+
+bool RegionSelector::isTransientTopLevelElementType(ElementType elementType) const
+{
+    switch (elementType) {
+    case ElementType::ContextMenu:
+    case ElementType::PopupMenu:
+    case ElementType::StatusBarItem:
+        return true;
+    case ElementType::Window:
+    case ElementType::Dialog:
+    case ElementType::Unknown:
+        return false;
+    }
+
+    return false;
+}
+
+bool RegionSelector::shouldKeepTopLevelWindowDetection(const QPoint &localPos) const
+{
+    if (!m_detectedWindow.has_value() ||
+        !isTransientTopLevelElementType(m_detectedWindow->elementType) ||
+        !m_inputState.highlightedWindowRect.isValid() ||
+        m_inputState.highlightedWindowRect.isEmpty()) {
+        return false;
+    }
+
+    return m_inputState.highlightedWindowRect.contains(localPos);
+}
+
+WindowDetector::QueryMode RegionSelector::effectiveWindowDetectionQueryMode(
+    const QPoint &localPos,
+    WindowDetector::QueryMode requestedMode) const
+{
+    if (requestedMode == WindowDetector::QueryMode::IncludeChildControls &&
+        shouldKeepTopLevelWindowDetection(localPos)) {
+        return WindowDetector::QueryMode::TopLevelOnly;
+    }
+
+    return requestedMode;
 }
 
 void RegionSelector::paintSelectorScene(QPainter& painter, const QRegion& dirtyRegion)
@@ -2631,7 +2689,30 @@ void RegionSelector::paintSelectorScene(QPainter& painter, const QRegion& dirtyR
     m_painter->paint(painter, m_backgroundPixmap, dirtyRegion);
 }
 
-void RegionSelector::syncDetachedSelectionUiDuringPaint()
+QRect RegionSelector::currentSelectionDimensionInfoRect() const
+{
+    if (!m_selectionManager || m_inputState.multiRegionMode) {
+        return {};
+    }
+
+    const QRect selectionRect = m_selectionManager->selectionRect();
+    if (!selectionRect.isValid() || selectionRect.isEmpty()) {
+        return {};
+    }
+
+    QFont font;
+    font.setPointSize(12);
+    font.setBold(true);
+
+    return SelectionDimensionLabel::selectionPanelLayout(
+        selectionRect,
+        SelectionDimensionLabel::widgetLabel(selectionRect, m_devicePixelRatio),
+        font,
+        size(),
+        SelectionDimensionLabel::controlAnchorSize(m_selectionManager->aspectRatio() > 0.0)).panelRect;
+}
+
+void RegionSelector::syncDetachedSelectionUiDuringPaint(const QRect& dimensionInfoRectOverride)
 {
     QRect selectionRect = m_selectionManager->selectionRect();
     const bool initialRevealVisible = m_initialRevealState == InitialRevealState::Revealed;
@@ -2652,9 +2733,12 @@ void RegionSelector::syncDetachedSelectionUiDuringPaint()
         }
         if (m_qmlToolbar) {
             if (!m_toolbarUserDragged) {
-                const QRect dimensionInfoRect = m_captureChromeWindow && m_captureChromeWindow->isVisible()
-                    ? m_captureChromeWindow->lastDimensionInfoRect()
-                    : m_painter->lastDimensionInfoRect();
+                const QRect dimensionInfoRect =
+                    dimensionInfoRectOverride.isValid() && !dimensionInfoRectOverride.isEmpty()
+                        ? dimensionInfoRectOverride
+                        : (m_captureChromeWindow && m_captureChromeWindow->isVisible()
+                            ? m_captureChromeWindow->lastDimensionInfoRect()
+                            : m_painter->lastDimensionInfoRect());
                 m_qmlToolbar->positionForSelection(
                     selectionRect,
                     width(),
@@ -2687,6 +2771,12 @@ void RegionSelector::syncDetachedSelectionUiDuringPaint()
         }
         hideSelectionFloatingUi(hasSelectableCapture && !m_exportInProgress);
     }
+}
+
+void RegionSelector::syncCompletedSelectionFloatingUi()
+{
+    syncDetachedSelectionUiDuringPaint(currentSelectionDimensionInfoRect());
+    syncFloatingUiCursor();
 }
 
 void RegionSelector::restoreDetachedSelectionFloatingUiIfNeeded()
@@ -3281,7 +3371,8 @@ void RegionSelector::updateShortcutHintsHoverVisibilityDuringSelection(const QPo
     }
 
     const QRect panelRect = m_shortcutHintsOverlay->panelRectForViewport(size());
-    if (!panelRect.isValid()) {
+    const QRect repaintRect = m_shortcutHintsOverlay->repaintRectForViewport(size());
+    if (!panelRect.isValid() || !repaintRect.isValid()) {
         return;
     }
 
@@ -3298,7 +3389,7 @@ void RegionSelector::updateShortcutHintsHoverVisibilityDuringSelection(const QPo
         if (!shouldTemporarilyHide && !m_shortcutHintsVisible) {
             m_shortcutHintsVisible = true;
             m_shortcutHintsTemporarilyHiddenByHover = false;
-            requestCaptureSceneUpdate(panelRect);
+            requestCaptureSceneUpdate(repaintRect);
         }
         return;
     }
@@ -3306,7 +3397,7 @@ void RegionSelector::updateShortcutHintsHoverVisibilityDuringSelection(const QPo
     if (shouldTemporarilyHide && m_shortcutHintsVisible) {
         m_shortcutHintsVisible = false;
         m_shortcutHintsTemporarilyHiddenByHover = true;
-        requestCaptureSceneUpdate(panelRect);
+        requestCaptureSceneUpdate(repaintRect);
     }
 }
 
@@ -3911,18 +4002,16 @@ void RegionSelector::copyToClipboard()
         return;
     }
 
-    recordCaptureSession(prepared.image);
-    emit copyRequested(prepared.pixmap);
-
     const QImage clipboardImage = prepared.image;
     const auto clipboardWriter = m_guiClipboardWriter;
-    QTimer::singleShot(0, qApp, [clipboardImage, clipboardWriter]() {
-        if (clipboardWriter) {
-            clipboardWriter(clipboardImage);
-            return;
-        }
-        PlatformFeatures::instance().copyImageToClipboardForGui(clipboardImage);
-    });
+    if (clipboardWriter) {
+        clipboardWriter(clipboardImage, {});
+    } else {
+        PlatformFeatures::instance().copyImageToClipboardForGuiAsync(clipboardImage, qApp);
+    }
+
+    recordCaptureSession(prepared.image);
+    emit copyRequested(prepared.pixmap);
     close();
 }
 
@@ -4445,6 +4534,15 @@ void RegionSelector::showEvent(QShowEvent* event)
 
     // Set cursor immediately on show (replaces unreliable 100ms timer)
     ensureCrossCursor();
+
+#ifdef Q_OS_LINUX
+    QTimer::singleShot(0, this, [this]() {
+        if (m_isClosing || !m_qmlToolbar) {
+            return;
+        }
+        m_qmlToolbar->prewarm();
+    });
+#endif
 
     if (m_initialRevealState != InitialRevealState::Revealed) {
         setWindowOpacity(0.0);

@@ -3,7 +3,7 @@ last_modified_at: 2026-02-24
 layout: docs
 title: Bug Report Workflow
 seo_title: "SnapTray Bug Report Workflow: Capture Clear Repro Steps"
-description: Build a reproducible bug report with clear visuals, steps, and optional recording.
+description: Build a reproducible bug report with clear visuals, steps, and optional macOS/Windows recording.
 permalink: /docs/tutorials/bug-report/
 lang: en
 route_key: docs_tutorial_bug_report
@@ -19,7 +19,7 @@ Produce a bug report that engineers can reproduce on the first try.
 
 - 1 annotated screenshot
 - 1 short reproduction step list
-- Optional 10-30 second recording
+- Optional 10-30 second recording (macOS/Windows only; skip on Linux beta)
 
 ## Workflow
 
@@ -50,9 +50,9 @@ Save with a structured name such as:
 
 ### 5. Optional: record short evidence video
 
-If the issue depends on timing or animation:
+If the issue depends on timing or animation, record on macOS/Windows only. Linux beta does not include recording, so skip this step there.
 
-1. Press `R` from region capture (or start from tray recording).
+1. Start full-screen recording from the tray menu or run `snaptray record start`.
 2. Record 10-30 seconds.
 3. Stop and export as MP4.
 
@@ -75,7 +75,7 @@ Actual:
 
 Attachments:
 - screenshot.png
-- recording.mp4 (optional)
+- recording.mp4 (optional, macOS/Windows only)
 ```
 
 ## Quality checklist

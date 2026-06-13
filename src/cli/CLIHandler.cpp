@@ -78,6 +78,10 @@ CLIResult CLIHandler::process(const QStringList& arguments)
             CLIResult::Code::InvalidArguments,
             QString("Unknown command: %1\n\n%2").arg(cmdOrOption, getHelpText()));
     }
+    if (!command->isSupported()) {
+        return CLIResult::error(CLIResult::Code::RecordingError,
+                                command->unsupportedMessage());
+    }
 
     // Setup and parse command arguments
     QCommandLineParser parser;
@@ -154,6 +158,9 @@ QString CLIHandler::getHelpText() const
 
     for (const QString& name : names) {
         const auto& cmd = m_commands.at(name);
+        if (!cmd->isSupported()) {
+            continue;
+        }
         out << QString("  %1  %2\n").arg(name, -10).arg(cmd->description());
     }
 

@@ -11,13 +11,36 @@
 #include <QDebug>
 #include <QEvent>
 #include <QGuiApplication>
+#include <QInputMethod>
 #include <QQmlContext>
+#include <QQuickItem>
 #include <QQuickView>
 #include <QScreen>
+#include <QTimer>
 
 namespace SnapTray {
 
 namespace {
+void releaseTextInputSession(QQuickView* view)
+{
+#ifdef Q_OS_MAC
+    if (!view) {
+        return;
+    }
+
+    if (auto* focusItem = qobject_cast<QQuickItem*>(view->focusObject())) {
+        focusItem->setFocus(false);
+    }
+
+    if (QInputMethod* inputMethod = QGuiApplication::inputMethod()) {
+        inputMethod->commit();
+        inputMethod->reset();
+    }
+#else
+    Q_UNUSED(view);
+#endif
+}
+
 void logQmlViewErrors(QQuickView* view, const QString& context)
 {
     if (!view) {
@@ -139,8 +162,12 @@ void QmlSettingsWindow::ensureView()
 #ifdef Q_OS_MAC
     // Revert to accessory (LSUIElement) mode when the window is dismissed.
     connect(m_view, &QWindow::visibleChanged, this, [](bool visible) {
-        if (!visible)
-            PlatformFeatures::setActivationPolicyAccessory();
+        if (!visible) {
+            // Let Cocoa/Qt finish tearing down the key window and input session first.
+            QTimer::singleShot(0, QCoreApplication::instance(), []() {
+                PlatformFeatures::setActivationPolicyAccessory();
+            });
+        }
     });
 #endif
 }
@@ -214,6 +241,9 @@ bool QmlSettingsWindow::eventFilter(QObject* watched, QEvent* event)
 {
     if (watched == m_view && event) {
         if (event->type() == QEvent::Hide || event->type() == QEvent::Close) {
+#ifdef Q_OS_MAC
+            releaseTextInputSession(m_view);
+#endif
             CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         } else if (CursorSurfaceSupport::isPointerRefreshEvent(event->type())) {
             syncCursorSurface();

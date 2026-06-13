@@ -1,6 +1,6 @@
 # SnapTray Project
 
-SnapTray is a Qt 6 screenshot and recording application for macOS and Windows. It provides region capture, on-screen annotation, pin windows, screen canvas mode, MP4 recording with optional audio capture, and GIF/WebP export workflows.
+SnapTray is a Qt 6 screenshot and annotation application for macOS, Windows, and Ubuntu 22.04 X11 beta. It provides region capture, on-screen annotation, pin windows, and screen canvas mode across supported platforms. MP4 recording with optional audio capture, GIF/WebP export workflows, and OCR are macOS/Windows only; Linux beta hides and does not include those features.
 
 ## Canonical Docs
 
@@ -36,6 +36,18 @@ scripts\build-and-run-release.bat   REM Release build + run app
 ./scripts/build-and-run-release.sh  # Release build + run app
 ```
 
+### Linux beta
+
+Use Ubuntu 22.04 X11 with Qt 6.10.1 for the supported Linux beta target.
+
+```bash
+./scripts/build.sh                  # Debug build
+./scripts/build-release.sh          # Release build
+./scripts/run-tests.sh              # Build and run tests
+./scripts/build-and-run.sh          # Debug build + run app
+./scripts/build-and-run-release.sh  # Release build + run app
+```
+
 For routine verification, use the build and test scripts. Running the app is only required for manual UI validation.
 
 ## Prerequisites
@@ -45,6 +57,7 @@ For routine verification, use the build and test scripts. Running the app is onl
 - Ninja
 - macOS: Xcode Command Line Tools
 - Windows: Visual Studio 2022 Build Tools and Windows SDK
+- Linux beta: Ubuntu 22.04 X11 plus the X11/XCB development packages listed in `docs/developer/build-from-source.md`
 - Git for FetchContent dependencies
 
 Key auto-fetched dependencies:
@@ -60,7 +73,7 @@ Key auto-fetched dependencies:
 - `src/qml/` contains overlays, dialogs, panels, toolbar, settings, and shared controls
 - `tests/` contains Qt Test suites organized by subsystem
 - `docs/` contains the website, user docs, and developer docs
-- `packaging/` contains macOS and Windows distribution scripts
+- `packaging/` contains macOS, Windows, and Linux AppImage distribution scripts
 
 For the detailed repository map and subsystem boundaries, use `docs/developer/architecture.md`.
 
@@ -98,7 +111,7 @@ Use `PlatformFeatures` and the platform layer instead of scattering OS-specific 
 
 ### Recording is screen-first
 
-Recording entry is tray/CLI driven and always records a full screen source. Region Selector remains screenshot-only and must not regain region-recording semantics.
+Recording is macOS/Windows only. Recording entry is tray/CLI driven and always records a full screen source. Region Selector remains screenshot-only and must not regain region-recording semantics. Linux beta must keep recording hidden and unsupported.
 
 ### Shared glass UI stays shared
 
@@ -107,8 +120,8 @@ Use `GlassRenderer` and existing toolbar style helpers for floating panels inste
 ## Verification Expectations
 
 - Run build, test, and relevant checks before claiming completion
-- Prefer `scripts/build.sh` or `scripts/build.bat` for compile verification
-- Prefer `scripts/run-tests.sh` or `scripts/run-tests.bat` after substantive changes
+- Prefer `scripts/build.sh` on macOS/Linux beta or `scripts/build.bat` on Windows for compile verification
+- Prefer `scripts/run-tests.sh` on macOS/Linux beta or `scripts/run-tests.bat` on Windows after substantive changes
 - On Windows, if you invoke `ctest` or a Qt test binary directly, prepend `%QT_PATH%\bin` to `PATH` first so `Qt6Testd.dll` and other debug Qt DLLs resolve; `scripts/run-tests.bat` is the canonical example
 - If a change touches packaging, signing, or release behavior, verify against `docs/developer/release-packaging.md`
 
@@ -117,7 +130,7 @@ Use `GlassRenderer` and existing toolbar style helpers for floating panels inste
 - `CHANGELOG.md` is the source of truth for curated release notes. Add or update the matching version section before preparing or pushing a release tag.
 - Keep `project(SnapTray VERSION ...)` in `CMakeLists.txt` in sync with the tag name `vX.Y.Z`. The release workflow fails if the tag version and CMake version do not match.
 - For release tags, create the local tag with `git tag vX.Y.Z`. Leave pushing the tag to manual execution.
-- GitHub Actions handles the rest: macOS and Windows builds, signing/notarization, GitHub Release creation, appcast updates, and website release page generation.
+- GitHub Actions handles the rest: macOS, Windows, and Linux AppImage builds, signing/notarization where applicable, GitHub Release creation, appcast updates, and website release page generation.
 - Do not add Xcode or `MARKETING_VERSION` guidance. SnapTray release versioning is CMake-driven.
 - For the full release procedure, use `docs/developer/release-packaging.md`.
 

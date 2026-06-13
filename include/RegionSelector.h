@@ -89,7 +89,6 @@ class RegionSelector : public QWidget, public AnnotationHostAdapter
     friend class tst_RegionSelectorMultiRegionSubToolbar;
     friend class tst_RegionSelectorTransientUiCancelGuard;
     friend class TestRegionSelectorStyleSync;
-    friend class tst_RegionSelectorDeferredInitialization;
     friend class RegionSelectorTestAccess;
 
 public:
@@ -202,6 +201,11 @@ private:
 
     // Window detection
     void updateWindowDetection(const QPoint &localPos);
+    bool isTransientTopLevelElementType(ElementType elementType) const;
+    bool shouldKeepTopLevelWindowDetection(const QPoint &localPos) const;
+    WindowDetector::QueryMode effectiveWindowDetectionQueryMode(
+        const QPoint &localPos,
+        WindowDetector::QueryMode requestedMode) const;
     void setMultiRegionMode(bool enabled);
     void completeMultiRegionCapture();
     void cancelMultiRegionCapture();
@@ -299,7 +303,9 @@ private:
     void resetAnnotationInteractionTracking();
     void syncFloatingUiCursor();
     void paintSelectorScene(QPainter& painter, const QRegion& dirtyRegion);
-    void syncDetachedSelectionUiDuringPaint();
+    QRect currentSelectionDimensionInfoRect() const;
+    void syncDetachedSelectionUiDuringPaint(const QRect& dimensionInfoRectOverride = QRect());
+    void syncCompletedSelectionFloatingUi();
     void restoreDetachedSelectionFloatingUiIfNeeded();
     void syncMagnifierOverlayDuringPaint();
     void syncSelectionPreviewOverlay();
@@ -583,7 +589,7 @@ private:
     std::function<std::unique_ptr<snaptray::colorwidgets::ColorPickerDialogCompat>()>
         m_colorPickerDialogFactory;
     std::function<void()> m_restoreAfterDialogCancelledHook;
-    std::function<bool(const QImage&)> m_guiClipboardWriter;
+    std::function<void(const QImage&, std::function<void(bool)>)> m_guiClipboardWriter;
     RegionSelectorTraceProbe* m_traceProbe = nullptr;
 };
 

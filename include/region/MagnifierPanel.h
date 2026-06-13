@@ -84,7 +84,6 @@ private:
     void updateMagnifierCache(const QPoint& cursorPos, const QPixmap& backgroundPixmap);
     void drawInfoPanel(QPainter& painter, int panelX, int infoY, int panelWidth);
 
-    friend class tst_RegionSelectorDeferredInitialization;
 
     qreal m_devicePixelRatio = 1.0;
     bool m_showHexColor = false;

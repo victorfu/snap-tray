@@ -447,8 +447,15 @@ PinWindow::PinWindow(const QPixmap& screenshot,
 
     // Frameless, always on top
     // Note: Removed Qt::Tool flag as it causes the window to hide when app loses focus on macOS
-    setWindowFlags(Qt::FramelessWindowHint |
-        Qt::WindowStaysOnTopHint);
+    Qt::WindowFlags flags = Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint;
+#ifdef Q_OS_LINUX
+    flags |= Qt::X11BypassWindowManagerHint;
+#endif
+    setWindowFlags(flags);
+
+#ifdef Q_OS_LINUX
+    setFocusPolicy(Qt::StrongFocus);
+#endif
 
     setAttribute(Qt::WA_DeleteOnClose);
     setAttribute(Qt::WA_TranslucentBackground);
@@ -912,13 +919,27 @@ void PinWindow::showPreparedWindow()
     }
 
     // Must show() first, then move() to get correct positioning on macOS.
-    // Moving before show() can result in incorrect window placement.
+    // Moving before show() can result in incorrect window placement there.
+#ifdef Q_OS_LINUX
+    move(m_initialPosition);
     show();
+#else
+    show();
+#endif
 
     // Enable visibility on all virtual desktops/workspaces.
     setWindowVisibleOnAllWorkspaces(this, true);
 
+#ifdef Q_OS_LINUX
+    activateWindow();
+    raise();
+    requestNativeWindowFocus(this);
+    setFocus(Qt::OtherFocusReason);
+#endif
+
+#ifndef Q_OS_LINUX
     move(m_initialPosition);
+#endif
     m_hasPerformedInitialShow = true;
 }
 
@@ -1571,8 +1592,18 @@ void PinWindow::copyToClipboard()
     }
 
     const QImage clipboardImage = normalizeImageForExport(pixmapToCopy.toImage(), exportScreen);
-    PlatformFeatures::instance().copyImageToClipboardForGui(clipboardImage);
-    m_toast->showToast(SnapTray::QmlToast::Level::Success, tr("Copied to clipboard"));
+    QPointer<PinWindow> safeThis(this);
+    PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
+        clipboardImage,
+        qApp,
+        [safeThis](bool success) {
+            if (!safeThis) {
+                return;
+            }
+            safeThis->m_toast->showToast(
+                success ? SnapTray::QmlToast::Level::Success : SnapTray::QmlToast::Level::Error,
+                success ? tr("Copied to clipboard") : tr("Copy failed"));
+        });
 }
 
 bool PinWindow::ensureAutoBlurReadyForExport()
@@ -2286,6 +2317,17 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
     if (isGlobalPosOverFloatingUi(event->globalPosition().toPoint())) {
         return;
     }
+
+#ifdef Q_OS_LINUX
+    if (!hasFocus()) {
+        if (!isActiveWindow()) {
+            activateWindow();
+            raise();
+        }
+        requestNativeWindowFocus(this);
+        setFocus(Qt::MouseFocusReason);
+    }
+#endif
 
     if (event->button() == Qt::LeftButton) {
         m_consumeNextToolRelease = false;
@@ -5420,8 +5462,18 @@ void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
         exportScreen = screen();
     }
     const QImage clipboardImage = normalizeImageForExport(result.toImage(), exportScreen);
-    PlatformFeatures::instance().copyImageToClipboardForGui(clipboardImage);
-    m_toast->showToast(SnapTray::QmlToast::Level::Success, tr("Beautified image copied"));
+    QPointer<PinWindow> safeThis(this);
+    PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
+        clipboardImage,
+        qApp,
+        [safeThis](bool success) {
+            if (!safeThis) {
+                return;
+            }
+            safeThis->m_toast->showToast(
+                success ? SnapTray::QmlToast::Level::Success : SnapTray::QmlToast::Level::Error,
+                success ? tr("Beautified image copied") : tr("Copy failed"));
+        });
 }
 
 void PinWindow::onBeautifySave(const BeautifySettings& settings)

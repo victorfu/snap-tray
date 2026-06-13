@@ -11,6 +11,7 @@ enum class InstallSource {
     MacAppStore,      // macOS App Store (future)
     DirectDownload,   // .exe / .dmg direct download
     Homebrew,         // macOS Homebrew (future)
+    AppImage,         // Linux AppImage
     Development,      // Debug build
     Unknown
 };

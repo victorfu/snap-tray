@@ -71,6 +71,7 @@ public:
     void show();
     void hide();
     void close();
+    void prewarm();
 
     bool isVisible() const;
 

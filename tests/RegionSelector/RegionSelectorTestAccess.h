@@ -2,7 +2,8 @@
 
 #include <QCoreApplication>
 #include <QEnterEvent>
-#include <QPaintEvent>
+#include <QImage>
+#include <QPainter>
 #include <QRegion>
 
 #include "RegionSelector.h"
@@ -127,10 +128,21 @@ public:
         selector.m_initialRevealState = RegionSelector::InitialRevealState::Preparing;
     }
 
-    static void invokePaint(RegionSelector& selector, const QRegion& dirtyRegion)
+    static void syncFloatingUiLayoutFromPaint(RegionSelector& selector, const QRegion& dirtyRegion)
     {
-        QPaintEvent event(dirtyRegion);
-        selector.paintEvent(&event);
+        const QSize paintSize = selector.size().expandedTo(QSize(1, 1));
+        QImage target(paintSize, QImage::Format_ARGB32_Premultiplied);
+        target.fill(Qt::transparent);
+
+        // Attachment-layout tests need RegionPainter's layout side effects, not
+        // a native QWidget paint delivery. Painting offscreen avoids invalid
+        // QPainter(this) calls on Qt/macOS when no paint event is active.
+        QPainter painter(&target);
+        selector.paintSelectorScene(painter, dirtyRegion);
+        painter.end();
+
+        selector.syncDetachedSelectionUiDuringPaint();
+        selector.syncRegionControlPanelDuringPaint();
     }
 
     static void invokeHandleInitialRevealTimeout(RegionSelector& selector)
@@ -298,6 +310,23 @@ public:
     static bool selectionCompletionHandoffPending(const RegionSelector& selector)
     {
         return selector.m_selectionCompletionHandoffPending;
+    }
+
+    static bool isClosing(const RegionSelector& selector)
+    {
+        return selector.m_isClosing;
+    }
+
+    static void setGuiClipboardWriter(
+        RegionSelector& selector,
+        std::function<void(const QImage&, std::function<void(bool)>)> writer)
+    {
+        selector.m_guiClipboardWriter = std::move(writer);
+    }
+
+    static void invokeCopyToClipboard(RegionSelector& selector)
+    {
+        selector.copyToClipboard();
     }
 
     static bool staticCaptureBackgroundVisible(const RegionSelector& selector)

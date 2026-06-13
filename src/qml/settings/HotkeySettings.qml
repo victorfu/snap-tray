@@ -23,6 +23,13 @@ Flickable {
         function onHotkeysChanged() { root.hotkeyRevision++ }
     }
 
+    // On Windows, proactively offer to disable the "Print Screen opens Snipping
+    // Tool" shortcut so Print Screen can be bound here. Deferred so the modal
+    // dialog is not shown during component construction. No-op on other platforms.
+    Component.onCompleted: Qt.callLater(function() {
+        settingsBackend.checkWindowsPrintScreenSnippingConflict()
+    })
+
     // Proportional column layout constants
     readonly property int rowLeftMargin: 8
     readonly property int buttonAreaWidth: 210

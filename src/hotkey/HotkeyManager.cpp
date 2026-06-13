@@ -14,6 +14,7 @@
 #include <QSet>
 
 #include <algorithm>
+#include <optional>
 
 namespace SnapTray {
 
@@ -40,6 +41,80 @@ QString translateHotkeyText(const char* sourceText)
 QString normalizeKeySequence(const QString& keySequence)
 {
     return keySequence.toLower().simplified();
+}
+
+QString formatNativeKeySequence(const QString& keySequence)
+{
+    if (normalizeKeySequence(keySequence) == QStringLiteral("native:0x2c")) {
+        return QStringLiteral("Print");
+    }
+
+    return keySequence;
+}
+
+#ifdef Q_OS_WIN
+constexpr quint32 kWindowsVirtualKeySnapshot = 0x2C;
+constexpr quint32 kWindowsModifierAlt = 0x0001;
+constexpr quint32 kWindowsModifierControl = 0x0002;
+constexpr quint32 kWindowsModifierShift = 0x0004;
+constexpr quint32 kWindowsModifierWin = 0x0008;
+
+quint32 windowsNativeModifierMask(Qt::KeyboardModifiers modifiers)
+{
+    quint32 mask = 0;
+    if (modifiers & Qt::AltModifier) {
+        mask |= kWindowsModifierAlt;
+    }
+    if (modifiers & Qt::ControlModifier) {
+        mask |= kWindowsModifierControl;
+    }
+    if (modifiers & Qt::ShiftModifier) {
+        mask |= kWindowsModifierShift;
+    }
+    if (modifiers & Qt::MetaModifier) {
+        mask |= kWindowsModifierWin;
+    }
+    return mask;
+}
+
+std::optional<QHotkey::NativeShortcut> windowsNativeShortcutForSequence(const QString& keySequence)
+{
+    const QKeySequence sequence(keySequence);
+    if (sequence.isEmpty()) {
+        return std::nullopt;
+    }
+
+    const int combined = sequence[0].toCombined();
+    const auto key = static_cast<Qt::Key>(combined & ~Qt::KeyboardModifierMask);
+    const auto modifiers = Qt::KeyboardModifiers(combined & Qt::KeyboardModifierMask);
+    if (key != Qt::Key_Print) {
+        return std::nullopt;
+    }
+
+    return QHotkey::NativeShortcut(
+        kWindowsVirtualKeySnapshot,
+        windowsNativeModifierMask(modifiers));
+}
+#endif
+
+QString conflictKeyForSequence(const QString& keySequence)
+{
+    const QString normalized = normalizeKeySequence(keySequence);
+
+#ifdef Q_OS_WIN
+    if (normalized == QStringLiteral("native:0x2c")) {
+        return QStringLiteral("win-native:0x2c:0");
+    }
+
+    if (const auto nativeShortcut = windowsNativeShortcutForSequence(keySequence);
+        nativeShortcut && nativeShortcut->key == kWindowsVirtualKeySnapshot) {
+        return QStringLiteral("win-native:0x%1:%2")
+            .arg(nativeShortcut->key, 0, 16)
+            .arg(nativeShortcut->modifier);
+    }
+#endif
+
+    return normalized;
 }
 }  // namespace
 
@@ -231,7 +306,7 @@ std::optional<HotkeyAction> HotkeyManager::preferredConflictOwner(HotkeyAction a
         return std::nullopt;
     }
 
-    const QString normalizedSequence = normalizeKeySequence(config.keySequence);
+    const QString normalizedSequence = conflictKeyForSequence(config.keySequence);
     HotkeyAction preferredOwner = action;
 
     for (auto it = m_configs.begin(); it != m_configs.end(); ++it) {
@@ -244,7 +319,7 @@ std::optional<HotkeyAction> HotkeyManager::preferredConflictOwner(HotkeyAction a
             continue;
         }
 
-        if (normalizeKeySequence(other.keySequence) != normalizedSequence) {
+        if (conflictKeyForSequence(other.keySequence) != normalizedSequence) {
             continue;
         }
 
@@ -309,10 +384,10 @@ void HotkeyManager::refreshAffectedConflicts(const QString& oldSequence,
 {
     QSet<QString> affectedSequences;
     if (!oldSequence.isEmpty()) {
-        affectedSequences.insert(normalizeKeySequence(oldSequence));
+        affectedSequences.insert(conflictKeyForSequence(oldSequence));
     }
     if (!newSequence.isEmpty()) {
-        affectedSequences.insert(normalizeKeySequence(newSequence));
+        affectedSequences.insert(conflictKeyForSequence(newSequence));
     }
 
     if (affectedSequences.isEmpty()) {
@@ -329,7 +404,7 @@ void HotkeyManager::refreshAffectedConflicts(const QString& oldSequence,
             continue;
         }
 
-        if (!affectedSequences.contains(normalizeKeySequence(config.keySequence))) {
+        if (!affectedSequences.contains(conflictKeyForSequence(config.keySequence))) {
             continue;
         }
 
@@ -367,7 +442,7 @@ QString HotkeyManager::formatKeySequence(const QString& keySequence)
 
     // Handle native keycode format
     if (keySequence.startsWith(QStringLiteral("Native:"), Qt::CaseInsensitive)) {
-        return keySequence;  // Display as-is for native codes
+        return formatNativeKeySequence(keySequence);
     }
 
     // Use Qt's native text formatting for standard sequences
@@ -544,7 +619,7 @@ std::optional<HotkeyAction> HotkeyManager::hasConflict(const QString& keySequenc
         return std::nullopt;
     }
 
-    const QString normalizedSequence = normalizeKeySequence(keySequence);
+    const QString normalizedSequence = conflictKeyForSequence(keySequence);
     std::optional<HotkeyAction> preferredConflict;
 
     for (auto it = m_configs.begin(); it != m_configs.end(); ++it) {
@@ -557,7 +632,7 @@ std::optional<HotkeyAction> HotkeyManager::hasConflict(const QString& keySequenc
             continue;
         }
 
-        const QString otherNormalized = normalizeKeySequence(config.keySequence);
+        const QString otherNormalized = conflictKeyForSequence(config.keySequence);
         if (normalizedSequence == otherNormalized) {
             if (!preferredConflict || hasHigherRegistrationPriority(it.key(), *preferredConflict)) {
                 preferredConflict = it.key();
@@ -652,6 +727,10 @@ void HotkeyManager::createHotkeyInstance(HotkeyAction action)
     if (isNativeKeyCode(config.keySequence, nativeKey)) {
         // Native keycode (e.g., "Native:0x2C" for Print Screen on Windows)
         hotkey = new QHotkey(QHotkey::NativeShortcut(nativeKey, 0), true, this);
+#ifdef Q_OS_WIN
+    } else if (const auto nativeShortcut = windowsNativeShortcutForSequence(config.keySequence)) {
+        hotkey = new QHotkey(*nativeShortcut, true, this);
+#endif
     } else {
         // Standard Qt key sequence
         hotkey = new QHotkey(QKeySequence(config.keySequence), true, this);

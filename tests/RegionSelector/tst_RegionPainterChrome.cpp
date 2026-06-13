@@ -144,6 +144,7 @@ private slots:
     void testSelectionDimensionLabelUsesPlatformUnits();
     void testWindowHighlightVisualRectIncludesHandlesAndPanel();
     void testCompactSelectionDimensionLabelStaysOutsideSelection();
+    void testTopEdgeShortSelectionUsesCompactDimensionLabel();
     void testFractionalDprPartialBackgroundRepaintMatchesFullPaint();
     void testFractionalDprSelectionTransitionNeedsFullRepaint();
 };
@@ -270,6 +271,38 @@ void tst_RegionPainterChrome::testCompactSelectionDimensionLabelStaysOutsideSele
     QVERIFY(dimensionRect.right() < compactSelectionRect.left());
     QVERIFY(compactSelectionRect.left() - dimensionRect.right() >= 8);
     QVERIFY(!compactSelectionRect.contains(dimensionRect));
+}
+
+void tst_RegionPainterChrome::testTopEdgeShortSelectionUsesCompactDimensionLabel()
+{
+    QWidget hostWidget;
+    hostWidget.resize(kHostRect.size());
+
+    SelectionStateManager selectionManager;
+    selectionManager.setBounds(kHostRect);
+    const QRect topEdgeShortSelectionRect(180, 8, 220, 39);
+    selectionManager.setSelectionRect(topEdgeShortSelectionRect);
+
+    RegionPainter painter;
+    painter.setParentWidget(&hostWidget);
+    painter.setSelectionManager(&selectionManager);
+    painter.setCornerRadius(0);
+    painter.setDevicePixelRatio(1.0);
+
+    QPixmap background(hostWidget.size());
+    background.fill(Qt::white);
+
+    QImage canvas(hostWidget.size(), QImage::Format_ARGB32_Premultiplied);
+    canvas.fill(Qt::transparent);
+    QPainter qp(&canvas);
+    qp.setRenderHint(QPainter::Antialiasing);
+    painter.paint(qp, background);
+    qp.end();
+
+    const QRect dimensionRect = painter.lastDimensionInfoRect();
+    QVERIFY(dimensionRect.isValid());
+    QVERIFY(dimensionRect.right() < topEdgeShortSelectionRect.left());
+    QVERIFY(!topEdgeShortSelectionRect.intersects(dimensionRect));
 }
 
 void tst_RegionPainterChrome::testFractionalDprPartialBackgroundRepaintMatchesFullPaint()

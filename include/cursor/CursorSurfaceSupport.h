@@ -10,7 +10,6 @@
 #include <QWindow>
 
 #include "cursor/CursorAuthority.h"
-#include "cursor/CursorManager.h"
 #include "cursor/CursorPlatformApplier.h"
 
 namespace CursorSurfaceSupport {
@@ -134,7 +133,19 @@ inline void restoreWidgetCursorIfPointerOver(QWidget* widget)
         Qt::NoButton,
         Qt::NoModifier);
     QApplication::sendEvent(widget, &moveEvent);
-    CursorManager::instance().reapplyCursorForWidget(widget);
+
+    auto& authority = CursorAuthority::instance();
+    const CursorSurfaceMode mode = authority.modeForWidget(widget);
+    const CursorStyleSpec legacyStyle = CursorStyleSpec::fromCursor(widget->cursor());
+    if (mode != CursorSurfaceMode::Legacy) {
+        authority.recordLegacyAppliedForWidget(widget, legacyStyle);
+    }
+
+    if (mode == CursorSurfaceMode::Authority && authority.hasResolvedRequestForWidget(widget)) {
+        CursorPlatformApplier::applyWidgetCursor(widget, authority.resolvedStyleForWidget(widget));
+    } else {
+        CursorPlatformApplier::applyWidgetCursor(widget, legacyStyle);
+    }
 }
 
 }  // namespace CursorSurfaceSupport

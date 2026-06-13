@@ -49,7 +49,7 @@ doc_order: 1
 
 - 繪圖工具：Pencil、Marker、Arrow、Shape、Text、Mosaic、Step Badge、Emoji、Eraser
 - 實用工具：Crop、Measure
-- 動作工具：OCR、QR Code Scan、Share URL、Save、Copy
+- 動作工具：OCR（僅支援 macOS/Windows；Linux beta 會隱藏）、QR Code Scan、Share URL、Save、Copy
 
 ## 下一步
 

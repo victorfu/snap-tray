@@ -1,6 +1,7 @@
 #include <QtTest>
 #include <QSignalSpy>
 
+#include "hotkey/HotkeyTypes.h"
 #include "qml/SettingsBackend.h"
 #include "settings/RecordingSettingsManager.h"
 #include "settings/Settings.h"
@@ -71,6 +72,10 @@ private slots:
     void testCheckForUpdates_Failed_EmitsFailure();
     void testCheckForUpdates_UnsupportedInstallSource_EmitsUnavailable();
     void testLastCheckedTextChanged_WhenCoordinatorRecordsSuccessfulCheck();
+    void testHotkeyRegistrationWarningMessage_WindowsPrintScreenUsesGenericFallback();
+    void testShouldPromptWindowsPrintScreenDisable_DecisionMatrix();
+    void testFeatureSupportPropertiesFollowPlatformCapabilities();
+    void testHotkeyCategoriesHideRecordingWhenUnsupported();
 
 private:
     void clearTestSettings();
@@ -317,6 +322,75 @@ void tst_SettingsBackend::testLastCheckedTextChanged_WhenCoordinatorRecordsSucce
 
     QCOMPARE(lastCheckedSpy.count(), 1);
     QVERIFY(backend.lastCheckedText() != QStringLiteral("Never"));
+}
+
+void tst_SettingsBackend::testHotkeyRegistrationWarningMessage_WindowsPrintScreenUsesGenericFallback()
+{
+    SnapTray::HotkeyConfig config;
+    config.displayName = QStringLiteral("Region Capture");
+    config.keySequence = QStringLiteral("Print");
+    config.status = SnapTray::HotkeyStatus::Failed;
+
+    const QString message = SettingsBackend::hotkeyRegistrationWarningMessage(
+        config,
+        QString(),
+        true);
+
+    QVERIFY(message.contains(QStringLiteral("Region Capture")));
+    QVERIFY(message.contains(QStringLiteral(
+        "the shortcut is already in use by another app or the system")));
+    QVERIFY(!message.contains(QStringLiteral("Snipping Tool")));
+    QVERIFY(!message.contains(QStringLiteral("SnapTray can turn off this Windows setting")));
+}
+
+void tst_SettingsBackend::testShouldPromptWindowsPrintScreenDisable_DecisionMatrix()
+{
+    // Prompt only on Windows, when snipping is still enabled, and the user has
+    // not dismissed the prompt before.
+    QVERIFY(SettingsBackend::shouldPromptWindowsPrintScreenSnippingDisable(true, true, false));
+
+    // Snipping already disabled — nothing to offer.
+    QVERIFY(!SettingsBackend::shouldPromptWindowsPrintScreenSnippingDisable(true, false, false));
+
+    // User chose "don't ask again".
+    QVERIFY(!SettingsBackend::shouldPromptWindowsPrintScreenSnippingDisable(true, true, true));
+
+    // Non-Windows platforms never prompt.
+    QVERIFY(!SettingsBackend::shouldPromptWindowsPrintScreenSnippingDisable(false, true, false));
+}
+
+void tst_SettingsBackend::testFeatureSupportPropertiesFollowPlatformCapabilities()
+{
+    SettingsBackend backend;
+
+#if defined(Q_OS_LINUX)
+    QVERIFY(!backend.recordingSupported());
+    QVERIFY(!backend.ocrSettingsVisible());
+#else
+    QVERIFY(backend.recordingSupported());
+    QVERIFY(backend.ocrSettingsVisible());
+#endif
+}
+
+void tst_SettingsBackend::testHotkeyCategoriesHideRecordingWhenUnsupported()
+{
+    SettingsBackend backend;
+    const QVariantList categories = backend.hotkeyCategories();
+
+    bool sawRecording = false;
+    for (const QVariant& item : categories) {
+        const auto map = item.toMap();
+        if (map.value(QStringLiteral("category")).toInt()
+            == static_cast<int>(SnapTray::HotkeyCategory::Recording)) {
+            sawRecording = true;
+        }
+    }
+
+#if defined(Q_OS_LINUX)
+    QVERIFY(!sawRecording);
+#else
+    QVERIFY(sawRecording);
+#endif
 }
 
 QTEST_MAIN(tst_SettingsBackend)

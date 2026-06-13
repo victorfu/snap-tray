@@ -85,6 +85,7 @@ private:
 
 private slots:
     void cleanupForShutdown();
+    void hideNativeWindow();
 
 private:
     void ensureView();

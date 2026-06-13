@@ -27,6 +27,7 @@ Flickable {
 
         SettingsToggle {
             label: qsTr("Apply to recordings")
+            visible: settingsBackend.recordingSupported
             checked: settingsBackend.watermarkApplyToRecording
             onToggled: function(checked) { settingsBackend.watermarkApplyToRecording = checked }
         }

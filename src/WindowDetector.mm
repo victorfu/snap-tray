@@ -1,6 +1,7 @@
 #include "WindowDetector.h"
 #include "WindowDetectorMacFilters.h"
 
+#include <QCoreApplication>
 #include <QImage>
 #include <QScreen>
 #include <QDebug>
@@ -609,13 +610,24 @@ void WindowDetector::refreshWindowList(QueryMode queryMode)
     m_refreshComplete = false;
     const DetectionFlags flags = flagsForQueryMode(m_detectionFlags, queryMode);
 
-    QMutexLocker locker(&m_cacheMutex);
-    m_windowCache.clear();
-    m_cacheReady = false;
-    m_cacheScreen = nullptr;
+    std::vector<DetectedElement> previousCache;
+    QScreen* previousScreen = nullptr;
+    QueryMode previousQueryMode = QueryMode::TopLevelOnly;
+
+    {
+        QMutexLocker locker(&m_cacheMutex);
+        previousCache = m_windowCache;
+        previousScreen = m_cacheScreen;
+        previousQueryMode = m_cacheQueryMode;
+        m_windowCache.clear();
+        m_cacheReady = false;
+        m_cacheScreen = nullptr;
+    }
 
     if (!m_enabled) {
+        QMutexLocker locker(&m_cacheMutex);
         m_cacheScreen = m_currentScreen.data();
+        m_cacheQueryMode = queryMode;
         m_cacheReady = true;
         m_refreshComplete = true;
         return;
@@ -632,6 +644,7 @@ void WindowDetector::refreshWindowList(QueryMode queryMode)
 
     if (!windowList) {
         qWarning() << "WindowDetector: Failed to get window list";
+        QMutexLocker locker(&m_cacheMutex);
         m_cacheScreen = m_currentScreen.data();
         m_cacheQueryMode = queryMode;
         m_cacheReady = true;
@@ -641,18 +654,31 @@ void WindowDetector::refreshWindowList(QueryMode queryMode)
 
     const CFIndex count = CFArrayGetCount(windowList);
     const pid_t myPid = [[NSProcessInfo processInfo] processIdentifier];
+    std::vector<DetectedElement> newCache;
 
     for (CFIndex i = 0; i < count; ++i) {
         CFDictionaryRef windowInfo = static_cast<CFDictionaryRef>(CFArrayGetValueAtIndex(windowList, i));
         if (auto element = buildDetectedTopLevelElement(windowInfo, myPid, flags)) {
-            m_windowCache.push_back(*element);
+            newCache.push_back(*element);
         }
     }
 
     CFRelease(windowList);
-    m_cacheScreen = m_currentScreen.data();
-    m_cacheQueryMode = queryMode;
-    m_cacheReady = true;
+    mergePreservedTopLevelElements(
+        newCache,
+        previousCache,
+        previousQueryMode,
+        previousScreen,
+        queryMode,
+        m_currentScreen.data());
+
+    {
+        QMutexLocker locker(&m_cacheMutex);
+        m_windowCache = std::move(newCache);
+        m_cacheScreen = m_currentScreen.data();
+        m_cacheQueryMode = queryMode;
+        m_cacheReady = true;
+    }
 
     m_refreshComplete = true;
 }
@@ -982,22 +1008,39 @@ std::optional<DetectedElement> WindowDetector::detectWindowAt(
 void WindowDetector::refreshWindowListAsync(QueryMode queryMode)
 {
     uint64_t requestId = ++m_refreshRequestId;
-    QScreen* targetScreen = m_currentScreen.data();
+    const QPointer<QScreen> targetScreen = m_currentScreen;
+    QPointer<WindowDetector> guardedThis(this);
+    QPointer<QCoreApplication> app = QCoreApplication::instance();
 
     m_refreshComplete = false;
 
     // Snapshot detection flags to avoid data race with main thread
     const DetectionFlags flags = flagsForQueryMode(m_detectionFlags, queryMode);
+    std::vector<DetectedElement> previousCache;
+    QScreen* previousScreen = nullptr;
+    QueryMode previousQueryMode = QueryMode::TopLevelOnly;
 
     {
         QMutexLocker locker(&m_cacheMutex);
-        if (m_cacheScreen != targetScreen ||
-            static_cast<int>(m_cacheQueryMode) < static_cast<int>(queryMode)) {
+        previousCache = m_windowCache;
+        previousScreen = m_cacheScreen;
+        previousQueryMode = m_cacheQueryMode;
+        if (m_cacheScreen != targetScreen.data()) {
             m_cacheReady = false;
         }
     }
 
-    m_refreshFuture = QtConcurrent::run([this, requestId, flags, targetScreen, queryMode]() {
+    m_refreshFuture = QtConcurrent::run([
+        guardedThis,
+        app,
+        requestId,
+        flags,
+        targetScreen,
+        queryMode,
+        previousCache = std::move(previousCache),
+        previousScreen,
+        previousQueryMode
+    ]() mutable {
         std::vector<DetectedElement> newCache;
 
         // Determine CGWindowList options based on detection flags
@@ -1010,12 +1053,21 @@ void WindowDetector::refreshWindowListAsync(QueryMode queryMode)
         CFArrayRef windowList = CGWindowListCopyWindowInfo(options, kCGNullWindowID);
 
         if (!windowList) {
-            if (m_refreshRequestId.load() == requestId) {
-                m_refreshComplete = true;
-                QMetaObject::invokeMethod(this, [this]() {
-                    emit windowListReady();
-                }, Qt::QueuedConnection);
+            if (!app) {
+                return;
             }
+
+            QMetaObject::invokeMethod(
+                app,
+                [guardedThis, requestId]() {
+                    if (!guardedThis || guardedThis->m_refreshRequestId.load() != requestId) {
+                        return;
+                    }
+
+                    guardedThis->m_refreshComplete = true;
+                    emit guardedThis->windowListReady();
+                },
+                Qt::QueuedConnection);
             return;
         }
 
@@ -1030,24 +1082,45 @@ void WindowDetector::refreshWindowListAsync(QueryMode queryMode)
         }
 
         CFRelease(windowList);
+        // Region capture uses a frozen pre-capture screenshot, so when we upgrade
+        // from a top-level-only snapshot to child-control queries we must keep any
+        // top-level windows that vanished after our overlay activated.
+        mergePreservedTopLevelElements(
+            newCache,
+            previousCache,
+            previousQueryMode,
+            previousScreen,
+            queryMode,
+            targetScreen.data());
 
-        if (m_refreshRequestId.load() != requestId) {
-            qDebug() << "WindowDetector: Discarding stale refresh result";
+        if (!app) {
             return;
         }
 
-        {
-            QMutexLocker locker(&m_cacheMutex);
-            m_windowCache = std::move(newCache);
-            m_cacheScreen = targetScreen;
-            m_cacheQueryMode = queryMode;
-            m_cacheReady = true;
-        }
+        QMetaObject::invokeMethod(
+            app,
+            [guardedThis, requestId, targetScreen, queryMode, newCache = std::move(newCache)]() mutable {
+                if (!guardedThis) {
+                    return;
+                }
 
-        m_refreshComplete = true;
-        QMetaObject::invokeMethod(this, [this]() {
-            emit windowListReady();
-        }, Qt::QueuedConnection);
+                if (guardedThis->m_refreshRequestId.load() != requestId) {
+                    qDebug() << "WindowDetector: Discarding stale refresh result";
+                    return;
+                }
+
+                {
+                    QMutexLocker locker(&guardedThis->m_cacheMutex);
+                    guardedThis->m_windowCache = std::move(newCache);
+                    guardedThis->m_cacheScreen = targetScreen.data();
+                    guardedThis->m_cacheQueryMode = queryMode;
+                    guardedThis->m_cacheReady = true;
+                }
+
+                guardedThis->m_refreshComplete = true;
+                emit guardedThis->windowListReady();
+            },
+            Qt::QueuedConnection);
     });
 }
 

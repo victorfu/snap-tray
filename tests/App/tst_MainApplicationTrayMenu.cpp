@@ -120,8 +120,10 @@ private slots:
     void cleanupTestCase();
 
     void updateTrayMenuHotkeyText_updatesPasteAction();
+    void updateTrayMenuHotkeyText_marksFailedHotkeyUnavailable();
     void updateTrayMenuHotkeyText_usesTranslatedPasteLabel();
     void initialize_directDownload_addsEnabledCheckForUpdatesActionBeforeSettings();
+    void initialize_hidesRecordingActionWhenUnsupported();
     void onCheckForUpdates_usesSharedSettingsWindowFlowWithoutShowingSettings();
     void initialize_externalManaged_disablesCheckForUpdatesAction();
     void handleCLICommand_recordToggle_closesScreenPicker();
@@ -142,6 +144,9 @@ private:
 void tst_MainApplicationTrayMenu::init()
 {
     manager().shutdown();
+    manager().m_registerHotkeyOverride = [](SnapTray::HotkeyAction, const QString&) {
+        return true;
+    };
     clearAllTestSettings();
     InstallSourceDetector::clearDetectedSourceForTests();
     UpdateCoordinator::resetForTests();
@@ -152,6 +157,7 @@ void tst_MainApplicationTrayMenu::init()
 void tst_MainApplicationTrayMenu::cleanup()
 {
     manager().shutdown();
+    manager().m_registerHotkeyOverride = {};
     clearAllTestSettings();
     InstallSourceDetector::clearDetectedSourceForTests();
     UpdateCoordinator::resetForTests();
@@ -177,6 +183,32 @@ void tst_MainApplicationTrayMenu::updateTrayMenuHotkeyText_updatesPasteAction()
 
     QVERIFY(!displayHotkey.isEmpty());
     QCOMPARE(pasteAction.text(), MainApplication::tr("%1 (%2)").arg(baseName, displayHotkey));
+}
+
+void tst_MainApplicationTrayMenu::updateTrayMenuHotkeyText_marksFailedHotkeyUnavailable()
+{
+    using namespace SnapTray;
+
+    manager().shutdown();
+    clearAllTestSettings();
+    manager().m_registerHotkeyOverride = [](HotkeyAction, const QString&) {
+        return true;
+    };
+    manager().initialize();
+
+    QVERIFY(manager().updateHotkey(HotkeyAction::PinFromImage, QStringLiteral("F9")));
+    QVERIFY(!manager().updateHotkey(HotkeyAction::RegionCapture, QStringLiteral("F9")));
+    QCOMPARE(manager().getConfig(HotkeyAction::RegionCapture).status, HotkeyStatus::Failed);
+
+    MainApplication application;
+    QAction regionAction(&application);
+    application.m_regionCaptureAction = &regionAction;
+
+    application.updateTrayMenuHotkeyText();
+
+    QCOMPARE(regionAction.text(),
+             MainApplication::tr("%1 (%2)")
+                 .arg(MainApplication::tr("Region Capture"), QStringLiteral("F9 unavailable")));
 }
 
 void tst_MainApplicationTrayMenu::updateTrayMenuHotkeyText_usesTranslatedPasteLabel()
@@ -235,6 +267,25 @@ void tst_MainApplicationTrayMenu::initialize_directDownload_addsEnabledCheckForU
     QCOMPARE(checkIndex + 1, settingsIndex);
 }
 
+void tst_MainApplicationTrayMenu::initialize_hidesRecordingActionWhenUnsupported()
+{
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+
+    MainApplication application;
+    application.initialize();
+
+#ifdef Q_OS_LINUX
+    QVERIFY(application.m_fullScreenRecordingAction == nullptr);
+
+    const QList<QAction*> actions = application.m_trayMenu->actions();
+    for (QAction* action : actions) {
+        QVERIFY(!action || action->text() != MainApplication::tr("Record Screen"));
+    }
+#else
+    QVERIFY(application.m_fullScreenRecordingAction != nullptr);
+#endif
+}
+
 void tst_MainApplicationTrayMenu::onCheckForUpdates_usesSharedSettingsWindowFlowWithoutShowingSettings()
 {
     installFakeUpdateService(InstallSource::DirectDownload, false);
@@ -279,7 +330,12 @@ void tst_MainApplicationTrayMenu::handleCLICommand_recordToggle_closesScreenPick
 
     application.handleCLICommand(message.toJson());
 
+#ifdef Q_OS_LINUX
+    QVERIFY(application.m_screenPickerDialog != nullptr);
+    application.closeScreenPicker();
+#else
     QVERIFY(application.m_screenPickerDialog.isNull());
+#endif
     QCOMPARE(application.m_recordingManager->state(), RecordingManager::State::Idle);
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 }

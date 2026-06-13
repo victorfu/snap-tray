@@ -7,6 +7,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QGuiApplication>
+#include <QMetaObject>
 #include <QMimeData>
 #include <QPainter>
 #include <QPainterPath>
@@ -32,12 +33,18 @@ PlatformFeatures& PlatformFeatures::instance()
 }
 
 PlatformFeatures::PlatformFeatures()
-    : m_ocrAvailable(OCRManager::isAvailable())
-    , m_windowDetectionAvailable(true)
+    : m_capabilities(SnapTray::currentPlatformCapabilities())
+    , m_ocrAvailable(m_capabilities.supportsOCR && OCRManager::isAvailable())
+    , m_windowDetectionAvailable(m_capabilities.supportsWindowDetection)
 {
 }
 
 PlatformFeatures::~PlatformFeatures() = default;
+
+const SnapTray::PlatformCapabilities& PlatformFeatures::capabilities() const
+{
+    return m_capabilities;
+}
 
 bool PlatformFeatures::isOCRAvailable() const
 {
@@ -112,6 +119,43 @@ bool PlatformFeatures::copyImageToClipboardPersistently(const QImage& image) con
 
     QGuiApplication::clipboard()->setMimeData(mimeData);
     return true;
+}
+
+bool PlatformFeatures::copyImageToClipboardForGui(const QImage& image) const
+{
+    if (image.isNull()) {
+        return false;
+    }
+
+    if (QClipboard* clipboard = QGuiApplication::clipboard()) {
+        clipboard->setImage(image);
+        return true;
+    }
+    return false;
+}
+
+void PlatformFeatures::copyImageToClipboardForGuiAsync(
+    const QImage& image,
+    QObject* context,
+    std::function<void(bool)> completion) const
+{
+    QObject* target = context ? context : QCoreApplication::instance();
+    if (!target) {
+        const bool success = copyImageToClipboardForGui(image);
+        if (completion) {
+            completion(success);
+        }
+        return;
+    }
+
+    QMetaObject::invokeMethod(target,
+        [this, image, completion = std::move(completion)]() mutable {
+            const bool success = copyImageToClipboardForGui(image);
+            if (completion) {
+                completion(success);
+            }
+        },
+        Qt::QueuedConnection);
 }
 
 QString PlatformFeatures::getAppExecutablePath() const

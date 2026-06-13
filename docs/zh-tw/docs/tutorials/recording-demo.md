@@ -2,8 +2,8 @@
 last_modified_at: 2026-02-24
 layout: docs
 title: 錄影教學示範
-seo_title: "SnapTray 錄影示範教學：錄製清楚簡潔的操作示範、導覽與問題說明影片"
-description: 錄製一段短而清楚的操作影片，用於 demo、導覽或問題說明。
+seo_title: "SnapTray 錄影示範教學：macOS/Windows 操作示範、導覽與問題說明影片"
+description: 在 macOS/Windows 錄製短而清楚的操作影片，用於 demo、導覽或問題說明；Linux beta 不包含錄影。
 permalink: /zh-tw/docs/tutorials/recording-demo/
 lang: zh-tw
 route_key: docs_tutorial_recording_demo
@@ -25,10 +25,10 @@ doc_order: 5
 
 ### 1. 定義錄影範圍
 
-- 全螢幕：完整導覽
-- 區域：聚焦示範
+錄影僅支援 macOS/Windows。Linux beta 不包含錄影，請略過這篇教學。
 
-可從托盤選單啟動，或在截圖選區按 `R` 開始。
+- 使用全螢幕錄影完成導覽或示範。
+- 從托盤選單啟動，或執行 `snaptray record start`。
 
 ### 2. 開錄前先設定
 

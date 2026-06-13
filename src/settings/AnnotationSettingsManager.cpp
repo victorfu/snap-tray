@@ -1,6 +1,8 @@
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/Settings.h"
+#include <QMetaType>
 #include <QSettings>
+#include <QVariant>
 
 AnnotationSettingsManager& AnnotationSettingsManager::instance()
 {
@@ -11,13 +13,24 @@ AnnotationSettingsManager& AnnotationSettingsManager::instance()
 QColor AnnotationSettingsManager::loadColor() const
 {
     auto settings = SnapTray::getSettings();
-    return settings.value(kSettingsKeyColor, defaultColor()).value<QColor>();
+    const QVariant value = settings.value(kSettingsKeyColor);
+    if (!value.isValid()) {
+        return defaultColor();
+    }
+
+    if (value.metaType() == QMetaType::fromType<QColor>()) {
+        const QColor color = value.value<QColor>();
+        return color.isValid() ? color : defaultColor();
+    }
+
+    const QColor color(value.toString());
+    return color.isValid() ? color : defaultColor();
 }
 
 void AnnotationSettingsManager::saveColor(const QColor& color)
 {
     auto settings = SnapTray::getSettings();
-    settings.setValue(kSettingsKeyColor, color);
+    settings.setValue(kSettingsKeyColor, color.name(QColor::HexArgb));
 }
 
 int AnnotationSettingsManager::loadWidth() const

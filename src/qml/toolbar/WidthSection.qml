@@ -22,8 +22,9 @@ Item {
 
     // Blue container
     Rectangle {
-        x: 4
-        y: 3
+        id: widthPreviewContainer
+        objectName: "widthPreviewContainer"
+        anchors.centerIn: parent
         width: 22
         height: 22
         radius: 5
@@ -32,7 +33,7 @@ Item {
         // Width preview dot
         Rectangle {
             id: widthDot
-            anchors.centerIn: parent
+            objectName: "widthPreviewDot"
 
             readonly property real minDot: 4
             readonly property real maxDot: 20
@@ -41,6 +42,8 @@ Item {
 
             width: Math.round(minDot + ratio * (maxDot - minDot))
             height: width
+            x: (parent.width - width) / 2
+            y: (parent.height - height) / 2
             radius: width / 2
             color: "white"
         }

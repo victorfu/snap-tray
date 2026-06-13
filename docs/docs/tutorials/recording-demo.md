@@ -2,8 +2,8 @@
 last_modified_at: 2026-02-24
 layout: docs
 title: Recording Demo
-seo_title: "SnapTray Recording Demo: Capture Demos & Walkthroughs"
-description: Create a concise recording for demos, onboarding, or issue explanation.
+seo_title: "SnapTray Recording Demo: macOS/Windows Demos & Walkthroughs"
+description: Create a concise macOS/Windows-only recording for demos, onboarding, or issue explanation; Linux beta does not include recording.
 permalink: /docs/tutorials/recording-demo/
 lang: en
 route_key: docs_tutorial_recording_demo
@@ -25,10 +25,10 @@ Produce a short, clear screen recording that stakeholders can understand quickly
 
 ### 1. Define recording scope
 
-- Full screen for complete walkthroughs
-- Region for focused demos
+Recording is available on macOS/Windows only. Linux beta does not include recording, so skip this tutorial there.
 
-Start via tray menu or press `R` from region capture.
+- Use full-screen recording for walkthroughs and demos.
+- Start via tray menu or run `snaptray record start`.
 
 ### 2. Configure before recording
 

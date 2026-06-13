@@ -2717,6 +2717,56 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
         <source>Images (*.png *.jpg *.jpeg *.bmp *.svg)</source>
         <translation>Hình ảnh (*.png *.jpg *.jpeg *.bmp *.svg)</translation>
         </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="147" />
+        <source>Disable Windows Print Screen Shortcut?</source>
+        <translation>Tắt phím tắt Print Screen của Windows?</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="159" />
+        <source>Windows Print Screen Shortcut Disabled</source>
+        <translation>Đã tắt phím tắt Print Screen của Windows</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="166" />
+        <source>Windows Setting Not Changed</source>
+        <translation>Chưa thay đổi cài đặt Windows</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="168" />
+        <source>SnapTray could not change the Windows Print Screen setting.</source>
+        <translation>SnapTray không thể thay đổi cài đặt Print Screen của Windows.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="170" />
+        <source>%1 was saved, but it could not be activated because the shortcut is already in use by another app or the system.</source>
+        <translation>Đã lưu %1, nhưng không thể kích hoạt vì phím tắt này đang được ứng dụng khác hoặc hệ thống sử dụng.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="170" />
+        <source>%1 was saved, but it could not be activated. %2</source>
+        <translation>Đã lưu %1, nhưng không thể kích hoạt. %2</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="207" />
+        <source>Windows is using the Print Screen key to open its Snipping Tool, which stops SnapTray from using Print Screen as a shortcut. Turn this off so SnapTray can use the Print Screen key?</source>
+        <translation>Windows đang dùng phím Print Screen để mở Snipping Tool, khiến SnapTray không thể dùng Print Screen làm phím tắt. Tắt tính năng này để SnapTray có thể dùng phím Print Screen?</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="211" />
+        <source>After this, restart SnapTray. If Windows still opens the Snipping Tool, sign out of Windows (or restart) and try again.</source>
+        <translation>Sau đó, khởi động lại SnapTray. Nếu Windows vẫn mở Snipping Tool, hãy đăng xuất khỏi Windows (hoặc khởi động lại) rồi thử lại.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="215" />
+        <source>No, don't ask again</source>
+        <translation>Không, đừng hỏi lại</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="224" />
+        <source>Restart SnapTray to use Print Screen. If it still opens the Snipping Tool, sign out of Windows and back in.</source>
+        <translation>Khởi động lại SnapTray để dùng Print Screen. Nếu vẫn mở Snipping Tool, hãy đăng xuất khỏi Windows rồi đăng nhập lại.</translation>
+        </message>
 </context>
 <context>
     <name>SnapTray::TypeHotkeyDialog</name>

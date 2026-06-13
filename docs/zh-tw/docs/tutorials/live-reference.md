@@ -60,4 +60,4 @@ doc_order: 4
 
 ## 下一篇
 
-若要說明動態流程，接著看 [錄影教學示範](/zh-tw/docs/tutorials/recording-demo/)。
+若要在 macOS 或 Windows 說明動態流程，接著看 [錄影教學示範（僅 macOS/Windows）](/zh-tw/docs/tutorials/recording-demo/)。Linux beta 使用者可略過錄影教學。

@@ -9,6 +9,7 @@ on:
 jobs:
   build-macos:
     runs-on: macos-latest
+    #runs-on: [self-hosted, macOS, ARM64]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,7 +33,11 @@ jobs:
         run: |
           # Extract GIT_TAG lines and generate stable hash
           DEPS_HASH=$(grep -E "GIT_TAG\s+" CMakeLists.txt | sort | shasum -a 256 | cut -c1-16)
+          SDK_PATH="$(xcrun --sdk macosx --show-sdk-path)"
+          SDK_HASH=$(printf '%s' "$SDK_PATH" | shasum -a 256 | cut -c1-12)
           echo "hash=$DEPS_HASH" >> $GITHUB_OUTPUT
+          echo "sdk_path=$SDK_PATH" >> $GITHUB_OUTPUT
+          echo "sdk_hash=$SDK_HASH" >> $GITHUB_OUTPUT
 
       - name: Cache FetchContent dependencies
         uses: actions/cache@v4
@@ -47,15 +52,55 @@ jobs:
             build/_deps/qhotkey-src
             build/_deps/qhotkey-build
             build/_deps/qhotkey-subbuild
-          key: deps-macos-${{ steps.deps-key.outputs.hash }}
-          restore-keys: |
-            deps-macos-
+          key: deps-macos-${{ steps.deps-key.outputs.hash }}-${{ steps.deps-key.outputs.sdk_hash }}
 
       - name: Configure CMake
         run: |
           cmake -S . -B build \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)" \
+            -DCMAKE_OSX_SYSROOT="${{ steps.deps-key.outputs.sdk_path }}" \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache
+
+      - name: Build
+        run: cmake --build build --config Release --parallel 1
+
+      - name: Run Tests
+        run: ctest --test-dir build --output-on-failure
+
+  build-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cmake ninja-build ccache git patchelf file libfuse2 \
+            xvfb dbus-x11 \
+            libgl1-mesa-dev libxkbcommon-x11-0 libxcb-cursor0 \
+            libxcb-keysyms1-dev libxcb-xinerama0-dev libxcb-render-util0-dev \
+            libxcb-image0-dev libxcb-icccm4-dev libxcb-randr0-dev \
+            libxcb-shape0-dev libxcb-xfixes0-dev libxcb-sync-dev \
+            libxrender-dev libxi-dev libxtst-dev
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.10.1'
+          host: 'linux'
+          target: 'desktop'
+          arch: 'linux_gcc_64'
+          cache: true
+
+      - name: Configure CMake
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR" \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache
 
@@ -63,10 +108,17 @@ jobs:
         run: cmake --build build --config Release --parallel
 
       - name: Run Tests
-        run: ctest --test-dir build --output-on-failure
+        run: xvfb-run -a ctest --test-dir build --output-on-failure -C Release
 
   build-windows:
     runs-on: windows-latest
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      # Give the sccache server more time to initialize its GitHub Actions cache
+      # backend before a compiler invocation gives up. The default is 10s, which
+      # a single parallel build occasionally exceeds when the GHA cache service
+      # is slow, failing one object file and aborting the whole build.
+      SCCACHE_CONF: ${{ github.workspace }}\sccache.toml
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -82,8 +134,9 @@ jobs:
 
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
-        env:
-          SCCACHE_GHA_ENABLED: "true"
+
+      - name: Configure sccache startup timeout
+        run: Set-Content -Path $env:SCCACHE_CONF -Value 'server_startup_timeout_ms = 30000'
 
       - name: Setup MSVC Developer Command Prompt
         uses: ilammy/msvc-dev-cmd@v1
@@ -126,13 +179,9 @@ jobs:
             -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR" `
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache `
             -DCMAKE_C_COMPILER_LAUNCHER=sccache
-        env:
-          SCCACHE_GHA_ENABLED: "true"
 
       - name: Build
         run: cmake --build build --config Release --parallel
-        env:
-          SCCACHE_GHA_ENABLED: "true"
 
       - name: Show sccache stats
         if: always()

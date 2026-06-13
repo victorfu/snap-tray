@@ -16,6 +16,8 @@ public:
     QString description() const override;
     void setupOptions(QCommandLineParser& parser) override;
     CLIResult execute(const QCommandLineParser& parser) override;
+    bool isSupported() const override;
+    QString unsupportedMessage() const override;
     bool requiresGUI(const QCommandLineParser&) const override { return true; }
     QJsonObject buildIPCMessage(const QCommandLineParser& parser) const override;
 };

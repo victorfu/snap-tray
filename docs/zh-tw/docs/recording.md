@@ -2,14 +2,17 @@
 last_modified_at: 2026-03-26
 layout: docs
 title: 錄影
-seo_title: "SnapTray 螢幕錄影：輸出 MP4、GIF 與 WebP，可錄製系統與麥克風音訊"
-description: 使用 MP4、GIF、WebP 輸出全螢幕來源錄影。
+seo_title: "SnapTray 螢幕錄影：macOS/Windows 輸出 MP4、GIF 與 WebP"
+description: "僅 macOS/Windows：使用 MP4、GIF、WebP 輸出全螢幕來源錄影。"
 permalink: /zh-tw/docs/recording/
 lang: zh-tw
 route_key: docs_recording
 doc_group: workflow
 doc_order: 2
 ---
+
+錄影僅 macOS 與 Windows 提供。Linux beta 不包含錄影，錄影 UI 與 CLI help
+項目也會隱藏。
 
 ## 錄影入口
 

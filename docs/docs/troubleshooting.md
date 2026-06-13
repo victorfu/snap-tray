@@ -1,9 +1,9 @@
 ---
-last_modified_at: 2026-03-24
+last_modified_at: 2026-05-18
 layout: docs
 title: Troubleshooting
-seo_title: "SnapTray Troubleshooting: Fix Permissions & Recording"
-description: Fix permission, startup, Qt deployment, encoding, recording, and hotkey issues on macOS and Windows.
+seo_title: "SnapTray Troubleshooting: Fix Permissions, Hotkeys & Recording"
+description: Fix permission, startup, Qt deployment, encoding, and hotkey issues, plus recording issues on macOS and Windows.
 permalink: /docs/troubleshooting/
 lang: en
 route_key: docs_troubleshooting
@@ -33,7 +33,7 @@ doc_order: 2
 
 If the app still does not appear, rebuild with:
 
-- macOS: `./scripts/build.sh`
+- macOS/Linux beta: `./scripts/build.sh`
 - Windows: `scripts\build.bat`
 
 ## Gatekeeper blocks app launch on macOS
@@ -67,9 +67,24 @@ Use the same Qt installation path that you passed to `CMAKE_PREFIX_PATH`.
 - Open Settings > Hotkeys and verify the action is still bound
 - Rebind the action and test immediately
 - Check for conflicts with another global hotkey utility
+- On Windows 11, turn off `Settings > Accessibility > Keyboard > Use the Print screen key to open screen capture` before binding `Print Screen` to SnapTray
 - Keep the most frequent actions on simple single-combo shortcuts
 
-## Recording issues
+### Linux beta: app exits on Wayland
+
+The Ubuntu 22.04 beta supports X11 sessions only. On the login screen, choose an
+X11 session before launching SnapTray.
+
+### Linux beta: hotkeys do not register
+
+Global hotkeys require an X11 session and may conflict with desktop environment
+shortcuts. Open Settings > Hotkeys to see which shortcut failed and assign a
+different key sequence.
+
+## Recording issues (macOS and Windows only)
+
+Linux beta does not include recording. For Linux beta startup, hotkey, or
+Wayland issues, use the Linux beta notes above.
 
 - Lower frame rate if you see dropped frames
 - Prefer MP4 for longer recordings
@@ -80,7 +95,7 @@ Use the same Qt installation path that you passed to `CMAKE_PREFIX_PATH`.
 
 For development environments, validate the full toolchain with repository scripts:
 
-- macOS: `./scripts/build.sh` then `./scripts/run-tests.sh`
+- macOS/Linux beta: `./scripts/build.sh` then `./scripts/run-tests.sh`
 - Windows: `scripts\build.bat` then `scripts\run-tests.bat`
 
 If you are debugging packaging or signing issues, continue in [Release & Packaging](/developer/release-packaging/).

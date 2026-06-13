@@ -112,11 +112,28 @@ bool tryReadJsonInt(const QJsonObject& options, const QString& key, int* value)
     return false;
 }
 
+QString hotkeyDisplayText(const SnapTray::HotkeyConfig& config, const QString& fallbackText)
+{
+    const QString displayHotkey = SnapTray::HotkeyManager::formatKeySequence(config.keySequence);
+    switch (config.status) {
+    case SnapTray::HotkeyStatus::Registered:
+        return displayHotkey.isEmpty() ? fallbackText : displayHotkey;
+    case SnapTray::HotkeyStatus::Failed:
+        return displayHotkey.isEmpty()
+            ? fallbackText
+            : QCoreApplication::translate("MainApplication", "%1 unavailable").arg(displayHotkey);
+    case SnapTray::HotkeyStatus::Disabled:
+        return QCoreApplication::translate("MainApplication", "Disabled");
+    case SnapTray::HotkeyStatus::Unset:
+        return fallbackText;
+    }
+
+    return fallbackText;
+}
+
 QString hotkeyDisplayTextOrFallback(SnapTray::HotkeyAction action, const QString& fallbackText)
 {
-    const auto config = SnapTray::HotkeyManager::instance().getConfig(action);
-    const QString displayHotkey = SnapTray::HotkeyManager::formatKeySequence(config.keySequence);
-    return displayHotkey.isEmpty() ? fallbackText : displayHotkey;
+    return hotkeyDisplayText(SnapTray::HotkeyManager::instance().getConfig(action), fallbackText);
 }
 }
 
@@ -196,6 +213,11 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
         onScreenCanvas();
     }
     else if (msg.command == "record") {
+        if (!PlatformFeatures::instance().capabilities().supportsRecording) {
+            qWarning() << "Ignoring record command on unsupported platform";
+            return;
+        }
+
         QString action = msg.options["action"].toString().toLower();
         const auto isRecordingFlowActive = [this]() {
             return m_screenPickerDialog
@@ -440,8 +462,13 @@ void MainApplication::initialize()
     connect(m_pinWindowManager, &PinWindowManager::allPinsVisibilityChanged,
             this, [this](bool) { updatePinsVisibilityActionText(); });
 
-    m_fullScreenRecordingAction = m_trayMenu->addAction(tr("Record Screen"));
-    connect(m_fullScreenRecordingAction, &QAction::triggered, this, &MainApplication::onFullScreenRecording);
+    if (PlatformFeatures::instance().capabilities().supportsRecording) {
+        m_fullScreenRecordingAction = m_trayMenu->addAction(tr("Record Screen"));
+        connect(m_fullScreenRecordingAction,
+                &QAction::triggered,
+                this,
+                &MainApplication::onFullScreenRecording);
+    }
 
     m_trayMenu->addSeparator();
 
@@ -619,6 +646,10 @@ void MainApplication::onScreenCanvas()
 
 void MainApplication::onFullScreenRecording()
 {
+    if (!PlatformFeatures::instance().capabilities().supportsRecording) {
+        return;
+    }
+
     if (m_screenPickerDialog) {
         closeScreenPicker();
         return;
@@ -848,7 +879,9 @@ void MainApplication::onHotkeyAction(SnapTray::HotkeyAction action)
         onToggleAllPinsVisibility();
         break;
     case HotkeyAction::RecordFullScreen:
-        onFullScreenRecording();
+        if (PlatformFeatures::instance().capabilities().supportsRecording) {
+            onFullScreenRecording();
+        }
         break;
     default:
         break;
@@ -985,10 +1018,13 @@ void MainApplication::showRecordingPreview(const QString& videoPath, int default
     m_previewBackend = new RecordingPreviewBackend(videoPath, this);
     m_previewBackend->setDefaultOutputFormat(defaultOutputFormat);
 
+    // The save handler opens a native dialog. Keep it out of the QML click/key
+    // handler stack so preview deleteLater() cannot run during a nested dialog
+    // event loop while QML is still handling the action.
     connect(m_previewBackend, &RecordingPreviewBackend::saveRequested,
-        this, &MainApplication::onPreviewSaveRequested);
+        this, &MainApplication::onPreviewSaveRequested, Qt::QueuedConnection);
     connect(m_previewBackend, &RecordingPreviewBackend::discardRequested,
-        this, &MainApplication::onPreviewDiscardRequested);
+        this, &MainApplication::onPreviewDiscardRequested, Qt::QueuedConnection);
     connect(m_previewBackend, &RecordingPreviewBackend::closed,
         this, [this](bool saved) {
             m_recordingManager->onPreviewClosed(saved);
@@ -1023,7 +1059,7 @@ void MainApplication::updateActionHotkeyText(QAction* action,
 
     auto& mgr = SnapTray::HotkeyManager::instance();
     auto config = mgr.getConfig(hotkeyAction);
-    QString displayHotkey = SnapTray::HotkeyManager::formatKeySequence(config.keySequence);
+    QString displayHotkey = hotkeyDisplayText(config, QString());
     if (!displayHotkey.isEmpty()) {
         action->setText(tr("%1 (%2)").arg(baseName, displayHotkey));
     } else {
@@ -1047,7 +1083,7 @@ void MainApplication::updatePinsVisibilityActionText()
 
     const auto config = SnapTray::HotkeyManager::instance().getConfig(
         SnapTray::HotkeyAction::TogglePinsVisibility);
-    const QString displayHotkey = SnapTray::HotkeyManager::formatKeySequence(config.keySequence);
+    const QString displayHotkey = hotkeyDisplayText(config, QString());
     if (!displayHotkey.isEmpty()) {
         m_togglePinsVisibilityAction->setText(tr("%1 (%2)").arg(baseText, displayHotkey));
     } else {

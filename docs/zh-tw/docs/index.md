@@ -20,7 +20,7 @@ doc_order: 1
 1. 30 秒內完成截圖分享：[30 秒快速分享](/zh-tw/docs/tutorials/quick-share/)
 2. 做出可重現問題回報：[Bug 回報流程](/zh-tw/docs/tutorials/bug-report/)
 3. 邊做事邊看參考圖：[Pin 長駐參考](/zh-tw/docs/tutorials/live-reference/)
-4. 產出可讀性高的示範影片：[錄影教學示範](/zh-tw/docs/tutorials/recording-demo/)
+4. 產出可讀性高的示範影片：[錄影教學示範（僅 macOS/Windows）](/zh-tw/docs/tutorials/recording-demo/)
 
 ## 先建立基礎設定
 
@@ -43,7 +43,7 @@ doc_order: 1
 ### 工作流與交付
 
 - [釘選視窗](/zh-tw/docs/pin-window/)
-- [錄影](/zh-tw/docs/recording/)
+- [錄影（僅 macOS/Windows）](/zh-tw/docs/recording/)
 - [快捷鍵](/zh-tw/docs/hotkeys/)
 
 ### 進階與支援

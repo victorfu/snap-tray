@@ -9,6 +9,14 @@
 find_package(Qt6 REQUIRED COMPONENTS Test)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
+if(UNIX AND NOT APPLE)
+    add_test(
+        NAME Packaging_AppImageBinfmtBypass
+        COMMAND bash "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_AppImageBinfmtBypass.sh" "${CMAKE_SOURCE_DIR}"
+    )
+    set_tests_properties(Packaging_AppImageBinfmtBypass PROPERTIES TIMEOUT 30 LABELS "unit;packaging")
+endif()
+
 # Enable automoc for tests
 set(CMAKE_AUTOMOC ON)
 
@@ -45,13 +53,33 @@ target_link_libraries(Qml_BeautifyPanelBackend PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_BeautifyPanelBackend COMMAND Qml_BeautifyPanelBackend)
 set_tests_properties(Qml_BeautifyPanelBackend PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_BeautifyPanelQml Qml/tst_BeautifyPanelQml.cpp)
+target_link_libraries(Qml_BeautifyPanelQml PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(Qml_BeautifyPanelQml PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_BeautifyPanelQml COMMAND Qml_BeautifyPanelQml)
+set_tests_properties(Qml_BeautifyPanelQml PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
+add_executable(Qml_WidthSectionQml Qml/tst_WidthSectionQml.cpp)
+target_link_libraries(Qml_WidthSectionQml PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+add_test(NAME Qml_WidthSectionQml COMMAND Qml_WidthSectionQml)
+set_tests_properties(Qml_WidthSectionQml PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Qml_SettingsWindowFeatureGating
+    Qml/tst_SettingsWindowFeatureGating.cpp
+    ${CMAKE_SOURCE_DIR}/src/qml/SettingsBackend.cpp
+    ${CMAKE_SOURCE_DIR}/include/qml/SettingsBackend.h
+)
+target_link_libraries(Qml_SettingsWindowFeatureGating PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+add_test(NAME Qml_SettingsWindowFeatureGating COMMAND Qml_SettingsWindowFeatureGating)
+set_tests_properties(Qml_SettingsWindowFeatureGating PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Qml_UpdateDialogViewModel Qml/tst_UpdateDialogViewModel.cpp)
 target_link_libraries(Qml_UpdateDialogViewModel PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_UpdateDialogViewModel COMMAND Qml_UpdateDialogViewModel)
 set_tests_properties(Qml_UpdateDialogViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(Qml_PlacementHelpers Qml/tst_PlacementHelpers.cpp)
-target_link_libraries(Qml_PlacementHelpers PRIVATE snaptray_ui Qt6::Test)
+target_link_libraries(Qml_PlacementHelpers PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
 add_test(NAME Qml_PlacementHelpers COMMAND Qml_PlacementHelpers)
 set_tests_properties(Qml_PlacementHelpers PROPERTIES TIMEOUT 60 LABELS "unit")
 
@@ -76,6 +104,30 @@ add_executable(Qml_QtQuickBackendPolicy Qml/tst_QtQuickBackendPolicy.cpp)
 target_link_libraries(Qml_QtQuickBackendPolicy PRIVATE snaptray_platform Qt6::Test)
 add_test(NAME Qml_QtQuickBackendPolicy COMMAND Qml_QtQuickBackendPolicy)
 set_tests_properties(Qml_QtQuickBackendPolicy PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Platform_Capabilities Platform/tst_PlatformCapabilities.cpp)
+target_link_libraries(Platform_Capabilities PRIVATE snaptray_core Qt6::Test)
+add_test(NAME Platform_Capabilities COMMAND Platform_Capabilities)
+set_tests_properties(Platform_Capabilities PROPERTIES TIMEOUT 60 LABELS "unit")
+
+if(UNIX AND NOT APPLE)
+    add_executable(Platform_LinuxDesktopEnvironment Platform/tst_LinuxDesktopEnvironment.cpp)
+    target_link_libraries(Platform_LinuxDesktopEnvironment PRIVATE snaptray_platform Qt6::Test)
+    add_test(NAME Platform_LinuxDesktopEnvironment COMMAND Platform_LinuxDesktopEnvironment)
+    set_tests_properties(Platform_LinuxDesktopEnvironment PROPERTIES TIMEOUT 60 LABELS "unit")
+endif()
+
+if(APPLE)
+    add_executable(Platform_GuiClipboardOrdering Platform/tst_GuiClipboardOrdering.cpp)
+    target_link_libraries(Platform_GuiClipboardOrdering PRIVATE snaptray_platform Qt6::Test)
+    add_test(NAME Platform_GuiClipboardOrdering COMMAND Platform_GuiClipboardOrdering)
+    set_tests_properties(Platform_GuiClipboardOrdering PROPERTIES TIMEOUT 30 LABELS "unit;integration")
+endif()
+
+add_executable(Qml_QmlBadge Qml/tst_QmlBadge.cpp)
+target_link_libraries(Qml_QmlBadge PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME Qml_QmlBadge COMMAND Qml_QmlBadge)
+set_tests_properties(Qml_QmlBadge PROPERTIES TIMEOUT 60 LABELS "unit")
 
 if(APPLE)
     add_executable(Qml_FloatingOverlayCaptureExclusion Qml/tst_FloatingOverlayCaptureExclusion.mm)
@@ -115,6 +167,7 @@ target_include_directories(App_MainApplicationTrayMenu PRIVATE
 )
 target_link_libraries(App_MainApplicationTrayMenu PRIVATE
     snaptray_ui
+    snaptray_cli
     snaptray_platform
     snaptray_algorithms
     snaptray_core
@@ -246,11 +299,6 @@ target_link_libraries(RegionSelector_MagnifierPanel PRIVATE snaptray_ui Qt6::Tes
 add_test(NAME RegionSelector_MagnifierPanel COMMAND RegionSelector_MagnifierPanel)
 set_tests_properties(RegionSelector_MagnifierPanel PROPERTIES TIMEOUT 60 LABELS "unit")
 
-add_executable(RegionSelector_DeferredInitialization RegionSelector/tst_DeferredInitialization.cpp)
-target_link_libraries(RegionSelector_DeferredInitialization PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
-add_test(NAME RegionSelector_DeferredInitialization COMMAND RegionSelector_DeferredInitialization)
-set_tests_properties(RegionSelector_DeferredInitialization PROPERTIES TIMEOUT 60 LABELS "unit;integration")
-
 add_executable(RegionSelector_CaptureShortcutHintsOverlay
     RegionSelector/tst_CaptureShortcutHintsOverlay.cpp
     RegionSelector/tst_CaptureShortcutHintsOverlay.h
@@ -349,6 +397,11 @@ add_executable(RegionSelector_TransientUiCancelGuard RegionSelector/tst_Transien
 target_link_libraries(RegionSelector_TransientUiCancelGuard PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
 add_test(NAME RegionSelector_TransientUiCancelGuard COMMAND RegionSelector_TransientUiCancelGuard)
 set_tests_properties(RegionSelector_TransientUiCancelGuard PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RegionSelector_CopyToClipboard RegionSelector/tst_CopyToClipboard.cpp)
+target_link_libraries(RegionSelector_CopyToClipboard PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME RegionSelector_CopyToClipboard COMMAND RegionSelector_CopyToClipboard)
+set_tests_properties(RegionSelector_CopyToClipboard PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(RegionSelector_HistoryReplay RegionSelector/tst_HistoryReplay.cpp)
 target_link_libraries(RegionSelector_HistoryReplay PRIVATE snaptray_ui Qt6::Test)
@@ -449,16 +502,21 @@ add_test(NAME Utils_TrayTooltipFormatter COMMAND Utils_TrayTooltipFormatter)
 set_tests_properties(Utils_TrayTooltipFormatter PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
-# CLI Tests (link snaptray_platform for PlatformFeatures symbols)
+# CLI Tests
 # ============================================================================
 
 add_executable(CLI_NumericArgumentValidation CLI/tst_NumericArgumentValidation.cpp)
-target_link_libraries(CLI_NumericArgumentValidation PRIVATE snaptray_platform Qt6::Test)
+target_link_libraries(CLI_NumericArgumentValidation PRIVATE snaptray_cli Qt6::Test)
 add_test(NAME CLI_NumericArgumentValidation COMMAND CLI_NumericArgumentValidation)
 set_tests_properties(CLI_NumericArgumentValidation PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(CLI_FeatureGating CLI/tst_CLIHandlerFeatureGating.cpp)
+target_link_libraries(CLI_FeatureGating PRIVATE snaptray_cli Qt6::Test)
+add_test(NAME CLI_FeatureGating COMMAND CLI_FeatureGating)
+set_tests_properties(CLI_FeatureGating PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(CLI_CaptureOutputHelper CLI/tst_CaptureOutputHelper.cpp)
-target_link_libraries(CLI_CaptureOutputHelper PRIVATE snaptray_platform Qt6::Test)
+target_link_libraries(CLI_CaptureOutputHelper PRIVATE snaptray_cli Qt6::Test)
 add_test(NAME CLI_CaptureOutputHelper COMMAND CLI_CaptureOutputHelper)
 set_tests_properties(CLI_CaptureOutputHelper PROPERTIES TIMEOUT 60 LABELS "unit")
 
@@ -550,6 +608,13 @@ target_link_libraries(Settings_AutoLaunchSyncPolicy PRIVATE snaptray_core Qt6::T
 add_test(NAME Settings_AutoLaunchSyncPolicy COMMAND Settings_AutoLaunchSyncPolicy)
 set_tests_properties(Settings_AutoLaunchSyncPolicy PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Settings_WindowsPrintScreenSettingsManager
+    Settings/tst_WindowsPrintScreenSettingsManager.cpp
+)
+target_link_libraries(Settings_WindowsPrintScreenSettingsManager PRIVATE snaptray_core Qt6::Test)
+add_test(NAME Settings_WindowsPrintScreenSettingsManager COMMAND Settings_WindowsPrintScreenSettingsManager)
+set_tests_properties(Settings_WindowsPrintScreenSettingsManager PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Settings_SettingsBackend
     Settings/tst_SettingsBackend.cpp
     ${CMAKE_SOURCE_DIR}/src/qml/SettingsBackend.cpp
@@ -608,6 +673,11 @@ add_executable(Hotkey_HotkeyManager Hotkey/tst_HotkeyManager.cpp)
 target_link_libraries(Hotkey_HotkeyManager PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Hotkey_HotkeyManager COMMAND Hotkey_HotkeyManager)
 set_tests_properties(Hotkey_HotkeyManager PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Hotkey_TypeHotkeyDialog Hotkey/tst_TypeHotkeyDialog.cpp)
+target_link_libraries(Hotkey_TypeHotkeyDialog PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Hotkey_TypeHotkeyDialog COMMAND Hotkey_TypeHotkeyDialog)
+set_tests_properties(Hotkey_TypeHotkeyDialog PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
 # Annotations Tests (link snaptray_core for annotation classes)

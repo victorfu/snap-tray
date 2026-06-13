@@ -9,6 +9,7 @@
 namespace {
 constexpr int kPanelMargin = 12;
 constexpr int kPanelCornerRadius = 12;
+constexpr int kPanelRepaintPadding = 2;
 constexpr int kPanelPaddingX = 12;
 constexpr int kPanelPaddingY = 10;
 constexpr int kColumnGap = 12;
@@ -139,6 +140,22 @@ QRect CaptureShortcutHintsOverlay::panelRectForViewport(const QSize& viewportSiz
     const int y = qMax(0, viewportSize.height() - height - kPanelMargin);
 
     return QRect(x, y, width, height);
+}
+
+QRect CaptureShortcutHintsOverlay::repaintRectForViewport(const QSize& viewportSize) const
+{
+    const QRect panelRect = panelRectForViewport(viewportSize);
+    if (!panelRect.isValid() || panelRect.isEmpty()) {
+        return QRect();
+    }
+
+    const QRect viewportRect(QPoint(), viewportSize);
+    return panelRect
+        .adjusted(-kPanelRepaintPadding,
+                  -kPanelRepaintPadding,
+                  kPanelRepaintPadding,
+                  kPanelRepaintPadding)
+        .intersected(viewportRect);
 }
 
 void CaptureShortcutHintsOverlay::drawKeyGroup(QPainter& painter,

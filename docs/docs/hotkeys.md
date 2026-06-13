@@ -2,8 +2,8 @@
 last_modified_at: 2026-03-17
 layout: docs
 title: Hotkeys
-seo_title: "SnapTray Hotkeys: Capture & Recording Keyboard Shortcuts"
-description: Configure capture and recording shortcuts through centralized hotkey management.
+seo_title: "SnapTray Hotkeys: Capture & Platform-Specific Recording Shortcuts"
+description: Configure capture shortcuts and platform-specific recording shortcuts through centralized hotkey management.
 permalink: /docs/hotkeys/
 lang: en
 route_key: docs_hotkeys
@@ -25,7 +25,7 @@ doc_order: 3
 - Pin from Image
 - Pin History
 - Toggle Hide/Show All Pins
-- Record Screen
+- Record Screen (macOS/Windows only)
 
 ## Hotkey categories
 
@@ -35,7 +35,7 @@ Hotkeys are managed by category inside Settings:
 - Canvas
 - Clipboard
 - Pin
-- Recording
+- Recording (macOS/Windows only; hidden in Linux beta)
 
 ## Conflict strategy
 

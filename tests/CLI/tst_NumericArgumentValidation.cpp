@@ -256,8 +256,15 @@ void tst_NumericArgumentValidation::cliHandler_validatesGUICommandArgumentsBefor
     CLIHandler handler;
 
     CLIResult recordResult = handler.process({"snaptray", "record", "start", "--screen", "abc"});
+#if defined(Q_OS_LINUX)
+    QVERIFY(!recordResult.isSuccess());
+    QCOMPARE(recordResult.code, CLIResult::Code::RecordingError);
+    QVERIFY(recordResult.message.contains("Linux beta"));
+    QVERIFY(recordResult.message.contains("recording"));
+#else
     QCOMPARE(recordResult.code, CLIResult::Code::InvalidArguments);
     QVERIFY(recordResult.message.contains("Invalid screen number: abc"));
+#endif
 
     CLIResult pinResult = handler.process({"snaptray", "pin", "--clipboard", "--pos-y", "bad"});
     QCOMPARE(pinResult.code, CLIResult::Code::InvalidArguments);
@@ -275,9 +282,16 @@ void tst_NumericArgumentValidation::cliHandler_rejectsOutOfRangeRecordScreenForS
     const QString invalidScreen = QString::number(screenCount);
 
     const CLIResult result = handler.process({"snaptray", "record", "start", "--screen", invalidScreen});
+#if defined(Q_OS_LINUX)
+    QVERIFY(!result.isSuccess());
+    QCOMPARE(result.code, CLIResult::Code::RecordingError);
+    QVERIFY(result.message.contains("Linux beta"));
+    QVERIFY(result.message.contains("recording"));
+#else
     QCOMPARE(result.code, CLIResult::Code::InvalidArguments);
     QVERIFY(result.message.contains(
         QString("Invalid screen number: %1").arg(invalidScreen)));
+#endif
 }
 
 void tst_NumericArgumentValidation::cliHandler_rejectsUnknownRecordActionBeforeIPC()
@@ -285,8 +299,15 @@ void tst_NumericArgumentValidation::cliHandler_rejectsUnknownRecordActionBeforeI
     CLIHandler handler;
 
     const CLIResult result = handler.process({"snaptray", "record", "foo"});
+#if defined(Q_OS_LINUX)
+    QVERIFY(!result.isSuccess());
+    QCOMPARE(result.code, CLIResult::Code::RecordingError);
+    QVERIFY(result.message.contains("Linux beta"));
+    QVERIFY(result.message.contains("recording"));
+#else
     QCOMPARE(result.code, CLIResult::Code::InvalidArguments);
     QVERIFY(result.message.contains("Invalid record action: foo"));
+#endif
 }
 
 void tst_NumericArgumentValidation::captureCommands_rejectUnsupportedCursorOption_data()

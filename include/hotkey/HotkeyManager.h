@@ -17,6 +17,7 @@
 
 class QHotkey;
 class tst_HotkeyManager;
+class tst_MainApplicationTrayMenu;
 
 namespace SnapTray {
 
@@ -196,6 +197,7 @@ signals:
 
 private:
     friend class ::tst_HotkeyManager;
+    friend class ::tst_MainApplicationTrayMenu;
 
     HotkeyManager();
     ~HotkeyManager() override;

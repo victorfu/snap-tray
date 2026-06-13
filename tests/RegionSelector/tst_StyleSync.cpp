@@ -11,8 +11,10 @@
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
 #include "cursor/CursorStyleCatalog.h"
+#include "qml/QmlFloatingToolbar.h"
 #include "settings/RegionCaptureSettingsManager.h"
 #include "region/RegionInputHandler.h"
+#include "region/SelectionDimensionLabel.h"
 #include "tools/ToolManager.h"
 
 namespace {
@@ -65,6 +67,8 @@ private slots:
     void testUsesAuthorityModeByDefault();
     void testSelectionBodyHoverUsesMoveCursor();
     void testSelectionBodyHoverUsesEventPosWhenLiveCursorLags();
+    void testSelectionCompletionShowsToolbarAfterWindowsHandoff();
+    void testSelectionCompletionPositionsToolbarAfterWindowsHandoff();
     void testSelectionDragUsesClosedHandCursor();
     void testOverlayRequestRestoreReturnsArrowToolCursor();
     void testFloatingToolbarWindowOwnsArrowCursor();
@@ -80,6 +84,11 @@ private slots:
     void testInitializeForScreen_MagnifierStylePrewarmsCache();
     void testDisabledMagnifierIgnoresShiftAndCopyShortcuts();
     void testBeaverStyleIgnoresShiftAndCopyShortcuts();
+#ifdef Q_OS_LINUX
+    void testLinuxCaptureSurfaceRemainsManaged();
+    void testLinuxTransparentCaptureHelpersDoNotBypassWindowManager();
+    void testLinuxSelectionToolbarPrewarmsAfterShow();
+#endif
 };
 
 void TestRegionSelectorStyleSync::prepareSelectionTool(RegionSelector& selector)
@@ -120,6 +129,49 @@ void TestRegionSelectorStyleSync::testUsesAuthorityModeByDefault()
     QCOMPARE(CursorAuthority::instance().modeForWidget(&selector), CursorSurfaceMode::Authority);
 }
 
+#ifdef Q_OS_LINUX
+void TestRegionSelectorStyleSync::testLinuxCaptureSurfaceRemainsManaged()
+{
+    RegionSelector selector;
+    QVERIFY(!selector.windowFlags().testFlag(Qt::X11BypassWindowManagerHint));
+}
+
+void TestRegionSelectorStyleSync::testLinuxTransparentCaptureHelpersDoNotBypassWindowManager()
+{
+    MagnifierOverlay magnifierOverlay(nullptr);
+    SelectionDimmingOverlay dimmingOverlay;
+    SelectionPreviewOverlay previewOverlay;
+    CaptureChromeWindow chromeWindow;
+
+    QVERIFY(!magnifierOverlay.windowFlags().testFlag(Qt::X11BypassWindowManagerHint));
+    QVERIFY(!dimmingOverlay.windowFlags().testFlag(Qt::X11BypassWindowManagerHint));
+    QVERIFY(!previewOverlay.windowFlags().testFlag(Qt::X11BypassWindowManagerHint));
+    QVERIFY(!chromeWindow.windowFlags().testFlag(Qt::X11BypassWindowManagerHint));
+}
+
+void TestRegionSelectorStyleSync::testLinuxSelectionToolbarPrewarmsAfterShow()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        QSKIP("No screen available for toolbar prewarm test.");
+    }
+
+    RegionSelector selector;
+    QVERIFY(!RegionSelectorTestAccess::toolbarWindow(selector));
+
+    QPixmap capture(screen->geometry().size());
+    capture.fill(Qt::black);
+    selector.initializeForScreen(screen, capture);
+    selector.show();
+    QCoreApplication::processEvents();
+
+    QTRY_VERIFY_WITH_TIMEOUT(RegionSelectorTestAccess::toolbarWindow(selector), 1000);
+    QVERIFY(!RegionSelectorTestAccess::toolbarVisible(selector));
+
+    selector.close();
+}
+#endif
+
 void TestRegionSelectorStyleSync::testSelectionBodyHoverUsesMoveCursor()
 {
     RegionSelector selector;
@@ -152,6 +204,124 @@ void TestRegionSelectorStyleSync::testSelectionBodyHoverUsesEventPosWhenLiveCurs
     verifyMoveCursor(selector.cursor());
 
     QCursor::setPos(originalCursorPos);
+}
+
+void TestRegionSelectorStyleSync::testSelectionCompletionShowsToolbarAfterWindowsHandoff()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        QSKIP("No screen available for selection completion toolbar test.");
+    }
+
+    RegionSelector selector;
+    QPixmap capture(screen->geometry().size());
+    capture.fill(Qt::black);
+    selector.initializeForScreen(screen, capture);
+    RegionSelectorTestAccess::markInitialRevealRevealed(selector);
+#ifdef Q_OS_WIN
+    selector.show();
+    QCoreApplication::processEvents();
+#endif
+
+    const QPoint start(40, 40);
+    const QPoint end(180, 150);
+    RegionSelectorTestAccess::dispatchMousePress(selector, start);
+
+    QMouseEvent moveEvent(QEvent::MouseMove,
+                          QPointF(end),
+                          QPointF(end),
+                          Qt::NoButton,
+                          Qt::LeftButton,
+                          Qt::NoModifier);
+    selector.m_inputHandler->handleMouseMove(&moveEvent);
+
+    RegionSelectorTestAccess::dispatchMouseRelease(selector, end);
+
+#ifdef Q_OS_WIN
+    QVERIFY(RegionSelectorTestAccess::selectionCompletionHandoffPending(selector));
+    QVERIFY(!RegionSelectorTestAccess::toolbarVisible(selector));
+    QTRY_VERIFY(!RegionSelectorTestAccess::selectionCompletionHandoffPending(selector));
+    QTRY_VERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+#else
+    QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+#endif
+}
+
+void TestRegionSelectorStyleSync::testSelectionCompletionPositionsToolbarAfterWindowsHandoff()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        QSKIP("No screen available for selection completion toolbar placement test.");
+    }
+
+    RegionSelector selector;
+    QPixmap capture(screen->geometry().size());
+    capture.fill(Qt::black);
+    selector.initializeForScreen(screen, capture);
+    RegionSelectorTestAccess::markInitialRevealRevealed(selector);
+#ifdef Q_OS_WIN
+    selector.show();
+    QCoreApplication::processEvents();
+#endif
+
+    const QSize viewportSize = selector.size();
+    if (viewportSize.width() < 360 || viewportSize.height() < 260) {
+        QSKIP("Screen is too small for deterministic toolbar placement test.");
+    }
+
+    const int selectionWidth = qMin(260, viewportSize.width() - 80);
+    const int selectionHeight = 100;
+    const int left = qMax(40, (viewportSize.width() - selectionWidth) / 2);
+    const int top = viewportSize.height() - selectionHeight - 40;
+    const QPoint start(left, top);
+    const QPoint end(left + selectionWidth, top + selectionHeight);
+
+    RegionSelectorTestAccess::dispatchMousePress(selector, start);
+    QMouseEvent moveEvent(QEvent::MouseMove,
+                          QPointF(end),
+                          QPointF(end),
+                          Qt::NoButton,
+                          Qt::LeftButton,
+                          Qt::NoModifier);
+    selector.m_inputHandler->handleMouseMove(&moveEvent);
+    RegionSelectorTestAccess::dispatchMouseRelease(selector, end);
+
+#ifdef Q_OS_WIN
+    QVERIFY(RegionSelectorTestAccess::selectionCompletionHandoffPending(selector));
+    QVERIFY(!RegionSelectorTestAccess::toolbarVisible(selector));
+    QTRY_VERIFY(!RegionSelectorTestAccess::selectionCompletionHandoffPending(selector));
+    QTRY_VERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+#else
+    QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+#endif
+    const QRect toolbarGeometry = RegionSelectorTestAccess::toolbarGeometry(selector);
+    QVERIFY(toolbarGeometry.isValid());
+    QVERIFY(!toolbarGeometry.isEmpty());
+
+    const QRect selectionRect = RegionSelectorTestAccess::selectionRect(selector);
+    QFont labelFont;
+    labelFont.setPointSize(12);
+    labelFont.setBold(true);
+    const QString dimensions = SelectionDimensionLabel::widgetLabel(
+        selectionRect,
+        RegionSelectorTestAccess::devicePixelRatio(selector));
+    const QRect dimensionRect = SelectionDimensionLabel::selectionPanelLayout(
+        selectionRect,
+        dimensions,
+        labelFont,
+        viewportSize,
+        SelectionDimensionLabel::controlAnchorSize(false)).panelRect;
+    QVERIFY(dimensionRect.isValid());
+    QVERIFY(!dimensionRect.isEmpty());
+
+    const QPoint expectedLocalTopLeft = SnapTray::QmlFloatingToolbar::resolveTopLeftForSelection(
+        selectionRect,
+        toolbarGeometry.size(),
+        QRect(QPoint(), viewportSize),
+        SnapTray::QmlFloatingToolbar::HorizontalAlignment::RightEdge,
+        dimensionRect);
+
+    QCOMPARE(toolbarGeometry.topLeft(), selector.mapToGlobal(expectedLocalTopLeft));
 }
 
 void TestRegionSelectorStyleSync::testSelectionDragUsesClosedHandCursor()

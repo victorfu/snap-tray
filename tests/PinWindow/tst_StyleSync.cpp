@@ -1,6 +1,8 @@
 #include <QtTest/QtTest>
 
+#include <QApplication>
 #include <QGuiApplication>
+#include <QWindow>
 
 #include "PinWindow.h"
 #include "qml/PinToolbarViewModel.h"
@@ -112,6 +114,9 @@ private slots:
     void testSpaceShortcutDismissesBeautifyPanelWithToolbar();
     void testEscapeShortcutDismissesBeautifyPanelWithToolbar();
     void testRegionLayoutMoveCursorUsesAuthority();
+    void testLinuxBypassPinDoesNotBecomeToolbarTransientParent();
+    void testLinuxBypassPinReceivesSpaceShortcutAfterShow();
+    void testLinuxBypassPinReceivesSpaceShortcutAfterClickFocus();
 };
 
 void TestPinWindowStyleSync::initTestCase()
@@ -489,6 +494,78 @@ void TestPinWindowStyleSync::testRegionLayoutMoveCursorUsesAuthority()
     QCOMPARE(authority.resolvedSourceForWidget(&window), CursorRequestSource::LayoutMode);
     QCOMPARE(authority.resolvedStyleForWidget(&window).styleId, CursorStyleId::Move);
     verifyMoveCursor(window.cursor());
+}
+
+void TestPinWindowStyleSync::testLinuxBypassPinDoesNotBecomeToolbarTransientParent()
+{
+#ifndef Q_OS_LINUX
+    QSKIP("Linux-only toolbar transient-parent policy.");
+#else
+    PinWindow window(createTestPixmap(), QPoint(0, 0), nullptr, false, false);
+    QVERIFY(window.windowFlags().testFlag(Qt::X11BypassWindowManagerHint));
+
+    window.showPreparedWindow();
+    QCoreApplication::processEvents();
+    QVERIFY(window.windowHandle());
+
+    SnapTray::QmlWindowedToolbar toolbar;
+    toolbar.setAssociatedWidgets(&window, nullptr);
+    toolbar.show();
+    QCoreApplication::processEvents();
+
+    QVERIFY(toolbar.window());
+    QVERIFY(toolbar.window()->transientParent() != window.windowHandle());
+
+    toolbar.close();
+    window.close();
+#endif
+}
+
+void TestPinWindowStyleSync::testLinuxBypassPinReceivesSpaceShortcutAfterShow()
+{
+#ifndef Q_OS_LINUX
+    QSKIP("Linux-only pin focus policy.");
+#else
+    PinWindow window(createTestPixmap(), QPoint(0, 0), nullptr, false, false);
+    QVERIFY(window.windowFlags().testFlag(Qt::X11BypassWindowManagerHint));
+
+    window.showPreparedWindow();
+    window.showToolbar();
+    QCoreApplication::processEvents();
+    QVERIFY(window.isToolbarVisible());
+    QTRY_COMPARE_WITH_TIMEOUT(QApplication::focusWidget(), &window, 1000);
+
+    QTest::keyClick(QApplication::focusWidget(), Qt::Key_Space);
+    QCoreApplication::processEvents();
+    QVERIFY(!window.isToolbarVisible());
+
+    window.close();
+#endif
+}
+
+void TestPinWindowStyleSync::testLinuxBypassPinReceivesSpaceShortcutAfterClickFocus()
+{
+#ifndef Q_OS_LINUX
+    QSKIP("Linux-only pin focus policy.");
+#else
+    PinWindow window(createTestPixmap(), QPoint(0, 0), nullptr, false, false);
+    QVERIFY(window.windowFlags().testFlag(Qt::X11BypassWindowManagerHint));
+
+    window.showPreparedWindow();
+    window.showToolbar();
+    QCoreApplication::processEvents();
+    QVERIFY(window.isToolbarVisible());
+
+    QTest::mouseClick(&window, Qt::LeftButton, Qt::NoModifier, QPoint(10, 10));
+    QCoreApplication::processEvents();
+    QCOMPARE(QApplication::focusWidget(), &window);
+
+    QTest::keyClick(QApplication::focusWidget(), Qt::Key_Space);
+    QCoreApplication::processEvents();
+    QVERIFY(!window.isToolbarVisible());
+
+    window.close();
+#endif
 }
 
 QTEST_MAIN(TestPinWindowStyleSync)

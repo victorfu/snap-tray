@@ -39,6 +39,7 @@ private slots:
     void testGetToolsForToolbar_RegionSelector();
     void testGetToolsForToolbar_ScreenCanvas();
     void testGetToolsForToolbar_PinWindow();
+    void testGetToolsForToolbar_HidesOcrWhenUnsupported();
 
     // Icon and tooltip tests
     void testGetIconKey_AllToolsHaveIcons();
@@ -217,6 +218,11 @@ void TestToolRegistry::testGetToolsForToolbar_RegionSelector()
     QVERIFY(tools.contains(ToolId::Undo));
     QVERIFY(tools.contains(ToolId::Redo));
     QVERIFY(!tools.contains(ToolId::Cancel));
+#if defined(Q_OS_LINUX)
+    QVERIFY(!tools.contains(ToolId::OCR));
+#else
+    QVERIFY(tools.contains(ToolId::OCR));
+#endif
     QVERIFY(tools.contains(ToolId::QRCode));
     QVERIFY(tools.contains(ToolId::MultiRegion));
     QVERIFY(tools.contains(ToolId::Share));
@@ -276,7 +282,11 @@ void TestToolRegistry::testGetToolsForToolbar_PinWindow()
     QVERIFY(tools.contains(ToolId::Beautify));
     QVERIFY(tools.contains(ToolId::Undo));
     QVERIFY(tools.contains(ToolId::Redo));
+#if defined(Q_OS_LINUX)
+    QVERIFY(!tools.contains(ToolId::OCR));
+#else
     QVERIFY(tools.contains(ToolId::OCR));
+#endif
     QVERIFY(tools.contains(ToolId::QRCode));
     QVERIFY(tools.contains(ToolId::Share));
     QVERIFY(tools.contains(ToolId::Save));
@@ -293,6 +303,20 @@ void TestToolRegistry::testGetToolsForToolbar_PinWindow()
     QVERIFY(cropIndex >= 0);
     QVERIFY2(beautifyIndex < cropIndex, "Beautify should appear to the left of Crop in PinWindow toolbar");
     QCOMPARE(registry().getIconKey(ToolId::Beautify), QString("beautify"));
+}
+
+void TestToolRegistry::testGetToolsForToolbar_HidesOcrWhenUnsupported()
+{
+    const QVector<ToolId> regionTools = registry().getToolsForToolbar(ToolbarType::RegionSelector);
+    const QVector<ToolId> pinTools = registry().getToolsForToolbar(ToolbarType::PinWindow);
+
+#if defined(Q_OS_LINUX)
+    QVERIFY(!regionTools.contains(ToolId::OCR));
+    QVERIFY(!pinTools.contains(ToolId::OCR));
+#else
+    QVERIFY(regionTools.contains(ToolId::OCR));
+    QVERIFY(pinTools.contains(ToolId::OCR));
+#endif
 }
 
 // ============================================================================

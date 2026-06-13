@@ -2,7 +2,7 @@
 last_modified_at: 2026-03-17
 layout: docs
 title: 快捷鍵
-seo_title: "SnapTray 快捷鍵設定：自訂截圖與錄影的全域快速鍵，提升日常操作效率"
+seo_title: "SnapTray 快捷鍵設定：自訂截圖與平台限定錄影快速鍵"
 description: 透過集中式 Hotkey 管理，建立穩定且高效率的操作習慣。
 permalink: /zh-tw/docs/hotkeys/
 lang: zh-tw
@@ -25,7 +25,7 @@ doc_order: 3
 - Pin from Image
 - Pin History
 - Toggle Hide/Show All Pins
-- Record Screen
+- Record Screen（僅 macOS/Windows）
 
 ## 分類管理
 
@@ -35,7 +35,7 @@ Settings > Hotkeys 會依功能分類管理：
 - Canvas
 - Clipboard
 - Pin
-- Recording
+- Recording（僅 macOS/Windows；Linux beta 會隱藏此分類）
 
 ## 衝突處理建議
 

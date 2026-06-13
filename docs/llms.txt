@@ -6,7 +6,7 @@ permalink: /llms.txt
 
 > Powerful screenshot and recording tool that lives in your system tray.
 
-SnapTray is a free, native desktop application for macOS and Windows built with Qt 6. It provides region capture, on-screen annotation, pin windows, screen canvas mode, MP4 recording with optional audio capture, and GIF/WebP export.
+SnapTray supports macOS, Windows, and Ubuntu 22.04 X11 AppImage beta. It is a free, native desktop application built with Qt 6 for region capture, on-screen annotation, pin windows, and screen canvas mode. Linux beta focuses on screenshots and annotation; recording, GIF/WebP export, and OCR are available on macOS/Windows only.
 
 ## Key Features
 
@@ -14,9 +14,9 @@ SnapTray is a free, native desktop application for macOS and Windows built with 
 - **Annotation Tools**: Arrow, rectangle, ellipse, text, numbering, blur, highlighter, and more
 - **Pin Window**: Pin captures as always-on-top floating references
 - **Screen Canvas**: Draw directly on your screen as a transparent overlay
-- **Recording**: MP4 video recording with system audio and microphone capture
-- **GIF/WebP Export**: Convert recordings to lightweight animated formats
-- **OCR**: Extract text from captured regions (platform-dependent)
+- **Recording**: MP4 video recording with system audio and microphone capture on macOS/Windows
+- **GIF/WebP Export**: Convert recordings to lightweight animated formats on macOS/Windows
+- **OCR**: Extract text from captured regions on macOS/Windows
 - **CLI**: Automate captures and control SnapTray from scripts
 - **QR Code Detection**: Scan QR codes from screen captures
 - **Share URL**: Quick-share captures via temporary upload
@@ -25,6 +25,7 @@ SnapTray is a free, native desktop application for macOS and Windows built with 
 
 - macOS 14+ (Apple Silicon and Intel)
 - Windows 10+ (x64)
+- Ubuntu 22.04 X11 AppImage beta
 
 ## Links
 

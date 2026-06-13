@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=SnapTray
+Comment=Screenshot and annotation tool
+Exec=SnapTray
+Icon=snaptray
+Terminal=false
+Categories=Utility;Graphics;
+StartupNotify=false

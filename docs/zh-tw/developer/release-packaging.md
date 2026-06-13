@@ -2,8 +2,8 @@
 last_modified_at: 2026-03-27
 layout: docs
 title: 發佈與打包
-seo_title: "SnapTray 發佈與打包：為 macOS 與 Windows 簽署、公證並建立發行版"
-description: 產生 macOS 與 Windows 可發佈安裝檔，並整理簽章、公證與商店提交流程。
+seo_title: "SnapTray 發佈與打包：macOS、Windows 與 Linux AppImage beta"
+description: 產生 macOS、Windows 可發佈安裝檔與 Linux AppImage beta，並整理簽章、公證與商店提交流程。
 permalink: /zh-tw/developer/release-packaging/
 lang: zh-tw
 route_key: developer_release_packaging
@@ -41,6 +41,19 @@ packaging\windows\package.bat msix      REM 只建置 MSIX
 - `dist\SnapTray-<version>-Setup.exe`
 - `dist\SnapTray-<version>.msix`
 - `dist\SnapTray-<version>.msixupload`
+
+### Linux
+
+```bash
+./packaging/linux/package-appimage.sh
+# Output: dist/SnapTray-<version>-x86_64.AppImage
+```
+
+Linux beta 目標是 Ubuntu 22.04 X11。此版本沒有內建更新，升級方式是下載新的 AppImage。
+
+打包腳本會在產生 AppImage 後遮蔽 AppImage type marker，讓有
+AppImageLauncher `binfmt_misc` handler 的 Ubuntu 22.04 系統直接執行內嵌的
+AppImage runtime，而不是先繞進 AppImageLauncher。
 
 ## 打包前置需求
 
@@ -95,7 +108,7 @@ git tag v1.0.42
 
 - 驗證 tag 版本與 `CMakeLists.txt` 是否一致
 - 從 `CHANGELOG.md` 抽出對應版本段落作為 GitHub Release notes
-- 建置 macOS 與 Windows 發佈物
+- 建置 macOS、Windows 與 Linux AppImage beta 發佈物
 - 對發佈資產進行簽章 / 公證
 - 發布 GitHub Release
 - 更新 appcasts 與網站 release page

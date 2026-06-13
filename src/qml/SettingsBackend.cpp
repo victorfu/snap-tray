@@ -15,6 +15,7 @@
 #include "settings/RegionCaptureSettingsManager.h"
 #include "settings/Settings.h"
 #include "settings/WatermarkSettingsManager.h"
+#include "settings/WindowsPrintScreenSettingsManager.h"
 #include "OCRManager.h"
 #include "ToolbarStyle.h"
 #include "qml/QmlToast.h"
@@ -28,6 +29,9 @@
 #include <QFileDialog>
 #include <QFutureWatcher>
 #include <QLocale>
+#include <QMessageBox>
+#include <QPushButton>
+#include <QSettings>
 #include <QUrl>
 #include <QVariantMap>
 #include <QtConcurrent/QtConcurrentRun>
@@ -110,6 +114,15 @@ CursorCompanionStyle cursorCompanionStyleFromUiValue(int value)
     }
 }
 
+bool isWindowsBuild()
+{
+#ifdef Q_OS_WIN
+    return true;
+#else
+    return false;
+#endif
+}
+
 void showHotkeyRegistrationWarning(SnapTray::HotkeyManager& manager,
                                    SnapTray::HotkeyAction action)
 {
@@ -119,12 +132,10 @@ void showHotkeyRegistrationWarning(SnapTray::HotkeyManager& manager,
     }
 
     const QString conflictDescription = manager.getConflictDescription(config.keySequence, action);
-    const QString message = conflictDescription.isEmpty()
-        ? SnapTray::SettingsBackend::tr(
-              "%1 was saved, but it could not be activated because the shortcut is already in use by another app or the system.")
-              .arg(config.displayName)
-        : SnapTray::SettingsBackend::tr("%1 was saved, but it could not be activated. %2")
-              .arg(config.displayName, conflictDescription);
+    const QString message = SnapTray::SettingsBackend::hotkeyRegistrationWarningMessage(
+        config,
+        conflictDescription,
+        isWindowsBuild());
 
     SnapTray::QmlToast::screenToast().showToast(
         SnapTray::QmlToast::Level::Warning,
@@ -151,6 +162,81 @@ void showRestoreAllHotkeyWarning(const QStringList& failedHotkeys)
 }
 
 namespace SnapTray {
+
+QString SettingsBackend::hotkeyRegistrationWarningMessage(const HotkeyConfig& config,
+                                                          const QString& conflictDescription,
+                                                          bool isWindows)
+{
+    Q_UNUSED(isWindows)
+
+    if (conflictDescription.isEmpty()) {
+        return tr(
+            "%1 was saved, but it could not be activated because the shortcut is already in use by another app or the system.")
+            .arg(config.displayName);
+    }
+
+    return tr("%1 was saved, but it could not be activated. %2")
+        .arg(config.displayName, conflictDescription);
+}
+
+bool SettingsBackend::shouldPromptWindowsPrintScreenSnippingDisable(
+    bool isWindows,
+    bool snippingShortcutEnabled,
+    bool userDismissed)
+{
+    return isWindows && snippingShortcutEnabled && !userDismissed;
+}
+
+void SettingsBackend::checkWindowsPrintScreenSnippingConflict()
+{
+#ifdef Q_OS_WIN
+    auto& manager = WindowsPrintScreenSettingsManager::instance();
+    QSettings settings = getSettings();
+    const bool userDismissed =
+        settings.value(QStringLiteral("hotkeys/ignorePrintScreenSnippingPrompt"), false).toBool();
+
+    if (!shouldPromptWindowsPrintScreenSnippingDisable(
+            true, manager.isSnippingShortcutEnabled(), userDismissed)) {
+        return;
+    }
+
+    QMessageBox msgBox;
+    msgBox.setWindowTitle(tr("Disable Windows Print Screen Shortcut?"));
+    msgBox.setIcon(QMessageBox::Question);
+    msgBox.setText(
+        tr("Windows is using the Print Screen key to open its Snipping Tool, "
+           "which stops SnapTray from using Print Screen as a shortcut. "
+           "Turn this off so SnapTray can use the Print Screen key?")
+        + QStringLiteral("\n\n")
+        + tr("After this, restart SnapTray. If Windows still opens the Snipping "
+             "Tool, sign out of Windows (or restart) and try again."));
+    QPushButton* yesButton = msgBox.addButton(QMessageBox::Yes);
+    msgBox.addButton(QMessageBox::No);
+    QPushButton* dontAskButton =
+        msgBox.addButton(tr("No, don't ask again"), QMessageBox::RejectRole);
+    msgBox.setDefaultButton(yesButton);
+    msgBox.exec();
+
+    if (msgBox.clickedButton() == yesButton) {
+        if (manager.disableSnippingShortcut()) {
+            QmlToast::screenToast().showToast(
+                QmlToast::Level::Success,
+                tr("Windows Print Screen Shortcut Disabled"),
+                tr("Restart SnapTray to use Print Screen. If it still opens the "
+                   "Snipping Tool, sign out of Windows and back in."),
+                4500);
+        } else {
+            QmlToast::screenToast().showToast(
+                QmlToast::Level::Error,
+                tr("Windows Setting Not Changed"),
+                tr("SnapTray could not change the Windows Print Screen setting."),
+                4500);
+        }
+    } else if (msgBox.clickedButton() == dontAskButton) {
+        settings.setValue(QStringLiteral("hotkeys/ignorePrintScreenSnippingPrompt"), true);
+    }
+#endif
+}
 
 SettingsBackend::SettingsBackend(QObject* parent)
     : QObject(parent)
@@ -705,9 +791,20 @@ QString SettingsBackend::appVersion() const
     return QString::fromLatin1(SNAPTRAY_VERSION);
 }
 
+bool SettingsBackend::recordingSupported() const
+{
+    return PlatformFeatures::instance().capabilities().supportsRecording;
+}
+
+bool SettingsBackend::ocrSettingsVisible() const
+{
+    return PlatformFeatures::instance().capabilities().supportsOCR;
+}
+
 bool SettingsBackend::ocrSupported() const
 {
-    return PlatformFeatures::instance().isOCRAvailable();
+    return PlatformFeatures::instance().capabilities().supportsOCR
+        && PlatformFeatures::instance().isOCRAvailable();
 }
 
 bool SettingsBackend::ocrLoading() const
@@ -984,6 +1081,10 @@ QVariantList SettingsBackend::hotkeyCategories() const
         HotkeyCategory::Recording,
     };
     for (auto cat : categories) {
+        if (cat == HotkeyCategory::Recording && !recordingSupported()) {
+            continue;
+        }
+
         QVariantMap entry;
         entry[QStringLiteral("category")] = static_cast<int>(cat);
         entry[QStringLiteral("name")] = getCategoryDisplayName(cat);

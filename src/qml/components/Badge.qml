@@ -45,8 +45,15 @@ Item {
     }
 
     onRetrigger: {
-        // Update text without re-fading; just restart the hide timer
+        // Keep the badge visible and restart the hide timer.
         hideTimer.stop();
+        if (!root.badgeVisible) {
+            root.badgeVisible = true;
+            return;
+        }
+        fadeOut.stop();
+        badge.visible = true;
+        badge.opacity = 1.0;
         hideTimer.interval = duration;
         hideTimer.start();
     }
@@ -56,8 +63,7 @@ Item {
         interval: root.duration
         repeat: false
         onTriggered: {
-            fadeIn.stop();
-            fadeOut.start();
+            root.badgeVisible = false;
         }
     }
 

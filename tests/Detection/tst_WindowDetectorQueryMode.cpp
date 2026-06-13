@@ -1,10 +1,20 @@
 #include <QtTest/QtTest>
 
+#include <algorithm>
+#include <optional>
 #include <QCursor>
 #include <QGuiApplication>
 #include <QScreen>
 
 #include "WindowDetector.h"
+
+#ifdef Q_OS_LINUX
+#include <QByteArray>
+#include <QtGui/qguiapplication_platform.h>
+#include <unistd.h>
+#include <X11/Xatom.h>
+#include <X11/Xlib.h>
+#endif
 
 namespace {
 
@@ -70,6 +80,9 @@ private slots:
     void testTopLevelCacheDoesNotPretendChildControlsAreReady();
     void testIncludeChildControlsUsesChildQuery();
     void testContextMenuPrefersTopLevelBounds();
+    void testQueryUpgradePreservesMissingTopLevelElements();
+    void testQueryUpgradeDoesNotDuplicateMatchingTopLevelElements();
+    void testLinuxX11TopLevelWindowDetectionFindsVisibleWindow();
 };
 
 void tst_WindowDetectorQueryMode::testTopLevelOnlySkipsChildQuery()
@@ -194,6 +207,200 @@ void tst_WindowDetectorQueryMode::testContextMenuPrefersTopLevelBounds()
     QCOMPARE(result->bounds, topBounds);
     QCOMPARE(result->elementType, ElementType::ContextMenu);
     QCOMPARE(detector.childQueryCount, 0);
+}
+
+void tst_WindowDetectorQueryMode::testQueryUpgradePreservesMissingTopLevelElements()
+{
+    QScreen* screen = QGuiApplication::screenAt(QCursor::pos());
+    if (!screen) {
+        screen = QGuiApplication::primaryScreen();
+    }
+    if (!screen) {
+        QSKIP("No screen available for WindowDetector query mode test.");
+    }
+
+    const QRect appBounds = clampRectToScreen(screen->geometry(), screen->geometry().center(), QSize(320, 240));
+    const QRect popupBounds = clampRectToScreen(
+        screen->geometry(),
+        QPoint(screen->geometry().center().x(), screen->geometry().top() + 80),
+        QSize(260, 180));
+
+    std::vector<DetectedElement> newCache{makeElement(appBounds, 0, ElementType::Window)};
+    DetectedElement preservedPopup = makeElement(popupBounds, 27, ElementType::StatusBarItem);
+    preservedPopup.windowId = 777;
+    preservedPopup.ownerPid = 5150;
+
+    WindowDetector::mergePreservedTopLevelElements(
+        newCache,
+        {preservedPopup},
+        WindowDetector::QueryMode::TopLevelOnly,
+        screen,
+        WindowDetector::QueryMode::IncludeChildControls,
+        screen);
+
+    QCOMPARE(newCache.size(), size_t(2));
+    QVERIFY(std::any_of(
+        newCache.cbegin(),
+        newCache.cend(),
+        [&popupBounds](const DetectedElement& element) {
+            return element.bounds == popupBounds &&
+                   element.elementType == ElementType::StatusBarItem;
+        }));
+}
+
+void tst_WindowDetectorQueryMode::testQueryUpgradeDoesNotDuplicateMatchingTopLevelElements()
+{
+    QScreen* screen = QGuiApplication::screenAt(QCursor::pos());
+    if (!screen) {
+        screen = QGuiApplication::primaryScreen();
+    }
+    if (!screen) {
+        QSKIP("No screen available for WindowDetector query mode test.");
+    }
+
+    const QRect popupBounds = clampRectToScreen(
+        screen->geometry(),
+        QPoint(screen->geometry().center().x(), screen->geometry().top() + 80),
+        QSize(260, 180));
+
+    DetectedElement preservedPopup = makeElement(popupBounds, 27, ElementType::StatusBarItem);
+    preservedPopup.windowId = 777;
+    preservedPopup.ownerPid = 5150;
+
+    DetectedElement livePopup = makeElement(popupBounds.adjusted(2, 1, 2, 1), 27, ElementType::StatusBarItem);
+    livePopup.windowId = 0;
+    livePopup.ownerPid = 5150;
+
+    std::vector<DetectedElement> newCache{livePopup};
+
+    WindowDetector::mergePreservedTopLevelElements(
+        newCache,
+        {preservedPopup},
+        WindowDetector::QueryMode::TopLevelOnly,
+        screen,
+        WindowDetector::QueryMode::IncludeChildControls,
+        screen);
+
+    QCOMPARE(newCache.size(), size_t(1));
+    QCOMPARE(newCache.front().bounds, livePopup.bounds);
+    QCOMPARE(newCache.front().ownerPid, livePopup.ownerPid);
+}
+
+void tst_WindowDetectorQueryMode::testLinuxX11TopLevelWindowDetectionFindsVisibleWindow()
+{
+#ifndef Q_OS_LINUX
+    QSKIP("Linux X11 window detection is only tested on Linux.");
+#else
+    if (QGuiApplication::platformName() != QStringLiteral("xcb")) {
+        QSKIP("Linux window detection currently supports X11/xcb only.");
+    }
+
+    auto* x11Application = qGuiApp->nativeInterface<QNativeInterface::QX11Application>();
+    if (!x11Application || !x11Application->display()) {
+        QSKIP("No X11 display available for window detection test.");
+    }
+
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        QSKIP("No screen available for Linux window detection test.");
+    }
+
+    const QRect testBounds =
+        clampRectToScreen(screen->geometry(), screen->geometry().center(), QSize(260, 180));
+    if (!testBounds.isValid()) {
+        QSKIP("Screen geometry is too small for Linux window detection test.");
+    }
+
+    Display* display = x11Application->display();
+    const int defaultScreen = DefaultScreen(display);
+    const ::Window rootWindow = RootWindow(display, defaultScreen);
+    const ::Window testWindow = XCreateSimpleWindow(
+        display,
+        rootWindow,
+        testBounds.x(),
+        testBounds.y(),
+        static_cast<unsigned int>(testBounds.width()),
+        static_cast<unsigned int>(testBounds.height()),
+        0,
+        BlackPixel(display, defaultScreen),
+        WhitePixel(display, defaultScreen));
+    QVERIFY(testWindow != 0);
+
+    struct WindowGuard
+    {
+        Display* display = nullptr;
+        ::Window window = 0;
+
+        ~WindowGuard()
+        {
+            if (display && window != 0) {
+                XUnmapWindow(display, window);
+                XDestroyWindow(display, window);
+                XFlush(display);
+            }
+        }
+    } windowGuard{display, testWindow};
+
+    const QByteArray title("SnapTray X11 detector test");
+    XStoreName(display, testWindow, title.constData());
+
+    const Atom utf8StringAtom = XInternAtom(display, "UTF8_STRING", False);
+    const Atom wmNameAtom = XInternAtom(display, "_NET_WM_NAME", False);
+    XChangeProperty(
+        display,
+        testWindow,
+        wmNameAtom,
+        utf8StringAtom,
+        8,
+        PropModeReplace,
+        reinterpret_cast<const unsigned char*>(title.constData()),
+        title.size());
+
+    const Atom pidAtom = XInternAtom(display, "_NET_WM_PID", False);
+    const unsigned long externalPid = static_cast<unsigned long>(::getpid()) + 100000UL;
+    XChangeProperty(
+        display,
+        testWindow,
+        pidAtom,
+        XA_CARDINAL,
+        32,
+        PropModeReplace,
+        reinterpret_cast<const unsigned char*>(&externalPid),
+        1);
+
+    const Atom windowTypeAtom = XInternAtom(display, "_NET_WM_WINDOW_TYPE", False);
+    const Atom normalTypeAtom = XInternAtom(display, "_NET_WM_WINDOW_TYPE_NORMAL", False);
+    XChangeProperty(
+        display,
+        testWindow,
+        windowTypeAtom,
+        XA_ATOM,
+        32,
+        PropModeReplace,
+        reinterpret_cast<const unsigned char*>(&normalTypeAtom),
+        1);
+
+    XMapRaised(display, testWindow);
+    XFlush(display);
+    XSync(display, False);
+
+    WindowDetector detector;
+    detector.setScreen(screen);
+    detector.setEnabled(true);
+
+    const QPoint hitPoint = testBounds.center();
+    std::optional<DetectedElement> result;
+
+    QTRY_VERIFY_WITH_TIMEOUT(([&]() {
+        detector.refreshWindowList(WindowDetector::QueryMode::TopLevelOnly);
+        result = detector.detectWindowAt(hitPoint, WindowDetector::QueryMode::TopLevelOnly);
+        return result.has_value() && result->bounds.contains(hitPoint);
+    }()), 3000);
+
+    QVERIFY(result.has_value());
+    QCOMPARE(result->elementType, ElementType::Window);
+    QVERIFY(result->bounds.intersects(testBounds.adjusted(-8, -8, 8, 8)));
+#endif
 }
 
 QTEST_MAIN(tst_WindowDetectorQueryMode)
