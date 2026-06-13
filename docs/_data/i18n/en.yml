@@ -84,7 +84,7 @@ downloads:
     title: Desktop Installer
     requirements: macOS 14.0 (Sonoma) or later
     button: Download .dmg
-    empty: DMG installer coming soon
+    empty: Or download from GitHub releases
     source_link: Build from source on GitHub
   windows:
     label: Windows
@@ -100,7 +100,7 @@ downloads:
     title: AppImage
     requirements: Ubuntu 22.04 X11 session
     button: Download AppImage
-    empty: Linux AppImage beta coming soon
+    empty: Or download from GitHub releases
   req_eyebrow: System Requirements
   req_title: Platform prerequisites
   req_cards:

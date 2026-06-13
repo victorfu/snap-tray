@@ -84,7 +84,7 @@ downloads:
     title: 桌面安裝程式
     requirements: macOS 14.0（Sonoma）以上
     button: 下載 .dmg
-    empty: DMG 安裝檔即將推出
+    empty: 或從 GitHub releases 下載
     source_link: 從 GitHub 原始碼建置
   windows:
     label: Windows
@@ -100,7 +100,7 @@ downloads:
     title: AppImage
     requirements: Ubuntu 22.04 X11 session
     button: 下載 AppImage
-    empty: Linux AppImage beta 即將推出
+    empty: 或從 GitHub releases 下載
   req_eyebrow: 系統需求
   req_title: 平台前置條件
   req_cards:
