@@ -30,6 +30,48 @@ const RELEASE_I18N = {
     downloadLinux: '下載 Linux AppImage',
     viewOnGithub: '在 GitHub 查看',
     untitledRelease: '未命名版本'
+  },
+  ja: {
+    locale: 'ja-JP',
+    noReleaseNotes: 'リリースノートはありません。',
+    noReleaseAvailable: '利用可能なリリースはまだありません',
+    browseReleases: 'GitHub リリースでダウンロードを確認',
+    unableToLoad: '現在リリース情報を読み込めません。後ほど GitHub リリースをご確認ください。',
+    preRelease: 'プレリリース',
+    stable: '安定版',
+    downloadMac: 'macOS をダウンロード (.dmg)',
+    downloadWindows: 'Windows をダウンロード (.exe)',
+    downloadLinux: 'Linux AppImage をダウンロード',
+    viewOnGithub: 'GitHub で見る',
+    untitledRelease: '無題のリリース'
+  },
+  ko: {
+    locale: 'ko-KR',
+    noReleaseNotes: '릴리스 노트가 없습니다.',
+    noReleaseAvailable: '아직 사용 가능한 릴리스가 없습니다',
+    browseReleases: 'GitHub 릴리스에서 다운로드 보기',
+    unableToLoad: '지금은 릴리스를 불러올 수 없습니다. 잠시 후 GitHub 릴리스를 확인하세요.',
+    preRelease: '프리릴리스',
+    stable: '안정판',
+    downloadMac: 'macOS 다운로드 (.dmg)',
+    downloadWindows: 'Windows 다운로드 (.exe)',
+    downloadLinux: 'Linux AppImage 다운로드',
+    viewOnGithub: 'GitHub에서 보기',
+    untitledRelease: '제목 없는 릴리스'
+  },
+  th: {
+    locale: 'th-TH',
+    noReleaseNotes: 'ไม่มีบันทึกการเปลี่ยนแปลง',
+    noReleaseAvailable: 'ยังไม่มีรุ่นที่พร้อมใช้งาน',
+    browseReleases: 'ดูดาวน์โหลดได้ใน GitHub releases',
+    unableToLoad: 'ขณะนี้ไม่สามารถโหลดข้อมูลรุ่นได้ โปรดลองใหม่ภายหลังหรือไปที่ GitHub releases',
+    preRelease: 'รุ่นทดลอง',
+    stable: 'รุ่นเสถียร',
+    downloadMac: 'ดาวน์โหลด macOS (.dmg)',
+    downloadWindows: 'ดาวน์โหลด Windows (.exe)',
+    downloadLinux: 'ดาวน์โหลด Linux AppImage',
+    viewOnGithub: 'ดูบน GitHub',
+    untitledRelease: 'รุ่นที่ไม่มีชื่อ'
   }
 };
 
@@ -39,6 +81,15 @@ function resolveLang() {
   const source = (document.body?.dataset.lang || document.documentElement.lang || 'en').toLowerCase();
   if (source.startsWith('zh')) {
     return 'zh-tw';
+  }
+  if (source.startsWith('ja')) {
+    return 'ja';
+  }
+  if (source.startsWith('ko')) {
+    return 'ko';
+  }
+  if (source.startsWith('th')) {
+    return 'th';
   }
   return 'en';
 }
