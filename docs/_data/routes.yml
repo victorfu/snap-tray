@@ -3,18 +3,21 @@ home:
   zh-tw: /zh-tw/
   ja: /ja/
   ko: /ko/
+  th: /th/
 
 releases:
   en: /releases/
   zh-tw: /zh-tw/releases/
   ja: /ja/releases/
   ko: /ko/releases/
+  th: /th/releases/
 
 privacy:
   en: /privacy/
   zh-tw: /zh-tw/privacy/
   ja: /ja/privacy/
   ko: /ko/privacy/
+  th: /th/privacy/
 
 docs_home:
   en: /docs/
@@ -139,18 +142,21 @@ screenshot_tool:
   zh-tw: /zh-tw/screenshot-tool/
   ja: /ja/screenshot-tool/
   ko: /ko/screenshot-tool/
+  th: /th/screenshot-tool/
 
 screenshot_tool_mac:
   en: /screenshot-tool-mac/
   zh-tw: /zh-tw/screenshot-tool-mac/
   ja: /ja/screenshot-tool-mac/
   ko: /ko/screenshot-tool-mac/
+  th: /th/screenshot-tool-mac/
 
 screenshot_tool_windows:
   en: /screenshot-tool-windows/
   zh-tw: /zh-tw/screenshot-tool-windows/
   ja: /ja/screenshot-tool-windows/
   ko: /ko/screenshot-tool-windows/
+  th: /th/screenshot-tool-windows/
 
 not_found:
   en: /404.html
