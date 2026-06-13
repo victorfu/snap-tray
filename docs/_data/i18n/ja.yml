@@ -311,7 +311,7 @@ landing_mac:
     feature_label: 機能
     tools:
       - SnapTray
-      - macOS Built-in
+      - macOS 標準
       - Shottr
       - CleanShot X
     rows:
@@ -322,7 +322,7 @@ landing_mac:
       - feature: 画面へのピン留め
         values: [true, false, false, true]
       - feature: 画面録画（Mac）
-        values: [true, "QuickTime only", false, true]
+        values: [true, "QuickTime のみ", false, true]
       - feature: GIF / WebP エクスポート（Mac）
         values: [true, false, false, true]
       - feature: OCR テキスト抽出（Mac）
@@ -332,7 +332,7 @@ landing_mac:
       - feature: CLI 自動化
         values: [true, false, false, false]
       - feature: 無料かつオープンソース
-        values: [true, true, "Free tier", false]
+        values: [true, true, "無料プランあり", false]
   setup:
     eyebrow: チュートリアル
     title: Mac で SnapTray を使う方法
@@ -411,7 +411,7 @@ landing_windows:
       - feature: ルーペ付き範囲キャプチャ
         values: [true, false, true, false]
       - feature: 注釈ツール
-        values: [true, "Pen only", true, true]
+        values: [true, "ペンのみ", true, true]
       - feature: 画面へのピン留め
         values: [true, false, false, false]
       - feature: 画面録画（Windows）
