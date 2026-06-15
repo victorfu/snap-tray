@@ -6,6 +6,24 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+## [1.0.57] - 2026-06-15
+
+### Added
+
+- Added Japanese, Korean, and Thai website localization, including translated user docs, marketing pages, navigation labels, release/download strings, and hreflang metadata.
+
+### Improved
+
+- Improved the website language switcher with a data-driven dropdown that works better on mobile layouts.
+- Improved Linux cursor theming by resolving Xcursor environment settings from X resources.
+- Refreshed download fallbacks, appcast metadata, and website page titles so release pages stay current and clearer in search results.
+
+### Fixed
+
+- Fixed Windows OCR build compatibility with newer MSVC toolchains by removing obsolete coroutine flags.
+- Fixed top-edge region selections so compact dimension labels appear correctly.
+- Fixed Japanese comparison-table translation coverage.
+
 ## [1.0.56] - 2026-06-03
 
 ### Fixed
