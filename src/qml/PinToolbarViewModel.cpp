@@ -17,6 +17,12 @@ void PinToolbarViewModel::buildButtonList()
     const QVector<ToolId> tools = registry.getToolsForToolbar(ToolbarType::PinWindow);
 
     for (ToolId toolId : tools) {
+        // Share is intentionally hidden from the toolbar. The underlying
+        // share implementation (tool registration, signals, handlers) is kept
+        // intact so the feature can be re-enabled by removing this guard.
+        if (toolId == ToolId::Share) {
+            continue;
+        }
         auto options = defaultToolButtonOptions(toolId);
         // Keep Beautify/Crop/Measure in one processing section without
         // using the accent-colored action styling.

@@ -36,6 +36,7 @@ class tst_RegionToolbarViewModel : public QObject
 
 private slots:
     void testNormalToolbarOmitsCancelRecordAndHandlesOcrAvailability();
+    void testShareButtonIsHiddenFromToolbar();
 };
 
 void tst_RegionToolbarViewModel::testNormalToolbarOmitsCancelRecordAndHandlesOcrAvailability()
@@ -54,6 +55,19 @@ void tst_RegionToolbarViewModel::testNormalToolbarOmitsCancelRecordAndHandlesOcr
     QVERIFY(!ocrButton.isEmpty());
     QVERIFY(ocrButton.value(QStringLiteral("separatorBefore")).toBool());
 #endif
+}
+
+void tst_RegionToolbarViewModel::testShareButtonIsHiddenFromToolbar()
+{
+    // Share is intentionally hidden from the toolbar while its implementation
+    // is kept intact. The registry still lists it, but the view model must not
+    // surface it as a visible button.
+    RegionToolbarViewModel viewModel;
+    const QVariantList buttons = viewModel.buttons();
+
+    const QVariantMap shareButton = findButtonById(buttons, static_cast<int>(ToolId::Share));
+    QVERIFY(shareButton.isEmpty());
+    QVERIFY(!containsButtonWithIconKey(buttons, QStringLiteral("share")));
 }
 
 QTEST_MAIN(tst_RegionToolbarViewModel)
