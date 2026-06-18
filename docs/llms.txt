@@ -19,7 +19,6 @@ SnapTray supports macOS, Windows, and Ubuntu 22.04 X11 AppImage beta. It is a fr
 - **OCR**: Extract text from captured regions on macOS/Windows
 - **CLI**: Automate captures and control SnapTray from scripts
 - **QR Code Detection**: Scan QR codes from screen captures
-- **Share URL**: Quick-share captures via temporary upload
 
 ## Platform Support
 

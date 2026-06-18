@@ -17,10 +17,9 @@ doc_order: 1
 
 ### 가장 많이 사용하는 경로
 
-1. 30초 안에 스크린샷 필요: [빠른 공유 (30초)](/ko/docs/tutorials/quick-share/)
-2. 재현 가능한 이슈 보고서 필요: [버그 보고 워크플로](/ko/docs/tutorials/bug-report/)
-3. 항상 보이는 참조 화면 필요: [핀으로 참조 고정](/ko/docs/tutorials/live-reference/)
-4. 짧은 데모 영상 필요: [녹화 데모 (macOS/Windows 전용)](/ko/docs/tutorials/recording-demo/)
+1. 재현 가능한 이슈 보고서 필요: [버그 보고 워크플로](/ko/docs/tutorials/bug-report/)
+2. 항상 보이는 참조 화면 필요: [핀으로 참조 고정](/ko/docs/tutorials/live-reference/)
+3. 짧은 데모 영상 필요: [녹화 데모 (macOS/Windows 전용)](/ko/docs/tutorials/recording-demo/)
 
 ## 기초 다지기
 
@@ -40,7 +39,7 @@ doc_order: 1
 - [주석 도구](/ko/docs/annotation-tools/)
 - [스크린 캔버스](/ko/docs/screen-canvas/)
 
-### 워크플로 및 공유
+### 워크플로 및 전달
 
 - [핀 창](/ko/docs/pin-window/)
 - [녹화 (macOS/Windows 전용)](/ko/docs/recording/)

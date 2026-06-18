@@ -3,7 +3,7 @@ last_modified_at: 2026-03-25
 layout: docs
 title: Region Capture
 seo_title: "SnapTray Region Capture: Precise Screenshots & Magnifier"
-description: Precision region selection with magnifier, window detection, multi-region support, and quick share/export actions.
+description: Precision region selection with magnifier, window detection, multi-region support, and quick export actions.
 permalink: /docs/region-capture/
 lang: en
 route_key: docs_region_capture
@@ -42,7 +42,6 @@ After the selection is complete, the toolbar supports:
 - Annotation + edit tools (Arrow/Pencil/Marker/Shape/Text/Mosaic/Step Badge/Emoji/Eraser)
 - `OCR` (macOS/Windows only; hidden on Linux beta) and `QR Code Scan`
 - `Auto Blur` (faces + credentials)
-- `Share URL` (upload selected result and return a share link)
 - `Pin`, `Save`, and `Copy`
 
 ## Useful shortcuts

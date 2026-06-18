@@ -2,8 +2,8 @@
 last_modified_at: 2026-03-25
 layout: docs
 title: 區域截圖
-seo_title: "SnapTray 區域截圖：放大鏡、視窗偵測、多區域與快速分享的高精度擷取"
-description: 透過放大鏡、視窗偵測、多區域模式與分享輸出動作完成高精度擷取。
+seo_title: "SnapTray 區域截圖：放大鏡、視窗偵測、多區域與快速匯出的高精度擷取"
+description: 透過放大鏡、視窗偵測、多區域模式與快速匯出動作完成高精度擷取。
 permalink: /zh-tw/docs/region-capture/
 lang: zh-tw
 route_key: docs_region_capture
@@ -42,7 +42,6 @@ doc_order: 1
 - 標註與編修工具（Arrow/Pencil/Marker/Shape/Text/Mosaic/Step Badge/Emoji/Eraser）
 - `OCR`（僅 macOS/Windows；Linux beta 會隱藏）與 `QR Code Scan`
 - `Auto Blur`（臉孔 + 憑證等敏感資訊）
-- `Share URL`（上傳目前選取結果並產生分享連結）
 - `Pin`、`Save`、`Copy`
 
 ## 常用快捷鍵

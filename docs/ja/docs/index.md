@@ -17,10 +17,9 @@ doc_order: 1
 
 ### よく使われる学習パス
 
-1. 30秒でスクリーンショットを撮りたい：[クイック共有（30秒）](/ja/docs/tutorials/quick-share/)
-2. 再現性のある問題レポートを作りたい：[バグ報告ワークフロー](/ja/docs/tutorials/bug-report/)
-3. 常時表示の参照画面が欲しい：[ピン留めで常時参照](/ja/docs/tutorials/live-reference/)
-4. 短いデモ動画を作りたい：[録画デモ（macOS/Windows のみ）](/ja/docs/tutorials/recording-demo/)
+1. 再現性のある問題レポートを作りたい：[バグ報告ワークフロー](/ja/docs/tutorials/bug-report/)
+2. 常時表示の参照画面が欲しい：[ピン留めで常時参照](/ja/docs/tutorials/live-reference/)
+3. 短いデモ動画を作りたい：[録画デモ（macOS/Windows のみ）](/ja/docs/tutorials/recording-demo/)
 
 ## 基礎を固める
 
@@ -40,7 +39,7 @@ doc_order: 1
 - [注釈ツール](/ja/docs/annotation-tools/)
 - [スクリーンキャンバス](/ja/docs/screen-canvas/)
 
-### ワークフローと共有
+### ワークフローと配信
 
 - [ピン留めウィンドウ](/ja/docs/pin-window/)
 - [録画（macOS/Windows のみ）](/ja/docs/recording/)

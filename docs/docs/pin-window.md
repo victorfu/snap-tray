@@ -49,7 +49,7 @@ Use the pencil icon to open a lightweight annotation toolbar dedicated to the cu
 
 - Drawing tools: Pencil, Marker, Arrow, Shape, Text, Mosaic, Step Badge, Emoji, Eraser
 - Utility tools: Crop, Measure
-- Action tools: OCR (macOS/Windows only; hidden in Linux beta), QR Code Scan, Share URL, Save, Copy
+- Action tools: OCR (macOS/Windows only; hidden in Linux beta), QR Code Scan, Save, Copy
 
 ## Next step
 

@@ -13,13 +13,12 @@ doc_order: 1
 
 ## 이 섹션 활용 방법
 
-SnapTray가 처음이라면 **빠른 공유 (30초)**부터 시작하세요. 각 튜토리얼은 태스크 기반이며 목표, 단계, 최종 검증 체크리스트가 포함되어 있습니다.
+SnapTray가 처음이라면 **버그 보고 워크플로**부터 시작하세요. 각 튜토리얼은 태스크 기반이며 목표, 단계, 최종 검증 체크리스트가 포함되어 있습니다.
 
 ## 권장 학습 경로
 
 | 목표 | 시작 | 이어서 |
 |---|---|---|
-| 빠르게 스크린샷을 캡처하고 전송 | [빠른 공유 (30초)](/ko/docs/tutorials/quick-share/) | [영역 캡처](/ko/docs/region-capture/) |
 | 명확한 증거로 버그 보고 | [버그 보고 워크플로](/ko/docs/tutorials/bug-report/) | [주석 도구](/ko/docs/annotation-tools/) |
 | 작업 중 참조 화면 항상 보이게 유지 | [핀으로 참조 고정](/ko/docs/tutorials/live-reference/) | [핀 창](/ko/docs/pin-window/) |
 | 제품 데모 녹화 및 공유 (macOS/Windows 전용) | [녹화 데모 (macOS/Windows 전용)](/ko/docs/tutorials/recording-demo/) | [녹화 (macOS/Windows 전용)](/ko/docs/recording/) |

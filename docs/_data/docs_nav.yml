@@ -36,13 +36,6 @@
         ja: チュートリアル一覧
         ko: 튜토리얼 목록
         th: รวมบทช่วยสอน
-    - route_key: docs_tutorial_quick_share
-      title:
-        en: Quick Share (30s)
-        zh-tw: 30 秒快速分享
-        ja: クイック共有（30秒）
-        ko: 빠른 공유 (30초)
-        th: แชร์ด่วน (30 วินาที)
     - route_key: docs_tutorial_bug_report
       title:
         en: Bug Report Workflow

@@ -3,7 +3,7 @@ last_modified_at: 2026-06-13
 layout: docs
 title: 영역 캡처
 seo_title: "SnapTray 영역 캡처: 정밀 스크린샷 및 돋보기"
-description: 돋보기, 창 감지, 다중 영역 지원, 빠른 공유·내보내기 동작이 포함된 정밀 영역 선택.
+description: 돋보기, 창 감지, 다중 영역 지원, 내보내기 동작이 포함된 정밀 영역 선택.
 permalink: /ko/docs/region-capture/
 lang: ko
 route_key: docs_region_capture
@@ -42,7 +42,6 @@ doc_order: 1
 - 주석 + 편집 도구 (화살표/연필/마커/도형/텍스트/모자이크/단계 배지/이모지/지우개)
 - `OCR` (macOS/Windows 전용; Linux beta에서는 숨김) 및 `QR 코드 스캔`
 - `자동 블러` (얼굴 + 자격 증명)
-- `URL 공유` (선택된 결과를 업로드하고 공유 링크 반환)
 - `고정`, `저장`, `복사`
 
 ## 유용한 단축키

@@ -11,7 +11,7 @@ doc_group: advanced
 doc_order: 3
 faq_schema:
   - question: "SnapTray가 캡처 이미지를 업로드하나요?"
-    answer: "기본적으로 자동 업로드는 없습니다. 캡처, 주석, 고정은 URL 공유 동작을 명시적으로 사용하지 않는 한 로컬에 유지됩니다. 녹화는 macOS/Windows 전용이며 역시 로컬에 유지됩니다."
+    answer: "자동 업로드는 없습니다. 캡처, 주석, 고정은 로컬에 유지됩니다. 녹화는 macOS/Windows 전용이며 역시 로컬에 유지됩니다."
   - question: "어떤 출력 형식을 사용해야 하나요?"
     answer: "macOS/Windows에서는 긴 동영상과 튜토리얼에 MP4, 짧은 루프나 소형 데모에 GIF, 가벼운 애니메이션 클립에 WebP를 사용하세요. Linux beta에서는 녹화 형식을 사용할 수 없습니다."
   - question: "OCR이 내 시스템에서 사용 불가능한 이유는?"
@@ -28,7 +28,7 @@ faq_schema:
 
 ## SnapTray가 캡처 이미지를 업로드하나요?
 
-기본적으로 자동 업로드는 없습니다. 캡처, 주석, 고정은 URL 공유 동작을 명시적으로 사용하지 않는 한 로컬에 유지됩니다. 녹화는 macOS/Windows 전용이며 역시 로컬에 유지됩니다. 직접 다운로드 빌드에서 SnapTray는 플랫폼 네이티브 업데이터(macOS는 Sparkle, Windows는 WinSparkle)를 통해 업데이트를 확인하며, 이는 설정에서 비활성화할 수 있습니다.
+자동 업로드는 없습니다. 캡처, 주석, 고정은 로컬에 유지됩니다. 녹화는 macOS/Windows 전용이며 역시 로컬에 유지됩니다. 직접 다운로드 빌드에서 SnapTray는 플랫폼 네이티브 업데이터(macOS는 Sparkle, Windows는 WinSparkle)를 통해 업데이트를 확인하며, 이는 설정에서 비활성화할 수 있습니다.
 
 ## 어떤 출력 형식을 사용해야 하나요?
 

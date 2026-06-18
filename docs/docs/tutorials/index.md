@@ -13,13 +13,12 @@ doc_order: 1
 
 ## How to use this section
 
-If you are new to SnapTray, start with **Quick Share (30s)** first. Each tutorial is task-based and includes a goal, steps, and a final validation checklist.
+If you are new to SnapTray, start with the **Bug Report Workflow**. Each tutorial is task-based and includes a goal, steps, and a final validation checklist.
 
 ## Recommended learning paths
 
 | Your goal | Start here | Then continue |
 |---|---|---|
-| Capture and send screenshots fast | [Quick Share (30s)](/docs/tutorials/quick-share/) | [Region Capture](/docs/region-capture/) |
 | Report bugs with clear evidence | [Bug Report Workflow](/docs/tutorials/bug-report/) | [Annotation Tools](/docs/annotation-tools/) |
 | Keep references visible while working | [Live Reference with Pin](/docs/tutorials/live-reference/) | [Pin Window](/docs/pin-window/) |
 | Record and share product demos (macOS/Windows only) | [Recording Demo (macOS/Windows only)](/docs/tutorials/recording-demo/) | [Recording (macOS/Windows only)](/docs/recording/) |

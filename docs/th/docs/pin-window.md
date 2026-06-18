@@ -49,7 +49,7 @@ doc_order: 1
 
 - เครื่องมือวาด: Pencil, Marker, Arrow, Shape, Text, Mosaic, Step Badge, Emoji, Eraser
 - เครื่องมืออรรถประโยชน์: Crop, Measure
-- เครื่องมือดำเนินการ: OCR (เฉพาะ macOS/Windows; ซ่อนใน Linux beta), QR Code Scan, Share URL, Save, Copy
+- เครื่องมือดำเนินการ: OCR (เฉพาะ macOS/Windows; ซ่อนใน Linux beta), QR Code Scan, Save, Copy
 
 ## ขั้นตอนถัดไป
 

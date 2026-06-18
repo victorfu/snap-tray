@@ -110,7 +110,6 @@ Minimum recommended actions:
 If you want hands-on learning:
 
 - [Tutorial Hub](/docs/tutorials/)
-- [Quick Share (30s)](/docs/tutorials/quick-share/)
 
 If you want feature deep dives:
 

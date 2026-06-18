@@ -15,12 +15,11 @@ doc_order: 1
 
 若你想快速把事情做完，先進入[教學總覽](/zh-tw/docs/tutorials/)。這裡每一篇都是真實情境的步驟式教學。
 
-### 最常用的四條路徑
+### 最常用的路徑
 
-1. 30 秒內完成截圖分享：[30 秒快速分享](/zh-tw/docs/tutorials/quick-share/)
-2. 做出可重現問題回報：[Bug 回報流程](/zh-tw/docs/tutorials/bug-report/)
-3. 邊做事邊看參考圖：[Pin 長駐參考](/zh-tw/docs/tutorials/live-reference/)
-4. 產出可讀性高的示範影片：[錄影教學示範（僅 macOS/Windows）](/zh-tw/docs/tutorials/recording-demo/)
+1. 做出可重現問題回報：[Bug 回報流程](/zh-tw/docs/tutorials/bug-report/)
+2. 邊做事邊看參考圖：[Pin 長駐參考](/zh-tw/docs/tutorials/live-reference/)
+3. 產出可讀性高的示範影片：[錄影教學示範（僅 macOS/Windows）](/zh-tw/docs/tutorials/recording-demo/)
 
 ## 先建立基礎設定
 

@@ -49,7 +49,7 @@ doc_order: 1
 
 - 그리기 도구: 연필, 마커, 화살표, 도형, 텍스트, 모자이크, 단계 배지, 이모지, 지우개
 - 유틸리티 도구: 자르기, 측정
-- 동작 도구: OCR (macOS/Windows 전용; Linux beta에서는 숨김), QR 코드 스캔, URL 공유, 저장, 복사
+- 동작 도구: OCR (macOS/Windows 전용; Linux beta에서는 숨김), QR 코드 스캔, 저장, 복사
 
 ## 다음 단계
 

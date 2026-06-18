@@ -40,13 +40,6 @@ docs_tutorials:
   ko: /ko/docs/tutorials/
   th: /th/docs/tutorials/
 
-docs_tutorial_quick_share:
-  en: /docs/tutorials/quick-share/
-  zh-tw: /zh-tw/docs/tutorials/quick-share/
-  ja: /ja/docs/tutorials/quick-share/
-  ko: /ko/docs/tutorials/quick-share/
-  th: /th/docs/tutorials/quick-share/
-
 docs_tutorial_bug_report:
   en: /docs/tutorials/bug-report/
   zh-tw: /zh-tw/docs/tutorials/bug-report/

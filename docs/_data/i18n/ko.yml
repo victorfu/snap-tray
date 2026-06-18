@@ -65,9 +65,6 @@ features:
     - kind: Control
       title: 실행 취소 / 다시 실행
       body: 주석 작업 전반에 걸친 완전한 작업 기록으로 편집 내용을 언제든 되돌릴 수 있습니다.
-    - kind: Sharing
-      title: URL 공유
-      body: 캡처를 업로드하고 선택적 비밀번호 보호와 함께 공유 링크를 생성합니다.
     - kind: Branding
       title: 워터마크
       body: 스크린샷과 macOS/Windows 녹화에 커스텀 이미지 워터마크 오버레이를 적용합니다.
@@ -125,7 +122,7 @@ faq:
   title: 자주 묻는 질문
   items:
     - q: SnapTray란 무엇인가요?
-      a: SnapTray는 macOS, Windows, Ubuntu 22.04 X11 beta용 무료 경량 스크린샷·주석 도구입니다. 시스템 트레이에 상주하며 영역 캡처, 스크린샷 주석 추가, 이미지 고정, 결과 즉시 공유가 가능합니다. 녹화와 OCR은 Linux beta에 포함되지 않습니다.
+      a: SnapTray는 macOS, Windows, Ubuntu 22.04 X11 beta용 무료 경량 스크린샷·주석 도구입니다. 시스템 트레이에 상주하며 영역 캡처, 스크린샷 주석 추가, 이미지 고정이 가능합니다. 녹화와 OCR은 Linux beta에 포함되지 않습니다.
     - q: SnapTray는 무료인가요?
       a: 네, SnapTray는 MIT 라이선스 하에 완전히 무료 오픈 소스입니다. 광고, 구독, 숨겨진 비용이 없습니다.
     - q: SnapTray와 Snipping Tool의 차이점은 무엇인가요?
@@ -171,7 +168,7 @@ error404:
 landing_screenshot_tool:
   hero:
     title: 빠른 캡처를 위한 최고의 스크린샷 도구
-    intro: "스크린샷 도구는 문서 작성, 버그 보고, 튜토리얼, 빠른 공유를 위해 화면의 일부를 이미지로 캡처합니다. 대부분의 운영 체제에는 기본 도구가 포함되어 있지만, 내장 도구는 캡처에서 멈춥니다. 주석, 녹화, 스크린샷 공유를 정기적으로 한다면 해당 워크플로에 맞는 도구가 필요합니다. SnapTray는 macOS, Windows, Ubuntu 22.04 X11 beta용 무료 오픈 소스 스크린샷 도구로 캡처, 주석, 공유를 한 곳에서 처리합니다. 녹화는 macOS 및 Windows에서 사용 가능합니다."
+    intro: "스크린샷 도구는 문서 작성, 버그 보고, 튜토리얼, 빠른 공유를 위해 화면의 일부를 이미지로 캡처합니다. 대부분의 운영 체제에는 기본 도구가 포함되어 있지만, 내장 도구는 캡처에서 멈춥니다. 주석, 녹화, 스크린샷 공유를 정기적으로 한다면 해당 워크플로에 맞는 도구가 필요합니다. SnapTray는 macOS, Windows, Ubuntu 22.04 X11 beta용 무료 오픈 소스 스크린샷 도구로 캡처와 주석을 한 곳에서 처리합니다. 녹화는 macOS 및 Windows에서 사용 가능합니다."
     cta_download: 무료 다운로드
     cta_docs: 문서 읽기
   problems:
@@ -194,8 +191,8 @@ landing_screenshot_tool:
         body: F2를 눌러 캡처 오버레이를 실행합니다. 돋보기로 픽셀 수준의 정밀도를 제공하고, 창 감지로 한 번의 클릭으로 전체 창을 선택할 수 있습니다. 앱 전환도, 로딩 화면도 없습니다.
       - title: 캡처를 벗어나지 않고 주석 추가
         body: 화살표, 도형, 텍스트, 단계 배지, 모자이크 블러, 이모지 스티커가 같은 오버레이 내에 표시됩니다. 별도의 편집기를 열거나 다른 앱에 붙여넣을 필요가 없습니다.
-      - title: 공유, 저장, 또는 고정
-        body: 클립보드에 복사, 디스크에 저장, 공유 링크용 업로드, 또는 플로팅 참조 창으로 고정합니다. macOS/Windows에서 전체 화면 녹화를 MP4, GIF, WebP로 내보낼 수 있습니다. 모든 작업이 단 하나의 키 입력으로 가능합니다.
+      - title: 저장 또는 고정
+        body: 클립보드에 복사, 디스크에 저장, 또는 플로팅 참조 창으로 고정합니다. macOS/Windows에서 전체 화면 녹화를 MP4, GIF, WebP로 내보낼 수 있습니다. 모든 작업이 단 하나의 키 입력으로 가능합니다.
   compare:
     eyebrow: 비교
     title: "SnapTray vs Snipping Tool vs Lightshot vs ShareX"
@@ -235,7 +232,7 @@ landing_screenshot_tool:
       - role: 디자이너
         scenario: 참조 이미지를 화면에 고정하고, 레이아웃을 나란히 비교하며, 픽셀 거리를 측정하고, 개발자를 위한 주석이 달린 피드백을 내보냅니다.
       - role: 지원팀
-        scenario: 고객 문제를 스크린샷하고, 단계 배지 주석을 추가하며, 민감한 데이터를 블러 처리하고, 링크를 공유합니다. 모든 작업이 대화를 벗어나지 않고 완료됩니다.
+        scenario: 고객 문제를 스크린샷하고, 단계 배지 주석을 추가하며, 민감한 데이터를 블러 처리합니다. 모든 작업이 대화를 벗어나지 않고 완료됩니다.
       - role: 교육자
         scenario: macOS/Windows에서 튜토리얼 연습 과정을 녹화하고 인라인 문서용 GIF로 내보냅니다. 라이브 세션 중 스크린 캔버스로 슬라이드에 주석을 추가합니다.
   setup:
@@ -246,14 +243,14 @@ landing_screenshot_tool:
         detail: GitHub 릴리스에서 SnapTray를 받거나(macOS DMG, Windows 설치 프로그램, Linux beta AppImage), Microsoft Store에서 Windows 버전을 설치합니다. 실행하면 트레이 아이콘이 즉시 나타납니다.
       - title: 첫 번째 스크린샷 찍기
         detail: F2를 눌러 캡처 오버레이를 엽니다. 드래그하여 영역을 선택하거나, 감지된 창을 클릭합니다. 주석 툴바가 자동으로 표시됩니다.
-      - title: 주석 추가, 저장, 공유
-        detail: 화살표, 텍스트, 도형, 블러를 추가합니다. Ctrl+C / Cmd+C로 복사, Ctrl+S / Cmd+S로 저장, 또는 Enter로 화면에 고정합니다. 선택적 비밀번호와 함께 공유 링크로 업로드할 수도 있습니다.
+      - title: 주석 추가, 저장, 고정
+        detail: 화살표, 텍스트, 도형, 블러를 추가합니다. Ctrl+C / Cmd+C로 복사, Ctrl+S / Cmd+S로 저장, 또는 Enter로 화면에 고정합니다.
   faq:
     eyebrow: 자주 묻는 질문
     title: 스크린샷 도구 — 자주 묻는 질문
     items:
       - q: 스크린샷 도구란 무엇인가요?
-        a: 스크린샷 도구는 화면의 일부 또는 전체를 이미지로 캡처하는 소프트웨어입니다. 기본 도구는 이미지를 저장하기만 합니다. SnapTray와 같은 고급 스크린샷 도구는 주석 추가, 화면에 캡처 고정, 링크로 공유도 가능하며, SnapTray는 macOS/Windows에서 동영상 녹화도 지원합니다.
+        a: 스크린샷 도구는 화면의 일부 또는 전체를 이미지로 캡처하는 소프트웨어입니다. 기본 도구는 이미지를 저장하기만 합니다. SnapTray와 같은 고급 스크린샷 도구는 주석 추가, 화면에 캡처 고정도 가능하며, SnapTray는 macOS/Windows에서 동영상 녹화도 지원합니다.
       - q: SnapTray란 무엇인가요?
         a: SnapTray는 macOS, Windows, Ubuntu 22.04 X11 beta용 무료 오픈 소스 스크린샷·주석 도구입니다. 시스템 트레이에 상주하며 즉각적인 영역 캡처, 풍부한 주석, 핀 창, CLI 자동화를 제공합니다. MP4/GIF/WebP 녹화와 OCR은 macOS 및 Windows에서 사용 가능하며, Linux beta는 캡처와 주석에 특화되어 있습니다.
       - q: SnapTray는 무료인가요?
@@ -303,8 +300,8 @@ landing_mac:
         body: 메뉴 바에 상주하며 F2로 즉시 실행됩니다. 독 아이콘 혼잡도 없고, 앱 전환도 없습니다. 어떤 컨텍스트에서도 중단 없이 캡처합니다.
       - title: 캡처 오버레이에서 주석 추가
         body: 캡처 직후 화살표, 도형, 텍스트, 단계 배지, 모자이크 블러, 이모지 스티커를 바로 사용할 수 있습니다. Preview나 다른 편집기를 열 필요가 없습니다.
-      - title: 고정, 녹화, 공유
-        body: 캡처를 플로팅 참조로 고정하고, 전체 화면을 MP4/GIF/WebP로 녹화하고, OCR로 텍스트를 추출하거나, 공유 링크용으로 업로드합니다. 모두 같은 Mac 도구에서 가능합니다.
+      - title: 고정, 녹화, 텍스트 추출
+        body: 캡처를 플로팅 참조로 고정하고, 전체 화면을 MP4/GIF/WebP로 녹화하고, OCR로 텍스트를 추출합니다. 모두 같은 Mac 도구에서 가능합니다.
   compare:
     eyebrow: 비교
     title: "SnapTray vs macOS 기본 vs Shottr vs CleanShot X"
@@ -342,7 +339,7 @@ landing_mac:
       - title: 영역 캡처
         detail: F2를 눌러 캡처 오버레이를 엽니다. 돋보기가 즉시 나타납니다. 드래그하여 영역을 선택하거나, 감지된 창을 클릭하여 캡처합니다.
       - title: 주석 추가 및 내보내기
-        detail: 툴바를 사용하여 화살표, 텍스트, 도형, 블러를 추가합니다. Cmd+C로 복사, Cmd+S로 저장, 또는 Enter로 화면에 고정합니다. 필요하면 공유 링크용으로 업로드합니다.
+        detail: 툴바를 사용하여 화살표, 텍스트, 도형, 블러를 추가합니다. Cmd+C로 복사, Cmd+S로 저장, 또는 Enter로 화면에 고정합니다.
   faq:
     eyebrow: 자주 묻는 질문
     title: Mac 스크린샷 도구 — 자주 묻는 질문

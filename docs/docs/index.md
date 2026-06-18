@@ -17,10 +17,9 @@ If your goal is to get work done quickly, start in [Tutorials](/docs/tutorials/)
 
 ### Most-used paths
 
-1. Need a screenshot in 30 seconds: [Quick Share (30s)](/docs/tutorials/quick-share/)
-2. Need a reproducible issue report: [Bug Report Workflow](/docs/tutorials/bug-report/)
-3. Need always-visible references: [Live Reference with Pin](/docs/tutorials/live-reference/)
-4. Need a short demo video: [Recording Demo (macOS/Windows only)](/docs/tutorials/recording-demo/)
+1. Need a reproducible issue report: [Bug Report Workflow](/docs/tutorials/bug-report/)
+2. Need always-visible references: [Live Reference with Pin](/docs/tutorials/live-reference/)
+3. Need a short demo video: [Recording Demo (macOS/Windows only)](/docs/tutorials/recording-demo/)
 
 ## Build your foundation
 
