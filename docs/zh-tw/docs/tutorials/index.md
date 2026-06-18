@@ -13,13 +13,12 @@ doc_order: 1
 
 ## 這區怎麼使用
 
-如果你是第一次使用 SnapTray，先從**30 秒快速分享**開始。每一篇都包含目標、操作步驟與最終檢查清單。
+如果你是第一次使用 SnapTray，先從 **Bug 回報流程**開始。每一篇都包含目標、操作步驟與最終檢查清單。
 
 ## 建議學習路徑
 
 | 你的目標 | 先看 | 再看 |
 |---|---|---|
-| 快速截圖並傳給同事 | [30 秒快速分享](/zh-tw/docs/tutorials/quick-share/) | [區域截圖](/zh-tw/docs/region-capture/) |
 | 做出可重現的 bug 回報 | [Bug 回報流程](/zh-tw/docs/tutorials/bug-report/) | [標註工具](/zh-tw/docs/annotation-tools/) |
 | 工作時固定顯示參考圖 | [Pin 長駐參考](/zh-tw/docs/tutorials/live-reference/) | [釘選視窗](/zh-tw/docs/pin-window/) |
 | 錄製可分享的操作示範（僅 macOS/Windows） | [錄影教學示範（僅 macOS/Windows）](/zh-tw/docs/tutorials/recording-demo/) | [錄影（僅 macOS/Windows）](/zh-tw/docs/recording/) |

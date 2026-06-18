@@ -17,10 +17,9 @@ doc_order: 1
 
 ### เส้นทางที่ใช้บ่อยที่สุด
 
-1. ต้องการสกรีนช็อตใน 30 วินาที: [แชร์ด่วน (30 วินาที)](/th/docs/tutorials/quick-share/)
-2. ต้องการรายงานปัญหาที่ทำซ้ำได้: [ขั้นตอนรายงานบัก](/th/docs/tutorials/bug-report/)
-3. ต้องการอ้างอิงที่มองเห็นได้ตลอดเวลา: [อ้างอิงสดด้วยการปักหมุด](/th/docs/tutorials/live-reference/)
-4. ต้องการวิดีโอสาธิตสั้น: [สาธิตการบันทึก (เฉพาะ macOS/Windows)](/th/docs/tutorials/recording-demo/)
+1. ต้องการรายงานปัญหาที่ทำซ้ำได้: [ขั้นตอนรายงานบัก](/th/docs/tutorials/bug-report/)
+2. ต้องการอ้างอิงที่มองเห็นได้ตลอดเวลา: [อ้างอิงสดด้วยการปักหมุด](/th/docs/tutorials/live-reference/)
+3. ต้องการวิดีโอสาธิตสั้น: [สาธิตการบันทึก (เฉพาะ macOS/Windows)](/th/docs/tutorials/recording-demo/)
 
 ## สร้างรากฐาน
 

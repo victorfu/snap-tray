@@ -109,7 +109,6 @@ SnapTray 提供 Ubuntu 22.04 X11 beta AppImage。Linux beta 不包含錄影與 O
 想直接實戰請看：
 
 - [教學總覽](/zh-tw/docs/tutorials/)
-- [30 秒快速分享](/zh-tw/docs/tutorials/quick-share/)
 
 想查功能細節請看：
 

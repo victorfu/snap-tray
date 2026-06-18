@@ -11,7 +11,7 @@ doc_group: advanced
 doc_order: 3
 faq_schema:
   - question: "SnapTray 會上傳我的畫面嗎？"
-    answer: "不會自動上傳。截圖、標註與釘選預設都在本機完成，只有你主動使用 Share URL 功能時才會上傳。錄影僅支援 macOS/Windows，且同樣在本機完成。"
+    answer: "不會自動上傳。截圖、標註與釘選都在本機完成。錄影僅支援 macOS/Windows，且同樣在本機完成。"
   - question: "錄影格式要怎麼選？"
     answer: "在 macOS/Windows，MP4 適合長影片與教學，GIF 適合短循環或簡短動作演示，WebP 適合較輕量的動態片段。Linux beta 不提供錄影格式。"
   - question: "為什麼我的 OCR 無法使用？"
@@ -28,7 +28,7 @@ faq_schema:
 
 ## SnapTray 會上傳我的畫面嗎？
 
-不會自動上傳。截圖、標註與釘選預設都在本機完成，只有你主動使用 Share URL 功能時才會上傳。錄影僅支援 macOS/Windows，且同樣在本機完成。對於直接下載版本，SnapTray 會透過平台原生更新器檢查更新（macOS 使用 Sparkle，Windows 使用 WinSparkle），這可以在設定中關閉。
+不會自動上傳。截圖、標註與釘選都在本機完成。錄影僅支援 macOS/Windows，且同樣在本機完成。對於直接下載版本，SnapTray 會透過平台原生更新器檢查更新（macOS 使用 Sparkle，Windows 使用 WinSparkle），這可以在設定中關閉。
 
 ## 錄影格式要怎麼選？
 

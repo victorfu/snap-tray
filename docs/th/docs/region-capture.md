@@ -3,7 +3,7 @@ last_modified_at: 2026-06-13
 layout: docs
 title: การจับภาพเฉพาะส่วน
 seo_title: "การจับภาพเฉพาะส่วน SnapTray: สกรีนช็อตที่แม่นยำพร้อมแว่นขยาย"
-description: การเลือกพื้นที่ที่แม่นยำพร้อมแว่นขยาย การตรวจจับหน้าต่าง รองรับหลายส่วน และการแชร์/ส่งออกอย่างรวดเร็ว
+description: การเลือกพื้นที่ที่แม่นยำพร้อมแว่นขยาย การตรวจจับหน้าต่าง รองรับหลายส่วน และการส่งออกอย่างรวดเร็ว
 permalink: /th/docs/region-capture/
 lang: th
 route_key: docs_region_capture
@@ -42,7 +42,6 @@ doc_order: 1
 - เครื่องมือมาร์กอัปและแก้ไข (Arrow/Pencil/Marker/Shape/Text/Mosaic/Step Badge/Emoji/Eraser)
 - `OCR` (เฉพาะ macOS/Windows; ซ่อนใน Linux beta) และ `QR Code Scan`
 - `Auto Blur` (ใบหน้า + ข้อมูลสำคัญ)
-- `Share URL` (อัปโหลดผลลัพธ์ที่เลือกและรับลิงก์แชร์)
 - `Pin`, `Save` และ `Copy`
 
 ## ปุ่มลัดที่มีประโยชน์

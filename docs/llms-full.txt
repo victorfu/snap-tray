@@ -126,7 +126,6 @@ Press `M` to toggle multi-region capture mode for collecting multiple regions.
 - Annotation tools (Arrow/Pencil/Marker/Shape/Text/Mosaic/Step Badge/Emoji/Eraser)
 - OCR (macOS/Windows) and QR Code Scan
 - Auto Blur (faces + credentials)
-- Share URL
 - Pin, Save, and Copy
 
 ### Shortcuts
@@ -213,7 +212,7 @@ Pin from capture result (`Enter`) or from tray menu using "Pin from Image...".
 
 Drawing tools: Pencil, Marker, Arrow, Shape, Text, Mosaic, Step Badge, Emoji, Eraser
 Utility tools: Crop, Measure
-Action tools: OCR (macOS/Windows), QR Code Scan, Share URL, Save, Copy
+Action tools: OCR (macOS/Windows), QR Code Scan, Save, Copy
 
 ---
 
@@ -373,7 +372,7 @@ snaptray config --set files/filenamePrefix SnapTray
 
 ### What is SnapTray?
 
-SnapTray is a free, lightweight screenshot and annotation tool for macOS, Windows, and Ubuntu 22.04 X11 AppImage beta. It lives in your system tray and lets you capture regions, annotate screenshots, pin images, and share results instantly. Recording to MP4/GIF/WebP is available on macOS/Windows only.
+SnapTray is a free, lightweight screenshot and annotation tool for macOS, Windows, and Ubuntu 22.04 X11 AppImage beta. It lives in your system tray and lets you capture regions, annotate screenshots, and pin images. Recording to MP4/GIF/WebP is available on macOS/Windows only.
 
 ### Is SnapTray free?
 
@@ -385,7 +384,7 @@ SnapTray goes beyond basic screen capture by offering on-screen annotation tools
 
 ### Does SnapTray upload my captures?
 
-No automatic upload happens by default. Everything stays local unless you explicitly use the Share URL action.
+No automatic upload happens. Everything stays local.
 
 ### Which output format should I use?
 

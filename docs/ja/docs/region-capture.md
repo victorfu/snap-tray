@@ -3,7 +3,7 @@ last_modified_at: 2026-03-25
 layout: docs
 title: 範囲キャプチャ
 seo_title: "SnapTray 範囲キャプチャ：精密なスクリーンショットとルーペ機能"
-description: ルーペ、ウィンドウ検出、マルチリージョン、クイック共有・エクスポートを備えた精密な範囲選択。
+description: ルーペ、ウィンドウ検出、マルチリージョン、エクスポートを備えた精密な範囲選択。
 permalink: /ja/docs/region-capture/
 lang: ja
 route_key: docs_region_capture
@@ -42,7 +42,6 @@ doc_order: 1
 - 注釈・編集ツール（矢印/ペン/マーカー/図形/テキスト/モザイク/ステップバッジ/絵文字/消しゴム）
 - `OCR`（macOS/Windows のみ；Linux beta では非表示）および `QR コードスキャン`
 - `自動ぼかし`（顔と認証情報）
-- `共有 URL`（選択した結果をアップロードして共有リンクを返す）
 - `ピン留め`、`保存`、`コピー`
 
 ## 便利なショートカット

@@ -6,7 +6,7 @@ if(APPLE)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "14.0" CACHE STRING "Minimum macOS deployment target" FORCE)
 endif()
 
-project(SnapTray VERSION 1.0.56 LANGUAGES CXX)
+project(SnapTray VERSION 1.0.57 LANGUAGES CXX)
 
 # ============================================================================
 # Compiler Cache (ccache/sccache) for faster incremental builds
@@ -626,14 +626,16 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     )
 endif()
 
-# Windows-specific compiler flags
-if(WIN32)
-    target_compile_options(snaptray_platform PRIVATE /await)
-endif()
-
 target_compile_definitions(snaptray_platform PRIVATE
     $<$<NOT:$<CONFIG:Debug>>:QT_NO_DEBUG_OUTPUT>
 )
+
+# OCRManager_win.cpp consumes the WinRT OCR API via IAsyncOperation::get(), which
+# pulls in <experimental/coroutine> under C++17. MSVC 14.51+ (VS 18) promotes its
+# deprecation to a hard error (STL1011); silence it until a C++20 <coroutine> move.
+if(WIN32)
+    target_compile_definitions(snaptray_platform PRIVATE _SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+endif()
 
 # Suppress duplicate library warnings on macOS
 if(APPLE)

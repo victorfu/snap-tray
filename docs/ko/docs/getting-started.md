@@ -110,7 +110,6 @@ OCR과 녹화 동작이 표시되지 않는지 확인한 후 단축키 확인으
 실습 학습을 원한다면:
 
 - [튜토리얼 목록](/ko/docs/tutorials/)
-- [빠른 공유 (30초)](/ko/docs/tutorials/quick-share/)
 
 기능 심층 탐구를 원한다면:
 

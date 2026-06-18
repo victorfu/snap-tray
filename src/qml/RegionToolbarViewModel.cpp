@@ -21,6 +21,12 @@ void RegionToolbarViewModel::buildButtonList()
         if (toolId == ToolId::OCR && !PlatformFeatures::instance().isOCRAvailable()) {
             continue;
         }
+        // Share is intentionally hidden from the toolbar. The underlying
+        // share implementation (tool registration, signals, handlers) is kept
+        // intact so the feature can be re-enabled by removing this guard.
+        if (toolId == ToolId::Share) {
+            continue;
+        }
 
         auto options = defaultToolButtonOptions(toolId);
         options.separatorBefore = registry.get(toolId).showSeparatorBefore

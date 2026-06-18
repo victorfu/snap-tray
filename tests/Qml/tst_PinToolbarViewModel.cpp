@@ -49,6 +49,7 @@ private slots:
     void testBeautifyUsesDefaultIconStyling();
     void testBeautifyTooltipUsesPinWindowTranslation();
     void testBeautifyButtonEmitsBeautifySignal();
+    void testShareButtonIsHiddenFromToolbar();
 };
 
 void tst_PinToolbarViewModel::testBeautifyStartsProcessingSectionBeforeCropAndMeasure()
@@ -126,6 +127,17 @@ void tst_PinToolbarViewModel::testBeautifyButtonEmitsBeautifySignal()
 
     QCOMPARE(toolSpy.count(), 0);
     QCOMPARE(beautifySpy.count(), 1);
+}
+
+void tst_PinToolbarViewModel::testShareButtonIsHiddenFromToolbar()
+{
+    // Share is intentionally hidden from the pin window toolbar while its
+    // implementation is kept intact.
+    PinToolbarViewModel viewModel;
+    const QVariantMap shareButton = findButtonById(
+        viewModel.buttons(), static_cast<int>(ToolId::Share));
+
+    QVERIFY(shareButton.isEmpty());
 }
 
 QTEST_MAIN(tst_PinToolbarViewModel)

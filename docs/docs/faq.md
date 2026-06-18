@@ -11,7 +11,7 @@ doc_group: advanced
 doc_order: 3
 faq_schema:
   - question: "Does SnapTray upload my captures?"
-    answer: "No automatic upload happens by default. Capture, annotation, and pinning stay local unless you explicitly use the Share URL action. Recording is macOS/Windows only and also stays local."
+    answer: "No automatic upload happens. Capture, annotation, and pinning stay local. Recording is macOS/Windows only and also stays local."
   - question: "Which output format should I use?"
     answer: "On macOS/Windows, use MP4 for long videos and tutorials, GIF for short loops or small demos, and WebP for lighter animated snippets. Recording formats are not available in the Linux beta."
   - question: "Why is OCR unavailable on my system?"
@@ -28,7 +28,7 @@ faq_schema:
 
 ## Does SnapTray upload my captures?
 
-No automatic upload happens by default. Capture, annotation, and pinning stay local unless you explicitly use the Share URL action. Recording is macOS/Windows only and also stays local. On direct-download builds, SnapTray checks for updates via the platform-native updater (Sparkle on macOS, WinSparkle on Windows), which can be disabled in Settings.
+No automatic upload happens. Capture, annotation, and pinning stay local. Recording is macOS/Windows only and also stays local. On direct-download builds, SnapTray checks for updates via the platform-native updater (Sparkle on macOS, WinSparkle on Windows), which can be disabled in Settings.
 
 ## Which output format should I use?
 
