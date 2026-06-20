@@ -6,6 +6,14 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+## [1.0.58] - 2026-06-20
+
+### Improved
+
+- Hid unfinished image-sharing actions from the region capture and Pin toolbars so only supported sharing flows appear in the app.
+- Updated English, Traditional Chinese, Japanese, Korean, and Thai documentation and navigation to match the current sharing feature set.
+- Refreshed v1.0.57 release-page and appcast metadata so update feeds stay aligned.
+
 ## [1.0.57] - 2026-06-15
 
 ### Added
