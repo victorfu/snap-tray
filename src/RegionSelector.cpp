@@ -2276,7 +2276,7 @@ void RegionSelector::maybeStartInitialRevealWait()
             },
             Qt::SingleShotConnection);
         if (m_initialRevealTimer) {
-            m_initialRevealTimer->stop();
+            m_initialRevealTimer->start(kInitialRevealTimeoutMs);
         }
         return;
     }
@@ -2324,7 +2324,10 @@ void RegionSelector::handleInitialRevealDetectorReady()
 
 void RegionSelector::handleInitialRevealTimeout()
 {
-    if (m_initialRevealState != InitialRevealState::Preparing ||
+    const bool waitingForReveal =
+        m_initialRevealState == InitialRevealState::Preparing ||
+        m_initialRevealState == InitialRevealState::ReadyToReveal;
+    if (!waitingForReveal ||
         m_isClosing ||
         !isScreenValid()) {
         return;

@@ -84,6 +84,7 @@ private slots:
     void testInitializeForScreen_MagnifierStylePrewarmsCache();
     void testDisabledMagnifierIgnoresShiftAndCopyShortcuts();
     void testBeaverStyleIgnoresShiftAndCopyShortcuts();
+    void testInitialRevealTimeoutRevealsReadySelector();
 #ifdef Q_OS_LINUX
     void testLinuxCaptureSurfaceRemainsManaged();
     void testLinuxTransparentCaptureHelpersDoNotBypassWindowManager();
@@ -744,6 +745,35 @@ void TestRegionSelectorStyleSync::testBeaverStyleIgnoresShiftAndCopyShortcuts()
 
     settings.setCursorCompanionStyle(
         RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier);
+}
+
+void TestRegionSelectorStyleSync::testInitialRevealTimeoutRevealsReadySelector()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        QSKIP("No screens available for RegionSelector initial reveal test.");
+    }
+
+    RegionSelector selector;
+    const QSize size = screen->geometry().size().boundedTo(QSize(320, 240));
+    QPixmap preCapture(size);
+    preCapture.fill(Qt::darkBlue);
+
+    selector.initializeForScreen(screen, preCapture);
+    selector.show();
+    QCoreApplication::processEvents();
+
+    RegionSelectorTestAccess::markInitialRevealReadyToReveal(selector);
+    selector.setWindowOpacity(0.0);
+
+    QVERIFY(!RegionSelectorTestAccess::initialRevealStateIsRevealed(selector));
+
+    RegionSelectorTestAccess::invokeHandleInitialRevealTimeout(selector);
+
+    QVERIFY(RegionSelectorTestAccess::initialRevealStateIsRevealed(selector));
+    QCOMPARE(selector.windowOpacity(), 1.0);
+
+    selector.close();
 }
 
 QTEST_MAIN(TestRegionSelectorStyleSync)

@@ -128,6 +128,11 @@ public:
         selector.m_initialRevealState = RegionSelector::InitialRevealState::Preparing;
     }
 
+    static void markInitialRevealReadyToReveal(RegionSelector& selector)
+    {
+        selector.m_initialRevealState = RegionSelector::InitialRevealState::ReadyToReveal;
+    }
+
     static void syncFloatingUiLayoutFromPaint(RegionSelector& selector, const QRegion& dirtyRegion)
     {
         const QSize paintSize = selector.size().expandedTo(QSize(1, 1));
