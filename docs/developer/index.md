@@ -2,7 +2,7 @@
 last_modified_at: 2026-03-24
 layout: docs
 title: Developer Docs
-seo_title: "SnapTray Developer Docs: Build, Package & Contribute"
+seo_title: "SnapTray Developer Docs: Build, Package and Contribute"
 description: Canonical technical documentation for building, packaging, and extending SnapTray without overloading the GitHub README.
 permalink: /developer/
 lang: en

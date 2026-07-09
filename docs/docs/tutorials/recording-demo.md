@@ -2,7 +2,7 @@
 last_modified_at: 2026-02-24
 layout: docs
 title: Recording Demo
-seo_title: "SnapTray Recording Demo: macOS/Windows Demos & Walkthroughs"
+seo_title: "SnapTray Recording Demo: macOS/Windows Demos and Walkthroughs"
 description: Create a concise macOS/Windows-only recording for demos, onboarding, or issue explanation; Linux beta does not include recording.
 permalink: /docs/tutorials/recording-demo/
 lang: en
