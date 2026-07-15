@@ -6,9 +6,17 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+## [1.0.59] - 2026-07-15
+
+### Improved
+
+- Refreshed the v1.0.58 release page and macOS/Windows update feeds so release and download metadata stay aligned.
+
 ### Fixed
 
+- Fixed Region Capture occasionally remaining stuck as a transparent overlay instead of appearing.
 - Fixed region capture copy on macOS so the selector waits for the clipboard write to finish before closing, preventing an immediate paste from using the previous clipboard image.
+- Fixed website page titles and shared-link previews so ampersands and other special characters display correctly.
 
 ## [1.0.58] - 2026-06-20
 
