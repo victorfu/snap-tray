@@ -1,8 +1,8 @@
 ---
 last_modified_at: 2026-03-27
 layout: docs
-title: Release & Packaging
-seo_title: "SnapTray Release & Packaging: macOS, Windows & Linux AppImage Beta"
+title: Release and Packaging
+seo_title: "SnapTray Release and Packaging: macOS, Windows and Linux AppImage Beta"
 description: Create distributable macOS and Windows packages plus the Linux AppImage beta, sign them, and prepare app-store or direct-download releases.
 permalink: /developer/release-packaging/
 lang: en

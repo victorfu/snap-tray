@@ -21,8 +21,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 {% assign tagline = site.data.i18n[lang].site.tagline %}
 {% assign title_suffix = site.data.i18n[lang].site.title_suffix %}
-<title>{% if page.seo_title %}{{ page.seo_title }}{% elsif page.title %}{{ page.title }} | {{ site.title }}{% if title_suffix %} {{ title_suffix }}{% endif %}{% elsif tagline %}{{ site.title }} — {{ tagline }}{% else %}{{ site.title }}{% endif %}</title>
-<meta name="description" content="{{ page.description | default: site.description }}">
+{% capture document_title %}{% if page.seo_title %}{{ page.seo_title }}{% elsif page.title %}{{ page.title }} | {{ site.title }}{% if title_suffix %} {{ title_suffix }}{% endif %}{% elsif tagline %}{{ site.title }} — {{ tagline }}{% else %}{{ site.title }}{% endif %}{% endcapture %}
+<title>{{ document_title | escape_once }}</title>
+<meta name="description" content="{{ page.description | default: site.description | escape_once }}">
 <meta name="theme-color" content="#0a1326">
 <meta name="snaptray-lang" content="{{ lang }}">
 
@@ -41,8 +42,8 @@
 {% endif %}
 
 <meta property="og:site_name" content="{{ site.title }}">
-<meta property="og:title" content="{{ social_title }}">
-<meta property="og:description" content="{{ social_description }}">
+<meta property="og:title" content="{{ social_title | escape_once }}">
+<meta property="og:description" content="{{ social_description | escape_once }}">
 <meta property="og:type" content="website">
 <meta property="og:url" content="{{ canonical_path | absolute_url }}">
 <meta property="og:locale" content="{{ og_locale }}">
@@ -52,8 +53,8 @@
 <meta property="og:image:height" content="630">
 <meta property="og:logo" content="{{ '/assets/images/logo.svg' | absolute_url }}">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="{{ social_title }}">
-<meta name="twitter:description" content="{{ social_description }}">
+<meta name="twitter:title" content="{{ social_title | escape_once }}">
+<meta name="twitter:description" content="{{ social_description | escape_once }}">
 <meta name="twitter:image" content="{{ '/assets/images/og-image.jpg' | absolute_url }}">
 
 <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">

@@ -2,7 +2,7 @@
 last_modified_at: 2026-03-26
 layout: docs
 title: Settings
-seo_title: "SnapTray Settings: Files, OCR, Watermark & Platform-Specific Recording"
+seo_title: "SnapTray Settings: Files, OCR, Watermark and Platform-Specific Recording"
 description: Tune SnapTray behavior for files, platform-specific OCR and recording, watermarking, and updates.
 permalink: /docs/settings/
 lang: en
