@@ -1596,10 +1596,11 @@ void PinWindow::copyToClipboard()
     PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
         clipboardImage,
         qApp,
-        [safeThis](bool success) {
-            if (!safeThis) {
+        [safeThis](PlatformFeatures::ClipboardCopyResult result) {
+            if (!safeThis || result == PlatformFeatures::ClipboardCopyResult::Superseded) {
                 return;
             }
+            const bool success = result == PlatformFeatures::ClipboardCopyResult::Success;
             safeThis->m_toast->showToast(
                 success ? SnapTray::QmlToast::Level::Success : SnapTray::QmlToast::Level::Error,
                 success ? tr("Copied to clipboard") : tr("Copy failed"));
@@ -5466,10 +5467,11 @@ void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
     PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
         clipboardImage,
         qApp,
-        [safeThis](bool success) {
-            if (!safeThis) {
+        [safeThis](PlatformFeatures::ClipboardCopyResult result) {
+            if (!safeThis || result == PlatformFeatures::ClipboardCopyResult::Superseded) {
                 return;
             }
+            const bool success = result == PlatformFeatures::ClipboardCopyResult::Success;
             safeThis->m_toast->showToast(
                 success ? SnapTray::QmlToast::Level::Success : SnapTray::QmlToast::Level::Error,
                 success ? tr("Beautified image copied") : tr("Copy failed"));

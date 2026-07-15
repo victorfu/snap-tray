@@ -1784,7 +1784,7 @@ void RegionSelector::recordCaptureSession(const QPixmap& resultPixmap)
     }
 
     const QPixmap resultPixmapCopy = resultPixmap;
-    QTimer::singleShot(0, qApp, [this, snapshot = std::move(*snapshot), resultPixmapCopy]() mutable {
+    QTimer::singleShot(0, qApp, [snapshot = std::move(*snapshot), resultPixmapCopy]() mutable {
         if (resultPixmapCopy.isNull()) {
             return;
         }
@@ -1793,7 +1793,7 @@ void RegionSelector::recordCaptureSession(const QPixmap& resultPixmap)
             return;
         }
         SnapTray::HistoryRecorder::instance().submitCaptureSession(
-            buildCaptureSessionWriteRequest(submission));
+            RegionSelector::buildCaptureSessionWriteRequest(submission));
     });
 }
 
@@ -1841,7 +1841,7 @@ std::optional<RegionSelector::HistoryCaptureSnapshot> RegionSelector::makeHistor
 
 void RegionSelector::submitPendingHistorySubmission(PendingHistorySubmission submission) const
 {
-    QTimer::singleShot(0, qApp, [this, submission = std::move(submission)]() mutable {
+    QTimer::singleShot(0, qApp, [submission = std::move(submission)]() mutable {
         if (submission.resultImage.isNull() ||
             submission.snapshot.backgroundPixmap.isNull() ||
             !submission.snapshot.selectionRect.isValid() ||
@@ -1849,12 +1849,12 @@ void RegionSelector::submitPendingHistorySubmission(PendingHistorySubmission sub
             return;
         }
         SnapTray::HistoryRecorder::instance().submitCaptureSession(
-            buildCaptureSessionWriteRequest(submission));
+            RegionSelector::buildCaptureSessionWriteRequest(submission));
     });
 }
 
 SnapTray::CaptureSessionWriteRequest RegionSelector::buildCaptureSessionWriteRequest(
-    const PendingHistorySubmission& submission) const
+    const PendingHistorySubmission& submission)
 {
     SnapTray::CaptureSessionWriteRequest request;
     request.canvasImage = submission.snapshot.backgroundPixmap.toImage();
@@ -1955,6 +1955,10 @@ void RegionSelector::setWindowDetector(WindowDetector* detector)
 
 void RegionSelector::switchToScreen(QScreen* screen, bool preserveCompletedSelection)
 {
+    if (m_exportInProgress || m_isClosing) {
+        return;
+    }
+
     resetInitialRevealState();
     m_initialRevealState = InitialRevealState::Revealed;
     hideSelectionPreviewOverlays();
@@ -4006,16 +4010,62 @@ void RegionSelector::copyToClipboard()
     }
 
     const QImage clipboardImage = prepared.image;
+    const qreal copiedPixmapDevicePixelRatio = prepared.pixmap.devicePixelRatio();
+    m_exportInProgress = true;
+    ensureLoadingSpinner()->start();
+    requestCaptureSceneUpdate();
+
+    QPointer<RegionSelector> safeThis(this);
+    auto finishClipboardCopy =
+        [safeThis, clipboardImage, copiedPixmapDevicePixelRatio](
+            PlatformFeatures::ClipboardCopyResult result) {
+            if (!safeThis) {
+                return;
+            }
+
+            safeThis->m_exportInProgress = false;
+            if (safeThis->m_loadingSpinner &&
+                !(safeThis->m_ocrInProgress || safeThis->m_qrCodeInProgress ||
+                  safeThis->m_autoBlurInProgress || safeThis->m_shareInProgress)) {
+                safeThis->m_loadingSpinner->stop();
+            }
+
+            if (result == PlatformFeatures::ClipboardCopyResult::Success) {
+                QPixmap copiedPixmap = QPixmap::fromImage(
+                    clipboardImage, Qt::NoOpaqueDetection);
+                copiedPixmap.setDevicePixelRatio(copiedPixmapDevicePixelRatio);
+                safeThis->recordCaptureSession(clipboardImage);
+                emit safeThis->copyRequested(copiedPixmap);
+                safeThis->close();
+                return;
+            }
+
+            if (result == PlatformFeatures::ClipboardCopyResult::Failed) {
+                qWarning() << "RegionSelector: Failed to copy image to clipboard";
+                if (safeThis->m_selectionToast) {
+                    safeThis->m_selectionToast->showNearRect(
+                        SnapTray::QmlToast::Level::Error,
+                        safeThis->tr("Copy failed"),
+                        safeThis->m_selectionManager->selectionRect());
+                }
+            }
+
+            safeThis->restoreAfterDialogCancelled();
+        };
+
     const auto clipboardWriter = m_guiClipboardWriter;
     if (clipboardWriter) {
-        clipboardWriter(clipboardImage, {});
+        clipboardWriter(
+            clipboardImage,
+            [finishClipboardCopy = std::move(finishClipboardCopy)](bool success) mutable {
+                finishClipboardCopy(success
+                        ? PlatformFeatures::ClipboardCopyResult::Success
+                        : PlatformFeatures::ClipboardCopyResult::Failed);
+            });
     } else {
-        PlatformFeatures::instance().copyImageToClipboardForGuiAsync(clipboardImage, qApp);
+        PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
+            clipboardImage, qApp, std::move(finishClipboardCopy));
     }
-
-    recordCaptureSession(prepared.image);
-    emit copyRequested(prepared.pixmap);
-    close();
 }
 
 void RegionSelector::saveToFile()
@@ -4615,6 +4665,16 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
 {
     if (m_isClosing) {
         return QWidget::eventFilter(obj, event);
+    }
+
+    if (m_exportInProgress) {
+        if (event->type() == QEvent::KeyPress &&
+            static_cast<QKeyEvent*>(event)->key() == Qt::Key_Escape) {
+            return true;
+        }
+        if (event->type() == QEvent::ApplicationDeactivate) {
+            return false;
+        }
     }
 
     // Capture ESC key at application level to handle when window loses focus

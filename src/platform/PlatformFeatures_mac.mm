@@ -73,8 +73,8 @@ bool writePngImageToGeneralPasteboard(const QImage& image)
 }
 
 void invokeClipboardCompletion(QObject* context,
-                               std::function<void(bool)> completion,
-                               bool success)
+                               PlatformFeatures::ClipboardCopyCompletion completion,
+                               PlatformFeatures::ClipboardCopyResult result)
 {
     if (!completion) {
         return;
@@ -82,12 +82,12 @@ void invokeClipboardCompletion(QObject* context,
 
     QObject* target = context ? context : QCoreApplication::instance();
     if (!target) {
-        completion(success);
+        completion(result);
         return;
     }
 
-    QMetaObject::invokeMethod(target, [completion = std::move(completion), success]() mutable {
-        completion(success);
+    QMetaObject::invokeMethod(target, [completion = std::move(completion), result]() mutable {
+        completion(result);
     }, Qt::QueuedConnection);
 }
 
@@ -185,13 +185,14 @@ bool PlatformFeatures::copyImageToClipboardForGui(const QImage& image) const
 void PlatformFeatures::copyImageToClipboardForGuiAsync(
     const QImage& image,
     QObject* context,
-    std::function<void(bool)> completion) const
+    ClipboardCopyCompletion completion) const
 {
     const quint64 requestGeneration =
         g_guiClipboardGeneration.fetch_add(1, std::memory_order_acq_rel) + 1;
 
     if (image.isNull()) {
-        invokeClipboardCompletion(context, std::move(completion), false);
+        invokeClipboardCompletion(
+            context, std::move(completion), ClipboardCopyResult::Failed);
         return;
     }
 
@@ -199,7 +200,7 @@ void PlatformFeatures::copyImageToClipboardForGuiAsync(
     if (!target) {
         const bool success = copyImageToClipboardForGui(image);
         if (completion) {
-            completion(success);
+            completion(success ? ClipboardCopyResult::Success : ClipboardCopyResult::Failed);
         }
         return;
     }
@@ -219,12 +220,15 @@ void PlatformFeatures::copyImageToClipboardForGuiAsync(
         QMetaObject::invokeMethod(guardedTarget,
             [pngData = std::move(pngData), completion = std::move(completion), requestGeneration]() mutable {
                 if (requestGeneration != g_guiClipboardGeneration.load(std::memory_order_acquire)) {
+                    if (completion) {
+                        completion(ClipboardCopyResult::Superseded);
+                    }
                     return;
                 }
 
                 const bool success = writePngDataToGeneralPasteboard(pngData);
                 if (completion) {
-                    completion(success);
+                    completion(success ? ClipboardCopyResult::Success : ClipboardCopyResult::Failed);
                 }
             },
             Qt::QueuedConnection);

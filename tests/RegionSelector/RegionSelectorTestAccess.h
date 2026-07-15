@@ -329,6 +329,13 @@ public:
         selector.m_guiClipboardWriter = std::move(writer);
     }
 
+    static void setRestoreAfterDialogCancelledHook(
+        RegionSelector& selector,
+        std::function<void()> hook)
+    {
+        selector.m_restoreAfterDialogCancelledHook = std::move(hook);
+    }
+
     static void invokeCopyToClipboard(RegionSelector& selector)
     {
         selector.copyToClipboard();

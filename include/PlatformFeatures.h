@@ -17,6 +17,14 @@ class WindowDetector;
 class PlatformFeatures
 {
 public:
+    enum class ClipboardCopyResult {
+        Success,
+        Failed,
+        Superseded,
+    };
+
+    using ClipboardCopyCompletion = std::function<void(ClipboardCopyResult)>;
+
     static PlatformFeatures& instance();
 
     const SnapTray::PlatformCapabilities& capabilities() const;
@@ -36,7 +44,7 @@ public:
     void copyImageToClipboardForGuiAsync(
         const QImage& image,
         QObject* context = nullptr,
-        std::function<void(bool)> completion = {}) const;
+        ClipboardCopyCompletion completion = {}) const;
 
     // CLI installation
     bool isCLIInstalled() const;

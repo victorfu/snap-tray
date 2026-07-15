@@ -51,40 +51,52 @@ void tst_GuiClipboardOrdering::latestGuiCopyWinsWhenEncodingCompletesOutOfOrder(
     QClipboard* clipboard = QGuiApplication::clipboard();
     QVERIFY(clipboard);
 
+    QImage sentinelImage(QSize(7, 5), QImage::Format_ARGB32);
+    sentinelImage.fill(QColor(201, 37, 91));
+    QVERIFY(PlatformFeatures::instance().copyImageToClipboardForGui(sentinelImage));
+    QCOMPARE(clipboard->image().size(), sentinelImage.size());
+
     const QImage staleImage = makeHighEntropyImage(QSize(4096, 3072));
     const QImage latestImage = makeLatestImage();
 
     bool staleCompletionCalled = false;
+    bool staleCopyWasSuperseded = false;
     bool latestCompletionCalled = false;
     bool latestCopySucceeded = false;
+    QImage clipboardImageAtLatestCompletion;
 
     PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
         staleImage,
         qApp,
-        [&staleCompletionCalled](bool) {
+        [&staleCompletionCalled, &staleCopyWasSuperseded](
+            PlatformFeatures::ClipboardCopyResult result) {
             staleCompletionCalled = true;
+            staleCopyWasSuperseded =
+                result == PlatformFeatures::ClipboardCopyResult::Superseded;
         });
 
     PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
         latestImage,
         qApp,
-        [&latestCompletionCalled, &latestCopySucceeded](bool success) {
+        [clipboard, &latestCompletionCalled, &latestCopySucceeded,
+            &clipboardImageAtLatestCompletion](
+            PlatformFeatures::ClipboardCopyResult result) {
             latestCompletionCalled = true;
-            latestCopySucceeded = success;
+            latestCopySucceeded = result == PlatformFeatures::ClipboardCopyResult::Success;
+            clipboardImageAtLatestCompletion = clipboard->image();
         });
 
     QTRY_VERIFY_WITH_TIMEOUT(latestCompletionCalled, 5000);
     QVERIFY(latestCopySucceeded);
-    QTRY_COMPARE_WITH_TIMEOUT(clipboard->image().size(), latestImage.size(), 1000);
+    QCOMPARE(clipboardImageAtLatestCompletion.size(), latestImage.size());
+    QCOMPARE(clipboardImageAtLatestCompletion.pixelColor(0, 0), latestImage.pixelColor(0, 0));
 
-    QTest::qWait(6000);
+    QTRY_VERIFY_WITH_TIMEOUT(staleCompletionCalled, 15000);
+    QVERIFY(staleCopyWasSuperseded);
 
     const QImage finalImage = clipboard->image();
-    QVERIFY2(!staleCompletionCalled, "Stale GUI clipboard requests must not complete after a newer copy.");
-    QVERIFY2(finalImage.size() != staleImage.size(), "A stale GUI clipboard request overwrote the latest copy.");
-    if (finalImage.size() == latestImage.size()) {
-        QCOMPARE(finalImage.pixelColor(0, 0), latestImage.pixelColor(0, 0));
-    }
+    QCOMPARE(finalImage.size(), latestImage.size());
+    QCOMPARE(finalImage.pixelColor(0, 0), latestImage.pixelColor(0, 0));
 #endif
 }
 

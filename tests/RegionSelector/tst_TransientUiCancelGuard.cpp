@@ -211,7 +211,9 @@ class tst_RegionSelectorTransientUiCancelGuard : public QObject
 private slots:
     void initTestCase();
     void testAppEscapeIgnoredWhenDropdownOpen();
+    void testAppEscapeIgnoredWhileExportInProgress();
     void testApplicationDeactivateIgnoredWhenBlockingDialogOpen();
+    void testApplicationDeactivateIgnoredWhileExportInProgress();
     void testDetachedWindowDeactivateGuardIgnoresSyntheticDeactivate();
     void testApplicationDeactivateCancelsWithoutGuard();
     void testWidgetEscapeIgnoredWhenBlockingUiOpen();
@@ -276,12 +278,43 @@ void tst_RegionSelectorTransientUiCancelGuard::testAppEscapeIgnoredWhenDropdownO
     QCOMPARE(cancelledSpy.count(), 0);
 }
 
+void tst_RegionSelectorTransientUiCancelGuard::testAppEscapeIgnoredWhileExportInProgress()
+{
+    RegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    selector.m_exportInProgress = true;
+
+    QSignalSpy cancelledSpy(&selector, &RegionSelector::selectionCancelled);
+    QKeyEvent event(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+
+    const bool handled = selector.eventFilter(qApp, &event);
+
+    QVERIFY(handled);
+    QCOMPARE(cancelledSpy.count(), 0);
+}
+
 void tst_RegionSelectorTransientUiCancelGuard::testApplicationDeactivateIgnoredWhenBlockingDialogOpen()
 {
     RegionSelector selector;
     selector.setAttribute(Qt::WA_DeleteOnClose, false);
     selector.m_activationCount = 1;
     selector.m_openBlockingDialogCount = 1;
+
+    QSignalSpy cancelledSpy(&selector, &RegionSelector::selectionCancelled);
+    QEvent event(QEvent::ApplicationDeactivate);
+
+    const bool handled = selector.eventFilter(qApp, &event);
+
+    QVERIFY(!handled);
+    QCOMPARE(cancelledSpy.count(), 0);
+}
+
+void tst_RegionSelectorTransientUiCancelGuard::testApplicationDeactivateIgnoredWhileExportInProgress()
+{
+    RegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    selector.m_activationCount = 1;
+    selector.m_exportInProgress = true;
 
     QSignalSpy cancelledSpy(&selector, &RegionSelector::selectionCancelled);
     QEvent event(QEvent::ApplicationDeactivate);

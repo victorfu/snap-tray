@@ -137,13 +137,13 @@ bool PlatformFeatures::copyImageToClipboardForGui(const QImage& image) const
 void PlatformFeatures::copyImageToClipboardForGuiAsync(
     const QImage& image,
     QObject* context,
-    std::function<void(bool)> completion) const
+    ClipboardCopyCompletion completion) const
 {
     QObject* target = context ? context : QCoreApplication::instance();
     if (!target) {
         const bool success = copyImageToClipboardForGui(image);
         if (completion) {
-            completion(success);
+            completion(success ? ClipboardCopyResult::Success : ClipboardCopyResult::Failed);
         }
         return;
     }
@@ -152,7 +152,7 @@ void PlatformFeatures::copyImageToClipboardForGuiAsync(
         [this, image, completion = std::move(completion)]() mutable {
             const bool success = copyImageToClipboardForGui(image);
             if (completion) {
-                completion(success);
+                completion(success ? ClipboardCopyResult::Success : ClipboardCopyResult::Failed);
             }
         },
         Qt::QueuedConnection);

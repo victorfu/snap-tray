@@ -6,6 +6,10 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed region capture copy on macOS so the selector waits for the clipboard write to finish before closing, preventing an immediate paste from using the previous clipboard image.
+
 ## [1.0.58] - 2026-06-20
 
 ### Improved

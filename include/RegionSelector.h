@@ -256,8 +256,8 @@ private:
                                  const QPixmap& backgroundPixmap,
                                  qreal devicePixelRatio,
                                  bool preWarmCache);
-    SnapTray::CaptureSessionWriteRequest buildCaptureSessionWriteRequest(
-        const PendingHistorySubmission& submission) const;
+    static SnapTray::CaptureSessionWriteRequest buildCaptureSessionWriteRequest(
+        const PendingHistorySubmission& submission);
 
     // Initialization helpers
     void setupScreenGeometry(QScreen* screen);
