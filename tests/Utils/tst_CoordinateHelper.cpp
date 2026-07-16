@@ -42,6 +42,9 @@ private slots:
     void testToPhysicalCoveringRect_FractionalLeftEdgePreventsPartialRepaintGap();
     void testToPhysicalCoveringRect_RightEdgeFractionalDpr();
     void testToPhysicalRect_NegativePosition();
+    void testToPhysicalScreenRect_MixedDpiSecondaryRight();
+    void testToPhysicalScreenRect_MixedDpiSecondaryLeft();
+    void testToPhysicalScreenRect_FullScreenRoundingClampsToPhysicalBounds();
 
     // toPhysical(QSize) tests
     void testToPhysicalSize_DPR1();
@@ -244,6 +247,45 @@ void tst_CoordinateHelper::testToPhysicalRect_NegativePosition()
     QRect logical(-50, -100, 100, 200);
     QRect physical = CoordinateHelper::toPhysical(logical, 2.0);
     QCOMPARE(physical, QRect(-100, -200, 200, 400));
+}
+
+void tst_CoordinateHelper::testToPhysicalScreenRect_MixedDpiSecondaryRight()
+{
+    // Qt exposes the secondary origin in logical coordinates, while DXGI uses
+    // the native desktop origin. Multiplying the Qt origin by 1.5 would produce
+    // x=3030 here and select/crop the wrong output.
+    const QRect logicalScreen(1920, 0, 1707, 960);
+    const QRect physicalScreen(1920, 0, 2560, 1440);
+    const QRect logicalRegion(2020, 100, 400, 200);
+
+    QCOMPARE(CoordinateHelper::toPhysicalScreenRect(
+                 logicalRegion, logicalScreen, physicalScreen, 1.5),
+             QRect(2070, 150, 600, 300));
+}
+
+void tst_CoordinateHelper::testToPhysicalScreenRect_MixedDpiSecondaryLeft()
+{
+    // Windows keeps native screen positions while Qt scales the screen size,
+    // producing the documented "islands of screens" logical geometry.
+    const QRect logicalScreen(-2560, 0, 1707, 960);
+    const QRect physicalScreen(-2560, 0, 2560, 1440);
+    const QRect logicalRegion(-2460, 50, 200, 100);
+
+    QCOMPARE(CoordinateHelper::toPhysicalScreenRect(
+                 logicalRegion, logicalScreen, physicalScreen, 1.5),
+             QRect(-2410, 75, 300, 150));
+}
+
+void tst_CoordinateHelper::testToPhysicalScreenRect_FullScreenRoundingClampsToPhysicalBounds()
+{
+    // 1707 * 1.5 is 2560.5. A covering conversion is deliberately 2561px,
+    // but a full-screen request must be clamped to the actual 2560px output.
+    const QRect logicalScreen(1920, 0, 1707, 960);
+    const QRect physicalScreen(1920, 0, 2560, 1440);
+
+    QCOMPARE(CoordinateHelper::toPhysicalScreenRect(
+                 logicalScreen, logicalScreen, physicalScreen, 1.5),
+             physicalScreen);
 }
 
 // ============================================================================

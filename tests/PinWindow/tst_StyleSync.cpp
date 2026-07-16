@@ -2,6 +2,8 @@
 
 #include <QApplication>
 #include <QGuiApplication>
+#include <QMouseEvent>
+#include <QPainter>
 #include <QWindow>
 
 #include "PinWindow.h"
@@ -102,6 +104,13 @@ private slots:
     void testNonAnnotationEdgeHoverUsesCorrectResizeCursor();
     void testOverlayRestoreReturnsArrowToolCursor();
     void testPolylineReleaseRecomputesHoverCursor();
+    void testReleaseOverFloatingToolbarFinishesWindowDrag();
+    void testAutoBlurMapsRotatedDisplayRectToAnnotationSpace();
+    void testAutoBlurMapsFlippedDisplayRectToAnnotationSpace();
+    void testAutoBlurMapsCombinedRotationAndFlips();
+    void testAutoBlurAnnotationSourceRestoresCombinedOrientation();
+    void testAutoBlurGenerationInvalidatesOnTransformChange();
+    void testLiveCaptureWaitsForAutoBlur();
     void testPopupRestoreReturnsMosaicCursor();
     void testTemporaryToolbarHideRestoresEmojiPicker();
     void testExplicitToolbarHideClearsEmojiToolState();
@@ -208,6 +217,145 @@ void TestPinWindowStyleSync::testPolylineReleaseRecomputesHoverCursor()
 
     QVERIFY(window.handlePolylineAnnotationRelease(bodyPos));
     verifyMoveCursor(window.cursor());
+}
+
+void TestPinWindowStyleSync::testReleaseOverFloatingToolbarFinishesWindowDrag()
+{
+    PinWindow window(createTestPixmap(240, 160), QPoint(0, 0));
+    window.showToolbar();
+    QVERIFY(window.m_toolbar);
+    QVERIFY(window.m_toolbar->isVisible());
+
+    window.m_isDragging = true;
+    const QPoint globalPos = window.m_toolbar->geometry().center();
+    QVERIFY(window.isGlobalPosOverFloatingUi(globalPos));
+
+    const QPoint localPos = window.mapFromGlobal(globalPos);
+    QMouseEvent releaseEvent(QEvent::MouseButtonRelease,
+                             localPos,
+                             globalPos,
+                             Qt::LeftButton,
+                             Qt::NoButton,
+                             Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &releaseEvent);
+
+    QVERIFY(!window.m_isDragging);
+}
+
+void TestPinWindowStyleSync::testAutoBlurMapsRotatedDisplayRectToAnnotationSpace()
+{
+    QPixmap rotatedDisplay(100, 200);
+    rotatedDisplay.fill(Qt::red);
+    rotatedDisplay.setDevicePixelRatio(1.0);
+
+    const QPixmap annotationSource = PinWindow::buildAutoBlurAnnotationSource(
+        rotatedDisplay, 90, false, false);
+    QCOMPARE(annotationSource.size(), QSize(200, 100));
+
+    const QRect mapped = PinWindow::mapAutoBlurDetectionRect(
+        QRect(10, 20, 30, 40),
+        1.0,
+        QSize(100, 200),
+        QSize(200, 100),
+        90,
+        false,
+        false);
+    QCOMPARE(mapped, QRect(20, 60, 40, 30));
+}
+
+void TestPinWindowStyleSync::testAutoBlurMapsFlippedDisplayRectToAnnotationSpace()
+{
+    QPixmap flippedDisplay(200, 100);
+    flippedDisplay.fill(Qt::red);
+    flippedDisplay.setDevicePixelRatio(1.0);
+
+    const QPixmap annotationSource = PinWindow::buildAutoBlurAnnotationSource(
+        flippedDisplay, 0, true, false);
+    QCOMPARE(annotationSource.size(), QSize(200, 100));
+
+    const QRect mapped = PinWindow::mapAutoBlurDetectionRect(
+        QRect(10, 20, 30, 40),
+        1.0,
+        QSize(200, 100),
+        QSize(200, 100),
+        0,
+        true,
+        false);
+    QCOMPARE(mapped, QRect(160, 20, 30, 40));
+}
+
+void TestPinWindowStyleSync::testAutoBlurMapsCombinedRotationAndFlips()
+{
+    const QSize displaySize(100, 200);
+    const QSize annotationSize(200, 100);
+    const QRect detectionRect(10, 20, 30, 40);
+
+    QCOMPARE(PinWindow::mapAutoBlurDetectionRect(
+                 detectionRect, 1.0, displaySize, annotationSize,
+                 90, true, false),
+             QRect(140, 60, 40, 30));
+    QCOMPARE(PinWindow::mapAutoBlurDetectionRect(
+                 detectionRect, 1.0, displaySize, annotationSize,
+                 90, false, true),
+             QRect(20, 10, 40, 30));
+}
+
+void TestPinWindowStyleSync::testAutoBlurAnnotationSourceRestoresCombinedOrientation()
+{
+    QPixmap annotation(200, 100);
+    annotation.fill(Qt::transparent);
+    {
+        QPainter painter(&annotation);
+        painter.fillRect(QRect(0, 0, 100, 50), Qt::red);
+        painter.fillRect(QRect(100, 0, 100, 50), Qt::green);
+        painter.fillRect(QRect(0, 50, 100, 50), Qt::blue);
+        painter.fillRect(QRect(100, 50, 100, 50), Qt::yellow);
+    }
+
+    QTransform orientation;
+    orientation.rotate(90);
+    orientation.scale(-1.0, 1.0);
+    const QPixmap display = annotation.transformed(
+        orientation, Qt::SmoothTransformation);
+    const QPixmap restored = PinWindow::buildAutoBlurAnnotationSource(
+        display, 90, true, false);
+
+    QCOMPARE(restored.size(), annotation.size());
+    const QImage restoredImage = restored.toImage();
+    QCOMPARE(restoredImage.pixelColor(25, 25), QColor(Qt::red));
+    QCOMPARE(restoredImage.pixelColor(175, 25), QColor(Qt::green));
+    QCOMPARE(restoredImage.pixelColor(25, 75), QColor(Qt::blue));
+    QCOMPARE(restoredImage.pixelColor(175, 75), QColor(Qt::yellow));
+}
+
+void TestPinWindowStyleSync::testAutoBlurGenerationInvalidatesOnTransformChange()
+{
+    PinWindow window(createTestPixmap(240, 160), QPoint(0, 0));
+    const quint64 requestGeneration = window.m_autoBlurContentGeneration;
+    QVERIFY(window.isAutoBlurRequestCurrent(requestGeneration));
+
+    window.rotateRight();
+
+    QVERIFY(!window.isAutoBlurRequestCurrent(requestGeneration));
+}
+
+void TestPinWindowStyleSync::testLiveCaptureWaitsForAutoBlur()
+{
+    PinWindow window(createTestPixmap(240, 160), QPoint(0, 0));
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+
+    const QRect sourceRegion(screen->geometry().topLeft(), QSize(100, 80));
+    window.setSourceRegion(sourceRegion, screen);
+    window.m_autoBlurInProgress = true;
+    const quint64 requestGeneration = window.m_autoBlurContentGeneration;
+
+    window.startLiveCapture();
+
+    QVERIFY(!window.m_isLiveMode);
+    QVERIFY(!window.m_captureEngine);
+    QCOMPARE(window.m_autoBlurContentGeneration, requestGeneration);
+    window.m_autoBlurInProgress = false;
 }
 
 void TestPinWindowStyleSync::testPopupRestoreReturnsMosaicCursor()

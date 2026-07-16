@@ -1,4 +1,5 @@
 #include "capture/QtCaptureEngine.h"
+#include "platform/PlatformCapabilities.h"
 
 #include <QScreen>
 #include <QGuiApplication>
@@ -43,6 +44,11 @@ bool QtCaptureEngine::setRegion(const QRect &region, const CaptureScreenInfo &sc
 
 bool QtCaptureEngine::start()
 {
+    if (!SnapTray::currentPlatformCapabilities().supportsLiveCapture) {
+        emit error("Live screen capture is not supported on this platform");
+        return false;
+    }
+
     if (!m_targetScreen && !m_screenInfo.isValid()) {
         emit error("No target screen configured");
         return false;

@@ -5,6 +5,8 @@
 
 /**
  * Normalize a logical recording region so its physical pixel size is even.
+ * When nativePhysicalScreenBounds is available, parity is evaluated with the
+ * same mixed-DPI mapping used by the capture engine.
  *
  * Strategy by axis:
  * 1) Prefer expanding right/bottom by 1 logical pixel.
@@ -14,6 +16,7 @@
  */
 QRect normalizeToEvenPhysicalRegion(const QRect& logicalRegion,
                                     const QRect& logicalScreenBounds,
-                                    qreal dpr);
+                                    qreal dpr,
+                                    const QRect& nativePhysicalScreenBounds = QRect());
 
 #endif // RECORDINGREGIONNORMALIZER_H

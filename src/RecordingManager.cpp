@@ -68,17 +68,37 @@ bool isScreenAvailable(QScreen* screen)
     return screen && QGuiApplication::screens().contains(screen);
 }
 
+QRect normalizeRecordingRegion(const QRect& region, const CaptureScreenInfo& screenInfo)
+{
+    return normalizeToEvenPhysicalRegion(
+        region,
+        screenInfo.geometry,
+        screenInfo.devicePixelRatio,
+        screenInfo.physicalGeometry);
+}
+
 QRect normalizeRecordingRegionForScreen(const QRect& region, QScreen* screen)
 {
     if (!screen) {
         return region;
     }
 
-    return normalizeToEvenPhysicalRegion(
-        region,
-        screen->geometry(),
-        CoordinateHelper::getDevicePixelRatio(screen)
-    );
+    return normalizeRecordingRegion(region, CaptureScreenInfo::fromScreen(screen));
+}
+
+QRect physicalRecordingRegion(const QRect& logicalRegion,
+                              const CaptureScreenInfo& screenInfo)
+{
+    if (!screenInfo.physicalGeometry.isEmpty()) {
+        return CoordinateHelper::toPhysicalScreenRect(
+            logicalRegion,
+            screenInfo.geometry,
+            screenInfo.physicalGeometry,
+            screenInfo.devicePixelRatio);
+    }
+
+    return QRect(QPoint(0, 0), CoordinateHelper::toPhysical(
+        logicalRegion.size(), screenInfo.devicePixelRatio));
 }
 
 bool isEvenPhysicalSize(const QSize& physicalSize)
@@ -452,7 +472,16 @@ void RecordingManager::beginAsyncInitialization()
         return;
     }
 
-    m_recordingRegion = normalizeRecordingRegionForScreen(m_recordingRegion, targetScreen);
+    const CaptureScreenInfo screenInfo = CaptureScreenInfo::fromScreen(targetScreen);
+    if (!screenInfo.isValid()) {
+        qWarning() << "RecordingManager: Failed to snapshot target screen geometry";
+        stopFrameCapture();
+        setState(State::Idle);
+        emit recordingError(tr("Recording screen information is unavailable."));
+        return;
+    }
+
+    m_recordingRegion = normalizeRecordingRegion(m_recordingRegion, screenInfo);
     if (m_recordingRegion.isEmpty()) {
         qWarning() << "RecordingManager: Normalized region is empty";
         stopFrameCapture();
@@ -514,9 +543,19 @@ void RecordingManager::beginAsyncInitialization()
         }
     }
 
-    // Use physical pixel size for Retina/HiDPI displays
-    qreal scale = CoordinateHelper::getDevicePixelRatio(targetScreen);
-    QSize physicalSize = CoordinateHelper::toPhysical(m_recordingRegion.size(), scale);
+    // Derive the encoder size from the same native mapping captured for the
+    // engine. Rounded Qt logical sizes (for example 1707 at 150%) must not
+    // disagree with a 2560-pixel DXGI output.
+    const QRect mappedPhysicalRegion = physicalRecordingRegion(
+        m_recordingRegion, screenInfo);
+    const QSize physicalSize = mappedPhysicalRegion.size();
+    if (physicalSize.isEmpty()) {
+        qWarning() << "RecordingManager: Failed to map recording region to physical pixels";
+        stopFrameCapture();
+        setState(State::Idle);
+        emit recordingError(tr("Recording region could not be mapped to the target screen."));
+        return;
+    }
     if (!isEvenPhysicalSize(physicalSize)) {
         qWarning() << "RecordingManager: Region normalization produced odd physical size"
                    << physicalSize << "- encoder fallback may rescale frames.";
@@ -525,7 +564,7 @@ void RecordingManager::beginAsyncInitialization()
     // Create initialization config
     RecordingInitTask::Config config;
     config.region = m_recordingRegion;
-    config.screenInfo = CaptureScreenInfo::fromScreen(targetScreen);
+    config.screenInfo = screenInfo;
     config.frameRate = m_frameRate;
     config.audioEnabled = shouldConfigureAudio;
     config.audioSampleRate = audioSampleRate;

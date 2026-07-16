@@ -89,10 +89,33 @@ void TestVideoTrimmerSafety::avFoundationSeekUsesGuardedPlayer()
     QVERIFY2(source.open(QIODevice::ReadOnly), qPrintable(source.errorString()));
     const QByteArray content = source.readAll();
 
-    QVERIFY(content.contains("QPointer<AVFoundationPlayer> weakPlayer(this)"));
-    QVERIFY(content.count("weakPlayer.data()") >= 2);
-    QVERIFY(!content.contains("AVFoundationPlayer *player = this"));
-    QVERIFY(content.contains("m_helper.player = nullptr"));
+    const qsizetype seekBegin = content.indexOf("void AVFoundationPlayer::seek(qint64 positionMs)");
+    const qsizetype seekEnd = content.indexOf("void AVFoundationPlayer::setVolume", seekBegin);
+    QVERIFY(seekBegin >= 0);
+    QVERIFY(seekEnd > seekBegin);
+    const QByteArray seek = content.mid(seekBegin, seekEnd - seekBegin);
+
+    QVERIFY(seek.contains("QPointer<AVFoundationPlayer> weakPlayer(this)"));
+    QCOMPARE(seek.count("weakPlayer.data()"), qsizetype(1));
+    QVERIFY(!seek.contains("AVFoundationPlayer *player = this"));
+    QVERIFY(!seek.contains("[this"));
+
+    const qsizetype completion = seek.indexOf("completionHandler:^(BOOL finished)");
+    const qsizetype mainDispatch = seek.indexOf("dispatch_async(dispatch_get_main_queue()", completion);
+    QVERIFY(completion >= 0);
+    QVERIFY(mainDispatch > completion);
+    const QByteArray outerCompletion = seek.mid(completion, mainDispatch - completion);
+    QVERIFY(!outerCompletion.contains("weakPlayer.data()"));
+    QVERIFY(!outerCompletion.contains("player->state()"));
+
+    const QByteArray mainBlock = seek.mid(mainDispatch);
+    QVERIFY(mainBlock.contains("weakPlayer.data()"));
+    QVERIFY(mainBlock.contains("player->state()"));
+
+    const qsizetype clearHelper = content.indexOf("m_helper.player = nullptr");
+    const qsizetype cleanupHelper = content.indexOf("[m_helper cleanup]", clearHelper);
+    QVERIFY(clearHelper >= 0);
+    QVERIFY(cleanupHelper > clearHelper);
 }
 
 QTEST_MAIN(TestVideoTrimmerSafety)

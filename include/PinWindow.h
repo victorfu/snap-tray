@@ -214,6 +214,19 @@ private:
 
     // OCR methods
     void updateToolbarAutoBlurState();
+    void invalidateAutoBlurRequest();
+    bool isAutoBlurRequestCurrent(quint64 generation) const;
+    static QPixmap buildAutoBlurAnnotationSource(const QPixmap& displayPixmap,
+                                                 int rotationAngle,
+                                                 bool flipHorizontal,
+                                                 bool flipVertical);
+    static QRect mapAutoBlurDetectionRect(const QRect& physicalRect,
+                                          qreal devicePixelRatio,
+                                          const QSize& displayLogicalSize,
+                                          const QSize& annotationLogicalSize,
+                                          int rotationAngle,
+                                          bool flipHorizontal,
+                                          bool flipVertical);
     OCRManager* ensureOCRManager();
     void updateLoadingSpinnerState();
     void performOCR();
@@ -497,6 +510,7 @@ private:
     AutoBlurManager* m_autoBlurManager = nullptr;
     bool m_autoBlurInProgress = false;
     QPointer<QFutureWatcherBase> m_autoBlurWatcher;
+    quint64 m_autoBlurContentGeneration = 0;
 
     // Color picker dialog
     std::unique_ptr<snaptray::colorwidgets::ColorPickerDialogCompat> m_colorPickerDialog;

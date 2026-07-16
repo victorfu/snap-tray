@@ -230,6 +230,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_selectionManager = new SelectionStateManager(this);
     connect(m_selectionManager, &SelectionStateManager::selectionChanged,
         this, [this](const QRect& rect) {
+            ++m_autoBlurGeneration;
             if (m_inputState.multiRegionMode && m_multiRegionManager &&
                 m_inputState.replaceTargetIndex < 0) {
                 int activeIndex = m_multiRegionManager->activeIndex();
@@ -1348,6 +1349,7 @@ void RegionSelector::applyCanvasGeometry(const QSize& logicalSize)
 
 void RegionSelector::applyCaptureContext(const SelectorCaptureContext& context)
 {
+    ++m_autoBlurGeneration;
     const qreal normalizedDpr = context.devicePixelRatio > 0.0 ? context.devicePixelRatio : 1.0;
     m_backgroundPixmap = context.backgroundPixmap;
     m_devicePixelRatio = normalizedDpr;
@@ -4268,11 +4270,13 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
         return;
     }
 
-    if (isGlobalPosOverFloatingUi(event->globalPosition().toPoint())) {
+    const bool releasedOverFloatingUi =
+        isGlobalPosOverFloatingUi(event->globalPosition().toPoint());
+    m_inputHandler->handleMouseRelease(event);
+    if (releasedOverFloatingUi) {
+        syncFloatingUiCursor();
         return;
     }
-
-    m_inputHandler->handleMouseRelease(event);
     updateShortcutHintsHoverVisibilityDuringSelection(event->pos());
     // QML multi-region panel handles cursor internally
 }
@@ -4952,6 +4956,8 @@ void RegionSelector::performAutoBlur()
         return;
     }
 
+    const quint64 requestGeneration = ++m_autoBlurGeneration;
+    m_activeAutoBlurGeneration = requestGeneration;
     m_autoBlurInProgress = true;
     updateToolbarAutoBlurState();
     m_toolOptionsViewModel->setAutoBlurProcessing(true);
@@ -4962,25 +4968,40 @@ void RegionSelector::performAutoBlur()
     m_autoBlurManager->setOptions(AutoBlurSettingsManager::instance().load());
 
     const QRect sel = m_selectionManager->selectionRect();
-    const QRect physicalRect = CoordinateHelper::toPhysicalCoveringRect(sel, m_devicePixelRatio);
-    const QRect clampedPhysicalRect = physicalRect.intersected(m_backgroundPixmap.rect());
-    const QPixmap selectedPixmap = capturePlainSelectionPixmap();
+    const qreal requestDpr = m_devicePixelRatio;
+    const SharedPixmap requestSource = m_sharedSourcePixmap;
+    const QRect physicalRect = CoordinateHelper::toPhysicalCoveringRect(sel, requestDpr);
+    const QRect clampedPhysicalRect = requestSource
+        ? physicalRect.intersected(requestSource->rect())
+        : QRect();
+    QPixmap selectedPixmap = requestSource
+        ? requestSource->copy(clampedPhysicalRect)
+        : QPixmap();
+    if (!selectedPixmap.isNull()) {
+        selectedPixmap.setDevicePixelRatio(requestDpr);
+    }
     const QImage selectedImage = selectedPixmap.toImage();
     if (selectedImage.isNull() || clampedPhysicalRect.isEmpty()) {
-        m_autoBlurInProgress = false;
-        updateToolbarAutoBlurState();
-        m_toolOptionsViewModel->setAutoBlurProcessing(false);
-        if (m_loadingSpinner) {
-            m_loadingSpinner->stop();
-        }
-        m_selectionToast->showNearRect(SnapTray::QmlToast::Level::Error,
-            tr("Failed to process selected region"), m_selectionManager->selectionRect());
-        update();
+        onAutoBlurComplete(requestGeneration, false, 0, 0,
+                           tr("Failed to process selected region"));
         return;
     }
     const QSize selectedImageSize = selectedImage.size();
 
     const auto opts = m_autoBlurManager->options();
+    AutoBlurRequestSnapshot snapshot;
+    snapshot.generation = requestGeneration;
+    snapshot.selectionRect = sel;
+    snapshot.clampedPhysicalRect = clampedPhysicalRect;
+    snapshot.devicePixelRatio = requestDpr;
+    snapshot.sourcePixmap = requestSource;
+    snapshot.sourceScreen = m_currentScreen;
+    snapshot.annotationLayer = m_annotationLayer;
+    snapshot.blockSize = AutoBlurManager::intensityToBlockSize(opts.blurIntensity);
+    snapshot.blurType = opts.blurType;
+    const auto request =
+        std::make_shared<const AutoBlurRequestSnapshot>(std::move(snapshot));
+
     const bool wantsFaceDetection = opts.detectFaces;
     bool runFaceDetection = false;
     if (wantsFaceDetection) {
@@ -4993,22 +5014,13 @@ void RegionSelector::performAutoBlur()
     const bool runCredentialDetection = (ocrManager != nullptr);
 
     if (!runFaceDetection && !runCredentialDetection) {
-        m_autoBlurInProgress = false;
-        updateToolbarAutoBlurState();
-        m_toolOptionsViewModel->setAutoBlurProcessing(false);
-        if (m_loadingSpinner) {
-            m_loadingSpinner->stop();
-        }
-        m_selectionToast->showNearRect(SnapTray::QmlToast::Level::Error,
-            faceUnavailableError.isEmpty() ? tr("Detection unavailable") : faceUnavailableError,
-            m_selectionManager->selectionRect());
-        update();
+        onAutoBlurComplete(
+            requestGeneration, false, 0, 0,
+            faceUnavailableError.isEmpty() ? tr("Detection unavailable") : faceUnavailableError);
         return;
     }
 
     struct AggregatedResult {
-        QRect selectionRect;
-        QRect clampedPhysicalRect;
         QVector<QRect> faceRegions;
         QVector<QRect> credentialRegions;
         bool facePending = false;
@@ -5020,8 +5032,6 @@ void RegionSelector::performAutoBlur()
     };
 
     auto aggregated = std::make_shared<AggregatedResult>();
-    aggregated->selectionRect = sel;
-    aggregated->clampedPhysicalRect = clampedPhysicalRect;
     aggregated->facePending = runFaceDetection;
     aggregated->ocrPending = runCredentialDetection;
     aggregated->faceAttempted = wantsFaceDetection;
@@ -5029,8 +5039,13 @@ void RegionSelector::performAutoBlur()
     aggregated->faceError = faceUnavailableError;
 
     QPointer<RegionSelector> safeThis = this;
-    auto finishIfReady = [safeThis, aggregated]() {
+    auto finishIfReady = [safeThis, request, aggregated]() {
         if (!safeThis || aggregated->facePending || aggregated->ocrPending) {
+            return;
+        }
+
+        if (!safeThis->isAutoBlurRequestCurrent(*request)) {
+            safeThis->clearAutoBlurProgress(request->generation);
             return;
         }
 
@@ -5047,32 +5062,11 @@ void RegionSelector::performAutoBlur()
                 warningMessage = aggregated->ocrError;
             }
 
-            const auto options = safeThis->m_autoBlurManager->options();
-            const int blockSize = AutoBlurManager::intensityToBlockSize(options.blurIntensity);
-            const auto blurType = options.blurType;
-
-            auto addMosaicRegions = [&](const QVector<QRect>& regions) {
-                for (const QRect& region : regions) {
-                    const QRect absolutePhysicalRect =
-                        region.translated(aggregated->clampedPhysicalRect.topLeft());
-                    const QRect logicalRect =
-                        CoordinateHelper::toLogical(absolutePhysicalRect, safeThis->m_devicePixelRatio)
-                            .intersected(aggregated->selectionRect);
-                    if (logicalRect.isEmpty()) {
-                        continue;
-                    }
-
-                    auto mosaic = std::make_unique<MosaicRectAnnotation>(
-                        logicalRect, safeThis->m_sharedSourcePixmap, blockSize, blurType
-                    );
-                    safeThis->m_annotationLayer->addItem(std::move(mosaic));
-                }
-            };
-
-            addMosaicRegions(aggregated->faceRegions);
-            addMosaicRegions(aggregated->credentialRegions);
+            safeThis->addAutoBlurRegions(*request, aggregated->faceRegions);
+            safeThis->addAutoBlurRegions(*request, aggregated->credentialRegions);
             if (warningMessage.isEmpty()) {
-                safeThis->onAutoBlurComplete(true, faceCount, credentialCount, QString());
+                safeThis->onAutoBlurComplete(
+                    request->generation, true, faceCount, credentialCount, QString());
                 return;
             }
 
@@ -5091,7 +5085,8 @@ void RegionSelector::performAutoBlur()
                     .arg(credentialCount)
                     .arg(warningMessage);
             }
-            safeThis->onAutoBlurComplete(false, faceCount, credentialCount, partialMessage);
+            safeThis->onAutoBlurComplete(
+                request->generation, false, faceCount, credentialCount, partialMessage);
             return;
         }
 
@@ -5105,9 +5100,9 @@ void RegionSelector::performAutoBlur()
         }
 
         if (errorMessage.isEmpty()) {
-            safeThis->onAutoBlurComplete(true, 0, 0, QString());
+            safeThis->onAutoBlurComplete(request->generation, true, 0, 0, QString());
         } else {
-            safeThis->onAutoBlurComplete(false, 0, 0, errorMessage);
+            safeThis->onAutoBlurComplete(request->generation, false, 0, 0, errorMessage);
         }
     };
 
@@ -5166,14 +5161,67 @@ void RegionSelector::performAutoBlur()
     }
 }
 
-void RegionSelector::onAutoBlurComplete(bool success, int faceCount, int credentialCount, const QString& error)
+bool RegionSelector::isAutoBlurRequestCurrent(const AutoBlurRequestSnapshot& request) const
 {
+    return request.generation == m_autoBlurGeneration &&
+           m_selectionManager &&
+           m_selectionManager->selectionRect() == request.selectionRect &&
+           qFuzzyCompare(m_devicePixelRatio, request.devicePixelRatio) &&
+           m_sharedSourcePixmap == request.sourcePixmap &&
+           m_currentScreen.data() == request.sourceScreen.data() &&
+           m_annotationLayer == request.annotationLayer.data() &&
+           request.sourcePixmap &&
+           request.sourceScreen &&
+           request.annotationLayer;
+}
+
+void RegionSelector::addAutoBlurRegions(const AutoBlurRequestSnapshot& request,
+                                        const QVector<QRect>& regions)
+{
+    if (!request.sourcePixmap || !request.annotationLayer) {
+        return;
+    }
+
+    for (const QRect& region : regions) {
+        const QRect absolutePhysicalRect =
+            region.translated(request.clampedPhysicalRect.topLeft());
+        const QRect logicalRect =
+            CoordinateHelper::toLogical(absolutePhysicalRect, request.devicePixelRatio)
+                .intersected(request.selectionRect);
+        if (logicalRect.isEmpty()) {
+            continue;
+        }
+
+        auto mosaic = std::make_unique<MosaicRectAnnotation>(
+            logicalRect, request.sourcePixmap, request.blockSize, request.blurType);
+        request.annotationLayer->addItem(std::move(mosaic));
+    }
+}
+
+void RegionSelector::clearAutoBlurProgress(quint64 generation)
+{
+    if (m_activeAutoBlurGeneration != generation) {
+        return;
+    }
+
+    m_activeAutoBlurGeneration = 0;
     m_autoBlurInProgress = false;
     updateToolbarAutoBlurState();
     m_toolOptionsViewModel->setAutoBlurProcessing(false);
     if (m_loadingSpinner) {
         m_loadingSpinner->stop();
     }
+    update();
+}
+
+void RegionSelector::onAutoBlurComplete(quint64 generation, bool success, int faceCount,
+                                        int credentialCount, const QString& error)
+{
+    if (m_activeAutoBlurGeneration != generation) {
+        return;
+    }
+
+    clearAutoBlurProgress(generation);
 
     QString msg;
     auto level = SnapTray::QmlToast::Level::Info;

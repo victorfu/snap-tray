@@ -1,5 +1,61 @@
 #include "region/SelectionStateManager.h"
 
+#include <QtMath>
+
+namespace {
+
+constexpr int kMinimumResizeSize = 10;
+
+int centeredOrigin(int doubledCenter, int length)
+{
+    return qRound((doubledCenter - (length - 1)) / 2.0);
+}
+
+int maximumCenteredLength(int doubledCenter, int boundsStart, int boundsEnd)
+{
+    const int distanceToStart = doubledCenter - 2 * boundsStart;
+    const int distanceToEnd = 2 * boundsEnd - doubledCenter;
+    return qMax(0, qMin(distanceToStart, distanceToEnd) + 1);
+}
+
+QSize ratioSizeFromHeight(int requestedHeight, qreal ratio, int maxWidth, int maxHeight)
+{
+    const int minHeight = qMax(kMinimumResizeSize,
+                               qCeil(kMinimumResizeSize / ratio));
+    const int maxHeightForWidth = qFloor(maxWidth / ratio);
+    const int allowedHeight = qMin(maxHeight, maxHeightForWidth);
+    if (allowedHeight < minHeight) {
+        return {};
+    }
+
+    const int height = qBound(minHeight, requestedHeight, allowedHeight);
+    const int width = qRound(height * ratio);
+    if (width < kMinimumResizeSize || width > maxWidth) {
+        return {};
+    }
+    return QSize(width, height);
+}
+
+QSize ratioSizeFromWidth(int requestedWidth, qreal ratio, int maxWidth, int maxHeight)
+{
+    const int minWidth = qMax(kMinimumResizeSize,
+                              qCeil(kMinimumResizeSize * ratio));
+    const int maxWidthForHeight = qFloor(maxHeight * ratio);
+    const int allowedWidth = qMin(maxWidth, maxWidthForHeight);
+    if (allowedWidth < minWidth) {
+        return {};
+    }
+
+    const int width = qBound(minWidth, requestedWidth, allowedWidth);
+    const int height = qRound(width / ratio);
+    if (height < kMinimumResizeSize || height > maxHeight) {
+        return {};
+    }
+    return QSize(width, height);
+}
+
+} // namespace
+
 SelectionStateManager::SelectionStateManager(QObject* parent)
     : QObject(parent)
 {
@@ -190,52 +246,87 @@ void SelectionStateManager::updateResize(const QPoint& pos)
         QPoint newCorner(anchor.x() + adjDx, anchor.y() + adjDy);
         newRect = QRect(anchor, newCorner);
     } else if (m_aspectRatio > 0.0 && !isCornerHandle(m_activeHandle)) {
-        // Edge resize with aspect ratio locked: adjust both dimensions
+        // Edge resize with aspect ratio locked. The opposite edge remains fixed,
+        // while the perpendicular axis stays centered on the original selection.
+        // Limit the requested size before constructing the rect so clamping cannot
+        // break either the ratio or those anchor semantics.
         QRect rect = m_originalRect.normalized();
-        int newWidth = rect.width();
-        int newHeight = rect.height();
-        int centerX = rect.center().x();
-        int centerY = rect.center().y();
+        const int doubledCenterX = rect.left() + rect.right();
+        const int doubledCenterY = rect.top() + rect.bottom();
 
         switch (m_activeHandle) {
         case ResizeHandle::Top:
         case ResizeHandle::Bottom: {
-            // Vertical edge: height changes, width adjusts to maintain ratio
-            if (m_activeHandle == ResizeHandle::Top) {
-                newHeight = rect.bottom() - (m_originalRect.top() + delta.y()) + 1;
+            const bool movingTop = m_activeHandle == ResizeHandle::Top;
+            const int movedEdge = (movingTop ? rect.top() : rect.bottom()) + delta.y();
+            const int requestedHeight = movingTop
+                ? rect.bottom() - movedEdge + 1
+                : movedEdge - rect.top() + 1;
+
+            int maxHeight;
+            int maxWidth;
+            if (m_bounds.isEmpty()) {
+                maxHeight = qMax(requestedHeight,
+                                 qMax(kMinimumResizeSize,
+                                      qCeil(kMinimumResizeSize / m_aspectRatio)));
+                maxWidth = qMax(kMinimumResizeSize,
+                                qRound(maxHeight * m_aspectRatio));
             } else {
-                newHeight = (m_originalRect.bottom() + delta.y()) - rect.top() + 1;
+                maxHeight = movingTop
+                    ? rect.bottom() - m_bounds.top() + 1
+                    : m_bounds.bottom() - rect.top() + 1;
+                maxWidth = maximumCenteredLength(
+                    doubledCenterX, m_bounds.left(), m_bounds.right());
             }
-            if (newHeight < 10) newHeight = 10;
-            newWidth = static_cast<int>(newHeight * m_aspectRatio + 0.5);
-            if (newWidth < 10) {
-                newWidth = 10;
-                newHeight = static_cast<int>(newWidth / m_aspectRatio + 0.5);
+
+            const QSize boundedSize = ratioSizeFromHeight(
+                requestedHeight, m_aspectRatio, maxWidth, maxHeight);
+            if (boundedSize.isEmpty()) {
+                break;
             }
-            // Keep horizontally centered
-            newRect = QRect(centerX - newWidth / 2,
-                           m_activeHandle == ResizeHandle::Top ? rect.bottom() - newHeight + 1 : rect.top(),
-                           newWidth, newHeight);
+
+            const int left = centeredOrigin(doubledCenterX, boundedSize.width());
+            const int top = movingTop
+                ? rect.bottom() - boundedSize.height() + 1
+                : rect.top();
+            newRect = QRect(QPoint(left, top), boundedSize);
             break;
         }
         case ResizeHandle::Left:
         case ResizeHandle::Right: {
-            // Horizontal edge: width changes, height adjusts to maintain ratio
-            if (m_activeHandle == ResizeHandle::Left) {
-                newWidth = rect.right() - (m_originalRect.left() + delta.x()) + 1;
+            const bool movingLeft = m_activeHandle == ResizeHandle::Left;
+            const int movedEdge = (movingLeft ? rect.left() : rect.right()) + delta.x();
+            const int requestedWidth = movingLeft
+                ? rect.right() - movedEdge + 1
+                : movedEdge - rect.left() + 1;
+
+            int maxWidth;
+            int maxHeight;
+            if (m_bounds.isEmpty()) {
+                maxWidth = qMax(requestedWidth,
+                                qMax(kMinimumResizeSize,
+                                     qCeil(kMinimumResizeSize * m_aspectRatio)));
+                maxHeight = qMax(kMinimumResizeSize,
+                                 qRound(maxWidth / m_aspectRatio));
             } else {
-                newWidth = (m_originalRect.right() + delta.x()) - rect.left() + 1;
+                maxWidth = movingLeft
+                    ? rect.right() - m_bounds.left() + 1
+                    : m_bounds.right() - rect.left() + 1;
+                maxHeight = maximumCenteredLength(
+                    doubledCenterY, m_bounds.top(), m_bounds.bottom());
             }
-            if (newWidth < 10) newWidth = 10;
-            newHeight = static_cast<int>(newWidth / m_aspectRatio + 0.5);
-            if (newHeight < 10) {
-                newHeight = 10;
-                newWidth = static_cast<int>(newHeight * m_aspectRatio + 0.5);
+
+            const QSize boundedSize = ratioSizeFromWidth(
+                requestedWidth, m_aspectRatio, maxWidth, maxHeight);
+            if (boundedSize.isEmpty()) {
+                break;
             }
-            // Keep vertically centered
-            newRect = QRect(m_activeHandle == ResizeHandle::Left ? rect.right() - newWidth + 1 : rect.left(),
-                           centerY - newHeight / 2,
-                           newWidth, newHeight);
+
+            const int left = movingLeft
+                ? rect.right() - boundedSize.width() + 1
+                : rect.left();
+            const int top = centeredOrigin(doubledCenterY, boundedSize.height());
+            newRect = QRect(QPoint(left, top), boundedSize);
             break;
         }
         default:

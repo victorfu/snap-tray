@@ -7,6 +7,7 @@
 #import <AudioToolbox/AudioToolbox.h>
 
 #include <QDebug>
+#include <QPointer>
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
@@ -29,6 +30,7 @@ static char kCaptureQueueSpecificKey;
 // Objective-C delegate for audio capture
 @interface AudioCaptureDelegate : NSObject <AVCaptureAudioDataOutputSampleBufferDelegate>
 @property (atomic, assign) CoreAudioCaptureEngine *engine;
+@property (atomic, assign) BOOL invalidated;
 @property (nonatomic, assign) qint64 startTime;
 @property (nonatomic, assign) qint64 pausedDuration;
 @property (nonatomic, assign) bool paused;
@@ -170,7 +172,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
        fromConnection:(AVCaptureConnection *)connection
 {
     CoreAudioCaptureEngine *engine = self.engine;
-    if (self.paused || !engine) return;
+    if (self.invalidated || self.paused || !engine) return;
 
     // Convert to 16-bit PCM
     QByteArray audioData = convertMicAudioBufferToPCM16(sampleBuffer);
@@ -180,8 +182,11 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
         std::chrono::steady_clock::now().time_since_epoch()).count();
     qint64 timestamp = now - self.startTime - self.pausedDuration;
 
-    QMetaObject::invokeMethod(engine, [engine, audioData, timestamp]() {
-        emit engine->audioDataReady(audioData, timestamp);
+    const QPointer<CoreAudioCaptureEngine> engineGuard(engine);
+    QMetaObject::invokeMethod(engine, [engineGuard, audioData, timestamp]() {
+        if (engineGuard) {
+            emit engineGuard->audioDataReady(audioData, timestamp);
+        }
     }, Qt::QueuedConnection);
 }
 
@@ -192,6 +197,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 API_AVAILABLE(macos(13.0))
 @interface SCKAudioCaptureDelegate : NSObject <SCStreamDelegate, SCStreamOutput>
 @property (atomic, assign) CoreAudioCaptureEngine *engine;
+@property (atomic, assign) BOOL invalidated;
 @property (nonatomic, assign) qint64 startTime;
 @property (nonatomic, assign) qint64 pausedDuration;
 @property (nonatomic, assign) bool paused;
@@ -210,7 +216,7 @@ API_AVAILABLE(macos(13.0))
 {
     if (type != SCStreamOutputTypeAudio) return;
     CoreAudioCaptureEngine *engine = self.engine;
-    if (self.paused || !engine) return;
+    if (self.invalidated || self.paused || !engine) return;
 
     // Convert to 16-bit PCM
     QByteArray audioData = convertSckAudioBufferToPCM16(sampleBuffer);
@@ -220,19 +226,22 @@ API_AVAILABLE(macos(13.0))
         std::chrono::steady_clock::now().time_since_epoch()).count();
     qint64 timestamp = now - self.startTime - self.pausedDuration;
 
-    QMetaObject::invokeMethod(engine, [engine, audioData, timestamp]() {
-        emit engine->audioDataReady(audioData, timestamp);
+    const QPointer<CoreAudioCaptureEngine> engineGuard(engine);
+    QMetaObject::invokeMethod(engine, [engineGuard, audioData, timestamp]() {
+        if (engineGuard) {
+            emit engineGuard->audioDataReady(audioData, timestamp);
+        }
     }, Qt::QueuedConnection);
 }
 
 - (void)stream:(SCStream *)stream didStopWithError:(NSError *)error
 {
-    CoreAudioCaptureEngine *engine = self.engine;
-    if (error && engine) {
-        QString errorMsg = QString::fromNSString(error.localizedDescription);
-        QMetaObject::invokeMethod(engine, [engine, errorMsg]() {
-            emit engine->error(errorMsg);
-        }, Qt::QueuedConnection);
+    // SCStream controls the callback queue for stream-delegate events. Keep
+    // this callback independent of the C++ engine so a late stop notification
+    // can never race CoreAudioCaptureEngine destruction.
+    if (error && !self.invalidated) {
+        qWarning() << "CoreAudioCaptureEngine: System audio stream stopped:"
+                   << QString::fromNSString(error.localizedDescription);
     }
 }
 
@@ -270,15 +279,23 @@ public:
 #if HAS_SCREENCAPTUREKIT
     void cleanupSystemAudio() {
         if (@available(macOS 13.0, *)) {
-            if (scDelegate) {
-                scDelegate.engine = nil;
+            // Keep the Objective-C graph alive until ScreenCaptureKit confirms
+            // its asynchronous stop, even after the C++ owner releases d.
+            SCStream *localStream = scStream;
+            SCKAudioCaptureDelegate *localDelegate = scDelegate;
+            const bool outputAdded = scOutputAdded;
+            const bool captureStarted = scCaptureStarted;
+
+            if (localDelegate) {
+                localDelegate.invalidated = YES;
+                localDelegate.engine = nil;
             }
 
-            if (scStream && scDelegate && scOutputAdded) {
+            if (localStream && localDelegate && outputAdded) {
                 NSError *removeError = nil;
-                if (![scStream removeStreamOutput:scDelegate
-                                             type:SCStreamOutputTypeAudio
-                                            error:&removeError]) {
+                if (![localStream removeStreamOutput:localDelegate
+                                                type:SCStreamOutputTypeAudio
+                                               error:&removeError]) {
                     qWarning() << "CoreAudioCaptureEngine: Failed to remove system audio output:"
                                << (removeError
                                        ? QString::fromNSString(removeError.localizedDescription)
@@ -287,20 +304,39 @@ public:
             }
             scOutputAdded = false;
 
-            if (scStream && scCaptureStarted) {
-                [scStream stopCaptureWithCompletionHandler:nil];
+            if (localStream && captureStarted) {
+                [localStream stopCaptureWithCompletionHandler:^(NSError *error) {
+                    // Capturing both objects retains the asynchronous callback
+                    // graph. This block intentionally never captures d or the
+                    // CoreAudioCaptureEngine instance.
+                    (void)localStream;
+                    (void)localDelegate;
+                    if (error) {
+                        qWarning() << "CoreAudioCaptureEngine: Failed to stop system audio:"
+                                   << QString::fromNSString(error.localizedDescription);
+                    }
+                }];
             }
             scCaptureStarted = false;
 
+            // A callback may already have copied the old raw engine target.
+            // Drain it before the C++ owner can continue destruction. Any
+            // callback scheduled later observes invalidated/engine == nil.
             drainCaptureQueue();
             scStream = nil;
             scDelegate = nil;
+        } else {
+            // HAS_SCREENCAPTUREKIT reflects the build SDK. On macOS 12 the
+            // microphone still uses this queue even though SCK audio is not
+            // available at runtime.
+            drainCaptureQueue();
         }
     }
 #endif
 
     void cleanup() {
         if (audioDelegate) {
+            audioDelegate.invalidated = YES;
             audioDelegate.engine = nil;
         }
         if (audioOutput) {
@@ -538,6 +574,7 @@ bool CoreAudioCaptureEngine::start()
         d->audioOutput = [[AVCaptureAudioDataOutput alloc] init];
         d->audioDelegate = [[AudioCaptureDelegate alloc] init];
         d->audioDelegate.engine = this;
+        d->audioDelegate.invalidated = NO;
         d->audioDelegate.startTime = m_startTime;
         d->audioDelegate.pausedDuration = 0;
         d->audioDelegate.paused = false;
@@ -629,6 +666,7 @@ bool CoreAudioCaptureEngine::start()
                                     qDebug() << "CoreAudioCaptureEngine: Creating delegate...";
                                     d->scDelegate = [[SCKAudioCaptureDelegate alloc] init];
                                     d->scDelegate.engine = this;
+                                    d->scDelegate.invalidated = NO;
                                     d->scDelegate.startTime = m_startTime;
                                     d->scDelegate.pausedDuration = 0;
                                     d->scDelegate.paused = false;

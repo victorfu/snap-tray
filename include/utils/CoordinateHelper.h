@@ -30,6 +30,14 @@ public:
     static QPoint toPhysical(const QPoint& logical, qreal dpr);
     static QRect toPhysical(const QRect& logical, qreal dpr);
     static QSize toPhysical(const QSize& logical, qreal dpr);
+    // Convert a global logical rect on one screen into native physical desktop
+    // coordinates. Screen origins must be translated, not scaled: on mixed-DPI
+    // desktops Qt's logical origin and the native output origin are different
+    // coordinate spaces.
+    static QRect toPhysicalScreenRect(const QRect& logicalRect,
+                                      const QRect& logicalScreenGeometry,
+                                      const QRect& physicalScreenGeometry,
+                                      qreal dpr);
     // Convert logical rect to a physical rect that fully covers it.
     // Uses floor() for left/top and ceil() for right/bottom boundaries.
     static QRect toPhysicalCoveringRect(const QRect& logical, qreal dpr);

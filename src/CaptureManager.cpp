@@ -243,7 +243,10 @@ void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &g
         }
 
         PinWindow *window = m_pinManager->createPinWindow(screenshot, globalPosition, false);
-        if (window && !globalRect.isEmpty() && targetScreen) {
+        if (window
+            && PlatformFeatures::instance().capabilities().supportsLiveCapture
+            && !globalRect.isEmpty()
+            && targetScreen) {
             window->setSourceRegion(globalRect, targetScreen);
         }
 

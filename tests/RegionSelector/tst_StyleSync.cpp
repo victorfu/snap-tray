@@ -70,6 +70,8 @@ private slots:
     void testSelectionCompletionShowsToolbarAfterWindowsHandoff();
     void testSelectionCompletionPositionsToolbarAfterWindowsHandoff();
     void testSelectionDragUsesClosedHandCursor();
+    void testReleaseOverFloatingUiFinishesSelectionDrag();
+    void testAutoBlurRequestGuardRejectsStaleContext();
     void testOverlayRequestRestoreReturnsArrowToolCursor();
     void testFloatingToolbarWindowOwnsArrowCursor();
     void testToolbarLeaveRestoresArrowToolCrossCursor();
@@ -340,6 +342,107 @@ void TestRegionSelectorStyleSync::testSelectionDragUsesClosedHandCursor()
     QMouseEvent releaseEvent(QEvent::MouseButtonRelease, kSelectionBodyPos, kSelectionBodyPos,
                              Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
     selector.m_inputHandler->handleMouseRelease(&releaseEvent);
+}
+
+void TestRegionSelectorStyleSync::testReleaseOverFloatingUiFinishesSelectionDrag()
+{
+    RegionSelector selector;
+    const QRect toolbarGeometry = showToolbarForTool(selector, ToolId::Selection);
+    if (!toolbarGeometry.isValid() || toolbarGeometry.isEmpty()) {
+        QSKIP("Floating toolbar is unavailable on this platform.");
+    }
+
+    QMouseEvent pressEvent(QEvent::MouseButtonPress,
+                           kSelectionBodyPos, kSelectionBodyPos,
+                           Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+    selector.m_inputHandler->handleMousePress(&pressEvent);
+    QVERIFY(selector.m_selectionManager->isMoving());
+
+    // Selection dragging normally suppresses its toolbar. Re-show it to exercise
+    // the release path where a captured mouse-up lands on a floating surface.
+    selector.m_qmlToolbar->show();
+    QCoreApplication::processEvents();
+    const QPoint releaseGlobalPos = selector.m_qmlToolbar->geometry().center();
+    QVERIFY(selector.isGlobalPosOverFloatingUi(releaseGlobalPos));
+    const QPoint releaseLocalPos = selector.mapFromGlobal(releaseGlobalPos);
+    QMouseEvent releaseEvent(QEvent::MouseButtonRelease,
+                             QPointF(releaseLocalPos),
+                             QPointF(releaseLocalPos),
+                             QPointF(releaseGlobalPos),
+                             Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+    selector.mouseReleaseEvent(&releaseEvent);
+
+    QVERIFY(selector.m_selectionManager->isComplete());
+    QCOMPARE(CursorManager::instance().dragStateForWidget(&selector), DragState::None);
+}
+
+void TestRegionSelectorStyleSync::testAutoBlurRequestGuardRejectsStaleContext()
+{
+    QScreen* screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        QSKIP("No screen available for auto-blur request guard test.");
+    }
+
+    RegionSelector selector;
+    QPixmap capture(240, 160);
+    capture.fill(Qt::darkCyan);
+    selector.initializeForScreen(screen, capture);
+    selector.m_selectionManager->setSelectionRect(QRect(20, 20, 100, 80));
+
+    RegionSelector::AutoBlurRequestSnapshot request;
+    request.generation = selector.m_autoBlurGeneration;
+    request.selectionRect = selector.m_selectionManager->selectionRect();
+    request.clampedPhysicalRect = QRect(20, 20, 100, 80);
+    request.devicePixelRatio = selector.m_devicePixelRatio;
+    request.sourcePixmap = selector.m_sharedSourcePixmap;
+    request.sourceScreen = selector.m_currentScreen;
+    request.annotationLayer = selector.m_annotationLayer;
+    request.blockSize = 14;
+    request.blurType = MosaicBlurType::Pixelate;
+    QVERIFY(selector.isAutoBlurRequestCurrent(request));
+
+    auto stale = request;
+    ++stale.generation;
+    QVERIFY(!selector.isAutoBlurRequestCurrent(stale));
+
+    stale = request;
+    stale.selectionRect.translate(1, 0);
+    QVERIFY(!selector.isAutoBlurRequestCurrent(stale));
+
+    stale = request;
+    stale.devicePixelRatio += 0.25;
+    QVERIFY(!selector.isAutoBlurRequestCurrent(stale));
+
+    stale = request;
+    stale.sourcePixmap = std::make_shared<const QPixmap>(capture);
+    QVERIFY(!selector.isAutoBlurRequestCurrent(stale));
+
+    stale = request;
+    stale.sourceScreen = nullptr;
+    QVERIFY(!selector.isAutoBlurRequestCurrent(stale));
+
+    QPointer<QScreen> savedCurrentScreen = selector.m_currentScreen;
+    selector.m_currentScreen = nullptr;
+    stale = request;
+    stale.sourceScreen = nullptr;
+    QVERIFY(!selector.isAutoBlurRequestCurrent(stale));
+    selector.m_currentScreen = savedCurrentScreen;
+
+    stale = request;
+    stale.annotationLayer = nullptr;
+    QVERIFY(!selector.isAutoBlurRequestCurrent(stale));
+
+    const quint64 selectionGeneration = selector.m_autoBlurGeneration;
+    selector.m_selectionManager->setSelectionRect(QRect(21, 20, 100, 80));
+    QCOMPARE(selector.m_autoBlurGeneration, selectionGeneration + 1);
+    QVERIFY(!selector.isAutoBlurRequestCurrent(request));
+
+    const quint64 captureGeneration = selector.m_autoBlurGeneration;
+    QPixmap replacementCapture(240, 160);
+    replacementCapture.fill(Qt::darkMagenta);
+    selector.applyCaptureContext(
+        {replacementCapture, selector.m_devicePixelRatio, selector.m_currentScreen});
+    QCOMPARE(selector.m_autoBlurGeneration, captureGeneration + 1);
 }
 
 void TestRegionSelectorStyleSync::testOverlayRequestRestoreReturnsArrowToolCursor()

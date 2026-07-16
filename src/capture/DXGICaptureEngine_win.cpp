@@ -18,6 +18,40 @@
 
 using Microsoft::WRL::ComPtr;
 
+namespace {
+
+struct MonitorLookup
+{
+    QString deviceName;
+    QRect physicalGeometry;
+    bool found = false;
+};
+
+BOOL CALLBACK findMonitorByDeviceName(HMONITOR monitor, HDC, LPRECT, LPARAM context)
+{
+    auto *lookup = reinterpret_cast<MonitorLookup *>(context);
+    MONITORINFOEXW info{};
+    info.cbSize = sizeof(info);
+    if (!GetMonitorInfoW(monitor, reinterpret_cast<LPMONITORINFO>(&info))) {
+        return TRUE;
+    }
+
+    const QString candidateName = QString::fromWCharArray(info.szDevice);
+    if (candidateName.compare(lookup->deviceName, Qt::CaseInsensitive) != 0) {
+        return TRUE;
+    }
+
+    lookup->physicalGeometry = QRect(
+        info.rcMonitor.left,
+        info.rcMonitor.top,
+        info.rcMonitor.right - info.rcMonitor.left,
+        info.rcMonitor.bottom - info.rcMonitor.top);
+    lookup->found = true;
+    return FALSE;
+}
+
+} // namespace
+
 class DXGICaptureEngine::Private : public QObject
 {
     Q_OBJECT
@@ -33,6 +67,7 @@ public:
     }
 
     bool initializeDXGI();
+    bool resolvePhysicalOutputGeometry();
     void cleanup();
     void cleanupThread(QThread *ownerThread);
     QImage captureWithBitBlt();
@@ -56,6 +91,7 @@ public:
 
     DXGI_OUTPUT_DESC outputDesc;
     D3D11_TEXTURE2D_DESC textureDesc;
+    QRect physicalOutputGeometry;
 
     QRect captureRegion;
     CaptureScreenInfo screenInfo;
@@ -82,6 +118,41 @@ public:
 public slots:
     void doCapture();
 };
+
+bool DXGICaptureEngine::Private::resolvePhysicalOutputGeometry()
+{
+    const QString deviceName = screenInfo.nativeName.trimmed().isEmpty()
+        ? screenInfo.name.trimmed()
+        : screenInfo.nativeName.trimmed();
+    if (deviceName.isEmpty()) {
+        qWarning() << "DXGICaptureEngine: Target screen has no Windows display device name";
+        return false;
+    }
+
+    MonitorLookup lookup;
+    lookup.deviceName = deviceName;
+    EnumDisplayMonitors(
+        nullptr,
+        nullptr,
+        findMonitorByDeviceName,
+        reinterpret_cast<LPARAM>(&lookup));
+
+    if (!lookup.found || lookup.physicalGeometry.isEmpty()) {
+        qWarning() << "DXGICaptureEngine: Could not resolve physical monitor for"
+                   << deviceName;
+        return false;
+    }
+
+    if (!screenInfo.physicalGeometry.isEmpty() &&
+        screenInfo.physicalGeometry != lookup.physicalGeometry) {
+        qWarning() << "DXGICaptureEngine: Target monitor geometry changed during initialization"
+                   << screenInfo.physicalGeometry << lookup.physicalGeometry;
+        return false;
+    }
+
+    physicalOutputGeometry = lookup.physicalGeometry;
+    return true;
+}
 
 bool DXGICaptureEngine::Private::initializeDXGI()
 {
@@ -138,36 +209,42 @@ bool DXGICaptureEngine::Private::initializeDXGI()
     // Find the output (monitor) that matches our target screen
     ComPtr<IDXGIOutput> output;
     UINT outputIndex = 0;
-
-    // Try to find matching output by position
-    // Note: QScreen::geometry() returns logical coordinates, but DXGI uses physical coordinates
-    // We need to convert using devicePixelRatio for HiDPI displays
-    const QRect screenGeom = screenInfo.geometry;
-    const qreal dpr = screenInfo.devicePixelRatio;
-    QRect physicalGeom = CoordinateHelper::toPhysical(screenGeom, dpr);
     bool foundMatch = false;
+    const QString targetDeviceName = screenInfo.nativeName.trimmed().isEmpty()
+        ? screenInfo.name.trimmed()
+        : screenInfo.nativeName.trimmed();
 
-    // Tolerance for coordinate matching to handle DPI rounding differences
-    auto matchesWithTolerance = [](const QRect& a, const QRect& b, int tolerance = 5) {
-        return qAbs(a.x() - b.x()) <= tolerance &&
-               qAbs(a.y() - b.y()) <= tolerance &&
-               qAbs(a.width() - b.width()) <= tolerance &&
-               qAbs(a.height() - b.height()) <= tolerance;
-    };
+    while (true) {
+        hr = adapter->EnumOutputs(outputIndex, &output);
+        if (hr == DXGI_ERROR_NOT_FOUND) {
+            break;
+        }
+        if (FAILED(hr)) {
+            qWarning() << "DXGICaptureEngine: Failed to enumerate DXGI output:"
+                       << hr;
+            break;
+        }
 
-    while (adapter->EnumOutputs(outputIndex, &output) != DXGI_ERROR_NOT_FOUND) {
-        DXGI_OUTPUT_DESC desc;
-        output->GetDesc(&desc);
+        DXGI_OUTPUT_DESC desc{};
+        hr = output->GetDesc(&desc);
+        if (FAILED(hr)) {
+            output.Reset();
+            outputIndex++;
+            continue;
+        }
 
-        QRect outputRect(
-            desc.DesktopCoordinates.left,
-            desc.DesktopCoordinates.top,
-            desc.DesktopCoordinates.right - desc.DesktopCoordinates.left,
-            desc.DesktopCoordinates.bottom - desc.DesktopCoordinates.top
-        );
-
-        // Compare with tolerance for HiDPI compatibility (non-integer DPI scales cause rounding differences)
-        if (matchesWithTolerance(outputRect, physicalGeom)) {
+        const QString outputName = QString::fromWCharArray(desc.DeviceName);
+        if (outputName.compare(targetDeviceName, Qt::CaseInsensitive) == 0) {
+            const QRect outputRect(
+                desc.DesktopCoordinates.left,
+                desc.DesktopCoordinates.top,
+                desc.DesktopCoordinates.right - desc.DesktopCoordinates.left,
+                desc.DesktopCoordinates.bottom - desc.DesktopCoordinates.top);
+            if (outputRect != physicalOutputGeometry) {
+                qWarning() << "DXGICaptureEngine: DXGI output geometry does not match screen snapshot"
+                           << outputRect << physicalOutputGeometry;
+                return false;
+            }
             outputDesc = desc;
             foundMatch = true;
             break;
@@ -177,14 +254,12 @@ bool DXGICaptureEngine::Private::initializeDXGI()
         outputIndex++;
     }
 
-    // If no exact match, use first output
     if (!foundMatch) {
-        hr = adapter->EnumOutputs(0, &output);
-        if (FAILED(hr)) {
-            qWarning() << "DXGICaptureEngine: No outputs found:" << hr;
-            return false;
-        }
-        output->GetDesc(&outputDesc);
+        // Selecting output 0 here can silently capture a different monitor.
+        // Let the caller use the correctly mapped BitBlt fallback instead.
+        qWarning() << "DXGICaptureEngine: Target output is not on the selected DXGI adapter:"
+                   << targetDeviceName;
+        return false;
     }
 
     // Get IDXGIOutput1 for duplication
@@ -336,9 +411,18 @@ QImage DXGICaptureEngine::Private::captureWithBitBlt()
         return QImage();
     }
 
-    // Convert logical coordinates to physical coordinates for HiDPI
-    const qreal dpr = screenInfo.devicePixelRatio;
-    QRect physRegion = CoordinateHelper::toPhysical(captureRegion, dpr);
+    const QRect physRegion = CoordinateHelper::toPhysicalScreenRect(
+        captureRegion,
+        screenInfo.geometry,
+        physicalOutputGeometry,
+        screenInfo.devicePixelRatio);
+    if (physRegion.isEmpty() || !physicalOutputGeometry.contains(physRegion)) {
+        qWarning() << "DXGICaptureEngine: Capture region maps outside target monitor"
+                   << physRegion << physicalOutputGeometry;
+        DeleteDC(hdcMem);
+        ReleaseDC(NULL, hdcScreen);
+        return QImage();
+    }
 
     HBITMAP hBitmap = CreateCompatibleBitmap(hdcScreen, physRegion.width(), physRegion.height());
     if (!hBitmap) {
@@ -458,13 +542,25 @@ QImage DXGICaptureEngine::Private::captureWithDXGI()
         QImage::Format_ARGB32
     );
 
-    // Calculate region relative to output in physical coordinates
-    // captureRegion is in logical coordinates, DXGI texture is in physical coordinates
-    const qreal dpr = screenInfo.devicePixelRatio;
-    QRect physRegion = CoordinateHelper::toPhysical(captureRegion, dpr);
+    // Map from Qt's per-screen logical coordinate space into the selected
+    // output's native desktop coordinate space. The output origin is translated,
+    // never multiplied by the target screen DPR.
+    const QRect physRegion = CoordinateHelper::toPhysicalScreenRect(
+        captureRegion,
+        screenInfo.geometry,
+        physicalOutputGeometry,
+        screenInfo.devicePixelRatio);
 
-    int relX = physRegion.x() - outputDesc.DesktopCoordinates.left;
-    int relY = physRegion.y() - outputDesc.DesktopCoordinates.top;
+    if (physRegion.isEmpty() || !physicalOutputGeometry.contains(physRegion)) {
+        qWarning() << "DXGICaptureEngine: Capture region maps outside selected DXGI output"
+                   << physRegion << physicalOutputGeometry;
+        context->Unmap(stagingTexture.Get(), 0);
+        duplication->ReleaseFrame();
+        return QImage();
+    }
+
+    const int relX = physRegion.x() - physicalOutputGeometry.x();
+    const int relY = physRegion.y() - physicalOutputGeometry.y();
 
     // Crop to capture region and deep copy
     lastFrame = fullImage.copy(relX, relY, physRegion.width(), physRegion.height());
@@ -574,6 +670,14 @@ bool DXGICaptureEngine::start()
 {
     if (!d->screenInfo.isValid() || d->captureRegion.isEmpty()) {
         emit error("Region or screen not configured");
+        return false;
+    }
+
+    // Resolve the native monitor bounds by stable Windows device name before
+    // choosing DXGI or GDI. Without this mapping, mixed-DPI secondary origins
+    // cannot be converted safely from Qt logical coordinates.
+    if (!d->resolvePhysicalOutputGeometry()) {
+        emit error("Failed to resolve target display");
         return false;
     }
 

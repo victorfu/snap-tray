@@ -81,12 +81,32 @@ class TestDXGICaptureEngineThreadLifecycleWin : public QObject
     Q_OBJECT
 
 private slots:
+    void testScreenSnapshotHasNativeDeviceIdentity();
     void testStartStopFromMainThread_NoThreadAffinityWarnings();
     void testRepeatedStartStop_NoThreadAffinityWarningsOrHang();
 
 private:
     bool configureEngine(DXGICaptureEngine &engine) const;
 };
+
+void TestDXGICaptureEngineThreadLifecycleWin::testScreenSnapshotHasNativeDeviceIdentity()
+{
+    QScreen *screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        QSKIP("No screen available for DXGI metadata test.");
+    }
+
+    const CaptureScreenInfo screenInfo = CaptureScreenInfo::fromScreen(screen);
+    QVERIFY(screenInfo.isValid());
+    QVERIFY2(!screenInfo.nativeName.isEmpty(),
+             "Windows screen snapshot must include the native display device name.");
+    QVERIFY2(!screenInfo.physicalGeometry.isEmpty(),
+             "Windows screen snapshot must include native monitor bounds.");
+    QVERIFY2(screenInfo.nativeName.startsWith(QStringLiteral("\\\\.\\DISPLAY"),
+                                              Qt::CaseInsensitive),
+             qPrintable(QStringLiteral("Unexpected Windows display device name: %1")
+                            .arg(screenInfo.nativeName)));
+}
 
 bool TestDXGICaptureEngineThreadLifecycleWin::configureEngine(DXGICaptureEngine &engine) const
 {

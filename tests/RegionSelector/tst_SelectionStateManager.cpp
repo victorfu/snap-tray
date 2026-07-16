@@ -43,6 +43,8 @@ private slots:
     void testUpdateResize_BottomRight();
     void testFinishResize();
     void testResize_MinimumSize();
+    void testAspectRatioEdgeResize_ClampsToBounds_data();
+    void testAspectRatioEdgeResize_ClampsToBounds();
 
     // Move operation tests
     void testHitTestMove_Inside();
@@ -273,6 +275,90 @@ void tst_SelectionStateManager::testResize_MinimumSize()
 
     // Selection should not change if it would become too small
     QCOMPARE(m_manager->selectionRect(), originalRect);
+}
+
+void tst_SelectionStateManager::testAspectRatioEdgeResize_ClampsToBounds_data()
+{
+    QTest::addColumn<int>("handleValue");
+    QTest::addColumn<QRect>("originalRect");
+    QTest::addColumn<QPoint>("pressPos");
+    QTest::addColumn<QPoint>("dragPos");
+
+    using Handle = SelectionStateManager::ResizeHandle;
+    QTest::newRow("top-edge-width-limited")
+        << static_cast<int>(Handle::Top)
+        << QRect(20, 100, 160, 90)
+        << QPoint(99, 100)
+        << QPoint(99, -200);
+    QTest::newRow("bottom-edge-width-limited")
+        << static_cast<int>(Handle::Bottom)
+        << QRect(220, 100, 160, 90)
+        << QPoint(299, 189)
+        << QPoint(299, 500);
+    QTest::newRow("left-edge-height-limited")
+        << static_cast<int>(Handle::Left)
+        << QRect(100, 20, 160, 90)
+        << QPoint(100, 64)
+        << QPoint(-200, 64);
+    QTest::newRow("right-edge-height-limited")
+        << static_cast<int>(Handle::Right)
+        << QRect(100, 190, 160, 90)
+        << QPoint(259, 234)
+        << QPoint(500, 234);
+}
+
+void tst_SelectionStateManager::testAspectRatioEdgeResize_ClampsToBounds()
+{
+    QFETCH(int, handleValue);
+    QFETCH(QRect, originalRect);
+    QFETCH(QPoint, pressPos);
+    QFETCH(QPoint, dragPos);
+
+    using Handle = SelectionStateManager::ResizeHandle;
+    const auto handle = static_cast<Handle>(handleValue);
+    const QRect bounds(0, 0, 400, 300);
+    const qreal ratio = static_cast<qreal>(originalRect.width()) / originalRect.height();
+
+    m_manager->setBounds(bounds);
+    m_manager->setSelectionRect(originalRect);
+    m_manager->setAspectRatio(ratio);
+    m_manager->startResize(pressPos, handle);
+    m_manager->updateResize(dragPos);
+
+    const QRect resized = m_manager->selectionRect();
+    QVERIFY2(bounds.contains(resized),
+             qPrintable(QStringLiteral("Resize escaped bounds: %1,%2 %3x%4")
+                            .arg(resized.x()).arg(resized.y())
+                            .arg(resized.width()).arg(resized.height())));
+    QVERIFY(resized.width() >= 10);
+    QVERIFY(resized.height() >= 10);
+    QVERIFY(resized.size() != originalRect.size());
+    QVERIFY(qAbs(static_cast<qreal>(resized.width()) / resized.height() - ratio) < 0.02);
+
+    switch (handle) {
+    case Handle::Top:
+        QCOMPARE(resized.bottom(), originalRect.bottom());
+        QVERIFY(qAbs((resized.left() + resized.right()) -
+                     (originalRect.left() + originalRect.right())) <= 1);
+        break;
+    case Handle::Bottom:
+        QCOMPARE(resized.top(), originalRect.top());
+        QVERIFY(qAbs((resized.left() + resized.right()) -
+                     (originalRect.left() + originalRect.right())) <= 1);
+        break;
+    case Handle::Left:
+        QCOMPARE(resized.right(), originalRect.right());
+        QVERIFY(qAbs((resized.top() + resized.bottom()) -
+                     (originalRect.top() + originalRect.bottom())) <= 1);
+        break;
+    case Handle::Right:
+        QCOMPARE(resized.left(), originalRect.left());
+        QVERIFY(qAbs((resized.top() + resized.bottom()) -
+                     (originalRect.top() + originalRect.bottom())) <= 1);
+        break;
+    default:
+        QFAIL("Expected an edge resize handle");
+    }
 }
 
 void tst_SelectionStateManager::testHitTestMove_Inside()

@@ -24,6 +24,9 @@ struct PlatformCapabilities {
     bool supportsOCR = false;
     bool supportsGlobalHotkeys = false;
     bool supportsWindowDetection = false;
+    // Live pin capture is safe only when the platform can exclude the pin
+    // window itself from the captured desktop.
+    bool supportsLiveCapture = false;
     bool supportsInAppUpdates = false;
     bool isRuntimeSupported = false;
     DisplayServerKind displayServer = DisplayServerKind::Unknown;

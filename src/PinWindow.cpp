@@ -254,34 +254,6 @@ namespace {
         return false;
     }
 
-    QTransform buildPinWindowTransform(const QRectF& pixmapRect, int rotationAngle, bool flipHorizontal, bool flipVertical)
-    {
-        QTransform transform;
-
-        if (rotationAngle == 90) {
-            transform.translate(pixmapRect.width(), 0);
-            transform.rotate(90);
-        }
-        else if (rotationAngle == 180) {
-            transform.translate(pixmapRect.width(), pixmapRect.height());
-            transform.rotate(180);
-        }
-        else if (rotationAngle == 270) {
-            transform.translate(0, pixmapRect.height());
-            transform.rotate(270);
-        }
-
-        if (flipHorizontal || flipVertical) {
-            QPointF center(pixmapRect.width() / 2.0, pixmapRect.height() / 2.0);
-            transform.translate(center.x(), center.y());
-            if (flipHorizontal) transform.scale(-1, 1);
-            if (flipVertical) transform.scale(1, -1);
-            transform.translate(-center.x(), -center.y());
-        }
-
-        return transform;
-    }
-
     QTransform buildOrientationLinearTransform(int rotationAngle, bool flipHorizontal, bool flipVertical)
     {
         QTransform transform;
@@ -290,6 +262,40 @@ namespace {
         }
         if (flipHorizontal || flipVertical) {
             transform.scale(flipHorizontal ? -1.0 : 1.0, flipVertical ? -1.0 : 1.0);
+        }
+        return transform;
+    }
+
+    QTransform buildPinWindowTransform(const QRectF& pixmapRect, int rotationAngle,
+                                       bool flipHorizontal, bool flipVertical)
+    {
+        QSizeF annotationSize = pixmapRect.size();
+        if (rotationAngle == 90 || rotationAngle == 270) {
+            annotationSize.transpose();
+        }
+
+        QTransform transform = buildOrientationLinearTransform(
+            rotationAngle, flipHorizontal, flipVertical);
+        const QRectF annotationRect(QPointF(0.0, 0.0), annotationSize);
+        const QRectF mappedBounds = transform.mapRect(annotationRect).normalized();
+
+        // QPixmap::transformed() translates the linear result so its bounding
+        // rectangle begins at (0, 0). Reproduce that exact translation for
+        // annotations and inverse coordinate mapping. Deriving it from the
+        // pre-rotation annotation bounds also handles 90/270 + flip correctly.
+        transform.setMatrix(
+            transform.m11(), transform.m12(), transform.m13(),
+            transform.m21(), transform.m22(), transform.m23(),
+            transform.dx() - mappedBounds.left(),
+            transform.dy() - mappedBounds.top(),
+            transform.m33());
+        if (!qFuzzyIsNull(pixmapRect.left()) || !qFuzzyIsNull(pixmapRect.top())) {
+            transform.setMatrix(
+                transform.m11(), transform.m12(), transform.m13(),
+                transform.m21(), transform.m22(), transform.m23(),
+                transform.dx() + pixmapRect.left(),
+                transform.dy() + pixmapRect.top(),
+                transform.m33());
         }
         return transform;
     }
@@ -903,6 +909,7 @@ void PinWindow::ensureTransformCacheValid() const
 void PinWindow::onResizeFinished()
 {
     if (m_pendingHighQualityUpdate && !m_isResizing) {
+        invalidateAutoBlurRequest();
         // Perform high-quality scaling after resize is complete
         m_displayPixmap = buildDisplayPixmap(size(), Qt::SmoothTransformation);
 
@@ -965,6 +972,7 @@ int PinWindow::effectiveCornerRadius(const QSize& contentSize) const
 
 void PinWindow::updateSize()
 {
+    invalidateAutoBlurRequest();
     const QSize transformedLogicalSize = transformedContentLogicalSize();
     QSize newLogicalSize = transformedLogicalSize * m_zoomLevel;
 
@@ -1692,6 +1700,74 @@ void PinWindow::updateToolbarAutoBlurState()
     if (m_toolbar) {
         m_toolbar->viewModel()->setAutoBlurProcessing(m_autoBlurInProgress);
     }
+}
+
+void PinWindow::invalidateAutoBlurRequest()
+{
+    ++m_autoBlurContentGeneration;
+}
+
+bool PinWindow::isAutoBlurRequestCurrent(quint64 generation) const
+{
+    return generation == m_autoBlurContentGeneration;
+}
+
+QPixmap PinWindow::buildAutoBlurAnnotationSource(const QPixmap& displayPixmap,
+                                                 int rotationAngle,
+                                                 bool flipHorizontal,
+                                                 bool flipVertical)
+{
+    if (displayPixmap.isNull() ||
+        (rotationAngle == 0 && !flipHorizontal && !flipVertical)) {
+        return displayPixmap;
+    }
+
+    bool invertible = false;
+    const QTransform inverse = buildOrientationLinearTransform(
+        rotationAngle, flipHorizontal, flipVertical).inverted(&invertible);
+    if (!invertible) {
+        return {};
+    }
+
+    QPixmap annotationSource = displayPixmap.transformed(inverse, Qt::SmoothTransformation);
+    annotationSource.setDevicePixelRatio(displayPixmap.devicePixelRatio());
+    return annotationSource;
+}
+
+QRect PinWindow::mapAutoBlurDetectionRect(const QRect& physicalRect,
+                                          qreal devicePixelRatio,
+                                          const QSize& displayLogicalSize,
+                                          const QSize& annotationLogicalSize,
+                                          int rotationAngle,
+                                          bool flipHorizontal,
+                                          bool flipVertical)
+{
+    if (physicalRect.isEmpty() || displayLogicalSize.isEmpty() ||
+        annotationLogicalSize.isEmpty()) {
+        return {};
+    }
+
+    const qreal dpr = devicePixelRatio > 0.0 ? devicePixelRatio : 1.0;
+    const QRectF displayRect(
+        physicalRect.x() / dpr,
+        physicalRect.y() / dpr,
+        physicalRect.width() / dpr,
+        physicalRect.height() / dpr);
+
+    bool invertible = false;
+    const QTransform displayToAnnotation = buildPinWindowTransform(
+        QRectF(QPointF(0.0, 0.0), QSizeF(displayLogicalSize)),
+        rotationAngle,
+        flipHorizontal,
+        flipVertical).inverted(&invertible);
+    if (!invertible) {
+        return {};
+    }
+
+    const QRect mapped = displayToAnnotation.mapRect(displayRect)
+                             .normalized()
+                             .toAlignedRect();
+    return mapped.intersected(QRect(QPoint(0, 0), annotationLogicalSize));
 }
 
 void PinWindow::performOCR()
@@ -2611,6 +2687,7 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
 
         // Use FastTransformation during resize for responsiveness.
         // High-quality scaling will be done after resize is complete.
+        invalidateAutoBlurRequest();
         m_displayPixmap = buildDisplayPixmap(newSize, Qt::FastTransformation);
 
         // Schedule high-quality update after resize ends
@@ -2650,9 +2727,11 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
 
 void PinWindow::mouseReleaseEvent(QMouseEvent* event)
 {
-    if (isGlobalPosOverFloatingUi(event->globalPosition().toPoint())) {
-        return;
-    }
+    // Qt keeps an implicit mouse grab for a press that started on this widget.
+    // A release over a floating toolbar must still finish that interaction;
+    // only suppress new single-click tool actions over the floating UI.
+    const bool overFloatingUi =
+        isGlobalPosOverFloatingUi(event->globalPosition().toPoint());
 
     if (event->button() == Qt::LeftButton) {
         // Handle Region Layout Mode
@@ -2721,8 +2800,9 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
         if (m_annotationMode && m_toolManager) {
             // For drawing tools: only route if actively drawing
             // For single-click tools (Emoji, StepBadge): always route release
-            bool isSingleClickTool = (m_currentToolId == ToolId::EmojiSticker ||
-                m_currentToolId == ToolId::StepBadge);
+            const bool isSingleClickTool = !overFloatingUi &&
+                (m_currentToolId == ToolId::EmojiSticker ||
+                 m_currentToolId == ToolId::StepBadge);
 
             if (m_toolManager->isDrawing() || isSingleClickTool) {
                 const AnnotationItem* previousLastItem = nullptr;
@@ -4308,6 +4388,12 @@ void PinWindow::onAutoBlurRequested()
         return;
     }
 
+    if (m_isLiveMode) {
+        m_toast->showToast(SnapTray::QmlToast::Level::Info,
+            tr("Stop live capture before running auto-blur"));
+        return;
+    }
+
     // Lazy initialize AutoBlurManager
     if (!m_autoBlurManager) {
         m_autoBlurManager = new AutoBlurManager(this);
@@ -4350,6 +4436,28 @@ void PinWindow::onAutoBlurRequested()
     if (dpr <= 0.0) {
         dpr = 1.0;
     }
+
+    const quint64 requestGeneration = m_autoBlurContentGeneration;
+    const int requestRotationAngle = m_rotationAngle;
+    const bool requestFlipHorizontal = m_flipHorizontal;
+    const bool requestFlipVertical = m_flipVertical;
+    const QSize displayLogicalSize = logicalSizeFromPixmap(detectionPixmap);
+    const QPixmap annotationSource = buildAutoBlurAnnotationSource(
+        detectionPixmap,
+        requestRotationAngle,
+        requestFlipHorizontal,
+        requestFlipVertical);
+    const QSize annotationLogicalSize = logicalSizeFromPixmap(annotationSource);
+    if (image.isNull() || displayLogicalSize.isEmpty() || annotationLogicalSize.isEmpty()) {
+        m_autoBlurInProgress = false;
+        updateToolbarAutoBlurState();
+        updateLoadingSpinnerState();
+        m_toast->showToast(SnapTray::QmlToast::Level::Error,
+            tr("Unable to snapshot the current image"));
+        return;
+    }
+    const auto sharedAnnotationSource =
+        std::make_shared<const QPixmap>(annotationSource);
 
     struct AggregatedResult {
         QVector<QRect> faceRegions;
@@ -4401,8 +4509,29 @@ void PinWindow::onAutoBlurRequested()
         safeThis->update();
     };
 
-    auto finishIfReady = [safeThis, aggregated, detectionPixmap, dpr, complete]() {
+    auto finishIfReady = [safeThis,
+                          aggregated,
+                          requestGeneration,
+                          requestRotationAngle,
+                          requestFlipHorizontal,
+                          requestFlipVertical,
+                          displayLogicalSize,
+                          annotationLogicalSize,
+                          sharedAnnotationSource,
+                          dpr,
+                          options,
+                          complete]() {
         if (!safeThis || aggregated->facePending || aggregated->ocrPending) {
+            return;
+        }
+
+        if (!safeThis->isAutoBlurRequestCurrent(requestGeneration)) {
+            safeThis->m_autoBlurInProgress = false;
+            safeThis->updateToolbarAutoBlurState();
+            safeThis->updateLoadingSpinnerState();
+            safeThis->m_toast->showToast(SnapTray::QmlToast::Level::Info,
+                safeThis->tr("Image changed; auto-blur result discarded"));
+            safeThis->update();
             return;
         }
 
@@ -4418,21 +4547,26 @@ void PinWindow::onAutoBlurRequested()
                 warningMessage = aggregated->ocrError;
             }
 
-            const auto opts = safeThis->m_autoBlurManager->options();
-            const int blockSize = AutoBlurManager::intensityToBlockSize(opts.blurIntensity);
-            const auto blurType = opts.blurType;
-            const QRect logicalBounds(QPoint(0, 0), logicalSizeFromPixmap(detectionPixmap));
-            auto sharedDisplayPixmap = std::make_shared<const QPixmap>(detectionPixmap);
+            const int blockSize =
+                AutoBlurManager::intensityToBlockSize(options.blurIntensity);
+            const auto blurType = options.blurType;
 
             auto addRegions = [&](const QVector<QRect>& regions) {
                 for (const QRect& rect : regions) {
-                    QRect logicalRect = CoordinateHelper::toLogical(rect, dpr).intersected(logicalBounds);
-                    if (logicalRect.isEmpty()) {
+                    const QRect annotationRect = PinWindow::mapAutoBlurDetectionRect(
+                        rect,
+                        dpr,
+                        displayLogicalSize,
+                        annotationLogicalSize,
+                        requestRotationAngle,
+                        requestFlipHorizontal,
+                        requestFlipVertical);
+                    if (annotationRect.isEmpty()) {
                         continue;
                     }
 
                     auto mosaic = std::make_unique<MosaicRectAnnotation>(
-                        logicalRect, sharedDisplayPixmap, blockSize, blurType
+                        annotationRect, sharedAnnotationSource, blockSize, blurType
                     );
                     safeThis->m_annotationLayer->addItem(std::move(mosaic));
                 }
@@ -4824,6 +4958,7 @@ bool PinWindow::handleGizmoPress(const QPoint& pos)
 
 void PinWindow::setSourceRegion(const QRect& region, QScreen* screen)
 {
+    invalidateAutoBlurRequest();
     m_sourceRegion = region;
     m_sourceScreen = screen;
     if (region.isValid() && !region.isEmpty()) {
@@ -4846,6 +4981,12 @@ void PinWindow::setSourceRegion(const QRect& region, QScreen* screen)
 
 void PinWindow::startLiveCapture()
 {
+    if (m_autoBlurInProgress) {
+        m_toast->showToast(SnapTray::QmlToast::Level::Info,
+            tr("Please wait for auto-blur to finish"));
+        return;
+    }
+
     QScreen* sourceScreen = m_sourceScreen.data();
     if (m_isLiveMode || m_sourceRegion.isEmpty() || !sourceScreen) {
         qWarning() << "Cannot start live capture: invalid state or no source region";
@@ -4858,6 +4999,9 @@ void PinWindow::startLiveCapture()
         return;
     }
 
+    // A live source changes the image identity. Invalidate any request that
+    // might have outlived its visible processing state before frames arrive.
+    invalidateAutoBlurRequest();
     m_isLiveMode = true;
 
     // Create capture engine
@@ -5343,6 +5487,7 @@ void PinWindow::exitRegionLayoutMode(bool apply)
         QPixmap newPixmap = m_regionLayoutManager->recomposeImage(dpr);
 
         if (!newPixmap.isNull()) {
+            invalidateAutoBlurRequest();
             // Calculate the bounds offset used in recomposition
             QRect bounds;
             for (const auto& region : m_regionLayoutManager->regions()) {

@@ -16,6 +16,7 @@ private slots:
     void testFullScreenOddRegionCropsMoreThanOneStepAtFractionalDpr();
     void testHighDpiNormalizationAt15();
     void testHighDpiNormalizationAt11();
+    void testMixedDpiFullScreenUsesNativeBounds();
 };
 
 namespace {
@@ -125,6 +126,26 @@ void TestRecordingRegionSizing::testHighDpiNormalizationAt11()
     QCOMPARE(normalized, QRect(64, 42, 56, 38));
     QVERIFY(bounds.contains(normalized));
     verifyEvenPhysicalSize(normalized, dpr);
+}
+
+void TestRecordingRegionSizing::testMixedDpiFullScreenUsesNativeBounds()
+{
+    const QRect logicalScreen(1920, 0, 1707, 960);
+    const QRect physicalScreen(1920, 0, 2560, 1440);
+    constexpr qreal dpr = 1.5;
+
+    const QRect normalized = normalizeToEvenPhysicalRegion(
+        logicalScreen, logicalScreen, dpr, physicalScreen);
+    const QRect mapped = CoordinateHelper::toPhysicalScreenRect(
+        normalized, logicalScreen, physicalScreen, dpr);
+
+    // The native output is already even. Do not crop two logical pixels merely
+    // because qRound(1707 * 1.5) produces the synthetic value 2561.
+    QCOMPARE(normalized, logicalScreen);
+    QCOMPARE(mapped, physicalScreen);
+    QCOMPARE(mapped.size(), QSize(2560, 1440));
+    QVERIFY((mapped.width() % 2) == 0);
+    QVERIFY((mapped.height() % 2) == 0);
 }
 
 QTEST_MAIN(TestRecordingRegionSizing)

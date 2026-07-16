@@ -19,6 +19,7 @@
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ShapeAnnotation.h"
 #include "annotations/LineStyle.h"
+#include "annotations/MosaicBlurType.h"
 #include "annotations/StepBadgeAnnotation.h"
 #include "tools/ToolId.h"
 #include "InlineTextEditor.h"
@@ -400,12 +401,31 @@ private:
     void onQRCodeComplete(bool success, const QString &text, const QString &format, const QString &error, const QPixmap &sourceImage);
 
     // Auto-blur detection
+    struct AutoBlurRequestSnapshot {
+        quint64 generation = 0;
+        QRect selectionRect;
+        QRect clampedPhysicalRect;
+        qreal devicePixelRatio = 1.0;
+        SharedPixmap sourcePixmap;
+        QPointer<QScreen> sourceScreen;
+        QPointer<AnnotationLayer> annotationLayer;
+        int blockSize = 0;
+        MosaicBlurType blurType = MosaicBlurType::Pixelate;
+    };
+
     AutoBlurManager *m_autoBlurManager;
     bool m_autoBlurInProgress;
     QPointer<QFutureWatcherBase> m_autoBlurWatcher;
+    quint64 m_autoBlurGeneration = 0;
+    quint64 m_activeAutoBlurGeneration = 0;
 
     void performAutoBlur();
-    void onAutoBlurComplete(bool success, int faceCount, int credentialCount, const QString &error);
+    bool isAutoBlurRequestCurrent(const AutoBlurRequestSnapshot& request) const;
+    void addAutoBlurRegions(const AutoBlurRequestSnapshot& request,
+                            const QVector<QRect>& regions);
+    void clearAutoBlurProgress(quint64 generation);
+    void onAutoBlurComplete(quint64 generation, bool success, int faceCount,
+                            int credentialCount, const QString &error);
 
     // Inline text editing
     InlineTextEditor *m_textEditor;

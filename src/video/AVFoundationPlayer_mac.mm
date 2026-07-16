@@ -321,21 +321,24 @@ void AVFoundationPlayer::seek(qint64 positionMs)
                   toleranceBefore:kCMTimeZero
                    toleranceAfter:kCMTimeZero
                 completionHandler:^(BOOL finished) {
-        AVFoundationPlayer *player = weakPlayer.data();
-        if (finished && player && player->state() != State::Playing) {
-            // Fetch and emit frame when paused
-            dispatch_async(dispatch_get_main_queue(), ^{
-                AVFoundationPlayer *player = weakPlayer.data();
-                AVFoundationPlayerHelper *strongHelper = weakHelper;
-                if (player && strongHelper) {
-                    QImage frame = [strongHelper currentFrame];
-                    // Always emit frameReady so downstream consumers (like VideoTrimmer)
-                    // don't hang waiting for a signal that never comes.
-                    // Consumers should handle null frames appropriately.
-                    emit player->frameReady(frame);
-                }
-            });
+        if (!finished) {
+            return;
         }
+
+        // AVFoundation may invoke this completion on a non-main queue. Do not
+        // materialize or dereference the guarded QObject until execution is
+        // serialized with its main-thread lifetime.
+        dispatch_async(dispatch_get_main_queue(), ^{
+            AVFoundationPlayer *player = weakPlayer.data();
+            AVFoundationPlayerHelper *strongHelper = weakHelper;
+            if (player && strongHelper && player->state() != State::Playing) {
+                QImage frame = [strongHelper currentFrame];
+                // Always emit frameReady so downstream consumers (like VideoTrimmer)
+                // don't hang waiting for a signal that never comes.
+                // Consumers should handle null frames appropriately.
+                emit player->frameReady(frame);
+            }
+        });
     }];
 }
 

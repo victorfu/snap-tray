@@ -12,6 +12,11 @@
 #include <QDebug>
 #include <QScreen>
 
+#ifdef Q_OS_WIN
+#include <QtGui/qscreen_platform.h>
+#include <Windows.h>
+#endif
+
 CaptureScreenInfo CaptureScreenInfo::fromScreen(const QScreen *screen)
 {
     CaptureScreenInfo info;
@@ -21,6 +26,23 @@ CaptureScreenInfo CaptureScreenInfo::fromScreen(const QScreen *screen)
 
     info.name = screen->name();
     info.geometry = screen->geometry();
+#ifdef Q_OS_WIN
+    if (auto *nativeScreen =
+            screen->nativeInterface<QNativeInterface::QWindowsScreen>()) {
+        MONITORINFOEXW monitorInfo{};
+        monitorInfo.cbSize = sizeof(monitorInfo);
+        if (const HMONITOR monitor = nativeScreen->handle();
+            monitor && GetMonitorInfoW(
+                monitor, reinterpret_cast<LPMONITORINFO>(&monitorInfo))) {
+            info.nativeName = QString::fromWCharArray(monitorInfo.szDevice);
+            info.physicalGeometry = QRect(
+                monitorInfo.rcMonitor.left,
+                monitorInfo.rcMonitor.top,
+                monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left,
+                monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top);
+        }
+    }
+#endif
     const qreal dpr = screen->devicePixelRatio();
     info.devicePixelRatio = dpr > 0.0 ? dpr : 1.0;
     return info;

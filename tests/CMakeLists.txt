@@ -868,6 +868,18 @@ target_link_libraries(RecordingManager_RecordingFileUtils PRIVATE snaptray_ui Qt
 add_test(NAME RecordingManager_RecordingFileUtils COMMAND RecordingManager_RecordingFileUtils)
 set_tests_properties(RecordingManager_RecordingFileUtils PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RecordingManager_CoreAudioCaptureEngineSafety
+    RecordingManager/tst_CoreAudioCaptureEngineSafety.cpp
+)
+target_compile_definitions(RecordingManager_CoreAudioCaptureEngineSafety PRIVATE
+    CAPTURE_SOURCE_ROOT="${CMAKE_SOURCE_DIR}/src/capture"
+)
+target_link_libraries(RecordingManager_CoreAudioCaptureEngineSafety PRIVATE Qt6::Test)
+add_test(NAME RecordingManager_CoreAudioCaptureEngineSafety
+    COMMAND RecordingManager_CoreAudioCaptureEngineSafety)
+set_tests_properties(RecordingManager_CoreAudioCaptureEngineSafety
+    PROPERTIES TIMEOUT 30 LABELS "unit")
+
 if(WIN32)
 add_executable(RecordingManager_DXGICaptureEngineThreadLifecycle
     RecordingManager/tst_DXGICaptureEngineThreadLifecycle_win.cpp

@@ -25,6 +25,7 @@ void tst_PlatformCapabilities::linuxX11BetaCapabilities()
     QVERIFY(!caps.supportsRecording);
     QVERIFY(!caps.supportsOCR);
     QVERIFY(caps.supportsWindowDetection);
+    QVERIFY(!caps.supportsLiveCapture);
     QVERIFY(!caps.supportsInAppUpdates);
     QCOMPARE(caps.displayServer, SnapTray::DisplayServerKind::X11);
     QVERIFY(caps.unsupportedRuntimeMessage.isEmpty());
@@ -65,6 +66,7 @@ void tst_PlatformCapabilities::macAndWindowsKeepRecordingAndOcrSupport()
     QVERIFY(macCaps.supportsRecording);
     QVERIFY(macCaps.supportsOCR);
     QVERIFY(macCaps.supportsWindowDetection);
+    QVERIFY(macCaps.supportsLiveCapture);
     QVERIFY(macCaps.supportsInAppUpdates);
 
     const auto winCaps = SnapTray::capabilitiesForPlatform(
@@ -74,6 +76,7 @@ void tst_PlatformCapabilities::macAndWindowsKeepRecordingAndOcrSupport()
     QVERIFY(winCaps.supportsRecording);
     QVERIFY(winCaps.supportsOCR);
     QVERIFY(winCaps.supportsWindowDetection);
+    QVERIFY(winCaps.supportsLiveCapture);
     QVERIFY(winCaps.supportsInAppUpdates);
 }
 

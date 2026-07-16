@@ -49,6 +49,28 @@ QSize CoordinateHelper::toPhysical(const QSize& logical, qreal dpr)
     );
 }
 
+QRect CoordinateHelper::toPhysicalScreenRect(const QRect& logicalRect,
+                                              const QRect& logicalScreenGeometry,
+                                              const QRect& physicalScreenGeometry,
+                                              qreal dpr)
+{
+    if (logicalRect.isEmpty() || logicalScreenGeometry.isEmpty() ||
+        physicalScreenGeometry.isEmpty() ||
+        !logicalScreenGeometry.contains(logicalRect)) {
+        return {};
+    }
+
+    const QRect screenRelativeRect(
+        logicalRect.topLeft() - logicalScreenGeometry.topLeft(),
+        logicalRect.size());
+    // Fractional-DPI logical screen sizes are rounded by Qt. Map the requested
+    // area outwards, then clamp it to the native monitor bounds so a complete
+    // secondary-screen capture cannot become one pixel too large and fail.
+    QRect physicalRect = toPhysicalCoveringRect(screenRelativeRect, dpr);
+    physicalRect.translate(physicalScreenGeometry.topLeft());
+    return physicalRect.intersected(physicalScreenGeometry);
+}
+
 QRect CoordinateHelper::toPhysicalCoveringRect(const QRect& logical, qreal dpr)
 {
     const qreal effectiveDpr = dpr > 0.0 ? dpr : 1.0;

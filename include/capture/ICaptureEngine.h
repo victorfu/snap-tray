@@ -19,7 +19,15 @@ class QScreen;
 struct CaptureScreenInfo
 {
     QString name;
+    // Platform-native display identifier used by capture APIs (for example
+    // "\\\\.\\DISPLAY1" on Windows). Kept separate because QScreen::name()
+    // may be a monitor model such as "ROG PG279Q".
+    QString nativeName;
     QRect geometry;
+    // Native desktop-pixel bounds when the platform exposes them. On Windows
+    // these match DXGI_OUTPUT_DESC::DesktopCoordinates and avoid scaling Qt's
+    // mixed-DPI logical screen origin/size heuristically.
+    QRect physicalGeometry;
     qreal devicePixelRatio = 1.0;
 
     bool isValid() const
