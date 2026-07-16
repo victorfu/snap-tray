@@ -6,7 +6,10 @@
 
 #include <QPoint>
 #include <QCursor>
+#include <QPointer>
 #include <vector>
+
+class AnnotationLayer;
 
 /**
  * @brief Tool handler for object-based erasing (delete whole annotations).
@@ -14,13 +17,14 @@
 class EraserToolHandler : public IToolHandler {
 public:
     EraserToolHandler() = default;
-    ~EraserToolHandler() override = default;
+    ~EraserToolHandler() override;
 
     ToolId toolId() const override { return ToolId::Eraser; }
 
     void onMousePress(ToolContext* ctx, const QPoint& pos) override;
     void onMouseMove(ToolContext* ctx, const QPoint& pos) override;
     void onMouseRelease(ToolContext* ctx, const QPoint& pos) override;
+    void onDeactivate(ToolContext* ctx) override;
 
     void drawPreview(QPainter& painter) const override;
     bool isDrawing() const override { return m_isErasing; }
@@ -35,7 +39,7 @@ private:
     static constexpr int kDefaultWidth = 20;
 
     void eraseAt(ToolContext* ctx, const QPoint& pos);
-    size_t mapToOriginalIndex(size_t currentIndex);
+    size_t mapToOriginalIndex(size_t currentIndex) const;
 
     bool m_isErasing = false;
     QPoint m_lastPoint;
@@ -44,6 +48,7 @@ private:
     mutable QCursor m_cachedCursor;
     mutable int m_cachedCursorWidth = 0;
 
+    QPointer<AnnotationLayer> m_activeLayer;
     std::vector<ErasedItemsGroup::IndexedItem> m_currentStrokeErasedItems;
     std::vector<size_t> m_removedOriginalIndices;
 };

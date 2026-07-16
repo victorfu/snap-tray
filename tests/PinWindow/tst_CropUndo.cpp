@@ -85,8 +85,10 @@ private slots:
     void testCropUndoRedo_FractionalDpr_RestoresExactLogicalSize();
     void testHandleToolbarUndo_PrioritizesCropWhenNoPostCropAnnotations();
     void testHandleToolbarUndo_PrioritizesPostCropAnnotationsFirst();
+    void testHandleToolbarUndo_DoesNothingDuringHistoryLock();
     void testHandleToolbarUndo_UsesStableCropBoundaryAfterAnnotationTrim();
     void testHandleToolbarRedo_ReappliesCropAfterUndo();
+    void testHandleToolbarRedo_DoesNothingDuringHistoryLock();
     void testTransformChange_ClearsCropHistory();
     void testHandleToolbarRedo_PrioritizesCropBeforePostCropAnnotationRedo();
     void testHandleToolbarRedo_UsesStableCropBoundaryAfterAnnotationTrim();
@@ -551,6 +553,43 @@ void TestPinWindowCropUndo::testHandleToolbarUndo_PrioritizesPostCropAnnotations
     QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(1));
 }
 
+void TestPinWindowCropUndo::testHandleToolbarUndo_DoesNothingDuringHistoryLock()
+{
+    QPixmap source = createPatternPixmap(220, 140);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    QVERIFY(window.m_annotationLayer != nullptr);
+
+    window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{QPoint(40, 35), QPoint(120, 55)},
+        QColor(Qt::red), 3, LineEndStyle::None, LineStyle::Solid));
+
+    const QRect cropRect(30, 20, 120, 80);
+    const QPixmap expectedCropped = source.copy(cropRect);
+    window.applyCrop(cropRect);
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, expectedCropped));
+
+    window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{QPoint(20, 20), QPoint(80, 45)},
+        QColor(Qt::blue), 3, LineEndStyle::None, LineStyle::Solid));
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(2));
+
+    const qsizetype cropUndoCount = window.m_cropUndoStack.size();
+    window.m_annotationLayer->beginEraseTransaction();
+    QVERIFY(window.m_annotationLayer->isHistoryLocked());
+
+    window.handleToolbarUndo();
+
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, expectedCropped));
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(2));
+    QCOMPARE(window.m_cropUndoStack.size(), cropUndoCount);
+
+    QVERIFY(window.m_annotationLayer->endEraseTransaction());
+    window.handleToolbarUndo();
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, expectedCropped));
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(1));
+}
+
 void TestPinWindowCropUndo::testHandleToolbarUndo_UsesStableCropBoundaryAfterAnnotationTrim()
 {
     QPixmap source = createPatternPixmap(260, 180);
@@ -605,6 +644,40 @@ void TestPinWindowCropUndo::testHandleToolbarRedo_ReappliesCropAfterUndo()
     window.handleToolbarRedo();
     QVERIFY(pixmapsEqual(window.m_originalPixmap, expectedCropped));
     QVERIFY(!window.m_cropUndoStack.isEmpty());
+    QVERIFY(window.m_cropRedoStack.isEmpty());
+}
+
+void TestPinWindowCropUndo::testHandleToolbarRedo_DoesNothingDuringHistoryLock()
+{
+    QPixmap source = createPatternPixmap(220, 140);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    QVERIFY(window.m_annotationLayer != nullptr);
+
+    window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{QPoint(40, 35), QPoint(120, 55)},
+        QColor(Qt::red), 3, LineEndStyle::None, LineStyle::Solid));
+
+    const QRect cropRect(30, 20, 120, 80);
+    const QPixmap expectedCropped = source.copy(cropRect);
+    window.applyCrop(cropRect);
+    window.handleToolbarUndo();
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+    QVERIFY(!window.m_cropRedoStack.isEmpty());
+
+    const qsizetype cropRedoCount = window.m_cropRedoStack.size();
+    window.m_annotationLayer->beginEraseTransaction();
+    QVERIFY(window.m_annotationLayer->isHistoryLocked());
+
+    window.handleToolbarRedo();
+
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+    QCOMPARE(window.m_cropRedoStack.size(), cropRedoCount);
+    QVERIFY(window.m_cropUndoStack.isEmpty());
+
+    QVERIFY(window.m_annotationLayer->endEraseTransaction());
+    window.handleToolbarRedo();
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, expectedCropped));
     QVERIFY(window.m_cropRedoStack.isEmpty());
 }
 

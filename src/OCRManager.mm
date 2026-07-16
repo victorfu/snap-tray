@@ -12,6 +12,10 @@
 #import <CoreGraphics/CoreGraphics.h>
 #import <AppKit/AppKit.h>
 
+#if !__has_feature(objc_arc)
+#error "OCRManager.mm requires Objective-C ARC"
+#endif
+
 namespace {
 
 // Language code to display name mapping
@@ -335,22 +339,24 @@ void OCRManager::recognizeText(const QPixmap &pixmap, const OCRCallback &callbac
 
         // Perform request asynchronously
         dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-            NSError *performError = nil;
-            BOOL performed = [handler performRequests:@[request] error:&performError];
+            @autoreleasepool {
+                NSError *performError = nil;
+                BOOL performed = [handler performRequests:@[request] error:&performError];
 
-            if (!performed && performError) {
-                OCRResult result;
-                result.success = false;
-                result.error = QString::fromNSString([performError localizedDescription]);
-                qDebug() << "OCRManager: Failed to perform request:" << result.error;
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    if (callbackCopy) {
-                        callbackCopy(result);
-                    }
-                    if (weakThis) {
-                        emit weakThis->recognitionComplete(result);
-                    }
-                });
+                if (!performed && performError) {
+                    OCRResult result;
+                    result.success = false;
+                    result.error = QString::fromNSString([performError localizedDescription]);
+                    qDebug() << "OCRManager: Failed to perform request:" << result.error;
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        if (callbackCopy) {
+                            callbackCopy(result);
+                        }
+                        if (weakThis) {
+                            emit weakThis->recognitionComplete(result);
+                        }
+                    });
+                }
             }
         });
     } else {

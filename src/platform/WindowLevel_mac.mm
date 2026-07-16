@@ -11,6 +11,10 @@
 
 #import <Cocoa/Cocoa.h>
 
+#if !__has_feature(objc_arc)
+#error "WindowLevel_mac.mm requires Objective-C ARC"
+#endif
+
 static void ensureCursorResourcesLoaded()
 {
     static const bool loaded = []() {
@@ -139,7 +143,7 @@ NSView* nsViewForWidget(QWidget* widget)
     }
 
     const WId wid = widget->winId();
-    return wid ? reinterpret_cast<NSView*>(wid) : nil;
+    return wid ? (__bridge NSView *)reinterpret_cast<void *>(wid) : nil;
 }
 
 NSView* nsViewForWindow(QWindow* window)
@@ -149,7 +153,7 @@ NSView* nsViewForWindow(QWindow* window)
     }
 
     const WId wid = window->winId();
-    return wid ? reinterpret_cast<NSView*>(wid) : nil;
+    return wid ? (__bridge NSView *)reinterpret_cast<void *>(wid) : nil;
 }
 }  // namespace
 

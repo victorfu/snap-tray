@@ -12,6 +12,12 @@
 #include <cstring>
 #include <chrono>
 
+#if !__has_feature(objc_arc)
+#error "CoreAudioCaptureEngine_mac.mm requires Objective-C ARC"
+#endif
+
+static char kCaptureQueueSpecificKey;
+
 // Check if ScreenCaptureKit is available (macOS 12.3+)
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 120300
 #define HAS_SCREENCAPTUREKIT 1
@@ -22,7 +28,7 @@
 
 // Objective-C delegate for audio capture
 @interface AudioCaptureDelegate : NSObject <AVCaptureAudioDataOutputSampleBufferDelegate>
-@property (nonatomic, assign) CoreAudioCaptureEngine *engine;
+@property (atomic, assign) CoreAudioCaptureEngine *engine;
 @property (nonatomic, assign) qint64 startTime;
 @property (nonatomic, assign) qint64 pausedDuration;
 @property (nonatomic, assign) bool paused;
@@ -163,7 +169,8 @@ static QByteArray convertMicAudioBufferToPCM16(CMSampleBufferRef sampleBuffer)
 didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
        fromConnection:(AVCaptureConnection *)connection
 {
-    if (self.paused || !self.engine) return;
+    CoreAudioCaptureEngine *engine = self.engine;
+    if (self.paused || !engine) return;
 
     // Convert to 16-bit PCM
     QByteArray audioData = convertMicAudioBufferToPCM16(sampleBuffer);
@@ -173,8 +180,8 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
         std::chrono::steady_clock::now().time_since_epoch()).count();
     qint64 timestamp = now - self.startTime - self.pausedDuration;
 
-    QMetaObject::invokeMethod(self.engine, [=]() {
-        emit self.engine->audioDataReady(audioData, timestamp);
+    QMetaObject::invokeMethod(engine, [engine, audioData, timestamp]() {
+        emit engine->audioDataReady(audioData, timestamp);
     }, Qt::QueuedConnection);
 }
 
@@ -184,7 +191,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 // ScreenCaptureKit delegate for system audio (macOS 13+)
 API_AVAILABLE(macos(13.0))
 @interface SCKAudioCaptureDelegate : NSObject <SCStreamDelegate, SCStreamOutput>
-@property (nonatomic, assign) CoreAudioCaptureEngine *engine;
+@property (atomic, assign) CoreAudioCaptureEngine *engine;
 @property (nonatomic, assign) qint64 startTime;
 @property (nonatomic, assign) qint64 pausedDuration;
 @property (nonatomic, assign) bool paused;
@@ -202,7 +209,8 @@ API_AVAILABLE(macos(13.0))
 - (void)stream:(SCStream *)stream didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer ofType:(SCStreamOutputType)type
 {
     if (type != SCStreamOutputTypeAudio) return;
-    if (self.paused || !self.engine) return;
+    CoreAudioCaptureEngine *engine = self.engine;
+    if (self.paused || !engine) return;
 
     // Convert to 16-bit PCM
     QByteArray audioData = convertSckAudioBufferToPCM16(sampleBuffer);
@@ -212,17 +220,18 @@ API_AVAILABLE(macos(13.0))
         std::chrono::steady_clock::now().time_since_epoch()).count();
     qint64 timestamp = now - self.startTime - self.pausedDuration;
 
-    QMetaObject::invokeMethod(self.engine, [=]() {
-        emit self.engine->audioDataReady(audioData, timestamp);
+    QMetaObject::invokeMethod(engine, [engine, audioData, timestamp]() {
+        emit engine->audioDataReady(audioData, timestamp);
     }, Qt::QueuedConnection);
 }
 
 - (void)stream:(SCStream *)stream didStopWithError:(NSError *)error
 {
-    if (error) {
+    CoreAudioCaptureEngine *engine = self.engine;
+    if (error && engine) {
         QString errorMsg = QString::fromNSString(error.localizedDescription);
-        QMetaObject::invokeMethod(self.engine, [=]() {
-            emit self.engine->error(errorMsg);
+        QMetaObject::invokeMethod(engine, [engine, errorMsg]() {
+            emit engine->error(errorMsg);
         }, Qt::QueuedConnection);
     }
 }
@@ -243,34 +252,76 @@ public:
 #if HAS_SCREENCAPTUREKIT
     SCStream *scStream API_AVAILABLE(macos(13.0)) = nil;
     SCKAudioCaptureDelegate *scDelegate API_AVAILABLE(macos(13.0)) = nil;
+    bool scOutputAdded = false;
+    bool scCaptureStarted = false;
 #endif
 
     ~Private() {
         cleanup();
     }
 
+    void drainCaptureQueue() {
+        if (captureQueue &&
+            dispatch_get_specific(&kCaptureQueueSpecificKey) != this) {
+            dispatch_sync(captureQueue, ^{});
+        }
+    }
+
+#if HAS_SCREENCAPTUREKIT
+    void cleanupSystemAudio() {
+        if (@available(macOS 13.0, *)) {
+            if (scDelegate) {
+                scDelegate.engine = nil;
+            }
+
+            if (scStream && scDelegate && scOutputAdded) {
+                NSError *removeError = nil;
+                if (![scStream removeStreamOutput:scDelegate
+                                             type:SCStreamOutputTypeAudio
+                                            error:&removeError]) {
+                    qWarning() << "CoreAudioCaptureEngine: Failed to remove system audio output:"
+                               << (removeError
+                                       ? QString::fromNSString(removeError.localizedDescription)
+                                       : QStringLiteral("unknown error"));
+                }
+            }
+            scOutputAdded = false;
+
+            if (scStream && scCaptureStarted) {
+                [scStream stopCaptureWithCompletionHandler:nil];
+            }
+            scCaptureStarted = false;
+
+            drainCaptureQueue();
+            scStream = nil;
+            scDelegate = nil;
+        }
+    }
+#endif
+
     void cleanup() {
+        if (audioDelegate) {
+            audioDelegate.engine = nil;
+        }
+        if (audioOutput) {
+            [audioOutput setSampleBufferDelegate:nil queue:nil];
+        }
+
         if (captureSession) {
             [captureSession stopRunning];
-            captureSession = nil;
         }
+
+#if HAS_SCREENCAPTUREKIT
+        cleanupSystemAudio();
+#else
+        drainCaptureQueue();
+#endif
+
+        captureSession = nil;
         audioInput = nil;
         audioOutput = nil;
         audioDelegate = nil;
-
-#if HAS_SCREENCAPTUREKIT
-        if (@available(macOS 13.0, *)) {
-            if (scStream) {
-                [scStream stopCaptureWithCompletionHandler:^(NSError *error) {}];
-                scStream = nil;
-            }
-            scDelegate = nil;
-        }
-#endif
-
-        if (captureQueue) {
-            captureQueue = nil;
-        }
+        captureQueue = nil;
     }
 };
 
@@ -444,6 +495,10 @@ bool CoreAudioCaptureEngine::start()
 
     // Create capture queue
     d->captureQueue = dispatch_queue_create("com.snaptray.audio.capture", DISPATCH_QUEUE_SERIAL);
+    dispatch_queue_set_specific(d->captureQueue,
+                                &kCaptureQueueSpecificKey,
+                                d,
+                                nullptr);
 
     // Set up microphone capture (only if permission granted)
     if (microphoneAvailable && (m_source == AudioSource::Microphone || m_source == AudioSource::Both)) {
@@ -515,8 +570,8 @@ bool CoreAudioCaptureEngine::start()
                 dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 
                 [SCShareableContent getShareableContentWithCompletionHandler:^(SCShareableContent *shareableContent, NSError *error) {
-                    contentResult = [shareableContent retain];
-                    contentError = [error retain];
+                    contentResult = shareableContent;
+                    contentError = error;
                     dispatch_semaphore_signal(semaphore);
                 }];
 
@@ -581,21 +636,21 @@ bool CoreAudioCaptureEngine::start()
                                     qDebug() << "CoreAudioCaptureEngine: Adding stream output...";
                                     NSError *addError = nil;
                                     BOOL added = [d->scStream addStreamOutput:d->scDelegate type:SCStreamOutputTypeAudio sampleHandlerQueue:d->captureQueue error:&addError];
+                                    d->scOutputAdded = added;
 
                                     if (!added || addError) {
                                         qWarning() << "CoreAudioCaptureEngine: Failed to add stream output:"
                                                    << (addError ? QString::fromNSString(addError.localizedDescription) : "unknown error");
                                         emit warning(QString("Cannot add audio output: %1").arg(
                                             addError ? QString::fromNSString(addError.localizedDescription) : "unknown error"));
-                                        d->scStream = nil;
-                                        d->scDelegate = nil;
+                                        d->cleanupSystemAudio();
                                     } else {
                                         qDebug() << "CoreAudioCaptureEngine: Starting capture...";
                                         dispatch_semaphore_t startSem = dispatch_semaphore_create(0);
                                         __block NSError *startError = nil;
 
                                         [d->scStream startCaptureWithCompletionHandler:^(NSError *error) {
-                                            startError = [error retain];
+                                            startError = error;
                                             dispatch_semaphore_signal(startSem);
                                         }];
 
@@ -606,15 +661,10 @@ bool CoreAudioCaptureEngine::start()
                                             qWarning() << "CoreAudioCaptureEngine: Start error:" << QString::fromNSString(startError.localizedDescription);
                                             emit warning(QString("Cannot start system audio: %1").arg(
                                                 QString::fromNSString(startError.localizedDescription)));
-                                            d->scStream = nil;
-                                            d->scDelegate = nil;
+                                            d->cleanupSystemAudio();
                                         } else {
+                                            d->scCaptureStarted = true;
                                             qDebug() << "CoreAudioCaptureEngine: System audio capture active";
-                                        }
-
-                                        if (startError) {
-                                            [startError release];
-                                            startError = nil;
                                         }
                                     }
                                 }
@@ -627,18 +677,11 @@ bool CoreAudioCaptureEngine::start()
                 qWarning() << "CoreAudioCaptureEngine: Exception during SCK setup:"
                            << QString::fromNSString(exception.name) << "-" << QString::fromNSString(exception.reason);
                 emit warning("System audio capture failed");
-                d->scStream = nil;
-                d->scDelegate = nil;
+                d->cleanupSystemAudio();
             }
             @finally {
-                if (contentResult) {
-                    [contentResult release];
-                    contentResult = nil;
-                }
-                if (contentError) {
-                    [contentError release];
-                    contentError = nil;
-                }
+                contentResult = nil;
+                contentError = nil;
             }
         }
     }

@@ -12,6 +12,10 @@
 #include <mutex>
 #include <atomic>
 
+#if !__has_feature(objc_arc)
+#error "SCKCaptureEngine_mac.mm requires Objective-C ARC"
+#endif
+
 // ScreenCaptureKit is only available on macOS 12.3+
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 120300
 #define HAS_SCREENCAPTUREKIT 1
@@ -62,6 +66,7 @@ public:
     int frameRate = 30;
     std::atomic<bool> running{false};
     bool useScreenCaptureKit = false;
+    bool captureStartRequested = false;
 
     // Windows to exclude from capture (stored as CGWindowID)
     QList<CGWindowID> excludedWindowIds;
@@ -103,7 +108,7 @@ API_AVAILABLE(macos(12.3))
     @try {
         SCKCaptureEngine::Private *localEngine = self.engine;
 
-        if (_invalidated || type != SCStreamOutputTypeScreen || !localEngine) {
+        if (self.invalidated || type != SCStreamOutputTypeScreen || !localEngine) {
             return;
         }
 
@@ -143,7 +148,7 @@ API_AVAILABLE(macos(12.3))
             imageBuffer
         );
 
-        if (!_invalidated && localEngine) {
+        if (!self.invalidated && localEngine) {
             localEngine->setLatestFrame(wrappedImage);
         } else {
             // If invalidated or no engine, we must release the buffer ourselves
@@ -176,40 +181,55 @@ void SCKCaptureEngine::Private::cleanup()
 {
 #if HAS_SCREENCAPTUREKIT
     if (@available(macOS 12.3, *)) {
+        SCKStreamDelegate *localDelegate = delegate;
+        SCStream *localStream = stream;
+
         // Step 1: Mark as invalidated to prevent new frame processing
-        if (delegate) {
-            delegate.invalidated = YES;
-            delegate.engine = nil;
+        if (localDelegate) {
+            localDelegate.invalidated = YES;
+            localDelegate.engine = nil;
         }
 
-        // Step 2: Wait for all in-progress callbacks to complete (max 3 seconds)
-        if (delegate && delegate.processingGroup) {
-            dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC);
-            long result = dispatch_group_wait(delegate.processingGroup, timeout);
-            if (result != 0) {
-                qWarning() << "SCKCaptureEngine::cleanup - Timeout waiting for callbacks to complete";
-            }
-        }
-
-        // Step 3: Stop the stream
-        if (stream) {
+        // Step 2: Stop the producer before releasing its stream/delegate graph.
+        if (localStream && captureStartRequested) {
             dispatch_semaphore_t stopSem = dispatch_semaphore_create(0);
-            [stream stopCaptureWithCompletionHandler:^(NSError *error) {
+            [localStream stopCaptureWithCompletionHandler:^(NSError *error) {
+                // Keep the asynchronous stream/delegate graph alive through
+                // completion even if the bounded wait below times out.
+                (void)localStream;
+                (void)localDelegate;
                 if (error) {
                     NSLog(@"SCKCaptureEngine: stopCapture error: %@", error.localizedDescription);
                 }
                 dispatch_semaphore_signal(stopSem);
             }];
-            dispatch_semaphore_wait(stopSem, dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC));
-            stream = nil;
+            if (dispatch_semaphore_wait(
+                    stopSem,
+                    dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC)) != 0) {
+                qWarning() << "SCKCaptureEngine::cleanup - Timeout stopping capture";
+            }
+        }
+        captureStartRequested = false;
+
+        // Step 3: All callbacks that could have observed the old engine pointer
+        // must finish before the C++ Private object can be destroyed.
+        if (localDelegate && localDelegate.processingGroup) {
+            dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC);
+            if (dispatch_group_wait(localDelegate.processingGroup, timeout) != 0) {
+                qWarning() << "SCKCaptureEngine::cleanup - Slow callback shutdown; waiting for safety";
+                dispatch_group_wait(localDelegate.processingGroup, DISPATCH_TIME_FOREVER);
+            }
         }
 
-        // Step 4: Clean up delegate (all callbacks are now complete)
+        // Step 4: Release the last frame and the ARC-owned object graph.
+        setLatestFrame(QImage());
+        stream = nil;
         delegate = nil;
         targetDisplay = nil;
     }
 #endif
     running = false;
+    useScreenCaptureKit = false;
 }
 
 // SCKCaptureEngine implementation
@@ -251,7 +271,12 @@ bool SCKCaptureEngine::hasScreenRecordingPermission()
             dispatch_semaphore_signal(semaphore);
         }];
 
-        dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC));
+        const long waitResult = dispatch_semaphore_wait(
+            semaphore,
+            dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC));
+        if (waitResult != 0) {
+            return false;
+        }
         return hasPermission;
     }
 #endif
@@ -283,7 +308,7 @@ void SCKCaptureEngine::setExcludedWindows(const QList<WId> &windowIds)
     d->excludedWindowIds.clear();
     for (WId wid : windowIds) {
         // Convert Qt WId (NSView*) to CGWindowID
-        NSView *view = reinterpret_cast<NSView *>(wid);
+        NSView *view = (__bridge NSView *)reinterpret_cast<void *>(wid);
         if (view) {
             NSWindow *window = [view window];
             if (window) {
@@ -300,6 +325,15 @@ bool SCKCaptureEngine::start()
     qDebug() << "SCKCaptureEngine::start() - BEGIN";
     qDebug() << "SCKCaptureEngine::start() - targetScreen:" << (d->targetScreen ? d->targetScreen->name() : "NULL");
     qDebug() << "SCKCaptureEngine::start() - captureRegion:" << d->captureRegion;
+
+    if (d->running) {
+        qWarning() << "SCKCaptureEngine::start() - Capture is already running";
+        emit error("Capture is already running");
+        return false;
+    }
+
+    // Release any partially initialized graph left by an earlier failed start.
+    d->cleanup();
 
     if (!d->targetScreen || d->captureRegion.isEmpty()) {
         qDebug() << "SCKCaptureEngine::start() - ERROR: Region or screen not configured";
@@ -320,13 +354,20 @@ bool SCKCaptureEngine::start()
 
         [SCShareableContent getShareableContentWithCompletionHandler:^(
             SCShareableContent *shareableContent, NSError *error) {
-            // Retain the content to prevent it from being released
-            content = [shareableContent retain];
-            contentError = [error retain];
+            content = shareableContent;
+            contentError = error;
             dispatch_semaphore_signal(semaphore);
         }];
 
-        dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+        const long contentWaitResult = dispatch_semaphore_wait(
+            semaphore,
+            dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+        if (contentWaitResult != 0) {
+            qWarning() << "SCKCaptureEngine: Timed out getting shareable content";
+            d->useScreenCaptureKit = false;
+            emit error("Timed out getting screen content");
+            return false;
+        }
         qDebug() << "SCKCaptureEngine::start() - Shareable content retrieved, content:" << (content ? "valid" : "nil");
 
         if (!content || contentError) {
@@ -334,8 +375,6 @@ bool SCKCaptureEngine::start()
                        << (contentError ? QString::fromNSString(contentError.localizedDescription) : "timeout");
             d->useScreenCaptureKit = false;
             emit error("Failed to get screen content. Check screen recording permission.");
-            [content release];
-            [contentError release];
             return false;
         }
 
@@ -408,9 +447,8 @@ bool SCKCaptureEngine::start()
 
             if (!d->targetDisplay) {
                 qWarning() << "SCKCaptureEngine: No display found";
-                d->useScreenCaptureKit = false;
                 emit error("No display found for capture");
-                [content release];
+                d->cleanup();
                 return false;
             }
 
@@ -508,17 +546,23 @@ bool SCKCaptureEngine::start()
             if (!success) {
                 qWarning() << "SCKCaptureEngine: Failed to add stream output:"
                            << QString::fromNSString(addOutputError.localizedDescription);
-                d->useScreenCaptureKit = false;
                 emit error("Failed to initialize capture stream");
-                [content release];
+                d->cleanup();
                 return false;
             }
 
             qDebug() << "SCKCaptureEngine::start() - Starting capture...";
             dispatch_semaphore_t startSemaphore = dispatch_semaphore_create(0);
             __block NSError *startError = nil;
+            SCStream *startStream = d->stream;
+            SCKStreamDelegate *startDelegate = d->delegate;
 
-            [d->stream startCaptureWithCompletionHandler:^(NSError *error) {
+            d->captureStartRequested = true;
+            [startStream startCaptureWithCompletionHandler:^(NSError *error) {
+                // A late completion after our timeout must still have a valid
+                // stream/delegate graph while cleanup requests cancellation.
+                (void)startStream;
+                (void)startDelegate;
                 if (error) {
                     NSLog(@"SCKCaptureEngine: startCapture error: %@", error.localizedDescription);
                 }
@@ -527,29 +571,32 @@ bool SCKCaptureEngine::start()
             }];
 
             qDebug() << "SCKCaptureEngine::start() - Waiting for capture to start...";
-            dispatch_semaphore_wait(startSemaphore, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+            const long startWaitResult = dispatch_semaphore_wait(
+                startSemaphore,
+                dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+            if (startWaitResult != 0) {
+                qWarning() << "SCKCaptureEngine: Timed out starting capture";
+                emit error("Timed out starting capture");
+                d->cleanup();
+                return false;
+            }
             qDebug() << "SCKCaptureEngine::start() - Capture start completed, error:" << (startError ? "YES" : "NO");
 
             if (startError) {
                 qWarning() << "SCKCaptureEngine: Failed to start capture:"
                            << QString::fromNSString(startError.localizedDescription);
-                d->useScreenCaptureKit = false;
                 emit error("Failed to start capture: " + QString::fromNSString(startError.localizedDescription));
-                [content release];
+                d->cleanup();
                 return false;
             }
-
-            // Release the retained content after successful setup
-            [content release];
 
             qDebug() << "SCKCaptureEngine::start() - Capture started successfully";
         } @catch (NSException *e) {
             qWarning() << "SCKCaptureEngine: Exception during initialization:"
                        << QString::fromNSString(e.name)
                        << QString::fromNSString(e.reason);
-            d->useScreenCaptureKit = false;
             emit error("Exception during capture initialization: " + QString::fromNSString(e.reason));
-            [content release];
+            d->cleanup();
             return false;
         }
     } else {
@@ -573,8 +620,9 @@ bool SCKCaptureEngine::start()
 
 void SCKCaptureEngine::stop()
 {
-    if (d->running) {
-        d->cleanup();
+    const bool wasRunning = d->running;
+    d->cleanup();
+    if (wasRunning) {
         qDebug() << "SCKCaptureEngine: Stopped";
     }
 }

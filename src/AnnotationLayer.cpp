@@ -60,7 +60,7 @@ void AnnotationLayer::trimHistory()
 
 void AnnotationLayer::undo()
 {
-    if (m_items.empty()) return;
+    if (m_eraseTransactionActive || m_items.empty()) return;
 
     // Check if the last item is an ErasedItemsGroup (from eraser action)
     if (auto* erasedGroup = dynamic_cast<ErasedItemsGroup*>(m_items.back().get())) {
@@ -102,7 +102,7 @@ void AnnotationLayer::undo()
 
 void AnnotationLayer::redo()
 {
-    if (m_redoStack.empty()) return;
+    if (m_eraseTransactionActive || m_redoStack.empty()) return;
 
     // Check if the item in redo stack is an ErasedItemsGroup
     if (auto* erasedGroup = dynamic_cast<ErasedItemsGroup*>(m_redoStack.back().get())) {
@@ -169,6 +169,9 @@ void AnnotationLayer::redo()
 
 void AnnotationLayer::clear()
 {
+    // A clear is authoritative. Any items temporarily owned by an active
+    // eraser stroke must not be restored into the newly cleared layer.
+    m_eraseTransactionActive = false;
     clearSelection();
     m_items.clear();
     m_redoStack.clear();
@@ -244,12 +247,12 @@ void AnnotationLayer::draw(QPainter &painter) const
 
 bool AnnotationLayer::canUndo() const
 {
-    return !m_items.empty();
+    return !m_eraseTransactionActive && !m_items.empty();
 }
 
 bool AnnotationLayer::canRedo() const
 {
-    return !m_redoStack.empty();
+    return !m_eraseTransactionActive && !m_redoStack.empty();
 }
 
 bool AnnotationLayer::isEmpty() const
@@ -321,7 +324,9 @@ std::vector<ErasedItemsGroup::IndexedItem> AnnotationLayer::removeItemsIntersect
     }
 
     if (!removedItems.empty()) {
-        m_redoStack.clear();  // Clear redo stack when items are erased
+        if (!m_eraseTransactionActive) {
+            m_redoStack.clear();
+        }
         renumberStepBadges();
         invalidateCache();
         clearSelection();
@@ -329,6 +334,43 @@ std::vector<ErasedItemsGroup::IndexedItem> AnnotationLayer::removeItemsIntersect
     }
 
     return removedItems;
+}
+
+void AnnotationLayer::beginEraseTransaction()
+{
+    m_eraseTransactionActive = true;
+}
+
+bool AnnotationLayer::endEraseTransaction()
+{
+    if (!m_eraseTransactionActive) {
+        return false;
+    }
+
+    m_eraseTransactionActive = false;
+    return true;
+}
+
+void AnnotationLayer::restoreRemovedItems(std::vector<ErasedItemsGroup::IndexedItem> items)
+{
+    if (items.empty()) {
+        return;
+    }
+
+    std::sort(items.begin(), items.end(),
+        [](const auto& a, const auto& b) { return a.originalIndex < b.originalIndex; });
+
+    m_items.reserve(m_items.size() + items.size());
+    for (auto& indexed : items) {
+        const size_t insertPos = (std::min)(indexed.originalIndex, m_items.size());
+        m_items.insert(m_items.begin() + static_cast<ptrdiff_t>(insertPos),
+            std::move(indexed.item));
+    }
+
+    renumberStepBadges();
+    invalidateCache();
+    clearSelection();
+    emit changed();
 }
 
 int AnnotationLayer::hitTestText(const QPoint &pos) const

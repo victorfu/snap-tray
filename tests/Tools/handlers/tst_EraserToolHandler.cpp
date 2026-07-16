@@ -45,11 +45,16 @@ private slots:
 
     // Cancellation tests
     void testCancelDrawing();
+    void testCancelDrawing_RestoresErasedItemsInOriginalOrder();
+    void testCancelDrawing_PreservesExistingRedoHistory();
+    void testOnDeactivate_RestoresErasedItems();
+    void testOnDeactivate_DoesNotRestoreAfterLayerClear();
 
     // Eraser functionality tests
     void testErasesIntersectingItems();
     void testErasesIntersectingMarkerItems();
     void testDoesNotEraseNonIntersecting();
+    void testEraseAcrossSamples_UndoRedoPreservesOriginalOrder();
     void testCursor_UsesCenteredPixmapHotspot();
     void testCursor_UsesSingleCrispOutline();
 
@@ -199,6 +204,131 @@ void TestEraserToolHandler::testCancelDrawing()
     QVERIFY(!m_handler->isDrawing());
 }
 
+void TestEraserToolHandler::testCancelDrawing_RestoresErasedItemsInOriginalOrder()
+{
+    const QVector<QPointF> firstPoints = {
+        QPointF(100, 20), QPointF(150, 20), QPointF(200, 20)
+    };
+    const QVector<QPointF> firstMiddlePoints = {
+        QPointF(100, 42), QPointF(150, 42), QPointF(200, 42)
+    };
+    const QVector<QPointF> secondMiddlePoints = {
+        QPointF(100, 58), QPointF(150, 58), QPointF(200, 58)
+    };
+    const QVector<QPointF> lastPoints = {
+        QPointF(100, 80), QPointF(150, 80), QPointF(200, 80)
+    };
+    addTestStroke(firstPoints);
+    addTestStroke(firstMiddlePoints);
+    addTestStroke(secondMiddlePoints);
+    addTestStroke(lastPoints);
+
+    AnnotationItem* firstItem = m_layer->itemAt(0);
+    AnnotationItem* firstMiddleItem = m_layer->itemAt(1);
+    AnnotationItem* secondMiddleItem = m_layer->itemAt(2);
+    AnnotationItem* lastItem = m_layer->itemAt(3);
+
+    // A single erase sample removes two adjacent items. Their indices must be
+    // mapped as one batch so restoring them does not change the z-order.
+    m_handler->onMousePress(m_context, QPoint(150, 50));
+
+    QCOMPARE(m_layer->itemCount(), static_cast<size_t>(2));
+    QCOMPARE(m_layer->itemAt(0), firstItem);
+    QCOMPARE(m_layer->itemAt(1), lastItem);
+
+    m_handler->cancelDrawing();
+
+    QVERIFY(!m_handler->isDrawing());
+    QCOMPARE(m_layer->itemCount(), static_cast<size_t>(4));
+    QCOMPARE(m_layer->itemAt(0), firstItem);
+    QCOMPARE(m_layer->itemAt(1), firstMiddleItem);
+    QCOMPARE(m_layer->itemAt(2), secondMiddleItem);
+    QCOMPARE(m_layer->itemAt(3), lastItem);
+    QVERIFY(dynamic_cast<ErasedItemsGroup*>(m_layer->itemAt(3)) == nullptr);
+    QVERIFY(!m_layer->canRedo());
+
+    // Cancellation must not create an eraser history entry. The next undo is
+    // still the creation of the last original annotation.
+    m_layer->undo();
+    QCOMPARE(m_layer->itemCount(), static_cast<size_t>(3));
+    QCOMPARE(m_layer->itemAt(0), firstItem);
+    QCOMPARE(m_layer->itemAt(1), firstMiddleItem);
+    QCOMPARE(m_layer->itemAt(2), secondMiddleItem);
+}
+
+void TestEraserToolHandler::testCancelDrawing_PreservesExistingRedoHistory()
+{
+    const QVector<QPointF> firstPoints = {
+        QPointF(100, 40), QPointF(150, 40), QPointF(200, 40)
+    };
+    const QVector<QPointF> secondPoints = {
+        QPointF(100, 100), QPointF(150, 100), QPointF(200, 100)
+    };
+    addTestStroke(firstPoints);
+    addTestStroke(secondPoints);
+
+    AnnotationItem* firstItem = m_layer->itemAt(0);
+    AnnotationItem* secondItem = m_layer->itemAt(1);
+    m_layer->undo();
+    QVERIFY(m_layer->canRedo());
+
+    m_handler->onMousePress(m_context, QPoint(150, 40));
+
+    QCOMPARE(m_layer->itemCount(), static_cast<size_t>(0));
+    QVERIFY(!m_layer->canUndo());
+    QVERIFY(!m_layer->canRedo());
+
+    m_handler->cancelDrawing();
+
+    QCOMPARE(m_layer->itemCount(), static_cast<size_t>(1));
+    QCOMPARE(m_layer->itemAt(0), firstItem);
+    QVERIFY(m_layer->canRedo());
+
+    m_layer->redo();
+    QCOMPARE(m_layer->itemCount(), static_cast<size_t>(2));
+    QCOMPARE(m_layer->itemAt(0), firstItem);
+    QCOMPARE(m_layer->itemAt(1), secondItem);
+}
+
+void TestEraserToolHandler::testOnDeactivate_RestoresErasedItems()
+{
+    const QVector<QPointF> points = {
+        QPointF(100, 100), QPointF(150, 100), QPointF(200, 100)
+    };
+    addTestStroke(points);
+    AnnotationItem* item = m_layer->itemAt(0);
+
+    m_handler->onMousePress(m_context, QPoint(150, 100));
+    QCOMPARE(m_layer->itemCount(), static_cast<size_t>(0));
+
+    m_handler->onDeactivate(m_context);
+
+    QVERIFY(!m_handler->isDrawing());
+    QCOMPARE(m_layer->itemCount(), static_cast<size_t>(1));
+    QCOMPARE(m_layer->itemAt(0), item);
+}
+
+void TestEraserToolHandler::testOnDeactivate_DoesNotRestoreAfterLayerClear()
+{
+    const QVector<QPointF> points = {
+        QPointF(100, 100), QPointF(150, 100), QPointF(200, 100)
+    };
+    addTestStroke(points);
+
+    m_handler->onMousePress(m_context, QPoint(150, 100));
+    QCOMPARE(m_layer->itemCount(), static_cast<size_t>(0));
+    QVERIFY(m_layer->isHistoryLocked());
+
+    // A destructive clear supersedes the in-progress stroke. Switching tools
+    // afterwards must not restore the items temporarily owned by the eraser.
+    m_layer->clear();
+    QVERIFY(!m_layer->isHistoryLocked());
+    m_handler->onDeactivate(m_context);
+
+    QVERIFY(!m_handler->isDrawing());
+    QCOMPARE(m_layer->itemCount(), static_cast<size_t>(0));
+}
+
 // ============================================================================
 // Eraser Functionality Tests
 // ============================================================================
@@ -258,6 +388,48 @@ void TestEraserToolHandler::testDoesNotEraseNonIntersecting()
 
     // The stroke should still exist
     QCOMPARE(m_layer->itemCount(), 1);
+}
+
+void TestEraserToolHandler::testEraseAcrossSamples_UndoRedoPreservesOriginalOrder()
+{
+    auto addHorizontalStroke = [this](int y) {
+        addTestStroke({
+            QPointF(100, y), QPointF(150, y), QPointF(200, y)
+        });
+    };
+    addHorizontalStroke(20);
+    addHorizontalStroke(40);
+    addHorizontalStroke(60);
+    addHorizontalStroke(80);
+
+    AnnotationItem* firstItem = m_layer->itemAt(0);
+    AnnotationItem* firstErasedItem = m_layer->itemAt(1);
+    AnnotationItem* secondErasedItem = m_layer->itemAt(2);
+    AnnotationItem* lastItem = m_layer->itemAt(3);
+
+    m_handler->onMousePress(m_context, QPoint(150, 40));
+    m_handler->onMouseMove(m_context, QPoint(150, 60));
+    m_handler->onMouseRelease(m_context, QPoint(150, 60));
+
+    QCOMPARE(m_layer->itemCount(), static_cast<size_t>(3));
+    QCOMPARE(m_layer->itemAt(0), firstItem);
+    QCOMPARE(m_layer->itemAt(1), lastItem);
+    QVERIFY(dynamic_cast<ErasedItemsGroup*>(m_layer->itemAt(2)) != nullptr);
+
+    m_layer->undo();
+
+    QCOMPARE(m_layer->itemCount(), static_cast<size_t>(4));
+    QCOMPARE(m_layer->itemAt(0), firstItem);
+    QCOMPARE(m_layer->itemAt(1), firstErasedItem);
+    QCOMPARE(m_layer->itemAt(2), secondErasedItem);
+    QCOMPARE(m_layer->itemAt(3), lastItem);
+
+    m_layer->redo();
+
+    QCOMPARE(m_layer->itemCount(), static_cast<size_t>(3));
+    QCOMPARE(m_layer->itemAt(0), firstItem);
+    QCOMPARE(m_layer->itemAt(1), lastItem);
+    QVERIFY(dynamic_cast<ErasedItemsGroup*>(m_layer->itemAt(2)) != nullptr);
 }
 
 void TestEraserToolHandler::testCursor_UsesCenteredPixmapHotspot()

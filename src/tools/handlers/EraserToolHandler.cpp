@@ -4,13 +4,24 @@
 
 #include <algorithm>
 
+EraserToolHandler::~EraserToolHandler()
+{
+    cancelDrawing();
+}
+
 void EraserToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos)
 {
     if (!ctx || !ctx->annotationLayer) {
         return;
     }
 
+    if (m_isErasing) {
+        cancelDrawing();
+    }
+
     m_isErasing = true;
+    m_activeLayer = ctx->annotationLayer;
+    m_activeLayer->beginEraseTransaction();
     m_lastPoint = pos;
     m_currentStrokeErasedItems.clear();
     m_removedOriginalIndices.clear();
@@ -43,18 +54,32 @@ void EraserToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos)
         eraseAt(ctx, pos);
     }
 
-    if (!m_currentStrokeErasedItems.empty() && ctx) {
+    QPointer<AnnotationLayer> activeLayer = m_activeLayer;
+    const bool transactionValid = activeLayer && activeLayer->endEraseTransaction();
+
+    const bool canCommit = transactionValid && ctx &&
+        (ctx->addAnnotation || ctx->annotationLayer == activeLayer);
+    if (!m_currentStrokeErasedItems.empty() && canCommit) {
         ctx->addItem(std::make_unique<ErasedItemsGroup>(std::move(m_currentStrokeErasedItems)));
-        m_currentStrokeErasedItems.clear();
+    } else if (transactionValid && !m_currentStrokeErasedItems.empty()) {
+        activeLayer->restoreRemovedItems(std::move(m_currentStrokeErasedItems));
     }
 
     m_isErasing = false;
+    m_activeLayer.clear();
+    m_currentStrokeErasedItems.clear();
     m_removedOriginalIndices.clear();
     m_lastPoint = pos;
 
     if (ctx) {
         ctx->repaint();
     }
+}
+
+void EraserToolHandler::onDeactivate(ToolContext* ctx)
+{
+    Q_UNUSED(ctx);
+    cancelDrawing();
 }
 
 void EraserToolHandler::drawPreview(QPainter& painter) const
@@ -64,7 +89,16 @@ void EraserToolHandler::drawPreview(QPainter& painter) const
 
 void EraserToolHandler::cancelDrawing()
 {
+    QPointer<AnnotationLayer> activeLayer = m_activeLayer;
+    if (activeLayer) {
+        const bool transactionValid = activeLayer->endEraseTransaction();
+        if (transactionValid && !m_currentStrokeErasedItems.empty()) {
+            activeLayer->restoreRemovedItems(std::move(m_currentStrokeErasedItems));
+        }
+    }
+
     m_isErasing = false;
+    m_activeLayer.clear();
     m_currentStrokeErasedItems.clear();
     m_removedOriginalIndices.clear();
 }
@@ -90,7 +124,9 @@ CursorStyleSpec EraserToolHandler::cursorStyleSpec() const
 
 void EraserToolHandler::eraseAt(ToolContext* ctx, const QPoint& pos)
 {
-    if (!ctx || !ctx->annotationLayer) {
+    if (!ctx || !ctx->annotationLayer || !m_activeLayer ||
+        ctx->annotationLayer != m_activeLayer ||
+        !m_activeLayer->isHistoryLocked()) {
         return;
     }
 
@@ -101,13 +137,23 @@ void EraserToolHandler::eraseAt(ToolContext* ctx, const QPoint& pos)
         return;
     }
 
+    std::vector<size_t> removedOriginalIndices;
+    removedOriginalIndices.reserve(removedItems.size());
+
+    // All indices returned by one layer query refer to the same pre-query
+    // ordering. Map the whole batch before recording any of its removals.
     for (auto& indexed : removedItems) {
         indexed.originalIndex = mapToOriginalIndex(indexed.originalIndex);
+        removedOriginalIndices.push_back(indexed.originalIndex);
         m_currentStrokeErasedItems.push_back(std::move(indexed));
     }
+
+    m_removedOriginalIndices.insert(m_removedOriginalIndices.end(),
+        removedOriginalIndices.begin(), removedOriginalIndices.end());
+    std::sort(m_removedOriginalIndices.begin(), m_removedOriginalIndices.end());
 }
 
-size_t EraserToolHandler::mapToOriginalIndex(size_t currentIndex)
+size_t EraserToolHandler::mapToOriginalIndex(size_t currentIndex) const
 {
     size_t originalIndex = currentIndex;
     for (size_t removedIndex : m_removedOriginalIndices) {
@@ -117,10 +163,6 @@ size_t EraserToolHandler::mapToOriginalIndex(size_t currentIndex)
             break;
         }
     }
-
-    auto it = std::lower_bound(m_removedOriginalIndices.begin(),
-        m_removedOriginalIndices.end(), originalIndex);
-    m_removedOriginalIndices.insert(it, originalIndex);
 
     return originalIndex;
 }

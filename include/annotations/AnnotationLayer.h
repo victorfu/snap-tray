@@ -57,6 +57,17 @@ public:
     // Returns the removed items with their original indices (for undo support)
     std::vector<ErasedItemsGroup::IndexedItem> removeItemsIntersecting(const QPoint &point, int strokeWidth);
 
+    // Guard history while an eraser stroke owns items removed from the layer.
+    // Committing the stroke through addItem() clears redo; cancelling does not.
+    void beginEraseTransaction();
+    // Returns false if a destructive layer operation invalidated the transaction.
+    bool endEraseTransaction();
+    bool isHistoryLocked() const { return m_eraseTransactionActive; }
+
+    // Restore items removed by an in-progress eraser stroke without creating
+    // a history entry. Used when the stroke is cancelled.
+    void restoreRemovedItems(std::vector<ErasedItemsGroup::IndexedItem> items);
+
     // Selection support for text/emoji annotations
     int hitTestText(const QPoint &pos) const;
     int hitTestEmojiSticker(const QPoint &pos) const;
@@ -104,6 +115,7 @@ private:
 
     std::vector<std::unique_ptr<AnnotationItem>> m_items;
     std::vector<std::unique_ptr<AnnotationItem>> m_redoStack;
+    bool m_eraseTransactionActive = false;
     int m_selectedIndex = -1;
 
     struct CacheKey {

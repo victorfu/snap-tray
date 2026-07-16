@@ -12,6 +12,10 @@
 #include <QDateTime>
 #include <atomic>
 
+#if !__has_feature(objc_arc)
+#error "AVFoundationEncoder.mm requires Objective-C ARC"
+#endif
+
 class AVFoundationEncoderPrivate
 {
 public:
@@ -259,7 +263,7 @@ bool AVFoundationEncoder::start(const QString &outputPath, const QSize &frameSiz
     [d->assetWriter startSessionAtSourceTime:kCMTimeZero];
 
     // Cache pixel buffer attributes for frame creation (reused every frame)
-    // Use copy to ensure proper retain under ARC in C++ context
+    // Keep an immutable owned copy for reuse across frames.
     d->pixelBufferAttributes = [@{
         (NSString *)kCVPixelBufferCGImageCompatibilityKey: @YES,
         (NSString *)kCVPixelBufferCGBitmapContextCompatibilityKey: @YES,

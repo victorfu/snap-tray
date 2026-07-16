@@ -559,8 +559,15 @@ add_library(snaptray_platform STATIC
     >
 )
 
-# Enable ARC for AVFoundationPlayer (uses __weak references)
+# These Objective-C++ sources keep Cocoa/AVFoundation/ScreenCaptureKit objects
+# in C++ storage or across asynchronous callbacks. Compile them with ARC so
+# assigning nil and leaving a scope release the owned Objective-C/GCD objects.
 set_source_files_properties(
+    src/platform/WindowLevel_mac.mm
+    src/OCRManager.mm
+    src/capture/SCKCaptureEngine_mac.mm
+    src/capture/CoreAudioCaptureEngine_mac.mm
+    src/AVFoundationEncoder.mm
     src/video/AVFoundationPlayer_mac.mm
     PROPERTIES COMPILE_FLAGS "-fobjc-arc"
 )

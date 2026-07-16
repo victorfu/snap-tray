@@ -3519,6 +3519,10 @@ void PinWindow::handleToolbarToolSelected(int toolId)
 
 void PinWindow::handleToolbarUndo()
 {
+    if (m_annotationLayer && m_annotationLayer->isHistoryLocked()) {
+        return;
+    }
+
     const bool annotationCanUndo = m_annotationLayer && m_annotationLayer->canUndo();
     const bool cropCanUndo = canUndoCrop();
 
@@ -3547,6 +3551,10 @@ void PinWindow::handleToolbarUndo()
 
 void PinWindow::handleToolbarRedo()
 {
+    if (m_annotationLayer && m_annotationLayer->isHistoryLocked()) {
+        return;
+    }
+
     pruneInvalidCropRedoState();
 
     if (canRedoCrop()) {
@@ -3878,6 +3886,10 @@ void PinWindow::pruneInvalidCropRedoState()
         return;
     }
 
+    if (m_annotationLayer->isHistoryLocked()) {
+        return;
+    }
+
     if (matchesCropAnnotationBoundary(m_cropRedoStack.constLast())) {
         return;
     }
@@ -3896,8 +3908,11 @@ void PinWindow::updateUndoRedoState()
     }
 
     if (m_toolbar && m_annotationLayer) {
-        bool canUndo = m_annotationLayer->canUndo() || canUndoCrop();
-        bool canRedo = m_annotationLayer->canRedo() || canRedoCrop();
+        const bool historyLocked = m_annotationLayer->isHistoryLocked();
+        const bool canUndo = !historyLocked &&
+            (m_annotationLayer->canUndo() || canUndoCrop());
+        const bool canRedo = !historyLocked &&
+            (m_annotationLayer->canRedo() || canRedoCrop());
         m_toolbar->viewModel()->setCanUndo(canUndo);
         m_toolbar->viewModel()->setCanRedo(canRedo);
     }
