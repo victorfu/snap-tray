@@ -32,24 +32,9 @@ void PolylineToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos)
         m_currentPolyline->addPoint(pos);
         // Add a second point for the preview line
         m_currentPolyline->addPoint(pos);
-        m_clickTimer.start();
     } else {
         if (!m_currentPolyline)
             return;
-        // Check for double-click to finish
-        if (m_clickTimer.isValid() && m_clickTimer.elapsed() < DOUBLE_CLICK_INTERVAL) {
-            // Double-click detected - finish the polyline
-            // Apply angle snapping if Shift is held
-            QPoint snappedPos = pos;
-            if (ctx->shiftPressed && m_currentPolyline->pointCount() >= 2) {
-                QPoint lastConfirmed = m_currentPolyline->points().at(m_currentPolyline->pointCount() - 2);
-                snappedPos = AngleSnap::snapTo45Degrees(lastConfirmed, pos);
-            }
-            m_currentPolyline->updateLastPoint(snappedPos);
-            finishPolyline(ctx);
-            return;
-        }
-
         // Add a new point
         // Apply angle snapping if Shift is held
         QPoint snappedPos = pos;
@@ -59,7 +44,6 @@ void PolylineToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos)
         }
         m_currentPolyline->updateLastPoint(snappedPos);  // Confirm the preview point
         m_currentPolyline->addPoint(snappedPos);  // Add new preview point
-        m_clickTimer.restart();
     }
 
     ctx->repaint();

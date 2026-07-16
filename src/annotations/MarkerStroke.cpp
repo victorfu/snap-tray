@@ -201,12 +201,9 @@ QPainterPath MarkerStroke::strokePath() const
         return QPainterPath();
     }
 
-    // Build the stroke path with width
-    QPainterPath linePath;
-    linePath.moveTo(m_points[0]);
-    for (int i = 1; i < m_points.size(); ++i) {
-        linePath.lineTo(m_points[i]);
-    }
+    // Use the same smoothed centerline as draw() so eraser hit-testing
+    // matches the visible marker at sharp turns.
+    const QPainterPath linePath = buildSmoothPath(m_points);
 
     QPainterPathStroker stroker;
     stroker.setWidth(m_width);

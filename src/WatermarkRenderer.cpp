@@ -63,9 +63,11 @@ void WatermarkRenderer::renderImage(QPainter &painter, const QRect &targetRect, 
     int margin = settings.margin;
     QRect imageRect = calculateWatermarkRect(targetRect, logicalScaledSize, settings.position, margin);
 
-    // Apply opacity and draw watermark
+    // Apply opacity only to the watermark. Callers may keep using the painter.
+    painter.save();
     painter.setOpacity(settings.opacity);
     painter.drawPixmap(imageRect.topLeft(), scaledImage);
+    painter.restore();
 }
 
 QPixmap WatermarkRenderer::applyToPixmap(const QPixmap &source, const Settings &settings)

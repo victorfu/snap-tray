@@ -200,6 +200,11 @@ target_link_libraries(PinWindow_Transform PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_Transform COMMAND PinWindow_Transform)
 set_tests_properties(PinWindow_Transform PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(PinWindow_WatermarkRenderer PinWindow/tst_WatermarkRenderer.cpp)
+target_link_libraries(PinWindow_WatermarkRenderer PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_WatermarkRenderer COMMAND PinWindow_WatermarkRenderer)
+set_tests_properties(PinWindow_WatermarkRenderer PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(PinWindow_Resize PinWindow/tst_Resize.cpp)
 target_link_libraries(PinWindow_Resize PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_Resize COMMAND PinWindow_Resize)
@@ -765,6 +770,11 @@ add_executable(Tools_ArrowToolHandler Tools/handlers/tst_ArrowToolHandler.cpp)
 target_link_libraries(Tools_ArrowToolHandler PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Tools_ArrowToolHandler COMMAND Tools_ArrowToolHandler)
 set_tests_properties(Tools_ArrowToolHandler PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Tools_PolylineToolHandler Tools/handlers/tst_PolylineToolHandler.cpp)
+target_link_libraries(Tools_PolylineToolHandler PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Tools_PolylineToolHandler COMMAND Tools_PolylineToolHandler)
+set_tests_properties(Tools_PolylineToolHandler PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(Tools_ShapeToolHandler Tools/handlers/tst_ShapeToolHandler.cpp)
 target_link_libraries(Tools_ShapeToolHandler PRIVATE snaptray_ui Qt6::Test)

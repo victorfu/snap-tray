@@ -55,6 +55,7 @@ private slots:
     void testIntersectsCircle_Intersection();
     void testIntersectsCircle_EdgeCase();
     void testIntersectsCircle_EmptyStroke();
+    void testIntersectsCircle_FollowsSmoothPathAtSharpTurn();
 
     // Stroke path tests
     void testStrokePath_EmptyPoints();
@@ -469,6 +470,21 @@ void TestMarkerStroke::testIntersectsCircle_EmptyStroke()
 {
     MarkerStroke stroke(QVector<QPointF>(), Qt::yellow, 20);
     QVERIFY(!stroke.intersectsCircle(QPoint(100, 100), 10));
+}
+
+void TestMarkerStroke::testIntersectsCircle_FollowsSmoothPathAtSharpTurn()
+{
+    const QVector<QPointF> points = {
+        QPointF(20, 100),
+        QPointF(100, 20),
+        QPointF(180, 100)
+    };
+    MarkerStroke stroke(points, Qt::yellow, 20);
+
+    // The midpoint-smoothed curve passes through (100, 40), while the raw
+    // control-point polyline passes through (100, 20).
+    QVERIFY(stroke.intersectsCircle(QPoint(100, 40), 1));
+    QVERIFY(!stroke.intersectsCircle(QPoint(100, 20), 1));
 }
 
 // ============================================================================

@@ -27,20 +27,6 @@ void ArrowToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
     if (m_isPolylineMode) {
         if (!m_currentPolyline)
             return;
-        // Already in polyline mode - check for double-click to finish
-        if (m_clickTimer.isValid() && m_clickTimer.elapsed() < DOUBLE_CLICK_INTERVAL) {
-            // Double-click detected - finish the polyline
-            // Apply angle snapping if Shift is held
-            QPoint snappedPos = pos;
-            if (ctx->shiftPressed && m_currentPolyline->pointCount() >= 2) {
-                QPoint lastConfirmed = m_currentPolyline->points().at(m_currentPolyline->pointCount() - 2);
-                snappedPos = AngleSnap::snapTo45Degrees(lastConfirmed, pos);
-            }
-            m_currentPolyline->updateLastPoint(snappedPos);
-            finishPolyline(ctx);
-            return;
-        }
-
         // Add a new point (confirm the preview point and add new preview)
         // Apply angle snapping if Shift is held
         QPoint snappedPos = pos;
@@ -50,7 +36,6 @@ void ArrowToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
         }
         m_currentPolyline->updateLastPoint(snappedPos);  // Confirm current preview position
         m_currentPolyline->addPoint(snappedPos);  // Add new preview point
-        m_clickTimer.restart();
         ctx->repaint();
     } else {
         // Start new drawing - could become drag (arrow) or click (polyline)
@@ -145,8 +130,6 @@ void ArrowToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
         );
         m_currentPolyline->addPoint(m_startPoint);  // First point
         m_currentPolyline->addPoint(pos);  // Preview point (same as start initially)
-
-        m_clickTimer.restart();
     }
 
     if (!committedAnnotation) {

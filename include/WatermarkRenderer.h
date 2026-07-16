@@ -20,7 +20,7 @@ public:
     static constexpr Position BottomLeft = WatermarkSettingsManager::BottomLeft;
     static constexpr Position BottomRight = WatermarkSettingsManager::BottomRight;
 
-    // Render watermark directly onto a painter (for display)
+    // Render watermark directly onto a painter without changing caller state (for display)
     static void render(QPainter &painter, const QRect &targetRect, const Settings &settings);
 
     // Apply watermark to a pixmap and return a new pixmap (for save/copy)

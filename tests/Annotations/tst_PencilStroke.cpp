@@ -52,9 +52,54 @@ class TestPencilStroke : public QObject
     Q_OBJECT
 
 private slots:
+    void testAddPoint_BoundingRectPreservesConstructorStartPoint();
+    void testIntersectsCircle_FollowsSmoothPathAtSharpTurn();
+    void testIntersectsCircle_BoundingRectCoversSmoothOvershoot();
     void testTranslate_UpdatesBoundingRectAfterCacheWarmup();
     void testTranslate_InvalidatesCachedPath();
 };
+
+void TestPencilStroke::testAddPoint_BoundingRectPreservesConstructorStartPoint()
+{
+    PencilStroke stroke({QPointF(20, 20)}, Qt::red, 4, LineStyle::Solid);
+
+    stroke.addPoint(QPointF(200, 200));
+
+    QVERIFY(stroke.boundingRect().contains(QPoint(20, 20)));
+    QVERIFY(stroke.intersectsCircle(QPoint(20, 20), 1));
+}
+
+void TestPencilStroke::testIntersectsCircle_FollowsSmoothPathAtSharpTurn()
+{
+    const QVector<QPointF> points = {
+        QPointF(20, 200),
+        QPointF(200, 20),
+        QPointF(380, 200)
+    };
+    PencilStroke stroke(points, Qt::red, 4, LineStyle::Solid);
+
+    // The centripetal Catmull-Rom curve passes through (110, 87.5), while the
+    // raw control-point polyline passes through (110, 110).
+    QVERIFY(stroke.intersectsCircle(QPoint(110, 88), 1));
+    QVERIFY(!stroke.intersectsCircle(QPoint(110, 110), 1));
+}
+
+void TestPencilStroke::testIntersectsCircle_BoundingRectCoversSmoothOvershoot()
+{
+    const QVector<QPointF> points = {
+        QPointF(20, 100),
+        QPointF(420, 100),
+        QPointF(420, 500),
+        QPointF(820, 500)
+    };
+    PencilStroke stroke(points, Qt::red, 4, LineStyle::Solid);
+
+    // The first Catmull-Rom segment overshoots above every sampled point.
+    // Its visible centerline is near (316, 70), so the bounding-box early
+    // rejection must include the curve rather than only the raw points.
+    QVERIFY(stroke.boundingRect().contains(QPoint(316, 70)));
+    QVERIFY(stroke.intersectsCircle(QPoint(316, 70), 10));
+}
 
 void TestPencilStroke::testTranslate_UpdatesBoundingRectAfterCacheWarmup()
 {

@@ -5,7 +5,6 @@
 #include "annotations/PolylineAnnotation.h"
 
 #include <QPoint>
-#include <QElapsedTimer>
 #include <memory>
 
 /**
@@ -44,8 +43,6 @@ private:
 
     bool m_isDrawing = false;
     std::unique_ptr<PolylineAnnotation> m_currentPolyline;
-    QElapsedTimer m_clickTimer;
-    static constexpr int DOUBLE_CLICK_INTERVAL = 300;  // ms
 };
 
 #endif // POLYLINETOOLHANDLER_H

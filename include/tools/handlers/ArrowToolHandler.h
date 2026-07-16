@@ -7,7 +7,6 @@
 #include "annotations/PolylineAnnotation.h"
 
 #include <QPoint>
-#include <QElapsedTimer>
 #include <memory>
 
 /**
@@ -58,8 +57,6 @@ private:
 
     // Polyline mode state (click-to-add-points)
     std::unique_ptr<PolylineAnnotation> m_currentPolyline;
-    QElapsedTimer m_clickTimer;
-    static constexpr int DOUBLE_CLICK_INTERVAL = 300;  // ms
 };
 
 #endif // ARROWTOOLHANDLER_H

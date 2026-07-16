@@ -50,6 +50,7 @@ private slots:
 
     // Click mode tests (polyline)
     void testClickMode_AddsPointsOnClick();
+    void testClickMode_RapidDistantClickDoesNotFinish();
 
     // Preview tests
     void testDrawPreview_DragMode();
@@ -233,6 +234,30 @@ void TestArrowToolHandler::testClickMode_AddsPointsOnClick()
     m_handler->onMousePress(m_context, QPoint(150, 150));
 
     QVERIFY(m_repaintCount > repaintAfterFirstClick);
+}
+
+void TestArrowToolHandler::testClickMode_RapidDistantClickDoesNotFinish()
+{
+    const QPoint start(20, 20);
+    const QPoint nextVertex(180, 140);
+
+    // Enter polyline mode, then immediately add a distant vertex. A quick
+    // ordinary click must not be treated as a double-click based on time alone.
+    m_handler->onMousePress(m_context, start);
+    m_handler->onMouseRelease(m_context, start);
+    m_handler->onMousePress(m_context, nextVertex);
+
+    QVERIFY(m_handler->isDrawing());
+    QCOMPARE(m_layer->itemCount(), size_t(0));
+
+    // The actual double-click callback remains the completion path.
+    m_handler->onDoubleClick(m_context, nextVertex);
+
+    QVERIFY(!m_handler->isDrawing());
+    QCOMPARE(m_layer->itemCount(), size_t(1));
+    auto* polyline = dynamic_cast<PolylineAnnotation*>(m_layer->itemAt(0));
+    QVERIFY(polyline != nullptr);
+    QCOMPARE(polyline->points(), QVector<QPoint>({start, nextVertex}));
 }
 
 // ============================================================================

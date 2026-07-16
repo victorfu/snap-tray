@@ -57,6 +57,44 @@ void appendCentripetalCatmullRomSegment(QPainterPath& path,
     path.cubicTo(c1, c2, p2);
 }
 
+QPainterPath buildSmoothPath(const QVector<QPointF>& points, int firstSegment = 0)
+{
+    QPainterPath path;
+    if (points.size() < 2 || firstSegment >= points.size() - 1) {
+        return path;
+    }
+
+    firstSegment = qMax(0, firstSegment);
+    path.moveTo(points[firstSegment]);
+    for (int i = firstSegment; i < points.size() - 1; ++i) {
+        const QPointF p0 = (i == 0)
+            ? points[0] * 2.0 - points[1]
+            : points[i - 1];
+        const QPointF& p1 = points[i];
+        const QPointF& p2 = points[i + 1];
+        const QPointF p3 = (i == points.size() - 2)
+            ? points[i + 1] * 2.0 - points[i]
+            : points[i + 2];
+
+        appendCentripetalCatmullRomSegment(path, p0, p1, p2, p3);
+    }
+
+    return path;
+}
+
+QRect smoothPathBounds(const QVector<QPointF>& points, int width, int firstSegment = 0)
+{
+    if (points.isEmpty()) {
+        return {};
+    }
+
+    const QRectF centerlineBounds = points.size() == 1
+        ? QRectF(points.first(), points.first())
+        : buildSmoothPath(points, firstSegment).boundingRect();
+    const int margin = width / 2 + 1;
+    return centerlineBounds.toAlignedRect().adjusted(-margin, -margin, margin, margin);
+}
+
 } // namespace
 
 // ============================================================================
@@ -107,28 +145,7 @@ void PencilStroke::draw(QPainter &painter) const
     int pointCount = m_points.size();
 
     if (tailStart < pointCount - 1) {
-        QPainterPath tailPath;
-
-        // MoveTo: connect to cached path endpoint or start fresh
-        if (tailStart == 0) {
-            tailPath.moveTo(m_points[0]);
-        } else {
-            tailPath.moveTo(m_points[tailStart]);
-        }
-
-        for (int i = tailStart; i < pointCount - 1; ++i) {
-            const QPointF p0 = (i == 0)
-                ? m_points[0] * 2.0 - m_points[1]
-                : m_points[i - 1];
-            const QPointF &p1 = m_points[i];
-            const QPointF &p2 = m_points[i + 1];
-            const QPointF p3 = (i == pointCount - 2)
-                ? m_points[i + 1] * 2.0 - m_points[i]  // Reflect for last segment
-                : m_points[i + 2];
-
-            appendCentripetalCatmullRomSegment(tailPath, p0, p1, p2, p3);
-        }
-
+        const QPainterPath tailPath = buildSmoothPath(m_points, tailStart);
         painter.drawPath(tailPath);
     }
 
@@ -140,21 +157,7 @@ QRect PencilStroke::boundingRect() const
     if (m_points.isEmpty()) return QRect();
 
     if (m_boundingRectDirty) {
-        qreal minX = m_points[0].x();
-        qreal maxX = m_points[0].x();
-        qreal minY = m_points[0].y();
-        qreal maxY = m_points[0].y();
-
-        for (const QPointF &p : m_points) {
-            minX = qMin(minX, p.x());
-            maxX = qMax(maxX, p.x());
-            minY = qMin(minY, p.y());
-            maxY = qMax(maxY, p.y());
-        }
-
-        int margin = m_width / 2 + 1;
-        m_boundingRectCache = QRect(static_cast<int>(minX) - margin, static_cast<int>(minY) - margin,
-                                    static_cast<int>(maxX - minX) + 2 * margin, static_cast<int>(maxY - minY) + 2 * margin);
+        m_boundingRectCache = smoothPathBounds(m_points, m_width);
         m_boundingRectDirty = false;
     }
     return m_boundingRectCache;
@@ -211,16 +214,15 @@ void PencilStroke::addPoint(const QPointF &point)
         m_cachedSegmentCount++;
     }
 
-    // Incrementally update bounding rect cache
-    int margin = m_width / 2 + 1;
-    QRect pointRect(static_cast<int>(point.x()) - margin, static_cast<int>(point.y()) - margin,
-                    margin * 2, margin * 2);
-
-    if (m_boundingRectDirty || m_boundingRectCache.isEmpty()) {
-        m_boundingRectCache = pointRect;
-        m_boundingRectDirty = false;
-    } else {
-        m_boundingRectCache = m_boundingRectCache.united(pointRect);
+    // If the cache is already dirty, keep it dirty so the next boundingRect()
+    // recomputes from all points, including points provided at construction.
+    if (!m_boundingRectDirty) {
+        // Appending a point changes the former tail segment and adds one new
+        // segment. Union their smooth bounds into the cache; keeping the old
+        // tail bounds is conservative and avoids a full-path rebuild.
+        const int firstAffectedSegment = qMax(0, m_points.size() - 3);
+        m_boundingRectCache = m_boundingRectCache.united(
+            smoothPathBounds(m_points, m_width, firstAffectedSegment));
     }
 }
 
@@ -235,11 +237,14 @@ QPainterPath PencilStroke::strokePath() const
         return QPainterPath();
     }
 
-    // Build the stroke path with width
-    QPainterPath linePath;
-    linePath.moveTo(m_points[0]);
-    for (int i = 1; i < m_points.size(); ++i) {
-        linePath.lineTo(m_points[i]);
+    // Recreate the same cached/tail subpaths used by draw(). Keeping the
+    // subpath boundary preserves the round-cap geometry at their shared seam.
+    QPainterPath linePath = m_cachedPath;
+    const QPainterPath tailPath = buildSmoothPath(m_points, m_cachedSegmentCount);
+    if (linePath.isEmpty()) {
+        linePath = tailPath;
+    } else if (!tailPath.isEmpty()) {
+        linePath.addPath(tailPath);
     }
 
     QPainterPathStroker stroker;
