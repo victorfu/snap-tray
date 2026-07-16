@@ -11,6 +11,7 @@
 #include <memory>
 
 #include "encoding/EncoderFactory.h"
+#include "capture/ICaptureEngine.h"
 
 class QScreen;
 class ICaptureEngine;
@@ -37,7 +38,7 @@ public:
      */
     struct Config {
         QRect region;
-        QScreen *screen = nullptr;
+        CaptureScreenInfo screenInfo;
         int frameRate = 30;
         bool audioEnabled = false;
         // Audio format for encoder configuration (must match captured PCM format).

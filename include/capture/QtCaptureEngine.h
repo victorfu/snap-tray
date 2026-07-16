@@ -27,6 +27,7 @@ public:
     ~QtCaptureEngine() override;
 
     bool setRegion(const QRect &region, QScreen *screen) override;
+    bool setRegion(const QRect &region, const CaptureScreenInfo &screenInfo) override;
     bool start() override;
     void stop() override;
     bool isRunning() const override;
@@ -34,7 +35,10 @@ public:
     QString engineName() const override { return QStringLiteral("Qt Screen Grab"); }
 
 private:
+    QScreen *resolveTargetScreen() const;
+
     bool m_running = false;
+    CaptureScreenInfo m_screenInfo;
 };
 
 #endif // QTCAPTUREENGINE_H

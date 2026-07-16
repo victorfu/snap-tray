@@ -49,11 +49,13 @@ private slots:
     void testFinishEmitsSignal();
     void testFinishSetsNotRunning();
     void testFinishWithNoFrames();
+    void testFinishWithNoFramesPreservesExistingFile();
     void testFinishNotRunning();
 
     // Abort tests
     void testAbortCleansUp();
     void testAbortRemovesFile();
+    void testAbortPreservesExistingFile();
     void testAbortNotRunning();
     void testAbortSetsAborted();
 
@@ -343,11 +345,32 @@ void TestNativeGifEncoder::testFinishWithNoFrames()
 
     m_encoder->finish();
 
-    // msf_gif can produce valid (empty) GIF even without frames
-    // Verify encoder completes without crash
     QVERIFY(!m_encoder->isRunning());
+    QCOMPARE(errorSpy.count(), 1);
     QCOMPARE(finishedSpy.count(), 1);
-    // Note: msf_gif successfully creates empty GIF, so this returns true
+    QCOMPARE(finishedSpy.first().at(0).toBool(), false);
+    QCOMPARE(finishedSpy.first().at(1).toString(), path);
+    QVERIFY(!QFile::exists(path));
+    QVERIFY(m_encoder->lastError().contains("no frames"));
+}
+
+void TestNativeGifEncoder::testFinishWithNoFramesPreservesExistingFile()
+{
+    const QString path = tempFilePath("existing_no_frames.gif");
+    const QByteArray originalData("existing-user-data");
+    QFile existingFile(path);
+    QVERIFY(existingFile.open(QIODevice::WriteOnly));
+    QCOMPARE(existingFile.write(originalData), static_cast<qint64>(originalData.size()));
+    existingFile.close();
+
+    QVERIFY(m_encoder->start(path, QSize(100, 100), 30));
+    QSignalSpy finishedSpy(m_encoder, &NativeGifEncoder::finished);
+    m_encoder->finish();
+
+    QCOMPARE(finishedSpy.count(), 1);
+    QVERIFY(!finishedSpy.first().at(0).toBool());
+    QVERIFY(existingFile.open(QIODevice::ReadOnly));
+    QCOMPARE(existingFile.readAll(), originalData);
 }
 
 void TestNativeGifEncoder::testFinishNotRunning()
@@ -389,6 +412,23 @@ void TestNativeGifEncoder::testAbortRemovesFile()
     m_encoder->abort();
 
     QVERIFY(!QFile::exists(path));
+}
+
+void TestNativeGifEncoder::testAbortPreservesExistingFile()
+{
+    const QString path = tempFilePath("abort_existing.gif");
+    const QByteArray originalData("existing-user-data");
+    QFile existingFile(path);
+    QVERIFY(existingFile.open(QIODevice::WriteOnly));
+    QCOMPARE(existingFile.write(originalData), static_cast<qint64>(originalData.size()));
+    existingFile.close();
+
+    QVERIFY(m_encoder->start(path, QSize(100, 100), 30));
+    m_encoder->writeFrame(createTestFrame(QSize(100, 100)));
+    m_encoder->abort();
+
+    QVERIFY(existingFile.open(QIODevice::ReadOnly));
+    QCOMPARE(existingFile.readAll(), originalData);
 }
 
 void TestNativeGifEncoder::testAbortNotRunning()

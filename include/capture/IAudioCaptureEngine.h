@@ -117,6 +117,19 @@ public:
     virtual void stop() = 0;
 
     /**
+     * @brief Stop capture and arrange safe deferred destruction.
+     *
+     * Most engines can stop synchronously and use QObject::deleteLater().
+     * Engines whose worker may remain blocked can override this to retain
+     * themselves until the worker has actually finished.
+     */
+    virtual void disposeAsync()
+    {
+        stop();
+        deleteLater();
+    }
+
+    /**
      * @brief Pause audio capture (for sync with video pause)
      */
     virtual void pause() = 0;

@@ -2,9 +2,27 @@
 #include <QSignalSpy>
 #include <QThread>
 #include <QTemporaryDir>
+#include <QDir>
+#include <QFile>
+#include <type_traits>
+#include <utility>
 #include "RecordingInitTask.h"
 #include "RecordingRegionNormalizer.h"
 #include "utils/CoordinateHelper.h"
+
+namespace {
+
+template<typename T, typename = void>
+struct HasLiveScreenMember : std::false_type {};
+
+template<typename T>
+struct HasLiveScreenMember<T, std::void_t<decltype(std::declval<T>().screen)>>
+    : std::true_type {};
+
+static_assert(!HasLiveScreenMember<RecordingInitTask::Config>::value,
+              "RecordingInitTask::Config must not carry a live QScreen into a worker");
+
+} // namespace
 
 /**
  * @brief Tests for RecordingInitTask
@@ -33,6 +51,8 @@ private slots:
     void testConfigWithGif();
     void testConfigWithNativeEncoder();
     void testNormalizedRegionFrameSizeAlignment();
+    void testScreenMetadataSnapshot();
+    void testSckInitializationUsesScreenSnapshot();
 
     // Cancellation tests
     void testCancelBeforeRun();
@@ -79,7 +99,9 @@ RecordingInitTask::Config TestRecordingInitTask::createTestConfig()
 {
     RecordingInitTask::Config config;
     config.region = QRect(0, 0, 800, 600);
-    config.screen = nullptr;  // Will use primary screen
+    config.screenInfo.name = QStringLiteral("test-screen");
+    config.screenInfo.geometry = config.region;
+    config.screenInfo.devicePixelRatio = 1.0;
     config.frameRate = 30;
     config.audioEnabled = false;
     config.outputPath = m_tempDir->filePath("test_output.mp4");
@@ -101,6 +123,7 @@ void TestRecordingInitTask::testDefaultConfig()
     QVERIFY(!config.audioEnabled);
     QCOMPARE(config.outputFormat, EncoderFactory::Format::MP4);
     QCOMPARE(config.quality, 55);
+    QVERIFY(!config.screenInfo.isValid());
 }
 
 void TestRecordingInitTask::testConfigWithRegion()
@@ -162,6 +185,35 @@ void TestRecordingInitTask::testNormalizedRegionFrameSizeAlignment()
     config.frameSize = frameSize;
 
     QCOMPARE(config.frameSize, CoordinateHelper::toPhysical(config.region.size(), dpr));
+}
+
+void TestRecordingInitTask::testScreenMetadataSnapshot()
+{
+    RecordingInitTask::Config config = createTestConfig();
+    config.screenInfo.name = QStringLiteral("detached-display");
+    config.screenInfo.geometry = QRect(-1920, 0, 1920, 1080);
+    config.screenInfo.devicePixelRatio = 1.25;
+
+    RecordingInitTask task(config);
+
+    // Cancellation exercises the task lifecycle without requiring a live
+    // QScreen. Initialization consumes only this immutable snapshot.
+    task.cancel();
+    task.run();
+    QVERIFY(task.isCancelled());
+    QCOMPARE(task.result().error, QStringLiteral("Initialization cancelled"));
+}
+
+void TestRecordingInitTask::testSckInitializationUsesScreenSnapshot()
+{
+    QFile source(QDir(QStringLiteral(CAPTURE_SOURCE_ROOT))
+                     .filePath(QStringLiteral("SCKCaptureEngine_mac.mm")));
+    QVERIFY2(source.open(QIODevice::ReadOnly), qPrintable(source.errorString()));
+    const QByteArray content = source.readAll();
+
+    QVERIFY(content.contains("CaptureScreenInfo screenInfo"));
+    QVERIFY(!content.contains("QScreen *targetScreen"));
+    QVERIFY(!content.contains("d->targetScreen"));
 }
 
 // ============================================================================

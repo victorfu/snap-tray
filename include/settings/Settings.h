@@ -7,6 +7,7 @@
 #include <QSettings>
 #include <QStringList>
 #include <mutex>
+#include <string>
 #if defined(Q_OS_WIN)
 #include <windows.h>
 #endif
@@ -99,6 +100,16 @@ inline QString windowsReleaseSettingsPath()
 inline QString windowsDebugSettingsPath()
 {
     return QStringLiteral("HKEY_CURRENT_USER\\Software\\SnapTray-Debug");
+}
+
+inline QString windowsLegacyVendorSubKey()
+{
+    return QStringLiteral("Software\\Victor Fu");
+}
+
+inline QStringList windowsLegacyApplicationSubKeys()
+{
+    return {QStringLiteral("SnapTray"), QStringLiteral("SnapTray-Debug")};
 }
 
 inline QSettings platformSettingsStore()
@@ -278,46 +289,71 @@ inline bool clearSettingsStoreIfSeparate(QSettings& target, QSettings& source)
 }
 
 #if defined(Q_OS_WIN)
-inline bool removeWindowsLegacyVendorKey()
+inline bool isMissingWindowsRegistryPath(LONG result)
 {
-    const QString vendorPath = QStringLiteral("HKEY_CURRENT_USER\\Software\\Victor Fu");
-    LONG deleteTreeResult = RegDeleteTreeW(HKEY_CURRENT_USER, L"Software\\Victor Fu");
-    if (deleteTreeResult != ERROR_SUCCESS
-        && deleteTreeResult != ERROR_FILE_NOT_FOUND
-        && deleteTreeResult != ERROR_PATH_NOT_FOUND) {
+    return result == ERROR_FILE_NOT_FOUND || result == ERROR_PATH_NOT_FOUND;
+}
+
+inline bool removeWindowsLegacyApplicationKeys(HKEY rootKey, QString vendorSubKey)
+{
+    vendorSubKey.replace('/', '\\');
+    while (vendorSubKey.endsWith('\\')) {
+        vendorSubKey.chop(1);
+    }
+    if (rootKey == nullptr || vendorSubKey.isEmpty()) {
         logSettingsMigrationWarning(
-            QStringLiteral("Failed to delete legacy vendor tree: %1 (error=%2)")
-                .arg(vendorPath)
-                .arg(deleteTreeResult));
+            QStringLiteral("Refusing to remove legacy application keys with an empty registry root/path"));
         return false;
     }
 
-    LONG deleteKeyResult = RegDeleteKeyW(HKEY_CURRENT_USER, L"Software\\Victor Fu");
-    if (deleteKeyResult != ERROR_SUCCESS
-        && deleteKeyResult != ERROR_FILE_NOT_FOUND
-        && deleteKeyResult != ERROR_PATH_NOT_FOUND) {
-        logSettingsMigrationWarning(
-            QStringLiteral("Failed to delete legacy vendor key: %1 (error=%2)")
-                .arg(vendorPath)
-                .arg(deleteKeyResult));
-        return false;
-    }
+    bool cleanupSucceeded = true;
+    for (const QString& applicationSubKey : windowsLegacyApplicationSubKeys()) {
+        const QString keyPath = vendorSubKey + QLatin1Char('\\') + applicationSubKey;
+        const std::wstring nativeKeyPath = keyPath.toStdWString();
 
-    HKEY verifyKey = nullptr;
-    const LONG openResult = RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Victor Fu", 0, KEY_READ, &verifyKey);
-    if (openResult != ERROR_FILE_NOT_FOUND && openResult != ERROR_PATH_NOT_FOUND) {
-        if (openResult == ERROR_SUCCESS && verifyKey != nullptr) {
-            RegCloseKey(verifyKey);
+        const LONG deleteTreeResult = RegDeleteTreeW(rootKey, nativeKeyPath.c_str());
+        if (deleteTreeResult != ERROR_SUCCESS
+            && !isMissingWindowsRegistryPath(deleteTreeResult)) {
+            logSettingsMigrationWarning(
+                QStringLiteral("Failed to delete legacy application tree: %1 (error=%2)")
+                    .arg(keyPath)
+                    .arg(deleteTreeResult));
+            cleanupSucceeded = false;
+            continue;
         }
-        logSettingsMigrationWarning(
-            QStringLiteral("Legacy vendor key still exists after forced removal: %1 (error=%2)")
-                .arg(vendorPath)
-                .arg(openResult));
-        return false;
+
+        // Ensure the now-empty application key itself is removed as well.
+        const LONG deleteKeyResult = RegDeleteKeyW(rootKey, nativeKeyPath.c_str());
+        if (deleteKeyResult != ERROR_SUCCESS
+            && !isMissingWindowsRegistryPath(deleteKeyResult)) {
+            logSettingsMigrationWarning(
+                QStringLiteral("Failed to delete legacy application key: %1 (error=%2)")
+                    .arg(keyPath)
+                    .arg(deleteKeyResult));
+            cleanupSucceeded = false;
+            continue;
+        }
+
+        HKEY verifyKey = nullptr;
+        const LONG openResult = RegOpenKeyExW(
+            rootKey, nativeKeyPath.c_str(), 0, KEY_READ, &verifyKey);
+        if (!isMissingWindowsRegistryPath(openResult)) {
+            if (openResult == ERROR_SUCCESS && verifyKey != nullptr) {
+                RegCloseKey(verifyKey);
+            }
+            logSettingsMigrationWarning(
+                QStringLiteral("Legacy application key still exists after removal: %1 (error=%2)")
+                    .arg(keyPath)
+                    .arg(openResult));
+            cleanupSucceeded = false;
+            continue;
+        }
+
+        logSettingsMigrationInfo(
+            QStringLiteral("Removed legacy application key tree: %1").arg(keyPath));
     }
 
-    logSettingsMigrationInfo(QStringLiteral("Removed legacy vendor key tree: %1").arg(vendorPath));
-    return true;
+    return cleanupSucceeded;
 }
 #endif
 
@@ -408,7 +444,9 @@ inline void migrateLegacySettingsIfNeeded()
         cleanupSucceeded
             = clearSettingsStoreIfSeparate(platformSettings, legacyOrganizationSettings) && cleanupSucceeded;
 #if defined(Q_OS_WIN)
-        cleanupSucceeded = removeWindowsLegacyVendorKey() && cleanupSucceeded;
+        cleanupSucceeded = removeWindowsLegacyApplicationKeys(
+                               HKEY_CURRENT_USER, windowsLegacyVendorSubKey())
+            && cleanupSucceeded;
 #endif
 
         if (cleanupSucceeded) {

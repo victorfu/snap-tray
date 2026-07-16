@@ -5,8 +5,30 @@
 #include <QRect>
 #include <QImage>
 #include <QList>
+#include <QString>
 
 class QScreen;
+
+/**
+ * @brief Immutable metadata describing a screen for capture initialization.
+ *
+ * QScreen objects belong to the GUI thread and may be destroyed when a display
+ * is disconnected. Capture engines can use this value snapshot so worker
+ * threads never need to dereference a potentially stale QScreen pointer.
+ */
+struct CaptureScreenInfo
+{
+    QString name;
+    QRect geometry;
+    qreal devicePixelRatio = 1.0;
+
+    bool isValid() const
+    {
+        return !geometry.isEmpty() && devicePixelRatio > 0.0;
+    }
+
+    static CaptureScreenInfo fromScreen(const QScreen *screen);
+};
 
 /**
  * @brief Abstract interface for screen capture engines
@@ -35,6 +57,13 @@ public:
      * @return true if configuration successful
      */
     virtual bool setRegion(const QRect &region, QScreen *screen) = 0;
+
+    /**
+     * @brief Configure capture from immutable screen metadata.
+     *
+     * Engines that initialize off the GUI thread should override this method.
+     */
+    virtual bool setRegion(const QRect &region, const CaptureScreenInfo &screenInfo);
 
     /**
      * @brief Set the target frame rate

@@ -442,6 +442,21 @@ target_link_libraries(Encoding_EncodingWorker PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Encoding_EncodingWorker COMMAND Encoding_EncodingWorker)
 set_tests_properties(Encoding_EncodingWorker PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Video_VideoTrimmerSafety Video/tst_VideoTrimmerSafety.cpp)
+target_compile_definitions(Video_VideoTrimmerSafety PRIVATE
+    VIDEO_SOURCE_ROOT="${CMAKE_SOURCE_DIR}/src/video"
+)
+target_link_libraries(Video_VideoTrimmerSafety PRIVATE snaptray_platform Qt6::Test)
+add_test(NAME Video_VideoTrimmerSafety COMMAND Video_VideoTrimmerSafety)
+set_tests_properties(Video_VideoTrimmerSafety PROPERTIES TIMEOUT 30 LABELS "unit")
+
+if(WIN32)
+    add_executable(Video_MediaFoundationPipeline Video/tst_MediaFoundationPipeline.cpp)
+    target_link_libraries(Video_MediaFoundationPipeline PRIVATE snaptray_platform Qt6::Test)
+    add_test(NAME Video_MediaFoundationPipeline COMMAND Video_MediaFoundationPipeline)
+    set_tests_properties(Video_MediaFoundationPipeline PROPERTIES TIMEOUT 60 LABELS "integration;slow")
+endif()
+
 # ============================================================================
 # Detection Tests (link snaptray_algorithms)
 # ============================================================================
@@ -831,6 +846,9 @@ add_test(NAME RecordingManager_Lifecycle COMMAND RecordingManager_Lifecycle)
 set_tests_properties(RecordingManager_Lifecycle PROPERTIES TIMEOUT 60 LABELS "integration")
 
 add_executable(RecordingManager_InitTask RecordingManager/tst_InitTask.cpp)
+target_compile_definitions(RecordingManager_InitTask PRIVATE
+    CAPTURE_SOURCE_ROOT="${CMAKE_SOURCE_DIR}/src/capture"
+)
 target_link_libraries(RecordingManager_InitTask PRIVATE snaptray_ui snaptray_platform Qt6::Test)
 add_test(NAME RecordingManager_InitTask COMMAND RecordingManager_InitTask)
 set_tests_properties(RecordingManager_InitTask PROPERTIES TIMEOUT 60 LABELS "integration")
@@ -845,6 +863,11 @@ target_link_libraries(RecordingManager_ScreenSourceService PRIVATE snaptray_ui s
 add_test(NAME RecordingManager_ScreenSourceService COMMAND RecordingManager_ScreenSourceService)
 set_tests_properties(RecordingManager_ScreenSourceService PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RecordingManager_RecordingFileUtils RecordingManager/tst_RecordingFileUtils.cpp)
+target_link_libraries(RecordingManager_RecordingFileUtils PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME RecordingManager_RecordingFileUtils COMMAND RecordingManager_RecordingFileUtils)
+set_tests_properties(RecordingManager_RecordingFileUtils PROPERTIES TIMEOUT 60 LABELS "unit")
+
 if(WIN32)
 add_executable(RecordingManager_DXGICaptureEngineThreadLifecycle
     RecordingManager/tst_DXGICaptureEngineThreadLifecycle_win.cpp
@@ -858,6 +881,18 @@ add_test(NAME RecordingManager_DXGICaptureEngineThreadLifecycle
     COMMAND RecordingManager_DXGICaptureEngineThreadLifecycle)
 set_tests_properties(RecordingManager_DXGICaptureEngineThreadLifecycle
     PROPERTIES TIMEOUT 120 LABELS "integration")
+
+add_executable(RecordingManager_WASAPIAudioCaptureEngineThreadSafety
+    RecordingManager/tst_WASAPIAudioCaptureEngineThreadSafety_win.cpp
+)
+target_link_libraries(RecordingManager_WASAPIAudioCaptureEngineThreadSafety PRIVATE
+    snaptray_platform
+    Qt6::Test
+)
+add_test(NAME RecordingManager_WASAPIAudioCaptureEngineThreadSafety
+    COMMAND RecordingManager_WASAPIAudioCaptureEngineThreadSafety)
+set_tests_properties(RecordingManager_WASAPIAudioCaptureEngineThreadSafety
+    PROPERTIES TIMEOUT 30 LABELS "unit")
 endif()
 
 endif()  # End of temporarily disabled RecordingManager tests

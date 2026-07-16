@@ -58,7 +58,7 @@ public:
     D3D11_TEXTURE2D_DESC textureDesc;
 
     QRect captureRegion;
-    QScreen *targetScreen = nullptr;
+    CaptureScreenInfo screenInfo;
     int frameRate = 30;
     std::atomic<bool> running{false};
     bool useDXGI = false;
@@ -85,8 +85,8 @@ public slots:
 
 bool DXGICaptureEngine::Private::initializeDXGI()
 {
-    if (!targetScreen) {
-        qWarning() << "DXGICaptureEngine: targetScreen is null";
+    if (!screenInfo.isValid()) {
+        qWarning() << "DXGICaptureEngine: screen metadata is invalid";
         return false;
     }
 
@@ -142,8 +142,8 @@ bool DXGICaptureEngine::Private::initializeDXGI()
     // Try to find matching output by position
     // Note: QScreen::geometry() returns logical coordinates, but DXGI uses physical coordinates
     // We need to convert using devicePixelRatio for HiDPI displays
-    QRect screenGeom = targetScreen->geometry();
-    qreal dpr = targetScreen->devicePixelRatio();
+    const QRect screenGeom = screenInfo.geometry;
+    const qreal dpr = screenInfo.devicePixelRatio;
     QRect physicalGeom = CoordinateHelper::toPhysical(screenGeom, dpr);
     bool foundMatch = false;
 
@@ -337,7 +337,7 @@ QImage DXGICaptureEngine::Private::captureWithBitBlt()
     }
 
     // Convert logical coordinates to physical coordinates for HiDPI
-    qreal dpr = targetScreen ? targetScreen->devicePixelRatio() : 1.0;
+    const qreal dpr = screenInfo.devicePixelRatio;
     QRect physRegion = CoordinateHelper::toPhysical(captureRegion, dpr);
 
     HBITMAP hBitmap = CreateCompatibleBitmap(hdcScreen, physRegion.width(), physRegion.height());
@@ -460,7 +460,7 @@ QImage DXGICaptureEngine::Private::captureWithDXGI()
 
     // Calculate region relative to output in physical coordinates
     // captureRegion is in logical coordinates, DXGI texture is in physical coordinates
-    qreal dpr = targetScreen ? targetScreen->devicePixelRatio() : 1.0;
+    const qreal dpr = screenInfo.devicePixelRatio;
     QRect physRegion = CoordinateHelper::toPhysical(captureRegion, dpr);
 
     int relX = physRegion.x() - outputDesc.DesktopCoordinates.left;
@@ -553,16 +553,26 @@ bool DXGICaptureEngine::setRegion(const QRect &region, QScreen *screen)
         return false;
     }
 
+    return setRegion(region, CaptureScreenInfo::fromScreen(screen));
+}
+
+bool DXGICaptureEngine::setRegion(const QRect &region, const CaptureScreenInfo &screenInfo)
+{
+    if (!screenInfo.isValid()) {
+        emit error("Invalid screen metadata");
+        return false;
+    }
+
     d->captureRegion = region;
-    d->targetScreen = screen;
+    d->screenInfo = screenInfo;
     m_captureRegion = region;
-    m_targetScreen = screen;
+    m_targetScreen = nullptr;
     return true;
 }
 
 bool DXGICaptureEngine::start()
 {
-    if (!d->targetScreen || d->captureRegion.isEmpty()) {
+    if (!d->screenInfo.isValid() || d->captureRegion.isEmpty()) {
         emit error("Region or screen not configured");
         return false;
     }

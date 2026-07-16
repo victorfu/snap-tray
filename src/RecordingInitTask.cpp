@@ -156,9 +156,9 @@ bool RecordingInitTask::initializeCaptureEngine()
     }
 
     qDebug() << "RecordingInitTask: Setting region:" << m_config.region
-        << "screen:" << (m_config.screen ? m_config.screen->name() : "NULL");
+             << "screen:" << m_config.screenInfo.name;
 
-    if (!m_result.captureEngine->setRegion(m_config.region, m_config.screen)) {
+    if (!m_result.captureEngine->setRegion(m_config.region, m_config.screenInfo)) {
         m_result.error = "Failed to configure capture region";
         return false;
     }
@@ -196,7 +196,9 @@ bool RecordingInitTask::initializeEncoder()
 {
     qDebug() << "RecordingInitTask: Creating encoder...";
 
-    const qreal dpr = CoordinateHelper::getDevicePixelRatio(m_config.screen);
+    const qreal dpr = m_config.screenInfo.devicePixelRatio > 0.0
+        ? m_config.screenInfo.devicePixelRatio
+        : 1.0;
     const QSize expectedFrameSize = CoordinateHelper::toPhysical(m_config.region.size(), dpr);
     if (expectedFrameSize != m_config.frameSize) {
         qWarning() << "RecordingInitTask: Frame size does not match capture region physical size."

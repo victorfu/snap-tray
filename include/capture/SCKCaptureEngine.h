@@ -30,6 +30,7 @@ public:
     ~SCKCaptureEngine() override;
 
     bool setRegion(const QRect &region, QScreen *screen) override;
+    bool setRegion(const QRect &region, const CaptureScreenInfo &screenInfo) override;
     void setFrameRate(int fps) override;
     void setExcludedWindows(const QList<WId> &windowIds) override;
     bool start() override;

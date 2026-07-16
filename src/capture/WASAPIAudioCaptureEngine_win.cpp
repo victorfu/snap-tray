@@ -76,7 +76,12 @@ WASAPIAudioCaptureEngine::WASAPIAudioCaptureEngine(QObject *parent)
 
 WASAPIAudioCaptureEngine::~WASAPIAudioCaptureEngine()
 {
-    stop();
+    // disposeAsync() is the ownership boundary for a live capture thread: it
+    // retains the engine until CaptureThread::finished. Reaching the destructor
+    // with a running thread would violate that contract and cannot be repaired
+    // here without either blocking indefinitely or creating a use-after-free.
+    Q_ASSERT(!m_captureThread || !m_captureThread->isRunning());
+    releaseCaptureThreadIfFinished();
 }
 
 bool WASAPIAudioCaptureEngine::initializeCOM()
@@ -98,7 +103,7 @@ bool WASAPIAudioCaptureEngine::isAvailable() const
 
 bool WASAPIAudioCaptureEngine::setAudioSource(AudioSource source)
 {
-    if (m_running) {
+    if (m_running || (m_captureThread && m_captureThread->isRunning())) {
         return false;
     }
     m_source = source;
@@ -108,7 +113,7 @@ bool WASAPIAudioCaptureEngine::setAudioSource(AudioSource source)
 
 bool WASAPIAudioCaptureEngine::setDevice(const QString &deviceId)
 {
-    if (m_running) {
+    if (m_running || (m_captureThread && m_captureThread->isRunning())) {
         return false;
     }
     m_deviceId = deviceId;
@@ -561,6 +566,15 @@ bool WASAPIAudioCaptureEngine::start()
         return false;
     }
 
+    // A previous initialization timeout may still be unwinding inside a COM or
+    // audio-driver call. Never replace (and leak) that live thread object.
+    if (m_captureThread) {
+        if (!releaseCaptureThreadIfFinished()) {
+            qWarning() << "WASAPIAudioCaptureEngine: Previous capture thread is still stopping";
+            return false;
+        }
+    }
+
     if (m_source == AudioSource::None) {
         qWarning() << "WASAPIAudioCaptureEngine: No audio source configured";
         return false;
@@ -582,6 +596,9 @@ bool WASAPIAudioCaptureEngine::start()
 
     // Start capture thread - it will do ALL COM initialization
     m_captureThread = new CaptureThread(this);
+    connect(m_captureThread, &QThread::finished,
+            this, &WASAPIAudioCaptureEngine::onCaptureThreadFinished,
+            Qt::QueuedConnection);
     m_captureThread->start();
 
     // Wait for thread to initialize (with timeout)
@@ -595,9 +612,10 @@ bool WASAPIAudioCaptureEngine::start()
         qWarning() << "WASAPIAudioCaptureEngine: Thread initialization failed";
         m_stopRequested = true;
         if (m_captureThread) {
-            m_captureThread->wait(500);
-            delete m_captureThread;
-            m_captureThread = nullptr;
+            if (!m_captureThread->wait(500)) {
+                qWarning() << "WASAPIAudioCaptureEngine: Initialization is still unwinding; retaining thread ownership";
+            }
+            releaseCaptureThreadIfFinished();
         }
         m_running = false;
         return false;
@@ -608,7 +626,7 @@ bool WASAPIAudioCaptureEngine::start()
 
 void WASAPIAudioCaptureEngine::stop()
 {
-    if (!m_running) {
+    if (!m_running && !m_captureThread) {
         return;
     }
 
@@ -617,17 +635,69 @@ void WASAPIAudioCaptureEngine::stop()
     m_paused = false;
 
     if (m_captureThread) {
-        // Use QThread::wait() with timeout - this is the proper way to wait for a thread
-        // Don't use processEvents() as it can cause re-entrancy issues with queued signals
+        // Do not terminate or delete a thread that may be blocked in a COM/driver
+        // call. It still references this engine and owns apartment-bound objects.
         if (!m_captureThread->wait(2000)) {
-            qWarning() << "WASAPIAudioCaptureEngine: Thread did not stop in 2 seconds, terminating";
-            m_captureThread->terminate();
-            m_captureThread->wait(500);
+            qWarning() << "WASAPIAudioCaptureEngine: Thread did not stop in 2 seconds; cleanup remains pending";
         }
-
-        delete m_captureThread;
-        m_captureThread = nullptr;
+        releaseCaptureThreadIfFinished();
     }
+}
+
+void WASAPIAudioCaptureEngine::disposeAsync()
+{
+    if (m_disposePending) {
+        return;
+    }
+    m_disposePending = true;
+
+    // Request shutdown without waiting on a COM/audio-driver call. The thread
+    // still dereferences this engine, so the engine deliberately remains alive
+    // until onCaptureThreadFinished() runs on its owning thread.
+    m_stopRequested = true;
+    m_running = false;
+    m_paused = false;
+
+    if (parent()) {
+        setParent(nullptr);
+    }
+
+    if (!m_captureThread) {
+        deleteLater();
+        return;
+    }
+
+    // The finished connection is installed before start(), so a fast-exit
+    // thread cannot race past connection setup. Queue an explicit finalization
+    // as well when the signal was delivered before disposal was requested.
+    if (!m_captureThread->isRunning()) {
+        QMetaObject::invokeMethod(
+            this, &WASAPIAudioCaptureEngine::onCaptureThreadFinished,
+            Qt::QueuedConnection);
+    }
+}
+
+void WASAPIAudioCaptureEngine::onCaptureThreadFinished()
+{
+    releaseCaptureThreadIfFinished();
+    if (m_disposePending && !m_captureThread) {
+        deleteLater();
+    }
+}
+
+bool WASAPIAudioCaptureEngine::releaseCaptureThreadIfFinished()
+{
+    if (!m_captureThread) {
+        return true;
+    }
+
+    if (m_captureThread->isRunning()) {
+        return false;
+    }
+
+    delete m_captureThread;
+    m_captureThread = nullptr;
+    return true;
 }
 
 void WASAPIAudioCaptureEngine::pause()

@@ -9,6 +9,7 @@
 
 #include <QDebug>
 #include <QImage>
+#include <QPointer>
 #include <QTimer>
 #include <QUrl>
 
@@ -46,6 +47,7 @@ public:
     qint64 position() const override { return m_position; }
     QSize videoSize() const override { return m_videoSize; }
     bool hasVideo() const override { return m_hasVideo; }
+    bool hasAudio() const override { return m_hasAudio; }
 
     void setVolume(float volume) override;
     float volume() const override { return m_volume; }
@@ -78,6 +80,7 @@ private:
     qint64 m_position;
     QSize m_videoSize;
     bool m_hasVideo;
+    bool m_hasAudio;
     float m_volume;
     bool m_muted;
     bool m_looping;
@@ -216,6 +219,7 @@ AVFoundationPlayer::AVFoundationPlayer(QObject *parent)
     , m_duration(0)
     , m_position(0)
     , m_hasVideo(false)
+    , m_hasAudio(false)
     , m_volume(1.0f)
     , m_muted(false)
     , m_looping(false)
@@ -232,6 +236,7 @@ AVFoundationPlayer::AVFoundationPlayer(QObject *parent)
 AVFoundationPlayer::~AVFoundationPlayer()
 {
     m_frameTimer->stop();
+    m_helper.player = nullptr;
     [m_helper cleanup];
     m_helper = nil;
 }
@@ -241,6 +246,7 @@ bool AVFoundationPlayer::load(const QString &filePath)
     // Cleanup previous player
     [m_helper cleanup];
     m_hasVideo = false;
+    m_hasAudio = false;
     m_duration = 0;
     m_position = 0;
     m_videoSize = QSize();
@@ -309,17 +315,19 @@ void AVFoundationPlayer::seek(qint64 positionMs)
 
     // Use completion handler to update frame after seek completes
     __weak AVFoundationPlayerHelper *weakHelper = m_helper;
-    AVFoundationPlayer *player = this;
+    QPointer<AVFoundationPlayer> weakPlayer(this);
 
     [m_helper.avPlayer seekToTime:time
                   toleranceBefore:kCMTimeZero
                    toleranceAfter:kCMTimeZero
                 completionHandler:^(BOOL finished) {
-        if (finished && player->state() != State::Playing) {
+        AVFoundationPlayer *player = weakPlayer.data();
+        if (finished && player && player->state() != State::Playing) {
             // Fetch and emit frame when paused
             dispatch_async(dispatch_get_main_queue(), ^{
+                AVFoundationPlayer *player = weakPlayer.data();
                 AVFoundationPlayerHelper *strongHelper = weakHelper;
-                if (strongHelper) {
+                if (player && strongHelper) {
                     QImage frame = [strongHelper currentFrame];
                     // Always emit frameReady so downstream consumers (like VideoTrimmer)
                     // don't hang waiting for a signal that never comes.
@@ -373,6 +381,7 @@ void AVFoundationPlayer::onStatusChanged(int status)
 
             // Get video size and frame rate
             NSArray *tracks = item.asset.tracks;
+            m_hasAudio = [item.asset tracksWithMediaType:AVMediaTypeAudio].count > 0;
             for (AVAssetTrack *track in tracks) {
                 if ([track.mediaType isEqualToString:AVMediaTypeVideo]) {
                     m_hasVideo = true;

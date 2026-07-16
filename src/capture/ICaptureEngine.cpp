@@ -10,6 +10,29 @@
 #endif
 
 #include <QDebug>
+#include <QScreen>
+
+CaptureScreenInfo CaptureScreenInfo::fromScreen(const QScreen *screen)
+{
+    CaptureScreenInfo info;
+    if (!screen) {
+        return info;
+    }
+
+    info.name = screen->name();
+    info.geometry = screen->geometry();
+    const qreal dpr = screen->devicePixelRatio();
+    info.devicePixelRatio = dpr > 0.0 ? dpr : 1.0;
+    return info;
+}
+
+bool ICaptureEngine::setRegion(const QRect &region, const CaptureScreenInfo &screenInfo)
+{
+    Q_UNUSED(region);
+    Q_UNUSED(screenInfo);
+    emit error(QStringLiteral("Screen metadata configuration is not supported by this capture engine"));
+    return false;
+}
 
 ICaptureEngine *ICaptureEngine::createBestEngine(QObject *parent)
 {

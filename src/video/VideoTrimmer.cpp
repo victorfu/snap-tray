@@ -9,9 +9,24 @@
 #include <QTimer>
 #include <QFileInfo>
 
+namespace {
+constexpr int kFrameExtractionTimeoutMs = 5000;
+constexpr int kFrameEncodingTimeoutMs = 5000;
+constexpr int kEncoderRetryIntervalMs = 10;
+}
+
 VideoTrimmer::VideoTrimmer(QObject *parent)
     : QObject(parent)
+    , m_frameTimeout(new QTimer(this))
 {
+    m_frameTimeout->setSingleShot(true);
+    connect(m_frameTimeout, &QTimer::timeout, this, [this]() {
+        if (m_waitingForEncoder) {
+            failTrim(tr("Timed out while waiting for the video encoder"));
+        } else if (m_waitingForFrame) {
+            failTrim(tr("Timed out while extracting a video frame"));
+        }
+    });
 }
 
 VideoTrimmer::~VideoTrimmer()
@@ -66,6 +81,11 @@ void VideoTrimmer::startTrim()
     m_cancelled = false;
     m_currentPosition = m_trimStart;
     m_frameCount = 0;
+    m_waitingForFrame = false;
+    m_waitingForEncoder = false;
+    m_pendingFrame = QImage();
+    m_pendingTimestamp = 0;
+    m_frameTimeout->stop();
 
     // Create video player to extract frames
     m_player = IVideoPlayer::create(this);
@@ -79,11 +99,14 @@ void VideoTrimmer::startTrim()
     // Connect to mediaLoaded to continue initialization after player is ready
     connect(m_player, &IVideoPlayer::mediaLoaded,
             this, &VideoTrimmer::onMediaLoaded);
+    // Connect before load(): the Windows backend emits its preview frame
+    // synchronously. onFrameReady intentionally ignores it until a seek is
+    // requested, so extraction never depends on that load-time signal.
+    connect(m_player, &IVideoPlayer::frameReady,
+            this, &VideoTrimmer::onFrameReady);
     connect(m_player, &IVideoPlayer::error,
             this, [this](const QString &msg) {
-        emit error(tr("Failed to load video: %1").arg(msg));
-        cleanup();
-        m_running = false;
+        failTrim(tr("Video processing failed: %1").arg(msg));
     });
 
     // Start loading - onMediaLoaded will be called when ready
@@ -105,13 +128,18 @@ void VideoTrimmer::onMediaLoaded()
 
     qDebug() << "VideoTrimmer: Media loaded, continuing initialization";
 
+    if (m_format == EncoderFactory::Format::MP4 && m_player->hasAudio()) {
+        failTrim(tr("MP4 trimming cannot preserve this video's audio; the original file was kept"));
+        return;
+    }
+
     // Now we can get accurate video properties
     QSize videoSize = m_player->videoSize();
     if (videoSize.isEmpty()) {
         videoSize = QSize(1920, 1080);  // Fallback
     }
 
-    int frameIntervalMs = m_player->frameIntervalMs();
+    int frameIntervalMs = qMax(1, m_player->frameIntervalMs());
     m_totalFrames = static_cast<int>((m_trimEnd - m_trimStart) / frameIntervalMs);
     if (m_totalFrames <= 0) m_totalFrames = 1;
 
@@ -152,19 +180,12 @@ void VideoTrimmer::onMediaLoaded()
                 this, &VideoTrimmer::onEncodingFinished);
     }
 
-    // Connect player frame signal
-    connect(m_player, &IVideoPlayer::frameReady,
-            this, &VideoTrimmer::onFrameReady);
-
     // Initialize seek position to start - we'll extract first frame at m_trimStart
     m_seekPosition = m_trimStart;
     m_currentPosition = m_trimStart;
 
     // Seek to start position and begin extraction
-    m_player->seek(m_trimStart);
-
-    // Wait for first frame via frameReady signal (no processNextFrame call here)
-    // The frame will arrive via onFrameReady, which will then trigger processNextFrame
+    requestFrame(m_trimStart);
 }
 
 void VideoTrimmer::cancel()
@@ -173,25 +194,26 @@ void VideoTrimmer::cancel()
         qDebug() << "VideoTrimmer: Cancelled";
         m_cancelled = true;
         m_running = false;
-
-        // Abort encoders
-        if (m_videoEncoder) {
-            m_videoEncoder->abort();
-        }
-        if (m_gifEncoder) {
-            m_gifEncoder->abort();
-        }
-        if (m_webpEncoder) {
-            m_webpEncoder->abort();
-        }
-
+        m_waitingForFrame = false;
+        m_waitingForEncoder = false;
+        m_pendingFrame = QImage();
+        m_frameTimeout->stop();
+        abortEncoders();
         cleanup();
     }
 }
 
 void VideoTrimmer::onFrameReady(const QImage &frame)
 {
-    if (m_cancelled || !m_running) {
+    if (m_cancelled || !m_running || !m_waitingForFrame) {
+        return;
+    }
+
+    m_waitingForFrame = false;
+    m_frameTimeout->stop();
+
+    if (frame.isNull()) {
+        failTrim(tr("Failed to extract a video frame"));
         return;
     }
 
@@ -199,19 +221,70 @@ void VideoTrimmer::onFrameReady(const QImage &frame)
     // This ensures correct timestamps since m_seekPosition hasn't been incremented yet
     qint64 adjustedTime = m_seekPosition - m_trimStart;
 
-    // Write frame to encoder (only if valid)
-    if (!frame.isNull()) {
-        if (m_videoEncoder) {
-            m_videoEncoder->writeFrame(frame, adjustedTime);
-        } else if (m_gifEncoder) {
-            m_gifEncoder->writeFrame(frame, adjustedTime);
-        } else if (m_webpEncoder) {
-            m_webpEncoder->writeFrame(frame, adjustedTime);
-        }
-    } else {
-        qWarning() << "VideoTrimmer: Received null frame at" << adjustedTime;
+    submitFrame(frame, adjustedTime);
+}
+
+void VideoTrimmer::submitFrame(const QImage &frame, qint64 timestampMs)
+{
+    const qint64 framesBefore = encoderFramesWritten();
+    if (m_videoEncoder) {
+        m_videoEncoder->writeFrame(frame, timestampMs);
+    } else if (m_gifEncoder) {
+        m_gifEncoder->writeFrame(frame, timestampMs);
+    } else if (m_webpEncoder) {
+        m_webpEncoder->writeFrame(frame, timestampMs);
     }
 
+    if (encoderFramesWritten() > framesBefore) {
+        completeCurrentFrame();
+        return;
+    }
+
+    // Native video encoders can apply temporary backpressure. Preserve the
+    // exact frame and timestamp and retry from the event loop until accepted
+    // or until the encoding timeout expires. GIF/WebP writes are synchronous,
+    // so a missing frame count increment is a permanent failure for them.
+    if (m_videoEncoder && m_videoEncoder->isRunning()) {
+        m_pendingFrame = frame;
+        m_pendingTimestamp = timestampMs;
+        m_waitingForEncoder = true;
+        m_frameTimeout->start(kFrameEncodingTimeoutMs);
+        QTimer::singleShot(kEncoderRetryIntervalMs,
+                           this, &VideoTrimmer::retryPendingFrame);
+        return;
+    }
+
+    failTrim(tr("Failed to encode a video frame"));
+}
+
+void VideoTrimmer::retryPendingFrame()
+{
+    if (!m_running || m_cancelled || !m_waitingForEncoder) {
+        return;
+    }
+
+    if (!m_videoEncoder || !m_videoEncoder->isRunning()) {
+        failTrim(tr("Failed to encode a video frame"));
+        return;
+    }
+
+    const qint64 framesBefore = m_videoEncoder->framesWritten();
+    m_videoEncoder->writeFrame(m_pendingFrame, m_pendingTimestamp);
+    if (m_videoEncoder->framesWritten() > framesBefore) {
+        completeCurrentFrame();
+        return;
+    }
+
+    QTimer::singleShot(kEncoderRetryIntervalMs,
+                       this, &VideoTrimmer::retryPendingFrame);
+}
+
+void VideoTrimmer::completeCurrentFrame()
+{
+    m_waitingForEncoder = false;
+    m_pendingFrame = QImage();
+    m_pendingTimestamp = 0;
+    m_frameTimeout->stop();
     m_frameCount++;
 
     // Update progress
@@ -230,7 +303,7 @@ void VideoTrimmer::processNextFrame()
     }
 
     // Advance position by one frame interval
-    m_currentPosition += m_player->frameIntervalMs();
+    m_currentPosition += qMax(1, m_player->frameIntervalMs());
 
     if (m_currentPosition >= m_trimEnd) {
         // Finished extracting frames
@@ -251,8 +324,7 @@ void VideoTrimmer::processNextFrame()
 
     // Seek to next position and request frame
     if (m_player) {
-        m_player->seek(m_currentPosition);
-        // Frame will be delivered via frameReady signal
+        requestFrame(m_currentPosition);
     }
 }
 
@@ -262,7 +334,11 @@ void VideoTrimmer::onEncodingFinished(bool success, const QString &path)
 
     m_running = false;
 
-    if (success) {
+    QFileInfo outputInfo(path);
+    const bool validOutput = success && m_frameCount > 0
+        && outputInfo.exists() && outputInfo.size() > 0;
+
+    if (validOutput) {
         emit progress(100);
         emit finished(true, path);
     } else {
@@ -273,11 +349,73 @@ void VideoTrimmer::onEncodingFinished(bool success, const QString &path)
     cleanup();
 }
 
+void VideoTrimmer::requestFrame(qint64 positionMs)
+{
+    if (!m_player || !m_running || m_cancelled) {
+        return;
+    }
+
+    m_seekPosition = positionMs;
+    m_waitingForFrame = true;
+    m_frameTimeout->start(kFrameExtractionTimeoutMs);
+    m_player->seek(positionMs);
+}
+
+void VideoTrimmer::failTrim(const QString &message)
+{
+    if (!m_running) {
+        return;
+    }
+
+    qWarning() << "VideoTrimmer:" << message;
+    m_running = false;
+    m_waitingForFrame = false;
+    m_waitingForEncoder = false;
+    m_pendingFrame = QImage();
+    m_pendingTimestamp = 0;
+    m_frameTimeout->stop();
+    abortEncoders();
+    cleanup();
+    emit error(message);
+}
+
+void VideoTrimmer::abortEncoders()
+{
+    if (m_videoEncoder) {
+        m_videoEncoder->abort();
+    }
+    if (m_gifEncoder) {
+        m_gifEncoder->abort();
+    }
+    if (m_webpEncoder) {
+        m_webpEncoder->abort();
+    }
+}
+
+qint64 VideoTrimmer::encoderFramesWritten() const
+{
+    if (m_videoEncoder) {
+        return m_videoEncoder->framesWritten();
+    }
+    if (m_gifEncoder) {
+        return m_gifEncoder->framesWritten();
+    }
+    if (m_webpEncoder) {
+        return m_webpEncoder->framesWritten();
+    }
+    return 0;
+}
+
 void VideoTrimmer::cleanup()
 {
+    m_waitingForFrame = false;
+    m_waitingForEncoder = false;
+    m_pendingFrame = QImage();
+    m_pendingTimestamp = 0;
+    m_frameTimeout->stop();
     if (m_player) {
         m_player->stop();
-        delete m_player;
+        m_player->deleteLater();
         m_player = nullptr;
     }
 

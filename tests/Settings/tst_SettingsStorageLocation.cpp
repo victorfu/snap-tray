@@ -1,7 +1,7 @@
 #include <QtTest/QtTest>
-#include <QMap>
+#include <QTemporaryDir>
 #include <QUuid>
-#include <QVariant>
+#include <utility>
 
 #include "settings/Settings.h"
 #include "version.h"
@@ -10,7 +10,7 @@ namespace {
 
 constexpr auto kProbeKey = "tests/settingsStorageLocation/probe";
 constexpr auto kLegacyProbeValue = "legacy";
-constexpr auto kLegacyOrganizationName = "Victor Fu";
+constexpr auto kSiblingProbeKey = "unrelated/probe";
 
 bool isDebugSettingsNamespace()
 {
@@ -30,12 +30,6 @@ QString normalizeSettingsLocation(QString location)
     }
 #endif
     return location;
-}
-
-QSettings legacySettingsStore()
-{
-    return QSettings(QString::fromLatin1(kLegacyOrganizationName),
-                     QString::fromLatin1(SnapTray::kApplicationName));
 }
 
 QStringList legacyMigrationSources()
@@ -70,35 +64,37 @@ QSettings settingsStoreUnderTest()
 #endif
 }
 
-class ScopedSettingsBackup
+#if defined(Q_OS_WIN)
+class ScopedRegistryTree
 {
 public:
-    explicit ScopedSettingsBackup(QSettings& settings)
-        : m_settings(settings)
+    explicit ScopedRegistryTree(QString subKey)
+        : m_subKey(std::move(subKey))
     {
-        const QStringList keys = m_settings.allKeys();
-        for (const QString& key : keys) {
-            m_values.insert(key, m_settings.value(key));
-        }
     }
 
-    ~ScopedSettingsBackup()
+    ~ScopedRegistryTree()
     {
-        if (m_settings.status() != QSettings::NoError) {
-            return;
-        }
+        const std::wstring nativeSubKey = m_subKey.toStdWString();
+        RegDeleteTreeW(HKEY_CURRENT_USER, nativeSubKey.c_str());
+        RegDeleteKeyW(HKEY_CURRENT_USER, nativeSubKey.c_str());
 
-        m_settings.clear();
-        for (auto it = m_values.cbegin(); it != m_values.cend(); ++it) {
-            m_settings.setValue(it.key(), it.value());
+        QString ancestor = m_subKey;
+        while (ancestor.startsWith(
+            QStringLiteral("Software\\SnapTrayTests\\"), Qt::CaseInsensitive)) {
+            ancestor.truncate(ancestor.lastIndexOf(QLatin1Char('\\')));
+            const std::wstring nativeAncestor = ancestor.toStdWString();
+            const LONG result = RegDeleteKeyW(HKEY_CURRENT_USER, nativeAncestor.c_str());
+            if (result != ERROR_SUCCESS && !SnapTray::isMissingWindowsRegistryPath(result)) {
+                break;
+            }
         }
-        m_settings.sync();
     }
 
 private:
-    QSettings& m_settings;
-    QMap<QString, QVariant> m_values;
+    QString m_subKey;
 };
+#endif
 
 } // namespace
 
@@ -109,6 +105,7 @@ class tst_SettingsStorageLocation : public QObject
 private slots:
     void testLegacySettingsMigration();
     void testLegacySourceCoverage();
+    void testWindowsLegacyCleanupPreservesSiblingKeys();
     void testWindowsNamespaceStoresAreNotCleanupTargets();
     void testStorageLocation();
     void testRoundtripSetReadRemove();
@@ -117,41 +114,25 @@ private slots:
 void tst_SettingsStorageLocation::testLegacySettingsMigration()
 {
 #if defined(Q_OS_WIN) || defined(Q_OS_MACOS)
-    auto legacy = legacySettingsStore();
-    auto platform = platformSettingsStore();
-    if (legacy.status() != QSettings::NoError || platform.status() != QSettings::NoError) {
-        QSKIP("Settings stores are not writable in this environment");
-    }
+    QTemporaryDir testDirectory;
+    QVERIFY(testDirectory.isValid());
 
-    ScopedSettingsBackup legacyBackup(legacy);
-    ScopedSettingsBackup platformBackup(platform);
-
-    legacy.clear();
-    platform.clear();
-    legacy.sync();
-    platform.sync();
-    if (legacy.status() != QSettings::NoError || platform.status() != QSettings::NoError) {
-        QSKIP("Failed to prepare isolated settings stores");
-    }
+    QSettings legacy(
+        testDirectory.filePath(QStringLiteral("legacy.ini")), QSettings::IniFormat);
+    QSettings platform(
+        testDirectory.filePath(QStringLiteral("platform.ini")), QSettings::IniFormat);
 
     legacy.setValue(kProbeKey, QString::fromLatin1(kLegacyProbeValue));
     legacy.sync();
-    QVERIFY(legacy.contains(kProbeKey));
 
-    platform.remove(QString::fromLatin1(SnapTray::kSettingsMigrationVersionKey));
+    int migratedKeyCount = 0;
+    QVERIFY(SnapTray::mergeSettingsIfMissing(platform, legacy, migratedKeyCount));
+    QCOMPARE(migratedKeyCount, 1);
     platform.sync();
+    QCOMPARE(platform.value(kProbeKey).toString(), QString::fromLatin1(kLegacyProbeValue));
 
-    SnapTray::migrateLegacySettingsIfNeeded();
-
-    auto settings = platformSettingsStore();
-    QCOMPARE(settings.value(kProbeKey).toString(), QString::fromLatin1(kLegacyProbeValue));
-
-    legacy.sync();
-    if (settings.status() == QSettings::NoError) {
-        QVERIFY(!legacy.contains(kProbeKey));
-    } else {
-        QSKIP("Platform settings store is not writable; cleanup assertion skipped");
-    }
+    QVERIFY(SnapTray::clearSettingsStoreIfSeparate(platform, legacy));
+    QVERIFY(!legacy.contains(kProbeKey));
 #else
     QSKIP("Legacy-to-platform settings migration applies only to Windows/macOS");
 #endif
@@ -183,6 +164,45 @@ void tst_SettingsStorageLocation::testLegacySourceCoverage()
     }
 #else
     QSKIP("Legacy source coverage applies only to Windows/macOS");
+#endif
+}
+
+void tst_SettingsStorageLocation::testWindowsLegacyCleanupPreservesSiblingKeys()
+{
+#if defined(Q_OS_WIN)
+    const QString testId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    const QString testRootSubKey
+        = QStringLiteral("Software\\SnapTrayTests\\SettingsStorageLocationCleanup\\%1")
+              .arg(testId);
+    const QString vendorSubKey = testRootSubKey + QStringLiteral("\\Victor Fu");
+    const QString vendorPath = QStringLiteral("HKEY_CURRENT_USER\\") + vendorSubKey;
+
+    ScopedRegistryTree cleanup(testRootSubKey);
+    QSettings releaseLegacy(
+        vendorPath + QStringLiteral("\\SnapTray"), QSettings::NativeFormat);
+    QSettings debugLegacy(
+        vendorPath + QStringLiteral("\\SnapTray-Debug"), QSettings::NativeFormat);
+    QSettings sibling(vendorPath + QStringLiteral("\\UnrelatedProduct"), QSettings::NativeFormat);
+    releaseLegacy.setValue(kProbeKey, QStringLiteral("release"));
+    debugLegacy.setValue(kProbeKey, QStringLiteral("debug"));
+    sibling.setValue(kSiblingProbeKey, QStringLiteral("keep"));
+    releaseLegacy.sync();
+    debugLegacy.sync();
+    sibling.sync();
+
+    QVERIFY(SnapTray::removeWindowsLegacyApplicationKeys(HKEY_CURRENT_USER, vendorSubKey));
+
+    QSettings releaseAfterCleanup(
+        vendorPath + QStringLiteral("\\SnapTray"), QSettings::NativeFormat);
+    QSettings debugAfterCleanup(
+        vendorPath + QStringLiteral("\\SnapTray-Debug"), QSettings::NativeFormat);
+    QSettings siblingAfterCleanup(
+        vendorPath + QStringLiteral("\\UnrelatedProduct"), QSettings::NativeFormat);
+    QVERIFY(!releaseAfterCleanup.contains(kProbeKey));
+    QVERIFY(!debugAfterCleanup.contains(kProbeKey));
+    QCOMPARE(siblingAfterCleanup.value(kSiblingProbeKey).toString(), QStringLiteral("keep"));
+#else
+    QSKIP("Windows registry cleanup applies only to Windows");
 #endif
 }
 
@@ -226,7 +246,10 @@ void tst_SettingsStorageLocation::testStorageLocation()
 
 void tst_SettingsStorageLocation::testRoundtripSetReadRemove()
 {
-    auto settings = settingsStoreUnderTest();
+    QTemporaryDir testDirectory;
+    QVERIFY(testDirectory.isValid());
+    QSettings settings(
+        testDirectory.filePath(QStringLiteral("roundtrip.ini")), QSettings::IniFormat);
     const QString probeKey = QStringLiteral("tests/settingsStorageLocation/probe/%1")
                                  .arg(QUuid::createUuid().toString(QUuid::WithoutBraces));
     settings.setValue(probeKey, QStringLiteral("ok"));

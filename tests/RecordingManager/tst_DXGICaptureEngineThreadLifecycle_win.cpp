@@ -105,7 +105,8 @@ bool TestDXGICaptureEngineThreadLifecycleWin::configureEngine(DXGICaptureEngine 
     const QRect region(screenGeom.topLeft(), QSize(width, height));
 
     engine.setFrameRate(10);
-    return engine.setRegion(region, screen);
+    const CaptureScreenInfo screenInfo = CaptureScreenInfo::fromScreen(screen);
+    return engine.setRegion(region, screenInfo);
 }
 
 void TestDXGICaptureEngineThreadLifecycleWin::testStartStopFromMainThread_NoThreadAffinityWarnings()

@@ -41,6 +41,7 @@ public:
 
     bool start() override;
     void stop() override;
+    void disposeAsync() override;
     void pause() override;
     void resume() override;
     bool isRunning() const override { return m_running; }
@@ -51,6 +52,7 @@ public:
     bool isSystemAudioSupported() const override { return true; }
 
 private:
+    friend class TestWASAPIAudioCaptureEngineThreadSafetyWin;
     class CaptureThread;
     friend class CaptureThread;
 
@@ -90,6 +92,11 @@ private:
     // Capture loop (runs in separate thread)
     void captureLoop();
 
+    // Deletes the thread object only after QThread has actually stopped. A timed-out
+    // WASAPI/COM call can keep initialization blocked after start() has failed.
+    bool releaseCaptureThreadIfFinished();
+    void onCaptureThreadFinished();
+
     // State
     std::atomic<bool> m_running{false};
     std::atomic<bool> m_paused{false};
@@ -112,6 +119,7 @@ private:
 
     // Capture thread
     QThread *m_captureThread = nullptr;
+    bool m_disposePending = false;
 
     // Timing
     qint64 m_startTime = 0;

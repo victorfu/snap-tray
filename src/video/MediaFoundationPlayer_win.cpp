@@ -146,26 +146,30 @@ protected:
         }
 
         while (!m_stopRequested) {
-            // Handle pause
-            if (m_paused) {
-                QThread::msleep(10);
-                continue;
-            }
-
             if (!m_reader) {
                 QThread::msleep(10);
                 continue;
             }
 
-            // Handle seek request
-            if (m_seekRequested) {
-                m_seekRequested = false;
+            // A seek while paused is also a request for one frame. Process it
+            // before the pause gate, then read exactly one sample below.
+            const bool seekRequested = m_seekRequested.exchange(false);
+            if (seekRequested) {
                 PROPVARIANT var;
                 PropVariantInit(&var);
                 var.vt = VT_I8;
-                var.hVal.QuadPart = m_seekPosition * 10000;
-                m_reader->SetCurrentPosition(GUID_NULL, var);
+                var.hVal.QuadPart = m_seekPosition.load() * 10000;
+                const HRESULT seekHr = m_reader->SetCurrentPosition(GUID_NULL, var);
                 PropVariantClear(&var);
+
+                if (FAILED(seekHr)) {
+                    emit errorOccurred(QString("SetCurrentPosition failed: 0x%1")
+                                           .arg(seekHr, 8, 16, QChar('0')));
+                    break;
+                }
+            } else if (m_paused) {
+                QThread::msleep(10);
+                continue;
             }
 
             // Read next frame
@@ -373,6 +377,7 @@ public:
     qint64 position() const override { return m_position; }
     QSize videoSize() const override { return m_videoSize; }
     bool hasVideo() const override { return m_hasVideo; }
+    bool hasAudio() const override { return m_hasAudio; }
 
     void setVolume(float volume) override { m_volume = qBound(0.0f, volume, 1.0f); }
     float volume() const override { return m_volume; }
@@ -397,6 +402,7 @@ private:
     void cleanup();
     bool createSourceReader(const QString &filePath);
     bool configureVideoOutput();
+    bool detectAudioStream();
     bool getMediaDuration();
     bool readFirstFrame();
     void setState(State newState);
@@ -417,6 +423,7 @@ private:
     qint64 m_position = 0;
     QSize m_videoSize;
     bool m_hasVideo = false;
+    bool m_hasAudio = false;
     float m_volume = 1.0f;
     bool m_muted = false;
     bool m_looping = false;
@@ -482,6 +489,7 @@ void MediaFoundationPlayer::cleanup()
     }
 
     m_hasVideo = false;
+    m_hasAudio = false;
     m_duration = 0;
     m_position = 0;
     m_videoSize = QSize();
@@ -503,6 +511,8 @@ bool MediaFoundationPlayer::load(const QString &filePath)
         emit error("Failed to create source reader");
         return false;
     }
+
+    m_hasAudio = detectAudioStream();
 
     if (!configureVideoOutput()) {
         emit error("Failed to configure video output");
@@ -692,6 +702,21 @@ bool MediaFoundationPlayer::configureVideoOutput()
     qDebug() << "MediaFoundationPlayer: Configured RGB32, size:" << m_videoSize
              << "stride:" << m_stride << "width*4:" << (m_videoSize.width() * 4);
     return true;
+}
+
+bool MediaFoundationPlayer::detectAudioStream()
+{
+    if (!m_reader) {
+        return false;
+    }
+
+    IMFMediaType *audioType = nullptr;
+    const HRESULT hr = m_reader->GetNativeMediaType(
+        MF_SOURCE_READER_FIRST_AUDIO_STREAM, 0, &audioType);
+    if (audioType) {
+        audioType->Release();
+    }
+    return SUCCEEDED(hr);
 }
 
 bool MediaFoundationPlayer::getMediaDuration()

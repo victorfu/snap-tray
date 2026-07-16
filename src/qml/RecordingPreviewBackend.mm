@@ -21,6 +21,7 @@
 #include <QTimer>
 #include <QScreen>
 #include <QtConcurrent/QtConcurrentRun>
+#include <QUuid>
 
 #ifdef Q_OS_MACOS
 #import <Cocoa/Cocoa.h>
@@ -384,6 +385,17 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
     else
         outputPath += extension;
 
+    // Never overwrite an earlier conversion. A unique final path also makes
+    // it impossible to mistake a stale file for this conversion's output.
+    if (QFileInfo::exists(outputPath)) {
+        const int outputDot = outputPath.lastIndexOf('.');
+        const QString suffix = QStringLiteral("_converted_")
+            + QString::number(QDateTime::currentMSecsSinceEpoch());
+        outputPath = outputDot > 0
+            ? outputPath.left(outputDot) + suffix + extension
+            : outputPath + suffix + extension;
+    }
+
     qDebug() << "RecordingPreviewBackend: Converting to" << extension;
 
     // Show processing state
@@ -402,6 +414,9 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
     const QString loadVideoError = tr("Failed to load video for conversion");
     const QString invalidVideoError = tr("Video not loaded properly for conversion");
     const QString startEncoderError = tr("Failed to start encoder");
+    const QString encodingFailedError = tr("Conversion failed: no video frames were encoded");
+    const QString frameExtractionError = tr("Conversion failed while extracting video frames");
+    const QString finalizeOutputError = tr("Conversion failed while saving the output file");
     const QString outputMissingError = tr("Conversion failed: output file is missing or empty");
     QPointer<RecordingPreviewBackend> weakThis(this);
 
@@ -414,6 +429,9 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
                              loadVideoError,
                              invalidVideoError,
                              startEncoderError,
+                             encodingFailedError,
+                             frameExtractionError,
+                             finalizeOutputError,
                              outputMissingError]() {
 #ifdef Q_OS_WIN
         // Initialize COM for Media Foundation on this worker thread.
@@ -488,6 +506,8 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
         }
 
         // Create encoder
+        const QString workingOutputPath = outputPath + QStringLiteral(".part-")
+            + QUuid::createUuid().toString(QUuid::WithoutBraces);
         bool encoderStarted = false;
         std::unique_ptr<NativeGifEncoder> gifEncoder;
         std::unique_ptr<WebPAnimationEncoder> webpEncoder;
@@ -495,12 +515,12 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
         if (selectedFormat == GIF) {
             gifEncoder = std::make_unique<NativeGifEncoder>(nullptr);
             gifEncoder->setMaxBitDepth(16);
-            encoderStarted = gifEncoder->start(outputPath, vidSize, frameRateInt);
+            encoderStarted = gifEncoder->start(workingOutputPath, vidSize, frameRateInt);
         } else {
             webpEncoder = std::make_unique<WebPAnimationEncoder>(nullptr);
             webpEncoder->setQuality(80);
             webpEncoder->setLooping(true);
-            encoderStarted = webpEncoder->start(outputPath, vidSize, frameRateInt);
+            encoderStarted = webpEncoder->start(workingOutputPath, vidSize, frameRateInt);
         }
 
         if (!encoderStarted) {
@@ -509,11 +529,30 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
             return;
         }
 
-        // Extract and encode frames
-        qint64 frameInterval = 1000 / frameRateInt;
-        player->pause();
+        bool encoderFinishedSuccessfully = false;
+        QString encoderFinishedPath;
+        if (gifEncoder) {
+            connect(gifEncoder.get(), &NativeGifEncoder::finished,
+                    [&encoderFinishedSuccessfully, &encoderFinishedPath](bool success,
+                                                                          const QString &path) {
+                encoderFinishedSuccessfully = success;
+                encoderFinishedPath = path;
+            });
+        } else if (webpEncoder) {
+            connect(webpEncoder.get(), &WebPAnimationEncoder::finished,
+                    [&encoderFinishedSuccessfully, &encoderFinishedPath](bool success,
+                                                                          const QString &path) {
+                encoderFinishedSuccessfully = success;
+                encoderFinishedPath = path;
+            });
+        }
 
-        for (qint64 timeMs = 0; timeMs <= dur; timeMs += frameInterval) {
+        // Extract and encode frames
+        const qint64 frameInterval = qMax<qint64>(1, 1000 / frameRateInt);
+        player->pause();
+        bool frameExtractionFailed = false;
+
+        for (qint64 timeMs = 0; timeMs < dur; timeMs += frameInterval) {
             QImage capturedFrame;
             bool frameReceived = false;
 
@@ -529,20 +568,36 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
             });
             connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
 
-            player->seek(timeMs);
             timer.start(500);
-            loop.exec();
+            player->seek(timeMs);
+            if (!frameReceived) {
+                loop.exec();
+            }
 
             timer.stop();
             disconnect(conn);
 
             if (frameReceived && !capturedFrame.isNull()) {
+                const qint64 framesBefore = gifEncoder
+                    ? gifEncoder->framesWritten()
+                    : webpEncoder->framesWritten();
                 if (gifEncoder)
                     gifEncoder->writeFrame(capturedFrame, timeMs);
                 else if (webpEncoder)
                     webpEncoder->writeFrame(capturedFrame, timeMs);
+
+                const qint64 framesAfter = gifEncoder
+                    ? gifEncoder->framesWritten()
+                    : webpEncoder->framesWritten();
+                if (framesAfter != framesBefore + 1) {
+                    frameExtractionFailed = true;
+                    break;
+                }
             } else {
-                qDebug() << "RecordingPreviewBackend: Skipped frame at" << timeMs << "ms (no frame received)";
+                qWarning() << "RecordingPreviewBackend: Frame extraction failed at"
+                           << timeMs << "ms";
+                frameExtractionFailed = true;
+                break;
             }
 
             int percent = static_cast<int>((timeMs * 100) / dur);
@@ -560,9 +615,38 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
             }
         }
 
-        // Finish encoding
+        if (frameExtractionFailed) {
+            if (gifEncoder) gifEncoder->abort();
+            if (webpEncoder) webpEncoder->abort();
+            QFile::remove(workingOutputPath);
+            postFailure(frameExtractionError);
+            return;
+        }
+
+        const qint64 encodedFrameCount = gifEncoder
+            ? gifEncoder->framesWritten()
+            : webpEncoder->framesWritten();
+
+        // Finish encoding. Both encoders complete synchronously and report the
+        // actual result through their finished signal.
         if (gifEncoder) gifEncoder->finish();
         if (webpEncoder) webpEncoder->finish();
+
+        if (encodedFrameCount <= 0 || !encoderFinishedSuccessfully
+            || encoderFinishedPath != workingOutputPath) {
+            qWarning() << "RecordingPreviewBackend: Conversion encoder failed; keeping original";
+            QFile::remove(workingOutputPath);
+            postFailure(encodingFailedError);
+            return;
+        }
+
+        if (QFileInfo::exists(outputPath)
+            || !QFile::rename(workingOutputPath, outputPath)) {
+            qWarning() << "RecordingPreviewBackend: Failed to promote conversion output";
+            QFile::remove(workingOutputPath);
+            postFailure(finalizeOutputError);
+            return;
+        }
 
         // Post results back to main thread
         QCoreApplication* app = QCoreApplication::instance();
@@ -649,6 +733,10 @@ void RecordingPreviewBackend::performTrim()
             this, [this](const QString &msg) {
         qWarning() << "RecordingPreviewBackend: Trim error:" << msg;
         setErrorMessage(tr("Trim failed: %1").arg(msg));
+        if (m_trimmer) {
+            m_trimmer->deleteLater();
+            m_trimmer = nullptr;
+        }
         m_isProcessing = false;
         emit processingChanged();
     });

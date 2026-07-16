@@ -5,7 +5,7 @@
 
 #include "encoding/NativeGifEncoder.h"
 #include <QDebug>
-#include <QFile>
+#include <QSaveFile>
 
 // Helper macro for casting opaque pointer
 #define GIF_STATE static_cast<MsfGifState*>(m_gifState)
@@ -192,9 +192,25 @@ void NativeGifEncoder::finish()
              << "gifState=" << (m_gifState != nullptr)
              << "framesWritten=" << m_framesWritten;
 
-    if (!m_running || !m_gifState) {
+    if (!m_gifState) {
         qDebug() << "NativeGifEncoder::finish() - Early return, not running or no state";
         emit finished(false, QString());
+        return;
+    }
+
+    if (!m_running || m_framesWritten == 0) {
+        MsfGifResult result = msf_gif_end(GIF_STATE);
+        if (result.data) {
+            msf_gif_free(result);
+        }
+
+        if (m_lastError.isEmpty()) {
+            m_lastError = "GIF encoding produced no frames";
+        }
+        const QString outputPath = m_outputPath;
+        cleanup();
+        emit error(m_lastError);
+        emit finished(false, outputPath);
         return;
     }
 
@@ -207,21 +223,23 @@ void NativeGifEncoder::finish()
 
     bool success = false;
     if (result.data && result.dataSize > 0) {
-        QFile file(m_outputPath);
+        QSaveFile file(m_outputPath);
+        file.setDirectWriteFallback(false);
         qDebug() << "NativeGifEncoder::finish() - Opening file:" << m_outputPath;
         if (file.open(QIODevice::WriteOnly)) {
             qint64 written = file.write(
                 reinterpret_cast<const char*>(result.data),
                 static_cast<qint64>(result.dataSize)
             );
-            file.close();
-
-            if (written == static_cast<qint64>(result.dataSize)) {
+            if (written == static_cast<qint64>(result.dataSize) && file.commit()) {
                 success = true;
                 qDebug() << "NativeGifEncoder: Saved" << result.dataSize << "bytes to" << m_outputPath;
             } else {
-                m_lastError = QString("Failed to write GIF data: wrote %1 of %2 bytes")
-                    .arg(written).arg(result.dataSize);
+                m_lastError = written == static_cast<qint64>(result.dataSize)
+                    ? QString("Failed to commit GIF data: %1").arg(file.errorString())
+                    : QString("Failed to write GIF data: wrote %1 of %2 bytes")
+                          .arg(written).arg(result.dataSize);
+                file.cancelWriting();
                 qDebug() << "NativeGifEncoder::finish() - Write error:" << m_lastError;
             }
         } else {
@@ -263,11 +281,6 @@ void NativeGifEncoder::abort()
     }
 
     cleanup();
-
-    // Remove incomplete output file
-    if (!m_outputPath.isEmpty() && QFile::exists(m_outputPath)) {
-        QFile::remove(m_outputPath);
-    }
 }
 
 void NativeGifEncoder::cleanup()

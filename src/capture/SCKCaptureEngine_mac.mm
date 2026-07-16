@@ -62,7 +62,7 @@ public:
 #endif
 
     QRect captureRegion;
-    QScreen *targetScreen = nullptr;
+    CaptureScreenInfo screenInfo;
     int frameRate = 30;
     std::atomic<bool> running{false};
     bool useScreenCaptureKit = false;
@@ -290,10 +290,20 @@ bool SCKCaptureEngine::setRegion(const QRect &region, QScreen *screen)
         return false;
     }
 
+    return setRegion(region, CaptureScreenInfo::fromScreen(screen));
+}
+
+bool SCKCaptureEngine::setRegion(const QRect &region, const CaptureScreenInfo &screenInfo)
+{
+    if (!screenInfo.isValid()) {
+        emit error("Invalid screen metadata");
+        return false;
+    }
+
     d->captureRegion = region;
-    d->targetScreen = screen;
+    d->screenInfo = screenInfo;
     m_captureRegion = region;
-    m_targetScreen = screen;
+    m_targetScreen = nullptr;
     return true;
 }
 
@@ -323,7 +333,7 @@ void SCKCaptureEngine::setExcludedWindows(const QList<WId> &windowIds)
 bool SCKCaptureEngine::start()
 {
     qDebug() << "SCKCaptureEngine::start() - BEGIN";
-    qDebug() << "SCKCaptureEngine::start() - targetScreen:" << (d->targetScreen ? d->targetScreen->name() : "NULL");
+    qDebug() << "SCKCaptureEngine::start() - targetScreen:" << d->screenInfo.name;
     qDebug() << "SCKCaptureEngine::start() - captureRegion:" << d->captureRegion;
 
     if (d->running) {
@@ -335,7 +345,7 @@ bool SCKCaptureEngine::start()
     // Release any partially initialized graph left by an earlier failed start.
     d->cleanup();
 
-    if (!d->targetScreen || d->captureRegion.isEmpty()) {
+    if (!d->screenInfo.isValid() || d->captureRegion.isEmpty()) {
         qDebug() << "SCKCaptureEngine::start() - ERROR: Region or screen not configured";
         emit error("Region or screen not configured");
         return false;
@@ -386,12 +396,12 @@ bool SCKCaptureEngine::start()
             CGDirectDisplayID targetDisplayID = 0;
 
             qDebug() << "SCKCaptureEngine::start() - Finding target display...";
-            qDebug() << "SCKCaptureEngine::start() - Target screen name:" << d->targetScreen->name();
-            qDebug() << "SCKCaptureEngine::start() - Target screen geometry:" << d->targetScreen->geometry();
+            qDebug() << "SCKCaptureEngine::start() - Target screen name:" << d->screenInfo.name;
+            qDebug() << "SCKCaptureEngine::start() - Target screen geometry:" << d->screenInfo.geometry;
 
             // Match display by geometry position instead of name (more reliable)
             // NSScreen.localizedName uses localized strings which may not match QScreen::name()
-            QRect targetGeom = d->targetScreen->geometry();
+            const QRect targetGeom = d->screenInfo.geometry;
             qDebug() << "SCKCaptureEngine::start() - Matching by geometry:" << targetGeom;
 
             // Get all active displays and match by position
@@ -476,7 +486,7 @@ bool SCKCaptureEngine::start()
             qDebug() << "SCKCaptureEngine::start() - Content filter created:" << (filter ? "valid" : "nil");
 
             // Get device pixel ratio for output scaling
-            CGFloat scale = d->targetScreen->devicePixelRatio();
+            const CGFloat scale = d->screenInfo.devicePixelRatio;
             qDebug() << "SCKCaptureEngine::start() - Device pixel ratio:" << scale;
 
             // Configure stream
@@ -498,11 +508,11 @@ bool SCKCaptureEngine::start()
             // sourceRect is in POINT coordinates (logical pixels), not physical pixels
             // It defines which region of the display to capture
             // ScreenCaptureKit uses top-left origin (same as Qt), no Y flip needed
-            CGFloat relativeX = d->captureRegion.x() - d->targetScreen->geometry().x();
-            CGFloat relativeY = d->captureRegion.y() - d->targetScreen->geometry().y();
+            const CGFloat relativeX = d->captureRegion.x() - d->screenInfo.geometry.x();
+            const CGFloat relativeY = d->captureRegion.y() - d->screenInfo.geometry.y();
 
             qDebug() << "=== SCKCaptureEngine Coordinate Debug ===";
-            qDebug() << "Qt screen geometry:" << d->targetScreen->geometry();
+            qDebug() << "Qt screen geometry:" << d->screenInfo.geometry;
             qDebug() << "SCDisplay size:" << d->targetDisplay.width << "x" << d->targetDisplay.height;
             qDebug() << "Device pixel ratio:" << scale;
             qDebug() << "captureRegion (global):" << d->captureRegion;

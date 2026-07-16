@@ -1,6 +1,7 @@
 #ifndef VIDEOTRIMMER_H
 #define VIDEOTRIMMER_H
 
+#include <QImage>
 #include <QObject>
 #include <QString>
 #include "encoding/EncoderFactory.h"
@@ -9,6 +10,7 @@ class IVideoPlayer;
 class IVideoEncoder;
 class NativeGifEncoder;
 class WebPAnimationEncoder;
+class QTimer;
 
 /**
  * @brief Async video trimming by re-encoding.
@@ -89,6 +91,15 @@ private slots:
     void onMediaLoaded();
 
 private:
+    friend class TestVideoTrimmerSafety;
+
+    void requestFrame(qint64 positionMs);
+    void submitFrame(const QImage &frame, qint64 timestampMs);
+    void retryPendingFrame();
+    void completeCurrentFrame();
+    void failTrim(const QString &message);
+    void abortEncoders();
+    qint64 encoderFramesWritten() const;
     void cleanup();
 
     QString m_inputPath;
@@ -104,6 +115,11 @@ private:
 
     bool m_running = false;
     bool m_cancelled = false;
+    bool m_waitingForFrame = false;
+    bool m_waitingForEncoder = false;
+    QTimer *m_frameTimeout = nullptr;
+    QImage m_pendingFrame;
+    qint64 m_pendingTimestamp = 0;
     qint64 m_currentPosition = 0;
     qint64 m_seekPosition = 0;    // Position we requested frame from (for timestamp calculation)
     int m_frameCount = 0;

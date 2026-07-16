@@ -1,5 +1,6 @@
 #include "RecordingManager.h"
 #include "recording/ScreenSourceService.h"
+#include "recording/RecordingFileUtils.h"
 #include "qml/QmlRecordingControlBar.h"
 #include "RecordingInitTask.h"
 #include "RecordingRegionNormalizer.h"
@@ -524,7 +525,7 @@ void RecordingManager::beginAsyncInitialization()
     // Create initialization config
     RecordingInitTask::Config config;
     config.region = m_recordingRegion;
-    config.screen = targetScreen;
+    config.screenInfo = CaptureScreenInfo::fromScreen(targetScreen);
     config.frameRate = m_frameRate;
     config.audioEnabled = shouldConfigureAudio;
     config.audioSampleRate = audioSampleRate;
@@ -624,6 +625,19 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
         qWarning() << "RecordingManager: onInitializationComplete called with null initTask";
         setState(State::Idle);
         emit recordingError(tr("Internal error: initialization task is null"));
+        return;
+    }
+
+    // The worker initializes from immutable screen metadata. Confirm that the
+    // corresponding live screen still exists before adopting its resources.
+    if (!isScreenAvailable(m_targetScreen.data())) {
+        qWarning() << "RecordingManager: Target screen was disconnected during initialization";
+        task->discardResult();
+        m_initTask.clear();
+        m_targetScreen = nullptr;
+        stopFrameCapture();
+        setState(State::Idle);
+        emit recordingError(tr("Recording screen was disconnected during initialization."));
         return;
     }
 
@@ -1340,23 +1354,15 @@ void RecordingManager::showSaveDialog(const QString &tempOutputPath)
     } else {
         // Move/rename the file to chosen location
         if (savePath != tempOutputPath) {
-            // Remove existing file if it exists
-            if (QFile::exists(savePath)) {
-                QFile::remove(savePath);
-            }
-            if (QFile::rename(tempOutputPath, savePath)) {
+            QString saveError;
+            if (SnapTray::RecordingFileUtils::replaceRecordingFile(
+                    tempOutputPath, savePath, &saveError)) {
                 syncFile(savePath);
                 emit recordingStopped(savePath);
             } else {
-                // Try copy + delete if rename fails (cross-filesystem)
-                if (QFile::copy(tempOutputPath, savePath)) {
-                    QFile::remove(tempOutputPath);
-                    syncFile(savePath);
-                    emit recordingStopped(savePath);
-                } else {
-                    qWarning() << "RecordingManager: Failed to save recording to:" << savePath;
-                    emit recordingError(tr("Failed to save recording to selected location"));
-                }
+                qWarning() << "RecordingManager: Failed to save recording to:" << savePath
+                           << saveError;
+                emit recordingError(tr("Failed to save recording to selected location"));
             }
         } else {
             syncFile(tempOutputPath);

@@ -859,10 +859,12 @@ add_library(snaptray_ui STATIC
     src/RecordingManager.cpp
     src/RecordingInitTask.cpp
     src/RecordingRegionNormalizer.cpp
+    src/recording/RecordingFileUtils.cpp
     src/encoding/EncodingWorker.cpp
     include/RecordingManager.h
     include/RecordingInitTask.h
     include/RecordingRegionNormalizer.h
+    include/recording/RecordingFileUtils.h
     include/encoding/EncodingWorker.h
 )
 
