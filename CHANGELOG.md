@@ -6,6 +6,10 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed SnapTray occasionally hanging during shutdown, which could block relaunches and in-app updates after the menu bar icon disappeared.
+
 ## [1.0.59] - 2026-07-15
 
 ### Improved

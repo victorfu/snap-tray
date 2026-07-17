@@ -59,6 +59,11 @@ target_sources(Qml_BeautifyPanelQml PRIVATE ${CMAKE_SOURCE_DIR}/resources/resour
 add_test(NAME Qml_BeautifyPanelQml COMMAND Qml_BeautifyPanelQml)
 set_tests_properties(Qml_BeautifyPanelQml PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(Qml_OverlayManagerLifetime Qml/tst_QmlOverlayManagerLifetime.cpp)
+target_link_libraries(Qml_OverlayManagerLifetime PRIVATE snaptray_qml Qt6::Quick Qt6::Widgets)
+add_test(NAME Qml_OverlayManagerLifetime COMMAND Qml_OverlayManagerLifetime)
+set_tests_properties(Qml_OverlayManagerLifetime PROPERTIES TIMEOUT 10 LABELS "integration")
+
 add_executable(Qml_WidthSectionQml Qml/tst_WidthSectionQml.cpp)
 target_link_libraries(Qml_WidthSectionQml PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
 add_test(NAME Qml_WidthSectionQml COMMAND Qml_WidthSectionQml)

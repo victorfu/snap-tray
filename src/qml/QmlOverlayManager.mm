@@ -54,8 +54,13 @@ QmlOverlayManager::QmlOverlayManager(QObject* parent)
 
 QmlOverlayManager& QmlOverlayManager::instance()
 {
-    static QmlOverlayManager inst;
-    return inst;
+    // Deliberately process-lifetime. QQmlEngine owns a type-loader thread, and
+    // destroying it from static teardown can happen after QApplication is gone
+    // (or while QQuickViews are still alive when exit() is used). In either
+    // case QQmlEngine teardown can wait forever for its worker thread. Let the
+    // operating system reclaim the manager and shared engine at process exit.
+    static auto* inst = new QmlOverlayManager();
+    return *inst;
 }
 
 void QmlOverlayManager::ensureEngine()

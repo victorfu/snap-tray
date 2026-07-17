@@ -20,6 +20,9 @@ namespace SnapTray {
  * The shared QML engine has the SnapTrayQml module registered so that
  * QML components can access PrimitiveTokens, SemanticTokens, ComponentTokens,
  * and ThemeManager.
+ *
+ * The manager and engine intentionally live for the lifetime of the process.
+ * Qt's global teardown is too late to safely stop the engine's worker thread.
  */
 class QmlOverlayManager : public QObject
 {
