@@ -562,10 +562,13 @@ PinWindow::PinWindow(const QPixmap& screenshot,
     m_resizeFinishTimer->setSingleShot(true);
     connect(m_resizeFinishTimer, &QTimer::timeout, this, &PinWindow::onResizeFinished);
 
-    // Track cursor near edges for click-through resize
-    m_clickThroughHoverTimer = new QTimer(this);
-    m_clickThroughHoverTimer->setInterval(50);  // Click-through hover check
-    connect(m_clickThroughHoverTimer, &QTimer::timeout, this, &PinWindow::updateClickThroughForCursor);
+    if (PlatformFeatures::instance().capabilities().supportsClickThrough) {
+        // Track cursor near edges for click-through resize.
+        m_clickThroughHoverTimer = new QTimer(this);
+        m_clickThroughHoverTimer->setInterval(50);
+        connect(m_clickThroughHoverTimer, &QTimer::timeout,
+                this, &PinWindow::updateClickThroughForCursor);
+    }
 
 }
 
@@ -1067,11 +1070,15 @@ void PinWindow::createContextMenu()
         QCoreApplication::translate("HistoryWindow", "Open History Folder"));
     connect(openCacheFolderAction, &QAction::triggered, this, &PinWindow::openCacheFolder);
 
-    // Click-through option
-    m_clickThroughAction = m_contextMenu->addAction(tr("Click-through"));
-    m_clickThroughAction->setCheckable(true);
-    m_clickThroughAction->setChecked(m_clickThrough);
-    connect(m_clickThroughAction, &QAction::toggled, this, &PinWindow::setClickThrough);
+    // Do not advertise click-through on platforms whose native implementation
+    // cannot actually remove this window from pointer hit-testing.
+    if (PlatformFeatures::instance().capabilities().supportsClickThrough) {
+        m_clickThroughAction = m_contextMenu->addAction(tr("Click-through"));
+        m_clickThroughAction->setCheckable(true);
+        m_clickThroughAction->setChecked(m_clickThrough);
+        connect(m_clickThroughAction, &QAction::toggled,
+                this, &PinWindow::setClickThrough);
+    }
 
     m_mergePinsAction = m_contextMenu->addAction(tr("Merge Pins"));
     connect(m_mergePinsAction, &QAction::triggered, this, &PinWindow::mergePinsFromContextMenu);
@@ -2131,6 +2138,10 @@ void PinWindow::openCacheFolder()
 
 void PinWindow::applyClickThroughState(bool enabled)
 {
+    if (enabled && !PlatformFeatures::instance().capabilities().supportsClickThrough) {
+        return;
+    }
+
     if (m_clickThroughApplied == enabled) {
         return;
     }
@@ -2160,6 +2171,8 @@ void PinWindow::updateClickThroughForCursor()
 
 void PinWindow::setClickThrough(bool enabled)
 {
+    enabled = enabled && PlatformFeatures::instance().capabilities().supportsClickThrough;
+
     if (m_clickThrough == enabled)
         return;
 

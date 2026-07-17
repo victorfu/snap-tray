@@ -489,6 +489,11 @@ target_link_libraries(Detection_CredentialDetector PRIVATE snaptray_algorithms Q
 add_test(NAME Detection_CredentialDetector COMMAND Detection_CredentialDetector)
 set_tests_properties(Detection_CredentialDetector PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Detection_QRCodeManager Detection/tst_QRCodeManager.cpp)
+target_link_libraries(Detection_QRCodeManager PRIVATE snaptray_platform Qt6::Widgets Qt6::Test)
+add_test(NAME Detection_QRCodeManager COMMAND Detection_QRCodeManager)
+set_tests_properties(Detection_QRCodeManager PROPERTIES TIMEOUT 60 LABELS "unit")
+
 if(APPLE)
     add_executable(Detection_WindowDetectorMacFilters Detection/tst_WindowDetectorMacFilters.cpp)
     target_include_directories(Detection_WindowDetectorMacFilters PRIVATE ${CMAKE_SOURCE_DIR}/src)

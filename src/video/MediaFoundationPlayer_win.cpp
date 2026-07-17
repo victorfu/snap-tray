@@ -12,6 +12,7 @@
 #include <QThread>
 #include <QTimer>
 #include <QUrl>
+#include <QWaitCondition>
 
 #include <windows.h>
 #include <mfapi.h>
@@ -120,14 +121,32 @@ public:
     void setVideoSize(QSize size) { m_videoSize = size; }
     void setStride(int stride) { m_stride = stride; }
     void setFrameInterval(int intervalMs) { m_frameIntervalMs = intervalMs; }
-    void setPlaybackRate(float rate) { m_playbackRate = rate; }
+    void setPlaybackRate(float rate) { m_playbackRate.store(rate); }
+    bool isWaitingAtEndOfStream() const
+    {
+        return m_waitingAtEndOfStream.load() && !m_seekRequested.load();
+    }
 
-    void requestStop() { m_stopRequested = true; }
-    void requestPause() { m_paused = true; }
-    void requestResume() { m_paused = false; }
+    void requestStop() {
+        QMutexLocker locker(&m_waitMutex);
+        m_stopRequested = true;
+        m_wakeCondition.wakeAll();
+    }
+    void requestPause() {
+        QMutexLocker locker(&m_waitMutex);
+        m_paused = true;
+    }
+    void requestResume() {
+        QMutexLocker locker(&m_waitMutex);
+        m_paused = false;
+        m_wakeCondition.wakeAll();
+    }
     void requestSeek(qint64 positionMs) {
+        QMutexLocker locker(&m_waitMutex);
         m_seekPosition = positionMs;
         m_seekRequested = true;
+        m_waitingAtEndOfStream = false;
+        m_wakeCondition.wakeAll();
     }
 
 signals:
@@ -149,6 +168,7 @@ protected:
         // Source Reader may first return stream ticks, media-type flags, or a
         // null/non-decodable sample; none of those should consume the request.
         bool framePendingAfterSeek = false;
+        bool waitingForSeekAfterEndOfStream = false;
 
         while (!m_stopRequested) {
             if (!m_reader) {
@@ -160,6 +180,7 @@ protected:
             // before the pause gate, then keep reading until one is delivered.
             const bool seekRequested = m_seekRequested.exchange(false);
             if (seekRequested) {
+                m_waitingAtEndOfStream = false;
                 PROPVARIANT var;
                 PropVariantInit(&var);
                 var.vt = VT_I8;
@@ -173,8 +194,18 @@ protected:
                     break;
                 }
                 framePendingAfterSeek = true;
-            } else if (m_paused && !framePendingAfterSeek) {
-                QThread::msleep(10);
+                waitingForSeekAfterEndOfStream = false;
+            } else if (waitingForSeekAfterEndOfStream
+                       || (m_paused && !framePendingAfterSeek)) {
+                // Park instead of polling. At end-of-stream, resuming without
+                // a seek would only read EOF repeatedly, so wait specifically
+                // for a seek (or shutdown) before touching the reader again.
+                QMutexLocker locker(&m_waitMutex);
+                if (!m_stopRequested && !m_seekRequested
+                    && (waitingForSeekAfterEndOfStream
+                        || (m_paused && !framePendingAfterSeek))) {
+                    m_wakeCondition.wait(&m_waitMutex);
+                }
                 continue;
             }
 
@@ -213,8 +244,20 @@ protected:
                 if (sample) {
                     sample->Release();
                 }
+
+                // Keep the reader thread alive but dormant. Looping and replay
+                // both seek this same Source Reader back to zero, avoiding a
+                // dead thread and avoiding a tight loop that repeatedly reads
+                // the end-of-stream marker.
+                {
+                    QMutexLocker locker(&m_waitMutex);
+                    m_paused = true;
+                }
+                framePendingAfterSeek = false;
+                waitingForSeekAfterEndOfStream = true;
+                m_waitingAtEndOfStream = true;
                 emit endOfStream();
-                break;
+                continue;
             }
 
             bool frameDelivered = false;
@@ -232,7 +275,8 @@ protected:
                 framePendingAfterSeek = false;
 
                 // Pace the frame reading based on playback rate
-                int sleepMs = static_cast<int>(m_frameIntervalMs / m_playbackRate);
+                const float playbackRate = m_playbackRate.load();
+                int sleepMs = static_cast<int>(m_frameIntervalMs / playbackRate);
                 if (sleepMs > 0) {
                     QThread::msleep(sleepMs);
                 }
@@ -374,12 +418,15 @@ private:
     QSize m_videoSize;
     int m_stride = 0;
     int m_frameIntervalMs = 33;
-    float m_playbackRate = 1.0f;
+    std::atomic<float> m_playbackRate{1.0f};
 
     std::atomic<bool> m_stopRequested{false};
     std::atomic<bool> m_paused{true};
     std::atomic<bool> m_seekRequested{false};
     std::atomic<qint64> m_seekPosition{0};
+    std::atomic<bool> m_waitingAtEndOfStream{false};
+    QMutex m_waitMutex;
+    QWaitCondition m_wakeCondition;
 };
 
 // MediaFoundationPlayer implementation using IMFSourceReader with background thread
@@ -453,8 +500,10 @@ private:
     float m_volume = 1.0f;
     bool m_muted = false;
     bool m_looping = false;
+    bool m_atEndOfStream = false;
     float m_playbackRate = 1.0f;
     bool m_mfInitialized = false;
+    quint64 m_readerGeneration = 0;
 
     // Frame timing
     int m_frameIntervalMs = 33;
@@ -507,6 +556,8 @@ void MediaFoundationPlayer::stopReaderThread()
 
 void MediaFoundationPlayer::cleanup()
 {
+    // Invalidate callbacks that may already be queued from this reader.
+    ++m_readerGeneration;
     stopReaderThread();
 
     if (m_reader) {
@@ -516,6 +567,7 @@ void MediaFoundationPlayer::cleanup()
 
     m_hasVideo = false;
     m_hasAudio = false;
+    m_atEndOfStream = false;
     m_duration = 0;
     m_position = 0;
     m_videoSize = QSize();
@@ -525,6 +577,8 @@ void MediaFoundationPlayer::cleanup()
 bool MediaFoundationPlayer::load(const QString &filePath)
 {
     cleanup();
+    m_positionTimer->stop();
+    setState(State::Stopped);
 
     if (!m_mfInitialized) {
         emit error("Media Foundation not initialized");
@@ -567,12 +621,25 @@ bool MediaFoundationPlayer::load(const QString &filePath)
     m_readerThread->setStride(m_stride);
     m_readerThread->setFrameInterval(m_frameIntervalMs);
 
-    connect(m_readerThread, &FrameReaderThread::frameReady,
-            this, &MediaFoundationPlayer::onFrameReady, Qt::QueuedConnection);
-    connect(m_readerThread, &FrameReaderThread::endOfStream,
-            this, &MediaFoundationPlayer::onEndOfStream, Qt::QueuedConnection);
-    connect(m_readerThread, &FrameReaderThread::errorOccurred,
-            this, &MediaFoundationPlayer::onReaderError, Qt::QueuedConnection);
+    const quint64 readerGeneration = m_readerGeneration;
+    connect(m_readerThread, &FrameReaderThread::frameReady, this,
+            [this, readerGeneration](const QImage& frame, qint64 timestampMs) {
+                if (readerGeneration == m_readerGeneration) {
+                    onFrameReady(frame, timestampMs);
+                }
+            }, Qt::QueuedConnection);
+    connect(m_readerThread, &FrameReaderThread::endOfStream, this,
+            [this, readerGeneration]() {
+                if (readerGeneration == m_readerGeneration) {
+                    onEndOfStream();
+                }
+            }, Qt::QueuedConnection);
+    connect(m_readerThread, &FrameReaderThread::errorOccurred, this,
+            [this, readerGeneration](const QString& message) {
+                if (readerGeneration == m_readerGeneration) {
+                    onReaderError(message);
+                }
+            }, Qt::QueuedConnection);
 
     m_readerThread->start();
 
@@ -895,6 +962,12 @@ void MediaFoundationPlayer::play()
 
     if (!m_readerThread || !m_hasVideo) return;
 
+    // A Source Reader remains positioned at EOF after normal completion.
+    // Rewind before resuming so play() is useful after non-looping playback.
+    if (m_atEndOfStream) {
+        seek(0);
+    }
+
     m_readerThread->setPlaybackRate(m_playbackRate);
     m_readerThread->requestResume();
     m_positionTimer->start();
@@ -920,6 +993,7 @@ void MediaFoundationPlayer::stop()
         m_readerThread->requestPause();
         m_readerThread->requestSeek(0);
     }
+    m_atEndOfStream = false;
     m_positionTimer->stop();
     m_position = 0;
     emit positionChanged(0);
@@ -932,6 +1006,7 @@ void MediaFoundationPlayer::seek(qint64 positionMs)
 
     positionMs = qBound(0LL, positionMs, m_duration);
     m_position = positionMs;
+    m_atEndOfStream = false;
 
     if (m_readerThread) {
         m_readerThread->requestSeek(positionMs);
@@ -954,6 +1029,7 @@ void MediaFoundationPlayer::setPlaybackRate(float rate)
 
 void MediaFoundationPlayer::onFrameReady(const QImage &frame, qint64 timestampMs)
 {
+    m_atEndOfStream = false;
     m_position = timestampMs;
     emit frameReady(frame);
 }
@@ -961,6 +1037,16 @@ void MediaFoundationPlayer::onFrameReady(const QImage &frame, qint64 timestampMs
 void MediaFoundationPlayer::onEndOfStream()
 {
     qDebug() << "MediaFoundationPlayer: End of stream";
+
+    // A queued EOS may arrive after stop(), seek(), or reader replacement.
+    // Only the currently playing reader that is still parked at EOF may
+    // transition the player or initiate a loop.
+    if (m_state != State::Playing || !m_readerThread
+        || !m_readerThread->isWaitingAtEndOfStream()) {
+        return;
+    }
+
+    m_atEndOfStream = true;
 
     if (m_looping) {
         seek(0);

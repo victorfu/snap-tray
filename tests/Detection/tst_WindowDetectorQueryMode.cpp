@@ -7,6 +7,7 @@
 #include <QScreen>
 
 #include "WindowDetector.h"
+#include "../../src/WindowDetectorWinFilters.h"
 
 #ifdef Q_OS_LINUX
 #include <QByteArray>
@@ -82,6 +83,8 @@ private slots:
     void testContextMenuPrefersTopLevelBounds();
     void testQueryUpgradePreservesMissingTopLevelElements();
     void testQueryUpgradeDoesNotDuplicateMatchingTopLevelElements();
+    void testWindowsModernUiRecognizesOnlyImeAndTooltipClasses();
+    void testWindowsModernUiDoesNotMaskStyleOrOwnerClassification();
     void testLinuxX11TopLevelWindowDetectionFindsVisibleWindow();
 };
 
@@ -284,6 +287,48 @@ void tst_WindowDetectorQueryMode::testQueryUpgradeDoesNotDuplicateMatchingTopLev
     QCOMPARE(newCache.size(), size_t(1));
     QCOMPARE(newCache.front().bounds, livePopup.bounds);
     QCOMPARE(newCache.front().ownerPid, livePopup.ownerPid);
+}
+
+void tst_WindowDetectorQueryMode::testWindowsModernUiRecognizesOnlyImeAndTooltipClasses()
+{
+    using namespace WindowDetectorWinFilters;
+
+    for (const std::wstring_view className : {
+             std::wstring_view(L"IME"),
+             std::wstring_view(L"MSCTFIME UI"),
+             std::wstring_view(L"tooltips_class32")}) {
+        TopLevelWindowTraits traits;
+        traits.className = className;
+        traits.modernUiEnabled = true;
+        QCOMPARE(classifyTopLevelWindow(traits), TopLevelWindowKind::PopupMenu);
+    }
+
+    TopLevelWindowTraits ordinaryWindow;
+    ordinaryWindow.className = L"Chrome_WidgetWin_1";
+    ordinaryWindow.modernUiEnabled = true;
+    QCOMPARE(classifyTopLevelWindow(ordinaryWindow), TopLevelWindowKind::Window);
+}
+
+void tst_WindowDetectorQueryMode::testWindowsModernUiDoesNotMaskStyleOrOwnerClassification()
+{
+    using namespace WindowDetectorWinFilters;
+
+    TopLevelWindowTraits traits;
+    traits.className = L"Chrome_WidgetWin_1";
+    traits.modernUiEnabled = true;
+    traits.toolWindow = true;
+    QCOMPARE(classifyTopLevelWindow(traits), TopLevelWindowKind::ToolWindow);
+
+    traits.toolWindow = false;
+    traits.modalFrame = true;
+    QCOMPARE(classifyTopLevelWindow(traits), TopLevelWindowKind::Dialog);
+
+    traits.modalFrame = false;
+    traits.hasOwner = true;
+    QCOMPARE(classifyTopLevelWindow(traits), TopLevelWindowKind::Dialog);
+
+    traits.className = L"ComboLBox";
+    QCOMPARE(classifyTopLevelWindow(traits), TopLevelWindowKind::PopupMenu);
 }
 
 void tst_WindowDetectorQueryMode::testLinuxX11TopLevelWindowDetectionFindsVisibleWindow()

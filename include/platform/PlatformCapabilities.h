@@ -24,6 +24,9 @@ struct PlatformCapabilities {
     bool supportsOCR = false;
     bool supportsGlobalHotkeys = false;
     bool supportsWindowDetection = false;
+    // Native click-through must only be exposed when the platform layer can
+    // actually remove the pin window from pointer hit-testing.
+    bool supportsClickThrough = false;
     // Live pin capture is safe only when the platform can exclude the pin
     // window itself from the captured desktop.
     bool supportsLiveCapture = false;

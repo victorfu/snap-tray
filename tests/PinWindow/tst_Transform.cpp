@@ -5,6 +5,7 @@
 #include <QPainter>
 
 #include "PinWindow.h"
+#include "PlatformFeatures.h"
 
 class TestPinWindowTransform : public QObject
 {
@@ -279,7 +280,8 @@ private slots:
         PinWindow window(pixmap, QPoint(0, 0));
 
         window.setClickThrough(true);
-        QCOMPARE(window.isClickThrough(), true);
+        QCOMPARE(window.isClickThrough(),
+                 PlatformFeatures::instance().capabilities().supportsClickThrough);
 
         window.setClickThrough(false);
         QCOMPARE(window.isClickThrough(), false);

@@ -84,6 +84,7 @@ PlatformCapabilities capabilitiesForPlatform(PlatformKind platform,
         caps.supportsOCR = true;
         caps.supportsGlobalHotkeys = true;
         caps.supportsWindowDetection = true;
+        caps.supportsClickThrough = true;
         caps.supportsLiveCapture = true;
         caps.supportsInAppUpdates = true;
         caps.isRuntimeSupported = true;
@@ -93,6 +94,7 @@ PlatformCapabilities capabilitiesForPlatform(PlatformKind platform,
         caps.supportsOCR = false;
         caps.supportsGlobalHotkeys = displayServer == DisplayServerKind::X11;
         caps.supportsWindowDetection = displayServer == DisplayServerKind::X11;
+        caps.supportsClickThrough = false;
         caps.supportsLiveCapture = false;
         caps.supportsInAppUpdates = false;
         caps.isRuntimeSupported = displayServer == DisplayServerKind::X11;

@@ -1,4 +1,5 @@
 #include "WindowDetector.h"
+#include "WindowDetectorWinFilters.h"
 #include "utils/CoordinateHelper.h"
 #include <QScreen>
 #include <QDebug>
@@ -209,9 +210,6 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
         }
     }
 
-    // Determine element type based on window characteristics
-    ElementType elementType = ElementType::Window;
-
     // Check window class name for special window types
     WCHAR className[256] = {0};
     GetClassNameW(hwnd, className, 256);
@@ -222,28 +220,28 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
         return TRUE;
     }
 
-    // Menu windows have class "#32768"
-    if (wcscmp(className, L"#32768") == 0) {
+    const WindowDetectorWinFilters::TopLevelWindowTraits traits{
+        className,
+        context->detectionFlags.testFlag(DetectionFlag::ModernUI),
+        (exStyle & WS_EX_TOOLWINDOW) != 0,
+        (style & DS_MODALFRAME) != 0 || (exStyle & WS_EX_DLGMODALFRAME) != 0,
+        (exStyle & WS_EX_APPWINDOW) != 0,
+        GetWindow(hwnd, GW_OWNER) != nullptr
+    };
+
+    ElementType elementType = ElementType::Window;
+    switch (WindowDetectorWinFilters::classifyTopLevelWindow(traits)) {
+    case WindowDetectorWinFilters::TopLevelWindowKind::ContextMenu:
         elementType = ElementType::ContextMenu;
-    }
-    // System dialog windows have class "#32770"
-    else if (wcscmp(className, L"#32770") == 0) {
+        break;
+    case WindowDetectorWinFilters::TopLevelWindowKind::PopupMenu:
+        elementType = ElementType::PopupMenu;
+        break;
+    case WindowDetectorWinFilters::TopLevelWindowKind::Dialog:
         elementType = ElementType::Dialog;
-    }
-    // Modern UI elements (IME, tooltips) - only if ModernUI flag is set
-    else if (context->detectionFlags.testFlag(DetectionFlag::ModernUI)) {
-        // IME candidate windows
-        if (wcscmp(className, L"IME") == 0 ||
-            wcsstr(className, L"MSCTFIME") != nullptr) {
-            elementType = ElementType::PopupMenu;
-        }
-        // Tooltips
-        else if (wcscmp(className, L"tooltips_class32") == 0) {
-            elementType = ElementType::PopupMenu;
-        }
-    }
-    // Check for tool windows (tooltips, floating toolbars, menus)
-    else if (exStyle & WS_EX_TOOLWINDOW) {
+        break;
+    case WindowDetectorWinFilters::TopLevelWindowKind::ToolWindow:
+        // Check for tool windows (tooltips, floating toolbars, menus)
         // Tool windows with topmost flag near taskbar might be tray popups
         if (exStyle & WS_EX_TOPMOST) {
             RECT rect;
@@ -273,20 +271,9 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
             }
             elementType = ElementType::PopupMenu;
         }
-    }
-    // Check for dialog windows
-    else if ((style & DS_MODALFRAME) || (exStyle & WS_EX_DLGMODALFRAME)) {
-        elementType = ElementType::Dialog;
-    }
-    // Check for owned popup windows (child dialogs, dropdowns)
-    else if (!(exStyle & WS_EX_APPWINDOW) && GetWindow(hwnd, GW_OWNER) != nullptr) {
-        // Check if it's a combo box dropdown or similar
-        if (wcscmp(className, L"ComboLBox") == 0 ||
-            wcsstr(className, L"DropDown") != nullptr) {
-            elementType = ElementType::PopupMenu;
-        } else {
-            elementType = ElementType::Dialog;
-        }
+        break;
+    case WindowDetectorWinFilters::TopLevelWindowKind::Window:
+        break;
     }
 
     // Check if this element type should be included

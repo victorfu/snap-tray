@@ -25,6 +25,7 @@ void tst_PlatformCapabilities::linuxX11BetaCapabilities()
     QVERIFY(!caps.supportsRecording);
     QVERIFY(!caps.supportsOCR);
     QVERIFY(caps.supportsWindowDetection);
+    QVERIFY(!caps.supportsClickThrough);
     QVERIFY(!caps.supportsLiveCapture);
     QVERIFY(!caps.supportsInAppUpdates);
     QCOMPARE(caps.displayServer, SnapTray::DisplayServerKind::X11);
@@ -66,6 +67,7 @@ void tst_PlatformCapabilities::macAndWindowsKeepRecordingAndOcrSupport()
     QVERIFY(macCaps.supportsRecording);
     QVERIFY(macCaps.supportsOCR);
     QVERIFY(macCaps.supportsWindowDetection);
+    QVERIFY(macCaps.supportsClickThrough);
     QVERIFY(macCaps.supportsLiveCapture);
     QVERIFY(macCaps.supportsInAppUpdates);
 
@@ -76,6 +78,7 @@ void tst_PlatformCapabilities::macAndWindowsKeepRecordingAndOcrSupport()
     QVERIFY(winCaps.supportsRecording);
     QVERIFY(winCaps.supportsOCR);
     QVERIFY(winCaps.supportsWindowDetection);
+    QVERIFY(winCaps.supportsClickThrough);
     QVERIFY(winCaps.supportsLiveCapture);
     QVERIFY(winCaps.supportsInAppUpdates);
 }

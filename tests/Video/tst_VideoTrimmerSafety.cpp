@@ -155,6 +155,14 @@ void TestVideoTrimmerSafety::mediaFoundationPausedSeekKeepsFramePending()
     const qsizetype readSample = run.indexOf("m_reader->ReadSample", pauseGate);
     const qsizetype deliveredGuard = run.indexOf("if (frameDelivered)", readSample);
     const qsizetype pendingClear = run.indexOf("framePendingAfterSeek = false", deliveredGuard);
+    const qsizetype endOfStream = run.indexOf("MF_SOURCE_READERF_ENDOFSTREAM", readSample);
+    const qsizetype endOfStreamPendingClear = run.indexOf(
+        "framePendingAfterSeek = false", endOfStream);
+    const qsizetype endOfStreamWait = run.indexOf(
+        "waitingForSeekAfterEndOfStream = true", endOfStreamPendingClear);
+    const qsizetype endOfStreamSignal = run.indexOf("emit endOfStream()", endOfStreamWait);
+    const qsizetype endOfStreamBlockEnd = run.indexOf(
+        "bool frameDelivered = false", endOfStreamSignal);
 
     QVERIFY(pendingDeclaration >= 0);
     QVERIFY(pendingSet > pendingDeclaration);
@@ -162,9 +170,17 @@ void TestVideoTrimmerSafety::mediaFoundationPausedSeekKeepsFramePending()
     QVERIFY(readSample > pauseGate);
     QVERIFY(deliveredGuard > readSample);
     QVERIFY(pendingClear > deliveredGuard);
-    QCOMPARE(run.count("framePendingAfterSeek = false"), qsizetype(2));
+    QVERIFY(endOfStream > readSample);
+    QVERIFY(endOfStreamPendingClear > endOfStream);
+    QVERIFY(endOfStreamWait > endOfStreamPendingClear);
+    QVERIFY(endOfStreamSignal > endOfStreamWait);
+    QVERIFY(endOfStreamBlockEnd > endOfStreamSignal);
+    const QByteArray endOfStreamBlock = run.mid(
+        endOfStream, endOfStreamBlockEnd - endOfStream);
+    QVERIFY(endOfStreamBlock.contains("continue;"));
+    QVERIFY(!endOfStreamBlock.contains("break;"));
+    QCOMPARE(run.count("framePendingAfterSeek = false"), qsizetype(3));
     QVERIFY(run.contains("MF_SOURCE_READERF_ERROR"));
-    QVERIFY(run.contains("MF_SOURCE_READERF_ENDOFSTREAM"));
 }
 
 QTEST_MAIN(TestVideoTrimmerSafety)

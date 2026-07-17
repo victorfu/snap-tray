@@ -27,8 +27,8 @@ ZXing::ImageView createImageViewFromShared(const std::shared_ptr<QImage> &imageP
     if (image.format() == QImage::Format_Grayscale8) {
         format = ZXing::ImageFormat::Lum;
     } else {
-        // Qt's RGB888 is actually BGR byte order
-        format = ZXing::ImageFormat::BGR;
+        // QImage::Format_RGB888 stores each pixel in R, G, B byte order.
+        format = ZXing::ImageFormat::RGB;
     }
 
     return ZXing::ImageView(

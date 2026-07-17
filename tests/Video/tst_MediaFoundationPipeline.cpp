@@ -16,6 +16,8 @@ class TestMediaFoundationPipeline : public QObject
 
 private slots:
     void pausedSeekProducesFrame();
+    void loopingRestartsAfterEndOfStream();
+    void playRestartsAfterNonLoopingEnd();
     void trimCompletesFromPausedSeeks();
     void mp4TrimRejectsAudioInput();
 
@@ -95,6 +97,81 @@ void TestMediaFoundationPipeline::pausedSeekProducesFrame()
         QVERIFY(!frameSpy.last().at(0).value<QImage>().isNull());
         QCOMPARE(player->state(), IVideoPlayer::State::Paused);
     }
+}
+
+void TestMediaFoundationPipeline::loopingRestartsAfterEndOfStream()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString inputPath = dir.filePath(QStringLiteral("loop.mp4"));
+    QString createError;
+    if (!createTestVideo(inputPath, false, &createError)) {
+        QSKIP(qPrintable(createError));
+    }
+
+    std::unique_ptr<IVideoPlayer> player(IVideoPlayer::create());
+    QVERIFY(player != nullptr);
+    QVERIFY(player->load(inputPath));
+
+    const qint64 lateFrameThreshold = qMax<qint64>(200, player->duration() / 2);
+    qint64 previousPosition = -1;
+    bool sawLateFrame = false;
+    bool sawWrappedFrame = false;
+    bool sawFrameAfterWrap = false;
+    connect(player.get(), &IVideoPlayer::frameReady, player.get(),
+            [&](const QImage &frame) {
+        QVERIFY(!frame.isNull());
+        const qint64 position = player->position();
+        if (position >= lateFrameThreshold) {
+            sawLateFrame = true;
+        }
+        if (sawLateFrame && previousPosition >= lateFrameThreshold
+            && position < previousPosition) {
+            sawWrappedFrame = true;
+        } else if (sawWrappedFrame && position > 0) {
+            sawFrameAfterWrap = true;
+        }
+        previousPosition = position;
+    });
+
+    QSignalSpy finishedSpy(player.get(), &IVideoPlayer::playbackFinished);
+    player->setLooping(true);
+    player->play();
+
+    QTRY_VERIFY_WITH_TIMEOUT(sawFrameAfterWrap, 6000);
+    QCOMPARE(finishedSpy.count(), 0);
+    QCOMPARE(player->state(), IVideoPlayer::State::Playing);
+}
+
+void TestMediaFoundationPipeline::playRestartsAfterNonLoopingEnd()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString inputPath = dir.filePath(QStringLiteral("replay.mp4"));
+    QString createError;
+    if (!createTestVideo(inputPath, false, &createError)) {
+        QSKIP(qPrintable(createError));
+    }
+
+    std::unique_ptr<IVideoPlayer> player(IVideoPlayer::create());
+    QVERIFY(player != nullptr);
+    QSignalSpy frameSpy(player.get(), &IVideoPlayer::frameReady);
+    QSignalSpy finishedSpy(player.get(), &IVideoPlayer::playbackFinished);
+    QVERIFY(player->load(inputPath));
+    frameSpy.clear();
+
+    player->play();
+    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 4000);
+    QCOMPARE(player->state(), IVideoPlayer::State::Stopped);
+
+    frameSpy.clear();
+    player->play();
+    QCOMPARE(player->state(), IVideoPlayer::State::Playing);
+    QCOMPARE(player->position(), qint64(0));
+    QTRY_VERIFY_WITH_TIMEOUT(frameSpy.count() > 0, 3000);
+    QVERIFY(!frameSpy.first().at(0).value<QImage>().isNull());
+    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 2, 4000);
+    QCOMPARE(player->state(), IVideoPlayer::State::Stopped);
 }
 
 void TestMediaFoundationPipeline::trimCompletesFromPausedSeeks()
