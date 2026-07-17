@@ -28,7 +28,7 @@ doc_order: 5
 錄影僅支援 macOS/Windows。Linux beta 不包含錄影，請略過這篇教學。
 
 - 使用全螢幕錄影完成導覽或示範。
-- 從托盤選單啟動，或執行 `snaptray record start`。
+- 從托盤選單或已設定的錄影快捷鍵啟動。
 
 ### 2. 開錄前先設定
 

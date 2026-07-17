@@ -262,7 +262,7 @@ landing_screenshot_tool:
       - q: SnapTray はどのプラットフォームをサポートしていますか？
         a: SnapTray は macOS 14+（Apple Silicon および Intel）、Windows 10+（x64）、Ubuntu 22.04 X11 AppImage beta をサポートしています。録画と OCR は Linux beta には含まれず、Wayland セッションは非対応です。
       - q: スクリプトでスクリーンショットを自動化できますか？
-        a: "はい。SnapTray には自動化のための CLI が含まれています。Linux beta では CLI は snaptray full、snaptray region、snaptray pin、snaptray config に対応。snaptray record は macOS/Windows でのみ利用可能です。シェルスクリプト、CI パイプライン、自動化ワークフローに統合できます。"
+        a: "はい。SnapTray にはスクリーンショット、ピン留め、設定を自動化する CLI が含まれています。主なコマンドは snaptray full、snaptray screen、snaptray region、snaptray pin、snaptray config です。シェルスクリプト、CI パイプライン、自動化ワークフローに統合できます。"
   cta:
     eyebrow: さっそく始めよう
     title: SnapTray をダウンロード — 無料かつオープンソース
@@ -394,7 +394,7 @@ landing_windows:
       - title: 高 DPI とマルチモニター対応
         body: SnapTray は混在した DPI 設定と複数のモニターを正確に処理します。4K ディスプレイでもぼやけたキャプチャ、ずれた範囲、スケーリングのアーティファクトはありません。
       - title: 録画、ピン留め、自動化
-        body: "フルスクリーンを MP4/GIF/WebP に録画、キャプチャをフローティング参照としてピン留め、OCR でテキストを抽出、CLI ですべてをスクリプト化: snaptray region、snaptray record、snaptray pin。"
+        body: "トレイメニューまたは録画ホットキーから MP4/GIF/WebP のフルスクリーン録画を開始し、キャプチャをフローティング参照としてピン留め、OCR でテキストを抽出。CLI ではスクリーンショット、ピン留め、設定を自動化できます: snaptray region、snaptray pin、snaptray config。"
   compare:
     eyebrow: 比較
     title: "SnapTray vs Snipping Tool vs ShareX vs Greenshot"
@@ -450,7 +450,7 @@ landing_windows:
       - q: SnapTray と Greenshot の違いは何ですか？
         a: Greenshot は基本的なキャプチャと注釈を提供しますが、画面録画、ピン留めウィンドウ、OCR、自動ぼかし、CLI 自動化が欠けています。SnapTray はサポートするプラットフォームでピン留めウィンドウと CLI 自動化を追加し、macOS/Windows では録画、OCR、自動ぼかしも提供します。さらに macOS と Linux beta（スクリーンショット・注釈ワークフロー向け）もサポートします。
       - q: SnapTray をスクリプトや自動化で使えますか？
-        a: "はい。SnapTray にはフル CLI が含まれています: snaptray full、snaptray region、snaptray record、snaptray pin、snaptray config。PowerShell スクリプト、バッチファイル、CI パイプラインに統合できます。"
+        a: "はい。SnapTray にはフル CLI が含まれています: snaptray full、snaptray screen、snaptray region、snaptray gui、snaptray canvas、snaptray pin、snaptray config。PowerShell スクリプト、バッチファイル、CI パイプラインに統合できます。"
   cta:
     eyebrow: さっそく始めよう
     title: Windows 向け SnapTray をダウンロード

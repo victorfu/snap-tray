@@ -1,14 +1,11 @@
 #include <QtTest>
 
 #include <QFile>
-#include <QGuiApplication>
-#include <QScreen>
 #include <QTemporaryDir>
 
 #include "cli/CLIHandler.h"
 #include "cli/commands/FullCommand.h"
 #include "cli/commands/PinCommand.h"
-#include "cli/commands/RecordCommand.h"
 #include "cli/commands/RegionCommand.h"
 #include "cli/commands/ScreenCommand.h"
 
@@ -16,7 +13,6 @@ using SnapTray::CLI::CLIHandler;
 using SnapTray::CLI::CLIResult;
 using SnapTray::CLI::FullCommand;
 using SnapTray::CLI::PinCommand;
-using SnapTray::CLI::RecordCommand;
 using SnapTray::CLI::RegionCommand;
 using SnapTray::CLI::ScreenCommand;
 
@@ -31,18 +27,10 @@ private slots:
     void regionCommand_rejectsNonNumericDelayOption();
     void fullCommand_rejectsNonNumericScreenOption();
     void fullCommand_rejectsNonNumericDelayOption();
-    void recordCommand_rejectsNonNumericScreenOptionForStart();
-    void recordCommand_rejectsOutOfRangeScreenOptionForStart();
-    void recordCommand_allowsOutOfRangeScreenOptionForStop();
-    void recordCommand_rejectsUnknownAction();
     void pinCommand_rejectsNonNumericPosition();
     void pinCommand_rejectsNonImageFile();
-    void recordCommand_buildIPCMessage_skipsInvalidScreenValueForStart();
-    void recordCommand_buildIPCMessage_omitsScreenForStop();
     void pinCommand_buildIPCMessage_skipsInvalidPositionValues();
-    void cliHandler_validatesGUICommandArgumentsBeforeIPC();
-    void cliHandler_rejectsOutOfRangeRecordScreenForStartBeforeIPC();
-    void cliHandler_rejectsUnknownRecordActionBeforeIPC();
+    void cliHandler_validatesPinArgumentsBeforeIPC();
     void captureCommands_rejectUnsupportedCursorOption_data();
     void captureCommands_rejectUnsupportedCursorOption();
 };
@@ -63,7 +51,7 @@ void tst_NumericArgumentValidation::screenCommand_rejectsNonNumericScreenOption(
 void tst_NumericArgumentValidation::cliHandler_ignoresLegacyStartupCompatibilityArgument()
 {
     QVERIFY(!CLIHandler::hasArguments({"snaptray", "--minimized"}));
-    QVERIFY(CLIHandler::hasArguments({"snaptray", "--minimized", "record", "start"}));
+    QVERIFY(CLIHandler::hasArguments({"snaptray", "--minimized", "full"}));
 }
 
 void tst_NumericArgumentValidation::regionCommand_rejectsNonNumericScreenOption()
@@ -118,67 +106,6 @@ void tst_NumericArgumentValidation::fullCommand_rejectsNonNumericDelayOption()
     QVERIFY(result.message.contains("Invalid delay value: abc"));
 }
 
-void tst_NumericArgumentValidation::recordCommand_rejectsNonNumericScreenOptionForStart()
-{
-    RecordCommand command;
-    QCommandLineParser parser;
-    command.setupOptions(parser);
-
-    QVERIFY(parser.parse({"snaptray", "start", "--screen", "abc"}));
-    CLIResult result = command.execute(parser);
-
-    QCOMPARE(result.code, CLIResult::Code::InvalidArguments);
-    QVERIFY(result.message.contains("Invalid screen number: abc"));
-}
-
-void tst_NumericArgumentValidation::recordCommand_rejectsOutOfRangeScreenOptionForStart()
-{
-    const int screenCount = QGuiApplication::screens().size();
-    if (screenCount <= 0) {
-        QSKIP("No screens available in test environment");
-    }
-
-    RecordCommand command;
-    QCommandLineParser parser;
-    command.setupOptions(parser);
-
-    const QString invalidScreen = QString::number(screenCount);
-    QVERIFY(parser.parse({"snaptray", "start", "--screen", invalidScreen}));
-    CLIResult result = command.execute(parser);
-
-    QCOMPARE(result.code, CLIResult::Code::InvalidArguments);
-    QVERIFY(result.message.contains(
-        QString("Invalid screen number: %1").arg(invalidScreen)));
-}
-
-void tst_NumericArgumentValidation::recordCommand_allowsOutOfRangeScreenOptionForStop()
-{
-    const int screenCount = QGuiApplication::screens().size();
-    const QString staleScreen = QString::number(qMax(screenCount, 0));
-
-    RecordCommand command;
-    QCommandLineParser parser;
-    command.setupOptions(parser);
-
-    QVERIFY(parser.parse({"snaptray", "stop", "--screen", staleScreen}));
-    CLIResult result = command.execute(parser);
-
-    QCOMPARE(result.code, CLIResult::Code::Success);
-}
-
-void tst_NumericArgumentValidation::recordCommand_rejectsUnknownAction()
-{
-    RecordCommand command;
-    QCommandLineParser parser;
-    command.setupOptions(parser);
-
-    QVERIFY(parser.parse({"snaptray", "foo"}));
-    CLIResult result = command.execute(parser);
-
-    QCOMPARE(result.code, CLIResult::Code::InvalidArguments);
-    QVERIFY(result.message.contains("Invalid record action: foo"));
-}
-
 void tst_NumericArgumentValidation::pinCommand_rejectsNonNumericPosition()
 {
     PinCommand command;
@@ -214,30 +141,6 @@ void tst_NumericArgumentValidation::pinCommand_rejectsNonImageFile()
     QVERIFY(result.message.contains("Unsupported or invalid image file"));
 }
 
-void tst_NumericArgumentValidation::recordCommand_buildIPCMessage_skipsInvalidScreenValueForStart()
-{
-    RecordCommand command;
-    QCommandLineParser parser;
-    command.setupOptions(parser);
-
-    QVERIFY(parser.parse({"snaptray", "start", "--screen", "abc"}));
-    const QJsonObject options = command.buildIPCMessage(parser);
-    QVERIFY(!options.contains("screen"));
-}
-
-void tst_NumericArgumentValidation::recordCommand_buildIPCMessage_omitsScreenForStop()
-{
-    RecordCommand command;
-    QCommandLineParser parser;
-    command.setupOptions(parser);
-
-    QVERIFY(parser.parse({"snaptray", "stop", "--screen", "3"}));
-    const QJsonObject options = command.buildIPCMessage(parser);
-
-    QCOMPARE(options.value("action").toString(), QString("stop"));
-    QVERIFY(!options.contains("screen"));
-}
-
 void tst_NumericArgumentValidation::pinCommand_buildIPCMessage_skipsInvalidPositionValues()
 {
     PinCommand command;
@@ -251,63 +154,13 @@ void tst_NumericArgumentValidation::pinCommand_buildIPCMessage_skipsInvalidPosit
     QVERIFY(!options.contains("y"));
 }
 
-void tst_NumericArgumentValidation::cliHandler_validatesGUICommandArgumentsBeforeIPC()
+void tst_NumericArgumentValidation::cliHandler_validatesPinArgumentsBeforeIPC()
 {
     CLIHandler handler;
-
-    CLIResult recordResult = handler.process({"snaptray", "record", "start", "--screen", "abc"});
-#if defined(Q_OS_LINUX)
-    QVERIFY(!recordResult.isSuccess());
-    QCOMPARE(recordResult.code, CLIResult::Code::RecordingError);
-    QVERIFY(recordResult.message.contains("Linux beta"));
-    QVERIFY(recordResult.message.contains("recording"));
-#else
-    QCOMPARE(recordResult.code, CLIResult::Code::InvalidArguments);
-    QVERIFY(recordResult.message.contains("Invalid screen number: abc"));
-#endif
 
     CLIResult pinResult = handler.process({"snaptray", "pin", "--clipboard", "--pos-y", "bad"});
     QCOMPARE(pinResult.code, CLIResult::Code::InvalidArguments);
     QVERIFY(pinResult.message.contains("Invalid y position: bad"));
-}
-
-void tst_NumericArgumentValidation::cliHandler_rejectsOutOfRangeRecordScreenForStartBeforeIPC()
-{
-    const int screenCount = QGuiApplication::screens().size();
-    if (screenCount <= 0) {
-        QSKIP("No screens available in test environment");
-    }
-
-    CLIHandler handler;
-    const QString invalidScreen = QString::number(screenCount);
-
-    const CLIResult result = handler.process({"snaptray", "record", "start", "--screen", invalidScreen});
-#if defined(Q_OS_LINUX)
-    QVERIFY(!result.isSuccess());
-    QCOMPARE(result.code, CLIResult::Code::RecordingError);
-    QVERIFY(result.message.contains("Linux beta"));
-    QVERIFY(result.message.contains("recording"));
-#else
-    QCOMPARE(result.code, CLIResult::Code::InvalidArguments);
-    QVERIFY(result.message.contains(
-        QString("Invalid screen number: %1").arg(invalidScreen)));
-#endif
-}
-
-void tst_NumericArgumentValidation::cliHandler_rejectsUnknownRecordActionBeforeIPC()
-{
-    CLIHandler handler;
-
-    const CLIResult result = handler.process({"snaptray", "record", "foo"});
-#if defined(Q_OS_LINUX)
-    QVERIFY(!result.isSuccess());
-    QCOMPARE(result.code, CLIResult::Code::RecordingError);
-    QVERIFY(result.message.contains("Linux beta"));
-    QVERIFY(result.message.contains("recording"));
-#else
-    QCOMPARE(result.code, CLIResult::Code::InvalidArguments);
-    QVERIFY(result.message.contains("Invalid record action: foo"));
-#endif
 }
 
 void tst_NumericArgumentValidation::captureCommands_rejectUnsupportedCursorOption_data()

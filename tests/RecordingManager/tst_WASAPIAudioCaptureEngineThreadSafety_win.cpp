@@ -10,6 +10,8 @@
 #include <QSemaphore>
 #include <QThread>
 
+#include <memory>
+
 namespace {
 
 class BlockingThread final : public QThread
@@ -36,6 +38,8 @@ private slots:
     void runningThreadIsRetainedUntilItFinishes();
     void disposalReturnsWithoutWaitingForRunningThread();
     void disposalCleansUpAlreadyFinishedThread();
+    void disposalWaitsForInFlightDirectCallback();
+    void stopPreservesConnectionsForRestart();
 };
 
 void TestWASAPIAudioCaptureEngineThreadSafetyWin::runningThreadIsRetainedUntilItFinishes()
@@ -103,6 +107,75 @@ void TestWASAPIAudioCaptureEngineThreadSafetyWin::disposalCleansUpAlreadyFinishe
 
     QTRY_VERIFY_WITH_TIMEOUT(threadGuard.isNull(), 2000);
     QTRY_VERIFY_WITH_TIMEOUT(engineGuard.isNull(), 2000);
+}
+
+void TestWASAPIAudioCaptureEngineThreadSafetyWin::disposalWaitsForInFlightDirectCallback()
+{
+    auto *engine = new WASAPIAudioCaptureEngine;
+    QObject receiver;
+    QSemaphore callbackEntered;
+    QSemaphore releaseCallback;
+    QSemaphore disposalFinished;
+
+    QObject::connect(engine, &IAudioCaptureEngine::audioDataReady,
+                     &receiver, [&callbackEntered, &releaseCallback](const QByteArray &, qint64) {
+        callbackEntered.release();
+        releaseCallback.acquire();
+    }, Qt::DirectConnection);
+    engine->enableDataCallbacks();
+
+    QThread *emitterThread = QThread::create([engine]() {
+        engine->deliverAudioData(QByteArrayLiteral("audio"), 0);
+    });
+    emitterThread->start();
+    QVERIFY2(callbackEntered.tryAcquire(1, 1000), "Direct callback did not start");
+
+    QPointer<WASAPIAudioCaptureEngine> engineGuard(engine);
+    auto owner = std::make_unique<AudioEnginePtr>(engine);
+    QThread *disposalThread = QThread::create([ownerPtr = owner.get(),
+                                               &disposalFinished]() {
+        ownerPtr->reset();
+        disposalFinished.release();
+    });
+    disposalThread->start();
+
+    const auto callbackGateClosed = [engine]() {
+        QMutexLocker locker(&engine->m_dataCallbackMutex);
+        return !engine->m_acceptingDataCallbacks;
+    };
+    QTRY_VERIFY_WITH_TIMEOUT(callbackGateClosed(), 1000);
+
+    QVERIFY2(!disposalFinished.tryAcquire(),
+             "Disposal returned while a DirectConnection callback was still running");
+
+    releaseCallback.release();
+    QVERIFY2(emitterThread->wait(1000), "Emitter thread did not finish");
+    QVERIFY2(disposalFinished.tryAcquire(1, 1000), "Disposal did not drain the callback");
+    QVERIFY2(disposalThread->wait(1000), "Disposal thread did not finish");
+
+    delete emitterThread;
+    delete disposalThread;
+    QTRY_VERIFY_WITH_TIMEOUT(engineGuard.isNull(), 2000);
+}
+
+void TestWASAPIAudioCaptureEngineThreadSafetyWin::stopPreservesConnectionsForRestart()
+{
+    WASAPIAudioCaptureEngine engine;
+    int deliveryCount = 0;
+
+    QObject::connect(&engine, &IAudioCaptureEngine::audioDataReady,
+                     &engine, [&deliveryCount](const QByteArray &, qint64) {
+        ++deliveryCount;
+    }, Qt::DirectConnection);
+
+    engine.enableDataCallbacks();
+    engine.deliverAudioData(QByteArrayLiteral("first"), 0);
+    QCOMPARE(deliveryCount, 1);
+
+    engine.stop();
+    engine.enableDataCallbacks();
+    engine.deliverAudioData(QByteArrayLiteral("second"), 1);
+    QCOMPARE(deliveryCount, 2);
 }
 
 QTEST_GUILESS_MAIN(TestWASAPIAudioCaptureEngineThreadSafetyWin)

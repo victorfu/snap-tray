@@ -12,12 +12,12 @@ doc_order: 2
 ---
 
 녹화는 macOS 및 Windows에서만 사용 가능합니다. Linux beta는 녹화를 포함하지 않으며,
-녹화 관련 UI와 CLI 도움말 항목이 숨겨져 있습니다.
+녹화 관련 UI가 숨겨져 있습니다.
 
 ## 녹화 진입점
 
 - 트레이 메뉴: 화면 녹화
-- CLI: `snaptray record start [--screen N]`
+- 녹화 단축키: 설정 > 단축키에서 화면 녹화 구성
 
 ## 녹화 라이프사이클
 

@@ -9,12 +9,26 @@
 
 #include <QDebug>
 #include <QImage>
-#include <QPointer>
+#include <QMetaObject>
+#include <QMutex>
+#include <QMutexLocker>
+#include <QThread>
 #include <QTimer>
 #include <QUrl>
 
+#include <memory>
+
 // Forward declaration
 class AVFoundationPlayer;
+
+namespace {
+
+struct AVFoundationSeekState {
+    QMutex mutex;
+    AVFoundationPlayer *player = nullptr;
+};
+
+} // namespace
 
 // Objective-C helper class for KVO and notifications
 @interface AVFoundationPlayerHelper : NSObject
@@ -70,8 +84,10 @@ public:
 
 private:
     void updateFrame();
+    void deliverSeekFrame();
     void setState(State newState);
 
+    std::shared_ptr<AVFoundationSeekState> m_seekState;
     AVFoundationPlayerHelper *m_helper;
     QTimer *m_frameTimer;
 
@@ -213,6 +229,7 @@ private:
 // AVFoundationPlayer implementation
 AVFoundationPlayer::AVFoundationPlayer(QObject *parent)
     : IVideoPlayer(parent)
+    , m_seekState(std::make_shared<AVFoundationSeekState>())
     , m_helper([[AVFoundationPlayerHelper alloc] init])
     , m_frameTimer(new QTimer(this))
     , m_state(State::Stopped)
@@ -226,6 +243,7 @@ AVFoundationPlayer::AVFoundationPlayer(QObject *parent)
     , m_playbackRate(1.0f)
     , m_frameIntervalMs(33)
 {
+    m_seekState->player = this;
     m_helper.player = this;
 
     // Frame update timer - interval will be updated when video loads
@@ -235,10 +253,18 @@ AVFoundationPlayer::AVFoundationPlayer(QObject *parent)
 
 AVFoundationPlayer::~AVFoundationPlayer()
 {
+    // Serialize with completion callbacks before invalidating their only route
+    // back to this QObject. Queued calls already attached to this player are
+    // removed by QObject teardown if they have not begun executing.
+    {
+        QMutexLocker locker(&m_seekState->mutex);
+        m_seekState->player = nullptr;
+    }
     m_frameTimer->stop();
     m_helper.player = nullptr;
     [m_helper cleanup];
     m_helper = nil;
+    m_seekState.reset();
 }
 
 bool AVFoundationPlayer::load(const QString &filePath)
@@ -313,9 +339,9 @@ void AVFoundationPlayer::seek(qint64 positionMs)
 
     CMTime time = CMTimeMakeWithSeconds(positionMs / 1000.0, NSEC_PER_SEC);
 
-    // Use completion handler to update frame after seek completes
-    __weak AVFoundationPlayerHelper *weakHelper = m_helper;
-    QPointer<AVFoundationPlayer> weakPlayer(this);
+    // Pure C++ state can outlive this player without depending on another
+    // QObject or on a thread-pool event loop remaining active.
+    const auto seekState = m_seekState;
 
     [m_helper.avPlayer seekToTime:time
                   toleranceBefore:kCMTimeZero
@@ -325,21 +351,41 @@ void AVFoundationPlayer::seek(qint64 positionMs)
             return;
         }
 
-        // AVFoundation may invoke this completion on a non-main queue. Do not
-        // materialize or dereference the guarded QObject until execution is
-        // serialized with its main-thread lifetime.
-        dispatch_async(dispatch_get_main_queue(), ^{
-            AVFoundationPlayer *player = weakPlayer.data();
-            AVFoundationPlayerHelper *strongHelper = weakHelper;
-            if (player && strongHelper && player->state() != State::Playing) {
-                QImage frame = [strongHelper currentFrame];
-                // Always emit frameReady so downstream consumers (like VideoTrimmer)
-                // don't hang waiting for a signal that never comes.
-                // Consumers should handle null frames appropriately.
-                emit player->frameReady(frame);
+        // AVFoundation may invoke this completion on any queue. Hold the state
+        // lock while validating the player and attaching a queued call to its
+        // QObject lifetime. Destruction takes the same lock before clearing it.
+        QMutexLocker locker(&seekState->mutex);
+        AVFoundationPlayer *player = seekState->player;
+        if (!player) {
+            return;
+        }
+
+        QMetaObject::invokeMethod(player, [seekState]() {
+            AVFoundationPlayer *player = nullptr;
+            {
+                QMutexLocker locker(&seekState->mutex);
+                player = seekState->player;
             }
-        });
+            if (player) {
+                player->deliverSeekFrame();
+            }
+        }, Qt::QueuedConnection);
     }];
+}
+
+void AVFoundationPlayer::deliverSeekFrame()
+{
+    Q_ASSERT(QThread::currentThread() == thread());
+
+    if (m_state == State::Playing || !m_helper) {
+        return;
+    }
+
+    const QImage frame = [m_helper currentFrame];
+    // Always emit frameReady so downstream consumers (like VideoTrimmer)
+    // don't hang waiting for a signal that never comes. Consumers should
+    // handle null frames appropriately.
+    emit frameReady(frame);
 }
 
 void AVFoundationPlayer::setVolume(float volume)

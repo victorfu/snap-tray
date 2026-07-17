@@ -7,6 +7,7 @@
 
 #include <QThread>
 #include <QMutex>
+#include <QWaitCondition>
 #include <atomic>
 
 // Forward declarations - Windows types are opaque pointers here
@@ -91,6 +92,10 @@ private:
 
     // Capture loop (runs in separate thread)
     void captureLoop();
+    void enableDataCallbacks();
+    void drainDataCallbacks(bool disconnectConnections);
+    void deliverAudioData(const QByteArray &data, qint64 timestampMs);
+    void finishDataCallback();
 
     // Deletes the thread object only after QThread has actually stopped. A timed-out
     // WASAPI/COM call can keep initialization blocked after start() has failed.
@@ -120,6 +125,14 @@ private:
     // Capture thread
     QThread *m_captureThread = nullptr;
     bool m_disposePending = false;
+
+    // Direct audioDataReady connections run on the capture thread. Teardown
+    // closes this gate and waits for signal delivery already in progress before
+    // a receiver such as EncodingWorker may be destroyed.
+    QMutex m_dataCallbackMutex;
+    QWaitCondition m_dataCallbacksDrained;
+    bool m_acceptingDataCallbacks = false;
+    int m_activeDataCallbacks = 0;
 
     // Timing
     qint64 m_startTime = 0;

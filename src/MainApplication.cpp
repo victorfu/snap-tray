@@ -47,8 +47,6 @@
 #include <QtConcurrent>
 
 #include <algorithm>
-#include <cmath>
-#include <limits>
 
 namespace {
 // Text pixmap rendering constants (for paste-as-text feature)
@@ -73,40 +71,6 @@ bool isBlockingUpdateRecordingState(RecordingManager::State state)
     case RecordingManager::State::Preparing:
     case RecordingManager::State::Countdown:
         return false;
-    }
-
-    return false;
-}
-
-bool tryReadJsonInt(const QJsonObject& options, const QString& key, int* value)
-{
-    if (!value || !options.contains(key)) {
-        return false;
-    }
-
-    const QJsonValue optionValue = options.value(key);
-    if (optionValue.isDouble()) {
-        const double number = optionValue.toDouble();
-        if (!std::isfinite(number)
-            || number < static_cast<double>(std::numeric_limits<int>::min())
-            || number > static_cast<double>(std::numeric_limits<int>::max())
-            || std::floor(number) != number) {
-            return false;
-        }
-
-        *value = static_cast<int>(number);
-        return true;
-    }
-
-    if (optionValue.isString()) {
-        bool ok = false;
-        const int parsedValue = optionValue.toString().toInt(&ok);
-        if (!ok) {
-            return false;
-        }
-
-        *value = parsedValue;
-        return true;
     }
 
     return false;
@@ -211,85 +175,6 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
     }
     else if (msg.command == "canvas") {
         onScreenCanvas();
-    }
-    else if (msg.command == "record") {
-        if (!PlatformFeatures::instance().capabilities().supportsRecording) {
-            qWarning() << "Ignoring record command on unsupported platform";
-            return;
-        }
-
-        QString action = msg.options["action"].toString().toLower();
-        const auto isRecordingFlowActive = [this]() {
-            return m_screenPickerDialog
-                || (m_recordingManager && m_recordingManager->isActive());
-        };
-        const auto stopOrCancelRecording = [this]() {
-            if (m_screenPickerDialog) {
-                closeScreenPicker();
-                return;
-            }
-
-            if (!m_recordingManager) {
-                return;
-            }
-
-            switch (m_recordingManager->state()) {
-            case RecordingManager::State::Recording:
-            case RecordingManager::State::Paused:
-                m_recordingManager->stopRecording();
-                break;
-            case RecordingManager::State::Preparing:
-            case RecordingManager::State::Countdown:
-                m_recordingManager->cancelRecording();
-                break;
-            case RecordingManager::State::Encoding:
-            case RecordingManager::State::Idle:
-            case RecordingManager::State::Previewing:
-                break;
-            }
-        };
-
-        if (action == "start") {
-            if (!isRecordingFlowActive()) {
-                // Check if a specific screen is requested
-                if (msg.options.contains("screen")) {
-                    int screenNum = -1;
-                    if (tryReadJsonInt(msg.options, "screen", &screenNum)) {
-                        auto screens = QGuiApplication::screens();
-                        if (screenNum >= 0 && screenNum < screens.size()) {
-                            QScreen* screen = screens.at(screenNum);
-                            m_recordingManager->startFullScreenRecording(screen);
-                        }
-                        else {
-                            qWarning() << "Invalid screen number:" << screenNum;
-                        }
-                    }
-                    else {
-                        qWarning() << "Invalid screen option value:" << msg.options.value("screen");
-                    }
-                }
-                else {
-                    onFullScreenRecording();
-                }
-            }
-        }
-        else if (action == "stop") {
-            if (isRecordingFlowActive()) {
-                stopOrCancelRecording();
-            }
-        }
-        else if (action.isEmpty() || action == "toggle") {
-            // Default action (no explicit action provided): toggle
-            if (isRecordingFlowActive()) {
-                stopOrCancelRecording();
-            }
-            else {
-                onFullScreenRecording();
-            }
-        }
-        else {
-            qWarning() << "Unknown record action:" << action;
-        }
     }
     else if (msg.command == "pin") {
         if (msg.options["clipboard"].toBool()) {

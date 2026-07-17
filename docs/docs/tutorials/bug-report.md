@@ -52,7 +52,7 @@ Save with a structured name such as:
 
 If the issue depends on timing or animation, record on macOS/Windows only. Linux beta does not include recording, so skip this step there.
 
-1. Start full-screen recording from the tray menu or run `snaptray record start`.
+1. Start full-screen recording from the tray menu or with the configured recording hotkey.
 2. Record 10-30 seconds.
 3. Stop and export as MP4.
 

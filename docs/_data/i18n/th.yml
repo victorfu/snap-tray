@@ -262,7 +262,7 @@ landing_screenshot_tool:
       - q: SnapTray รองรับแพลตฟอร์มใดบ้าง?
         a: SnapTray รองรับ macOS 14+ (Apple Silicon และ Intel) Windows 10+ (x64) และ Ubuntu 22.04 X11 AppImage beta การบันทึกหน้าจอและ OCR ไม่รวมใน Linux beta และไม่รองรับ Wayland session
       - q: ฉันสามารถสร้างระบบอัตโนมัติสกรีนช็อตด้วยสคริปต์ได้ไหม?
-        a: "ใช่ SnapTray มี CLI สำหรับระบบอัตโนมัติ บน Linux beta CLI ครอบคลุม snaptray full, snaptray region, snaptray pin และ snaptray config; snaptray record ใช้ได้เฉพาะบน macOS/Windows เท่านั้น รวมเข้ากับ shell script, CI pipeline หรือเวิร์กโฟลว์อัตโนมัติ"
+        a: "ใช่ SnapTray มี CLI สำหรับระบบอัตโนมัติของสกรีนช็อต การปักหมุด และการตั้งค่า คำสั่งทั่วไปได้แก่ snaptray full, snaptray screen, snaptray region, snaptray pin และ snaptray config รวมเข้ากับ shell script, CI pipeline หรือเวิร์กโฟลว์อัตโนมัติ"
   cta:
     eyebrow: เริ่มต้น
     title: ดาวน์โหลด SnapTray — ฟรีและโอเพ่นซอร์ส
@@ -394,7 +394,7 @@ landing_windows:
       - title: High-DPI และหลายจอภาพ
         body: SnapTray จัดการการตั้งค่า DPI แบบผสมและหลายจอภาพได้อย่างถูกต้อง ไม่มีภาพเบลอ ไม่มีส่วนที่คลาดเคลื่อน ไม่มีอาร์ติแฟกต์จากการปรับขนาดบนจอแสดงผล 4K
       - title: บันทึก ปักหมุด และสร้างระบบอัตโนมัติ
-        body: "บันทึกเต็มหน้าจอเป็น MP4/GIF/WebP ปักหมุดภาพที่จับเป็นการอ้างอิงแบบลอย แยกข้อความด้วย OCR และสคริปต์ทุกอย่างผ่าน CLI: snaptray region, snaptray record, snaptray pin"
+        body: "เริ่มบันทึกเต็มหน้าจอเป็น MP4/GIF/WebP จากเมนูถาดระบบหรือปุ่มลัดการบันทึก ปักหมุดภาพที่จับเป็นการอ้างอิงแบบลอย แยกข้อความด้วย OCR และทำเวิร์กโฟลว์สกรีนช็อต การปักหมุด และการตั้งค่าอัตโนมัติผ่าน CLI: snaptray region, snaptray pin, snaptray config"
   compare:
     eyebrow: เปรียบเทียบ
     title: "SnapTray vs Snipping Tool vs ShareX vs Greenshot"
@@ -450,7 +450,7 @@ landing_windows:
       - q: SnapTray ต่างจาก Greenshot อย่างไร?
         a: Greenshot ให้การจับภาพและมาร์กอัปพื้นฐานแต่ขาดการบันทึกหน้าจอ หน้าต่างปักหมุด OCR เบลออัตโนมัติ และระบบอัตโนมัติด้วย CLI SnapTray เพิ่มหน้าต่างปักหมุดและระบบอัตโนมัติด้วย CLI สำหรับแพลตฟอร์มที่รองรับ พร้อมการบันทึก OCR และเบลออัตโนมัติบน macOS/Windows นอกจากนี้ยังรองรับ macOS และ Linux beta สำหรับเวิร์กโฟลว์สกรีนช็อตและมาร์กอัป
       - q: ฉันสามารถใช้ SnapTray ในสคริปต์และระบบอัตโนมัติได้ไหม?
-        a: "ใช่ SnapTray มี CLI ครบชุด: snaptray full, snaptray region, snaptray record, snaptray pin และ snaptray config รวมเข้ากับ PowerShell script, batch file หรือ CI pipeline"
+        a: "ใช่ SnapTray มี CLI ครบชุด: snaptray full, snaptray screen, snaptray region, snaptray gui, snaptray canvas, snaptray pin และ snaptray config รวมเข้ากับ PowerShell script, batch file หรือ CI pipeline"
   cta:
     eyebrow: เริ่มต้น
     title: ดาวน์โหลด SnapTray สำหรับ Windows

@@ -83,7 +83,7 @@ If the tray icon does not appear, continue with [Troubleshooting](/docs/troubles
 
 ### macOS and Windows
 
-1. Start recording from the tray menu or with `snaptray record start`.
+1. Start recording from the tray menu or with the configured recording hotkey.
 2. Record 5 to 10 seconds.
 3. Stop and export MP4.
 4. Confirm the output path in Settings > Files.

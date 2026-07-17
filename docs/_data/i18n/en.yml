@@ -262,7 +262,7 @@ landing_screenshot_tool:
       - q: Which platforms does SnapTray support?
         a: SnapTray supports macOS 14+ (Apple Silicon and Intel), Windows 10+ (x64), and an Ubuntu 22.04 X11 AppImage beta. Recording and OCR are not included in the Linux beta, and Wayland sessions are not supported.
       - q: Can I automate screenshots with scripts?
-        a: "Yes. SnapTray includes a CLI for automation. On Linux beta, the CLI covers snaptray full, snaptray region, snaptray pin, and snaptray config; snaptray record is available only on macOS/Windows. Integrate into shell scripts, CI pipelines, or automation workflows."
+        a: "Yes. SnapTray includes a CLI for screenshot, pin, and settings automation. Common commands include snaptray full, snaptray screen, snaptray region, snaptray pin, and snaptray config. Integrate them into shell scripts, CI pipelines, or automation workflows."
   cta:
     eyebrow: Get Started
     title: Download SnapTray — Free and Open Source
@@ -394,7 +394,7 @@ landing_windows:
       - title: High-DPI and Multi-Monitor
         body: SnapTray handles mixed-DPI setups and multiple monitors correctly. No blurry captures, no offset regions, no scaling artifacts on 4K displays.
       - title: Record, Pin, and Automate
-        body: "Record full screen to MP4/GIF/WebP, pin captures as floating references, extract text with OCR, and script everything via CLI: snaptray region, snaptray record, snaptray pin."
+        body: "Start full-screen MP4/GIF/WebP recording from the tray menu or recording hotkey, pin captures as floating references, extract text with OCR, and automate screenshot, pin, and settings workflows via CLI: snaptray region, snaptray pin, snaptray config."
   compare:
     eyebrow: Comparison
     title: "SnapTray vs Snipping Tool vs ShareX vs Greenshot"
@@ -450,7 +450,7 @@ landing_windows:
       - q: How is SnapTray different from Greenshot?
         a: Greenshot offers basic capture and annotation but lacks screen recording, pin windows, OCR, auto blur, and CLI automation. SnapTray adds pin windows and CLI automation across supported platforms, with recording, OCR, and auto blur on macOS/Windows. It also supports macOS and a Linux beta for screenshot and annotation workflows.
       - q: Can I use SnapTray in scripts and automation?
-        a: "Yes. SnapTray includes a full CLI: snaptray full, snaptray region, snaptray record, snaptray pin, and snaptray config. Integrate into PowerShell scripts, batch files, or CI pipelines."
+        a: "Yes. SnapTray includes a full CLI: snaptray full, snaptray screen, snaptray region, snaptray gui, snaptray canvas, snaptray pin, and snaptray config. Integrate into PowerShell scripts, batch files, or CI pipelines."
   cta:
     eyebrow: Get Started
     title: Download SnapTray for Windows

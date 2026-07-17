@@ -48,7 +48,8 @@ class TestVideoTrimmerSafety : public QObject
 
 private slots:
     void nativeEncoderBackpressureRetriesSameFrame();
-    void avFoundationSeekUsesGuardedPlayer();
+    void avFoundationSeekUsesLockedAffinityHandoff();
+    void mediaFoundationPausedSeekKeepsFramePending();
 };
 
 void TestVideoTrimmerSafety::nativeEncoderBackpressureRetriesSameFrame()
@@ -82,7 +83,7 @@ void TestVideoTrimmerSafety::nativeEncoderBackpressureRetriesSameFrame()
     trimmer.m_videoEncoder = nullptr;
 }
 
-void TestVideoTrimmerSafety::avFoundationSeekUsesGuardedPlayer()
+void TestVideoTrimmerSafety::avFoundationSeekUsesLockedAffinityHandoff()
 {
     QFile source(QDir(QStringLiteral(VIDEO_SOURCE_ROOT))
                      .filePath(QStringLiteral("AVFoundationPlayer_mac.mm")));
@@ -95,27 +96,75 @@ void TestVideoTrimmerSafety::avFoundationSeekUsesGuardedPlayer()
     QVERIFY(seekEnd > seekBegin);
     const QByteArray seek = content.mid(seekBegin, seekEnd - seekBegin);
 
-    QVERIFY(seek.contains("QPointer<AVFoundationPlayer> weakPlayer(this)"));
-    QCOMPARE(seek.count("weakPlayer.data()"), qsizetype(1));
-    QVERIFY(!seek.contains("AVFoundationPlayer *player = this"));
-    QVERIFY(!seek.contains("[this"));
-
     const qsizetype completion = seek.indexOf("completionHandler:^(BOOL finished)");
-    const qsizetype mainDispatch = seek.indexOf("dispatch_async(dispatch_get_main_queue()", completion);
+    const qsizetype completionLock = seek.indexOf("QMutexLocker locker(&seekState->mutex)",
+                                                   completion);
+    const qsizetype playerLookup = seek.indexOf(
+        "AVFoundationPlayer *player = seekState->player", completionLock);
+    const qsizetype affinityDispatch = seek.indexOf("QMetaObject::invokeMethod(player",
+                                                      playerLookup);
+    const qsizetype queuedLock = seek.indexOf("QMutexLocker locker(&seekState->mutex)",
+                                               affinityDispatch);
+    const qsizetype queuedLookup = seek.indexOf("player = seekState->player", queuedLock);
     QVERIFY(completion >= 0);
-    QVERIFY(mainDispatch > completion);
-    const QByteArray outerCompletion = seek.mid(completion, mainDispatch - completion);
-    QVERIFY(!outerCompletion.contains("weakPlayer.data()"));
-    QVERIFY(!outerCompletion.contains("player->state()"));
+    QVERIFY(completionLock > completion);
+    QVERIFY(playerLookup > completionLock);
+    QVERIFY(affinityDispatch > playerLookup);
+    QVERIFY(queuedLock > affinityDispatch);
+    QVERIFY(queuedLookup > queuedLock);
+    QVERIFY(seek.contains("const auto seekState = m_seekState"));
+    QVERIFY(seek.contains("Qt::QueuedConnection"));
+    QCOMPARE(seek.count("seekState->player"), qsizetype(2));
+    QVERIFY(!seek.contains("QPointer"));
+    QVERIFY(!seek.contains("dispatch_get_main_queue"));
+    QVERIFY(!seek.contains("weakPlayer"));
 
-    const QByteArray mainBlock = seek.mid(mainDispatch);
-    QVERIFY(mainBlock.contains("weakPlayer.data()"));
-    QVERIFY(mainBlock.contains("player->state()"));
+    QVERIFY(content.contains("struct AVFoundationSeekState"));
+    QVERIFY(content.contains("QMutex mutex"));
+    QVERIFY(content.contains("std::shared_ptr<AVFoundationSeekState> m_seekState"));
 
-    const qsizetype clearHelper = content.indexOf("m_helper.player = nullptr");
-    const qsizetype cleanupHelper = content.indexOf("[m_helper cleanup]", clearHelper);
-    QVERIFY(clearHelper >= 0);
-    QVERIFY(cleanupHelper > clearHelper);
+    const qsizetype destructorBegin = content.indexOf("AVFoundationPlayer::~AVFoundationPlayer()");
+    const qsizetype destructorEnd = content.indexOf("bool AVFoundationPlayer::load", destructorBegin);
+    QVERIFY(destructorBegin >= 0);
+    QVERIFY(destructorEnd > destructorBegin);
+    const QByteArray destructor = content.mid(destructorBegin, destructorEnd - destructorBegin);
+    const qsizetype teardownLock = destructor.indexOf("QMutexLocker locker(&m_seekState->mutex)");
+    const qsizetype clearPlayer = destructor.indexOf("m_seekState->player = nullptr", teardownLock);
+    const qsizetype cleanupHelper = destructor.indexOf("[m_helper cleanup]", clearPlayer);
+    QVERIFY(teardownLock >= 0);
+    QVERIFY(clearPlayer > teardownLock);
+    QVERIFY(cleanupHelper > clearPlayer);
+}
+
+void TestVideoTrimmerSafety::mediaFoundationPausedSeekKeepsFramePending()
+{
+    QFile source(QDir(QStringLiteral(VIDEO_SOURCE_ROOT))
+                     .filePath(QStringLiteral("MediaFoundationPlayer_win.cpp")));
+    QVERIFY2(source.open(QIODevice::ReadOnly), qPrintable(source.errorString()));
+    const QByteArray content = source.readAll();
+
+    const qsizetype runBegin = content.indexOf("void run() override");
+    const qsizetype runEnd = content.indexOf("private:", runBegin);
+    QVERIFY(runBegin >= 0);
+    QVERIFY(runEnd > runBegin);
+    const QByteArray run = content.mid(runBegin, runEnd - runBegin);
+
+    const qsizetype pendingDeclaration = run.indexOf("bool framePendingAfterSeek = false");
+    const qsizetype pendingSet = run.indexOf("framePendingAfterSeek = true", pendingDeclaration);
+    const qsizetype pauseGate = run.indexOf("m_paused && !framePendingAfterSeek", pendingSet);
+    const qsizetype readSample = run.indexOf("m_reader->ReadSample", pauseGate);
+    const qsizetype deliveredGuard = run.indexOf("if (frameDelivered)", readSample);
+    const qsizetype pendingClear = run.indexOf("framePendingAfterSeek = false", deliveredGuard);
+
+    QVERIFY(pendingDeclaration >= 0);
+    QVERIFY(pendingSet > pendingDeclaration);
+    QVERIFY(pauseGate > pendingSet);
+    QVERIFY(readSample > pauseGate);
+    QVERIFY(deliveredGuard > readSample);
+    QVERIFY(pendingClear > deliveredGuard);
+    QCOMPARE(run.count("framePendingAfterSeek = false"), qsizetype(2));
+    QVERIFY(run.contains("MF_SOURCE_READERF_ERROR"));
+    QVERIFY(run.contains("MF_SOURCE_READERF_ENDOFSTREAM"));
 }
 
 QTEST_MAIN(TestVideoTrimmerSafety)

@@ -4272,7 +4272,11 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
 
     const bool releasedOverFloatingUi =
         isGlobalPosOverFloatingUi(event->globalPosition().toPoint());
-    m_inputHandler->handleMouseRelease(event);
+    m_inputHandler->handleMouseRelease(
+        event,
+        releasedOverFloatingUi
+            ? RegionInputHandler::ReleaseTarget::FloatingUi
+            : RegionInputHandler::ReleaseTarget::Canvas);
     if (releasedOverFloatingUi) {
         syncFloatingUiCursor();
         return;

@@ -43,6 +43,7 @@ private slots:
     void testCommitFailurePreservesExistingDestination();
     void testNewDestinationMovesSource();
     void testSamePathIsNoOp();
+    void testCaseAliasOfSameFileIsNoOp();
 };
 
 void TestRecordingFileUtils::testExistingDestinationReplacedAfterCompleteCopy()
@@ -153,6 +154,30 @@ void TestRecordingFileUtils::testSamePathIsNoOp()
     QVERIFY2(SnapTray::RecordingFileUtils::replaceRecordingFile(path, path, &error),
              qPrintable(error));
     QCOMPARE(readFile(path), recording);
+}
+
+void TestRecordingFileUtils::testCaseAliasOfSameFileIsNoOp()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+
+    const QString sourcePath = tempDir.filePath(QStringLiteral("CaseAliasRecording.mp4"));
+    const QString aliasPath = tempDir.filePath(QStringLiteral("casealiasrecording.mp4"));
+    const QByteArray recording("case alias recording");
+    QVERIFY(writeFile(sourcePath, recording));
+
+    if (!QFileInfo::exists(aliasPath)) {
+        QSKIP("The test volume is case-sensitive.");
+    }
+
+    QString error;
+    QVERIFY2(SnapTray::RecordingFileUtils::replaceRecordingFile(
+                 sourcePath, aliasPath, &error),
+             qPrintable(error));
+    QVERIFY(QFileInfo::exists(sourcePath));
+    QVERIFY(QFileInfo::exists(aliasPath));
+    QCOMPARE(readFile(sourcePath), recording);
+    QCOMPARE(readFile(aliasPath), recording);
 }
 
 QTEST_MAIN(TestRecordingFileUtils)

@@ -11,12 +11,12 @@ doc_group: workflow
 doc_order: 2
 ---
 
-การบันทึกหน้าจอใช้ได้เฉพาะบน macOS และ Windows เท่านั้น Linux beta ไม่รวมการบันทึก และ UI การบันทึกรวมถึงรายการ CLI help ถูกซ่อนไว้
+การบันทึกหน้าจอใช้ได้เฉพาะบน macOS และ Windows เท่านั้น Linux beta ไม่รวมการบันทึก และ UI การบันทึกถูกซ่อนไว้
 
 ## จุดเริ่มต้นการบันทึก
 
 - เมนูถาดระบบ: Record Screen
-- CLI: `snaptray record start [--screen N]`
+- ปุ่มลัดการบันทึก: กำหนดค่า Record Screen ใน Settings > Hotkeys
 
 ## วงจรชีวิตการบันทึก
 

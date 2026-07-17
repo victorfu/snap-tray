@@ -661,7 +661,6 @@ add_library(snaptray_cli STATIC
     src/cli/commands/ScreenCommand.cpp
     src/cli/commands/RegionCommand.cpp
     src/cli/commands/CanvasCommand.cpp
-    src/cli/commands/RecordCommand.cpp
     src/cli/commands/PinCommand.cpp
     src/cli/commands/ConfigCommand.cpp
 )

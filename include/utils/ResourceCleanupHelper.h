@@ -33,7 +33,8 @@ template<typename T>
 struct DisposeAudioLater {
     void operator()(T* engine) const {
         if (engine) {
-            QObject::disconnect(engine, nullptr, nullptr, nullptr);
+            // disposeAsync() owns both the callback drain and any deferred
+            // driver-thread lifetime required by the concrete engine.
             engine->disposeAsync();
         }
     }
@@ -45,6 +46,7 @@ struct DisposeAudioLater {
 
 /// Engine pointer with stop + disconnect + deleteLater
 using CaptureEnginePtr = std::unique_ptr<ICaptureEngine, StopAndDeleteLater<ICaptureEngine>>;
+/// Audio engine pointer with callback drain + engine-managed deferred disposal
 using AudioEnginePtr = std::unique_ptr<IAudioCaptureEngine, DisposeAudioLater<IAudioCaptureEngine>>;
 
 #endif // RESOURCECLEANUPHELPER_H

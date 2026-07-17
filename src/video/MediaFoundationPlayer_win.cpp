@@ -145,6 +145,11 @@ protected:
             return;
         }
 
+        // A paused seek remains active until a usable video frame is emitted.
+        // Source Reader may first return stream ticks, media-type flags, or a
+        // null/non-decodable sample; none of those should consume the request.
+        bool framePendingAfterSeek = false;
+
         while (!m_stopRequested) {
             if (!m_reader) {
                 QThread::msleep(10);
@@ -152,7 +157,7 @@ protected:
             }
 
             // A seek while paused is also a request for one frame. Process it
-            // before the pause gate, then read exactly one sample below.
+            // before the pause gate, then keep reading until one is delivered.
             const bool seekRequested = m_seekRequested.exchange(false);
             if (seekRequested) {
                 PROPVARIANT var;
@@ -167,7 +172,8 @@ protected:
                                            .arg(seekHr, 8, 16, QChar('0')));
                     break;
                 }
-            } else if (m_paused) {
+                framePendingAfterSeek = true;
+            } else if (m_paused && !framePendingAfterSeek) {
                 QThread::msleep(10);
                 continue;
             }
@@ -187,23 +193,43 @@ protected:
                 &sample);
 
             if (FAILED(hr)) {
+                if (sample) {
+                    sample->Release();
+                }
                 emit errorOccurred(QString("ReadSample failed: 0x%1").arg(hr, 8, 16, QChar('0')));
+                break;
+            }
+
+            if (flags & MF_SOURCE_READERF_ERROR) {
+                if (sample) {
+                    sample->Release();
+                }
+                emit errorOccurred("Source reader reported an error while reading a video sample");
                 break;
             }
 
             // Check for end of stream
             if (flags & MF_SOURCE_READERF_ENDOFSTREAM) {
+                if (sample) {
+                    sample->Release();
+                }
                 emit endOfStream();
                 break;
             }
 
+            bool frameDelivered = false;
             if (sample) {
                 QImage frame = extractFrame(sample);
                 if (!frame.isNull()) {
                     qint64 timestampMs = timestamp / 10000;
                     emit frameReady(frame, timestampMs);
+                    frameDelivered = true;
                 }
                 sample->Release();
+            }
+
+            if (frameDelivered) {
+                framePendingAfterSeek = false;
 
                 // Pace the frame reading based on playback rate
                 int sleepMs = static_cast<int>(m_frameIntervalMs / m_playbackRate);

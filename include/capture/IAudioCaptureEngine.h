@@ -121,10 +121,12 @@ public:
      *
      * Most engines can stop synchronously and use QObject::deleteLater().
      * Engines whose worker may remain blocked can override this to retain
-     * themselves until the worker has actually finished.
+     * themselves until the worker has actually finished. Implementations must
+     * quiesce direct data callbacks before returning ownership to the caller.
      */
     virtual void disposeAsync()
     {
+        QObject::disconnect(this, nullptr, nullptr, nullptr);
         stop();
         deleteLater();
     }

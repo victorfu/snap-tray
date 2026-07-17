@@ -40,6 +40,11 @@ class RegionInputHandler : public QObject
     Q_OBJECT
 
 public:
+    enum class ReleaseTarget {
+        Canvas,
+        FloatingUi
+    };
+
     explicit RegionInputHandler(QObject* parent = nullptr);
 
     // Dependency injection
@@ -63,7 +68,8 @@ public:
     // Event handlers (called from RegionSelector)
     void handleMousePress(QMouseEvent* event);
     void handleMouseMove(QMouseEvent* event);
-    void handleMouseRelease(QMouseEvent* event);
+    void handleMouseRelease(QMouseEvent* event,
+                            ReleaseTarget target = ReleaseTarget::Canvas);
     void syncHoverCursorAt(const QPoint& pos);
 
     // State accessors

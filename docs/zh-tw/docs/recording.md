@@ -11,13 +11,12 @@ doc_group: workflow
 doc_order: 2
 ---
 
-錄影僅 macOS 與 Windows 提供。Linux beta 不包含錄影，錄影 UI 與 CLI help
-項目也會隱藏。
+錄影僅 macOS 與 Windows 提供。Linux beta 不包含錄影，錄影 UI 也會隱藏。
 
 ## 錄影入口
 
 - 托盤選單：Record Screen
-- CLI：`snaptray record start [--screen N]`
+- 錄影快捷鍵：至 Settings > Hotkeys 設定 Record Screen
 
 ## 錄影生命週期
 

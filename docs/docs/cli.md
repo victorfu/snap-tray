@@ -2,8 +2,8 @@
 last_modified_at: 2026-03-24
 layout: docs
 title: CLI
-seo_title: "SnapTray CLI: Automate Screenshots and Platform-Specific Recording"
-description: The official automation interface for scripting capture, platform-specific recording, pin, and settings workflows.
+seo_title: "SnapTray CLI: Automate Screenshots, Pinning, and Settings"
+description: The official automation interface for scripting capture, pin, and settings workflows.
 permalink: /docs/cli/
 lang: en
 route_key: docs_cli
@@ -40,7 +40,6 @@ Some installers may already expose `snaptray` through `PATH` or App Execution Al
 | `region` | Capture `-r x,y,width,height` from a selected screen | No |
 | `gui` | Open the region capture GUI | Yes |
 | `canvas` | Toggle Screen Canvas mode | Yes |
-| `record` | Start, stop, or toggle recording (macOS/Windows only) | Yes |
 | `pin` | Pin an image file or clipboard image | Yes |
 | `config` | List, get, set, or reset settings; no options opens Settings | Partial |
 
@@ -70,10 +69,6 @@ snaptray region -r 100,100,400,300 -o region.png
 snaptray gui                          # Open the region selector
 snaptray gui -d 2000                  # Open after 2 seconds
 snaptray canvas                       # Toggle Screen Canvas
-snaptray record start                 # Start recording (macOS/Windows only)
-snaptray record stop                  # Stop recording (macOS/Windows only)
-snaptray record                       # Toggle recording (macOS/Windows only)
-snaptray record start -n 1            # Start full-screen recording on screen 1 (macOS/Windows only)
 snaptray pin -f image.png             # Pin an image file
 snaptray pin -c --center              # Pin clipboard image centered
 snaptray pin -f image.png -x 200 -y 120
@@ -93,8 +88,6 @@ snaptray config --reset
 - `--output` takes priority over `--path`. If neither is provided, SnapTray generates a filename in the configured screenshot directory.
 - `screen` supports both `snaptray screen 1` and `snaptray screen -n 1`.
 - `region` requires `-r/--region`, uses logical pixels relative to the selected screen, and the rectangle must fit inside that screen.
-- `record` accepts `start`, `stop`, or `toggle` on macOS and Windows. No action means `toggle`. In the current implementation, `-n/--screen` is consumed only by `record start`.
-- Linux beta does not include recording. The `record` command is hidden from help output; calling it directly returns a recording error.
 - `pin` requires exactly one of `--file` or `--clipboard`. `--file` must be a readable image. Custom placement is applied only when both `-x` and `-y` are provided; otherwise the pin is centered.
 - `config --set` accepts a single positional value. `config --reset` clears the entire settings store.
 
@@ -107,7 +100,6 @@ snaptray config --reset
 | `2` | Invalid arguments |
 | `3` | File error |
 | `4` | Instance error (main app not running) |
-| `5` | Recording error, including direct `record` calls on Linux beta |
 
 ## Related docs
 

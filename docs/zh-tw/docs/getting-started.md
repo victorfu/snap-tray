@@ -82,7 +82,7 @@ SnapTray 提供 Ubuntu 22.04 X11 beta AppImage。Linux beta 不包含錄影與 O
 
 ### macOS 與 Windows
 
-1. 從托盤啟動錄影，或使用 `snaptray record start`。
+1. 從托盤選單或已設定的錄影快捷鍵啟動錄影。
 2. 錄 5 到 10 秒。
 3. 停止並輸出 MP4。
 4. 在 Settings > Files 確認輸出路徑。

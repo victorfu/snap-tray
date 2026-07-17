@@ -190,7 +190,6 @@ Commands under `include/cli/commands/` include:
 - `RegionCommand`
 - `GuiCommand`
 - `CanvasCommand`
-- `RecordCommand`
 - `PinCommand`
 - `ConfigCommand`
 

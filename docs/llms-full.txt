@@ -94,7 +94,7 @@ Most runtime permissions are handled by the OS and installer shape. If you recor
 
 ### Step 4: Test recording flow on macOS/Windows (3 min)
 
-1. Start full-screen recording from the tray menu or `snaptray record start`.
+1. Start full-screen recording from the tray menu or configured recording hotkey.
 2. Record 5 to 10 seconds.
 3. Stop and export MP4.
 4. Confirm the output path in Settings > Files.
@@ -246,13 +246,13 @@ Recording is available on macOS and Windows only. Linux beta focuses on screensh
 ### Entry points
 
 - Tray menu: Record Full Screen
-- CLI: `snaptray record start`
+- Recording hotkey: configure Record Full Screen in Settings > Hotkeys
 
 Region Selector is screenshot-only and does not start recording.
 
 ### Recording lifecycle
 
-1. Start full-screen recording from the tray menu or CLI.
+1. Start full-screen recording from the tray menu or configured recording hotkey.
 2. Click Start.
 3. Use floating control bar to Pause/Resume.
 4. Click Stop to export.
@@ -318,7 +318,6 @@ The CLI is SnapTray's official automation interface for scripting capture workfl
 | `region` | Capture region | No |
 | `gui` | Open region capture GUI | Yes |
 | `canvas` | Toggle Screen Canvas | Yes |
-| `record` | Start/stop/toggle full-screen recording on macOS/Windows | Yes |
 | `pin` | Pin an image file or clipboard | Yes |
 | `config` | Manage settings | Partial |
 
@@ -332,8 +331,6 @@ snaptray screen --list                # List screens
 snaptray region -r 0,0,800,600 -c     # Capture region to clipboard
 snaptray gui                          # Open region selector
 snaptray canvas                       # Toggle Screen Canvas
-snaptray record start                 # Start full-screen recording on macOS/Windows
-snaptray record stop                  # Stop full-screen recording on macOS/Windows
 snaptray pin -f image.png             # Pin image file
 snaptray pin -c --center              # Pin clipboard centered
 snaptray config --list                # List settings

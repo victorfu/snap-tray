@@ -190,7 +190,6 @@ SnapTray 以模組化 static-library 風格組織：
 - `RegionCommand`
 - `GuiCommand`
 - `CanvasCommand`
-- `RecordCommand`
 - `PinCommand`
 - `ConfigCommand`
 

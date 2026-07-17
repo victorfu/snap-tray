@@ -60,7 +60,6 @@ public:
 
 public slots:
     void startScreenRecording(QScreen* screen = nullptr);  // Record full screen using screen-first semantics
-    void startFullScreenRecording(QScreen* screen = nullptr);  // Record entire screen (cursor position or specified)
     void stopRecording();           // Stop and save recording
     void cancelRecording();         // Cancel without saving
     void pauseRecording();          // Pause recording
@@ -139,7 +138,7 @@ private:
     mutable QMutex m_durationMutex;  // Protects pause duration variables
 
     // Audio capture
-    AudioEnginePtr m_audioEngine;       // Audio capture engine (stop + disconnect + deleteLater)
+    AudioEnginePtr m_audioEngine;       // Audio engine with callback-draining deferred disposal
     bool m_audioEnabled;
     int m_audioSource;  // 0=Microphone, 1=SystemAudio, 2=Both
     QString m_audioDevice;

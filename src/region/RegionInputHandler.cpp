@@ -382,7 +382,7 @@ void RegionInputHandler::syncHoverCursorAt(const QPoint& pos)
     handleHoverMove(pos, Qt::NoButton);
 }
 
-void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
+void RegionInputHandler::handleMouseRelease(QMouseEvent* event, ReleaseTarget target)
 {
     if (!m_state) {
         qWarning() << "RegionInputHandler: Shared input state not set";
@@ -444,7 +444,20 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event)
             emit updateRequested();
         }
         else if (state().isDrawing) {
-            handleAnnotationRelease();
+            const bool cancelSingleClickPlacement =
+                target == ReleaseTarget::FloatingUi &&
+                (state().currentTool == ToolId::StepBadge ||
+                 state().currentTool == ToolId::EmojiSticker);
+            if (cancelSingleClickPlacement) {
+                if (m_toolManager) {
+                    m_toolManager->cancelDrawing();
+                }
+                state().isDrawing = false;
+                emit drawingStateChanged(false);
+            }
+            else {
+                handleAnnotationRelease();
+            }
             emit updateRequested();
         }
     }

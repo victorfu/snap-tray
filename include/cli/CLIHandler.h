@@ -17,7 +17,7 @@ namespace CLI {
  *
  * Supports two execution modes:
  * 1. Local execution (full, screen, region - no GUI needed)
- * 2. IPC execution (gui, canvas, record - sends to main instance)
+ * 2. IPC execution (gui, canvas, pin, config - sends to main instance)
  */
 class CLIHandler
 {

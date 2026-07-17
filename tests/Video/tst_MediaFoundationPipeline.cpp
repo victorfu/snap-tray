@@ -85,11 +85,16 @@ void TestMediaFoundationPipeline::pausedSeekProducesFrame()
     QVERIFY(player->load(inputPath));
     QCOMPARE(loadedSpy.count(), 1);
     player->pause();
-    frameSpy.clear();
-    player->seek(500);
 
-    QTRY_VERIFY_WITH_TIMEOUT(frameSpy.count() > 0, 3000);
-    QVERIFY(!frameSpy.last().at(0).value<QImage>().isNull());
+    const qint64 seekPositions[] = { 200, 500, 800 };
+    for (qint64 positionMs : seekPositions) {
+        frameSpy.clear();
+        player->seek(positionMs);
+
+        QTRY_VERIFY_WITH_TIMEOUT(frameSpy.count() > 0, 3000);
+        QVERIFY(!frameSpy.last().at(0).value<QImage>().isNull());
+        QCOMPARE(player->state(), IVideoPlayer::State::Paused);
+    }
 }
 
 void TestMediaFoundationPipeline::trimCompletesFromPausedSeeks()

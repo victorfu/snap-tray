@@ -4,8 +4,8 @@
 
 #include <QDebug>
 #include <QElapsedTimer>
-#include <QWaitCondition>
 #include <QCoreApplication>
+#include <QScopeGuard>
 #include <chrono>
 
 // Windows headers for WASAPI
@@ -593,6 +593,7 @@ bool WASAPIAudioCaptureEngine::start()
     m_paused = false;
     m_micPending.clear();
     m_loopbackPending.clear();
+    enableDataCallbacks();
 
     // Start capture thread - it will do ALL COM initialization
     m_captureThread = new CaptureThread(this);
@@ -626,22 +627,23 @@ bool WASAPIAudioCaptureEngine::start()
 
 void WASAPIAudioCaptureEngine::stop()
 {
-    if (!m_running && !m_captureThread) {
-        return;
-    }
-
     m_stopRequested = true;
     m_running = false;
     m_paused = false;
+    // Stop delivery before callers tear down downstream state, but preserve
+    // signal connections so this engine can be started again.
+    drainDataCallbacks(false);
 
-    if (m_captureThread) {
-        // Do not terminate or delete a thread that may be blocked in a COM/driver
-        // call. It still references this engine and owns apartment-bound objects.
-        if (!m_captureThread->wait(2000)) {
-            qWarning() << "WASAPIAudioCaptureEngine: Thread did not stop in 2 seconds; cleanup remains pending";
-        }
-        releaseCaptureThreadIfFinished();
+    if (!m_captureThread) {
+        return;
     }
+
+    // Do not terminate or delete a thread that may be blocked in a COM/driver
+    // call. It still references this engine and owns apartment-bound objects.
+    if (!m_captureThread->wait(2000)) {
+        qWarning() << "WASAPIAudioCaptureEngine: Thread did not stop in 2 seconds; cleanup remains pending";
+    }
+    releaseCaptureThreadIfFinished();
 }
 
 void WASAPIAudioCaptureEngine::disposeAsync()
@@ -657,6 +659,7 @@ void WASAPIAudioCaptureEngine::disposeAsync()
     m_stopRequested = true;
     m_running = false;
     m_paused = false;
+    drainDataCallbacks(true);
 
     if (parent()) {
         setParent(nullptr);
@@ -698,6 +701,59 @@ bool WASAPIAudioCaptureEngine::releaseCaptureThreadIfFinished()
     delete m_captureThread;
     m_captureThread = nullptr;
     return true;
+}
+
+void WASAPIAudioCaptureEngine::enableDataCallbacks()
+{
+    QMutexLocker locker(&m_dataCallbackMutex);
+    Q_ASSERT(m_activeDataCallbacks == 0);
+    m_acceptingDataCallbacks = true;
+}
+
+void WASAPIAudioCaptureEngine::drainDataCallbacks(bool disconnectConnections)
+{
+    {
+        QMutexLocker locker(&m_dataCallbackMutex);
+        m_acceptingDataCallbacks = false;
+    }
+
+    if (disconnectConnections) {
+        // Final disposal prevents Qt from selecting another connection while
+        // the capture thread is between packets. A connection already executing
+        // is covered by m_activeDataCallbacks below.
+        QObject::disconnect(this, nullptr, nullptr, nullptr);
+    }
+
+    QMutexLocker locker(&m_dataCallbackMutex);
+    while (m_activeDataCallbacks > 0) {
+        m_dataCallbacksDrained.wait(&m_dataCallbackMutex);
+    }
+}
+
+void WASAPIAudioCaptureEngine::deliverAudioData(const QByteArray &data, qint64 timestampMs)
+{
+    {
+        QMutexLocker locker(&m_dataCallbackMutex);
+        if (!m_acceptingDataCallbacks) {
+            return;
+        }
+        ++m_activeDataCallbacks;
+    }
+
+    const auto callbackGuard = qScopeGuard([this]() {
+        finishDataCallback();
+    });
+    emit audioDataReady(data, timestampMs);
+}
+
+void WASAPIAudioCaptureEngine::finishDataCallback()
+{
+    QMutexLocker locker(&m_dataCallbackMutex);
+    Q_ASSERT(m_activeDataCallbacks > 0);
+    --m_activeDataCallbacks;
+    if (m_activeDataCallbacks == 0) {
+        m_dataCallbacksDrained.wakeAll();
+    }
 }
 
 void WASAPIAudioCaptureEngine::pause()
@@ -827,7 +883,7 @@ void WASAPIAudioCaptureEngine::captureLoop()
                         qint64 timestamp = now - m_startTime - m_pausedDuration;
                         locker.unlock();
 
-                        emit audioDataReady(audioData, timestamp);
+                        deliverAudioData(audioData, timestamp);
                     }
                     gotData = true;
 
@@ -872,7 +928,7 @@ void WASAPIAudioCaptureEngine::captureLoop()
                         qint64 timestamp = now - m_startTime - m_pausedDuration;
                         locker.unlock();
 
-                        emit audioDataReady(audioData, timestamp);
+                        deliverAudioData(audioData, timestamp);
                     }
                     gotData = true;
 
@@ -911,7 +967,7 @@ void WASAPIAudioCaptureEngine::captureLoop()
                 qint64 timestamp = now - m_startTime - m_pausedDuration;
                 locker.unlock();
 
-                emit audioDataReady(mixed, timestamp);
+                deliverAudioData(mixed, timestamp);
                 gotData = true;
             }
         }

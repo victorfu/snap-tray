@@ -21,8 +21,18 @@ void setError(QString *errorMessage, const QString &message)
 
 bool pathsReferToSameFile(const QString &left, const QString &right)
 {
-    const QString leftPath = QDir::cleanPath(QFileInfo(left).absoluteFilePath());
-    const QString rightPath = QDir::cleanPath(QFileInfo(right).absoluteFilePath());
+    const QFileInfo leftInfo(left);
+    const QFileInfo rightInfo(right);
+
+    // Let the filesystem decide identity whenever both entries already exist.
+    // This handles case- and normalization-insensitive volumes without making
+    // platform-wide assumptions about their naming rules.
+    if (leftInfo.exists() && rightInfo.exists() && leftInfo == rightInfo) {
+        return true;
+    }
+
+    const QString leftPath = QDir::cleanPath(leftInfo.absoluteFilePath());
+    const QString rightPath = QDir::cleanPath(rightInfo.absoluteFilePath());
 #ifdef Q_OS_WIN
     return leftPath.compare(rightPath, Qt::CaseInsensitive) == 0;
 #else

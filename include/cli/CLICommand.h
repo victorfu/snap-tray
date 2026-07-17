@@ -42,16 +42,6 @@ public:
     virtual CLIResult execute(const QCommandLineParser& parser) = 0;
 
     /**
-     * @brief Whether this command is supported on the current platform/runtime
-     */
-    virtual bool isSupported() const { return true; }
-
-    /**
-     * @brief Message to return when this command is unsupported
-     */
-    virtual QString unsupportedMessage() const { return QString(); }
-
-    /**
      * @brief Whether this command requires GUI (needs IPC to main instance)
      * @param parser Parsed command line (allows checking options)
      */

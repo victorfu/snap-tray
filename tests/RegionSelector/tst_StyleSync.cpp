@@ -71,6 +71,9 @@ private slots:
     void testSelectionCompletionPositionsToolbarAfterWindowsHandoff();
     void testSelectionDragUsesClosedHandCursor();
     void testReleaseOverFloatingUiFinishesSelectionDrag();
+    void testReleaseOverFloatingUiFinishesDrawingDrag();
+    void testReleaseOverFloatingUiCancelsSingleClickAnnotation_data();
+    void testReleaseOverFloatingUiCancelsSingleClickAnnotation();
     void testAutoBlurRequestGuardRejectsStaleContext();
     void testOverlayRequestRestoreReturnsArrowToolCursor();
     void testFloatingToolbarWindowOwnsArrowCursor();
@@ -374,6 +377,95 @@ void TestRegionSelectorStyleSync::testReleaseOverFloatingUiFinishesSelectionDrag
 
     QVERIFY(selector.m_selectionManager->isComplete());
     QCOMPARE(CursorManager::instance().dragStateForWidget(&selector), DragState::None);
+}
+
+void TestRegionSelectorStyleSync::testReleaseOverFloatingUiFinishesDrawingDrag()
+{
+    RegionSelector selector;
+    const QRect toolbarGeometry = showToolbarForTool(selector, ToolId::Shape);
+    if (!toolbarGeometry.isValid() || toolbarGeometry.isEmpty()) {
+        QSKIP("Floating toolbar is unavailable on this platform.");
+    }
+
+    QMouseEvent pressEvent(QEvent::MouseButtonPress,
+                           kSelectionBodyPos, kSelectionBodyPos,
+                           Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+    selector.m_inputHandler->handleMousePress(&pressEvent);
+    QVERIFY(selector.m_inputState.isDrawing);
+
+    const QPoint releaseGlobalPos = toolbarGeometry.center();
+    QVERIFY(selector.isGlobalPosOverFloatingUi(releaseGlobalPos));
+    const QPoint releaseLocalPos = selector.mapFromGlobal(releaseGlobalPos);
+    QMouseEvent releaseEvent(QEvent::MouseButtonRelease,
+                             QPointF(releaseLocalPos),
+                             QPointF(releaseLocalPos),
+                             QPointF(releaseGlobalPos),
+                             Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+    selector.mouseReleaseEvent(&releaseEvent);
+
+    QCOMPARE(selector.m_annotationLayer->itemCount(), static_cast<size_t>(1));
+    QVERIFY(!selector.m_inputState.isDrawing);
+    QVERIFY(!selector.m_toolManager->isDrawing());
+}
+
+void TestRegionSelectorStyleSync::testReleaseOverFloatingUiCancelsSingleClickAnnotation_data()
+{
+    QTest::addColumn<int>("toolId");
+
+    QTest::newRow("step-badge") << static_cast<int>(ToolId::StepBadge);
+    QTest::newRow("emoji-sticker") << static_cast<int>(ToolId::EmojiSticker);
+}
+
+void TestRegionSelectorStyleSync::testReleaseOverFloatingUiCancelsSingleClickAnnotation()
+{
+    QFETCH(int, toolId);
+    const ToolId tool = static_cast<ToolId>(toolId);
+
+    RegionSelector selector;
+    const QRect toolbarGeometry = showToolbarForTool(selector, tool);
+    if (!toolbarGeometry.isValid() || toolbarGeometry.isEmpty()) {
+        QSKIP("Floating toolbar is unavailable on this platform.");
+    }
+
+    QSignalSpy drawingStateSpy(
+        selector.m_inputHandler, &RegionInputHandler::drawingStateChanged);
+    QMouseEvent pressEvent(QEvent::MouseButtonPress,
+                           kSelectionBodyPos, kSelectionBodyPos,
+                           Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+    selector.m_inputHandler->handleMousePress(&pressEvent);
+    QVERIFY(selector.m_inputState.isDrawing);
+    QCOMPARE(selector.m_annotationLayer->itemCount(), static_cast<size_t>(0));
+
+    const QPoint releaseGlobalPos = toolbarGeometry.center();
+    QVERIFY(selector.isGlobalPosOverFloatingUi(releaseGlobalPos));
+    const QPoint releaseLocalPos = selector.mapFromGlobal(releaseGlobalPos);
+    QMouseEvent releaseEvent(QEvent::MouseButtonRelease,
+                             QPointF(releaseLocalPos),
+                             QPointF(releaseLocalPos),
+                             QPointF(releaseGlobalPos),
+                             Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+    selector.mouseReleaseEvent(&releaseEvent);
+
+    QCOMPARE(selector.m_annotationLayer->itemCount(), static_cast<size_t>(0));
+    QVERIFY(!selector.m_inputState.isDrawing);
+    QVERIFY(!selector.m_toolManager->isDrawing());
+    QCOMPARE(drawingStateSpy.count(), 2);
+    QCOMPARE(drawingStateSpy.at(0).at(0).toBool(), true);
+    QCOMPARE(drawingStateSpy.at(1).at(0).toBool(), false);
+
+    // Cancelling the captured release must leave the tool ready for the next
+    // ordinary canvas click.
+    QMouseEvent nextPressEvent(QEvent::MouseButtonPress,
+                               kSelectionBodyPos, kSelectionBodyPos,
+                               Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+    selector.m_inputHandler->handleMousePress(&nextPressEvent);
+    QMouseEvent nextReleaseEvent(QEvent::MouseButtonRelease,
+                                 kSelectionBodyPos, kSelectionBodyPos,
+                                 Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+    selector.m_inputHandler->handleMouseRelease(&nextReleaseEvent);
+
+    QCOMPARE(selector.m_annotationLayer->itemCount(), static_cast<size_t>(1));
+    QVERIFY(!selector.m_inputState.isDrawing);
 }
 
 void TestRegionSelectorStyleSync::testAutoBlurRequestGuardRejectsStaleContext()

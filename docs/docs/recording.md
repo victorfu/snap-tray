@@ -12,12 +12,12 @@ doc_order: 2
 ---
 
 Recording is available on macOS and Windows only. Linux beta does not include
-recording, and its recording UI and CLI help entries are hidden.
+recording, and its recording UI is hidden.
 
 ## Recording entry points
 
 - Tray menu: Record Screen
-- CLI: `snaptray record start [--screen N]`
+- Recording hotkey: configure Record Screen in Settings > Hotkeys
 
 ## Recording lifecycle
 

@@ -28,7 +28,7 @@ Produce a short, clear screen recording that stakeholders can understand quickly
 Recording is available on macOS/Windows only. Linux beta does not include recording, so skip this tutorial there.
 
 - Use full-screen recording for walkthroughs and demos.
-- Start via tray menu or run `snaptray record start`.
+- Start via the tray menu or the configured recording hotkey.
 
 ### 2. Configure before recording
 

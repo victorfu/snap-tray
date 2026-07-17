@@ -126,8 +126,7 @@ private slots:
     void initialize_hidesRecordingActionWhenUnsupported();
     void onCheckForUpdates_usesSharedSettingsWindowFlowWithoutShowingSettings();
     void initialize_externalManaged_disablesCheckForUpdatesAction();
-    void handleCLICommand_recordToggle_closesScreenPicker();
-    void handleCLICommand_recordStart_doesNothingWhilePickerOpen();
+    void handleCLICommand_removedRecordCommandIsIgnored();
     void screenPickerClosed_deletesWrapperAndViewModel();
 
 private:
@@ -314,7 +313,7 @@ void tst_MainApplicationTrayMenu::initialize_externalManaged_disablesCheckForUpd
     QVERIFY(!application.m_checkForUpdatesAction->isEnabled());
 }
 
-void tst_MainApplicationTrayMenu::handleCLICommand_recordToggle_closesScreenPicker()
+void tst_MainApplicationTrayMenu::handleCLICommand_removedRecordCommandIsIgnored()
 {
     using namespace SnapTray::CLI;
 
@@ -327,32 +326,6 @@ void tst_MainApplicationTrayMenu::handleCLICommand_recordToggle_closesScreenPick
     IPCMessage message;
     message.command = QStringLiteral("record");
     message.options = QJsonObject{{QStringLiteral("action"), QStringLiteral("toggle")}};
-
-    application.handleCLICommand(message.toJson());
-
-#ifdef Q_OS_LINUX
-    QVERIFY(application.m_screenPickerDialog != nullptr);
-    application.closeScreenPicker();
-#else
-    QVERIFY(application.m_screenPickerDialog.isNull());
-#endif
-    QCOMPARE(application.m_recordingManager->state(), RecordingManager::State::Idle);
-    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
-}
-
-void tst_MainApplicationTrayMenu::handleCLICommand_recordStart_doesNothingWhilePickerOpen()
-{
-    using namespace SnapTray::CLI;
-
-    installFakeUpdateService(InstallSource::DirectDownload, false);
-
-    MainApplication application;
-    application.initialize();
-    application.m_screenPickerDialog = new DummyScreenPickerDialog(new QObject(), &application);
-
-    IPCMessage message;
-    message.command = QStringLiteral("record");
-    message.options = QJsonObject{{QStringLiteral("action"), QStringLiteral("start")}};
 
     application.handleCLICommand(message.toJson());
 

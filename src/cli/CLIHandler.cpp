@@ -6,7 +6,6 @@
 #include "cli/commands/FullCommand.h"
 #include "cli/commands/GuiCommand.h"
 #include "cli/commands/PinCommand.h"
-#include "cli/commands/RecordCommand.h"
 #include "cli/commands/RegionCommand.h"
 #include "cli/commands/ScreenCommand.h"
 #include "version.h"
@@ -39,7 +38,6 @@ void CLIHandler::registerCommands()
     addCmd(std::make_unique<ScreenCommand>());
     addCmd(std::make_unique<RegionCommand>());
     addCmd(std::make_unique<CanvasCommand>());
-    addCmd(std::make_unique<RecordCommand>());
     addCmd(std::make_unique<PinCommand>());
     addCmd(std::make_unique<ConfigCommand>());
 }
@@ -78,11 +76,6 @@ CLIResult CLIHandler::process(const QStringList& arguments)
             CLIResult::Code::InvalidArguments,
             QString("Unknown command: %1\n\n%2").arg(cmdOrOption, getHelpText()));
     }
-    if (!command->isSupported()) {
-        return CLIResult::error(CLIResult::Code::RecordingError,
-                                command->unsupportedMessage());
-    }
-
     // Setup and parse command arguments
     QCommandLineParser parser;
     parser.setApplicationDescription(command->description());
@@ -145,7 +138,7 @@ QString CLIHandler::getHelpText() const
     QString help;
     QTextStream out(&help);
 
-    out << "SnapTray - Screenshot & Recording Tool\n\n";
+    out << "SnapTray - Screenshot Tool\n\n";
     out << "Usage: snaptray <command> [options]\n\n";
     out << "Commands:\n";
 
@@ -158,9 +151,6 @@ QString CLIHandler::getHelpText() const
 
     for (const QString& name : names) {
         const auto& cmd = m_commands.at(name);
-        if (!cmd->isSupported()) {
-            continue;
-        }
         out << QString("  %1  %2\n").arg(name, -10).arg(cmd->description());
     }
 

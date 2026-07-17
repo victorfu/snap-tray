@@ -18,7 +18,6 @@ struct CLIResult
         InvalidArguments = 2,
         FileError = 3,
         InstanceError = 4,
-        RecordingError = 5,
     };
 
     Code code = Code::Success;

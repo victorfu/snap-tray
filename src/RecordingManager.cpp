@@ -393,11 +393,6 @@ void RecordingManager::teardownEncodingWorker(bool abortEncoding)
     m_encodingWorker.reset();
 }
 
-void RecordingManager::startFullScreenRecording(QScreen* screen)
-{
-    startScreenRecording(screen);
-}
-
 void RecordingManager::startFrameCapture()
 {
     if (m_initFuture.isRunning()) {
@@ -1198,8 +1193,8 @@ void RecordingManager::stopFrameCapture()
         m_durationTimer.reset();
     }
 
-    // Stop audio capture and finalize audio file
-    // Custom deleter handles disconnect + stop() + deleteLater()
+    // Keep audio teardown before EncodingWorker teardown. AudioEnginePtr closes
+    // and drains any in-flight DirectConnection callback before reset returns.
     if (m_audioEngine) {
         m_audioEngine.reset();
     }

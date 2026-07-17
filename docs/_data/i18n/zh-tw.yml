@@ -262,7 +262,7 @@ landing_screenshot_tool:
       - q: SnapTray 支援哪些平台？
         a: SnapTray 支援 macOS 14+（Apple Silicon 和 Intel）、Windows 10+（x64），以及 Ubuntu 22.04 X11 AppImage beta。Linux beta 不包含錄影與 OCR，也不支援 Wayland session。
       - q: 可以用腳本自動化截圖嗎？
-        a: 可以。SnapTray 內建 CLI 自動化。Linux beta 的 CLI 範圍是 snaptray full、snaptray region、snaptray pin 和 snaptray config；snaptray record 僅支援 macOS/Windows。可整合 Shell 腳本、CI 流程或自動化工作流。
+        a: 可以。SnapTray 內建 CLI，可自動化截圖、釘選與設定。常用指令包括 snaptray full、snaptray screen、snaptray region、snaptray pin 和 snaptray config。可整合 Shell 腳本、CI 流程或自動化工作流。
   cta:
     eyebrow: 立即開始
     title: 下載 SnapTray — 免費且開源
@@ -394,7 +394,7 @@ landing_windows:
       - title: 高 DPI 與多螢幕
         body: SnapTray 正確處理混合 DPI 設定和多螢幕環境。4K 顯示器上不會有模糊擷取、偏移區域或縮放異常。
       - title: 錄影、釘選與自動化
-        body: 將全螢幕錄製為 MP4/GIF/WebP、釘選截圖為浮動參考、用 OCR 擷取文字，並透過 CLI 腳本化所有操作：snaptray region、snaptray record、snaptray pin。
+        body: 從托盤選單或錄影快捷鍵啟動全螢幕 MP4/GIF/WebP 錄影、將截圖釘選為浮動參考、用 OCR 擷取文字，並透過 CLI 自動化截圖、釘選與設定：snaptray region、snaptray pin、snaptray config。
   compare:
     eyebrow: 工具比較
     title: "SnapTray vs 剪取工具 vs ShareX vs Greenshot"
@@ -450,7 +450,7 @@ landing_windows:
       - q: SnapTray 和 Greenshot 有什麼不同？
         a: Greenshot 提供基本擷取和標註，但缺少螢幕錄影、釘選視窗、OCR、自動模糊和 CLI 自動化。SnapTray 在支援平台提供釘選視窗和 CLI 自動化，並在 macOS/Windows 提供錄影、OCR 和自動模糊；同時也支援 macOS，以及以截圖與標註為主的 Linux beta。
       - q: 可以在腳本和自動化中使用 SnapTray 嗎？
-        a: 可以。SnapTray 內建完整 CLI：snaptray full、snaptray region、snaptray record、snaptray pin 和 snaptray config。可整合 PowerShell 腳本、批次檔或 CI 流程。
+        a: 可以。SnapTray 內建完整 CLI：snaptray full、snaptray screen、snaptray region、snaptray gui、snaptray canvas、snaptray pin 和 snaptray config。可整合 PowerShell 腳本、批次檔或 CI 流程。
   cta:
     eyebrow: 立即開始
     title: 下載 SnapTray Windows 版
