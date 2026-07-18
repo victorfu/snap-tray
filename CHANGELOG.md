@@ -6,9 +6,22 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+## [1.0.60] - 2026-07-18
+
+### Improved
+
+- Improved recording, trimming, GIF/WebP conversion, and file replacement so media failures stop cleanly without overwriting or losing the original recording.
+- Improved Pin auto-blur and annotation transforms so results stay aligned after resizing, rotating, or flipping an image, and stale detections are discarded when the image changes.
+- Improved capture and Pin interactions so releasing the pointer over floating controls still completes active drags without triggering unintended tool actions.
+
 ### Fixed
 
 - Fixed SnapTray occasionally hanging during shutdown, which could block relaunches and in-app updates after the menu bar icon disappeared.
+- Fixed eraser and crop history so interrupted eraser strokes restore removed items and undo/redo remains consistent.
+- Fixed pencil and marker hit testing and repaint bounds so erasing and redraws follow the visible curved stroke accurately.
+- Fixed capture and recording reliability across mixed-scale displays and during macOS and Windows capture or audio thread shutdown.
+- Fixed Windows recording previews so playback can restart after reaching the end, while preserving window-type detection fallbacks.
+- Fixed QR code scanning for RGB images and hid unsupported Pin click-through controls on Linux.
 
 ### Removed
 
