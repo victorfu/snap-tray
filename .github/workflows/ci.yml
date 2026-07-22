@@ -10,6 +10,9 @@ jobs:
   build-macos:
     runs-on: macos-latest
     #runs-on: [self-hosted, macOS, ARM64]
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_CONFIGPATH: ${{ runner.temp }}/snap-tray-ccache.conf
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

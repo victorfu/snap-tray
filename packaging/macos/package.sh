@@ -22,6 +22,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+export CCACHE_DIR="${CCACHE_DIR:-$PROJECT_ROOT/.cache/ccache}"
 BUILD_DIR="${PROJECT_ROOT}/build"
 OUTPUT_DIR="${PROJECT_ROOT}/dist"
 QML_SOURCE_DIR="${PROJECT_ROOT}/src/qml"
