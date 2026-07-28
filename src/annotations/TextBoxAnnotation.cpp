@@ -1,7 +1,6 @@
 #include "annotations/TextBoxAnnotation.h"
 #include "utils/CoordinateHelper.h"
 #include <QPainter>
-#include <QPainterPath>
 #include <QFontMetrics>
 #include <QTransform>
 
@@ -169,19 +168,16 @@ void TextBoxAnnotation::regenerateCache(qreal dpr) const
         QPainter offPainter(&m_cachedPixmap);
         offPainter.setRenderHint(QPainter::TextAntialiasing, true);
         offPainter.setFont(m_font);
+        offPainter.setPen(m_color);
 
         // Start at top-left with padding, then add ascent for baseline
         QPointF pos(kPadding, kPadding + fm.ascent());
 
         for (const QString &line : lines) {
             if (!line.isEmpty()) {
-                QPainterPath path;
-                path.addText(pos, m_font, line);
-
-                // Fill with color
-                offPainter.setPen(Qt::NoPen);
-                offPainter.setBrush(m_color);
-                offPainter.drawPath(path);
+                // Keep glyph rasterization in Qt's text engine. Converting glyphs
+                // to painter paths bypasses TextAntialiasing and degrades CJK text.
+                offPainter.drawText(pos, line);
             }
             pos.setY(pos.y() + fm.lineSpacing());
         }

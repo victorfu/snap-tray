@@ -6,6 +6,10 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed jagged Chinese and other CJK annotation text by preserving Qt's native antialiased glyph rendering on macOS, Windows, and Linux.
+
 ## [1.0.60] - 2026-07-18
 
 ### Improved

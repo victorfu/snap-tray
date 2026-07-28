@@ -2,6 +2,8 @@
 #include <QPainter>
 #include <QImage>
 #include <QFont>
+#include <QFontDatabase>
+#include <QRawFont>
 #include "annotations/TextBoxAnnotation.h"
 
 /**
@@ -90,6 +92,8 @@ private slots:
 
     // Drawing tests
     void testDraw_Basic();
+    void testDraw_CjkTextIsAntialiased_data();
+    void testDraw_CjkTextIsAntialiased();
     void testBoundingRect_WithRotationScale_ContainsDrawnPixels();
     void testDraw_MultilineText();
 
@@ -644,6 +648,90 @@ void TestTextBoxAnnotation::testDraw_Basic()
         }
     }
     QVERIFY(hasColor);
+}
+
+void TestTextBoxAnnotation::testDraw_CjkTextIsAntialiased_data()
+{
+    QTest::addColumn<qreal>("devicePixelRatio");
+
+    QTest::newRow("dpr-1") << 1.0;
+    QTest::newRow("dpr-1.5") << 1.5;
+    QTest::newRow("dpr-2") << 2.0;
+}
+
+void TestTextBoxAnnotation::testDraw_CjkTextIsAntialiased()
+{
+    QFETCH(qreal, devicePixelRatio);
+
+    const QString text = QStringLiteral("\u6d4b\u8bd5\u4e2d\u6587");
+    QString cjkFontFamily;
+    const QStringList cjkFamilies =
+        QFontDatabase::families(QFontDatabase::SimplifiedChinese);
+
+    for (const QString& family : cjkFamilies) {
+        const QFont candidate(family);
+        const QRawFont rawFont = QRawFont::fromFont(candidate);
+        if (!rawFont.isValid()) {
+            continue;
+        }
+
+        bool supportsAllCharacters = true;
+        for (const QChar character : text) {
+            if (!rawFont.supportsCharacter(character)) {
+                supportsAllCharacters = false;
+                break;
+            }
+        }
+
+        if (supportsAllCharacters) {
+            cjkFontFamily = family;
+            break;
+        }
+    }
+
+    QVERIFY2(!cjkFontFamily.isEmpty(),
+             "No Simplified Chinese font is available for the CJK rendering test");
+
+    QFont font(cjkFontFamily);
+    font.setPixelSize(32);
+    font.setStyleStrategy(QFont::PreferAntialias);
+
+    const QColor textColor(Qt::red);
+    TextBoxAnnotation textBox(QPointF(20, 20), text, font, textColor);
+
+    const QSize logicalSize(360, 140);
+    QImage image(QSize(qCeil(logicalSize.width() * devicePixelRatio),
+                       qCeil(logicalSize.height() * devicePixelRatio)),
+                 QImage::Format_ARGB32);
+    image.setDevicePixelRatio(devicePixelRatio);
+    image.fill(Qt::white);
+
+    QPainter painter(&image);
+    textBox.draw(painter);
+    painter.end();
+
+    int textPixelCount = 0;
+    int blendedEdgePixelCount = 0;
+    const QRgb background = qRgb(255, 255, 255);
+    const QRgb solidText = textColor.rgb();
+
+    for (int y = 0; y < image.height(); ++y) {
+        for (int x = 0; x < image.width(); ++x) {
+            const QRgb pixel = image.pixel(x, y);
+            if (pixel == background) {
+                continue;
+            }
+
+            ++textPixelCount;
+            if (pixel != solidText) {
+                ++blendedEdgePixelCount;
+            }
+        }
+    }
+
+    QVERIFY2(textPixelCount > 0, "CJK text was not rendered");
+    QVERIFY2(blendedEdgePixelCount > 0,
+             "Text edges were rendered without antialiasing");
 }
 
 void TestTextBoxAnnotation::testBoundingRect_WithRotationScale_ContainsDrawnPixels()
