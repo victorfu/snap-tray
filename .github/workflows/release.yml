@@ -110,7 +110,6 @@ jobs:
     #runs-on: [self-hosted, macOS, ARM64]
     env:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
-      CCACHE_CONFIGPATH: ${{ runner.temp }}/snap-tray-release-ccache.conf
       APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
       APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
       APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -133,6 +132,9 @@ jobs:
       # ========================================
       # Compiler Cache
       # ========================================
+      - name: Configure ccache path
+        run: echo "CCACHE_CONFIGPATH=$RUNNER_TEMP/snap-tray-release-ccache.conf" >> "$GITHUB_ENV"
+
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:

@@ -12,7 +12,6 @@ jobs:
     #runs-on: [self-hosted, macOS, ARM64]
     env:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
-      CCACHE_CONFIGPATH: ${{ runner.temp }}/snap-tray-ccache.conf
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,6 +20,9 @@ jobs:
         run: |
           brew install qt@6 ccache
           echo "$(brew --prefix ccache)/libexec" >> $GITHUB_PATH
+
+      - name: Configure ccache path
+        run: echo "CCACHE_CONFIGPATH=$RUNNER_TEMP/snap-tray-ccache.conf" >> "$GITHUB_ENV"
 
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
