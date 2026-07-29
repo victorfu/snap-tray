@@ -69,6 +69,15 @@ Ubuntu 22.04 X11 beta uses the same shell scripts as macOS:
 ./scripts/run-tests.sh
 ```
 
+If Qt was installed with the Qt Online Installer rather than the system package
+manager, point the scripts at that installation first:
+
+```bash
+export QT_ROOT_DIR="$HOME/Qt/6.10.1/gcc_64"
+```
+
+Adjust the path if the Qt installation lives elsewhere.
+
 ### Windows
 
 ```batch
