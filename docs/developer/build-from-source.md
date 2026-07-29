@@ -85,12 +85,26 @@ For validation, prefer `build.sh` / `build.bat` and the test scripts. Running th
 
 ## PowerShell with MSVC
 
-If you build on Windows from PowerShell, load the Visual Studio developer shell first:
+If you build on Windows from PowerShell, load the Visual Studio developer
+environment first. The Windows build scripts assume it is already loaded and
+do not call `VsDevCmd.bat` themselves. A plain PowerShell build can find the
+compiler through an existing CMake cache but still fail on standard headers
+such as `type_traits` or `utility`.
+
+For a single automated build or test run, use `vswhere` so the command works
+without hard-coding the installed Visual Studio version:
 
 ```powershell
-Import-Module "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
-Enter-VsDevShell -VsInstallPath "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools" -DevCmdArguments '-arch=x64' -SkipAutomaticLocation
+$snapTrayVswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+$snapTrayVsInstall = & $snapTrayVswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+$snapTrayDevCmd = Join-Path $snapTrayVsInstall 'Common7\Tools\VsDevCmd.bat'
+cmd.exe /d /s /c "call `"$snapTrayDevCmd`" -arch=amd64 -host_arch=amd64 && call scripts\run-tests.bat"
 ```
+
+Replace `scripts\run-tests.bat` with another Windows build script as needed.
+For an interactive PowerShell session, import
+`$snapTrayVsInstall\Common7\Tools\Microsoft.VisualStudio.DevShell.dll` and call
+`Enter-VsDevShell` before running the scripts.
 
 ## Manual CMake flows
 

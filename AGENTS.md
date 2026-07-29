@@ -16,7 +16,22 @@ Use these as the source of truth instead of growing this file into a second READ
 
 ### Windows
 
-Use `cmd.exe` or PowerShell with the MSVC developer environment loaded.
+Use `cmd.exe` or PowerShell with the MSVC developer environment loaded. The
+Windows build scripts do not load `VsDevCmd.bat` themselves. Do not run the
+first build from a plain PowerShell session: MSVC may be found through an
+existing CMake cache while standard headers such as `type_traits` are still
+unavailable.
+
+On the current Windows workstation, run a script through the developer
+environment in one command. Replace the final script name when needed:
+
+```powershell
+cmd.exe /d /s /c 'call "C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\Common7\Tools\VsDevCmd.bat" -arch=amd64 -host_arch=amd64 && call scripts\run-tests.bat'
+```
+
+If that path changes, use `vswhere` as documented in
+`docs/developer/build-from-source.md` instead of guessing the Visual Studio
+version or retrying an uninitialized build.
 
 ```batch
 scripts\build.bat                   REM Debug build
