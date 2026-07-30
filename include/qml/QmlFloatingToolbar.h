@@ -11,6 +11,7 @@
 #include <QString>
 
 #include "cursor/CursorTypes.h"
+#include "qml/ToolbarTooltipController.h"
 
 class QQuickView;
 class QQuickItem;
@@ -135,19 +136,14 @@ private slots:
 
 private:
     void ensureView();
-    void ensureTooltipView();
     void setupConnections();
     void applyAppearance();
     void applyPlatformWindowFlags();
-    void applyTooltipWindowFlags();
     void syncTransientParent();
     void syncCursorSurface(const CursorStyleSpec* explicitStyle = nullptr);
     void cancelParentCursorRestore();
     void scheduleParentCursorRestore();
     void attemptParentCursorRestore(quint64 token, int remainingAttempts);
-
-    void showTooltip(const QString& text, const QRect& anchorRect);
-    void hideTooltip();
 
     bool eventFilter(QObject* obj, QEvent* event) override;
 
@@ -155,8 +151,7 @@ private:
     Appearance m_appearance;
     QQuickView* m_view = nullptr;
     QQuickItem* m_rootItem = nullptr;
-    QQuickView* m_tooltipView = nullptr;
-    QQuickItem* m_tooltipRootItem = nullptr;
+    ToolbarTooltipController m_tooltip;
     QWidget* m_parentWidget = nullptr;
     QList<QRect> m_dragBounds;
 
@@ -165,7 +160,6 @@ private:
     QPoint m_dragStartCursorPos;
     bool m_isDragging = false;
 
-    quint64 m_tooltipRequestId = 0;
     quint64 m_parentCursorRestoreToken = 0;
     QString m_cursorSurfaceId;
     QString m_cursorOwnerId;

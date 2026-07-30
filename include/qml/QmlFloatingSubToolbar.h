@@ -1,5 +1,7 @@
 #pragma once
 
+#include "qml/ToolbarTooltipController.h"
+
 #include <QObject>
 #include <QRect>
 #include <QString>
@@ -66,6 +68,10 @@ public:
 signals:
     void emojiPickerRequested();
 
+private slots:
+    void onWidthHovered(double globalX, double globalY, double width, double height);
+    void onWidthUnhovered();
+
 private:
     void ensureView();
     void applyPlatformWindowFlags();
@@ -83,6 +89,8 @@ private:
     quint64 m_parentCursorRestoreToken = 0;
     QString m_cursorSurfaceId;
     QString m_cursorOwnerId;
+    ToolbarTooltipController m_tooltip;
+    QRect m_lastWidthAnchor;
 };
 
 } // namespace SnapTray

@@ -36,7 +36,8 @@ public:
 
     // Current drawing settings
     QColor color = Qt::red;
-    int width = 3;
+    int width = 3;          // Shared stroke width (pencil, arrow, shape, polyline)
+    int mosaicWidth = 18;   // Mosaic brush footprint; MosaicStroke doubles this
     LineEndStyle arrowStyle = LineEndStyle::EndArrow;
     LineStyle lineStyle = LineStyle::Solid;
 

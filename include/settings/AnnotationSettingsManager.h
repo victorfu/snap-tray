@@ -6,6 +6,7 @@
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/LineStyle.h"
 #include "annotations/StepBadgeAnnotation.h"
+#include "tools/ToolWidthSlot.h"
 
 /**
  * @brief Singleton class for managing annotation settings.
@@ -23,9 +24,9 @@ public:
     QColor loadColor() const;
     void saveColor(const QColor& color);
 
-    // Width settings
-    int loadWidth() const;
-    void saveWidth(int width);
+    // Per-tool width settings (routes through WidthSlot)
+    int loadWidthForTool(ToolId toolId) const;
+    void saveWidthForTool(ToolId toolId, int width);
 
     // Arrow and line style settings
     LineEndStyle loadArrowStyle() const;
@@ -56,6 +57,9 @@ public:
 
     // Default values
     static constexpr int kDefaultWidth = 3;
+    static constexpr int kDefaultMosaicBrushSize = 18;
+    static constexpr int kMinWidth = 1;
+    static constexpr int kMaxWidth = 30;
     static QColor defaultColor() { return Qt::red; }
     static constexpr LineEndStyle kDefaultArrowStyle = LineEndStyle::EndArrow;
     static constexpr LineStyle kDefaultLineStyle = LineStyle::Solid;
@@ -74,6 +78,7 @@ private:
 
     static constexpr const char* kSettingsKeyColor = "annotationColor";
     static constexpr const char* kSettingsKeyWidth = "annotationWidth";
+    static constexpr const char* kSettingsKeyMosaicBrushSize = "mosaicBrushSize";
     static constexpr const char* kSettingsKeyArrowStyle = "annotation/arrowStyle";
     static constexpr const char* kSettingsKeyLineStyle = "annotation/lineStyle";
     static constexpr const char* kSettingsKeyStepBadgeSize = "stepBadgeSize";

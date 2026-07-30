@@ -73,6 +73,13 @@ QmlFloatingSubToolbar::QmlFloatingSubToolbar(PinToolOptionsViewModel* viewModel,
 {
     connect(m_viewModel, &PinToolOptionsViewModel::emojiPickerRequested,
             this, &QmlFloatingSubToolbar::emojiPickerRequested);
+    connect(m_viewModel, &PinToolOptionsViewModel::widthTooltipChanged,
+            this, [this]() {
+                if (m_tooltip.window() && m_tooltip.window()->isVisible()) {
+                    onWidthHovered(m_lastWidthAnchor.x(), m_lastWidthAnchor.y(),
+                                   m_lastWidthAnchor.width(), m_lastWidthAnchor.height());
+                }
+            });
 }
 
 QmlFloatingSubToolbar::QmlFloatingSubToolbar(QObject* parent)
@@ -81,6 +88,13 @@ QmlFloatingSubToolbar::QmlFloatingSubToolbar(QObject* parent)
 {
     connect(m_viewModel, &PinToolOptionsViewModel::emojiPickerRequested,
             this, &QmlFloatingSubToolbar::emojiPickerRequested);
+    connect(m_viewModel, &PinToolOptionsViewModel::widthTooltipChanged,
+            this, [this]() {
+                if (m_tooltip.window() && m_tooltip.window()->isVisible()) {
+                    onWidthHovered(m_lastWidthAnchor.x(), m_lastWidthAnchor.y(),
+                                   m_lastWidthAnchor.width(), m_lastWidthAnchor.height());
+                }
+            });
 }
 
 QmlFloatingSubToolbar::~QmlFloatingSubToolbar()
@@ -114,6 +128,10 @@ void QmlFloatingSubToolbar::ensureView()
         m_rootItem->setProperty(
             "viewModel",
             QVariant::fromValue(static_cast<QObject*>(m_viewModel)));
+        connect(m_rootItem, SIGNAL(widthHovered(double, double, double, double)),
+                this, SLOT(onWidthHovered(double, double, double, double)));
+        connect(m_rootItem, SIGNAL(widthUnhovered()),
+                this, SLOT(onWidthUnhovered()));
     }
 
     m_view->installEventFilter(this);
@@ -182,6 +200,7 @@ void QmlFloatingSubToolbar::show()
 
 void QmlFloatingSubToolbar::hide()
 {
+    m_tooltip.hide();
     if (m_view) {
         m_view->hide();
         m_view->unsetCursor();
@@ -196,6 +215,7 @@ void QmlFloatingSubToolbar::hide()
 
 void QmlFloatingSubToolbar::close()
 {
+    m_tooltip.hide();
     if (m_view) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->removeEventFilter(this);
@@ -352,6 +372,7 @@ bool QmlFloatingSubToolbar::eventFilter(QObject* obj, QEvent* event)
 
 void QmlFloatingSubToolbar::showForTool(int toolId)
 {
+    m_tooltip.hide();
     m_viewModel->showForTool(toolId);
 
     if (m_viewModel->hasContent()) {
@@ -359,6 +380,24 @@ void QmlFloatingSubToolbar::showForTool(int toolId)
     } else {
         hide();
     }
+}
+
+void QmlFloatingSubToolbar::onWidthHovered(double globalX, double globalY,
+                                           double width, double height)
+{
+    const QString tip = m_viewModel->widthTooltip();
+    if (tip.isEmpty()) {
+        return;
+    }
+
+    m_lastWidthAnchor = QRect(QPoint(qRound(globalX), qRound(globalY)),
+                              QSize(qRound(width), qRound(height)));
+    m_tooltip.showFor(tip, m_lastWidthAnchor, m_view, TooltipPlacement::Below);
+}
+
+void QmlFloatingSubToolbar::onWidthUnhovered()
+{
+    m_tooltip.hide();
 }
 
 // ── Positioning ──

@@ -3196,4 +3196,17 @@ Password: %2</source>
         <translation>เลือกสี</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="134"/>
+        <source>Mosaic size: %1 (scroll to adjust)</source>
+        <translation>ขนาดโมเสก: %1 (เลื่อนเพื่อปรับ)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="136"/>
+        <source>Line width: %1 (scroll to adjust)</source>
+        <translation>ความหนาเส้น: %1 (เลื่อนเพื่อปรับ)</translation>
+    </message>
+</context>
 </TS>

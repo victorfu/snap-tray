@@ -1,5 +1,6 @@
 #include "tools/ToolManager.h"
 #include "tools/ToolRegistry.h"
+#include "tools/ToolWidthSlot.h"
 #include "tools/handlers/AllHandlers.h"
 
 #include <QPainter>
@@ -325,7 +326,17 @@ void ToolManager::setColor(const QColor& color) {
 }
 
 void ToolManager::setWidth(int width) {
-    m_context->width = width;
+    if (widthSlotForTool(currentTool()) == WidthSlot::MosaicBrush) {
+        m_context->mosaicWidth = width;
+    } else {
+        m_context->width = width;
+    }
+}
+
+int ToolManager::width() const {
+    return widthSlotForTool(currentTool()) == WidthSlot::MosaicBrush
+        ? m_context->mosaicWidth
+        : m_context->width;
 }
 
 void ToolManager::setArrowStyle(LineEndStyle style) {

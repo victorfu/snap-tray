@@ -37,6 +37,7 @@ class PinToolOptionsViewModel : public QObject
     Q_PROPERTY(int currentWidth READ currentWidth WRITE setCurrentWidth NOTIFY currentWidthChanged)
     Q_PROPERTY(int minWidth READ minWidth CONSTANT)
     Q_PROPERTY(int maxWidth READ maxWidth CONSTANT)
+    Q_PROPERTY(QString widthTooltip READ widthTooltip NOTIFY widthTooltipChanged)
 
     // Text formatting section
     Q_PROPERTY(bool isBold READ isBold WRITE setBold NOTIFY boldChanged)
@@ -97,6 +98,7 @@ public:
     void setCurrentWidth(int width);
     int minWidth() const { return 1; }
     int maxWidth() const { return 30; }
+    QString widthTooltip() const;
 
     // Text formatting
     bool isBold() const { return m_bold; }
@@ -155,6 +157,7 @@ signals:
     void sectionVisibilityChanged();
     void currentColorChanged();
     void currentWidthChanged();
+    void widthTooltipChanged();
     void boldChanged();
     void italicChanged();
     void underlineChanged();
@@ -240,6 +243,7 @@ private:
 
     // Width
     int m_currentWidth = 3;
+    ToolId m_currentToolId = ToolId::Selection;
 
     // Text formatting
     bool m_bold = false;

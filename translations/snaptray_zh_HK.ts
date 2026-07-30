@@ -3435,4 +3435,17 @@ File size: %3</source>
 檔案大小：%3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="134"/>
+        <source>Mosaic size: %1 (scroll to adjust)</source>
+        <translation>馬賽克大小：%1（滾輪可調整）</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="136"/>
+        <source>Line width: %1 (scroll to adjust)</source>
+        <translation>線寬：%1（滾輪可調整）</translation>
+    </message>
+</context>
 </TS>

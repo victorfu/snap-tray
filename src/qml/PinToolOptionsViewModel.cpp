@@ -1,5 +1,6 @@
 #include "qml/PinToolOptionsViewModel.h"
 #include "tools/ToolSectionConfig.h"
+#include "tools/ToolWidthSlot.h"
 
 PinToolOptionsViewModel::PinToolOptionsViewModel(QObject* parent)
     : QObject(parent)
@@ -69,6 +70,11 @@ void PinToolOptionsViewModel::clearSections()
 void PinToolOptionsViewModel::showLaserPointerOptions()
 {
     setShowingEmojiPicker(false);
+    if (m_currentToolId != ToolId::Selection) {
+        // Laser pointer width shares the normal stroke-width slot.
+        m_currentToolId = ToolId::Selection;
+        emit widthTooltipChanged();
+    }
     applySectionVisibility(true, true, false, false, false, false, false, false);
 }
 
@@ -82,6 +88,8 @@ void PinToolOptionsViewModel::showForTool(int toolId)
     }
 
     auto id = static_cast<ToolId>(toolId);
+    m_currentToolId = id;
+    emit widthTooltipChanged();
 
     // Special case: EmojiSticker shows emoji picker popup
     if (id == ToolId::EmojiSticker) {
@@ -121,7 +129,16 @@ void PinToolOptionsViewModel::setCurrentWidth(int width)
     if (m_currentWidth != width) {
         m_currentWidth = width;
         emit currentWidthChanged();
+        emit widthTooltipChanged();
     }
+}
+
+QString PinToolOptionsViewModel::widthTooltip() const
+{
+    if (widthSlotForTool(m_currentToolId) == WidthSlot::MosaicBrush) {
+        return tr("Mosaic size: %1 (scroll to adjust)").arg(m_currentWidth);
+    }
+    return tr("Line width: %1 (scroll to adjust)").arg(m_currentWidth);
 }
 
 void PinToolOptionsViewModel::setBold(bool value)

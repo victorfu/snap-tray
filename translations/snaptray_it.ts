@@ -3441,4 +3441,17 @@ Risoluzione: %2
 Dimensione file: %3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="134"/>
+        <source>Mosaic size: %1 (scroll to adjust)</source>
+        <translation>Dimensione mosaico: %1 (scorri per regolare)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="136"/>
+        <source>Line width: %1 (scroll to adjust)</source>
+        <translation>Spessore linea: %1 (scorri per regolare)</translation>
+    </message>
+</context>
 </TS>

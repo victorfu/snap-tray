@@ -26,6 +26,8 @@ private slots:
     void testLineStyleOptions_AreValueOnly();
     void testShowLaserPointerOptions_ShowsOnlyColorAndWidth();
     void testClearSections_DisablesWidthWheelHandling();
+    void testWidthTooltipTracksToolAndValue();
+    void testWidthTooltipChangesNotify();
 };
 
 void tst_PinToolOptionsViewModel::testDropdownRequested_PreservesCoordinates_data()
@@ -109,6 +111,8 @@ void tst_PinToolOptionsViewModel::testLineStyleOptions_AreValueOnly()
 void tst_PinToolOptionsViewModel::testShowLaserPointerOptions_ShowsOnlyColorAndWidth()
 {
     PinToolOptionsViewModel viewModel;
+    viewModel.showForTool(static_cast<int>(ToolId::Mosaic));
+    QVERIFY(viewModel.widthTooltip().contains(QStringLiteral("Mosaic")));
 
     viewModel.showLaserPointerOptions();
 
@@ -117,6 +121,7 @@ void tst_PinToolOptionsViewModel::testShowLaserPointerOptions_ShowsOnlyColorAndW
     QVERIFY(!viewModel.showLineStyleSection());
     QVERIFY(!viewModel.showArrowStyleSection());
     QVERIFY(!viewModel.showTextSection());
+    QVERIFY(viewModel.widthTooltip().contains(QStringLiteral("Line width")));
 }
 
 void tst_PinToolOptionsViewModel::testClearSections_DisablesWidthWheelHandling()
@@ -129,6 +134,34 @@ void tst_PinToolOptionsViewModel::testClearSections_DisablesWidthWheelHandling()
     viewModel.clearSections();
 
     QVERIFY(!viewModel.handleWidthWheelDelta(120));
+}
+
+void tst_PinToolOptionsViewModel::testWidthTooltipTracksToolAndValue()
+{
+    PinToolOptionsViewModel viewModel;
+
+    viewModel.showForTool(static_cast<int>(ToolId::Mosaic));
+    viewModel.setCurrentWidth(18);
+    QVERIFY(viewModel.widthTooltip().contains(QStringLiteral("18")));
+    const QString mosaicTip = viewModel.widthTooltip();
+
+    viewModel.setCurrentWidth(24);
+    QVERIFY(viewModel.widthTooltip().contains(QStringLiteral("24")));
+
+    viewModel.showForTool(static_cast<int>(ToolId::Pencil));
+    viewModel.setCurrentWidth(3);
+    QVERIFY(viewModel.widthTooltip().contains(QStringLiteral("3")));
+    QVERIFY(viewModel.widthTooltip() != mosaicTip);
+}
+
+void tst_PinToolOptionsViewModel::testWidthTooltipChangesNotify()
+{
+    PinToolOptionsViewModel viewModel;
+    viewModel.showForTool(static_cast<int>(ToolId::Pencil));
+
+    QSignalSpy spy(&viewModel, &PinToolOptionsViewModel::widthTooltipChanged);
+    viewModel.setCurrentWidth(9);
+    QCOMPARE(spy.count(), 1);
 }
 
 QTEST_MAIN(tst_PinToolOptionsViewModel)

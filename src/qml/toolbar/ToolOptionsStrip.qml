@@ -15,6 +15,9 @@ Item {
     readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
     readonly property int panelRightMargin: 6
 
+    signal widthHovered(real globalX, real globalY, real w, real h)
+    signal widthUnhovered()
+
     // Content sizing: expand to fit the row of sections
     implicitWidth: glassBg.width
     implicitHeight: Math.max(glassBg.height, contentHeight + 8)
@@ -102,9 +105,16 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
 
             WidthSection {
+                id: widthSection
                 visible: root.hasViewModel && root.viewModel.showWidthSection
                 viewModel: root.viewModel
                 anchors.verticalCenter: parent.verticalCenter
+                onHoverEntered: {
+                    var mapped = widthSection.mapToGlobal(0, 0)
+                    root.widthHovered(mapped.x, mapped.y,
+                                      widthSection.width, widthSection.height)
+                }
+                onHoverExited: root.widthUnhovered()
             }
 
             ColorPaletteSection {

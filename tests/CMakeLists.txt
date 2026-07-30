@@ -782,6 +782,16 @@ target_link_libraries(Tools_ToolManagerEscape PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Tools_ToolManagerEscape COMMAND Tools_ToolManagerEscape)
 set_tests_properties(Tools_ToolManagerEscape PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Tools_ToolWidthSlot Tools/tst_ToolWidthSlot.cpp)
+target_link_libraries(Tools_ToolWidthSlot PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Tools_ToolWidthSlot COMMAND Tools_ToolWidthSlot)
+set_tests_properties(Tools_ToolWidthSlot PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Tools_ToolManagerWidthRouting Tools/tst_ToolManagerWidthRouting.cpp)
+target_link_libraries(Tools_ToolManagerWidthRouting PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Tools_ToolManagerWidthRouting COMMAND Tools_ToolManagerWidthRouting)
+set_tests_properties(Tools_ToolManagerWidthRouting PROPERTIES TIMEOUT 60 LABELS "unit")
+
 # ============================================================================
 # Tool Handler Tests (link snaptray_ui for tool handlers)
 # ============================================================================

@@ -238,7 +238,7 @@ void ScreenCanvasSession::initializeSharedState()
 
     auto& annotationSettings = AnnotationSettingsManager::instance();
     const QColor savedColor = annotationSettings.loadColor();
-    const int savedWidth = annotationSettings.loadWidth();
+    const int savedWidth = annotationSettings.loadWidthForTool(m_currentToolId);
     const LineEndStyle savedArrowStyle = annotationSettings.loadArrowStyle();
     const LineStyle savedLineStyle = annotationSettings.loadLineStyle();
     m_stepBadgeSize = annotationSettings.loadStepBadgeSize();
@@ -2072,7 +2072,7 @@ void ScreenCanvasSession::onLineWidthChanged(int width)
 {
     m_toolManager->setWidth(width);
     m_laserRenderer->setWidth(width);
-    AnnotationSettingsManager::instance().saveWidth(width);
+    AnnotationSettingsManager::instance().saveWidthForTool(m_currentToolId, width);
     updateAllSurfaces();
 }
 
@@ -2201,6 +2201,10 @@ void ScreenCanvasSession::updateQmlToolbarState()
 
     if (m_showSubToolbar && !m_laserPointerActive) {
         m_qmlSubToolbar->showForTool(static_cast<int>(m_currentToolId));
+        const int toolWidth =
+            AnnotationSettingsManager::instance().loadWidthForTool(m_currentToolId);
+        m_toolManager->setWidth(toolWidth);
+        m_toolOptionsViewModel->setCurrentWidth(toolWidth);
     } else if (m_showSubToolbar && m_laserPointerActive) {
         m_toolOptionsViewModel->showLaserPointerOptions();
         if (m_toolOptionsViewModel->hasContent()) {

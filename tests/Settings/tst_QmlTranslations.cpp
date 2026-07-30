@@ -24,6 +24,7 @@ private slots:
     void testPhase4PanelContexts();
     void testMainApplicationTrayContext();
     void testHotkeyConflictGuidanceTranslatedForAllLocales();
+    void testWidthTooltipsTranslatedForAllLocales();
 
 private:
     QTranslator m_translator;
@@ -169,6 +170,43 @@ void tst_QmlTranslations::testHotkeyConflictGuidanceTranslatedForAllLocales()
                          qPrintable(QStringLiteral("%1 translation dropped the %%1 placeholder")
                                         .arg(qmFile)));
             }
+        }
+    }
+}
+
+void tst_QmlTranslations::testWidthTooltipsTranslatedForAllLocales()
+{
+    const QByteArray context = "PinToolOptionsViewModel";
+    const QList<QByteArray> sources = {
+        QByteArray("Mosaic size: %1 (scroll to adjust)"),
+        QByteArray("Line width: %1 (scroll to adjust)"),
+    };
+
+    const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
+    const QStringList qmFiles = translationsDir.entryList(
+        {QStringLiteral("snaptray_*.qm")},
+        QDir::Files,
+        QDir::Name);
+    QVERIFY(!qmFiles.isEmpty());
+
+    for (const QString& qmFile : qmFiles) {
+        QTranslator translator;
+        const QString path = translationsDir.filePath(qmFile);
+        QVERIFY2(translator.load(path),
+                 qPrintable(QStringLiteral("Failed to load translation file: %1").arg(path)));
+
+        for (const QByteArray& source : sources) {
+            const QString translated = translator.translate(context.constData(),
+                                                            source.constData());
+            QVERIFY2(!translated.isEmpty(),
+                     qPrintable(QStringLiteral("%1 is missing width tooltip: %2")
+                                    .arg(qmFile, QString::fromUtf8(source))));
+            QVERIFY2(translated != QString::fromUtf8(source),
+                     qPrintable(QStringLiteral("%1 fell back to English for width tooltip: %2")
+                                    .arg(qmFile, QString::fromUtf8(source))));
+            QVERIFY2(translated.contains(QStringLiteral("%1")),
+                     qPrintable(QStringLiteral("%1 width tooltip dropped the %%1 placeholder")
+                                    .arg(qmFile)));
         }
     }
 }

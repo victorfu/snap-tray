@@ -3432,4 +3432,17 @@ File size: %3</source>
 文件大小：%3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="134"/>
+        <source>Mosaic size: %1 (scroll to adjust)</source>
+        <translation>马赛克大小：%1（滚轮可调整）</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="136"/>
+        <source>Line width: %1 (scroll to adjust)</source>
+        <translation>线宽：%1（滚轮可调整）</translation>
+    </message>
+</context>
 </TS>
