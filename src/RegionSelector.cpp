@@ -355,7 +355,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Load saved annotation settings (or defaults)
     auto& settings = AnnotationSettingsManager::instance();
     m_inputState.annotationColor = settings.loadColor();
-    m_inputState.annotationWidth = settings.loadWidthForTool(m_inputState.currentTool);
+    m_inputState.annotationWidth = settings.loadWidth();
     m_inputState.arrowStyle = settings.loadArrowStyle();
     m_inputState.lineStyle = settings.loadLineStyle();
     m_stepBadgeSize = settings.loadStepBadgeSize();
@@ -1223,15 +1223,17 @@ void RegionSelector::onMoreColorsRequested()
 
 void RegionSelector::onLineWidthChanged(int width)
 {
-    m_inputState.annotationWidth = width;
-    m_toolManager->setWidth(width);
-    AnnotationSettingsManager::instance().saveWidthForTool(
-        m_inputState.currentTool, width);
-
     if (m_inputState.currentTool == ToolId::Mosaic) {
-        // Cursor and painting both read the already-updated Mosaic slot.
+        m_inputState.annotationWidth = width;
+        // Update cursor to reflect new width
         setToolCursor();
+        AnnotationSettingsManager::instance().saveWidth(width);
     }
+    else {
+        m_inputState.annotationWidth = width;
+        AnnotationSettingsManager::instance().saveWidth(width);
+    }
+    m_toolManager->setWidth(width);
     requestCaptureSceneUpdate();
 }
 
@@ -3828,6 +3830,7 @@ void RegionSelector::handleToolbarClick(ToolId tool)
     // Sync current state to handler
     m_toolbarHandler->setCurrentTool(m_inputState.currentTool);
     m_toolbarHandler->setShowSubToolbar(m_inputState.showSubToolbar);
+    m_toolbarHandler->setAnnotationWidth(m_inputState.annotationWidth);
     m_toolbarHandler->setStepBadgeSize(m_stepBadgeSize);
     m_toolbarHandler->setShareInProgress(m_shareInProgress);
     m_toolbarHandler->setMultiRegionMode(m_inputState.multiRegionMode);
@@ -3861,20 +3864,6 @@ void RegionSelector::syncRegionSubToolbar(bool refreshContent)
 {
     if (!m_qmlSubToolbar || !m_toolOptionsViewModel) {
         return;
-    }
-
-    // Persisted widths are restored only for explicit content refreshes, such
-    // as a tool transition. Passive paint-time synchronization must not reload
-    // the persisted width.
-    if (refreshContent) {
-        const int toolWidth =
-            AnnotationSettingsManager::instance().loadWidthForTool(m_inputState.currentTool);
-        m_inputState.annotationWidth = toolWidth;
-        m_toolManager->setWidth(toolWidth);
-        m_toolOptionsViewModel->setCurrentWidth(toolWidth);
-        if (m_inputState.currentTool == ToolId::Mosaic) {
-            setToolCursor();
-        }
     }
 
     const bool allowSubToolbar = m_inputState.showSubToolbar &&

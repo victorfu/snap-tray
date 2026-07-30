@@ -62,14 +62,12 @@ void PinToolOptionsViewModel::setShowingEmojiPicker(bool visible)
 
 void PinToolOptionsViewModel::clearSections()
 {
-    setActiveTool(ToolId::Count);
     setShowingEmojiPicker(false);
     applySectionVisibility(false, false, false, false, false, false, false, false);
 }
 
 void PinToolOptionsViewModel::showLaserPointerOptions()
 {
-    setActiveTool(ToolId::Selection);
     setShowingEmojiPicker(false);
     applySectionVisibility(true, true, false, false, false, false, false, false);
 }
@@ -87,16 +85,12 @@ void PinToolOptionsViewModel::showForTool(int toolId)
 
     // Special case: EmojiSticker shows emoji picker popup
     if (id == ToolId::EmojiSticker) {
-        setActiveTool(id);
-        setShowingEmojiPicker(false);
-        applySectionVisibility(false, false, false, false,
-                               false, false, false, false);
+        clearSections();
         setShowingEmojiPicker(true);
         emit emojiPickerRequested();
         return;
     }
 
-    setActiveTool(id);
     setShowingEmojiPicker(false);
 
     // Apply tool section config
@@ -109,11 +103,6 @@ void PinToolOptionsViewModel::showForTool(int toolId)
                            config.showShapeSection,
                            config.showSizeSection,
                            config.showAutoBlurSection);
-}
-
-QString PinToolOptionsViewModel::mosaicBrushHintText() const
-{
-    return tr("Scroll here to adjust the mosaic brush size");
 }
 
 // ── Property setters ──
@@ -315,18 +304,7 @@ bool PinToolOptionsViewModel::handleWidthWheelDelta(int delta)
         return false;
     int step = delta > 0 ? 1 : -1;
     handleWidthChanged(m_currentWidth + step);
-    if (isMosaicActive())
-        emit mosaicBrushAdjustmentLearned();
     return true;
-}
-
-void PinToolOptionsViewModel::setActiveTool(ToolId toolId)
-{
-    if (m_activeToolId == toolId)
-        return;
-
-    m_activeToolId = toolId;
-    emit activeToolChanged();
 }
 
 void PinToolOptionsViewModel::handleBoldToggled()

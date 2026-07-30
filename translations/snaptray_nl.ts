@@ -3441,11 +3441,4 @@ Resolutie: %2
 Bestandsgrootte: %3</translation>
     </message>
 </context>
-<context>
-    <name>PinToolOptionsViewModel</name>
-    <message>
-        <source>Scroll here to adjust the mosaic brush size</source>
-        <translation>Scrol hier om de grootte van het mozaïekpenseel aan te passen</translation>
-    </message>
-</context>
 </TS>

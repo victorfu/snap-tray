@@ -3441,11 +3441,4 @@ File size: %3</source>
 Размер файла: %3</translation>
     </message>
 </context>
-<context>
-    <name>PinToolOptionsViewModel</name>
-    <message>
-        <source>Scroll here to adjust the mosaic brush size</source>
-        <translation>Прокрутите здесь, чтобы настроить размер кисти мозаики</translation>
-    </message>
-</context>
 </TS>

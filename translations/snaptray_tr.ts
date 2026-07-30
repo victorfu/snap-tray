@@ -3435,11 +3435,4 @@ File size: %3</source>
 Dosya boyutu: %3</translation>
     </message>
 </context>
-<context>
-    <name>PinToolOptionsViewModel</name>
-    <message>
-        <source>Scroll here to adjust the mosaic brush size</source>
-        <translation>Mozaik fırçası boyutunu ayarlamak için burada kaydırın</translation>
-    </message>
-</context>
 </TS>

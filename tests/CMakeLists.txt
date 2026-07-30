@@ -69,11 +69,6 @@ target_link_libraries(Qml_WidthSectionQml PRIVATE snaptray_ui snaptray_qmlplugin
 add_test(NAME Qml_WidthSectionQml COMMAND Qml_WidthSectionQml)
 set_tests_properties(Qml_WidthSectionQml PROPERTIES TIMEOUT 60 LABELS "unit")
 
-add_executable(Qml_FloatingSubToolbarMosaicHint Qml/tst_FloatingSubToolbarMosaicHint.cpp)
-target_link_libraries(Qml_FloatingSubToolbarMosaicHint PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
-add_test(NAME Qml_FloatingSubToolbarMosaicHint COMMAND Qml_FloatingSubToolbarMosaicHint)
-set_tests_properties(Qml_FloatingSubToolbarMosaicHint PROPERTIES TIMEOUT 60 LABELS "unit;integration")
-
 add_executable(Qml_SettingsWindowFeatureGating
     Qml/tst_SettingsWindowFeatureGating.cpp
     ${CMAKE_SOURCE_DIR}/src/qml/SettingsBackend.cpp
@@ -786,16 +781,6 @@ add_executable(Tools_ToolManagerEscape Tools/tst_ToolManagerEscape.cpp)
 target_link_libraries(Tools_ToolManagerEscape PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Tools_ToolManagerEscape COMMAND Tools_ToolManagerEscape)
 set_tests_properties(Tools_ToolManagerEscape PROPERTIES TIMEOUT 60 LABELS "unit")
-
-add_executable(Tools_ToolWidthSlot Tools/tst_ToolWidthSlot.cpp)
-target_link_libraries(Tools_ToolWidthSlot PRIVATE snaptray_core Qt6::Test)
-add_test(NAME Tools_ToolWidthSlot COMMAND Tools_ToolWidthSlot)
-set_tests_properties(Tools_ToolWidthSlot PROPERTIES TIMEOUT 60 LABELS "unit")
-
-add_executable(Tools_ToolManagerWidthRouting Tools/tst_ToolManagerWidthRouting.cpp)
-target_link_libraries(Tools_ToolManagerWidthRouting PRIVATE snaptray_ui Qt6::Test)
-add_test(NAME Tools_ToolManagerWidthRouting COMMAND Tools_ToolManagerWidthRouting)
-set_tests_properties(Tools_ToolManagerWidthRouting PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # ============================================================================
 # Tool Handler Tests (link snaptray_ui for tool handlers)

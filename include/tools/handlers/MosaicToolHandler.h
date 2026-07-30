@@ -4,7 +4,6 @@
 #include "../IToolHandler.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/MosaicStroke.h"
-#include "tools/ToolWidthSlot.h"
 
 #include <QVector>
 #include <QPoint>
@@ -16,7 +15,7 @@
  */
 class MosaicToolHandler : public IToolHandler {
 public:
-    static constexpr int kDefaultBrushWidth = ToolWidthDefaults::kMosaicBrush;
+    static constexpr int kDefaultBrushWidth = 18;
     static constexpr int kDefaultBlockSize = 6;
 
     MosaicToolHandler() = default;

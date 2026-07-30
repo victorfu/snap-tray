@@ -14,10 +14,6 @@ Item {
         : null
     readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
     readonly property int panelRightMargin: 6
-    property bool mosaicBrushHintActive: false
-    signal mosaicBrushPreviewHovered(real anchorX, real anchorY,
-                                     real anchorW, real anchorH)
-    signal mosaicBrushPreviewHoverExited()
 
     // Content sizing: expand to fit the row of sections
     implicitWidth: glassBg.width
@@ -108,13 +104,7 @@ Item {
             WidthSection {
                 visible: root.hasViewModel && root.viewModel.showWidthSection
                 viewModel: root.viewModel
-                hintActive: root.mosaicBrushHintActive
-                hoverHintEnabled: root.hasViewModel && root.viewModel.mosaicActive
                 anchors.verticalCenter: parent.verticalCenter
-                onPreviewHovered: function(anchorX, anchorY, anchorW, anchorH) {
-                    root.mosaicBrushPreviewHovered(anchorX, anchorY, anchorW, anchorH)
-                }
-                onPreviewHoverExited: root.mosaicBrushPreviewHoverExited()
             }
 
             ColorPaletteSection {

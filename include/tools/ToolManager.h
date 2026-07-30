@@ -125,7 +125,7 @@ public:
     QColor color() const { return m_context->color; }
 
     void setWidth(int width);
-    int width() const;
+    int width() const { return m_context->width; }
 
     void setArrowStyle(LineEndStyle style);
     LineEndStyle arrowStyle() const { return m_context->arrowStyle; }

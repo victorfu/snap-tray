@@ -3196,11 +3196,4 @@ Password: %2</source>
         <translation>เลือกสี</translation>
     </message>
 </context>
-<context>
-    <name>PinToolOptionsViewModel</name>
-    <message>
-        <source>Scroll here to adjust the mosaic brush size</source>
-        <translation>เลื่อนที่นี่เพื่อปรับขนาดแปรงโมเสก</translation>
-    </message>
-</context>
 </TS>

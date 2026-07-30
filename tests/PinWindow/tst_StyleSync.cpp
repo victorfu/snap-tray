@@ -4,70 +4,22 @@
 #include <QGuiApplication>
 #include <QMouseEvent>
 #include <QPainter>
-#include <QSettings>
 #include <QWindow>
 
 #include "PinWindow.h"
 #include "qml/PinToolbarViewModel.h"
-#include "qml/PinToolOptionsViewModel.h"
 #include "qml/QmlEmojiPickerPopup.h"
 #include "qml/QmlBeautifyPanel.h"
-#include "qml/QmlFloatingSubToolbar.h"
 #include "qml/QmlWindowedToolbar.h"
 #include "annotations/PolylineAnnotation.h"
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
 #include "cursor/CursorStyleCatalog.h"
 #include "pinwindow/RegionLayoutManager.h"
-#include "settings/AnnotationSettingsManager.h"
-#include "settings/Settings.h"
 #include "tools/ToolManager.h"
 
 namespace {
 constexpr int kToolbarOutsideClickGuardMs = 350;
-
-class ScopedMosaicWidthSettings final
-{
-public:
-    ScopedMosaicWidthSettings()
-        : m_settings(SnapTray::getSettings())
-        , m_hadStrokeWidth(m_settings.contains(QStringLiteral("annotationWidth")))
-        , m_strokeWidth(m_settings.value(QStringLiteral("annotationWidth")))
-        , m_hadMosaicWidth(m_settings.contains(QStringLiteral("mosaicBrushSize")))
-        , m_mosaicWidth(m_settings.value(QStringLiteral("mosaicBrushSize")))
-        , m_hadLearnedHint(m_settings.contains(QStringLiteral("mosaicBrushAdjustmentLearned")))
-        , m_learnedHint(m_settings.value(QStringLiteral("mosaicBrushAdjustmentLearned")))
-    {
-    }
-
-    ~ScopedMosaicWidthSettings()
-    {
-        restore(QStringLiteral("annotationWidth"), m_hadStrokeWidth, m_strokeWidth);
-        restore(QStringLiteral("mosaicBrushSize"), m_hadMosaicWidth, m_mosaicWidth);
-        restore(QStringLiteral("mosaicBrushAdjustmentLearned"),
-                m_hadLearnedHint,
-                m_learnedHint);
-        m_settings.sync();
-    }
-
-private:
-    void restore(const QString& key, bool existed, const QVariant& value)
-    {
-        if (existed) {
-            m_settings.setValue(key, value);
-        } else {
-            m_settings.remove(key);
-        }
-    }
-
-    QSettings m_settings;
-    bool m_hadStrokeWidth;
-    QVariant m_strokeWidth;
-    bool m_hadMosaicWidth;
-    QVariant m_mosaicWidth;
-    bool m_hadLearnedHint;
-    QVariant m_learnedHint;
-};
 
 QPixmap createTestPixmap(int width = 160, int height = 120)
 {
@@ -149,8 +101,6 @@ class TestPinWindowStyleSync : public QObject
 private slots:
     void initTestCase();
     void testUsesAuthorityModeByDefault();
-    void testStrokeAndMosaicWidthsRestoreIndependently();
-    void testDeferredAnnotationDeactivationClearsMosaicHintState();
     void testNonAnnotationEdgeHoverUsesCorrectResizeCursor();
     void testOverlayRestoreReturnsArrowToolCursor();
     void testPolylineReleaseRecomputesHoverCursor();
@@ -189,69 +139,6 @@ void TestPinWindowStyleSync::testUsesAuthorityModeByDefault()
 {
     PinWindow window(createTestPixmap(), QPoint(0, 0));
     QCOMPARE(CursorAuthority::instance().modeForWidget(&window), CursorSurfaceMode::Authority);
-}
-
-void TestPinWindowStyleSync::testStrokeAndMosaicWidthsRestoreIndependently()
-{
-    ScopedMosaicWidthSettings restoreSettings;
-    auto& settings = AnnotationSettingsManager::instance();
-    settings.saveWidthForTool(ToolId::Pencil, 5);
-    settings.saveWidthForTool(ToolId::Mosaic, 22);
-    settings.saveMosaicBrushAdjustmentLearned(true);
-
-    PinWindow window(createTestPixmap(), QPoint(0, 0));
-    window.initializeAnnotationComponents();
-    QCOMPARE(window.m_annotationWidth, 5);
-
-    window.handleToolbarToolSelected(static_cast<int>(ToolId::Pencil));
-    QCOMPARE(window.m_currentToolId, ToolId::Pencil);
-    QCOMPARE(window.m_annotationWidth, 5);
-    QCOMPARE(window.m_toolManager->width(), 5);
-
-    window.onWidthChanged(7);
-    QCOMPARE(settings.loadWidthForTool(ToolId::Pencil), 7);
-    QCOMPARE(settings.loadWidthForTool(ToolId::Mosaic), 22);
-
-    window.handleToolbarToolSelected(static_cast<int>(ToolId::Mosaic));
-    QCOMPARE(window.m_currentToolId, ToolId::Mosaic);
-    QCOMPARE(window.m_annotationWidth, 22);
-    QCOMPARE(window.m_toolManager->width(), 22);
-
-    window.onWidthChanged(24);
-    QCOMPARE(settings.loadWidthForTool(ToolId::Pencil), 7);
-    QCOMPARE(settings.loadWidthForTool(ToolId::Mosaic), 24);
-
-    window.handleToolbarToolSelected(static_cast<int>(ToolId::Pencil));
-    QCOMPARE(window.m_currentToolId, ToolId::Pencil);
-    QCOMPARE(window.m_annotationWidth, 7);
-    QCOMPARE(window.m_toolManager->width(), 7);
-}
-
-void TestPinWindowStyleSync::testDeferredAnnotationDeactivationClearsMosaicHintState()
-{
-    ScopedMosaicWidthSettings restoreSettings;
-    AnnotationSettingsManager::instance().saveMosaicBrushAdjustmentLearned(true);
-
-    PinWindow window(createTestPixmap(), QPoint(0, 0));
-    window.initializeAnnotationComponents();
-    window.handleToolbarToolSelected(static_cast<int>(ToolId::Mosaic));
-    QVERIFY(window.m_annotationMode);
-    QVERIFY(window.m_subToolbar->viewModel()->isMosaicActive());
-
-    window.exitAnnotationMode(false);
-    QVERIFY(!window.m_annotationMode);
-    QVERIFY(window.m_subToolbar->viewModel()->isMosaicActive());
-
-    // A later definitive deactivation must still clear the preserved state,
-    // even though annotation mode is already inactive.
-    window.exitAnnotationMode(true);
-    QCOMPARE(window.m_currentToolId, ToolId::Selection);
-    QCOMPARE(window.m_toolManager->currentTool(), ToolId::Selection);
-    QVERIFY(!window.m_subToolbar->viewModel()->isMosaicActive());
-
-    window.handleToolbarToolSelected(static_cast<int>(ToolId::Mosaic));
-    QVERIFY(window.m_annotationMode);
-    QVERIFY(window.m_subToolbar->viewModel()->isMosaicActive());
 }
 
 void TestPinWindowStyleSync::testNonAnnotationEdgeHoverUsesCorrectResizeCursor()

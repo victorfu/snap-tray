@@ -5,7 +5,6 @@
 #include <QClipboard>
 #include <QGuiApplication>
 #include <QScreen>
-#include <QSettings>
 #include "RegionSelector.h"
 #include "RegionSelectorTestAccess.h"
 #include "annotations/ArrowAnnotation.h"
@@ -13,10 +12,7 @@
 #include "cursor/CursorManager.h"
 #include "cursor/CursorStyleCatalog.h"
 #include "qml/QmlFloatingToolbar.h"
-#include "qml/PinToolOptionsViewModel.h"
-#include "settings/AnnotationSettingsManager.h"
 #include "settings/RegionCaptureSettingsManager.h"
-#include "settings/Settings.h"
 #include "region/RegionInputHandler.h"
 #include "region/SelectionDimensionLabel.h"
 #include "tools/ToolManager.h"
@@ -26,49 +22,6 @@ const QRect kSelectionRect(40, 40, 160, 120);
 const QPoint kSelectionBodyPos(180, 140);
 const QPoint kArrowControlHandlePos(100, 80);
 const QPoint kArrowDraggedControlPos(110, 86);
-
-class ScopedMosaicWidthSettings final
-{
-public:
-    ScopedMosaicWidthSettings()
-        : m_settings(SnapTray::getSettings())
-        , m_hadStrokeWidth(m_settings.contains(QStringLiteral("annotationWidth")))
-        , m_strokeWidth(m_settings.value(QStringLiteral("annotationWidth")))
-        , m_hadMosaicWidth(m_settings.contains(QStringLiteral("mosaicBrushSize")))
-        , m_mosaicWidth(m_settings.value(QStringLiteral("mosaicBrushSize")))
-        , m_hadLearnedHint(m_settings.contains(QStringLiteral("mosaicBrushAdjustmentLearned")))
-        , m_learnedHint(m_settings.value(QStringLiteral("mosaicBrushAdjustmentLearned")))
-    {
-    }
-
-    ~ScopedMosaicWidthSettings()
-    {
-        restore(QStringLiteral("annotationWidth"), m_hadStrokeWidth, m_strokeWidth);
-        restore(QStringLiteral("mosaicBrushSize"), m_hadMosaicWidth, m_mosaicWidth);
-        restore(QStringLiteral("mosaicBrushAdjustmentLearned"),
-                m_hadLearnedHint,
-                m_learnedHint);
-        m_settings.sync();
-    }
-
-private:
-    void restore(const QString& key, bool existed, const QVariant& value)
-    {
-        if (existed) {
-            m_settings.setValue(key, value);
-        } else {
-            m_settings.remove(key);
-        }
-    }
-
-    QSettings m_settings;
-    bool m_hadStrokeWidth;
-    QVariant m_strokeWidth;
-    bool m_hadMosaicWidth;
-    QVariant m_mosaicWidth;
-    bool m_hadLearnedHint;
-    QVariant m_learnedHint;
-};
 
 void verifyMoveCursor(const QCursor& cursor)
 {
@@ -112,8 +65,6 @@ private:
 
 private slots:
     void testUsesAuthorityModeByDefault();
-    void testStrokeAndMosaicWidthsRestoreIndependently();
-    void testSelectionSubToolbarSyncDoesNotReloadWidth();
     void testSelectionBodyHoverUsesMoveCursor();
     void testSelectionBodyHoverUsesEventPosWhenLiveCursorLags();
     void testSelectionCompletionShowsToolbarAfterWindowsHandoff();
@@ -182,71 +133,6 @@ void TestRegionSelectorStyleSync::testUsesAuthorityModeByDefault()
 {
     RegionSelector selector;
     QCOMPARE(CursorAuthority::instance().modeForWidget(&selector), CursorSurfaceMode::Authority);
-}
-
-void TestRegionSelectorStyleSync::testStrokeAndMosaicWidthsRestoreIndependently()
-{
-    ScopedMosaicWidthSettings restoreSettings;
-    auto& settings = AnnotationSettingsManager::instance();
-    settings.saveWidthForTool(ToolId::Pencil, 4);
-    settings.saveWidthForTool(ToolId::Mosaic, 23);
-    settings.saveMosaicBrushAdjustmentLearned(true);
-
-    RegionSelector selector;
-    QCOMPARE(selector.m_inputState.annotationWidth, 4);
-
-    selector.handleToolbarClick(ToolId::Pencil);
-    QCOMPARE(selector.m_inputState.currentTool, ToolId::Pencil);
-    QCOMPARE(selector.m_inputState.annotationWidth, 4);
-    QCOMPARE(selector.m_toolManager->width(), 4);
-
-    selector.onLineWidthChanged(6);
-    QCOMPARE(settings.loadWidthForTool(ToolId::Pencil), 6);
-    QCOMPARE(settings.loadWidthForTool(ToolId::Mosaic), 23);
-
-    selector.handleToolbarClick(ToolId::Mosaic);
-    QCOMPARE(selector.m_inputState.currentTool, ToolId::Mosaic);
-    QCOMPARE(selector.m_inputState.annotationWidth, 23);
-    QCOMPARE(selector.m_toolManager->width(), 23);
-
-    selector.onLineWidthChanged(25);
-    QCOMPARE(settings.loadWidthForTool(ToolId::Pencil), 6);
-    QCOMPARE(settings.loadWidthForTool(ToolId::Mosaic), 25);
-
-    selector.handleToolbarClick(ToolId::StepBadge);
-    QCOMPARE(selector.m_inputState.currentTool, ToolId::StepBadge);
-    QCOMPARE(selector.m_inputState.annotationWidth, 6);
-    QCOMPARE(selector.m_toolManager->width(), 6);
-    QCOMPARE(settings.loadWidthForTool(ToolId::Mosaic), 25);
-
-    selector.handleToolbarClick(ToolId::Pencil);
-    QCOMPARE(selector.m_inputState.currentTool, ToolId::Pencil);
-    QCOMPARE(selector.m_inputState.annotationWidth, 6);
-    QCOMPARE(selector.m_toolManager->width(), 6);
-}
-
-void TestRegionSelectorStyleSync::testSelectionSubToolbarSyncDoesNotReloadWidth()
-{
-    ScopedMosaicWidthSettings restoreSettings;
-    auto& settings = AnnotationSettingsManager::instance();
-    settings.saveWidthForTool(ToolId::Pencil, 5);
-
-    RegionSelector selector;
-    QCOMPARE(selector.m_inputState.annotationWidth, 5);
-    QCOMPARE(selector.m_toolManager->width(), 5);
-    QCOMPARE(selector.m_toolOptionsViewModel->currentWidth(), 5);
-
-    settings.saveWidthForTool(ToolId::Pencil, 19);
-    selector.m_inputState.currentTool = ToolId::Selection;
-    selector.m_inputState.showSubToolbar = true;
-    selector.m_toolManager->setCurrentTool(ToolId::Selection);
-
-    selector.syncRegionSubToolbar(false);
-    selector.syncRegionSubToolbar(false);
-
-    QCOMPARE(selector.m_inputState.annotationWidth, 5);
-    QCOMPARE(selector.m_toolManager->width(), 5);
-    QCOMPARE(selector.m_toolOptionsViewModel->currentWidth(), 5);
 }
 
 #ifdef Q_OS_LINUX

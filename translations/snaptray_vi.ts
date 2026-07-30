@@ -3435,11 +3435,4 @@ File size: %3</source>
 Kích thước tệp: %3</translation>
     </message>
 </context>
-<context>
-    <name>PinToolOptionsViewModel</name>
-    <message>
-        <source>Scroll here to adjust the mosaic brush size</source>
-        <translation>Cuộn tại đây để điều chỉnh kích thước cọ khảm</translation>
-    </message>
-</context>
 </TS>

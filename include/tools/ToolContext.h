@@ -8,7 +8,7 @@
 #include <functional>
 #include <memory>
 
-#include "ToolWidthSlot.h"
+#include "ToolId.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/LineStyle.h"
@@ -36,8 +36,7 @@ public:
 
     // Current drawing settings
     QColor color = Qt::red;
-    int width = ToolWidthDefaults::kStroke;
-    int mosaicWidth = ToolWidthDefaults::kMosaicBrush;
+    int width = 3;
     LineEndStyle arrowStyle = LineEndStyle::EndArrow;
     LineStyle lineStyle = LineStyle::Solid;
 

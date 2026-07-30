@@ -3441,11 +3441,4 @@ File size: %3</source>
 Величина датотеке: %3</translation>
     </message>
 </context>
-<context>
-    <name>PinToolOptionsViewModel</name>
-    <message>
-        <source>Scroll here to adjust the mosaic brush size</source>
-        <translation>Скролујте овде да бисте подесили величину мозаик четкице</translation>
-    </message>
-</context>
 </TS>

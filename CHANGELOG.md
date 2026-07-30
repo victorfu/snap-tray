@@ -6,10 +6,6 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
-### Improved
-
-- Improved Mosaic annotations with an independent brush size, a larger default that persists separately from other tools, and a compact first-use hint showing where to scroll to adjust it.
-
 ### Fixed
 
 - Fixed jagged Chinese and other CJK annotation text by preserving Qt's native antialiased glyph rendering on macOS, Windows, and Linux.

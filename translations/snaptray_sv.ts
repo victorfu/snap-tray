@@ -3435,11 +3435,4 @@ Upplösning: %2
 Filstorlek: %3</translation>
     </message>
 </context>
-<context>
-    <name>PinToolOptionsViewModel</name>
-    <message>
-        <source>Scroll here to adjust the mosaic brush size</source>
-        <translation>Rulla här för att justera mosaikpenselns storlek</translation>
-    </message>
-</context>
 </TS>

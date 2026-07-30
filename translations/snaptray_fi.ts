@@ -3435,11 +3435,4 @@ Resoluutio: %2
 Tiedoston koko: %3</translation>
     </message>
 </context>
-<context>
-    <name>PinToolOptionsViewModel</name>
-    <message>
-        <source>Scroll here to adjust the mosaic brush size</source>
-        <translation>Säädä mosaiikkisiveltimen kokoa vierittämällä tässä</translation>
-    </message>
-</context>
 </TS>
