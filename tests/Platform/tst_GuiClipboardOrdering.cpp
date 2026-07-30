@@ -1,10 +1,10 @@
 #include <QtTest/QtTest>
 
+#include <QClipboard>
+#include <QGuiApplication>
 #include <QImage>
 
 #include "PlatformFeatures.h"
-
-#import <AppKit/AppKit.h>
 
 namespace {
 
@@ -33,24 +33,6 @@ QImage makeLatestImage()
     return image;
 }
 
-QImage readPngImageFromGeneralPasteboard()
-{
-    // PlatformFeatures writes NSPasteboard directly. QClipboard observes that
-    // native change asynchronously, so reading it in the completion callback
-    // can return stale cached data even though the pasteboard write is done.
-    @autoreleasepool {
-        NSData* pngData = [[NSPasteboard generalPasteboard] dataForType:NSPasteboardTypePNG];
-        if (!pngData) {
-            return {};
-        }
-
-        return QImage::fromData(
-            static_cast<const uchar*>(pngData.bytes),
-            static_cast<int>(pngData.length),
-            "PNG");
-    }
-}
-
 } // namespace
 
 class tst_GuiClipboardOrdering : public QObject
@@ -63,10 +45,16 @@ private slots:
 
 void tst_GuiClipboardOrdering::latestGuiCopyWinsWhenEncodingCompletesOutOfOrder()
 {
+#ifndef Q_OS_MACOS
+    QSKIP("GUI clipboard encoding is asynchronous only on macOS.");
+#else
+    QClipboard* clipboard = QGuiApplication::clipboard();
+    QVERIFY(clipboard);
+
     QImage sentinelImage(QSize(7, 5), QImage::Format_ARGB32);
     sentinelImage.fill(QColor(201, 37, 91));
     QVERIFY(PlatformFeatures::instance().copyImageToClipboardForGui(sentinelImage));
-    QCOMPARE(readPngImageFromGeneralPasteboard().size(), sentinelImage.size());
+    QCOMPARE(clipboard->image().size(), sentinelImage.size());
 
     const QImage staleImage = makeHighEntropyImage(QSize(4096, 3072));
     const QImage latestImage = makeLatestImage();
@@ -75,7 +63,7 @@ void tst_GuiClipboardOrdering::latestGuiCopyWinsWhenEncodingCompletesOutOfOrder(
     bool staleCopyWasSuperseded = false;
     bool latestCompletionCalled = false;
     bool latestCopySucceeded = false;
-    QImage pasteboardImageAtLatestCompletion;
+    QImage clipboardImageAtLatestCompletion;
 
     PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
         staleImage,
@@ -90,25 +78,26 @@ void tst_GuiClipboardOrdering::latestGuiCopyWinsWhenEncodingCompletesOutOfOrder(
     PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
         latestImage,
         qApp,
-        [&latestCompletionCalled, &latestCopySucceeded,
-            &pasteboardImageAtLatestCompletion](
+        [clipboard, &latestCompletionCalled, &latestCopySucceeded,
+            &clipboardImageAtLatestCompletion](
             PlatformFeatures::ClipboardCopyResult result) {
             latestCompletionCalled = true;
             latestCopySucceeded = result == PlatformFeatures::ClipboardCopyResult::Success;
-            pasteboardImageAtLatestCompletion = readPngImageFromGeneralPasteboard();
+            clipboardImageAtLatestCompletion = clipboard->image();
         });
 
     QTRY_VERIFY_WITH_TIMEOUT(latestCompletionCalled, 5000);
     QVERIFY(latestCopySucceeded);
-    QCOMPARE(pasteboardImageAtLatestCompletion.size(), latestImage.size());
-    QCOMPARE(pasteboardImageAtLatestCompletion.pixelColor(0, 0), latestImage.pixelColor(0, 0));
+    QCOMPARE(clipboardImageAtLatestCompletion.size(), latestImage.size());
+    QCOMPARE(clipboardImageAtLatestCompletion.pixelColor(0, 0), latestImage.pixelColor(0, 0));
 
     QTRY_VERIFY_WITH_TIMEOUT(staleCompletionCalled, 15000);
     QVERIFY(staleCopyWasSuperseded);
 
-    const QImage finalImage = readPngImageFromGeneralPasteboard();
+    const QImage finalImage = clipboard->image();
     QCOMPARE(finalImage.size(), latestImage.size());
     QCOMPARE(finalImage.pixelColor(0, 0), latestImage.pixelColor(0, 0));
+#endif
 }
 
 QTEST_MAIN(tst_GuiClipboardOrdering)
