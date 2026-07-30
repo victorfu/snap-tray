@@ -99,9 +99,6 @@ QmlFloatingSubToolbar::~QmlFloatingSubToolbar()
 
 void QmlFloatingSubToolbar::initializeHintConnections()
 {
-    m_mosaicBrushAdjustmentLearned = AnnotationSettingsManager::instance()
-        .loadMosaicBrushAdjustmentLearned();
-
     m_mosaicCoachmarkTimer.setSingleShot(true);
     m_mosaicCoachmarkTimer.setInterval(kMosaicCoachmarkDurationMs);
     connect(&m_mosaicCoachmarkTimer, &QTimer::timeout, this, [this]() {

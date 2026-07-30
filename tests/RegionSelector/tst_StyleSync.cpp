@@ -13,6 +13,7 @@
 #include "cursor/CursorManager.h"
 #include "cursor/CursorStyleCatalog.h"
 #include "qml/QmlFloatingToolbar.h"
+#include "qml/PinToolOptionsViewModel.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/RegionCaptureSettingsManager.h"
 #include "settings/Settings.h"
@@ -112,6 +113,7 @@ private:
 private slots:
     void testUsesAuthorityModeByDefault();
     void testStrokeAndMosaicWidthsRestoreIndependently();
+    void testSelectionSubToolbarSyncDoesNotReloadWidth();
     void testSelectionBodyHoverUsesMoveCursor();
     void testSelectionBodyHoverUsesEventPosWhenLiveCursorLags();
     void testSelectionCompletionShowsToolbarAfterWindowsHandoff();
@@ -211,10 +213,40 @@ void TestRegionSelectorStyleSync::testStrokeAndMosaicWidthsRestoreIndependently(
     QCOMPARE(settings.loadWidthForTool(ToolId::Pencil), 6);
     QCOMPARE(settings.loadWidthForTool(ToolId::Mosaic), 25);
 
+    selector.handleToolbarClick(ToolId::StepBadge);
+    QCOMPARE(selector.m_inputState.currentTool, ToolId::StepBadge);
+    QCOMPARE(selector.m_inputState.annotationWidth, 6);
+    QCOMPARE(selector.m_toolManager->width(), 6);
+    QCOMPARE(settings.loadWidthForTool(ToolId::Mosaic), 25);
+
     selector.handleToolbarClick(ToolId::Pencil);
     QCOMPARE(selector.m_inputState.currentTool, ToolId::Pencil);
     QCOMPARE(selector.m_inputState.annotationWidth, 6);
     QCOMPARE(selector.m_toolManager->width(), 6);
+}
+
+void TestRegionSelectorStyleSync::testSelectionSubToolbarSyncDoesNotReloadWidth()
+{
+    ScopedMosaicWidthSettings restoreSettings;
+    auto& settings = AnnotationSettingsManager::instance();
+    settings.saveWidthForTool(ToolId::Pencil, 5);
+
+    RegionSelector selector;
+    QCOMPARE(selector.m_inputState.annotationWidth, 5);
+    QCOMPARE(selector.m_toolManager->width(), 5);
+    QCOMPARE(selector.m_toolOptionsViewModel->currentWidth(), 5);
+
+    settings.saveWidthForTool(ToolId::Pencil, 19);
+    selector.m_inputState.currentTool = ToolId::Selection;
+    selector.m_inputState.showSubToolbar = true;
+    selector.m_toolManager->setCurrentTool(ToolId::Selection);
+
+    selector.syncRegionSubToolbar(false);
+    selector.syncRegionSubToolbar(false);
+
+    QCOMPARE(selector.m_inputState.annotationWidth, 5);
+    QCOMPARE(selector.m_toolManager->width(), 5);
+    QCOMPARE(selector.m_toolOptionsViewModel->currentWidth(), 5);
 }
 
 #ifdef Q_OS_LINUX

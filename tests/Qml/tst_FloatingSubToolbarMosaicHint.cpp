@@ -62,6 +62,7 @@ class TestQmlFloatingSubToolbarMosaicHint : public QObject
 
 private slots:
     void initTestCase();
+    void testLearnedSettingLoadsOnlyOnMosaicActivation();
     void testTemporaryHideDoesNotReplayCoachmark();
     void testTimeoutLearningAndHoverReminderLifecycle();
 };
@@ -71,6 +72,26 @@ void TestQmlFloatingSubToolbarMosaicHint::initTestCase()
     if (QGuiApplication::screens().isEmpty()) {
         QSKIP("Mosaic hint tests require a screen");
     }
+}
+
+void TestQmlFloatingSubToolbarMosaicHint::testLearnedSettingLoadsOnlyOnMosaicActivation()
+{
+    ScopedMosaicHintSetting restoreSetting;
+    AnnotationSettingsManager::instance().saveMosaicBrushAdjustmentLearned(true);
+
+    PinToolOptionsViewModel viewModel;
+    SnapTray::QmlFloatingSubToolbar subToolbar(&viewModel);
+
+    QVERIFY(!subToolbar.m_mosaicBrushAdjustmentLearned);
+    subToolbar.showForTool(static_cast<int>(ToolId::Selection));
+    QVERIFY(!subToolbar.m_mosaicBrushAdjustmentLearned);
+
+    subToolbar.showForTool(static_cast<int>(ToolId::Mosaic));
+    QVERIFY(subToolbar.m_mosaicHintActivationActive);
+    QVERIFY(subToolbar.m_mosaicBrushAdjustmentLearned);
+    QVERIFY(!subToolbar.m_mosaicCoachmarkPending);
+
+    subToolbar.close();
 }
 
 void TestQmlFloatingSubToolbarMosaicHint::testTemporaryHideDoesNotReplayCoachmark()

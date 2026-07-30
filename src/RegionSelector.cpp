@@ -3863,6 +3863,20 @@ void RegionSelector::syncRegionSubToolbar(bool refreshContent)
         return;
     }
 
+    // Persisted widths are restored only for explicit content refreshes, such
+    // as a tool transition. Passive paint-time synchronization must not reload
+    // the persisted width.
+    if (refreshContent) {
+        const int toolWidth =
+            AnnotationSettingsManager::instance().loadWidthForTool(m_inputState.currentTool);
+        m_inputState.annotationWidth = toolWidth;
+        m_toolManager->setWidth(toolWidth);
+        m_toolOptionsViewModel->setCurrentWidth(toolWidth);
+        if (m_inputState.currentTool == ToolId::Mosaic) {
+            setToolCursor();
+        }
+    }
+
     const bool allowSubToolbar = m_inputState.showSubToolbar &&
                                  !completedSelectionDragUiSuppressed() &&
                                  !m_inputState.multiRegionMode &&
@@ -3879,15 +3893,6 @@ void RegionSelector::syncRegionSubToolbar(bool refreshContent)
                                       !m_qmlSubToolbar->isVisible() ||
                                       !m_toolOptionsViewModel->hasContent();
     if (shouldRefreshContent) {
-        const int toolWidth =
-            AnnotationSettingsManager::instance().loadWidthForTool(m_inputState.currentTool);
-        m_inputState.annotationWidth = toolWidth;
-        m_toolManager->setWidth(toolWidth);
-        m_toolOptionsViewModel->setCurrentWidth(toolWidth);
-        if (m_inputState.currentTool == ToolId::Mosaic) {
-            setToolCursor();
-        }
-
         if (m_inputState.currentTool == ToolId::Mosaic) {
             m_toolOptionsViewModel->setAutoBlurEnabled(m_autoBlurManager != nullptr);
         }
