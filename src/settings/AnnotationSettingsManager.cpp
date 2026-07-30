@@ -1,7 +1,9 @@
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/Settings.h"
+#include "tools/ToolWidthSlot.h"
 #include <QMetaType>
 #include <QSettings>
+#include <QtGlobal>
 #include <QVariant>
 
 AnnotationSettingsManager& AnnotationSettingsManager::instance()
@@ -43,6 +45,43 @@ void AnnotationSettingsManager::saveWidth(int width)
 {
     auto settings = SnapTray::getSettings();
     settings.setValue(kSettingsKeyWidth, width);
+}
+
+int AnnotationSettingsManager::loadWidthForTool(ToolId toolId) const
+{
+    if (widthSlotForTool(toolId) == WidthSlot::Stroke) {
+        return loadWidth();
+    }
+
+    auto settings = SnapTray::getSettings();
+    const int stored = settings.value(
+        kSettingsKeyMosaicBrushSize, kDefaultMosaicBrushSize).toInt();
+    return qBound(kMinMosaicBrushSize, stored, kMaxMosaicBrushSize);
+}
+
+void AnnotationSettingsManager::saveWidthForTool(ToolId toolId, int width)
+{
+    if (widthSlotForTool(toolId) == WidthSlot::Stroke) {
+        saveWidth(width);
+        return;
+    }
+
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyMosaicBrushSize,
+                      qBound(kMinMosaicBrushSize, width, kMaxMosaicBrushSize));
+}
+
+bool AnnotationSettingsManager::loadMosaicBrushAdjustmentLearned() const
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(kSettingsKeyMosaicBrushAdjustmentLearned,
+                          kDefaultMosaicBrushAdjustmentLearned).toBool();
+}
+
+void AnnotationSettingsManager::saveMosaicBrushAdjustmentLearned(bool learned)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyMosaicBrushAdjustmentLearned, learned);
 }
 
 LineEndStyle AnnotationSettingsManager::loadArrowStyle() const

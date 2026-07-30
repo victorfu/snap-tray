@@ -3441,4 +3441,11 @@ Résolution : %2
 Taille du fichier : %3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <source>Scroll here to adjust the mosaic brush size</source>
+        <translation>Faites défiler ici pour ajuster la taille du pinceau mosaïque</translation>
+    </message>
+</context>
 </TS>

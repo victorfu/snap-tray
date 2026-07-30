@@ -3153,7 +3153,7 @@ void PinWindow::initializeAnnotationComponents()
     // Load saved annotation settings
     auto& annotationSettings = AnnotationSettingsManager::instance();
     m_annotationColor = annotationSettings.loadColor();
-    m_annotationWidth = annotationSettings.loadWidth();
+    m_annotationWidth = annotationSettings.loadWidthForTool(m_currentToolId);
     LineEndStyle savedArrowStyle = annotationSettings.loadArrowStyle();
     LineStyle savedLineStyle = annotationSettings.loadLineStyle();
     m_stepBadgeSize = annotationSettings.loadStepBadgeSize();
@@ -3242,6 +3242,7 @@ void PinWindow::initializeAnnotationComponents()
 
     // Initialize QML sub-toolbar
     m_subToolbar = std::make_unique<SnapTray::QmlFloatingSubToolbar>(static_cast<QObject*>(nullptr));
+    m_subToolbar->setParentWidget(this);
     auto* optionsVM = m_subToolbar->viewModel();
     auto syncTextFormattingToSubToolbar = [this, optionsVM]() {
         if (!m_textAnnotationEditor) {
@@ -3466,24 +3467,37 @@ void PinWindow::updateCursorForTool()
 
 void PinWindow::exitAnnotationMode(bool clearActiveTool)
 {
+    auto clearToolSelection = [this]() {
+        m_currentToolId = ToolId::Selection;
+        if (m_toolManager) {
+            m_toolManager->setCurrentTool(ToolId::Selection);
+        }
+        if (m_toolbar) {
+            m_toolbar->viewModel()->setActiveTool(-1);
+        }
+        if (m_subToolbar) {
+            // A real tool deactivation must reset the Mosaic hint activation.
+            // Temporary toolbar hiding uses clearActiveTool=false and keeps it.
+            m_subToolbar->viewModel()->clearSections();
+        }
+    };
+
     if (!m_annotationMode) {
+        if (clearActiveTool) {
+            clearToolSelection();
+            hideSubToolbar();
+            syncToolbarActiveButtonForVisibleState();
+        }
         return;
     }
 
     m_annotationMode = false;
     if (clearActiveTool) {
-        m_currentToolId = ToolId::Selection;
-        if (m_toolManager) {
-            m_toolManager->setCurrentTool(ToolId::Selection);
-        }
+        clearToolSelection();
     }
 
     CursorManager::instance().clearAllForWidget(this, Qt::ArrowCursor);
     CursorManager::instance().resetStateForWidget(this);
-
-    if (clearActiveTool && m_toolbar) {
-        m_toolbar->viewModel()->setActiveTool(-1);
-    }
 
     // Hide sub-toolbar when exiting annotation mode
     hideSubToolbar();
@@ -3533,20 +3547,7 @@ void PinWindow::dismissBeautifyPanelIfVisible()
 
 void PinWindow::clearSelectedToolForBeautify()
 {
-    if (m_annotationMode) {
-        exitAnnotationMode();
-        return;
-    }
-
-    if (isAnnotationTool(m_currentToolId)) {
-        m_currentToolId = ToolId::Selection;
-        if (m_toolManager) {
-            m_toolManager->setCurrentTool(ToolId::Selection);
-        }
-    }
-
-    hideSubToolbar();
-    syncToolbarActiveButtonForVisibleState();
+    exitAnnotationMode();
 }
 
 void PinWindow::handleToolbarToolSelected(int toolId)
@@ -3587,6 +3588,16 @@ void PinWindow::handleToolbarToolSelected(int toolId)
             // Same tool clicked while sub-toolbar visible - exit annotation mode entirely
             exitAnnotationMode();
             return;
+        }
+
+        const int toolWidth =
+            AnnotationSettingsManager::instance().loadWidthForTool(tool);
+        m_annotationWidth = toolWidth;
+        if (m_toolManager) {
+            m_toolManager->setWidth(toolWidth);
+        }
+        if (m_subToolbar && m_subToolbar->viewModel()) {
+            m_subToolbar->viewModel()->setCurrentWidth(toolWidth);
         }
 
         enterAnnotationMode();
@@ -4307,7 +4318,7 @@ void PinWindow::onWidthChanged(int width)
         updateCursorForTool();
     }
     // Save to settings
-    AnnotationSettingsManager::instance().saveWidth(width);
+    AnnotationSettingsManager::instance().saveWidthForTool(m_currentToolId, width);
 }
 
 void PinWindow::onEmojiSelected(const QString& emoji)

@@ -3435,4 +3435,11 @@ Raiška: %2
 Failo dydis: %3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <source>Scroll here to adjust the mosaic brush size</source>
+        <translation>Slinkite čia, kad pakeistumėte mozaikos teptuko dydį</translation>
+    </message>
+</context>
 </TS>

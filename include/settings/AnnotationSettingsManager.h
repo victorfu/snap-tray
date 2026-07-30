@@ -6,6 +6,7 @@
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/LineStyle.h"
 #include "annotations/StepBadgeAnnotation.h"
+#include "tools/ToolWidthSlot.h"
 
 /**
  * @brief Singleton class for managing annotation settings.
@@ -26,6 +27,12 @@ public:
     // Width settings
     int loadWidth() const;
     void saveWidth(int width);
+    int loadWidthForTool(ToolId toolId) const;
+    void saveWidthForTool(ToolId toolId, int width);
+
+    // Mosaic brush-size hint state
+    bool loadMosaicBrushAdjustmentLearned() const;
+    void saveMosaicBrushAdjustmentLearned(bool learned);
 
     // Arrow and line style settings
     LineEndStyle loadArrowStyle() const;
@@ -55,7 +62,11 @@ public:
     void saveMosaicBlurType(MosaicBlurType type);
 
     // Default values
-    static constexpr int kDefaultWidth = 3;
+    static constexpr int kDefaultWidth = ToolWidthDefaults::kStroke;
+    static constexpr int kDefaultMosaicBrushSize = ToolWidthDefaults::kMosaicBrush;
+    static constexpr int kMinMosaicBrushSize = ToolWidthDefaults::kMosaicBrushMinimum;
+    static constexpr int kMaxMosaicBrushSize = ToolWidthDefaults::kMosaicBrushMaximum;
+    static constexpr bool kDefaultMosaicBrushAdjustmentLearned = false;
     static QColor defaultColor() { return Qt::red; }
     static constexpr LineEndStyle kDefaultArrowStyle = LineEndStyle::EndArrow;
     static constexpr LineStyle kDefaultLineStyle = LineStyle::Solid;
@@ -74,6 +85,9 @@ private:
 
     static constexpr const char* kSettingsKeyColor = "annotationColor";
     static constexpr const char* kSettingsKeyWidth = "annotationWidth";
+    static constexpr const char* kSettingsKeyMosaicBrushSize = "mosaicBrushSize";
+    static constexpr const char* kSettingsKeyMosaicBrushAdjustmentLearned =
+        "mosaicBrushAdjustmentLearned";
     static constexpr const char* kSettingsKeyArrowStyle = "annotation/arrowStyle";
     static constexpr const char* kSettingsKeyLineStyle = "annotation/lineStyle";
     static constexpr const char* kSettingsKeyStepBadgeSize = "stepBadgeSize";

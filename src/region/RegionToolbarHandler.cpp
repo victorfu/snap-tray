@@ -135,6 +135,9 @@ void RegionToolbarHandler::handleMosaicTool(ToolId button)
 {
     if (m_currentTool == button) {
         m_currentTool = ToolId::Selection;
+        if (m_toolManager) {
+            m_toolManager->setCurrentTool(m_currentTool);
+        }
         m_showSubToolbar = true;
         emit toolChanged(m_currentTool, m_showSubToolbar);
         emit updateRequested();
@@ -146,9 +149,6 @@ void RegionToolbarHandler::handleMosaicTool(ToolId button)
             m_toolManager->setCurrentTool(button);
         }
         m_showSubToolbar = true;
-    }
-    if (m_toolManager) {
-        m_toolManager->setWidth(m_annotationWidth);
     }
     emit toolChanged(m_currentTool, m_showSubToolbar);
     emit updateRequested();

@@ -3441,4 +3441,11 @@ Rozdzielczość: %2
 Rozmiar pliku: %3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <source>Scroll here to adjust the mosaic brush size</source>
+        <translation>Przewiń tutaj, aby dostosować rozmiar pędzla mozaiki</translation>
+    </message>
+</context>
 </TS>

@@ -1,14 +1,19 @@
 #pragma once
 
+#include "qml/ToolbarTooltipController.h"
+
 #include <QObject>
+#include <QPointer>
 #include <QRect>
 #include <QString>
+#include <QTimer>
 
 class QQuickView;
 class QQuickItem;
 class PinToolOptionsViewModel;
 class QWidget;
 class QWindow;
+class TestQmlFloatingSubToolbarMosaicHint;
 
 namespace SnapTray {
 
@@ -66,8 +71,27 @@ public:
 signals:
     void emojiPickerRequested();
 
+private slots:
+    void onActiveToolChanged();
+    void onMosaicBrushAdjustmentLearned();
+    void onMosaicBrushPreviewHovered(double globalX,
+                                      double globalY,
+                                      double width,
+                                      double height);
+    void onMosaicBrushPreviewHoverExited();
+
 private:
+    friend class ::TestQmlFloatingSubToolbarMosaicHint;
+
+    enum class MosaicHintDisplay
+    {
+        None,
+        Coachmark,
+        HoverReminder,
+    };
+
     void ensureView();
+    void initializeHintConnections();
     void applyPlatformWindowFlags();
     void syncTransientParent();
     void syncCursorSurface();
@@ -75,14 +99,31 @@ private:
     void scheduleParentCursorRestore();
     void attemptParentCursorRestore(quint64 token, int remainingAttempts);
     bool eventFilter(QObject* obj, QEvent* event) override;
+    void activateMosaicHint();
+    void deactivateMosaicHint();
+    void suspendMosaicHint();
+    void showPendingMosaicCoachmark();
+    void showMosaicHint(MosaicHintDisplay display, const QRect& anchorGlobalRect);
+    void hideMosaicHint();
+    void setMosaicHintEmphasis(bool active);
+    QRect mosaicPreviewGlobalRect() const;
 
     PinToolOptionsViewModel* m_viewModel = nullptr;
     QQuickView* m_view = nullptr;
     QQuickItem* m_rootItem = nullptr;
-    QWidget* m_parentWidget = nullptr;
+    QPointer<QWidget> m_parentWidget;
     quint64 m_parentCursorRestoreToken = 0;
     QString m_cursorSurfaceId;
     QString m_cursorOwnerId;
+    ToolbarTooltipController m_tooltip;
+    QTimer m_mosaicCoachmarkTimer;
+    MosaicHintDisplay m_mosaicHintDisplay = MosaicHintDisplay::None;
+    TooltipPlacement m_mosaicHintPlacement = TooltipPlacement::Below;
+    bool m_mosaicHintActivationActive = false;
+    bool m_mosaicCoachmarkPending = false;
+    bool m_mosaicBrushAdjustmentLearned = false;
+    bool m_mosaicPreviewHovered = false;
+    bool m_suppressHoverReminderUntilExit = false;
 };
 
 } // namespace SnapTray

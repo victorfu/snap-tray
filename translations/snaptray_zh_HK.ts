@@ -3435,4 +3435,11 @@ File size: %3</source>
 檔案大小：%3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <source>Scroll here to adjust the mosaic brush size</source>
+        <translation>在此捲動以調整馬賽克筆刷大小</translation>
+    </message>
+</context>
 </TS>

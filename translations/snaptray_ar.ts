@@ -3435,4 +3435,11 @@ File size: %3</source>
 حجم الملف: %3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <source>Scroll here to adjust the mosaic brush size</source>
+        <translation>مرّر هنا لضبط حجم فرشاة الفسيفساء</translation>
+    </message>
+</context>
 </TS>

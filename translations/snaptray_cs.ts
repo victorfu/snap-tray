@@ -3441,4 +3441,11 @@ Rozlišení: %2
 Velikost souboru: %3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <source>Scroll here to adjust the mosaic brush size</source>
+        <translation>Posouváním zde upravíte velikost mozaikového štětce</translation>
+    </message>
+</context>
 </TS>

@@ -10,10 +10,14 @@ import SnapTrayQml
 Item {
     id: root
     property var viewModel: null
+    property bool hintActive: false
+    property bool hoverHintEnabled: false
     readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
     readonly property int currentWidthValue: root.hasViewModel ? root.viewModel.currentWidth : 1
     readonly property int minWidthValue: root.hasViewModel ? root.viewModel.minWidth : 1
     readonly property int maxWidthValue: root.hasViewModel ? root.viewModel.maxWidth : 1
+    signal previewHovered(real anchorX, real anchorY, real anchorW, real anchorH)
+    signal previewHoverExited()
 
     implicitWidth: 28
     implicitHeight: 28
@@ -28,7 +32,37 @@ Item {
         width: 22
         height: 22
         radius: 5
-        color: DesignSystem.accentDefault
+        readonly property bool emphasized: root.hintActive
+                                           || (root.hoverHintEnabled && previewHover.hovered)
+        color: emphasized ? DesignSystem.accentHover : DesignSystem.accentDefault
+        border.width: emphasized ? 1 : 0
+        border.color: DesignSystem.textOnAccent
+        scale: emphasized ? 1.06 : 1.0
+
+        Behavior on color {
+            ColorAnimation { duration: 100 }
+        }
+
+        Behavior on scale {
+            NumberAnimation { duration: 100; easing.type: Easing.OutCubic }
+        }
+
+        HoverHandler {
+            id: previewHover
+            objectName: "widthPreviewHoverHandler"
+            enabled: root.hoverHintEnabled
+
+            onHoveredChanged: {
+                if (hovered) {
+                    var anchor = widthPreviewContainer.mapToGlobal(0, 0)
+                    root.previewHovered(anchor.x, anchor.y,
+                                        widthPreviewContainer.width,
+                                        widthPreviewContainer.height)
+                } else {
+                    root.previewHoverExited()
+                }
+            }
+        }
 
         // Width preview dot
         Rectangle {
