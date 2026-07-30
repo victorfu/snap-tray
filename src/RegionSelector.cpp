@@ -355,7 +355,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Load saved annotation settings (or defaults)
     auto& settings = AnnotationSettingsManager::instance();
     m_inputState.annotationColor = settings.loadColor();
-    m_inputState.annotationWidth = settings.loadWidthForTool(m_inputState.currentTool);
+    m_inputState.annotationWidth = settings.loadWidth();
     m_inputState.arrowStyle = settings.loadArrowStyle();
     m_inputState.lineStyle = settings.loadLineStyle();
     m_stepBadgeSize = settings.loadStepBadgeSize();
@@ -1223,13 +1223,17 @@ void RegionSelector::onMoreColorsRequested()
 
 void RegionSelector::onLineWidthChanged(int width)
 {
-    m_inputState.annotationWidth = width;
-    m_toolManager->setWidth(width);
-    AnnotationSettingsManager::instance().saveWidthForTool(m_inputState.currentTool, width);
     if (m_inputState.currentTool == ToolId::Mosaic) {
-        // Brush cursor previews the footprint, so refresh it after ToolManager.
+        m_inputState.annotationWidth = width;
+        // Update cursor to reflect new width
         setToolCursor();
+        AnnotationSettingsManager::instance().saveWidth(width);
     }
+    else {
+        m_inputState.annotationWidth = width;
+        AnnotationSettingsManager::instance().saveWidth(width);
+    }
+    m_toolManager->setWidth(width);
     requestCaptureSceneUpdate();
 }
 
@@ -3882,12 +3886,6 @@ void RegionSelector::syncRegionSubToolbar(bool refreshContent)
             m_toolOptionsViewModel->setAutoBlurEnabled(m_autoBlurManager != nullptr);
         }
         m_qmlSubToolbar->showForTool(static_cast<int>(m_inputState.currentTool));
-        const int toolWidth =
-            AnnotationSettingsManager::instance().loadWidthForTool(m_inputState.currentTool);
-        m_inputState.annotationWidth = toolWidth;
-        m_toolManager->setWidth(toolWidth);
-        m_toolOptionsViewModel->setCurrentWidth(toolWidth);
-        setToolCursor();
     }
 
     if (m_qmlToolbar && m_qmlToolbar->isVisible() && m_qmlSubToolbar->isVisible()) {

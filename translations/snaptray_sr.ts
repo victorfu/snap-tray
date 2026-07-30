@@ -3441,17 +3441,4 @@ File size: %3</source>
 Величина датотеке: %3</translation>
     </message>
 </context>
-<context>
-    <name>PinToolOptionsViewModel</name>
-    <message>
-        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="134"/>
-        <source>Mosaic size: %1 (scroll to adjust)</source>
-        <translation>Величина мозаика: %1 (скролујте за подешавање)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="136"/>
-        <source>Line width: %1 (scroll to adjust)</source>
-        <translation>Дебљина линије: %1 (скролујте за подешавање)</translation>
-    </message>
-</context>
 </TS>

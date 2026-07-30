@@ -3435,17 +3435,4 @@ Resoluutio: %2
 Tiedoston koko: %3</translation>
     </message>
 </context>
-<context>
-    <name>PinToolOptionsViewModel</name>
-    <message>
-        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="134"/>
-        <source>Mosaic size: %1 (scroll to adjust)</source>
-        <translation>Mosaiikin koko: %1 (säädä vierittämällä)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="136"/>
-        <source>Line width: %1 (scroll to adjust)</source>
-        <translation>Viivan leveys: %1 (säädä vierittämällä)</translation>
-    </message>
-</context>
 </TS>

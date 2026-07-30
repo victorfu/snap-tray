@@ -2,7 +2,6 @@
 #include "settings/Settings.h"
 #include <QMetaType>
 #include <QSettings>
-#include <QtGlobal>
 #include <QVariant>
 
 AnnotationSettingsManager& AnnotationSettingsManager::instance()
@@ -34,26 +33,16 @@ void AnnotationSettingsManager::saveColor(const QColor& color)
     settings.setValue(kSettingsKeyColor, color.name(QColor::HexArgb));
 }
 
-int AnnotationSettingsManager::loadWidthForTool(ToolId toolId) const
+int AnnotationSettingsManager::loadWidth() const
 {
     auto settings = SnapTray::getSettings();
-    const bool isMosaic = widthSlotForTool(toolId) == WidthSlot::MosaicBrush;
-    const int stored = isMosaic
-        ? settings.value(kSettingsKeyMosaicBrushSize, kDefaultMosaicBrushSize).toInt()
-        : settings.value(kSettingsKeyWidth, kDefaultWidth).toInt();
-
-    return qBound(kMinWidth, stored, kMaxWidth);
+    return settings.value(kSettingsKeyWidth, kDefaultWidth).toInt();
 }
 
-void AnnotationSettingsManager::saveWidthForTool(ToolId toolId, int width)
+void AnnotationSettingsManager::saveWidth(int width)
 {
     auto settings = SnapTray::getSettings();
-    const int clamped = qBound(kMinWidth, width, kMaxWidth);
-    if (widthSlotForTool(toolId) == WidthSlot::MosaicBrush) {
-        settings.setValue(kSettingsKeyMosaicBrushSize, clamped);
-    } else {
-        settings.setValue(kSettingsKeyWidth, clamped);
-    }
+    settings.setValue(kSettingsKeyWidth, width);
 }
 
 LineEndStyle AnnotationSettingsManager::loadArrowStyle() const

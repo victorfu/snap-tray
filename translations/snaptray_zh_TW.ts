@@ -3441,17 +3441,4 @@ It may be in use by another application.</source>
         <translation>選擇顏色</translation>
     </message>
 </context>
-<context>
-    <name>PinToolOptionsViewModel</name>
-    <message>
-        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="134"/>
-        <source>Mosaic size: %1 (scroll to adjust)</source>
-        <translation>馬賽克大小：%1（滾輪可調整）</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="136"/>
-        <source>Line width: %1 (scroll to adjust)</source>
-        <translation>線寬：%1（滾輪可調整）</translation>
-    </message>
-</context>
 </TS>

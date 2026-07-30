@@ -3441,17 +3441,4 @@ File size: %3</source>
 파일 크기: %3</translation>
     </message>
 </context>
-<context>
-    <name>PinToolOptionsViewModel</name>
-    <message>
-        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="134"/>
-        <source>Mosaic size: %1 (scroll to adjust)</source>
-        <translation>모자이크 크기: %1 (스크롤하여 조절)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="136"/>
-        <source>Line width: %1 (scroll to adjust)</source>
-        <translation>선 두께: %1 (스크롤하여 조절)</translation>
-    </message>
-</context>
 </TS>

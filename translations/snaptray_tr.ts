@@ -3435,17 +3435,4 @@ File size: %3</source>
 Dosya boyutu: %3</translation>
     </message>
 </context>
-<context>
-    <name>PinToolOptionsViewModel</name>
-    <message>
-        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="134"/>
-        <source>Mosaic size: %1 (scroll to adjust)</source>
-        <translation>Mozaik boyutu: %1 (ayarlamak için kaydırın)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="136"/>
-        <source>Line width: %1 (scroll to adjust)</source>
-        <translation>Çizgi kalınlığı: %1 (ayarlamak için kaydırın)</translation>
-    </message>
-</context>
 </TS>

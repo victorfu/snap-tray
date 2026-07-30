@@ -8,7 +8,6 @@
 #include <QString>
 
 #include "cursor/CursorTypes.h"
-#include "qml/ToolbarTooltipController.h"
 
 class QWidget;
 class QWindow;
@@ -71,16 +70,23 @@ private slots:
 
 private:
     void ensureView();
+    void ensureTooltipView();
     void setupConnections();
     void syncTransientParent();
+    void syncTooltipTransientParent();
     void applyPlatformWindowFlags();
+    void applyTooltipWindowFlags();
     void syncCursorSurface(const CursorStyleSpec* explicitStyle = nullptr);
+
+    void showTooltip(const QString& text, const QRect& anchorRect);
+    void hideTooltip();
 
     bool eventFilter(QObject* obj, QEvent* event) override;
 
     QQuickView* m_view = nullptr;
     QQuickItem* m_rootItem = nullptr;
-    ToolbarTooltipController m_tooltip;
+    QQuickView* m_tooltipView = nullptr;
+    QQuickItem* m_tooltipRootItem = nullptr;
 
     PinToolbarViewModel* m_viewModel = nullptr;
 
@@ -96,6 +102,7 @@ private:
     QPointer<QWidget> m_associatedTransientWidget;
     QPointer<QWindow> m_associatedTransientWindow;
 
+    quint64 m_tooltipRequestId = 0;
     QString m_cursorSurfaceId;
     QString m_cursorOwnerId;
 };

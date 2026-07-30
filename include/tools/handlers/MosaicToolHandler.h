@@ -15,6 +15,7 @@
  */
 class MosaicToolHandler : public IToolHandler {
 public:
+    static constexpr int kDefaultBrushWidth = 18;
     static constexpr int kDefaultBlockSize = 6;
 
     MosaicToolHandler() = default;
@@ -53,7 +54,7 @@ private:
     // Cursor caching (same pattern as EraserToolHandler)
     mutable QCursor m_cachedCursor;
     mutable int m_cachedCursorWidth = 0;
-    int m_brushWidth = 18;
+    int m_brushWidth = kDefaultBrushWidth;
 };
 
 #endif // MOSAICTOOLHANDLER_H

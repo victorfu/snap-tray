@@ -25,6 +25,8 @@
 
 #ifdef Q_OS_MACOS
 #import <Cocoa/Cocoa.h>
+#elif defined(Q_OS_WIN)
+#include <windows.h>
 #endif
 
 namespace SnapTray {
@@ -68,6 +70,28 @@ void destroyQuickView(QQuickView*& view, QQuickItem*& rootItem)
     rootItem = nullptr;
 }
 
+#ifdef Q_OS_MACOS
+NSWindow* nsWindowForWidget(const QWidget* widget)
+{
+    if (!widget) {
+        return nil;
+    }
+
+    NSView* view = reinterpret_cast<NSView*>(widget->winId());
+    return view ? [view window] : nil;
+}
+
+NSWindow* nsWindowForQuickView(const QQuickView* view)
+{
+    if (!view) {
+        return nil;
+    }
+
+    NSView* nsView = reinterpret_cast<NSView*>(view->winId());
+    return nsView ? [nsView window] : nil;
+}
+#endif
+
 } // namespace
 
 QmlWindowedToolbar::QmlWindowedToolbar(QObject* parent)
@@ -78,6 +102,8 @@ QmlWindowedToolbar::QmlWindowedToolbar(QObject* parent)
 
 QmlWindowedToolbar::~QmlWindowedToolbar()
 {
+    destroyQuickView(m_tooltipView, m_tooltipRootItem);
+
     if (m_view) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->removeEventFilter(this);
@@ -116,6 +142,26 @@ void QmlWindowedToolbar::ensureView()
 
     if (m_rootItem)
         setupConnections();
+}
+
+void QmlWindowedToolbar::ensureTooltipView()
+{
+    if (m_tooltipView)
+        return;
+
+    m_tooltipView = QmlOverlayManager::instance().createParentOverlay(
+        QUrl(QStringLiteral("qrc:/SnapTrayQml/components/RecordingTooltip.qml")));
+    m_tooltipView->setFlag(Qt::WindowDoesNotAcceptFocus, true);
+    m_tooltipView->setResizeMode(QQuickView::SizeRootObjectToView);
+    m_tooltipView->setFlag(Qt::WindowTransparentForInput, true);
+
+    if (m_tooltipView->status() == QQuickView::Error) {
+        for (const auto& error : m_tooltipView->errors())
+            qWarning() << "FloatingToolbar tooltip QML error:" << error.toString();
+    }
+
+    m_tooltipRootItem = m_tooltipView->rootObject();
+    syncTooltipTransientParent();
 }
 
 void QmlWindowedToolbar::setupConnections()
@@ -178,6 +224,36 @@ void QmlWindowedToolbar::applyPlatformWindowFlags()
     QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
 }
 
+void QmlWindowedToolbar::applyTooltipWindowFlags()
+{
+#ifdef Q_OS_MACOS
+    if (!m_tooltipView)
+        return;
+
+    NSWindow* window = nsWindowForQuickView(m_tooltipView);
+    if (!window)
+        return;
+
+    NSInteger targetLevel = NSPopUpMenuWindowLevel;
+    if (NSWindow* toolbarWindow = nsWindowForQuickView(m_view)) {
+        targetLevel = qMax<NSInteger>(targetLevel, [toolbarWindow level] + 1);
+    }
+    if (NSWindow* pinWindow = nsWindowForWidget(m_associatedPinWindow)) {
+        targetLevel = qMax<NSInteger>(targetLevel, [pinWindow level] + 1);
+    }
+
+    [window setLevel:targetLevel];
+    [window setHidesOnDeactivate:NO];
+    [window setIgnoresMouseEvents:YES];
+    [window setHasShadow:YES];
+    [window setSharingType:NSWindowSharingNone];
+#elif defined(Q_OS_WIN)
+    Q_UNUSED(m_tooltipView)
+#endif
+
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_tooltipView);
+}
+
 // ── Show / Hide / Close ──
 
 void QmlWindowedToolbar::show()
@@ -203,7 +279,7 @@ void QmlWindowedToolbar::show()
 
 void QmlWindowedToolbar::hide()
 {
-    m_tooltip.hide();
+    hideTooltip();
     if (m_view) {
         m_view->hide();
         qApp->removeEventFilter(this);
@@ -218,7 +294,7 @@ void QmlWindowedToolbar::hide()
 
 void QmlWindowedToolbar::close()
 {
-    m_tooltip.hide();
+    hideTooltip();
 
     if (m_view) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
@@ -231,6 +307,8 @@ void QmlWindowedToolbar::close()
         });
     }
     destroyQuickView(m_view, m_rootItem);
+
+    destroyQuickView(m_tooltipView, m_tooltipRootItem);
 }
 
 bool QmlWindowedToolbar::isVisible() const
@@ -252,7 +330,7 @@ QWindow* QmlWindowedToolbar::window() const
 
 QWindow* QmlWindowedToolbar::tooltipWindow() const
 {
-    return m_tooltip.window();
+    return m_tooltipView;
 }
 
 PinToolbarViewModel* QmlWindowedToolbar::viewModel() const
@@ -305,6 +383,24 @@ void QmlWindowedToolbar::syncTransientParent()
     QmlOverlayManager::applyShownOverlayWindowPolicy(m_view);
     if (m_view->isVisible()) {
         applyPlatformWindowFlags();
+    }
+}
+
+void QmlWindowedToolbar::syncTooltipTransientParent()
+{
+    if (!m_tooltipView) {
+        return;
+    }
+
+    if (m_view) {
+        m_tooltipView->setTransientParent(m_view);
+    } else {
+        m_tooltipView->setTransientParent(nullptr);
+    }
+
+    QmlOverlayManager::applyShownOverlayWindowPolicy(m_tooltipView);
+    if (m_tooltipView->isVisible()) {
+        applyTooltipWindowFlags();
     }
 }
 
@@ -385,7 +481,7 @@ bool QmlWindowedToolbar::eventFilter(QObject* obj, QEvent* event)
         case QEvent::Leave:
         case QEvent::Hide:
         case QEvent::Close:
-            m_tooltip.hide();
+            hideTooltip();
             CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
             if (m_associatedPinWindow) {
                 QTimer::singleShot(0, this, [this]() {
@@ -452,7 +548,7 @@ bool QmlWindowedToolbar::eventFilter(QObject* obj, QEvent* event)
     }
 
     // Click is outside — request close
-    m_tooltip.hide();
+    hideTooltip();
     emit closeRequested();
     return false;  // Let the event propagate
 }
@@ -478,7 +574,7 @@ void QmlWindowedToolbar::onButtonHovered(int buttonId, double anchorX, double an
     }
 
     if (tip.isEmpty()) {
-        m_tooltip.hide();
+        hideTooltip();
         return;
     }
 
@@ -486,13 +582,75 @@ void QmlWindowedToolbar::onButtonHovered(int buttonId, double anchorX, double an
                      m_view->y() + qRound(anchorY));
     QRect anchorRect(globalPos, QSize(qRound(anchorW), qRound(anchorH)));
 
-    m_tooltip.setAssociatedWidget(m_associatedPinWindow);
-    m_tooltip.showFor(tip, anchorRect, m_view, TooltipPlacement::Above);
+    showTooltip(tip, anchorRect);
 }
 
 void QmlWindowedToolbar::onButtonUnhovered()
 {
-    m_tooltip.hide();
+    hideTooltip();
+}
+
+void QmlWindowedToolbar::showTooltip(const QString& text, const QRect& anchorRect)
+{
+    ensureTooltipView();
+    if (!m_tooltipView || !m_tooltipRootItem || !m_view)
+        return;
+
+    syncTooltipTransientParent();
+
+    const quint64 requestId = ++m_tooltipRequestId;
+    m_tooltipRootItem->setProperty("tooltipText", text);
+    m_tooltipRootItem->polish();
+
+    QTimer::singleShot(0, this, [this, requestId, anchorRect]() {
+        if (requestId != m_tooltipRequestId || !m_tooltipView || !m_tooltipRootItem || !m_view)
+            return;
+
+        const int tipWidth = qMax(1, qCeil(m_tooltipRootItem->implicitWidth()));
+        const int tipHeight = qMax(1, qCeil(m_tooltipRootItem->implicitHeight()));
+        const QPoint anchorCenter = anchorRect.center();
+
+        // Position tooltip above the toolbar (PinWindow toolbar shows above, unlike recording bar)
+        const int barTop = m_view->y();
+
+        auto positionTooltip = [this, tipWidth, tipHeight](const QPoint& anchorEdge, bool above) {
+            int x = anchorEdge.x() - tipWidth / 2;
+            int y = above ? anchorEdge.y() - tipHeight - 6 : anchorEdge.y() + 6;
+
+            if (QScreen* screen = QGuiApplication::screenAt(anchorEdge)) {
+                const QRect bounds = screen->availableGeometry();
+                x = qBound(bounds.left() + 5, x, bounds.right() - tipWidth - 5);
+            }
+
+            m_tooltipView->setGeometry(x, y, tipWidth, tipHeight);
+        };
+
+        // Show above the toolbar by default
+        positionTooltip(QPoint(anchorCenter.x(), barTop), true);
+        m_tooltipView->show();
+        applyTooltipWindowFlags();
+        m_tooltipView->raise();
+
+        // Fallback: if above goes off screen, show below
+        QScreen* screen = QGuiApplication::screenAt(anchorCenter);
+        if (!screen)
+            screen = QGuiApplication::primaryScreen();
+        if (screen) {
+            const QRect bounds = screen->availableGeometry();
+            const QRect tipGeom = m_tooltipView->geometry();
+            if (tipGeom.top() < bounds.top() + 5) {
+                const int barBottom = m_view->y() + m_view->height();
+                positionTooltip(QPoint(anchorCenter.x(), barBottom), false);
+            }
+        }
+    });
+}
+
+void QmlWindowedToolbar::hideTooltip()
+{
+    ++m_tooltipRequestId;
+    if (m_tooltipView)
+        m_tooltipView->hide();
 }
 
 // ── Drag handling ──
@@ -503,7 +661,7 @@ void QmlWindowedToolbar::onDragStarted()
     if (m_view)
         m_dragStartViewPos = m_view->position();
     m_dragStartCursorPos = QCursor::pos();
-    m_tooltip.hide();
+    hideTooltip();
     syncCursorSurface();
 }
 
@@ -540,7 +698,7 @@ void QmlWindowedToolbar::onDragMoved(double deltaX, double deltaY)
 
     m_view->setPosition(newPos);
     syncCursorSurface();
-    m_tooltip.hide();
+    hideTooltip();
 }
 
 } // namespace SnapTray

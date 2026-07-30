@@ -3441,17 +3441,4 @@ Rozlišení: %2
 Velikost souboru: %3</translation>
     </message>
 </context>
-<context>
-    <name>PinToolOptionsViewModel</name>
-    <message>
-        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="134"/>
-        <source>Mosaic size: %1 (scroll to adjust)</source>
-        <translation>Velikost mozaiky: %1 (upravíte posouváním)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="136"/>
-        <source>Line width: %1 (scroll to adjust)</source>
-        <translation>Tloušťka čáry: %1 (upravíte posouváním)</translation>
-    </message>
-</context>
 </TS>

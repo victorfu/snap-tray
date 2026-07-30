@@ -6,14 +6,9 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
-### Improved
-
-- Made annotation line and mosaic sizes visibly adjustable with a numeric readout, stepper controls, and localized scroll guidance in the sub-toolbar.
-
 ### Fixed
 
 - Fixed jagged Chinese and other CJK annotation text by preserving Qt's native antialiased glyph rendering on macOS, Windows, and Linux.
-- Fixed mosaic annotations starting with the shared 3 px line width by giving the mosaic brush its own persisted 18 px default size.
 
 ## [1.0.60] - 2026-07-18
 

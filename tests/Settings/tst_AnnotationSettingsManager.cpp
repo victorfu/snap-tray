@@ -6,7 +6,6 @@
 #include "annotations/LineStyle.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/Settings.h"
-#include "tools/ToolId.h"
 
 /**
  * @brief Unit tests for AnnotationSettingsManager singleton class.
@@ -36,10 +35,10 @@ private slots:
     void testSaveLoadColor_ARGB();
     void testSaveColor_PersistsPortableString();
 
-    // Per-tool width tests
-    void testLoadMosaicBrushSize_DefaultValue();
-    void testSaveLoadWidthForTool_MosaicIsIndependentOfStroke();
-    void testLoadWidthForTool_ClampsOutOfRangeStoredValue();
+    // Width settings tests
+    void testLoadWidth_DefaultValue();
+    void testSaveLoadWidth_Roundtrip();
+    void testSaveLoadWidth_BoundaryValues();
 
     // Arrow style settings tests
     void testLoadArrowStyle_DefaultValue();
@@ -95,7 +94,6 @@ void tst_AnnotationSettingsManager::clearAllTestSettings()
     auto settings = SnapTray::getSettings();
     settings.remove("annotationColor");
     settings.remove("annotationWidth");
-    settings.remove("mosaicBrushSize");
     settings.remove("annotation/arrowStyle");
     settings.remove("annotation/lineStyle");
     settings.remove("stepBadgeSize");
@@ -192,44 +190,38 @@ void tst_AnnotationSettingsManager::testSaveColor_PersistsPortableString()
 }
 
 // ============================================================================
-// Per-tool width settings tests
+// Width settings tests
 // ============================================================================
 
-void tst_AnnotationSettingsManager::testLoadMosaicBrushSize_DefaultValue()
+void tst_AnnotationSettingsManager::testLoadWidth_DefaultValue()
 {
-    QCOMPARE(AnnotationSettingsManager::instance().loadWidthForTool(ToolId::Mosaic),
-             AnnotationSettingsManager::kDefaultMosaicBrushSize);
-    QCOMPARE(AnnotationSettingsManager::kDefaultMosaicBrushSize, 18);
+    int width = AnnotationSettingsManager::instance().loadWidth();
+    QCOMPARE(width, AnnotationSettingsManager::kDefaultWidth);
+    QCOMPARE(width, 3);
 }
 
-void tst_AnnotationSettingsManager::testSaveLoadWidthForTool_MosaicIsIndependentOfStroke()
+void tst_AnnotationSettingsManager::testSaveLoadWidth_Roundtrip()
 {
-    auto& manager = AnnotationSettingsManager::instance();
+    AnnotationSettingsManager& manager = AnnotationSettingsManager::instance();
 
-    manager.saveWidthForTool(ToolId::Pencil, 3);
-    manager.saveWidthForTool(ToolId::Mosaic, 24);
+    manager.saveWidth(10);
+    QCOMPARE(manager.loadWidth(), 10);
 
-    QCOMPARE(manager.loadWidthForTool(ToolId::Pencil), 3);
-    QCOMPARE(manager.loadWidthForTool(ToolId::Arrow), 3);
-    QCOMPARE(manager.loadWidthForTool(ToolId::Mosaic), 24);
-
-    manager.saveWidthForTool(ToolId::Arrow, 7);
-
-    QCOMPARE(manager.loadWidthForTool(ToolId::Pencil), 7);
-    QCOMPARE(manager.loadWidthForTool(ToolId::Mosaic), 24);
+    manager.saveWidth(1);
+    QCOMPARE(manager.loadWidth(), 1);
 }
 
-void tst_AnnotationSettingsManager::testLoadWidthForTool_ClampsOutOfRangeStoredValue()
+void tst_AnnotationSettingsManager::testSaveLoadWidth_BoundaryValues()
 {
-    auto settings = SnapTray::getSettings();
-    settings.setValue("mosaicBrushSize", 999);
-    QCOMPARE(AnnotationSettingsManager::instance().loadWidthForTool(ToolId::Mosaic), 30);
+    AnnotationSettingsManager& manager = AnnotationSettingsManager::instance();
 
-    settings.setValue("mosaicBrushSize", 0);
-    QCOMPARE(AnnotationSettingsManager::instance().loadWidthForTool(ToolId::Mosaic), 1);
+    // Test minimum practical value
+    manager.saveWidth(1);
+    QCOMPARE(manager.loadWidth(), 1);
 
-    settings.setValue("annotationWidth", -5);
-    QCOMPARE(AnnotationSettingsManager::instance().loadWidthForTool(ToolId::Pencil), 1);
+    // Test large value
+    manager.saveWidth(100);
+    QCOMPARE(manager.loadWidth(), 100);
 }
 
 // ============================================================================

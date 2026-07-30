@@ -3153,7 +3153,7 @@ void PinWindow::initializeAnnotationComponents()
     // Load saved annotation settings
     auto& annotationSettings = AnnotationSettingsManager::instance();
     m_annotationColor = annotationSettings.loadColor();
-    m_annotationWidth = annotationSettings.loadWidthForTool(m_currentToolId);
+    m_annotationWidth = annotationSettings.loadWidth();
     LineEndStyle savedArrowStyle = annotationSettings.loadArrowStyle();
     LineStyle savedLineStyle = annotationSettings.loadLineStyle();
     m_stepBadgeSize = annotationSettings.loadStepBadgeSize();
@@ -3601,16 +3601,6 @@ void PinWindow::handleToolbarToolSelected(int toolId)
         // Show sub-toolbar for the selected tool
         if (m_subToolbar) {
             m_subToolbar->showForTool(toolId);
-            const int toolWidth = AnnotationSettingsManager::instance().loadWidthForTool(
-                static_cast<ToolId>(toolId));
-            m_annotationWidth = toolWidth;
-            if (m_toolManager) {
-                m_toolManager->setWidth(toolWidth);
-            }
-            if (auto* optionsVM = m_subToolbar->viewModel()) {
-                optionsVM->setCurrentWidth(toolWidth);
-            }
-            updateCursorForTool();
             updateSubToolbarPosition();
         }
     }
@@ -4317,7 +4307,7 @@ void PinWindow::onWidthChanged(int width)
         updateCursorForTool();
     }
     // Save to settings
-    AnnotationSettingsManager::instance().saveWidthForTool(m_currentToolId, width);
+    AnnotationSettingsManager::instance().saveWidth(width);
 }
 
 void PinWindow::onEmojiSelected(const QString& emoji)

@@ -135,9 +135,6 @@ void RegionToolbarHandler::handleMosaicTool(ToolId button)
 {
     if (m_currentTool == button) {
         m_currentTool = ToolId::Selection;
-        if (m_toolManager) {
-            m_toolManager->setCurrentTool(m_currentTool);
-        }
         m_showSubToolbar = true;
         emit toolChanged(m_currentTool, m_showSubToolbar);
         emit updateRequested();

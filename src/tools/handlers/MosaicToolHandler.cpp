@@ -13,7 +13,7 @@ void MosaicToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
     m_currentPath.clear();
     m_currentPath.append(pos);
 
-    const int brushWidth = ctx->mosaicWidth;
+    int brushWidth = ctx->width > 0 ? ctx->width : kDefaultBrushWidth;
     m_currentStroke = std::make_unique<MosaicStroke>(
         m_currentPath,
         ctx->sourcePixmap,  // Pass shared pointer directly
@@ -93,5 +93,5 @@ CursorStyleSpec MosaicToolHandler::cursorStyleSpec() const
 }
 
 void MosaicToolHandler::setWidth(int width) {
-    m_brushWidth = width;
+    m_brushWidth = width > 0 ? width : kDefaultBrushWidth;
 }

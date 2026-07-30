@@ -323,7 +323,6 @@ add_library(snaptray_core STATIC
     src/platform/PlatformCapabilities.cpp
     src/tools/ToolRegistry.cpp
     src/tools/ToolSectionConfig.cpp
-    src/tools/ToolWidthSlot.cpp
     src/cursor/CursorAuthority.cpp
     src/cursor/CursorPlatformApplier.cpp
     src/cursor/CursorStyleCatalog.cpp
@@ -998,7 +997,6 @@ set_source_files_properties(src/qml/panels/MultiRegionListPanel.qml PROPERTIES Q
 
 set(SNAPTRAY_QML_NATIVE_SOURCES
     src/qml/QmlOverlayManager.mm
-    src/qml/ToolbarTooltipController.mm
     src/qml/QmlRecordingBoundary.mm
     src/qml/QmlRecordingControlBar.mm
     src/qml/QmlCountdownOverlay.mm
@@ -1098,7 +1096,6 @@ qt_add_qml_module(snaptray_qml
         src/qml/EmojiPickerBackend.cpp
         include/qml/EmojiPickerBackend.h
         ${SNAPTRAY_QML_NATIVE_SOURCES}
-        include/qml/ToolbarTooltipController.h
         include/qml/QmlOverlayManager.h
         src/qml/QmlBeautifyPanel.cpp
         include/qml/QmlBeautifyPanel.h
