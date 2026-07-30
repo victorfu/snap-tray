@@ -543,9 +543,6 @@ jobs:
   build-linux-appimage:
     needs: prepare
     runs-on: ubuntu-22.04
-    env:
-      CMAKE_VERSION: 3.31.12
-      CMAKE_LINUX_X86_64_SHA256: 0dc2e9a6860f06bf10bd8fadc03e35d9eeb4df46e33763a7e480e987758f385c
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -554,25 +551,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            build-essential ninja-build ccache git curl patchelf file libfuse2 squashfs-tools \
+            build-essential cmake ninja-build ccache git curl patchelf file libfuse2 \
             libgl1-mesa-dev libxkbcommon-x11-0 libxcb-cursor0 \
             libxcb-keysyms1-dev libxcb-xinerama0-dev libxcb-render-util0-dev \
             libxcb-image0-dev libxcb-icccm4-dev libxcb-randr0-dev \
             libxcb-shape0-dev libxcb-xfixes0-dev libxcb-sync-dev \
             libxrender-dev libxi-dev libxtst-dev
-
-      - name: Install CMake 3.31
-        run: |
-          CMAKE_ARCHIVE="cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz"
-          CMAKE_INSTALL_DIR="$RUNNER_TEMP/cmake-${CMAKE_VERSION}"
-          curl -fsSL "https://cmake.org/files/v3.31/${CMAKE_ARCHIVE}" \
-            -o "$RUNNER_TEMP/$CMAKE_ARCHIVE"
-          echo "${CMAKE_LINUX_X86_64_SHA256}  $RUNNER_TEMP/$CMAKE_ARCHIVE" | sha256sum --check
-          mkdir -p "$CMAKE_INSTALL_DIR"
-          tar -xzf "$RUNNER_TEMP/$CMAKE_ARCHIVE" \
-            --strip-components=1 -C "$CMAKE_INSTALL_DIR"
-          "$CMAKE_INSTALL_DIR/bin/cmake" --version
-          echo "$CMAKE_INSTALL_DIR/bin" >> "$GITHUB_PATH"
 
       - name: Install Qt
         uses: jurplel/install-qt-action@v4

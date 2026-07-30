@@ -18,9 +18,6 @@ configure_build_dir() {
     local cached_type=""
     local cached_generator=""
     local cached_sysroot=""
-    local cached_cmake=""
-    local cached_cmake_version=""
-    local current_cmake_version=""
     local desired_generator=""
     local desired_sdk=""
     local needs_reset=0
@@ -51,15 +48,6 @@ configure_build_dir() {
     cached_type="$(sed -n 's/^CMAKE_BUILD_TYPE:STRING=//p' "$cache_file" | head -n 1)"
     cached_generator="$(sed -n 's/^CMAKE_GENERATOR:INTERNAL=//p' "$cache_file" | head -n 1)"
     cached_sysroot="$(sed -n 's/^CMAKE_OSX_SYSROOT:[^=]*=//p' "$cache_file" | head -n 1)"
-    cached_cmake="$(sed -n 's/^CMAKE_COMMAND:INTERNAL=//p' "$cache_file" | head -n 1)"
-    cached_cmake_version="$(
-        sed -n \
-            -e 's/^CMAKE_CACHE_MAJOR_VERSION:INTERNAL=//p' \
-            -e 's/^CMAKE_CACHE_MINOR_VERSION:INTERNAL=//p' \
-            -e 's/^CMAKE_CACHE_PATCH_VERSION:INTERNAL=//p' \
-            "$cache_file" | paste -sd '.' -
-    )"
-    current_cmake_version="$(cmake --version | sed -n '1s/^cmake version //p')"
     if { [ -n "$desired_generator" ] && [ "$cached_generator" != "$desired_generator" ]; } || \
        { [ -n "$desired_sdk" ] && [ "$cached_sysroot" != "$desired_sdk" ]; } || \
        [ ! -f "$buildsystem_file" ]; then
@@ -73,11 +61,7 @@ configure_build_dir() {
         return
     fi
 
-    if [ -z "$cached_cmake" ] || [ ! -x "$cached_cmake" ] || \
-       [ "$cached_cmake_version" != "$current_cmake_version" ]; then
-        echo "Reconfiguring project after CMake changed ($cached_cmake_version -> $current_cmake_version)..."
-        cmake "${cmake_args[@]}"
-    elif [ "$cached_type" != "$build_type" ]; then
+    if [ "$cached_type" != "$build_type" ]; then
         echo "Reconfiguring project ($build_type)..."
         cmake "${cmake_args[@]}"
     fi

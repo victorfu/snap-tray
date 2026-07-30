@@ -69,15 +69,6 @@ Ubuntu 22.04 X11 beta uses the same shell scripts as macOS:
 ./scripts/run-tests.sh
 ```
 
-If Qt was installed with the Qt Online Installer rather than the system package
-manager, point the scripts at that installation first:
-
-```bash
-export QT_ROOT_DIR="$HOME/Qt/6.10.1/gcc_64"
-```
-
-Adjust the path if the Qt installation lives elsewhere.
-
 ### Windows
 
 ```batch
@@ -94,26 +85,12 @@ For validation, prefer `build.sh` / `build.bat` and the test scripts. Running th
 
 ## PowerShell with MSVC
 
-If you build on Windows from PowerShell, load the Visual Studio developer
-environment first. The Windows build scripts assume it is already loaded and
-do not call `VsDevCmd.bat` themselves. A plain PowerShell build can find the
-compiler through an existing CMake cache but still fail on standard headers
-such as `type_traits` or `utility`.
-
-For a single automated build or test run, use `vswhere` so the command works
-without hard-coding the installed Visual Studio version:
+If you build on Windows from PowerShell, load the Visual Studio developer shell first:
 
 ```powershell
-$snapTrayVswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-$snapTrayVsInstall = & $snapTrayVswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-$snapTrayDevCmd = Join-Path $snapTrayVsInstall 'Common7\Tools\VsDevCmd.bat'
-cmd.exe /d /s /c "call `"$snapTrayDevCmd`" -arch=amd64 -host_arch=amd64 && call scripts\run-tests.bat"
+Import-Module "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
+Enter-VsDevShell -VsInstallPath "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools" -DevCmdArguments '-arch=x64' -SkipAutomaticLocation
 ```
-
-Replace `scripts\run-tests.bat` with another Windows build script as needed.
-For an interactive PowerShell session, import
-`$snapTrayVsInstall\Common7\Tools\Microsoft.VisualStudio.DevShell.dll` and call
-`Enter-VsDevShell` before running the scripts.
 
 ## Manual CMake flows
 
