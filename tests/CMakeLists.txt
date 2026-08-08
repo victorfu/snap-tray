@@ -133,7 +133,7 @@ if(UNIX AND NOT APPLE)
 endif()
 
 if(APPLE)
-    add_executable(Platform_GuiClipboardOrdering Platform/tst_GuiClipboardOrdering.cpp)
+    add_executable(Platform_GuiClipboardOrdering Platform/tst_GuiClipboardOrdering.mm)
     target_link_libraries(Platform_GuiClipboardOrdering PRIVATE snaptray_platform Qt6::Test)
     add_test(NAME Platform_GuiClipboardOrdering COMMAND Platform_GuiClipboardOrdering)
     set_tests_properties(Platform_GuiClipboardOrdering PROPERTIES TIMEOUT 30 LABELS "unit;integration")
