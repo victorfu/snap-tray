@@ -6,6 +6,8 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+## [1.0.61] - 2026-08-08
+
 ### Improved
 
 - Improved Mosaic discoverability with compact popup guidance for brush-size adjustment and automatic face and credential blurring.
