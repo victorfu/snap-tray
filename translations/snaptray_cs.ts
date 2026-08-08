@@ -3441,4 +3441,11 @@ Rozlišení: %2
 Velikost souboru: %3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <source>Automatically detect and blur faces and credentials</source>
+        <translation>Automaticky rozpoznat a rozmazat obličeje a přihlašovací údaje</translation>
+    </message>
+</context>
 </TS>

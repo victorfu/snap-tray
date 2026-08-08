@@ -1,5 +1,7 @@
 #pragma once
 
+#include "qml/ToolbarTooltipController.h"
+
 #include <QObject>
 #include <QRect>
 #include <QString>
@@ -9,6 +11,7 @@ class QQuickItem;
 class PinToolOptionsViewModel;
 class QWidget;
 class QWindow;
+class TestQmlFloatingSubToolbarAutoBlurHint;
 
 namespace SnapTray {
 
@@ -66,7 +69,16 @@ public:
 signals:
     void emojiPickerRequested();
 
+private slots:
+    void onAutoBlurButtonHovered(double globalX,
+                                 double globalY,
+                                 double width,
+                                 double height);
+    void onAutoBlurButtonHoverExited();
+
 private:
+    friend class ::TestQmlFloatingSubToolbarAutoBlurHint;
+
     void ensureView();
     void applyPlatformWindowFlags();
     void syncTransientParent();
@@ -75,6 +87,10 @@ private:
     void scheduleParentCursorRestore();
     void attemptParentCursorRestore(quint64 token, int remainingAttempts);
     bool eventFilter(QObject* obj, QEvent* event) override;
+    void showAutoBlurHint(const QRect& anchorGlobalRect);
+    void hideAutoBlurHint();
+    void setAutoBlurHintEmphasis(bool active);
+    QRect autoBlurButtonGlobalRect() const;
 
     PinToolOptionsViewModel* m_viewModel = nullptr;
     QQuickView* m_view = nullptr;
@@ -83,6 +99,9 @@ private:
     quint64 m_parentCursorRestoreToken = 0;
     QString m_cursorSurfaceId;
     QString m_cursorOwnerId;
+    ToolbarTooltipController m_tooltip;
+    TooltipPlacement m_tooltipPlacement = TooltipPlacement::Below;
+    bool m_autoBlurHintVisible = false;
 };
 
 } // namespace SnapTray

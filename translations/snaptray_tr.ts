@@ -3435,4 +3435,11 @@ File size: %3</source>
 Dosya boyutu: %3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <source>Automatically detect and blur faces and credentials</source>
+        <translation>Yüzleri ve kimlik bilgilerini otomatik olarak algılayıp bulanıklaştırın</translation>
+    </message>
+</context>
 </TS>

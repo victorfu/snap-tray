@@ -3435,4 +3435,11 @@ Upplösning: %2
 Filstorlek: %3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <source>Automatically detect and blur faces and credentials</source>
+        <translation>Identifiera och sudda automatiskt ansikten och inloggningsuppgifter</translation>
+    </message>
+</context>
 </TS>

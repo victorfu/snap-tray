@@ -3432,4 +3432,11 @@ File size: %3</source>
 文件大小：%3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <source>Automatically detect and blur faces and credentials</source>
+        <translation>自动检测并模糊人脸和凭证信息</translation>
+    </message>
+</context>
 </TS>

@@ -105,6 +105,11 @@ void PinToolOptionsViewModel::showForTool(int toolId)
                            config.showAutoBlurSection);
 }
 
+QString PinToolOptionsViewModel::autoBlurHintText() const
+{
+    return tr("Automatically detect and blur faces and credentials");
+}
+
 // ── Property setters ──
 
 void PinToolOptionsViewModel::setCurrentColor(const QColor& color)

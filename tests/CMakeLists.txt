@@ -69,6 +69,11 @@ target_link_libraries(Qml_WidthSectionQml PRIVATE snaptray_ui snaptray_qmlplugin
 add_test(NAME Qml_WidthSectionQml COMMAND Qml_WidthSectionQml)
 set_tests_properties(Qml_WidthSectionQml PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_FloatingSubToolbarAutoBlurHint Qml/tst_FloatingSubToolbarAutoBlurHint.cpp)
+target_link_libraries(Qml_FloatingSubToolbarAutoBlurHint PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+add_test(NAME Qml_FloatingSubToolbarAutoBlurHint COMMAND Qml_FloatingSubToolbarAutoBlurHint)
+set_tests_properties(Qml_FloatingSubToolbarAutoBlurHint PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 add_executable(Qml_SettingsWindowFeatureGating
     Qml/tst_SettingsWindowFeatureGating.cpp
     ${CMAKE_SOURCE_DIR}/src/qml/SettingsBackend.cpp

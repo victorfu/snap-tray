@@ -3435,4 +3435,11 @@ File size: %3</source>
 Kích thước tệp: %3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <source>Automatically detect and blur faces and credentials</source>
+        <translation>Tự động phát hiện và làm mờ khuôn mặt cùng thông tin đăng nhập</translation>
+    </message>
+</context>
 </TS>

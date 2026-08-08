@@ -3196,4 +3196,11 @@ Password: %2</source>
         <translation>เลือกสี</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <source>Automatically detect and blur faces and credentials</source>
+        <translation>ตรวจจับและเบลอใบหน้าและข้อมูลประจำตัวโดยอัตโนมัติ</translation>
+    </message>
+</context>
 </TS>

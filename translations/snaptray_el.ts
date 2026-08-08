@@ -3435,4 +3435,11 @@ File size: %3</source>
 Μέγεθος αρχείου: %3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <source>Automatically detect and blur faces and credentials</source>
+        <translation>Αυτόματος εντοπισμός και θόλωση προσώπων και διαπιστευτηρίων</translation>
+    </message>
+</context>
 </TS>

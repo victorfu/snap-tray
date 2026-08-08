@@ -3435,4 +3435,11 @@ File size: %3</source>
 檔案大小：%3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <source>Automatically detect and blur faces and credentials</source>
+        <translation>自動偵測並模糊人臉與認證資訊</translation>
+    </message>
+</context>
 </TS>

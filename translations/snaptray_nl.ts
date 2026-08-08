@@ -3441,4 +3441,11 @@ Resolutie: %2
 Bestandsgrootte: %3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <source>Automatically detect and blur faces and credentials</source>
+        <translation>Gezichten en inloggegevens automatisch detecteren en vervagen</translation>
+    </message>
+</context>
 </TS>

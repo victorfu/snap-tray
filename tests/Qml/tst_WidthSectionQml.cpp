@@ -1,9 +1,14 @@
 #include <QtTest/QtTest>
 
 #include <QQuickItem>
+#include <QQuickView>
 #include <QQmlComponent>
+#include <QQmlContext>
 #include <QQmlEngine>
+#include <QSignalSpy>
 #include <QtQml/qqmlextensionplugin.h>
+
+#include "qml/PinToolOptionsViewModel.h"
 
 Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
 
@@ -42,6 +47,7 @@ class tst_WidthSectionQml : public QObject
 
 private slots:
     void testPreviewDotCenterStaysFixedAcrossWidthChanges();
+    void testToolOptionsStripForwardsAutoBlurHoverAnchor();
 };
 
 void tst_WidthSectionQml::testPreviewDotCenterStaysFixedAcrossWidthChanges()
@@ -87,6 +93,77 @@ void tst_WidthSectionQml::testPreviewDotCenterStaysFixedAcrossWidthChanges()
         QCOMPARE(containerCenter, expectedCenter);
         QCOMPARE(dotCenter, expectedCenter);
     }
+}
+
+void tst_WidthSectionQml::testToolOptionsStripForwardsAutoBlurHoverAnchor()
+{
+    if (QGuiApplication::screens().isEmpty())
+        QSKIP("Auto-blur hover test requires a screen");
+
+    PinToolOptionsViewModel viewModel;
+    viewModel.showForTool(static_cast<int>(ToolId::Mosaic));
+
+    QQuickView view;
+    view.rootContext()->setContextProperty(
+        QStringLiteral("pinToolOptionsViewModel"), &viewModel);
+    view.setResizeMode(QQuickView::SizeViewToRootObject);
+    view.setSource(
+        QUrl(QStringLiteral("qrc:/SnapTrayQml/toolbar/ToolOptionsStrip.qml")));
+
+    if (view.status() != QQuickView::Ready) {
+        const auto errors = view.errors();
+        QStringList messages;
+        for (const auto& error : errors)
+            messages.append(error.toString());
+        QFAIL(qPrintable(messages.join('\n')));
+    }
+
+    view.show();
+    if (!QTest::qWaitForWindowExposed(&view))
+        QSKIP("Auto-blur hover test window could not be exposed");
+
+    auto* rootItem = view.rootObject();
+    QVERIFY(rootItem);
+    auto* autoBlurButton =
+        rootItem->findChild<QQuickItem*>(QStringLiteral("autoBlurButton"));
+    auto* previewContainer =
+        rootItem->findChild<QQuickItem*>(QStringLiteral("widthPreviewContainer"));
+    QVERIFY(autoBlurButton);
+    QVERIFY(previewContainer);
+
+    QSignalSpy hoverSpy(
+        rootItem, SIGNAL(autoBlurButtonHovered(double,double,double,double)));
+    QSignalSpy exitSpy(rootItem, SIGNAL(autoBlurButtonHoverExited()));
+    QVERIFY(hoverSpy.isValid());
+    QVERIFY(exitSpy.isValid());
+
+    QVERIFY(rootItem->setProperty("autoBlurHintActive", true));
+    QTRY_VERIFY(autoBlurButton->scale() > 1.0);
+    QVERIFY(rootItem->setProperty("autoBlurHintActive", false));
+    QTRY_COMPARE(autoBlurButton->scale(), 1.0);
+
+    const QRectF previewRect = previewContainer->mapRectToScene(
+        QRectF(0.0, 0.0, previewContainer->width(), previewContainer->height()));
+    const QRectF autoBlurRect = autoBlurButton->mapRectToScene(
+        QRectF(0.0, 0.0, autoBlurButton->width(), autoBlurButton->height()));
+
+    QTest::mouseMove(&view, previewRect.center().toPoint());
+    QCoreApplication::processEvents();
+    hoverSpy.clear();
+    exitSpy.clear();
+
+    QTest::mouseMove(&view, autoBlurRect.center().toPoint());
+    QTRY_COMPARE(hoverSpy.count(), 1);
+
+    const auto arguments = hoverSpy.takeFirst();
+    const QPointF expectedAnchor = autoBlurButton->mapToGlobal(QPointF(0.0, 0.0));
+    QVERIFY(qAbs(arguments.at(0).toDouble() - expectedAnchor.x()) < 1.0);
+    QVERIFY(qAbs(arguments.at(1).toDouble() - expectedAnchor.y()) < 1.0);
+    QCOMPARE(arguments.at(2).toDouble(), 22.0);
+    QCOMPARE(arguments.at(3).toDouble(), 22.0);
+
+    QTest::mouseMove(&view, previewRect.center().toPoint());
+    QTRY_COMPARE(exitSpy.count(), 1);
 }
 
 QTEST_MAIN(tst_WidthSectionQml)

@@ -3441,4 +3441,11 @@ File size: %3</source>
 파일 크기: %3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <source>Automatically detect and blur faces and credentials</source>
+        <translation>얼굴과 자격 증명을 자동으로 감지하여 블러 처리</translation>
+    </message>
+</context>
 </TS>

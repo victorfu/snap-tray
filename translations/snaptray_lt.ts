@@ -3435,4 +3435,11 @@ Raiška: %2
 Failo dydis: %3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <source>Automatically detect and blur faces and credentials</source>
+        <translation>Automatiškai aptikti ir sulieti veidus bei prisijungimo duomenis</translation>
+    </message>
+</context>
 </TS>

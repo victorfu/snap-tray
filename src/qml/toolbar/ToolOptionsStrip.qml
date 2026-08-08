@@ -14,6 +14,10 @@ Item {
         : null
     readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
     readonly property int panelRightMargin: 6
+    property bool autoBlurHintActive: false
+    signal autoBlurButtonHovered(real anchorX, real anchorY,
+                                 real anchorW, real anchorH)
+    signal autoBlurButtonHoverExited()
 
     // Content sizing: expand to fit the row of sections
     implicitWidth: glassBg.width
@@ -116,7 +120,12 @@ Item {
             AutoBlurSection {
                 visible: root.hasViewModel && root.viewModel.showAutoBlurSection
                 viewModel: root.viewModel
+                hintActive: root.autoBlurHintActive
                 anchors.verticalCenter: parent.verticalCenter
+                onButtonHovered: function(anchorX, anchorY, anchorW, anchorH) {
+                    root.autoBlurButtonHovered(anchorX, anchorY, anchorW, anchorH)
+                }
+                onButtonHoverExited: root.autoBlurButtonHoverExited()
             }
         }
 

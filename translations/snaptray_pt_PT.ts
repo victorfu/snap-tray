@@ -3435,4 +3435,11 @@ Resolução: %2
 Tamanho do ficheiro: %3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <source>Automatically detect and blur faces and credentials</source>
+        <translation>Detetar e desfocar automaticamente rostos e credenciais</translation>
+    </message>
+</context>
 </TS>

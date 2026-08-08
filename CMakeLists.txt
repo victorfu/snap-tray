@@ -1004,6 +1004,7 @@ set(SNAPTRAY_QML_NATIVE_SOURCES
     src/qml/QmlWindowedToolbar.mm
     src/qml/QmlFloatingToolbar.mm
     src/qml/QmlFloatingSubToolbar.mm
+    src/qml/ToolbarTooltipController.mm
     src/qml/QmlDialog.mm
     src/qml/QmlOverlayPanel.mm
 )
@@ -1097,6 +1098,7 @@ qt_add_qml_module(snaptray_qml
         include/qml/EmojiPickerBackend.h
         ${SNAPTRAY_QML_NATIVE_SOURCES}
         include/qml/QmlOverlayManager.h
+        include/qml/ToolbarTooltipController.h
         src/qml/QmlBeautifyPanel.cpp
         include/qml/QmlBeautifyPanel.h
         src/qml/QmlEmojiPickerPopup.cpp

@@ -3441,4 +3441,11 @@ File size: %3</source>
 Размер файла: %3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <source>Automatically detect and blur faces and credentials</source>
+        <translation>Автоматически обнаруживать и размывать лица и учётные данные</translation>
+    </message>
+</context>
 </TS>

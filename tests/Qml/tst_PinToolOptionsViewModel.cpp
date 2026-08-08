@@ -26,6 +26,7 @@ private slots:
     void testLineStyleOptions_AreValueOnly();
     void testShowLaserPointerOptions_ShowsOnlyColorAndWidth();
     void testClearSections_DisablesWidthWheelHandling();
+    void testAutoBlurHintText();
 };
 
 void tst_PinToolOptionsViewModel::testDropdownRequested_PreservesCoordinates_data()
@@ -129,6 +130,13 @@ void tst_PinToolOptionsViewModel::testClearSections_DisablesWidthWheelHandling()
     viewModel.clearSections();
 
     QVERIFY(!viewModel.handleWidthWheelDelta(120));
+}
+
+void tst_PinToolOptionsViewModel::testAutoBlurHintText()
+{
+    PinToolOptionsViewModel viewModel;
+    QCOMPARE(viewModel.autoBlurHintText(),
+             QStringLiteral("Automatically detect and blur faces and credentials"));
 }
 
 QTEST_MAIN(tst_PinToolOptionsViewModel)

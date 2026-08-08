@@ -59,6 +59,7 @@ class PinToolOptionsViewModel : public QObject
     // Auto-blur section
     Q_PROPERTY(bool autoBlurEnabled READ autoBlurEnabled WRITE setAutoBlurEnabled NOTIFY autoBlurEnabledChanged)
     Q_PROPERTY(bool autoBlurProcessing READ autoBlurProcessing WRITE setAutoBlurProcessing NOTIFY autoBlurProcessingChanged)
+    Q_PROPERTY(QString autoBlurHintText READ autoBlurHintText CONSTANT)
 
     // Arrow/line style option lists for QML Repeater
     Q_PROPERTY(QVariantList arrowStyleOptions READ arrowStyleOptions CONSTANT)
@@ -131,6 +132,7 @@ public:
     void setAutoBlurEnabled(bool value);
     bool autoBlurProcessing() const { return m_autoBlurProcessing; }
     void setAutoBlurProcessing(bool value);
+    QString autoBlurHintText() const;
 
     // Option lists
     QVariantList arrowStyleOptions() const;

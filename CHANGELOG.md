@@ -6,6 +6,10 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+### Improved
+
+- Improved Mosaic discoverability with a compact popup explaining automatic face and credential blurring.
+
 ### Fixed
 
 - Fixed jagged Chinese and other CJK annotation text by preserving Qt's native antialiased glyph rendering on macOS, Windows, and Linux.

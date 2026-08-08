@@ -3441,4 +3441,11 @@ File size: %3</source>
 Величина датотеке: %3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <source>Automatically detect and blur faces and credentials</source>
+        <translation>Аутоматски откријте и замаглите лица и акредитиве</translation>
+    </message>
+</context>
 </TS>

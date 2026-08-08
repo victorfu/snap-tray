@@ -3441,4 +3441,11 @@ It may be in use by another application.</source>
         <translation>選擇顏色</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <source>Automatically detect and blur faces and credentials</source>
+        <translation>自動偵測並模糊人臉與認證資訊</translation>
+    </message>
+</context>
 </TS>

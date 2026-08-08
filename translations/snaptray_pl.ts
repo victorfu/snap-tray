@@ -3441,4 +3441,11 @@ Rozdzielczość: %2
 Rozmiar pliku: %3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <source>Automatically detect and blur faces and credentials</source>
+        <translation>Automatycznie wykrywaj i rozmywaj twarze oraz dane uwierzytelniające</translation>
+    </message>
+</context>
 </TS>

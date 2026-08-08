@@ -3441,4 +3441,11 @@ Resolución: %2
 Tamaño del archivo: %3</translation>
     </message>
 </context>
+<context>
+    <name>PinToolOptionsViewModel</name>
+    <message>
+        <source>Automatically detect and blur faces and credentials</source>
+        <translation>Detectar y difuminar automáticamente rostros y credenciales</translation>
+    </message>
+</context>
 </TS>
