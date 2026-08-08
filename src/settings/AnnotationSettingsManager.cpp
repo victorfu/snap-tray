@@ -45,6 +45,19 @@ void AnnotationSettingsManager::saveWidth(int width)
     settings.setValue(kSettingsKeyWidth, width);
 }
 
+bool AnnotationSettingsManager::loadMosaicBrushAdjustmentLearned() const
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(kSettingsKeyMosaicBrushAdjustmentLearned,
+                          kDefaultMosaicBrushAdjustmentLearned).toBool();
+}
+
+void AnnotationSettingsManager::saveMosaicBrushAdjustmentLearned(bool learned)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyMosaicBrushAdjustmentLearned, learned);
+}
+
 LineEndStyle AnnotationSettingsManager::loadArrowStyle() const
 {
     auto settings = SnapTray::getSettings();

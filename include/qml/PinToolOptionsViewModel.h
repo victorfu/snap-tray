@@ -37,6 +37,9 @@ class PinToolOptionsViewModel : public QObject
     Q_PROPERTY(int currentWidth READ currentWidth WRITE setCurrentWidth NOTIFY currentWidthChanged)
     Q_PROPERTY(int minWidth READ minWidth CONSTANT)
     Q_PROPERTY(int maxWidth READ maxWidth CONSTANT)
+    Q_PROPERTY(int activeToolId READ activeToolId NOTIFY activeToolChanged)
+    Q_PROPERTY(bool mosaicActive READ isMosaicActive NOTIFY activeToolChanged)
+    Q_PROPERTY(QString mosaicBrushHintText READ mosaicBrushHintText CONSTANT)
 
     // Text formatting section
     Q_PROPERTY(bool isBold READ isBold WRITE setBold NOTIFY boldChanged)
@@ -98,6 +101,9 @@ public:
     void setCurrentWidth(int width);
     int minWidth() const { return 1; }
     int maxWidth() const { return 30; }
+    int activeToolId() const { return static_cast<int>(m_activeToolId); }
+    bool isMosaicActive() const { return m_activeToolId == ToolId::Mosaic; }
+    QString mosaicBrushHintText() const;
 
     // Text formatting
     bool isBold() const { return m_bold; }
@@ -157,6 +163,7 @@ signals:
     void sectionVisibilityChanged();
     void currentColorChanged();
     void currentWidthChanged();
+    void activeToolChanged();
     void boldChanged();
     void italicChanged();
     void underlineChanged();
@@ -175,6 +182,7 @@ signals:
     void colorSelected(const QColor& color);
     void customColorPickerRequested();
     void widthValueChanged(int width);
+    void mosaicBrushAdjustmentLearned();
     void boldToggled(bool enabled);
     void italicToggled(bool enabled);
     void underlineToggled(bool enabled);
@@ -224,6 +232,7 @@ private:
                                 bool showSize,
                                 bool showAutoBlur);
     void setShowingEmojiPicker(bool visible);
+    void setActiveTool(ToolId toolId);
 
     // Section visibility
     bool m_showColor = false;
@@ -242,6 +251,7 @@ private:
 
     // Width
     int m_currentWidth = 3;
+    ToolId m_activeToolId = ToolId::Count;
 
     // Text formatting
     bool m_bold = false;

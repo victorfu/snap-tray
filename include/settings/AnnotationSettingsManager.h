@@ -27,6 +27,10 @@ public:
     int loadWidth() const;
     void saveWidth(int width);
 
+    // Mosaic brush-size hint state
+    bool loadMosaicBrushAdjustmentLearned() const;
+    void saveMosaicBrushAdjustmentLearned(bool learned);
+
     // Arrow and line style settings
     LineEndStyle loadArrowStyle() const;
     void saveArrowStyle(LineEndStyle style);
@@ -56,6 +60,7 @@ public:
 
     // Default values
     static constexpr int kDefaultWidth = 3;
+    static constexpr bool kDefaultMosaicBrushAdjustmentLearned = false;
     static QColor defaultColor() { return Qt::red; }
     static constexpr LineEndStyle kDefaultArrowStyle = LineEndStyle::EndArrow;
     static constexpr LineStyle kDefaultLineStyle = LineStyle::Solid;
@@ -74,6 +79,8 @@ private:
 
     static constexpr const char* kSettingsKeyColor = "annotationColor";
     static constexpr const char* kSettingsKeyWidth = "annotationWidth";
+    static constexpr const char* kSettingsKeyMosaicBrushAdjustmentLearned =
+        "mosaicBrushAdjustmentLearned";
     static constexpr const char* kSettingsKeyArrowStyle = "annotation/arrowStyle";
     static constexpr const char* kSettingsKeyLineStyle = "annotation/lineStyle";
     static constexpr const char* kSettingsKeyStepBadgeSize = "stepBadgeSize";

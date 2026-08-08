@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QRect>
 #include <QString>
+#include <QTimer>
 
 class QQuickView;
 class QQuickItem;
@@ -12,6 +13,7 @@ class PinToolOptionsViewModel;
 class QWidget;
 class QWindow;
 class TestQmlFloatingSubToolbarAutoBlurHint;
+class TestQmlFloatingSubToolbarMosaicHint;
 
 namespace SnapTray {
 
@@ -70,6 +72,13 @@ signals:
     void emojiPickerRequested();
 
 private slots:
+    void onActiveToolChanged();
+    void onMosaicBrushAdjustmentLearned();
+    void onMosaicBrushPreviewHovered(double globalX,
+                                      double globalY,
+                                      double width,
+                                      double height);
+    void onMosaicBrushPreviewHoverExited();
     void onAutoBlurButtonHovered(double globalX,
                                  double globalY,
                                  double width,
@@ -78,8 +87,18 @@ private slots:
 
 private:
     friend class ::TestQmlFloatingSubToolbarAutoBlurHint;
+    friend class ::TestQmlFloatingSubToolbarMosaicHint;
+
+    enum class MosaicHintDisplay
+    {
+        None,
+        Coachmark,
+        HoverReminder,
+        AutoBlurHoverReminder,
+    };
 
     void ensureView();
+    void initializeHintConnections();
     void applyPlatformWindowFlags();
     void syncTransientParent();
     void syncCursorSurface();
@@ -87,9 +106,16 @@ private:
     void scheduleParentCursorRestore();
     void attemptParentCursorRestore(quint64 token, int remainingAttempts);
     bool eventFilter(QObject* obj, QEvent* event) override;
+    void activateMosaicHint();
+    void deactivateMosaicHint();
+    void suspendMosaicHint();
+    void showPendingMosaicCoachmark();
+    void showMosaicHint(MosaicHintDisplay display, const QRect& anchorGlobalRect);
     void showAutoBlurHint(const QRect& anchorGlobalRect);
-    void hideAutoBlurHint();
+    void hideMosaicHint();
+    void setMosaicHintEmphasis(bool active);
     void setAutoBlurHintEmphasis(bool active);
+    QRect mosaicPreviewGlobalRect() const;
     QRect autoBlurButtonGlobalRect() const;
 
     PinToolOptionsViewModel* m_viewModel = nullptr;
@@ -101,7 +127,13 @@ private:
     QString m_cursorOwnerId;
     ToolbarTooltipController m_tooltip;
     TooltipPlacement m_tooltipPlacement = TooltipPlacement::Below;
-    bool m_autoBlurHintVisible = false;
+    QTimer m_mosaicCoachmarkTimer;
+    MosaicHintDisplay m_mosaicHintDisplay = MosaicHintDisplay::None;
+    bool m_mosaicHintActivationActive = false;
+    bool m_mosaicCoachmarkPending = false;
+    bool m_mosaicBrushAdjustmentLearned = false;
+    bool m_mosaicPreviewHovered = false;
+    bool m_suppressHoverReminderUntilExit = false;
 };
 
 } // namespace SnapTray

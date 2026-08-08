@@ -24,6 +24,7 @@ private slots:
     void testPhase4PanelContexts();
     void testMainApplicationTrayContext();
     void testHotkeyConflictGuidanceTranslatedForAllLocales();
+    void testMosaicBrushSizeHintTranslatedForAllLocales();
     void testAutoBlurHintTranslatedForAllLocales();
 
 private:
@@ -199,6 +200,36 @@ void tst_QmlTranslations::testAutoBlurHintTranslatedForAllLocales()
                                 .arg(qmFile)));
         QVERIFY2(translated != QString::fromUtf8(source),
                  qPrintable(QStringLiteral("%1 fell back to English for the auto-blur hint")
+                                .arg(qmFile)));
+    }
+}
+
+void tst_QmlTranslations::testMosaicBrushSizeHintTranslatedForAllLocales()
+{
+    const QByteArray context = "PinToolOptionsViewModel";
+    const QByteArray source = "Scroll here to adjust the mosaic brush size";
+
+    const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
+    const QStringList qmFiles = translationsDir.entryList(
+        {QStringLiteral("snaptray_*.qm")},
+        QDir::Files,
+        QDir::Name);
+    QVERIFY(!qmFiles.isEmpty());
+
+    for (const QString& qmFile : qmFiles) {
+        QTranslator translator;
+        const QString path = translationsDir.filePath(qmFile);
+        QVERIFY2(translator.load(path),
+                 qPrintable(QStringLiteral("Failed to load translation file: %1").arg(path)));
+
+        const QString translated = translator.translate(context.constData(),
+                                                        source.constData());
+        QVERIFY2(!translated.isEmpty(),
+                 qPrintable(QStringLiteral("%1 is missing the Mosaic brush size hint")
+                                .arg(qmFile)));
+        QVERIFY2(translated != QString::fromUtf8(source),
+                 qPrintable(QStringLiteral(
+                                "%1 fell back to English for the Mosaic brush size hint")
                                 .arg(qmFile)));
     }
 }

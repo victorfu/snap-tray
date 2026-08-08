@@ -39,6 +39,8 @@ private slots:
     void testLoadWidth_DefaultValue();
     void testSaveLoadWidth_Roundtrip();
     void testSaveLoadWidth_BoundaryValues();
+    void testMosaicBrushAdjustmentLearned_DefaultValue();
+    void testMosaicBrushAdjustmentLearned_Roundtrip();
 
     // Arrow style settings tests
     void testLoadArrowStyle_DefaultValue();
@@ -94,6 +96,7 @@ void tst_AnnotationSettingsManager::clearAllTestSettings()
     auto settings = SnapTray::getSettings();
     settings.remove("annotationColor");
     settings.remove("annotationWidth");
+    settings.remove("mosaicBrushAdjustmentLearned");
     settings.remove("annotation/arrowStyle");
     settings.remove("annotation/lineStyle");
     settings.remove("stepBadgeSize");
@@ -222,6 +225,24 @@ void tst_AnnotationSettingsManager::testSaveLoadWidth_BoundaryValues()
     // Test large value
     manager.saveWidth(100);
     QCOMPARE(manager.loadWidth(), 100);
+}
+
+void tst_AnnotationSettingsManager::testMosaicBrushAdjustmentLearned_DefaultValue()
+{
+    QCOMPARE(AnnotationSettingsManager::instance().loadMosaicBrushAdjustmentLearned(),
+             AnnotationSettingsManager::kDefaultMosaicBrushAdjustmentLearned);
+    QVERIFY(!AnnotationSettingsManager::kDefaultMosaicBrushAdjustmentLearned);
+}
+
+void tst_AnnotationSettingsManager::testMosaicBrushAdjustmentLearned_Roundtrip()
+{
+    auto& manager = AnnotationSettingsManager::instance();
+
+    manager.saveMosaicBrushAdjustmentLearned(true);
+    QVERIFY(manager.loadMosaicBrushAdjustmentLearned());
+
+    manager.saveMosaicBrushAdjustmentLearned(false);
+    QVERIFY(!manager.loadMosaicBrushAdjustmentLearned());
 }
 
 // ============================================================================

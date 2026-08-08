@@ -8,7 +8,7 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ### Improved
 
-- Improved Mosaic discoverability with a compact popup explaining automatic face and credential blurring.
+- Improved Mosaic discoverability with compact popup guidance for brush-size adjustment and automatic face and credential blurring.
 
 ### Fixed
 
