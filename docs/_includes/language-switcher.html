@@ -1,6 +1,6 @@
 {% assign lang = page.lang | default: site.default_lang %}
 {% assign route = site.data.routes[page.route_key] %}
-{% assign raw_url = page.url | default: '/' %}
+{% assign home = site.data.routes.home %}
 {% assign current_name = lang %}
 {% for l in site.data.languages %}{% if l.code == lang %}{% assign current_name = l.name %}{% endif %}{% endfor %}
 
@@ -13,22 +13,17 @@
   <ul id="language-menu" class="lang-menu" role="menu" data-lang-menu>
 {% for l in site.data.languages %}
     {% assign code = l.code %}
-    {% assign target = '' %}
+    {% comment %}
+      Pages without a translated route (developer docs, 404) fall back to that
+      language's home page so the switcher never drops an option and leaves a
+      reader stranded on a locale they cannot navigate out of.
+    {% endcomment %}
     {% if route and route[code] %}
       {% assign target = route[code] %}
-    {% elsif code == 'en' %}
-      {% assign target = raw_url | replace_first: '/zh-tw', '' %}
-      {% if target == '' %}{% assign target = '/' %}{% endif %}
-    {% elsif code == 'zh-tw' %}
-      {% if raw_url == '/' %}
-        {% assign target = '/zh-tw/' %}
-      {% elsif raw_url contains '/zh-tw/' %}
-        {% assign target = raw_url %}
-      {% else %}
-        {% assign target = '/zh-tw' | append: raw_url %}
-      {% endif %}
+    {% else %}
+      {% assign target = home[code] %}
     {% endif %}
-    {% if target != '' %}
+    {% if target %}
     <li role="none"><a role="menuitem" href="{{ target | relative_url }}" class="lang-link{% if lang == code %} is-active{% endif %}"{% if lang == code %} aria-current="true"{% endif %}>{{ l.name }}</a></li>
     {% endif %}
 {% endfor %}
