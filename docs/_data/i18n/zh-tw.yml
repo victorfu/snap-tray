@@ -260,7 +260,7 @@ landing_screenshot_tool:
       - q: SnapTray 和 Lightshot 有什麼不同？
         a: Lightshot 提供快速擷取和簡單標註，但缺少釘選視窗和 CLI 支援。SnapTray 在支援平台包含這些功能，並在 macOS/Windows 提供螢幕錄影、OCR 與自動模糊，同時保持免費、開源且完全離線。
       - q: SnapTray 支援哪些平台？
-        a: SnapTray 支援 macOS 14+（Apple Silicon 和 Intel）、Windows 10+（x64），以及 Ubuntu 22.04 X11 AppImage beta。Linux beta 不包含錄影與 OCR，也不支援 Wayland session。
+        a: SnapTray 支援 macOS 14+（Apple Silicon）、Windows 10+（x64），以及 Ubuntu 22.04 X11 AppImage beta。Linux beta 不包含錄影與 OCR，也不支援 Wayland session。
       - q: 可以用腳本自動化截圖嗎？
         a: 可以。SnapTray 內建 CLI，可自動化截圖、釘選與設定。常用指令包括 snaptray full、snaptray screen、snaptray region、snaptray pin 和 snaptray config。可整合 Shell 腳本、CI 流程或自動化工作流。
   cta:
@@ -273,7 +273,7 @@ landing_screenshot_tool:
 landing_mac:
   hero:
     title: Mac 最佳截圖工具
-    intro: "macOS 內建 Cmd+Shift+4 進行基本截圖，但也僅止於此 — 沒有標註、沒有釘選視窗、沒有 MP4/GIF/WebP 錄影工作流程、沒有 OCR。如果你每天都在截圖工作，你需要一個能處理完整流程的工具。SnapTray 是一款免費開源的截圖工具，為你的 Mac 增添專業擷取、標註、錄影和分享功能。"
+    intro: "macOS 內建 Cmd+Shift+4 進行基本截圖，但也僅止於此 — 沒有標註、沒有釘選視窗、沒有 MP4/GIF/WebP 錄影工作流程、沒有 OCR。如果你每天都在截圖工作，你需要一個能處理完整流程的工具。SnapTray 是一款免費開源的截圖工具，為你的 Mac 增添專業擷取、標註、錄影和釘選視窗功能。"
     cta_download: 下載 .dmg
     cta_docs: 閱讀文件
   problems:
@@ -286,13 +286,13 @@ landing_mac:
       - pain: 無法釘選或浮動參考
         detail: 截圖無法保持在其他視窗上方顯示。每次擷取都消失在檔案中，迫使你不斷切換視窗。
       - pain: 沒有螢幕錄影管線
-        detail: QuickTime Player 只能全螢幕錄影，沒有區域選取、暫停/繼續功能，也無法匯出 GIF 或 WebP 快速分享。
+        detail: QuickTime Player 可以錄製螢幕，但沒有暫停/繼續，沒有影格率與倒數計時設定，也無法匯出 GIF 或 WebP 快速分享。
       - pain: 沒有 OCR 或 QR Code 掃描
         detail: 從截圖中提取文字意味著手動重新輸入。也沒有內建方式掃描螢幕上的 QR Code。
   features:
     eyebrow: 如何在 Mac 上更好地截圖
     title: SnapTray 為你的 Mac 工作流程增添什麼
-    subtitle: 在 Apple Silicon 和 Intel 上原生運行，深度整合 macOS。
+    subtitle: 在 Apple Silicon 上原生運行，深度整合 macOS。
     items:
       - title: Retina 品質擷取
         body: SnapTray 以原生 Retina 解析度渲染。HiDPI 顯示器的每個像素都完整保留在輸出圖片中 — 沒有縮放異常。
@@ -347,7 +347,7 @@ landing_mac:
       - q: 如何在 Mac 上截圖？
         a: macOS 提供 Cmd+Shift+4 進行區域擷取、Cmd+Shift+3 擷取全螢幕。如需標註、錄影和分享等進階工作流程，安裝 SnapTray 後按 F2 — 提供放大鏡精準度、即時標註和一鍵匯出。
       - q: SnapTray 在 Apple Silicon 上是原生運行嗎？
-        a: 是的。SnapTray 以通用二進位檔發布，在 Apple Silicon（M1/M2/M3/M4）和 Intel Mac 上都是原生運行，不需要 Rosetta 轉譯。
+        a: 是的。SnapTray 以 Apple Silicon 原生版本發布，在 M1/M2/M3/M4 Mac 上原生運行，不需要 Rosetta 轉譯。macOS 版本僅支援 Apple Silicon。
       - q: 為什麼 macOS 要求螢幕錄影權限？
         a: macOS 要求任何擷取螢幕內容的應用程式都必須取得螢幕錄影權限。SnapTray 需要此權限才能運作。請在系統設定 > 隱私權與安全性 > 螢幕錄影中授予。
       - q: SnapTray 和 CleanShot X 相比如何？

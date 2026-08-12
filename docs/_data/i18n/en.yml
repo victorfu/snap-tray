@@ -260,7 +260,7 @@ landing_screenshot_tool:
       - q: How is SnapTray different from Lightshot?
         a: Lightshot provides quick capture and simple annotation, but lacks pin windows and CLI support. SnapTray includes those across supported platforms, with screen recording, OCR, and auto blur on macOS/Windows, while remaining free, open source, and fully offline.
       - q: Which platforms does SnapTray support?
-        a: SnapTray supports macOS 14+ (Apple Silicon and Intel), Windows 10+ (x64), and an Ubuntu 22.04 X11 AppImage beta. Recording and OCR are not included in the Linux beta, and Wayland sessions are not supported.
+        a: SnapTray supports macOS 14+ (Apple Silicon), Windows 10+ (x64), and an Ubuntu 22.04 X11 AppImage beta. Recording and OCR are not included in the Linux beta, and Wayland sessions are not supported.
       - q: Can I automate screenshots with scripts?
         a: "Yes. SnapTray includes a CLI for screenshot, pin, and settings automation. Common commands include snaptray full, snaptray screen, snaptray region, snaptray pin, and snaptray config. Integrate them into shell scripts, CI pipelines, or automation workflows."
   cta:
@@ -273,7 +273,7 @@ landing_screenshot_tool:
 landing_mac:
   hero:
     title: Best Screenshot Tool for Mac
-    intro: "macOS includes Cmd+Shift+4 for basic screen capture, but stops there — no annotation, no pin windows, no MP4/GIF/WebP recording workflow, no OCR. If you take screenshots daily for work, you need a tool that handles the full workflow. SnapTray is a free, open-source screenshot tool that adds professional capture, annotation, recording, and sharing to your Mac."
+    intro: "macOS includes Cmd+Shift+4 for basic screen capture, but stops there — no annotation, no pin windows, no MP4/GIF/WebP recording workflow, no OCR. If you take screenshots daily for work, you need a tool that handles the full workflow. SnapTray is a free, open-source screenshot tool that adds professional capture, annotation, recording, and pin windows to your Mac."
     cta_download: Download .dmg
     cta_docs: Read the Docs
   problems:
@@ -286,13 +286,13 @@ landing_mac:
       - pain: No Pin or Floating Reference
         detail: You cannot keep a screenshot visible while working. Every capture disappears into a file, forcing constant window switching.
       - pain: No Screen Recording Pipeline
-        detail: QuickTime Player records full screen, but there is no region selection, no pause/resume, and no GIF or WebP export for quick sharing.
+        detail: QuickTime Player can record your screen, but there is no pause and resume, no frame rate or countdown control, and no GIF or WebP export for quick sharing.
       - pain: No OCR or QR Code Scanning
         detail: Extracting text from a screenshot means manually retyping it. There is no built-in way to scan QR codes from screen content.
   features:
     eyebrow: How to Take Better Screenshots on Mac
     title: What SnapTray Adds to Your Mac Workflow
-    subtitle: Native performance on Apple Silicon and Intel, with deep macOS integration.
+    subtitle: Native performance on Apple Silicon, with deep macOS integration.
     items:
       - title: Retina-Quality Captures
         body: SnapTray renders at native Retina resolution. Every pixel of your HiDPI display is preserved in the output image — no scaling artifacts.
@@ -347,7 +347,7 @@ landing_mac:
       - q: How do I take a screenshot on Mac?
         a: "macOS provides Cmd+Shift+4 for region capture and Cmd+Shift+3 for full screen. For advanced workflows with annotation, recording, and sharing, install SnapTray and press F2 — it provides magnifier precision, instant annotation, and one-key export."
       - q: Does SnapTray run natively on Apple Silicon?
-        a: Yes. SnapTray ships as a universal binary that runs natively on both Apple Silicon (M1/M2/M3/M4) and Intel Macs with no Rosetta translation.
+        a: Yes. SnapTray ships as a native Apple Silicon build that runs on M1/M2/M3/M4 Macs with no Rosetta translation. The macOS release targets Apple Silicon only.
       - q: Why does macOS ask for Screen Recording permission?
         a: macOS requires explicit Screen Recording permission for any app that captures screen content. SnapTray needs this to function. Grant it in System Settings > Privacy & Security > Screen Recording.
       - q: How does SnapTray compare to CleanShot X?

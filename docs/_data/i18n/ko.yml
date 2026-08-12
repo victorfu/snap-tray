@@ -260,7 +260,7 @@ landing_screenshot_tool:
       - q: SnapTray와 Lightshot의 차이점은 무엇인가요?
         a: Lightshot은 빠른 캡처와 간단한 주석을 제공하지만 핀 창과 CLI 지원이 없습니다. SnapTray는 지원 플랫폼에서 이를 모두 포함하며, macOS/Windows에서 화면 녹화, OCR, 자동 블러를 제공하면서도 무료, 오픈 소스, 완전 오프라인으로 유지됩니다.
       - q: SnapTray는 어떤 플랫폼을 지원하나요?
-        a: SnapTray는 macOS 14+(Apple Silicon 및 Intel), Windows 10+(x64), Ubuntu 22.04 X11 AppImage beta를 지원합니다. 녹화와 OCR은 Linux beta에 포함되지 않으며, Wayland 세션은 지원되지 않습니다.
+        a: SnapTray는 macOS 14+(Apple Silicon), Windows 10+(x64), Ubuntu 22.04 X11 AppImage beta를 지원합니다. 녹화와 OCR은 Linux beta에 포함되지 않으며, Wayland 세션은 지원되지 않습니다.
       - q: 스크립트로 스크린샷을 자동화할 수 있나요?
         a: "네. SnapTray에는 스크린샷, 고정 및 설정 자동화를 위한 CLI가 포함되어 있습니다. 주요 명령은 snaptray full, snaptray screen, snaptray region, snaptray pin, snaptray config입니다. 셸 스크립트, CI 파이프라인, 자동화 워크플로에 통합하세요."
   cta:
@@ -273,7 +273,7 @@ landing_screenshot_tool:
 landing_mac:
   hero:
     title: Mac을 위한 최고의 스크린샷 도구
-    intro: "macOS에는 기본 화면 캡처용 Cmd+Shift+4가 있지만 거기서 끝납니다. 주석도, 핀 창도, MP4/GIF/WebP 녹화 워크플로도, OCR도 없습니다. 업무용으로 매일 스크린샷을 찍는다면 전체 워크플로를 처리할 수 있는 도구가 필요합니다. SnapTray는 Mac에 전문적인 캡처, 주석, 녹화, 공유 기능을 추가하는 무료 오픈 소스 스크린샷 도구입니다."
+    intro: "macOS에는 기본 화면 캡처용 Cmd+Shift+4가 있지만 거기서 끝납니다. 주석도, 핀 창도, MP4/GIF/WebP 녹화 워크플로도, OCR도 없습니다. 업무용으로 매일 스크린샷을 찍는다면 전체 워크플로를 처리할 수 있는 도구가 필요합니다. SnapTray는 Mac에 전문적인 캡처, 주석, 녹화, 핀 창 기능을 추가하는 무료 오픈 소스 스크린샷 도구입니다."
     cta_download: .dmg 다운로드
     cta_docs: 문서 읽기
   problems:
@@ -286,13 +286,13 @@ landing_mac:
       - pain: 고정 또는 플로팅 참조 없음
         detail: 작업하는 동안 스크린샷을 계속 표시해 둘 수 없습니다. 모든 캡처가 파일로 사라지며 지속적으로 창을 전환해야 합니다.
       - pain: 화면 녹화 파이프라인 없음
-        detail: QuickTime Player는 전체 화면을 녹화하지만 영역 선택이 없고, 일시 정지/재개도 없으며, 빠른 공유를 위한 GIF나 WebP 내보내기도 없습니다.
+        detail: QuickTime Player로 화면을 녹화할 수는 있지만 일시 정지/재개가 없고, 프레임 레이트나 카운트다운 설정도 없으며, 빠른 공유를 위한 GIF나 WebP 내보내기도 없습니다.
       - pain: OCR 또는 QR 코드 스캔 없음
         detail: 스크린샷에서 텍스트를 추출하려면 수동으로 다시 입력해야 합니다. 화면 콘텐츠에서 QR 코드를 스캔하는 내장 방법이 없습니다.
   features:
     eyebrow: Mac에서 더 나은 스크린샷을 찍는 방법
     title: SnapTray가 Mac 워크플로에 추가하는 것
-    subtitle: Apple Silicon과 Intel에서 네이티브 성능, macOS와의 깊은 통합.
+    subtitle: Apple Silicon에서 네이티브 성능, macOS와의 깊은 통합.
     items:
       - title: Retina 품질 캡처
         body: SnapTray는 네이티브 Retina 해상도로 렌더링합니다. HiDPI 디스플레이의 모든 픽셀이 출력 이미지에 보존되며 스케일링 아티팩트가 없습니다.
@@ -347,7 +347,7 @@ landing_mac:
       - q: Mac에서 스크린샷을 찍는 방법은?
         a: "macOS는 영역 캡처에 Cmd+Shift+4, 전체 화면에 Cmd+Shift+3을 제공합니다. 주석, 녹화, 공유를 포함한 고급 워크플로에는 SnapTray를 설치하고 F2를 누르세요. 돋보기 정밀도, 즉각적인 주석, 원키 내보내기를 제공합니다."
       - q: SnapTray가 Apple Silicon에서 네이티브로 실행되나요?
-        a: 네. SnapTray는 Rosetta 변환 없이 Apple Silicon(M1/M2/M3/M4)과 Intel Mac 모두에서 네이티브로 실행되는 유니버설 바이너리로 제공됩니다.
+        a: 네. SnapTray는 Apple Silicon 네이티브 빌드로 제공되며 M1/M2/M3/M4 Mac에서 Rosetta 변환 없이 실행됩니다. macOS 릴리스는 Apple Silicon만 지원합니다.
       - q: macOS가 화면 녹화 권한을 요청하는 이유는?
         a: macOS는 화면 콘텐츠를 캡처하는 모든 앱에 대해 명시적인 화면 녹화 권한을 요구합니다. SnapTray가 작동하려면 이 권한이 필요합니다. 시스템 환경설정 > 개인 정보 보호 및 보안 > 화면 녹화에서 허용하세요.
       - q: SnapTray와 CleanShot X를 비교하면 어떻나요?
