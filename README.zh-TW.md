@@ -5,7 +5,7 @@
 <h1 align="center">SnapTray</h1>
 
 <p align="center">
-  <a href="README.md">English</a> | <strong>繁體中文</strong>
+  <a href="README.md">English</a> | <strong>繁體中文</strong> | <a href="README.ja.md">日本語</a> | <a href="README.ko.md">한국어</a> | <a href="README.th.md">ไทย</a>
 </p>
 
 ---
