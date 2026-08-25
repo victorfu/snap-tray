@@ -5,6 +5,7 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QHash>
 #include <QTemporaryDir>
 
 namespace {
@@ -34,6 +35,28 @@ RegionExportManager::PreparedExport makePreparedExport()
 
 constexpr auto kLastSaveDirectoryKey = "files/lastScreenshotSaveDirectory";
 
+void configureSaveSettings(const QString& screenshotPath,
+                           bool autoSave,
+                           bool useLastSaveLocation,
+                           const QString& rememberedDirectory)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(QStringLiteral("files/autoSaveScreenshots"), autoSave);
+    settings.setValue(QStringLiteral("files/filenameTemplate"),
+                      QStringLiteral("capture.{ext}"));
+    settings.setValue(QStringLiteral("files/screenshotPath"), screenshotPath);
+    settings.setValue(QStringLiteral("files/useLastScreenshotSaveLocation"),
+                      useLastSaveLocation);
+    settings.setValue(QString::fromLatin1(kLastSaveDirectoryKey), rememberedDirectory);
+    settings.sync();
+}
+
+struct SettingSnapshot
+{
+    bool existed = false;
+    QVariant value;
+};
+
 } // namespace
 
 class tst_RegionExportManager : public QObject
@@ -44,32 +67,49 @@ private slots:
     void init();
     void cleanup();
     void testPrepareExport_NormalizesHighDpiCrop();
+    void testCreateSaveRequest_ManualUsesRememberedDirectory();
+    void testCreateSaveRequest_ManualUsesScreenshotDirectoryWhenDisabled();
+    void testCreateSaveRequest_CancelPreservesRememberedDirectory();
+    void testCreateSaveRequest_AutoSaveUsesScreenshotDirectoryAndSkipsDialog();
     void testSavePreparedExportAsync_RemembersDirectoryAfterSuccess();
     void testSavePreparedExportAsync_DoesNotRememberWhenRequestDisablesIt();
     void testSavePreparedExportAsync_DoesNotRememberAfterFailure();
 
 private:
-    bool m_hadLastSaveDirectory = false;
-    QVariant m_previousLastSaveDirectory;
+    QHash<QString, SettingSnapshot> m_settingSnapshots;
 };
 
 void tst_RegionExportManager::init()
 {
     auto settings = SnapTray::getSettings();
+    const QStringList keys = {
+        QStringLiteral("files/autoSaveScreenshots"),
+        QStringLiteral("files/filenameTemplate"),
+        QStringLiteral("files/lastScreenshotSaveDirectory"),
+        QStringLiteral("files/screenshotPath"),
+        QStringLiteral("files/useLastScreenshotSaveLocation"),
+    };
+
+    m_settingSnapshots.clear();
+    for (const QString& key : keys) {
+        m_settingSnapshots.insert(key, {settings.contains(key), settings.value(key)});
+        settings.remove(key);
+    }
     settings.sync();
-    m_hadLastSaveDirectory = settings.contains(kLastSaveDirectoryKey);
-    m_previousLastSaveDirectory = settings.value(kLastSaveDirectoryKey);
 }
 
 void tst_RegionExportManager::cleanup()
 {
     auto settings = SnapTray::getSettings();
-    if (m_hadLastSaveDirectory) {
-        settings.setValue(kLastSaveDirectoryKey, m_previousLastSaveDirectory);
-    } else {
-        settings.remove(kLastSaveDirectoryKey);
+    for (auto it = m_settingSnapshots.cbegin(); it != m_settingSnapshots.cend(); ++it) {
+        if (it.value().existed) {
+            settings.setValue(it.key(), it.value().value);
+        } else {
+            settings.remove(it.key());
+        }
     }
     settings.sync();
+    m_settingSnapshots.clear();
 }
 
 void tst_RegionExportManager::testPrepareExport_NormalizesHighDpiCrop()
@@ -94,6 +134,130 @@ void tst_RegionExportManager::testPrepareExport_NormalizesHighDpiCrop()
     }
 }
 
+void tst_RegionExportManager::testCreateSaveRequest_ManualUsesRememberedDirectory()
+{
+    QTemporaryDir screenshotDirectory;
+    QTemporaryDir rememberedDirectory;
+    QTemporaryDir chosenDirectory;
+    QVERIFY(screenshotDirectory.isValid());
+    QVERIFY(rememberedDirectory.isValid());
+    QVERIFY(chosenDirectory.isValid());
+
+    configureSaveSettings(
+        screenshotDirectory.path(), false, true, rememberedDirectory.path());
+
+    const QString chosenPath = chosenDirectory.filePath(QStringLiteral("chosen.png"));
+    QString observedDefaultPath;
+    bool dialogCalled = false;
+    RegionExportManager manager;
+    manager.m_saveFileDialog = [&](QWidget*, const QString&, const QString& defaultPath,
+                                   const QString&) {
+        dialogCalled = true;
+        observedDefaultPath = defaultPath;
+        return chosenPath;
+    };
+
+    const auto request = manager.createSaveRequest(QRect(0, 0, 320, 180));
+
+    QVERIFY(dialogCalled);
+    QCOMPARE(QFileInfo(observedDefaultPath).absolutePath(), rememberedDirectory.path());
+    QCOMPARE(request.filePath, chosenPath);
+    QVERIFY(!request.autoSave);
+    QVERIFY(request.rememberDirectoryOnSuccess);
+    QVERIFY(!request.cancelled);
+    QVERIFY(request.isValid());
+}
+
+void tst_RegionExportManager::testCreateSaveRequest_ManualUsesScreenshotDirectoryWhenDisabled()
+{
+    QTemporaryDir screenshotDirectory;
+    QTemporaryDir rememberedDirectory;
+    QTemporaryDir chosenDirectory;
+    QVERIFY(screenshotDirectory.isValid());
+    QVERIFY(rememberedDirectory.isValid());
+    QVERIFY(chosenDirectory.isValid());
+
+    configureSaveSettings(
+        screenshotDirectory.path(), false, false, rememberedDirectory.path());
+
+    const QString chosenPath = chosenDirectory.filePath(QStringLiteral("chosen.png"));
+    QString observedDefaultPath;
+    RegionExportManager manager;
+    manager.m_saveFileDialog = [&](QWidget*, const QString&, const QString& defaultPath,
+                                   const QString&) {
+        observedDefaultPath = defaultPath;
+        return chosenPath;
+    };
+
+    const auto request = manager.createSaveRequest(QRect(0, 0, 320, 180));
+
+    QCOMPARE(QFileInfo(observedDefaultPath).absolutePath(), screenshotDirectory.path());
+    QCOMPARE(request.filePath, chosenPath);
+    QVERIFY(!request.autoSave);
+    QVERIFY(!request.rememberDirectoryOnSuccess);
+    QVERIFY(!request.cancelled);
+    QVERIFY(request.isValid());
+}
+
+void tst_RegionExportManager::testCreateSaveRequest_CancelPreservesRememberedDirectory()
+{
+    QTemporaryDir screenshotDirectory;
+    QTemporaryDir rememberedDirectory;
+    QVERIFY(screenshotDirectory.isValid());
+    QVERIFY(rememberedDirectory.isValid());
+
+    configureSaveSettings(
+        screenshotDirectory.path(), false, true, rememberedDirectory.path());
+
+    QString observedDefaultPath;
+    RegionExportManager manager;
+    manager.m_saveFileDialog = [&](QWidget*, const QString&, const QString& defaultPath,
+                                   const QString&) {
+        observedDefaultPath = defaultPath;
+        return QString();
+    };
+
+    const auto request = manager.createSaveRequest(QRect(0, 0, 320, 180));
+
+    QCOMPARE(QFileInfo(observedDefaultPath).absolutePath(), rememberedDirectory.path());
+    QVERIFY(request.filePath.isEmpty());
+    QVERIFY(!request.autoSave);
+    QVERIFY(request.rememberDirectoryOnSuccess);
+    QVERIFY(request.cancelled);
+    QVERIFY(!request.isValid());
+    QCOMPARE(SnapTray::getSettings().value(kLastSaveDirectoryKey).toString(),
+             rememberedDirectory.path());
+}
+
+void tst_RegionExportManager::testCreateSaveRequest_AutoSaveUsesScreenshotDirectoryAndSkipsDialog()
+{
+    QTemporaryDir screenshotDirectory;
+    QTemporaryDir rememberedDirectory;
+    QVERIFY(screenshotDirectory.isValid());
+    QVERIFY(rememberedDirectory.isValid());
+
+    configureSaveSettings(
+        screenshotDirectory.path(), true, true, rememberedDirectory.path());
+
+    bool dialogCalled = false;
+    RegionExportManager manager;
+    manager.m_saveFileDialog = [&](QWidget*, const QString&, const QString&, const QString&) {
+        dialogCalled = true;
+        return QString();
+    };
+
+    const auto request = manager.createSaveRequest(QRect(0, 0, 320, 180));
+
+    QVERIFY(!dialogCalled);
+    QCOMPARE(QFileInfo(request.filePath).absolutePath(), screenshotDirectory.path());
+    QVERIFY(request.autoSave);
+    QVERIFY(!request.rememberDirectoryOnSuccess);
+    QVERIFY(!request.cancelled);
+    QVERIFY(request.isValid());
+    QCOMPARE(SnapTray::getSettings().value(kLastSaveDirectoryKey).toString(),
+             rememberedDirectory.path());
+}
+
 void tst_RegionExportManager::testSavePreparedExportAsync_RemembersDirectoryAfterSuccess()
 {
     QTemporaryDir tempDir;
@@ -101,17 +265,21 @@ void tst_RegionExportManager::testSavePreparedExportAsync_RemembersDirectoryAfte
     const QString outputDirectory = tempDir.filePath(QStringLiteral("chosen"));
     QVERIFY(QDir().mkpath(outputDirectory));
     const QString filePath = outputDirectory + QStringLiteral("/screenshot.png");
+    const QString previousDirectory = tempDir.filePath(QStringLiteral("previous"));
+    QVERIFY(QDir().mkpath(previousDirectory));
 
-    auto settings = SnapTray::getSettings();
-    settings.setValue(kLastSaveDirectoryKey, QStringLiteral("previous-directory"));
-    settings.sync();
+    configureSaveSettings(tempDir.path(), false, true, previousDirectory);
 
     RegionExportManager manager;
+    manager.m_saveFileDialog = [filePath](QWidget*, const QString&, const QString&, const QString&) {
+        return filePath;
+    };
+    const auto request = manager.createSaveRequest(QRect(0, 0, 320, 180));
+    QCOMPARE(request.filePath, filePath);
+    QVERIFY(request.rememberDirectoryOnSuccess);
+
     QSignalSpy completedSpy(&manager, &RegionExportManager::saveCompleted);
     QSignalSpy failedSpy(&manager, &RegionExportManager::saveFailed);
-    RegionExportManager::SaveRequest request;
-    request.filePath = filePath;
-    request.rememberDirectoryOnSuccess = true;
 
     manager.savePreparedExportAsync(makePreparedExport(), request);
 
@@ -127,18 +295,21 @@ void tst_RegionExportManager::testSavePreparedExportAsync_DoesNotRememberWhenReq
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
     const QString filePath = tempDir.filePath(QStringLiteral("screenshot.png"));
-    const QString previousDirectory = QStringLiteral("previous-directory");
+    const QString previousDirectory = tempDir.filePath(QStringLiteral("previous"));
+    QVERIFY(QDir().mkpath(previousDirectory));
 
-    auto settings = SnapTray::getSettings();
-    settings.setValue(kLastSaveDirectoryKey, previousDirectory);
-    settings.sync();
+    configureSaveSettings(tempDir.path(), false, false, previousDirectory);
 
     RegionExportManager manager;
+    manager.m_saveFileDialog = [filePath](QWidget*, const QString&, const QString&, const QString&) {
+        return filePath;
+    };
+    const auto request = manager.createSaveRequest(QRect(0, 0, 320, 180));
+    QCOMPARE(request.filePath, filePath);
+    QVERIFY(!request.rememberDirectoryOnSuccess);
+
     QSignalSpy completedSpy(&manager, &RegionExportManager::saveCompleted);
     QSignalSpy failedSpy(&manager, &RegionExportManager::saveFailed);
-    RegionExportManager::SaveRequest request;
-    request.filePath = filePath;
-    request.rememberDirectoryOnSuccess = false;
 
     manager.savePreparedExportAsync(makePreparedExport(), request);
 
@@ -152,25 +323,31 @@ void tst_RegionExportManager::testSavePreparedExportAsync_DoesNotRememberAfterFa
 {
     QTemporaryDir tempDir;
     QVERIFY(tempDir.isValid());
-    const QString filePath = tempDir.filePath(QStringLiteral("missing/screenshot.png"));
-    const QString previousDirectory = QStringLiteral("previous-directory");
+    const QString previousDirectory = tempDir.filePath(QStringLiteral("previous"));
+    QVERIFY(QDir().mkpath(previousDirectory));
+    const QString filePath = tempDir.filePath(QStringLiteral("screenshot.png"));
+    QVERIFY(QDir().mkpath(filePath));
+    QVERIFY(QFileInfo(filePath).isDir());
+    QVERIFY(QFileInfo(filePath).absoluteDir().exists());
 
-    auto settings = SnapTray::getSettings();
-    settings.setValue(kLastSaveDirectoryKey, previousDirectory);
-    settings.sync();
+    configureSaveSettings(tempDir.path(), false, true, previousDirectory);
 
     RegionExportManager manager;
+    manager.m_saveFileDialog = [filePath](QWidget*, const QString&, const QString&, const QString&) {
+        return filePath;
+    };
+    const auto request = manager.createSaveRequest(QRect(0, 0, 320, 180));
+    QCOMPARE(request.filePath, filePath);
+    QVERIFY(request.rememberDirectoryOnSuccess);
+
     QSignalSpy completedSpy(&manager, &RegionExportManager::saveCompleted);
     QSignalSpy failedSpy(&manager, &RegionExportManager::saveFailed);
-    RegionExportManager::SaveRequest request;
-    request.filePath = filePath;
-    request.rememberDirectoryOnSuccess = true;
 
     manager.savePreparedExportAsync(makePreparedExport(), request);
 
     QTRY_COMPARE_WITH_TIMEOUT(failedSpy.count(), 1, 5000);
     QCOMPARE(completedSpy.count(), 0);
-    QVERIFY(!QFileInfo::exists(filePath));
+    QVERIFY(QFileInfo(filePath).isDir());
     QCOMPARE(SnapTray::getSettings().value(kLastSaveDirectoryKey).toString(), previousDirectory);
 }
 

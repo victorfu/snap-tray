@@ -36,6 +36,13 @@ QString saveErrorDetail(const ImageSaveUtils::Error& saveError)
 
 RegionExportManager::RegionExportManager(QObject *parent)
     : QObject(parent)
+    , m_saveFileDialog([](QWidget* dialogParent,
+                           const QString& title,
+                           const QString& defaultPath,
+                           const QString& filters) {
+        return NativeFileDialogUtils::getSaveFileName(
+            dialogParent, title, defaultPath, filters);
+    })
 {
 }
 
@@ -212,7 +219,7 @@ RegionExportManager::SaveRequest RegionExportManager::createSaveRequest(
     context.outputDir = manualSaveDirectory;
     const QString defaultName = FilenameTemplateEngine::buildUniqueFilePath(
         manualSaveDirectory, templateValue, context, 1);
-    request.filePath = NativeFileDialogUtils::getSaveFileName(
+    request.filePath = m_saveFileDialog(
         parentWidget,
         tr("Save Screenshot"),
         defaultName,
