@@ -134,14 +134,7 @@ void tst_SettingsWindowFeatureGating::filesPageShowsRememberLastFolderOnAllPlatf
     backend.setUseLastScreenshotSaveLocation(false);
     QTRY_VERIFY(!toggle->property("checked").toBool());
 
-    QVERIFY(QMetaObject::invokeMethod(toggle, "toggled", Qt::DirectConnection, Q_ARG(bool, true)));
-    QVERIFY(backend.useLastScreenshotSaveLocation());
-    QCOMPARE(SnapTray::getSettings()
-                 .value(QStringLiteral("files/useLastScreenshotSaveLocation"))
-                 .toBool(),
-             true);
-
-    bool foundAccessibleToggle = false;
+    QAccessibleInterface* accessibleToggle = nullptr;
     const auto descendants = toggle->findChildren<QQuickItem*>();
     for (QQuickItem* item : descendants) {
         QAccessibleInterface* accessibleInterface = QAccessible::queryAccessibleInterface(item);
@@ -151,10 +144,46 @@ void tst_SettingsWindowFeatureGating::filesPageShowsRememberLastFolderOnAllPlatf
         }
 
         QCOMPARE(accessibleInterface->text(QAccessible::Description), expectedDescription);
-        foundAccessibleToggle = true;
+        accessibleToggle = accessibleInterface;
         break;
     }
-    QVERIFY(foundAccessibleToggle);
+    QVERIFY(accessibleToggle != nullptr);
+
+    QAccessibleActionInterface* actionInterface = accessibleToggle->actionInterface();
+    QVERIFY(actionInterface != nullptr);
+    QVERIFY(actionInterface->actionNames().contains(QAccessibleActionInterface::pressAction()));
+    QVERIFY(actionInterface->actionNames().contains(QAccessibleActionInterface::toggleAction()));
+    auto* accessibleItem = qobject_cast<QQuickItem*>(accessibleToggle->object());
+    QVERIFY(accessibleItem != nullptr);
+    QVERIFY(accessibleItem->activeFocusOnTab());
+
+    QSignalSpy changedSpy(&backend, &SnapTray::SettingsBackend::useLastScreenshotSaveLocationChanged);
+    actionInterface->doAction(QAccessibleActionInterface::toggleAction());
+    QTRY_VERIFY(backend.useLastScreenshotSaveLocation());
+    QTRY_VERIFY(toggle->property("checked").toBool());
+    QTRY_COMPARE(changedSpy.count(), 1);
+    QVERIFY(accessibleToggle->state().checked);
+
+    actionInterface->doAction(QAccessibleActionInterface::pressAction());
+    QTRY_VERIFY(!backend.useLastScreenshotSaveLocation());
+    QTRY_VERIFY(!toggle->property("checked").toBool());
+    QTRY_COMPARE(changedSpy.count(), 2);
+    QVERIFY(!accessibleToggle->state().checked);
+
+    actionInterface->doAction(QAccessibleActionInterface::toggleAction());
+    QTRY_VERIFY(backend.useLastScreenshotSaveLocation());
+    QTRY_VERIFY(toggle->property("checked").toBool());
+    QTRY_COMPARE(changedSpy.count(), 3);
+
+    backend.setUseLastScreenshotSaveLocation(false);
+    QTRY_VERIFY(!toggle->property("checked").toBool());
+    backend.setUseLastScreenshotSaveLocation(true);
+    QTRY_VERIFY(toggle->property("checked").toBool());
+    QTRY_COMPARE(changedSpy.count(), 5);
+    QCOMPARE(SnapTray::getSettings()
+                 .value(QStringLiteral("files/useLastScreenshotSaveLocation"))
+                 .toBool(),
+             true);
 }
 
 QTEST_MAIN(tst_SettingsWindowFeatureGating)
