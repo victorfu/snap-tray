@@ -318,6 +318,16 @@ Tokeny daty: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} lub {date}</translation>
         <translation>Automatycznie zapisuj zrzuty ekranu</translation>
         </message>
     <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="102" />
+        <source>Remember last folder</source>
+        <translation>Zapamiętaj ostatni folder</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="103" />
+        <source>When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.</source>
+        <translation>Podczas ręcznego zapisywania obrazu okno dialogowe otwiera się w folderze ostatniego pomyślnego zapisu. Automatyczne zapisywanie nadal używa folderu Zrzuty ekranu wskazanego powyżej.</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/FilesSettings.qml" line="98" />
         <source>Auto-save recordings</source>
         <translation>Automatycznie zapisuj nagrania</translation>

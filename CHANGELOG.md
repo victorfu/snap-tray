@@ -6,6 +6,10 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+### Added
+
+- Added an option to reopen manual image save dialogs in the folder used by the last successful save.
+
 ## [1.0.61] - 2026-08-08
 
 ### Improved

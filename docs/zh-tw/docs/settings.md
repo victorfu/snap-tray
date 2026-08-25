@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-03-26
+last_modified_at: 2026-08-25
 layout: docs
 title: 設定
 seo_title: "SnapTray 設定說明：調整檔案、平台限定 OCR 與錄影、浮水印與更新策略"
@@ -45,6 +45,8 @@ OCR 語言優先序與辨識後行為。
 ### Files
 
 截圖/錄影輸出路徑與檔名格式模板。
+
+啟用「記住上次使用的資料夾」後，Region、Pin、Beautify，以及 History 的「另存新檔」對話框會從上次成功手動儲存圖片的資料夾開啟；自動儲存螢幕截圖仍使用上方「螢幕截圖」設定的資料夾。
 
 ### Updates
 

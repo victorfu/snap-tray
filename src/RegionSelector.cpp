@@ -4134,8 +4134,7 @@ void RegionSelector::saveToFile()
     ensureLoadingSpinner()->start();
     update();
 
-    m_exportManager->savePreparedExportAsync(
-        std::move(prepared), saveRequest.filePath, saveRequest.renderWarning);
+    m_exportManager->savePreparedExportAsync(std::move(prepared), saveRequest);
 }
 
 void RegionSelector::shareToUrl()

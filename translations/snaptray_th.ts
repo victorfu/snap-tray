@@ -227,6 +227,16 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>บันทึกภาพหน้าจออัตโนมัติ</translation>
     </message>
     <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="102"/>
+        <source>Remember last folder</source>
+        <translation>จำโฟลเดอร์ล่าสุด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="103"/>
+        <source>When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.</source>
+        <translation>เมื่อบันทึกรูปภาพด้วยตนเอง กล่องโต้ตอบจะเปิดในโฟลเดอร์ที่บันทึกสำเร็จครั้งล่าสุด การบันทึกอัตโนมัติยังคงใช้โฟลเดอร์ภาพหน้าจอด้านบน</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/FilesSettings.qml" line="100"/>
         <source>Auto-save recordings</source>
         <translation>บันทึกการบันทึกอัตโนมัติ</translation>

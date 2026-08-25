@@ -1,4 +1,5 @@
 #include <QtTest>
+#include <QHash>
 #include <QSignalSpy>
 
 #include "hotkey/HotkeyTypes.h"
@@ -53,6 +54,12 @@ public:
 
 FakeUpdateService* g_fakeUpdateService = nullptr;
 
+struct SettingSnapshot
+{
+    bool existed = false;
+    QVariant value;
+};
+
 } // namespace
 
 class tst_SettingsBackend : public QObject
@@ -60,6 +67,8 @@ class tst_SettingsBackend : public QObject
     Q_OBJECT
 
 private slots:
+    void initTestCase();
+    void cleanupTestCase();
     void init();
     void cleanup();
 
@@ -68,6 +77,7 @@ private slots:
     void testMagnifierEnabled_RoundTripPersistsAndSignals();
     void testNormalizeRecordingAudioSettings_PreservesUnavailableLoadedDevice();
     void testBlurTypeMapping_RoundTripMatchesUiIndices();
+    void testUseLastScreenshotSaveLocation_RoundTripPersistsAndSignals();
     void testCheckForUpdates_Started_EmitsNoTerminalSignals();
     void testCheckForUpdates_Failed_EmitsFailure();
     void testCheckForUpdates_UnsupportedInstallSource_EmitsUnavailable();
@@ -80,7 +90,40 @@ private slots:
 private:
     void clearTestSettings();
     void installFakeUpdateService(UpdateCheckResult result);
+
+    QHash<QString, SettingSnapshot> m_settingSnapshots;
 };
+
+void tst_SettingsBackend::initTestCase()
+{
+    auto settings = SnapTray::getSettings();
+    const QStringList keys = {
+        QStringLiteral("recording/audioDevice"),
+        QStringLiteral("detection/blurType"),
+        QStringLiteral("general/startOnLogin"),
+        QStringLiteral("regionCapture/cursorCompanionStyle"),
+        QStringLiteral("update/lastCheckTime"),
+        QStringLiteral("files/filenameTemplate"),
+        QStringLiteral("files/useLastScreenshotSaveLocation"),
+    };
+
+    for (const QString& key : keys) {
+        m_settingSnapshots.insert(key, {settings.contains(key), settings.value(key)});
+    }
+}
+
+void tst_SettingsBackend::cleanupTestCase()
+{
+    auto settings = SnapTray::getSettings();
+    for (auto it = m_settingSnapshots.cbegin(); it != m_settingSnapshots.cend(); ++it) {
+        if (it.value().existed) {
+            settings.setValue(it.key(), it.value().value);
+        } else {
+            settings.remove(it.key());
+        }
+    }
+    settings.sync();
+}
 
 void tst_SettingsBackend::init()
 {
@@ -106,6 +149,8 @@ void tst_SettingsBackend::clearTestSettings()
     settings.remove("general/startOnLogin");
     settings.remove("regionCapture/cursorCompanionStyle");
     settings.remove("update/lastCheckTime");
+    settings.remove("files/filenameTemplate");
+    settings.remove("files/useLastScreenshotSaveLocation");
     settings.sync();
 }
 
@@ -249,6 +294,37 @@ void tst_SettingsBackend::testBlurTypeMapping_RoundTripMatchesUiIndices()
 
     reloadedBackend.setBlurType(1);
     QCOMPARE(settings.value("detection/blurType").toString(), QStringLiteral("gaussian"));
+}
+
+void tst_SettingsBackend::testUseLastScreenshotSaveLocation_RoundTripPersistsAndSignals()
+{
+    auto settings = SnapTray::getSettings();
+
+    SettingsBackend backend;
+    QVERIFY(!backend.useLastScreenshotSaveLocation());
+    QVERIFY(!settings.contains(QStringLiteral("files/useLastScreenshotSaveLocation")));
+
+    QSignalSpy changedSpy(&backend, &SettingsBackend::useLastScreenshotSaveLocationChanged);
+
+    backend.setUseLastScreenshotSaveLocation(false);
+    QCOMPARE(changedSpy.count(), 0);
+    QVERIFY(!settings.contains(QStringLiteral("files/useLastScreenshotSaveLocation")));
+
+    backend.setUseLastScreenshotSaveLocation(true);
+    QVERIFY(backend.useLastScreenshotSaveLocation());
+    QCOMPARE(settings.value(QStringLiteral("files/useLastScreenshotSaveLocation")).toBool(), true);
+    QCOMPARE(changedSpy.count(), 1);
+
+    backend.setUseLastScreenshotSaveLocation(true);
+    QCOMPARE(changedSpy.count(), 1);
+
+    SettingsBackend reloadedBackend;
+    QVERIFY(reloadedBackend.useLastScreenshotSaveLocation());
+
+    backend.setUseLastScreenshotSaveLocation(false);
+    QVERIFY(!backend.useLastScreenshotSaveLocation());
+    QCOMPARE(settings.value(QStringLiteral("files/useLastScreenshotSaveLocation")).toBool(), false);
+    QCOMPARE(changedSpy.count(), 2);
 }
 
 void tst_SettingsBackend::testCheckForUpdates_Started_EmitsNoTerminalSignals()

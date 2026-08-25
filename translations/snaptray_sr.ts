@@ -318,6 +318,16 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>Аутоматски чувај снимке екрана</translation>
         </message>
     <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="102" />
+        <source>Remember last folder</source>
+        <translation>Запамти последњу фасциклу</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="103" />
+        <source>When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.</source>
+        <translation>При ручном чувању слике, дијалог се отвара у фасцикли последњег успешног чувања. Аутоматско чување и даље користи горе наведену фасциклу за снимке екрана.</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/FilesSettings.qml" line="98" />
         <source>Auto-save recordings</source>
         <translation>Аутоматски чувај снимања</translation>

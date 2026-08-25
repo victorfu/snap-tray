@@ -43,6 +43,7 @@ public:
         QString renderWarning;
         QString error;
         bool autoSave = false;
+        bool rememberDirectoryOnSuccess = false;
         bool cancelled = false;
 
         bool isValid() const
@@ -93,9 +94,7 @@ public:
     /**
      * @brief Save a prepared export asynchronously
      */
-    void savePreparedExportAsync(PreparedExport prepared,
-                                 const QString& filePath,
-                                 const QString& renderWarning = QString());
+    void savePreparedExportAsync(PreparedExport prepared, SaveRequest request);
 
     void setMonitorIdentifier(const QString& monitor);
     void setWindowMetadata(const QString& windowTitle, const QString& appName = QString());

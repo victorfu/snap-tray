@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-06-13
+last_modified_at: 2026-08-25
 layout: docs
 title: 설정
 seo_title: "SnapTray 설정: 파일, OCR, 워터마크, 플랫폼별 녹화 설정"
@@ -45,6 +45,8 @@ OCR 언어 순서 및 인식 후 동작.
 ### 파일
 
 스크린샷 및 녹화 폴더와 파일명 형식 템플릿.
+
+‘마지막 폴더 기억’을 켜면 Region, Pin, Beautify 및 History의 다른 이름으로 저장 대화 상자가 마지막으로 수동 이미지 저장에 성공한 폴더에서 열립니다. 자동 저장은 계속 스크린샷 폴더를 사용합니다.
 
 ### 업데이트
 

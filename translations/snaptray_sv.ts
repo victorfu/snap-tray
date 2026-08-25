@@ -312,6 +312,16 @@ Datumtoken: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} eller {date}</translation>
         <translation>Spara skärmbilder automatiskt</translation>
         </message>
     <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="102" />
+        <source>Remember last folder</source>
+        <translation>Kom ihåg senaste mappen</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="103" />
+        <source>When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.</source>
+        <translation>När en bild sparas manuellt öppnas dialogrutan i mappen för den senaste lyckade sparningen. Automatisk sparning använder fortfarande skärmbildsmappen ovan.</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/FilesSettings.qml" line="98" />
         <source>Auto-save recordings</source>
         <translation>Spara inspelningar automatiskt</translation>

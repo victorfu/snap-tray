@@ -24,6 +24,7 @@ private slots:
     void testPhase4PanelContexts();
     void testMainApplicationTrayContext();
     void testHotkeyConflictGuidanceTranslatedForAllLocales();
+    void testRememberLastFolderTranslatedForAllLocales();
     void testMosaicBrushSizeHintTranslatedForAllLocales();
     void testAutoBlurHintTranslatedForAllLocales();
 
@@ -53,6 +54,16 @@ void tst_QmlTranslations::testQmlSettingsContexts()
              QString::fromUtf8("一般"));
     QCOMPARE(QCoreApplication::translate("SettingsPermissionRow", "Granted"),
              QString::fromUtf8("已授權"));
+    QCOMPARE(QCoreApplication::translate("FilesSettings", "Remember last folder"),
+             QString::fromUtf8("記住上次使用的資料夾"));
+    QCOMPARE(
+        QCoreApplication::translate(
+            "FilesSettings",
+            "When saving an image manually, the dialog opens in the folder of the last "
+            "successful save. Auto-save still uses the Screenshots folder above."),
+        QString::fromUtf8(
+            "手動儲存圖片時，對話框會以上次成功儲存的資料夾開啟。"
+            "自動儲存仍會使用上方的「螢幕截圖」資料夾。"));
     QCOMPARE(QCoreApplication::translate("SnapTray::QmlSettingsWindow",
                                          "Settings saved. Language change will apply after restart."),
              QString::fromUtf8("設定已儲存。語言變更將在重新啟動後生效。"));
@@ -171,6 +182,43 @@ void tst_QmlTranslations::testHotkeyConflictGuidanceTranslatedForAllLocales()
                          qPrintable(QStringLiteral("%1 translation dropped the %%1 placeholder")
                                         .arg(qmFile)));
             }
+        }
+    }
+}
+
+void tst_QmlTranslations::testRememberLastFolderTranslatedForAllLocales()
+{
+    const QByteArray context = "FilesSettings";
+    const QList<QByteArray> sources = {
+        QByteArray("Remember last folder"),
+        QByteArray(
+            "When saving an image manually, the dialog opens in the folder of the last "
+            "successful save. Auto-save still uses the Screenshots folder above."),
+    };
+
+    const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
+    const QStringList qmFiles = translationsDir.entryList(
+        {QStringLiteral("snaptray_*.qm")},
+        QDir::Files,
+        QDir::Name);
+    QCOMPARE(qmFiles.size(), 24);
+
+    for (const QString& qmFile : qmFiles) {
+        QTranslator translator;
+        const QString path = translationsDir.filePath(qmFile);
+        QVERIFY2(translator.load(path),
+                 qPrintable(QStringLiteral("Failed to load translation file: %1").arg(path)));
+
+        for (const QByteArray& source : sources) {
+            const QString translated = translator.translate(context.constData(),
+                                                            source.constData());
+            QVERIFY2(!translated.isEmpty(),
+                     qPrintable(QStringLiteral("%1 is missing the remember-folder text: %2")
+                                    .arg(qmFile, QString::fromUtf8(source))));
+            QVERIFY2(translated != QString::fromUtf8(source),
+                     qPrintable(QStringLiteral(
+                                    "%1 fell back to English for the remember-folder text: %2")
+                                    .arg(qmFile, QString::fromUtf8(source))));
         }
     }
 }

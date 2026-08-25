@@ -318,6 +318,16 @@ Token di data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} o {date}</translation>
         <translation>Salva automaticamente gli screenshot</translation>
         </message>
     <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="102" />
+        <source>Remember last folder</source>
+        <translation>Ricorda l'ultima cartella</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="103" />
+        <source>When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.</source>
+        <translation>Quando salvi manualmente un'immagine, la finestra di dialogo si apre nella cartella dell'ultimo salvataggio riuscito. Il salvataggio automatico continua a usare la cartella Screenshot indicata sopra.</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/FilesSettings.qml" line="98" />
         <source>Auto-save recordings</source>
         <translation>Salva automaticamente le registrazioni</translation>

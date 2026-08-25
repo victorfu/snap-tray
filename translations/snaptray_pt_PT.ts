@@ -312,6 +312,16 @@ Tokens de data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} ou {date}</translation>
         <translation>Guardar capturas de ecrã automaticamente</translation>
         </message>
     <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="102" />
+        <source>Remember last folder</source>
+        <translation>Memorizar a última pasta</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="103" />
+        <source>When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.</source>
+        <translation>Ao guardar manualmente uma imagem, a caixa de diálogo abre na pasta onde foi guardada com êxito pela última vez. A opção de guardar automaticamente continua a utilizar a pasta Capturas de ecrã acima.</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/FilesSettings.qml" line="98" />
         <source>Auto-save recordings</source>
         <translation>Guardar gravações automaticamente</translation>

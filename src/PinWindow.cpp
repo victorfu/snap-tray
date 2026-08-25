@@ -1564,8 +1564,11 @@ void PinWindow::saveToFile()
     }
 
     // Show save dialog
+    const bool rememberDirectoryOnSuccess = fileSettings.loadUseLastScreenshotSaveLocation();
+    const QString manualSavePath =
+        fileSettings.resolveManualScreenshotSaveDirectory(rememberDirectoryOnSuccess);
     QString defaultName = FilenameTemplateEngine::buildUniqueFilePath(
-        savePath, templateValue, context, 1);
+        manualSavePath, templateValue, context, 1);
     const QString filePath = NativeFileDialogUtils::getSaveFileName(
         this,
         tr("Save Screenshot"),
@@ -1582,6 +1585,9 @@ void PinWindow::saveToFile()
         const QImage taggedImage = tagImageWithScreenColorSpace(pixmapToSave.toImage(), exportScreen);
         ImageSaveUtils::Error saveError;
         if (ImageSaveUtils::saveImageAtomically(taggedImage, filePath, QByteArray(), &saveError)) {
+            if (rememberDirectoryOnSuccess) {
+                fileSettings.rememberManualScreenshotSaveDirectory(filePath);
+            }
             emit saveCompleted(pixmapToSave, filePath);
         } else {
             emit saveFailed(filePath, tr("Failed to save screenshot: %1").arg(saveErrorDetail(saveError)));
@@ -5711,8 +5717,11 @@ void PinWindow::onBeautifySave(const BeautifySettings& settings)
                 tr("Failed to save beautified screenshot: %1").arg(saveErrorDetail(saveError)));
         }
     } else {
+        const bool rememberDirectoryOnSuccess = fileSettings.loadUseLastScreenshotSaveLocation();
+        const QString manualSavePath =
+            fileSettings.resolveManualScreenshotSaveDirectory(rememberDirectoryOnSuccess);
         QString defaultName = FilenameTemplateEngine::buildUniqueFilePath(
-            savePath, templateValue, context, 1);
+            manualSavePath, templateValue, context, 1);
         const QString filePath = NativeFileDialogUtils::getSaveFileName(
             this,
             tr("Save Beautified Screenshot"),
@@ -5733,6 +5742,9 @@ void PinWindow::onBeautifySave(const BeautifySettings& settings)
             const QImage taggedImage = tagImageWithScreenColorSpace(result.toImage(), exportScreen);
             ImageSaveUtils::Error saveError;
             if (ImageSaveUtils::saveImageAtomically(taggedImage, filePath, QByteArray(), &saveError)) {
+                if (rememberDirectoryOnSuccess) {
+                    fileSettings.rememberManualScreenshotSaveDirectory(filePath);
+                }
                 emit saveCompleted(result, filePath);
             } else {
                 emit saveFailed(

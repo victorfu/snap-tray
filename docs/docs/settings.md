@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-03-26
+last_modified_at: 2026-08-25
 layout: docs
 title: Settings
 seo_title: "SnapTray Settings: Files, OCR, Watermark and Platform-Specific Recording"
@@ -45,6 +45,8 @@ Frame rate, default output format, preview-first export behavior, audio source/d
 ### Files
 
 Screenshot and recording folders plus filename format templates.
+
+Enable **Remember last folder** to make Region, Pin, Beautify, and History Save As dialogs reopen in the folder of the last successful manual image save. Auto-save continues to use the Screenshots folder.
 
 ### Updates
 

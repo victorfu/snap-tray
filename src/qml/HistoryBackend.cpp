@@ -145,7 +145,9 @@ void HistoryBackend::saveAs(int index)
     }
 
     auto& fileSettings = FileSettingsManager::instance();
-    const QString defaultDir = fileSettings.loadScreenshotPath();
+    const bool rememberDirectoryOnSuccess = fileSettings.loadUseLastScreenshotSaveLocation();
+    const QString defaultDir =
+        fileSettings.resolveManualScreenshotSaveDirectory(rememberDirectoryOnSuccess);
     FilenameTemplateEngine::Context context;
     context.timestamp = entry.createdAt.isValid() ? entry.createdAt : QDateTime::currentDateTime();
     context.type = QStringLiteral("History");
@@ -178,6 +180,9 @@ void HistoryBackend::saveAs(int index)
         return;
     }
 
+    if (rememberDirectoryOnSuccess) {
+        fileSettings.rememberManualScreenshotSaveDirectory(filePath);
+    }
     emit closeRequested();
 }
 

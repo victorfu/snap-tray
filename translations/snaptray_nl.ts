@@ -318,6 +318,16 @@ Datumtokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} of {date}</translation>
         <translation>Screenshots automatisch opslaan</translation>
         </message>
     <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="102" />
+        <source>Remember last folder</source>
+        <translation>Laatste map onthouden</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="103" />
+        <source>When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.</source>
+        <translation>Wanneer u een afbeelding handmatig opslaat, wordt het dialoogvenster geopend in de map van de laatste geslaagde opslag. Automatisch opslaan blijft de bovenstaande map voor schermafbeeldingen gebruiken.</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/FilesSettings.qml" line="98" />
         <source>Auto-save recordings</source>
         <translation>Opnamen automatisch opslaan</translation>

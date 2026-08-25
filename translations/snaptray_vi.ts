@@ -312,6 +312,16 @@ Token ngày: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, hoặc {date}</translatio
         <translation>Tự động lưu ảnh chụp màn hình</translation>
         </message>
     <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="102" />
+        <source>Remember last folder</source>
+        <translation>Ghi nhớ thư mục gần nhất</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="103" />
+        <source>When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.</source>
+        <translation>Khi lưu ảnh theo cách thủ công, hộp thoại sẽ mở tại thư mục của lần lưu thành công gần nhất. Tính năng tự động lưu vẫn sử dụng thư mục Ảnh chụp màn hình ở trên.</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/FilesSettings.qml" line="98" />
         <source>Auto-save recordings</source>
         <translation>Tự động lưu bản ghi</translation>

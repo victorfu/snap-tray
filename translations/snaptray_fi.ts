@@ -312,6 +312,16 @@ Päivämäärätunnisteet: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} tai {date}</
         <translation>Tallenna kuvakaappaukset automaattisesti</translation>
         </message>
     <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="102" />
+        <source>Remember last folder</source>
+        <translation>Muista viimeksi käytetty kansio</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="103" />
+        <source>When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.</source>
+        <translation>Kun kuva tallennetaan manuaalisesti, valintaikkuna avautuu viimeksi onnistuneessa tallennuksessa käytettyyn kansioon. Automaattinen tallennus käyttää edelleen yllä määritettyä kuvakaappauskansiota.</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/FilesSettings.qml" line="98" />
         <source>Auto-save recordings</source>
         <translation>Tallenna tallenteet automaattisesti</translation>

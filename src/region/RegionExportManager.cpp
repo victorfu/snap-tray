@@ -174,8 +174,8 @@ RegionExportManager::SaveRequest RegionExportManager::createSaveRequest(
     SaveRequest request;
 
     // Get file settings
-    auto &fileSettings = FileSettingsManager::instance();
-    QString savePath = fileSettings.loadScreenshotPath();
+    auto& fileSettings = FileSettingsManager::instance();
+    const QString screenshotPath = fileSettings.loadScreenshotPath();
     FilenameTemplateEngine::Context context;
     context.type = QStringLiteral("Screenshot");
     context.prefix = fileSettings.loadFilenamePrefix();
@@ -187,14 +187,15 @@ RegionExportManager::SaveRequest RegionExportManager::createSaveRequest(
     context.regionIndex = m_regionIndex;
     context.ext = QStringLiteral("png");
     context.dateFormat = fileSettings.loadDateFormat();
-    context.outputDir = savePath;
+    context.outputDir = screenshotPath;
     const QString templateValue = fileSettings.loadFilenameTemplate();
 
     // Check auto-save setting
     if (fileSettings.loadAutoSaveScreenshots()) {
         request.filePath = FilenameTemplateEngine::buildUniqueFilePath(
-            savePath, templateValue, context, 100, &request.renderWarning);
+            screenshotPath, templateValue, context, 100, &request.renderWarning);
         request.autoSave = true;
+        request.rememberDirectoryOnSuccess = false;
         if (request.filePath.isEmpty()) {
             request.error = request.renderWarning.isEmpty()
                 ? tr("Failed to determine screenshot output path")
@@ -204,8 +205,13 @@ RegionExportManager::SaveRequest RegionExportManager::createSaveRequest(
     }
 
     // Show save dialog
+    request.rememberDirectoryOnSuccess =
+        fileSettings.loadUseLastScreenshotSaveLocation();
+    const QString manualSaveDirectory =
+        fileSettings.resolveManualScreenshotSaveDirectory(request.rememberDirectoryOnSuccess);
+    context.outputDir = manualSaveDirectory;
     const QString defaultName = FilenameTemplateEngine::buildUniqueFilePath(
-        savePath, templateValue, context, 1);
+        manualSaveDirectory, templateValue, context, 1);
     request.filePath = NativeFileDialogUtils::getSaveFileName(
         parentWidget,
         tr("Save Screenshot"),
@@ -216,22 +222,25 @@ RegionExportManager::SaveRequest RegionExportManager::createSaveRequest(
 }
 
 void RegionExportManager::savePreparedExportAsync(PreparedExport prepared,
-                                                  const QString& filePath,
-                                                  const QString& renderWarning)
+    SaveRequest request)
 {
     if (!prepared.isValid()) {
-        emit saveFailed(filePath, tr("Failed to save screenshot: unable to process selection"));
+        emit saveFailed(
+            request.filePath,
+            tr("Failed to save screenshot: unable to process selection"));
         return;
     }
 
-    if (filePath.isEmpty()) {
+    if (request.filePath.isEmpty()) {
         emit saveFailed(QString(), tr("Failed to save screenshot: output path is empty"));
         return;
     }
 
     if (m_saveWatcher) {
         qWarning() << "RegionExportManager: save already in progress";
-        emit saveFailed(filePath, tr("Failed to save screenshot: another save is already in progress"));
+        emit saveFailed(
+            request.filePath,
+            tr("Failed to save screenshot: another save is already in progress"));
         return;
     }
 
@@ -239,7 +248,7 @@ void RegionExportManager::savePreparedExportAsync(PreparedExport prepared,
     m_saveWatcher = watcher;
     const QImage image = prepared.image;
     connect(watcher, &QFutureWatcher<SaveTaskResult>::finished, this,
-        [this, watcher, prepared = std::move(prepared)]() mutable {
+        [this, watcher, prepared = std::move(prepared), request]() mutable {
             const SaveTaskResult result = watcher->result();
             if (m_saveWatcher == watcher) {
                 m_saveWatcher.clear();
@@ -248,6 +257,10 @@ void RegionExportManager::savePreparedExportAsync(PreparedExport prepared,
 
             if (result.success) {
                 qDebug() << "RegionExportManager: Saved to" << result.filePath;
+                if (request.rememberDirectoryOnSuccess) {
+                    FileSettingsManager::instance().rememberManualScreenshotSaveDirectory(
+                        result.filePath);
+                }
                 emit saveCompleted(prepared.pixmap, prepared.image, result.filePath);
                 return;
             }
@@ -265,12 +278,13 @@ void RegionExportManager::savePreparedExportAsync(PreparedExport prepared,
                 tr("Failed to save screenshot: %1").arg(saveErrorDetail(result.saveError)));
         });
 
-    watcher->setFuture(QtConcurrent::run([image, filePath, renderWarning]() {
-        SaveTaskResult result;
-        result.filePath = filePath;
-        result.renderWarning = renderWarning;
-        result.success = ImageSaveUtils::saveImageAtomically(
-            image, filePath, QByteArray(), &result.saveError);
-        return result;
-    }));
+    watcher->setFuture(QtConcurrent::run(
+        [image, filePath = request.filePath, renderWarning = request.renderWarning]() {
+            SaveTaskResult result;
+            result.filePath = filePath;
+            result.renderWarning = renderWarning;
+            result.success = ImageSaveUtils::saveImageAtomically(
+                image, filePath, QByteArray(), &result.saveError);
+            return result;
+        }));
 }

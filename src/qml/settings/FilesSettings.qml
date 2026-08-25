@@ -98,6 +98,14 @@ Flickable {
         }
 
         SettingsToggle {
+            objectName: "rememberLastFolderToggle"
+            label: qsTr("Remember last folder")
+            description: qsTr("When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.")
+            checked: settingsBackend.useLastScreenshotSaveLocation
+            onToggled: function(checked) { settingsBackend.useLastScreenshotSaveLocation = checked }
+        }
+
+        SettingsToggle {
             label: qsTr("Auto-save recordings")
             visible: settingsBackend.recordingSupported
             checked: settingsBackend.autoSaveRecordings

@@ -318,6 +318,16 @@ Jetons de date : {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} ou {date}</translation
         <translation>Enregistrer automatiquement les captures d’écran</translation>
         </message>
     <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="102" />
+        <source>Remember last folder</source>
+        <translation>Mémoriser le dernier dossier</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="103" />
+        <source>When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.</source>
+        <translation>Lors de l’enregistrement manuel d’une image, la boîte de dialogue s’ouvre dans le dossier du dernier enregistrement réussi. L’enregistrement automatique continue d’utiliser le dossier Captures d’écran ci-dessus.</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/FilesSettings.qml" line="98" />
         <source>Auto-save recordings</source>
         <translation>Enregistrer automatiquement les enregistrements</translation>

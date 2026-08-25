@@ -308,6 +308,7 @@ void SettingsBackend::loadAllSettings()
     m_recordingPath = fileMgr.loadRecordingPath();
     m_filenameTemplate = fileMgr.loadFilenameTemplate();
     m_autoSaveScreenshots = fileMgr.loadAutoSaveScreenshots();
+    m_useLastScreenshotSaveLocation = fileMgr.loadUseLastScreenshotSaveLocation();
     m_autoSaveRecordings = fileMgr.loadAutoSaveRecordings();
 
     // Updates
@@ -712,6 +713,22 @@ void SettingsBackend::setAutoSaveScreenshots(bool v) {
         FileSettingsManager::instance().saveAutoSaveScreenshots(v);
         emit autoSaveScreenshotsChanged();
     }
+}
+
+bool SettingsBackend::useLastScreenshotSaveLocation() const
+{
+    return m_useLastScreenshotSaveLocation;
+}
+
+void SettingsBackend::setUseLastScreenshotSaveLocation(bool v)
+{
+    if (m_useLastScreenshotSaveLocation == v) {
+        return;
+    }
+
+    m_useLastScreenshotSaveLocation = v;
+    FileSettingsManager::instance().saveUseLastScreenshotSaveLocation(v);
+    emit useLastScreenshotSaveLocationChanged();
 }
 
 bool SettingsBackend::autoSaveRecordings() const { return m_autoSaveRecordings; }

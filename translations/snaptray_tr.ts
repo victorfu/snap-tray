@@ -312,6 +312,16 @@ Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</trans
         <translation>Ekran görüntülerini otomatik kaydet</translation>
         </message>
     <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="102" />
+        <source>Remember last folder</source>
+        <translation>Son klasörü hatırla</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/settings/FilesSettings.qml" line="103" />
+        <source>When saving an image manually, the dialog opens in the folder of the last successful save. Auto-save still uses the Screenshots folder above.</source>
+        <translation>Bir görüntüyü elle kaydederken iletişim kutusu, son başarılı kaydın yapıldığı klasörde açılır. Otomatik kaydetme, yukarıdaki Ekran Görüntüleri klasörünü kullanmaya devam eder.</translation>
+        </message>
+    <message>
         <location filename="../src/qml/settings/FilesSettings.qml" line="98" />
         <source>Auto-save recordings</source>
         <translation>Kayıtları otomatik kaydet</translation>

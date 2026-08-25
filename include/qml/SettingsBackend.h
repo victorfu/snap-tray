@@ -78,6 +78,7 @@ class SettingsBackend : public QObject
     Q_PROPERTY(QString filenameTemplate READ filenameTemplate WRITE setFilenameTemplate NOTIFY filenameTemplateChanged)
     Q_PROPERTY(QString filenamePreview READ filenamePreview NOTIFY filenameTemplateChanged)
     Q_PROPERTY(bool autoSaveScreenshots READ autoSaveScreenshots WRITE setAutoSaveScreenshots NOTIFY autoSaveScreenshotsChanged)
+    Q_PROPERTY(bool useLastScreenshotSaveLocation READ useLastScreenshotSaveLocation WRITE setUseLastScreenshotSaveLocation NOTIFY useLastScreenshotSaveLocationChanged)
     Q_PROPERTY(bool autoSaveRecordings READ autoSaveRecordings WRITE setAutoSaveRecordings NOTIFY autoSaveRecordingsChanged)
 
     // ──── Updates ────
@@ -202,6 +203,8 @@ public:
     QString filenamePreview() const;
     bool autoSaveScreenshots() const;
     void setAutoSaveScreenshots(bool v);
+    bool useLastScreenshotSaveLocation() const;
+    void setUseLastScreenshotSaveLocation(bool v);
     bool autoSaveRecordings() const;
     void setAutoSaveRecordings(bool v);
 
@@ -313,6 +316,7 @@ signals:
     void recordingPathChanged();
     void filenameTemplateChanged();
     void autoSaveScreenshotsChanged();
+    void useLastScreenshotSaveLocationChanged();
     void autoSaveRecordingsChanged();
 
     // Updates
@@ -398,6 +402,7 @@ private:
     QString m_recordingPath;
     QString m_filenameTemplate;
     bool m_autoSaveScreenshots = true;
+    bool m_useLastScreenshotSaveLocation = false;
     bool m_autoSaveRecordings = true;
 
     // Updates

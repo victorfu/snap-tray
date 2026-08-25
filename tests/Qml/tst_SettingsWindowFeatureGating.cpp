@@ -1,7 +1,10 @@
 #include <QtTest/QtTest>
 
 #include "qml/SettingsBackend.h"
+#include "settings/Settings.h"
 
+#include <QAccessible>
+#include <QHash>
 #include <QQmlComponent>
 #include <QQmlContext>
 #include <QQmlEngine>
@@ -12,13 +15,71 @@
 
 Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
 
+namespace {
+
+struct SettingSnapshot
+{
+    bool existed = false;
+    QVariant value;
+};
+
+} // namespace
+
 class tst_SettingsWindowFeatureGating : public QObject
 {
     Q_OBJECT
 
 private slots:
+    void initTestCase();
+    void cleanupTestCase();
+    void init();
+    void cleanup();
+
     void sidebarModelHidesUnsupportedPages();
+    void filesPageShowsRememberLastFolderOnAllPlatforms();
+
+private:
+    QHash<QString, SettingSnapshot> m_settingSnapshots;
 };
+
+void tst_SettingsWindowFeatureGating::initTestCase()
+{
+    auto settings = SnapTray::getSettings();
+    const QStringList keys = {
+        QStringLiteral("files/filenameTemplate"),
+        QStringLiteral("files/useLastScreenshotSaveLocation"),
+    };
+
+    for (const QString& key : keys) {
+        m_settingSnapshots.insert(key, {settings.contains(key), settings.value(key)});
+    }
+}
+
+void tst_SettingsWindowFeatureGating::cleanupTestCase()
+{
+    auto settings = SnapTray::getSettings();
+    for (auto it = m_settingSnapshots.cbegin(); it != m_settingSnapshots.cend(); ++it) {
+        if (it.value().existed) {
+            settings.setValue(it.key(), it.value().value);
+        } else {
+            settings.remove(it.key());
+        }
+    }
+    settings.sync();
+}
+
+void tst_SettingsWindowFeatureGating::init()
+{
+    auto settings = SnapTray::getSettings();
+    settings.remove(QStringLiteral("files/filenameTemplate"));
+    settings.remove(QStringLiteral("files/useLastScreenshotSaveLocation"));
+    settings.sync();
+}
+
+void tst_SettingsWindowFeatureGating::cleanup()
+{
+    init();
+}
 
 void tst_SettingsWindowFeatureGating::sidebarModelHidesUnsupportedPages()
 {
@@ -46,6 +107,54 @@ void tst_SettingsWindowFeatureGating::sidebarModelHidesUnsupportedPages()
     QVERIFY(keys.contains(QStringLiteral("ocr")));
     QVERIFY(keys.contains(QStringLiteral("recording")));
 #endif
+}
+
+void tst_SettingsWindowFeatureGating::filesPageShowsRememberLastFolderOnAllPlatforms()
+{
+    QQmlEngine engine;
+    SnapTray::SettingsBackend backend;
+    backend.setUseLastScreenshotSaveLocation(true);
+    engine.rootContext()->setContextProperty(QStringLiteral("settingsBackend"), &backend);
+
+    QQmlComponent component(&engine, QUrl(QStringLiteral("qrc:/SnapTrayQml/settings/FilesSettings.qml")));
+    std::unique_ptr<QObject> root(component.create());
+    QVERIFY2(root != nullptr, qPrintable(component.errorString()));
+
+    auto* toggle = root->findChild<QQuickItem*>(QStringLiteral("rememberLastFolderToggle"));
+    QVERIFY(toggle != nullptr);
+    QVERIFY(toggle->property("visible").toBool());
+    QCOMPARE(toggle->property("label").toString(), QStringLiteral("Remember last folder"));
+
+    const QString expectedDescription = QStringLiteral(
+        "When saving an image manually, the dialog opens in the folder of the last successful save. "
+        "Auto-save still uses the Screenshots folder above.");
+    QCOMPARE(toggle->property("description").toString(), expectedDescription);
+    QVERIFY(toggle->property("checked").toBool());
+
+    backend.setUseLastScreenshotSaveLocation(false);
+    QTRY_VERIFY(!toggle->property("checked").toBool());
+
+    QVERIFY(QMetaObject::invokeMethod(toggle, "toggled", Qt::DirectConnection, Q_ARG(bool, true)));
+    QVERIFY(backend.useLastScreenshotSaveLocation());
+    QCOMPARE(SnapTray::getSettings()
+                 .value(QStringLiteral("files/useLastScreenshotSaveLocation"))
+                 .toBool(),
+             true);
+
+    bool foundAccessibleToggle = false;
+    const auto descendants = toggle->findChildren<QQuickItem*>();
+    for (QQuickItem* item : descendants) {
+        QAccessibleInterface* interface = QAccessible::queryAccessibleInterface(item);
+        if (!interface || interface->role() != QAccessible::CheckBox
+            || interface->text(QAccessible::Name) != QStringLiteral("Remember last folder")) {
+            continue;
+        }
+
+        QCOMPARE(interface->text(QAccessible::Description), expectedDescription);
+        foundAccessibleToggle = true;
+        break;
+    }
+    QVERIFY(foundAccessibleToggle);
 }
 
 QTEST_MAIN(tst_SettingsWindowFeatureGating)
