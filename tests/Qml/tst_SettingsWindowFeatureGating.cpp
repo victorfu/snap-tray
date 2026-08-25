@@ -144,13 +144,13 @@ void tst_SettingsWindowFeatureGating::filesPageShowsRememberLastFolderOnAllPlatf
     bool foundAccessibleToggle = false;
     const auto descendants = toggle->findChildren<QQuickItem*>();
     for (QQuickItem* item : descendants) {
-        QAccessibleInterface* interface = QAccessible::queryAccessibleInterface(item);
-        if (!interface || interface->role() != QAccessible::CheckBox
-            || interface->text(QAccessible::Name) != QStringLiteral("Remember last folder")) {
+        QAccessibleInterface* accessibleInterface = QAccessible::queryAccessibleInterface(item);
+        if (!accessibleInterface || accessibleInterface->role() != QAccessible::CheckBox
+            || accessibleInterface->text(QAccessible::Name) != QStringLiteral("Remember last folder")) {
             continue;
         }
 
-        QCOMPARE(interface->text(QAccessible::Description), expectedDescription);
+        QCOMPARE(accessibleInterface->text(QAccessible::Description), expectedDescription);
         foundAccessibleToggle = true;
         break;
     }
