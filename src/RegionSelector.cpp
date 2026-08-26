@@ -4126,13 +4126,12 @@ void RegionSelector::saveToFile()
 
     m_exportInProgress = true;
     hideDetachedFloatingUi();
-    if (!QGuiApplication::screens().isEmpty()) {
-        show();
-        activateWindow();
-        raise();
+    // A manual save already hid the fullscreen selector before opening the dialog.
+    // Keep it hidden while saving so it cannot flash briefly before close().
+    if (!usesDialog) {
+        ensureLoadingSpinner()->start();
+        update();
     }
-    ensureLoadingSpinner()->start();
-    update();
 
     m_exportManager->savePreparedExportAsync(std::move(prepared), saveRequest);
 }
