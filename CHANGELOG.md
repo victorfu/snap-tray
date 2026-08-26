@@ -6,9 +6,22 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+## [1.0.62] - 2026-08-26
+
 ### Added
 
-- Added an option to reopen manual image save dialogs in the folder used by the last successful save.
+- Added a "Remember last folder" option for manual screenshots, beautified images, and history exports while keeping auto-save tied to the configured Screenshots folder.
+- Added Japanese, Korean, and Thai README guides with localized documentation entry points.
+
+### Improved
+
+- Improved Settings toggles so keyboard users and assistive technologies can activate them reliably.
+- Improved the website language switcher so every supported locale remains available when a page has no direct translation.
+
+### Fixed
+
+- Fixed manual region saves so the fullscreen selector stays hidden after choosing a file, eliminating a brief overlay flash.
+- Corrected macOS website guidance to reflect Apple Silicon-only release builds and SnapTray's screen-first recording workflow.
 
 ## [1.0.61] - 2026-08-08
 
