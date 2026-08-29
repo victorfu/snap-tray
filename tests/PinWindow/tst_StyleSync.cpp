@@ -101,6 +101,7 @@ class TestPinWindowStyleSync : public QObject
 private slots:
     void initTestCase();
     void testUsesAuthorityModeByDefault();
+    void testAnnotationToolUsesWindowDevicePixelRatio();
     void testNonAnnotationEdgeHoverUsesCorrectResizeCursor();
     void testOverlayRestoreReturnsArrowToolCursor();
     void testPolylineReleaseRecomputesHoverCursor();
@@ -139,6 +140,17 @@ void TestPinWindowStyleSync::testUsesAuthorityModeByDefault()
 {
     PinWindow window(createTestPixmap(), QPoint(0, 0));
     QCOMPARE(CursorAuthority::instance().modeForWidget(&window), CursorSurfaceMode::Authority);
+}
+
+void TestPinWindowStyleSync::testAnnotationToolUsesWindowDevicePixelRatio()
+{
+    PinWindow window(createTestPixmap(240, 160), QPoint(0, 0));
+    if (!window.m_toolManager) {
+        window.initializeAnnotationComponents();
+    }
+
+    QVERIFY(window.m_toolManager != nullptr);
+    QCOMPARE(window.m_toolManager->context()->devicePixelRatio, window.devicePixelRatioF());
 }
 
 void TestPinWindowStyleSync::testNonAnnotationEdgeHoverUsesCorrectResizeCursor()

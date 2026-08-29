@@ -40,7 +40,6 @@ public:
 
 private:
     bool m_isDrawing = false;
-    QVector<QPointF> m_currentPath;
     std::unique_ptr<PencilStroke> m_currentStroke;
     QRect m_previewDirtyRect;
 

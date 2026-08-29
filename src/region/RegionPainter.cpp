@@ -591,18 +591,7 @@ void RegionPainter::drawAnnotations(QPainter& painter)
     if (m_parentWidget) {
         QRect annotationViewport = m_annotationViewport.normalized();
         if (annotationViewport.isValid() && !annotationViewport.isEmpty()) {
-            QRect itemBounds;
-            m_annotationLayer->forEachItem([&itemBounds](const AnnotationItem* item) {
-                if (!item || !item->isVisible()) {
-                    return;
-                }
-
-                if (itemBounds.isValid()) {
-                    itemBounds = itemBounds.united(item->boundingRect());
-                } else {
-                    itemBounds = item->boundingRect();
-                }
-            });
+            const QRect itemBounds = m_annotationLayer->contentBoundingRect();
 
             if (itemBounds.isValid() && !itemBounds.isEmpty()) {
                 annotationViewport = annotationViewport.united(itemBounds);

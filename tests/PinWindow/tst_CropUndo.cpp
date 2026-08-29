@@ -86,12 +86,12 @@ private slots:
     void testHandleToolbarUndo_PrioritizesCropWhenNoPostCropAnnotations();
     void testHandleToolbarUndo_PrioritizesPostCropAnnotationsFirst();
     void testHandleToolbarUndo_DoesNothingDuringHistoryLock();
-    void testHandleToolbarUndo_UsesStableCropBoundaryAfterAnnotationTrim();
+    void testHandleToolbarUndo_UsesStableCropBoundaryBeyondFiftyAnnotations();
     void testHandleToolbarRedo_ReappliesCropAfterUndo();
     void testHandleToolbarRedo_DoesNothingDuringHistoryLock();
     void testTransformChange_ClearsCropHistory();
     void testHandleToolbarRedo_PrioritizesCropBeforePostCropAnnotationRedo();
-    void testHandleToolbarRedo_UsesStableCropBoundaryAfterAnnotationTrim();
+    void testHandleToolbarRedo_UsesStableCropBoundaryBeyondFiftyAnnotations();
     void testHandleToolbarUndo_InPlaceCacheInvalidationDoesNotPreemptCropUndo();
 };
 
@@ -590,14 +590,14 @@ void TestPinWindowCropUndo::testHandleToolbarUndo_DoesNothingDuringHistoryLock()
     QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(1));
 }
 
-void TestPinWindowCropUndo::testHandleToolbarUndo_UsesStableCropBoundaryAfterAnnotationTrim()
+void TestPinWindowCropUndo::testHandleToolbarUndo_UsesStableCropBoundaryBeyondFiftyAnnotations()
 {
     QPixmap source = createPatternPixmap(260, 180);
     PinWindow window(source, QPoint(0, 0), nullptr, false);
     window.showToolbar();
     QVERIFY(window.m_annotationLayer != nullptr);
 
-    // Fill annotation history to capacity so the first post-crop add trims from the front.
+    // Keep enough annotations to cover the former 50-item content limit.
     for (int i = 0; i < 50; ++i) {
         const QVector<QPoint> points = {
             QPoint(20 + i, 20 + i),
@@ -607,6 +607,8 @@ void TestPinWindowCropUndo::testHandleToolbarUndo_UsesStableCropBoundaryAfterAnn
             points, QColor(Qt::red), 2, LineEndStyle::None, LineStyle::Solid));
     }
     QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(50));
+    AnnotationItem* firstAnnotation = window.m_annotationLayer->itemAt(0);
+    QVERIFY(firstAnnotation != nullptr);
 
     const QRect cropRect(30, 20, 160, 110);
     const QPixmap expectedCropped = source.copy(cropRect);
@@ -616,14 +618,17 @@ void TestPinWindowCropUndo::testHandleToolbarUndo_UsesStableCropBoundaryAfterAnn
     const QVector<QPoint> postCropPoints = {QPoint(18, 16), QPoint(70, 42)};
     window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
         postCropPoints, QColor(Qt::blue), 2, LineEndStyle::None, LineStyle::Solid));
-    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(50));
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(51));
+    QCOMPARE(window.m_annotationLayer->itemAt(0), firstAnnotation);
 
     window.handleToolbarUndo(); // Undo post-crop annotation first.
-    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(49));
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(50));
+    QCOMPARE(window.m_annotationLayer->itemAt(0), firstAnnotation);
     QVERIFY(pixmapsEqual(window.m_originalPixmap, expectedCropped));
 
     window.handleToolbarUndo(); // Then undo crop, not pre-crop annotation.
-    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(49));
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(50));
+    QCOMPARE(window.m_annotationLayer->itemAt(0), firstAnnotation);
     QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
 }
 
@@ -744,14 +749,14 @@ void TestPinWindowCropUndo::testHandleToolbarRedo_PrioritizesCropBeforePostCropA
     QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(2));
 }
 
-void TestPinWindowCropUndo::testHandleToolbarRedo_UsesStableCropBoundaryAfterAnnotationTrim()
+void TestPinWindowCropUndo::testHandleToolbarRedo_UsesStableCropBoundaryBeyondFiftyAnnotations()
 {
     QPixmap source = createPatternPixmap(260, 180);
     PinWindow window(source, QPoint(0, 0), nullptr, false);
     window.showToolbar();
     QVERIFY(window.m_annotationLayer != nullptr);
 
-    // Fill annotation history to capacity so post-crop add triggers trimHistory().
+    // Keep enough annotations to cover the former 50-item content limit.
     for (int i = 0; i < 50; ++i) {
         const QVector<QPoint> points = {
             QPoint(20 + i, 20 + i),
@@ -761,6 +766,8 @@ void TestPinWindowCropUndo::testHandleToolbarRedo_UsesStableCropBoundaryAfterAnn
             points, QColor(Qt::red), 2, LineEndStyle::None, LineStyle::Solid));
     }
     QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(50));
+    AnnotationItem* firstAnnotation = window.m_annotationLayer->itemAt(0);
+    QVERIFY(firstAnnotation != nullptr);
 
     const QRect cropRect(30, 20, 160, 110);
     const QPixmap expectedCropped = source.copy(cropRect);
@@ -769,19 +776,23 @@ void TestPinWindowCropUndo::testHandleToolbarRedo_UsesStableCropBoundaryAfterAnn
     const QVector<QPoint> postCropPoints = {QPoint(18, 16), QPoint(70, 42)};
     window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
         postCropPoints, QColor(Qt::blue), 2, LineEndStyle::None, LineStyle::Solid));
-    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(50));
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(51));
+    QCOMPARE(window.m_annotationLayer->itemAt(0), firstAnnotation);
 
     window.handleToolbarUndo(); // Undo post-crop annotation
     window.handleToolbarUndo(); // Undo crop
     QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
-    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(49));
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(50));
+    QCOMPARE(window.m_annotationLayer->itemAt(0), firstAnnotation);
 
     window.handleToolbarRedo(); // Redo crop first when boundary matches via top item.
     QVERIFY(pixmapsEqual(window.m_originalPixmap, expectedCropped));
-    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(49));
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(50));
+    QCOMPARE(window.m_annotationLayer->itemAt(0), firstAnnotation);
 
     window.handleToolbarRedo(); // Then redo post-crop annotation.
-    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(50));
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(51));
+    QCOMPARE(window.m_annotationLayer->itemAt(0), firstAnnotation);
 }
 
 void TestPinWindowCropUndo::testHandleToolbarUndo_InPlaceCacheInvalidationDoesNotPreemptCropUndo()

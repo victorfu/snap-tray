@@ -142,13 +142,14 @@ void ScreenCanvas::closeFromSession()
 
 void ScreenCanvas::paintEvent(QPaintEvent* event)
 {
-    Q_UNUSED(event);
-
     if (!m_session) {
         return;
     }
 
     QPainter painter(this);
+    if (event) {
+        painter.setClipRegion(event->region(), Qt::IntersectClip);
+    }
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
     painter.setRenderHint(QPainter::Antialiasing);
     m_session->handleSurfacePaint(this, painter);

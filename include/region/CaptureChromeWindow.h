@@ -14,6 +14,44 @@ class LoadingSpinnerRenderer;
 class SelectionStateManager;
 class ToolManager;
 
+namespace snaptray::region {
+
+enum class CaptureChromeDirtyReason {
+    Scene,
+    PencilPreview
+};
+
+CaptureChromeDirtyReason captureChromeDirtyReasonForToolPreview(
+    bool pencilToolActive,
+    const QRegion& previewDirtyRegion);
+
+struct CaptureChromePendingDirtyRegions
+{
+    QRegion scene;
+    QRegion pencilPreview;
+
+    void add(const QRegion& region, CaptureChromeDirtyReason reason);
+    void clear();
+    CaptureChromePendingDirtyRegions take();
+};
+
+struct CaptureChromeDirtyRegionPlanInput
+{
+    QRect windowRect;
+    QRegion sceneDirtyRegion;
+    QRegion previewDirtyRegion;
+    QRegion stateDirtyRegion;
+    bool forceFullRepaint = false;
+    bool renderStateChanged = false;
+    bool conservativeStateCompositing = false;
+};
+
+QRegion planCaptureChromeDirtyRegion(const CaptureChromeDirtyRegionPlanInput& input);
+QRegion planCaptureChromeDirtyRegionForCurrentPlatform(
+    CaptureChromeDirtyRegionPlanInput input);
+
+} // namespace snaptray::region
+
 class CaptureChromeWindow : public QWidget
 {
     Q_OBJECT
@@ -26,7 +64,10 @@ public:
     void setAnnotationLayer(AnnotationLayer* layer);
     void setToolManager(ToolManager* manager);
     void setShortcutHintsOverlay(CaptureShortcutHintsOverlay* overlay);
-    void markDirtyRegion(const QRegion& region);
+    void markDirtyRegion(
+        const QRegion& region,
+        snaptray::region::CaptureChromeDirtyReason reason =
+            snaptray::region::CaptureChromeDirtyReason::Scene);
 
     void syncToHost(QWidget* host,
                     const QRect& selectionRect,
@@ -70,7 +111,7 @@ private:
     QPoint m_busySpinnerCenter;
     QRect m_lastDimensionInfoRect;
     bool m_useNativeLayeredBackend = false;
-    QRegion m_pendingDirtyRegion;
+    snaptray::region::CaptureChromePendingDirtyRegions m_pendingDirtyRegions;
 };
 
 #endif // CAPTURECHROMEWINDOW_H

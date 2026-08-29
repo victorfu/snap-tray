@@ -282,6 +282,11 @@ RegionSelector::RegionSelector(QWidget* parent)
             }
 
             syncSelectionPreviewOverlay();
+            if (usesDetachedCaptureWindows() && m_captureChromeWindow) {
+                // SelectionStateManager::State changes can alter dimension and
+                // annotation chrome even when the selection rect is unchanged.
+                m_captureChromeWindow->markDirtyRegion(QRegion(rect()));
+            }
             syncCaptureChromeWindow();
             m_lastSelectionState = newState;
 
@@ -375,13 +380,33 @@ RegionSelector::RegionSelector(QWidget* parent)
             "ToolManager.needsRepaint.hostReaction",
             QStringLiteral("tool=%1").arg(static_cast<int>(
                 m_toolManager ? m_toolManager->currentTool() : ToolId::Selection)));
-        if (usesDetachedCaptureWindows()) {
-            syncCaptureChromeWindow();
-            return;
-        }
         const QRect previewRect = snaptray::tools::previewRepaintRect(
             m_toolManager,
             SelectionDirtyRegionPlanner::kAnnotationRepaintMargin);
+        if (usesDetachedCaptureWindows()) {
+            if (m_captureChromeWindow) {
+                const QRegion previewDirtyRegion =
+                    previewRect.isValid() && !previewRect.isEmpty()
+                    ? QRegion(previewRect)
+                    : QRegion();
+                const bool pencilToolActive =
+                    m_toolManager && m_toolManager->currentTool() == ToolId::Pencil;
+                const auto dirtyReason =
+                    snaptray::region::captureChromeDirtyReasonForToolPreview(
+                        pencilToolActive,
+                        previewDirtyRegion);
+
+                // Other previews and annotation interactions keep the
+                // conservative Windows full-clear path.
+                m_captureChromeWindow->markDirtyRegion(
+                    !previewDirtyRegion.isEmpty()
+                        ? previewDirtyRegion
+                        : QRegion(rect()),
+                    dirtyReason);
+            }
+            syncCaptureChromeWindow();
+            return;
+        }
         if (previewRect.isValid() && !previewRect.isEmpty()) {
             requestCaptureSceneUpdate(previewRect);
             return;
@@ -575,13 +600,13 @@ RegionSelector::RegionSelector(QWidget* parent)
                 m_toolbarViewModel->setCanRedo(m_annotationLayer && m_annotationLayer->canRedo());
             }
             if (m_selectionManager && m_selectionManager->hasSelection()) {
-                update(m_selectionManager->selectionRect().adjusted(
+                requestCaptureSceneUpdate(m_selectionManager->selectionRect().adjusted(
                     -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
                     -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
                     SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
                     SelectionDirtyRegionPlanner::kAnnotationRepaintMargin));
             } else {
-                update();
+                requestCaptureSceneUpdate();
             }
         });
 
@@ -2840,7 +2865,7 @@ void RegionSelector::requestCaptureSceneUpdate(const QRect& rect)
     if (usesDetachedCaptureWindows()) {
         if (m_captureChromeWindow) {
             m_captureChromeWindow->markDirtyRegion(
-                rect.isValid() && !rect.isEmpty() ? QRegion(rect) : QRegion());
+                rect.isValid() && !rect.isEmpty() ? QRegion(rect) : QRegion(this->rect()));
         }
         syncCaptureChromeWindow();
         return;
@@ -3053,6 +3078,10 @@ void RegionSelector::paintEvent(QPaintEvent* event)
         m_detachedCaptureWindowsNeedFullClear = false;
     }
 #endif
+    // Keep the logical repaint clip visible to annotation renderers. Pencil's
+    // incremental preview uses it to avoid resubmitting locked segments that
+    // are outside the current dirty tail.
+    painter.setClipRegion(dirtyRegion);
     if (m_traceProbe) {
         RegionSelectorTraceProbe::PaintEventRecord record;
         record.dirtyRegion = dirtyRegion;
@@ -3070,7 +3099,6 @@ void RegionSelector::paintEvent(QPaintEvent* event)
     if (detachedCaptureWindowsActive) {
         syncStaticCaptureBackgroundWindow();
         syncCaptureChromeWindow();
-        painter.setClipRegion(dirtyRegion);
         painter.setCompositionMode(QPainter::CompositionMode_Source);
         painter.fillRect(dirtyRegion.boundingRect(), QColor(0, 0, 0, 1));
         painter.setCompositionMode(QPainter::CompositionMode_SourceOver);

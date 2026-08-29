@@ -29,33 +29,18 @@ void AnnotationLayer::addItem(std::unique_ptr<AnnotationItem> item)
 {
     m_items.push_back(std::move(item));
     m_redoStack.clear();  // Clear redo stack when new item is added
-    trimHistory();
-    invalidateCache();
+    if (dynamic_cast<const PencilStroke*>(m_items.back().get())) {
+        // Pencil completion is immutable at commit time, so existing viewport
+        // caches can absorb only the new stroke instead of rebuilding the
+        // entire retained annotation scene on mouse release.
+        appendItemToCaches(*m_items.back());
+        ++m_revision;
+    } else {
+        // Other tools may apply host-specific compensation immediately after
+        // addItem(), so keep their conservative full invalidation behavior.
+        invalidateCache();
+    }
     emit changed();
-}
-
-void AnnotationLayer::trimHistory()
-{
-    if (m_items.size() <= kMaxHistorySize) {
-        return;
-    }
-
-    // Calculate items to trim and remove in one O(n) operation instead of O(n²)
-    size_t trimCount = m_items.size() - kMaxHistorySize;
-    m_items.erase(m_items.begin(), m_items.begin() + static_cast<ptrdiff_t>(trimCount));
-
-    // Adjust stored indices in all ErasedItemsGroups
-    for (auto& item : m_items) {
-        if (auto* group = dynamic_cast<ErasedItemsGroup*>(item.get())) {
-            group->adjustIndicesForTrim(trimCount);
-        }
-    }
-    for (auto& item : m_redoStack) {
-        if (auto* group = dynamic_cast<ErasedItemsGroup*>(item.get())) {
-            group->adjustIndicesForTrim(trimCount);
-        }
-    }
-    renumberStepBadges();
 }
 
 void AnnotationLayer::undo()
@@ -238,10 +223,23 @@ void AnnotationLayer::draw(QPainter &painter) const
 {
     if (m_items.empty()) return;
 
+    const QRectF clipBounds = painter.hasClipping()
+        ? painter.clipBoundingRect()
+        : QRectF();
     for (const auto &item : m_items) {
-        if (item->isVisible()) {
-            item->draw(painter);
+        if (!item->isVisible()) {
+            continue;
         }
+        if (clipBounds.isValid() && !clipBounds.isEmpty()) {
+            // PencilStroke owns an exact smooth-path bound. Other annotation
+            // types still have legacy conservative bounds that may not cover
+            // wide arrowheads, so do not use them for destructive clip culling.
+            if (const auto* pencil = dynamic_cast<const PencilStroke*>(item.get());
+                pencil && !QRectF(pencil->boundingRect()).intersects(clipBounds)) {
+                continue;
+            }
+        }
+        item->draw(painter);
     }
 }
 
@@ -258,6 +256,20 @@ bool AnnotationLayer::canRedo() const
 bool AnnotationLayer::isEmpty() const
 {
     return m_items.empty();
+}
+
+QRect AnnotationLayer::contentBoundingRect() const
+{
+    QRect bounds;
+    for (const auto& item : m_items) {
+        if (!item || !item->isVisible()) {
+            continue;
+        }
+        const QRect itemBounds = item->boundingRect();
+        bounds = bounds.isValid() ? bounds.united(itemBounds) : itemBounds;
+    }
+
+    return bounds;
 }
 
 int AnnotationLayer::countStepBadges() const
@@ -495,6 +507,26 @@ void AnnotationLayer::invalidateCache()
 {
     m_annotationCaches.clear();
     ++m_revision;
+}
+
+void AnnotationLayer::appendItemToCaches(const AnnotationItem& item)
+{
+    for (auto it = m_annotationCaches.begin(); it != m_annotationCaches.end();) {
+        const CacheKey& key = it->first;
+        if (key.excludeIndex >= 0) {
+            it = m_annotationCaches.erase(it);
+            continue;
+        }
+
+        if (item.isVisible()) {
+            QPainter cachePainter(&it->second);
+            cachePainter.setRenderHint(QPainter::Antialiasing);
+            cachePainter.setRenderHint(QPainter::SmoothPixmapTransform);
+            cachePainter.translate(-QPointF(key.originX, key.originY));
+            item.draw(cachePainter);
+        }
+        ++it;
+    }
 }
 
 void AnnotationLayer::drawCached(QPainter &painter,

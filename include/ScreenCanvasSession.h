@@ -137,7 +137,7 @@ private:
     ScreenSnapshotVisibilityState hideUiForScreenSnapshot();
     void restoreUiAfterScreenSnapshot(const ScreenSnapshotVisibilityState& state);
 
-    void activateSurface(ScreenCanvas* surface);
+    bool activateSurface(ScreenCanvas* surface);
     void beginMouseGrab(ScreenCanvas* surface);
     void endMouseGrab();
     ScreenCanvas* editingSurface() const;
@@ -226,6 +226,7 @@ private:
     QRect m_desktopGeometry;
     QList<QPointer<ScreenCanvas>> m_surfaces;
     QPointer<ScreenCanvas> m_activeSurface;
+    QPointer<ScreenCanvas> m_activationSyncedSurface;
     QPointer<ScreenCanvas> m_grabbedSurface;
 
     AnnotationLayer* m_annotationLayer = nullptr;

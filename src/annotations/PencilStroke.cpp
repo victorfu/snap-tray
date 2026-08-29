@@ -1,19 +1,24 @@
 #include "annotations/PencilStroke.h"
 #include <QPainter>
 #include <QPainterPath>
+#include <QSet>
 #include <QtMath>
+#include <algorithm>
+#include <cmath>
 
 namespace {
 
-constexpr qreal kCatmullRomAlpha = 0.5;
 constexpr qreal kParameterEpsilon = 1e-3;
+constexpr int kPreviewTileSize = 256;
+constexpr int kPreviewBatchSegments = 64;
+constexpr int kMaxPreviewRasterCaches = 4;
 
 qreal parameterStep(const QPointF& a, const QPointF& b)
 {
     const qreal dx = b.x() - a.x();
     const qreal dy = b.y() - a.y();
     const qreal distance = qSqrt(dx * dx + dy * dy);
-    return qMax(kParameterEpsilon, qPow(distance, kCatmullRomAlpha));
+    return qMax(kParameterEpsilon, qSqrt(distance));
 }
 
 QPointF safeDivide(const QPointF& value, qreal divisor)
@@ -57,7 +62,9 @@ void appendCentripetalCatmullRomSegment(QPainterPath& path,
     path.cubicTo(c1, c2, p2);
 }
 
-QPainterPath buildSmoothPath(const QVector<QPointF>& points, int firstSegment = 0)
+QPainterPath buildSmoothPath(const QVector<QPointF>& points,
+                             int firstSegment = 0,
+                             int lastSegmentExclusive = -1)
 {
     QPainterPath path;
     if (points.size() < 2 || firstSegment >= points.size() - 1) {
@@ -65,8 +72,17 @@ QPainterPath buildSmoothPath(const QVector<QPointF>& points, int firstSegment = 
     }
 
     firstSegment = qMax(0, firstSegment);
+    const int segmentCount = points.size() - 1;
+    if (lastSegmentExclusive < 0) {
+        lastSegmentExclusive = segmentCount;
+    }
+    lastSegmentExclusive = qBound(firstSegment, lastSegmentExclusive, segmentCount);
+    if (firstSegment >= lastSegmentExclusive) {
+        return path;
+    }
+
     path.moveTo(points[firstSegment]);
-    for (int i = firstSegment; i < points.size() - 1; ++i) {
+    for (int i = firstSegment; i < lastSegmentExclusive; ++i) {
         const QPointF p0 = (i == 0)
             ? points[0] * 2.0 - points[1]
             : points[i - 1];
@@ -80,6 +96,49 @@ QPainterPath buildSmoothPath(const QVector<QPointF>& points, int firstSegment = 
     }
 
     return path;
+}
+
+Qt::PenStyle penStyleForLineStyle(LineStyle lineStyle)
+{
+    switch (lineStyle) {
+    case LineStyle::Dashed:
+        return Qt::DashLine;
+    case LineStyle::Dotted:
+        return Qt::DotLine;
+    case LineStyle::Solid:
+    default:
+        return Qt::SolidLine;
+    }
+}
+
+QPen pencilPen(const QColor& color, int width, LineStyle lineStyle)
+{
+    return QPen(color, width, penStyleForLineStyle(lineStyle), Qt::RoundCap, Qt::RoundJoin);
+}
+
+QPair<qreal, qreal> previewDeviceScales(const QPainter& painter)
+{
+    const QTransform transform = painter.deviceTransform();
+    const qreal scaleX = std::hypot(transform.m11(), transform.m12());
+    const qreal scaleY = std::hypot(transform.m21(), transform.m22());
+    return {scaleX, scaleY};
+}
+
+bool supportsExactPreviewRasterTransform(const QPainter& painter,
+                                         const QPair<qreal, qreal>& scales)
+{
+    const QTransform transform = painter.deviceTransform();
+    const bool axisAligned =
+        qAbs(transform.m12()) < 0.001 && qAbs(transform.m21()) < 0.001;
+    const bool uniformScale = qAbs(scales.first - scales.second) < 0.001;
+    const bool integralScale =
+        qAbs(scales.first - 1.0) < 0.001 || qAbs(scales.first - 2.0) < 0.001;
+    return axisAligned && uniformScale && integralScale;
+}
+
+int tileIndex(qreal coordinate)
+{
+    return static_cast<int>(std::floor(coordinate / kPreviewTileSize));
 }
 
 QRect smoothPathBounds(const QVector<QPointF>& points, int width, int firstSegment = 0)
@@ -108,6 +167,7 @@ PencilStroke::PencilStroke(const QVector<QPointF> &points, const QColor &color, 
     , m_width(width)
     , m_lineStyle(lineStyle)
 {
+    rebuildPathCaches();
 }
 
 void PencilStroke::draw(QPainter &painter) const
@@ -116,39 +176,73 @@ void PencilStroke::draw(QPainter &painter) const
 
     painter.save();
 
-    // Map LineStyle to Qt::PenStyle
-    Qt::PenStyle qtStyle = Qt::SolidLine;
-    switch (m_lineStyle) {
-    case LineStyle::Solid:
-        qtStyle = Qt::SolidLine;
-        break;
-    case LineStyle::Dashed:
-        qtStyle = Qt::DashLine;
-        break;
-    case LineStyle::Dotted:
-        qtStyle = Qt::DotLine;
-        break;
-    }
-
-    QPen pen(m_color, m_width, qtStyle, Qt::RoundCap, Qt::RoundJoin);
+    const QPen pen = pencilPen(m_color, m_width, m_lineStyle);
     painter.setPen(pen);
     painter.setBrush(Qt::NoBrush);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // Draw cached (locked) segments
     if (!m_cachedPath.isEmpty()) {
         painter.drawPath(m_cachedPath);
     }
 
-    // Build and draw tail (unlocked segments that may still change)
-    int tailStart = m_cachedSegmentCount;
-    int pointCount = m_points.size();
-
-    if (tailStart < pointCount - 1) {
-        const QPainterPath tailPath = buildSmoothPath(m_points, tailStart);
-        painter.drawPath(tailPath);
+    if (!m_tailPath.isEmpty()) {
+        painter.setPen(pen);
+        painter.drawPath(m_tailPath);
     }
 
+    painter.restore();
+}
+
+void PencilStroke::drawPreview(QPainter &painter) const
+{
+    if (m_points.size() < 2) {
+        return;
+    }
+
+    // The sparse coverage cache is bit-stable for the normal opaque solid
+    // Pencil. Dashed/dotted phase and translucent self-overlap must retain the
+    // canonical single-path compositor semantics, so those modes use the
+    // persistent vector caches instead of an approximate raster shortcut.
+    const QPair<qreal, qreal> deviceScales = previewDeviceScales(painter);
+    if (m_lineStyle != LineStyle::Solid || m_color.alpha() != 255 ||
+        !supportsExactPreviewRasterTransform(painter, deviceScales)) {
+        draw(painter);
+        return;
+    }
+
+    const qreal scale = deviceScales.first;
+    const int scaleKey = qRound(scale * 64.0);
+    auto cacheIt = m_previewRasterCaches.find(scaleKey);
+    if (cacheIt == m_previewRasterCaches.end()) {
+        if (m_previewRasterCaches.size() >= kMaxPreviewRasterCaches) {
+            m_previewRasterCaches.erase(m_previewRasterCaches.begin());
+        }
+        PreviewRasterCache cache;
+        cache.rasterScale = scale;
+        cacheIt = m_previewRasterCaches.insert(scaleKey, std::move(cache));
+    }
+
+    PreviewRasterCache& cache = cacheIt.value();
+    syncPreviewRasterCache(cache);
+
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setBrush(Qt::NoBrush);
+    drawPreviewTiles(painter, cache);
+
+    const QPen basePen = pencilPen(m_color, m_width, m_lineStyle);
+    if (cache.renderedSegmentCount < m_cachedSegmentCount) {
+        painter.setPen(basePen);
+        const QPainterPath pendingPrefix = buildSmoothPath(
+            m_points, cache.renderedSegmentCount, m_cachedSegmentCount);
+        if (!pendingPrefix.isEmpty()) {
+            painter.drawPath(pendingPrefix);
+        }
+    }
+    if (!m_tailPath.isEmpty()) {
+        painter.setPen(basePen);
+        painter.drawPath(m_tailPath);
+    }
     painter.restore();
 }
 
@@ -165,7 +259,11 @@ QRect PencilStroke::boundingRect() const
 
 std::unique_ptr<AnnotationItem> PencilStroke::clone() const
 {
-    return std::make_unique<PencilStroke>(m_points, m_color, m_width, m_lineStyle);
+    auto clone = std::make_unique<PencilStroke>(m_points, m_color, m_width, m_lineStyle);
+    if (m_finalized) {
+        clone->finalize();
+    }
+    return clone;
 }
 
 void PencilStroke::translate(const QPointF& delta)
@@ -178,40 +276,25 @@ void PencilStroke::translate(const QPointF& delta)
         point += delta;
     }
 
-    // Translation invalidates cached geometry derived from old coordinates.
+    QTransform translation;
+    translation.translate(delta.x(), delta.y());
+    m_cachedPath = translation.map(m_cachedPath);
+    m_tailPath = translation.map(m_tailPath);
+    m_previewAffectedPath = translation.map(m_previewAffectedPath);
     m_boundingRectDirty = true;
-    m_cachedPath = QPainterPath();
-    m_cachedSegmentCount = 0;
+    m_previewRasterCaches.clear();
 }
 
 void PencilStroke::addPoint(const QPointF &point)
 {
     m_points.append(point);
-
-    // Incrementally lock segments that now have all 4 control points known
-    // Segment i depends on points[i-1], points[i], points[i+1], points[i+2]
-    // So segment i is locked when we have points[i+2]
-    int pointCount = m_points.size();
-    int lockableSegments = std::max(0, pointCount - 3);
-
-    while (m_cachedSegmentCount < lockableSegments) {
-        int i = m_cachedSegmentCount;
-
-        // First segment: start the path
-        if (i == 0) {
-            m_cachedPath.moveTo(m_points[0]);
-        }
-
-        // Build segment i using 4 control points
-        const QPointF p0 = (i == 0)
-            ? m_points[0] * 2.0 - m_points[1]  // Reflect for first segment
-            : m_points[i - 1];
-        const QPointF &p1 = m_points[i];
-        const QPointF &p2 = m_points[i + 1];
-        const QPointF &p3 = m_points[i + 2];  // Guaranteed to exist
-
-        appendCentripetalCatmullRomSegment(m_cachedPath, p0, p1, p2, p3);
-        m_cachedSegmentCount++;
+    if (m_finalized) {
+        m_finalized = false;
+        rebuildPathCaches();
+    }
+    else {
+        appendLockableSegments();
+        rebuildTailPath();
     }
 
     // If the cache is already dirty, keep it dirty so the next boundingRect()
@@ -220,7 +303,7 @@ void PencilStroke::addPoint(const QPointF &point)
         // Appending a point changes the former tail segment and adds one new
         // segment. Union their smooth bounds into the cache; keeping the old
         // tail bounds is conservative and avoids a full-path rebuild.
-        const int firstAffectedSegment = qMax(0, m_points.size() - 3);
+        const int firstAffectedSegment = qMax(0, m_points.size() - 4);
         m_boundingRectCache = m_boundingRectCache.united(
             smoothPathBounds(m_points, m_width, firstAffectedSegment));
     }
@@ -228,7 +311,213 @@ void PencilStroke::addPoint(const QPointF &point)
 
 void PencilStroke::finalize()
 {
-    // No longer needed - path is stable due to incremental segment locking
+    // The immutable prefix and live tail are already persistent paths. Keeping
+    // their boundary preserves existing dash phase and alpha-overlap behavior
+    // without rebuilding geometry on subsequent completed-stroke paints.
+    m_finalized = true;
+    m_previewRasterCaches.clear();
+}
+
+QRect PencilStroke::previewAffectedBoundingRect() const
+{
+    const qreal margin = m_width / 2.0 + 2.0;
+    if (!m_previewAffectedPath.isEmpty()) {
+        return m_previewAffectedPath.boundingRect()
+            .adjusted(-margin, -margin, margin, margin)
+            .toAlignedRect();
+    }
+    if (!m_points.isEmpty()) {
+        return QRectF(m_points.last(), m_points.last())
+            .adjusted(-margin, -margin, margin, margin)
+            .toAlignedRect();
+    }
+    return {};
+}
+
+void PencilStroke::appendCachedSegment(int segmentIndex)
+{
+    if (segmentIndex < 0 || segmentIndex >= m_points.size() - 1) {
+        return;
+    }
+
+    if (m_cachedPath.isEmpty()) {
+        m_cachedPath.moveTo(m_points[segmentIndex]);
+    }
+
+    const QPointF p0 = (segmentIndex == 0)
+        ? m_points[0] * 2.0 - m_points[1]
+        : m_points[segmentIndex - 1];
+    const QPointF& p1 = m_points[segmentIndex];
+    const QPointF& p2 = m_points[segmentIndex + 1];
+    const QPointF p3 = (segmentIndex == m_points.size() - 2)
+        ? m_points[segmentIndex + 1] * 2.0 - m_points[segmentIndex]
+        : m_points[segmentIndex + 2];
+
+    appendCentripetalCatmullRomSegment(m_cachedPath, p0, p1, p2, p3);
+
+    ++m_cachedSegmentCount;
+}
+
+void PencilStroke::appendLockableSegments()
+{
+    const int lockableSegments = qMax(0, m_points.size() - 3);
+    while (m_cachedSegmentCount < lockableSegments) {
+        appendCachedSegment(m_cachedSegmentCount);
+    }
+}
+
+void PencilStroke::rebuildPathCaches()
+{
+    m_cachedPath = QPainterPath();
+    m_tailPath = QPainterPath();
+    m_previewAffectedPath = QPainterPath();
+    m_cachedSegmentCount = 0;
+    m_previewRasterCaches.clear();
+    appendLockableSegments();
+    rebuildTailPath();
+}
+
+void PencilStroke::rebuildTailPath()
+{
+    m_tailPath = buildSmoothPath(m_points, m_cachedSegmentCount);
+    m_previewAffectedPath = buildSmoothPath(
+        m_points, qMax(0, m_cachedSegmentCount - 1));
+}
+
+void PencilStroke::syncPreviewRasterCache(PreviewRasterCache& cache) const
+{
+    const int lockableSegments = qMax(0, m_points.size() - 3);
+    const int rasterizableSegments =
+        (lockableSegments / kPreviewBatchSegments) * kPreviewBatchSegments;
+    const int padding = m_width / 2 + 3;
+    const int logicalTileExtent = kPreviewTileSize + padding * 2;
+    const QSize physicalTileSize(
+        qMax(1, qCeil(logicalTileExtent * cache.rasterScale)),
+        qMax(1, qCeil(logicalTileExtent * cache.rasterScale)));
+
+    while (cache.renderedSegmentCount < rasterizableSegments) {
+        const int firstSegment = cache.renderedSegmentCount;
+        const int lastSegment = qMin(
+            firstSegment + kPreviewBatchSegments, rasterizableSegments);
+        const QPainterPath batchPath = buildSmoothPath(
+            m_points, firstSegment, lastSegment);
+        if (batchPath.isEmpty()) {
+            break;
+        }
+
+        QSet<QPair<int, int>> touchedTiles;
+        for (int segment = firstSegment; segment < lastSegment; ++segment) {
+            const QPainterPath segmentPath = buildSmoothPath(
+                m_points, segment, segment + 1);
+            const QRectF segmentBounds = segmentPath.boundingRect().adjusted(
+                -padding, -padding, padding, padding);
+            const int firstTileX = tileIndex(segmentBounds.left());
+            const int lastTileX = tileIndex(segmentBounds.right());
+            const int firstTileY = tileIndex(segmentBounds.top());
+            const int lastTileY = tileIndex(segmentBounds.bottom());
+
+            for (int tileY = firstTileY; tileY <= lastTileY; ++tileY) {
+                for (int tileX = firstTileX; tileX <= lastTileX; ++tileX) {
+                    const QRectF paddedTile(
+                        tileX * kPreviewTileSize - padding,
+                        tileY * kPreviewTileSize - padding,
+                        kPreviewTileSize + padding * 2,
+                        kPreviewTileSize + padding * 2);
+                    if (segmentPath.intersects(paddedTile) ||
+                        paddedTile.contains(m_points[segment]) ||
+                        paddedTile.contains(m_points[segment + 1])) {
+                        touchedTiles.insert(QPair<int, int>(tileX, tileY));
+                    }
+                }
+            }
+        }
+
+        QPen coveragePen = pencilPen(Qt::white, m_width, m_lineStyle);
+
+        for (const QPair<int, int>& tileKey : touchedTiles) {
+            const int tileX = tileKey.first;
+            const int tileY = tileKey.second;
+            PreviewTile& tile = cache.tiles[tileKey];
+            if (tile.coverage.isNull()) {
+                tile.coverage = QImage(physicalTileSize, QImage::Format_Alpha8);
+                tile.coverage.setDevicePixelRatio(cache.rasterScale);
+                tile.coverage.fill(0);
+            }
+
+            QImage scratch(tile.coverage.size(), QImage::Format_Alpha8);
+            scratch.setDevicePixelRatio(cache.rasterScale);
+            scratch.fill(0);
+            {
+                QPainter scratchPainter(&scratch);
+                scratchPainter.setRenderHint(QPainter::Antialiasing, true);
+                scratchPainter.translate(
+                    -tileX * kPreviewTileSize + padding,
+                    -tileY * kPreviewTileSize + padding);
+                scratchPainter.setPen(coveragePen);
+                scratchPainter.setBrush(Qt::NoBrush);
+                scratchPainter.drawPath(batchPath);
+            }
+
+            for (int y = 0; y < tile.coverage.height(); ++y) {
+                auto* destination = tile.coverage.scanLine(y);
+                const auto* source = scratch.constScanLine(y);
+                for (int x = 0; x < tile.coverage.width(); ++x) {
+                    destination[x] = qMax(destination[x], source[x]);
+                }
+            }
+            tile.coloredDirty = true;
+        }
+
+        cache.renderedSegmentCount = lastSegment;
+    }
+}
+
+void PencilStroke::drawPreviewTiles(QPainter& painter, PreviewRasterCache& cache) const
+{
+    const int padding = m_width / 2 + 3;
+    const QRectF clipBounds = painter.hasClipping()
+        ? painter.clipBoundingRect()
+        : QRectF();
+
+    for (auto it = cache.tiles.begin(); it != cache.tiles.end(); ++it) {
+        const int tileX = it.key().first;
+        const int tileY = it.key().second;
+        const QRectF tileCore(
+            tileX * kPreviewTileSize,
+            tileY * kPreviewTileSize,
+            kPreviewTileSize,
+            kPreviewTileSize);
+        if (clipBounds.isValid() && !clipBounds.isEmpty() &&
+            !tileCore.intersects(clipBounds)) {
+            continue;
+        }
+
+        PreviewTile& tile = it.value();
+        if (tile.coloredDirty || tile.colored.isNull()) {
+            tile.colored = QImage(
+                tile.coverage.size(), QImage::Format_ARGB32_Premultiplied);
+            tile.colored.setDevicePixelRatio(cache.rasterScale);
+            tile.colored.fill(Qt::transparent);
+            for (int y = 0; y < tile.coverage.height(); ++y) {
+                const auto* coverage = tile.coverage.constScanLine(y);
+                auto* destination = reinterpret_cast<QRgb*>(tile.colored.scanLine(y));
+                for (int x = 0; x < tile.coverage.width(); ++x) {
+                    const int alpha = qRound(
+                        coverage[x] * (m_color.alpha() / 255.0));
+                    destination[x] = qPremultiply(qRgba(
+                        m_color.red(), m_color.green(), m_color.blue(), alpha));
+                }
+            }
+            tile.coloredDirty = false;
+        }
+
+        painter.save();
+        painter.setClipRect(tileCore, Qt::IntersectClip);
+        painter.drawImage(
+            QPointF(tileCore.left() - padding, tileCore.top() - padding),
+            tile.colored);
+        painter.restore();
+    }
 }
 
 QPainterPath PencilStroke::strokePath() const
@@ -240,11 +529,10 @@ QPainterPath PencilStroke::strokePath() const
     // Recreate the same cached/tail subpaths used by draw(). Keeping the
     // subpath boundary preserves the round-cap geometry at their shared seam.
     QPainterPath linePath = m_cachedPath;
-    const QPainterPath tailPath = buildSmoothPath(m_points, m_cachedSegmentCount);
     if (linePath.isEmpty()) {
-        linePath = tailPath;
-    } else if (!tailPath.isEmpty()) {
-        linePath.addPath(tailPath);
+        linePath = m_tailPath;
+    } else if (!m_tailPath.isEmpty()) {
+        linePath.addPath(m_tailPath);
     }
 
     QPainterPathStroker stroker;

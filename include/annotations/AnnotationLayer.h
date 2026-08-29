@@ -45,6 +45,7 @@ public:
     bool canRedo() const;
     bool isEmpty() const;
     size_t itemCount() const { return m_items.size(); }
+    QRect contentBoundingRect() const;
     std::uint64_t revision() const { return m_revision; }
 
     // Access item by index (for re-editing)
@@ -108,11 +109,11 @@ signals:
     void changed();
 
 private:
-    static constexpr size_t kMaxHistorySize = 50;
-
-    void trimHistory();
     void renumberStepBadges();
+    void appendItemToCaches(const AnnotationItem& item);
 
+    // Authoritative canvas contents. Trimming this container deletes visible and
+    // serialized annotations; any future undo limit must use separate history state.
     std::vector<std::unique_ptr<AnnotationItem>> m_items;
     std::vector<std::unique_ptr<AnnotationItem>> m_redoStack;
     bool m_eraseTransactionActive = false;

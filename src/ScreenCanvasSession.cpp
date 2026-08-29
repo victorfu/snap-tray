@@ -514,6 +514,7 @@ void ScreenCanvasSession::teardown()
     destroySurfaces();
 
     m_activeSurface = nullptr;
+    m_activationSyncedSurface = nullptr;
     m_grabbedSurface = nullptr;
     m_isOpen = false;
 }
@@ -999,13 +1000,23 @@ void ScreenCanvasSession::connectApplicationStateSignal()
         &ScreenCanvasSession::handleApplicationStateChanged);
 }
 
-void ScreenCanvasSession::activateSurface(ScreenCanvas* surface)
+bool ScreenCanvasSession::activateSurface(ScreenCanvas* surface)
 {
     if (!surface) {
-        return;
+        return false;
+    }
+
+    // Mouse move events repeatedly identify the same surface while drawing. The
+    // editor bindings, DPR, formatting state, and floating UI parent only need
+    // to be refreshed when the tool context actually moves to another surface.
+    // Track synchronization separately from m_activeSurface because surface
+    // creation selects m_activeSurface before the first activation.
+    if (m_activeSurface == surface && m_activationSyncedSurface == surface) {
+        return false;
     }
 
     m_activeSurface = surface;
+    m_activationSyncedSurface = surface;
     if (m_toolManager) {
         m_toolManager->setInlineTextEditor(surface->inlineTextEditor());
         m_toolManager->setTextAnnotationEditor(surface->textAnnotationEditor());
@@ -1017,6 +1028,7 @@ void ScreenCanvasSession::activateSurface(ScreenCanvas* surface)
     }
     syncTextFormattingToSubToolbar();
     refreshFloatingUiParentWidget();
+    return true;
 }
 
 void ScreenCanvasSession::beginMouseGrab(ScreenCanvas* surface)

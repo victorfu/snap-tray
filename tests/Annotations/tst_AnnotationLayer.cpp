@@ -12,11 +12,66 @@
 #include "annotations/ShapeAnnotation.h"
 #include "annotations/ErasedItemsGroup.h"
 
+namespace {
+
+struct CountingAnnotationState {
+    int drawCalls = 0;
+    int boundingRectCalls = 0;
+};
+
+class CountingAnnotation final : public AnnotationItem
+{
+public:
+    CountingAnnotation(const QRect& bounds, std::shared_ptr<CountingAnnotationState> state)
+        : m_bounds(bounds)
+        , m_state(std::move(state))
+    {
+    }
+
+    void draw(QPainter&) const override { ++m_state->drawCalls; }
+    QRect boundingRect() const override
+    {
+        ++m_state->boundingRectCalls;
+        return m_bounds;
+    }
+    std::unique_ptr<AnnotationItem> clone() const override
+    {
+        return std::make_unique<CountingAnnotation>(m_bounds, m_state);
+    }
+    void setBounds(const QRect& bounds) { m_bounds = bounds; }
+
+private:
+    QRect m_bounds;
+    std::shared_ptr<CountingAnnotationState> m_state;
+};
+
+class CountingPencilStroke final : public PencilStroke
+{
+public:
+    CountingPencilStroke(const QVector<QPointF>& points,
+                         std::shared_ptr<CountingAnnotationState> state)
+        : PencilStroke(points, Qt::red, 3, LineStyle::Solid)
+        , m_state(std::move(state))
+    {
+    }
+
+    void draw(QPainter&) const override { ++m_state->drawCalls; }
+
+private:
+    std::shared_ptr<CountingAnnotationState> m_state;
+};
+
+} // namespace
+
 class TestAnnotationLayer : public QObject
 {
     Q_OBJECT
 
 private slots:
+    void testAddItem_PreservesAnnotationsBeyondFifty();
+    void testDraw_CullsPencilStrokesOutsidePainterClip();
+    void testDrawCached_AppendsWithoutRebuildingExistingItems();
+    void testContentBoundingRect_ReflectsInPlaceMutation();
     void testDrawWithDirtyRegion_ExcludesDraggedItemFromFullCache();
     void testDrawCached_RebuildsAfterExcludeCache();
     void testDrawCached_RebuildsAfterDraggedItemMoved();
@@ -91,6 +146,95 @@ std::unique_ptr<TextBoxAnnotation> TestAnnotationLayer::createTextBox(const QPoi
     font.setPointSize(16);
     font.setBold(true);
     return std::make_unique<TextBoxAnnotation>(pos, text, font, QColor(Qt::red));
+}
+
+void TestAnnotationLayer::testAddItem_PreservesAnnotationsBeyondFifty()
+{
+    AnnotationLayer layer;
+
+    for (int i = 0; i < 52; ++i) {
+        layer.addItem(createPencil(i));
+    }
+
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(52));
+
+    auto* firstStroke = dynamic_cast<PencilStroke*>(layer.itemAt(0));
+    auto* secondStroke = dynamic_cast<PencilStroke*>(layer.itemAt(1));
+    auto* lastStroke = dynamic_cast<PencilStroke*>(layer.itemAt(51));
+    QVERIFY(firstStroke != nullptr);
+    QVERIFY(secondStroke != nullptr);
+    QVERIFY(lastStroke != nullptr);
+    QCOMPARE(firstStroke->points().first(), QPointF(20.0, 0.0));
+    QCOMPARE(secondStroke->points().first(), QPointF(20.0, 1.0));
+    QCOMPARE(lastStroke->points().first(), QPointF(20.0, 51.0));
+
+    layer.undo();
+    layer.undo();
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(50));
+    QCOMPARE(layer.itemAt(0), firstStroke);
+
+    layer.redo();
+    layer.redo();
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(52));
+    QCOMPARE(layer.itemAt(0), firstStroke);
+}
+
+void TestAnnotationLayer::testDraw_CullsPencilStrokesOutsidePainterClip()
+{
+    AnnotationLayer layer;
+    auto inside = std::make_shared<CountingAnnotationState>();
+    auto outside = std::make_shared<CountingAnnotationState>();
+    layer.addItem(std::make_unique<CountingPencilStroke>(
+        QVector<QPointF>{QPointF(10, 20), QPointF(30, 20)}, inside));
+    layer.addItem(std::make_unique<CountingPencilStroke>(
+        QVector<QPointF>{QPointF(200, 210), QPointF(220, 210)}, outside));
+
+    QImage image(260, 260, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
+    painter.setClipRect(QRect(0, 0, 80, 80));
+    layer.draw(painter);
+    painter.end();
+
+    QCOMPARE(inside->drawCalls, 1);
+    QCOMPARE(outside->drawCalls, 0);
+}
+
+void TestAnnotationLayer::testDrawCached_AppendsWithoutRebuildingExistingItems()
+{
+    AnnotationLayer layer;
+    auto first = std::make_shared<CountingAnnotationState>();
+    layer.addItem(std::make_unique<CountingAnnotation>(QRect(10, 10, 20, 20), first));
+
+    QImage image(120, 120, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
+    layer.drawCached(painter, image.size(), 1.0);
+    QCOMPARE(first->drawCalls, 1);
+
+    layer.addItem(createPencil(60));
+    QCOMPARE(first->drawCalls, 1);
+
+    layer.drawCached(painter, image.size(), 1.0);
+    QCOMPARE(first->drawCalls, 1);
+}
+
+void TestAnnotationLayer::testContentBoundingRect_ReflectsInPlaceMutation()
+{
+    AnnotationLayer layer;
+    auto first = std::make_shared<CountingAnnotationState>();
+    auto second = std::make_shared<CountingAnnotationState>();
+    layer.addItem(std::make_unique<CountingAnnotation>(QRect(10, 10, 20, 20), first));
+    layer.addItem(std::make_unique<CountingAnnotation>(QRect(80, 70, 30, 40), second));
+
+    QCOMPARE(layer.contentBoundingRect(), QRect(10, 10, 100, 100));
+    auto* mutableFirst = dynamic_cast<CountingAnnotation*>(layer.itemAt(0));
+    QVERIFY(mutableFirst != nullptr);
+    mutableFirst->setBounds(QRect(140, 130, 20, 20));
+
+    QCOMPARE(layer.contentBoundingRect(), QRect(80, 70, 80, 80));
+    QCOMPARE(first->boundingRectCalls, 2);
+    QCOMPARE(second->boundingRectCalls, 2);
 }
 
 void TestAnnotationLayer::testDrawWithDirtyRegion_ExcludesDraggedItemFromFullCache()

@@ -44,24 +44,6 @@ std::vector<ErasedItemsGroup::IndexedItem> ErasedItemsGroup::extractItems()
     return std::move(m_erasedItems);
 }
 
-void ErasedItemsGroup::adjustIndicesForTrim(size_t trimCount)
-{
-    for (auto& indexed : m_erasedItems) {
-        if (indexed.originalIndex >= trimCount) {
-            indexed.originalIndex -= trimCount;
-        } else {
-            indexed.originalIndex = 0;
-        }
-    }
-    for (size_t i = 0; i < m_originalIndices.size(); ++i) {
-        if (m_originalIndices[i] >= trimCount) {
-            m_originalIndices[i] -= trimCount;
-        } else {
-            m_originalIndices[i] = 0;
-        }
-    }
-}
-
 void ErasedItemsGroup::forEachStoredItem(const std::function<void(AnnotationItem*)>& visitor)
 {
     if (!visitor) {

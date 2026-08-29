@@ -39,9 +39,6 @@ public:
     const std::vector<size_t>& originalIndices() const { return m_originalIndices; }
     void setOriginalIndices(std::vector<size_t> indices) { m_originalIndices = std::move(indices); }
 
-    // Adjust stored indices when trimHistory() removes items from front
-    void adjustIndicesForTrim(size_t trimCount);
-
     // Visit items currently stored inside this erased-items group.
     void forEachStoredItem(const std::function<void(AnnotationItem*)>& visitor);
 

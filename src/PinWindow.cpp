@@ -73,6 +73,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QCursor>
 #include <QImage>
 #include <QMouseEvent>
+#include <QPaintEvent>
 #include <QWheelEvent>
 #include <QKeyEvent>
 #include <QCloseEvent>
@@ -823,8 +824,7 @@ void PinWindow::compensateNewestEmojiIfNeeded(const AnnotationItem* previousLast
     }
 
     auto* newestItem = m_annotationLayer->itemAt(static_cast<int>(currentCount - 1));
-    // AnnotationLayer may trim history at capacity, so count can stay unchanged
-    // even when a new item is added. Compare last-item pointer instead.
+    // Compare the last-item pointer because this helper cares whether the top item changed.
     if (!newestItem || newestItem == previousLastItem) {
         return;
     }
@@ -857,8 +857,7 @@ void PinWindow::compensateNewestStepBadgeIfNeeded(const AnnotationItem* previous
     }
 
     auto* newestItem = m_annotationLayer->itemAt(static_cast<int>(currentCount - 1));
-    // AnnotationLayer may trim history at capacity, so count can stay unchanged
-    // even when a new item is added. Compare last-item pointer instead.
+    // Compare the last-item pointer because this helper cares whether the top item changed.
     if (!newestItem || newestItem == previousLastItem) {
         return;
     }
@@ -2220,9 +2219,12 @@ void PinWindow::setShowBorder(bool enabled)
     }
 }
 
-void PinWindow::paintEvent(QPaintEvent*)
+void PinWindow::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);
+    if (event) {
+        painter.setClipRegion(event->region(), Qt::IntersectClip);
+    }
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
     painter.setRenderHint(QPainter::Antialiasing);
 
@@ -3123,6 +3125,9 @@ void PinWindow::closeEvent(QCloseEvent* event)
 void PinWindow::moveEvent(QMoveEvent* event)
 {
     QWidget::moveEvent(event);
+    if (m_toolManager) {
+        m_toolManager->setDevicePixelRatio(devicePixelRatioF());
+    }
     updateToolbarPosition();
 }
 
@@ -3167,6 +3172,7 @@ void PinWindow::initializeAnnotationComponents()
     m_toolManager->setWidth(m_annotationWidth);
     m_toolManager->setArrowStyle(savedArrowStyle);
     m_toolManager->setLineStyle(savedLineStyle);
+    m_toolManager->setDevicePixelRatio(devicePixelRatioF());
 
     // Connect tool manager signals
     connect(m_toolManager, &ToolManager::needsRepaint, this, [this]() {

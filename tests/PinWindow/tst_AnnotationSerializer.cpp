@@ -115,6 +115,7 @@ class tst_AnnotationSerializer : public QObject
 
 private slots:
     void testRoundtripPreservesSupportedAnnotations();
+    void testRoundtripPreservesMoreThanFiftyAnnotations();
 };
 
 void tst_AnnotationSerializer::testRoundtripPreservesSupportedAnnotations()
@@ -133,6 +134,34 @@ void tst_AnnotationSerializer::testRoundtripPreservesSupportedAnnotations()
 
     const QByteArray roundtrip = SnapTray::serializeAnnotationLayer(restored);
     QCOMPARE(QJsonDocument::fromJson(roundtrip), QJsonDocument::fromJson(serialized));
+}
+
+void tst_AnnotationSerializer::testRoundtripPreservesMoreThanFiftyAnnotations()
+{
+    AnnotationLayer original;
+    for (int i = 0; i < 52; ++i) {
+        original.addItem(std::make_unique<PencilStroke>(
+            QVector<QPointF>{QPointF(10.0, i), QPointF(30.0, i)},
+            QColor(Qt::red),
+            3,
+            LineStyle::Solid));
+    }
+    QCOMPARE(original.itemCount(), static_cast<size_t>(52));
+
+    const QByteArray serialized = SnapTray::serializeAnnotationLayer(original);
+    AnnotationLayer restored;
+    QString errorMessage;
+    QVERIFY2(SnapTray::deserializeAnnotationLayer(
+                 serialized, &restored, SharedPixmap(), &errorMessage),
+             qPrintable(errorMessage));
+    QCOMPARE(restored.itemCount(), static_cast<size_t>(52));
+
+    auto* firstStroke = dynamic_cast<PencilStroke*>(restored.itemAt(0));
+    auto* lastStroke = dynamic_cast<PencilStroke*>(restored.itemAt(51));
+    QVERIFY(firstStroke != nullptr);
+    QVERIFY(lastStroke != nullptr);
+    QCOMPARE(firstStroke->points().first(), QPointF(10.0, 0.0));
+    QCOMPARE(lastStroke->points().first(), QPointF(10.0, 51.0));
 }
 
 QTEST_MAIN(tst_AnnotationSerializer)
