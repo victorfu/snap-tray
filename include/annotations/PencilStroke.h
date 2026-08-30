@@ -25,6 +25,7 @@ public:
     QRect boundingRect() const override;
     std::unique_ptr<AnnotationItem> clone() const override;
     void translate(const QPointF& delta) override;
+    std::size_t estimatedRetainedBytes() const override;
 
     void addPoint(const QPointF &point);
     void finalize();

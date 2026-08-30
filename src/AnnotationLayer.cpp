@@ -8,7 +8,6 @@
 #include "annotations/ShapeAnnotation.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/PolylineAnnotation.h"
-#include "annotations/ErasedItemsGroup.h"
 #include "utils/CoordinateHelper.h"
 #include <QImage>
 #include <QPixmap>
@@ -18,17 +17,82 @@
 #include <QtMath>
 #include <algorithm>
 
+namespace {
+
+constexpr std::size_t kMaxTrackedCommandBytes =
+    AnnotationLayer::kMaxHistoryOwnedBytes + 1;
+static_assert(sizeof(std::size_t) >= sizeof(std::uint64_t),
+              "Bounded annotation history requires a 64-bit address space");
+
+void addCappedCommandBytes(std::size_t& total, std::size_t bytes)
+{
+    if (total >= kMaxTrackedCommandBytes
+        || bytes >= kMaxTrackedCommandBytes - total) {
+        total = kMaxTrackedCommandBytes;
+    } else {
+        total += bytes;
+    }
+}
+
+void adjustRetainedByteCounter(std::size_t& counter,
+                               std::size_t before,
+                               std::size_t after)
+{
+    if (after >= before) {
+        // Each command estimate is capped just above the soft limit and the
+        // history contains at most kMaxHistoryCommands + 1 entries while
+        // trimming, so this aggregate remains exact on supported 64-bit hosts.
+        counter += after - before;
+        return;
+    }
+
+    const std::size_t delta = before - after;
+    counter = delta > counter ? 0 : counter - delta;
+}
+
+} // namespace
+
 AnnotationLayer::AnnotationLayer(QObject *parent)
     : QObject(parent)
 {
+    // Keep one spare slot so moving a command between stacks or pushing the
+    // command that triggers trimming never allocates after ownership changes.
+    m_undoStack.reserve(kMaxHistoryCommands + 1);
+    m_redoStack.reserve(kMaxHistoryCommands + 1);
+    m_currentHistoryState = allocateHistoryState();
 }
 
 AnnotationLayer::~AnnotationLayer() = default;
 
 void AnnotationLayer::addItem(std::unique_ptr<AnnotationItem> item)
 {
-    m_items.push_back(std::move(item));
-    m_redoStack.clear();  // Clear redo stack when new item is added
+    if (!item) {
+        return;
+    }
+    if (m_eraseTransactionActive) {
+        m_deferredItems.push_back(std::move(item));
+        return;
+    }
+
+    addItemNow(std::move(item));
+    emit changed();
+}
+
+void AnnotationLayer::addItemNow(std::unique_ptr<AnnotationItem> item)
+{
+    if (!item) {
+        return;
+    }
+
+    const AnnotationId id = allocateAnnotationId();
+    const size_t index = m_items.size();
+    HistoryCommand command;
+    command.kind = HistoryCommandKind::Add;
+    command.items.push_back({index, nullptr, id});
+
+    m_items.push_back({id, std::move(item)});
+    pushAppliedCommand(std::move(command));
+
     if (dynamic_cast<const PencilStroke*>(m_items.back().get())) {
         // Pencil completion is immutable at commit time, so existing viewport
         // caches can absorb only the new stroke instead of rebuilding the
@@ -40,44 +104,67 @@ void AnnotationLayer::addItem(std::unique_ptr<AnnotationItem> item)
         // addItem(), so keep their conservative full invalidation behavior.
         invalidateCache();
     }
+}
+
+void AnnotationLayer::replaceItems(std::vector<std::unique_ptr<AnnotationItem>> items)
+{
+    m_eraseTransactionActive = false;
+    m_deferredItems.clear();
+    clearSelection();
+    m_items.clear();
+    m_undoStack.clear();
+    m_redoStack.clear();
+    m_historyOwnedBytes = 0;
+    m_redoOwnedBytes = 0;
+    m_currentHistoryState = allocateHistoryState();
+
+    m_items.reserve(items.size());
+    for (auto& item : items) {
+        if (item) {
+            m_items.push_back({allocateAnnotationId(), std::move(item)});
+        }
+    }
+
+    const size_t undoableStart = m_items.size() > kMaxHistoryCommands
+        ? m_items.size() - kMaxHistoryCommands
+        : 0;
+    m_undoStack.reserve(m_items.size() - undoableStart);
+    for (size_t i = undoableStart; i < m_items.size(); ++i) {
+        HistoryCommand command;
+        command.kind = HistoryCommandKind::Add;
+        command.items.push_back({i, nullptr, m_items[i].id});
+        command.beforeState = m_currentHistoryState;
+        command.afterState = allocateHistoryState();
+        m_currentHistoryState = command.afterState;
+        refreshCommandRetainedBytes(command);
+        adjustHistoryBytes(0, command.retainedBytes);
+        m_undoStack.push_back(std::move(command));
+    }
+
+    // Metadata alone can exceed the soft byte limit for unusually large bulk
+    // imports. Keep the newest state and commit the oldest prefix.
+    trimHistory(m_currentHistoryState);
+    invalidateCache();
     emit changed();
 }
 
 void AnnotationLayer::undo()
 {
-    if (m_eraseTransactionActive || m_items.empty()) return;
+    if (m_eraseTransactionActive || m_undoStack.empty()) return;
 
-    // Check if the last item is an ErasedItemsGroup (from eraser action)
-    if (auto* erasedGroup = dynamic_cast<ErasedItemsGroup*>(m_items.back().get())) {
-        // Extract the erased items with their original indices
-        auto restoredItems = erasedGroup->extractItems();
-
-        // Store original indices for redo support
-        std::vector<size_t> indices;
-        indices.reserve(restoredItems.size());
-        for (const auto& item : restoredItems) {
-            indices.push_back(item.originalIndex);
-        }
-        erasedGroup->setOriginalIndices(std::move(indices));
-
-        // Move the empty group to redo stack
-        m_redoStack.push_back(std::move(m_items.back()));
-        m_items.pop_back();
-
-        // Sort by original index ascending to restore in correct order
-        std::sort(restoredItems.begin(), restoredItems.end(),
-            [](const auto& a, const auto& b) { return a.originalIndex < b.originalIndex; });
-
-        // Re-insert items at their original indices
-        for (auto &indexed : restoredItems) {
-            size_t insertPos = (std::min)(indexed.originalIndex, m_items.size());
-            m_items.insert(m_items.begin() + static_cast<ptrdiff_t>(insertPos), std::move(indexed.item));
-        }
-    } else {
-        // Normal undo: move last item to redo stack
-        m_redoStack.push_back(std::move(m_items.back()));
-        m_items.pop_back();
+    const std::size_t beforeBytes = m_undoStack.back().retainedBytes;
+    if (!undoCommand(m_undoStack.back())) {
+        return;
     }
+    refreshCommandRetainedBytes(m_undoStack.back());
+    const std::size_t afterBytes = m_undoStack.back().retainedBytes;
+    adjustHistoryBytes(beforeBytes, afterBytes);
+
+    m_currentHistoryState = m_undoStack.back().beforeState;
+    m_redoStack.push_back(std::move(m_undoStack.back()));
+    adjustRetainedByteCounter(m_redoOwnedBytes, 0, afterBytes);
+    m_undoStack.pop_back();
+    trimHistory(m_redoStack.back().afterState);
 
     renumberStepBadges();
     invalidateCache();
@@ -89,62 +176,19 @@ void AnnotationLayer::redo()
 {
     if (m_eraseTransactionActive || m_redoStack.empty()) return;
 
-    // Check if the item in redo stack is an ErasedItemsGroup
-    if (auto* erasedGroup = dynamic_cast<ErasedItemsGroup*>(m_redoStack.back().get())) {
-        // Get the stored original indices
-        auto indices = erasedGroup->originalIndices();
-        // Sort indices in descending order to remove from back to front
-        // (prevents index shifting issues during removal)
-        std::sort(indices.begin(), indices.end(), std::greater<size_t>());
-        // Defensive dedupe: malformed history can contain duplicate indices.
-        indices.erase(std::unique(indices.begin(), indices.end()), indices.end());
-
-        // Reserve before ownership changes so allocation failures leave state intact.
-        m_items.reserve(m_items.size() + 1);
-
-        // Remove items at the stored indices
-        std::vector<ErasedItemsGroup::IndexedItem> itemsToErase;
-        itemsToErase.reserve(indices.size());
-
-        // Keep ownership of redo item until all erase work succeeds.
-        auto redoItem = std::move(m_redoStack.back());
-
-        try {
-            for (size_t idx : indices) {
-                if (idx < m_items.size() && !dynamic_cast<ErasedItemsGroup*>(m_items[idx].get())) {
-                    itemsToErase.push_back({idx, std::move(m_items[idx])});
-                    m_items.erase(m_items.begin() + static_cast<ptrdiff_t>(idx));
-                }
-            }
-
-            // Reverse to restore original order (we collected in descending index order)
-            std::reverse(itemsToErase.begin(), itemsToErase.end());
-            m_items.push_back(std::make_unique<ErasedItemsGroup>(std::move(itemsToErase)));
-
-            // Commit only after redo operation succeeds.
-            m_redoStack.pop_back();
-        } catch (...) {
-            // Roll back removed items to keep undo/redo history consistent.
-            std::sort(itemsToErase.begin(), itemsToErase.end(),
-                      [](const ErasedItemsGroup::IndexedItem& a,
-                         const ErasedItemsGroup::IndexedItem& b) {
-                          return a.originalIndex < b.originalIndex;
-                      });
-
-            for (auto& indexed : itemsToErase) {
-                const size_t insertPos = (std::min)(indexed.originalIndex, m_items.size());
-                m_items.insert(m_items.begin() + static_cast<ptrdiff_t>(insertPos),
-                               std::move(indexed.item));
-            }
-
-            m_redoStack.back() = std::move(redoItem);
-            throw;
-        }
-    } else {
-        // Normal redo
-        m_items.push_back(std::move(m_redoStack.back()));
-        m_redoStack.pop_back();
+    const std::size_t beforeBytes = m_redoStack.back().retainedBytes;
+    if (!redoCommand(m_redoStack.back())) {
+        return;
     }
+    refreshCommandRetainedBytes(m_redoStack.back());
+    const std::size_t afterBytes = m_redoStack.back().retainedBytes;
+    adjustHistoryBytes(beforeBytes, afterBytes);
+
+    m_currentHistoryState = m_redoStack.back().afterState;
+    m_undoStack.push_back(std::move(m_redoStack.back()));
+    m_redoStack.pop_back();
+    adjustRetainedByteCounter(m_redoOwnedBytes, beforeBytes, 0);
+    trimHistory(m_undoStack.back().afterState);
 
     renumberStepBadges();
     invalidateCache();
@@ -157,25 +201,25 @@ void AnnotationLayer::clear()
     // A clear is authoritative. Any items temporarily owned by an active
     // eraser stroke must not be restored into the newly cleared layer.
     m_eraseTransactionActive = false;
+    m_deferredItems.clear();
     clearSelection();
     m_items.clear();
+    m_undoStack.clear();
     m_redoStack.clear();
+    m_historyOwnedBytes = 0;
+    m_redoOwnedBytes = 0;
+    m_currentHistoryState = allocateHistoryState();
     invalidateCache();
     emit changed();
 }
 
 void AnnotationLayer::translateAll(const QPointF& delta)
 {
-    auto translateItems = [&delta](std::vector<std::unique_ptr<AnnotationItem>>& items) {
-        for (auto& item : items) {
-            if (item) {
-                item->translate(delta);
-            }
+    forEachOwnedItem([&delta](AnnotationItem* item) {
+        if (item) {
+            item->translate(delta);
         }
-    };
-
-    translateItems(m_items);
-    translateItems(m_redoStack);
+    });
 
     invalidateCache();
     emit changed();
@@ -188,15 +232,25 @@ void AnnotationLayer::forEachItem(const std::function<void(AnnotationItem*)>& vi
         return;
     }
 
-    auto visitItems = [&visitor](std::vector<std::unique_ptr<AnnotationItem>>& items) {
-        for (auto& item : items) {
-            visitor(item.get());
-        }
-    };
-
-    visitItems(m_items);
+    for (auto& sceneItem : m_items) {
+        visitor(sceneItem.get());
+    }
     if (includeRedoStack) {
-        visitItems(m_redoStack);
+        const auto visitOwnedCommands = [this, &visitor](auto& commands,
+                                                          bool isRedoStack) {
+            for (auto& command : commands) {
+                const std::size_t beforeBytes = command.retainedBytes;
+                visitCommandOwnedItems(command, visitor);
+                adjustHistoryBytes(beforeBytes, command.retainedBytes);
+                if (isRedoStack) {
+                    adjustRetainedByteCounter(
+                        m_redoOwnedBytes, beforeBytes, command.retainedBytes);
+                }
+            }
+        };
+        visitOwnedCommands(m_undoStack, false);
+        visitOwnedCommands(m_redoStack, true);
+        trimHistory(m_currentHistoryState);
     }
 }
 
@@ -207,16 +261,348 @@ void AnnotationLayer::forEachItem(const std::function<void(const AnnotationItem*
         return;
     }
 
-    auto visitItems = [&visitor](const std::vector<std::unique_ptr<AnnotationItem>>& items) {
-        for (const auto& item : items) {
-            visitor(item.get());
+    for (const auto& sceneItem : m_items) {
+        visitor(sceneItem.get());
+    }
+    if (includeRedoStack) {
+        for (const auto& command : m_undoStack) {
+            for (const auto& item : command.items) {
+                if (item.item) visitor(item.item.get());
+            }
         }
+        for (const auto& command : m_redoStack) {
+            for (const auto& item : command.items) {
+                if (item.item) visitor(item.item.get());
+            }
+        }
+    }
+}
+
+void AnnotationLayer::forEachOwnedItem(
+    const std::function<void(AnnotationItem*)>& visitor)
+{
+    forEachItem(visitor, true);
+    if (!visitor) {
+        return;
+    }
+    for (auto& item : m_deferredItems) {
+        visitor(item.get());
+    }
+}
+
+void AnnotationLayer::forEachOwnedItem(
+    const std::function<void(const AnnotationItem*)>& visitor) const
+{
+    forEachItem(visitor, true);
+    if (!visitor) {
+        return;
+    }
+    for (const auto& item : m_deferredItems) {
+        visitor(item.get());
+    }
+}
+
+AnnotationLayer::AnnotationId AnnotationLayer::allocateAnnotationId()
+{
+    const AnnotationId id = m_nextAnnotationId++;
+    if (m_nextAnnotationId == 0) {
+        // Zero is reserved for legacy/unassigned transport records.
+        m_nextAnnotationId = 1;
+    }
+    return id;
+}
+
+AnnotationLayer::HistoryStateToken AnnotationLayer::allocateHistoryState()
+{
+    const HistoryStateToken state = m_nextHistoryState++;
+    if (m_nextHistoryState == 0) {
+        // History state wraparound is practically unreachable. Preserve the
+        // public invariant that zero is never a valid token.
+        m_nextHistoryState = 1;
+    }
+    return state;
+}
+
+AnnotationLayer::HistoryStateRelation AnnotationLayer::historyStateRelation(
+    HistoryStateToken token) const
+{
+    if (token == 0) {
+        return HistoryStateRelation::Unreachable;
+    }
+    if (token == m_currentHistoryState) {
+        return HistoryStateRelation::Current;
+    }
+
+    for (auto it = m_undoStack.rbegin(); it != m_undoStack.rend(); ++it) {
+        if (it->beforeState == token) {
+            return HistoryStateRelation::UndoReachable;
+        }
+    }
+    for (auto it = m_redoStack.rbegin(); it != m_redoStack.rend(); ++it) {
+        if (it->afterState == token) {
+            return HistoryStateRelation::RedoReachable;
+        }
+    }
+    return HistoryStateRelation::Unreachable;
+}
+
+std::vector<AnnotationLayer::SceneItem>::iterator AnnotationLayer::findSceneItem(
+    AnnotationId id)
+{
+    return std::find_if(m_items.begin(), m_items.end(),
+        [id](const SceneItem& sceneItem) { return sceneItem.id == id; });
+}
+
+std::vector<AnnotationLayer::SceneItem>::const_iterator AnnotationLayer::findSceneItem(
+    AnnotationId id) const
+{
+    return std::find_if(m_items.cbegin(), m_items.cend(),
+        [id](const SceneItem& sceneItem) { return sceneItem.id == id; });
+}
+
+std::size_t AnnotationLayer::calculateCommandRetainedBytes(
+    const HistoryCommand& command) const
+{
+    std::size_t bytes = sizeof(HistoryCommand);
+    if (command.items.capacity()
+        >= kMaxTrackedCommandBytes / sizeof(RemovedItem)) {
+        bytes = kMaxTrackedCommandBytes;
+    } else {
+        addCappedCommandBytes(
+            bytes, command.items.capacity() * sizeof(RemovedItem));
+    }
+    for (const auto& record : command.items) {
+        if (record.item) {
+            addCappedCommandBytes(bytes, record.item->estimatedRetainedBytes());
+        }
+    }
+    return bytes;
+}
+
+void AnnotationLayer::refreshCommandRetainedBytes(HistoryCommand& command)
+{
+    command.retainedBytes = calculateCommandRetainedBytes(command);
+}
+
+void AnnotationLayer::visitCommandOwnedItems(
+    HistoryCommand& command,
+    const std::function<void(AnnotationItem*)>& visitor)
+{
+    std::size_t bytes = sizeof(HistoryCommand);
+    if (command.items.capacity()
+        >= kMaxTrackedCommandBytes / sizeof(RemovedItem)) {
+        bytes = kMaxTrackedCommandBytes;
+    } else {
+        addCappedCommandBytes(
+            bytes, command.items.capacity() * sizeof(RemovedItem));
+    }
+
+    for (auto& record : command.items) {
+        if (!record.item) {
+            continue;
+        }
+        visitor(record.item.get());
+        addCappedCommandBytes(bytes, record.item->estimatedRetainedBytes());
+    }
+    command.retainedBytes = bytes;
+}
+
+void AnnotationLayer::adjustHistoryBytes(std::size_t before, std::size_t after)
+{
+    adjustRetainedByteCounter(m_historyOwnedBytes, before, after);
+}
+
+void AnnotationLayer::clearRedoHistory()
+{
+    adjustHistoryBytes(m_redoOwnedBytes, 0);
+    m_redoOwnedBytes = 0;
+    m_redoStack.clear();
+}
+
+void AnnotationLayer::evictUndoFront()
+{
+    if (m_undoStack.empty()) return;
+    const std::size_t bytes = m_undoStack.front().retainedBytes;
+    m_historyOwnedBytes = bytes > m_historyOwnedBytes
+        ? 0
+        : m_historyOwnedBytes - bytes;
+    m_undoStack.erase(m_undoStack.begin());
+}
+
+void AnnotationLayer::evictRedoFront()
+{
+    if (m_redoStack.empty()) return;
+    const std::size_t bytes = m_redoStack.front().retainedBytes;
+    m_historyOwnedBytes = bytes > m_historyOwnedBytes
+        ? 0
+        : m_historyOwnedBytes - bytes;
+    m_redoOwnedBytes = bytes > m_redoOwnedBytes
+        ? 0
+        : m_redoOwnedBytes - bytes;
+    m_redoStack.erase(m_redoStack.begin());
+}
+
+void AnnotationLayer::trimHistory(HistoryStateToken protectedState)
+{
+    auto exceedsLimits = [this]() {
+        return historyCommandCount() > kMaxHistoryCommands
+            || m_historyOwnedBytes > kMaxHistoryOwnedBytes;
     };
 
-    visitItems(m_items);
-    if (includeRedoStack) {
-        visitItems(m_redoStack);
+    while (exceedsLimits() && historyCommandCount() > 1) {
+        const bool undoEvictable = !m_undoStack.empty()
+            && m_undoStack.front().afterState != protectedState;
+        const bool redoEvictable = !m_redoStack.empty()
+            && m_redoStack.front().afterState != protectedState;
+        const bool undoHasSpare = undoEvictable && m_undoStack.size() > 1;
+        const bool redoHasSpare = redoEvictable && m_redoStack.size() > 1;
+
+        // Preserve the nearest command on both sides of the cursor whenever
+        // the limits allow it. The front of either vector is the farthest
+        // command in that direction, so trimming never punches a hole.
+        if (undoHasSpare || redoHasSpare) {
+            if (undoHasSpare && redoHasSpare) {
+                if (m_redoStack.size() > m_undoStack.size()) {
+                    evictRedoFront();
+                } else if (m_undoStack.size() > m_redoStack.size()) {
+                    evictUndoFront();
+                } else if (m_historyOwnedBytes > kMaxHistoryOwnedBytes
+                           && m_redoStack.front().retainedBytes
+                               > m_undoStack.front().retainedBytes) {
+                    evictRedoFront();
+                } else {
+                    evictUndoFront();
+                }
+            } else if (undoHasSpare) {
+                evictUndoFront();
+            } else {
+                evictRedoFront();
+            }
+            continue;
+        }
+
+        // If one command on each side remains and their combined payload is
+        // still too large, keep the command that triggered this trim. With no
+        // explicit protected command, prefer retaining immediate Undo.
+        if (undoEvictable && redoEvictable) {
+            evictRedoFront();
+        } else if (undoEvictable) {
+            evictUndoFront();
+        } else if (redoEvictable) {
+            evictRedoFront();
+        } else {
+            break;
+        }
     }
+}
+
+void AnnotationLayer::pushAppliedCommand(HistoryCommand command)
+{
+    clearRedoHistory();
+    command.beforeState = m_currentHistoryState;
+    command.afterState = allocateHistoryState();
+    m_currentHistoryState = command.afterState;
+    refreshCommandRetainedBytes(command);
+    adjustHistoryBytes(0, command.retainedBytes);
+    m_undoStack.push_back(std::move(command));
+    trimHistory(m_currentHistoryState);
+}
+
+void AnnotationLayer::restoreCommandItems(HistoryCommand& command)
+{
+    std::sort(command.items.begin(), command.items.end(),
+        [](const RemovedItem& lhs, const RemovedItem& rhs) {
+            return lhs.originalIndex < rhs.originalIndex;
+        });
+
+    m_items.reserve(m_items.size() + command.items.size());
+    for (auto& record : command.items) {
+        if (!record.item) continue;
+        const size_t insertPos = (std::min)(record.originalIndex, m_items.size());
+        m_items.insert(m_items.begin() + static_cast<ptrdiff_t>(insertPos),
+            SceneItem{record.id, std::move(record.item)});
+    }
+}
+
+void AnnotationLayer::removeCommandItems(HistoryCommand& command)
+{
+    for (auto& record : command.items) {
+        if (record.item) continue;
+        auto sceneIt = findSceneItem(record.id);
+        if (sceneIt == m_items.end()) continue;
+        record.item = std::move(sceneIt->item);
+        m_items.erase(sceneIt);
+    }
+}
+
+bool AnnotationLayer::undoCommand(HistoryCommand& command)
+{
+    if (command.kind == HistoryCommandKind::Add) {
+        if (command.items.size() != 1 || command.items.front().item) {
+            return false;
+        }
+        RemovedItem& record = command.items.front();
+        auto sceneIt = m_items.end();
+        if (record.originalIndex < m_items.size() &&
+            m_items[record.originalIndex].id == record.id) {
+            sceneIt = m_items.begin() + static_cast<ptrdiff_t>(record.originalIndex);
+        } else {
+            sceneIt = findSceneItem(record.id);
+        }
+        if (sceneIt == m_items.end()) {
+            return false;
+        }
+        record.originalIndex =
+            static_cast<size_t>(std::distance(m_items.begin(), sceneIt));
+        record.item = std::move(sceneIt->item);
+        m_items.erase(sceneIt);
+        return true;
+    }
+
+    const bool allOwned = std::all_of(command.items.cbegin(), command.items.cend(),
+        [](const RemovedItem& record) { return static_cast<bool>(record.item); });
+    if (!allOwned) {
+        return false;
+    }
+    restoreCommandItems(command);
+    return true;
+}
+
+bool AnnotationLayer::redoCommand(HistoryCommand& command)
+{
+    if (command.kind == HistoryCommandKind::Add) {
+        if (command.items.size() != 1 || !command.items.front().item) {
+            return false;
+        }
+        restoreCommandItems(command);
+        return true;
+    }
+
+    bool indicesMatch = true;
+    for (const RemovedItem& record : command.items) {
+        if (record.item || record.originalIndex >= m_items.size() ||
+            m_items[record.originalIndex].id != record.id) {
+            indicesMatch = false;
+            break;
+        }
+    }
+    if (indicesMatch) {
+        for (auto it = command.items.rbegin(); it != command.items.rend(); ++it) {
+            const auto sceneIt = m_items.begin() +
+                static_cast<ptrdiff_t>(it->originalIndex);
+            it->item = std::move(sceneIt->item);
+            m_items.erase(sceneIt);
+        }
+        return true;
+    }
+
+    const bool allPresent = std::all_of(command.items.cbegin(), command.items.cend(),
+        [this](const RemovedItem& record) {
+            return !record.item && findSceneItem(record.id) != m_items.cend();
+        });
+    if (!allPresent) return false;
+    removeCommandItems(command);
+    return true;
 }
 
 void AnnotationLayer::draw(QPainter &painter) const
@@ -245,7 +631,7 @@ void AnnotationLayer::draw(QPainter &painter) const
 
 bool AnnotationLayer::canUndo() const
 {
-    return !m_eraseTransactionActive && !m_items.empty();
+    return !m_eraseTransactionActive && !m_undoStack.empty();
 }
 
 bool AnnotationLayer::canRedo() const
@@ -293,20 +679,17 @@ void AnnotationLayer::renumberStepBadges()
     }
 }
 
-std::vector<ErasedItemsGroup::IndexedItem> AnnotationLayer::removeItemsIntersecting(const QPoint &point, int strokeWidth)
+std::vector<AnnotationLayer::RemovedItem> AnnotationLayer::removeItemsIntersecting(
+    const QPoint &point, int strokeWidth)
 {
-    std::vector<ErasedItemsGroup::IndexedItem> removedItems;
+    std::vector<RemovedItem> removedItems;
+    if (!m_eraseTransactionActive) {
+        return removedItems;
+    }
     int radius = strokeWidth / 2;
     size_t currentIndex = 0;
 
     for (auto it = m_items.begin(); it != m_items.end(); ) {
-        // Skip ErasedItemsGroup items (they are invisible markers)
-        if (dynamic_cast<ErasedItemsGroup*>(it->get())) {
-            ++it;
-            ++currentIndex;
-            continue;
-        }
-
         bool shouldRemove = false;
 
         // Use path-based intersection for strokes (more accurate)
@@ -325,7 +708,24 @@ std::vector<ErasedItemsGroup::IndexedItem> AnnotationLayer::removeItemsIntersect
 
         if (shouldRemove) {
             // Item intersects with eraser - remove it and record original index
-            removedItems.push_back({currentIndex, std::move(*it)});
+            if (removedItems.size() == removedItems.capacity()) {
+                const size_t currentSize = removedItems.size();
+                if (currentSize > removedItems.max_size() / 2) {
+                    restoreRemovedItems(std::move(removedItems));
+                    return {};
+                }
+                const size_t nextCapacity = currentSize == 0 ? 1 : currentSize * 2;
+                try {
+                    // Allocate before moving the next scene-owned object. If
+                    // allocation fails, roll back prior removals in-place.
+                    removedItems.reserve(nextCapacity);
+                } catch (...) {
+                    restoreRemovedItems(std::move(removedItems));
+                    return {};
+                }
+            }
+            removedItems.push_back({currentIndex, nullptr, it->id});
+            removedItems.back().item = std::move(it->item);
             it = m_items.erase(it);
             // currentIndex tracks the original scan position, not post-erase offsets.
             ++currentIndex;
@@ -336,9 +736,6 @@ std::vector<ErasedItemsGroup::IndexedItem> AnnotationLayer::removeItemsIntersect
     }
 
     if (!removedItems.empty()) {
-        if (!m_eraseTransactionActive) {
-            m_redoStack.clear();
-        }
         renumberStepBadges();
         invalidateCache();
         clearSelection();
@@ -360,13 +757,76 @@ bool AnnotationLayer::endEraseTransaction()
     }
 
     m_eraseTransactionActive = false;
+    if (flushDeferredItems()) {
+        emit changed();
+    }
     return true;
 }
 
-void AnnotationLayer::restoreRemovedItems(std::vector<ErasedItemsGroup::IndexedItem> items)
+bool AnnotationLayer::commitEraseTransaction(std::vector<RemovedItem> items)
+{
+    if (!m_eraseTransactionActive) {
+        return false;
+    }
+
+    if (items.empty()) {
+        m_eraseTransactionActive = false;
+        if (flushDeferredItems()) {
+            emit changed();
+        }
+        return true;
+    }
+
+    HistoryCommand command;
+    command.kind = HistoryCommandKind::Remove;
+    command.items = std::move(items);
+    m_eraseTransactionActive = false;
+    pushAppliedCommand(std::move(command));
+    flushDeferredItems();
+    emit changed();
+    return true;
+}
+
+bool AnnotationLayer::cancelEraseTransaction(std::vector<RemovedItem> items)
+{
+    if (!m_eraseTransactionActive) {
+        return false;
+    }
+
+    m_eraseTransactionActive = false;
+    const bool restored = restoreRemovedItemsNow(std::move(items));
+    const bool installedDeferredItems = flushDeferredItems();
+    if (restored || installedDeferredItems) {
+        emit changed();
+    }
+    return true;
+}
+
+bool AnnotationLayer::flushDeferredItems()
+{
+    if (m_eraseTransactionActive || m_deferredItems.empty()) {
+        return false;
+    }
+
+    auto deferredItems = std::move(m_deferredItems);
+    m_deferredItems.clear();
+    for (auto& item : deferredItems) {
+        addItemNow(std::move(item));
+    }
+    return true;
+}
+
+void AnnotationLayer::restoreRemovedItems(std::vector<RemovedItem> items)
+{
+    if (restoreRemovedItemsNow(std::move(items))) {
+        emit changed();
+    }
+}
+
+bool AnnotationLayer::restoreRemovedItemsNow(std::vector<RemovedItem> items)
 {
     if (items.empty()) {
-        return;
+        return false;
     }
 
     std::sort(items.begin(), items.end(),
@@ -375,14 +835,18 @@ void AnnotationLayer::restoreRemovedItems(std::vector<ErasedItemsGroup::IndexedI
     m_items.reserve(m_items.size() + items.size());
     for (auto& indexed : items) {
         const size_t insertPos = (std::min)(indexed.originalIndex, m_items.size());
+        AnnotationId id = indexed.id;
+        if (id == 0) {
+            id = allocateAnnotationId();
+        }
         m_items.insert(m_items.begin() + static_cast<ptrdiff_t>(insertPos),
-            std::move(indexed.item));
+            SceneItem{id, std::move(indexed.item)});
     }
 
     renumberStepBadges();
     invalidateCache();
     clearSelection();
-    emit changed();
+    return true;
 }
 
 int AnnotationLayer::hitTestText(const QPoint &pos) const
@@ -483,19 +947,20 @@ AnnotationItem* AnnotationLayer::itemAt(int index)
 
 bool AnnotationLayer::removeSelectedItem()
 {
-    if (m_selectedIndex < 0 || m_selectedIndex >= static_cast<int>(m_items.size())) {
+    if (m_eraseTransactionActive ||
+        m_selectedIndex < 0 || m_selectedIndex >= static_cast<int>(m_items.size())) {
         return false;
     }
 
-    // Use ErasedItemsGroup for proper undo/redo support (same pattern as eraser)
-    std::vector<ErasedItemsGroup::IndexedItem> removedItems;
-    removedItems.push_back({static_cast<size_t>(m_selectedIndex), std::move(m_items[m_selectedIndex])});
+    HistoryCommand command;
+    command.kind = HistoryCommandKind::Remove;
+    command.items.push_back({static_cast<size_t>(m_selectedIndex),
+                             nullptr,
+                             m_items[m_selectedIndex].id});
+    command.items.front().item = std::move(m_items[m_selectedIndex].item);
     m_items.erase(m_items.begin() + m_selectedIndex);
 
-    // Add ErasedItemsGroup to track the deletion for undo
-    m_items.push_back(std::make_unique<ErasedItemsGroup>(std::move(removedItems)));
-
-    m_redoStack.clear();
+    pushAppliedCommand(std::move(command));
     m_selectedIndex = -1;
     renumberStepBadges();
     invalidateCache();

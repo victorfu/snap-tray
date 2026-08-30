@@ -13,7 +13,7 @@
 #include <vector>
 
 #include "annotations/AnnotationItem.h"
-#include "annotations/ErasedItemsGroup.h"
+#include "annotations/RemovedAnnotationItem.h"
 
 // Forward declarations
 class TextBoxAnnotation;
@@ -27,10 +27,27 @@ class AnnotationLayer : public QObject
     Q_OBJECT
 
 public:
+    using AnnotationId = std::uint64_t;
+    using HistoryStateToken = std::uint64_t;
+    using RemovedItem = RemovedAnnotationItem;
+
+    enum class HistoryStateRelation {
+        Current,
+        UndoReachable,
+        RedoReachable,
+        Unreachable
+    };
+
+    static constexpr std::size_t kMaxHistoryCommands = 100;
+    static constexpr std::size_t kMaxHistoryOwnedBytes = 64u * 1024u * 1024u;
+
     explicit AnnotationLayer(QObject *parent = nullptr);
     ~AnnotationLayer();
 
     void addItem(std::unique_ptr<AnnotationItem> item);
+    // Replaces the visible snapshot without N cache rebuilds/signals. All
+    // items remain visible; only the newest kMaxHistoryCommands are undoable.
+    void replaceItems(std::vector<std::unique_ptr<AnnotationItem>> items);
     void undo();
     void redo();
     void clear();
@@ -47,6 +64,13 @@ public:
     size_t itemCount() const { return m_items.size(); }
     QRect contentBoundingRect() const;
     std::uint64_t revision() const { return m_revision; }
+    HistoryStateToken historyStateToken() const { return m_currentHistoryState; }
+    HistoryStateRelation historyStateRelation(HistoryStateToken token) const;
+    std::size_t historyCommandCount() const
+    {
+        return m_undoStack.size() + m_redoStack.size();
+    }
+    std::size_t historyOwnedBytes() const { return m_historyOwnedBytes; }
 
     // Access item by index (for re-editing)
     AnnotationItem* itemAt(int index);
@@ -56,18 +80,32 @@ public:
 
     // Eraser support: remove items that intersect with the given path
     // Returns the removed items with their original indices (for undo support)
-    std::vector<ErasedItemsGroup::IndexedItem> removeItemsIntersecting(const QPoint &point, int strokeWidth);
+    std::vector<RemovedItem> removeItemsIntersecting(const QPoint &point, int strokeWidth);
 
     // Guard history while an eraser stroke owns items removed from the layer.
-    // Committing the stroke through addItem() clears redo; cancelling does not.
+    // New annotations arriving asynchronously are deferred until the
+    // transaction is committed or cancelled.
     void beginEraseTransaction();
+    // Ends an empty/manual transaction and installs deferred annotations.
     // Returns false if a destructive layer operation invalidated the transaction.
     bool endEraseTransaction();
+    // Finalizes a valid eraser gesture as one Remove command. The visible
+    // items have already been removed by removeItemsIntersecting().
+    bool commitEraseTransaction(std::vector<RemovedItem> items);
+    // Restores an in-progress gesture without creating a Remove command, then
+    // installs annotations that arrived while the gesture held the history lock.
+    bool cancelEraseTransaction(std::vector<RemovedItem> items);
     bool isHistoryLocked() const { return m_eraseTransactionActive; }
 
     // Restore items removed by an in-progress eraser stroke without creating
     // a history entry. Used when the stroke is cancelled.
-    void restoreRemovedItems(std::vector<ErasedItemsGroup::IndexedItem> items);
+    void restoreRemovedItems(std::vector<RemovedItem> items);
+
+    // Visits visible scene items, command-owned annotations, and deferred
+    // additions exactly once. Intended for host-wide coordinate/source updates
+    // such as PinWindow crop handling.
+    void forEachOwnedItem(const std::function<void(AnnotationItem*)>& visitor);
+    void forEachOwnedItem(const std::function<void(const AnnotationItem*)>& visitor) const;
 
     // Selection support for text/emoji annotations
     int hitTestText(const QPoint &pos) const;
@@ -109,14 +147,66 @@ signals:
     void changed();
 
 private:
+    struct SceneItem {
+        AnnotationId id = 0;
+        std::unique_ptr<AnnotationItem> item;
+
+        AnnotationItem* get() const { return item.get(); }
+        AnnotationItem* operator->() const { return item.get(); }
+        AnnotationItem& operator*() const { return *item; }
+        explicit operator bool() const { return static_cast<bool>(item); }
+    };
+
+    enum class HistoryCommandKind {
+        Add,
+        Remove
+    };
+
+    struct HistoryCommand {
+        HistoryCommandKind kind = HistoryCommandKind::Add;
+        std::vector<RemovedItem> items;
+        HistoryStateToken beforeState = 0;
+        HistoryStateToken afterState = 0;
+        std::size_t retainedBytes = 0;
+    };
+
+    void addItemNow(std::unique_ptr<AnnotationItem> item);
     void renumberStepBadges();
     void appendItemToCaches(const AnnotationItem& item);
+    AnnotationId allocateAnnotationId();
+    HistoryStateToken allocateHistoryState();
+    void pushAppliedCommand(HistoryCommand command);
+    bool undoCommand(HistoryCommand& command);
+    bool redoCommand(HistoryCommand& command);
+    std::size_t calculateCommandRetainedBytes(const HistoryCommand& command) const;
+    void refreshCommandRetainedBytes(HistoryCommand& command);
+    void visitCommandOwnedItems(
+        HistoryCommand& command,
+        const std::function<void(AnnotationItem*)>& visitor);
+    void adjustHistoryBytes(std::size_t before, std::size_t after);
+    void trimHistory(HistoryStateToken protectedState);
+    void clearRedoHistory();
+    void evictUndoFront();
+    void evictRedoFront();
+    std::vector<SceneItem>::iterator findSceneItem(AnnotationId id);
+    std::vector<SceneItem>::const_iterator findSceneItem(AnnotationId id) const;
+    void restoreCommandItems(HistoryCommand& command);
+    void removeCommandItems(HistoryCommand& command);
+    bool restoreRemovedItemsNow(std::vector<RemovedItem> items);
+    bool flushDeferredItems();
 
     // Authoritative canvas contents. Trimming this container deletes visible and
     // serialized annotations; any future undo limit must use separate history state.
-    std::vector<std::unique_ptr<AnnotationItem>> m_items;
-    std::vector<std::unique_ptr<AnnotationItem>> m_redoStack;
+    std::vector<SceneItem> m_items;
+    std::vector<HistoryCommand> m_undoStack;
+    std::vector<HistoryCommand> m_redoStack;
+    AnnotationId m_nextAnnotationId = 1;
+    HistoryStateToken m_nextHistoryState = 1;
+    HistoryStateToken m_currentHistoryState = 0;
+    std::size_t m_historyOwnedBytes = 0;
+    std::size_t m_redoOwnedBytes = 0;
     bool m_eraseTransactionActive = false;
+    std::vector<std::unique_ptr<AnnotationItem>> m_deferredItems;
     int m_selectedIndex = -1;
 
     struct CacheKey {

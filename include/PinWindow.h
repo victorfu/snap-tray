@@ -11,6 +11,7 @@
 #include <QPointer>
 #include <QVector>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 
 
@@ -290,11 +291,11 @@ private:
     void applyCrop(const QRect& cropRect);
     void undoCrop();
     void redoCrop();
-    bool canUndoCrop() const;
-    bool canRedoCrop() const;
+    bool canUndoCrop();
+    bool canRedoCrop();
     void clearCropUndoHistory();
     bool matchesCropAnnotationBoundary(const CropUndoEntry& entry) const;
-    void pruneInvalidCropRedoState();
+    void pruneInvalidCropHistory();
     void onColorSelected(const QColor& color);
     void onWidthChanged(int width);
     void onEmojiSelected(const QString& emoji);
@@ -496,7 +497,7 @@ private:
         QVector<LayoutRegion> croppedStoredRegions;
         bool croppedHasMultiRegionData = false;
         QPoint annotationOffsetDisplay;
-        const AnnotationItem* annotationTopItem = nullptr;
+        std::uint64_t annotationHistoryState = 0;
     };
     QVector<CropUndoEntry> m_cropUndoStack;
     QVector<CropUndoEntry> m_cropRedoStack;

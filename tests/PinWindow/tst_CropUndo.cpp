@@ -7,7 +7,6 @@
 #include "PinWindow.h"
 
 #include "annotations/AnnotationLayer.h"
-#include "annotations/ErasedItemsGroup.h"
 #include "annotations/MarkerStroke.h"
 #include "annotations/MosaicRectAnnotation.h"
 #include "annotations/PolylineAnnotation.h"
@@ -77,7 +76,8 @@ private slots:
     void testUndoCrop_RestoresAnnotationPosition();
     void testApplyCrop_MarkerStroke_RemainsAlignedAfterTranslation();
     void testUndoCrop_MarkerStroke_RestoresOriginalPosition();
-    void testApplyCrop_RefreshesMosaicSourceInsideErasedGroup();
+    void testApplyCrop_RefreshesMosaicSourceInsideRemoveCommand();
+    void testApplyCrop_RefreshesMosaicSourceInsideUndoneAddCommand();
     void testApplyCrop_EdgeEndpointCoordinate_ClampsToLastPixelColumn();
     void testPreciseSourceSampleRectForRegion_UsesScreenLocalCoordinates();
     void testDisplaySourceRectForTarget_PrefersTranslationOverScaling();
@@ -93,6 +93,9 @@ private slots:
     void testHandleToolbarRedo_PrioritizesCropBeforePostCropAnnotationRedo();
     void testHandleToolbarRedo_UsesStableCropBoundaryBeyondFiftyAnnotations();
     void testHandleToolbarUndo_InPlaceCacheInvalidationDoesNotPreemptCropUndo();
+    void testHandleToolbarUndo_NonTopRemovalPrecedesCropUndo();
+    void testHandleToolbarRedo_NewAnnotationBranchInvalidatesCropRedo();
+    void testHistoryFloorInvalidatesUnreachableCropBoundary();
 };
 
 void TestPinWindowCropUndo::initTestCase()
@@ -361,7 +364,7 @@ void TestPinWindowCropUndo::testUndoCrop_MarkerStroke_RestoresOriginalPosition()
     QCOMPARE(marker->boundingRect(), originalRect);
 }
 
-void TestPinWindowCropUndo::testApplyCrop_RefreshesMosaicSourceInsideErasedGroup()
+void TestPinWindowCropUndo::testApplyCrop_RefreshesMosaicSourceInsideRemoveCommand()
 {
     QPixmap source = createPatternPixmap(240, 160);
     PinWindow window(source, QPoint(0, 0), nullptr, false);
@@ -378,12 +381,13 @@ void TestPinWindowCropUndo::testApplyCrop_RefreshesMosaicSourceInsideErasedGroup
 
     window.m_annotationLayer->setSelectedIndex(0);
     QVERIFY(window.m_annotationLayer->removeSelectedItem());
-    QVERIFY(dynamic_cast<ErasedItemsGroup*>(window.m_annotationLayer->itemAt(0)) != nullptr);
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(0));
+    QVERIFY(window.m_annotationLayer->canUndo());
 
     const QRect cropRect(60, 40, 120, 90);
     window.applyCrop(cropRect);
 
-    // Undo deletion to restore the mosaic item from ErasedItemsGroup storage.
+    // Undo deletion to restore the Mosaic item from command-owned storage.
     window.m_annotationLayer->undo();
     auto* restored = dynamic_cast<MosaicRectAnnotation*>(window.m_annotationLayer->itemAt(0));
     QVERIFY(restored != nullptr);
@@ -403,6 +407,53 @@ void TestPinWindowCropUndo::testApplyCrop_RefreshesMosaicSourceInsideErasedGroup
         12,
         MosaicBlurType::Pixelate);
 
+    QImage expected(120, 90, QImage::Format_ARGB32_Premultiplied);
+    expected.fill(Qt::transparent);
+    {
+        QPainter painter(&expected);
+        expectedAnnotation.draw(painter);
+    }
+
+    QCOMPARE(actual, expected);
+}
+
+void TestPinWindowCropUndo::testApplyCrop_RefreshesMosaicSourceInsideUndoneAddCommand()
+{
+    QPixmap source = createPatternPixmap(240, 160);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    QVERIFY(window.m_annotationLayer != nullptr);
+
+    const QRect originalRect(90, 70, 50, 30);
+    window.m_annotationLayer->addItem(std::make_unique<MosaicRectAnnotation>(
+        originalRect,
+        window.m_sharedSourcePixmap,
+        12,
+        MosaicBlurType::Pixelate));
+    window.m_annotationLayer->undo();
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(0));
+    QVERIFY(window.m_annotationLayer->canRedo());
+
+    const QRect cropRect(60, 40, 120, 90);
+    window.applyCrop(cropRect);
+    window.m_annotationLayer->redo();
+
+    auto* restored = dynamic_cast<MosaicRectAnnotation*>(window.m_annotationLayer->itemAt(0));
+    QVERIFY(restored != nullptr);
+
+    QImage actual(120, 90, QImage::Format_ARGB32_Premultiplied);
+    actual.fill(Qt::transparent);
+    {
+        QPainter painter(&actual);
+        restored->draw(painter);
+    }
+
+    auto expectedSource = std::make_shared<const QPixmap>(source.copy(cropRect));
+    MosaicRectAnnotation expectedAnnotation(
+        originalRect.translated(-cropRect.topLeft()),
+        expectedSource,
+        12,
+        MosaicBlurType::Pixelate);
     QImage expected(120, 90, QImage::Format_ARGB32_Premultiplied);
     expected.fill(Qt::transparent);
     {
@@ -829,6 +880,105 @@ void TestPinWindowCropUndo::testHandleToolbarUndo_InPlaceCacheInvalidationDoesNo
 
     window.handleToolbarUndo();
     QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(0));
+}
+
+void TestPinWindowCropUndo::testHandleToolbarUndo_NonTopRemovalPrecedesCropUndo()
+{
+    QPixmap source = createPatternPixmap(220, 140);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    QVERIFY(window.m_annotationLayer != nullptr);
+
+    window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{QPoint(40, 35), QPoint(100, 45)},
+        QColor(Qt::red), 3, LineEndStyle::None, LineStyle::Solid));
+    window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{QPoint(50, 55), QPoint(120, 65)},
+        QColor(Qt::blue), 3, LineEndStyle::None, LineStyle::Solid));
+    AnnotationItem* topItem = window.m_annotationLayer->itemAt(1);
+
+    const QRect cropRect(30, 20, 120, 80);
+    const QPixmap expectedCropped = source.copy(cropRect);
+    window.applyCrop(cropRect);
+
+    // Removing a non-top item keeps the old top pointer unchanged. History
+    // state, rather than scene shape, must still put this undo before crop.
+    window.m_annotationLayer->setSelectedIndex(0);
+    QVERIFY(window.m_annotationLayer->removeSelectedItem());
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(1));
+    QCOMPARE(window.m_annotationLayer->itemAt(0), topItem);
+
+    window.handleToolbarUndo();
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, expectedCropped));
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(2));
+    QCOMPARE(window.m_annotationLayer->itemAt(1), topItem);
+
+    window.handleToolbarUndo();
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(2));
+}
+
+void TestPinWindowCropUndo::testHandleToolbarRedo_NewAnnotationBranchInvalidatesCropRedo()
+{
+    QPixmap source = createPatternPixmap(220, 140);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    QVERIFY(window.m_annotationLayer != nullptr);
+
+    window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{QPoint(40, 35), QPoint(120, 55)},
+        QColor(Qt::red), 3, LineEndStyle::None, LineStyle::Solid));
+
+    const QRect cropRect(30, 20, 120, 80);
+    window.applyCrop(cropRect);
+    window.handleToolbarUndo();
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+    QVERIFY(!window.m_cropRedoStack.isEmpty());
+
+    // The old crop boundary remains annotation-undo-reachable, but the new
+    // branch must invalidate crop redo rather than reapply it out of order.
+    window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{QPoint(20, 20), QPoint(80, 45)},
+        QColor(Qt::blue), 3, LineEndStyle::None, LineStyle::Solid));
+    window.handleToolbarRedo();
+
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+    QVERIFY(window.m_cropRedoStack.isEmpty());
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(2));
+}
+
+void TestPinWindowCropUndo::testHistoryFloorInvalidatesUnreachableCropBoundary()
+{
+    QPixmap source = createPatternPixmap(260, 180);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    QVERIFY(window.m_annotationLayer != nullptr);
+
+    const QRect cropRect(30, 20, 160, 110);
+    const QPixmap expectedCropped = source.copy(cropRect);
+    window.applyCrop(cropRect);
+    QVERIFY(!window.m_cropUndoStack.isEmpty());
+
+    for (std::size_t i = 0; i <= AnnotationLayer::kMaxHistoryCommands; ++i) {
+        const int offset = static_cast<int>(i % 20);
+        window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+            QVector<QPoint>{QPoint(10 + offset, 10), QPoint(60 + offset, 30)},
+            QColor(Qt::red), 2, LineEndStyle::None, LineStyle::Solid));
+    }
+    QCOMPARE(window.m_annotationLayer->historyCommandCount(),
+             AnnotationLayer::kMaxHistoryCommands);
+    QCOMPARE(window.m_annotationLayer->historyStateRelation(
+                 window.m_cropUndoStack.constLast().annotationHistoryState),
+             AnnotationLayer::HistoryStateRelation::Unreachable);
+
+    window.handleToolbarUndo();
+
+    // Committed post-crop annotations make the old crop unsafe to undo. The
+    // crop entry is discarded while the latest annotation remains undoable.
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, expectedCropped));
+    QVERIFY(window.m_cropUndoStack.isEmpty());
+    QCOMPARE(window.m_annotationLayer->itemCount(),
+             AnnotationLayer::kMaxHistoryCommands);
 }
 
 QTEST_MAIN(TestPinWindowCropUndo)

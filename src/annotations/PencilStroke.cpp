@@ -266,6 +266,16 @@ std::unique_ptr<AnnotationItem> PencilStroke::clone() const
     return clone;
 }
 
+std::size_t PencilStroke::estimatedRetainedBytes() const
+{
+    return sizeof(PencilStroke) +
+        static_cast<std::size_t>(m_points.capacity()) * sizeof(QPointF) +
+        static_cast<std::size_t>(m_cachedPath.elementCount() +
+                                 m_tailPath.elementCount() +
+                                 m_previewAffectedPath.elementCount()) *
+            sizeof(QPainterPath::Element);
+}
+
 void PencilStroke::translate(const QPointF& delta)
 {
     if (delta.isNull()) {

@@ -224,6 +224,11 @@ public:
         return selector.applyHistoryReplayEntry(entry);
     }
 
+    static AnnotationLayer* annotationLayer(RegionSelector& selector)
+    {
+        return selector.m_annotationLayer;
+    }
+
     static QRect selectionRect(const RegionSelector& selector)
     {
         return selector.m_selectionManager->selectionRect();

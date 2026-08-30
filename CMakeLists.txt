@@ -302,7 +302,6 @@ add_library(snaptray_core STATIC
     src/annotations/ShapeAnnotation.cpp
     src/annotations/StepBadgeAnnotation.cpp
     src/annotations/EmojiStickerAnnotation.cpp
-    src/annotations/ErasedItemsGroup.cpp
     src/annotations/TextBoxAnnotation.cpp
     src/settings/AnnotationSettingsManager.cpp
     src/settings/AutoLaunchSyncPolicy.cpp

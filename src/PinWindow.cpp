@@ -27,7 +27,6 @@
 #include "qml/QmlBeautifyPanel.h"
 #include "qml/PinToolbarViewModel.h"
 #include "annotations/AnnotationLayer.h"
-#include "annotations/ErasedItemsGroup.h"
 #include "annotations/EmojiStickerAnnotation.h"
 #include "annotations/MosaicStroke.h"
 #include "annotations/MosaicRectAnnotation.h"
@@ -380,11 +379,6 @@ namespace {
             mosaicRect->setSourcePixmap(sourcePixmap);
             return;
         }
-        if (auto* erasedGroup = dynamic_cast<ErasedItemsGroup*>(item)) {
-            erasedGroup->forEachStoredItem([&sourcePixmap](AnnotationItem* storedItem) {
-                refreshMosaicSourceForItem(storedItem, sourcePixmap);
-            });
-        }
     }
 
     void refreshAllMosaicSources(AnnotationLayer* layer, const SharedPixmap& sourcePixmap)
@@ -393,9 +387,9 @@ namespace {
             return;
         }
 
-        layer->forEachItem([&sourcePixmap](AnnotationItem* item) {
+        layer->forEachOwnedItem([&sourcePixmap](AnnotationItem* item) {
             refreshMosaicSourceForItem(item, sourcePixmap);
-        }, true);
+        });
     }
 
     // Crop endpoints can land on the logical right/bottom boundary (x == width / y == height)
@@ -3628,6 +3622,7 @@ void PinWindow::handleToolbarUndo()
         return;
     }
 
+    pruneInvalidCropHistory();
     const bool annotationCanUndo = m_annotationLayer && m_annotationLayer->canUndo();
     const bool cropCanUndo = canUndoCrop();
 
@@ -3660,7 +3655,7 @@ void PinWindow::handleToolbarRedo()
         return;
     }
 
-    pruneInvalidCropRedoState();
+    pruneInvalidCropHistory();
 
     if (canRedoCrop()) {
         redoCrop();
@@ -3831,11 +3826,7 @@ void PinWindow::applyCrop(const QRect& cropRect)
 
     // Translate annotations in display/tool coordinates (same space as tool input).
     if (m_annotationLayer) {
-        const std::size_t annotationCount = m_annotationLayer->itemCount();
-        if (annotationCount > 0) {
-            entry.annotationTopItem =
-                m_annotationLayer->itemAt(static_cast<int>(annotationCount - 1));
-        }
+        entry.annotationHistoryState = m_annotationLayer->historyStateToken();
         m_annotationLayer->translateAll(QPointF(-annotationOffsetDisplay.x(), -annotationOffsetDisplay.y()));
         refreshAllMosaicSources(m_annotationLayer, m_sharedSourcePixmap);
     }
@@ -3943,13 +3934,15 @@ void PinWindow::redoCrop()
 
 }
 
-bool PinWindow::canUndoCrop() const
+bool PinWindow::canUndoCrop()
 {
+    pruneInvalidCropHistory();
     return !m_cropUndoStack.isEmpty();
 }
 
-bool PinWindow::canRedoCrop() const
+bool PinWindow::canRedoCrop()
 {
+    pruneInvalidCropHistory();
     if (m_cropRedoStack.isEmpty()) {
         return false;
     }
@@ -3977,39 +3970,43 @@ bool PinWindow::matchesCropAnnotationBoundary(const CropUndoEntry& entry) const
         return true;
     }
 
-    const std::size_t currentCount = m_annotationLayer->itemCount();
-    const AnnotationItem* currentTopItem = (currentCount > 0)
-        ? m_annotationLayer->itemAt(static_cast<int>(currentCount - 1))
-        : nullptr;
-
-    return currentTopItem == entry.annotationTopItem;
+    return m_annotationLayer->historyStateToken() == entry.annotationHistoryState;
 }
 
-void PinWindow::pruneInvalidCropRedoState()
+void PinWindow::pruneInvalidCropHistory()
 {
-    if (m_cropRedoStack.isEmpty() || !m_annotationLayer) {
+    if (!m_annotationLayer || m_annotationLayer->isHistoryLocked()) {
         return;
     }
 
-    if (m_annotationLayer->isHistoryLocked()) {
-        return;
-    }
+    using Relation = AnnotationLayer::HistoryStateRelation;
+    auto pruneInvalidPrefix = [this](QVector<CropUndoEntry>& stack,
+                                     Relation firstValid,
+                                     Relation secondValid) {
+        qsizetype lastInvalid = -1;
+        for (qsizetype i = 0; i < stack.size(); ++i) {
+            const Relation relation = m_annotationLayer->historyStateRelation(
+                stack.at(i).annotationHistoryState);
+            if (relation != firstValid && relation != secondValid) {
+                lastInvalid = i;
+            }
+        }
+        if (lastInvalid >= 0) {
+            stack.remove(0, lastInvalid + 1);
+        }
+    };
 
-    if (matchesCropAnnotationBoundary(m_cropRedoStack.constLast())) {
-        return;
-    }
-
-    // If no annotation redo steps can bring us back to the crop boundary,
-    // this crop redo branch has been invalidated by a new edit path.
-    if (!m_annotationLayer->canRedo()) {
-        m_cropRedoStack.clear();
-    }
+    // Applied crop boundaries are valid only in the current state or the
+    // annotation undo path. Crop redo boundaries have the inverse direction;
+    // UndoReachable there means a new annotation branch invalidated the redo.
+    pruneInvalidPrefix(m_cropUndoStack, Relation::Current, Relation::UndoReachable);
+    pruneInvalidPrefix(m_cropRedoStack, Relation::Current, Relation::RedoReachable);
 }
 
 void PinWindow::updateUndoRedoState()
 {
     if (m_annotationLayer) {
-        pruneInvalidCropRedoState();
+        pruneInvalidCropHistory();
     }
 
     if (m_toolbar && m_annotationLayer) {

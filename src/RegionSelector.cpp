@@ -1688,8 +1688,9 @@ void RegionSelector::restoreLiveReplaySlot()
         }
     }
 
-    m_annotationLayer->clear();
-    if (!m_historyLiveSlot.annotationsJson.isEmpty()) {
+    if (m_historyLiveSlot.annotationsJson.isEmpty()) {
+        m_annotationLayer->replaceItems({});
+    } else {
         QString errorMessage;
         SnapTray::deserializeAnnotationLayer(
             m_historyLiveSlot.annotationsJson, m_annotationLayer, m_sharedSourcePixmap, &errorMessage);
@@ -1771,12 +1772,12 @@ bool RegionSelector::applyHistoryReplayEntry(const SnapTray::HistoryEntry& entry
         }
     }
 
-    m_annotationLayer->clear();
-    if (!annotationsData.isEmpty()) {
+    if (annotationsData.isEmpty()) {
+        m_annotationLayer->replaceItems({});
+    } else {
         QString errorMessage;
         if (!SnapTray::deserializeAnnotationLayer(
                 annotationsData, m_annotationLayer, m_sharedSourcePixmap, &errorMessage)) {
-            m_annotationLayer->clear();
             return false;
         }
     }
@@ -1796,7 +1797,6 @@ void RegionSelector::clearHistoryReplaySelectionState()
         m_multiRegionManager->clear();
     }
     m_selectionManager->clearSelection();
-    m_annotationLayer->clear();
 }
 
 void RegionSelector::recordCaptureSession(const QPixmap& resultPixmap)

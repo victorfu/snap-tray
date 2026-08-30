@@ -4,7 +4,6 @@
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
-#include "annotations/ErasedItemsGroup.h"
 #include "annotations/MarkerStroke.h"
 #include "annotations/MosaicRectAnnotation.h"
 #include "annotations/MosaicStroke.h"
@@ -21,6 +20,8 @@
 #include <QJsonParseError>
 #include <QPoint>
 #include <QPointF>
+
+#include <vector>
 
 namespace {
 
@@ -392,7 +393,7 @@ QByteArray serializeAnnotationLayer(const AnnotationLayer& layer)
 {
     QJsonArray items;
     layer.forEachItem([&items](const AnnotationItem* item) {
-        if (!item || !item->isVisible() || dynamic_cast<const ErasedItemsGroup*>(item) != nullptr) {
+        if (!item || !item->isVisible()) {
             return;
         }
 
@@ -426,22 +427,25 @@ bool deserializeAnnotationLayer(const QByteArray& data,
                 ? parseError.errorString()
                 : QStringLiteral("Annotation payload is not an object");
         }
+        layer->replaceItems({});
         return false;
     }
 
     const QJsonArray items = document.object().value(QStringLiteral("items")).toArray();
-    layer->clear();
+    std::vector<std::unique_ptr<AnnotationItem>> decodedItems;
+    decodedItems.reserve(static_cast<std::size_t>(items.size()));
 
     for (const QJsonValue& value : items) {
         const QJsonObject object = value.toObject();
         auto item = deserializeAnnotationItem(object, sourcePixmap, errorMessage);
         if (!item) {
-            layer->clear();
+            layer->replaceItems({});
             return false;
         }
-        layer->addItem(std::move(item));
+        decodedItems.push_back(std::move(item));
     }
 
+    layer->replaceItems(std::move(decodedItems));
     return true;
 }
 

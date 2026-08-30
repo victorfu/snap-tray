@@ -7,12 +7,16 @@
 
 #include "region/RegionPainter.h"
 #include "region/SelectionDimensionLabel.h"
+#include "region/SelectionDirtyRegionPlanner.h"
 #include "region/SelectionStateManager.h"
+#include "annotations/AnnotationLayer.h"
+#include "tools/ToolManager.h"
 
 namespace {
 
 const QRect kHostRect(0, 0, 420, 320);
 const QRect kSelectionRect(90, 80, 180, 120);
+constexpr int kDetachedAnnotationViewportMargin = 64;
 
 QImage paintImage(RegionPainter& painter,
                   SelectionStateManager& selectionManager,
@@ -67,6 +71,22 @@ bool imagesEqualOutsideRect(const QImage& lhs, const QImage& rhs, const QRect& i
     }
 
     return true;
+}
+
+bool regionHasRedStrokePixel(const QImage& image, const QRect& probe)
+{
+    const QRect boundedProbe = probe.intersected(image.rect());
+    for (int y = boundedProbe.top(); y <= boundedProbe.bottom(); ++y) {
+        for (int x = boundedProbe.left(); x <= boundedProbe.right(); ++x) {
+            const QColor color = image.pixelColor(x, y);
+            if (color.red() > color.green() + 40 &&
+                color.red() > color.blue() + 40 &&
+                color.alpha() > 0) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 QImage paintFractionalDprImage(RegionPainter& painter,
@@ -147,6 +167,7 @@ private slots:
     void testTopEdgeShortSelectionUsesCompactDimensionLabel();
     void testFractionalDprPartialBackgroundRepaintMatchesFullPaint();
     void testFractionalDprSelectionTransitionNeedsFullRepaint();
+    void testPencilPreviewExtendsBeyondDetachedAnnotationViewport();
 };
 
 void tst_RegionPainterChrome::testDetectedWindowChromeMatchesSelectionChrome()
@@ -387,6 +408,108 @@ void tst_RegionPainterChrome::testFractionalDprSelectionTransitionNeedsFullRepai
         currentSelectionRect,
         QRegion(hostWidget.rect()));
     QCOMPARE(fullTransitionCanvas, fullSelectionCanvas);
+}
+
+void tst_RegionPainterChrome::testPencilPreviewExtendsBeyondDetachedAnnotationViewport()
+{
+    QWidget hostWidget;
+    hostWidget.resize(kHostRect.size());
+
+    const QRect selectionRect(20, 80, 60, 100);
+    const QRect detachedViewport =
+        selectionRect.adjusted(-kDetachedAnnotationViewportMargin,
+                               -kDetachedAnnotationViewportMargin,
+                               kDetachedAnnotationViewportMargin,
+                               kDetachedAnnotationViewportMargin)
+            .intersected(hostWidget.rect());
+
+    SelectionStateManager selectionManager;
+    selectionManager.setBounds(kHostRect);
+    selectionManager.setSelectionRect(selectionRect);
+
+    AnnotationLayer annotationLayer;
+    ToolManager toolManager;
+    toolManager.registerDefaultHandlers();
+    toolManager.setAnnotationLayer(&annotationLayer);
+    toolManager.setColor(Qt::red);
+    toolManager.setWidth(5);
+    toolManager.setLineStyle(LineStyle::Solid);
+    toolManager.setCurrentTool(ToolId::Pencil);
+
+    const QPointF start(50.0, 130.0);
+    const QPointF outside(400.0, 130.0);
+    toolManager.handleMousePress(start);
+    for (qreal x = 100.0; x <= outside.x(); x += 50.0) {
+        toolManager.handleMouseMove(QPointF(x, outside.y()));
+    }
+    QVERIFY(toolManager.isDrawing());
+    QVERIFY(toolManager.currentHandler() != nullptr);
+    const QRect previewBounds = toolManager.currentHandler()->previewBounds();
+    QVERIFY(previewBounds.left() > detachedViewport.right());
+
+    RegionPainter painter;
+    painter.setParentWidget(&hostWidget);
+    painter.setSelectionManager(&selectionManager);
+    painter.setAnnotationLayer(&annotationLayer);
+    painter.setToolManager(&toolManager);
+    painter.setCurrentTool(static_cast<int>(ToolId::Pencil));
+    painter.setDevicePixelRatio(1.0);
+    painter.setAnnotationViewport(detachedViewport);
+
+    QImage liveCanvas(hostWidget.size(), QImage::Format_ARGB32_Premultiplied);
+    liveCanvas.fill(Qt::transparent);
+    const QRect previewDirtyRect = previewBounds.adjusted(
+        -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+        -SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+        SelectionDirtyRegionPlanner::kAnnotationRepaintMargin,
+        SelectionDirtyRegionPlanner::kAnnotationRepaintMargin).intersected(hostWidget.rect());
+    {
+        QPainter livePainter(&liveCanvas);
+        livePainter.setRenderHint(QPainter::Antialiasing);
+        livePainter.setClipRect(previewDirtyRect);
+        painter.paint(livePainter, QPixmap(), QRegion(previewDirtyRect));
+    }
+
+    const QRect outsideProbe(
+        qMax(previewBounds.left(), detachedViewport.right() + 10),
+        124,
+        qMin(50, previewBounds.right() - qMax(
+            previewBounds.left(), detachedViewport.right() + 10) + 1),
+        13);
+    QVERIFY(outsideProbe.isValid() && !outsideProbe.isEmpty());
+    QVERIFY(!detachedViewport.intersects(outsideProbe));
+    QVERIFY(regionHasRedStrokePixel(liveCanvas, outsideProbe));
+
+    // A full repaint must also redraw the older prefix between the static
+    // viewport and the current dirty tail.
+    const QRect prefixProbe(
+        detachedViewport.right() + 4,
+        124,
+        previewBounds.left() - detachedViewport.right() - 8,
+        13);
+    QVERIFY(prefixProbe.isValid() && !prefixProbe.isEmpty());
+
+    QImage fullLiveCanvas(hostWidget.size(), QImage::Format_ARGB32_Premultiplied);
+    fullLiveCanvas.fill(Qt::transparent);
+    {
+        QPainter fullLivePainter(&fullLiveCanvas);
+        fullLivePainter.setRenderHint(QPainter::Antialiasing);
+        painter.paint(fullLivePainter, QPixmap(), QRegion(hostWidget.rect()));
+    }
+    QVERIFY(regionHasRedStrokePixel(fullLiveCanvas, prefixProbe));
+
+    toolManager.handleMouseRelease(outside);
+    QCOMPARE(annotationLayer.itemCount(), static_cast<size_t>(1));
+
+    QImage completedCanvas(hostWidget.size(), QImage::Format_ARGB32_Premultiplied);
+    completedCanvas.fill(Qt::transparent);
+    {
+        QPainter completedPainter(&completedCanvas);
+        completedPainter.setRenderHint(QPainter::Antialiasing);
+        painter.paint(completedPainter, QPixmap(), QRegion(hostWidget.rect()));
+    }
+    QVERIFY(regionHasRedStrokePixel(completedCanvas, outsideProbe));
+    QVERIFY(regionHasRedStrokePixel(completedCanvas, prefixProbe));
 }
 
 QTEST_MAIN(tst_RegionPainterChrome)

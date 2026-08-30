@@ -648,12 +648,18 @@ void RegionPainter::drawCurrentAnnotation(QPainter& painter)
     // Use ToolManager for tools it handles.
     ToolId tool = static_cast<ToolId>(m_currentTool);
     if (ToolTraits::isToolManagerHandledTool(tool)) {
-        if (m_annotationViewport.isValid() && !m_annotationViewport.isEmpty()) {
+        if (tool != ToolId::Pencil &&
+            m_annotationViewport.isValid() && !m_annotationViewport.isEmpty()) {
             painter.save();
             painter.setClipRect(m_annotationViewport);
             m_toolManager->drawCurrentPreview(painter);
             painter.restore();
         } else {
+            // Pencil owns a localized QPaintEvent dirty clip supplied by the
+            // host. Replacing it with the detached selection viewport hides
+            // live points beyond selection + 64 px and can expand tail-only
+            // paints. Preserve the caller clip; a full repaint then redraws
+            // the entire in-progress stroke.
             m_toolManager->drawCurrentPreview(painter);
         }
     }

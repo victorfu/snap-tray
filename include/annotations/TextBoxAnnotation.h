@@ -44,6 +44,13 @@ public:
     QRect boundingRect() const override;
     std::unique_ptr<AnnotationItem> clone() const override;
     void translate(const QPointF& delta) override;
+    std::size_t estimatedRetainedBytes() const override
+    {
+        return sizeof(TextBoxAnnotation)
+            + static_cast<std::size_t>(m_text.capacity() + m_cachedText.capacity())
+                * sizeof(QChar)
+            + estimatedPixmapBytes(m_cachedPixmap);
+    }
 
     // Text manipulation
     void setText(const QString &text);

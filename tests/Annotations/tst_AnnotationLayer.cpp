@@ -10,7 +10,6 @@
 #include "annotations/TextBoxAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
 #include "annotations/ShapeAnnotation.h"
-#include "annotations/ErasedItemsGroup.h"
 
 namespace {
 
@@ -61,6 +60,27 @@ private:
     std::shared_ptr<CountingAnnotationState> m_state;
 };
 
+class SizedAnnotation final : public AnnotationItem
+{
+public:
+    explicit SizedAnnotation(std::size_t retainedBytes)
+        : m_retainedBytes(retainedBytes)
+    {
+    }
+
+    void draw(QPainter&) const override {}
+    QRect boundingRect() const override { return QRect(0, 0, 1, 1); }
+    std::unique_ptr<AnnotationItem> clone() const override
+    {
+        return std::make_unique<SizedAnnotation>(m_retainedBytes);
+    }
+    std::size_t estimatedRetainedBytes() const override { return m_retainedBytes; }
+    void setRetainedBytes(std::size_t bytes) { m_retainedBytes = bytes; }
+
+private:
+    std::size_t m_retainedBytes;
+};
+
 } // namespace
 
 class TestAnnotationLayer : public QObject
@@ -83,12 +103,26 @@ private slots:
     void testHitTestShape_ReturnsTopMostVisible();
     void testSetSelectedIndex_InvalidOrHiddenClearsSelection();
     void testTranslateAll_AlsoTranslatesRedoStackItems();
-    void testTranslateAll_TranslatesErasedItemsGroupContents();
-    void testRedo_ErasedItemsGroup_ReappliesDeletion();
+    void testTranslateAll_TranslatesRemoveCommandContents();
+    void testRedo_RemoveCommand_ReappliesDeletion();
     void testRemoveItemsIntersecting_AdjacentRemovals_TrackOriginalIndices();
     void testRemoveItemsIntersecting_MarkerRemovals_TrackOriginalIndices();
-    void testRedo_ErasedItemsGroup_AdjacentRemovals_PreservesOrder();
-    void testRedo_ErasedItemsGroup_DuplicateIndices_DoesNotOverDelete();
+    void testRedo_RemoveCommand_AdjacentRemovals_PreservesOrder();
+    void testRedo_RemoveCommand_UsesStableIds();
+    void testHistoryCountLimit_CommitsOldestVisibleItem();
+    void testHistoryByteLimit_PreservesLatestOversizeCommand();
+    void testHistoryByteLimit_PreservesNearestUndoAndRedo();
+    void testHistoryBranch_DropsRedoOwnedBytes();
+    void testHistoryStateToken_TracksUndoRedoAndBranches();
+    void testRemoveOutsideEraseTransaction_IsNoOp();
+    void testDeleteDuringEraseTransaction_IsRejected();
+    void testAddDuringEraseTransaction_DefersUntilCommit();
+    void testAddDuringEraseTransaction_DefersUntilEmptyCommit();
+    void testAddDuringEraseTransaction_DefersUntilCancel();
+    void testDeferredAdds_FlushAsSingleBatch();
+    void testDeferredAddAfterCancel_ClearsRedoBranch();
+    void testClearDuringEraseTransaction_DiscardsDeferredItems();
+    void testOwnedVisitor_RefreshesHistoryBytes();
 
 private:
     static bool hasVisiblePixel(const QImage& image, const QRect& probe);
@@ -481,7 +515,7 @@ void TestAnnotationLayer::testTranslateAll_AlsoTranslatesRedoStackItems()
     QCOMPARE(translatedPoints[1], originalPoints[1] + QPoint(7, 11));
 }
 
-void TestAnnotationLayer::testTranslateAll_TranslatesErasedItemsGroupContents()
+void TestAnnotationLayer::testTranslateAll_TranslatesRemoveCommandContents()
 {
     AnnotationLayer layer;
 
@@ -503,7 +537,7 @@ void TestAnnotationLayer::testTranslateAll_TranslatesErasedItemsGroupContents()
     QVERIFY(layer.removeSelectedItem());
 
     layer.translateAll(QPointF(9.0, 5.0));
-    layer.undo();  // Restores erased item from ErasedItemsGroup
+    layer.undo();
 
     auto* restored = dynamic_cast<PolylineAnnotation*>(layer.itemAt(0));
     QVERIFY(restored != nullptr);
@@ -514,7 +548,7 @@ void TestAnnotationLayer::testTranslateAll_TranslatesErasedItemsGroupContents()
     QCOMPARE(restoredPoints[1], firstPoints[1] + QPoint(9, 5));
 }
 
-void TestAnnotationLayer::testRedo_ErasedItemsGroup_ReappliesDeletion()
+void TestAnnotationLayer::testRedo_RemoveCommand_ReappliesDeletion()
 {
     AnnotationLayer layer;
 
@@ -527,7 +561,8 @@ void TestAnnotationLayer::testRedo_ErasedItemsGroup_ReappliesDeletion()
 
     layer.setSelectedIndex(0);
     QVERIFY(layer.removeSelectedItem());
-    QVERIFY(dynamic_cast<ErasedItemsGroup*>(layer.itemAt(1)) != nullptr);
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+    QVERIFY(layer.canUndo());
 
     layer.undo();
     QVERIFY(layer.canRedo());
@@ -535,12 +570,11 @@ void TestAnnotationLayer::testRedo_ErasedItemsGroup_ReappliesDeletion()
 
     layer.redo();
 
-    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
     QVERIFY(!layer.canRedo());
     auto* remaining = dynamic_cast<PolylineAnnotation*>(layer.itemAt(0));
     QVERIFY(remaining != nullptr);
     QCOMPARE(remaining->points(), secondPoints);
-    QVERIFY(dynamic_cast<ErasedItemsGroup*>(layer.itemAt(1)) != nullptr);
 }
 
 void TestAnnotationLayer::testRemoveItemsIntersecting_AdjacentRemovals_TrackOriginalIndices()
@@ -551,6 +585,7 @@ void TestAnnotationLayer::testRemoveItemsIntersecting_AdjacentRemovals_TrackOrig
     layer.addItem(createPencil(60));
     layer.addItem(createPencil(80));
 
+    layer.beginEraseTransaction();
     auto removed = layer.removeItemsIntersecting(QPoint(80, 50), 24);
 
     QCOMPARE(removed.size(), static_cast<size_t>(2));
@@ -564,6 +599,7 @@ void TestAnnotationLayer::testRemoveItemsIntersecting_AdjacentRemovals_TrackOrig
     QVERIFY(secondRemaining != nullptr);
     QVERIFY(firstRemaining->intersectsCircle(QPoint(80, 20), 1));
     QVERIFY(secondRemaining->intersectsCircle(QPoint(80, 80), 1));
+    QVERIFY(layer.commitEraseTransaction(std::move(removed)));
 }
 
 void TestAnnotationLayer::testRemoveItemsIntersecting_MarkerRemovals_TrackOriginalIndices()
@@ -574,6 +610,7 @@ void TestAnnotationLayer::testRemoveItemsIntersecting_MarkerRemovals_TrackOrigin
     layer.addItem(createMarker(60));
     layer.addItem(createMarker(80));
 
+    layer.beginEraseTransaction();
     auto removed = layer.removeItemsIntersecting(QPoint(80, 50), 24);
 
     QCOMPARE(removed.size(), static_cast<size_t>(2));
@@ -587,9 +624,10 @@ void TestAnnotationLayer::testRemoveItemsIntersecting_MarkerRemovals_TrackOrigin
     QVERIFY(secondRemaining != nullptr);
     QVERIFY(firstRemaining->intersectsCircle(QPoint(80, 20), 1));
     QVERIFY(secondRemaining->intersectsCircle(QPoint(80, 80), 1));
+    QVERIFY(layer.commitEraseTransaction(std::move(removed)));
 }
 
-void TestAnnotationLayer::testRedo_ErasedItemsGroup_AdjacentRemovals_PreservesOrder()
+void TestAnnotationLayer::testRedo_RemoveCommand_AdjacentRemovals_PreservesOrder()
 {
     AnnotationLayer layer;
     layer.addItem(createPencil(20));
@@ -597,12 +635,12 @@ void TestAnnotationLayer::testRedo_ErasedItemsGroup_AdjacentRemovals_PreservesOr
     layer.addItem(createPencil(60));
     layer.addItem(createPencil(80));
 
+    layer.beginEraseTransaction();
     auto removed = layer.removeItemsIntersecting(QPoint(80, 50), 24);
     QCOMPARE(removed.size(), static_cast<size_t>(2));
-    layer.addItem(std::make_unique<ErasedItemsGroup>(std::move(removed)));
+    QVERIFY(layer.commitEraseTransaction(std::move(removed)));
 
-    QCOMPARE(layer.itemCount(), static_cast<size_t>(3));
-    QVERIFY(dynamic_cast<ErasedItemsGroup*>(layer.itemAt(2)) != nullptr);
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
 
     layer.undo();
 
@@ -623,7 +661,7 @@ void TestAnnotationLayer::testRedo_ErasedItemsGroup_AdjacentRemovals_PreservesOr
 
     layer.redo();
 
-    QCOMPARE(layer.itemCount(), static_cast<size_t>(3));
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
     QVERIFY(!layer.canRedo());
 
     auto* firstRemaining = dynamic_cast<PencilStroke*>(layer.itemAt(0));
@@ -632,10 +670,9 @@ void TestAnnotationLayer::testRedo_ErasedItemsGroup_AdjacentRemovals_PreservesOr
     QVERIFY(secondRemaining != nullptr);
     QVERIFY(firstRemaining->intersectsCircle(QPoint(80, 20), 1));
     QVERIFY(secondRemaining->intersectsCircle(QPoint(80, 80), 1));
-    QVERIFY(dynamic_cast<ErasedItemsGroup*>(layer.itemAt(2)) != nullptr);
 }
 
-void TestAnnotationLayer::testRedo_ErasedItemsGroup_DuplicateIndices_DoesNotOverDelete()
+void TestAnnotationLayer::testRedo_RemoveCommand_UsesStableIds()
 {
     AnnotationLayer layer;
     layer.addItem(createPencil(20));
@@ -643,37 +680,345 @@ void TestAnnotationLayer::testRedo_ErasedItemsGroup_DuplicateIndices_DoesNotOver
     layer.addItem(createPencil(60));
     layer.addItem(createPencil(80));
 
+    AnnotationItem* erasedFirst = layer.itemAt(1);
+    AnnotationItem* erasedSecond = layer.itemAt(2);
+
+    layer.beginEraseTransaction();
     auto removed = layer.removeItemsIntersecting(QPoint(80, 50), 24);
     QCOMPARE(removed.size(), static_cast<size_t>(2));
-    layer.addItem(std::make_unique<ErasedItemsGroup>(std::move(removed)));
+    QVERIFY(removed[0].id != 0);
+    QVERIFY(removed[1].id != 0);
+    QVERIFY(removed[0].id != removed[1].id);
+    QVERIFY(layer.commitEraseTransaction(std::move(removed)));
 
     layer.undo();
     QCOMPARE(layer.itemCount(), static_cast<size_t>(4));
     QVERIFY(layer.canRedo());
-
-    ErasedItemsGroup* redoGroup = nullptr;
-    layer.forEachItem([&redoGroup](AnnotationItem* item) {
-        if (auto* group = dynamic_cast<ErasedItemsGroup*>(item)) {
-            redoGroup = group;
-        }
-    }, true);
-
-    QVERIFY(redoGroup != nullptr);
-    redoGroup->setOriginalIndices({1, 1});
+    QCOMPARE(layer.itemAt(1), erasedFirst);
+    QCOMPARE(layer.itemAt(2), erasedSecond);
 
     layer.redo();
 
-    QCOMPARE(layer.itemCount(), static_cast<size_t>(4));
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
     auto* firstRemaining = dynamic_cast<PencilStroke*>(layer.itemAt(0));
     auto* secondRemaining = dynamic_cast<PencilStroke*>(layer.itemAt(1));
-    auto* thirdRemaining = dynamic_cast<PencilStroke*>(layer.itemAt(2));
     QVERIFY(firstRemaining != nullptr);
     QVERIFY(secondRemaining != nullptr);
-    QVERIFY(thirdRemaining != nullptr);
     QVERIFY(firstRemaining->intersectsCircle(QPoint(80, 20), 1));
-    QVERIFY(secondRemaining->intersectsCircle(QPoint(80, 60), 1));
-    QVERIFY(thirdRemaining->intersectsCircle(QPoint(80, 80), 1));
-    QVERIFY(dynamic_cast<ErasedItemsGroup*>(layer.itemAt(3)) != nullptr);
+    QVERIFY(secondRemaining->intersectsCircle(QPoint(80, 80), 1));
+}
+
+void TestAnnotationLayer::testHistoryCountLimit_CommitsOldestVisibleItem()
+{
+    AnnotationLayer layer;
+    layer.addItem(createPencil(0));
+    AnnotationItem* committedFirst = layer.itemAt(0);
+
+    for (int i = 1; i <= 100; ++i) {
+        layer.addItem(createPencil(i));
+    }
+
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(101));
+    QCOMPARE(layer.historyCommandCount(), AnnotationLayer::kMaxHistoryCommands);
+
+    int undoCount = 0;
+    while (layer.canUndo()) {
+        layer.undo();
+        ++undoCount;
+    }
+
+    QCOMPARE(undoCount, 100);
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+    QCOMPARE(layer.itemAt(0), committedFirst);
+}
+
+void TestAnnotationLayer::testHistoryByteLimit_PreservesLatestOversizeCommand()
+{
+    AnnotationLayer layer;
+    constexpr std::size_t oversize = AnnotationLayer::kMaxHistoryOwnedBytes + 1024;
+
+    layer.addItem(std::make_unique<SizedAnnotation>(1024));
+    AnnotationItem* committedBaseline = layer.itemAt(0);
+    layer.addItem(std::make_unique<SizedAnnotation>(oversize));
+    AnnotationItem* item = layer.itemAt(1);
+    layer.undo();
+
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+    QCOMPARE(layer.itemAt(0), committedBaseline);
+    QCOMPARE(layer.historyCommandCount(), static_cast<size_t>(1));
+    QVERIFY(layer.historyOwnedBytes() > AnnotationLayer::kMaxHistoryOwnedBytes);
+    QVERIFY(!layer.canUndo());
+    QVERIFY(layer.canRedo());
+
+    layer.redo();
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
+    QCOMPARE(layer.itemAt(1), item);
+    QVERIFY(layer.canUndo());
+}
+
+void TestAnnotationLayer::testHistoryByteLimit_PreservesNearestUndoAndRedo()
+{
+    AnnotationLayer layer;
+    constexpr std::size_t largePayload = 40u * 1024u * 1024u;
+
+    layer.addItem(std::make_unique<SizedAnnotation>(1024));
+    AnnotationItem* first = layer.itemAt(0);
+    layer.addItem(std::make_unique<SizedAnnotation>(largePayload));
+    AnnotationItem* second = layer.itemAt(1);
+    layer.addItem(std::make_unique<SizedAnnotation>(largePayload));
+
+    layer.undo();
+    layer.undo();
+
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+    QCOMPARE(layer.itemAt(0), first);
+    QCOMPARE(layer.historyCommandCount(), static_cast<size_t>(2));
+    QVERIFY(layer.historyOwnedBytes() <= AnnotationLayer::kMaxHistoryOwnedBytes);
+    QVERIFY(layer.canUndo());
+    QVERIFY(layer.canRedo());
+
+    // The farthest redo command was evicted; the commands immediately on
+    // either side of the cursor remain available.
+    layer.redo();
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
+    QCOMPARE(layer.itemAt(1), second);
+    QVERIFY(!layer.canRedo());
+
+    layer.undo();
+    layer.undo();
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(0));
+}
+
+void TestAnnotationLayer::testHistoryBranch_DropsRedoOwnedBytes()
+{
+    AnnotationLayer layer;
+    constexpr std::size_t largePayload = 40u * 1024u * 1024u;
+
+    layer.addItem(std::make_unique<SizedAnnotation>(largePayload));
+    layer.undo();
+    const std::size_t withRedoPayload = layer.historyOwnedBytes();
+    QVERIFY(withRedoPayload >= largePayload);
+
+    layer.addItem(std::make_unique<SizedAnnotation>(1024));
+
+    QVERIFY(!layer.canRedo());
+    QVERIFY(layer.historyOwnedBytes() < withRedoPayload);
+    QVERIFY(layer.historyOwnedBytes() <= AnnotationLayer::kMaxHistoryOwnedBytes);
+}
+
+void TestAnnotationLayer::testHistoryStateToken_TracksUndoRedoAndBranches()
+{
+    AnnotationLayer layer;
+    const auto initial = layer.historyStateToken();
+    layer.addItem(createPencil(20));
+    const auto first = layer.historyStateToken();
+    layer.addItem(createPencil(40));
+    const auto abandoned = layer.historyStateToken();
+
+    QCOMPARE(layer.historyStateRelation(abandoned),
+             AnnotationLayer::HistoryStateRelation::Current);
+    QCOMPARE(layer.historyStateRelation(first),
+             AnnotationLayer::HistoryStateRelation::UndoReachable);
+    QCOMPARE(layer.historyStateRelation(initial),
+             AnnotationLayer::HistoryStateRelation::UndoReachable);
+
+    layer.undo();
+    QCOMPARE(layer.historyStateToken(), first);
+    QCOMPARE(layer.historyStateRelation(abandoned),
+             AnnotationLayer::HistoryStateRelation::RedoReachable);
+
+    layer.addItem(createPencil(60));
+    QVERIFY(layer.historyStateToken() != abandoned);
+    QCOMPARE(layer.historyStateRelation(abandoned),
+             AnnotationLayer::HistoryStateRelation::Unreachable);
+}
+
+void TestAnnotationLayer::testRemoveOutsideEraseTransaction_IsNoOp()
+{
+    AnnotationLayer layer;
+    layer.addItem(createPencil(20));
+    AnnotationItem* original = layer.itemAt(0);
+    const auto historyState = layer.historyStateToken();
+
+    auto removed = layer.removeItemsIntersecting(QPoint(80, 20), 24);
+
+    QVERIFY(removed.empty());
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+    QCOMPARE(layer.itemAt(0), original);
+    QCOMPARE(layer.historyStateToken(), historyState);
+    QVERIFY(layer.canUndo());
+}
+
+void TestAnnotationLayer::testDeleteDuringEraseTransaction_IsRejected()
+{
+    AnnotationLayer layer;
+    layer.addItem(createPencil(20));
+    layer.setSelectedIndex(0);
+    layer.beginEraseTransaction();
+
+    QVERIFY(!layer.removeSelectedItem());
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+    QVERIFY(layer.endEraseTransaction());
+}
+
+void TestAnnotationLayer::testAddDuringEraseTransaction_DefersUntilCommit()
+{
+    AnnotationLayer layer;
+    layer.addItem(createPencil(20));
+    AnnotationItem* original = layer.itemAt(0);
+
+    layer.beginEraseTransaction();
+    auto removed = layer.removeItemsIntersecting(QPoint(80, 20), 24);
+    QCOMPARE(removed.size(), static_cast<size_t>(1));
+
+    auto deferred = createPencil(60);
+    AnnotationItem* deferredItem = deferred.get();
+    layer.addItem(std::move(deferred));
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(0));
+
+    QVERIFY(layer.commitEraseTransaction(std::move(removed)));
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+    QCOMPARE(layer.itemAt(0), deferredItem);
+
+    // The deferred Add follows the completed Remove in history order.
+    layer.undo();
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(0));
+    layer.undo();
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+    QCOMPARE(layer.itemAt(0), original);
+}
+
+void TestAnnotationLayer::testAddDuringEraseTransaction_DefersUntilCancel()
+{
+    AnnotationLayer layer;
+    layer.addItem(createPencil(20));
+    AnnotationItem* original = layer.itemAt(0);
+
+    layer.beginEraseTransaction();
+    auto removed = layer.removeItemsIntersecting(QPoint(80, 20), 24);
+    QCOMPARE(removed.size(), static_cast<size_t>(1));
+
+    auto deferred = createPencil(60);
+    AnnotationItem* deferredItem = deferred.get();
+    layer.addItem(std::move(deferred));
+    QVERIFY(layer.cancelEraseTransaction(std::move(removed)));
+
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
+    QCOMPARE(layer.itemAt(0), original);
+    QCOMPARE(layer.itemAt(1), deferredItem);
+
+    // Cancelling creates no Remove command; only the real asynchronous Add is
+    // undoable after the original scene item.
+    layer.undo();
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+    QCOMPARE(layer.itemAt(0), original);
+}
+
+void TestAnnotationLayer::testAddDuringEraseTransaction_DefersUntilEmptyCommit()
+{
+    AnnotationLayer layer;
+    layer.beginEraseTransaction();
+
+    auto deferred = createPencil(60);
+    AnnotationItem* deferredItem = deferred.get();
+    layer.addItem(std::move(deferred));
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(0));
+    layer.translateAll(QPointF(5.0, 7.0));
+
+    QVERIFY(layer.commitEraseTransaction({}));
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+    QCOMPARE(layer.itemAt(0), deferredItem);
+    auto* deferredStroke = dynamic_cast<PencilStroke*>(layer.itemAt(0));
+    QVERIFY(deferredStroke != nullptr);
+    QCOMPARE(deferredStroke->points().first(), QPointF(25.0, 67.0));
+    QVERIFY(layer.canUndo());
+}
+
+void TestAnnotationLayer::testDeferredAdds_FlushAsSingleBatch()
+{
+    AnnotationLayer layer;
+    QSignalSpy changedSpy(&layer, &AnnotationLayer::changed);
+    layer.beginEraseTransaction();
+
+    auto first = createPencil(20);
+    auto second = createPencil(40);
+    AnnotationItem* firstItem = first.get();
+    AnnotationItem* secondItem = second.get();
+    layer.addItem(std::move(first));
+    layer.addItem(std::move(second));
+    QCOMPARE(changedSpy.count(), 0);
+
+    QVERIFY(layer.commitEraseTransaction({}));
+    QCOMPARE(changedSpy.count(), 1);
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
+    QCOMPARE(layer.itemAt(0), firstItem);
+    QCOMPARE(layer.itemAt(1), secondItem);
+
+    layer.undo();
+    QCOMPARE(layer.itemAt(0), firstItem);
+    layer.undo();
+    QVERIFY(layer.isEmpty());
+}
+
+void TestAnnotationLayer::testDeferredAddAfterCancel_ClearsRedoBranch()
+{
+    AnnotationLayer layer;
+    layer.addItem(createPencil(20));
+    layer.undo();
+    QVERIFY(layer.canRedo());
+
+    layer.beginEraseTransaction();
+    auto deferred = createPencil(60);
+    AnnotationItem* deferredItem = deferred.get();
+    layer.addItem(std::move(deferred));
+    QVERIFY(layer.cancelEraseTransaction({}));
+
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+    QCOMPARE(layer.itemAt(0), deferredItem);
+    QVERIFY(!layer.canRedo());
+    QVERIFY(layer.canUndo());
+}
+
+void TestAnnotationLayer::testClearDuringEraseTransaction_DiscardsDeferredItems()
+{
+    AnnotationLayer layer;
+    layer.addItem(createPencil(20));
+
+    layer.beginEraseTransaction();
+    auto removed = layer.removeItemsIntersecting(QPoint(80, 20), 24);
+    QCOMPARE(removed.size(), static_cast<size_t>(1));
+    layer.addItem(createPencil(60));
+
+    layer.clear();
+
+    QVERIFY(!layer.commitEraseTransaction(std::move(removed)));
+    QVERIFY(layer.isEmpty());
+    QVERIFY(!layer.canUndo());
+    QVERIFY(!layer.canRedo());
+}
+
+void TestAnnotationLayer::testOwnedVisitor_RefreshesHistoryBytes()
+{
+    AnnotationLayer layer;
+    layer.addItem(std::make_unique<SizedAnnotation>(1024));
+    layer.undo();
+    const std::size_t before = layer.historyOwnedBytes();
+
+    layer.forEachOwnedItem([](AnnotationItem* item) {
+        if (auto* sized = dynamic_cast<SizedAnnotation*>(item)) {
+            sized->setRetainedBytes(8 * 1024 * 1024);
+        }
+    });
+    const std::size_t grown = layer.historyOwnedBytes();
+    QVERIFY(grown > before);
+
+    layer.forEachOwnedItem([](AnnotationItem* item) {
+        if (auto* sized = dynamic_cast<SizedAnnotation*>(item)) {
+            sized->setRetainedBytes(2048);
+        }
+    });
+    QVERIFY(layer.historyOwnedBytes() < grown);
+    QVERIFY(layer.canRedo());
 }
 
 QTEST_MAIN(TestAnnotationLayer)

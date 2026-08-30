@@ -38,6 +38,7 @@ public:
     QRect boundingRect() const override;
     std::unique_ptr<AnnotationItem> clone() const override;
     void translate(const QPointF& delta) override;
+    std::size_t estimatedRetainedBytes() const override { return sizeof(ShapeAnnotation); }
 
     void setRect(const QRect &rect);
     QRect rect() const { return m_rect.toAlignedRect(); }

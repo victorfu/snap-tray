@@ -5,6 +5,7 @@
 
 #include "RegionSelector.h"
 #include "RegionSelectorTestAccess.h"
+#include "annotations/AnnotationLayer.h"
 
 class tst_RegionSelectorHistoryReplay : public QObject
 {
@@ -98,8 +99,11 @@ void tst_RegionSelectorHistoryReplay::testRestoreLiveReplaySlotRecordsCaptureCon
         QRect(10, 10, 40, 30),
         5);
 
+    QSignalSpy changedSpy(RegionSelectorTestAccess::annotationLayer(selector),
+                          &AnnotationLayer::changed);
     RegionSelectorTestAccess::invokeRestoreLiveReplaySlot(selector);
 
+    QCOMPARE(changedSpy.count(), 1);
     QVERIFY(!probe.captureContextEvents.isEmpty());
     const auto& record = probe.captureContextEvents.constLast();
     QCOMPARE(record.backgroundPixelSize, replayCapture.size());
@@ -141,8 +145,11 @@ void tst_RegionSelectorHistoryReplay::testApplyHistoryReplayEntryRecordsCaptureC
     entry.selectionRect = QRect(5, 6, 30, 20);
     entry.cornerRadius = 3;
 
+    QSignalSpy changedSpy(RegionSelectorTestAccess::annotationLayer(selector),
+                          &AnnotationLayer::changed);
     QVERIFY(RegionSelectorTestAccess::invokeApplyHistoryReplayEntry(selector, entry));
 
+    QCOMPARE(changedSpy.count(), 1);
     QVERIFY(!probe.captureContextEvents.isEmpty());
     const auto& record = probe.captureContextEvents.constLast();
     QCOMPARE(record.backgroundPixelSize, replayPixmap.size());

@@ -15,7 +15,9 @@
 
 #include <QFont>
 #include <QImage>
+#include <QJsonArray>
 #include <QJsonDocument>
+#include <QJsonObject>
 
 namespace {
 
@@ -115,7 +117,9 @@ class tst_AnnotationSerializer : public QObject
 
 private slots:
     void testRoundtripPreservesSupportedAnnotations();
-    void testRoundtripPreservesMoreThanFiftyAnnotations();
+    void testBulkRoundtripPreservesVisibleSceneAndBoundedUndo();
+    void testSerializeExcludesRemovedCommandPayload();
+    void testDeserializeFailureClearsLayerOnce();
 };
 
 void tst_AnnotationSerializer::testRoundtripPreservesSupportedAnnotations()
@@ -136,32 +140,111 @@ void tst_AnnotationSerializer::testRoundtripPreservesSupportedAnnotations()
     QCOMPARE(QJsonDocument::fromJson(roundtrip), QJsonDocument::fromJson(serialized));
 }
 
-void tst_AnnotationSerializer::testRoundtripPreservesMoreThanFiftyAnnotations()
+void tst_AnnotationSerializer::testBulkRoundtripPreservesVisibleSceneAndBoundedUndo()
 {
+    constexpr int kItemCount = 102;
     AnnotationLayer original;
-    for (int i = 0; i < 52; ++i) {
+    for (int i = 0; i < kItemCount; ++i) {
         original.addItem(std::make_unique<PencilStroke>(
             QVector<QPointF>{QPointF(10.0, i), QPointF(30.0, i)},
             QColor(Qt::red),
             3,
             LineStyle::Solid));
     }
-    QCOMPARE(original.itemCount(), static_cast<size_t>(52));
+    QCOMPARE(original.itemCount(), static_cast<size_t>(kItemCount));
 
     const QByteArray serialized = SnapTray::serializeAnnotationLayer(original);
     AnnotationLayer restored;
+    QSignalSpy changedSpy(&restored, &AnnotationLayer::changed);
     QString errorMessage;
     QVERIFY2(SnapTray::deserializeAnnotationLayer(
                  serialized, &restored, SharedPixmap(), &errorMessage),
              qPrintable(errorMessage));
-    QCOMPARE(restored.itemCount(), static_cast<size_t>(52));
+    QCOMPARE(changedSpy.count(), 1);
+    QCOMPARE(restored.itemCount(), static_cast<size_t>(kItemCount));
+    QCOMPARE(restored.historyCommandCount(), AnnotationLayer::kMaxHistoryCommands);
+    QCOMPARE(QJsonDocument::fromJson(SnapTray::serializeAnnotationLayer(restored)),
+             QJsonDocument::fromJson(serialized));
 
     auto* firstStroke = dynamic_cast<PencilStroke*>(restored.itemAt(0));
-    auto* lastStroke = dynamic_cast<PencilStroke*>(restored.itemAt(51));
+    auto* lastStroke = dynamic_cast<PencilStroke*>(restored.itemAt(kItemCount - 1));
     QVERIFY(firstStroke != nullptr);
     QVERIFY(lastStroke != nullptr);
     QCOMPARE(firstStroke->points().first(), QPointF(10.0, 0.0));
-    QCOMPARE(lastStroke->points().first(), QPointF(10.0, 51.0));
+    QCOMPARE(lastStroke->points().first(), QPointF(10.0, kItemCount - 1));
+
+    for (std::size_t i = 0; i < AnnotationLayer::kMaxHistoryCommands; ++i) {
+        QVERIFY(restored.canUndo());
+        restored.undo();
+    }
+    QVERIFY(!restored.canUndo());
+    QCOMPARE(restored.itemCount(), static_cast<size_t>(2));
+    firstStroke = dynamic_cast<PencilStroke*>(restored.itemAt(0));
+    lastStroke = dynamic_cast<PencilStroke*>(restored.itemAt(1));
+    QVERIFY(firstStroke != nullptr);
+    QVERIFY(lastStroke != nullptr);
+    QCOMPARE(firstStroke->points().first(), QPointF(10.0, 0.0));
+    QCOMPARE(lastStroke->points().first(), QPointF(10.0, 1.0));
+}
+
+void tst_AnnotationSerializer::testSerializeExcludesRemovedCommandPayload()
+{
+    AnnotationLayer layer;
+    for (int i = 0; i < 3; ++i) {
+        layer.addItem(std::make_unique<PencilStroke>(
+            QVector<QPointF>{QPointF(10.0, i * 10.0), QPointF(30.0, i * 10.0)},
+            QColor(Qt::red),
+            3,
+            LineStyle::Solid));
+    }
+
+    layer.setSelectedIndex(1);
+    QVERIFY(layer.removeSelectedItem());
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
+
+    QJsonObject root = QJsonDocument::fromJson(
+        SnapTray::serializeAnnotationLayer(layer)).object();
+    QCOMPARE(root.keys(), QStringList{QStringLiteral("items")});
+    QCOMPARE(root.value(QStringLiteral("items")).toArray().size(), 2);
+    for (const QJsonValue& value : root.value(QStringLiteral("items")).toArray()) {
+        const QJsonObject object = value.toObject();
+        QVERIFY(!object.contains(QStringLiteral("id")));
+        QVERIFY(!object.contains(QStringLiteral("history")));
+    }
+
+    layer.undo();
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(3));
+    auto* restoredMiddle = dynamic_cast<PencilStroke*>(layer.itemAt(1));
+    QVERIFY(restoredMiddle != nullptr);
+    QCOMPARE(restoredMiddle->points().first(), QPointF(10.0, 10.0));
+    QCOMPARE(QJsonDocument::fromJson(SnapTray::serializeAnnotationLayer(layer))
+                 .object().value(QStringLiteral("items")).toArray().size(),
+             3);
+
+    layer.redo();
+    QCOMPARE(layer.itemCount(), static_cast<size_t>(2));
+    QCOMPARE(QJsonDocument::fromJson(SnapTray::serializeAnnotationLayer(layer))
+                 .object().value(QStringLiteral("items")).toArray().size(),
+             2);
+}
+
+void tst_AnnotationSerializer::testDeserializeFailureClearsLayerOnce()
+{
+    AnnotationLayer layer;
+    layer.addItem(std::make_unique<PencilStroke>(
+        QVector<QPointF>{QPointF(10.0, 10.0), QPointF(30.0, 10.0)},
+        QColor(Qt::red),
+        3,
+        LineStyle::Solid));
+    QSignalSpy changedSpy(&layer, &AnnotationLayer::changed);
+
+    QString errorMessage;
+    QVERIFY(!SnapTray::deserializeAnnotationLayer(
+        QByteArrayLiteral("{"), &layer, SharedPixmap(), &errorMessage));
+    QVERIFY(!errorMessage.isEmpty());
+    QCOMPARE(changedSpy.count(), 1);
+    QVERIFY(layer.isEmpty());
+    QVERIFY(!layer.canUndo());
 }
 
 QTEST_MAIN(tst_AnnotationSerializer)
