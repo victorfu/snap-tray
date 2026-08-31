@@ -8,7 +8,7 @@ lang: zh-tw
 route_key: privacy
 ---
 
-<p><strong>最後更新：</strong>2026 年 3 月</p>
+<p><strong>最後更新：</strong>2026 年 8 月</p>
 
 ## 概述
 
@@ -38,7 +38,7 @@ SnapTray 使用或產生的資料都儲存在你的本機：
 - **macOS:** `~/Library/Preferences/cc.snaptray.plist`
 - **Windows:** `HKEY_CURRENT_USER\Software\SnapTray`
 - **Linux beta:** 使用 Qt/Linux 的使用者設定儲存區，位於使用者設定目錄下，常見形式為 `~/.config/<organization>/<application>.conf`
-- 升級到新版後，首次啟動會自動移轉舊版設定，移轉成功後會清理舊位置。
+- 在 macOS 上，`cc.snaptray` 之前的舊版偏好設定檔會於清理時直接移除，不會匯入；Windows 舊版設定則會在清理前先行移轉。
 
 ## 權限需求
 

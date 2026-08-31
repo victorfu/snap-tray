@@ -46,6 +46,9 @@ inline constexpr const char* kSettingsMigrationVersionKey = "__meta/settingsMigr
 inline constexpr int kSettingsMigrationVersion = 2;
 inline constexpr const char* kSettingsCleanupVersionKey = "__meta/settingsCleanupVersion";
 inline constexpr int kSettingsCleanupVersion = 6;
+#if defined(Q_OS_MACOS)
+inline constexpr int kMacSettingsCleanupVersion = 7;
+#endif
 
 inline bool isDebugSettingsNamespace()
 {
@@ -161,12 +164,6 @@ inline QStringList macLegacySettingsPaths()
 #endif
 
 #if defined(Q_OS_WIN) || defined(Q_OS_MACOS)
-inline QSettings legacyOrganizationSettingsStore()
-{
-    return QSettings(QString::fromLatin1(kLegacyOrganizationName),
-                     QString::fromLatin1(kApplicationName));
-}
-
 inline void logSettingsMigrationInfo(const QString& message)
 {
     Q_UNUSED(message);
@@ -174,21 +171,127 @@ inline void logSettingsMigrationInfo(const QString& message)
 
 inline void logSettingsMigrationWarning(const QString& message)
 {
-    qWarning().noquote() << QStringLiteral("[SettingsMigration] %1").arg(message);
+    qWarning().noquote() << QStringLiteral("[SettingsMaintenance] %1").arg(message);
+}
+
+inline QString settingsFileIdentity(const QString& path)
+{
+    const QFileInfo fileInfo(path);
+    QString identity;
+    if (fileInfo.exists() || fileInfo.isSymLink()) {
+        identity = fileInfo.canonicalFilePath();
+    }
+    if (identity.isEmpty()) {
+        identity = fileInfo.absoluteFilePath();
+    }
+    return normalizeSettingsLocation(QDir::cleanPath(identity));
+}
+
+inline bool removeLegacySettingsFile(const QString& sourcePath,
+                                     const QString& protectedTargetPath)
+{
+    const QString sourceIdentity = settingsFileIdentity(sourcePath);
+    const QString targetIdentity = settingsFileIdentity(protectedTargetPath);
+    if (sourcePath.isEmpty() || sourceIdentity.isEmpty()) {
+        logSettingsMigrationWarning(
+            QStringLiteral("Refusing to remove a legacy settings file with an empty path"));
+        return false;
+    }
+    if (!targetIdentity.isEmpty() && sourceIdentity == targetIdentity) {
+        logSettingsMigrationWarning(
+            QStringLiteral("Refusing to remove the active settings file: %1").arg(sourcePath));
+        return false;
+    }
+
+    QFileInfo sourceInfo(sourcePath);
+    if (!sourceInfo.exists() && !sourceInfo.isSymLink()) {
+        return true;
+    }
+    if (QFile::remove(sourcePath)) {
+        logSettingsMigrationInfo(
+            QStringLiteral("Deleted legacy settings file: %1").arg(sourcePath));
+        return true;
+    }
+
+    sourceInfo.refresh();
+    if (!sourceInfo.exists() && !sourceInfo.isSymLink()) {
+        return true;
+    }
+    logSettingsMigrationWarning(
+        QStringLiteral("Failed to delete legacy settings file: %1").arg(sourcePath));
+    return false;
+}
+
+inline bool cleanupLegacySettingsFiles(QSettings& target,
+                                       const QStringList& sourcePaths,
+                                       const QString& protectedTargetPath,
+                                       int cleanupVersion)
+{
+    if (cleanupVersion <= 0) {
+        logSettingsMigrationWarning(
+            QStringLiteral("Refusing to run legacy cleanup with an invalid version"));
+        return false;
+    }
+    if (target.value(kSettingsCleanupVersionKey, 0).toInt() >= cleanupVersion) {
+        return true;
+    }
+
+    QStringList processedIdentities;
+    bool cleanupSucceeded = true;
+    for (const QString& sourcePath : sourcePaths) {
+        const QString identity = settingsFileIdentity(sourcePath);
+        if (!identity.isEmpty() && processedIdentities.contains(identity)) {
+            continue;
+        }
+        if (!identity.isEmpty()) {
+            processedIdentities.append(identity);
+        }
+        cleanupSucceeded
+            = removeLegacySettingsFile(sourcePath, protectedTargetPath) && cleanupSucceeded;
+    }
+    if (cleanupSucceeded) {
+        for (const QString& sourcePath : sourcePaths) {
+            const QFileInfo sourceInfo(sourcePath);
+            if (sourceInfo.exists() || sourceInfo.isSymLink()) {
+                logSettingsMigrationWarning(
+                    QStringLiteral("Legacy settings file still exists after cleanup: %1")
+                        .arg(sourcePath));
+                cleanupSucceeded = false;
+            }
+        }
+    }
+    if (!cleanupSucceeded) {
+        logSettingsMigrationWarning(
+            QStringLiteral("Legacy settings cleanup finished with errors; will retry on next launch"));
+        return false;
+    }
+
+    target.setValue(kSettingsCleanupVersionKey, cleanupVersion);
+    target.sync();
+    if (target.status() != QSettings::NoError) {
+        logSettingsMigrationWarning(
+            QStringLiteral("Failed to persist legacy cleanup completion marker"));
+        return false;
+    }
+    logSettingsMigrationInfo(QStringLiteral("Legacy settings cleanup completed successfully"));
+    return true;
+}
+#endif
+
+#if defined(Q_OS_WIN)
+inline QSettings legacyOrganizationSettingsStore()
+{
+    return QSettings(QString::fromLatin1(kLegacyOrganizationName),
+                     QString::fromLatin1(kApplicationName));
 }
 
 inline bool shouldPreserveWindowsNamespaceStore(const QString& settingsPath)
 {
-#if defined(Q_OS_WIN)
     const QString normalizedPath = normalizeSettingsLocation(settingsPath);
     const QString normalizedReleasePath = normalizeSettingsLocation(windowsReleaseSettingsPath());
     const QString normalizedDebugPath = normalizeSettingsLocation(windowsDebugSettingsPath());
     return normalizedPath == normalizedReleasePath
         || normalizedPath == normalizedDebugPath;
-#else
-    Q_UNUSED(settingsPath);
-    return false;
-#endif
 }
 
 inline bool mergeSettingsIfMissing(QSettings& target, QSettings& source, int& migratedKeyCount)
@@ -235,13 +338,11 @@ inline bool clearSettingsStoreIfSeparate(QSettings& target, QSettings& source)
     if (isSameSettingsStore(target, source)) {
         return true;
     }
-#if defined(Q_OS_WIN)
     if (shouldPreserveWindowsNamespaceStore(sourcePath)) {
         logSettingsMigrationInfo(
             QStringLiteral("Skipping cleanup for active namespace store: %1").arg(sourcePath));
         return true;
     }
-#endif
     if (source.status() != QSettings::NoError) {
         logSettingsMigrationWarning(
             QStringLiteral("Skipping cleanup due to source store error: %1").arg(sourcePath));
@@ -261,34 +362,9 @@ inline bool clearSettingsStoreIfSeparate(QSettings& target, QSettings& source)
             .arg(sourcePath)
             .arg(keysBeforeCleanup.size()));
 
-#if defined(Q_OS_MACOS)
-    const QString legacyFile = sourcePath;
-    if (legacyFile.endsWith(QStringLiteral(".plist"), Qt::CaseInsensitive)) {
-        QSettings verifyStore(legacyFile, QSettings::NativeFormat);
-        verifyStore.setFallbacksEnabled(false);
-        if (verifyStore.allKeys().isEmpty()) {
-            if (!QFile::remove(legacyFile)) {
-                if (QFileInfo::exists(legacyFile)) {
-                    logSettingsMigrationWarning(
-                        QStringLiteral("Failed to delete legacy plist: %1").arg(legacyFile));
-                    return false;
-                }
-            } else {
-                logSettingsMigrationInfo(
-                    QStringLiteral("Deleted legacy plist: %1").arg(legacyFile));
-            }
-        } else {
-            logSettingsMigrationWarning(
-                QStringLiteral("Legacy plist still has keys after cleanup: %1").arg(legacyFile));
-            return false;
-        }
-    }
-#endif
-
     return true;
 }
 
-#if defined(Q_OS_WIN)
 inline bool isMissingWindowsRegistryPath(LONG result)
 {
     return result == ERROR_FILE_NOT_FOUND || result == ERROR_PATH_NOT_FOUND;
@@ -355,7 +431,6 @@ inline bool removeWindowsLegacyApplicationKeys(HKEY rootKey, QString vendorSubKe
 
     return cleanupSucceeded;
 }
-#endif
 
 inline void migrateLegacySettingsIfNeeded()
 {
@@ -373,11 +448,7 @@ inline void migrateLegacySettingsIfNeeded()
         return;
     }
 
-#if defined(Q_OS_WIN)
     const QStringList legacyPaths = windowsLegacySettingsPaths();
-#else
-    const QStringList legacyPaths = macLegacySettingsPaths();
-#endif
     logSettingsMigrationInfo(
         QStringLiteral("Starting migration for target store %1 (needsMigration=%2, needsCleanup=%3)")
             .arg(platformSettings.fileName())
@@ -423,31 +494,20 @@ inline void migrateLegacySettingsIfNeeded()
 
     if (needsCleanup) {
         bool cleanupSucceeded = true;
-#if defined(Q_OS_WIN)
         for (const QString& path : windowsLegacySettingsPaths()) {
             QSettings legacySettings(path, QSettings::NativeFormat);
             legacySettings.setFallbacksEnabled(false);
             cleanupSucceeded
                 = clearSettingsStoreIfSeparate(platformSettings, legacySettings) && cleanupSucceeded;
         }
-#else
-        for (const QString& path : macLegacySettingsPaths()) {
-            QSettings legacySettings(path, QSettings::NativeFormat);
-            legacySettings.setFallbacksEnabled(false);
-            cleanupSucceeded
-                = clearSettingsStoreIfSeparate(platformSettings, legacySettings) && cleanupSucceeded;
-        }
-#endif
 
         QSettings legacyOrganizationSettings = legacyOrganizationSettingsStore();
         legacyOrganizationSettings.setFallbacksEnabled(false);
         cleanupSucceeded
             = clearSettingsStoreIfSeparate(platformSettings, legacyOrganizationSettings) && cleanupSucceeded;
-#if defined(Q_OS_WIN)
         cleanupSucceeded = removeWindowsLegacyApplicationKeys(
                                HKEY_CURRENT_USER, windowsLegacyVendorSubKey())
             && cleanupSucceeded;
-#endif
 
         if (cleanupSucceeded) {
             platformSettings.setValue(kSettingsCleanupVersionKey, kSettingsCleanupVersion);
@@ -481,13 +541,40 @@ inline void ensureSettingsMigration()
 }
 #endif
 
+#if defined(Q_OS_MACOS)
+inline void cleanupMacLegacySettingsIfNeeded()
+{
+    QSettings platformSettings = platformSettingsStore();
+    if (platformSettings.value(kSettingsCleanupVersionKey, 0).toInt()
+        >= kMacSettingsCleanupVersion) {
+        return;
+    }
+
+    logSettingsMigrationInfo(
+        QStringLiteral("Starting macOS legacy settings cleanup for target store %1")
+            .arg(platformSettings.fileName()));
+    (void)cleanupLegacySettingsFiles(platformSettings,
+                                     macLegacySettingsPaths(),
+                                     macSettingsPath(),
+                                     kMacSettingsCleanupVersion);
+}
+
+inline void ensureMacLegacySettingsCleanup()
+{
+    static std::once_flag cleanupOnce;
+    std::call_once(cleanupOnce, [] {
+        cleanupMacLegacySettingsIfNeeded();
+    });
+}
+#endif
+
 inline QSettings getSettings()
 {
 #if defined(Q_OS_WIN)
     ensureSettingsMigration();
     return platformSettingsStore();
 #elif defined(Q_OS_MACOS)
-    ensureSettingsMigration();
+    ensureMacLegacySettingsCleanup();
     return platformSettingsStore();
 #else
     return QSettings(kOrganizationName, kApplicationName);

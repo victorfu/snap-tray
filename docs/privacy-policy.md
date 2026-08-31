@@ -8,7 +8,7 @@ lang: en
 route_key: privacy
 ---
 
-<p><strong>Last Updated:</strong> March 2026</p>
+<p><strong>Last Updated:</strong> August 2026</p>
 
 ## Overview
 
@@ -38,7 +38,7 @@ All data generated or used by SnapTray is stored locally on your device:
 - **macOS:** `~/Library/Preferences/cc.snaptray.plist`
 - **Windows:** `HKEY_CURRENT_USER\Software\SnapTray`
 - **Linux beta:** Qt/Linux user configuration storage under the user's config directory, commonly `~/.config/<organization>/<application>.conf`
-- Legacy locations are migrated on first launch of newer builds and cleaned up after migration succeeds.
+- On macOS, obsolete pre-`cc.snaptray` preference files are removed during cleanup and are not imported. Windows legacy settings are migrated before cleanup.
 
 ## Permissions
 

@@ -8,7 +8,7 @@ lang: ko
 route_key: privacy
 ---
 
-<p><strong>최종 업데이트:</strong> 2026년 3월</p>
+<p><strong>최종 업데이트:</strong> 2026년 8월</p>
 
 ## 개요
 
@@ -38,7 +38,7 @@ SnapTray가 사용하거나 생성하는 모든 데이터는 사용자 기기에
 - **macOS:** `~/Library/Preferences/cc.snaptray.plist`
 - **Windows:** `HKEY_CURRENT_USER\Software\SnapTray`
 - **Linux beta:** Qt/Linux 사용자 설정 저장소(일반적으로 `~/.config/<organization>/<application>.conf`)
-- 새 버전으로 업그레이드 후 첫 실행 시 이전 버전 설정이 자동으로 마이그레이션되며, 마이그레이션 성공 후 이전 데이터는 삭제됩니다.
+- macOS에서는 `cc.snaptray` 이전 형식의 환경설정 파일을 정리할 때 가져오지 않고 바로 삭제합니다. Windows의 이전 설정은 정리 전에 마이그레이션됩니다.
 
 ## 권한
 

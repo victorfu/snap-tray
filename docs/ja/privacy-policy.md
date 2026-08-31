@@ -8,7 +8,7 @@ lang: ja
 route_key: privacy
 ---
 
-<p><strong>最終更新：</strong>2026年3月</p>
+<p><strong>最終更新：</strong>2026年8月</p>
 
 ## 概要
 
@@ -38,7 +38,7 @@ SnapTray が使用・生成するすべてのデータはお使いのデバイ�
 - **macOS:** `~/Library/Preferences/cc.snaptray.plist`
 - **Windows:** `HKEY_CURRENT_USER\Software\SnapTray`
 - **Linux beta:** Qt/Linux ユーザー設定ストレージ（通常 `~/.config/<organization>/<application>.conf`）
-- 新バージョンへのアップグレード後、初回起動時に旧バージョンの設定が自動移行され、移行成功後に旧データは削除されます。
+- macOS では、`cc.snaptray` より前の旧形式の設定ファイルはクリーンアップ時に直接削除され、インポートされません。Windows の旧設定はクリーンアップ前に移行されます。
 
 ## 権限
 
