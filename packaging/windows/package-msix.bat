@@ -186,17 +186,11 @@ if defined MSIX_SIGN_CERT (
     echo [7/7] Skipping signing (MSIX_SIGN_CERT not set)
 )
 
-REM Create .msixupload for Store submission
-echo.
-echo Creating .msixupload for Store submission...
-copy "%MSIX_OUTPUT%" "%OUTPUT_DIR%\%APP_NAME%-%VERSION%.msixupload" >nul
-
 echo.
 echo =======================================
 echo   Build Complete
 echo =======================================
 echo Package: %MSIX_OUTPUT%
-echo Upload:  %OUTPUT_DIR%\%APP_NAME%-%VERSION%.msixupload
 echo.
 echo For local testing (unsigned):
 echo   Add-AppPackage -Path "%MSIX_OUTPUT%" -AllowUnsigned
@@ -204,6 +198,6 @@ echo.
 echo For Microsoft Store submission:
 echo   1. Sign in to Partner Center (https://partner.microsoft.com)
 echo   2. Create or update your app submission
-echo   3. Upload the .msixupload file
+echo   3. Upload the .msix file
 
 endlocal

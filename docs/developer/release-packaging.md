@@ -40,7 +40,6 @@ Typical outputs:
 
 - `dist\SnapTray-<version>-Setup.exe`
 - `dist\SnapTray-<version>.msix`
-- `dist\SnapTray-<version>.msixupload`
 
 ### Linux
 
@@ -193,7 +192,7 @@ Get-AppPackage SnapTray* | Remove-AppPackage
 1. Sign in to Partner Center
 2. Create or select the app reservation
 3. Create a new submission
-4. Upload the `.msixupload`
+4. Upload the `.msix`
 5. Complete listing, pricing, and age rating details
 6. Submit for certification
 

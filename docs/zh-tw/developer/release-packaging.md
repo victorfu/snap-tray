@@ -40,7 +40,6 @@ packaging\windows\package.bat msix      REM 只建置 MSIX
 
 - `dist\SnapTray-<version>-Setup.exe`
 - `dist\SnapTray-<version>.msix`
-- `dist\SnapTray-<version>.msixupload`
 
 ### Linux
 
@@ -192,7 +191,7 @@ Get-AppPackage SnapTray* | Remove-AppPackage
 1. 登入 Partner Center
 2. 建立或選擇 app reservation
 3. 建立新的 submission
-4. 上傳 `.msixupload`
+4. 上傳 `.msix`
 5. 補齊 listing、pricing、age rating
 6. 送出認證
 
