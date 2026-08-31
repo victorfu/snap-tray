@@ -58,8 +58,12 @@ bool AutoLaunchManager::syncWithPreference()
 {
     auto& settingsManager = AutoLaunchSettingsManager::instance();
     const std::optional<bool> preferredEnabled = settingsManager.loadPreferredEnabled();
-    const bool currentlyEnabled = isEnabled();
-    const SnapTray::AutoLaunchSyncState state = currentlyEnabled
+    const AutoLaunchStatus currentStatus = currentAutoLaunchStatus();
+    if (!currentStatus.canChange()) {
+        return currentStatus.isEnabled();
+    }
+
+    const SnapTray::AutoLaunchSyncState state = currentStatus.isEnabled()
         ? SnapTray::AutoLaunchSyncState::EnabledCurrentCanonical
         : SnapTray::AutoLaunchSyncState::Disabled;
     const SnapTray::AutoLaunchSyncPlan plan =
