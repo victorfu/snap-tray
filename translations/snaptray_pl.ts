@@ -1759,6 +1759,11 @@ Rozmiar: %2</translation>
         <translation>Dźwięk systemowy jest niedostępny. Nagrywany będzie tylko mikrofon. Sprawdź uprawnienie do nagrywania ekranu w Ustawieniach systemowych.</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check the default playback device.</source>
+        <translation>Dźwięk systemowy jest niedostępny. Nagrywany będzie tylko mikrofon. Sprawdź domyślne urządzenie odtwarzające.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="837" />
         <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
         <translation>Mikrofon jest niedostępny. Nagrywany będzie tylko dźwięk systemowy. Sprawdź uprawnienie mikrofonu i wybrane urządzenie wejściowe.</translation>

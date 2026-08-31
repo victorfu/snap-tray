@@ -1718,6 +1718,11 @@ Koko: %2</translation>
         <translation>Järjestelmän ääni ei ole käytettävissä. Vain mikrofonin ääni tallennetaan. Tarkista näytön tallennuksen käyttöoikeus Järjestelmäasetuksista.</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="816" />
+        <source>System audio is unavailable. Recording microphone only. Check the default playback device.</source>
+        <translation>Järjestelmän ääni ei ole käytettävissä. Vain mikrofonin ääni tallennetaan. Tarkista oletustoistolaite.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="836" />
         <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
         <translation>Mikrofoni ei ole käytettävissä. Vain järjestelmän ääni tallennetaan. Tarkista mikrofonin käyttöoikeus ja valittu syöttölaite.</translation>

@@ -1753,6 +1753,11 @@ Storlek: %2</translation>
         <translation>Systemljudet är inte tillgängligt. Endast mikrofonen spelas in. Kontrollera behörigheten för skärminspelning i Systeminställningar.</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check the default playback device.</source>
+        <translation>Systemljudet är inte tillgängligt. Endast mikrofonen spelas in. Kontrollera standardenheten för uppspelning.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="837" />
         <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
         <translation>Mikrofonen är inte tillgänglig. Endast systemljudet spelas in. Kontrollera mikrofonbehörigheten och den valda inmatningsenheten.</translation>

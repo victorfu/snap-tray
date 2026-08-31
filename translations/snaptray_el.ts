@@ -1718,6 +1718,11 @@ Size: %2</source>
         <translation>Ο ήχος συστήματος δεν είναι διαθέσιμος. Γίνεται εγγραφή μόνο από το μικρόφωνο. Ελέγξτε την άδεια Εγγραφής οθόνης στις Ρυθμίσεις συστήματος.</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="816" />
+        <source>System audio is unavailable. Recording microphone only. Check the default playback device.</source>
+        <translation>Ο ήχος συστήματος δεν είναι διαθέσιμος. Γίνεται εγγραφή μόνο από το μικρόφωνο. Ελέγξτε την προεπιλεγμένη συσκευή αναπαραγωγής.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="836" />
         <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
         <translation>Το μικρόφωνο δεν είναι διαθέσιμο. Γίνεται εγγραφή μόνο του ήχου συστήματος. Ελέγξτε την άδεια μικροφώνου και την επιλεγμένη συσκευή εισόδου.</translation>

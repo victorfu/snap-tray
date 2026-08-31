@@ -1724,6 +1724,11 @@ Tamaño: %2</translation>
         <translation>El audio del sistema no está disponible. Solo se grabará el micrófono. Verifica el permiso de Grabación de pantalla en Configuración del Sistema.</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="816" />
+        <source>System audio is unavailable. Recording microphone only. Check the default playback device.</source>
+        <translation>El audio del sistema no está disponible. Solo se grabará el micrófono. Verifica el dispositivo de reproducción predeterminado.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="836" />
         <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
         <translation>El micrófono no está disponible. Solo se grabará el audio del sistema. Verifica el permiso del micrófono y el dispositivo de entrada seleccionado.</translation>

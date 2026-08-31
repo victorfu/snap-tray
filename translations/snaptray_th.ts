@@ -1740,6 +1740,11 @@ English is always included and cannot be removed.</source>
         <translation>ไม่สามารถใช้เสียงระบบได้ จะบันทึกเฉพาะไมโครโฟน โปรดตรวจสอบสิทธิ์การบันทึกหน้าจอในการตั้งค่าระบบ</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check the default playback device.</source>
+        <translation>ไม่สามารถใช้เสียงระบบได้ จะบันทึกเฉพาะไมโครโฟน โปรดตรวจสอบอุปกรณ์เล่นเสียงเริ่มต้น</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="837" />
         <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
         <translation>ไม่สามารถใช้ไมโครโฟนได้ จะบันทึกเฉพาะเสียงระบบ โปรดตรวจสอบสิทธิ์ไมโครโฟนและอุปกรณ์อินพุตที่เลือก</translation>

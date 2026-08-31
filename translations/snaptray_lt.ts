@@ -1753,6 +1753,11 @@ Dydis: %2</translation>
         <translation>Sistemos garsas nepasiekiamas. Įrašomas tik mikrofonas. Sistemos nuostatose patikrinkite ekrano įrašymo leidimą.</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check the default playback device.</source>
+        <translation>Sistemos garsas nepasiekiamas. Įrašomas tik mikrofonas. Patikrinkite numatytąjį atkūrimo įrenginį.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="837" />
         <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
         <translation>Mikrofonas nepasiekiamas. Įrašomas tik sistemos garsas. Patikrinkite mikrofono leidimą ir pasirinktą įvesties įrenginį.</translation>

@@ -1724,6 +1724,11 @@ Größe: %2</translation>
         <translation>Systemaudio ist nicht verfügbar. Nur das Mikrofon wird aufgenommen. Überprüfen Sie in den Systemeinstellungen die Berechtigung für die Bildschirmaufnahme.</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="816" />
+        <source>System audio is unavailable. Recording microphone only. Check the default playback device.</source>
+        <translation>Systemaudio ist nicht verfügbar. Nur das Mikrofon wird aufgenommen. Überprüfen Sie das Standard-Wiedergabegerät.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="836" />
         <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
         <translation>Das Mikrofon ist nicht verfügbar. Nur das Systemaudio wird aufgenommen. Überprüfen Sie die Mikrofonberechtigung und das ausgewählte Eingabegerät.</translation>

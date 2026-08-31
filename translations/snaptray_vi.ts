@@ -1753,6 +1753,11 @@ Kích thước: %2</translation>
         <translation>Không thể sử dụng âm thanh hệ thống. Chỉ thu âm từ micrô. Hãy kiểm tra quyền Ghi màn hình trong Cài đặt hệ thống.</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check the default playback device.</source>
+        <translation>Không thể sử dụng âm thanh hệ thống. Chỉ thu âm từ micrô. Hãy kiểm tra thiết bị phát mặc định.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="837" />
         <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
         <translation>Không thể sử dụng micrô. Chỉ thu âm thanh hệ thống. Hãy kiểm tra quyền truy cập micrô và thiết bị đầu vào đã chọn.</translation>

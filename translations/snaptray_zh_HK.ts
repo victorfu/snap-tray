@@ -1753,6 +1753,11 @@ Size: %2</source>
         <translation>系統音訊無法使用，將只錄製麥克風。請在「系統設定」中檢查「屏幕錄製」權限。</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check the default playback device.</source>
+        <translation>系統音訊無法使用，將只錄製麥克風。請檢查預設播放裝置。</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="837" />
         <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
         <translation>麥克風無法使用，將只錄製系統音訊。請檢查麥克風權限及所選輸入裝置。</translation>

@@ -1759,6 +1759,11 @@ Size: %2</source>
         <translation>Системный звук недоступен. Будет записываться только микрофон. Проверьте разрешение на запись экрана в системных настройках.</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check the default playback device.</source>
+        <translation>Системный звук недоступен. Будет записываться только микрофон. Проверьте устройство воспроизведения по умолчанию.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="837" />
         <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
         <translation>Микрофон недоступен. Будет записываться только системный звук. Проверьте разрешение на доступ к микрофону и выбранное устройство ввода.</translation>

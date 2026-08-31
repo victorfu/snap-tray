@@ -511,42 +511,12 @@ void RecordingManager::beginAsyncInitialization()
     int audioChannels = kDefaultAudioChannels;
     int audioBitsPerSample = kDefaultAudioBitsPerSample;
     const bool shouldConfigureAudio = m_audioEnabled && (recordingFormat == EncoderFactory::Format::MP4);
-#ifdef Q_OS_MACOS
     if (shouldConfigureAudio) {
         const auto canonicalFormat = SnapTray::Audio::TimestampedPcmMixer::outputFormat();
         audioSampleRate = canonicalFormat.sampleRate;
         audioChannels = canonicalFormat.channels;
         audioBitsPerSample = canonicalFormat.bitsPerSample;
     }
-#else
-    if (shouldConfigureAudio) {
-        std::unique_ptr<IAudioCaptureEngine> probeEngine(IAudioCaptureEngine::createBestEngine(nullptr));
-        if (!probeEngine) {
-            qWarning() << "RecordingManager: Failed to probe audio format. Using defaults.";
-        } else {
-            const auto source = resolveAudioSource(m_audioSource);
-            if (!probeEngine->setAudioSource(source)) {
-                qWarning() << "RecordingManager: Failed to apply configured audio source for format probing";
-            }
-            m_audioDevice = configuredAudioInputDeviceOrDefault(*probeEngine, m_audioSource, m_audioDevice);
-            if (audioSourceUsesInputDevice(m_audioSource)
-                && !m_audioDevice.isEmpty() && !probeEngine->setDevice(m_audioDevice)) {
-                qWarning() << "RecordingManager: Failed to apply configured audio device for format probing";
-            }
-
-            const auto probedFormat = probeEngine->audioFormat();
-            if (probedFormat.sampleRate > 0
-                && probedFormat.channels > 0
-                && probedFormat.bitsPerSample > 0) {
-                audioSampleRate = probedFormat.sampleRate;
-                audioChannels = probedFormat.channels;
-                audioBitsPerSample = probedFormat.bitsPerSample;
-            } else {
-                qWarning() << "RecordingManager: Audio format probe returned invalid values. Using defaults.";
-            }
-        }
-    }
-#endif
 
     // Derive the encoder size from the same native mapping captured for the
     // engine. Rounded Qt logical sizes (for example 1707 at 150%) must not
@@ -838,9 +808,15 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
                 }
                 switch (activeSource) {
                 case IAudioCaptureEngine::AudioSource::Microphone:
+#ifdef Q_OS_MACOS
                     emit recordingWarning(tr(
                         "System audio is unavailable. Recording microphone only. "
                         "Check Screen Recording permission in System Settings."));
+#else
+                    emit recordingWarning(tr(
+                        "System audio is unavailable. Recording microphone only. "
+                        "Check the default playback device."));
+#endif
                     break;
                 case IAudioCaptureEngine::AudioSource::SystemAudio:
                     emit recordingWarning(tr(

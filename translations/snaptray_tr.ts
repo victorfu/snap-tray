@@ -1753,6 +1753,11 @@ Boyut: %2</translation>
         <translation>Sistem sesi kullanılamıyor. Yalnızca mikrofon kaydedilecek. Sistem Ayarları’ndaki Ekran Kaydı iznini kontrol edin.</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check the default playback device.</source>
+        <translation>Sistem sesi kullanılamıyor. Yalnızca mikrofon kaydedilecek. Varsayılan oynatma aygıtını kontrol edin.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="837" />
         <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
         <translation>Mikrofon kullanılamıyor. Yalnızca sistem sesi kaydedilecek. Mikrofon iznini ve seçili giriş aygıtını kontrol edin.</translation>

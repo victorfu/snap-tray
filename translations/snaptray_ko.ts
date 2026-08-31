@@ -1759,6 +1759,11 @@ Size: %2</source>
         <translation>시스템 오디오를 사용할 수 없습니다. 마이크만 녹음합니다. 시스템 설정에서 화면 기록 권한을 확인하세요.</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check the default playback device.</source>
+        <translation>시스템 오디오를 사용할 수 없습니다. 마이크만 녹음합니다. 기본 재생 장치를 확인하세요.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="837" />
         <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
         <translation>마이크를 사용할 수 없습니다. 시스템 오디오만 녹음합니다. 마이크 권한과 선택한 입력 장치를 확인하세요.</translation>

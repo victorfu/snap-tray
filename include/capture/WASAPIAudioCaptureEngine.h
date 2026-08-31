@@ -2,6 +2,7 @@
 #define WASAPIAUDIOCAPTUREENGINE_H
 
 #include "IAudioCaptureEngine.h"
+#include "capture/TimestampedPcmMixer.h"
 
 #ifdef Q_OS_WIN
 
@@ -9,6 +10,7 @@
 #include <QMutex>
 #include <QWaitCondition>
 #include <atomic>
+#include <memory>
 
 // Forward declarations - Windows types are opaque pointers here
 // Actual types are defined in the .cpp file via Windows headers
@@ -75,20 +77,45 @@ private:
 
     // Convert WASAPI format to our format (takes void* to avoid WAVEFORMATEX in header)
     struct NativeFormatInfo {
-        bool isFloat = false;
+        enum class Encoding {
+            Unsupported,
+            SignedInteger,
+            UnsignedInteger,
+            Float,
+        };
+
+        Encoding encoding = Encoding::Unsupported;
         int bitsPerSample = 16;
+        int bytesPerSample = 2;
         int channels = 2;
         int sampleRate = 48000;
     };
     bool updateFormatFromWaveFormat(const void *wfx, NativeFormatInfo &nativeFormat, AudioFormat &outputFormat) const;
-    bool probeFormat(bool forLoopback, const QString &deviceId,
-                     NativeFormatInfo &nativeFormat, AudioFormat &outputFormat) const;
     void refreshProbedFormat();
 
     // Convert audio data from native format to 16-bit PCM
     // Uses unsigned char* to avoid Windows header dependency
     QByteArray convertToInt16PCM(const unsigned char *data, int numFrames,
                                  const NativeFormatInfo &nativeFormat) const;
+
+    AudioSource activeAudioSource() const;
+    void notifyActiveSourceChanged();
+    void cleanupSource(SnapTray::Audio::Source source);
+    void handleSourceFailure(SnapTray::Audio::Source source,
+                             long errorCode,
+                             qint64 effectiveTimeNs);
+    void deliverMixerOutput(
+        const SnapTray::Audio::TimestampedPcmMixer::ProcessResult& result);
+    void processAudioPacket(SnapTray::Audio::Source source,
+                            const QByteArray& pcm,
+                            qint64 timestampNs,
+                            const NativeFormatInfo& nativeFormat);
+    void advanceMixerTimeline(qint64 activeTimeNs);
+    qint64 currentActiveTimeNs() const;
+    qint64 packetTimestampNs(quint64 qpcPosition100ns,
+                             quint32 flags,
+                             int numFrames,
+                             const NativeFormatInfo& nativeFormat) const;
 
     // Capture loop (runs in separate thread)
     void captureLoop();
@@ -136,6 +163,8 @@ private:
 
     // Timing
     qint64 m_startTime = 0;
+    qint64 m_startQpc100ns = 0;
+    std::atomic<qint64> m_stopActiveTimeNs{-1};
     qint64 m_pausedDuration = 0;
     qint64 m_pauseStartTime = 0;
     mutable QMutex m_timingMutex;
@@ -143,12 +172,13 @@ private:
     // Native audio format info (for conversion and mixing)
     NativeFormatInfo m_micNativeFormat;
     NativeFormatInfo m_loopbackNativeFormat;
-    AudioFormat m_micFormat;
-    AudioFormat m_loopbackFormat;
-
-    // Pending buffers for mixing mic + loopback
-    QByteArray m_micPending;
-    QByteArray m_loopbackPending;
+    std::unique_ptr<SnapTray::Audio::TimestampedPcmMixer> m_mixer;
+    QMutex m_mixerDeliveryMutex;
+    std::atomic<bool> m_microphoneActive{false};
+    std::atomic<bool> m_systemAudioActive{false};
+    std::atomic<int> m_lastNotifiedActiveSource{
+        static_cast<int>(AudioSource::None)};
+    std::atomic<bool> m_reportedMixerDrop{false};
 };
 
 #endif // Q_OS_WIN

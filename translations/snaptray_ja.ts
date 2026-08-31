@@ -1759,6 +1759,11 @@ Size: %2</source>
         <translation>システム音声を利用できません。マイク音声のみを録音します。システム設定で「画面収録」の許可を確認してください。</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check the default playback device.</source>
+        <translation>システム音声を利用できません。マイク音声のみを録音します。デフォルトの再生デバイスを確認してください。</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="837" />
         <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
         <translation>マイクを利用できません。システム音声のみを録音します。マイクの許可と選択した入力デバイスを確認してください。</translation>

@@ -1759,6 +1759,11 @@ Size: %2</source>
         <translation>Системски звук није доступан. Снимаће се само микрофон. Проверите дозволу за снимање екрана у Системским подешавањима.</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check the default playback device.</source>
+        <translation>Системски звук није доступан. Снимаће се само микрофон. Проверите подразумевани уређај за репродукцију.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="837" />
         <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
         <translation>Микрофон није доступан. Снимаће се само системски звук. Проверите дозволу за микрофон и изабрани улазни уређај.</translation>

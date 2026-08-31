@@ -323,6 +323,9 @@ void tst_QmlTranslations::testRecordingAudioWarningsTranslatedForAllLocales()
             "System audio is unavailable. Recording microphone only. "
             "Check Screen Recording permission in System Settings."),
         QByteArray(
+            "System audio is unavailable. Recording microphone only. "
+            "Check the default playback device."),
+        QByteArray(
             "Microphone is unavailable. Recording system audio only. "
             "Check microphone permission and the selected input device."),
         QByteArray(

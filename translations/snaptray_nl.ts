@@ -1759,6 +1759,11 @@ Grootte: %2</translation>
         <translation>Systeemaudio is niet beschikbaar. Alleen de microfoon wordt opgenomen. Controleer de toestemming voor schermopname in Systeeminstellingen.</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check the default playback device.</source>
+        <translation>Systeemaudio is niet beschikbaar. Alleen de microfoon wordt opgenomen. Controleer het standaard afspeelapparaat.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="837" />
         <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
         <translation>De microfoon is niet beschikbaar. Alleen systeemaudio wordt opgenomen. Controleer de microfoontoestemming en het geselecteerde invoerapparaat.</translation>

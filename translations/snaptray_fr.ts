@@ -1759,6 +1759,11 @@ Taille : %2</translation>
         <translation>L’audio système n’est pas disponible. Seul le microphone sera enregistré. Vérifiez l’autorisation d’enregistrement de l’écran dans les Réglages Système.</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check the default playback device.</source>
+        <translation>L’audio système n’est pas disponible. Seul le microphone sera enregistré. Vérifiez le périphérique de lecture par défaut.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="837" />
         <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
         <translation>Le microphone n’est pas disponible. Seul l’audio système sera enregistré. Vérifiez l’autorisation du microphone et le périphérique d’entrée sélectionné.</translation>

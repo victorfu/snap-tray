@@ -1724,6 +1724,11 @@ Velikost: %2</translation>
         <translation>Systémový zvuk není k dispozici. Nahrává se pouze mikrofon. Zkontrolujte oprávnění k nahrávání obrazovky v Nastavení systému.</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="816" />
+        <source>System audio is unavailable. Recording microphone only. Check the default playback device.</source>
+        <translation>Systémový zvuk není k dispozici. Nahrává se pouze mikrofon. Zkontrolujte výchozí zařízení pro přehrávání.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="836" />
         <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
         <translation>Mikrofon není k dispozici. Nahrává se pouze systémový zvuk. Zkontrolujte oprávnění k mikrofonu a vybrané vstupní zařízení.</translation>

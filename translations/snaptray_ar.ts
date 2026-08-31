@@ -1718,6 +1718,11 @@ Size: %2</source>
         <translation>صوت النظام غير متاح. سيُسجَّل صوت الميكروفون فقط. تحقّق من إذن تسجيل الشاشة في إعدادات النظام.</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="816" />
+        <source>System audio is unavailable. Recording microphone only. Check the default playback device.</source>
+        <translation>صوت النظام غير متاح. سيُسجَّل صوت الميكروفون فقط. تحقّق من جهاز التشغيل الافتراضي.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="836" />
         <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
         <translation>الميكروفون غير متاح. سيُسجَّل صوت النظام فقط. تحقّق من إذن الميكروفون وجهاز الإدخال المحدد.</translation>
