@@ -618,8 +618,19 @@ add_executable(IPC_SingleInstanceGuardRace
 add_dependencies(IPC_SingleInstanceGuardRace IPC_SingleInstanceGuardProbe)
 target_include_directories(IPC_SingleInstanceGuardRace PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(IPC_SingleInstanceGuardRace PRIVATE Qt6::Core Qt6::Network Qt6::Test)
-add_test(NAME IPC_SingleInstanceGuardRace COMMAND IPC_SingleInstanceGuardRace)
-set_tests_properties(IPC_SingleInstanceGuardRace PROPERTIES TIMEOUT 60 LABELS "integration")
+add_test(
+    NAME IPC_SingleInstanceGuardConcurrentStart
+    COMMAND IPC_SingleInstanceGuardRace testConcurrentStart_ExactlyOnePrimary -o -,txt
+)
+add_test(
+    NAME IPC_SingleInstanceGuardActivation
+    COMMAND IPC_SingleInstanceGuardRace testSecondaryCanActivatePrimary -o -,txt
+)
+set_tests_properties(
+    IPC_SingleInstanceGuardConcurrentStart
+    IPC_SingleInstanceGuardActivation
+    PROPERTIES TIMEOUT 30 LABELS "integration"
+)
 
 # ============================================================================
 # Settings Tests (link snaptray_ui for full settings dependencies)

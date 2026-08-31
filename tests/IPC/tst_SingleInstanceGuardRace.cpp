@@ -1,33 +1,67 @@
 #include <QtTest>
 
 #include <QCoreApplication>
-#include <QCryptographicHash>
 #include <QDateTime>
 #include <QDir>
 #include <QElapsedTimer>
 #include <QFileInfo>
-#include <QLocalSocket>
 #include <QProcess>
 #include <QRegularExpression>
+#include <QTextStream>
 
 namespace {
 
-QString serverNameForAppId(const QString& appId)
+constexpr int kProcessStartTimeoutMs = 3000;
+constexpr int kOutputTimeoutMs = 5000;
+constexpr int kProcessFinishTimeoutMs = 5000;
+constexpr int kActivationSafetyTimeoutMs = 10000;
+constexpr int kActivationFinishTimeoutMs = kActivationSafetyTimeoutMs + 2000;
+
+bool outputContainsLine(const QString& output, const QString& expectedLine)
 {
-    return QString("snaptray-%1")
-        .arg(QString(QCryptographicHash::hash(appId.toUtf8(), QCryptographicHash::Md5).toHex()));
+    const QStringList lines = output.split(QRegularExpression("[\\r\\n]+"), Qt::SkipEmptyParts);
+    return lines.contains(expectedLine);
 }
 
-bool canConnectToServer(const QString& serverName, int timeoutMs = 200)
+bool sendCommand(QProcess& process, const QByteArray& command, int timeoutMs = 2000)
 {
-    QLocalSocket socket;
-    socket.connectToServer(serverName);
-    const bool connected = socket.waitForConnected(timeoutMs);
-    if (connected) {
-        socket.disconnectFromServer();
-        socket.waitForDisconnected(timeoutMs);
+    const QByteArray line = command + '\n';
+    if (process.write(line) != line.size()) {
+        return false;
     }
-    return connected;
+
+    return process.bytesToWrite() == 0 || process.waitForBytesWritten(timeoutMs);
+}
+
+bool exitedSuccessfully(const QProcess& process)
+{
+    return process.state() == QProcess::NotRunning
+        && process.exitStatus() == QProcess::NormalExit
+        && process.exitCode() == 0;
+}
+
+QString processDiagnostics(const QString& label, const QProcess& process, const QString& output)
+{
+    return QStringLiteral(
+               "%1: state=%2 exitStatus=%3 exitCode=%4 error=\"%5\" output=\"%6\"")
+        .arg(label)
+        .arg(static_cast<int>(process.state()))
+        .arg(static_cast<int>(process.exitStatus()))
+        .arg(process.exitCode())
+        .arg(process.errorString(), output.trimmed());
+}
+
+QString combinedDiagnostics(const QProcess& processA, const QString& outputA,
+                            const QProcess& processB, const QString& outputB)
+{
+    return processDiagnostics(QStringLiteral("Process A"), processA, outputA)
+        + QLatin1Char('\n')
+        + processDiagnostics(QStringLiteral("Process B"), processB, outputB);
+}
+
+void printDiagnostics(const QString& diagnostics)
+{
+    QTextStream(stderr) << diagnostics << Qt::endl;
 }
 
 void stopProcessIfRunning(QProcess& process)
@@ -76,6 +110,8 @@ private:
     static QString readProcessOutput(QProcess& process);
     static QString extractLockStateLine(const QString& output);
     static int extractActivateCount(const QString& output);
+    static bool waitForOutputLine(
+        QProcess& process, QString& capturedOutput, const QString& expectedLine, int timeoutMs);
     static QString waitForLockState(QProcess& process, QString& capturedOutput, int timeoutMs);
 };
 
@@ -129,6 +165,29 @@ int tst_SingleInstanceGuardRace::extractActivateCount(const QString& output)
     return -1;
 }
 
+bool tst_SingleInstanceGuardRace::waitForOutputLine(
+    QProcess& process, QString& capturedOutput, const QString& expectedLine, int timeoutMs)
+{
+    QElapsedTimer timer;
+    timer.start();
+
+    while (timer.elapsed() < timeoutMs) {
+        process.waitForReadyRead(100);
+        capturedOutput += readProcessOutput(process);
+
+        if (outputContainsLine(capturedOutput, expectedLine)) {
+            return true;
+        }
+
+        if (process.state() == QProcess::NotRunning) {
+            break;
+        }
+    }
+
+    capturedOutput += readProcessOutput(process);
+    return outputContainsLine(capturedOutput, expectedLine);
+}
+
 QString tst_SingleInstanceGuardRace::waitForLockState(
     QProcess& process, QString& capturedOutput, int timeoutMs)
 {
@@ -159,24 +218,37 @@ void tst_SingleInstanceGuardRace::testConcurrentStart_ExactlyOnePrimary()
     QVERIFY2(QFileInfo::exists(helperPath), qPrintable(QString("Helper not found: %1").arg(helperPath)));
 
     const QString appId = testAppId("concurrent");
-    const QStringList args = {"--app-id", appId, "--hold-ms", "800"};
 
     // Preflight: ensure environment can acquire the primary lock at all.
     {
         QProcess preflightProcess;
         ScopedProcessStop preflightCleanup(preflightProcess);
         preflightProcess.setProgram(helperPath);
-        preflightProcess.setArguments({"--app-id", testAppId("concurrent-preflight"), "--hold-ms", "250"});
+        preflightProcess.setArguments({"--app-id", testAppId("concurrent-preflight")});
         preflightProcess.start();
-        QVERIFY(preflightProcess.waitForStarted(2000));
+        QVERIFY2(preflightProcess.waitForStarted(kProcessStartTimeoutMs),
+                 qPrintable(processDiagnostics(
+                     QStringLiteral("Preflight"), preflightProcess, readProcessOutput(preflightProcess))));
+        QVERIFY2(preflightProcess.waitForFinished(kProcessFinishTimeoutMs),
+                 qPrintable(processDiagnostics(
+                     QStringLiteral("Preflight"), preflightProcess, readProcessOutput(preflightProcess))));
         QString preflightOutput;
-        const QString preflightState = waitForLockState(preflightProcess, preflightOutput, 3000);
+        preflightOutput += readProcessOutput(preflightProcess);
+        const QString preflightState = extractLockStateLine(preflightOutput);
         if (preflightState != "LOCKED") {
-            QSKIP(qPrintable(QString("Single-instance lock is unavailable in this environment. Output: %1")
-                                 .arg(preflightOutput)));
+            QSKIP(qPrintable(QStringLiteral(
+                                 "Single-instance lock is unavailable in this environment. %1")
+                                 .arg(processDiagnostics(
+                                     QStringLiteral("Preflight"), preflightProcess, preflightOutput))));
         }
-        QVERIFY(preflightProcess.waitForFinished(3000));
+        QVERIFY2(exitedSuccessfully(preflightProcess),
+                 qPrintable(processDiagnostics(
+                     QStringLiteral("Preflight"), preflightProcess, preflightOutput)));
     }
+
+    const QStringList args = {
+        "--app-id", appId, "--wait-for-start", "--wait-for-stop"
+    };
 
     QProcess processA;
     ScopedProcessStop cleanupA(processA);
@@ -190,22 +262,71 @@ void tst_SingleInstanceGuardRace::testConcurrentStart_ExactlyOnePrimary()
     processB.setArguments(args);
     processB.start();
 
-    QVERIFY(processA.waitForStarted(2000));
-    QVERIFY(processB.waitForStarted(2000));
-    QVERIFY(processA.waitForFinished(5000));
-    QVERIFY(processB.waitForFinished(5000));
+    QString outputA;
+    QString outputB;
 
-    const QString outputA = readProcessOutput(processA);
-    const QString outputB = readProcessOutput(processB);
+    const bool processAStarted = processA.waitForStarted(kProcessStartTimeoutMs);
+    outputA += readProcessOutput(processA);
+    QVERIFY2(processAStarted,
+             qPrintable(processDiagnostics(QStringLiteral("Process A"), processA, outputA)));
 
-    const QString stateA = extractLockStateLine(outputA);
-    const QString stateB = extractLockStateLine(outputB);
+    const bool processBStarted = processB.waitForStarted(kProcessStartTimeoutMs);
+    outputB += readProcessOutput(processB);
+    QVERIFY2(processBStarted,
+             qPrintable(processDiagnostics(QStringLiteral("Process B"), processB, outputB)));
 
-    QVERIFY2(!stateA.isEmpty(), qPrintable(QString("Process A missing lock state. Output: %1").arg(outputA)));
-    QVERIFY2(!stateB.isEmpty(), qPrintable(QString("Process B missing lock state. Output: %1").arg(outputB)));
+    const bool processAWaiting = waitForOutputLine(
+        processA, outputA, QStringLiteral("WAITING_FOR_START"), kOutputTimeoutMs);
+    const bool processBWaiting = waitForOutputLine(
+        processB, outputB, QStringLiteral("WAITING_FOR_START"), kOutputTimeoutMs);
+    if (!processAWaiting || !processBWaiting) {
+        printDiagnostics(combinedDiagnostics(processA, outputA, processB, outputB));
+    }
+    QVERIFY2(processAWaiting && processBWaiting,
+             qPrintable(combinedDiagnostics(processA, outputA, processB, outputB)));
+
+    const bool startSentToA = sendCommand(processA, QByteArrayLiteral("START"));
+    const bool startSentToB = sendCommand(processB, QByteArrayLiteral("START"));
+    if (!startSentToA || !startSentToB) {
+        printDiagnostics(combinedDiagnostics(processA, outputA, processB, outputB));
+    }
+    QVERIFY2(startSentToA && startSentToB,
+             qPrintable(combinedDiagnostics(processA, outputA, processB, outputB)));
+
+    const QString stateA = waitForLockState(processA, outputA, kOutputTimeoutMs);
+    const QString stateB = waitForLockState(processB, outputB, kOutputTimeoutMs);
+
+    if (stateA.isEmpty() || stateB.isEmpty()) {
+        printDiagnostics(combinedDiagnostics(processA, outputA, processB, outputB));
+    }
+    QVERIFY2(!stateA.isEmpty() && !stateB.isEmpty(),
+             qPrintable(combinedDiagnostics(processA, outputA, processB, outputB)));
 
     const int lockedCount = (stateA == "LOCKED" ? 1 : 0) + (stateB == "LOCKED" ? 1 : 0);
+    if (lockedCount != 1) {
+        printDiagnostics(combinedDiagnostics(processA, outputA, processB, outputB));
+    }
     QCOMPARE(lockedCount, 1);
+
+    const bool stopSentToA = sendCommand(processA, QByteArrayLiteral("STOP"));
+    const bool stopSentToB = sendCommand(processB, QByteArrayLiteral("STOP"));
+    if (!stopSentToA || !stopSentToB) {
+        printDiagnostics(combinedDiagnostics(processA, outputA, processB, outputB));
+    }
+    QVERIFY2(stopSentToA && stopSentToB,
+             qPrintable(combinedDiagnostics(processA, outputA, processB, outputB)));
+
+    const bool processAFinished = processA.waitForFinished(kProcessFinishTimeoutMs);
+    const bool processBFinished = processB.waitForFinished(kProcessFinishTimeoutMs);
+    outputA += readProcessOutput(processA);
+    outputB += readProcessOutput(processB);
+    if (!processAFinished || !processBFinished
+        || !exitedSuccessfully(processA) || !exitedSuccessfully(processB)) {
+        printDiagnostics(combinedDiagnostics(processA, outputA, processB, outputB));
+    }
+    QVERIFY2(processAFinished && processBFinished
+                 && exitedSuccessfully(processA) && exitedSuccessfully(processB),
+             qPrintable(combinedDiagnostics(processA, outputA, processB, outputB)));
 }
 
 void tst_SingleInstanceGuardRace::testSecondaryCanActivatePrimary()
@@ -218,21 +339,23 @@ void tst_SingleInstanceGuardRace::testSecondaryCanActivatePrimary()
     QProcess primaryProcess;
     ScopedProcessStop primaryCleanup(primaryProcess);
     primaryProcess.setProgram(helperPath);
-    primaryProcess.setArguments({"--app-id", appId, "--hold-ms", "1500"});
+    primaryProcess.setArguments({
+        "--app-id", appId,
+        "--exit-on-activate",
+        "--timeout-ms", QString::number(kActivationSafetyTimeoutMs)
+    });
     primaryProcess.start();
-    QVERIFY(primaryProcess.waitForStarted(2000));
+    QVERIFY2(primaryProcess.waitForStarted(kProcessStartTimeoutMs),
+             qPrintable(processDiagnostics(
+                 QStringLiteral("Primary"), primaryProcess, readProcessOutput(primaryProcess))));
 
     QString primaryOutput;
-    const QString primaryState = waitForLockState(primaryProcess, primaryOutput, 3000);
+    const QString primaryState = waitForLockState(primaryProcess, primaryOutput, kOutputTimeoutMs);
     if (primaryState != "LOCKED") {
-        QSKIP(qPrintable(QString("Primary lock acquisition is unavailable in this environment. Output: %1")
-                             .arg(primaryOutput)));
-    }
-
-    const QString serverName = serverNameForAppId(appId);
-    if (!canConnectToServer(serverName)) {
-        QSKIP(qPrintable(QString("IPC endpoint is unavailable in this environment (%1).")
-                             .arg(serverName)));
+        QSKIP(qPrintable(QStringLiteral(
+                             "Primary lock acquisition is unavailable in this environment. %1")
+                             .arg(processDiagnostics(
+                                 QStringLiteral("Primary"), primaryProcess, primaryOutput))));
     }
 
     QProcess secondaryProcess;
@@ -240,18 +363,40 @@ void tst_SingleInstanceGuardRace::testSecondaryCanActivatePrimary()
     secondaryProcess.setProgram(helperPath);
     secondaryProcess.setArguments({"--app-id", appId, "--send-activate"});
     secondaryProcess.start();
-    QVERIFY(secondaryProcess.waitForStarted(2000));
-    QVERIFY(secondaryProcess.waitForFinished(3000));
+    QVERIFY2(secondaryProcess.waitForStarted(kProcessStartTimeoutMs),
+             qPrintable(processDiagnostics(
+                 QStringLiteral("Secondary"), secondaryProcess, readProcessOutput(secondaryProcess))));
 
-    QVERIFY(primaryProcess.waitForFinished(5000));
+    const bool secondaryFinished = secondaryProcess.waitForFinished(kProcessFinishTimeoutMs);
+    QString secondaryOutput = readProcessOutput(secondaryProcess);
+    if (!secondaryFinished || !exitedSuccessfully(secondaryProcess)) {
+        printDiagnostics(processDiagnostics(
+            QStringLiteral("Secondary"), secondaryProcess, secondaryOutput));
+    }
+    QVERIFY2(secondaryFinished && exitedSuccessfully(secondaryProcess),
+             qPrintable(processDiagnostics(
+                 QStringLiteral("Secondary"), secondaryProcess, secondaryOutput)));
+
+    const bool primaryFinished = primaryProcess.waitForFinished(kActivationFinishTimeoutMs);
     primaryOutput += readProcessOutput(primaryProcess);
-    const QString secondaryOutput = readProcessOutput(secondaryProcess);
+    if (!primaryFinished || !exitedSuccessfully(primaryProcess)) {
+        printDiagnostics(processDiagnostics(
+            QStringLiteral("Primary"), primaryProcess, primaryOutput));
+    }
+    QVERIFY2(primaryFinished && exitedSuccessfully(primaryProcess),
+             qPrintable(processDiagnostics(
+                 QStringLiteral("Primary"), primaryProcess, primaryOutput)));
+
     const QString secondaryState = extractLockStateLine(secondaryOutput);
-    QCOMPARE(secondaryState, QString("UNLOCKED"));
+    QVERIFY2(secondaryState == QStringLiteral("UNLOCKED"),
+             qPrintable(processDiagnostics(
+                 QStringLiteral("Secondary"), secondaryProcess, secondaryOutput)));
 
     const int activateCount = extractActivateCount(primaryOutput);
-    QCOMPARE(activateCount, 1);
+    QVERIFY2(activateCount == 1,
+             qPrintable(processDiagnostics(
+                 QStringLiteral("Primary"), primaryProcess, primaryOutput)));
 }
 
-QTEST_MAIN(tst_SingleInstanceGuardRace)
+QTEST_GUILESS_MAIN(tst_SingleInstanceGuardRace)
 #include "tst_SingleInstanceGuardRace.moc"
