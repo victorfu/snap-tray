@@ -43,15 +43,34 @@ if exist "%BUILD_DIR%\CMakeFiles\rules.ninja" (
 if "!NEED_CONFIGURE!"=="1" (
     echo Configuring project...
     cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="%QT_PATH%"
+    set "CONFIGURE_EXIT_CODE=!ERRORLEVEL!"
+    if not "!CONFIGURE_EXIT_CODE!"=="0" (
+        echo.
+        echo Configure failed with error code !CONFIGURE_EXIT_CODE!
+        exit /b !CONFIGURE_EXIT_CODE!
+    )
 )
 
 REM Build all targets (including tests)
 echo Building...
 cmake --build build
-
+set "BUILD_EXIT_CODE=!ERRORLEVEL!"
+if not "!BUILD_EXIT_CODE!"=="0" (
+    echo.
+    echo Build failed with error code !BUILD_EXIT_CODE!
+    exit /b !BUILD_EXIT_CODE!
+)
 
 REM Run tests (add Qt bin to PATH for DLL loading)
 echo.
 echo Running tests...
 set "PATH=%QT_PATH%\bin;%PATH%"
 cd /d "%BUILD_DIR%" && ctest --output-on-failure
+set "TEST_EXIT_CODE=!ERRORLEVEL!"
+if not "!TEST_EXIT_CODE!"=="0" (
+    echo.
+    echo Tests failed with error code !TEST_EXIT_CODE!
+    exit /b !TEST_EXIT_CODE!
+)
+
+exit /b 0
