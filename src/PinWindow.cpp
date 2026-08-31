@@ -300,6 +300,102 @@ namespace {
         return transform;
     }
 
+    QPointF layoutHandlePosition(const QRectF& rect, ResizeHandler::Edge edge)
+    {
+        switch (edge) {
+            case ResizeHandler::Edge::TopLeft: return rect.topLeft();
+            case ResizeHandler::Edge::Top: return QPointF(rect.center().x(), rect.top());
+            case ResizeHandler::Edge::TopRight: return rect.topRight();
+            case ResizeHandler::Edge::Right: return QPointF(rect.right(), rect.center().y());
+            case ResizeHandler::Edge::BottomRight: return rect.bottomRight();
+            case ResizeHandler::Edge::Bottom: return QPointF(rect.center().x(), rect.bottom());
+            case ResizeHandler::Edge::BottomLeft: return rect.bottomLeft();
+            case ResizeHandler::Edge::Left: return QPointF(rect.left(), rect.center().y());
+            default: return {};
+        }
+    }
+
+    QPoint renderedLayoutHandlePosition(const QRect& rect, ResizeHandler::Edge edge)
+    {
+        switch (edge) {
+            case ResizeHandler::Edge::TopLeft: return rect.topLeft();
+            case ResizeHandler::Edge::Top: return QPoint(rect.center().x(), rect.top());
+            case ResizeHandler::Edge::TopRight: return rect.topRight();
+            case ResizeHandler::Edge::Right: return QPoint(rect.right(), rect.center().y());
+            case ResizeHandler::Edge::BottomRight: return rect.bottomRight();
+            case ResizeHandler::Edge::Bottom: return QPoint(rect.center().x(), rect.bottom());
+            case ResizeHandler::Edge::BottomLeft: return rect.bottomLeft();
+            case ResizeHandler::Edge::Left: return QPoint(rect.left(), rect.center().y());
+            default: return {};
+        }
+    }
+
+    QPoint snappedLayoutHandlePosition(const QRectF& modelRect,
+                                       ResizeHandler::Edge modelEdge,
+                                       const QTransform& modelToView)
+    {
+        static constexpr ResizeHandler::Edge kVisualEdges[] = {
+            ResizeHandler::Edge::TopLeft,
+            ResizeHandler::Edge::Top,
+            ResizeHandler::Edge::TopRight,
+            ResizeHandler::Edge::Right,
+            ResizeHandler::Edge::BottomRight,
+            ResizeHandler::Edge::Bottom,
+            ResizeHandler::Edge::BottomLeft,
+            ResizeHandler::Edge::Left
+        };
+        const QRect viewRect = modelToView.mapRect(modelRect).toAlignedRect();
+        const QPointF mappedModelHandle = modelToView.map(
+            layoutHandlePosition(modelRect, modelEdge));
+        QPoint closest;
+        qreal closestDistanceSquared = (std::numeric_limits<qreal>::max)();
+        for (const auto visualEdge : kVisualEdges) {
+            const QPoint candidate = renderedLayoutHandlePosition(viewRect, visualEdge);
+            const QPointF delta = QPointF(candidate) - mappedModelHandle;
+            const qreal distanceSquared =
+                delta.x() * delta.x() + delta.y() * delta.y();
+            if (distanceSquared < closestDistanceSquared) {
+                closestDistanceSquared = distanceSquared;
+                closest = candidate;
+            }
+        }
+        return closest;
+    }
+
+    CursorStyleSpec layoutResizeCursorSpec(ResizeHandler::Edge edge,
+                                           const QTransform& modelToView)
+    {
+        QPointF modelDirection;
+        switch (edge) {
+            case ResizeHandler::Edge::Left: modelDirection = QPointF(-1.0, 0.0); break;
+            case ResizeHandler::Edge::Right: modelDirection = QPointF(1.0, 0.0); break;
+            case ResizeHandler::Edge::Top: modelDirection = QPointF(0.0, -1.0); break;
+            case ResizeHandler::Edge::Bottom: modelDirection = QPointF(0.0, 1.0); break;
+            case ResizeHandler::Edge::TopLeft: modelDirection = QPointF(-1.0, -1.0); break;
+            case ResizeHandler::Edge::TopRight: modelDirection = QPointF(1.0, -1.0); break;
+            case ResizeHandler::Edge::BottomRight: modelDirection = QPointF(1.0, 1.0); break;
+            case ResizeHandler::Edge::BottomLeft: modelDirection = QPointF(-1.0, 1.0); break;
+            default: return CursorStyleSpec::fromShape(Qt::ArrowCursor);
+        }
+
+        const QPointF origin = modelToView.map(QPointF());
+        const QPointF mapped = modelToView.map(modelDirection) - origin;
+        const bool corner = edge == ResizeHandler::Edge::TopLeft ||
+            edge == ResizeHandler::Edge::TopRight ||
+            edge == ResizeHandler::Edge::BottomRight ||
+            edge == ResizeHandler::Edge::BottomLeft;
+        if (corner) {
+            return CursorStyleSpec::fromShape(
+                mapped.x() * mapped.y() >= 0.0
+                    ? Qt::SizeFDiagCursor
+                    : Qt::SizeBDiagCursor);
+        }
+        return CursorStyleSpec::fromShape(
+            qAbs(mapped.x()) >= qAbs(mapped.y())
+                ? Qt::SizeHorCursor
+                : Qt::SizeVerCursor);
+    }
+
     bool sameLinearTransform(const QTransform& lhs, const QTransform& rhs)
     {
         return qAbs(lhs.m11() - rhs.m11()) <= kTransformEpsilon &&
@@ -616,6 +712,13 @@ void PinWindow::setPinWindowManager(PinWindowManager* manager)
 
 void PinWindow::setZoomLevel(qreal zoom)
 {
+    // Annotation geometry uses the zoom that was active when layout mode
+    // began. Without a general annotation scale transform, changing zoom in
+    // the middle of the session would reinterpret every item at a new scale.
+    if (isRegionLayoutMode()) {
+        return;
+    }
+
     m_zoomLevel = qBound(0.1, zoom, 5.0);
     if (m_currentZoomAction) {
         m_currentZoomAction->setText(QString("%1%").arg(qRound(m_zoomLevel * 100)));
@@ -647,6 +750,9 @@ void PinWindow::adjustOpacityByStep(int direction)
 
 void PinWindow::rotateRight()
 {
+    if (isRegionLayoutMode()) {
+        return;
+    }
     m_rotationAngle = (m_rotationAngle + 90) % 360;
     clearCropUndoHistory();
     updateSize();
@@ -655,6 +761,9 @@ void PinWindow::rotateRight()
 
 void PinWindow::rotateLeft()
 {
+    if (isRegionLayoutMode()) {
+        return;
+    }
     m_rotationAngle = (m_rotationAngle + 270) % 360;  // +270 is same as -90
     clearCropUndoHistory();
     updateSize();
@@ -663,6 +772,9 @@ void PinWindow::rotateLeft()
 
 void PinWindow::flipHorizontal()
 {
+    if (isRegionLayoutMode()) {
+        return;
+    }
     m_flipHorizontal = !m_flipHorizontal;
     clearCropUndoHistory();
     updateSize();
@@ -671,6 +783,9 @@ void PinWindow::flipHorizontal()
 
 void PinWindow::flipVertical()
 {
+    if (isRegionLayoutMode()) {
+        return;
+    }
     m_flipVertical = !m_flipVertical;
     clearCropUndoHistory();
     updateSize();
@@ -2233,7 +2348,7 @@ void PinWindow::paintEvent(QPaintEvent* event)
     }
 
     // Draw annotations with the same rotation/flip transform as the pixmap
-    if (m_annotationLayer && !m_annotationLayer->isEmpty()) {
+    if (!isRegionLayoutMode() && m_annotationLayer && !m_annotationLayer->isEmpty()) {
         painter.save();
 
         // Apply the same rotation/flip transform used for the pixmap
@@ -2368,8 +2483,13 @@ void PinWindow::paintEvent(QPaintEvent* event)
         const auto& regions = m_regionLayoutManager->regions();
         int selectedIdx = m_regionLayoutManager->selectedIndex();
         int hoveredIdx = m_regionLayoutManager->hoveredIndex();
+        const QSize layoutSize = m_regionLayoutManager->canvasBounds().size();
+        const QTransform layoutTransform = regionLayoutViewTransform(layoutSize);
 
-        // Draw region images at their current positions
+        // Draw region images in model coordinates through the shared layout
+        // view transform.
+        painter.save();
+        painter.setTransform(layoutTransform, true);
         for (const auto& region : regions) {
             QRect targetRect = region.rect;
             if (region.rect.size() != region.originalRect.size()) {
@@ -2386,13 +2506,25 @@ void PinWindow::paintEvent(QPaintEvent* event)
                 painter.drawImage(targetRect.topLeft(), img);
             }
         }
+        painter.restore();
 
-        // Draw region borders, handles, and badges
-        RegionLayoutRenderer::drawRegions(painter, regions, selectedIdx, hoveredIdx, dpr);
+        // Preview annotations at their pending layout positions without
+        // mutating the layer until Confirm succeeds.
+        drawRegionLayoutAnnotations(painter, layoutSize, false);
+
+        // Chrome stays in widget space so handles, badges, text, and buttons
+        // remain upright and usable at every content zoom/orientation.
+        QVector<LayoutRegion> viewRegions = regions;
+        for (auto& region : viewRegions) {
+            region.rect = layoutTransform.mapRect(QRectF(region.rect)).toAlignedRect();
+            region.originalRect = region.rect;
+        }
+        RegionLayoutRenderer::drawRegions(
+            painter, viewRegions, selectedIdx, hoveredIdx, dpr);
 
         // Draw confirm/cancel buttons
-        QRect canvasBounds = m_regionLayoutManager->canvasBounds();
-        RegionLayoutRenderer::drawConfirmCancelButtons(painter, canvasBounds, m_layoutModeMousePos);
+        RegionLayoutRenderer::drawConfirmCancelButtons(
+            painter, regionLayoutControlsRect(layoutSize), m_layoutModeMousePos);
     }
 }
 
@@ -2426,21 +2558,23 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
 
         // 0. Handle Region Layout Mode interactions
         if (isRegionLayoutMode()) {
-            QPoint pos = event->pos();
-            QRect canvasBounds = m_regionLayoutManager->canvasBounds();
+            const QPoint viewPos = event->position().toPoint();
+            const QPoint pos = regionLayoutPositionFromWidget(event->position());
+            const QRect controlsRect = regionLayoutControlsRect(
+                m_regionLayoutManager->canvasBounds().size());
 
             // Check confirm/cancel button clicks
-            if (RegionLayoutRenderer::confirmButtonRect(canvasBounds).contains(pos)) {
+            if (RegionLayoutRenderer::confirmButtonRect(controlsRect).contains(viewPos)) {
                 exitRegionLayoutMode(true);
                 return;
             }
-            if (RegionLayoutRenderer::cancelButtonRect(canvasBounds).contains(pos)) {
+            if (RegionLayoutRenderer::cancelButtonRect(controlsRect).contains(viewPos)) {
                 exitRegionLayoutMode(false);
                 return;
             }
 
             // Check for resize handle hit on selected region
-            ResizeHandler::Edge handle = m_regionLayoutManager->hitTestHandle(pos);
+            const ResizeHandler::Edge handle = regionLayoutHandleAtWidget(viewPos);
             if (handle != ResizeHandler::Edge::None) {
                 m_regionLayoutManager->startResize(handle, pos);
                 return;
@@ -2567,8 +2701,9 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
 
     // Handle Region Layout Mode
     if (isRegionLayoutMode()) {
-        QPoint pos = event->pos();
-        m_layoutModeMousePos = pos;  // Store for hover effects
+        const QPoint viewPos = event->position().toPoint();
+        const QPoint pos = regionLayoutPositionFromWidget(event->position());
+        m_layoutModeMousePos = viewPos;  // View-space position for fixed chrome
 
         if (m_regionLayoutManager->isDragging()) {
             m_regionLayoutManager->updateDrag(pos);
@@ -2586,31 +2721,13 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
         m_regionLayoutManager->setHoveredIndex(hoveredRegion);
 
         // Update cursor based on what's under the mouse
-        ResizeHandler::Edge handle = m_regionLayoutManager->hitTestHandle(pos);
+        const ResizeHandler::Edge handle = regionLayoutHandleAtWidget(viewPos);
         CursorStyleSpec layoutSpec = CursorStyleSpec::fromShape(Qt::ArrowCursor);
         if (handle != ResizeHandler::Edge::None) {
-            // Set resize cursor based on edge
-            switch (handle) {
-                case ResizeHandler::Edge::Left:
-                case ResizeHandler::Edge::Right:
-                    layoutSpec = CursorStyleSpec::fromShape(Qt::SizeHorCursor);
-                    break;
-                case ResizeHandler::Edge::Top:
-                case ResizeHandler::Edge::Bottom:
-                    layoutSpec = CursorStyleSpec::fromShape(Qt::SizeVerCursor);
-                    break;
-                case ResizeHandler::Edge::TopLeft:
-                case ResizeHandler::Edge::BottomRight:
-                    layoutSpec = CursorStyleSpec::fromShape(Qt::SizeFDiagCursor);
-                    break;
-                case ResizeHandler::Edge::TopRight:
-                case ResizeHandler::Edge::BottomLeft:
-                    layoutSpec = CursorStyleSpec::fromShape(Qt::SizeBDiagCursor);
-                    break;
-                default:
-                    layoutSpec = CursorStyleSpec::fromShape(Qt::ArrowCursor);
-                    break;
-            }
+            layoutSpec = layoutResizeCursorSpec(
+                handle,
+                regionLayoutViewTransform(
+                    m_regionLayoutManager->canvasBounds().size()));
         } else if (hoveredRegion >= 0) {
             layoutSpec = CursorStyleSpec::fromShape(Qt::SizeAllCursor);
         } else {
@@ -2757,6 +2874,7 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
             if (m_regionLayoutManager->isResizing()) {
                 m_regionLayoutManager->finishResize();
             }
+            keepRegionLayoutControlsOnScreen();
             return;
         }
 
@@ -2881,6 +2999,11 @@ void PinWindow::mouseDoubleClickEvent(QMouseEvent* event)
 
 void PinWindow::wheelEvent(QWheelEvent* event)
 {
+    if (isRegionLayoutMode()) {
+        event->accept();
+        return;
+    }
+
     // Ctrl+Wheel = Opacity adjustment
     if (event->modifiers() & Qt::ControlModifier) {
         adjustOpacityByStep(event->angleDelta().y() > 0 ? 1 : -1);
@@ -2910,6 +3033,11 @@ void PinWindow::wheelEvent(QWheelEvent* event)
 
 void PinWindow::contextMenuEvent(QContextMenuEvent* event)
 {
+    if (isRegionLayoutMode()) {
+        event->accept();
+        return;
+    }
+
     // Lazy-create context menu on first right-click to improve initial window creation performance
     if (!m_contextMenu) {
         createContextMenu();
@@ -4046,12 +4174,45 @@ QPixmap PinWindow::exportPixmapForMerge() const
     // Merge output is reopened in a PinWindow, so avoid baking display effects
     // (opacity/watermark) that the destination window can apply again.
     QPixmap result;
+    bool usedActiveLayout = false;
+    QSize activeLayoutSize;
     if (isRegionLayoutMode() && m_regionLayoutManager) {
         qreal dpr = m_displayPixmap.devicePixelRatio();
         if (dpr <= 0.0) {
             dpr = 1.0;
         }
-        result = m_regionLayoutManager->recomposeImage(dpr);
+        const QPixmap layoutPixmap = m_regionLayoutManager->recomposeImage(dpr);
+        if (!layoutPixmap.isNull()) {
+            const QSize layoutSize = logicalSizeFromPixmap(layoutPixmap);
+            activeLayoutSize = layoutSize;
+            const QSize viewportSize = regionLayoutContentViewSize(layoutSize);
+            const QSize physicalSize = CoordinateHelper::toPhysical(viewportSize, dpr);
+            if (!physicalSize.isEmpty()) {
+                QPixmap transformedLayout = layoutPixmap;
+                if (m_rotationAngle != 0 || m_flipHorizontal || m_flipVertical) {
+                    transformedLayout = layoutPixmap.transformed(
+                        buildOrientationLinearTransform(
+                            m_rotationAngle,
+                            m_flipHorizontal,
+                            m_flipVertical),
+                        Qt::SmoothTransformation);
+                    transformedLayout.setDevicePixelRatio(dpr);
+                }
+
+                result = QPixmap(physicalSize);
+                result.setDevicePixelRatio(dpr);
+                result.fill(Qt::transparent);
+
+                QPainter layoutPainter(&result);
+                layoutPainter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+                layoutPainter.drawPixmap(
+                    QRectF(QPointF(0.0, 0.0), QSizeF(viewportSize)),
+                    transformedLayout,
+                    QRectF(QPointF(0.0, 0.0), QSizeF(transformedLayout.size())));
+                layoutPainter.end();
+                usedActiveLayout = !result.isNull();
+            }
+        }
     }
     if (result.isNull()) {
         result = getExportPixmapCore(false);
@@ -4062,10 +4223,208 @@ QPixmap PinWindow::exportPixmapForMerge() const
 
     QPainter painter(&result);
     painter.setRenderHint(QPainter::Antialiasing);
-    drawAnnotationsForExport(painter, logicalSizeFromPixmap(result));
+    if (usedActiveLayout) {
+        drawRegionLayoutAnnotations(
+            painter, activeLayoutSize, true);
+    } else {
+        drawAnnotationsForExport(painter, logicalSizeFromPixmap(result));
+    }
     painter.end();
 
     return result;
+}
+
+QSize PinWindow::regionLayoutContentViewSize(const QSize& layoutSize) const
+{
+    const QSize orientedSize = transformedLogicalSizeForRotation(
+        layoutSize, m_rotationAngle);
+    return CoordinateHelper::toPhysical(orientedSize, m_zoomLevel);
+}
+
+QSize PinWindow::regionLayoutViewportSize(const QSize& layoutSize) const
+{
+    const QSize contentSize = regionLayoutContentViewSize(layoutSize);
+    const int controlsWidth =
+        LayoutModeConstants::kButtonWidth * 2 +
+        LayoutModeConstants::kButtonSpacing +
+        LayoutModeConstants::kButtonMargin * 2;
+    const int controlsHeight =
+        LayoutModeConstants::kButtonHeight +
+        LayoutModeConstants::kButtonMargin * 2;
+    return QSize(qMax(contentSize.width(), controlsWidth),
+                 contentSize.height() + controlsHeight);
+}
+
+QRect PinWindow::regionLayoutControlsRect(const QSize& layoutSize) const
+{
+    const QSize contentSize = regionLayoutContentViewSize(layoutSize);
+    const QSize viewportSize = regionLayoutViewportSize(layoutSize);
+    return QRect(0,
+                 contentSize.height(),
+                 viewportSize.width(),
+                 viewportSize.height() - contentSize.height());
+}
+
+QTransform PinWindow::regionLayoutViewTransform(const QSize& layoutSize) const
+{
+    const QSize contentViewSize = regionLayoutContentViewSize(layoutSize);
+    QTransform transform = buildPinWindowTransform(
+        QRectF(QPointF(0.0, 0.0), QSizeF(contentViewSize)),
+        m_rotationAngle,
+        m_flipHorizontal,
+        m_flipVertical);
+    transform.scale(m_zoomLevel, m_zoomLevel);
+    return transform;
+}
+
+QPoint PinWindow::regionLayoutPositionFromWidget(const QPointF& widgetPos) const
+{
+    if (!m_regionLayoutManager) {
+        return widgetPos.toPoint();
+    }
+    bool invertible = false;
+    const QTransform inverse = regionLayoutViewTransform(
+        m_regionLayoutManager->canvasBounds().size()).inverted(&invertible);
+    if (!invertible) {
+        return widgetPos.toPoint();
+    }
+    return inverse.map(widgetPos).toPoint();
+}
+
+ResizeHandler::Edge PinWindow::regionLayoutHandleAtWidget(
+    const QPoint& widgetPos) const
+{
+    if (!m_regionLayoutManager) {
+        return ResizeHandler::Edge::None;
+    }
+    const int selectedIndex = m_regionLayoutManager->selectedIndex();
+    const auto regions = m_regionLayoutManager->regions();
+    if (selectedIndex < 0 || selectedIndex >= regions.size()) {
+        return ResizeHandler::Edge::None;
+    }
+
+    static constexpr ResizeHandler::Edge kEdges[] = {
+        ResizeHandler::Edge::TopLeft,
+        ResizeHandler::Edge::Top,
+        ResizeHandler::Edge::TopRight,
+        ResizeHandler::Edge::Right,
+        ResizeHandler::Edge::BottomRight,
+        ResizeHandler::Edge::Bottom,
+        ResizeHandler::Edge::BottomLeft,
+        ResizeHandler::Edge::Left
+    };
+    const QTransform modelToView = regionLayoutViewTransform(
+        m_regionLayoutManager->canvasBounds().size());
+    const QRectF modelRect(regions[selectedIndex].rect);
+    const int halfHandle = LayoutModeConstants::kHandleSize / 2;
+    ResizeHandler::Edge closestEdge = ResizeHandler::Edge::None;
+    qreal closestDistanceSquared = (std::numeric_limits<qreal>::max)();
+    for (const auto edge : kEdges) {
+        const QPoint center = snappedLayoutHandlePosition(
+            modelRect, edge, modelToView);
+        const QRect hitRect = QRect(
+            center.x() - halfHandle,
+            center.y() - halfHandle,
+            LayoutModeConstants::kHandleSize,
+            LayoutModeConstants::kHandleSize).adjusted(
+                -LayoutModeConstants::kHandleHitMargin,
+                -LayoutModeConstants::kHandleHitMargin,
+                LayoutModeConstants::kHandleHitMargin,
+                LayoutModeConstants::kHandleHitMargin);
+        if (hitRect.contains(widgetPos)) {
+            const QPoint delta = widgetPos - center;
+            const qreal distanceSquared =
+                static_cast<qreal>(delta.x()) * delta.x() +
+                static_cast<qreal>(delta.y()) * delta.y();
+            if (distanceSquared < closestDistanceSquared) {
+                closestDistanceSquared = distanceSquared;
+                closestEdge = edge;
+            }
+        }
+    }
+    return closestEdge;
+}
+
+void PinWindow::keepRegionLayoutControlsOnScreen()
+{
+    if (!m_regionLayoutManager) {
+        return;
+    }
+    QScreen* targetScreen = screen();
+    if (!targetScreen) {
+        targetScreen = QGuiApplication::primaryScreen();
+    }
+    if (!targetScreen) {
+        return;
+    }
+
+    const QRect available = targetScreen->availableGeometry();
+    const QRect controlsBand = regionLayoutControlsRect(
+        m_regionLayoutManager->canvasBounds().size());
+    QRect controlsGlobal = RegionLayoutRenderer::confirmButtonRect(controlsBand)
+                               .united(RegionLayoutRenderer::cancelButtonRect(controlsBand))
+                               .translated(pos());
+    QPoint adjustedPos = pos();
+
+    if (controlsGlobal.right() > available.right()) {
+        const int delta = controlsGlobal.right() - available.right();
+        adjustedPos.rx() -= delta;
+        controlsGlobal.translate(-delta, 0);
+    }
+    if (controlsGlobal.left() < available.left()) {
+        const int delta = available.left() - controlsGlobal.left();
+        adjustedPos.rx() += delta;
+        controlsGlobal.translate(delta, 0);
+    }
+    if (controlsGlobal.bottom() > available.bottom()) {
+        const int delta = controlsGlobal.bottom() - available.bottom();
+        adjustedPos.ry() -= delta;
+        controlsGlobal.translate(0, -delta);
+    }
+    if (controlsGlobal.top() < available.top()) {
+        const int delta = available.top() - controlsGlobal.top();
+        adjustedPos.ry() += delta;
+    }
+
+    if (adjustedPos != pos()) {
+        move(adjustedPos);
+    }
+}
+
+void PinWindow::drawRegionLayoutAnnotations(
+    QPainter& painter,
+    const QSize& layoutSize,
+    bool normalizeToRecomposedOrigin) const
+{
+    if (!m_regionLayoutManager || !m_annotationLayer || m_annotationLayer->isEmpty()) {
+        return;
+    }
+
+    painter.save();
+    if (m_rotationAngle != 0 || m_flipHorizontal || m_flipVertical) {
+        const QSize contentViewSize = regionLayoutContentViewSize(layoutSize);
+        painter.setTransform(
+            buildPinWindowTransform(
+                QRectF(QPointF(0.0, 0.0), QSizeF(contentViewSize)),
+                m_rotationAngle,
+                m_flipHorizontal,
+                m_flipVertical),
+            true);
+    }
+
+    for (size_t i = 0; i < m_annotationLayer->itemCount(); ++i) {
+        const AnnotationItem* item = m_annotationLayer->itemAt(static_cast<int>(i));
+        if (!item || !item->isVisible()) {
+            continue;
+        }
+        painter.save();
+        painter.translate(
+            m_regionLayoutManager->annotationTranslation(
+                *item, m_zoomLevel, normalizeToRecomposedOrigin));
+        item->draw(painter);
+        painter.restore();
+    }
+    painter.restore();
 }
 
 void PinWindow::updateSubToolbarPosition()
@@ -5452,9 +5811,12 @@ void PinWindow::prepareForMerge()
 
 void PinWindow::enterRegionLayoutMode()
 {
-    if (!m_hasMultiRegionData || m_isLiveMode) {
+    if (!m_hasMultiRegionData || m_isLiveMode || isRegionLayoutMode()) {
         return;
     }
+
+    m_regionLayoutOriginalWindowPos = pos();
+    m_hasRegionLayoutOriginalWindowPos = true;
 
     // Exit annotation mode if active
     if (m_annotationMode) {
@@ -5474,15 +5836,20 @@ void PinWindow::enterRegionLayoutMode()
         connect(m_regionLayoutManager, &RegionLayoutManager::layoutChanged,
                 this, QOverload<>::of(&QWidget::update));
         connect(m_regionLayoutManager, &RegionLayoutManager::canvasSizeChanged,
-                this, [this](const QSize& newSize) {
-                    QSize logicalSize = newSize;
-                    setFixedSize(logicalSize);
-                });
+                 this, [this](const QSize& newSize) {
+                    setFixedSize(regionLayoutViewportSize(newSize));
+                    if (!m_regionLayoutManager->isDragging() &&
+                        !m_regionLayoutManager->isResizing()) {
+                        keepRegionLayoutControlsOnScreen();
+                    }
+                 });
     }
 
     // Enter layout mode with stored regions
     QSize canvasSize = baseContentLogicalSize();
     m_regionLayoutManager->enterLayoutMode(m_storedRegions, canvasSize);
+    setFixedSize(regionLayoutViewportSize(canvasSize));
+    keepRegionLayoutControlsOnScreen();
 
     update();
 }
@@ -5531,7 +5898,8 @@ void PinWindow::exitRegionLayoutMode(bool apply)
         }
         if (m_annotationLayer) {
             refreshAllMosaicSources(m_annotationLayer, m_sharedSourcePixmap);
-            m_regionLayoutManager->updateAnnotationPositions(m_annotationLayer);
+            m_regionLayoutManager->updateAnnotationPositions(
+                m_annotationLayer, m_zoomLevel);
         }
 
         // Invalidate transform cache
@@ -5539,20 +5907,17 @@ void PinWindow::exitRegionLayoutMode(bool apply)
         m_cachedFlipH = false;
         m_cachedFlipV = false;
 
-        // Update window size
-        QSize logicalSize = logicalSizeFromPixmap(m_displayPixmap);
-        setFixedSize(logicalSize);
-        syncCropHandlerImageSize();
-    } else {
-        // Layout mode can temporarily resize the window via canvasSizeChanged.
-        // On cancel, restore the pre-layout display size.
-        const QSize restoredSize = logicalSizeFromPixmap(m_displayPixmap);
-        if (restoredSize.isValid() && !restoredSize.isEmpty()) {
-            setFixedSize(restoredSize);
-        }
     }
 
     m_regionLayoutManager->exitLayoutMode(apply);
+    // Rebuild from the committed (or original, on Cancel) base content only
+    // after leaving layout mode so updateSize() uses the normal display path.
+    updateSize();
+    syncCropHandlerImageSize();
+    if (m_hasRegionLayoutOriginalWindowPos) {
+        move(m_regionLayoutOriginalWindowPos);
+        m_hasRegionLayoutOriginalWindowPos = false;
+    }
     CursorAuthority::instance().clearWidgetRequest(this, QStringLiteral("pin.layout"));
     rebuildManagedCursorAt(mapFromGlobal(QCursor::pos()));
     update();

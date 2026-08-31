@@ -14,6 +14,7 @@
 
 class QPainter;
 class AnnotationLayer;
+class AnnotationItem;
 
 /**
  * @brief Constants for Region Layout Mode UI and behavior.
@@ -259,8 +260,20 @@ public:
     /**
      * @brief Update every owned annotation based on the final region layout.
      * @param layer The annotation layer containing annotations and history
+     * @param viewScale Scale from layout model coordinates to annotation
+     * coordinates (the PinWindow zoom level)
      */
-    void updateAnnotationPositions(AnnotationLayer* layer) const;
+    void updateAnnotationPositions(AnnotationLayer* layer,
+                                   qreal viewScale = 1.0) const;
+
+    /**
+     * @brief Translation for one annotation in its current view coordinate space.
+     * @param normalizeToRecomposedOrigin Subtract the final region-union
+     * origin for committed/export output; false keeps live canvas coordinates
+     */
+    QPointF annotationTranslation(const AnnotationItem& annotation,
+                                  qreal viewScale = 1.0,
+                                  bool normalizeToRecomposedOrigin = true) const;
 
     // ========================================================================
     // Serialization

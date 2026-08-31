@@ -1,5 +1,6 @@
 #include <QtTest/QtTest>
 #include <QGuiApplication>
+#include <QPainter>
 #include <memory>
 #include <vector>
 
@@ -317,6 +318,52 @@ private slots:
         const QImage image = mergedSource.toImage();
         QVERIFY(image.pixelColor(10, 50) == QColor(Qt::red));
         QVERIFY(image.pixelColor(90, 50) == QColor(Qt::green));
+    }
+
+    void testEnteringLayoutPreservesZoomedMergeExport()
+    {
+        QPixmap source(100, 100);
+        source.fill(Qt::transparent);
+        {
+            QPainter painter(&source);
+            painter.fillRect(QRect(0, 0, 50, 100), Qt::red);
+            painter.fillRect(QRect(50, 0, 50, 100), Qt::green);
+        }
+        PinWindow window(source, QPoint(0, 0), nullptr, false);
+        window.setZoomLevel(2.0);
+
+        LayoutRegion leftRegion;
+        leftRegion.rect = QRect(0, 0, 50, 100);
+        leftRegion.originalRect = leftRegion.rect;
+        leftRegion.image = source.toImage().copy(leftRegion.rect);
+        leftRegion.index = 1;
+
+        LayoutRegion rightRegion;
+        rightRegion.rect = QRect(50, 0, 50, 100);
+        rightRegion.originalRect = rightRegion.rect;
+        rightRegion.image = source.toImage().copy(rightRegion.rect);
+        rightRegion.index = 2;
+
+        const QPixmap before = window.exportPixmapForMerge();
+        window.setMultiRegionData({leftRegion, rightRegion});
+        window.enterRegionLayoutMode();
+        const QPixmap during = window.exportPixmapForMerge();
+
+        QCOMPARE(logicalSize(before), QSize(200, 200));
+        QCOMPARE(logicalSize(during), logicalSize(before));
+        QCOMPARE(during.toImage().convertToFormat(QImage::Format_ARGB32),
+                 before.toImage().convertToFormat(QImage::Format_ARGB32));
+
+        window.exitRegionLayoutMode(false);
+        window.rotateRight();
+        window.flipHorizontal();
+        const QPixmap transformedBefore = window.exportPixmapForMerge();
+        window.enterRegionLayoutMode();
+        const QPixmap transformedDuring = window.exportPixmapForMerge();
+
+        QCOMPARE(logicalSize(transformedDuring), logicalSize(transformedBefore));
+        QCOMPARE(transformedDuring.toImage().convertToFormat(QImage::Format_ARGB32),
+                 transformedBefore.toImage().convertToFormat(QImage::Format_ARGB32));
     }
 
     void testExportPixmapForMergeIsStableAcrossRepeatedCallsWithTransform()

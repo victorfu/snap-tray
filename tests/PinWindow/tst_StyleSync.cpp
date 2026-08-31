@@ -124,6 +124,7 @@ private slots:
     void testSpaceShortcutDismissesBeautifyPanelWithToolbar();
     void testEscapeShortcutDismissesBeautifyPanelWithToolbar();
     void testRegionLayoutMoveCursorUsesAuthority();
+    void testRegionLayoutRotatedHandleUsesVisualCursorDirection();
     void testLinuxBypassPinDoesNotBecomeToolbarTransientParent();
     void testLinuxBypassPinReceivesSpaceShortcutAfterShow();
     void testLinuxBypassPinReceivesSpaceShortcutAfterClickFocus();
@@ -654,6 +655,37 @@ void TestPinWindowStyleSync::testRegionLayoutMoveCursorUsesAuthority()
     QCOMPARE(authority.resolvedSourceForWidget(&window), CursorRequestSource::LayoutMode);
     QCOMPARE(authority.resolvedStyleForWidget(&window).styleId, CursorStyleId::Move);
     verifyMoveCursor(window.cursor());
+}
+
+void TestPinWindowStyleSync::testRegionLayoutRotatedHandleUsesVisualCursorDirection()
+{
+    PinWindow window(createTestPixmap(240, 160), QPoint(0, 0));
+    auto& authority = CursorAuthority::instance();
+
+    LayoutRegion region;
+    region.rect = QRect(0, 0, 240, 160);
+    region.originalRect = region.rect;
+    region.image = QImage(region.rect.size(), QImage::Format_ARGB32_Premultiplied);
+    region.image.fill(Qt::blue);
+    region.index = 1;
+
+    window.rotateRight();
+    window.setMultiRegionData({region});
+    window.enterRegionLayoutMode();
+    window.m_regionLayoutManager->selectRegion(0);
+
+    const QPoint modelTop(region.rect.center().x(), region.rect.top());
+    const QPoint viewTop = window.regionLayoutViewTransform(QSize(240, 160))
+                               .map(QPointF(modelTop)).toPoint();
+    QCOMPARE(window.regionLayoutHandleAtWidget(viewTop), ResizeHandler::Edge::Top);
+
+    QMouseEvent moveEvent(QEvent::MouseMove, viewTop, window.mapToGlobal(viewTop),
+                          Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &moveEvent);
+
+    QCOMPARE(authority.resolvedSourceForWidget(&window), CursorRequestSource::LayoutMode);
+    QCOMPARE(authority.resolvedStyleForWidget(&window).styleId,
+             CursorStyleId::ResizeHorizontal);
 }
 
 void TestPinWindowStyleSync::testLinuxBypassPinDoesNotBecomeToolbarTransientParent()

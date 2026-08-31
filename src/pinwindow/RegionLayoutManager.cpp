@@ -540,10 +540,26 @@ QPixmap RegionLayoutManager::recomposeImage(
 // Annotation Integration
 // ============================================================================
 
-void RegionLayoutManager::updateAnnotationPositions(AnnotationLayer* layer) const
+void RegionLayoutManager::updateAnnotationPositions(AnnotationLayer* layer,
+                                                    qreal viewScale) const
 {
     if (!layer || m_state.regions.isEmpty() || m_state.originalSnapshot.isEmpty()) {
         return;
+    }
+
+    layer->translateOwnedItems(
+        [this, viewScale](const AnnotationItem& annotation) {
+            return annotationTranslation(annotation, viewScale);
+        });
+}
+
+QPointF RegionLayoutManager::annotationTranslation(
+    const AnnotationItem& annotation,
+    qreal viewScale,
+    bool normalizeToRecomposedOrigin) const
+{
+    if (m_state.regions.isEmpty() || m_state.originalSnapshot.isEmpty()) {
+        return {};
     }
 
     QRect finalBounds;
@@ -553,47 +569,47 @@ void RegionLayoutManager::updateAnnotationPositions(AnnotationLayer* layer) cons
             : finalBounds.united(region.rect);
     }
     if (finalBounds.isEmpty()) {
-        return;
+        return {};
     }
 
     const int regionCount = (std::min)(m_state.regions.size(),
                                        m_state.originalSnapshot.size());
-    const QPointF finalOrigin(finalBounds.topLeft());
+    const QPointF outputOrigin = normalizeToRecomposedOrigin
+        ? QPointF(finalBounds.topLeft())
+        : QPointF();
+    const qreal scale = viewScale > 0.0 ? viewScale : 1.0;
+    const QPointF originalCenterView = QRectF(annotation.boundingRect()).center();
+    const QPointF originalCenterModel = originalCenterView / scale;
+    int regionIndex = -1;
 
-    layer->translateOwnedItems(
-        [this, regionCount, finalOrigin](const AnnotationItem& annotation) {
-            const QPointF originalCenter = QRectF(annotation.boundingRect()).center();
-            int regionIndex = -1;
+    // Regions are painted in vector order, so the last containing region is
+    // the visible/topmost owner for overlapping captures.
+    for (int i = regionCount - 1; i >= 0; --i) {
+        if (QRectF(m_state.originalSnapshot[i].rect).contains(originalCenterModel)) {
+            regionIndex = i;
+            break;
+        }
+    }
 
-            // Regions are painted in vector order, so the last containing
-            // region is the visible/topmost owner for overlapping captures.
-            for (int i = regionCount - 1; i >= 0; --i) {
-                if (QRectF(m_state.originalSnapshot[i].rect).contains(originalCenter)) {
-                    regionIndex = i;
-                    break;
-                }
-            }
+    QPointF targetCenterModel = originalCenterModel - outputOrigin;
+    if (regionIndex >= 0) {
+        const QRectF originalRegion(m_state.originalSnapshot[regionIndex].rect);
+        const QRectF currentRegion(m_state.regions[regionIndex].rect);
+        if (originalRegion.width() > 0.0 && originalRegion.height() > 0.0) {
+            const qreal relativeX =
+                (originalCenterModel.x() - originalRegion.left()) / originalRegion.width();
+            const qreal relativeY =
+                (originalCenterModel.y() - originalRegion.top()) / originalRegion.height();
+            targetCenterModel = QPointF(
+                currentRegion.left() + relativeX * currentRegion.width(),
+                currentRegion.top() + relativeY * currentRegion.height())
+                - outputOrigin;
+        }
+    }
 
-            QPointF targetCenter = originalCenter - finalOrigin;
-            if (regionIndex >= 0) {
-                const QRectF originalRegion(m_state.originalSnapshot[regionIndex].rect);
-                const QRectF currentRegion(m_state.regions[regionIndex].rect);
-                if (originalRegion.width() > 0.0 && originalRegion.height() > 0.0) {
-                    const qreal relativeX =
-                        (originalCenter.x() - originalRegion.left()) / originalRegion.width();
-                    const qreal relativeY =
-                        (originalCenter.y() - originalRegion.top()) / originalRegion.height();
-                    targetCenter = QPointF(
-                        currentRegion.left() + relativeX * currentRegion.width(),
-                        currentRegion.top() + relativeY * currentRegion.height())
-                        - finalOrigin;
-                }
-            }
-
-            // Annotation geometry and visual weight remain unchanged. Only its
-            // center follows the corresponding point in the resized region.
-            return targetCenter - originalCenter;
-        });
+    // Annotation geometry and visual weight remain unchanged. Only its center
+    // follows the corresponding point in the resized region.
+    return targetCenterModel * scale - originalCenterView;
 }
 
 // ============================================================================

@@ -281,6 +281,16 @@ private:
     void updateUndoRedoState();
     bool isAnnotationTool(ToolId toolId) const;
     QPixmap getExportPixmapWithAnnotations() const;
+    QSize regionLayoutContentViewSize(const QSize& layoutSize) const;
+    QSize regionLayoutViewportSize(const QSize& layoutSize) const;
+    QRect regionLayoutControlsRect(const QSize& layoutSize) const;
+    QTransform regionLayoutViewTransform(const QSize& layoutSize) const;
+    QPoint regionLayoutPositionFromWidget(const QPointF& widgetPos) const;
+    ResizeHandler::Edge regionLayoutHandleAtWidget(const QPoint& widgetPos) const;
+    void keepRegionLayoutControlsOnScreen();
+    void drawRegionLayoutAnnotations(QPainter& painter,
+                                     const QSize& layoutSize,
+                                     bool normalizeToRecomposedOrigin) const;
     void updateSubToolbarPosition();
     void hideSubToolbar();
     void showEmojiPickerPopup();
@@ -524,7 +534,9 @@ private:
     RegionLayoutManager* m_regionLayoutManager = nullptr;
     QVector<LayoutRegion> m_storedRegions;
     bool m_hasMultiRegionData = false;
-    QPoint m_layoutModeMousePos;  // For hover effects in layout mode
+    QPoint m_layoutModeMousePos;  // Widget/view coordinates for layout chrome hover
+    QPoint m_regionLayoutOriginalWindowPos;
+    bool m_hasRegionLayoutOriginalWindowPos = false;
 
     // Live capture mode
     QRect m_sourceRegion;

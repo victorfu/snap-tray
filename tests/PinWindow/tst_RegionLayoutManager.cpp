@@ -377,6 +377,30 @@ private slots:
         QCOMPARE(annotation->boundingRect(), QRect(101, 40, 8, 8));
     }
 
+    void testAnnotationPreviewKeepsCanvasOriginUntilRecompose() {
+        RegionLayoutManager manager;
+        auto regions = createTestRegions(2);
+        TrackingAnnotation annotation(QRect(20, 20, 10, 10));
+
+        manager.enterLayoutMode(regions, QSize(210, 100));
+        manager.selectRegion(0);
+        manager.startDrag(QPoint(50, 50));
+        manager.updateDrag(QPoint(100, 50));
+        manager.finishDrag();
+        manager.selectRegion(1);
+        manager.startDrag(QPoint(160, 50));
+        manager.updateDrag(QPoint(210, 50));
+        manager.finishDrag();
+
+        // The live canvas still begins at model x=0, so both the region and
+        // annotation preview move right. Recomposed output crops the 50px
+        // empty prefix and therefore applies no final annotation delta.
+        QCOMPARE(manager.annotationTranslation(annotation, 1.0, false),
+                 QPointF(50.0, 0.0));
+        QCOMPARE(manager.annotationTranslation(annotation, 1.0, true),
+                 QPointF(0.0, 0.0));
+    }
+
     void testRedoOwnedAnnotationUsesFinalRegionCoordinates() {
         RegionLayoutManager manager;
         auto regions = createTestRegions(2);

@@ -2,6 +2,7 @@
 #include <QGuiApplication>
 #include <QImage>
 #include <QPainter>
+#include <QScreen>
 
 #include "annotations/MosaicBlurType.h"
 #include "PinWindow.h"
@@ -11,6 +12,8 @@
 #include "annotations/MosaicRectAnnotation.h"
 #include "annotations/PolylineAnnotation.h"
 #include "pinwindow/RegionLayoutManager.h"
+#include "pinwindow/RegionLayoutRenderer.h"
+#include "utils/CoordinateHelper.h"
 
 namespace {
 
@@ -82,6 +85,16 @@ private slots:
     void testRegionLayoutApply_RefreshesMosaicSourceInsideUndoneAddCommand();
     void testRegionLayoutApply_MaterializesResizedRegionForNextEdit();
     void testRegionLayoutApply_RecomposeFailureKeepsModeActive();
+    void testRegionLayoutZoomMapsRenderingInputAndApply_data();
+    void testRegionLayoutZoomMapsRenderingInputAndApply();
+    void testRegionLayoutFreezesZoomDuringSession();
+    void testRegionLayoutZoomedAnnotationFollowsRegion();
+    void testRegionLayoutZoomAndRotationShareOneTransform();
+    void testRegionLayoutChromeStaysFixedInView_data();
+    void testRegionLayoutChromeStaysFixedInView();
+    void testRegionLayoutOverlappingHandleTargetsChooseClosest();
+    void testRegionLayoutKeepsControlsOnScreenAndRestoresPosition();
+    void testRegionLayoutDefersScreenClampUntilGestureEnds();
     void testApplyCrop_EdgeEndpointCoordinate_ClampsToLastPixelColumn();
     void testPreciseSourceSampleRectForRegion_UsesScreenLocalCoordinates();
     void testDisplaySourceRectForTarget_PrefersTranslationOverScaling();
@@ -655,7 +668,7 @@ void TestPinWindowCropUndo::testRegionLayoutApply_RecomposeFailureKeepsModeActiv
     window.m_regionLayoutManager->updateDrag(QPoint(130, 50));
     window.m_regionLayoutManager->finishDrag();
     const QSize activeLayoutSize = window.size();
-    QCOMPARE(activeLayoutSize, QSize(180, 100));
+    QCOMPARE(activeLayoutSize, window.regionLayoutViewportSize(QSize(180, 100)));
 
     window.exitRegionLayoutMode(true);
 
@@ -669,6 +682,466 @@ void TestPinWindowCropUndo::testRegionLayoutApply_RecomposeFailureKeepsModeActiv
     window.exitRegionLayoutMode(false);
     QVERIFY(!window.isRegionLayoutMode());
     QCOMPARE(window.size(), QSize(100, 100));
+}
+
+void TestPinWindowCropUndo::testRegionLayoutZoomMapsRenderingInputAndApply_data()
+{
+    QTest::addColumn<qreal>("zoom");
+    QTest::addColumn<int>("expectedModelDelta");
+
+    QTest::newRow("half") << 0.5 << 40;
+    QTest::newRow("double") << 2.0 << 10;
+}
+
+void TestPinWindowCropUndo::testRegionLayoutZoomMapsRenderingInputAndApply()
+{
+    QFETCH(qreal, zoom);
+    QFETCH(int, expectedModelDelta);
+
+    QImage sourceImage(210, 100, QImage::Format_ARGB32_Premultiplied);
+    sourceImage.fill(Qt::transparent);
+    {
+        QPainter painter(&sourceImage);
+        painter.fillRect(QRect(0, 0, 100, 100), Qt::red);
+        painter.fillRect(QRect(110, 0, 100, 100), Qt::blue);
+    }
+    const QPixmap source = QPixmap::fromImage(sourceImage);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+
+    LayoutRegion leftRegion;
+    leftRegion.rect = QRect(0, 0, 100, 100);
+    leftRegion.originalRect = leftRegion.rect;
+    leftRegion.image = sourceImage.copy(leftRegion.rect);
+    leftRegion.index = 1;
+
+    LayoutRegion rightRegion;
+    rightRegion.rect = QRect(110, 0, 100, 100);
+    rightRegion.originalRect = rightRegion.rect;
+    rightRegion.image = sourceImage.copy(rightRegion.rect);
+    rightRegion.index = 2;
+
+    window.setZoomLevel(zoom);
+    window.setMultiRegionData({leftRegion, rightRegion});
+    window.enterRegionLayoutMode();
+    QVERIFY(window.isRegionLayoutMode());
+    QCOMPARE(window.size(), window.regionLayoutViewportSize(QSize(210, 100)));
+
+    const QPointF secondCenterView(190.0 * zoom, 20.0 * zoom);
+    const QPointF secondSampleView(180.0 * zoom, 10.0 * zoom);
+    QImage rendered(window.size(), QImage::Format_ARGB32_Premultiplied);
+    rendered.fill(Qt::transparent);
+    window.render(&rendered);
+    QCOMPARE(rendered.pixelColor(secondSampleView.toPoint()), QColor(Qt::blue));
+
+    QMouseEvent pressEvent(
+        QEvent::MouseButtonPress,
+        secondCenterView,
+        window.mapToGlobal(secondCenterView.toPoint()),
+        Qt::LeftButton,
+        Qt::LeftButton,
+        Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &pressEvent);
+    QCOMPARE(window.m_regionLayoutManager->selectedIndex(), 1);
+
+    const QPointF movedView = secondCenterView + QPointF(20.0, 0.0);
+    QMouseEvent moveEvent(
+        QEvent::MouseMove,
+        movedView,
+        window.mapToGlobal(movedView.toPoint()),
+        Qt::NoButton,
+        Qt::LeftButton,
+        Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &moveEvent);
+    QCOMPARE(window.m_regionLayoutManager->regions()[1].rect.left(),
+             110 + expectedModelDelta);
+    QCOMPARE(window.size(), window.regionLayoutViewportSize(
+        window.m_regionLayoutManager->canvasBounds().size()));
+
+    QMouseEvent releaseEvent(
+        QEvent::MouseButtonRelease,
+        movedView,
+        window.mapToGlobal(movedView.toPoint()),
+        Qt::LeftButton,
+        Qt::NoButton,
+        Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &releaseEvent);
+
+    const QPointF confirmView = RegionLayoutRenderer::confirmButtonRect(
+        window.regionLayoutControlsRect(
+            window.m_regionLayoutManager->canvasBounds().size())).center();
+    QMouseEvent confirmEvent(
+        QEvent::MouseButtonPress,
+        confirmView,
+        window.mapToGlobal(confirmView.toPoint()),
+        Qt::LeftButton,
+        Qt::LeftButton,
+        Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &confirmEvent);
+
+    QVERIFY(!window.isRegionLayoutMode());
+    QCOMPARE(window.zoomLevel(), zoom);
+    const QSize expectedBaseSize(210 + expectedModelDelta, 100);
+    QCOMPARE(window.baseContentLogicalSize(), expectedBaseSize);
+    QCOMPARE(window.size(), CoordinateHelper::toPhysical(expectedBaseSize, zoom));
+    QCOMPARE(window.m_displayPixmap.deviceIndependentSize().toSize(), window.size());
+    const QSize appliedSize = window.size();
+    window.updateSize();
+    QCOMPARE(window.size(), appliedSize);
+}
+
+void TestPinWindowCropUndo::testRegionLayoutFreezesZoomDuringSession()
+{
+    const QPixmap source = createPatternPixmap(210, 100);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+
+    LayoutRegion leftRegion;
+    leftRegion.rect = QRect(0, 0, 100, 100);
+    leftRegion.originalRect = leftRegion.rect;
+    leftRegion.image = source.toImage().copy(leftRegion.rect);
+
+    LayoutRegion rightRegion;
+    rightRegion.rect = QRect(110, 0, 100, 100);
+    rightRegion.originalRect = rightRegion.rect;
+    rightRegion.image = source.toImage().copy(rightRegion.rect);
+
+    window.setMultiRegionData({leftRegion, rightRegion});
+    window.enterRegionLayoutMode();
+    window.m_regionLayoutManager->selectRegion(1);
+    window.m_regionLayoutManager->startDrag(QPoint(160, 50));
+    window.m_regionLayoutManager->updateDrag(QPoint(200, 50));
+    window.m_regionLayoutManager->finishDrag();
+    QCOMPARE(window.m_regionLayoutManager->canvasBounds().size(), QSize(250, 100));
+
+    window.setZoomLevel(2.0);
+    QCOMPARE(window.zoomLevel(), 1.0);
+    QCOMPARE(window.size(), window.regionLayoutViewportSize(QSize(250, 100)));
+    window.setZoomLevel(0.5);
+    QCOMPARE(window.zoomLevel(), 1.0);
+    QCOMPARE(window.size(), window.regionLayoutViewportSize(QSize(250, 100)));
+
+    window.exitRegionLayoutMode(false);
+    QVERIFY(!window.isRegionLayoutMode());
+    QCOMPARE(window.zoomLevel(), 1.0);
+    QCOMPARE(window.size(), QSize(210, 100));
+    window.updateSize();
+    QCOMPARE(window.size(), QSize(210, 100));
+}
+
+void TestPinWindowCropUndo::testRegionLayoutZoomedAnnotationFollowsRegion()
+{
+    const QPixmap source = createPatternPixmap(210, 100);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.setZoomLevel(2.0);
+    window.showToolbar();
+    QVERIFY(window.m_annotationLayer != nullptr);
+
+    LayoutRegion leftRegion;
+    leftRegion.rect = QRect(0, 0, 100, 100);
+    leftRegion.originalRect = leftRegion.rect;
+    leftRegion.image = source.toImage().copy(leftRegion.rect);
+
+    LayoutRegion rightRegion;
+    rightRegion.rect = QRect(110, 0, 100, 100);
+    rightRegion.originalRect = rightRegion.rect;
+    rightRegion.image = source.toImage().copy(rightRegion.rect);
+
+    const QVector<QPointF> points = {QPointF(260, 40), QPointF(320, 80)};
+    window.m_annotationLayer->addItem(
+        std::make_unique<MarkerStroke>(points, QColor(Qt::red), 12));
+    auto* marker = dynamic_cast<MarkerStroke*>(window.m_annotationLayer->itemAt(0));
+    QVERIFY(marker != nullptr);
+    const QRect originalRect = marker->boundingRect();
+
+    window.setMultiRegionData({leftRegion, rightRegion});
+    window.enterRegionLayoutMode();
+    window.setZoomLevel(0.5);
+    QCOMPARE(window.zoomLevel(), 2.0);
+    window.m_regionLayoutManager->selectRegion(1);
+    window.m_regionLayoutManager->startDrag(QPoint(160, 50));
+    window.m_regionLayoutManager->updateDrag(QPoint(200, 50));
+    window.m_regionLayoutManager->finishDrag();
+    window.exitRegionLayoutMode(true);
+
+    marker = dynamic_cast<MarkerStroke*>(window.m_annotationLayer->itemAt(0));
+    QVERIFY(marker != nullptr);
+    QCOMPARE(marker->boundingRect(), originalRect.translated(80, 0));
+    QCOMPARE(window.zoomLevel(), 2.0);
+    QCOMPARE(window.size(), QSize(500, 200));
+}
+
+void TestPinWindowCropUndo::testRegionLayoutZoomAndRotationShareOneTransform()
+{
+    QImage sourceImage(210, 100, QImage::Format_ARGB32_Premultiplied);
+    sourceImage.fill(Qt::transparent);
+    {
+        QPainter painter(&sourceImage);
+        painter.fillRect(QRect(0, 0, 100, 100), Qt::red);
+        painter.fillRect(QRect(110, 0, 100, 100), Qt::blue);
+    }
+    PinWindow window(QPixmap::fromImage(sourceImage), QPoint(0, 0), nullptr, false);
+
+    LayoutRegion leftRegion;
+    leftRegion.rect = QRect(0, 0, 100, 100);
+    leftRegion.originalRect = leftRegion.rect;
+    leftRegion.image = sourceImage.copy(leftRegion.rect);
+
+    LayoutRegion rightRegion;
+    rightRegion.rect = QRect(110, 0, 100, 100);
+    rightRegion.originalRect = rightRegion.rect;
+    rightRegion.image = sourceImage.copy(rightRegion.rect);
+
+    window.setZoomLevel(2.0);
+    window.rotateRight();
+    window.setMultiRegionData({leftRegion, rightRegion});
+    window.enterRegionLayoutMode();
+    QCOMPARE(window.size(), window.regionLayoutViewportSize(QSize(210, 100)));
+
+    const QSize activeSize = window.size();
+    window.rotateRight();
+    window.flipHorizontal();
+    window.setZoomLevel(0.5);
+    QCOMPARE(window.m_rotationAngle, 90);
+    QCOMPARE(window.m_flipHorizontal, false);
+    QCOMPARE(window.zoomLevel(), 2.0);
+    QCOMPARE(window.size(), activeSize);
+
+    const QPointF mappedCenter = window.regionLayoutViewTransform(QSize(210, 100)).map(
+        QPointF(160, 50));
+    QCOMPARE(mappedCenter.toPoint(), QPoint(100, 320));
+
+    QImage rendered(window.size(), QImage::Format_ARGB32_Premultiplied);
+    rendered.fill(Qt::transparent);
+    window.render(&rendered);
+    QCOMPARE(rendered.pixelColor(mappedCenter.toPoint()), QColor(Qt::blue));
+
+    QMouseEvent pressEvent(
+        QEvent::MouseButtonPress,
+        mappedCenter,
+        window.mapToGlobal(mappedCenter.toPoint()),
+        Qt::LeftButton,
+        Qt::LeftButton,
+        Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &pressEvent);
+    QCOMPARE(window.m_regionLayoutManager->selectedIndex(), 1);
+}
+
+void TestPinWindowCropUndo::testRegionLayoutChromeStaysFixedInView_data()
+{
+    QTest::addColumn<qreal>("zoom");
+    QTest::newRow("minimum") << 0.1;
+    QTest::newRow("half") << 0.5;
+    QTest::newRow("double") << 2.0;
+    QTest::newRow("maximum") << 5.0;
+}
+
+void TestPinWindowCropUndo::testRegionLayoutChromeStaysFixedInView()
+{
+    QFETCH(qreal, zoom);
+
+    const QPixmap source = createPatternPixmap(500, 300);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    LayoutRegion region;
+    region.rect = QRect(0, 0, 500, 300);
+    region.originalRect = region.rect;
+    region.image = source.toImage();
+
+    window.setZoomLevel(zoom);
+    window.setMultiRegionData({region});
+    window.enterRegionLayoutMode();
+    window.m_regionLayoutManager->selectRegion(0);
+
+    const QRect controlsRect = window.regionLayoutControlsRect(QSize(500, 300));
+    const QRect confirmRect = RegionLayoutRenderer::confirmButtonRect(controlsRect);
+    const QRect cancelRect = RegionLayoutRenderer::cancelButtonRect(controlsRect);
+    QCOMPARE(confirmRect.size(), QSize(
+        LayoutModeConstants::kButtonWidth,
+        LayoutModeConstants::kButtonHeight));
+    QCOMPARE(cancelRect.size(), confirmRect.size());
+    QVERIFY(window.rect().contains(confirmRect));
+    QVERIFY(window.rect().contains(cancelRect));
+
+    const QTransform modelToView = window.regionLayoutViewTransform(QSize(500, 300));
+    const QPoint topLeft = modelToView.map(QPointF(0.0, 0.0)).toPoint();
+    QCOMPARE(window.regionLayoutHandleAtWidget(topLeft),
+             ResizeHandler::Edge::TopLeft);
+    QCOMPARE(window.regionLayoutHandleAtWidget(topLeft + QPoint(7, 0)),
+             ResizeHandler::Edge::TopLeft);
+    QCOMPARE(window.regionLayoutHandleAtWidget(topLeft + QPoint(9, 0)),
+             ResizeHandler::Edge::None);
+}
+
+void TestPinWindowCropUndo::testRegionLayoutOverlappingHandleTargetsChooseClosest()
+{
+    const QPixmap source = createPatternPixmap(100, 100);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    LayoutRegion region;
+    region.rect = QRect(0, 0, 100, 100);
+    region.originalRect = region.rect;
+    region.image = source.toImage();
+
+    window.setZoomLevel(0.1);
+    window.setMultiRegionData({region});
+    window.enterRegionLayoutMode();
+    window.m_regionLayoutManager->selectRegion(0);
+
+    const QTransform modelToView = window.regionLayoutViewTransform(QSize(100, 100));
+    const QRect viewRect = modelToView.mapRect(QRectF(region.rect)).toAlignedRect();
+    const QPair<ResizeHandler::Edge, QPoint> handles[] = {
+        {ResizeHandler::Edge::TopLeft, viewRect.topLeft()},
+        {ResizeHandler::Edge::Top, QPoint(viewRect.center().x(), viewRect.top())},
+        {ResizeHandler::Edge::TopRight, viewRect.topRight()},
+        {ResizeHandler::Edge::Right, QPoint(viewRect.right(), viewRect.center().y())},
+        {ResizeHandler::Edge::BottomRight, viewRect.bottomRight()},
+        {ResizeHandler::Edge::Bottom, QPoint(viewRect.center().x(), viewRect.bottom())},
+        {ResizeHandler::Edge::BottomLeft, viewRect.bottomLeft()},
+        {ResizeHandler::Edge::Left, QPoint(viewRect.left(), viewRect.center().y())}
+    };
+    for (const auto& handle : handles) {
+        QCOMPARE(window.regionLayoutHandleAtWidget(handle.second), handle.first);
+    }
+
+    const QRect controlsRect = window.regionLayoutControlsRect(QSize(100, 100));
+    QVERIFY(controlsRect.top() > viewRect.bottom());
+    QVERIFY(!RegionLayoutRenderer::confirmButtonRect(controlsRect).intersects(viewRect));
+    QVERIFY(!RegionLayoutRenderer::cancelButtonRect(controlsRect).intersects(viewRect));
+}
+
+void TestPinWindowCropUndo::testRegionLayoutKeepsControlsOnScreenAndRestoresPosition()
+{
+    QScreen* targetScreen = QGuiApplication::primaryScreen();
+    QVERIFY(targetScreen != nullptr);
+    const QRect available = targetScreen->availableGeometry();
+
+    const QPixmap source = createPatternPixmap(100, 100);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    LayoutRegion region;
+    region.rect = QRect(0, 0, 100, 100);
+    region.originalRect = region.rect;
+    region.image = source.toImage();
+
+    const QPoint originalPos(
+        available.left() + qMax(0, (available.width() - 100) / 2),
+        available.bottom() - 99);
+    window.move(originalPos);
+    window.setMultiRegionData({region});
+    window.enterRegionLayoutMode();
+
+    const QRect controlsBand = window.regionLayoutControlsRect(QSize(100, 100));
+    const QRect controlsGlobal = RegionLayoutRenderer::confirmButtonRect(controlsBand)
+                                     .united(RegionLayoutRenderer::cancelButtonRect(controlsBand))
+                                     .translated(window.pos());
+    QVERIFY(available.contains(controlsGlobal));
+
+    window.exitRegionLayoutMode(false);
+    QCOMPARE(window.pos(), originalPos);
+
+    // A layout wider than the screen cannot fit as a whole. The centered
+    // button pair still must be clamped into the available geometry.
+    if (available.width() >= LayoutModeConstants::kMaxCanvasSize) {
+        QSKIP("Available screen is wider than the maximum legal layout canvas.");
+    }
+    const int wideLayoutWidth = qMin(
+        LayoutModeConstants::kMaxCanvasSize,
+        available.width() + 500);
+    QVERIFY(wideLayoutWidth > available.width());
+    PinWindow wideWindow(source, QPoint(0, 0), nullptr, false);
+    LayoutRegion wideRegion = region;
+    wideRegion.rect = QRect(0, 0, wideLayoutWidth, 100);
+    wideRegion.originalRect = wideRegion.rect;
+    wideWindow.move(originalPos);
+    wideWindow.setMultiRegionData({wideRegion});
+    wideWindow.enterRegionLayoutMode();
+
+    const QRect wideControls = wideWindow.regionLayoutControlsRect(
+        QSize(wideLayoutWidth, 100));
+    const QRect buttonPairGlobal = RegionLayoutRenderer::confirmButtonRect(wideControls)
+                                       .united(RegionLayoutRenderer::cancelButtonRect(wideControls))
+                                       .translated(wideWindow.pos());
+    QVERIFY(available.contains(buttonPairGlobal));
+
+    wideWindow.exitRegionLayoutMode(false);
+    QCOMPARE(wideWindow.pos(), originalPos);
+}
+
+void TestPinWindowCropUndo::testRegionLayoutDefersScreenClampUntilGestureEnds()
+{
+    QScreen* targetScreen = QGuiApplication::primaryScreen();
+    QVERIFY(targetScreen != nullptr);
+    const QRect available = targetScreen->availableGeometry();
+
+    const QPixmap source = createPatternPixmap(210, 100);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    LayoutRegion leftRegion;
+    leftRegion.rect = QRect(0, 0, 100, 100);
+    leftRegion.originalRect = leftRegion.rect;
+    leftRegion.image = source.toImage().copy(leftRegion.rect);
+    LayoutRegion rightRegion;
+    rightRegion.rect = QRect(110, 0, 100, 100);
+    rightRegion.originalRect = rightRegion.rect;
+    rightRegion.image = source.toImage().copy(rightRegion.rect);
+
+    const QPoint originalPos(available.right() - 209, available.top() + 40);
+    window.move(originalPos);
+    window.setMultiRegionData({leftRegion, rightRegion});
+    window.enterRegionLayoutMode();
+    const QPoint entryPos = window.pos();
+
+    const QPointF pressPos(190.0, 20.0);
+    QMouseEvent pressEvent(
+        QEvent::MouseButtonPress,
+        pressPos,
+        window.mapToGlobal(pressPos.toPoint()),
+        Qt::LeftButton,
+        Qt::LeftButton,
+        Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &pressEvent);
+    QVERIFY(window.m_regionLayoutManager->isDragging());
+
+    const int dragDistance = qMin(
+        available.width(),
+        LayoutModeConstants::kMaxCanvasSize - 300);
+    const QPointF movedPos = pressPos + QPointF(dragDistance, 0.0);
+    QMouseEvent moveEvent(
+        QEvent::MouseMove,
+        movedPos,
+        window.mapToGlobal(movedPos.toPoint()),
+        Qt::NoButton,
+        Qt::LeftButton,
+        Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &moveEvent);
+    QCOMPARE(window.pos(), entryPos);
+    const QRect firstMovedRect = window.m_regionLayoutManager->regions()[1].rect;
+
+    QMouseEvent samePositionMove(
+        QEvent::MouseMove,
+        movedPos,
+        window.mapToGlobal(movedPos.toPoint()),
+        Qt::NoButton,
+        Qt::LeftButton,
+        Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &samePositionMove);
+    QCOMPARE(window.m_regionLayoutManager->regions()[1].rect, firstMovedRect);
+    QCOMPARE(window.pos(), entryPos);
+
+    QMouseEvent releaseEvent(
+        QEvent::MouseButtonRelease,
+        movedPos,
+        window.mapToGlobal(movedPos.toPoint()),
+        Qt::LeftButton,
+        Qt::NoButton,
+        Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &releaseEvent);
+    QVERIFY(!window.m_regionLayoutManager->isDragging());
+
+    const QSize expandedLayoutSize = window.m_regionLayoutManager->canvasBounds().size();
+    const QRect controls = window.regionLayoutControlsRect(expandedLayoutSize);
+    const QRect buttonsGlobal = RegionLayoutRenderer::confirmButtonRect(controls)
+                                    .united(RegionLayoutRenderer::cancelButtonRect(controls))
+                                    .translated(window.pos());
+    QVERIFY(available.contains(buttonsGlobal));
+
+    window.exitRegionLayoutMode(false);
+    QCOMPARE(window.pos(), originalPos);
 }
 
 void TestPinWindowCropUndo::testApplyCrop_EdgeEndpointCoordinate_ClampsToLastPixelColumn()
