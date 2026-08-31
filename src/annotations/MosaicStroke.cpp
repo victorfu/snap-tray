@@ -228,7 +228,12 @@ void MosaicStroke::draw(QPainter &painter) const
     QRect bounds = boundingRect();
     if (bounds.isEmpty()) return;
 
-    qreal dpr = painter.device()->devicePixelRatio();
+    // The stroke points and source sampling both live in the source pixmap's
+    // logical coordinate system. Build the effect and mask at that same DPR;
+    // QPainter will scale the resulting pixmap to the destination device DPR.
+    // Mixing the painter DPR with the source DPR clips or shrinks the mask when
+    // a pin moves between screens with different scale factors.
+    const qreal dpr = m_devicePixelRatio > 0.0 ? m_devicePixelRatio : 1.0;
 
     // Check if cache is valid
     bool cacheValid = !m_renderedCache.isNull()
@@ -258,7 +263,7 @@ void MosaicStroke::draw(QPainter &painter) const
         }
 
         // === Step 2: Create mask from stroke path (square brush) ===
-        QImage maskImage(CoordinateHelper::toPhysical(bounds.size(), dpr), QImage::Format_Grayscale8);
+        QImage maskImage(mosaicImage.size(), QImage::Format_Grayscale8);
         maskImage.fill(0);  // Start fully transparent
 
         QPainter maskPainter(&maskImage);
@@ -308,11 +313,17 @@ void MosaicStroke::draw(QPainter &painter) const
 
         // === Step 3: Composite mosaic image using mask ===
         // Apply mask to mosaic image
-        for (int y = 0; y < qMin(mosaicImage.height(), maskImage.height()); ++y) {
+        Q_ASSERT(mosaicImage.size() == maskImage.size());
+        if (mosaicImage.size() != maskImage.size()) {
+            m_renderedCache = QPixmap();
+            return;
+        }
+
+        for (int y = 0; y < mosaicImage.height(); ++y) {
             QRgb *pixelRow = reinterpret_cast<QRgb*>(mosaicImage.scanLine(y));
             const uchar *maskRow = maskImage.constScanLine(y);
 
-            for (int x = 0; x < qMin(mosaicImage.width(), maskImage.width()); ++x) {
+            for (int x = 0; x < mosaicImage.width(); ++x) {
                 int alpha = maskRow[x];  // 0-255 from grayscale mask
                 if (alpha == 0) {
                     pixelRow[x] = qRgba(0, 0, 0, 0);  // Fully transparent
@@ -333,7 +344,7 @@ void MosaicStroke::draw(QPainter &painter) const
     }
 
     // Draw cached result
-    painter.drawPixmap(bounds.topLeft(), m_renderedCache);
+    painter.drawPixmap(bounds, m_renderedCache);
 }
 
 QRect MosaicStroke::boundingRect() const

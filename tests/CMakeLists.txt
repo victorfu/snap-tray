@@ -764,6 +764,11 @@ target_link_libraries(Annotations_MarkerStroke PRIVATE snaptray_core Qt6::Widget
 add_test(NAME Annotations_MarkerStroke COMMAND Annotations_MarkerStroke)
 set_tests_properties(Annotations_MarkerStroke PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Annotations_MosaicStroke Annotations/tst_MosaicStroke.cpp)
+target_link_libraries(Annotations_MosaicStroke PRIVATE snaptray_algorithms Qt6::Widgets Qt6::Test)
+add_test(NAME Annotations_MosaicStroke COMMAND Annotations_MosaicStroke)
+set_tests_properties(Annotations_MosaicStroke PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Annotations_PencilStroke Annotations/tst_PencilStroke.cpp)
 target_link_libraries(Annotations_PencilStroke PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
 add_test(NAME Annotations_PencilStroke COMMAND Annotations_PencilStroke)
