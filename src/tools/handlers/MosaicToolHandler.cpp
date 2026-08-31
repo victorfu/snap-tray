@@ -43,6 +43,7 @@ void MosaicToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
 
     // Add final point
     if (m_currentPath.isEmpty() || m_currentPath.last() != pos) {
+        m_currentPath.append(pos);
         if (m_currentStroke) {
             m_currentStroke->addPoint(pos);
         }

@@ -1,6 +1,10 @@
 #include <QtTest/QtTest>
 
 #include "tools/handlers/MosaicToolHandler.h"
+#include "tools/ToolContext.h"
+#include "annotations/AnnotationLayer.h"
+
+#include <memory>
 
 class TestMosaicToolHandler : public QObject
 {
@@ -10,6 +14,9 @@ private slots:
     void testToolIdAndCapabilities();
     void testCursor_UsesCenteredPixmapHotspot();
     void testCursor_DrawsSingleSquareOutline();
+    void testReleaseOnlyDrag_CommitsStroke();
+    void testReleaseAtPressPoint_DoesNotCommitStroke();
+    void testMoveThenDistinctRelease_RecordsFinalPointOnce();
 };
 
 void TestMosaicToolHandler::testToolIdAndCapabilities()
@@ -66,6 +73,69 @@ void TestMosaicToolHandler::testCursor_DrawsSingleSquareOutline()
     QCOMPARE(qBlue(topPixel), expectedColor.blue());
     QCOMPARE(qAlpha(image.pixel(toPhysical(logicalSize.width() / 2.0), toPhysical(expectedPadding + 4.0))), 0);
     QCOMPARE(qAlpha(image.pixel(image.width() / 2, image.height() / 2)), 0);
+}
+
+void TestMosaicToolHandler::testReleaseOnlyDrag_CommitsStroke()
+{
+    MosaicToolHandler handler;
+    AnnotationLayer layer;
+    ToolContext context;
+    context.annotationLayer = &layer;
+    QPixmap source(64, 64);
+    source.fill(Qt::white);
+    context.sourcePixmap = std::make_shared<const QPixmap>(source);
+
+    const QPoint pressPoint(10, 20);
+    const QPoint releasePoint(40, 20);
+    handler.onMousePress(&context, pressPoint);
+    handler.onMouseRelease(&context, releasePoint);
+
+    QCOMPARE(layer.itemCount(), size_t(1));
+    auto *stroke = dynamic_cast<MosaicStroke *>(layer.itemAt(0));
+    QVERIFY(stroke != nullptr);
+    QCOMPARE(stroke->points(), QVector<QPoint>({pressPoint, releasePoint}));
+}
+
+void TestMosaicToolHandler::testReleaseAtPressPoint_DoesNotCommitStroke()
+{
+    MosaicToolHandler handler;
+    AnnotationLayer layer;
+    ToolContext context;
+    context.annotationLayer = &layer;
+    QPixmap source(64, 64);
+    source.fill(Qt::white);
+    context.sourcePixmap = std::make_shared<const QPixmap>(source);
+
+    const QPoint point(10, 20);
+    handler.onMousePress(&context, point);
+    handler.onMouseRelease(&context, point);
+
+    QCOMPARE(layer.itemCount(), size_t(0));
+}
+
+void TestMosaicToolHandler::testMoveThenDistinctRelease_RecordsFinalPointOnce()
+{
+    MosaicToolHandler handler;
+    AnnotationLayer layer;
+    ToolContext context;
+    context.annotationLayer = &layer;
+    QPixmap source(64, 64);
+    source.fill(Qt::white);
+    context.sourcePixmap = std::make_shared<const QPixmap>(source);
+
+    const QPoint pressPoint(10, 20);
+    const QPoint movePoint(25, 20);
+    const QPoint releasePoint(40, 20);
+    handler.onMousePress(&context, pressPoint);
+    handler.onMouseMove(&context, movePoint);
+    handler.onMouseRelease(&context, releasePoint);
+
+    QCOMPARE(layer.itemCount(), size_t(1));
+    auto *stroke = dynamic_cast<MosaicStroke *>(layer.itemAt(0));
+    QVERIFY(stroke != nullptr);
+    QCOMPARE(
+        stroke->points(),
+        QVector<QPoint>({pressPoint, movePoint, releasePoint}));
 }
 
 QTEST_MAIN(TestMosaicToolHandler)

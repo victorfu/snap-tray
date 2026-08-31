@@ -4,6 +4,7 @@
 #include "tools/handlers/ArrowToolHandler.h"
 #include "tools/ToolContext.h"
 #include "annotations/AnnotationLayer.h"
+#include "utils/AngleSnap.h"
 
 /**
  * @brief Tests for ArrowToolHandler class
@@ -47,6 +48,11 @@ private slots:
     void testDragMode_StartsOnPress();
     void testDragMode_UpdatesOnMove();
     void testDragMode_CreatesArrowOnRelease();
+    void testDragMode_CreatesArrowWithoutMoveEvent();
+    void testSmallReleaseDisplacement_RemainsClickMode();
+    void testReleaseAtDragThreshold_RemainsClickMode();
+    void testCrossedThresholdThenReleaseNear_CancelsGesture();
+    void testReleaseOnlyDrag_AppliesShiftSnapping();
 
     // Click mode tests (polyline)
     void testClickMode_AddsPointsOnClick();
@@ -216,6 +222,79 @@ void TestArrowToolHandler::testDragMode_CreatesArrowOnRelease()
 
     QCOMPARE(m_layer->itemCount(), initialItemCount + 1);
     QVERIFY(!m_handler->isDrawing());
+}
+
+void TestArrowToolHandler::testDragMode_CreatesArrowWithoutMoveEvent()
+{
+    const QPoint start(25, 30);
+    const QPoint end(31, 30); // Manhattan distance 6: just over the threshold.
+
+    m_handler->onMousePress(m_context, start);
+    m_handler->onMouseRelease(m_context, end);
+
+    QCOMPARE(m_layer->itemCount(), size_t(1));
+    auto *arrow = dynamic_cast<ArrowAnnotation *>(m_layer->itemAt(0));
+    QVERIFY(arrow != nullptr);
+    QCOMPARE(arrow->start(), start);
+    QCOMPARE(arrow->end(), end);
+    QVERIFY(!m_handler->isDrawing());
+}
+
+void TestArrowToolHandler::testSmallReleaseDisplacement_RemainsClickMode()
+{
+    const QPoint start(25, 30);
+    const QPoint nearPoint(27, 31);
+
+    m_handler->onMousePress(m_context, start);
+    m_handler->onMouseRelease(m_context, nearPoint);
+
+    QCOMPARE(m_layer->itemCount(), size_t(0));
+    QVERIFY(m_handler->isDrawing());
+}
+
+void TestArrowToolHandler::testReleaseAtDragThreshold_RemainsClickMode()
+{
+    const QPoint start(25, 30);
+    const QPoint thresholdPoint(30, 30);
+
+    m_handler->onMousePress(m_context, start);
+    m_handler->onMouseRelease(m_context, thresholdPoint);
+
+    QCOMPARE(m_layer->itemCount(), size_t(0));
+    QVERIFY(m_handler->isDrawing());
+}
+
+void TestArrowToolHandler::testCrossedThresholdThenReleaseNear_CancelsGesture()
+{
+    const QPoint start(25, 30);
+
+    m_handler->onMousePress(m_context, start);
+    m_handler->onMouseMove(m_context, QPoint(80, 30));
+    const QPoint nearPoint(27, 31);
+    m_handler->onMouseMove(m_context, nearPoint);
+
+    const QRect returnedPreview = m_handler->previewBounds();
+    QVERIFY(returnedPreview.right() < 50);
+
+    m_handler->onMouseRelease(m_context, nearPoint);
+
+    QCOMPARE(m_layer->itemCount(), size_t(0));
+    QVERIFY(!m_handler->isDrawing());
+}
+
+void TestArrowToolHandler::testReleaseOnlyDrag_AppliesShiftSnapping()
+{
+    const QPoint start(25, 30);
+    const QPoint releasePoint(100, 52);
+    m_context->shiftPressed = true;
+
+    m_handler->onMousePress(m_context, start);
+    m_handler->onMouseRelease(m_context, releasePoint);
+
+    QCOMPARE(m_layer->itemCount(), size_t(1));
+    auto *arrow = dynamic_cast<ArrowAnnotation *>(m_layer->itemAt(0));
+    QVERIFY(arrow != nullptr);
+    QCOMPARE(arrow->end(), AngleSnap::snapTo45Degrees(start, releasePoint));
 }
 
 // ============================================================================

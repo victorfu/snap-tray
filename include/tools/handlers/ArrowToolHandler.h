@@ -45,6 +45,8 @@ public:
     bool supportsLineStyle() const override { return true; }
 
 private:
+    static constexpr int kDragThreshold = 5;
+
     void finishPolyline(ToolContext* ctx);
 
     bool m_isDrawing = false;
