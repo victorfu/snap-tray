@@ -101,6 +101,8 @@ private slots:
     void immediatelyDrainableInputIsNotCapped();
     void boundedSkewReleasesLeadingSource();
     void futureSourceEnableHonorsEffectiveTime();
+    void futureOnlySourceDrainsAtActivation();
+    void activationBoundaryThatTrimsWholePacketIsTooLate();
     void tinyOverlapDropsArePartitionInvariant();
     void fullyLateCanonicalSegmentReportsTooLate();
     void disablingSourceReleasesPeer();
@@ -347,6 +349,40 @@ void tst_TimestampedPcmMixer::futureSourceEnableHonorsEffectiveTime()
         Source::SystemAudio,
         {pcm16({10, 10}), 0, format(48000, 2)});
     QCOMPARE(staleSystem.code, TimestampedPcmMixer::ResultCode::TooLate);
+}
+
+void tst_TimestampedPcmMixer::futureOnlySourceDrainsAtActivation()
+{
+    auto futureConfig = config(false, false);
+    futureConfig.maxPendingFramesPerSource = 4;
+    futureConfig.maxPendingBytesPerSource = 16;
+    TimestampedPcmMixer mixer(futureConfig);
+
+    mixer.setSourceEnabled(Source::Microphone, true, nsForFrames(10, 48000));
+    QByteArray mic;
+    for (int i = 0; i < 10; ++i) mic += pcm16({qint16(i), qint16(i)});
+    const auto result = mixer.push(
+        Source::Microphone,
+        {mic, nsForFrames(10, 48000), format(48000, 2)});
+
+    QCOMPARE(join(result.output).size() / 4, 10);
+    QCOMPARE(result.output.first().startFrame, qint64(10));
+    QCOMPARE(result.code, TimestampedPcmMixer::ResultCode::Accepted);
+    QCOMPARE(mixer.stats().overflowFrames, qint64(0));
+}
+
+void tst_TimestampedPcmMixer::activationBoundaryThatTrimsWholePacketIsTooLate()
+{
+    TimestampedPcmMixer mixer(config(false, false));
+    mixer.setSourceEnabled(Source::Microphone, true, 20000);
+
+    const auto result = mixer.push(
+        Source::Microphone,
+        {pcm16({100}), 0, format(44100, 1)});
+
+    QCOMPARE(result.code, TimestampedPcmMixer::ResultCode::TooLate);
+    QVERIFY(result.output.isEmpty());
+    QCOMPARE(mixer.pendingFrames(Source::Microphone), qint64(0));
 }
 
 void tst_TimestampedPcmMixer::tinyOverlapDropsArePartitionInvariant()

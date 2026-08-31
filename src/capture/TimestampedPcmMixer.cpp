@@ -564,6 +564,17 @@ public:
     {
         const int enabledCount = enabledSourceCountAt(outputCursor);
         if (enabledCount == 0) {
+            const qint64 nextActivation = nextActivationAfter(outputCursor);
+            if (nextActivation == std::numeric_limits<qint64>::max()) {
+                return outputCursor;
+            }
+            for (const auto& source : sources) {
+                if (source.enabled
+                    && source.enabledFromFrame == nextActivation
+                    && latestEndFrame(source) > nextActivation) {
+                    return nextActivation;
+                }
+            }
             return outputCursor;
         }
 
@@ -770,6 +781,14 @@ TimestampedPcmMixer::ProcessResult TimestampedPcmMixer::push(
         effectiveChunk.startTimeNs += framesToNanoseconds(
             preNormalizationDrops,
             effectiveChunk.format.sampleRate);
+        if (effectiveChunk.pcm.isEmpty()) {
+            const qint64 canonicalDrops = d->scaleDroppedFrames(
+                state, preNormalizationDrops, effectiveChunk.format.sampleRate);
+            result.droppedFrames = canonicalDrops;
+            d->statistics.lateFrames += canonicalDrops;
+            result.code = ResultCode::TooLate;
+            return result;
+        }
     }
 
     bool hadDrops = preNormalizationDrops > 0;
