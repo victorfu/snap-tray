@@ -4541,16 +4541,15 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
 
         if (event->modifiers() & Qt::ShiftModifier) {
             // Shift + Arrow: Resize selection (adjust corresponding edge)
-            QRect newRect = sel;
+            QPoint edgeDelta;
             switch (event->key()) {
-            case Qt::Key_Left:  newRect.setRight(newRect.right() - 1); break;
-            case Qt::Key_Right: newRect.setRight(newRect.right() + 1); break;
-            case Qt::Key_Up:    newRect.setBottom(newRect.bottom() - 1); break;
-            case Qt::Key_Down:  newRect.setBottom(newRect.bottom() + 1); break;
+            case Qt::Key_Left:  edgeDelta.setX(-1); break;
+            case Qt::Key_Right: edgeDelta.setX(1); break;
+            case Qt::Key_Up:    edgeDelta.setY(-1); break;
+            case Qt::Key_Down:  edgeDelta.setY(1); break;
             default: handled = false; break;
             }
-            if (handled && newRect.width() >= 10 && newRect.height() >= 10) {
-                m_selectionManager->setSelectionRect(newRect);
+            if (handled && m_selectionManager->resizeFromBottomRight(edgeDelta)) {
                 requestCaptureSceneUpdate();
             }
         }

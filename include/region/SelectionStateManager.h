@@ -81,6 +81,10 @@ public:
     void updateResize(const QPoint& pos);
     void finishResize();
 
+    // Keyboard resize keeps top/left fixed and adjusts the inclusive
+    // bottom-right edges while honoring bounds and minimum size.
+    bool resizeFromBottomRight(const QPoint& edgeDelta, int minimumSize = 10);
+
     // Move operations
     bool hitTestMove(const QPoint& pos) const;
     void startMove(const QPoint& pos);

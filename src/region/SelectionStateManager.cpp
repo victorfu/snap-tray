@@ -381,6 +381,39 @@ void SelectionStateManager::finishResize()
     setState(State::Complete);
 }
 
+bool SelectionStateManager::resizeFromBottomRight(
+    const QPoint& edgeDelta,
+    int minimumSize)
+{
+    if (!isComplete() || m_selectionRect.isEmpty() || edgeDelta.isNull()) {
+        return false;
+    }
+
+    minimumSize = qMax(1, minimumSize);
+    QRect resized = m_selectionRect.normalized();
+    int newRight = resized.right() + edgeDelta.x();
+    int newBottom = resized.bottom() + edgeDelta.y();
+
+    if (!m_bounds.isEmpty()) {
+        newRight = qMin(newRight, m_bounds.right());
+        newBottom = qMin(newBottom, m_bounds.bottom());
+    }
+
+    if (newRight - resized.left() + 1 < minimumSize
+        || newBottom - resized.top() + 1 < minimumSize) {
+        return false;
+    }
+
+    resized.setRight(newRight);
+    resized.setBottom(newBottom);
+    if (resized == m_selectionRect.normalized()) {
+        return false;
+    }
+
+    setSelectionRect(resized);
+    return true;
+}
+
 // ============================================================================
 // Move Operations
 // ============================================================================

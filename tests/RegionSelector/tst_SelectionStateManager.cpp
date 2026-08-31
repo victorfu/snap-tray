@@ -43,6 +43,8 @@ private slots:
     void testUpdateResize_BottomRight();
     void testFinishResize();
     void testResize_MinimumSize();
+    void testKeyboardEdgeResize_ClampsToBounds_data();
+    void testKeyboardEdgeResize_ClampsToBounds();
     void testAspectRatioEdgeResize_ClampsToBounds_data();
     void testAspectRatioEdgeResize_ClampsToBounds();
 
@@ -275,6 +277,54 @@ void tst_SelectionStateManager::testResize_MinimumSize()
 
     // Selection should not change if it would become too small
     QCOMPARE(m_manager->selectionRect(), originalRect);
+}
+
+void tst_SelectionStateManager::testKeyboardEdgeResize_ClampsToBounds_data()
+{
+    QTest::addColumn<QRect>("selection");
+    QTest::addColumn<QPoint>("delta");
+    QTest::addColumn<QRect>("expected");
+    QTest::addColumn<bool>("changed");
+
+    QTest::newRow("grow-right-to-boundary")
+        << QRect(10, 10, 89, 60) << QPoint(1, 0)
+        << QRect(10, 10, 90, 60) << true;
+    QTest::newRow("grow-right-at-boundary")
+        << QRect(10, 10, 90, 60) << QPoint(1, 0)
+        << QRect(10, 10, 90, 60) << false;
+    QTest::newRow("grow-bottom-to-boundary")
+        << QRect(10, 10, 90, 69) << QPoint(0, 1)
+        << QRect(10, 10, 90, 70) << true;
+    QTest::newRow("grow-bottom-at-boundary")
+        << QRect(10, 10, 90, 70) << QPoint(0, 1)
+        << QRect(10, 10, 90, 70) << false;
+    QTest::newRow("minimum-width")
+        << QRect(10, 10, 10, 30) << QPoint(-1, 0)
+        << QRect(10, 10, 10, 30) << false;
+    QTest::newRow("minimum-height")
+        << QRect(10, 10, 30, 10) << QPoint(0, -1)
+        << QRect(10, 10, 30, 10) << false;
+    QTest::newRow("shrink-inside-bounds")
+        << QRect(10, 10, 30, 30) << QPoint(-1, 0)
+        << QRect(10, 10, 29, 30) << true;
+}
+
+void tst_SelectionStateManager::testKeyboardEdgeResize_ClampsToBounds()
+{
+    QFETCH(QRect, selection);
+    QFETCH(QPoint, delta);
+    QFETCH(QRect, expected);
+    QFETCH(bool, changed);
+
+    const QRect bounds(0, 0, 100, 80);
+    m_manager->setBounds(bounds);
+    m_manager->setSelectionRect(selection);
+    QSignalSpy selectionSpy(m_manager, &SelectionStateManager::selectionChanged);
+
+    QCOMPARE(m_manager->resizeFromBottomRight(delta), changed);
+    QCOMPARE(m_manager->selectionRect(), expected);
+    QVERIFY(bounds.contains(m_manager->selectionRect()));
+    QCOMPARE(selectionSpy.count(), changed ? 1 : 0);
 }
 
 void tst_SelectionStateManager::testAspectRatioEdgeResize_ClampsToBounds_data()
