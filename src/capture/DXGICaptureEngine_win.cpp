@@ -477,7 +477,10 @@ QImage DXGICaptureEngine::Private::captureWithBitBlt()
     bmi.bmiHeader.biBitCount = 32;
     bmi.bmiHeader.biCompression = BI_RGB;
 
-    QImage image(physRegion.width(), physRegion.height(), QImage::Format_ARGB32);
+    // BI_RGB produces BGRX data; the high byte is padding, not alpha. Mark the
+    // frame as opaque RGB so live pins and alpha-capable encoders do not treat
+    // the undefined padding byte as transparency.
+    QImage image(physRegion.width(), physRegion.height(), QImage::Format_RGB32);
     GetDIBits(hdcMem, hBitmap, 0, physRegion.height(), image.bits(), &bmi, DIB_RGB_COLORS);
 
     DeleteObject(hBitmap);
