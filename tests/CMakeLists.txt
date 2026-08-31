@@ -914,6 +914,14 @@ target_link_libraries(RecordingManager_RecordingFileUtils PRIVATE snaptray_ui Qt
 add_test(NAME RecordingManager_RecordingFileUtils COMMAND RecordingManager_RecordingFileUtils)
 set_tests_properties(RecordingManager_RecordingFileUtils PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RecordingManager_TimestampedPcmMixer
+    RecordingManager/tst_TimestampedPcmMixer.cpp)
+target_link_libraries(RecordingManager_TimestampedPcmMixer PRIVATE snaptray_platform Qt6::Test)
+add_test(NAME RecordingManager_TimestampedPcmMixer
+    COMMAND RecordingManager_TimestampedPcmMixer)
+set_tests_properties(RecordingManager_TimestampedPcmMixer
+    PROPERTIES TIMEOUT 30 LABELS "unit")
+
 add_executable(RecordingManager_CoreAudioCaptureEngineSafety
     RecordingManager/tst_CoreAudioCaptureEngineSafety.cpp
 )

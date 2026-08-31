@@ -481,6 +481,7 @@ add_library(snaptray_platform STATIC
     # Common sources
     src/capture/ICaptureEngine.cpp
     src/capture/IAudioCaptureEngine.cpp
+    src/capture/TimestampedPcmMixer.cpp
     src/capture/ScreenSnapshot.cpp
     src/capture/QtCaptureEngine.cpp
     src/encoding/EncoderFactory.cpp
@@ -502,6 +503,7 @@ add_library(snaptray_platform STATIC
     include/recording/ScreenSourceService.h
     include/capture/ICaptureEngine.h
     include/capture/IAudioCaptureEngine.h
+    include/capture/TimestampedPcmMixer.h
     include/capture/ScreenSnapshot.h
     include/capture/QtCaptureEngine.h
     include/video/IVideoPlayer.h
