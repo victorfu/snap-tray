@@ -1748,6 +1748,29 @@ Dimensione: %2</translation>
         <source>Failed to save recording to selected location</source>
         <translation>Impossibile salvare la registrazione nella posizione selezionata</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="825" />
+        <source>Audio capture encountered a problem. This recording may contain missing audio.</source>
+        <translation>Si è verificato un problema durante l’acquisizione audio. In questa registrazione potrebbero mancare alcune parti audio.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check Screen Recording permission in System Settings.</source>
+        <translation>L’audio di sistema non è disponibile. Verrà registrato solo il microfono. Controlla l’autorizzazione Registrazione schermo nelle Impostazioni di Sistema.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="837" />
+        <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
+        <translation>Il microfono non è disponibile. Verrà registrato solo l’audio di sistema. Controlla l’autorizzazione del microfono e il dispositivo di ingresso selezionato.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="846" />
+        <location filename="../src/RecordingManager.cpp" line="859" />
+        <location filename="../src/RecordingManager.cpp" line="878" />
+        <location filename="../src/RecordingManager.cpp" line="977" />
+        <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
+        <translation>L’audio non è disponibile. Questa registrazione sarà senza audio. Controlla le autorizzazioni di sistema e il dispositivo audio selezionato.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>

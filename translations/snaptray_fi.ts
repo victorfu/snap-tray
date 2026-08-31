@@ -1708,6 +1708,29 @@ Koko: %2</translation>
         <translation>Koodaustyöntekijän käynnistys epäonnistui</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="824" />
+        <source>Audio capture encountered a problem. This recording may contain missing audio.</source>
+        <translation>Äänen tallennuksessa ilmeni ongelma. Tästä tallenteesta saattaa puuttua ääntä.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="831" />
+        <source>System audio is unavailable. Recording microphone only. Check Screen Recording permission in System Settings.</source>
+        <translation>Järjestelmän ääni ei ole käytettävissä. Vain mikrofonin ääni tallennetaan. Tarkista näytön tallennuksen käyttöoikeus Järjestelmäasetuksista.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="836" />
+        <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
+        <translation>Mikrofoni ei ole käytettävissä. Vain järjestelmän ääni tallennetaan. Tarkista mikrofonin käyttöoikeus ja valittu syöttölaite.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="845" />
+        <location filename="../src/RecordingManager.cpp" line="858" />
+        <location filename="../src/RecordingManager.cpp" line="877" />
+        <location filename="../src/RecordingManager.cpp" line="976" />
+        <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
+        <translation>Ääntä ei ole käytettävissä. Tähän tallenteeseen ei tule ääntä. Tarkista järjestelmän käyttöoikeudet ja valittu äänilaite.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="986" />
         <source>Recording screen disconnected during capture.</source>
         <translation>Tallennusnäyttö irtosi kaappauksen aikana.</translation>

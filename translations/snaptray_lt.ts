@@ -1742,6 +1742,29 @@ Dydis: %2</translation>
         <source>Failed to save recording to selected location</source>
         <translation>Nepavyko išsaugoti įrašo pasirinktoje vietoje</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="825" />
+        <source>Audio capture encountered a problem. This recording may contain missing audio.</source>
+        <translation>Fiksuojant garsą kilo problema. Šiame įraše gali trūkti dalies garso.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check Screen Recording permission in System Settings.</source>
+        <translation>Sistemos garsas nepasiekiamas. Įrašomas tik mikrofonas. Sistemos nuostatose patikrinkite ekrano įrašymo leidimą.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="837" />
+        <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
+        <translation>Mikrofonas nepasiekiamas. Įrašomas tik sistemos garsas. Patikrinkite mikrofono leidimą ir pasirinktą įvesties įrenginį.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="846" />
+        <location filename="../src/RecordingManager.cpp" line="859" />
+        <location filename="../src/RecordingManager.cpp" line="878" />
+        <location filename="../src/RecordingManager.cpp" line="977" />
+        <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
+        <translation>Garsas nepasiekiamas. Šis įrašas bus be garso. Patikrinkite sistemos leidimus ir pasirinktą garso įrenginį.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>

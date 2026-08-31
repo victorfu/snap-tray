@@ -211,6 +211,15 @@ signals:
     void warning(const QString &message);
 
     /**
+     * @brief Emitted when capture continues with a different effective source
+     *
+     * This reports the sources that are actually producing audio, rather than
+     * the configured preference. AudioSource::None means capture will be
+     * silent until the recording stops.
+     */
+    void activeSourceChanged(AudioSource source);
+
+    /**
      * @brief Emitted when the audio device is disconnected
      */
     void deviceLost();

@@ -1748,6 +1748,29 @@ Size: %2</source>
         <source>Failed to save recording to selected location</source>
         <translation>選択した場所への録画の保存に失敗しました</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="825" />
+        <source>Audio capture encountered a problem. This recording may contain missing audio.</source>
+        <translation>オーディオのキャプチャ中に問題が発生しました。この録画では音声の一部が欠落している可能性があります。</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check Screen Recording permission in System Settings.</source>
+        <translation>システム音声を利用できません。マイク音声のみを録音します。システム設定で「画面収録」の許可を確認してください。</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="837" />
+        <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
+        <translation>マイクを利用できません。システム音声のみを録音します。マイクの許可と選択した入力デバイスを確認してください。</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="846" />
+        <location filename="../src/RecordingManager.cpp" line="859" />
+        <location filename="../src/RecordingManager.cpp" line="878" />
+        <location filename="../src/RecordingManager.cpp" line="977" />
+        <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
+        <translation>音声を利用できません。この録画は無音になります。システムの許可と選択したオーディオデバイスを確認してください。</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>

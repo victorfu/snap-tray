@@ -1708,6 +1708,29 @@ Size: %2</source>
         <translation>Αποτυχία εκκίνησης διαδικασίας κωδικοποίησης</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="824" />
+        <source>Audio capture encountered a problem. This recording may contain missing audio.</source>
+        <translation>Παρουσιάστηκε πρόβλημα κατά την καταγραφή ήχου. Ενδέχεται να λείπουν τμήματα ήχου από αυτή την εγγραφή.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="831" />
+        <source>System audio is unavailable. Recording microphone only. Check Screen Recording permission in System Settings.</source>
+        <translation>Ο ήχος συστήματος δεν είναι διαθέσιμος. Γίνεται εγγραφή μόνο από το μικρόφωνο. Ελέγξτε την άδεια Εγγραφής οθόνης στις Ρυθμίσεις συστήματος.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="836" />
+        <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
+        <translation>Το μικρόφωνο δεν είναι διαθέσιμο. Γίνεται εγγραφή μόνο του ήχου συστήματος. Ελέγξτε την άδεια μικροφώνου και την επιλεγμένη συσκευή εισόδου.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="845" />
+        <location filename="../src/RecordingManager.cpp" line="858" />
+        <location filename="../src/RecordingManager.cpp" line="877" />
+        <location filename="../src/RecordingManager.cpp" line="976" />
+        <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
+        <translation>Ο ήχος δεν είναι διαθέσιμος. Αυτή η εγγραφή θα είναι χωρίς ήχο. Ελέγξτε τις άδειες συστήματος και την επιλεγμένη συσκευή ήχου.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="986" />
         <source>Recording screen disconnected during capture.</source>
         <translation>Η οθόνη εγγραφής αποσυνδέθηκε κατά τη διάρκεια της καταγραφής.</translation>

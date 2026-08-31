@@ -1714,6 +1714,29 @@ Größe: %2</translation>
         <translation>Kodierungs-Worker konnte nicht gestartet werden</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="824" />
+        <source>Audio capture encountered a problem. This recording may contain missing audio.</source>
+        <translation>Bei der Audioaufnahme ist ein Problem aufgetreten. In dieser Aufnahme können Teile des Tons fehlen.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="831" />
+        <source>System audio is unavailable. Recording microphone only. Check Screen Recording permission in System Settings.</source>
+        <translation>Systemaudio ist nicht verfügbar. Nur das Mikrofon wird aufgenommen. Überprüfen Sie in den Systemeinstellungen die Berechtigung für die Bildschirmaufnahme.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="836" />
+        <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
+        <translation>Das Mikrofon ist nicht verfügbar. Nur das Systemaudio wird aufgenommen. Überprüfen Sie die Mikrofonberechtigung und das ausgewählte Eingabegerät.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="845" />
+        <location filename="../src/RecordingManager.cpp" line="858" />
+        <location filename="../src/RecordingManager.cpp" line="877" />
+        <location filename="../src/RecordingManager.cpp" line="976" />
+        <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
+        <translation>Audio ist nicht verfügbar. Diese Aufnahme wird keinen Ton enthalten. Überprüfen Sie die Systemberechtigungen und das ausgewählte Audiogerät.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="986" />
         <source>Recording screen disconnected during capture.</source>
         <translation>Aufnahmebildschirm wurde während der Aufnahme getrennt.</translation>

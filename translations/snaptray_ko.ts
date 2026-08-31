@@ -1748,6 +1748,29 @@ Size: %2</source>
         <source>Failed to save recording to selected location</source>
         <translation>선택한 위치에 녹화를 저장하지 못했습니다</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="825" />
+        <source>Audio capture encountered a problem. This recording may contain missing audio.</source>
+        <translation>오디오 캡처 중 문제가 발생했습니다. 이 녹화에서 일부 오디오가 누락될 수 있습니다.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check Screen Recording permission in System Settings.</source>
+        <translation>시스템 오디오를 사용할 수 없습니다. 마이크만 녹음합니다. 시스템 설정에서 화면 기록 권한을 확인하세요.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="837" />
+        <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
+        <translation>마이크를 사용할 수 없습니다. 시스템 오디오만 녹음합니다. 마이크 권한과 선택한 입력 장치를 확인하세요.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="846" />
+        <location filename="../src/RecordingManager.cpp" line="859" />
+        <location filename="../src/RecordingManager.cpp" line="878" />
+        <location filename="../src/RecordingManager.cpp" line="977" />
+        <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
+        <translation>오디오를 사용할 수 없습니다. 이 녹화는 무음으로 저장됩니다. 시스템 권한과 선택한 오디오 장치를 확인하세요.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>

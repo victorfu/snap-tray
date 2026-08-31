@@ -1748,6 +1748,29 @@ Size: %2</source>
         <source>Failed to save recording to selected location</source>
         <translation>Не удалось сохранить запись в выбранное место</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="825" />
+        <source>Audio capture encountered a problem. This recording may contain missing audio.</source>
+        <translation>При захвате звука возникла проблема. В этой записи могут отсутствовать фрагменты звука.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check Screen Recording permission in System Settings.</source>
+        <translation>Системный звук недоступен. Будет записываться только микрофон. Проверьте разрешение на запись экрана в системных настройках.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="837" />
+        <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
+        <translation>Микрофон недоступен. Будет записываться только системный звук. Проверьте разрешение на доступ к микрофону и выбранное устройство ввода.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="846" />
+        <location filename="../src/RecordingManager.cpp" line="859" />
+        <location filename="../src/RecordingManager.cpp" line="878" />
+        <location filename="../src/RecordingManager.cpp" line="977" />
+        <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
+        <translation>Звук недоступен. Эта запись будет без звука. Проверьте системные разрешения и выбранное аудиоустройство.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>

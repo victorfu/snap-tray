@@ -1742,6 +1742,29 @@ Boyut: %2</translation>
         <source>Failed to save recording to selected location</source>
         <translation>Kayıt seçilen konuma kaydedilemedi</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="825" />
+        <source>Audio capture encountered a problem. This recording may contain missing audio.</source>
+        <translation>Ses yakalama sırasında bir sorun oluştu. Bu kayıtta bazı ses bölümleri eksik olabilir.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check Screen Recording permission in System Settings.</source>
+        <translation>Sistem sesi kullanılamıyor. Yalnızca mikrofon kaydedilecek. Sistem Ayarları’ndaki Ekran Kaydı iznini kontrol edin.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="837" />
+        <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
+        <translation>Mikrofon kullanılamıyor. Yalnızca sistem sesi kaydedilecek. Mikrofon iznini ve seçili giriş aygıtını kontrol edin.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="846" />
+        <location filename="../src/RecordingManager.cpp" line="859" />
+        <location filename="../src/RecordingManager.cpp" line="878" />
+        <location filename="../src/RecordingManager.cpp" line="977" />
+        <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
+        <translation>Ses kullanılamıyor. Bu kayıt sessiz olacaktır. Sistem izinlerini ve seçili ses aygıtını kontrol edin.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>

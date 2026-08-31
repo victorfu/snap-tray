@@ -1714,6 +1714,29 @@ Velikost: %2</translation>
         <translation>Spuštění procesu kódování se nezdařilo</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="824" />
+        <source>Audio capture encountered a problem. This recording may contain missing audio.</source>
+        <translation>Při zachytávání zvuku došlo k problému. V této nahrávce mohou některé části zvuku chybět.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="831" />
+        <source>System audio is unavailable. Recording microphone only. Check Screen Recording permission in System Settings.</source>
+        <translation>Systémový zvuk není k dispozici. Nahrává se pouze mikrofon. Zkontrolujte oprávnění k nahrávání obrazovky v Nastavení systému.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="836" />
+        <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
+        <translation>Mikrofon není k dispozici. Nahrává se pouze systémový zvuk. Zkontrolujte oprávnění k mikrofonu a vybrané vstupní zařízení.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="845" />
+        <location filename="../src/RecordingManager.cpp" line="858" />
+        <location filename="../src/RecordingManager.cpp" line="877" />
+        <location filename="../src/RecordingManager.cpp" line="976" />
+        <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
+        <translation>Zvuk není k dispozici. Tato nahrávka bude bez zvuku. Zkontrolujte systémová oprávnění a vybrané zvukové zařízení.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="986" />
         <source>Recording screen disconnected during capture.</source>
         <translation>Obrazovka pro nahrávání byla odpojena během zachytávání.</translation>

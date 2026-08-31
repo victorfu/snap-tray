@@ -1748,6 +1748,29 @@ Size: %2</source>
         <source>Failed to save recording to selected location</source>
         <translation>Чување снимка на изабрану локацију неуспешно</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="825" />
+        <source>Audio capture encountered a problem. This recording may contain missing audio.</source>
+        <translation>Дошло је до проблема при снимању звука. У овом снимку могу недостајати делови звука.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check Screen Recording permission in System Settings.</source>
+        <translation>Системски звук није доступан. Снимаће се само микрофон. Проверите дозволу за снимање екрана у Системским подешавањима.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="837" />
+        <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
+        <translation>Микрофон није доступан. Снимаће се само системски звук. Проверите дозволу за микрофон и изабрани улазни уређај.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="846" />
+        <location filename="../src/RecordingManager.cpp" line="859" />
+        <location filename="../src/RecordingManager.cpp" line="878" />
+        <location filename="../src/RecordingManager.cpp" line="977" />
+        <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
+        <translation>Звук није доступан. Овај снимак ће бити без звука. Проверите системске дозволе и изабрани аудио-уређај.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>

@@ -1875,6 +1875,29 @@ File size: %3</source>
         <source>Failed to save recording to selected location</source>
         <translation>儲存錄製到所選位置失敗</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="825" />
+        <source>Audio capture encountered a problem. This recording may contain missing audio.</source>
+        <translation>擷取音訊時發生問題，此錄製可能缺少部分音訊。</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check Screen Recording permission in System Settings.</source>
+        <translation>系統音訊無法使用，將只錄製麥克風。請在「系統設定」中檢查「螢幕錄製」權限。</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="837" />
+        <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
+        <translation>麥克風無法使用，將只錄製系統音訊。請檢查麥克風權限及所選輸入裝置。</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="846" />
+        <location filename="../src/RecordingManager.cpp" line="859" />
+        <location filename="../src/RecordingManager.cpp" line="878" />
+        <location filename="../src/RecordingManager.cpp" line="977" />
+        <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
+        <translation>音訊無法使用，此錄製將沒有聲音。請檢查系統權限及所選音訊裝置。</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>

@@ -259,7 +259,7 @@ void MainApplication::initialize()
         this, [](const QString& warning) {
             SnapTray::QmlToast::screenToast().showToast(
                 SnapTray::QmlToast::Level::Warning,
-                MainApplication::tr("Recording Audio"),
+                MainApplication::tr("Recording Error"),
                 warning, 5000);
         });
 

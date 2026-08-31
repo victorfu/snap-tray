@@ -28,6 +28,7 @@ private slots:
     void testMosaicBrushSizeHintTranslatedForAllLocales();
     void testAutoBlurHintTranslatedForAllLocales();
     void testRecordingPreviewAudioNoticeTranslatedForAllLocales();
+    void testRecordingAudioWarningsTranslatedForAllLocales();
 
 private:
     QTranslator m_translator;
@@ -309,6 +310,50 @@ void tst_QmlTranslations::testRecordingPreviewAudioNoticeTranslatedForAllLocales
         QVERIFY2(translated != QString::fromUtf8(source),
                  qPrintable(QStringLiteral("%1 fell back to English for the preview-audio notice")
                                 .arg(qmFile)));
+    }
+}
+
+void tst_QmlTranslations::testRecordingAudioWarningsTranslatedForAllLocales()
+{
+    const QByteArray context = "RecordingManager";
+    const QList<QByteArray> sources = {
+        QByteArray(
+            "Audio capture encountered a problem. This recording may contain missing audio."),
+        QByteArray(
+            "System audio is unavailable. Recording microphone only. "
+            "Check Screen Recording permission in System Settings."),
+        QByteArray(
+            "Microphone is unavailable. Recording system audio only. "
+            "Check microphone permission and the selected input device."),
+        QByteArray(
+            "Audio is unavailable. This recording will be silent. "
+            "Check system permissions and the selected audio device."),
+    };
+
+    const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
+    const QStringList qmFiles = translationsDir.entryList(
+        {QStringLiteral("snaptray_*.qm")},
+        QDir::Files,
+        QDir::Name);
+    QCOMPARE(qmFiles.size(), 24);
+
+    for (const QString& qmFile : qmFiles) {
+        QTranslator translator;
+        const QString path = translationsDir.filePath(qmFile);
+        QVERIFY2(translator.load(path),
+                 qPrintable(QStringLiteral("Failed to load translation file: %1").arg(path)));
+
+        for (const QByteArray& source : sources) {
+            const QString translated = translator.translate(context.constData(),
+                                                            source.constData());
+            QVERIFY2(!translated.isEmpty(),
+                     qPrintable(QStringLiteral("%1 is missing a recording-audio warning: %2")
+                                    .arg(qmFile, QString::fromUtf8(source))));
+            QVERIFY2(translated != QString::fromUtf8(source),
+                     qPrintable(QStringLiteral(
+                                    "%1 fell back to English for a recording-audio warning: %2")
+                                    .arg(qmFile, QString::fromUtf8(source))));
+        }
     }
 }
 

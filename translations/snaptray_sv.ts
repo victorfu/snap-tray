@@ -1742,6 +1742,29 @@ Storlek: %2</translation>
         <source>Failed to save recording to selected location</source>
         <translation>Misslyckades att spara inspelningen till vald plats</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="825" />
+        <source>Audio capture encountered a problem. This recording may contain missing audio.</source>
+        <translation>Ett problem uppstod vid ljudinspelningen. Delar av ljudet kan saknas i den här inspelningen.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check Screen Recording permission in System Settings.</source>
+        <translation>Systemljudet är inte tillgängligt. Endast mikrofonen spelas in. Kontrollera behörigheten för skärminspelning i Systeminställningar.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="837" />
+        <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
+        <translation>Mikrofonen är inte tillgänglig. Endast systemljudet spelas in. Kontrollera mikrofonbehörigheten och den valda inmatningsenheten.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="846" />
+        <location filename="../src/RecordingManager.cpp" line="859" />
+        <location filename="../src/RecordingManager.cpp" line="878" />
+        <location filename="../src/RecordingManager.cpp" line="977" />
+        <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
+        <translation>Ljud är inte tillgängligt. Den här inspelningen blir utan ljud. Kontrollera systembehörigheterna och den valda ljudenheten.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>

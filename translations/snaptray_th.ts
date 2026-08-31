@@ -1729,6 +1729,29 @@ English is always included and cannot be removed.</source>
         <source>Failed to save recording to selected location</source>
         <translation>บันทึกการบันทึกไปยังตำแหน่งที่เลือกไม่สำเร็จ</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="825" />
+        <source>Audio capture encountered a problem. This recording may contain missing audio.</source>
+        <translation>เกิดปัญหาระหว่างการบันทึกเสียง การบันทึกนี้อาจมีเสียงบางช่วงขาดหายไป</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check Screen Recording permission in System Settings.</source>
+        <translation>ไม่สามารถใช้เสียงระบบได้ จะบันทึกเฉพาะไมโครโฟน โปรดตรวจสอบสิทธิ์การบันทึกหน้าจอในการตั้งค่าระบบ</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="837" />
+        <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
+        <translation>ไม่สามารถใช้ไมโครโฟนได้ จะบันทึกเฉพาะเสียงระบบ โปรดตรวจสอบสิทธิ์ไมโครโฟนและอุปกรณ์อินพุตที่เลือก</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="846" />
+        <location filename="../src/RecordingManager.cpp" line="859" />
+        <location filename="../src/RecordingManager.cpp" line="878" />
+        <location filename="../src/RecordingManager.cpp" line="977" />
+        <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
+        <translation>ไม่สามารถใช้เสียงได้ การบันทึกนี้จะไม่มีเสียง โปรดตรวจสอบสิทธิ์ของระบบและอุปกรณ์เสียงที่เลือก</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>

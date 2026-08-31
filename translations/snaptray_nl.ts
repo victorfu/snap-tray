@@ -1748,6 +1748,29 @@ Grootte: %2</translation>
         <source>Failed to save recording to selected location</source>
         <translation>Kan opname niet opslaan op de geselecteerde locatie</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="825" />
+        <source>Audio capture encountered a problem. This recording may contain missing audio.</source>
+        <translation>Er is een probleem opgetreden bij het opnemen van audio. In deze opname kan audio ontbreken.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check Screen Recording permission in System Settings.</source>
+        <translation>Systeemaudio is niet beschikbaar. Alleen de microfoon wordt opgenomen. Controleer de toestemming voor schermopname in Systeeminstellingen.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="837" />
+        <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
+        <translation>De microfoon is niet beschikbaar. Alleen systeemaudio wordt opgenomen. Controleer de microfoontoestemming en het geselecteerde invoerapparaat.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="846" />
+        <location filename="../src/RecordingManager.cpp" line="859" />
+        <location filename="../src/RecordingManager.cpp" line="878" />
+        <location filename="../src/RecordingManager.cpp" line="977" />
+        <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
+        <translation>Audio is niet beschikbaar. Deze opname zal stil zijn. Controleer de systeemtoestemmingen en het geselecteerde audioapparaat.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>

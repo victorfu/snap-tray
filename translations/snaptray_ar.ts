@@ -1708,6 +1708,29 @@ Size: %2</source>
         <translation>فشل بدء عملية التشفير</translation>
     </message>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="824" />
+        <source>Audio capture encountered a problem. This recording may contain missing audio.</source>
+        <translation>حدثت مشكلة أثناء التقاط الصوت. قد تكون أجزاء من الصوت مفقودة في هذا التسجيل.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="831" />
+        <source>System audio is unavailable. Recording microphone only. Check Screen Recording permission in System Settings.</source>
+        <translation>صوت النظام غير متاح. سيُسجَّل صوت الميكروفون فقط. تحقّق من إذن تسجيل الشاشة في إعدادات النظام.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="836" />
+        <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
+        <translation>الميكروفون غير متاح. سيُسجَّل صوت النظام فقط. تحقّق من إذن الميكروفون وجهاز الإدخال المحدد.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="845" />
+        <location filename="../src/RecordingManager.cpp" line="858" />
+        <location filename="../src/RecordingManager.cpp" line="877" />
+        <location filename="../src/RecordingManager.cpp" line="976" />
+        <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
+        <translation>الصوت غير متاح. سيكون هذا التسجيل صامتًا. تحقّق من أذونات النظام وجهاز الصوت المحدد.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="986" />
         <source>Recording screen disconnected during capture.</source>
         <translation>تم فصل شاشة التسجيل أثناء الالتقاط.</translation>

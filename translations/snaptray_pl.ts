@@ -1748,6 +1748,29 @@ Rozmiar: %2</translation>
         <source>Failed to save recording to selected location</source>
         <translation>Nie udało się zapisać nagrania w wybranej lokalizacji</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="825" />
+        <source>Audio capture encountered a problem. This recording may contain missing audio.</source>
+        <translation>Wystąpił problem podczas przechwytywania dźwięku. W tym nagraniu może brakować fragmentów dźwięku.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="832" />
+        <source>System audio is unavailable. Recording microphone only. Check Screen Recording permission in System Settings.</source>
+        <translation>Dźwięk systemowy jest niedostępny. Nagrywany będzie tylko mikrofon. Sprawdź uprawnienie do nagrywania ekranu w Ustawieniach systemowych.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="837" />
+        <source>Microphone is unavailable. Recording system audio only. Check microphone permission and the selected input device.</source>
+        <translation>Mikrofon jest niedostępny. Nagrywany będzie tylko dźwięk systemowy. Sprawdź uprawnienie mikrofonu i wybrane urządzenie wejściowe.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="846" />
+        <location filename="../src/RecordingManager.cpp" line="859" />
+        <location filename="../src/RecordingManager.cpp" line="878" />
+        <location filename="../src/RecordingManager.cpp" line="977" />
+        <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
+        <translation>Dźwięk jest niedostępny. To nagranie będzie bez dźwięku. Sprawdź uprawnienia systemowe i wybrane urządzenie audio.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>

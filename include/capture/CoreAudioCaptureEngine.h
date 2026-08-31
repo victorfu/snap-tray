@@ -50,8 +50,13 @@ public:
                               const QByteArray& pcm,
                               const SnapTray::Audio::Pcm16Format& format,
                               qint64 timestampNs);
+    void reportCapturedAudioFormatFailure(SnapTray::Audio::Source source,
+                                          qint64 effectiveTimeNs);
+    void handleSystemAudioCaptureFailure(const QString& details);
 
 private:
+    AudioSource activeAudioSource() const;
+    void notifyActiveSourceChanged();
     void deliverMixerOutput(
         const SnapTray::Audio::TimestampedPcmMixer::ProcessResult& result);
 
@@ -59,6 +64,15 @@ private:
     Private *d;
     std::unique_ptr<SnapTray::Audio::TimestampedPcmMixer> m_mixer;
     bool m_reportedMixerDrop = false;
+    std::atomic<bool> m_reportedMicrophoneFormatFailure{false};
+    std::atomic<bool> m_reportedSystemFormatFailure{false};
+    std::atomic<bool> m_microphoneActive{false};
+    std::atomic<bool> m_systemAudioActive{false};
+    std::atomic<int> m_lastNotifiedActiveSource{
+        static_cast<int>(AudioSource::None)};
+    std::atomic<bool> m_starting{false};
+    std::atomic<bool> m_stopping{false};
+    bool m_systemAudioFailed = false;
 
     std::atomic<bool> m_running{false};
     std::atomic<bool> m_paused{false};
