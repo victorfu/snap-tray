@@ -31,6 +31,9 @@ public:
     virtual QSize videoSize() const = 0;      // Native video dimensions
     virtual bool hasVideo() const = 0;
     virtual bool hasAudio() const = 0;
+    // Playback capability is distinct from hasAudio(), which only reports
+    // whether the media contains an audio track.
+    virtual bool supportsAudioPlayback() const = 0;
     virtual double frameRate() const = 0;     // FPS (e.g., 29.97, 60.0)
     virtual int frameIntervalMs() const = 0;  // Milliseconds per frame
 

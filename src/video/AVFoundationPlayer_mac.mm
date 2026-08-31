@@ -62,6 +62,7 @@ public:
     QSize videoSize() const override { return m_videoSize; }
     bool hasVideo() const override { return m_hasVideo; }
     bool hasAudio() const override { return m_hasAudio; }
+    bool supportsAudioPlayback() const override { return true; }
 
     void setVolume(float volume) override;
     float volume() const override { return m_volume; }

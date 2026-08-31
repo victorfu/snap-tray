@@ -28,6 +28,7 @@ class VideoPlaybackItem : public QQuickPaintedItem
     Q_PROPERTY(int playerState READ playerState NOTIFY stateChanged)
     Q_PROPERTY(qint64 position READ position NOTIFY positionChanged)
     Q_PROPERTY(qint64 duration READ duration NOTIFY durationChanged)
+    Q_PROPERTY(bool audioPlaybackSupported READ audioPlaybackSupported CONSTANT)
     Q_PROPERTY(bool muted READ isMuted WRITE setMuted NOTIFY mutedChanged)
     Q_PROPERTY(qreal volume READ volume WRITE setVolume NOTIFY volumeChanged)
     Q_PROPERTY(qreal playbackRate READ playbackRate WRITE setPlaybackRate NOTIFY playbackRateChanged)
@@ -49,6 +50,7 @@ public:
     int playerState() const;
     qint64 position() const;
     qint64 duration() const;
+    bool audioPlaybackSupported() const;
 
     bool isMuted() const;
     void setMuted(bool muted);

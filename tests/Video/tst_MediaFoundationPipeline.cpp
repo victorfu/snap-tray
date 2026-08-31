@@ -18,6 +18,7 @@ private slots:
     void pausedSeekProducesFrame();
     void loopingRestartsAfterEndOfStream();
     void playRestartsAfterNonLoopingEnd();
+    void audioPlaybackCapabilityIsTruthful();
     void trimCompletesFromPausedSeeks();
     void mp4TrimRejectsAudioInput();
 
@@ -67,6 +68,18 @@ bool TestMediaFoundationPipeline::createTestVideo(const QString &path,
         return false;
     }
     return QFileInfo(path).size() > 0;
+}
+
+void TestMediaFoundationPipeline::audioPlaybackCapabilityIsTruthful()
+{
+    std::unique_ptr<IVideoPlayer> player(IVideoPlayer::create());
+    QVERIFY(player != nullptr);
+    QVERIFY(!player->supportsAudioPlayback());
+
+    player->setMuted(true);
+    player->setVolume(0.0f);
+    QVERIFY(!player->isMuted());
+    QCOMPARE(player->volume(), 1.0f);
 }
 
 void TestMediaFoundationPipeline::pausedSeekProducesFrame()

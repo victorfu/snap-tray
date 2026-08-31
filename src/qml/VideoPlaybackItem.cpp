@@ -109,6 +109,11 @@ qint64 VideoPlaybackItem::duration() const
     return m_player ? m_player->duration() : 0;
 }
 
+bool VideoPlaybackItem::audioPlaybackSupported() const
+{
+    return m_player && m_player->supportsAudioPlayback();
+}
+
 bool VideoPlaybackItem::isMuted() const
 {
     return m_player ? m_player->isMuted() : false;
@@ -116,7 +121,7 @@ bool VideoPlaybackItem::isMuted() const
 
 void VideoPlaybackItem::setMuted(bool muted)
 {
-    if (!m_player || m_player->isMuted() == muted)
+    if (!audioPlaybackSupported() || m_player->isMuted() == muted)
         return;
     m_player->setMuted(muted);
     emit mutedChanged();
@@ -129,7 +134,8 @@ qreal VideoPlaybackItem::volume() const
 
 void VideoPlaybackItem::setVolume(qreal vol)
 {
-    if (!m_player || qFuzzyCompare(m_player->volume(), static_cast<float>(vol)))
+    if (!audioPlaybackSupported()
+        || qFuzzyCompare(m_player->volume(), static_cast<float>(vol)))
         return;
     m_player->setVolume(static_cast<float>(vol));
     emit volumeChanged();

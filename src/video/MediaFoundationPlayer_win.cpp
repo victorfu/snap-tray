@@ -451,11 +451,12 @@ public:
     QSize videoSize() const override { return m_videoSize; }
     bool hasVideo() const override { return m_hasVideo; }
     bool hasAudio() const override { return m_hasAudio; }
+    bool supportsAudioPlayback() const override { return false; }
 
-    void setVolume(float volume) override { m_volume = qBound(0.0f, volume, 1.0f); }
-    float volume() const override { return m_volume; }
-    void setMuted(bool muted) override { m_muted = muted; }
-    bool isMuted() const override { return m_muted; }
+    void setVolume(float) override {}
+    float volume() const override { return 1.0f; }
+    void setMuted(bool) override {}
+    bool isMuted() const override { return false; }
 
     void setLooping(bool loop) override { m_looping = loop; }
     bool isLooping() const override { return m_looping; }
@@ -497,8 +498,6 @@ private:
     QSize m_videoSize;
     bool m_hasVideo = false;
     bool m_hasAudio = false;
-    float m_volume = 1.0f;
-    bool m_muted = false;
     bool m_looping = false;
     bool m_atEndOfStream = false;
     float m_playbackRate = 1.0f;

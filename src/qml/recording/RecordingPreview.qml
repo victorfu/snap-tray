@@ -147,6 +147,32 @@ Item {
                     color: ComponentTokens.recordingPreviewPrimaryButtonIcon
                 }
             }
+
+            GlassSurface {
+                id: silentPreviewNotice
+                objectName: "previewAudioUnavailableLabel"
+                visible: !videoPlayer.audioPlaybackSupported
+                anchors.top: parent.top
+                anchors.right: parent.right
+                anchors.margins: SemanticTokens.spacing12
+                width: silentPreviewText.implicitWidth + SemanticTokens.spacing16
+                height: 28
+                z: 5
+                glassBg: ComponentTokens.tooltipBackground
+                glassBgTop: ComponentTokens.tooltipBackgroundTop
+                glassHighlight: ComponentTokens.tooltipHighlight
+                glassBorder: ComponentTokens.tooltipBorder
+                glassRadius: ComponentTokens.tooltipRadius
+
+                Text {
+                    id: silentPreviewText
+                    anchors.centerIn: parent
+                    text: qsTr("Audio playback is unavailable in this preview.")
+                    font.pixelSize: SemanticTokens.fontSizeCaption
+                    font.family: SemanticTokens.fontFamily
+                    color: root.textSecondary
+                }
+            }
         }
 
         Item {
@@ -414,6 +440,8 @@ Item {
                 Item { Layout.fillWidth: true }
 
                 IconButton {
+                    objectName: "previewMuteButton"
+                    visible: videoPlayer.audioPlaybackSupported
                     iconSource: videoPlayer.muted ? "qrc:/icons/icons/volume-x.svg" : "qrc:/icons/icons/volume-2.svg"
                     tooltipText: videoPlayer.muted ? qsTr("Unmute Preview (M)") : qsTr("Mute Preview (M)")
                     onClicked: videoPlayer.muted = !videoPlayer.muted
@@ -557,8 +585,10 @@ Item {
             event.accepted = true
             break
         case Qt.Key_M:
-            videoPlayer.muted = !videoPlayer.muted
-            event.accepted = true
+            if (videoPlayer.audioPlaybackSupported) {
+                videoPlayer.muted = !videoPlayer.muted
+                event.accepted = true
+            }
             break
         case Qt.Key_Left:
             videoPlayer.seek(Math.max(0, videoPlayer.position - 5000))
