@@ -11,6 +11,161 @@
 #include <algorithm>
 #include <utility>
 
+namespace {
+
+struct ResizeDirections
+{
+    int horizontal = 0;  // -1: left, +1: right
+    int vertical = 0;    // -1: top, +1: bottom
+};
+
+ResizeDirections resizeDirections(ResizeHandler::Edge edge)
+{
+    switch (edge) {
+        case ResizeHandler::Edge::TopLeft: return {-1, -1};
+        case ResizeHandler::Edge::Top: return {0, -1};
+        case ResizeHandler::Edge::TopRight: return {1, -1};
+        case ResizeHandler::Edge::Right: return {1, 0};
+        case ResizeHandler::Edge::BottomRight: return {1, 1};
+        case ResizeHandler::Edge::Bottom: return {0, 1};
+        case ResizeHandler::Edge::BottomLeft: return {-1, 1};
+        case ResizeHandler::Edge::Left: return {-1, 0};
+        default: return {};
+    }
+}
+
+QRect resizedRegionRect(const QRect& startRect,
+                        ResizeHandler::Edge edge,
+                        const QPoint& delta,
+                        bool maintainAspectRatio)
+{
+    const ResizeDirections directions = resizeDirections(edge);
+    if (directions.horizontal == 0 && directions.vertical == 0) {
+        return startRect;
+    }
+
+    constexpr qreal kRoundingEpsilon = 1e-9;
+    const int minSize = LayoutModeConstants::kMinRegionSize;
+    const int canvasExtent = LayoutModeConstants::kMaxCanvasSize;
+    const int startWidth = startRect.width();
+    const int startHeight = startRect.height();
+    if (startWidth <= 0 || startHeight <= 0) {
+        return startRect;
+    }
+
+    // Work with half-open bounds. QRect::right()/bottom() are inclusive, while
+    // the layout canvas is [0, canvasExtent) and therefore ends at 9999.
+    const int startLeft = startRect.x();
+    const int startTop = startRect.y();
+    const int startRight = startLeft + startWidth;
+    const int startBottom = startTop + startHeight;
+    const qreal centerX = startLeft + startWidth / 2.0;
+    const qreal centerY = startTop + startHeight / 2.0;
+
+    const qreal anchoredAvailableWidth = directions.horizontal < 0
+        ? startRight
+        : directions.horizontal > 0
+            ? canvasExtent - startLeft
+            : 2.0 * qMin(centerX, canvasExtent - centerX);
+    const qreal anchoredAvailableHeight = directions.vertical < 0
+        ? startBottom
+        : directions.vertical > 0
+            ? canvasExtent - startTop
+            : 2.0 * qMin(centerY, canvasExtent - centerY);
+    // Imported/captured regions may begin below the layout editor's 50px
+    // resize minimum. In that case, expanding to the minimum takes precedence
+    // over preserving an infeasible edge/center anchor exactly.
+    qreal availableWidth = qMin<qreal>(
+        canvasExtent,
+        anchoredAvailableWidth < minSize ? canvasExtent : anchoredAvailableWidth);
+    qreal availableHeight = qMin<qreal>(
+        canvasExtent,
+        anchoredAvailableHeight < minSize ? canvasExtent : anchoredAvailableHeight);
+    if (maintainAspectRatio) {
+        const qreal minScale = qMax(
+            static_cast<qreal>(minSize) / startWidth,
+            static_cast<qreal>(minSize) / startHeight);
+        const qreal anchoredMaxScale = qMin(
+            availableWidth / startWidth,
+            availableHeight / startHeight);
+        const qreal fullCanvasMaxScale = qMin(
+            static_cast<qreal>(canvasExtent) / startWidth,
+            static_cast<qreal>(canvasExtent) / startHeight);
+        if (anchoredMaxScale < minScale && fullCanvasMaxScale >= minScale) {
+            availableWidth = canvasExtent;
+            availableHeight = canvasExtent;
+        }
+    }
+    const int maxWidth = qMax(1, qFloor(availableWidth + kRoundingEpsilon));
+    const int maxHeight = qMax(1, qFloor(availableHeight + kRoundingEpsilon));
+
+    const qreal requestedWidth = startWidth + directions.horizontal * delta.x();
+    const qreal requestedHeight = startHeight + directions.vertical * delta.y();
+    int width = qBound(minSize, startWidth, maxWidth);
+    int height = qBound(minSize, startHeight, maxHeight);
+
+    if (maintainAspectRatio) {
+        const qreal minScale = qMax(
+            static_cast<qreal>(minSize) / startWidth,
+            static_cast<qreal>(minSize) / startHeight);
+        const qreal maxScale = qMin(
+            availableWidth / startWidth,
+            availableHeight / startHeight);
+        if (maxScale + kRoundingEpsilon < minScale) {
+            // The imported aspect itself cannot satisfy both the 50px
+            // minimum and the 10000px canvas. Preserve minimum/bounds instead
+            // of leaving the region permanently unresizable and invalid.
+            return resizedRegionRect(startRect, edge, delta, false);
+        }
+
+        qreal requestedScale = 1.0;
+        if (directions.horizontal != 0 && directions.vertical == 0) {
+            requestedScale = requestedWidth / startWidth;
+        } else if (directions.horizontal == 0 && directions.vertical != 0) {
+            requestedScale = requestedHeight / startHeight;
+        } else {
+            // Project the pointer-requested size onto the original aspect ray.
+            const qreal denominator =
+                static_cast<qreal>(startWidth) * startWidth +
+                static_cast<qreal>(startHeight) * startHeight;
+            requestedScale =
+                (requestedWidth * startWidth + requestedHeight * startHeight) /
+                denominator;
+        }
+
+        const qreal scale = qBound(minScale, requestedScale, maxScale);
+        width = qBound(minSize, qRound(startWidth * scale), maxWidth);
+        height = qBound(minSize, qRound(startHeight * scale), maxHeight);
+    } else {
+        if (directions.horizontal != 0) {
+            width = qBound(minSize, qRound(requestedWidth), maxWidth);
+        }
+        if (directions.vertical != 0) {
+            height = qBound(minSize, qRound(requestedHeight), maxHeight);
+        }
+    }
+
+    int left = startLeft;
+    if (directions.horizontal < 0) {
+        left = startRight - width;
+    } else if (directions.horizontal == 0) {
+        left = qRound(centerX - width / 2.0);
+    }
+
+    int top = startTop;
+    if (directions.vertical < 0) {
+        top = startBottom - height;
+    } else if (directions.vertical == 0) {
+        top = qRound(centerY - height / 2.0);
+    }
+
+    left = qBound(0, left, canvasExtent - width);
+    top = qBound(0, top, canvasExtent - height);
+    return QRect(left, top, width, height);
+}
+
+}  // namespace
+
 RegionLayoutManager::RegionLayoutManager(QObject* parent)
     : QObject(parent)
     , m_active(false)
@@ -203,15 +358,16 @@ void RegionLayoutManager::updateDrag(const QPoint& pos)
         newRect.moveTop(0);
     }
 
-    // Clamp to maximum canvas size
-    if (newRect.right() > LayoutModeConstants::kMaxCanvasSize) {
-        newRect.moveRight(LayoutModeConstants::kMaxCanvasSize);
+    // The maximum canvas is the half-open range [0, kMaxCanvasSize).
+    const int maxCoordinate = LayoutModeConstants::kMaxCanvasSize - 1;
+    if (newRect.right() > maxCoordinate) {
+        newRect.moveRight(maxCoordinate);
         if (newRect.left() < 0) {
             newRect.moveLeft(0);
         }
     }
-    if (newRect.bottom() > LayoutModeConstants::kMaxCanvasSize) {
-        newRect.moveBottom(LayoutModeConstants::kMaxCanvasSize);
+    if (newRect.bottom() > maxCoordinate) {
+        newRect.moveBottom(maxCoordinate);
         if (newRect.top() < 0) {
             newRect.moveTop(0);
         }
@@ -255,165 +411,12 @@ void RegionLayoutManager::updateResize(const QPoint& pos, bool maintainAspectRat
         return;
     }
 
-    QPoint delta = pos - m_state.resizeStartPos;
-    QRect newRect = m_state.resizeStartRect;
-    const int minSize = LayoutModeConstants::kMinRegionSize;
-
-    // Apply resize based on edge
-    switch (m_state.resizeEdge) {
-        case ResizeHandler::Edge::Left:
-            newRect.setLeft(newRect.left() + delta.x());
-            break;
-        case ResizeHandler::Edge::Right:
-            newRect.setRight(newRect.right() + delta.x());
-            break;
-        case ResizeHandler::Edge::Top:
-            newRect.setTop(newRect.top() + delta.y());
-            break;
-        case ResizeHandler::Edge::Bottom:
-            newRect.setBottom(newRect.bottom() + delta.y());
-            break;
-        case ResizeHandler::Edge::TopLeft:
-            newRect.setTopLeft(newRect.topLeft() + delta);
-            break;
-        case ResizeHandler::Edge::TopRight:
-            newRect.setTop(newRect.top() + delta.y());
-            newRect.setRight(newRect.right() + delta.x());
-            break;
-        case ResizeHandler::Edge::BottomLeft:
-            newRect.setBottom(newRect.bottom() + delta.y());
-            newRect.setLeft(newRect.left() + delta.x());
-            break;
-        case ResizeHandler::Edge::BottomRight:
-            newRect.setBottomRight(newRect.bottomRight() + delta);
-            break;
-        default:
-            return;
-    }
-
-    // Enforce minimum size
-    if (newRect.width() < minSize) {
-        if (m_state.resizeEdge == ResizeHandler::Edge::Left ||
-            m_state.resizeEdge == ResizeHandler::Edge::TopLeft ||
-            m_state.resizeEdge == ResizeHandler::Edge::BottomLeft) {
-            newRect.setLeft(newRect.right() - minSize);
-        } else {
-            newRect.setRight(newRect.left() + minSize);
-        }
-    }
-
-    if (newRect.height() < minSize) {
-        if (m_state.resizeEdge == ResizeHandler::Edge::Top ||
-            m_state.resizeEdge == ResizeHandler::Edge::TopLeft ||
-            m_state.resizeEdge == ResizeHandler::Edge::TopRight) {
-            newRect.setTop(newRect.bottom() - minSize);
-        } else {
-            newRect.setBottom(newRect.top() + minSize);
-        }
-    }
-
-    // Maintain aspect ratio if requested (Shift key held)
-    if (maintainAspectRatio && m_state.resizeStartRect.width() > 0 && m_state.resizeStartRect.height() > 0) {
-        qreal aspectRatio = static_cast<qreal>(m_state.resizeStartRect.width()) /
-                           static_cast<qreal>(m_state.resizeStartRect.height());
-
-        // Determine which dimension to adjust based on edge
-        bool adjustWidth = (m_state.resizeEdge == ResizeHandler::Edge::Top ||
-                           m_state.resizeEdge == ResizeHandler::Edge::Bottom);
-        bool adjustHeight = (m_state.resizeEdge == ResizeHandler::Edge::Left ||
-                            m_state.resizeEdge == ResizeHandler::Edge::Right);
-
-        if (adjustWidth) {
-            int newWidth = static_cast<int>(newRect.height() * aspectRatio);
-            newRect.setWidth(newWidth);
-        } else if (adjustHeight) {
-            int newHeight = static_cast<int>(newRect.width() / aspectRatio);
-            newRect.setHeight(newHeight);
-        } else {
-            // Corner resize: use the larger delta direction
-            int deltaW = std::abs(newRect.width() - m_state.resizeStartRect.width());
-            int deltaH = std::abs(newRect.height() - m_state.resizeStartRect.height());
-
-            if (deltaW > deltaH) {
-                int newHeight = static_cast<int>(newRect.width() / aspectRatio);
-                if (m_state.resizeEdge == ResizeHandler::Edge::TopLeft ||
-                    m_state.resizeEdge == ResizeHandler::Edge::TopRight) {
-                    newRect.setTop(newRect.bottom() - newHeight);
-                } else {
-                    newRect.setHeight(newHeight);
-                }
-            } else {
-                int newWidth = static_cast<int>(newRect.height() * aspectRatio);
-                if (m_state.resizeEdge == ResizeHandler::Edge::TopLeft ||
-                    m_state.resizeEdge == ResizeHandler::Edge::BottomLeft) {
-                    newRect.setLeft(newRect.right() - newWidth);
-                } else {
-                    newRect.setWidth(newWidth);
-                }
-            }
-        }
-    }
-
-    // Clamp to maximum canvas size
-    const bool resizeFromLeft = (m_state.resizeEdge == ResizeHandler::Edge::Left
-        || m_state.resizeEdge == ResizeHandler::Edge::TopLeft
-        || m_state.resizeEdge == ResizeHandler::Edge::BottomLeft);
-    const bool resizeFromTop = (m_state.resizeEdge == ResizeHandler::Edge::Top
-        || m_state.resizeEdge == ResizeHandler::Edge::TopLeft
-        || m_state.resizeEdge == ResizeHandler::Edge::TopRight);
-    const bool resizeFromRight = (m_state.resizeEdge == ResizeHandler::Edge::Right
-        || m_state.resizeEdge == ResizeHandler::Edge::TopRight
-        || m_state.resizeEdge == ResizeHandler::Edge::BottomRight);
-    const bool resizeFromBottom = (m_state.resizeEdge == ResizeHandler::Edge::Bottom
-        || m_state.resizeEdge == ResizeHandler::Edge::BottomLeft
-        || m_state.resizeEdge == ResizeHandler::Edge::BottomRight);
-
-    if (newRect.left() < 0) {
-        if (resizeFromLeft) {
-            newRect.setLeft(0);
-        } else {
-            newRect.moveLeft(0);
-        }
-    }
-    if (newRect.top() < 0) {
-        if (resizeFromTop) {
-            newRect.setTop(0);
-        } else {
-            newRect.moveTop(0);
-        }
-    }
-
-    if (newRect.right() > LayoutModeConstants::kMaxCanvasSize) {
-        if (resizeFromRight) {
-            newRect.setRight(LayoutModeConstants::kMaxCanvasSize);
-        } else {
-            newRect.moveRight(LayoutModeConstants::kMaxCanvasSize);
-        }
-    }
-    if (newRect.bottom() > LayoutModeConstants::kMaxCanvasSize) {
-        if (resizeFromBottom) {
-            newRect.setBottom(LayoutModeConstants::kMaxCanvasSize);
-        } else {
-            newRect.moveBottom(LayoutModeConstants::kMaxCanvasSize);
-        }
-    }
-
-    // Final safety clamp: moveRight/moveBottom can shift left/top negative when the
-    // rect is larger than the canvas. Keep the final rect fully within bounds.
-    if (newRect.left() < 0) {
-        newRect.setLeft(0);
-    }
-    if (newRect.top() < 0) {
-        newRect.setTop(0);
-    }
-    if (newRect.right() > LayoutModeConstants::kMaxCanvasSize) {
-        newRect.setRight(LayoutModeConstants::kMaxCanvasSize);
-    }
-    if (newRect.bottom() > LayoutModeConstants::kMaxCanvasSize) {
-        newRect.setBottom(LayoutModeConstants::kMaxCanvasSize);
-    }
-
-    m_state.regions[m_state.selectedIndex].rect = newRect;
+    const QPoint delta = pos - m_state.resizeStartPos;
+    m_state.regions[m_state.selectedIndex].rect = resizedRegionRect(
+        m_state.resizeStartRect,
+        m_state.resizeEdge,
+        delta,
+        maintainAspectRatio);
     recalculateBounds();
     emit layoutChanged();
 }
