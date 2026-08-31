@@ -481,11 +481,29 @@ QImage DXGICaptureEngine::Private::captureWithBitBlt()
     // frame as opaque RGB so live pins and alpha-capable encoders do not treat
     // the undefined padding byte as transparency.
     QImage image(physRegion.width(), physRegion.height(), QImage::Format_RGB32);
-    GetDIBits(hdcMem, hBitmap, 0, physRegion.height(), image.bits(), &bmi, DIB_RGB_COLORS);
+    const int copiedScanLines = image.isNull()
+        ? 0
+        : GetDIBits(hdcMem, hBitmap, 0, physRegion.height(),
+                    image.bits(), &bmi, DIB_RGB_COLORS);
 
     DeleteObject(hBitmap);
     DeleteDC(hdcMem);
     ReleaseDC(NULL, hdcScreen);
+
+    if (copiedScanLines != physRegion.height()) {
+        qWarning() << "DXGICaptureEngine: GetDIBits failed for BitBlt fallback";
+        return QImage();
+    }
+
+    // QImage::Format_RGB32 ignores alpha semantically, but some QPixmap paths
+    // still preserve the raw high byte. Normalize BGRX to 0xffRRGGBB so every
+    // downstream renderer and encoder sees an opaque frame.
+    for (int y = 0; y < image.height(); ++y) {
+        auto *pixels = reinterpret_cast<QRgb *>(image.scanLine(y));
+        for (int x = 0; x < image.width(); ++x) {
+            pixels[x] |= 0xff000000U;
+        }
+    }
 
     return image;
 }
