@@ -1349,6 +1349,11 @@ Dimensione: %2</translation>
         <translation>Abbellimento non riuscito</translation>
     </message>
     <message>
+        <location filename="../src/PinWindow.cpp" line="5508" />
+        <source>Unable to apply region layout</source>
+        <translation>Impossibile applicare il layout delle aree</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="4669" />
         <source>Beautified image copied</source>
         <translation>Immagine abbellita copiata</translation>

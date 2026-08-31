@@ -78,6 +78,10 @@ private slots:
     void testUndoCrop_MarkerStroke_RestoresOriginalPosition();
     void testApplyCrop_RefreshesMosaicSourceInsideRemoveCommand();
     void testApplyCrop_RefreshesMosaicSourceInsideUndoneAddCommand();
+    void testRegionLayoutApply_MovesAnnotationAfterSuccessfulRecompose();
+    void testRegionLayoutApply_RefreshesMosaicSourceInsideUndoneAddCommand();
+    void testRegionLayoutApply_MaterializesResizedRegionForNextEdit();
+    void testRegionLayoutApply_RecomposeFailureKeepsModeActive();
     void testApplyCrop_EdgeEndpointCoordinate_ClampsToLastPixelColumn();
     void testPreciseSourceSampleRectForRegion_UsesScreenLocalCoordinates();
     void testDisplaySourceRectForTarget_PrefersTranslationOverScaling();
@@ -462,6 +466,209 @@ void TestPinWindowCropUndo::testApplyCrop_RefreshesMosaicSourceInsideUndoneAddCo
     }
 
     QCOMPARE(actual, expected);
+}
+
+void TestPinWindowCropUndo::testRegionLayoutApply_MovesAnnotationAfterSuccessfulRecompose()
+{
+    const QPixmap source = createPatternPixmap(210, 100);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    QVERIFY(window.m_annotationLayer != nullptr);
+
+    QVector<LayoutRegion> regions;
+    LayoutRegion leftRegion;
+    leftRegion.rect = QRect(0, 0, 100, 100);
+    leftRegion.originalRect = leftRegion.rect;
+    leftRegion.image = source.toImage().copy(leftRegion.rect);
+    leftRegion.index = 1;
+    regions.append(leftRegion);
+
+    LayoutRegion rightRegion;
+    rightRegion.rect = QRect(110, 0, 100, 100);
+    rightRegion.originalRect = rightRegion.rect;
+    rightRegion.image = source.toImage().copy(rightRegion.rect);
+    rightRegion.index = 2;
+    regions.append(rightRegion);
+
+    const QVector<QPointF> points = {QPointF(130, 30), QPointF(160, 60)};
+    window.m_annotationLayer->addItem(
+        std::make_unique<MarkerStroke>(points, QColor(Qt::red), 12));
+    auto* marker = dynamic_cast<MarkerStroke*>(window.m_annotationLayer->itemAt(0));
+    QVERIFY(marker != nullptr);
+    const QRect originalAnnotationRect = marker->boundingRect();
+
+    window.setMultiRegionData(regions);
+    window.enterRegionLayoutMode();
+    QVERIFY(window.m_regionLayoutManager != nullptr);
+    window.m_regionLayoutManager->selectRegion(1);
+    window.m_regionLayoutManager->startDrag(QPoint(160, 50));
+    window.m_regionLayoutManager->updateDrag(QPoint(200, 50));
+    window.m_regionLayoutManager->finishDrag();
+    window.exitRegionLayoutMode(true);
+
+    marker = dynamic_cast<MarkerStroke*>(window.m_annotationLayer->itemAt(0));
+    QVERIFY(marker != nullptr);
+    QCOMPARE(marker->boundingRect(), originalAnnotationRect.translated(40, 0));
+    QCOMPARE(window.m_originalPixmap.deviceIndependentSize().toSize(), QSize(250, 100));
+    QVERIFY(window.m_sharedSourcePixmap != nullptr);
+    QVERIFY(pixmapsEqual(*window.m_sharedSourcePixmap, window.m_originalPixmap));
+}
+
+void TestPinWindowCropUndo::testRegionLayoutApply_RefreshesMosaicSourceInsideUndoneAddCommand()
+{
+    const QPixmap source = createPatternPixmap(210, 100);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    QVERIFY(window.m_annotationLayer != nullptr);
+    QVERIFY(window.m_sharedSourcePixmap != nullptr);
+
+    QVector<LayoutRegion> regions;
+    LayoutRegion leftRegion;
+    leftRegion.rect = QRect(0, 0, 100, 100);
+    leftRegion.originalRect = leftRegion.rect;
+    leftRegion.image = source.toImage().copy(leftRegion.rect);
+    leftRegion.index = 1;
+    regions.append(leftRegion);
+
+    LayoutRegion rightRegion;
+    rightRegion.rect = QRect(110, 0, 100, 100);
+    rightRegion.originalRect = rightRegion.rect;
+    rightRegion.image = source.toImage().copy(rightRegion.rect);
+    rightRegion.index = 2;
+    regions.append(rightRegion);
+
+    const QRect originalRect(130, 30, 30, 30);
+    window.m_annotationLayer->addItem(std::make_unique<MosaicRectAnnotation>(
+        originalRect,
+        window.m_sharedSourcePixmap,
+        12,
+        MosaicBlurType::Pixelate));
+    window.m_annotationLayer->undo();
+    QCOMPARE(window.m_annotationLayer->itemCount(), static_cast<size_t>(0));
+
+    window.setMultiRegionData(regions);
+    window.enterRegionLayoutMode();
+    QVERIFY(window.m_regionLayoutManager != nullptr);
+    window.m_regionLayoutManager->selectRegion(1);
+    window.m_regionLayoutManager->startDrag(QPoint(160, 50));
+    window.m_regionLayoutManager->updateDrag(QPoint(200, 50));
+    window.m_regionLayoutManager->finishDrag();
+    window.exitRegionLayoutMode(true);
+
+    window.m_annotationLayer->redo();
+    auto* restored = dynamic_cast<MosaicRectAnnotation*>(window.m_annotationLayer->itemAt(0));
+    QVERIFY(restored != nullptr);
+
+    QImage actual(250, 100, QImage::Format_ARGB32_Premultiplied);
+    actual.fill(Qt::transparent);
+    {
+        QPainter painter(&actual);
+        restored->draw(painter);
+    }
+
+    auto expectedSource = std::make_shared<const QPixmap>(window.m_originalPixmap);
+    MosaicRectAnnotation expectedAnnotation(
+        originalRect.translated(40, 0),
+        expectedSource,
+        12,
+        MosaicBlurType::Pixelate);
+    QImage expected(250, 100, QImage::Format_ARGB32_Premultiplied);
+    expected.fill(Qt::transparent);
+    {
+        QPainter painter(&expected);
+        expectedAnnotation.draw(painter);
+    }
+
+    auto staleSource = std::make_shared<const QPixmap>(source);
+    MosaicRectAnnotation staleAnnotation(
+        originalRect.translated(40, 0),
+        staleSource,
+        12,
+        MosaicBlurType::Pixelate);
+    QImage stale(250, 100, QImage::Format_ARGB32_Premultiplied);
+    stale.fill(Qt::transparent);
+    {
+        QPainter painter(&stale);
+        staleAnnotation.draw(painter);
+    }
+
+    QVERIFY(stale != expected);
+    QCOMPARE(actual, expected);
+}
+
+void TestPinWindowCropUndo::testRegionLayoutApply_MaterializesResizedRegionForNextEdit()
+{
+    const QPixmap source = createPatternPixmap(100, 100);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+
+    LayoutRegion region;
+    region.rect = QRect(0, 0, 100, 100);
+    region.originalRect = region.rect;
+    region.image = source.toImage();
+    region.index = 1;
+    window.setMultiRegionData({region});
+
+    window.enterRegionLayoutMode();
+    QVERIFY(window.m_regionLayoutManager != nullptr);
+    window.m_regionLayoutManager->selectRegion(0);
+    window.m_regionLayoutManager->startResize(
+        ResizeHandler::Edge::BottomRight, QPoint(99, 99));
+    window.m_regionLayoutManager->updateResize(QPoint(199, 199), false);
+    window.m_regionLayoutManager->finishResize();
+    window.exitRegionLayoutMode(true);
+
+    QVERIFY(!window.isRegionLayoutMode());
+    QCOMPARE(window.m_originalPixmap.deviceIndependentSize().toSize(), QSize(200, 200));
+    QCOMPARE(window.m_storedRegions.size(), 1);
+    QCOMPARE(window.m_storedRegions[0].rect, QRect(0, 0, 200, 200));
+    QCOMPARE(window.m_storedRegions[0].originalRect, QRect(0, 0, 200, 200));
+    QCOMPARE(window.m_storedRegions[0].image.size(), QSize(200, 200));
+    const QPixmap firstApply = window.m_originalPixmap;
+
+    // Re-enter and apply without another resize. The committed per-region
+    // image must already match the 200x200 rect, so no transparent quadrant
+    // appears and the result remains byte-for-byte stable.
+    window.enterRegionLayoutMode();
+    window.exitRegionLayoutMode(true);
+
+    QVERIFY(!window.isRegionLayoutMode());
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, firstApply));
+    QVERIFY(window.m_originalPixmap.toImage().pixelColor(199, 199).alpha() > 0);
+}
+
+void TestPinWindowCropUndo::testRegionLayoutApply_RecomposeFailureKeepsModeActive()
+{
+    const QPixmap source = createPatternPixmap(100, 100);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+
+    LayoutRegion invalidRegion;
+    invalidRegion.rect = QRect(0, 0, 100, 100);
+    invalidRegion.originalRect = invalidRegion.rect;
+    invalidRegion.image = QImage();
+    invalidRegion.index = 1;
+    window.setMultiRegionData({invalidRegion});
+
+    window.enterRegionLayoutMode();
+    QVERIFY(window.m_regionLayoutManager != nullptr);
+    window.m_regionLayoutManager->selectRegion(0);
+    window.m_regionLayoutManager->startDrag(QPoint(50, 50));
+    window.m_regionLayoutManager->updateDrag(QPoint(130, 50));
+    window.m_regionLayoutManager->finishDrag();
+    const QSize activeLayoutSize = window.size();
+    QCOMPARE(activeLayoutSize, QSize(180, 100));
+
+    window.exitRegionLayoutMode(true);
+
+    // A failed allocation/invalid source must not exit into a half-applied
+    // state. The active layout is left intact so Cancel remains available.
+    QVERIFY(window.isRegionLayoutMode());
+    QCOMPARE(window.size(), activeLayoutSize);
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+    QCOMPARE(window.m_storedRegions[0].rect, invalidRegion.rect);
+
+    window.exitRegionLayoutMode(false);
+    QVERIFY(!window.isRegionLayoutMode());
+    QCOMPARE(window.size(), QSize(100, 100));
 }
 
 void TestPinWindowCropUndo::testApplyCrop_EdgeEndpointCoordinate_ClampsToLastPixelColumn()

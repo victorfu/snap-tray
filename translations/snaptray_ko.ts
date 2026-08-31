@@ -1349,6 +1349,11 @@ Size: %2</source>
         <translation>꾸미기 렌더링 실패</translation>
     </message>
     <message>
+        <location filename="../src/PinWindow.cpp" line="5508" />
+        <source>Unable to apply region layout</source>
+        <translation>영역 레이아웃을 적용할 수 없습니다</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="4669" />
         <source>Beautified image copied</source>
         <translation>꾸민 이미지 복사됨</translation>

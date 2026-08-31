@@ -1343,6 +1343,11 @@ Storlek: %2</translation>
         <translation>Förskönande rendering misslyckades</translation>
     </message>
     <message>
+        <location filename="../src/PinWindow.cpp" line="5508" />
+        <source>Unable to apply region layout</source>
+        <translation>Det gick inte att tillämpa områdeslayouten</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="4669" />
         <source>Beautified image copied</source>
         <translation>Förskönad bild kopierad</translation>

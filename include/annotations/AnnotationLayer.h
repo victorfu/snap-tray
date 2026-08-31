@@ -53,6 +53,12 @@ public:
     void clear();
     void draw(QPainter &painter) const;
     void translateAll(const QPointF& delta);
+    // Applies a caller-provided translation to every annotation owned by the
+    // layer, including history- and transaction-owned items, then invalidates
+    // rendering caches once. Canvas-wide transforms must keep these hidden
+    // items aligned so a later undo/redo cannot restore stale coordinates.
+    void translateOwnedItems(
+        const std::function<QPointF(const AnnotationItem&)>& deltaForItem);
     void forEachItem(const std::function<void(AnnotationItem*)>& visitor,
                      bool includeRedoStack = false);
     void forEachItem(const std::function<void(const AnnotationItem*)>& visitor,

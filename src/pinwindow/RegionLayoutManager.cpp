@@ -9,6 +9,7 @@
 #include <QDataStream>
 #include <QDebug>
 #include <algorithm>
+#include <utility>
 
 RegionLayoutManager::RegionLayoutManager(QObject* parent)
     : QObject(parent)
@@ -35,9 +36,6 @@ void RegionLayoutManager::enterLayoutMode(const QVector<LayoutRegion>& regions, 
     m_state.isDragging = false;
     m_state.isResizing = false;
     m_state.resizeEdge = ResizeHandler::Edge::None;
-
-    m_annotationBindings.clear();
-    m_annotationOriginalRects.clear();
 
     m_active = true;
     emit layoutChanged();
@@ -447,9 +445,11 @@ void RegionLayoutManager::render(QPainter& painter, qreal dpr) const
 // Image Recomposition
 // ============================================================================
 
-QPixmap RegionLayoutManager::recomposeImage(qreal dpr) const
+QPixmap RegionLayoutManager::recomposeImage(
+    qreal dpr,
+    QVector<LayoutRegion>* committedRegions) const
 {
-    if (m_state.regions.isEmpty()) {
+    if (dpr <= 0.0 || m_state.regions.isEmpty()) {
         return QPixmap();
     }
 
@@ -470,107 +470,130 @@ QPixmap RegionLayoutManager::recomposeImage(qreal dpr) const
     // Create transparent canvas at physical resolution
     QSize physSize = CoordinateHelper::toPhysical(bounds.size(), dpr);
     QImage result(physSize, QImage::Format_ARGB32_Premultiplied);
+    if (result.isNull()) {
+        return QPixmap();
+    }
     result.fill(Qt::transparent);
     result.setDevicePixelRatio(dpr);
 
     QPainter painter(&result);
+    if (!painter.isActive()) {
+        return QPixmap();
+    }
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
+
+    QVector<LayoutRegion> finalRegions;
+    if (committedRegions) {
+        finalRegions.reserve(m_state.regions.size());
+    }
 
     // Paint each region at its new position (using logical coordinates)
     // Note: Since result has DPR set, QPainter expects logical coordinates
     for (const auto& region : m_state.regions) {
-        QRect targetRect = region.rect.translated(-bounds.topLeft());
+        if (region.image.isNull()) {
+            painter.end();
+            return QPixmap();
+        }
 
-        // Scale region image if resized
-        if (region.rect.size() != region.originalRect.size()) {
-            QSize targetPhysSize = CoordinateHelper::toPhysical(region.rect.size(), dpr);
-            QImage scaled = region.image.scaled(
+        const QRect targetRect = region.rect.translated(-bounds.topLeft());
+        const QSize targetPhysSize = CoordinateHelper::toPhysical(region.rect.size(), dpr);
+        if (!targetPhysSize.isValid() || targetPhysSize.isEmpty()) {
+            painter.end();
+            return QPixmap();
+        }
+
+        QImage materializedImage = region.image;
+        if (materializedImage.size() != targetPhysSize) {
+            materializedImage = materializedImage.scaled(
                 targetPhysSize,
                 Qt::IgnoreAspectRatio,
-                Qt::SmoothTransformation
-            );
-            scaled.setDevicePixelRatio(dpr);
-            painter.drawImage(targetRect.topLeft(), scaled);
-        } else {
-            painter.drawImage(targetRect.topLeft(), region.image);
+                Qt::SmoothTransformation);
+        }
+        if (materializedImage.isNull()) {
+            painter.end();
+            return QPixmap();
+        }
+        materializedImage.setDevicePixelRatio(dpr);
+        painter.drawImage(targetRect.topLeft(), materializedImage);
+
+        if (committedRegions) {
+            LayoutRegion finalRegion = region;
+            finalRegion.rect = targetRect;
+            finalRegion.originalRect = targetRect;
+            finalRegion.image = std::move(materializedImage);
+            finalRegions.append(std::move(finalRegion));
         }
     }
 
     painter.end();
-    return QPixmap::fromImage(result);
+    QPixmap pixmap = QPixmap::fromImage(result);
+    if (pixmap.isNull()) {
+        return QPixmap();
+    }
+    if (committedRegions) {
+        *committedRegions = std::move(finalRegions);
+    }
+    return pixmap;
 }
 
 // ============================================================================
 // Annotation Integration
 // ============================================================================
 
-void RegionLayoutManager::bindAnnotations(AnnotationLayer* layer)
+void RegionLayoutManager::updateAnnotationPositions(AnnotationLayer* layer) const
 {
-    m_annotationBindings.clear();
-    m_annotationOriginalRects.clear();
-
-    if (!layer || layer->itemCount() == 0) {
+    if (!layer || m_state.regions.isEmpty() || m_state.originalSnapshot.isEmpty()) {
         return;
     }
 
-    for (size_t idx = 0; idx < layer->itemCount(); ++idx) {
-        AnnotationItem* annotation = layer->itemAt(static_cast<int>(idx));
-        if (!annotation) {
-            continue;
-        }
+    QRect finalBounds;
+    for (const auto& region : m_state.regions) {
+        finalBounds = finalBounds.isNull()
+            ? region.rect
+            : finalBounds.united(region.rect);
+    }
+    if (finalBounds.isEmpty()) {
+        return;
+    }
 
-        AnnotationRegionBinding binding;
-        binding.annotation = annotation;
-        binding.regionIndex = -1;
+    const int regionCount = (std::min)(m_state.regions.size(),
+                                       m_state.originalSnapshot.size());
+    const QPointF finalOrigin(finalBounds.topLeft());
 
-        QRectF annotationRect = annotation->boundingRect();
-        m_annotationOriginalRects.append(annotationRect);
-        QPointF center = annotationRect.center();
+    layer->translateOwnedItems(
+        [this, regionCount, finalOrigin](const AnnotationItem& annotation) {
+            const QPointF originalCenter = QRectF(annotation.boundingRect()).center();
+            int regionIndex = -1;
 
-        // Find the region that contains the annotation's center
-        for (int i = 0; i < m_state.regions.size(); ++i) {
-            if (m_state.regions[i].rect.contains(center.toPoint())) {
-                binding.regionIndex = i;
-                binding.offsetFromRegion = center - m_state.regions[i].rect.topLeft();
-                break;
-            }
-        }
-
-        // If not in any region, bind to closest region
-        if (binding.regionIndex < 0 && !m_state.regions.isEmpty()) {
-            qreal minDist = (std::numeric_limits<qreal>::max)();
-            for (int i = 0; i < m_state.regions.size(); ++i) {
-                QPointF regionCenter = m_state.regions[i].rect.center();
-                qreal dist = QLineF(center, regionCenter).length();
-                if (dist < minDist) {
-                    minDist = dist;
-                    binding.regionIndex = i;
-                    binding.offsetFromRegion = center - m_state.regions[i].rect.topLeft();
+            // Regions are painted in vector order, so the last containing
+            // region is the visible/topmost owner for overlapping captures.
+            for (int i = regionCount - 1; i >= 0; --i) {
+                if (QRectF(m_state.originalSnapshot[i].rect).contains(originalCenter)) {
+                    regionIndex = i;
+                    break;
                 }
             }
-        }
 
-        m_annotationBindings.append(binding);
-    }
-}
+            QPointF targetCenter = originalCenter - finalOrigin;
+            if (regionIndex >= 0) {
+                const QRectF originalRegion(m_state.originalSnapshot[regionIndex].rect);
+                const QRectF currentRegion(m_state.regions[regionIndex].rect);
+                if (originalRegion.width() > 0.0 && originalRegion.height() > 0.0) {
+                    const qreal relativeX =
+                        (originalCenter.x() - originalRegion.left()) / originalRegion.width();
+                    const qreal relativeY =
+                        (originalCenter.y() - originalRegion.top()) / originalRegion.height();
+                    targetCenter = QPointF(
+                        currentRegion.left() + relativeX * currentRegion.width(),
+                        currentRegion.top() + relativeY * currentRegion.height())
+                        - finalOrigin;
+                }
+            }
 
-void RegionLayoutManager::updateAnnotationPositions()
-{
-    // Note: Annotation movement is tracked but not applied during layout mode.
-    // The binding data is preserved for potential future use when annotations
-    // gain transformation support. For now, annotations remain at their
-    // original positions and are re-rendered on top of the composed image.
-    Q_UNUSED(m_annotationBindings)
-}
-
-void RegionLayoutManager::restoreAnnotations(AnnotationLayer* layer)
-{
-    Q_UNUSED(layer)
-
-    // Note: Since annotations are not moved during layout mode (see updateAnnotationPositions),
-    // there's nothing to restore. The binding data is cleared when exiting layout mode.
-    m_annotationBindings.clear();
-    m_annotationOriginalRects.clear();
+            // Annotation geometry and visual weight remain unchanged. Only its
+            // center follows the corresponding point in the resized region.
+            return targetCenter - originalCenter;
+        });
 }
 
 // ============================================================================

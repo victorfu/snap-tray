@@ -5484,11 +5484,6 @@ void PinWindow::enterRegionLayoutMode()
     QSize canvasSize = baseContentLogicalSize();
     m_regionLayoutManager->enterLayoutMode(m_storedRegions, canvasSize);
 
-    // Bind annotations if annotation layer exists
-    if (m_annotationLayer) {
-        m_regionLayoutManager->bindAnnotations(m_annotationLayer);
-    }
-
     update();
 }
 
@@ -5499,62 +5494,56 @@ void PinWindow::exitRegionLayoutMode(bool apply)
     }
 
     if (apply) {
-        // Update annotation positions before recomposing
-        if (m_annotationLayer) {
-            m_regionLayoutManager->updateAnnotationPositions();
-        }
-
         // Recompose the image
         qreal dpr = m_originalPixmap.devicePixelRatio();
-        QPixmap newPixmap = m_regionLayoutManager->recomposeImage(dpr);
+        QVector<LayoutRegion> committedRegions;
+        QPixmap newPixmap = m_regionLayoutManager->recomposeImage(
+            dpr, &committedRegions);
 
-        if (!newPixmap.isNull()) {
-            invalidateAutoBlurRequest();
-            // Calculate the bounds offset used in recomposition
-            QRect bounds;
-            for (const auto& region : m_regionLayoutManager->regions()) {
-                if (bounds.isNull()) {
-                    bounds = region.rect;
-                } else {
-                    bounds = bounds.united(region.rect);
-                }
+        if (newPixmap.isNull()) {
+            qWarning() << "PinWindow::exitRegionLayoutMode: Failed to recompose layout";
+            if (m_toast) {
+                m_toast->showToast(
+                    SnapTray::QmlToast::Level::Error,
+                    tr("Unable to apply region layout"));
             }
-
-            // Store regions with normalized coordinates (relative to new canvas origin)
-            m_storedRegions = m_regionLayoutManager->regions();
-            for (auto& region : m_storedRegions) {
-                region.rect.translate(-bounds.topLeft());
-                region.originalRect = region.rect;  // Reset original to match current
-            }
-
-            m_originalPixmap = newPixmap;
-            setContentLogicalSize(bounds.size());
-            resetSourceSampleRect();
-            m_displayPixmap = newPixmap;
-            clearCropUndoHistory();
-
-            // Invalidate transform cache
-            m_cachedRotation = -1;
-            m_cachedFlipH = false;
-            m_cachedFlipV = false;
-
-            // Update window size
-            QSize logicalSize = logicalSizeFromPixmap(m_displayPixmap);
-            setFixedSize(logicalSize);
-            syncCropHandlerImageSize();
-
-            // Invalidate annotation layer cache
-            if (m_annotationLayer) {
-                m_annotationLayer->invalidateCache();
-            }
-
+            // Keep layout mode and its temporary canvas active so the user can
+            // adjust the layout or cancel without leaving a half-applied state.
+            return;
         }
-    } else {
-        // Cancel - restore annotations
+
+        invalidateAutoBlurRequest();
+        m_storedRegions = std::move(committedRegions);
+
+        m_originalPixmap = newPixmap;
+        setContentLogicalSize(logicalSizeFromPixmap(newPixmap));
+        resetSourceSampleRect();
+        m_displayPixmap = newPixmap;
+        clearCropUndoHistory();
+
+        // Region recomposition changes the coordinate origin and the
+        // source sampled by Mosaic annotations. Update the shared source
+        // before moving annotations so the layer's single cache
+        // invalidation covers both changes.
+        m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
+        if (m_toolManager) {
+            m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
+        }
         if (m_annotationLayer) {
-            m_regionLayoutManager->restoreAnnotations(m_annotationLayer);
+            refreshAllMosaicSources(m_annotationLayer, m_sharedSourcePixmap);
+            m_regionLayoutManager->updateAnnotationPositions(m_annotationLayer);
         }
 
+        // Invalidate transform cache
+        m_cachedRotation = -1;
+        m_cachedFlipH = false;
+        m_cachedFlipV = false;
+
+        // Update window size
+        QSize logicalSize = logicalSizeFromPixmap(m_displayPixmap);
+        setFixedSize(logicalSize);
+        syncCropHandlerImageSize();
+    } else {
         // Layout mode can temporarily resize the window via canvasSizeChanged.
         // On cancel, restore the pre-layout display size.
         const QSize restoredSize = logicalSizeFromPixmap(m_displayPixmap);

@@ -1349,6 +1349,11 @@ Taille : %2</translation>
         <translation>Échec du rendu de l'embellissement</translation>
     </message>
     <message>
+        <location filename="../src/PinWindow.cpp" line="5508" />
+        <source>Unable to apply region layout</source>
+        <translation>Impossible d’appliquer la disposition des régions</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="4669" />
         <source>Beautified image copied</source>
         <translation>Image embellie copiée</translation>

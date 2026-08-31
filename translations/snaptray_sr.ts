@@ -1349,6 +1349,11 @@ Size: %2</source>
         <translation>Рендеровање улепшавања неуспешно</translation>
     </message>
     <message>
+        <location filename="../src/PinWindow.cpp" line="5508" />
+        <source>Unable to apply region layout</source>
+        <translation>Није могуће применити распоред области</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="4669" />
         <source>Beautified image copied</source>
         <translation>Улепшана слика копирана</translation>

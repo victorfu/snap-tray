@@ -1343,6 +1343,11 @@ Size: %2</source>
         <translation>فشل عرض التجميل</translation>
     </message>
     <message>
+        <location filename="../src/PinWindow.cpp" line="5508" />
+        <source>Unable to apply region layout</source>
+        <translation>تعذّر تطبيق تخطيط المناطق</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="4669" />
         <source>Beautified image copied</source>
         <translation>تم نسخ الصورة المُجمَّلة</translation>

@@ -1338,6 +1338,11 @@ English is always included and cannot be removed.</source>
         <translation>เรนเดอร์ภาพที่ปรับแต่งไม่สำเร็จ</translation>
     </message>
     <message>
+        <location filename="../src/PinWindow.cpp" line="5508"/>
+        <source>Unable to apply region layout</source>
+        <translation>ไม่สามารถใช้เค้าโครงพื้นที่ได้</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="4896"/>
         <source>Beautified image copied</source>
         <translation>คัดลอกภาพที่ปรับแต่งแล้ว</translation>

@@ -1343,6 +1343,11 @@ Kích thước: %2</translation>
         <translation>Xử lý làm đẹp thất bại</translation>
     </message>
     <message>
+        <location filename="../src/PinWindow.cpp" line="5508" />
+        <source>Unable to apply region layout</source>
+        <translation>Không thể áp dụng bố cục vùng</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="4669" />
         <source>Beautified image copied</source>
         <translation>Đã sao chép hình ảnh đã làm đẹp</translation>

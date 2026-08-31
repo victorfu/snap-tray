@@ -2,8 +2,46 @@
 #include <QSignalSpy>
 #include <QImage>
 #include <QColor>
+#include <memory>
 
+#include "annotations/AnnotationItem.h"
+#include "annotations/AnnotationLayer.h"
 #include "pinwindow/RegionLayoutManager.h"
+
+namespace {
+
+class TrackingAnnotation final : public AnnotationItem
+{
+public:
+    explicit TrackingAnnotation(const QRect& rect)
+        : m_rect(rect)
+    {
+    }
+
+    void draw(QPainter& painter) const override { Q_UNUSED(painter) }
+    QRect boundingRect() const override { return m_rect; }
+    std::unique_ptr<AnnotationItem> clone() const override
+    {
+        return std::make_unique<TrackingAnnotation>(m_rect);
+    }
+    void translate(const QPointF& delta) override
+    {
+        m_rect.translate(qRound(delta.x()), qRound(delta.y()));
+    }
+
+private:
+    QRect m_rect;
+};
+
+TrackingAnnotation* addTrackingAnnotation(AnnotationLayer& layer, const QRect& rect)
+{
+    auto annotation = std::make_unique<TrackingAnnotation>(rect);
+    auto* result = annotation.get();
+    layer.addItem(std::move(annotation));
+    return result;
+}
+
+}  // namespace
 
 class TestRegionLayoutManager : public QObject
 {
@@ -272,6 +310,134 @@ private slots:
         // Canvas should have expanded
         QRect bounds = manager.canvasBounds();
         QVERIFY(bounds.width() > 100 || bounds.height() > 100);
+    }
+
+    // =========================================================================
+    // Annotation Integration Tests
+    // =========================================================================
+
+    void testAnnotationsFollowTheirRegionsAndFinalCanvasOrigin() {
+        RegionLayoutManager manager;
+        auto regions = createTestRegions(2);
+        AnnotationLayer layer;
+        auto* first = addTrackingAnnotation(layer, QRect(20, 20, 10, 10));
+        auto* second = addTrackingAnnotation(layer, QRect(140, 20, 10, 10));
+
+        manager.enterLayoutMode(regions, QSize(210, 100));
+        manager.selectRegion(0);
+        manager.startDrag(QPoint(50, 50));
+        manager.updateDrag(QPoint(100, 80));
+        manager.finishDrag();
+
+        QSignalSpy changedSpy(&layer, &AnnotationLayer::changed);
+        const auto revisionBefore = layer.revision();
+        manager.updateAnnotationPositions(&layer);
+
+        // The final canvas starts at x=50 because the untouched second region
+        // is now the leftmost region. Each annotation follows its own region,
+        // then both are normalized to that final origin.
+        QCOMPARE(first->boundingRect(), QRect(20, 50, 10, 10));
+        QCOMPARE(second->boundingRect(), QRect(90, 20, 10, 10));
+        QCOMPARE(changedSpy.count(), 1);
+        QVERIFY(layer.revision() > revisionBefore);
+    }
+
+    void testAnnotationCenterTracksRegionResizeWithoutScalingGeometry() {
+        RegionLayoutManager manager;
+        auto regions = createTestRegions(2);
+        AnnotationLayer layer;
+        auto* annotation = addTrackingAnnotation(layer, QRect(130, 20, 10, 10));
+
+        manager.enterLayoutMode(regions, QSize(210, 100));
+        manager.selectRegion(1);
+        manager.startResize(ResizeHandler::Edge::BottomRight, QPoint(209, 99));
+        manager.updateResize(QPoint(309, 199), false);
+        manager.finishResize();
+        manager.updateAnnotationPositions(&layer);
+
+        // The original center is 25% across/down the region. It moves to the
+        // same relative point in the 200x200 region, while its own size stays
+        // 10x10 because AnnotationItem has translation, not affine scaling.
+        QCOMPARE(annotation->boundingRect(), QRect(155, 45, 10, 10));
+    }
+
+    void testAnnotationInGapIsNotAttachedToNearestRegion() {
+        RegionLayoutManager manager;
+        auto regions = createTestRegions(2);
+        AnnotationLayer layer;
+        auto* annotation = addTrackingAnnotation(layer, QRect(101, 40, 8, 8));
+
+        manager.enterLayoutMode(regions, QSize(210, 100));
+        manager.selectRegion(1);
+        manager.startDrag(QPoint(160, 50));
+        manager.updateDrag(QPoint(210, 50));
+        manager.finishDrag();
+        manager.updateAnnotationPositions(&layer);
+
+        QCOMPARE(annotation->boundingRect(), QRect(101, 40, 8, 8));
+    }
+
+    void testRedoOwnedAnnotationUsesFinalRegionCoordinates() {
+        RegionLayoutManager manager;
+        auto regions = createTestRegions(2);
+        AnnotationLayer layer;
+        auto* annotation = addTrackingAnnotation(layer, QRect(130, 20, 10, 10));
+        layer.undo();
+        QCOMPARE(layer.itemCount(), static_cast<size_t>(0));
+
+        manager.enterLayoutMode(regions, QSize(210, 100));
+        manager.selectRegion(1);
+        manager.startDrag(QPoint(160, 50));
+        manager.updateDrag(QPoint(200, 50));
+        manager.finishDrag();
+        manager.updateAnnotationPositions(&layer);
+
+        layer.redo();
+        QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+        QCOMPARE(annotation->boundingRect(), QRect(170, 20, 10, 10));
+    }
+
+    void testRemovedAnnotationUsesFinalRegionCoordinatesAfterUndo() {
+        RegionLayoutManager manager;
+        auto regions = createTestRegions(2);
+        AnnotationLayer layer;
+        auto* annotation = addTrackingAnnotation(layer, QRect(130, 20, 10, 10));
+        layer.setSelectedIndex(0);
+        QVERIFY(layer.removeSelectedItem());
+        QCOMPARE(layer.itemCount(), static_cast<size_t>(0));
+
+        manager.enterLayoutMode(regions, QSize(210, 100));
+        manager.selectRegion(1);
+        manager.startDrag(QPoint(160, 50));
+        manager.updateDrag(QPoint(200, 50));
+        manager.finishDrag();
+        manager.updateAnnotationPositions(&layer);
+
+        layer.undo();
+        QCOMPARE(layer.itemCount(), static_cast<size_t>(1));
+        QCOMPARE(annotation->boundingRect(), QRect(170, 20, 10, 10));
+    }
+
+    void testRecomposeMaterializesCommittedRegionAtTargetDpr() {
+        RegionLayoutManager manager;
+        auto regions = createTestRegions(1);
+        manager.enterLayoutMode(regions, QSize(100, 100));
+        manager.selectRegion(0);
+        manager.startResize(ResizeHandler::Edge::BottomRight, QPoint(99, 99));
+        manager.updateResize(QPoint(149, 149), false);
+        manager.finishResize();
+
+        QVector<LayoutRegion> committedRegions;
+        const QPixmap pixmap = manager.recomposeImage(2.0, &committedRegions);
+
+        QVERIFY(!pixmap.isNull());
+        QCOMPARE(pixmap.size(), QSize(300, 300));
+        QCOMPARE(pixmap.devicePixelRatio(), 2.0);
+        QCOMPARE(committedRegions.size(), 1);
+        QCOMPARE(committedRegions[0].rect, QRect(0, 0, 150, 150));
+        QCOMPARE(committedRegions[0].originalRect, committedRegions[0].rect);
+        QCOMPARE(committedRegions[0].image.size(), QSize(300, 300));
+        QCOMPARE(committedRegions[0].image.devicePixelRatio(), 2.0);
     }
 
     // =========================================================================

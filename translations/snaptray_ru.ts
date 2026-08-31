@@ -1349,6 +1349,11 @@ Size: %2</source>
         <translation>Ошибка рендеринга украшения</translation>
     </message>
     <message>
+        <location filename="../src/PinWindow.cpp" line="5508" />
+        <source>Unable to apply region layout</source>
+        <translation>Не удалось применить расположение областей</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="4669" />
         <source>Beautified image copied</source>
         <translation>Украшенное изображение скопировано</translation>

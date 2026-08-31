@@ -225,6 +225,28 @@ void AnnotationLayer::translateAll(const QPointF& delta)
     emit changed();
 }
 
+void AnnotationLayer::translateOwnedItems(
+    const std::function<QPointF(const AnnotationItem&)>& deltaForItem)
+{
+    if (!deltaForItem) {
+        return;
+    }
+
+    forEachOwnedItem([&deltaForItem](AnnotationItem* item) {
+        if (!item) {
+            return;
+        }
+
+        const QPointF delta = deltaForItem(*item);
+        if (!delta.isNull()) {
+            item->translate(delta);
+        }
+    });
+
+    invalidateCache();
+    emit changed();
+}
+
 void AnnotationLayer::forEachItem(const std::function<void(AnnotationItem*)>& visitor,
                                   bool includeRedoStack)
 {

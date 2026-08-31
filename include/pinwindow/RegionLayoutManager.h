@@ -14,7 +14,6 @@
 
 class QPainter;
 class AnnotationLayer;
-class AnnotationItem;
 
 /**
  * @brief Constants for Region Layout Mode UI and behavior.
@@ -70,15 +69,6 @@ struct RegionLayoutState {
     ResizeHandler::Edge resizeEdge = ResizeHandler::Edge::None;
     QPoint resizeStartPos;
     QRect resizeStartRect;
-};
-
-/**
- * @brief Binding between an annotation and its containing region.
- */
-struct AnnotationRegionBinding {
-    AnnotationItem* annotation = nullptr;  ///< Pointer to the annotation
-    int regionIndex = -1;                  ///< Index of containing region (-1 = unbound)
-    QPointF offsetFromRegion;              ///< Offset from region's top-left corner
 };
 
 /**
@@ -253,30 +243,24 @@ public:
     /**
      * @brief Recompose the regions into a single image.
      * @param dpr Device pixel ratio
+     * @param committedRegions Optional normalized snapshot whose per-region
+     * images are materialized at their final physical sizes. The output is
+     * assigned only when recomposition succeeds.
      * @return The composited pixmap
      */
-    QPixmap recomposeImage(qreal dpr) const;
+    QPixmap recomposeImage(
+        qreal dpr,
+        QVector<LayoutRegion>* committedRegions = nullptr) const;
 
     // ========================================================================
     // Annotation Integration
     // ========================================================================
 
     /**
-     * @brief Bind annotations to their containing regions.
-     * @param layer The annotation layer containing annotations
+     * @brief Update every owned annotation based on the final region layout.
+     * @param layer The annotation layer containing annotations and history
      */
-    void bindAnnotations(AnnotationLayer* layer);
-
-    /**
-     * @brief Update annotation positions based on region movements.
-     */
-    void updateAnnotationPositions();
-
-    /**
-     * @brief Restore annotations to their original positions (for cancel).
-     * @param layer The annotation layer to restore
-     */
-    void restoreAnnotations(AnnotationLayer* layer);
+    void updateAnnotationPositions(AnnotationLayer* layer) const;
 
     // ========================================================================
     // Serialization
@@ -342,8 +326,6 @@ private:
 
     bool m_active = false;
     RegionLayoutState m_state;
-    QVector<AnnotationRegionBinding> m_annotationBindings;
-    QVector<QRectF> m_annotationOriginalRects;  ///< Original annotation rects for restore
 };
 
 #endif // REGIONLAYOUTMANAGER_H

@@ -1349,6 +1349,11 @@ Velikost: %2</translation>
         <translation>Vykreslení zkrášlení se nezdařilo</translation>
     </message>
     <message>
+        <location filename="../src/PinWindow.cpp" line="5508" />
+        <source>Unable to apply region layout</source>
+        <translation>Rozložení oblastí se nepodařilo použít</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="4669" />
         <source>Beautified image copied</source>
         <translation>Zkrášlený obrázek zkopírován</translation>

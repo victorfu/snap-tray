@@ -1343,6 +1343,11 @@ Dydis: %2</translation>
         <translation>Pagražinimo atvaizdavimas nepavyko</translation>
     </message>
     <message>
+        <location filename="../src/PinWindow.cpp" line="5508" />
+        <source>Unable to apply region layout</source>
+        <translation>Nepavyko pritaikyti sričių išdėstymo</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="4669" />
         <source>Beautified image copied</source>
         <translation>Pagražintas vaizdas nukopijuotas</translation>

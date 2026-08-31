@@ -1343,6 +1343,11 @@ Size: %2</source>
         <translation>Αποτυχία απόδοσης ομορφοποίησης</translation>
     </message>
     <message>
+        <location filename="../src/PinWindow.cpp" line="5508" />
+        <source>Unable to apply region layout</source>
+        <translation>Δεν ήταν δυνατή η εφαρμογή της διάταξης περιοχών</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="4669" />
         <source>Beautified image copied</source>
         <translation>Η ομορφοποιημένη εικόνα αντιγράφηκε</translation>

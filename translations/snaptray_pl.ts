@@ -1349,6 +1349,11 @@ Rozmiar: %2</translation>
         <translation>Renderowanie upiększenia nie powiodło się</translation>
     </message>
     <message>
+        <location filename="../src/PinWindow.cpp" line="5508" />
+        <source>Unable to apply region layout</source>
+        <translation>Nie można zastosować układu regionów</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="4669" />
         <source>Beautified image copied</source>
         <translation>Upiększony obraz skopiowany</translation>

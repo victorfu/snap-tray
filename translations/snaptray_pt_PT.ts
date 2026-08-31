@@ -1343,6 +1343,11 @@ Tamanho: %2</translation>
         <translation>Falha na renderização do embelezamento</translation>
     </message>
     <message>
+        <location filename="../src/PinWindow.cpp" line="5508" />
+        <source>Unable to apply region layout</source>
+        <translation>Não foi possível aplicar a disposição das regiões</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="4669" />
         <source>Beautified image copied</source>
         <translation>Imagem embelezada copiada</translation>

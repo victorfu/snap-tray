@@ -1349,6 +1349,11 @@ Grootte: %2</translation>
         <translation>Verfraaien mislukt</translation>
     </message>
     <message>
+        <location filename="../src/PinWindow.cpp" line="5508" />
+        <source>Unable to apply region layout</source>
+        <translation>Kan de regio-indeling niet toepassen</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="4669" />
         <source>Beautified image copied</source>
         <translation>Verfraaide afbeelding gekopieerd</translation>

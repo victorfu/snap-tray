@@ -1343,6 +1343,11 @@ Boyut: %2</translation>
         <translation>Güzelleştirme işlemi başarısız</translation>
     </message>
     <message>
+        <location filename="../src/PinWindow.cpp" line="5508" />
+        <source>Unable to apply region layout</source>
+        <translation>Bölge düzeni uygulanamadı</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="4669" />
         <source>Beautified image copied</source>
         <translation>Güzelleştirilmiş görsel kopyalandı</translation>

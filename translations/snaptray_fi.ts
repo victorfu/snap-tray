@@ -1343,6 +1343,11 @@ Koko: %2</translation>
         <translation>Kaunistuksen renderöinti epäonnistui</translation>
     </message>
     <message>
+        <location filename="../src/PinWindow.cpp" line="5508" />
+        <source>Unable to apply region layout</source>
+        <translation>Alueasettelua ei voitu ottaa käyttöön</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="4669" />
         <source>Beautified image copied</source>
         <translation>Kaunistettu kuva kopioitu</translation>

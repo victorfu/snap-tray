@@ -1340,6 +1340,11 @@ Size: %2</source>
         <translation>美化渲染失败</translation>
     </message>
     <message>
+        <location filename="../src/PinWindow.cpp" line="5508" />
+        <source>Unable to apply region layout</source>
+        <translation>无法应用区域布局</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="4669" />
         <source>Beautified image copied</source>
         <translation>美化图片已复制</translation>
