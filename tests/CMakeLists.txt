@@ -9,6 +9,14 @@
 find_package(Qt6 REQUIRED COMPONENTS Test)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
+add_test(
+    NAME Packaging_MacMicrophoneMetadata
+    COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_MacMicrophoneMetadata.py"
+            "${CMAKE_SOURCE_DIR}"
+)
+set_tests_properties(Packaging_MacMicrophoneMetadata PROPERTIES TIMEOUT 30 LABELS "unit;packaging")
+
 if(UNIX AND NOT APPLE)
     add_test(
         NAME Packaging_AppImageBinfmtBypass

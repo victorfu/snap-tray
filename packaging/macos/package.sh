@@ -342,6 +342,9 @@ echo "Verifying signature..."
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 echo -e "${GREEN}Signature verified${NC}"
 
+echo "Verifying packaged microphone configuration..."
+"$SCRIPT_DIR/verify-app-permissions.sh" "$APP_PATH"
+
 # Step 5: Notarize app bundle before creating distributable archives
 echo ""
 mkdir -p "$OUTPUT_DIR"
