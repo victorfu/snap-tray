@@ -2783,6 +2783,41 @@ Deze wordt mogelijk gebruikt door een andere applicatie.</translation>
         <source>Restart SnapTray to use Print Screen. If it still opens the Snipping Tool, sign out of Windows and back in.</source>
         <translation>Start SnapTray opnieuw om Print Screen te gebruiken. Als het Snipping Tool nog steeds wordt geopend, meld je dan af bij Windows en weer aan.</translation>
         </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="340" />
+        <source>Checking start on login status...</source>
+        <translation>Status voor starten bij aanmelden controleren...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="353" />
+        <source>Updating start on login status...</source>
+        <translation>Status voor starten bij aanmelden bijwerken...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="404" />
+        <source>Start on login status error: %1</source>
+        <translation>Fout in status voor starten bij aanmelden: %1</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="414" />
+        <source>Disabled in system startup settings. Re-enable it there.</source>
+        <translation>Uitgeschakeld in de opstartinstellingen van het systeem. Schakel het daar opnieuw in.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="417" />
+        <source>Disabled by your organization.</source>
+        <translation>Uitgeschakeld door uw organisatie.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="420" />
+        <source>Enabled by your organization.</source>
+        <translation>Ingeschakeld door uw organisatie.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="423" />
+        <source>Start on login is unavailable for this package.</source>
+        <translation>Starten bij aanmelden is niet beschikbaar voor dit pakket.</translation>
+        </message>
 </context>
 <context>
     <name>SnapTray::TypeHotkeyDialog</name>

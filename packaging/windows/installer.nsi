@@ -118,10 +118,3 @@ Section "Uninstall"
     ; Remove startup entry if present
     DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "${APP_NAME}"
 SectionEnd
-
-; Optional: Run at startup section
-Section "Run at Startup" SecStartup
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Run" \
-                     "${APP_NAME}" "$\"$INSTDIR\${APP_NAME}.exe$\""
-    WriteRegDWORD HKCU "Software\SnapTray\general" "startOnLogin" 1
-SectionEnd

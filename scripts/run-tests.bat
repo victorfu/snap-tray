@@ -65,7 +65,7 @@ REM Run tests (add Qt bin to PATH for DLL loading)
 echo.
 echo Running tests...
 set "PATH=%QT_PATH%\bin;%PATH%"
-cd /d "%BUILD_DIR%" && ctest --output-on-failure
+cd /d "%BUILD_DIR%" && ctest --interactive-debug-mode 0 --output-on-failure
 set "TEST_EXIT_CODE=!ERRORLEVEL!"
 if not "!TEST_EXIT_CODE!"=="0" (
     echo.

@@ -2777,6 +2777,41 @@ Se saattaa olla toisen sovelluksen käytössä.</translation>
         <source>Restart SnapTray to use Print Screen. If it still opens the Snipping Tool, sign out of Windows and back in.</source>
         <translation>Käynnistä SnapTray uudelleen käyttääksesi Print Screeniä. Jos Snipping Tool avautuu edelleen, kirjaudu ulos Windowsista ja takaisin sisään.</translation>
         </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="340" />
+        <source>Checking start on login status...</source>
+        <translation>Tarkistetaan kirjautumisen yhteydessä käynnistämisen tilaa...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="353" />
+        <source>Updating start on login status...</source>
+        <translation>Päivitetään kirjautumisen yhteydessä käynnistämisen tilaa...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="404" />
+        <source>Start on login status error: %1</source>
+        <translation>Kirjautumisen yhteydessä käynnistämisen tilavirhe: %1</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="414" />
+        <source>Disabled in system startup settings. Re-enable it there.</source>
+        <translation>Poistettu käytöstä järjestelmän käynnistysasetuksissa. Ota se uudelleen käyttöön siellä.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="417" />
+        <source>Disabled by your organization.</source>
+        <translation>Organisaatiosi on poistanut tämän käytöstä.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="420" />
+        <source>Enabled by your organization.</source>
+        <translation>Organisaatiosi on ottanut tämän käyttöön.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="423" />
+        <source>Start on login is unavailable for this package.</source>
+        <translation>Kirjautumisen yhteydessä käynnistäminen ei ole käytettävissä tälle paketille.</translation>
+        </message>
 </context>
 <context>
     <name>SnapTray::TypeHotkeyDialog</name>

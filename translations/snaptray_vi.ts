@@ -2777,6 +2777,41 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
         <source>Restart SnapTray to use Print Screen. If it still opens the Snipping Tool, sign out of Windows and back in.</source>
         <translation>Khởi động lại SnapTray để dùng Print Screen. Nếu vẫn mở Snipping Tool, hãy đăng xuất khỏi Windows rồi đăng nhập lại.</translation>
         </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="340" />
+        <source>Checking start on login status...</source>
+        <translation>Đang kiểm tra trạng thái khởi động khi đăng nhập...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="353" />
+        <source>Updating start on login status...</source>
+        <translation>Đang cập nhật trạng thái khởi động khi đăng nhập...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="404" />
+        <source>Start on login status error: %1</source>
+        <translation>Lỗi trạng thái khởi động khi đăng nhập: %1</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="414" />
+        <source>Disabled in system startup settings. Re-enable it there.</source>
+        <translation>Đã bị tắt trong cài đặt khởi động hệ thống. Hãy bật lại tại đó.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="417" />
+        <source>Disabled by your organization.</source>
+        <translation>Bị tổ chức của bạn tắt.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="420" />
+        <source>Enabled by your organization.</source>
+        <translation>Được tổ chức của bạn bật.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="423" />
+        <source>Start on login is unavailable for this package.</source>
+        <translation>Tính năng khởi động khi đăng nhập không khả dụng cho gói này.</translation>
+        </message>
 </context>
 <context>
     <name>SnapTray::TypeHotkeyDialog</name>

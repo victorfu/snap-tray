@@ -2777,6 +2777,41 @@ Pode estar a ser utilizado por outra aplicação.</translation>
         <source>Restart SnapTray to use Print Screen. If it still opens the Snipping Tool, sign out of Windows and back in.</source>
         <translation>Reinicie o SnapTray para usar Print Screen. Se continuar a abrir o Snipping Tool, termine a sessão no Windows e inicie-a novamente.</translation>
         </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="340" />
+        <source>Checking start on login status...</source>
+        <translation>A verificar o estado do arranque ao iniciar sessão...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="353" />
+        <source>Updating start on login status...</source>
+        <translation>A atualizar o estado do arranque ao iniciar sessão...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="404" />
+        <source>Start on login status error: %1</source>
+        <translation>Erro no estado do arranque ao iniciar sessão: %1</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="414" />
+        <source>Disabled in system startup settings. Re-enable it there.</source>
+        <translation>Desativado nas definições de arranque do sistema. Volte a ativá-lo aí.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="417" />
+        <source>Disabled by your organization.</source>
+        <translation>Desativado pela sua organização.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="420" />
+        <source>Enabled by your organization.</source>
+        <translation>Ativado pela sua organização.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="423" />
+        <source>Start on login is unavailable for this package.</source>
+        <translation>O arranque ao iniciar sessão não está disponível para este pacote.</translation>
+        </message>
 </context>
 <context>
     <name>SnapTray::TypeHotkeyDialog</name>

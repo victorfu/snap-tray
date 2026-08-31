@@ -1,9 +1,12 @@
 #include <QtTest>
 
+#include "AutoLaunchManager.h"
 #include "settings/AutoLaunchSyncPolicy.h"
 
 using SnapTray::AutoLaunchSyncPlan;
 using SnapTray::AutoLaunchSyncState;
+
+Q_DECLARE_METATYPE(AutoLaunchState)
 
 class tst_AutoLaunchSyncPolicy : public QObject
 {
@@ -16,6 +19,8 @@ private slots:
     void startupSync_withoutPreference_onlyNormalizesCurrentLegacyEntry();
     void startupSync_enabledPreference_doesNotRebindOtherExecutable();
     void startupSync_disabledPreference_onlyDisablesCurrentEntry();
+    void systemStatus_reportsEffectiveAndMutableStates_data();
+    void systemStatus_reportsEffectiveAndMutableStates();
 };
 
 void tst_AutoLaunchSyncPolicy::windowsClassification_recognizesCanonicalCurrentEntry()
@@ -92,6 +97,37 @@ void tst_AutoLaunchSyncPolicy::startupSync_disabledPreference_onlyDisablesCurren
     QVERIFY(!otherPlan.shouldApplyChange);
     QVERIFY(!otherPlan.targetEnabled);
     QVERIFY(!otherPlan.effectiveEnabled);
+}
+
+void tst_AutoLaunchSyncPolicy::systemStatus_reportsEffectiveAndMutableStates_data()
+{
+    QTest::addColumn<AutoLaunchState>("state");
+    QTest::addColumn<bool>("enabled");
+    QTest::addColumn<bool>("canChange");
+
+    QTest::newRow("disabled")
+        << AutoLaunchState::Disabled << false << true;
+    QTest::newRow("enabled")
+        << AutoLaunchState::Enabled << true << true;
+    QTest::newRow("disabled-by-user")
+        << AutoLaunchState::DisabledByUser << false << false;
+    QTest::newRow("disabled-by-policy")
+        << AutoLaunchState::DisabledByPolicy << false << false;
+    QTest::newRow("enabled-by-policy")
+        << AutoLaunchState::EnabledByPolicy << true << false;
+    QTest::newRow("unavailable")
+        << AutoLaunchState::Unavailable << false << false;
+}
+
+void tst_AutoLaunchSyncPolicy::systemStatus_reportsEffectiveAndMutableStates()
+{
+    QFETCH(AutoLaunchState, state);
+    QFETCH(bool, enabled);
+    QFETCH(bool, canChange);
+
+    const AutoLaunchStatus status{state, {}};
+    QCOMPARE(status.isEnabled(), enabled);
+    QCOMPARE(status.canChange(), canChange);
 }
 
 QTEST_MAIN(tst_AutoLaunchSyncPolicy)

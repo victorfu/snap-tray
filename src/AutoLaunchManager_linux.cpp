@@ -11,6 +11,7 @@
 #include <QTextStream>
 
 #include <optional>
+#include <utility>
 
 namespace {
 
@@ -117,4 +118,28 @@ bool AutoLaunchManager::syncWithPreference()
     }
 
     return isEnabled();
+}
+
+void AutoLaunchManager::queryStatus(StatusCallback callback)
+{
+    if (callback) {
+        callback({isEnabled() ? AutoLaunchState::Enabled : AutoLaunchState::Disabled, {}});
+    }
+}
+
+void AutoLaunchManager::setEnabledAsync(bool enabled, StatusCallback callback)
+{
+    if (!callback) {
+        return;
+    }
+
+    if (!setEnabled(enabled)) {
+        callback({
+            isEnabled() ? AutoLaunchState::Enabled : AutoLaunchState::Disabled,
+            QStringLiteral("Failed to update the Linux autostart entry.")
+        });
+        return;
+    }
+
+    queryStatus(std::move(callback));
 }

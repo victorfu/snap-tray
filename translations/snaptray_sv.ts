@@ -2777,6 +2777,41 @@ Den kan användas av ett annat program.</translation>
         <source>Restart SnapTray to use Print Screen. If it still opens the Snipping Tool, sign out of Windows and back in.</source>
         <translation>Starta om SnapTray för att använda Print Screen. Om Snipping Tool fortfarande öppnas, logga ut från Windows och logga in igen.</translation>
         </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="340" />
+        <source>Checking start on login status...</source>
+        <translation>Kontrollerar status för start vid inloggning...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="353" />
+        <source>Updating start on login status...</source>
+        <translation>Uppdaterar status för start vid inloggning...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="404" />
+        <source>Start on login status error: %1</source>
+        <translation>Fel i status för start vid inloggning: %1</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="414" />
+        <source>Disabled in system startup settings. Re-enable it there.</source>
+        <translation>Inaktiverad i systemets startinställningar. Aktivera den igen där.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="417" />
+        <source>Disabled by your organization.</source>
+        <translation>Inaktiverad av din organisation.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="420" />
+        <source>Enabled by your organization.</source>
+        <translation>Aktiverad av din organisation.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="423" />
+        <source>Start on login is unavailable for this package.</source>
+        <translation>Start vid inloggning är inte tillgänglig för det här paketet.</translation>
+        </message>
 </context>
 <context>
     <name>SnapTray::TypeHotkeyDialog</name>

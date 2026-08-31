@@ -2603,6 +2603,41 @@ Password: %2</source>
         <source>Restart SnapTray to use Print Screen. If it still opens the Snipping Tool, sign out of Windows and back in.</source>
         <translation>รีสตาร์ต SnapTray เพื่อใช้ Print Screen หากยังคงเปิด Snipping Tool ให้ออกจากระบบ Windows แล้วเข้าสู่ระบบใหม่</translation>
         </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="340" />
+        <source>Checking start on login status...</source>
+        <translation>กำลังตรวจสอบสถานะการเริ่มต้นเมื่อเข้าสู่ระบบ...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="353" />
+        <source>Updating start on login status...</source>
+        <translation>กำลังอัปเดตสถานะการเริ่มต้นเมื่อเข้าสู่ระบบ...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="404" />
+        <source>Start on login status error: %1</source>
+        <translation>ข้อผิดพลาดสถานะการเริ่มต้นเมื่อเข้าสู่ระบบ: %1</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="414" />
+        <source>Disabled in system startup settings. Re-enable it there.</source>
+        <translation>ปิดใช้งานในการตั้งค่าการเริ่มต้นของระบบ โปรดเปิดใช้งานอีกครั้งจากที่นั่น</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="417" />
+        <source>Disabled by your organization.</source>
+        <translation>ปิดใช้งานโดยองค์กรของคุณ</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="420" />
+        <source>Enabled by your organization.</source>
+        <translation>เปิดใช้งานโดยองค์กรของคุณ</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="423" />
+        <source>Start on login is unavailable for this package.</source>
+        <translation>แพ็กเกจนี้ไม่รองรับการเริ่มต้นเมื่อเข้าสู่ระบบ</translation>
+        </message>
 </context>
 <context>
     <name>SnapTray::TypeHotkeyDialog</name>

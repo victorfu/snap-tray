@@ -2777,6 +2777,41 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
         <source>Restart SnapTray to use Print Screen. If it still opens the Snipping Tool, sign out of Windows and back in.</source>
         <translation>Print Screen'i kullanmak için SnapTray'i yeniden başlatın. Hâlâ Snipping Tool'u açıyorsa Windows oturumunuzu kapatıp yeniden açın.</translation>
         </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="340" />
+        <source>Checking start on login status...</source>
+        <translation>Oturum açıldığında başlatma durumu kontrol ediliyor...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="353" />
+        <source>Updating start on login status...</source>
+        <translation>Oturum açıldığında başlatma durumu güncelleniyor...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="404" />
+        <source>Start on login status error: %1</source>
+        <translation>Oturum açıldığında başlatma durumu hatası: %1</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="414" />
+        <source>Disabled in system startup settings. Re-enable it there.</source>
+        <translation>Sistem başlangıç ayarlarında devre dışı bırakıldı. Oradan yeniden etkinleştirin.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="417" />
+        <source>Disabled by your organization.</source>
+        <translation>Kuruluşunuz tarafından devre dışı bırakıldı.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="420" />
+        <source>Enabled by your organization.</source>
+        <translation>Kuruluşunuz tarafından etkinleştirildi.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="423" />
+        <source>Start on login is unavailable for this package.</source>
+        <translation>Oturum açıldığında başlatma bu paket için kullanılamıyor.</translation>
+        </message>
 </context>
 <context>
     <name>SnapTray::TypeHotkeyDialog</name>

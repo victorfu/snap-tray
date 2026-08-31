@@ -26,10 +26,12 @@
 #include "version.h"
 #include "widgets/TypeHotkeyDialog.h"
 
+#include <QCoreApplication>
 #include <QFileDialog>
 #include <QFutureWatcher>
 #include <QLocale>
 #include <QMessageBox>
+#include <QPointer>
 #include <QPushButton>
 #include <QSettings>
 #include <QUrl>
@@ -255,7 +257,8 @@ SettingsBackend::~SettingsBackend() = default;
 void SettingsBackend::loadAllSettings()
 {
     // General
-    m_startOnLogin = AutoLaunchManager::syncWithPreference();
+    m_startOnLogin = false;
+    refreshStartOnLogin();
     m_language = LanguageManager::instance().loadLanguage();
     m_appTheme = static_cast<int>(ToolbarStyleConfig::loadStyle());
     m_cliInstalled = PlatformFeatures::instance().isCLIInstalled();
@@ -322,17 +325,114 @@ void SettingsBackend::loadAllSettings()
 // ─────────────────────────────────────────────────────────────────────────────
 
 bool SettingsBackend::startOnLogin() const { return m_startOnLogin; }
-void SettingsBackend::setStartOnLogin(bool v) {
-    if (m_startOnLogin != v) {
-        AutoLaunchSettingsManager::instance().savePreferredEnabled(v);
-        (void)AutoLaunchManager::setEnabled(v);
-        const bool actualValue = AutoLaunchManager::isEnabled();
-        const bool shouldNotify = (m_startOnLogin != actualValue) || (actualValue != v);
-        m_startOnLogin = actualValue;
-        if (shouldNotify) {
-            emit startOnLoginChanged();
+bool SettingsBackend::startOnLoginBusy() const { return m_startOnLoginBusy; }
+bool SettingsBackend::startOnLoginCanChange() const { return m_startOnLoginCanChange; }
+QString SettingsBackend::startOnLoginStatusText() const { return m_startOnLoginStatusText; }
+
+void SettingsBackend::refreshStartOnLogin()
+{
+    if (m_startOnLoginBusy) {
+        return;
+    }
+
+    m_startOnLoginBusy = true;
+    m_startOnLoginCanChange = false;
+    m_startOnLoginStatusText = tr("Checking start on login status...");
+    emit startOnLoginStateChanged();
+    refreshStartOnLoginStatus();
+}
+
+void SettingsBackend::setStartOnLogin(bool v)
+{
+    if (m_startOnLogin == v || m_startOnLoginBusy || !m_startOnLoginCanChange) {
+        return;
+    }
+
+    m_startOnLoginBusy = true;
+    m_startOnLoginCanChange = false;
+    m_startOnLoginStatusText = tr("Updating start on login status...");
+    emit startOnLoginStateChanged();
+
+    QPointer<SettingsBackend> safeThis(this);
+    QCoreApplication* dispatcher = QCoreApplication::instance();
+    AutoLaunchManager::setEnabledAsync(
+        v,
+        [safeThis, dispatcher](AutoLaunchStatus status) mutable {
+            if (!dispatcher) {
+                return;
+            }
+            QMetaObject::invokeMethod(
+                dispatcher,
+                [safeThis, status = std::move(status)]() mutable {
+                    if (safeThis) {
+                        safeThis->applyStartOnLoginStatus(status);
+                    }
+                },
+                Qt::QueuedConnection);
+        });
+}
+
+void SettingsBackend::refreshStartOnLoginStatus()
+{
+    QPointer<SettingsBackend> safeThis(this);
+    QCoreApplication* dispatcher = QCoreApplication::instance();
+    AutoLaunchManager::queryStatus(
+        [safeThis, dispatcher](AutoLaunchStatus status) mutable {
+            if (!dispatcher) {
+                return;
+            }
+            QMetaObject::invokeMethod(
+                dispatcher,
+                [safeThis, status = std::move(status)]() mutable {
+                    if (safeThis) {
+                        safeThis->applyStartOnLoginStatus(status);
+                    }
+                },
+                Qt::QueuedConnection);
+        });
+}
+
+void SettingsBackend::applyStartOnLoginStatus(const AutoLaunchStatus& status)
+{
+    const bool enabledChanged = m_startOnLogin != status.isEnabled();
+
+    m_startOnLogin = status.isEnabled();
+    m_startOnLoginBusy = false;
+    m_startOnLoginCanChange = status.canChange();
+
+    if (!status.errorMessage.isEmpty()) {
+        m_startOnLoginStatusText = tr("Start on login status error: %1")
+                                       .arg(status.errorMessage);
+    } else {
+        switch (status.state) {
+        case AutoLaunchState::Disabled:
+        case AutoLaunchState::Enabled:
+            m_startOnLoginStatusText.clear();
+            break;
+        case AutoLaunchState::DisabledByUser:
+            m_startOnLoginStatusText =
+                tr("Disabled in system startup settings. Re-enable it there.");
+            break;
+        case AutoLaunchState::DisabledByPolicy:
+            m_startOnLoginStatusText = tr("Disabled by your organization.");
+            break;
+        case AutoLaunchState::EnabledByPolicy:
+            m_startOnLoginStatusText = tr("Enabled by your organization.");
+            break;
+        case AutoLaunchState::Unavailable:
+            m_startOnLoginStatusText = tr("Start on login is unavailable for this package.");
+            break;
         }
     }
+
+    if (status.state != AutoLaunchState::Unavailable && status.errorMessage.isEmpty()) {
+        AutoLaunchSettingsManager::instance().savePreferredEnabled(m_startOnLogin);
+    }
+
+    if (enabledChanged) {
+        emit startOnLoginChanged();
+    }
+    emit startOnLoginStateChanged();
 }
 
 QString SettingsBackend::language() const { return m_language; }

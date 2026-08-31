@@ -2,6 +2,7 @@
 #include <QHash>
 #include <QSignalSpy>
 
+#include "AutoLaunchManager.h"
 #include "hotkey/HotkeyTypes.h"
 #include "qml/SettingsBackend.h"
 #include "settings/RecordingSettingsManager.h"
@@ -11,6 +12,8 @@
 #include "update/UpdateCoordinator.h"
 
 using SnapTray::SettingsBackend;
+
+Q_DECLARE_METATYPE(AutoLaunchState)
 
 namespace {
 
@@ -86,6 +89,10 @@ private slots:
     void testShouldPromptWindowsPrintScreenDisable_DecisionMatrix();
     void testFeatureSupportPropertiesFollowPlatformCapabilities();
     void testHotkeyCategoriesHideRecordingWhenUnsupported();
+#ifdef Q_OS_WIN
+    void testStartOnLoginStatusReflectsWindowsState_data();
+    void testStartOnLoginStatusReflectsWindowsState();
+#endif
 
 private:
     void clearTestSettings();
@@ -165,6 +172,52 @@ void tst_SettingsBackend::installFakeUpdateService(UpdateCheckResult result)
             return service;
         });
 }
+
+#ifdef Q_OS_WIN
+void tst_SettingsBackend::testStartOnLoginStatusReflectsWindowsState_data()
+{
+    QTest::addColumn<AutoLaunchState>("state");
+    QTest::addColumn<QString>("errorMessage");
+    QTest::addColumn<bool>("enabled");
+    QTest::addColumn<bool>("canChange");
+    QTest::addColumn<bool>("hasDescription");
+
+    QTest::newRow("disabled")
+        << AutoLaunchState::Disabled << QString() << false << true << false;
+    QTest::newRow("enabled")
+        << AutoLaunchState::Enabled << QString() << true << true << false;
+    QTest::newRow("disabled-by-user")
+        << AutoLaunchState::DisabledByUser << QString() << false << false << true;
+    QTest::newRow("disabled-by-policy")
+        << AutoLaunchState::DisabledByPolicy << QString() << false << false << true;
+    QTest::newRow("enabled-by-policy")
+        << AutoLaunchState::EnabledByPolicy << QString() << true << false << true;
+    QTest::newRow("unavailable")
+        << AutoLaunchState::Unavailable << QString() << false << false << true;
+    QTest::newRow("operation-error")
+        << AutoLaunchState::Disabled << QStringLiteral("boom") << false << true << true;
+}
+
+void tst_SettingsBackend::testStartOnLoginStatusReflectsWindowsState()
+{
+    QFETCH(AutoLaunchState, state);
+    QFETCH(QString, errorMessage);
+    QFETCH(bool, enabled);
+    QFETCH(bool, canChange);
+    QFETCH(bool, hasDescription);
+
+    SettingsBackend backend;
+    backend.applyStartOnLoginStatus({state, errorMessage});
+
+    QCOMPARE(backend.startOnLogin(), enabled);
+    QCOMPARE(backend.startOnLoginBusy(), false);
+    QCOMPARE(backend.startOnLoginCanChange(), canChange);
+    QCOMPARE(!backend.startOnLoginStatusText().isEmpty(), hasDescription);
+    if (!errorMessage.isEmpty()) {
+        QVERIFY(backend.startOnLoginStatusText().contains(errorMessage));
+    }
+}
+#endif
 
 void tst_SettingsBackend::testAvailableLanguages_PrioritizesConfiguredAsianLanguages()
 {

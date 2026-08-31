@@ -2783,6 +2783,41 @@ Sie wird möglicherweise von einer anderen Anwendung verwendet.</translation>
         <source>Restart SnapTray to use Print Screen. If it still opens the Snipping Tool, sign out of Windows and back in.</source>
         <translation>Starten Sie SnapTray neu, um Print Screen zu verwenden. Wenn weiterhin das Snipping Tool geöffnet wird, melden Sie sich von Windows ab und wieder an.</translation>
         </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="340" />
+        <source>Checking start on login status...</source>
+        <translation>Status „Bei Anmeldung starten“ wird geprüft...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="353" />
+        <source>Updating start on login status...</source>
+        <translation>Status „Bei Anmeldung starten“ wird aktualisiert...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="404" />
+        <source>Start on login status error: %1</source>
+        <translation>Fehler beim Status „Bei Anmeldung starten“: %1</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="414" />
+        <source>Disabled in system startup settings. Re-enable it there.</source>
+        <translation>In den System-Autostarteinstellungen deaktiviert. Aktivieren Sie es dort erneut.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="417" />
+        <source>Disabled by your organization.</source>
+        <translation>Von Ihrer Organisation deaktiviert.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="420" />
+        <source>Enabled by your organization.</source>
+        <translation>Von Ihrer Organisation aktiviert.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="423" />
+        <source>Start on login is unavailable for this package.</source>
+        <translation>„Bei Anmeldung starten“ ist für dieses Paket nicht verfügbar.</translation>
+        </message>
 </context>
 <context>
     <name>SnapTray::TypeHotkeyDialog</name>

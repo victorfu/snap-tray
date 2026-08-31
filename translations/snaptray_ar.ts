@@ -2777,6 +2777,41 @@ It may be in use by another application.</source>
         <source>Restart SnapTray to use Print Screen. If it still opens the Snipping Tool, sign out of Windows and back in.</source>
         <translation>أعد تشغيل SnapTray لاستخدام Print Screen. إذا استمر في فتح Snipping Tool، فسجّل الخروج من Windows ثم سجّل الدخول مرة أخرى.</translation>
         </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="340" />
+        <source>Checking start on login status...</source>
+        <translation>جارٍ التحقق من حالة التشغيل عند تسجيل الدخول...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="353" />
+        <source>Updating start on login status...</source>
+        <translation>جارٍ تحديث حالة التشغيل عند تسجيل الدخول...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="404" />
+        <source>Start on login status error: %1</source>
+        <translation>خطأ في حالة التشغيل عند تسجيل الدخول: %1</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="414" />
+        <source>Disabled in system startup settings. Re-enable it there.</source>
+        <translation>تم تعطيله في إعدادات بدء التشغيل بالنظام. أعد تمكينه من هناك.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="417" />
+        <source>Disabled by your organization.</source>
+        <translation>تم تعطيله بواسطة مؤسستك.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="420" />
+        <source>Enabled by your organization.</source>
+        <translation>تم تمكينه بواسطة مؤسستك.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="423" />
+        <source>Start on login is unavailable for this package.</source>
+        <translation>التشغيل عند تسجيل الدخول غير متاح لهذه الحزمة.</translation>
+        </message>
 </context>
 <context>
     <name>SnapTray::TypeHotkeyDialog</name>

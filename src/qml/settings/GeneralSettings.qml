@@ -30,6 +30,9 @@ Flickable {
         SettingsToggle {
             label: qsTr("Start on login")
             checked: settingsBackend.startOnLogin
+            enabled: !settingsBackend.startOnLoginBusy
+                && settingsBackend.startOnLoginCanChange
+            description: settingsBackend.startOnLoginStatusText
             onToggled: function(checked) { settingsBackend.startOnLogin = checked }
         }
 

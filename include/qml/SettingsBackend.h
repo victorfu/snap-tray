@@ -8,6 +8,7 @@
 #include <QVariantList>
 
 class tst_SettingsBackend;
+struct AutoLaunchStatus;
 template<typename T>
 class QFutureWatcher;
 struct OCRLanguageInfo;
@@ -23,6 +24,9 @@ class SettingsBackend : public QObject
 
     // ──── General ────
     Q_PROPERTY(bool startOnLogin READ startOnLogin WRITE setStartOnLogin NOTIFY startOnLoginChanged)
+    Q_PROPERTY(bool startOnLoginBusy READ startOnLoginBusy NOTIFY startOnLoginStateChanged)
+    Q_PROPERTY(bool startOnLoginCanChange READ startOnLoginCanChange NOTIFY startOnLoginStateChanged)
+    Q_PROPERTY(QString startOnLoginStatusText READ startOnLoginStatusText NOTIFY startOnLoginStateChanged)
     Q_PROPERTY(QString language READ language WRITE setLanguage NOTIFY languageChanged)
     Q_PROPERTY(QVariantList availableLanguages READ availableLanguages CONSTANT)
     Q_PROPERTY(int appTheme READ appTheme WRITE setAppTheme NOTIFY appThemeChanged)
@@ -117,6 +121,10 @@ public:
     // ──── General ────
     bool startOnLogin() const;
     void setStartOnLogin(bool v);
+    bool startOnLoginBusy() const;
+    bool startOnLoginCanChange() const;
+    QString startOnLoginStatusText() const;
+    void refreshStartOnLogin();
     QString language() const;
     void setLanguage(const QString& v);
     QVariantList availableLanguages() const;
@@ -269,6 +277,7 @@ public:
 signals:
     // General
     void startOnLoginChanged();
+    void startOnLoginStateChanged();
     void languageChanged();
     void appThemeChanged();
     void cliInstalledChanged();
@@ -343,6 +352,8 @@ private:
     friend class ::tst_SettingsBackend;
 
     void loadAllSettings();
+    void refreshStartOnLoginStatus();
+    void applyStartOnLoginStatus(const AutoLaunchStatus& status);
     QString computeFilenamePreview() const;
     bool normalizeRecordingAudioSettings();
     bool hasRecordingAudioDevice(const QString& deviceId) const;
@@ -354,6 +365,9 @@ private:
 
     // General
     bool m_startOnLogin = false;
+    bool m_startOnLoginBusy = false;
+    bool m_startOnLoginCanChange = true;
+    QString m_startOnLoginStatusText;
     QString m_language;
     int m_appTheme = 0;
     bool m_cliInstalled = false;

@@ -175,6 +175,9 @@ void QmlSettingsWindow::ensureView()
 void QmlSettingsWindow::show()
 {
     ensureView();
+    if (m_backend) {
+        m_backend->refreshStartOnLogin();
+    }
 
 #ifdef Q_OS_MAC
     // Temporarily switch to regular activation policy so the window
@@ -196,6 +199,9 @@ void QmlSettingsWindow::show()
 
 void QmlSettingsWindow::raise()
 {
+    if (m_backend) {
+        m_backend->refreshStartOnLogin();
+    }
     if (m_view) {
         m_view->raise();
         m_view->requestActivate();
@@ -245,8 +251,13 @@ bool QmlSettingsWindow::eventFilter(QObject* watched, QEvent* event)
             releaseTextInputSession(m_view);
 #endif
             CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
-        } else if (CursorSurfaceSupport::isPointerRefreshEvent(event->type())) {
-            syncCursorSurface();
+        } else {
+            if (event->type() == QEvent::WindowActivate && m_backend) {
+                m_backend->refreshStartOnLogin();
+            }
+            if (CursorSurfaceSupport::isPointerRefreshEvent(event->type())) {
+                syncCursorSurface();
+            }
         }
     }
 

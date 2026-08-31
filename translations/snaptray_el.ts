@@ -2777,6 +2777,41 @@ It may be in use by another application.</source>
         <source>Restart SnapTray to use Print Screen. If it still opens the Snipping Tool, sign out of Windows and back in.</source>
         <translation>Επανεκκινήστε το SnapTray για να χρησιμοποιήσετε το Print Screen. Αν εξακολουθεί να ανοίγει το Snipping Tool, αποσυνδεθείτε από τα Windows και συνδεθείτε ξανά.</translation>
         </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="340" />
+        <source>Checking start on login status...</source>
+        <translation>Έλεγχος κατάστασης εκκίνησης κατά τη σύνδεση...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="353" />
+        <source>Updating start on login status...</source>
+        <translation>Ενημέρωση κατάστασης εκκίνησης κατά τη σύνδεση...</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="404" />
+        <source>Start on login status error: %1</source>
+        <translation>Σφάλμα κατάστασης εκκίνησης κατά τη σύνδεση: %1</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="414" />
+        <source>Disabled in system startup settings. Re-enable it there.</source>
+        <translation>Απενεργοποιήθηκε στις ρυθμίσεις εκκίνησης του συστήματος. Ενεργοποιήστε το ξανά από εκεί.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="417" />
+        <source>Disabled by your organization.</source>
+        <translation>Απενεργοποιήθηκε από τον οργανισμό σας.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="420" />
+        <source>Enabled by your organization.</source>
+        <translation>Ενεργοποιήθηκε από τον οργανισμό σας.</translation>
+        </message>
+    <message>
+        <location filename="../src/qml/SettingsBackend.cpp" line="423" />
+        <source>Start on login is unavailable for this package.</source>
+        <translation>Η εκκίνηση κατά τη σύνδεση δεν είναι διαθέσιμη για αυτό το πακέτο.</translation>
+        </message>
 </context>
 <context>
     <name>SnapTray::TypeHotkeyDialog</name>
