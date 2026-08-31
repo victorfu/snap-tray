@@ -255,6 +255,13 @@ void MainApplication::initialize()
                 MainApplication::tr("Recording Error"),
                 error, 5000);
         });
+    connect(m_recordingManager, &RecordingManager::recordingWarning,
+        this, [](const QString& warning) {
+            SnapTray::QmlToast::screenToast().showToast(
+                SnapTray::QmlToast::Level::Warning,
+                MainApplication::tr("Recording Audio"),
+                warning, 5000);
+        });
 
     // Connect screenshot save signals from CaptureManager
     connect(m_captureManager, &CaptureManager::saveCompleted,

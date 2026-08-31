@@ -2,11 +2,13 @@
 #define COREAUDIOCAPTUREENGINE_H
 
 #include "IAudioCaptureEngine.h"
+#include "capture/TimestampedPcmMixer.h"
 
 #ifdef Q_OS_MAC
 
 #include <QMutex>
 #include <atomic>
+#include <memory>
 
 /**
  * @brief macOS CoreAudio/AVFoundation-based audio capture engine
@@ -33,6 +35,7 @@ public:
 
     bool start() override;
     void stop() override;
+    void disposeAsync() override;
     void pause() override;
     void resume() override;
     bool isRunning() const override { return m_running; }
@@ -42,9 +45,20 @@ public:
     bool isAvailable() const override;
     bool isSystemAudioSupported() const override;
 
+    // Internal bridge used by the Objective-C capture delegates.
+    void processCapturedAudio(SnapTray::Audio::Source source,
+                              const QByteArray& pcm,
+                              const SnapTray::Audio::Pcm16Format& format,
+                              qint64 timestampNs);
+
 private:
+    void deliverMixerOutput(
+        const SnapTray::Audio::TimestampedPcmMixer::ProcessResult& result);
+
     class Private;
     Private *d;
+    std::unique_ptr<SnapTray::Audio::TimestampedPcmMixer> m_mixer;
+    bool m_reportedMixerDrop = false;
 
     std::atomic<bool> m_running{false};
     std::atomic<bool> m_paused{false};

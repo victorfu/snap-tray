@@ -11,6 +11,7 @@
 #include "encoding/EncoderFactory.h"
 #include "capture/ICaptureEngine.h"
 #include "capture/IAudioCaptureEngine.h"
+#include "capture/TimestampedPcmMixer.h"
 #include "utils/ResourceCleanupHelper.h"
 #include "utils/CoordinateHelper.h"
 #include "utils/FilenameTemplateEngine.h"
@@ -510,6 +511,14 @@ void RecordingManager::beginAsyncInitialization()
     int audioChannels = kDefaultAudioChannels;
     int audioBitsPerSample = kDefaultAudioBitsPerSample;
     const bool shouldConfigureAudio = m_audioEnabled && (recordingFormat == EncoderFactory::Format::MP4);
+#ifdef Q_OS_MACOS
+    if (shouldConfigureAudio) {
+        const auto canonicalFormat = SnapTray::Audio::TimestampedPcmMixer::outputFormat();
+        audioSampleRate = canonicalFormat.sampleRate;
+        audioChannels = canonicalFormat.channels;
+        audioBitsPerSample = canonicalFormat.bitsPerSample;
+    }
+#else
     if (shouldConfigureAudio) {
         std::unique_ptr<IAudioCaptureEngine> probeEngine(IAudioCaptureEngine::createBestEngine(nullptr));
         if (!probeEngine) {
@@ -537,6 +546,7 @@ void RecordingManager::beginAsyncInitialization()
             }
         }
     }
+#endif
 
     // Derive the encoder size from the same native mapping captured for the
     // engine. Rounded Qt logical sizes (for example 1707 at 150%) must not
@@ -806,26 +816,39 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
             const auto source = resolveAudioSource(m_audioSource);
             if (!m_audioEngine->setAudioSource(source)) {
                 qWarning() << "RecordingManager: Failed to apply configured audio source";
-            }
-            m_audioDevice = configuredAudioInputDeviceOrDefault(*m_audioEngine, m_audioSource, m_audioDevice);
-
-            if (audioSourceUsesInputDevice(m_audioSource)
-                && !m_audioDevice.isEmpty() && !m_audioEngine->setDevice(m_audioDevice)) {
-                qWarning() << "RecordingManager: Failed to apply configured audio device";
+                emit recordingWarning(tr(
+                    "The selected audio source is unavailable. This recording will be silent."));
+                m_audioEnabled = false;
+                cleanupAudio();
             }
 
-            // Connect audio error/warning signals
-            connect(m_audioEngine.get(), &IAudioCaptureEngine::error,
-                    this, [this](const QString &msg) {
-                qWarning() << "RecordingManager: Audio error:" << msg;
-            });
-            connect(m_audioEngine.get(), &IAudioCaptureEngine::warning,
-                    this, [](const QString &msg) {
-                qWarning() << "RecordingManager: Audio warning:" << msg;
-            });
+            if (m_audioEngine) {
+                m_audioDevice = configuredAudioInputDeviceOrDefault(
+                    *m_audioEngine, m_audioSource, m_audioDevice);
+
+                if (audioSourceUsesInputDevice(m_audioSource)
+                    && !m_audioDevice.isEmpty() && !m_audioEngine->setDevice(m_audioDevice)) {
+                    qWarning() << "RecordingManager: Failed to apply configured audio device";
+                }
+
+                // Errors cause start() to fail and are reported by the explicit
+                // silent-recording fallback below. Non-fatal source degradation
+                // must still be visible to the user.
+                connect(m_audioEngine.get(), &IAudioCaptureEngine::error,
+                        this, [](const QString &msg) {
+                    qWarning() << "RecordingManager: Audio error:" << msg;
+                });
+                connect(m_audioEngine.get(), &IAudioCaptureEngine::warning,
+                        this, [this](const QString &msg) {
+                    qWarning() << "RecordingManager: Audio warning:" << msg;
+                    emit recordingWarning(tr("Audio capture warning: %1").arg(msg));
+                });
+            }
         } else {
             qWarning() << "RecordingManager: Failed to create audio engine";
             m_audioEnabled = false;
+            emit recordingWarning(tr(
+                "Audio capture is unavailable. This recording will be silent."));
         }
     }
 
@@ -922,7 +945,13 @@ void RecordingManager::startRecordingAfterCountdown()
     if (m_audioEngine) {
         if (!m_audioEngine->start()) {
             qWarning() << "RecordingManager: Failed to start audio capture";
+            emit recordingWarning(tr(
+                "Audio capture could not start. This recording will be silent."));
+            m_audioEnabled = false;
             cleanupAudio();
+            if (m_controlBar) {
+                m_controlBar->setAudioEnabled(false);
+            }
         }
     }
 

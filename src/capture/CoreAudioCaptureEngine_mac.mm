@@ -34,11 +34,15 @@ static char kCaptureQueueSpecificKey;
 @property (nonatomic, assign) qint64 startTime;
 @property (nonatomic, assign) qint64 pausedDuration;
 @property (nonatomic, assign) bool paused;
+@property (nonatomic, assign) BOOL hasTimelineAnchor;
+@property (nonatomic, assign) qint64 firstPresentationTimeNs;
+@property (nonatomic, assign) qint64 firstTimelineTimeNs;
 @end
 
 static QByteArray convertAudioBufferToPCM16(CMSampleBufferRef sampleBuffer,
-                                            const char *label,
-                                            bool *formatLogged)
+                                             const char *label,
+                                             bool *formatLogged,
+                                             SnapTray::Audio::Pcm16Format *outputFormat)
 {
     CMFormatDescriptionRef formatDesc = CMSampleBufferGetFormatDescription(sampleBuffer);
     const AudioStreamBasicDescription *asbd = CMAudioFormatDescriptionGetStreamBasicDescription(formatDesc);
@@ -50,7 +54,17 @@ static QByteArray convertAudioBufferToPCM16(CMSampleBufferRef sampleBuffer,
     int channels = static_cast<int>(asbd->mChannelsPerFrame);
     if (channels <= 0) return QByteArray();
 
+    if (outputFormat) {
+        outputFormat->sampleRate = qRound(asbd->mSampleRate);
+        outputFormat->channels = channels;
+        outputFormat->byteOrder = SnapTray::Audio::ByteOrder::LittleEndian;
+        outputFormat->signedSamples = true;
+        outputFormat->interleaved = true;
+    }
+
     bool isFloat = (asbd->mFormatFlags & kAudioFormatFlagIsFloat) != 0;
+    bool isSignedInteger = (asbd->mFormatFlags & kAudioFormatFlagIsSignedInteger) != 0;
+    bool isBigEndian = (asbd->mFormatFlags & kAudioFormatFlagIsBigEndian) != 0;
     bool isNonInterleaved = (asbd->mFormatFlags & kAudioFormatFlagIsNonInterleaved) != 0;
     int bitsPerChannel = static_cast<int>(asbd->mBitsPerChannel);
 
@@ -127,7 +141,7 @@ static QByteArray convertAudioBufferToPCM16(CMSampleBufferRef sampleBuffer,
                 outPtr[i] = static_cast<int16_t>(sample * 32767.0f);
             }
         }
-    } else if (!isFloat && bitsPerChannel == 16) {
+    } else if (!isFloat && isSignedInteger && !isBigEndian && bitsPerChannel == 16) {
         if (isNonInterleaved && bufferList->mNumberBuffers >= static_cast<UInt32>(channels)) {
             int minFrames = frameCount;
             for (int ch = 0; ch < channels; ch++) {
@@ -159,10 +173,41 @@ static QByteArray convertAudioBufferToPCM16(CMSampleBufferRef sampleBuffer,
     return output;
 }
 
-static QByteArray convertMicAudioBufferToPCM16(CMSampleBufferRef sampleBuffer)
+static QByteArray convertMicAudioBufferToPCM16(
+    CMSampleBufferRef sampleBuffer,
+    SnapTray::Audio::Pcm16Format *format)
 {
     static bool micFormatLogged = false;
-    return convertAudioBufferToPCM16(sampleBuffer, "Mic", &micFormatLogged);
+    return convertAudioBufferToPCM16(sampleBuffer, "Mic", &micFormatLogged, format);
+}
+
+static qint64 alignedSampleTimestampNs(CMSampleBufferRef sampleBuffer,
+                                       BOOL *hasAnchor,
+                                       qint64 *firstPresentationTimeNs,
+                                       qint64 *firstTimelineTimeNs,
+                                       qint64 fallbackTimelineNs)
+{
+    const CMTime presentationTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer);
+    if (!CMTIME_IS_VALID(presentationTime) || presentationTime.timescale <= 0) {
+        return qMax<qint64>(qint64(0), fallbackTimelineNs);
+    }
+
+    const CMTime nanoseconds = CMTimeConvertScale(
+        presentationTime,
+        static_cast<int32_t>(NSEC_PER_SEC),
+        kCMTimeRoundingMethod_RoundHalfAwayFromZero);
+    if (!CMTIME_IS_VALID(nanoseconds)) {
+        return qMax<qint64>(qint64(0), fallbackTimelineNs);
+    }
+
+    if (!*hasAnchor) {
+        *hasAnchor = YES;
+        *firstPresentationTimeNs = nanoseconds.value;
+        *firstTimelineTimeNs = qMax<qint64>(qint64(0), fallbackTimelineNs);
+    }
+    return qMax<qint64>(
+        qint64(0),
+        *firstTimelineTimeNs + nanoseconds.value - *firstPresentationTimeNs);
 }
 
 @implementation AudioCaptureDelegate
@@ -174,18 +219,41 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     CoreAudioCaptureEngine *engine = self.engine;
     if (self.invalidated || self.paused || !engine) return;
 
-    // Convert to 16-bit PCM
-    QByteArray audioData = convertMicAudioBufferToPCM16(sampleBuffer);
+    SnapTray::Audio::Pcm16Format format;
+    QByteArray audioData = convertMicAudioBufferToPCM16(sampleBuffer, &format);
     if (audioData.isEmpty()) return;
 
     qint64 now = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now().time_since_epoch()).count();
-    qint64 timestamp = now - self.startTime - self.pausedDuration;
+    const qint64 chunkFrames = audioData.size() / qMax(1, format.channels * 2);
+    const qint64 chunkDurationNs = format.sampleRate > 0
+        ? chunkFrames * NSEC_PER_SEC / format.sampleRate
+        : 0;
+    const qint64 fallbackTimestampNs = qMax<qint64>(
+        qint64(0),
+        (now - self.startTime - self.pausedDuration) * NSEC_PER_MSEC
+            - chunkDurationNs);
+    BOOL hasAnchor = self.hasTimelineAnchor;
+    qint64 firstPresentationTimeNs = self.firstPresentationTimeNs;
+    qint64 firstTimelineTimeNs = self.firstTimelineTimeNs;
+    const qint64 timestampNs = alignedSampleTimestampNs(
+        sampleBuffer,
+        &hasAnchor,
+        &firstPresentationTimeNs,
+        &firstTimelineTimeNs,
+        fallbackTimestampNs);
+    self.hasTimelineAnchor = hasAnchor;
+    self.firstPresentationTimeNs = firstPresentationTimeNs;
+    self.firstTimelineTimeNs = firstTimelineTimeNs;
 
     const QPointer<CoreAudioCaptureEngine> engineGuard(engine);
-    QMetaObject::invokeMethod(engine, [engineGuard, audioData, timestamp]() {
+    QMetaObject::invokeMethod(engine, [engineGuard, audioData, format, timestampNs]() {
         if (engineGuard) {
-            emit engineGuard->audioDataReady(audioData, timestamp);
+            engineGuard->processCapturedAudio(
+                SnapTray::Audio::Source::Microphone,
+                audioData,
+                format,
+                timestampNs);
         }
     }, Qt::QueuedConnection);
 }
@@ -201,12 +269,17 @@ API_AVAILABLE(macos(13.0))
 @property (nonatomic, assign) qint64 startTime;
 @property (nonatomic, assign) qint64 pausedDuration;
 @property (nonatomic, assign) bool paused;
+@property (nonatomic, assign) BOOL hasTimelineAnchor;
+@property (nonatomic, assign) qint64 firstPresentationTimeNs;
+@property (nonatomic, assign) qint64 firstTimelineTimeNs;
 @end
 
-static QByteArray convertSckAudioBufferToPCM16(CMSampleBufferRef sampleBuffer)
+static QByteArray convertSckAudioBufferToPCM16(
+    CMSampleBufferRef sampleBuffer,
+    SnapTray::Audio::Pcm16Format *format)
 {
     static bool sckFormatLogged = false;
-    return convertAudioBufferToPCM16(sampleBuffer, "SCK", &sckFormatLogged);
+    return convertAudioBufferToPCM16(sampleBuffer, "SCK", &sckFormatLogged, format);
 }
 
 API_AVAILABLE(macos(13.0))
@@ -218,18 +291,41 @@ API_AVAILABLE(macos(13.0))
     CoreAudioCaptureEngine *engine = self.engine;
     if (self.invalidated || self.paused || !engine) return;
 
-    // Convert to 16-bit PCM
-    QByteArray audioData = convertSckAudioBufferToPCM16(sampleBuffer);
+    SnapTray::Audio::Pcm16Format format;
+    QByteArray audioData = convertSckAudioBufferToPCM16(sampleBuffer, &format);
     if (audioData.isEmpty()) return;
 
     qint64 now = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now().time_since_epoch()).count();
-    qint64 timestamp = now - self.startTime - self.pausedDuration;
+    const qint64 chunkFrames = audioData.size() / qMax(1, format.channels * 2);
+    const qint64 chunkDurationNs = format.sampleRate > 0
+        ? chunkFrames * NSEC_PER_SEC / format.sampleRate
+        : 0;
+    const qint64 fallbackTimestampNs = qMax<qint64>(
+        qint64(0),
+        (now - self.startTime - self.pausedDuration) * NSEC_PER_MSEC
+            - chunkDurationNs);
+    BOOL hasAnchor = self.hasTimelineAnchor;
+    qint64 firstPresentationTimeNs = self.firstPresentationTimeNs;
+    qint64 firstTimelineTimeNs = self.firstTimelineTimeNs;
+    const qint64 timestampNs = alignedSampleTimestampNs(
+        sampleBuffer,
+        &hasAnchor,
+        &firstPresentationTimeNs,
+        &firstTimelineTimeNs,
+        fallbackTimestampNs);
+    self.hasTimelineAnchor = hasAnchor;
+    self.firstPresentationTimeNs = firstPresentationTimeNs;
+    self.firstTimelineTimeNs = firstTimelineTimeNs;
 
     const QPointer<CoreAudioCaptureEngine> engineGuard(engine);
-    QMetaObject::invokeMethod(engine, [engineGuard, audioData, timestamp]() {
+    QMetaObject::invokeMethod(engine, [engineGuard, audioData, format, timestampNs]() {
         if (engineGuard) {
-            emit engineGuard->audioDataReady(audioData, timestamp);
+            engineGuard->processCapturedAudio(
+                SnapTray::Audio::Source::SystemAudio,
+                audioData,
+                format,
+                timestampNs);
         }
     }, Qt::QueuedConnection);
 }
@@ -334,7 +430,7 @@ public:
     }
 #endif
 
-    void cleanup() {
+    void cleanupMicrophone() {
         if (audioDelegate) {
             audioDelegate.invalidated = YES;
             audioDelegate.engine = nil;
@@ -342,10 +438,18 @@ public:
         if (audioOutput) {
             [audioOutput setSampleBufferDelegate:nil queue:nil];
         }
-
         if (captureSession) {
             [captureSession stopRunning];
         }
+        drainCaptureQueue();
+        captureSession = nil;
+        audioInput = nil;
+        audioOutput = nil;
+        audioDelegate = nil;
+    }
+
+    void cleanup() {
+        cleanupMicrophone();
 
 #if HAS_SCREENCAPTUREKIT
         cleanupSystemAudio();
@@ -353,10 +457,6 @@ public:
         drainCaptureQueue();
 #endif
 
-        captureSession = nil;
-        audioInput = nil;
-        audioOutput = nil;
-        audioDelegate = nil;
         captureQueue = nil;
     }
 };
@@ -365,10 +465,7 @@ CoreAudioCaptureEngine::CoreAudioCaptureEngine(QObject *parent)
     : IAudioCaptureEngine(parent)
     , d(new Private)
 {
-    // Set default format
-    m_format.sampleRate = 48000;
-    m_format.channels = 2;
-    m_format.bitsPerSample = 16;
+    m_format = SnapTray::Audio::TimestampedPcmMixer::outputFormat();
 }
 
 CoreAudioCaptureEngine::~CoreAudioCaptureEngine()
@@ -420,7 +517,11 @@ bool CoreAudioCaptureEngine::setAudioSource(AudioSource source)
     if ((source == AudioSource::SystemAudio || source == AudioSource::Both) &&
         !isSystemAudioSupported()) {
         qWarning() << "CoreAudioCaptureEngine: System audio not supported on this macOS version";
-        emit warning("System audio capture requires macOS 13 or later");
+        if (source == AudioSource::SystemAudio) {
+            emit error("System audio capture requires macOS 13 or later");
+            return false;
+        }
+        emit warning("System audio is unavailable. Recording microphone only.");
     }
 
     m_source = source;
@@ -489,9 +590,20 @@ bool CoreAudioCaptureEngine::start()
         return false;
     }
 
+    const bool wantsMicrophone = m_source == AudioSource::Microphone
+        || m_source == AudioSource::Both;
+    const bool wantsSystemAudio = m_source == AudioSource::SystemAudio
+        || m_source == AudioSource::Both;
+    SnapTray::Audio::TimestampedPcmMixer::Config mixerConfig;
+    mixerConfig.microphoneEnabled = wantsMicrophone;
+    mixerConfig.systemAudioEnabled = wantsSystemAudio && isSystemAudioSupported();
+    m_mixer = std::make_unique<SnapTray::Audio::TimestampedPcmMixer>(mixerConfig);
+    m_reportedMixerDrop = false;
+
     // Check microphone permission if needed
     bool microphoneAvailable = false;
-    if (m_source == AudioSource::Microphone || m_source == AudioSource::Both) {
+    bool microphoneWarningEmitted = false;
+    if (wantsMicrophone) {
         AVAuthorizationStatus status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeAudio];
         if (status == AVAuthorizationStatusNotDetermined) {
             __block bool granted = false;
@@ -507,9 +619,11 @@ bool CoreAudioCaptureEngine::start()
             microphoneAvailable = granted;
             if (!granted && m_source == AudioSource::Microphone) {
                 emit error("Microphone access denied");
+                m_mixer.reset();
                 return false;
             } else if (!granted) {
                 emit warning("Microphone access denied. Recording system audio only.");
+                microphoneWarningEmitted = true;
             }
         } else if (status == AVAuthorizationStatusAuthorized) {
             microphoneAvailable = true;
@@ -517,10 +631,12 @@ bool CoreAudioCaptureEngine::start()
             // Denied or Restricted
             if (m_source == AudioSource::Microphone) {
                 emit error("Microphone access not authorized. Please enable in System Settings.");
+                m_mixer.reset();
                 return false;
             }
             // For "Both" mode, warn but continue with system audio only
             emit warning("Microphone access denied. Recording system audio only.");
+            microphoneWarningEmitted = true;
         }
     }
 
@@ -536,8 +652,11 @@ bool CoreAudioCaptureEngine::start()
                                 d,
                                 nullptr);
 
-    // Set up microphone capture (only if permission granted)
-    if (microphoneAvailable && (m_source == AudioSource::Microphone || m_source == AudioSource::Both)) {
+    auto setupMicrophone = [&]() -> bool {
+        if (!microphoneAvailable || !wantsMicrophone) {
+            return false;
+        }
+
         d->captureSession = [[AVCaptureSession alloc] init];
 
         // Get the audio device
@@ -549,24 +668,23 @@ bool CoreAudioCaptureEngine::start()
         }
 
         if (!audioDevice) {
-            emit error("No audio input device found");
-            d->cleanup();
+            qWarning() << "CoreAudioCaptureEngine: No audio input device found";
             return false;
         }
 
         NSError *error = nil;
         d->audioInput = [AVCaptureDeviceInput deviceInputWithDevice:audioDevice error:&error];
         if (error || !d->audioInput) {
-            emit this->error(QString::fromNSString(error.localizedDescription));
-            d->cleanup();
+            qWarning() << "CoreAudioCaptureEngine: Failed to create microphone input:"
+                       << (error ? QString::fromNSString(error.localizedDescription)
+                                 : QStringLiteral("unknown error"));
             return false;
         }
 
         if ([d->captureSession canAddInput:d->audioInput]) {
             [d->captureSession addInput:d->audioInput];
         } else {
-            emit this->error("Cannot add audio input to capture session");
-            d->cleanup();
+            qWarning() << "CoreAudioCaptureEngine: Cannot add microphone input";
             return false;
         }
 
@@ -578,19 +696,38 @@ bool CoreAudioCaptureEngine::start()
         d->audioDelegate.startTime = m_startTime;
         d->audioDelegate.pausedDuration = 0;
         d->audioDelegate.paused = false;
+        d->audioDelegate.hasTimelineAnchor = NO;
 
         [d->audioOutput setSampleBufferDelegate:d->audioDelegate queue:d->captureQueue];
 
         if ([d->captureSession canAddOutput:d->audioOutput]) {
             [d->captureSession addOutput:d->audioOutput];
         } else {
-            emit this->error("Cannot add audio output to capture session");
-            d->cleanup();
+            qWarning() << "CoreAudioCaptureEngine: Cannot add microphone output";
             return false;
         }
 
         [d->captureSession startRunning];
+        return d->captureSession.running;
+    };
+
+    bool microphoneActive = setupMicrophone();
+    if (wantsMicrophone && !microphoneActive) {
+        d->cleanupMicrophone();
+        m_mixer->setSourceEnabled(SnapTray::Audio::Source::Microphone, false, 0);
+
+        if (!wantsSystemAudio) {
+            emit error("Microphone capture could not start");
+            d->cleanup();
+            m_mixer.reset();
+            return false;
+        }
+        if (!microphoneWarningEmitted) {
+            emit warning("Microphone is unavailable. Recording system audio only.");
+        }
     }
+
+    bool systemAudioActive = false;
 
 #if HAS_SCREENCAPTUREKIT
     // Set up system audio capture (macOS 13+)
@@ -670,6 +807,7 @@ bool CoreAudioCaptureEngine::start()
                                     d->scDelegate.startTime = m_startTime;
                                     d->scDelegate.pausedDuration = 0;
                                     d->scDelegate.paused = false;
+                                    d->scDelegate.hasTimelineAnchor = NO;
 
                                     qDebug() << "CoreAudioCaptureEngine: Adding stream output...";
                                     NSError *addError = nil;
@@ -702,6 +840,7 @@ bool CoreAudioCaptureEngine::start()
                                             d->cleanupSystemAudio();
                                         } else {
                                             d->scCaptureStarted = true;
+                                            systemAudioActive = true;
                                             qDebug() << "CoreAudioCaptureEngine: System audio capture active";
                                         }
                                     }
@@ -725,6 +864,24 @@ bool CoreAudioCaptureEngine::start()
     }
 #endif
 
+    if (wantsSystemAudio && !systemAudioActive) {
+        m_mixer->setSourceEnabled(SnapTray::Audio::Source::SystemAudio, false, 0);
+        if (!microphoneActive) {
+            emit error("System audio capture could not start");
+            d->cleanup();
+            m_mixer.reset();
+            return false;
+        }
+        emit warning("System audio is unavailable. Recording microphone only.");
+    }
+
+    if (!microphoneActive && !systemAudioActive) {
+        emit error("No requested audio source could be started");
+        d->cleanup();
+        m_mixer.reset();
+        return false;
+    }
+
     m_running = true;
     m_paused = false;
 
@@ -732,16 +889,71 @@ bool CoreAudioCaptureEngine::start()
     return true;
 }
 
+void CoreAudioCaptureEngine::processCapturedAudio(
+    SnapTray::Audio::Source source,
+    const QByteArray& pcm,
+    const SnapTray::Audio::Pcm16Format& format,
+    qint64 timestampNs)
+{
+    if (!m_running || m_paused || !m_mixer) {
+        return;
+    }
+
+    const SnapTray::Audio::InputChunk chunk{pcm, timestampNs, format};
+    const auto result = m_mixer->push(source, chunk);
+    deliverMixerOutput(result);
+
+    if (!m_reportedMixerDrop
+        && (result.code == SnapTray::Audio::TimestampedPcmMixer::ResultCode::AcceptedWithDrops
+            || result.code == SnapTray::Audio::TimestampedPcmMixer::ResultCode::TooLate)) {
+        m_reportedMixerDrop = true;
+        emit warning("Audio capture fell behind; a short section may be silent.");
+    } else if (!m_reportedMixerDrop
+               && (result.code == SnapTray::Audio::TimestampedPcmMixer::ResultCode::MalformedInput
+                   || result.code == SnapTray::Audio::TimestampedPcmMixer::ResultCode::UnsupportedFormat)) {
+        m_reportedMixerDrop = true;
+        emit warning("An audio source produced an unsupported format and was skipped.");
+    }
+}
+
+void CoreAudioCaptureEngine::deliverMixerOutput(
+    const SnapTray::Audio::TimestampedPcmMixer::ProcessResult& result)
+{
+    for (const auto& output : result.output) {
+        if (!output.pcm.isEmpty()) {
+            emit audioDataReady(output.pcm, output.timestampMs());
+        }
+    }
+}
+
 void CoreAudioCaptureEngine::stop()
 {
     if (!m_running) return;
 
-    d->cleanup();
-
     m_running = false;
+    if (m_mixer) {
+        const qint64 now = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()).count();
+        const qint64 activeNow = m_paused ? m_pauseStartTime : now;
+        const qint64 endTimeNs = qMax<qint64>(
+            qint64(0),
+            (activeNow - m_startTime - m_pausedDuration) * NSEC_PER_MSEC);
+        deliverMixerOutput(m_mixer->flush(endTimeNs));
+    }
+
+    d->cleanup();
+    m_mixer.reset();
+
     m_paused = false;
 
     qDebug() << "CoreAudioCaptureEngine: Stopped";
+}
+
+void CoreAudioCaptureEngine::disposeAsync()
+{
+    stop();
+    QObject::disconnect(this, nullptr, nullptr, nullptr);
+    deleteLater();
 }
 
 void CoreAudioCaptureEngine::pause()
@@ -752,6 +964,12 @@ void CoreAudioCaptureEngine::pause()
     m_pauseStartTime = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now().time_since_epoch()).count();
     m_paused = true;
+    if (m_mixer) {
+        const qint64 activeTimeNs = qMax<qint64>(
+            qint64(0),
+            (m_pauseStartTime - m_startTime - m_pausedDuration) * NSEC_PER_MSEC);
+        deliverMixerOutput(m_mixer->pause(activeTimeNs));
+    }
 
     if (d->audioDelegate) {
         d->audioDelegate.paused = true;
@@ -776,16 +994,24 @@ void CoreAudioCaptureEngine::resume()
         std::chrono::steady_clock::now().time_since_epoch()).count();
     m_pausedDuration += (now - m_pauseStartTime);
     m_paused = false;
+    if (m_mixer) {
+        const qint64 activeTimeNs = qMax<qint64>(
+            qint64(0),
+            (now - m_startTime - m_pausedDuration) * NSEC_PER_MSEC);
+        m_mixer->resume(activeTimeNs);
+    }
 
     if (d->audioDelegate) {
         d->audioDelegate.paused = false;
         d->audioDelegate.pausedDuration = m_pausedDuration;
+        d->audioDelegate.hasTimelineAnchor = NO;
     }
 #if HAS_SCREENCAPTUREKIT
     if (@available(macOS 13.0, *)) {
         if (d->scDelegate) {
             d->scDelegate.paused = false;
             d->scDelegate.pausedDuration = m_pausedDuration;
+            d->scDelegate.hasTimelineAnchor = NO;
         }
     }
 #endif

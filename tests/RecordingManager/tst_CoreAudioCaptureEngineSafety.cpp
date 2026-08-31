@@ -40,6 +40,8 @@ class TestCoreAudioCaptureEngineSafety : public QObject
 private slots:
     void delegatesGuardQueuedEngineAccess();
     void systemAudioTeardownRetainsAndInvalidatesCallbackGraph();
+    void delegatesRouteThroughCanonicalTimestampMixer();
+    void requestedSourceFailurePreventsFalseStartSuccess();
 };
 
 void TestCoreAudioCaptureEngineSafety::delegatesGuardQueuedEngineAccess()
@@ -100,6 +102,39 @@ void TestCoreAudioCaptureEngineSafety::systemAudioTeardownRetainsAndInvalidatesC
     QVERIFY(!cleanup.contains("stopCaptureWithCompletionHandler:nil"));
     QVERIFY(!cleanup.contains("CoreAudioCaptureEngine *engine"));
     QVERIFY(!cleanup.contains("[this"));
+}
+
+void TestCoreAudioCaptureEngineSafety::delegatesRouteThroughCanonicalTimestampMixer()
+{
+    const QByteArray source = coreAudioSource();
+    QVERIFY2(!source.isEmpty(), "Could not read CoreAudioCaptureEngine_mac.mm");
+
+    QVERIFY(source.contains("CMSampleBufferGetPresentationTimeStamp"));
+    QVERIFY(source.contains("TimestampedPcmMixer::outputFormat()"));
+    QVERIFY(source.contains("SnapTray::Audio::Source::Microphone"));
+    QVERIFY(source.contains("SnapTray::Audio::Source::SystemAudio"));
+    QCOMPARE(source.count("engineGuard->processCapturedAudio("), qsizetype(2));
+    QVERIFY(!source.contains("emit engineGuard->audioDataReady"));
+}
+
+void TestCoreAudioCaptureEngineSafety::requestedSourceFailurePreventsFalseStartSuccess()
+{
+    const QByteArray source = coreAudioSource();
+    const QByteArray start = section(
+        source,
+        "bool CoreAudioCaptureEngine::start()",
+        "void CoreAudioCaptureEngine::processCapturedAudio(");
+    QVERIFY(!start.isEmpty());
+
+    const qsizetype sourcePolicy = start.indexOf(
+        "if (wantsSystemAudio && !systemAudioActive)");
+    const qsizetype noSources = start.indexOf(
+        "if (!microphoneActive && !systemAudioActive)");
+    const qsizetype success = start.indexOf("m_running = true");
+    QVERIFY(sourcePolicy >= 0);
+    QVERIFY(noSources > sourcePolicy);
+    QVERIFY(success > noSources);
+    QVERIFY(start.contains("m_mixer->setSourceEnabled("));
 }
 
 QTEST_GUILESS_MAIN(TestCoreAudioCaptureEngineSafety)
