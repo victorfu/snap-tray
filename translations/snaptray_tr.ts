@@ -1776,6 +1776,11 @@ Boyut: %2</translation>
         <translation>WebP olarak dışa aktar</translation>
     </message>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
+        <source>Audio playback is unavailable in this preview.</source>
+        <translation>Bu önizlemede ses oynatma kullanılamıyor.</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Unmute Preview (M)</source>
         <translation>Önizleme sesini aç (M)</translation>

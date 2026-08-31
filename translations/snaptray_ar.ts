@@ -1776,6 +1776,11 @@ Size: %2</source>
         <translation>تصدير بصيغة WebP</translation>
     </message>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
+        <source>Audio playback is unavailable in this preview.</source>
+        <translation>تشغيل الصوت غير متاح في هذه المعاينة.</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Unmute Preview (M)</source>
         <translation>إلغاء كتم صوت المعاينة (M)</translation>

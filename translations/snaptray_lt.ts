@@ -1776,6 +1776,11 @@ Dydis: %2</translation>
         <translation>Eksportuoti kaip WebP</translation>
     </message>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
+        <source>Audio playback is unavailable in this preview.</source>
+        <translation>Šioje peržiūroje garso atkūrimas nepasiekiamas.</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Unmute Preview (M)</source>
         <translation>Įjungti peržiūros garsą (M)</translation>

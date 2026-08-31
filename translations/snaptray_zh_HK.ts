@@ -1776,6 +1776,11 @@ Size: %2</source>
         <translation>匯出為 WebP</translation>
     </message>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
+        <source>Audio playback is unavailable in this preview.</source>
+        <translation>此預覽不支援音訊播放。</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Unmute Preview (M)</source>
         <translation>取消靜音預覽 (M)</translation>

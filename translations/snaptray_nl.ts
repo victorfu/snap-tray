@@ -1782,6 +1782,11 @@ Grootte: %2</translation>
         <translation>Exporteren als WebP</translation>
     </message>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
+        <source>Audio playback is unavailable in this preview.</source>
+        <translation>Audio afspelen is niet beschikbaar in dit voorbeeld.</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Unmute Preview (M)</source>
         <translation>Dempen van voorbeeld opheffen (M)</translation>

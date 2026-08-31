@@ -1776,6 +1776,11 @@ Size: %2</source>
         <translation>Εξαγωγή ως WebP</translation>
     </message>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
+        <source>Audio playback is unavailable in this preview.</source>
+        <translation>Η αναπαραγωγή ήχου δεν είναι διαθέσιμη σε αυτήν την προεπισκόπηση.</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Unmute Preview (M)</source>
         <translation>Κατάργηση σίγασης προεπισκόπησης (M)</translation>

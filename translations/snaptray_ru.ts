@@ -1782,6 +1782,11 @@ Size: %2</source>
         <translation>Экспортировать как WebP</translation>
     </message>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
+        <source>Audio playback is unavailable in this preview.</source>
+        <translation>В этом окне предварительного просмотра воспроизведение звука недоступно.</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Unmute Preview (M)</source>
         <translation>Включить звук предпросмотра (M)</translation>

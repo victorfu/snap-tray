@@ -1782,6 +1782,11 @@ Size: %2</source>
         <translation>WebP として書き出す</translation>
     </message>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
+        <source>Audio playback is unavailable in this preview.</source>
+        <translation>このプレビューでは音声を再生できません。</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Unmute Preview (M)</source>
         <translation>プレビューのミュートを解除 (M)</translation>

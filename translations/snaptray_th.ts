@@ -1763,6 +1763,11 @@ English is always included and cannot be removed.</source>
         <translation>ส่งออกเป็น WebP</translation>
     </message>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="170"/>
+        <source>Audio playback is unavailable in this preview.</source>
+        <translation>ไม่สามารถเล่นเสียงในการแสดงตัวอย่างนี้ได้</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="418"/>
         <source>Unmute Preview (M)</source>
         <translation>เปิดเสียงตัวอย่าง (M)</translation>

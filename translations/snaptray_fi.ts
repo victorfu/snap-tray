@@ -1776,6 +1776,11 @@ Koko: %2</translation>
         <translation>Vie WebP-muodossa</translation>
     </message>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
+        <source>Audio playback is unavailable in this preview.</source>
+        <translation>Äänen toisto ei ole käytettävissä tässä esikatselussa.</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Unmute Preview (M)</source>
         <translation>Poista esikatselun mykistys (M)</translation>

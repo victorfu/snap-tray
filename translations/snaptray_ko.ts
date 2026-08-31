@@ -1782,6 +1782,11 @@ Size: %2</source>
         <translation>WebP로 내보내기</translation>
     </message>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
+        <source>Audio playback is unavailable in this preview.</source>
+        <translation>이 미리보기에서는 오디오를 재생할 수 없습니다.</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Unmute Preview (M)</source>
         <translation>미리 보기 음소거 해제 (M)</translation>

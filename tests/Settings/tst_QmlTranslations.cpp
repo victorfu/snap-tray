@@ -27,6 +27,7 @@ private slots:
     void testRememberLastFolderTranslatedForAllLocales();
     void testMosaicBrushSizeHintTranslatedForAllLocales();
     void testAutoBlurHintTranslatedForAllLocales();
+    void testRecordingPreviewAudioNoticeTranslatedForAllLocales();
 
 private:
     QTranslator m_translator;
@@ -278,6 +279,35 @@ void tst_QmlTranslations::testMosaicBrushSizeHintTranslatedForAllLocales()
         QVERIFY2(translated != QString::fromUtf8(source),
                  qPrintable(QStringLiteral(
                                 "%1 fell back to English for the Mosaic brush size hint")
+                                .arg(qmFile)));
+    }
+}
+
+void tst_QmlTranslations::testRecordingPreviewAudioNoticeTranslatedForAllLocales()
+{
+    const QByteArray context = "RecordingPreview";
+    const QByteArray source = "Audio playback is unavailable in this preview.";
+
+    const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
+    const QStringList qmFiles = translationsDir.entryList(
+        {QStringLiteral("snaptray_*.qm")},
+        QDir::Files,
+        QDir::Name);
+    QCOMPARE(qmFiles.size(), 24);
+
+    for (const QString& qmFile : qmFiles) {
+        QTranslator translator;
+        const QString path = translationsDir.filePath(qmFile);
+        QVERIFY2(translator.load(path),
+                 qPrintable(QStringLiteral("Failed to load translation file: %1").arg(path)));
+
+        const QString translated = translator.translate(context.constData(),
+                                                        source.constData());
+        QVERIFY2(!translated.isEmpty(),
+                 qPrintable(QStringLiteral("%1 is missing the preview-audio notice")
+                                .arg(qmFile)));
+        QVERIFY2(translated != QString::fromUtf8(source),
+                 qPrintable(QStringLiteral("%1 fell back to English for the preview-audio notice")
                                 .arg(qmFile)));
     }
 }

@@ -1776,6 +1776,11 @@ Kích thước: %2</translation>
         <translation>Xuất dưới dạng WebP</translation>
     </message>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
+        <source>Audio playback is unavailable in this preview.</source>
+        <translation>Không thể phát âm thanh trong bản xem trước này.</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Unmute Preview (M)</source>
         <translation>Bật tiếng xem trước (M)</translation>
