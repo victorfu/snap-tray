@@ -143,11 +143,13 @@ void NativeGifEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
         return;
     }
 
-    const qint64 durationMs = timestampMs >= 0
-            && m_pendingTimestampMs >= 0
-            && timestampMs > m_pendingTimestampMs
+    const bool hasComparableTimestamps = timestampMs >= 0 && m_pendingTimestampMs >= 0;
+    const bool timestampRegressed = hasComparableTimestamps
+        && timestampMs <= m_pendingTimestampMs;
+    const qint64 durationMs = hasComparableTimestamps && !timestampRegressed
         ? timestampMs - m_pendingTimestampMs
         : -1;
+    const qint64 nextPendingTimestampMs = timestampRegressed ? -1 : timestampMs;
     const int centiSeconds = calculateCentiseconds(durationMs);
 
     if (!encodePendingFrame(centiSeconds)) {
@@ -157,7 +159,7 @@ void NativeGifEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
         m_delayRemainderUnits = 0;
         if (m_running) {
             m_pendingFrame = processed.copy();
-            m_pendingTimestampMs = timestampMs;
+            m_pendingTimestampMs = nextPendingTimestampMs;
         } else {
             m_pendingFrame = QImage();
             m_pendingTimestampMs = -1;
@@ -166,7 +168,7 @@ void NativeGifEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
     }
 
     m_pendingFrame = processed.copy();
-    m_pendingTimestampMs = timestampMs;
+    m_pendingTimestampMs = nextPendingTimestampMs;
     m_framesWritten++;
 
     // Emit progress every 30 frames

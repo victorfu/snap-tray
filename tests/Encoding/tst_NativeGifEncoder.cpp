@@ -8,6 +8,21 @@
 
 namespace {
 
+bool skipGifSubBlocks(const QByteArray &data, qsizetype &offset)
+{
+    while (offset < data.size()) {
+        const int blockSize = static_cast<uchar>(data.at(offset++));
+        if (blockSize == 0) {
+            return true;
+        }
+        if (offset + blockSize > data.size()) {
+            return false;
+        }
+        offset += blockSize;
+    }
+    return false;
+}
+
 QList<int> gifFrameDelays(const QString &path)
 {
     QFile file(path);
@@ -16,15 +31,78 @@ QList<int> gifFrameDelays(const QString &path)
     }
 
     const QByteArray data = file.readAll();
-    const auto *bytes = reinterpret_cast<const uchar *>(data.constData());
-    QList<int> delays;
-    for (qsizetype i = 0; i + 7 < data.size(); ++i) {
-        if (bytes[i] == 0x21 && bytes[i + 1] == 0xf9 && bytes[i + 2] == 0x04) {
-            delays.append(bytes[i + 4] | (bytes[i + 5] << 8));
-            i += 7;
-        }
+    if (data.size() < 13 || (!data.startsWith("GIF87a") && !data.startsWith("GIF89a"))) {
+        return {};
     }
-    return delays;
+
+    auto byteAt = [&data](qsizetype offset) {
+        return static_cast<uchar>(data.at(offset));
+    };
+
+    qsizetype offset = 6;
+    const int logicalScreenPacked = byteAt(offset + 4);
+    offset += 7;
+    if (logicalScreenPacked & 0x80) {
+        const qsizetype colorTableBytes = 3 * (1 << ((logicalScreenPacked & 0x07) + 1));
+        if (offset + colorTableBytes > data.size()) {
+            return {};
+        }
+        offset += colorTableBytes;
+    }
+
+    QList<int> delays;
+    while (offset < data.size()) {
+        const int marker = byteAt(offset++);
+        if (marker == 0x3b) {
+            return delays;
+        }
+
+        if (marker == 0x21) {
+            if (offset >= data.size()) {
+                return {};
+            }
+            const int extensionLabel = byteAt(offset++);
+            if (extensionLabel == 0xf9) {
+                if (offset + 6 > data.size() || byteAt(offset) != 0x04) {
+                    return {};
+                }
+                delays.append(byteAt(offset + 2) | (byteAt(offset + 3) << 8));
+                offset += 5;
+                if (byteAt(offset++) != 0x00) {
+                    return {};
+                }
+            } else if (!skipGifSubBlocks(data, offset)) {
+                return {};
+            }
+            continue;
+        }
+
+        if (marker == 0x2c) {
+            if (offset + 9 > data.size()) {
+                return {};
+            }
+            const int imagePacked = byteAt(offset + 8);
+            offset += 9;
+            if (imagePacked & 0x80) {
+                const qsizetype colorTableBytes = 3 * (1 << ((imagePacked & 0x07) + 1));
+                if (offset + colorTableBytes > data.size()) {
+                    return {};
+                }
+                offset += colorTableBytes;
+            }
+            if (offset >= data.size()) {
+                return {};
+            }
+            ++offset; // LZW minimum code size
+            if (!skipGifSubBlocks(data, offset)) {
+                return {};
+            }
+            continue;
+        }
+
+        return {};
+    }
+    return {};
 }
 
 } // namespace
@@ -69,6 +147,7 @@ private slots:
     void testWriteFrameNotRunning();
     void testProgressSignalEmitted();
     void testTimestampDelayBelongsToPreviousFrame();
+    void testRegressedTimestampDoesNotBecomeNextBaseline();
     void testDefaultFrameRatePreservesCentisecondRemainder_data();
     void testDefaultFrameRatePreservesCentisecondRemainder();
     void testTimestampQuantizationPreservesDuration_data();
@@ -335,6 +414,19 @@ void TestNativeGifEncoder::testTimestampDelayBelongsToPreviousFrame()
     m_encoder->finish();
 
     QCOMPARE(gifFrameDelays(path), QList<int>({1, 2, 3, 5}));
+}
+
+void TestNativeGifEncoder::testRegressedTimestampDoesNotBecomeNextBaseline()
+{
+    const QString path = tempFilePath("regressed_timestamp.gif");
+    QVERIFY(m_encoder->start(path, QSize(2, 2), 30));
+
+    m_encoder->writeFrame(createTestFrame(QSize(2, 2), qRgb(255, 0, 0)), 1000);
+    m_encoder->writeFrame(createTestFrame(QSize(2, 2), qRgb(0, 255, 0)), 0);
+    m_encoder->writeFrame(createTestFrame(QSize(2, 2), qRgb(0, 0, 255)), 1033);
+    m_encoder->finish();
+
+    QCOMPARE(gifFrameDelays(path), QList<int>({3, 3, 4}));
 }
 
 void TestNativeGifEncoder::testDefaultFrameRatePreservesCentisecondRemainder_data()
