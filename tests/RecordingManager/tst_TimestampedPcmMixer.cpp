@@ -98,7 +98,11 @@ private slots:
     void alignsByTimestampAndFillsGaps();
     void trimsSameSourceOverlap();
     void pendingBufferIsCapped();
+    void immediatelyDrainableInputIsNotCapped();
     void boundedSkewReleasesLeadingSource();
+    void futureSourceEnableHonorsEffectiveTime();
+    void tinyOverlapDropsArePartitionInvariant();
+    void fullyLateCanonicalSegmentReportsTooLate();
     void disablingSourceReleasesPeer();
     void pauseResumeClearsCrossPauseState();
     void flushClosesUntilReset();
@@ -273,6 +277,37 @@ void tst_TimestampedPcmMixer::pendingBufferIsCapped()
     QVERIFY(mixer.stats().overflowFrames >= 6);
 }
 
+void tst_TimestampedPcmMixer::immediatelyDrainableInputIsNotCapped()
+{
+    auto smallCap = config(true, false);
+    smallCap.maxPendingFramesPerSource = 4;
+    smallCap.maxPendingBytesPerSource = 16;
+
+    QByteArray input;
+    for (int i = 0; i < 10; ++i) input += pcm16({qint16(i), qint16(i)});
+
+    TimestampedPcmMixer whole(smallCap);
+    const auto wholeResult = whole.push(
+        Source::Microphone,
+        {input, 0, format(48000, 2)});
+
+    TimestampedPcmMixer partitioned(smallCap);
+    QVector<OutputChunk> partitionedOutput;
+    partitionedOutput += partitioned.push(
+        Source::Microphone,
+        {input.left(16), 0, format(48000, 2)}).output;
+    partitionedOutput += partitioned.push(
+        Source::Microphone,
+        {input.mid(16, 16), nsForFrames(4, 48000), format(48000, 2)}).output;
+    partitionedOutput += partitioned.push(
+        Source::Microphone,
+        {input.mid(32), nsForFrames(8, 48000), format(48000, 2)}).output;
+
+    QCOMPARE(join(wholeResult.output), join(partitionedOutput));
+    QCOMPARE(wholeResult.code, TimestampedPcmMixer::ResultCode::Accepted);
+    QCOMPARE(whole.stats().overflowFrames, qint64(0));
+}
+
 void tst_TimestampedPcmMixer::boundedSkewReleasesLeadingSource()
 {
     auto skewConfig = config(true, true);
@@ -290,6 +325,58 @@ void tst_TimestampedPcmMixer::boundedSkewReleasesLeadingSource()
              QList<qint16>({100, 100, 100, 100, 100, 100, 100, 100}));
     QCOMPARE(mixer.pendingFrames(Source::Microphone), qint64(2));
     QCOMPARE(mixer.stats().synthesizedGapFrames, qint64(4));
+}
+
+void tst_TimestampedPcmMixer::futureSourceEnableHonorsEffectiveTime()
+{
+    auto futureConfig = config(true, false);
+    futureConfig.maxSkewFrames = 2;
+    TimestampedPcmMixer mixer(futureConfig);
+
+    mixer.setSourceEnabled(Source::SystemAudio, true, nsForFrames(10, 48000));
+    QByteArray mic;
+    for (int i = 0; i < 6; ++i) mic += pcm16({100, 100});
+    const auto micResult = mixer.push(
+        Source::Microphone,
+        {mic, 0, format(48000, 2)});
+
+    QCOMPARE(join(micResult.output).size() / 4, 6);
+    QCOMPARE(mixer.stats().synthesizedGapFrames, qint64(0));
+
+    const auto staleSystem = mixer.push(
+        Source::SystemAudio,
+        {pcm16({10, 10}), 0, format(48000, 2)});
+    QCOMPARE(staleSystem.code, TimestampedPcmMixer::ResultCode::TooLate);
+}
+
+void tst_TimestampedPcmMixer::tinyOverlapDropsArePartitionInvariant()
+{
+    TimestampedPcmMixer mixer(config(true, false));
+    const Pcm16Format highRate = format(192000, 1);
+    mixer.push(Source::Microphone, {pcm16({100}), 0, highRate});
+
+    for (int i = 0; i < 4; ++i) {
+        const auto duplicate = mixer.push(
+            Source::Microphone,
+            {pcm16({100}), 0, highRate});
+        QCOMPARE(duplicate.code, TimestampedPcmMixer::ResultCode::TooLate);
+    }
+    QCOMPARE(mixer.stats().overlapFrames, qint64(1));
+}
+
+void tst_TimestampedPcmMixer::fullyLateCanonicalSegmentReportsTooLate()
+{
+    TimestampedPcmMixer mixer(config(true, false));
+    mixer.reset(10 * 1000000LL);
+
+    QByteArray late;
+    for (int i = 0; i < 48; ++i) late += pcm16({100, 100});
+    const auto result = mixer.push(
+        Source::Microphone,
+        {late, 0, format(48000, 2)});
+
+    QCOMPARE(result.code, TimestampedPcmMixer::ResultCode::TooLate);
+    QVERIFY(result.output.isEmpty());
 }
 
 void tst_TimestampedPcmMixer::disablingSourceReleasesPeer()

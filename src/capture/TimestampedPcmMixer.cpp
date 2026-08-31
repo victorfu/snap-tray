@@ -295,8 +295,17 @@ private:
 
 struct SourceState {
     bool enabled = false;
+    qint64 enabledFromFrame = 0;
+    qint64 enabledFromTimeNs = 0;
+    qint64 dropScaleRemainder = 0;
+    int dropScaleSampleRate = 0;
     StreamNormalizer normalizer;
     QList<CanonicalSegment> pending;
+};
+
+struct AppendOutcome {
+    qint64 droppedFrames = 0;
+    qint64 retainedFrames = 0;
 };
 
 qint64 segmentFrames(const QList<CanonicalSegment>& segments)
@@ -376,6 +385,35 @@ public:
     {
         source.normalizer.clear();
         source.pending.clear();
+        source.dropScaleRemainder = 0;
+        source.dropScaleSampleRate = 0;
+    }
+
+    qint64 scaleDroppedFrames(SourceState& source, qint64 inputFrames, int sampleRate)
+    {
+        if (inputFrames <= 0 || sampleRate <= 0) {
+            return 0;
+        }
+        if (source.dropScaleSampleRate != sampleRate) {
+            source.dropScaleSampleRate = sampleRate;
+            source.dropScaleRemainder = 0;
+        }
+        const qint64 scaled = source.dropScaleRemainder
+            + inputFrames * kOutputSampleRate;
+        const qint64 outputFrames = scaled / sampleRate;
+        source.dropScaleRemainder = scaled % sampleRate;
+        return outputFrames;
+    }
+
+    bool sourceActiveAt(const SourceState& source, qint64 frame) const
+    {
+        return source.enabled && frame >= source.enabledFromFrame;
+    }
+
+    int enabledSourceCountAt(qint64 frame) const
+    {
+        return static_cast<int>(sourceActiveAt(sources[0], frame))
+            + static_cast<int>(sourceActiveAt(sources[1], frame));
     }
 
     void resetLocked(qint64 timelineStartNs)
@@ -386,6 +424,10 @@ public:
         sources[0].enabled = config.microphoneEnabled;
         sources[1].enabled = config.systemAudioEnabled;
         outputCursor = scaledTimeToFrames(timelineStartNs, kOutputSampleRate);
+        for (auto& source : sources) {
+            source.enabledFromFrame = outputCursor;
+            source.enabledFromTimeNs = timelineStartNs;
+        }
         paused = false;
         closed = false;
         statistics = {};
@@ -445,22 +487,23 @@ public:
         return dropped;
     }
 
-    qint64 appendSegment(SourceState& source, CanonicalSegment segment)
+    AppendOutcome appendSegment(SourceState& source, CanonicalSegment segment)
     {
+        AppendOutcome outcome;
         if (segment.pcm.isEmpty()) {
-            return 0;
+            return outcome;
         }
 
-        qint64 dropped = 0;
-        if (segment.startFrame < outputCursor) {
-            const qint64 prefix = qMin(outputCursor - segment.startFrame,
+        const qint64 earliestAcceptedFrame = qMax(outputCursor, source.enabledFromFrame);
+        if (segment.startFrame < earliestAcceptedFrame) {
+            const qint64 prefix = qMin(earliestAcceptedFrame - segment.startFrame,
                                        segment.frameCount());
             trimSegmentPrefix(segment, prefix);
-            dropped += prefix;
+            outcome.droppedFrames += prefix;
             statistics.lateFrames += prefix;
         }
         if (segment.pcm.isEmpty()) {
-            return dropped;
+            return outcome;
         }
 
         if (!source.pending.isEmpty()) {
@@ -468,18 +511,18 @@ public:
             if (overlap > 0) {
                 const qint64 trimmed = qMin(overlap, segment.frameCount());
                 trimSegmentPrefix(segment, trimmed);
-                dropped += trimmed;
+                outcome.droppedFrames += trimmed;
                 statistics.overlapFrames += trimmed;
             }
         }
         if (!segment.pcm.isEmpty()) {
+            outcome.retainedFrames = segment.frameCount();
             source.pending.append(std::move(segment));
         }
-        dropped += enforceCap(source);
         statistics.peakPendingBytes = qMax(
             statistics.peakPendingBytes,
             segmentBytes(source.pending));
-        return dropped;
+        return outcome;
     }
 
     qint16 sampleAt(const SourceState& source, qint64 frame, int channel,
@@ -506,42 +549,66 @@ public:
         dropBefore(source, frame, false);
     }
 
-    int enabledSourceCount() const
+    qint64 nextActivationAfter(qint64 frame) const
     {
-        return static_cast<int>(sources[0].enabled)
-            + static_cast<int>(sources[1].enabled);
+        qint64 next = std::numeric_limits<qint64>::max();
+        for (const auto& source : sources) {
+            if (source.enabled && source.enabledFromFrame > frame) {
+                next = qMin(next, source.enabledFromFrame);
+            }
+        }
+        return next;
     }
 
     qint64 automaticFrontier() const
     {
-        const int enabledCount = enabledSourceCount();
+        const int enabledCount = enabledSourceCountAt(outputCursor);
         if (enabledCount == 0) {
             return outputCursor;
         }
 
-        const qint64 micEnd = sources[0].enabled ? latestEndFrame(sources[0]) : -1;
-        const qint64 systemEnd = sources[1].enabled ? latestEndFrame(sources[1]) : -1;
+        const qint64 micEnd = sourceActiveAt(sources[0], outputCursor)
+            ? latestEndFrame(sources[0]) : -1;
+        const qint64 systemEnd = sourceActiveAt(sources[1], outputCursor)
+            ? latestEndFrame(sources[1]) : -1;
+        qint64 frontier = outputCursor;
         if (enabledCount == 1) {
-            return qMax(micEnd, systemEnd);
+            frontier = qMax(micEnd, systemEnd);
+        } else {
+            const qint64 maximumEnd = qMax(micEnd, systemEnd);
+            const qint64 minimumEnd = micEnd >= 0 && systemEnd >= 0
+                ? qMin(micEnd, systemEnd)
+                : outputCursor;
+            frontier = qMax(minimumEnd, maximumEnd - config.maxSkewFrames);
         }
 
-        const qint64 maximumEnd = qMax(micEnd, systemEnd);
-        const qint64 minimumEnd = micEnd >= 0 && systemEnd >= 0
-            ? qMin(micEnd, systemEnd)
-            : outputCursor;
-        return qMax(minimumEnd, maximumEnd - config.maxSkewFrames);
+        const qint64 nextActivation = nextActivationAfter(outputCursor);
+        if (nextActivation != std::numeric_limits<qint64>::max()) {
+            frontier = qMin(frontier, nextActivation);
+        }
+        return frontier;
     }
 
     void drainTo(qint64 frontier, ProcessResult& result)
     {
-        if (enabledSourceCount() == 0) {
-            return;
-        }
         frontier = qMax(frontier, outputCursor);
         while (outputCursor < frontier) {
-            const qint64 frames = qMin<qint64>(
+            const int activeSources = enabledSourceCountAt(outputCursor);
+            if (activeSources == 0) {
+                const qint64 nextActivation = nextActivationAfter(outputCursor);
+                outputCursor = nextActivation == std::numeric_limits<qint64>::max()
+                    ? frontier
+                    : qMin(frontier, nextActivation);
+                continue;
+            }
+
+            qint64 frames = qMin<qint64>(
                 config.outputChunkFrames,
                 frontier - outputCursor);
+            const qint64 nextActivation = nextActivationAfter(outputCursor);
+            if (nextActivation != std::numeric_limits<qint64>::max()) {
+                frames = qMin(frames, nextActivation - outputCursor);
+            }
             OutputChunk chunk;
             chunk.startFrame = outputCursor;
             chunk.pcm.reserve(static_cast<qsizetype>(
@@ -551,11 +618,13 @@ public:
                 const qint64 frame = outputCursor + offset;
                 bool micPresent[2] = {false, false};
                 bool systemPresent[2] = {false, false};
+                const bool micActive = sourceActiveAt(sources[0], frame);
+                const bool systemActive = sourceActiveAt(sources[1], frame);
                 for (int channel = 0; channel < kOutputChannels; ++channel) {
-                    const qint16 mic = sources[0].enabled
+                    const qint16 mic = micActive
                         ? sampleAt(sources[0], frame, channel, &micPresent[channel])
                         : 0;
-                    const qint16 system = sources[1].enabled
+                    const qint16 system = systemActive
                         ? sampleAt(sources[1], frame, channel, &systemPresent[channel])
                         : 0;
                     appendLittleEndianSample(
@@ -563,10 +632,10 @@ public:
                         clampPcm16(static_cast<qint64>(mic) + system));
                 }
 
-                if (sources[0].enabled && !micPresent[0]) {
+                if (micActive && !micPresent[0]) {
                     ++statistics.synthesizedGapFrames;
                 }
-                if (sources[1].enabled && !systemPresent[0]) {
+                if (systemActive && !systemPresent[0]) {
                     ++statistics.synthesizedGapFrames;
                 }
             }
@@ -578,10 +647,41 @@ public:
         }
     }
 
+    void drainAutomatically(ProcessResult& result)
+    {
+        while (true) {
+            const qint64 frontier = automaticFrontier();
+            if (frontier <= outputCursor) {
+                return;
+            }
+            drainTo(frontier, result);
+        }
+    }
+
+    void advanceWithSkew(qint64 targetFrame, ProcessResult& result)
+    {
+        targetFrame = qMax(targetFrame, outputCursor);
+        while (outputCursor < targetFrame) {
+            const qint64 nextActivation = nextActivationAfter(outputCursor);
+            const qint64 stageEnd = nextActivation == std::numeric_limits<qint64>::max()
+                ? targetFrame
+                : qMin(targetFrame, nextActivation);
+            qint64 frontier = stageEnd;
+            if (enabledSourceCountAt(outputCursor) > 1) {
+                frontier -= config.maxSkewFrames;
+            }
+            if (frontier <= outputCursor) {
+                return;
+            }
+            drainTo(frontier, result);
+        }
+    }
+
     void appendNormalizerTail(SourceState& source, ProcessResult& result)
     {
         CanonicalSegment tail = source.normalizer.flushAndReset();
-        result.droppedFrames += appendSegment(source, std::move(tail));
+        const AppendOutcome outcome = appendSegment(source, std::move(tail));
+        result.droppedFrames += outcome.droppedFrames;
     }
 
     Config config;
@@ -592,6 +692,11 @@ public:
     Stats statistics;
     mutable QMutex mutex;
 };
+
+TimestampedPcmMixer::TimestampedPcmMixer()
+    : TimestampedPcmMixer(Config{})
+{
+}
 
 TimestampedPcmMixer::TimestampedPcmMixer(const Config& config)
     : d(std::make_unique<Private>(config))
@@ -636,24 +741,70 @@ TimestampedPcmMixer::ProcessResult TimestampedPcmMixer::push(
         return result;
     }
 
-    const auto normalized = state.normalizer.push(chunk);
-    const qint64 normalizedDrops = (normalized.droppedInputFrames * kOutputSampleRate
-        + chunk.format.sampleRate / 2) / chunk.format.sampleRate;
-    result.droppedFrames += normalizedDrops;
-    d->statistics.overlapFrames += normalizedDrops;
-    bool appended = false;
-    for (auto segment : normalized.segments) {
-        const qint64 beforeFrames = segment.frameCount();
-        const qint64 dropped = d->appendSegment(state, std::move(segment));
-        result.droppedFrames += dropped;
-        appended = appended || dropped < beforeFrames;
+    InputChunk effectiveChunk = chunk;
+    qint64 preNormalizationDrops = 0;
+    if (effectiveChunk.startTimeNs < state.enabledFromTimeNs) {
+        const qint64 inputFrames = effectiveChunk.pcm.size()
+            / effectiveChunk.format.bytesPerFrame();
+        const qint64 chunkEndNs = effectiveChunk.startTimeNs
+            + framesToNanoseconds(inputFrames, effectiveChunk.format.sampleRate);
+        if (chunkEndNs <= state.enabledFromTimeNs) {
+            const qint64 canonicalDrops = d->scaleDroppedFrames(
+                state, inputFrames, effectiveChunk.format.sampleRate);
+            result.droppedFrames = canonicalDrops;
+            d->statistics.lateFrames += canonicalDrops;
+            result.code = ResultCode::TooLate;
+            return result;
+        }
+
+        preNormalizationDrops = qBound<qint64>(
+            qint64(0),
+            scaledTimeToFrames(
+                state.enabledFromTimeNs - effectiveChunk.startTimeNs,
+                effectiveChunk.format.sampleRate),
+            inputFrames);
+        effectiveChunk.pcm.remove(
+            0,
+            static_cast<qsizetype>(preNormalizationDrops
+                * effectiveChunk.format.bytesPerFrame()));
+        effectiveChunk.startTimeNs += framesToNanoseconds(
+            preNormalizationDrops,
+            effectiveChunk.format.sampleRate);
     }
 
-    d->drainTo(d->automaticFrontier(), result);
-    if (result.droppedFrames > 0) {
-        result.code = appended || !normalized.segments.isEmpty()
-            ? ResultCode::AcceptedWithDrops
-            : ResultCode::TooLate;
+    bool hadDrops = preNormalizationDrops > 0;
+    const qint64 preNormalizationCanonicalDrops = d->scaleDroppedFrames(
+        state, preNormalizationDrops, effectiveChunk.format.sampleRate);
+    result.droppedFrames += preNormalizationCanonicalDrops;
+    d->statistics.lateFrames += preNormalizationCanonicalDrops;
+
+    const auto normalized = state.normalizer.push(effectiveChunk);
+    hadDrops = hadDrops || normalized.droppedInputFrames > 0;
+    const qint64 normalizedDrops = d->scaleDroppedFrames(
+        state, normalized.droppedInputFrames, effectiveChunk.format.sampleRate);
+    result.droppedFrames += normalizedDrops;
+    d->statistics.overlapFrames += normalizedDrops;
+    bool retainedOutput = false;
+    for (auto segment : normalized.segments) {
+        const AppendOutcome outcome = d->appendSegment(state, std::move(segment));
+        result.droppedFrames += outcome.droppedFrames;
+        hadDrops = hadDrops || outcome.droppedFrames > 0;
+        retainedOutput = retainedOutput || outcome.retainedFrames > 0;
+    }
+
+    d->drainAutomatically(result);
+    const qint64 overflowDrops = d->enforceCap(state);
+    result.droppedFrames += overflowDrops;
+    hadDrops = hadDrops || overflowDrops > 0;
+
+    if (hadDrops) {
+        const bool allProducedOutputWasLate = !normalized.segments.isEmpty()
+            && !retainedOutput;
+        const bool allInputWasNormalizerOverlap = normalized.segments.isEmpty()
+            && normalized.droppedInputFrames > 0;
+        result.code = allProducedOutputWasLate || allInputWasNormalizerOverlap
+            ? ResultCode::TooLate
+            : ResultCode::AcceptedWithDrops;
     }
     return result;
 }
@@ -684,10 +835,17 @@ TimestampedPcmMixer::ProcessResult TimestampedPcmMixer::setSourceEnabled(
         d->drainTo(scaledTimeToFrames(effectiveTimeNs, kOutputSampleRate), result);
         d->clearSource(state);
         state.enabled = false;
-        d->drainTo(d->automaticFrontier(), result);
+        d->drainAutomatically(result);
     } else {
         d->clearSource(state);
         state.enabled = true;
+        const qint64 effectiveFrame = scaledTimeToFrames(
+            effectiveTimeNs, kOutputSampleRate);
+        state.enabledFromFrame = qMax(effectiveFrame, d->outputCursor);
+        state.enabledFromTimeNs = state.enabledFromFrame == effectiveFrame
+            ? effectiveTimeNs
+            : framesToNanoseconds(state.enabledFromFrame, kOutputSampleRate);
+        d->drainAutomatically(result);
     }
 
     if (result.droppedFrames > 0) {
@@ -713,11 +871,9 @@ TimestampedPcmMixer::ProcessResult TimestampedPcmMixer::advanceTo(qint64 activeT
         return result;
     }
 
-    qint64 frontier = scaledTimeToFrames(activeTimeNs, kOutputSampleRate);
-    if (d->enabledSourceCount() > 1) {
-        frontier -= d->config.maxSkewFrames;
-    }
-    d->drainTo(frontier, result);
+    d->advanceWithSkew(
+        scaledTimeToFrames(activeTimeNs, kOutputSampleRate),
+        result);
     return result;
 }
 

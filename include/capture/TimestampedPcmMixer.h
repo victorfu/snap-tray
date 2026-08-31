@@ -111,7 +111,8 @@ public:
         qsizetype peakPendingBytes = 0;
     };
 
-    explicit TimestampedPcmMixer(const Config& config = Config());
+    TimestampedPcmMixer();
+    explicit TimestampedPcmMixer(const Config& config);
     ~TimestampedPcmMixer();
 
     TimestampedPcmMixer(const TimestampedPcmMixer&) = delete;
