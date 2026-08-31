@@ -50,6 +50,17 @@ BOOL CALLBACK findMonitorByDeviceName(HMONITOR monitor, HDC, LPRECT, LPARAM cont
     return FALSE;
 }
 
+constexpr bool supportsUnrotatedDuplication(DXGI_MODE_ROTATION rotation) noexcept
+{
+    return rotation == DXGI_MODE_ROTATION_IDENTITY;
+}
+
+static_assert(supportsUnrotatedDuplication(DXGI_MODE_ROTATION_IDENTITY));
+static_assert(!supportsUnrotatedDuplication(DXGI_MODE_ROTATION_UNSPECIFIED));
+static_assert(!supportsUnrotatedDuplication(DXGI_MODE_ROTATION_ROTATE90));
+static_assert(!supportsUnrotatedDuplication(DXGI_MODE_ROTATION_ROTATE180));
+static_assert(!supportsUnrotatedDuplication(DXGI_MODE_ROTATION_ROTATE270));
+
 } // namespace
 
 class DXGICaptureEngine::Private : public QObject
@@ -277,6 +288,22 @@ bool DXGICaptureEngine::Private::initializeDXGI()
         if (hr == DXGI_ERROR_NOT_CURRENTLY_AVAILABLE) {
             qWarning() << "  - Desktop duplication not available (possibly remote session)";
         }
+        return false;
+    }
+
+    DXGI_OUTDUPL_DESC duplicationDesc{};
+    duplication->GetDesc(&duplicationDesc);
+    if (!supportsUnrotatedDuplication(duplicationDesc.Rotation)) {
+        // Desktop Duplication exposes rotated outputs in an unrotated surface.
+        // Until the frame and crop coordinates are rotated together, BitBlt is
+        // the safe path because it captures in desktop orientation.
+        qWarning() << "DXGICaptureEngine: Rotated output is not supported by the DXGI path;"
+                   << "using BitBlt fallback. Rotation:"
+                   << static_cast<int>(duplicationDesc.Rotation);
+        stagingTexture.Reset();
+        duplication.Reset();
+        context.Reset();
+        device.Reset();
         return false;
     }
 
