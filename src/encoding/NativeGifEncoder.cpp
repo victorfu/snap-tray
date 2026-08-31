@@ -18,7 +18,8 @@ NativeGifEncoder::NativeGifEncoder(QObject *parent)
     , m_framesWritten(0)
     , m_consecutiveFailures(0)
     , m_maxConsecutiveFailures(5)
-    , m_lastTimestampMs(0)
+    , m_pendingTimestampMs(-1)
+    , m_delayRemainderUnits(0)
     , m_running(false)
     , m_aborted(false)
 {
@@ -60,7 +61,9 @@ bool NativeGifEncoder::start(const QString &outputPath, const QSize &frameSize, 
     m_frameRate = qBound(1, frameRate, 240);
     m_framesWritten = 0;
     m_consecutiveFailures = 0;
-    m_lastTimestampMs = 0;
+    m_pendingFrame = QImage();
+    m_pendingTimestampMs = -1;
+    m_delayRemainderUnits = 0;
     m_lastError.clear();
     m_aborted = false;
 
@@ -130,35 +133,41 @@ void NativeGifEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
                  << "expected:" << (processed.width() * 4);
     }
 
-    // Calculate delay in centiseconds (1/100 second)
-    int centiSeconds = calculateCentiseconds(timestampMs);
+    // A GIF frame's delay describes how long that frame remains visible. Keep
+    // one processed frame pending so the next timestamp can determine the
+    // previous frame's delay instead of shifting every interval forward.
+    if (m_pendingFrame.isNull()) {
+        m_pendingFrame = processed.copy();
+        m_pendingTimestampMs = timestampMs;
+        m_framesWritten = 1;
+        return;
+    }
 
-    // Write frame to GIF
-    int pitchInBytes = processed.bytesPerLine();
-    int result = msf_gif_frame(GIF_STATE,
-                       const_cast<uint8_t*>(processed.constBits()),
-                       centiSeconds,
-                       m_maxBitDepth,
-                       pitchInBytes);
-    if (!result) {
-        m_consecutiveFailures++;
-        qWarning() << "NativeGifEncoder: msf_gif_frame failed for frame" << m_framesWritten
-                   << "(consecutive failures:" << m_consecutiveFailures << ")";
+    const qint64 durationMs = timestampMs >= 0
+            && m_pendingTimestampMs >= 0
+            && timestampMs > m_pendingTimestampMs
+        ? timestampMs - m_pendingTimestampMs
+        : -1;
+    const int centiSeconds = calculateCentiseconds(durationMs);
 
-        // Stop encoding after too many consecutive failures to prevent silent corruption
-        if (m_consecutiveFailures >= m_maxConsecutiveFailures) {
-            m_lastError = QString("GIF encoding failed: %1 consecutive frame failures")
-                .arg(m_consecutiveFailures);
-            m_running = false;
-            emit error(m_lastError);
+    if (!encodePendingFrame(centiSeconds)) {
+        // Match the previous streaming behavior by dropping the failed frame
+        // and allowing the current frame to become the next pending frame.
+        // The failed interval was not emitted, so do not carry its remainder.
+        m_delayRemainderUnits = 0;
+        if (m_running) {
+            m_pendingFrame = processed.copy();
+            m_pendingTimestampMs = timestampMs;
+        } else {
+            m_pendingFrame = QImage();
+            m_pendingTimestampMs = -1;
         }
         return;
     }
 
-    // Reset failure counter on success
-    m_consecutiveFailures = 0;
+    m_pendingFrame = processed.copy();
+    m_pendingTimestampMs = timestampMs;
     m_framesWritten++;
-    m_lastTimestampMs = timestampMs;
 
     // Emit progress every 30 frames
     if (m_framesWritten % 30 == 0) {
@@ -166,24 +175,71 @@ void NativeGifEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
     }
 }
 
-int NativeGifEncoder::calculateCentiseconds(qint64 timestampMs)
+bool NativeGifEncoder::encodePendingFrame(int centiSeconds)
 {
-    if (timestampMs < 0 || m_framesWritten == 0) {
-        // First frame or no timestamp provided, use base frame rate
-        // Default to 10 centiseconds (100ms) if frameRate is invalid
-        // Use qMax(1, ...) to ensure minimum 1 centisecond (10ms) for high fps
-        return (m_frameRate > 0) ? qMax(1, 100 / m_frameRate) : 10;
+    if (!m_gifState || m_pendingFrame.isNull()) {
+        return false;
     }
 
-    // Calculate time delta from previous frame
-    qint64 deltaMs = timestampMs - m_lastTimestampMs;
+    const int result = msf_gif_frame(
+        GIF_STATE,
+        const_cast<uint8_t *>(m_pendingFrame.constBits()),
+        centiSeconds,
+        m_maxBitDepth,
+        m_pendingFrame.bytesPerLine());
+    if (result) {
+        m_consecutiveFailures = 0;
+        return true;
+    }
 
-    // Convert to centiseconds (1/100 second)
-    int centiSeconds = static_cast<int>(deltaMs / 10);
+    ++m_consecutiveFailures;
+    qWarning() << "NativeGifEncoder: msf_gif_frame failed for frame"
+               << qMax<qint64>(0, m_framesWritten - 1)
+               << "(consecutive failures:" << m_consecutiveFailures << ")";
 
-    // GIF spec: delay of 0 causes some browsers to use default
-    // Range: 1 (10ms) to 65535 (655.35 seconds)
-    return qBound(1, centiSeconds, 65535);
+    if (m_consecutiveFailures >= m_maxConsecutiveFailures) {
+        m_lastError = QString("GIF encoding failed: %1 consecutive frame failures")
+            .arg(m_consecutiveFailures);
+        m_running = false;
+        emit error(m_lastError);
+    }
+    return false;
+}
+
+int NativeGifEncoder::calculateCentiseconds(qint64 durationMs)
+{
+    constexpr qint64 kMaxCentiseconds = 65535;
+    constexpr qint64 kMaxDurationMs = kMaxCentiseconds * 10;
+
+    if (durationMs > kMaxDurationMs) {
+        m_delayRemainderUnits = 0;
+        return static_cast<int>(kMaxCentiseconds);
+    }
+
+    // Use frameRate-scaled units so a default interval is exactly 1000/fps
+    // milliseconds without losing its fractional part. Timestamp intervals
+    // are exact integer milliseconds in the same unit system.
+    const qint64 unitsPerCentisecond = static_cast<qint64>(m_frameRate) * 10;
+    const qint64 durationUnits = durationMs > 0
+        ? durationMs * m_frameRate
+        : 1000;
+    const qint64 totalUnits = m_delayRemainderUnits + durationUnits;
+    const qint64 centiSeconds = totalUnits / unitsPerCentisecond;
+
+    if (centiSeconds < 1) {
+        // GIF delays below one centisecond cannot be represented. Reset the
+        // remainder because the forced minimum already exceeds the duration.
+        m_delayRemainderUnits = 0;
+        return 1;
+    }
+
+    if (centiSeconds > kMaxCentiseconds) {
+        m_delayRemainderUnits = 0;
+        return static_cast<int>(kMaxCentiseconds);
+    }
+
+    m_delayRemainderUnits = totalUnits % unitsPerCentisecond;
+    return static_cast<int>(centiSeconds);
 }
 
 void NativeGifEncoder::finish()
@@ -198,7 +254,7 @@ void NativeGifEncoder::finish()
         return;
     }
 
-    if (!m_running || m_framesWritten == 0) {
+    if (!m_running || m_framesWritten == 0 || m_pendingFrame.isNull()) {
         MsfGifResult result = msf_gif_end(GIF_STATE);
         if (result.data) {
             msf_gif_free(result);
@@ -215,6 +271,25 @@ void NativeGifEncoder::finish()
     }
 
     qDebug() << "NativeGifEncoder: Finishing with" << m_framesWritten << "frames";
+
+    // No later timestamp exists for the final frame, so use one exact base
+    // frame interval and preserve any accumulated centisecond remainder.
+    if (!encodePendingFrame(calculateCentiseconds(-1))) {
+        MsfGifResult failedResult = msf_gif_end(GIF_STATE);
+        if (failedResult.data) {
+            msf_gif_free(failedResult);
+        }
+        if (m_lastError.isEmpty()) {
+            m_lastError = "Failed to encode final GIF frame";
+        }
+        const QString outputPath = m_outputPath;
+        cleanup();
+        emit error(m_lastError);
+        emit finished(false, outputPath);
+        return;
+    }
+    m_pendingFrame = QImage();
+    m_pendingTimestampMs = -1;
 
     MsfGifResult result = msf_gif_end(GIF_STATE);
 
@@ -289,5 +364,8 @@ void NativeGifEncoder::cleanup()
         delete GIF_STATE;
         m_gifState = nullptr;
     }
+    m_pendingFrame = QImage();
+    m_pendingTimestampMs = -1;
+    m_delayRemainderUnits = 0;
     m_running = false;
 }

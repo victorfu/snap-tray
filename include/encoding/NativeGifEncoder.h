@@ -72,7 +72,8 @@ signals:
 
 private:
     void cleanup();
-    int calculateCentiseconds(qint64 timestampMs);
+    bool encodePendingFrame(int centiSeconds);
+    int calculateCentiseconds(qint64 durationMs);
 
     void *m_gifState;  // Opaque pointer to MsfGifState
     QString m_outputPath;
@@ -82,7 +83,9 @@ private:
     qint64 m_framesWritten;
     int m_consecutiveFailures;  // Track consecutive frame encoding failures
     int m_maxConsecutiveFailures;  // Configurable threshold
-    qint64 m_lastTimestampMs;
+    QImage m_pendingFrame;
+    qint64 m_pendingTimestampMs;
+    qint64 m_delayRemainderUnits;
     QString m_lastError;
     bool m_running;
     bool m_aborted;

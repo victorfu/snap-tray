@@ -4,6 +4,31 @@
 #include <QFile>
 #include "encoding/NativeGifEncoder.h"
 
+#include <numeric>
+
+namespace {
+
+QList<int> gifFrameDelays(const QString &path)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        return {};
+    }
+
+    const QByteArray data = file.readAll();
+    const auto *bytes = reinterpret_cast<const uchar *>(data.constData());
+    QList<int> delays;
+    for (qsizetype i = 0; i + 7 < data.size(); ++i) {
+        if (bytes[i] == 0x21 && bytes[i + 1] == 0xf9 && bytes[i + 2] == 0x04) {
+            delays.append(bytes[i + 4] | (bytes[i + 5] << 8));
+            i += 7;
+        }
+    }
+    return delays;
+}
+
+} // namespace
+
 /**
  * @brief Tests for NativeGifEncoder
  *
@@ -43,6 +68,11 @@ private slots:
     void testWriteNullFrame();
     void testWriteFrameNotRunning();
     void testProgressSignalEmitted();
+    void testTimestampDelayBelongsToPreviousFrame();
+    void testDefaultFrameRatePreservesCentisecondRemainder_data();
+    void testDefaultFrameRatePreservesCentisecondRemainder();
+    void testTimestampQuantizationPreservesDuration_data();
+    void testTimestampQuantizationPreservesDuration();
 
     // Finish tests
     void testFinishCreatesFile();
@@ -51,6 +81,7 @@ private slots:
     void testFinishWithNoFrames();
     void testFinishWithNoFramesPreservesExistingFile();
     void testFinishNotRunning();
+    void testFinishFlushesSingleFrame();
 
     // Abort tests
     void testAbortCleansUp();
@@ -292,6 +323,93 @@ void TestNativeGifEncoder::testProgressSignalEmitted()
     QCOMPARE(progressSpy.at(1).at(0).toLongLong(), 60);
 }
 
+void TestNativeGifEncoder::testTimestampDelayBelongsToPreviousFrame()
+{
+    const QString path = tempFilePath("timestamp_previous_frame.gif");
+    QVERIFY(m_encoder->start(path, QSize(2, 2), 20));
+
+    m_encoder->writeFrame(createTestFrame(QSize(2, 2), qRgb(255, 0, 0)), 0);
+    m_encoder->writeFrame(createTestFrame(QSize(2, 2), qRgb(0, 255, 0)), 15);
+    m_encoder->writeFrame(createTestFrame(QSize(2, 2), qRgb(0, 0, 255)), 35);
+    m_encoder->writeFrame(createTestFrame(QSize(2, 2), qRgb(255, 255, 0)), 60);
+    m_encoder->finish();
+
+    QCOMPARE(gifFrameDelays(path), QList<int>({1, 2, 3, 5}));
+}
+
+void TestNativeGifEncoder::testDefaultFrameRatePreservesCentisecondRemainder_data()
+{
+    QTest::addColumn<int>("frameRate");
+
+    QTest::newRow("15 fps") << 15;
+    QTest::newRow("24 fps") << 24;
+    QTest::newRow("30 fps") << 30;
+}
+
+void TestNativeGifEncoder::testDefaultFrameRatePreservesCentisecondRemainder()
+{
+    QFETCH(int, frameRate);
+
+    const QString path = tempFilePath(QString("default_%1_fps.gif").arg(frameRate));
+    QVERIFY(m_encoder->start(path, QSize(2, 2), frameRate));
+    for (int i = 0; i < frameRate; ++i) {
+        m_encoder->writeFrame(createTestFrame(
+            QSize(2, 2), qRgb((i * 37) % 256, (i * 71) % 256, (i * 113) % 256)));
+    }
+    m_encoder->finish();
+
+    const QList<int> delays = gifFrameDelays(path);
+    QCOMPARE(delays.size(), frameRate);
+    QList<int> expectedDelays;
+    int remainder = 0;
+    for (int i = 0; i < frameRate; ++i) {
+        remainder += 100;
+        expectedDelays.append(remainder / frameRate);
+        remainder %= frameRate;
+    }
+    QCOMPARE(delays, expectedDelays);
+    QCOMPARE(std::accumulate(delays.cbegin(), delays.cend(), 0), 100);
+}
+
+void TestNativeGifEncoder::testTimestampQuantizationPreservesDuration_data()
+{
+    QTest::addColumn<int>("frameRate");
+    QTest::addColumn<int>("expectedCentiseconds");
+
+    QTest::newRow("15 fps") << 15 << 106;
+    QTest::newRow("24 fps") << 24 << 104;
+    QTest::newRow("30 fps") << 30 << 103;
+}
+
+void TestNativeGifEncoder::testTimestampQuantizationPreservesDuration()
+{
+    QFETCH(int, frameRate);
+    QFETCH(int, expectedCentiseconds);
+
+    const QString path = tempFilePath(QString("timestamp_%1_fps.gif").arg(frameRate));
+    QVERIFY(m_encoder->start(path, QSize(2, 2), frameRate));
+    for (int i = 0; i <= frameRate; ++i) {
+        const qint64 timestampMs = static_cast<qint64>(i) * 1000 / frameRate;
+        m_encoder->writeFrame(createTestFrame(
+            QSize(2, 2), qRgb((i * 41) % 256, (i * 67) % 256, (i * 97) % 256)),
+            timestampMs);
+    }
+    m_encoder->finish();
+
+    const QList<int> delays = gifFrameDelays(path);
+    QCOMPARE(delays.size(), frameRate + 1);
+    QList<int> expectedDelays;
+    int remainder = 0;
+    for (int i = 0; i < frameRate; ++i) {
+        remainder += 100;
+        expectedDelays.append(remainder / frameRate);
+        remainder %= frameRate;
+    }
+    expectedDelays.append(100 / frameRate);
+    QCOMPARE(delays, expectedDelays);
+    QCOMPARE(std::accumulate(delays.cbegin(), delays.cend(), 0), expectedCentiseconds);
+}
+
 // ============================================================================
 // Finish Tests
 // ============================================================================
@@ -383,6 +501,18 @@ void TestNativeGifEncoder::testFinishNotRunning()
     QCOMPARE(finishedSpy.count(), 1);
     QCOMPARE(finishedSpy.first().at(0).toBool(), false);
     QVERIFY(finishedSpy.first().at(1).toString().isEmpty());
+}
+
+void TestNativeGifEncoder::testFinishFlushesSingleFrame()
+{
+    const QString path = tempFilePath("single_frame_flush.gif");
+    QVERIFY(m_encoder->start(path, QSize(2, 2), 24));
+    m_encoder->writeFrame(createTestFrame(QSize(2, 2)));
+    QCOMPARE(m_encoder->framesWritten(), 1);
+
+    m_encoder->finish();
+
+    QCOMPARE(gifFrameDelays(path), QList<int>({4}));
 }
 
 // ============================================================================
