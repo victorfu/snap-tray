@@ -2,7 +2,7 @@
 set -euo pipefail
 
 APP_PATH="${1:-}"
-PLIST_BUDDY="/usr/libexec/PlistBuddy"
+XMLLINT="/usr/bin/xmllint"
 
 fail() {
     echo "Error: $1" >&2
@@ -17,8 +17,8 @@ if [ ! -d "$APP_PATH" ]; then
     fail "Application bundle not found: $APP_PATH"
 fi
 
-if [ ! -x "$PLIST_BUDDY" ]; then
-    fail "PlistBuddy not found: $PLIST_BUDDY"
+if [ ! -x "$XMLLINT" ]; then
+    fail "xmllint not found: $XMLLINT"
 fi
 
 INFO_PLIST="$APP_PATH/Contents/Info.plist"
@@ -30,10 +30,11 @@ if ! plutil -lint "$INFO_PLIST" >/dev/null; then
     fail "Packaged Info.plist is invalid: $INFO_PLIST"
 fi
 
-MICROPHONE_DESCRIPTION="$("$PLIST_BUDDY" \
-    -c 'Print :NSMicrophoneUsageDescription' \
+MICROPHONE_DESCRIPTION="$(plutil \
+    -extract NSMicrophoneUsageDescription raw \
+    -expect string \
     "$INFO_PLIST" 2>/dev/null || true)"
-if [ -z "$MICROPHONE_DESCRIPTION" ]; then
+if [ -z "${MICROPHONE_DESCRIPTION//[[:space:]]/}" ]; then
     fail "Packaged Info.plist is missing a non-empty NSMicrophoneUsageDescription"
 fi
 
@@ -48,10 +49,10 @@ if ! plutil -lint "$ENTITLEMENTS_DUMP" >/dev/null; then
     fail "The signed application contains invalid entitlements"
 fi
 
-AUDIO_INPUT_ENTITLEMENT="$("$PLIST_BUDDY" \
-    -c 'Print :com.apple.security.device.audio-input' \
+AUDIO_INPUT_IS_TRUE="$("$XMLLINT" --xpath \
+    'count(/plist/dict/key[.="com.apple.security.device.audio-input"]) = 1 and count(/plist/dict/key[.="com.apple.security.device.audio-input"]/following-sibling::*[1][self::true]) = 1' \
     "$ENTITLEMENTS_DUMP" 2>/dev/null || true)"
-if [ "$AUDIO_INPUT_ENTITLEMENT" != "true" ]; then
+if [ "$AUDIO_INPUT_IS_TRUE" != "true" ]; then
     fail "Signed application is missing com.apple.security.device.audio-input=true"
 fi
 

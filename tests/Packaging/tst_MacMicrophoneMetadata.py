@@ -23,6 +23,9 @@ def main() -> None:
     entitlements = load_plist(
         project_root / "packaging" / "macos" / "entitlements.plist"
     )
+    package_script = (
+        project_root / "packaging" / "macos" / "package.sh"
+    ).read_text(encoding="utf-8")
 
     usage_description = info_plist.get("NSMicrophoneUsageDescription")
     if not isinstance(usage_description, str) or not usage_description.strip():
@@ -30,6 +33,9 @@ def main() -> None:
 
     if entitlements.get("com.apple.security.device.audio-input") is not True:
         fail("com.apple.security.device.audio-input must be true")
+
+    if 'codesign_runtime "$APP_PATH" --deep' in package_script:
+        fail("top-level app signing must not propagate app entitlements with --deep")
 
 
 if __name__ == "__main__":

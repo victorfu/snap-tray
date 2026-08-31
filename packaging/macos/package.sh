@@ -46,22 +46,6 @@ codesign_runtime() {
     fi
 }
 
-codesign_nested() {
-    local target="$1"
-    shift
-
-    if [ -n "$CODESIGN_IDENTITY" ]; then
-        codesign --force --sign "$CODESIGN_IDENTITY" \
-            --timestamp \
-            "$@" \
-            "$target"
-    else
-        codesign --force --sign - \
-            "$@" \
-            "$target"
-    fi
-}
-
 notarize_artifact() {
     local artifact="$1"
     local description="$2"
@@ -188,10 +172,17 @@ fi
 # Step 2: Run macdeployqt
 echo ""
 echo -e "${YELLOW}[2/8] Running macdeployqt...${NC}"
+if [ -n "$CODESIGN_IDENTITY" ]; then
+    MACDEPLOYQT_SIGNING_ARGS=("-sign-for-notarization=$CODESIGN_IDENTITY")
+else
+    MACDEPLOYQT_SIGNING_ARGS=("-codesign=-" "-hardened-runtime")
+fi
+
 "$QT_PREFIX/bin/macdeployqt" "$APP_PATH" \
     -qmldir="$QML_SOURCE_DIR" \
     -qmlimport="$QML_IMPORT_DIR" \
-    -verbose=1
+    -verbose=1 \
+    "${MACDEPLOYQT_SIGNING_ARGS[@]}"
 
 echo "Removing optional Qt modules pulled in by Homebrew macdeployqt..."
 OPTIONAL_QML_PATHS=(
@@ -295,7 +286,7 @@ echo "Re-signing modified Brotli dylibs..."
 for lib in "${BROTLI_LIBS[@]}"; do
     lib_path="$FRAMEWORKS_DIR/$lib"
     [ -f "$lib_path" ] || continue
-    codesign_nested "$lib_path"
+    codesign_runtime "$lib_path"
 done
 
 # Step 3: Bundle Sparkle
@@ -336,7 +327,7 @@ if [ -d "$SPARKLE_CURRENT/Updater.app" ]; then
 fi
 
 codesign_runtime "$SPARKLE_DEST"
-codesign_runtime "$APP_PATH" --deep --entitlements "$SCRIPT_DIR/entitlements.plist"
+codesign_runtime "$APP_PATH" --entitlements "$SCRIPT_DIR/entitlements.plist"
 
 echo "Verifying signature..."
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
