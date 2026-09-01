@@ -138,8 +138,27 @@ void RegionPainter::paint(QPainter& painter, const QPixmap& background, const QR
         !background.isNull();
 
     if (singleRegionFastPath) {
-        ensureDimmedBackgroundCache(background);
-        drawBackgroundTiles(painter, m_dimmedBackgroundCache, updateRegion);
+        bool useDirectDimming = m_dimmingComposition == DimmingComposition::Direct;
+        if (m_dimmingComposition == DimmingComposition::PlatformDefault) {
+#ifdef Q_OS_MACOS
+            useDirectDimming = true;
+#else
+            useDirectDimming = false;
+#endif
+        }
+
+        if (useDirectDimming) {
+            // macOS screen snapshots are opaque. Composite the same background +
+            // dim color directly into the widget's dirty region instead of first
+            // materializing another full-screen Retina pixmap. The clear region is
+            // restored from the original background below, preserving the cached
+            // path's paint order and pixels while avoiding its cold allocation.
+            drawBackgroundTiles(painter, background, updateRegion);
+            drawDimmingTiles(painter, updateRegion);
+        } else {
+            ensureDimmedBackgroundCache(background);
+            drawBackgroundTiles(painter, m_dimmedBackgroundCache, updateRegion);
+        }
 
         QRegion clearRegion;
         if (m_selectionManager->hasActiveSelection() && selectionRect.isValid()) {
@@ -231,6 +250,19 @@ void RegionPainter::ensureDimmedBackgroundCache(const QPixmap& background) const
     m_dimmedBackgroundCache = dimmed;
     m_dimmedBackgroundCacheKey = cacheKey;
     m_dimmedBackgroundCacheDpr = dpr;
+}
+
+void RegionPainter::drawDimmingTiles(QPainter& painter,
+                                     const QRegion& updateRegion) const
+{
+    if (updateRegion.isEmpty()) {
+        return;
+    }
+
+    painter.save();
+    painter.setClipRegion(updateRegion, Qt::IntersectClip);
+    painter.fillRect(updateRegion.boundingRect(), kRegionDimColor);
+    painter.restore();
 }
 
 void RegionPainter::drawBackgroundTiles(QPainter& painter,

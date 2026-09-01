@@ -297,6 +297,7 @@ private:
     // Annotation helpers
     bool isAnnotationTool(ToolId tool) const;
     bool shouldShowCursorCompanion() const;
+    bool cursorCompanionRequiresOverlay() const;
     bool shouldShowMagnifier() const;
     bool hasActiveAnnotationInteraction() const;
     QRect selectedAnnotationInteractionVisualRect() const;
@@ -309,6 +310,7 @@ private:
     void syncCompletedSelectionFloatingUi();
     void restoreDetachedSelectionFloatingUiIfNeeded();
     void syncMagnifierOverlayDuringPaint();
+    void paintHostForegroundOverlays(QPainter& painter, bool detachedCaptureWindowsActive);
     void syncSelectionPreviewOverlay();
     void hideSelectionPreviewOverlays();
     void commitSelectionCompletionHandoffAfterChromePaint();

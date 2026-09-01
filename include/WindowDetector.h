@@ -10,7 +10,9 @@
 #include <QFuture>
 #include <QPointer>
 #include <QElapsedTimer>
+#include <atomic>
 #include <algorithm>
+#include <memory>
 #include <vector>
 #include <optional>
 
@@ -105,6 +107,15 @@ protected:
         size_t topLevelIndex) const;
 
 private:
+#ifdef Q_OS_MACOS
+    struct RefreshRequest {
+        uint64_t id = 0;
+        std::shared_ptr<std::atomic_bool> cancelled;
+    };
+
+    RefreshRequest beginRefreshRequest();
+#endif
+
     void enumerateWindows();
     void enumerateWindowsInternal(std::vector<DetectedElement>& cache, qreal dpr, DetectionFlags flags);
     static void mergePreservedTopLevelElements(
@@ -165,6 +176,7 @@ private:
     QueryMode m_cacheQueryMode = QueryMode::TopLevelOnly;
 
 #ifdef Q_OS_MACOS
+    std::shared_ptr<std::atomic_bool> m_refreshCancellationToken;
     std::optional<DetectedElement> detectChildElementAt(const QPoint &screenPos, qint64 targetPid, const QRect &windowBounds) const;
     mutable DetectedElement m_axCache;
     mutable bool m_axCacheValid{false};

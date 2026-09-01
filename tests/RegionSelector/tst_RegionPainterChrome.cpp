@@ -1,5 +1,6 @@
 #include <QtTest/QtTest>
 
+#include <QColorSpace>
 #include <QImage>
 #include <QPainter>
 #include <QPixmap>
@@ -160,6 +161,8 @@ class tst_RegionPainterChrome : public QObject
     Q_OBJECT
 
 private slots:
+    void testDirectDimmingMatchesCached_data();
+    void testDirectDimmingMatchesCached();
     void testDetectedWindowChromeMatchesSelectionChrome();
     void testSelectionDimensionLabelUsesPlatformUnits();
     void testWindowHighlightVisualRectIncludesHandlesAndPanel();
@@ -169,6 +172,131 @@ private slots:
     void testFractionalDprSelectionTransitionNeedsFullRepaint();
     void testPencilPreviewExtendsBeyondDetachedAnnotationViewport();
 };
+
+void tst_RegionPainterChrome::testDirectDimmingMatchesCached_data()
+{
+    QTest::addColumn<QString>("selectionState");
+    QTest::addColumn<qreal>("devicePixelRatio");
+    QTest::addColumn<bool>("partialRepaint");
+    QTest::addColumn<bool>("displayP3");
+
+    const QStringList states = {
+        QStringLiteral("none"),
+        QStringLiteral("highlight"),
+        QStringLiteral("selection"),
+    };
+    const QList<qreal> devicePixelRatios = {1.0, 2.0};
+
+    for (const QString& state : states) {
+        for (qreal dpr : devicePixelRatios) {
+            for (bool partial : {false, true}) {
+                for (bool displayP3 : {false, true}) {
+                    const QByteArray rowName = QStringLiteral("%1-dpr%2-%3-%4")
+                        .arg(state)
+                        .arg(dpr)
+                        .arg(partial ? QStringLiteral("dirty") : QStringLiteral("full"))
+                        .arg(displayP3 ? QStringLiteral("p3") : QStringLiteral("srgb"))
+                        .toLatin1();
+                    QTest::newRow(rowName.constData())
+                        << state << dpr << partial << displayP3;
+                }
+            }
+        }
+    }
+}
+
+void tst_RegionPainterChrome::testDirectDimmingMatchesCached()
+{
+    QFETCH(QString, selectionState);
+    QFETCH(qreal, devicePixelRatio);
+    QFETCH(bool, partialRepaint);
+    QFETCH(bool, displayP3);
+
+    const QSize logicalSize(120, 90);
+    const QRect logicalBounds(QPoint(), logicalSize);
+    const QSize physicalSize(
+        qRound(logicalSize.width() * devicePixelRatio),
+        qRound(logicalSize.height() * devicePixelRatio));
+
+    QWidget hostWidget;
+    hostWidget.resize(logicalSize);
+
+    QImage backgroundImage(physicalSize, QImage::Format_ARGB32_Premultiplied);
+    backgroundImage.setColorSpace(
+        displayP3 ? QColorSpace(QColorSpace::DisplayP3)
+                  : QColorSpace(QColorSpace::SRgb));
+    for (int y = 0; y < backgroundImage.height(); ++y) {
+        QRgb* row = reinterpret_cast<QRgb*>(backgroundImage.scanLine(y));
+        for (int x = 0; x < backgroundImage.width(); ++x) {
+            row[x] = qRgb(
+                (x * 17 + y * 3) % 256,
+                (x * 5 + y * 13) % 256,
+                (x * 11 + y * 7) % 256);
+        }
+    }
+    QPixmap background = QPixmap::fromImage(backgroundImage);
+    background.setDevicePixelRatio(devicePixelRatio);
+
+    const QRect focusRect(24, 18, 58, 42);
+    const QRegion dirtyRegion = partialRepaint
+        ? QRegion(QRect(2, 4, 39, 31)).united(QRegion(QRect(66, 40, 48, 43)))
+        : QRegion(logicalBounds);
+
+    auto render = [&](RegionPainter::DimmingComposition composition,
+                      bool* cacheMaterialized) {
+        SelectionStateManager selectionManager;
+        selectionManager.setBounds(logicalBounds);
+
+        RegionPainter painter;
+        painter.setParentWidget(&hostWidget);
+        painter.setSelectionManager(&selectionManager);
+        painter.setCornerRadius(0);
+        painter.setDevicePixelRatio(devicePixelRatio);
+        painter.m_dimmingComposition = composition;
+
+        if (selectionState == QStringLiteral("selection")) {
+            selectionManager.setSelectionRect(focusRect);
+        } else if (selectionState == QStringLiteral("highlight")) {
+            painter.setHighlightedWindowRect(focusRect);
+        }
+
+        QImage canvas(physicalSize, QImage::Format_ARGB32_Premultiplied);
+        canvas.setDevicePixelRatio(devicePixelRatio);
+        canvas.setColorSpace(backgroundImage.colorSpace());
+        canvas.fill(QColor(31, 47, 63, 255));
+
+        QPainter canvasPainter(&canvas);
+        canvasPainter.setRenderHint(QPainter::Antialiasing);
+        if (partialRepaint) {
+            canvasPainter.setClipRegion(dirtyRegion);
+        }
+        painter.paint(canvasPainter, background, dirtyRegion);
+        canvasPainter.end();
+        if (cacheMaterialized) {
+            *cacheMaterialized = !painter.m_dimmedBackgroundCache.isNull();
+        }
+        return canvas;
+    };
+
+    bool cachedMaterialized = false;
+    bool directMaterialized = true;
+    bool platformDefaultMaterialized = true;
+    const QImage cached = render(
+        RegionPainter::DimmingComposition::Cached, &cachedMaterialized);
+    const QImage direct = render(
+        RegionPainter::DimmingComposition::Direct, &directMaterialized);
+    render(RegionPainter::DimmingComposition::PlatformDefault,
+           &platformDefaultMaterialized);
+
+    QCOMPARE(direct, cached);
+    QVERIFY(cachedMaterialized);
+    QVERIFY(!directMaterialized);
+#ifdef Q_OS_MACOS
+    QVERIFY(!platformDefaultMaterialized);
+#else
+    QVERIFY(platformDefaultMaterialized);
+#endif
+}
 
 void tst_RegionPainterChrome::testDetectedWindowChromeMatchesSelectionChrome()
 {

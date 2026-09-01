@@ -7,6 +7,9 @@
 #include <QDebug>
 #include <QByteArray>
 #include <QtConcurrent>
+#include <iterator>
+#include <unordered_map>
+#include <unordered_set>
 #include <unistd.h>
 
 #import <Foundation/Foundation.h>
@@ -226,9 +229,16 @@ bool shouldPreferTopLevelBoundsForElementType(ElementType elementType)
     return false;
 }
 
-QImage captureWindowImage(CGWindowID windowId)
+using RefreshCancellationToken = std::shared_ptr<std::atomic_bool>;
+
+bool isRefreshCancelled(const RefreshCancellationToken &token)
 {
+    return token && token->load(std::memory_order_acquire);
+}
+
 #if HAS_SCREENCAPTUREKIT
+SCShareableContent *copyShareableContentForWindowCapture()
+{
     if (@available(macOS 14.0, *)) {
         dispatch_semaphore_t contentSemaphore = dispatch_semaphore_create(0);
         __block SCShareableContent *shareableContent = nil;
@@ -249,23 +259,79 @@ QImage captureWindowImage(CGWindowID windowId)
         if (contentWaitResult != 0 || !shareableContent || shareableContentError) {
             [shareableContent release];
             [shareableContentError release];
-            return QImage();
+            return nil;
         }
 
-        SCWindow *targetWindow = nil;
+        [shareableContentError release];
+        return shareableContent;
+    }
+
+    return nil;
+}
+
+class PopupWindowCaptureSession
+{
+public:
+    PopupWindowCaptureSession(const std::vector<CGWindowID> &windowIds,
+                              const RefreshCancellationToken &cancellationToken)
+        : m_cancellationToken(cancellationToken)
+    {
+        if (windowIds.empty() || isRefreshCancelled(m_cancellationToken)) {
+            return;
+        }
+
+        SCShareableContent *shareableContent = copyShareableContentForWindowCapture();
+        if (!shareableContent || isRefreshCancelled(m_cancellationToken)) {
+            [shareableContent release];
+            return;
+        }
+
+        // Resolve every candidate against the same shareable-content snapshot.
+        // Previously each candidate fetched the full list again before capture.
+        const std::unordered_set<CGWindowID> requestedWindowIds(
+            windowIds.cbegin(), windowIds.cend());
         for (SCWindow *window in shareableContent.windows) {
-            if (window.windowID == windowId) {
-                targetWindow = [window retain];
+            const CGWindowID windowId = window.windowID;
+            if (requestedWindowIds.find(windowId) == requestedWindowIds.cend()) {
+                continue;
+            }
+
+            const auto [unusedIt, inserted] = m_windows.emplace(windowId, window);
+            Q_UNUSED(unusedIt);
+            if (inserted) {
+                [window retain];
+            }
+            if (m_windows.size() == requestedWindowIds.size()) {
                 break;
             }
         }
 
         [shareableContent release];
-        [shareableContentError release];
+    }
 
-        if (!targetWindow) {
+    ~PopupWindowCaptureSession()
+    {
+        for (const auto &[windowId, window] : m_windows) {
+            Q_UNUSED(windowId);
+            [window release];
+        }
+    }
+
+    PopupWindowCaptureSession(const PopupWindowCaptureSession &) = delete;
+    PopupWindowCaptureSession &operator=(const PopupWindowCaptureSession &) = delete;
+
+    QImage captureWindowImage(CGWindowID windowId) const
+    {
+        if (isRefreshCancelled(m_cancellationToken)) {
             return QImage();
         }
+
+        const auto targetIt = m_windows.find(windowId);
+        if (targetIt == m_windows.cend()) {
+            return QImage();
+        }
+
+        SCWindow *targetWindow = targetIt->second;
 
         SCContentFilter *filter = [[SCContentFilter alloc] initWithDesktopIndependentWindow:targetWindow];
         SCShareableContentInfo *filterInfo = [SCShareableContent infoForFilter:filter];
@@ -298,7 +364,6 @@ QImage captureWindowImage(CGWindowID windowId)
 
         [config release];
         [filter release];
-        [targetWindow release];
 
         const long captureWaitResult = dispatch_semaphore_wait(
             captureSemaphore,
@@ -311,23 +376,47 @@ QImage captureWindowImage(CGWindowID windowId)
             return QImage();
         }
 
+        if (isRefreshCancelled(m_cancellationToken)) {
+            CGImageRelease(capturedImage);
+            [captureError release];
+            return QImage();
+        }
+
         const QImage image = createQImageFromCGImage(capturedImage);
         CGImageRelease(capturedImage);
         [captureError release];
         return image;
     }
+
+private:
+    std::unordered_map<CGWindowID, SCWindow *> m_windows;
+    RefreshCancellationToken m_cancellationToken;
+};
+#else
+class PopupWindowCaptureSession
+{
+public:
+    PopupWindowCaptureSession(const std::vector<CGWindowID> &,
+                              const RefreshCancellationToken &)
+    {
+    }
+
+    QImage captureWindowImage(CGWindowID) const
+    {
+        return QImage();
+    }
+};
 #endif
 
-    return QImage();
-}
-
-QRect refineVisibleBoundsFromWindowImage(CGWindowID windowId, const QRect &rawBounds)
+QRect refineVisibleBoundsFromWindowImage(const PopupWindowCaptureSession &captureSession,
+                                         CGWindowID windowId,
+                                         const QRect &rawBounds)
 {
     if (windowId == 0 || !rawBounds.isValid() || rawBounds.isEmpty()) {
         return QRect();
     }
 
-    const QImage image = captureWindowImage(windowId);
+    const QImage image = captureSession.captureWindowImage(windowId);
     if (image.isNull()) {
         return QRect();
     }
@@ -542,13 +631,6 @@ std::optional<DetectedElement> buildDetectedTopLevelElement(
     int windowId = 0;
     readCFNumberValue(windowInfo, kCGWindowNumber, kCFNumberIntType, windowId);
 
-    if (windowId > 0 && shouldRefinePopupBoundsFromImage(elementType, bounds)) {
-        const QRect refinedBounds = refineVisibleBoundsFromWindowImage(static_cast<CGWindowID>(windowId), bounds);
-        if (refinedBounds.isValid() && !refinedBounds.isEmpty()) {
-            bounds = refinedBounds;
-        }
-    }
-
     DetectedElement element;
     element.bounds = bounds;
     element.windowTitle = readWindowString(windowInfo, kCGWindowName);
@@ -558,6 +640,57 @@ std::optional<DetectedElement> buildDetectedTopLevelElement(
     element.elementType = elementType;
     element.ownerPid = windowPid;
     return element;
+}
+
+std::vector<CGWindowID> popupRefinementWindowIds(
+    const std::vector<DetectedElement> &elements)
+{
+    std::vector<CGWindowID> windowIds;
+    windowIds.reserve(elements.size());
+
+    std::unordered_set<CGWindowID> seenWindowIds;
+    for (const auto &element : elements) {
+        const auto windowId = static_cast<CGWindowID>(element.windowId);
+        if (windowId == 0 ||
+            !shouldRefinePopupBoundsFromImage(element.elementType, element.bounds) ||
+            !seenWindowIds.insert(windowId).second) {
+            continue;
+        }
+
+        windowIds.push_back(windowId);
+    }
+
+    return windowIds;
+}
+
+void refinePopupBounds(std::vector<DetectedElement> &elements,
+                       const RefreshCancellationToken &cancellationToken = {})
+{
+    const auto windowIds = popupRefinementWindowIds(elements);
+    if (windowIds.empty() || isRefreshCancelled(cancellationToken)) {
+        return;
+    }
+
+    const PopupWindowCaptureSession captureSession(windowIds, cancellationToken);
+    for (auto &element : elements) {
+        if (isRefreshCancelled(cancellationToken)) {
+            return;
+        }
+
+        const auto windowId = static_cast<CGWindowID>(element.windowId);
+        if (windowId == 0 ||
+            !shouldRefinePopupBoundsFromImage(element.elementType, element.bounds)) {
+            continue;
+        }
+
+        const QRect refinedBounds = refineVisibleBoundsFromWindowImage(
+            captureSession, windowId, element.bounds);
+        // Keep the original CGWindow bounds when ScreenCaptureKit lookup,
+        // capture, or alpha-bound analysis fails.
+        if (refinedBounds.isValid() && !refinedBounds.isEmpty()) {
+            element.bounds = refinedBounds;
+        }
+    }
 }
 
 } // anonymous namespace
@@ -572,9 +705,33 @@ WindowDetector::WindowDetector(QObject *parent)
 
 WindowDetector::~WindowDetector()
 {
+    {
+        QMutexLocker locker(&m_cacheMutex);
+        if (m_refreshCancellationToken) {
+            m_refreshCancellationToken->store(true, std::memory_order_release);
+        }
+    }
+
     if (m_refreshFuture.isValid() && m_refreshFuture.isRunning()) {
         m_refreshFuture.waitForFinished();
     }
+}
+
+WindowDetector::RefreshRequest WindowDetector::beginRefreshRequest()
+{
+    RefreshRequest request;
+    request.cancelled = std::make_shared<std::atomic_bool>(false);
+
+    QMutexLocker locker(&m_cacheMutex);
+    // A capture refresh must never consume a late prewarm result. The request
+    // id prevents publication; the token also lets superseded native work stop
+    // before starting another expensive popup refinement.
+    if (m_refreshCancellationToken) {
+        m_refreshCancellationToken->store(true, std::memory_order_release);
+    }
+    m_refreshCancellationToken = request.cancelled;
+    request.id = ++m_refreshRequestId;
+    return request;
 }
 
 bool WindowDetector::hasAccessibilityPermission(bool promptIfMissing)
@@ -606,7 +763,8 @@ DetectionFlags WindowDetector::detectionFlags() const
 
 void WindowDetector::refreshWindowList(QueryMode queryMode)
 {
-    ++m_refreshRequestId;
+    const RefreshRequest request = beginRefreshRequest();
+    const QPointer<QScreen> targetScreen = m_currentScreen;
     m_refreshComplete = false;
     const DetectionFlags flags = flagsForQueryMode(m_detectionFlags, queryMode);
 
@@ -626,7 +784,11 @@ void WindowDetector::refreshWindowList(QueryMode queryMode)
 
     if (!m_enabled) {
         QMutexLocker locker(&m_cacheMutex);
-        m_cacheScreen = m_currentScreen.data();
+        if (isRefreshCancelled(request.cancelled) ||
+            m_refreshRequestId.load() != request.id) {
+            return;
+        }
+        m_cacheScreen = targetScreen.data();
         m_cacheQueryMode = queryMode;
         m_cacheReady = true;
         m_refreshComplete = true;
@@ -645,7 +807,11 @@ void WindowDetector::refreshWindowList(QueryMode queryMode)
     if (!windowList) {
         qWarning() << "WindowDetector: Failed to get window list";
         QMutexLocker locker(&m_cacheMutex);
-        m_cacheScreen = m_currentScreen.data();
+        if (isRefreshCancelled(request.cancelled) ||
+            m_refreshRequestId.load() != request.id) {
+            return;
+        }
+        m_cacheScreen = targetScreen.data();
         m_cacheQueryMode = queryMode;
         m_cacheReady = true;
         m_refreshComplete = true;
@@ -664,23 +830,31 @@ void WindowDetector::refreshWindowList(QueryMode queryMode)
     }
 
     CFRelease(windowList);
+    refinePopupBounds(newCache, request.cancelled);
+    if (isRefreshCancelled(request.cancelled)) {
+        return;
+    }
+
     mergePreservedTopLevelElements(
         newCache,
         previousCache,
         previousQueryMode,
         previousScreen,
         queryMode,
-        m_currentScreen.data());
+        targetScreen.data());
 
     {
         QMutexLocker locker(&m_cacheMutex);
+        if (isRefreshCancelled(request.cancelled) ||
+            m_refreshRequestId.load() != request.id) {
+            return;
+        }
         m_windowCache = std::move(newCache);
-        m_cacheScreen = m_currentScreen.data();
+        m_cacheScreen = targetScreen.data();
         m_cacheQueryMode = queryMode;
         m_cacheReady = true;
+        m_refreshComplete = true;
     }
-
-    m_refreshComplete = true;
 }
 
 void WindowDetector::enumerateWindows()
@@ -705,14 +879,20 @@ void WindowDetector::enumerateWindows()
     // Get our own process ID to exclude our windows
     pid_t myPid = [[NSProcessInfo processInfo] processIdentifier];
 
+    std::vector<DetectedElement> newElements;
     for (CFIndex i = 0; i < count; ++i) {
         CFDictionaryRef windowInfo = static_cast<CFDictionaryRef>(CFArrayGetValueAtIndex(windowList, i));
         if (auto element = buildDetectedTopLevelElement(windowInfo, myPid, m_detectionFlags)) {
-            m_windowCache.push_back(*element);
+            newElements.push_back(*element);
         }
     }
 
     CFRelease(windowList);
+    refinePopupBounds(newElements);
+    m_windowCache.insert(
+        m_windowCache.end(),
+        std::make_move_iterator(newElements.begin()),
+        std::make_move_iterator(newElements.end()));
 }
 
 std::optional<DetectedElement> WindowDetector::detectChildElementAt(
@@ -1007,7 +1187,9 @@ std::optional<DetectedElement> WindowDetector::detectWindowAt(
 
 void WindowDetector::refreshWindowListAsync(QueryMode queryMode)
 {
-    uint64_t requestId = ++m_refreshRequestId;
+    const RefreshRequest request = beginRefreshRequest();
+    const uint64_t requestId = request.id;
+    const RefreshCancellationToken cancellationToken = request.cancelled;
     const QPointer<QScreen> targetScreen = m_currentScreen;
     QPointer<WindowDetector> guardedThis(this);
     QPointer<QCoreApplication> app = QCoreApplication::instance();
@@ -1037,11 +1219,16 @@ void WindowDetector::refreshWindowListAsync(QueryMode queryMode)
         flags,
         targetScreen,
         queryMode,
+        cancellationToken,
         previousCache = std::move(previousCache),
         previousScreen,
         previousQueryMode
     ]() mutable {
         std::vector<DetectedElement> newCache;
+
+        if (isRefreshCancelled(cancellationToken)) {
+            return;
+        }
 
         // Determine CGWindowList options based on detection flags
         CGWindowListOption options = kCGWindowListOptionOnScreenOnly;
@@ -1053,18 +1240,28 @@ void WindowDetector::refreshWindowListAsync(QueryMode queryMode)
         CFArrayRef windowList = CGWindowListCopyWindowInfo(options, kCGNullWindowID);
 
         if (!windowList) {
+            if (isRefreshCancelled(cancellationToken)) {
+                return;
+            }
             if (!app) {
                 return;
             }
 
             QMetaObject::invokeMethod(
                 app,
-                [guardedThis, requestId]() {
-                    if (!guardedThis || guardedThis->m_refreshRequestId.load() != requestId) {
+                [guardedThis, requestId, cancellationToken]() {
+                    if (!guardedThis) {
                         return;
                     }
 
-                    guardedThis->m_refreshComplete = true;
+                    {
+                        QMutexLocker locker(&guardedThis->m_cacheMutex);
+                        if (isRefreshCancelled(cancellationToken) ||
+                            guardedThis->m_refreshRequestId.load() != requestId) {
+                            return;
+                        }
+                        guardedThis->m_refreshComplete = true;
+                    }
                     emit guardedThis->windowListReady();
                 },
                 Qt::QueuedConnection);
@@ -1075,6 +1272,11 @@ void WindowDetector::refreshWindowListAsync(QueryMode queryMode)
         pid_t myPid = getpid();
 
         for (CFIndex i = 0; i < count; ++i) {
+            if (isRefreshCancelled(cancellationToken)) {
+                CFRelease(windowList);
+                return;
+            }
+
             CFDictionaryRef windowInfo = static_cast<CFDictionaryRef>(CFArrayGetValueAtIndex(windowList, i));
             if (auto element = buildDetectedTopLevelElement(windowInfo, myPid, flags)) {
                 newCache.push_back(*element);
@@ -1082,6 +1284,11 @@ void WindowDetector::refreshWindowListAsync(QueryMode queryMode)
         }
 
         CFRelease(windowList);
+        refinePopupBounds(newCache, cancellationToken);
+        if (isRefreshCancelled(cancellationToken)) {
+            return;
+        }
+
         // Region capture uses a frozen pre-capture screenshot, so when we upgrade
         // from a top-level-only snapshot to child-control queries we must keep any
         // top-level windows that vanished after our overlay activated.
@@ -1099,25 +1306,30 @@ void WindowDetector::refreshWindowListAsync(QueryMode queryMode)
 
         QMetaObject::invokeMethod(
             app,
-            [guardedThis, requestId, targetScreen, queryMode, newCache = std::move(newCache)]() mutable {
+            [guardedThis,
+             requestId,
+             targetScreen,
+             queryMode,
+             cancellationToken,
+             newCache = std::move(newCache)]() mutable {
                 if (!guardedThis) {
-                    return;
-                }
-
-                if (guardedThis->m_refreshRequestId.load() != requestId) {
-                    qDebug() << "WindowDetector: Discarding stale refresh result";
                     return;
                 }
 
                 {
                     QMutexLocker locker(&guardedThis->m_cacheMutex);
+                    if (isRefreshCancelled(cancellationToken) ||
+                        guardedThis->m_refreshRequestId.load() != requestId) {
+                        qDebug() << "WindowDetector: Discarding stale refresh result";
+                        return;
+                    }
                     guardedThis->m_windowCache = std::move(newCache);
                     guardedThis->m_cacheScreen = targetScreen.data();
                     guardedThis->m_cacheQueryMode = queryMode;
                     guardedThis->m_cacheReady = true;
+                    guardedThis->m_refreshComplete = true;
                 }
 
-                guardedThis->m_refreshComplete = true;
                 emit guardedThis->windowListReady();
             },
             Qt::QueuedConnection);

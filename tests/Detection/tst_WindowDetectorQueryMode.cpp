@@ -83,6 +83,9 @@ private slots:
     void testContextMenuPrefersTopLevelBounds();
     void testQueryUpgradePreservesMissingTopLevelElements();
     void testQueryUpgradeDoesNotDuplicateMatchingTopLevelElements();
+#ifdef Q_OS_MACOS
+    void testMacRefreshRequestInvalidatesPreviousWork();
+#endif
     void testWindowsModernUiRecognizesOnlyImeAndTooltipClasses();
     void testWindowsModernUiDoesNotMaskStyleOrOwnerClassification();
     void testLinuxX11TopLevelWindowDetectionFindsVisibleWindow();
@@ -288,6 +291,25 @@ void tst_WindowDetectorQueryMode::testQueryUpgradeDoesNotDuplicateMatchingTopLev
     QCOMPARE(newCache.front().bounds, livePopup.bounds);
     QCOMPARE(newCache.front().ownerPid, livePopup.ownerPid);
 }
+
+#ifdef Q_OS_MACOS
+void tst_WindowDetectorQueryMode::testMacRefreshRequestInvalidatesPreviousWork()
+{
+    WindowDetector detector;
+
+    const auto firstRequest = detector.beginRefreshRequest();
+    QVERIFY(firstRequest.cancelled);
+    QVERIFY(!firstRequest.cancelled->load(std::memory_order_acquire));
+
+    const auto secondRequest = detector.beginRefreshRequest();
+    QVERIFY(secondRequest.cancelled);
+    QVERIFY(firstRequest.cancelled->load(std::memory_order_acquire));
+    QVERIFY(!secondRequest.cancelled->load(std::memory_order_acquire));
+    QVERIFY(secondRequest.id > firstRequest.id);
+    QCOMPARE(detector.m_refreshRequestId.load(), secondRequest.id);
+    QCOMPARE(detector.m_refreshCancellationToken, secondRequest.cancelled);
+}
+#endif
 
 void tst_WindowDetectorQueryMode::testWindowsModernUiRecognizesOnlyImeAndTooltipClasses()
 {

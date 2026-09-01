@@ -7,6 +7,7 @@
 #include "WindowDetector.h"
 #include "PlatformFeatures.h"
 #include "history/HistoryStore.h"
+#include "region/CapturePerfRecorder.h"
 #include "region/MultiRegionManager.h"
 #include "pinwindow/RegionLayoutManager.h"
 
@@ -174,6 +175,8 @@ void CaptureManager::startQuickPinCapture()
 
 void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortcutHintsOnEntry)
 {
+    snaptray::region::CapturePerfScope capturePerfScope("CaptureManager.startCaptureInternal");
+
     // Skip if already in capture mode
     if (m_regionSelector && m_regionSelector->isVisible()) {
         return;
@@ -201,13 +204,22 @@ void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortc
     }
 
     // 2. Keep detector state in sync with the frame we capture.
-    refreshWindowDetectorForCapture(targetScreen);
+    {
+        snaptray::region::CapturePerfScope detectorPerfScope(
+            "CaptureManager.refreshWindowDetectorForCapture");
+        refreshWindowDetectorForCapture(targetScreen);
+    }
 
     // 3. Capture screenshot while popup/modal is still visible
     QWidget *popup = QApplication::activePopupWidget();
     QWidget *modal = QApplication::activeModalWidget();
 
-    QPixmap preCapture = snaptray::capture::captureScreenSnapshot(targetScreen);
+    QPixmap preCapture;
+    {
+        snaptray::region::CapturePerfScope snapshotPerfScope(
+            "CaptureManager.captureScreenSnapshot");
+        preCapture = snaptray::capture::captureScreenSnapshot(targetScreen);
+    }
 
     // 4. Close popup/modal AFTER screenshot
     if (popup) {
@@ -222,7 +234,11 @@ void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortc
     }
 
     const bool quickPinMode = (mode == CaptureEntryMode::QuickPin);
-    initializeRegionSelector(targetScreen, preCapture, quickPinMode, showShortcutHintsOnEntry);
+    {
+        snaptray::region::CapturePerfScope selectorPerfScope(
+            "CaptureManager.initializeRegionSelector");
+        initializeRegionSelector(targetScreen, preCapture, quickPinMode, showShortcutHintsOnEntry);
+    }
 }
 
 void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &globalPosition, const QRect &globalRect)
@@ -368,6 +384,8 @@ void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
 
 void CaptureManager::showPreparedRegionSelector(QScreen *targetScreen)
 {
+    snaptray::region::CapturePerfScope perfScope("CaptureManager.showPreparedRegionSelector");
+
     if (!m_regionSelector || !targetScreen) {
         return;
     }

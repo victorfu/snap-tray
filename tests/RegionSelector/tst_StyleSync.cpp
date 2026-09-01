@@ -14,7 +14,9 @@
 #include "qml/QmlFloatingToolbar.h"
 #include "settings/RegionCaptureSettingsManager.h"
 #include "region/RegionInputHandler.h"
+#include "region/CaptureShortcutHintsOverlay.h"
 #include "region/SelectionDimensionLabel.h"
+#include "region/SelectionDirtyRegionPlanner.h"
 #include "tools/ToolManager.h"
 
 namespace {
@@ -89,13 +91,224 @@ private slots:
     void testInitializeForScreen_MagnifierStylePrewarmsCache();
     void testDisabledMagnifierIgnoresShiftAndCopyShortcuts();
     void testBeaverStyleIgnoresShiftAndCopyShortcuts();
+    void testHostFallbackPaintsAboveShortcutHints();
+    void testHostFallbackUsesOverlayRenderHints();
     void testInitialRevealTimeoutRevealsReadySelector();
+#ifdef Q_OS_MACOS
+    void testMacInitialCursorCompanionUsesHostUntilDetachedUiAppears();
+#endif
 #ifdef Q_OS_LINUX
     void testLinuxCaptureSurfaceRemainsManaged();
     void testLinuxTransparentCaptureHelpersDoNotBypassWindowManager();
     void testLinuxSelectionToolbarPrewarmsAfterShow();
 #endif
 };
+
+void TestRegionSelectorStyleSync::testHostFallbackPaintsAboveShortcutHints()
+{
+    RegionSelector selector;
+    selector.resize(QSize(640, 480));
+    selector.m_initialRevealState = RegionSelector::InitialRevealState::Revealed;
+    selector.m_cursorCompanionStyle =
+        RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier;
+    selector.m_shortcutHintsVisible = true;
+
+    const QRect hintsRect =
+        selector.m_shortcutHintsOverlay->panelRectForViewport(selector.size());
+    QVERIFY(hintsRect.isValid());
+
+    // Keep the magnifier below the cursor so its opaque panel overlaps the
+    // top of the shortcut-hints panel.
+    const QPoint cursorPos(hintsRect.left() + 16, hintsRect.top() - 32);
+    const SelectionDirtyRegionPlanner dirtyRegionPlanner;
+    const QRect fallbackRect = dirtyRegionPlanner.cursorCompanionRectForCursor(
+        RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier,
+        cursorPos,
+        selector.size());
+    QVERIFY(fallbackRect.intersects(hintsRect));
+
+    QPixmap background(selector.size());
+    background.fill(QColor(72, 118, 164));
+
+    selector.m_inputState.currentPoint = cursorPos;
+    selector.m_hostFallbackCursorCompanionRect = fallbackRect;
+    selector.m_magnifierOverlay->syncToHost(
+        &selector,
+        cursorPos,
+        &background,
+        RegionCaptureSettingsManager::CursorCompanionStyle::Magnifier,
+        false);
+
+    auto makeCanvas = [&selector]() {
+        QImage image(selector.size(), QImage::Format_ARGB32_Premultiplied);
+        image.fill(Qt::transparent);
+        return image;
+    };
+    auto drawFallback = [&selector, &fallbackRect](QImage& image) {
+        QPainter painter(&image);
+        painter.setClipRect(fallbackRect, Qt::IntersectClip);
+        selector.m_magnifierOverlay->paintFallback(painter, selector.size());
+    };
+    auto drawHints = [&selector](QImage& image) {
+        QPainter painter(&image);
+        selector.m_shortcutHintsOverlay->draw(painter, selector.size());
+    };
+
+    QImage expected = makeCanvas();
+    drawHints(expected);
+    drawFallback(expected);
+
+    QImage reversed = makeCanvas();
+    drawFallback(reversed);
+    drawHints(reversed);
+    QVERIFY2(expected != reversed,
+             "The probe must exercise pixels shared by the hints and companion.");
+
+    QImage actual = makeCanvas();
+    {
+        QPainter painter(&actual);
+        selector.paintHostForegroundOverlays(painter, false);
+    }
+    QCOMPARE(actual, expected);
+}
+
+void TestRegionSelectorStyleSync::testHostFallbackUsesOverlayRenderHints()
+{
+    RegionSelector selector;
+    selector.resize(QSize(180, 160));
+
+    QImage sourceImage(QSize(192, 192), QImage::Format_ARGB32_Premultiplied);
+    for (int y = 0; y < sourceImage.height(); ++y) {
+        QRgb* row = reinterpret_cast<QRgb*>(sourceImage.scanLine(y));
+        for (int x = 0; x < sourceImage.width(); ++x) {
+            const bool light = ((x + y) % 3) == 0;
+            row[x] = light ? qRgba(255, 255, 255, 255) : qRgba(0, 0, 0, 255);
+        }
+    }
+    selector.m_magnifierOverlay->m_beaverPixmap = QPixmap::fromImage(sourceImage);
+
+    const QPoint cursorPos(24, 24);
+    const SelectionDirtyRegionPlanner dirtyRegionPlanner;
+    const QRect targetRect = dirtyRegionPlanner.beaverRectForCursor(
+        cursorPos, selector.size());
+    selector.m_magnifierOverlay->syncToHost(
+        &selector,
+        cursorPos,
+        nullptr,
+        RegionCaptureSettingsManager::CursorCompanionStyle::Beaver,
+        false);
+
+    auto makeCanvas = [&selector]() {
+        QImage image(selector.size(), QImage::Format_ARGB32_Premultiplied);
+        image.fill(Qt::transparent);
+        return image;
+    };
+    auto drawSource = [&](bool smooth) {
+        QImage image = makeCanvas();
+        QPainter painter(&image);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, smooth);
+        painter.drawPixmap(targetRect, selector.m_magnifierOverlay->m_beaverPixmap);
+        return image;
+    };
+
+    const QImage fastReference = drawSource(false);
+    const QImage smoothReference = drawSource(true);
+    QVERIFY2(fastReference != smoothReference,
+             "The probe image must distinguish fast and smooth pixmap scaling.");
+
+    QImage fallback = makeCanvas();
+    {
+        QPainter painter(&fallback);
+        QVERIFY(!painter.testRenderHint(QPainter::Antialiasing));
+        QVERIFY(!painter.testRenderHint(QPainter::SmoothPixmapTransform));
+        selector.m_magnifierOverlay->paintFallback(painter, selector.size());
+        QVERIFY(!painter.testRenderHint(QPainter::Antialiasing));
+        QVERIFY(!painter.testRenderHint(QPainter::SmoothPixmapTransform));
+    }
+
+    QCOMPARE(fallback, smoothReference);
+}
+
+#ifdef Q_OS_MACOS
+void TestRegionSelectorStyleSync::testMacInitialCursorCompanionUsesHostUntilDetachedUiAppears()
+{
+    RegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    selector.resize(QSize(640, 480));
+    selector.m_initialRevealState = RegionSelector::InitialRevealState::Revealed;
+    selector.m_cursorCompanionStyle =
+        RegionCaptureSettingsManager::CursorCompanionStyle::Beaver;
+    selector.m_inputState.currentPoint = selector.rect().center();
+
+    QPixmap beaverProbe(QSize(192, 192));
+    beaverProbe.fill(QColor(78, 142, 206));
+    selector.m_magnifierOverlay->m_beaverPixmap = beaverProbe;
+
+    // This assertion is platform-window independent: with no detached QML UI,
+    // synchronization selects the host paint path and never shows the overlay.
+    selector.syncMagnifierOverlay();
+    QVERIFY(!selector.cursorCompanionRequiresOverlay());
+    QVERIFY(!selector.m_magnifierOverlay->isVisible());
+    QVERIFY(selector.m_hostFallbackCursorCompanionRect.isValid());
+
+    const QPoint cursorGlobal = QCursor::pos();
+    QScreen* screen = QGuiApplication::screenAt(cursorGlobal);
+    if (!screen) {
+        screen = QGuiApplication::primaryScreen();
+    }
+    if (!screen) {
+        return;
+    }
+
+    const QRect screenGeometry = screen->geometry();
+    const QSize hostSize = screenGeometry.size().boundedTo(QSize(640, 480));
+    QPoint hostTopLeft = cursorGlobal - QPoint(hostSize.width() / 2, hostSize.height() / 2);
+    hostTopLeft.setX(qBound(screenGeometry.left(),
+                            hostTopLeft.x(),
+                            screenGeometry.right() - hostSize.width() + 1));
+    hostTopLeft.setY(qBound(screenGeometry.top(),
+                            hostTopLeft.y(),
+                            screenGeometry.bottom() - hostSize.height() + 1));
+
+    selector.setGeometry(QRect(hostTopLeft, hostSize));
+    selector.m_inputState.currentPoint = cursorGlobal - hostTopLeft;
+
+    selector.show();
+    QTRY_VERIFY(selector.isVisible());
+    selector.syncMagnifierOverlay();
+
+    QVERIFY(!selector.cursorCompanionRequiresOverlay());
+    QVERIFY(!selector.m_magnifierOverlay->isVisible());
+    QVERIFY(selector.m_hostFallbackCursorCompanionRect.isValid());
+
+    selector.m_qmlToolbar->setPosition(screenGeometry.topLeft() + QPoint(12, 12));
+    selector.m_qmlToolbar->show();
+    QTRY_VERIFY(selector.m_qmlToolbar->isVisible());
+    if (selector.m_qmlToolbar->geometry().contains(cursorGlobal)) {
+        const QSize toolbarSize = selector.m_qmlToolbar->geometry().size();
+        selector.m_qmlToolbar->setPosition(
+            screenGeometry.bottomRight() -
+            QPoint(toolbarSize.width() + 12, toolbarSize.height() + 12));
+        QCoreApplication::processEvents();
+    }
+    QVERIFY(!selector.m_qmlToolbar->geometry().contains(cursorGlobal));
+
+    QVERIFY(selector.cursorCompanionRequiresOverlay());
+    selector.syncMagnifierOverlay();
+    QTRY_VERIFY(selector.m_magnifierOverlay->isVisible());
+    QVERIFY(selector.m_magnifierOverlay->hasPaintedSinceShow());
+
+    // Once the top-level renderer has painted, the next synchronization drops
+    // the temporary host copy and leaves a single companion surface.
+    selector.syncMagnifierOverlay();
+    QVERIFY(!selector.m_hostFallbackCursorCompanionRect.isValid());
+
+    selector.m_qmlToolbar->hide();
+    selector.m_magnifierOverlay->hideOverlay();
+    selector.hide();
+}
+#endif
 
 void TestRegionSelectorStyleSync::prepareSelectionTool(RegionSelector& selector)
 {

@@ -8,6 +8,7 @@
 #include <QPixmap>
 #include <QScreen>
 #include <QTemporaryDir>
+#include <utility>
 
 #include "utils/ImageSaveUtils.h"
 
@@ -205,11 +206,13 @@ void tst_ImageSaveUtils::testPixmapRoundTripPreservesTaggedColorSpace()
     taggedImage.fill(QColor(80, 160, 255, 255));
     taggedImage.setColorSpace(sourceColorSpace);
 
-    const QPixmap pixmap = QPixmap::fromImage(taggedImage);
+    const QPixmap pixmap = QPixmap::fromImage(
+        std::move(taggedImage), Qt::NoOpaqueDetection);
     QVERIFY(!pixmap.isNull());
 
     const QImage roundTrip = pixmap.toImage();
     QVERIFY(roundTrip.colorSpace().isValid());
+    QCOMPARE(roundTrip.pixelColor(0, 0), QColor(80, 160, 255, 255));
 
     const QByteArray sourceIcc = sourceColorSpace.iccProfile();
     if (!sourceIcc.isEmpty()) {

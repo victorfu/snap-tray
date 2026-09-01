@@ -3106,22 +3106,6 @@ void RegionSelector::paintEvent(QPaintEvent* event)
         paintSelectorScene(painter, dirtyRegion);
     }
 
-    if (m_magnifierOverlay &&
-        !m_magnifierOverlay->hasPaintedSinceShow() &&
-        m_initialRevealState == InitialRevealState::Revealed &&
-        shouldShowCursorCompanion()) {
-        if (m_hostFallbackCursorCompanionRect.isValid()) {
-            painter.save();
-            painter.setClipRect(m_hostFallbackCursorCompanionRect);
-            m_magnifierOverlay->paintFallback(painter);
-            painter.restore();
-        }
-    } else if (m_hostFallbackCursorCompanionRect.isValid()) {
-        const QRect fallbackRect = m_hostFallbackCursorCompanionRect;
-        m_hostFallbackCursorCompanionRect = QRect();
-        requestCaptureSceneUpdate(fallbackRect);
-    }
-
     syncDetachedSelectionUiDuringPaint();
 
     QRect selectionRect = m_selectionManager->selectionRect();
@@ -3172,15 +3156,39 @@ void RegionSelector::paintEvent(QPaintEvent* event)
         m_loadingSpinner->draw(painter, selectionRect.center());
     }
 
-    syncMagnifierOverlayDuringPaint();
+    // Position region control panel after paint (painter computes dimension info rect)
+    syncRegionControlPanelDuringPaint();
 
+    // Resolve all detached surfaces before choosing the host fallback. The
+    // fallback is then painted last, matching the established top-level
+    // magnifier's stacking above every host-rendered overlay.
+    syncMagnifierOverlayDuringPaint();
+    paintHostForegroundOverlays(painter, detachedCaptureWindowsActive);
+}
+
+void RegionSelector::paintHostForegroundOverlays(QPainter& painter,
+                                                 bool detachedCaptureWindowsActive)
+{
     // Shortcut hints remain painter-based in the RegionSelector host window.
     if (!detachedCaptureWindowsActive && m_shortcutHintsVisible && m_shortcutHintsOverlay) {
         m_shortcutHintsOverlay->draw(painter, size());
     }
 
-    // Position region control panel after paint (painter computes dimension info rect)
-    syncRegionControlPanelDuringPaint();
+    if (m_magnifierOverlay &&
+        !m_magnifierOverlay->hasPaintedSinceShow() &&
+        m_initialRevealState == InitialRevealState::Revealed &&
+        shouldShowCursorCompanion()) {
+        if (m_hostFallbackCursorCompanionRect.isValid()) {
+            painter.save();
+            painter.setClipRect(m_hostFallbackCursorCompanionRect, Qt::IntersectClip);
+            m_magnifierOverlay->paintFallback(painter, size());
+            painter.restore();
+        }
+    } else if (m_hostFallbackCursorCompanionRect.isValid()) {
+        const QRect fallbackRect = m_hostFallbackCursorCompanionRect;
+        m_hostFallbackCursorCompanionRect = QRect();
+        requestCaptureSceneUpdate(fallbackRect);
+    }
 }
 
 void RegionSelector::syncMagnifierOverlay()
@@ -3191,10 +3199,13 @@ void RegionSelector::syncMagnifierOverlay()
 
     snaptray::region::CapturePerfScope perfScope("RegionSelector.syncMagnifierOverlay");
 
-    const bool shouldTrackHostFallback =
+    const bool shouldShow =
         m_initialRevealState == InitialRevealState::Revealed &&
-        shouldShowCursorCompanion() &&
-        !m_magnifierOverlay->hasPaintedSinceShow();
+        shouldShowCursorCompanion();
+    const bool requiresOverlay = shouldShow && cursorCompanionRequiresOverlay();
+    const bool shouldTrackHostFallback =
+        shouldShow &&
+        (!requiresOverlay || !m_magnifierOverlay->hasPaintedSinceShow());
     const QRect currentFallbackRect = shouldTrackHostFallback
         ? g_cursorCompanionDirtyRegionPlanner.cursorCompanionRectForCursor(
             m_cursorCompanionStyle, m_inputState.currentPoint, size())
@@ -3223,7 +3234,7 @@ void RegionSelector::syncMagnifierOverlay()
         m_inputState.currentPoint,
         &m_backgroundPixmap,
         m_cursorCompanionStyle,
-        shouldShowCursorCompanion());
+        requiresOverlay);
 }
 
 void RegionSelector::positionRegionControlPanel()
@@ -3656,6 +3667,23 @@ bool RegionSelector::shouldShowCursorCompanion() const
     const QRect selectionRect = m_selectionManager->selectionRect();
     return selectionRect.contains(m_inputState.currentPoint) &&
            !m_cursorOverSelectionToolbar;
+}
+
+bool RegionSelector::cursorCompanionRequiresOverlay() const
+{
+#ifdef Q_OS_MACOS
+    // Before detached QML surfaces exist, drawing through the host is visually
+    // identical and avoids creating/repainting a second full-screen top-level
+    // surface during the initial reveal. Restore the overlay as soon as any
+    // detached capture UI needs the established above-QML stacking behavior.
+    return (m_qmlToolbar && m_qmlToolbar->isVisible()) ||
+           (m_qmlSubToolbar && m_qmlSubToolbar->isVisible()) ||
+           (m_regionControlPanel && m_regionControlPanel->isVisible()) ||
+           (m_multiRegionListPanel && m_multiRegionListPanel->isVisible()) ||
+           (m_emojiPickerPopup && m_emojiPickerPopup->isVisible());
+#else
+    return true;
+#endif
 }
 
 bool RegionSelector::shouldShowMagnifier() const
