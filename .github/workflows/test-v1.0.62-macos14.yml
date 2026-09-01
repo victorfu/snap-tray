@@ -1,0 +1,174 @@
+name: Test v1.0.62 on macOS 14
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  RELEASE_TAG: v1.0.62
+  RELEASE_VERSION: 1.0.62
+  DMG_NAME: SnapTray-1.0.62-macOS.dmg
+  DMG_SHA256: bf2e68ab1d29a3677552d29e471dcc64ad0f160a999f0b9b564d457e15e7aab5
+
+jobs:
+  smoke-macos14:
+    name: Official DMG smoke test
+    runs-on: macos-14
+    timeout-minutes: 15
+
+    steps:
+      - name: Prepare test paths
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          release_dir="$RUNNER_TEMP/snaptray-release"
+          install_dir="$RUNNER_TEMP/snaptray-installed"
+          mkdir -p "$release_dir" "$install_dir"
+
+          echo "DMG_PATH=$release_dir/$DMG_NAME" >> "$GITHUB_ENV"
+          echo "APP_PATH=$install_dir/SnapTray.app" >> "$GITHUB_ENV"
+          echo "APP_BINARY=$install_dir/SnapTray.app/Contents/MacOS/SnapTray" >> "$GITHUB_ENV"
+          echo "SMOKE_LOG=$RUNNER_TEMP/snaptray-v1.0.62-macos14.log" >> "$GITHUB_ENV"
+
+      - name: Download official v1.0.62 DMG
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "$DMG_NAME" \
+            --dir "$(dirname "$DMG_PATH")"
+
+          test -f "$DMG_PATH"
+
+      - name: Verify downloaded artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          actual_sha256=$(shasum -a 256 "$DMG_PATH" | awk '{print $1}')
+          if [[ "$actual_sha256" != "$DMG_SHA256" ]]; then
+            echo "Expected SHA-256: $DMG_SHA256" >&2
+            echo "Actual SHA-256:   $actual_sha256" >&2
+            exit 1
+          fi
+
+          hdiutil verify "$DMG_PATH"
+
+      - name: Copy app from read-only DMG
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mount_point="$RUNNER_TEMP/snaptray-v1.0.62-mount"
+          mkdir -p "$mount_point"
+
+          mounted=0
+          cleanup() {
+            if [[ "$mounted" -eq 1 ]]; then
+              hdiutil detach "$mount_point" || true
+            fi
+          }
+          trap cleanup EXIT
+
+          hdiutil attach \
+            -readonly \
+            -nobrowse \
+            -mountpoint "$mount_point" \
+            "$DMG_PATH"
+          mounted=1
+
+          test -d "$mount_point/SnapTray.app"
+          ditto "$mount_point/SnapTray.app" "$APP_PATH"
+          test -x "$APP_BINARY"
+
+      - name: Verify app metadata, signature, and notarization
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          info_plist="$APP_PATH/Contents/Info.plist"
+          bundle_version=$(/usr/libexec/PlistBuddy \
+            -c 'Print :CFBundleShortVersionString' "$info_plist")
+          minimum_system_version=$(/usr/libexec/PlistBuddy \
+            -c 'Print :LSMinimumSystemVersion' "$info_plist")
+
+          [[ "$bundle_version" == "$RELEASE_VERSION" ]]
+          [[ "$minimum_system_version" == "14.0" ]]
+
+          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+          xcrun stapler validate "$DMG_PATH"
+          xcrun stapler validate "$APP_PATH"
+          spctl --assess --type execute --verbose=4 "$APP_PATH"
+
+      - name: Record deployment metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          binaries=(
+            "$APP_BINARY"
+            "$APP_PATH/Contents/Frameworks/QtQuick.framework/Versions/A/QtQuick"
+            "$APP_PATH/Contents/Frameworks/QtQml.framework/Versions/A/QtQml"
+            "$APP_PATH/Contents/Frameworks/QtSvg.framework/Versions/A/QtSvg"
+          )
+
+          for binary in "${binaries[@]}"; do
+            test -f "$binary"
+            echo "::group::${binary#$APP_PATH/}"
+            file "$binary"
+            xcrun vtool -show-build "$binary"
+            echo "::endgroup::"
+          done
+
+      - name: Run loader and version smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          version_output=$("$APP_BINARY" --version 2>&1)
+          printf '%s\n' "$version_output"
+          grep -Fx "SnapTray version $RELEASE_VERSION" <<< "$version_output"
+
+      - name: Run GUI startup survival smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          "$APP_BINARY" >"$SMOKE_LOG" 2>&1 &
+          app_pid=$!
+
+          cleanup() {
+            if kill -0 "$app_pid" 2>/dev/null; then
+              kill "$app_pid" || true
+              wait "$app_pid" || true
+            fi
+          }
+          trap cleanup EXIT
+
+          for _ in {1..10}; do
+            if ! kill -0 "$app_pid" 2>/dev/null; then
+              echo "SnapTray exited during the startup smoke window." >&2
+              cat "$SMOKE_LOG" >&2 || true
+              wait "$app_pid" || true
+              exit 1
+            fi
+            sleep 1
+          done
+
+          echo "SnapTray remained alive for the 10-second startup smoke window."
+
+      - name: Upload smoke log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snaptray-v1.0.62-macos14-smoke-log
+          path: ${{ runner.temp }}/snaptray-v1.0.62-macos14.log
+          if-no-files-found: ignore
+          retention-days: 7
