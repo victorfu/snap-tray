@@ -1250,6 +1250,7 @@ void RegionSelector::onLineWidthChanged(int width)
 {
     if (m_inputState.currentTool == ToolId::Mosaic) {
         m_inputState.annotationWidth = width;
+        m_toolManager->setWidth(width);
         // Update cursor to reflect new width
         setToolCursor();
         AnnotationSettingsManager::instance().saveWidth(width);
@@ -1257,8 +1258,8 @@ void RegionSelector::onLineWidthChanged(int width)
     else {
         m_inputState.annotationWidth = width;
         AnnotationSettingsManager::instance().saveWidth(width);
+        m_toolManager->setWidth(width);
     }
-    m_toolManager->setWidth(width);
     requestCaptureSceneUpdate();
 }
 

@@ -1,6 +1,31 @@
 #include "qml/PinToolOptionsViewModel.h"
 #include "tools/ToolSectionConfig.h"
 
+#include <iterator>
+
+namespace {
+struct MosaicWidthPreset
+{
+    int value;
+    int previewDiameter;
+};
+
+constexpr MosaicWidthPreset kMosaicWidthPresets[] = {
+    {10, 6},
+    {18, 10},
+    {30, 14},
+};
+
+bool isMosaicWidthPreset(int width)
+{
+    for (const auto& preset : kMosaicWidthPresets) {
+        if (preset.value == width)
+            return true;
+    }
+    return false;
+}
+} // namespace
+
 PinToolOptionsViewModel::PinToolOptionsViewModel(QObject* parent)
     : QObject(parent)
 {
@@ -292,6 +317,19 @@ QVariantList PinToolOptionsViewModel::stepBadgeSizeOptions() const
     };
 }
 
+QVariantList PinToolOptionsViewModel::mosaicWidthPresetOptions() const
+{
+    QVariantList options;
+    options.reserve(std::size(kMosaicWidthPresets));
+    for (const auto& preset : kMosaicWidthPresets) {
+        options.append(QVariantMap{
+            {"value", preset.value},
+            {"previewDiameter", preset.previewDiameter},
+        });
+    }
+    return options;
+}
+
 // ── QML action handlers ──
 
 void PinToolOptionsViewModel::handleColorClicked(int index)
@@ -312,6 +350,15 @@ void PinToolOptionsViewModel::handleWidthChanged(int width)
 {
     setCurrentWidth(width);
     emit widthValueChanged(m_currentWidth);
+}
+
+void PinToolOptionsViewModel::handleMosaicWidthPresetSelected(int width)
+{
+    if (!isMosaicActive() || !isMosaicWidthPreset(width))
+        return;
+
+    handleWidthChanged(width);
+    emit mosaicBrushAdjustmentLearned();
 }
 
 bool PinToolOptionsViewModel::handleWidthWheelDelta(int delta)

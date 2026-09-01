@@ -65,6 +65,7 @@ private slots:
     void testLearnedSettingLoadsOnlyOnMosaicActivation();
     void testTemporaryHideDoesNotReplayCoachmark();
     void testTimeoutLearningAndHoverReminderLifecycle();
+    void testPresetSelectionLearnsAndKeepsHoverReminderAvailable();
 };
 
 void TestQmlFloatingSubToolbarMosaicHint::initTestCase()
@@ -205,6 +206,57 @@ void TestQmlFloatingSubToolbarMosaicHint::testTimeoutLearningAndHoverReminderLif
                                            learnedPreviewRect.y(),
                                            learnedPreviewRect.width(),
                                            learnedPreviewRect.height());
+    QCOMPARE(
+        static_cast<int>(subToolbar.m_mosaicHintDisplay),
+        static_cast<int>(SnapTray::QmlFloatingSubToolbar::MosaicHintDisplay::None));
+
+    subToolbar.close();
+}
+
+void TestQmlFloatingSubToolbarMosaicHint::testPresetSelectionLearnsAndKeepsHoverReminderAvailable()
+{
+    ScopedMosaicHintSetting restoreSetting;
+    auto& settings = AnnotationSettingsManager::instance();
+    PinToolOptionsViewModel viewModel;
+    SnapTray::QmlFloatingSubToolbar subToolbar(&viewModel);
+    const QRect toolbarRect = testToolbarRect();
+    QVERIFY(toolbarRect.isValid());
+
+    subToolbar.showForTool(static_cast<int>(ToolId::Mosaic));
+    QTRY_VERIFY(subToolbar.isVisible());
+    subToolbar.positionBelow(toolbarRect);
+    QTRY_COMPARE(
+        static_cast<int>(subToolbar.m_mosaicHintDisplay),
+        static_cast<int>(SnapTray::QmlFloatingSubToolbar::MosaicHintDisplay::Coachmark));
+
+    viewModel.handleMosaicWidthPresetSelected(18);
+
+    QCOMPARE(viewModel.currentWidth(), 18);
+    QTRY_COMPARE(
+        static_cast<int>(subToolbar.m_mosaicHintDisplay),
+        static_cast<int>(SnapTray::QmlFloatingSubToolbar::MosaicHintDisplay::None));
+    QVERIFY(subToolbar.m_mosaicBrushAdjustmentLearned);
+    QVERIFY(!subToolbar.m_mosaicCoachmarkTimer.isActive());
+    QVERIFY(settings.loadMosaicBrushAdjustmentLearned());
+
+    subToolbar.showForTool(static_cast<int>(ToolId::Pencil));
+    subToolbar.showForTool(static_cast<int>(ToolId::Mosaic));
+    subToolbar.positionBelow(toolbarRect);
+    QCoreApplication::processEvents();
+    QCOMPARE(
+        static_cast<int>(subToolbar.m_mosaicHintDisplay),
+        static_cast<int>(SnapTray::QmlFloatingSubToolbar::MosaicHintDisplay::None));
+
+    const QRect previewRect = subToolbar.mosaicPreviewGlobalRect();
+    QVERIFY(previewRect.isValid());
+    subToolbar.onMosaicBrushPreviewHovered(previewRect.x(),
+                                           previewRect.y(),
+                                           previewRect.width(),
+                                           previewRect.height());
+    QCOMPARE(
+        static_cast<int>(subToolbar.m_mosaicHintDisplay),
+        static_cast<int>(SnapTray::QmlFloatingSubToolbar::MosaicHintDisplay::HoverReminder));
+    subToolbar.onMosaicBrushPreviewHoverExited();
     QCOMPARE(
         static_cast<int>(subToolbar.m_mosaicHintDisplay),
         static_cast<int>(SnapTray::QmlFloatingSubToolbar::MosaicHintDisplay::None));

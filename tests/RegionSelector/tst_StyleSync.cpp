@@ -4,7 +4,9 @@
 
 #include <QClipboard>
 #include <QGuiApplication>
+#include <QScopeGuard>
 #include <QScreen>
+#include <QtMath>
 #include "RegionSelector.h"
 #include "RegionSelectorTestAccess.h"
 #include "annotations/ArrowAnnotation.h"
@@ -12,6 +14,7 @@
 #include "cursor/CursorManager.h"
 #include "cursor/CursorStyleCatalog.h"
 #include "qml/QmlFloatingToolbar.h"
+#include "settings/AnnotationSettingsManager.h"
 #include "settings/RegionCaptureSettingsManager.h"
 #include "region/RegionInputHandler.h"
 #include "region/CaptureShortcutHintsOverlay.h"
@@ -85,6 +88,7 @@ private slots:
     void testRestoreRegionCursorAfterArrowControlHoverReturnsSelectionBodyCursor();
     void testPopupRestoreReturnsSelectionBodyCursor();
     void testPopupRestoreReturnsMosaicCursor();
+    void testMosaicWidthChangeImmediatelyUpdatesCursor();
     void testInitializeForScreen_DisabledMagnifierPreventsVisibility();
     void testInitializeForScreen_BeaverStyleDisablesMagnifierMode();
     void testInitializeForScreen_BeaverStyleSkipsMagnifierPrewarm();
@@ -981,6 +985,45 @@ void TestRegionSelectorStyleSync::testPopupRestoreReturnsMosaicCursor()
     QCOMPARE(restoredCursor.hotSpot(), toolCursor.hotSpot());
     QCOMPARE(restoredCursor.pixmap().deviceIndependentSize(),
              toolCursor.pixmap().deviceIndependentSize());
+}
+
+void TestRegionSelectorStyleSync::testMosaicWidthChangeImmediatelyUpdatesCursor()
+{
+    auto& settings = AnnotationSettingsManager::instance();
+    const int originalWidth = settings.loadWidth();
+    const auto restoreWidth = qScopeGuard([&settings, originalWidth]() {
+        settings.saveWidth(originalWidth);
+    });
+
+    RegionSelector selector;
+    selector.m_selectionManager->setSelectionRect(kSelectionRect);
+    selector.m_inputState.currentTool = ToolId::Mosaic;
+    selector.m_toolManager->setCurrentTool(ToolId::Mosaic);
+
+    constexpr int cursorPadding = 4;
+    const QList<int> presetWidths{10, 18, 30};
+    for (const int width : presetWidths) {
+        selector.onLineWidthChanged(width);
+
+        QCOMPARE(selector.m_inputState.annotationWidth, width);
+        QCOMPARE(selector.m_toolManager->width(), width);
+
+        const QCursor cursor = selector.cursor();
+        QVERIFY(!cursor.pixmap().isNull());
+        QCOMPARE(cursor.shape(), Qt::BitmapCursor);
+
+        const int brushFootprint = width * 2;
+        const int expectedLogicalExtent = brushFootprint + (cursorPadding * 2);
+        const qreal cursorDpr = cursor.pixmap().devicePixelRatio();
+        const qreal expectedDeviceIndependentExtent =
+            qCeil(expectedLogicalExtent * cursorDpr) / cursorDpr;
+        const QSizeF expectedCursorSize(expectedDeviceIndependentExtent,
+                                        expectedDeviceIndependentExtent);
+        QCOMPARE(cursor.pixmap().deviceIndependentSize(), expectedCursorSize);
+        QCOMPARE(cursor.hotSpot(),
+                 QPoint(expectedLogicalExtent / 2,
+                        expectedLogicalExtent / 2));
+    }
 }
 
 void TestRegionSelectorStyleSync::testInitializeForScreen_DisabledMagnifierPreventsVisibility()
