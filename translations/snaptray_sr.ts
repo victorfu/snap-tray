@@ -3532,10 +3532,6 @@ File size: %3</source>
 <context>
     <name>PinToolOptionsViewModel</name>
     <message>
-        <source>Scroll here to adjust the mosaic brush size</source>
-        <translation>Скролујте овде да бисте подесили величину мозаик четкице</translation>
-    </message>
-    <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Аутоматски откријте и замаглите лица и акредитиве</translation>
     </message>

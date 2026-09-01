@@ -322,6 +322,7 @@ add_library(snaptray_core STATIC
     src/platform/PlatformCapabilities.cpp
     src/tools/ToolRegistry.cpp
     src/tools/ToolSectionConfig.cpp
+    src/tools/ToolWidthSlot.cpp
     src/cursor/CursorAuthority.cpp
     src/cursor/CursorPlatformApplier.cpp
     src/cursor/CursorStyleCatalog.cpp

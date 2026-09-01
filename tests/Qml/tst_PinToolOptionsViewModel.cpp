@@ -28,10 +28,10 @@ private slots:
     void testClearSections_DisablesWidthWheelHandling();
     void testAutoBlurHintText();
     void testMosaicWidthPresetOptions_HaveExpectedValues();
-    void testMosaicWidthPresetSelection_UpdatesWidthAndLearns();
+    void testMosaicWidthPresetSelection_UpdatesWidth();
     void testMosaicWidthPresetSelection_IgnoresInactiveAndInvalidValues();
-    void testMosaicWheelGesture_EmitsLearnedSignal();
-    void testProgrammaticAndNonMosaicWidthChanges_DoNotLearn();
+    void testMosaicWidthWheel_IsNotHandled();
+    void testNonMosaicWidthWheel_RemainsHandled();
     void testLaserPointerOptions_ClearMosaicSemantics();
 };
 
@@ -163,12 +163,10 @@ void tst_PinToolOptionsViewModel::testMosaicWidthPresetOptions_HaveExpectedValue
     }
 }
 
-void tst_PinToolOptionsViewModel::testMosaicWidthPresetSelection_UpdatesWidthAndLearns()
+void tst_PinToolOptionsViewModel::testMosaicWidthPresetSelection_UpdatesWidth()
 {
     PinToolOptionsViewModel viewModel;
     QSignalSpy widthSpy(&viewModel, &PinToolOptionsViewModel::widthValueChanged);
-    QSignalSpy learnedSpy(
-        &viewModel, &PinToolOptionsViewModel::mosaicBrushAdjustmentLearned);
 
     viewModel.showForTool(static_cast<int>(ToolId::Mosaic));
 
@@ -179,7 +177,6 @@ void tst_PinToolOptionsViewModel::testMosaicWidthPresetSelection_UpdatesWidthAnd
         QCOMPARE(viewModel.currentWidth(), width);
         QCOMPARE(widthSpy.count(), i + 1);
         QCOMPARE(widthSpy.at(i).at(0).toInt(), width);
-        QCOMPARE(learnedSpy.count(), i + 1);
     }
 }
 
@@ -187,15 +184,12 @@ void tst_PinToolOptionsViewModel::testMosaicWidthPresetSelection_IgnoresInactive
 {
     PinToolOptionsViewModel viewModel;
     QSignalSpy widthSpy(&viewModel, &PinToolOptionsViewModel::widthValueChanged);
-    QSignalSpy learnedSpy(
-        &viewModel, &PinToolOptionsViewModel::mosaicBrushAdjustmentLearned);
 
     viewModel.showForTool(static_cast<int>(ToolId::Pencil));
     viewModel.handleMosaicWidthPresetSelected(10);
 
     QCOMPARE(viewModel.currentWidth(), 3);
     QCOMPARE(widthSpy.count(), 0);
-    QCOMPARE(learnedSpy.count(), 0);
 
     viewModel.showForTool(static_cast<int>(ToolId::Mosaic));
     viewModel.handleMosaicWidthPresetSelected(9);
@@ -203,54 +197,49 @@ void tst_PinToolOptionsViewModel::testMosaicWidthPresetSelection_IgnoresInactive
 
     QCOMPARE(viewModel.currentWidth(), 3);
     QCOMPARE(widthSpy.count(), 0);
-    QCOMPARE(learnedSpy.count(), 0);
 }
 
-void tst_PinToolOptionsViewModel::testMosaicWheelGesture_EmitsLearnedSignal()
+void tst_PinToolOptionsViewModel::testMosaicWidthWheel_IsNotHandled()
 {
     PinToolOptionsViewModel viewModel;
-    QSignalSpy learnedSpy(
-        &viewModel, &PinToolOptionsViewModel::mosaicBrushAdjustmentLearned);
+    QSignalSpy widthSpy(&viewModel, &PinToolOptionsViewModel::widthValueChanged);
+    QSignalSpy currentWidthSpy(&viewModel, &PinToolOptionsViewModel::currentWidthChanged);
 
     QCOMPARE(viewModel.activeToolId(), static_cast<int>(ToolId::Count));
     QVERIFY(!viewModel.isMosaicActive());
-    QCOMPARE(viewModel.mosaicBrushHintText(),
-             QStringLiteral("Scroll here to adjust the mosaic brush size"));
 
     viewModel.showForTool(static_cast<int>(ToolId::Mosaic));
 
     QCOMPARE(viewModel.activeToolId(), static_cast<int>(ToolId::Mosaic));
     QVERIFY(viewModel.isMosaicActive());
-    QVERIFY(viewModel.handleWidthWheelDelta(120));
-    QCOMPARE(learnedSpy.count(), 1);
-
-    QVERIFY(viewModel.handleWidthWheelDelta(-120));
-    QCOMPARE(learnedSpy.count(), 2);
+    QVERIFY(!viewModel.handleWidthWheelDelta(120));
+    QVERIFY(!viewModel.handleWidthWheelDelta(-120));
     QVERIFY(!viewModel.handleWidthWheelDelta(0));
-    QCOMPARE(learnedSpy.count(), 2);
+    QCOMPARE(viewModel.currentWidth(), 3);
+    QCOMPARE(widthSpy.count(), 0);
+    QCOMPARE(currentWidthSpy.count(), 0);
 }
 
-void tst_PinToolOptionsViewModel::testProgrammaticAndNonMosaicWidthChanges_DoNotLearn()
+void tst_PinToolOptionsViewModel::testNonMosaicWidthWheel_RemainsHandled()
 {
     PinToolOptionsViewModel viewModel;
-    QSignalSpy learnedSpy(
-        &viewModel, &PinToolOptionsViewModel::mosaicBrushAdjustmentLearned);
-
-    viewModel.showForTool(static_cast<int>(ToolId::Mosaic));
-    viewModel.setCurrentWidth(12);
-    viewModel.handleWidthChanged(13);
-    QCOMPARE(learnedSpy.count(), 0);
+    QSignalSpy widthSpy(&viewModel, &PinToolOptionsViewModel::widthValueChanged);
 
     viewModel.showForTool(static_cast<int>(ToolId::Pencil));
     QVERIFY(viewModel.handleWidthWheelDelta(120));
-    QCOMPARE(learnedSpy.count(), 0);
+    QCOMPARE(viewModel.currentWidth(), 4);
+    QCOMPARE(widthSpy.count(), 1);
+    QCOMPARE(widthSpy.at(0).at(0).toInt(), 4);
+
+    QVERIFY(viewModel.handleWidthWheelDelta(-120));
+    QCOMPARE(viewModel.currentWidth(), 3);
+    QCOMPARE(widthSpy.count(), 2);
+    QCOMPARE(widthSpy.at(1).at(0).toInt(), 3);
 }
 
 void tst_PinToolOptionsViewModel::testLaserPointerOptions_ClearMosaicSemantics()
 {
     PinToolOptionsViewModel viewModel;
-    QSignalSpy learnedSpy(
-        &viewModel, &PinToolOptionsViewModel::mosaicBrushAdjustmentLearned);
 
     viewModel.showForTool(static_cast<int>(ToolId::Mosaic));
     QVERIFY(viewModel.isMosaicActive());
@@ -260,14 +249,13 @@ void tst_PinToolOptionsViewModel::testLaserPointerOptions_ClearMosaicSemantics()
     QCOMPARE(viewModel.activeToolId(), static_cast<int>(ToolId::Selection));
     QVERIFY(!viewModel.isMosaicActive());
     QVERIFY(viewModel.handleWidthWheelDelta(120));
-    QCOMPARE(learnedSpy.count(), 0);
 
     viewModel.showForTool(static_cast<int>(ToolId::Mosaic));
+    QVERIFY(!viewModel.handleWidthWheelDelta(120));
     viewModel.clearSections();
     QCOMPARE(viewModel.activeToolId(), static_cast<int>(ToolId::Count));
     QVERIFY(!viewModel.isMosaicActive());
     QVERIFY(!viewModel.handleWidthWheelDelta(120));
-    QCOMPARE(learnedSpy.count(), 0);
 }
 
 QTEST_MAIN(tst_PinToolOptionsViewModel)

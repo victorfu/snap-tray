@@ -3526,10 +3526,6 @@ Kích thước tệp: %3</translation>
 <context>
     <name>PinToolOptionsViewModel</name>
     <message>
-        <source>Scroll here to adjust the mosaic brush size</source>
-        <translation>Cuộn tại đây để điều chỉnh kích thước cọ khảm</translation>
-    </message>
-    <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Tự động phát hiện và làm mờ khuôn mặt cùng thông tin đăng nhập</translation>
     </message>

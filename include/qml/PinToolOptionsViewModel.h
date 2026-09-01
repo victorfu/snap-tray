@@ -40,7 +40,6 @@ class PinToolOptionsViewModel : public QObject
     Q_PROPERTY(int activeToolId READ activeToolId NOTIFY activeToolChanged)
     Q_PROPERTY(bool mosaicActive READ isMosaicActive NOTIFY activeToolChanged)
     Q_PROPERTY(QVariantList mosaicWidthPresetOptions READ mosaicWidthPresetOptions CONSTANT)
-    Q_PROPERTY(QString mosaicBrushHintText READ mosaicBrushHintText CONSTANT)
 
     // Text formatting section
     Q_PROPERTY(bool isBold READ isBold WRITE setBold NOTIFY boldChanged)
@@ -105,7 +104,6 @@ public:
     int activeToolId() const { return static_cast<int>(m_activeToolId); }
     bool isMosaicActive() const { return m_activeToolId == ToolId::Mosaic; }
     QVariantList mosaicWidthPresetOptions() const;
-    QString mosaicBrushHintText() const;
 
     // Text formatting
     bool isBold() const { return m_bold; }
@@ -184,7 +182,6 @@ signals:
     void colorSelected(const QColor& color);
     void customColorPickerRequested();
     void widthValueChanged(int width);
-    void mosaicBrushAdjustmentLearned();
     void boldToggled(bool enabled);
     void italicToggled(bool enabled);
     void underlineToggled(bool enabled);

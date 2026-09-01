@@ -20,6 +20,7 @@ private slots:
     void testBeginReplaceHidesStaleSubToolbar();
     void testCompletedSelectionReopensHiddenSubToolbar();
     void testWheelDoesNotAdjustWidthWithoutCompletedSelection();
+    void testMosaicWheelDoesNotAdjustWidthWithCompletedSelection();
 };
 
 void tst_RegionSelectorMultiRegionSubToolbar::initTestCase()
@@ -116,6 +117,32 @@ void tst_RegionSelectorMultiRegionSubToolbar::testWheelDoesNotAdjustWidthWithout
     selector.wheelEvent(&event);
 
     QCOMPARE(selector.m_toolOptionsViewModel->currentWidth(), 5);
+}
+
+void tst_RegionSelectorMultiRegionSubToolbar::testMosaicWheelDoesNotAdjustWidthWithCompletedSelection()
+{
+    RegionSelector selector;
+
+    selector.m_selectionManager->setSelectionRect(QRect(20, 20, 120, 90));
+    selector.m_inputState.currentTool = ToolId::Mosaic;
+    selector.m_inputState.showSubToolbar = true;
+    selector.m_toolOptionsViewModel->showForTool(static_cast<int>(ToolId::Mosaic));
+    selector.m_toolOptionsViewModel->setCurrentWidth(18);
+    QVERIFY(selector.m_selectionManager->isComplete());
+
+    QWheelEvent event(QPointF(40, 40),
+                      QPointF(40, 40),
+                      QPoint(),
+                      QPoint(0, 120),
+                      Qt::NoButton,
+                      Qt::NoModifier,
+                      Qt::NoScrollPhase,
+                      false);
+
+    selector.wheelEvent(&event);
+
+    QCOMPARE(selector.m_toolOptionsViewModel->currentWidth(), 18);
+    QVERIFY(!event.isAccepted());
 }
 
 QTEST_MAIN(tst_RegionSelectorMultiRegionSubToolbar)

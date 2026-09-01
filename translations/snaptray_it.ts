@@ -3532,10 +3532,6 @@ Dimensione file: %3</translation>
 <context>
     <name>PinToolOptionsViewModel</name>
     <message>
-        <source>Scroll here to adjust the mosaic brush size</source>
-        <translation>Scorri qui per regolare la dimensione del pennello mosaico</translation>
-    </message>
-    <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Rileva e sfoca automaticamente volti e credenziali</translation>
     </message>

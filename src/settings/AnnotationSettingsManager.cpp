@@ -45,17 +45,28 @@ void AnnotationSettingsManager::saveWidth(int width)
     settings.setValue(kSettingsKeyWidth, width);
 }
 
-bool AnnotationSettingsManager::loadMosaicBrushAdjustmentLearned() const
+int AnnotationSettingsManager::loadWidthForTool(ToolId toolId) const
 {
+    if (widthSlotForTool(toolId) == WidthSlot::Stroke) {
+        return loadWidth();
+    }
+
     auto settings = SnapTray::getSettings();
-    return settings.value(kSettingsKeyMosaicBrushAdjustmentLearned,
-                          kDefaultMosaicBrushAdjustmentLearned).toBool();
+    const int width = settings.value(kSettingsKeyMosaicBrushSize,
+                                     kDefaultMosaicBrushSize).toInt();
+    return isMosaicWidthPreset(width) ? width : kDefaultMosaicBrushSize;
 }
 
-void AnnotationSettingsManager::saveMosaicBrushAdjustmentLearned(bool learned)
+void AnnotationSettingsManager::saveWidthForTool(ToolId toolId, int width)
 {
+    if (widthSlotForTool(toolId) == WidthSlot::Stroke) {
+        saveWidth(width);
+        return;
+    }
+
     auto settings = SnapTray::getSettings();
-    settings.setValue(kSettingsKeyMosaicBrushAdjustmentLearned, learned);
+    settings.setValue(kSettingsKeyMosaicBrushSize,
+                      isMosaicWidthPreset(width) ? width : kDefaultMosaicBrushSize);
 }
 
 LineEndStyle AnnotationSettingsManager::loadArrowStyle() const

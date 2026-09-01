@@ -14,11 +14,7 @@ Item {
         : null
     readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
     readonly property int panelRightMargin: 6
-    property bool mosaicBrushHintActive: false
     property bool autoBlurHintActive: false
-    signal mosaicBrushPreviewHovered(real anchorX, real anchorY,
-                                     real anchorW, real anchorH)
-    signal mosaicBrushPreviewHoverExited()
     signal autoBlurButtonHovered(real anchorX, real anchorY,
                                  real anchorW, real anchorH)
     signal autoBlurButtonHoverExited()
@@ -77,6 +73,10 @@ Item {
                 wheel.accepted = false
                 return
             }
+            if (root.viewModel.mosaicActive) {
+                wheel.accepted = true
+                return
+            }
             wheel.accepted = root.viewModel.handleWidthWheelDelta(wheel.angleDelta.y)
         }
     }
@@ -112,13 +112,7 @@ Item {
             WidthSection {
                 visible: root.hasViewModel && root.viewModel.showWidthSection
                 viewModel: root.viewModel
-                hintActive: root.mosaicBrushHintActive
-                hoverHintEnabled: root.hasViewModel && root.viewModel.mosaicActive
                 anchors.verticalCenter: parent.verticalCenter
-                onPreviewHovered: function(anchorX, anchorY, anchorW, anchorH) {
-                    root.mosaicBrushPreviewHovered(anchorX, anchorY, anchorW, anchorH)
-                }
-                onPreviewHoverExited: root.mosaicBrushPreviewHoverExited()
             }
 
             ColorPaletteSection {

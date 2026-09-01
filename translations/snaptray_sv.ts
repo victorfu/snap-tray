@@ -3526,10 +3526,6 @@ Filstorlek: %3</translation>
 <context>
     <name>PinToolOptionsViewModel</name>
     <message>
-        <source>Scroll here to adjust the mosaic brush size</source>
-        <translation>Rulla här för att justera mosaikpenselns storlek</translation>
-    </message>
-    <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Identifiera och sudda automatiskt ansikten och inloggningsuppgifter</translation>
     </message>

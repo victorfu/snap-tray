@@ -360,7 +360,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     // Load saved annotation settings (or defaults)
     auto& settings = AnnotationSettingsManager::instance();
     m_inputState.annotationColor = settings.loadColor();
-    m_inputState.annotationWidth = settings.loadWidth();
+    m_inputState.annotationWidth = settings.loadWidthForTool(m_inputState.currentTool);
     m_inputState.arrowStyle = settings.loadArrowStyle();
     m_inputState.lineStyle = settings.loadLineStyle();
     m_stepBadgeSize = settings.loadStepBadgeSize();
@@ -1248,17 +1248,14 @@ void RegionSelector::onMoreColorsRequested()
 
 void RegionSelector::onLineWidthChanged(int width)
 {
+    m_inputState.annotationWidth = width;
+    m_toolManager->setWidth(width);
+    AnnotationSettingsManager::instance().saveWidthForTool(
+        m_inputState.currentTool, width);
+
     if (m_inputState.currentTool == ToolId::Mosaic) {
-        m_inputState.annotationWidth = width;
-        m_toolManager->setWidth(width);
-        // Update cursor to reflect new width
+        // Cursor and painting both read the already-updated Mosaic slot.
         setToolCursor();
-        AnnotationSettingsManager::instance().saveWidth(width);
-    }
-    else {
-        m_inputState.annotationWidth = width;
-        AnnotationSettingsManager::instance().saveWidth(width);
-        m_toolManager->setWidth(width);
     }
     requestCaptureSceneUpdate();
 }
@@ -3887,7 +3884,6 @@ void RegionSelector::handleToolbarClick(ToolId tool)
     // Sync current state to handler
     m_toolbarHandler->setCurrentTool(m_inputState.currentTool);
     m_toolbarHandler->setShowSubToolbar(m_inputState.showSubToolbar);
-    m_toolbarHandler->setAnnotationWidth(m_inputState.annotationWidth);
     m_toolbarHandler->setStepBadgeSize(m_stepBadgeSize);
     m_toolbarHandler->setShareInProgress(m_shareInProgress);
     m_toolbarHandler->setMultiRegionMode(m_inputState.multiRegionMode);
@@ -3919,7 +3915,29 @@ void RegionSelector::updateToolbarAutoBlurState()
 
 void RegionSelector::syncRegionSubToolbar(bool refreshContent)
 {
-    if (!m_qmlSubToolbar || !m_toolOptionsViewModel) {
+    if (!m_toolOptionsViewModel) {
+        return;
+    }
+
+    const auto syncActiveToolWidth = [this]() {
+        const int toolWidth =
+            AnnotationSettingsManager::instance().loadWidthForTool(
+                m_inputState.currentTool);
+        m_inputState.annotationWidth = toolWidth;
+        m_toolManager->setWidth(toolWidth);
+        m_toolOptionsViewModel->setCurrentWidth(toolWidth);
+
+        if (m_inputState.currentTool == ToolId::Mosaic) {
+            setToolCursor();
+        }
+    };
+
+    // Keep runtime and ViewModel state synchronized even when no floating
+    // sub-toolbar surface is available (for example during headless tests).
+    if (!m_qmlSubToolbar) {
+        if (refreshContent) {
+            syncActiveToolWidth();
+        }
         return;
     }
 
@@ -3939,6 +3957,8 @@ void RegionSelector::syncRegionSubToolbar(bool refreshContent)
                                       !m_qmlSubToolbar->isVisible() ||
                                       !m_toolOptionsViewModel->hasContent();
     if (shouldRefreshContent) {
+        syncActiveToolWidth();
+
         if (m_inputState.currentTool == ToolId::Mosaic) {
             m_toolOptionsViewModel->setAutoBlurEnabled(m_autoBlurManager != nullptr);
         }

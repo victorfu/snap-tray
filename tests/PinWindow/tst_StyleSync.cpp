@@ -4,22 +4,65 @@
 #include <QGuiApplication>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QSettings>
 #include <QWindow>
+#include <QtMath>
 
 #include "PinWindow.h"
+#include "qml/PinToolOptionsViewModel.h"
 #include "qml/PinToolbarViewModel.h"
 #include "qml/QmlEmojiPickerPopup.h"
 #include "qml/QmlBeautifyPanel.h"
+#include "qml/QmlFloatingSubToolbar.h"
 #include "qml/QmlWindowedToolbar.h"
 #include "annotations/PolylineAnnotation.h"
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
 #include "cursor/CursorStyleCatalog.h"
 #include "pinwindow/RegionLayoutManager.h"
+#include "settings/AnnotationSettingsManager.h"
+#include "settings/Settings.h"
 #include "tools/ToolManager.h"
 
 namespace {
 constexpr int kToolbarOutsideClickGuardMs = 350;
+
+class ScopedWidthSettings final
+{
+public:
+    ScopedWidthSettings()
+        : m_settings(SnapTray::getSettings())
+        , m_hadStrokeWidth(m_settings.contains(QStringLiteral("annotationWidth")))
+        , m_strokeWidth(m_settings.value(QStringLiteral("annotationWidth")))
+        , m_hadMosaicWidth(m_settings.contains(QStringLiteral("mosaicBrushSize")))
+        , m_mosaicWidth(m_settings.value(QStringLiteral("mosaicBrushSize")))
+    {
+    }
+
+    ~ScopedWidthSettings()
+    {
+        restore(QStringLiteral("annotationWidth"), m_hadStrokeWidth, m_strokeWidth);
+        restore(QStringLiteral("mosaicBrushSize"), m_hadMosaicWidth, m_mosaicWidth);
+        m_settings.sync();
+    }
+
+private:
+    void restore(const QString& key, bool existed, const QVariant& value)
+    {
+        if (existed) {
+            m_settings.setValue(key, value);
+        }
+        else {
+            m_settings.remove(key);
+        }
+    }
+
+    QSettings m_settings;
+    bool m_hadStrokeWidth;
+    QVariant m_strokeWidth;
+    bool m_hadMosaicWidth;
+    QVariant m_mosaicWidth;
+};
 
 QPixmap createTestPixmap(int width = 160, int height = 120)
 {
@@ -102,6 +145,8 @@ private slots:
     void initTestCase();
     void testUsesAuthorityModeByDefault();
     void testAnnotationToolUsesWindowDevicePixelRatio();
+    void testStrokeAndMosaicWidthsRestoreIndependently();
+    void testMosaicPresetsUpdateCursorWithoutChangingStrokeWidth();
     void testNonAnnotationEdgeHoverUsesCorrectResizeCursor();
     void testOverlayRestoreReturnsArrowToolCursor();
     void testPolylineReleaseRecomputesHoverCursor();
@@ -152,6 +197,110 @@ void TestPinWindowStyleSync::testAnnotationToolUsesWindowDevicePixelRatio()
 
     QVERIFY(window.m_toolManager != nullptr);
     QCOMPARE(window.m_toolManager->context()->devicePixelRatio, window.devicePixelRatioF());
+}
+
+void TestPinWindowStyleSync::testStrokeAndMosaicWidthsRestoreIndependently()
+{
+    ScopedWidthSettings restoreSettings;
+    auto& settings = AnnotationSettingsManager::instance();
+    settings.saveWidthForTool(ToolId::Pencil, 4);
+    settings.saveWidthForTool(ToolId::Mosaic, 18);
+
+    PinWindow window(createTestPixmap(240, 160), QPoint(0, 0));
+    if (!window.m_toolManager) {
+        window.initializeAnnotationComponents();
+    }
+
+    QVERIFY(window.m_subToolbar);
+    auto* optionsVM = window.m_subToolbar->viewModel();
+    QVERIFY(optionsVM);
+    QCOMPARE(window.m_annotationWidth, 4);
+    QCOMPARE(window.m_toolManager->width(), 4);
+    QCOMPARE(optionsVM->currentWidth(), 4);
+
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Pencil));
+    QCOMPARE(window.m_currentToolId, ToolId::Pencil);
+    QCOMPARE(window.m_annotationWidth, 4);
+    QCOMPARE(window.m_toolManager->width(), 4);
+    QCOMPARE(optionsVM->currentWidth(), 4);
+
+    optionsVM->handleWidthChanged(6);
+    QCOMPARE(window.m_annotationWidth, 6);
+    QCOMPARE(window.m_toolManager->width(), 6);
+    QCOMPARE(settings.loadWidthForTool(ToolId::Pencil), 6);
+    QCOMPARE(settings.loadWidthForTool(ToolId::Mosaic), 18);
+
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Mosaic));
+    QCOMPARE(window.m_currentToolId, ToolId::Mosaic);
+    QCOMPARE(window.m_annotationWidth, 18);
+    QCOMPARE(window.m_toolManager->width(), 18);
+    QCOMPARE(optionsVM->currentWidth(), 18);
+
+    optionsVM->handleMosaicWidthPresetSelected(30);
+    QCOMPARE(window.m_annotationWidth, 30);
+    QCOMPARE(window.m_toolManager->width(), 30);
+    QCOMPARE(settings.loadWidthForTool(ToolId::Pencil), 6);
+    QCOMPARE(settings.loadWidthForTool(ToolId::Mosaic), 30);
+
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Pencil));
+    QCOMPARE(window.m_currentToolId, ToolId::Pencil);
+    QCOMPARE(window.m_annotationWidth, 6);
+    QCOMPARE(window.m_toolManager->width(), 6);
+    QCOMPARE(optionsVM->currentWidth(), 6);
+}
+
+void TestPinWindowStyleSync::testMosaicPresetsUpdateCursorWithoutChangingStrokeWidth()
+{
+    ScopedWidthSettings restoreSettings;
+    auto& settings = AnnotationSettingsManager::instance();
+    settings.saveWidthForTool(ToolId::Pencil, 7);
+    settings.saveWidthForTool(ToolId::Mosaic, 18);
+
+    PinWindow window(createTestPixmap(240, 160), QPoint(0, 0));
+    if (!window.m_toolManager) {
+        window.initializeAnnotationComponents();
+    }
+
+    QVERIFY(window.m_subToolbar);
+    auto* optionsVM = window.m_subToolbar->viewModel();
+    QVERIFY(optionsVM);
+
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Mosaic));
+    QCOMPARE(window.m_currentToolId, ToolId::Mosaic);
+    QCOMPARE(window.m_toolManager->currentTool(), ToolId::Mosaic);
+
+    constexpr int cursorPadding = 4;
+    const QList<int> presetWidths{10, 18, 30};
+    for (const int width : presetWidths) {
+        optionsVM->handleMosaicWidthPresetSelected(width);
+
+        QCOMPARE(window.m_annotationWidth, width);
+        QCOMPARE(window.m_toolManager->width(), width);
+        QCOMPARE(optionsVM->currentWidth(), width);
+        QCOMPARE(settings.loadWidthForTool(ToolId::Mosaic), width);
+        QCOMPARE(settings.loadWidthForTool(ToolId::Pencil), 7);
+
+        const QCursor cursor = window.cursor();
+        QVERIFY(!cursor.pixmap().isNull());
+        QCOMPARE(cursor.shape(), Qt::BitmapCursor);
+
+        const int brushFootprint = width * 2;
+        const int expectedLogicalExtent = brushFootprint + (cursorPadding * 2);
+        const qreal cursorDpr = cursor.pixmap().devicePixelRatio();
+        const qreal expectedDeviceIndependentExtent =
+            qCeil(expectedLogicalExtent * cursorDpr) / cursorDpr;
+        const QSizeF expectedCursorSize(expectedDeviceIndependentExtent,
+                                        expectedDeviceIndependentExtent);
+        QCOMPARE(cursor.pixmap().deviceIndependentSize(), expectedCursorSize);
+        QCOMPARE(cursor.hotSpot(),
+                 QPoint(expectedLogicalExtent / 2,
+                        expectedLogicalExtent / 2));
+    }
+
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Pencil));
+    QCOMPARE(window.m_annotationWidth, 7);
+    QCOMPARE(window.m_toolManager->width(), 7);
+    QCOMPARE(optionsVM->currentWidth(), 7);
 }
 
 void TestPinWindowStyleSync::testNonAnnotationEdgeHoverUsesCorrectResizeCursor()

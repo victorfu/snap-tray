@@ -4,7 +4,7 @@
 
 #include <QClipboard>
 #include <QGuiApplication>
-#include <QScopeGuard>
+#include <QSettings>
 #include <QScreen>
 #include <QtMath>
 #include "RegionSelector.h"
@@ -13,9 +13,12 @@
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
 #include "cursor/CursorStyleCatalog.h"
+#include "qml/QmlFloatingSubToolbar.h"
 #include "qml/QmlFloatingToolbar.h"
+#include "qml/PinToolOptionsViewModel.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/RegionCaptureSettingsManager.h"
+#include "settings/Settings.h"
 #include "region/RegionInputHandler.h"
 #include "region/CaptureShortcutHintsOverlay.h"
 #include "region/SelectionDimensionLabel.h"
@@ -27,6 +30,43 @@ const QRect kSelectionRect(40, 40, 160, 120);
 const QPoint kSelectionBodyPos(180, 140);
 const QPoint kArrowControlHandlePos(100, 80);
 const QPoint kArrowDraggedControlPos(110, 86);
+
+class ScopedWidthSettings final
+{
+public:
+    ScopedWidthSettings()
+        : m_settings(SnapTray::getSettings())
+        , m_hadStrokeWidth(m_settings.contains(QStringLiteral("annotationWidth")))
+        , m_strokeWidth(m_settings.value(QStringLiteral("annotationWidth")))
+        , m_hadMosaicWidth(m_settings.contains(QStringLiteral("mosaicBrushSize")))
+        , m_mosaicWidth(m_settings.value(QStringLiteral("mosaicBrushSize")))
+    {
+    }
+
+    ~ScopedWidthSettings()
+    {
+        restore(QStringLiteral("annotationWidth"), m_hadStrokeWidth, m_strokeWidth);
+        restore(QStringLiteral("mosaicBrushSize"), m_hadMosaicWidth, m_mosaicWidth);
+        m_settings.sync();
+    }
+
+private:
+    void restore(const QString& key, bool existed, const QVariant& value)
+    {
+        if (existed) {
+            m_settings.setValue(key, value);
+        }
+        else {
+            m_settings.remove(key);
+        }
+    }
+
+    QSettings m_settings;
+    bool m_hadStrokeWidth;
+    QVariant m_strokeWidth;
+    bool m_hadMosaicWidth;
+    QVariant m_mosaicWidth;
+};
 
 void verifyMoveCursor(const QCursor& cursor)
 {
@@ -70,6 +110,7 @@ private:
 
 private slots:
     void testUsesAuthorityModeByDefault();
+    void testStrokeAndMosaicWidthsRestoreIndependently();
     void testSelectionBodyHoverUsesMoveCursor();
     void testSelectionBodyHoverUsesEventPosWhenLiveCursorLags();
     void testSelectionCompletionShowsToolbarAfterWindowsHandoff();
@@ -350,6 +391,51 @@ void TestRegionSelectorStyleSync::testUsesAuthorityModeByDefault()
 {
     RegionSelector selector;
     QCOMPARE(CursorAuthority::instance().modeForWidget(&selector), CursorSurfaceMode::Authority);
+}
+
+void TestRegionSelectorStyleSync::testStrokeAndMosaicWidthsRestoreIndependently()
+{
+    ScopedWidthSettings restoreSettings;
+    auto& settings = AnnotationSettingsManager::instance();
+    settings.saveWidthForTool(ToolId::Pencil, 4);
+    settings.saveWidthForTool(ToolId::Mosaic, 18);
+
+    RegionSelector selector;
+    selector.m_qmlSubToolbar.reset();
+    QCOMPARE(selector.m_inputState.annotationWidth, 4);
+
+    selector.handleToolbarClick(ToolId::Pencil);
+    QCOMPARE(selector.m_inputState.currentTool, ToolId::Pencil);
+    QCOMPARE(selector.m_inputState.annotationWidth, 4);
+    QCOMPARE(selector.m_toolManager->width(), 4);
+    QCOMPARE(selector.m_toolOptionsViewModel->currentWidth(), 4);
+
+    selector.onLineWidthChanged(6);
+    QCOMPARE(settings.loadWidthForTool(ToolId::Pencil), 6);
+    QCOMPARE(settings.loadWidthForTool(ToolId::Mosaic), 18);
+
+    selector.handleToolbarClick(ToolId::Mosaic);
+    QCOMPARE(selector.m_inputState.currentTool, ToolId::Mosaic);
+    QCOMPARE(selector.m_inputState.annotationWidth, 18);
+    QCOMPARE(selector.m_toolManager->width(), 18);
+    QCOMPARE(selector.m_toolOptionsViewModel->currentWidth(), 18);
+
+    selector.onLineWidthChanged(30);
+    QCOMPARE(settings.loadWidthForTool(ToolId::Pencil), 6);
+    QCOMPARE(settings.loadWidthForTool(ToolId::Mosaic), 30);
+
+    selector.handleToolbarClick(ToolId::Mosaic);
+    QCOMPARE(selector.m_inputState.currentTool, ToolId::Selection);
+    QCOMPARE(selector.m_toolManager->currentTool(), ToolId::Selection);
+    QCOMPARE(selector.m_inputState.annotationWidth, 6);
+    QCOMPARE(selector.m_toolManager->width(), 6);
+    QCOMPARE(selector.m_toolOptionsViewModel->currentWidth(), 6);
+
+    selector.handleToolbarClick(ToolId::Pencil);
+    QCOMPARE(selector.m_inputState.currentTool, ToolId::Pencil);
+    QCOMPARE(selector.m_inputState.annotationWidth, 6);
+    QCOMPARE(selector.m_toolManager->width(), 6);
+    QCOMPARE(selector.m_toolOptionsViewModel->currentWidth(), 6);
 }
 
 #ifdef Q_OS_LINUX
@@ -989,11 +1075,10 @@ void TestRegionSelectorStyleSync::testPopupRestoreReturnsMosaicCursor()
 
 void TestRegionSelectorStyleSync::testMosaicWidthChangeImmediatelyUpdatesCursor()
 {
+    ScopedWidthSettings restoreSettings;
     auto& settings = AnnotationSettingsManager::instance();
-    const int originalWidth = settings.loadWidth();
-    const auto restoreWidth = qScopeGuard([&settings, originalWidth]() {
-        settings.saveWidth(originalWidth);
-    });
+    settings.saveWidthForTool(ToolId::Pencil, 7);
+    settings.saveWidthForTool(ToolId::Mosaic, 18);
 
     RegionSelector selector;
     selector.m_selectionManager->setSelectionRect(kSelectionRect);
@@ -1007,6 +1092,8 @@ void TestRegionSelectorStyleSync::testMosaicWidthChangeImmediatelyUpdatesCursor(
 
         QCOMPARE(selector.m_inputState.annotationWidth, width);
         QCOMPARE(selector.m_toolManager->width(), width);
+        QCOMPARE(settings.loadWidthForTool(ToolId::Mosaic), width);
+        QCOMPARE(settings.loadWidthForTool(ToolId::Pencil), 7);
 
         const QCursor cursor = selector.cursor();
         QVERIFY(!cursor.pixmap().isNull());
@@ -1024,6 +1111,9 @@ void TestRegionSelectorStyleSync::testMosaicWidthChangeImmediatelyUpdatesCursor(
                  QPoint(expectedLogicalExtent / 2,
                         expectedLogicalExtent / 2));
     }
+
+    selector.m_toolManager->setCurrentTool(ToolId::Pencil);
+    QCOMPARE(selector.m_toolManager->width(), 7);
 }
 
 void TestRegionSelectorStyleSync::testInitializeForScreen_DisabledMagnifierPreventsVisibility()

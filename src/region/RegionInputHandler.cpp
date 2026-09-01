@@ -1360,6 +1360,9 @@ void RegionInputHandler::startAnnotation(const QPoint& pos)
 void RegionInputHandler::startAnnotation(const QPointF& pos)
 {
     if (ToolTraits::isToolManagerHandledTool(state().currentTool)) {
+        // Width routing depends on the active tool, so select it before
+        // applying that tool's current style values.
+        m_toolManager->setCurrentTool(state().currentTool);
         m_toolManager->setColor(state().annotationColor);
         // Don't overwrite width for StepBadge - it uses a separate radius setting
         if (state().currentTool != ToolId::StepBadge) {
@@ -1370,7 +1373,6 @@ void RegionInputHandler::startAnnotation(const QPointF& pos)
         m_toolManager->setShapeType(static_cast<int>(state().shapeType));
         m_toolManager->setShapeFillMode(static_cast<int>(state().shapeFillMode));
 
-        m_toolManager->setCurrentTool(state().currentTool);
         m_toolManager->handleMousePress(pos, m_currentModifiers);
         state().isDrawing = m_toolManager->isDrawing();
 

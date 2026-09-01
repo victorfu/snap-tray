@@ -3523,10 +3523,6 @@ File size: %3</source>
 <context>
     <name>PinToolOptionsViewModel</name>
     <message>
-        <source>Scroll here to adjust the mosaic brush size</source>
-        <translation>在此滚动以调整马赛克画笔大小</translation>
-    </message>
-    <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>自动检测并模糊人脸和凭证信息</translation>
     </message>

@@ -30,7 +30,6 @@ public:
     // State setters (synced from RegionSelector before handle calls)
     void setCurrentTool(ToolId tool) { m_currentTool = tool; }
     void setShowSubToolbar(bool show) { m_showSubToolbar = show; }
-    void setAnnotationWidth(int width) { m_annotationWidth = width; }
     void setStepBadgeSize(StepBadgeSize size);
     void setShareInProgress(bool inProgress) { m_shareInProgress = inProgress; }
     void setMultiRegionMode(bool enabled) { m_multiRegionMode = enabled; }
@@ -88,7 +87,6 @@ private:
 
     ToolId m_currentTool;
     bool m_showSubToolbar = true;
-    int m_annotationWidth = 3;
     StepBadgeSize m_stepBadgeSize;
     bool m_shareInProgress = false;
     bool m_multiRegionMode = false;

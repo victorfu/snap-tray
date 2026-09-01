@@ -3532,10 +3532,6 @@ Taille du fichier : %3</translation>
 <context>
     <name>PinToolOptionsViewModel</name>
     <message>
-        <source>Scroll here to adjust the mosaic brush size</source>
-        <translation>Faites défiler ici pour ajuster la taille du pinceau mosaïque</translation>
-    </message>
-    <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Détecter et flouter automatiquement les visages et les identifiants</translation>
     </message>

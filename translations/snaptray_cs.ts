@@ -3532,10 +3532,6 @@ Velikost souboru: %3</translation>
 <context>
     <name>PinToolOptionsViewModel</name>
     <message>
-        <source>Scroll here to adjust the mosaic brush size</source>
-        <translation>Posouváním zde upravíte velikost mozaikového štětce</translation>
-    </message>
-    <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Automaticky rozpoznat a rozmazat obličeje a přihlašovací údaje</translation>
     </message>

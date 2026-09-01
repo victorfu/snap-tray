@@ -4,16 +4,13 @@ import SnapTrayQml
 /**
  * WidthSection: Stroke width preview and Mosaic width presets.
  *
- * The blue preview remains in its original 28x28 slot. Mosaic adds three
- * common-width shortcuts to its right, while the containing strip continues
- * to own mouse-wheel adjustment.
+ * Non-Mosaic tools use the original 28x28 preview. Mosaic replaces it with
+ * three common-width shortcuts.
  */
 Item {
     id: root
     objectName: "widthSection"
     property var viewModel: null
-    property bool hintActive: false
-    property bool hoverHintEnabled: false
     readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
     readonly property int currentWidthValue: root.hasViewModel ? root.viewModel.currentWidth : 1
     readonly property int minWidthValue: root.hasViewModel ? root.viewModel.minWidth : 1
@@ -23,25 +20,27 @@ Item {
                                                     ? root.viewModel.mosaicWidthPresetOptions
                                                     : []
     readonly property int controlSpacing: 2
-    signal previewHovered(real anchorX, real anchorY, real anchorW, real anchorH)
-    signal previewHoverExited()
+    readonly property int sectionPadding: 3
+    readonly property int sectionTrailingPadding: 1
 
-    implicitWidth: previewSlot.width
-                   + (root.mosaicActive
-                      ? root.controlSpacing + mosaicWidthPresetRow.width
-                      : 0)
+    implicitWidth: root.mosaicActive
+        ? root.sectionPadding + mosaicWidthPresetRow.width + root.sectionTrailingPadding
+        : previewSlot.width
     implicitHeight: 28
     width: implicitWidth
     height: implicitHeight
 
     Row {
         anchors.left: parent.left
+        anchors.leftMargin: root.mosaicActive ? root.sectionPadding : 0
         anchors.verticalCenter: parent.verticalCenter
+        height: root.height
         spacing: root.controlSpacing
 
         Item {
             id: previewSlot
             objectName: "widthPreviewSlot"
+            visible: !root.mosaicActive
             width: 28
             height: 28
 
@@ -53,37 +52,7 @@ Item {
                 width: 22
                 height: 22
                 radius: 5
-                readonly property bool emphasized: root.hintActive
-                                                   || (root.hoverHintEnabled && previewHover.hovered)
-                color: emphasized ? DesignSystem.accentHover : DesignSystem.accentDefault
-                border.width: emphasized ? 1 : 0
-                border.color: DesignSystem.textOnAccent
-                scale: emphasized ? 1.06 : 1.0
-
-                Behavior on color {
-                    ColorAnimation { duration: 100 }
-                }
-
-                Behavior on scale {
-                    NumberAnimation { duration: 100; easing.type: Easing.OutCubic }
-                }
-
-                HoverHandler {
-                    id: previewHover
-                    objectName: "widthPreviewHoverHandler"
-                    enabled: root.hoverHintEnabled
-
-                    onHoveredChanged: {
-                        if (hovered) {
-                            var anchor = widthPreviewContainer.mapToGlobal(0, 0)
-                            root.previewHovered(anchor.x, anchor.y,
-                                                widthPreviewContainer.width,
-                                                widthPreviewContainer.height)
-                        } else {
-                            root.previewHoverExited()
-                        }
-                    }
-                }
+                color: DesignSystem.accentDefault
 
                 // Width preview dot
                 Rectangle {
@@ -150,8 +119,7 @@ Item {
                                 root.viewModel.handleMosaicWidthPresetSelected(modelData.value)
                         }
 
-                        // Keep width adjustment owned by ToolOptionsStrip's
-                        // strip-wide wheel handler, including over presets.
+                        // Let ToolOptionsStrip consume Mosaic wheel events.
                         onWheel: function(wheel) {
                             wheel.accepted = false
                         }

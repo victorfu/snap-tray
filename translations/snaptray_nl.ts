@@ -3532,10 +3532,6 @@ Bestandsgrootte: %3</translation>
 <context>
     <name>PinToolOptionsViewModel</name>
     <message>
-        <source>Scroll here to adjust the mosaic brush size</source>
-        <translation>Scrol hier om de grootte van het mozaïekpenseel aan te passen</translation>
-    </message>
-    <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Gezichten en inloggegevens automatisch detecteren en vervagen</translation>
     </message>

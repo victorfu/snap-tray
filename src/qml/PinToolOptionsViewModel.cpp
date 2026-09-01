@@ -1,5 +1,6 @@
 #include "qml/PinToolOptionsViewModel.h"
 #include "tools/ToolSectionConfig.h"
+#include "tools/ToolWidthSlot.h"
 
 #include <iterator>
 
@@ -11,19 +12,10 @@ struct MosaicWidthPreset
 };
 
 constexpr MosaicWidthPreset kMosaicWidthPresets[] = {
-    {10, 6},
-    {18, 10},
-    {30, 14},
+    {ToolWidthDefaults::kMosaicBrushSmall, 6},
+    {ToolWidthDefaults::kMosaicBrush, 10},
+    {ToolWidthDefaults::kMosaicBrushLarge, 14},
 };
-
-bool isMosaicWidthPreset(int width)
-{
-    for (const auto& preset : kMosaicWidthPresets) {
-        if (preset.value == width)
-            return true;
-    }
-    return false;
-}
 } // namespace
 
 PinToolOptionsViewModel::PinToolOptionsViewModel(QObject* parent)
@@ -134,11 +126,6 @@ void PinToolOptionsViewModel::showForTool(int toolId)
                            config.showShapeSection,
                            config.showSizeSection,
                            config.showAutoBlurSection);
-}
-
-QString PinToolOptionsViewModel::mosaicBrushHintText() const
-{
-    return tr("Scroll here to adjust the mosaic brush size");
 }
 
 QString PinToolOptionsViewModel::autoBlurHintText() const
@@ -358,17 +345,14 @@ void PinToolOptionsViewModel::handleMosaicWidthPresetSelected(int width)
         return;
 
     handleWidthChanged(width);
-    emit mosaicBrushAdjustmentLearned();
 }
 
 bool PinToolOptionsViewModel::handleWidthWheelDelta(int delta)
 {
-    if (!m_showWidth || delta == 0)
+    if (!m_showWidth || isMosaicActive() || delta == 0)
         return false;
     int step = delta > 0 ? 1 : -1;
     handleWidthChanged(m_currentWidth + step);
-    if (isMosaicActive())
-        emit mosaicBrushAdjustmentLearned();
     return true;
 }
 

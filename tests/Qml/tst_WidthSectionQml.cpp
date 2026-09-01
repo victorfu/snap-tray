@@ -97,12 +97,12 @@ class tst_WidthSectionQml : public QObject
 
 private slots:
     void testPreviewDotCenterStaysFixedAcrossWidthChanges();
-    void testPreviewRemainsCompactAndSupportsHintEmphasis();
+    void testNonMosaicPreviewRemainsCompact();
     void testMosaicPresetsFollowToolAndHaveExpectedGeometry();
     void testMosaicPresetActiveStateRequiresExactWidth();
-    void testMosaicPresetClickUpdatesWidthAndMarksAdjustmentLearned();
-    void testMosaicPresetAllowsStripWideWheelAdjustment();
-    void testToolOptionsStripForwardsPreviewHoverAnchor();
+    void testMosaicPresetClickUpdatesWidth();
+    void testMosaicPresetConsumesWheelWithoutChangingWidth();
+    void testNonMosaicWidthPreviewAllowsStripWideWheelAdjustment();
     void testToolOptionsStripForwardsAutoBlurHoverAnchor();
 };
 
@@ -151,7 +151,7 @@ void tst_WidthSectionQml::testPreviewDotCenterStaysFixedAcrossWidthChanges()
     }
 }
 
-void tst_WidthSectionQml::testPreviewRemainsCompactAndSupportsHintEmphasis()
+void tst_WidthSectionQml::testNonMosaicPreviewRemainsCompact()
 {
     QQmlEngine engine;
     QQmlComponent component(
@@ -178,12 +178,6 @@ void tst_WidthSectionQml::testPreviewRemainsCompactAndSupportsHintEmphasis()
     QCOMPARE(previewContainer->width(), 22.0);
     QCOMPARE(previewContainer->height(), 22.0);
     QCOMPARE(previewContainer->scale(), 1.0);
-
-    QVERIFY(rootItem->setProperty("hintActive", true));
-    QTRY_VERIFY(previewContainer->scale() > 1.0);
-
-    QVERIFY(rootItem->setProperty("hintActive", false));
-    QTRY_COMPARE(previewContainer->scale(), 1.0);
 }
 
 void tst_WidthSectionQml::testMosaicPresetsFollowToolAndHaveExpectedGeometry()
@@ -221,14 +215,18 @@ void tst_WidthSectionQml::testMosaicPresetsFollowToolAndHaveExpectedGeometry()
     QVERIFY(previewContainer);
     QVERIFY(presetRow);
 
-    QCOMPARE(rootItem->width(), 100.0);
+    QCOMPARE(rootItem->width(), 74.0);
     QCOMPARE(rootItem->height(), 28.0);
     QCOMPARE(previewSlot->width(), 28.0);
     QCOMPARE(previewSlot->height(), 28.0);
+    QVERIFY(!previewSlot->isVisible());
     QCOMPARE(previewContainer->width(), 22.0);
     QCOMPARE(previewContainer->height(), 22.0);
     QVERIFY(presetRow->isVisible());
     QCOMPARE(presetRow->width(), 70.0);
+    const QPointF presetOrigin = presetRow->mapToItem(rootItem, QPointF(0.0, 0.0));
+    QCOMPARE(presetOrigin.x(), 3.0);
+    QCOMPARE(rootItem->width() - presetOrigin.x() - presetRow->width(), 1.0);
 
     const int presetWidths[] = {10, 18, 30};
     const int previewDiameters[] = {6, 10, 14};
@@ -264,6 +262,7 @@ void tst_WidthSectionQml::testMosaicPresetsFollowToolAndHaveExpectedGeometry()
         QVERIFY(viewModel.showWidthSection());
         QCOMPARE(rootItem->width(), 28.0);
         QCOMPARE(rootItem->height(), 28.0);
+        QVERIFY(previewSlot->isVisible());
         QVERIFY(!presetRow->isVisible());
 
         const QPointF expectedCenter = rootItem->mapToScene(QPointF(14.0, 14.0));
@@ -332,7 +331,7 @@ void tst_WidthSectionQml::testMosaicPresetActiveStateRequiresExactWidth()
     verifySelection(false, false, false);
 }
 
-void tst_WidthSectionQml::testMosaicPresetClickUpdatesWidthAndMarksAdjustmentLearned()
+void tst_WidthSectionQml::testMosaicPresetClickUpdatesWidth()
 {
     if (QGuiApplication::screens().isEmpty())
         QSKIP("Mosaic preset click test requires a screen");
@@ -365,8 +364,6 @@ void tst_WidthSectionQml::testMosaicPresetClickUpdatesWidthAndMarksAdjustmentLea
     auto* mediumButton = findVisualItem(
         rootItem, QStringLiteral("mosaicWidthPresetButton_18"));
     QVERIFY(mediumButton);
-    QSignalSpy learnedSpy(
-        &viewModel, &PinToolOptionsViewModel::mosaicBrushAdjustmentLearned);
 
     const QPoint clickPosition = mediumButton->mapToScene(
         QPointF(mediumButton->width() / 2.0,
@@ -374,11 +371,10 @@ void tst_WidthSectionQml::testMosaicPresetClickUpdatesWidthAndMarksAdjustmentLea
     QTest::mouseClick(&view, Qt::LeftButton, Qt::NoModifier, clickPosition);
 
     QTRY_COMPARE(viewModel.currentWidth(), 18);
-    QTRY_COMPARE(learnedSpy.count(), 1);
     QVERIFY(mediumButton->property("selected").toBool());
 }
 
-void tst_WidthSectionQml::testMosaicPresetAllowsStripWideWheelAdjustment()
+void tst_WidthSectionQml::testMosaicPresetConsumesWheelWithoutChangingWidth()
 {
     if (QGuiApplication::screens().isEmpty())
         QSKIP("Mosaic preset wheel test requires a screen");
@@ -423,18 +419,21 @@ void tst_WidthSectionQml::testMosaicPresetAllowsStripWideWheelAdjustment()
                            Qt::NoModifier,
                            Qt::NoScrollPhase,
                            false);
+    wheelEvent.setAccepted(false);
     QCoreApplication::sendEvent(&view, &wheelEvent);
 
-    QTRY_COMPARE(viewModel.currentWidth(), 19);
+    QCOMPARE(viewModel.currentWidth(), 18);
+    QVERIFY(wheelEvent.isAccepted());
 }
 
-void tst_WidthSectionQml::testToolOptionsStripForwardsPreviewHoverAnchor()
+void tst_WidthSectionQml::testNonMosaicWidthPreviewAllowsStripWideWheelAdjustment()
 {
     if (QGuiApplication::screens().isEmpty())
-        QSKIP("Width preview hover test requires a screen");
+        QSKIP("Non-Mosaic width wheel test requires a screen");
 
     PinToolOptionsViewModel viewModel;
-    viewModel.showForTool(static_cast<int>(ToolId::Mosaic));
+    viewModel.showForTool(static_cast<int>(ToolId::Pencil));
+    viewModel.setCurrentWidth(18);
 
     QQuickView view;
     view.rootContext()->setContextProperty(
@@ -453,7 +452,7 @@ void tst_WidthSectionQml::testToolOptionsStripForwardsPreviewHoverAnchor()
 
     view.show();
     if (!QTest::qWaitForWindowExposed(&view))
-        QSKIP("Width preview hover test window could not be exposed");
+        QSKIP("Non-Mosaic width wheel test window could not be exposed");
 
     auto* rootItem = view.rootObject();
     QVERIFY(rootItem);
@@ -461,46 +460,23 @@ void tst_WidthSectionQml::testToolOptionsStripForwardsPreviewHoverAnchor()
         rootItem->findChild<QQuickItem*>(QStringLiteral("widthPreviewContainer"));
     QVERIFY(previewContainer);
 
-    QSignalSpy hoverSpy(
-        rootItem, SIGNAL(mosaicBrushPreviewHovered(double,double,double,double)));
-    QSignalSpy exitSpy(rootItem, SIGNAL(mosaicBrushPreviewHoverExited()));
-    QVERIFY(hoverSpy.isValid());
-    QVERIFY(exitSpy.isValid());
+    const QPointF localPosition = previewContainer->mapToScene(
+        QPointF(previewContainer->width() / 2.0,
+                previewContainer->height() / 2.0));
+    const QPointF globalPosition = view.mapToGlobal(localPosition.toPoint());
+    QWheelEvent wheelEvent(localPosition,
+                           globalPosition,
+                           QPoint(),
+                           QPoint(0, 120),
+                           Qt::NoButton,
+                           Qt::NoModifier,
+                           Qt::NoScrollPhase,
+                           false);
+    wheelEvent.setAccepted(false);
+    QCoreApplication::sendEvent(&view, &wheelEvent);
 
-    QVERIFY(rootItem->setProperty("mosaicBrushHintActive", true));
-    QTRY_VERIFY(previewContainer->scale() > 1.0);
-    QVERIFY(rootItem->setProperty("mosaicBrushHintActive", false));
-
-    const QRectF previewRect = previewContainer->mapRectToScene(
-        QRectF(0.0, 0.0, previewContainer->width(), previewContainer->height()));
-    QTest::mouseMove(&view, QPoint(view.width() - 1, view.height() - 1));
-    QCoreApplication::processEvents();
-    hoverSpy.clear();
-    exitSpy.clear();
-
-    QTest::mouseMove(&view, previewRect.center().toPoint());
-    QTRY_COMPARE(hoverSpy.count(), 1);
-
-    const auto arguments = hoverSpy.takeFirst();
-    const QPointF expectedAnchor = previewContainer->mapToGlobal(QPointF(0.0, 0.0));
-    QVERIFY(qAbs(arguments.at(0).toDouble() - expectedAnchor.x()) < 1.0);
-    QVERIFY(qAbs(arguments.at(1).toDouble() - expectedAnchor.y()) < 1.0);
-    QCOMPARE(arguments.at(2).toDouble(), 22.0);
-    QCOMPARE(arguments.at(3).toDouble(), 22.0);
-
-    QTest::mouseMove(&view, QPoint(view.width() - 1, view.height() - 1));
-    QTRY_COMPARE(exitSpy.count(), 1);
-
-    viewModel.showForTool(static_cast<int>(ToolId::Pencil));
-    QCoreApplication::processEvents();
-    hoverSpy.clear();
-    exitSpy.clear();
-    QTRY_COMPARE(previewContainer->scale(), 1.0);
-
-    QTest::mouseMove(&view, previewRect.center().toPoint());
-    QTest::qWait(150);
-    QCOMPARE(hoverSpy.count(), 0);
-    QCOMPARE(previewContainer->scale(), 1.0);
+    QTRY_COMPARE(viewModel.currentWidth(), 19);
+    QVERIFY(wheelEvent.isAccepted());
 }
 
 void tst_WidthSectionQml::testToolOptionsStripForwardsAutoBlurHoverAnchor()
@@ -534,10 +510,10 @@ void tst_WidthSectionQml::testToolOptionsStripForwardsAutoBlurHoverAnchor()
     QVERIFY(rootItem);
     auto* autoBlurButton =
         rootItem->findChild<QQuickItem*>(QStringLiteral("autoBlurButton"));
-    auto* previewContainer =
-        rootItem->findChild<QQuickItem*>(QStringLiteral("widthPreviewContainer"));
+    auto* presetRow =
+        rootItem->findChild<QQuickItem*>(QStringLiteral("mosaicWidthPresetRow"));
     QVERIFY(autoBlurButton);
-    QVERIFY(previewContainer);
+    QVERIFY(presetRow);
 
     QSignalSpy hoverSpy(
         rootItem, SIGNAL(autoBlurButtonHovered(double,double,double,double)));
@@ -550,12 +526,12 @@ void tst_WidthSectionQml::testToolOptionsStripForwardsAutoBlurHoverAnchor()
     QVERIFY(rootItem->setProperty("autoBlurHintActive", false));
     QTRY_COMPARE(autoBlurButton->scale(), 1.0);
 
-    const QRectF previewRect = previewContainer->mapRectToScene(
-        QRectF(0.0, 0.0, previewContainer->width(), previewContainer->height()));
+    const QRectF presetRect = presetRow->mapRectToScene(
+        QRectF(0.0, 0.0, presetRow->width(), presetRow->height()));
     const QRectF autoBlurRect = autoBlurButton->mapRectToScene(
         QRectF(0.0, 0.0, autoBlurButton->width(), autoBlurButton->height()));
 
-    QTest::mouseMove(&view, previewRect.center().toPoint());
+    QTest::mouseMove(&view, presetRect.center().toPoint());
     QCoreApplication::processEvents();
     hoverSpy.clear();
     exitSpy.clear();
@@ -570,7 +546,7 @@ void tst_WidthSectionQml::testToolOptionsStripForwardsAutoBlurHoverAnchor()
     QCOMPARE(arguments.at(2).toDouble(), 22.0);
     QCOMPARE(arguments.at(3).toDouble(), 22.0);
 
-    QTest::mouseMove(&view, previewRect.center().toPoint());
+    QTest::mouseMove(&view, presetRect.center().toPoint());
     QTRY_COMPARE(exitSpy.count(), 1);
 }
 

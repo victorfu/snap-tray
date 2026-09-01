@@ -17,6 +17,7 @@ private slots:
     void testReleaseOnlyDrag_CommitsStroke();
     void testReleaseAtPressPoint_DoesNotCommitStroke();
     void testMoveThenDistinctRelease_RecordsFinalPointOnce();
+    void testStrokeUsesMosaicWidthSlot();
 };
 
 void TestMosaicToolHandler::testToolIdAndCapabilities()
@@ -136,6 +137,31 @@ void TestMosaicToolHandler::testMoveThenDistinctRelease_RecordsFinalPointOnce()
     QCOMPARE(
         stroke->points(),
         QVector<QPoint>({pressPoint, movePoint, releasePoint}));
+}
+
+void TestMosaicToolHandler::testStrokeUsesMosaicWidthSlot()
+{
+    MosaicToolHandler handler;
+    ToolContext context;
+    context.width = 2;
+    context.mosaicWidth = ToolWidthDefaults::kMosaicBrushLarge;
+
+    auto source = std::make_shared<QPixmap>(64, 64);
+    source->fill(Qt::white);
+    context.sourcePixmap = source;
+
+    std::unique_ptr<AnnotationItem> captured;
+    context.addAnnotation = [&captured](std::unique_ptr<AnnotationItem> item) {
+        captured = std::move(item);
+    };
+
+    handler.onMousePress(&context, QPoint(10, 10));
+    handler.onMouseMove(&context, QPoint(15, 15));
+    handler.onMouseRelease(&context, QPoint(20, 20));
+
+    const auto* stroke = dynamic_cast<MosaicStroke*>(captured.get());
+    QVERIFY(stroke);
+    QCOMPARE(stroke->width(), ToolWidthDefaults::kMosaicBrushLarge);
 }
 
 QTEST_MAIN(TestMosaicToolHandler)
