@@ -36,16 +36,16 @@
 | 類型 | 數量 |
 |---|---:|
 | Confirmed / Open | 35 |
-| Confirmed / In Progress | 2 |
-| Confirmed / Verified | 0 |
+| Confirmed / In Progress | 0 |
+| Confirmed / Verified | 2 |
 | Potential / 待確認 | 2 |
 
 建立本文件時，工作樹已存在兩組未提交候選修正：
 
-- REV-004：Settings test isolation，涉及 include/settings/Settings.h、tests/CMakeLists.txt、tests/TestSettingsIsolation.cpp 等。
-- REV-009：Screen Canvas text interaction cache，涉及 src/ScreenCanvasSession.cpp、src/region/TextAnnotationEditor.cpp 與相關測試。
+- REV-004：Settings test isolation，涉及 include/settings/Settings.h、tests/CMakeLists.txt、tests/TestSettingsIsolation.cpp 等；後續已完成獨立驗證並標為 Verified。
+- REV-009：Screen Canvas text interaction cache，涉及 src/ScreenCanvasSession.cpp、src/region/TextAnnotationEditor.cpp 與相關測試；後續已完成獨立驗證並標為 Verified。
 
-上述變更尚未在本文件建立時完成獨立驗證，因此只能標為 In Progress，不能視為已修復。其餘既有工作樹變更不由本文件認領。
+上述變更在本文件建立時尚未完成獨立驗證；目前 REV-004 與 REV-009 均已符合完成條件並標為 Verified。其餘既有工作樹變更不由本文件認領。
 
 ## Confirmed Issue 總表
 
@@ -54,12 +54,12 @@
 | REV-001 | Open | P0 | High | macOS Release | 官方 DMG 宣稱 macOS 14，相依 Qt payload 實際要求 macOS 26 |
 | REV-002 | Open | P0 | High | Mosaic / HiDPI | Gaussian 自動遮罩只覆蓋部分實體像素 |
 | REV-003 | Open | P0 | High | Windows OCR | 未遵守 OcrEngine MaxImageDimension |
-| REV-004 | In Progress | P0 | High | Tests / Settings | 測試會刪寫真實 SnapTray 設定 |
+| REV-004 | Verified | P0 | High | Tests / Settings | 測試會刪寫真實 SnapTray 設定 |
 | REV-005 | Open | P0 | High | Save / Concurrency | 唯一檔名存在 TOCTOU，可靜默覆寫 |
 | REV-006 | Open | P1 | High | Windows Capture UI | Annotation cache 無上限成長，可耗盡記憶體 |
 | REV-007 | Open | P0 | High | Windows Video | 強制 terminate 並刪除 reader thread，可 crash／UAF |
 | REV-008 | Open | P1 | High | macOS Recording | 首次麥克風授權阻塞主執行緒並破壞時間軸 |
-| REV-009 | In Progress | P1 | High | Screen Canvas | 文字拖移／旋轉／縮放會重用舊快取 |
+| REV-009 | Verified | P1 | High | Screen Canvas | 文字拖移／旋轉／縮放會重用舊快取 |
 | REV-010 | Open | P1 | High | Region Selection | 建立與一般 resize 沒有 clamp 到 bounds |
 | REV-011 | Open | P1 | High | Region Selection | mouse release 忽略最後座標 |
 | REV-012 | Open | P1 | High | Eraser | 只在離散事件點擦除，快速拖曳會留下間隙 |
@@ -120,13 +120,14 @@
 
 ### REV-004 — 測試會修改真實 SnapTray settings
 
-- 狀態：In Progress（目前工作樹有未提交候選修正）
+- 狀態：Verified（修正位於未提交工作樹）
 - 證據：tests/App/tst_MainApplicationTrayMenu.cpp:143-164,359-384；tests/Settings/tst_AnnotationSettingsManager.cpp:84-110；tests/Settings/tst_PinWindowSettingsManager.cpp:68-87；tests/Settings/tst_RegionCaptureSettingsManager.cpp:28-44；tests/Update/tst_UpdateCoordinator.cpp:64-71,95-108；tests/Update/tst_UpdateSettingsManager.cpp:43-60；include/settings/Settings.h:571-581。
 - 觸發：執行上述 test binaries 或 canonical test suite。
 - 後果：tests 直接 remove／write 真實 namespace。Debug 測試可刪除 SnapTray-Debug 的 hotkey、annotation、pin、region、update 偏好；Release-config test 可能污染 production namespace。
 - 實際副作用：本次 Debug 驗證已執行相關 suites；若原本存在這些 Debug keys，可能已被刪除。事前沒有 snapshot，不能安全自動復原；production release namespace 未受這次 Debug build 影響。
 - 完成條件：每個 test process 在 main 前切到獨立暫存 store；以 sentinel 驗證正常結束與異常終止都不改變真實 key 的 existence、type、value；全套測試通過。
-- 修正證據：候選變更位於 include/settings/Settings.h、tests/CMakeLists.txt、tests/TestSettingsIsolation.cpp 與 tests/Settings/tst_SettingsStorageLocation.cpp；尚待驗證。
+- 修正證據：SnapTray::getSettings() 已在 Windows migration／macOS legacy cleanup 前套用 test-only exact-file override；TestSettingsIsolation 會在 main 前為每個 process 建立唯一 QTemporaryDir/settings.ini；tests/CMakeLists.txt 將 bootstrap object 統一注入所有 C++ test／helper executables，正式 app 不包含該 object。process 即使異常終止也只可能留下暫存 store，不需回復真實 namespace。
+- 驗證：generated Debug graph 的 140／140 test／helper executables 均包含 isolation object；20 個直接或間接 settings-writer suites（含 App、Annotation、Pin、Region 與兩個 Update suites）在 standalone／平行執行皆通過；Settings_SettingsStorageLocation 驗證 temporary INI 與 platform store 不同。macOS Debug 全目標建置與 clean Release 的 StorageLocation／RegionCapture 測試通過；Debug／production plist 在 focused test window 前後 SHA-256 不變。完整 suite 的有效結果為 143／143；Windows／Linux runtime 仍由 CI 覆蓋。
 
 ### REV-005 — 唯一檔名配置存在 TOCTOU
 
@@ -166,12 +167,13 @@
 
 ### REV-009 — Screen Canvas 文字 transform 重用舊 annotation cache
 
-- 狀態：In Progress（目前工作樹有未提交候選修正）
+- 狀態：Verified（修正位於未提交工作樹）
 - 證據：src/ScreenCanvasSession.cpp 的 drawAnnotations；src/region/TextAnnotationEditor.cpp 的 start／update／finish dragging/transform；tests/ScreenCanvas/tst_AnnotationRenderHelper.cpp。
 - 觸發：選取文字後拖移、旋轉或縮放；文字 transform 在 interaction 期間不增加 layer revision，舊邏輯也未把 text editor 視為 active interaction。
 - 後果：draw path 可重用含舊文字位置／transform 的快取，畫面出現殘影、舊位置或操作結束後仍顯示 stale content。
 - 完成條件：position／rotation／scale 三種 interaction 的 live frame 與明確 dirty-path frame pixel-equal；release 後 cache revision 更新；Screen Canvas、Region、Pin 均無回歸。
-- 修正證據：目前候選變更涉及 include/ScreenCanvasSession.h、src/ScreenCanvasSession.cpp、src/region/TextAnnotationEditor.cpp 與相關 tests；尚待驗證。
+- 修正證據：ScreenCanvasSession::drawAnnotations 已統一使用 hasActiveAnnotationInteraction，使 text drag／rotation／scale 在 interaction 期間走 exclude-selected dirty path；TextAnnotationEditor::finishDragging／finishTransformation 在 release 時各 invalidate layer cache 一次，move 期間不重建整層 cache。
+- 驗證：ScreenCanvas_AnnotationRenderHelper 以 position／rotation／scale 三列先建立舊 full cache，再驗證 live frame 與明確 dirty-path frame pixel-equal；Tools_TextToolHandler 驗證 move 期間 revision 不變、release 後增加；RegionSelector_TextAnnotationEditor 與全部 PinWindow suites 通過。scripts/build.sh 通過；完整 scripts/run-tests.sh 為 140／143 通過，僅 Platform_GuiClipboardOrdering（sandbox pasteboard）、IPC_SingleInstanceGuardActivation（sandbox IPC）與 Settings_SettingsBackend（sandbox 禁止 /bin/ps）失敗，均不在本項路徑。
 
 ### REV-010 — selection create／一般 resize 沒有 clamp 到 bounds
 
@@ -486,3 +488,5 @@
 | 日期 | 變更 |
 |---|---|
 | 2026-09-01 | 建立全庫 review tracker；37 Confirmed、2 Potential；REV-004 與 REV-009 因既有未提交候選修正標為 In Progress。 |
+| 2026-09-01 | REV-009 完成修正與獨立驗證：文字 position／rotation／scale interaction 改走 dirty-render path，release 後 invalidate layer cache；狀態更新為 Verified。 |
+| 2026-09-01 | REV-004 完成修正與獨立驗證：所有 C++ test process 改用獨立 temporary INI，Debug／Release 真實 settings store 不再被測試刪寫；狀態更新為 Verified。 |

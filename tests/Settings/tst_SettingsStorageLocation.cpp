@@ -71,7 +71,8 @@ QSettings settingsStoreUnderTest()
 #if defined(Q_OS_WIN) || defined(Q_OS_MACOS)
     return platformSettingsStore();
 #else
-    return SnapTray::getSettings();
+    return QSettings(QString::fromLatin1(SnapTray::kOrganizationName),
+                     QString::fromLatin1(SnapTray::kApplicationName));
 #endif
 }
 
@@ -122,6 +123,7 @@ private slots:
     void testLegacyFileCleanupIsIdempotent();
     void testWindowsLegacyCleanupPreservesSiblingKeys();
     void testWindowsNamespaceStoresAreNotCleanupTargets();
+    void testGetSettingsUsesIsolatedTestStore();
     void testStorageLocation();
     void testRoundtripSetReadRemove();
 };
@@ -338,6 +340,24 @@ void tst_SettingsStorageLocation::testWindowsNamespaceStoresAreNotCleanupTargets
         QStringLiteral("HKEY_CURRENT_USER\\Software\\SnapTray\\Debug")));
 #else
     QSKIP("Windows namespace cleanup protection applies only to Windows");
+#endif
+}
+
+void tst_SettingsStorageLocation::testGetSettingsUsesIsolatedTestStore()
+{
+    auto settings = SnapTray::getSettings();
+    QCOMPARE(settings.format(), QSettings::IniFormat);
+
+    const QString actual = normalizeSettingsLocation(settings.fileName());
+    const QString expectedRoot = normalizeSettingsLocation(
+        QDir::tempPath() + QStringLiteral("/snaptray-test-settings-"));
+    QVERIFY2(actual.startsWith(expectedRoot),
+             qPrintable(QStringLiteral("Expected isolated test settings under %1, actual: %2")
+                            .arg(expectedRoot, actual)));
+
+#if defined(Q_OS_WIN) || defined(Q_OS_MACOS)
+    const auto platformSettings = platformSettingsStore();
+    QVERIFY(!SnapTray::isSameSettingsStore(settings, platformSettings));
 #endif
 }
 

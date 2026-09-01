@@ -21,7 +21,9 @@ private slots:
     void testGlobalDoubleClick_StartsReEditAndSyncsColor();
     void testHandleEscape_CancelsInlineEditing();
     void testInteractionMethods_ReturnFalseWithoutContext();
-    void testInteractionMove_DoesNotInvalidateLayerCache();
+    void testInteractionMove_DefersLayerCacheInvalidationUntilRelease();
+    void testInteractionTransform_DefersLayerCacheInvalidationUntilRelease_data();
+    void testInteractionTransform_DefersLayerCacheInvalidationUntilRelease();
 
 private:
     TextToolHandler* m_handler = nullptr;
@@ -143,7 +145,7 @@ void TestTextToolHandler::testInteractionMethods_ReturnFalseWithoutContext()
     QVERIFY(!m_handler->handleInteractionDoubleClick(&emptyContext, QPoint(1, 1)));
 }
 
-void TestTextToolHandler::testInteractionMove_DoesNotInvalidateLayerCache()
+void TestTextToolHandler::testInteractionMove_DefersLayerCacheInvalidationUntilRelease()
 {
     QFont font;
     font.setPointSize(14);
@@ -157,6 +159,62 @@ void TestTextToolHandler::testInteractionMove_DoesNotInvalidateLayerCache()
     const std::uint64_t revisionBeforeMove = m_layer->revision();
     QVERIFY(m_handler->handleInteractionMove(m_context, hitPoint + QPoint(24, 12)));
     QCOMPARE(m_layer->revision(), revisionBeforeMove);
+
+    QVERIFY(m_handler->handleInteractionRelease(m_context, hitPoint + QPoint(24, 12)));
+    QVERIFY(m_layer->revision() > revisionBeforeMove);
+}
+
+void TestTextToolHandler::testInteractionTransform_DefersLayerCacheInvalidationUntilRelease_data()
+{
+    QTest::addColumn<int>("handleValue");
+
+    QTest::newRow("rotation") << static_cast<int>(GizmoHandle::Rotation);
+    QTest::newRow("scale") << static_cast<int>(GizmoHandle::TopRight);
+}
+
+void TestTextToolHandler::testInteractionTransform_DefersLayerCacheInvalidationUntilRelease()
+{
+    QFETCH(int, handleValue);
+    const auto handle = static_cast<GizmoHandle>(handleValue);
+
+    QFont font;
+    font.setPointSize(14);
+    auto item = std::make_unique<TextBoxAnnotation>(
+        QPointF(100, 100), "transform me", font, Qt::green);
+    m_layer->addItem(std::move(item));
+    m_layer->setSelectedIndex(0);
+
+    auto* textItem = dynamic_cast<TextBoxAnnotation*>(m_layer->selectedItem());
+    QVERIFY(textItem != nullptr);
+
+    QPoint start;
+    QPoint next;
+    if (handle == GizmoHandle::Rotation) {
+        start = TransformationGizmo::rotationHandlePosition(textItem).toPoint();
+        next = textItem->center().toPoint() + QPoint(70, 0);
+    }
+    else {
+        const QPointF center = textItem->center();
+        const QPointF corner = TransformationGizmo::cornerHandlePositions(textItem).at(1);
+        start = corner.toPoint();
+        next = (center + (corner - center) * 1.7).toPoint();
+    }
+
+    QVERIFY(m_handler->handleInteractionPress(m_context, start, false));
+    QVERIFY(m_textAnnotationEditor->isTransforming());
+
+    const std::uint64_t revisionBeforeMove = m_layer->revision();
+    QVERIFY(m_handler->handleInteractionMove(m_context, next));
+    QCOMPARE(m_layer->revision(), revisionBeforeMove);
+    if (handle == GizmoHandle::Rotation) {
+        QVERIFY(qAbs(textItem->rotation() - 90.0) < 2.0);
+    }
+    else {
+        QVERIFY(textItem->scale() > 1.6 && textItem->scale() < 1.8);
+    }
+
+    QVERIFY(m_handler->handleInteractionRelease(m_context, next));
+    QVERIFY(m_layer->revision() > revisionBeforeMove);
 }
 
 QTEST_MAIN(TestTextToolHandler)

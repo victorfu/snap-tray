@@ -61,6 +61,7 @@ class ScreenCanvasSession : public QObject
     friend class TestScreenCanvasPlacement;
     friend class TestScreenCanvasSessionRecovery;
     friend class TestScreenCanvasCopyExport;
+    friend class TestScreenCanvasAnnotationRenderHelper;
 
 public:
     struct ToolbarPlacementResolution

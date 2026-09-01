@@ -50,6 +50,22 @@ inline constexpr int kSettingsCleanupVersion = 6;
 inline constexpr int kMacSettingsCleanupVersion = 7;
 #endif
 
+namespace detail {
+
+inline QString& settingsPathOverrideForTests()
+{
+    static QString path;
+    return path;
+}
+
+} // namespace detail
+
+// Test bootstrap only. Call before any settings manager is used.
+inline void setSettingsPathOverrideForTests(const QString& filePath)
+{
+    detail::settingsPathOverrideForTests() = filePath;
+}
+
 inline bool isDebugSettingsNamespace()
 {
     return QString::fromLatin1(SNAPTRAY_APP_BUNDLE_ID).endsWith(QStringLiteral(".debug"));
@@ -570,6 +586,11 @@ inline void ensureMacLegacySettingsCleanup()
 
 inline QSettings getSettings()
 {
+    const QString testSettingsPath = detail::settingsPathOverrideForTests();
+    if (!testSettingsPath.isEmpty()) {
+        return QSettings(testSettingsPath, QSettings::IniFormat);
+    }
+
 #if defined(Q_OS_WIN)
     ensureSettingsMigration();
     return platformSettingsStore();

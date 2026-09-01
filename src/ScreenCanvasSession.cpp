@@ -1240,12 +1240,6 @@ void ScreenCanvasSession::drawAnnotations(ScreenCanvas* surface, QPainter& paint
         ? surface->canvasScreen()->devicePixelRatio()
         : surface->devicePixelRatioF();
     const QPoint origin = surface->annotationOffset();
-    const ScreenCanvas* interactionSurface = m_grabbedSurface ? m_grabbedSurface.data() : m_activeSurface.data();
-    const bool shapeInteractionActive =
-        interactionSurface &&
-        interactionSurface->shapeAnnotationEditor() &&
-        (interactionSurface->shapeAnnotationEditor()->isDragging() ||
-         interactionSurface->shapeAnnotationEditor()->isTransforming());
 
     snaptray::annotation::SelectedAnnotationItems selectedItems;
     selectedItems.text = getSelectedTextAnnotation();
@@ -1260,8 +1254,7 @@ void ScreenCanvasSession::drawAnnotations(ScreenCanvas* surface, QPainter& paint
         surface->size(),
         devicePixelRatio,
         origin,
-        m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating ||
-            m_isArrowDragging || m_isPolylineDragging || shapeInteractionActive,
+        hasActiveAnnotationInteraction(),
         selectedItems);
 }
 

@@ -9,6 +9,17 @@
 find_package(Qt6 REQUIRED COMPONENTS Test)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
+# Compile this bootstrap directly into every C++ test executable. It enables
+# a test-only settings override before main() and gives each process its own
+# temporary INI store, so calls through SnapTray::getSettings() cannot read,
+# remove, or overwrite the user's SnapTray settings.
+add_library(snaptray_test_settings_isolation OBJECT TestSettingsIsolation.cpp)
+target_include_directories(snaptray_test_settings_isolation PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_BINARY_DIR}/generated
+)
+target_link_libraries(snaptray_test_settings_isolation PRIVATE Qt6::Core)
+
 add_test(
     NAME Packaging_MacMicrophoneMetadata
     COMMAND ${Python3_EXECUTABLE}
@@ -313,7 +324,7 @@ add_test(NAME ScreenCanvas_CopyExport COMMAND ScreenCanvas_CopyExport)
 set_tests_properties(ScreenCanvas_CopyExport PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
 add_executable(ScreenCanvas_AnnotationRenderHelper ScreenCanvas/tst_AnnotationRenderHelper.cpp)
-target_link_libraries(ScreenCanvas_AnnotationRenderHelper PRIVATE snaptray_ui Qt6::Test)
+target_link_libraries(ScreenCanvas_AnnotationRenderHelper PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
 target_include_directories(ScreenCanvas_AnnotationRenderHelper PRIVATE ${CMAKE_SOURCE_DIR}/src)
 add_test(NAME ScreenCanvas_AnnotationRenderHelper COMMAND ScreenCanvas_AnnotationRenderHelper)
 set_tests_properties(ScreenCanvas_AnnotationRenderHelper PROPERTIES TIMEOUT 60 LABELS "unit")
@@ -1025,6 +1036,18 @@ add_test(
             ${CMAKE_SOURCE_DIR}/scripts/render_release_notes_page.py
 )
 set_tests_properties(Update_RenderReleaseNotesPage PROPERTIES TIMEOUT 60 LABELS "unit")
+
+# Keep this after all test executable declarations so newly added test targets
+# are isolated automatically as well.
+get_property(snaptray_test_targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
+foreach(snaptray_test_target IN LISTS snaptray_test_targets)
+    get_target_property(snaptray_test_target_type ${snaptray_test_target} TYPE)
+    if(snaptray_test_target_type STREQUAL "EXECUTABLE")
+        target_sources(${snaptray_test_target} PRIVATE
+            $<TARGET_OBJECTS:snaptray_test_settings_isolation>
+        )
+    endif()
+endforeach()
 
 # ============================================================================
 # CTest Label Summary

@@ -272,8 +272,15 @@ void TextAnnotationEditor::updateTransformation(const QPoint& pos)
 
 void TextAnnotationEditor::finishTransformation()
 {
+    if (!m_isTransforming) {
+        return;
+    }
+
     m_isTransforming = false;
     m_activeGizmoHandle = GizmoHandle::None;
+    if (m_annotationLayer) {
+        m_annotationLayer->invalidateCache();
+    }
 }
 
 void TextAnnotationEditor::startDragging(const QPoint& pos)
@@ -297,7 +304,14 @@ void TextAnnotationEditor::updateDragging(const QPoint& pos)
 
 void TextAnnotationEditor::finishDragging()
 {
+    if (!m_isDragging) {
+        return;
+    }
+
     m_isDragging = false;
+    if (m_annotationLayer) {
+        m_annotationLayer->invalidateCache();
+    }
 }
 
 void TextAnnotationEditor::setBold(bool enabled)
