@@ -354,7 +354,7 @@ void SettingsBackend::setStartOnLogin(bool v)
     emit startOnLoginStateChanged();
 
     QPointer<SettingsBackend> safeThis(this);
-    QCoreApplication* dispatcher = QCoreApplication::instance();
+    QPointer<QCoreApplication> dispatcher(QCoreApplication::instance());
     AutoLaunchManager::setEnabledAsync(
         v,
         [safeThis, dispatcher](AutoLaunchStatus status) mutable {
@@ -362,7 +362,7 @@ void SettingsBackend::setStartOnLogin(bool v)
                 return;
             }
             QMetaObject::invokeMethod(
-                dispatcher,
+                dispatcher.data(),
                 [safeThis, status = std::move(status)]() mutable {
                     if (safeThis) {
                         safeThis->applyStartOnLoginStatus(status);
@@ -375,14 +375,14 @@ void SettingsBackend::setStartOnLogin(bool v)
 void SettingsBackend::refreshStartOnLoginStatus()
 {
     QPointer<SettingsBackend> safeThis(this);
-    QCoreApplication* dispatcher = QCoreApplication::instance();
+    QPointer<QCoreApplication> dispatcher(QCoreApplication::instance());
     AutoLaunchManager::queryStatus(
         [safeThis, dispatcher](AutoLaunchStatus status) mutable {
             if (!dispatcher) {
                 return;
             }
             QMetaObject::invokeMethod(
-                dispatcher,
+                dispatcher.data(),
                 [safeThis, status = std::move(status)]() mutable {
                     if (safeThis) {
                         safeThis->applyStartOnLoginStatus(status);

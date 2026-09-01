@@ -181,13 +181,18 @@ void PencilStroke::draw(QPainter &painter) const
     painter.setBrush(Qt::NoBrush);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    if (!m_cachedPath.isEmpty()) {
-        painter.drawPath(m_cachedPath);
-    }
+    const bool requiresSinglePath =
+        m_lineStyle != LineStyle::Solid || m_color.alpha() != 255;
+    if (requiresSinglePath && !m_finalized) {
+        painter.drawPath(buildSmoothPath(m_points));
+    } else {
+        if (!m_cachedPath.isEmpty()) {
+            painter.drawPath(m_cachedPath);
+        }
 
-    if (!m_tailPath.isEmpty()) {
-        painter.setPen(pen);
-        painter.drawPath(m_tailPath);
+        if (!m_tailPath.isEmpty()) {
+            painter.drawPath(m_tailPath);
+        }
     }
 
     painter.restore();
@@ -202,7 +207,7 @@ void PencilStroke::drawPreview(QPainter &painter) const
     // The sparse coverage cache is bit-stable for the normal opaque solid
     // Pencil. Dashed/dotted phase and translucent self-overlap must retain the
     // canonical single-path compositor semantics, so those modes use the
-    // persistent vector caches instead of an approximate raster shortcut.
+    // canonical vector path instead of an approximate raster shortcut.
     const QPair<qreal, qreal> deviceScales = previewDeviceScales(painter);
     if (m_lineStyle != LineStyle::Solid || m_color.alpha() != 255 ||
         !supportsExactPreviewRasterTransform(painter, deviceScales)) {
@@ -321,9 +326,16 @@ void PencilStroke::addPoint(const QPointF &point)
 
 void PencilStroke::finalize()
 {
-    // The immutable prefix and live tail are already persistent paths. Keeping
-    // their boundary preserves existing dash phase and alpha-overlap behavior
-    // without rebuilding geometry on subsequent completed-stroke paints.
+    // For styles where separate painter calls change the output, pay the
+    // one-time cost of consolidating the incremental prefix/tail caches.
+    // Opaque solid strokes keep their existing caches because the split is
+    // visually stable and avoids changing the active-stroke raster baseline.
+    if (m_lineStyle != LineStyle::Solid || m_color.alpha() != 255) {
+        m_cachedPath = buildSmoothPath(m_points);
+        m_tailPath = QPainterPath();
+        m_cachedSegmentCount = qMax(0, m_points.size() - 1);
+    }
+    m_previewAffectedPath = QPainterPath();
     m_finalized = true;
     m_previewRasterCaches.clear();
 }
@@ -536,13 +548,16 @@ QPainterPath PencilStroke::strokePath() const
         return QPainterPath();
     }
 
-    // Recreate the same cached/tail subpaths used by draw(). Keeping the
-    // subpath boundary preserves the round-cap geometry at their shared seam.
-    QPainterPath linePath = m_cachedPath;
-    if (linePath.isEmpty()) {
-        linePath = m_tailPath;
-    } else if (!m_tailPath.isEmpty()) {
-        linePath.addPath(m_tailPath);
+    QPainterPath linePath;
+    if (m_lineStyle != LineStyle::Solid || m_color.alpha() != 255) {
+        linePath = m_finalized ? m_cachedPath : buildSmoothPath(m_points);
+    } else {
+        linePath = m_cachedPath;
+        if (linePath.isEmpty()) {
+            linePath = m_tailPath;
+        } else if (!m_tailPath.isEmpty()) {
+            linePath.addPath(m_tailPath);
+        }
     }
 
     QPainterPathStroker stroker;

@@ -76,6 +76,33 @@ QImage renderStroke(PencilStroke& stroke,
     return image;
 }
 
+QImage renderStraightReference(const QVector<QPointF>& points,
+                               const QColor& color,
+                               int width,
+                               LineStyle lineStyle)
+{
+    QImage image(QSize(700, 500), QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+
+    Qt::PenStyle penStyle = Qt::SolidLine;
+    if (lineStyle == LineStyle::Dashed) {
+        penStyle = Qt::DashLine;
+    } else if (lineStyle == LineStyle::Dotted) {
+        penStyle = Qt::DotLine;
+    }
+
+    QPainterPath path;
+    path.moveTo(points.first());
+    path.lineTo(points.last());
+
+    QPainter painter(&image);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setPen(QPen(color, width, penStyle, Qt::RoundCap, Qt::RoundJoin));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawPath(path);
+    return image;
+}
+
 quint64 totalAlpha(const QImage& image)
 {
     quint64 total = 0;
@@ -136,6 +163,8 @@ private slots:
     void testTranslate_PreservesCachedPathPlacement();
     void testPreviewRasterMatchesVectorCoverage_data();
     void testPreviewRasterMatchesVectorCoverage();
+    void testDrawMatchesSinglePathReference_data();
+    void testDrawMatchesSinglePathReference();
     void testFinalizePreservesRendering_data();
     void testFinalizePreservesRendering();
     void testPreviewRasterPreservesSelfOverlapAlpha_data();
@@ -305,6 +334,42 @@ void TestPencilStroke::testPreviewRasterMatchesVectorCoverage()
     QVERIFY(previewBounds.isValid());
     QVERIFY(vectorBounds.adjusted(-2, -2, 2, 2).contains(previewBounds));
     QVERIFY(previewBounds.adjusted(-2, -2, 2, 2).contains(vectorBounds));
+}
+
+void TestPencilStroke::testDrawMatchesSinglePathReference_data()
+{
+    QTest::addColumn<int>("lineStyle");
+    QTest::addColumn<QColor>("color");
+
+    QTest::newRow("solid-translucent")
+        << static_cast<int>(LineStyle::Solid) << QColor(220, 20, 70, 128);
+    QTest::newRow("dashed-opaque")
+        << static_cast<int>(LineStyle::Dashed) << QColor(220, 20, 70);
+    QTest::newRow("dotted-opaque")
+        << static_cast<int>(LineStyle::Dotted) << QColor(220, 20, 70);
+}
+
+void TestPencilStroke::testDrawMatchesSinglePathReference()
+{
+    QFETCH(int, lineStyle);
+    QFETCH(QColor, color);
+
+    const QVector<QPointF> points = {
+        QPointF(20.0, 250.0),
+        QPointF(47.0, 250.0),
+        QPointF(74.0, 250.0),
+        QPointF(101.0, 250.0),
+        QPointF(128.0, 250.0),
+        QPointF(155.0, 250.0),
+        QPointF(182.0, 250.0)
+    };
+    const auto style = static_cast<LineStyle>(lineStyle);
+    PencilStroke stroke(points, color, 7, style);
+    const QImage reference = renderStraightReference(points, color, 7, style);
+
+    QCOMPARE(renderStroke(stroke, false, 1.0, 0.0), reference);
+    stroke.finalize();
+    QCOMPARE(renderStroke(stroke, false, 1.0, 0.0), reference);
 }
 
 void TestPencilStroke::testFinalizePreservesRendering_data()
