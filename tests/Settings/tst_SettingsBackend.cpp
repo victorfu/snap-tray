@@ -5,6 +5,7 @@
 #include "AutoLaunchManager.h"
 #include "hotkey/HotkeyTypes.h"
 #include "qml/SettingsBackend.h"
+#include "settings/AutoLaunchSettingsManager.h"
 #include "settings/RecordingSettingsManager.h"
 #include "settings/Settings.h"
 #include "update/IUpdateService.h"
@@ -89,10 +90,9 @@ private slots:
     void testShouldPromptWindowsPrintScreenDisable_DecisionMatrix();
     void testFeatureSupportPropertiesFollowPlatformCapabilities();
     void testHotkeyCategoriesHideRecordingWhenUnsupported();
-#ifdef Q_OS_WIN
-    void testStartOnLoginStatusReflectsWindowsState_data();
-    void testStartOnLoginStatusReflectsWindowsState();
-#endif
+    void testStartOnLoginRequestPersistsAcceptedIntent();
+    void testStartOnLoginStatusReflectsSystemState_data();
+    void testStartOnLoginStatusReflectsSystemState();
 
 private:
     void clearTestSettings();
@@ -173,40 +173,85 @@ void tst_SettingsBackend::installFakeUpdateService(UpdateCheckResult result)
         });
 }
 
-#ifdef Q_OS_WIN
-void tst_SettingsBackend::testStartOnLoginStatusReflectsWindowsState_data()
+void tst_SettingsBackend::testStartOnLoginRequestPersistsAcceptedIntent()
+{
+    SettingsBackend backend;
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.startOnLoginBusy(), 5000);
+
+    backend.m_startOnLoginCanChange = true;
+    const bool requested = !backend.startOnLogin();
+    AutoLaunchSettingsManager::instance().savePreferredEnabled(!requested);
+    QCOMPARE(
+        AutoLaunchSettingsManager::instance().loadPreferredEnabled(),
+        std::optional<bool>(!requested));
+
+    bool setterCalled = false;
+    backend.setStartOnLoginWithSetter(
+        requested,
+        [&setterCalled, requested](bool enabled, auto completion) {
+            Q_UNUSED(completion);
+            setterCalled = true;
+            QCOMPARE(enabled, requested);
+        });
+
+    QVERIFY(setterCalled);
+    QVERIFY(backend.startOnLoginBusy());
+    QVERIFY(!backend.startOnLoginCanChange());
+    QCOMPARE(
+        AutoLaunchSettingsManager::instance().loadPreferredEnabled(),
+        std::optional<bool>(requested));
+}
+
+void tst_SettingsBackend::testStartOnLoginStatusReflectsSystemState_data()
 {
     QTest::addColumn<AutoLaunchState>("state");
     QTest::addColumn<QString>("errorMessage");
     QTest::addColumn<bool>("enabled");
     QTest::addColumn<bool>("canChange");
     QTest::addColumn<bool>("hasDescription");
+    QTest::addColumn<bool>("initialPreference");
+    QTest::addColumn<bool>("expectedPreference");
 
     QTest::newRow("disabled")
-        << AutoLaunchState::Disabled << QString() << false << true << false;
+        << AutoLaunchState::Disabled << QString() << false << true << false
+        << true << false;
     QTest::newRow("enabled")
-        << AutoLaunchState::Enabled << QString() << true << true << false;
+        << AutoLaunchState::Enabled << QString() << true << true << false
+        << false << true;
     QTest::newRow("disabled-by-user")
-        << AutoLaunchState::DisabledByUser << QString() << false << false << true;
+        << AutoLaunchState::DisabledByUser << QString() << false << false << true
+        << true << true;
     QTest::newRow("disabled-by-policy")
-        << AutoLaunchState::DisabledByPolicy << QString() << false << false << true;
+        << AutoLaunchState::DisabledByPolicy << QString() << false << false << true
+        << true << true;
     QTest::newRow("enabled-by-policy")
-        << AutoLaunchState::EnabledByPolicy << QString() << true << false << true;
+        << AutoLaunchState::EnabledByPolicy << QString() << true << false << true
+        << false << false;
     QTest::newRow("unavailable")
-        << AutoLaunchState::Unavailable << QString() << false << false << true;
+        << AutoLaunchState::Unavailable << QString() << false << false << true
+        << true << true;
     QTest::newRow("operation-error")
-        << AutoLaunchState::Disabled << QStringLiteral("boom") << false << true << true;
+        << AutoLaunchState::Disabled << QStringLiteral("boom") << false << true << true
+        << true << true;
 }
 
-void tst_SettingsBackend::testStartOnLoginStatusReflectsWindowsState()
+void tst_SettingsBackend::testStartOnLoginStatusReflectsSystemState()
 {
     QFETCH(AutoLaunchState, state);
     QFETCH(QString, errorMessage);
     QFETCH(bool, enabled);
     QFETCH(bool, canChange);
     QFETCH(bool, hasDescription);
+    QFETCH(bool, initialPreference);
+    QFETCH(bool, expectedPreference);
 
     SettingsBackend backend;
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.startOnLoginBusy(), 5000);
+
+    AutoLaunchSettingsManager::instance().savePreferredEnabled(initialPreference);
+    QCOMPARE(
+        AutoLaunchSettingsManager::instance().loadPreferredEnabled(),
+        std::optional<bool>(initialPreference));
     backend.applyStartOnLoginStatus({state, errorMessage});
 
     QCOMPARE(backend.startOnLogin(), enabled);
@@ -216,8 +261,10 @@ void tst_SettingsBackend::testStartOnLoginStatusReflectsWindowsState()
     if (!errorMessage.isEmpty()) {
         QVERIFY(backend.startOnLoginStatusText().contains(errorMessage));
     }
+    QCOMPARE(
+        AutoLaunchSettingsManager::instance().loadPreferredEnabled(),
+        std::optional<bool>(expectedPreference));
 }
-#endif
 
 void tst_SettingsBackend::testAvailableLanguages_PrioritizesConfiguredAsianLanguages()
 {

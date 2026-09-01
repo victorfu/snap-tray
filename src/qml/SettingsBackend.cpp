@@ -344,10 +344,25 @@ void SettingsBackend::refreshStartOnLogin()
 
 void SettingsBackend::setStartOnLogin(bool v)
 {
-    if (m_startOnLogin == v || m_startOnLoginBusy || !m_startOnLoginCanChange) {
+    setStartOnLoginWithSetter(
+        v,
+        [](bool enabled, StartOnLoginCompletion completion) {
+            AutoLaunchManager::setEnabledAsync(enabled, std::move(completion));
+        });
+}
+
+void SettingsBackend::setStartOnLoginWithSetter(
+    bool v,
+    const StartOnLoginSetter& setter)
+{
+    if (!setter || m_startOnLogin == v || m_startOnLoginBusy
+        || !m_startOnLoginCanChange) {
         return;
     }
 
+    // Record the accepted intent before the OS can answer with a non-mutable
+    // intermediate state such as macOS RequiresApproval.
+    AutoLaunchSettingsManager::instance().savePreferredEnabled(v);
     m_startOnLoginBusy = true;
     m_startOnLoginCanChange = false;
     m_startOnLoginStatusText = tr("Updating start on login status...");
@@ -355,7 +370,7 @@ void SettingsBackend::setStartOnLogin(bool v)
 
     QPointer<SettingsBackend> safeThis(this);
     QPointer<QCoreApplication> dispatcher(QCoreApplication::instance());
-    AutoLaunchManager::setEnabledAsync(
+    setter(
         v,
         [safeThis, dispatcher](AutoLaunchStatus status) mutable {
             if (!dispatcher) {
@@ -425,7 +440,9 @@ void SettingsBackend::applyStartOnLoginStatus(const AutoLaunchStatus& status)
         }
     }
 
-    if (status.state != AutoLaunchState::Unavailable && status.errorMessage.isEmpty()) {
+    // Only authoritative mutable states may reconcile the saved intent. User-
+    // or policy-managed states can differ from the preference temporarily.
+    if (status.canChange() && status.errorMessage.isEmpty()) {
         AutoLaunchSettingsManager::instance().savePreferredEnabled(m_startOnLogin);
     }
 

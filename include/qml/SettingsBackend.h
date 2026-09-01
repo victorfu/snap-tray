@@ -7,6 +7,8 @@
 #include <QStringList>
 #include <QVariantList>
 
+#include <functional>
+
 class tst_SettingsBackend;
 struct AutoLaunchStatus;
 template<typename T>
@@ -351,7 +353,11 @@ signals:
 private:
     friend class ::tst_SettingsBackend;
 
+    using StartOnLoginCompletion = std::function<void(AutoLaunchStatus)>;
+    using StartOnLoginSetter = std::function<void(bool, StartOnLoginCompletion)>;
+
     void loadAllSettings();
+    void setStartOnLoginWithSetter(bool v, const StartOnLoginSetter& setter);
     void refreshStartOnLoginStatus();
     void applyStartOnLoginStatus(const AutoLaunchStatus& status);
     QString computeFilenamePreview() const;
