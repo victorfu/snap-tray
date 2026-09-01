@@ -519,6 +519,11 @@ Datos žetonai: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} arba {date}</translatio
         <translation>Įrašymo klaida</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="262" />
+        <source>Recording Warning</source>
+        <translation>Įrašymo įspėjimas</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="297" />
         <location filename="../src/MainApplication.cpp" line="313" />
         <source>Screenshot Saved</source>

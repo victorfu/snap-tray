@@ -525,6 +525,11 @@ Tokeny data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} nebo {date}</translation>
         <translation>Chyba nahrávání</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="262" />
+        <source>Recording Warning</source>
+        <translation>Upozornění k nahrávání</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="297" />
         <location filename="../src/MainApplication.cpp" line="313" />
         <source>Screenshot Saved</source>

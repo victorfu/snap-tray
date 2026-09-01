@@ -28,6 +28,7 @@ private slots:
     void testMosaicBrushSizeHintTranslatedForAllLocales();
     void testAutoBlurHintTranslatedForAllLocales();
     void testRecordingPreviewAudioNoticeTranslatedForAllLocales();
+    void testRecordingWarningTitleTranslatedForAllLocales();
     void testRecordingAudioWarningsTranslatedForAllLocales();
 
 private:
@@ -309,6 +310,36 @@ void tst_QmlTranslations::testRecordingPreviewAudioNoticeTranslatedForAllLocales
                                 .arg(qmFile)));
         QVERIFY2(translated != QString::fromUtf8(source),
                  qPrintable(QStringLiteral("%1 fell back to English for the preview-audio notice")
+                                .arg(qmFile)));
+    }
+}
+
+void tst_QmlTranslations::testRecordingWarningTitleTranslatedForAllLocales()
+{
+    const QByteArray context = "MainApplication";
+    const QByteArray source = "Recording Warning";
+
+    const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
+    const QStringList qmFiles = translationsDir.entryList(
+        {QStringLiteral("snaptray_*.qm")},
+        QDir::Files,
+        QDir::Name);
+    QCOMPARE(qmFiles.size(), 24);
+
+    for (const QString& qmFile : qmFiles) {
+        QTranslator translator;
+        const QString path = translationsDir.filePath(qmFile);
+        QVERIFY2(translator.load(path),
+                 qPrintable(QStringLiteral("Failed to load translation file: %1").arg(path)));
+
+        const QString translated = translator.translate(context.constData(),
+                                                        source.constData());
+        QVERIFY2(!translated.isEmpty(),
+                 qPrintable(QStringLiteral("%1 is missing the recording warning title")
+                                .arg(qmFile)));
+        QVERIFY2(translated != QString::fromUtf8(source),
+                 qPrintable(QStringLiteral(
+                                "%1 fell back to English for the recording warning title")
                                 .arg(qmFile)));
     }
 }

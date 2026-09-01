@@ -590,6 +590,11 @@ File size: %3</source>
         <translation>ข้อผิดพลาดในการบันทึก</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="262"/>
+        <source>Recording Warning</source>
+        <translation>คำเตือนเกี่ยวกับการบันทึก</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="331"/>
         <location filename="../src/MainApplication.cpp" line="347"/>
         <source>Screenshot Saved</source>

@@ -525,6 +525,11 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>録画エラー</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="262" />
+        <source>Recording Warning</source>
+        <translation>録画に関する警告</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="297" />
         <location filename="../src/MainApplication.cpp" line="313" />
         <source>Screenshot Saved</source>

@@ -519,6 +519,11 @@ Token ngày: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, hoặc {date}</translatio
         <translation>Lỗi ghi hình</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="262" />
+        <source>Recording Warning</source>
+        <translation>Cảnh báo ghi hình</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="297" />
         <location filename="../src/MainApplication.cpp" line="313" />
         <source>Screenshot Saved</source>

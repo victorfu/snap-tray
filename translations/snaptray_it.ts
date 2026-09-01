@@ -525,6 +525,11 @@ Token di data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} o {date}</translation>
         <translation>Errore di registrazione</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="262" />
+        <source>Recording Warning</source>
+        <translation>Avviso sulla registrazione</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="297" />
         <location filename="../src/MainApplication.cpp" line="313" />
         <source>Screenshot Saved</source>
