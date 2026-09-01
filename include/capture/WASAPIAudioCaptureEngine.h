@@ -110,6 +110,17 @@ private:
                             const QByteArray& pcm,
                             qint64 timestampNs,
                             const NativeFormatInfo& nativeFormat);
+    bool processCapturedAudioPacket(
+        SnapTray::Audio::Source source,
+        const QByteArray& pcm,
+        qint64 timestampNs,
+        const NativeFormatInfo& nativeFormat,
+        quint64 pauseGeneration);
+    void processAudioPacketWhileGateHeld(
+        SnapTray::Audio::Source source,
+        const QByteArray& pcm,
+        qint64 timestampNs,
+        const NativeFormatInfo& nativeFormat);
     void advanceMixerTimeline(qint64 activeTimeNs);
     qint64 currentActiveTimeNs() const;
     qint64 packetTimestampNs(quint64 qpcPosition100ns,
@@ -168,6 +179,12 @@ private:
     qint64 m_pausedDuration = 0;
     qint64 m_pauseStartTime = 0;
     mutable QMutex m_timingMutex;
+
+    // Serializes final packet admission with pause/resume transitions. Capture
+    // snapshots the generation before querying WASAPI, then revalidates it
+    // under this gate. Lock order: packet gate, timing, then mixer.
+    QMutex m_packetGate;
+    std::atomic<quint64> m_pauseGeneration{0};
 
     // Native audio format info (for conversion and mixing)
     NativeFormatInfo m_micNativeFormat;

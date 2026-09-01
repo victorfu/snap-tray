@@ -57,6 +57,7 @@ private slots:
     void canonicalPipelineKeepsPendingBounded();
     void periodicTimelineAdvanceBoundsSilentOutput();
     void packetTimestampUsesSharedQpcTimeline();
+    void stalePacketIsRejectedAcrossPauseResume();
     void sourceFailureReportsExplicitDegradation();
 };
 
@@ -527,6 +528,49 @@ void TestWASAPIAudioCaptureEngineThreadSafetyWin::packetTimestampUsesSharedQpcTi
                  480,
                  format),
              qint64(7000000));
+}
+
+void TestWASAPIAudioCaptureEngineThreadSafetyWin::stalePacketIsRejectedAcrossPauseResume()
+{
+    WASAPIAudioCaptureEngine engine;
+    SnapTray::Audio::TimestampedPcmMixer::Config config;
+    config.microphoneEnabled = true;
+    config.systemAudioEnabled = true;
+    engine.m_mixer = std::make_unique<SnapTray::Audio::TimestampedPcmMixer>(config);
+    engine.m_startTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+    engine.m_running = true;
+
+    WASAPIAudioCaptureEngine::NativeFormatInfo format;
+    format.channels = 1;
+    format.sampleRate = 48000;
+    const QByteArray packet(480 * static_cast<int>(sizeof(int16_t)), '\0');
+
+    const quint64 staleGeneration = engine.m_pauseGeneration.load();
+    engine.pause();
+    engine.resume();
+    QCOMPARE(engine.m_pauseGeneration.load(), staleGeneration + 2);
+
+    QVERIFY(!engine.processCapturedAudioPacket(
+        SnapTray::Audio::Source::Microphone,
+        packet,
+        0,
+        format,
+        staleGeneration));
+    QCOMPARE(engine.m_mixer->pendingFrames(
+                 SnapTray::Audio::Source::Microphone),
+             qint64(0));
+
+    const quint64 currentGeneration = engine.m_pauseGeneration.load();
+    const qint64 currentTimestampNs = engine.currentActiveTimeNs();
+    QVERIFY(engine.processCapturedAudioPacket(
+        SnapTray::Audio::Source::Microphone,
+        packet,
+        currentTimestampNs,
+        format,
+        currentGeneration));
+    QVERIFY(engine.m_mixer->pendingFrames(
+                SnapTray::Audio::Source::Microphone) > 0);
 }
 
 void TestWASAPIAudioCaptureEngineThreadSafetyWin::sourceFailureReportsExplicitDegradation()

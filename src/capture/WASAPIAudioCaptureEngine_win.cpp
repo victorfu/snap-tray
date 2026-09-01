@@ -489,6 +489,35 @@ void WASAPIAudioCaptureEngine::processAudioPacket(
     qint64 timestampNs,
     const NativeFormatInfo& nativeFormat)
 {
+    processCapturedAudioPacket(
+        source,
+        pcm,
+        timestampNs,
+        nativeFormat,
+        m_pauseGeneration.load());
+}
+
+bool WASAPIAudioCaptureEngine::processCapturedAudioPacket(
+    SnapTray::Audio::Source source,
+    const QByteArray& pcm,
+    qint64 timestampNs,
+    const NativeFormatInfo& nativeFormat,
+    quint64 pauseGeneration)
+{
+    QMutexLocker packetGateLocker(&m_packetGate);
+    if (m_paused || pauseGeneration != m_pauseGeneration.load()) {
+        return false;
+    }
+    processAudioPacketWhileGateHeld(source, pcm, timestampNs, nativeFormat);
+    return true;
+}
+
+void WASAPIAudioCaptureEngine::processAudioPacketWhileGateHeld(
+    SnapTray::Audio::Source source,
+    const QByteArray& pcm,
+    qint64 timestampNs,
+    const NativeFormatInfo& nativeFormat)
+{
     const qint64 activeTimeNs = currentActiveTimeNs();
     QMutexLocker mixerLocker(&m_mixerDeliveryMutex);
     if (!m_mixer || pcm.isEmpty()) {
@@ -764,6 +793,7 @@ bool WASAPIAudioCaptureEngine::start()
     m_stopRequested = false;
     m_running = true;
     m_paused = false;
+    m_pauseGeneration = 0;
     enableDataCallbacks();
 
     // Start capture thread - it will do ALL COM initialization
@@ -951,12 +981,14 @@ void WASAPIAudioCaptureEngine::finishDataCallback()
 
 void WASAPIAudioCaptureEngine::pause()
 {
+    QMutexLocker packetGateLocker(&m_packetGate);
     if (!m_running || m_paused) return;
 
     QMutexLocker locker(&m_timingMutex);
     m_pauseStartTime = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now().time_since_epoch()).count();
     m_paused = true;
+    m_pauseGeneration.fetch_add(1);
     const qint64 activeTimeNs = qMax<qint64>(
         qint64(0),
         (m_pauseStartTime - m_startTime - m_pausedDuration)
@@ -972,6 +1004,7 @@ void WASAPIAudioCaptureEngine::pause()
 
 void WASAPIAudioCaptureEngine::resume()
 {
+    QMutexLocker packetGateLocker(&m_packetGate);
     if (!m_running || !m_paused) return;
 
     QMutexLocker locker(&m_timingMutex);
@@ -989,6 +1022,7 @@ void WASAPIAudioCaptureEngine::resume()
             m_mixer->resume(activeTimeNs);
         }
     }
+    m_pauseGeneration.fetch_add(1);
     m_paused = false;
 }
 
@@ -1079,14 +1113,20 @@ void WASAPIAudioCaptureEngine::captureLoop()
         }
 
         bool gotData = false;
-        UINT32 packetLength = 0;
-        HRESULT hr = captureClient->GetNextPacketSize(&packetLength);
-        if (FAILED(hr)) {
-            handleSourceFailure(source, hr, currentActiveTimeNs());
-            return false;
-        }
+        while (!m_stopRequested && captureClient) {
+            const quint64 pauseGeneration = m_pauseGeneration.load();
+            const bool discardForPause = m_paused.load();
 
-        while (packetLength > 0 && !m_stopRequested && captureClient) {
+            UINT32 packetLength = 0;
+            HRESULT hr = captureClient->GetNextPacketSize(&packetLength);
+            if (FAILED(hr)) {
+                handleSourceFailure(source, hr, currentActiveTimeNs());
+                break;
+            }
+            if (packetLength == 0) {
+                break;
+            }
+
             BYTE *data = nullptr;
             UINT32 numFrames = 0;
             DWORD flags = 0;
@@ -1108,7 +1148,6 @@ void WASAPIAudioCaptureEngine::captureLoop()
 
             QByteArray audioData;
             qint64 timestampNs = 0;
-            const bool discardForPause = m_paused.load();
             if (!discardForPause && numFrames > 0) {
                 timestampNs = packetTimestampNs(
                     qpcPosition100ns,
@@ -1148,16 +1187,12 @@ void WASAPIAudioCaptureEngine::captureLoop()
                                        ? "microphone" : "system audio");
                 }
 
-                processAudioPacket(source, audioData, timestampNs, nativeFormat);
-            }
-
-            if (!captureClient) {
-                break;
-            }
-            hr = captureClient->GetNextPacketSize(&packetLength);
-            if (FAILED(hr)) {
-                handleSourceFailure(source, hr, currentActiveTimeNs());
-                break;
+                processCapturedAudioPacket(
+                    source,
+                    audioData,
+                    timestampNs,
+                    nativeFormat,
+                    pauseGeneration);
             }
         }
         return gotData;
