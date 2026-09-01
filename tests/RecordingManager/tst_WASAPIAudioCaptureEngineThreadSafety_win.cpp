@@ -48,6 +48,7 @@ private slots:
     void disposalWaitsForInFlightDirectCallback();
     void stopPreservesConnectionsForRestart();
     void outputFormatIsCanonical();
+    void mixerDeliveryPreservesFrameTimestamp();
     void parsesSupportedWaveFormats();
     void convertsSupportedNativeFormats();
     void mismatchedSourcesMixThroughCanonicalPipeline();
@@ -240,6 +241,23 @@ void TestWASAPIAudioCaptureEngineThreadSafetyWin::outputFormatIsCanonical()
     QCOMPARE(format.sampleRate, 48000);
     QCOMPARE(format.channels, 2);
     QCOMPARE(format.bitsPerSample, 16);
+}
+
+void TestWASAPIAudioCaptureEngineThreadSafetyWin::mixerDeliveryPreservesFrameTimestamp()
+{
+    WASAPIAudioCaptureEngine engine;
+    engine.enableDataCallbacks();
+    QSignalSpy audioSpy(&engine, &IAudioCaptureEngine::audioDataReady);
+
+    SnapTray::Audio::TimestampedPcmMixer::ProcessResult result;
+    SnapTray::Audio::OutputChunk chunk;
+    chunk.pcm = QByteArray(128, '\0');
+    chunk.startFrame = 512;
+    result.output.append(chunk);
+    engine.deliverMixerOutput(result);
+
+    QCOMPARE(audioSpy.count(), 1);
+    QCOMPARE(audioSpy.first().at(1).toLongLong(), qint64(512));
 }
 
 void TestWASAPIAudioCaptureEngineThreadSafetyWin::parsesSupportedWaveFormats()

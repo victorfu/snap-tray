@@ -51,7 +51,7 @@ public:
      */
     struct AudioData {
         QByteArray data;
-        qint64 timestampMs;
+        qint64 startFrame;
     };
 
     /**
@@ -129,12 +129,12 @@ public:
     /**
      * @brief Write audio samples to encoder
      * @param data PCM audio data
-     * @param timestampMs Timestamp in milliseconds
+     * @param startFrame First frame on the canonical 48 kHz audio timeline
      *
      * Thread-safe: Audio is queued and processed by the worker thread.
      * Can be called from any thread (e.g., audio capture thread via DirectConnection).
      */
-    void writeAudioSamples(const QByteArray& data, qint64 timestampMs);
+    void writeAudioSamples(const QByteArray& data, qint64 startFrame);
 
     // ========== State Queries ==========
 

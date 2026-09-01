@@ -28,6 +28,19 @@ QByteArray recordingManagerSource()
     return source.readAll();
 }
 
+QByteArray avFoundationEncoderSource()
+{
+    QDir sourceDir(QStringLiteral(CAPTURE_SOURCE_ROOT));
+    if (!sourceDir.cdUp()) {
+        return {};
+    }
+    QFile source(sourceDir.filePath(QStringLiteral("AVFoundationEncoder.mm")));
+    if (!source.open(QIODevice::ReadOnly)) {
+        return {};
+    }
+    return source.readAll();
+}
+
 QByteArray section(const QByteArray &source,
                    const QByteArray &beginMarker,
                    const QByteArray &endMarker)
@@ -54,6 +67,7 @@ private slots:
     void delegatesGuardQueuedEngineAccess();
     void systemAudioTeardownRetainsAndInvalidatesCallbackGraph();
     void delegatesRouteThroughCanonicalTimestampMixer();
+    void avFoundationUsesExactAudioSampleTiming();
     void microphoneRequestsConvertiblePcm();
     void callbackBarriersPrecedeMixerLifecycleTransitions();
     void runtimeSystemAudioFailureUsesGuardedDegradation();
@@ -135,6 +149,20 @@ void TestCoreAudioCaptureEngineSafety::delegatesRouteThroughCanonicalTimestampMi
     QVERIFY(source.contains("SnapTray::Audio::Source::SystemAudio"));
     QCOMPARE(source.count("engineGuard->processCapturedAudio("), qsizetype(2));
     QVERIFY(!source.contains("emit engineGuard->audioDataReady"));
+    QVERIFY(source.contains("audioDataReady(output.pcm, output.startFrame)"));
+}
+
+void TestCoreAudioCaptureEngineSafety::avFoundationUsesExactAudioSampleTiming()
+{
+    const QByteArray source = avFoundationEncoderSource();
+    QVERIFY2(!source.isEmpty(), "Could not read AVFoundationEncoder.mm");
+
+    QVERIFY(source.contains(
+        "CMTime presentationTime = CMTimeMake(startFrame, d->audioSampleRate)"));
+    QVERIFY(source.contains(
+        "CMTime duration = CMTimeMake(1, d->audioSampleRate)"));
+    QVERIFY(!source.contains(
+        "CMTime duration = CMTimeMake(numSamples, d->audioSampleRate)"));
 }
 
 void TestCoreAudioCaptureEngineSafety::microphoneRequestsConvertiblePcm()

@@ -57,7 +57,6 @@ struct OutputChunk {
 
     bool isEmpty() const { return pcm.isEmpty(); }
     qint64 timestampNs() const;
-    qint64 timestampMs() const;
 };
 
 /**

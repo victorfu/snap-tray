@@ -284,7 +284,7 @@ bool EncodingWorker::enqueueFrame(const FrameData& frame)
     return true;
 }
 
-void EncodingWorker::writeAudioSamples(const QByteArray& data, qint64 timestampMs)
+void EncodingWorker::writeAudioSamples(const QByteArray& data, qint64 startFrame)
 {
     if (!m_acceptingFrames.load() || !m_running.load()) {
         return;
@@ -299,7 +299,7 @@ void EncodingWorker::writeAudioSamples(const QByteArray& data, qint64 timestampM
         if (m_audioQueue.size() >= MAX_AUDIO_QUEUE_SIZE) {
             return;  // Drop audio if queue full (prevents blocking capture thread)
         }
-        m_audioQueue.enqueue({data, timestampMs});
+        m_audioQueue.enqueue({data, startFrame});
     }
 
     scheduleProcessing();
@@ -393,7 +393,7 @@ void EncodingWorker::processNextFrame()
             // Write audio directly to encoder (we're on worker thread)
             try {
                 if (m_videoEncoder) {
-                    m_videoEncoder->writeAudioSamples(audioData.data, audioData.timestampMs);
+                    m_videoEncoder->writeAudioSamples(audioData.data, audioData.startFrame);
                 }
             } catch (const std::exception& e) {
                 handleProcessingFailure(QStringLiteral("audio encoding"),

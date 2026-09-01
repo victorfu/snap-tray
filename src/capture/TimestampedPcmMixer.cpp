@@ -13,7 +13,6 @@ namespace SnapTray::Audio {
 namespace {
 
 constexpr qint64 kNanosecondsPerSecond = 1000000000LL;
-constexpr qint64 kNanosecondsPerMillisecond = 1000000LL;
 constexpr int kBytesPerPcm16Sample = 2;
 
 qint64 scaledTimeToFrames(qint64 timeNs, int sampleRate)
@@ -355,11 +354,6 @@ int Pcm16Format::bytesPerFrame() const
 qint64 OutputChunk::timestampNs() const
 {
     return framesToNanoseconds(startFrame, TimestampedPcmMixer::kOutputSampleRate);
-}
-
-qint64 OutputChunk::timestampMs() const
-{
-    return timestampNs() / kNanosecondsPerMillisecond;
 }
 
 class TimestampedPcmMixer::Private

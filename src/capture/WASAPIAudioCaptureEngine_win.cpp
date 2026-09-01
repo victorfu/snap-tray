@@ -469,7 +469,7 @@ void WASAPIAudioCaptureEngine::deliverMixerOutput(
 {
     for (const auto& output : result.output) {
         if (!output.pcm.isEmpty()) {
-            deliverAudioData(output.pcm, output.timestampMs());
+            deliverAudioData(output.pcm, output.startFrame);
         }
     }
 
@@ -918,7 +918,7 @@ void WASAPIAudioCaptureEngine::drainDataCallbacks(bool disconnectConnections)
     }
 }
 
-void WASAPIAudioCaptureEngine::deliverAudioData(const QByteArray &data, qint64 timestampMs)
+void WASAPIAudioCaptureEngine::deliverAudioData(const QByteArray &data, qint64 startFrame)
 {
     {
         QMutexLocker locker(&m_dataCallbackMutex);
@@ -931,7 +931,7 @@ void WASAPIAudioCaptureEngine::deliverAudioData(const QByteArray &data, qint64 t
     const auto callbackGuard = qScopeGuard([this]() {
         finishDataCallback();
     });
-    emit audioDataReady(data, timestampMs);
+    emit audioDataReady(data, startFrame);
 }
 
 void WASAPIAudioCaptureEngine::finishDataCallback()

@@ -1,4 +1,5 @@
 #include "MediaFoundationEncoder.h"
+#include "encoding/AudioSampleTiming.h"
 
 #ifdef Q_OS_WIN
 
@@ -492,7 +493,7 @@ bool MediaFoundationEncoder::isAudioEnabled() const
     return d->audioEnabled;
 }
 
-void MediaFoundationEncoder::writeAudioSamples(const QByteArray &pcmData, qint64 timestampMs)
+void MediaFoundationEncoder::writeAudioSamples(const QByteArray &pcmData, qint64 startFrame)
 {
     if (!d->running || !d->sinkWriter || !d->audioEnabled) {
         return;
@@ -527,16 +528,19 @@ void MediaFoundationEncoder::writeAudioSamples(const QByteArray &pcmData, qint64
     if (FAILED(hr)) goto done;
 
     {
-        // Convert ms to 100-nanosecond units
-        LONGLONG timestamp = timestampMs * 10000LL;
-        hr = sample->SetSampleTime(timestamp);
-        if (FAILED(hr)) goto done;
-
-        // Calculate duration based on number of samples
+        // Quantize both absolute frame boundaries to Media Foundation's
+        // 100-nanosecond clock so adjacent buffers cannot overlap or leave gaps.
         int bytesPerFrame = d->audioChannels * d->audioBitsPerSample / 8;
         int numFrames = bufferSize / bytesPerFrame;
-        LONGLONG duration = (static_cast<LONGLONG>(numFrames) * 10000000LL) / d->audioSampleRate;
-        hr = sample->SetSampleDuration(duration);
+        const auto timing = SnapTray::Audio::scaleAudioSampleRange(
+            startFrame, numFrames, d->audioSampleRate, 10000000LL);
+        if (!timing.valid) {
+            qWarning() << "MediaFoundationEncoder: Invalid audio sample timing";
+            goto done;
+        }
+        hr = sample->SetSampleTime(timing.start);
+        if (FAILED(hr)) goto done;
+        hr = sample->SetSampleDuration(timing.duration);
         if (FAILED(hr)) goto done;
     }
 

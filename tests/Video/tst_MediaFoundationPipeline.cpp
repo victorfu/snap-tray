@@ -58,7 +58,7 @@ bool TestMediaFoundationPipeline::createTestVideo(const QString &path,
         frame.fill(QColor::fromHsv((i * 30) % 360, 255, 220));
         encoder->writeFrame(frame, i * 100);
         if (withAudio) {
-            encoder->writeAudioSamples(audioChunk, i * 100);
+            encoder->writeAudioSamples(audioChunk, i * 4800LL);
         }
     }
     encoder->finish();

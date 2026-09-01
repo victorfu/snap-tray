@@ -194,9 +194,9 @@ signals:
     /**
      * @brief Emitted when audio data is available
      * @param data Raw PCM audio data
-     * @param timestampMs Timestamp in milliseconds since capture start
+     * @param startFrame First frame on the canonical 48 kHz capture timeline
      */
-    void audioDataReady(const QByteArray &data, qint64 timestampMs);
+    void audioDataReady(const QByteArray &data, qint64 startFrame);
 
     /**
      * @brief Emitted when an error occurs

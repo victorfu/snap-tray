@@ -121,7 +121,7 @@ private:
     void captureLoop();
     void enableDataCallbacks();
     void drainDataCallbacks(bool disconnectConnections);
-    void deliverAudioData(const QByteArray &data, qint64 timestampMs);
+    void deliverAudioData(const QByteArray &data, qint64 startFrame);
     void finishDataCallback();
 
     // Deletes the thread object only after QThread has actually stopped. A timed-out

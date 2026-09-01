@@ -1199,7 +1199,7 @@ void CoreAudioCaptureEngine::deliverMixerOutput(
 {
     for (const auto& output : result.output) {
         if (!output.pcm.isEmpty()) {
-            emit audioDataReady(output.pcm, output.timestampMs());
+            emit audioDataReady(output.pcm, output.startFrame);
         }
     }
 }

@@ -77,10 +77,10 @@ public:
     /**
      * @brief Write audio samples to the encoder
      * @param pcmData Raw PCM audio data
-     * @param timestampMs Timestamp in milliseconds since recording start
+     * @param startFrame First frame on the configured audio sample-rate timeline
      */
-    virtual void writeAudioSamples(const QByteArray &pcmData, qint64 timestampMs) {
-        Q_UNUSED(pcmData); Q_UNUSED(timestampMs);
+    virtual void writeAudioSamples(const QByteArray &pcmData, qint64 startFrame) {
+        Q_UNUSED(pcmData); Q_UNUSED(startFrame);
     }
 
     /**

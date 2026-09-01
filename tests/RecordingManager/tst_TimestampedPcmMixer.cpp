@@ -1,8 +1,11 @@
 #include <QtTest/QtTest>
 
 #include "capture/TimestampedPcmMixer.h"
+#include "encoding/AudioSampleTiming.h"
 
 #include <QtEndian>
+
+#include <limits>
 
 using SnapTray::Audio::ByteOrder;
 using SnapTray::Audio::InputChunk;
@@ -10,6 +13,7 @@ using SnapTray::Audio::OutputChunk;
 using SnapTray::Audio::Pcm16Format;
 using SnapTray::Audio::Source;
 using SnapTray::Audio::TimestampedPcmMixer;
+using SnapTray::Audio::scaleAudioSampleRange;
 
 namespace {
 
@@ -90,6 +94,8 @@ class tst_TimestampedPcmMixer : public QObject
 
 private slots:
     void outputFormatIsCanonical();
+    void outputChunkTimestampsPreserveFramePrecision();
+    void encoderTimebaseKeepsAdjacentChunksContiguous();
     void rejectsMalformedAndUnsupportedInput();
     void singleSourceCanonicalizesMono();
     void multichannelInputUsesLayoutAgnosticAverage();
@@ -116,6 +122,68 @@ void tst_TimestampedPcmMixer::outputFormatIsCanonical()
     QCOMPARE(output.sampleRate, 48000);
     QCOMPARE(output.channels, 2);
     QCOMPARE(output.bitsPerSample, 16);
+}
+
+void tst_TimestampedPcmMixer::outputChunkTimestampsPreserveFramePrecision()
+{
+    TimestampedPcmMixer::Config preciseConfig;
+    preciseConfig.microphoneEnabled = true;
+    preciseConfig.systemAudioEnabled = false;
+    TimestampedPcmMixer mixer(preciseConfig);
+    const Pcm16Format mono = format(48000, 1);
+    const QByteArray packet = monoRamp(512);
+
+    QVector<OutputChunk> output = mixer.push(
+        Source::Microphone, {packet, 0, mono}).output;
+    output += mixer.push(
+        Source::Microphone, {packet, nsForFrames(512, 48000), mono}).output;
+
+    QCOMPARE(output.size(), 4);
+    QCOMPARE(output.at(0).startFrame, qint64(0));
+    QCOMPARE(output.at(1).startFrame, qint64(480));
+    QCOMPARE(output.at(2).startFrame, qint64(512));
+    QCOMPARE(output.at(3).startFrame, qint64(992));
+    for (qsizetype i = 1; i < output.size(); ++i) {
+        const qint64 previousFrames = output.at(i - 1).pcm.size()
+            / (TimestampedPcmMixer::kOutputChannels * 2);
+        QCOMPARE(output.at(i).startFrame,
+                 output.at(i - 1).startFrame + previousFrames);
+    }
+}
+
+void tst_TimestampedPcmMixer::encoderTimebaseKeepsAdjacentChunksContiguous()
+{
+    constexpr qint64 mediaFoundationUnitsPerSecond = 10000000LL;
+    const auto first = scaleAudioSampleRange(
+        0, 480, 48000, mediaFoundationUnitsPerSecond);
+    const auto remainder = scaleAudioSampleRange(
+        480, 32, 48000, mediaFoundationUnitsPerSecond);
+    const auto next = scaleAudioSampleRange(
+        512, 480, 48000, mediaFoundationUnitsPerSecond);
+
+    QVERIFY(first.valid);
+    QVERIFY(remainder.valid);
+    QVERIFY(next.valid);
+    QCOMPARE(first.start, qint64(0));
+    QCOMPARE(first.duration, qint64(100000));
+    QCOMPARE(remainder.start, qint64(100000));
+    QCOMPARE(remainder.duration, qint64(6666));
+    QCOMPARE(next.start, qint64(106666));
+    QCOMPARE(first.start + first.duration, remainder.start);
+    QCOMPARE(remainder.start + remainder.duration, next.start);
+
+    QVERIFY(!scaleAudioSampleRange(
+                 -1, 1, 48000, mediaFoundationUnitsPerSecond).valid);
+    QVERIFY(!scaleAudioSampleRange(
+                 std::numeric_limits<qint64>::max() - 1,
+                 2,
+                 48000,
+                 mediaFoundationUnitsPerSecond).valid);
+    QVERIFY(!scaleAudioSampleRange(
+                 std::numeric_limits<qint64>::max(),
+                 0,
+                 48000,
+                 mediaFoundationUnitsPerSecond).valid);
 }
 
 void tst_TimestampedPcmMixer::rejectsMalformedAndUnsupportedInput()

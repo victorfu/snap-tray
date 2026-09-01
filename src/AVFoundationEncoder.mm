@@ -462,7 +462,7 @@ bool AVFoundationEncoder::isAudioEnabled() const
     return d->audioEnabled;
 }
 
-void AVFoundationEncoder::writeAudioSamples(const QByteArray &pcmData, qint64 timestampMs)
+void AVFoundationEncoder::writeAudioSamples(const QByteArray &pcmData, qint64 startFrame)
 {
     if (!d->running || !d->audioInput || !d->audioEnabled) {
         return;
@@ -551,8 +551,8 @@ void AVFoundationEncoder::writeAudioSamples(const QByteArray &pcmData, qint64 ti
     CMItemCount numSamples = static_cast<CMItemCount>(dataLength / bytesPerFrame);
 
     // Create timing info
-    CMTime presentationTime = CMTimeMake(timestampMs, 1000);
-    CMTime duration = CMTimeMake(numSamples, d->audioSampleRate);
+    CMTime presentationTime = CMTimeMake(startFrame, d->audioSampleRate);
+    CMTime duration = CMTimeMake(1, d->audioSampleRate);
 
     CMSampleTimingInfo timingInfo = {0};
     timingInfo.duration = duration;

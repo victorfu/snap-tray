@@ -72,14 +72,16 @@ public:
     QString outputPath() const override { return m_outputPath; }
     int finishCallCount() const { return m_finishCalls.load(); }
 
-    void writeAudioSamples(const QByteArray& pcmData, qint64 timestampMs) override
+    void writeAudioSamples(const QByteArray& pcmData, qint64 startFrame) override
     {
         Q_UNUSED(pcmData);
-        Q_UNUSED(timestampMs);
         if (m_throwOnAudio) {
             throw std::runtime_error("mock audio write failure");
         }
+        m_lastAudioStartFrame = startFrame;
     }
+
+    qint64 lastAudioStartFrame() const { return m_lastAudioStartFrame.load(); }
 
 private:
     const bool m_throwOnFrame;
@@ -87,6 +89,7 @@ private:
     bool m_running = true;
     qint64 m_framesWritten = 0;
     std::atomic<int> m_finishCalls{0};
+    std::atomic<qint64> m_lastAudioStartFrame{-1};
     QString m_outputPath;
 };
 
@@ -245,6 +248,7 @@ class TestEncodingWorker : public QObject
 private slots:
     void testFrameExceptionStopsWorker();
     void testAudioExceptionStopsWorker();
+    void testAudioFrameTimestampPreservesPrecision();
     void testRequestFinishAfterFailureDoesNotEmitFinished();
     void testRequestFinishIsAsyncAndRunsOnWorkerThread();
     void testStopDuringFrameProcessingResetsProcessingState();
@@ -296,6 +300,21 @@ void TestEncodingWorker::testAudioExceptionStopsWorker()
 
     const QString errorMessage = errorSpy.first().first().toString();
     QVERIFY(errorMessage.contains("audio encoding"));
+}
+
+void TestEncodingWorker::testAudioFrameTimestampPreservesPrecision()
+{
+    EncodingWorker worker;
+    auto* encoder = new ThrowingVideoEncoder(false, false);
+    worker.setEncoderType(EncodingWorker::EncoderType::Video);
+    worker.setVideoEncoder(encoder);
+    QVERIFY(worker.start());
+
+    constexpr qint64 startFrame = 512;
+    worker.writeAudioSamples(QByteArray(128, char(0x7f)), startFrame);
+
+    QTRY_COMPARE_WITH_TIMEOUT(encoder->lastAudioStartFrame(), startFrame, 3000);
+    worker.stop();
 }
 
 void TestEncodingWorker::testRequestFinishAfterFailureDoesNotEmitFinished()
