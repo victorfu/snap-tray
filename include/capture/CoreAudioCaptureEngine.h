@@ -49,7 +49,8 @@ public:
     void processCapturedAudio(SnapTray::Audio::Source source,
                               const QByteArray& pcm,
                               const SnapTray::Audio::Pcm16Format& format,
-                              qint64 timestampNs);
+                              qint64 timestampNs,
+                              qint64 activeTimeNs);
     void reportCapturedAudioFormatFailure(SnapTray::Audio::Source source,
                                           qint64 effectiveTimeNs);
     void handleSystemAudioCaptureFailure(const QString& details);

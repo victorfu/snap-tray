@@ -150,6 +150,8 @@ void TestCoreAudioCaptureEngineSafety::delegatesRouteThroughCanonicalTimestampMi
     QCOMPARE(source.count("engineGuard->processCapturedAudio("), qsizetype(2));
     QVERIFY(!source.contains("emit engineGuard->audioDataReady"));
     QVERIFY(source.contains("audioDataReady(output.pcm, output.startFrame)"));
+    QVERIFY(source.contains(
+        "m_mixer->push(source, chunk, activeTimeNs)"));
 }
 
 void TestCoreAudioCaptureEngineSafety::avFoundationUsesExactAudioSampleTiming()

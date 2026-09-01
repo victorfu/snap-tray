@@ -12,6 +12,7 @@
 
 #include <memory>
 #include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <cstring>
 
@@ -49,6 +50,7 @@ private slots:
     void stopPreservesConnectionsForRestart();
     void outputFormatIsCanonical();
     void mixerDeliveryPreservesFrameTimestamp();
+    void farFuturePacketIsRejectedBeforeMixerDrain();
     void parsesSupportedWaveFormats();
     void convertsSupportedNativeFormats();
     void mismatchedSourcesMixThroughCanonicalPipeline();
@@ -258,6 +260,44 @@ void TestWASAPIAudioCaptureEngineThreadSafetyWin::mixerDeliveryPreservesFrameTim
 
     QCOMPARE(audioSpy.count(), 1);
     QCOMPARE(audioSpy.first().at(1).toLongLong(), qint64(512));
+}
+
+void TestWASAPIAudioCaptureEngineThreadSafetyWin::farFuturePacketIsRejectedBeforeMixerDrain()
+{
+    WASAPIAudioCaptureEngine engine;
+    SnapTray::Audio::TimestampedPcmMixer::Config config;
+    config.microphoneEnabled = true;
+    engine.m_mixer = std::make_unique<SnapTray::Audio::TimestampedPcmMixer>(config);
+    engine.m_startTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+    engine.enableDataCallbacks();
+
+    QSignalSpy audioSpy(&engine, &IAudioCaptureEngine::audioDataReady);
+    QSignalSpy warningSpy(&engine, &IAudioCaptureEngine::warning);
+    WASAPIAudioCaptureEngine::NativeFormatInfo format;
+    format.channels = 1;
+    format.sampleRate = 48000;
+    const QByteArray packet(480 * 2, '\0');
+
+    engine.processAudioPacket(
+        SnapTray::Audio::Source::Microphone,
+        packet,
+        3600LL * 1000000000LL,
+        format);
+
+    QCOMPARE(audioSpy.count(), 0);
+    QCOMPARE(warningSpy.count(), 1);
+    QCOMPARE(engine.m_mixer->stats().futureTimestampPackets, qint64(1));
+    QCOMPARE(engine.m_mixer->pendingFrames(
+                 SnapTray::Audio::Source::Microphone), qint64(0));
+
+    engine.processAudioPacket(
+        SnapTray::Audio::Source::Microphone,
+        packet,
+        0,
+        format);
+    QCOMPARE(audioSpy.count(), 1);
+    QCOMPARE(audioSpy.first().at(1).toLongLong(), qint64(0));
 }
 
 void TestWASAPIAudioCaptureEngineThreadSafetyWin::parsesSupportedWaveFormats()

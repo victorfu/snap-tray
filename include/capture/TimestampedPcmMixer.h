@@ -66,8 +66,9 @@ struct OutputChunk {
  * independent streaming resampler state. Output is always interleaved PCM16
  * at 48 kHz stereo. Mono is duplicated, stereo is preserved, and sources with
  * more than two channels use a layout-agnostic arithmetic mean duplicated to
- * left/right. Missing timeline coverage is silence; coincident samples are
- * added with int16 saturation.
+ * left/right. Missing timeline coverage is silence; long wholly uncovered
+ * spans may be represented by a timestamp gap after the configured silence
+ * budget. Coincident samples are added with int16 saturation.
  */
 class TimestampedPcmMixer final
 {
@@ -82,6 +83,8 @@ public:
         qint64 maxSkewFrames = 12000;             // 250 ms at 48 kHz
         qint64 maxPendingFramesPerSource = 24000; // 500 ms at 48 kHz
         qsizetype maxPendingBytesPerSource = 2 * 1024 * 1024;
+        qint64 maxFutureLeadFrames = 24000;        // 500 ms at 48 kHz
+        qint64 maxMaterializedSilenceFramesPerCall = 24000; // 500 ms per API call
         int outputChunkFrames = 480;              // 10 ms at 48 kHz
     };
 
@@ -92,6 +95,7 @@ public:
         MalformedInput,
         UnsupportedFormat,
         TooLate,
+        FutureTimestamp,
         Paused,
         Closed,
     };
@@ -100,6 +104,7 @@ public:
         ResultCode code = ResultCode::Accepted;
         QVector<OutputChunk> output;
         qint64 droppedFrames = 0; // Canonical 48 kHz frames
+        qint64 materializedSilenceFrames = 0;
     };
 
     struct Stats {
@@ -107,6 +112,8 @@ public:
         qint64 overlapFrames = 0;
         qint64 overflowFrames = 0;
         qint64 synthesizedGapFrames = 0;
+        qint64 skippedSilenceFrames = 0;
+        qint64 futureTimestampPackets = 0;
         qsizetype peakPendingBytes = 0;
     };
 
@@ -119,7 +126,9 @@ public:
 
     static IAudioCaptureEngine::AudioFormat outputFormat();
 
-    ProcessResult push(Source source, const InputChunk& chunk);
+    ProcessResult push(Source source,
+                       const InputChunk& chunk,
+                       qint64 activeTimeNs); // Current pause-adjusted capture horizon
     ProcessResult setSourceEnabled(Source source, bool enabled, qint64 effectiveTimeNs);
     ProcessResult advanceTo(qint64 activeTimeNs);
     ProcessResult pause(qint64 activeTimeNs);

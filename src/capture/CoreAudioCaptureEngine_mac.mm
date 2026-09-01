@@ -261,10 +261,11 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     const qint64 chunkDurationNs = format.sampleRate > 0
         ? chunkFrames * NSEC_PER_SEC / format.sampleRate
         : 0;
-    const qint64 fallbackTimestampNs = qMax<qint64>(
+    const qint64 activeTimeNs = qMax<qint64>(
         qint64(0),
-        (now - self.startTime - self.pausedDuration) * NSEC_PER_MSEC
-            - chunkDurationNs);
+        (now - self.startTime - self.pausedDuration) * NSEC_PER_MSEC);
+    const qint64 fallbackTimestampNs = qMax<qint64>(
+        qint64(0), activeTimeNs - chunkDurationNs);
     BOOL hasAnchor = self.hasTimelineAnchor;
     qint64 firstPresentationTimeNs = self.firstPresentationTimeNs;
     qint64 firstTimelineTimeNs = self.firstTimelineTimeNs;
@@ -284,7 +285,8 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
             SnapTray::Audio::Source::Microphone,
             audioData,
             format,
-            timestampNs);
+            timestampNs,
+            activeTimeNs);
     }
 }
 
@@ -352,10 +354,11 @@ API_AVAILABLE(macos(13.0))
     const qint64 chunkDurationNs = format.sampleRate > 0
         ? chunkFrames * NSEC_PER_SEC / format.sampleRate
         : 0;
-    const qint64 fallbackTimestampNs = qMax<qint64>(
+    const qint64 activeTimeNs = qMax<qint64>(
         qint64(0),
-        (now - self.startTime - self.pausedDuration) * NSEC_PER_MSEC
-            - chunkDurationNs);
+        (now - self.startTime - self.pausedDuration) * NSEC_PER_MSEC);
+    const qint64 fallbackTimestampNs = qMax<qint64>(
+        qint64(0), activeTimeNs - chunkDurationNs);
     BOOL hasAnchor = self.hasTimelineAnchor;
     qint64 firstPresentationTimeNs = self.firstPresentationTimeNs;
     qint64 firstTimelineTimeNs = self.firstTimelineTimeNs;
@@ -375,7 +378,8 @@ API_AVAILABLE(macos(13.0))
             SnapTray::Audio::Source::SystemAudio,
             audioData,
             format,
-            timestampNs);
+            timestampNs,
+            activeTimeNs);
     }
 }
 
@@ -1093,17 +1097,22 @@ void CoreAudioCaptureEngine::processCapturedAudio(
     SnapTray::Audio::Source source,
     const QByteArray& pcm,
     const SnapTray::Audio::Pcm16Format& format,
-    qint64 timestampNs)
+    qint64 timestampNs,
+    qint64 activeTimeNs)
 {
     if (!m_running || m_paused || !m_mixer) {
         return;
     }
 
     const SnapTray::Audio::InputChunk chunk{pcm, timestampNs, format};
-    const auto result = m_mixer->push(source, chunk);
+    const auto result = m_mixer->push(source, chunk, activeTimeNs);
     deliverMixerOutput(result);
 
     if (!m_reportedMixerDrop
+        && result.code == SnapTray::Audio::TimestampedPcmMixer::ResultCode::FutureTimestamp) {
+        m_reportedMixerDrop = true;
+        emit warning("An audio source reported an invalid timestamp and was skipped.");
+    } else if (!m_reportedMixerDrop
         && (result.code == SnapTray::Audio::TimestampedPcmMixer::ResultCode::AcceptedWithDrops
             || result.code == SnapTray::Audio::TimestampedPcmMixer::ResultCode::TooLate)) {
         m_reportedMixerDrop = true;

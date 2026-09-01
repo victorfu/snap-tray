@@ -367,6 +367,9 @@ public:
         config.maxPendingBytesPerSource = qMax<qsizetype>(
             kOutputChannels * kBytesPerPcm16Sample,
             config.maxPendingBytesPerSource);
+        config.maxFutureLeadFrames = qMax<qint64>(0, config.maxFutureLeadFrames);
+        config.maxMaterializedSilenceFramesPerCall = qMax<qint64>(
+            0, config.maxMaterializedSilenceFramesPerCall);
         config.outputChunkFrames = qMax(1, config.outputChunkFrames);
         sources[0].enabled = config.microphoneEnabled;
         sources[1].enabled = config.systemAudioEnabled;
@@ -554,6 +557,64 @@ public:
         return next;
     }
 
+    qint64 nextCoveredFrame(qint64 frame) const
+    {
+        qint64 next = std::numeric_limits<qint64>::max();
+        for (const auto& source : sources) {
+            if (!sourceActiveAt(source, frame)) {
+                continue;
+            }
+            for (const auto& segment : source.pending) {
+                if (segment.endFrame() <= frame) {
+                    continue;
+                }
+                next = qMin(next, qMax(frame, segment.startFrame));
+                break;
+            }
+        }
+        return next;
+    }
+
+    qint64 coveredThrough(qint64 frame, qint64 limit)
+    {
+        limit = qMax(frame, limit);
+        qint64 coverageEnd = frame;
+        std::array<qsizetype, 2> nextIndexes = {0, 0};
+        while (coverageEnd < limit) {
+            bool extended = false;
+            for (int sourceIndex = 0; sourceIndex < 2; ++sourceIndex) {
+                const auto& source = sources[sourceIndex];
+                if (!sourceActiveAt(source, frame)) {
+                    continue;
+                }
+
+                auto& nextIndex = nextIndexes[sourceIndex];
+                while (nextIndex < source.pending.size()) {
+                    const auto& segment = source.pending.at(nextIndex);
+                    if (segment.endFrame() <= frame) {
+                        ++nextIndex;
+                        continue;
+                    }
+                    if (segment.startFrame > coverageEnd) {
+                        break;
+                    }
+                    ++nextIndex;
+                    if (segment.endFrame() > coverageEnd) {
+                        coverageEnd = qMin(limit, segment.endFrame());
+                        extended = true;
+                        if (coverageEnd == limit) {
+                            return coverageEnd;
+                        }
+                    }
+                }
+            }
+            if (!extended) {
+                break;
+            }
+        }
+        return coverageEnd;
+    }
+
     qint64 automaticFrontier() const
     {
         const int enabledCount = enabledSourceCountAt(outputCursor);
@@ -607,12 +668,36 @@ public:
                 continue;
             }
 
-            qint64 frames = qMin<qint64>(
-                config.outputChunkFrames,
-                frontier - outputCursor);
             const qint64 nextActivation = nextActivationAfter(outputCursor);
-            if (nextActivation != std::numeric_limits<qint64>::max()) {
-                frames = qMin(frames, nextActivation - outputCursor);
+            const qint64 stageEnd = nextActivation == std::numeric_limits<qint64>::max()
+                ? frontier
+                : qMin(frontier, nextActivation);
+            const qint64 coverageLimit = outputCursor + qMin<qint64>(
+                config.outputChunkFrames, stageEnd - outputCursor);
+            const qint64 coverageEnd = coveredThrough(outputCursor, coverageLimit);
+            const bool whollyUncovered = coverageEnd <= outputCursor;
+            qint64 frames = 0;
+            if (whollyUncovered) {
+                const qint64 silenceEnd = qMin(
+                    stageEnd, nextCoveredFrame(outputCursor));
+                const qint64 silenceFrames = silenceEnd - outputCursor;
+                const qint64 remainingBudget = qMax<qint64>(
+                    0,
+                    config.maxMaterializedSilenceFramesPerCall
+                        - result.materializedSilenceFrames);
+                if (silenceFrames > remainingBudget) {
+                    const qint64 skipTo = silenceEnd - remainingBudget;
+                    statistics.skippedSilenceFrames += skipTo - outputCursor;
+                    outputCursor = skipTo;
+                    consumeThrough(sources[0], outputCursor);
+                    consumeThrough(sources[1], outputCursor);
+                    continue;
+                }
+                frames = qMin<qint64>(config.outputChunkFrames, silenceFrames);
+            } else {
+                frames = qMin<qint64>(
+                    config.outputChunkFrames,
+                    qMin(stageEnd, coverageEnd) - outputCursor);
             }
             OutputChunk chunk;
             chunk.startFrame = outputCursor;
@@ -646,6 +731,9 @@ public:
             }
 
             outputCursor += frames;
+            if (whollyUncovered) {
+                result.materializedSilenceFrames += frames;
+            }
             consumeThrough(sources[0], outputCursor);
             consumeThrough(sources[1], outputCursor);
             result.output.append(std::move(chunk));
@@ -717,7 +805,8 @@ IAudioCaptureEngine::AudioFormat TimestampedPcmMixer::outputFormat()
 
 TimestampedPcmMixer::ProcessResult TimestampedPcmMixer::push(
     Source source,
-    const InputChunk& chunk)
+    const InputChunk& chunk,
+    qint64 activeTimeNs)
 {
     QMutexLocker locker(&d->mutex);
     ProcessResult result;
@@ -735,7 +824,8 @@ TimestampedPcmMixer::ProcessResult TimestampedPcmMixer::push(
         result.code = ResultCode::SourceDisabled;
         return result;
     }
-    if (!chunk.format.isValid() || chunk.startTimeNs < 0 || chunk.pcm.isEmpty()
+    if (!chunk.format.isValid() || chunk.startTimeNs < 0 || activeTimeNs < 0
+        || chunk.pcm.isEmpty()
         || chunk.pcm.size() % chunk.format.bytesPerFrame() != 0) {
         result.code = ResultCode::MalformedInput;
         return result;
@@ -743,6 +833,17 @@ TimestampedPcmMixer::ProcessResult TimestampedPcmMixer::push(
     if (!chunk.format.signedSamples || !chunk.format.interleaved
         || chunk.format.byteOrder != ByteOrder::LittleEndian) {
         result.code = ResultCode::UnsupportedFormat;
+        return result;
+    }
+
+    const qint64 chunkStartFrame = scaledTimeToFrames(
+        chunk.startTimeNs, kOutputSampleRate);
+    const qint64 activeFrame = scaledTimeToFrames(
+        activeTimeNs, kOutputSampleRate);
+    if (chunkStartFrame > activeFrame
+        && chunkStartFrame - activeFrame > d->config.maxFutureLeadFrames) {
+        result.code = ResultCode::FutureTimestamp;
+        ++d->statistics.futureTimestampPackets;
         return result;
     }
 

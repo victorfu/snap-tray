@@ -473,7 +473,10 @@ void WASAPIAudioCaptureEngine::deliverMixerOutput(
         }
     }
 
-    if ((result.code == SnapTray::Audio::TimestampedPcmMixer::ResultCode::AcceptedWithDrops
+    if (result.code == SnapTray::Audio::TimestampedPcmMixer::ResultCode::FutureTimestamp
+        && !m_reportedMixerDrop.exchange(true)) {
+        emit warning("An audio source reported an invalid timestamp and was skipped.");
+    } else if ((result.code == SnapTray::Audio::TimestampedPcmMixer::ResultCode::AcceptedWithDrops
          || result.code == SnapTray::Audio::TimestampedPcmMixer::ResultCode::TooLate)
         && !m_reportedMixerDrop.exchange(true)) {
         emit warning("Audio capture fell behind; a short section may be silent.");
@@ -486,6 +489,7 @@ void WASAPIAudioCaptureEngine::processAudioPacket(
     qint64 timestampNs,
     const NativeFormatInfo& nativeFormat)
 {
+    const qint64 activeTimeNs = currentActiveTimeNs();
     QMutexLocker mixerLocker(&m_mixerDeliveryMutex);
     if (!m_mixer || pcm.isEmpty()) {
         return;
@@ -499,7 +503,8 @@ void WASAPIAudioCaptureEngine::processAudioPacket(
     format.interleaved = true;
     deliverMixerOutput(m_mixer->push(
         source,
-        {pcm, qMax<qint64>(qint64(0), timestampNs), format}));
+        {pcm, qMax<qint64>(qint64(0), timestampNs), format},
+        activeTimeNs));
 }
 
 void WASAPIAudioCaptureEngine::advanceMixerTimeline(qint64 activeTimeNs)
