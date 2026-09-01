@@ -3,7 +3,7 @@
 - 審查日期：2026-09-01
 - 審查基準：main @ 82611586a549f4ada3c7131b92854ebaddcaf0e1
 - 審查模式：唯讀、Double Confirm、全庫掃描
-- 目前結論：37 項 Confirmed Issue、2 項 Potential Issue
+- 目前結論：36 項 Confirmed Issue、2 項 Potential Issue、1 項 Rejected
 
 ## 使用方式
 
@@ -22,6 +22,7 @@
 - Verified：完成條件與回歸測試皆通過。
 - Blocked：被環境、平台或外部條件阻擋。
 - Potential：仍需指定的 runtime／產品契約確認。
+- Rejected：後續證據反證原 finding 的觸發或後果；不是已修復。
 
 優先度定義：
 
@@ -35,10 +36,11 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 35 |
+| Confirmed / Open | 34 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 2 |
+| Rejected / 已反證 | 1 |
 
 建立本文件時，工作樹已存在兩組未提交候選修正：
 
@@ -47,11 +49,11 @@
 
 上述變更在本文件建立時尚未完成獨立驗證；目前 REV-004 與 REV-009 均已符合完成條件並標為 Verified。其餘既有工作樹變更不由本文件認領。
 
-## Confirmed Issue 總表
+## Issue 總表
 
 | ID | 狀態 | 優先度 | 信心 | 平台／區域 | 摘要 |
 |---|---|---:|---|---|---|
-| REV-001 | Open | P0 | High | macOS Release | 官方 DMG 宣稱 macOS 14，相依 Qt payload 實際要求 macOS 26 |
+| REV-001 | Rejected | — | High | macOS Release | v1.0.62 已在 macOS 14.8.7 ARM64 通過 loader 與基本 GUI startup smoke |
 | REV-002 | Open | P0 | High | Mosaic / HiDPI | Gaussian 自動遮罩只覆蓋部分實體像素 |
 | REV-003 | Open | P0 | High | Windows OCR | 未遵守 OcrEngine MaxImageDimension |
 | REV-004 | Verified | P0 | High | Tests / Settings | 測試會刪寫真實 SnapTray 設定 |
@@ -91,14 +93,15 @@
 
 ## 詳細問題與完成條件
 
-### REV-001 — 官方 macOS DMG 的實際最低版本高於宣告
+### REV-001 — bundled Qt minos 26 導致 macOS 14 無法啟動（已反證）
 
-- 狀態：Open
-- 證據：CMakeLists.txt:3-7；.github/workflows/release.yml:107-125,272-282,308-316；packaging/macos/package.sh:126-185；cmake/Info.plist.in:50-51；docs/_data/i18n/en.yml:77-80,101-104。
-- 觸發：release 使用浮動 macos-latest 與 brew install qt@6，macdeployqt 將較高 deployment target 的預編譯 Qt framework 打入 DMG。
-- 後果：v1.0.62 的 Info.plist、Sparkle appcast 與網站宣稱 macOS 14，但抽查官方 DMG 的必要 Qt frameworks／plugins 為 minos 26.0；macOS 14／15 使用者會收到看似相容、實際無法啟動的更新。
-- 完成條件：固定 runner 與 Qt；打包後遞迴檢查所有 Mach-O 的 LC_BUILD_VERSION；實際最大 minos 與 Info.plist、appcast、網站一致；在乾淨 macOS 14 完成安裝、啟動、Region、Settings/QML 與 updater smoke。
-- 修正證據：待補。
+- 狀態：Rejected
+- 原始證據：release 使用浮動 macos-latest 與 Homebrew Qt；v1.0.62 的 126／154 個 Mach-O 為 minos 26.0，主程式直接依賴其中的 QtQuick、QtQml、QtSvg。
+- 反證證據：官方 v1.0.62 DMG 在 macOS 14.8.7 ARM64 runner 通過固定 SHA-256、DMG、簽章、公證與 Gatekeeper 驗證；`SnapTray --version` 成功，無參數 GUI process 存活 10 秒，startup log 無 dyld／Qt 錯誤。
+- 判定：LC_BUILD_VERSION minos 26.0 並未使這些 dylib 在 Sonoma 上被拒絕載入；「macOS 14／15 實際無法啟動」與 P0 Release-blocking 後果不成立。
+- 驗證邊界：尚未涵蓋 macOS 14.0、Settings/QML 實際互動、Region Capture／TCC、updater 與長時間穩定性。
+- 後續建議：固定 Qt 與 release 輸入、遞迴檢查最終 bundle 的 Mach-O metadata，仍可作為 release reproducibility／hardening 工作，但不屬於此已反證的啟動 blocker。
+- 反證紀錄：https://github.com/victorfu/snap-tray/actions/runs/33515420361/job/99881113054
 
 ### REV-002 — HiDPI Gaussian 自動遮罩可能只覆蓋左上區域
 
@@ -474,6 +477,7 @@
 ## 參考資料
 
 - SnapTray v1.0.62 release：https://github.com/victorfu/snap-tray/releases/tag/v1.0.62
+- SnapTray v1.0.62 macOS 14.8.7 smoke：https://github.com/victorfu/snap-tray/actions/runs/33515420361/job/99881113054
 - Microsoft OcrEngine.MaxImageDimension：https://learn.microsoft.com/en-us/uwp/api/windows.media.ocr.ocrengine.maximagedimension
 - Microsoft OCR sample：https://github.com/Microsoft/Windows-universal-samples/blob/main/Samples/OCR/cs/OcrFileImage.xaml.cs
 - Qt QThread termination warning：https://doc.qt.io/qt-6/qthread.html
@@ -490,3 +494,4 @@
 | 2026-09-01 | 建立全庫 review tracker；37 Confirmed、2 Potential；REV-004 與 REV-009 因既有未提交候選修正標為 In Progress。 |
 | 2026-09-01 | REV-009 完成修正與獨立驗證：文字 position／rotation／scale interaction 改走 dirty-render path，release 後 invalidate layer cache；狀態更新為 Verified。 |
 | 2026-09-01 | REV-004 完成修正與獨立驗證：所有 C++ test process 改用獨立 temporary INI，Debug／Release 真實 settings store 不再被測試刪寫；狀態更新為 Verified。 |
+| 2026-09-01 | REV-001 經官方 v1.0.62 DMG 的 macOS 14.8.7 ARM64 smoke 反證：loader、`--version` 與 10 秒 GUI startup 均通過；由 Open／P0 改為 Rejected，統計更新為 36 Confirmed、2 Potential、1 Rejected。 |
