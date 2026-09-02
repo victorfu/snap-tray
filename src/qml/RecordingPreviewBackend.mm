@@ -2,6 +2,7 @@
 #include "cursor/CursorSurfaceSupport.h"
 #include "qml/QmlOverlayManager.h"
 #include "video/VideoTrimmer.h"
+#include "video/IVideoFrameReader.h"
 #include "video/IVideoPlayer.h"
 #include "encoding/NativeGifEncoder.h"
 #include "encoding/WebPAnimEncoder.h"
@@ -30,6 +31,12 @@
 #ifdef Q_OS_WIN
 #include <objbase.h>
 #endif
+
+namespace {
+constexpr int kVideoLoadTimeoutMs = 5000;
+// Keep the extraction allowance used by VideoTrimmer for animated trims.
+constexpr int kFrameExtractionTimeoutMs = 5000;
+}
 
 RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, QObject *parent)
     : QObject(parent)
@@ -292,22 +299,22 @@ void RecordingPreviewBackend::save()
         return;
     }
 
-    // If trimming is needed, do that first
+    // Animated exports share the same offline extraction path, including trims.
+    if (m_selectedFormat != MP4) {
+        performFormatConversion(m_selectedFormat);
+        return;
+    }
+
     if (hasTrim()) {
         performTrim();
         return;
     }
 
-    if (m_selectedFormat == MP4) {
-        // MP4 -- use original file directly
-        m_saved = true;
-        const QString outputPath = m_videoPath;
-        close(); // Release playback resources before caller touches the file.
-        emit saveRequested(outputPath);
-    } else {
-        // Convert to GIF or WebP on a background thread
-        performFormatConversion(m_selectedFormat);
-    }
+    // MP4 -- use original file directly
+    m_saved = true;
+    const QString outputPath = m_videoPath;
+    close(); // Release playback resources before caller touches the file.
+    emit saveRequested(outputPath);
 }
 
 void RecordingPreviewBackend::discard()
@@ -409,6 +416,8 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
     // Capture values needed by the worker thread
     const QString videoPath = m_videoPath;
     const QString sourceVideoPath = m_videoPath;
+    const qint64 requestedStartMs = m_trimStart;
+    const qint64 requestedEndMs = m_trimEnd;
     const int selectedFormat = static_cast<int>(format);
     const QString createPlayerError = tr("Failed to create video player for conversion");
     const QString loadVideoError = tr("Failed to load video for conversion");
@@ -423,6 +432,8 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
     (void)QtConcurrent::run([weakThis,
                              videoPath,
                              sourceVideoPath,
+                             requestedStartMs,
+                             requestedEndMs,
                              outputPath,
                              selectedFormat,
                              createPlayerError,
@@ -459,47 +470,58 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
             }, Qt::QueuedConnection);
         };
 
-        // Create a temporary IVideoPlayer for frame extraction
-        std::unique_ptr<IVideoPlayer> player(IVideoPlayer::create(nullptr));
-        if (!player) {
-            qWarning() << "RecordingPreviewBackend: Failed to create video player for conversion";
-            postFailure(createPlayerError);
-            return;
-        }
-
-        // Load video synchronously on worker thread
-        bool mediaLoaded = false;
-        {
-            QEventLoop loop;
-            QTimer timer;
-            timer.setSingleShot(true);
-            auto mediaLoadedConn = connect(player.get(), &IVideoPlayer::mediaLoaded, &loop, [&]() {
-                mediaLoaded = true;
-                loop.quit();
-            });
-            connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
-
-            if (!player->load(videoPath)) {
-                disconnect(mediaLoadedConn);
-                qWarning() << "RecordingPreviewBackend: Failed to load video for conversion";
+        auto frameReader = IVideoFrameReader::create();
+        std::unique_ptr<IVideoPlayer> player;
+        if (frameReader) {
+            if (!frameReader->load(videoPath)) {
+                qWarning() << "RecordingPreviewBackend: Failed to open video reader:"
+                           << frameReader->lastError();
                 postFailure(loadVideoError);
                 return;
             }
-
-            if (!mediaLoaded) {
-                timer.start(5000);
-                loop.exec();
-                timer.stop();
+        } else {
+            player.reset(IVideoPlayer::create(nullptr));
+            if (!player) {
+                qWarning() << "RecordingPreviewBackend: Failed to create video player for conversion";
+                postFailure(createPlayerError);
+                return;
             }
-            disconnect(mediaLoadedConn);
+
+            bool mediaLoaded = false;
+            {
+                QEventLoop loop;
+                QTimer timer;
+                timer.setSingleShot(true);
+                auto mediaLoadedConn = connect(player.get(), &IVideoPlayer::mediaLoaded, &loop, [&]() {
+                    mediaLoaded = true;
+                    loop.quit();
+                });
+                connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
+
+                if (!player->load(videoPath)) {
+                    disconnect(mediaLoadedConn);
+                    qWarning() << "RecordingPreviewBackend: Failed to load video for conversion";
+                    postFailure(loadVideoError);
+                    return;
+                }
+
+                if (!mediaLoaded) {
+                    timer.start(kVideoLoadTimeoutMs);
+                    loop.exec();
+                    timer.stop();
+                }
+                disconnect(mediaLoadedConn);
+            }
         }
 
-        QSize vidSize = player->videoSize();
-        int frameRateInt = static_cast<int>(player->frameRate());
+        const QSize vidSize = frameReader ? frameReader->videoSize() : player->videoSize();
+        int frameRateInt = static_cast<int>(frameReader ? frameReader->frameRate() : player->frameRate());
         if (frameRateInt <= 0) frameRateInt = 30;
-        qint64 dur = player->duration();
+        const qint64 dur = frameReader ? frameReader->duration() : player->duration();
+        const qint64 startMs = qMax<qint64>(0, requestedStartMs);
+        const qint64 endMs = requestedEndMs < 0 ? dur : qMin(requestedEndMs, dur);
 
-        if (dur <= 0 || vidSize.isEmpty()) {
+        if (dur <= 0 || vidSize.isEmpty() || startMs >= endMs) {
             qWarning() << "RecordingPreviewBackend: Video not loaded properly for conversion";
             postFailure(invalidVideoError);
             return;
@@ -548,43 +570,54 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
         }
 
         // Extract and encode frames
-        const qint64 frameInterval = qMax<qint64>(1, 1000 / frameRateInt);
-        player->pause();
+        if (player) {
+            player->pause();
+        }
         bool frameExtractionFailed = false;
 
-        for (qint64 timeMs = 0; timeMs < dur; timeMs += frameInterval) {
+        for (qint64 frameIndex = 0; ; ++frameIndex) {
+            const qint64 timeMs = startMs + frameIndex * 1000 / frameRateInt;
+            if (timeMs >= endMs) {
+                break;
+            }
             QImage capturedFrame;
-            bool frameReceived = false;
+            if (frameReader) {
+                capturedFrame = frameReader->frameAt(timeMs);
+                if (capturedFrame.isNull()) {
+                    qWarning() << "RecordingPreviewBackend: Offline frame extraction failed:"
+                               << frameReader->lastError();
+                }
+            } else {
+                bool frameReceived = false;
+                QEventLoop loop;
+                QTimer timer;
+                timer.setSingleShot(true);
 
-            QEventLoop loop;
-            QTimer timer;
-            timer.setSingleShot(true);
+                auto conn = connect(player.get(), &IVideoPlayer::frameReady,
+                                    &loop, [&capturedFrame, &frameReceived, &loop](const QImage &frame) {
+                    capturedFrame = frame.copy();
+                    frameReceived = true;
+                    loop.quit();
+                });
+                connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
 
-            auto conn = connect(player.get(), &IVideoPlayer::frameReady,
-                                &loop, [&capturedFrame, &frameReceived, &loop](const QImage &frame) {
-                capturedFrame = frame.copy();
-                frameReceived = true;
-                loop.quit();
-            });
-            connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
-
-            timer.start(500);
-            player->seek(timeMs);
-            if (!frameReceived) {
-                loop.exec();
+                timer.start(kFrameExtractionTimeoutMs);
+                player->seek(timeMs);
+                if (!frameReceived) {
+                    loop.exec();
+                }
+                timer.stop();
+                disconnect(conn);
             }
 
-            timer.stop();
-            disconnect(conn);
-
-            if (frameReceived && !capturedFrame.isNull()) {
+            if (!capturedFrame.isNull()) {
                 const qint64 framesBefore = gifEncoder
                     ? gifEncoder->framesWritten()
                     : webpEncoder->framesWritten();
                 if (gifEncoder)
-                    gifEncoder->writeFrame(capturedFrame, timeMs);
+                    gifEncoder->writeFrame(capturedFrame, timeMs - startMs);
                 else if (webpEncoder)
-                    webpEncoder->writeFrame(capturedFrame, timeMs);
+                    webpEncoder->writeFrame(capturedFrame, timeMs - startMs);
 
                 const qint64 framesAfter = gifEncoder
                     ? gifEncoder->framesWritten()
@@ -600,7 +633,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
                 break;
             }
 
-            int percent = static_cast<int>((timeMs * 100) / dur);
+            int percent = static_cast<int>(((timeMs - startMs) * 100) / (endMs - startMs));
             QCoreApplication* app = QCoreApplication::instance();
             if (app) {
                 QMetaObject::invokeMethod(app, [weakThis, percent]() {

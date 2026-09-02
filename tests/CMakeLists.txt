@@ -167,6 +167,11 @@ if(APPLE)
     target_link_libraries(Qml_FloatingOverlayCaptureExclusion PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
     add_test(NAME Qml_FloatingOverlayCaptureExclusion COMMAND Qml_FloatingOverlayCaptureExclusion)
     set_tests_properties(Qml_FloatingOverlayCaptureExclusion PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
+    add_executable(Qml_RecordingPreviewExport Qml/tst_RecordingPreviewExport.cpp)
+    target_link_libraries(Qml_RecordingPreviewExport PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+    add_test(NAME Qml_RecordingPreviewExport COMMAND Qml_RecordingPreviewExport)
+    set_tests_properties(Qml_RecordingPreviewExport PROPERTIES TIMEOUT 120 LABELS "integration")
 endif()
 
 add_executable(Utils_ScreenCaptureRegionUtils Utils/tst_ScreenCaptureRegionUtils.cpp)

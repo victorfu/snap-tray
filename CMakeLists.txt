@@ -489,6 +489,7 @@ add_library(snaptray_platform STATIC
     src/encoding/NativeGifEncoder.cpp
     src/encoding/WebPAnimEncoder.cpp
     src/recording/ScreenSourceService.cpp
+    src/video/IVideoFrameReader.cpp
     src/video/IVideoPlayer.cpp
     src/video/VideoTrimmer.cpp
     src/VideoEncoderFactory.cpp
@@ -524,6 +525,7 @@ add_library(snaptray_platform STATIC
         src/capture/SCKCaptureEngine_mac.mm
         src/capture/CoreAudioCaptureEngine_mac.mm
         src/AVFoundationEncoder.mm
+        src/video/AVFoundationFrameReader_mac.mm
         src/video/AVFoundationPlayer_mac.mm
     >
     # macOS headers with Q_OBJECT
@@ -576,6 +578,7 @@ set_source_files_properties(
     src/capture/SCKCaptureEngine_mac.mm
     src/capture/CoreAudioCaptureEngine_mac.mm
     src/AVFoundationEncoder.mm
+    src/video/AVFoundationFrameReader_mac.mm
     src/video/AVFoundationPlayer_mac.mm
     PROPERTIES COMPILE_FLAGS "-fobjc-arc"
 )
