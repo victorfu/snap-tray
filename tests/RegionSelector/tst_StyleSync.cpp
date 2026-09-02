@@ -327,6 +327,9 @@ void TestRegionSelectorStyleSync::testMacInitialCursorCompanionUsesHostUntilDeta
     QVERIFY(!selector.m_magnifierOverlay->isVisible());
     QVERIFY(selector.m_hostFallbackCursorCompanionRect.isValid());
 
+    // Keep the toolbar visible and its explicit position stable during repaint.
+    selector.m_selectionManager->setSelectionRect(selector.rect());
+    selector.m_toolbarUserDragged = true;
     selector.m_qmlToolbar->setPosition(screenGeometry.topLeft() + QPoint(12, 12));
     selector.m_qmlToolbar->show();
     QTRY_VERIFY(selector.m_qmlToolbar->isVisible());
@@ -335,18 +338,26 @@ void TestRegionSelectorStyleSync::testMacInitialCursorCompanionUsesHostUntilDeta
         selector.m_qmlToolbar->setPosition(
             screenGeometry.bottomRight() -
             QPoint(toolbarSize.width() + 12, toolbarSize.height() + 12));
-        QCoreApplication::processEvents();
     }
     QVERIFY(!selector.m_qmlToolbar->geometry().contains(cursorGlobal));
 
     QVERIFY(selector.cursorCompanionRequiresOverlay());
     selector.syncMagnifierOverlay();
-    QTRY_VERIFY(selector.m_magnifierOverlay->isVisible());
+    QVERIFY(selector.m_magnifierOverlay->isVisible());
+
+    // Exercise the real paint event synchronously so native exposure timing and
+    // unrelated cursor/focus events cannot interrupt the renderer handoff.
+    QImage overlayFrame(selector.m_magnifierOverlay->size(),
+                        QImage::Format_ARGB32_Premultiplied);
+    overlayFrame.fill(Qt::transparent);
+    selector.m_magnifierOverlay->render(&overlayFrame);
     QVERIFY(selector.m_magnifierOverlay->hasPaintedSinceShow());
 
     // Once the top-level renderer has painted, the next synchronization drops
     // the temporary host copy and leaves a single companion surface.
     selector.syncMagnifierOverlay();
+    QVERIFY(selector.m_magnifierOverlay->isVisible());
+    QVERIFY(selector.m_magnifierOverlay->hasPaintedSinceShow());
     QVERIFY(!selector.m_hostFallbackCursorCompanionRect.isValid());
 
     selector.m_qmlToolbar->hide();
