@@ -6,6 +6,27 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+## [1.0.63] - 2026-09-05
+
+### Added
+
+- Added three Mosaic brush-size presets for quick adjustments while annotating captures and pinned images.
+
+### Improved
+
+- Reduced the delay when starting a screen capture on macOS.
+- Improved recording audio mixing and timestamp handling on macOS and Windows, including pause/resume and audio-source interruptions.
+- Clarified silent Windows recording previews and localized recording warning titles.
+
+### Fixed
+
+- Fixed macOS GIF/WebP exports by extracting video frames offline, and corrected GIF frame timing and timing fallbacks.
+- Fixed region resizing at screen boundaries and kept annotations aligned when arranging regions or transforming pinned images.
+- Fixed Mosaic rendering across display scales, stale text after canvas transforms, and drawing gestures completed without an intermediate pointer move.
+- Fixed Windows capture on rotated displays and incorrect transparency in fallback captures.
+- Fixed start-on-login handling to respect system approval states, and configured macOS microphone permissions and app entitlements.
+- Prevented obsolete settings from being imported from older installations.
+
 ## [1.0.62] - 2026-08-26
 
 ### Added
