@@ -3197,6 +3197,14 @@ void RegionSelector::syncMagnifierOverlay()
 
     snaptray::region::CapturePerfScope perfScope("RegionSelector.syncMagnifierOverlay");
 
+    QPoint companionCursorPos = m_inputState.currentPoint;
+#ifdef Q_OS_LINUX
+    // A grabbed cursor can leave the capture screen. Bound the companion
+    // snapshot once so host clipping and rendering agree at screen edges.
+    companionCursorPos.setX(qBound(0, companionCursorPos.x(), qMax(0, width() - 1)));
+    companionCursorPos.setY(qBound(0, companionCursorPos.y(), qMax(0, height() - 1)));
+#endif
+
     const bool shouldShow =
         m_initialRevealState == InitialRevealState::Revealed &&
         shouldShowCursorCompanion();
@@ -3206,7 +3214,7 @@ void RegionSelector::syncMagnifierOverlay()
         (!requiresOverlay || !m_magnifierOverlay->hasPaintedSinceShow());
     const QRect currentFallbackRect = shouldTrackHostFallback
         ? g_cursorCompanionDirtyRegionPlanner.cursorCompanionRectForCursor(
-            m_cursorCompanionStyle, m_inputState.currentPoint, size())
+            m_cursorCompanionStyle, companionCursorPos, size())
         : QRect();
     if (currentFallbackRect != m_hostFallbackCursorCompanionRect) {
         QRect dirtyRect = currentFallbackRect;
@@ -3229,7 +3237,7 @@ void RegionSelector::syncMagnifierOverlay()
 
     m_magnifierOverlay->syncToHost(
         this,
-        m_inputState.currentPoint,
+        companionCursorPos,
         &m_backgroundPixmap,
         m_cursorCompanionStyle,
         requiresOverlay);
@@ -3669,7 +3677,12 @@ bool RegionSelector::shouldShowCursorCompanion() const
 
 bool RegionSelector::cursorCompanionRequiresOverlay() const
 {
-#ifdef Q_OS_MACOS
+#ifdef Q_OS_LINUX
+    // GNOME can stack independent tool windows below the focused full-screen
+    // capture host, even with WindowStaysOnTopHint. Keep the companion in the
+    // host paint path so it remains visible after the overlay's first paint.
+    return false;
+#elif defined(Q_OS_MACOS)
     // Before detached QML surfaces exist, drawing through the host is visually
     // identical and avoids creating/repainting a second full-screen top-level
     // surface during the initial reveal. Restore the overlay as soon as any

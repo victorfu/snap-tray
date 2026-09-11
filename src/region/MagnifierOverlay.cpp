@@ -33,9 +33,16 @@ void MagnifierOverlay::syncToHost(QWidget* host,
 {
     m_host = host;
     m_backgroundPixmap = backgroundPixmap;
+#ifdef Q_OS_LINUX
+    // Linux paints in the host, whose dirty and clip regions use this cursor
+    // snapshot. Resampling the live cursor can flip the companion outside the
+    // host's clip region while a selection drag event is being processed.
+    m_cursorPos = cursorPos;
+#else
     const QPoint liveCursorPos = currentHostCursorPos();
     const QPoint effectiveCursorPos = liveCursorPos.isNull() ? cursorPos : liveCursorPos;
     m_cursorPos = effectiveCursorPos;
+#endif
     m_style = style;
 
     const bool canRenderMagnifier =

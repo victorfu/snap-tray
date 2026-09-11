@@ -6,6 +6,7 @@
 #include <QGuiApplication>
 #include <QSettings>
 #include <QScreen>
+#include <QScopeGuard>
 #include <QtMath>
 #include "RegionSelector.h"
 #include "RegionSelectorTestAccess.h"
@@ -143,6 +144,10 @@ private slots:
     void testMacInitialCursorCompanionUsesHostUntilDetachedUiAppears();
 #endif
 #ifdef Q_OS_LINUX
+    void testLinuxCursorCompanionStaysInHost_data();
+    void testLinuxCursorCompanionStaysInHost();
+    void testLinuxCursorCompanionDragUsesOneCursorPosition_data();
+    void testLinuxCursorCompanionDragUsesOneCursorPosition();
     void testLinuxCaptureSurfaceRemainsManaged();
     void testLinuxTransparentCaptureHelpersDoNotBypassWindowManager();
     void testLinuxSelectionToolbarPrewarmsAfterShow();
@@ -450,6 +455,171 @@ void TestRegionSelectorStyleSync::testStrokeAndMosaicWidthsRestoreIndependently(
 }
 
 #ifdef Q_OS_LINUX
+void TestRegionSelectorStyleSync::testLinuxCursorCompanionStaysInHost_data()
+{
+    using Style = RegionCaptureSettingsManager::CursorCompanionStyle;
+    QTest::addColumn<Style>("style");
+    QTest::newRow("beaver") << Style::Beaver;
+    QTest::newRow("magnifier") << Style::Magnifier;
+}
+
+void TestRegionSelectorStyleSync::testLinuxCursorCompanionStaysInHost()
+{
+    QFETCH(RegionCaptureSettingsManager::CursorCompanionStyle, style);
+
+    RegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    // Center the host on the live cursor without moving the system pointer.
+    selector.setGeometry(QRect(QCursor::pos() - QPoint(320, 240), QSize(640, 480)));
+    selector.m_initialRevealState = RegionSelector::InitialRevealState::Revealed;
+    selector.m_cursorCompanionStyle = style;
+    selector.m_shortcutHintsVisible = false;
+    selector.m_backgroundPixmap = QPixmap(selector.size());
+    selector.m_backgroundPixmap.fill(QColor(72, 118, 164));
+    QPixmap beaverProbe(QSize(192, 192));
+    beaverProbe.fill(QColor(78, 142, 206));
+    selector.m_magnifierOverlay->m_beaverPixmap = beaverProbe;
+
+    selector.show();
+    QTRY_VERIFY(selector.isVisible());
+    selector.m_inputState.currentPoint = selector.mapFromGlobal(QCursor::pos());
+    selector.syncMagnifierOverlay();
+    QVERIFY(!selector.cursorCompanionRequiresOverlay());
+    QVERIFY(!selector.m_magnifierOverlay->isVisible());
+    QVERIFY(selector.m_hostFallbackCursorCompanionRect.isValid());
+
+    // A visible toolbar must not switch Linux back to the independent window
+    // that GNOME can stack below the focused full-screen capture host.
+    selector.m_selectionManager->setSelectionRect(selector.rect());
+    selector.m_toolbarUserDragged = true;
+    selector.m_qmlToolbar->show();
+    QTRY_VERIFY(selector.m_qmlToolbar->isVisible());
+    selector.m_qmlToolbar->setPosition(QCursor::pos() + QPoint(40, 40));
+    QVERIFY(!selector.m_qmlToolbar->geometry().contains(QCursor::pos()));
+
+    const auto paintForeground = [&selector]() {
+        QImage frame(selector.size(), QImage::Format_ARGB32_Premultiplied);
+        frame.fill(Qt::transparent);
+        QPainter painter(&frame);
+        selector.paintHostForegroundOverlays(painter, false);
+        return frame;
+    };
+
+    for (int frame = 0; frame < 2; ++frame) {
+        selector.syncMagnifierOverlay();
+        QVERIFY(!selector.cursorCompanionRequiresOverlay());
+        QVERIFY(!selector.m_magnifierOverlay->isVisible());
+        const QRect companionRect = selector.m_hostFallbackCursorCompanionRect;
+        QVERIFY(companionRect.isValid());
+        QVERIFY(paintForeground().pixelColor(companionRect.center()).alpha() > 0);
+    }
+
+    // The host copy must still disappear when drawing or disabling companions.
+    selector.m_inputState.isDrawing = true;
+    selector.syncMagnifierOverlay();
+    QVERIFY(!selector.m_hostFallbackCursorCompanionRect.isValid());
+    QImage emptyFrame(selector.size(), QImage::Format_ARGB32_Premultiplied);
+    emptyFrame.fill(Qt::transparent);
+    QCOMPARE(paintForeground(), emptyFrame);
+
+    selector.m_inputState.isDrawing = false;
+    selector.m_cursorCompanionStyle = RegionCaptureSettingsManager::CursorCompanionStyle::None;
+    selector.syncMagnifierOverlay();
+    QVERIFY(!selector.m_hostFallbackCursorCompanionRect.isValid());
+    QCOMPARE(paintForeground(), emptyFrame);
+}
+
+void TestRegionSelectorStyleSync::testLinuxCursorCompanionDragUsesOneCursorPosition_data()
+{
+    using Style = RegionCaptureSettingsManager::CursorCompanionStyle;
+    QTest::addColumn<Style>("style");
+    QTest::addColumn<QPoint>("eventPos");
+    QTest::addColumn<QPoint>("liveOffset");
+    QTest::addColumn<QPoint>("companionPos");
+
+    // At these positions in a 640x480 viewport, one more pixel makes the
+    // companion flip to the opposite side of the cursor.
+    QTest::newRow("beaver-right") << Style::Beaver << QPoint(538, 150) << QPoint(1, 0) << QPoint(538, 150);
+    QTest::newRow("beaver-bottom") << Style::Beaver << QPoint(150, 378) << QPoint(0, 1) << QPoint(150, 378);
+    QTest::newRow("magnifier-right") << Style::Magnifier << QPoint(430, 150) << QPoint(1, 0) << QPoint(430, 150);
+    QTest::newRow("magnifier-bottom") << Style::Magnifier << QPoint(150, 245) << QPoint(0, 1) << QPoint(150, 245);
+
+    // A grabbed mouse can leave the capture screen during a selection drag.
+    // Only the companion position is clamped; selection input stays untouched.
+    QTest::newRow("beaver-outside-right") << Style::Beaver << QPoint(750, 150) << QPoint() << QPoint(639, 150);
+    QTest::newRow("beaver-outside-bottom") << Style::Beaver << QPoint(150, 600) << QPoint() << QPoint(150, 479);
+    QTest::newRow("beaver-outside-left") << Style::Beaver << QPoint(-50, 150) << QPoint() << QPoint(0, 150);
+    QTest::newRow("beaver-outside-top") << Style::Beaver << QPoint(150, -50) << QPoint() << QPoint(150, 0);
+    QTest::newRow("magnifier-outside-right") << Style::Magnifier << QPoint(750, 150) << QPoint() << QPoint(639, 150);
+    QTest::newRow("magnifier-outside-bottom") << Style::Magnifier << QPoint(150, 600) << QPoint() << QPoint(150, 479);
+    QTest::newRow("magnifier-outside-left") << Style::Magnifier << QPoint(-50, 150) << QPoint() << QPoint(0, 150);
+    QTest::newRow("magnifier-outside-top") << Style::Magnifier << QPoint(150, -50) << QPoint() << QPoint(150, 0);
+}
+
+void TestRegionSelectorStyleSync::testLinuxCursorCompanionDragUsesOneCursorPosition()
+{
+    QFETCH(RegionCaptureSettingsManager::CursorCompanionStyle, style);
+    QFETCH(QPoint, eventPos);
+    QFETCH(QPoint, liveOffset);
+    QFETCH(QPoint, companionPos);
+
+    const QPoint originalCursorPos = QCursor::pos();
+    const auto restoreCursor = qScopeGuard([originalCursorPos]() {
+        QCursor::setPos(originalCursorPos);
+    });
+    RegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    // Leave room on every side for the native cursor to move outside the host.
+    selector.setGeometry(QRect(100, 100, 640, 480));
+    selector.m_initialRevealState = RegionSelector::InitialRevealState::Revealed;
+    selector.m_cursorCompanionStyle = style;
+    selector.m_shortcutHintsVisible = false;
+    selector.m_backgroundPixmap = QPixmap(selector.size());
+    selector.m_backgroundPixmap.fill(QColor(72, 118, 164));
+    QPixmap beaverProbe(QSize(192, 192));
+    beaverProbe.fill(QColor(78, 142, 206));
+    selector.m_magnifierOverlay->m_beaverPixmap = beaverProbe;
+    selector.show();
+    QCoreApplication::processEvents();
+
+    const QPoint liveGlobalPos = selector.mapToGlobal(eventPos + liveOffset);
+    QCursor::setPos(liveGlobalPos);
+    if (QCursor::pos() != liveGlobalPos) {
+        QSKIP("System cursor position could not be adjusted for cursor companion drag test.");
+    }
+    RegionSelectorTestAccess::dispatchMousePress(selector, QPoint(100, 100));
+    RegionSelectorTestAccess::dispatchWidgetMouseMove(selector, eventPos, Qt::LeftButton);
+    QVERIFY(selector.m_selectionManager->isSelecting());
+    QCOMPARE(selector.m_inputState.currentPoint, eventPos);
+    selector.syncMagnifierOverlay();
+    QVERIFY(!selector.m_magnifierOverlay->isVisible());
+
+    // Render an unclipped reference at the companion position, without a live host
+    // that could replace the supplied cursor position during synchronization.
+    MagnifierOverlay reference(selector.m_magnifierPanel);
+    reference.m_beaverPixmap = beaverProbe;
+    reference.syncToHost(nullptr, companionPos, &selector.m_backgroundPixmap, style, false);
+    QImage expected(selector.size(), QImage::Format_ARGB32_Premultiplied);
+    expected.fill(Qt::transparent);
+    {
+        QPainter painter(&expected);
+        reference.paintFallback(painter, selector.size());
+    }
+    const QRect expectedRect = SelectionDirtyRegionPlanner().cursorCompanionRectForCursor(
+        style, companionPos, selector.size());
+    QVERIFY(expected.pixelColor(expectedRect.center()).alpha() > 0);
+    QCOMPARE(selector.m_hostFallbackCursorCompanionRect, expectedRect);
+
+    QImage actual(selector.size(), QImage::Format_ARGB32_Premultiplied);
+    actual.fill(Qt::transparent);
+    {
+        QPainter painter(&actual);
+        selector.paintHostForegroundOverlays(painter, false);
+    }
+    QCOMPARE(actual, expected);
+    QCOMPARE(selector.m_magnifierOverlay->m_cursorPos, companionPos);
+}
+
 void TestRegionSelectorStyleSync::testLinuxCaptureSurfaceRemainsManaged()
 {
     RegionSelector selector;
