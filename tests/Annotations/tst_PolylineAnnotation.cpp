@@ -62,6 +62,12 @@ private slots:
 
     // Drawing tests
     void testDraw_MultiplePoints();
+    void testShortTerminalSegments_data();
+    void testShortTerminalSegments();
+    void testRepeatedAndZeroLengthPoints_data();
+    void testRepeatedAndZeroLengthPoints();
+    void testHeadAtShortBentEndpoint_data();
+    void testHeadAtShortBentEndpoint();
 
 private:
     QVector<QPoint> createTestPoints(int count, int spacing = 20);
@@ -410,6 +416,133 @@ void TestPolylineAnnotation::testDraw_MultiplePoints()
         }
     }
     QVERIFY(hasColor);
+}
+
+namespace {
+QImage renderPolyline(const PolylineAnnotation& polyline)
+{
+    QImage image(480, 480, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
+    painter.translate(240, 240);
+    polyline.draw(painter);
+    return image;
+}
+}
+
+void TestPolylineAnnotation::testShortTerminalSegments_data()
+{
+    QTest::addColumn<int>("style");
+    QTest::addColumn<int>("angle");
+    QTest::addColumn<int>("length");
+    for (int style = 0; style <= int(LineEndStyle::BothArrowOutline); ++style) {
+        for (int angle : {0, 45, 90, 225}) {
+            for (int length : {2, 20, 120}) {
+                QTest::addRow("style-%d-angle-%d-length-%d", style, angle, length)
+                    << style << angle << length;
+            }
+        }
+    }
+}
+
+void TestPolylineAnnotation::testShortTerminalSegments()
+{
+    QFETCH(int, style);
+    QFETCH(int, angle);
+    QFETCH(int, length);
+    QTransform rotation;
+    rotation.rotate(angle);
+    const QPoint start = rotation.map(QPoint(-length, 0));
+    const QPoint end = -start;
+    // Duplicate terminal vertices and arbitrarily short collinear segments must
+    // not move either arrowhead or introduce a backwards tail.
+    const QVector<QPoint> points{start, start, start / 2, QPoint(), end / 2, end, end};
+    PolylineAnnotation split(points, Qt::red, 12, static_cast<LineEndStyle>(style));
+    PolylineAnnotation simple({start, end}, Qt::red, 12, static_cast<LineEndStyle>(style));
+    QCOMPARE(renderPolyline(split), renderPolyline(simple));
+    QCOMPARE(split.points(), points);
+    if (style != int(LineEndStyle::None)) {
+        QVERIFY(split.containsPoint(end));
+        if (style == int(LineEndStyle::BothArrow) || style == int(LineEndStyle::BothArrowOutline)) {
+            QVERIFY(split.containsPoint(start));
+        }
+    }
+    // The shaft must not run backwards beyond either endpoint on short lines.
+    const QImage image = renderPolyline(simple);
+    const QPointF direction = QPointF(end - start) / QLineF(start, end).length();
+    const qreal tipProjection = QPointF::dotProduct(end, direction);
+    const qreal startProjection = QPointF::dotProduct(start, direction);
+    for (int y = 0; y < image.height(); ++y) {
+        const auto* row = reinterpret_cast<const QRgb*>(image.constScanLine(y));
+        for (int x = 0; x < image.width(); ++x) {
+            if (qAlpha(row[x]) == 0) continue;
+            const QPointF pixel(x + 0.5 - 240, y + 0.5 - 240);
+            const qreal projection = QPointF::dotProduct(pixel, direction);
+            // Allow only the pen's round cap/outline radius and antialiasing.
+            QVERIFY(projection <= tipProjection + 8);
+            QVERIFY(projection >= startProjection - 8);
+        }
+    }
+}
+
+void TestPolylineAnnotation::testRepeatedAndZeroLengthPoints_data()
+{
+    QTest::addColumn<int>("style");
+    QTest::addColumn<QVector<QPoint>>("points");
+    for (int style = 0; style <= int(LineEndStyle::BothArrowOutline); ++style) {
+        QTest::addRow("right-angle-%d", style) << style
+            << QVector<QPoint>{QPoint(-100, 0), QPoint(0, 0), QPoint(0, 5)};
+        QTest::addRow("acute-angle-%d", style) << style
+            << QVector<QPoint>{QPoint(-100, 0), QPoint(0, 0), QPoint(-4, 3)};
+        QTest::addRow("short-bend-%d", style) << style
+            << QVector<QPoint>{QPoint(-2, 0), QPoint(0, 0), QPoint(0, 2)};
+        QTest::addRow("zero-length-%d", style) << style
+            << QVector<QPoint>{QPoint(0, 0), QPoint(0, 0)};
+        QTest::addRow("return-to-start-%d", style) << style
+            << QVector<QPoint>{QPoint(0, 0), QPoint(3, 0), QPoint(0, 0)};
+    }
+}
+
+void TestPolylineAnnotation::testRepeatedAndZeroLengthPoints()
+{
+    QFETCH(int, style);
+    QFETCH(QVector<QPoint>, points);
+    QVector<QPoint> duplicates;
+    for (const auto& point : points) duplicates << point << point;
+    PolylineAnnotation simple(points, Qt::red, 8, static_cast<LineEndStyle>(style));
+    PolylineAnnotation repeated(duplicates, Qt::red, 8, static_cast<LineEndStyle>(style));
+    const QImage image = renderPolyline(simple);
+    QCOMPARE(renderPolyline(repeated), image);
+    QCOMPARE(repeated.points(), duplicates);
+    if (points[0] == points[1]) {
+        QImage empty(image.size(), image.format());
+        empty.fill(Qt::transparent);
+        QCOMPARE(image, empty);
+        QVERIFY(!simple.containsPoint(points.first()));
+    } else if (style != int(LineEndStyle::None)) {
+        QVERIFY(simple.containsPoint(points.last()));
+    }
+}
+
+void TestPolylineAnnotation::testHeadAtShortBentEndpoint_data()
+{
+    QTest::addColumn<int>("style");
+    for (int style = int(LineEndStyle::EndArrow); style <= int(LineEndStyle::BothArrowOutline); ++style) {
+        QTest::addRow("style-%d", style) << style;
+    }
+}
+
+void TestPolylineAnnotation::testHeadAtShortBentEndpoint()
+{
+    QFETCH(int, style);
+    PolylineAnnotation line({QPoint(-100, 0), QPoint(0, 0), QPoint(0, 5)},
+                            Qt::red, 8, static_cast<LineEndStyle>(style));
+    const bool filled = style == int(LineEndStyle::EndArrow) || style == int(LineEndStyle::BothArrow);
+    // This wing area belongs to the head at (0, 5). It is outside both the
+    // shaft and the old horizontal head at the preceding vertex (0, 0).
+    const QPoint wing = filled ? QPoint(-9, 6) : QPoint(-9, 10);
+    QVERIFY(qAlpha(renderPolyline(line).pixel(wing + QPoint(240, 240))) > 128);
+    QVERIFY(line.containsPoint(wing));
 }
 
 QTEST_MAIN(TestPolylineAnnotation)

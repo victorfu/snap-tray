@@ -34,12 +34,14 @@ qreal LineAnnotationGeometry::headBaseDistance(int width)
 }
 
 void LineAnnotationGeometry::addHead(const QPointF& tip, qreal angle, int width,
-                                     LineEndStyle style)
+                                     LineEndStyle style, qreal length)
 {
     if (style == LineEndStyle::None) {
         return;
     }
-    const qreal length = headLength(width);
+    if (length < 0.0) {
+        length = headLength(width);
+    }
     const QPointF wing1 = tip - length * QPointF(qCos(angle - kHeadHalfAngle),
                                                 qSin(angle - kHeadHalfAngle));
     const QPointF wing2 = tip - length * QPointF(qCos(angle + kHeadHalfAngle),
@@ -59,6 +61,20 @@ void LineAnnotationGeometry::addHead(const QPointF& tip, qreal angle, int width,
         head.path.closeSubpath();
     }
     heads.append(head);
+}
+
+void LineAnnotationGeometry::addHeadFromBase(const QPointF& tip, const QPointF& base,
+                                            int width, LineEndStyle style)
+{
+    const QPointF direction = tip - base;
+    const qreal distance = QLineF(base, tip).length();
+    if (distance <= 0.0) {
+        return;
+    }
+    // Fit the head to the available chord, retaining the usual shaft overlap.
+    // On a sufficiently long straight terminal segment this is the normal size.
+    addHead(tip, qAtan2(direction.y(), direction.x()), width, style,
+            (distance + kShaftHeadOverlap) / qCos(kHeadHalfAngle));
 }
 
 void LineAnnotationGeometry::draw(QPainter& painter, const QColor& color, int width,

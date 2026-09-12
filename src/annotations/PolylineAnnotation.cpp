@@ -5,6 +5,10 @@
 #include <QPainterPath>
 #include <QtMath>
 
+namespace {
+constexpr qreal kMinChordLength = 1e-6;
+}
+
 PolylineAnnotation::PolylineAnnotation(const QColor& color, int width,
                                        LineEndStyle style, LineStyle lineStyle)
     : m_color(color)
@@ -32,73 +36,84 @@ void PolylineAnnotation::draw(QPainter& painter) const
 LineAnnotationGeometry PolylineAnnotation::geometry() const
 {
     LineAnnotationGeometry geometry;
-    if (m_points.size() < 2) {
+    QVector<QPointF> points;
+    for (const QPoint& point : m_points) {
+        if (!points.isEmpty() && points.last() == point) continue;
+        while (points.size() >= 2) {
+            const QPointF incoming = points.last() - points[points.size() - 2];
+            const QPointF outgoing = QPointF(point) - points.last();
+            if (incoming.x() * outgoing.y() != incoming.y() * outgoing.x()
+                || QPointF::dotProduct(incoming, outgoing) <= 0.0) break;
+            // Rendering-only normalization: splitting a straight segment must
+            // not perturb head placement through floating-point accumulation.
+            points.removeLast();
+        }
+        points.append(point);
+    }
+    if (points.size() < 2) {
         return geometry;
     }
-    // Check if we have arrowheads
-    bool hasEndArrow = (m_lineEndStyle != LineEndStyle::None);
-    bool hasStartArrow = (m_lineEndStyle == LineEndStyle::BothArrow ||
-                          m_lineEndStyle == LineEndStyle::BothArrowOutline);
-    bool needsEndAdjust = (m_lineEndStyle == LineEndStyle::EndArrow ||
-                           m_lineEndStyle == LineEndStyle::EndArrowOutline ||
-                           m_lineEndStyle == LineEndStyle::BothArrow ||
-                           m_lineEndStyle == LineEndStyle::BothArrowOutline);
-    bool needsStartAdjust = hasStartArrow;
+    QVector<qreal> distances{0.0};
+    qreal totalLength = 0.0;
+    for (int i = 1; i < points.size(); ++i) {
+        totalLength += QLineF(points[i - 1], points[i]).length();
+        distances.append(totalLength);
+    }
 
-    geometry.capStyle = hasEndArrow ? Qt::FlatCap : Qt::RoundCap;
-    const qreal arrowLength = LineAnnotationGeometry::headLength(m_width);
-    const qreal baseDistance = LineAnnotationGeometry::headBaseDistance(m_width);
-    int lastIdx = m_points.size() - 1;
+    const auto pointAtDistance = [&](qreal distance) {
+        for (int i = 1; i < points.size(); ++i) {
+            if (distance <= distances[i]) {
+                const qreal fraction = (distance - distances[i - 1])
+                    / (distances[i] - distances[i - 1]);
+                return points[i - 1] + fraction * (points[i] - points[i - 1]);
+            }
+        }
+        return points.last();
+    };
+    const bool hasEnd = m_lineEndStyle != LineEndStyle::None;
+    const bool hasStart = m_lineEndStyle == LineEndStyle::BothArrow
+        || m_lineEndStyle == LineEndStyle::BothArrowOutline;
+    const qreal headDistance = qMin(LineAnnotationGeometry::headBaseDistance(m_width),
+                                    hasStart ? totalLength / 2.0 : totalLength);
+    qreal startDistance = 0.0;
+    qreal endDistance = totalLength;
 
-    // Determine where to draw the end arrow
-    // To avoid jitter at inflection points, keep arrow at previous vertex
-    // until the new segment is long enough.
-    int arrowTipIdx = lastIdx;
-    if (m_points.size() > 2) {
-        double lastSegmentLen = QLineF(m_points[lastIdx-1], m_points[lastIdx]).length();
-        if (lastSegmentLen < arrowLength) {
-            arrowTipIdx = lastIdx - 1;
+    if (hasEnd) {
+        qreal baseDistance = totalLength - headDistance;
+        QPointF base = pointAtDistance(baseDistance);
+        if (QLineF(base, points.last()).length() < kMinChordLength) {
+            // A looping tail can return to the tip. Use its last nonzero segment
+            // rather than inventing a direction for a zero-length chord.
+            baseDistance = qMax(baseDistance, distances[distances.size() - 2]);
+            base = pointAtDistance(baseDistance);
+        }
+        geometry.addHeadFromBase(points.last(), base, m_width, m_lineEndStyle);
+        if (m_lineEndStyle != LineEndStyle::EndArrowLine) {
+            endDistance = baseDistance;
         }
     }
-
-    // Build the path for all segments
-
-    // Adjust first point for start arrowhead
-    QPointF startPoint = m_points[0];
-    if (needsStartAdjust && m_points.size() >= 2) {
-        double angle = qAtan2(m_points[0].y() - m_points[1].y(),
-                             m_points[0].x() - m_points[1].x());
-        startPoint = QPointF(
-            m_points[0].x() - baseDistance * qCos(angle),
-            m_points[0].y() - baseDistance * qSin(angle)
-        );
-    }
-    geometry.shaft.moveTo(startPoint);
-
-    // Draw segments
-    for (int i = 1; i <= lastIdx; ++i) {
-        QPointF target = m_points[i];
-
-        // Check if this vertex needs adjustment for the end arrow
-        if (needsEndAdjust && i == arrowTipIdx) {
-             const QPoint& prev = m_points[i - 1];
-             double angle = qAtan2(target.y() - prev.y(), target.x() - prev.x());
-             target = QPointF(
-                target.x() - baseDistance * qCos(angle),
-                target.y() - baseDistance * qSin(angle)
-             );
+    if (hasStart) {
+        startDistance = headDistance;
+        QPointF base = pointAtDistance(startDistance);
+        if (QLineF(base, points.first()).length() < kMinChordLength) {
+            startDistance = qMin(startDistance, distances[1]);
+            base = pointAtDistance(startDistance);
         }
-
-        geometry.shaft.lineTo(target);
+        geometry.addHeadFromBase(points.first(), base, m_width, m_lineEndStyle);
     }
 
-    const QPointF endDirection = m_points[arrowTipIdx] - m_points[arrowTipIdx - 1];
-    geometry.addHead(m_points[arrowTipIdx], qAtan2(endDirection.y(), endDirection.x()),
-                     m_width, m_lineEndStyle);
-    if (hasStartArrow) {
-        const QPointF startDirection = m_points[0] - m_points[1];
-        geometry.addHead(m_points[0], qAtan2(startDirection.y(), startDirection.x()),
-                         m_width, m_lineEndStyle);
+    // Trim along the polyline, consuming short terminal segments instead of
+    // extending them backwards. Each head joins the retained shaft at its base
+    // and points to the actual endpoint, even when its neck spans a corner.
+    geometry.capStyle = hasEnd ? Qt::FlatCap : Qt::RoundCap;
+    if (endDistance > startDistance) {
+        geometry.shaft.moveTo(pointAtDistance(startDistance));
+        for (int i = 1; i < points.size() - 1; ++i) {
+            if (distances[i] > startDistance && distances[i] < endDistance) {
+                geometry.shaft.lineTo(points[i]);
+            }
+        }
+        geometry.shaft.lineTo(pointAtDistance(endDistance));
     }
     return geometry;
 }

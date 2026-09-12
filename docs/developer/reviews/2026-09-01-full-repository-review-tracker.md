@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 23 |
-| Confirmed / Fix Ready | 12 |
+| Confirmed / Open | 22 |
+| Confirmed / Fix Ready | 13 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 1 |
@@ -68,7 +68,7 @@
 | REV-012 | Fix Ready | P1 | High | Eraser | 只在離散事件點擦除，快速拖曳會留下間隙 |
 | REV-013 | Fix Ready | P2 | High | Arrow | 端點曲線結果依 mouse event 分割方式而變 |
 | REV-014 | Fix Ready | P1 | High | Arrow / Polyline | 寬箭頭超出 bounding／hit geometry |
-| REV-015 | Open | P1 | High | Polyline | 短末段把箭頭畫在倒數頂點，箭頭後仍有尾巴 |
+| REV-015 | Fix Ready | P1 | High | Polyline | 短末段把箭頭畫在倒數頂點，箭頭後仍有尾巴 |
 | REV-016 | Open | P2 | High | Gizmo | 小物件的 handle hit zones 重疊，部分 handle 不可達 |
 | REV-017 | Open | P1 | High | Text | wrapText 改變空白且不支援 CJK 字元換行 |
 | REV-018 | Open | P1 | High | Save Metadata | detected-window metadata 在儲存前被清除 |
@@ -236,12 +236,13 @@
 
 ### REV-015 — Polyline 短末段把箭頭放在倒數頂點
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/annotations/PolylineAnnotation.cpp:64-135。
 - 觸發：polyline 至少三點，最後一段短於 arrowLength。
 - 後果：arrowTipIdx 改為倒數頂點，但 path loop 仍繼續畫到真正末點；結果是箭頭出現在中途，箭頭尖端後還有一段線尾，與 end-arrow 語意相反。
 - 完成條件：不論末段長度，end arrow 必須位於視覺終點且 shaft 正確縮短；涵蓋零長度、短折線、急角與各 arrow style。
-- 修正證據：待補。
+- 修正證據：Polyline head 固定在實際終點，沿折線回溯計算接合底部與方向；短末段可跨頂點接合、整條短線限制 head 尺寸，雙箭頭各使用最多半條線長。shaft 依路徑長度裁短，不再反向延伸；重複／同向共線點只在繪製時正規化，原始頂點與 History 資料保留。
+- 驗證：2026-09-12 macOS scripts/build.sh 與 PolylineAnnotation、ArrowAnnotation、AnnotationLayer、PolylineToolHandler、AnnotationSerializer 五套測試通過；新增 107 組短線／方向／style／重複／零長度／急角／回頭路徑情境，驗證分段前後像素相同、shaft 不越過尖端、實際終點 head wing 像素。REV-014 的 432 組 clip／cache／hit 矩陣仍通過；跨平台 UI smoke 待補，保留 Fix Ready。對應本機 commit：fix: anchor polyline arrowheads at the final endpoint。
 
 ### REV-016 — 小 annotation 的 gizmo handles 可能不可達
 
@@ -521,3 +522,4 @@
 | 2026-09-12 | REV-012 完成連續刷頭掃描與單次 gesture history 回歸，macOS 建置及三套測試通過；標為 Fix Ready。 |
 | 2026-09-12 | REV-013 完成箭頭控制點浮點化與序列化精度回歸，macOS 建置及四套測試通過；標為 Fix Ready。 |
 | 2026-09-12 | REV-014 完成 Arrow／Polyline 實際繪製幾何共用與 432 組像素回歸，macOS 建置及六套測試通過；標為 Fix Ready。 |
+| 2026-09-12 | REV-015 完成短末段終點與 shaft 接合修正，macOS 建置、五套測試及 107 組新增回歸通過；標為 Fix Ready。 |

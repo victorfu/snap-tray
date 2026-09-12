@@ -19,7 +19,9 @@ struct LineAnnotationGeometry
 
     static qreal headLength(int width);
     static qreal headBaseDistance(int width);
-    void addHead(const QPointF& tip, qreal angle, int width, LineEndStyle style);
+    void addHead(const QPointF& tip, qreal angle, int width, LineEndStyle style,
+                 qreal length = -1.0);
+    void addHeadFromBase(const QPointF& tip, const QPointF& base, int width, LineEndStyle style);
     void draw(QPainter& painter, const QColor& color, int width, LineStyle style) const;
     QRect boundingRect(int width) const;
     bool containsPoint(const QPoint& point, int width) const;
