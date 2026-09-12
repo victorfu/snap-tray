@@ -440,8 +440,9 @@
 - 狀態：Fix Ready
 - 原始證據：638 px 工具列在 640 px 畫面產生 qBound(10, x, -9)，Debug assertion 已重現。
 - 修正證據：ToolbarOverflowLayout 統一 availableGeometry 的 10 px 邊距、exclusive 邊界與安全 clamp。Pin 工具列依實際 QML 尺寸分配按鈕，保留 Save／Copy／Done，其餘移至獨立 GlassSurface 更多選單；固定區也放不下時採單一更多按鈕。共用 Region／Canvas 預設配置維持原行為。選單支援停用／active 狀態、鍵盤、捲動、不搶焦點、click-outside 與完整關閉生命週期。
-- 驗證：2026-09-12 macOS scripts/build.sh 通過；Qml_ToolbarOverflow 的 1／100／300／500／640／1920 px、OCR 顯隱、負座標／oversized clamp、鍵盤／捲動／生命週期共 16 個測試計數通過。另四套 Pin／Region／Canvas ViewModel 與 Pin StyleSync 回歸通過，實際 QML 截圖已檢查。all_qmllint exit 0；既有 CursorTokens 等警告不在本項範圍。Windows／Linux 跨螢幕、縮放 UI smoke 待補，保留 Fix Ready。
+- 驗證：2026-09-12 macOS scripts/build.sh 通過；Qml_ToolbarOverflow 的 1／100／300／500／640／1920 px、OCR 顯隱、負座標／oversized clamp、鍵盤／捲動／生命週期共 17 個測試計數通過。另四套 Pin／Region／Canvas ViewModel 與 Pin StyleSync 回歸通過，實際 QML 截圖已檢查。all_qmllint exit 0；既有 CursorTokens 等警告不在本項範圍。Windows／Linux 跨螢幕、縮放 UI smoke 待補，保留 Fix Ready。
 - 對應本機 commit：fix: keep pin toolbar actions reachable on narrow screens。
+- 整合驗證補充：共用 ToolbarButtonState.js 改以私有 QML resource 提供，避免 standalone QQmlEngine 的模組歧義。新增冷啟動匯入回歸；Qml_WidthSectionQml、Qml_SettingsWindowFeatureGating 與 Qml_ToolbarOverflow 均通過。補充 commit：fix: keep toolbar state script private to QML resources。
 
 ## Potential Issues
 
@@ -501,3 +502,4 @@
 | 2026-09-12 | REV-002 完成 DPR 合成修正與 macOS 像素／入口回歸測試，標為 Fix Ready；跨平台 UI 驗證待補。 |
 | 2026-09-12 | REV-005 完成原子禁止覆寫存檔與所有自動命名入口遷移，macOS 並行及回歸測試通過；標為 Fix Ready。 |
 | 2026-09-12 | POT-001 升格 Confirmed；完成安全定位與更多選單，macOS QML 排版及互動驗證通過，標為 Fix Ready。 |
+| 2026-09-12 | POT-001 整合驗證修正共用腳本的模組匯出歧義；兩套既有 standalone QML 測試與新增匯入回歸通過。 |

@@ -1,6 +1,8 @@
 #include <QtTest>
 #include <QQuickView>
 #include <QQuickItem>
+#include <QQmlComponent>
+#include <QQmlEngine>
 #include <QApplication>
 #include <QScreen>
 #include <QWidget>
@@ -19,11 +21,21 @@ class TestToolbarOverflow : public QObject
     Q_OBJECT
 private slots:
     void init() { QTest::failOnWarning(QRegularExpression(".*Binding loop.*")); }
+    void standaloneEngineCanImportModule();
     void layout_data();
     void layout();
     void safePositioning();
     void menuActionsAndLifetime();
 };
+
+void TestToolbarOverflow::standaloneEngineCanImportModule()
+{
+    QQmlEngine engine;
+    QQmlComponent component(&engine, QUrl("qrc:/SnapTrayQml/toolbar/WidthSection.qml"));
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+    QScopedPointer<QObject> item(component.create());
+    QVERIFY(item);
+}
 
 void TestToolbarOverflow::layout_data()
 {

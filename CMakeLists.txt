@@ -1082,7 +1082,6 @@ qt_add_qml_module(snaptray_qml
         src/qml/dialogs/ScreenPickerDialog.qml
         src/qml/toolbar/FloatingToolbar.qml
         src/qml/toolbar/ToolbarOverflowMenu.qml
-        src/qml/toolbar/ToolbarButtonState.js
         src/qml/toolbar/ToolOptionsStrip.qml
         src/qml/toolbar/ColorPaletteSection.qml
         src/qml/toolbar/WidthSection.qml
@@ -1095,6 +1094,8 @@ qt_add_qml_module(snaptray_qml
         src/qml/panels/ShortcutHintsPanel.qml
         src/qml/panels/RegionControlPanel.qml
         src/qml/panels/MultiRegionListPanel.qml
+    RESOURCES
+        src/qml/toolbar/ToolbarButtonState.js
     SOURCES
         src/ui/DesignSystem.cpp
         include/ui/DesignSystem.h
