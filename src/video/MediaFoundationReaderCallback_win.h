@@ -2,6 +2,7 @@
 
 #include "SourceReaderMailbox.h"
 #include <windows.h>
+#include <mfidl.h> // Declares IMFMediaSource and IMFMediaSink for mfreadwrite.h.
 #include <mfreadwrite.h>
 #include <wrl/client.h>
 #include <atomic>

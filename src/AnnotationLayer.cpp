@@ -1073,8 +1073,8 @@ const QPixmap* AnnotationLayer::annotationCache(const CacheKey& key, qreal devic
     const auto byteSize = [&](int depth) {
         const std::uint64_t pixels = std::uint64_t(key.physicalWidth) * std::uint64_t(key.physicalHeight);
         const std::uint64_t bytesPerPixel = std::uint64_t(qMax(1, (depth + 7) / 8));
-        return pixels > std::numeric_limits<std::uint64_t>::max() / bytesPerPixel
-            ? std::numeric_limits<std::uint64_t>::max() : pixels * bytesPerPixel;
+        return pixels > (std::numeric_limits<std::uint64_t>::max)() / bytesPerPixel
+            ? (std::numeric_limits<std::uint64_t>::max)() : pixels * bytesPerPixel;
     };
     // Evict before allocating, including before a single oversized MRU entry.
     makeAnnotationCacheRoom(byteSize(qMax(32, QPixmap::defaultDepth())));
