@@ -6,6 +6,8 @@
 #include <QPixmap>
 #include <QWidget>
 
+class TestColorWheel;
+
 namespace snaptray {
 namespace colorwidgets {
 
@@ -75,6 +77,7 @@ protected:
     void dropEvent(QDropEvent* event) override;
 
 private:
+    friend class ::TestColorWheel;
     enum DragMode { DragNone, DragHue, DragSquare };
 
     // Rendering

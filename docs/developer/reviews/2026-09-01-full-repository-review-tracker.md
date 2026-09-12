@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 13 |
-| Confirmed / Fix Ready | 20 |
+| Confirmed / Open | 12 |
+| Confirmed / Fix Ready | 21 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 3 |
@@ -82,7 +82,7 @@
 | REV-026 | Fix Ready | P1 | High | Linux Runtime | XDG session 與 Qt QPA 衝突時錯判為 X11 |
 | REV-027 | Open | P2 | High | QML | CursorTokens 未註冊 singleton |
 | REV-028 | Open | P2 | High | Settings / CLI | install／uninstall 失敗後 busy 永久不解除 |
-| REV-029 | Open | P2 | High | Color Picker | triangle value 軸使用 height 而非 width |
+| REV-029 | Fix Ready | P2 | High | Color Picker | triangle value 軸使用 height 而非 width |
 | REV-030 | Fix Ready | P1 | High | QML Dialog | setModal(true) 實際仍為 NonModal |
 | REV-031 | Open | P2 | High | Pin Info | 顯示新值但單項 Copy 複製舊值 |
 | REV-032 | Open | P1 | High | macOS Recording | SCK 未排除錄影 tooltip window |
@@ -371,12 +371,13 @@
 
 ### REV-029 — ColorWheel triangle 的 value 軸使用錯誤尺寸
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/colorwidgets/ColorDialog.cpp:49-54；src/colorwidgets/ColorWheel.cpp:145-170,262-299,319-333,402-415。
 - 觸發：預設 Triangle color picker，在 triangle 右側選擇高 value 顏色。
 - 後果：x 軸長度是 width，render 卻用 x / height；最右端只畫約 86% value，但 selector／輸出可到 100%，指示點下顏色與實際 QColor 不一致。x=0 的 sliceH=0 亦可導致 saturation 除零。
 - 完成條件：固定 hue，對多個 S/V 比較 selector pixel 與 color()；包含 V=0/128/255、邊界與不同 DPR，且不得有 NaN／invalid QColor。
-- 修正證據：待補。
+- 修正證據：Triangle texture 的 value 軸改依實際像素寬度，端點取樣涵蓋完整 0～1，零寬切片固定 saturation 0 避免除零；HSV／HSL 使用與 color() 相同的 hue 與整數色彩範圍，維持 LCH 契約。
+- 驗證：2026-09-12 macOS scripts/build.sh、ColorWidgets_ColorWheel 與 ScreenCanvas_StyleSync 通過；27 組尺寸／hue／HSV-HSL-LCH 矩陣驗證端點、黑白及中間色，實際 mouse selection 與 texture 一致；另在 DPR 1.5、2 各 30 個 Qt Test 計數全數通過。跨平台色盤原生顯示 smoke 待補，保留 Fix Ready。 對應本機 commit：fix: align triangle color wheel rendering with selected colors。
 
 ### REV-030 — QmlDialog::setModal(true) 沒有建立 modal window
 
@@ -540,3 +541,4 @@
 | 2026-09-12 | REV-020 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-025 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-026 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-029 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
