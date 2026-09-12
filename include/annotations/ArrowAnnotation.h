@@ -43,11 +43,11 @@ public:
     // Point accessors
     void setStart(const QPoint &start);
     void setEnd(const QPoint &end);
-    void setControlPoint(const QPoint &p);
+    void setControlPoint(const QPointF &p);
 
     QPoint start() const { return m_start; }
     QPoint end() const { return m_end; }
-    QPoint controlPoint() const { return m_controlPoint; }
+    QPointF controlPoint() const { return m_controlPoint; }
     QColor color() const { return m_color; }
     int width() const { return m_width; }
     LineStyle lineStyle() const { return m_lineStyle; }
@@ -87,7 +87,7 @@ private:
 
     QPoint m_start;
     QPoint m_end;
-    QPoint m_controlPoint;
+    QPointF m_controlPoint;
     QColor m_color;
     int m_width;
     LineEndStyle m_lineEndStyle;

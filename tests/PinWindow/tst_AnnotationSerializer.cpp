@@ -120,6 +120,8 @@ private slots:
     void testBulkRoundtripPreservesVisibleSceneAndBoundedUndo();
     void testSerializeExcludesRemovedCommandPayload();
     void testDeserializeFailureClearsLayerOnce();
+    void testArrowControlPointPrecision_data();
+    void testArrowControlPointPrecision();
 };
 
 void tst_AnnotationSerializer::testRoundtripPreservesSupportedAnnotations()
@@ -138,6 +140,36 @@ void tst_AnnotationSerializer::testRoundtripPreservesSupportedAnnotations()
 
     const QByteArray roundtrip = SnapTray::serializeAnnotationLayer(restored);
     QCOMPARE(QJsonDocument::fromJson(roundtrip), QJsonDocument::fromJson(serialized));
+}
+
+void tst_AnnotationSerializer::testArrowControlPointPrecision_data()
+{
+    QTest::addColumn<QPointF>("control");
+    QTest::newRow("legacy-integer") << QPointF(70, 10);
+    QTest::newRow("fractional") << QPointF(70.5, -10.5);
+}
+
+void tst_AnnotationSerializer::testArrowControlPointPrecision()
+{
+    QFETCH(QPointF, control);
+    AnnotationLayer original;
+    auto arrow = std::make_unique<ArrowAnnotation>(QPoint(20, 20), QPoint(121, 41), Qt::red, 5);
+    arrow->setControlPoint(control);
+    original.addItem(std::move(arrow));
+    const QByteArray data = SnapTray::serializeAnnotationLayer(original);
+    AnnotationLayer restored;
+    QVERIFY(SnapTray::deserializeAnnotationLayer(data, &restored, {}));
+    auto* restoredArrow = dynamic_cast<ArrowAnnotation*>(restored.itemAt(0));
+    QVERIFY(restoredArrow);
+    QCOMPARE(restoredArrow->controlPoint(), control);
+    restoredArrow->setEnd(QPoint(122, 40));
+    QCOMPARE(restoredArrow->controlPoint(), control + QPointF(0.5, -0.5));
+    restored.undo();
+    QVERIFY(restored.isEmpty());
+    restored.redo();
+    restoredArrow = dynamic_cast<ArrowAnnotation*>(restored.itemAt(0));
+    QVERIFY(restoredArrow);
+    QCOMPARE(restoredArrow->controlPoint(), control + QPointF(0.5, -0.5));
 }
 
 void tst_AnnotationSerializer::testBulkRoundtripPreservesVisibleSceneAndBoundedUndo()

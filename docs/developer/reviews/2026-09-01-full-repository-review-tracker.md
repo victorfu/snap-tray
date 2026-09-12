@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 25 |
-| Confirmed / Fix Ready | 10 |
+| Confirmed / Open | 24 |
+| Confirmed / Fix Ready | 11 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 1 |
@@ -66,7 +66,7 @@
 | REV-010 | Fix Ready | P1 | High | Region Selection | 建立與一般 resize 沒有 clamp 到 bounds |
 | REV-011 | Fix Ready | P1 | High | Region Selection | mouse release 忽略最後座標 |
 | REV-012 | Fix Ready | P1 | High | Eraser | 只在離散事件點擦除，快速拖曳會留下間隙 |
-| REV-013 | Open | P2 | High | Arrow | 端點曲線結果依 mouse event 分割方式而變 |
+| REV-013 | Fix Ready | P2 | High | Arrow | 端點曲線結果依 mouse event 分割方式而變 |
 | REV-014 | Open | P1 | High | Arrow / Polyline | 寬箭頭超出 bounding／hit geometry |
 | REV-015 | Open | P1 | High | Polyline | 短末段把箭頭畫在倒數頂點，箭頭後仍有尾巴 |
 | REV-016 | Open | P2 | High | Gizmo | 小物件的 handle hit zones 重疊，部分 handle 不可達 |
@@ -216,12 +216,13 @@
 
 ### REV-013 — Arrow endpoint curve 依事件取樣而變
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/annotations/ArrowAnnotation.cpp:262-280；src/region/RegionInputHandler.cpp:1572-1582；src/PinWindow.cpp:5593-5603；src/ScreenCanvasSession.cpp:2608-2615。
 - 觸發：拖動既有 curved arrow 的 start／end；總位移被拆成多個含奇數像素的 move delta。
 - 後果：每次 setStart／setEnd 都以 QPoint 的 delta / 2 更新 control point並截斷。相同起終點若由不同事件序列到達，最終 control point 與曲線形狀不同。
 - 完成條件：以 drag-start snapshot 計算一次絕對結果或使用無截斷浮點；一大步與多小步的最終 start/end/control 必須完全一致。
-- 修正證據：待補。
+- 修正證據：Arrow control point 全程使用 QPointF，端點位移以浮點半位移更新；初始 midpoint、三個編輯入口、clone 與 History JSON 皆保留小數，既有整數資料仍可讀取。
+- 驗證：2026-09-12 macOS scripts/build.sh 與 ArrowAnnotation、AnnotationSerializer、TransformationGizmo、ArrowToolHandler 四套測試通過。新增正負奇數位移／起終端點一大步與 29 小步的座標及像素一致測試，並驗證反向還原、clone、整數／半像素序列化與 undo／redo；跨平台原生拖曳 smoke 待補，保留 Fix Ready。對應本機 commit：fix: preserve fractional arrow control points during endpoint edits。
 
 ### REV-014 — 寬箭頭的視覺超出 bounding／hit geometry
 
@@ -517,3 +518,4 @@
 | 2026-09-12 | REV-030 完成 QQuickView modality 與 History capture 入口互斥，三套原生 macOS 回歸通過；標為 Fix Ready。 |
 | 2026-09-12 | REV-034 完成實際 encoder 音訊能力傳遞與靜音降級 UI／警告，標為 Fix Ready；本批五項修正整合後 macOS 149／149 測試通過，QML lint exit 0。 |
 | 2026-09-12 | REV-012 完成連續刷頭掃描與單次 gesture history 回歸，macOS 建置及三套測試通過；標為 Fix Ready。 |
+| 2026-09-12 | REV-013 完成箭頭控制點浮點化與序列化精度回歸，macOS 建置及四套測試通過；標為 Fix Ready。 |

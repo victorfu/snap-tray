@@ -171,7 +171,7 @@ QJsonObject serializeAnnotationItem(const AnnotationItem* item)
             {"type", QStringLiteral("arrow")},
             {"start", serializePoint(arrow->start())},
             {"end", serializePoint(arrow->end())},
-            {"controlPoint", serializePoint(arrow->controlPoint())},
+            {"controlPoint", serializePointF(arrow->controlPoint())},
             {"color", serializeColor(arrow->color())},
             {"width", arrow->width()},
             {"lineEndStyle", static_cast<int>(arrow->lineEndStyle())},
@@ -299,7 +299,7 @@ std::unique_ptr<AnnotationItem> deserializeAnnotationItem(const QJsonObject& obj
             object.value(QStringLiteral("width")).toInt(),
             static_cast<LineEndStyle>(object.value(QStringLiteral("lineEndStyle")).toInt()),
             static_cast<LineStyle>(object.value(QStringLiteral("lineStyle")).toInt()));
-        item->setControlPoint(deserializePoint(object.value(QStringLiteral("controlPoint"))));
+        item->setControlPoint(deserializePointF(object.value(QStringLiteral("controlPoint"))));
         return item;
     }
 

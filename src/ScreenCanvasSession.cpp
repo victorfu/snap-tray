@@ -2617,7 +2617,7 @@ bool ScreenCanvasSession::handleArrowAnnotationMove(const QPoint& pos)
         const QPointF start = arrowItem->start();
         const QPointF end = arrowItem->end();
         const QPointF newControl = 2.0 * QPointF(pos) - 0.5 * (start + end);
-        arrowItem->setControlPoint(newControl.toPoint());
+        arrowItem->setControlPoint(newControl);
     }
 
     requestLocalizedToolRepaint();

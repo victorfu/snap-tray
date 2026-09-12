@@ -40,6 +40,8 @@ private slots:
     void testSetEnd();
     void testSetControlPoint();
     void testMoveBy();
+    void testEndpointSampling_data();
+    void testEndpointSampling();
 
     // Clone tests
     void testClone_CreatesNewInstance();
@@ -240,6 +242,54 @@ void TestArrowAnnotation::testMoveBy()
 // ============================================================================
 // Clone Tests
 // ============================================================================
+
+void TestArrowAnnotation::testEndpointSampling_data()
+{
+    QTest::addColumn<QPoint>("delta");
+    QTest::addColumn<bool>("moveStart");
+    for (QPoint delta : {QPoint(1, 1), QPoint(9, -7), QPoint(-9, 7), QPoint(-13, -11)}) {
+        for (bool moveStart : {false, true}) {
+            QTest::addRow("%d-%d-start-%d", delta.x(), delta.y(), moveStart)
+                << delta << moveStart;
+        }
+    }
+}
+
+void TestArrowAnnotation::testEndpointSampling()
+{
+    QFETCH(QPoint, delta);
+    QFETCH(bool, moveStart);
+    ArrowAnnotation single(QPoint(40, 41), QPoint(201, 202), Qt::red, 7);
+    QCOMPARE(single.controlPoint(), QPointF(120.5, 121.5));
+    single.setControlPoint(QPointF(100.5, 60.5));
+    ArrowAnnotation sampled = single;
+    const QPoint endpoint = moveStart ? single.start() : single.end();
+    auto move = [moveStart](ArrowAnnotation& arrow, QPoint position) {
+        if (moveStart) arrow.setStart(position);
+        else arrow.setEnd(position);
+    };
+    move(single, endpoint + delta);
+    for (int i = 1; i <= 29; ++i) {
+        move(sampled, endpoint + delta * i / 29);
+    }
+    QCOMPARE(sampled.start(), single.start());
+    QCOMPARE(sampled.end(), single.end());
+    QCOMPARE(sampled.controlPoint(), single.controlPoint());
+    QCOMPARE(single.controlPoint(), QPointF(100.5, 60.5) + QPointF(delta) / 2.0);
+    auto render = [](const AnnotationItem& item) {
+        QImage image(300, 300, QImage::Format_ARGB32_Premultiplied);
+        image.fill(Qt::transparent);
+        QPainter painter(&image);
+        item.draw(painter);
+        return image;
+    };
+    QCOMPARE(render(single), render(sampled));
+    auto copy = sampled.clone();
+    QCOMPARE(static_cast<ArrowAnnotation*>(copy.get())->controlPoint(), single.controlPoint());
+    QCOMPARE(render(*copy), render(single));
+    move(sampled, endpoint);
+    QCOMPARE(sampled.controlPoint(), QPointF(100.5, 60.5));
+}
 
 void TestArrowAnnotation::testClone_CreatesNewInstance()
 {

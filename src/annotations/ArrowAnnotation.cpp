@@ -9,7 +9,7 @@ ArrowAnnotation::ArrowAnnotation(const QPoint &start, const QPoint &end, const Q
                                  LineEndStyle style, LineStyle lineStyle)
     : m_start(start)
     , m_end(end)
-    , m_controlPoint((start + end) / 2)  // Default: midpoint = straight line
+    , m_controlPoint((QPointF(start) + QPointF(end)) / 2.0)  // Default: midpoint = straight line
     , m_color(color)
     , m_width(width)
     , m_lineEndStyle(style)
@@ -20,7 +20,7 @@ ArrowAnnotation::ArrowAnnotation(const QPoint &start, const QPoint &end, const Q
 double ArrowAnnotation::endTangentAngle() const
 {
     // Tangent at t=1 for Quadratic Bézier is proportional to (P2 - P1) = (end - control)
-    QPoint tangent = m_end - m_controlPoint;
+    QPointF tangent = m_end - m_controlPoint;
 
     // Edge case: if end == control, fall back to end - start
     if (tangent.isNull()) {
@@ -33,7 +33,7 @@ double ArrowAnnotation::endTangentAngle() const
 double ArrowAnnotation::startTangentAngle() const
 {
     // Tangent at t=0 for Quadratic Bézier is proportional to (P1 - P0) = (control - start)
-    QPoint tangent = m_controlPoint - m_start;
+    QPointF tangent = m_controlPoint - m_start;
 
     // Edge case: if control == start, fall back to end - start
     if (tangent.isNull()) {
@@ -216,10 +216,10 @@ QRect ArrowAnnotation::boundingRect() const
     int margin = 20;  // Extra margin for arrowhead
 
     // Include all three points (start, end, control) in bounding calculation
-    int minX = qMin(qMin(m_start.x(), m_end.x()), m_controlPoint.x()) - margin;
-    int maxX = qMax(qMax(m_start.x(), m_end.x()), m_controlPoint.x()) + margin;
-    int minY = qMin(qMin(m_start.y(), m_end.y()), m_controlPoint.y()) - margin;
-    int maxY = qMax(qMax(m_start.y(), m_end.y()), m_controlPoint.y()) + margin;
+    int minX = qFloor(qMin(qreal(qMin(m_start.x(), m_end.x())), m_controlPoint.x())) - margin;
+    int maxX = qCeil(qMax(qreal(qMax(m_start.x(), m_end.x())), m_controlPoint.x())) + margin;
+    int minY = qFloor(qMin(qreal(qMin(m_start.y(), m_end.y())), m_controlPoint.y())) - margin;
+    int maxY = qCeil(qMax(qreal(qMax(m_start.y(), m_end.y())), m_controlPoint.y())) + margin;
 
     return QRect(minX, minY, maxX - minX, maxY - minY);
 }
@@ -267,7 +267,7 @@ void ArrowAnnotation::setStart(const QPoint &start)
 
     // Move control point by half the delta to keep relative curvature
     // This maintains the curve shape when adjusting endpoints
-    m_controlPoint += delta / 2;
+    m_controlPoint += QPointF(delta) / 2.0;
 }
 
 void ArrowAnnotation::setEnd(const QPoint &end)
@@ -277,10 +277,10 @@ void ArrowAnnotation::setEnd(const QPoint &end)
     m_end = end;
 
     // Move control point by half the delta to keep relative curvature
-    m_controlPoint += delta / 2;
+    m_controlPoint += QPointF(delta) / 2.0;
 }
 
-void ArrowAnnotation::setControlPoint(const QPoint &p)
+void ArrowAnnotation::setControlPoint(const QPointF &p)
 {
     m_controlPoint = p;
 }

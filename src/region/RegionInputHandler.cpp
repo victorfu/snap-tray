@@ -1576,7 +1576,7 @@ bool RegionInputHandler::handleArrowAnnotationMove(const QPoint& pos)
             QPointF start = arrowItem->start();
             QPointF end = arrowItem->end();
             QPointF newControl = 2.0 * QPointF(pos) - 0.5 * (start + end);
-            arrowItem->setControlPoint(newControl.toPoint());
+            arrowItem->setControlPoint(newControl);
         }
         break;
 
