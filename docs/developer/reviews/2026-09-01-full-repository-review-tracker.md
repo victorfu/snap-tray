@@ -502,6 +502,8 @@
 - 修正證據：使用者於 2026-09-12 明確確認「關閉預覽等同丟棄」。所有 close 路徑集中 finishClose，以一次性 guard 保護 closed／discardRequested，保留先 teardown 再 queued 刪檔的順序。Save 不觸發丟棄，處理中 close 仍阻擋。
 - 驗證：macOS canonical build、原生 Cocoa App_MainApplicationTrayMenu 與 Qml_RecordingPreviewExport 通過；實際 QWindow close 與 Escape 驗證暫存檔刪除、backend 銷毀及單次通知；另覆蓋重複 close／discard／save、處理中關閉、MP4／GIF／WebP 匯出與失敗保留。Windows 原生檔案 handle／關閉 smoke 待補，保留 Fix Ready。對應本機 commit：39dc0dbd（fix: discard recording temporary files when closing preview）。
 
+- 補充回歸：使用 native encoder 產生有效 MP4，等待實際播放器載入 duration，再透過 QWindow close／Escape 關閉；有效與損壞影片共 4 組均驗證單次通知、backend 銷毀與檔案刪除。原生 Cocoa App_MainApplicationTrayMenu 通過。
+
 ## 已反證或不列入本次 tracker
 
 - Share JPEG HiDPI flatten helper 有可重現 defect，但 Share 在目前 Region／Pin toolbar 都被刻意隱藏，沒有正式 UI、shortcut 或 CLI 入口，因此是 latent unreachable code，不列 Confirmed。
@@ -584,3 +586,4 @@
 | 2026-09-12 | REV-037 完成狀態同步防禦性修正與回歸；分類維持 Potential，狀態為 Fix Ready，不將未重現的誤操作升格 Confirmed。 |
 | 2026-09-12 | POT-002 依使用者確認的關閉即丟棄契約升格 Confirmed；原生 close／Escape 刪檔回歸通過，標 Fix Ready。 |
 | 2026-09-12 | REV-007 移除強制 thread termination 並加入非同步取消；portable 回歸通過，Windows 編譯／原生壓力與原始後果確認待補，分類維持 Potential、狀態 Fix Ready。 |
+| 2026-09-12 | 本批 REV-017／021／022／023／024／028、REV-037／007 防禦性修正及 POT-002 整合完成：canonical build 與 scripts/run-tests.sh 158/158 通過（144.14 秒），all_qmllint exit 0，保留既有警告；追加有效 MP4 close／Escape 原生測試亦通過。未執行 Windows／Ubuntu runtime、MSVC 編譯或 Application Verifier，相關項目保留 Fix Ready。 |

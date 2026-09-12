@@ -4,6 +4,7 @@
 #include <QCursor>
 #include <QWindow>
 #include "qml/RecordingPreviewBackend.h"
+#include "IVideoEncoder.h"
 
 #include "cli/IPCProtocol.h"
 #include "hotkey/HotkeyManager.h"
@@ -589,26 +590,52 @@ QTEST_MAIN(tst_MainApplicationTrayMenu)
 void tst_MainApplicationTrayMenu::previewCloseDiscardsTemporaryFile_data()
 {
     QTest::addColumn<bool>("escape");
-    QTest::newRow("window-close") << false;
-    QTest::newRow("escape") << true;
+    QTest::addColumn<bool>("validVideo");
+    QTest::newRow("window-close") << false << true;
+    QTest::newRow("escape") << true << true;
+    QTest::newRow("invalid-window-close") << false << false;
+    QTest::newRow("invalid-escape") << true << false;
 }
 
 void tst_MainApplicationTrayMenu::previewCloseDiscardsTemporaryFile()
 {
 #if defined(Q_OS_MACOS) || defined(Q_OS_WIN)
     QFETCH(bool, escape);
+    QFETCH(bool, validVideo);
     installFakeUpdateService(InstallSource::DirectDownload, false);
     MainApplication application;
     application.initialize();
     QTemporaryDir dir;
     const QString path = dir.filePath("temporary.mp4");
-    QFile file(path);
-    QVERIFY(file.open(QIODevice::WriteOnly));
-    QVERIFY(file.write("Incomplete recording") > 0);
-    file.close();
+    if (validVideo) {
+        std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
+        QVERIFY(encoder);
+        QVERIFY2(encoder->start(path, QSize(64, 48), 10), qPrintable(encoder->lastError()));
+        QImage frame(64, 48, QImage::Format_ARGB32);
+        frame.fill(Qt::blue);
+        for (int i = 0; i < 3; ++i) {
+            QElapsedTimer wait;
+            wait.start();
+            while (encoder->framesWritten() <= i && wait.elapsed() < 2000) {
+                encoder->writeFrame(frame, i * 100);
+                if (encoder->framesWritten() <= i) QTest::qWait(5);
+            }
+            QCOMPARE(encoder->framesWritten(), qint64(i + 1));
+        }
+        QSignalSpy finished(encoder.get(), &IVideoEncoder::finished);
+        encoder->finish();
+        QTRY_COMPARE_WITH_TIMEOUT(finished.count(), 1, 10000);
+        QVERIFY(finished.first().first().toBool());
+    } else {
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        QVERIFY(file.write("Incomplete recording") > 0);
+        file.close();
+    }
     application.showRecordingPreview(path, 0);
     QVERIFY(application.m_previewBackend);
     QPointer<RecordingPreviewBackend> backend(application.m_previewBackend);
+    if (validVideo) QTRY_VERIFY(backend->duration() > 0);
     QSignalSpy discarded(backend, &RecordingPreviewBackend::discardRequested);
     QSignalSpy closed(backend, &RecordingPreviewBackend::closed);
     QWindow* preview = nullptr;
