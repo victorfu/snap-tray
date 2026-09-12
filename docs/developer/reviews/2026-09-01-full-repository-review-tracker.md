@@ -3,7 +3,7 @@
 - 審查日期：2026-09-01
 - 審查基準：main @ 82611586a549f4ada3c7131b92854ebaddcaf0e1
 - 審查模式：唯讀、Double Confirm、全庫掃描
-- 目前結論：35 項 Confirmed Issue、3 項 Potential Issue、1 項 Rejected
+- 目前結論：36 項 Confirmed Issue、2 項 Potential Issue、1 項 Rejected
 
 ## 使用方式
 
@@ -37,10 +37,10 @@
 | 類型 | 數量 |
 |---|---:|
 | Confirmed / Open | 0 |
-| Confirmed / Fix Ready | 33 |
+| Confirmed / Fix Ready | 34 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
-| Potential / 待確認 | 2 |
+| Potential / 待確認 | 1 |
 | Potential / Fix Ready（防禦性修正） | 1 |
 | Rejected / 已反證 | 1 |
 
@@ -93,6 +93,7 @@
 | REV-036 | Fix Ready | P1 | High | macOS Recording | 麥克風中途斷線／session runtime error 無監聽 |
 | REV-037 | Fix Ready | — | Low | Region Toolbar | StepBadge 狀態同步已修；原始操作後果仍未確認 |
 | POT-001 | Fix Ready | P1 | High | Pin Toolbar | 窄螢幕安全定位與更多選單已完成，跨平台 UI 待驗證 |
+| POT-002 | Fix Ready | P2 | High | Recording Preview | 關閉預覽等同丟棄並刪除暫存檔 |
 
 ## 詳細問題與完成條件
 
@@ -482,17 +483,19 @@
 - 對應本機 commit：fix: keep pin toolbar actions reachable on narrow screens。
 - 整合驗證補充：共用 ToolbarButtonState.js 改以私有 QML resource 提供，避免 standalone QQmlEngine 的模組歧義。新增冷啟動匯入回歸；Qml_WidthSectionQml、Qml_SettingsWindowFeatureGating 與 Qml_ToolbarOverflow 均通過。補充 commit：fix: keep toolbar state script private to QML resources。
 
-## Potential Issues
+## 已確認產品契約項目
 
 ### POT-002 — 直接關閉 Recording Preview 會保留暫存 MP4
 
-- 狀態：Potential
-- 信心水準：Medium
+- 分類：Confirmed（產品契約確認後升格）
+- 狀態：Fix Ready
+- 信心水準：High
 - 證據：src/qml/RecordingPreviewBackend.mm:85-88,313-324；src/MainApplication.cpp:904-942；src/RecordingManager.cpp:1319-1329,1468-1499。
 - 待確認情境：使用視窗 close button／系統 close，而不是明確按 Discard。
 - 可能後果：closing 只 emit closed(false)，不 emit discardRequested；RecordingManager 清空 m_tempVideoPath，但不刪除檔案，直到下次 stale-temp cleanup。這可能是意外磁碟殘留，也可能是刻意的 crash-recovery 保留策略。
 - 升格條件：先確認產品對「關閉預覽」的契約；若等同 Discard，關閉後 temp file 必須立即移除；若要保留，UI／cleanup retention 必須明文化並有上限測試。
-- 修正證據：待確認。
+- 修正證據：使用者於 2026-09-12 明確確認「關閉預覽等同丟棄」。所有 close 路徑集中 finishClose，以一次性 guard 保護 closed／discardRequested，保留先 teardown 再 queued 刪檔的順序。Save 不觸發丟棄，處理中 close 仍阻擋。
+- 驗證：macOS canonical build、原生 Cocoa App_MainApplicationTrayMenu 與 Qml_RecordingPreviewExport 通過；實際 QWindow close 與 Escape 驗證暫存檔刪除、backend 銷毀及單次通知；另覆蓋重複 close／discard／save、處理中關閉、MP4／GIF／WebP 匯出與失敗保留。Windows 原生檔案 handle／關閉 smoke 待補，保留 Fix Ready。對應本機 commit：39dc0dbd（fix: discard recording temporary files when closing preview）。
 
 ## 已反證或不列入本次 tracker
 
@@ -574,3 +577,4 @@
 | 2026-09-12 | REV-024 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-028 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-037 完成狀態同步防禦性修正與回歸；分類維持 Potential，狀態為 Fix Ready，不將未重現的誤操作升格 Confirmed。 |
+| 2026-09-12 | POT-002 依使用者確認的關閉即丟棄契約升格 Confirmed；原生 close／Escape 刪檔回歸通過，標 Fix Ready。 |
