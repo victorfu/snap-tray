@@ -67,6 +67,12 @@ target_link_libraries(Qml_RegionToolbarViewModel PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_RegionToolbarViewModel COMMAND Qml_RegionToolbarViewModel)
 set_tests_properties(Qml_RegionToolbarViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_CursorTokens Qml/tst_CursorTokens.cpp)
+target_link_libraries(Qml_CursorTokens PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+target_sources(Qml_CursorTokens PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_CursorTokens COMMAND Qml_CursorTokens)
+set_tests_properties(Qml_CursorTokens PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Qml_BeautifyPanelBackend Qml/tst_BeautifyPanelBackend.cpp)
 target_link_libraries(Qml_BeautifyPanelBackend PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_BeautifyPanelBackend COMMAND Qml_BeautifyPanelBackend)

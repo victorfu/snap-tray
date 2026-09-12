@@ -919,6 +919,7 @@ set_source_files_properties(
     src/qml/tokens/PrimitiveTokens.qml
     src/qml/tokens/SemanticTokens.qml
     src/qml/tokens/ComponentTokens.qml
+    src/qml/tokens/CursorTokens.qml
     PROPERTIES
         QT_QML_SINGLETON_TYPE TRUE
 )

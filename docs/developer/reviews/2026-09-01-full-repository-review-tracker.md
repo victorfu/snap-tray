@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 7 |
-| Confirmed / Fix Ready | 26 |
+| Confirmed / Open | 6 |
+| Confirmed / Fix Ready | 27 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 3 |
@@ -80,7 +80,7 @@
 | REV-024 | Open | P2 | High | CLI Full | 負數 screen 被當成未指定 |
 | REV-025 | Fix Ready | P1 | High | Linux Save | filename 長度用 UTF-16 units 而非 UTF-8 bytes |
 | REV-026 | Fix Ready | P1 | High | Linux Runtime | XDG session 與 Qt QPA 衝突時錯判為 X11 |
-| REV-027 | Open | P2 | High | QML | CursorTokens 未註冊 singleton |
+| REV-027 | Fix Ready | P2 | High | QML | CursorTokens 未註冊 singleton |
 | REV-028 | Open | P2 | High | Settings / CLI | install／uninstall 失敗後 busy 永久不解除 |
 | REV-029 | Fix Ready | P2 | High | Color Picker | triangle value 軸使用 height 而非 width |
 | REV-030 | Fix Ready | P1 | High | QML Dialog | setModal(true) 實際仍為 NonModal |
@@ -354,12 +354,13 @@
 
 ### REV-027 — CursorTokens 未註冊為 QML singleton
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：CMakeLists.txt:910-923；src/qml/tokens/CursorTokens.qml:1-13；代表性引用 src/qml/controls/SettingsButton.qml:64-69。
 - 觸發：建立任何引用 CursorTokens.* 的 SnapTrayQml 元件；目前約 41 個 references。
 - 後果：runtime 可出現 ReferenceError；AOT 路徑會退回預設 Arrow，enabled button 沒有 PointingHand、drag 沒有 ClosedHand。
 - 完成條件：生成 qmldir 宣告 singleton CursorTokens；all_qmllint 無相關 warning；runtime 驗證 SettingsButton 與 toolbar drag cursor。
-- 修正證據：待補。
+- 修正證據：在 qt_add_qml_module 前將 CursorTokens.qml 加入 QT_QML_SINGLETON_TYPE 清單，生成正確 singleton qmldir entry；保留既有 tokens 資源路徑與宣告。
+- 驗證：2026-09-12 macOS scripts/build.sh、CursorTokens、ToolbarOverflow、SettingsWindowFeatureGating 通過；驗證正式 resource／QML cache 的 SettingsButton enabled/disabled 游標、工具列 press/release 游標，以及與正式 engine 相同 import path 下有版本／無版本匯入和 singleton instance。最終 scripts/run-tests.sh 155／155 套通過（既有平台／環境 skip 保留）；首跑 DialogModality 在建立 dialog 前的基準鍵盤計數異常，獨立與完整重跑皆通過。all_qmllint exit 0，無 CursorTokens 相關警告。Windows／Ubuntu 原生 cursor smoke 待補，保留 Fix Ready。 對應本機 commit：fix: register CursorTokens as a QML singleton。
 
 ### REV-028 — CLI install／uninstall 失敗後 Settings 永久 busy
 
@@ -554,3 +555,4 @@
 | 2026-09-12 | REV-025 整合覆核修正 counter 判定，長數字 metadata 與明示格式 counter 回歸通過。 |
 | 2026-09-12 | REV-036 完成修正與針對性回歸，標為 Fix Ready；本批指定 11 項整合後 macOS 153／153 套測試通過，QML lint exit 0；硬體及其他平台 smoke 待補。 |
 | 2026-09-12 | REV-032 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-027 完成修正與針對性回歸，標為 Fix Ready；與 REV-032 整合後 macOS 155／155 套測試通過，QML lint 無 CursorTokens 警告。 |
