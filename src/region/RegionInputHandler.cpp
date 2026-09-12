@@ -334,21 +334,7 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
         return;
     }
 
-    if (m_pendingWindowClickActive && !m_selectionManager->hasActiveSelection()) {
-        const int dx = effectivePos.x() - m_pendingWindowClickStartPos.x();
-        const int dy = effectivePos.y() - m_pendingWindowClickStartPos.y();
-        if ((dx * dx + dy * dy) > WINDOW_CLICK_MAX_DISTANCE_SQ) {
-            m_selectionManager->startSelection(m_pendingWindowClickStartPos);
-            m_lastSelectionRect = QRect();
-            // Crossing the click-drift threshold turns a detected-window click
-            // into a real drag-selection transition.
-            clearDetectionAndNotify(true);
-            m_selectionManager->updateSelection(effectivePos);
-            m_pendingWindowClickActive = false;
-            m_pendingWindowClickRect = QRect();
-            m_pendingWindowClickStartPos = QPoint();
-        }
-    }
+    const bool selectionGesture = updateSelectionGesture(effectivePos);
 
     // Window detection during hover
     if (!m_pendingWindowClickActive) {
@@ -356,20 +342,11 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
     }
 
     // Handle selection states
-    if (m_selectionManager->isSelecting()) {
-        handleSelectionMove(effectivePos);
-    }
-    else if (m_selectionManager->isResizing()) {
-        m_selectionManager->updateResize(effectivePos);
-    }
-    else if (m_selectionManager->isMoving()) {
-        m_selectionManager->updateMove(effectivePos);
-    }
-    else if (state().isDrawing) {
+    if (!selectionGesture && state().isDrawing) {
         handleAnnotationMove(QPointF(effectivePos));
     }
-    else if (m_selectionManager->isComplete() ||
-        (state().multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0)) {
+    else if (!selectionGesture && (m_selectionManager->isComplete() ||
+        (state().multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0))) {
         handleHoverMove(effectivePos, event->buttons());
     }
 
@@ -423,14 +400,16 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event, ReleaseTarget ta
             return;
         }
 
-        // Handle selection release
+        // Apply the event's final coordinate before finishing the gesture. Do
+        // not route through mouseMove's hover or annotation side effects.
+        updateSelectionGesture(event->pos());
         if (m_selectionManager->isSelecting()) {
-            handleSelectionRelease(event->pos());
+            handleSelectionRelease();
             clearSelectionDrag();
             emit updateRequested();
         }
         else if (m_pendingWindowClickActive) {
-            handleSelectionRelease(event->pos());
+            handleSelectionRelease();
             emit updateRequested();
         }
         else if (m_selectionManager->isResizing()) {
@@ -874,22 +853,6 @@ void RegionInputHandler::clearDetectionAndNotify(bool selectionTransition)
     emit detectionCleared(previousHighlightRect, selectionTransition);
 }
 
-void RegionInputHandler::handleSelectionMove(const QPoint& pos)
-{
-    if (m_pendingWindowClickActive) {
-        const int dx = pos.x() - m_pendingWindowClickStartPos.x();
-        const int dy = pos.y() - m_pendingWindowClickStartPos.y();
-        if ((dx * dx + dy * dy) > WINDOW_CLICK_MAX_DISTANCE_SQ) {
-            m_pendingWindowClickActive = false;
-            m_pendingWindowClickRect = QRect();
-            m_pendingWindowClickStartPos = QPoint();
-        }
-    }
-
-    clearDetectionAndNotify();
-    m_selectionManager->updateSelection(pos);
-}
-
 void RegionInputHandler::handleAnnotationMove(const QPoint& pos)
 {
     handleAnnotationMove(QPointF(pos));
@@ -1210,16 +1173,7 @@ void RegionInputHandler::onDragFrameTick()
 
     state().currentPoint = localPos;
     emit currentPointUpdated(localPos);
-    if (m_selectionManager->isSelecting()) {
-        handleSelectionMove(localPos);
-    }
-    else if (m_selectionManager->isResizing()) {
-        m_selectionManager->updateResize(localPos);
-    }
-    else if (m_selectionManager->isMoving()) {
-        m_selectionManager->updateMove(localPos);
-    }
-    else {
+    if (!updateSelectionGesture(localPos)) {
         if (!m_pendingWindowClickActive) {
             handleWindowDetectionMove(localPos);
         }
@@ -1281,14 +1235,44 @@ bool RegionInputHandler::handleEmojiStickerRelease(const QPoint& pos)
     return false;
 }
 
-void RegionInputHandler::handleSelectionRelease(const QPoint& pos)
+void RegionInputHandler::clearPendingWindowClick()
 {
-    Q_UNUSED(pos);
-    auto clearPendingWindowClick = [this]() {
-        m_pendingWindowClickActive = false;
-        m_pendingWindowClickRect = QRect();
-        m_pendingWindowClickStartPos = QPoint();
-    };
+    m_pendingWindowClickActive = false;
+    m_pendingWindowClickRect = QRect();
+    m_pendingWindowClickStartPos = QPoint();
+}
+
+bool RegionInputHandler::updateSelectionGesture(const QPoint& pos)
+{
+    if (!m_selectionManager || !m_state) return false;
+    if (!m_pendingWindowClickActive && !m_selectionManager->isSelecting()
+        && !m_selectionManager->isResizing() && !m_selectionManager->isMoving())
+        return false;
+    if (state().currentPoint != pos) {
+        state().currentPoint = pos;
+        emit currentPointUpdated(pos);
+    }
+    if (m_pendingWindowClickActive && !m_selectionManager->hasActiveSelection()) {
+        const qreal dx = qreal(pos.x()) - m_pendingWindowClickStartPos.x();
+        const qreal dy = qreal(pos.y()) - m_pendingWindowClickStartPos.y();
+        if (dx * dx + dy * dy > WINDOW_CLICK_MAX_DISTANCE_SQ) {
+            m_selectionManager->startSelection(m_pendingWindowClickStartPos);
+            m_lastSelectionRect = {};
+            clearDetectionAndNotify(true);
+            clearPendingWindowClick();
+        }
+    }
+    if (m_selectionManager->isSelecting()) {
+        clearDetectionAndNotify();
+        m_selectionManager->updateSelection(pos);
+    }
+    else if (m_selectionManager->isResizing()) m_selectionManager->updateResize(pos);
+    else if (m_selectionManager->isMoving()) m_selectionManager->updateMove(pos);
+    return true;
+}
+
+void RegionInputHandler::handleSelectionRelease()
+{
 
     QRect sel = m_selectionManager->selectionRect();
     const bool canUsePendingWindowClick =

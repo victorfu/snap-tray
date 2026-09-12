@@ -115,7 +115,8 @@ private:
     bool handleArrowAnnotationMove(const QPoint& pos);
     void handleWindowDetectionMove(const QPoint& pos);
     void clearDetectionAndNotify(bool selectionTransition = false);
-    void handleSelectionMove(const QPoint& pos);
+    bool updateSelectionGesture(const QPoint& pos);
+    void clearPendingWindowClick();
     void handleAnnotationMove(const QPoint& pos);
     void handleAnnotationMove(const QPointF& pos);
     void handleHoverMove(const QPoint& pos, Qt::MouseButtons buttons);
@@ -128,7 +129,7 @@ private:
     bool handleTextEditorRelease(const QPoint& pos);
     bool handleEmojiStickerRelease(const QPoint& pos);
     bool handleArrowAnnotationRelease(const QPoint& pos);
-    void handleSelectionRelease(const QPoint& pos);
+    void handleSelectionRelease();
     void handleAnnotationRelease();
 
     // Annotation helpers

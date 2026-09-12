@@ -36,6 +36,9 @@ private slots:
     void cleanup();
 
     void testTinyMoveKeepsDetectedWindowSelection();
+    void testReleaseAppliesFinalSelectionPoint_data();
+    void testReleaseAppliesFinalSelectionPoint();
+    void testReleaseAppliesFinalResizeAndMove();
     void testNoMoveKeepsDetectedWindowSelection();
     void testTinyMoveWithoutDetectionFallsBackToFullScreen();
     void testLargeDragUsesDragSelectionInsteadOfPendingWindow();
@@ -87,6 +90,67 @@ void tst_RegionInputHandler::cleanup()
 
     delete m_handler;
     m_handler = nullptr;
+}
+
+void tst_RegionInputHandler::testReleaseAppliesFinalSelectionPoint_data()
+{
+    QTest::addColumn<bool>("detected");
+    QTest::addColumn<bool>("moved");
+    QTest::addColumn<bool>("multi");
+    QTest::addColumn<bool>("floating");
+    for (int flags = 0; flags < 16; ++flags)
+        QTest::newRow(qPrintable(QString::number(flags)))
+            << bool(flags & 1) << bool(flags & 2) << bool(flags & 4) << bool(flags & 8);
+}
+
+void tst_RegionInputHandler::testReleaseAppliesFinalSelectionPoint()
+{
+    QFETCH(bool, detected);
+    QFETCH(bool, moved);
+    QFETCH(bool, multi);
+    QFETCH(bool, floating);
+    m_state.multiRegionMode = multi;
+    m_state.hasDetectedWindow = detected;
+    m_state.highlightedWindowRect = detected ? QRect(50, 50, 400, 300) : QRect();
+    QSignalSpy finished(m_handler, &RegionInputHandler::selectionFinished);
+    QSignalSpy fullscreen(m_handler, &RegionInputHandler::fullScreenSelectionRequested);
+    QSignalSpy cleared(m_handler, &RegionInputHandler::detectionCleared);
+    auto press = makeMouseEvent(QEvent::MouseButtonPress, QPoint(100,100), Qt::LeftButton, Qt::LeftButton);
+    m_handler->handleMousePress(&press);
+    if (moved) {
+        auto move = makeMouseEvent(QEvent::MouseMove, QPoint(140,150), Qt::NoButton, Qt::LeftButton);
+        m_handler->handleMouseMove(&move);
+    }
+    auto release = makeMouseEvent(QEvent::MouseButtonRelease, QPoint(180,190), Qt::LeftButton, Qt::NoButton);
+    m_handler->handleMouseRelease(&release, floating ? RegionInputHandler::ReleaseTarget::FloatingUi
+                                                    : RegionInputHandler::ReleaseTarget::Canvas);
+    QCOMPARE(m_selectionManager->selectionRect(), QRect(100,100,81,91));
+    QCOMPARE(m_state.currentPoint, QPoint(180,190));
+    QVERIFY(m_selectionManager->isComplete());
+    QCOMPARE(finished.count(), 1);
+    QCOMPARE(fullscreen.count(), 0);
+    QCOMPARE(cleared.count(), detected ? 1 : 0);
+    if (detected) QCOMPARE(cleared.first().at(1).toBool(), true);
+}
+
+void tst_RegionInputHandler::testReleaseAppliesFinalResizeAndMove()
+{
+    const QRect original(40,40,100,80);
+    m_selectionManager->setSelectionRect(original);
+    m_selectionManager->startResize(original.bottomRight(), SelectionStateManager::ResizeHandle::BottomRight);
+    m_selectionManager->updateResize(QPoint(150,130));
+    auto release = makeMouseEvent(QEvent::MouseButtonRelease, QPoint(170,160), Qt::LeftButton, Qt::NoButton);
+    m_handler->handleMouseRelease(&release, RegionInputHandler::ReleaseTarget::FloatingUi);
+    QCOMPARE(m_selectionManager->selectionRect(), QRect(40,40,131,121));
+    QVERIFY(m_selectionManager->isComplete());
+
+    m_selectionManager->setSelectionRect(original);
+    m_selectionManager->startMove(QPoint(80,80));
+    m_selectionManager->updateMove(QPoint(90,90));
+    auto moveRelease = makeMouseEvent(QEvent::MouseButtonRelease, QPoint(110,120), Qt::LeftButton, Qt::NoButton);
+    m_handler->handleMouseRelease(&moveRelease);
+    QCOMPARE(m_selectionManager->selectionRect(), original.translated(30,40));
+    QVERIFY(m_selectionManager->isComplete());
 }
 
 void tst_RegionInputHandler::testTinyMoveKeepsDetectedWindowSelection()

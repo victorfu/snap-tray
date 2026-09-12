@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 29 |
-| Confirmed / Fix Ready | 6 |
+| Confirmed / Open | 28 |
+| Confirmed / Fix Ready | 7 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 1 |
@@ -64,7 +64,7 @@
 | REV-008 | Fix Ready | P1 | High | macOS Recording | 首次麥克風授權阻塞主執行緒並破壞時間軸 |
 | REV-009 | Verified | P1 | High | Screen Canvas | 文字拖移／旋轉／縮放會重用舊快取 |
 | REV-010 | Fix Ready | P1 | High | Region Selection | 建立與一般 resize 沒有 clamp 到 bounds |
-| REV-011 | Open | P1 | High | Region Selection | mouse release 忽略最後座標 |
+| REV-011 | Fix Ready | P1 | High | Region Selection | mouse release 忽略最後座標 |
 | REV-012 | Open | P1 | High | Eraser | 只在離散事件點擦除，快速拖曳會留下間隙 |
 | REV-013 | Open | P2 | High | Arrow | 端點曲線結果依 mouse event 分割方式而變 |
 | REV-014 | Open | P1 | High | Arrow / Polyline | 寬箭頭超出 bounding／hit geometry |
@@ -196,12 +196,13 @@
 
 ### REV-011 — selection release 忽略最後座標
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/region/RegionInputHandler.cpp:385-445,1284-1344；handleSelectionRelease 對 pos 使用 Q_UNUSED。
 - 觸發：最後一個 mouse move 被 coalesce／漏送，release 位置不同於上一個 move；小拖曳尤其容易發生。
 - 後果：selection 終點停在舊位置；本應成立的 selection 可能被判成小點擊並改為 detected window 或 full-screen selection。
 - 完成條件：release 前必須套用最後座標到 selecting／resizing／moving 狀態；加入「只有 press + release、沒有中間 move」及 coalesced final move 測試。
-- 修正證據：待補。
+- 修正證據：move、polling、release 共用 updateSelectionGesture，release 先套用事件座標再 finish；pending detected-window click 也依最後位移轉成拖曳。保留點擊門檻、FloatingUi release 與多區域語意，未修改 annotation release。
+- 驗證：2026-09-12 macOS scripts/build.sh、RegionInputHandler 與 MultiRegionReplaceFlow 通過；新增 16 組 detected／move／multi／floating 矩陣及 resize／move 最後座標測試。原生 RegionSelector_StyleSync 為 29 passed／5 skipped／0 failed；Windows／Ubuntu 真實輸入與跨螢幕 smoke 尚待驗證，保留 Fix Ready。對應本機 commit：fix: apply final release coordinates to selection gestures。
 
 ### REV-012 — Eraser 快速拖曳會漏擦
 
@@ -509,3 +510,4 @@
 | 2026-09-12 | REV-006 完成 8 entries／128 MiB 快取限制與壓力／像素回歸，標為 Fix Ready；四項修正整合後 macOS 全 147 項測試通過。 |
 | 2026-09-12 | REV-008 完成非同步授權前置、設定快照與啟動回呼隔離，四套 macOS 回歸通過；標為 Fix Ready。 |
 | 2026-09-12 | REV-010 完成手動選取／resize 邊界與比例 anchor 修正，三套 macOS 回歸通過；標為 Fix Ready。 |
+| 2026-09-12 | REV-011 完成共用 selection gesture 更新與 release 最後座標修正，輸入／多區域及原生 StyleSync 回歸通過；標為 Fix Ready。 |
