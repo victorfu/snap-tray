@@ -6,6 +6,7 @@
 #include "RegionSelector.h"
 #include "RegionSelectorTestAccess.h"
 #include "annotations/AnnotationLayer.h"
+#include "settings/FileSettingsManager.h"
 
 class tst_RegionSelectorHistoryReplay : public QObject
 {
@@ -16,6 +17,7 @@ private slots:
     void testBuildCaptureSessionWriteRequestPreservesFields();
     void testRestoreLiveReplaySlotRecordsCaptureContext();
     void testApplyHistoryReplayEntryRecordsCaptureContext();
+    void testDetectedWindowMetadataSurvivesHighlightClear();
 };
 
 void tst_RegionSelectorHistoryReplay::initTestCase()
@@ -144,10 +146,16 @@ void tst_RegionSelectorHistoryReplay::testApplyHistoryReplayEntryRecordsCaptureC
     entry.canvasLogicalSize = QSize(80, 50);
     entry.selectionRect = QRect(5, 6, 30, 20);
     entry.cornerRadius = 3;
+    entry.windowTitle = QStringLiteral("Stored title");
+    entry.ownerApp = QStringLiteral("Stored app");
 
     QSignalSpy changedSpy(RegionSelectorTestAccess::annotationLayer(selector),
                           &AnnotationLayer::changed);
     QVERIFY(RegionSelectorTestAccess::invokeApplyHistoryReplayEntry(selector, entry));
+    const auto request = RegionSelectorTestAccess::currentHistoryRequest(selector);
+    QVERIFY(request);
+    QCOMPARE(request->windowTitle, entry.windowTitle);
+    QCOMPARE(request->ownerApp, entry.ownerApp);
 
     QCOMPARE(changedSpy.count(), 1);
     QVERIFY(!probe.captureContextEvents.isEmpty());
@@ -158,6 +166,52 @@ void tst_RegionSelectorHistoryReplay::testApplyHistoryReplayEntryRecordsCaptureC
     QVERIFY(record.hasSourceScreen);
     QCOMPARE(RegionSelectorTestAccess::devicePixelRatio(selector), 2.0);
     QCOMPARE(RegionSelectorTestAccess::selectionRect(selector), QRect(5, 6, 30, 20));
+}
+
+void tst_RegionSelectorHistoryReplay::testDetectedWindowMetadataSurvivesHighlightClear()
+{
+    RegionSelector selector;
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+    QPixmap capture(400, 300);
+    capture.fill(Qt::white);
+    selector.initializeForScreen(screen, capture);
+    const QRect window(40, 50, 180, 120);
+    RegionSelectorTestAccess::seedDetectedWindow(selector, window, "Document title", "Editor");
+    RegionSelectorTestAccess::dispatchMousePress(selector, window.center());
+    RegionSelectorTestAccess::dispatchMouseRelease(selector, window.center());
+    QCOMPARE(RegionSelectorTestAccess::selectionRect(selector), window);
+    auto request = RegionSelectorTestAccess::currentHistoryRequest(selector);
+    QVERIFY(request);
+    QCOMPARE(request->windowTitle, QStringLiteral("Document title"));
+    QCOMPARE(request->ownerApp, QStringLiteral("Editor"));
+
+    auto& settings = FileSettingsManager::instance();
+    const bool oldAutoSave = settings.loadAutoSaveScreenshots();
+    settings.saveAutoSaveScreenshots(true);
+    const auto save = RegionSelectorTestAccess::createSaveRequest(selector);
+    settings.saveAutoSaveScreenshots(oldAutoSave);
+    QVERIFY(save.uniqueSave);
+    QCOMPARE(save.uniqueSave->context.windowTitle, request->windowTitle);
+    QCOMPARE(save.uniqueSave->context.appName, request->ownerApp);
+
+    // Hover/highlight may change independently; moving the completed selection
+    // retains its captured context rather than adopting a newly hovered window.
+    RegionSelectorTestAccess::seedDetectedWindow(selector, QRect(240, 180, 100, 100), "Unrelated", "Other");
+    RegionSelectorTestAccess::moveSelection(selector, QPoint(10, 10));
+    request = RegionSelectorTestAccess::currentHistoryRequest(selector);
+    QVERIFY(request);
+    QCOMPARE(request->windowTitle, QStringLiteral("Document title"));
+    QCOMPARE(request->ownerApp, QStringLiteral("Editor"));
+
+    // Programmatic replacement must not inherit the previous window's tokens.
+    RegionSelectorTestAccess::setSelectionRect(selector, QRect(10, 10, 70, 80));
+    request = RegionSelectorTestAccess::currentHistoryRequest(selector);
+    QVERIFY(request);
+    QVERIFY(request->windowTitle.isEmpty());
+    QVERIFY(request->ownerApp.isEmpty());
+    // Already prepared async requests own their naming context.
+    QCOMPARE(save.uniqueSave->context.windowTitle, QStringLiteral("Document title"));
 }
 
 QTEST_MAIN(tst_RegionSelectorHistoryReplay)

@@ -238,6 +238,7 @@ private:
     bool loadHistoryReplayIndex(int index);
     bool applyHistoryReplayEntry(const SnapTray::HistoryEntry& entry);
     void clearHistoryReplaySelectionState();
+    void setSelectionWindowMetadata(const QString& title, const QString& ownerApp);
     void recordCaptureSession(const QPixmap& resultPixmap);
     void recordCaptureSession(const QImage& resultImage);
     struct SelectorCaptureContext;
@@ -381,6 +382,8 @@ private:
     // Window detection state
     WindowDetector *m_windowDetector;
     std::optional<DetectedElement> m_detectedWindow;
+    QString m_selectionWindowTitle;
+    QString m_selectionOwnerApp;
 
     // OCR state
     OCRManager *m_ocrManager;
@@ -541,6 +544,8 @@ private:
         int cornerRadius = 0;
         int maxEntries = 20;
         QDateTime createdAt;
+        QString windowTitle;
+        QString ownerApp;
     };
 
     struct PendingHistorySubmission {
@@ -558,6 +563,8 @@ private:
         QVector<MultiRegionManager::Region> multiRegions;
         QByteArray annotationsJson;
         int cornerRadius = 0;
+        QString windowTitle;
+        QString ownerApp;
     };
 
     QList<SnapTray::HistoryEntry> m_historyReplayEntries;
@@ -599,7 +606,7 @@ private:
     RegionSettingsHelper* m_settingsHelper;
 
     // Export manager component
-    RegionExportManager* m_exportManager;
+    RegionExportManager* m_exportManager = nullptr;
     ShareUploadClient* m_shareClient = nullptr;
 
     // Shared annotation setup/signals helper

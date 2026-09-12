@@ -33,6 +33,8 @@ struct HistoryEntry
     QString annotationsPath;
     QSize canvasLogicalSize;
     int cornerRadius = 0;
+    QString windowTitle;
+    QString ownerApp;
 };
 
 struct CaptureSessionWriteRequest
@@ -47,6 +49,8 @@ struct CaptureSessionWriteRequest
     int cornerRadius = 0;
     int maxEntries = 20;
     QDateTime createdAt = QDateTime::currentDateTime();
+    QString windowTitle;
+    QString ownerApp;
 };
 
 class HistoryStore

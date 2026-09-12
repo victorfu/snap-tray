@@ -16,6 +16,7 @@
 #include "region/SelectionDimmingOverlay.h"
 #include "region/SelectionPreviewOverlay.h"
 #include "region/SelectionStateManager.h"
+#include "region/RegionExportManager.h"
 #include "region/StaticCaptureBackgroundWindow.h"
 
 class RegionSelectorTestAccess
@@ -103,6 +104,37 @@ public:
     {
         selector.m_inputState.highlightedWindowRect = rect;
         selector.m_inputState.hasDetectedWindow = rect.isValid() && !rect.isEmpty();
+    }
+
+    static void seedDetectedWindow(RegionSelector& selector, const QRect& rect,
+                                   const QString& title, const QString& app)
+    {
+        seedDetectedWindowHighlight(selector, rect);
+        DetectedElement element;
+        element.bounds = rect;
+        element.windowTitle = title;
+        element.ownerApp = app;
+        selector.m_detectedWindow = element;
+    }
+
+    static std::optional<SnapTray::CaptureSessionWriteRequest> currentHistoryRequest(RegionSelector& selector)
+    {
+        auto snapshot = selector.makeHistoryCaptureSnapshot();
+        if (!snapshot) return {};
+        return selector.buildCaptureSessionWriteRequest({*snapshot, QImage()});
+    }
+
+    static RegionExportManager::SaveRequest createSaveRequest(RegionSelector& selector)
+    {
+        return selector.m_exportManager->createSaveRequest(selector.m_selectionManager->selectionRect());
+    }
+
+    static void moveSelection(RegionSelector& selector, const QPoint& delta)
+    {
+        const QPoint from = selector.m_selectionManager->selectionRect().center();
+        selector.m_selectionManager->startMove(from);
+        selector.m_selectionManager->updateMove(from + delta);
+        selector.m_selectionManager->finishMove();
     }
 
     static void setSelectionRect(RegionSelector& selector, const QRect& rect)

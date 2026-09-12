@@ -230,6 +230,9 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_selectionManager = new SelectionStateManager(this);
     connect(m_selectionManager, &SelectionStateManager::selectionChanged,
         this, [this](const QRect& rect) {
+            if (!m_selectionManager->isMoving() && !m_selectionManager->isResizing()) {
+                setSelectionWindowMetadata({}, {});
+            }
             ++m_autoBlurGeneration;
             if (m_inputState.multiRegionMode && m_multiRegionManager &&
                 m_inputState.replaceTargetIndex < 0) {
@@ -247,6 +250,10 @@ RegionSelector::RegionSelector(QWidget* parent)
         });
     connect(m_selectionManager, &SelectionStateManager::stateChanged,
         this, [this](SelectionStateManager::State newState) {
+            if (newState == SelectionStateManager::State::None
+                || newState == SelectionStateManager::State::Selecting) {
+                setSelectionWindowMetadata({}, {});
+            }
             // Detached capture window handoff is Windows-only. macOS keeps the
             // in-window toolbar path, so this branch must stay inert there.
             const bool enteringCompletedSelectionHandoff =
@@ -949,6 +956,12 @@ RegionSelector::RegionSelector(QWidget* parent)
         });
     connect(m_inputHandler, &RegionInputHandler::selectionFinished,
         this, [this]() {
+            if (!m_inputState.multiRegionMode && m_detectedWindow
+                && m_inputState.hasDetectedWindow
+                && m_selectionManager->selectionRect()
+                    == m_inputState.highlightedWindowRect.intersected(rect())) {
+                setSelectionWindowMetadata(m_detectedWindow->windowTitle, m_detectedWindow->ownerApp);
+            }
             m_selectionManager->finishSelection();
             if (!m_inputState.multiRegionMode) {
                 CursorManager::instance().popCursorForWidget(this, CursorContext::Selection);
@@ -1425,6 +1438,7 @@ void RegionSelector::refreshMagnifierContext(const QPoint& cursorPos,
 
 void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapture)
 {
+    setSelectionWindowMetadata({}, {});
     m_historyReplayEntries.clear();
     m_historyLiveSlot = {};
     m_historyReplayIndex = -1;
@@ -1497,6 +1511,7 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
 
 void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
 {
+    setSelectionWindowMetadata({}, {});
     m_historyReplayEntries.clear();
     m_historyLiveSlot = {};
     m_historyReplayIndex = -1;
@@ -1646,6 +1661,8 @@ void RegionSelector::snapshotLiveReplaySlot()
     m_historyLiveSlot.multiRegions = currentHistoryCaptureRegions();
     m_historyLiveSlot.annotationsJson = SnapTray::serializeAnnotationLayer(*m_annotationLayer);
     m_historyLiveSlot.cornerRadius = m_cornerRadius;
+    m_historyLiveSlot.windowTitle = m_selectionWindowTitle;
+    m_historyLiveSlot.ownerApp = m_selectionOwnerApp;
 }
 
 void RegionSelector::restoreLiveReplaySlot()
@@ -1696,6 +1713,7 @@ void RegionSelector::restoreLiveReplaySlot()
 
     m_historyReplayIndex = -1;
     m_historyReplayActive = false;
+    setSelectionWindowMetadata(m_historyLiveSlot.windowTitle, m_historyLiveSlot.ownerApp);
     update();
 }
 
@@ -1780,6 +1798,7 @@ bool RegionSelector::applyHistoryReplayEntry(const SnapTray::HistoryEntry& entry
         }
     }
 
+    setSelectionWindowMetadata(entry.windowTitle, entry.ownerApp);
     update();
     return true;
 }
@@ -1795,6 +1814,15 @@ void RegionSelector::clearHistoryReplaySelectionState()
         m_multiRegionManager->clear();
     }
     m_selectionManager->clearSelection();
+}
+
+void RegionSelector::setSelectionWindowMetadata(const QString& title, const QString& ownerApp)
+{
+    m_selectionWindowTitle = title;
+    m_selectionOwnerApp = ownerApp;
+    if (m_exportManager) {
+        m_exportManager->setWindowMetadata(title, ownerApp);
+    }
 }
 
 void RegionSelector::recordCaptureSession(const QPixmap& resultPixmap)
@@ -1861,6 +1889,8 @@ std::optional<RegionSelector::HistoryCaptureSnapshot> RegionSelector::makeHistor
     snapshot.cornerRadius = m_cornerRadius;
     snapshot.maxEntries = PinWindowSettingsManager::instance().loadMaxCacheFiles();
     snapshot.createdAt = createdAt;
+    snapshot.windowTitle = m_selectionWindowTitle;
+    snapshot.ownerApp = m_selectionOwnerApp;
     return snapshot;
 }
 
@@ -1892,6 +1922,8 @@ SnapTray::CaptureSessionWriteRequest RegionSelector::buildCaptureSessionWriteReq
     request.cornerRadius = submission.snapshot.cornerRadius;
     request.maxEntries = submission.snapshot.maxEntries;
     request.createdAt = submission.snapshot.createdAt;
+    request.windowTitle = submission.snapshot.windowTitle;
+    request.ownerApp = submission.snapshot.ownerApp;
     return request;
 }
 
@@ -4171,11 +4203,7 @@ void RegionSelector::saveToFile()
             ? m_multiRegionManager->activeIndex()
             : -1;
         m_exportManager->setRegionIndex(regionIndex);
-        if (m_detectedWindow.has_value()) {
-            m_exportManager->setWindowMetadata(m_detectedWindow->windowTitle, m_detectedWindow->ownerApp);
-        } else {
-            m_exportManager->setWindowMetadata(QString(), QString());
-        }
+        m_exportManager->setWindowMetadata(m_selectionWindowTitle, m_selectionOwnerApp);
     }
 
     const QRect selectionRect = m_selectionManager->selectionRect();

@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 18 |
-| Confirmed / Fix Ready | 15 |
+| Confirmed / Open | 17 |
+| Confirmed / Fix Ready | 16 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 3 |
@@ -71,7 +71,7 @@
 | REV-015 | Fix Ready | P1 | High | Polyline | 短末段把箭頭畫在倒數頂點，箭頭後仍有尾巴 |
 | REV-016 | Fix Ready | P2 | High | Gizmo | 小物件的 handle hit zones 重疊，部分 handle 不可達 |
 | REV-017 | Open | P1 | High | Text | wrapText 改變空白且不支援 CJK 字元換行 |
-| REV-018 | Open | P1 | High | Save Metadata | detected-window metadata 在儲存前被清除 |
+| REV-018 | Fix Ready | P1 | High | Save Metadata | detected-window metadata 在儲存前被清除 |
 | REV-019 | Open | P1 | High | History | 跨螢幕保留選取後按 Enter 不寫入 History |
 | REV-020 | Open | P2 | High | Screen Canvas | 自訂顏色沒有完整同步與持久化 |
 | REV-021 | Open | P1 | High | CLI Pin | file pin 略過 EXIF transform 與大圖 auto-fit |
@@ -267,12 +267,13 @@
 
 ### REV-018 — Detected-window metadata 在儲存前被清除
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/region/RegionInputHandler.cpp:1284-1344；src/RegionSelector.cpp:1005-1011,4101-4116。
 - 觸發：點擊 detected window 建立選取，之後按 Save／auto-save。
 - 後果：selection release 呼叫 clearDetectionAndNotify，RegionSelector connection 同時 reset m_detectedWindow；saveToFile 因此把 windowTitle／ownerApp 設成空字串。使用 window／app token 的 filename 與 metadata 遺失。
 - 完成條件：完成 detected-window selection 時保存 metadata snapshot，直到 selection 被替換／取消；Save、Copy history、quick pin 各入口使用一致 snapshot。
-- 修正證據：待補。
+- 修正證據：選取完成時保存 windowTitle／ownerApp，與 hover detection 分離；SaveRequest 使用選取快照，移動／resize 保留來源資訊，新選取／取消／程式化替換清除。共用 HistoryCaptureSnapshot 將資訊傳入 Save／Copy／Quick Pin 的 History 記錄；manifest 新增可選欄位，History replay／live slot 可還原，舊 manifest 仍相容。
+- 驗證：2026-09-12 macOS scripts/build.sh 與 HistoryReplay、RegionInputHandler、RegionExportManager、HistoryStore、HistoryRecorder 五套回歸通過；驗證真實 press／release 清除 highlight 後 metadata、獨立命名快照、移動與替換、manifest roundtrip／舊檔相容及 replay。跨平台原生視窗偵測／UI smoke 待補，保留 Fix Ready。 對應本機 commit：fix: retain selected window metadata through export and history。
 
 ### REV-019 — 跨螢幕保留 selection 後按 Enter 不寫 History
 
@@ -530,3 +531,4 @@
 | 2026-09-12 | REV-016 完成最近 handle 與穩定同距離判定，標為 Fix Ready；本批 REV-012～016 整合後 macOS 全 149 套測試通過，QML lint exit 0。 |
 | 2026-09-12 | 同步 REV-007／REV-037 重新判定為 Potential；確認 Mosaic 子項已修、其餘操作後果待重現。統計更新為 35 Confirmed、3 Potential、1 Rejected。 |
 | 2026-09-12 | REV-003 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-018 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
