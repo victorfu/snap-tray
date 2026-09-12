@@ -577,6 +577,7 @@ private:
     bool m_hasPreservedSelection = false;
     QRect m_preservedGlobalSelectionRect;
     QPixmap m_preservedSelectionPixmap;
+    std::optional<HistoryCaptureSnapshot> m_preservedHistorySnapshot;
 
     // Region control panel (QML - radius + aspect ratio)
     RegionControlViewModel* m_regionControlViewModel = nullptr;

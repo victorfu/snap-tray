@@ -2154,11 +2154,16 @@ void RegionSelector::preserveCompletedSelectionSnapshot()
     if (selectedRegion.isNull()) {
         return;
     }
+    auto historySnapshot = makeHistoryCaptureSnapshot();
+    if (!historySnapshot) {
+        return;
+    }
 
     m_preservedGlobalSelectionRect = QRect(
         localToGlobal(selectionRect.topLeft()),
         selectionRect.size());
     m_preservedSelectionPixmap = selectedRegion;
+    m_preservedHistorySnapshot = std::move(historySnapshot);
     m_hasPreservedSelection = m_preservedGlobalSelectionRect.isValid() &&
                               !m_preservedGlobalSelectionRect.isEmpty();
 }
@@ -2168,20 +2173,26 @@ void RegionSelector::clearPreservedSelection()
     m_hasPreservedSelection = false;
     m_preservedGlobalSelectionRect = QRect();
     m_preservedSelectionPixmap = QPixmap();
+    m_preservedHistorySnapshot.reset();
 }
 
 void RegionSelector::finishPreservedSelection()
 {
-    if (!m_hasPreservedSelection ||
+    if (m_isClosing || !m_hasPreservedSelection ||
         m_preservedSelectionPixmap.isNull() ||
         !m_preservedGlobalSelectionRect.isValid() ||
         m_preservedGlobalSelectionRect.isEmpty()) {
         return;
     }
 
-    emit regionSelected(m_preservedSelectionPixmap,
-                        m_preservedGlobalSelectionRect.topLeft(),
-                        m_preservedGlobalSelectionRect);
+    const QPixmap result = m_preservedSelectionPixmap;
+    const QRect globalRect = m_preservedGlobalSelectionRect;
+    auto snapshot = std::move(m_preservedHistorySnapshot);
+    clearPreservedSelection();
+    if (snapshot) {
+        submitPendingHistorySubmission({std::move(*snapshot), result.toImage()});
+    }
+    emit regionSelected(result, globalRect.topLeft(), globalRect);
     close();
 }
 

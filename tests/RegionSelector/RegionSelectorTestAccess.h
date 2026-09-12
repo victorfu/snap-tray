@@ -17,6 +17,7 @@
 #include "region/SelectionPreviewOverlay.h"
 #include "region/SelectionStateManager.h"
 #include "region/RegionExportManager.h"
+#include "annotations/AnnotationLayer.h"
 #include "region/StaticCaptureBackgroundWindow.h"
 
 class RegionSelectorTestAccess
@@ -135,6 +136,39 @@ public:
         selector.m_selectionManager->startMove(from);
         selector.m_selectionManager->updateMove(from + delta);
         selector.m_selectionManager->finishMove();
+    }
+
+    static void preserveCompletedSelection(RegionSelector& selector)
+    {
+        selector.preserveCompletedSelectionSnapshot();
+    }
+
+    static QPixmap preservedSelectionPixmap(const RegionSelector& selector)
+    {
+        return selector.m_preservedSelectionPixmap;
+    }
+
+    static QRect preservedGlobalRect(const RegionSelector& selector)
+    {
+        return selector.m_preservedGlobalSelectionRect;
+    }
+
+    static void replaceCanvasAfterPreservingSelection(RegionSelector& selector, const QPixmap& capture)
+    {
+        selector.applyCaptureContext({capture, capture.devicePixelRatio(), selector.m_currentScreen});
+        selector.m_selectionManager->clearSelection();
+        selector.m_annotationLayer->clear();
+        selector.applyCanvasGeometry(capture.deviceIndependentSize().toSize());
+    }
+
+    static void finishPreservedSelection(RegionSelector& selector)
+    {
+        selector.finishPreservedSelection();
+    }
+
+    static void clearPreservedSelection(RegionSelector& selector)
+    {
+        selector.clearPreservedSelection();
     }
 
     static void setSelectionRect(RegionSelector& selector, const QRect& rect)

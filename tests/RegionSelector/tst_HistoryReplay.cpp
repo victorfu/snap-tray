@@ -7,6 +7,11 @@
 #include "RegionSelectorTestAccess.h"
 #include "annotations/AnnotationLayer.h"
 #include "settings/FileSettingsManager.h"
+#include "history/HistoryRecorder.h"
+#include "history/AnnotationSerializer.h"
+#include "annotations/ShapeAnnotation.h"
+#include <QScopeGuard>
+#include <QFile>
 
 class tst_RegionSelectorHistoryReplay : public QObject
 {
@@ -18,6 +23,8 @@ private slots:
     void testRestoreLiveReplaySlotRecordsCaptureContext();
     void testApplyHistoryReplayEntryRecordsCaptureContext();
     void testDetectedWindowMetadataSurvivesHighlightClear();
+    void testPreservedSelectionRecordsOriginalHistory_data();
+    void testPreservedSelectionRecordsOriginalHistory();
 };
 
 void tst_RegionSelectorHistoryReplay::initTestCase()
@@ -212,6 +219,92 @@ void tst_RegionSelectorHistoryReplay::testDetectedWindowMetadataSurvivesHighligh
     QVERIFY(request->ownerApp.isEmpty());
     // Already prepared async requests own their naming context.
     QCOMPARE(save.uniqueSave->context.windowTitle, QStringLiteral("Document title"));
+}
+
+void tst_RegionSelectorHistoryReplay::testPreservedSelectionRecordsOriginalHistory_data()
+{
+    QTest::addColumn<qreal>("dpr");
+    QTest::addColumn<bool>("cancel");
+    for (qreal dpr : {1.0, 1.5, 2.0}) {
+        QTest::addRow("dpr-%g-finish", dpr) << dpr << false;
+        QTest::addRow("dpr-%g-cancel", dpr) << dpr << true;
+    }
+}
+
+void tst_RegionSelectorHistoryReplay::testPreservedSelectionRecordsOriginalHistory()
+{
+    QFETCH(qreal, dpr);
+    QFETCH(bool, cancel);
+    QTemporaryDir history;
+    QVERIFY(history.isValid());
+    const QByteArray oldHistory = qgetenv("SNAPTRAY_HISTORY_DIR");
+    qputenv("SNAPTRAY_HISTORY_DIR", history.path().toUtf8());
+    const auto restoreEnvironment = qScopeGuard([&] {
+        SnapTray::HistoryRecorder::instance().waitForIdleForTests();
+        if (oldHistory.isNull()) qunsetenv("SNAPTRAY_HISTORY_DIR");
+        else qputenv("SNAPTRAY_HISTORY_DIR", oldHistory);
+    });
+    RegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    QPixmap capture(QSize(qRound(320 * dpr), qRound(240 * dpr)));
+    capture.fill(Qt::yellow);
+    capture.setDevicePixelRatio(dpr);
+    selector.initializeForScreen(QGuiApplication::primaryScreen(), capture);
+    // Use the same capture-context contract as a real screen's DPR.
+    RegionSelectorTestAccess::replaceCanvasAfterPreservingSelection(selector, capture);
+    const QRect window(30, 40, 120, 80);
+    RegionSelectorTestAccess::seedDetectedWindow(selector, window, "Original window", "Original app");
+    RegionSelectorTestAccess::dispatchMousePress(selector, window.center());
+    RegionSelectorTestAccess::dispatchMouseRelease(selector, window.center());
+    auto* layer = RegionSelectorTestAccess::annotationLayer(selector);
+    layer->addItem(std::make_unique<ShapeAnnotation>(QRect(50, 60, 20, 15),
+        ShapeType::Rectangle, Qt::red, 3, true));
+    const auto originalRequest = RegionSelectorTestAccess::currentHistoryRequest(selector);
+    QVERIFY(originalRequest);
+    RegionSelectorTestAccess::preserveCompletedSelection(selector);
+    const QPixmap result = RegionSelectorTestAccess::preservedSelectionPixmap(selector);
+    const QRect globalRect = RegionSelectorTestAccess::preservedGlobalRect(selector);
+    QVERIFY(!result.isNull());
+
+    QPixmap otherScreen(180, 120);
+    otherScreen.fill(Qt::blue);
+    otherScreen.setDevicePixelRatio(1.0);
+    RegionSelectorTestAccess::replaceCanvasAfterPreservingSelection(selector, otherScreen);
+    QSignalSpy selected(&selector, &RegionSelector::regionSelected);
+    if (cancel) RegionSelectorTestAccess::clearPreservedSelection(selector);
+    if (!cancel) QTest::keyClick(&selector, Qt::Key_Return);
+    RegionSelectorTestAccess::finishPreservedSelection(selector);
+    QCoreApplication::processEvents();
+    QVERIFY(SnapTray::HistoryRecorder::instance().waitForIdleForTests());
+    const auto entries = SnapTray::HistoryStore::loadEntries();
+    if (cancel) {
+        QCOMPARE(selected.count(), 0);
+        QVERIFY(entries.isEmpty());
+        return;
+    }
+    QCOMPARE(selected.count(), 1);
+    QCOMPARE(qvariant_cast<QPixmap>(selected.first()[0]).toImage(), result.toImage());
+    QCOMPARE(selected.first()[1].toPoint(), globalRect.topLeft());
+    QCOMPARE(selected.first()[2].toRect(), globalRect);
+    QCOMPARE(entries.size(), 1);
+    const auto& entry = entries.first();
+    QCOMPARE(entry.selectionRect, originalRequest->selectionRect);
+    QCOMPARE(entry.devicePixelRatio, dpr);
+    QCOMPARE(entry.canvasLogicalSize, originalRequest->canvasLogicalSize);
+    QCOMPARE(entry.windowTitle, QStringLiteral("Original window"));
+    QCOMPARE(entry.ownerApp, QStringLiteral("Original app"));
+    QImage canvasPixels = capture.toImage();
+    canvasPixels.setDevicePixelRatio(1.0);
+    QCOMPARE(QImage(entry.canvasPath).convertToFormat(QImage::Format_RGB32),
+             canvasPixels.convertToFormat(QImage::Format_RGB32));
+    // PNG stores pixels; DPR is carried separately in the history manifest.
+    QImage resultPixels = result.toImage();
+    resultPixels.setDevicePixelRatio(1.0);
+    QCOMPARE(QImage(entry.resultPath).convertToFormat(QImage::Format_ARGB32),
+             resultPixels.convertToFormat(QImage::Format_ARGB32));
+    QFile annotations(entry.annotationsPath);
+    QVERIFY(annotations.open(QIODevice::ReadOnly));
+    QCOMPARE(annotations.readAll(), originalRequest->annotationsJson);
 }
 
 QTEST_MAIN(tst_RegionSelectorHistoryReplay)

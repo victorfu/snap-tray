@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 17 |
-| Confirmed / Fix Ready | 16 |
+| Confirmed / Open | 16 |
+| Confirmed / Fix Ready | 17 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 3 |
@@ -72,7 +72,7 @@
 | REV-016 | Fix Ready | P2 | High | Gizmo | 小物件的 handle hit zones 重疊，部分 handle 不可達 |
 | REV-017 | Open | P1 | High | Text | wrapText 改變空白且不支援 CJK 字元換行 |
 | REV-018 | Fix Ready | P1 | High | Save Metadata | detected-window metadata 在儲存前被清除 |
-| REV-019 | Open | P1 | High | History | 跨螢幕保留選取後按 Enter 不寫入 History |
+| REV-019 | Fix Ready | P1 | High | History | 跨螢幕保留選取後按 Enter 不寫入 History |
 | REV-020 | Open | P2 | High | Screen Canvas | 自訂顏色沒有完整同步與持久化 |
 | REV-021 | Open | P1 | High | CLI Pin | file pin 略過 EXIF transform 與大圖 auto-fit |
 | REV-022 | Open | P2 | High | CLI Pin | clipboard pin 忽略 x／y |
@@ -277,12 +277,13 @@
 
 ### REV-019 — 跨螢幕保留 selection 後按 Enter 不寫 History
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/RegionSelector.cpp:2111-2156,4461-4470；一般 finishSelection／history submission 位於 1838-1892。
 - 觸發：完成單一 selection 後把游標切到另一螢幕，selection 被保存成 m_preservedSelectionPixmap；此時按 Enter。
 - 後果：finishPreservedSelection 只 emit regionSelected 並 close，繞過正常 pending history submission；截圖可成功交付，但 History 缺少這筆紀錄。
 - 完成條件：preserved path 與一般 finish path 使用同一個 history contract；驗證圖片、global rect、DPR、annotations 與 history entry 完整一致。
-- 修正證據：待補。
+- 修正證據：preserveCompletedSelectionSnapshot 同時保留原 canvas／selection／annotations／DPR／metadata 的 HistoryCaptureSnapshot；跨螢幕後 Enter 使用保留快照提交共用 History writer。完成前先消費 preserved state，取消清除快照，避免重複交付與 History 重複記錄。
+- 驗證：2026-09-12 macOS scripts/build.sh、HistoryReplay、RegionInputHandler、HistoryRecorder 通過；6 組 DPR 1／1.5／2 與取消矩陣，以 Enter 驗證原 canvas／輸出像素、global rect、selection、annotations JSON、metadata 與單一 History entry，模擬新畫布及不同 DPR 不污染舊截圖。實際多螢幕切換 smoke 待補，保留 Fix Ready。 對應本機 commit：fix: record preserved cross-screen selections in history。
 
 ### REV-020 — Screen Canvas 自訂顏色沒有完整同步／保存
 
@@ -532,3 +533,4 @@
 | 2026-09-12 | 同步 REV-007／REV-037 重新判定為 Potential；確認 Mosaic 子項已修、其餘操作後果待重現。統計更新為 35 Confirmed、3 Potential、1 Rejected。 |
 | 2026-09-12 | REV-003 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-018 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-019 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
