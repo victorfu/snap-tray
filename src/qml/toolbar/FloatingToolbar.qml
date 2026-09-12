@@ -1,5 +1,6 @@
 import QtQuick
 import SnapTrayQml
+import "ToolbarButtonState.js" as ButtonState
 
 /**
  * FloatingToolbar: Glass-effect toolbar for PinWindow annotation mode.
@@ -18,6 +19,10 @@ Item {
     id: root
     required property var viewModel
     readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
+    property var displayButtons: root.hasViewModel ? root.viewModel.buttons : []
+    property var overflowButtons: []
+    property int constrainedWidth: -1
+    property bool showDragHandle: true
     property int iconPalette: 0
     readonly property bool useCaptureOverlayIconPalette: root.iconPalette === 1
     property color iconNormalColor: root.useCaptureOverlayIconPalette
@@ -40,6 +45,7 @@ Item {
     signal dragStarted()
     signal dragFinished()
     signal dragMoved(real deltaX, real deltaY)
+    signal overflowRequested(real anchorX, real anchorY, real anchorW, real anchorH)
 
     // ── Layout constants (match WindowedToolbar dimensions) ──
     readonly property int barHeight: 32
@@ -52,7 +58,7 @@ Item {
     readonly property int dragHandleWidth: 16
     readonly property int contentSpacing: 6
 
-    width: contentRow.width + margin * 2
+    width: constrainedWidth > 0 ? constrainedWidth : contentRow.width + margin * 2
     height: barHeight
 
     // ── Glass background ──
@@ -61,18 +67,20 @@ Item {
         glassRadius: 8
     }
 
-    Row {
+    Item {
         id: contentRow
         anchors {
             left: parent.left
-            leftMargin: root.margin
+            leftMargin: Math.min(root.margin, Math.max(0, (root.width - 1) / 4))
             verticalCenter: parent.verticalCenter
         }
-        spacing: root.contentSpacing
+        width: buttonRow.width + (root.showDragHandle ? root.dragHandleWidth + root.contentSpacing : 0)
+        height: root.barHeight
         z: 1
 
         Item {
             id: dragHandle
+            visible: root.showDragHandle
             objectName: "toolbarDragHandle"
             width: root.dragHandleWidth
             height: root.barHeight
@@ -130,10 +138,11 @@ Item {
         // ── Button row ──
         Row {
             id: buttonRow
+            x: root.showDragHandle ? root.dragHandleWidth + root.contentSpacing : 0
             spacing: root.buttonSpacing
 
             Repeater {
-                model: root.hasViewModel ? root.viewModel.buttons : []
+                model: root.displayButtons
 
                 Loader {
                     id: delegateLoader
@@ -181,20 +190,7 @@ Item {
                             isCancel: delegateLoader.buttonData.isCancel || false
                             isActive: root.hasViewModel
                                       && root.viewModel.activeTool === delegateLoader.buttonId
-                            isDisabled: {
-                                if (!root.hasViewModel)
-                                    return true;
-                                if (delegateLoader.buttonData.isUndo)
-                                    return !root.viewModel.canUndo;
-                                if (delegateLoader.buttonData.isRedo)
-                                    return !root.viewModel.canRedo;
-                                if (delegateLoader.buttonData.isShare)
-                                    return root.viewModel.shareInProgress
-                                           || root.viewModel.autoBlurProcessing;
-                                if (delegateLoader.buttonData.isExportAction)
-                                    return root.viewModel.autoBlurProcessing;
-                                return false;
-                            }
+                            isDisabled: ButtonState.isDisabled(delegateLoader.buttonData, root.viewModel)
                             iconNormalColor: root.iconNormalColor
                             iconActionColor: root.iconActionColor
                             iconCancelColor: root.iconCancelColor
@@ -214,6 +210,24 @@ Item {
                             onUnhovered: root.buttonUnhovered()
                         }
                     }
+                }
+            }
+            ToolbarButton {
+                id: moreButton
+                objectName: "toolbarMoreButton"
+                visible: root.overflowButtons.length > 0
+                width: root.showDragHandle ? root.buttonWidth
+                    : Math.max(1, Math.min(root.buttonWidth, root.width - contentRow.x * 2))
+                height: root.buttonHeight
+                y: (root.barHeight - height) / 2
+                textLabel: "\u22ef"
+                tooltipText: qsTr("More")
+                isActive: root.hasViewModel && root.overflowButtons.some(function(button) {
+                    return button.id === root.viewModel.activeTool
+                })
+                onClicked: {
+                    var anchor = mapToItem(root, 0, 0)
+                    root.overflowRequested(anchor.x, anchor.y, width, height)
                 }
             }
         }

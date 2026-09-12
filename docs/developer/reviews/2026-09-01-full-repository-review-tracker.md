@@ -3,7 +3,7 @@
 - 審查日期：2026-09-01
 - 審查基準：main @ 82611586a549f4ada3c7131b92854ebaddcaf0e1
 - 審查模式：唯讀、Double Confirm、全庫掃描
-- 目前結論：36 項 Confirmed Issue、2 項 Potential Issue、1 項 Rejected
+- 目前結論：37 項 Confirmed Issue、1 項 Potential Issue、1 項 Rejected
 
 ## 使用方式
 
@@ -37,10 +37,10 @@
 | 類型 | 數量 |
 |---|---:|
 | Confirmed / Open | 32 |
-| Confirmed / Fix Ready | 2 |
+| Confirmed / Fix Ready | 3 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
-| Potential / 待確認 | 2 |
+| Potential / 待確認 | 1 |
 | Rejected / 已反證 | 1 |
 
 建立本文件時，工作樹已存在兩組未提交候選修正：
@@ -91,6 +91,7 @@
 | REV-035 | Open | P1 | High | Windows Recording | DXGI worker 固定 30 fps，忽略使用者 frame rate |
 | REV-036 | Open | P1 | High | macOS Recording | 麥克風中途斷線／session runtime error 無監聽 |
 | REV-037 | Open | P2 | High | Region Toolbar | StepBadge／Mosaic toggle-off 未同步 ToolManager |
+| POT-001 | Fix Ready | P1 | High | Pin Toolbar | 窄螢幕安全定位與更多選單已完成，跨平台 UI 待驗證 |
 
 ## 詳細問題與完成條件
 
@@ -433,17 +434,16 @@
 - 完成條件：兩工具的 toggle-off 都讓 handler、inputState、ViewModel、ToolManager 同步為 Selection；toolCursorRequested 不再回傳舊 cursor。
 - 修正證據：待補。
 
+### POT-001 — 窄螢幕 Pin toolbar 定位與操作可達性
+
+- 分類：Confirmed（由 Potential 升格）
+- 狀態：Fix Ready
+- 原始證據：638 px 工具列在 640 px 畫面產生 qBound(10, x, -9)，Debug assertion 已重現。
+- 修正證據：ToolbarOverflowLayout 統一 availableGeometry 的 10 px 邊距、exclusive 邊界與安全 clamp。Pin 工具列依實際 QML 尺寸分配按鈕，保留 Save／Copy／Done，其餘移至獨立 GlassSurface 更多選單；固定區也放不下時採單一更多按鈕。共用 Region／Canvas 預設配置維持原行為。選單支援停用／active 狀態、鍵盤、捲動、不搶焦點、click-outside 與完整關閉生命週期。
+- 驗證：2026-09-12 macOS scripts/build.sh 通過；Qml_ToolbarOverflow 的 1／100／300／500／640／1920 px、OCR 顯隱、負座標／oversized clamp、鍵盤／捲動／生命週期共 16 個測試計數通過。另四套 Pin／Region／Canvas ViewModel 與 Pin StyleSync 回歸通過，實際 QML 截圖已檢查。all_qmllint exit 0；既有 CursorTokens 等警告不在本項範圍。Windows／Linux 跨螢幕、縮放 UI smoke 待補，保留 Fix Ready。
+- 對應本機 commit：fix: keep pin toolbar actions reachable on narrow screens。
+
 ## Potential Issues
-
-### POT-001 — Pin toolbar 比 logical screen 寬時 qBound 範圍無效
-
-- 狀態：Potential
-- 信心水準：Medium
-- 證據：src/qml/QmlWindowedToolbar.mm:409-439,680-701；src/tools/ToolRegistry.cpp:456-484；src/qml/PinToolbarViewModel.cpp:13-50。
-- 待確認情境：m_view->width() > screen.width() - 20，例如窄 logical desktop 或 Windows 225%／250% scaling。
-- 可能後果：qBound(minX, x, maxX) 收到 maxX < minX；Debug 可 assertion，Release 可讓右側 Save／Copy／Done 不可達。
-- 升格條件：Windows debug 實機或抽出的 placement helper，以實際 toolbar width 和 500–640 px viewport 重現 assertion／不可達 action。
-- 修正證據：待確認。
 
 ### POT-002 — 直接關閉 Recording Preview 會保留暫存 MP4
 
@@ -500,3 +500,4 @@
 | 2026-09-01 | REV-001 經官方 v1.0.62 DMG 的 macOS 14.8.7 ARM64 smoke 反證：loader、`--version` 與 10 秒 GUI startup 均通過；由 Open／P0 改為 Rejected，統計更新為 36 Confirmed、2 Potential、1 Rejected。 |
 | 2026-09-12 | REV-002 完成 DPR 合成修正與 macOS 像素／入口回歸測試，標為 Fix Ready；跨平台 UI 驗證待補。 |
 | 2026-09-12 | REV-005 完成原子禁止覆寫存檔與所有自動命名入口遷移，macOS 並行及回歸測試通過；標為 Fix Ready。 |
+| 2026-09-12 | POT-001 升格 Confirmed；完成安全定位與更多選單，macOS QML 排版及互動驗證通過，標為 Fix Ready。 |

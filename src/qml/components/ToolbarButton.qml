@@ -22,6 +22,7 @@ Item {
 
     property int buttonId: -1
     property string iconSource: ""
+    property string textLabel: ""
     property bool isAction: false
     property bool isCancel: false
     property bool isActive: false
@@ -71,6 +72,7 @@ Item {
 
     // Icon
     SvgIcon {
+        visible: root.textLabel.length === 0
         anchors.centerIn: parent
         source: root.iconSource
         iconSize: root.iconSize
@@ -86,6 +88,14 @@ Item {
     }
 
     // Interaction
+    Text {
+        anchors.centerIn: parent
+        visible: root.textLabel.length > 0
+        text: root.textLabel
+        font.pixelSize: 20
+        color: root.isActive ? root.iconActiveColor : root.iconNormalColor
+    }
+
     MouseArea {
         id: mouseArea
         anchors.fill: parent

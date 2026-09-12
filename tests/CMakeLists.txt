@@ -78,6 +78,12 @@ target_sources(Qml_BeautifyPanelQml PRIVATE ${CMAKE_SOURCE_DIR}/resources/resour
 add_test(NAME Qml_BeautifyPanelQml COMMAND Qml_BeautifyPanelQml)
 set_tests_properties(Qml_BeautifyPanelQml PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(Qml_ToolbarOverflow Qml/tst_ToolbarOverflow.cpp)
+target_link_libraries(Qml_ToolbarOverflow PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(Qml_ToolbarOverflow PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_ToolbarOverflow COMMAND Qml_ToolbarOverflow)
+set_tests_properties(Qml_ToolbarOverflow PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 add_executable(Qml_OverlayManagerLifetime Qml/tst_QmlOverlayManagerLifetime.cpp)
 target_link_libraries(Qml_OverlayManagerLifetime PRIVATE snaptray_qml Qt6::Quick Qt6::Widgets)
 add_test(NAME Qml_OverlayManagerLifetime COMMAND Qml_OverlayManagerLifetime)

@@ -939,6 +939,8 @@ set_source_files_properties(src/qml/components/ThumbnailCard.qml PROPERTIES QT_R
 
 # Floating toolbar
 set_source_files_properties(src/qml/toolbar/FloatingToolbar.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/FloatingToolbar.qml)
+set_source_files_properties(src/qml/toolbar/ToolbarOverflowMenu.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ToolbarOverflowMenu.qml)
+set_source_files_properties(src/qml/toolbar/ToolbarButtonState.js PROPERTIES QT_RESOURCE_ALIAS toolbar/ToolbarButtonState.js)
 set_source_files_properties(src/qml/toolbar/ToolOptionsStrip.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ToolOptionsStrip.qml)
 set_source_files_properties(src/qml/toolbar/ColorPaletteSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ColorPaletteSection.qml)
 set_source_files_properties(src/qml/toolbar/WidthSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/WidthSection.qml)
@@ -1079,6 +1081,8 @@ qt_add_qml_module(snaptray_qml
         src/qml/dialogs/QRCodeResultDialog.qml
         src/qml/dialogs/ScreenPickerDialog.qml
         src/qml/toolbar/FloatingToolbar.qml
+        src/qml/toolbar/ToolbarOverflowMenu.qml
+        src/qml/toolbar/ToolbarButtonState.js
         src/qml/toolbar/ToolOptionsStrip.qml
         src/qml/toolbar/ColorPaletteSection.qml
         src/qml/toolbar/WidthSection.qml
