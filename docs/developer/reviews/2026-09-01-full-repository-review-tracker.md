@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 22 |
-| Confirmed / Fix Ready | 13 |
+| Confirmed / Open | 21 |
+| Confirmed / Fix Ready | 14 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 1 |
@@ -69,7 +69,7 @@
 | REV-013 | Fix Ready | P2 | High | Arrow | 端點曲線結果依 mouse event 分割方式而變 |
 | REV-014 | Fix Ready | P1 | High | Arrow / Polyline | 寬箭頭超出 bounding／hit geometry |
 | REV-015 | Fix Ready | P1 | High | Polyline | 短末段把箭頭畫在倒數頂點，箭頭後仍有尾巴 |
-| REV-016 | Open | P2 | High | Gizmo | 小物件的 handle hit zones 重疊，部分 handle 不可達 |
+| REV-016 | Fix Ready | P2 | High | Gizmo | 小物件的 handle hit zones 重疊，部分 handle 不可達 |
 | REV-017 | Open | P1 | High | Text | wrapText 改變空白且不支援 CJK 字元換行 |
 | REV-018 | Open | P1 | High | Save Metadata | detected-window metadata 在儲存前被清除 |
 | REV-019 | Open | P1 | High | History | 跨螢幕保留選取後按 Enter 不寫入 History |
@@ -246,12 +246,13 @@
 
 ### REV-016 — 小 annotation 的 gizmo handles 可能不可達
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：include/TransformationGizmo.h:48-56；src/TransformationGizmo.cpp:119-153,224-258,306-337,394-430,452-472。
 - 觸發：文字、emoji、shape、arrow 或相鄰 polyline vertices 的 handle centers 距離小於兩個 hit radius 總和。
 - 後果：hit zones 重疊，固定的檢查順序永遠回傳前一個 handle；後面的 corner／endpoint／vertex 即使可見也選不到。
 - 完成條件：重疊時依最近距離與穩定 tie-break 選擇；對小尺寸、重合 endpoints／vertices 與旋轉後物件做 data-driven hit test。
-- 修正證據：待補。
+- 修正證據：Text／Emoji／Shape／Arrow／Polyline 的 gizmo 使用共用最近距離判定，只比較落在各自有效半徑內的候選；同距離保留 rotation／corner、control／start／end、vertex 原順序作穩定 tie-break。仍先判定 handle，再回退 body／none。
+- 驗證：2026-09-12 macOS scripts/build.sh、TransformationGizmo 與 RegionInputHandler 通過；新增 27 組小尺寸／旋轉／負座標／重合／同距離／半徑邊界與 body fallback 測試。REV-012～016 整合後 scripts/run-tests.sh 全 149／149 套測試通過（既有平台及環境 skip 保留），all_qmllint exit 0（既有 warnings）；Windows／Ubuntu 原生互動 smoke 待補，保留 Fix Ready。對應本機 commit：fix: select the nearest overlapping annotation handle。
 
 ### REV-017 — TextBox wrapText 破壞空白且無法換行 CJK
 
@@ -523,3 +524,4 @@
 | 2026-09-12 | REV-013 完成箭頭控制點浮點化與序列化精度回歸，macOS 建置及四套測試通過；標為 Fix Ready。 |
 | 2026-09-12 | REV-014 完成 Arrow／Polyline 實際繪製幾何共用與 432 組像素回歸，macOS 建置及六套測試通過；標為 Fix Ready。 |
 | 2026-09-12 | REV-015 完成短末段終點與 shaft 接合修正，macOS 建置、五套測試及 107 組新增回歸通過；標為 Fix Ready。 |
+| 2026-09-12 | REV-016 完成最近 handle 與穩定同距離判定，標為 Fix Ready；本批 REV-012～016 整合後 macOS 全 149 套測試通過，QML lint exit 0。 |
