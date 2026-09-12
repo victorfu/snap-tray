@@ -9,6 +9,8 @@
 #include <QPoint>
 #include <QColor>
 
+struct LineAnnotationGeometry;
+
 /**
  * @brief Polyline annotation (multi-segment line with optional arrowhead)
  *
@@ -54,8 +56,7 @@ public:
     int width() const { return m_width; }
 
 private:
-    void drawArrowhead(QPainter& painter, const QPoint& from, const QPoint& to, bool filled) const;
-    void drawArrowheadLine(QPainter& painter, const QPoint& from, const QPoint& to) const;
+    LineAnnotationGeometry geometry() const;
 
     QVector<QPoint> m_points;
     QColor m_color;

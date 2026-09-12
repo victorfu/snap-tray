@@ -113,7 +113,6 @@ void TestArrowAnnotation::testConstruction_WithWidth()
     ArrowAnnotation thickArrow(QPoint(100, 100), QPoint(200, 100), Qt::red, 20);
 
     // Both arrows should have valid bounding rects
-    // Note: ArrowAnnotation uses fixed margin, so bounding rect may not scale with width
     QVERIFY(!thinArrow.boundingRect().isEmpty());
     QVERIFY(!thickArrow.boundingRect().isEmpty());
 }
@@ -180,7 +179,6 @@ void TestArrowAnnotation::testBoundingRect_IncludesWidth()
     ArrowAnnotation thickArrow(QPoint(100, 100), QPoint(200, 100), Qt::red, 20);
 
     // Both should have valid bounding rects that include arrow margins
-    // Note: ArrowAnnotation uses fixed margin for arrowhead, independent of stroke width
     QVERIFY(!thinArrow.boundingRect().isEmpty());
     QVERIFY(!thickArrow.boundingRect().isEmpty());
     QVERIFY(thickArrow.boundingRect().height() >= 1);  // Has some height
@@ -192,8 +190,8 @@ void TestArrowAnnotation::testBoundingRect_CurvedArrow()
     arrow.setControlPoint(QPoint(150, 50));  // Curve upward
 
     QRect rect = arrow.boundingRect();
-    // Should include the control point area
-    QVERIFY(rect.top() <= 50);
+    // Include the visible bowed shaft; the off-curve control point is not ink.
+    QVERIFY(rect.contains(QPoint(150, 75)));
 }
 
 // ============================================================================

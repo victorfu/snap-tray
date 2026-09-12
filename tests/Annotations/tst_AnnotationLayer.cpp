@@ -100,6 +100,8 @@ private slots:
     void testViewportCacheLruAndTransientPriority();
     void testViewportCacheByteBudgetAndOversizedEntry();
     void testViewportCacheAccountingAndNullFallback();
+    void testLinePaintedGeometry_data();
+    void testLinePaintedGeometry();
     void testHitTestText_IgnoresHiddenItems();
     void testHitTestEmojiSticker_IgnoresHiddenItems();
     void testHitTestEmojiSticker_ReturnsTopMostVisible();
@@ -511,6 +513,94 @@ void TestAnnotationLayer::testViewportCacheByteBudgetAndOversizedEntry()
     draw(QSize(32, 32), 11);
     QCOMPARE(layer.cacheStats().entryCount, size_t(1));
     QVERIFY(layer.cacheStats().retainedBytes <= AnnotationLayer::kMaxAnnotationCacheBytes);
+}
+
+void TestAnnotationLayer::testLinePaintedGeometry_data()
+{
+    QTest::addColumn<bool>("polyline");
+    QTest::addColumn<int>("style");
+    QTest::addColumn<int>("width");
+    QTest::addColumn<int>("angle");
+    QTest::addColumn<qreal>("dpr");
+    for (bool polyline : {false, true}) {
+        for (int style = 0; style <= int(LineEndStyle::BothArrowOutline); ++style) {
+            for (int width : {1, 30, 100}) {
+                for (int angle : {0, 45, 90, 225}) {
+                    for (qreal dpr : {1.0, 1.5, 2.0}) {
+                        QTest::addRow("poly-%d-style-%d-width-%d-angle-%d-dpr-%g",
+                                      polyline, style, width, angle, dpr)
+                            << polyline << style << width << angle << dpr;
+                    }
+                }
+            }
+        }
+    }
+}
+
+void TestAnnotationLayer::testLinePaintedGeometry()
+{
+    QFETCH(bool, polyline);
+    QFETCH(int, style);
+    QFETCH(int, width);
+    QFETCH(int, angle);
+    QFETCH(qreal, dpr);
+    QTransform rotation;
+    rotation.rotate(angle);
+    const QPoint start = rotation.map(QPoint(-100, 0));
+    const QPoint end = rotation.map(QPoint(100, 0));
+    const QPoint middle = rotation.map(QPoint(0, -50));
+    AnnotationLayer layer;
+    const auto lineStyle = static_cast<LineStyle>(style % 3);
+    if (polyline) {
+        layer.addItem(std::make_unique<PolylineAnnotation>(
+            QVector<QPoint>{start, middle, end}, Qt::red, width,
+            static_cast<LineEndStyle>(style), lineStyle));
+    } else {
+        auto arrow = std::make_unique<ArrowAnnotation>(start, end, Qt::red, width,
+            static_cast<LineEndStyle>(style), lineStyle);
+        arrow->setControlPoint(middle);
+        layer.addItem(std::move(arrow));
+    }
+    const QRect viewport(-400, -400, 800, 800);
+    const QRect bounds = layer.itemAt(0)->boundingRect();
+    QVERIFY(viewport.contains(bounds));
+    auto render = [&](int mode) {
+        QImage image(QSize(qRound(viewport.width() * dpr), qRound(viewport.height() * dpr)),
+                     QImage::Format_ARGB32_Premultiplied);
+        image.setDevicePixelRatio(dpr);
+        image.fill(Qt::transparent);
+        QPainter painter(&image);
+        if (mode == 1) {
+            layer.drawCached(painter, viewport.size(), dpr, viewport.topLeft());
+        } else if (mode == 2) {
+            layer.drawWithDirtyRegion(painter, viewport.size(), dpr, 0, viewport.topLeft());
+        } else {
+            painter.translate(-viewport.topLeft());
+            if (mode == 3) painter.setClipRect(bounds);
+            layer.draw(painter);
+        }
+        return image;
+    };
+    const QImage direct = render(0);
+    // Bounds are actually used as a repaint clip, not just compared to a formula.
+    QCOMPARE(render(3), direct);
+    QCOMPARE(render(1), direct);
+    QCOMPARE(render(2), direct);
+    int inkSamples = 0;
+    for (int y = 0; y < direct.height(); y += 3) {
+        const auto* row = reinterpret_cast<const QRgb*>(direct.constScanLine(y));
+        for (int x = 0; x < direct.width(); x += 3) {
+            if (qAlpha(row[x]) < 128) continue;
+            const QPoint point = (QPointF(x + 0.5, y + 0.5) / dpr).toPoint() + viewport.topLeft();
+            const bool hit = polyline
+                ? static_cast<PolylineAnnotation*>(layer.itemAt(0))->containsPoint(point)
+                : static_cast<ArrowAnnotation*>(layer.itemAt(0))->containsPoint(point);
+            QVERIFY2(hit, qPrintable(QString("painted point (%1, %2) was not selectable")
+                                        .arg(point.x()).arg(point.y())));
+            ++inkSamples;
+        }
+    }
+    QVERIFY(inkSamples > 0);
 }
 
 void TestAnnotationLayer::testViewportCacheAccountingAndNullFallback()

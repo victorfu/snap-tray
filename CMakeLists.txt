@@ -297,6 +297,7 @@ add_library(snaptray_core STATIC
     src/annotations/AnnotationItem.cpp
     src/annotations/PencilStroke.cpp
     src/annotations/MarkerStroke.cpp
+    src/annotations/LineAnnotationGeometry.cpp
     src/annotations/ArrowAnnotation.cpp
     src/annotations/PolylineAnnotation.cpp
     src/annotations/ShapeAnnotation.cpp

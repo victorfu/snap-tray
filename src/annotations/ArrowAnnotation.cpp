@@ -1,4 +1,5 @@
 #include "annotations/ArrowAnnotation.h"
+#include "annotations/LineAnnotationGeometry.h"
 #include <QPainter>
 #include <QPainterPath>
 #include <QPainterPathStroker>
@@ -45,31 +46,13 @@ double ArrowAnnotation::startTangentAngle() const
 
 void ArrowAnnotation::draw(QPainter &painter) const
 {
-    painter.save();
+    geometry().draw(painter, m_color, m_width, m_lineStyle);
+}
 
-    // Map LineStyle to Qt::PenStyle
-    Qt::PenStyle qtStyle = Qt::SolidLine;
-    switch (m_lineStyle) {
-    case LineStyle::Solid:
-        qtStyle = Qt::SolidLine;
-        break;
-    case LineStyle::Dashed:
-        qtStyle = Qt::DashLine;
-        break;
-    case LineStyle::Dotted:
-        qtStyle = Qt::DotLine;
-        break;
-    }
-
-    QPen pen(m_color, m_width, qtStyle, Qt::FlatCap, Qt::RoundJoin);
-    painter.setPen(pen);
-    painter.setRenderHint(QPainter::Antialiasing, true);
-
-    double arrowLength = qMax(10.0, m_width * 3.0);
-    double arrowAngle = M_PI / 6.0;  // 30 degrees
-    // Distance from tip to triangle base along the line direction
-    double baseDistance = arrowLength * qCos(arrowAngle) - 1.0;
-
+LineAnnotationGeometry ArrowAnnotation::geometry() const
+{
+    LineAnnotationGeometry geometry;
+    const qreal baseDistance = LineAnnotationGeometry::headBaseDistance(m_width);
     // Check if we have arrowheads
     bool hasEndArrow = (m_lineEndStyle != LineEndStyle::None);
     bool hasStartArrow = (m_lineEndStyle == LineEndStyle::BothArrow ||
@@ -117,128 +100,24 @@ void ArrowAnnotation::draw(QPainter &painter) const
 
     // Draw the Bézier curve using QPainterPath
     // Set NoBrush to prevent filling the curve interior
-    painter.setBrush(Qt::NoBrush);
-    QPainterPath curvePath;
-    curvePath.moveTo(curveStart);
-    curvePath.quadTo(adjustedControl, curveEnd);
-    painter.drawPath(curvePath);
+    geometry.shaft.moveTo(curveStart);
+    geometry.shaft.quadTo(adjustedControl, curveEnd);
 
-    // Draw arrowhead(s) based on line end style
-    switch (m_lineEndStyle) {
-    case LineEndStyle::None:
-        // Plain line, no arrowheads
-        break;
-    case LineEndStyle::EndArrow:
-        drawArrowheadAtAngle(painter, m_end, endTangentAngle(), true);
-        break;
-    case LineEndStyle::EndArrowOutline:
-        drawArrowheadAtAngle(painter, m_end, endTangentAngle(), false);
-        break;
-    case LineEndStyle::EndArrowLine:
-        drawArrowheadLineAtAngle(painter, m_end, endTangentAngle());
-        break;
-    case LineEndStyle::BothArrow:
-        drawArrowheadAtAngle(painter, m_end, endTangentAngle(), true);
-        // Start arrow points opposite direction (add PI to reverse)
-        drawArrowheadAtAngle(painter, m_start, startTangentAngle() + M_PI, true);
-        break;
-    case LineEndStyle::BothArrowOutline:
-        drawArrowheadAtAngle(painter, m_end, endTangentAngle(), false);
-        drawArrowheadAtAngle(painter, m_start, startTangentAngle() + M_PI, false);
-        break;
+    geometry.addHead(m_end, endTangentAngle(), m_width, m_lineEndStyle);
+    if (hasStartArrow) {
+        geometry.addHead(m_start, startTangentAngle() + M_PI, m_width, m_lineEndStyle);
     }
-
-    painter.restore();
-}
-
-void ArrowAnnotation::drawArrowheadAtAngle(QPainter &painter, const QPoint &tip, double angle, bool filled) const
-{
-    // Arrowhead size proportional to line width
-    double arrowLength = qMax(10.0, m_width * 3.0);
-    double arrowAngle = M_PI / 6.0;  // 30 degrees
-
-    // Calculate arrowhead points
-    QPointF arrowP1(
-        tip.x() - arrowLength * qCos(angle - arrowAngle),
-        tip.y() - arrowLength * qSin(angle - arrowAngle)
-    );
-    QPointF arrowP2(
-        tip.x() - arrowLength * qCos(angle + arrowAngle),
-        tip.y() - arrowLength * qSin(angle + arrowAngle)
-    );
-
-    // Draw arrowhead triangle
-    QPainterPath arrowPath;
-    arrowPath.moveTo(tip);
-    arrowPath.lineTo(arrowP1);
-    arrowPath.lineTo(arrowP2);
-    arrowPath.closeSubpath();
-
-    if (filled) {
-        // Solid fill without outline stroke
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(m_color);
-    } else {
-        // Outline only
-        QPen solidPen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-        painter.setPen(solidPen);
-        painter.setBrush(Qt::NoBrush);
-    }
-    painter.drawPath(arrowPath);
-}
-
-void ArrowAnnotation::drawArrowheadLineAtAngle(QPainter &painter, const QPoint &tip, double angle) const
-{
-    // Arrowhead size proportional to line width
-    double arrowLength = qMax(10.0, m_width * 3.0);
-    double arrowAngle = M_PI / 6.0;  // 30 degrees
-
-    // Calculate arrowhead points
-    QPointF arrowP1(
-        tip.x() - arrowLength * qCos(angle - arrowAngle),
-        tip.y() - arrowLength * qSin(angle - arrowAngle)
-    );
-    QPointF arrowP2(
-        tip.x() - arrowLength * qCos(angle + arrowAngle),
-        tip.y() - arrowLength * qSin(angle + arrowAngle)
-    );
-
-    // Draw two lines forming a V (no closed path)
-    QPen solidPen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-    painter.setPen(solidPen);
-    painter.setBrush(Qt::NoBrush);
-    painter.drawLine(arrowP1, QPointF(tip));
-    painter.drawLine(QPointF(tip), arrowP2);
+    return geometry;
 }
 
 QRect ArrowAnnotation::boundingRect() const
 {
-    int margin = 20;  // Extra margin for arrowhead
-
-    // Include all three points (start, end, control) in bounding calculation
-    int minX = qFloor(qMin(qreal(qMin(m_start.x(), m_end.x())), m_controlPoint.x())) - margin;
-    int maxX = qCeil(qMax(qreal(qMax(m_start.x(), m_end.x())), m_controlPoint.x())) + margin;
-    int minY = qFloor(qMin(qreal(qMin(m_start.y(), m_end.y())), m_controlPoint.y())) - margin;
-    int maxY = qCeil(qMax(qreal(qMax(m_start.y(), m_end.y())), m_controlPoint.y())) + margin;
-
-    return QRect(minX, minY, maxX - minX, maxY - minY);
+    return geometry().boundingRect(m_width);
 }
 
 bool ArrowAnnotation::containsPoint(const QPoint &pos) const
 {
-    // Create the Bézier curve path
-    QPainterPath curvePath;
-    curvePath.moveTo(m_start);
-    curvePath.quadTo(m_controlPoint, m_end);
-
-    // Use QPainterPathStroker to create a widened path for hit testing
-    QPainterPathStroker stroker;
-    stroker.setWidth(qMax(kHitTolerance, m_width + 6));  // At least 10px tolerance
-    stroker.setCapStyle(Qt::RoundCap);
-    stroker.setJoinStyle(Qt::RoundJoin);
-
-    QPainterPath strokedPath = stroker.createStroke(curvePath);
-    return strokedPath.contains(pos);
+    return geometry().containsPoint(pos, m_width);
 }
 
 bool ArrowAnnotation::isCurved() const

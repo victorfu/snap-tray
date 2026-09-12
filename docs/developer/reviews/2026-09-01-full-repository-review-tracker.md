@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 24 |
-| Confirmed / Fix Ready | 11 |
+| Confirmed / Open | 23 |
+| Confirmed / Fix Ready | 12 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 1 |
@@ -67,7 +67,7 @@
 | REV-011 | Fix Ready | P1 | High | Region Selection | mouse release 忽略最後座標 |
 | REV-012 | Fix Ready | P1 | High | Eraser | 只在離散事件點擦除，快速拖曳會留下間隙 |
 | REV-013 | Fix Ready | P2 | High | Arrow | 端點曲線結果依 mouse event 分割方式而變 |
-| REV-014 | Open | P1 | High | Arrow / Polyline | 寬箭頭超出 bounding／hit geometry |
+| REV-014 | Fix Ready | P1 | High | Arrow / Polyline | 寬箭頭超出 bounding／hit geometry |
 | REV-015 | Open | P1 | High | Polyline | 短末段把箭頭畫在倒數頂點，箭頭後仍有尾巴 |
 | REV-016 | Open | P2 | High | Gizmo | 小物件的 handle hit zones 重疊，部分 handle 不可達 |
 | REV-017 | Open | P1 | High | Text | wrapText 改變空白且不支援 CJK 字元換行 |
@@ -226,12 +226,13 @@
 
 ### REV-014 — 寬箭頭的視覺超出 bounding／hit geometry
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/annotations/ArrowAnnotation.cpp:154-224,227-241；src/annotations/PolylineAnnotation.cpp:140-226,260-280。
 - 觸發：使用較大 line width；arrowhead length 為 max(10, width × 3)，但 Arrow bounding 固定 margin 20，Polyline margin 也遠小於 3 × width；containsPoint 只 stroke 主路徑。
 - 後果：arrowhead 可在 dirty repaint／cache／export 中被裁切，且點擊可見 arrowhead 可能無法選取 annotation。
 - 完成條件：bounding rect 與 hit path 必須包含各種 line-end style 的實際 arrowhead geometry；寬度最小／最大與各角度做 pixel bounds、dirty repaint、selection 測試。
-- 修正證據：待補。
+- 修正證據：Arrow／Polyline 共用 LineAnnotationGeometry，繪製、bounds 及 hit testing 取自相同 shaft／head paths；bounds 包含線寬、圓角及抗鋸齒邊距，實心／外框／V 型及雙箭頭均可點選。保留逐筆直接繪製，未擴大 generic culling。
+- 驗證：2026-09-12 macOS scripts/build.sh 與 ArrowAnnotation、PolylineAnnotation、AnnotationLayer、ArrowToolHandler、PolylineToolHandler、EraserToolHandler 六套測試通過；432 組矩陣涵蓋寬度 1／30／100、六種 end styles、四個方向、DPR 1／1.5／2 與負 origin，驗證 bounds clip／快取／dirty／直接繪製像素一致及可見像素 hit。Windows／Ubuntu 原生 repaint smoke 待補，保留 Fix Ready。對應本機 commit：fix: share painted arrow geometry for bounds and hit testing。
 
 ### REV-015 — Polyline 短末段把箭頭放在倒數頂點
 
@@ -519,3 +520,4 @@
 | 2026-09-12 | REV-034 完成實際 encoder 音訊能力傳遞與靜音降級 UI／警告，標為 Fix Ready；本批五項修正整合後 macOS 149／149 測試通過，QML lint exit 0。 |
 | 2026-09-12 | REV-012 完成連續刷頭掃描與單次 gesture history 回歸，macOS 建置及三套測試通過；標為 Fix Ready。 |
 | 2026-09-12 | REV-013 完成箭頭控制點浮點化與序列化精度回歸，macOS 建置及四套測試通過；標為 Fix Ready。 |
+| 2026-09-12 | REV-014 完成 Arrow／Polyline 實際繪製幾何共用與 432 組像素回歸，macOS 建置及六套測試通過；標為 Fix Ready。 |

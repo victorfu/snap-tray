@@ -16,6 +16,8 @@ enum class LineEndStyle {
     BothArrowOutline // Outline triangles at both ends
 };
 
+struct LineAnnotationGeometry;
+
 /**
  * @brief Arrow annotation (line with optional arrowhead) - supports Quadratic Bézier curves.
  *
@@ -77,9 +79,7 @@ public:
     void moveBy(const QPoint &delta);
 
 private:
-    // Arrowhead drawing helpers
-    void drawArrowheadAtAngle(QPainter &painter, const QPoint &tip, double angle, bool filled) const;
-    void drawArrowheadLineAtAngle(QPainter &painter, const QPoint &tip, double angle) const;
+    LineAnnotationGeometry geometry() const;
 
     // Tangent angle calculations for Bézier curve
     double endTangentAngle() const;
@@ -92,9 +92,6 @@ private:
     int m_width;
     LineEndStyle m_lineEndStyle;
     LineStyle m_lineStyle;
-
-    // Hit testing tolerance
-    static constexpr int kHitTolerance = 10;
 };
 
 #endif // ARROWANNOTATION_H

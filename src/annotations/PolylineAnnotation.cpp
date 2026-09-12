@@ -1,4 +1,5 @@
 #include "annotations/PolylineAnnotation.h"
+#include "annotations/LineAnnotationGeometry.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -25,26 +26,15 @@ PolylineAnnotation::PolylineAnnotation(const QVector<QPoint>& points, const QCol
 
 void PolylineAnnotation::draw(QPainter& painter) const
 {
+    geometry().draw(painter, m_color, m_width, m_lineStyle);
+}
+
+LineAnnotationGeometry PolylineAnnotation::geometry() const
+{
+    LineAnnotationGeometry geometry;
     if (m_points.size() < 2) {
-        return;
+        return geometry;
     }
-
-    painter.save();
-
-    // Map LineStyle to Qt::PenStyle
-    Qt::PenStyle qtStyle = Qt::SolidLine;
-    switch (m_lineStyle) {
-    case LineStyle::Solid:
-        qtStyle = Qt::SolidLine;
-        break;
-    case LineStyle::Dashed:
-        qtStyle = Qt::DashLine;
-        break;
-    case LineStyle::Dotted:
-        qtStyle = Qt::DotLine;
-        break;
-    }
-
     // Check if we have arrowheads
     bool hasEndArrow = (m_lineEndStyle != LineEndStyle::None);
     bool hasStartArrow = (m_lineEndStyle == LineEndStyle::BothArrow ||
@@ -55,15 +45,9 @@ void PolylineAnnotation::draw(QPainter& painter) const
                            m_lineEndStyle == LineEndStyle::BothArrowOutline);
     bool needsStartAdjust = hasStartArrow;
 
-    Qt::PenCapStyle capStyle = hasEndArrow ? Qt::FlatCap : Qt::RoundCap;
-    QPen pen(m_color, m_width, qtStyle, capStyle, Qt::RoundJoin);
-    painter.setPen(pen);
-    painter.setBrush(Qt::NoBrush);  // Ensure no fill for the polyline path
-    painter.setRenderHint(QPainter::Antialiasing, true);
-
-    double arrowLength = qMax(10.0, m_width * 3.0);
-    double arrowAngle = M_PI / 6.0;  // 30 degrees
-    double baseDistance = arrowLength * qCos(arrowAngle) - 1.0;
+    geometry.capStyle = hasEndArrow ? Qt::FlatCap : Qt::RoundCap;
+    const qreal arrowLength = LineAnnotationGeometry::headLength(m_width);
+    const qreal baseDistance = LineAnnotationGeometry::headBaseDistance(m_width);
     int lastIdx = m_points.size() - 1;
 
     // Determine where to draw the end arrow
@@ -78,7 +62,6 @@ void PolylineAnnotation::draw(QPainter& painter) const
     }
 
     // Build the path for all segments
-    QPainterPath path;
 
     // Adjust first point for start arrowhead
     QPointF startPoint = m_points[0];
@@ -90,12 +73,12 @@ void PolylineAnnotation::draw(QPainter& painter) const
             m_points[0].y() - baseDistance * qSin(angle)
         );
     }
-    path.moveTo(startPoint);
+    geometry.shaft.moveTo(startPoint);
 
     // Draw segments
     for (int i = 1; i <= lastIdx; ++i) {
         QPointF target = m_points[i];
-        
+
         // Check if this vertex needs adjustment for the end arrow
         if (needsEndAdjust && i == arrowTipIdx) {
              const QPoint& prev = m_points[i - 1];
@@ -105,125 +88,28 @@ void PolylineAnnotation::draw(QPainter& painter) const
                 target.y() - baseDistance * qSin(angle)
              );
         }
-        
-        path.lineTo(target);
+
+        geometry.shaft.lineTo(target);
     }
 
-    painter.drawPath(path);
-
-    // Draw arrowheads based on style
-    switch (m_lineEndStyle) {
-    case LineEndStyle::None:
-        break;
-    case LineEndStyle::EndArrow:
-        drawArrowhead(painter, m_points[arrowTipIdx - 1], m_points[arrowTipIdx], true);
-        break;
-    case LineEndStyle::EndArrowOutline:
-        drawArrowhead(painter, m_points[arrowTipIdx - 1], m_points[arrowTipIdx], false);
-        break;
-    case LineEndStyle::EndArrowLine:
-        drawArrowheadLine(painter, m_points[arrowTipIdx - 1], m_points[arrowTipIdx]);
-        break;
-    case LineEndStyle::BothArrow:
-        drawArrowhead(painter, m_points[arrowTipIdx - 1], m_points[arrowTipIdx], true);
-        drawArrowhead(painter, m_points[1], m_points[0], true);
-        break;
-    case LineEndStyle::BothArrowOutline:
-        drawArrowhead(painter, m_points[arrowTipIdx - 1], m_points[arrowTipIdx], false);
-        drawArrowhead(painter, m_points[1], m_points[0], false);
-        break;
+    const QPointF endDirection = m_points[arrowTipIdx] - m_points[arrowTipIdx - 1];
+    geometry.addHead(m_points[arrowTipIdx], qAtan2(endDirection.y(), endDirection.x()),
+                     m_width, m_lineEndStyle);
+    if (hasStartArrow) {
+        const QPointF startDirection = m_points[0] - m_points[1];
+        geometry.addHead(m_points[0], qAtan2(startDirection.y(), startDirection.x()),
+                         m_width, m_lineEndStyle);
     }
-
-    painter.restore();
-}
-
-void PolylineAnnotation::drawArrowhead(QPainter& painter, const QPoint& from, const QPoint& to, bool filled) const
-{
-    // Calculate the angle of the last segment
-    double angle = qAtan2(to.y() - from.y(), to.x() - from.x());
-
-    // Arrowhead size proportional to line width
-    double arrowLength = qMax(10.0, m_width * 3.0);
-    double arrowAngle = M_PI / 6.0;  // 30 degrees
-
-    // Calculate arrowhead points
-    QPointF arrowP1(
-        to.x() - arrowLength * qCos(angle - arrowAngle),
-        to.y() - arrowLength * qSin(angle - arrowAngle)
-    );
-    QPointF arrowP2(
-        to.x() - arrowLength * qCos(angle + arrowAngle),
-        to.y() - arrowLength * qSin(angle + arrowAngle)
-    );
-
-    // Draw arrowhead triangle
-    QPainterPath arrowPath;
-    arrowPath.moveTo(to);
-    arrowPath.lineTo(arrowP1);
-    arrowPath.lineTo(arrowP2);
-    arrowPath.closeSubpath();
-
-    if (filled) {
-        // Filled arrowheads should remain sharp at the tip.
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(m_color);
-    } else {
-        QPen solidPen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-        painter.setPen(solidPen);
-        painter.setBrush(Qt::NoBrush);
-    }
-    painter.drawPath(arrowPath);
-}
-
-void PolylineAnnotation::drawArrowheadLine(QPainter& painter, const QPoint& from, const QPoint& to) const
-{
-    // Calculate the angle of the last segment
-    double angle = qAtan2(to.y() - from.y(), to.x() - from.x());
-
-    // Arrowhead size proportional to line width
-    double arrowLength = qMax(10.0, m_width * 3.0);
-    double arrowAngle = M_PI / 6.0;  // 30 degrees
-
-    // Calculate arrowhead points
-    QPointF arrowP1(
-        to.x() - arrowLength * qCos(angle - arrowAngle),
-        to.y() - arrowLength * qSin(angle - arrowAngle)
-    );
-    QPointF arrowP2(
-        to.x() - arrowLength * qCos(angle + arrowAngle),
-        to.y() - arrowLength * qSin(angle + arrowAngle)
-    );
-
-    // Draw two lines forming a V (no closed path)
-    QPen solidPen(m_color, m_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-    painter.setPen(solidPen);
-    painter.setBrush(Qt::NoBrush);
-    painter.drawLine(arrowP1, QPointF(to));
-    painter.drawLine(QPointF(to), arrowP2);
+    return geometry;
 }
 
 QRect PolylineAnnotation::boundingRect() const
 {
-    if (m_points.isEmpty()) {
-        return QRect();
+    if (m_points.size() == 1) {
+        // Keep the initial vertex available to placement/selection callers.
+        return QRect(m_points.first(), QSize(1, 1));
     }
-
-    int minX = m_points[0].x();
-    int maxX = m_points[0].x();
-    int minY = m_points[0].y();
-    int maxY = m_points[0].y();
-
-    for (const QPoint& p : m_points) {
-        minX = qMin(minX, p.x());
-        maxX = qMax(maxX, p.x());
-        minY = qMin(minY, p.y());
-        maxY = qMax(maxY, p.y());
-    }
-
-    // Add margin for line width and arrowhead
-    int margin = qMax(20, m_width / 2 + 15);
-    return QRect(minX - margin, minY - margin,
-                 maxX - minX + 2 * margin, maxY - minY + 2 * margin);
+    return geometry().boundingRect(m_width);
 }
 
 std::unique_ptr<AnnotationItem> PolylineAnnotation::clone() const
@@ -259,25 +145,7 @@ void PolylineAnnotation::removeLastPoint()
 
 bool PolylineAnnotation::containsPoint(const QPoint& pos) const
 {
-    if (m_points.size() < 2) {
-        return false;
-    }
-
-    // Create a path from the points
-    QPainterPath path;
-    path.moveTo(m_points[0]);
-    for (int i = 1; i < m_points.size(); ++i) {
-        path.lineTo(m_points[i]);
-    }
-
-    // Use QPainterPathStroker to create a widened path for hit testing
-    QPainterPathStroker stroker;
-    stroker.setWidth(qMax(10, m_width + 6));  // At least 10px tolerance
-    stroker.setCapStyle(Qt::RoundCap);
-    stroker.setJoinStyle(Qt::RoundJoin);
-
-    QPainterPath strokedPath = stroker.createStroke(path);
-    return strokedPath.contains(pos);
+    return geometry().containsPoint(pos, m_width);
 }
 
 void PolylineAnnotation::moveBy(const QPoint& delta)
