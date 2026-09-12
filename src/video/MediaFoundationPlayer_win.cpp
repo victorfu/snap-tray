@@ -127,6 +127,7 @@ public:
     void setVideoSize(QSize size) { m_videoSize = size; }
     void setStride(int stride) { m_stride = stride; }
     void setFrameInterval(int intervalMs) { m_frameIntervalMs = intervalMs; }
+    void setDuration(qint64 durationMs) { m_durationMs = durationMs; }
     void setPlaybackRate(float rate) { m_playbackRate.store(rate); }
     bool isWaitingAtEndOfStream() const
     {
@@ -151,14 +152,16 @@ public:
     void requestSeek(qint64 positionMs) {
         QMutexLocker locker(&m_waitMutex);
         m_seekPosition = positionMs;
+        ++m_seekSerial;
         m_seekRequested = true;
         m_waitingAtEndOfStream = false;
         m_wakeCondition.wakeAll();
     }
+    quint64 seekSerial() const { return m_seekSerial.load(); }
 
 signals:
-    void frameReady(const QImage &frame, qint64 timestampMs);
-    void endOfStream();
+    void frameReady(const QImage &frame, qint64 timestampMs, quint64 seekSerial);
+    void endOfStream(quint64 seekSerial);
     void errorOccurred(const QString &message);
 
 protected:
@@ -176,6 +179,19 @@ protected:
         // null/non-decodable sample; none of those should consume the request.
         bool framePendingAfterSeek = false;
         bool waitingForSeekAfterEndOfStream = false;
+        quint64 activeSeekSerial = 0;
+        qint64 targetTime = 0;
+        QImage candidateFrame;
+        qint64 candidateTime = 0;
+        QImage lookAheadFrame;
+        qint64 lookAheadTime = 0;
+        const auto pacePlayback = [this] {
+            const int sleepMs = static_cast<int>(m_frameIntervalMs / m_playbackRate.load());
+            QMutexLocker locker(&m_waitMutex);
+            if (sleepMs > 0 && !m_stopRequested && !m_seekRequested && !m_paused) {
+                m_wakeCondition.wait(&m_waitMutex, sleepMs);
+            }
+        };
 
         while (!m_stopRequested) {
             if (!m_reader) {
@@ -185,13 +201,28 @@ protected:
 
             // A seek while paused is also a request for one frame. Process it
             // before the pause gate, then keep reading until one is delivered.
-            const bool seekRequested = m_seekRequested.exchange(false);
+            bool seekRequested = false;
+            {
+                // Snapshot the position and serial together. A newer request
+                // must never inherit the serial of the position being decoded.
+                QMutexLocker locker(&m_waitMutex);
+                seekRequested = m_seekRequested.exchange(false);
+                if (seekRequested) {
+                    targetTime = m_seekPosition.load() * 10000;
+                    activeSeekSerial = m_seekSerial.load();
+                }
+            }
             if (seekRequested) {
+                candidateFrame = {};
+                lookAheadFrame = {};
                 m_waitingAtEndOfStream = false;
                 PROPVARIANT var;
                 PropVariantInit(&var);
                 var.vt = VT_I8;
-                var.hVal.QuadPart = m_seekPosition.load() * 10000;
+                // Seeking exactly to the media end may return EOF without any
+                // samples. Start just inside the stream to recover its last frame.
+                var.hVal.QuadPart = m_durationMs > 0
+                    ? qMin(targetTime, m_durationMs * 10000 - 1) : targetTime;
                 const HRESULT seekHr = m_reader->SetCurrentPosition(GUID_NULL, var);
                 PropVariantClear(&var);
 
@@ -216,6 +247,13 @@ protected:
                 continue;
             }
 
+            if (!lookAheadFrame.isNull()) {
+                emit frameReady(lookAheadFrame, lookAheadTime / 10000, activeSeekSerial);
+                lookAheadFrame = {};
+                pacePlayback();
+                continue;
+            }
+
             // Async ReadSample never waits for decoding. The mailbox wait is
             // cancellable even when the decoder has not delivered its callback.
             hr = m_reader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM,
@@ -231,7 +269,7 @@ protected:
             if (!result) break;
             // A seek/close may have arrived while this sample was decoding.
             // Drop its owned sample and process the newest request first.
-            if (m_stopRequested || m_seekRequested) continue;
+            if (m_stopRequested || activeSeekSerial != m_seekSerial.load()) continue;
             hr = result->status;
             const DWORD flags = result->flags;
             const LONGLONG timestamp = result->timestamp;
@@ -259,18 +297,28 @@ protected:
                     sample->Release();
                 }
 
+                // The final frame covers the remainder of the timeline,
+                // including a seek to duration(). Do not time out at EOF.
+                if (framePendingAfterSeek && !candidateFrame.isNull()) {
+                    emit frameReady(candidateFrame, candidateTime / 10000, activeSeekSerial);
+                    candidateFrame = {};
+                }
+
                 // Keep the reader thread alive but dormant. Looping and replay
                 // both seek this same Source Reader back to zero, avoiding a
                 // dead thread and avoiding a tight loop that repeatedly reads
                 // the end-of-stream marker.
                 {
                     QMutexLocker locker(&m_waitMutex);
+                    if (activeSeekSerial != m_seekSerial.load()) {
+                        continue;
+                    }
                     m_paused = true;
                 }
                 framePendingAfterSeek = false;
                 waitingForSeekAfterEndOfStream = true;
                 m_waitingAtEndOfStream = true;
-                emit endOfStream();
+                emit endOfStream(activeSeekSerial);
                 continue;
             }
 
@@ -278,9 +326,26 @@ protected:
             if (sample) {
                 QImage frame = extractFrame(sample);
                 if (!frame.isNull()) {
-                    qint64 timestampMs = timestamp / 10000;
-                    emit frameReady(frame, timestampMs);
-                    frameDelivered = true;
+                    if (framePendingAfterSeek && timestamp < targetTime) {
+                        // SetCurrentPosition lands on an earlier keyframe.
+                        // Decode without playback pacing until we bracket t.
+                        candidateFrame = frame;
+                        candidateTime = timestamp;
+                    } else {
+                        if (framePendingAfterSeek && timestamp > targetTime
+                            && !candidateFrame.isNull()) {
+                            // candidate PTS <= t < next PTS. Save the next
+                            // frame so resumed playback does not skip it.
+                            lookAheadFrame = frame;
+                            lookAheadTime = timestamp;
+                            frame = candidateFrame;
+                        } else {
+                            candidateTime = timestamp;
+                        }
+                        emit frameReady(frame, candidateTime / 10000, activeSeekSerial);
+                        candidateFrame = {};
+                        frameDelivered = true;
+                    }
                 }
                 sample->Release();
             }
@@ -288,15 +353,7 @@ protected:
             if (frameDelivered) {
                 framePendingAfterSeek = false;
 
-                // Pace the frame reading based on playback rate
-                const float playbackRate = m_playbackRate.load();
-                int sleepMs = static_cast<int>(m_frameIntervalMs / playbackRate);
-                if (sleepMs > 0) {
-                    QMutexLocker locker(&m_waitMutex);
-                    if (!m_stopRequested && !m_seekRequested) {
-                        m_wakeCondition.wait(&m_waitMutex, sleepMs);
-                    }
-                }
+                pacePlayback();
             }
         }
 
@@ -439,12 +496,14 @@ private:
     QSize m_videoSize;
     int m_stride = 0;
     int m_frameIntervalMs = 33;
+    qint64 m_durationMs = 0;
     std::atomic<float> m_playbackRate{1.0f};
 
     std::atomic<bool> m_stopRequested{false};
     std::atomic<bool> m_paused{true};
     std::atomic<bool> m_seekRequested{false};
     std::atomic<qint64> m_seekPosition{0};
+    std::atomic<quint64> m_seekSerial{0};
     std::atomic<bool> m_waitingAtEndOfStream{false};
     QMutex m_waitMutex;
     QWaitCondition m_wakeCondition;
@@ -641,17 +700,20 @@ bool MediaFoundationPlayer::load(const QString &filePath)
     m_readerThread->setVideoSize(m_videoSize);
     m_readerThread->setStride(m_stride);
     m_readerThread->setFrameInterval(m_frameIntervalMs);
+    m_readerThread->setDuration(m_duration);
 
     const quint64 readerGeneration = m_readerGeneration;
     connect(m_readerThread, &FrameReaderThread::frameReady, this,
-            [this, readerGeneration](const QImage& frame, qint64 timestampMs) {
-                if (readerGeneration == m_readerGeneration) {
+            [this, readerGeneration](const QImage& frame, qint64 timestampMs, quint64 seekSerial) {
+                if (readerGeneration == m_readerGeneration && m_readerThread
+                    && seekSerial == m_readerThread->seekSerial()) {
                     onFrameReady(frame, timestampMs);
                 }
             }, Qt::QueuedConnection);
     connect(m_readerThread, &FrameReaderThread::endOfStream, this,
-            [this, readerGeneration]() {
-                if (readerGeneration == m_readerGeneration) {
+            [this, readerGeneration](quint64 seekSerial) {
+                if (readerGeneration == m_readerGeneration && m_readerThread
+                    && seekSerial == m_readerThread->seekSerial()) {
                     onEndOfStream();
                 }
             }, Qt::QueuedConnection);

@@ -57,6 +57,7 @@ public:
     class Private;
 
 private:
+    void applyPendingFrameRate();
     Private *d;
 };
 

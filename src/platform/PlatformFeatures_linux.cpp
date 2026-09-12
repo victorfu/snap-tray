@@ -1,4 +1,5 @@
 #include "PlatformFeatures.h"
+#include "platform/LinuxClipboardOwner.h"
 
 #include "OCRManager.h"
 #include "WindowDetector.h"
@@ -116,7 +117,7 @@ QIcon PlatformFeatures::createTrayIcon() const
 
 bool PlatformFeatures::copyImageToClipboardPersistently(const QImage& image) const
 {
-    return copyImageToClipboardForGui(image);
+    return SnapTray::copyImageToLinuxClipboard(image, launchableAppPath());
 }
 
 bool PlatformFeatures::copyImageToClipboardForGui(const QImage& image) const

@@ -78,7 +78,7 @@ void tst_PlatformCapabilities::macAndWindowsKeepRecordingAndOcrSupport()
 
     const auto winCaps = SnapTray::capabilitiesForPlatform(
         SnapTray::PlatformKind::Windows,
-        SnapTray::DisplayServerKind::Unknown);
+        SnapTray::DisplayServerKind::Unknown, QOperatingSystemVersion::Windows10_2004);
     QVERIFY(winCaps.isRuntimeSupported);
     QVERIFY(winCaps.supportsRecording);
     QVERIFY(winCaps.supportsOCR);
@@ -143,6 +143,7 @@ void tst_PlatformCapabilities::windowsCaptureExclusionVersionGate_data()
     QTest::newRow("1909") << 10 << 18363 << false;
     QTest::newRow("before-2004") << 10 << 19040 << false;
     QTest::newRow("2004") << 10 << 19041 << true;
+    QTest::newRow("22H2") << 10 << 19045 << true;
     QTest::newRow("windows11") << 10 << 22000 << true;
     QTest::newRow("unknown-build") << 10 << -1 << false;
 }
@@ -156,6 +157,12 @@ void tst_PlatformCapabilities::windowsCaptureExclusionVersionGate()
     QCOMPARE(SnapTray::windowsCaptureAffinity(true, version), supported ? quint32(0x11) : quint32(0));
     QCOMPARE(SnapTray::windowsCaptureAffinity(false, version), quint32(0));
     QCOMPARE(SnapTray::requiresVisibleRecordingControls(version), !supported);
+    const auto caps = SnapTray::capabilitiesForPlatform(
+        SnapTray::PlatformKind::Windows, SnapTray::DisplayServerKind::Unknown, version);
+    QCOMPARE(caps.supportsLiveCapture, supported);
+    QCOMPARE(caps.liveCaptureUnavailableReason.isEmpty(), supported);
+    QVERIFY(caps.isRuntimeSupported);
+    QVERIFY(caps.supportsRecording);
     QVERIFY(!SnapTray::requiresVisibleRecordingControls(QOperatingSystemVersion(QOperatingSystemVersion::MacOS, 14, 0, 0)));
 }
 

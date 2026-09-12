@@ -161,7 +161,7 @@ void TestVideoTrimmerSafety::mediaFoundationPausedSeekKeepsFramePending()
         "framePendingAfterSeek = false", endOfStream);
     const qsizetype endOfStreamWait = run.indexOf(
         "waitingForSeekAfterEndOfStream = true", endOfStreamPendingClear);
-    const qsizetype endOfStreamSignal = run.indexOf("emit endOfStream()", endOfStreamWait);
+    const qsizetype endOfStreamSignal = run.indexOf("emit endOfStream(activeSeekSerial)", endOfStreamWait);
     const qsizetype endOfStreamBlockEnd = run.indexOf(
         "bool frameDelivered = false", endOfStreamSignal);
 

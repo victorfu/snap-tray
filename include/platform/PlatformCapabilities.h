@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QString>
+#include <QOperatingSystemVersion>
 
 namespace SnapTray {
 
@@ -34,6 +35,7 @@ struct PlatformCapabilities {
     bool isRuntimeSupported = false;
     DisplayServerKind displayServer = DisplayServerKind::Unknown;
     QString unsupportedRuntimeMessage;
+    QString liveCaptureUnavailableReason;
 };
 
 PlatformKind currentPlatformKind();
@@ -41,7 +43,8 @@ DisplayServerKind displayServerKindFromSessionType(const QString& sessionType,
                                                    const QString& qtPlatformName);
 DisplayServerKind currentDisplayServerKind();
 PlatformCapabilities capabilitiesForPlatform(PlatformKind platform,
-                                             DisplayServerKind displayServer);
+                                             DisplayServerKind displayServer,
+                                             const QOperatingSystemVersion& version = QOperatingSystemVersion::current());
 PlatformCapabilities currentPlatformCapabilities();
 
 } // namespace SnapTray

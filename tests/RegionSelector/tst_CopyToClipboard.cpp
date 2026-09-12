@@ -1,4 +1,5 @@
 #include <QtTest/QtTest>
+#include <memory>
 
 #include "RegionSelector.h"
 #include "RegionSelectorTestAccess.h"
@@ -11,6 +12,7 @@ private slots:
     void testCopyWaitsForClipboardCompletionBeforeClosingSelector();
     void testCopyDoesNotBlockOnSlowClipboardWriter();
     void testClipboardFailureKeepsSelectorOpenAndAllowsRetry();
+    void testCompletionAfterSelectorDestructionIsIgnored();
 };
 
 void tst_RegionSelectorCopyToClipboard::testCopyWaitsForClipboardCompletionBeforeClosingSelector()
@@ -79,11 +81,15 @@ void tst_RegionSelectorCopyToClipboard::testCopyDoesNotBlockOnSlowClipboardWrite
 
     bool writerCalled = false;
     bool completionCalled = false;
+    QObject completionContext;
     RegionSelectorTestAccess::setGuiClipboardWriter(
         selector,
         [&](const QImage&, std::function<void(bool)> completion) {
             writerCalled = true;
-            QTimer::singleShot(150, qApp, [&completionCalled, completion = std::move(completion)]() mutable {
+            // Bind the pending callback to this test invocation. If an
+            // assertion exits early it must not write a dead stack variable
+            // during the next test's event processing.
+            QTimer::singleShot(0, &completionContext, [&completionCalled, completion = std::move(completion)]() mutable {
                 completionCalled = true;
                 if (completion) {
                     completion(true);
@@ -91,13 +97,12 @@ void tst_RegionSelectorCopyToClipboard::testCopyDoesNotBlockOnSlowClipboardWrite
             });
         });
 
-    QElapsedTimer timer;
-    timer.start();
     RegionSelectorTestAccess::invokeCopyToClipboard(selector);
 
-    QVERIFY2(timer.elapsed() < 80, "copyToClipboard() blocked on the clipboard writer");
     QVERIFY(writerCalled);
-    QVERIFY(!completionCalled);
+    // copyToClipboard must return before dispatching the queued writer. This
+    // detects a nested completion wait without a machine-speed threshold.
+    QVERIFY2(!completionCalled, "copyToClipboard() waited for the clipboard writer");
     QVERIFY(!RegionSelectorTestAccess::isClosing(selector));
     QTRY_VERIFY(completionCalled);
     QTRY_VERIFY(RegionSelectorTestAccess::isClosing(selector));
@@ -147,6 +152,29 @@ void tst_RegionSelectorCopyToClipboard::testClipboardFailureKeepsSelectorOpenAnd
     pendingCompletion(true);
     QTRY_VERIFY(RegionSelectorTestAccess::isClosing(selector));
     QCOMPARE(copyRequestedSpy.count(), 1);
+}
+
+void tst_RegionSelectorCopyToClipboard::testCompletionAfterSelectorDestructionIsIgnored()
+{
+    auto* screen = QGuiApplication::primaryScreen();
+    if (!screen) QSKIP("No screens available for RegionSelector copy test.");
+    auto selector = std::make_unique<RegionSelector>();
+    selector->setAttribute(Qt::WA_DeleteOnClose, false);
+    QPixmap preCapture(screen->geometry().size().boundedTo(QSize(320, 240)));
+    preCapture.fill(Qt::red);
+    selector->initializeForScreen(screen, preCapture);
+    RegionSelectorTestAccess::setSelectionRect(*selector, QRect(10, 10, 40, 30));
+    std::function<void(bool)> pending;
+    RegionSelectorTestAccess::setGuiClipboardWriter(*selector,
+        [&](const QImage&, std::function<void(bool)> completion) {
+            pending = std::move(completion);
+        });
+    RegionSelectorTestAccess::invokeCopyToClipboard(*selector);
+    QVERIFY(pending);
+    selector.reset();
+    pending(false);
+    pending(true);
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 }
 
 QTEST_MAIN(tst_RegionSelectorCopyToClipboard)

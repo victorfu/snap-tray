@@ -74,7 +74,7 @@ public:
     virtual bool setRegion(const QRect &region, const CaptureScreenInfo &screenInfo);
 
     /**
-     * @brief Set the target frame rate
+     * @brief Set the target frame rate, including while capture is running.
      * @param fps Frames per second (used by engines with async delivery)
      */
     virtual void setFrameRate(int fps) { m_frameRate = fps; }

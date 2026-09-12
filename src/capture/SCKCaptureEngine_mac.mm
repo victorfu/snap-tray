@@ -1,4 +1,5 @@
 #include "capture/SCKCaptureEngine.h"
+#include "capture/FrameRateUpdateState.h"
 
 #import <Foundation/Foundation.h>
 #import <AppKit/AppKit.h>
@@ -9,6 +10,9 @@
 #include <QScreen>
 #include <QGuiApplication>
 #include <QDebug>
+#include <QThread>
+#include <QMetaObject>
+#include <memory>
 #include <mutex>
 #include <atomic>
 #include <limits>
@@ -43,6 +47,12 @@ static void releasePixelBuffer(void *info)
 }
 #endif
 
+struct SCKFrameRateLifetime
+{
+    std::mutex mutex;
+    SCKCaptureEngine* engine = nullptr;
+};
+
 class SCKCaptureEngine::Private
 {
 public:
@@ -54,6 +64,8 @@ public:
 #if HAS_SCREENCAPTUREKIT
     API_AVAILABLE(macos(12.3))
     SCStream *stream = nil;
+    API_AVAILABLE(macos(12.3))
+    SCStreamConfiguration *configuration = nil;
 
     API_AVAILABLE(macos(12.3))
     SCKStreamDelegate *delegate = nil;
@@ -65,6 +77,8 @@ public:
     QRect captureRegion;
     CaptureScreenInfo screenInfo;
     int frameRate = 30;
+    SnapTray::FrameRateUpdateState frameRateUpdates;
+    std::shared_ptr<SCKFrameRateLifetime> frameRateLifetime = std::make_shared<SCKFrameRateLifetime>();
     std::atomic<bool> running{false};
     bool useScreenCaptureKit = false;
     bool captureStartRequested = false;
@@ -181,6 +195,7 @@ API_AVAILABLE(macos(12.3))
 
 void SCKCaptureEngine::Private::cleanup()
 {
+    frameRateUpdates.reset(frameRate);
 #if HAS_SCREENCAPTUREKIT
     if (@available(macOS 12.3, *)) {
         SCKStreamDelegate *localDelegate = delegate;
@@ -226,6 +241,7 @@ void SCKCaptureEngine::Private::cleanup()
         // Step 4: Release the last frame and the ARC-owned object graph.
         setLatestFrame(QImage());
         stream = nil;
+        configuration = nil;
         delegate = nil;
         targetDisplay = nil;
     }
@@ -240,10 +256,15 @@ SCKCaptureEngine::SCKCaptureEngine(QObject *parent)
     : ICaptureEngine(parent)
     , d(new Private)
 {
+    d->frameRateLifetime->engine = this;
 }
 
 SCKCaptureEngine::~SCKCaptureEngine()
 {
+    {
+        std::lock_guard<std::mutex> lock(d->frameRateLifetime->mutex);
+        d->frameRateLifetime->engine = nullptr;
+    }
     stop();
     delete d;
 }
@@ -311,8 +332,51 @@ bool SCKCaptureEngine::setRegion(const QRect &region, const CaptureScreenInfo &s
 
 void SCKCaptureEngine::setFrameRate(int fps)
 {
+    Q_ASSERT(QThread::currentThread() == thread());
+    if (fps <= 0) {
+        emit error("Invalid capture frame rate");
+        return;
+    }
     m_frameRate = fps;
     d->frameRate = fps;
+    d->frameRateUpdates.request(fps);
+    if (d->running) applyPendingFrameRate();
+}
+
+void SCKCaptureEngine::applyPendingFrameRate()
+{
+#if HAS_SCREENCAPTUREKIT
+    if (@available(macOS 12.3, *)) {
+        if (!d->running || !d->stream || !d->configuration) return;
+        const auto update = d->frameRateUpdates.begin();
+        if (!update) return;
+        const auto request = *update;
+        const auto lifetime = d->frameRateLifetime;
+        // Keep all crop, size, pixel format and exclusion configuration intact.
+        // Only one update is in flight, so this object is never modified
+        // again until the native completion has been handled.
+        SCStreamConfiguration* config = d->configuration;
+        config.minimumFrameInterval = CMTimeMake(1, request.fps);
+        SCStream* stream = d->stream;
+        [stream updateConfiguration:config completionHandler:^(NSError* nativeError) {
+            const QString message = nativeError
+                ? QString::fromNSString(nativeError.localizedDescription) : QString();
+            std::lock_guard<std::mutex> lock(lifetime->mutex);
+            auto* engine = lifetime->engine;
+            if (!engine) return;
+            QMetaObject::invokeMethod(engine, [engine, request, config, message] {
+                auto* state = engine->d;
+                if (!state->frameRateUpdates.complete(request, message.isEmpty())) return;
+                if (!message.isEmpty()) {
+                    emit engine->error(QStringLiteral("Failed to update capture frame rate: ") + message);
+                    return;
+                }
+                state->configuration = config;
+                engine->applyPendingFrameRate();
+            }, Qt::QueuedConnection);
+        }];
+    }
+#endif
 }
 
 void SCKCaptureEngine::setExcludedWindows(const QList<WId> &windowIds)
@@ -566,6 +630,8 @@ bool SCKCaptureEngine::start()
             d->stream = [[SCStream alloc] initWithFilter:filter
                                            configuration:config
                                                 delegate:d->delegate];
+            d->configuration = config;
+            d->frameRateUpdates.reset(d->frameRate);
             qDebug() << "SCKCaptureEngine::start() - SCStream created:" << (d->stream ? "valid" : "nil");
 
             qDebug() << "SCKCaptureEngine::start() - Adding stream output...";

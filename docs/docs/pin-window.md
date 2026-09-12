@@ -41,6 +41,12 @@ Right-click menu includes:
 - View/layout: Show Toolbar, Show Border, Move to Screen, Merge Pins, Adjust Region Layout
 - Image controls: Zoom presets, image processing (rotate/flip/crop/opacity step), smoothing
 - Output/workflow: Copy, Save, Open Cache Folder, Beautify, Watermark, Live Update
+
+Live Update requires macOS or Windows 10 version 2004 (build 19041) or later.
+Windows 10 22H2 and Windows 11 support it. Earlier Windows 10 versions retain
+normal pin windows, but Live Update is disabled because those versions cannot
+exclude the pin itself from screen capture. Linux beta does not support Live Update.
+Changing the frame rate while Live Update is running also updates the capture engine.
 - Interaction/close: Click-through, Close, Close All Pins
 
 ## Annotation in pin window

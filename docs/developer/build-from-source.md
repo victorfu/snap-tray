@@ -19,6 +19,7 @@ SnapTray currently supports macOS, Windows, and Ubuntu 22.04 X11 beta.
 
 - macOS 14.0+
 - Windows 10+
+  - Live Update requires Windows 10 version 2004 (build 19041) or later.
 - Ubuntu 22.04 X11 beta
 
 ### Development prerequisites

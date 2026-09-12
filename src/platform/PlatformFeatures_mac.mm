@@ -1,4 +1,5 @@
 #include "PlatformFeatures.h"
+#include "platform/MacCLIInstaller.h"
 #include "OCRManager.h"
 #include "WindowDetector.h"
 #include <QBuffer>
@@ -28,13 +29,6 @@
 namespace {
 
 std::atomic<quint64> g_guiClipboardGeneration{0};
-
-QString escapeForSingleQuotedShellLiteral(const QString& value)
-{
-    QString escaped = value;
-    escaped.replace('\'', QStringLiteral("'\"'\"'"));
-    return escaped;
-}
 
 QByteArray encodePngImage(const QImage& image)
 {
@@ -249,43 +243,23 @@ QString PlatformFeatures::getAppExecutablePath() const
 
 bool PlatformFeatures::isCLIInstalled() const
 {
-    QFileInfo cliFile("/usr/local/bin/snaptray");
-    if (!cliFile.exists()) {
-        return false;
-    }
-
-    // Read the script and check if it references our app
-    QFile file("/usr/local/bin/snaptray");
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        return false;
-    }
-    QString content = QString::fromUtf8(file.readAll());
-    return content.contains(getAppExecutablePath());
+    return SnapTray::isMacCLIWrapperInstalled(QStringLiteral("/usr/local/bin/snaptray"),
+        QCoreApplication::applicationFilePath(), getAppExecutablePath());
 }
 
 bool PlatformFeatures::installCLI() const
 {
-    QString appPath = getAppExecutablePath();
-    const QString escapedAppPath = escapeForSingleQuotedShellLiteral(appPath);
-
-    // Create shell script content that sets up Qt environment
-    // Using printf for proper newline handling in shell
-    QString script = QString(
-        "do shell script \"mkdir -p /usr/local/bin && "
-        "printf '#!/bin/bash\\n"
-        "APP_PATH=\\\"%1\\\"\\n"
-        "export QT_PLUGIN_PATH=\\\"$APP_PATH/Contents/PlugIns\\\"\\n"
-        "exec \\\"$APP_PATH/Contents/MacOS/SnapTray\\\" \\\"$@\\\"\\n' > /usr/local/bin/snaptray && "
-        "chmod +x /usr/local/bin/snaptray\" "
-        "with administrator privileges"
-    ).arg(escapedAppPath);
-
-    QProcess process;
-    process.start("osascript", {"-e", script});
-    process.waitForFinished(-1);
-    return process.exitCode() == 0;
+    return SnapTray::installMacCLIWrapper(QStringLiteral("/usr/local/bin/snaptray"),
+        QCoreApplication::applicationFilePath(), getAppExecutablePath(), [](const QString& command) {
+            QProcess process;
+            process.start(QStringLiteral("/usr/bin/osascript"),
+                {QStringLiteral("-e"), QStringLiteral("do shell script ")
+                    + SnapTray::quoteAppleScriptString(command)
+                    + QStringLiteral(" with administrator privileges")});
+            return process.waitForFinished(-1) && process.exitStatus() == QProcess::NormalExit
+                && process.exitCode() == 0;
+        });
 }
-
 bool PlatformFeatures::uninstallCLI() const
 {
     QString script = "do shell script \"rm -f /usr/local/bin/snaptray\" with administrator privileges";

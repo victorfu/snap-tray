@@ -85,6 +85,7 @@ snaptray config --reset
 
 - Capture commands (`full`, `screen`, `region`) save PNG by default.
 - `--clipboard` copies instead of saving. `--raw` writes PNG bytes to stdout.
+- On Linux X11, clipboard captures remain available after the CLI exits without requiring the tray app or a clipboard manager. A background clipboard owner exits when another copy replaces the image.
 - `--output` takes priority over `--path`. If neither is provided, SnapTray generates a filename in the configured screenshot directory.
 - `screen` supports both `snaptray screen 1` and `snaptray screen -n 1`.
 - `region` requires `-r/--region`, uses logical pixels relative to the selected screen, and the rectangle must fit inside that screen.

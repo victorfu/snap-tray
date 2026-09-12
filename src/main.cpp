@@ -10,6 +10,7 @@
 
 #if defined(Q_OS_LINUX)
 #include "platform/LinuxDesktopEnvironment.h"
+#include "platform/LinuxClipboardOwner.h"
 #endif
 
 #include <QApplication>
@@ -59,6 +60,14 @@ int main(int argc, char* argv[])
     for (int i = 0; i < argc; ++i) {
         arguments.append(QString::fromLocal8Bit(argv[i]));
     }
+
+#if defined(Q_OS_LINUX)
+    if (SnapTray::isLinuxClipboardOwnerRequest(arguments)) {
+        QGuiApplication app(argc, argv);
+        if (!SnapTray::currentPlatformCapabilities().isRuntimeSupported) return 1;
+        return SnapTray::runLinuxClipboardOwner(arguments);
+    }
+#endif
 
     if (shouldBypassRuntimeGuardForMetadataCommand(arguments)) {
         QCoreApplication app(argc, argv);

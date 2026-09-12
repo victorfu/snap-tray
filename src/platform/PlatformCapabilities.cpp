@@ -1,4 +1,5 @@
 #include "platform/PlatformCapabilities.h"
+#include "platform/CaptureExclusionPolicy.h"
 
 #include <QByteArray>
 #include <QGuiApplication>
@@ -64,7 +65,8 @@ DisplayServerKind currentDisplayServerKind()
 }
 
 PlatformCapabilities capabilitiesForPlatform(PlatformKind platform,
-                                             DisplayServerKind displayServer)
+                                             DisplayServerKind displayServer,
+                                             const QOperatingSystemVersion& version)
 {
     PlatformCapabilities caps;
     caps.displayServer = displayServer;
@@ -78,6 +80,11 @@ PlatformCapabilities capabilitiesForPlatform(PlatformKind platform,
         caps.supportsWindowDetection = true;
         caps.supportsClickThrough = true;
         caps.supportsLiveCapture = true;
+        if (platform == PlatformKind::Windows && windowsCaptureAffinity(true, version) == 0) {
+            caps.supportsLiveCapture = false;
+            caps.liveCaptureUnavailableReason = QCoreApplication::translate(
+                "PlatformCapabilities", "Live Update requires Windows 10 version 2004 or later.");
+        }
         caps.supportsInAppUpdates = true;
         caps.isRuntimeSupported = true;
         return caps;
@@ -88,6 +95,8 @@ PlatformCapabilities capabilitiesForPlatform(PlatformKind platform,
         caps.supportsWindowDetection = displayServer == DisplayServerKind::X11;
         caps.supportsClickThrough = false;
         caps.supportsLiveCapture = false;
+        caps.liveCaptureUnavailableReason = QCoreApplication::translate(
+            "PlatformCapabilities", "Live Update is not supported on this platform.");
         caps.supportsInAppUpdates = false;
         caps.isRuntimeSupported = displayServer == DisplayServerKind::X11;
         if (!caps.isRuntimeSupported) {

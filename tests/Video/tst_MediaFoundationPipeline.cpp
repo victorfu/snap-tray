@@ -5,6 +5,9 @@
 #include <QElapsedTimer>
 #include <QSignalSpy>
 #include <QTemporaryDir>
+#include <QPainter>
+#include <QImageReader>
+#include <webp/demux.h>
 
 #include <memory>
 
@@ -19,6 +22,9 @@ class TestMediaFoundationPipeline : public QObject
 private slots:
     void reloadAndCloseStress();
     void pausedSeekProducesFrame();
+    void seekSupersedesQueuedFramesAndResumes();
+    void trimmedFramesMatchSource_data();
+    void trimmedFramesMatchSource();
     void loopingRestartsAfterEndOfStream();
     void playRestartsAfterNonLoopingEnd();
     void audioPlaybackCapabilityIsTruthful();
@@ -58,7 +64,10 @@ bool TestMediaFoundationPipeline::createTestVideo(const QString &path,
     const QByteArray audioChunk(4800 * 2 * 2, '\0'); // 100 ms, 48 kHz stereo PCM16
     for (int i = 0; i < 10; ++i) {
         QImage frame(64, 64, QImage::Format_RGB32);
-        frame.fill(QColor::fromHsv((i * 30) % 360, 255, 220));
+        frame.fill(QColor(40, 40, 40));
+        QPainter painter(&frame);
+        painter.fillRect(QRect(i * 4, 20, 8, 8), Qt::white);
+        painter.end();
         encoder->writeFrame(frame, i * 100);
         if (withAudio) {
             encoder->writeAudioSamples(audioChunk, i * 4800LL);
@@ -104,14 +113,134 @@ void TestMediaFoundationPipeline::pausedSeekProducesFrame()
     QCOMPARE(loadedSpy.count(), 1);
     player->pause();
 
-    const qint64 seekPositions[] = { 200, 500, 800 };
+    const qint64 seekPositions[] = { 200, 550, 800, 999, 1000, 0 };
     for (qint64 positionMs : seekPositions) {
         frameSpy.clear();
         player->seek(positionMs);
 
         QTRY_VERIFY_WITH_TIMEOUT(frameSpy.count() > 0, 3000);
         QVERIFY(!frameSpy.last().at(0).value<QImage>().isNull());
+        const qint64 expectedTime = qMin<qint64>(900, (positionMs / 100) * 100);
+        QCOMPARE(player->position(), expectedTime);
+        const QImage frame = frameSpy.last().at(0).value<QImage>();
+        const int expectedX = int(expectedTime / 100) * 4;
+        QVERIFY(frame.pixelColor(expectedX + 3, 23).red() > 180);
+        if (expectedX >= 8) {
+            QVERIFY(frame.pixelColor(2, 23).red() < 100);
+        }
         QCOMPARE(player->state(), IVideoPlayer::State::Paused);
+    }
+}
+
+void TestMediaFoundationPipeline::seekSupersedesQueuedFramesAndResumes()
+{
+    QTemporaryDir dir;
+    QString error;
+    const QString input = dir.filePath("queued-seek.mp4");
+    if (!createTestVideo(input, false, &error)) QSKIP(qPrintable(error));
+    std::unique_ptr<IVideoPlayer> player(IVideoPlayer::create());
+    QVERIFY(player->load(input));
+    player->pause();
+    // Let the old preview reach Qt's event queue without dispatching it.
+    QThread::msleep(150);
+    QSignalSpy frames(player.get(), &IVideoPlayer::frameReady);
+    player->seek(550);
+    QTRY_COMPARE_WITH_TIMEOUT(frames.count(), 1, 3000);
+    QCOMPARE(player->position(), qint64(500));
+    QTest::qWait(150);
+    QCOMPARE(frames.count(), 1);
+    frames.clear();
+    qint64 firstResumedPosition = -1;
+    connect(player.get(), &IVideoPlayer::frameReady, player.get(), [&] {
+        if (firstResumedPosition < 0) firstResumedPosition = player->position();
+    });
+    player->play();
+    QTRY_VERIFY_WITH_TIMEOUT(!frames.isEmpty(), 3000);
+    QCOMPARE(firstResumedPosition, qint64(600));
+}
+
+void TestMediaFoundationPipeline::trimmedFramesMatchSource_data()
+{
+    QTest::addColumn<int>("format");
+    QTest::addColumn<QString>("extension");
+    QTest::newRow("MP4") << int(EncoderFactory::Format::MP4) << QString("mp4");
+    QTest::newRow("GIF") << int(EncoderFactory::Format::GIF) << QString("gif");
+    QTest::newRow("WebP") << int(EncoderFactory::Format::WebP) << QString("webp");
+}
+
+void TestMediaFoundationPipeline::trimmedFramesMatchSource()
+{
+    QFETCH(int, format);
+    QFETCH(QString, extension);
+    QTemporaryDir dir;
+    QString error;
+    const QString input = dir.filePath("input.mp4");
+    const QString output = dir.filePath("output." + extension);
+    if (!createTestVideo(input, false, &error)) QSKIP(qPrintable(error));
+    VideoTrimmer trimmer;
+    trimmer.setInputPath(input);
+    trimmer.setOutputPath(output);
+    trimmer.setOutputFormat(static_cast<EncoderFactory::Format>(format));
+    trimmer.setTrimRange(200, 600);
+    QSignalSpy finished(&trimmer, &VideoTrimmer::finished);
+    QSignalSpy errors(&trimmer, &VideoTrimmer::error);
+    trimmer.startTrim();
+    QTRY_VERIFY_WITH_TIMEOUT(!finished.isEmpty() || !errors.isEmpty(), 10000);
+    QVERIFY2(errors.isEmpty(), errors.isEmpty() ? "" : qPrintable(errors.first().first().toString()));
+    QVERIFY(finished.first().first().toBool());
+
+    std::unique_ptr<IVideoPlayer> player;
+    std::unique_ptr<QSignalSpy> frames;
+    QList<QImage> webpFrames;
+    QImageReader imageReader(output);
+    if (extension == "mp4") {
+        player.reset(IVideoPlayer::create());
+        frames = std::make_unique<QSignalSpy>(player.get(), &IVideoPlayer::frameReady);
+        QVERIFY(player->load(output));
+        player->pause();
+    } else if (extension == "webp") {
+        // Use the bundled decoder so this regression test does not depend on
+        // the optional Qt WebP image plugin being installed on the machine.
+        QFile file(output);
+        QVERIFY(file.open(QIODevice::ReadOnly));
+        const QByteArray bytes = file.readAll();
+        const WebPData data{reinterpret_cast<const uint8_t*>(bytes.constData()), size_t(bytes.size())};
+        WebPAnimDecoderOptions options;
+        QVERIFY(WebPAnimDecoderOptionsInit(&options));
+        options.color_mode = MODE_RGBA;
+        std::unique_ptr<WebPAnimDecoder, decltype(&WebPAnimDecoderDelete)> decoder(
+            WebPAnimDecoderNew(&data, &options), &WebPAnimDecoderDelete);
+        QVERIFY(decoder);
+        WebPAnimInfo info;
+        QVERIFY(WebPAnimDecoderGetInfo(decoder.get(), &info));
+        while (WebPAnimDecoderHasMoreFrames(decoder.get()) && webpFrames.size() < 4) {
+            uint8_t* rgba = nullptr;
+            int timestamp = 0;
+            QVERIFY(WebPAnimDecoderGetNext(decoder.get(), &rgba, &timestamp));
+            webpFrames.append(QImage(rgba, int(info.canvas_width), int(info.canvas_height),
+                                    int(info.canvas_width) * 4, QImage::Format_RGBA8888).copy());
+        }
+        QCOMPARE(webpFrames.size(), 4);
+    } else if (!imageReader.canRead()) {
+        QSKIP(qPrintable("Image decoder unavailable: " + imageReader.errorString()));
+    }
+    for (int index = 0; index < 4; ++index) {
+        QImage frame;
+        if (player) {
+            frames->clear();
+            player->seek(index * 100);
+            QTRY_VERIFY_WITH_TIMEOUT(!frames->isEmpty(), 3000);
+            frame = frames->last().first().value<QImage>();
+        } else if (extension == "webp") {
+            frame = webpFrames.at(index);
+        } else {
+            frame = imageReader.read();
+        }
+        QVERIFY2(!frame.isNull(), qPrintable(imageReader.errorString()));
+        const int expectedX = (index + 2) * 4;
+        QVERIFY2(frame.pixelColor(expectedX + 3, 23).red() > 170,
+                 qPrintable(QString("Wrong source content in output frame %1").arg(index)));
+        QVERIFY(frame.pixelColor(2, 23).red() < 110);
     }
 }
 

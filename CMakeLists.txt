@@ -321,6 +321,7 @@ add_library(snaptray_core STATIC
     src/beautify/BeautifyRenderer.cpp
     src/update/UpdateSettingsManager.cpp
     src/platform/PlatformCapabilities.cpp
+    src/platform/MacCLIInstaller.cpp
     src/platform/CaptureExclusionPolicy.cpp
     src/platform/AtomicFilePublish.cpp
     src/tools/ToolRegistry.cpp
@@ -518,6 +519,7 @@ add_library(snaptray_platform STATIC
     include/QRCodeManager.h
     include/ImageColorSpaceHelper.h
     include/platform/QtQuickBackendPolicy.h
+    src/platform/LinuxClipboardOwner.cpp
 
     # macOS sources
     $<$<PLATFORM_ID:Darwin>:

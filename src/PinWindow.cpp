@@ -3061,9 +3061,13 @@ void PinWindow::contextMenuEvent(QContextMenuEvent* event)
 
     // Update live mode menu items based on current state
     if (m_startLiveAction) {
-        bool canStartLive = !m_sourceRegion.isEmpty() && m_sourceScreen;
+        const auto& capabilities = PlatformFeatures::instance().capabilities();
+        bool canStartLive = capabilities.supportsLiveCapture
+            && !m_sourceRegion.isEmpty() && m_sourceScreen;
         m_startLiveAction->setEnabled(canStartLive || m_isLiveMode);
-        m_startLiveAction->setText(m_isLiveMode ? tr("Stop Live Update") : tr("Start Live Update"));
+        m_startLiveAction->setText(!capabilities.supportsLiveCapture
+            ? capabilities.liveCaptureUnavailableReason
+            : m_isLiveMode ? tr("Stop Live Update") : tr("Start Live Update"));
     }
     if (m_pauseLiveAction) {
         m_pauseLiveAction->setVisible(m_isLiveMode);
@@ -5371,6 +5375,13 @@ void PinWindow::setSourceRegion(const QRect& region, QScreen* screen)
 
 void PinWindow::startLiveCapture()
 {
+    const auto& capabilities = PlatformFeatures::instance().capabilities();
+    if (!capabilities.supportsLiveCapture) {
+        m_toast->showToast(SnapTray::QmlToast::Level::Info,
+            capabilities.liveCaptureUnavailableReason);
+        return;
+    }
+
     if (m_autoBlurInProgress) {
         m_toast->showToast(SnapTray::QmlToast::Level::Info,
             tr("Please wait for auto-blur to finish"));
@@ -5396,6 +5407,14 @@ void PinWindow::startLiveCapture()
 
     // Create capture engine
     m_captureEngine = ICaptureEngine::createBestEngine(this);
+    connect(m_captureEngine, &ICaptureEngine::error, this,
+        [this, engine = QPointer<ICaptureEngine>(m_captureEngine)](const QString& message) {
+            if (!engine || m_captureEngine != engine.data()) {
+                return;
+            }
+            stopLiveCapture();
+            m_toast->showToast(SnapTray::QmlToast::Level::Error, message);
+        }, Qt::QueuedConnection);
     m_captureEngine->setRegion(m_sourceRegion, sourceScreen);
     m_captureEngine->setFrameRate(m_captureFrameRate);
 

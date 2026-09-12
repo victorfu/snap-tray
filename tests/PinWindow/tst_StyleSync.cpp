@@ -6,9 +6,13 @@
 #include <QPainter>
 #include <QSettings>
 #include <QWindow>
+#include <QMenu>
+#include <QContextMenuEvent>
+#include <QScopeGuard>
 #include <QtMath>
 
 #include "PinWindow.h"
+#include "PlatformFeatures.h"
 #include "qml/PinToolOptionsViewModel.h"
 #include "qml/PinToolbarViewModel.h"
 #include "qml/QmlEmojiPickerPopup.h"
@@ -164,6 +168,8 @@ private slots:
     void testAutoBlurAnnotationSourceRestoresCombinedOrientation();
     void testAutoBlurGenerationInvalidatesOnTransformChange();
     void testLiveCaptureWaitsForAutoBlur();
+    void testLiveCaptureVersionGate_data();
+    void testLiveCaptureVersionGate();
     void testPopupRestoreReturnsMosaicCursor();
     void testTemporaryToolbarHideRestoresEmojiPicker();
     void testExplicitToolbarHideClearsEmojiToolState();
@@ -586,6 +592,51 @@ void TestPinWindowStyleSync::testLiveCaptureWaitsForAutoBlur()
     QVERIFY(!window.m_captureEngine);
     QCOMPARE(window.m_autoBlurContentGeneration, requestGeneration);
     window.m_autoBlurInProgress = false;
+}
+
+void TestPinWindowStyleSync::testLiveCaptureVersionGate_data()
+{
+    QTest::addColumn<int>("build");
+    QTest::addColumn<bool>("supported");
+    QTest::newRow("1809") << 17763 << false;
+    QTest::newRow("1909") << 18363 << false;
+    QTest::newRow("2004") << 19041 << true;
+    QTest::newRow("22H2") << 19045 << true;
+    QTest::newRow("Windows11") << 22000 << true;
+}
+
+void TestPinWindowStyleSync::testLiveCaptureVersionGate()
+{
+    QFETCH(int, build);
+    QFETCH(bool, supported);
+    // Scope the simulated platform to this test process; no native capture is
+    // started. Restore even if an assertion exits the test early.
+    auto& capabilities = const_cast<SnapTray::PlatformCapabilities&>(
+        PlatformFeatures::instance().capabilities());
+    const auto saved = capabilities;
+    const auto restore = qScopeGuard([&] { capabilities = saved; });
+    capabilities = SnapTray::capabilitiesForPlatform(SnapTray::PlatformKind::Windows,
+        SnapTray::DisplayServerKind::Unknown,
+        QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, build));
+    PinWindow window(createTestPixmap(240, 160), QPoint(0, 0));
+    auto* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+    window.setSourceRegion(QRect(screen->geometry().topLeft(), QSize(100, 80)), screen);
+    QContextMenuEvent context(QContextMenuEvent::Mouse, QPoint(1, 1), QPoint(1, 1));
+    window.contextMenuEvent(&context);
+    QVERIFY(window.m_startLiveAction);
+    QCOMPARE(window.m_startLiveAction->isEnabled(), supported);
+    window.m_contextMenu->hide();
+    if (!supported) {
+        QVERIFY(window.m_startLiveAction->text().contains("2004"));
+        window.startLiveCapture();
+        QVERIFY(!window.m_captureEngine);
+        QVERIFY(!window.m_isLiveMode);
+        QKeyEvent key(QEvent::KeyPress, Qt::Key_L, Qt::NoModifier);
+        window.keyPressEvent(&key);
+        QVERIFY(!window.m_captureEngine);
+        QVERIFY(!window.m_isLiveMode);
+    }
 }
 
 void TestPinWindowStyleSync::testPopupRestoreReturnsMosaicCursor()

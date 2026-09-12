@@ -642,6 +642,15 @@ void tst_MainApplicationTrayMenu::previewCloseDiscardsTemporaryFile()
         if (window->title() == "Recording Preview" && window->isVisible()) preview = window;
     }
     QVERIFY(preview);
+    // show()/requestActivate() complete asynchronously on Windows. Key events
+    // sent before exposure have no active QML focus item to receive Escape.
+    QVERIFY(QTest::qWaitForWindowExposed(preview));
+#ifdef Q_OS_WIN
+    if (escape) {
+        preview->requestActivate();
+        QVERIFY(QTest::qWaitForWindowActive(preview));
+    }
+#endif
     if (escape) QTest::keyClick(preview, Qt::Key_Escape);
     else QVERIFY(preview->close());
     QCOMPARE(discarded.count(), 1);

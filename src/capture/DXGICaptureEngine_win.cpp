@@ -109,6 +109,8 @@ public:
     CaptureScreenInfo screenInfo;
     std::function<void()> captureTickObserver;
     std::atomic<bool> running{false};
+    std::atomic<quint64> captureGeneration{0};
+    std::atomic<int> requestedFrameRate{30};
     bool useDXGI = false;
     QImage lastFrame;  // Cache for when no new frame available (used during capture)
     std::chrono::steady_clock::time_point lastFrameTime;
@@ -716,6 +718,28 @@ bool DXGICaptureEngine::setRegion(const QRect &region, const CaptureScreenInfo &
     return true;
 }
 
+void DXGICaptureEngine::setFrameRate(int fps)
+{
+    if (SnapTray::captureFrameInterval(fps) <= std::chrono::nanoseconds::zero()) {
+        emit error("Invalid capture frame rate");
+        return;
+    }
+    m_frameRate = fps;
+    d->requestedFrameRate = fps;
+    if (!d->running) {
+        return;
+    }
+    const quint64 generation = d->captureGeneration.load();
+    QMetaObject::invokeMethod(d, [state = d, generation] {
+        if (state->running && state->captureGeneration == generation && state->captureTimer) {
+            const auto interval = SnapTray::captureFrameInterval(state->requestedFrameRate.load());
+            if (state->captureTimer->interval() != interval) {
+                state->captureTimer->setInterval(interval);
+            }
+        }
+    }, Qt::QueuedConnection);
+}
+
 bool DXGICaptureEngine::start()
 {
     const auto interval = SnapTray::captureFrameInterval(m_frameRate);
@@ -775,6 +799,7 @@ bool DXGICaptureEngine::start()
             &QChronoTimer::start);
 
     d->running = true;
+    ++d->captureGeneration;
     d->workerThread->start();
 
     qDebug() << "DXGICaptureEngine: Started with worker thread"
@@ -787,6 +812,7 @@ bool DXGICaptureEngine::start()
 
 void DXGICaptureEngine::stop()
 {
+    ++d->captureGeneration;
     const bool hasThreadResources = d->running || d->captureTimer || d->workerThread;
     if (hasThreadResources || d->useDXGI) {
         if (hasThreadResources) {

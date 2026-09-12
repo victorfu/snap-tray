@@ -1,7 +1,6 @@
 #include <QtTest>
 #include <QSemaphore>
 #include <QThread>
-#include <QTimer>
 #include <memory>
 #include "video/SourceReaderMailbox.h"
 #ifdef Q_OS_WIN
@@ -28,15 +27,21 @@ void tst_SourceReaderMailbox::cancelWithoutDecoderResponse()
         cancelled = !mailbox.wait().has_value();
     }));
     worker->start();
-    QVERIFY(started.tryAcquire(1, 1000));
-    int ticks = 0;
-    QTimer timer;
-    connect(&timer, &QTimer::timeout, this, [&] { ++ticks; });
-    timer.start(1);
-    QTest::qWait(30);
-    const bool stayedResponsive = ticks > 0;
+    const bool workerStarted = started.tryAcquire(1, 1000);
+    // Exercise the event loop while the decoder wait is outstanding. A 1 ms
+    // timer in a fixed 30 ms window depends on macOS/CI timer scheduling and
+    // does not measure whether the mailbox blocks the GUI thread.
+    bool cancellationDispatched = false;
+    QObject receiver;
+    QMetaObject::invokeMethod(&receiver, [&] {
+        cancellationDispatched = true;
+        mailbox.cancel();
+    }, Qt::QueuedConnection);
+    const bool stayedResponsive = QTest::qWaitFor([&] { return cancellationDispatched; }, 1000);
+    // Always release the worker, including when an assertion will fail.
     mailbox.cancel();
     QVERIFY(worker->wait(1000));
+    QVERIFY(workerStarted);
     QVERIFY(cancelled);
     QVERIFY(stayedResponsive);
 }

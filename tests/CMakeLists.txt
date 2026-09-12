@@ -109,6 +109,13 @@ set_tests_properties(Qml_WidthSectionQml PROPERTIES
     LABELS "unit"
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 )
+if(TARGET Qt6::QOffscreenIntegrationPlugin)
+    # windeployqt normally deploys only qwindows beside the test binaries.
+    # Resolve the explicit offscreen backend from the configured Qt SDK even
+    # when that deployed directory contains a qt.conf with a local Prefix.
+    set_property(TEST Qml_WidthSectionQml APPEND PROPERTY ENVIRONMENT
+        "QT_QPA_PLATFORM_PLUGIN_PATH=$<TARGET_FILE_DIR:Qt6::QOffscreenIntegrationPlugin>")
+endif()
 
 add_executable(Qml_FloatingSubToolbarAutoBlurHint Qml/tst_FloatingSubToolbarAutoBlurHint.cpp)
 target_link_libraries(Qml_FloatingSubToolbarAutoBlurHint PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
@@ -157,6 +164,25 @@ add_test(NAME Qml_QtQuickBackendPolicy COMMAND Qml_QtQuickBackendPolicy)
 set_tests_properties(Qml_QtQuickBackendPolicy PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(Platform_Capabilities Platform/tst_PlatformCapabilities.cpp)
+add_executable(Platform_LinuxClipboardOwner Platform/tst_LinuxClipboardOwner.cpp)
+target_link_libraries(Platform_LinuxClipboardOwner PRIVATE snaptray_platform Qt6::Test)
+add_test(NAME Platform_LinuxClipboardOwner COMMAND Platform_LinuxClipboardOwner)
+set_tests_properties(Platform_LinuxClipboardOwner PROPERTIES TIMEOUT 45 LABELS "unit;integration")
+if(UNIX AND NOT APPLE)
+    add_executable(Platform_LinuxClipboardProbe Platform/LinuxClipboardProbe.cpp)
+    target_link_libraries(Platform_LinuxClipboardProbe PRIVATE snaptray_platform Qt6::Gui)
+    target_compile_definitions(Platform_LinuxClipboardOwner PRIVATE
+        CLIPBOARD_PROBE_PATH="$<TARGET_FILE:Platform_LinuxClipboardProbe>")
+    add_dependencies(Platform_LinuxClipboardOwner Platform_LinuxClipboardProbe)
+endif()
+add_executable(CLI_MacCLIInstaller CLI/tst_MacCLIInstaller.cpp)
+target_link_libraries(CLI_MacCLIInstaller PRIVATE snaptray_core Qt6::Test)
+add_test(NAME CLI_MacCLIInstaller COMMAND CLI_MacCLIInstaller)
+set_tests_properties(CLI_MacCLIInstaller PROPERTIES TIMEOUT 30 LABELS "unit;integration")
+add_executable(RecordingManager_FrameRateUpdateState RecordingManager/tst_FrameRateUpdateState.cpp)
+target_link_libraries(RecordingManager_FrameRateUpdateState PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_FrameRateUpdateState COMMAND RecordingManager_FrameRateUpdateState)
+set_tests_properties(RecordingManager_FrameRateUpdateState PROPERTIES TIMEOUT 30 LABELS "unit")
 target_link_libraries(Platform_Capabilities PRIVATE snaptray_core Qt6::Test)
 add_test(NAME Platform_Capabilities COMMAND Platform_Capabilities)
 set_tests_properties(Platform_Capabilities PROPERTIES TIMEOUT 60 LABELS "unit")
@@ -526,7 +552,7 @@ set_tests_properties(Video_VideoTrimmerSafety PROPERTIES TIMEOUT 30 LABELS "unit
 
 if(WIN32)
     add_executable(Video_MediaFoundationPipeline Video/tst_MediaFoundationPipeline.cpp)
-    target_link_libraries(Video_MediaFoundationPipeline PRIVATE snaptray_platform Qt6::Test)
+    target_link_libraries(Video_MediaFoundationPipeline PRIVATE snaptray_platform Qt6::Test webpdemux)
     add_test(NAME Video_MediaFoundationPipeline COMMAND Video_MediaFoundationPipeline)
     set_tests_properties(Video_MediaFoundationPipeline PROPERTIES TIMEOUT 60 LABELS "integration;slow")
 endif()
@@ -1152,6 +1178,11 @@ foreach(snaptray_test_target IN LISTS snaptray_test_targets)
         )
     endif()
 endforeach()
+
+# Windows GUI executables otherwise send QtTest diagnostics to the debugger,
+# leaving failed CTest jobs with no assertion output in their CI logs.
+get_property(snaptray_registered_tests DIRECTORY PROPERTY TESTS)
+set_property(TEST ${snaptray_registered_tests} APPEND PROPERTY ENVIRONMENT "QT_FORCE_STDERR_LOGGING=1")
 
 # ============================================================================
 # CTest Label Summary

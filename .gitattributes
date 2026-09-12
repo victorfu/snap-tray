@@ -1,0 +1,3 @@
+# Keep executable shell scripts usable in Windows checkouts shared with WSL,
+# containers, macOS, or Linux, regardless of core.autocrlf.
+*.sh text eol=lf

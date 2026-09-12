@@ -9,6 +9,7 @@
 #include <QMutex>
 #include <QScreen>
 #include <QScopeGuard>
+#include <atomic>
 
 namespace {
 
@@ -87,6 +88,7 @@ private slots:
     void testRepeatedStartStop_NoThreadAffinityWarningsOrHang();
     void testConfiguredFrameRate_data();
     void testConfiguredFrameRate();
+    void testFrameRateChangesWhileRunning();
 
 private:
     bool configureEngine(DXGICaptureEngine &engine) const;
@@ -210,6 +212,38 @@ void TestDXGICaptureEngineThreadLifecycleWin::testConfiguredFrameRate()
     QVERIFY(timestamps.size() >= 2);
     const qreal meanMs = qreal(timestamps.last() - timestamps.first()) / (timestamps.size() - 1) / 1000000.0;
     QVERIFY(qAbs(meanMs - 1000.0 / fps) < (1000.0 / fps) * 0.25);
+}
+
+void TestDXGICaptureEngineThreadLifecycleWin::testFrameRateChangesWhileRunning()
+{
+    DXGICaptureEngine engine;
+    if (!configureEngine(engine)) QSKIP("No screen available");
+    WarningCaptureScope warnings;
+    std::atomic<int> ticks{0};
+    engine.m_captureTickObserver = [&] { ++ticks; };
+    engine.setFrameRate(15);
+    QVERIFY(engine.start());
+    for (int fps : {15, 30, 5}) {
+        engine.setFrameRate(fps);
+        QTest::qWait(200);
+        const int before = ticks.load();
+        QElapsedTimer elapsed;
+        elapsed.start();
+        QTest::qWait(1400);
+        const double actual = (ticks.load() - before) * 1000.0 / elapsed.elapsed();
+        QVERIFY2(qAbs(actual - fps) < qMax(2.0, fps * 0.25),
+                 qPrintable(QString("Requested %1 FPS, observed %2").arg(fps).arg(actual)));
+    }
+    for (int fps : {30, 5, 15, 30}) engine.setFrameRate(fps);
+    engine.stop();
+    engine.setFrameRate(10);
+    QVERIFY(engine.start());
+    QTest::qWait(200);
+    const int before = ticks.load();
+    QTest::qWait(1000);
+    engine.stop();
+    QVERIFY(qAbs(ticks.load() - before - 10) <= 3);
+    QVERIFY(warnings.threadLifecycleWarnings().isEmpty());
 }
 
 QTEST_MAIN(TestDXGICaptureEngineThreadLifecycleWin)
