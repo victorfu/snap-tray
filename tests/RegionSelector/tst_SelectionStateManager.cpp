@@ -27,6 +27,11 @@ private slots:
     void testUpdateSelection();
     void testFinishSelection();
     void testFinishSelection_TooSmall();
+    void testSelectionBoundsInEveryDirection_data();
+    void testSelectionBoundsInEveryDirection();
+    void testAllResizeHandlesClampOnlyMovedEdges_data();
+    void testAllResizeHandlesClampOnlyMovedEdges();
+    void testBoundedRatioCornersAndUnboundedRestore();
 
     // Compound state queries
     void testHasSelection_Complete();
@@ -101,6 +106,106 @@ void tst_SelectionStateManager::testStateQueries_NoSelection()
     QVERIFY(!m_manager->hasSelection());
     QVERIFY(!m_manager->hasActiveSelection());
     QVERIFY(!m_manager->isManipulating());
+}
+
+void tst_SelectionStateManager::testSelectionBoundsInEveryDirection_data()
+{
+    QTest::addColumn<QPoint>("end");
+    QTest::addColumn<qreal>("ratio");
+    for (QPoint end : {QPoint(-500, -500), QPoint(500, -500), QPoint(-500, 500), QPoint(500, 500)})
+        for (qreal ratio : {0.0, 1.0, 16.0 / 9.0})
+            QTest::newRow(qPrintable(QString("%1-%2-ratio-%3").arg(end.x()).arg(end.y()).arg(ratio))) << end << ratio;
+}
+
+void tst_SelectionStateManager::testSelectionBoundsInEveryDirection()
+{
+    QFETCH(QPoint, end);
+    QFETCH(qreal, ratio);
+    const QRect bounds(10, 20, 200, 120);
+    m_manager->setBounds(bounds);
+    m_manager->setAspectRatio(ratio);
+    m_manager->startSelection(QPoint(90, 70));
+    m_manager->updateSelection(end);
+    m_manager->finishSelection();
+    const QRect rect = m_manager->selectionRect();
+    QVERIFY(bounds.contains(rect));
+    QVERIFY(rect.width() >= 5 && rect.height() >= 5);
+    if (ratio > 0)
+        QVERIFY(qAbs(rect.width() - ratio * rect.height()) <= ratio + 1);
+    m_manager->clearSelection();
+    m_manager->setAspectRatio(0);
+    m_manager->startSelection(QPoint(-100, 70));
+    QCOMPARE(m_manager->selectionRect().topLeft(), QPoint(10, 70));
+}
+
+void tst_SelectionStateManager::testAllResizeHandlesClampOnlyMovedEdges_data()
+{
+    QTest::addColumn<int>("handle");
+    QTest::addColumn<QPoint>("press");
+    QTest::addColumn<QPoint>("end");
+    QTest::addColumn<QRect>("expected");
+    using H = SelectionStateManager::ResizeHandle;
+    QTest::newRow("top-left") << int(H::TopLeft) << QPoint(60,60) << QPoint(-500,-500) << QRect(10,20,130,80);
+    QTest::newRow("top") << int(H::Top) << QPoint(100,60) << QPoint(100,-500) << QRect(60,20,80,80);
+    QTest::newRow("top-right") << int(H::TopRight) << QPoint(139,60) << QPoint(500,-500) << QRect(60,20,150,80);
+    QTest::newRow("left") << int(H::Left) << QPoint(60,80) << QPoint(-500,80) << QRect(10,60,130,40);
+    QTest::newRow("right") << int(H::Right) << QPoint(139,80) << QPoint(500,80) << QRect(60,60,150,40);
+    QTest::newRow("bottom-left") << int(H::BottomLeft) << QPoint(60,99) << QPoint(-500,500) << QRect(10,60,130,80);
+    QTest::newRow("bottom") << int(H::Bottom) << QPoint(100,99) << QPoint(100,500) << QRect(60,60,80,80);
+    QTest::newRow("bottom-right") << int(H::BottomRight) << QPoint(139,99) << QPoint(500,500) << QRect(60,60,150,80);
+    QTest::newRow("flip") << int(H::Right) << QPoint(139,80) << QPoint(-500,80) << QRect(11,60,49,40);
+    QTest::newRow("minimum") << int(H::Right) << QPoint(139,80) << QPoint(63,80) << QRect(60,60,80,40);
+}
+
+void tst_SelectionStateManager::testAllResizeHandlesClampOnlyMovedEdges()
+{
+    QFETCH(int, handle);
+    QFETCH(QPoint, press);
+    QFETCH(QPoint, end);
+    QFETCH(QRect, expected);
+    m_manager->setBounds(QRect(10,20,200,120));
+    m_manager->setSelectionRect(QRect(60,60,80,40));
+    m_manager->startResize(press, static_cast<SelectionStateManager::ResizeHandle>(handle));
+    m_manager->updateResize(end);
+    m_manager->finishResize();
+    QCOMPARE(m_manager->selectionRect(), expected);
+}
+
+void tst_SelectionStateManager::testBoundedRatioCornersAndUnboundedRestore()
+{
+    const QRect bounds(10,20,200,120);
+    using H = SelectionStateManager::ResizeHandle;
+    const H handles[] = {H::TopLeft, H::TopRight, H::BottomLeft, H::BottomRight};
+    const QPoint presses[] = {{60,60},{139,60},{60,99},{139,99}};
+    const QPoint ends[] = {{-500,-500},{500,-500},{-500,500},{500,500}};
+    const QPoint anchors[] = {{139,99},{60,99},{139,60},{60,60}};
+    for (int i = 0; i < 4; ++i) {
+        m_manager->setBounds(bounds);
+        m_manager->setAspectRatio(16.0/9.0);
+        m_manager->setSelectionRect(QRect(60,60,80,40));
+        m_manager->startResize(presses[i], handles[i]);
+        m_manager->updateResize(ends[i]);
+        const QRect resized = m_manager->selectionRect();
+        QVERIFY(bounds.contains(resized));
+        QVERIFY(qAbs(resized.width() - (16.0/9.0) * resized.height()) < 3);
+        const QPoint fixed = i == 0 ? resized.bottomRight() : i == 1 ? resized.bottomLeft()
+            : i == 2 ? resized.topRight() : resized.topLeft();
+        QCOMPARE(fixed, anchors[i]);
+        m_manager->updateResize(anchors[i]);
+        QCOMPARE(m_manager->selectionRect(), resized);
+        m_manager->updateResize(ends[3 - i]);
+        QVERIFY(bounds.contains(m_manager->selectionRect()));
+        QVERIFY(m_manager->selectionRect().contains(anchors[i]));
+        m_manager->finishResize();
+    }
+    const QRect restored(-30, -40, 500, 300);
+    m_manager->setSelectionRect(restored);
+    QCOMPARE(m_manager->selectionRect(), restored);
+    m_manager->setBounds({});
+    m_manager->setAspectRatio(0);
+    m_manager->startSelection(QPoint(-30, -40));
+    m_manager->updateSelection(QPoint(500, 300));
+    QCOMPARE(m_manager->selectionRect(), QRect(-30, -40, 531, 341));
 }
 
 void tst_SelectionStateManager::testStartSelection()

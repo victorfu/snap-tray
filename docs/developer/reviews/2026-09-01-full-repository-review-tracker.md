@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 30 |
-| Confirmed / Fix Ready | 5 |
+| Confirmed / Open | 29 |
+| Confirmed / Fix Ready | 6 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 1 |
@@ -63,7 +63,7 @@
 | REV-007 | Open | P0 | High | Windows Video | 強制 terminate 並刪除 reader thread，可 crash／UAF |
 | REV-008 | Fix Ready | P1 | High | macOS Recording | 首次麥克風授權阻塞主執行緒並破壞時間軸 |
 | REV-009 | Verified | P1 | High | Screen Canvas | 文字拖移／旋轉／縮放會重用舊快取 |
-| REV-010 | Open | P1 | High | Region Selection | 建立與一般 resize 沒有 clamp 到 bounds |
+| REV-010 | Fix Ready | P1 | High | Region Selection | 建立與一般 resize 沒有 clamp 到 bounds |
 | REV-011 | Open | P1 | High | Region Selection | mouse release 忽略最後座標 |
 | REV-012 | Open | P1 | High | Eraser | 只在離散事件點擦除，快速拖曳會留下間隙 |
 | REV-013 | Open | P2 | High | Arrow | 端點曲線結果依 mouse event 分割方式而變 |
@@ -186,12 +186,13 @@
 
 ### REV-010 — selection create／一般 resize 沒有 clamp 到 bounds
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/region/SelectionStateManager.cpp:94-129,203-373；相對地 updateMove／setFromDetectedWindow 會在 436-468 呼叫 clampToBounds。
 - 觸發：拖曳到 capture widget 外建立 selection，或用未鎖比例的 handle resize 超出四個邊界。
 - 後果：selection rect 可大於可擷取畫布；後續實體 copy 會被 intersect，但 UI dimension、toolbar placement、history／metadata 使用未截斷 rect，產生尺寸與實際輸出不一致或控制項跑出畫面。
 - 完成條件：create 與八個 resize handle 在四邊越界時都維持於 bounds；鎖比例與最小尺寸契約不變；export／history rect 與實際 pixels 一致。
-- 修正證據：待補。
+- 修正證據：手動新選取限制 press／move，普通 resize 僅限制被拖曳的邊；比例鎖定選取／角落以 bounds 內的 inclusive 寬高計算，保留固定 anchor 與最小尺寸。未設定 bounds 及程式化 setSelectionRect 保持原契約。
+- 驗證：2026-09-12 macOS scripts/build.sh、SelectionStateManager、RegionExportManager、MultiRegionReplaceFlow 三套測試通過。新增四方向／比例矩陣、八種 handle、反向拖曳、最小尺寸、固定 anchor、非零 bounds 與 HiDPI 輸出／annotation 對位驗證。Windows／Ubuntu 手動選取 UI smoke 待補，標為 Fix Ready。對應本機 commit：fix: keep manual selections and resize handles within canvas bounds。
 
 ### REV-011 — selection release 忽略最後座標
 
@@ -507,3 +508,4 @@
 | 2026-09-12 | POT-001 整合驗證修正共用腳本的模組匯出歧義；兩套既有 standalone QML 測試與新增匯入回歸通過。 |
 | 2026-09-12 | REV-006 完成 8 entries／128 MiB 快取限制與壓力／像素回歸，標為 Fix Ready；四項修正整合後 macOS 全 147 項測試通過。 |
 | 2026-09-12 | REV-008 完成非同步授權前置、設定快照與啟動回呼隔離，四套 macOS 回歸通過；標為 Fix Ready。 |
+| 2026-09-12 | REV-010 完成手動選取／resize 邊界與比例 anchor 修正，三套 macOS 回歸通過；標為 Fix Ready。 |

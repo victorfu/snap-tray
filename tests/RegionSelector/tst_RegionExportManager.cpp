@@ -2,6 +2,9 @@
 
 #include "region/RegionExportManager.h"
 #include "settings/Settings.h"
+#include "region/SelectionStateManager.h"
+#include "annotations/AnnotationLayer.h"
+#include "annotations/PolylineAnnotation.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -67,6 +70,7 @@ private slots:
     void init();
     void cleanup();
     void testPrepareExport_NormalizesHighDpiCrop();
+    void testBoundedSelectionMatchesExportAndAnnotationCoordinates();
     void testCreateSaveRequest_ManualUsesRememberedDirectory();
     void testCreateSaveRequest_ManualUsesScreenshotDirectoryWhenDisabled();
     void testCreateSaveRequest_CancelPreservesRememberedDirectory();
@@ -257,6 +261,31 @@ void tst_RegionExportManager::testCreateSaveRequest_AutoSaveUsesScreenshotDirect
     QVERIFY(request.isValid());
     QCOMPARE(SnapTray::getSettings().value(kLastSaveDirectoryKey).toString(),
              rememberedDirectory.path());
+}
+
+void tst_RegionExportManager::testBoundedSelectionMatchesExportAndAnnotationCoordinates()
+{
+    QPixmap source(128, 96);
+    source.fill(Qt::blue);
+    source.setDevicePixelRatio(2);
+    SelectionStateManager selection;
+    selection.setBounds(QRect(0, 0, 64, 48));
+    selection.startSelection(QPoint(20, 20));
+    selection.updateSelection(QPoint(200, 200));
+    selection.finishSelection();
+    QCOMPARE(selection.selectionRect(), QRect(20, 20, 44, 28));
+    AnnotationLayer layer;
+    layer.addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{{28, 24}, {40, 24}}, Qt::red, 3, LineEndStyle::None));
+    RegionExportManager exporter;
+    exporter.setBackgroundPixmap(source);
+    exporter.setDevicePixelRatio(2);
+    exporter.setAnnotationLayer(&layer);
+    const auto prepared = exporter.prepareExport(selection.selectionRect(), 0);
+    QVERIFY(prepared.isValid());
+    QCOMPARE(prepared.image.size(), QSize(88, 56));
+    QCOMPARE(prepared.image.pixelColor(0, 0), QColor(Qt::blue));
+    QCOMPARE(prepared.image.pixelColor(20, 8), QColor(Qt::red));
 }
 
 void tst_RegionExportManager::testAutoSaveCollisionUsesSnapshotAndReportsFinalPath()

@@ -1,10 +1,16 @@
 #include "region/SelectionStateManager.h"
 
 #include <QtMath>
+#include <array>
 
 namespace {
 
 constexpr int kMinimumResizeSize = 10;
+constexpr std::array<Qt::Edges, 9> kResizeEdges{{
+    {}, Qt::LeftEdge | Qt::TopEdge, Qt::TopEdge, Qt::RightEdge | Qt::TopEdge,
+    Qt::LeftEdge, Qt::RightEdge, Qt::LeftEdge | Qt::BottomEdge, Qt::BottomEdge,
+    Qt::RightEdge | Qt::BottomEdge
+}};
 
 int centeredOrigin(int doubledCenter, int length)
 {
@@ -93,9 +99,8 @@ void SelectionStateManager::setBounds(const QRect& bounds)
 
 void SelectionStateManager::startSelection(const QPoint& pos)
 {
-    m_startPoint = pos;
-    m_lastPoint = pos;
-    m_selectionRect = QRect(pos, pos);
+    m_startPoint = clampPointToBounds(pos);
+    m_selectionRect = QRect(m_startPoint, m_startPoint);
     setState(State::Selecting);
 }
 
@@ -103,13 +108,7 @@ void SelectionStateManager::updateSelection(const QPoint& pos)
 {
     if (m_state != State::Selecting) return;
 
-    QPoint delta = pos - m_startPoint;
-    if (m_aspectRatio > 0.0) {
-        delta = adjustDeltaForAspectRatio(delta);
-    }
-
-    m_lastPoint = m_startPoint + delta;
-    m_selectionRect = QRect(m_startPoint, m_lastPoint);
+    m_selectionRect = selectionRectForDrag(m_startPoint, pos);
     m_handleCacheValid = false;  // Invalidate handle cache
     emit selectionChanged(m_selectionRect.normalized());
 }
@@ -228,23 +227,7 @@ void SelectionStateManager::updateResize(const QPoint& pos)
             break;
         }
 
-        int dx = pos.x() - anchor.x();
-        int dy = pos.y() - anchor.y();
-        double absDx = qAbs(dx);
-        double absDy = qAbs(dy);
-        if (absDx < 1.0) absDx = 1.0;
-        if (absDy < 1.0) absDy = 1.0;
-
-        if (absDx / absDy > m_aspectRatio) {
-            absDx = absDy * m_aspectRatio;
-        } else {
-            absDy = absDx / m_aspectRatio;
-        }
-
-        int adjDx = (dx < 0 ? -1 : 1) * static_cast<int>(absDx + 0.5);
-        int adjDy = (dy < 0 ? -1 : 1) * static_cast<int>(absDy + 0.5);
-        QPoint newCorner(anchor.x() + adjDx, anchor.y() + adjDy);
-        newRect = QRect(anchor, newCorner);
+        newRect = selectionRectForDrag(anchor, pos);
     } else if (m_aspectRatio > 0.0 && !isCornerHandle(m_activeHandle)) {
         // Edge resize with aspect ratio locked. The opposite edge remains fixed,
         // while the perpendicular axis stays centered on the original selection.
@@ -360,6 +343,16 @@ void SelectionStateManager::updateResize(const QPoint& pos)
             break;
         default:
             break;
+        }
+        if (!m_bounds.isEmpty()) {
+            const auto index = static_cast<std::size_t>(m_activeHandle);
+            const Qt::Edges edges = index < kResizeEdges.size() ? kResizeEdges[index] : Qt::Edges{};
+            const QPoint topLeft = clampPointToBounds(newRect.topLeft());
+            const QPoint bottomRight = clampPointToBounds(newRect.bottomRight());
+            if (edges.testFlag(Qt::LeftEdge)) newRect.setLeft(topLeft.x());
+            if (edges.testFlag(Qt::TopEdge)) newRect.setTop(topLeft.y());
+            if (edges.testFlag(Qt::RightEdge)) newRect.setRight(bottomRight.x());
+            if (edges.testFlag(Qt::BottomEdge)) newRect.setBottom(bottomRight.y());
         }
     }
 
@@ -497,6 +490,34 @@ void SelectionStateManager::clampToBounds()
         m_selectionRect.moveRight(m_bounds.right());
     if (m_selectionRect.bottom() > m_bounds.bottom())
         m_selectionRect.moveBottom(m_bounds.bottom());
+}
+
+QPoint SelectionStateManager::clampPointToBounds(const QPoint& point) const
+{
+    if (m_bounds.isEmpty()) return point;
+    return QPoint(qBound(m_bounds.left(), point.x(), m_bounds.right()),
+                  qBound(m_bounds.top(), point.y(), m_bounds.bottom()));
+}
+
+QRect SelectionStateManager::selectionRectForDrag(const QPoint& anchor, const QPoint& point) const
+{
+    const QPoint bounded = clampPointToBounds(point);
+    if (m_aspectRatio <= 0.0) return QRect(anchor, bounded);
+    if (m_bounds.isEmpty())
+        return QRect(anchor, anchor + adjustDeltaForAspectRatio(point - anchor));
+
+    // Work with inclusive rectangle sizes, not signed QPoint deltas: QRect's
+    // negative-size normalization otherwise shifts the fixed anchor and gives
+    // different ratios in different drag quadrants.
+    int width = qAbs(bounded.x() - anchor.x()) + 1;
+    int height = qAbs(bounded.y() - anchor.y()) + 1;
+    if (qreal(width) / height > m_aspectRatio)
+        width = qMax(1, qRound(height * m_aspectRatio));
+    else
+        height = qMax(1, qRound(width / m_aspectRatio));
+    const int left = bounded.x() < anchor.x() ? anchor.x() - width + 1 : anchor.x();
+    const int top = bounded.y() < anchor.y() ? anchor.y() - height + 1 : anchor.y();
+    return QRect(left, top, width, height);
 }
 
 QPoint SelectionStateManager::adjustDeltaForAspectRatio(const QPoint& delta) const

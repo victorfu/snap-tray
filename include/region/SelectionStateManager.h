@@ -107,6 +107,8 @@ signals:
 private:
     void setState(State state);
     void clampToBounds();
+    QPoint clampPointToBounds(const QPoint& point) const;
+    QRect selectionRectForDrag(const QPoint& anchor, const QPoint& point) const;
     QPoint adjustDeltaForAspectRatio(const QPoint& delta) const;
     bool isCornerHandle(ResizeHandle handle) const;
     void updateHandleRectsCache(int handleSize) const;
@@ -118,7 +120,6 @@ private:
 
     // Operation temporaries
     QPoint m_startPoint;
-    QPoint m_lastPoint;
     QRect m_originalRect;  // For resize/move restoration
     ResizeHandle m_activeHandle = ResizeHandle::None;
 
