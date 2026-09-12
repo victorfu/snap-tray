@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 26 |
-| Confirmed / Fix Ready | 9 |
+| Confirmed / Open | 25 |
+| Confirmed / Fix Ready | 10 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 1 |
@@ -65,7 +65,7 @@
 | REV-009 | Verified | P1 | High | Screen Canvas | 文字拖移／旋轉／縮放會重用舊快取 |
 | REV-010 | Fix Ready | P1 | High | Region Selection | 建立與一般 resize 沒有 clamp 到 bounds |
 | REV-011 | Fix Ready | P1 | High | Region Selection | mouse release 忽略最後座標 |
-| REV-012 | Open | P1 | High | Eraser | 只在離散事件點擦除，快速拖曳會留下間隙 |
+| REV-012 | Fix Ready | P1 | High | Eraser | 只在離散事件點擦除，快速拖曳會留下間隙 |
 | REV-013 | Open | P2 | High | Arrow | 端點曲線結果依 mouse event 分割方式而變 |
 | REV-014 | Open | P1 | High | Arrow / Polyline | 寬箭頭超出 bounding／hit geometry |
 | REV-015 | Open | P1 | High | Polyline | 短末段把箭頭畫在倒數頂點，箭頭後仍有尾巴 |
@@ -206,12 +206,13 @@
 
 ### REV-012 — Eraser 快速拖曳會漏擦
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/tools/handlers/EraserToolHandler.cpp:33-55,119-130。
 - 觸發：相鄰 mouse move event 的距離大於 eraser diameter，且中間有 annotation。
 - 後果：eraseAt 只查詢離散 sample 圓／方位，沒有沿 m_lastPoint 到 pos 插值；使用者看到連續拖曳，但中間物件仍保留。
 - 完成條件：按 brush 半徑或更小步距沿 segment 掃描；不同事件密度得到相同擦除結果；一個 gesture 仍只產生一個 undo command。
-- 修正證據：待補。
+- 修正證據：Eraser move／release 改查詢前後事件之間完整的 round-cap swept path；Pencil／Marker／Mosaic 使用筆畫幾何交集，其餘物件維持 expanded bounding rect 語意。沿用單次 gesture transaction、取消復原及原始 z-order。
+- 驗證：2026-09-12 macOS scripts/build.sh 與 Tools_EraserToolHandler、Annotations_AnnotationLayer、Annotations_MosaicStroke 三套測試通過；新增 24 組事件密度／方向／取消矩陣，涵蓋 press＋release、四類物件及單次 undo／redo。Windows／Ubuntu 原生輸入 smoke 待補，保留 Fix Ready。對應本機 commit：fix: erase annotations across complete drag segments。
 
 ### REV-013 — Arrow endpoint curve 依事件取樣而變
 
@@ -515,3 +516,4 @@
 | 2026-09-12 | REV-011 完成共用 selection gesture 更新與 release 最後座標修正，輸入／多區域及原生 StyleSync 回歸通過；標為 Fix Ready。 |
 | 2026-09-12 | REV-030 完成 QQuickView modality 與 History capture 入口互斥，三套原生 macOS 回歸通過；標為 Fix Ready。 |
 | 2026-09-12 | REV-034 完成實際 encoder 音訊能力傳遞與靜音降級 UI／警告，標為 Fix Ready；本批五項修正整合後 macOS 149／149 測試通過，QML lint exit 0。 |
+| 2026-09-12 | REV-012 完成連續刷頭掃描與單次 gesture history 回歸，macOS 建置及三套測試通過；標為 Fix Ready。 |

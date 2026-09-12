@@ -402,16 +402,10 @@ void MosaicStroke::setSourcePixmap(SharedPixmap pixmap)
     m_cachedDpr = 0.0;
 }
 
-bool MosaicStroke::intersectsCircle(const QPoint &center, int radius) const
+QPainterPath MosaicStroke::strokePath() const
 {
     if (m_points.size() < 2) {
-        return false;
-    }
-
-    QRect bbox = boundingRect();
-    QRect eraserRect(center.x() - radius, center.y() - radius, radius * 2, radius * 2);
-    if (!bbox.intersects(eraserRect)) {
-        return false;
+        return {};
     }
 
     QPainterPath linePath;
@@ -424,9 +418,17 @@ bool MosaicStroke::intersectsCircle(const QPoint &center, int radius) const
     stroker.setWidth(m_width * 2);  // 2x width for mosaic brush
     stroker.setCapStyle(Qt::RoundCap);
     stroker.setJoinStyle(Qt::RoundJoin);
-    QPainterPath strokePath = stroker.createStroke(linePath);
+    return stroker.createStroke(linePath);
+}
+
+bool MosaicStroke::intersectsCircle(const QPoint &center, int radius) const
+{
+    QRect eraserRect(center.x() - radius, center.y() - radius, radius * 2, radius * 2);
+    if (!boundingRect().intersects(eraserRect)) {
+        return false;
+    }
 
     QPainterPath eraserPath;
     eraserPath.addEllipse(center, radius, radius);
-    return strokePath.intersects(eraserPath);
+    return strokePath().intersects(eraserPath);
 }

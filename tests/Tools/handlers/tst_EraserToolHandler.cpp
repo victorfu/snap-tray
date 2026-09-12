@@ -4,6 +4,8 @@
 #include "annotations/AnnotationLayer.h"
 #include "annotations/MarkerStroke.h"
 #include "annotations/PencilStroke.h"
+#include "annotations/MosaicStroke.h"
+#include "annotations/ShapeAnnotation.h"
 
 /**
  * @brief Tests for EraserToolHandler class
@@ -54,6 +56,8 @@ private slots:
     void testErasesIntersectingMarkerItems();
     void testDoesNotEraseNonIntersecting();
     void testEraseAcrossSamples_UndoRedoPreservesOriginalOrder();
+    void testSweptErase_data();
+    void testSweptErase();
     void testRepeatedDrawErase_HistoryBoundedAndSceneEmpty();
     void testCursor_UsesCenteredPixmapHotspot();
     void testCursor_UsesSingleCrispOutline();
@@ -436,6 +440,87 @@ void TestEraserToolHandler::testEraseAcrossSamples_UndoRedoPreservesOriginalOrde
     QCOMPARE(m_layer->itemCount(), static_cast<size_t>(2));
     QCOMPARE(m_layer->itemAt(0), firstItem);
     QCOMPARE(m_layer->itemAt(1), lastItem);
+}
+
+void TestEraserToolHandler::testSweptErase_data()
+{
+    QTest::addColumn<int>("steps");
+    QTest::addColumn<bool>("diagonal");
+    QTest::addColumn<bool>("reverse");
+    QTest::addColumn<bool>("cancel");
+    for (int steps : {1, 2, 60}) {
+        for (bool diagonal : {false, true}) {
+            for (bool reverse : {false, true}) {
+                for (bool cancel : {false, true}) {
+                    QTest::addRow("steps-%d-diagonal-%d-reverse-%d-cancel-%d",
+                                  steps, diagonal, reverse, cancel)
+                        << steps << diagonal << reverse << cancel;
+                }
+            }
+        }
+    }
+}
+
+void TestEraserToolHandler::testSweptErase()
+{
+    QFETCH(int, steps);
+    QFETCH(bool, diagonal);
+    QFETCH(bool, reverse);
+    QFETCH(bool, cancel);
+    QVector<AnnotationItem*> originalItems;
+    for (int i = 0; i < 4; ++i) {
+        const QPoint center(60 + 60 * i, diagonal ? 60 + 60 * i : 150);
+        const QVector<QPointF> points{center - QPoint(0, 2), center + QPoint(0, 2)};
+        if (i == 0) {
+            addTestStroke(points);
+        } else if (i == 1) {
+            addTestMarker(points);
+        } else if (i == 2) {
+            m_layer->addItem(std::make_unique<MosaicStroke>(
+                QVector<QPoint>{points[0].toPoint(), points[1].toPoint()},
+                SharedPixmap{}, 6));
+        } else {
+            m_layer->addItem(std::make_unique<ShapeAnnotation>(
+                QRect(center - QPoint(2, 2), QSize(5, 5)),
+                ShapeType::Rectangle, Qt::blue, 2));
+        }
+        originalItems.append(m_layer->itemAt(i));
+    }
+    // Outside the swept brush, despite lying inside its broad bounding box.
+    addTestStroke({QPointF(100, 230), QPointF(110, 230)});
+    originalItems.append(m_layer->itemAt(4));
+    const auto historyCount = m_layer->historyCommandCount();
+    QPoint from(0, diagonal ? 0 : 150);
+    QPoint to(300, diagonal ? 300 : 150);
+    if (reverse) {
+        std::swap(from, to);
+    }
+    m_handler->onMousePress(m_context, from);
+    for (int step = 1; step < steps; ++step) {
+        m_handler->onMouseMove(m_context, from + (to - from) * step / steps);
+    }
+    if (cancel) {
+        m_handler->onMouseMove(m_context, to);
+        QCOMPARE(m_layer->itemCount(), size_t(1));
+        m_handler->cancelDrawing();
+        QCOMPARE(m_layer->historyCommandCount(), historyCount);
+    } else {
+        // With one step, this is press + release with no move events at all.
+        m_handler->onMouseRelease(m_context, to);
+        QCOMPARE(m_layer->itemCount(), size_t(1));
+        QCOMPARE(m_layer->itemAt(0), originalItems.last());
+        QCOMPARE(m_layer->historyCommandCount(), historyCount + 1);
+        m_layer->undo();
+    }
+    QCOMPARE(m_layer->itemCount(), size_t(originalItems.size()));
+    for (int i = 0; i < originalItems.size(); ++i) {
+        QCOMPARE(m_layer->itemAt(i), originalItems[i]);
+    }
+    if (!cancel) {
+        m_layer->redo();
+        QCOMPARE(m_layer->itemCount(), size_t(1));
+        QCOMPARE(m_layer->itemAt(0), originalItems.last());
+    }
 }
 
 void TestEraserToolHandler::testRepeatedDrawErase_HistoryBoundedAndSceneEmpty()

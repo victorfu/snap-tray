@@ -43,6 +43,7 @@ public:
 
     // Collision detection for eraser (path-based intersection)
     bool intersectsCircle(const QPoint &center, int radius) const;
+    QPainterPath strokePath() const;
 
 private:
     QVector<QPoint> m_points;

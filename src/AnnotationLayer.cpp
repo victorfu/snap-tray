@@ -12,6 +12,7 @@
 #include <QImage>
 #include <QPixmap>
 #include <QPainterPath>
+#include <QPainterPathStroker>
 #include <QDebug>
 #include <QSize>
 #include <QtMath>
@@ -706,11 +707,30 @@ void AnnotationLayer::renumberStepBadges()
 std::vector<AnnotationLayer::RemovedItem> AnnotationLayer::removeItemsIntersecting(
     const QPoint &point, int strokeWidth)
 {
+    return removeItemsIntersecting(point, point, strokeWidth);
+}
+
+std::vector<AnnotationLayer::RemovedItem> AnnotationLayer::removeItemsIntersecting(
+    const QPoint &from, const QPoint &to, int strokeWidth)
+{
     std::vector<RemovedItem> removedItems;
     if (!m_eraseTransactionActive) {
         return removedItems;
     }
     int radius = strokeWidth / 2;
+    QPainterPath segment;
+    segment.moveTo(from);
+    segment.lineTo(to);
+    QPainterPath eraserPath;
+    if (from == to) {
+        eraserPath.addEllipse(from, radius, radius);
+    } else {
+        QPainterPathStroker stroker;
+        stroker.setWidth(radius * 2);
+        stroker.setCapStyle(Qt::RoundCap);
+        eraserPath = stroker.createStroke(segment);
+    }
+    const QRectF eraserBounds = eraserPath.boundingRect();
     size_t currentIndex = 0;
 
     for (auto it = m_items.begin(); it != m_items.end(); ) {
@@ -718,16 +738,20 @@ std::vector<AnnotationLayer::RemovedItem> AnnotationLayer::removeItemsIntersecti
 
         // Use path-based intersection for strokes (more accurate)
         if (auto* pencil = dynamic_cast<PencilStroke*>(it->get())) {
-            shouldRemove = pencil->intersectsCircle(point, radius);
+            shouldRemove = eraserBounds.intersects(pencil->boundingRect())
+                && pencil->strokePath().intersects(eraserPath);
         } else if (auto* marker = dynamic_cast<MarkerStroke*>(it->get())) {
-            shouldRemove = marker->intersectsCircle(point, radius);
+            shouldRemove = eraserBounds.intersects(marker->boundingRect())
+                && marker->strokePath().intersects(eraserPath);
         } else if (auto* mosaic = dynamic_cast<MosaicStroke*>(it->get())) {
-            shouldRemove = mosaic->intersectsCircle(point, radius);
+            shouldRemove = eraserBounds.intersects(mosaic->boundingRect())
+                && mosaic->strokePath().intersects(eraserPath);
         } else {
             // Fallback: expanded bounding rect for shapes/text/badges/etc.
             QRect itemRect = (*it)->boundingRect();
             QRect expandedRect = itemRect.adjusted(-radius, -radius, radius, radius);
-            shouldRemove = expandedRect.contains(point);
+            shouldRemove = expandedRect.contains(from) || expandedRect.contains(to)
+                || segment.intersects(QRectF(expandedRect));
         }
 
         if (shouldRemove) {

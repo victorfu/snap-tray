@@ -95,6 +95,8 @@ public:
     // Eraser support: remove items that intersect with the given path
     // Returns the removed items with their original indices (for undo support)
     std::vector<RemovedItem> removeItemsIntersecting(const QPoint &point, int strokeWidth);
+    std::vector<RemovedItem> removeItemsIntersecting(const QPoint &from, const QPoint &to,
+                                                    int strokeWidth);
 
     // Guard history while an eraser stroke owns items removed from the layer.
     // New annotations arriving asynchronously are deferred until the

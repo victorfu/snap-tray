@@ -26,7 +26,7 @@ void EraserToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos)
     m_currentStrokeErasedItems.clear();
     m_removedOriginalIndices.clear();
 
-    eraseAt(ctx, pos);
+    eraseSegment(ctx, pos, pos);
     ctx->repaint();
 }
 
@@ -37,9 +37,11 @@ void EraserToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos)
             return;
         }
 
-        eraseAt(ctx, pos);
+        eraseSegment(ctx, m_lastPoint, pos);
         m_lastPoint = pos;
-        ctx->repaint();
+        if (ctx) {
+            ctx->repaint();
+        }
         return;
     }
 }
@@ -51,7 +53,7 @@ void EraserToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos)
     }
 
     if (pos != m_lastPoint) {
-        eraseAt(ctx, pos);
+        eraseSegment(ctx, m_lastPoint, pos);
     }
 
     QPointer<AnnotationLayer> activeLayer = m_activeLayer;
@@ -116,7 +118,7 @@ CursorStyleSpec EraserToolHandler::cursorStyleSpec() const
     return spec;
 }
 
-void EraserToolHandler::eraseAt(ToolContext* ctx, const QPoint& pos)
+void EraserToolHandler::eraseSegment(ToolContext* ctx, const QPoint& from, const QPoint& to)
 {
     if (!ctx || !ctx->annotationLayer || !m_activeLayer ||
         ctx->annotationLayer != m_activeLayer ||
@@ -126,7 +128,7 @@ void EraserToolHandler::eraseAt(ToolContext* ctx, const QPoint& pos)
 
     int diameter = std::clamp(m_eraserWidth, kMinWidth, kMaxWidth);
     m_eraserWidth = diameter;
-    auto removedItems = ctx->annotationLayer->removeItemsIntersecting(pos, diameter);
+    auto removedItems = ctx->annotationLayer->removeItemsIntersecting(from, to, diameter);
     if (removedItems.empty()) {
         return;
     }

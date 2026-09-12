@@ -38,7 +38,7 @@ private:
     static constexpr int kMaxWidth = 100;
     static constexpr int kDefaultWidth = 20;
 
-    void eraseAt(ToolContext* ctx, const QPoint& pos);
+    void eraseSegment(ToolContext* ctx, const QPoint& from, const QPoint& to);
     size_t mapToOriginalIndex(size_t currentIndex) const;
 
     bool m_isErasing = false;
