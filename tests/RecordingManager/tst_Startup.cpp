@@ -87,6 +87,8 @@ void TestRecordingStartup::encoderCapabilityControlsAudioPipeline()
     QFETCH(bool, acceptsAudio);
     QFETCH(bool, starts);
     RecordingSettingsManager::instance().setAudioEnabled(requested);
+    constexpr int kBothSourcesSetting = 2;
+    RecordingSettingsManager::instance().setAudioSource(kBothSourcesSetting);
     auto encoderState = std::make_shared<AudioEncoderTestState>();
     encoderState->acceptsAudio = acceptsAudio;
     encoderState->starts = starts;
@@ -144,8 +146,22 @@ void TestRecordingStartup::encoderCapabilityControlsAudioPipeline()
         QCOMPARE(warnings.count(), 1);
     }
     if (audioEnabled) {
-        static_cast<FakeStartupAudio*>(manager.m_audioEngine.get())->sendPcm();
+        auto* audio = static_cast<FakeStartupAudio*>(manager.m_audioEngine.get());
+        audio->sendPcm();
         QTRY_COMPARE(encoderState->audioWrites.load(), 1);
+        audio->activeSourceChanged(IAudioCaptureEngine::AudioSource::SystemAudio);
+        QCOMPARE(warnings.count(), 1);
+        QCOMPARE(manager.state(), RecordingManager::State::Recording);
+        QVERIFY(manager.m_audioEnabled);
+        QVERIFY(manager.m_controlBar->m_rootItem->property("audioEnabled").toBool());
+        audio->sendPcm();
+        QTRY_COMPARE(encoderState->audioWrites.load(), 2);
+        audio->activeSourceChanged(IAudioCaptureEngine::AudioSource::None);
+        QCOMPARE(warnings.count(), 2);
+        QCOMPARE(manager.state(), RecordingManager::State::Recording);
+        QVERIFY(!manager.m_audioEnabled);
+        QVERIFY(!manager.m_controlBar->m_rootItem->property("audioEnabled").toBool());
+        QCOMPARE(RecordingSettingsManager::instance().audioSource(), kBothSourcesSetting);
     } else {
         QVERIFY(!manager.m_audioEngine);
         QCOMPARE(encoderState->audioWrites.load(), 0);

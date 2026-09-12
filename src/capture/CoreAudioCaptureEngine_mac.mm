@@ -19,6 +19,12 @@
 
 static char kCaptureQueueSpecificKey;
 
+struct MicrophoneFailureBridge
+{
+    QMutex mutex;
+    QPointer<CoreAudioCaptureEngine> engine;
+};
+
 // Check if ScreenCaptureKit is available (macOS 12.3+)
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 120300
 #define HAS_SCREENCAPTUREKIT 1
@@ -429,6 +435,8 @@ public:
     AVCaptureAudioDataOutput *audioOutput = nil;
     AudioCaptureDelegate *audioDelegate = nil;
     dispatch_queue_t captureQueue = nil;
+    NSMutableArray* microphoneObservers = nil;
+    std::shared_ptr<MicrophoneFailureBridge> microphoneFailureBridge;
 
 #if HAS_SCREENCAPTUREKIT
     SCStream *scStream API_AVAILABLE(macos(13.0)) = nil;
@@ -551,7 +559,22 @@ public:
     }
 #endif
 
+    void removeMicrophoneObservers() {
+        if (microphoneFailureBridge) {
+            QMutexLocker locker(&microphoneFailureBridge->mutex);
+            microphoneFailureBridge->engine = nullptr;
+        }
+        for (id observer in microphoneObservers) {
+            [[NSNotificationCenter defaultCenter] removeObserver:observer];
+        }
+        microphoneObservers = nil;
+        microphoneFailureBridge.reset();
+    }
+
     void cleanupMicrophone() {
+        // Invalidate queued notifications before intentional stopRunning emits
+        // its own DidStopRunning notification or a later recording is started.
+        removeMicrophoneObservers();
         if (audioDelegate) {
             audioDelegate.invalidated = YES;
             audioDelegate.engine = nil;
@@ -762,6 +785,7 @@ bool CoreAudioCaptureEngine::start()
     m_lastNotifiedActiveSource = static_cast<int>(m_source);
     m_stopping = false;
     m_systemAudioFailed = false;
+    m_microphoneFailed = false;
 
     // Check microphone permission if needed
     bool microphoneAvailable = false;
@@ -864,6 +888,8 @@ bool CoreAudioCaptureEngine::start()
             qWarning() << "CoreAudioCaptureEngine: Cannot add microphone output";
             return false;
         }
+
+        installMicrophoneObservers((__bridge void*)d->captureSession, (__bridge void*)audioDevice);
 
         return true;
     };
@@ -1154,6 +1180,67 @@ void CoreAudioCaptureEngine::reportCapturedAudioFormatFailure(
 #endif
         }
     }, Qt::QueuedConnection);
+}
+
+void CoreAudioCaptureEngine::installMicrophoneObservers(void* session, void* device)
+{
+    d->removeMicrophoneObservers();
+    const auto bridge = std::make_shared<MicrophoneFailureBridge>();
+    bridge->engine = this;
+    d->microphoneFailureBridge = bridge;
+    d->microphoneObservers = [NSMutableArray array];
+    auto failure = ^(NSNotification* notification) {
+        NSError* error = notification.userInfo[AVCaptureSessionErrorKey];
+        const QString details = error ? QString::fromNSString(error.localizedDescription)
+                                      : QString::fromNSString(notification.name);
+        // NotificationCenter may call on a native capture thread. Serialize
+        // scheduling with teardown and only touch the engine on its Qt thread.
+        QMutexLocker locker(&bridge->mutex);
+        CoreAudioCaptureEngine* target = bridge->engine.data();
+        if (!target) return;
+        QMetaObject::invokeMethod(target, [bridge, details] {
+            QPointer<CoreAudioCaptureEngine> guardedTarget;
+            {
+                QMutexLocker bridgeLocker(&bridge->mutex);
+                guardedTarget = bridge->engine;
+            }
+            if (guardedTarget) guardedTarget->handleMicrophoneCaptureFailure(details);
+        }, Qt::QueuedConnection);
+    };
+    NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
+    if (device) {
+        [d->microphoneObservers addObject:[center
+            addObserverForName:AVCaptureDeviceWasDisconnectedNotification
+            object:(__bridge id)device queue:nil usingBlock:failure]];
+    }
+    if (session) {
+        for (NSNotificationName name in @[AVCaptureSessionRuntimeErrorNotification,
+                                          AVCaptureSessionDidStopRunningNotification]) {
+            [d->microphoneObservers addObject:[center addObserverForName:name
+                object:(__bridge id)session queue:nil usingBlock:failure]];
+        }
+    }
+}
+
+void CoreAudioCaptureEngine::handleMicrophoneCaptureFailure(const QString& details)
+{
+    if (!m_running || m_stopping || !m_mixer || m_microphoneFailed
+        || !m_microphoneActive) return;
+    m_microphoneFailed = true;
+    m_microphoneActive = false;
+    qWarning() << "CoreAudioCaptureEngine: Handling microphone failure:" << details;
+    qint64 activeTimeNs = 0;
+    {
+        QMutexLocker locker(&m_timingMutex);
+        const qint64 now = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()).count();
+        const qint64 activeNow = m_paused ? m_pauseStartTime : now;
+        activeTimeNs = qMax<qint64>(0, (activeNow - m_startTime - m_pausedDuration) * NSEC_PER_MSEC);
+    }
+    d->cleanupMicrophone();
+    deliverMixerOutput(m_mixer->setSourceEnabled(
+        SnapTray::Audio::Source::Microphone, false, activeTimeNs));
+    notifyActiveSourceChanged();
 }
 
 void CoreAudioCaptureEngine::handleSystemAudioCaptureFailure(

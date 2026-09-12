@@ -56,6 +56,9 @@ public:
     void handleSystemAudioCaptureFailure(const QString& details);
 
 private:
+    friend class TestCoreAudioRuntime;
+    void installMicrophoneObservers(void* session, void* device);
+    void handleMicrophoneCaptureFailure(const QString& details);
     AudioSource activeAudioSource() const;
     void notifyActiveSourceChanged();
     void deliverMixerOutput(
@@ -74,6 +77,7 @@ private:
     std::atomic<bool> m_starting{false};
     std::atomic<bool> m_stopping{false};
     bool m_systemAudioFailed = false;
+    bool m_microphoneFailed = false;
 
     std::atomic<bool> m_running{false};
     std::atomic<bool> m_paused{false};

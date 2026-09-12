@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 9 |
-| Confirmed / Fix Ready | 24 |
+| Confirmed / Open | 8 |
+| Confirmed / Fix Ready | 25 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 3 |
@@ -89,7 +89,7 @@
 | REV-033 | Fix Ready | P1 | High | Windows Recording | Windows 10 2004 前 exclusion 退化成無內容佔位 |
 | REV-034 | Fix Ready | P1 | High | Recording Audio | encoder 靜默降級無音訊，呼叫端未察覺 |
 | REV-035 | Fix Ready | P1 | High | Windows Recording | DXGI worker 固定 30 fps，忽略使用者 frame rate |
-| REV-036 | Open | P1 | High | macOS Recording | 麥克風中途斷線／session runtime error 無監聽 |
+| REV-036 | Fix Ready | P1 | High | macOS Recording | 麥克風中途斷線／session runtime error 無監聽 |
 | REV-037 | Potential | — | Low | Region Toolbar | Mosaic 已修；StepBadge 狀態不同步的操作後果待確認 |
 | POT-001 | Fix Ready | P1 | High | Pin Toolbar | 窄螢幕安全定位與更多選單已完成，跨平台 UI 待驗證 |
 
@@ -441,12 +441,13 @@
 
 ### REV-036 — macOS 麥克風中途失效沒有通知
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/capture/CoreAudioCaptureEngine_mac.mm:423-439,820-885,1046-1093；沒有註冊 AVCaptureDeviceWasDisconnectedNotification 或 AVCaptureSessionRuntimeErrorNotification。
 - 觸發：錄影中拔除 USB microphone、Bluetooth input 斷線，或 AVCaptureSession 發生 runtime error。
 - 後果：初始 running 檢查已通過後，程式不再更新 m_microphoneActive／mixer source，也不 emit warning；影片後半段靜音或缺少一個 source，UI 仍顯示音訊正常。
 - 完成條件：監聽並在 cleanup 時解除 device/session notifications；中途故障要停用 source、更新 activeSourceChanged、警告使用者；拔除／重連與 system+mic fallback 實機測試。
-- 修正證據：待補。
+- 修正證據：監聽選定麥克風的 disconnected 及本次 AVCaptureSession 的 runtime error／意外停止通知。每次訂閱使用獨立 mutex＋QPointer bridge，owner thread 處理失效；cleanup 先失效 bridge 並解除 observer，再停止 native capture 及 drain callbacks。停用 microphone mixer source 並通知 effective source，沿用 manager 的剩餘來源／靜音影片、音訊指示與警告政策，不改偏好、不於本次錄影自動重新接入裝置。
+- 驗證：2026-09-12 macOS canonical build、CoreAudioRuntime／CoreAudioCaptureEngineSafety／TimestampedPcmMixer／Startup 通過。真實 NotificationCenter fixture 的 12 組 notification／來源／pause 情境及停止重啟／銷毀後舊回呼隔離共 15 個 Qt Test 計數通過；剩餘 system PCM 持續輸出，manager 的 SystemAudio→None 狀態維持 Recording、指示關閉與偏好保存通過。最終 scripts/run-tests.sh 153／153 套通過（既有平台／環境 skip 保留），all_qmllint exit 0（既有 warnings）。未操作日常 TCC；USB／Bluetooth 實際拔除／重連 smoke 待補，保留 Fix Ready。 對應本機 commit：fix: degrade microphone capture safely after runtime device loss。
 
 ### REV-037 — StepBadge／Mosaic toggle-off 未同步 ToolManager
 
@@ -550,3 +551,4 @@
 | 2026-09-12 | REV-033 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-035 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-025 整合覆核修正 counter 判定，長數字 metadata 與明示格式 counter 回歸通過。 |
+| 2026-09-12 | REV-036 完成修正與針對性回歸，標為 Fix Ready；本批指定 11 項整合後 macOS 153／153 套測試通過，QML lint exit 0；硬體及其他平台 smoke 待補。 |

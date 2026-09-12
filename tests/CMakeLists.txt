@@ -1006,6 +1006,15 @@ add_test(NAME RecordingManager_CoreAudioCaptureEngineSafety
 set_tests_properties(RecordingManager_CoreAudioCaptureEngineSafety
     PROPERTIES TIMEOUT 30 LABELS "unit")
 
+if(APPLE)
+add_executable(RecordingManager_CoreAudioRuntime RecordingManager/tst_CoreAudioRuntime.mm)
+set_source_files_properties(RecordingManager/tst_CoreAudioRuntime.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+target_link_libraries(RecordingManager_CoreAudioRuntime PRIVATE snaptray_platform Qt6::Test
+    "-framework AVFoundation" "-framework Foundation")
+add_test(NAME RecordingManager_CoreAudioRuntime COMMAND RecordingManager_CoreAudioRuntime)
+set_tests_properties(RecordingManager_CoreAudioRuntime PROPERTIES TIMEOUT 30 LABELS "unit")
+endif()
+
 add_executable(RecordingManager_CaptureFrameTiming RecordingManager/tst_CaptureFrameTiming.cpp)
 target_link_libraries(RecordingManager_CaptureFrameTiming PRIVATE snaptray_core Qt6::Test)
 add_test(NAME RecordingManager_CaptureFrameTiming COMMAND RecordingManager_CaptureFrameTiming)
