@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 8 |
-| Confirmed / Fix Ready | 25 |
+| Confirmed / Open | 7 |
+| Confirmed / Fix Ready | 26 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 3 |
@@ -85,7 +85,7 @@
 | REV-029 | Fix Ready | P2 | High | Color Picker | triangle value 軸使用 height 而非 width |
 | REV-030 | Fix Ready | P1 | High | QML Dialog | setModal(true) 實際仍為 NonModal |
 | REV-031 | Fix Ready | P2 | High | Pin Info | 顯示新值但單項 Copy 複製舊值 |
-| REV-032 | Open | P1 | High | macOS Recording | SCK 未排除錄影 tooltip window |
+| REV-032 | Fix Ready | P1 | High | macOS Recording | SCK 未排除錄影 tooltip window |
 | REV-033 | Fix Ready | P1 | High | Windows Recording | Windows 10 2004 前 exclusion 退化成無內容佔位 |
 | REV-034 | Fix Ready | P1 | High | Recording Audio | encoder 靜默降級無音訊，呼叫端未察覺 |
 | REV-035 | Fix Ready | P1 | High | Windows Recording | DXGI worker 固定 30 fps，忽略使用者 frame rate |
@@ -402,12 +402,13 @@
 
 ### REV-032 — macOS SCK 未排除錄影 tooltip window
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/RecordingManager.cpp:553-557；src/capture/SCKCaptureEngine_mac.mm:467-485；src/qml/QmlRecordingControlBar.mm:104-120,195-214。
 - 觸發：ScreenCaptureKit stream 建立後，使用者 hover control bar 顯示獨立 tooltip window。
 - 後果：content filter 初始化時只收到 control bar winId；tooltip 沒被加入 excludingWindows。setSharingType:NSWindowSharingNone 是 legacy window-sharing policy，不能替代 SCK content filter，因此 tooltip 可被錄進影片。
 - 完成條件：錄影時建立／顯示 tooltip，逐 frame 確認輸出不含 control bar 與 tooltip；動態出現的 overlay 必須更新 filter 或在 stream 前完整建立並排除。
-- 修正證據：待補。
+- 修正證據：錄影準備階段預建 tooltip native window，以不可見 root 保留 WindowServer 身分；hover／hide 不重建視窗。GUI thread 先保存 control bar＋tooltip 的 CGWindowID，再交給非同步 init／SCK filter，避免 worker 存取 NSView；SCK 納入 offscreen windows，若本次錄影需要的排除項缺失則回報失敗。既有 Pin live capture 的 Qt WId 入口保留。
+- 驗證：2026-09-12 macOS scripts/build.sh、RecordingManager_InitTask／Startup 與原生 CaptureExclusion 通過。macOS 26.6.2 的 current-process SCShareableContent 確認兩個視窗皆可被發現，反覆 tooltip show／hide、close／重建 ID 快照與生命週期回歸通過。逐幀 SCK 像素測試已加入，但測試 executable 未有 Screen Recording 權限而 skip，未要求或重設 TCC；保留 Fix Ready，待實際錄影與其他 macOS 版本 smoke。 對應本機 commit：fix: include recording tooltips in ScreenCaptureKit exclusions。
 
 ### REV-033 — Windows 10 2004 前 exclusion 會變無內容佔位
 
@@ -552,3 +553,4 @@
 | 2026-09-12 | REV-035 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-025 整合覆核修正 counter 判定，長數字 metadata 與明示格式 counter 回歸通過。 |
 | 2026-09-12 | REV-036 完成修正與針對性回歸，標為 Fix Ready；本批指定 11 項整合後 macOS 153／153 套測試通過，QML lint exit 0；硬體及其他平台 smoke 待補。 |
+| 2026-09-12 | REV-032 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |

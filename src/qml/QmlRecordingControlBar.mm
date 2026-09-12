@@ -210,7 +210,7 @@ void QmlRecordingControlBar::applyTooltipWindowFlags()
     [window setLevel:kCGScreenSaverWindowLevel];
     [window setHidesOnDeactivate:NO];
     [window setIgnoresMouseEvents:YES];
-    [window setHasShadow:YES];
+    [window setHasShadow:m_tooltipRootItem && m_tooltipRootItem->isVisible()];
     [window setSharingType:NSWindowSharingNone];
 #elif defined(Q_OS_WIN)
     setWindowExcludedFromCapture(m_tooltipView, true);
@@ -238,6 +238,7 @@ void QmlRecordingControlBar::hide()
 void QmlRecordingControlBar::close()
 {
     hideTooltip();
+    m_captureExclusionsPrepared = false;
 
     if (m_view) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
@@ -263,6 +264,38 @@ WId QmlRecordingControlBar::winId() const
     if (m_view)
         return m_view->winId();
     return 0;
+}
+
+QList<quintptr> QmlRecordingControlBar::prepareCaptureExclusions()
+{
+    ensureView();
+    ensureTooltipView();
+    if (!m_rootItem || !m_tooltipRootItem) return {};
+    if (!m_captureExclusionsPrepared) {
+        hideTooltip();
+        m_captureExclusionsPrepared = true;
+        // Keep a transparent, input-transparent native window registered with
+        // WindowServer, so SCK can exclude it before the first tooltip hover.
+        m_tooltipRootItem->setVisible(false);
+        m_tooltipView->setPosition(m_view->position());
+        m_tooltipView->show();
+        applyTooltipWindowFlags();
+    }
+    QList<quintptr> ids;
+    for (QQuickView* view : {m_view, m_tooltipView}) {
+#ifdef Q_OS_MACOS
+        NSView* nativeView = reinterpret_cast<NSView*>(view->winId());
+        NSWindow* window = [nativeView window];
+        const NSInteger number = window ? [window windowNumber] : 0;
+        if (number <= 0) return {};
+        ids.append(static_cast<quintptr>(number));
+#else
+        const WId id = view->winId();
+        if (!id) return {};
+        ids.append(id);
+#endif
+    }
+    return ids;
 }
 
 void QmlRecordingControlBar::raiseAboveMenuBar()
@@ -486,6 +519,7 @@ void QmlRecordingControlBar::showTooltip(const QString& text, const QRect& ancho
         };
 
         positionTooltip(QPoint(anchorCenter.x(), barBottom), false);
+        m_tooltipRootItem->setVisible(true);
         m_tooltipView->show();
         applyTooltipWindowFlags();
         m_tooltipView->raise();
@@ -511,8 +545,12 @@ void QmlRecordingControlBar::showTooltip(const QString& text, const QRect& ancho
 void QmlRecordingControlBar::hideTooltip()
 {
     ++m_tooltipRequestId;
-    if (m_tooltipView)
+    if (m_captureExclusionsPrepared && m_tooltipRootItem) {
+        m_tooltipRootItem->setVisible(false);
+        applyTooltipWindowFlags();
+    } else if (m_tooltipView) {
         m_tooltipView->hide();
+    }
 }
 
 // ── Drag handling ──

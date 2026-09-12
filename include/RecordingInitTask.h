@@ -49,7 +49,7 @@ public:
         EncoderFactory::Format outputFormat = EncoderFactory::Format::MP4;
         QSize frameSize;
         int quality = 55;
-        QList<WId> excludedWindowIds;  // Windows to exclude from capture (e.g., recording UI)
+        QList<quintptr> excludedCaptureWindowIds; // Native capture IDs resolved on the GUI thread
     };
 
     /**

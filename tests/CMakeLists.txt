@@ -1013,6 +1013,14 @@ target_link_libraries(RecordingManager_CoreAudioRuntime PRIVATE snaptray_platfor
     "-framework AVFoundation" "-framework Foundation")
 add_test(NAME RecordingManager_CoreAudioRuntime COMMAND RecordingManager_CoreAudioRuntime)
 set_tests_properties(RecordingManager_CoreAudioRuntime PROPERTIES TIMEOUT 30 LABELS "unit")
+
+add_executable(RecordingManager_CaptureExclusion RecordingManager/tst_CaptureExclusion.mm)
+set_source_files_properties(RecordingManager/tst_CaptureExclusion.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+target_link_libraries(RecordingManager_CaptureExclusion PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test
+    "-framework ScreenCaptureKit" "-framework Cocoa")
+target_sources(RecordingManager_CaptureExclusion PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME RecordingManager_CaptureExclusion COMMAND RecordingManager_CaptureExclusion)
+set_tests_properties(RecordingManager_CaptureExclusion PROPERTIES TIMEOUT 60 LABELS "integration")
 endif()
 
 add_executable(RecordingManager_CaptureFrameTiming RecordingManager/tst_CaptureFrameTiming.cpp)

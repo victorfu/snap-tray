@@ -11,6 +11,7 @@
 #include <QDebug>
 #include <mutex>
 #include <atomic>
+#include <limits>
 
 #if !__has_feature(objc_arc)
 #error "SCKCaptureEngine_mac.mm requires Objective-C ARC"
@@ -70,6 +71,7 @@ public:
 
     // Windows to exclude from capture (stored as CGWindowID)
     QList<CGWindowID> excludedWindowIds;
+    bool requireAllExcludedWindows = false;
 
     // Latest captured frame (for async delivery)
     QImage latestFrame;
@@ -315,7 +317,7 @@ void SCKCaptureEngine::setFrameRate(int fps)
 
 void SCKCaptureEngine::setExcludedWindows(const QList<WId> &windowIds)
 {
-    d->excludedWindowIds.clear();
+    QList<quintptr> nativeIds;
     for (WId wid : windowIds) {
         // Convert Qt WId (NSView*) to CGWindowID
         NSView *view = (__bridge NSView *)reinterpret_cast<void *>(wid);
@@ -323,9 +325,23 @@ void SCKCaptureEngine::setExcludedWindows(const QList<WId> &windowIds)
             NSWindow *window = [view window];
             if (window) {
                 CGWindowID windowId = static_cast<CGWindowID>([window windowNumber]);
-                d->excludedWindowIds.append(windowId);
+                nativeIds.append(windowId);
                 qDebug() << "SCKCaptureEngine: Added excluded window ID:" << windowId;
             }
+        }
+    }
+    setExcludedCaptureWindowIds(nativeIds);
+    d->requireAllExcludedWindows = false; // Preserve the legacy live-pin contract.
+}
+
+void SCKCaptureEngine::setExcludedCaptureWindowIds(const QList<quintptr>& ids)
+{
+    d->requireAllExcludedWindows = true;
+    d->excludedWindowIds.clear();
+    for (quintptr id : ids) {
+        if (id != 0 && id <= std::numeric_limits<CGWindowID>::max()
+            && !d->excludedWindowIds.contains(static_cast<CGWindowID>(id))) {
+            d->excludedWindowIds.append(static_cast<CGWindowID>(id));
         }
     }
 }
@@ -362,7 +378,8 @@ bool SCKCaptureEngine::start()
         __block SCShareableContent *content = nil;
         __block NSError *contentError = nil;
 
-        [SCShareableContent getShareableContentWithCompletionHandler:^(
+        [SCShareableContent getShareableContentExcludingDesktopWindows:NO
+            onScreenWindowsOnly:NO completionHandler:^(
             SCShareableContent *shareableContent, NSError *error) {
             content = shareableContent;
             contentError = error;
@@ -477,6 +494,12 @@ bool SCKCaptureEngine::start()
                     }
                 }
                 qDebug() << "SCKCaptureEngine::start() - Found" << excludedWindows.count << "windows to exclude";
+                if (d->requireAllExcludedWindows
+                    && excludedWindows.count != static_cast<NSUInteger>(d->excludedWindowIds.size())) {
+                    emit error(tr("Recording controls could not be excluded from capture. Please try again."));
+                    d->cleanup();
+                    return false;
+                }
             }
 
             // Create content filter for the display, excluding our UI windows

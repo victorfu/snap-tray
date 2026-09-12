@@ -89,6 +89,10 @@ public:
      */
     virtual void setExcludedWindows(const QList<WId> &windowIds) { Q_UNUSED(windowIds); }
 
+    // Pre-resolved native capture identifiers for asynchronous initialization.
+    // Unlike Qt WId on macOS, these are CGWindowIDs, not NSView pointers.
+    virtual void setExcludedCaptureWindowIds(const QList<quintptr>& ids) { Q_UNUSED(ids); }
+
     /**
      * @brief Initialize and start the capture engine
      * @return true if started successfully

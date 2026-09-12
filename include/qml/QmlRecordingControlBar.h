@@ -12,6 +12,7 @@ class QShortcut;
 class QEvent;
 
 class TestRecordingStartup;
+class TestRecordingCaptureExclusion;
 
 namespace SnapTray {
 
@@ -49,6 +50,9 @@ public:
     WId winId() const;
     void raiseAboveMenuBar();
     void setExcludedFromCapture(bool excluded);
+    // GUI-thread snapshot: CGWindowIDs on macOS, native window IDs elsewhere.
+    // Prepares both windows before asynchronous capture initialization.
+    QList<quintptr> prepareCaptureExclusions();
 
     void positionNear(const QRect& recordingRegion);
     void updateDuration(qint64 elapsedMs);
@@ -76,6 +80,7 @@ private slots:
 
 private:
     friend class ::TestRecordingStartup;
+    friend class ::TestRecordingCaptureExclusion;
     void ensureView();
     void ensureTooltipView();
     void applyPlatformWindowFlags();
@@ -105,6 +110,7 @@ private:
     // For re-centering after width change
     bool m_isDragging = false;
     quint64 m_tooltipRequestId = 0;
+    bool m_captureExclusionsPrepared = false;
     QString m_cursorSurfaceId;
     QString m_cursorOwnerId;
 };

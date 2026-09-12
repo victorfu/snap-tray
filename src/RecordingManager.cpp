@@ -674,7 +674,12 @@ void RecordingManager::beginAsyncInitialization()
 
     // Collect UI window IDs to exclude from capture.
     if (m_controlBar) {
-        config.excludedWindowIds.append(m_controlBar->winId());
+        config.excludedCaptureWindowIds = m_controlBar->prepareCaptureExclusions();
+        if (config.excludedCaptureWindowIds.isEmpty()) {
+            cancelRecording();
+            emit recordingError(tr("Failed to prepare recording controls for capture."));
+            return;
+        }
         m_controlBar->setExcludedFromCapture(true);
     }
 
