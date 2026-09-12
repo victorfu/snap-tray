@@ -3,7 +3,7 @@
 - 審查日期：2026-09-01
 - 審查基準：main @ 82611586a549f4ada3c7131b92854ebaddcaf0e1
 - 審查模式：唯讀、Double Confirm、全庫掃描
-- 目前結論：37 項 Confirmed Issue、1 項 Potential Issue、1 項 Rejected
+- 目前結論：35 項 Confirmed Issue、3 項 Potential Issue、1 項 Rejected
 
 ## 使用方式
 
@@ -36,11 +36,11 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 21 |
+| Confirmed / Open | 19 |
 | Confirmed / Fix Ready | 14 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
-| Potential / 待確認 | 1 |
+| Potential / 待確認 | 3 |
 | Rejected / 已反證 | 1 |
 
 建立本文件時，工作樹已存在兩組未提交候選修正：
@@ -60,7 +60,7 @@
 | REV-004 | Verified | P0 | High | Tests / Settings | 測試會刪寫真實 SnapTray 設定 |
 | REV-005 | Fix Ready | P0 | High | Save / Concurrency | 唯一檔名存在 TOCTOU，可靜默覆寫 |
 | REV-006 | Fix Ready | P1 | High | Windows Capture UI | Annotation cache 無上限成長，可耗盡記憶體 |
-| REV-007 | Open | P0 | High | Windows Video | 強制 terminate 並刪除 reader thread，可 crash／UAF |
+| REV-007 | Potential | — | Medium | Windows Video | 強制終止 reader thread 的實際失敗後果待重現 |
 | REV-008 | Fix Ready | P1 | High | macOS Recording | 首次麥克風授權阻塞主執行緒並破壞時間軸 |
 | REV-009 | Verified | P1 | High | Screen Canvas | 文字拖移／旋轉／縮放會重用舊快取 |
 | REV-010 | Fix Ready | P1 | High | Region Selection | 建立與一般 resize 沒有 clamp 到 bounds |
@@ -90,7 +90,7 @@
 | REV-034 | Fix Ready | P1 | High | Recording Audio | encoder 靜默降級無音訊，呼叫端未察覺 |
 | REV-035 | Open | P1 | High | Windows Recording | DXGI worker 固定 30 fps，忽略使用者 frame rate |
 | REV-036 | Open | P1 | High | macOS Recording | 麥克風中途斷線／session runtime error 無監聽 |
-| REV-037 | Open | P2 | High | Region Toolbar | StepBadge／Mosaic toggle-off 未同步 ToolManager |
+| REV-037 | Potential | — | Low | Region Toolbar | Mosaic 已修；StepBadge 狀態不同步的操作後果待確認 |
 | POT-001 | Fix Ready | P1 | High | Pin Toolbar | 窄螢幕安全定位與更多選單已完成，跨平台 UI 待驗證 |
 
 ## 詳細問題與完成條件
@@ -157,12 +157,13 @@
 
 ### REV-007 — Media Foundation player 強制終止 reader thread
 
-- 狀態：Open
+- 狀態：Potential
 - 證據：src/video/MediaFoundationPlayer_win.cpp:532-556。
 - 觸發：close／reload 時 reader thread 在一秒內未退出。
-- 後果：程式呼叫 QThread::terminate，再立即 wait／delete；thread 可能在持有 mutex、執行 COM 或存取 player state 時被終止，造成 deadlock、heap corruption、UAF 或 crash。
+- 原始風險描述：程式呼叫 QThread::terminate，再立即 wait／delete；thread 可能在持有 mutex、執行 COM 或存取 player state 時被終止，造成 deadlock、heap corruption、UAF 或 crash。
 - 完成條件：移除強制 terminate 路徑；以可取消的 blocking read／cooperative shutdown 完成；反覆 load、seek、close 與損壞檔案壓力測試不 hang、不 crash，並通過 sanitizer／Application Verifier。
-- 修正證據：待補。
+- 重新判定：2026-09-12 核對 stopReaderThread，terminate → wait(500) → delete 仍在，最後 wait 結果未檢查；但尚未重現 blocking read／終止失敗造成 crash 或 UAF，不能僅由危險 API 斷言實際後果。維持待確認，不視為已修復。
+- 待確認：Windows 使用損壞檔案、延遲／阻塞 read 與反覆 close／reload 重現失敗，再依具體 thread lifetime 證據確認缺陷與修正範圍。
 
 ### REV-008 — 首次麥克風授權會凍結 UI 並錯置錄影時間軸
 
@@ -438,12 +439,13 @@
 
 ### REV-037 — StepBadge／Mosaic toggle-off 未同步 ToolManager
 
-- 狀態：Open
+- 狀態：Potential
 - 證據：src/region/RegionToolbarHandler.cpp:94-155；src/RegionSelector.cpp:1023-1036,3455-3467；src/region/RegionInputHandler.cpp:970-997。
 - 觸發：目前工具是 StepBadge 或 Mosaic，再點同一 toolbar button 切回 Selection。
-- 後果：handler 與 inputState 已是 Selection，但 ToolManager::currentTool 仍是舊工具；選取輸入本身可運作，但後續 cursor refresh 會從 stale ToolManager 取回舊工具 cursor。
+- 原始風險描述：handler 與 inputState 已是 Selection，但 ToolManager::currentTool 仍是舊工具；選取輸入本身可運作，但後續 cursor refresh 會從 stale ToolManager 取回舊工具 cursor。
 - 完成條件：兩工具的 toggle-off 都讓 handler、inputState、ViewModel、ToolManager 同步為 Selection；toolCursorRequested 不再回傳舊 cursor。
-- 修正證據：待補。
+- 重新判定：2026-09-12 核對 handleMosaicTool，toggle-off 已同步 ToolManager，Mosaic 子項已修。handleStepBadgeTool 仍提前 return，但 StepBadge 與 Selection 的 idle cursor 同為 CrossCursor，且未證實會誤放 badge；目前僅確認內部狀態不同步，操作後果仍待確認。
+- 待確認：重現 StepBadge toggle-off 後可見的錯誤游標、誤操作或後續工具切換問題，再確認剩餘子項；不再把 Mosaic 列為未修。
 
 ### POT-001 — 窄螢幕 Pin toolbar 定位與操作可達性
 
@@ -525,3 +527,4 @@
 | 2026-09-12 | REV-014 完成 Arrow／Polyline 實際繪製幾何共用與 432 組像素回歸，macOS 建置及六套測試通過；標為 Fix Ready。 |
 | 2026-09-12 | REV-015 完成短末段終點與 shaft 接合修正，macOS 建置、五套測試及 107 組新增回歸通過；標為 Fix Ready。 |
 | 2026-09-12 | REV-016 完成最近 handle 與穩定同距離判定，標為 Fix Ready；本批 REV-012～016 整合後 macOS 全 149 套測試通過，QML lint exit 0。 |
+| 2026-09-12 | 同步 REV-007／REV-037 重新判定為 Potential；確認 Mosaic 子項已修、其餘操作後果待重現。統計更新為 35 Confirmed、3 Potential、1 Rejected。 |
