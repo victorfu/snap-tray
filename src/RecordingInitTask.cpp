@@ -20,6 +20,8 @@ RecordingInitTask::Result::~Result() = default;
 
 void RecordingInitTask::Result::cleanup()
 {
+    audioEnabled = false;
+    audioWarning.clear();
     if (captureEngine) {
         if (captureEngineStarted) {
             captureEngine->stop();
@@ -227,7 +229,7 @@ bool RecordingInitTask::initializeEncoder()
     }
 
     // Create encoder (pass nullptr parent - will be reparented on main thread)
-    auto encoderResult = EncoderFactory::create(encoderConfig, nullptr);
+    auto encoderResult = m_createEncoder(encoderConfig, nullptr);
 
     if (!encoderResult.success) {
         m_result.error = encoderResult.errorMessage;
@@ -235,6 +237,8 @@ bool RecordingInitTask::initializeEncoder()
     }
 
     m_result.usingNativeEncoder = encoderResult.isNative;
+    m_result.audioEnabled = encoderResult.audioEnabled;
+    m_result.audioWarning = encoderResult.audioWarning;
     m_result.nativeEncoder.reset(encoderResult.nativeEncoder);
     m_result.gifEncoder.reset(encoderResult.gifEncoder);
     m_result.webpEncoder.reset(encoderResult.webpEncoder);

@@ -3,6 +3,8 @@
 #include "encoding/EncoderFactory.h"
 #include "IVideoEncoder.h"
 #include "encoding/NativeGifEncoder.h"
+#include "encoding/WebPAnimEncoder.h"
+#include "FakeAudioEncoder.h"
 
 /**
  * @brief Tests for EncoderFactory
@@ -25,6 +27,9 @@ private slots:
 
     // Config tests
     void testDefaultConfig();
+    void testActualAudioCapability_data();
+    void testActualAudioCapability();
+    void testAnimatedFormatsDoNotReportAudioFallback();
 
     // Factory creation tests - GIF
     void testCreateGifEncoder();
@@ -82,6 +87,58 @@ EncoderFactory::EncoderConfig TestEncoderFactory::createTestConfig(EncoderFactor
 // ============================================================================
 // Config Tests
 // ============================================================================
+
+void TestEncoderFactory::testActualAudioCapability_data()
+{
+    QTest::addColumn<bool>("requested");
+    QTest::addColumn<bool>("supported");
+    QTest::addColumn<bool>("configured");
+    QTest::addColumn<bool>("started");
+    QTest::newRow("audio-ready") << true << true << true << true;
+    QTest::newRow("audio-setup-failed") << true << true << false << true;
+    QTest::newRow("audio-unsupported") << true << false << true << true;
+    QTest::newRow("audio-not-requested") << false << true << true << true;
+    QTest::newRow("encoder-failed") << true << true << true << false;
+}
+
+void TestEncoderFactory::testActualAudioCapability()
+{
+    QFETCH(bool, requested);
+    QFETCH(bool, supported);
+    QFETCH(bool, configured);
+    QFETCH(bool, started);
+    auto state = std::make_shared<AudioEncoderTestState>();
+    state->supportsAudio = supported;
+    state->acceptsAudio = configured;
+    state->starts = started;
+    auto config = createTestConfig(EncoderFactory::Format::MP4);
+    config.enableAudio = requested;
+    auto result = EncoderFactoryTestAccess::create(config, nullptr, state);
+    QCOMPARE(result.success, started);
+    QCOMPARE(result.audioEnabled, started && requested && supported && configured);
+    QCOMPARE(!result.audioWarning.isEmpty(), started && requested && !(supported && configured));
+    QCOMPARE(!result.errorMessage.isEmpty(), !started);
+    delete result.nativeEncoder;
+    QCOMPARE(state->created.load(), 1);
+    QCOMPARE(state->destroyed.load(), 1);
+}
+
+void TestEncoderFactory::testAnimatedFormatsDoNotReportAudioFallback()
+{
+    for (auto format : {EncoderFactory::Format::GIF, EncoderFactory::Format::WebP}) {
+        auto config = createTestConfig(format);
+        if (format == EncoderFactory::Format::WebP) config.outputPath = m_tempDir->filePath("test.webp");
+        config.enableAudio = true;
+        auto state = std::make_shared<AudioEncoderTestState>();
+        auto result = EncoderFactoryTestAccess::create(config, nullptr, state);
+        QVERIFY(result.success);
+        QVERIFY(!result.audioEnabled);
+        QVERIFY(result.audioWarning.isEmpty());
+        QCOMPARE(state->created.load(), 0);
+        delete result.gifEncoder;
+        delete result.webpEncoder;
+    }
+}
 
 void TestEncoderFactory::testDefaultConfig()
 {

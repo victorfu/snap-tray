@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 27 |
-| Confirmed / Fix Ready | 8 |
+| Confirmed / Open | 26 |
+| Confirmed / Fix Ready | 9 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 1 |
@@ -87,7 +87,7 @@
 | REV-031 | Open | P2 | High | Pin Info | 顯示新值但單項 Copy 複製舊值 |
 | REV-032 | Open | P1 | High | macOS Recording | SCK 未排除錄影 tooltip window |
 | REV-033 | Open | P1 | High | Windows Recording | Windows 10 2004 前 exclusion 退化成黑色矩形 |
-| REV-034 | Open | P1 | High | Recording Audio | encoder 靜默降級無音訊，呼叫端未察覺 |
+| REV-034 | Fix Ready | P1 | High | Recording Audio | encoder 靜默降級無音訊，呼叫端未察覺 |
 | REV-035 | Open | P1 | High | Windows Recording | DXGI worker 固定 30 fps，忽略使用者 frame rate |
 | REV-036 | Open | P1 | High | macOS Recording | 麥克風中途斷線／session runtime error 無監聽 |
 | REV-037 | Open | P2 | High | Region Toolbar | StepBadge／Mosaic toggle-off 未同步 ToolManager |
@@ -405,12 +405,13 @@
 
 ### REV-034 — Native encoder 靜默關閉 audio，呼叫端仍啟動錄音
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/encoding/EncoderFactory.cpp:102-125；src/MediaFoundationEncoder.cpp:292-303,472-496；src/RecordingManager.cpp:781-892。
 - 觸發：使用者要求 MP4 audio，但 Media Foundation audio stream configuration 失敗；encoder 仍讓 start() 成功並把內部 audioEnabled 改為 false。
 - 後果：RecordingManager 不查 encoder->isAudioEnabled，仍建立／啟動 audio engine、顯示 audio enabled 並丟 PCM 給 worker；最後輸出是無聲影片且沒有對使用者警告。
 - 完成條件：encoder startup result 明確回報 audio capability／fallback；呼叫端同步 UI 與 capture engine並發出一次可理解警告；以故意使 audio media type 失敗的 fake／Windows integration test 驗證。
-- 修正證據：待補。
+- 修正證據：EncoderFactory 與 RecordingInitTask 結果新增實際 audioEnabled／audioWarning。manager 在移交 encoder 前消費能力，無音訊時略過 audio engine／PCM 連線並關閉控制列指示；準備／啟動階段的降級警告共用去重與合併流程，保留錄影中既有警告及使用者偏好。整體 encoder start 失敗仍走錯誤清理。
+- 驗證：2026-09-12 macOS scripts/build.sh 與五套 encoder／init／startup／worker／CoreAudio safety 測試通過；fake encoder 貫穿 factory→init result→manager→QML 控制列／encoding worker，驗證成功降級、音訊未要求、正常 PCM、警告合併與資源回收，GIF／WebP 不發錯誤音訊警告。整合後 scripts/run-tests.sh 149／149 通過，all_qmllint exit 0。Windows native 降級實機驗證待補，保留 Fix Ready。對應本機 commit：fix: propagate effective encoder audio capability to recording startup。
 
 ### REV-035 — DXGI capture cadence 固定 30 fps
 
@@ -513,3 +514,4 @@
 | 2026-09-12 | REV-010 完成手動選取／resize 邊界與比例 anchor 修正，三套 macOS 回歸通過；標為 Fix Ready。 |
 | 2026-09-12 | REV-011 完成共用 selection gesture 更新與 release 最後座標修正，輸入／多區域及原生 StyleSync 回歸通過；標為 Fix Ready。 |
 | 2026-09-12 | REV-030 完成 QQuickView modality 與 History capture 入口互斥，三套原生 macOS 回歸通過；標為 Fix Ready。 |
+| 2026-09-12 | REV-034 完成實際 encoder 音訊能力傳遞與靜音降級 UI／警告，標為 Fix Ready；本批五項修正整合後 macOS 149／149 測試通過，QML lint exit 0。 |

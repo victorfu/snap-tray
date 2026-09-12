@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QSize>
 #include <QString>
+#include <functional>
 
 class IVideoEncoder;
 class NativeGifEncoder;
@@ -72,6 +73,8 @@ public:
         bool success = false;
         bool isNative = false;
         QString errorMessage;
+        bool audioEnabled = false;
+        QString audioWarning;
 
         /**
          * @brief Check if any encoder was created
@@ -98,12 +101,17 @@ public:
     static bool isNativeEncoderAvailable();
 
 private:
+    friend class TestEncoderFactory;
+    friend struct EncoderFactoryTestAccess;
+    using NativeEncoderFactory = std::function<IVideoEncoder*(QObject*)>;
+    static EncoderResult createWithNativeFactory(const EncoderConfig& config, QObject* parent,
+                                                  const NativeEncoderFactory& factory);
     /**
      * @brief Try to create and start a native encoder
      * @return Encoder pointer or nullptr if failed
      */
     static IVideoEncoder* tryCreateNativeEncoder(
-        const EncoderConfig& config, QObject* parent);
+        const EncoderConfig& config, QObject* parent, const NativeEncoderFactory& factory);
 
     /**
      * @brief Try to create and start a GIF encoder

@@ -66,6 +66,8 @@ public:
         std::unique_ptr<WebPAnimationEncoder> webpEncoder;
 
         bool usingNativeEncoder = false;
+        bool audioEnabled = false;
+        QString audioWarning;
 
         // Track started state for safe cleanup
         bool captureEngineStarted = false;
@@ -129,6 +131,7 @@ signals:
     void finished();
 
 private:
+    friend class TestRecordingStartup;
     bool initializeCaptureEngine();
     bool initializeAudioEngine();
     bool initializeEncoder();
@@ -136,6 +139,8 @@ private:
     Config m_config;
     Result m_result;
     QAtomicInt m_cancelled;
+    std::function<EncoderFactory::EncoderResult(const EncoderFactory::EncoderConfig&, QObject*)>
+        m_createEncoder = &EncoderFactory::create;
 };
 
 #endif // RECORDINGINITTASK_H

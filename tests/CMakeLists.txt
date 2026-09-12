@@ -948,7 +948,8 @@ add_test(NAME RecordingManager_Lifecycle COMMAND RecordingManager_Lifecycle)
 set_tests_properties(RecordingManager_Lifecycle PROPERTIES TIMEOUT 60 LABELS "integration")
 
 add_executable(RecordingManager_Startup RecordingManager/tst_Startup.cpp)
-target_link_libraries(RecordingManager_Startup PRIVATE snaptray_ui snaptray_platform Qt6::Test)
+target_link_libraries(RecordingManager_Startup PRIVATE snaptray_ui snaptray_platform snaptray_qmlplugin Qt6::Test)
+target_sources(RecordingManager_Startup PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
 add_test(NAME RecordingManager_Startup COMMAND RecordingManager_Startup)
 set_tests_properties(RecordingManager_Startup PROPERTIES TIMEOUT 60 LABELS "unit")
 

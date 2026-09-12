@@ -473,6 +473,7 @@ void RecordingManager::initializeStartState()
     m_permissionPending = false;
     m_startupAudioWarnings.clear();
     m_reportedStartupAudioWarnings.clear();
+    m_collectStartupAudioWarnings = true;
     m_elapsedTimer.invalidate();
     m_frameCount = 0;
     resetPauseTracking();
@@ -493,6 +494,22 @@ void RecordingManager::flushStartupAudioWarnings()
     m_reportedStartupAudioWarnings.append(m_startupAudioWarnings);
     m_startupAudioWarnings.clear();
     emit recordingWarning(message);
+}
+
+void RecordingManager::reportAudioWarning(const QString& warning)
+{
+    if (m_collectStartupAudioWarnings) addStartupAudioWarning(warning);
+    else emit recordingWarning(warning);
+}
+
+void RecordingManager::applyEncoderAudioResult(bool audioEnabled, const QString& warning)
+{
+    if (!m_audioEnabled || audioEnabled) return;
+    m_audioEnabled = false;
+    cleanupAudio();
+    if (m_controlBar) m_controlBar->setAudioEnabled(false);
+    addStartupAudioWarning(warning.isEmpty()
+        ? tr("Audio encoding is unavailable. This recording will be silent.") : warning);
 }
 
 void RecordingManager::prepareAudioPermission()
@@ -766,6 +783,8 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
         return;
     }
 
+    applyEncoderAudioResult(result.audioEnabled, result.audioWarning);
+
     // Take ownership of created resources (already moved to main thread in worker)
     m_captureEngine.reset(result.releaseCaptureEngine());
     if (m_captureEngine) {
@@ -867,11 +886,29 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
         return;
     }
 
+    configureAudioCapture();
+
+    // Clean up init task
+    m_initTask.clear();
+
+    flushStartupAudioWarnings();
+    if (m_state != State::Preparing || startGeneration != m_startGeneration) return;
+
+    // Start countdown if enabled, otherwise go directly to recording
+    if (m_countdownEnabled && m_countdownSeconds > 0) {
+        startCountdown();
+    } else {
+        startRecordingAfterCountdown();
+    }
+}
+
+void RecordingManager::configureAudioCapture()
+{
     // Create audio engine on main thread (macOS audio APIs require main thread)
     // Audio engine was NOT created in worker thread due to thread affinity requirements
     if (m_audioEnabled) {
         // Pass nullptr as parent since we use custom deleter with unique_ptr
-        m_audioEngine.reset(IAudioCaptureEngine::createBestEngine(nullptr));
+        m_audioEngine.reset(m_createAudioEngine());
         if (m_audioEngine) {
             const QPointer<IAudioCaptureEngine> configuredEngine(m_audioEngine.get());
             // Connect status signals before configuration because some engines
@@ -889,7 +926,7 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
                     return;
                 }
                 qWarning() << "RecordingManager: Audio warning:" << msg;
-                emit recordingWarning(tr(
+                reportAudioWarning(tr(
                     "Audio capture encountered a problem. This recording may contain missing audio."));
             });
             connect(m_audioEngine.get(), &IAudioCaptureEngine::activeSourceChanged,
@@ -900,17 +937,17 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
                 switch (activeSource) {
                 case IAudioCaptureEngine::AudioSource::Microphone:
 #ifdef Q_OS_MACOS
-                    emit recordingWarning(tr(
+                    reportAudioWarning(tr(
                         "System audio is unavailable. Recording microphone only. "
                         "Check Screen Recording permission in System Settings."));
 #else
-                    emit recordingWarning(tr(
+                    reportAudioWarning(tr(
                         "System audio is unavailable. Recording microphone only. "
                         "Check the default playback device."));
 #endif
                     break;
                 case IAudioCaptureEngine::AudioSource::SystemAudio:
-                    emit recordingWarning(tr(
+                    reportAudioWarning(tr(
                         "Microphone is unavailable. Recording system audio only. "
                         "Check microphone permission and the selected input device."));
                     break;
@@ -919,7 +956,7 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
                     if (m_controlBar) {
                         m_controlBar->setAudioEnabled(false);
                     }
-                    emit recordingWarning(tr(
+                    reportAudioWarning(tr(
                         "Audio is unavailable. This recording will be silent. "
                         "Check system permissions and the selected audio device."));
                     break;
@@ -932,7 +969,7 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
             const auto source = resolveAudioSource(m_audioSource);
             if (!m_audioEngine->setAudioSource(source)) {
                 qWarning() << "RecordingManager: Failed to apply configured audio source";
-                emit recordingWarning(tr(
+                reportAudioWarning(tr(
                     "Audio is unavailable. This recording will be silent. "
                     "Check system permissions and the selected audio device."));
                 m_audioEnabled = false;
@@ -951,7 +988,7 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
         } else {
             qWarning() << "RecordingManager: Failed to create audio engine";
             m_audioEnabled = false;
-            emit recordingWarning(tr(
+            reportAudioWarning(tr(
                 "Audio is unavailable. This recording will be silent. "
                 "Check system permissions and the selected audio device."));
         }
@@ -983,18 +1020,6 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
         m_controlBar->setAudioEnabled(m_audioEngine != nullptr && m_audioEnabled);
     }
 
-    // Clean up init task
-    m_initTask.clear();
-
-    flushStartupAudioWarnings();
-    if (m_state != State::Preparing || startGeneration != m_startGeneration) return;
-
-    // Start countdown if enabled, otherwise go directly to recording
-    if (m_countdownEnabled && m_countdownSeconds > 0) {
-        startCountdown();
-    } else {
-        startRecordingAfterCountdown();
-    }
 }
 
 void RecordingManager::startCountdown()
@@ -1054,7 +1079,7 @@ void RecordingManager::startRecordingAfterCountdown()
     if (m_audioEngine) {
         if (!m_audioEngine->start()) {
             qWarning() << "RecordingManager: Failed to start audio capture";
-            emit recordingWarning(tr(
+            reportAudioWarning(tr(
                 "Audio is unavailable. This recording will be silent. "
                 "Check system permissions and the selected audio device."));
             m_audioEnabled = false;
@@ -1064,6 +1089,10 @@ void RecordingManager::startRecordingAfterCountdown()
             }
         }
     }
+
+    if (m_state != State::Recording || generation != m_startGeneration) return;
+    m_collectStartupAudioWarnings = false;
+    flushStartupAudioWarnings();
 
     // Load watermark settings for recording and configure worker
     if (m_state != State::Recording || generation != m_startGeneration) return;
@@ -1299,6 +1328,8 @@ void RecordingManager::cancelRecording()
 
     ++m_startGeneration;
     m_permissionPending = false;
+    m_collectStartupAudioWarnings = false;
+    m_startupAudioWarnings.clear();
 
     // Cancel countdown overlay if active
     if (m_countdownOverlay) {

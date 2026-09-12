@@ -4,6 +4,52 @@
 #include <QTimer>
 #include "RecordingManager.h"
 #include "settings/RecordingSettingsManager.h"
+#include "RecordingInitTask.h"
+#include "qml/QmlRecordingControlBar.h"
+#include "../Encoding/FakeAudioEncoder.h"
+#include <QQuickItem>
+#include <QtQml/qqmlextensionplugin.h>
+
+Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
+
+namespace {
+struct AudioCaptureTestState { int created = 0; int destroyed = 0; };
+class FakeStartupAudio final : public IAudioCaptureEngine
+{
+public:
+    explicit FakeStartupAudio(std::shared_ptr<AudioCaptureTestState> state) : m_state(std::move(state)) { ++m_state->created; }
+    ~FakeStartupAudio() override { ++m_state->destroyed; }
+    bool setAudioSource(AudioSource source) override { m_source = source; return true; }
+    AudioSource audioSource() const override { return m_source; }
+    bool setDevice(const QString& device) override { m_deviceId = device; return true; }
+    AudioFormat audioFormat() const override { return {}; }
+    QList<AudioDevice> availableInputDevices() const override { return {{"saved-device", "Test microphone", true}}; }
+    QString defaultInputDevice() const override { return "saved-device"; }
+    bool start() override { m_running = true; return true; }
+    void stop() override { m_running = false; }
+    void pause() override {}
+    void resume() override {}
+    bool isRunning() const override { return m_running; }
+    bool isPaused() const override { return false; }
+    QString engineName() const override { return "test"; }
+    bool isAvailable() const override { return true; }
+    bool isSystemAudioSupported() const override { return true; }
+    void sendPcm() { emit audioDataReady(QByteArray(4, '\0'), 0); }
+private:
+    std::shared_ptr<AudioCaptureTestState> m_state;
+    bool m_running = false;
+};
+class FakeStartupCapture final : public ICaptureEngine
+{
+public:
+    bool setRegion(const QRect&, QScreen*) override { return true; }
+    bool start() override { return true; }
+    void stop() override {}
+    bool isRunning() const override { return true; }
+    QImage captureFrame() override { QImage image(16,16,QImage::Format_RGB32); image.fill(Qt::black); return image; }
+    QString engineName() const override { return "test"; }
+};
+}
 
 class TestRecordingStartup : public QObject
 {
@@ -16,9 +62,98 @@ private slots:
     void staleAndDuplicateRepliesCannotStart();
     void missingScreenAndDestructionRejectReplies();
     void permissionWaitIsOutsideTimelineAndOldTimerIsIgnored();
+    void encoderCapabilityControlsAudioPipeline_data();
+    void encoderCapabilityControlsAudioPipeline();
 private:
     void prepare(RecordingManager& manager);
 };
+
+void TestRecordingStartup::encoderCapabilityControlsAudioPipeline_data()
+{
+    QTest::addColumn<bool>("requested");
+    QTest::addColumn<bool>("acceptsAudio");
+    QTest::addColumn<bool>("starts");
+    QTest::newRow("audio-ready") << true << true << true;
+    QTest::newRow("silent-fallback") << true << false << true;
+    QTest::newRow("silent-request") << false << true << true;
+    QTest::newRow("encoder-failure") << true << true << false;
+}
+
+void TestRecordingStartup::encoderCapabilityControlsAudioPipeline()
+{
+    QFETCH(bool, requested);
+    QFETCH(bool, acceptsAudio);
+    QFETCH(bool, starts);
+    RecordingSettingsManager::instance().setAudioEnabled(requested);
+    auto encoderState = std::make_shared<AudioEncoderTestState>();
+    encoderState->acceptsAudio = acceptsAudio;
+    encoderState->starts = starts;
+    auto audioState = std::make_shared<AudioCaptureTestState>();
+    RecordingManager manager;
+    prepare(manager);
+    manager.m_createAudioEngine = [audioState] { return new FakeStartupAudio(audioState); };
+    RecordingInitTask::Config config;
+    config.region = QRect(0,0,16,16);
+    config.screenInfo.geometry = config.region;
+    config.frameSize = QSize(16,16);
+    config.audioEnabled = requested;
+    config.outputPath = "unused-fake.mp4";
+    auto task = QSharedPointer<RecordingInitTask>::create(config);
+    task->m_createEncoder = [encoderState](const auto& options, QObject* parent) {
+        return EncoderFactoryTestAccess::create(options, parent, encoderState);
+    };
+    QCOMPARE(task->initializeEncoder(), starts);
+    QCOMPARE(task->result().audioEnabled, starts && requested && acceptsAudio);
+    task->result().success = starts;
+    if (starts) {
+        task->result().captureEngine = std::make_unique<FakeStartupCapture>();
+        task->result().captureEngineStarted = true;
+    }
+    manager.m_controlBar = new SnapTray::QmlRecordingControlBar();
+    manager.m_controlBar->ensureView();
+    QVERIFY(manager.m_controlBar->m_rootItem);
+    manager.m_controlBar->setAudioEnabled(true);
+    manager.m_initTask = task;
+    QSignalSpy warnings(&manager, &RecordingManager::recordingWarning);
+    QSignalSpy errors(&manager, &RecordingManager::recordingError);
+    if (starts && requested && !acceptsAudio)
+        manager.addStartupAudioWarning("A microphone source was unavailable.");
+    manager.onInitializationComplete(task, manager.m_initGeneration);
+    if (!starts) {
+        QCOMPARE(manager.state(), RecordingManager::State::Idle);
+        QCOMPARE(errors.count(), 1);
+        QCOMPARE(warnings.count(), 0);
+        QCOMPARE(audioState->created, 0);
+        QCOMPARE(encoderState->destroyed.load(), 1);
+        return;
+    }
+    QCOMPARE(manager.state(), RecordingManager::State::Recording);
+    const bool audioEnabled = requested && acceptsAudio;
+    QCOMPARE(manager.m_audioEnabled, audioEnabled);
+    QCOMPARE(manager.m_controlBar->m_rootItem->property("audioEnabled").toBool(), audioEnabled);
+    QCOMPARE(audioState->created, audioEnabled ? 1 : 0);
+    QCOMPARE(warnings.count(), requested && !acceptsAudio ? 1 : 0);
+    if (requested && !acceptsAudio) {
+        const QString warning = warnings.first().first().toString();
+        QVERIFY(warning.contains("microphone source"));
+        QVERIFY(warning.contains("silent"));
+        manager.applyEncoderAudioResult(false, task->result().audioWarning);
+        manager.flushStartupAudioWarnings();
+        QCOMPARE(warnings.count(), 1);
+    }
+    if (audioEnabled) {
+        static_cast<FakeStartupAudio*>(manager.m_audioEngine.get())->sendPcm();
+        QTRY_COMPARE(encoderState->audioWrites.load(), 1);
+    } else {
+        QVERIFY(!manager.m_audioEngine);
+        QCOMPARE(encoderState->audioWrites.load(), 0);
+    }
+    QCOMPARE(RecordingSettingsManager::instance().audioEnabled(), requested);
+    manager.cancelRecording();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    QTRY_COMPARE(encoderState->destroyed.load(), 1);
+    QCOMPARE(audioState->destroyed, audioState->created);
+}
 
 void TestRecordingStartup::init()
 {

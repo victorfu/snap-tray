@@ -11,6 +11,8 @@ class QQuickItem;
 class QShortcut;
 class QEvent;
 
+class TestRecordingStartup;
+
 namespace SnapTray {
 
 /**
@@ -73,6 +75,7 @@ private slots:
     void onWidthChanged();
 
 private:
+    friend class ::TestRecordingStartup;
     void ensureView();
     void ensureTooltipView();
     void applyPlatformWindowFlags();

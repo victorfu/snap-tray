@@ -102,6 +102,9 @@ private:
     void finishAudioPermission(quint64 generation, bool granted);
     void addStartupAudioWarning(const QString& warning);
     void flushStartupAudioWarnings();
+    void reportAudioWarning(const QString& warning);
+    void applyEncoderAudioResult(bool audioEnabled, const QString& warning);
+    void configureAudioCapture();
     void beginAsyncInitialization();   // Start async initialization
     void onInitializationComplete(const QSharedPointer<RecordingInitTask> &task,
                                   quint64 generation);   // Handle async init completion
@@ -167,6 +170,10 @@ private:
     bool m_permissionPending = false;
     QStringList m_startupAudioWarnings;
     QStringList m_reportedStartupAudioWarnings;
+    bool m_collectStartupAudioWarnings = false;
+    std::function<IAudioCaptureEngine*()> m_createAudioEngine = [] {
+        return IAudioCaptureEngine::createBestEngine(nullptr);
+    };
     std::function<IAudioCaptureEngine::MicrophonePermission()> m_checkMicrophonePermission =
         &IAudioCaptureEngine::checkMicrophonePermission;
     std::function<void(std::function<void(bool)>)> m_requestMicrophonePermission =
