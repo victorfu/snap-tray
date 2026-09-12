@@ -12,9 +12,16 @@ void GuiCommand::setupOptions(QCommandLineParser& parser)
     parser.addOption({{"d", "delay"}, "Delay in milliseconds before capture", "ms", "0"});
 }
 
-CLIResult GuiCommand::execute(const QCommandLineParser& /*parser*/)
+CLIResult GuiCommand::execute(const QCommandLineParser& parser)
 {
-    // This command is executed via IPC, not locally
+    const QString value = parser.value("delay");
+    bool ok = false;
+    const int delay = value.toInt(&ok);
+    if (!ok || delay < 0) {
+        return CLIResult::error(CLIResult::Code::InvalidArguments,
+                                QString("Invalid delay value: %1").arg(value));
+    }
+    // Validate before the CLI handler dispatches IPC.
     return CLIResult::success("Region capture started");
 }
 
@@ -23,7 +30,9 @@ QJsonObject GuiCommand::buildIPCMessage(const QCommandLineParser& parser) const
     QJsonObject options;
 
     if (parser.isSet("delay")) {
-        options["delay"] = parser.value("delay").toInt();
+        bool ok = false;
+        const int delay = parser.value("delay").toInt(&ok);
+        if (ok && delay >= 0) options["delay"] = delay;
     }
 
     return options;

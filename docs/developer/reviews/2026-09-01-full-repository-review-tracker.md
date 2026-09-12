@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 3 |
-| Confirmed / Fix Ready | 30 |
+| Confirmed / Open | 2 |
+| Confirmed / Fix Ready | 31 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 3 |
@@ -76,7 +76,7 @@
 | REV-020 | Fix Ready | P2 | High | Screen Canvas | 自訂顏色沒有完整同步與持久化 |
 | REV-021 | Fix Ready | P1 | High | CLI Pin | file pin 略過 EXIF transform 與大圖 auto-fit |
 | REV-022 | Fix Ready | P2 | High | CLI Pin | clipboard pin 忽略 x／y |
-| REV-023 | Open | P2 | High | CLI GUI | 非數字 delay 被接受為 0 |
+| REV-023 | Fix Ready | P2 | High | CLI GUI | 非數字 delay 被接受為 0 |
 | REV-024 | Open | P2 | High | CLI Full | 負數 screen 被當成未指定 |
 | REV-025 | Fix Ready | P1 | High | Linux Save | filename 長度用 UTF-16 units 而非 UTF-8 bytes |
 | REV-026 | Fix Ready | P1 | High | Linux Runtime | XDG session 與 Qt QPA 衝突時錯判為 X11 |
@@ -318,12 +318,13 @@
 
 ### REV-023 — gui --delay 非數字被接受
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/cli/commands/GuiCommand.cpp:10-29；src/cli/CLIHandler.cpp:98-118；src/MainApplication.cpp:167-174。
 - 觸發：已有主程式時執行 snaptray gui --delay abc 或 overflow 數字。
 - 後果：preflight 未驗證；QString::toInt 未檢查 ok，失敗得到 0。非法命令回傳成功並立即啟動 Region Capture。
 - 完成條件：非法、空值、overflow 回 InvalidArguments 且不發 IPC／不啟動 capture；0 與合法正整數維持契約。
-- 修正證據：待補。
+- 修正證據：GuiCommand 在 IPC preflight 使用 toInt(ok) 驗證 delay 且拒絕負數；buildIPCMessage 防禦性略過非法 delay，避免靜默轉成零。
+- 驗證：2026-09-12 macOS canonical build 與 CLI_NumericArgumentValidation 通過；非數字、空值、overflow、負數皆在 CLIHandler preflight 回 InvalidArguments，0／250／int 最大值保持正確 IPC payload。跨平台 CLI smoke 待補，保留 Fix Ready。 對應本機 commit：fix: validate GUI capture delay before sending IPC。
 
 ### REV-024 — full --screen 負數被當成未指定
 
@@ -562,3 +563,4 @@
 | 2026-09-12 | REV-017 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-021 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-022 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-023 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
