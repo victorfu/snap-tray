@@ -1,3 +1,4 @@
+#include "platform/WindowLevel.h"
 #include "qml/QmlRecordingControlBar.h"
 #include "cursor/CursorSurfaceSupport.h"
 #include "qml/QmlOverlayManager.h"
@@ -212,15 +213,7 @@ void QmlRecordingControlBar::applyTooltipWindowFlags()
     [window setHasShadow:YES];
     [window setSharingType:NSWindowSharingNone];
 #elif defined(Q_OS_WIN)
-    if (!m_tooltipView)
-        return;
-
-    HWND hwnd = reinterpret_cast<HWND>(m_tooltipView->winId());
-    if (!hwnd)
-        return;
-
-    constexpr DWORD kExcludeFromCapture = 0x00000011;
-    SetWindowDisplayAffinity(hwnd, kExcludeFromCapture);
+    setWindowExcludedFromCapture(m_tooltipView, true);
 #endif
 }
 
@@ -300,16 +293,7 @@ void QmlRecordingControlBar::setExcludedFromCapture(bool excluded)
         }
     }
 #elif defined(Q_OS_WIN)
-    if (!m_view)
-        return;
-
-    HWND hwnd = reinterpret_cast<HWND>(m_view->winId());
-    if (!hwnd)
-        return;
-
-    constexpr DWORD kExcludeFromCapture = 0x00000011;
-    const DWORD affinity = excluded ? kExcludeFromCapture : WDA_NONE;
-    SetWindowDisplayAffinity(hwnd, affinity);
+    setWindowExcludedFromCapture(m_view, excluded);
 #else
     Q_UNUSED(excluded)
 #endif

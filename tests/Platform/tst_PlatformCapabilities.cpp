@@ -1,6 +1,7 @@
 #include <QtTest/QtTest>
 
 #include "platform/PlatformCapabilities.h"
+#include "platform/CaptureExclusionPolicy.h"
 
 class tst_PlatformCapabilities : public QObject
 {
@@ -14,6 +15,8 @@ private slots:
     void displayServerDetectionUsesSessionAndQtPlatform();
     void linuxSessionBackendMatrix_data();
     void linuxSessionBackendMatrix();
+    void windowsCaptureExclusionVersionGate_data();
+    void windowsCaptureExclusionVersionGate();
 };
 
 void tst_PlatformCapabilities::linuxX11BetaCapabilities()
@@ -128,6 +131,32 @@ void tst_PlatformCapabilities::linuxSessionBackendMatrix()
     QVERIFY(!caps.supportsRecording);
     QVERIFY(!caps.supportsOCR);
     QCOMPARE(caps.unsupportedRuntimeMessage.isEmpty(), supported);
+}
+
+void tst_PlatformCapabilities::windowsCaptureExclusionVersionGate_data()
+{
+    QTest::addColumn<int>("major");
+    QTest::addColumn<int>("build");
+    QTest::addColumn<bool>("supported");
+    QTest::newRow("windows7") << 6 << 7601 << false;
+    QTest::newRow("1809") << 10 << 17763 << false;
+    QTest::newRow("1909") << 10 << 18363 << false;
+    QTest::newRow("before-2004") << 10 << 19040 << false;
+    QTest::newRow("2004") << 10 << 19041 << true;
+    QTest::newRow("windows11") << 10 << 22000 << true;
+    QTest::newRow("unknown-build") << 10 << -1 << false;
+}
+
+void tst_PlatformCapabilities::windowsCaptureExclusionVersionGate()
+{
+    QFETCH(int, major);
+    QFETCH(int, build);
+    QFETCH(bool, supported);
+    const QOperatingSystemVersion version(QOperatingSystemVersion::Windows, major, 0, build);
+    QCOMPARE(SnapTray::windowsCaptureAffinity(true, version), supported ? quint32(0x11) : quint32(0));
+    QCOMPARE(SnapTray::windowsCaptureAffinity(false, version), quint32(0));
+    QCOMPARE(SnapTray::requiresVisibleRecordingControls(version), !supported);
+    QVERIFY(!SnapTray::requiresVisibleRecordingControls(QOperatingSystemVersion(QOperatingSystemVersion::MacOS, 14, 0, 0)));
 }
 
 QTEST_MAIN(tst_PlatformCapabilities)

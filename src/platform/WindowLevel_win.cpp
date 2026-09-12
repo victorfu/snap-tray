@@ -3,6 +3,8 @@
 // found in the LICENSE file.
 
 #include "WindowLevel.h"
+#include "platform/CaptureExclusionPolicy.h"
+#include <QDebug>
 
 #ifdef Q_OS_WIN
 #include <Windows.h>
@@ -64,13 +66,9 @@ void setWindowExcludedFromCapture(QWidget *widget, bool excluded)
     }
     HWND hwnd = reinterpret_cast<HWND>(widget->winId());
     if (hwnd) {
-        // WDA_EXCLUDEFROMCAPTURE = 0x00000011, available on Windows 10 version 2004+
-        // This makes the window invisible to screen capture APIs (including DXGI)
-        constexpr DWORD WDA_EXCLUDEFROMCAPTURE_VALUE = 0x00000011;
-        DWORD affinity = excluded ? WDA_EXCLUDEFROMCAPTURE_VALUE : WDA_NONE;
+        const DWORD affinity = SnapTray::windowsCaptureAffinity(excluded, QOperatingSystemVersion::current());
         if (!SetWindowDisplayAffinity(hwnd, affinity)) {
-            // May fail on older Windows versions - this is expected
-            // The window will still be visible in captures on older systems
+            qWarning() << "Failed to set window capture affinity:" << GetLastError();
         }
     }
 #else
@@ -88,9 +86,10 @@ void setWindowExcludedFromCapture(QWindow *window, bool excluded)
 
     HWND hwnd = reinterpret_cast<HWND>(window->winId());
     if (hwnd) {
-        constexpr DWORD WDA_EXCLUDEFROMCAPTURE_VALUE = 0x00000011;
-        DWORD affinity = excluded ? WDA_EXCLUDEFROMCAPTURE_VALUE : WDA_NONE;
-        SetWindowDisplayAffinity(hwnd, affinity);
+        const DWORD affinity = SnapTray::windowsCaptureAffinity(excluded, QOperatingSystemVersion::current());
+        if (!SetWindowDisplayAffinity(hwnd, affinity)) {
+            qWarning() << "Failed to set window capture affinity:" << GetLastError();
+        }
     }
 #else
     Q_UNUSED(window)

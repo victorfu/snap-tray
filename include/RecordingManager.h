@@ -168,6 +168,9 @@ private:
     } m_startSettings;
     quint64 m_startGeneration = 0;
     bool m_permissionPending = false;
+    bool m_captureExclusionWarningShown = false;
+    std::function<bool()> m_captureControlsMayBeVisible;
+    void warnAboutVisibleCaptureControls();
     QStringList m_startupAudioWarnings;
     QStringList m_reportedStartupAudioWarnings;
     bool m_collectStartupAudioWarnings = false;

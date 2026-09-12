@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 11 |
-| Confirmed / Fix Ready | 22 |
+| Confirmed / Open | 10 |
+| Confirmed / Fix Ready | 23 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 3 |
@@ -86,7 +86,7 @@
 | REV-030 | Fix Ready | P1 | High | QML Dialog | setModal(true) 實際仍為 NonModal |
 | REV-031 | Fix Ready | P2 | High | Pin Info | 顯示新值但單項 Copy 複製舊值 |
 | REV-032 | Open | P1 | High | macOS Recording | SCK 未排除錄影 tooltip window |
-| REV-033 | Open | P1 | High | Windows Recording | Windows 10 2004 前 exclusion 退化成黑色矩形 |
+| REV-033 | Fix Ready | P1 | High | Windows Recording | Windows 10 2004 前 exclusion 退化成無內容佔位 |
 | REV-034 | Fix Ready | P1 | High | Recording Audio | encoder 靜默降級無音訊，呼叫端未察覺 |
 | REV-035 | Open | P1 | High | Windows Recording | DXGI worker 固定 30 fps，忽略使用者 frame rate |
 | REV-036 | Open | P1 | High | macOS Recording | 麥克風中途斷線／session runtime error 無監聽 |
@@ -408,14 +408,15 @@
 - 完成條件：錄影時建立／顯示 tooltip，逐 frame 確認輸出不含 control bar 與 tooltip；動態出現的 overlay 必須更新 filter 或在 stream 前完整建立並排除。
 - 修正證據：待補。
 
-### REV-033 — Windows 10 2004 前 exclusion 會變黑色矩形
+### REV-033 — Windows 10 2004 前 exclusion 會變無內容佔位
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/platform/WindowLevel_win.cpp:59-94；src/qml/QmlRecordingControlBar.mm:214-224。
 - 觸發：在 Windows 10 version 2004 前使用 WDA_EXCLUDEFROMCAPTURE (0x11)。
-- 後果：API 在舊版本按 WDA_MONITOR 行為處理，視窗不是透明消失，而是在 capture 中成為黑色區塊；程式註解與 UI 契約誤以為只是「仍可見」。
+- 後果：API 在舊版本按 WDA_MONITOR 行為處理，視窗不是透明消失，而是在 capture 中成為無內容佔位（顏色依擷取路徑而定）；程式註解與 UI 契約誤以為只是「仍可見」。
 - 完成條件：runtime version gate；舊版採明確 fallback／警告或不顯示 overlay；Windows 10 1909 與 2004+ 各做錄影 pixel smoke。
-- 修正證據：待補。
+- 修正證據：共用 Windows capture-affinity policy 以 Qt 回報的真實 OS build gate Windows 10 2004；舊版使用 WDA_NONE 保持控制列可操作，避免 WDA_MONITOR 無內容佔位。QWidget／QWindow、錄影 control bar／tooltip／boundary 全數經相同 helper；Preparing 階段明確警告控制 UI 可能錄入，每次錄影只提示一次。
+- 驗證：2026-09-12 macOS scripts/build.sh、Platform_Capabilities、RecordingManager_Startup／Lifecycle 通過；7 組 Windows 版本與 unknown-build gate、開／關排除旗標及兩組每次錄影警告去重測試通過。原生 Qml_FloatingOverlayCaptureExclusion 使用 Cocoa 重跑通過（offscreen 不提供 NSWindow）；Windows 1909／2004+ 原生 build 與像素 smoke 待補，保留 Fix Ready。 對應本機 commit：fix: gate Windows capture exclusion and warn on legacy fallback。
 
 ### REV-034 — Native encoder 靜默關閉 audio，呼叫端仍啟動錄音
 
@@ -544,3 +545,4 @@
 | 2026-09-12 | REV-026 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-029 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-031 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-033 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |

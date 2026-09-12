@@ -1,3 +1,4 @@
+#include "platform/CaptureExclusionPolicy.h"
 #include "RecordingManager.h"
 #include "recording/ScreenSourceService.h"
 #include "recording/RecordingFileUtils.h"
@@ -220,6 +221,10 @@ RecordingManager::RecordingManager(QObject *parent)
     , m_countdownEnabled(true)
     , m_countdownSeconds(3)
 {
+    m_captureControlsMayBeVisible = [] {
+        return SnapTray::requiresVisibleRecordingControls(QOperatingSystemVersion::current());
+    };
+
     cleanupStaleTempFiles();
 }
 
@@ -453,6 +458,7 @@ void RecordingManager::startFrameCapture()
     // Position after show() to avoid Qt/macOS adjusting the position
     m_controlBar->positionNear(m_recordingRegion);
 
+    warnAboutVisibleCaptureControls();
     prepareAudioPermission();
 }
 
@@ -471,6 +477,7 @@ void RecordingManager::initializeStartState()
     m_countdownSeconds = m_startSettings.countdownSeconds;
     ++m_startGeneration;
     m_permissionPending = false;
+    m_captureExclusionWarningShown = false;
     m_startupAudioWarnings.clear();
     m_reportedStartupAudioWarnings.clear();
     m_collectStartupAudioWarnings = true;
@@ -478,6 +485,14 @@ void RecordingManager::initializeStartState()
     m_frameCount = 0;
     resetPauseTracking();
     setState(State::Preparing);
+}
+
+void RecordingManager::warnAboutVisibleCaptureControls()
+{
+    if (m_state != State::Preparing || m_captureExclusionWarningShown
+        || !m_captureControlsMayBeVisible || !m_captureControlsMayBeVisible()) return;
+    m_captureExclusionWarningShown = true;
+    emit recordingWarning(tr("Recording controls and tooltips may appear in videos on this Windows version."));
 }
 
 void RecordingManager::addStartupAudioWarning(const QString& warning)

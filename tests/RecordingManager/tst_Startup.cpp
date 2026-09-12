@@ -64,6 +64,8 @@ private slots:
     void permissionWaitIsOutsideTimelineAndOldTimerIsIgnored();
     void encoderCapabilityControlsAudioPipeline_data();
     void encoderCapabilityControlsAudioPipeline();
+    void captureExclusionWarning_data();
+    void captureExclusionWarning();
 private:
     void prepare(RecordingManager& manager);
 };
@@ -336,6 +338,31 @@ void TestRecordingStartup::permissionWaitIsOutsideTimelineAndOldTimerIsIgnored()
     QTest::qWait(150); // The previous session's delayed capture startup must do nothing.
     QVERIFY(!manager.m_captureTimer);
     QVERIFY(!manager.m_durationTimer);
+}
+
+void TestRecordingStartup::captureExclusionWarning_data()
+{
+    QTest::addColumn<bool>("legacy");
+    QTest::newRow("modern") << false;
+    QTest::newRow("legacy") << true;
+}
+
+void TestRecordingStartup::captureExclusionWarning()
+{
+    QFETCH(bool, legacy);
+    RecordingManager manager;
+    manager.m_captureControlsMayBeVisible = [legacy] { return legacy; };
+    QSignalSpy warnings(&manager, &RecordingManager::recordingWarning);
+    prepare(manager);
+    manager.warnAboutVisibleCaptureControls();
+    manager.warnAboutVisibleCaptureControls();
+    QCOMPARE(warnings.count(), legacy ? 1 : 0);
+    QVERIFY(!manager.m_elapsedTimer.isValid());
+    manager.cancelRecording();
+    prepare(manager);
+    manager.warnAboutVisibleCaptureControls();
+    QCOMPARE(warnings.count(), legacy ? 2 : 0);
+    manager.cancelRecording();
 }
 
 QTEST_MAIN(TestRecordingStartup)

@@ -22,6 +22,7 @@ void setWindowFloatingWithoutFocus(QWidget *widget);
 
 // Excludes a window from screen capture
 // On Windows: Uses SetWindowDisplayAffinity with WDA_EXCLUDEFROMCAPTURE (Windows 10 2004+)
+//   - Older Windows keeps the window visible instead of producing a blank capture placeholder.
 // On macOS: Uses NSWindow.sharingType = NSWindowSharingNone
 //   - Works with QScreen::grabWindow() and legacy CGWindowList APIs (macOS 10.5+)
 //   - Does NOT affect ScreenCaptureKit on macOS 15+ (use SCContentFilter's
