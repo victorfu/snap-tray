@@ -50,6 +50,7 @@ private slots:
     void nativeEncoderBackpressureRetriesSameFrame();
     void avFoundationSeekUsesLockedAffinityHandoff();
     void mediaFoundationPausedSeekKeepsFramePending();
+    void mediaFoundationShutdownCancelsBeforeJoin();
 };
 
 void TestVideoTrimmerSafety::nativeEncoderBackpressureRetriesSameFrame()
@@ -185,3 +186,19 @@ void TestVideoTrimmerSafety::mediaFoundationPausedSeekKeepsFramePending()
 
 QTEST_MAIN(TestVideoTrimmerSafety)
 #include "tst_VideoTrimmerSafety.moc"
+
+void TestVideoTrimmerSafety::mediaFoundationShutdownCancelsBeforeJoin()
+{
+    QFile source(QDir(QStringLiteral(VIDEO_SOURCE_ROOT)).filePath("MediaFoundationPlayer_win.cpp"));
+    QVERIFY(source.open(QIODevice::ReadOnly));
+    const QByteArray code = source.readAll();
+    QVERIFY(code.contains("MF_SOURCE_READER_ASYNC_CALLBACK"));
+    QVERIFY(!code.contains("->terminate()"));
+    QVERIFY(!code.contains("readFirstFrame"));
+    QVERIFY(code.contains("m_callback->cancel()"));
+    const auto begin = code.indexOf("void MediaFoundationPlayer::stopReaderThread()");
+    const auto end = code.indexOf("void MediaFoundationPlayer::cleanup()", begin);
+    const auto stop = code.mid(begin, end - begin);
+    QVERIFY(stop.indexOf("requestStop()") < stop.indexOf("->wait()"));
+    QVERIFY(stop.indexOf("->wait()") < stop.indexOf("delete m_readerThread"));
+}

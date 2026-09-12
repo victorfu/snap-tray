@@ -2,6 +2,8 @@
 
 #ifdef Q_OS_WIN
 
+#include "MediaFoundationReaderCallback_win.h"
+
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDebug>
@@ -117,7 +119,11 @@ public:
         : QThread(parent)
     {}
 
-    void setReader(IMFSourceReader *reader) { m_reader = reader; }
+    void setReader(IMFSourceReader* reader, MediaFoundationReaderCallback* callback)
+    {
+        m_reader = reader;
+        m_callback = callback;
+    }
     void setVideoSize(QSize size) { m_videoSize = size; }
     void setStride(int stride) { m_stride = stride; }
     void setFrameInterval(int intervalMs) { m_frameIntervalMs = intervalMs; }
@@ -130,6 +136,7 @@ public:
     void requestStop() {
         QMutexLocker locker(&m_waitMutex);
         m_stopRequested = true;
+        m_callback->cancel();
         m_wakeCondition.wakeAll();
     }
     void requestPause() {
@@ -209,19 +216,26 @@ protected:
                 continue;
             }
 
-            // Read next frame
-            DWORD streamIndex = 0;
-            DWORD flags = 0;
-            LONGLONG timestamp = 0;
-            IMFSample *sample = nullptr;
-
-            hr = m_reader->ReadSample(
-                MF_SOURCE_READER_FIRST_VIDEO_STREAM,
-                0,
-                &streamIndex,
-                &flags,
-                &timestamp,
-                &sample);
+            // Async ReadSample never waits for decoding. The mailbox wait is
+            // cancellable even when the decoder has not delivered its callback.
+            hr = m_reader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM,
+                                      0, nullptr, nullptr, nullptr, nullptr);
+            if (FAILED(hr)) {
+                if (!m_stopRequested) {
+                    emit errorOccurred(QString("ReadSample request failed: 0x%1")
+                                           .arg(hr, 8, 16, QChar('0')));
+                }
+                break;
+            }
+            auto result = m_callback->wait();
+            if (!result) break;
+            // A seek/close may have arrived while this sample was decoding.
+            // Drop its owned sample and process the newest request first.
+            if (m_stopRequested || m_seekRequested) continue;
+            hr = result->status;
+            const DWORD flags = result->flags;
+            const LONGLONG timestamp = result->timestamp;
+            IMFSample* sample = result->sample.Detach();
 
             if (FAILED(hr)) {
                 if (sample) {
@@ -278,11 +292,17 @@ protected:
                 const float playbackRate = m_playbackRate.load();
                 int sleepMs = static_cast<int>(m_frameIntervalMs / playbackRate);
                 if (sleepMs > 0) {
-                    QThread::msleep(sleepMs);
+                    QMutexLocker locker(&m_waitMutex);
+                    if (!m_stopRequested && !m_seekRequested) {
+                        m_wakeCondition.wait(&m_waitMutex, sleepMs);
+                    }
                 }
             }
         }
 
+        // Async Flush cancels outstanding native delivery; the callback owns
+        // its mailbox independently and safely discards any late sample.
+        m_reader->Flush(MF_SOURCE_READER_ALL_STREAMS);
         CoUninitialize();
     }
 
@@ -415,6 +435,7 @@ private:
     }
 
     IMFSourceReader *m_reader = nullptr;
+    MediaFoundationReaderCallback* m_callback = nullptr;
     QSize m_videoSize;
     int m_stride = 0;
     int m_frameIntervalMs = 33;
@@ -478,12 +499,12 @@ private:
     bool configureVideoOutput();
     bool detectAudioStream();
     bool getMediaDuration();
-    bool readFirstFrame();
     void setState(State newState);
     void stopReaderThread();
 
     // Media Foundation objects
     IMFSourceReader *m_reader = nullptr;
+    MediaFoundationReaderCallback* m_callback = nullptr;
 
     // Worker thread
     FrameReaderThread *m_readerThread = nullptr;
@@ -543,11 +564,9 @@ void MediaFoundationPlayer::stopReaderThread()
 {
     if (m_readerThread) {
         m_readerThread->requestStop();
-        m_readerThread->wait(1000);
-        if (m_readerThread->isRunning()) {
-            m_readerThread->terminate();
-            m_readerThread->wait(500);
-        }
+        // requestStop wakes both the pacing gate and async sample wait. Join
+        // cooperatively before releasing either the thread or its COM objects.
+        m_readerThread->wait();
         delete m_readerThread;
         m_readerThread = nullptr;
     }
@@ -562,6 +581,12 @@ void MediaFoundationPlayer::cleanup()
     if (m_reader) {
         m_reader->Release();
         m_reader = nullptr;
+    }
+
+    if (m_callback) {
+        m_callback->cancel();
+        m_callback->Release();
+        m_callback = nullptr;
     }
 
     m_hasVideo = false;
@@ -610,12 +635,9 @@ bool MediaFoundationPlayer::load(const QString &filePath)
     emit durationChanged(m_duration);
     emit positionChanged(m_position);
 
-    // Read first frame synchronously (small blocking call, acceptable at load time)
-    readFirstFrame();
-
     // Create reader thread
     m_readerThread = new FrameReaderThread(this);
-    m_readerThread->setReader(m_reader);
+    m_readerThread->setReader(m_reader, m_callback);
     m_readerThread->setVideoSize(m_videoSize);
     m_readerThread->setStride(m_stride);
     m_readerThread->setFrameInterval(m_frameIntervalMs);
@@ -640,6 +662,9 @@ bool MediaFoundationPlayer::load(const QString &filePath)
                 }
             }, Qt::QueuedConnection);
 
+    // Obtain the initial paused preview frame through the same cancellable
+    // path. load() does not synchronously wait for a decoder sample.
+    m_readerThread->requestSeek(0);
     m_readerThread->start();
 
     emit mediaLoaded();
@@ -658,9 +683,18 @@ bool MediaFoundationPlayer::createSourceReader(const QString &filePath)
     resolvedPath = QDir::toNativeSeparators(resolvedPath);
 
     IMFAttributes *attributes = nullptr;
-    HRESULT hr = MFCreateAttributes(&attributes, 3);
+    HRESULT hr = MFCreateAttributes(&attributes, 4);
     if (FAILED(hr)) {
         qWarning() << "MediaFoundationPlayer: Failed to create attributes:" << Qt::hex << hr;
+        return false;
+    }
+
+    m_callback = new MediaFoundationReaderCallback;
+    hr = attributes->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, m_callback);
+    if (FAILED(hr)) {
+        attributes->Release();
+        m_callback->Release();
+        m_callback = nullptr;
         return false;
     }
 
@@ -690,6 +724,7 @@ bool MediaFoundationPlayer::createSourceReader(const QString &filePath)
 
     if (FAILED(hr)) {
         qWarning() << "MediaFoundationPlayer: Failed to create source reader:" << Qt::hex << hr;
+        cleanup();
         return false;
     }
 
@@ -831,128 +866,6 @@ bool MediaFoundationPlayer::getMediaDuration()
 
     PropVariantClear(&var);
     return false;
-}
-
-bool MediaFoundationPlayer::readFirstFrame()
-{
-    if (!m_reader) return false;
-
-    DWORD streamIndex = 0;
-    DWORD flags = 0;
-    LONGLONG timestamp = 0;
-    IMFSample *sample = nullptr;
-
-    HRESULT hr = m_reader->ReadSample(
-        MF_SOURCE_READER_FIRST_VIDEO_STREAM,
-        0,
-        &streamIndex,
-        &flags,
-        &timestamp,
-        &sample);
-
-    if (FAILED(hr) || !sample) {
-        return false;
-    }
-
-    // Extract and emit first frame
-    IMFMediaBuffer *buffer = nullptr;
-    hr = sample->GetBufferByIndex(0, &buffer);
-    if (SUCCEEDED(hr)) {
-        QImage frame;
-
-        // Try IMF2DBuffer first to get actual stride
-        IMF2DBuffer *buffer2D = nullptr;
-        hr = buffer->QueryInterface(IID_PPV_ARGS(&buffer2D));
-        if (SUCCEEDED(hr)) {
-            BYTE *data = nullptr;
-            LONG pitch = 0;
-            hr = buffer2D->Lock2D(&data, &pitch);
-            if (SUCCEEDED(hr)) {
-                if (m_stride != static_cast<int>(pitch)) {
-                    m_stride = static_cast<int>(pitch);
-                }
-                frame = QImage(m_videoSize.width(), m_videoSize.height(), QImage::Format_RGB32);
-                if (!frame.isNull()) {
-                    int absPitch = qAbs(pitch);
-
-                    if (pitch < 0) {
-                        for (int y = 0; y < m_videoSize.height(); y++) {
-                            const BYTE *srcRow = data + (m_videoSize.height() - 1 - y) * absPitch;
-                            memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
-                        }
-                    } else {
-                        for (int y = 0; y < m_videoSize.height(); y++) {
-                            const BYTE *srcRow = data + y * absPitch;
-                            memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
-                        }
-                    }
-                }
-                buffer2D->Unlock2D();
-            }
-            buffer2D->Release();
-        } else {
-            // Fallback to regular buffer - calculate actual stride from buffer size
-            BYTE *data = nullptr;
-            DWORD maxLength = 0, currentLength = 0;
-
-            hr = buffer->Lock(&data, &maxLength, &currentLength);
-            if (SUCCEEDED(hr)) {
-                int height = m_videoSize.height();
-                int width = m_videoSize.width();
-                int defaultStride = qAbs(m_stride);
-                StrideResult fromMax = computeStrideFromLength(width, height, maxLength, defaultStride);
-                StrideResult fromCurrent = computeStrideFromLength(width, height, currentLength, defaultStride);
-                StrideResult chosen = fromCurrent;
-                if (chosen.stride <= 0 || (!chosen.exact && fromMax.exact)) {
-                    chosen = fromMax;
-                }
-                int strideToUse = chosen.stride;
-                int strideSign = (m_stride < 0) ? -1 : 1;
-                int signedStride = strideSign * strideToUse;
-
-                if (strideToUse > 0) {
-                    if (m_stride != signedStride) {
-                        m_stride = signedStride;
-                    }
-
-                    if (height > 0 && maxLength >= static_cast<DWORD>(height * strideToUse)) {
-                        frame = QImage(m_videoSize.width(), m_videoSize.height(), QImage::Format_RGB32);
-
-                        if (!frame.isNull()) {
-                            if (m_stride < 0) {
-                                for (int y = 0; y < m_videoSize.height(); y++) {
-                                    const BYTE *srcRow = data + (m_videoSize.height() - 1 - y) * strideToUse;
-                                    memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
-                                }
-                            } else {
-                                for (int y = 0; y < m_videoSize.height(); y++) {
-                                    const BYTE *srcRow = data + y * strideToUse;
-                                    memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
-                                }
-                            }
-                        }
-                    }
-                }
-                buffer->Unlock();
-            }
-        }
-
-        if (!frame.isNull()) {
-            emit frameReady(frame);
-        }
-        buffer->Release();
-    }
-    sample->Release();
-
-    // Seek back to beginning for playback
-    PROPVARIANT var;
-    PropVariantInit(&var);
-    var.vt = VT_I8;
-    var.hVal.QuadPart = 0;
-    m_reader->SetCurrentPosition(GUID_NULL, var);
-    PropVariantClear(&var);
-
-    return true;
 }
 
 void MediaFoundationPlayer::play()

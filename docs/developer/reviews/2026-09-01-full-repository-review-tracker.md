@@ -40,8 +40,8 @@
 | Confirmed / Fix Ready | 34 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
-| Potential / 待確認 | 1 |
-| Potential / Fix Ready（防禦性修正） | 1 |
+| Potential / 待確認 | 0 |
+| Potential / Fix Ready（防禦性修正） | 2 |
 | Rejected / 已反證 | 1 |
 
 建立本文件時，工作樹已存在兩組未提交候選修正：
@@ -61,7 +61,7 @@
 | REV-004 | Verified | P0 | High | Tests / Settings | 測試會刪寫真實 SnapTray 設定 |
 | REV-005 | Fix Ready | P0 | High | Save / Concurrency | 唯一檔名存在 TOCTOU，可靜默覆寫 |
 | REV-006 | Fix Ready | P1 | High | Windows Capture UI | Annotation cache 無上限成長，可耗盡記憶體 |
-| REV-007 | Potential | — | Medium | Windows Video | 強制終止 reader thread 的實際失敗後果待重現 |
+| REV-007 | Fix Ready | — | Medium | Windows Video | 已移除強制終止，非同步取消與原生壓力驗證待補 |
 | REV-008 | Fix Ready | P1 | High | macOS Recording | 首次麥克風授權阻塞主執行緒並破壞時間軸 |
 | REV-009 | Verified | P1 | High | Screen Canvas | 文字拖移／旋轉／縮放會重用舊快取 |
 | REV-010 | Fix Ready | P1 | High | Region Selection | 建立與一般 resize 沒有 clamp 到 bounds |
@@ -160,13 +160,18 @@
 
 ### REV-007 — Media Foundation player 強制終止 reader thread
 
-- 狀態：Potential
+- 分類：Potential（未宣稱原始 crash／UAF 後果已重現）
+- 狀態：Fix Ready（防禦性修正）
 - 證據：src/video/MediaFoundationPlayer_win.cpp:532-556。
 - 觸發：close／reload 時 reader thread 在一秒內未退出。
 - 原始風險描述：程式呼叫 QThread::terminate，再立即 wait／delete；thread 可能在持有 mutex、執行 COM 或存取 player state 時被終止，造成 deadlock、heap corruption、UAF 或 crash。
 - 完成條件：移除強制 terminate 路徑；以可取消的 blocking read／cooperative shutdown 完成；反覆 load、seek、close 與損壞檔案壓力測試不 hang、不 crash，並通過 sanitizer／Application Verifier。
 - 重新判定：2026-09-12 核對 stopReaderThread，terminate → wait(500) → delete 仍在，最後 wait 結果未檢查；但尚未重現 blocking read／終止失敗造成 crash 或 UAF，不能僅由危險 API 斷言實際後果。維持待確認，不視為已修復。
 - 待確認：Windows 使用損壞檔案、延遲／阻塞 read 與反覆 close／reload 重現失敗，再依具體 thread lifetime 證據確認缺陷與修正範圍。
+
+- 修正證據：Source Reader 使用 MF_SOURCE_READER_ASYNC_CALLBACK，sample 經由 COM 自有引用與可取消 mailbox 交給 worker；取消即喚醒等待且丟棄遲到結果。首幀也走非同步路徑，pacing 等待可喚醒。停止後協作 join，再釋放 thread／reader／callback，移除 terminate 與未檢查的 timed wait。舊 generation 回呼仍由既有 guard 排除。
+- 設計依據：[Microsoft 非同步 Source Reader](https://learn.microsoft.com/en-us/windows/win32/medfound/using-the-source-reader-in-asynchronous-mode) 與 [Flush 契約](https://learn.microsoft.com/en-us/windows/win32/api/mfreadwrite/nf-mfreadwrite-imfsourcereader-flush)。
+- 驗證：2026-09-12 macOS canonical build、Video_SourceReaderMailbox 與 Video_VideoTrimmerSafety 通過；涵蓋無解碼回覆時取消、UI timer 不中斷、sample 引用清理與 500 次並行回覆／取消。Windows COM callback、30 次有效／損壞影片 reload／seek／close 與既有 paused-seek／loop 原生回歸已加入但未在本機執行；MSVC build／Application Verifier 尚待 Windows，維持 Fix Ready 與 Potential 分類。對應本機 commit：fix: cancel asynchronous Media Foundation reads before joining workers。
 
 ### REV-008 — 首次麥克風授權會凍結 UI 並錯置錄影時間軸
 
@@ -578,3 +583,4 @@
 | 2026-09-12 | REV-028 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-037 完成狀態同步防禦性修正與回歸；分類維持 Potential，狀態為 Fix Ready，不將未重現的誤操作升格 Confirmed。 |
 | 2026-09-12 | POT-002 依使用者確認的關閉即丟棄契約升格 Confirmed；原生 close／Escape 刪檔回歸通過，標 Fix Ready。 |
+| 2026-09-12 | REV-007 移除強制 thread termination 並加入非同步取消；portable 回歸通過，Windows 編譯／原生壓力與原始後果確認待補，分類維持 Potential、狀態 Fix Ready。 |

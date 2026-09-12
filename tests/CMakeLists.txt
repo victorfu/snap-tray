@@ -510,6 +510,12 @@ target_link_libraries(Encoding_EncodingWorker PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Encoding_EncodingWorker COMMAND Encoding_EncodingWorker)
 set_tests_properties(Encoding_EncodingWorker PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Video_SourceReaderMailbox Video/tst_SourceReaderMailbox.cpp)
+target_include_directories(Video_SourceReaderMailbox PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(Video_SourceReaderMailbox PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME Video_SourceReaderMailbox COMMAND Video_SourceReaderMailbox)
+set_tests_properties(Video_SourceReaderMailbox PROPERTIES TIMEOUT 30 LABELS "unit")
+
 add_executable(Video_VideoTrimmerSafety Video/tst_VideoTrimmerSafety.cpp)
 target_compile_definitions(Video_VideoTrimmerSafety PRIVATE
     VIDEO_SOURCE_ROOT="${CMAKE_SOURCE_DIR}/src/video"

@@ -1,6 +1,8 @@
 #include <QtTest/QtTest>
 
 #include <QFileInfo>
+#include <QFile>
+#include <QElapsedTimer>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 
@@ -15,6 +17,7 @@ class TestMediaFoundationPipeline : public QObject
     Q_OBJECT
 
 private slots:
+    void reloadAndCloseStress();
     void pausedSeekProducesFrame();
     void loopingRestartsAfterEndOfStream();
     void playRestartsAfterNonLoopingEnd();
@@ -254,3 +257,30 @@ void TestMediaFoundationPipeline::mp4TrimRejectsAudioInput()
 
 QTEST_MAIN(TestMediaFoundationPipeline)
 #include "tst_MediaFoundationPipeline.moc"
+
+void TestMediaFoundationPipeline::reloadAndCloseStress()
+{
+    QTemporaryDir dir;
+    const QString input = dir.filePath("shutdown.mp4");
+    QString error;
+    if (!createTestVideo(input, false, &error)) QSKIP(qPrintable(error));
+    const QString invalid = dir.filePath("truncated.mp4");
+    QFile corrupt(invalid);
+    QVERIFY(corrupt.open(QIODevice::WriteOnly));
+    QVERIFY(corrupt.write("Truncated recording") > 0);
+    corrupt.close();
+    QElapsedTimer timer;
+    timer.start();
+    for (int i = 0; i < 30; ++i) {
+        std::unique_ptr<IVideoPlayer> player(IVideoPlayer::create());
+        QVERIFY(player->load(input));
+        if (i % 2) player->play();
+        player->seek((i % 8) * 100);
+        QVERIFY(!player->load(invalid));
+        QVERIFY(player->load(input));
+        player->seek(500);
+        player.reset(); // May still be awaiting its first async decoder sample.
+        QCoreApplication::processEvents();
+    }
+    QVERIFY(timer.elapsed() < 15000);
+}
