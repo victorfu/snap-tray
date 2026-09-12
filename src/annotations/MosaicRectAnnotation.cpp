@@ -203,6 +203,11 @@ QImage MosaicRectAnnotation::applyGaussianBlur(qreal dpr) const
     // For simplicity and correctness with existing logic, we use the intersection.
     QImage regionImage = m_sourcePixmap->copy(clampedRect).toImage();
     QImage rgb = regionImage.convertToFormat(QImage::Format_RGB32);
+    // Sampling, OpenCV and the destination canvas all use physical pixels.
+    // A copied pixmap retains its DPR; leaving it here makes drawImage below
+    // shrink the blurred patch a second time. Restore the source DPR only on
+    // the final cached pixmap in draw().
+    rgb.setDevicePixelRatio(1.0);
 
     // Calculate sigma based on block size (larger block = more blur)
     double sigma = static_cast<double>(m_blockSize) * sourceDpr / 2.0;

@@ -36,7 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 34 |
+| Confirmed / Open | 33 |
+| Confirmed / Fix Ready | 1 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 2 |
@@ -54,7 +55,7 @@
 | ID | 狀態 | 優先度 | 信心 | 平台／區域 | 摘要 |
 |---|---|---:|---|---|---|
 | REV-001 | Rejected | — | High | macOS Release | v1.0.62 已在 macOS 14.8.7 ARM64 通過 loader 與基本 GUI startup smoke |
-| REV-002 | Open | P0 | High | Mosaic / HiDPI | Gaussian 自動遮罩只覆蓋部分實體像素 |
+| REV-002 | Fix Ready | P0 | High | Mosaic / HiDPI | Gaussian 自動遮罩只覆蓋部分實體像素 |
 | REV-003 | Open | P0 | High | Windows OCR | 未遵守 OcrEngine MaxImageDimension |
 | REV-004 | Verified | P0 | High | Tests / Settings | 測試會刪寫真實 SnapTray 設定 |
 | REV-005 | Open | P0 | High | Save / Concurrency | 唯一檔名存在 TOCTOU，可靜默覆寫 |
@@ -105,12 +106,13 @@
 
 ### REV-002 — HiDPI Gaussian 自動遮罩可能只覆蓋左上區域
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/annotations/MosaicRectAnnotation.cpp:172-234,237-274。
 - 觸發：來源 QPixmap 的 DPR 大於 1，MosaicRectAnnotation 使用 Gaussian；來源 QImage 保留 DPR，但 resultImage 是 DPR 1，drawImage 會按 device-independent size 縮小繪製。
 - 後果：resultImage 剩餘區域保持透明；套回原圖後部分敏感內容未被 Gaussian 遮罩，屬隱私風險。Pixelate 走直接像素填入，不是同一問題。
 - 完成條件：以 DPR 2／1.5、四象限高對比來源測試 Gaussian rect，斷言整個目標 rect 每個實體像素皆被處理；同時驗證 Pin／Region credential auto-blur。
-- 修正證據：待補。
+- 修正證據：Gaussian 暫存 QImage 在實體像素合成前清除 DPR，只有最終 QPixmap 恢復來源 DPR。Annotations_MosaicRectAnnotation 以獨立逐像素參考驗證 27 組來源／目標 DPR、非零位置、邊界裁切、快取重用與來源替換。RegionSelector_StyleSync 與 PinWindow_StyleSync 新增自動遮罩插入／旋轉映射的 HiDPI 覆蓋測試。
+- 驗證：2026-09-12 macOS 乾淨建置與 scripts/build.sh 通過；MosaicRectAnnotation、MosaicStroke、AnnotationSerializer、AutoBlurManager 四套測試，以及兩個入口回歸測試通過。Windows／Linux 建置及實機 UI smoke 尚待驗證，因此保留 Fix Ready。對應本機 commit：fix: cover full HiDPI Gaussian mask rectangles。
 
 ### REV-003 — Windows OCR 未處理 MaxImageDimension
 
@@ -495,3 +497,4 @@
 | 2026-09-01 | REV-009 完成修正與獨立驗證：文字 position／rotation／scale interaction 改走 dirty-render path，release 後 invalidate layer cache；狀態更新為 Verified。 |
 | 2026-09-01 | REV-004 完成修正與獨立驗證：所有 C++ test process 改用獨立 temporary INI，Debug／Release 真實 settings store 不再被測試刪寫；狀態更新為 Verified。 |
 | 2026-09-01 | REV-001 經官方 v1.0.62 DMG 的 macOS 14.8.7 ARM64 smoke 反證：loader、`--version` 與 10 秒 GUI startup 均通過；由 Open／P0 改為 Rejected，統計更新為 36 Confirmed、2 Potential、1 Rejected。 |
+| 2026-09-12 | REV-002 完成 DPR 合成修正與 macOS 像素／入口回歸測試，標為 Fix Ready；跨平台 UI 驗證待補。 |

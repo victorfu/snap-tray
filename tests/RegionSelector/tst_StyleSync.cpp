@@ -122,6 +122,7 @@ private slots:
     void testReleaseOverFloatingUiCancelsSingleClickAnnotation_data();
     void testReleaseOverFloatingUiCancelsSingleClickAnnotation();
     void testAutoBlurRequestGuardRejectsStaleContext();
+    void testAutoBlurGaussianCoversDetectedRegion();
     void testOverlayRequestRestoreReturnsArrowToolCursor();
     void testFloatingToolbarWindowOwnsArrowCursor();
     void testToolbarLeaveRestoresArrowToolCrossCursor();
@@ -950,6 +951,32 @@ void TestRegionSelectorStyleSync::testReleaseOverFloatingUiCancelsSingleClickAnn
 
     QCOMPARE(selector.m_annotationLayer->itemCount(), static_cast<size_t>(1));
     QVERIFY(!selector.m_inputState.isDrawing);
+}
+
+void TestRegionSelectorStyleSync::testAutoBlurGaussianCoversDetectedRegion()
+{
+    RegionSelector selector;
+    AnnotationLayer layer;
+    QPixmap capture(240, 200);
+    capture.fill(Qt::red);
+    capture.setDevicePixelRatio(2.0);
+    RegionSelector::AutoBlurRequestSnapshot request;
+    request.selectionRect = QRect(10, 10, 80, 60);
+    request.clampedPhysicalRect = QRect(20, 20, 160, 120);
+    request.devicePixelRatio = 2.0;
+    request.sourcePixmap = std::make_shared<const QPixmap>(capture);
+    request.annotationLayer = &layer;
+    request.blockSize = 12;
+    request.blurType = MosaicBlurType::Gaussian;
+    selector.addAutoBlurRegions(request, {QRect(20, 20, 80, 60)});
+    QCOMPARE(layer.itemCount(), size_t(1));
+    QImage output(240, 200, QImage::Format_ARGB32);
+    output.setDevicePixelRatio(2.0);
+    output.fill(Qt::transparent);
+    { QPainter painter(&output); layer.itemAt(0)->draw(painter); }
+    for (int y = 40; y < 100; ++y)
+        for (int x = 40; x < 120; ++x)
+            QCOMPARE(output.pixelColor(x, y), QColor(Qt::red));
 }
 
 void TestRegionSelectorStyleSync::testAutoBlurRequestGuardRejectsStaleContext()

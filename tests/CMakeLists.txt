@@ -784,6 +784,16 @@ target_link_libraries(Annotations_MosaicStroke PRIVATE snaptray_algorithms Qt6::
 add_test(NAME Annotations_MosaicStroke COMMAND Annotations_MosaicStroke)
 set_tests_properties(Annotations_MosaicStroke PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Annotations_MosaicRectAnnotation Annotations/tst_MosaicRectAnnotation.cpp)
+target_link_libraries(Annotations_MosaicRectAnnotation PRIVATE snaptray_algorithms opencv_imgproc Qt6::Widgets Qt6::Test)
+target_include_directories(Annotations_MosaicRectAnnotation PRIVATE
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/core/include
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/imgproc/include
+)
+add_test(NAME Annotations_MosaicRectAnnotation COMMAND Annotations_MosaicRectAnnotation)
+set_tests_properties(Annotations_MosaicRectAnnotation PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Annotations_PencilStroke Annotations/tst_PencilStroke.cpp)
 target_link_libraries(Annotations_PencilStroke PRIVATE snaptray_core Qt6::Widgets Qt6::Test)
 add_test(NAME Annotations_PencilStroke COMMAND Annotations_PencilStroke)

@@ -16,6 +16,7 @@
 #include "qml/QmlFloatingSubToolbar.h"
 #include "qml/QmlWindowedToolbar.h"
 #include "annotations/PolylineAnnotation.h"
+#include "annotations/MosaicRectAnnotation.h"
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
 #include "cursor/CursorStyleCatalog.h"
@@ -152,6 +153,7 @@ private slots:
     void testPolylineReleaseRecomputesHoverCursor();
     void testReleaseOverFloatingToolbarFinishesWindowDrag();
     void testAutoBlurMapsRotatedDisplayRectToAnnotationSpace();
+    void testAutoBlurGaussianCoversMappedHiDpiRegion();
     void testAutoBlurMapsFlippedDisplayRectToAnnotationSpace();
     void testAutoBlurMapsCombinedRotationAndFlips();
     void testAutoBlurAnnotationSourceRestoresCombinedOrientation();
@@ -402,6 +404,26 @@ void TestPinWindowStyleSync::testReleaseOverFloatingToolbarFinishesWindowDrag()
     QCoreApplication::sendEvent(&window, &releaseEvent);
 
     QVERIFY(!window.m_isDragging);
+}
+
+void TestPinWindowStyleSync::testAutoBlurGaussianCoversMappedHiDpiRegion()
+{
+    QPixmap display(200, 240);
+    display.fill(Qt::red);
+    display.setDevicePixelRatio(2.0);
+    const QPixmap source = PinWindow::buildAutoBlurAnnotationSource(display, 90, false, false);
+    const QRect rect = PinWindow::mapAutoBlurDetectionRect(
+        QRect(20, 40, 60, 80), 2.0, display.size() / 2, source.size() / 2, 90, false, false);
+    QVERIFY(!rect.isEmpty());
+    MosaicRectAnnotation annotation(rect, std::make_shared<const QPixmap>(source),
+                                     12, MosaicBlurType::Gaussian);
+    QImage output(source.size(), QImage::Format_ARGB32);
+    output.setDevicePixelRatio(2.0);
+    output.fill(Qt::transparent);
+    { QPainter painter(&output); annotation.draw(painter); }
+    for (int y = rect.y() * 2; y < (rect.y() + rect.height()) * 2; ++y)
+        for (int x = rect.x() * 2; x < (rect.x() + rect.width()) * 2; ++x)
+            QCOMPARE(output.pixelColor(x, y), QColor(Qt::red));
 }
 
 void TestPinWindowStyleSync::testAutoBlurMapsRotatedDisplayRectToAnnotationSpace()
