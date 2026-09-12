@@ -181,14 +181,14 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
         onScreenCanvas();
     }
     else if (msg.command == "pin") {
+        std::optional<QPoint> position;
+        if (msg.options.contains("x") && msg.options.contains("y")) {
+            position = QPoint(msg.options["x"].toInt(), msg.options["y"].toInt());
+        }
         if (msg.options["clipboard"].toBool()) {
-            onPasteFromClipboard();
+            pinFromClipboard(position);
         }
         else if (msg.options.contains("file")) {
-            std::optional<QPoint> position;
-            if (msg.options.contains("x") && msg.options.contains("y")) {
-                position = QPoint(msg.options["x"].toInt(), msg.options["y"].toInt());
-            }
             loadImageForPin(msg.options["file"].toString(), position);
         }
     }
@@ -824,6 +824,11 @@ QPixmap MainApplication::renderTextToPixmap(const QString &text)
 
 void MainApplication::onPasteFromClipboard()
 {
+    pinFromClipboard();
+}
+
+void MainApplication::pinFromClipboard(std::optional<QPoint> requestedPosition)
+{
     if (m_screenPickerDialog) {
         return;
     }
@@ -873,7 +878,7 @@ void MainApplication::onPasteFromClipboard()
         QSize logicalSize = CoordinateHelper::toLogical(pixmap.size(), dpr);
         QPoint position = screenGeometry.center() - QPoint(logicalSize.width() / 2, logicalSize.height() / 2);
 
-        m_pinWindowManager->createPinWindow(pixmap, position);
+        m_pinWindowManager->createPinWindow(pixmap, requestedPosition.value_or(position));
     }
 }
 

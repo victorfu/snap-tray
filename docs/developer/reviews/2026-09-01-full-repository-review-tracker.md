@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 4 |
-| Confirmed / Fix Ready | 29 |
+| Confirmed / Open | 3 |
+| Confirmed / Fix Ready | 30 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 3 |
@@ -75,7 +75,7 @@
 | REV-019 | Fix Ready | P1 | High | History | 跨螢幕保留選取後按 Enter 不寫入 History |
 | REV-020 | Fix Ready | P2 | High | Screen Canvas | 自訂顏色沒有完整同步與持久化 |
 | REV-021 | Fix Ready | P1 | High | CLI Pin | file pin 略過 EXIF transform 與大圖 auto-fit |
-| REV-022 | Open | P2 | High | CLI Pin | clipboard pin 忽略 x／y |
+| REV-022 | Fix Ready | P2 | High | CLI Pin | clipboard pin 忽略 x／y |
 | REV-023 | Open | P2 | High | CLI GUI | 非數字 delay 被接受為 0 |
 | REV-024 | Open | P2 | High | CLI Full | 負數 screen 被當成未指定 |
 | REV-025 | Fix Ready | P1 | High | Linux Save | filename 長度用 UTF-16 units 而非 UTF-8 bytes |
@@ -308,12 +308,13 @@
 
 ### REV-022 — CLI clipboard pin 忽略 x／y
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/cli/commands/PinCommand.cpp:81-112；src/MainApplication.cpp:179-218,849-901。
 - 觸發：snaptray pin --clipboard -x 200 -y 120。
 - 後果：IPC message 有 x／y，但 clipboard branch 呼叫無座標的 onPasteFromClipboard；Pin 固定在游標螢幕中央，CLI 仍回報成功。
 - 完成條件：同時提供 x/y 時 top-left 精確符合；皆未提供或只提供一個時維持既有置中契約。
-- 修正證據：待補。
+- 修正證據：clipboard Pin 共用私有 helper 接收 optional position；CLI 同時提供 x/y 時直接套用，GUI 快捷鍵、皆未提供與單一座標仍依游標螢幕置中。
+- 驗證：2026-09-12 macOS canonical build 與原生 Cocoa App_MainApplicationTrayMenu 通過；8 組圖片／文字及座標完整／缺漏矩陣涵蓋負座標與 HiDPI 圖片。Windows／Linux UI 待補，保留 Fix Ready。 對應本機 commit：fix: honor explicit coordinates for CLI clipboard pins。
 
 ### REV-023 — gui --delay 非數字被接受
 
@@ -560,3 +561,4 @@
 | 2026-09-12 | REV-027 完成修正與針對性回歸，標為 Fix Ready；與 REV-032 整合後 macOS 155／155 套測試通過，QML lint 無 CursorTokens 警告。 |
 | 2026-09-12 | REV-017 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-021 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-022 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |

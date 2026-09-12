@@ -64,6 +64,7 @@ private slots:
 
 private:
     friend class tst_MainApplicationTrayMenu;
+    void pinFromClipboard(std::optional<QPoint> position = std::nullopt);
     void loadImageForPin(const QString& filePath, std::optional<QPoint> position = std::nullopt);
     void onImageLoaded(const QString& filePath, const QImage& image,
                        std::optional<QPoint> position = std::nullopt);

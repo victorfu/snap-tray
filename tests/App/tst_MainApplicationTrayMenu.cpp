@@ -1,5 +1,7 @@
 #include "MainApplication.h"
 #include "ImageColorSpaceHelper.h"
+#include <QClipboard>
+#include <QCursor>
 
 #include "cli/IPCProtocol.h"
 #include "hotkey/HotkeyManager.h"
@@ -139,6 +141,8 @@ private slots:
     void handleCLICommand_removedRecordCommandIsIgnored();
     void screenPickerClosed_deletesWrapperAndViewModel();
     void queuedHistoryEntryRechecksCaptureMode();
+    void cliClipboardPinPosition_data();
+    void cliClipboardPinPosition();
     void cliFilePinUsesImageLoader_data();
     void cliFilePinUsesImageLoader();
 
@@ -525,6 +529,54 @@ void tst_MainApplicationTrayMenu::cliFilePinUsesImageLoader()
     }
     application.m_pinWindowManager->closeAllWindows();
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void tst_MainApplicationTrayMenu::cliClipboardPinPosition_data()
+{
+    QTest::addColumn<bool>("text");
+    QTest::addColumn<int>("coordinates");
+    for (bool text : {false, true}) {
+        for (int coordinates = 0; coordinates < 4; ++coordinates) {
+            QTest::newRow(qPrintable(QString("%1-%2").arg(text ? "text" : "image").arg(coordinates)))
+                << text << coordinates;
+        }
+    }
+}
+
+void tst_MainApplicationTrayMenu::cliClipboardPinPosition()
+{
+    QFETCH(bool, text);
+    QFETCH(int, coordinates);
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    MainApplication application;
+    application.initialize();
+    auto* clipboard = QGuiApplication::clipboard();
+    if (text) {
+        clipboard->setText("Clipboard pin position");
+    } else {
+        QPixmap image(120, 80);
+        image.fill(Qt::green);
+        image.setDevicePixelRatio(2.0);
+        clipboard->setPixmap(image);
+    }
+    SnapTray::CLI::IPCMessage command;
+    command.command = "pin";
+    command.options = {{"clipboard", true}};
+    const QPoint requested(-240, -120);
+    if (coordinates & 1) command.options["x"] = requested.x();
+    if (coordinates & 2) command.options["y"] = requested.y();
+    QScreen* screen = QGuiApplication::screenAt(QCursor::pos());
+    if (!screen) screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+    QSignalSpy created(application.m_pinWindowManager, &PinWindowManager::windowCreated);
+    application.handleCLICommand(command.toJson());
+    QCOMPARE(created.count(), 1);
+    auto* pin = application.m_pinWindowManager->windows().first();
+    const QPoint centered = screen->geometry().center() - QPoint(pin->width()/2, pin->height()/2);
+    QCOMPARE(pin->pos(), coordinates == 3 ? requested : centered);
+    application.m_pinWindowManager->closeAllWindows();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    clipboard->clear();
 }
 
 QTEST_MAIN(tst_MainApplicationTrayMenu)
