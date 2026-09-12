@@ -768,25 +768,11 @@ bool CoreAudioCaptureEngine::start()
     if (wantsMicrophone) {
         AVAuthorizationStatus status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeAudio];
         if (status == AVAuthorizationStatusNotDetermined) {
-            __block bool granted = false;
-            dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-
-            [AVCaptureDevice requestAccessForMediaType:AVMediaTypeAudio completionHandler:^(BOOL g) {
-                granted = g;
-                dispatch_semaphore_signal(semaphore);
-            }];
-
-            dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
-
-            microphoneAvailable = granted;
-            if (!granted && m_source == AudioSource::Microphone) {
-                emit error("Microphone access denied");
-                m_mixer.reset();
-                return false;
-            } else if (!granted) {
-                qWarning() << "CoreAudioCaptureEngine: Microphone access denied;"
-                              " continuing with system audio";
-            }
+            // The manager must complete asynchronous authorization in Preparing.
+            // Never block the recording thread waiting for a system dialog here.
+            emit error("Microphone permission has not been requested");
+            m_mixer.reset();
+            return false;
         } else if (status == AVAuthorizationStatusAuthorized) {
             microphoneAvailable = true;
         } else {

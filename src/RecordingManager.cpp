@@ -51,6 +51,9 @@ constexpr int kDefaultAudioChannels = 2;
 constexpr int kDefaultAudioBitsPerSample = 16;
 constexpr int kOverlayRenderDelay = 100;  // ms, delay before capture to allow overlay render
 constexpr int kDurationUpdate = 100;      // ms, recording duration UI update interval
+constexpr int kMicrophoneSource = 0;
+constexpr int kSystemAudioSource = 1;
+constexpr int kBothAudioSources = 2;
 QScreen* resolveTargetScreen(QScreen* preferred)
 {
     if (preferred) {
@@ -110,8 +113,8 @@ bool isEvenPhysicalSize(const QSize& physicalSize)
 IAudioCaptureEngine::AudioSource resolveAudioSource(int audioSourceSetting)
 {
     switch (audioSourceSetting) {
-    case 1: return IAudioCaptureEngine::AudioSource::SystemAudio;
-    case 2: return IAudioCaptureEngine::AudioSource::Both;
+    case kSystemAudioSource: return IAudioCaptureEngine::AudioSource::SystemAudio;
+    case kBothAudioSources: return IAudioCaptureEngine::AudioSource::Both;
     default: return IAudioCaptureEngine::AudioSource::Microphone;
     }
 }
@@ -123,7 +126,7 @@ bool recordingSupportsAudioCapture(int outputFormat, bool showPreview)
 
 bool audioSourceUsesInputDevice(int audioSourceSetting)
 {
-    return audioSourceSetting != 1;
+    return audioSourceSetting != kSystemAudioSource;
 }
 
 QString forceFileExtension(QString filePath, const QString& extension)
@@ -213,7 +216,7 @@ RecordingManager::RecordingManager(QObject *parent)
     , m_pausedDuration(0)
     , m_pauseStartTime(0)
     , m_audioEnabled(false)
-    , m_audioSource(0)
+    , m_audioSource(kMicrophoneSource)
     , m_countdownEnabled(true)
     , m_countdownSeconds(3)
 {
@@ -222,6 +225,7 @@ RecordingManager::RecordingManager(QObject *parent)
 
 RecordingManager::~RecordingManager()
 {
+    ++m_startGeneration;
     // Cancel and wait for any pending async initialization
     if (m_initTask) {
         m_initTask->cancel();
@@ -415,7 +419,9 @@ void RecordingManager::startFrameCapture()
     m_usingNativeEncoder = false;
 
     // Set state to Preparing and show UI immediately
-    setState(State::Preparing);
+    const quint64 startGeneration = m_startGeneration + 1;
+    initializeStartState();
+    if (m_state != State::Preparing || startGeneration != m_startGeneration) return;
     // Show control bar in preparing state
     // Clean up any existing control bar first to prevent resource leak
     if (m_controlBar) {
@@ -447,8 +453,98 @@ void RecordingManager::startFrameCapture()
     // Position after show() to avoid Qt/macOS adjusting the position
     m_controlBar->positionNear(m_recordingRegion);
 
-    // Start async initialization
-    beginAsyncInitialization();
+    prepareAudioPermission();
+}
+
+void RecordingManager::initializeStartState()
+{
+    auto& settings = RecordingSettingsManager::instance();
+    m_startSettings = {settings.outputFormat(), settings.showPreview(), settings.quality(),
+                      settings.audioEnabled(), settings.audioSource(), settings.audioDevice(),
+                      settings.countdownEnabled(), settings.countdownSeconds()};
+    m_defaultOutputFormat = m_startSettings.outputFormat;
+    m_audioEnabled = m_startSettings.audioEnabled
+        && recordingSupportsAudioCapture(m_startSettings.outputFormat, m_startSettings.showPreview);
+    m_audioSource = m_startSettings.audioSource;
+    m_audioDevice = m_startSettings.audioDevice;
+    m_countdownEnabled = m_startSettings.countdownEnabled;
+    m_countdownSeconds = m_startSettings.countdownSeconds;
+    ++m_startGeneration;
+    m_permissionPending = false;
+    m_startupAudioWarnings.clear();
+    m_reportedStartupAudioWarnings.clear();
+    m_elapsedTimer.invalidate();
+    m_frameCount = 0;
+    resetPauseTracking();
+    setState(State::Preparing);
+}
+
+void RecordingManager::addStartupAudioWarning(const QString& warning)
+{
+    if (!warning.isEmpty() && !m_startupAudioWarnings.contains(warning)
+        && !m_reportedStartupAudioWarnings.contains(warning))
+        m_startupAudioWarnings.append(warning);
+}
+
+void RecordingManager::flushStartupAudioWarnings()
+{
+    if (m_startupAudioWarnings.isEmpty()) return;
+    const QString message = m_startupAudioWarnings.join(QChar('\n'));
+    m_reportedStartupAudioWarnings.append(m_startupAudioWarnings);
+    m_startupAudioWarnings.clear();
+    emit recordingWarning(message);
+}
+
+void RecordingManager::prepareAudioPermission()
+{
+    if (m_state != State::Preparing || m_permissionPending) return;
+    const quint64 generation = m_startGeneration;
+    if (!m_audioEnabled || !audioSourceUsesInputDevice(m_audioSource)) {
+        m_permissionPending = true;
+        finishAudioPermission(generation, true);
+        return;
+    }
+    using Permission = IAudioCaptureEngine::MicrophonePermission;
+    const auto permission = m_checkMicrophonePermission();
+    m_permissionPending = true;
+    if (permission != Permission::NotDetermined) {
+        finishAudioPermission(generation, permission == Permission::Authorized);
+        return;
+    }
+    if (m_controlBar)
+        m_controlBar->setPreparingStatus(tr("Waiting for microphone permission..."));
+    const QPointer<RecordingManager> guard(this);
+    m_requestMicrophonePermission([guard, generation](bool granted) {
+        if (!guard) return;
+        QMetaObject::invokeMethod(guard, [guard, generation, granted] {
+            if (guard) guard->finishAudioPermission(generation, granted);
+        }, Qt::QueuedConnection);
+    });
+}
+
+void RecordingManager::finishAudioPermission(quint64 generation, bool granted)
+{
+    if (generation != m_startGeneration || m_state != State::Preparing || !m_permissionPending)
+        return;
+    m_permissionPending = false;
+    if (!isScreenAvailable(m_targetScreen.data())) {
+        cancelRecording();
+        emit recordingError(tr("Recording screen is no longer available."));
+        return;
+    }
+    if (!granted && m_audioEnabled) {
+        if (m_audioSource == kBothAudioSources) {
+            m_audioSource = kSystemAudioSource;
+            m_audioDevice.clear();
+            addStartupAudioWarning(tr("Microphone permission is unavailable. Recording system audio only."));
+        } else {
+            m_audioEnabled = false;
+            addStartupAudioWarning(tr("Microphone permission is unavailable. This recording will be silent."));
+        }
+        if (m_controlBar) m_controlBar->setAudioEnabled(m_audioEnabled);
+    }
+    if (m_controlBar) m_controlBar->setPreparingStatus(tr("Preparing recording..."));
+    m_initializeRecording();
 }
 
 void RecordingManager::beginAsyncInitialization()
@@ -487,10 +583,9 @@ void RecordingManager::beginAsyncInitialization()
     }
 
 
-    // Load settings for initialization config
-    auto& recMgr = RecordingSettingsManager::instance();
-    const int formatInt = recMgr.outputFormat();
-    const bool showPreview = recMgr.showPreview();
+    // Use the request snapshot, including across an asynchronous permission prompt.
+    const int formatInt = m_startSettings.outputFormat;
+    const bool showPreview = m_startSettings.showPreview;
 
     auto outputFormat = EncoderFactory::Format::MP4;
     if (formatInt == 1) outputFormat = EncoderFactory::Format::GIF;
@@ -500,11 +595,6 @@ void RecordingManager::beginAsyncInitialization()
     // The user's default output format is pre-selected in the preview's format widget.
     auto recordingFormat = showPreview ? EncoderFactory::Format::MP4 : outputFormat;
     m_defaultOutputFormat = formatInt;
-
-    const bool audioCaptureSupported = recordingSupportsAudioCapture(formatInt, showPreview);
-    m_audioEnabled = recMgr.audioEnabled() && audioCaptureSupported;
-    m_audioSource = recMgr.audioSource();
-    m_audioDevice = recMgr.audioDevice();
 
     // Probe actual input format so encoder format matches captured PCM data.
     int audioSampleRate = kDefaultAudioSampleRate;
@@ -548,7 +638,7 @@ void RecordingManager::beginAsyncInitialization()
     config.outputPath = generateOutputPath();
     config.outputFormat = recordingFormat;
     config.frameSize = physicalSize;
-    config.quality = recMgr.quality();
+    config.quality = m_startSettings.quality;
 
     // Collect UI window IDs to exclude from capture.
     if (m_controlBar) {
@@ -604,6 +694,7 @@ void RecordingManager::beginAsyncInitialization()
 void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingInitTask> &task,
                                                 quint64 generation)
 {
+    const quint64 startGeneration = m_startGeneration;
     if (!task) {
         return;
     }
@@ -895,10 +986,8 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
     // Clean up init task
     m_initTask.clear();
 
-    // Load countdown settings
-    auto& recMgr = RecordingSettingsManager::instance();
-    m_countdownEnabled = recMgr.countdownEnabled();
-    m_countdownSeconds = recMgr.countdownSeconds();
+    flushStartupAudioWarnings();
+    if (m_state != State::Preparing || startGeneration != m_startGeneration) return;
 
     // Start countdown if enabled, otherwise go directly to recording
     if (m_countdownEnabled && m_countdownSeconds > 0) {
@@ -924,8 +1013,11 @@ void RecordingManager::startCountdown()
     m_countdownOverlay->setRegion(m_recordingRegion);
     m_countdownOverlay->setCountdownSeconds(m_countdownSeconds);
 
+    const quint64 generation = m_startGeneration;
     connect(m_countdownOverlay, &QmlCountdownOverlay::countdownFinished,
-            this, &RecordingManager::startRecordingAfterCountdown);
+            this, [this, generation] {
+        if (generation == m_startGeneration) startRecordingAfterCountdown();
+    });
     connect(m_countdownOverlay, &QmlCountdownOverlay::countdownCancelled,
             this, &RecordingManager::onCountdownCancelled);
 
@@ -934,6 +1026,8 @@ void RecordingManager::startCountdown()
 
 void RecordingManager::startRecordingAfterCountdown()
 {
+    if (m_state != State::Preparing && m_state != State::Countdown) return;
+    const quint64 generation = m_startGeneration;
     // Clean up countdown overlay if it exists (deleteLater because we're
     // called from the QML countdown finished signal handler)
     if (m_countdownOverlay) {
@@ -953,6 +1047,7 @@ void RecordingManager::startRecordingAfterCountdown()
     // Initialize state and counters
     m_elapsedTimer.start();
     setState(State::Recording);
+    if (m_state != State::Recording || generation != m_startGeneration) return;
     m_frameCount = 0;
 
     // Start audio capture here to synchronize with video timer
@@ -971,6 +1066,7 @@ void RecordingManager::startRecordingAfterCountdown()
     }
 
     // Load watermark settings for recording and configure worker
+    if (m_state != State::Recording || generation != m_startGeneration) return;
     m_watermarkSettings = WatermarkSettingsManager::instance().load();
     if (m_watermarkSettings.applyToRecording && !m_watermarkSettings.imagePath.isEmpty()) {
         m_watermarkSettings.enabled = true;  // Enable for render() to work
@@ -980,8 +1076,8 @@ void RecordingManager::startRecordingAfterCountdown()
     }
 
     // Small delay so the control bar is fully rendered before capture starts
-    QTimer::singleShot(kOverlayRenderDelay, this, [this]() {
-        startCaptureTimers();
+    QTimer::singleShot(kOverlayRenderDelay, this, [this, generation]() {
+        if (generation == m_startGeneration) startCaptureTimers();
     });
 
     emit recordingStarted();
@@ -1175,6 +1271,10 @@ void RecordingManager::togglePause()
 
 void RecordingManager::stopRecording()
 {
+    if (m_state == State::Preparing || m_state == State::Countdown) {
+        cancelRecording();
+        return;
+    }
     if (m_state != State::Recording && m_state != State::Paused) {
         return;
     }
@@ -1196,6 +1296,9 @@ void RecordingManager::cancelRecording()
         m_state != State::Countdown) {
         return;
     }
+
+    ++m_startGeneration;
+    m_permissionPending = false;
 
     // Cancel countdown overlay if active
     if (m_countdownOverlay) {
@@ -1291,8 +1394,7 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
     m_usingNativeEncoder = false;
 
     if (success) {
-        auto& recMgr = RecordingSettingsManager::instance();
-        const bool showPreview = recMgr.showPreview();
+        const bool showPreview = m_startSettings.showPreview;
 
         if (showPreview) {
             QString tempPath = outputPath;
@@ -1471,9 +1573,8 @@ QString RecordingManager::generateOutputPath() const
     QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
 
     // Get output format from settings
-    auto& recMgr = RecordingSettingsManager::instance();
-    const int formatInt = recMgr.outputFormat();
-    const bool showPreview = recMgr.showPreview();
+    const int formatInt = m_startSettings.outputFormat;
+    const bool showPreview = m_startSettings.showPreview;
 
     // When preview is enabled, always record as MP4 (preview player only supports MP4)
     QString extension;

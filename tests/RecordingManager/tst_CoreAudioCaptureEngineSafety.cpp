@@ -64,6 +64,7 @@ class TestCoreAudioCaptureEngineSafety : public QObject
     Q_OBJECT
 
 private slots:
+    void microphoneAuthorizationIsPreflightOnly();
     void delegatesGuardQueuedEngineAccess();
     void systemAudioTeardownRetainsAndInvalidatesCallbackGraph();
     void delegatesRouteThroughCanonicalTimestampMixer();
@@ -185,6 +186,16 @@ void TestCoreAudioCaptureEngineSafety::microphoneRequestsConvertiblePcm()
     QCOMPARE(source.count(
                  "if (unsupportedFormat && CMSampleBufferGetNumSamples(sampleBuffer) > 0)"),
              qsizetype(2));
+}
+
+void TestCoreAudioCaptureEngineSafety::microphoneAuthorizationIsPreflightOnly()
+{
+    const auto permission = section(coreAudioSource(), "// Check microphone permission if needed",
+                                    "// Initialize timing");
+    QVERIFY(!permission.isEmpty());
+    QVERIFY(permission.contains("AVAuthorizationStatusNotDetermined"));
+    QVERIFY(!permission.contains("requestAccessForMediaType"));
+    QVERIFY(!permission.contains("dispatch_semaphore_wait"));
 }
 
 void TestCoreAudioCaptureEngineSafety::callbackBarriersPrecedeMixerLifecycleTransitions()

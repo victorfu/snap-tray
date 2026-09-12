@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 31 |
-| Confirmed / Fix Ready | 4 |
+| Confirmed / Open | 30 |
+| Confirmed / Fix Ready | 5 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 1 |
@@ -61,7 +61,7 @@
 | REV-005 | Fix Ready | P0 | High | Save / Concurrency | 唯一檔名存在 TOCTOU，可靜默覆寫 |
 | REV-006 | Fix Ready | P1 | High | Windows Capture UI | Annotation cache 無上限成長，可耗盡記憶體 |
 | REV-007 | Open | P0 | High | Windows Video | 強制 terminate 並刪除 reader thread，可 crash／UAF |
-| REV-008 | Open | P1 | High | macOS Recording | 首次麥克風授權阻塞主執行緒並破壞時間軸 |
+| REV-008 | Fix Ready | P1 | High | macOS Recording | 首次麥克風授權阻塞主執行緒並破壞時間軸 |
 | REV-009 | Verified | P1 | High | Screen Canvas | 文字拖移／旋轉／縮放會重用舊快取 |
 | REV-010 | Open | P1 | High | Region Selection | 建立與一般 resize 沒有 clamp 到 bounds |
 | REV-011 | Open | P1 | High | Region Selection | mouse release 忽略最後座標 |
@@ -166,12 +166,13 @@
 
 ### REV-008 — 首次麥克風授權會凍結 UI 並錯置錄影時間軸
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/capture/CoreAudioCaptureEngine_mac.mm:766-806；src/RecordingManager.cpp:953-985,1057-1075。
 - 觸發：macOS 麥克風權限為 NotDetermined，倒數結束後開始錄影。
 - 後果：主執行緒在 dispatch_semaphore_wait(DISPATCH_TIME_FOREVER) 等授權；RecordingManager 已先啟動 elapsed timer。使用者停留在系統 prompt 的時間會被算入第一個 video timestamp，而 audio timeline 從授權後的零點開始，造成 UI 凍結、開頭長空洞或 A/V 錯位。
 - 完成條件：授權流程不得阻塞主執行緒；只有音訊與影像皆準備好後才建立共同 epoch／進入 Recording；以延遲 5–10 秒授權、拒絕與允許三種情境驗證。
-- 修正證據：待補。
+- 修正證據：Preparing 保存錄影設定快照，非同步完成麥克風授權後才初始化 capture／encoder。start generation 與 QPointer 排除取消、重啟、銷毀及螢幕移除後的回呼；CoreAudio start 不再等待授權 semaphore。拒絕時僅調整本次有效來源，保留偏好並在準備完成後警告。倒數及延後 capture timer 同樣受 generation 保護。
+- 驗證：2026-09-12 macOS scripts/build.sh 與 RecordingManager_Startup、StateMachine、Lifecycle、CoreAudioCaptureEngineSafety 四套測試通過；涵蓋事件迴圈持續運作、設定快照、授權狀態／格式／來源矩陣、取消／重啟／重複回覆／銷毀、計時起點與舊 timer。未重設日常 App TCC；獨立 bundle 首次授權及實際影音同步 smoke 尚待執行，保留 Fix Ready。對應本機 commit：fix: request microphone permission before recording initialization。
 
 ### REV-009 — Screen Canvas 文字 transform 重用舊 annotation cache
 
@@ -505,3 +506,4 @@
 | 2026-09-12 | POT-001 升格 Confirmed；完成安全定位與更多選單，macOS QML 排版及互動驗證通過，標為 Fix Ready。 |
 | 2026-09-12 | POT-001 整合驗證修正共用腳本的模組匯出歧義；兩套既有 standalone QML 測試與新增匯入回歸通過。 |
 | 2026-09-12 | REV-006 完成 8 entries／128 MiB 快取限制與壓力／像素回歸，標為 Fix Ready；四項修正整合後 macOS 全 147 項測試通過。 |
+| 2026-09-12 | REV-008 完成非同步授權前置、設定快照與啟動回呼隔離，四套 macOS 回歸通過；標為 Fix Ready。 |

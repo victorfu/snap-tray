@@ -11,6 +11,9 @@
 #include <QFuture>
 #include <QSharedPointer>
 #include <memory>
+#include <functional>
+#include <QStringList>
+#include "capture/IAudioCaptureEngine.h"
 
 #include "WatermarkRenderer.h"
 #include "utils/ResourceCleanupHelper.h"
@@ -90,8 +93,14 @@ private:
     // Grant targeted access to unit tests without altering access-specifier mangling.
     friend class TestRecordingManagerStateMachine;
     friend class TestRecordingManagerLifecycle;
+    friend class TestRecordingStartup;
 
     void startFrameCapture();
+    void initializeStartState();
+    void prepareAudioPermission();
+    void finishAudioPermission(quint64 generation, bool granted);
+    void addStartupAudioWarning(const QString& warning);
+    void flushStartupAudioWarnings();
     void beginAsyncInitialization();   // Start async initialization
     void onInitializationComplete(const QSharedPointer<RecordingInitTask> &task,
                                   quint64 generation);   // Handle async init completion
@@ -143,6 +152,25 @@ private:
     bool m_audioEnabled;
     int m_audioSource;  // 0=Microphone, 1=SystemAudio, 2=Both
     QString m_audioDevice;
+    struct StartSettings {
+        int outputFormat = 0;
+        bool showPreview = true;
+        int quality = 55;
+        bool audioEnabled = false;
+        int audioSource = 0;
+        QString audioDevice;
+        bool countdownEnabled = true;
+        int countdownSeconds = 3;
+    } m_startSettings;
+    quint64 m_startGeneration = 0;
+    bool m_permissionPending = false;
+    QStringList m_startupAudioWarnings;
+    QStringList m_reportedStartupAudioWarnings;
+    std::function<IAudioCaptureEngine::MicrophonePermission()> m_checkMicrophonePermission =
+        &IAudioCaptureEngine::checkMicrophonePermission;
+    std::function<void(std::function<void(bool)>)> m_requestMicrophonePermission =
+        &IAudioCaptureEngine::requestMicrophonePermission;
+    std::function<void()> m_initializeRecording = [this] { beginAsyncInitialization(); };
 
     // Async initialization
     QSharedPointer<RecordingInitTask> m_initTask;
