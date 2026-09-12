@@ -6,6 +6,13 @@
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
 #include "tools/ToolManager.h"
+#include "ScreenCanvasSession.h"
+#include "InlineTextEditor.h"
+#include "LaserPointerRenderer.h"
+#include "qml/PinToolOptionsViewModel.h"
+#include "colorwidgets/ColorPickerDialogCompat.h"
+#include "settings/AnnotationSettingsManager.h"
+#include <QScopeGuard>
 
 class TestScreenCanvasStyleSync : public QObject
 {
@@ -16,6 +23,8 @@ private slots:
     void testUsesAuthorityModeByDefault();
     void testOverlayRestoreReturnsArrowToolCursor();
     void testPopupRestoreReturnsEraserCursor();
+    void testCustomColorSynchronizesSession_data();
+    void testCustomColorSynchronizesSession();
 #ifdef Q_OS_MACOS
     void testMacSurfaceAvoidsToolWindowHideBehavior();
 #endif
@@ -117,6 +126,49 @@ void TestScreenCanvasStyleSync::testLinuxSurfaceBypassesWindowManagerForPanelOve
     QVERIFY(canvas.windowFlags().testFlag(Qt::X11BypassWindowManagerHint));
 }
 #endif
+
+void TestScreenCanvasStyleSync::testCustomColorSynchronizesSession_data()
+{
+    QTest::addColumn<int>("mode");
+    QTest::newRow("pencil") << 0;
+    QTest::newRow("editing-text") << 1;
+    QTest::newRow("active-laser") << 2;
+}
+
+void TestScreenCanvasStyleSync::testCustomColorSynchronizesSession()
+{
+    QFETCH(int, mode);
+    auto& settings = AnnotationSettingsManager::instance();
+    const QColor previous = settings.loadColor();
+    const auto restoreColor = qScopeGuard([&] { settings.saveColor(previous); });
+    settings.saveColor(Qt::red);
+    ScreenCanvasSession session;
+    auto* first = new ScreenCanvas;
+    auto* second = new ScreenCanvas;
+    session.m_surfaces = {first, second};
+    session.m_activeSurface = first;
+    if (mode == 1) {
+        session.m_toolManager->setCurrentTool(ToolId::Text);
+        first->inlineTextEditor()->startEditing(QPoint(10, 10), QRect(0, 0, 200, 150));
+    } else if (mode == 2) {
+        session.m_laserRenderer->startDrawing(QPoint(10, 10));
+    }
+    const QColor custom(23, 147, 219);
+    session.onMoreColorsRequested();
+    QVERIFY(session.m_colorPickerDialog);
+    session.m_colorPickerDialog->colorSelected(custom);
+    session.m_colorPickerDialog->hide();
+    QCOMPARE(session.m_toolManager->color(), custom);
+    QCOMPARE(session.m_laserRenderer->color(), custom);
+    QCOMPARE(session.m_toolOptionsViewModel->currentColor(), custom);
+    QCOMPARE(first->inlineTextEditor()->color(), custom);
+    QCOMPARE(second->inlineTextEditor()->color(), custom);
+    QCOMPARE(settings.loadColor(), custom);
+    ScreenCanvasSession reopened;
+    QCOMPARE(reopened.m_toolManager->color(), custom);
+    QCOMPARE(reopened.m_laserRenderer->color(), custom);
+    QCOMPARE(reopened.m_toolOptionsViewModel->currentColor(), custom);
+}
 
 QTEST_MAIN(TestScreenCanvasStyleSync)
 #include "tst_StyleSync.moc"

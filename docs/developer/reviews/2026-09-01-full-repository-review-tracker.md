@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 16 |
-| Confirmed / Fix Ready | 17 |
+| Confirmed / Open | 15 |
+| Confirmed / Fix Ready | 18 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 3 |
@@ -73,7 +73,7 @@
 | REV-017 | Open | P1 | High | Text | wrapText 改變空白且不支援 CJK 字元換行 |
 | REV-018 | Fix Ready | P1 | High | Save Metadata | detected-window metadata 在儲存前被清除 |
 | REV-019 | Fix Ready | P1 | High | History | 跨螢幕保留選取後按 Enter 不寫入 History |
-| REV-020 | Open | P2 | High | Screen Canvas | 自訂顏色沒有完整同步與持久化 |
+| REV-020 | Fix Ready | P2 | High | Screen Canvas | 自訂顏色沒有完整同步與持久化 |
 | REV-021 | Open | P1 | High | CLI Pin | file pin 略過 EXIF transform 與大圖 auto-fit |
 | REV-022 | Open | P2 | High | CLI Pin | clipboard pin 忽略 x／y |
 | REV-023 | Open | P2 | High | CLI GUI | 非數字 delay 被接受為 0 |
@@ -287,12 +287,13 @@
 
 ### REV-020 — Screen Canvas 自訂顏色沒有完整同步／保存
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/ScreenCanvasSession.cpp:2016-2053。
 - 觸發：在 Screen Canvas 的 More Colors 選擇自訂顏色。
 - 後果：preset color 走 onColorSelected，會同步 ToolManager、laser、inline editors、ViewModel 並 saveColor；custom callback 只更新 ToolManager 與 ViewModel。Laser／現有 inline editor 仍用舊色，重開後也回到舊設定。
 - 完成條件：所有 color entry 共用同一同步與持久化函式；驗證 pencil／text／laser、所有 surface、重開 session 後顏色一致。
-- 修正證據：待補。
+- 修正證據：More Colors 的 colorSelected 回呼改走 onColorSelected，共用 preset color 的 ToolManager／laser／所有 inline editors／ViewModel 同步與 AnnotationSettingsManager 保存流程。
+- 驗證：2026-09-12 macOS scripts/build.sh、ScreenCanvas_StyleSync 與 SessionRecovery 通過；新增 pencil／正在編輯 text／active laser 三組，透過實際 picker signal 驗證兩個 surface、狀態、持久化與新 session 還原顏色。跨平台多螢幕原生 UI smoke 待補，保留 Fix Ready。 對應本機 commit：fix: synchronize and persist custom screen canvas colors。
 
 ### REV-021 — CLI file pin 略過正常圖片載入契約
 
@@ -534,3 +535,4 @@
 | 2026-09-12 | REV-003 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-018 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-019 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-020 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |

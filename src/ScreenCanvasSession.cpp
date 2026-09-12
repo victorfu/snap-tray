@@ -2047,9 +2047,7 @@ void ScreenCanvasSession::onMoreColorsRequested()
         m_toolManager->color(),
         colorPickerAnchorPoint(),
         [this](const QColor& color) {
-            m_toolManager->setColor(color);
-            m_toolOptionsViewModel->setCurrentColor(color);
-            updateAllSurfaces();
+            onColorSelected(color);
         });
 }
 

@@ -59,6 +59,7 @@ class ScreenCanvasSession : public QObject
     Q_OBJECT
 
     friend class TestScreenCanvasPlacement;
+    friend class TestScreenCanvasStyleSync;
     friend class TestScreenCanvasSessionRecovery;
     friend class TestScreenCanvasCopyExport;
     friend class TestScreenCanvasAnnotationRenderHelper;
