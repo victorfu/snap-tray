@@ -2,6 +2,8 @@
 #include "ImageColorSpaceHelper.h"
 #include <QClipboard>
 #include <QCursor>
+#include <QWindow>
+#include "qml/RecordingPreviewBackend.h"
 
 #include "cli/IPCProtocol.h"
 #include "hotkey/HotkeyManager.h"
@@ -141,6 +143,8 @@ private slots:
     void handleCLICommand_removedRecordCommandIsIgnored();
     void screenPickerClosed_deletesWrapperAndViewModel();
     void queuedHistoryEntryRechecksCaptureMode();
+    void previewCloseDiscardsTemporaryFile_data();
+    void previewCloseDiscardsTemporaryFile();
     void cliClipboardPinPosition_data();
     void cliClipboardPinPosition();
     void cliFilePinUsesImageLoader_data();
@@ -581,3 +585,45 @@ void tst_MainApplicationTrayMenu::cliClipboardPinPosition()
 
 QTEST_MAIN(tst_MainApplicationTrayMenu)
 #include "tst_MainApplicationTrayMenu.moc"
+
+void tst_MainApplicationTrayMenu::previewCloseDiscardsTemporaryFile_data()
+{
+    QTest::addColumn<bool>("escape");
+    QTest::newRow("window-close") << false;
+    QTest::newRow("escape") << true;
+}
+
+void tst_MainApplicationTrayMenu::previewCloseDiscardsTemporaryFile()
+{
+#if defined(Q_OS_MACOS) || defined(Q_OS_WIN)
+    QFETCH(bool, escape);
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    MainApplication application;
+    application.initialize();
+    QTemporaryDir dir;
+    const QString path = dir.filePath("temporary.mp4");
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    QVERIFY(file.write("Incomplete recording") > 0);
+    file.close();
+    application.showRecordingPreview(path, 0);
+    QVERIFY(application.m_previewBackend);
+    QPointer<RecordingPreviewBackend> backend(application.m_previewBackend);
+    QSignalSpy discarded(backend, &RecordingPreviewBackend::discardRequested);
+    QSignalSpy closed(backend, &RecordingPreviewBackend::closed);
+    QWindow* preview = nullptr;
+    for (auto* window : QGuiApplication::topLevelWindows()) {
+        if (window->title() == "Recording Preview" && window->isVisible()) preview = window;
+    }
+    QVERIFY(preview);
+    if (escape) QTest::keyClick(preview, Qt::Key_Escape);
+    else QVERIFY(preview->close());
+    QCOMPARE(discarded.count(), 1);
+    QCOMPARE(discarded.first().first().toString(), path);
+    QCOMPARE(closed.count(), 1);
+    QTRY_VERIFY(backend.isNull());
+    QTRY_VERIFY(!QFileInfo::exists(path));
+#else
+    QSKIP("Recording is unsupported on Linux");
+#endif
+}

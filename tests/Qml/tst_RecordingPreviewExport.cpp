@@ -87,6 +87,8 @@ class tst_RecordingPreviewExport : public QObject
     Q_OBJECT
 
 private slots:
+    void closeOutcomes_data();
+    void closeOutcomes();
     void saveAnimation_data();
     void saveAnimation();
     void failedExportPreservesOriginal_data();
@@ -218,3 +220,39 @@ void tst_RecordingPreviewExport::failedExportPreservesOriginal()
 
 QTEST_MAIN(tst_RecordingPreviewExport)
 #include "tst_RecordingPreviewExport.moc"
+
+void tst_RecordingPreviewExport::closeOutcomes_data()
+{
+    QTest::addColumn<int>("action");
+    QTest::newRow("close") << 0;
+    QTest::newRow("discard") << 1;
+    QTest::newRow("save") << 2;
+    QTest::newRow("processing-close") << 3;
+}
+
+void tst_RecordingPreviewExport::closeOutcomes()
+{
+    QFETCH(int, action);
+    RecordingPreviewBackend backend("temporary.mp4");
+    QSignalSpy closed(&backend, &RecordingPreviewBackend::closed);
+    QSignalSpy discarded(&backend, &RecordingPreviewBackend::discardRequested);
+    QSignalSpy saved(&backend, &RecordingPreviewBackend::saveRequested);
+    if (action == 3) backend.m_isProcessing = true;
+    if (action == 1) backend.discard();
+    else if (action == 2) backend.save();
+    else backend.close();
+    QCOMPARE(closed.count(), action == 3 ? 0 : 1);
+    QCOMPARE(discarded.count(), action < 2 ? 1 : 0);
+    QCOMPARE(saved.count(), action == 2 ? 1 : 0);
+    if (action == 3) {
+        backend.m_isProcessing = false;
+        backend.close();
+    }
+    QCOMPARE(closed.first().first().toBool(), action == 2);
+    backend.close();
+    backend.discard();
+    backend.save();
+    QCOMPARE(closed.count(), 1);
+    QCOMPARE(discarded.count(), action == 2 ? 0 : 1);
+    QCOMPARE(saved.count(), action == 2 ? 1 : 0);
+}

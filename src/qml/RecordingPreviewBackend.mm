@@ -91,7 +91,7 @@ void RecordingPreviewBackend::ensureView()
 
     // Handle window close
     connect(m_view, &QQuickView::closing, this, [this](QQuickCloseEvent *) {
-        emit closed(m_saved);
+        finishClose();
     });
 }
 
@@ -155,10 +155,25 @@ void RecordingPreviewBackend::show()
 
 void RecordingPreviewBackend::close()
 {
+    if (m_isProcessing || m_closeHandled) return;
     if (m_view) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->close();
+    } else {
+        finishClose();
     }
+}
+
+void RecordingPreviewBackend::finishClose()
+{
+    if (m_closeHandled) return;
+    m_closeHandled = true;
+    const QString discardPath = m_videoPath;
+    const bool saved = m_saved;
+    // Preserve teardown ordering: the owner schedules deletion of playback
+    // resources before the queued discard handler removes the temporary file.
+    emit closed(saved);
+    if (!saved) emit discardRequested(discardPath);
 }
 
 void RecordingPreviewBackend::syncCursorSurface()
@@ -294,7 +309,7 @@ QString RecordingPreviewBackend::formatTime(qint64 ms) const
 void RecordingPreviewBackend::save()
 {
     qDebug() << "RecordingPreviewBackend: Save requested";
-    if (m_isProcessing) {
+    if (m_isProcessing || m_closeHandled) {
         qDebug() << "RecordingPreviewBackend: Save ignored while processing";
         return;
     }
@@ -320,14 +335,12 @@ void RecordingPreviewBackend::save()
 void RecordingPreviewBackend::discard()
 {
     qDebug() << "RecordingPreviewBackend: Discard requested";
-    if (m_isProcessing) {
+    if (m_isProcessing || m_closeHandled) {
         qDebug() << "RecordingPreviewBackend: Discard ignored while processing";
         return;
     }
     m_saved = false;
-    const QString discardPath = m_videoPath;
-    close(); // Release playback resources before caller deletes the file.
-    emit discardRequested(discardPath);
+    close(); // All close paths share the same discard/teardown notification.
 }
 
 void RecordingPreviewBackend::toggleTrim()

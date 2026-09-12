@@ -7,6 +7,7 @@
 class QQuickView;
 class QEvent;
 class VideoTrimmer;
+class tst_RecordingPreviewExport;
 
 /**
  * @brief C++ backend for the QML Recording Preview window.
@@ -123,6 +124,8 @@ signals:
     void errorMessageChanged();
 
 private:
+    friend class tst_RecordingPreviewExport;
+    void finishClose();
     bool eventFilter(QObject* watched, QEvent* event) override;
 
     void ensureView();
@@ -164,6 +167,7 @@ private:
 
     // State
     bool m_saved = false;
+    bool m_closeHandled = false;
     QString m_cursorSurfaceId;
     QString m_cursorOwnerId;
 };
