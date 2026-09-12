@@ -121,6 +121,9 @@ MainApplication::MainApplication(QObject* parent)
     , m_screenPickerDialog(nullptr)
     , m_screenPickerViewModel(nullptr)
 {
+    m_historyReplayStarter = [this](const QString& entryId) {
+        return m_captureManager && m_captureManager->startHistoryReplay(entryId);
+    };
 }
 
 MainApplication::~MainApplication()
@@ -462,23 +465,21 @@ void MainApplication::prepareForUpdateShutdown()
     QCoreApplication::quit();
 }
 
+bool MainApplication::canStartRegionCapture() const
+{
+    return m_captureManager && !m_screenPickerDialog
+        && (!m_screenCanvasManager || !m_screenCanvasManager->isActive())
+        && (!m_recordingManager || !m_recordingManager->isActive());
+}
+
+bool MainApplication::startHistoryReplay(const QString& entryId)
+{
+    return canStartRegionCapture() && m_historyReplayStarter(entryId);
+}
+
 void MainApplication::startRegionCapture(bool showShortcutHintsOnEntry)
 {
-    // Don't trigger if screen canvas is active
-    if (m_screenCanvasManager->isActive()) {
-        qDebug() << "onRegionCapture: blocked by screenCanvasManager";
-        return;
-    }
-
-    // Don't trigger if recording is active
-    if (m_recordingManager->isActive()) {
-        qDebug() << "onRegionCapture: blocked by recordingManager";
-        return;
-    }
-    if (m_screenPickerDialog) {
-        qDebug() << "onRegionCapture: blocked by screen picker";
-        return;
-    }
+    if (!canStartRegionCapture()) return;
 
     // Note: Don't close popup menus - allow capturing them (like Snipaste)
     // Modal dialogs (QMessageBox) are handled by CaptureManager
@@ -647,8 +648,8 @@ void MainApplication::onHistoryWindow()
 
     m_historyWindow = new SnapTray::QmlHistoryWindow(
         m_pinWindowManager,
-        [captureManager = m_captureManager](const QString& entryId) {
-            return captureManager && captureManager->startHistoryReplay(entryId);
+        [this](const QString& entryId) {
+            return startHistoryReplay(entryId);
         },
         this);
     m_historyWindow->show();

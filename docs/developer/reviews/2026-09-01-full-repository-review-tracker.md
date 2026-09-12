@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 28 |
-| Confirmed / Fix Ready | 7 |
+| Confirmed / Open | 27 |
+| Confirmed / Fix Ready | 8 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 1 |
@@ -83,7 +83,7 @@
 | REV-027 | Open | P2 | High | QML | CursorTokens 未註冊 singleton |
 | REV-028 | Open | P2 | High | Settings / CLI | install／uninstall 失敗後 busy 永久不解除 |
 | REV-029 | Open | P2 | High | Color Picker | triangle value 軸使用 height 而非 width |
-| REV-030 | Open | P1 | High | QML Dialog | setModal(true) 實際仍為 NonModal |
+| REV-030 | Fix Ready | P1 | High | QML Dialog | setModal(true) 實際仍為 NonModal |
 | REV-031 | Open | P2 | High | Pin Info | 顯示新值但單項 Copy 複製舊值 |
 | REV-032 | Open | P1 | High | macOS Recording | SCK 未排除錄影 tooltip window |
 | REV-033 | Open | P1 | High | Windows Recording | Windows 10 2004 前 exclusion 退化成黑色矩形 |
@@ -368,12 +368,13 @@
 
 ### REV-030 — QmlDialog::setModal(true) 沒有建立 modal window
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/qml/QmlDialog.mm:113-136,175-207；caller：src/MainApplication.cpp:1140-1149、src/PinWindow.cpp:1767-1791。
 - 觸發：caller 在 show 前 setModal(true)。
 - 後果：函式只保存 bool，未對 backing QQuickView 呼叫 setModality；QWindow::modality 仍為 NonModal。背景 PinWindow／其他視窗仍可能接受 input。
 - 完成條件：modal true/false 的 backing QWindow modality 正確；用背景測試視窗驗證 mouse／key 阻擋；覆蓋 screen picker 與 share-password caller。
-- 修正證據：待補。
+- 修正證據：QmlDialog 首次 show 前套用 ApplicationModal／NonModal；可見時 hide→切換→show 更新 Qt modal registry，保留 geometry、ViewModel 與 transient parent 且不發 closed。Region Capture 與 History replay 共用 MainApplication 的模式互斥判斷，queued History 請求在執行時重新檢查。
+- 驗證：2026-09-12 macOS scripts/build.sh 與 Qml_DialogModality、App_MainApplicationTrayMenu、RegionSelector_TransientUiCancelGuard 三套原生回歸通過。包含 QWindow 滑鼠／鍵盤阻擋及恢復、可見時切換、screen picker／share-password 真實 QML、History queued 操作及錄影狀態／快捷鍵互斥。Windows／Ubuntu modal 與雙螢幕 UI smoke 待補，保留 Fix Ready。對應本機 commit：fix: enforce dialog modality and guard history capture entry。
 
 ### REV-031 — Pin Info 顯示新值但 Copy 複製舊值
 
@@ -511,3 +512,4 @@
 | 2026-09-12 | REV-008 完成非同步授權前置、設定快照與啟動回呼隔離，四套 macOS 回歸通過；標為 Fix Ready。 |
 | 2026-09-12 | REV-010 完成手動選取／resize 邊界與比例 anchor 修正，三套 macOS 回歸通過；標為 Fix Ready。 |
 | 2026-09-12 | REV-011 完成共用 selection gesture 更新與 release 最後座標修正，輸入／多區域及原生 StyleSync 回歸通過；標為 Fix Ready。 |
+| 2026-09-12 | REV-030 完成 QQuickView modality 與 History capture 入口互斥，三套原生 macOS 回歸通過；標為 Fix Ready。 |

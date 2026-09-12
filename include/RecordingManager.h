@@ -94,6 +94,7 @@ private:
     friend class TestRecordingManagerStateMachine;
     friend class TestRecordingManagerLifecycle;
     friend class TestRecordingStartup;
+    friend class tst_MainApplicationTrayMenu;
 
     void startFrameCapture();
     void initializeStartState();

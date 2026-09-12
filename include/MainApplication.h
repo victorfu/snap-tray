@@ -9,6 +9,7 @@
 #include <QPixmap>
 #include <QPointer>
 #include <QStringList>
+#include <functional>
 
 class QSystemTrayIcon;
 class QMenu;
@@ -65,6 +66,9 @@ private:
     friend class tst_MainApplicationTrayMenu;
 
     void startRegionCapture(bool showShortcutHintsOnEntry);
+    bool canStartRegionCapture() const;
+    bool startHistoryReplay(const QString& entryId);
+    std::function<bool(const QString&)> m_historyReplayStarter;
     bool canShutdownForUpdate() const;
     void prepareForUpdateShutdown();
     void updateTrayMenuHotkeyText();

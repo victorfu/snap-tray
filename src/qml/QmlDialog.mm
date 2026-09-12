@@ -61,6 +61,7 @@ void QmlDialog::ensureView()
     }
 
     m_view = QmlOverlayManager::instance().createScreenOverlay();
+    m_view->setModality(m_modal ? Qt::ApplicationModal : Qt::NonModal);
 
     // Use initial properties so the viewModel QML property is set before component creation.
     // This avoids null-reference errors during initial binding evaluation.
@@ -203,7 +204,18 @@ void QmlDialog::close()
 
 void QmlDialog::setModal(bool modal)
 {
+    if (m_modal == modal) return;
+    const bool visible = m_view && m_view->isVisible();
+    const QRect geometry = m_view ? m_view->geometry() : QRect();
+    // Qt registers modal blocking when a window is shown. Hide using the old
+    // modality first so switching a visible dialog also updates that registry.
+    if (visible) m_view->hide();
     m_modal = modal;
+    if (m_view) m_view->setModality(modal ? Qt::ApplicationModal : Qt::NonModal);
+    if (visible) {
+        m_view->setGeometry(geometry);
+        showPreparedView();
+    }
 }
 
 void QmlDialog::syncCursorSurface()

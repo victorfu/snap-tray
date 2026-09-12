@@ -6,6 +6,7 @@
 #include "qml/ScreenPickerViewModel.h"
 #include "qml/QmlSettingsWindow.h"
 #include "RecordingManager.h"
+#include "CaptureManager.h"
 #include "settings/Settings.h"
 #include "update/IUpdateService.h"
 #include "update/InstallSourceDetector.h"
@@ -128,6 +129,7 @@ private slots:
     void initialize_externalManaged_disablesCheckForUpdatesAction();
     void handleCLICommand_removedRecordCommandIsIgnored();
     void screenPickerClosed_deletesWrapperAndViewModel();
+    void queuedHistoryEntryRechecksCaptureMode();
 
 private:
     void clearAllTestSettings();
@@ -334,6 +336,43 @@ void tst_MainApplicationTrayMenu::handleCLICommand_removedRecordCommandIsIgnored
 
     application.closeScreenPicker();
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void tst_MainApplicationTrayMenu::queuedHistoryEntryRechecksCaptureMode()
+{
+    MainApplication application;
+    application.m_captureManager = new CaptureManager(nullptr, &application);
+    application.m_recordingManager = new RecordingManager(&application);
+    int replayCalls = 0;
+    application.m_historyReplayStarter = [&](const QString&) { ++replayCalls; return true; };
+    QVERIFY(application.canStartRegionCapture());
+    bool queuedResult = true;
+    QMetaObject::invokeMethod(&application, [&] {
+        queuedResult = application.startHistoryReplay("test-entry");
+    }, Qt::QueuedConnection);
+    auto* viewModel = new SnapTray::ScreenPickerViewModel();
+    auto* picker = new DummyScreenPickerDialog(viewModel, &application);
+    application.attachScreenPicker(picker, viewModel);
+    QCoreApplication::processEvents();
+    QVERIFY(!queuedResult);
+    QCOMPARE(replayCalls, 0);
+    QSignalSpy captureStarted(application.m_captureManager, &CaptureManager::captureStarted);
+    application.onHotkeyAction(SnapTray::HotkeyAction::RegionCapture);
+    QCOMPARE(captureStarted.count(), 0);
+    application.closeScreenPicker();
+    QVERIFY(application.startHistoryReplay("test-entry"));
+    QCOMPARE(replayCalls, 1);
+    using State = RecordingManager::State;
+    for (State state : {State::Preparing, State::Countdown, State::Recording,
+                        State::Paused, State::Encoding, State::Previewing}) {
+        application.m_recordingManager->m_state = state;
+        QVERIFY(!application.canStartRegionCapture());
+        QVERIFY(!application.startHistoryReplay("test-entry"));
+        application.onRegionCapture();
+        QCOMPARE(captureStarted.count(), 0);
+        QCOMPARE(replayCalls, 1);
+    }
+    application.m_recordingManager->m_state = State::Idle;
 }
 
 void tst_MainApplicationTrayMenu::screenPickerClosed_deletesWrapperAndViewModel()

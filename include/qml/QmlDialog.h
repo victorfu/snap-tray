@@ -35,6 +35,7 @@ signals:
     void closed();
 
 private:
+    friend class TestQmlDialogModality;
     void ensureView();
     void showPreparedView();
     QWidget* hostWidget() const;
