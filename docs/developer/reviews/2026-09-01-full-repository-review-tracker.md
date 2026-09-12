@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 12 |
-| Confirmed / Fix Ready | 21 |
+| Confirmed / Open | 11 |
+| Confirmed / Fix Ready | 22 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 3 |
@@ -84,7 +84,7 @@
 | REV-028 | Open | P2 | High | Settings / CLI | install／uninstall 失敗後 busy 永久不解除 |
 | REV-029 | Fix Ready | P2 | High | Color Picker | triangle value 軸使用 height 而非 width |
 | REV-030 | Fix Ready | P1 | High | QML Dialog | setModal(true) 實際仍為 NonModal |
-| REV-031 | Open | P2 | High | Pin Info | 顯示新值但單項 Copy 複製舊值 |
+| REV-031 | Fix Ready | P2 | High | Pin Info | 顯示新值但單項 Copy 複製舊值 |
 | REV-032 | Open | P1 | High | macOS Recording | SCK 未排除錄影 tooltip window |
 | REV-033 | Open | P1 | High | Windows Recording | Windows 10 2004 前 exclusion 退化成黑色矩形 |
 | REV-034 | Fix Ready | P1 | High | Recording Audio | encoder 靜默降級無音訊，呼叫端未察覺 |
@@ -391,12 +391,13 @@
 
 ### REV-031 — Pin Info 顯示新值但 Copy 複製舊值
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/PinWindow.cpp:1326-1348,2209-2230。
 - 觸發：先開過一次 context menu，再 zoom／rotate／flip／opacity／resize／crop，重新開 Info 並點單一列。
 - 後果：action text 被更新，但 triggered lambda capture 的 value 仍是第一次建立時的字串；clipboard 與畫面不同。Copy All 不受影響。
 - 完成條件：Size／Zoom／Rotation／Opacity／Mirror／crop data rows 都驗證顯示值與 clipboard 同步。
-- 修正證據：待補。
+- 修正證據：Info QAction 保存目前 value 在 data 中，refreshInfoMenu 同時更新顯示與 payload；triggered 讀取即時 data，連線生命週期綁定 action，不再捕捉第一次建立時的舊值。
+- 驗證：2026-09-12 macOS scripts/build.sh、PinWindow_Transform 與 CropUndo 通過；同一組 actions 在初始、zoom／rotation／opacity／兩軸 mirror、crop 與再次變更後，逐列 trigger 驗證 clipboard 等於顯示值。Windows／Ubuntu 原生 clipboard smoke 待補，保留 Fix Ready。 對應本機 commit：fix: copy current values from pin info actions。
 
 ### REV-032 — macOS SCK 未排除錄影 tooltip window
 
@@ -542,3 +543,4 @@
 | 2026-09-12 | REV-025 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-026 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-029 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-031 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |

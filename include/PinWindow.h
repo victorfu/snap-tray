@@ -166,6 +166,7 @@ protected:
 private:
     friend class TestPinWindowCropUndo;
     friend class TestPinWindowStyleSync;
+    friend class TestPinWindowTransform;
     friend class TestPinWindowTextToolFormatting;
     struct CropUndoEntry;
 

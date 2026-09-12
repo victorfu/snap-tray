@@ -1334,8 +1334,9 @@ void PinWindow::createContextMenu()
     // Info items - clicking copies that value
     auto addInfoItem = [this](const QString& label, const QString& value) {
         QAction* action = m_infoMenu->addAction(QString("%1: %2").arg(label, value));
-        QObject::connect(action, &QAction::triggered, [value]() {
-            QGuiApplication::clipboard()->setText(value);
+        action->setData(value);
+        QObject::connect(action, &QAction::triggered, action, [action]() {
+            QGuiApplication::clipboard()->setText(action->data().toString());
             });
         return action;
         };
@@ -2217,6 +2218,7 @@ void PinWindow::refreshInfoMenu()
             return;
         }
         action->setText(QString("%1: %2").arg(label, value));
+        action->setData(value);
     };
 
     updateInfoAction(m_sizeInfoAction, tr("Size"), sizeText);

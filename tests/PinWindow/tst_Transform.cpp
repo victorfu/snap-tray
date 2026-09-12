@@ -3,6 +3,8 @@
 #include <QSignalSpy>
 #include <QPixmap>
 #include <QPainter>
+#include <QAction>
+#include <QClipboard>
 
 #include "PinWindow.h"
 #include "PlatformFeatures.h"
@@ -22,6 +24,44 @@ private:
     }
 
 private slots:
+    void testInfoCopyTracksCurrentTransform() {
+        PinWindow window(createTestPixmap(200, 160), QPoint(), nullptr, false, false);
+        window.createContextMenu();
+        const auto verifyInfo = [&] {
+            window.refreshInfoMenu();
+            const QList<QPair<QAction*, QString>> rows{
+                {window.m_sizeInfoAction, window.currentDisplaySizeText()},
+                {window.m_zoomInfoAction, QString("%1%").arg(qRound(window.zoomLevel() * 100))},
+                {window.m_rotationInfoAction, QString::fromUtf8("%1°").arg(window.m_rotationAngle)},
+                {window.m_opacityInfoAction, QString("%1%").arg(qRound(window.opacity() * 100))},
+                {window.m_flipHorizontalInfoAction, window.m_flipHorizontal ? window.tr("Yes") : window.tr("No")},
+                {window.m_flipVerticalInfoAction, window.m_flipVertical ? window.tr("Yes") : window.tr("No")}
+            };
+            for (const auto& row : rows) {
+                QVERIFY(row.first);
+                QVERIFY(row.first->text().endsWith(": " + row.second));
+                QGuiApplication::clipboard()->setText(QStringLiteral("stale"));
+                row.first->trigger();
+                QCOMPARE(QGuiApplication::clipboard()->text(), row.second);
+            }
+        };
+        verifyInfo();
+        window.setZoomLevel(1.75);
+        window.rotateRight();
+        window.setOpacity(0.6);
+        window.flipHorizontal();
+        window.flipVertical();
+        verifyInfo();
+        window.applyCrop(QRect(10, 10, 60, 40));
+        verifyInfo();
+        window.setZoomLevel(0.75);
+        window.rotateLeft();
+        window.setOpacity(0.9);
+        window.flipHorizontal();
+        window.flipVertical();
+        verifyInfo();
+    }
+
     void initTestCase() {
         if (QGuiApplication::screens().isEmpty()) {
             QSKIP("No screens available for PinWindow tests in this environment.");
