@@ -41,6 +41,7 @@
 #include <QStandardPaths>
 #include <QFileInfo>
 #include <QImageReader>
+#include <QFutureWatcher>
 #include <QPainter>
 #include <QFont>
 #include <QFontMetrics>
@@ -184,40 +185,11 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
             onPasteFromClipboard();
         }
         else if (msg.options.contains("file")) {
-            QString filePath = msg.options["file"].toString();
-            QImage image(filePath);
-            if (!image.isNull()) {
-                QPixmap pixmap = QPixmap::fromImage(image);
-
-                // Get positioning options
-                bool hasX = msg.options.contains("x");
-                bool hasY = msg.options.contains("y");
-                bool center = msg.options["center"].toBool();
-
-                // Calculate position
-                QScreen* screen = QGuiApplication::primaryScreen();
-                if (!screen) {
-                    qCritical() << "MainApplication: No valid screen available for pin window";
-                    return;
-                }
-                QRect screenGeo = screen->availableGeometry();
-                const qreal dpr = pixmap.devicePixelRatio() > 0.0 ? pixmap.devicePixelRatio() : 1.0;
-                QSize logicalSize = CoordinateHelper::toLogical(pixmap.size(), dpr);
-                QPoint position;
-
-                if (hasX && hasY) {
-                    position = QPoint(msg.options["x"].toInt(), msg.options["y"].toInt());
-                }
-                else if (center) {
-                    position = screenGeo.center() - QPoint(logicalSize.width() / 2, logicalSize.height() / 2);
-                }
-                else {
-                    // Default: center on screen (same as onImageLoaded)
-                    position = screenGeo.center() - QPoint(logicalSize.width() / 2, logicalSize.height() / 2);
-                }
-
-                m_pinWindowManager->createPinWindow(pixmap, position);
+            std::optional<QPoint> position;
+            if (msg.options.contains("x") && msg.options.contains("y")) {
+                position = QPoint(msg.options["x"].toInt(), msg.options["y"].toInt());
             }
+            loadImageForPin(msg.options["file"].toString(), position);
         }
     }
     else if (msg.command == "config") {
@@ -607,6 +579,11 @@ void MainApplication::onPinFromImage()
         return;
     }
 
+    loadImageForPin(filePath);
+}
+
+void MainApplication::loadImageForPin(const QString& filePath, std::optional<QPoint> position)
+{
     // Show loading toast
     SnapTray::QmlToast::screenToast().showToast(
         SnapTray::QmlToast::Level::Info,
@@ -614,22 +591,19 @@ void MainApplication::onPinFromImage()
         QFileInfo(filePath).fileName()
     );
 
-    // Load image asynchronously (QImage is thread-safe, QPixmap is not)
-    QPointer<MainApplication> guard(this);
-    (void)QtConcurrent::run([filePath, guard]() {
+    // Keep completion ownership on the GUI thread. Destroying the application
+    // also destroys the watcher; the decoding task never holds a QObject pointer.
+    auto* watcher = new QFutureWatcher<QImage>(this);
+    connect(watcher, &QFutureWatcher<QImage>::finished, this, [this, watcher, filePath, position] {
+        const QImage image = watcher->result();
+        watcher->deleteLater();
+        onImageLoaded(filePath, image, position);
+    });
+    watcher->setFuture(QtConcurrent::run([filePath] {
         QImageReader reader(filePath);
         reader.setAutoTransform(true);
-        QImage image = reader.read();
-
-        // Call back to UI thread
-        if (guard) {
-            QMetaObject::invokeMethod(guard, [guard, filePath, image = std::move(image)]() {
-                if (guard) {
-                    guard->onImageLoaded(filePath, image);
-                }
-            }, Qt::QueuedConnection);
-        }
-    });
+        return reader.read();
+    }));
 }
 
 void MainApplication::onHistoryWindow()
@@ -657,7 +631,7 @@ void MainApplication::onHistoryWindow()
     m_historyWindow->activateWindow();
 }
 
-void MainApplication::onImageLoaded(const QString &filePath, const QImage &image)
+void MainApplication::onImageLoaded(const QString& filePath, const QImage& image, std::optional<QPoint> position)
 {
     if (image.isNull()) {
         QFileInfo fileInfo(filePath);
@@ -670,7 +644,8 @@ void MainApplication::onImageLoaded(const QString &filePath, const QImage &image
     }
 
     // Get screen geometry
-    QScreen *screen = QGuiApplication::primaryScreen();
+    QScreen* screen = position ? QGuiApplication::screenAt(*position) : nullptr;
+    if (!screen) screen = QGuiApplication::primaryScreen();
     if (!screen) {
         qCritical() << "MainApplication: No valid screen available for pin window";
         return;
@@ -693,7 +668,7 @@ void MainApplication::onImageLoaded(const QString &filePath, const QImage &image
         screen->availableGeometry());
 
     // Create pin window and apply zoom if needed
-    PinWindow *pinWindow = m_pinWindowManager->createPinWindow(pixmap, placement.position);
+    PinWindow *pinWindow = m_pinWindowManager->createPinWindow(pixmap, position.value_or(placement.position));
     if (pinWindow && placement.zoomLevel < 1.0) {
         pinWindow->setZoomLevel(placement.zoomLevel);
     }

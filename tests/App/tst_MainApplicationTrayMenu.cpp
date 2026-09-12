@@ -1,4 +1,5 @@
 #include "MainApplication.h"
+#include "ImageColorSpaceHelper.h"
 
 #include "cli/IPCProtocol.h"
 #include "hotkey/HotkeyManager.h"
@@ -7,6 +8,9 @@
 #include "qml/QmlSettingsWindow.h"
 #include "RecordingManager.h"
 #include "CaptureManager.h"
+#include "PinWindowManager.h"
+#include "PinWindow.h"
+#include "pinwindow/PinWindowPlacement.h"
 #include "settings/Settings.h"
 #include "update/IUpdateService.h"
 #include "update/InstallSourceDetector.h"
@@ -17,6 +21,11 @@
 #include <QMenu>
 #include <QSettings>
 #include <QTranslator>
+#include <QBuffer>
+#include <QImageReader>
+#include <QTemporaryDir>
+#include <QScreen>
+#include <QPainter>
 #include <QtTest>
 
 namespace {
@@ -130,6 +139,8 @@ private slots:
     void handleCLICommand_removedRecordCommandIsIgnored();
     void screenPickerClosed_deletesWrapperAndViewModel();
     void queuedHistoryEntryRechecksCaptureMode();
+    void cliFilePinUsesImageLoader_data();
+    void cliFilePinUsesImageLoader();
 
 private:
     void clearAllTestSettings();
@@ -442,6 +453,78 @@ void tst_MainApplicationTrayMenu::installFakeUpdateService(InstallSource install
             g_fakeUpdateService = service.get();
             return service;
         });
+}
+
+void tst_MainApplicationTrayMenu::cliFilePinUsesImageLoader_data()
+{
+    QTest::addColumn<int>("orientation");
+    QTest::addColumn<bool>("large");
+    QTest::addColumn<bool>("positioned");
+    QTest::newRow("rotate90") << 6 << false << false;
+    QTest::newRow("rotate270") << 8 << false << false;
+    QTest::newRow("mirror") << 2 << false << true;
+    QTest::newRow("large") << 1 << true << false;
+    QTest::newRow("large-positioned") << 1 << true << true;
+}
+
+void tst_MainApplicationTrayMenu::cliFilePinUsesImageLoader()
+{
+    QFETCH(int, orientation);
+    QFETCH(bool, large);
+    QFETCH(bool, positioned);
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    MainApplication application;
+    application.initialize();
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+    const QSize size = large ? screen->availableGeometry().size() * 2 : QSize(120, 80);
+    QImage input(size, QImage::Format_RGB32);
+    input.fill(Qt::red);
+    { QPainter painter(&input); painter.fillRect(QRect(0, 0, size.width()/2, size.height()/2), Qt::blue); }
+    QByteArray jpeg;
+    QBuffer buffer(&jpeg);
+    QVERIFY(buffer.open(QIODevice::WriteOnly));
+    QVERIFY(input.save(&buffer, "JPEG", 100));
+    QByteArray exif = QByteArray::fromHex("45786966000049492a0008000000010012010300010000000100000000000000");
+    exif[24] = char(orientation);
+    QByteArray segment = QByteArray::fromHex("ffe10022") + exif;
+    jpeg.insert(2, segment);
+    QTemporaryDir dir;
+    const QString path = dir.filePath("oriented.jpg");
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    QCOMPARE(file.write(jpeg), qint64(jpeg.size()));
+    file.close();
+    QImageReader reader(path);
+    reader.setAutoTransform(false);
+    QImage expected = reader.read();
+    if (orientation == 6) expected = expected.transformed(QTransform().rotate(90));
+    if (orientation == 8) expected = expected.transformed(QTransform().rotate(-90));
+    if (orientation == 2) expected = expected.mirrored(true, false);
+    expected = convertImageForDisplay(expected);
+    const QPoint position = screen->availableGeometry().topLeft() + QPoint(37, 43);
+    SnapTray::CLI::IPCMessage command;
+    command.command = "pin";
+    command.options = {{"file", path}};
+    if (positioned) { command.options["x"] = position.x(); command.options["y"] = position.y(); }
+    QSignalSpy created(application.m_pinWindowManager, &PinWindowManager::windowCreated);
+    application.handleCLICommand(command.toJson());
+    QTRY_COMPARE(created.count(), 1);
+    PinWindow* pin = application.m_pinWindowManager->windows().first();
+    const auto placement = computeInitialPinWindowPlacement(QPixmap::fromImage(expected), screen->availableGeometry());
+    QCOMPARE(pin->zoomLevel(), placement.zoomLevel);
+    QCOMPARE(pin->size(), placement.displaySize);
+    QCOMPARE(pin->pos(), positioned ? position : placement.position);
+    if (!large) {
+        const QImage pixels = pin->exportPixmapForMerge().toImage();
+        QCOMPARE(pixels.size(), expected.size());
+        for (const QPoint point : {QPoint(10,10), QPoint(expected.width()-11,10),
+                                   QPoint(10,expected.height()-11), QPoint(expected.width()-11,expected.height()-11)}) {
+            QCOMPARE(pixels.pixelColor(point), expected.pixelColor(point));
+        }
+    }
+    application.m_pinWindowManager->closeAllWindows();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 }
 
 QTEST_MAIN(tst_MainApplicationTrayMenu)

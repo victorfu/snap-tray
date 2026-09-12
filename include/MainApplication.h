@@ -10,6 +10,7 @@
 #include <QPointer>
 #include <QStringList>
 #include <functional>
+#include <optional>
 
 class QSystemTrayIcon;
 class QMenu;
@@ -53,7 +54,6 @@ private slots:
     void onCloseAllPins();
     void onPinFromImage();
     void onHistoryWindow();
-    void onImageLoaded(const QString &filePath, const QImage &image);
     void onSettings();
     void showRecordingPreview(const QString &videoPath, int defaultOutputFormat);
     void onPreviewSaveRequested(const QString &videoPath);
@@ -64,6 +64,9 @@ private slots:
 
 private:
     friend class tst_MainApplicationTrayMenu;
+    void loadImageForPin(const QString& filePath, std::optional<QPoint> position = std::nullopt);
+    void onImageLoaded(const QString& filePath, const QImage& image,
+                       std::optional<QPoint> position = std::nullopt);
 
     void startRegionCapture(bool showShortcutHintsOnEntry);
     bool canStartRegionCapture() const;

@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 5 |
-| Confirmed / Fix Ready | 28 |
+| Confirmed / Open | 4 |
+| Confirmed / Fix Ready | 29 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 3 |
@@ -74,7 +74,7 @@
 | REV-018 | Fix Ready | P1 | High | Save Metadata | detected-window metadata 在儲存前被清除 |
 | REV-019 | Fix Ready | P1 | High | History | 跨螢幕保留選取後按 Enter 不寫入 History |
 | REV-020 | Fix Ready | P2 | High | Screen Canvas | 自訂顏色沒有完整同步與持久化 |
-| REV-021 | Open | P1 | High | CLI Pin | file pin 略過 EXIF transform 與大圖 auto-fit |
+| REV-021 | Fix Ready | P1 | High | CLI Pin | file pin 略過 EXIF transform 與大圖 auto-fit |
 | REV-022 | Open | P2 | High | CLI Pin | clipboard pin 忽略 x／y |
 | REV-023 | Open | P2 | High | CLI GUI | 非數字 delay 被接受為 0 |
 | REV-024 | Open | P2 | High | CLI Full | 負數 screen 被當成未指定 |
@@ -298,12 +298,13 @@
 
 ### REV-021 — CLI file pin 略過正常圖片載入契約
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/MainApplication.cpp:183-216；正常路徑位於 616-629,659-698；src/PinWindow.cpp:519-572；src/pinwindow/PinWindowPlacement.cpp:57-98。
 - 觸發：snaptray pin --file 載入含 EXIF rotation／mirror 的 JPEG，或尺寸遠大於螢幕的圖片。
 - 後果：CLI 直接 QImage(filePath) 並自行置中，未 setAutoTransform、display conversion 或 computeInitialPinWindowPlacement；圖片方向錯誤，或以原尺寸大幅超出螢幕。
 - 完成條件：CLI 與 GUI Pin from Image 共用 loader／placement；EXIF 6／8／mirrored fixtures pixels 一致；超大圖符合既有 90% available-geometry auto-fit。
-- 修正證據：待補。
+- 修正證據：GUI 與 CLI file Pin 共用非同步 QImageReader loader，套用 EXIF auto-transform、display conversion 與既有 availableGeometry 90% auto-fit；同時指定 x/y 時保留明確位置，watcher 由 MainApplication 管理生命週期。
+- 驗證：2026-09-12 macOS canonical build 與原生 Cocoa App_MainApplicationTrayMenu、PinWindow_PinWindowPlacement、CLI_NumericArgumentValidation 3 套通過；5 組真實 CLI IPC fixture 覆蓋 EXIF 6／8／mirror pixels、超大圖片、指定位置與顯示色彩轉換。Windows／Linux 原生 UI 待補，保留 Fix Ready。 對應本機 commit：fix: share image loading and placement for CLI file pins。
 
 ### REV-022 — CLI clipboard pin 忽略 x／y
 
@@ -558,3 +559,4 @@
 | 2026-09-12 | REV-032 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-027 完成修正與針對性回歸，標為 Fix Ready；與 REV-032 整合後 macOS 155／155 套測試通過，QML lint 無 CursorTokens 警告。 |
 | 2026-09-12 | REV-017 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-021 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
