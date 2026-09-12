@@ -1,4 +1,5 @@
 #include "InlineTextEditor.h"
+#include "utils/TextLayoutUtils.h"
 #include "cursor/CursorManager.h"
 #include "ui/DesignSystem.h"
 
@@ -8,6 +9,7 @@
 #include <QFontMetrics>
 #include <QWidget>
 #include <QKeyEvent>
+#include <QScopedValueRollback>
 
 const int InlineTextEditor::MIN_WIDTH;
 const int InlineTextEditor::MIN_HEIGHT;
@@ -52,16 +54,16 @@ void InlineTextEditor::startEditing(const QPoint& pos, const QRect& bounds)
     startEditingInternal(pos, bounds, QString(), false);
 }
 
-void InlineTextEditor::startEditingExisting(const QPoint& pos, const QRect& bounds, const QString& existingText)
+void InlineTextEditor::startEditingExisting(const QPoint& pos, const QRect& bounds, const QString& existingText, qreal wrapWidth)
 {
     // Preserve the original annotation baseline when re-editing existing text.
-    startEditingInternal(pos, bounds, existingText, true);
+    startEditingInternal(pos, bounds, existingText, true, wrapWidth);
 }
 
 void InlineTextEditor::startEditingInternal(const QPoint& pos,
                                             const QRect& bounds,
                                             const QString& existingText,
-                                            bool preserveBaselineOnClamp)
+                                            bool preserveBaselineOnClamp, qreal wrapWidth)
 {
     // Create QTextEdit lazily
     if (!m_textEdit) {
@@ -79,6 +81,11 @@ void InlineTextEditor::startEditingInternal(const QPoint& pos,
     }
 
     m_bounds = bounds;
+    m_fixedWrapWidth = wrapWidth > 0 ? qCeil(wrapWidth) : 0.0;
+    m_committedTextWidth = 0.0;
+    m_textEdit->setLineWrapMode(m_fixedWrapWidth > 0 ? QTextEdit::FixedPixelWidth : QTextEdit::WidgetWidth);
+    if (m_fixedWrapWidth > 0) m_textEdit->setLineWrapColumnOrWidth(qRound(m_fixedWrapWidth));
+    TextLayoutUtils::configure(*m_textEdit->document(), m_font);
 
     // Reset states from previous editing session
     m_isConfirmMode = false;
@@ -151,7 +158,9 @@ QString InlineTextEditor::finishEditing()
     // Remove event filter installed during confirm mode
     m_textEdit->removeEventFilter(this);
 
-    QString text = m_textEdit->toPlainText().trimmed();
+    QString text = m_textEdit->toPlainText();
+    m_committedTextWidth = m_textEdit->document()->textWidth();
+    if (text.trimmed().isEmpty()) text.clear();
 
     m_textEdit->hide();
     m_textEdit->clear();
@@ -429,42 +438,23 @@ void InlineTextEditor::updateStyle()
 
 void InlineTextEditor::adjustSize()
 {
-    if (!m_textEdit) return;
-
-    // Calculate actual text width using QFontMetrics
-    QString text = m_textEdit->toPlainText();
-    QFontMetrics fm(m_font);
-
-    // Find the widest line
-    int maxLineWidth = 0;
-    QStringList lines = text.split('\n');
-    for (const QString& line : lines) {
-        int lineWidth = fm.horizontalAdvance(line);
-        maxLineWidth = qMax(maxLineWidth, lineWidth);
-    }
-
-    // Add padding for border and internal padding
+    if (!m_textEdit || m_adjustingSize) return;
+    QScopedValueRollback<bool> adjusting(m_adjustingSize, true);
+    TextLayoutUtils::configure(*m_textEdit->document(), m_font);
+    const QString text = m_textEdit->toPlainText();
+    const QSizeF natural = TextLayoutUtils::measure(text, m_font);
     const int horizontalChrome = 2 * PADDING + 2 * kEditorBorderPx;
     const int verticalChrome = 2 * PADDING + 2 * kEditorBorderPx;
-    int newWidth = qMax(MIN_WIDTH, maxLineWidth + horizontalChrome + 4);
-    int newHeight = qMax(MIN_HEIGHT, lines.count() * fm.lineSpacing() + verticalChrome);
-
-    // Calculate box position from baseline position (m_textPosition)
-    QPoint boxTopLeft = boxTopLeftFromBaseline(m_textPosition);
-    int boxX = boxTopLeft.x();
-    int boxY = boxTopLeft.y();
-
-    // Clamp to bounds
-    if (boxX + newWidth > m_bounds.right()) {
-        newWidth = m_bounds.right() - boxX;
-    }
-    if (boxY + newHeight > m_bounds.bottom()) {
-        newHeight = m_bounds.bottom() - boxY;
-    }
-    newWidth = qMax(100, newWidth);
-    newHeight = qMax(30, newHeight);
-
-    m_textEdit->setFixedSize(newWidth, newHeight);
+    const QPoint topLeft = boxTopLeftFromBaseline(m_textPosition);
+    const qreal desiredWidth = m_fixedWrapWidth > 0 ? m_fixedWrapWidth : natural.width();
+    int width = qMax(MIN_WIDTH, qCeil(desiredWidth) + horizontalChrome + 4);
+    width = qMax(100, qMin(width, m_bounds.x() + m_bounds.width() - topLeft.x()));
+    m_textEdit->setFixedWidth(width);
+    const qreal textWidth = m_fixedWrapWidth > 0 ? m_fixedWrapWidth : m_textEdit->viewport()->width();
+    m_textEdit->document()->setTextWidth(qMax(1.0, textWidth));
+    const int desiredHeight = qCeil(m_textEdit->document()->size().height()) + verticalChrome;
+    const int availableHeight = m_bounds.y() + m_bounds.height() - topLeft.y();
+    m_textEdit->setFixedHeight(qMax(MIN_HEIGHT, qMin(desiredHeight, availableHeight)));
 }
 
 bool InlineTextEditor::eventFilter(QObject* obj, QEvent* event)

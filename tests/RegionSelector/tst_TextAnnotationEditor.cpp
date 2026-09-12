@@ -2,6 +2,12 @@
 #include <QWidget>
 #include <QTextEdit>
 #include <QFontMetrics>
+#include <QTextBlock>
+#include <QTextLayout>
+#include <QTextDocument>
+#include "annotations/TextBoxAnnotation.h"
+#include "history/AnnotationSerializer.h"
+#include "utils/TextLayoutUtils.h"
 #include "TextFormattingState.h"
 #include "TransformationGizmo.h"
 #include "annotations/AnnotationLayer.h"
@@ -58,6 +64,8 @@ private slots:
     void testInlineTextEditor_BaselineStableAcrossSessions();
     void testInlineTextEditor_UsesBlueFocusBorderStyle();
     void testInlineTextEditor_UsesDarkBackdropForLightText();
+    void testTextLayoutRoundtrip_data();
+    void testTextLayoutRoundtrip();
 
 private:
     // Double-click detection helper (mimics TextAnnotationEditor logic)
@@ -484,6 +492,99 @@ void tst_TextAnnotationEditor::testInlineTextEditor_UsesDarkBackdropForLightText
     QVERIFY(styleSheet.contains("background: rgba(0, 0, 0, 110)"));
     QVERIFY(styleSheet.contains("QTextEdit:focus"));
     QVERIFY(styleSheet.contains("background: rgba(0, 0, 0, 150)"));
+}
+
+namespace {
+QVector<QPair<int, int>> lineSpans(QTextDocument& document)
+{
+    (void)document.size();
+    QVector<QPair<int, int>> result;
+    for (QTextBlock block = document.begin(); block.isValid(); block = block.next()) {
+        for (int i = 0; i < block.layout()->lineCount(); ++i) {
+            const auto line = block.layout()->lineAt(i);
+            result.append({block.position() + line.textStart(), line.textLength()});
+        }
+    }
+    return result;
+}
+QImage renderText(const AnnotationItem& item, qreal dpr)
+{
+    QImage image(QSize(qRound(1500 * dpr), qRound(350 * dpr)), QImage::Format_ARGB32_Premultiplied);
+    image.setDevicePixelRatio(dpr);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
+    item.draw(painter);
+    return image;
+}
+}
+
+void tst_TextAnnotationEditor::testTextLayoutRoundtrip_data()
+{
+    QTest::addColumn<QString>("text");
+    QTest::addColumn<qreal>("dpr");
+    const QStringList cases{"  A   B  ", "first\n\n  second  ",
+        QStringLiteral("這是一段沒有空白的中文文字").repeated(4),
+        QStringLiteral("abcdefghijklmno").repeated(4),
+        QStringLiteral("Cafe\u0301 👨‍👩‍👧‍👦 中文 ").repeated(3)};
+    for (int i = 0; i < cases.size(); ++i) {
+        for (qreal dpr : {1.0, 1.5, 2.0}) {
+            QTest::addRow("text-%d-dpr-%g", i, dpr) << cases[i] << dpr;
+        }
+    }
+}
+
+void tst_TextAnnotationEditor::testTextLayoutRoundtrip()
+{
+    QFETCH(QString, text);
+    QFETCH(qreal, dpr);
+    QWidget parent;
+    parent.resize(240, 300);
+    parent.show();
+    AnnotationLayer layer;
+    InlineTextEditor input(&parent);
+    TextAnnotationEditor editor;
+    editor.setParentWidget(&parent);
+    editor.setTextEditor(&input);
+    editor.setAnnotationLayer(&layer);
+    connect(&input, &InlineTextEditor::editingFinished, &editor,
+        [&](const QString& value, const QPoint& position) { editor.finishEditing(value, position, Qt::black); });
+    editor.startEditing(QPoint(20, 40), parent.rect(), Qt::black);
+    input.textEdit()->setPlainText(text);
+    QCoreApplication::processEvents();
+    const auto editingLines = lineSpans(*input.textEdit()->document());
+    const qreal editingWidth = input.textEdit()->document()->textWidth();
+    QCOMPARE(input.finishEditing(), text);
+    auto* item = dynamic_cast<TextBoxAnnotation*>(layer.itemAt(0));
+    QVERIFY(item);
+    QCOMPARE(item->text(), text);
+    QCOMPARE(item->wrapWidth(), editingWidth);
+    QTextDocument rendered;
+    TextLayoutUtils::populate(rendered, item->text(), item->font(), item->wrapWidth());
+    QCOMPARE(lineSpans(rendered), editingLines);
+    QVERIFY(item->box().width() <= parent.width());
+    QVERIFY(item->box().height() >= rendered.size().height());
+    const QImage image = renderText(*item, dpr);
+    for (int y = 0; y < image.height(); ++y) {
+        const QRgb* row = reinterpret_cast<const QRgb*>(image.constScanLine(y));
+        for (int x = qRound(parent.width() * dpr); x < image.width(); ++x) QVERIFY(qAlpha(row[x]) == 0);
+    }
+    QCOMPARE(renderText(*item->clone(), dpr), image);
+    AnnotationLayer restored;
+    QVERIFY(SnapTray::deserializeAnnotationLayer(SnapTray::serializeAnnotationLayer(layer), &restored, {}));
+    auto* restoredText = dynamic_cast<TextBoxAnnotation*>(restored.itemAt(0));
+    QVERIFY(restoredText);
+    QCOMPARE(restoredText->wrapWidth(), item->wrapWidth());
+    QCOMPARE(renderText(*restoredText, dpr), image);
+    editor.startReEditing(0, Qt::black);
+    QCoreApplication::processEvents();
+    QCOMPARE(lineSpans(*input.textEdit()->document()), editingLines);
+    input.finishEditing();
+    QCOMPARE(renderText(*layer.itemAt(0), dpr), image);
+    if (text == "  A   B  ") {
+        TextBoxAnnotation collapsed(item->position(), "A B", item->font(), item->color());
+        collapsed.setWrapWidth(item->wrapWidth());
+        QVERIFY(renderText(collapsed, dpr) != image);
+    }
 }
 
 QTEST_MAIN(tst_TextAnnotationEditor)

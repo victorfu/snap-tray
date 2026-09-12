@@ -1,5 +1,9 @@
 #include "annotations/TextBoxAnnotation.h"
 #include "utils/CoordinateHelper.h"
+#include "utils/TextLayoutUtils.h"
+#include <QTextDocument>
+#include <QAbstractTextDocumentLayout>
+#include <QtMath>
 #include <QPainter>
 #include <QFontMetrics>
 #include <QTransform>
@@ -16,75 +20,14 @@ TextBoxAnnotation::TextBoxAnnotation(const QPointF &position, const QString &tex
 
 void TextBoxAnnotation::calculateInitialBox()
 {
-    QFontMetrics fm(m_font);
-    QStringList lines = m_text.split('\n');
-
-    // Calculate natural text width (no wrap)
-    int maxWidth = 0;
-    for (const QString &line : lines) {
-        maxWidth = qMax(maxWidth, fm.horizontalAdvance(line));
+    qreal width = m_wrapWidth;
+    if (width <= 0) {
+        const QSizeF natural = TextLayoutUtils::measure(m_text, m_font);
+        width = qMax(qreal(kDefaultWidth - 2 * kPadding), qreal(qCeil(natural.width())));
     }
-
-    // Use either default width or natural width, whichever is larger
-    int boxWidth = qMax(kDefaultWidth, maxWidth + 2 * kPadding);
-
-    // Calculate height based on wrapped text with this width
-    m_box = QRectF(0, 0, boxWidth, fm.lineSpacing() + 2 * kPadding);
-
-    // Now wrap text and recalculate height
-    QStringList wrapped = wrapText();
-    int totalHeight = wrapped.count() * fm.lineSpacing() + 2 * kPadding;
-    m_box.setHeight(qMax(totalHeight, kMinHeight));
-}
-
-QStringList TextBoxAnnotation::wrapText() const
-{
-    QFontMetrics fm(m_font);
-    int maxWidth = static_cast<int>(m_box.width()) - 2 * kPadding;
-
-    if (maxWidth <= 0) {
-        return m_text.split('\n');
-    }
-
-    QStringList result;
-    QStringList paragraphs = m_text.split('\n');
-
-    for (const QString &para : paragraphs) {
-        if (para.isEmpty()) {
-            result.append(QString());
-            continue;
-        }
-
-        QString currentLine;
-        QStringList words = para.split(' ');
-
-        for (const QString &word : words) {
-            if (word.isEmpty()) continue;
-
-            QString testLine = currentLine.isEmpty() ? word : currentLine + ' ' + word;
-
-            if (fm.horizontalAdvance(testLine) <= maxWidth) {
-                currentLine = testLine;
-            } else {
-                if (!currentLine.isEmpty()) {
-                    result.append(currentLine);
-                }
-                // If single word is too long, add it anyway (will be clipped)
-                currentLine = word;
-            }
-        }
-
-        if (!currentLine.isEmpty()) {
-            result.append(currentLine);
-        }
-    }
-
-    // Ensure at least one line
-    if (result.isEmpty()) {
-        result.append(QString());
-    }
-
-    return result;
+    const QSizeF content = TextLayoutUtils::measure(m_text, m_font, width);
+    m_box = QRectF(0, 0, qCeil(width) + 2 * kPadding,
+                   qMax(kMinHeight, qCeil(content.height()) + 2 * kPadding));
 }
 
 QPointF TextBoxAnnotation::center() const
@@ -152,35 +95,19 @@ bool TextBoxAnnotation::isCacheValid(qreal dpr) const
 
 void TextBoxAnnotation::regenerateCache(qreal dpr) const
 {
-    QFontMetrics fm(m_font);
-    QStringList lines = wrapText();
-
-    int boxWidth = static_cast<int>(m_box.width());
-    int boxHeight = static_cast<int>(m_box.height());
-
-    // Create pixmap for the box
-    QSize pixmapSize(boxWidth, boxHeight);
+    QTextDocument document;
+    TextLayoutUtils::populate(document, m_text, m_font, qMax(1.0, m_box.width() - 2 * kPadding));
+    const QSize pixmapSize(qCeil(m_box.width()), qCeil(m_box.height()));
     m_cachedPixmap = QPixmap(CoordinateHelper::toPhysical(pixmapSize, dpr));
     m_cachedPixmap.setDevicePixelRatio(dpr);
     m_cachedPixmap.fill(Qt::transparent);
-
     {
         QPainter offPainter(&m_cachedPixmap);
         offPainter.setRenderHint(QPainter::TextAntialiasing, true);
-        offPainter.setFont(m_font);
-        offPainter.setPen(m_color);
-
-        // Start at top-left with padding, then add ascent for baseline
-        QPointF pos(kPadding, kPadding + fm.ascent());
-
-        for (const QString &line : lines) {
-            if (!line.isEmpty()) {
-                // Keep glyph rasterization in Qt's text engine. Converting glyphs
-                // to painter paths bypasses TextAntialiasing and degrades CJK text.
-                offPainter.drawText(pos, line);
-            }
-            pos.setY(pos.y() + fm.lineSpacing());
-        }
+        offPainter.translate(kPadding, kPadding + TextLayoutUtils::baselineAdjustment(document, m_font));
+        QAbstractTextDocumentLayout::PaintContext context;
+        context.palette.setColor(QPalette::Text, m_color);
+        document.documentLayout()->draw(&offPainter, context);
     }
 
     // Origin is the position (top-left of box)
@@ -228,6 +155,7 @@ std::unique_ptr<AnnotationItem> TextBoxAnnotation::clone() const
 {
     auto cloned = std::make_unique<TextBoxAnnotation>(m_position, m_text, m_font, m_color);
     cloned->m_box = m_box;
+    cloned->m_wrapWidth = m_wrapWidth;
     cloned->m_rotation = m_rotation;
     cloned->m_scale = m_scale;
     cloned->m_mirrorX = m_mirrorX;
@@ -255,6 +183,14 @@ void TextBoxAnnotation::setPosition(const QPointF &position)
 void TextBoxAnnotation::setBox(const QRectF& box)
 {
     m_box = box;
+    if (m_wrapWidth > 0) m_wrapWidth = qMax(1.0, box.width() - 2 * kPadding);
+    invalidateCache();
+}
+
+void TextBoxAnnotation::setWrapWidth(qreal width)
+{
+    m_wrapWidth = qIsFinite(width) && width > 0 ? qCeil(width) : 0;
+    calculateInitialBox();
     invalidateCache();
 }
 

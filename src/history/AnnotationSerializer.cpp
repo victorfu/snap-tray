@@ -142,6 +142,7 @@ QJsonObject serializeAnnotationItem(const AnnotationItem* item)
             {"type", QStringLiteral("text_box")},
             {"position", serializePointF(text->position())},
             {"box", serializeRectF(text->box())},
+            {"wrapWidth", text->wrapWidth()},
             {"text", text->text()},
             {"font", text->font().toString()},
             {"color", serializeColor(text->color())},
@@ -274,6 +275,7 @@ std::unique_ptr<AnnotationItem> deserializeAnnotationItem(const QJsonObject& obj
         item->setScale(object.value(QStringLiteral("scale")).toDouble(1.0));
         item->setMirror(object.value(QStringLiteral("mirrorX")).toBool(),
                         object.value(QStringLiteral("mirrorY")).toBool());
+        item->setWrapWidth(object.value(QStringLiteral("wrapWidth")).toDouble());
         item->setBox(deserializeRectF(object.value(QStringLiteral("box"))));
         return item;
     }

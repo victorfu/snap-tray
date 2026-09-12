@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 6 |
-| Confirmed / Fix Ready | 27 |
+| Confirmed / Open | 5 |
+| Confirmed / Fix Ready | 28 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 3 |
@@ -70,7 +70,7 @@
 | REV-014 | Fix Ready | P1 | High | Arrow / Polyline | 寬箭頭超出 bounding／hit geometry |
 | REV-015 | Fix Ready | P1 | High | Polyline | 短末段把箭頭畫在倒數頂點，箭頭後仍有尾巴 |
 | REV-016 | Fix Ready | P2 | High | Gizmo | 小物件的 handle hit zones 重疊，部分 handle 不可達 |
-| REV-017 | Open | P1 | High | Text | wrapText 改變空白且不支援 CJK 字元換行 |
+| REV-017 | Fix Ready | P1 | High | Text | 空白被折疊且編輯／成品換行布局不一致 |
 | REV-018 | Fix Ready | P1 | High | Save Metadata | detected-window metadata 在儲存前被清除 |
 | REV-019 | Fix Ready | P1 | High | History | 跨螢幕保留選取後按 Enter 不寫入 History |
 | REV-020 | Fix Ready | P2 | High | Screen Canvas | 自訂顏色沒有完整同步與持久化 |
@@ -256,14 +256,15 @@
 - 修正證據：Text／Emoji／Shape／Arrow／Polyline 的 gizmo 使用共用最近距離判定，只比較落在各自有效半徑內的候選；同距離保留 rotation／corner、control／start／end、vertex 原順序作穩定 tie-break。仍先判定 handle，再回退 body／none。
 - 驗證：2026-09-12 macOS scripts/build.sh、TransformationGizmo 與 RegionInputHandler 通過；新增 27 組小尺寸／旋轉／負座標／重合／同距離／半徑邊界與 body fallback 測試。REV-012～016 整合後 scripts/run-tests.sh 全 149／149 套測試通過（既有平台及環境 skip 保留），all_qmllint exit 0（既有 warnings）；Windows／Ubuntu 原生互動 smoke 待補，保留 Fix Ready。對應本機 commit：fix: select the nearest overlapping annotation handle。
 
-### REV-017 — TextBox wrapText 破壞空白且無法換行 CJK
+### REV-017 — 文字空白與編輯／成品換行布局不一致
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/annotations/TextBoxAnnotation.cpp:40-87,153-183。
-- 觸發：文字含連續／前後空格，或沒有 ASCII space 的長 CJK／日文／泰文段落。
-- 後果：split(' ') 後略過 empty token，會正規化原文空白；無空格長字串整段當成單一 word 並允許超寬，最終被 box 裁切。
+- 觸發：連續／前後空白，或在窄輸入框編輯長 CJK／英文文字。
+- 後果：成品折疊空白；輸入框的 soft wrap 寬度未傳入 annotation，提交後變成自然寬度的單行並在匯出時被裁切。已用 52 字中文於 220 px 選區重現輸入布局 6 行、成品寬 1108 px；長英文亦同。
 - 完成條件：rendered text 保留原始 whitespace 語意；CJK 可在 grapheme boundary 換行且不切斷 surrogate／combining sequence；加入 mixed-script 與多空格 pixel／layout 測試。
-- 修正證據：待補。
+- 修正證據：文字編輯器與成品共用 QTextDocument 換行設定，保留空白、空行與 Unicode grapheme；提交保存實際 text width，成品按該寬度重新排版。重編輯固定原 wrap width，clone／History JSON 保存可選 wrapWidth（舊資料預設自然寬度），保留原本 baseline、旋轉／縮放與 Qt 原生字型光柵化。
+- 驗證：2026-09-12 macOS scripts/build.sh、TextBoxAnnotation、TextAnnotationEditor、AnnotationSerializer、ScreenCanvas_AnnotationRenderHelper 通過；15 組空白／空行／CJK／長英文／combining＋ZWJ emoji × DPR 1／1.5／2，驗證編輯與成品 line spans 一致、水平不溢出、重編輯／clone／serialization 像素一致。跨平台輸入法及原生編輯 UI smoke 待補，保留 Fix Ready。 對應本機 commit：fix: preserve text whitespace and layout through annotation editing。
 
 ### REV-018 — Detected-window metadata 在儲存前被清除
 
@@ -556,3 +557,4 @@
 | 2026-09-12 | REV-036 完成修正與針對性回歸，標為 Fix Ready；本批指定 11 項整合後 macOS 153／153 套測試通過，QML lint exit 0；硬體及其他平台 smoke 待補。 |
 | 2026-09-12 | REV-032 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-027 完成修正與針對性回歸，標為 Fix Ready；與 REV-032 整合後 macOS 155／155 套測試通過，QML lint 無 CursorTokens 警告。 |
+| 2026-09-12 | REV-017 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |

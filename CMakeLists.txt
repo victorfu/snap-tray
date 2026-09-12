@@ -336,6 +336,7 @@ add_library(snaptray_core STATIC
     src/utils/NativeFileDialogUtils.cpp
     src/utils/ScreenCaptureRegionUtils.cpp
     src/utils/OCRImageUtils.cpp
+    src/utils/TextLayoutUtils.cpp
     # Headers with Q_OBJECT for MOC processing
     include/settings/AnnotationSettingsManager.h
     include/settings/AutoLaunchSyncPolicy.h

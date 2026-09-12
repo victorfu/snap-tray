@@ -37,7 +37,9 @@ public:
      * @param bounds Bounding rect to constrain the editor
      * @param existingText The existing text to edit
      */
-    void startEditingExisting(const QPoint& pos, const QRect& bounds, const QString& existingText);
+    void startEditingExisting(const QPoint& pos, const QRect& bounds, const QString& existingText,
+                              qreal wrapWidth = 0.0);
+    qreal committedTextWidth() const { return m_committedTextWidth; }
 
     /**
      * @brief Finish editing and return the text.
@@ -159,7 +161,7 @@ private:
     void startEditingInternal(const QPoint& pos,
                               const QRect& bounds,
                               const QString& existingText,
-                              bool preserveBaselineOnClamp);
+                              bool preserveBaselineOnClamp, qreal wrapWidth = 0.0);
     QPoint baselineOffsetInEditor() const;
     QPoint boxTopLeftFromBaseline(const QPoint& baseline) const;
     QPoint baselineFromBoxTopLeft(const QPoint& boxTopLeft) const;
@@ -177,6 +179,9 @@ private:
     QRect m_bounds;
     QColor m_color;
     QFont m_font;
+    qreal m_fixedWrapWidth = 0.0;
+    qreal m_committedTextWidth = 0.0;
+    bool m_adjustingSize = false;
 
     static const int MIN_WIDTH = 150;
     static const int MIN_HEIGHT = 30;

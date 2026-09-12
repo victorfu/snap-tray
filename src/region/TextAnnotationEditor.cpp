@@ -105,7 +105,7 @@ void TextAnnotationEditor::startReEditing(int annotationIndex, const QColor& col
 
     QPointF baselineAnnotation = textItem->mapLocalPointToTransformed(baselineLocalOffset(textItem->font()));
     QPoint baselineDisplay = toRoundedPoint(m_annotationToDisplayMapper(baselineAnnotation));
-    m_textEditor->startEditingExisting(baselineDisplay, selectionRect, textItem->text());
+    m_textEditor->startEditingExisting(baselineDisplay, selectionRect, textItem->text(), textItem->wrapWidth());
 
     // Hide the original annotation while editing (prevent duplicate display)
     textItem->setVisible(false);
@@ -129,6 +129,7 @@ bool TextAnnotationEditor::finishEditing(const QString& text, const QPoint& posi
     QPointF baselineAnnotation = m_displayToAnnotationMapper(QPointF(position));
     QPointF localBaseline = baselineLocalOffset(font);
     bool createdNew = false;
+    const qreal wrapWidth = m_textEditor ? m_textEditor->committedTextWidth() : 0.0;
 
     if (m_editingIndex >= 0) {
         // Re-editing: restore visibility first
@@ -144,6 +145,7 @@ bool TextAnnotationEditor::finishEditing(const QString& text, const QPoint& posi
                 textItem->setText(text);
                 textItem->setFont(font);
                 textItem->setColor(color);
+                if (wrapWidth > 0) textItem->setWrapWidth(wrapWidth);
                 textItem->setRotation(originalRotation);
                 textItem->setScale(originalScale);
                 textItem->setMirror(originalMirrorX, originalMirrorY);
@@ -159,6 +161,7 @@ bool TextAnnotationEditor::finishEditing(const QString& text, const QPoint& posi
     else if (!text.isEmpty()) {
         // Create new TextBoxAnnotation
         auto textAnnotation = std::make_unique<TextBoxAnnotation>(QPointF(0, 0), text, font, color);
+        if (wrapWidth > 0) textAnnotation->setWrapWidth(wrapWidth);
         QPointF topLeft = textAnnotation->topLeftFromTransformedLocalPoint(baselineAnnotation, localBaseline);
         textAnnotation->setPosition(topLeft);
         m_annotationLayer->addItem(std::move(textAnnotation));
