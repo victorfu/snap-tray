@@ -39,7 +39,8 @@ QImage prepareImageForClipboard(const QPixmap& screenshot, QScreen* sourceScreen
 }
 
 QString resolveOutputFilePath(
-    const QPixmap& screenshot, const CaptureOutputOptions& options, const CaptureMetadata& metadata)
+    const QPixmap& screenshot, const CaptureOutputOptions& options, const CaptureMetadata& metadata,
+    ImageSaveUtils::UniqueSaveSpec* uniqueSpec)
 {
     if (!options.outputFile.isEmpty()) {
         return options.outputFile;
@@ -69,9 +70,10 @@ QString resolveOutputFilePath(
     context.ext = QStringLiteral("png");
     context.dateFormat = fileSettings.loadDateFormat();
     context.outputDir = savePath;
+    *uniqueSpec = {savePath, fileSettings.loadFilenameTemplate(), context};
 
     return FilenameTemplateEngine::buildUniqueFilePath(
-        savePath, fileSettings.loadFilenameTemplate(), context);
+        savePath, uniqueSpec->filenameTemplate, context);
 }
 
 } // namespace
@@ -109,14 +111,24 @@ CLIResult emitCaptureOutput(
         return CLIResult::error(CLIResult::Code::GeneralError, "Failed to copy to clipboard");
     }
 
-    const QString filePath = resolveOutputFilePath(screenshot, options, metadata);
+    ImageSaveUtils::UniqueSaveSpec uniqueSpec;
+    QString filePath = resolveOutputFilePath(screenshot, options, metadata, &uniqueSpec);
 
     // Ensure directory exists
     QDir().mkpath(QFileInfo(filePath).absolutePath());
 
     QImage image = prepareImageForRawOrSave(screenshot, metadata.sourceScreen);
     ImageSaveUtils::Error saveError;
-    if (!ImageSaveUtils::saveImageAtomically(image, filePath, QByteArrayLiteral("PNG"), &saveError)) {
+    bool success;
+    if (options.outputFile.isEmpty()) {
+        const auto saved = ImageSaveUtils::saveImageUnique(image, uniqueSpec, QByteArrayLiteral("PNG"));
+        filePath = saved.filePath;
+        saveError = saved.error;
+        success = saved.success;
+    } else {
+        success = ImageSaveUtils::saveImageAtomically(image, filePath, QByteArrayLiteral("PNG"), &saveError);
+    }
+    if (!success) {
         const QString detail = saveError.stage.isEmpty()
             ? (saveError.message.isEmpty() ? QStringLiteral("Unknown error") : saveError.message)
             : QStringLiteral("%1: %2").arg(saveError.stage, saveError.message);

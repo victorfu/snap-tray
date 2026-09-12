@@ -33,6 +33,12 @@ public:
 
     static Result renderFilename(const QString& templ, const Context& context);
 
+    // Pure name generation, without reserving or examining the filesystem.
+    // attempt 0 is the initial name; a non-empty uuidSuffix selects the fallback.
+    static QString collisionFilename(const QString& templ, const Context& context,
+                                      const QString& initialFilename, int attempt,
+                                      const QString& uuidSuffix = {});
+
     static QString buildUniqueFilePath(const QString& outputDir,
                                        const QString& templ,
                                        const Context& context,

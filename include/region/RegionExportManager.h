@@ -10,6 +10,8 @@
 #include <QString>
 
 #include <functional>
+#include <optional>
+#include "utils/ImageSaveUtils.h"
 
 class AnnotationLayer;
 class QFutureWatcherBase;
@@ -47,6 +49,7 @@ public:
         bool autoSave = false;
         bool rememberDirectoryOnSuccess = false;
         bool cancelled = false;
+        std::optional<ImageSaveUtils::UniqueSaveSpec> uniqueSave;
 
         bool isValid() const
         {

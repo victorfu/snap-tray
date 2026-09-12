@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 33 |
-| Confirmed / Fix Ready | 1 |
+| Confirmed / Open | 32 |
+| Confirmed / Fix Ready | 2 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 2 |
@@ -58,7 +58,7 @@
 | REV-002 | Fix Ready | P0 | High | Mosaic / HiDPI | Gaussian 自動遮罩只覆蓋部分實體像素 |
 | REV-003 | Open | P0 | High | Windows OCR | 未遵守 OcrEngine MaxImageDimension |
 | REV-004 | Verified | P0 | High | Tests / Settings | 測試會刪寫真實 SnapTray 設定 |
-| REV-005 | Open | P0 | High | Save / Concurrency | 唯一檔名存在 TOCTOU，可靜默覆寫 |
+| REV-005 | Fix Ready | P0 | High | Save / Concurrency | 唯一檔名存在 TOCTOU，可靜默覆寫 |
 | REV-006 | Open | P1 | High | Windows Capture UI | Annotation cache 無上限成長，可耗盡記憶體 |
 | REV-007 | Open | P0 | High | Windows Video | 強制 terminate 並刪除 reader thread，可 crash／UAF |
 | REV-008 | Open | P1 | High | macOS Recording | 首次麥克風授權阻塞主執行緒並破壞時間軸 |
@@ -136,12 +136,13 @@
 
 ### REV-005 — 唯一檔名配置存在 TOCTOU
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/utils/FilenameTemplateEngine.cpp:258-308；src/region/RegionExportManager.cpp:200-205,246-295；src/cli/CaptureOutputHelper.cpp:73-74,112-120；src/PinWindow.cpp:1648-1663,6049-6070；src/utils/ImageSaveUtils.cpp:75-103。
 - 觸發：兩個 producer 在同一 output directory、timestamp 與 filename context 下並行儲存，且都在任一方 commit 前完成 QFile::exists 檢查。
 - 後果：兩個操作都可能回報成功，但後完成的 QSaveFile::commit 取代先前檔案，只剩一張，造成靜默資料遺失。
 - 完成條件：以 barrier 同步兩個 producer 和兩個 process；必須取得不同保留路徑並保留兩份不同內容。Recording 既有 collision retry 不得退化。
-- 修正證據：待補。
+- 修正證據：saveImageUnique 將同目錄暫存編碼與原子禁止覆寫發布整合，碰撞時沿用序號／UUID 重試。AtomicFilePublish 封裝 macOS exclusive rename、Linux renameat2 與 Windows MoveFileExW，POSIX 只允許 hard-link 安全回退。Region、Pin、Beautify 自動儲存及 CLI 自動命名入口均回報實際路徑；手動／明確 output 覆寫保持原契約。
+- 驗證：2026-09-12 macOS scripts/build.sh 通過；Utils_ImageSaveUtils、FilenameTemplateEngine、RegionExportManager、CLI_CaptureOutputHelper、RecordingManager_Lifecycle 五套測試及 Pin／Beautify 自動儲存回歸通過。包含同步雙執行緒／雙程序、100 次序號與 UUID 碰撞、dangling symlink、失敗清理、設定快照與最終路徑。Windows／Ubuntu 原子操作尚待實機驗證，保留 Fix Ready。對應本機 commit：fix: publish uniquely named images without overwriting。
 
 ### REV-006 — CaptureChrome annotation cache 無上限成長
 
@@ -498,3 +499,4 @@
 | 2026-09-01 | REV-004 完成修正與獨立驗證：所有 C++ test process 改用獨立 temporary INI，Debug／Release 真實 settings store 不再被測試刪寫；狀態更新為 Verified。 |
 | 2026-09-01 | REV-001 經官方 v1.0.62 DMG 的 macOS 14.8.7 ARM64 smoke 反證：loader、`--version` 與 10 秒 GUI startup 均通過；由 Open／P0 改為 Rejected，統計更新為 36 Confirmed、2 Potential、1 Rejected。 |
 | 2026-09-12 | REV-002 完成 DPR 合成修正與 macOS 像素／入口回歸測試，標為 Fix Ready；跨平台 UI 驗證待補。 |
+| 2026-09-12 | REV-005 完成原子禁止覆寫存檔與所有自動命名入口遷移，macOS 並行及回歸測試通過；標為 Fix Ready。 |

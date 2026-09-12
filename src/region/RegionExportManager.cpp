@@ -199,6 +199,7 @@ RegionExportManager::SaveRequest RegionExportManager::createSaveRequest(
 
     // Check auto-save setting
     if (fileSettings.loadAutoSaveScreenshots()) {
+        request.uniqueSave = ImageSaveUtils::UniqueSaveSpec{screenshotPath, templateValue, context};
         request.filePath = FilenameTemplateEngine::buildUniqueFilePath(
             screenshotPath, templateValue, context, 100, &request.renderWarning);
         request.autoSave = true;
@@ -286,12 +287,20 @@ void RegionExportManager::savePreparedExportAsync(PreparedExport prepared,
         });
 
     watcher->setFuture(QtConcurrent::run(
-        [image, filePath = request.filePath, renderWarning = request.renderWarning]() {
+        [image, request]() {
             SaveTaskResult result;
-            result.filePath = filePath;
-            result.renderWarning = renderWarning;
+            if (request.uniqueSave) {
+                const auto saved = ImageSaveUtils::saveImageUnique(image, *request.uniqueSave);
+                result.filePath = saved.filePath;
+                result.renderWarning = saved.renderWarning;
+                result.saveError = saved.error;
+                result.success = saved.success;
+                return result;
+            }
+            result.filePath = request.filePath;
+            result.renderWarning = request.renderWarning;
             result.success = ImageSaveUtils::saveImageAtomically(
-                image, filePath, QByteArray(), &result.saveError);
+                image, request.filePath, QByteArray(), &result.saveError);
             return result;
         }));
 }

@@ -2,6 +2,10 @@
 #include <QSignalSpy>
 
 #include "RecordingManager.h"
+#include "settings/Settings.h"
+#include "settings/FileSettingsManager.h"
+#include <QFile>
+#include <QTemporaryDir>
 
 /**
  * @brief Tests for RecordingManager resource lifecycle
@@ -35,6 +39,7 @@ private slots:
 
     // Error handling tests
     void testErrorSignalOnInvalidOperation();
+    void testAutoSaveKeepsExistingRecording();
 
 private:
     RecordingManager* m_manager = nullptr;
@@ -144,6 +149,32 @@ void TestRecordingManagerLifecycle::testErrorSignalOnInvalidOperation()
     // These operations silently fail when in wrong state (no error signal)
     // This documents current behavior
     QCOMPARE(m_manager->state(), RecordingManager::State::Idle);
+}
+
+void TestRecordingManagerLifecycle::testAutoSaveKeepsExistingRecording()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    auto& settings = FileSettingsManager::instance();
+    settings.saveAutoSaveRecordings(true);
+    settings.saveRecordingPath(dir.path());
+    settings.saveFilenameTemplate("same.{ext}");
+    const QString existing = dir.filePath("same.mp4");
+    const QString temporary = dir.filePath("input.mp4");
+    for (const auto& path : {existing, temporary}) {
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        QCOMPARE(file.write(path == existing ? "original" : "new-video"),
+                 path == existing ? qint64(8) : qint64(9));
+    }
+    QSignalSpy saved(m_manager, &RecordingManager::recordingStopped);
+    m_manager->triggerSaveDialog(temporary);
+    QCOMPARE(saved.count(), 1);
+    QCOMPARE(saved.first().first().toString(), dir.filePath("same_1.mp4"));
+    QFile original(existing);
+    QVERIFY(original.open(QIODevice::ReadOnly));
+    QCOMPARE(original.readAll(), QByteArray("original"));
+    QVERIFY(!QFile::exists(temporary));
 }
 
 QTEST_MAIN(TestRecordingManagerLifecycle)

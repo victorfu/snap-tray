@@ -72,6 +72,7 @@ private slots:
     void testCreateSaveRequest_CancelPreservesRememberedDirectory();
     void testCreateSaveRequest_AutoSaveUsesScreenshotDirectoryAndSkipsDialog();
     void testSavePreparedExportAsync_RemembersDirectoryAfterSuccess();
+    void testAutoSaveCollisionUsesSnapshotAndReportsFinalPath();
     void testSavePreparedExportAsync_DoesNotRememberWhenRequestDisablesIt();
     void testSavePreparedExportAsync_DoesNotRememberAfterFailure();
 
@@ -256,6 +257,40 @@ void tst_RegionExportManager::testCreateSaveRequest_AutoSaveUsesScreenshotDirect
     QVERIFY(request.isValid());
     QCOMPARE(SnapTray::getSettings().value(kLastSaveDirectoryKey).toString(),
              rememberedDirectory.path());
+}
+
+void tst_RegionExportManager::testAutoSaveCollisionUsesSnapshotAndReportsFinalPath()
+{
+    QTemporaryDir directory;
+    QTemporaryDir changedDirectory;
+    QVERIFY(directory.isValid());
+    QVERIFY(changedDirectory.isValid());
+    configureSaveSettings(directory.path(), true, false, {});
+    RegionExportManager first, second;
+    const auto a = first.createSaveRequest(QRect(0, 0, 320, 180));
+    const auto b = second.createSaveRequest(QRect(0, 0, 320, 180));
+    QCOMPARE(a.filePath, b.filePath);
+    QVERIFY(a.uniqueSave.has_value());
+    // Later settings changes must not redirect an already prepared save.
+    configureSaveSettings(changedDirectory.path(), true, false, {});
+    auto red = makePreparedExport();
+    red.image.fill(Qt::red);
+    auto blue = makePreparedExport();
+    blue.image.fill(Qt::blue);
+    QSignalSpy firstDone(&first, &RegionExportManager::saveCompleted);
+    QSignalSpy secondDone(&second, &RegionExportManager::saveCompleted);
+    first.savePreparedExportAsync(red, a);
+    QTRY_COMPARE_WITH_TIMEOUT(firstDone.count(), 1, 5000);
+    second.savePreparedExportAsync(blue, b);
+    QTRY_COMPARE_WITH_TIMEOUT(secondDone.count(), 1, 5000);
+    const QString firstPath = firstDone.first().at(2).toString();
+    const QString secondPath = secondDone.first().at(2).toString();
+    QVERIFY(firstPath != secondPath);
+    QCOMPARE(QFileInfo(firstPath).absolutePath(), directory.path());
+    QCOMPARE(QFileInfo(secondPath).absolutePath(), directory.path());
+    QCOMPARE(QImage(firstPath).pixelColor(0, 0), QColor(Qt::red));
+    QCOMPARE(QImage(secondPath).pixelColor(0, 0), QColor(Qt::blue));
+    QVERIFY(QDir(changedDirectory.path()).entryList(QDir::Files).isEmpty());
 }
 
 void tst_RegionExportManager::testSavePreparedExportAsync_RemembersDirectoryAfterSuccess()

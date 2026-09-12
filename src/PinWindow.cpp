@@ -1653,20 +1653,17 @@ void PinWindow::saveToFile()
             return;
         }
 
-        QString renderError;
-        QString filePath = FilenameTemplateEngine::buildUniqueFilePath(
-            savePath, templateValue, context, kMaxFileCollisionRetries, &renderError);
-
         const QImage taggedImage = tagImageWithScreenColorSpace(pixmapToSave.toImage(), exportScreen);
-        ImageSaveUtils::Error saveError;
-        if (ImageSaveUtils::saveImageAtomically(taggedImage, filePath, QByteArray(), &saveError)) {
-            emit saveCompleted(pixmapToSave, filePath);
+        const auto saved = ImageSaveUtils::saveImageUnique(
+            taggedImage, {savePath, templateValue, context});
+        if (saved.success) {
+            emit saveCompleted(pixmapToSave, saved.filePath);
         }
         else {
-            if (!renderError.isEmpty()) {
-                qWarning() << "PinWindow: template warning:" << renderError;
+            if (!saved.renderWarning.isEmpty()) {
+                qWarning() << "PinWindow: template warning:" << saved.renderWarning;
             }
-            emit saveFailed(filePath, tr("Failed to save screenshot: %1").arg(saveErrorDetail(saveError)));
+            emit saveFailed(saved.filePath, tr("Failed to save screenshot: %1").arg(saveErrorDetail(saved.error)));
         }
         return;
     }
@@ -6068,20 +6065,18 @@ void PinWindow::onBeautifySave(const BeautifySettings& settings)
             return;
         }
 
-        QString renderError;
-        QString filePath = FilenameTemplateEngine::buildUniqueFilePath(
-            savePath, templateValue, context, kMaxFileCollisionRetries, &renderError);
-        if (!renderError.isEmpty()) {
-            qWarning() << "PinWindow: beautify template warning:" << renderError;
-        }
         const QImage taggedImage = tagImageWithScreenColorSpace(result.toImage(), exportScreen);
-        ImageSaveUtils::Error saveError;
-        if (ImageSaveUtils::saveImageAtomically(taggedImage, filePath, QByteArray(), &saveError)) {
-            emit saveCompleted(result, filePath);
+        const auto saved = ImageSaveUtils::saveImageUnique(
+            taggedImage, {savePath, templateValue, context});
+        if (!saved.renderWarning.isEmpty()) {
+            qWarning() << "PinWindow: beautify template warning:" << saved.renderWarning;
+        }
+        if (saved.success) {
+            emit saveCompleted(result, saved.filePath);
         } else {
             emit saveFailed(
-                filePath,
-                tr("Failed to save beautified screenshot: %1").arg(saveErrorDetail(saveError)));
+                saved.filePath,
+                tr("Failed to save beautified screenshot: %1").arg(saveErrorDetail(saved.error)));
         }
     } else {
         const bool rememberDirectoryOnSuccess = fileSettings.loadUseLastScreenshotSaveLocation();

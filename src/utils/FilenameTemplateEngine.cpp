@@ -255,6 +255,28 @@ FilenameTemplateEngine::Result FilenameTemplateEngine::renderFilename(const QStr
     return result;
 }
 
+QString FilenameTemplateEngine::collisionFilename(const QString& templ, const Context& context,
+                                                   const QString& initialFilename, int attempt,
+                                                   const QString& uuidSuffix)
+{
+    if (!uuidSuffix.isEmpty()) {
+        const QFileInfo info(initialFilename);
+        QString name = info.completeBaseName() + QChar('_') + uuidSuffix;
+        if (!info.suffix().isEmpty())
+            name += QChar('.') + info.suffix();
+        return ensureExtension(enforceLengthLimit(name, context.outputDir), context.ext);
+    }
+    if (attempt == 0)
+        return initialFilename;
+    const QString effectiveTemplate = templ.trimmed().isEmpty() ? defaultTemplate() : templ.trimmed();
+    if (hasCounterToken(effectiveTemplate)) {
+        Context numbered = context;
+        numbered.counter = attempt;
+        return renderFilename(effectiveTemplate, numbered).filename;
+    }
+    return enforceLengthLimit(appendCounter(initialFilename, attempt), context.outputDir);
+}
+
 QString FilenameTemplateEngine::buildUniqueFilePath(const QString& outputDir,
                                                     const QString& templ,
                                                     const Context& context,
@@ -279,19 +301,8 @@ QString FilenameTemplateEngine::buildUniqueFilePath(const QString& outputDir,
         return initialPath;
     }
 
-    const QString templateToUse = templ.trimmed().isEmpty() ? defaultTemplate() : templ.trimmed();
-    const bool counterInTemplate = hasCounterToken(templateToUse);
-
     for (int attempt = 1; attempt <= maxAttempts; ++attempt) {
-        QString candidateName;
-        if (counterInTemplate) {
-            localContext.counter = attempt;
-            candidateName = renderFilename(templateToUse, localContext).filename;
-        } else {
-            candidateName = appendCounter(initialResult.filename, attempt);
-            candidateName = enforceLengthLimit(candidateName, outputDir);
-        }
-
+        const QString candidateName = collisionFilename(templ, localContext, initialResult.filename, attempt);
         const QString candidatePath = dir.filePath(candidateName);
         if (!QFile::exists(candidatePath)) {
             return candidatePath;
@@ -299,13 +310,7 @@ QString FilenameTemplateEngine::buildUniqueFilePath(const QString& outputDir,
     }
 
     const QString uuid = QUuid::createUuid().toString(QUuid::Id128).left(8);
-    const QFileInfo fallbackInfo(initialResult.filename);
-    QString fallbackName = QStringLiteral("%1_%2").arg(fallbackInfo.completeBaseName()).arg(uuid);
-    if (!fallbackInfo.suffix().isEmpty()) {
-        fallbackName += QStringLiteral(".") + fallbackInfo.suffix();
-    }
-    fallbackName = enforceLengthLimit(fallbackName, outputDir);
-    return dir.filePath(ensureExtension(fallbackName, localContext.ext));
+    return dir.filePath(collisionFilename(templ, localContext, initialResult.filename, 0, uuid));
 }
 
 QString FilenameTemplateEngine::sanitizeFilename(const QString& raw)

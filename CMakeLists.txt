@@ -320,6 +320,7 @@ add_library(snaptray_core STATIC
     src/beautify/BeautifyRenderer.cpp
     src/update/UpdateSettingsManager.cpp
     src/platform/PlatformCapabilities.cpp
+    src/platform/AtomicFilePublish.cpp
     src/tools/ToolRegistry.cpp
     src/tools/ToolSectionConfig.cpp
     src/tools/ToolWidthSlot.cpp

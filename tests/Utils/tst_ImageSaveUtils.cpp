@@ -9,8 +9,18 @@
 #include <QScreen>
 #include <QTemporaryDir>
 #include <utility>
+#include <QDir>
+#include <QProcess>
+#include <QImageWriter>
+#include <condition_variable>
+#include <future>
+#include <mutex>
+#ifndef Q_OS_WIN
+#include <unistd.h>
+#endif
 
 #include "utils/ImageSaveUtils.h"
+#include "ImageSaveUtilsTestAccess.h"
 
 class tst_ImageSaveUtils : public QObject
 {
@@ -24,12 +34,176 @@ private slots:
     void testOverwriteExistingFile();
     void testOverwriteWithReadOnlyDirectoryUsesFallback();
     void testSaveImageWithColorSpacePreservesProfile();
+    void testUniqueConcurrentThreads();
+    void testUniqueConcurrentProcesses();
+    void testUniqueCounterAndUuidCollisions();
+    void testUniquePreservesSymlink();
+    void testUniqueFailureCleansTemporaryFile();
+    void testUniqueEncodingFailure();
 #ifdef Q_OS_MAC
     void testPixmapRoundTripPreservesTaggedColorSpace();
     void testSavePixmapPreservesTaggedColorSpace();
     void testSavePixmapAppliesScreenColorSpaceWhenMissing();
 #endif
 };
+
+namespace {
+QImage solidImage(Qt::GlobalColor color)
+{
+    QImage image(24, 24, QImage::Format_ARGB32);
+    image.fill(color);
+    return image;
+}
+void writeSentinel(const QString& path)
+{
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::NewOnly));
+    QCOMPARE(file.write("sentinel"), qint64(8));
+}
+}
+
+void tst_ImageSaveUtils::testUniqueConcurrentThreads()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    ImageSaveUtils::UniqueSaveSpec spec{dir.path(), "same.png", {}};
+    std::mutex mutex;
+    std::condition_variable ready;
+    int arrived = 0;
+    auto worker = [&](Qt::GlobalColor color) {
+        bool first = true;
+        return ImageSaveUtilsTestAccess::save(solidImage(color), spec,
+            [&](const QString& source, const QString& destination) {
+                if (first) {
+                    first = false;
+                    std::unique_lock<std::mutex> lock(mutex);
+                    ++arrived;
+                    ready.notify_all();
+                    if (!ready.wait_for(lock, std::chrono::seconds(10), [&] { return arrived == 2; }))
+                        return SnapTray::FilePublishResult{SnapTray::FilePublishStatus::Failed, "barrier timeout"};
+                }
+                return SnapTray::publishFileNoReplace(source, destination);
+            });
+    };
+    auto first = std::async(std::launch::async, worker, Qt::red);
+    auto second = std::async(std::launch::async, worker, Qt::blue);
+    const auto a = first.get();
+    const auto b = second.get();
+    QVERIFY2(a.success, qPrintable(a.error.message));
+    QVERIFY2(b.success, qPrintable(b.error.message));
+    QVERIFY(a.filePath != b.filePath);
+    QCOMPARE(QImage(a.filePath), solidImage(Qt::red));
+    QCOMPARE(QImage(b.filePath), solidImage(Qt::blue));
+    QCOMPARE(QDir(dir.path()).entryList(QDir::Files | QDir::Hidden).size(), 2);
+}
+
+void tst_ImageSaveUtils::testUniqueConcurrentProcesses()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString program = QCoreApplication::applicationDirPath() + "/Utils_UniqueImageSaveProcess";
+    QProcess first, second;
+    first.start(program, {dir.path(), "red"});
+    second.start(program, {dir.path(), "blue"});
+    for (QProcess* process : {&first, &second}) {
+        QVERIFY(process->waitForStarted());
+        QTRY_VERIFY_WITH_TIMEOUT(process->canReadLine(), 10000);
+        QCOMPARE(process->readLine().trimmed(), QByteArray("ready"));
+    }
+    for (QProcess* process : {&first, &second})
+        QCOMPARE(process->write("go\n"), qint64(3));
+    for (QProcess* process : {&first, &second}) {
+        QVERIFY(process->waitForFinished(10000));
+        QCOMPARE(process->exitStatus(), QProcess::NormalExit);
+        QCOMPARE(process->exitCode(), 0);
+    }
+    const QString a = QString::fromUtf8(first.readAllStandardOutput()).trimmed();
+    const QString b = QString::fromUtf8(second.readAllStandardOutput()).trimmed();
+    QVERIFY(a != b);
+    QCOMPARE(QImage(a), solidImage(Qt::red));
+    QCOMPARE(QImage(b), solidImage(Qt::blue));
+    QCOMPARE(QDir(dir.path()).entryList(QDir::Files | QDir::Hidden).size(), 2);
+}
+
+void tst_ImageSaveUtils::testUniqueCounterAndUuidCollisions()
+{
+    for (const QString& templ : {QString("same.png"), QString("same_{#}.png")}) {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        ImageSaveUtils::UniqueSaveSpec spec{dir.path(), templ, {}};
+        spec.context.outputDir = dir.path();
+        const QString initial = FilenameTemplateEngine::renderFilename(templ, spec.context).filename;
+        for (int i = 0; i <= 100; ++i)
+            writeSentinel(dir.filePath(FilenameTemplateEngine::collisionFilename(templ, spec.context, initial, i)));
+        int attempts = 0;
+        QString temporaryPath;
+        auto publish = [&](const QString& source, const QString& destination) {
+            if (temporaryPath.isEmpty()) temporaryPath = source;
+            if (source != temporaryPath || QImage(source) != solidImage(Qt::red))
+                return SnapTray::FilePublishResult{SnapTray::FilePublishStatus::Failed, "incomplete or re-encoded source"};
+            ++attempts;
+            return SnapTray::publishFileNoReplace(source, destination);
+        };
+        auto saved = ImageSaveUtilsTestAccess::save(solidImage(Qt::red), spec, publish, "fixed");
+        QVERIFY2(saved.success, qPrintable(saved.error.message));
+        QCOMPARE(attempts, 102);
+        QVERIFY(saved.filePath.endsWith("same_fixed.png"));
+        QVERIFY(!QFile::exists(temporaryPath));
+        saved = ImageSaveUtilsTestAccess::save(solidImage(Qt::red), spec, {}, "fixed");
+        QVERIFY(!saved.success);
+        QCOMPARE(saved.error.stage, QString("commit"));
+        QCOMPARE(QDir(dir.path()).entryList(QDir::Files | QDir::Hidden).size(), 102);
+        QFile sentinel(dir.filePath(initial));
+        QVERIFY(sentinel.open(QIODevice::ReadOnly));
+        QCOMPARE(sentinel.readAll(), QByteArray("sentinel"));
+    }
+}
+
+void tst_ImageSaveUtils::testUniquePreservesSymlink()
+{
+#ifdef Q_OS_WIN
+    QSKIP("Native Windows symlink creation requires developer mode or elevated privileges");
+#else
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString target = dir.filePath("missing-target");
+    const QString link = dir.filePath("same.png");
+    QCOMPARE(::symlink(QFile::encodeName(target).constData(), QFile::encodeName(link).constData()), 0);
+    const auto saved = ImageSaveUtils::saveImageUnique(solidImage(Qt::red), {dir.path(), "same.png", {}});
+    QVERIFY(saved.success);
+    QVERIFY(saved.filePath.endsWith("same_1.png"));
+    QVERIFY(QFileInfo(link).isSymLink());
+    QVERIFY(!QFile::exists(target));
+#endif
+}
+
+void tst_ImageSaveUtils::testUniqueFailureCleansTemporaryFile()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    writeSentinel(dir.filePath("existing.png"));
+    const auto saved = ImageSaveUtilsTestAccess::save(solidImage(Qt::red), {dir.path(), "new.png", {}},
+        [](const QString&, const QString&) {
+            return SnapTray::FilePublishResult{SnapTray::FilePublishStatus::Failed, "unsupported publication"};
+        });
+    QVERIFY(!saved.success);
+    QCOMPARE(saved.error.stage, QString("commit"));
+    QCOMPARE(QDir(dir.path()).entryList(QDir::Files | QDir::Hidden), QStringList{"existing.png"});
+}
+
+void tst_ImageSaveUtils::testUniqueEncodingFailure()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    if (!QImageWriter::supportedImageFormats().contains("jpeg"))
+        QSKIP("JPEG writer unavailable");
+    QImage tooWide(65536, 1, QImage::Format_RGB32);
+    tooWide.fill(Qt::red);
+    const auto saved = ImageSaveUtils::saveImageUnique(tooWide, {dir.path(), "new.jpg", {}}, "JPEG");
+    QVERIFY(!saved.success);
+    QCOMPARE(saved.error.stage, QString("write"));
+    QVERIFY(QDir(dir.path()).entryList(QDir::Files | QDir::Hidden).isEmpty());
+}
 
 void tst_ImageSaveUtils::testSavePngSuccess()
 {

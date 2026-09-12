@@ -23,6 +23,9 @@
 #include "pinwindow/RegionLayoutManager.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/Settings.h"
+#include "settings/FileSettingsManager.h"
+#include "beautify/BeautifySettings.h"
+#include <QTemporaryDir>
 #include "tools/ToolManager.h"
 
 namespace {
@@ -154,6 +157,8 @@ private slots:
     void testReleaseOverFloatingToolbarFinishesWindowDrag();
     void testAutoBlurMapsRotatedDisplayRectToAnnotationSpace();
     void testAutoBlurGaussianCoversMappedHiDpiRegion();
+    void testAutomaticSavesPreserveEarlierImage_data();
+    void testAutomaticSavesPreserveEarlierImage();
     void testAutoBlurMapsFlippedDisplayRectToAnnotationSpace();
     void testAutoBlurMapsCombinedRotationAndFlips();
     void testAutoBlurAnnotationSourceRestoresCombinedOrientation();
@@ -404,6 +409,47 @@ void TestPinWindowStyleSync::testReleaseOverFloatingToolbarFinishesWindowDrag()
     QCoreApplication::sendEvent(&window, &releaseEvent);
 
     QVERIFY(!window.m_isDragging);
+}
+
+void TestPinWindowStyleSync::testAutomaticSavesPreserveEarlierImage_data()
+{
+    QTest::addColumn<bool>("beautify");
+    QTest::newRow("pin") << false;
+    QTest::newRow("beautify") << true;
+}
+
+void TestPinWindowStyleSync::testAutomaticSavesPreserveEarlierImage()
+{
+    QFETCH(bool, beautify);
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    auto& settings = FileSettingsManager::instance();
+    settings.saveScreenshotPath(dir.path());
+    settings.saveAutoSaveScreenshots(true);
+    settings.saveFilenameTemplate("same.png");
+    QPixmap red(24, 24), blue(24, 24);
+    red.fill(Qt::red);
+    blue.fill(Qt::blue);
+    PinWindow first(red, QPoint(0, 0)), second(blue, QPoint(0, 0));
+    QSignalSpy a(&first, &PinWindow::saveCompleted), b(&second, &PinWindow::saveCompleted);
+    BeautifySettings style;
+    style.padding = 0;
+    style.cornerRadius = 0;
+    style.shadowEnabled = false;
+    if (beautify) {
+        first.onBeautifySave(style);
+        second.onBeautifySave(style);
+    } else {
+        first.saveToFile();
+        second.saveToFile();
+    }
+    QCOMPARE(a.count(), 1);
+    QCOMPARE(b.count(), 1);
+    const QString firstPath = a.first().at(1).toString();
+    const QString secondPath = b.first().at(1).toString();
+    QVERIFY(firstPath != secondPath);
+    QCOMPARE(QImage(firstPath).pixelColor(12, 12), QColor(Qt::red));
+    QCOMPARE(QImage(secondPath).pixelColor(12, 12), QColor(Qt::blue));
 }
 
 void TestPinWindowStyleSync::testAutoBlurGaussianCoversMappedHiDpiRegion()
