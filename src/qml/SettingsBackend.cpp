@@ -957,18 +957,24 @@ bool SettingsBackend::ocrAvailableLanguagesLoaded() const
 
 void SettingsBackend::installCLI()
 {
-    if (PlatformFeatures::instance().installCLI()) {
-        m_cliInstalled = true;
-        emit cliInstalledChanged();
-    }
+    changeCLIInstallation(true, [] { return PlatformFeatures::instance().installCLI(); });
 }
 
 void SettingsBackend::uninstallCLI()
 {
-    if (PlatformFeatures::instance().uninstallCLI()) {
-        m_cliInstalled = false;
+    changeCLIInstallation(false, [] { return PlatformFeatures::instance().uninstallCLI(); });
+}
+
+void SettingsBackend::changeCLIInstallation(bool installed, const std::function<bool()>& operation)
+{
+    const bool success = operation();
+    if (success && m_cliInstalled != installed) {
+        m_cliInstalled = installed;
         emit cliInstalledChanged();
     }
+    emit cliOperationFinished(success, success ? QString() : installed
+        ? tr("Could not install the CLI. Check permissions and try again.")
+        : tr("Could not uninstall the CLI. Check permissions and try again."));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

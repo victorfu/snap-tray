@@ -283,6 +283,7 @@ signals:
     void languageChanged();
     void appThemeChanged();
     void cliInstalledChanged();
+    void cliOperationFinished(bool success, const QString& errorMessage);
 
 #ifdef Q_OS_MAC
     void permissionsChanged();
@@ -356,6 +357,7 @@ private:
     using StartOnLoginCompletion = std::function<void(AutoLaunchStatus)>;
     using StartOnLoginSetter = std::function<void(bool, StartOnLoginCompletion)>;
 
+    void changeCLIInstallation(bool installed, const std::function<bool()>& operation);
     void loadAllSettings();
     void setStartOnLoginWithSetter(bool v, const StartOnLoginSetter& setter);
     void refreshStartOnLoginStatus();

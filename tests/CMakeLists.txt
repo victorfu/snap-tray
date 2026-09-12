@@ -622,6 +622,15 @@ target_link_libraries(CLI_CaptureOutputHelper PRIVATE snaptray_cli Qt6::Test)
 add_test(NAME CLI_CaptureOutputHelper COMMAND CLI_CaptureOutputHelper)
 set_tests_properties(CLI_CaptureOutputHelper PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(CLI_PathPersistence
+    CLI/tst_PathPersistence.cpp
+    ${CMAKE_SOURCE_DIR}/src/platform/PathEnvUtils_win.cpp
+)
+target_include_directories(CLI_PathPersistence PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(CLI_PathPersistence PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME CLI_PathPersistence COMMAND CLI_PathPersistence)
+set_tests_properties(CLI_PathPersistence PROPERTIES TIMEOUT 60 LABELS "unit")
+
 if(WIN32)
     add_executable(CLI_WindowsPathEnv
         CLI/tst_WindowsPathEnv.cpp

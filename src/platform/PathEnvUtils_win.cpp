@@ -1,6 +1,7 @@
 #include "platform/PathEnvUtils_win.h"
 
 #include <QDir>
+#include <QSettings>
 
 namespace {
 
@@ -15,6 +16,20 @@ QString stripOuterQuotes(QString value)
 } // namespace
 
 namespace PathEnvUtils {
+
+bool persistPathEntries(QSettings& store, const MutationResult& result)
+{
+    if (store.status() != QSettings::NoError) return false;
+    const QString expected = result.entries.join(';');
+    if (result.changed) store.setValue("Path", expected);
+    store.sync();
+    if (store.status() != QSettings::NoError) return false;
+
+    QSettings persisted(store.fileName(), store.format());
+    const QString actual = persisted.value("Path").toString();
+    return persisted.status() == QSettings::NoError
+        && splitPathEntries(actual) == result.entries;
+}
 
 QString normalizePathEntry(QString path)
 {

@@ -4,12 +4,16 @@
 #include <QString>
 #include <QStringList>
 
+class QSettings;
+
 namespace PathEnvUtils {
 
 struct MutationResult {
     QStringList entries;
     bool changed = false;
 };
+
+bool persistPathEntries(QSettings& store, const MutationResult& result);
 
 QString normalizePathEntry(QString path);
 QStringList splitPathEntries(const QString& pathValue);

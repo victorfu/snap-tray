@@ -76,6 +76,8 @@ private slots:
     void init();
     void cleanup();
 
+    void testCLICompletion_data();
+    void testCLICompletion();
     void testAvailableLanguages_PrioritizesConfiguredAsianLanguages();
     void testCursorCompanionStyle_RoundTripPersistsAndSignals();
     void testMagnifierEnabled_RoundTripPersistsAndSignals();
@@ -571,3 +573,34 @@ void tst_SettingsBackend::testHotkeyCategoriesHideRecordingWhenUnsupported()
 
 QTEST_MAIN(tst_SettingsBackend)
 #include "tst_SettingsBackend.moc"
+
+void tst_SettingsBackend::testCLICompletion_data()
+{
+    QTest::addColumn<bool>("initial");
+    QTest::addColumn<bool>("requested");
+    QTest::addColumn<bool>("success");
+    for (bool initial : {false, true})
+        for (bool requested : {false, true})
+            for (bool success : {false, true})
+                QTest::newRow(qPrintable(QString("%1-%2-%3").arg(initial).arg(requested).arg(success)))
+                    << initial << requested << success;
+}
+
+void tst_SettingsBackend::testCLICompletion()
+{
+    QFETCH(bool, initial);
+    QFETCH(bool, requested);
+    QFETCH(bool, success);
+    SettingsBackend backend;
+    backend.m_cliInstalled = initial;
+    QSignalSpy changed(&backend, &SettingsBackend::cliInstalledChanged);
+    QSignalSpy finished(&backend, &SettingsBackend::cliOperationFinished);
+    int calls = 0;
+    backend.changeCLIInstallation(requested, [&] { ++calls; return success; });
+    QCOMPARE(calls, 1);
+    QCOMPARE(finished.count(), 1);
+    QCOMPARE(finished.first().at(0).toBool(), success);
+    QCOMPARE(finished.first().at(1).toString().isEmpty(), success);
+    QCOMPARE(backend.cliInstalled(), success ? requested : initial);
+    QCOMPARE(changed.count(), int(success && initial != requested));
+}

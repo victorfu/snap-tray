@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 1 |
-| Confirmed / Fix Ready | 32 |
+| Confirmed / Open | 0 |
+| Confirmed / Fix Ready | 33 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 3 |
@@ -81,7 +81,7 @@
 | REV-025 | Fix Ready | P1 | High | Linux Save | filename 長度用 UTF-16 units 而非 UTF-8 bytes |
 | REV-026 | Fix Ready | P1 | High | Linux Runtime | XDG session 與 Qt QPA 衝突時錯判為 X11 |
 | REV-027 | Fix Ready | P2 | High | QML | CursorTokens 未註冊 singleton |
-| REV-028 | Open | P2 | High | Settings / CLI | install／uninstall 失敗後 busy 永久不解除 |
+| REV-028 | Fix Ready | P2 | High | Settings / CLI | install／uninstall 失敗後 busy 永久不解除 |
 | REV-029 | Fix Ready | P2 | High | Color Picker | triangle value 軸使用 height 而非 width |
 | REV-030 | Fix Ready | P1 | High | QML Dialog | setModal(true) 實際仍為 NonModal |
 | REV-031 | Fix Ready | P2 | High | Pin Info | 顯示新值但單項 Copy 複製舊值 |
@@ -369,12 +369,13 @@
 
 ### REV-028 — CLI install／uninstall 失敗後 Settings 永久 busy
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/qml/settings/GeneralSettings.qml:89-132；src/qml/SettingsBackend.cpp:958-971；src/platform/PlatformFeatures_mac.mm:266-295；src/platform/PlatformFeatures_linux.cpp:183-209；Windows 實作 src/platform/PlatformFeatures_win.cpp:173-197。
 - 觸發：使用者點 Install／Uninstall，之後取消 macOS 管理員授權，或 Linux mkdir／open／chmod／remove 失敗。
 - 後果：QML 先設 busy=true，失敗時 backend 不 emit cliInstalledChanged，而這是唯一解除 busy 的路徑；按鈕停在 Please wait... 直到重建 Settings。Windows 寫 Registry 後也未 sync／檢查 status，可能 false-success。
 - 完成條件：成功與失敗都發出 completion；失敗恢復 busy、保留原狀態並顯示錯誤；Windows 驗證實際 PATH store 狀態後才回成功。
-- 修正證據：待補。
+- 修正證據：SettingsBackend 成功／失敗皆發出 cliOperationFinished，失敗保留原安裝狀態；QML completion 解除 busy 並顯示錯誤文字。Windows PATH mutation 必須 sync、檢查 QSettings status 並從新 store 讀回比對後才回成功及 broadcast。新增可注入的私有 operation helper 與隔離 PATH persistence 測試。
+- 驗證：2026-09-12 macOS canonical build、all_qmllint 與原生 Cocoa Settings_SettingsBackend、Qml_SettingsWindowFeatureGating、CLI_PathPersistence 3 套通過；8 組 install/uninstall/state/result 矩陣、QML 失敗後恢復、持久化／讀回／寫入失敗皆涵蓋。sandbox/offscreen Settings 舊 update 測試逾時，原生重跑通過；Windows 私有 Registry fixture 已加入，原生驗證待補，保留 Fix Ready。 對應本機 commit：fix: complete failed CLI installation actions and verify PATH writes。
 
 ### REV-029 — ColorWheel triangle 的 value 軸使用錯誤尺寸
 
@@ -566,3 +567,4 @@
 | 2026-09-12 | REV-022 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-023 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-024 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-028 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |

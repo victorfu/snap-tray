@@ -177,10 +177,8 @@ bool PlatformFeatures::installCLI() const
     const QStringList currentEntries = PathEnvUtils::splitPathEntries(env.value("Path").toString());
     const auto result = PathEnvUtils::installPathEntry(currentEntries, appDir);
 
-    if (result.changed) {
-        env.setValue("Path", result.entries.join(';'));
-        broadcastEnvironmentChange();
-    }
+    if (!PathEnvUtils::persistPathEntries(env, result)) return false;
+    if (result.changed) broadcastEnvironmentChange();
     return true;
 }
 
@@ -190,9 +188,7 @@ bool PlatformFeatures::uninstallCLI() const
     const QStringList currentEntries = PathEnvUtils::splitPathEntries(env.value("Path").toString());
     const auto result = PathEnvUtils::uninstallPathEntry(currentEntries, getAppExecutablePath());
 
-    if (result.changed) {
-        env.setValue("Path", result.entries.join(';'));
-        broadcastEnvironmentChange();
-    }
+    if (!PathEnvUtils::persistPathEntries(env, result)) return false;
+    if (result.changed) broadcastEnvironmentChange();
     return true;
 }

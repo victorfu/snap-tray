@@ -88,13 +88,18 @@ Flickable {
 
         SettingsRow {
             id: cliRow
+            objectName: "cliInstallationRow"
             label: qsTr("CLI Status")
 
             property bool busy: false
+            property string errorMessage: ""
 
             Connections {
                 target: settingsBackend
-                function onCliInstalledChanged() { cliRow.busy = false }
+                function onCliOperationFinished(success: bool, errorMessage: string) {
+                    cliRow.busy = false
+                    cliRow.errorMessage = errorMessage
+                }
             }
 
             Row {
@@ -124,6 +129,7 @@ Flickable {
                         ? qsTr("Uninstall CLI") : qsTr("Install CLI")
                     enabled: !cliRow.busy
                     onClicked: {
+                        cliRow.errorMessage = ""
                         cliRow.busy = true
                         if (settingsBackend.cliInstalled)
                             settingsBackend.uninstallCLI()
@@ -132,6 +138,17 @@ Flickable {
                     }
                 }
             }
+        }
+
+        Text {
+            objectName: "cliInstallationError"
+            width: parent.width - parent.leftPadding - parent.rightPadding
+            visible: text.length > 0
+            text: cliRow.errorMessage
+            color: SemanticTokens.statusError
+            font.pixelSize: SemanticTokens.fontSizeBody
+            font.family: SemanticTokens.fontFamily
+            wrapMode: Text.WordWrap
         }
     }
 }

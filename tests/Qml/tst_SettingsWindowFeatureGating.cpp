@@ -35,6 +35,7 @@ private slots:
     void init();
     void cleanup();
 
+    void cliOperationCompletionRestoresControls();
     void sidebarModelHidesUnsupportedPages();
     void filesPageShowsRememberLastFolderOnAllPlatforms();
 
@@ -188,3 +189,24 @@ void tst_SettingsWindowFeatureGating::filesPageShowsRememberLastFolderOnAllPlatf
 
 QTEST_MAIN(tst_SettingsWindowFeatureGating)
 #include "tst_SettingsWindowFeatureGating.moc"
+
+void tst_SettingsWindowFeatureGating::cliOperationCompletionRestoresControls()
+{
+    QQmlEngine engine;
+    SnapTray::SettingsBackend backend;
+    engine.rootContext()->setContextProperty(QStringLiteral("settingsBackend"), &backend);
+    QQmlComponent component(&engine, QUrl(QStringLiteral("qrc:/SnapTrayQml/settings/GeneralSettings.qml")));
+    std::unique_ptr<QObject> root(component.create());
+    QVERIFY2(root != nullptr, qPrintable(component.errorString()));
+    auto* row = root->findChild<QObject*>(QStringLiteral("cliInstallationRow"));
+    auto* error = root->findChild<QObject*>(QStringLiteral("cliInstallationError"));
+    QVERIFY(row && error);
+    QVERIFY(row->setProperty("busy", true));
+    emit backend.cliOperationFinished(false, QStringLiteral("Permission denied"));
+    QVERIFY(!row->property("busy").toBool());
+    QCOMPARE(error->property("text").toString(), QStringLiteral("Permission denied"));
+    QVERIFY(row->setProperty("busy", true));
+    emit backend.cliOperationFinished(true, QString());
+    QVERIFY(!row->property("busy").toBool());
+    QVERIFY(error->property("text").toString().isEmpty());
+}
