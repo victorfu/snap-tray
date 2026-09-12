@@ -373,8 +373,7 @@ void tst_MainApplicationTrayMenu::queuedHistoryEntryRechecksCaptureMode()
     auto* viewModel = new SnapTray::ScreenPickerViewModel();
     auto* picker = new DummyScreenPickerDialog(viewModel, &application);
     application.attachScreenPicker(picker, viewModel);
-    QCoreApplication::processEvents();
-    QVERIFY(!queuedResult);
+    QTRY_VERIFY(!queuedResult);
     QCOMPARE(replayCalls, 0);
     QSignalSpy captureStarted(application.m_captureManager, &CaptureManager::captureStarted);
     application.onHotkeyAction(SnapTray::HotkeyAction::RegionCapture);

@@ -68,6 +68,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QClipboard>
 #include <QMouseEvent>
 #include <QKeyEvent>
+#include <QScopedValueRollback>
 #include <QCloseEvent>
 #include <QResizeEvent>
 #include <QShowEvent>
@@ -230,7 +231,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_selectionManager = new SelectionStateManager(this);
     connect(m_selectionManager, &SelectionStateManager::selectionChanged,
         this, [this](const QRect& rect) {
-            if (!m_selectionManager->isMoving() && !m_selectionManager->isResizing()) {
+            if (!m_adjustingSelectionWithKeyboard && !m_selectionManager->isManipulating()) {
                 setSelectionWindowMetadata({}, {});
             }
             ++m_autoBlurGeneration;
@@ -4637,6 +4638,9 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
     }
     // Arrow keys for precise selection adjustment
     else if (m_selectionManager->isComplete() && !m_selectionManager->selectionRect().isEmpty()) {
+        // Keyboard adjustments keep the completed selection's window context,
+        // just like mouse movement and resizing.
+        const QScopedValueRollback<bool> adjustingSelection(m_adjustingSelectionWithKeyboard, true);
         bool handled = true;
         QRect sel = m_selectionManager->selectionRect();
 

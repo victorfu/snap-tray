@@ -378,6 +378,7 @@ private:
     bool m_saveDialogOpen;
     bool m_dropdownOpen;
     int m_openBlockingDialogCount = 0;
+    bool m_adjustingSelectionWithKeyboard = false;
 
     // Window detection state
     WindowDetector *m_windowDetector;

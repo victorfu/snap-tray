@@ -211,6 +211,19 @@ void tst_RegionSelectorHistoryReplay::testDetectedWindowMetadataSurvivesHighligh
     QCOMPARE(request->windowTitle, QStringLiteral("Document title"));
     QCOMPARE(request->ownerApp, QStringLiteral("Editor"));
 
+    // Keyboard movement and resizing retain the same captured context.
+    for (const auto modifiers : {Qt::NoModifier, Qt::ShiftModifier}) {
+        for (const auto key : {Qt::Key_Left, Qt::Key_Right, Qt::Key_Up, Qt::Key_Down}) {
+            const QRect previous = RegionSelectorTestAccess::selectionRect(selector);
+            QTest::keyClick(&selector, key, modifiers);
+            QVERIFY(RegionSelectorTestAccess::selectionRect(selector) != previous);
+            request = RegionSelectorTestAccess::currentHistoryRequest(selector);
+            QVERIFY(request);
+            QCOMPARE(request->windowTitle, QStringLiteral("Document title"));
+            QCOMPARE(request->ownerApp, QStringLiteral("Editor"));
+        }
+    }
+
     // Programmatic replacement must not inherit the previous window's tokens.
     RegionSelectorTestAccess::setSelectionRect(selector, QRect(10, 10, 70, 80));
     request = RegionSelectorTestAccess::currentHistoryRequest(selector);
@@ -240,6 +253,7 @@ void tst_RegionSelectorHistoryReplay::testPreservedSelectionRecordsOriginalHisto
     const QByteArray oldHistory = qgetenv("SNAPTRAY_HISTORY_DIR");
     qputenv("SNAPTRAY_HISTORY_DIR", history.path().toUtf8());
     const auto restoreEnvironment = qScopeGuard([&] {
+        QCoreApplication::sendPostedEvents(qApp, QEvent::MetaCall);
         SnapTray::HistoryRecorder::instance().waitForIdleForTests();
         if (oldHistory.isNull()) qunsetenv("SNAPTRAY_HISTORY_DIR");
         else qputenv("SNAPTRAY_HISTORY_DIR", oldHistory);
@@ -274,7 +288,9 @@ void tst_RegionSelectorHistoryReplay::testPreservedSelectionRecordsOriginalHisto
     if (cancel) RegionSelectorTestAccess::clearPreservedSelection(selector);
     if (!cancel) QTest::keyClick(&selector, Qt::Key_Return);
     RegionSelectorTestAccess::finishPreservedSelection(selector);
-    QCoreApplication::processEvents();
+    // RegionSelector queues submission on qApp before starting the recorder's
+    // worker. Deliver it before waiting for the pool or changing history dirs.
+    QCoreApplication::sendPostedEvents(qApp, QEvent::MetaCall);
     QVERIFY(SnapTray::HistoryRecorder::instance().waitForIdleForTests());
     const auto entries = SnapTray::HistoryStore::loadEntries();
     if (cancel) {

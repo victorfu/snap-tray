@@ -12,10 +12,12 @@
 #include <QDir>
 #include <QProcess>
 #include <QImageWriter>
+#include <QScopeGuard>
 #include <condition_variable>
 #include <future>
 #include <mutex>
 #ifndef Q_OS_WIN
+#include <sys/stat.h>
 #include <unistd.h>
 #endif
 
@@ -40,6 +42,8 @@ private slots:
     void testUniquePreservesSymlink();
     void testUniqueFailureCleansTemporaryFile();
     void testUniqueEncodingFailure();
+    void testUniquePreservesOutputPermissions_data();
+    void testUniquePreservesOutputPermissions();
 #ifdef Q_OS_MAC
     void testPixmapRoundTripPreservesTaggedColorSpace();
     void testSavePixmapPreservesTaggedColorSpace();
@@ -203,6 +207,39 @@ void tst_ImageSaveUtils::testUniqueEncodingFailure()
     QVERIFY(!saved.success);
     QCOMPARE(saved.error.stage, QString("write"));
     QVERIFY(QDir(dir.path()).entryList(QDir::Files | QDir::Hidden).isEmpty());
+}
+
+void tst_ImageSaveUtils::testUniquePreservesOutputPermissions_data()
+{
+    QTest::addColumn<int>("creationMask");
+#ifdef Q_OS_WIN
+    QTest::newRow("native-permissions") << 0;
+#else
+    QTest::newRow("shared-read") << 0022;
+    QTest::newRow("group-write") << 0002;
+    QTest::newRow("private") << 0077;
+#endif
+}
+
+void tst_ImageSaveUtils::testUniquePreservesOutputPermissions()
+{
+    QFETCH(int, creationMask);
+#ifdef Q_OS_WIN
+    Q_UNUSED(creationMask);
+#else
+    const mode_t previousMask = ::umask(static_cast<mode_t>(creationMask));
+    const auto restoreMask = qScopeGuard([previousMask] { ::umask(previousMask); });
+#endif
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const auto image = solidImage(Qt::red);
+    const QString explicitPath = dir.filePath("explicit.png");
+    QVERIFY(ImageSaveUtils::saveImageAtomically(image, explicitPath));
+    const auto saved = ImageSaveUtils::saveImageUnique(image, {dir.path(), "unique.png", {}});
+    QVERIFY2(saved.success, qPrintable(saved.error.message));
+    QCOMPARE(QFileInfo(saved.filePath).permissions(), QFileInfo(explicitPath).permissions());
+    QCOMPARE(QImage(saved.filePath), image);
+    QCOMPARE(QDir(dir.path()).entryList(QDir::Files | QDir::Hidden).size(), 2);
 }
 
 void tst_ImageSaveUtils::testSavePngSuccess()

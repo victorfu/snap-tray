@@ -39,6 +39,8 @@ private slots:
     void testReleaseAppliesFinalSelectionPoint_data();
     void testReleaseAppliesFinalSelectionPoint();
     void testReleaseAppliesFinalResizeAndMove();
+    void testAspectLockedCornerResizeKeepsPressOffset_data();
+    void testAspectLockedCornerResizeKeepsPressOffset();
     void testNoMoveKeepsDetectedWindowSelection();
     void testTinyMoveWithoutDetectionFallsBackToFullScreen();
     void testLargeDragUsesDragSelectionInsteadOfPendingWindow();
@@ -150,6 +152,50 @@ void tst_RegionInputHandler::testReleaseAppliesFinalResizeAndMove()
     auto moveRelease = makeMouseEvent(QEvent::MouseButtonRelease, QPoint(110,120), Qt::LeftButton, Qt::NoButton);
     m_handler->handleMouseRelease(&moveRelease);
     QCOMPARE(m_selectionManager->selectionRect(), original.translated(30,40));
+    QVERIFY(m_selectionManager->isComplete());
+}
+
+void tst_RegionInputHandler::testAspectLockedCornerResizeKeepsPressOffset_data()
+{
+    QTest::addColumn<QPoint>("pressPos");
+    QTest::addColumn<QPoint>("releaseDelta");
+    QTest::addColumn<QRect>("expected");
+    const QRect original(100, 100, 100, 80);
+    struct CornerCase {
+        const char* name;
+        QPoint pressPos;
+        QPoint dragDelta;
+        QRect resized;
+    };
+    const CornerCase cases[] = {
+        {"top-left", QPoint(103, 103), QPoint(-20, -16), QRect(80, 84, 120, 96)},
+        {"top-right", QPoint(196, 103), QPoint(20, -16), QRect(100, 84, 120, 96)},
+        {"bottom-left", QPoint(103, 176), QPoint(-20, 16), QRect(80, 100, 120, 96)},
+        {"bottom-right", QPoint(196, 176), QPoint(20, 16), QRect(100, 100, 120, 96)}
+    };
+    for (const auto& corner : cases) {
+        QTest::addRow("%s-click", corner.name) << corner.pressPos << QPoint() << original;
+        QTest::addRow("%s-drag", corner.name) << corner.pressPos << corner.dragDelta << corner.resized;
+    }
+}
+
+void tst_RegionInputHandler::testAspectLockedCornerResizeKeepsPressOffset()
+{
+    QFETCH(QPoint, pressPos);
+    QFETCH(QPoint, releaseDelta);
+    QFETCH(QRect, expected);
+    m_selectionManager->setSelectionRect(QRect(100, 100, 100, 80));
+    m_selectionManager->setAspectRatio(1.25);
+    auto press = makeMouseEvent(QEvent::MouseButtonPress, pressPos, Qt::LeftButton, Qt::LeftButton);
+    m_handler->handleMousePress(&press);
+    QVERIFY(m_selectionManager->isResizing());
+
+    // No move event: release must apply the final delta without snapping to
+    // the pointer's offset within the handle's hit area.
+    auto release = makeMouseEvent(QEvent::MouseButtonRelease, pressPos + releaseDelta,
+                                  Qt::LeftButton, Qt::NoButton);
+    m_handler->handleMouseRelease(&release);
+    QCOMPARE(m_selectionManager->selectionRect(), expected);
     QVERIFY(m_selectionManager->isComplete());
 }
 

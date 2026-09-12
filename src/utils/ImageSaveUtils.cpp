@@ -1,13 +1,13 @@
 #include "utils/ImageSaveUtils.h"
 
 #include <QColorSpace>
+#include <QFile>
 #include <QFileInfo>
 #include <QImageWriter>
 #include <QSaveFile>
 #include <QSet>
 #include <QStringList>
 #include <QDir>
-#include <QTemporaryFile>
 #include <QUuid>
 
 namespace {
@@ -100,11 +100,15 @@ ImageSaveUtils::UniqueSaveResult ImageSaveUtils::saveImageUniqueWithHooks(
         ~TemporaryPath() { if (!path.isEmpty()) QFile::remove(path); }
     } temporary;
     {
-        QTemporaryFile file(dir.filePath(QStringLiteral(".snaptray-save-XXXXXX")));
-        if (!file.open()) {
+        // Exclusive creation keeps the staging path safe from collisions while
+        // using normal output permissions (including umask and directory ACLs).
+        QFile file(dir.filePath(QStringLiteral(".snaptray-save-")
+                                + QUuid::createUuid().toString(QUuid::Id128)));
+        if (!file.open(QIODevice::WriteOnly | QIODevice::NewOnly)) {
             setError(&result.error, QStringLiteral("open"), file.errorString());
             return result;
         }
+        temporary.path = file.fileName();
         QImageWriter writer(&file, format);
         if (!writer.write(image)) {
             setError(&result.error, QStringLiteral("write"), writer.errorString());
@@ -114,8 +118,6 @@ ImageSaveUtils::UniqueSaveResult ImageSaveUtils::saveImageUniqueWithHooks(
             setError(&result.error, QStringLiteral("write"), file.errorString());
             return result;
         }
-        temporary.path = file.fileName();
-        file.setAutoRemove(false);
         // Destruction closes the native handle as well, including on Windows.
     }
 

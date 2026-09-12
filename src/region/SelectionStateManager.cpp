@@ -207,27 +207,15 @@ void SelectionStateManager::updateResize(const QPoint& pos)
     QRect newRect = m_originalRect;
 
     if (m_aspectRatio > 0.0 && isCornerHandle(m_activeHandle)) {
-        QRect rect = m_originalRect.normalized();
-        QPoint anchor;
-        switch (m_activeHandle) {
-        case ResizeHandle::TopLeft:
-            anchor = rect.bottomRight();
-            break;
-        case ResizeHandle::TopRight:
-            anchor = rect.bottomLeft();
-            break;
-        case ResizeHandle::BottomLeft:
-            anchor = rect.topRight();
-            break;
-        case ResizeHandle::BottomRight:
-            anchor = rect.topLeft();
-            break;
-        default:
-            anchor = rect.topLeft();
-            break;
-        }
-
-        newRect = selectionRectForDrag(anchor, pos);
+        const QRect rect = m_originalRect.normalized();
+        const auto edges = kResizeEdges[static_cast<std::size_t>(m_activeHandle)];
+        const QPoint anchor(edges.testFlag(Qt::LeftEdge) ? rect.right() : rect.left(),
+                            edges.testFlag(Qt::TopEdge) ? rect.bottom() : rect.top());
+        const QPoint corner(edges.testFlag(Qt::LeftEdge) ? rect.left() : rect.right(),
+                            edges.testFlag(Qt::TopEdge) ? rect.top() : rect.bottom());
+        // The handle's hit area extends around the corner. Preserve that press
+        // offset, including when release arrives without any mouse movement.
+        newRect = delta.isNull() ? rect : selectionRectForDrag(anchor, corner + delta);
     } else if (m_aspectRatio > 0.0 && !isCornerHandle(m_activeHandle)) {
         // Edge resize with aspect ratio locked. The opposite edge remains fixed,
         // while the perpendicular axis stays centered on the original selection.
