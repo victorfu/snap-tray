@@ -28,6 +28,8 @@ private slots:
     void regionCommand_rejectsNonNumericDelayOption();
     void guiCommand_validatesDelay_data();
     void guiCommand_validatesDelay();
+    void fullCommand_rejectsNegativeScreen_data();
+    void fullCommand_rejectsNegativeScreen();
     void fullCommand_rejectsNonNumericScreenOption();
     void fullCommand_rejectsNonNumericDelayOption();
     void pinCommand_rejectsNonNumericPosition();
@@ -222,4 +224,26 @@ void tst_NumericArgumentValidation::guiCommand_validatesDelay()
         QCOMPARE(handler.process({"snaptray", "gui", "--delay", value}).code,
                  CLIResult::Code::InvalidArguments);
     }
+}
+
+void tst_NumericArgumentValidation::fullCommand_rejectsNegativeScreen_data()
+{
+    QTest::addColumn<QString>("value");
+    for (const QString value : {QString("-1"), QString("-2"), QString("-2147483648")})
+        QTest::newRow(qPrintable(value)) << value;
+}
+
+void tst_NumericArgumentValidation::fullCommand_rejectsNegativeScreen()
+{
+    QFETCH(QString, value);
+    FullCommand command;
+    QCommandLineParser parser;
+    command.setupOptions(parser);
+    QVERIFY(parser.parse({"snaptray", "--screen=" + value, "--delay", "10000"}));
+    QElapsedTimer timer;
+    timer.start();
+    const auto result = command.execute(parser);
+    QCOMPARE(result.code, CLIResult::Code::InvalidArguments);
+    QVERIFY(result.message.contains("Invalid screen number: " + value));
+    QVERIFY(timer.elapsed() < 1000); // Validation must precede delay and capture.
 }

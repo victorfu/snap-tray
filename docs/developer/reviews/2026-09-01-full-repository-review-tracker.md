@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 2 |
-| Confirmed / Fix Ready | 31 |
+| Confirmed / Open | 1 |
+| Confirmed / Fix Ready | 32 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 3 |
@@ -77,7 +77,7 @@
 | REV-021 | Fix Ready | P1 | High | CLI Pin | file pin 略過 EXIF transform 與大圖 auto-fit |
 | REV-022 | Fix Ready | P2 | High | CLI Pin | clipboard pin 忽略 x／y |
 | REV-023 | Fix Ready | P2 | High | CLI GUI | 非數字 delay 被接受為 0 |
-| REV-024 | Open | P2 | High | CLI Full | 負數 screen 被當成未指定 |
+| REV-024 | Fix Ready | P2 | High | CLI Full | 負數 screen 被當成未指定 |
 | REV-025 | Fix Ready | P1 | High | Linux Save | filename 長度用 UTF-16 units 而非 UTF-8 bytes |
 | REV-026 | Fix Ready | P1 | High | Linux Runtime | XDG session 與 Qt QPA 衝突時錯判為 X11 |
 | REV-027 | Fix Ready | P2 | High | QML | CursorTokens 未註冊 singleton |
@@ -328,12 +328,13 @@
 
 ### REV-024 — full --screen 負數被當成未指定
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/cli/commands/FullCommand.cpp:43-79。
 - 觸發：snaptray full --screen=-1 或其他可解析的負數。
 - 後果：負數成功轉成 int，之後因 screenNum >= 0 不成立而落入游標螢幕 fallback；明確的非法輸入卻成功擷取另一個螢幕。
 - 完成條件：任何提供但小於 0 的 screen 都回 InvalidArguments；只有完全未提供 option 才可 fallback。
-- 修正證據：待補。
+- 修正證據：FullCommand 僅在未指定 screen 時保留 -1 sentinel；任何明確提供的負數在 delay／capture 前回 InvalidArguments。
+- 驗證：2026-09-12 macOS canonical build 與 CLI_NumericArgumentValidation 通過；-1／-2／int 最小值皆拒絕，並驗證不進入 10 秒 delay。跨平台 CLI smoke 待補，保留 Fix Ready。 對應本機 commit：fix: reject explicitly negative full capture screen indices。
 
 ### REV-025 — Linux filename 限制使用字元數而非 bytes
 
@@ -564,3 +565,4 @@
 | 2026-09-12 | REV-021 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-022 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-023 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-024 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
