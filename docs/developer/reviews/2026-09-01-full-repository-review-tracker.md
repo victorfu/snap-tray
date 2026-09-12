@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 19 |
-| Confirmed / Fix Ready | 14 |
+| Confirmed / Open | 18 |
+| Confirmed / Fix Ready | 15 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 3 |
@@ -56,7 +56,7 @@
 |---|---|---:|---|---|---|
 | REV-001 | Rejected | — | High | macOS Release | v1.0.62 已在 macOS 14.8.7 ARM64 通過 loader 與基本 GUI startup smoke |
 | REV-002 | Fix Ready | P0 | High | Mosaic / HiDPI | Gaussian 自動遮罩只覆蓋部分實體像素 |
-| REV-003 | Open | P0 | High | Windows OCR | 未遵守 OcrEngine MaxImageDimension |
+| REV-003 | Fix Ready | P0 | High | Windows OCR | 未遵守 OcrEngine MaxImageDimension |
 | REV-004 | Verified | P0 | High | Tests / Settings | 測試會刪寫真實 SnapTray 設定 |
 | REV-005 | Fix Ready | P0 | High | Save / Concurrency | 唯一檔名存在 TOCTOU，可靜默覆寫 |
 | REV-006 | Fix Ready | P1 | High | Windows Capture UI | Annotation cache 無上限成長，可耗盡記憶體 |
@@ -117,12 +117,13 @@
 
 ### REV-003 — Windows OCR 未處理 MaxImageDimension
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/OCRManager_win.cpp:91-120,173-176；src/PinWindow.cpp:1910-1915,5027-5045。
 - 觸發：輸入任一實體像素軸超過 OcrEngine::MaxImageDimension，例如 4K／5K 或 HiDPI 大範圍截圖。
 - 後果：手動 OCR 失敗；credential auto-blur 無法得到 credential regions，敏感文字保持未遮蔽。
 - 完成條件：Windows 以 MaxImageDimension、MaxImageDimension + 1 與大型雙軸圖片驗證；若縮放或分塊，OCR bounding boxes 必須正確映回原圖；覆蓋 Pin／Region OCR 與 credential auto-blur。
-- 修正證據：待補。
+- 修正證據：Windows OCR 在 SoftwareBitmap 建立前依 OcrEngine::MaxImageDimension 限制實體尺寸，維持比例且不產生零尺寸；word boxes 改按實際 recognition image 尺寸正規化，保持回原圖及 credential detector 的座標契約。來源 DPR／原圖不變，配置失敗維持失敗通知。
+- 驗證：2026-09-12 macOS scripts/build.sh 與 OCRImageUtils、CredentialDetector、AutoBlurManager 三套測試通過；涵蓋限制值／+1／雙軸大圖／極端長寬、DPR 1／1.5／2 與 7001×5003 原圖的 credential 框回映射。Windows native OCR／語言包及 Pin／Region 實機辨識待驗證，保留 Fix Ready。 對應本機 commit：fix: fit Windows OCR images to the engine dimension limit。
 
 ### REV-004 — 測試會修改真實 SnapTray settings
 
@@ -528,3 +529,4 @@
 | 2026-09-12 | REV-015 完成短末段終點與 shaft 接合修正，macOS 建置、五套測試及 107 組新增回歸通過；標為 Fix Ready。 |
 | 2026-09-12 | REV-016 完成最近 handle 與穩定同距離判定，標為 Fix Ready；本批 REV-012～016 整合後 macOS 全 149 套測試通過，QML lint exit 0。 |
 | 2026-09-12 | 同步 REV-007／REV-037 重新判定為 Potential；確認 Mosaic 子項已修、其餘操作後果待重現。統計更新為 35 Confirmed、3 Potential、1 Rejected。 |
+| 2026-09-12 | REV-003 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |

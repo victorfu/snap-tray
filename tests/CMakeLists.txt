@@ -536,6 +536,11 @@ target_link_libraries(Detection_TableDetector PRIVATE snaptray_algorithms Qt6::T
 add_test(NAME Detection_TableDetector COMMAND Detection_TableDetector)
 set_tests_properties(Detection_TableDetector PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Detection_OCRImageUtils Detection/tst_OCRImageUtils.cpp)
+target_link_libraries(Detection_OCRImageUtils PRIVATE snaptray_algorithms Qt6::Widgets Qt6::Test)
+add_test(NAME Detection_OCRImageUtils COMMAND Detection_OCRImageUtils)
+set_tests_properties(Detection_OCRImageUtils PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Detection_CredentialDetector Detection/tst_CredentialDetector.cpp)
 target_link_libraries(Detection_CredentialDetector PRIVATE snaptray_algorithms Qt6::Test)
 add_test(NAME Detection_CredentialDetector COMMAND Detection_CredentialDetector)
