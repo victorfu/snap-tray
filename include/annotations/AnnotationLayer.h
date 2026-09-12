@@ -40,6 +40,14 @@ public:
 
     static constexpr std::size_t kMaxHistoryCommands = 100;
     static constexpr std::size_t kMaxHistoryOwnedBytes = 64u * 1024u * 1024u;
+    static constexpr std::size_t kMaxAnnotationCacheEntries = 8;
+    static constexpr std::uint64_t kMaxAnnotationCacheBytes = 128ull * 1024ull * 1024ull;
+
+    struct CacheStats {
+        std::size_t entryCount;
+        std::uint64_t retainedBytes;
+    };
+    CacheStats cacheStats() const { return {m_annotationCaches.size(), m_annotationCacheBytes}; }
 
     explicit AnnotationLayer(QObject *parent = nullptr);
     ~AnnotationLayer();
@@ -245,7 +253,20 @@ private:
     };
 
     // Completed annotations caches for rendering optimization.
-    mutable std::map<CacheKey, QPixmap> m_annotationCaches;
+    struct CacheEntry {
+        QPixmap pixmap;
+        std::uint64_t bytes = 0;
+        std::uint64_t lastUsed = 0;
+    };
+    using CacheMap = std::map<CacheKey, CacheEntry>;
+    CacheMap::iterator eraseAnnotationCache(CacheMap::iterator it) const;
+    void makeAnnotationCacheRoom(std::uint64_t incomingBytes) const;
+    const QPixmap* annotationCache(const CacheKey& key, qreal devicePixelRatio) const;
+    void paintCacheContents(QPainter& painter, const QPoint& origin, int excludeIndex) const;
+
+    mutable CacheMap m_annotationCaches;
+    mutable std::uint64_t m_annotationCacheBytes = 0;
+    mutable std::uint64_t m_annotationCacheClock = 0;
     std::uint64_t m_revision = 0;
 
     // Dirty region tracking for drag optimization

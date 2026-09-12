@@ -16,6 +16,8 @@
 #include <QSize>
 #include <QtMath>
 #include <algorithm>
+#include <iterator>
+#include <limits>
 
 namespace {
 
@@ -993,7 +995,79 @@ bool AnnotationLayer::removeSelectedItem()
 void AnnotationLayer::invalidateCache()
 {
     m_annotationCaches.clear();
+    m_annotationCacheBytes = 0;
+    m_annotationCacheClock = 0;
     ++m_revision;
+}
+
+AnnotationLayer::CacheMap::iterator AnnotationLayer::eraseAnnotationCache(CacheMap::iterator it) const
+{
+    m_annotationCacheBytes -= it->second.bytes;
+    return m_annotationCaches.erase(it);
+}
+
+void AnnotationLayer::makeAnnotationCacheRoom(std::uint64_t incomingBytes) const
+{
+    while (!m_annotationCaches.empty()
+           && (m_annotationCaches.size() >= kMaxAnnotationCacheEntries
+               || incomingBytes > kMaxAnnotationCacheBytes
+               || m_annotationCacheBytes > kMaxAnnotationCacheBytes - incomingBytes)) {
+        auto victim = m_annotationCaches.begin();
+        for (auto it = std::next(victim); it != m_annotationCaches.end(); ++it) {
+            const bool transient = it->first.excludeIndex >= 0;
+            const bool victimTransient = victim->first.excludeIndex >= 0;
+            if ((transient && !victimTransient)
+                || (transient == victimTransient && it->second.lastUsed < victim->second.lastUsed))
+                victim = it;
+        }
+        eraseAnnotationCache(victim);
+    }
+}
+
+void AnnotationLayer::paintCacheContents(QPainter& painter, const QPoint& origin, int excludeIndex) const
+{
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform);
+    painter.translate(-QPointF(origin));
+    for (int i = 0; i < static_cast<int>(m_items.size()); ++i) {
+        if (i != excludeIndex && m_items[i]->isVisible())
+            m_items[i]->draw(painter);
+    }
+    painter.restore();
+}
+
+const QPixmap* AnnotationLayer::annotationCache(const CacheKey& key, qreal devicePixelRatio) const
+{
+    const auto found = m_annotationCaches.find(key);
+    if (found != m_annotationCaches.end()) {
+        found->second.lastUsed = ++m_annotationCacheClock;
+        return &found->second.pixmap;
+    }
+    if (key.physicalWidth <= 0 || key.physicalHeight <= 0)
+        return nullptr;
+    const auto byteSize = [&](int depth) {
+        const std::uint64_t pixels = std::uint64_t(key.physicalWidth) * std::uint64_t(key.physicalHeight);
+        const std::uint64_t bytesPerPixel = std::uint64_t(qMax(1, (depth + 7) / 8));
+        return pixels > std::numeric_limits<std::uint64_t>::max() / bytesPerPixel
+            ? std::numeric_limits<std::uint64_t>::max() : pixels * bytesPerPixel;
+    };
+    // Evict before allocating, including before a single oversized MRU entry.
+    makeAnnotationCacheRoom(byteSize(qMax(32, QPixmap::defaultDepth())));
+    QPixmap cache(QSize(key.physicalWidth, key.physicalHeight));
+    if (cache.isNull()) return nullptr;
+    cache.setDevicePixelRatio(devicePixelRatio);
+    cache.fill(Qt::transparent);
+    const std::uint64_t bytes = byteSize(cache.depth());
+    makeAnnotationCacheRoom(bytes);
+    {
+        QPainter painter(&cache);
+        paintCacheContents(painter, QPoint(key.originX, key.originY), key.excludeIndex);
+    }
+    const auto inserted = m_annotationCaches.emplace(key,
+        CacheEntry{std::move(cache), bytes, ++m_annotationCacheClock}).first;
+    m_annotationCacheBytes += bytes;
+    return &inserted->second.pixmap;
 }
 
 void AnnotationLayer::appendItemToCaches(const AnnotationItem& item)
@@ -1001,12 +1075,12 @@ void AnnotationLayer::appendItemToCaches(const AnnotationItem& item)
     for (auto it = m_annotationCaches.begin(); it != m_annotationCaches.end();) {
         const CacheKey& key = it->first;
         if (key.excludeIndex >= 0) {
-            it = m_annotationCaches.erase(it);
+            it = eraseAnnotationCache(it);
             continue;
         }
 
         if (item.isVisible()) {
-            QPainter cachePainter(&it->second);
+            QPainter cachePainter(&it->second.pixmap);
             cachePainter.setRenderHint(QPainter::Antialiasing);
             cachePainter.setRenderHint(QPainter::SmoothPixmapTransform);
             cachePainter.translate(-QPointF(key.originX, key.originY));
@@ -1033,27 +1107,10 @@ void AnnotationLayer::drawCached(QPainter &painter,
         qRound(devicePixelRatio * 1000.0)
     };
 
-    auto cacheIt = m_annotationCaches.find(cacheKey);
-    if (cacheIt == m_annotationCaches.end()) {
-        QPixmap cache(physicalSize);
-        cache.setDevicePixelRatio(devicePixelRatio);
-        cache.fill(Qt::transparent);
-
-        QPainter cachePainter(&cache);
-        cachePainter.setRenderHint(QPainter::Antialiasing);
-        cachePainter.setRenderHint(QPainter::SmoothPixmapTransform);
-        cachePainter.translate(-QPointF(origin));
-
-        for (const auto &item : m_items) {
-            if (item->isVisible()) {
-                item->draw(cachePainter);
-            }
-        }
-
-        cacheIt = m_annotationCaches.emplace(cacheKey, std::move(cache)).first;
-    }
-
-    painter.drawPixmap(0, 0, cacheIt->second);
+    if (const QPixmap* cache = annotationCache(cacheKey, devicePixelRatio))
+        painter.drawPixmap(0, 0, *cache);
+    else
+        paintCacheContents(painter, origin, -1);
 }
 
 void AnnotationLayer::markDirtyRect(const QRect& rect)
@@ -1102,35 +1159,18 @@ void AnnotationLayer::drawWithDirtyRegion(QPainter &painter, const QSize &canvas
                 existingKey.devicePixelRatioMilli == cacheKey.devicePixelRatioMilli;
 
             if (sameViewport && existingKey.excludeIndex != normalizedExcludeIndex) {
-                it = m_annotationCaches.erase(it);
+                it = eraseAnnotationCache(it);
             } else {
                 ++it;
             }
         }
     }
 
-    auto cacheIt = m_annotationCaches.find(cacheKey);
-    if (cacheIt == m_annotationCaches.end()) {
-        QPixmap cache(physicalSize);
-        cache.setDevicePixelRatio(devicePixelRatio);
-        cache.fill(Qt::transparent);
-
-        QPainter cachePainter(&cache);
-        cachePainter.setRenderHint(QPainter::Antialiasing);
-        cachePainter.setRenderHint(QPainter::SmoothPixmapTransform);
-        cachePainter.translate(-QPointF(origin));
-
-        for (int i = 0; i < static_cast<int>(m_items.size()); ++i) {
-            if (i != normalizedExcludeIndex && m_items[i]->isVisible()) {
-                m_items[i]->draw(cachePainter);
-            }
-        }
-
-        cacheIt = m_annotationCaches.emplace(cacheKey, std::move(cache)).first;
-    }
-
     // Draw the cached background (all items except the one being dragged)
-    painter.drawPixmap(0, 0, cacheIt->second);
+    if (const QPixmap* cache = annotationCache(cacheKey, devicePixelRatio))
+        painter.drawPixmap(0, 0, *cache);
+    else
+        paintCacheContents(painter, origin, normalizedExcludeIndex);
 
     // Draw the excluded item (being dragged) on top, directly to painter
     if (normalizedExcludeIndex >= 0) {

@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 32 |
-| Confirmed / Fix Ready | 3 |
+| Confirmed / Open | 31 |
+| Confirmed / Fix Ready | 4 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 1 |
@@ -59,7 +59,7 @@
 | REV-003 | Open | P0 | High | Windows OCR | 未遵守 OcrEngine MaxImageDimension |
 | REV-004 | Verified | P0 | High | Tests / Settings | 測試會刪寫真實 SnapTray 設定 |
 | REV-005 | Fix Ready | P0 | High | Save / Concurrency | 唯一檔名存在 TOCTOU，可靜默覆寫 |
-| REV-006 | Open | P1 | High | Windows Capture UI | Annotation cache 無上限成長，可耗盡記憶體 |
+| REV-006 | Fix Ready | P1 | High | Windows Capture UI | Annotation cache 無上限成長，可耗盡記憶體 |
 | REV-007 | Open | P0 | High | Windows Video | 強制 terminate 並刪除 reader thread，可 crash／UAF |
 | REV-008 | Open | P1 | High | macOS Recording | 首次麥克風授權阻塞主執行緒並破壞時間軸 |
 | REV-009 | Verified | P1 | High | Screen Canvas | 文字拖移／旋轉／縮放會重用舊快取 |
@@ -147,12 +147,13 @@
 
 ### REV-006 — CaptureChrome annotation cache 無上限成長
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：include/annotations/AnnotationLayer.h:218-249；src/AnnotationLayer.cpp:1019-1054,1075-1130；src/region/CaptureChromeWindow.cpp:386-392；src/region/RegionPainter.cpp:592-623。
 - 觸發：Windows capture overlay 已有 annotation，使用者反覆移動／resize selection，使 annotation viewport origin／size 持續產生新 CacheKey，而 layer revision 沒有改變。
 - 後果：m_annotationCaches 為無上限 map，每個 key 保留一張高 DPI QPixmap；長時間操作會持續增加 RAM／圖形資源，最終可能 OOM 或使程式／系統不穩定。
 - 完成條件：對數千個不同 viewport 做壓力測試，cache entries 與 retained bytes 必須有明確上限；畫面與 full repaint pixel parity 一致。
-- 修正證據：待補。
+- 修正證據：drawCached／drawWithDirtyRegion 共用有上限快取管理；每層最多 8 entries／128 MiB，配置前優先淘汰 exclude 暫存快取，再採 LRU。單張超額時只保留最新一張；null pixmap 回退直接繪製。所有移除／清空／append 路徑統一計數，cacheStats 提供唯讀統計；不修改 annotation、history state 或既有拖曳／release invalidation 契約。
+- 驗證：2026-09-12 macOS scripts/build.sh 與六套針對性測試通過。新增 5,000 組 viewport／DPR 逐像素比對、LRU／暫存優先、128 MiB 預算、單張超額、重用／清理／null fallback 與 history 不變性驗證。最終 scripts/run-tests.sh 全 147 項通過，all_qmllint exit 0；Windows compositor／縮放實機 smoke 尚待驗證，保留 Fix Ready。對應本機 commit：fix: bound annotation viewport pixmap caches。
 
 ### REV-007 — Media Foundation player 強制終止 reader thread
 
@@ -503,3 +504,4 @@
 | 2026-09-12 | REV-005 完成原子禁止覆寫存檔與所有自動命名入口遷移，macOS 並行及回歸測試通過；標為 Fix Ready。 |
 | 2026-09-12 | POT-001 升格 Confirmed；完成安全定位與更多選單，macOS QML 排版及互動驗證通過，標為 Fix Ready。 |
 | 2026-09-12 | POT-001 整合驗證修正共用腳本的模組匯出歧義；兩套既有 standalone QML 測試與新增匯入回歸通過。 |
+| 2026-09-12 | REV-006 完成 8 entries／128 MiB 快取限制與壓力／像素回歸，標為 Fix Ready；四項修正整合後 macOS 全 147 項測試通過。 |

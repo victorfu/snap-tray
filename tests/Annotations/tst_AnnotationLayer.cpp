@@ -96,6 +96,10 @@ private slots:
     void testDrawCached_RebuildsAfterExcludeCache();
     void testDrawCached_RebuildsAfterDraggedItemMoved();
     void testDrawCached_AppliesViewportOrigin();
+    void testViewportCacheStressPreservesPixelsAndHistory();
+    void testViewportCacheLruAndTransientPriority();
+    void testViewportCacheByteBudgetAndOversizedEntry();
+    void testViewportCacheAccountingAndNullFallback();
     void testHitTestText_IgnoresHiddenItems();
     void testHitTestEmojiSticker_IgnoresHiddenItems();
     void testHitTestEmojiSticker_ReturnsTopMostVisible();
@@ -389,6 +393,166 @@ void TestAnnotationLayer::testDrawCached_AppliesViewportOrigin()
     }
 
     QVERIFY(hasVisiblePixel(cachedFrame, QRect(70, 32, 24, 16)));
+}
+
+void TestAnnotationLayer::testViewportCacheStressPreservesPixelsAndHistory()
+{
+    AnnotationLayer layer;
+    layer.addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{QPoint(10, 25), QPoint(70, 60), QPoint(95, 20)}, Qt::red, 7));
+    layer.addItem(std::make_unique<MarkerStroke>(
+        QVector<QPointF>{QPointF(20, 40), QPointF(85, 40)}, QColor(20, 80, 220, 110), 12));
+    const auto revision = layer.revision();
+    const auto historyState = layer.historyStateToken();
+    const auto historyBytes = layer.historyOwnedBytes();
+    const auto historyCount = layer.historyCommandCount();
+    const qreal ratios[] = {1.0, 1.5, 2.0};
+    for (int i = 0; i < 5000; ++i) {
+        const QSize size(64 + i % 13, 64 + i % 11);
+        const QPoint origin(i % 75, i / 75);
+        const qreal dpr = ratios[i % 3];
+        QImage actual(QSize(qRound(size.width() * dpr), qRound(size.height() * dpr)),
+                      QImage::Format_ARGB32_Premultiplied);
+        actual.setDevicePixelRatio(dpr);
+        actual.fill(Qt::transparent);
+        QImage expected = actual.copy();
+        const int excluded = i % 2 == 0 ? -1 : 0;
+        {
+            QPainter painter(&actual);
+            if (excluded < 0) layer.drawCached(painter, size, dpr, origin);
+            else layer.drawWithDirtyRegion(painter, size, dpr, excluded, origin);
+        }
+        {
+            QPainter painter(&expected);
+            painter.setRenderHint(QPainter::Antialiasing);
+            painter.setRenderHint(QPainter::SmoothPixmapTransform);
+            painter.translate(-origin);
+            for (int j = 0; j < int(layer.itemCount()); ++j)
+                if (j != excluded) layer.itemAt(j)->draw(painter);
+            if (excluded >= 0) layer.itemAt(excluded)->draw(painter);
+        }
+        QCOMPARE(actual, expected);
+        QVERIFY(layer.cacheStats().entryCount <= AnnotationLayer::kMaxAnnotationCacheEntries);
+        QVERIFY(layer.cacheStats().retainedBytes <= AnnotationLayer::kMaxAnnotationCacheBytes);
+    }
+    QCOMPARE(layer.itemCount(), size_t(2));
+    QCOMPARE(layer.revision(), revision);
+    QCOMPARE(layer.historyStateToken(), historyState);
+    QCOMPARE(layer.historyOwnedBytes(), historyBytes);
+    QCOMPARE(layer.historyCommandCount(), historyCount);
+    layer.undo();
+    QCOMPARE(layer.itemCount(), size_t(1));
+    layer.redo();
+    QCOMPARE(layer.itemCount(), size_t(2));
+}
+
+void TestAnnotationLayer::testViewportCacheLruAndTransientPriority()
+{
+    AnnotationLayer layer;
+    auto state = std::make_shared<CountingAnnotationState>();
+    layer.addItem(std::make_unique<CountingAnnotation>(QRect(0, 0, 10, 10), state));
+    QImage output(32, 32, QImage::Format_ARGB32_Premultiplied);
+    auto draw = [&](int origin, int excluded = -1) {
+        output.fill(Qt::transparent);
+        QPainter painter(&output);
+        if (excluded < 0) layer.drawCached(painter, output.size(), 1, QPoint(origin, 0));
+        else layer.drawWithDirtyRegion(painter, output.size(), 1, excluded, QPoint(origin, 0));
+    };
+    for (int i = 0; i < 8; ++i) draw(i);
+    state->drawCalls = 0;
+    draw(0); // Refresh the oldest entry.
+    QCOMPARE(state->drawCalls, 0);
+    draw(8);
+    QCOMPARE(state->drawCalls, 1);
+    draw(0);
+    QCOMPARE(state->drawCalls, 1);
+    draw(1); // Entry 1, not recently used entry 0, must have been evicted.
+    QCOMPARE(state->drawCalls, 2);
+
+    layer.invalidateCache();
+    for (int i = 0; i < 7; ++i) draw(i);
+    draw(7, 0); // Newest cache, but transient entries are evicted first.
+    draw(8);
+    state->drawCalls = 0;
+    draw(0);
+    QCOMPARE(state->drawCalls, 0);
+    QCOMPARE(layer.cacheStats().entryCount, size_t(8));
+}
+
+void TestAnnotationLayer::testViewportCacheByteBudgetAndOversizedEntry()
+{
+    AnnotationLayer layer;
+    auto state = std::make_shared<CountingAnnotationState>();
+    layer.addItem(std::make_unique<CountingAnnotation>(QRect(0, 0, 1, 1), state));
+    QImage output(8, 8, QImage::Format_ARGB32_Premultiplied);
+    auto draw = [&](const QSize& size, int origin) {
+        output.fill(Qt::transparent);
+        QPainter painter(&output);
+        layer.drawCached(painter, size, 1, QPoint(origin, 0));
+    };
+    draw(QSize(2304, 2048), 0);
+    const auto entryBytes = layer.cacheStats().retainedBytes;
+    QVERIFY(entryBytes > 0);
+    for (int i = 1; i < 9; ++i) {
+        draw(QSize(2304, 2048), i);
+        QVERIFY(layer.cacheStats().retainedBytes <= AnnotationLayer::kMaxAnnotationCacheBytes);
+    }
+    QCOMPARE(layer.cacheStats().entryCount,
+             qMin(AnnotationLayer::kMaxAnnotationCacheEntries,
+                  size_t(AnnotationLayer::kMaxAnnotationCacheBytes / entryBytes)));
+    QCOMPARE(layer.cacheStats().retainedBytes, entryBytes * layer.cacheStats().entryCount);
+
+    draw(QSize(6000, 6000), 10);
+    QCOMPARE(layer.cacheStats().entryCount, size_t(1));
+    QVERIFY(layer.cacheStats().retainedBytes > AnnotationLayer::kMaxAnnotationCacheBytes);
+    const int draws = state->drawCalls;
+    draw(QSize(6000, 6000), 10);
+    QCOMPARE(state->drawCalls, draws);
+    draw(QSize(32, 32), 11);
+    QCOMPARE(layer.cacheStats().entryCount, size_t(1));
+    QVERIFY(layer.cacheStats().retainedBytes <= AnnotationLayer::kMaxAnnotationCacheBytes);
+}
+
+void TestAnnotationLayer::testViewportCacheAccountingAndNullFallback()
+{
+    AnnotationLayer layer;
+    layer.addItem(createPencil(10));
+    QImage image(120, 120, QImage::Format_ARGB32_Premultiplied);
+    auto draw = [&](const QSize& viewport, int exclude = -1, QPoint origin = {}) {
+        image.fill(Qt::transparent);
+        QPainter painter(&image);
+        if (exclude < 0) layer.drawCached(painter, viewport, 1, origin);
+        else layer.drawWithDirtyRegion(painter, viewport, 1, exclude, origin);
+    };
+    draw(image.size());
+    const auto bytes = layer.cacheStats().retainedBytes;
+    draw(image.size(), 0);
+    QCOMPARE(layer.cacheStats().entryCount, size_t(1));
+    QCOMPARE(layer.cacheStats().retainedBytes, bytes);
+    draw(image.size(), -1, QPoint(1, 0));
+    QCOMPARE(layer.cacheStats().retainedBytes, bytes * 2);
+    layer.addItem(createPencil(20)); // Append preserves full caches, removes exclude caches.
+    QCOMPARE(layer.cacheStats().entryCount, size_t(1));
+    QCOMPARE(layer.cacheStats().retainedBytes, bytes);
+
+    draw(image.size());
+    const QImage reference = image.copy();
+    draw(QSize()); // A null pixmap cannot be retained; draw vectors directly.
+    QCOMPARE(image, reference);
+    draw(QSize(), 0);
+    QCOMPARE(image, reference); // Non-overlapping strokes, including the live excluded item.
+    layer.invalidateCache();
+    QCOMPARE(layer.cacheStats().entryCount, size_t(0));
+    QCOMPARE(layer.cacheStats().retainedBytes, std::uint64_t(0));
+    draw(image.size());
+    std::vector<std::unique_ptr<AnnotationItem>> replacement;
+    replacement.push_back(createPencil(30));
+    layer.replaceItems(std::move(replacement));
+    QCOMPARE(layer.cacheStats().retainedBytes, std::uint64_t(0));
+    draw(image.size());
+    layer.clear();
+    QCOMPARE(layer.cacheStats().entryCount, size_t(0));
+    QCOMPARE(layer.cacheStats().retainedBytes, std::uint64_t(0));
 }
 
 void TestAnnotationLayer::testHitTestText_IgnoresHiddenItems()
