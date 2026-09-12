@@ -67,7 +67,6 @@ private:
     void handleSelectionTool(ToolId button);
     // Tool switching helpers
     void handleAnnotationTool(ToolId button);
-    void handleStepBadgeTool(ToolId button);
     void handleMosaicTool(ToolId button);
     void handleActionButton(ToolId button);
     void handleUndoAction(ToolId button);

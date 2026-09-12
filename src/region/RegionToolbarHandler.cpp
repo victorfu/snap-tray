@@ -22,7 +22,7 @@ const std::map<ToolId, RegionToolbarHandler::ToolDispatchEntry>& RegionToolbarHa
         {ToolId::Text, {&RegionToolbarHandler::handleAnnotationTool}},
         {ToolId::Eraser, {&RegionToolbarHandler::handleAnnotationTool}},
         {ToolId::EmojiSticker, {&RegionToolbarHandler::handleAnnotationTool}},
-        {ToolId::StepBadge, {&RegionToolbarHandler::handleStepBadgeTool}},
+        {ToolId::StepBadge, {&RegionToolbarHandler::handleAnnotationTool}},
         {ToolId::Mosaic, {&RegionToolbarHandler::handleMosaicTool}},
         {ToolId::Undo, {&RegionToolbarHandler::handleActionButton}},
         {ToolId::Redo, {&RegionToolbarHandler::handleActionButton}},
@@ -106,26 +106,6 @@ void RegionToolbarHandler::handleAnnotationTool(ToolId button)
     // This triggers CursorManager::updateToolCursor() via toolChanged signal
     if (m_toolManager) {
         m_toolManager->setCurrentTool(m_currentTool);
-    }
-    emit toolChanged(m_currentTool, m_showSubToolbar);
-    emit updateRequested();
-}
-
-void RegionToolbarHandler::handleStepBadgeTool(ToolId button)
-{
-    if (m_currentTool == button) {
-        m_currentTool = ToolId::Selection;
-        m_showSubToolbar = true;
-        emit toolChanged(m_currentTool, m_showSubToolbar);
-        emit updateRequested();
-        return;
-    } else {
-        // Different tool - select it and show sub-toolbar
-        m_currentTool = button;
-        if (m_toolManager) {
-            m_toolManager->setCurrentTool(button);
-        }
-        m_showSubToolbar = true;
     }
     emit toolChanged(m_currentTool, m_showSubToolbar);
     emit updateRequested();

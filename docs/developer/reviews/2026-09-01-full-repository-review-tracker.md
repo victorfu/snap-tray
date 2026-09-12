@@ -40,7 +40,8 @@
 | Confirmed / Fix Ready | 33 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
-| Potential / 待確認 | 3 |
+| Potential / 待確認 | 2 |
+| Potential / Fix Ready（防禦性修正） | 1 |
 | Rejected / 已反證 | 1 |
 
 建立本文件時，工作樹已存在兩組未提交候選修正：
@@ -90,7 +91,7 @@
 | REV-034 | Fix Ready | P1 | High | Recording Audio | encoder 靜默降級無音訊，呼叫端未察覺 |
 | REV-035 | Fix Ready | P1 | High | Windows Recording | DXGI worker 固定 30 fps，忽略使用者 frame rate |
 | REV-036 | Fix Ready | P1 | High | macOS Recording | 麥克風中途斷線／session runtime error 無監聽 |
-| REV-037 | Potential | — | Low | Region Toolbar | Mosaic 已修；StepBadge 狀態不同步的操作後果待確認 |
+| REV-037 | Fix Ready | — | Low | Region Toolbar | StepBadge 狀態同步已修；原始操作後果仍未確認 |
 | POT-001 | Fix Ready | P1 | High | Pin Toolbar | 窄螢幕安全定位與更多選單已完成，跨平台 UI 待驗證 |
 
 ## 詳細問題與完成條件
@@ -459,13 +460,17 @@
 
 ### REV-037 — StepBadge／Mosaic toggle-off 未同步 ToolManager
 
-- 狀態：Potential
+- 分類：Potential（未宣稱原始操作後果已重現）
+- 狀態：Fix Ready（防禦性修正）
 - 證據：src/region/RegionToolbarHandler.cpp:94-155；src/RegionSelector.cpp:1023-1036,3455-3467；src/region/RegionInputHandler.cpp:970-997。
 - 觸發：目前工具是 StepBadge 或 Mosaic，再點同一 toolbar button 切回 Selection。
 - 原始風險描述：handler 與 inputState 已是 Selection，但 ToolManager::currentTool 仍是舊工具；選取輸入本身可運作，但後續 cursor refresh 會從 stale ToolManager 取回舊工具 cursor。
 - 完成條件：兩工具的 toggle-off 都讓 handler、inputState、ViewModel、ToolManager 同步為 Selection；toolCursorRequested 不再回傳舊 cursor。
 - 重新判定：2026-09-12 核對 handleMosaicTool，toggle-off 已同步 ToolManager，Mosaic 子項已修。handleStepBadgeTool 仍提前 return，但 StepBadge 與 Selection 的 idle cursor 同為 CrossCursor，且未證實會誤放 badge；目前僅確認內部狀態不同步，操作後果仍待確認。
 - 待確認：重現 StepBadge toggle-off 後可見的錯誤游標、誤操作或後續工具切換問題，再確認剩餘子項；不再把 Mosaic 列為未修。
+
+- 修正證據：StepBadge 改走共用 annotation toggle handler，ToolManager 在 toolChanged 通知前同步 Selection；移除重複且漏同步的分支。
+- 驗證：2026-09-12 macOS canonical build、RegionSelector_ToolbarState 與 Qml_RegionToolbarViewModel 通過；反覆 StepBadge／Mosaic toggle 與後續 Pencil 切換，通知期間 ToolManager 始終一致。原生跨平台操作 smoke 待補；原先錯游標／誤放 badge 未重現，維持 Potential 分類。對應本機 commit：fix: synchronize step badge toggles through the shared tool handler。
 
 ### POT-001 — 窄螢幕 Pin toolbar 定位與操作可達性
 
@@ -568,3 +573,4 @@
 | 2026-09-12 | REV-023 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-024 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-028 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-037 完成狀態同步防禦性修正與回歸；分類維持 Potential，狀態為 Fix Ready，不將未重現的誤操作升格 Confirmed。 |
