@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 14 |
-| Confirmed / Fix Ready | 19 |
+| Confirmed / Open | 13 |
+| Confirmed / Fix Ready | 20 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 3 |
@@ -79,7 +79,7 @@
 | REV-023 | Open | P2 | High | CLI GUI | 非數字 delay 被接受為 0 |
 | REV-024 | Open | P2 | High | CLI Full | 負數 screen 被當成未指定 |
 | REV-025 | Fix Ready | P1 | High | Linux Save | filename 長度用 UTF-16 units 而非 UTF-8 bytes |
-| REV-026 | Open | P1 | High | Linux Runtime | XDG session 與 Qt QPA 衝突時錯判為 X11 |
+| REV-026 | Fix Ready | P1 | High | Linux Runtime | XDG session 與 Qt QPA 衝突時錯判為 X11 |
 | REV-027 | Open | P2 | High | QML | CursorTokens 未註冊 singleton |
 | REV-028 | Open | P2 | High | Settings / CLI | install／uninstall 失敗後 busy 永久不解除 |
 | REV-029 | Open | P2 | High | Color Picker | triangle value 軸使用 height 而非 width |
@@ -343,12 +343,13 @@
 
 ### REV-026 — Linux display-server 衝突時錯判 X11
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/platform/PlatformCapabilities.cpp:21-69,92-105；src/main.cpp:92-96,144-147。
 - 觸發：XDG_SESSION_TYPE=wayland 但 Qt QPA=xcb，或 XDG_SESSION_TYPE=x11 但 QPA=offscreen／minimal。
 - 後果：判斷以 OR 且先回傳 X11；runtime guard 錯誤放行並啟用只支援 Ubuntu 22.04 X11 的 capture、global hotkey、window detection。
 - 完成條件：建立 session/QPA 決策矩陣並 fail closed；x11+xcb 才 supported，wayland、offscreen、minimal 與衝突訊號不得啟用 X11-only capabilities。
-- 修正證據：待補。
+- 修正證據：display-server 判定採 session 與實際 Qt backend 同時符合 x11＋xcb 才放行；Wayland／XWayland、offscreen／minimal、缺少或衝突訊號保持不支援，移除僅憑 DISPLAY 的放行 fallback。Linux Xvfb 測試腳本與 CI 明確設定其 x11 session。
+- 驗證：2026-09-12 macOS scripts/build.sh 與 Platform_Capabilities 通過，新增 25 組 session／QPA 決策矩陣，驗證 runtime、hotkey、window detection 同步停用，Linux 錄影／OCR 維持關閉；scripts/run-tests.sh bash -n 通過。Ubuntu X11／Wayland 實機啟動與更新後 CI 待執行，保留 Fix Ready。 對應本機 commit：fix: require matching Linux X11 session and Qt backend。
 
 ### REV-027 — CursorTokens 未註冊為 QML singleton
 
@@ -538,3 +539,4 @@
 | 2026-09-12 | REV-019 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-020 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-025 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-026 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |

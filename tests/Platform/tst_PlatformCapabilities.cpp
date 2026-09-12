@@ -12,6 +12,8 @@ private slots:
     void unsupportedRuntimeMessageIsEmptyOnlyWhenSupported();
     void macAndWindowsKeepRecordingAndOcrSupport();
     void displayServerDetectionUsesSessionAndQtPlatform();
+    void linuxSessionBackendMatrix_data();
+    void linuxSessionBackendMatrix();
 };
 
 void tst_PlatformCapabilities::linuxX11BetaCapabilities()
@@ -86,15 +88,46 @@ void tst_PlatformCapabilities::macAndWindowsKeepRecordingAndOcrSupport()
 void tst_PlatformCapabilities::displayServerDetectionUsesSessionAndQtPlatform()
 {
     QCOMPARE(SnapTray::displayServerKindFromSessionType(QStringLiteral("x11"), QString()),
-             SnapTray::DisplayServerKind::X11);
+             SnapTray::DisplayServerKind::Other);
     QCOMPARE(SnapTray::displayServerKindFromSessionType(QStringLiteral("wayland"), QString()),
              SnapTray::DisplayServerKind::Wayland);
     QCOMPARE(SnapTray::displayServerKindFromSessionType(QString(), QStringLiteral("xcb")),
-             SnapTray::DisplayServerKind::X11);
+             SnapTray::DisplayServerKind::Other);
     QCOMPARE(SnapTray::displayServerKindFromSessionType(QString(), QStringLiteral("wayland")),
              SnapTray::DisplayServerKind::Wayland);
     QCOMPARE(SnapTray::displayServerKindFromSessionType(QString(), QStringLiteral("offscreen")),
              SnapTray::DisplayServerKind::Offscreen);
+}
+
+void tst_PlatformCapabilities::linuxSessionBackendMatrix_data()
+{
+    QTest::addColumn<QString>("session");
+    QTest::addColumn<QString>("backend");
+    for (const QString& session : {QStringLiteral("x11"), QStringLiteral("wayland"),
+                                   QStringLiteral("tty"), QString()}) {
+        for (const QString& backend : {QStringLiteral("xcb"), QStringLiteral("wayland"),
+                                       QStringLiteral("wayland-egl"), QStringLiteral("offscreen"),
+                                       QStringLiteral("minimal"), QString()}) {
+            QTest::addRow("%s-%s", qPrintable(session), qPrintable(backend)) << session << backend;
+        }
+    }
+    QTest::newRow("case-whitespace") << QStringLiteral(" X11 ") << QStringLiteral(" XCB ");
+}
+
+void tst_PlatformCapabilities::linuxSessionBackendMatrix()
+{
+    QFETCH(QString, session);
+    QFETCH(QString, backend);
+    const bool supported = session.trimmed().compare("x11", Qt::CaseInsensitive) == 0
+        && backend.trimmed().compare("xcb", Qt::CaseInsensitive) == 0;
+    const auto kind = SnapTray::displayServerKindFromSessionType(session, backend);
+    const auto caps = SnapTray::capabilitiesForPlatform(SnapTray::PlatformKind::Linux, kind);
+    QCOMPARE(caps.isRuntimeSupported, supported);
+    QCOMPARE(caps.supportsGlobalHotkeys, supported);
+    QCOMPARE(caps.supportsWindowDetection, supported);
+    QVERIFY(!caps.supportsRecording);
+    QVERIFY(!caps.supportsOCR);
+    QCOMPARE(caps.unsupportedRuntimeMessage.isEmpty(), supported);
 }
 
 QTEST_MAIN(tst_PlatformCapabilities)

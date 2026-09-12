@@ -24,19 +24,21 @@ DisplayServerKind displayServerKindFromSessionType(const QString& sessionType,
     const QString normalizedSession = sessionType.trimmed().toLower();
     const QString normalizedQtPlatform = qtPlatformName.trimmed().toLower();
 
-    if (normalizedSession == QStringLiteral("x11") ||
-        normalizedQtPlatform == QStringLiteral("xcb")) {
-        return DisplayServerKind::X11;
-    }
-
-    if (normalizedSession == QStringLiteral("wayland") ||
-        normalizedQtPlatform == QStringLiteral("wayland")) {
-        return DisplayServerKind::Wayland;
-    }
-
     if (normalizedQtPlatform == QStringLiteral("offscreen") ||
         normalizedQtPlatform == QStringLiteral("minimal")) {
         return DisplayServerKind::Offscreen;
+    }
+
+    if (normalizedSession == QStringLiteral("wayland") ||
+        normalizedQtPlatform.startsWith(QStringLiteral("wayland"))) {
+        return DisplayServerKind::Wayland;
+    }
+
+    // xcb inside a Wayland session is XWayland, not a supported X11 desktop.
+    // Missing or conflicting evidence must not enable X11-only capabilities.
+    if (normalizedSession == QStringLiteral("x11") &&
+        normalizedQtPlatform == QStringLiteral("xcb")) {
+        return DisplayServerKind::X11;
     }
 
     if (normalizedSession.isEmpty() && normalizedQtPlatform.isEmpty()) {
@@ -50,23 +52,13 @@ DisplayServerKind currentDisplayServerKind()
 {
 #if defined(Q_OS_LINUX)
     QString qtPlatformName;
-    if (QGuiApplication::instance()) {
+    if (qobject_cast<QGuiApplication*>(QCoreApplication::instance())) {
         qtPlatformName = QGuiApplication::platformName();
     }
 
-    auto detected = displayServerKindFromSessionType(
+    return displayServerKindFromSessionType(
         QString::fromLocal8Bit(qgetenv("XDG_SESSION_TYPE")),
         qtPlatformName);
-    if (detected != DisplayServerKind::Unknown) {
-        return detected;
-    }
-
-    if (!qEnvironmentVariableIsEmpty("DISPLAY")) {
-        return DisplayServerKind::X11;
-    }
-    if (!qEnvironmentVariableIsEmpty("WAYLAND_DISPLAY")) {
-        return DisplayServerKind::Wayland;
-    }
 #endif
     return DisplayServerKind::Unknown;
 }

@@ -99,7 +99,7 @@ cmake --build "$BUILD_DIR"
 echo ""
 echo "Running tests..."
 if [[ "$OSTYPE" == linux* ]] && [ -z "${DISPLAY:-}" ] && command -v xvfb-run >/dev/null 2>&1; then
-    xvfb-run -a ctest --test-dir "$BUILD_DIR" --output-on-failure
+    XDG_SESSION_TYPE=x11 xvfb-run -a ctest --test-dir "$BUILD_DIR" --output-on-failure
 else
     ctest --test-dir "$BUILD_DIR" --output-on-failure
 fi

@@ -113,7 +113,7 @@ jobs:
         run: cmake --build build --config Release --parallel
 
       - name: Run Tests
-        run: xvfb-run -a ctest --test-dir build --output-on-failure -C Release
+        run: XDG_SESSION_TYPE=x11 xvfb-run -a ctest --test-dir build --output-on-failure -C Release
 
   build-windows:
     runs-on: windows-latest
