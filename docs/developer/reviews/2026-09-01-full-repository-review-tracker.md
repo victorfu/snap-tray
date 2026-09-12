@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 10 |
-| Confirmed / Fix Ready | 23 |
+| Confirmed / Open | 9 |
+| Confirmed / Fix Ready | 24 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 3 |
@@ -88,7 +88,7 @@
 | REV-032 | Open | P1 | High | macOS Recording | SCK 未排除錄影 tooltip window |
 | REV-033 | Fix Ready | P1 | High | Windows Recording | Windows 10 2004 前 exclusion 退化成無內容佔位 |
 | REV-034 | Fix Ready | P1 | High | Recording Audio | encoder 靜默降級無音訊，呼叫端未察覺 |
-| REV-035 | Open | P1 | High | Windows Recording | DXGI worker 固定 30 fps，忽略使用者 frame rate |
+| REV-035 | Fix Ready | P1 | High | Windows Recording | DXGI worker 固定 30 fps，忽略使用者 frame rate |
 | REV-036 | Open | P1 | High | macOS Recording | 麥克風中途斷線／session runtime error 無監聽 |
 | REV-037 | Potential | — | Low | Region Toolbar | Mosaic 已修；StepBadge 狀態不同步的操作後果待確認 |
 | POT-001 | Fix Ready | P1 | High | Pin Toolbar | 窄螢幕安全定位與更多選單已完成，跨平台 UI 待驗證 |
@@ -430,12 +430,13 @@
 
 ### REV-035 — DXGI capture cadence 固定 30 fps
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：include/capture/ICaptureEngine.h:80,142；src/RecordingInitTask.cpp:147-176；src/capture/DXGICaptureEngine_win.cpp:109,758-774。
 - 觸發：設定 24、60 或任何非 30 frame rate。
 - 後果：setFrameRate 只改 ICaptureEngine base member，DXGICaptureEngine::Private 有另一個固定 30 的 frameRate，QTimer 仍用 1000/30；encoder 卻用使用者選擇值。24 fps 會過度擷取／時間戳取樣不一致，60 fps 會重複／不足 frame，輸出 cadence 不符合設定。
 - 完成條件：capture timer 使用同一 frameRate source；24／30／60 各量測固定時間的 callback 數與 frame timestamp cadence，容許合理 timer jitter。
-- 修正證據：待補。
+- 修正證據：DXGI worker 移除固定 30 fps 副本，start 直接使用 ICaptureEngine 接收的本次 frame rate；採 Precise QChronoTimer 與奈秒 interval 保留 24／60 fps 的小數毫秒，非法 rate 拒絕啟動，保留既有 worker affinity／stop cleanup。
+- 驗證：2026-09-12 macOS scripts/build.sh、CaptureFrameTiming、RecordingManager_StateMachine／Startup 通過；10／15／24／30／60 fps 驗證精確 interval、固定時間 callback 數與平均 cadence，另驗證非法 rate。Windows DXGI lifecycle suite 新增真實 worker tick observer 的同組 cadence 測試，Windows native build／DXGI 與 BitBlt smoke 待執行，保留 Fix Ready。 對應本機 commit：fix: drive DXGI capture cadence from the configured frame rate。
 
 ### REV-036 — macOS 麥克風中途失效沒有通知
 
@@ -546,3 +547,4 @@
 | 2026-09-12 | REV-029 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-031 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-033 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-035 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |

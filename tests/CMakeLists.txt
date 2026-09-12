@@ -1006,6 +1006,11 @@ add_test(NAME RecordingManager_CoreAudioCaptureEngineSafety
 set_tests_properties(RecordingManager_CoreAudioCaptureEngineSafety
     PROPERTIES TIMEOUT 30 LABELS "unit")
 
+add_executable(RecordingManager_CaptureFrameTiming RecordingManager/tst_CaptureFrameTiming.cpp)
+target_link_libraries(RecordingManager_CaptureFrameTiming PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_CaptureFrameTiming COMMAND RecordingManager_CaptureFrameTiming)
+set_tests_properties(RecordingManager_CaptureFrameTiming PROPERTIES TIMEOUT 30 LABELS "unit")
+
 if(WIN32)
 add_executable(RecordingManager_DXGICaptureEngineThreadLifecycle
     RecordingManager/tst_DXGICaptureEngineThreadLifecycle_win.cpp

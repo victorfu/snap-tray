@@ -1,11 +1,12 @@
 #include "capture/DXGICaptureEngine.h"
+#include "capture/CaptureFrameTiming.h"
 #include "utils/CoordinateHelper.h"
 
 #include <QCoreApplication>
 #include <QScreen>
 #include <QDebug>
 #include <QThread>
-#include <QTimer>
+#include <QChronoTimer>
 
 #include <Windows.h>
 #include <d3d11.h>
@@ -106,7 +107,7 @@ public:
 
     QRect captureRegion;
     CaptureScreenInfo screenInfo;
-    int frameRate = 30;
+    std::function<void()> captureTickObserver;
     std::atomic<bool> running{false};
     bool useDXGI = false;
     QImage lastFrame;  // Cache for when no new frame available (used during capture)
@@ -114,7 +115,7 @@ public:
 
     // Worker thread members
     QThread *workerThread = nullptr;
-    QTimer *captureTimer = nullptr;
+    QChronoTimer *captureTimer = nullptr;
     QImage latestFrame;  // Thread-safe cached frame for main thread access
     std::mutex frameMutex;
 
@@ -408,6 +409,7 @@ void DXGICaptureEngine::Private::cleanupThread(QThread *ownerThread)
 void DXGICaptureEngine::Private::doCapture()
 {
     if (!running) return;
+    if (captureTickObserver) captureTickObserver();
 
     std::lock_guard<std::recursive_mutex> lock(resourceMutex);
     if (!running) return;  // Double-check after acquiring lock
@@ -716,6 +718,11 @@ bool DXGICaptureEngine::setRegion(const QRect &region, const CaptureScreenInfo &
 
 bool DXGICaptureEngine::start()
 {
+    const auto interval = SnapTray::captureFrameInterval(m_frameRate);
+    if (interval <= std::chrono::nanoseconds::zero()) {
+        emit error("Invalid capture frame rate");
+        return false;
+    }
     if (!d->screenInfo.isValid() || d->captureRegion.isEmpty()) {
         emit error("Region or screen not configured");
         return false;
@@ -756,14 +763,16 @@ bool DXGICaptureEngine::start()
     d->moveToThread(d->workerThread);
 
     // Create timer in worker thread context
-    d->captureTimer = new QTimer();
+    d->captureTickObserver = m_captureTickObserver;
+    d->captureTimer = new QChronoTimer();
     d->captureTimer->moveToThread(d->workerThread);
-    d->captureTimer->setInterval(1000 / d->frameRate);
+    d->captureTimer->setTimerType(Qt::PreciseTimer);
+    d->captureTimer->setInterval(interval);
 
     // Connect timer to capture slot
-    connect(d->captureTimer, &QTimer::timeout, d, &Private::doCapture);
+    connect(d->captureTimer, &QChronoTimer::timeout, d, &Private::doCapture);
     connect(d->workerThread, &QThread::started, d->captureTimer,
-            QOverload<>::of(&QTimer::start));
+            &QChronoTimer::start);
 
     d->running = true;
     d->workerThread->start();
@@ -771,7 +780,7 @@ bool DXGICaptureEngine::start()
     qDebug() << "DXGICaptureEngine: Started with worker thread"
              << (d->useDXGI ? "(DXGI Desktop Duplication)" : "(BitBlt fallback)")
              << "region:" << d->captureRegion
-             << "fps:" << d->frameRate;
+             << "fps:" << m_frameRate;
 
     return true;
 }

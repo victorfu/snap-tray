@@ -2,6 +2,7 @@
 #define DXGICAPTUREENGINE_H
 
 #include "ICaptureEngine.h"
+#include <functional>
 
 /**
  * @brief Windows capture engine using Desktop Duplication API
@@ -45,6 +46,8 @@ public:
     static bool isAvailable();
 
 private:
+    friend class TestDXGICaptureEngineThreadLifecycleWin;
+    std::function<void()> m_captureTickObserver;
     class Private;
     Private *d;
 };
