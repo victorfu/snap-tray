@@ -49,8 +49,12 @@ public:
     static QString sanitizeFilename(const QString& raw);
 
 private:
+    friend class tst_FilenameTemplateEngine;
     static QString ensureExtension(const QString& filename, const QString& ext);
-    static QString enforceLengthLimit(const QString& filename, const QString& outputDir);
+    static QString enforceLengthLimit(const QString& filename, const QString& outputDir,
+                                      const QString& collisionSuffix = {});
+    static QString limitFilenameComponent(const QString& filename, int limit, bool utf8,
+                                          const QString& collisionSuffix = {});
     static QString appendCounter(const QString& filename, int counter);
     static bool hasCounterToken(const QString& templ);
 };

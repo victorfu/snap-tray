@@ -36,8 +36,8 @@
 
 | 類型 | 數量 |
 |---|---:|
-| Confirmed / Open | 15 |
-| Confirmed / Fix Ready | 18 |
+| Confirmed / Open | 14 |
+| Confirmed / Fix Ready | 19 |
 | Confirmed / In Progress | 0 |
 | Confirmed / Verified | 2 |
 | Potential / 待確認 | 3 |
@@ -78,7 +78,7 @@
 | REV-022 | Open | P2 | High | CLI Pin | clipboard pin 忽略 x／y |
 | REV-023 | Open | P2 | High | CLI GUI | 非數字 delay 被接受為 0 |
 | REV-024 | Open | P2 | High | CLI Full | 負數 screen 被當成未指定 |
-| REV-025 | Open | P1 | High | Linux Save | filename 長度用 UTF-16 units 而非 UTF-8 bytes |
+| REV-025 | Fix Ready | P1 | High | Linux Save | filename 長度用 UTF-16 units 而非 UTF-8 bytes |
 | REV-026 | Open | P1 | High | Linux Runtime | XDG session 與 Qt QPA 衝突時錯判為 X11 |
 | REV-027 | Open | P2 | High | QML | CursorTokens 未註冊 singleton |
 | REV-028 | Open | P2 | High | Settings / CLI | install／uninstall 失敗後 busy 永久不解除 |
@@ -333,12 +333,13 @@
 
 ### REV-025 — Linux filename 限制使用字元數而非 bytes
 
-- 狀態：Open
+- 狀態：Fix Ready
 - 證據：src/utils/FilenameTemplateEngine.cpp:311-339,360-389；src/region/RegionExportManager.cpp:191-198；src/utils/ImageSaveUtils.cpp:75-84。
 - 觸發：ext4 等 NAME_MAX 以 bytes 計算的檔案系統，template 含長 CJK、emoji 或多 byte Unicode metadata。
 - 後果：QString::length／left 判定少於 255，但 UTF-8 component 超過 255 bytes；QSaveFile::open 以 ENAMETOOLONG 失敗，auto-save 無輸出。
 - 完成條件：Ubuntu 22.04 實際寫入 CJK、emoji、mixed ASCII；basename.toUtf8().size 不超過目標限制，保留 extension／collision suffix／hash，不切斷 grapheme。
-- 修正證據：待補。
+- 修正證據：Linux 依 UTF-8 bytes 與目的目錄 NAME_MAX 限制檔名，使用 grapheme boundary 裁切；保留副檔名、hash、counter／UUID 尾碼。必要尾碼無法容納時回報錯誤，不把空檔名當目的目錄發布；Windows 既有路徑長度政策保留。
+- 驗證：2026-09-12 macOS scripts/build.sh、FilenameTemplateEngine、ImageSaveUtils、RegionExportManager 通過；12 組 CJK／mixed／combining／ZWJ emoji 與 suffix 矩陣驗證 byte budget、完整字元群及實際檔案寫入，另驗證 counter／UUID、並行唯一存檔與失敗清理回歸。Linux 原生 render／collision 寫檔斷言已加入，Ubuntu ext4 runtime 待補，保留 Fix Ready。 對應本機 commit：fix: bound Linux filenames by UTF-8 bytes without splitting graphemes。
 
 ### REV-026 — Linux display-server 衝突時錯判 X11
 
@@ -536,3 +537,4 @@
 | 2026-09-12 | REV-018 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-019 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-020 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-025 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |

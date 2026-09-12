@@ -86,6 +86,10 @@ ImageSaveUtils::UniqueSaveResult ImageSaveUtils::saveImageUniqueWithHooks(
         context.timestamp = QDateTime::currentDateTime();
     const auto initial = FilenameTemplateEngine::renderFilename(spec.filenameTemplate, context);
     result.renderWarning = initial.error;
+    if (initial.filename.isEmpty()) {
+        setError(&result.error, QStringLiteral("open"), initial.error);
+        return result;
+    }
     result.filePath = dir.filePath(initial.filename);
     const QByteArray format = resolveFormat(result.filePath, explicitFormat, &result.error);
     if (format.isEmpty())
@@ -121,8 +125,14 @@ ImageSaveUtils::UniqueSaveResult ImageSaveUtils::saveImageUniqueWithHooks(
             ? (hooks.uuidSuffix.isEmpty() ? QUuid::createUuid().toString(QUuid::Id128).left(8)
                                          : hooks.uuidSuffix)
             : QString();
-        result.filePath = dir.filePath(FilenameTemplateEngine::collisionFilename(
-            spec.filenameTemplate, context, initial.filename, attempt, uuid));
+        const QString candidate = FilenameTemplateEngine::collisionFilename(
+            spec.filenameTemplate, context, initial.filename, attempt, uuid);
+        if (candidate.isEmpty()) {
+            setError(&result.error, QStringLiteral("commit"),
+                     QStringLiteral("Filename length limit is too small for a collision suffix"));
+            return result;
+        }
+        result.filePath = dir.filePath(candidate);
         const auto published = hooks.publish
             ? hooks.publish(temporary.path, result.filePath)
             : SnapTray::publishFileNoReplace(temporary.path, result.filePath);
