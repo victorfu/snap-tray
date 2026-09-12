@@ -340,6 +340,7 @@
 - 完成條件：Ubuntu 22.04 實際寫入 CJK、emoji、mixed ASCII；basename.toUtf8().size 不超過目標限制，保留 extension／collision suffix／hash，不切斷 grapheme。
 - 修正證據：Linux 依 UTF-8 bytes 與目的目錄 NAME_MAX 限制檔名，使用 grapheme boundary 裁切；保留副檔名、hash、counter／UUID 尾碼。必要尾碼無法容納時回報錯誤，不把空檔名當目的目錄發布；Windows 既有路徑長度政策保留。
 - 驗證：2026-09-12 macOS scripts/build.sh、FilenameTemplateEngine、ImageSaveUtils、RegionExportManager 通過；12 組 CJK／mixed／combining／ZWJ emoji 與 suffix 矩陣驗證 byte budget、完整字元群及實際檔案寫入，另驗證 counter／UUID、並行唯一存檔與失敗清理回歸。Linux 原生 render／collision 寫檔斷言已加入，Ubuntu ext4 runtime 待補，保留 Fix Ready。 對應本機 commit：fix: bound Linux filenames by UTF-8 bytes without splitting graphemes。
+- 整合回歸補充：counter 保留範圍改由 template 的末尾 {#}／{#:n} 決定，避免把 window/app metadata 的長數字誤判為不可裁切的 counter。新增 400 位數 metadata 與 30 位格式 counter 測試；macOS canonical build、FilenameTemplateEngine／ImageSaveUtils／RegionExportManager 通過。對應本機 commit：fix: reserve filename counters only when declared by templates。
 
 ### REV-026 — Linux display-server 衝突時錯判 X11
 
@@ -548,3 +549,4 @@
 | 2026-09-12 | REV-031 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-033 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
 | 2026-09-12 | REV-035 完成修正與針對性回歸，標為 Fix Ready；原生跨平台／實機驗證待補。 |
+| 2026-09-12 | REV-025 整合覆核修正 counter 判定，長數字 metadata 與明示格式 counter 回歸通過。 |

@@ -23,6 +23,7 @@ private slots:
     void testUtf8LengthLimit_data();
     void testUtf8LengthLimit();
     void testCollisionSuffixSurvivesLengthLimit();
+    void testNumericMetadataIsNotACounter();
 };
 
 void tst_FilenameTemplateEngine::testRender_BasicTokens()
@@ -189,14 +190,17 @@ void tst_FilenameTemplateEngine::testCollisionSuffixSurvivesLengthLimit()
     context.windowTitle = QStringLiteral("界").repeated(400);
     context.outputDir = dir.path();
     for (const QString& templ : {QStringLiteral("{windowTitle}.{ext}"),
-                                 QStringLiteral("{windowTitle}_{#:4}.{ext}")}) {
+                                 QStringLiteral("{windowTitle}_{#:4}.{ext}"),
+                                 QStringLiteral("{windowTitle}_{#:30}.{ext}")}) {
         QTemporaryDir caseDirectory;
         QVERIFY(caseDirectory.isValid());
         context.outputDir = caseDirectory.path();
         const QString initial = FilenameTemplateEngine::renderFilename(templ, context).filename;
         const QString numbered = FilenameTemplateEngine::collisionFilename(templ, context, initial, 42);
         const QString uuid = FilenameTemplateEngine::collisionFilename(templ, context, initial, 0, "deadbeef");
-        QVERIFY(numbered.endsWith(templ.contains("{#") ? "_0042.png" : "_42.png"));
+        const QString expectedCounter = templ.contains("#:30") ? QStringLiteral("_000000000000000000000000000042.png")
+            : templ.contains("{#") ? QStringLiteral("_0042.png") : QStringLiteral("_42.png");
+        QVERIFY(numbered.endsWith(expectedCounter));
         QVERIFY(uuid.endsWith("_deadbeef.png"));
         QVERIFY(initial != numbered && numbered != uuid);
 #ifdef Q_OS_LINUX
@@ -208,6 +212,17 @@ void tst_FilenameTemplateEngine::testCollisionSuffixSurvivesLengthLimit()
 #endif
     }
     QVERIFY(FilenameTemplateEngine::limitFilenameComponent(QString(40, 'a') + ".png", 10, true).isEmpty());
+}
+
+void tst_FilenameTemplateEngine::testNumericMetadataIsNotACounter()
+{
+    FilenameTemplateEngine::Context context;
+    context.windowTitle = QStringLiteral("Document_") + QString(400, QChar('9'));
+    const auto result = FilenameTemplateEngine::renderFilename("{windowTitle}.{ext}", context);
+    QVERIFY(!result.filename.isEmpty());
+    QVERIFY(result.error.isEmpty());
+    QVERIFY(result.filename.size() <= 255);
+    QVERIFY(result.filename.endsWith(".png"));
 }
 
 QTEST_MAIN(tst_FilenameTemplateEngine)

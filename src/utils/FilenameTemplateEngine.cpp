@@ -254,7 +254,20 @@ FilenameTemplateEngine::Result FilenameTemplateEngine::renderFilename(const QStr
     }
 
     filename = ensureExtension(filename, normalizedContext.ext);
-    filename = enforceLengthLimit(filename, normalizedContext.outputDir);
+    QString counterSuffix;
+    if (!result.usedFallback && normalizedContext.counter > 0) {
+        // Reserve a terminal counter declared by the template, never an
+        // arbitrary numeric suffix that came from a window title or app name.
+        static const QRegularExpression terminalCounter(
+            QStringLiteral(R"(([_\-.]?)\{#(?::(\d+))?\}(?:\.(?:\{ext\}|[^{}]+))?$)"));
+        const auto match = terminalCounter.match(templateToUse);
+        if (match.hasMatch()) {
+            counterSuffix = match.captured(1) + QString::number(normalizedContext.counter)
+                .rightJustified(match.captured(2).toInt(), QChar('0'));
+            if (!QFileInfo(filename).completeBaseName().endsWith(counterSuffix)) counterSuffix.clear();
+        }
+    }
+    filename = enforceLengthLimit(filename, normalizedContext.outputDir, counterSuffix);
     if (filename.isEmpty()) {
         result.error = QStringLiteral("Filename length limit is too small for the required suffix");
     }
@@ -425,11 +438,6 @@ QString FilenameTemplateEngine::limitFilenameComponent(const QString& filename, 
     QString base = dotPos > 0 ? filename.left(dotPos) : filename;
     const QString hash = QString::number(qHash(filename), 16).rightJustified(6, QChar('0')).right(6);
     QString suffix = collisionSuffix;
-    if (suffix.isEmpty()) {
-        // Also preserve a trailing formatted {#} token in rendered templates.
-        static const QRegularExpression counterSuffix(QStringLiteral(R"(_\d+$)"));
-        suffix = counterSuffix.match(base).captured();
-    }
     if (!suffix.isEmpty() && base.endsWith(suffix)) {
         base.chop(suffix.size());
     }
