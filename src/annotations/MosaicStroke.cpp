@@ -188,6 +188,10 @@ QImage MosaicStroke::applyGaussianBlur(const QRect &strokeBounds) const
     // Extract region from source (Just the needed part)
     QImage regionImage = m_sourcePixmap->copy(clampedBounds).toImage();
     QImage rgb = regionImage.convertToFormat(QImage::Format_RGB32);
+    // The patch and result canvas use physical pixels. Copied pixmaps retain
+    // their DPR, which would shrink the patch during drawImage below. Restore
+    // the source DPR only on the final rendered cache in draw().
+    rgb.setDevicePixelRatio(1.0);
 
     // Calculate sigma based on physical block size (larger block = more blur)
     const int physicalBlockSize = CoordinateHelper::toPhysical(

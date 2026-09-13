@@ -858,7 +858,12 @@ add_test(NAME Annotations_MarkerStroke COMMAND Annotations_MarkerStroke)
 set_tests_properties(Annotations_MarkerStroke PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(Annotations_MosaicStroke Annotations/tst_MosaicStroke.cpp)
-target_link_libraries(Annotations_MosaicStroke PRIVATE snaptray_algorithms Qt6::Widgets Qt6::Test)
+target_link_libraries(Annotations_MosaicStroke PRIVATE snaptray_algorithms opencv_imgproc Qt6::Widgets Qt6::Test)
+target_include_directories(Annotations_MosaicStroke PRIVATE
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/core/include
+    ${CMAKE_BINARY_DIR}/_deps/opencv-src/modules/imgproc/include
+)
 add_test(NAME Annotations_MosaicStroke COMMAND Annotations_MosaicStroke)
 set_tests_properties(Annotations_MosaicStroke PROPERTIES TIMEOUT 60 LABELS "unit")
 
