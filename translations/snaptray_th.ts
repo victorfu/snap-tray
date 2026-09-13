@@ -935,11 +935,6 @@ English is always included and cannot be removed.</source>
 <context>
     <name>PinWindow</name>
     <message>
-        <location filename="../src/PinWindow.cpp" line="483"/>
-        <source>Failed to share screenshot</source>
-        <translation>แชร์ภาพหน้าจอไม่สำเร็จ</translation>
-    </message>
-    <message>
         <location filename="../src/PinWindow.cpp" line="912"/>
         <source>Show Toolbar</source>
         <translation>แสดงแถบเครื่องมือ</translation>
@@ -1258,11 +1253,6 @@ English is always included and cannot be removed.</source>
         <translation>โปรดรอให้การเบลออัตโนมัติเสร็จสิ้น</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="1484"/>
-        <source>Share failed</source>
-        <translation>แชร์ไม่สำเร็จ</translation>
-    </message>
-    <message>
         <location filename="../src/PinWindow.cpp" line="1585"/>
         <location filename="../src/PinWindow.cpp" line="1608"/>
         <location filename="../src/PinWindow.cpp" line="1662"/>
@@ -1393,41 +1383,6 @@ English is always included and cannot be removed.</source>
         <location filename="../src/QRCodeManager.cpp" line="186"/>
         <source>No barcode found in image</source>
         <translation>ไม่พบบาร์โค้ดในรูปภาพ</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="45"/>
-        <source>Invalid upload request</source>
-        <translation>คำขออัปโหลดไม่ถูกต้อง</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="47"/>
-        <source>Upload method not allowed</source>
-        <translation>ไม่อนุญาตวิธีอัปโหลดนี้</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="49"/>
-        <source>File too large (max 5MB)</source>
-        <translation>ไฟล์ใหญ่เกินไป (สูงสุด 5MB)</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="51"/>
-        <source>Server error while uploading</source>
-        <translation>เซิร์ฟเวอร์เกิดข้อผิดพลาดขณะอัปโหลด</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="53"/>
-        <source>Upload service unavailable, please retry</source>
-        <translation>บริการอัปโหลดไม่พร้อมใช้งาน โปรดลองอีกครั้ง</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="56"/>
-        <source>Upload failed (HTTP %1)</source>
-        <translation>อัปโหลดไม่สำเร็จ (HTTP %1)</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="58"/>
-        <source>Upload failed</source>
-        <translation>อัปโหลดไม่สำเร็จ</translation>
     </message>
     <message>
         <location filename="../src/ToolbarStyle.cpp" line="41"/>
@@ -2086,11 +2041,6 @@ English is always included and cannot be removed.</source>
 <context>
     <name>RegionSelector</name>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="680"/>
-        <source>Failed to share screenshot</source>
-        <translation>แชร์ภาพหน้าจอไม่สำเร็จ</translation>
-    </message>
-    <message>
         <location filename="../src/RegionSelector.cpp" line="2181"/>
         <source>%1 region</source>
         <translation>%1 พื้นที่</translation>
@@ -2266,190 +2216,6 @@ English is always included and cannot be removed.</source>
         <location filename="../src/qml/settings/SettingsSidebar.qml" line="35"/>
         <source>About</source>
         <translation>เกี่ยวกับ</translation>
-    </message>
-</context>
-<context>
-    <name>SharePasswordDialog</name>
-    <message>
-        <location filename="../src/qml/dialogs/SharePasswordDialog.qml" line="9"/>
-        <source>Share URL</source>
-        <translation>แชร์ URL</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/SharePasswordDialog.qml" line="10"/>
-        <source>Set an optional password</source>
-        <translation>ตั้งรหัสผ่านเพิ่มเติมได้</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/SharePasswordDialog.qml" line="32"/>
-        <source>No password</source>
-        <translation>ไม่มีรหัสผ่าน</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/SharePasswordDialog.qml" line="61"/>
-        <source>Leave empty for public access. Link expires in 24 hours.</source>
-        <translation>เว้นว่างไว้เพื่อให้เข้าถึงแบบสาธารณะ ลิงก์จะหมดอายุใน 24 ชั่วโมง</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/SharePasswordDialog.qml" line="82"/>
-        <source>Cancel</source>
-        <translation>ยกเลิก</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/SharePasswordDialog.qml" line="89"/>
-        <source>Share</source>
-        <translation>แชร์</translation>
-    </message>
-</context>
-<context>
-    <name>ShareResultDialog</name>
-    <message>
-        <location filename="../src/qml/dialogs/ShareResultDialog.qml" line="9"/>
-        <source>Share URL Ready</source>
-        <translation>URL สำหรับแชร์พร้อมแล้ว</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ShareResultDialog.qml" line="28"/>
-        <source>Share Link</source>
-        <translation>ลิงก์สำหรับแชร์</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ShareResultDialog.qml" line="48"/>
-        <source>No URL</source>
-        <translation>ไม่มี URL</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ShareResultDialog.qml" line="61"/>
-        <source>Password</source>
-        <translation>รหัสผ่าน</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ShareResultDialog.qml" line="155"/>
-        <source>Close</source>
-        <translation>ปิด</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ShareResultDialog.qml" line="163"/>
-        <source>Copy</source>
-        <translation>คัดลอก</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ShareResultDialog.qml" line="165"/>
-        <source>✓ Copied!</source>
-        <translation>✓ คัดลอกแล้ว!</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/dialogs/ShareResultDialog.qml" line="174"/>
-        <source>Open</source>
-        <translation>เปิด</translation>
-    </message>
-</context>
-<context>
-    <name>ShareResultViewModel</name>
-    <message>
-        <location filename="../src/qml/ShareResultViewModel.cpp" line="33"/>
-        <source>Expires: %1</source>
-        <translation>หมดอายุ: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/ShareResultViewModel.cpp" line="40"/>
-        <source>Valid until %1</source>
-        <translation>ใช้ได้จนถึง %1</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/ShareResultViewModel.cpp" line="43"/>
-        <source>Upload completed</source>
-        <translation>อัปโหลดเสร็จสิ้น</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/ShareResultViewModel.cpp" line="49"/>
-        <source>Copy includes both link and password.</source>
-        <translation>การคัดลอกจะรวมทั้งลิงก์และรหัสผ่าน</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/ShareResultViewModel.cpp" line="50"/>
-        <source>Anyone with this link can access it until expiration.</source>
-        <translation>ใครก็ตามที่มีลิงก์นี้สามารถเข้าถึงได้จนกว่าจะหมดอายุ</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/ShareResultViewModel.cpp" line="56"/>
-        <source>Password protected</source>
-        <translation>ป้องกันด้วยรหัสผ่าน</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/ShareResultViewModel.cpp" line="58"/>
-        <source>Password protected (hidden)</source>
-        <translation>ป้องกันด้วยรหัสผ่าน (ซ่อนไว้)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/ShareResultViewModel.cpp" line="59"/>
-        <source>No password</source>
-        <translation>ไม่มีรหัสผ่าน</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/ShareResultViewModel.cpp" line="89"/>
-        <source>%1
-Password: %2</source>
-        <translation>%1
-รหัสผ่าน: %2</translation>
-    </message>
-</context>
-<context>
-    <name>ShareUploadClient</name>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="72"/>
-        <source>Upload already in progress</source>
-        <translation>มีการอัปโหลดกำลังดำเนินอยู่แล้ว</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="77"/>
-        <source>Password too long (max %1 characters)</source>
-        <translation>รหัสผ่านยาวเกินไป (สูงสุด %1 อักขระ)</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="83"/>
-        <source>Failed to prepare image for upload</source>
-        <translation>เตรียมรูปภาพสำหรับอัปโหลดไม่สำเร็จ</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="105"/>
-        <source>No image available to share</source>
-        <translation>ไม่มีรูปภาพให้แชร์</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="110"/>
-        <source>Invalid upload size limit</source>
-        <translation>ขีดจำกัดขนาดอัปโหลดไม่ถูกต้อง</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="116"/>
-        <source>Failed to read image data</source>
-        <translation>อ่านข้อมูลรูปภาพไม่สำเร็จ</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="122"/>
-        <source>Failed to encode PNG image</source>
-        <translation>เข้ารหัสรูปภาพ PNG ไม่สำเร็จ</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="149"/>
-        <source>Image exceeds 5MB even after compression. Please crop a smaller region.</source>
-        <translation>รูปภาพมีขนาดเกิน 5MB แม้หลังบีบอัดแล้ว โปรดครอบพื้นที่ให้เล็กลง</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="176"/>
-        <source>Invalid upload response</source>
-        <translation>การตอบกลับการอัปโหลดไม่ถูกต้อง</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="185"/>
-        <source>Upload response missing URL</source>
-        <translation>การตอบกลับการอัปโหลดไม่มี URL</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="240"/>
-        <source>Upload succeeded but response could not be parsed</source>
-        <translation>อัปโหลดสำเร็จแต่ไม่สามารถแยกวิเคราะห์การตอบกลับได้</translation>
     </message>
 </context>
 <context>
@@ -2857,11 +2623,6 @@ Password: %2</source>
         <location filename="../src/tools/ToolRegistry.cpp" line="278"/>
         <source>Screen Recording</source>
         <translation>การบันทึกหน้าจอ</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="289"/>
-        <source>Share URL</source>
-        <translation>แชร์ URL</translation>
     </message>
     <message>
         <location filename="../src/tools/ToolRegistry.cpp" line="301"/>

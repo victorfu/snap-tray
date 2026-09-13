@@ -41,7 +41,6 @@ snap-tray/
 │   ├── qml/                    # QML bridges and view models
 │   ├── region/                 # Region selector components
 │   ├── settings/               # Settings managers
-│   ├── share/                  # Share upload client
 │   ├── tools/                  # Tool registry and handlers
 │   ├── ui/                     # Cross-cutting UI helpers and theme
 │   ├── update/                 # Auto-update classes
@@ -214,7 +213,7 @@ Commands under `include/cli/commands/` include:
 
 - Test files use `tests/<Component>/tst_<Name>.cpp`
 - The suite uses Qt Test primitives such as `QCOMPARE` and `QVERIFY`
-- Tests are organized by subsystem folders including `Annotations`, `Beautify`, `CLI`, `Cursor`, `Detection`, `Encoding`, `Hotkey`, `IPC`, `PinWindow`, `Qml`, `RecordingManager`, `RegionSelector`, `ScreenCanvas`, `Settings`, `Share`, `Tools`, `Update`, and `Utils`
+- Tests are organized by subsystem folders including `Annotations`, `Beautify`, `CLI`, `Cursor`, `Detection`, `Encoding`, `Hotkey`, `IPC`, `PinWindow`, `Qml`, `RecordingManager`, `RegionSelector`, `ScreenCanvas`, `Settings`, `Tools`, `Update`, and `Utils`
 
 ### Common patterns to avoid
 

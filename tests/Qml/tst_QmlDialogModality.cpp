@@ -8,7 +8,6 @@
 #include <QtQml/qqmlextensionplugin.h>
 #include "qml/QmlDialog.h"
 #include "qml/ScreenPickerViewModel.h"
-#include "qml/SharePasswordViewModel.h"
 
 Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
 
@@ -29,8 +28,7 @@ class TestQmlDialogModality : public QObject
 private slots:
     void initTestCase();
     void modalityBlocksAndRestoresInput();
-    void existingCallersPreserveParentAndContent_data();
-    void existingCallersPreserveParentAndContent();
+    void screenPickerPreservesParentAndContent();
 };
 
 void TestQmlDialogModality::initTestCase()
@@ -91,24 +89,14 @@ void TestQmlDialogModality::modalityBlocksAndRestoresInput()
     QCOMPARE(background.keyPresses, 3);
 }
 
-void TestQmlDialogModality::existingCallersPreserveParentAndContent_data()
+void TestQmlDialogModality::screenPickerPreservesParentAndContent()
 {
-    QTest::addColumn<bool>("screenPicker");
-    QTest::newRow("screen-picker") << true;
-    QTest::newRow("share-password") << false;
-}
-
-void TestQmlDialogModality::existingCallersPreserveParentAndContent()
-{
-    QFETCH(bool, screenPicker);
     QWidget host;
     host.resize(200,100);
     host.show();
     QVERIFY(QTest::qWaitForWindowExposed(&host));
-    QObject* model = screenPicker ? static_cast<QObject*>(new ScreenPickerViewModel)
-                                  : static_cast<QObject*>(new SharePasswordViewModel);
-    const QUrl source(screenPicker ? "qrc:/SnapTrayQml/dialogs/ScreenPickerDialog.qml"
-                                    : "qrc:/SnapTrayQml/dialogs/SharePasswordDialog.qml");
+    auto* model = new ScreenPickerViewModel;
+    const QUrl source("qrc:/SnapTrayQml/dialogs/ScreenPickerDialog.qml");
     QPointer<QmlDialog> dialog = new QmlDialog(source, model, "viewModel", &host);
     dialog->setModal(true);
     dialog->showAt(QPoint(80,100));

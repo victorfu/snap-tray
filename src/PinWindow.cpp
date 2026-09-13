@@ -43,10 +43,7 @@
 #include "settings/BeautifySettingsManager.h"
 #include "beautify/BeautifyRenderer.h"
 #include "settings/OCRSettingsManager.h"
-#include "share/ShareUploadClient.h"
 #include "qml/QmlToast.h"
-#include "qml/SharePasswordViewModel.h"
-#include "qml/ShareResultViewModel.h"
 #include "qml/QmlDialog.h"
 #include "utils/FilenameTemplateEngine.h"
 #include "utils/ImageSaveUtils.h"
@@ -615,38 +612,6 @@ PinWindow::PinWindow(const QPixmap& screenshot,
     m_loadingSpinner = new LoadingSpinnerRenderer(this);
     connect(m_loadingSpinner, &LoadingSpinnerRenderer::needsRepaint,
         this, QOverload<>::of(&QWidget::update));
-
-    m_shareClient = new ShareUploadClient(this);
-    connect(m_shareClient, &ShareUploadClient::uploadSucceeded,
-        this, [this](const QString& url, const QDateTime& expiresAt, bool isProtected) {
-            m_shareInProgress = false;
-            if (m_toolbar) {
-                m_toolbar->viewModel()->setShareInProgress(false);
-            }
-            updateLoadingSpinnerState();
-
-            auto* vm = new ShareResultViewModel(this);
-            vm->setResult(url, expiresAt, isProtected, m_pendingSharePassword);
-            m_pendingSharePassword.clear();
-            auto* dlg = new SnapTray::QmlDialog(
-                QUrl("qrc:/SnapTrayQml/dialogs/ShareResultDialog.qml"),
-                vm, "viewModel", this);
-            connect(vm, &ShareResultViewModel::dialogClosed, this, [dlg]() {
-                dlg->close();
-            });
-            dlg->showCenteredOnScreen(QGuiApplication::screenAt(frameGeometry().center()));
-        });
-    connect(m_shareClient, &ShareUploadClient::uploadFailed,
-        this, [this](const QString& errorMessage) {
-            m_shareInProgress = false;
-            if (m_toolbar) {
-                m_toolbar->viewModel()->setShareInProgress(false);
-            }
-            updateLoadingSpinnerState();
-            m_pendingSharePassword.clear();
-            m_toast->showToast(SnapTray::QmlToast::Level::Error,
-                errorMessage.isEmpty() ? tr("Failed to share screenshot") : errorMessage);
-        });
 
     // Initialize resize finish timer for high-quality update
     m_resizeFinishTimer = new QTimer(this);
@@ -1746,49 +1711,6 @@ bool PinWindow::ensureAutoBlurReadyForExport()
     return false;
 }
 
-void PinWindow::shareToUrl()
-{
-    if (m_shareInProgress || !m_shareClient) {
-        return;
-    }
-
-    if (!ensureAutoBlurReadyForExport()) {
-        return;
-    }
-
-    const QPixmap pixmapToShare = getExportPixmapWithAnnotations();
-    if (pixmapToShare.isNull()) {
-        m_toast->showToast(SnapTray::QmlToast::Level::Error, tr("Share failed"));
-        return;
-    }
-
-    auto* vm = new SharePasswordViewModel(this);
-    auto* dlg = new SnapTray::QmlDialog(
-        QUrl("qrc:/SnapTrayQml/dialogs/SharePasswordDialog.qml"),
-        vm, "viewModel", this);
-    connect(vm, &SharePasswordViewModel::accepted, this, [this, vm, dlg, pixmapToShare]() {
-        dlg->close();
-        if (m_shareInProgress || !m_shareClient) {
-            return;
-        }
-
-        m_pendingSharePassword = vm->password();
-
-        m_shareInProgress = true;
-        if (m_toolbar) {
-            m_toolbar->viewModel()->setShareInProgress(true);
-        }
-        updateLoadingSpinnerState();
-        m_shareClient->uploadPixmap(pixmapToShare, m_pendingSharePassword);
-    });
-    connect(vm, &SharePasswordViewModel::rejected, this, [this, dlg]() {
-        m_pendingSharePassword.clear();
-        dlg->close();
-    });
-    dlg->setModal(true);
-    dlg->showCenteredOnScreen(QGuiApplication::screenAt(frameGeometry().center()));
-}
-
 OCRManager* PinWindow::ensureOCRManager()
 {
     if (!m_ocrManager) {
@@ -1806,7 +1728,7 @@ void PinWindow::updateLoadingSpinnerState()
         return;
     }
 
-    const bool hasInFlightTask = m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress || m_shareInProgress;
+    const bool hasInFlightTask = m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress;
     if (hasInFlightTask) {
         m_loadingSpinner->start();
     } else {
@@ -2441,7 +2363,7 @@ void PinWindow::paintEvent(QPaintEvent* event)
     WatermarkRenderer::render(painter, pixmapRect, m_watermarkSettings);
 
     // Draw loading spinner when OCR, QR, or auto-blur is in progress
-    if (m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress || m_shareInProgress) {
+    if (m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress) {
         QPoint center = pixmapRect.center();
         m_loadingSpinner->draw(painter, center);
     }
@@ -3354,11 +3276,6 @@ void PinWindow::initializeAnnotationComponents()
             dismissBeautifyPanelIfVisible();
             performQRCodeScan();
         });
-    connect(vm, &PinToolbarViewModel::shareClicked,
-        this, [this]() {
-            dismissBeautifyPanelIfVisible();
-            shareToUrl();
-        });
     connect(vm, &PinToolbarViewModel::beautifyClicked,
         this, &PinWindow::showBeautifyPanel);
     connect(vm, &PinToolbarViewModel::copyClicked,
@@ -3524,7 +3441,6 @@ void PinWindow::showToolbar()
         this, &PinWindow::hideToolbarPreservingToolState, Qt::UniqueConnection);
 
     updateUndoRedoState();
-    m_toolbar->viewModel()->setShareInProgress(m_shareInProgress);
     m_toolbar->viewModel()->setAutoBlurProcessing(m_autoBlurInProgress);
     m_toolbar->show();
 

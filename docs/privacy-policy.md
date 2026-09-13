@@ -8,13 +8,13 @@ lang: en
 route_key: privacy
 ---
 
-<p><strong>Last Updated:</strong> August 2026</p>
+<p><strong>Last Updated:</strong> September 2026</p>
 
 ## Overview
 
-SnapTray is a local-first screenshot and annotation application with recording on macOS and Windows. Linux beta supports screenshots and annotation only. It only connects to the network when you explicitly trigger a Share URL upload or when the optional update checker runs. We are committed to protecting your privacy and being transparent about our practices.
+SnapTray is a local-first screenshot and annotation application with recording on macOS and Windows. Linux beta supports screenshots and annotation only. It only connects to the network when the optional update checker runs. We are committed to protecting your privacy and being transparent about our practices.
 
-**The short version:** SnapTray is local-first with no telemetry, tracking, or analytics. Network access is limited to two explicit features: Share URL (user-triggered image upload) and optional update checking (version string only).
+**The short version:** SnapTray is local-first with no telemetry, tracking, or analytics. Network access is limited to optional update checking (version string only).
 
 ## Data Collection
 
@@ -62,11 +62,7 @@ SnapTray requires certain system permissions to function. Here is why:
 
 ## Network Communication
 
-SnapTray connects to the network only for two explicit features:
-
-### Share URL
-
-When you explicitly use the Share URL action, your captured image is uploaded to `x.snaptray.cc`. You may optionally set a password. Shared links expire automatically. No upload happens unless you trigger it.
+SnapTray connects to the network for optional update checking. It does not upload screenshots.
 
 ### Update Check
 
@@ -103,7 +99,7 @@ If you have questions about this privacy policy or SnapTray's privacy practices,
 | Question | Answer |
 |----------|--------|
 | Does SnapTray collect my data? | No |
-| Does SnapTray send data to servers? | Only when you use Share URL, or if update checking is enabled (version string only) |
+| Does SnapTray send data to servers? | Only if update checking is enabled (version string only) |
 | Does SnapTray track my usage? | No |
 | Does SnapTray include analytics? | No |
 | Does SnapTray phone home? | No. Update checks are opt-out and send only the version number |

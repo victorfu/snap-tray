@@ -6,7 +6,7 @@
  * @brief ViewModel exposing PinWindow toolbar state to QML.
  *
  * Builds a button list from ToolRegistry::getToolsForToolbar(PinWindow),
- * tracks active tool and undo/redo/share state, and forwards QML clicks
+ * tracks active tool and undo/redo state, and forwards QML clicks
  * back to PinWindow via signals.
  */
 class PinToolbarViewModel : public ToolbarViewModelBase
@@ -26,7 +26,6 @@ signals:
     void redoClicked();
     void ocrClicked();
     void qrCodeClicked();
-    void shareClicked();
     void beautifyClicked();
     void copyClicked();
     void saveClicked();

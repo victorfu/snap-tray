@@ -30,7 +30,6 @@ const std::map<ToolId, RegionToolbarHandler::ToolDispatchEntry>& RegionToolbarHa
         {ToolId::OCR, {&RegionToolbarHandler::handleActionButton}},
         {ToolId::QRCode, {&RegionToolbarHandler::handleActionButton}},
         {ToolId::Pin, {&RegionToolbarHandler::handleActionButton}},
-        {ToolId::Share, {&RegionToolbarHandler::handleActionButton}},
         {ToolId::Save, {&RegionToolbarHandler::handleActionButton}},
         {ToolId::Copy, {&RegionToolbarHandler::handleActionButton}},
         {ToolId::MultiRegion, {&RegionToolbarHandler::handleMultiRegionToggle}},
@@ -48,7 +47,6 @@ const std::map<ToolId, RegionToolbarHandler::ClickHandler>& RegionToolbarHandler
         {ToolId::OCR, &RegionToolbarHandler::handleOcrAction},
         {ToolId::QRCode, &RegionToolbarHandler::handleQrCodeAction},
         {ToolId::Pin, &RegionToolbarHandler::handlePinAction},
-        {ToolId::Share, &RegionToolbarHandler::handleShareAction},
         {ToolId::Save, &RegionToolbarHandler::handleSaveAction},
         {ToolId::Copy, &RegionToolbarHandler::handleCopyAction},
     };
@@ -182,14 +180,6 @@ void RegionToolbarHandler::handleQrCodeAction(ToolId)
 void RegionToolbarHandler::handlePinAction(ToolId)
 {
     emit pinRequested();
-}
-
-void RegionToolbarHandler::handleShareAction(ToolId)
-{
-    if (m_shareInProgress) {
-        return;
-    }
-    emit shareRequested();
 }
 
 void RegionToolbarHandler::handleSaveAction(ToolId)

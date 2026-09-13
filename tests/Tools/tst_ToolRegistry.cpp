@@ -134,7 +134,7 @@ void TestToolRegistry::testIsActionTool_ActionTools()
     QList<ToolId> actionTools = {
         ToolId::Undo, ToolId::Redo, ToolId::Clear,
         ToolId::Cancel, ToolId::OCR, ToolId::QRCode,
-        ToolId::Pin, ToolId::Share, ToolId::Save,
+        ToolId::Pin, ToolId::Save,
         ToolId::Copy, ToolId::Exit, ToolId::Beautify,
         ToolId::MultiRegion, ToolId::MultiRegionDone
     };
@@ -225,15 +225,13 @@ void TestToolRegistry::testGetToolsForToolbar_RegionSelector()
 #endif
     QVERIFY(tools.contains(ToolId::QRCode));
     QVERIFY(tools.contains(ToolId::MultiRegion));
-    QVERIFY(tools.contains(ToolId::Share));
     QVERIFY(tools.contains(ToolId::Save));
     QVERIFY(tools.contains(ToolId::Copy));
 
-    const int shareIndex = tools.indexOf(ToolId::Share);
     const int pinIndex = tools.indexOf(ToolId::Pin);
-    QVERIFY(shareIndex >= 0);
     QVERIFY(pinIndex >= 0);
-    QVERIFY2(shareIndex < pinIndex, "Share should appear to the left of Pin in RegionSelector toolbar");
+    QCOMPARE(tools.at(pinIndex + 1), ToolId::Save);
+    QCOMPARE(tools.at(pinIndex + 2), ToolId::Copy);
 }
 
 void TestToolRegistry::testGetToolsForToolbar_ScreenCanvas()
@@ -288,7 +286,6 @@ void TestToolRegistry::testGetToolsForToolbar_PinWindow()
     QVERIFY(tools.contains(ToolId::OCR));
 #endif
     QVERIFY(tools.contains(ToolId::QRCode));
-    QVERIFY(tools.contains(ToolId::Share));
     QVERIFY(tools.contains(ToolId::Save));
     QVERIFY(tools.contains(ToolId::Copy));
 
