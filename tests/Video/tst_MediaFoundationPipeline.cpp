@@ -22,6 +22,9 @@ class TestMediaFoundationPipeline : public QObject
 private slots:
     void reloadAndCloseStress();
     void pausedSeekProducesFrame();
+    void playRestartsAfterPausedTerminalSeek_data();
+    void playRestartsAfterPausedTerminalSeek();
+    void terminalSeekSupersededFromFrameCallback();
     void seekSupersedesQueuedFramesAndResumes();
     void trimmedFramesMatchSource_data();
     void trimmedFramesMatchSource();
@@ -130,6 +133,112 @@ void TestMediaFoundationPipeline::pausedSeekProducesFrame()
         }
         QCOMPARE(player->state(), IVideoPlayer::State::Paused);
     }
+}
+
+void TestMediaFoundationPipeline::playRestartsAfterPausedTerminalSeek_data()
+{
+    QTest::addColumn<qint64>("seekPosition");
+    QTest::addColumn<bool>("looping");
+    QTest::newRow("final-interval") << qint64(950) << false;
+    QTest::newRow("near-end") << qint64(999) << false;
+    QTest::newRow("duration") << qint64(1000) << false;
+    QTest::newRow("final-interval-looping") << qint64(950) << true;
+    QTest::newRow("near-end-looping") << qint64(999) << true;
+    QTest::newRow("duration-looping") << qint64(1000) << true;
+}
+
+void TestMediaFoundationPipeline::playRestartsAfterPausedTerminalSeek()
+{
+    QFETCH(qint64, seekPosition);
+    QFETCH(bool, looping);
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString input = dir.filePath("terminal-seek.mp4");
+    QString error;
+    if (!createTestVideo(input, false, &error)) QSKIP(qPrintable(error));
+
+    std::unique_ptr<IVideoPlayer> player(IVideoPlayer::create());
+    QVERIFY(player != nullptr);
+    QVERIFY(player->load(input));
+    QCOMPARE(player->duration(), qint64(1000));
+    player->setLooping(looping);
+    player->pause();
+
+    auto* reader = player->findChild<QThread*>();
+    QVERIFY(reader != nullptr);
+    QSignalSpy endSpy(reader, SIGNAL(endOfStream(quint64)));
+    QVERIFY(endSpy.isValid());
+    QSignalSpy frames(player.get(), &IVideoPlayer::frameReady);
+    QSignalSpy finished(player.get(), &IVideoPlayer::playbackFinished);
+    QSignalSpy errors(player.get(), &IVideoPlayer::error);
+    player->seek(seekPosition);
+
+    // Wait for native EOF, then dispatch the player's queued frame/EOS calls.
+    // Receiving the final frame alone does not guarantee EOF was handled yet.
+    QTRY_COMPARE_WITH_TIMEOUT(endSpy.count(), 1, 3000);
+    QCoreApplication::sendPostedEvents(player.get(), QEvent::MetaCall);
+    QCOMPARE(frames.count(), 1);
+    QVERIFY(!frames.first().first().value<QImage>().isNull());
+    QCOMPARE(player->position(), qint64(900));
+    QCOMPARE(player->state(), IVideoPlayer::State::Paused);
+    QCOMPARE(finished.count(), 0);
+
+    QList<qint64> resumedPositions;
+    connect(player.get(), &IVideoPlayer::frameReady, player.get(), [&] {
+        resumedPositions.append(player->position());
+    });
+    player->play();
+    QCOMPARE(player->state(), IVideoPlayer::State::Playing);
+    QTRY_VERIFY_WITH_TIMEOUT(resumedPositions.size() >= 2, 3000);
+    QCOMPARE(resumedPositions.at(0), qint64(0));
+    QCOMPARE(resumedPositions.at(1), qint64(100));
+
+    if (looping) {
+        QTRY_VERIFY_WITH_TIMEOUT(resumedPositions.count(100) >= 2, 4000);
+        QCOMPARE(player->state(), IVideoPlayer::State::Playing);
+        QCOMPARE(finished.count(), 0);
+        player->pause();
+    } else {
+        QTRY_COMPARE_WITH_TIMEOUT(finished.count(), 1, 4000);
+        QCOMPARE(player->state(), IVideoPlayer::State::Stopped);
+        QCOMPARE(player->position(), player->duration());
+    }
+    QVERIFY(errors.isEmpty());
+}
+
+void TestMediaFoundationPipeline::terminalSeekSupersededFromFrameCallback()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString input = dir.filePath("superseded-terminal-seek.mp4");
+    QString error;
+    if (!createTestVideo(input, false, &error)) QSKIP(qPrintable(error));
+
+    std::unique_ptr<IVideoPlayer> player(IVideoPlayer::create());
+    QVERIFY(player != nullptr);
+    QVERIFY(player->load(input));
+    player->pause();
+    QSignalSpy finished(player.get(), &IVideoPlayer::playbackFinished);
+    QList<qint64> positions;
+    connect(player.get(), &IVideoPlayer::frameReady, player.get(), [&] {
+        positions.append(player->position());
+        if (positions.size() == 1) {
+            // Supersede the terminal seek before its queued EOS is dispatched.
+            player->seek(550);
+        }
+    });
+    player->seek(950);
+    QTRY_COMPARE_WITH_TIMEOUT(positions.size(), 2, 3000);
+    QCOMPARE(positions.at(0), qint64(900));
+    QCOMPARE(positions.at(1), qint64(500));
+    QCOMPARE(player->state(), IVideoPlayer::State::Paused);
+    QCOMPARE(finished.count(), 0);
+
+    player->play();
+    QTRY_VERIFY_WITH_TIMEOUT(positions.size() >= 3, 3000);
+    QCOMPARE(positions.at(2), qint64(600));
+    QTRY_COMPARE_WITH_TIMEOUT(finished.count(), 1, 4000);
+    QCOMPARE(player->state(), IVideoPlayer::State::Stopped);
 }
 
 void TestMediaFoundationPipeline::seekSupersedesQueuedFramesAndResumes()

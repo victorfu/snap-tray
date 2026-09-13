@@ -936,8 +936,8 @@ void MediaFoundationPlayer::play()
 
     if (!m_readerThread || !m_hasVideo) return;
 
-    // A Source Reader remains positioned at EOF after normal completion.
-    // Rewind before resuming so play() is useful after non-looping playback.
+    // The reader stays at EOF after completion or a paused terminal seek.
+    // Rewind before resuming either case.
     if (m_atEndOfStream) {
         seek(0);
     }
@@ -1013,14 +1013,19 @@ void MediaFoundationPlayer::onEndOfStream()
     qDebug() << "MediaFoundationPlayer: End of stream";
 
     // A queued EOS may arrive after stop(), seek(), or reader replacement.
-    // Only the currently playing reader that is still parked at EOF may
-    // transition the player or initiate a loop.
-    if (m_state != State::Playing || !m_readerThread
-        || !m_readerThread->isWaitingAtEndOfStream()) {
+    // Remember valid EOF even while paused: a terminal seek parks the reader
+    // until another seek, so the next play() must rewind before resuming.
+    if (!m_readerThread || !m_readerThread->isWaitingAtEndOfStream()) {
         return;
     }
 
     m_atEndOfStream = true;
+
+    // Only active playback may finish or loop. Seeking while paused must
+    // leave the requested final frame visible without changing player state.
+    if (m_state != State::Playing) {
+        return;
+    }
 
     if (m_looping) {
         seek(0);
