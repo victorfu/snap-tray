@@ -3,17 +3,51 @@
 
 #include "RegionSelector.h"
 #include "RegionSelectorTestAccess.h"
+#include "history/HistoryRecorder.h"
 
 class tst_RegionSelectorCopyToClipboard : public QObject
 {
     Q_OBJECT
 
 private slots:
+    void initTestCase();
+    void cleanup();
+    void cleanupTestCase();
     void testCopyWaitsForClipboardCompletionBeforeClosingSelector();
     void testCopyDoesNotBlockOnSlowClipboardWriter();
     void testClipboardFailureKeepsSelectorOpenAndAllowsRetry();
     void testCompletionAfterSelectorDestructionIsIgnored();
+
+private:
+    QTemporaryDir m_historyDirectory;
+    QByteArray m_previousHistoryDirectory;
 };
+
+void tst_RegionSelectorCopyToClipboard::initTestCase()
+{
+    m_previousHistoryDirectory = qgetenv("SNAPTRAY_HISTORY_DIR");
+    QVERIFY(m_historyDirectory.isValid());
+    qputenv("SNAPTRAY_HISTORY_DIR", m_historyDirectory.path().toLocal8Bit());
+}
+
+void tst_RegionSelectorCopyToClipboard::cleanup()
+{
+    // Successful copies queue history submission on qApp before starting the
+    // recorder's worker. Flush those callbacks first, then finish image writes
+    // while QApplication and its image plugins are still alive.
+    QCoreApplication::sendPostedEvents(qApp, QEvent::MetaCall);
+    QVERIFY(SnapTray::HistoryRecorder::instance().waitForIdleForTests());
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void tst_RegionSelectorCopyToClipboard::cleanupTestCase()
+{
+    if (m_previousHistoryDirectory.isNull()) {
+        qunsetenv("SNAPTRAY_HISTORY_DIR");
+    } else {
+        qputenv("SNAPTRAY_HISTORY_DIR", m_previousHistoryDirectory);
+    }
+}
 
 void tst_RegionSelectorCopyToClipboard::testCopyWaitsForClipboardCompletionBeforeClosingSelector()
 {
@@ -174,7 +208,6 @@ void tst_RegionSelectorCopyToClipboard::testCompletionAfterSelectorDestructionIs
     selector.reset();
     pending(false);
     pending(true);
-    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 }
 
 QTEST_MAIN(tst_RegionSelectorCopyToClipboard)
