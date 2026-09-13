@@ -1186,11 +1186,6 @@ Size: %2</source>
         <translation>معدل الإطارات</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="464" />
-        <source>Failed to share screenshot</source>
-        <translation>فشل في مشاركة لقطة الشاشة</translation>
-    </message>
-    <message>
         <location filename="../src/PinWindow.cpp" line="898" />
         <source>Move to Screen</source>
         <translation>نقل إلى الشاشة</translation>
@@ -1272,11 +1267,6 @@ Size: %2</source>
         <location filename="../src/PinWindow.cpp" line="1427" />
         <source>Please wait for auto-blur to finish</source>
         <translation>يرجى الانتظار حتى يكتمل التمويه التلقائي</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1433" />
-        <source>Share failed</source>
-        <translation>فشلت المشاركة</translation>
     </message>
     <message>
         <location filename="../src/PinWindow.cpp" line="1523" />
@@ -1408,41 +1398,6 @@ Size: %2</source>
         <location filename="../src/pinwindow/PinMergeHelper.cpp" line="280" />
         <source>Failed to merge pins</source>
         <translation>فشل دمج النوافذ المثبّتة</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="45" />
-        <source>Invalid upload request</source>
-        <translation>طلب الرفع غير صالح</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="47" />
-        <source>Upload method not allowed</source>
-        <translation>طريقة الرفع غير مسموح بها</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="49" />
-        <source>File too large (max 5MB)</source>
-        <translation>الملف كبير جدًا (الحد الأقصى 5MB)</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="51" />
-        <source>Server error while uploading</source>
-        <translation>حدث خطأ في الخادم أثناء الرفع</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="53" />
-        <source>Upload service unavailable, please retry</source>
-        <translation>خدمة الرفع غير متاحة، يرجى إعادة المحاولة</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="56" />
-        <source>Upload failed (HTTP %1)</source>
-        <translation>فشل الرفع (HTTP %1)</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="58" />
-        <source>Upload failed</source>
-        <translation>فشل الرفع</translation>
     </message>
     <message>
         <location filename="../src/QRCodeManager.cpp" line="200" />
@@ -2201,11 +2156,6 @@ Audio is not supported for GIF recordings.</source>
 <context>
     <name>RegionSelector</name>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="543" />
-        <source>Failed to share screenshot</source>
-        <translation>فشل في مشاركة لقطة الشاشة</translation>
-    </message>
-    <message>
         <location filename="../src/RegionSelector.cpp" line="1560" />
         <source>%1 region</source>
         <translation>%1 منطقة</translation>
@@ -2404,198 +2354,6 @@ Audio is not supported for GIF recordings.</source>
         <source>Save</source>
         <translation>حفظ</translation>
         </message>
-</context>
-<context>
-    <name>SharePasswordDialog</name>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="54" />
-        <source>URL</source>
-        <translation>URL</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="63" />
-        <source>Share URL</source>
-        <translation>مشاركة URL</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="67" />
-        <source>Set an optional password</source>
-        <translation>تعيين كلمة مرور اختيارية</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="84" />
-        <source>No password</source>
-        <translation>بدون كلمة مرور</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="90" />
-        <source>Leave empty for public access. Link expires in 24 hours.</source>
-        <translation>اتركه فارغًا للوصول العام. تنتهي صلاحية الرابط خلال 24 ساعة.</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="106" />
-        <source>Cancel</source>
-        <translation>إلغاء</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="112" />
-        <source>Share</source>
-        <translation>مشاركة</translation>
-    </message>
-</context>
-<context>
-    <name>ShareResultDialog</name>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="52" />
-        <source>URL</source>
-        <translation>URL</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="61" />
-        <source>Share URL Ready</source>
-        <translation>URL المشاركة جاهز</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="65" />
-        <location filename="../src/ui/ShareResultDialog.cpp" line="235" />
-        <source>Upload completed</source>
-        <translation>اكتمل الرفع</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="79" />
-        <source>Share Link</source>
-        <translation>رابط المشاركة</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="86" />
-        <source>No URL</source>
-        <translation>لا يوجد URL</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="90" />
-        <source>Password</source>
-        <translation>كلمة المرور</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="119" />
-        <source>Use Copy to share now, or Open to verify in browser.</source>
-        <translation>استخدم "نسخ" للمشاركة الآن، أو "فتح" للتحقق في المتصفح.</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="134" />
-        <source>Close</source>
-        <translation>إغلاق</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="140" />
-        <source>Copy</source>
-        <translation>نسخ</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="146" />
-        <source>Open</source>
-        <translation>فتح</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="229" />
-        <source>Expires: %1</source>
-        <translation>ينتهي: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="231" />
-        <source>Valid until %1</source>
-        <translation>صالح حتى %1</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="239" />
-        <source>Password protected</source>
-        <translation>محمي بكلمة مرور</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="241" />
-        <source>Password protected (hidden)</source>
-        <translation>محمي بكلمة مرور (مخفي)</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="243" />
-        <source>No password</source>
-        <translation>بدون كلمة مرور</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="248" />
-        <source>Copy includes both link and password.</source>
-        <translation>يتضمن النسخ كلًا من الرابط وكلمة المرور.</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="249" />
-        <source>Anyone with this link can access it until expiration.</source>
-        <translation>يمكن لأي شخص يملك هذا الرابط الوصول إليه حتى انتهاء الصلاحية.</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="360" />
-        <source>%1
-Password: %2</source>
-        <translation>%1
-كلمة المرور: %2</translation>
-    </message>
-</context>
-<context>
-    <name>ShareUploadClient</name>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="72" />
-        <source>Upload already in progress</source>
-        <translation>الرفع قيد التنفيذ بالفعل</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="77" />
-        <source>Password too long (max %1 characters)</source>
-        <translation>كلمة المرور طويلة جدًا (الحد الأقصى %1 حرفًا)</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="83" />
-        <source>Failed to prepare image for upload</source>
-        <translation>فشل تجهيز الصورة للرفع</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="105" />
-        <source>No image available to share</source>
-        <translation>لا توجد صورة متاحة للمشاركة</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="110" />
-        <source>Invalid upload size limit</source>
-        <translation>حد حجم الرفع غير صالح</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="116" />
-        <source>Failed to read image data</source>
-        <translation>فشل قراءة بيانات الصورة</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="122" />
-        <source>Failed to encode PNG image</source>
-        <translation>فشل ترميز صورة PNG</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="149" />
-        <source>Image exceeds 5MB even after compression. Please crop a smaller region.</source>
-        <translation>يتجاوز حجم الصورة 5MB حتى بعد الضغط. يرجى اقتصاص منطقة أصغر.</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="176" />
-        <source>Invalid upload response</source>
-        <translation>استجابة الرفع غير صالحة</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="185" />
-        <source>Upload response missing URL</source>
-        <translation>استجابة الرفع تفتقد URL</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="240" />
-        <source>Upload succeeded but response could not be parsed</source>
-        <translation>نجح الرفع لكن تعذّر تحليل الاستجابة</translation>
-    </message>
 </context>
 <context>
     <name>SnapTray::HotkeyManager</name>
@@ -3023,11 +2781,6 @@ It may be in use by another application.</source>
         <location filename="../src/tools/ToolRegistry.cpp" line="278" />
         <source>Screen Recording</source>
         <translation>تسجيل الشاشة</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="289" />
-        <source>Share URL</source>
-        <translation>مشاركة URL</translation>
     </message>
     <message>
         <location filename="../src/tools/ToolRegistry.cpp" line="301" />

@@ -1192,11 +1192,6 @@ Size: %2</source>
         <translation>フレームレート</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="464" />
-        <source>Failed to share screenshot</source>
-        <translation>スクリーンショットの共有に失敗しました</translation>
-    </message>
-    <message>
         <location filename="../src/PinWindow.cpp" line="898" />
         <source>Move to Screen</source>
         <translation>画面へ移動</translation>
@@ -1278,11 +1273,6 @@ Size: %2</source>
         <location filename="../src/PinWindow.cpp" line="1427" />
         <source>Please wait for auto-blur to finish</source>
         <translation>自動ぼかしが完了するまでお待ちください</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1433" />
-        <source>Share failed</source>
-        <translation>共有に失敗しました</translation>
     </message>
     <message>
         <location filename="../src/PinWindow.cpp" line="1523" />
@@ -1419,41 +1409,6 @@ Size: %2</source>
         <location filename="../src/ToolbarStyle.cpp" line="141" />
         <source>Dark</source>
         <translation>ダーク</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="45" />
-        <source>Invalid upload request</source>
-        <translation>無効なアップロード要求です</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="47" />
-        <source>Upload method not allowed</source>
-        <translation>このアップロード方法は許可されていません</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="49" />
-        <source>File too large (max 5MB)</source>
-        <translation>ファイルが大きすぎます（最大5MB）</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="51" />
-        <source>Server error while uploading</source>
-        <translation>アップロード中にサーバーエラーが発生しました</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="53" />
-        <source>Upload service unavailable, please retry</source>
-        <translation>アップロードサービスを利用できません。再試行してください</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="56" />
-        <source>Upload failed (HTTP %1)</source>
-        <translation>アップロードに失敗しました（HTTP %1）</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="58" />
-        <source>Upload failed</source>
-        <translation>アップロードに失敗しました</translation>
     </message>
 </context>
 <context>
@@ -2207,11 +2162,6 @@ GIF録画では音声はサポートされていません。</translation>
 <context>
     <name>RegionSelector</name>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="543" />
-        <source>Failed to share screenshot</source>
-        <translation>スクリーンショットの共有に失敗しました</translation>
-    </message>
-    <message>
         <location filename="../src/RegionSelector.cpp" line="1560" />
         <source>%1 region</source>
         <translation>%1領域</translation>
@@ -2410,198 +2360,6 @@ GIF録画では音声はサポートされていません。</translation>
         <source>Save</source>
         <translation>保存</translation>
         </message>
-</context>
-<context>
-    <name>SharePasswordDialog</name>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="54" />
-        <source>URL</source>
-        <translation>URL</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="63" />
-        <source>Share URL</source>
-        <translation>URLを共有</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="67" />
-        <source>Set an optional password</source>
-        <translation>任意のパスワードを設定</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="84" />
-        <source>No password</source>
-        <translation>パスワードなし</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="90" />
-        <source>Leave empty for public access. Link expires in 24 hours.</source>
-        <translation>空欄のままにすると公開アクセスになります。リンクは24時間で期限切れになります。</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="106" />
-        <source>Cancel</source>
-        <translation>キャンセル</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="112" />
-        <source>Share</source>
-        <translation>共有</translation>
-    </message>
-</context>
-<context>
-    <name>ShareResultDialog</name>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="52" />
-        <source>URL</source>
-        <translation>URL</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="61" />
-        <source>Share URL Ready</source>
-        <translation>共有URLの準備ができました</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="65" />
-        <location filename="../src/ui/ShareResultDialog.cpp" line="235" />
-        <source>Upload completed</source>
-        <translation>アップロードが完了しました</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="79" />
-        <source>Share Link</source>
-        <translation>共有リンク</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="86" />
-        <source>No URL</source>
-        <translation>URLがありません</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="90" />
-        <source>Password</source>
-        <translation>パスワード</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="119" />
-        <source>Use Copy to share now, or Open to verify in browser.</source>
-        <translation>「コピー」で今すぐ共有するか、「開く」でブラウザーで確認してください。</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="134" />
-        <source>Close</source>
-        <translation>閉じる</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="140" />
-        <source>Copy</source>
-        <translation>コピー</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="146" />
-        <source>Open</source>
-        <translation>開く</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="229" />
-        <source>Expires: %1</source>
-        <translation>有効期限: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="231" />
-        <source>Valid until %1</source>
-        <translation>%1まで有効</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="239" />
-        <source>Password protected</source>
-        <translation>パスワード保護あり</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="241" />
-        <source>Password protected (hidden)</source>
-        <translation>パスワード保護（非表示）</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="243" />
-        <source>No password</source>
-        <translation>パスワードなし</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="248" />
-        <source>Copy includes both link and password.</source>
-        <translation>コピーにはリンクとパスワードの両方が含まれます。</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="249" />
-        <source>Anyone with this link can access it until expiration.</source>
-        <translation>このリンクを知っている人は、有効期限までアクセスできます。</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="360" />
-        <source>%1
-Password: %2</source>
-        <translation>%1
-パスワード: %2</translation>
-    </message>
-</context>
-<context>
-    <name>ShareUploadClient</name>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="72" />
-        <source>Upload already in progress</source>
-        <translation>アップロードはすでに進行中です</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="77" />
-        <source>Password too long (max %1 characters)</source>
-        <translation>パスワードが長すぎます（最大%1文字）</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="83" />
-        <source>Failed to prepare image for upload</source>
-        <translation>アップロード用画像の準備に失敗しました</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="105" />
-        <source>No image available to share</source>
-        <translation>共有できる画像がありません</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="110" />
-        <source>Invalid upload size limit</source>
-        <translation>アップロードサイズ制限が無効です</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="116" />
-        <source>Failed to read image data</source>
-        <translation>画像データの読み取りに失敗しました</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="122" />
-        <source>Failed to encode PNG image</source>
-        <translation>PNG画像のエンコードに失敗しました</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="149" />
-        <source>Image exceeds 5MB even after compression. Please crop a smaller region.</source>
-        <translation>圧縮後も画像が5MBを超えています。より小さい領域を切り取ってください。</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="176" />
-        <source>Invalid upload response</source>
-        <translation>無効なアップロード応答です</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="185" />
-        <source>Upload response missing URL</source>
-        <translation>アップロード応答にURLがありません</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="240" />
-        <source>Upload succeeded but response could not be parsed</source>
-        <translation>アップロードは成功しましたが、応答を解析できませんでした</translation>
-    </message>
 </context>
 <context>
     <name>SnapTray::HotkeyManager</name>
@@ -3029,11 +2787,6 @@ It may be in use by another application.</source>
         <location filename="../src/tools/ToolRegistry.cpp" line="278" />
         <source>Screen Recording</source>
         <translation>画面録画</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="289" />
-        <source>Share URL</source>
-        <translation>URLを共有</translation>
     </message>
     <message>
         <location filename="../src/tools/ToolRegistry.cpp" line="301" />

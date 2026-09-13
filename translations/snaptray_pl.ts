@@ -1192,11 +1192,6 @@ Rozmiar: %2</translation>
         <translation>Klatki na sekundę</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="464" />
-        <source>Failed to share screenshot</source>
-        <translation>Nie udało się udostępnić zrzutu ekranu</translation>
-    </message>
-    <message>
         <location filename="../src/PinWindow.cpp" line="898" />
         <source>Move to Screen</source>
         <translation>Przenieś na ekran</translation>
@@ -1278,11 +1273,6 @@ Rozmiar: %2</translation>
         <location filename="../src/PinWindow.cpp" line="1427" />
         <source>Please wait for auto-blur to finish</source>
         <translation>Poczekaj na zakończenie automatycznego rozmywania</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1433" />
-        <source>Share failed</source>
-        <translation>Udostępnianie nie powiodło się</translation>
     </message>
     <message>
         <location filename="../src/PinWindow.cpp" line="1523" />
@@ -1419,41 +1409,6 @@ Rozmiar: %2</translation>
         <location filename="../src/ToolbarStyle.cpp" line="141" />
         <source>Dark</source>
         <translation>Ciemny</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="45" />
-        <source>Invalid upload request</source>
-        <translation>Nieprawidłowe żądanie przesyłania</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="47" />
-        <source>Upload method not allowed</source>
-        <translation>Metoda przesyłania niedozwolona</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="49" />
-        <source>File too large (max 5MB)</source>
-        <translation>Plik jest zbyt duży (maks. 5 MB)</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="51" />
-        <source>Server error while uploading</source>
-        <translation>Błąd serwera podczas przesyłania</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="53" />
-        <source>Upload service unavailable, please retry</source>
-        <translation>Usługa przesyłania niedostępna, spróbuj ponownie</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="56" />
-        <source>Upload failed (HTTP %1)</source>
-        <translation>Przesyłanie nie powiodło się (HTTP %1)</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="58" />
-        <source>Upload failed</source>
-        <translation>Przesyłanie nie powiodło się</translation>
     </message>
 </context>
 <context>
@@ -2207,11 +2162,6 @@ Dźwięk nie jest obsługiwany w nagraniach GIF.</translation>
 <context>
     <name>RegionSelector</name>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="543" />
-        <source>Failed to share screenshot</source>
-        <translation>Nie udało się udostępnić zrzutu ekranu</translation>
-    </message>
-    <message>
         <location filename="../src/RegionSelector.cpp" line="1560" />
         <source>%1 region</source>
         <translation>%1 obszar</translation>
@@ -2410,198 +2360,6 @@ Dźwięk nie jest obsługiwany w nagraniach GIF.</translation>
         <source>Save</source>
         <translation>Zapisz</translation>
         </message>
-</context>
-<context>
-    <name>SharePasswordDialog</name>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="54" />
-        <source>URL</source>
-        <translation>URL</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="63" />
-        <source>Share URL</source>
-        <translation>Udostępnij URL</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="67" />
-        <source>Set an optional password</source>
-        <translation>Ustaw opcjonalne hasło</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="84" />
-        <source>No password</source>
-        <translation>Brak hasła</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="90" />
-        <source>Leave empty for public access. Link expires in 24 hours.</source>
-        <translation>Pozostaw puste, aby umożliwić dostęp publiczny. Link wygasa po 24 godzinach.</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="106" />
-        <source>Cancel</source>
-        <translation>Anuluj</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="112" />
-        <source>Share</source>
-        <translation>Udostępnij</translation>
-    </message>
-</context>
-<context>
-    <name>ShareResultDialog</name>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="52" />
-        <source>URL</source>
-        <translation>URL</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="61" />
-        <source>Share URL Ready</source>
-        <translation>Gotowy URL do udostępnienia</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="65" />
-        <location filename="../src/ui/ShareResultDialog.cpp" line="235" />
-        <source>Upload completed</source>
-        <translation>Przesyłanie zakończone</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="79" />
-        <source>Share Link</source>
-        <translation>Link do udostępnienia</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="86" />
-        <source>No URL</source>
-        <translation>Brak URL</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="90" />
-        <source>Password</source>
-        <translation>Hasło</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="119" />
-        <source>Use Copy to share now, or Open to verify in browser.</source>
-        <translation>Użyj Kopiuj, aby udostępnić teraz, lub Otwórz, aby sprawdzić w przeglądarce.</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="134" />
-        <source>Close</source>
-        <translation>Zamknij</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="140" />
-        <source>Copy</source>
-        <translation>Kopiuj</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="146" />
-        <source>Open</source>
-        <translation>Otwórz</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="229" />
-        <source>Expires: %1</source>
-        <translation>Wygasa: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="231" />
-        <source>Valid until %1</source>
-        <translation>Ważne do %1</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="239" />
-        <source>Password protected</source>
-        <translation>Chronione hasłem</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="241" />
-        <source>Password protected (hidden)</source>
-        <translation>Chronione hasłem (ukryte)</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="243" />
-        <source>No password</source>
-        <translation>Brak hasła</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="248" />
-        <source>Copy includes both link and password.</source>
-        <translation>Kopiowanie obejmuje zarówno link, jak i hasło.</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="249" />
-        <source>Anyone with this link can access it until expiration.</source>
-        <translation>Każdy, kto ma ten link, może uzyskać dostęp do czasu wygaśnięcia.</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="360" />
-        <source>%1
-Password: %2</source>
-        <translation>%1
-Hasło: %2</translation>
-    </message>
-</context>
-<context>
-    <name>ShareUploadClient</name>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="72" />
-        <source>Upload already in progress</source>
-        <translation>Przesyłanie już trwa</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="77" />
-        <source>Password too long (max %1 characters)</source>
-        <translation>Hasło jest zbyt długie (maks. %1 znaków)</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="83" />
-        <source>Failed to prepare image for upload</source>
-        <translation>Nie udało się przygotować obrazu do przesłania</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="105" />
-        <source>No image available to share</source>
-        <translation>Brak obrazu do udostępnienia</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="110" />
-        <source>Invalid upload size limit</source>
-        <translation>Nieprawidłowy limit rozmiaru przesyłania</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="116" />
-        <source>Failed to read image data</source>
-        <translation>Nie udało się odczytać danych obrazu</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="122" />
-        <source>Failed to encode PNG image</source>
-        <translation>Nie udało się zakodować obrazu PNG</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="149" />
-        <source>Image exceeds 5MB even after compression. Please crop a smaller region.</source>
-        <translation>Obraz przekracza 5 MB nawet po kompresji. Przytnij mniejszy obszar.</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="176" />
-        <source>Invalid upload response</source>
-        <translation>Nieprawidłowa odpowiedź przesyłania</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="185" />
-        <source>Upload response missing URL</source>
-        <translation>W odpowiedzi przesyłania brakuje URL</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="240" />
-        <source>Upload succeeded but response could not be parsed</source>
-        <translation>Przesyłanie zakończyło się sukcesem, ale nie udało się przetworzyć odpowiedzi</translation>
-    </message>
 </context>
 <context>
     <name>SnapTray::HotkeyManager</name>
@@ -3029,11 +2787,6 @@ Może być używany przez inną aplikację.</translation>
         <location filename="../src/tools/ToolRegistry.cpp" line="278" />
         <source>Screen Recording</source>
         <translation>Nagrywanie ekranu</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="289" />
-        <source>Share URL</source>
-        <translation>Udostępnij URL</translation>
     </message>
     <message>
         <location filename="../src/tools/ToolRegistry.cpp" line="301" />

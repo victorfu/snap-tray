@@ -1186,11 +1186,6 @@ Storlek: %2</translation>
         <translation>Bildfrekvens</translation>
     </message>
     <message>
-        <location filename="../src/PinWindow.cpp" line="464" />
-        <source>Failed to share screenshot</source>
-        <translation>Det gick inte att dela skärmbilden</translation>
-    </message>
-    <message>
         <location filename="../src/PinWindow.cpp" line="898" />
         <source>Move to Screen</source>
         <translation>Flytta till skärm</translation>
@@ -1272,11 +1267,6 @@ Storlek: %2</translation>
         <location filename="../src/PinWindow.cpp" line="1427" />
         <source>Please wait for auto-blur to finish</source>
         <translation>Vänta tills automatisk oskärpa är klar</translation>
-    </message>
-    <message>
-        <location filename="../src/PinWindow.cpp" line="1433" />
-        <source>Share failed</source>
-        <translation>Delning misslyckades</translation>
     </message>
     <message>
         <location filename="../src/PinWindow.cpp" line="1523" />
@@ -1408,41 +1398,6 @@ Storlek: %2</translation>
         <location filename="../src/pinwindow/PinMergeHelper.cpp" line="280" />
         <source>Failed to merge pins</source>
         <translation>Det gick inte att sammanfoga fästen</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="45" />
-        <source>Invalid upload request</source>
-        <translation>Ogiltig uppladdningsbegäran</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="47" />
-        <source>Upload method not allowed</source>
-        <translation>Uppladdningsmetoden tillåts inte</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="49" />
-        <source>File too large (max 5MB)</source>
-        <translation>Filen är för stor (max 5 MB)</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="51" />
-        <source>Server error while uploading</source>
-        <translation>Serverfel vid uppladdning</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="53" />
-        <source>Upload service unavailable, please retry</source>
-        <translation>Uppladdningstjänsten är inte tillgänglig, försök igen</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="56" />
-        <source>Upload failed (HTTP %1)</source>
-        <translation>Uppladdning misslyckades (HTTP %1)</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="58" />
-        <source>Upload failed</source>
-        <translation>Uppladdning misslyckades</translation>
     </message>
     <message>
         <location filename="../src/QRCodeManager.cpp" line="200" />
@@ -2201,11 +2156,6 @@ Ljud stöds inte för GIF-inspelningar.</translation>
 <context>
     <name>RegionSelector</name>
     <message>
-        <location filename="../src/RegionSelector.cpp" line="543" />
-        <source>Failed to share screenshot</source>
-        <translation>Det gick inte att dela skärmbilden</translation>
-    </message>
-    <message>
         <location filename="../src/RegionSelector.cpp" line="1560" />
         <source>%1 region</source>
         <translation>%1 område</translation>
@@ -2404,198 +2354,6 @@ Ljud stöds inte för GIF-inspelningar.</translation>
         <source>Save</source>
         <translation>Spara</translation>
         </message>
-</context>
-<context>
-    <name>SharePasswordDialog</name>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="54" />
-        <source>URL</source>
-        <translation>URL</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="63" />
-        <source>Share URL</source>
-        <translation>Dela URL</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="67" />
-        <source>Set an optional password</source>
-        <translation>Ange ett valfritt lösenord</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="84" />
-        <source>No password</source>
-        <translation>Inget lösenord</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="90" />
-        <source>Leave empty for public access. Link expires in 24 hours.</source>
-        <translation>Lämna tomt för offentlig åtkomst. Länken upphör efter 24 timmar.</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="106" />
-        <source>Cancel</source>
-        <translation>Avbryt</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SharePasswordDialog.cpp" line="112" />
-        <source>Share</source>
-        <translation>Dela</translation>
-    </message>
-</context>
-<context>
-    <name>ShareResultDialog</name>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="52" />
-        <source>URL</source>
-        <translation>URL</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="61" />
-        <source>Share URL Ready</source>
-        <translation>Delnings-URL klar</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="65" />
-        <location filename="../src/ui/ShareResultDialog.cpp" line="235" />
-        <source>Upload completed</source>
-        <translation>Uppladdning slutförd</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="79" />
-        <source>Share Link</source>
-        <translation>Delningslänk</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="86" />
-        <source>No URL</source>
-        <translation>Ingen URL</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="90" />
-        <source>Password</source>
-        <translation>Lösenord</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="119" />
-        <source>Use Copy to share now, or Open to verify in browser.</source>
-        <translation>Använd Kopiera för att dela nu, eller Öppna för att kontrollera i webbläsaren.</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="134" />
-        <source>Close</source>
-        <translation>Stäng</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="140" />
-        <source>Copy</source>
-        <translation>Kopiera</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="146" />
-        <source>Open</source>
-        <translation>Öppna</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="229" />
-        <source>Expires: %1</source>
-        <translation>Upphör: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="231" />
-        <source>Valid until %1</source>
-        <translation>Giltig till %1</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="239" />
-        <source>Password protected</source>
-        <translation>Lösenordsskyddad</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="241" />
-        <source>Password protected (hidden)</source>
-        <translation>Lösenordsskyddad (dolt)</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="243" />
-        <source>No password</source>
-        <translation>Inget lösenord</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="248" />
-        <source>Copy includes both link and password.</source>
-        <translation>Kopiera inkluderar både länk och lösenord.</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="249" />
-        <source>Anyone with this link can access it until expiration.</source>
-        <translation>Alla med den här länken kan komma åt den tills den upphör.</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/ShareResultDialog.cpp" line="360" />
-        <source>%1
-Password: %2</source>
-        <translation>%1
-Lösenord: %2</translation>
-    </message>
-</context>
-<context>
-    <name>ShareUploadClient</name>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="72" />
-        <source>Upload already in progress</source>
-        <translation>Uppladdning pågår redan</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="77" />
-        <source>Password too long (max %1 characters)</source>
-        <translation>Lösenordet är för långt (max %1 tecken)</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="83" />
-        <source>Failed to prepare image for upload</source>
-        <translation>Det gick inte att förbereda bilden för uppladdning</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="105" />
-        <source>No image available to share</source>
-        <translation>Ingen bild tillgänglig att dela</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="110" />
-        <source>Invalid upload size limit</source>
-        <translation>Ogiltig gräns för uppladdningsstorlek</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="116" />
-        <source>Failed to read image data</source>
-        <translation>Det gick inte att läsa bilddata</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="122" />
-        <source>Failed to encode PNG image</source>
-        <translation>Det gick inte att koda PNG-bild</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="149" />
-        <source>Image exceeds 5MB even after compression. Please crop a smaller region.</source>
-        <translation>Bilden överstiger 5 MB även efter komprimering. Beskär ett mindre område.</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="176" />
-        <source>Invalid upload response</source>
-        <translation>Ogiltigt uppladdningssvar</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="185" />
-        <source>Upload response missing URL</source>
-        <translation>Uppladdningssvaret saknar URL</translation>
-    </message>
-    <message>
-        <location filename="../src/share/ShareUploadClient.cpp" line="240" />
-        <source>Upload succeeded but response could not be parsed</source>
-        <translation>Uppladdningen lyckades men svaret kunde inte tolkas</translation>
-    </message>
 </context>
 <context>
     <name>SnapTray::HotkeyManager</name>
@@ -3023,11 +2781,6 @@ Den kan användas av ett annat program.</translation>
         <location filename="../src/tools/ToolRegistry.cpp" line="278" />
         <source>Screen Recording</source>
         <translation>Skärminspelning</translation>
-    </message>
-    <message>
-        <location filename="../src/tools/ToolRegistry.cpp" line="289" />
-        <source>Share URL</source>
-        <translation>Dela URL</translation>
     </message>
     <message>
         <location filename="../src/tools/ToolRegistry.cpp" line="301" />

@@ -37,7 +37,6 @@ enum class ToolId {
     OCR,
     QRCode,     // QR Code scan/generate
     Pin,
-    Share,
     Save,
     Copy,
     Exit,

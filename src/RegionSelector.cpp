@@ -19,7 +19,6 @@
 #include "qml/QmlOverlayPanel.h"
 #include "qml/RegionControlViewModel.h"
 #include "qml/MultiRegionListViewModel.h"
-#include "share/ShareUploadClient.h"
 #include "annotations/AllAnnotations.h"
 #include "cursor/CursorAuthority.h"
 #include "cursor/CursorManager.h"
@@ -49,8 +48,6 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "qml/QRCodeResultViewModel.h"
 #include "qml/QmlDialog.h"
 #include "qml/QmlToast.h"
-#include "qml/SharePasswordViewModel.h"
-#include "qml/ShareResultViewModel.h"
 #include "tools/handlers/MosaicToolHandler.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
 #include "tools/ToolRepaintHelper.h"
@@ -472,8 +469,6 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, [this]() { handleToolbarClick(ToolId::Save); });
     connect(m_toolbarViewModel, &RegionToolbarViewModel::copyClicked,
         this, [this]() { handleToolbarClick(ToolId::Copy); });
-    connect(m_toolbarViewModel, &RegionToolbarViewModel::shareClicked,
-        this, [this]() { handleToolbarClick(ToolId::Share); });
     connect(m_toolbarViewModel, &RegionToolbarViewModel::ocrClicked,
         this, [this]() { handleToolbarClick(ToolId::OCR); });
     connect(m_toolbarViewModel, &RegionToolbarViewModel::qrCodeClicked,
@@ -833,7 +828,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_exportManager, &RegionExportManager::saveCompleted,
         this, [this](const QPixmap& pixmap, const QImage& image, const QString& filePath) {
             m_exportInProgress = false;
-            if (m_loadingSpinner && !(m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress || m_shareInProgress)) {
+            if (m_loadingSpinner && !(m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress)) {
                 m_loadingSpinner->stop();
             }
             recordCaptureSession(image);
@@ -843,60 +838,11 @@ RegionSelector::RegionSelector(QWidget* parent)
     connect(m_exportManager, &RegionExportManager::saveFailed,
         this, [this](const QString& filePath, const QString& error) {
             m_exportInProgress = false;
-            if (m_loadingSpinner && !(m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress || m_shareInProgress)) {
+            if (m_loadingSpinner && !(m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress)) {
                 m_loadingSpinner->stop();
             }
             emit saveFailed(filePath, error);
             restoreAfterDialogCancelled();
-        });
-
-    m_shareClient = new ShareUploadClient(this);
-    connect(m_shareClient, &ShareUploadClient::uploadSucceeded,
-        this, [this](const QString& url, const QDateTime& expiresAt, bool isProtected) {
-            m_shareInProgress = false;
-            if (m_toolbarHandler) {
-                m_toolbarHandler->setShareInProgress(false);
-            }
-            m_toolbarViewModel->setShareInProgress(false);
-            if (m_loadingSpinner && !(m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress)) {
-                m_loadingSpinner->stop();
-            }
-            update();
-
-            if (m_pendingShareSubmission.has_value()) {
-                submitPendingHistorySubmission(std::move(*m_pendingShareSubmission));
-                m_pendingShareSubmission.reset();
-            }
-
-            auto* vm = new ShareResultViewModel(this);
-            vm->setResult(url, expiresAt, isProtected, m_pendingSharePassword);
-            m_pendingSharePassword.clear();
-            auto* dialog = createTransientDialog(
-                QUrl("qrc:/SnapTrayQml/dialogs/ShareResultDialog.qml"),
-                vm, "viewModel");
-            trackBlockingDialog(dialog);
-            connect(vm, &ShareResultViewModel::dialogClosed, this, [this, dialog]() {
-                dialog->close();
-                restoreAfterDialogCancelled();
-            });
-            dialog->showCenteredOnScreen(m_currentScreen.data());
-        });
-    connect(m_shareClient, &ShareUploadClient::uploadFailed,
-        this, [this](const QString& errorMessage) {
-            m_shareInProgress = false;
-            if (m_toolbarHandler) {
-                m_toolbarHandler->setShareInProgress(false);
-            }
-            m_toolbarViewModel->setShareInProgress(false);
-            if (m_loadingSpinner && !(m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress)) {
-                m_loadingSpinner->stop();
-            }
-            m_selectionToast->showNearRect(SnapTray::QmlToast::Level::Error,
-                errorMessage.isEmpty() ? tr("Failed to share screenshot") : errorMessage,
-                m_selectionManager->selectionRect());
-            m_pendingSharePassword.clear();
-            m_pendingShareSubmission.reset();
-            update();
         });
 
     // Initialize input handling component
@@ -1065,8 +1011,6 @@ RegionSelector::RegionSelector(QWidget* parent)
         this, &RegionSelector::saveToFile);
     connect(m_toolbarHandler, &RegionToolbarHandler::copyRequested,
         this, &RegionSelector::copyToClipboard);
-    connect(m_toolbarHandler, &RegionToolbarHandler::shareRequested,
-        this, &RegionSelector::shareToUrl);
     connect(m_toolbarHandler, &RegionToolbarHandler::ocrRequested,
         this, &RegionSelector::performOCR);
     connect(m_toolbarHandler, &RegionToolbarHandler::qrCodeRequested,
@@ -3016,7 +2960,7 @@ void RegionSelector::syncCaptureChromeWindow()
         m_selectionManager->hasSelection();
     const bool shouldDrawBusySpinner = hasSelectableCapture &&
         (m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress ||
-         m_shareInProgress || m_exportInProgress);
+         m_exportInProgress);
 
     const bool wasVisible = m_captureChromeWindow->isVisible();
     const QRect previousGeometry = m_captureChromeWindow->geometry();
@@ -3164,7 +3108,7 @@ void RegionSelector::paintEvent(QPaintEvent* event)
         !m_exportInProgress;
     const bool shouldDrawBusySpinner = hasSelectableCapture &&
         (m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress ||
-         m_shareInProgress || m_exportInProgress);
+         m_exportInProgress);
     if (shouldShowSelectionUi && !suppressSelectionFloatingUi) {
         if (m_inputState.multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0) {
             const int regionCount = m_multiRegionManager->count();
@@ -3942,7 +3886,6 @@ void RegionSelector::handleToolbarClick(ToolId tool)
     m_toolbarHandler->setCurrentTool(m_inputState.currentTool);
     m_toolbarHandler->setShowSubToolbar(m_inputState.showSubToolbar);
     m_toolbarHandler->setStepBadgeSize(m_stepBadgeSize);
-    m_toolbarHandler->setShareInProgress(m_shareInProgress);
     m_toolbarHandler->setMultiRegionMode(m_inputState.multiRegionMode);
 
     // Delegate to handler
@@ -4162,7 +4105,7 @@ void RegionSelector::copyToClipboard()
             safeThis->m_exportInProgress = false;
             if (safeThis->m_loadingSpinner &&
                 !(safeThis->m_ocrInProgress || safeThis->m_qrCodeInProgress ||
-                  safeThis->m_autoBlurInProgress || safeThis->m_shareInProgress)) {
+                  safeThis->m_autoBlurInProgress)) {
                 safeThis->m_loadingSpinner->stop();
             }
 
@@ -4264,67 +4207,6 @@ void RegionSelector::saveToFile()
     }
 
     m_exportManager->savePreparedExportAsync(std::move(prepared), saveRequest);
-}
-
-void RegionSelector::shareToUrl()
-{
-    if (m_exportInProgress || m_shareInProgress || m_ocrInProgress || m_qrCodeInProgress ||
-        !m_shareClient || !m_selectionManager || !m_selectionManager->isComplete()) {
-        return;
-    }
-
-    if (!ensureAutoBlurReadyForExport()) {
-        return;
-    }
-
-    const QPixmap selectedRegion = m_exportManager->getSelectedRegion(
-        m_selectionManager->selectionRect(), effectiveCornerRadius());
-    if (selectedRegion.isNull()) {
-        m_selectionToast->showNearRect(SnapTray::QmlToast::Level::Error,
-            tr("Failed to process selected region"), m_selectionManager->selectionRect());
-        return;
-    }
-
-    auto* vm = new SharePasswordViewModel(this);
-    auto* dialog = createTransientDialog(
-        QUrl("qrc:/SnapTrayQml/dialogs/SharePasswordDialog.qml"),
-        vm, "viewModel");
-    trackBlockingDialog(dialog);
-    connect(vm, &SharePasswordViewModel::accepted, this, [this, vm, dialog, selectedRegion]() {
-        dialog->close();
-        if (m_shareInProgress || !m_shareClient) {
-            return;
-        }
-
-        m_pendingSharePassword = vm->password();
-        auto snapshot = makeHistoryCaptureSnapshot(QDateTime::currentDateTime());
-        if (snapshot.has_value()) {
-            m_pendingShareSubmission = PendingHistorySubmission{
-                std::move(*snapshot),
-                selectedRegion.toImage()
-            };
-        } else {
-            m_pendingShareSubmission.reset();
-        }
-
-        m_shareInProgress = true;
-        if (m_toolbarHandler) {
-            m_toolbarHandler->setShareInProgress(true);
-        }
-        m_toolbarViewModel->setShareInProgress(true);
-        ensureLoadingSpinner()->start();
-        update();
-
-        m_shareClient->uploadPixmap(selectedRegion, m_pendingSharePassword);
-    });
-    connect(vm, &SharePasswordViewModel::rejected, this, [this, dialog]() {
-        m_pendingSharePassword.clear();
-        m_pendingShareSubmission.reset();
-        dialog->close();
-        restoreAfterDialogCancelled();
-    });
-    dialog->setModal(true);
-    dialog->showCenteredOnScreen(m_currentScreen.data());
 }
 
 void RegionSelector::finishSelection()
@@ -4700,8 +4582,6 @@ void RegionSelector::closeEvent(QCloseEvent* event)
     m_initialRevealState = InitialRevealState::Revealed;
     m_selectionCompletionHandoffPending = false;
     m_detachedWindowDeactivateGuardPending = false;
-    m_pendingSharePassword.clear();
-    m_pendingShareSubmission.reset();
     if (m_qmlToolbar) m_qmlToolbar->hide();
     if (m_qmlSubToolbar) m_qmlSubToolbar->hide();
     if (m_magnifierOverlay) m_magnifierOverlay->hideOverlay();
@@ -4820,7 +4700,7 @@ bool RegionSelector::eventFilter(QObject* obj, QEvent* event)
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
         if (keyEvent->key() == Qt::Key_Escape) {
-            // Let the active dialog (save/share/OCR/QR) consume Esc so this
+            // Let the active dialog (save/OCR/QR) consume Esc so this
             // global handler does not cancel the entire capture session.
             if (hasBlockingTransientUiOpen()) {
                 return false;
@@ -4907,7 +4787,7 @@ void RegionSelector::onTextEditingFinished(const QString& text, const QPoint& po
 void RegionSelector::performOCR()
 {
     OCRManager* ocrMgr = ensureOCRManager();
-    if (!ocrMgr || m_exportInProgress || m_ocrInProgress || m_shareInProgress ||
+    if (!ocrMgr || m_exportInProgress || m_ocrInProgress ||
         !m_selectionManager->isComplete()) {
         return;
     }
@@ -4995,7 +4875,7 @@ void RegionSelector::showOCRResultDialog(const OCRResult& result)
 void RegionSelector::performQRCodeScan()
 {
     QRCodeManager* qrMgr = ensureQRCodeManager();
-    if (!qrMgr || m_exportInProgress || m_qrCodeInProgress || m_shareInProgress ||
+    if (!qrMgr || m_exportInProgress || m_qrCodeInProgress ||
         !m_selectionManager->isComplete()) {
         return;
     }
@@ -5085,7 +4965,7 @@ void RegionSelector::onQRCodeComplete(bool success, const QString& text, const Q
 
 void RegionSelector::performAutoBlur()
 {
-    if (!m_autoBlurManager || m_exportInProgress || m_autoBlurInProgress || m_shareInProgress ||
+    if (!m_autoBlurManager || m_exportInProgress || m_autoBlurInProgress ||
         !m_selectionManager->isComplete()) {
         return;
     }

@@ -41,8 +41,6 @@ SnapTray is a Qt 6 screenshot and annotation app for macOS, Windows, and Ubuntu 
 
 Press `F2`, drag a region, then copy, save, pin, or blur from the same toolbar. OCR is also available there on macOS/Windows.
 
-> **Note:** Image sharing (upload to a shareable URL) is currently disabled. The Share button is hidden from the capture and pin-window toolbars, so it cannot be triggered from the UI. The underlying share code is intentionally retained, so the feature can be re-enabled in a later build without reimplementing it.
-
 ### Draw directly on the desktop
 
 Use `Ctrl+F2 / Cmd+F2` to open Screen Canvas for demos, walkthroughs, presentations, and live explanation.

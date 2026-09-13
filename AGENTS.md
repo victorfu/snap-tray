@@ -153,7 +153,7 @@ Use `GlassRenderer` and existing toolbar style helpers for floating panels inste
 
 - Tests live under `tests/<Component>/tst_<Name>.cpp`
 - The suite uses Qt Test with helpers such as `QCOMPARE` and `QVERIFY`
-- Important test areas include CLI, Cursor, Detection, Encoding, Hotkey, PinWindow, Qml, RecordingManager, RegionSelector, ScreenCanvas, Settings, Share, Tools, Update, and Utils
+- Important test areas include CLI, Cursor, Detection, Encoding, Hotkey, PinWindow, Qml, RecordingManager, RegionSelector, ScreenCanvas, Settings, Tools, Update, and Utils
 
 ## Patterns to Avoid
 

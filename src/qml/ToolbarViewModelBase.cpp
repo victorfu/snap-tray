@@ -10,9 +10,8 @@ namespace {
 
 bool isExportActionTool(ToolId toolId)
 {
-    static constexpr std::array<ToolId, 4> kExportActionTools = {
+    static constexpr std::array<ToolId, 3> kExportActionTools = {
         ToolId::Pin,
-        ToolId::Share,
         ToolId::Save,
         ToolId::Copy,
     };
@@ -83,19 +82,6 @@ void ToolbarViewModelBase::setOCRAvailable(bool value)
     }
 }
 
-bool ToolbarViewModelBase::shareInProgress() const
-{
-    return m_shareInProgress;
-}
-
-void ToolbarViewModelBase::setShareInProgress(bool value)
-{
-    if (m_shareInProgress != value) {
-        m_shareInProgress = value;
-        emit shareInProgressChanged();
-    }
-}
-
 bool ToolbarViewModelBase::autoBlurProcessing() const
 {
     return m_autoBlurProcessing;
@@ -116,7 +102,6 @@ ToolbarViewModelBase::ToolButtonOptions ToolbarViewModelBase::defaultToolButtonO
     options.isOCR = (toolId == ToolId::OCR);
     options.isUndo = (toolId == ToolId::Undo);
     options.isRedo = (toolId == ToolId::Redo);
-    options.isShare = (toolId == ToolId::Share);
     options.isExportAction = isExportActionTool(toolId);
     return options;
 }
@@ -152,7 +137,6 @@ QVariantMap ToolbarViewModelBase::buildCustomButtonEntry(int id,
     entry[QStringLiteral("isOCR")] = options.isOCR;
     entry[QStringLiteral("isUndo")] = options.isUndo;
     entry[QStringLiteral("isRedo")] = options.isRedo;
-    entry[QStringLiteral("isShare")] = options.isShare;
     entry[QStringLiteral("isAction")] = options.isAction;
     entry[QStringLiteral("isExportAction")] = options.isExportAction;
     entry[QStringLiteral("isCancel")] = options.isCancel;

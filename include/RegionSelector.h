@@ -78,7 +78,6 @@ class AnnotationContext;
 class CaptureShortcutHintsOverlay;
 class RegionControlViewModel;
 class MultiRegionListViewModel;
-class ShareUploadClient;
 namespace SnapTray { class QmlToast; }
 
 // ShapeType and ShapeFillMode are defined in annotations/ShapeAnnotation.h
@@ -212,7 +211,6 @@ private:
     void cancelMultiRegionCapture();
     void copyToClipboard();
     void saveToFile();
-    void shareToUrl();
     void finishSelection();
     bool ensureAutoBlurReadyForExport();
     void updateToolbarAutoBlurState();
@@ -389,9 +387,7 @@ private:
     // OCR state
     OCRManager *m_ocrManager;
     bool m_ocrInProgress;
-    bool m_shareInProgress = false;
     bool m_exportInProgress = false;
-    QString m_pendingSharePassword;
     LoadingSpinnerRenderer *m_loadingSpinner = nullptr;
     SnapTray::QmlToast *m_selectionToast = nullptr;
 
@@ -572,7 +568,6 @@ private:
     HistoryLiveSlot m_historyLiveSlot;
     int m_historyReplayIndex = -1;  // -1 = current live slot
     bool m_historyReplayActive = false;
-    std::optional<PendingHistorySubmission> m_pendingShareSubmission;
 
     // Preserve completed selection when cursor switches to another screen.
     bool m_hasPreservedSelection = false;
@@ -609,7 +604,6 @@ private:
 
     // Export manager component
     RegionExportManager* m_exportManager = nullptr;
-    ShareUploadClient* m_shareClient = nullptr;
 
     // Shared annotation setup/signals helper
     std::unique_ptr<AnnotationContext> m_annotationContext;

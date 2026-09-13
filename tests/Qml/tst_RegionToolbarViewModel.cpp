@@ -36,7 +36,8 @@ class tst_RegionToolbarViewModel : public QObject
 
 private slots:
     void testNormalToolbarOmitsCancelRecordAndHandlesOcrAvailability();
-    void testShareButtonIsHiddenFromToolbar();
+    void testExportActionsRemainAvailable_data();
+    void testExportActionsRemainAvailable();
 };
 
 void tst_RegionToolbarViewModel::testNormalToolbarOmitsCancelRecordAndHandlesOcrAvailability()
@@ -57,17 +58,35 @@ void tst_RegionToolbarViewModel::testNormalToolbarOmitsCancelRecordAndHandlesOcr
 #endif
 }
 
-void tst_RegionToolbarViewModel::testShareButtonIsHiddenFromToolbar()
+void tst_RegionToolbarViewModel::testExportActionsRemainAvailable_data()
 {
-    // Share is intentionally hidden from the toolbar while its implementation
-    // is kept intact. The registry still lists it, but the view model must not
-    // surface it as a visible button.
+    QTest::addColumn<int>("toolId");
+    QTest::addColumn<QByteArray>("signal");
+    QTest::newRow("pin") << static_cast<int>(ToolId::Pin) << QByteArray(SIGNAL(pinClicked()));
+    QTest::newRow("save") << static_cast<int>(ToolId::Save) << QByteArray(SIGNAL(saveClicked()));
+    QTest::newRow("copy") << static_cast<int>(ToolId::Copy) << QByteArray(SIGNAL(copyClicked()));
+}
+
+void tst_RegionToolbarViewModel::testExportActionsRemainAvailable()
+{
+    QFETCH(int, toolId);
+    QFETCH(QByteArray, signal);
     RegionToolbarViewModel viewModel;
     const QVariantList buttons = viewModel.buttons();
+    for (const QVariant& button : buttons) {
+        QVERIFY(button.toMap().value(QStringLiteral("iconKey")).toString() != QStringLiteral("share"));
+    }
+    const QVariantMap exportButton = findButtonById(buttons, toolId);
+    QVERIFY(!exportButton.isEmpty());
+    QVERIFY(exportButton.value(QStringLiteral("isAction")).toBool());
+    QVERIFY(exportButton.value(QStringLiteral("isExportAction")).toBool());
 
-    const QVariantMap shareButton = findButtonById(buttons, static_cast<int>(ToolId::Share));
-    QVERIFY(shareButton.isEmpty());
-    QVERIFY(!containsButtonWithIconKey(buttons, QStringLiteral("share")));
+    QSignalSpy actionSpy(&viewModel, signal.constData());
+    QSignalSpy drawingSpy(&viewModel, &RegionToolbarViewModel::toolSelected);
+    QVERIFY(actionSpy.isValid());
+    viewModel.handleButtonClicked(toolId);
+    QCOMPARE(actionSpy.count(), 1);
+    QCOMPARE(drawingSpy.count(), 0);
 }
 
 QTEST_MAIN(tst_RegionToolbarViewModel)

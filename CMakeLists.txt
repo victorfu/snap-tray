@@ -797,16 +797,11 @@ add_library(snaptray_ui STATIC
     src/WatermarkRenderer.cpp
     src/LoadingSpinnerRenderer.cpp
 
-    # Beautify
-    # Share
-    src/share/ShareUploadClient.cpp
-
     # Global UI components
     src/ui/DesignTokens.cpp
     src/ui/TrayTooltipFormatter.cpp
     include/ui/DesignTokens.h
     include/ui/TrayTooltipFormatter.h
-    include/share/ShareUploadClient.h
     include/region/MagnifierOverlay.h
 
     # Update system
@@ -989,8 +984,6 @@ set_source_files_properties(src/qml/settings/AboutSettings.qml PROPERTIES QT_RES
 # Dialog components
 set_source_files_properties(src/qml/components/DialogBase.qml PROPERTIES QT_RESOURCE_ALIAS components/DialogBase.qml)
 set_source_files_properties(src/qml/controls/DialogButton.qml PROPERTIES QT_RESOURCE_ALIAS controls/DialogButton.qml)
-set_source_files_properties(src/qml/dialogs/SharePasswordDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/SharePasswordDialog.qml)
-set_source_files_properties(src/qml/dialogs/ShareResultDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/ShareResultDialog.qml)
 set_source_files_properties(src/qml/dialogs/OCRResultDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/OCRResultDialog.qml)
 set_source_files_properties(src/qml/dialogs/UpdateDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/UpdateDialog.qml)
 set_source_files_properties(src/qml/dialogs/QRCodeResultDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/QRCodeResultDialog.qml)
@@ -1081,8 +1074,6 @@ qt_add_qml_module(snaptray_qml
         src/qml/panels/BeautifyPanel.qml
         src/qml/panels/EmojiPickerPopup.qml
         src/qml/panels/HistoryWindow.qml
-        src/qml/dialogs/SharePasswordDialog.qml
-        src/qml/dialogs/ShareResultDialog.qml
         src/qml/dialogs/OCRResultDialog.qml
         src/qml/dialogs/UpdateDialog.qml
         src/qml/dialogs/QRCodeResultDialog.qml
@@ -1151,10 +1142,6 @@ qt_add_qml_module(snaptray_qml
         include/qml/DialogImageProvider.h
         src/qml/ScreenPickerViewModel.cpp
         include/qml/ScreenPickerViewModel.h
-        src/qml/SharePasswordViewModel.cpp
-        include/qml/SharePasswordViewModel.h
-        src/qml/ShareResultViewModel.cpp
-        include/qml/ShareResultViewModel.h
         src/qml/OCRResultViewModel.cpp
         include/qml/OCRResultViewModel.h
         src/qml/UpdateDialogViewModel.cpp

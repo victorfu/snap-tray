@@ -41,7 +41,6 @@ snap-tray/
 │   ├── qml/                    # QML bridges 與 view models
 │   ├── region/                 # Region selector 元件
 │   ├── settings/               # Settings managers
-│   ├── share/                  # Share upload client
 │   ├── tools/                  # Tool registry 與 handlers
 │   ├── ui/                     # 共用 UI helper 與 theme
 │   ├── update/                 # Auto-update 類別
@@ -214,7 +213,7 @@ SnapTray 以模組化 static-library 風格組織：
 
 - 測試檔命名為 `tests/<Component>/tst_<Name>.cpp`
 - 測試框架使用 Qt Test，例如 `QCOMPARE`、`QVERIFY`
-- 目前測試資料夾包含 `Annotations`、`Beautify`、`CLI`、`Cursor`、`Detection`、`Encoding`、`Hotkey`、`IPC`、`PinWindow`、`Qml`、`RecordingManager`、`RegionSelector`、`ScreenCanvas`、`Settings`、`Share`、`Tools`、`Update`、`Utils`
+- 目前測試資料夾包含 `Annotations`、`Beautify`、`CLI`、`Cursor`、`Detection`、`Encoding`、`Hotkey`、`IPC`、`PinWindow`、`Qml`、`RecordingManager`、`RegionSelector`、`ScreenCanvas`、`Settings`、`Tools`、`Update`、`Utils`
 
 ### 避免的模式
 
