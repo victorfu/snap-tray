@@ -566,6 +566,11 @@ target_link_libraries(ColorWidgets_ColorWheel PRIVATE snaptray_colorwidgets Qt6:
 add_test(NAME ColorWidgets_ColorWheel COMMAND ColorWidgets_ColorWheel)
 set_tests_properties(ColorWidgets_ColorWheel PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(ColorWidgets_ColorDialog ColorWidgets/tst_ColorDialog.cpp)
+target_link_libraries(ColorWidgets_ColorDialog PRIVATE snaptray_colorwidgets Qt6::Test)
+add_test(NAME ColorWidgets_ColorDialog COMMAND ColorWidgets_ColorDialog)
+set_tests_properties(ColorWidgets_ColorDialog PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Detection_FaceDetector Detection/tst_FaceDetector.cpp)
 target_link_libraries(Detection_FaceDetector PRIVATE snaptray_algorithms Qt6::Widgets Qt6::Test)
 # Add resources for cascade file
