@@ -2,6 +2,7 @@
 #include "AutoLaunchManager.h"
 #include "SingleInstanceGuard.h"
 #include "cli/CLIHandler.h"
+#include "cli/CaptureOutputHelper.h"
 #include "platform/PlatformCapabilities.h"
 #include "platform/QtQuickBackendPolicy.h"
 #include "settings/LanguageManager.h"
@@ -16,7 +17,6 @@
 #include <QApplication>
 #include <QCoreApplication>
 #include <QDebug>
-#include <QFile>
 #include <QOperatingSystemVersion>
 #include <QStringList>
 #include <QTextStream>
@@ -116,9 +116,9 @@ int main(int argc, char* argv[])
 
         if (!result.data.isEmpty()) {
             // Binary data (--raw)
-            QFile outFile;
-            if (outFile.open(stdout, QIODevice::WriteOnly)) {
-                outFile.write(result.data);
+            if (!SnapTray::CLI::writeRawOutputToStdout(result.data)) {
+                err << "Error: Failed to write raw image to stdout\n";
+                result.code = SnapTray::CLI::CLIResult::Code::FileError;
             }
         }
         else if (!result.message.isEmpty()) {

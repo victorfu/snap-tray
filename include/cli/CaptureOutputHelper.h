@@ -26,6 +26,7 @@ struct CaptureMetadata
 };
 
 void applyOptionalDelay(int delayMs);
+bool writeRawOutputToStdout(const QByteArray& data);
 CLIResult emitCaptureOutput(
     const QPixmap& screenshot,
     const CaptureOutputOptions& options,

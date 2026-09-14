@@ -4,6 +4,8 @@
 #include <QImage>
 #include <QPixmap>
 #include <QTemporaryDir>
+#include <QApplication>
+#include <QProcess>
 
 #include "cli/CaptureOutputHelper.h"
 #include "settings/Settings.h"
@@ -19,6 +21,7 @@ class tst_CaptureOutputHelper : public QObject
 
 private slots:
     void emitCaptureOutput_rawReturnsPngData();
+    void rawStdoutPreservesPngBytes();
     void emitCaptureOutput_saveWritesPngFile();
     void autoNamedSavesKeepBothImages();
     void explicitOutputStillOverwrites();
@@ -48,6 +51,23 @@ void tst_CaptureOutputHelper::emitCaptureOutput_rawReturnsPngData()
     QImage decoded;
     QVERIFY(decoded.loadFromData(result.data, "PNG"));
     QCOMPARE(decoded.size(), QSize(8, 6));
+}
+
+void tst_CaptureOutputHelper::rawStdoutPreservesPngBytes()
+{
+    QProcess child;
+    child.start(QCoreApplication::applicationFilePath(), {QStringLiteral("--raw-output-probe")});
+    QVERIFY(child.waitForFinished(10000));
+    QCOMPARE(child.exitStatus(), QProcess::NormalExit);
+    QCOMPARE(child.exitCode(), 0);
+    const QByteArray bytes = child.readAllStandardOutput();
+    CaptureOutputOptions options;
+    options.toRaw = true;
+    QCOMPARE(bytes, emitCaptureOutput(makeScreenshot(), options).data);
+    QImage decoded;
+    QVERIFY(decoded.loadFromData(bytes, "PNG"));
+    QCOMPARE(decoded.size(), QSize(8, 6));
+    QCOMPARE(decoded.pixelColor(0, 0), QColor(Qt::red));
 }
 
 void tst_CaptureOutputHelper::emitCaptureOutput_saveWritesPngFile()
@@ -108,5 +128,16 @@ void tst_CaptureOutputHelper::explicitOutputStillOverwrites()
     QCOMPARE(QImage(options.outputFile).pixelColor(0, 0), QColor(Qt::blue));
 }
 
-QTEST_MAIN(tst_CaptureOutputHelper)
+int main(int argc, char** argv)
+{
+    QApplication app(argc, argv);
+    if (app.arguments().contains(QStringLiteral("--raw-output-probe"))) {
+        CaptureOutputOptions options;
+        options.toRaw = true;
+        const auto result = emitCaptureOutput(makeScreenshot(), options);
+        return result.isSuccess() && SnapTray::CLI::writeRawOutputToStdout(result.data) ? 0 : 1;
+    }
+    tst_CaptureOutputHelper test;
+    return QTest::qExec(&test, argc, argv);
+}
 #include "tst_CaptureOutputHelper.moc"

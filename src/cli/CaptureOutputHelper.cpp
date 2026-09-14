@@ -10,15 +10,35 @@
 #include <QBuffer>
 #include <QCoreApplication>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QImage>
 #include <QPixmap>
 #include <QScreen>
 #include <QThread>
+#include <cstdio>
+#ifdef Q_OS_WIN
+#include <fcntl.h>
+#include <io.h>
+#endif
 
 namespace SnapTray {
 namespace CLI {
+bool writeRawOutputToStdout(const QByteArray& data)
+{
+#ifdef Q_OS_WIN
+    // QIODevice's binary mode does not disable the CRT's LF translation.
+    if (_setmode(_fileno(stdout), _O_BINARY) == -1) {
+        return false;
+    }
+#endif
+    QFile output;
+    return output.open(stdout, QIODevice::WriteOnly)
+        && output.write(data) == data.size()
+        && output.flush();
+}
+
 namespace {
 
 QString resolveCaptureType(const CaptureMetadata& metadata)
