@@ -5371,14 +5371,7 @@ void PinWindow::startLiveCapture()
 
     // Create capture engine
     m_captureEngine = ICaptureEngine::createBestEngine(this);
-    connect(m_captureEngine, &ICaptureEngine::error, this,
-        [this, engine = QPointer<ICaptureEngine>(m_captureEngine)](const QString& message) {
-            if (!engine || m_captureEngine != engine.data()) {
-                return;
-            }
-            stopLiveCapture();
-            m_toast->showToast(SnapTray::QmlToast::Level::Error, message);
-        }, Qt::QueuedConnection);
+    connectLiveCaptureEngineSignals();
     m_captureEngine->setRegion(m_sourceRegion, sourceScreen);
     m_captureEngine->setFrameRate(m_captureFrameRate);
 
@@ -5404,6 +5397,24 @@ void PinWindow::startLiveCapture()
     connect(m_liveIndicatorTimer, &QTimer::timeout, this, QOverload<>::of(&QWidget::update));
     m_liveIndicatorTimer->start(50);  // ~20fps for indicator animation
     update();
+}
+
+void PinWindow::connectLiveCaptureEngineSignals()
+{
+    const QPointer<ICaptureEngine> engine(m_captureEngine);
+    connect(m_captureEngine, &ICaptureEngine::stoppedByUser, this, [this, engine]() {
+        if (engine && m_captureEngine == engine.data()) {
+            stopLiveCapture();
+        }
+    }, Qt::QueuedConnection);
+    connect(m_captureEngine, &ICaptureEngine::error, this,
+        [this, engine](const QString& message) {
+            if (!engine || m_captureEngine != engine.data()) {
+                return;
+            }
+            stopLiveCapture();
+            m_toast->showToast(SnapTray::QmlToast::Level::Error, message);
+        }, Qt::QueuedConnection);
 }
 
 void PinWindow::stopLiveCapture()

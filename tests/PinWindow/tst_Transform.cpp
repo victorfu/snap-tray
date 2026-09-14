@@ -45,6 +45,43 @@ private:
     }
 
 private slots:
+    void testNativeStopEndsLivePin_data() {
+        QTest::addColumn<bool>("replaceEngine");
+        QTest::newRow("active-engine") << false;
+        QTest::newRow("stale-engine") << true;
+    }
+
+    void testNativeStopEndsLivePin() {
+        PinWindow window(createTestPixmap(100, 80), QPoint(), nullptr, false, false);
+        QFETCH(bool, replaceEngine);
+        const auto startFixture = [&window]() {
+            auto* capture = new PinFrameFixture(&window);
+            window.m_captureEngine = capture;
+            window.m_isLiveMode = true;
+            window.m_captureTimer = new QTimer(&window);
+            window.m_captureTimer->start(1000);
+            window.m_liveIndicatorTimer = new QTimer(&window);
+            window.m_liveIndicatorTimer->start(1000);
+            window.connectLiveCaptureEngineSignals();
+            return capture;
+        };
+        auto* capture = startFixture();
+        capture->stoppedByUser();
+        if (replaceEngine) {
+            window.stopLiveCapture();
+            capture = startFixture();
+            QCoreApplication::sendPostedEvents(&window, QEvent::MetaCall);
+            QVERIFY(window.isLiveMode());
+            QCOMPARE(window.m_captureEngine, capture);
+            capture->stoppedByUser();
+        }
+        QTRY_VERIFY(!window.isLiveMode());
+        QVERIFY(!window.m_captureEngine);
+        QVERIFY(!window.m_captureTimer);
+        QVERIFY(!window.m_liveIndicatorTimer);
+        QVERIFY(!window.isLivePaused());
+    }
+
     void testHiddenLiveMosaicToolDefersSources_data() {
         QTest::addColumn<bool>("showToolbar");
         QTest::newRow("toolbar-reopen") << true;

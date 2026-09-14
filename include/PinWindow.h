@@ -582,6 +582,7 @@ private:
     static constexpr int kMosaicBlockSize = 12;
 
     void updateLiveFrame();
+    void connectLiveCaptureEngineSignals();
 };
 
 #endif // PINWINDOW_H
