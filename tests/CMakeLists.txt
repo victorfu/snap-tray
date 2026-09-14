@@ -32,6 +32,9 @@ if(WIN32)
     add_test(NAME Packaging_WindowsPackageWrapper
         COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_WindowsPackageWrapper.py" "${CMAKE_SOURCE_DIR}")
     set_tests_properties(Packaging_WindowsPackageWrapper PROPERTIES TIMEOUT 30 LABELS "unit;packaging")
+    add_test(NAME Packaging_WindowsQtDetection
+        COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_WindowsQtDetection.py" "${CMAKE_SOURCE_DIR}")
+    set_tests_properties(Packaging_WindowsQtDetection PROPERTIES TIMEOUT 30 LABELS "unit;packaging")
 endif()
 
 if(UNIX AND NOT APPLE)
