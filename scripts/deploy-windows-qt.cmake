@@ -35,6 +35,8 @@ foreach(required "platforms/qwindows${suffix}.dll" "qml/QtQuick/Layouts" "qml/Qt
 endforeach()
 
 if(needs_deploy)
+    # A partial copy can satisfy the file checks even if deployment later fails.
+    file(WRITE "${pending}" "${qt_prefix}\n")
     set(deployer "${qt_prefix}/bin/windeployqt.exe")
     if(NOT EXISTS "${deployer}")
         message(FATAL_ERROR "Qt deployment tool not found: ${deployer}")

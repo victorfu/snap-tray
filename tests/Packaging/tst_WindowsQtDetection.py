@@ -114,7 +114,7 @@ class QtDetectionTests(unittest.TestCase):
             fixture.run_entry(expect_success=False)
             self.assertEqual(fixture.configure_count(), 1)
 
-    def test_pending_deployment_is_not_skipped_for_existing_dlls(self):
+    def test_failed_deployment_is_retried_after_partial_copy(self):
         with QtCacheFixture("build-release.bat") as fixture:
             fixture.seed(fixture.new_qt)
             binary_dir = fixture.build / "bin"
@@ -130,9 +130,17 @@ class QtDetectionTests(unittest.TestCase):
             env = dict(os.environ, QT_PATH=str(fixture.new_qt))
             # No deployment is needed when the matching runtime is already present.
             subprocess.run(args, env=env, check=True, capture_output=True, timeout=15)
-            fixture.pending.write_text("pending")
-            # The new SDK deliberately has no deployment tool. Existing DLLs must
-            # not bypass the pending update, and failure must retain the marker.
+            missing_dll = binary_dir / "Qt6QuickWidgets.dll"
+            missing_dll.unlink()
+            # The SDK deliberately has no deployment tool. A missing runtime
+            # must start a pending update even when no reconfigure was needed.
+            result = subprocess.run(args, env=env, capture_output=True, text=True, timeout=15)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Qt deployment tool not found", result.stdout + result.stderr)
+            self.assertTrue(fixture.pending.exists())
+            # Simulate a failed deployment that copied all checked DLLs before
+            # failing on another dependency. Existing files must not bypass retry.
+            missing_dll.touch()
             result = subprocess.run(args, env=env, capture_output=True, text=True, timeout=15)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("Qt deployment tool not found", result.stdout + result.stderr)
