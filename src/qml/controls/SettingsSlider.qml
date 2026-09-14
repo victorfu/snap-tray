@@ -21,6 +21,7 @@ SettingsRow {
 
     Slider {
         id: slider
+        objectName: "settingsSliderInput"
         anchors.verticalCenter: parent.verticalCenter
         width: parent.width - valueText.width - 8
         from: root.from
@@ -33,8 +34,7 @@ SettingsRow {
         Accessible.name: root.label
 
         onMoved: {
-            root.value = Math.round(slider.value)
-            root.moved(root.value)
+            root.moved(Math.round(slider.value))
         }
 
         background: Rectangle {
