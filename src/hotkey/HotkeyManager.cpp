@@ -473,6 +473,7 @@ bool HotkeyManager::updateHotkey(HotkeyAction action, const QString& keySequence
         saveToSettings(action);
         emit hotkeyChanged(action, config);
         emit registrationStatusChanged(action, config.status);
+        refreshAffectedConflicts(oldSequence, config.keySequence, action);
         return true;
     }
 
