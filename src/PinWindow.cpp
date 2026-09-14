@@ -985,6 +985,7 @@ void PinWindow::ensureTransformCacheValid() const
 void PinWindow::onResizeFinished()
 {
     if (m_pendingHighQualityUpdate && !m_isResizing) {
+        m_resizeFinishTimer->stop();
         invalidateAutoBlurRequest();
         // Perform high-quality scaling after resize is complete
         m_displayPixmap = buildDisplayPixmap(size(), Qt::SmoothTransformation);
@@ -2741,10 +2742,9 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
         m_zoomLevel = qMin(scaleX, scaleY);
 
         // Use FastTransformation during resize for responsiveness.
-        // High-quality scaling will be done after resize is complete.
+        // Rebuild mosaic sources and annotation caches only when resize finishes.
         invalidateAutoBlurRequest();
         m_displayPixmap = buildDisplayPixmap(newSize, Qt::FastTransformation);
-        refreshMosaicSources();
 
         // Schedule high-quality update after resize ends
         m_pendingHighQualityUpdate = true;
@@ -2881,6 +2881,8 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
         if (m_isResizing) {
             m_isResizing = false;
             m_resizeHandler->finishResize();
+            // Flush even if the debounce already fired while the mouse was held.
+            onResizeFinished();
             rebuildManagedCursorAt(event->pos());
         }
         if (m_isDragging) {

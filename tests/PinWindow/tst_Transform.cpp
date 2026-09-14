@@ -9,6 +9,7 @@
 #include "PinWindow.h"
 #include "PlatformFeatures.h"
 #include "annotations/MosaicStroke.h"
+#include "pinwindow/ResizeHandler.h"
 #include "tools/ToolManager.h"
 
 class TestPinWindowTransform : public QObject
@@ -26,6 +27,86 @@ private:
     }
 
 private slots:
+    void testInteractiveResizeDefersMosaicRefresh_data() {
+        QTest::addColumn<bool>("transform");
+        QTest::addColumn<bool>("expireDebounce");
+        for (bool transform : {false, true}) {
+            for (bool expireDebounce : {false, true}) {
+                QTest::addRow("transform-%d-expired-%d", transform, expireDebounce)
+                    << transform << expireDebounce;
+            }
+        }
+    }
+
+    void testInteractiveResizeDefersMosaicRefresh() {
+        QFETCH(bool, transform);
+        QFETCH(bool, expireDebounce);
+        constexpr qreal dpr = 2.0;
+        const QSize logicalSize(100, 80);
+        QPixmap source(logicalSize * dpr);
+        source.setDevicePixelRatio(dpr);
+        source.fill(Qt::red);
+        { QPainter painter(&source); painter.fillRect(50, 0, 50, 80, Qt::blue); }
+        PinWindow window(source, QPoint(), nullptr, false, false);
+        if (transform) { window.rotateRight(); window.flipHorizontal(); }
+        window.initializeAnnotationComponents();
+        const QPoint sample(65, 40);
+        window.m_annotationLayer->addItem(std::make_unique<MosaicStroke>(
+            QVector<QPoint>{sample, sample + QPoint(2, 0)}, window.m_sharedSourcePixmap, 2));
+        const auto render = [&window]() {
+            const auto& canvas = *window.m_sharedSourcePixmap;
+            QImage image(canvas.size(), QImage::Format_ARGB32_Premultiplied);
+            image.setDevicePixelRatio(canvas.devicePixelRatio());
+            image.fill(Qt::transparent);
+            QPainter painter(&image);
+            window.m_annotationLayer->drawCached(
+                painter, canvas.deviceIndependentSize().toSize(), canvas.devicePixelRatio());
+            return image;
+        };
+        QCOMPARE(render().pixelColor(sample * dpr), QColor(Qt::blue));
+        const auto originalSource = window.m_sharedSourcePixmap;
+        const auto cachedEntries = window.m_annotationLayer->cacheStats().entryCount;
+        QVERIFY(cachedEntries > 0);
+
+        const QSize originalSize = window.size();
+        const QPoint corner(originalSize.width() - 1, originalSize.height() - 1);
+        const QPoint globalCorner = window.mapToGlobal(corner);
+        QMouseEvent press(QEvent::MouseButtonPress, QPointF(corner), QPointF(globalCorner),
+                          Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+        window.mousePressEvent(&press);
+        QVERIFY(window.m_isResizing);
+        for (qreal scale : {1.5, 2.0}) {
+            const QSize newSize = originalSize * scale;
+            const QPoint delta(newSize.width() - originalSize.width(),
+                               newSize.height() - originalSize.height());
+            QMouseEvent move(QEvent::MouseMove, QPointF(corner + delta), QPointF(globalCorner + delta),
+                             Qt::NoButton, Qt::LeftButton, Qt::NoModifier);
+            window.mouseMoveEvent(&move);
+            QCOMPARE(window.size(), newSize);
+            QCOMPARE(window.m_sharedSourcePixmap.get(), originalSource.get());
+            QCOMPARE(window.m_annotationLayer->cacheStats().entryCount, cachedEntries);
+        }
+        if (expireDebounce) {
+            // The single-shot timer may fire while the pointer is held still.
+            QTRY_VERIFY_WITH_TIMEOUT(!window.m_resizeFinishTimer->isActive(), 1000);
+            QCOMPARE(window.m_sharedSourcePixmap.get(), originalSource.get());
+            QVERIFY(window.m_pendingHighQualityUpdate);
+        }
+        const QPoint releasePos(window.width() - 1, window.height() - 1);
+        QMouseEvent release(QEvent::MouseButtonRelease, QPointF(releasePos),
+                            QPointF(window.mapToGlobal(releasePos)), Qt::LeftButton,
+                            Qt::NoButton, Qt::NoModifier);
+        window.mouseReleaseEvent(&release);
+        QVERIFY(!window.m_isResizing);
+        QVERIFY(!window.m_resizeHandler->isResizing());
+        QVERIFY(!window.m_pendingHighQualityUpdate);
+        QVERIFY(!window.m_resizeFinishTimer->isActive());
+        QVERIFY(window.m_sharedSourcePixmap != originalSource);
+        QCOMPARE(window.m_sharedSourcePixmap->deviceIndependentSize().toSize(), logicalSize * 2);
+        // This existing stroke must sample the newly enlarged canvas immediately.
+        QCOMPARE(render().pixelColor(sample * dpr), QColor(Qt::red));
+    }
+
     void testManualMosaicSamplesZoomedCanvas_data() {
         QTest::addColumn<qreal>("zoom");
         QTest::addColumn<qreal>("dpr");

@@ -287,7 +287,7 @@ endif()
 # ============================================================================
 
 add_executable(PinWindow_Transform PinWindow/tst_Transform.cpp)
-target_link_libraries(PinWindow_Transform PRIVATE snaptray_ui Qt6::Test)
+target_link_libraries(PinWindow_Transform PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
 add_test(NAME PinWindow_Transform COMMAND PinWindow_Transform)
 set_tests_properties(PinWindow_Transform PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
