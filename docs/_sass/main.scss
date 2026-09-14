@@ -39,6 +39,11 @@
   padding: 0;
 }
 
+// Keep author display rules from exposing controls without a usable target.
+[hidden]:not([hidden="until-found" i]) {
+  display: none !important;
+}
+
 html {
   scroll-behavior: smooth;
 }
