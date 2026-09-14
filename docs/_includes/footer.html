@@ -1,5 +1,6 @@
 {% assign lang = page.lang | default: site.default_lang %}
 {% assign t = site.data.i18n[lang] %}
+{% assign developer_url = site.data.routes.developer_home[lang] | default: site.data.routes.developer_home.en %}
 
 <footer class="site-footer">
   <div class="container footer-grid">
@@ -14,7 +15,7 @@
       <div class="footer-links">
         <a href="{{ site.data.routes.home[lang] | relative_url }}">{{ t.footer.links.home }}</a>
         <a href="{{ site.data.routes.docs_home[lang] | relative_url }}">{{ t.footer.links.docs }}</a>
-        <a href="{{ site.data.routes.developer_home[lang] | relative_url }}">{{ t.footer.links.developer }}</a>
+        <a href="{{ developer_url | relative_url }}">{{ t.footer.links.developer }}</a>
         <a href="{{ site.data.routes.releases[lang] | relative_url }}">{{ t.footer.links.releases }}</a>
         <a href="{{ site.data.routes.privacy[lang] | relative_url }}">{{ t.footer.links.privacy }}</a>
       </div>
