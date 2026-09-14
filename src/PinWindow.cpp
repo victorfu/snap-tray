@@ -4100,6 +4100,10 @@ QPixmap PinWindow::getExportPixmapWithAnnotations() const
 
 QPixmap PinWindow::exportPixmapForMerge() const
 {
+    if (m_autoBlurInProgress) {
+        return QPixmap();
+    }
+
     // Merge output is reopened in a PinWindow, so avoid baking display effects
     // (opacity/watermark) that the destination window can apply again.
     QPixmap result;

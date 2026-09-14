@@ -141,6 +141,7 @@ public:
     bool isRegionLayoutMode() const;
     void prepareForMerge();
     QPixmap exportPixmapForMerge() const;
+    bool isAutoBlurInProgress() const { return m_autoBlurInProgress; }
 
 signals:
     void closed(PinWindow* window);
@@ -164,6 +165,7 @@ protected:
 
 private:
     friend class TestPinWindowCropUndo;
+    friend class TestPinMergeHelper;
     friend class TestPinWindowStyleSync;
     friend class TestPinWindowTransform;
     friend class TestPinWindowTextToolFormatting;
