@@ -185,8 +185,45 @@ API_AVAILABLE(macos(12.3))
 
 - (void)stream:(SCStream *)stream didStopWithError:(NSError *)error
 {
-    if (error) {
-        NSLog(@"SCKCaptureEngine: Stream stopped with error: %@", error.localizedDescription);
+    dispatch_group_enter(_processingGroup);
+    @try {
+        auto* state = self.engine;
+        if (self.invalidated || !state) {
+            return;
+        }
+        self.invalidated = YES;
+        // Stop polling the cached frame immediately, even before Qt handles
+        // the notification. cleanup() drains this callback before deleting state.
+        state->running = false;
+        state->setLatestFrame(QImage());
+        const bool userStopped = [error.domain isEqualToString:SCStreamErrorDomain]
+            && error.code == SCStreamErrorUserStopped;
+        const QString message = error
+            ? QString::fromNSString(error.localizedDescription)
+            : QStringLiteral("Screen capture stream stopped unexpectedly");
+        SCKStreamDelegate* stoppedDelegate = self;
+        const auto lifetime = state->frameRateLifetime;
+        std::lock_guard<std::mutex> lock(lifetime->mutex);
+        auto* owner = lifetime->engine;
+        if (!owner) {
+            return;
+        }
+        QMetaObject::invokeMethod(owner, [owner, state, stoppedDelegate, userStopped, message] {
+            // A stop/restart may have replaced the stream before delivery.
+            if (state->delegate != stoppedDelegate) {
+                return;
+            }
+            state->running = false;
+            state->captureStartRequested = false;
+            state->setLatestFrame(QImage());
+            if (userStopped) {
+                emit owner->stoppedByUser();
+            } else {
+                emit owner->error(message);
+            }
+        }, Qt::QueuedConnection);
+    } @finally {
+        dispatch_group_leave(_processingGroup);
     }
 }
 

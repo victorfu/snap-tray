@@ -66,9 +66,57 @@ private slots:
     void encoderCapabilityControlsAudioPipeline();
     void captureExclusionWarning_data();
     void captureExclusionWarning();
+    void nativeStreamStopFinishesRecording_data();
+    void nativeStreamStopFinishesRecording();
 private:
     void prepare(RecordingManager& manager);
 };
+
+void TestRecordingStartup::nativeStreamStopFinishesRecording_data()
+{
+    QTest::addColumn<bool>("userStopped");
+    QTest::addColumn<bool>("paused");
+    QTest::newRow("user-recording") << true << false;
+    QTest::newRow("user-paused") << true << true;
+    QTest::newRow("native-error") << false << false;
+}
+
+void TestRecordingStartup::nativeStreamStopFinishesRecording()
+{
+    QFETCH(bool, userStopped);
+    QFETCH(bool, paused);
+    RecordingSettingsManager::instance().setAudioEnabled(false);
+    RecordingManager manager;
+    prepare(manager);
+    auto encoderState = std::make_shared<AudioEncoderTestState>();
+    RecordingInitTask::Config config;
+    config.region = QRect(0, 0, 16, 16);
+    config.screenInfo.geometry = config.region;
+    config.frameSize = QSize(16, 16);
+    config.outputPath = "unused-native-stop-test.mp4";
+    auto task = QSharedPointer<RecordingInitTask>::create(config);
+    task->m_createEncoder = [encoderState](const auto& options, QObject* parent) {
+        return EncoderFactoryTestAccess::create(options, parent, encoderState);
+    };
+    QVERIFY(task->initializeEncoder());
+    task->result().success = true;
+    task->result().captureEngine = std::make_unique<FakeStartupCapture>();
+    task->result().captureEngineStarted = true;
+    manager.m_initTask = task;
+    manager.onInitializationComplete(task, manager.m_initGeneration);
+    QCOMPARE(manager.state(), RecordingManager::State::Recording);
+    if (paused) manager.pauseRecording();
+    QSignalSpy errors(&manager, &RecordingManager::recordingError);
+    QSignalSpy cancelled(&manager, &RecordingManager::recordingCancelled);
+    if (userStopped) manager.m_captureEngine->stoppedByUser();
+    else manager.m_captureEngine->error(QStringLiteral("native stream failed"));
+    QCOMPARE(manager.state(), RecordingManager::State::Encoding);
+    QVERIFY(!manager.m_captureEngine);
+    QVERIFY(!manager.m_captureTimer);
+    QCOMPARE(errors.count(), userStopped ? 0 : 1);
+    QCOMPARE(cancelled.count(), 0);
+    manager.cancelRecording();
+}
 
 void TestRecordingStartup::encoderCapabilityControlsAudioPipeline_data()
 {
