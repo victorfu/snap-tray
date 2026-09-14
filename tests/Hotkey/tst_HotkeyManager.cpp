@@ -48,6 +48,7 @@ private slots:
     void testUpdateHotkey_DisabledRollbackStatus();
     void testUpdateHotkey_ConflictPersistsDesiredSequence();
     void testUpdateHotkey_ReleasesPersistedConflictForOtherAction();
+    void testUpdateHotkey_ReleasesPersistedConflictForOtherAction_data();
 
     // Conflict detection tests
     void testHasConflict_NoConflict();
@@ -348,9 +349,17 @@ void tst_HotkeyManager::testUpdateHotkey_ConflictPersistsDesiredSequence()
     QVERIFY(config.enabled);
 }
 
+void tst_HotkeyManager::testUpdateHotkey_ReleasesPersistedConflictForOtherAction_data()
+{
+    QTest::addColumn<QString>("replacement");
+    QTest::newRow("change-owner") << QStringLiteral("Ctrl+Alt+2");
+    QTest::newRow("clear-owner") << QString();
+}
+
 void tst_HotkeyManager::testUpdateHotkey_ReleasesPersistedConflictForOtherAction()
 {
     using namespace SnapTray;
+    QFETCH(QString, replacement);
 
     manager().shutdown();
     clearAllTestSettings();
@@ -367,7 +376,7 @@ void tst_HotkeyManager::testUpdateHotkey_ReleasesPersistedConflictForOtherAction
     QVERIFY(!manager().updateHotkey(blocked, sharedSequence));
     QCOMPARE(manager().getConfig(blocked).status, HotkeyStatus::Failed);
 
-    QVERIFY(manager().updateHotkey(owner, QStringLiteral("Ctrl+Alt+2")));
+    QVERIFY(manager().updateHotkey(owner, replacement));
 
     const HotkeyConfig recovered = manager().getConfig(blocked);
     QCOMPARE(recovered.keySequence, sharedSequence);

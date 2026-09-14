@@ -141,6 +141,7 @@ public:
     bool isRegionLayoutMode() const;
     void prepareForMerge();
     QPixmap exportPixmapForMerge() const;
+    bool isAutoBlurInProgress() const { return m_autoBlurInProgress; }
 
 signals:
     void closed(PinWindow* window);
@@ -164,6 +165,7 @@ protected:
 
 private:
     friend class TestPinWindowCropUndo;
+    friend class TestPinMergeHelper;
     friend class TestPinWindowStyleSync;
     friend class TestPinWindowTransform;
     friend class TestPinWindowTextToolFormatting;
@@ -185,7 +187,7 @@ private:
     void onContextTextEditingCancelled() override;
 
 
-    void updateSize();
+    void updateSize(bool liveFrame = false);
     void createContextMenu();
     void refreshMoveToScreenMenu();
     void moveToScreen(QScreen* targetScreen);
@@ -265,6 +267,7 @@ private:
     void hideToolbar();
     void hideToolbarPreservingToolState();
     void initializeAnnotationComponents();
+    void refreshMosaicSources(bool liveFrame = false);
     void dismissBeautifyPanelIfVisible();
     void clearSelectedToolForBeautify();
     void syncToolbarActiveButtonForVisibleState();
@@ -388,6 +391,8 @@ private:
     // Original members
     QPixmap m_originalPixmap;
     SharedPixmap m_sharedSourcePixmap;  // Shared for mosaic tool memory efficiency
+    bool m_mosaicSourceDirty = false;
+    bool m_hasVisibleMosaicAnnotations = false;
     QPixmap m_displayPixmap;
     QSize m_contentLogicalSize;
     QRectF m_sourceSampleRect;
@@ -577,6 +582,7 @@ private:
     static constexpr int kMosaicBlockSize = 12;
 
     void updateLiveFrame();
+    void connectLiveCaptureEngineSignals();
 };
 
 #endif // PINWINDOW_H

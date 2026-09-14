@@ -82,6 +82,8 @@ scripts\build-and-run-release.bat   REM Release build + run app
 
 `scripts\run-tests.bat` prepends `%QT_PATH%\bin` to `PATH` before `ctest`. If you run Windows debug tests manually, do the same first so `Qt6Testd.dll` and other Qt debug DLLs can be found.
 
+The Windows scripts reconfigure an existing build directory when its cached Qt installation differs from `QT_PATH` or its build type differs from the script's Debug/Release mode. They preserve unrelated CMake options, refresh cached Qt package paths, and redeploy the selected Qt runtime before running the app or tests. Failed configuration, builds, or deployment stop the script; the next run retries the pending update.
+
 For validation, prefer `build.sh` / `build.bat` and the test scripts. Running the app is useful for manual QA but not required for every change.
 
 ## PowerShell with MSVC

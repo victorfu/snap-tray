@@ -28,6 +28,15 @@ add_test(
 )
 set_tests_properties(Packaging_MacMicrophoneMetadata PROPERTIES TIMEOUT 30 LABELS "unit;packaging")
 
+if(WIN32)
+    add_test(NAME Packaging_WindowsPackageWrapper
+        COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_WindowsPackageWrapper.py" "${CMAKE_SOURCE_DIR}")
+    set_tests_properties(Packaging_WindowsPackageWrapper PROPERTIES TIMEOUT 30 LABELS "unit;packaging")
+    add_test(NAME Packaging_WindowsQtDetection
+        COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_WindowsQtDetection.py" "${CMAKE_SOURCE_DIR}")
+    set_tests_properties(Packaging_WindowsQtDetection PROPERTIES TIMEOUT 60 LABELS "unit;packaging")
+endif()
+
 if(UNIX AND NOT APPLE)
     add_test(
         NAME Packaging_AppImageBinfmtBypass
@@ -278,7 +287,7 @@ endif()
 # ============================================================================
 
 add_executable(PinWindow_Transform PinWindow/tst_Transform.cpp)
-target_link_libraries(PinWindow_Transform PRIVATE snaptray_ui Qt6::Test)
+target_link_libraries(PinWindow_Transform PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
 add_test(NAME PinWindow_Transform COMMAND PinWindow_Transform)
 set_tests_properties(PinWindow_Transform PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
@@ -565,6 +574,11 @@ add_executable(ColorWidgets_ColorWheel ColorWidgets/tst_ColorWheel.cpp)
 target_link_libraries(ColorWidgets_ColorWheel PRIVATE snaptray_colorwidgets Qt6::Test)
 add_test(NAME ColorWidgets_ColorWheel COMMAND ColorWidgets_ColorWheel)
 set_tests_properties(ColorWidgets_ColorWheel PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(ColorWidgets_ColorDialog ColorWidgets/tst_ColorDialog.cpp)
+target_link_libraries(ColorWidgets_ColorDialog PRIVATE snaptray_colorwidgets Qt6::Test)
+add_test(NAME ColorWidgets_ColorDialog COMMAND ColorWidgets_ColorDialog)
+set_tests_properties(ColorWidgets_ColorDialog PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(Detection_FaceDetector Detection/tst_FaceDetector.cpp)
 target_link_libraries(Detection_FaceDetector PRIVATE snaptray_algorithms Qt6::Widgets Qt6::Test)
@@ -896,6 +910,11 @@ add_executable(Annotations_AnnotationLayer Annotations/tst_AnnotationLayer.cpp)
 target_link_libraries(Annotations_AnnotationLayer PRIVATE snaptray_ui Qt6::Widgets Qt6::Test)
 add_test(NAME Annotations_AnnotationLayer COMMAND Annotations_AnnotationLayer)
 set_tests_properties(Annotations_AnnotationLayer PROPERTIES TIMEOUT 60 LABELS "unit")
+if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+    # The 432 painted-geometry cases take about five minutes with Qt's debug
+    # libraries. Keep every pixel/hit-test assertion and allow for slower hosts.
+    set_tests_properties(Annotations_AnnotationLayer PROPERTIES TIMEOUT 600 LABELS "unit;slow")
+endif()
 
 add_executable(Annotations_AnnotationContext Annotations/tst_AnnotationContext.cpp)
 target_link_libraries(Annotations_AnnotationContext PRIVATE snaptray_ui Qt6::Widgets Qt6::Test)

@@ -60,6 +60,29 @@ private slots:
         QCOMPARE(result.regions[1].color, QColor(52, 199, 89));
     }
 
+    void testMergeWaitsForEveryAutoBlurSource()
+    {
+        PinWindow first(createTestPixmap(100, 100, Qt::red), QPoint(0, 0), nullptr, false);
+        PinWindow busy(createTestPixmap(100, 100, Qt::green), QPoint(120, 0), nullptr, false);
+        PinWindow third(createTestPixmap(100, 100, Qt::blue), QPoint(240, 0), nullptr, false);
+        busy.m_autoBlurInProgress = true;
+
+        const auto blocked = PinMergeHelper::merge({&first, &busy, &third});
+        QVERIFY(!blocked.success);
+        QVERIFY(!blocked.errorMessage.isEmpty());
+        QVERIFY(blocked.composedPixmap.isNull());
+        QVERIFY(blocked.mergedWindows.isEmpty());
+        QVERIFY(busy.exportPixmapForMerge().isNull());
+        QVERIFY(first.isVisible());
+        QVERIFY(busy.isVisible());
+        QVERIFY(third.isVisible());
+
+        busy.m_autoBlurInProgress = false;
+        const auto ready = PinMergeHelper::merge({&first, &busy, &third});
+        QVERIFY(ready.success);
+        QCOMPARE(ready.mergedWindows.size(), 3);
+    }
+
     void testMergeDifferentHeights()
     {
         PinWindow first(createTestPixmap(100, 50, Qt::yellow), QPoint(0, 0));

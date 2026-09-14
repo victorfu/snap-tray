@@ -817,6 +817,8 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
         });
 
         // Connect capture engine error signal
+        connect(m_captureEngine.get(), &ICaptureEngine::stoppedByUser,
+                this, &RecordingManager::stopRecording);
         connect(m_captureEngine.get(), &ICaptureEngine::error,
                 this, [this](const QString &msg) {
             stopRecording();

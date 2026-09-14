@@ -985,9 +985,11 @@ void PinWindow::ensureTransformCacheValid() const
 void PinWindow::onResizeFinished()
 {
     if (m_pendingHighQualityUpdate && !m_isResizing) {
+        m_resizeFinishTimer->stop();
         invalidateAutoBlurRequest();
         // Perform high-quality scaling after resize is complete
         m_displayPixmap = buildDisplayPixmap(size(), Qt::SmoothTransformation);
+        refreshMosaicSources();
 
         m_pendingHighQualityUpdate = false;
         update();
@@ -1046,7 +1048,7 @@ int PinWindow::effectiveCornerRadius(const QSize& contentSize) const
     return qMin(radius, maxRadius);
 }
 
-void PinWindow::updateSize()
+void PinWindow::updateSize(bool liveFrame)
 {
     invalidateAutoBlurRequest();
     const QSize transformedLogicalSize = transformedContentLogicalSize();
@@ -1054,6 +1056,7 @@ void PinWindow::updateSize()
 
     Qt::TransformationMode mode = m_smoothing ? Qt::SmoothTransformation : Qt::FastTransformation;
     m_displayPixmap = buildDisplayPixmap(newLogicalSize, mode);
+    refreshMosaicSources(liveFrame);
 
     setFixedSize(newLogicalSize);
     update();
@@ -2739,7 +2742,7 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
         m_zoomLevel = qMin(scaleX, scaleY);
 
         // Use FastTransformation during resize for responsiveness.
-        // High-quality scaling will be done after resize is complete.
+        // Rebuild mosaic sources and annotation caches only when resize finishes.
         invalidateAutoBlurRequest();
         m_displayPixmap = buildDisplayPixmap(newSize, Qt::FastTransformation);
 
@@ -2878,6 +2881,8 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
         if (m_isResizing) {
             m_isResizing = false;
             m_resizeHandler->finishResize();
+            // Flush even if the debounce already fired while the mouse was held.
+            onResizeFinished();
             rebuildManagedCursorAt(event->pos());
         }
         if (m_isDragging) {
@@ -3182,12 +3187,65 @@ void PinWindow::moveEvent(QMoveEvent* event)
 // Toolbar and Annotation Methods
 // ============================================================================
 
+void PinWindow::refreshMosaicSources(bool liveFrame)
+{
+    if (!m_toolManager) {
+        return;
+    }
+
+    const bool activeMosaicTool = m_annotationMode && m_toolManager->currentTool() == ToolId::Mosaic;
+    if (liveFrame && !m_hasVisibleMosaicAnnotations && !activeMosaicTool) {
+        // An initialized toolbar alone does not need a second raster pipeline.
+        m_mosaicSourceDirty = true;
+        return;
+    }
+
+    QPixmap source;
+    if (liveFrame) {
+        // Live frames cover the whole source. Sample them directly without
+        // undoing the display's rotation/flip with another smooth transform.
+        // At 100% scaled() shares the original pixels; zoomed live sources use
+        // nearest-neighbor scaling until pause/stop restores full-quality output.
+        QSize sourceSize = m_displayPixmap.size();
+        if (m_rotationAngle % 180 != 0) sourceSize.transpose();
+        source = m_originalPixmap.scaled(sourceSize, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+        source.setDevicePixelRatio(m_displayPixmap.devicePixelRatio());
+    } else {
+        // Tool points are in zoomed, unrotated display coordinates. Full updates
+        // also preserve fractional crop boundaries and display smoothing.
+        source = buildAutoBlurAnnotationSource(
+            m_displayPixmap, m_rotationAngle, m_flipHorizontal, m_flipVertical);
+    }
+    m_sharedSourcePixmap = std::make_shared<const QPixmap>(source);
+    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
+    m_mosaicSourceDirty = false;
+    if (!liveFrame || m_hasVisibleMosaicAnnotations) {
+        refreshAllMosaicSources(m_annotationLayer, m_sharedSourcePixmap);
+        if (m_annotationLayer) {
+            m_annotationLayer->invalidateCache();
+        }
+    }
+}
+
 void PinWindow::initializeAnnotationComponents()
 {
     // Initialize annotation layer
     m_annotationLayer = new AnnotationLayer(this);
     connect(m_annotationLayer, &AnnotationLayer::changed,
         this, [this]() {
+            // Track visible mosaic demand on edits, not on every frame.
+            const bool hadMosaics = m_hasVisibleMosaicAnnotations;
+            m_hasVisibleMosaicAnnotations = false;
+            for (size_t i = 0; i < m_annotationLayer->itemCount(); ++i) {
+                const auto* item = m_annotationLayer->itemAt(static_cast<int>(i));
+                if (dynamic_cast<const MosaicStroke*>(item) || dynamic_cast<const MosaicRectAnnotation*>(item)) {
+                    m_hasVisibleMosaicAnnotations = true;
+                    break;
+                }
+            }
+            if (m_hasVisibleMosaicAnnotations && (m_mosaicSourceDirty || !hadMosaics)) {
+                refreshMosaicSources();
+            }
             resetAnnotationInteractionTracking();
             update();
         });
@@ -3196,9 +3254,7 @@ void PinWindow::initializeAnnotationComponents()
     m_toolManager = new ToolManager(this);
     m_toolManager->registerDefaultHandlers();
     m_toolManager->setAnnotationLayer(m_annotationLayer);
-    // Create shared pixmap for mosaic tool (explicit sharing to avoid memory duplication)
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
-    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);  // Required for Mosaic tool
+    refreshMosaicSources();
 
     // Set up crop tool callback
     if (auto* cropHandler = dynamic_cast<CropToolHandler*>(m_toolManager->handler(ToolId::Crop))) {
@@ -3502,6 +3558,9 @@ void PinWindow::enterAnnotationMode()
     }
 
     m_annotationMode = true;
+    if (m_mosaicSourceDirty && m_toolManager && m_toolManager->currentTool() == ToolId::Mosaic) {
+        refreshMosaicSources();
+    }
     CursorManager::instance().clearAllForWidget(this);
     CursorManager::instance().resetStateForWidget(this);
     rebuildManagedCursorAt(mapFromGlobal(QCursor::pos()));
@@ -3621,6 +3680,9 @@ void PinWindow::handleToolbarToolSelected(int toolId)
 
     if (m_toolManager) {
         m_toolManager->setCurrentTool(tool);
+    }
+    if (tool == ToolId::Mosaic && m_mosaicSourceDirty) {
+        refreshMosaicSources();
     }
 
     const int toolWidth =
@@ -3872,12 +3934,6 @@ void PinWindow::applyCrop(const QRect& cropRect)
     entry.croppedStoredRegions = m_storedRegions;
     entry.croppedHasMultiRegionData = m_hasMultiRegionData;
 
-    // Update shared pixmap for mosaic tool
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
-    if (m_toolManager) {
-        m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-    }
-
     // Invalidate transform cache
     m_cachedRotation = -1;
 
@@ -3885,7 +3941,6 @@ void PinWindow::applyCrop(const QRect& cropRect)
     if (m_annotationLayer) {
         entry.annotationHistoryState = m_annotationLayer->historyStateToken();
         m_annotationLayer->translateAll(QPointF(-annotationOffsetDisplay.x(), -annotationOffsetDisplay.y()));
-        refreshAllMosaicSources(m_annotationLayer, m_sharedSourcePixmap);
     }
 
     m_cropRedoStack.clear();
@@ -3927,15 +3982,9 @@ void PinWindow::undoCrop()
     m_storedRegions = entry.storedRegions;
     m_hasMultiRegionData = entry.hasMultiRegionData;
 
-    // Update shared pixmap
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
-    if (m_toolManager) {
-        m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-    }
     if (m_annotationLayer) {
         m_annotationLayer->translateAll(QPointF(entry.annotationOffsetDisplay.x(),
                                                 entry.annotationOffsetDisplay.y()));
-        refreshAllMosaicSources(m_annotationLayer, m_sharedSourcePixmap);
     }
     m_cropRedoStack.append(entry);
     if (m_cropRedoStack.size() > kMaxCropUndoSize) {
@@ -3967,14 +4016,9 @@ void PinWindow::redoCrop()
     m_storedRegions = entry.croppedStoredRegions;
     m_hasMultiRegionData = entry.croppedHasMultiRegionData;
 
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
-    if (m_toolManager) {
-        m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-    }
     if (m_annotationLayer) {
         m_annotationLayer->translateAll(QPointF(-entry.annotationOffsetDisplay.x(),
                                                 -entry.annotationOffsetDisplay.y()));
-        refreshAllMosaicSources(m_annotationLayer, m_sharedSourcePixmap);
     }
 
     m_cropUndoStack.append(entry);
@@ -4100,6 +4144,10 @@ QPixmap PinWindow::getExportPixmapWithAnnotations() const
 
 QPixmap PinWindow::exportPixmapForMerge() const
 {
+    if (m_autoBlurInProgress) {
+        return QPixmap();
+    }
+
     // Merge output is reopened in a PinWindow, so avoid baking display effects
     // (opacity/watermark) that the destination window can apply again.
     QPixmap result;
@@ -5323,14 +5371,7 @@ void PinWindow::startLiveCapture()
 
     // Create capture engine
     m_captureEngine = ICaptureEngine::createBestEngine(this);
-    connect(m_captureEngine, &ICaptureEngine::error, this,
-        [this, engine = QPointer<ICaptureEngine>(m_captureEngine)](const QString& message) {
-            if (!engine || m_captureEngine != engine.data()) {
-                return;
-            }
-            stopLiveCapture();
-            m_toast->showToast(SnapTray::QmlToast::Level::Error, message);
-        }, Qt::QueuedConnection);
+    connectLiveCaptureEngineSignals();
     m_captureEngine->setRegion(m_sourceRegion, sourceScreen);
     m_captureEngine->setFrameRate(m_captureFrameRate);
 
@@ -5356,6 +5397,24 @@ void PinWindow::startLiveCapture()
     connect(m_liveIndicatorTimer, &QTimer::timeout, this, QOverload<>::of(&QWidget::update));
     m_liveIndicatorTimer->start(50);  // ~20fps for indicator animation
     update();
+}
+
+void PinWindow::connectLiveCaptureEngineSignals()
+{
+    const QPointer<ICaptureEngine> engine(m_captureEngine);
+    connect(m_captureEngine, &ICaptureEngine::stoppedByUser, this, [this, engine]() {
+        if (engine && m_captureEngine == engine.data()) {
+            stopLiveCapture();
+        }
+    }, Qt::QueuedConnection);
+    connect(m_captureEngine, &ICaptureEngine::error, this,
+        [this, engine](const QString& message) {
+            if (!engine || m_captureEngine != engine.data()) {
+                return;
+            }
+            stopLiveCapture();
+            m_toast->showToast(SnapTray::QmlToast::Level::Error, message);
+        }, Qt::QueuedConnection);
 }
 
 void PinWindow::stopLiveCapture()
@@ -5388,6 +5447,9 @@ void PinWindow::stopLiveCapture()
     setWindowExcludedFromCapture(this, false);
     m_isLiveMode = false;
     m_livePaused = false;
+    if (!m_isDestructing) {
+        refreshMosaicSources();
+    }
     update();
 }
 
@@ -5399,6 +5461,7 @@ void PinWindow::pauseLiveCapture()
     if (m_captureTimer) {
         m_captureTimer->stop();
     }
+    refreshMosaicSources();
     update();
 }
 
@@ -5449,17 +5512,11 @@ void PinWindow::updateLiveFrame()
         resetSourceSampleRect();
         clearCropUndoHistory();
 
-        // Update shared pixmap for mosaic tool to use latest frame
-        m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
-        if (m_toolManager) {
-            m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-        }
-
         // Invalidate transform cache
         m_cachedRotation = -1;
 
         // Update display
-        updateSize();
+        updateSize(/*liveFrame=*/true);
     }
 }
 
@@ -5832,16 +5889,9 @@ void PinWindow::exitRegionLayoutMode(bool apply)
         m_displayPixmap = newPixmap;
         clearCropUndoHistory();
 
-        // Region recomposition changes the coordinate origin and the
-        // source sampled by Mosaic annotations. Update the shared source
-        // before moving annotations so the layer's single cache
-        // invalidation covers both changes.
-        m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
-        if (m_toolManager) {
-            m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-        }
+        // Move annotations in tool coordinates; updateSize() below refreshes
+        // all mosaic sources after the recomposed display is ready.
         if (m_annotationLayer) {
-            refreshAllMosaicSources(m_annotationLayer, m_sharedSourcePixmap);
             m_regionLayoutManager->updateAnnotationPositions(
                 m_annotationLayer, m_zoomLevel);
         }

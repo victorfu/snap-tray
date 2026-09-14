@@ -4211,10 +4211,16 @@ void RegionSelector::saveToFile()
 
 void RegionSelector::finishSelection()
 {
+    if (m_isClosing || m_exportInProgress) {
+        return;
+    }
     if (!ensureAutoBlurReadyForExport()) {
         return;
     }
 
+    // Claim completion before emitting signals, which can synchronously reenter
+    // this method. Quick Pin's full-screen fallback also emits two input signals.
+    m_isClosing = true;
     QRect sel = m_selectionManager->selectionRect();
     QPixmap selectedRegion = m_exportManager->getSelectedRegion(sel, effectiveCornerRadius());
 

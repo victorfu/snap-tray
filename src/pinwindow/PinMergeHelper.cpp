@@ -6,6 +6,7 @@
 #include "utils/CoordinateHelper.h"
 
 #include <QColor>
+#include <QCoreApplication>
 #include <QImage>
 #include <QObject>
 #include <QPainter>
@@ -161,6 +162,16 @@ PinMergeResult PinMergeHelper::merge(const QList<PinWindow*>& windows,
     if (eligible.size() < 2) {
         result.errorMessage = QObject::tr("Need at least 2 pins to merge");
         return result;
+    }
+
+    // Validate every source before taking any snapshots. Skipping a busy pin
+    // could silently produce a partial merge and discard its pending redaction.
+    for (const PinWindow* window : eligible) {
+        if (window->isAutoBlurInProgress()) {
+            result.errorMessage = QCoreApplication::translate(
+                "PinWindow", "Please wait for auto-blur to finish");
+            return result;
+        }
     }
 
     QList<QPixmap> sourcePixmaps;

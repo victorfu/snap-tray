@@ -128,6 +128,10 @@ public:
     static ICaptureEngine *createBestEngine(QObject *parent = nullptr);
 
 signals:
+    // The user ended capture through a native system control. Finish encoding
+    // normally so the recording can still be previewed or saved.
+    void stoppedByUser();
+
     /**
      * @brief Emitted when a capture error occurs
      * @param message Error description

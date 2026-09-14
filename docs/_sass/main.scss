@@ -39,6 +39,11 @@
   padding: 0;
 }
 
+// Keep author display rules from exposing controls without a usable target.
+[hidden]:not([hidden="until-found" i]) {
+  display: none !important;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -139,9 +144,13 @@ svg {
 }
 
 [data-reveal] {
+  transition: transform 420ms ease, opacity 420ms ease;
+}
+
+// Content is visible unless the reveal observer has been installed successfully.
+.reveal-ready [data-reveal]:not(.is-visible) {
   opacity: 0;
   transform: translateY(20px);
-  transition: transform 420ms ease, opacity 420ms ease;
 }
 
 [data-reveal].is-visible {

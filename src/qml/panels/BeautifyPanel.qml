@@ -239,6 +239,7 @@ Item {
         }
 
         SettingsSlider {
+            objectName: "beautifyPaddingSlider"
             width: parent.width
             label: qsTr("Padding:")
             from: 16
@@ -252,6 +253,7 @@ Item {
         }
 
         SettingsSlider {
+            objectName: "beautifyCornerSlider"
             width: parent.width
             label: qsTr("Corners:")
             from: 0
@@ -316,6 +318,7 @@ Item {
         }
 
         SettingsSlider {
+            objectName: "beautifyBlurSlider"
             width: parent.width
             label: qsTr("  Blur:")
             from: 0
