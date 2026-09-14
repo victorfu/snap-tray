@@ -57,8 +57,16 @@ void TestToolbarOverflow::layout()
     QCOMPARE(toolbar.m_view->status(), QQuickView::Ready);
     const QRect bounds = toolbarUsableBounds(QRect(-width, -200, width, 400));
     toolbar.applyOverflowLayout(bounds);
+    const QSize expectedSize(toolbar.m_rootItem->property("constrainedWidth").toInt(),
+                             toolbar.m_rootItem->property("barHeight").toInt());
+    // Native windows and QQuickView can finish resizing in follow-up events;
+    // one processEvents() pass does not guarantee their geometry has settled.
     QCoreApplication::processEvents();
-    QVERIFY(toolbar.m_view->width() <= bounds.width());
+    QTRY_COMPARE(toolbar.m_view->size(), expectedSize);
+    QCOMPARE(toolbar.m_rootItem->size(), QSizeF(expectedSize));
+    QVERIFY2(toolbar.m_view->width() <= bounds.width(),
+             qPrintable(QString("toolbar width %1 exceeds usable width %2")
+                 .arg(toolbar.m_view->width()).arg(bounds.width())));
     QSet<int> expected;
     for (const auto& b : toolbar.viewModel()->buttons())
         if (ocr || !b.toMap().value("isOCR").toBool()) expected.insert(b.toMap().value("id").toInt());
@@ -89,6 +97,9 @@ void TestToolbarOverflow::layout()
                       .arg(geometry.left()).arg(geometry.right())));
     }
     toolbar.applyOverflowLayout(QRect(10, 10, 1900, 1000));
+    const int expandedWidth = toolbar.m_rootItem->property("constrainedWidth").toInt();
+    QCoreApplication::processEvents();
+    QTRY_COMPARE(toolbar.m_view->width(), expandedWidth);
     QVERIFY(toolbar.m_rootItem->property("overflowButtons").toList().isEmpty());
     QVERIFY(toolbar.m_rootItem->property("showDragHandle").toBool());
 }
