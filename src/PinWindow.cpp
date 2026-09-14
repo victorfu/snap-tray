@@ -988,6 +988,7 @@ void PinWindow::onResizeFinished()
         invalidateAutoBlurRequest();
         // Perform high-quality scaling after resize is complete
         m_displayPixmap = buildDisplayPixmap(size(), Qt::SmoothTransformation);
+        refreshMosaicSources();
 
         m_pendingHighQualityUpdate = false;
         update();
@@ -1054,6 +1055,7 @@ void PinWindow::updateSize()
 
     Qt::TransformationMode mode = m_smoothing ? Qt::SmoothTransformation : Qt::FastTransformation;
     m_displayPixmap = buildDisplayPixmap(newLogicalSize, mode);
+    refreshMosaicSources();
 
     setFixedSize(newLogicalSize);
     update();
@@ -2742,6 +2744,7 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
         // High-quality scaling will be done after resize is complete.
         invalidateAutoBlurRequest();
         m_displayPixmap = buildDisplayPixmap(newSize, Qt::FastTransformation);
+        refreshMosaicSources();
 
         // Schedule high-quality update after resize ends
         m_pendingHighQualityUpdate = true;
@@ -3182,6 +3185,23 @@ void PinWindow::moveEvent(QMoveEvent* event)
 // Toolbar and Annotation Methods
 // ============================================================================
 
+void PinWindow::refreshMosaicSources()
+{
+    if (!m_toolManager) {
+        return;
+    }
+
+    // Tool points are in zoomed, unrotated display coordinates. Sample the
+    // same canvas, including crop boundaries, instead of the original pixels.
+    m_sharedSourcePixmap = std::make_shared<const QPixmap>(buildAutoBlurAnnotationSource(
+        m_displayPixmap, m_rotationAngle, m_flipHorizontal, m_flipVertical));
+    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
+    refreshAllMosaicSources(m_annotationLayer, m_sharedSourcePixmap);
+    if (m_annotationLayer) {
+        m_annotationLayer->invalidateCache();
+    }
+}
+
 void PinWindow::initializeAnnotationComponents()
 {
     // Initialize annotation layer
@@ -3196,9 +3216,7 @@ void PinWindow::initializeAnnotationComponents()
     m_toolManager = new ToolManager(this);
     m_toolManager->registerDefaultHandlers();
     m_toolManager->setAnnotationLayer(m_annotationLayer);
-    // Create shared pixmap for mosaic tool (explicit sharing to avoid memory duplication)
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
-    m_toolManager->setSourcePixmap(m_sharedSourcePixmap);  // Required for Mosaic tool
+    refreshMosaicSources();
 
     // Set up crop tool callback
     if (auto* cropHandler = dynamic_cast<CropToolHandler*>(m_toolManager->handler(ToolId::Crop))) {
@@ -3872,12 +3890,6 @@ void PinWindow::applyCrop(const QRect& cropRect)
     entry.croppedStoredRegions = m_storedRegions;
     entry.croppedHasMultiRegionData = m_hasMultiRegionData;
 
-    // Update shared pixmap for mosaic tool
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
-    if (m_toolManager) {
-        m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-    }
-
     // Invalidate transform cache
     m_cachedRotation = -1;
 
@@ -3885,7 +3897,6 @@ void PinWindow::applyCrop(const QRect& cropRect)
     if (m_annotationLayer) {
         entry.annotationHistoryState = m_annotationLayer->historyStateToken();
         m_annotationLayer->translateAll(QPointF(-annotationOffsetDisplay.x(), -annotationOffsetDisplay.y()));
-        refreshAllMosaicSources(m_annotationLayer, m_sharedSourcePixmap);
     }
 
     m_cropRedoStack.clear();
@@ -3927,15 +3938,9 @@ void PinWindow::undoCrop()
     m_storedRegions = entry.storedRegions;
     m_hasMultiRegionData = entry.hasMultiRegionData;
 
-    // Update shared pixmap
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
-    if (m_toolManager) {
-        m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-    }
     if (m_annotationLayer) {
         m_annotationLayer->translateAll(QPointF(entry.annotationOffsetDisplay.x(),
                                                 entry.annotationOffsetDisplay.y()));
-        refreshAllMosaicSources(m_annotationLayer, m_sharedSourcePixmap);
     }
     m_cropRedoStack.append(entry);
     if (m_cropRedoStack.size() > kMaxCropUndoSize) {
@@ -3967,14 +3972,9 @@ void PinWindow::redoCrop()
     m_storedRegions = entry.croppedStoredRegions;
     m_hasMultiRegionData = entry.croppedHasMultiRegionData;
 
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
-    if (m_toolManager) {
-        m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-    }
     if (m_annotationLayer) {
         m_annotationLayer->translateAll(QPointF(-entry.annotationOffsetDisplay.x(),
                                                 -entry.annotationOffsetDisplay.y()));
-        refreshAllMosaicSources(m_annotationLayer, m_sharedSourcePixmap);
     }
 
     m_cropUndoStack.append(entry);
@@ -5453,12 +5453,6 @@ void PinWindow::updateLiveFrame()
         resetSourceSampleRect();
         clearCropUndoHistory();
 
-        // Update shared pixmap for mosaic tool to use latest frame
-        m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
-        if (m_toolManager) {
-            m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-        }
-
         // Invalidate transform cache
         m_cachedRotation = -1;
 
@@ -5836,16 +5830,9 @@ void PinWindow::exitRegionLayoutMode(bool apply)
         m_displayPixmap = newPixmap;
         clearCropUndoHistory();
 
-        // Region recomposition changes the coordinate origin and the
-        // source sampled by Mosaic annotations. Update the shared source
-        // before moving annotations so the layer's single cache
-        // invalidation covers both changes.
-        m_sharedSourcePixmap = std::make_shared<const QPixmap>(m_originalPixmap);
-        if (m_toolManager) {
-            m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-        }
+        // Move annotations in tool coordinates; updateSize() below refreshes
+        // all mosaic sources after the recomposed display is ready.
         if (m_annotationLayer) {
-            refreshAllMosaicSources(m_annotationLayer, m_sharedSourcePixmap);
             m_regionLayoutManager->updateAnnotationPositions(
                 m_annotationLayer, m_zoomLevel);
         }

@@ -8,6 +8,8 @@
 
 #include "PinWindow.h"
 #include "PlatformFeatures.h"
+#include "annotations/MosaicStroke.h"
+#include "tools/ToolManager.h"
 
 class TestPinWindowTransform : public QObject
 {
@@ -24,6 +26,75 @@ private:
     }
 
 private slots:
+    void testManualMosaicSamplesZoomedCanvas_data() {
+        QTest::addColumn<qreal>("zoom");
+        QTest::addColumn<qreal>("dpr");
+        QTest::addColumn<bool>("transform");
+        for (qreal zoom : {0.5, 2.0}) {
+            for (qreal dpr : {1.0, 2.0}) {
+                for (bool transform : {false, true}) {
+                    QTest::newRow(qPrintable(QString("zoom%1-dpr%2-transform%3").arg(zoom).arg(dpr).arg(transform)))
+                        << zoom << dpr << transform;
+                }
+            }
+        }
+    }
+
+    void testManualMosaicSamplesZoomedCanvas() {
+        QFETCH(qreal, zoom);
+        QFETCH(qreal, dpr);
+        QFETCH(bool, transform);
+        QPixmap source(QSize(100, 80) * dpr);
+        source.setDevicePixelRatio(dpr);
+        source.fill(Qt::red);
+        { QPainter painter(&source); painter.fillRect(50, 0, 50, 80, Qt::blue); }
+        PinWindow window(source, QPoint(), nullptr, false, false);
+        window.setZoomLevel(zoom);
+        if (transform) { window.rotateRight(); window.flipHorizontal(); }
+        window.initializeAnnotationComponents();
+        window.m_toolManager->setCurrentTool(ToolId::Mosaic);
+        window.m_toolManager->setWidth(2);
+        const QPoint start(qRound(76 * zoom), qRound(48 * zoom));
+        const QPoint end = start + QPoint(2, 0);
+        window.m_toolManager->handleMousePress(window.mapToOriginalCoords(window.mapFromOriginalCoords(start)));
+        window.m_toolManager->handleMouseRelease(window.mapToOriginalCoords(window.mapFromOriginalCoords(end)));
+        QCOMPARE(window.m_annotationLayer->itemCount(), size_t(1));
+        QImage actual(QSize(100, 80) * zoom * dpr, QImage::Format_ARGB32);
+        actual.setDevicePixelRatio(dpr);
+        actual.fill(Qt::transparent);
+        { QPainter painter(&actual); window.m_annotationLayer->draw(painter); }
+        QCOMPARE(actual.pixelColor(start * dpr), QColor(Qt::blue));
+
+        // A subsequent zoom must also refresh strokes held by undo history.
+        window.m_annotationLayer->undo();
+        window.setZoomLevel(2.0);
+        window.m_annotationLayer->redo();
+        QCOMPARE(window.m_sharedSourcePixmap->deviceIndependentSize().toSize(), QSize(200, 160));
+        QImage replayed(QSize(200, 160) * dpr, QImage::Format_ARGB32);
+        replayed.setDevicePixelRatio(dpr);
+        replayed.fill(Qt::transparent);
+        { QPainter painter(&replayed); window.m_annotationLayer->draw(painter); }
+        QCOMPARE(replayed.pixelColor(start * dpr), QColor(zoom < 1.0 ? Qt::red : Qt::blue));
+    }
+
+    void testMosaicCanvasFollowsZoomedCrop() {
+        QPixmap source(100, 80);
+        source.fill(Qt::red);
+        { QPainter painter(&source); painter.fillRect(50, 0, 50, 80, Qt::blue); }
+        PinWindow window(source, QPoint(), nullptr, false, false);
+        window.setZoomLevel(2.0);
+        window.initializeAnnotationComponents();
+        window.applyCrop(QRect(100, 0, 100, 160));
+        QCOMPARE(window.m_sharedSourcePixmap->size(), QSize(100, 160));
+        QCOMPARE(window.m_sharedSourcePixmap->toImage().pixelColor(50, 80), QColor(Qt::blue));
+        window.undoCrop();
+        QCOMPARE(window.m_sharedSourcePixmap->size(), QSize(200, 160));
+        QCOMPARE(window.m_sharedSourcePixmap->toImage().pixelColor(50, 80), QColor(Qt::red));
+        window.redoCrop();
+        QCOMPARE(window.m_sharedSourcePixmap->size(), QSize(100, 160));
+        QCOMPARE(window.m_sharedSourcePixmap->toImage().pixelColor(50, 80), QColor(Qt::blue));
+    }
+
     void testInfoCopyTracksCurrentTransform() {
         PinWindow window(createTestPixmap(200, 160), QPoint(), nullptr, false, false);
         window.createContextMenu();

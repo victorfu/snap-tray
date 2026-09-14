@@ -267,6 +267,7 @@ private:
     void hideToolbar();
     void hideToolbarPreservingToolState();
     void initializeAnnotationComponents();
+    void refreshMosaicSources();
     void dismissBeautifyPanelIfVisible();
     void clearSelectedToolForBeautify();
     void syncToolbarActiveButtonForVisibleState();
