@@ -910,6 +910,11 @@ add_executable(Annotations_AnnotationLayer Annotations/tst_AnnotationLayer.cpp)
 target_link_libraries(Annotations_AnnotationLayer PRIVATE snaptray_ui Qt6::Widgets Qt6::Test)
 add_test(NAME Annotations_AnnotationLayer COMMAND Annotations_AnnotationLayer)
 set_tests_properties(Annotations_AnnotationLayer PROPERTIES TIMEOUT 60 LABELS "unit")
+if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+    # The 432 painted-geometry cases take about five minutes with Qt's debug
+    # libraries. Keep every pixel/hit-test assertion and allow for slower hosts.
+    set_tests_properties(Annotations_AnnotationLayer PROPERTIES TIMEOUT 600 LABELS "unit;slow")
+endif()
 
 add_executable(Annotations_AnnotationContext Annotations/tst_AnnotationContext.cpp)
 target_link_libraries(Annotations_AnnotationContext PRIVATE snaptray_ui Qt6::Widgets Qt6::Test)
