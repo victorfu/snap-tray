@@ -17,6 +17,8 @@ private slots:
     void testCopyDoesNotBlockOnSlowClipboardWriter();
     void testClipboardFailureKeepsSelectorOpenAndAllowsRetry();
     void testCompletionAfterSelectorDestructionIsIgnored();
+    void testQuickPinCompletesOnce_data();
+    void testQuickPinCompletesOnce();
 
 private:
     QTemporaryDir m_historyDirectory;
@@ -47,6 +49,38 @@ void tst_RegionSelectorCopyToClipboard::cleanupTestCase()
     } else {
         qputenv("SNAPTRAY_HISTORY_DIR", m_previousHistoryDirectory);
     }
+}
+
+void tst_RegionSelectorCopyToClipboard::testQuickPinCompletesOnce_data()
+{
+    QTest::addColumn<bool>("reenter");
+    QTest::newRow("fallback-click") << false;
+    QTest::newRow("reentrant-completion") << true;
+}
+
+void tst_RegionSelectorCopyToClipboard::testQuickPinCompletesOnce()
+{
+    QFETCH(bool, reenter);
+    auto* screen = QGuiApplication::primaryScreen();
+    if (!screen) QSKIP("Requires a screen");
+    RegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    QPixmap background(screen->size());
+    background.fill(Qt::red);
+    selector.initializeForScreen(screen, background);
+    selector.setQuickPinMode(true);
+    QSignalSpy selected(&selector, &RegionSelector::regionSelected);
+    if (reenter) {
+        connect(&selector, &RegionSelector::regionSelected, &selector, [&selector] {
+            RegionSelectorTestAccess::finishSelection(selector);
+        });
+    }
+    RegionSelectorTestAccess::dispatchMousePress(selector, QPoint(50, 50));
+    RegionSelectorTestAccess::dispatchMouseRelease(selector, QPoint(50, 50));
+    QCOMPARE(selected.count(), 1);
+    QVERIFY(RegionSelectorTestAccess::isClosing(selector));
+    RegionSelectorTestAccess::finishSelection(selector);
+    QCOMPARE(selected.count(), 1);
 }
 
 void tst_RegionSelectorCopyToClipboard::testCopyWaitsForClipboardCompletionBeforeClosingSelector()

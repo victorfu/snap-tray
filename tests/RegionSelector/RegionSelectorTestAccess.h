@@ -393,6 +393,11 @@ public:
         return selector.m_isClosing;
     }
 
+    static void finishSelection(RegionSelector& selector)
+    {
+        selector.finishSelection();
+    }
+
     static void setGuiClipboardWriter(
         RegionSelector& selector,
         std::function<void(const QImage&, std::function<void(bool)>)> writer)
