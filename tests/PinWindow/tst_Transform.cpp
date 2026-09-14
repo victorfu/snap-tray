@@ -45,6 +45,54 @@ private:
     }
 
 private slots:
+    void testHiddenLiveMosaicToolDefersSources_data() {
+        QTest::addColumn<bool>("showToolbar");
+        QTest::newRow("toolbar-reopen") << true;
+        QTest::newRow("annotation-mode-entry") << false;
+    }
+
+    void testHiddenLiveMosaicToolDefersSources() {
+        QFETCH(bool, showToolbar);
+        auto* screen = QGuiApplication::primaryScreen();
+        QVERIFY(screen);
+        QPixmap source(QSize(100, 80) * screen->devicePixelRatio());
+        source.setDevicePixelRatio(screen->devicePixelRatio());
+        source.fill(Qt::red);
+        PinWindow window(source, QPoint(), nullptr, false, false);
+        window.setSourceRegion(QRect(screen->geometry().topLeft(), QSize(100, 80)), screen);
+        window.setZoomLevel(2.0);
+        window.rotateRight();
+        window.flipHorizontal();
+        window.showToolbar();
+        window.handleToolbarToolSelected(static_cast<int>(ToolId::Mosaic));
+        QVERIFY(window.isAnnotationMode());
+        auto* capture = new PinFrameFixture(&window);
+        capture->frame = source.toImage();
+        window.m_captureEngine = capture;
+        window.m_isLiveMode = true;
+
+        window.hideToolbarPreservingToolState();
+        QVERIFY(!window.isAnnotationMode());
+        QCOMPARE(window.m_toolManager->currentTool(), ToolId::Mosaic);
+        const auto frozenSource = window.m_sharedSourcePixmap;
+        const auto revision = window.m_annotationLayer->revision();
+        capture->frame.fill(Qt::blue);
+        window.updateLiveFrame();
+        QCOMPARE(window.m_displayPixmap.toImage().pixelColor(0, 0), QColor(Qt::blue));
+        QCOMPARE(window.m_sharedSourcePixmap.get(), frozenSource.get());
+        QCOMPARE(window.m_annotationLayer->revision(), revision);
+
+        if (showToolbar) window.showToolbar();
+        else window.enterAnnotationMode();
+        QVERIFY(window.isAnnotationMode());
+        QCOMPARE(window.m_sharedSourcePixmap->deviceIndependentSize().toSize(), QSize(200, 160));
+        QCOMPARE(window.m_sharedSourcePixmap->toImage().pixelColor(0, 0), QColor(Qt::blue));
+        capture->frame.fill(Qt::green);
+        window.updateLiveFrame();
+        QCOMPARE(window.m_sharedSourcePixmap->toImage().pixelColor(0, 0), QColor(Qt::green));
+        window.stopLiveCapture();
+    }
+
     void testLiveFramesDeferUnusedMosaicSources() {
         auto* screen = QGuiApplication::primaryScreen();
         QVERIFY(screen);

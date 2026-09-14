@@ -3193,7 +3193,8 @@ void PinWindow::refreshMosaicSources(bool liveFrame)
         return;
     }
 
-    if (liveFrame && !m_hasVisibleMosaicAnnotations && m_toolManager->currentTool() != ToolId::Mosaic) {
+    const bool activeMosaicTool = m_annotationMode && m_toolManager->currentTool() == ToolId::Mosaic;
+    if (liveFrame && !m_hasVisibleMosaicAnnotations && !activeMosaicTool) {
         // An initialized toolbar alone does not need a second raster pipeline.
         m_mosaicSourceDirty = true;
         return;
@@ -3557,6 +3558,9 @@ void PinWindow::enterAnnotationMode()
     }
 
     m_annotationMode = true;
+    if (m_mosaicSourceDirty && m_toolManager && m_toolManager->currentTool() == ToolId::Mosaic) {
+        refreshMosaicSources();
+    }
     CursorManager::instance().clearAllForWidget(this);
     CursorManager::instance().resetStateForWidget(this);
     rebuildManagedCursorAt(mapFromGlobal(QCursor::pos()));
