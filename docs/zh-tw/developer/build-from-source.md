@@ -81,6 +81,8 @@ scripts\build-and-run-release.bat   REM Release 建置 + 執行 app
 
 `scripts\run-tests.bat` 會在執行 `ctest` 前先把 `%QT_PATH%\bin` 加到 `PATH` 前面。若你要在 Windows 的 debug build 手動跑測試，也要先做同樣設定，否則 `Qt6Testd.dll` 與其他 Qt debug DLL 可能找不到。
 
+當既有建置目錄快取的 Qt 安裝位置與 `QT_PATH` 不同，或建置類型與腳本指定的 Debug／Release 模式不同時，Windows 腳本會重新設定 CMake。這個流程會保留其他 CMake 選項、更新 Qt 套件路徑，並在執行 app 或測試前重新部署所選的 Qt runtime。設定、建置或部署失敗時，腳本會立即停止，下次執行時會重試尚未完成的更新。
+
 日常驗證以 `build.sh` / `build.bat` 與測試腳本為主；只有在需要手動 UI 驗證時才一定要執行 app。
 
 ## PowerShell 與 MSVC
