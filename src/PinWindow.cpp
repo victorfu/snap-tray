@@ -1048,7 +1048,7 @@ int PinWindow::effectiveCornerRadius(const QSize& contentSize) const
     return qMin(radius, maxRadius);
 }
 
-void PinWindow::updateSize()
+void PinWindow::updateSize(bool liveFrame)
 {
     invalidateAutoBlurRequest();
     const QSize transformedLogicalSize = transformedContentLogicalSize();
@@ -1056,7 +1056,7 @@ void PinWindow::updateSize()
 
     Qt::TransformationMode mode = m_smoothing ? Qt::SmoothTransformation : Qt::FastTransformation;
     m_displayPixmap = buildDisplayPixmap(newLogicalSize, mode);
-    refreshMosaicSources();
+    refreshMosaicSources(liveFrame);
 
     setFixedSize(newLogicalSize);
     update();
@@ -3187,20 +3187,42 @@ void PinWindow::moveEvent(QMoveEvent* event)
 // Toolbar and Annotation Methods
 // ============================================================================
 
-void PinWindow::refreshMosaicSources()
+void PinWindow::refreshMosaicSources(bool liveFrame)
 {
     if (!m_toolManager) {
         return;
     }
 
-    // Tool points are in zoomed, unrotated display coordinates. Sample the
-    // same canvas, including crop boundaries, instead of the original pixels.
-    m_sharedSourcePixmap = std::make_shared<const QPixmap>(buildAutoBlurAnnotationSource(
-        m_displayPixmap, m_rotationAngle, m_flipHorizontal, m_flipVertical));
+    if (liveFrame && !m_hasVisibleMosaicAnnotations && m_toolManager->currentTool() != ToolId::Mosaic) {
+        // An initialized toolbar alone does not need a second raster pipeline.
+        m_mosaicSourceDirty = true;
+        return;
+    }
+
+    QPixmap source;
+    if (liveFrame) {
+        // Live frames cover the whole source. Sample them directly without
+        // undoing the display's rotation/flip with another smooth transform.
+        // At 100% scaled() shares the original pixels; zoomed live sources use
+        // nearest-neighbor scaling until pause/stop restores full-quality output.
+        QSize sourceSize = m_displayPixmap.size();
+        if (m_rotationAngle % 180 != 0) sourceSize.transpose();
+        source = m_originalPixmap.scaled(sourceSize, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+        source.setDevicePixelRatio(m_displayPixmap.devicePixelRatio());
+    } else {
+        // Tool points are in zoomed, unrotated display coordinates. Full updates
+        // also preserve fractional crop boundaries and display smoothing.
+        source = buildAutoBlurAnnotationSource(
+            m_displayPixmap, m_rotationAngle, m_flipHorizontal, m_flipVertical);
+    }
+    m_sharedSourcePixmap = std::make_shared<const QPixmap>(source);
     m_toolManager->setSourcePixmap(m_sharedSourcePixmap);
-    refreshAllMosaicSources(m_annotationLayer, m_sharedSourcePixmap);
-    if (m_annotationLayer) {
-        m_annotationLayer->invalidateCache();
+    m_mosaicSourceDirty = false;
+    if (!liveFrame || m_hasVisibleMosaicAnnotations) {
+        refreshAllMosaicSources(m_annotationLayer, m_sharedSourcePixmap);
+        if (m_annotationLayer) {
+            m_annotationLayer->invalidateCache();
+        }
     }
 }
 
@@ -3210,6 +3232,19 @@ void PinWindow::initializeAnnotationComponents()
     m_annotationLayer = new AnnotationLayer(this);
     connect(m_annotationLayer, &AnnotationLayer::changed,
         this, [this]() {
+            // Track visible mosaic demand on edits, not on every frame.
+            const bool hadMosaics = m_hasVisibleMosaicAnnotations;
+            m_hasVisibleMosaicAnnotations = false;
+            for (size_t i = 0; i < m_annotationLayer->itemCount(); ++i) {
+                const auto* item = m_annotationLayer->itemAt(static_cast<int>(i));
+                if (dynamic_cast<const MosaicStroke*>(item) || dynamic_cast<const MosaicRectAnnotation*>(item)) {
+                    m_hasVisibleMosaicAnnotations = true;
+                    break;
+                }
+            }
+            if (m_hasVisibleMosaicAnnotations && (m_mosaicSourceDirty || !hadMosaics)) {
+                refreshMosaicSources();
+            }
             resetAnnotationInteractionTracking();
             update();
         });
@@ -3641,6 +3676,9 @@ void PinWindow::handleToolbarToolSelected(int toolId)
 
     if (m_toolManager) {
         m_toolManager->setCurrentTool(tool);
+    }
+    if (tool == ToolId::Mosaic && m_mosaicSourceDirty) {
+        refreshMosaicSources();
     }
 
     const int toolWidth =
@@ -5394,6 +5432,9 @@ void PinWindow::stopLiveCapture()
     setWindowExcludedFromCapture(this, false);
     m_isLiveMode = false;
     m_livePaused = false;
+    if (!m_isDestructing) {
+        refreshMosaicSources();
+    }
     update();
 }
 
@@ -5405,6 +5446,7 @@ void PinWindow::pauseLiveCapture()
     if (m_captureTimer) {
         m_captureTimer->stop();
     }
+    refreshMosaicSources();
     update();
 }
 
@@ -5459,7 +5501,7 @@ void PinWindow::updateLiveFrame()
         m_cachedRotation = -1;
 
         // Update display
-        updateSize();
+        updateSize(/*liveFrame=*/true);
     }
 }
 

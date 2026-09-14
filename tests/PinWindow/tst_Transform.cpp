@@ -9,8 +9,26 @@
 #include "PinWindow.h"
 #include "PlatformFeatures.h"
 #include "annotations/MosaicStroke.h"
+#include "annotations/MosaicRectAnnotation.h"
+#include "annotations/MarkerStroke.h"
+#include "capture/ICaptureEngine.h"
 #include "pinwindow/ResizeHandler.h"
 #include "tools/ToolManager.h"
+#include <QScreen>
+
+namespace {
+class PinFrameFixture final : public ICaptureEngine {
+public:
+    explicit PinFrameFixture(QObject* parent) : ICaptureEngine(parent) {}
+    QImage frame;
+    bool setRegion(const QRect&, QScreen*) override { return true; }
+    bool start() override { return true; }
+    void stop() override {}
+    bool isRunning() const override { return true; }
+    QImage captureFrame() override { return frame; }
+    QString engineName() const override { return QStringLiteral("fixture"); }
+};
+}
 
 class TestPinWindowTransform : public QObject
 {
@@ -27,6 +45,126 @@ private:
     }
 
 private slots:
+    void testLiveFramesDeferUnusedMosaicSources() {
+        auto* screen = QGuiApplication::primaryScreen();
+        QVERIFY(screen);
+        const qreal dpr = screen->devicePixelRatio();
+        QPixmap source(QSize(100, 80) * dpr);
+        source.setDevicePixelRatio(dpr);
+        source.fill(Qt::red);
+        PinWindow window(source, QPoint(), nullptr, false, false);
+        window.setSourceRegion(QRect(screen->geometry().topLeft(), QSize(100, 80)), screen);
+        window.setZoomLevel(2.0);
+        window.rotateRight();
+        window.flipHorizontal();
+        window.initializeAnnotationComponents();
+        window.m_annotationLayer->addItem(std::make_unique<MarkerStroke>(
+            QVector<QPointF>{QPointF(10, 10), QPointF(30, 10)}, QColor(Qt::black), 4));
+        const auto originalSource = window.m_sharedSourcePixmap;
+        const auto revision = window.m_annotationLayer->revision();
+        auto* capture = new PinFrameFixture(&window);
+        capture->frame = source.toImage();
+        window.m_captureEngine = capture;
+        window.m_isLiveMode = true;
+        for (const QColor& color : {QColor(Qt::green), QColor(Qt::blue)}) {
+            capture->frame.fill(color);
+            window.updateLiveFrame();
+            QCOMPARE(window.m_displayPixmap.toImage().pixelColor(0, 0), color);
+            QCOMPARE(window.m_sharedSourcePixmap.get(), originalSource.get());
+            QCOMPARE(window.m_annotationLayer->revision(), revision);
+        }
+        window.pauseLiveCapture();
+        QCOMPARE(window.m_sharedSourcePixmap->toImage().pixelColor(0, 0), QColor(Qt::blue));
+        window.resumeLiveCapture();
+        capture->frame.fill(Qt::green);
+        window.updateLiveFrame();
+        // Selecting mosaic after deferred frames must use the latest pixels.
+        window.handleToolbarToolSelected(static_cast<int>(ToolId::Mosaic));
+        QCOMPARE(window.m_sharedSourcePixmap->toImage().pixelColor(0, 0), QColor(Qt::green));
+        const auto editingRevision = window.m_annotationLayer->revision();
+        capture->frame.fill(Qt::yellow);
+        window.updateLiveFrame();
+        QCOMPARE(window.m_sharedSourcePixmap->toImage().pixelColor(0, 0), QColor(Qt::yellow));
+        QCOMPARE(window.m_annotationLayer->revision(), editingRevision);
+        window.handleToolbarToolSelected(static_cast<int>(ToolId::Selection));
+        capture->frame.fill(Qt::blue);
+        window.updateLiveFrame();
+        window.stopLiveCapture();
+        QCOMPARE(window.m_sharedSourcePixmap->deviceIndependentSize().toSize(), QSize(200, 160));
+        QCOMPARE(window.m_sharedSourcePixmap->toImage().pixelColor(0, 0), QColor(Qt::blue));
+    }
+
+    void testLiveMosaicsUseCurrentUnrotatedFrame_data() {
+        QTest::addColumn<qreal>("zoom");
+        QTest::addColumn<bool>("rectangle");
+        for (qreal zoom : {1.0, 2.0}) {
+            for (bool rectangle : {false, true}) {
+                QTest::addRow("zoom-%.1f-rect-%d", zoom, rectangle) << zoom << rectangle;
+            }
+        }
+    }
+
+    void testLiveMosaicsUseCurrentUnrotatedFrame() {
+        QFETCH(qreal, zoom);
+        QFETCH(bool, rectangle);
+        auto* screen = QGuiApplication::primaryScreen();
+        QVERIFY(screen);
+        const qreal dpr = screen->devicePixelRatio();
+        QPixmap source(QSize(100, 80) * dpr);
+        source.setDevicePixelRatio(dpr);
+        source.fill(Qt::red);
+        PinWindow window(source, QPoint(), nullptr, false, false);
+        window.setSourceRegion(QRect(screen->geometry().topLeft(), QSize(100, 80)), screen);
+        window.setZoomLevel(zoom);
+        window.rotateRight();
+        window.flipHorizontal();
+        window.initializeAnnotationComponents();
+        const QPoint sample(qRound(60 * zoom), qRound(40 * zoom));
+        if (rectangle) {
+            window.m_annotationLayer->addItem(std::make_unique<MosaicRectAnnotation>(
+                QRect(sample - QPoint(10, 10), QSize(30, 30)), window.m_sharedSourcePixmap, 12));
+        } else {
+            window.m_annotationLayer->addItem(std::make_unique<MosaicStroke>(
+                QVector<QPoint>{sample, sample + QPoint(2, 0)}, window.m_sharedSourcePixmap, 2));
+        }
+        auto* capture = new PinFrameFixture(&window);
+        capture->frame = source.toImage();
+        for (int y = 0; y < capture->frame.height(); ++y) {
+            for (int x = 0; x < capture->frame.width(); ++x) {
+                capture->frame.setPixelColor(x, y, x % 2 ? Qt::blue : Qt::green);
+            }
+        }
+        window.m_captureEngine = capture;
+        window.m_isLiveMode = true;
+        window.updateLiveFrame();
+        if (zoom == 1.0) {
+            QCOMPARE(window.m_sharedSourcePixmap->cacheKey(), window.m_originalPixmap.cacheKey());
+        }
+        const QPixmap expected = window.m_originalPixmap.scaled(
+            QSize(100, 80) * zoom * dpr, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+        QCOMPARE(window.m_sharedSourcePixmap->toImage(), expected.toImage());
+        QImage liveMask(expected.size(), QImage::Format_ARGB32_Premultiplied);
+        liveMask.setDevicePixelRatio(dpr);
+        liveMask.fill(Qt::transparent);
+        { QPainter painter(&liveMask); window.m_annotationLayer->draw(painter); }
+        const QColor livePixel = liveMask.pixelColor(sample * dpr);
+        QCOMPARE(livePixel.alpha(), 255);
+        QCOMPARE(livePixel.red(), 0); // The old source was red; the new frame is blue/green.
+        QVERIFY(livePixel.green() + livePixel.blue() > 0);
+
+        // Redo after unused live frames must refresh a history-owned mosaic.
+        window.m_annotationLayer->undo();
+        capture->frame.fill(Qt::yellow);
+        window.updateLiveFrame();
+        window.m_annotationLayer->redo();
+        QImage rendered(expected.size(), QImage::Format_ARGB32_Premultiplied);
+        rendered.setDevicePixelRatio(dpr);
+        rendered.fill(Qt::transparent);
+        { QPainter painter(&rendered); window.m_annotationLayer->draw(painter); }
+        QCOMPARE(rendered.pixelColor(sample * dpr), QColor(Qt::yellow));
+        window.stopLiveCapture();
+    }
+
     void testInteractiveResizeDefersMosaicRefresh_data() {
         QTest::addColumn<bool>("transform");
         QTest::addColumn<bool>("expireDebounce");
