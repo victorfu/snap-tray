@@ -6,6 +6,31 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+## [1.0.64] - 2026-09-15
+
+### Improved
+
+- Improved recording frame-rate accuracy on Windows and support for frame-rate changes during capture on macOS and Windows.
+- Reduced annotation preview cache memory use and kept pinned-image toolbar actions reachable on narrow screens.
+
+### Fixed
+
+- Fixed black patches and incomplete coverage in Gaussian Mosaic strokes on high-DPI displays.
+- Fixed selection resizing, aspect-ratio locking, and pointer-release handling near screen edges, while preserving window metadata and cross-screen captures in history.
+- Fixed gaps when erasing quickly, arrowhead placement and hit testing, overlapping annotation handles, and whitespace and layout preservation when editing text.
+- Fixed custom canvas color persistence, color-wheel accuracy, step badge toggle synchronization, and copying current pinned-image information.
+- Prevented uniquely named image saves from overwriting existing files, preserved normal output permissions, and corrected filename counters and long Unicode filenames on Linux.
+- Fixed microphone permission timing and device-loss handling, recording audio capability checks, and recording tooltips appearing in macOS captures.
+- Fixed Windows recording preview replay after seeking to the end while paused, improved preview shutdown, and removed temporary recordings when discarding previews.
+- Fixed oversized Windows OCR input and capture-exclusion compatibility on older Windows versions.
+- Fixed CLI pin placement and image loading, invalid capture arguments, and installation failure handling; Linux CLI clipboard images now remain available after the command exits.
+- Fixed Linux cursor rendering during drags and required a compatible X11 session and Qt backend.
+- Fixed dialog modality and prevented conflicting capture actions from history.
+
+### Removed
+
+- Removed the Share URL image-upload feature and its related controls.
+
 ## [1.0.63] - 2026-09-05
 
 ### Added
