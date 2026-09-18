@@ -523,6 +523,7 @@ set_tests_properties(RegionSelector_RegionExportManager PROPERTIES TIMEOUT 60 LA
 
 add_executable(RegionSelector_StyleSync RegionSelector/tst_StyleSync.cpp)
 target_link_libraries(RegionSelector_StyleSync PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+target_sources(RegionSelector_StyleSync PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
 add_test(NAME RegionSelector_StyleSync COMMAND RegionSelector_StyleSync)
 set_tests_properties(RegionSelector_StyleSync PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 

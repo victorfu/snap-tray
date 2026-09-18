@@ -2748,9 +2748,6 @@ void RegionSelector::syncDetachedSelectionUiDuringPaint(const QRect& dimensionIn
         !m_exportInProgress;
 
     if (shouldShowSelectionUi && !suppressSelectionFloatingUi) {
-        if (m_qmlToolbar && !m_qmlToolbar->isVisible()) {
-            m_qmlToolbar->show();
-        }
         if (m_qmlToolbar) {
             if (!m_toolbarUserDragged) {
                 const QRect dimensionInfoRect =
@@ -2769,6 +2766,11 @@ void RegionSelector::syncDetachedSelectionUiDuringPaint(const QRect& dimensionIn
             m_toolbarViewModel->setCanUndo(m_annotationLayer && m_annotationLayer->canUndo());
             m_toolbarViewModel->setCanRedo(m_annotationLayer && m_annotationLayer->canRedo());
             m_toolbarViewModel->setAutoBlurProcessing(m_autoBlurInProgress);
+            // Map the native window only after its final position and button
+            // state are ready, so the first frame appears in the right place.
+            if (!m_qmlToolbar->isVisible()) {
+                m_qmlToolbar->show();
+            }
             if (m_emojiPickerPopup && m_emojiPickerPopup->isVisible()) {
                 m_emojiPickerPopup->positionAt(m_qmlToolbar->geometry());
             }
@@ -3367,12 +3369,15 @@ void RegionSelector::updateCompletedSelectionDragUiSuppression()
     syncCaptureChromeWindow();
 
     if (!m_inputState.completedSelectionDragUiSuppressed) {
-        QTimer::singleShot(0, this, [this]() {
-            restoreDetachedSelectionFloatingUiIfNeeded();
-            if (!usesDetachedCaptureWindows()) {
-                syncFloatingUiCursor();
-            }
-        });
+        if (usesDetachedCaptureWindows()) {
+            QTimer::singleShot(0, this, [this]() {
+                restoreDetachedSelectionFloatingUiIfNeeded();
+            });
+        } else if (!m_isClosing) {
+            // Moving/resizing has the same latency requirement as the initial
+            // selection. Do not wait for the full-screen host to repaint.
+            syncCompletedSelectionFloatingUi();
+        }
     }
 }
 

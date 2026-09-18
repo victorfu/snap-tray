@@ -106,6 +106,8 @@ Tools are defined by `ToolId`, `ToolDefinition`, handlers, and the `ToolRegistry
 
 Use `PlatformFeatures` and the platform-specific implementation layer instead of sprinkling OS checks across feature code.
 
+`QtQuickBackendPolicy` selects the Qt Quick rendering backend before application startup. Linux beta uses the software scene graph to avoid OpenGL initialization and synchronization delays when capture toolbars appear; Windows 10 also uses software rendering, while macOS and Windows 11 retain the platform default. This policy affects QML UI rendering, not screenshot pixels or annotation rendering.
+
 ### Floating glass panels use shared rendering helpers
 
 Use `GlassRenderer` and the existing toolbar style configuration rather than local one-off panel rendering logic.

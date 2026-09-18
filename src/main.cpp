@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
 #endif
 
     SnapTray::applyQtQuickGraphicsBackendPolicy(
-        SnapTray::selectQtQuickGraphicsBackendPolicy(QOperatingSystemVersion::current()));
+        SnapTray::currentQtQuickGraphicsBackendPolicy());
 
     // Check for CLI arguments before creating QApplication
     QStringList arguments;

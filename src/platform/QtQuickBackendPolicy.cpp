@@ -20,15 +20,22 @@ QtQuickGraphicsBackendPolicy selectQtQuickGraphicsBackendPolicy(
 
 QtQuickGraphicsBackendPolicy currentQtQuickGraphicsBackendPolicy()
 {
+#ifdef Q_OS_LINUX
+    // Capture toolbars are short-lived, transparent windows. The software
+    // scene graph avoids per-window OpenGL context initialization and render
+    // thread synchronization stalls on X11 (notably with NVIDIA drivers).
+    return QtQuickGraphicsBackendPolicy::Software;
+#else
     return selectQtQuickGraphicsBackendPolicy(QOperatingSystemVersion::current());
+#endif
 }
 
 void applyQtQuickGraphicsBackendPolicy(QtQuickGraphicsBackendPolicy policy)
 {
     switch (policy) {
     case QtQuickGraphicsBackendPolicy::Software:
-        // On Windows 10, forcing the software scene graph adaptation avoids
-        // GPU-backed Qt Quick surfaces that NVIDIA Instant Replay hooks into.
+        // This also avoids GPU-backed Qt Quick surfaces that NVIDIA Instant
+        // Replay hooks into on Windows 10.
         QQuickWindow::setSceneGraphBackend(QStringLiteral("software"));
         break;
     case QtQuickGraphicsBackendPolicy::PlatformDefault:
