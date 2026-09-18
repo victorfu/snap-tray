@@ -12,6 +12,7 @@
 #if defined(Q_OS_LINUX)
 #include "platform/LinuxDesktopEnvironment.h"
 #include "platform/LinuxClipboardOwner.h"
+#include "platform/LinuxQtQuickSmokeCheck.h"
 #endif
 
 #include <QApplication>
@@ -62,6 +63,14 @@ int main(int argc, char* argv[])
     }
 
 #if defined(Q_OS_LINUX)
+    // Exercise the deployed Qt Quick runtime without starting the tray app or
+    // touching settings. Packaging uses the offscreen QPA platform on CI.
+    if (arguments.size() == 2 &&
+        arguments.at(1) == QStringLiteral("--internal-qt-quick-smoke-check")) {
+        QGuiApplication app(argc, argv);
+        return SnapTray::runLinuxQtQuickSmokeCheck();
+    }
+
     if (SnapTray::isLinuxClipboardOwnerRequest(arguments)) {
         QGuiApplication app(argc, argv);
         if (!SnapTray::currentPlatformCapabilities().isRuntimeSupported) return 1;

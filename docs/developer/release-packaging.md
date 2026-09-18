@@ -55,6 +55,15 @@ The packaging script masks the AppImage type marker after creation so Ubuntu
 22.04 systems with AppImageLauncher `binfmt_misc` handlers run the embedded
 AppImage runtime directly instead of routing through AppImageLauncher.
 
+Qt 6.10's software scene graph is [built into Qt Quick](https://doc.qt.io/qt-6.10/qtquick-visualcanvas-adaptations.html),
+so there is no separate `libqsgsoftwarebackend.so` to bundle. After extracting
+the final AppImage, packaging checks both `--version` and a rendered QML surface
+using the bundled Qt runtime with `QT_QPA_PLATFORM=offscreen`. The rendering check
+uses the application's normal backend policy, verifies that the actual renderer
+is software, and checks the resulting pixels. A failed QML load, backend fallback,
+unexpected pixels, or a rendering timeout fail the package build.
+The package explicitly includes the offscreen QPA plugin for this headless check.
+
 ## Packaging prerequisites
 
 ### macOS

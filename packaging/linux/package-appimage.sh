@@ -131,7 +131,11 @@ EOF
 fi
 
 export QML_SOURCES_PATHS="$PROJECT_DIR/src/qml"
-export EXTRA_QT_PLUGINS="imageformats;platforms;platformthemes;xcbglintegrations"
+# Qt 6.10's software scene graph is built into libQt6Quick, not a scenegraph
+# plugin. The headless rendering check also needs the offscreen QPA plugin;
+# linuxdeploy-plugin-qt deploys only xcb by default. EXTRA_QT_PLUGINS is a
+# deprecated alias for Qt modules, not a list of plugin directories.
+export EXTRA_PLATFORM_PLUGINS="${EXTRA_PLATFORM_PLUGINS:+${EXTRA_PLATFORM_PLUGINS};}libqoffscreen.so"
 export OUTPUT="SnapTray-$VERSION-x86_64.AppImage"
 
 cd "$PROJECT_DIR"
@@ -165,5 +169,15 @@ mkdir -p "$SMOKE_APPDIR"
 )
 QT_QPA_PLATFORM=offscreen "$SMOKE_APPDIR/squashfs-root/AppRun" --version >"$VERSION_OUTPUT_FILE"
 grep -q "SnapTray version" "$VERSION_OUTPUT_FILE"
+
+# Use the extracted artifact's libraries, plugins and QML imports, without Qt
+# SDK path overrides or a backend override masking the application's policy.
+env -u QT_PLUGIN_PATH -u QT_QPA_PLATFORM_PLUGIN_PATH \
+  -u QML_IMPORT_PATH -u QML2_IMPORT_PATH \
+  -u QT_QUICK_BACKEND -u QMLSCENE_DEVICE -u QSG_RHI_BACKEND \
+  -u LD_PRELOAD \
+  LD_LIBRARY_PATH="$SMOKE_APPDIR/squashfs-root/usr/lib" \
+  QT_QPA_PLATFORM=offscreen \
+  timeout 15s "$SMOKE_APPDIR/squashfs-root/AppRun" --internal-qt-quick-smoke-check
 
 echo "AppImage complete: $DIST_DIR/$OUTPUT"
