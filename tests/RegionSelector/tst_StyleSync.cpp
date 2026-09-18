@@ -17,6 +17,7 @@
 #include "qml/QmlFloatingSubToolbar.h"
 #include "qml/QmlFloatingToolbar.h"
 #include "qml/PinToolOptionsViewModel.h"
+#include "platform/QtQuickBackendPolicy.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/RegionCaptureSettingsManager.h"
 #include "settings/Settings.h"
@@ -110,6 +111,7 @@ private:
     static QRect showToolbarForTool(RegionSelector& selector, ToolId tool);
 
 private slots:
+    void initTestCase();
     void testUsesAuthorityModeByDefault();
     void testStrokeAndMosaicWidthsRestoreIndependently();
     void testSelectionBodyHoverUsesMoveCursor();
@@ -152,8 +154,16 @@ private slots:
     void testLinuxCaptureSurfaceRemainsManaged();
     void testLinuxTransparentCaptureHelpersDoNotBypassWindowManager();
     void testLinuxSelectionToolbarPrewarmsAfterShow();
+    void testLinuxSelectionToolbarPositionedBeforeShow();
+    void testLinuxSelectionManipulationRestoresToolbarWithoutRepaint_data();
+    void testLinuxSelectionManipulationRestoresToolbarWithoutRepaint();
 #endif
 };
+
+void TestRegionSelectorStyleSync::initTestCase()
+{
+    SnapTray::applyQtQuickGraphicsBackendPolicy(SnapTray::currentQtQuickGraphicsBackendPolicy());
+}
 
 void TestRegionSelectorStyleSync::testHostFallbackPaintsAboveShortcutHints()
 {
@@ -660,6 +670,80 @@ void TestRegionSelectorStyleSync::testLinuxSelectionToolbarPrewarmsAfterShow()
     QVERIFY(!RegionSelectorTestAccess::toolbarVisible(selector));
 
     selector.close();
+}
+
+void TestRegionSelectorStyleSync::testLinuxSelectionToolbarPositionedBeforeShow()
+{
+    RegionSelector selector;
+    selector.m_currentScreen = QGuiApplication::primaryScreen();
+    QVERIFY(selector.m_currentScreen);
+    selector.setGeometry(QRect(0, 0, 800, 600));
+    selector.setUpdatesEnabled(false);
+    RegionSelectorTestAccess::markInitialRevealRevealed(selector);
+    selector.m_qmlToolbar->prewarm();
+    QWindow* toolbarWindow = RegionSelectorTestAccess::toolbarWindow(selector);
+    QVERIFY(toolbarWindow);
+    toolbarWindow->setPosition(QPoint(-10000, -10000));
+
+    QRect geometryWhenShown;
+    connect(toolbarWindow, &QWindow::visibleChanged, &selector, [&](bool visible) {
+        if (visible) geometryWhenShown = toolbarWindow->geometry();
+    });
+    RegionSelectorTestAccess::dispatchMousePress(selector, QPoint(150, 150));
+    RegionSelectorTestAccess::dispatchWidgetMouseMove(selector, QPoint(600, 450), Qt::LeftButton);
+    RegionSelectorTestAccess::dispatchMouseRelease(selector, QPoint(600, 450));
+
+    QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+    QVERIFY(geometryWhenShown.isValid());
+    QCOMPARE(geometryWhenShown, RegionSelectorTestAccess::toolbarGeometry(selector));
+    QVERIFY(selector.geometry().contains(geometryWhenShown));
+}
+
+void TestRegionSelectorStyleSync::testLinuxSelectionManipulationRestoresToolbarWithoutRepaint_data()
+{
+    QTest::addColumn<bool>("resize");
+    QTest::newRow("move") << false;
+    QTest::newRow("resize") << true;
+}
+
+void TestRegionSelectorStyleSync::testLinuxSelectionManipulationRestoresToolbarWithoutRepaint()
+{
+    QFETCH(bool, resize);
+    RegionSelector selector;
+    selector.m_currentScreen = QGuiApplication::primaryScreen();
+    QVERIFY(selector.m_currentScreen);
+    selector.setGeometry(QRect(0, 0, 800, 600));
+    selector.setUpdatesEnabled(false);
+    RegionSelectorTestAccess::markInitialRevealRevealed(selector);
+    const QRect selection(150, 150, 400, 250);
+    selector.m_selectionManager->setSelectionRect(selection);
+    selector.syncCompletedSelectionFloatingUi();
+    QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+    QWindow* originalWindow = RegionSelectorTestAccess::toolbarWindow(selector);
+
+    const QPoint start = resize ? selection.bottomRight() : selection.center();
+    const QPoint end = start + QPoint(50, 40);
+    if (resize) {
+        selector.m_selectionManager->startResize(start, SelectionStateManager::ResizeHandle::BottomRight);
+    } else {
+        selector.m_selectionManager->startMove(start);
+    }
+    QVERIFY(!RegionSelectorTestAccess::toolbarVisible(selector));
+    RegionSelectorTestAccess::dispatchMouseRelease(selector, end);
+
+    // No event processing or host repaint: releasing the selection must map
+    // the existing toolbar at its new position immediately.
+    QVERIFY(selector.m_selectionManager->isComplete());
+    QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+    QCOMPARE(RegionSelectorTestAccess::toolbarWindow(selector), originalWindow);
+    QCOMPARE(selector.m_selectionManager->selectionRect(),
+             resize ? selection.adjusted(0, 0, 50, 40) : selection.translated(50, 40));
+    const QPoint expectedTopLeft = SnapTray::QmlFloatingToolbar::resolveTopLeftForSelection(
+        selector.m_selectionManager->selectionRect(),
+        selector.m_qmlToolbar->sizeHint(), selector.rect(),
+        SnapTray::QmlFloatingToolbar::HorizontalAlignment::RightEdge,
+        selector.currentSelectionDimensionInfoRect());
+    QCOMPARE(originalWindow->position(), selector.mapToGlobal(expectedTopLeft));
 }
 #endif
 

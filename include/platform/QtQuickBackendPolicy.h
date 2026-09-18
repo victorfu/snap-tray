@@ -12,6 +12,7 @@ enum class QtQuickGraphicsBackendPolicy {
 QtQuickGraphicsBackendPolicy selectQtQuickGraphicsBackendPolicy(
     const QOperatingSystemVersion& version);
 
+// Includes platform policy for Linux, which has no QOperatingSystemVersion type.
 QtQuickGraphicsBackendPolicy currentQtQuickGraphicsBackendPolicy();
 
 void applyQtQuickGraphicsBackendPolicy(QtQuickGraphicsBackendPolicy policy);

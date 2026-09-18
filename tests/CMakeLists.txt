@@ -43,6 +43,14 @@ if(UNIX AND NOT APPLE)
         COMMAND bash "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_AppImageBinfmtBypass.sh" "${CMAKE_SOURCE_DIR}"
     )
     set_tests_properties(Packaging_AppImageBinfmtBypass PROPERTIES TIMEOUT 30 LABELS "unit;packaging")
+
+    add_test(NAME Packaging_QtQuickSoftwareRendering
+        COMMAND ${CMAKE_COMMAND} -E env
+            --unset=QT_QUICK_BACKEND --unset=QMLSCENE_DEVICE --unset=QSG_RHI_BACKEND
+            QT_QPA_PLATFORM=offscreen
+            $<TARGET_FILE:SnapTray> --internal-qt-quick-smoke-check)
+    set_tests_properties(Packaging_QtQuickSoftwareRendering PROPERTIES
+        TIMEOUT 15 LABELS "integration;packaging")
 endif()
 
 # Enable automoc for tests
@@ -523,6 +531,7 @@ set_tests_properties(RegionSelector_RegionExportManager PROPERTIES TIMEOUT 60 LA
 
 add_executable(RegionSelector_StyleSync RegionSelector/tst_StyleSync.cpp)
 target_link_libraries(RegionSelector_StyleSync PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+target_sources(RegionSelector_StyleSync PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
 add_test(NAME RegionSelector_StyleSync COMMAND RegionSelector_StyleSync)
 set_tests_properties(RegionSelector_StyleSync PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
