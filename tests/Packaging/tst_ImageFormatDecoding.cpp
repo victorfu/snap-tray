@@ -17,13 +17,15 @@ void tst_ImageFormatDecoding::decode_data()
     QTest::addColumn<QString>("extension");
     QTest::addColumn<QByteArray>("encoded");
 
-    // Fixed 2x2 RGB(17, 34, 51) fixtures, independently encoded with Pillow:
+    // Fixed 2x2 four-color fixtures, independently encoded with Pillow:
     // lossless WebP and uncompressed TIFF. Do not generate with QImageWriter:
     // the decoder must be tested even when the Qt encoder is unavailable.
+    // Keep the WebP at least 40 bytes: Qt's QWebpHandler::ensureScanned()
+    // probes sizeof(WebPBitstreamFeatures) bytes and rejects smaller files.
     const QByteArray webp = QByteArray::fromBase64(
-        "UklGRh4AAABXRUJQVlA4TBEAAAAvAUAAAAdQkUZ0pv+BiOh/AAA=");
+        "UklGRiYAAABXRUJQVlA4TBoAAAAvAUAAAB9wkZlHzHRm/oPbQDZAmSrMIvofOw==");
     const QByteArray tiff = QByteArray::fromBase64(
-        "SUkqAAgAAAAKAAABBAABAAAAAgAAAAEBBAABAAAAAgAAAAIBAwADAAAAhgAAAAMBAwABAAAAAQAAAAYBAwABAAAAAgAAABEBBAABAAAAjAAAABUBAwABAAAAAwAAABYBBAABAAAAAgAAABcBBAABAAAADAAAABwBAwABAAAAAQAAAAAAAAAIAAgACAARIjMRIjMRIjMRIjM=");
+        "SUkqAAgAAAAKAAABBAABAAAAAgAAAAEBBAABAAAAAgAAAAIBAwADAAAAhgAAAAMBAwABAAAAAQAAAAYBAwABAAAAAgAAABEBBAABAAAAjAAAABUBAwABAAAAAwAAABYBBAABAAAAAgAAABcBBAABAAAADAAAABwBAwABAAAAAQAAAAAAAAAIAAgACAARIjNEVWZ3iJmqu8w=");
     QTest::newRow("webp") << QStringLiteral("webp") << webp;
     QTest::newRow("tiff") << QStringLiteral("tiff") << tiff;
     QTest::newRow("tif") << QStringLiteral("tif") << tiff;
@@ -49,9 +51,13 @@ void tst_ImageFormatDecoding::decode()
     const QImage image = reader.read();
     QVERIFY2(!image.isNull(), qPrintable(reader.errorString()));
     QCOMPARE(image.size(), QSize(2, 2));
+    const QColor expectedPixels[2][2] = {
+        {QColor(17, 34, 51), QColor(68, 85, 102)},
+        {QColor(119, 136, 153), QColor(170, 187, 204)}
+    };
     for (int y = 0; y < image.height(); ++y) {
         for (int x = 0; x < image.width(); ++x) {
-            QCOMPARE(image.pixelColor(x, y), QColor(17, 34, 51));
+            QCOMPARE(image.pixelColor(x, y), expectedPixels[y][x]);
         }
     }
 }
