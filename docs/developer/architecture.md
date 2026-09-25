@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-03-24
+last_modified_at: 2026-09-25
 layout: docs
 title: Architecture Overview
 seo_title: "SnapTray Architecture: Subsystems, Boundaries and Layers"
@@ -167,18 +167,18 @@ Important extracted parts under `src/pinwindow/`:
 
 - `ResizeHandler`
 - `UIIndicators`
+- `ClickThroughExitButton`
 - `PinWindowPlacement`
 - `RegionLayoutManager`
 - `RegionLayoutRenderer`
 - `PinMergeHelper`
-- `PinHistoryStore`
-- `PinHistoryWindow`
+
+Capture history is recorded by `RegionSelector` through `HistoryRecorder` and `HistoryStore` under `src/history/`. Creating a pin window through `PinWindowManager::createPinWindow` does not persist history.
 
 ### Recording subsystem
 
-- `RecordingRegionSelector`
-- `RecordingControlBar`
-- `RecordingBoundaryOverlay`
+- `QmlRecordingControlBar`
+- `QmlCountdownOverlay`
 - `RecordingInitTask`
 - `RecordingRegionNormalizer`
 
