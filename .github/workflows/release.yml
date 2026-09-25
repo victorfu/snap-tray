@@ -347,6 +347,9 @@ jobs:
           host: 'windows'
           target: 'desktop'
           arch: 'win64_msvc2022_64'
+          # aqtinstall 3.3.0 cannot resolve Qt 6.11's Windows repositories.
+          # Pin upstream support until it is included in a stable release.
+          aqtsource: 'git+https://github.com/miurahr/aqtinstall.git@9e49c82edc6d946db376dec907cca5b4b486eec5'
           modules: 'qtimageformats'
           cache: true
 
