@@ -24,7 +24,8 @@ SnapTray currently supports macOS, Windows, and Ubuntu 22.04 X11 beta.
 
 ### Development prerequisites
 
-- Qt 6.10.1 with Widgets, Gui, Svg, Concurrent, Network, Quick, QuickControls2, and QuickWidgets
+- Qt 6.11.2 with Widgets, Gui, Svg, Concurrent, Network, Quick, QuickControls2, and QuickWidgets
+- Qt Image Formats add-on (`qtimageformats`) for WebP/TIFF image import
 - CMake 3.16+
 - Ninja
 - Git for FetchContent dependencies
@@ -34,7 +35,8 @@ SnapTray currently supports macOS, Windows, and Ubuntu 22.04 X11 beta.
 ### Linux
 
 - Ubuntu 22.04 X11 session
-- Qt 6.10.1 with Widgets, Gui, Svg, Concurrent, Network, Quick, QuickControls2, and QuickWidgets
+- Qt 6.11.2 with Widgets, Gui, Svg, Concurrent, Network, Quick, QuickControls2, and QuickWidgets
+- Qt Image Formats add-on (`qtimageformats`) for WebP/TIFF image import
 - CMake 3.16+
 - Ninja
 - Git
@@ -118,17 +120,17 @@ cmake --build release --parallel
 ### Windows (Debug)
 
 ```batch
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=C:/Qt/6.11.2/msvc2022_64
 cmake --build build --parallel
-C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray-Debug.exe
+C:\Qt\6.11.2\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray-Debug.exe
 ```
 
 ### Windows (Release)
 
 ```batch
-cmake -S . -B release -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
+cmake -S . -B release -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.11.2/msvc2022_64
 cmake --build release --parallel
-C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe --release release\bin\SnapTray.exe
+C:\Qt\6.11.2\msvc2022_64\bin\windeployqt.exe --release release\bin\SnapTray.exe
 ```
 
 ## Build outputs and build modes
@@ -189,7 +191,7 @@ xattr -cr /Applications/SnapTray.app
 If you see errors such as `Qt6Core.dll was not found` or `no Qt platform plugin could be initialized`, deploy Qt dependencies with `windeployqt`:
 
 ```batch
-C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray-Debug.exe
+C:\Qt\6.11.2\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray-Debug.exe
 ```
 
 Replace the Qt path if your installation lives elsewhere.

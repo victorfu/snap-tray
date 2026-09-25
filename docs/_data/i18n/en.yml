@@ -23,7 +23,7 @@ hero:
     - macOS 14+
     - Windows 10+
     - Ubuntu 22.04 X11 beta
-    - Qt 6.10.1
+    - Qt 6.11.2
   runtime_title: SnapTray Runtime
   runtime_items:
     - Region Capture with magnifier precision

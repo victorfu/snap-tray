@@ -72,7 +72,7 @@ AppImage runtime，而不是先繞進 AppImageLauncher。
 若 Qt 不是安裝在預設路徑，可設定：
 
 ```batch
-set QT_PATH=C:\Qt\6.10.1\msvc2022_64
+set QT_PATH=C:\Qt\6.11.2\msvc2022_64
 ```
 
 ## Release Notes 與版本規則

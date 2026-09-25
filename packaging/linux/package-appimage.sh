@@ -167,6 +167,14 @@ mkdir -p "$SMOKE_APPDIR"
   cd "$SMOKE_APPDIR"
   unsquashfs -q -o "$APPIMAGE_OFFSET" "$DIST_DIR/$OUTPUT" >/dev/null
 )
+# Inspect the extracted artifact, not the build host's Qt installation.
+for plugin in libqwebp.so libqtiff.so; do
+  if [ -z "$(find "$SMOKE_APPDIR/squashfs-root/usr" -path "*/imageformats/$plugin" -type f -print -quit)" ]; then
+    echo "Missing imageformats/$plugin in AppImage. Install Qt Image Formats (qtimageformats) for the packaging Qt SDK." >&2
+    exit 1
+  fi
+done
+
 QT_QPA_PLATFORM=offscreen "$SMOKE_APPDIR/squashfs-root/AppRun" --version >"$VERSION_OUTPUT_FILE"
 grep -q "SnapTray version" "$VERSION_OUTPUT_FILE"
 

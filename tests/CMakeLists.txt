@@ -56,6 +56,11 @@ endif()
 # Enable automoc for tests
 set(CMAKE_AUTOMOC ON)
 
+add_executable(Packaging_ImageFormatDecoding Packaging/tst_ImageFormatDecoding.cpp)
+target_link_libraries(Packaging_ImageFormatDecoding PRIVATE Qt6::Gui Qt6::Test)
+add_test(NAME Packaging_ImageFormatDecoding COMMAND Packaging_ImageFormatDecoding)
+set_tests_properties(Packaging_ImageFormatDecoding PROPERTIES TIMEOUT 30 LABELS "integration;packaging")
+
 # ============================================================================
 # QML ViewModel Tests
 # ============================================================================

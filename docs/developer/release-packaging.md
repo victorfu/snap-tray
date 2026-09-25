@@ -66,6 +66,20 @@ The package explicitly includes the offscreen QPA plugin for this headless check
 
 ## Packaging prerequisites
 
+Windows and Linux Qt SDKs must include the **Qt Image Formats** add-on
+(`qtimageformats`). It provides the WebP and TIFF plugins used by
+`QImageReader` when pinning images. SnapTray's separately linked libwebp encoder
+does not provide those Qt decoders. With `jurplel/install-qt-action@v4`, use
+`modules: 'qtimageformats'`; for local SDKs, select Qt Image Formats in the Qt
+installer. Homebrew's Qt installation includes these plugins.
+
+NSIS/MSIX staging and the extracted AppImage are checked for the WebP and TIFF
+plugin files before packaging succeeds. Windows development deployment also
+retries if either plugin is missing. The `Packaging_ImageFormatDecoding` CTest
+reads fixed `.webp`, `.tiff`, and `.tif` fixtures using `QImageReader` and checks
+the decoded pixels. This test exercises the test runtime; the packaging file
+checks separately guard against missing plugins in distributable artifacts.
+
 ### macOS
 
 - Qt 6 installed
@@ -82,7 +96,7 @@ The package explicitly includes the offscreen QPA plugin for this headless check
 If Qt is not installed in the default location, set:
 
 ```batch
-set QT_PATH=C:\Qt\6.10.1\msvc2022_64
+set QT_PATH=C:\Qt\6.11.2\msvc2022_64
 ```
 
 ## Release notes and versioning

@@ -57,7 +57,7 @@ xattr -cr /Applications/SnapTray.app
 `Qt6Core.dll을 찾을 수 없습니다` 또는 `Qt 플랫폼 플러그인을 초기화할 수 없습니다`와 같은 메시지가 나타나면 `windeployqt`로 Qt 종속성을 배포하세요.
 
 ```batch
-C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray-Debug.exe
+C:\Qt\6.11.2\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray-Debug.exe
 ```
 
 `CMAKE_PREFIX_PATH`에 전달한 것과 동일한 Qt 설치 경로를 사용하세요.

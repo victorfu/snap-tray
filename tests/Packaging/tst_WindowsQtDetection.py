@@ -14,10 +14,10 @@ ENTRIES = ("build.bat", "build-release.bat", "build-and-run.bat", "build-and-run
 class QtDetectionTests(unittest.TestCase):
     def test_all_entries(self):
         cases = [
-            (("6.10.1", "6.8.0", "6.7.0"), "", True),
-            (("6.8.0", "6.7.0"), "", False),
+            (("6.11.2", "6.10.1", "6.8.0"), "", True),
+            (("6.10.1", "6.8.0"), "", False),
             ((), "", False),
-            (("6.10.1", "6.7.0"), "custom Qt", True),
+            (("6.11.2", "6.7.0"), "custom Qt", True),
         ]
         for versions, override, succeeds in cases:
             with tempfile.TemporaryDirectory(prefix="snaptray qt ") as directory:
@@ -42,7 +42,7 @@ class QtDetectionTests(unittest.TestCase):
                         if override:
                             env["QT_PATH"] = str(folder / override)
                         env["SNAPTRAY_TEST_QT_ROOT"] = str(qt)
-                        env["SNAPTRAY_TEST_EXPECTED"] = env.get("QT_PATH", str(qt / "6.10.1/msvc2022_64"))
+                        env["SNAPTRAY_TEST_EXPECTED"] = env.get("QT_PATH", str(qt / "6.11.2/msvc2022_64"))
                         result = subprocess.run(["cmd.exe", "/d", "/c", entry], cwd=scripts,
                                                 env=env, capture_output=True, timeout=10)
                         self.assertEqual(result.returncode == 0, succeeds, result.stdout + result.stderr)
@@ -115,36 +115,39 @@ class QtDetectionTests(unittest.TestCase):
             self.assertEqual(fixture.configure_count(), 1)
 
     def test_failed_deployment_is_retried_after_partial_copy(self):
-        with QtCacheFixture("build-release.bat") as fixture:
-            fixture.seed(fixture.new_qt)
-            binary_dir = fixture.build / "bin"
-            binary_dir.mkdir()
-            (binary_dir / "SnapTray.exe").touch()
-            for module in ("Core", "Gui", "Widgets", "Qml", "Quick", "QuickWidgets"):
-                (binary_dir / f"Qt6{module}.dll").touch()
-            for folder in ("platforms", "qml/QtQuick/Layouts", "qml/QtQuick/Controls/Basic"):
-                (binary_dir / folder).mkdir(parents=True, exist_ok=True)
-            (binary_dir / "platforms/qwindows.dll").touch()
-            args = ["cmake", f"-DSNAPTRAY_BUILD_DIR={fixture.build}", "-DSNAPTRAY_BUILD_TYPE=Release",
-                    "-P", str(fixture.scripts / "deploy-windows-qt.cmake")]
-            env = dict(os.environ, QT_PATH=str(fixture.new_qt))
-            # No deployment is needed when the matching runtime is already present.
-            subprocess.run(args, env=env, check=True, capture_output=True, timeout=15)
-            missing_dll = binary_dir / "Qt6QuickWidgets.dll"
-            missing_dll.unlink()
-            # The SDK deliberately has no deployment tool. A missing runtime
-            # must start a pending update even when no reconfigure was needed.
-            result = subprocess.run(args, env=env, capture_output=True, text=True, timeout=15)
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("Qt deployment tool not found", result.stdout + result.stderr)
-            self.assertTrue(fixture.pending.exists())
-            # Simulate a failed deployment that copied all checked DLLs before
-            # failing on another dependency. Existing files must not bypass retry.
-            missing_dll.touch()
-            result = subprocess.run(args, env=env, capture_output=True, text=True, timeout=15)
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("Qt deployment tool not found", result.stdout + result.stderr)
-            self.assertTrue(fixture.pending.exists())
+        for missing in ("Qt6QuickWidgets.dll", "imageformats/qwebp.dll", "imageformats/qtiff.dll"):
+            with self.subTest(missing=missing), QtCacheFixture("build-release.bat") as fixture:
+                fixture.seed(fixture.new_qt)
+                binary_dir = fixture.build / "bin"
+                binary_dir.mkdir()
+                (binary_dir / "SnapTray.exe").touch()
+                for module in ("Core", "Gui", "Widgets", "Qml", "Quick", "QuickWidgets"):
+                    (binary_dir / f"Qt6{module}.dll").touch()
+                for folder in ("platforms", "imageformats", "qml/QtQuick/Layouts", "qml/QtQuick/Controls/Basic"):
+                    (binary_dir / folder).mkdir(parents=True, exist_ok=True)
+                (binary_dir / "platforms/qwindows.dll").touch()
+                for plugin in ("qwebp", "qtiff"):
+                    (binary_dir / f"imageformats/{plugin}.dll").touch()
+                args = ["cmake", f"-DSNAPTRAY_BUILD_DIR={fixture.build}", "-DSNAPTRAY_BUILD_TYPE=Release",
+                        "-P", str(fixture.scripts / "deploy-windows-qt.cmake")]
+                env = dict(os.environ, QT_PATH=str(fixture.new_qt))
+                # No deployment is needed when the matching runtime is already present.
+                subprocess.run(args, env=env, check=True, capture_output=True, timeout=15)
+                missing_dll = binary_dir / missing
+                missing_dll.unlink()
+                # The SDK deliberately has no deployment tool. A missing runtime
+                # must start a pending update even when no reconfigure was needed.
+                result = subprocess.run(args, env=env, capture_output=True, text=True, timeout=15)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("Qt deployment tool not found", result.stdout + result.stderr)
+                self.assertTrue(fixture.pending.exists())
+                # Simulate a failed deployment that copied all checked DLLs before
+                # failing on another dependency. Existing files must not bypass retry.
+                missing_dll.touch()
+                result = subprocess.run(args, env=env, capture_output=True, text=True, timeout=15)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("Qt deployment tool not found", result.stdout + result.stderr)
+                self.assertTrue(fixture.pending.exists())
 
 
 class QtCacheFixture:
@@ -157,8 +160,8 @@ class QtCacheFixture:
         self.build_type = "Release" if "release" in entry else "Debug"
         self.build = self.root / ("release" if self.build_type == "Release" else "build")
         self.pending = self.build / ".qt-deploy-pending"
-        self.old_qt = self.root / "Qt 6.8.0"
-        self.new_qt = self.root / "Qt 6.10.1"
+        self.old_qt = self.root / "Qt 6.10.1"
+        self.new_qt = self.root / "Qt 6.11.2"
         for qt in (self.old_qt, self.new_qt):
             self.config(qt).parent.mkdir(parents=True)
             self.config(qt).write_text('find_package(Qt6Core CONFIG REQUIRED)\nset(Qt6_FOUND TRUE)\n')

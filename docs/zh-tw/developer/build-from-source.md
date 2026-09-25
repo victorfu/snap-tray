@@ -23,7 +23,8 @@ SnapTray 目前支援 macOS、Windows 與 Ubuntu 22.04 X11 beta。
 
 ### 開發前置需求
 
-- Qt 6.10.1，需包含 Widgets、Gui、Svg、Concurrent、Network、Quick、QuickControls2、QuickWidgets
+- Qt 6.11.2，需包含 Widgets、Gui、Svg、Concurrent、Network、Quick、QuickControls2、QuickWidgets
+- Qt Image Formats 附加元件（`qtimageformats`），用於匯入 WebP／TIFF 圖片
 - CMake 3.16+
 - Ninja
 - Git（FetchContent 相依套件）
@@ -33,7 +34,8 @@ SnapTray 目前支援 macOS、Windows 與 Ubuntu 22.04 X11 beta。
 ### Linux
 
 - Ubuntu 22.04 X11 session
-- Qt 6.10.1，需包含 Widgets、Gui、Svg、Concurrent、Network、Quick、QuickControls2、QuickWidgets
+- Qt 6.11.2，需包含 Widgets、Gui、Svg、Concurrent、Network、Quick、QuickControls2、QuickWidgets
+- Qt Image Formats 附加元件（`qtimageformats`），用於匯入 WebP／TIFF 圖片
 - CMake 3.16+
 - Ninja
 - Git
@@ -117,17 +119,17 @@ cmake --build release --parallel
 ### Windows（Debug）
 
 ```batch
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=C:/Qt/6.11.2/msvc2022_64
 cmake --build build --parallel
-C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray-Debug.exe
+C:\Qt\6.11.2\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray-Debug.exe
 ```
 
 ### Windows（Release）
 
 ```batch
-cmake -S . -B release -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/msvc2022_64
+cmake -S . -B release -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.11.2/msvc2022_64
 cmake --build release --parallel
-C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe --release release\bin\SnapTray.exe
+C:\Qt\6.11.2\msvc2022_64\bin\windeployqt.exe --release release\bin\SnapTray.exe
 ```
 
 ## 建置模式與輸出
@@ -188,7 +190,7 @@ xattr -cr /Applications/SnapTray.app
 若出現 `Qt6Core.dll was not found` 或 `no Qt platform plugin could be initialized`，請執行 `windeployqt`：
 
 ```batch
-C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray-Debug.exe
+C:\Qt\6.11.2\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray-Debug.exe
 ```
 
 若 Qt 安裝在其他位置，請改成你的實際路徑。

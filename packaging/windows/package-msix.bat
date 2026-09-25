@@ -51,8 +51,8 @@ echo.
 
 REM Check for Qt
 if "%QT_PATH%"=="" (
-    if exist "C:\Qt\6.10.1\msvc2022_64" (
-        set QT_PATH=C:\Qt\6.10.1\msvc2022_64
+    if exist "C:\Qt\6.11.2\msvc2022_64" (
+        set QT_PATH=C:\Qt\6.11.2\msvc2022_64
     ) else if exist "C:\Qt\6.8.0\msvc2022_64" (
         set QT_PATH=C:\Qt\6.8.0\msvc2022_64
     ) else if exist "C:\Qt\6.7.0\msvc2022_64" (
@@ -131,6 +131,14 @@ echo [3/7] Running windeployqt...
 if errorlevel 1 (
     echo ERROR: windeployqt failed
     exit /b 1
+)
+
+REM These QImageReader decoders come from the Qt Image Formats add-on.
+for %%P in (qwebp qtiff) do (
+    if not exist "%STAGING_DIR%\imageformats\%%P.dll" (
+        echo ERROR: Missing imageformats\%%P.dll. Install Qt Image Formats ^(qtimageformats^) for this Qt SDK.
+        exit /b 1
+    )
 )
 
 REM Step 4: Generate Store assets
