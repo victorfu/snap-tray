@@ -24,6 +24,7 @@ SnapTray 目前支援 macOS、Windows 與 Ubuntu 22.04 X11 beta。
 ### 開發前置需求
 
 - Qt 6.11.2，需包含 Widgets、Gui、Svg、Concurrent、Network、Quick、QuickControls2、QuickWidgets
+- Qt Image Formats 附加元件（`qtimageformats`），用於匯入 WebP／TIFF 圖片
 - CMake 3.16+
 - Ninja
 - Git（FetchContent 相依套件）
@@ -34,6 +35,7 @@ SnapTray 目前支援 macOS、Windows 與 Ubuntu 22.04 X11 beta。
 
 - Ubuntu 22.04 X11 session
 - Qt 6.11.2，需包含 Widgets、Gui、Svg、Concurrent、Network、Quick、QuickControls2、QuickWidgets
+- Qt Image Formats 附加元件（`qtimageformats`），用於匯入 WebP／TIFF 圖片
 - CMake 3.16+
 - Ninja
 - Git
