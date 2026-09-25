@@ -57,7 +57,7 @@ xattr -cr /Applications/SnapTray.app
 若出現 `Qt6Core.dll was not found` 或 `no Qt platform plugin could be initialized`，請用 `windeployqt` 部署 Qt 依賴：
 
 ```batch
-C:\Qt\6.10.1\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray-Debug.exe
+C:\Qt\6.11.2\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray-Debug.exe
 ```
 
 Qt 路徑請與你 configure 時使用的 `CMAKE_PREFIX_PATH` 保持一致。

@@ -96,7 +96,7 @@ checks separately guard against missing plugins in distributable artifacts.
 If Qt is not installed in the default location, set:
 
 ```batch
-set QT_PATH=C:\Qt\6.10.1\msvc2022_64
+set QT_PATH=C:\Qt\6.11.2\msvc2022_64
 ```
 
 ## Release notes and versioning

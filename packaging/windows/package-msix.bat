@@ -51,8 +51,8 @@ echo.
 
 REM Check for Qt
 if "%QT_PATH%"=="" (
-    if exist "C:\Qt\6.10.1\msvc2022_64" (
-        set QT_PATH=C:\Qt\6.10.1\msvc2022_64
+    if exist "C:\Qt\6.11.2\msvc2022_64" (
+        set QT_PATH=C:\Qt\6.11.2\msvc2022_64
     ) else if exist "C:\Qt\6.8.0\msvc2022_64" (
         set QT_PATH=C:\Qt\6.8.0\msvc2022_64
     ) else if exist "C:\Qt\6.7.0\msvc2022_64" (

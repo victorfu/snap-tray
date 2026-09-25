@@ -14,10 +14,10 @@ ENTRIES = ("build.bat", "build-release.bat", "build-and-run.bat", "build-and-run
 class QtDetectionTests(unittest.TestCase):
     def test_all_entries(self):
         cases = [
-            (("6.10.1", "6.8.0", "6.7.0"), "", True),
-            (("6.8.0", "6.7.0"), "", False),
+            (("6.11.2", "6.10.1", "6.8.0"), "", True),
+            (("6.10.1", "6.8.0"), "", False),
             ((), "", False),
-            (("6.10.1", "6.7.0"), "custom Qt", True),
+            (("6.11.2", "6.7.0"), "custom Qt", True),
         ]
         for versions, override, succeeds in cases:
             with tempfile.TemporaryDirectory(prefix="snaptray qt ") as directory:
@@ -42,7 +42,7 @@ class QtDetectionTests(unittest.TestCase):
                         if override:
                             env["QT_PATH"] = str(folder / override)
                         env["SNAPTRAY_TEST_QT_ROOT"] = str(qt)
-                        env["SNAPTRAY_TEST_EXPECTED"] = env.get("QT_PATH", str(qt / "6.10.1/msvc2022_64"))
+                        env["SNAPTRAY_TEST_EXPECTED"] = env.get("QT_PATH", str(qt / "6.11.2/msvc2022_64"))
                         result = subprocess.run(["cmd.exe", "/d", "/c", entry], cwd=scripts,
                                                 env=env, capture_output=True, timeout=10)
                         self.assertEqual(result.returncode == 0, succeeds, result.stdout + result.stderr)
@@ -160,8 +160,8 @@ class QtCacheFixture:
         self.build_type = "Release" if "release" in entry else "Debug"
         self.build = self.root / ("release" if self.build_type == "Release" else "build")
         self.pending = self.build / ".qt-deploy-pending"
-        self.old_qt = self.root / "Qt 6.8.0"
-        self.new_qt = self.root / "Qt 6.10.1"
+        self.old_qt = self.root / "Qt 6.10.1"
+        self.new_qt = self.root / "Qt 6.11.2"
         for qt in (self.old_qt, self.new_qt):
             self.config(qt).parent.mkdir(parents=True)
             self.config(qt).write_text('find_package(Qt6Core CONFIG REQUIRED)\nset(Qt6_FOUND TRUE)\n')
