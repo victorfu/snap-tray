@@ -347,6 +347,7 @@ jobs:
           host: 'windows'
           target: 'desktop'
           arch: 'win64_msvc2022_64'
+          modules: 'qtimageformats'
           cache: true
 
       # ========================================
@@ -565,6 +566,7 @@ jobs:
           host: 'linux'
           target: 'desktop'
           arch: 'linux_gcc_64'
+          modules: 'qtimageformats'
           cache: true
 
       - name: Build AppImage

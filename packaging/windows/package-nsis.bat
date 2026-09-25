@@ -156,6 +156,14 @@ if errorlevel 1 (
     exit /b 1
 )
 
+REM These QImageReader decoders come from the Qt Image Formats add-on.
+for %%P in (qwebp qtiff) do (
+    if not exist "%STAGING_DIR%\imageformats\%%P.dll" (
+        echo ERROR: Missing imageformats\%%P.dll. Install Qt Image Formats ^(qtimageformats^) for this Qt SDK.
+        exit /b 1
+    )
+)
+
 REM Step 4: Code signing (optional)
 echo.
 if defined CODESIGN_CERT (

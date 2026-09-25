@@ -115,36 +115,39 @@ class QtDetectionTests(unittest.TestCase):
             self.assertEqual(fixture.configure_count(), 1)
 
     def test_failed_deployment_is_retried_after_partial_copy(self):
-        with QtCacheFixture("build-release.bat") as fixture:
-            fixture.seed(fixture.new_qt)
-            binary_dir = fixture.build / "bin"
-            binary_dir.mkdir()
-            (binary_dir / "SnapTray.exe").touch()
-            for module in ("Core", "Gui", "Widgets", "Qml", "Quick", "QuickWidgets"):
-                (binary_dir / f"Qt6{module}.dll").touch()
-            for folder in ("platforms", "qml/QtQuick/Layouts", "qml/QtQuick/Controls/Basic"):
-                (binary_dir / folder).mkdir(parents=True, exist_ok=True)
-            (binary_dir / "platforms/qwindows.dll").touch()
-            args = ["cmake", f"-DSNAPTRAY_BUILD_DIR={fixture.build}", "-DSNAPTRAY_BUILD_TYPE=Release",
-                    "-P", str(fixture.scripts / "deploy-windows-qt.cmake")]
-            env = dict(os.environ, QT_PATH=str(fixture.new_qt))
-            # No deployment is needed when the matching runtime is already present.
-            subprocess.run(args, env=env, check=True, capture_output=True, timeout=15)
-            missing_dll = binary_dir / "Qt6QuickWidgets.dll"
-            missing_dll.unlink()
-            # The SDK deliberately has no deployment tool. A missing runtime
-            # must start a pending update even when no reconfigure was needed.
-            result = subprocess.run(args, env=env, capture_output=True, text=True, timeout=15)
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("Qt deployment tool not found", result.stdout + result.stderr)
-            self.assertTrue(fixture.pending.exists())
-            # Simulate a failed deployment that copied all checked DLLs before
-            # failing on another dependency. Existing files must not bypass retry.
-            missing_dll.touch()
-            result = subprocess.run(args, env=env, capture_output=True, text=True, timeout=15)
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("Qt deployment tool not found", result.stdout + result.stderr)
-            self.assertTrue(fixture.pending.exists())
+        for missing in ("Qt6QuickWidgets.dll", "imageformats/qwebp.dll", "imageformats/qtiff.dll"):
+            with self.subTest(missing=missing), QtCacheFixture("build-release.bat") as fixture:
+                fixture.seed(fixture.new_qt)
+                binary_dir = fixture.build / "bin"
+                binary_dir.mkdir()
+                (binary_dir / "SnapTray.exe").touch()
+                for module in ("Core", "Gui", "Widgets", "Qml", "Quick", "QuickWidgets"):
+                    (binary_dir / f"Qt6{module}.dll").touch()
+                for folder in ("platforms", "imageformats", "qml/QtQuick/Layouts", "qml/QtQuick/Controls/Basic"):
+                    (binary_dir / folder).mkdir(parents=True, exist_ok=True)
+                (binary_dir / "platforms/qwindows.dll").touch()
+                for plugin in ("qwebp", "qtiff"):
+                    (binary_dir / f"imageformats/{plugin}.dll").touch()
+                args = ["cmake", f"-DSNAPTRAY_BUILD_DIR={fixture.build}", "-DSNAPTRAY_BUILD_TYPE=Release",
+                        "-P", str(fixture.scripts / "deploy-windows-qt.cmake")]
+                env = dict(os.environ, QT_PATH=str(fixture.new_qt))
+                # No deployment is needed when the matching runtime is already present.
+                subprocess.run(args, env=env, check=True, capture_output=True, timeout=15)
+                missing_dll = binary_dir / missing
+                missing_dll.unlink()
+                # The SDK deliberately has no deployment tool. A missing runtime
+                # must start a pending update even when no reconfigure was needed.
+                result = subprocess.run(args, env=env, capture_output=True, text=True, timeout=15)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("Qt deployment tool not found", result.stdout + result.stderr)
+                self.assertTrue(fixture.pending.exists())
+                # Simulate a failed deployment that copied all checked DLLs before
+                # failing on another dependency. Existing files must not bypass retry.
+                missing_dll.touch()
+                result = subprocess.run(args, env=env, capture_output=True, text=True, timeout=15)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("Qt deployment tool not found", result.stdout + result.stderr)
+                self.assertTrue(fixture.pending.exists())
 
 
 class QtCacheFixture:
