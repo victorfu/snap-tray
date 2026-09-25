@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-03-24
+last_modified_at: 2026-09-25
 layout: docs
 title: 架構總覽
 seo_title: "SnapTray 架構總覽：儲存庫結構、函式庫邊界、子系統職責與平台抽象"
@@ -165,18 +165,18 @@ SnapTray 以模組化 static-library 風格組織：
 
 - `ResizeHandler`
 - `UIIndicators`
+- `ClickThroughExitButton`
 - `PinWindowPlacement`
 - `RegionLayoutManager`
 - `RegionLayoutRenderer`
 - `PinMergeHelper`
-- `PinHistoryStore`
-- `PinHistoryWindow`
+
+擷取歷史由 `RegionSelector` 透過 `src/history/` 下的 `HistoryRecorder` 與 `HistoryStore` 寫入。透過 `PinWindowManager::createPinWindow` 建立釘選視窗不會儲存歷史紀錄。
 
 ### Recording subsystem
 
-- `RecordingRegionSelector`
-- `RecordingControlBar`
-- `RecordingBoundaryOverlay`
+- `QmlRecordingControlBar`
+- `QmlCountdownOverlay`
 - `RecordingInitTask`
 - `RecordingRegionNormalizer`
 
