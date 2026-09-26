@@ -232,6 +232,8 @@ private:
         int originY = 0;
         int excludeIndex = -1;
         int devicePixelRatioMilli = 1000;
+        qreal pixelPhaseX = 0.0;
+        qreal pixelPhaseY = 0.0;
 
         bool operator<(const CacheKey& other) const
         {
@@ -250,7 +252,13 @@ private:
             if (excludeIndex != other.excludeIndex) {
                 return excludeIndex < other.excludeIndex;
             }
-            return devicePixelRatioMilli < other.devicePixelRatioMilli;
+            if (devicePixelRatioMilli != other.devicePixelRatioMilli) {
+                return devicePixelRatioMilli < other.devicePixelRatioMilli;
+            }
+            if (pixelPhaseX != other.pixelPhaseX) {
+                return pixelPhaseX < other.pixelPhaseX;
+            }
+            return pixelPhaseY < other.pixelPhaseY;
         }
     };
 
@@ -264,7 +272,10 @@ private:
     CacheMap::iterator eraseAnnotationCache(CacheMap::iterator it) const;
     void makeAnnotationCacheRoom(std::uint64_t incomingBytes) const;
     const QPixmap* annotationCache(const CacheKey& key, qreal devicePixelRatio) const;
-    void paintCacheContents(QPainter& painter, const QPoint& origin, int excludeIndex) const;
+    void paintCacheContents(QPainter& painter, const QPointF& origin, int excludeIndex) const;
+    static CacheKey cacheKeyForPainter(const QPainter& painter, const QSize& canvasSize,
+                                      qreal devicePixelRatio, const QPoint& origin, int excludeIndex);
+    static QPointF cachePixelPhase(const CacheKey& key, qreal devicePixelRatio);
 
     mutable CacheMap m_annotationCaches;
     mutable std::uint64_t m_annotationCacheBytes = 0;
