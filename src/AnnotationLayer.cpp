@@ -17,6 +17,7 @@
 #include <QSize>
 #include <QtMath>
 #include <algorithm>
+#include <cmath>
 #include <iterator>
 #include <limits>
 
@@ -1048,7 +1049,38 @@ void AnnotationLayer::makeAnnotationCacheRoom(std::uint64_t incomingBytes) const
     }
 }
 
-void AnnotationLayer::paintCacheContents(QPainter& painter, const QPoint& origin, int excludeIndex) const
+AnnotationLayer::CacheKey AnnotationLayer::cacheKeyForPainter(
+    const QPainter& painter, const QSize& canvasSize, qreal devicePixelRatio,
+    const QPoint& origin, int excludeIndex)
+{
+    const QTransform transform = painter.deviceTransform();
+    const auto pixelPhase = [](qreal position) {
+        const qreal phase = position - std::floor(position);
+        return qFuzzyIsNull(phase) || qFuzzyCompare(phase, qreal(1.0)) ? 0.0 : phase;
+    };
+    // Only a native-scale, axis-aligned blit can preserve the pixel grid this
+    // way. Keep the existing sampling for zoomed/rotated annotation views.
+    const bool nativeScale = qFuzzyCompare(transform.m11(), devicePixelRatio)
+        && qFuzzyCompare(transform.m22(), devicePixelRatio)
+        && qFuzzyIsNull(transform.m12()) && qFuzzyIsNull(transform.m21());
+    const qreal phaseX = nativeScale ? pixelPhase(transform.dx()) : 0.0;
+    const qreal phaseY = nativeScale ? pixelPhase(transform.dy()) : 0.0;
+    const QSize physicalSize = CoordinateHelper::toPhysical(canvasSize, devicePixelRatio);
+    // A translated viewport may start between physical pixels. Preserve that
+    // phase while rasterizing, then blit at an integral device-pixel position.
+    // The extra edge pixel keeps the phase shift from clipping the cache.
+    return {physicalSize.width() > 0 ? physicalSize.width() + qCeil(phaseX) : 0,
+            physicalSize.height() > 0 ? physicalSize.height() + qCeil(phaseY) : 0,
+            origin.x(), origin.y(), excludeIndex,
+            qRound(devicePixelRatio * 1000.0), phaseX, phaseY};
+}
+
+QPointF AnnotationLayer::cachePixelPhase(const CacheKey& key, qreal devicePixelRatio)
+{
+    return QPointF(key.pixelPhaseX / devicePixelRatio, key.pixelPhaseY / devicePixelRatio);
+}
+
+void AnnotationLayer::paintCacheContents(QPainter& painter, const QPointF& origin, int excludeIndex) const
 {
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing);
@@ -1086,7 +1118,9 @@ const QPixmap* AnnotationLayer::annotationCache(const CacheKey& key, qreal devic
     makeAnnotationCacheRoom(bytes);
     {
         QPainter painter(&cache);
-        paintCacheContents(painter, QPoint(key.originX, key.originY), key.excludeIndex);
+        paintCacheContents(painter,
+                           QPointF(key.originX, key.originY) - cachePixelPhase(key, devicePixelRatio),
+                           key.excludeIndex);
     }
     const auto inserted = m_annotationCaches.emplace(key,
         CacheEntry{std::move(cache), bytes, ++m_annotationCacheClock}).first;
@@ -1107,7 +1141,8 @@ void AnnotationLayer::appendItemToCaches(const AnnotationItem& item)
             QPainter cachePainter(&it->second.pixmap);
             cachePainter.setRenderHint(QPainter::Antialiasing);
             cachePainter.setRenderHint(QPainter::SmoothPixmapTransform);
-            cachePainter.translate(-QPointF(key.originX, key.originY));
+            cachePainter.translate(cachePixelPhase(key, it->second.pixmap.devicePixelRatio())
+                                   - QPointF(key.originX, key.originY));
             item.draw(cachePainter);
         }
         ++it;
@@ -1121,18 +1156,10 @@ void AnnotationLayer::drawCached(QPainter &painter,
 {
     if (m_items.empty()) return;
 
-    const QSize physicalSize = CoordinateHelper::toPhysical(canvasSize, devicePixelRatio);
-    const CacheKey cacheKey{
-        physicalSize.width(),
-        physicalSize.height(),
-        origin.x(),
-        origin.y(),
-        -1,
-        qRound(devicePixelRatio * 1000.0)
-    };
+    const CacheKey cacheKey = cacheKeyForPainter(painter, canvasSize, devicePixelRatio, origin, -1);
 
     if (const QPixmap* cache = annotationCache(cacheKey, devicePixelRatio))
-        painter.drawPixmap(0, 0, *cache);
+        painter.drawPixmap(-cachePixelPhase(cacheKey, devicePixelRatio), *cache);
     else
         paintCacheContents(painter, origin, -1);
 }
@@ -1159,18 +1186,10 @@ void AnnotationLayer::drawWithDirtyRegion(QPainter &painter, const QSize &canvas
 {
     if (m_items.empty()) return;
 
-    const QSize physicalSize = CoordinateHelper::toPhysical(canvasSize, devicePixelRatio);
     const int normalizedExcludeIndex =
         (excludeIndex >= 0 && excludeIndex < static_cast<int>(m_items.size())) ? excludeIndex : -1;
-
-    const CacheKey cacheKey{
-        physicalSize.width(),
-        physicalSize.height(),
-        origin.x(),
-        origin.y(),
-        normalizedExcludeIndex,
-        qRound(devicePixelRatio * 1000.0)
-    };
+    const CacheKey cacheKey = cacheKeyForPainter(
+        painter, canvasSize, devicePixelRatio, origin, normalizedExcludeIndex);
 
     if (normalizedExcludeIndex >= 0) {
         for (auto it = m_annotationCaches.begin(); it != m_annotationCaches.end();) {
@@ -1180,7 +1199,9 @@ void AnnotationLayer::drawWithDirtyRegion(QPainter &painter, const QSize &canvas
                 existingKey.physicalHeight == cacheKey.physicalHeight &&
                 existingKey.originX == cacheKey.originX &&
                 existingKey.originY == cacheKey.originY &&
-                existingKey.devicePixelRatioMilli == cacheKey.devicePixelRatioMilli;
+                existingKey.devicePixelRatioMilli == cacheKey.devicePixelRatioMilli &&
+                existingKey.pixelPhaseX == cacheKey.pixelPhaseX &&
+                existingKey.pixelPhaseY == cacheKey.pixelPhaseY;
 
             if (sameViewport && existingKey.excludeIndex != normalizedExcludeIndex) {
                 it = eraseAnnotationCache(it);
@@ -1192,7 +1213,7 @@ void AnnotationLayer::drawWithDirtyRegion(QPainter &painter, const QSize &canvas
 
     // Draw the cached background (all items except the one being dragged)
     if (const QPixmap* cache = annotationCache(cacheKey, devicePixelRatio))
-        painter.drawPixmap(0, 0, *cache);
+        painter.drawPixmap(-cachePixelPhase(cacheKey, devicePixelRatio), *cache);
     else
         paintCacheContents(painter, origin, normalizedExcludeIndex);
 

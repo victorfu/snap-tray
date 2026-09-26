@@ -96,6 +96,8 @@ private slots:
     void testDrawCached_RebuildsAfterExcludeCache();
     void testDrawCached_RebuildsAfterDraggedItemMoved();
     void testDrawCached_AppliesViewportOrigin();
+    void testPencilCommitPreservesPixelAlignment_data();
+    void testPencilCommitPreservesPixelAlignment();
     void testViewportCacheStressPreservesPixelsAndHistory();
     void testViewportCacheLruAndTransientPriority();
     void testViewportCacheByteBudgetAndOversizedEntry();
@@ -373,6 +375,85 @@ void TestAnnotationLayer::testDrawCached_RebuildsAfterDraggedItemMoved()
 
     QVERIFY(!hasVisiblePixel(cachedFrame, QRect(70, 12, 24, 16)));
     QVERIFY(hasVisiblePixel(cachedFrame, QRect(70, 42, 24, 16)));
+}
+
+void TestAnnotationLayer::testPencilCommitPreservesPixelAlignment_data()
+{
+    QTest::addColumn<qreal>("dpr");
+    QTest::addColumn<QPoint>("origin");
+    for (qreal dpr : {1.0, 1.25, 1.5, 1.75, 2.0}) {
+        for (QPoint origin : {QPoint(64, 64), QPoint(65, 67), QPoint(66, 65)}) {
+            QTest::addRow("dpr-%g-origin-%d-%d", dpr, origin.x(), origin.y())
+                << dpr << origin;
+        }
+    }
+}
+
+void TestAnnotationLayer::testPencilCommitPreservesPixelAlignment()
+{
+    QFETCH(qreal, dpr);
+    QFETCH(QPoint, origin);
+    const QSize viewport(330, 230);
+    const auto makeImage = [&] {
+        QImage image(QSize(qRound(480 * dpr), qRound(360 * dpr)),
+                     QImage::Format_ARGB32_Premultiplied);
+        image.setDevicePixelRatio(dpr);
+        image.fill(Qt::transparent);
+        return image;
+    };
+    AnnotationLayer layer;
+    auto stroke = std::make_unique<PencilStroke>(QVector<QPointF>{
+        {120.25, 120.5}, {170.25, 160.5}, {225.25, 125.5}, {280.25, 170.5}},
+        Qt::red, 3);
+    QImage preview = makeImage();
+    {
+        QPainter painter(&preview);
+        stroke->drawPreview(painter);
+    }
+    stroke->finalize();
+    layer.addItem(std::move(stroke));
+    const auto render = [&](int excluded, QPoint destination) {
+        QImage image = makeImage();
+        QPainter painter(&image);
+        painter.translate(destination);
+        if (excluded < 0)
+            layer.drawCached(painter, viewport, dpr, origin);
+        else
+            layer.drawWithDirtyRegion(painter, viewport, dpr, excluded, origin);
+        return image;
+    };
+    QCOMPARE(render(-1, origin), preview);
+    QCOMPARE(render(-1, origin), preview); // Cache hit.
+    QImage fallback = makeImage();
+    {
+        QPainter painter(&fallback);
+        painter.translate(origin);
+        layer.drawCached(painter, QSize(0, 0), dpr, origin);
+    }
+    QCOMPARE(fallback, preview); // Empty cache dimensions still use vector fallback.
+    QCOMPARE(render(0, origin), preview); // Direct selected item.
+    QCOMPARE(render(-1, origin), preview); // Restore the full cache before appending.
+
+    auto second = std::make_unique<PencilStroke>(QVector<QPointF>{
+        {130.25, 200.5}, {180.25, 230.5}, {270.25, 210.5}}, Qt::blue, 3);
+    {
+        QPainter painter(&preview);
+        second->drawPreview(painter);
+    }
+    second->finalize();
+    layer.addItem(std::move(second)); // Incrementally update the full cache.
+    QCOMPARE(render(-1, origin), preview);
+    QCOMPARE(render(1, origin), preview); // Cached first item plus selected second.
+
+    // The same viewport can be drawn at a different destination pixel phase.
+    const QPoint destination = origin + QPoint(1, 1);
+    QImage translated = makeImage();
+    {
+        QPainter painter(&translated);
+        painter.translate(destination - origin);
+        layer.draw(painter);
+    }
+    QCOMPARE(render(-1, destination), translated);
 }
 
 void TestAnnotationLayer::testDrawCached_AppliesViewportOrigin()
