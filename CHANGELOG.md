@@ -6,6 +6,18 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+## [1.0.65] - 2026-09-28
+
+### Improved
+
+- Reduced region capture toolbar latency on Linux.
+- Updated the bundled Qt runtime to 6.11.2 on Windows and Linux, and added a rendering check to Linux AppImage packaging.
+
+### Fixed
+
+- Preserved annotation pixel alignment on displays using fractional scaling.
+- Fixed opening WebP and TIFF images in Windows and Linux distributions by bundling the required image format plugins.
+
 ## [1.0.64] - 2026-09-15
 
 ### Improved
