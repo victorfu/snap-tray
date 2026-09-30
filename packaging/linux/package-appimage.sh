@@ -18,6 +18,13 @@ if [ -z "$VERSION" ]; then
   exit 1
 fi
 
+for tool in python3 xvfb-run xauth; do
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    echo "AppImage startup checks require $tool. Install python3, xvfb, and xauth." >&2
+    exit 1
+  fi
+done
+
 mkdir -p "$DIST_DIR" "$TOOLS_DIR" "$TOOLS_DOWNLOADS_DIR"
 rm -rf "$APPDIR"
 
@@ -198,5 +205,11 @@ env -u QT_PLUGIN_PATH -u QT_QPA_PLATFORM_PLUGIN_PATH \
   LD_LIBRARY_PATH="$SMOKE_APPDIR/squashfs-root/usr/lib" \
   QT_QPA_PLATFORM=offscreen \
   timeout 15s "$SMOKE_APPDIR/squashfs-root/AppRun" --internal-qt-quick-smoke-check
+
+# Test normal startup too: --version and the rendering probe bypass the Linux
+# runtime guard, while AppImageHub starts under Xvfb without session metadata.
+LD_LIBRARY_PATH="$SMOKE_APPDIR/squashfs-root/usr/lib" \
+  xvfb-run -a python3 "$PROJECT_DIR/tests/Packaging/tst_LinuxX11Startup.py" \
+  "$SMOKE_APPDIR/squashfs-root/AppRun"
 
 echo "AppImage complete: $DIST_DIR/$OUTPUT"

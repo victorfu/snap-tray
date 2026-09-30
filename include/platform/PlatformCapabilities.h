@@ -40,7 +40,8 @@ struct PlatformCapabilities {
 
 PlatformKind currentPlatformKind();
 DisplayServerKind displayServerKindFromSessionType(const QString& sessionType,
-                                                   const QString& qtPlatformName);
+                                                   const QString& qtPlatformName,
+                                                   bool hasWaylandEnvironment = false);
 DisplayServerKind currentDisplayServerKind();
 PlatformCapabilities capabilitiesForPlatform(PlatformKind platform,
                                              DisplayServerKind displayServer,

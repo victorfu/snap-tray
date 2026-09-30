@@ -6,6 +6,10 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed Linux startup on X11 environments without desktop session metadata, including Xvfb and sessions launched with startx.
+
 ## [1.0.66] - 2026-09-30
 
 ### Fixed

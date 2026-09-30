@@ -95,7 +95,7 @@ void tst_PlatformCapabilities::displayServerDetectionUsesSessionAndQtPlatform()
     QCOMPARE(SnapTray::displayServerKindFromSessionType(QStringLiteral("wayland"), QString()),
              SnapTray::DisplayServerKind::Wayland);
     QCOMPARE(SnapTray::displayServerKindFromSessionType(QString(), QStringLiteral("xcb")),
-             SnapTray::DisplayServerKind::Other);
+             SnapTray::DisplayServerKind::X11);
     QCOMPARE(SnapTray::displayServerKindFromSessionType(QString(), QStringLiteral("wayland")),
              SnapTray::DisplayServerKind::Wayland);
     QCOMPARE(SnapTray::displayServerKindFromSessionType(QString(), QStringLiteral("offscreen")),
@@ -104,26 +104,60 @@ void tst_PlatformCapabilities::displayServerDetectionUsesSessionAndQtPlatform()
 
 void tst_PlatformCapabilities::linuxSessionBackendMatrix_data()
 {
+    using Kind = SnapTray::DisplayServerKind;
     QTest::addColumn<QString>("session");
     QTest::addColumn<QString>("backend");
-    for (const QString& session : {QStringLiteral("x11"), QStringLiteral("wayland"),
-                                   QStringLiteral("tty"), QString()}) {
-        for (const QString& backend : {QStringLiteral("xcb"), QStringLiteral("wayland"),
-                                       QStringLiteral("wayland-egl"), QStringLiteral("offscreen"),
-                                       QStringLiteral("minimal"), QString()}) {
-            QTest::addRow("%s-%s", qPrintable(session), qPrintable(backend)) << session << backend;
-        }
-    }
-    QTest::newRow("case-whitespace") << QStringLiteral(" X11 ") << QStringLiteral(" XCB ");
+    QTest::addColumn<bool>("waylandEnvironment");
+    QTest::addColumn<Kind>("expectedKind");
+    const auto row = [](const char* name, const char* session, const char* backend,
+                        Kind expected, bool waylandEnvironment = false) {
+        QTest::newRow(name) << QString::fromLatin1(session) << QString::fromLatin1(backend)
+                           << waylandEnvironment << expected;
+    };
+
+    row("x11-xcb", "x11", "xcb", Kind::X11);
+    row("xvfb-no-session", "", "xcb", Kind::X11);
+    row("startx-tty", "tty", "xcb", Kind::X11);
+    row("unspecified-xcb", "unspecified", "xcb", Kind::X11);
+    row("case-whitespace", " X11 ", " XCB ", Kind::X11);
+    row("empty-session-whitespace", " \t", "xcb", Kind::X11);
+    row("unknown-session", "mir", "xcb", Kind::Other);
+
+    row("xwayland-session", "wayland", "xcb", Kind::Wayland);
+    row("xwayland-environment", "", "xcb", Kind::Wayland, true);
+    row("xwayland-tty", "tty", "xcb", Kind::Wayland, true);
+    row("conflicting-wayland-environment", "x11", "xcb", Kind::Wayland, true);
+    row("x11-wayland-backend", "x11", "wayland", Kind::Wayland);
+    row("x11-wayland-egl", "x11", "wayland-egl", Kind::Wayland);
+    row("no-session-wayland", "", "wayland", Kind::Wayland);
+    row("no-session-wayland-egl", "", "wayland-egl", Kind::Wayland);
+    row("wayland-no-backend", "wayland", "", Kind::Wayland);
+
+    row("x11-offscreen", "x11", "offscreen", Kind::Offscreen);
+    row("wayland-offscreen", "wayland", "offscreen", Kind::Offscreen, true);
+    row("no-session-offscreen", "", "offscreen", Kind::Offscreen);
+    row("tty-offscreen", "tty", "offscreen", Kind::Offscreen);
+    row("x11-minimal", "x11", "minimal", Kind::Offscreen);
+    row("wayland-minimal", "wayland", "minimal", Kind::Offscreen, true);
+    row("no-session-minimal", "", "minimal", Kind::Offscreen);
+    row("tty-minimal", "tty", "minimal", Kind::Offscreen);
+
+    row("x11-no-backend", "x11", "", Kind::Other);
+    row("tty-no-backend", "tty", "", Kind::Other);
+    row("x11-eglfs", "x11", "eglfs", Kind::Other);
+    row("no-session-eglfs", "", "eglfs", Kind::Other);
+    row("no-session-no-backend", "", "", Kind::Unknown);
 }
 
 void tst_PlatformCapabilities::linuxSessionBackendMatrix()
 {
     QFETCH(QString, session);
     QFETCH(QString, backend);
-    const bool supported = session.trimmed().compare("x11", Qt::CaseInsensitive) == 0
-        && backend.trimmed().compare("xcb", Qt::CaseInsensitive) == 0;
-    const auto kind = SnapTray::displayServerKindFromSessionType(session, backend);
+    QFETCH(bool, waylandEnvironment);
+    QFETCH(SnapTray::DisplayServerKind, expectedKind);
+    const bool supported = expectedKind == SnapTray::DisplayServerKind::X11;
+    const auto kind = SnapTray::displayServerKindFromSessionType(session, backend, waylandEnvironment);
+    QCOMPARE(kind, expectedKind);
     const auto caps = SnapTray::capabilitiesForPlatform(SnapTray::PlatformKind::Linux, kind);
     QCOMPARE(caps.isRuntimeSupported, supported);
     QCOMPARE(caps.supportsGlobalHotkeys, supported);

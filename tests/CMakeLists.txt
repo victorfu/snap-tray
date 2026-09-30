@@ -51,6 +51,13 @@ if(UNIX AND NOT APPLE)
             $<TARGET_FILE:SnapTray> --internal-qt-quick-smoke-check)
     set_tests_properties(Packaging_QtQuickSoftwareRendering PROPERTIES
         TIMEOUT 15 LABELS "integration;packaging")
+
+    add_test(NAME Packaging_LinuxX11Startup
+        COMMAND xvfb-run -a ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_LinuxX11Startup.py"
+            $<TARGET_FILE:SnapTray>)
+    set_tests_properties(Packaging_LinuxX11Startup PROPERTIES
+        TIMEOUT 60 LABELS "integration;packaging")
 endif()
 
 # Enable automoc for tests

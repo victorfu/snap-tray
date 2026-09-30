@@ -79,6 +79,11 @@ is software, and checks the resulting pixels. A failed QML load, backend fallbac
 unexpected pixels, or a rendering timeout fail the package build.
 The package explicitly includes the offscreen QPA plugin for this headless check.
 
+Packaging also runs the extracted application's normal CLI and tray startup
+under Xvfb without `XDG_SESSION_TYPE`, matching the AppImage catalog's X11
+environment. It checks that Wayland and offscreen sessions remain unsupported.
+These startup checks require `python3`, `xvfb`, and `xauth` on the build host.
+
 ## Packaging prerequisites
 
 Windows and Linux Qt SDKs must include the **Qt Image Formats** add-on

@@ -68,6 +68,12 @@ unsquashfs -o "$(appimage_squashfs_offset "$appimage")" -d "$appimage.AppDir" "$
 
 ## 打包前置需求
 
+### Linux
+
+打包檢查需要 `python3`、`xvfb` 與 `xauth`。腳本會在未設定 `XDG_SESSION_TYPE`
+的 Xvfb 環境中驗證解壓後應用程式的 CLI 與系統匣啟動，涵蓋 AppImage 目錄的
+X11 測試環境，並確認 Wayland 與 offscreen session 仍不受支援。
+
 ### macOS
 
 - 已安裝 Qt 6

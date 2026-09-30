@@ -20,7 +20,8 @@ PlatformKind currentPlatformKind()
 }
 
 DisplayServerKind displayServerKindFromSessionType(const QString& sessionType,
-                                                   const QString& qtPlatformName)
+                                                   const QString& qtPlatformName,
+                                                   bool hasWaylandEnvironment)
 {
     const QString normalizedSession = sessionType.trimmed().toLower();
     const QString normalizedQtPlatform = qtPlatformName.trimmed().toLower();
@@ -30,15 +31,19 @@ DisplayServerKind displayServerKindFromSessionType(const QString& sessionType,
         return DisplayServerKind::Offscreen;
     }
 
-    if (normalizedSession == QStringLiteral("wayland") ||
+    if (hasWaylandEnvironment || normalizedSession == QStringLiteral("wayland") ||
         normalizedQtPlatform.startsWith(QStringLiteral("wayland"))) {
         return DisplayServerKind::Wayland;
     }
 
-    // xcb inside a Wayland session is XWayland, not a supported X11 desktop.
-    // Missing or conflicting evidence must not enable X11-only capabilities.
-    if (normalizedSession == QStringLiteral("x11") &&
-        normalizedQtPlatform == QStringLiteral("xcb")) {
+    // Xvfb and startx may have no desktop session metadata (or inherit tty).
+    // An initialized xcb backend confirms an X11 connection. Reject Wayland
+    // evidence above first, since xcb can also be running through XWayland.
+    const bool sessionAllowsX11 = normalizedSession.isEmpty() ||
+        normalizedSession == QStringLiteral("x11") ||
+        normalizedSession == QStringLiteral("tty") ||
+        normalizedSession == QStringLiteral("unspecified");
+    if (sessionAllowsX11 && normalizedQtPlatform == QStringLiteral("xcb")) {
         return DisplayServerKind::X11;
     }
 
@@ -59,7 +64,9 @@ DisplayServerKind currentDisplayServerKind()
 
     return displayServerKindFromSessionType(
         QString::fromLocal8Bit(qgetenv("XDG_SESSION_TYPE")),
-        qtPlatformName);
+        qtPlatformName,
+        !qEnvironmentVariableIsEmpty("WAYLAND_DISPLAY") ||
+            !qEnvironmentVariableIsEmpty("WAYLAND_SOCKET"));
 #endif
     return DisplayServerKind::Unknown;
 }
