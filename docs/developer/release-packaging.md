@@ -51,9 +51,24 @@ Typical outputs:
 The Linux beta artifact targets Ubuntu 22.04 X11. It does not include in-app
 updates; users download a newer AppImage for upgrades.
 
-The packaging script masks the AppImage type marker after creation so Ubuntu
-22.04 systems with AppImageLauncher `binfmt_misc` handlers run the embedded
-AppImage runtime directly instead of routing through AppImageLauncher.
+The packaging script preserves and checks the ELF header and the type 2
+AppImage marker (`AI\x02` at byte offset 8), as required by the
+[AppImage specification](https://github.com/AppImage/AppImageSpec/blob/master/draft.md#type-2-image-format).
+It also checks the extracted root desktop entry, icons, and executable `AppRun`.
+The marker must not be masked: AppImage catalogs and desktop integration tools
+need it to recognize the artifact and extract its metadata.
+
+If an older AppImageLauncher `binfmt_misc` handler prevents launching on Ubuntu
+22.04, update or disable that handler locally. From a repository checkout, you
+can also extract and run the application without invoking AppImageLauncher or
+FUSE (requires `squashfs-tools`):
+
+```bash
+source packaging/linux/appimage-helpers.sh
+appimage="$(realpath dist/SnapTray-<version>-x86_64.AppImage)"
+unsquashfs -o "$(appimage_squashfs_offset "$appimage")" -d "$appimage.AppDir" "$appimage"
+"$appimage.AppDir/AppRun"
+```
 
 Qt 6.10's software scene graph is [built into Qt Quick](https://doc.qt.io/qt-6.10/qtquick-visualcanvas-adaptations.html),
 so there is no separate `libqsgsoftwarebackend.so` to bundle. After extracting

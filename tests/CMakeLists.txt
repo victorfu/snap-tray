@@ -39,10 +39,10 @@ endif()
 
 if(UNIX AND NOT APPLE)
     add_test(
-        NAME Packaging_AppImageBinfmtBypass
-        COMMAND bash "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_AppImageBinfmtBypass.sh" "${CMAKE_SOURCE_DIR}"
+        NAME Packaging_AppImageFormat
+        COMMAND bash "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_AppImageFormat.sh" "${CMAKE_SOURCE_DIR}"
     )
-    set_tests_properties(Packaging_AppImageBinfmtBypass PROPERTIES TIMEOUT 30 LABELS "unit;packaging")
+    set_tests_properties(Packaging_AppImageFormat PROPERTIES TIMEOUT 30 LABELS "unit;packaging")
 
     add_test(NAME Packaging_QtQuickSoftwareRendering
         COMMAND ${CMAKE_COMMAND} -E env

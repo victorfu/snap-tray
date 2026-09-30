@@ -21,17 +21,16 @@ appimage_squashfs_offset() {
   return 1
 }
 
-mask_appimage_binfmt_magic() {
+validate_appimage_header() {
   local appimage="$1"
-  local magic
+  local elf_magic appimage_magic
 
-  magic="$(od -An -tx1 -j 8 -N 3 "$appimage" | tr -d ' \n')"
-  case "$magic" in
-    414901|414902)
-      # Ubuntu 22.04 AppImageLauncher 2.2.0 registers binfmt handlers for this
-      # marker and can break before the embedded AppImage runtime starts.
-      # Masking the marker keeps the ELF runtime and SquashFS payload intact.
-      printf '\0\0\0' | dd of="$appimage" bs=1 seek=8 conv=notrunc status=none
-      ;;
-  esac
+  elf_magic="$(od -An -tx1 -N 4 "$appimage" | tr -d ' \n')" || return 1
+  appimage_magic="$(od -An -tx1 -j 8 -N 3 "$appimage" | tr -d ' \n')" || return 1
+  # Type 2 AppImages must retain AI\002 at offset 8. Catalogs and desktop
+  # integration tools use it to identify the image before extracting metadata.
+  if [ "$elf_magic" != "7f454c46" ] || [ "$appimage_magic" != "414902" ]; then
+    echo "Invalid type 2 AppImage header in $appimage: expected ELF and AI\\002 magic at offset 8." >&2
+    return 1
+  fi
 }

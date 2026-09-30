@@ -6,6 +6,10 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed Linux AppImage detection by application catalogs and desktop integration tools by preserving the standard AppImage header.
+
 ## [1.0.65] - 2026-09-28
 
 ### Improved

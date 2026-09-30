@@ -148,8 +148,7 @@ cd "$PROJECT_DIR"
   --output appimage
 
 mv "$PROJECT_DIR/$OUTPUT" "$DIST_DIR/$OUTPUT"
-mask_appimage_binfmt_magic "$DIST_DIR/$OUTPUT"
-echo "Masked AppImage binfmt magic for direct launch on Ubuntu 22.04."
+validate_appimage_header "$DIST_DIR/$OUTPUT"
 
 VERSION_OUTPUT_FILE="$(mktemp)"
 trap 'rm -f "$VERSION_OUTPUT_FILE"' EXIT
@@ -167,6 +166,18 @@ mkdir -p "$SMOKE_APPDIR"
   cd "$SMOKE_APPDIR"
   unsquashfs -q -o "$APPIMAGE_OFFSET" "$DIST_DIR/$OUTPUT" >/dev/null
 )
+# Catalogs read metadata from the AppDir root, including symlink targets.
+for metadata in SnapTray.desktop snaptray.svg .DirIcon; do
+  if [ ! -f "$SMOKE_APPDIR/squashfs-root/$metadata" ]; then
+    echo "Missing root $metadata in AppImage." >&2
+    exit 1
+  fi
+done
+if [ ! -x "$SMOKE_APPDIR/squashfs-root/AppRun" ]; then
+  echo "Missing executable AppRun in AppImage." >&2
+  exit 1
+fi
+
 # Inspect the extracted artifact, not the build host's Qt installation.
 for plugin in libqwebp.so libqtiff.so; do
   if [ -z "$(find "$SMOKE_APPDIR/squashfs-root/usr" -path "*/imageformats/$plugin" -type f -print -quit)" ]; then

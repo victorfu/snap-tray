@@ -50,9 +50,21 @@ packaging\windows\package.bat msix      REM 只建置 MSIX
 
 Linux beta 目標是 Ubuntu 22.04 X11。此版本沒有內建更新，升級方式是下載新的 AppImage。
 
-打包腳本會在產生 AppImage 後遮蔽 AppImage type marker，讓有
-AppImageLauncher `binfmt_misc` handler 的 Ubuntu 22.04 系統直接執行內嵌的
-AppImage runtime，而不是先繞進 AppImageLauncher。
+打包腳本會保留並檢查 ELF header 與 type 2 AppImage marker（位元組偏移 8 的
+`AI\x02`），遵循 [AppImage 規格](https://github.com/AppImage/AppImageSpec/blob/master/draft.md#type-2-image-format)，
+並檢查解壓後根目錄的 desktop entry、圖示及可執行的 `AppRun`。
+不可遮蔽此 marker；AppImage 目錄與桌面整合工具需要它來辨識檔案並擷取中繼資料。
+
+若 Ubuntu 22.04 上舊版 AppImageLauncher 的 `binfmt_misc` handler 導致無法啟動，
+請在本機更新或停用該 handler。也可從 repository checkout 直接解壓並執行，
+不經過 AppImageLauncher 或 FUSE（需要 `squashfs-tools`）：
+
+```bash
+source packaging/linux/appimage-helpers.sh
+appimage="$(realpath dist/SnapTray-<version>-x86_64.AppImage)"
+unsquashfs -o "$(appimage_squashfs_offset "$appimage")" -d "$appimage.AppDir" "$appimage"
+"$appimage.AppDir/AppRun"
+```
 
 ## 打包前置需求
 
