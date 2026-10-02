@@ -1,4 +1,5 @@
 #include "AVFoundationEncoder.h"
+#include "encoding/VideoBitrate.h"
 
 #ifdef Q_OS_MAC
 
@@ -55,12 +56,7 @@ public:
     NSDictionary *pixelBufferAttributes = nil;
 
     int calculateBitrate() const {
-        int pixels = frameSize.width() * frameSize.height();
-        // Quality 0-100 maps to bits per pixel 0.1-0.3
-        double bitsPerPixel = 0.1 + (quality / 100.0) * 0.2;
-        int bitrate = static_cast<int>(pixels * frameRate * bitsPerPixel);
-        // Clamp to reasonable range: 1 Mbps to 50 Mbps
-        return qBound(1000000, bitrate, 50000000);
+        return SnapTray::VideoBitrate::forQuality(frameSize, frameRate, quality);
     }
 
     CVPixelBufferRef createPixelBufferFromImage(const QImage &image) {

@@ -571,6 +571,12 @@ target_link_libraries(Encoding_EncoderFactory PRIVATE snaptray_platform Qt6::Tes
 add_test(NAME Encoding_EncoderFactory COMMAND Encoding_EncoderFactory)
 set_tests_properties(Encoding_EncoderFactory PROPERTIES TIMEOUT 120 LABELS "integration;slow")
 
+add_executable(Encoding_VideoBitrate Encoding/tst_VideoBitrate.cpp)
+target_include_directories(Encoding_VideoBitrate PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(Encoding_VideoBitrate PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME Encoding_VideoBitrate COMMAND Encoding_VideoBitrate)
+set_tests_properties(Encoding_VideoBitrate PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Encoding_EncodingWorker Encoding/tst_EncodingWorker.cpp)
 target_link_libraries(Encoding_EncodingWorker PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Encoding_EncodingWorker COMMAND Encoding_EncodingWorker)

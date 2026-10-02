@@ -1,5 +1,6 @@
 #include "MediaFoundationEncoder.h"
 #include "encoding/AudioSampleTiming.h"
+#include "encoding/VideoBitrate.h"
 
 #ifdef Q_OS_WIN
 
@@ -48,12 +49,7 @@ public:
     }
 
     UINT32 calculateBitrate() const {
-        int pixels = frameSize.width() * frameSize.height();
-        // Quality 0-100 maps to bits per pixel 0.1-0.3
-        double bitsPerPixel = 0.1 + (quality / 100.0) * 0.2;
-        UINT32 bitrate = static_cast<UINT32>(pixels * frameRate * bitsPerPixel);
-        // Clamp to reasonable range: 1 Mbps to 50 Mbps
-        return qBound(1000000U, bitrate, 50000000U);
+        return static_cast<UINT32>(SnapTray::VideoBitrate::forQuality(frameSize, frameRate, quality));
     }
 
     HRESULT createSinkWriter(const QString &path) {
