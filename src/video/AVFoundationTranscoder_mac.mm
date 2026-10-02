@@ -363,6 +363,7 @@ VideoTranscodeResult AVFoundationTranscoder::transcode(const VideoTranscodeReque
         if (endMs <= startMs) {
             return fail(QStringLiteral("Invalid time range"));
         }
+        result.startMs = startMs; // AVAssetWriter keeps per-frame timing: the output starts at the request
         const qint64 spanMs = endMs - startMs;
         const CMTime startTime = CMTimeMake(startMs, kMsTimescale);
         const CMTime endTime = CMTimeMake(endMs, kMsTimescale);

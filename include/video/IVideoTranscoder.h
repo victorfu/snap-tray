@@ -22,6 +22,11 @@ struct VideoTranscodeRequest {
 struct VideoTranscodeResult {
     bool success = false;
     bool audioCopied = false; // Source audio preserved, including verified re-encode fallback.
+    // Source time the output starts at. The requested start where the writer
+    // keeps per-frame timing (AVFoundation); where the container is constant
+    // frame rate (Media Foundation) it is the start of the frame shown at the
+    // requested start, so at most one frame earlier. Audio shares this origin.
+    qint64 startMs = 0;
     QString errorMessage;
 };
 
