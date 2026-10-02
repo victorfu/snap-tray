@@ -248,10 +248,14 @@ Item {
         id: cropMouse
         objectName: "cropMouseArea"
         anchors.fill: parent
+        // MouseArea.enabled does not drop the area from the window's cursor lookup, so it is
+        // hidden outside editing (the click-to-play hand underneath shows through) and its
+        // cursor is reset whenever it is disabled (for example while processing).
+        visible: overlay.editing
         enabled: overlay.editing && overlay.interactive
         hoverEnabled: enabled
         preventStealing: true
-        cursorShape: enabled ? overlay.cursorFor(mouseX, mouseY) : CursorTokens.defaultCursor
+        cursorShape: enabled ? overlay.cursorFor(mouseX, mouseY) : undefined
 
         readonly property int modeNone: 0
         readonly property int modeCreate: 1

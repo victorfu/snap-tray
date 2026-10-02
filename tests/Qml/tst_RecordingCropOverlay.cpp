@@ -232,6 +232,7 @@ private slots:
     void previewGeometryChangeCancelsDraft();
     void previewSizeChipAndClear();
     void previewToolbarFitsAtMinimumWidth();
+    void previewCursorOverVideo();
 
 private:
     QVariant call(const char* name, const QVariantList& args = {});
@@ -246,6 +247,7 @@ private:
     void click(QQuickItem* item);
     void drag(const QPoint& from, const QPoint& to);
     void sendKey(Qt::Key key, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    Qt::CursorShape cursorAt(const QPoint& scenePos);
     bool editing() const;
     QRect expectedVideoCrop(const QRectF& viewRect) const;
 
@@ -574,6 +576,14 @@ void tst_RecordingCropOverlay::sendKey(Qt::Key key, Qt::KeyboardModifiers modifi
     QCoreApplication::sendEvent(m_view->rootObject(), &press);
     QKeyEvent release(QEvent::KeyRelease, key, modifiers);
     QCoreApplication::sendEvent(m_view->rootObject(), &release);
+}
+
+Qt::CursorShape tst_RecordingCropOverlay::cursorAt(const QPoint& scenePos)
+{
+    // Two hover moves: the first may only make a newly shown MouseArea track the pointer.
+    QTest::mouseMove(m_view.get(), scenePos + QPoint(1, 1));
+    QTest::mouseMove(m_view.get(), scenePos);
+    return m_view->cursor().shape();
 }
 
 bool tst_RecordingCropOverlay::editing() const
@@ -908,6 +918,35 @@ void tst_RecordingCropOverlay::previewToolbarFitsAtMinimumWidth()
     QVERIFY2(rightEdge(save) <= m_view->rootObject()->width(),
              qPrintable(QStringLiteral("save button right edge %1 > %2")
                             .arg(rightEdge(save)).arg(m_view->rootObject()->width())));
+}
+
+void tst_RecordingCropOverlay::previewCursorOverVideo()
+{
+    OPEN_PREVIEW_OR_SKIP(QSize(1600, 400));
+    const QRectF content = previewContentRect();
+    const QPoint inVideo = overlayPoint(content.x() + content.width() * 0.3, content.y() + content.height() * 0.4);
+
+    // Not editing: the click-to-play hand, with or without a committed crop.
+    QTRY_COMPARE(cursorAt(inVideo), Qt::PointingHandCursor);
+    m_backend->setCropRect(QRect(400, 100, 400, 200));
+    QTRY_COMPARE(cursorAt(inVideo), Qt::PointingHandCursor);
+    QQuickItem* chipLabel = previewItem("previewCropSizeLabel");
+    QVERIFY(chipLabel->isVisible());
+    QTRY_COMPARE(cursorAt(scenePoint(chipLabel, QPointF(chipLabel->width() / 2, chipLabel->height() / 2))),
+                 Qt::PointingHandCursor);
+    m_backend->clearCrop();
+
+    // Editing: the crop editor owns the cursor.
+    click(previewItem("previewCropButton"));
+    QVERIFY(editing());
+    QTRY_COMPARE(cursorAt(inVideo), Qt::CrossCursor);
+    drag(overlayPoint(content.x() + 100, content.y() + 30), overlayPoint(content.x() + 300, content.y() + 130));
+    QTRY_COMPARE(cursorAt(overlayPoint(content.x() + 200, content.y() + 80)), Qt::SizeAllCursor);
+
+    // Back out of editing: the hand returns.
+    sendKey(Qt::Key_Escape);
+    QVERIFY(!editing());
+    QTRY_COMPARE(cursorAt(inVideo), Qt::PointingHandCursor);
 }
 
 QTEST_MAIN(tst_RecordingCropOverlay)
