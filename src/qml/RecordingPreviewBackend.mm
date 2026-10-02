@@ -332,7 +332,7 @@ void RecordingPreviewBackend::save()
     m_saved = true;
     const QString outputPath = m_videoPath;
     close(); // Release playback resources before caller touches the file.
-    emit saveRequested(outputPath);
+    emit saveRequested(outputPath, QSize());
 }
 
 void RecordingPreviewBackend::discard()
@@ -760,7 +760,9 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
             return;
         }
 
-        QMetaObject::invokeMethod(app, [weakThis, outputPath, sourceVideoPath, outputMissingError]() {
+        const QSize croppedSize = cropRect.isEmpty() ? QSize() : outputSize;
+        QMetaObject::invokeMethod(app, [weakThis, outputPath, sourceVideoPath, outputMissingError,
+                                        croppedSize]() {
             if (!weakThis) {
                 return;
             }
@@ -776,7 +778,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
                 QFile::remove(sourceVideoPath);
                 weakThis->m_saved = true;
                 weakThis->close();
-                emit weakThis->saveRequested(outputPath);
+                emit weakThis->saveRequested(outputPath, croppedSize);
             } else {
                 qWarning() << "RecordingPreviewBackend: Conversion output missing or empty, keeping original";
                 weakThis->setErrorMessage(outputMissingError);
@@ -812,6 +814,7 @@ void RecordingPreviewBackend::performTranscode()
     request.startMs = m_trimStart;
     request.endMs = m_trimEnd;
     request.cropRect = m_cropRect;
+    const QSize croppedSize = m_cropRect.isEmpty() ? QSize() : m_cropRect.size();
     const QString unsupportedError = tr("Video export is not supported on this platform");
     const QString failedTemplate = tr("Export failed: %1");
     const auto cancelToken = m_exportCancelToken;
@@ -820,7 +823,7 @@ void RecordingPreviewBackend::performTranscode()
         : TranscoderFactory(&IVideoTranscoder::create);
     QPointer<RecordingPreviewBackend> weakThis(this);
 
-    (void)QtConcurrent::run([weakThis, request, outputPath, unsupportedError, failedTemplate,
+    (void)QtConcurrent::run([weakThis, request, outputPath, croppedSize, unsupportedError, failedTemplate,
                              cancelToken, createTranscoder]() {
         // Queued onto the GUI thread; never blocks, so it is safe from the
         // transcoder's worker threads (see IVideoTranscoder::ProgressCallback).
@@ -878,7 +881,7 @@ void RecordingPreviewBackend::performTranscode()
             result.success = false;
             result.errorMessage = QStringLiteral("rename failed");
         }
-        const bool posted = post([weakThis, result, outputPath, failedTemplate,
+        const bool posted = post([weakThis, result, outputPath, croppedSize, failedTemplate,
                                   inputPath = request.inputPath]() {
             if (!weakThis) {
                 // The preview went away mid-export; keep the source, drop the output.
@@ -894,7 +897,7 @@ void RecordingPreviewBackend::performTranscode()
             QFile::remove(inputPath);
             weakThis->m_saved = true;
             weakThis->close();
-            emit weakThis->saveRequested(outputPath);
+            emit weakThis->saveRequested(outputPath, croppedSize);
         });
         if (!posted && result.success) {
             QFile::remove(outputPath);

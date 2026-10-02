@@ -1483,12 +1483,12 @@ void RecordingManager::onPreviewClosed(bool saved)
     m_tempVideoPath.clear();
 }
 
-void RecordingManager::triggerSaveDialog(const QString &videoPath)
+void RecordingManager::triggerSaveDialog(const QString &videoPath, const QSize &outputSize)
 {
-    showSaveDialog(videoPath);
+    showSaveDialog(videoPath, outputSize);
 }
 
-void RecordingManager::showSaveDialog(const QString &tempOutputPath)
+void RecordingManager::showSaveDialog(const QString &tempOutputPath, const QSize &outputSize)
 {
     // Get settings from FileSettingsManager
     auto& fileSettings = FileSettingsManager::instance();
@@ -1509,8 +1509,10 @@ void RecordingManager::showSaveDialog(const QString &tempOutputPath)
     FilenameTemplateEngine::Context context;
     context.type = QStringLiteral("Recording");
     context.prefix = fileSettings.loadFilenamePrefix();
-    context.width = m_recordingRegion.width();
-    context.height = m_recordingRegion.height();
+    // A cropped export is named by its own size; other saves by the region.
+    const QSize nameSize = outputSize.isEmpty() ? m_recordingRegion.size() : outputSize;
+    context.width = nameSize.width();
+    context.height = nameSize.height();
     context.monitor = monitorIndex >= 0 ? QString::number(monitorIndex) : QStringLiteral("unknown");
     context.windowTitle = QString();
     context.appName = QString();

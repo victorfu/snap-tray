@@ -129,8 +129,10 @@ public:
     Q_INVOKABLE void updatePlayingState(bool playing);
 
 signals:
-    // External interface consumed by MainApplication.
-    void saveRequested(const QString &videoPath);
+    // External interface consumed by MainApplication. `outputSize` is the
+    // pixel size of a cropped export (for the filename's {w}x{h}); it is
+    // empty when the output is not cropped.
+    void saveRequested(const QString &videoPath, const QSize &outputSize);
     void discardRequested(const QString &videoPath);
     void closed(bool saved);
 

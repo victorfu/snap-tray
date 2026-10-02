@@ -40,6 +40,7 @@ private slots:
     // Error handling tests
     void testErrorSignalOnInvalidOperation();
     void testAutoSaveKeepsExistingRecording();
+    void testSaveNameUsesCroppedOutputSize();
 
 private:
     RecordingManager* m_manager = nullptr;
@@ -175,6 +176,35 @@ void TestRecordingManagerLifecycle::testAutoSaveKeepsExistingRecording()
     QVERIFY(original.open(QIODevice::ReadOnly));
     QCOMPARE(original.readAll(), QByteArray("original"));
     QVERIFY(!QFile::exists(temporary));
+}
+
+// {w}x{h} names a cropped export by its own pixel size; any other save keeps
+// the recording region's size.
+void TestRecordingManagerLifecycle::testSaveNameUsesCroppedOutputSize()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    auto& settings = FileSettingsManager::instance();
+    settings.saveAutoSaveRecordings(true);
+    settings.saveRecordingPath(dir.path());
+    settings.saveFilenameTemplate("{w}x{h}.{ext}");
+    m_manager->m_recordingRegion = QRect(0, 0, 1440, 900);
+    const QString cropped = dir.filePath("cropped.gif");
+    const QString uncropped = dir.filePath("uncropped.mp4");
+    for (const auto& path : {cropped, uncropped}) {
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        QCOMPARE(file.write("video"), qint64(5));
+    }
+
+    QSignalSpy saved(m_manager, &RecordingManager::recordingStopped);
+    m_manager->triggerSaveDialog(cropped, QSize(640, 360));
+    QCOMPARE(saved.count(), 1);
+    QCOMPARE(saved.at(0).first().toString(), dir.filePath("640x360.gif"));
+
+    m_manager->triggerSaveDialog(uncropped);
+    QCOMPARE(saved.count(), 2);
+    QCOMPARE(saved.at(1).first().toString(), dir.filePath("1440x900.mp4"));
 }
 
 QTEST_MAIN(TestRecordingManagerLifecycle)

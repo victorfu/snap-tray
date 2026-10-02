@@ -69,7 +69,9 @@ public slots:
     void resumeRecording();         // Resume recording
     void togglePause();             // Toggle pause state
     void onPreviewClosed(bool saved);  // Handle preview window close
-    void triggerSaveDialog(const QString &videoPath);  // Show save dialog for video
+    // Show save dialog for video. `outputSize` (pixels) replaces the recording
+    // region in the filename's {w}x{h} for a cropped export; empty = region.
+    void triggerSaveDialog(const QString &videoPath, const QSize &outputSize = QSize());
 
 signals:
     void recordingStarted();
@@ -115,7 +117,7 @@ private:
     void cleanupStaleTempFiles();      // Clean up old temp files on startup
     QString generateOutputPath() const;
     void setState(State newState);
-    void showSaveDialog(const QString &tempOutputPath);
+    void showSaveDialog(const QString &tempOutputPath, const QSize &outputSize = QSize());
     void loadAndValidateFrameRate();
     void resetPauseTracking();
     bool shouldUseDedicatedEncodingThread(bool hasNativeEncoder) const;

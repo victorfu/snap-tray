@@ -908,9 +908,9 @@ void MainApplication::showRecordingPreview(const QString& videoPath, int default
     m_previewBackend->show();
 }
 
-void MainApplication::onPreviewSaveRequested(const QString& videoPath)
+void MainApplication::onPreviewSaveRequested(const QString& videoPath, const QSize& outputSize)
 {
-    m_recordingManager->triggerSaveDialog(videoPath);
+    m_recordingManager->triggerSaveDialog(videoPath, outputSize);
 }
 
 void MainApplication::onPreviewDiscardRequested(const QString& videoPath)

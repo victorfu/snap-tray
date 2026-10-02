@@ -8,6 +8,7 @@
 #include <QObject>
 #include <QPixmap>
 #include <QPointer>
+#include <QSize>
 #include <QStringList>
 #include <functional>
 #include <optional>
@@ -56,7 +57,7 @@ private slots:
     void onHistoryWindow();
     void onSettings();
     void showRecordingPreview(const QString &videoPath, int defaultOutputFormat);
-    void onPreviewSaveRequested(const QString &videoPath);
+    void onPreviewSaveRequested(const QString &videoPath, const QSize &outputSize);
     void onPreviewDiscardRequested(const QString &videoPath);
     void onHotkeyAction(SnapTray::HotkeyAction action);
     void onHotkeyChanged(SnapTray::HotkeyAction action, const SnapTray::HotkeyConfig& config);

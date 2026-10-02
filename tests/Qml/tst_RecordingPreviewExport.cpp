@@ -263,6 +263,8 @@ void tst_RecordingPreviewExport::saveAnimation()
     QCOMPARE(savedSpy.count(), 1);
 
     const QString outputPath = savedSpy.first().at(0).toString();
+    // Uncropped: no output size, so the filename keeps the recording's size.
+    QCOMPARE(savedSpy.first().at(1).toSize(), QSize());
     const QByteArray expectedFormat = format == RecordingPreviewBackend::GIF ? "gif" : "webp";
     QCOMPARE(QFileInfo(outputPath).absolutePath(), directory.path());
     QCOMPARE(QFileInfo(outputPath).suffix().toLatin1(), expectedFormat);
@@ -375,6 +377,8 @@ void tst_RecordingPreviewExport::saveCroppedAnimation()
     QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
     QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
     QCOMPARE(savedSpy.count(), 1);
+    // The filename's {w}x{h} must describe the cropped output.
+    QCOMPARE(savedSpy.first().at(1).toSize(), crop.size());
 
     QImageReader reader(savedSpy.first().at(0).toString());
     QVERIFY2(reader.canRead(), qPrintable(reader.errorString()));
@@ -475,6 +479,7 @@ void tst_RecordingPreviewExport::saveMp4Edits()
     QCOMPARE(backend.processProgress(), 100);
 
     const QString outputPath = savedSpy.first().at(0).toString();
+    QCOMPARE(savedSpy.first().at(1).toSize(), crop ? cropRect.size() : QSize());
     QCOMPARE(QFileInfo(outputPath).suffix(), QStringLiteral("mp4"));
     QCOMPARE(QFileInfo(outputPath).absolutePath(), directory.path());
     QVERIFY(!QFileInfo::exists(inputPath));
@@ -689,6 +694,9 @@ void tst_RecordingPreviewExport::closeOutcomes()
     QCOMPARE(closed.count(), action == 3 ? 0 : 1);
     QCOMPARE(discarded.count(), action < 2 ? 1 : 0);
     QCOMPARE(saved.count(), action == 2 ? 1 : 0);
+    if (action == 2) {
+        QCOMPARE(saved.first().at(1).toSize(), QSize());
+    }
     if (action == 3) {
         backend.m_isProcessing = false;
         backend.close();
