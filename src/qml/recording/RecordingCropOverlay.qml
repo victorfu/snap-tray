@@ -233,7 +233,8 @@ Item {
         Text {
             id: draftSizeText
             anchors.centerIn: parent
-            // Approximate; the committed (normalized) size is shown by the toolbar chip.
+            // Approximate; the committed (normalized) size is shown by the crop
+            // size chip in the top-left corner of the video.
             text: overlay.hasContent
                   ? Math.round(overlay.draftRect.width * overlay.videoSize.width / overlay.contentRect.width)
                     + " × " + Math.round(overlay.draftRect.height * overlay.videoSize.height / overlay.contentRect.height)

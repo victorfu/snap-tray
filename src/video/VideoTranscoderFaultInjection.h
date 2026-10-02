@@ -3,8 +3,9 @@
 // Internal test seam for native IVideoTranscoder implementations.
 //
 // Production code never sets a fault: IVideoTranscoder::create() returns a
-// transcoder whose fault is VideoTranscodeFault::None, and nothing outside the
-// tests includes this header. Tests reach the seam with
+// transcoder whose fault is VideoTranscodeFault::None. Besides the tests, only
+// the native transcoders include this header, to implement the seam; only the
+// tests call setFaultForTesting(). Tests reach the seam with
 //   dynamic_cast<VideoTranscoderFaultInjection*>(transcoder.get())
 // so the public IVideoTranscoder contract stays unchanged. Every native
 // implementation (AVFoundation, Media Foundation) must implement each fault at

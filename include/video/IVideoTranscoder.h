@@ -36,10 +36,12 @@ struct VideoFileProbe {
 class IVideoTranscoder
 {
 public:
-    // Called from the transcoder's worker threads; return false to cancel.
-    // 100 is reported once, only after the output has been validated;
-    // returning false there still cancels and the output is removed.
-    // The callback must not block on the thread that called transcode().
+    // Return false to cancel. Values below 100 may come from an internal
+    // worker thread (AVFoundation) or from the thread that called
+    // transcode() (Media Foundation). 100 is reported once, on the calling
+    // thread, only after the output has been validated; returning false
+    // there still cancels and the output is removed. The callback must not
+    // block on the thread that called transcode().
     using ProgressCallback = std::function<bool(int percent)>;
 
     virtual ~IVideoTranscoder() = default;
