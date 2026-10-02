@@ -93,6 +93,8 @@ private slots:
     void saveAnimation();
     void saveCroppedAnimation_data();
     void saveCroppedAnimation();
+    void saveCroppedAnimationExceedsBounds_data();
+    void saveCroppedAnimationExceedsBounds();
     void failedExportPreservesOriginal_data();
     void failedExportPreservesOriginal();
 };
@@ -256,6 +258,46 @@ void tst_RecordingPreviewExport::saveCroppedAnimation()
     const QImage first = reader.read();
     QCOMPARE(first.size(), crop.size());
     QVERIFY(isRed(first.pixelColor(first.rect().center())));
+    QVERIFY(QDir(directory.path()).entryList(QStringList(QStringLiteral("*.part-*")), QDir::Files).isEmpty());
+}
+
+void tst_RecordingPreviewExport::saveCroppedAnimationExceedsBounds_data()
+{
+    QTest::addColumn<int>("format");
+    QTest::newRow("gif") << int(RecordingPreviewBackend::GIF);
+    QTest::newRow("webp") << int(RecordingPreviewBackend::WebP);
+}
+
+void tst_RecordingPreviewExport::saveCroppedAnimationExceedsBounds()
+{
+    QFETCH(int, format);
+    const QSize sourceSize(160, 120);
+    const QSize reportedSize(200, 150);  // Larger than actual
+    const QRect crop(80, 60, 96, 72);   // Valid for reported size, exceeds actual
+
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(format);
+    // Report larger size than actual video
+    backend.updateVideoSize(reportedSize);
+    // Set crop that exceeds actual frame bounds
+    backend.setCropRect(crop);
+    QCOMPARE(backend.cropRect(), crop);
+
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
+    // Should have failed due to crop exceeding frame bounds
+    QVERIFY(!backend.errorMessage().isEmpty());
+    QCOMPARE(savedSpy.count(), 0);
+    // Source file should still exist (not deleted)
+    QVERIFY(QFileInfo::exists(inputPath));
+    // No partial files should remain
     QVERIFY(QDir(directory.path()).entryList(QStringList(QStringLiteral("*.part-*")), QDir::Files).isEmpty());
 }
 

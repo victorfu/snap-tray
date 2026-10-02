@@ -673,6 +673,13 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
 
             if (!capturedFrame.isNull()) {
                 if (!cropRect.isEmpty()) {
+                    const QRect frameRect(QPoint(0, 0), capturedFrame.size());
+                    if (!frameRect.contains(cropRect)) {
+                        qWarning() << "RecordingPreviewBackend: Crop rectangle" << cropRect
+                                   << "exceeds frame bounds" << frameRect;
+                        frameExtractionFailed = true;
+                        break;
+                    }
                     capturedFrame = capturedFrame.copy(cropRect);
                 }
                 const qint64 framesBefore = gifEncoder
