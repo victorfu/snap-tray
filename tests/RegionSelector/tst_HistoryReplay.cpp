@@ -25,6 +25,8 @@ private slots:
     void testDetectedWindowMetadataSurvivesHighlightClear();
     void testPreservedSelectionRecordsOriginalHistory_data();
     void testPreservedSelectionRecordsOriginalHistory();
+    void testLiveEditsSurviveHistoryNavigation_data();
+    void testLiveEditsSurviveHistoryNavigation();
 };
 
 void tst_RegionSelectorHistoryReplay::initTestCase()
@@ -321,6 +323,104 @@ void tst_RegionSelectorHistoryReplay::testPreservedSelectionRecordsOriginalHisto
     QFile annotations(entry.annotationsPath);
     QVERIFY(annotations.open(QIODevice::ReadOnly));
     QCOMPARE(annotations.readAll(), originalRequest->annotationsJson);
+}
+
+void tst_RegionSelectorHistoryReplay::testLiveEditsSurviveHistoryNavigation_data()
+{
+    QTest::addColumn<bool>("previousRoundTrip");
+    QTest::addColumn<bool>("noopForward");
+    QTest::addColumn<bool>("openByEntryId");
+    for (bool openByEntryId : {false, true}) {
+        const char* entryPoint = openByEntryId ? "entry-id" : "keyboard";
+        QTest::addRow("%s-first-round-trip", entryPoint) << false << false << openByEntryId;
+        QTest::addRow("%s-second-round-trip", entryPoint) << true << false << openByEntryId;
+        QTest::addRow("%s-noop-period", entryPoint) << false << true << openByEntryId;
+    }
+}
+
+void tst_RegionSelectorHistoryReplay::testLiveEditsSurviveHistoryNavigation()
+{
+    QFETCH(bool, previousRoundTrip);
+    QFETCH(bool, noopForward);
+    QFETCH(bool, openByEntryId);
+    QTemporaryDir history;
+    QVERIFY(history.isValid());
+    const QByteArray previousHistory = qgetenv("SNAPTRAY_HISTORY_DIR");
+    qputenv("SNAPTRAY_HISTORY_DIR", history.path().toUtf8());
+    const auto restoreEnvironment = qScopeGuard([&] {
+        if (previousHistory.isNull()) qunsetenv("SNAPTRAY_HISTORY_DIR");
+        else qputenv("SNAPTRAY_HISTORY_DIR", previousHistory);
+    });
+
+    SnapTray::CaptureSessionWriteRequest stored;
+    stored.canvasImage = QImage(400, 300, QImage::Format_RGB32);
+    stored.canvasImage.fill(Qt::blue);
+    stored.selectionRect = QRect(5, 5, 80, 60);
+    stored.resultImage = stored.canvasImage.copy(stored.selectionRect);
+    stored.canvasLogicalSize = stored.canvasImage.size();
+    AnnotationLayer emptyLayer;
+    stored.annotationsJson = SnapTray::serializeAnnotationLayer(emptyLayer);
+    const auto entry = SnapTray::HistoryStore::writeCaptureSession(stored);
+    QVERIFY(entry);
+
+    // A second history entry exercises navigation within history without
+    // replacing the live snapshot with the currently displayed history entry.
+    auto older = stored;
+    older.createdAt = stored.createdAt.addSecs(-1);
+    older.selectionRect = QRect(10, 10, 60, 40);
+    older.resultImage = older.canvasImage.copy(older.selectionRect);
+    QVERIFY(SnapTray::HistoryStore::writeCaptureSession(older));
+
+    RegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    QPixmap liveCapture(400, 300);
+    liveCapture.fill(Qt::white);
+    selector.initializeForScreen(QGuiApplication::primaryScreen(), liveCapture);
+    const QRect originalCrop(20, 20, 200, 150);
+    const QRect editedCrop(30, 35, 250, 190);
+    RegionSelectorTestAccess::setSelectionRect(selector, originalCrop);
+    auto* layer = RegionSelectorTestAccess::annotationLayer(selector);
+    layer->addItem(std::make_unique<ShapeAnnotation>(QRect(40, 40, 30, 25),
+        ShapeType::Rectangle, Qt::red, 3, true));
+    const QByteArray annotationA = SnapTray::serializeAnnotationLayer(*layer);
+
+    if (previousRoundTrip) {
+        QTest::keyClick(&selector, Qt::Key_Comma);
+        QCOMPARE(RegionSelectorTestAccess::selectionRect(selector), stored.selectionRect);
+        QVERIFY(layer->isEmpty());
+        QTest::keyClick(&selector, Qt::Key_Period);
+    }
+    if (noopForward) {
+        QTest::keyClick(&selector, Qt::Key_Period);
+    }
+    QCOMPARE(RegionSelectorTestAccess::selectionRect(selector), originalCrop);
+    QCOMPARE(SnapTray::serializeAnnotationLayer(*layer), annotationA);
+
+    layer->addItem(std::make_unique<ShapeAnnotation>(QRect(100, 100, 40, 35),
+        ShapeType::Rectangle, Qt::green, 3, true));
+    RegionSelectorTestAccess::setSelectionRect(selector, editedCrop);
+    const QByteArray annotationsAB = SnapTray::serializeAnnotationLayer(*layer);
+    QCOMPARE(layer->itemCount(), size_t(2));
+
+    if (openByEntryId) {
+        QVERIFY(selector.beginHistoryReplay(entry->id));
+    } else {
+        QTest::keyClick(&selector, Qt::Key_Comma);
+    }
+    QCOMPARE(RegionSelectorTestAccess::selectionRect(selector), stored.selectionRect);
+    QVERIFY(layer->isEmpty());
+    QTest::keyClick(&selector, Qt::Key_Comma);
+    QCOMPARE(RegionSelectorTestAccess::selectionRect(selector), older.selectionRect);
+    if (openByEntryId) {
+        QVERIFY(selector.beginHistoryReplay(entry->id));
+    } else {
+        QTest::keyClick(&selector, Qt::Key_Period);
+    }
+    QCOMPARE(RegionSelectorTestAccess::selectionRect(selector), stored.selectionRect);
+    QTest::keyClick(&selector, Qt::Key_Period);
+    QCOMPARE(layer->itemCount(), size_t(2));
+    QCOMPARE(SnapTray::serializeAnnotationLayer(*layer), annotationsAB);
+    QCOMPARE(RegionSelectorTestAccess::selectionRect(selector), editedCrop);
 }
 
 QTEST_MAIN(tst_RegionSelectorHistoryReplay)

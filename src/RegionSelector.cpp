@@ -1532,7 +1532,7 @@ bool RegionSelector::beginHistoryReplay(const QString& entryId)
     resetInitialRevealState();
     m_initialRevealState = InitialRevealState::Revealed;
 
-    if (!m_historyLiveSlot.valid) {
+    if (m_historyReplayIndex < 0) {
         snapshotLiveReplaySlot();
     }
 
@@ -1571,10 +1571,6 @@ void RegionSelector::navigateHistoryReplay(int direction)
         return;
     }
 
-    if (!m_historyLiveSlot.valid) {
-        snapshotLiveReplaySlot();
-    }
-
     int targetIndex = m_historyReplayIndex;
     if (direction < 0) {
         targetIndex = (m_historyReplayIndex < 0)
@@ -1587,6 +1583,12 @@ void RegionSelector::navigateHistoryReplay(int direction)
 
     if (targetIndex == m_historyReplayIndex) {
         return;
+    }
+
+    // Refresh live edits on every departure, but never snapshot a no-op key
+    // press or replace the live slot while browsing historical entries.
+    if (m_historyReplayIndex < 0) {
+        snapshotLiveReplaySlot();
     }
 
     if (targetIndex < 0) {
