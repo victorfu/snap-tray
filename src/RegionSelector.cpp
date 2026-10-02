@@ -907,7 +907,9 @@ RegionSelector::RegionSelector(QWidget* parent)
                 && m_inputState.hasDetectedWindow
                 && m_selectionManager->selectionRect()
                     == m_inputState.highlightedWindowRect.intersected(rect())) {
-                setSelectionWindowMetadata(m_detectedWindow->windowTitle, m_detectedWindow->ownerApp);
+                DetectedElement selectedWindow = *m_detectedWindow;
+                WindowDetector::populateWindowMetadata(selectedWindow);
+                setSelectionWindowMetadata(selectedWindow.windowTitle, selectedWindow.ownerApp);
             }
             m_selectionManager->finishSelection();
             if (!m_inputState.multiRegionMode) {

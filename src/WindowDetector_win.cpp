@@ -440,6 +440,33 @@ bool WindowDetector::hasAccessibilityPermission(bool /*promptIfMissing*/)
     return true;
 }
 
+void WindowDetector::populateWindowMetadata(DetectedElement &element)
+{
+    // windowId holds the HWND truncated to 32 bits; Windows documents that
+    // handles round-trip safely by sign-extending them back.
+    HWND hwnd = reinterpret_cast<HWND>(
+        static_cast<intptr_t>(static_cast<int32_t>(element.windowId)));
+    if (!hwnd || !IsWindow(hwnd)) {
+        return;
+    }
+
+    if (element.windowTitle.isEmpty()) {
+        // Child controls report the title of their top-level window.
+        HWND rootHwnd = GetAncestor(hwnd, GA_ROOT);
+        if (!rootHwnd) {
+            rootHwnd = hwnd;
+        }
+        constexpr int kMaxTitleLength = 512;
+        WCHAR titleBuffer[kMaxTitleLength];
+        const int titleLen = GetWindowTextW(rootHwnd, titleBuffer, kMaxTitleLength);
+        element.windowTitle = QString::fromWCharArray(titleBuffer, titleLen);
+    }
+
+    if (element.ownerApp.isEmpty() && element.ownerPid > 0) {
+        element.ownerApp = getProcessName(static_cast<DWORD>(element.ownerPid));
+    }
+}
+
 void WindowDetector::setScreen(QScreen *screen)
 {
     m_currentScreen = screen;

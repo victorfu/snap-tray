@@ -71,6 +71,10 @@ public:
     // Permission management
     static bool hasAccessibilityPermission(bool promptIfMissing = false);
 
+    // Fill windowTitle/ownerApp for platforms that skip them during enumeration
+    // for speed. Call once a detected element is actually used, not per hover.
+    static void populateWindowMetadata(DetectedElement &element);
+
     // Detection control
     void setScreen(QScreen *screen);
     void setEnabled(bool enabled);

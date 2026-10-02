@@ -531,6 +531,12 @@ bool WindowDetector::hasAccessibilityPermission(bool promptIfMissing)
     return true;
 }
 
+void WindowDetector::populateWindowMetadata(DetectedElement& element)
+{
+    // Enumeration already reads the X11 window title and owner app.
+    Q_UNUSED(element);
+}
+
 void WindowDetector::setScreen(QScreen* screen)
 {
     m_currentScreen = screen;

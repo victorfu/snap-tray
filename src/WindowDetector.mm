@@ -741,6 +741,11 @@ bool WindowDetector::hasAccessibilityPermission(bool promptIfMissing)
     return AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)options);
 }
 
+void WindowDetector::populateWindowMetadata(DetectedElement & /*element*/)
+{
+    // Enumeration already reads kCGWindowName / kCGWindowOwnerName.
+}
+
 void WindowDetector::setScreen(QScreen *screen)
 {
     m_currentScreen = screen;
