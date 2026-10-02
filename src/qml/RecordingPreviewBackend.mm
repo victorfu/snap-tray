@@ -2,7 +2,7 @@
 #include "cursor/CursorSurfaceSupport.h"
 #include "qml/QmlOverlayManager.h"
 #include "utils/VideoCropGeometry.h"
-#include "video/VideoTrimmer.h"
+#include "video/IVideoTranscoder.h"
 #include "video/IVideoFrameReader.h"
 #include "video/IVideoPlayer.h"
 #include "encoding/NativeGifEncoder.h"
@@ -45,13 +45,15 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, QObje
 {
 }
 
+RecordingPreviewBackend::TranscoderFactory& RecordingPreviewBackend::transcoderFactoryOverride()
+{
+    static TranscoderFactory factory;
+    return factory;
+}
+
 RecordingPreviewBackend::~RecordingPreviewBackend()
 {
-    if (m_trimmer) {
-        m_trimmer->cancel();
-        delete m_trimmer;
-        m_trimmer = nullptr;
-    }
+    m_exportCancelToken->store(true);
 
     if (m_view) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
@@ -321,8 +323,8 @@ void RecordingPreviewBackend::save()
         return;
     }
 
-    if (hasTrim()) {
-        performTrim();
+    if (hasTrim() || hasCrop()) {
+        performTranscode();
         return;
     }
 
@@ -783,105 +785,119 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
     });
 }
 
-// ---------- Trim ----------
+// ---------- MP4 trim / crop (runs on background thread) ----------
 
-void RecordingPreviewBackend::performTrim()
+void RecordingPreviewBackend::performTranscode()
 {
-    // Determine output format
-    QString extension;
-    EncoderFactory::Format encoderFormat;
-    switch (m_selectedFormat) {
-    case GIF:
-        extension = ".gif";
-        encoderFormat = EncoderFactory::Format::GIF;
-        break;
-    case WebP:
-        extension = ".webp";
-        encoderFormat = EncoderFactory::Format::WebP;
-        break;
-    default:
-        extension = ".mp4";
-        encoderFormat = EncoderFactory::Format::MP4;
-        break;
-    }
+    const int dotIndex = m_videoPath.lastIndexOf('.');
+    const QString base = dotIndex > 0 ? m_videoPath.left(dotIndex) : m_videoPath;
+    const QString stamp = QString::number(QDateTime::currentMSecsSinceEpoch());
+    const QString outputPath = base + QStringLiteral("_edited_") + stamp + QStringLiteral(".mp4");
+    const QString workingPath = base + QStringLiteral("_edited_") + stamp + QStringLiteral(".part-")
+        + QUuid::createUuid().toString(QUuid::WithoutBraces) + QStringLiteral(".mp4");
 
-    // Create output path with timestamp for uniqueness
-    QString outputPath = m_videoPath;
-    int dotIndex = outputPath.lastIndexOf('.');
-    QString timestamp = QString::number(QDateTime::currentMSecsSinceEpoch());
-    if (dotIndex > 0)
-        outputPath = outputPath.left(dotIndex) + "_trimmed_" + timestamp + extension;
-    else
-        outputPath += "_trimmed_" + timestamp + extension;
+    qDebug() << "RecordingPreviewBackend: Exporting MP4 edits, trim:" << hasTrim()
+             << "crop:" << m_cropRect;
 
-    // Show processing state
     m_isProcessing = true;
     m_processProgress = 0;
-    m_processStatus = tr("Trimming video...");
+    m_processStatus = tr("Exporting video...");
     emit processingChanged();
     emit processProgressChanged();
     emit processStatusChanged();
 
-    // Create trimmer
-    m_trimmer = new VideoTrimmer(this);
-    m_trimmer->setInputPath(m_videoPath);
-    m_trimmer->setTrimRange(m_trimStart, trimEnd());
-    m_trimmer->setOutputFormat(encoderFormat);
-    m_trimmer->setOutputPath(outputPath);
+    VideoTranscodeRequest request;
+    request.inputPath = m_videoPath;
+    request.outputPath = workingPath;
+    request.startMs = m_trimStart;
+    request.endMs = m_trimEnd;
+    request.cropRect = m_cropRect;
+    const QString unsupportedError = tr("Video export is not supported on this platform");
+    const QString failedTemplate = tr("Export failed: %1");
+    const auto cancelToken = m_exportCancelToken;
+    const TranscoderFactory createTranscoder = transcoderFactoryOverride()
+        ? transcoderFactoryOverride()
+        : TranscoderFactory(&IVideoTranscoder::create);
+    QPointer<RecordingPreviewBackend> weakThis(this);
 
-    connect(m_trimmer, &VideoTrimmer::progress,
-            this, &RecordingPreviewBackend::onTrimProgress);
-    connect(m_trimmer, &VideoTrimmer::finished,
-            this, &RecordingPreviewBackend::onTrimFinished);
-    connect(m_trimmer, &VideoTrimmer::error,
-            this, [this](const QString &msg) {
-        qWarning() << "RecordingPreviewBackend: Trim error:" << msg;
-        setErrorMessage(tr("Trim failed: %1").arg(msg));
-        if (m_trimmer) {
-            m_trimmer->deleteLater();
-            m_trimmer = nullptr;
-        }
-        m_isProcessing = false;
-        emit processingChanged();
-    });
-
-    m_trimmer->startTrim();
-}
-
-void RecordingPreviewBackend::onTrimProgress(int percent)
-{
-    if (m_processProgress != percent) {
-        m_processProgress = percent;
-        emit processProgressChanged();
-    }
-}
-
-void RecordingPreviewBackend::onTrimFinished(bool success, const QString &outputPath)
-{
-    qDebug() << "RecordingPreviewBackend: Trim finished, success:" << success;
-
-    // Clean up trimmer
-    if (m_trimmer) {
-        m_trimmer->deleteLater();
-        m_trimmer = nullptr;
-    }
-
-    m_isProcessing = false;
-    emit processingChanged();
-
-    if (success) {
-        QFileInfo outInfo(outputPath);
-        if (outInfo.exists() && outInfo.size() > 0) {
-            QFile::remove(m_videoPath);
+    (void)QtConcurrent::run([weakThis, request, outputPath, unsupportedError, failedTemplate,
+                             cancelToken, createTranscoder]() {
+        // Queued onto the GUI thread; never blocks, so it is safe from the
+        // transcoder's worker threads (see IVideoTranscoder::ProgressCallback).
+        auto post = [](auto fn) {
+            if (QCoreApplication* app = QCoreApplication::instance()) {
+                QMetaObject::invokeMethod(app, fn, Qt::QueuedConnection);
+                return true;
+            }
+            return false;
+        };
+        auto transcoder = createTranscoder();
+        VideoTranscodeResult result;
+        if (!transcoder) {
+            result.errorMessage = unsupportedError;
         } else {
-            qWarning() << "RecordingPreviewBackend: Trim output missing or empty, keeping original";
-            setErrorMessage(tr("Trim failed: output file is missing or empty"));
-            return;
+            result = transcoder->transcode(request, [weakThis, cancelToken, post](int percent) {
+                post([weakThis, percent]() {
+                    if (weakThis && weakThis->m_processProgress != percent) {
+                        weakThis->m_processProgress = percent;
+                        emit weakThis->processProgressChanged();
+                    }
+                });
+                return !cancelToken->load();
+            });
         }
-        m_saved = true;
-        close();
-        emit saveRequested(outputPath);
-    } else {
-        setErrorMessage(tr("Trim failed"));
-    }
+        // Do not trust the transcoder's claim alone: the source is deleted on
+        // success, so the output must be a playable file that kept the audio.
+        if (result.success) {
+            const VideoFileProbe sourceProbe = transcoder->probe(request.inputPath);
+            const VideoFileProbe outputProbe = transcoder->probe(request.outputPath);
+            const QFileInfo outputInfo(request.outputPath);
+            if (cancelToken->load() || !sourceProbe.valid || !outputProbe.valid
+                || !outputInfo.exists() || outputInfo.size() <= 0 || outputProbe.durationMs <= 0
+                || (sourceProbe.hasAudio && (!result.audioCopied || !outputProbe.hasAudio))) {
+                qWarning() << "RecordingPreviewBackend: MP4 export output failed validation;"
+                           << "cancelled:" << cancelToken->load()
+                           << "source valid:" << sourceProbe.valid
+                           << "output valid:" << outputProbe.valid
+                           << "source audio:" << sourceProbe.hasAudio
+                           << "audio copied:" << result.audioCopied
+                           << "output audio:" << outputProbe.hasAudio;
+                QFile::remove(request.outputPath);
+                result.success = false;
+                result.errorMessage = QStringLiteral("Output validation failed; source retained");
+            }
+        } else {
+            qWarning() << "RecordingPreviewBackend: MP4 export failed:" << result.errorMessage;
+            // The transcoder removes its own output on failure; a fake or
+            // misbehaving one must not leave a partial file behind either.
+            QFile::remove(request.outputPath);
+        }
+        if (result.success && !QFile::rename(request.outputPath, outputPath)) {
+            qWarning() << "RecordingPreviewBackend: Failed to promote MP4 export output";
+            QFile::remove(request.outputPath);
+            result.success = false;
+            result.errorMessage = QStringLiteral("rename failed");
+        }
+        const bool posted = post([weakThis, result, outputPath, failedTemplate,
+                                  inputPath = request.inputPath]() {
+            if (!weakThis) {
+                // The preview went away mid-export; keep the source, drop the output.
+                QFile::remove(outputPath);
+                return;
+            }
+            weakThis->m_isProcessing = false;
+            emit weakThis->processingChanged();
+            if (!result.success) {
+                weakThis->setErrorMessage(failedTemplate.arg(result.errorMessage));
+                return;
+            }
+            QFile::remove(inputPath);
+            weakThis->m_saved = true;
+            weakThis->close();
+            emit weakThis->saveRequested(outputPath);
+        });
+        if (!posted && result.success) {
+            QFile::remove(outputPath);
+        }
+    });
 }

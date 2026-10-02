@@ -7,9 +7,13 @@
 #include <QRectF>
 #include <QSize>
 
+#include <atomic>
+#include <functional>
+#include <memory>
+
 class QQuickView;
 class QEvent;
-class VideoTrimmer;
+class IVideoTranscoder;
 class tst_RecordingPreviewExport;
 
 /**
@@ -146,6 +150,12 @@ signals:
 private:
     friend class tst_RecordingPreviewExport;
     friend class tst_RecordingPreviewCrop;
+
+    // Test seam: when set, replaces IVideoTranscoder::create() for MP4 edit
+    // exports. Empty (the default, and always in production) = native factory.
+    using TranscoderFactory = std::function<std::unique_ptr<IVideoTranscoder>()>;
+    static TranscoderFactory& transcoderFactoryOverride();
+
     void finishClose();
     bool eventFilter(QObject* watched, QEvent* event) override;
 
@@ -153,13 +163,9 @@ private:
     void applyPlatformWindowFlags();
     void syncCursorSurface();
     void performFormatConversion(OutputFormat format);
-    void performTrim();
+    void performTranscode();
 
     void setErrorMessage(const QString &msg);
-
-    // Trim callbacks
-    void onTrimProgress(int percent);
-    void onTrimFinished(bool success, const QString &outputPath);
 
     // View
     QQuickView *m_view = nullptr;
@@ -173,7 +179,6 @@ private:
     // Trim
     qint64 m_trimStart = 0;
     qint64 m_trimEnd = -1;  // -1 means end of video
-    VideoTrimmer *m_trimmer = nullptr;
 
     // Crop
     QRect m_cropRect;
@@ -184,6 +189,8 @@ private:
 
     // Processing
     bool m_isProcessing = false;
+    // Shared with the MP4 export worker; set on destruction to cancel it.
+    std::shared_ptr<std::atomic_bool> m_exportCancelToken = std::make_shared<std::atomic_bool>(false);
     int m_processProgress = 0;
     QString m_processStatus;
 

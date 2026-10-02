@@ -2,6 +2,7 @@
 
 #include "IVideoEncoder.h"
 #include "qml/RecordingPreviewBackend.h"
+#include "video/IVideoTranscoder.h"
 
 #include <QDir>
 #include <QElapsedTimer>
@@ -9,9 +10,12 @@
 #include <QFileInfo>
 #include <QImageReader>
 #include <QSignalSpy>
+#include <QScopeGuard>
 #include <QTemporaryDir>
 
+#include <atomic>
 #include <memory>
+#include <mutex>
 
 namespace {
 
@@ -19,12 +23,27 @@ constexpr int kFrameRate = 10;
 constexpr int kFrameCount = 12;
 constexpr int kFrameIntervalMs = 1000 / kFrameRate;
 const QSize kFrameSize(64, 48);
+constexpr int kAudioSampleRate = 48000;
+constexpr int kAudioFramesPerVideoFrame = kAudioSampleRate / kFrameRate;
+constexpr int kAudioChannels = 2;
+constexpr int kAudioBytesPerSample = 2;
 
-QString createRecording(const QString& path, qint64 firstFrameMs, const QSize& frameSize = kFrameSize)
+QString createRecording(const QString& path, qint64 firstFrameMs, const QSize& frameSize = kFrameSize,
+                        bool withAudio = false)
 {
     std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
-    if (!encoder || !encoder->start(path, frameSize, kFrameRate)) {
-        return encoder ? encoder->lastError() : QStringLiteral("No native encoder");
+    if (!encoder) {
+        return QStringLiteral("No native encoder");
+    }
+    if (withAudio) encoder->setAudioFormat(kAudioSampleRate, kAudioChannels, kAudioBytesPerSample * 8);
+    if (!encoder->start(path, frameSize, kFrameRate)) {
+        return encoder->lastError();
+    }
+    // AAC is available on every supported macOS host; a fixture that silently
+    // lost its audio track would make the audio assertions meaningless.
+    if (withAudio && !encoder->isAudioEnabled()) {
+        encoder->abort();
+        return QStringLiteral("Native encoder did not enable audio for the fixture");
     }
 
     QImage frame(frameSize, QImage::Format_ARGB32);
@@ -46,6 +65,11 @@ QString createRecording(const QString& path, qint64 firstFrameMs, const QSize& f
         if (encoder->framesWritten() != before + 1) {
             return QStringLiteral("Native encoder did not accept fixture frame %1: %2")
                 .arg(i).arg(encoder->lastError());
+        }
+        if (withAudio && encoder->isAudioEnabled()) {
+            encoder->writeAudioSamples(
+                QByteArray(kAudioFramesPerVideoFrame * kAudioChannels * kAudioBytesPerSample, '\0'),
+                qint64(i) * kAudioFramesPerVideoFrame);
         }
     }
 
@@ -80,6 +104,99 @@ bool isBlue(const QColor& color)
     return color.blue() > 180 && color.red() < 60 && color.green() < 60;
 }
 
+// A transcoder whose transcode() misreports its result, so the backend's own
+// output validation is the only thing standing between it and source deletion.
+// probe() is the real native probe.
+enum class FakeTranscodeOutcome {
+    SilentOutputClaimsAudio,  // success, audioCopied, output has no audio track
+    AudioNotCopied,           // success, real output with audio, audioCopied=false
+    MissingOutput,            // success, audioCopied, nothing written
+    WaitForCancel,            // reports progress until the callback cancels
+    Real,                     // the native transcoder
+};
+
+constexpr int kFakeCancelWaitMs = 10000;
+constexpr int kFakeCancelPollMs = 5;
+
+struct FakeTranscodeLog {
+    std::mutex mutex;
+    int calls = 0;
+    VideoTranscodeRequest lastRequest;
+    std::atomic_bool started{false};
+    std::atomic_bool cancelObserved{false};
+    std::atomic_bool finished{false};
+};
+
+class FakeTranscoder : public IVideoTranscoder
+{
+public:
+    FakeTranscoder(FakeTranscodeOutcome outcome, QString silentFixturePath,
+                   std::shared_ptr<FakeTranscodeLog> log)
+        : m_outcome(outcome)
+        , m_silentFixturePath(std::move(silentFixturePath))
+        , m_log(std::move(log))
+        , m_real(IVideoTranscoder::create())
+    {
+    }
+
+    VideoTranscodeResult transcode(const VideoTranscodeRequest& request,
+                                   const ProgressCallback& progress) override
+    {
+        {
+            std::lock_guard<std::mutex> lock(m_log->mutex);
+            ++m_log->calls;
+            m_log->lastRequest = request;
+        }
+        m_log->started.store(true);
+        const auto finished = qScopeGuard([this]() { m_log->finished.store(true); });
+        VideoTranscodeResult result;
+        switch (m_outcome) {
+        case FakeTranscodeOutcome::SilentOutputClaimsAudio:
+            result.success = QFile::copy(m_silentFixturePath, request.outputPath);
+            result.audioCopied = true;
+            break;
+        case FakeTranscodeOutcome::AudioNotCopied:
+            result = m_real->transcode(request, progress);
+            result.audioCopied = false;
+            break;
+        case FakeTranscodeOutcome::MissingOutput:
+            result.success = true;
+            result.audioCopied = true;
+            break;
+        case FakeTranscodeOutcome::WaitForCancel: {
+            QElapsedTimer timer;
+            timer.start();
+            while (timer.elapsed() < kFakeCancelWaitMs) {
+                if (!progress(0)) {
+                    m_log->cancelObserved.store(true);
+                    break;
+                }
+                QThread::msleep(kFakeCancelPollMs);
+            }
+            result.errorMessage = QStringLiteral("cancelled");
+            break;
+        }
+        case FakeTranscodeOutcome::Real:
+            result = m_real->transcode(request, progress);
+            break;
+        }
+        return result;
+    }
+
+    VideoFileProbe probe(const QString& filePath) override { return m_real->probe(filePath); }
+
+private:
+    FakeTranscodeOutcome m_outcome;
+    QString m_silentFixturePath;
+    std::shared_ptr<FakeTranscodeLog> m_log;
+    std::unique_ptr<IVideoTranscoder> m_real;
+};
+
+QStringList partFiles(const QString& directoryPath)
+{
+    return QDir(directoryPath).entryList(QStringList(QStringLiteral("*.part-*")), QDir::Files);
+}
+
 } // namespace
 
 class tst_RecordingPreviewExport : public QObject
@@ -97,6 +214,12 @@ private slots:
     void saveCroppedAnimationExceedsBounds();
     void failedExportPreservesOriginal_data();
     void failedExportPreservesOriginal();
+    void saveMp4Edits_data();
+    void saveMp4Edits();
+    void invalidTranscodeKeepsSourceAndRetries_data();
+    void invalidTranscodeKeepsSourceAndRetries();
+    void destroyWhileExportingKeepsSource_data();
+    void destroyWhileExportingKeepsSource();
 };
 
 void tst_RecordingPreviewExport::saveAnimation_data()
@@ -299,6 +422,245 @@ void tst_RecordingPreviewExport::saveCroppedAnimationExceedsBounds()
     QVERIFY(QFileInfo::exists(inputPath));
     // No partial files should remain
     QVERIFY(QDir(directory.path()).entryList(QStringList(QStringLiteral("*.part-*")), QDir::Files).isEmpty());
+}
+
+void tst_RecordingPreviewExport::saveMp4Edits_data()
+{
+    QTest::addColumn<bool>("trim");
+    QTest::addColumn<bool>("crop");
+    QTest::addColumn<bool>("withAudio");
+    QTest::newRow("trim-with-audio") << true << false << true;
+    QTest::newRow("crop-with-audio") << false << true << true;
+    QTest::newRow("trim-and-crop-silent") << true << true << false;
+}
+
+void tst_RecordingPreviewExport::saveMp4Edits()
+{
+    QFETCH(bool, trim);
+    QFETCH(bool, crop);
+    QFETCH(bool, withAudio);
+    const QSize sourceSize(160, 120);
+    const QRect cropRect(32, 24, 96, 72);
+
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize, withAudio);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+
+    auto transcoder = IVideoTranscoder::create();
+    QVERIFY(transcoder);
+    QCOMPARE(transcoder->probe(inputPath).hasAudio, withAudio);
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    backend.updateVideoSize(sourceSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    if (trim) {
+        backend.setTrimStart(4 * kFrameIntervalMs);
+        backend.setTrimEnd(10 * kFrameIntervalMs);
+    }
+    if (crop) {
+        backend.setCropRect(cropRect);
+    }
+
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    QVERIFY(backend.isProcessing());
+    // A second save while the export runs must not start another export.
+    backend.save();
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(savedSpy.count(), 1);
+    QCOMPARE(backend.processProgress(), 100);
+
+    const QString outputPath = savedSpy.first().at(0).toString();
+    QCOMPARE(QFileInfo(outputPath).suffix(), QStringLiteral("mp4"));
+    QCOMPARE(QFileInfo(outputPath).absolutePath(), directory.path());
+    QVERIFY(!QFileInfo::exists(inputPath));
+    const VideoFileProbe probe = transcoder->probe(outputPath);
+    QVERIFY(probe.valid);
+    QCOMPARE(probe.videoSize, crop ? cropRect.size() : sourceSize);
+    QCOMPARE(probe.hasAudio, withAudio);
+    if (trim) {
+        QVERIFY2(qAbs(probe.durationMs - 6 * kFrameIntervalMs) <= 2 * kFrameIntervalMs,
+                 qPrintable(QString::number(probe.durationMs)));
+    }
+    QVERIFY(partFiles(directory.path()).isEmpty());
+    // Only the promoted output remains.
+    QCOMPARE(QDir(directory.path()).entryList(QDir::Files), QStringList(QFileInfo(outputPath).fileName()));
+}
+
+void tst_RecordingPreviewExport::invalidTranscodeKeepsSourceAndRetries_data()
+{
+    QTest::addColumn<int>("outcome");
+    QTest::newRow("silent-output-claims-audio") << int(FakeTranscodeOutcome::SilentOutputClaimsAudio);
+    QTest::newRow("audio-not-copied") << int(FakeTranscodeOutcome::AudioNotCopied);
+    QTest::newRow("missing-output") << int(FakeTranscodeOutcome::MissingOutput);
+}
+
+void tst_RecordingPreviewExport::invalidTranscodeKeepsSourceAndRetries()
+{
+    QFETCH(int, outcome);
+    const QSize sourceSize(160, 120);
+    const QRect cropRect(32, 24, 96, 72);
+
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    QString fixtureError = createRecording(inputPath, 0, sourceSize, true);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    QFile input(inputPath);
+    QVERIFY(input.open(QIODevice::ReadOnly));
+    const QByteArray originalBytes = input.readAll();
+    input.close();
+
+    QTemporaryDir fixtureDirectory;
+    QVERIFY(fixtureDirectory.isValid());
+    const QString silentPath = fixtureDirectory.filePath(QStringLiteral("silent.mp4"));
+    fixtureError = createRecording(silentPath, 0, cropRect.size(), false);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+
+    auto realTranscoder = IVideoTranscoder::create();
+    QVERIFY(realTranscoder);
+    QVERIFY(realTranscoder->probe(inputPath).hasAudio);
+    QVERIFY(realTranscoder->probe(silentPath).valid);
+    QVERIFY(!realTranscoder->probe(silentPath).hasAudio);
+
+    auto restoreFactory = qScopeGuard([]() {
+        RecordingPreviewBackend::transcoderFactoryOverride() = {};
+    });
+    const auto log = std::make_shared<FakeTranscodeLog>();
+    const auto fakeOutcome = static_cast<FakeTranscodeOutcome>(outcome);
+    RecordingPreviewBackend::transcoderFactoryOverride() = [fakeOutcome, silentPath, log]() {
+        return std::unique_ptr<IVideoTranscoder>(new FakeTranscoder(fakeOutcome, silentPath, log));
+    };
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    backend.updateVideoSize(sourceSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    backend.setCropRect(cropRect);
+
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    QSignalSpy closedSpy(&backend, &RecordingPreviewBackend::closed);
+    backend.save();
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
+    {
+        std::lock_guard<std::mutex> lock(log->mutex);
+        QCOMPARE(log->calls, 1);
+        QCOMPARE(log->lastRequest.inputPath, inputPath);
+        QCOMPARE(log->lastRequest.cropRect, cropRect);
+        QCOMPARE(log->lastRequest.startMs, qint64(0));
+        QCOMPARE(log->lastRequest.endMs, qint64(-1));
+        QVERIFY2(log->lastRequest.outputPath.contains(QStringLiteral(".part-")),
+                 qPrintable(log->lastRequest.outputPath));
+    }
+    QVERIFY(!backend.errorMessage().isEmpty());
+    QCOMPARE(savedSpy.count(), 0);
+    QCOMPARE(closedSpy.count(), 0);
+    QVERIFY(input.open(QIODevice::ReadOnly));
+    QCOMPARE(input.readAll(), originalBytes);
+    input.close();
+    QVERIFY(partFiles(directory.path()).isEmpty());
+    QCOMPARE(QDir(directory.path()).entryList(QDir::Files), QStringList(QStringLiteral("recording.mp4")));
+
+    // The failure leaves the export retryable with the real transcoder.
+    RecordingPreviewBackend::transcoderFactoryOverride() = {};
+    backend.clearError();
+    backend.save();
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(savedSpy.count(), 1);
+    QCOMPARE(closedSpy.count(), 1);
+    QVERIFY(!QFileInfo::exists(inputPath));
+    const VideoFileProbe probe = realTranscoder->probe(savedSpy.first().at(0).toString());
+    QVERIFY(probe.valid);
+    QCOMPARE(probe.videoSize, cropRect.size());
+    QVERIFY(probe.hasAudio);
+    QVERIFY(partFiles(directory.path()).isEmpty());
+}
+
+void tst_RecordingPreviewExport::destroyWhileExportingKeepsSource_data()
+{
+    QTest::addColumn<int>("outcome");
+    // Destroyed mid-transcode: the cancel token must stop the worker.
+    QTest::newRow("during-transcode") << int(FakeTranscodeOutcome::WaitForCancel);
+    // Destroyed after the output was promoted: the queued completion must
+    // drop the output instead of touching the backend or deleting the source.
+    QTest::newRow("after-promotion") << int(FakeTranscodeOutcome::Real);
+}
+
+void tst_RecordingPreviewExport::destroyWhileExportingKeepsSource()
+{
+    QFETCH(int, outcome);
+    const auto fakeOutcome = static_cast<FakeTranscodeOutcome>(outcome);
+    const QSize sourceSize(160, 120);
+    const QRect cropRect(32, 24, 96, 72);
+
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize, true);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    QFile input(inputPath);
+    QVERIFY(input.open(QIODevice::ReadOnly));
+    const QByteArray originalBytes = input.readAll();
+    input.close();
+
+    auto restoreFactory = qScopeGuard([]() {
+        RecordingPreviewBackend::transcoderFactoryOverride() = {};
+    });
+    const auto log = std::make_shared<FakeTranscodeLog>();
+    RecordingPreviewBackend::transcoderFactoryOverride() = [fakeOutcome, log]() {
+        return std::unique_ptr<IVideoTranscoder>(new FakeTranscoder(fakeOutcome, QString(), log));
+    };
+
+    auto backend = std::make_unique<RecordingPreviewBackend>(inputPath);
+    backend->setSelectedFormat(RecordingPreviewBackend::MP4);
+    backend->updateVideoSize(sourceSize);
+    backend->updateDuration(kFrameCount * kFrameIntervalMs);
+    backend->setCropRect(cropRect);
+    QSignalSpy savedSpy(backend.get(), &RecordingPreviewBackend::saveRequested);
+    backend->save();
+    QVERIFY(backend->isProcessing());
+
+    // Wait without spinning the event loop, so the worker's queued completion
+    // cannot reach the backend before it is destroyed.
+    const auto waitFor = [](const std::function<bool()>& condition) {
+        QElapsedTimer timer;
+        timer.start();
+        while (!condition() && timer.elapsed() < kFakeCancelWaitMs) {
+            QThread::msleep(kFakeCancelPollMs);
+        }
+        return condition();
+    };
+    const QString directoryPath = directory.path();
+    if (fakeOutcome == FakeTranscodeOutcome::Real) {
+        // The promoted output exists only after validation passed, so the
+        // destructor's cancel can no longer reach the worker; only the queued
+        // completion's QPointer check stands between it and the source.
+        QVERIFY(waitFor([log]() { return log->finished.load(); }));
+        QVERIFY(waitFor([directoryPath]() {
+            const QStringList edited = QDir(directoryPath).entryList(
+                QStringList(QStringLiteral("recording_edited_*.mp4")), QDir::Files);
+            return !edited.isEmpty() && partFiles(directoryPath).isEmpty();
+        }));
+    } else {
+        QVERIFY(waitFor([log]() { return log->started.load(); }));
+    }
+
+    backend.reset();
+    QVERIFY(waitFor([log]() { return log->finished.load(); }));
+    if (fakeOutcome == FakeTranscodeOutcome::WaitForCancel) {
+        QVERIFY(log->cancelObserved.load());
+    }
+
+    QTRY_COMPARE_WITH_TIMEOUT(QDir(directory.path()).entryList(QDir::Files),
+                              QStringList(QStringLiteral("recording.mp4")), 20000);
+    QCOMPARE(savedSpy.count(), 0);
+    QVERIFY(input.open(QIODevice::ReadOnly));
+    QCOMPARE(input.readAll(), originalBytes);
 }
 
 QTEST_MAIN(tst_RecordingPreviewExport)
