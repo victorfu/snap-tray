@@ -476,6 +476,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
     const QString sourceVideoPath = m_videoPath;
     const qint64 requestedStartMs = m_trimStart;
     const qint64 requestedEndMs = m_trimEnd;
+    const QRect cropRect = m_cropRect;
     const int selectedFormat = static_cast<int>(format);
     const QString createPlayerError = tr("Failed to create video player for conversion");
     const QString loadVideoError = tr("Failed to load video for conversion");
@@ -492,6 +493,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
                              sourceVideoPath,
                              requestedStartMs,
                              requestedEndMs,
+                             cropRect,
                              outputPath,
                              selectedFormat,
                              createPlayerError,
@@ -578,6 +580,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
         const qint64 dur = frameReader ? frameReader->duration() : player->duration();
         const qint64 startMs = qMax<qint64>(0, requestedStartMs);
         const qint64 endMs = requestedEndMs < 0 ? dur : qMin(requestedEndMs, dur);
+        const QSize outputSize = cropRect.isEmpty() ? vidSize : cropRect.size();
 
         if (dur <= 0 || vidSize.isEmpty() || startMs >= endMs) {
             qWarning() << "RecordingPreviewBackend: Video not loaded properly for conversion";
@@ -595,12 +598,12 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
         if (selectedFormat == GIF) {
             gifEncoder = std::make_unique<NativeGifEncoder>(nullptr);
             gifEncoder->setMaxBitDepth(16);
-            encoderStarted = gifEncoder->start(workingOutputPath, vidSize, frameRateInt);
+            encoderStarted = gifEncoder->start(workingOutputPath, outputSize, frameRateInt);
         } else {
             webpEncoder = std::make_unique<WebPAnimationEncoder>(nullptr);
             webpEncoder->setQuality(80);
             webpEncoder->setLooping(true);
-            encoderStarted = webpEncoder->start(workingOutputPath, vidSize, frameRateInt);
+            encoderStarted = webpEncoder->start(workingOutputPath, outputSize, frameRateInt);
         }
 
         if (!encoderStarted) {
@@ -669,6 +672,9 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
             }
 
             if (!capturedFrame.isNull()) {
+                if (!cropRect.isEmpty()) {
+                    capturedFrame = capturedFrame.copy(cropRect);
+                }
                 const qint64 framesBefore = gifEncoder
                     ? gifEncoder->framesWritten()
                     : webpEncoder->framesWritten();

@@ -20,14 +20,14 @@ constexpr int kFrameCount = 12;
 constexpr int kFrameIntervalMs = 1000 / kFrameRate;
 const QSize kFrameSize(64, 48);
 
-QString createRecording(const QString& path, qint64 firstFrameMs)
+QString createRecording(const QString& path, qint64 firstFrameMs, const QSize& frameSize = kFrameSize)
 {
     std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
-    if (!encoder || !encoder->start(path, kFrameSize, kFrameRate)) {
+    if (!encoder || !encoder->start(path, frameSize, kFrameRate)) {
         return encoder ? encoder->lastError() : QStringLiteral("No native encoder");
     }
 
-    QImage frame(kFrameSize, QImage::Format_ARGB32);
+    QImage frame(frameSize, QImage::Format_ARGB32);
     for (int i = 0; i < kFrameCount; ++i) {
         frame.fill(i < 4 ? Qt::red : i < 8 ? Qt::green : Qt::blue);
         const qint64 before = encoder->framesWritten();
@@ -91,6 +91,8 @@ private slots:
     void closeOutcomes();
     void saveAnimation_data();
     void saveAnimation();
+    void saveCroppedAnimation_data();
+    void saveCroppedAnimation();
     void failedExportPreservesOriginal_data();
     void failedExportPreservesOriginal();
 };
@@ -216,6 +218,45 @@ void tst_RecordingPreviewExport::failedExportPreservesOriginal()
     QVERIFY(input.open(QIODevice::ReadOnly));
     QCOMPARE(input.readAll(), originalBytes);
     QCOMPARE(QDir(directory.path()).entryList(QDir::Files), QStringList(QStringLiteral("invalid.mp4")));
+}
+
+void tst_RecordingPreviewExport::saveCroppedAnimation_data()
+{
+    QTest::addColumn<int>("format");
+    QTest::newRow("gif") << int(RecordingPreviewBackend::GIF);
+    QTest::newRow("webp") << int(RecordingPreviewBackend::WebP);
+}
+
+void tst_RecordingPreviewExport::saveCroppedAnimation()
+{
+    QFETCH(int, format);
+    const QSize sourceSize(160, 120);
+    const QRect crop(32, 24, 96, 72);
+
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(format);
+    backend.updateVideoSize(sourceSize);
+    backend.setCropRect(crop);
+    QCOMPARE(backend.cropRect(), crop);
+
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(savedSpy.count(), 1);
+
+    QImageReader reader(savedSpy.first().at(0).toString());
+    QVERIFY2(reader.canRead(), qPrintable(reader.errorString()));
+    const QImage first = reader.read();
+    QCOMPARE(first.size(), crop.size());
+    QVERIFY(isRed(first.pixelColor(first.rect().center())));
+    QVERIFY(QDir(directory.path()).entryList(QStringList(QStringLiteral("*.part-*")), QDir::Files).isEmpty());
 }
 
 QTEST_MAIN(tst_RecordingPreviewExport)
