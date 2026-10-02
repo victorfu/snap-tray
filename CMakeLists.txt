@@ -72,7 +72,10 @@ configure_file(
 # Platform-specific version file generation
 if(APPLE)
     # Set variables for Info.plist.in template
-    set(MACOSX_BUNDLE_EXECUTABLE_NAME ${PROJECT_NAME})
+    # Must match the target's OUTPUT_NAME (SnapTray-Debug in Debug builds);
+    # this template is expanded before CMake's own Info.plist pass, so the
+    # CFBundleExecutable placeholder is already gone by then.
+    set(MACOSX_BUNDLE_EXECUTABLE_NAME "${APP_DISPLAY_NAME}")
     set(MACOSX_BUNDLE_BUNDLE_NAME "${APP_DISPLAY_NAME}")
     set(MACOSX_BUNDLE_GUI_IDENTIFIER "${APP_BUNDLE_ID}")
     set(MACOSX_BUNDLE_ICON_FILE "snaptray.icns")
