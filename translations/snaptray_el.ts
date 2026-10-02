@@ -1808,6 +1808,26 @@ Size: %2</source>
         <source>Dismiss Error</source>
         <translation>Κλείσιμο σφάλματος</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="552" />
+        <source>Crop Recording</source>
+        <translation>Περικοπή περιοχής εγγραφής</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="552" />
+        <source>Edit Crop</source>
+        <translation>Επεξεργασία περικοπής</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="551" />
+        <source>Apply Crop (Enter)</source>
+        <translation>Εφαρμογή περικοπής (Enter)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="239" />
+        <source>Clear Crop</source>
+        <translation>Κατάργηση περικοπής</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -1865,6 +1885,21 @@ Size: %2</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
         <translation>Η περικοπή απέτυχε</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="804" />
+        <source>Exporting video...</source>
+        <translation>Εξαγωγή βίντεο...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="815" />
+        <source>Video export is not supported on this platform</source>
+        <translation>Η εξαγωγή βίντεο δεν υποστηρίζεται σε αυτήν την πλατφόρμα</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="816" />
+        <source>Export failed: %1</source>
+        <translation>Η εξαγωγή απέτυχε: %1</translation>
     </message>
 </context>
 <context>

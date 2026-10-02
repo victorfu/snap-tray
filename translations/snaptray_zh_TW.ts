@@ -1941,6 +1941,26 @@ File size: %3</source>
         <source>Dismiss Error</source>
         <translation>關閉錯誤訊息</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="552" />
+        <source>Crop Recording</source>
+        <translation>裁切錄影</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="552" />
+        <source>Edit Crop</source>
+        <translation>編輯裁切</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="551" />
+        <source>Apply Crop (Enter)</source>
+        <translation>套用裁切 (Enter)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="239" />
+        <source>Clear Crop</source>
+        <translation>清除裁切</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -1998,6 +2018,21 @@ File size: %3</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
         <translation>修剪失敗</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="804" />
+        <source>Exporting video...</source>
+        <translation>正在匯出影片...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="815" />
+        <source>Video export is not supported on this platform</source>
+        <translation>此平台不支援匯出影片</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="816" />
+        <source>Export failed: %1</source>
+        <translation>匯出失敗：%1</translation>
     </message>
 </context>
 <context>

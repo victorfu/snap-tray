@@ -1814,6 +1814,26 @@ Dimensione: %2</translation>
         <source>Dismiss Error</source>
         <translation>Chiudi errore</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="552" />
+        <source>Crop Recording</source>
+        <translation>Ritaglia registrazione</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="552" />
+        <source>Edit Crop</source>
+        <translation>Modifica ritaglio</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="551" />
+        <source>Apply Crop (Enter)</source>
+        <translation>Applica ritaglio (Invio)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="239" />
+        <source>Clear Crop</source>
+        <translation>Rimuovi ritaglio</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -1871,6 +1891,21 @@ Dimensione: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
         <translation>Taglio non riuscito</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="804" />
+        <source>Exporting video...</source>
+        <translation>Esportazione video in corso...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="815" />
+        <source>Video export is not supported on this platform</source>
+        <translation>L'esportazione video non è supportata su questa piattaforma</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="816" />
+        <source>Export failed: %1</source>
+        <translation>Esportazione non riuscita: %1</translation>
     </message>
 </context>
 <context>

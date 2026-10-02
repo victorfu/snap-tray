@@ -1814,6 +1814,26 @@ Size: %2</source>
         <source>Dismiss Error</source>
         <translation>Закрыть ошибку</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="552" />
+        <source>Crop Recording</source>
+        <translation>Кадрировать запись</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="552" />
+        <source>Edit Crop</source>
+        <translation>Изменить кадрирование</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="551" />
+        <source>Apply Crop (Enter)</source>
+        <translation>Применить кадрирование (Enter)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="239" />
+        <source>Clear Crop</source>
+        <translation>Сбросить кадрирование</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -1871,6 +1891,21 @@ Size: %2</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
         <translation>Ошибка обрезки</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="804" />
+        <source>Exporting video...</source>
+        <translation>Экспорт видео...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="815" />
+        <source>Video export is not supported on this platform</source>
+        <translation>Экспорт видео не поддерживается на этой платформе</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="816" />
+        <source>Export failed: %1</source>
+        <translation>Ошибка экспорта: %1</translation>
     </message>
 </context>
 <context>

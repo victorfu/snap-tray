@@ -113,6 +113,8 @@ Use `PlatformFeatures` and the platform layer instead of scattering OS-specific 
 
 Recording is macOS/Windows only. Recording entry is driven by the tray menu or recording hotkey and always records a full screen source. The CLI does not support recording. Region Selector remains screenshot-only and must not regain region-recording semantics. Linux beta must keep recording hidden and unsupported.
 
+Choosing a region happens after recording, by cropping in the Recording Preview; capture itself stays full screen.
+
 ### Shared glass UI stays shared
 
 Use `GlassRenderer` and existing toolbar style helpers for floating panels instead of inventing new local visual systems.

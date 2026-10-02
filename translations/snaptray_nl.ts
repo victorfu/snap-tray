@@ -1814,6 +1814,26 @@ Grootte: %2</translation>
         <source>Dismiss Error</source>
         <translation>Fout sluiten</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="552" />
+        <source>Crop Recording</source>
+        <translation>Opname bijsnijden</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="552" />
+        <source>Edit Crop</source>
+        <translation>Bijsnijden bewerken</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="551" />
+        <source>Apply Crop (Enter)</source>
+        <translation>Bijsnijden toepassen (Enter)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="239" />
+        <source>Clear Crop</source>
+        <translation>Bijsnijden wissen</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -1871,6 +1891,21 @@ Grootte: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
         <translation>Bijknippen mislukt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="804" />
+        <source>Exporting video...</source>
+        <translation>Video exporteren...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="815" />
+        <source>Video export is not supported on this platform</source>
+        <translation>Video exporteren wordt op dit platform niet ondersteund</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="816" />
+        <source>Export failed: %1</source>
+        <translation>Exporteren mislukt: %1</translation>
     </message>
 </context>
 <context>

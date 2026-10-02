@@ -26,6 +26,15 @@ recording, and its recording UI is hidden.
 3. Use the floating control bar to monitor duration and stop recording.
 4. Click Stop to export.
 
+## Crop a recording
+
+Recording always captures the full screen. To keep only part of it, open the preview after you stop:
+
+1. Click **Crop** in the preview toolbar.
+2. Drag on the video to draw the area, then drag inside it to move or drag a handle to resize. Edges snap to the video edges and centre lines.
+3. Press **Enter** to apply or **Esc** to cancel. The applied size appears at the top-left of the video; click ✕ to clear it.
+4. Save as MP4, GIF, or WebP. MP4 exports keep their audio.
+
 ## Output formats
 
 | Format | Typical use |

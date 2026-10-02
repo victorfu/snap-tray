@@ -1795,6 +1795,44 @@ English is always included and cannot be removed.</source>
         <source>Dismiss Error</source>
         <translation>ปิดข้อความผิดพลาด</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="552"/>
+        <source>Crop Recording</source>
+        <translation>ครอบตัดการบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="552"/>
+        <source>Edit Crop</source>
+        <translation>แก้ไขการครอบตัด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="551"/>
+        <source>Apply Crop (Enter)</source>
+        <translation>ใช้การครอบตัด (Enter)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="239"/>
+        <source>Clear Crop</source>
+        <translation>ล้างการครอบตัด</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPreviewBackend</name>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="804"/>
+        <source>Exporting video...</source>
+        <translation>กำลังส่งออกวิดีโอ...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="815"/>
+        <source>Video export is not supported on this platform</source>
+        <translation>แพลตฟอร์มนี้ไม่รองรับการส่งออกวิดีโอ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="816"/>
+        <source>Export failed: %1</source>
+        <translation>ส่งออกไม่สำเร็จ: %1</translation>
+    </message>
 </context>
 <context>
     <name>RecordingSettings</name>

@@ -6,6 +6,14 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+### Added
+
+- Recording preview can crop the recording to a region before exporting MP4, GIF, or WebP.
+
+### Fixed
+
+- Trimming an MP4 recording with audio now keeps the audio instead of failing.
+
 ## [1.0.67] - 2026-09-30
 
 ### Fixed

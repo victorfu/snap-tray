@@ -1,6 +1,8 @@
 #include <QtTest/QtTest>
 
 #include <QDir>
+#include <QList>
+#include <QPair>
 #include <QTranslator>
 
 namespace {
@@ -27,6 +29,7 @@ private slots:
     void testRememberLastFolderTranslatedForAllLocales();
     void testAutoBlurHintTranslatedForAllLocales();
     void testRecordingPreviewAudioNoticeTranslatedForAllLocales();
+    void testRecordingPreviewCropTranslatedForAllLocales();
     void testRecordingWarningTitleTranslatedForAllLocales();
     void testRecordingAudioWarningsTranslatedForAllLocales();
 
@@ -280,6 +283,53 @@ void tst_QmlTranslations::testRecordingPreviewAudioNoticeTranslatedForAllLocales
         QVERIFY2(translated != QString::fromUtf8(source),
                  qPrintable(QStringLiteral("%1 fell back to English for the preview-audio notice")
                                 .arg(qmFile)));
+    }
+}
+
+void tst_QmlTranslations::testRecordingPreviewCropTranslatedForAllLocales()
+{
+    const QList<QPair<const char*, const char*>> strings = {
+        {"RecordingPreview", "Crop Recording"},
+        {"RecordingPreview", "Edit Crop"},
+        {"RecordingPreview", "Apply Crop (Enter)"},
+        {"RecordingPreview", "Clear Crop"},
+        {"RecordingPreviewBackend", "Exporting video..."},
+        {"RecordingPreviewBackend", "Video export is not supported on this platform"},
+        {"RecordingPreviewBackend", "Export failed: %1"},
+    };
+
+    const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
+    const QStringList qmFiles = translationsDir.entryList(
+        {QStringLiteral("snaptray_*.qm")},
+        QDir::Files,
+        QDir::Name);
+    QCOMPARE(qmFiles.size(), 24);
+
+    for (const QString& qmFile : qmFiles) {
+        QTranslator translator;
+        const QString path = translationsDir.filePath(qmFile);
+        QVERIFY2(translator.load(path),
+                 qPrintable(QStringLiteral("Failed to load translation file: %1").arg(path)));
+
+        for (const auto& [context, source] : strings) {
+            const QString translated = translator.translate(context, source);
+            QVERIFY2(!translated.isEmpty(),
+                     qPrintable(QStringLiteral("%1 is missing a recording-crop string: %2/%3")
+                                    .arg(qmFile, QString::fromUtf8(context),
+                                         QString::fromUtf8(source))));
+            QVERIFY2(translated != QString::fromUtf8(source),
+                     qPrintable(QStringLiteral(
+                                    "%1 fell back to English for a recording-crop string: %2/%3")
+                                    .arg(qmFile, QString::fromUtf8(context),
+                                         QString::fromUtf8(source))));
+            if (QByteArray(source).contains("%1")) {
+                QVERIFY2(translated.contains(QStringLiteral("%1")),
+                         qPrintable(QStringLiteral(
+                                        "%1 dropped the argument placeholder for: %2/%3")
+                                        .arg(qmFile, QString::fromUtf8(context),
+                                             QString::fromUtf8(source))));
+            }
+        }
     }
 }
 
