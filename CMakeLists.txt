@@ -502,7 +502,6 @@ add_library(snaptray_platform STATIC
     src/video/IVideoFrameReader.cpp
     src/video/IVideoPlayer.cpp
     src/video/IVideoTranscoder.cpp
-    src/video/VideoTrimmer.cpp
     src/VideoEncoderFactory.cpp
     src/QRCodeManager.cpp
     src/platform/QtQuickBackendPolicy.cpp
@@ -520,7 +519,6 @@ add_library(snaptray_platform STATIC
     include/capture/ScreenSnapshot.h
     include/capture/QtCaptureEngine.h
     include/video/IVideoPlayer.h
-    include/video/VideoTrimmer.h
     include/QRCodeManager.h
     include/ImageColorSpaceHelper.h
     include/platform/QtQuickBackendPolicy.h

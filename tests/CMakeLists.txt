@@ -251,7 +251,10 @@ if(APPLE)
     target_link_libraries(Qml_FloatingOverlayCaptureExclusion PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
     add_test(NAME Qml_FloatingOverlayCaptureExclusion COMMAND Qml_FloatingOverlayCaptureExclusion)
     set_tests_properties(Qml_FloatingOverlayCaptureExclusion PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+endif()
 
+# Recording preview export (native encoder + transcoder): both recording platforms.
+if(APPLE OR WIN32)
     add_executable(Qml_RecordingPreviewExport Qml/tst_RecordingPreviewExport.cpp)
     target_link_libraries(Qml_RecordingPreviewExport PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
     add_test(NAME Qml_RecordingPreviewExport COMMAND Qml_RecordingPreviewExport)
@@ -594,14 +597,6 @@ target_link_libraries(Video_SourceReaderMailbox PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME Video_SourceReaderMailbox COMMAND Video_SourceReaderMailbox)
 set_tests_properties(Video_SourceReaderMailbox PROPERTIES TIMEOUT 30 LABELS "unit")
 
-add_executable(Video_VideoTrimmerSafety Video/tst_VideoTrimmerSafety.cpp)
-target_compile_definitions(Video_VideoTrimmerSafety PRIVATE
-    VIDEO_SOURCE_ROOT="${CMAKE_SOURCE_DIR}/src/video"
-)
-target_link_libraries(Video_VideoTrimmerSafety PRIVATE snaptray_platform Qt6::Test)
-add_test(NAME Video_VideoTrimmerSafety COMMAND Video_VideoTrimmerSafety)
-set_tests_properties(Video_VideoTrimmerSafety PROPERTIES TIMEOUT 30 LABELS "unit")
-
 # Cross-platform transcoder contract. The test-only audio decoder is native per
 # platform; the stub (Linux, where the test skips) makes the audio contract fail
 # if a platform gains a transcoder without a decoder.
@@ -626,7 +621,7 @@ if(WIN32)
     set_tests_properties(Video_MediaFoundationFrameCopy PROPERTIES TIMEOUT 30 LABELS "unit")
 
     add_executable(Video_MediaFoundationPipeline Video/tst_MediaFoundationPipeline.cpp)
-    target_link_libraries(Video_MediaFoundationPipeline PRIVATE snaptray_platform Qt6::Test webpdemux)
+    target_link_libraries(Video_MediaFoundationPipeline PRIVATE snaptray_platform Qt6::Test)
     add_test(NAME Video_MediaFoundationPipeline COMMAND Video_MediaFoundationPipeline)
     set_tests_properties(Video_MediaFoundationPipeline PROPERTIES TIMEOUT 60 LABELS "integration;slow")
 endif()
