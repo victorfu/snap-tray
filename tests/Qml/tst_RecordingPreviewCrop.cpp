@@ -1,6 +1,7 @@
 #include <QtTest/QtTest>
 
 #include "qml/RecordingPreviewBackend.h"
+#include "utils/VideoCropGeometry.h"
 
 #include <QSignalSpy>
 
@@ -16,6 +17,7 @@ private slots:
     void setCropFromViewMapsToVideoPixels();
     void cropRectInViewFallsBackToContent();
     void videoSizeChangeRenormalizes();
+    void minCropSideMatchesGeometry();
 };
 
 void tst_RecordingPreviewCrop::cropIgnoredUntilVideoSizeKnown()
@@ -86,6 +88,15 @@ void tst_RecordingPreviewCrop::videoSizeChangeRenormalizes()
     backend.setCropRect(QRect(1200, 600, 640, 360));
     backend.updateVideoSize(QSize(1280, 720));
     QCOMPARE(backend.cropRect(), QRect(1200, 600, 80, 120));
+}
+
+void tst_RecordingPreviewCrop::minCropSideMatchesGeometry()
+{
+    // The crop overlay sizes its drafts from this, so it must be the value
+    // normalizeCropRect() enforces on commit.
+    RecordingPreviewBackend backend(QStringLiteral("unused.mp4"));
+    QCOMPARE(backend.property("minCropSide").toInt(), SnapTray::VideoCropGeometry::kMinCropSide);
+    QCOMPARE(backend.minCropSide(), 64);
 }
 
 QTEST_MAIN(tst_RecordingPreviewCrop)

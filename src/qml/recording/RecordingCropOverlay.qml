@@ -8,8 +8,9 @@ import SnapTrayQml
  * States: no crop (committedRect empty), editing a draft, committed crop.
  * While editing, a press inside the selection moves it, a press on an edge or
  * handle resizes it, and a drag elsewhere inside the video creates a new one.
- * Snapping only ever picks targets that keep the rect inside the content and
- * at least minViewSide wide/tall.
+ * Creating, resizing and snapping only ever pick geometry that keeps the rect
+ * inside the content and at least the backend's minimum crop size (minVideoSide,
+ * converted to view px) wide/tall, so applying a draft never visibly jumps.
  */
 Item {
     id: overlay
@@ -22,6 +23,9 @@ Item {
     property rect draftRect: Qt.rect(0, 0, 0, 0)
     // False blocks pointer edits (for example while an export is processing).
     property bool interactive: true
+    // The backend grows any committed crop below this many video px per side
+    // (capped at the even-floored frame size). 0 falls back to minViewSide.
+    property int minVideoSide: 0
 
     signal applyRequested(rect viewRect)
     signal cancelRequested()
@@ -34,7 +38,19 @@ Item {
     readonly property real handleRadius: 2
     readonly property real borderWidth: 2
     readonly property real snapDistance: 6
+    // Floor for drafts in view px, so a selection stays grabbable even when the
+    // backend minimum maps to less (for example a 4K video in a small window).
     readonly property real minViewSide: 8
+    // Smallest draft per axis in view px: minVideoSide at the current scale, at
+    // least minViewSide, never wider or taller than the content itself.
+    readonly property real minViewWidth: hasContent
+            ? Math.min(contentRect.width, Math.max(minViewSide,
+                  Math.min(minVideoSide, videoSize.width - videoSize.width % 2) * contentRect.width / videoSize.width))
+            : minViewSide
+    readonly property real minViewHeight: hasContent
+            ? Math.min(contentRect.height, Math.max(minViewSide,
+                  Math.min(minVideoSide, videoSize.height - videoSize.height % 2) * contentRect.height / videoSize.height))
+            : minViewSide
     // Pointer travel before a press outside the selection starts a new one,
     // so a plain click does not replace the selection with a sliver.
     readonly property real createDragThreshold: 3
@@ -105,16 +121,25 @@ Item {
     function xTargets() { return [contentRect.x, contentRect.x + contentRect.width / 2, contentRect.x + contentRect.width] }
     function yTargets() { return [contentRect.y, contentRect.y + contentRect.height / 2, contentRect.y + contentRect.height] }
 
+    // New selection from the press point (px, py) to the pointer (x, y).
     function createRect(px, py, x, y) {
         const c = contentRect
-        const right = c.x + c.width
-        const bottom = c.y + c.height
-        // Snap the near edge inside the content, then the far edge between it and the content edge.
-        const x0 = snapWithin(Math.min(px, x), xTargets(), c.x, right)
-        const y0 = snapWithin(Math.min(py, y), yTargets(), c.y, bottom)
-        const x1 = snapWithin(Math.max(px, x), xTargets(), x0, right)
-        const y1 = snapWithin(Math.max(py, y), yTargets(), y0, bottom)
-        return Qt.rect(x0, y0, x1 - x0, y1 - y0)
+        const h = createSpan(px, x, xTargets(), c.x, c.x + c.width, minViewWidth)
+        const v = createSpan(py, y, yTargets(), c.y, c.y + c.height, minViewHeight)
+        return Qt.rect(h.lo, v.lo, h.hi - h.lo, v.hi - v.lo)
+    }
+    // One axis of a new selection. The press point stays the anchor (snapped), the
+    // pointer side keeps at least minSide away from it, and both stay in [lo, hi].
+    // Only when the minimum would not fit does the anchor retreat into the content.
+    function createSpan(anchor, pointer, targets, lo, hi, minSide) {
+        const a = snapWithin(anchor, targets, lo, hi)
+        const side = Math.min(minSide, hi - lo)
+        if (pointer >= anchor) {
+            const start = Math.min(a, hi - side)
+            return { lo: start, hi: snapWithin(pointer, targets, start + side, hi) }
+        }
+        const end = Math.max(a, lo + side)
+        return { lo: snapWithin(pointer, targets, lo, end - side), hi: end }
     }
     function moveRect(r, dx, dy) {
         const c = contentRect
@@ -128,14 +153,15 @@ Item {
     function resizeRect(r, edges, dx, dy) {
         const c = contentRect
         let left = r.x, top = r.y, right = r.x + r.width, bottom = r.y + r.height
+        // The dragged edge stops at the minimum size; the opposite edge never moves.
         if (edges & edgeLeft)
-            left = snapWithin(left + dx, xTargets(), c.x, Math.max(c.x, right - minViewSide))
+            left = snapWithin(left + dx, xTargets(), c.x, Math.max(c.x, right - minViewWidth))
         if (edges & edgeRight)
-            right = snapWithin(right + dx, xTargets(), Math.min(c.x + c.width, left + minViewSide), c.x + c.width)
+            right = snapWithin(right + dx, xTargets(), Math.min(c.x + c.width, left + minViewWidth), c.x + c.width)
         if (edges & edgeTop)
-            top = snapWithin(top + dy, yTargets(), c.y, Math.max(c.y, bottom - minViewSide))
+            top = snapWithin(top + dy, yTargets(), c.y, Math.max(c.y, bottom - minViewHeight))
         if (edges & edgeBottom)
-            bottom = snapWithin(bottom + dy, yTargets(), Math.min(c.y + c.height, top + minViewSide), c.y + c.height)
+            bottom = snapWithin(bottom + dy, yTargets(), Math.min(c.y + c.height, top + minViewHeight), c.y + c.height)
         return Qt.rect(left, top, right - left, bottom - top)
     }
     function containsPoint(r, x, y) {
@@ -149,14 +175,22 @@ Item {
                 && y >= r.y - handleSize && y <= r.y + r.height + handleSize
         if (!near)
             return 0
+        // Inside the rect the edge bands shrink with its size so its centre always
+        // moves it; outside, the full handleSize band keeps edges and corners easy
+        // to grab. Each axis is judged on its own, so a point beside a small rect
+        // hits that one edge rather than a corner.
+        const insideX = x > r.x && x < r.x + r.width
+        const insideY = y > r.y && y < r.y + r.height
+        const toleranceX = insideX ? Math.min(handleSize, r.width / 4) : handleSize
+        const toleranceY = insideY ? Math.min(handleSize, r.height / 4) : handleSize
         let edges = 0
         const dl = Math.abs(x - r.x)
         const dr = Math.abs(x - (r.x + r.width))
         const dt = Math.abs(y - r.y)
         const db = Math.abs(y - (r.y + r.height))
-        if (Math.min(dl, dr) <= handleSize)
+        if (Math.min(dl, dr) <= toleranceX)
             edges |= dl <= dr ? edgeLeft : edgeRight
-        if (Math.min(dt, db) <= handleSize)
+        if (Math.min(dt, db) <= toleranceY)
             edges |= dt <= db ? edgeTop : edgeBottom
         return edges
     }

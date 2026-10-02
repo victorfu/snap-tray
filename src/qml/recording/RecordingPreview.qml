@@ -162,6 +162,7 @@ Item {
                 interactive: !backend.isProcessing
                 contentRect: videoPlayer.contentRect
                 videoSize: backend.videoSize
+                minVideoSide: backend.minCropSide
                 accentColor: root.accent
                 // backend.cropRect is read so the binding re-evaluates when the crop changes.
                 committedRect: {

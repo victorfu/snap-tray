@@ -80,6 +80,7 @@ class StubPreviewBackend : public QObject
     Q_PROPERTY(QRect cropRect READ cropRect NOTIFY cropRectChanged)
     Q_PROPERTY(bool hasCrop READ hasCrop NOTIFY cropRectChanged)
     Q_PROPERTY(QSize videoSize READ videoSize NOTIFY videoSizeChanged)
+    Q_PROPERTY(int minCropSide READ minCropSide CONSTANT)
     Q_PROPERTY(int selectedFormat READ selectedFormat WRITE setSelectedFormat NOTIFY formatChanged)
     Q_PROPERTY(bool isProcessing READ isProcessing WRITE setProcessing NOTIFY processingChanged)
     Q_PROPERTY(int processProgress READ processProgress CONSTANT)
@@ -96,6 +97,7 @@ public:
     QRect cropRect() const { return m_cropRect; }
     bool hasCrop() const { return !m_cropRect.isEmpty(); }
     QSize videoSize() const { return m_videoSize; }
+    int minCropSide() const { return SnapTray::VideoCropGeometry::kMinCropSide; }
     int selectedFormat() const { return m_selectedFormat; }
     void setSelectedFormat(int format)
     {
@@ -219,6 +221,18 @@ private slots:
     void resizeSweepKeepsMinimumAndBounds();
     void createSweepStaysInside();
 
+    // Edge hit-testing on small selections (#116).
+    void edgesAtSmallRectKeepsMoveZone();
+    void edgesAtSweepSmallRects();
+
+    // Draft minimum follows the backend's minimum crop size (#117).
+    void minViewSizeFollowsBackendMinimum();
+    void resizeRectKeepsBackendMinimum_data();
+    void resizeRectKeepsBackendMinimum();
+    void createRectKeepsBackendMinimum_data();
+    void createRectKeepsBackendMinimum();
+    void createSweepKeepsBackendMinimum();
+
     // Full RecordingPreview in a real window with mouse/key events.
     void previewCreatesFirstSelection_data();
     void previewCreatesFirstSelection();
@@ -233,6 +247,8 @@ private slots:
     void previewSizeChipAndClear();
     void previewToolbarFitsAtMinimumWidth();
     void previewCursorOverVideo();
+    void previewSmallSelectionMoves();
+    void previewTinyDraftAppliesWithoutJump();
 
 private:
     QVariant call(const char* name, const QVariantList& args = {});
@@ -481,6 +497,135 @@ void tst_RecordingCropOverlay::createSweepStaysInside()
     const QRectF nearCentre = call("createRect", {198, 100, 202, 120}).toRectF();
     QCOMPARE(nearCentre.x(), 200.0);
     QVERIFY(nearCentre.width() >= 0);
+}
+
+// ---------- Edge hit-testing on small selections ----------
+
+void tst_RecordingCropOverlay::edgesAtSmallRectKeepsMoveZone()
+{
+    // 16x16: narrower than two handle bands, yet its centre must still move it.
+    m_overlay->setProperty("draftRect", QRectF(100, 100, 16, 16));
+    QCOMPARE(call("edgesAt", {108, 108}).toInt(), 0);
+    QCOMPARE(call("edgesAt", {101, 108}).toInt(), kEdgeLeft);
+    QCOMPARE(call("edgesAt", {115, 108}).toInt(), kEdgeRight);
+    QCOMPARE(call("edgesAt", {108, 101}).toInt(), kEdgeTop);
+    QCOMPARE(call("edgesAt", {108, 115}).toInt(), kEdgeBottom);
+    // Outside the rect the full handle band applies, one axis at a time:
+    // vertically centred to the left is the left edge, not a corner.
+    QCOMPARE(call("edgesAt", {95, 108}).toInt(), kEdgeLeft);
+    QCOMPARE(call("edgesAt", {95, 95}).toInt(), kEdgeLeft | kEdgeTop);
+    QCOMPARE(call("edgesAt", {121, 121}).toInt(), kEdgeRight | kEdgeBottom);
+    QCOMPARE(call("edgesAt", {80, 108}).toInt(), 0);
+    QCOMPARE(call("cursorFor", {108, 108}).toInt(), static_cast<int>(Qt::SizeAllCursor));
+
+    // Large rects keep the full band inside too.
+    m_overlay->setProperty("draftRect", QRectF(100, 100, 100, 100));
+    QCOMPARE(call("edgesAt", {108, 150}).toInt(), kEdgeLeft);
+    QCOMPARE(call("edgesAt", {150, 150}).toInt(), 0);
+}
+
+void tst_RecordingCropOverlay::edgesAtSweepSmallRects()
+{
+    for (int w = 1; w <= 60; ++w) {
+        for (int h = 1; h <= 60; ++h) {
+            const QRectF r(100, 100, w, h);
+            m_overlay->setProperty("draftRect", r);
+            const QString where = QStringLiteral("rect %1x%2").arg(w).arg(h);
+            QVERIFY2(call("edgesAt", {r.center().x(), r.center().y()}).toInt() == 0, qPrintable(where));
+            QVERIFY2(call("edgesAt", {r.left() - 3, r.center().y()}).toInt() == kEdgeLeft, qPrintable(where));
+            QVERIFY2(call("edgesAt", {r.center().x(), r.bottom() + 3}).toInt() == kEdgeBottom, qPrintable(where));
+            QVERIFY2(call("edgesAt", {r.right() + 3, r.top() - 3}).toInt() == (kEdgeRight | kEdgeTop),
+                     qPrintable(where));
+        }
+    }
+}
+
+// ---------- Draft minimum follows the backend's minimum crop size ----------
+// init(): 800x400 video in a 400x200 content rect, so 64 video px = 32 view px.
+
+void tst_RecordingCropOverlay::minViewSizeFollowsBackendMinimum()
+{
+    QCOMPARE(m_overlay->property("minViewWidth").toReal(), kMinViewSide);
+    QCOMPARE(m_overlay->property("minViewHeight").toReal(), kMinViewSide);
+
+    m_overlay->setProperty("minVideoSide", 64);
+    QCOMPARE(m_overlay->property("minViewWidth").toReal(), 32.0);
+    QCOMPARE(m_overlay->property("minViewHeight").toReal(), 32.0);
+
+    // Never below the pointer-friendly floor, never above the content.
+    m_overlay->setProperty("minVideoSide", 4);
+    QCOMPARE(m_overlay->property("minViewWidth").toReal(), kMinViewSide);
+    m_overlay->setProperty("minVideoSide", 64);
+    m_overlay->setProperty("videoSize", QSize(40, 20));
+    QCOMPARE(m_overlay->property("minViewWidth").toReal(), 400.0);
+    QCOMPARE(m_overlay->property("minViewHeight").toReal(), 200.0);
+}
+
+void tst_RecordingCropOverlay::resizeRectKeepsBackendMinimum_data()
+{
+    QTest::addColumn<QRectF>("start");
+    QTest::addColumn<int>("edges");
+    QTest::addColumn<int>("dx");
+    QTest::addColumn<int>("dy");
+    QTest::addColumn<QRectF>("expected");
+    // The dragged edge stops at 32 view px; the opposite edge never moves.
+    const QRectF start(100, 100, 100, 50);
+    QTest::newRow("left") << start << kEdgeLeft << 200 << 0 << QRectF(168, 100, 32, 50);
+    QTest::newRow("right") << start << kEdgeRight << -200 << 0 << QRectF(100, 100, 32, 50);
+    QTest::newRow("top") << start << kEdgeTop << 0 << 200 << QRectF(100, 118, 100, 32);
+    QTest::newRow("bottom") << start << kEdgeBottom << 0 << -200 << QRectF(100, 100, 100, 32);
+    QTest::newRow("top-left") << start << (kEdgeLeft | kEdgeTop) << 200 << 200 << QRectF(168, 118, 32, 32);
+}
+
+void tst_RecordingCropOverlay::resizeRectKeepsBackendMinimum()
+{
+    QFETCH(QRectF, start);
+    QFETCH(int, edges);
+    QFETCH(int, dx);
+    QFETCH(int, dy);
+    QFETCH(QRectF, expected);
+    m_overlay->setProperty("minVideoSide", 64);
+    QCOMPARE(call("resizeRect", {start, edges, dx, dy}).toRectF(), expected);
+}
+
+void tst_RecordingCropOverlay::createRectKeepsBackendMinimum_data()
+{
+    QTest::addColumn<QPointF>("press");
+    QTest::addColumn<QPointF>("pointer");
+    QTest::addColumn<QRectF>("expected");
+    // The press point is the anchor; the pointer side grows to the minimum.
+    QTest::newRow("down-right") << QPointF(100, 100) << QPointF(104, 104) << QRectF(100, 100, 32, 32);
+    QTest::newRow("up-left") << QPointF(100, 100) << QPointF(90, 90) << QRectF(68, 68, 32, 32);
+    QTest::newRow("right only") << QPointF(100, 100) << QPointF(160, 100) << QRectF(100, 100, 60, 32);
+    // Only when the minimum does not fit does the anchor retreat into the content.
+    QTest::newRow("bottom-right corner") << QPointF(398, 248) << QPointF(399, 249) << QRectF(368, 218, 32, 32);
+    QTest::newRow("top-left corner") << QPointF(2, 52) << QPointF(1, 51) << QRectF(0, 50, 32, 32);
+    // Large drags are unchanged.
+    QTest::newRow("large") << QPointF(100, 100) << QPointF(500, 400) << QRectF(100, 100, 300, 150);
+}
+
+void tst_RecordingCropOverlay::createRectKeepsBackendMinimum()
+{
+    QFETCH(QPointF, press);
+    QFETCH(QPointF, pointer);
+    QFETCH(QRectF, expected);
+    m_overlay->setProperty("minVideoSide", 64);
+    QCOMPARE(call("createRect", {press.x(), press.y(), pointer.x(), pointer.y()}).toRectF(), expected);
+}
+
+void tst_RecordingCropOverlay::createSweepKeepsBackendMinimum()
+{
+    m_overlay->setProperty("minVideoSide", 64);
+    const QRectF content(0, 50, 400, 200);
+    for (int a = -40; a <= 440; a += 7) {
+        for (int b = -40; b <= 440; b += 11) {
+            const QRectF r = call("createRect", {a, a / 2 + 20, b, b / 2 + 30}).toRectF();
+            const QString where = QStringLiteral("a=%1 b=%2 r=(%3,%4 %5x%6)")
+                                      .arg(a).arg(b).arg(r.x()).arg(r.y()).arg(r.width()).arg(r.height());
+            QVERIFY2(r.width() >= 32.0 && r.height() >= 32.0, qPrintable(where));
+            QVERIFY2(content.contains(r), qPrintable(where));
+        }
+    }
 }
 
 // ---------- Full preview ----------
@@ -984,6 +1129,64 @@ void tst_RecordingCropOverlay::previewCursorOverVideo()
     sendKey(Qt::Key_Escape);
     QVERIFY(!editing());
     QTRY_COMPARE(cursorAt(inVideo), Qt::PointingHandCursor);
+}
+
+void tst_RecordingCropOverlay::previewSmallSelectionMoves()
+{
+    // A 4000px-wide video shown 800px wide: the minimum crop is 12.8 view px.
+    OPEN_PREVIEW_OR_FAIL(QSize(4000, 1000));
+    m_backend->setCropRect(QRect(1000, 200, 64, 64));
+    QObject* overlay = previewOverlay();
+    const QRectF committedView = overlay->property("committedRect").toRectF();
+    QVERIFY(committedView.width() < 20.0);
+
+    click(previewItem("previewCropButton"));
+    QVERIFY(editing());
+    const QPoint centre = overlayPoint(committedView.center().x(), committedView.center().y());
+    QTRY_COMPARE(cursorAt(centre), Qt::SizeAllCursor);
+
+    drag(centre, centre + QPoint(20, 10));
+    const QRectF moved = overlay->property("draftRect").toRectF();
+    const QRectF expected = committedView.translated(20, 10);
+    QVERIFY2(qAbs(moved.x() - expected.x()) < 0.01 && qAbs(moved.y() - expected.y()) < 0.01
+                 && qAbs(moved.width() - expected.width()) < 0.01
+                 && qAbs(moved.height() - expected.height()) < 0.01,
+             qPrintable(QStringLiteral("draft (%1,%2 %3x%4) expected (%5,%6 %7x%8)")
+                            .arg(moved.x()).arg(moved.y()).arg(moved.width()).arg(moved.height())
+                            .arg(expected.x()).arg(expected.y()).arg(expected.width()).arg(expected.height())));
+}
+
+void tst_RecordingCropOverlay::previewTinyDraftAppliesWithoutJump()
+{
+    OPEN_PREVIEW_OR_FAIL(QSize(1920, 1080));
+    QObject* overlay = previewOverlay();
+    const QRectF content = previewContentRect();
+    const qreal minView = SnapTray::VideoCropGeometry::kMinCropSide * content.width() / 1920.0;
+    QCOMPARE(overlay->property("minViewWidth").toReal(), minView);
+
+    click(previewItem("previewCropButton"));
+    QVERIFY(editing());
+    // A tiny drag draws a draft that is already as large as the backend will make it.
+    drag(overlayPoint(content.x() + 100, content.y() + 100), overlayPoint(content.x() + 104, content.y() + 104));
+    const QRectF draft = overlay->property("draftRect").toRectF();
+    QVERIFY(!draft.isEmpty());
+    QVERIFY2(draft.width() >= minView - 0.01 && draft.height() >= minView - 0.01,
+             qPrintable(QStringLiteral("draft %1x%2 < %3").arg(draft.width()).arg(draft.height()).arg(minView)));
+
+    sendKey(Qt::Key_Return);
+    QVERIFY(!editing());
+    QCOMPARE(m_backend->cropRect(), expectedVideoCrop(draft));
+    QCOMPARE(m_backend->cropRect().size(), QSize(64, 64));
+
+    // The committed rect redraws where the draft was: no visible jump.
+    const QRectF committed = overlay->property("committedRect").toRectF();
+    const QString where = QStringLiteral("draft (%1,%2 %3x%4) committed (%5,%6 %7x%8)")
+                              .arg(draft.x()).arg(draft.y()).arg(draft.width()).arg(draft.height())
+                              .arg(committed.x()).arg(committed.y()).arg(committed.width()).arg(committed.height());
+    QVERIFY2(qAbs(committed.left() - draft.left()) <= 1.0 && qAbs(committed.top() - draft.top()) <= 1.0
+                 && qAbs(committed.right() - draft.right()) <= 1.0
+                 && qAbs(committed.bottom() - draft.bottom()) <= 1.0,
+             qPrintable(where));
 }
 
 QTEST_MAIN(tst_RecordingCropOverlay)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "encoding/EncoderFactory.h"
+#include "utils/VideoCropGeometry.h"
 #include <QObject>
 #include <QString>
 #include <QRect>
@@ -53,6 +54,8 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(QRect cropRect READ cropRect NOTIFY cropRectChanged)
     Q_PROPERTY(bool hasCrop READ hasCrop NOTIFY cropRectChanged)
     Q_PROPERTY(QSize videoSize READ videoSize NOTIFY videoSizeChanged)
+    // Smallest side a committed crop can have, so the editor never offers less.
+    Q_PROPERTY(int minCropSide READ minCropSide CONSTANT)
 
     // Format
     Q_PROPERTY(int selectedFormat READ selectedFormat WRITE setSelectedFormat NOTIFY formatChanged)
@@ -95,6 +98,7 @@ public:
     QRect cropRect() const { return m_cropRect; }
     bool hasCrop() const { return !m_cropRect.isEmpty(); }
     QSize videoSize() const { return m_videoSize; }
+    int minCropSide() const { return SnapTray::VideoCropGeometry::kMinCropSide; }
 
     int selectedFormat() const { return m_selectedFormat; }
 
