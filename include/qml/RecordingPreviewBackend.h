@@ -3,6 +3,9 @@
 #include "encoding/EncoderFactory.h"
 #include <QObject>
 #include <QString>
+#include <QRect>
+#include <QRectF>
+#include <QSize>
 
 class QQuickView;
 class QEvent;
@@ -42,6 +45,11 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(bool hasTrim READ hasTrim NOTIFY trimRangeChanged)
     Q_PROPERTY(qint64 trimmedDuration READ trimmedDuration NOTIFY trimRangeChanged)
 
+    // Crop (video pixels; empty = no crop)
+    Q_PROPERTY(QRect cropRect READ cropRect NOTIFY cropRectChanged)
+    Q_PROPERTY(bool hasCrop READ hasCrop NOTIFY cropRectChanged)
+    Q_PROPERTY(QSize videoSize READ videoSize NOTIFY videoSizeChanged)
+
     // Format
     Q_PROPERTY(int selectedFormat READ selectedFormat WRITE setSelectedFormat NOTIFY formatChanged)
 
@@ -80,6 +88,10 @@ public:
     bool hasTrim() const;
     qint64 trimmedDuration() const;
 
+    QRect cropRect() const { return m_cropRect; }
+    bool hasCrop() const { return !m_cropRect.isEmpty(); }
+    QSize videoSize() const { return m_videoSize; }
+
     int selectedFormat() const { return m_selectedFormat; }
 
     bool isProcessing() const { return m_isProcessing; }
@@ -100,6 +112,12 @@ public:
     Q_INVOKABLE QString formatTime(qint64 ms) const;
     Q_INVOKABLE void clearError();
     Q_INVOKABLE void reportPlaybackError(const QString &message);
+
+    Q_INVOKABLE void updateVideoSize(const QSize &size);
+    Q_INVOKABLE void setCropRect(const QRect &videoRect);
+    Q_INVOKABLE void setCropFromView(const QRectF &viewRect, const QRectF &contentRect);
+    Q_INVOKABLE QRectF cropRectInView(const QRectF &contentRect) const;
+    Q_INVOKABLE void clearCrop();
 
     // Called by QML VideoPlaybackItem position/duration updates
     Q_INVOKABLE void updatePosition(qint64 ms);
@@ -122,9 +140,12 @@ signals:
     void processProgressChanged();
     void processStatusChanged();
     void errorMessageChanged();
+    void cropRectChanged();
+    void videoSizeChanged();
 
 private:
     friend class tst_RecordingPreviewExport;
+    friend class tst_RecordingPreviewCrop;
     void finishClose();
     bool eventFilter(QObject* watched, QEvent* event) override;
 
@@ -153,6 +174,10 @@ private:
     qint64 m_trimStart = 0;
     qint64 m_trimEnd = -1;  // -1 means end of video
     VideoTrimmer *m_trimmer = nullptr;
+
+    // Crop
+    QRect m_cropRect;
+    QSize m_videoSize;
 
     // Format
     OutputFormat m_selectedFormat = MP4;

@@ -1,6 +1,7 @@
 #include "qml/RecordingPreviewBackend.h"
 #include "cursor/CursorSurfaceSupport.h"
 #include "qml/QmlOverlayManager.h"
+#include "utils/VideoCropGeometry.h"
 #include "video/VideoTrimmer.h"
 #include "video/IVideoFrameReader.h"
 #include "video/IVideoPlayer.h"
@@ -384,6 +385,50 @@ void RecordingPreviewBackend::toggleTrim()
     m_trimStart = start;
     m_trimEnd = end;
     emit trimRangeChanged();
+}
+
+// ---------- Crop ----------
+
+void RecordingPreviewBackend::updateVideoSize(const QSize &size)
+{
+    if (m_videoSize == size) {
+        return;
+    }
+    m_videoSize = size;
+    emit videoSizeChanged();
+    setCropRect(m_cropRect);
+}
+
+void RecordingPreviewBackend::setCropRect(const QRect &videoRect)
+{
+    const QRect normalized = SnapTray::VideoCropGeometry::normalizeCropRect(videoRect, m_videoSize);
+    if (normalized == m_cropRect) {
+        return;
+    }
+    m_cropRect = normalized;
+    emit cropRectChanged();
+}
+
+void RecordingPreviewBackend::setCropFromView(const QRectF &viewRect, const QRectF &contentRect)
+{
+    setCropRect(SnapTray::VideoCropGeometry::viewToVideo(viewRect, contentRect, m_videoSize));
+}
+
+QRectF RecordingPreviewBackend::cropRectInView(const QRectF &contentRect) const
+{
+    if (!hasCrop()) {
+        return contentRect;
+    }
+    return SnapTray::VideoCropGeometry::videoToView(m_cropRect, contentRect, m_videoSize);
+}
+
+void RecordingPreviewBackend::clearCrop()
+{
+    if (m_cropRect.isNull()) {
+        return;
+    }
+    m_cropRect = QRect();
+    emit cropRectChanged();
 }
 
 // ---------- Format conversion (runs on background thread) ----------

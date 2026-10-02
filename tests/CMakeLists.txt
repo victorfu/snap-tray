@@ -180,6 +180,11 @@ target_link_libraries(Qml_ScreenPickerViewModel PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_ScreenPickerViewModel COMMAND Qml_ScreenPickerViewModel)
 set_tests_properties(Qml_ScreenPickerViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_RecordingPreviewCrop Qml/tst_RecordingPreviewCrop.cpp)
+target_link_libraries(Qml_RecordingPreviewCrop PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME Qml_RecordingPreviewCrop COMMAND Qml_RecordingPreviewCrop)
+set_tests_properties(Qml_RecordingPreviewCrop PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Qml_WindowPolicyGuard Qml/tst_WindowPolicyGuard.cpp)
 target_link_libraries(Qml_WindowPolicyGuard PRIVATE Qt6::Core Qt6::Test)
 target_compile_definitions(Qml_WindowPolicyGuard PRIVATE
