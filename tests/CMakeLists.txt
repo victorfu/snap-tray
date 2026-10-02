@@ -252,6 +252,11 @@ target_link_libraries(Utils_ScreenCaptureRegionUtils PRIVATE snaptray_core Qt6::
 add_test(NAME Utils_ScreenCaptureRegionUtils COMMAND Utils_ScreenCaptureRegionUtils)
 set_tests_properties(Utils_ScreenCaptureRegionUtils PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Utils_VideoCropGeometry Utils/tst_VideoCropGeometry.cpp)
+target_link_libraries(Utils_VideoCropGeometry PRIVATE snaptray_core Qt6::Test)
+add_test(NAME Utils_VideoCropGeometry COMMAND Utils_VideoCropGeometry)
+set_tests_properties(Utils_VideoCropGeometry PROPERTIES TIMEOUT 60 LABELS "unit")
+
 set(APP_MainApplicationTrayMenu_SOURCES ${APP_SOURCES})
 list(FILTER APP_MainApplicationTrayMenu_SOURCES EXCLUDE REGEX "^src/main\\.cpp$")
 list(TRANSFORM APP_MainApplicationTrayMenu_SOURCES PREPEND "${CMAKE_SOURCE_DIR}/")
