@@ -25,6 +25,11 @@ private slots:
     void stepForwardFollowsDecodedFrames_data();
     void stepForwardFollowsDecodedFrames();
     void stepForwardAcrossTimestampGap();
+    void queuedStepForward_data();
+    void queuedStepForward();
+    void queuedStepsStopAtEnd();
+    void queuedStepsSuperseded_data();
+    void queuedStepsSuperseded();
     void seekSupersedesStepForward();
     void playRestartsAfterPausedTerminalSeek_data();
     void playRestartsAfterPausedTerminalSeek();
@@ -233,6 +238,156 @@ void TestMediaFoundationPipeline::stepForwardFollowsDecodedFrames()
     player->play();
     QTRY_VERIFY_WITH_TIMEOUT(!frames.isEmpty(), 3000);
     QCOMPARE(firstResumedPosition, positions.first());
+}
+
+void TestMediaFoundationPipeline::queuedStepForward_data()
+{
+    QTest::addColumn<qint64>("startPosition");
+    QTest::addColumn<bool>("delayDelivery");
+    QTest::newRow("back-to-back") << qint64(0) << false;
+    QTest::newRow("decoded-frame-pending") << qint64(0) << true;
+    QTest::newRow("timestamp-gap") << qint64(1000) << false;
+    QTest::newRow("timestamp-gap-pending") << qint64(1000) << true;
+}
+
+void TestMediaFoundationPipeline::queuedStepForward()
+{
+    QFETCH(qint64, startPosition);
+    QFETCH(bool, delayDelivery);
+    const QString input = QFINDTESTDATA("fixtures/frame-gap.mp4");
+    QVERIFY(!input.isEmpty());
+    std::unique_ptr<IVideoPlayer> player(IVideoPlayer::create());
+    QVERIFY(player != nullptr);
+    QSignalSpy frames(player.get(), &IVideoPlayer::frameReady);
+    QSignalSpy errors(player.get(), &IVideoPlayer::error);
+    QVERIFY(player->load(input));
+    player->pause();
+    player->seek(startPosition);
+    QTRY_COMPARE_WITH_TIMEOUT(frames.count(), 1, 3000);
+
+    QList<qint64> positions;
+    connect(player.get(), &IVideoPlayer::frameReady, player.get(), [&] {
+        positions.append(player->position());
+    });
+    player->stepForward();
+    if (delayDelivery) {
+        // A decoded frame waiting in Qt's queue must still count as in flight.
+        QThread::msleep(150);
+    }
+    player->stepForward();
+    player->stepForward();
+    QTRY_COMPARE_WITH_TIMEOUT(positions.size(), 3, 3000);
+    const QList<qint64> expected = startPosition == 0
+        ? QList<qint64>{100, 200, 300} : QList<qint64>{1200, 1300, 1400};
+    QCOMPARE(positions, expected);
+    QCOMPARE(player->state(), IVideoPlayer::State::Paused);
+    QTest::qWait(50);
+    QCOMPARE(positions, expected);
+
+    player->stepForward();
+    QTRY_COMPARE_WITH_TIMEOUT(positions.size(), 4, 3000);
+    QCOMPARE(positions.last(), expected.last() + 100);
+    QVERIFY(errors.isEmpty());
+}
+
+void TestMediaFoundationPipeline::queuedStepsStopAtEnd()
+{
+    const QString input = QFINDTESTDATA("fixtures/frame-gap.mp4");
+    QVERIFY(!input.isEmpty());
+    std::unique_ptr<IVideoPlayer> player(IVideoPlayer::create());
+    QVERIFY(player != nullptr);
+    QSignalSpy frames(player.get(), &IVideoPlayer::frameReady);
+    QSignalSpy finished(player.get(), &IVideoPlayer::playbackFinished);
+    QVERIFY(player->load(input));
+    player->pause();
+    player->setLooping(true);
+    player->seek(1900);
+    QTRY_COMPARE_WITH_TIMEOUT(frames.count(), 1, 3000);
+    auto* reader = player->findChild<QThread*>();
+    QVERIFY(reader != nullptr);
+    QSignalSpy endOfStream(reader, SIGNAL(endOfStream(quint64)));
+    QVERIFY(endOfStream.isValid());
+
+    frames.clear();
+    for (int i = 0; i < 5; ++i) player->stepForward();
+    QTRY_COMPARE_WITH_TIMEOUT(endOfStream.count(), 1, 3000);
+    QCoreApplication::sendPostedEvents(player.get(), QEvent::MetaCall);
+    QCOMPARE(player->position(), qint64(2000));
+    QCOMPARE(player->state(), IVideoPlayer::State::Paused);
+    // One next frame and one terminal fallback, regardless of the extra presses.
+    QCOMPARE(frames.count(), 2);
+    QTest::qWait(50);
+    QCOMPARE(frames.count(), 2);
+    QCOMPARE(endOfStream.count(), 1);
+    QVERIFY(finished.isEmpty());
+
+    frames.clear();
+    player->seek(0);
+    QTRY_COMPARE_WITH_TIMEOUT(frames.count(), 1, 3000);
+    frames.clear();
+    player->stepForward();
+    QTRY_COMPARE_WITH_TIMEOUT(frames.count(), 1, 3000);
+    QCOMPARE(player->position(), qint64(100));
+}
+
+void TestMediaFoundationPipeline::queuedStepsSuperseded_data()
+{
+    QTest::addColumn<QString>("action");
+    QTest::addColumn<bool>("fromFrameCallback");
+    for (const QString& action : {QStringLiteral("seek"), QStringLiteral("stop"),
+                                  QStringLiteral("reload")}) {
+        QTest::addRow("%s-pending", qPrintable(action)) << action << false;
+        QTest::addRow("%s-from-frame", qPrintable(action)) << action << true;
+    }
+}
+
+void TestMediaFoundationPipeline::queuedStepsSuperseded()
+{
+    QFETCH(QString, action);
+    QFETCH(bool, fromFrameCallback);
+    const QString input = QFINDTESTDATA("fixtures/frame-gap.mp4");
+    QVERIFY(!input.isEmpty());
+    std::unique_ptr<IVideoPlayer> player(IVideoPlayer::create());
+    QVERIFY(player != nullptr);
+    QSignalSpy frames(player.get(), &IVideoPlayer::frameReady);
+    QVERIFY(player->load(input));
+    player->pause();
+    player->seek(0);
+    QTRY_COMPARE_WITH_TIMEOUT(frames.count(), 1, 3000);
+    frames.clear();
+
+    const auto supersede = [&] {
+        if (action == QStringLiteral("seek")) player->seek(550);
+        else if (action == QStringLiteral("stop")) player->stop();
+        else QVERIFY(player->load(input));
+    };
+    bool superseded = false;
+    if (fromFrameCallback) {
+        connect(player.get(), &IVideoPlayer::frameReady, player.get(), [&] {
+            if (!superseded) {
+                superseded = true;
+                supersede();
+            }
+        });
+    }
+    for (int i = 0; i < 3; ++i) player->stepForward();
+    if (!fromFrameCallback) {
+        QThread::msleep(150);
+        supersede();
+    }
+    const int expectedFrames = fromFrameCallback ? 2 : 1;
+    QTRY_COMPARE_WITH_TIMEOUT(frames.count(), expectedFrames, 3000);
+    const qint64 targetPosition = action == QStringLiteral("seek") ? 500 : 0;
+    QCOMPARE(player->position(), targetPosition);
+    QTest::qWait(100);
+    QCOMPARE(frames.count(), expectedFrames);
+
+    frames.clear();
+    player->stepForward();
+    QTRY_COMPARE_WITH_TIMEOUT(frames.count(), 1, 3000);
+    QCOMPARE(player->position(), targetPosition + 100);
+    QTest::qWait(50);
+    QCOMPARE(frames.count(), 1);
 }
 
 void TestMediaFoundationPipeline::seekSupersedesStepForward()
