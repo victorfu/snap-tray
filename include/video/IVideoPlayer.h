@@ -23,6 +23,8 @@ public:
     virtual void pause() = 0;
     virtual void stop() = 0;
     virtual void seek(qint64 positionMs) = 0;
+    // Pause and advance one frame. Backends can override with native PTS stepping.
+    virtual void stepForward();
 
     // State queries
     virtual State state() const = 0;

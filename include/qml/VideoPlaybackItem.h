@@ -71,6 +71,7 @@ public:
     Q_INVOKABLE void togglePlayPause();
     Q_INVOKABLE void stop();
     Q_INVOKABLE void seek(qint64 positionMs);
+    Q_INVOKABLE void stepForward();
     Q_INVOKABLE void setLooping(bool loop);
 
 signals:

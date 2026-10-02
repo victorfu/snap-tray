@@ -214,6 +214,12 @@ void VideoPlaybackItem::setLooping(bool loop)
         m_player->setLooping(loop);
 }
 
+void VideoPlaybackItem::stepForward()
+{
+    if (m_player)
+        m_player->stepForward();
+}
+
 void VideoPlaybackItem::onFrameReady(const QImage &frame)
 {
     if (frame.isNull())

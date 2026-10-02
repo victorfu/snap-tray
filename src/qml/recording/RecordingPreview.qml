@@ -604,8 +604,7 @@ Item {
             event.accepted = true
             break
         case Qt.Key_Period:
-            videoPlayer.pause()
-            videoPlayer.seek(Math.min(videoPlayer.duration, videoPlayer.position + videoPlayer.frameIntervalMs))
+            videoPlayer.stepForward()
             event.accepted = true
             break
         case Qt.Key_S:

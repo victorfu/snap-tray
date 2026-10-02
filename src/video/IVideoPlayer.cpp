@@ -1,6 +1,12 @@
 #include "video/IVideoPlayer.h"
 #include <QDebug>
 
+void IVideoPlayer::stepForward()
+{
+    pause();
+    seek(qMin(duration(), position() + frameIntervalMs()));
+}
+
 #ifdef Q_OS_MAC
 class AVFoundationPlayer;
 IVideoPlayer* createAVFoundationPlayer(QObject *parent);
