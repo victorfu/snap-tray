@@ -202,30 +202,47 @@ QString describe(const std::vector<double>& values)
 }
 
 // Times at which the bottom-right burst marker turns black in `path`, found by
-// sampling frames every kVideoScanStepMs. `markerPoint` is in output pixels.
+// sampling frames every kVideoScanStepMs (Windows: at every decoded frame's
+// own timestamp). `markerPoint` is in output pixels.
 std::vector<double> markerOnsetsMs(const QString& path, const QPoint& markerPoint, qint64 durationMs,
                                    QString* error)
 {
     std::vector<double> onsets;
+    bool dark = false;
+    const auto addSample = [&](double timeMs, int lightness) {
+        if (!dark && lightness <= kMarkerDarkMax) {
+            onsets.push_back(timeMs);
+            dark = true;
+        } else if (dark && lightness >= kMarkerLightMin) {
+            dark = false;
+        }
+    };
     auto reader = IVideoFrameReader::create();
+#ifdef Q_OS_WIN
+    if (!reader) {
+        std::vector<DecodedVideoPixel> pixels;
+        if (!decodeVideoPixels(path, markerPoint, &pixels, error)) {
+            return onsets;
+        }
+        for (const DecodedVideoPixel& pixel : pixels) {
+            if (pixel.timeMs < durationMs) {
+                addSample(pixel.timeMs, QColor(pixel.color).lightness());
+            }
+        }
+        return onsets;
+    }
+#endif
     if (!reader || !reader->load(path)) {
         *error = QStringLiteral("Cannot load output video");
         return onsets;
     }
-    bool dark = false;
     for (qint64 t = 0; t < durationMs; t += kVideoScanStepMs) {
         const QImage frame = reader->frameAt(t);
         if (frame.isNull()) {
             *error = reader->lastError();
             return onsets;
         }
-        const int lightness = frame.pixelColor(markerPoint).lightness();
-        if (!dark && lightness <= kMarkerDarkMax) {
-            onsets.push_back(static_cast<double>(t));
-            dark = true;
-        } else if (dark && lightness >= kMarkerLightMin) {
-            dark = false;
-        }
+        addSample(static_cast<double>(t), frame.pixelColor(markerPoint).lightness());
     }
     return onsets;
 }
@@ -393,6 +410,20 @@ void tst_VideoTranscoder::cropAndTrimKeepsAudio()
         QVERIFY2(isGreen(frame.pixelColor(frame.rect().center())),
                  qPrintable(frame.pixelColor(frame.rect().center()).name()));
     }
+#ifdef Q_OS_WIN
+    else {
+        // No IVideoFrameReader on Windows: check the crop position (and row
+        // orientation) on the decoded output frames instead.
+        std::vector<DecodedVideoPixel> pixels;
+        QString error;
+        QVERIFY2(decodeVideoPixels(request.outputPath, QRect(QPoint(0, 0), probe.videoSize).center(), &pixels,
+                                   &error),
+                 qPrintable(error));
+        QVERIFY(!pixels.empty());
+        const QColor center(pixels.front().color);
+        QVERIFY2(isGreen(center), qPrintable(center.name()));
+    }
+#endif
 
     verifyAudioPulses(request.outputPath, request.startMs, request.endMs);
 }

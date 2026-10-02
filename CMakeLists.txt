@@ -564,6 +564,7 @@ add_library(snaptray_platform STATIC
         src/capture/WASAPIAudioCaptureEngine_win.cpp
         src/MediaFoundationEncoder.cpp
         src/video/MediaFoundationPlayer_win.cpp
+        src/video/MediaFoundationTranscoder_win.cpp
     >
     # Linux sources
     $<$<PLATFORM_ID:Linux>:

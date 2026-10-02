@@ -1,9 +1,9 @@
 #include "VideoTranscoderTestAudio.h"
 
-// Platforms without a native transcoder skip tst_VideoTranscoder in init().
-// A platform that gains a transcoder must replace this stub with a real
-// decoder (Windows: Media Foundation Source Reader with PCM output), because
-// the audio contract tests fail rather than skip without one.
+// Linux beta has no native transcoder and skips tst_VideoTranscoder in init().
+// macOS (_mac.mm) and Windows (_win.cpp) have real decoders. A platform that
+// gains a transcoder must replace this stub with a real decoder, because the
+// audio contract tests fail rather than skip without one.
 bool decodeAudioTrack(const QString&, int, DecodedAudio*, QString* error)
 {
     if (error) {

@@ -597,15 +597,18 @@ add_test(NAME Video_VideoTrimmerSafety COMMAND Video_VideoTrimmerSafety)
 set_tests_properties(Video_VideoTrimmerSafety PROPERTIES TIMEOUT 30 LABELS "unit")
 
 # Cross-platform transcoder contract. The test-only audio decoder is native per
-# platform; the stub makes the audio contract fail until a platform provides one.
+# platform; the stub (Linux, where the test skips) makes the audio contract fail
+# if a platform gains a transcoder without a decoder.
 add_executable(Video_VideoTranscoder
     Video/tst_VideoTranscoder.cpp
-    $<IF:$<PLATFORM_ID:Darwin>,Video/VideoTranscoderTestAudio_mac.mm,Video/VideoTranscoderTestAudio_stub.cpp>
+    $<IF:$<PLATFORM_ID:Darwin>,Video/VideoTranscoderTestAudio_mac.mm,$<IF:$<PLATFORM_ID:Windows>,Video/VideoTranscoderTestAudio_win.cpp,Video/VideoTranscoderTestAudio_stub.cpp>>
 )
 set_source_files_properties(Video/VideoTranscoderTestAudio_mac.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
 target_include_directories(Video_VideoTranscoder PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(Video_VideoTranscoder PRIVATE snaptray_platform Qt6::Test
-    "$<$<PLATFORM_ID:Darwin>:-framework AVFoundation>" "$<$<PLATFORM_ID:Darwin>:-framework CoreMedia>")
+    "$<$<PLATFORM_ID:Darwin>:-framework AVFoundation>" "$<$<PLATFORM_ID:Darwin>:-framework CoreMedia>"
+    "$<$<PLATFORM_ID:Windows>:mfreadwrite>" "$<$<PLATFORM_ID:Windows>:mfplat>"
+    "$<$<PLATFORM_ID:Windows>:mfuuid>" "$<$<PLATFORM_ID:Windows>:ole32>")
 add_test(NAME Video_VideoTranscoder COMMAND Video_VideoTranscoder)
 set_tests_properties(Video_VideoTranscoder PROPERTIES TIMEOUT 120 LABELS "integration;slow")
 
