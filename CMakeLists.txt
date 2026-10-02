@@ -501,6 +501,7 @@ add_library(snaptray_platform STATIC
     src/recording/ScreenSourceService.cpp
     src/video/IVideoFrameReader.cpp
     src/video/IVideoPlayer.cpp
+    src/video/IVideoTranscoder.cpp
     src/video/VideoTrimmer.cpp
     src/VideoEncoderFactory.cpp
     src/QRCodeManager.cpp
@@ -538,6 +539,7 @@ add_library(snaptray_platform STATIC
         src/AVFoundationEncoder.mm
         src/video/AVFoundationFrameReader_mac.mm
         src/video/AVFoundationPlayer_mac.mm
+        src/video/AVFoundationTranscoder_mac.mm
     >
     # macOS headers with Q_OBJECT
     $<$<PLATFORM_ID:Darwin>:
@@ -592,6 +594,7 @@ set_source_files_properties(
     src/AVFoundationEncoder.mm
     src/video/AVFoundationFrameReader_mac.mm
     src/video/AVFoundationPlayer_mac.mm
+    src/video/AVFoundationTranscoder_mac.mm
     PROPERTIES COMPILE_FLAGS "-fobjc-arc"
 )
 

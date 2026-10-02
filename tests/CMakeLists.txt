@@ -596,6 +596,19 @@ target_link_libraries(Video_VideoTrimmerSafety PRIVATE snaptray_platform Qt6::Te
 add_test(NAME Video_VideoTrimmerSafety COMMAND Video_VideoTrimmerSafety)
 set_tests_properties(Video_VideoTrimmerSafety PROPERTIES TIMEOUT 30 LABELS "unit")
 
+# Cross-platform transcoder contract. The test-only audio decoder is native per
+# platform; the stub makes the audio contract fail until a platform provides one.
+add_executable(Video_VideoTranscoder
+    Video/tst_VideoTranscoder.cpp
+    $<IF:$<PLATFORM_ID:Darwin>,Video/VideoTranscoderTestAudio_mac.mm,Video/VideoTranscoderTestAudio_stub.cpp>
+)
+set_source_files_properties(Video/VideoTranscoderTestAudio_mac.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+target_include_directories(Video_VideoTranscoder PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(Video_VideoTranscoder PRIVATE snaptray_platform Qt6::Test
+    "$<$<PLATFORM_ID:Darwin>:-framework AVFoundation>" "$<$<PLATFORM_ID:Darwin>:-framework CoreMedia>")
+add_test(NAME Video_VideoTranscoder COMMAND Video_VideoTranscoder)
+set_tests_properties(Video_VideoTranscoder PROPERTIES TIMEOUT 120 LABELS "integration;slow")
+
 if(WIN32)
     add_executable(Video_MediaFoundationFrameCopy Video/tst_MediaFoundationFrameCopy_win.cpp)
     target_include_directories(Video_MediaFoundationFrameCopy PRIVATE ${CMAKE_SOURCE_DIR}/src)
