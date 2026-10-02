@@ -1000,6 +1000,7 @@ set_source_files_properties(src/qml/dialogs/ScreenPickerDialog.qml PROPERTIES QT
 
 # Recording preview
 set_source_files_properties(src/qml/recording/RecordingPreview.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingPreview.qml)
+set_source_files_properties(src/qml/recording/RecordingCropOverlay.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingCropOverlay.qml)
 
 # Recording control bar
 set_source_files_properties(src/qml/recording/RecordingControlBar.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingControlBar.qml)
@@ -1079,6 +1080,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/settings/UpdatesSettings.qml
         src/qml/settings/AboutSettings.qml
         src/qml/recording/RecordingPreview.qml
+        src/qml/recording/RecordingCropOverlay.qml
         src/qml/recording/RecordingControlBar.qml
         src/qml/panels/BeautifyPanel.qml
         src/qml/panels/EmojiPickerPopup.qml

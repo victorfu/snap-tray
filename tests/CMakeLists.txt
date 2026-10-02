@@ -185,6 +185,12 @@ target_link_libraries(Qml_RecordingPreviewCrop PRIVATE snaptray_ui snaptray_qmlp
 add_test(NAME Qml_RecordingPreviewCrop COMMAND Qml_RecordingPreviewCrop)
 set_tests_properties(Qml_RecordingPreviewCrop PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_RecordingCropOverlay Qml/tst_RecordingCropOverlay.cpp)
+target_link_libraries(Qml_RecordingCropOverlay PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(Qml_RecordingCropOverlay PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_RecordingCropOverlay COMMAND Qml_RecordingCropOverlay)
+set_tests_properties(Qml_RecordingCropOverlay PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 add_executable(Qml_WindowPolicyGuard Qml/tst_WindowPolicyGuard.cpp)
 target_link_libraries(Qml_WindowPolicyGuard PRIVATE Qt6::Core Qt6::Test)
 target_compile_definitions(Qml_WindowPolicyGuard PRIVATE

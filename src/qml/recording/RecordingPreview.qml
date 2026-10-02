@@ -21,6 +21,9 @@ Item {
     readonly property color bgPanelPressed: ComponentTokens.recordingPreviewPanelPressed
     readonly property color borderColor: ComponentTokens.recordingPreviewBorder
     readonly property color trimOverlayColor: ComponentTokens.recordingPreviewTrimOverlay
+    readonly property real disabledControlOpacity: 0.6
+    readonly property real overlayChipHeight: 28
+    readonly property real overlayChipButtonSize: 20
 
     property bool isScrubbing: false
     property bool isDraggingTrimStart: false
@@ -32,6 +35,25 @@ Item {
     property rect activeTooltipAnchor: Qt.rect(0, 0, 0, 0)
     property bool activeTooltipPreferAbove: true
     property var activeTooltipSourceItem: null
+
+    // Crop editing needs a decoded frame: contentRect alone can be stale after the frame is cleared.
+    readonly property bool cropAvailable: backend.videoSize.width > 0 && backend.videoSize.height > 0
+                                          && videoPlayer.contentRect.width > 0
+                                          && videoPlayer.contentRect.height > 0
+    onCropAvailableChanged: {
+        if (!cropAvailable)
+            cropOverlay.cancel()
+    }
+
+    // The single guarded save path shared by the Save button, Ctrl+S and non-editing Enter.
+    // A visible crop draft is applied first so the export matches what the user sees.
+    function saveWithCrop() {
+        if (backend.isProcessing)
+            return
+        if (cropOverlay.editing)
+            cropOverlay.apply()
+        backend.save()
+    }
 
     function showButtonTooltip(text, item, preferAbove) {
         if (!text || !item || backend.isProcessing) {
@@ -107,9 +129,11 @@ Item {
 
             VideoPlaybackItem {
                 id: videoPlayer
+                objectName: "previewVideoPlayer"
                 anchors.fill: parent
                 source: backend.videoPath
 
+                onVideoLoaded: backend.updateVideoSize(videoPlayer.videoSize)
                 onDurationChanged: function(durationMs) { backend.updateDuration(durationMs) }
                 onPositionChanged: function(positionMs) { backend.updatePosition(positionMs) }
                 onStateChanged: backend.updatePlayingState(videoPlayer.playing)
@@ -121,9 +145,33 @@ Item {
             }
 
             MouseArea {
+                objectName: "previewVideoClickArea"
                 anchors.fill: parent
+                // Video clicks belong to the crop editor while editing; Space and the play button still work.
+                enabled: !cropOverlay.editing
                 cursorShape: CursorTokens.clickable
                 onClicked: videoPlayer.togglePlayPause()
+            }
+
+            RecordingCropOverlay {
+                id: cropOverlay
+                objectName: "previewCropOverlay"
+                anchors.fill: parent
+                z: 4
+                visible: root.cropAvailable
+                interactive: !backend.isProcessing
+                contentRect: videoPlayer.contentRect
+                videoSize: backend.videoSize
+                accentColor: root.accent
+                // backend.cropRect is read so the binding re-evaluates when the crop changes.
+                committedRect: {
+                    backend.cropRect
+                    return backend.hasCrop ? backend.cropRectInView(videoPlayer.contentRect) : Qt.rect(0, 0, 0, 0)
+                }
+                onApplyRequested: function(viewRect) {
+                    if (!backend.isProcessing)
+                        backend.setCropFromView(viewRect, videoPlayer.contentRect)
+                }
             }
 
             Rectangle {
@@ -148,6 +196,53 @@ Item {
                 }
             }
 
+            // Committed crop chip; kept off the toolbar so it fits the minimum window width.
+            GlassSurface {
+                id: cropChip
+                objectName: "previewCropChip"
+                visible: backend.hasCrop && !cropOverlay.editing
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.margins: SemanticTokens.spacing12
+                width: cropChipRow.implicitWidth + SemanticTokens.spacing16
+                height: root.overlayChipHeight
+                z: 5
+                glassBg: ComponentTokens.tooltipBackground
+                glassBgTop: ComponentTokens.tooltipBackgroundTop
+                glassHighlight: ComponentTokens.tooltipHighlight
+                glassBorder: ComponentTokens.tooltipBorder
+                glassRadius: ComponentTokens.tooltipRadius
+
+                Row {
+                    id: cropChipRow
+                    anchors.centerIn: parent
+                    spacing: SemanticTokens.spacing4
+
+                    Text {
+                        objectName: "previewCropSizeLabel"
+                        anchors.verticalCenter: parent.verticalCenter
+                        // Authoritative: the backend's normalized, even video-pixel crop.
+                        text: backend.cropRect.width + " × " + backend.cropRect.height
+                        color: root.textSecondary
+                        font.pixelSize: SemanticTokens.fontSizeCaption
+                        font.family: SemanticTokens.fontFamily
+                    }
+
+                    IconButton {
+                        objectName: "previewClearCropButton"
+                        anchors.verticalCenter: parent.verticalCenter
+                        enabled: !backend.isProcessing
+                        iconSource: "qrc:/icons/icons/close.svg"
+                        iconSize: ComponentTokens.iconSizeMenu
+                        width: root.overlayChipButtonSize
+                        height: root.overlayChipButtonSize
+                        tooltipText: qsTr("Clear Crop")
+                        tooltipPreferredAbove: false
+                        onClicked: backend.clearCrop()
+                    }
+                }
+            }
+
             GlassSurface {
                 id: silentPreviewNotice
                 objectName: "previewAudioUnavailableLabel"
@@ -156,7 +251,7 @@ Item {
                 anchors.right: parent.right
                 anchors.margins: SemanticTokens.spacing12
                 width: silentPreviewText.implicitWidth + SemanticTokens.spacing16
-                height: 28
+                height: root.overlayChipHeight
                 z: 5
                 glassBg: ComponentTokens.tooltipBackground
                 glassBgTop: ComponentTokens.tooltipBackgroundTop
@@ -448,6 +543,17 @@ Item {
                 }
 
                 IconButton {
+                    objectName: "previewCropButton"
+                    iconSource: "qrc:/icons/icons/crop.svg"
+                    enabled: root.cropAvailable && !backend.isProcessing
+                    opacity: enabled ? 1.0 : root.disabledControlOpacity
+                    highlighted: backend.hasCrop || cropOverlay.editing
+                    tooltipText: cropOverlay.editing ? qsTr("Apply Crop (Enter)")
+                                                     : backend.hasCrop ? qsTr("Edit Crop") : qsTr("Crop Recording")
+                    onClicked: cropOverlay.editing ? cropOverlay.apply() : cropOverlay.beginEditing()
+                }
+
+                IconButton {
                     iconSource: "qrc:/icons/icons/scissors.svg"
                     highlighted: backend.hasTrim
                     tooltipText: backend.hasTrim ? qsTr("Clear Trim Selection") : qsTr("Trim Recording")
@@ -468,10 +574,11 @@ Item {
                 }
 
                 IconButton {
+                    objectName: "previewSaveButton"
                     iconSource: "qrc:/icons/icons/save.svg"
                     primary: true
                     tooltipText: qsTr("Save Recording (Enter / Ctrl+S)")
-                    onClicked: backend.save()
+                    onClicked: root.saveWithCrop()
                 }
             }
         }
@@ -570,6 +677,20 @@ Item {
             return
         }
 
+        if (cropOverlay.editing) {
+            // Escape only drops the draft (the preview stays open); Enter only applies it.
+            if (event.key === Qt.Key_Escape) {
+                cropOverlay.cancel()
+                event.accepted = true
+                return
+            }
+            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                cropOverlay.apply()
+                event.accepted = true
+                return
+            }
+        }
+
         switch (event.key) {
         case Qt.Key_Space:
             videoPlayer.togglePlayPause()
@@ -581,7 +702,7 @@ Item {
             break
         case Qt.Key_Return:
         case Qt.Key_Enter:
-            backend.save()
+            root.saveWithCrop()
             event.accepted = true
             break
         case Qt.Key_M:
@@ -609,7 +730,7 @@ Item {
             break
         case Qt.Key_S:
             if (event.modifiers & Qt.ControlModifier) {
-                backend.save()
+                root.saveWithCrop()
                 event.accepted = true
             }
             break
