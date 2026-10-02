@@ -744,6 +744,9 @@ bool MediaFoundationTranscoder::writeOutput(const VideoTranscodeRequest& request
     if (SUCCEEDED(hr)) hr = writerAttributes->SetGUID(MF_TRANSCODE_CONTAINERTYPE, MFTranscodeContainerType_MPEG4);
     // Throttling stays enabled (the default): WriteSample blocks while the
     // encoder is behind, so decoded RGB32 frames cannot pile up in memory.
+    // Source audio that ends well before the video leaves the audio stream
+    // idle while video is still written; tst_VideoTranscoder::earlyEndingAudio
+    // (run under a hang guard) verifies that case completes.
     ComPtr<IMFSinkWriter> writer;
     const std::wstring outputPath = nativePath(request.outputPath);
     if (SUCCEEDED(hr)) hr = MFCreateSinkWriterFromURL(outputPath.c_str(), nullptr, writerAttributes.Get(), &writer);

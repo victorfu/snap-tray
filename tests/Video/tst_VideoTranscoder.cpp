@@ -13,9 +13,11 @@
 #include <QSignalSpy>
 #include <QTemporaryDir>
 
+#include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <memory>
+#include <thread>
 #include <vector>
 
 namespace {
@@ -70,6 +72,18 @@ constexpr qint64 kUnalignedEndMs = 1730;
 static_assert((kUnalignedStartMs * kAudioSampleRate / 1000) % kAacPacketFrames != 0,
               "trim start must fall inside an AAC packet");
 
+// Early-ending audio fixture: audio only for the first 800 ms of the 2 s
+// video (bursts at 200, 400 and 600 ms), as when audio capture stops early.
+constexpr int kEarlyAudioFrameCount = 8;
+constexpr qint64 kEarlyAudioEndMs = kEarlyAudioFrameCount * kFrameIntervalMs;
+constexpr qint64 kEarlyAudioMinGapMs = 1000;
+static_assert(kFrameCount * kFrameIntervalMs - kEarlyAudioEndMs >= kEarlyAudioMinGapMs,
+              "the audio must end at least 1 s before the video");
+// A transcode of the 2 s fixture takes well under a second; this bound only
+// turns a hang into a test failure, inside the ctest TIMEOUT for the suite.
+constexpr int kTranscodeHangTimeoutMs = 20000;
+constexpr int kTranscodeHangPollMs = 10;
+
 constexpr int kCancelAtPercent = 30;
 constexpr int kMarkerDarkMax = 64;
 constexpr int kMarkerLightMin = 192;
@@ -121,7 +135,9 @@ QByteArray fixtureAudio(int frameIndex)
     return pcm;
 }
 
-QString createFixture(const QString& path, bool withAudio)
+// `audioFrameCount` video frames (from the start) get audio; the rest are
+// video only.
+QString createFixture(const QString& path, bool withAudio, int audioFrameCount = kFrameCount)
 {
     std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
     if (!encoder) {
@@ -152,7 +168,7 @@ QString createFixture(const QString& path, bool withAudio)
         if (encoder->framesWritten() != before + 1) {
             return QStringLiteral("Encoder rejected fixture frame %1").arg(i);
         }
-        if (withAudio) {
+        if (withAudio && i < audioFrameCount) {
             encoder->writeAudioSamples(fixtureAudio(i), qint64(i) * kAudioFramesPerVideoFrame);
         }
     }
@@ -247,6 +263,47 @@ std::vector<double> markerOnsetsMs(const QString& path, const QPoint& markerPoin
     return onsets;
 }
 
+// Runs transcode() on its own thread with a fresh transcoder and waits at most
+// kTranscodeHangTimeoutMs, so a pipeline that never returns fails the test
+// instead of wedging the suite. A hung worker is detached; it owns everything
+// it touches. Returns false on timeout.
+bool transcodeWithHangGuard(const VideoTranscodeRequest& request, VideoTranscodeResult* result)
+{
+    struct Job {
+        std::unique_ptr<IVideoTranscoder> transcoder = IVideoTranscoder::create();
+        VideoTranscodeRequest request;
+        VideoTranscodeResult result;
+        std::atomic<bool> done{false};
+    };
+    auto job = std::make_shared<Job>();
+    job->request = request;
+    if (!job->transcoder) {
+        result->errorMessage = QStringLiteral("No native transcoder");
+        return true;
+    }
+    std::thread worker([job]() {
+        job->result = job->transcoder->transcode(job->request, {});
+        job->done.store(true);
+    });
+    QElapsedTimer timer;
+    timer.start();
+    while (!job->done.load() && timer.elapsed() < kTranscodeHangTimeoutMs) {
+        QTest::qWait(kTranscodeHangPollMs);
+    }
+    if (!job->done.load()) {
+        worker.detach();
+        return false;
+    }
+    worker.join();
+    *result = job->result;
+    return true;
+}
+
+double decodedEndMs(const DecodedAudio& audio)
+{
+    return (audio.firstFrame + static_cast<qint64>(audio.mono.size())) * kMsPerSecond / audio.sampleRate;
+}
+
 // Every failure is reported with qWarning; `pattern` pins its cause.
 void expectFailureWarning(const char* pattern)
 {
@@ -267,6 +324,8 @@ private slots:
     void cropAndTrimKeepsAudio();
     void cropOnlyKeepsPrimedAudio();
     void trimStartBetweenAacPacketsKeepsAlignment();
+    void earlyEndingAudio_data();
+    void earlyEndingAudio();
     void trimWithoutAudio();
     void oddCropIsEvenAligned();
     void cancelRemovesOutput();
@@ -282,8 +341,10 @@ private:
     std::unique_ptr<IVideoTranscoder> m_transcoder;
     QTemporaryDir m_dir;
     QString fixture(bool withAudio);
+    QString earlyAudioFixture();
     VideoTranscoderFaultInjection* faultInjection();
-    void verifyAudioPulses(const QString& outputPath, qint64 startMs, qint64 endMs);
+    void verifyAudioPulses(const QString& outputPath, qint64 startMs, qint64 endMs,
+                           const QString& sourcePath = QString());
 };
 
 void tst_VideoTranscoder::init()
@@ -308,28 +369,47 @@ QString tst_VideoTranscoder::fixture(bool withAudio)
     return error.isEmpty() ? path : QStringLiteral("ERROR:") + error;
 }
 
+QString tst_VideoTranscoder::earlyAudioFixture()
+{
+    const QString path = m_dir.filePath(QStringLiteral("av-early.mp4"));
+    if (QFileInfo::exists(path)) {
+        return path;
+    }
+    const QString error = createFixture(path, true, kEarlyAudioFrameCount);
+    if (error.startsWith(QLatin1String("SKIP:"))) {
+        return QString();
+    }
+    return error.isEmpty() ? path : QStringLiteral("ERROR:") + error;
+}
+
 VideoTranscoderFaultInjection* tst_VideoTranscoder::faultInjection()
 {
     return dynamic_cast<VideoTranscoderFaultInjection*>(m_transcoder.get());
 }
 
-// Decodes the source and output audio and checks that the output holds the
-// selected interval: audio from 0 to the interval end, and exactly the source
-// bursts inside the interval, each at (source onset - startMs).
-void tst_VideoTranscoder::verifyAudioPulses(const QString& outputPath, qint64 startMs, qint64 endMs)
+// Decodes the source (default: the full-audio fixture) and output audio and
+// checks that the output holds the selected interval: audio from 0 to the
+// interval end (or to the end of the source audio, if that comes first), and
+// exactly the source bursts inside the interval, each at (source onset - startMs).
+void tst_VideoTranscoder::verifyAudioPulses(const QString& outputPath, qint64 startMs, qint64 endMs,
+                                            const QString& sourcePath)
 {
     DecodedAudio source;
     QString error;
-    QVERIFY2(decodeAudioTrack(fixture(true), kAudioSampleRate, &source, &error), qPrintable(error));
+    QVERIFY2(decodeAudioTrack(sourcePath.isEmpty() ? fixture(true) : sourcePath, kAudioSampleRate, &source, &error),
+             qPrintable(error));
     DecodedAudio output;
     QVERIFY2(decodeAudioTrack(outputPath, kAudioSampleRate, &output, &error), qPrintable(error));
 
     const double spanMs = static_cast<double>(endMs - startMs);
+    const double coveredMs = std::min(spanMs, decodedEndMs(source) - startMs);
     const double outputStartMs = output.firstFrame * kMsPerSecond / output.sampleRate;
-    const double outputEndMs = (output.firstFrame + static_cast<qint64>(output.mono.size())) * kMsPerSecond
-        / output.sampleRate;
+    const double outputEndMs = decodedEndMs(output);
     QVERIFY2(std::fabs(outputStartMs) <= kAudioEdgeToleranceMs, qPrintable(QString::number(outputStartMs)));
-    QVERIFY2(outputEndMs >= spanMs - kAudioEdgeToleranceMs, qPrintable(QString::number(outputEndMs)));
+    QVERIFY2(outputEndMs >= coveredMs - kAudioEdgeToleranceMs,
+             qPrintable(QStringLiteral("output audio ends at %1 ms, source audio covers %2 ms")
+                            .arg(outputEndMs)
+                            .arg(coveredMs)));
 
     std::vector<double> expected;
     for (double onset : pulseOnsetsMs(source)) {
@@ -488,6 +568,83 @@ void tst_VideoTranscoder::trimStartBetweenAacPacketsKeepsAlignment()
     for (size_t i = 0; i < audioOnsets.size(); ++i) {
         QVERIFY2(std::fabs(audioOnsets[i] - videoOnsets[i]) <= kAvSyncToleranceMs, qPrintable(detail));
     }
+}
+
+// Export contract for source audio that ends before the video: an interval
+// the source audio covers only in part succeeds, with the output audio
+// covering exactly the audio-bearing part; the rest of the output is video
+// only, as in the source. Validation compares the output audio with the
+// source audio coverage inside the interval, not with the interval length,
+// so this is not a silent downgrade. The transcode runs under a hang guard:
+// on Windows this is the case that exercises the throttled Sink Writer with
+// an audio stream that has ended while video is still being written.
+void tst_VideoTranscoder::earlyEndingAudio_data()
+{
+    QTest::addColumn<qint64>("startMs");
+    QTest::addColumn<qint64>("endMs");
+    QTest::addColumn<QRect>("cropRect");
+    QTest::addColumn<QString>("outputName");
+    QTest::newRow("crop over the whole video")
+        << qint64(0) << qint64(-1) << QRect(80, 0, 80, 60) << QStringLiteral("early-crop.mp4");
+    QTest::newRow("trim across the audio end")
+        << qint64(500) << qint64(1500) << QRect() << QStringLiteral("early-trim.mp4");
+}
+
+void tst_VideoTranscoder::earlyEndingAudio()
+{
+    QFETCH(qint64, startMs);
+    QFETCH(qint64, endMs);
+    QFETCH(QRect, cropRect);
+    QFETCH(QString, outputName);
+    const QString input = earlyAudioFixture();
+    if (input.isEmpty()) QSKIP("AAC encoding unavailable");
+    QVERIFY2(!input.startsWith(QLatin1String("ERROR:")), qPrintable(input));
+
+    // The fixture really ends its audio early.
+    const VideoFileProbe sourceProbe = m_transcoder->probe(input);
+    QVERIFY(sourceProbe.valid);
+    QVERIFY(sourceProbe.hasAudio);
+    DecodedAudio source;
+    QString error;
+    QVERIFY2(decodeAudioTrack(input, kAudioSampleRate, &source, &error), qPrintable(error));
+    const double sourceAudioEndMs = decodedEndMs(source);
+    QVERIFY2(std::fabs(sourceAudioEndMs - kEarlyAudioEndMs) <= kAudioEdgeToleranceMs,
+             qPrintable(QString::number(sourceAudioEndMs)));
+    QVERIFY2(sourceProbe.durationMs - sourceAudioEndMs >= kEarlyAudioMinGapMs - kAudioEdgeToleranceMs,
+             qPrintable(QString::number(sourceProbe.durationMs)));
+
+    VideoTranscodeRequest request;
+    request.inputPath = input;
+    request.outputPath = m_dir.filePath(outputName);
+    request.startMs = startMs;
+    request.endMs = endMs;
+    request.cropRect = cropRect;
+    VideoTranscodeResult result;
+    QVERIFY2(transcodeWithHangGuard(request, &result),
+             qPrintable(QStringLiteral("transcode() did not return within %1 ms").arg(kTranscodeHangTimeoutMs)));
+    QVERIFY2(result.success, qPrintable(result.errorMessage));
+    QVERIFY(result.audioCopied);
+
+    const qint64 expectedEndMs = endMs < 0 ? sourceProbe.durationMs : endMs;
+    const VideoFileProbe probe = m_transcoder->probe(request.outputPath);
+    QVERIFY(probe.valid);
+    QCOMPARE(probe.videoSize, cropRect.isEmpty() ? kSourceSize : cropRect.size());
+    // The video keeps the whole interval, past the end of the audio.
+    QVERIFY2(qAbs(probe.durationMs - (expectedEndMs - startMs)) <= kDurationToleranceMs,
+             qPrintable(QString::number(probe.durationMs)));
+    QVERIFY(probe.hasAudio);
+
+    // Audio from 0 to the end of the source audio, with its bursts in place...
+    verifyAudioPulses(request.outputPath, startMs, expectedEndMs, input);
+    if (QTest::currentTestFailed()) {
+        return;
+    }
+    // ...and nothing invented after it.
+    DecodedAudio output;
+    QVERIFY2(decodeAudioTrack(request.outputPath, kAudioSampleRate, &output, &error), qPrintable(error));
+    QVERIFY2(decodedEndMs(output) <= sourceAudioEndMs - startMs + kAudioEdgeToleranceMs,
+             qPrintable(QString::number(decodedEndMs(output))));
+    QVERIFY(QFileInfo::exists(input));
 }
 
 void tst_VideoTranscoder::trimWithoutAudio()
