@@ -41,8 +41,9 @@ QString createRecording(const QString& path, qint64 firstFrameMs, const QSize& f
     if (!encoder->start(path, frameSize, kFrameRate)) {
         return encoder->lastError();
     }
-    // AAC is available on every supported macOS host; a fixture that silently
-    // lost its audio track would make the audio assertions meaningless.
+    // AAC is available on every supported macOS and Windows host; a fixture
+    // that silently lost its audio track would make the audio assertions
+    // meaningless.
     if (withAudio && !encoder->isAudioEnabled()) {
         encoder->abort();
         return QStringLiteral("Native encoder did not enable audio for the fixture");
