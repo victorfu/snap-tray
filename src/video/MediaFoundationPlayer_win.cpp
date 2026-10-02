@@ -577,6 +577,7 @@ private:
     qint64 m_duration = 0;
     qint64 m_position = 0;
     qint64 m_frameTimestamp = 0; // Native 100 ns units, preserved for frame stepping.
+    int m_pendingFrameSteps = 0; // Includes the frame awaiting delivery to this player.
     QSize m_videoSize;
     bool m_hasVideo = false;
     bool m_hasAudio = false;
@@ -637,6 +638,7 @@ void MediaFoundationPlayer::cleanup()
 {
     // Invalidate callbacks that may already be queued from this reader.
     ++m_readerGeneration;
+    m_pendingFrameSteps = 0;
     stopReaderThread();
 
     if (m_reader) {
@@ -939,6 +941,7 @@ void MediaFoundationPlayer::play()
 
     if (!m_readerThread || !m_hasVideo) return;
 
+    m_pendingFrameSteps = 0;
     // The reader stays at EOF after completion or a paused terminal seek.
     // Rewind before resuming either case.
     if (m_atEndOfStream) {
@@ -966,6 +969,7 @@ void MediaFoundationPlayer::stop()
 {
     qDebug() << "MediaFoundationPlayer::stop()";
 
+    m_pendingFrameSteps = 0;
     if (m_readerThread) {
         m_readerThread->requestPause();
         m_readerThread->requestSeek(0);
@@ -982,6 +986,7 @@ void MediaFoundationPlayer::seek(qint64 positionMs)
 {
     qDebug() << "MediaFoundationPlayer::seek() to" << positionMs << "ms";
 
+    m_pendingFrameSteps = 0;
     positionMs = qBound(0LL, positionMs, m_duration);
     m_position = positionMs;
     m_frameTimestamp = positionMs * kTimeUnitsPerMillisecond;
@@ -1012,14 +1017,25 @@ void MediaFoundationPlayer::stepForward()
 
     pause();
     m_atEndOfStream = false;
-    m_readerThread->requestNextFrame(m_frameTimestamp);
+    if (++m_pendingFrameSteps == 1) {
+        m_readerThread->requestNextFrame(m_frameTimestamp);
+    }
 }
 
 void MediaFoundationPlayer::onFrameReady(const QImage &frame, qint64 timestamp)
 {
+    if (m_pendingFrameSteps > 0) {
+        // A terminal step returns the current frame. Drop excess presses at EOF.
+        m_pendingFrameSteps = timestamp > m_frameTimestamp ? m_pendingFrameSteps - 1 : 0;
+    }
     m_atEndOfStream = false;
     m_frameTimestamp = timestamp;
     m_position = timestamp / kTimeUnitsPerMillisecond;
+    if (m_pendingFrameSteps > 0) {
+        // Dispatch before notifying observers so a seek/stop from a signal
+        // handler supersedes this request along with the remaining steps.
+        m_readerThread->requestNextFrame(m_frameTimestamp);
+    }
     if (m_state == State::Paused) {
         emit positionChanged(m_position);
     }
@@ -1038,6 +1054,7 @@ void MediaFoundationPlayer::onEndOfStream()
     }
 
     m_atEndOfStream = true;
+    m_pendingFrameSteps = 0;
 
     // Only active playback may finish or loop. Seeking while paused must
     // leave the requested final frame visible without changing player state.
@@ -1060,6 +1077,7 @@ void MediaFoundationPlayer::onEndOfStream()
 void MediaFoundationPlayer::onReaderError(const QString &message)
 {
     qWarning() << "MediaFoundationPlayer: Reader error:" << message;
+    m_pendingFrameSteps = 0;
     emit error(message);
 }
 
