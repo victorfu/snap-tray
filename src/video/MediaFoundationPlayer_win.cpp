@@ -2,6 +2,7 @@
 
 #ifdef Q_OS_WIN
 
+#include "MediaFoundationFrameCopy_win.h"
 #include "MediaFoundationReaderCallback_win.h"
 
 #include <QCoreApplication>
@@ -394,24 +395,7 @@ private:
                     m_stride = static_cast<int>(pitch);
                 }
 
-                frame = QImage(m_videoSize.width(), m_videoSize.height(), QImage::Format_RGB32);
-                if (!frame.isNull()) {
-                    int absPitch = qAbs(pitch);
-
-                    if (pitch < 0) {
-                        // Bottom-up buffer - flip vertically
-                        for (int y = 0; y < m_videoSize.height(); y++) {
-                            const BYTE *srcRow = data + (m_videoSize.height() - 1 - y) * absPitch;
-                            memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
-                        }
-                    } else {
-                        // Top-down - copy directly
-                        for (int y = 0; y < m_videoSize.height(); y++) {
-                            const BYTE *srcRow = data + y * absPitch;
-                            memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
-                        }
-                    }
-                }
+                frame = copyMediaFoundationRgb32Frame(data, pitch, m_videoSize);
                 buffer2D->Unlock2D();
             }
             buffer2D->Release();

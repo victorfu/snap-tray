@@ -581,6 +581,12 @@ add_test(NAME Video_VideoTrimmerSafety COMMAND Video_VideoTrimmerSafety)
 set_tests_properties(Video_VideoTrimmerSafety PROPERTIES TIMEOUT 30 LABELS "unit")
 
 if(WIN32)
+    add_executable(Video_MediaFoundationFrameCopy Video/tst_MediaFoundationFrameCopy_win.cpp)
+    target_include_directories(Video_MediaFoundationFrameCopy PRIVATE ${CMAKE_SOURCE_DIR}/src)
+    target_link_libraries(Video_MediaFoundationFrameCopy PRIVATE Qt6::Gui Qt6::Test mfplat mfuuid ole32)
+    add_test(NAME Video_MediaFoundationFrameCopy COMMAND Video_MediaFoundationFrameCopy)
+    set_tests_properties(Video_MediaFoundationFrameCopy PROPERTIES TIMEOUT 30 LABELS "unit")
+
     add_executable(Video_MediaFoundationPipeline Video/tst_MediaFoundationPipeline.cpp)
     target_link_libraries(Video_MediaFoundationPipeline PRIVATE snaptray_platform Qt6::Test webpdemux)
     add_test(NAME Video_MediaFoundationPipeline COMMAND Video_MediaFoundationPipeline)
