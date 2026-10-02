@@ -1907,6 +1907,10 @@ Tamanho: %2</translation>
         <source>Export failed: %1</source>
         <translation>Falha na exportação: %1</translation>
     </message>
+    <message>
+        <source>Export failed; the original recording was kept.</source>
+        <translation>A exportação falhou; a gravação original foi mantida.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3009,44 +3013,6 @@ Ele pode estar em uso por outro aplicativo.</translation>
         <source>Check Now</source>
         <translation>Verificar agora</translation>
         </message>
-</context>
-<context>
-    <name>VideoTrimmer</name>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="52" />
-        <source>Input or output path not set</source>
-        <translation>Caminho de entrada ou saída não definido</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="57" />
-        <source>Invalid trim range</source>
-        <translation>Intervalo de corte inválido</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="73" />
-        <source>Failed to create video player</source>
-        <translation>Falha ao criar reprodutor de vídeo</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="84" />
-        <source>Failed to load video: %1</source>
-        <translation>Falha ao carregar vídeo: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="91" />
-        <source>Failed to load input video</source>
-        <translation>Falha ao carregar vídeo de entrada</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="133" />
-        <source>Failed to create encoder: %1</source>
-        <translation>Falha ao criar codificador: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="269" />
-        <source>Encoding failed</source>
-        <translation>Falha na codificação</translation>
-    </message>
 </context>
 <context>
     <name>WatermarkSettings</name>

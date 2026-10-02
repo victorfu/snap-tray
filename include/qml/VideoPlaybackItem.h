@@ -98,6 +98,8 @@ private slots:
 private:
     void createPlayer();
     void refreshScaledFrameForCurrentSize();
+    // Drops the shown frame and empties contentRect (emitting contentRectChanged).
+    void clearFrame();
 
     IVideoPlayer *m_player = nullptr;
     QString m_source;

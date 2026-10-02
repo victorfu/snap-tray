@@ -1898,6 +1898,10 @@ Size: %2</source>
         <source>Export failed: %1</source>
         <translation>导出失败：%1</translation>
     </message>
+    <message>
+        <source>Export failed; the original recording was kept.</source>
+        <translation>导出失败；已保留原始录制。</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3000,44 +3004,6 @@ It may be in use by another application.</source>
         <source>Check Now</source>
         <translation>立即检查</translation>
         </message>
-</context>
-<context>
-    <name>VideoTrimmer</name>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="52" />
-        <source>Input or output path not set</source>
-        <translation>未设置输入或输出路径</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="57" />
-        <source>Invalid trim range</source>
-        <translation>无效的裁剪范围</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="73" />
-        <source>Failed to create video player</source>
-        <translation>创建视频播放器失败</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="84" />
-        <source>Failed to load video: %1</source>
-        <translation>加载视频失败：%1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="91" />
-        <source>Failed to load input video</source>
-        <translation>加载输入视频失败</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="133" />
-        <source>Failed to create encoder: %1</source>
-        <translation>创建编码器失败：%1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="269" />
-        <source>Encoding failed</source>
-        <translation>编码失败</translation>
-    </message>
 </context>
 <context>
     <name>WatermarkSettings</name>

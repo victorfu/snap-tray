@@ -42,13 +42,11 @@ constexpr int64_t kStatusPollIntervalMs = 20;
 // anything else is floored to even rather than handed to the encoder.
 constexpr int kEvenAlignmentMask = ~1;
 constexpr int kMinEvenSide = 2;
-// Output audio duration may fall short of the source coverage by this much
-// before validation calls it lost audio. Edge packets keep the reader's trim
-// attachments, so coverage is normally exact apart from the writer's
-// 600-timescale edit-list rounding (< 2 ms); the margin also allows a source
-// whose edge packets carry no trim, i.e. one whole 1024-sample packet per
-// edge (2 x 23.2 ms at 44.1 kHz).
-constexpr qint64 kAudioCoverageToleranceMs = 50;
+// Edge packets keep the reader's trim attachments, so output audio coverage is
+// normally exact apart from the writer's 600-timescale edit-list rounding
+// (< 2 ms); kAudioCoverageToleranceMs (IVideoTranscoder.h) also allows a
+// source whose edge packets carry no trim, i.e. one whole 1024-sample packet
+// per edge (2 x 23.2 ms at 44.1 kHz).
 
 qint64 toMs(CMTime time)
 {
@@ -294,6 +292,11 @@ VideoFileProbe AVFoundationTranscoder::probe(const QString& filePath)
         result.videoSize = QSize(qAbs(qRound(size.width)), qAbs(qRound(size.height)));
         result.durationMs = toMs(asset.duration);
         result.hasAudio = [asset tracksWithMediaType:AVMediaTypeAudio].count > 0;
+        if (result.hasAudio) {
+            const auto [audioStartMs, audioEndMs] = audioRangeMs(asset);
+            result.audioStartMs = audioStartMs;
+            result.audioEndMs = audioEndMs;
+        }
         result.valid = !result.videoSize.isEmpty() && result.durationMs > 0;
     }
     return result;
@@ -345,7 +348,24 @@ VideoTranscodeResult AVFoundationTranscoder::transcode(const VideoTranscodeReque
         }
         AVAssetTrack* audioTrack = [[asset tracksWithMediaType:AVMediaTypeAudio] firstObject];
 
-        const QRect frameRect(0, 0, qRound(videoTrack.naturalSize.width), qRound(videoTrack.naturalSize.height));
+        // The crop is in displayed coordinates (what the player and probe()
+        // report), while the reader decodes the stored, untransformed frames.
+        // Map it through the inverse track transform and give the output the
+        // same orientation, re-anchored to the cropped frame.
+        const CGAffineTransform transform = videoTrack.preferredTransform;
+        CGAffineTransform orientation = transform;
+        orientation.tx = 0;
+        orientation.ty = 0;
+        // Only axis-aligned orientations (rotations by 90 degrees, flips) map
+        // an even-aligned crop to an even-aligned stored rectangle.
+        if (!qFuzzyIsNull(orientation.a * orientation.b) || !qFuzzyIsNull(orientation.c * orientation.d)) {
+            return fail(QStringLiteral("Cannot crop a video with a skewed orientation"));
+        }
+        const CGSize natural = videoTrack.naturalSize;
+        const QRect storedRect(0, 0, qRound(natural.width), qRound(natural.height));
+        const CGRect displayedBounds = CGRectApplyAffineTransform(CGRectMake(0, 0, natural.width, natural.height),
+                                                                  transform);
+        const QRect frameRect(0, 0, qRound(displayedBounds.size.width), qRound(displayedBounds.size.height));
         QRect crop = request.cropRect.isEmpty() ? frameRect : request.cropRect.intersected(frameRect);
         crop.setWidth(crop.width() & kEvenAlignmentMask);
         crop.setHeight(crop.height() & kEvenAlignmentMask);
@@ -353,6 +373,21 @@ VideoTranscodeResult AVFoundationTranscoder::transcode(const VideoTranscodeReque
             return fail(QStringLiteral("Crop rectangle is outside the video"));
         }
         outputSize = crop.size();
+        const CGRect displayedCrop = CGRectMake(displayedBounds.origin.x + crop.x(), displayedBounds.origin.y + crop.y(),
+                                                crop.width(), crop.height());
+        const CGRect storedCropBounds =
+            CGRectApplyAffineTransform(displayedCrop, CGAffineTransformInvert(transform));
+        // The area of the stored frame to copy; identical to `crop` for an
+        // identity transform (every recording SnapTray makes).
+        const QRect storedCrop(qRound(storedCropBounds.origin.x), qRound(storedCropBounds.origin.y),
+                               qRound(storedCropBounds.size.width), qRound(storedCropBounds.size.height));
+        if (!storedRect.contains(storedCrop)) {
+            return fail(QStringLiteral("Crop rectangle is outside the video"));
+        }
+        const CGRect orientedCropBounds =
+            CGRectApplyAffineTransform(CGRectMake(0, 0, storedCrop.width(), storedCrop.height()), orientation);
+        const CGAffineTransform outputTransform = CGAffineTransformConcat(
+            orientation, CGAffineTransformMakeTranslation(-orientedCropBounds.origin.x, -orientedCropBounds.origin.y));
 
         const qint64 durationMs = toMs(asset.duration);
         if (durationMs <= 0) {
@@ -371,6 +406,10 @@ VideoTranscodeResult AVFoundationTranscoder::transcode(const VideoTranscodeReque
             const auto [audioStartMs, audioEndMs] = audioRangeMs(asset);
             sourceAudioCoverageMs = qMax<qint64>(0, qMin(audioEndMs, endMs) - qMax(audioStartMs, startMs));
         }
+        // A range the source audio never reaches exports video only, as the
+        // source is there: the writer gets no audio input that would see no
+        // samples. Mirrors the Media Foundation transcoder.
+        const bool copyAudio = audioTrack != nil && sourceAudioCoverageMs > 0;
 
         QFile::remove(request.outputPath);
         NSError* error = nil;
@@ -386,12 +425,14 @@ VideoTranscodeResult AVFoundationTranscoder::transcode(const VideoTranscodeReque
         const int bitrate = request.videoBitrate > 0
             ? request.videoBitrate
             : SnapTray::VideoBitrate::forQuality(crop.size(), frameRate, kDefaultTranscodeQuality);
+        // Encoded in stored orientation (storedCrop); outputTransform shows it
+        // the way the source was shown.
         AVAssetWriterInput* videoInput = [[AVAssetWriterInput alloc]
             initWithMediaType:AVMediaTypeVideo
                outputSettings:@{
                    AVVideoCodecKey: AVVideoCodecTypeH264,
-                   AVVideoWidthKey: @(crop.width()),
-                   AVVideoHeightKey: @(crop.height()),
+                   AVVideoWidthKey: @(storedCrop.width()),
+                   AVVideoHeightKey: @(storedCrop.height()),
                    AVVideoCompressionPropertiesKey: @{
                        AVVideoAverageBitRateKey: @(bitrate),
                        AVVideoExpectedSourceFrameRateKey: @(frameRate),
@@ -401,13 +442,13 @@ VideoTranscodeResult AVFoundationTranscoder::transcode(const VideoTranscodeReque
                    }
                }];
         videoInput.expectsMediaDataInRealTime = NO;
-        videoInput.transform = videoTrack.preferredTransform;
+        videoInput.transform = outputTransform;
         AVAssetWriterInputPixelBufferAdaptor* adaptor = [[AVAssetWriterInputPixelBufferAdaptor alloc]
             initWithAssetWriterInput:videoInput
          sourcePixelBufferAttributes:@{
              (NSString*)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_32BGRA),
-             (NSString*)kCVPixelBufferWidthKey: @(crop.width()),
-             (NSString*)kCVPixelBufferHeightKey: @(crop.height())
+             (NSString*)kCVPixelBufferWidthKey: @(storedCrop.width()),
+             (NSString*)kCVPixelBufferHeightKey: @(storedCrop.height())
          }];
         if (![writer canAddInput:videoInput]) {
             return fail(QStringLiteral("Cannot configure H.264 output"));
@@ -416,7 +457,7 @@ VideoTranscodeResult AVFoundationTranscoder::transcode(const VideoTranscodeReque
 
         // Shift from reader audio timestamps to the output timeline.
         CMTime audioShift = startTime;
-        if (audioTrack) {
+        if (copyAudio) {
             const CMTime mediaOffset = audioMediaOffset(audioTrack);
             if (!CMTIME_IS_NUMERIC(mediaOffset)) {
                 return fail(QStringLiteral("Cannot preserve source audio: unsupported audio edit list"));
@@ -425,7 +466,7 @@ VideoTranscodeResult AVFoundationTranscoder::transcode(const VideoTranscodeReque
         }
 
         AVAssetWriterInput* audioInput = nil;
-        if (audioTrack) {
+        if (copyAudio) {
             CMFormatDescriptionRef hint =
                 (__bridge CMFormatDescriptionRef)audioTrack.formatDescriptions.firstObject;
             // outputSettings nil = passthrough of the compressed source packets.
@@ -535,7 +576,7 @@ VideoTranscodeResult AVFoundationTranscoder::transcode(const VideoTranscodeReque
                     }
                     const CMTime pts = CMTimeSubtract(CMSampleBufferGetPresentationTimeStamp(sample), startTime);
                     CVPixelBufferRef cropped =
-                        copyCroppedPixelBuffer(CMSampleBufferGetImageBuffer(sample), crop, pixelAdaptor.pixelBufferPool);
+                        copyCroppedPixelBuffer(CMSampleBufferGetImageBuffer(sample), storedCrop, pixelAdaptor.pixelBufferPool);
                     CFRelease(sample);
                     if (!cropped) {
                         state->failWith(QStringLiteral("Cannot crop video frame"));

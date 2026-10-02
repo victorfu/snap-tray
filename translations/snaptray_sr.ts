@@ -1907,6 +1907,10 @@ Size: %2</source>
         <source>Export failed: %1</source>
         <translation>Извоз није успео: %1</translation>
     </message>
+    <message>
+        <source>Export failed; the original recording was kept.</source>
+        <translation>Извоз није успео; оригинални снимак је задржан.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3009,44 +3013,6 @@ It may be in use by another application.</source>
         <source>Check Now</source>
         <translation>Провери сада</translation>
         </message>
-</context>
-<context>
-    <name>VideoTrimmer</name>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="52" />
-        <source>Input or output path not set</source>
-        <translation>Улазна или излазна путања није постављена</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="57" />
-        <source>Invalid trim range</source>
-        <translation>Неисправан опсег обрезивања</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="73" />
-        <source>Failed to create video player</source>
-        <translation>Креирање видео плејера неуспешно</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="84" />
-        <source>Failed to load video: %1</source>
-        <translation>Учитавање видеа неуспешно: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="91" />
-        <source>Failed to load input video</source>
-        <translation>Учитавање улазног видеа неуспешно</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="133" />
-        <source>Failed to create encoder: %1</source>
-        <translation>Креирање кодера неуспешно: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="269" />
-        <source>Encoding failed</source>
-        <translation>Кодирање неуспешно</translation>
-    </message>
 </context>
 <context>
     <name>WatermarkSettings</name>

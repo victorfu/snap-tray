@@ -2034,6 +2034,10 @@ File size: %3</source>
         <source>Export failed: %1</source>
         <translation>匯出失敗：%1</translation>
     </message>
+    <message>
+        <source>Export failed; the original recording was kept.</source>
+        <translation>匯出失敗；已保留原始錄製。</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3136,44 +3140,6 @@ It may be in use by another application.</source>
         <source>Check Now</source>
         <translation>立即檢查</translation>
         </message>
-</context>
-<context>
-    <name>VideoTrimmer</name>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="52" />
-        <source>Input or output path not set</source>
-        <translation>未設定輸入或輸出路徑</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="57" />
-        <source>Invalid trim range</source>
-        <translation>無效的修剪範圍</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="73" />
-        <source>Failed to create video player</source>
-        <translation>建立影片播放器失敗</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="84" />
-        <source>Failed to load video: %1</source>
-        <translation>載入影片失敗：%1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="91" />
-        <source>Failed to load input video</source>
-        <translation>載入輸入影片失敗</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="133" />
-        <source>Failed to create encoder: %1</source>
-        <translation>建立編碼器失敗：%1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="269" />
-        <source>Encoding failed</source>
-        <translation>編碼失敗</translation>
-    </message>
 </context>
 <context>
     <name>WatermarkSettings</name>

@@ -79,6 +79,9 @@ constexpr qint64 kEarlyAudioEndMs = kEarlyAudioFrameCount * kFrameIntervalMs;
 constexpr qint64 kEarlyAudioMinGapMs = 1000;
 static_assert(kFrameCount * kFrameIntervalMs - kEarlyAudioEndMs >= kEarlyAudioMinGapMs,
               "the audio must end at least 1 s before the video");
+// probe() reads the audio range off packet/track timing: the AAC encoder may
+// pad the end to a whole packet and shift the start by its priming.
+constexpr qint64 kAudioRangeToleranceMs = 3 * kAacPacketFrames * 1000 / kAudioSampleRate; // 64 ms
 // A transcode of the 2 s fixture takes well under a second; this bound only
 // turns a hang into a test failure, inside the ctest TIMEOUT for the suite.
 constexpr int kTranscodeHangTimeoutMs = 20000;
@@ -326,6 +329,9 @@ private slots:
     void trimStartBetweenAacPacketsKeepsAlignment();
     void earlyEndingAudio_data();
     void earlyEndingAudio();
+    void probeReportsAudioRange();
+    void rangeWithoutSourceAudioExportsVideoOnly_data();
+    void rangeWithoutSourceAudioExportsVideoOnly();
     void trimWithoutAudio();
     void oddCropIsEvenAligned();
     void cancelRemovesOutput();
@@ -645,6 +651,82 @@ void tst_VideoTranscoder::earlyEndingAudio()
     QVERIFY2(decodedEndMs(output) <= sourceAudioEndMs - startMs + kAudioEdgeToleranceMs,
              qPrintable(QString::number(decodedEndMs(output))));
     QVERIFY(QFileInfo::exists(input));
+}
+
+// probe() reports where the first audio track lies on the presentation
+// timeline, so a caller can tell a selection the source audio never reaches
+// from one whose audio was lost.
+void tst_VideoTranscoder::probeReportsAudioRange()
+{
+    const QString silent = fixture(false);
+    QVERIFY2(!silent.isEmpty() && !silent.startsWith(QLatin1String("ERROR:")), qPrintable(silent));
+    const VideoFileProbe silentProbe = m_transcoder->probe(silent);
+    QVERIFY(silentProbe.valid);
+    QVERIFY(!silentProbe.hasAudio);
+    QCOMPARE(silentProbe.audioStartMs, qint64(-1));
+    QCOMPARE(silentProbe.audioEndMs, qint64(-1));
+
+    const QString early = earlyAudioFixture();
+    if (early.isEmpty()) QSKIP("AAC encoding unavailable");
+    QVERIFY2(!early.startsWith(QLatin1String("ERROR:")), qPrintable(early));
+    const VideoFileProbe probe = m_transcoder->probe(early);
+    QVERIFY(probe.valid);
+    QVERIFY(probe.hasAudio);
+    // Starts with the video and ends where the encoder stopped getting audio,
+    // well before the video does.
+    QVERIFY2(qAbs(probe.audioStartMs) <= kAudioRangeToleranceMs, qPrintable(QString::number(probe.audioStartMs)));
+    QVERIFY2(qAbs(probe.audioEndMs - kEarlyAudioEndMs) <= kAudioRangeToleranceMs,
+             qPrintable(QString::number(probe.audioEndMs)));
+    QVERIFY2(probe.durationMs - probe.audioEndMs >= kEarlyAudioMinGapMs - kAudioRangeToleranceMs,
+             qPrintable(QStringLiteral("audio ends at %1 ms of %2 ms").arg(probe.audioEndMs).arg(probe.durationMs)));
+}
+
+// A selection that starts after the source audio ends has no audio to
+// preserve: the export must succeed as video only, exactly like the source
+// is over that range, instead of being refused as lost audio.
+void tst_VideoTranscoder::rangeWithoutSourceAudioExportsVideoOnly_data()
+{
+    QTest::addColumn<qint64>("startMs");
+    QTest::addColumn<bool>("mustBeVideoOnly");
+    QTest::addColumn<QString>("outputName");
+    QTest::newRow("after the audio end") << qint64(1000) << true << QStringLiteral("early-tail.mp4");
+    // Inside the last packet: whether that edge packet is copied is up to the
+    // platform, but the export must still succeed and stay self-consistent.
+    QTest::newRow("inside the last audio packet")
+        << qint64(kEarlyAudioEndMs - 5) << false << QStringLiteral("early-edge.mp4");
+}
+
+void tst_VideoTranscoder::rangeWithoutSourceAudioExportsVideoOnly()
+{
+    QFETCH(qint64, startMs);
+    QFETCH(bool, mustBeVideoOnly);
+    QFETCH(QString, outputName);
+    const QString input = earlyAudioFixture();
+    if (input.isEmpty()) QSKIP("AAC encoding unavailable");
+    QVERIFY2(!input.startsWith(QLatin1String("ERROR:")), qPrintable(input));
+    const VideoFileProbe sourceProbe = m_transcoder->probe(input);
+    QVERIFY(sourceProbe.valid);
+    QVERIFY(sourceProbe.hasAudio);
+    const QByteArray sourceHash = fileHash(input);
+
+    VideoTranscodeRequest request;
+    request.inputPath = input;
+    request.outputPath = m_dir.filePath(outputName);
+    request.startMs = startMs;
+    const VideoTranscodeResult result = m_transcoder->transcode(request, {});
+    QVERIFY2(result.success, qPrintable(result.errorMessage));
+
+    const VideoFileProbe probe = m_transcoder->probe(request.outputPath);
+    QVERIFY(probe.valid);
+    QCOMPARE(probe.videoSize, kSourceSize);
+    QVERIFY2(qAbs(probe.durationMs - (sourceProbe.durationMs - startMs)) <= kDurationToleranceMs,
+             qPrintable(QString::number(probe.durationMs)));
+    QCOMPARE(probe.hasAudio, result.audioCopied);
+    if (mustBeVideoOnly) {
+        QVERIFY(!result.audioCopied);
+        QVERIFY(!probe.hasAudio);
+    }
+    QCOMPARE(fileHash(input), sourceHash);
 }
 
 void tst_VideoTranscoder::trimWithoutAudio()

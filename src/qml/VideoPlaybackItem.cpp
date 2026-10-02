@@ -76,9 +76,7 @@ void VideoPlaybackItem::setSource(const QString &source)
     if (!m_player || source.isEmpty())
         return;
 
-    m_currentFrame = QImage();
-    m_scaledFrame = QImage();
-    update();
+    clearFrame();
 
     if (!m_player->load(source)) {
         const QString message = QStringLiteral("Failed to load: %1").arg(source);
@@ -192,10 +190,21 @@ void VideoPlaybackItem::stop()
 {
     if (m_player) {
         m_player->stop();
-        m_currentFrame = QImage();
-        m_scaledFrame = QImage();
-        update();
+        clearFrame();
     }
+}
+
+void VideoPlaybackItem::clearFrame()
+{
+    m_currentFrame = QImage();
+    m_scaledFrame = QImage();
+    m_lastFrameSize = QSize();
+    // No frame, no content: overlays placed by contentRect must know.
+    if (!m_contentRect.isEmpty()) {
+        m_contentRect = QRectF();
+        emit contentRectChanged();
+    }
+    update();
 }
 
 void VideoPlaybackItem::seek(qint64 positionMs)

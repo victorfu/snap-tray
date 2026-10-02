@@ -210,7 +210,7 @@ private slots:
     void applyEmitsDraft();
     void cancelLeavesEditing();
     void beginEditingNeedsContent();
-    void contentChangeCancelsDraft();
+    void contentChangeMovesDraft();
 
     // Bounded snapping.
     void moveSnapNeverLeavesContentX();
@@ -243,12 +243,16 @@ private slots:
     void previewCtrlSExportsDraft();
     void previewEnterSavesWhenNotEditing();
     void previewProcessingBlocksSave();
-    void previewGeometryChangeCancelsDraft();
+    void previewGeometryChangeKeepsDraft();
     void previewSizeChipAndClear();
     void previewToolbarFitsAtMinimumWidth();
     void previewCursorOverVideo();
     void previewSmallSelectionMoves();
     void previewTinyDraftAppliesWithoutJump();
+    void previewCropUnavailableAfterFrameCleared();
+
+    // The draft follows the content when the window is resized (#11).
+    void draftFollowsContentRect();
 
 private:
     QVariant call(const char* name, const QVariantList& args = {});
@@ -365,18 +369,21 @@ void tst_RecordingCropOverlay::beginEditingNeedsContent()
     QVERIFY(!m_overlay->property("editing").toBool());
 }
 
-void tst_RecordingCropOverlay::contentChangeCancelsDraft()
+void tst_RecordingCropOverlay::contentChangeMovesDraft()
 {
     m_overlay->setProperty("committedRect", QRectF(50, 100, 100, 50));
     call("beginEditing");
     m_overlay->setProperty("draftRect", QRectF(10, 60, 100, 50));
     QSignalSpy applySpy(m_overlay.get(), SIGNAL(applyRequested(QRectF)));
     QSignalSpy cancelSpy(m_overlay.get(), SIGNAL(cancelRequested()));
+    // The content grows 10% taller and moves up: the draft keeps framing the
+    // same video pixels, nothing is applied or cancelled.
     m_overlay->setProperty("contentRect", QRectF(0, 40, 400, 220));
-    QVERIFY(!m_overlay->property("editing").toBool());
-    QCOMPARE(cancelSpy.count(), 1);
+    QVERIFY(m_overlay->property("editing").toBool());
+    QCOMPARE(cancelSpy.count(), 0);
     QCOMPARE(applySpy.count(), 0);
-    QCOMPARE(overlayRect("shownRect"), QRectF(50, 100, 100, 50));
+    QCOMPARE(overlayRect("draftRect"), QRectF(10, 51, 100, 55));
+    QCOMPARE(overlayRect("shownRect"), QRectF(10, 51, 100, 55));
 }
 
 // ---------- Bounded snapping (content x 0..400, y 50..250) ----------
@@ -497,6 +504,34 @@ void tst_RecordingCropOverlay::createSweepStaysInside()
     const QRectF nearCentre = call("createRect", {198, 100, 202, 120}).toRectF();
     QCOMPARE(nearCentre.x(), 200.0);
     QVERIFY(nearCentre.width() >= 0);
+}
+
+// ---------- The draft follows the content (#11) ----------
+// init(): 800x400 video in a 400x200 content rect at (0, 50).
+
+void tst_RecordingCropOverlay::draftFollowsContentRect()
+{
+    call("beginEditing");
+    m_overlay->setProperty("draftRect", QRectF(100, 100, 100, 50));
+
+    // Twice the scale and the letterbox gone: the same video pixels, so the
+    // draft keeps framing them and editing continues.
+    m_overlay->setProperty("contentRect", QRectF(0, 0, 800, 400));
+    QVERIFY(m_overlay->property("editing").toBool());
+    QCOMPARE(m_overlay->property("draftRect").toRectF(), QRectF(200, 100, 200, 100));
+
+    // No content left to show (window collapsed, frame cleared): nothing to
+    // follow, the draft is dropped.
+    m_overlay->setProperty("contentRect", QRectF(0, 0, 0, 0));
+    QVERIFY(!m_overlay->property("editing").toBool());
+    QCOMPARE(m_overlay->property("draftRect").toRectF(), QRectF(0, 0, 0, 0));
+
+    // A different video is a different picture: the draft is dropped too.
+    m_overlay->setProperty("contentRect", QRectF(0, 50, 400, 200));
+    call("beginEditing");
+    m_overlay->setProperty("draftRect", QRectF(100, 100, 100, 50));
+    m_overlay->setProperty("videoSize", QSize(400, 200));
+    QVERIFY(!m_overlay->property("editing").toBool());
 }
 
 // ---------- Edge hit-testing on small selections ----------
@@ -1031,9 +1066,10 @@ void tst_RecordingCropOverlay::previewProcessingBlocksSave()
     QCOMPARE(m_backend->cropAtSave, expectedVideoCrop(draft));
 }
 
-void tst_RecordingCropOverlay::previewGeometryChangeCancelsDraft()
+void tst_RecordingCropOverlay::previewGeometryChangeKeepsDraft()
 {
-    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
+    const QSize frameSize(1600, 400);
+    OPEN_PREVIEW_OR_FAIL(frameSize);
     const QRect committed(400, 100, 400, 200);
     m_backend->setCropRect(committed);
     QObject* overlay = previewOverlay();
@@ -1044,13 +1080,34 @@ void tst_RecordingCropOverlay::previewGeometryChangeCancelsDraft()
     drag(overlayPoint(committedView.center().x(), committedView.center().y()),
          overlayPoint(committedView.center().x() + 40, committedView.center().y() + 10));
     QVERIFY(editing());
+    const QRectF draftBefore = overlay->property("draftRect").toRectF();
+    const QRect videoCropBefore = SnapTray::VideoCropGeometry::normalizeCropRect(
+        SnapTray::VideoCropGeometry::viewToVideo(draftBefore, oldContent, frameSize), frameSize);
+    QVERIFY(videoCropBefore != committed);
 
+    // Resizing the window re-fits the video; the draft moves with it and the
+    // user keeps editing. Nothing is committed by the resize itself.
     m_view->resize(kPreviewWidth + 100, kPreviewHeight + 60);
     QTRY_VERIFY(previewContentRect() != oldContent);
-    QVERIFY(!editing());
+    QVERIFY(editing());
     QCOMPARE(m_backend->cropRect(), committed);
     QCOMPARE(m_backend->setCropFromViewCount, 0);
     QCOMPARE(overlay->property("committedRect").toRectF(), m_backend->cropRectInView(previewContentRect()));
+
+    // Applying now commits the same video pixels the draft framed before.
+    sendKey(Qt::Key_Return);
+    QVERIFY(!editing());
+    const QRect videoCropAfter = m_backend->cropRect();
+    const QString where = QStringLiteral("before (%1,%2 %3x%4) after (%5,%6 %7x%8)")
+                              .arg(videoCropBefore.x()).arg(videoCropBefore.y())
+                              .arg(videoCropBefore.width()).arg(videoCropBefore.height())
+                              .arg(videoCropAfter.x()).arg(videoCropAfter.y())
+                              .arg(videoCropAfter.width()).arg(videoCropAfter.height());
+    QVERIFY2(qAbs(videoCropAfter.left() - videoCropBefore.left()) <= 2
+                 && qAbs(videoCropAfter.top() - videoCropBefore.top()) <= 2
+                 && qAbs(videoCropAfter.right() - videoCropBefore.right()) <= 2
+                 && qAbs(videoCropAfter.bottom() - videoCropBefore.bottom()) <= 2,
+             qPrintable(where));
 }
 
 void tst_RecordingCropOverlay::previewSizeChipAndClear()
@@ -1131,6 +1188,25 @@ void tst_RecordingCropOverlay::previewCursorOverVideo()
     QTRY_COMPARE(cursorAt(inVideo), Qt::PointingHandCursor);
 }
 
+// A cleared frame (stop, or a new source) takes the crop editor with it: the
+// overlay is placed by contentRect, which must be empty again once no frame
+// is shown, whatever the backend still reports as the video size.
+void tst_RecordingCropOverlay::previewCropUnavailableAfterFrameCleared()
+{
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
+    QQuickItem* cropButton = previewItem("previewCropButton");
+    QQuickItem* overlay = previewItem("previewCropOverlay");
+    QVERIFY(cropButton && overlay);
+    QVERIFY(cropButton->isEnabled());
+    QVERIFY(overlay->isVisible());
+
+    QQuickItem* video = previewItem("previewVideoPlayer");
+    QVERIFY(QMetaObject::invokeMethod(video, "stop", Qt::DirectConnection));
+    QTRY_VERIFY(!cropButton->isEnabled());
+    QVERIFY(!overlay->isVisible());
+    QVERIFY(previewContentRect().isEmpty());
+}
+
 void tst_RecordingCropOverlay::previewSmallSelectionMoves()
 {
     // A 4000px-wide video shown 800px wide: the minimum crop is 12.8 view px.
@@ -1177,6 +1253,7 @@ void tst_RecordingCropOverlay::previewTinyDraftAppliesWithoutJump()
     QVERIFY(!editing());
     QCOMPARE(m_backend->cropRect(), expectedVideoCrop(draft));
     QCOMPARE(m_backend->cropRect().size(), QSize(64, 64));
+    QVERIFY(!QTest::currentTestFailed());
 
     // The committed rect redraws where the draft was: no visible jump.
     const QRectF committed = overlay->property("committedRect").toRectF();

@@ -1833,6 +1833,10 @@ English is always included and cannot be removed.</source>
         <source>Export failed: %1</source>
         <translation>ส่งออกไม่สำเร็จ: %1</translation>
     </message>
+    <message>
+        <source>Export failed; the original recording was kept.</source>
+        <translation>ส่งออกไม่สำเร็จ ระบบยังคงเก็บการบันทึกต้นฉบับไว้</translation>
+    </message>
 </context>
 <context>
     <name>RecordingSettings</name>
@@ -2891,44 +2895,6 @@ English is always included and cannot be removed.</source>
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="117"/>
         <source>Check Now</source>
         <translation>ตรวจสอบตอนนี้</translation>
-    </message>
-</context>
-<context>
-    <name>VideoTrimmer</name>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="52"/>
-        <source>Input or output path not set</source>
-        <translation>ยังไม่ได้ตั้งค่าพาธอินพุตหรือเอาต์พุต</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="57"/>
-        <source>Invalid trim range</source>
-        <translation>ช่วงตัดไม่ถูกต้อง</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="73"/>
-        <source>Failed to create video player</source>
-        <translation>สร้างตัวเล่นวิดีโอไม่สำเร็จ</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="84"/>
-        <source>Failed to load video: %1</source>
-        <translation>โหลดวิดีโอไม่สำเร็จ: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="91"/>
-        <source>Failed to load input video</source>
-        <translation>โหลดวิดีโออินพุตไม่สำเร็จ</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="133"/>
-        <source>Failed to create encoder: %1</source>
-        <translation>สร้างตัวเข้ารหัสไม่สำเร็จ: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="269"/>
-        <source>Encoding failed</source>
-        <translation>การเข้ารหัสล้มเหลว</translation>
     </message>
 </context>
 <context>

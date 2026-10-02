@@ -35,7 +35,7 @@
 
 namespace {
 constexpr int kVideoLoadTimeoutMs = 5000;
-// Keep the extraction allowance used by VideoTrimmer for animated trims.
+// How long an animated export waits for each extracted frame to arrive.
 constexpr int kFrameExtractionTimeoutMs = 5000;
 }
 
@@ -817,6 +817,9 @@ void RecordingPreviewBackend::performTranscode()
     const QSize croppedSize = m_cropRect.isEmpty() ? QSize() : m_cropRect.size();
     const QString unsupportedError = tr("Video export is not supported on this platform");
     const QString failedTemplate = tr("Export failed: %1");
+    // Transcoder and validation failures carry English diagnostics for the
+    // log; the user sees this translated summary instead.
+    const QString keptMessage = tr("Export failed; the original recording was kept.");
     const auto cancelToken = m_exportCancelToken;
     const TranscoderFactory createTranscoder = transcoderFactoryOverride()
         ? transcoderFactoryOverride()
@@ -824,7 +827,7 @@ void RecordingPreviewBackend::performTranscode()
     QPointer<RecordingPreviewBackend> weakThis(this);
 
     (void)QtConcurrent::run([weakThis, request, outputPath, croppedSize, unsupportedError, failedTemplate,
-                             cancelToken, createTranscoder]() {
+                             keptMessage, cancelToken, createTranscoder]() {
         // Queued onto the GUI thread; never blocks, so it is safe from the
         // transcoder's worker threads (see IVideoTranscoder::ProgressCallback).
         auto post = [](auto fn) {
@@ -835,8 +838,9 @@ void RecordingPreviewBackend::performTranscode()
             return false;
         };
         auto transcoder = createTranscoder();
+        const bool unsupported = !transcoder;
         VideoTranscodeResult result;
-        if (!transcoder) {
+        if (unsupported) {
             result.errorMessage = unsupportedError;
         } else {
             result = transcoder->transcode(request, [weakThis, cancelToken, post](int percent) {
@@ -850,19 +854,38 @@ void RecordingPreviewBackend::performTranscode()
             });
         }
         // Do not trust the transcoder's claim alone: the source is deleted on
-        // success, so the output must be a playable file that kept the audio.
+        // success, so the output must be a playable file that kept whatever
+        // audio the selected range had. A range the source audio does not
+        // reach (within kAudioCoverageToleranceMs) exports video only, as the
+        // source is there; that is not lost audio.
         if (result.success) {
             const VideoFileProbe sourceProbe = transcoder->probe(request.inputPath);
             const VideoFileProbe outputProbe = transcoder->probe(request.outputPath);
             const QFileInfo outputInfo(request.outputPath);
+            const qint64 rangeStartMs = qMax<qint64>(0, request.startMs);
+            const qint64 rangeEndMs = request.endMs < 0 ? sourceProbe.durationMs
+                                                        : qMin(request.endMs, sourceProbe.durationMs);
+            const qint64 audioCoverageMs = sourceProbe.hasAudio
+                ? qMax<qint64>(0, qMin(sourceProbe.audioEndMs, rangeEndMs)
+                                      - qMax(sourceProbe.audioStartMs, rangeStartMs))
+                : 0;
+            const bool expectAudio = audioCoverageMs > kAudioCoverageToleranceMs;
+            // The picture must be exactly what was asked for: a crop the
+            // transcoder had to shrink or ignore is a different export (and
+            // would be named by the requested size).
+            const QSize expectedSize = request.cropRect.isEmpty() ? sourceProbe.videoSize : request.cropRect.size();
             if (cancelToken->load() || !sourceProbe.valid || !outputProbe.valid
                 || !outputInfo.exists() || outputInfo.size() <= 0 || outputProbe.durationMs <= 0
-                || (sourceProbe.hasAudio && (!result.audioCopied || !outputProbe.hasAudio))) {
+                || outputProbe.videoSize != expectedSize
+                || (expectAudio && (!result.audioCopied || !outputProbe.hasAudio))
+                || (result.audioCopied && !outputProbe.hasAudio)) {
                 qWarning() << "RecordingPreviewBackend: MP4 export output failed validation;"
                            << "cancelled:" << cancelToken->load()
                            << "source valid:" << sourceProbe.valid
                            << "output valid:" << outputProbe.valid
+                           << "output size:" << outputProbe.videoSize << "expected:" << expectedSize
                            << "source audio:" << sourceProbe.hasAudio
+                           << "audio coverage (ms):" << audioCoverageMs
                            << "audio copied:" << result.audioCopied
                            << "output audio:" << outputProbe.hasAudio;
                 QFile::remove(request.outputPath);
@@ -881,8 +904,8 @@ void RecordingPreviewBackend::performTranscode()
             result.success = false;
             result.errorMessage = QStringLiteral("rename failed");
         }
-        const bool posted = post([weakThis, result, outputPath, croppedSize, failedTemplate,
-                                  inputPath = request.inputPath]() {
+        const bool posted = post([weakThis, result, outputPath, croppedSize, failedTemplate, keptMessage,
+                                  unsupported, unsupportedError, inputPath = request.inputPath]() {
             if (!weakThis) {
                 // The preview went away mid-export; keep the source, drop the output.
                 QFile::remove(outputPath);
@@ -891,7 +914,7 @@ void RecordingPreviewBackend::performTranscode()
             weakThis->m_isProcessing = false;
             emit weakThis->processingChanged();
             if (!result.success) {
-                weakThis->setErrorMessage(failedTemplate.arg(result.errorMessage));
+                weakThis->setErrorMessage(unsupported ? failedTemplate.arg(unsupportedError) : keptMessage);
                 return;
             }
             QFile::remove(inputPath);

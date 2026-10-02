@@ -54,12 +54,10 @@ constexpr int kMinEvenSide = 2;
 // AAC packs 1024 PCM frames per packet; used only when the source reader
 // gives a packet no duration.
 constexpr LONGLONG kAacFramesPerPacket = 1024;
-// Output audio may fall short of the source audio coverage of the interval by
-// this much before validation calls it lost audio. Coverage is measured over
-// every source packet that overlaps the interval, while the packet straddling
-// the start is not copied (< one packet, 21.3 ms at 48 kHz / 23.2 ms at
-// 44.1 kHz), and the packet straddling the end is copied whole.
-constexpr qint64 kAudioCoverageToleranceMs = 50;
+// Audio coverage of the range is measured over every source packet that
+// overlaps it, while the packet straddling the start is not copied and the
+// one straddling the end is copied whole; kAudioCoverageToleranceMs
+// (IVideoTranscoder.h) absorbs that difference.
 // The finished file's duration must match the media the writer was given.
 constexpr qint64 kOutputDurationToleranceMs = 100;
 constexpr int kHresultHexDigits = 8;
@@ -421,13 +419,12 @@ HRESULT createVideoType(const GUID& subtype, const QSize& size, UINT32 fpsNum, U
     return hr;
 }
 
-// Span of the first audio stream's compressed packets, without decoding.
-// `hasAudio` is false (and S_OK returned) for a file without audio.
-HRESULT measureAudioSpan(const QString& path, bool* hasAudio, LONGLONG* spanHns)
+// Opens `path` for its first audio stream only, delivering the compressed
+// packets as they are (nothing is decoded). `hasAudio` is false, with S_OK
+// and a null reader, for a file without an audio stream.
+HRESULT openAudioPacketReader(const QString& path, bool* hasAudio, ComPtr<IMFSourceReader>& reader)
 {
     *hasAudio = false;
-    *spanHns = 0;
-    ComPtr<IMFSourceReader> reader;
     HRESULT hr = openReader(path, false, reader);
     if (FAILED(hr)) {
         return hr;
@@ -435,49 +432,122 @@ HRESULT measureAudioSpan(const QString& path, bool* hasAudio, LONGLONG* spanHns)
     ComPtr<IMFMediaType> nativeType;
     hr = reader->GetNativeMediaType(MF_SOURCE_READER_FIRST_AUDIO_STREAM, 0, &nativeType);
     if (hr == MF_E_INVALIDSTREAMNUMBER) {
+        reader.Reset();
         return S_OK;
     }
     if (SUCCEEDED(hr)) hr = reader->SetStreamSelection(MF_SOURCE_READER_ALL_STREAMS, FALSE);
     if (SUCCEEDED(hr)) hr = reader->SetStreamSelection(MF_SOURCE_READER_FIRST_AUDIO_STREAM, TRUE);
     // The native type keeps the packets compressed: nothing is decoded.
     if (SUCCEEDED(hr)) hr = reader->SetCurrentMediaType(MF_SOURCE_READER_FIRST_AUDIO_STREAM, nullptr, nativeType.Get());
+    if (SUCCEEDED(hr)) {
+        *hasAudio = true;
+    }
+    return hr;
+}
+
+// Reads the next compressed packet. `sample` stays null for stream ticks and
+// at the end of the stream, which sets `endOfStream`.
+HRESULT readAudioPacket(IMFSourceReader* reader, ComPtr<IMFSample>& sample, LONGLONG* timestamp, bool* endOfStream)
+{
+    DWORD flags = 0;
+    sample.Reset();
+    const HRESULT hr = reader->ReadSample(MF_SOURCE_READER_FIRST_AUDIO_STREAM, 0, nullptr, &flags, timestamp, &sample);
     if (FAILED(hr)) {
         return hr;
     }
+    if (flags & MF_SOURCE_READERF_ERROR) {
+        return E_FAIL;
+    }
+    *endOfStream = (flags & MF_SOURCE_READERF_ENDOFSTREAM) != 0;
+    return S_OK;
+}
+
+// [first packet start, last packet end) of the first audio stream, read off
+// the packets: MP4 exposes no per-track duration through the Source Reader.
+// `hasAudio` is false (and S_OK returned) for a file without audio packets.
+HRESULT measureAudioRange(const QString& path, bool* hasAudio, LONGLONG* firstHns, LONGLONG* endHns)
+{
+    *firstHns = 0;
+    *endHns = 0;
+    ComPtr<IMFSourceReader> reader;
+    HRESULT hr = openAudioPacketReader(path, hasAudio, reader);
+    if (FAILED(hr) || !*hasAudio) {
+        return hr;
+    }
     bool haveFirst = false;
-    LONGLONG first = 0;
-    LONGLONG end = 0;
     for (;;) {
-        DWORD flags = 0;
-        LONGLONG timestamp = 0;
         ComPtr<IMFSample> sample;
-        hr = reader->ReadSample(MF_SOURCE_READER_FIRST_AUDIO_STREAM, 0, nullptr, &flags, &timestamp, &sample);
+        LONGLONG timestamp = 0;
+        bool endOfStream = false;
+        hr = readAudioPacket(reader.Get(), sample, &timestamp, &endOfStream);
         if (FAILED(hr)) {
             return hr;
-        }
-        if (flags & MF_SOURCE_READERF_ERROR) {
-            return E_FAIL;
         }
         if (sample.Get() != nullptr) {
             LONGLONG duration = 0;
             if (FAILED(sample->GetSampleDuration(&duration)) || duration < 0) {
                 duration = 0;
             }
-            if (!haveFirst || timestamp < first) {
-                first = timestamp;
+            if (!haveFirst || timestamp < *firstHns) {
+                *firstHns = timestamp;
             }
-            if (!haveFirst || timestamp + duration > end) {
-                end = timestamp + duration;
+            if (!haveFirst || timestamp + duration > *endHns) {
+                *endHns = timestamp + duration;
             }
             haveFirst = true;
         }
-        if (flags & MF_SOURCE_READERF_ENDOFSTREAM) {
+        if (endOfStream) {
             break;
         }
     }
     *hasAudio = haveFirst;
-    *spanHns = haveFirst ? end - first : 0;
     return S_OK;
+}
+
+// True when a data-carrying audio packet of `path` starts inside
+// [startHns, endHns): exactly the packets handleAudio() copies (the packet
+// straddling the start is not one of them). Seeks to the start, so only a
+// few packets are read however long the file is.
+HRESULT audioPacketStartsInRange(const QString& path, LONGLONG startHns, LONGLONG endHns, bool* found)
+{
+    *found = false;
+    bool hasAudio = false;
+    ComPtr<IMFSourceReader> reader;
+    HRESULT hr = openAudioPacketReader(path, &hasAudio, reader);
+    if (FAILED(hr) || !hasAudio) {
+        return hr;
+    }
+    if (startHns > 0) {
+        PROPVARIANT position;
+        PropVariantInit(&position);
+        hr = InitPropVariantFromInt64(startHns, &position);
+        // Lands on the packet at or before startHns; earlier ones are skipped below.
+        if (SUCCEEDED(hr)) hr = reader->SetCurrentPosition(GUID_NULL, position);
+        PropVariantClear(&position);
+        if (FAILED(hr)) {
+            return hr;
+        }
+    }
+    for (;;) {
+        ComPtr<IMFSample> sample;
+        LONGLONG timestamp = 0;
+        bool endOfStream = false;
+        hr = readAudioPacket(reader.Get(), sample, &timestamp, &endOfStream);
+        if (FAILED(hr)) {
+            return hr;
+        }
+        if (sample.Get() != nullptr && timestamp >= startHns) {
+            DWORD length = 0;
+            const bool dataless = SUCCEEDED(sample->GetTotalLength(&length)) && length == 0;
+            if (!dataless) {
+                *found = timestamp < endHns;
+                return S_OK;
+            }
+        }
+        if (endOfStream) {
+            return S_OK;
+        }
+    }
 }
 
 void removeOutput(const QString& path)
@@ -544,6 +614,18 @@ VideoFileProbe MediaFoundationTranscoder::probe(const QString& filePath)
     result.videoSize = area.size();
     result.durationMs = hnsToMs(durationHns);
     result.hasAudio = SUCCEEDED(reader->GetNativeMediaType(MF_SOURCE_READER_FIRST_AUDIO_STREAM, 0, &audioType));
+    if (result.hasAudio) {
+        bool hasPackets = false;
+        LONGLONG firstHns = 0;
+        LONGLONG endHns = 0;
+        if (FAILED(measureAudioRange(filePath, &hasPackets, &firstHns, &endHns))) {
+            return result; // Audio that cannot be inspected leaves the probe invalid.
+        }
+        if (hasPackets) {
+            result.audioStartMs = hnsToMs(firstHns);
+            result.audioEndMs = hnsToMs(endHns);
+        }
+    }
     result.valid = !result.videoSize.isEmpty() && result.durationMs > 0;
     return result;
 }
@@ -712,6 +794,13 @@ bool MediaFoundationTranscoder::writeOutput(const VideoTranscodeRequest& request
     if (!hasAudio && hr != MF_E_INVALIDSTREAMNUMBER) {
         return failAudio("Cannot inspect source audio", "GetNativeMediaType(audio)", hr);
     }
+    // Only packets starting inside the range are copied (see handleAudio). A
+    // range the source audio never reaches gets no audio stream at all and
+    // exports video only, as the source is there: the Sink Writer cannot
+    // finalize a stream that received no samples, and failing instead would
+    // make the tail of a recording whose audio stopped early impossible to
+    // export.
+    bool copyAudio = false;
     LONGLONG audioPacketHns = 0;
     if (hasAudio) {
         GUID audioSubtype = GUID_NULL;
@@ -725,6 +814,12 @@ bool MediaFoundationTranscoder::writeOutput(const VideoTranscodeRequest& request
         }
         const UINT32 sampleRate = MFGetAttributeUINT32(nativeAudio.Get(), MF_MT_AUDIO_SAMPLES_PER_SECOND, 0);
         audioPacketHns = sampleRate > 0 ? kAacFramesPerPacket * kHnsPerSecond / static_cast<LONGLONG>(sampleRate) : 0;
+        hr = audioPacketStartsInRange(request.inputPath, startHns, endHns, &copyAudio);
+        if (FAILED(hr)) {
+            return failAudio("Cannot inspect source audio", "Locate audio in the range", hr);
+        }
+    }
+    if (copyAudio) {
         hr = reader->SetStreamSelection(MF_SOURCE_READER_FIRST_AUDIO_STREAM, TRUE);
         // Setting the native type keeps the packets compressed (no decoder).
         if (SUCCEEDED(hr)) {
@@ -770,7 +865,7 @@ bool MediaFoundationTranscoder::writeOutput(const VideoTranscodeRequest& request
     }
 
     DWORD audioStream = 0;
-    if (hasAudio) {
+    if (copyAudio) {
         ComPtr<IMFMediaType> passthroughType;
         hr = MFCreateMediaType(&passthroughType);
         if (SUCCEEDED(hr)) hr = nativeAudio->CopyAllItems(passthroughType.Get());
@@ -806,8 +901,13 @@ bool MediaFoundationTranscoder::writeOutput(const VideoTranscodeRequest& request
     }
 
     // ---- Video: the frame on screen at the range start is shown from 0 ----
+    // The newest decoded frame at or before the range start is the one on
+    // screen there; it is the only pre-start frame written (shown from 0).
+    // The sample is kept and cropped when written, instead of cropping every
+    // frame from the seek key frame to the start.
     struct LeadFrame {
-        ComPtr<IMFMediaBuffer> buffer;
+        ComPtr<IMFSample> sample;
+        DecodedVideoLayout layout; // the decoded geometry when the sample was read
         LONGLONG durationHns = 0;
     } lead;
     bool haveLead = false;
@@ -843,29 +943,39 @@ bool MediaFoundationTranscoder::writeOutput(const VideoTranscodeRequest& request
         return true;
     };
 
-    const auto handleVideo = [&](IMFSample* sample, LONGLONG timestamp) {
+    const auto writeLead = [&](LONGLONG durationHns) {
         ComPtr<IMFMediaBuffer> cropped;
-        const HRESULT cropHr = copyCrop(sample, layout, crop, cropped);
+        const HRESULT cropHr = copyCrop(lead.sample.Get(), lead.layout, crop, cropped);
+        lead.sample.Reset();
         if (FAILED(cropHr)) {
             return failWith(hrText("Crop video frame", cropHr));
         }
+        return writeVideo(cropped.Get(), 0, durationHns);
+    };
+
+    const auto handleVideo = [&](IMFSample* sample, LONGLONG timestamp) {
         LONGLONG duration = 0;
         if (FAILED(sample->GetSampleDuration(&duration)) || duration <= 0) {
             duration = frameDurationHns;
         }
         if (timestamp <= startHns) {
             // Frames from the seek key frame up to the start: keep the newest.
-            lead.buffer = cropped;
+            lead.sample = sample;
+            lead.layout = layout;
             lead.durationHns = duration;
             haveLead = true;
             return true;
         }
         if (haveLead) {
             haveLead = false;
-            if (!writeVideo(lead.buffer.Get(), 0, timestamp - startHns)) {
+            if (!writeLead(timestamp - startHns)) {
                 return false;
             }
-            lead.buffer.Reset();
+        }
+        ComPtr<IMFMediaBuffer> cropped;
+        const HRESULT cropHr = copyCrop(sample, layout, crop, cropped);
+        if (FAILED(cropHr)) {
+            return failWith(hrText("Crop video frame", cropHr));
         }
         // Clamp so the last frame ends at the range end.
         return writeVideo(cropped.Get(), timestamp - startHns, qMin(duration, endHns - timestamp));
@@ -939,7 +1049,7 @@ bool MediaFoundationTranscoder::writeOutput(const VideoTranscodeRequest& request
     // ---- Read loop: always pull the stream that is further behind, so the
     // MPEG-4 sink receives interleaved media ----
     bool videoDone = false;
-    bool audioDone = !hasAudio;
+    bool audioDone = !copyAudio;
     LONGLONG videoClock = LLONG_MIN;
     LONGLONG audioClock = LLONG_MIN;
     while (!videoDone || !audioDone) {
@@ -990,17 +1100,17 @@ bool MediaFoundationTranscoder::writeOutput(const VideoTranscodeRequest& request
     if (haveLead) {
         // No frame after the start inside the range: the lead covers it all.
         haveLead = false;
-        if (!writeVideo(lead.buffer.Get(), 0, qMin(lead.durationHns, spanHns))) {
+        if (!writeLead(qMin(lead.durationHns, spanHns))) {
             return false;
         }
-        lead.buffer.Reset();
     }
     if (!haveVideoOut) {
         return failWith(QStringLiteral("No video frames in the selected range"));
     }
-    if (hasAudio && !haveAudioOut) {
-        // The Sink Writer cannot finalize an audio stream without samples, and
-        // the stream cannot be removed after BeginWriting.
+    if (copyAudio && !haveAudioOut) {
+        // audioPacketStartsInRange() promised a packet, so this is a reader
+        // inconsistency. The Sink Writer cannot finalize an audio stream
+        // without samples, and the stream cannot be removed after BeginWriting.
         return failWith(QStringLiteral("Cannot preserve source audio: no audio packets in the selected range"));
     }
 
@@ -1034,15 +1144,10 @@ bool MediaFoundationTranscoder::validateOutput(const QString& path, const WriteO
                      .arg(writtenMs);
         return false;
     }
-    bool outputHasAudio = false;
-    LONGLONG outputAudioHns = 0;
-    const HRESULT hr = measureAudioSpan(path, &outputHasAudio, &outputAudioHns);
-    if (FAILED(hr)) {
-        *error = QStringLiteral("Cannot inspect output audio (%1); source retained")
-                     .arg(hrText("Read output audio", hr));
-        return false;
-    }
-    const qint64 outputAudioMs = outputHasAudio ? hnsToMs(outputAudioHns) : -1;
+    // probe() already read the output's audio packets (an uninspectable
+    // output is not valid, caught above).
+    const qint64 outputAudioMs =
+        outputProbe.audioEndMs >= 0 ? outputProbe.audioEndMs - outputProbe.audioStartMs : -1;
     // A selection the source audio does not reach (coverage within the
     // tolerance) has nothing to preserve; any other gap is a silent downgrade.
     if (written.sourceAudioCoverageMs > kAudioCoverageToleranceMs

@@ -7,8 +7,16 @@
 #include <functional>
 #include <memory>
 
-// Quality used for preview edits; matches the previous VideoTrimmer export.
+// Quality used for preview edits; the quality the preview has always exported at.
 constexpr int kDefaultTranscodeQuality = 80;
+
+// Output audio may fall short of the source audio's coverage of the selected
+// range by this much before it counts as lost audio. Edge packets are copied
+// or dropped whole (a 1024-sample AAC packet is 21.3 ms at 48 kHz, 23.2 ms at
+// 44.1 kHz), so a range the source audio only grazes may legitimately export
+// without audio. Shared by the native transcoders and the preview backend so
+// all of them judge "lost audio" the same way.
+constexpr qint64 kAudioCoverageToleranceMs = 50;
 
 struct VideoTranscodeRequest {
     QString inputPath;
@@ -21,7 +29,9 @@ struct VideoTranscodeRequest {
 
 struct VideoTranscodeResult {
     bool success = false;
-    bool audioCopied = false; // Source audio preserved, including verified re-encode fallback.
+    // The output carries source audio. False when the source has none, or when
+    // the selected range lies outside the source audio (video-only export).
+    bool audioCopied = false;
     QString errorMessage;
 };
 
@@ -30,6 +40,9 @@ struct VideoFileProbe {
     QSize videoSize;
     qint64 durationMs = 0;
     bool hasAudio = false;
+    // Presentation range of the first audio track; -1/-1 without audio.
+    qint64 audioStartMs = -1;
+    qint64 audioEndMs = -1;
 };
 
 // Offline MP4 trim + crop + H.264 re-encode with AAC passthrough.
@@ -48,7 +61,10 @@ public:
 
     // Blocking. Run off the GUI thread in production code. On failure or
     // cancellation the output file is removed; the input is never removed here.
-    // An input with audio may succeed only if its audio is preserved in the output.
+    // An input with audio may succeed only if the audio inside the selected
+    // range is preserved in the output; a range the source audio does not
+    // reach (see kAudioCoverageToleranceMs) exports video only, as the source
+    // is there.
     virtual VideoTranscodeResult transcode(const VideoTranscodeRequest& request,
                                            const ProgressCallback& progress) = 0;
     virtual VideoFileProbe probe(const QString& filePath) = 0;

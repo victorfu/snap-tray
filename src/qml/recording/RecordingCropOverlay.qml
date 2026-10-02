@@ -61,14 +61,37 @@ Item {
     readonly property bool hasContent: contentRect.width > 0 && contentRect.height > 0
             && videoSize.width > 0 && videoSize.height > 0
 
-    // The draft lives in view coordinates; a new content geometry would
-    // reinterpret it, so drop it and keep the committed video-pixel crop.
-    onContentRectChanged: cancel()
+    // The draft lives in view coordinates. When the content is re-fitted (the
+    // window was resized) it follows the same video pixels, so editing goes on.
+    // Without content to follow, or for a different video, it is dropped and
+    // the committed video-pixel crop stays.
+    property rect lastContentRect: Qt.rect(0, 0, 0, 0)
+    Component.onCompleted: lastContentRect = contentRect
+    onContentRectChanged: {
+        const previous = Qt.rect(lastContentRect.x, lastContentRect.y, lastContentRect.width, lastContentRect.height)
+        lastContentRect = contentRect
+        if (!editing)
+            return
+        // Read the inputs, not hasContent: a derived property may not have
+        // been re-evaluated yet when this handler runs.
+        const haveVideo = videoSize.width > 0 && videoSize.height > 0
+        if (!isNonEmpty(contentRect) || !haveVideo || !isNonEmpty(previous)) {
+            cancel()
+            return
+        }
+        draftRect = mapRect(draftRect, previous, contentRect)
+    }
     onVideoSizeChanged: cancel()
 
     function isNonEmpty(r) { return r.width > 0 && r.height > 0 }
     function sameRect(a, b) {
         return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height
+    }
+    // The same video pixels as r (in `from`), in a re-fitted content rect `to`.
+    function mapRect(r, from, to) {
+        const sx = to.width / from.width
+        const sy = to.height / from.height
+        return Qt.rect(to.x + (r.x - from.x) * sx, to.y + (r.y - from.y) * sy, r.width * sx, r.height * sy)
     }
 
     function beginEditing() {

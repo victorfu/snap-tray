@@ -1901,6 +1901,10 @@ Kích thước: %2</translation>
         <source>Export failed: %1</source>
         <translation>Xuất video thất bại: %1</translation>
     </message>
+    <message>
+        <source>Export failed; the original recording was kept.</source>
+        <translation>Xuất không thành công; bản ghi gốc đã được giữ lại.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3003,44 +3007,6 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
         <source>Check Now</source>
         <translation>Kiểm tra ngay</translation>
         </message>
-</context>
-<context>
-    <name>VideoTrimmer</name>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="52" />
-        <source>Input or output path not set</source>
-        <translation>Chưa đặt đường dẫn đầu vào hoặc đầu ra</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="57" />
-        <source>Invalid trim range</source>
-        <translation>Khoảng cắt không hợp lệ</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="73" />
-        <source>Failed to create video player</source>
-        <translation>Không thể tạo trình phát video</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="84" />
-        <source>Failed to load video: %1</source>
-        <translation>Không thể tải video: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="91" />
-        <source>Failed to load input video</source>
-        <translation>Không thể tải video đầu vào</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="133" />
-        <source>Failed to create encoder: %1</source>
-        <translation>Không thể tạo bộ mã hóa: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="269" />
-        <source>Encoding failed</source>
-        <translation>Mã hóa thất bại</translation>
-    </message>
 </context>
 <context>
     <name>WatermarkSettings</name>

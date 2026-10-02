@@ -296,6 +296,7 @@ void tst_QmlTranslations::testRecordingPreviewCropTranslatedForAllLocales()
         {"RecordingPreviewBackend", "Exporting video..."},
         {"RecordingPreviewBackend", "Video export is not supported on this platform"},
         {"RecordingPreviewBackend", "Export failed: %1"},
+        {"RecordingPreviewBackend", "Export failed; the original recording was kept."},
     };
 
     const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));

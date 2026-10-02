@@ -36,7 +36,8 @@ Item {
     property bool activeTooltipPreferAbove: true
     property var activeTooltipSourceItem: null
 
-    // Crop editing needs a decoded frame: contentRect alone can be stale after the frame is cleared.
+    // Crop editing needs a decoded frame on screen (contentRect is empty until one is shown and
+    // again once it is cleared) and the video size the crop is mapped to.
     readonly property bool cropAvailable: backend.videoSize.width > 0 && backend.videoSize.height > 0
                                           && videoPlayer.contentRect.width > 0
                                           && videoPlayer.contentRect.height > 0

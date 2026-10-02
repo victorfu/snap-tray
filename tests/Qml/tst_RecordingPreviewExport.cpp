@@ -28,8 +28,10 @@ constexpr int kAudioFramesPerVideoFrame = kAudioSampleRate / kFrameRate;
 constexpr int kAudioChannels = 2;
 constexpr int kAudioBytesPerSample = 2;
 
+// With audio, only the first `audioFrameCount` video frames get audio; the
+// rest are video only, as when audio capture stops before the recording does.
 QString createRecording(const QString& path, qint64 firstFrameMs, const QSize& frameSize = kFrameSize,
-                        bool withAudio = false)
+                        bool withAudio = false, int audioFrameCount = kFrameCount)
 {
     std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
     if (!encoder) {
@@ -66,7 +68,7 @@ QString createRecording(const QString& path, qint64 firstFrameMs, const QSize& f
             return QStringLiteral("Native encoder did not accept fixture frame %1: %2")
                 .arg(i).arg(encoder->lastError());
         }
-        if (withAudio && encoder->isAudioEnabled()) {
+        if (withAudio && encoder->isAudioEnabled() && i < audioFrameCount) {
             encoder->writeAudioSamples(
                 QByteArray(kAudioFramesPerVideoFrame * kAudioChannels * kAudioBytesPerSample, '\0'),
                 qint64(i) * kAudioFramesPerVideoFrame);
@@ -112,6 +114,8 @@ enum class FakeTranscodeOutcome {
     AudioNotCopied,           // success, real output with audio, audioCopied=false
     MissingOutput,            // success, audioCopied, nothing written
     WaitForCancel,            // reports progress until the callback cancels
+    VideoOnlyRange,           // success, silent output, audioCopied=false: the range lies past the source audio
+    IgnoresCrop,              // success, audioCopied, output is the uncropped source
     Real,                     // the native transcoder
 };
 
@@ -176,6 +180,14 @@ public:
             result.errorMessage = QStringLiteral("cancelled");
             break;
         }
+        case FakeTranscodeOutcome::VideoOnlyRange:
+            result.success = QFile::copy(m_silentFixturePath, request.outputPath);
+            result.audioCopied = false;
+            break;
+        case FakeTranscodeOutcome::IgnoresCrop:
+            result.success = QFile::copy(request.inputPath, request.outputPath);
+            result.audioCopied = true;
+            break;
         case FakeTranscodeOutcome::Real:
             result = m_real->transcode(request, progress);
             break;
@@ -216,6 +228,7 @@ private slots:
     void failedExportPreservesOriginal();
     void saveMp4Edits_data();
     void saveMp4Edits();
+    void videoOnlyExportAcceptedWhenRangeHasNoSourceAudio();
     void invalidTranscodeKeepsSourceAndRetries_data();
     void invalidTranscodeKeepsSourceAndRetries();
     void destroyWhileExportingKeepsSource_data();
@@ -433,9 +446,14 @@ void tst_RecordingPreviewExport::saveMp4Edits_data()
     QTest::addColumn<bool>("trim");
     QTest::addColumn<bool>("crop");
     QTest::addColumn<bool>("withAudio");
-    QTest::newRow("trim-with-audio") << true << false << true;
-    QTest::newRow("crop-with-audio") << false << true << true;
-    QTest::newRow("trim-and-crop-silent") << true << true << false;
+    QTest::addColumn<int>("audioFrameCount");
+    QTest::addColumn<bool>("expectOutputAudio");
+    QTest::newRow("trim-with-audio") << true << false << true << kFrameCount << true;
+    QTest::newRow("crop-with-audio") << false << true << true << kFrameCount << true;
+    QTest::newRow("trim-and-crop-silent") << true << true << false << kFrameCount << false;
+    // Audio stops at 200 ms; the trim (400 ms on) lies entirely past it, so
+    // the export is video only, like the source is there.
+    QTest::newRow("trim-after-audio-end") << true << false << true << 2 << false;
 }
 
 void tst_RecordingPreviewExport::saveMp4Edits()
@@ -443,26 +461,36 @@ void tst_RecordingPreviewExport::saveMp4Edits()
     QFETCH(bool, trim);
     QFETCH(bool, crop);
     QFETCH(bool, withAudio);
+    QFETCH(int, audioFrameCount);
+    QFETCH(bool, expectOutputAudio);
     const QSize sourceSize(160, 120);
     const QRect cropRect(32, 24, 96, 72);
+    const qint64 trimStartMs = 4 * kFrameIntervalMs;
+    const qint64 trimEndMs = 10 * kFrameIntervalMs;
 
     QTemporaryDir directory;
     QVERIFY(directory.isValid());
     const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
-    const QString fixtureError = createRecording(inputPath, 0, sourceSize, withAudio);
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize, withAudio, audioFrameCount);
     QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
 
     auto transcoder = IVideoTranscoder::create();
     QVERIFY(transcoder);
-    QCOMPARE(transcoder->probe(inputPath).hasAudio, withAudio);
+    const VideoFileProbe sourceProbe = transcoder->probe(inputPath);
+    QCOMPARE(sourceProbe.hasAudio, withAudio);
+    if (withAudio && audioFrameCount < kFrameCount) {
+        // The fixture's audio really ends before the trimmed range starts.
+        QVERIFY2(sourceProbe.audioEndMs >= 0 && sourceProbe.audioEndMs < trimStartMs,
+                 qPrintable(QString::number(sourceProbe.audioEndMs)));
+    }
 
     RecordingPreviewBackend backend(inputPath);
     backend.setSelectedFormat(RecordingPreviewBackend::MP4);
     backend.updateVideoSize(sourceSize);
     backend.updateDuration(kFrameCount * kFrameIntervalMs);
     if (trim) {
-        backend.setTrimStart(4 * kFrameIntervalMs);
-        backend.setTrimEnd(10 * kFrameIntervalMs);
+        backend.setTrimStart(trimStartMs);
+        backend.setTrimEnd(trimEndMs);
     }
     if (crop) {
         backend.setCropRect(cropRect);
@@ -486,9 +514,9 @@ void tst_RecordingPreviewExport::saveMp4Edits()
     const VideoFileProbe probe = transcoder->probe(outputPath);
     QVERIFY(probe.valid);
     QCOMPARE(probe.videoSize, crop ? cropRect.size() : sourceSize);
-    QCOMPARE(probe.hasAudio, withAudio);
+    QCOMPARE(probe.hasAudio, expectOutputAudio);
     if (trim) {
-        QVERIFY2(qAbs(probe.durationMs - 6 * kFrameIntervalMs) <= 2 * kFrameIntervalMs,
+        QVERIFY2(qAbs(probe.durationMs - (trimEndMs - trimStartMs)) <= 2 * kFrameIntervalMs,
                  qPrintable(QString::number(probe.durationMs)));
     }
     QVERIFY(partFiles(directory.path()).isEmpty());
@@ -496,10 +524,74 @@ void tst_RecordingPreviewExport::saveMp4Edits()
     QCOMPARE(QDir(directory.path()).entryList(QDir::Files), QStringList(QFileInfo(outputPath).fileName()));
 }
 
+// A transcoder that returns success with audioCopied=false and a silent
+// output is right when the selected range starts after the source audio
+// ends. The backend's own validation must accept that instead of treating
+// it as lost audio, or the tail of such a recording can never be exported.
+void tst_RecordingPreviewExport::videoOnlyExportAcceptedWhenRangeHasNoSourceAudio()
+{
+    const QSize sourceSize(160, 120);
+    const qint64 trimStartMs = 4 * kFrameIntervalMs;
+
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    // Audio for the first two frames (200 ms) of a 1.2 s recording.
+    QString fixtureError = createRecording(inputPath, 0, sourceSize, true, 2);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+
+    QTemporaryDir fixtureDirectory;
+    QVERIFY(fixtureDirectory.isValid());
+    const QString silentPath = fixtureDirectory.filePath(QStringLiteral("silent.mp4"));
+    fixtureError = createRecording(silentPath, 0, sourceSize, false);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+
+    auto realTranscoder = IVideoTranscoder::create();
+    QVERIFY(realTranscoder);
+    const VideoFileProbe sourceProbe = realTranscoder->probe(inputPath);
+    QVERIFY(sourceProbe.valid);
+    QVERIFY(sourceProbe.hasAudio);
+    QVERIFY2(sourceProbe.audioEndMs >= 0 && sourceProbe.audioEndMs < trimStartMs,
+             qPrintable(QString::number(sourceProbe.audioEndMs)));
+
+    auto restoreFactory = qScopeGuard([]() {
+        RecordingPreviewBackend::transcoderFactoryOverride() = {};
+    });
+    const auto log = std::make_shared<FakeTranscodeLog>();
+    RecordingPreviewBackend::transcoderFactoryOverride() = [silentPath, log]() {
+        return std::unique_ptr<IVideoTranscoder>(
+            new FakeTranscoder(FakeTranscodeOutcome::VideoOnlyRange, silentPath, log));
+    };
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    backend.updateVideoSize(sourceSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    backend.setTrimStart(trimStartMs);
+
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(savedSpy.count(), 1);
+    {
+        std::lock_guard<std::mutex> lock(log->mutex);
+        QCOMPARE(log->calls, 1);
+        QCOMPARE(log->lastRequest.startMs, trimStartMs);
+    }
+    QVERIFY(!QFileInfo::exists(inputPath));
+    const VideoFileProbe outputProbe = realTranscoder->probe(savedSpy.first().at(0).toString());
+    QVERIFY(outputProbe.valid);
+    QVERIFY(!outputProbe.hasAudio);
+    QVERIFY(partFiles(directory.path()).isEmpty());
+}
+
 void tst_RecordingPreviewExport::invalidTranscodeKeepsSourceAndRetries_data()
 {
     QTest::addColumn<int>("outcome");
     QTest::newRow("silent-output-claims-audio") << int(FakeTranscodeOutcome::SilentOutputClaimsAudio);
+    // Right audio, wrong picture: the crop was not applied.
+    QTest::newRow("ignores-crop") << int(FakeTranscodeOutcome::IgnoresCrop);
     QTest::newRow("audio-not-copied") << int(FakeTranscodeOutcome::AudioNotCopied);
     QTest::newRow("missing-output") << int(FakeTranscodeOutcome::MissingOutput);
 }
@@ -561,7 +653,9 @@ void tst_RecordingPreviewExport::invalidTranscodeKeepsSourceAndRetries()
         QVERIFY2(log->lastRequest.outputPath.contains(QStringLiteral(".part-")),
                  qPrintable(log->lastRequest.outputPath));
     }
-    QVERIFY(!backend.errorMessage().isEmpty());
+    // The user sees a translated summary; the English diagnostics go to the log.
+    QCOMPARE(backend.errorMessage(),
+             RecordingPreviewBackend::tr("Export failed; the original recording was kept."));
     QCOMPARE(savedSpy.count(), 0);
     QCOMPARE(closedSpy.count(), 0);
     QVERIFY(input.open(QIODevice::ReadOnly));

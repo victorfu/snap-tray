@@ -1901,6 +1901,10 @@ Koko: %2</translation>
         <source>Export failed: %1</source>
         <translation>Vienti epäonnistui: %1</translation>
     </message>
+    <message>
+        <source>Export failed; the original recording was kept.</source>
+        <translation>Vienti epäonnistui; alkuperäinen tallenne säilytettiin.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3003,44 +3007,6 @@ Se saattaa olla toisen sovelluksen käytössä.</translation>
         <source>Check Now</source>
         <translation>Tarkista nyt</translation>
         </message>
-</context>
-<context>
-    <name>VideoTrimmer</name>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="52" />
-        <source>Input or output path not set</source>
-        <translation>Syöte- tai tulostepolkua ei ole asetettu</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="57" />
-        <source>Invalid trim range</source>
-        <translation>Virheellinen leikkausalue</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="73" />
-        <source>Failed to create video player</source>
-        <translation>Videotoistimen luonti epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="84" />
-        <source>Failed to load video: %1</source>
-        <translation>Videon lataus epäonnistui: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="91" />
-        <source>Failed to load input video</source>
-        <translation>Syötevideon lataus epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="133" />
-        <source>Failed to create encoder: %1</source>
-        <translation>Enkooderin luonti epäonnistui: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="269" />
-        <source>Encoding failed</source>
-        <translation>Enkoodaus epäonnistui</translation>
-    </message>
 </context>
 <context>
     <name>WatermarkSettings</name>

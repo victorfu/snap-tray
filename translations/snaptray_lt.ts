@@ -1901,6 +1901,10 @@ Dydis: %2</translation>
         <source>Export failed: %1</source>
         <translation>Eksportavimas nepavyko: %1</translation>
     </message>
+    <message>
+        <source>Export failed; the original recording was kept.</source>
+        <translation>Eksportuoti nepavyko; pradinis įrašas išsaugotas.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewWindow</name>
@@ -3003,44 +3007,6 @@ Jį gali naudoti kita programa.</translation>
         <source>Check Now</source>
         <translation>Tikrinti dabar</translation>
         </message>
-</context>
-<context>
-    <name>VideoTrimmer</name>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="52" />
-        <source>Input or output path not set</source>
-        <translation>Nenustatytas įvesties arba išvesties kelias</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="57" />
-        <source>Invalid trim range</source>
-        <translation>Neteisingas apkirpimo intervalas</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="73" />
-        <source>Failed to create video player</source>
-        <translation>Nepavyko sukurti vaizdo grotuvo</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="84" />
-        <source>Failed to load video: %1</source>
-        <translation>Nepavyko įkelti vaizdo įrašo: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="91" />
-        <source>Failed to load input video</source>
-        <translation>Nepavyko įkelti įvesties vaizdo įrašo</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="133" />
-        <source>Failed to create encoder: %1</source>
-        <translation>Nepavyko sukurti koduotuvo: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="269" />
-        <source>Encoding failed</source>
-        <translation>Koduoti nepavyko</translation>
-    </message>
 </context>
 <context>
     <name>WatermarkSettings</name>
