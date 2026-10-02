@@ -1,5 +1,6 @@
 #include "qml/VideoPlaybackItem.h"
 #include "video/IVideoPlayer.h"
+#include "utils/VideoCropGeometry.h"
 
 #include <QPainter>
 #include <QDebug>
@@ -61,10 +62,7 @@ void VideoPlaybackItem::paint(QPainter *painter)
         return;
     }
 
-    // Center the scaled frame (letterboxing)
-    int x = (width() - m_scaledFrame.width()) / 2;
-    int y = (height() - m_scaledFrame.height()) / 2;
-    painter->drawImage(x, y, m_scaledFrame);
+    painter->drawImage(m_contentRect.topLeft().toPoint(), m_scaledFrame);
 }
 
 void VideoPlaybackItem::setSource(const QString &source)
@@ -252,6 +250,13 @@ void VideoPlaybackItem::refreshScaledFrameForCurrentSize()
         m_lastItemSize = itemSize;
         m_lastFrameSize = m_currentFrame.size();
         m_targetScaledSize = m_currentFrame.size().scaled(itemSize, Qt::KeepAspectRatio);
+
+        const QRectF contentRect = SnapTray::VideoCropGeometry::aspectFitRect(
+            m_currentFrame.size(), QSizeF(width(), height()));
+        if (contentRect != m_contentRect) {
+            m_contentRect = contentRect;
+            emit contentRectChanged();
+        }
     }
 
     // Scale only if needed
