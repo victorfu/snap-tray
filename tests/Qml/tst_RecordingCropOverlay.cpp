@@ -238,7 +238,10 @@ private:
     QVariant call(const char* name, const QVariantList& args = {});
     QRectF overlayRect(const char* property) const;
 
-    bool openPreview(const QSize& frameSize);
+    // Unavailable: the environment cannot show the window (skip). Failed: the
+    // preview itself is broken (fail); `reason` says why.
+    enum class PreviewOpen { Ready, Unavailable, Failed };
+    PreviewOpen openPreview(const QSize& frameSize, QString* reason);
     QObject* previewOverlay() const;
     QQuickItem* previewItem(const char* objectName) const;
     QRectF previewContentRect() const;
@@ -482,10 +485,12 @@ void tst_RecordingCropOverlay::createSweepStaysInside()
 
 // ---------- Full preview ----------
 
-bool tst_RecordingCropOverlay::openPreview(const QSize& frameSize)
+tst_RecordingCropOverlay::PreviewOpen tst_RecordingCropOverlay::openPreview(const QSize& frameSize,
+                                                                           QString* reason)
 {
     if (QGuiApplication::screens().isEmpty()) {
-        return false;
+        *reason = QStringLiteral("RecordingPreview interaction tests need a screen");
+        return PreviewOpen::Unavailable;
     }
     m_backend = std::make_unique<StubPreviewBackend>();
     m_view = std::make_unique<QQuickView>(SnapTray::QmlOverlayManager::instance().engine(), nullptr);
@@ -494,15 +499,19 @@ bool tst_RecordingCropOverlay::openPreview(const QSize& frameSize)
     m_view->setMinimumSize(QSize(kPreviewMinWidth, kPreviewMinHeight));
     m_view->resize(kPreviewWidth, kPreviewHeight);
     m_view->setSource(QUrl(QStringLiteral("qrc:/SnapTrayQml/recording/RecordingPreview.qml")));
-    if (m_view->status() != QQuickView::Ready) {
+    if (m_view->status() != QQuickView::Ready || !m_view->rootObject()) {
+        QStringList errors;
         for (const auto& error : m_view->errors()) {
-            qWarning() << error.toString();
+            errors << error.toString();
         }
-        return false;
+        *reason = QStringLiteral("RecordingPreview.qml failed to load: %1")
+                      .arg(errors.isEmpty() ? QStringLiteral("no root object") : errors.join(QLatin1String("; ")));
+        return PreviewOpen::Failed;
     }
     m_view->show();
     if (!QTest::qWaitForWindowExposed(m_view.get())) {
-        return false;
+        *reason = QStringLiteral("RecordingPreview interaction tests need a real, exposable window");
+        return PreviewOpen::Unavailable;
     }
     m_view->requestActivate();
     if (!QTest::qWaitForWindowActive(m_view.get(), 1000)) {
@@ -512,16 +521,37 @@ bool tst_RecordingCropOverlay::openPreview(const QSize& frameSize)
     // Stand in for a decoded frame: the item derives contentRect from it, and the
     // preview reports the video size to the backend when the media loads.
     QQuickItem* video = previewItem("previewVideoPlayer");
-    if (!video || video->width() <= 0 || video->height() <= 0) {
-        return false;
+    if (!video) {
+        *reason = QStringLiteral("RecordingPreview has no item named previewVideoPlayer");
+        return PreviewOpen::Failed;
+    }
+    if (video->width() <= 0 || video->height() <= 0) {
+        *reason = QStringLiteral("previewVideoPlayer has no area (%1x%2) in an exposed window")
+                      .arg(video->width())
+                      .arg(video->height());
+        return PreviewOpen::Failed;
+    }
+    for (const char* name : {"previewCropOverlay", "previewCropButton", "previewVideoClickArea"}) {
+        if (!m_view->rootObject()->findChild<QObject*>(QString::fromLatin1(name))) {
+            *reason = QStringLiteral("RecordingPreview has no object named %1").arg(QString::fromLatin1(name));
+            return PreviewOpen::Failed;
+        }
     }
     QImage frame(frameSize, QImage::Format_ARGB32_Premultiplied);
     frame.fill(Qt::darkGray);
     if (!QMetaObject::invokeMethod(video, "onFrameReady", Qt::DirectConnection, Q_ARG(QImage, frame))) {
-        return false;
+        *reason = QStringLiteral("Cannot inject a frame: previewVideoPlayer.onFrameReady(QImage) is not invokable");
+        return PreviewOpen::Failed;
     }
     m_backend->updateVideoSize(frameSize);
-    return !previewContentRect().isEmpty();
+    const QRectF content = previewContentRect();
+    if (content.isEmpty()) {
+        *reason = QStringLiteral("previewVideoPlayer.contentRect is empty after a %1x%2 frame")
+                      .arg(frameSize.width())
+                      .arg(frameSize.height());
+        return PreviewOpen::Failed;
+    }
+    return PreviewOpen::Ready;
 }
 
 QObject* tst_RecordingCropOverlay::previewOverlay() const
@@ -598,10 +628,17 @@ QRect tst_RecordingCropOverlay::expectedVideoCrop(const QRectF& viewRect) const
         m_backend->videoSize());
 }
 
-#define OPEN_PREVIEW_OR_SKIP(frameSize)                                                    \
+// Skips only when the environment cannot show the window; a broken preview
+// (load error, missing object, no content area) fails the test.
+#define OPEN_PREVIEW_OR_FAIL(frameSize)                                                    \
     do {                                                                                   \
-        if (!openPreview(frameSize)) {                                                     \
-            QSKIP("RecordingPreview interaction tests need a real, exposable window");     \
+        QString openReason;                                                                \
+        const PreviewOpen opened = openPreview(frameSize, &openReason);                    \
+        if (opened == PreviewOpen::Unavailable) {                                          \
+            QSKIP(qPrintable(openReason));                                                 \
+        }                                                                                  \
+        if (opened != PreviewOpen::Ready) {                                                \
+            QFAIL(qPrintable(openReason));                                                 \
         }                                                                                  \
     } while (false)
 
@@ -616,12 +653,12 @@ void tst_RecordingCropOverlay::previewCreatesFirstSelection()
 {
     QFETCH(bool, letterboxed);
     // Probe the video area size first so the "fills item" frame matches it exactly.
-    OPEN_PREVIEW_OR_SKIP(QSize(1600, 400));
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
     QQuickItem* video = previewItem("previewVideoPlayer");
     const QSize area(qRound(video->width()), qRound(video->height()));
     if (!letterboxed) {
         m_view.reset();
-        OPEN_PREVIEW_OR_SKIP(area);
+        OPEN_PREVIEW_OR_FAIL(area);
     }
     const QRectF content = previewContentRect();
     if (letterboxed) {
@@ -668,12 +705,12 @@ void tst_RecordingCropOverlay::previewCreatesFirstSelection()
 
 void tst_RecordingCropOverlay::previewMoveResizeReplace()
 {
-    OPEN_PREVIEW_OR_SKIP(QSize(1600, 400));
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
     QQuickItem* video = previewItem("previewVideoPlayer");
     const QSize area(qRound(video->width()), qRound(video->height()));
     m_view.reset();
     // A frame that fills the item 1:1, so view and video pixels coincide.
-    OPEN_PREVIEW_OR_SKIP(area);
+    OPEN_PREVIEW_OR_FAIL(area);
     QCOMPARE(previewContentRect(), QRectF(QPointF(0, 0), QSizeF(area)));
 
     m_backend->setCropRect(QRect(100, 100, 200, 100));
@@ -715,7 +752,7 @@ void tst_RecordingCropOverlay::previewMoveResizeReplace()
 
 void tst_RecordingCropOverlay::previewEscapeRestoresCommitted()
 {
-    OPEN_PREVIEW_OR_SKIP(QSize(1600, 400));
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
     const QRect committed(400, 100, 400, 200);
     m_backend->setCropRect(committed);
     QObject* overlay = previewOverlay();
@@ -754,7 +791,7 @@ void tst_RecordingCropOverlay::previewEscapeRestoresCommitted()
 
 void tst_RecordingCropOverlay::previewEmptyDraftApplyIsNoop()
 {
-    OPEN_PREVIEW_OR_SKIP(QSize(1600, 400));
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
     QQuickItem* cropButton = previewItem("previewCropButton");
 
     // Toolbar apply of an empty draft.
@@ -777,7 +814,7 @@ void tst_RecordingCropOverlay::previewEmptyDraftApplyIsNoop()
 
 void tst_RecordingCropOverlay::previewSaveButtonExportsDraft()
 {
-    OPEN_PREVIEW_OR_SKIP(QSize(1600, 400));
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
     click(previewItem("previewCropButton"));
     const QRectF content = previewContentRect();
     drag(overlayPoint(content.x() + 100, content.y() + 30), overlayPoint(content.x() + 300, content.y() + 130));
@@ -794,7 +831,7 @@ void tst_RecordingCropOverlay::previewSaveButtonExportsDraft()
 
 void tst_RecordingCropOverlay::previewCtrlSExportsDraft()
 {
-    OPEN_PREVIEW_OR_SKIP(QSize(1600, 400));
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
     click(previewItem("previewCropButton"));
     const QRectF content = previewContentRect();
     drag(overlayPoint(content.x() + 120, content.y() + 40), overlayPoint(content.x() + 320, content.y() + 140));
@@ -809,7 +846,7 @@ void tst_RecordingCropOverlay::previewCtrlSExportsDraft()
 
 void tst_RecordingCropOverlay::previewEnterSavesWhenNotEditing()
 {
-    OPEN_PREVIEW_OR_SKIP(QSize(1600, 400));
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
     m_backend->setCropRect(QRect(200, 100, 400, 200));
     sendKey(Qt::Key_Return);
     QCOMPARE(m_backend->saveCount, 1);
@@ -820,7 +857,7 @@ void tst_RecordingCropOverlay::previewEnterSavesWhenNotEditing()
 
 void tst_RecordingCropOverlay::previewProcessingBlocksSave()
 {
-    OPEN_PREVIEW_OR_SKIP(QSize(1600, 400));
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
     click(previewItem("previewCropButton"));
     const QRectF content = previewContentRect();
     drag(overlayPoint(content.x() + 100, content.y() + 30), overlayPoint(content.x() + 300, content.y() + 130));
@@ -851,7 +888,7 @@ void tst_RecordingCropOverlay::previewProcessingBlocksSave()
 
 void tst_RecordingCropOverlay::previewGeometryChangeCancelsDraft()
 {
-    OPEN_PREVIEW_OR_SKIP(QSize(1600, 400));
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
     const QRect committed(400, 100, 400, 200);
     m_backend->setCropRect(committed);
     QObject* overlay = previewOverlay();
@@ -873,7 +910,7 @@ void tst_RecordingCropOverlay::previewGeometryChangeCancelsDraft()
 
 void tst_RecordingCropOverlay::previewSizeChipAndClear()
 {
-    OPEN_PREVIEW_OR_SKIP(QSize(1600, 400));
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
     QQuickItem* chip = previewItem("previewCropSizeLabel");
     QQuickItem* clear = previewItem("previewClearCropButton");
     QVERIFY(chip && clear);
@@ -902,7 +939,7 @@ void tst_RecordingCropOverlay::previewSizeChipAndClear()
 
 void tst_RecordingCropOverlay::previewToolbarFitsAtMinimumWidth()
 {
-    OPEN_PREVIEW_OR_SKIP(QSize(1600, 400));
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
     // Widest realistic chip text for this frame.
     m_backend->setCropRect(QRect(2, 2, 1596, 396));
     QVERIFY(m_backend->hasCrop());
@@ -922,7 +959,7 @@ void tst_RecordingCropOverlay::previewToolbarFitsAtMinimumWidth()
 
 void tst_RecordingCropOverlay::previewCursorOverVideo()
 {
-    OPEN_PREVIEW_OR_SKIP(QSize(1600, 400));
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
     const QRectF content = previewContentRect();
     const QPoint inVideo = overlayPoint(content.x() + content.width() * 0.3, content.y() + content.height() * 0.4);
 
