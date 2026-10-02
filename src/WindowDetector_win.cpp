@@ -155,8 +155,8 @@ int getMinimumSize(ElementType type)
 QString getProcessName(DWORD processId)
 {
     QString processName;
-    HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ,
-                                   FALSE, processId);
+    // QueryFullProcessImageNameW needs no access to the process's memory.
+    HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, processId);
     if (hProcess) {
         WCHAR path[MAX_PATH];
         DWORD size = MAX_PATH;
