@@ -480,6 +480,7 @@ void tst_VideoTranscoder::cropAndTrimKeepsAudio()
     });
     QVERIFY2(result.success, qPrintable(result.errorMessage));
     QVERIFY(result.audioCopied);
+    QCOMPARE(result.startMs, request.startMs); // 500 ms is on the frame grid
     QCOMPARE(lastPercent, 100);
 
     const VideoFileProbe probe = m_transcoder->probe(request.outputPath);
@@ -550,12 +551,17 @@ void tst_VideoTranscoder::trimStartBetweenAacPacketsKeepsAlignment()
     const VideoTranscodeResult result = m_transcoder->transcode(request, {});
     QVERIFY2(result.success, qPrintable(result.errorMessage));
     QVERIFY(result.audioCopied);
+    // The output starts on the frame shown at the requested start: exactly
+    // there (AVFoundation) or, in a constant-frame-rate container, up to one
+    // frame earlier (Media Foundation). Audio must share that origin.
+    QVERIFY2(result.startMs <= request.startMs && request.startMs - result.startMs < kFrameIntervalMs,
+             qPrintable(QString::number(result.startMs)));
     const VideoFileProbe probe = m_transcoder->probe(request.outputPath);
     QCOMPARE(probe.videoSize, QSize(120, 90));
-    QVERIFY2(qAbs(probe.durationMs - (kUnalignedEndMs - kUnalignedStartMs)) <= kDurationToleranceMs,
+    QVERIFY2(qAbs(probe.durationMs - (kUnalignedEndMs - result.startMs)) <= kDurationToleranceMs,
              qPrintable(QString::number(probe.durationMs)));
 
-    verifyAudioPulses(request.outputPath, request.startMs, request.endMs);
+    verifyAudioPulses(request.outputPath, result.startMs, request.endMs);
     if (QTest::currentTestFailed()) {
         return;
     }
@@ -630,25 +636,27 @@ void tst_VideoTranscoder::earlyEndingAudio()
              qPrintable(QStringLiteral("transcode() did not return within %1 ms").arg(kTranscodeHangTimeoutMs)));
     QVERIFY2(result.success, qPrintable(result.errorMessage));
     QVERIFY(result.audioCopied);
+    QVERIFY2(result.startMs <= startMs && startMs - result.startMs < kFrameIntervalMs,
+             qPrintable(QString::number(result.startMs)));
 
     const qint64 expectedEndMs = endMs < 0 ? sourceProbe.durationMs : endMs;
     const VideoFileProbe probe = m_transcoder->probe(request.outputPath);
     QVERIFY(probe.valid);
     QCOMPARE(probe.videoSize, cropRect.isEmpty() ? kSourceSize : cropRect.size());
     // The video keeps the whole interval, past the end of the audio.
-    QVERIFY2(qAbs(probe.durationMs - (expectedEndMs - startMs)) <= kDurationToleranceMs,
+    QVERIFY2(qAbs(probe.durationMs - (expectedEndMs - result.startMs)) <= kDurationToleranceMs,
              qPrintable(QString::number(probe.durationMs)));
     QVERIFY(probe.hasAudio);
 
     // Audio from 0 to the end of the source audio, with its bursts in place...
-    verifyAudioPulses(request.outputPath, startMs, expectedEndMs, input);
+    verifyAudioPulses(request.outputPath, result.startMs, expectedEndMs, input);
     if (QTest::currentTestFailed()) {
         return;
     }
     // ...and nothing invented after it.
     DecodedAudio output;
     QVERIFY2(decodeAudioTrack(request.outputPath, kAudioSampleRate, &output, &error), qPrintable(error));
-    QVERIFY2(decodedEndMs(output) <= sourceAudioEndMs - startMs + kAudioEdgeToleranceMs,
+    QVERIFY2(decodedEndMs(output) <= sourceAudioEndMs - result.startMs + kAudioEdgeToleranceMs,
              qPrintable(QString::number(decodedEndMs(output))));
     QVERIFY(QFileInfo::exists(input));
 }
@@ -740,6 +748,7 @@ void tst_VideoTranscoder::trimWithoutAudio()
     const VideoTranscodeResult result = m_transcoder->transcode(request, {});
     QVERIFY2(result.success, qPrintable(result.errorMessage));
     QVERIFY(!result.audioCopied);
+    QCOMPARE(result.startMs, request.startMs); // 1000 ms is on the frame grid
     const VideoFileProbe probe = m_transcoder->probe(request.outputPath);
     QCOMPARE(probe.videoSize, kSourceSize);
     QVERIFY(qAbs(probe.durationMs - 1000) <= kDurationToleranceMs);

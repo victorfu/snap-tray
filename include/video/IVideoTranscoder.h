@@ -32,6 +32,11 @@ struct VideoTranscodeResult {
     // The output carries source audio. False when the source has none, or when
     // the selected range lies outside the source audio (video-only export).
     bool audioCopied = false;
+    // Source time the output starts at. The requested start where the writer
+    // keeps per-frame timing (AVFoundation); where the container is constant
+    // frame rate (Media Foundation) it is the start of the frame shown at the
+    // requested start, so at most one frame earlier. Audio shares this origin.
+    qint64 startMs = 0;
     QString errorMessage;
 };
 

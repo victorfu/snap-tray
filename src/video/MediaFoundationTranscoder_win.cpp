@@ -562,6 +562,7 @@ struct WriteOutcome {
     bool cancelled = false;
     QSize outputSize;
     LONGLONG writtenEndHns = 0;        // end of the media handed to the writer
+    LONGLONG originHns = 0;            // source time the output starts at
     qint64 sourceAudioCoverageMs = -1; // -1 = the source has no audio
 };
 
@@ -694,6 +695,7 @@ VideoTranscodeResult MediaFoundationTranscoder::transcode(const VideoTranscodeRe
     }
     result.success = true;
     result.audioCopied = audioCopied;
+    result.startMs = hnsToMs(outcome.originHns);
     return result;
 }
 
@@ -785,7 +787,16 @@ bool MediaFoundationTranscoder::writeOutput(const VideoTranscodeRequest& request
     }
     const LONGLONG startHns = static_cast<LONGLONG>(startMs) * kHnsPerMs;
     const LONGLONG endHns = static_cast<LONGLONG>(endMs) * kHnsPerMs;
-    const LONGLONG spanHns = endHns - startHns;
+    // The output timeline starts at originHns: the timestamp of the frame
+    // shown at startHns, settled once the first frame after the start has
+    // been read (or the video has ended). The MPEG-4 sink writes video at a
+    // constant frame rate and drops the timing of a shortened first frame,
+    // so a start inside a frame cannot be expressed; anchoring both streams
+    // at that frame keeps audio and video aligned at the cost of starting up
+    // to one frame early. Nothing is written before the origin is settled.
+    LONGLONG originHns = startHns;
+    bool originKnown = false;
+    LONGLONG spanHns = endHns - startHns;
 
     // ---- Source audio: compressed AAC, delivered as-is ----
     ComPtr<IMFMediaType> nativeAudio;
@@ -799,7 +810,9 @@ bool MediaFoundationTranscoder::writeOutput(const VideoTranscodeRequest& request
     // exports video only, as the source is there: the Sink Writer cannot
     // finalize a stream that received no samples, and failing instead would
     // make the tail of a recording whose audio stopped early impossible to
-    // export.
+    // export. Checked against the requested start: the output origin can lie
+    // up to one frame earlier (originHns), so audio that ends inside that
+    // sliver of an otherwise video-only range is not carried over.
     bool copyAudio = false;
     LONGLONG audioPacketHns = 0;
     if (hasAudio) {
@@ -909,8 +922,19 @@ bool MediaFoundationTranscoder::writeOutput(const VideoTranscodeRequest& request
         ComPtr<IMFSample> sample;
         DecodedVideoLayout layout; // the decoded geometry when the sample was read
         LONGLONG durationHns = 0;
+        LONGLONG timestampHns = 0;
     } lead;
     bool haveLead = false;
+    const auto settleOrigin = [&]() {
+        if (originKnown) {
+            return;
+        }
+        originKnown = true;
+        if (haveLead) {
+            originHns = lead.timestampHns;
+        }
+        spanHns = endHns - originHns;
+    };
     bool haveVideoOut = false;
     LONGLONG lastVideoOutHns = 0;
     LONGLONG videoEndOutHns = 0;
@@ -963,12 +987,14 @@ bool MediaFoundationTranscoder::writeOutput(const VideoTranscodeRequest& request
             lead.sample = sample;
             lead.layout = layout;
             lead.durationHns = duration;
+            lead.timestampHns = timestamp;
             haveLead = true;
             return true;
         }
+        settleOrigin();
         if (haveLead) {
             haveLead = false;
-            if (!writeLead(timestamp - startHns)) {
+            if (!writeLead(timestamp - originHns)) {
                 return false;
             }
         }
@@ -978,12 +1004,12 @@ bool MediaFoundationTranscoder::writeOutput(const VideoTranscodeRequest& request
             return failWith(hrText("Crop video frame", cropHr));
         }
         // Clamp so the last frame ends at the range end.
-        return writeVideo(cropped.Get(), timestamp - startHns, qMin(duration, endHns - timestamp));
+        return writeVideo(cropped.Get(), timestamp - originHns, qMin(duration, endHns - timestamp));
     };
 
     // ---- Audio: compressed packets copied with retimed timestamps ----
     // Media Foundation delivers one AAC packet (1024 frames) per sample.
-    // Decision for the packet that straddles the range start: it is NOT
+    // Decision for the packet that straddles the output origin: it is NOT
     // copied. Its timestamp would be negative on the output timeline, and
     // retiming it to 0 would shift every following packet by up to one packet.
     // Dropping it costs < one packet of lead-in silence (<= 21.3 ms at 48 kHz)
@@ -1014,18 +1040,18 @@ bool MediaFoundationTranscoder::writeOutput(const VideoTranscodeRequest& request
         const LONGLONG sampleEnd = timestamp + duration;
         // Source coverage of the interval counts every overlapping packet,
         // including the start-straddling one that is not copied.
-        if (sampleEnd > startHns) {
-            const LONGLONG coverStart = qMax(timestamp, startHns);
+        if (sampleEnd > originHns) {
+            const LONGLONG coverStart = qMax(timestamp, originHns);
             const LONGLONG coverEnd = qMin(sampleEnd, endHns);
             sourceAudioStartHns = haveSourceAudio ? qMin(sourceAudioStartHns, coverStart) : coverStart;
             sourceAudioEndHns = haveSourceAudio ? qMax(sourceAudioEndHns, coverEnd) : coverEnd;
             haveSourceAudio = true;
         }
-        if (timestamp < startHns) {
-            return true; // before the start, or straddling it (see above)
+        if (timestamp < originHns) {
+            return true; // before the origin, or straddling it (see above)
         }
         const bool faultHere = writtenAudioSamples++ == kVideoTranscodeFaultAudioSampleIndex;
-        const LONGLONG outTime = timestamp - startHns;
+        const LONGLONG outTime = timestamp - originHns;
         if (haveAudioOut && outTime <= lastAudioOutHns) {
             return failWith(QStringLiteral("Cannot retime source audio: timestamps are not increasing"));
         }
@@ -1053,7 +1079,7 @@ bool MediaFoundationTranscoder::writeOutput(const VideoTranscodeRequest& request
     LONGLONG videoClock = LLONG_MIN;
     LONGLONG audioClock = LLONG_MIN;
     while (!videoDone || !audioDone) {
-        const bool readVideo = !videoDone && (audioDone || videoClock <= audioClock);
+        const bool readVideo = !videoDone && (!originKnown || audioDone || videoClock <= audioClock);
         const DWORD stream = readVideo ? static_cast<DWORD>(MF_SOURCE_READER_FIRST_VIDEO_STREAM)
                                        : static_cast<DWORD>(MF_SOURCE_READER_FIRST_AUDIO_STREAM);
         DWORD flags = 0;
@@ -1089,6 +1115,9 @@ bool MediaFoundationTranscoder::writeOutput(const VideoTranscodeRequest& request
         }
         if ((flags & MF_SOURCE_READERF_ENDOFSTREAM) || (hasTime && timestamp >= endHns)) {
             (readVideo ? videoDone : audioDone) = true;
+            if (readVideo) {
+                settleOrigin(); // in case no frame after the start was read: the lead covers it all
+            }
             // Deselect so the reader stops queueing this stream's samples.
             hr = reader->SetStreamSelection(stream, FALSE);
             if (FAILED(hr)) {
@@ -1122,6 +1151,7 @@ bool MediaFoundationTranscoder::writeOutput(const VideoTranscodeRequest& request
     reader.Reset();
 
     outcome->writtenEndHns = qMax(videoEndOutHns, audioEndOutHns);
+    outcome->originHns = originHns;
     outcome->sourceAudioCoverageMs =
         hasAudio ? (haveSourceAudio ? hnsToMs(qMax<LONGLONG>(0, sourceAudioEndHns - sourceAudioStartHns)) : 0) : -1;
     return true;
