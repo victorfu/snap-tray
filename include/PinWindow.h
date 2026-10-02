@@ -169,6 +169,7 @@ private:
     friend class TestPinWindowStyleSync;
     friend class TestPinWindowTransform;
     friend class TestPinWindowTextToolFormatting;
+    friend class TestEraserHostRouting;
     struct CropUndoEntry;
 
     // AnnotationHostAdapter implementation

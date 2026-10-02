@@ -2522,6 +2522,13 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
             return;
         }
 
+        // Erasing must take precedence over selecting or transforming existing items.
+        if (m_annotationMode && m_currentToolId == ToolId::Eraser && m_toolManager) {
+            m_annotationLayer->clearSelection();
+            m_toolManager->handleMousePress(mapToOriginalCoords(event->position()), event->modifiers());
+            return;
+        }
+
         // 2. Handle gizmo interaction (scale/rotate selected text)
         if (m_annotationMode && handleGizmoPress(event->pos())) {
             return;

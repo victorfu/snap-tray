@@ -1023,6 +1023,11 @@ target_link_libraries(Tools_EraserToolHandler PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Tools_EraserToolHandler COMMAND Tools_EraserToolHandler)
 set_tests_properties(Tools_EraserToolHandler PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Tools_EraserHostRouting Tools/tst_EraserHostRouting.cpp)
+target_link_libraries(Tools_EraserHostRouting PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME Tools_EraserHostRouting COMMAND Tools_EraserHostRouting)
+set_tests_properties(Tools_EraserHostRouting PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 add_executable(Tools_TextToolHandler Tools/handlers/tst_TextToolHandler.cpp)
 target_link_libraries(Tools_TextToolHandler PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Tools_TextToolHandler COMMAND Tools_TextToolHandler)

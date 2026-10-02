@@ -174,6 +174,14 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
                 return;
             }
 
+            // Erasing must take precedence over selecting or transforming existing items.
+            if (state().currentTool == ToolId::Eraser && m_toolManager) {
+                m_annotationLayer->clearSelection();
+                handleAnnotationToolPress(event->pos());
+                emit updateRequested();
+                return;
+            }
+
             // Finalize polyline when clicking on UI elements
             auto finalizePolylineForUiClick = [&](const QPoint& pos) {
                 if (state().currentTool == ToolId::Arrow && m_toolManager->isDrawing()) {
