@@ -92,6 +92,9 @@ private:
 void tst_FrameSource::initTestCase()
 {
     QVERIFY(m_dir.isValid());
+    // Linux has neither a native encoder nor an offline reader.
+    if (!std::unique_ptr<IVideoEncoder>(IVideoEncoder::createNativeEncoder())) QSKIP("No native encoder on this platform");
+    if (!IVideoFrameReader::createOffline()) QSKIP("No offline frame reader on this platform");
     m_path = m_dir.filePath(QStringLiteral("scroll.mp4"));
     const QString error = createRecording(m_path);
     QVERIFY2(error.isEmpty(), qPrintable(error));
@@ -110,7 +113,7 @@ void tst_FrameSource::initTestCase()
 
 void tst_FrameSource::readerHonoursApertureOnPaddedHeight()
 {
-    auto reader = IVideoFrameReader::create();
+    auto reader = IVideoFrameReader::createOffline();
     if (!reader) QSKIP("No frame reader on this platform");
     QVERIFY2(reader->load(m_paddedPath), qPrintable(reader->lastError()));
     QCOMPARE(reader->videoSize(), m_paddedSize);
@@ -129,7 +132,7 @@ void tst_FrameSource::readerHonoursApertureOnPaddedHeight()
 
 void tst_FrameSource::readerDecodesAscendingFrames()
 {
-    auto reader = IVideoFrameReader::create();
+    auto reader = IVideoFrameReader::createOffline();
     if (!reader) QSKIP("No frame reader on this platform");
     QVERIFY2(reader->load(m_path), qPrintable(reader->lastError()));
     QCOMPARE(reader->videoSize(), kSize);
@@ -151,7 +154,7 @@ void tst_FrameSource::readerDecodesAscendingFrames()
 
 void tst_FrameSource::readerRejectsDescendingRequests()
 {
-    auto reader = IVideoFrameReader::create();
+    auto reader = IVideoFrameReader::createOffline();
     if (!reader) QSKIP("No frame reader on this platform");
     QVERIFY(reader->load(m_path));
     QVERIFY(!reader->frameAt(500).isNull());

@@ -17,7 +17,7 @@ public:
     explicit FrameReaderLongshotSource(std::unique_ptr<IVideoFrameReader> reader);
     ~FrameReaderLongshotSource() override;
 
-    // Uses IVideoFrameReader::create(); nullptr where no reader exists (Linux).
+    // Uses IVideoFrameReader::createOffline(); nullptr where no reader exists (Linux).
     static std::unique_ptr<LongshotFrameSource> createNative();
 
     bool open(const QString& path, qint64 startMs, qint64 endMs, const QRect& crop) override;
