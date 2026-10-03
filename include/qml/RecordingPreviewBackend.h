@@ -2,6 +2,7 @@
 
 #include "encoding/EncoderFactory.h"
 #include "utils/VideoCropGeometry.h"
+#include "video/IVideoTranscoder.h"
 #include "recording/WindowTimeline.h"
 #include <QObject>
 #include <QString>
@@ -16,7 +17,6 @@
 
 class QQuickView;
 class QEvent;
-class IVideoTranscoder;
 class tst_RecordingPreviewExport;
 
 /**
@@ -170,6 +170,9 @@ private:
     // exports. Empty (the default, and always in production) = native factory.
     using TranscoderFactory = std::function<std::unique_ptr<IVideoTranscoder>()>;
     static TranscoderFactory& transcoderFactoryOverride();
+    // Test seam for the user's output quality; empty means read
+    // RecordingSettingsManager at save time.
+    static std::function<int()>& outputQualityOverride();
 
     void finishClose();
     bool eventFilter(QObject* watched, QEvent* event) override;
@@ -178,7 +181,9 @@ private:
     void applyPlatformWindowFlags();
     void syncCursorSurface();
     void performFormatConversion(OutputFormat format);
-    void performTranscode();
+    // smartSave: no edits -- move the file if it already meets the user's
+    // target bitrate, otherwise re-encode the full range at that bitrate.
+    void performTranscode(bool smartSave);
 
     void setErrorMessage(const QString &msg);
 
@@ -187,6 +192,7 @@ private:
 
     // Video
     QString m_videoPath;
+    int m_outputQuality = kDefaultTranscodeQuality; // snapshot taken when save() begins
     qint64 m_duration = 0;
     qint64 m_position = 0;
     bool m_isPlaying = false;

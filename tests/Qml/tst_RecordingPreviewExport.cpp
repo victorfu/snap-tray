@@ -1,6 +1,8 @@
 #include <QtTest/QtTest>
 
 #include "IVideoEncoder.h"
+#include "encoding/IntermediateQuality.h"
+#include "encoding/VideoBitrate.h"
 #include "qml/RecordingPreviewBackend.h"
 #include "recording/WindowTimeline.h"
 #include "recording/WindowTimelineSidecar.h"
@@ -11,6 +13,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QImageReader>
+#include <QRandomGenerator>
 #include <QSignalSpy>
 #include <QScopeGuard>
 #include <QTemporaryDir>
@@ -92,6 +95,42 @@ QString createRecording(const QString& path, qint64 firstFrameMs, const QSize& f
         return QStringLiteral("Native encoder produced no fixture file");
     }
     return {};
+}
+
+// A recording the encoder cannot compress: random pixels at quality 100,
+// large enough that its average bitrate sits far above the quality-0 target
+// (1280x720 @ kFrameRate: target 1,000,000 bps after the kMinBitrate floor,
+// encoder budget 2,764,800 bps). Used to force the smart-save re-encode branch.
+const QSize kNoiseSize(1280, 720);
+constexpr int kNoiseFrameCount = 40;
+constexpr quint32 kNoiseSeed = 20261003;
+
+QString createNoiseRecording(const QString& path)
+{
+    std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
+    if (!encoder) return QStringLiteral("No native encoder");
+    encoder->setQuality(SnapTray::VideoBitrate::kMaxQuality);
+    if (!encoder->start(path, kNoiseSize, kFrameRate)) return encoder->lastError();
+    QRandomGenerator random(kNoiseSeed);
+    QImage frame(kNoiseSize, QImage::Format_ARGB32);
+    for (int i = 0; i < kNoiseFrameCount; ++i) {
+        auto* pixels = reinterpret_cast<quint32*>(frame.bits());
+        const qsizetype count = qsizetype(frame.width()) * frame.height();
+        for (qsizetype p = 0; p < count; ++p) pixels[p] = 0xFF000000u | (random.generate() & 0x00FFFFFFu);
+        const qint64 before = encoder->framesWritten();
+        QElapsedTimer waitTimer;
+        waitTimer.start();
+        do {
+            encoder->writeFrame(frame, i * kFrameIntervalMs);
+            if (encoder->framesWritten() != before) break;
+            QTest::qWait(5);
+        } while (waitTimer.elapsed() < 2000);
+        if (encoder->framesWritten() != before + 1) return QStringLiteral("noise frame %1 rejected").arg(i);
+    }
+    QSignalSpy finishedSpy(encoder.get(), &IVideoEncoder::finished);
+    encoder->finish();
+    if (finishedSpy.isEmpty() && !finishedSpy.wait(10000)) return QStringLiteral("noise fixture did not finish");
+    return finishedSpy.first().at(0).toBool() ? QString() : encoder->lastError();
 }
 
 bool isRed(const QColor& color)
@@ -231,6 +270,10 @@ private slots:
     void failedExportPreservesOriginal();
     void saveMp4Edits_data();
     void saveMp4Edits();
+    void saveMp4EditsUseOutputQuality_data();
+    void saveMp4EditsUseOutputQuality();
+    void smartSaveMovesLowBitrateRecording();
+    void smartSaveReencodesHighBitrateRecording();
     void videoOnlyExportAcceptedWhenRangeHasNoSourceAudio();
     void invalidTranscodeKeepsSourceAndRetries_data();
     void invalidTranscodeKeepsSourceAndRetries();
@@ -773,6 +816,152 @@ void tst_RecordingPreviewExport::destroyWhileExportingKeepsSource()
     QCOMPARE(input.readAll(), originalBytes);
 }
 
+void tst_RecordingPreviewExport::saveMp4EditsUseOutputQuality_data()
+{
+    QTest::addColumn<bool>("trim");
+    QTest::addColumn<bool>("crop");
+    QTest::addColumn<int>("quality");
+    QTest::newRow("trim-only low") << true << false << 0;
+    QTest::newRow("trim-only high") << true << false << 100;
+    QTest::newRow("crop-only low") << false << true << 0;
+    QTest::newRow("crop-only high") << false << true << 100;
+    QTest::newRow("trim+crop mid") << true << true << 55;
+}
+
+void tst_RecordingPreviewExport::saveMp4EditsUseOutputQuality()
+{
+    QFETCH(bool, trim);
+    QFETCH(bool, crop);
+    QFETCH(int, quality);
+    const QSize sourceSize(160, 120);
+    const QRect cropRect(32, 24, 96, 72);
+    const qint64 trimStartMs = 300;
+
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize, false);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+
+    auto restore = qScopeGuard([]() {
+        RecordingPreviewBackend::transcoderFactoryOverride() = {};
+        RecordingPreviewBackend::outputQualityOverride() = {};
+    });
+    const auto log = std::make_shared<FakeTranscodeLog>();
+    RecordingPreviewBackend::transcoderFactoryOverride() = [log]() {
+        return std::unique_ptr<IVideoTranscoder>(new FakeTranscoder(FakeTranscodeOutcome::Real, QString(), log));
+    };
+    RecordingPreviewBackend::outputQualityOverride() = [quality]() { return quality; };
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    backend.updateVideoSize(sourceSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    if (trim) backend.setTrimStart(trimStartMs);
+    if (crop) backend.setCropRect(cropRect);
+
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(savedSpy.count(), 1);
+    const QSize outputSize = crop ? cropRect.size() : sourceSize;
+    const int expectedBitrate = SnapTray::IntermediateQuality::outputBitrateFor(outputSize, kFrameRate, quality);
+    std::lock_guard<std::mutex> lock(log->mutex);
+    QCOMPARE(log->calls, 1);
+    QCOMPARE(log->lastRequest.videoBitrate, expectedBitrate);
+    QVERIFY(log->lastRequest.videoBitrate > 0);
+}
+
+void tst_RecordingPreviewExport::smartSaveMovesLowBitrateRecording()
+{
+    // Solid-colour frames compress far below any target: the file is moved as is.
+    const QSize sourceSize(160, 120);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize, true);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+
+    auto restore = qScopeGuard([]() {
+        RecordingPreviewBackend::transcoderFactoryOverride() = {};
+        RecordingPreviewBackend::outputQualityOverride() = {};
+    });
+    const auto log = std::make_shared<FakeTranscodeLog>();
+    RecordingPreviewBackend::transcoderFactoryOverride() = [log]() {
+        return std::unique_ptr<IVideoTranscoder>(new FakeTranscoder(FakeTranscodeOutcome::Real, QString(), log));
+    };
+    RecordingPreviewBackend::outputQualityOverride() = []() { return 0; };
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    backend.updateVideoSize(sourceSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    QSignalSpy closedSpy(&backend, &RecordingPreviewBackend::closed);
+    backend.save();
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
+    QTRY_COMPARE(savedSpy.count(), 1);
+    QCOMPARE(savedSpy.first().at(0).toString(), inputPath);
+    QCOMPARE(savedSpy.first().at(1).toSize(), QSize());
+    QCOMPARE(closedSpy.count(), 1);
+    QVERIFY(QFileInfo::exists(inputPath)); // the consumer of saveRequested moves it
+    std::lock_guard<std::mutex> lock(log->mutex);
+    QCOMPARE(log->calls, 0);
+}
+
+void tst_RecordingPreviewExport::smartSaveReencodesHighBitrateRecording()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createNoiseRecording(inputPath);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+
+    auto realTranscoder = IVideoTranscoder::create();
+    QVERIFY(realTranscoder);
+    const VideoFileProbe sourceProbe = realTranscoder->probe(inputPath);
+    QVERIFY(sourceProbe.valid);
+    const int target = SnapTray::IntermediateQuality::outputBitrateFor(kNoiseSize, sourceProbe.frameRate, 0);
+    const qint64 actual = SnapTray::IntermediateQuality::averageBitrate(QFileInfo(inputPath).size(), sourceProbe.durationMs);
+    QVERIFY2(actual > target, qPrintable(QStringLiteral("fixture %1 bps is not above target %2").arg(actual).arg(target)));
+
+    auto restore = qScopeGuard([]() {
+        RecordingPreviewBackend::transcoderFactoryOverride() = {};
+        RecordingPreviewBackend::outputQualityOverride() = {};
+    });
+    const auto log = std::make_shared<FakeTranscodeLog>();
+    RecordingPreviewBackend::transcoderFactoryOverride() = [log]() {
+        return std::unique_ptr<IVideoTranscoder>(new FakeTranscoder(FakeTranscodeOutcome::Real, QString(), log));
+    };
+    RecordingPreviewBackend::outputQualityOverride() = []() { return 0; };
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    backend.updateVideoSize(kNoiseSize);
+    backend.updateDuration(kNoiseFrameCount * kFrameIntervalMs);
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    QVERIFY(backend.isProcessing());
+    QCOMPARE(backend.processStatus(), RecordingPreviewBackend::tr("Exporting video..."));
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 60000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(savedSpy.count(), 1);
+    const QString outputPath = savedSpy.first().at(0).toString();
+    QVERIFY(outputPath != inputPath);
+    QVERIFY(!QFileInfo::exists(inputPath));
+    const VideoFileProbe outputProbe = realTranscoder->probe(outputPath);
+    QVERIFY(outputProbe.valid);
+    QCOMPARE(outputProbe.videoSize, kNoiseSize);
+    QVERIFY(partFiles(directory.path()).isEmpty());
+    std::lock_guard<std::mutex> lock(log->mutex);
+    QCOMPARE(log->calls, 1);
+    QCOMPARE(log->lastRequest.startMs, qint64(0));
+    QCOMPARE(log->lastRequest.endMs, qint64(-1));
+    QVERIFY(log->lastRequest.cropRect.isEmpty());
+    QCOMPARE(log->lastRequest.videoBitrate, target);
+}
+
 QTEST_MAIN(tst_RecordingPreviewExport)
 #include "tst_RecordingPreviewExport.moc"
 
@@ -794,8 +983,14 @@ void tst_RecordingPreviewExport::closeOutcomes()
     QSignalSpy saved(&backend, &RecordingPreviewBackend::saveRequested);
     if (action == 3) backend.m_isProcessing = true;
     if (action == 1) backend.discard();
-    else if (action == 2) backend.save();
-    else backend.close();
+    else if (action == 2) {
+        // An unedited MP4 save is decided on a worker; with no transcoder
+        // available it saves the original as is.
+        RecordingPreviewBackend::transcoderFactoryOverride() = []() { return std::unique_ptr<IVideoTranscoder>(); };
+        backend.save();
+        QTRY_COMPARE(closed.count(), 1);
+        RecordingPreviewBackend::transcoderFactoryOverride() = {};
+    } else backend.close();
     QCOMPARE(closed.count(), action == 3 ? 0 : 1);
     QCOMPARE(discarded.count(), action < 2 ? 1 : 0);
     QCOMPARE(saved.count(), action == 2 ? 1 : 0);

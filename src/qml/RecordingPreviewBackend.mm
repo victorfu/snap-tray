@@ -7,6 +7,8 @@
 #include "video/IVideoPlayer.h"
 #include "encoding/NativeGifEncoder.h"
 #include "encoding/WebPAnimEncoder.h"
+#include "encoding/IntermediateQuality.h"
+#include "settings/RecordingSettingsManager.h"
 #include "recording/WindowTimelineSidecar.h"
 
 #include <QCloseEvent>
@@ -45,6 +47,12 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, QObje
     , m_videoPath(videoPath)
 {
     m_windowTimeline = SnapTray::WindowTimelineSidecar::read(videoPath);
+}
+
+std::function<int()>& RecordingPreviewBackend::outputQualityOverride()
+{
+    static std::function<int()> override;
+    return override;
 }
 
 RecordingPreviewBackend::TranscoderFactory& RecordingPreviewBackend::transcoderFactoryOverride()
@@ -319,6 +327,11 @@ void RecordingPreviewBackend::save()
         return;
     }
 
+    // Output quality contract: snapshot the user's setting when Save begins;
+    // every MP4 re-encode below uses it. Quality 80 is only the legacy default.
+    m_outputQuality = outputQualityOverride() ? outputQualityOverride()()
+                                              : RecordingSettingsManager::instance().quality();
+
     // Animated exports share the same offline extraction path, including trims.
     if (m_selectedFormat != MP4) {
         performFormatConversion(m_selectedFormat);
@@ -326,15 +339,13 @@ void RecordingPreviewBackend::save()
     }
 
     if (hasTrim() || hasCrop()) {
-        performTranscode();
+        performTranscode(false);
         return;
     }
 
-    // MP4 -- use original file directly
-    m_saved = true;
-    const QString outputPath = m_videoPath;
-    close(); // Release playback resources before caller touches the file.
-    emit saveRequested(outputPath, QSize());
+    // MP4 with no edits: move the intermediate if it already meets the
+    // user's quality, otherwise re-encode it to that quality.
+    performTranscode(true);
 }
 
 void RecordingPreviewBackend::discard()
@@ -826,7 +837,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
 
 // ---------- MP4 trim / crop (runs on background thread) ----------
 
-void RecordingPreviewBackend::performTranscode()
+void RecordingPreviewBackend::performTranscode(bool smartSave)
 {
     const int dotIndex = m_videoPath.lastIndexOf('.');
     const QString base = dotIndex > 0 ? m_videoPath.left(dotIndex) : m_videoPath;
@@ -857,6 +868,7 @@ void RecordingPreviewBackend::performTranscode()
     // Transcoder and validation failures carry English diagnostics for the
     // log; the user sees this translated summary instead.
     const QString keptMessage = tr("Export failed; the original recording was kept.");
+    const int outputQuality = m_outputQuality;
     const auto cancelToken = m_exportCancelToken;
     const TranscoderFactory createTranscoder = transcoderFactoryOverride()
         ? transcoderFactoryOverride()
@@ -864,7 +876,7 @@ void RecordingPreviewBackend::performTranscode()
     QPointer<RecordingPreviewBackend> weakThis(this);
 
     (void)QtConcurrent::run([weakThis, request, outputPath, croppedSize, unsupportedError, failedTemplate,
-                             keptMessage, cancelToken, createTranscoder]() {
+                             keptMessage, cancelToken, createTranscoder, smartSave, outputQuality]() mutable {
         // Queued onto the GUI thread; never blocks, so it is safe from the
         // transcoder's worker threads (see IVideoTranscoder::ProgressCallback).
         auto post = [](auto fn) {
@@ -877,18 +889,49 @@ void RecordingPreviewBackend::performTranscode()
         auto transcoder = createTranscoder();
         const bool unsupported = !transcoder;
         VideoTranscodeResult result;
+        VideoFileProbe sourceProbe;
+        bool moveInstead = false;
         if (unsupported) {
-            result.errorMessage = unsupportedError;
+            // Without a transcoder an unedited save still works as before.
+            moveInstead = smartSave;
+            if (!moveInstead) result.errorMessage = unsupportedError;
         } else {
-            result = transcoder->transcode(request, [weakThis, cancelToken, post](int percent) {
-                post([weakThis, percent]() {
-                    if (weakThis && weakThis->m_processProgress != percent) {
-                        weakThis->m_processProgress = percent;
-                        emit weakThis->processProgressChanged();
-                    }
-                });
-                return !cancelToken->load();
+            sourceProbe = transcoder->probe(request.inputPath);
+            if (smartSave && SnapTray::IntermediateQuality::smartSaveShouldMove(
+                                 sourceProbe, QFileInfo(request.inputPath).size(), outputQuality)) {
+                moveInstead = true;
+            }
+        }
+        if (moveInstead) {
+            qDebug() << "RecordingPreviewBackend: unedited recording meets the output quality; moving it";
+            const QString inputPath = request.inputPath;
+            post([weakThis, inputPath]() {
+                if (!weakThis) return;
+                weakThis->m_isProcessing = false;
+                emit weakThis->processingChanged();
+                weakThis->m_saved = true;
+                weakThis->close();
+                emit weakThis->saveRequested(inputPath, QSize());
             });
+            return;
+        }
+        if (!unsupported) {
+            const IVideoTranscoder::ProgressCallback progressCallback =
+                [weakThis, cancelToken, post](int percent) {
+                    post([weakThis, percent]() {
+                        if (weakThis && weakThis->m_processProgress != percent) {
+                            weakThis->m_processProgress = percent;
+                            emit weakThis->processProgressChanged();
+                        }
+                    });
+                    return !cancelToken->load();
+                };
+            const QSize outputSize = request.cropRect.isEmpty() ? sourceProbe.videoSize : request.cropRect.size();
+            request.videoBitrate = SnapTray::IntermediateQuality::outputBitrateFor(
+                outputSize, sourceProbe.frameRate, outputQuality);
+            qDebug() << "RecordingPreviewBackend: exporting at" << request.videoBitrate << "bps for"
+                     << outputSize << "quality" << outputQuality;
+            result = transcoder->transcode(request, progressCallback);
         }
         // Do not trust the transcoder's claim alone: the source is deleted on
         // success, so the output must be a playable file that kept whatever
@@ -896,7 +939,6 @@ void RecordingPreviewBackend::performTranscode()
         // reach (within kAudioCoverageToleranceMs) exports video only, as the
         // source is there; that is not lost audio.
         if (result.success) {
-            const VideoFileProbe sourceProbe = transcoder->probe(request.inputPath);
             const VideoFileProbe outputProbe = transcoder->probe(request.outputPath);
             const QFileInfo outputInfo(request.outputPath);
             const qint64 rangeStartMs = qMax<qint64>(0, request.startMs);
