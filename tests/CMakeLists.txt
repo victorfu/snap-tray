@@ -234,6 +234,11 @@ add_executable(RecordingManager_WindowFrameMapping RecordingManager/tst_WindowFr
 target_link_libraries(RecordingManager_WindowFrameMapping PRIVATE snaptray_core Qt6::Test)
 add_test(NAME RecordingManager_WindowFrameMapping COMMAND RecordingManager_WindowFrameMapping)
 set_tests_properties(RecordingManager_WindowFrameMapping PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RecordingManager_WindowTimelineRecorder RecordingManager/tst_WindowTimelineRecorder.cpp)
+target_link_libraries(RecordingManager_WindowTimelineRecorder PRIVATE snaptray_platform Qt6::Test)
+add_test(NAME RecordingManager_WindowTimelineRecorder COMMAND RecordingManager_WindowTimelineRecorder)
+set_tests_properties(RecordingManager_WindowTimelineRecorder PROPERTIES TIMEOUT 60 LABELS "unit")
 target_link_libraries(Platform_Capabilities PRIVATE snaptray_core Qt6::Test)
 add_test(NAME Platform_Capabilities COMMAND Platform_Capabilities)
 set_tests_properties(Platform_Capabilities PROPERTIES TIMEOUT 60 LABELS "unit")

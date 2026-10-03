@@ -98,6 +98,17 @@ public:
         const QPoint &screenPos,
         QueryMode queryMode = QueryMode::IncludeChildControls) const;
 
+    // Copy of the cached top-level elements after refreshWindowList(TopLevelOnly).
+    // Empty before a refresh or when the cache holds child controls too.
+    std::vector<DetectedElement> topLevelWindowsSnapshot() const
+    {
+        QMutexLocker locker(&m_cacheMutex);
+        if (!m_cacheReady || m_cacheQueryMode != QueryMode::TopLevelOnly) {
+            return {};
+        }
+        return m_windowCache;
+    }
+
     // Detection mode control
     DetectionFlags detectionFlags() const;
 

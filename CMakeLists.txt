@@ -500,6 +500,7 @@ add_library(snaptray_platform STATIC
     src/encoding/NativeGifEncoder.cpp
     src/encoding/WebPAnimEncoder.cpp
     src/recording/ScreenSourceService.cpp
+    src/recording/WindowTimelineRecorder.cpp
     src/video/IVideoFrameReader.cpp
     src/video/IVideoPlayer.cpp
     src/video/IVideoTranscoder.cpp
@@ -520,6 +521,7 @@ add_library(snaptray_platform STATIC
     include/capture/ScreenSnapshot.h
     include/capture/QtCaptureEngine.h
     include/video/IVideoPlayer.h
+    include/recording/WindowTimelineRecorder.h
     include/QRCodeManager.h
     include/ImageColorSpaceHelper.h
     include/platform/QtQuickBackendPolicy.h
