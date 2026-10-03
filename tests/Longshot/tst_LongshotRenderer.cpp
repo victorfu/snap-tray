@@ -8,6 +8,8 @@
 #include <limits>
 #include <memory>
 #include <QTemporaryDir>
+#include <QRandomGenerator>
+#include <QPainter>
 
 using namespace SnapTray::Longshot;
 using namespace SyntheticScroll;
@@ -147,6 +149,10 @@ private slots:
     void breakLeavesGapReported();
     void decodeFailureIsReported();
     void lowConfidenceRowsFollowWeakEdges();
+    void shortFramesCoverEveryRow();
+    void shortContentBands_data();
+    void shortContentBands();
+    void onlyUncoveredRowsAreBreaks();
 
 private:
     QTemporaryDir m_dir;
@@ -157,6 +163,129 @@ void tst_LongshotRenderer::initTestCase()
     QVERIFY(m_dir.isValid());
     if (!std::unique_ptr<IVideoEncoder>(IVideoEncoder::createNativeEncoder())) QSKIP("No native encoder on this platform");
     if (!FrameReaderLongshotSource::createNative()) QSKIP("No frame reader on this platform");
+}
+
+void tst_LongshotRenderer::shortFramesCoverEveryRow()
+{
+    QRandomGenerator random(13);
+    QImage page(128, 164, QImage::Format_RGB32);
+    for (int y = 0; y < page.height(); ++y) {
+        for (int x = 0; x < page.width(); ++x) {
+            const int value = random.bounded(256);
+            page.setPixel(x, y, qRgb(value, value, value));
+        }
+    }
+    std::vector<QImage> frames;
+    for (int offset = 0; offset <= 100; offset += 20) frames.push_back(page.copy(0, offset, 128, 64));
+    MemorySource source(std::move(frames));
+    const auto analysis = LongshotPipeline::analyze(source, {}, 0, -1, {}, {}, {});
+    QCOMPARE(analysis.error, LongshotError::None);
+    for (int i = 0; i < 6; ++i) QCOMPARE(analysis.solve.positions[i], std::optional<int>(i * 20));
+    const auto result = LongshotRenderer::render(source, {}, 0, -1, {}, analysis, {}, {});
+    QCOMPARE(result.error, LongshotError::None);
+    QCOMPARE(result.fullHeightPx, 164);
+    QVERIFY(result.breakRows.empty());
+    QCOMPARE(result.parts.size(), 1);
+    QCOMPARE(result.parts.front(), page);
+}
+
+void tst_LongshotRenderer::shortContentBands_data()
+{
+    QTest::addColumn<bool>("includeHeader");
+    QTest::addColumn<int>("heightCap");
+    QTest::addColumn<bool>("split");
+    QTest::newRow("short-body-without-header") << false << 30000 << false;
+    QTest::newRow("short-body-with-header") << true << 30000 << false;
+    QTest::newRow("capped") << true << 96 << false;
+    QTest::newRow("split-header") << true << 96 << true;
+    QTest::newRow("split-body") << false << 96 << true;
+}
+
+void tst_LongshotRenderer::shortContentBands()
+{
+    QFETCH(bool, includeHeader);
+    QFETCH(int, heightCap);
+    QFETCH(bool, split);
+    constexpr int headerRows = 48;
+    constexpr int bodyRows = 48;
+    constexpr int pageRows = 148;
+    QImage page(128, pageRows, QImage::Format_RGB32);
+    for (int y = 0; y < pageRows; ++y) {
+        for (int x = 0; x < page.width(); ++x) page.setPixel(x, y, qRgb(y + 1, x, (y + x) % 255));
+    }
+    AnalysisResult analysis;
+    analysis.frameSize = QSize(128, headerRows + bodyRows);
+    std::vector<QImage> frames;
+    for (int i = 0; i < 6; ++i) {
+        QImage frame(analysis.frameSize, QImage::Format_RGB32);
+        frame.fill(Qt::blue);
+        QPainter painter(&frame);
+        painter.drawImage(0, headerRows, page.copy(0, i * 20, 128, bodyRows));
+        painter.end();
+        FrameFeatures features;
+        features.excludedBands.top = headerRows;
+        features.validContentRect = QRect(0, headerRows, 128, bodyRows);
+        features.rowGradient.assign(frame.height(), 1.0f);
+        for (int y = 0; y < frame.height(); ++y) {
+            float mean = 0;
+            for (int x = 0; x < frame.width(); ++x) mean += qGray(frame.pixel(x, y));
+            features.rowMean.push_back(mean / frame.width());
+        }
+        analysis.frames.push_back(std::move(features));
+        analysis.solve.positions.push_back(i * 20);
+        frames.push_back(frame);
+    }
+    MemorySource source(std::move(frames));
+    LongshotOptions options;
+    options.includeStickyHeader = includeHeader;
+    options.maxHeightPx = heightCap;
+    options.splitOversize = split;
+    const auto result = LongshotRenderer::render(source, {}, 0, -1, {}, analysis, options, {});
+    QCOMPARE(result.error, LongshotError::None);
+    QVERIFY(result.breakRows.empty());
+    QCOMPARE(result.stickyHeaderIncluded, includeHeader);
+    QImage expected(128, pageRows + (includeHeader ? headerRows : 0), QImage::Format_RGB32);
+    expected.fill(Qt::blue);
+    QPainter painter(&expected);
+    painter.drawImage(0, includeHeader ? headerRows : 0, page);
+    painter.end();
+    QCOMPARE(result.fullHeightPx, expected.height());
+    QCOMPARE(result.heightCapped, !split && expected.height() > heightCap);
+    int nextRow = 0;
+    for (const QImage& part : result.parts) {
+        QVERIFY(part.height() <= heightCap);
+        QCOMPARE(part, expected.copy(0, nextRow, expected.width(), part.height()));
+        nextRow += part.height();
+    }
+    QCOMPARE(nextRow, split ? expected.height() : std::min(heightCap, expected.height()));
+}
+
+void tst_LongshotRenderer::onlyUncoveredRowsAreBreaks()
+{
+    AnalysisResult analysis;
+    analysis.frameSize = QSize(128, 64);
+    std::vector<QImage> frames;
+    for (int offset : {0, 40, 120}) {
+        QImage frame(analysis.frameSize, QImage::Format_RGB32);
+        frame.fill(Qt::green);
+        frames.push_back(frame);
+        FrameFeatures features;
+        features.validContentRect = QRect(QPoint(), analysis.frameSize);
+        features.rowMean.assign(64, 100.0f);
+        features.rowGradient.assign(64, 0.0f);
+        analysis.frames.push_back(features);
+        analysis.solve.positions.push_back(offset);
+    }
+    MemorySource source(std::move(frames));
+    const auto result = LongshotRenderer::render(source, {}, 0, -1, {}, analysis, {}, {});
+    QCOMPARE(result.error, LongshotError::None);
+    QCOMPARE(result.parts.size(), 1);
+    QCOMPARE(result.breakRows.size(), size_t(16));
+    for (int y = 0; y < 184; ++y) {
+        const bool gap = y >= 104 && y < 120;
+        QCOMPARE(result.parts.front().pixelColor(0, y), QColor(gap ? Qt::white : Qt::green));
+        if (gap) QCOMPARE(result.breakRows[y - 104], y);
+    }
 }
 
 void tst_LongshotRenderer::tileAssignmentPrefersStationaryAndCentred()
