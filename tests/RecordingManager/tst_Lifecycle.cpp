@@ -205,6 +205,10 @@ void TestRecordingManagerLifecycle::testSaveNameUsesCroppedOutputSize()
         QCOMPARE(file.write("video"), qint64(5));
     }
 
+    SnapTray::WindowTimeline timeline;
+    timeline.setFrameSize(QSize(16, 16));
+    QVERIFY(SnapTray::WindowTimelineSidecar::write(uncropped, timeline));
+
     QSignalSpy saved(m_manager, &RecordingManager::recordingStopped);
     m_manager->triggerSaveDialog(cropped, QSize(640, 360));
     QCOMPARE(saved.count(), 1);
@@ -213,6 +217,8 @@ void TestRecordingManagerLifecycle::testSaveNameUsesCroppedOutputSize()
     m_manager->triggerSaveDialog(uncropped);
     QCOMPARE(saved.count(), 2);
     QCOMPARE(saved.at(1).first().toString(), dir.filePath("1440x900.mp4"));
+    // The saved recording takes its sidecar with it.
+    QVERIFY(!QFile::exists(SnapTray::WindowTimelineSidecar::pathFor(uncropped)));
 }
 
 namespace {

@@ -2,6 +2,8 @@
 
 #include "IVideoEncoder.h"
 #include "qml/RecordingPreviewBackend.h"
+#include "recording/WindowTimeline.h"
+#include "recording/WindowTimelineSidecar.h"
 #include "video/IVideoTranscoder.h"
 
 #include <QDir>
@@ -261,6 +263,9 @@ void tst_RecordingPreviewExport::saveAnimation()
     const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
     const QString fixtureError = createRecording(inputPath, firstFrameMs);
     QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    SnapTray::WindowTimeline timeline;
+    timeline.setFrameSize(kFrameSize);
+    QVERIFY(SnapTray::WindowTimelineSidecar::write(inputPath, timeline));
 
     RecordingPreviewBackend backend(inputPath);
     backend.setSelectedFormat(format);
@@ -327,6 +332,8 @@ void tst_RecordingPreviewExport::saveAnimation()
              qPrintable(QStringLiteral("Animation duration %1 ms differs from expected %2 ms")
                             .arg(animationDurationMs).arg(expectedDurationMs)));
     QVERIFY(QDir(directory.path()).entryList(QStringList(QStringLiteral("*.part-*")), QDir::Files).isEmpty());
+    // The source recording and its sidecar are replaced by the export.
+    QVERIFY(!QFile::exists(SnapTray::WindowTimelineSidecar::pathFor(inputPath)));
 }
 
 void tst_RecordingPreviewExport::failedExportPreservesOriginal_data()
@@ -474,6 +481,9 @@ void tst_RecordingPreviewExport::saveMp4Edits()
     const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
     const QString fixtureError = createRecording(inputPath, 0, sourceSize, withAudio, audioFrameCount);
     QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    SnapTray::WindowTimeline timeline;
+    timeline.setFrameSize(sourceSize);
+    QVERIFY(SnapTray::WindowTimelineSidecar::write(inputPath, timeline));
 
     auto transcoder = IVideoTranscoder::create();
     QVERIFY(transcoder);

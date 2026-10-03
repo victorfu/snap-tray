@@ -32,6 +32,7 @@
 #include <QFileInfo>
 #include <QFile>
 #include <QMutexLocker>
+#include <QScopeGuard>
 #include <QUuid>
 #include <QtConcurrent/QtConcurrent>
 #include <QFutureWatcher>
@@ -1519,6 +1520,12 @@ void RecordingManager::triggerSaveDialog(const QString &videoPath, const QSize &
 
 void RecordingManager::showSaveDialog(const QString &tempOutputPath, const QSize &outputSize)
 {
+    // Whatever happens below, the temp recording stops being a preview input:
+    // it is moved, kept as the final file, or deleted. Its sidecar goes with it.
+    const auto dropSidecar = qScopeGuard([&tempOutputPath]() {
+        SnapTray::WindowTimelineSidecar::remove(tempOutputPath);
+    });
+
     // Get settings from FileSettingsManager
     auto& fileSettings = FileSettingsManager::instance();
 

@@ -7,6 +7,7 @@
 #include "video/IVideoPlayer.h"
 #include "encoding/NativeGifEncoder.h"
 #include "encoding/WebPAnimEncoder.h"
+#include "recording/WindowTimelineSidecar.h"
 
 #include <QCloseEvent>
 #include <QCoreApplication>
@@ -776,6 +777,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
             QFileInfo outInfo(outputPath);
             if (outInfo.exists() && outInfo.size() > 0) {
                 QFile::remove(sourceVideoPath);
+                SnapTray::WindowTimelineSidecar::remove(sourceVideoPath);
                 weakThis->m_saved = true;
                 weakThis->close();
                 emit weakThis->saveRequested(outputPath, croppedSize);
@@ -918,6 +920,7 @@ void RecordingPreviewBackend::performTranscode()
                 return;
             }
             QFile::remove(inputPath);
+            SnapTray::WindowTimelineSidecar::remove(inputPath);
             weakThis->m_saved = true;
             weakThis->close();
             emit weakThis->saveRequested(outputPath, croppedSize);

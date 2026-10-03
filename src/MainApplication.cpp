@@ -17,6 +17,7 @@
 #include "hotkey/HotkeyManager.h"
 #include "qml/QmlToast.h"
 #include "qml/RecordingPreviewBackend.h"
+#include "recording/WindowTimelineSidecar.h"
 #include "ui/TrayTooltipFormatter.h"
 #include "update/InstallSourceDetector.h"
 #include "update/UpdateCoordinator.h"
@@ -920,6 +921,7 @@ void MainApplication::onPreviewDiscardRequested(const QString& videoPath)
             qWarning() << "MainApplication: Failed to delete temp file:" << videoPath;
         }
     }
+    SnapTray::WindowTimelineSidecar::remove(videoPath);
 }
 
 void MainApplication::updateActionHotkeyText(QAction* action,
