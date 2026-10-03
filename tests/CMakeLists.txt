@@ -1355,3 +1355,8 @@ set_property(TEST ${snaptray_registered_tests} APPEND PROPERTY ENVIRONMENT "QT_F
 #   ctest -L slow           # Run slow tests
 #   ctest -LE slow          # Exclude slow tests
 # ============================================================================
+
+add_executable(Longshot_Analyzer Longshot/tst_LongshotAnalyzer.cpp)
+target_link_libraries(Longshot_Analyzer PRIVATE Longshot_SyntheticScroll Qt6::Test)
+add_test(NAME Longshot_Analyzer COMMAND Longshot_Analyzer)
+set_tests_properties(Longshot_Analyzer PROPERTIES TIMEOUT 120 LABELS "unit")
