@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QPoint>
+#include <QPointF>
 #include <QRect>
 #include <QRectF>
 #include <QSize>
@@ -21,5 +23,8 @@ QRect normalizeCropRect(const QRect& rect, const QSize& frameSize);
 
 QRect viewToVideo(const QRectF& viewRect, const QRectF& contentRect, const QSize& frameSize);
 QRectF videoToView(const QRect& videoRect, const QRectF& contentRect, const QSize& frameSize);
+
+// The video pixel under a view point; QPoint(-1, -1) when the point is outside the content.
+QPoint viewPointToVideo(const QPointF& viewPoint, const QRectF& contentRect, const QSize& frameSize);
 
 } // namespace SnapTray::VideoCropGeometry

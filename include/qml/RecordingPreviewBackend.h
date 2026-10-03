@@ -2,6 +2,7 @@
 
 #include "encoding/EncoderFactory.h"
 #include "utils/VideoCropGeometry.h"
+#include "recording/WindowTimeline.h"
 #include <QObject>
 #include <QString>
 #include <QRect>
@@ -11,6 +12,7 @@
 #include <atomic>
 #include <functional>
 #include <memory>
+#include <optional>
 
 class QQuickView;
 class QEvent;
@@ -56,6 +58,8 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(QSize videoSize READ videoSize NOTIFY videoSizeChanged)
     // Smallest side a committed crop can have, so the editor never offers less.
     Q_PROPERTY(int minCropSide READ minCropSide CONSTANT)
+    // Where the top-level windows were while recording (from the sidecar), for snapping.
+    Q_PROPERTY(bool hasWindowTimeline READ hasWindowTimeline NOTIFY windowTimelineChanged)
 
     // Format
     Q_PROPERTY(int selectedFormat READ selectedFormat WRITE setSelectedFormat NOTIFY formatChanged)
@@ -125,6 +129,10 @@ public:
     Q_INVOKABLE void setCropRect(const QRect &videoRect);
     Q_INVOKABLE void setCropFromView(const QRectF &viewRect, const QRectF &contentRect);
     Q_INVOKABLE QRectF cropRectInView(const QRectF &contentRect) const;
+    bool hasWindowTimeline() const { return m_windowTimeline.has_value(); }
+    // Window under `viewPoint` at `positionMs`, in view coordinates; empty when none.
+    Q_INVOKABLE QRectF windowRectInViewAt(const QPointF &viewPoint, const QRectF &contentRect, qint64 positionMs) const;
+    Q_INVOKABLE QString windowAppAt(const QPointF &viewPoint, const QRectF &contentRect, qint64 positionMs) const;
     Q_INVOKABLE void clearCrop();
 
     // Called by QML VideoPlaybackItem position/duration updates
@@ -133,6 +141,7 @@ public:
     Q_INVOKABLE void updatePlayingState(bool playing);
 
 signals:
+    void windowTimelineChanged();
     // External interface consumed by MainApplication. `outputSize` is the
     // pixel size of a cropped export (for the filename's {w}x{h}); it is
     // empty when the output is not cropped.
@@ -189,6 +198,9 @@ private:
     // Crop
     QRect m_cropRect;
     QSize m_videoSize;
+    std::optional<SnapTray::WindowTimeline> m_windowTimeline;
+    std::optional<SnapTray::WindowSample> windowAt(const QPointF &viewPoint, const QRectF &contentRect,
+                                                   qint64 positionMs) const;
 
     // Format
     OutputFormat m_selectedFormat = MP4;

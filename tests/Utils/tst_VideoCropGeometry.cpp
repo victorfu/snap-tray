@@ -16,6 +16,7 @@ private slots:
     void viewToVideoMapsThroughContentRect();
     void videoToViewIsInverseOfViewToVideo();
     void mappingRejectsEmptyContent();
+    void viewPointToVideoMapsAndClamps();
 };
 
 void tst_VideoCropGeometry::aspectFitRect_data()
@@ -85,6 +86,17 @@ void tst_VideoCropGeometry::mappingRejectsEmptyContent()
 {
     QCOMPARE(viewToVideo(QRectF(0, 0, 10, 10), QRectF(), QSize(100, 100)), QRect());
     QCOMPARE(videoToView(QRect(0, 0, 10, 10), QRectF(), QSize(100, 100)), QRectF());
+}
+
+void tst_VideoCropGeometry::viewPointToVideoMapsAndClamps()
+{
+    // 800x400 video drawn at half scale, 100 px below the item top.
+    const QRectF content(0, 100, 400, 200);
+    const QSize frame(800, 400);
+    QCOMPARE(viewPointToVideo(QPointF(100, 150), content, frame), QPoint(200, 100));
+    QCOMPARE(viewPointToVideo(QPointF(399.9, 299.9), content, frame), QPoint(799, 399)); // inside the last pixel
+    QCOMPARE(viewPointToVideo(QPointF(-5, 150), content, frame), QPoint(-1, -1));         // outside the content
+    QCOMPARE(viewPointToVideo(QPointF(100, 150), QRectF(), frame), QPoint(-1, -1));
 }
 
 QTEST_MAIN(tst_VideoCropGeometry)

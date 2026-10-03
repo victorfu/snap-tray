@@ -44,6 +44,7 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, QObje
     : QObject(parent)
     , m_videoPath(videoPath)
 {
+    m_windowTimeline = SnapTray::WindowTimelineSidecar::read(videoPath);
 }
 
 RecordingPreviewBackend::TranscoderFactory& RecordingPreviewBackend::transcoderFactoryOverride()
@@ -399,6 +400,12 @@ void RecordingPreviewBackend::updateVideoSize(const QSize &size)
     }
     m_videoSize = size;
     emit videoSizeChanged();
+    if (m_windowTimeline && m_windowTimeline->frameSize() != size) {
+        qDebug() << "RecordingPreviewBackend: window timeline frame size" << m_windowTimeline->frameSize()
+                 << "does not match the video" << size << "- snapping disabled";
+        m_windowTimeline.reset();
+        emit windowTimelineChanged();
+    }
     setCropRect(m_cropRect);
 }
 
@@ -423,6 +430,34 @@ QRectF RecordingPreviewBackend::cropRectInView(const QRectF &contentRect) const
         return contentRect;
     }
     return SnapTray::VideoCropGeometry::videoToView(m_cropRect, contentRect, m_videoSize);
+}
+
+std::optional<SnapTray::WindowSample> RecordingPreviewBackend::windowAt(const QPointF &viewPoint,
+                                                                         const QRectF &contentRect,
+                                                                         qint64 positionMs) const
+{
+    if (!m_windowTimeline || m_videoSize.isEmpty()) {
+        return std::nullopt;
+    }
+    const QPoint videoPoint = SnapTray::VideoCropGeometry::viewPointToVideo(viewPoint, contentRect, m_videoSize);
+    if (videoPoint.x() < 0) {
+        return std::nullopt;
+    }
+    return m_windowTimeline->hitTest(videoPoint, positionMs);
+}
+
+QRectF RecordingPreviewBackend::windowRectInViewAt(const QPointF &viewPoint, const QRectF &contentRect,
+                                                   qint64 positionMs) const
+{
+    const auto window = windowAt(viewPoint, contentRect, positionMs);
+    return window ? SnapTray::VideoCropGeometry::videoToView(window->rect, contentRect, m_videoSize) : QRectF();
+}
+
+QString RecordingPreviewBackend::windowAppAt(const QPointF &viewPoint, const QRectF &contentRect,
+                                             qint64 positionMs) const
+{
+    const auto window = windowAt(viewPoint, contentRect, positionMs);
+    return window ? window->ownerApp : QString();
 }
 
 void RecordingPreviewBackend::clearCrop()

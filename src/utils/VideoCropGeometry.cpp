@@ -80,4 +80,15 @@ QRectF videoToView(const QRect& videoRect, const QRectF& contentRect, const QSiz
                   videoRect.height() * scaleY);
 }
 
+QPoint viewPointToVideo(const QPointF& viewPoint, const QRectF& contentRect, const QSize& frameSize)
+{
+    if (contentRect.isEmpty() || frameSize.isEmpty() || !contentRect.contains(viewPoint)) {
+        return QPoint(-1, -1);
+    }
+    const QPointF local = viewPoint - contentRect.topLeft();
+    const int x = qBound(0, static_cast<int>(local.x() * frameSize.width() / contentRect.width()), frameSize.width() - 1);
+    const int y = qBound(0, static_cast<int>(local.y() * frameSize.height() / contentRect.height()), frameSize.height() - 1);
+    return QPoint(x, y);
+}
+
 } // namespace SnapTray::VideoCropGeometry
