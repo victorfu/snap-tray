@@ -7,6 +7,7 @@
 #include <QFileInfo>
 #include <QImage>
 #include <QPainter>
+#include <QRandomGenerator>
 #include <QTemporaryDir>
 
 #include <windows.h>
@@ -22,7 +23,6 @@ namespace {
 
 constexpr int kFrameRate = 30;
 constexpr int kSeconds = 3;
-constexpr int kFrameCount = kFrameRate * kSeconds;
 const QSize kFrameSize(320, 240);
 // A 1 s GOP over 3 s yields keyframes at 0, 1, 2 s (3) plus possibly one at
 // the end; the Media Foundation default GOP is several seconds, so 3 is the
@@ -33,35 +33,63 @@ constexpr int kHighQuality = 95;
 // Quality mode must visibly change the output; high quality has to be at
 // least this many times larger than low quality for identical content.
 constexpr double kQualitySizeRatio = 1.3;
+// Seconds of content for the quality-size comparison; longer than kSeconds
+// so the difference between the two sizes is well above container overhead.
+constexpr int kQualitySizeSeconds = 6;
+// Constant-quality output may overshoot its bitrate ceiling by this much on
+// worst-case (random-noise) content before the ceiling counts as ignored.
+constexpr double kCeilingTolerance = 1.25;
+const QSize kNoiseFrameSize(640, 360);
+constexpr quint32 kNoiseSeed = 0x5eed;
 constexpr int kFrameAcceptTimeoutMs = 2000;
 constexpr int kFinishTimeoutMs = 10000;
 
+struct Content {
+    QSize size = kFrameSize;
+    int seconds = kSeconds;
+    bool noise = false; // random pixels: the worst case for any rate control
+};
+
 // Moving content: a static image lets the encoder emit nothing but the GOP
 // structure, which would still pass, but real motion is the honest case.
-QImage frameAt(int index)
+QImage frameAt(int index, const QSize& size)
 {
-    QImage image(kFrameSize, QImage::Format_ARGB32);
+    QImage image(size, QImage::Format_ARGB32);
     image.fill(Qt::darkGray);
     QPainter painter(&image);
-    painter.fillRect(QRect((index * 7) % kFrameSize.width(), (index * 3) % kFrameSize.height(), 40, 40), Qt::yellow);
+    painter.fillRect(QRect((index * 7) % size.width(), (index * 3) % size.height(), 40, 40), Qt::yellow);
+    return image;
+}
+
+QImage noiseFrame(const QSize& size, QRandomGenerator& random)
+{
+    QImage image(size, QImage::Format_ARGB32);
+    for (int y = 0; y < size.height(); ++y) {
+        auto* line = reinterpret_cast<quint32*>(image.scanLine(y));
+        for (int x = 0; x < size.width(); ++x) line[x] = random.generate() | 0xFF000000u;
+    }
     return image;
 }
 
 QString encode(const QString& path, VideoRateControl mode, int keyFrameIntervalSeconds,
-               VideoRateControl* effective = nullptr, int quality = IntermediateQuality::kConstantQualityValue)
+               VideoRateControl* effective = nullptr, int quality = IntermediateQuality::kConstantQualityValue,
+               const Content& content = {})
 {
     std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
     if (!encoder) return QStringLiteral("No native encoder");
     encoder->setQuality(quality);
     encoder->setRateControl(mode, quality);
     encoder->setKeyFrameIntervalSeconds(keyFrameIntervalSeconds);
-    if (!encoder->start(path, kFrameSize, kFrameRate)) return encoder->lastError();
-    for (int i = 0; i < kFrameCount; ++i) {
+    if (!encoder->start(path, content.size, kFrameRate)) return encoder->lastError();
+    QRandomGenerator random(kNoiseSeed);
+    const int frameCount = kFrameRate * content.seconds;
+    for (int i = 0; i < frameCount; ++i) {
         const qint64 before = encoder->framesWritten();
+        const QImage frame = content.noise ? noiseFrame(content.size, random) : frameAt(i, content.size);
         QElapsedTimer timer;
         timer.start();
         do {
-            encoder->writeFrame(frameAt(i), qint64(i) * 1000 / kFrameRate);
+            encoder->writeFrame(frame, qint64(i) * 1000 / kFrameRate);
             if (encoder->framesWritten() != before) break;
             QTest::qWait(5);
         } while (timer.elapsed() < kFrameAcceptTimeoutMs);
@@ -106,6 +134,7 @@ private slots:
     void intermediateHasOneSecondKeyFrames();
     void defaultModeStillRecords();
     void constantQualityChangesOutputSize();
+    void constantQualityRespectsCeiling();
 };
 
 void tst_MediaFoundationEncoderIntermediate::intermediateHasOneSecondKeyFrames()
@@ -150,9 +179,15 @@ void tst_MediaFoundationEncoderIntermediate::constantQualityChangesOutputSize()
     QVERIFY(dir.isValid());
     const QString lowPath = dir.filePath(QStringLiteral("low.mp4"));
     const QString highPath = dir.filePath(QStringLiteral("high.mp4"));
-    QString error = encode(lowPath, VideoRateControl::ConstantQuality, 1, nullptr, kLowQuality);
+    Content content;
+    content.seconds = kQualitySizeSeconds;
+    VideoRateControl effective = VideoRateControl::Bitrate;
+    QString error = encode(lowPath, VideoRateControl::ConstantQuality, 1, &effective, kLowQuality, content);
     QVERIFY2(error.isEmpty(), qPrintable(error));
-    error = encode(highPath, VideoRateControl::ConstantQuality, 1, nullptr, kHighQuality);
+    if (effective != VideoRateControl::ConstantQuality) {
+        QSKIP("MFT did not adopt Quality mode");
+    }
+    error = encode(highPath, VideoRateControl::ConstantQuality, 1, nullptr, kHighQuality, content);
     QVERIFY2(error.isEmpty(), qPrintable(error));
     const qint64 lowSize = QFileInfo(lowPath).size();
     const qint64 highSize = QFileInfo(highPath).size();
@@ -160,6 +195,31 @@ void tst_MediaFoundationEncoderIntermediate::constantQualityChangesOutputSize()
             << "ratio:" << (lowSize > 0 ? double(highSize) / double(lowSize) : 0.0);
     QVERIFY2(highSize > lowSize * kQualitySizeRatio,
              qPrintable(QStringLiteral("low %1 high %2").arg(lowSize).arg(highSize)));
+}
+
+void tst_MediaFoundationEncoderIntermediate::constantQualityRespectsCeiling()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString path = dir.filePath(QStringLiteral("noise.mp4"));
+    Content content;
+    content.size = kNoiseFrameSize;
+    content.noise = true;
+    VideoRateControl effective = VideoRateControl::Bitrate;
+    const QString error = encode(path, VideoRateControl::ConstantQuality, IntermediateQuality::kKeyFrameIntervalSeconds,
+                                 &effective, IntermediateQuality::kConstantQualityValue, content);
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+    auto transcoder = IVideoTranscoder::create();
+    QVERIFY(transcoder);
+    const VideoFileProbe probe = transcoder->probe(path);
+    QVERIFY(probe.valid);
+    const qint64 average = IntermediateQuality::averageBitrate(QFileInfo(path).size(), probe.durationMs);
+    const qint64 ceiling = IntermediateQuality::intermediateBitrate(kNoiseFrameSize, kFrameRate);
+    qInfo() << "effective rate control:" << int(effective) << "average bps:" << average
+            << "ceiling bps:" << ceiling << "ratio:" << double(average) / double(ceiling);
+    QVERIFY2(average <= qint64(double(ceiling) * kCeilingTolerance),
+             qPrintable(QStringLiteral("average %1 bps exceeds ceiling %2 bps x %3")
+                            .arg(average).arg(ceiling).arg(kCeilingTolerance)));
 }
 
 QTEST_MAIN(tst_MediaFoundationEncoderIntermediate)

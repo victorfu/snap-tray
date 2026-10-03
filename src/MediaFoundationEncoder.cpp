@@ -88,13 +88,10 @@ public:
             effectiveRateControl = SnapTray::VideoRateControl::ConstantQuality;
             qDebug() << "MediaFoundationEncoder: constant quality" << quality << "confirmed";
         } else {
+            // Setting a mode through ICodecAPI here is accepted but ignored,
+            // so the readback alone decides what is reported.
             qWarning() << "MediaFoundationEncoder: quality mode not adopted (hr =" << Qt::hex << hr
-                       << "), falling back to VBR at" << calculateBitrate() << "bps";
-            VariantClear(&value);
-            VariantInit(&value);
-            value.vt = VT_UI4;
-            value.ulVal = eAVEncCommonRateControlMode_UnconstrainedVBR;
-            (void)codecApi->SetValue(&CODECAPI_AVEncCommonRateControlMode, &value);
+                       << "), encoding with the MFT's rate control up to" << Qt::dec << calculateBitrate() << "bps";
         }
         VariantClear(&value);
         codecApi->Release();
@@ -177,44 +174,81 @@ public:
 
         // Codec properties must be handed over as encoding parameters: values
         // set through ICodecAPI after the input type is negotiated are accepted
-        // but ignored by the H.264 MFT.
+        // but ignored by the H.264 MFT. When the full set is rejected, keep
+        // the GOP (seeking in the preview depends on it) before giving up on
+        // parameters altogether.
         {
             const bool wantQuality = requestedRateControl == SnapTray::VideoRateControl::ConstantQuality;
             bool qualityParamsSet = false;
-            if (wantQuality || keyFrameIntervalSeconds > 0) {
-                HRESULT paramHr = MFCreateAttributes(&encodingParams, 3);
-                if (FAILED(paramHr)) {
+            // full: GOP plus constant quality with a bitrate ceiling;
+            // otherwise: GOP plus unconstrained VBR.
+            auto createParams = [this, wantQuality, &qualityParamsSet](bool full) -> IMFAttributes* {
+                IMFAttributes *params = nullptr;
+                HRESULT paramHr = MFCreateAttributes(&params, 4);
+                if (FAILED(paramHr) || !params) {
                     qWarning() << "MediaFoundationEncoder: cannot create encoding parameters (hr =" << Qt::hex << paramHr << ")";
-                    encodingParams = nullptr;
-                } else {
-                    if (keyFrameIntervalSeconds > 0) {
-                        paramHr = encodingParams->SetUINT32(CODECAPI_AVEncMPVGOPSize,
-                            static_cast<UINT32>(frameRate * keyFrameIntervalSeconds));
-                        if (FAILED(paramHr)) {
-                            qWarning() << "MediaFoundationEncoder: GOP size parameter rejected (hr =" << Qt::hex << paramHr << ")";
-                        }
+                    return nullptr;
+                }
+                if (keyFrameIntervalSeconds > 0) {
+                    paramHr = params->SetUINT32(CODECAPI_AVEncMPVGOPSize,
+                        static_cast<UINT32>(frameRate * keyFrameIntervalSeconds));
+                    if (FAILED(paramHr)) {
+                        qWarning() << "MediaFoundationEncoder: GOP size parameter rejected (hr =" << Qt::hex << paramHr << ")";
                     }
-                    if (wantQuality) {
-                        const HRESULT modeHr = encodingParams->SetUINT32(CODECAPI_AVEncCommonRateControlMode,
-                            eAVEncCommonRateControlMode_Quality);
-                        const HRESULT qualityHr = encodingParams->SetUINT32(CODECAPI_AVEncCommonQuality,
-                            static_cast<UINT32>(quality));
-                        qualityParamsSet = SUCCEEDED(modeHr) && SUCCEEDED(qualityHr);
-                        if (!qualityParamsSet) {
-                            qWarning() << "MediaFoundationEncoder: quality parameters rejected (hr =" << Qt::hex
-                                       << modeHr << qualityHr << ")";
+                }
+                if (full && wantQuality) {
+                    const HRESULT modeHr = params->SetUINT32(CODECAPI_AVEncCommonRateControlMode,
+                        eAVEncCommonRateControlMode_Quality);
+                    const HRESULT qualityHr = params->SetUINT32(CODECAPI_AVEncCommonQuality,
+                        static_cast<UINT32>(quality));
+                    // Quality mode alone lets busy content grow without bound.
+                    const HRESULT ceilingHr = params->SetUINT32(CODECAPI_AVEncCommonMaxBitRate, calculateBitrate());
+                    qualityParamsSet = SUCCEEDED(modeHr) && SUCCEEDED(qualityHr);
+                    if (!qualityParamsSet || FAILED(ceilingHr)) {
+                        qWarning() << "MediaFoundationEncoder: quality parameters rejected (hr =" << Qt::hex
+                                   << modeHr << qualityHr << ceilingHr << ")";
+                    }
+                } else if (!full) {
+                    paramHr = params->SetUINT32(CODECAPI_AVEncCommonRateControlMode,
+                        eAVEncCommonRateControlMode_UnconstrainedVBR);
+                    if (FAILED(paramHr)) {
+                        qWarning() << "MediaFoundationEncoder: VBR mode parameter rejected (hr =" << Qt::hex << paramHr << ")";
+                    }
+                }
+                return params;
+            };
+
+            const char *appliedParams = "encoder defaults";
+            if (wantQuality || keyFrameIntervalSeconds > 0) {
+                encodingParams = createParams(true);
+            }
+            hr = sinkWriter->SetInputMediaType(videoStreamIndex, inputType, encodingParams);
+            if (encodingParams) {
+                encodingParams->Release();
+                encodingParams = nullptr;
+                if (SUCCEEDED(hr)) {
+                    appliedParams = wantQuality ? "GOP + constant quality with bitrate ceiling" : "GOP";
+                } else {
+                    qWarning() << "MediaFoundationEncoder: encoding parameters rejected (hr =" << Qt::hex << hr
+                               << "), retrying with GOP and unconstrained VBR";
+                    qualityParamsSet = false;
+                    encodingParams = createParams(false);
+                    hr = sinkWriter->SetInputMediaType(videoStreamIndex, inputType, encodingParams);
+                    if (SUCCEEDED(hr)) {
+                        appliedParams = "GOP + unconstrained VBR";
+                    } else {
+                        qWarning() << "MediaFoundationEncoder: GOP and VBR parameters rejected (hr =" << Qt::hex << hr
+                                   << "), retrying with encoder defaults";
+                        hr = sinkWriter->SetInputMediaType(videoStreamIndex, inputType, nullptr);
+                        if (FAILED(hr)) {
+                            qWarning() << "MediaFoundationEncoder: input type rejected with encoder defaults (hr ="
+                                       << Qt::hex << hr << ")";
                         }
                     }
                 }
             }
-            hr = sinkWriter->SetInputMediaType(videoStreamIndex, inputType, encodingParams);
-            if (FAILED(hr) && encodingParams) {
-                qWarning() << "MediaFoundationEncoder: encoding parameters rejected (hr =" << Qt::hex << hr
-                           << "), retrying with encoder defaults";
-                qualityParamsSet = false;
-                hr = sinkWriter->SetInputMediaType(videoStreamIndex, inputType, nullptr);
-            }
             if (SUCCEEDED(hr)) {
+                qDebug() << "MediaFoundationEncoder: video encoding parameters applied:" << appliedParams;
                 verifyRateControl(qualityParamsSet);
             }
         }
