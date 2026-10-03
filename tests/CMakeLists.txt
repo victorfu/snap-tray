@@ -793,6 +793,18 @@ target_link_libraries(Longshot_FrameSource PRIVATE snaptray_platform snaptray_al
 add_test(NAME Longshot_FrameSource COMMAND Longshot_FrameSource)
 set_tests_properties(Longshot_FrameSource PROPERTIES TIMEOUT 120 LABELS "integration;slow")
 
+add_library(Longshot_SyntheticScroll STATIC Longshot/SyntheticScroll.cpp Longshot/SyntheticScroll.h)
+target_include_directories(Longshot_SyntheticScroll PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Longshot)
+target_include_directories(Longshot_SyntheticScroll PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(Longshot_SyntheticScroll PUBLIC snaptray_platform snaptray_algorithms Qt6::Gui Qt6::Test)
+
+add_executable(Longshot_SyntheticHarness Longshot/tst_SyntheticHarness.cpp)
+target_link_libraries(Longshot_SyntheticHarness PRIVATE Longshot_SyntheticScroll Qt6::Test
+    "$<$<PLATFORM_ID:Windows>:mfreadwrite>" "$<$<PLATFORM_ID:Windows>:mfplat>"
+    "$<$<PLATFORM_ID:Windows>:mfuuid>" "$<$<PLATFORM_ID:Windows>:ole32>")
+add_test(NAME Longshot_SyntheticHarness COMMAND Longshot_SyntheticHarness)
+set_tests_properties(Longshot_SyntheticHarness PROPERTIES TIMEOUT 180 LABELS "integration;slow")
+
 # ============================================================================
 # Utils Tests (link snaptray_core)
 # ============================================================================
