@@ -274,6 +274,7 @@ private slots:
     void saveMp4EditsUseOutputQuality();
     void smartSaveMovesLowBitrateRecording();
     void smartSaveReencodesHighBitrateRecording();
+    void smartSaveMovesUnprobeableRecording();
     void videoOnlyExportAcceptedWhenRangeHasNoSourceAudio();
     void invalidTranscodeKeepsSourceAndRetries_data();
     void invalidTranscodeKeepsSourceAndRetries();
@@ -910,6 +911,42 @@ void tst_RecordingPreviewExport::smartSaveMovesLowBitrateRecording()
     QCOMPARE(log->calls, 0);
 }
 
+void tst_RecordingPreviewExport::smartSaveMovesUnprobeableRecording()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    {
+        QByteArray garbage;
+        QRandomGenerator random(kNoiseSeed);
+        for (int i = 0; i < 4096; ++i) garbage.append(char(random.generate() & 0xFF));
+        QFile file(inputPath);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        QCOMPARE(file.write(garbage), garbage.size());
+    }
+
+    auto restore = qScopeGuard([]() { RecordingPreviewBackend::transcoderFactoryOverride() = {}; });
+    const auto log = std::make_shared<FakeTranscodeLog>();
+    RecordingPreviewBackend::transcoderFactoryOverride() = [log]() {
+        return std::unique_ptr<IVideoTranscoder>(new FakeTranscoder(FakeTranscodeOutcome::Real, QString(), log));
+    };
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    backend.updateVideoSize(QSize(160, 120));
+    backend.updateDuration(2000);
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
+    QTRY_COMPARE(savedSpy.count(), 1);
+    QCOMPARE(savedSpy.first().at(0).toString(), inputPath);
+    QCOMPARE(savedSpy.first().at(1).toSize(), QSize());
+    QVERIFY(QFileInfo::exists(inputPath));
+    QVERIFY(backend.errorMessage().isEmpty());
+    std::lock_guard<std::mutex> lock(log->mutex);
+    QCOMPARE(log->calls, 0);
+}
+
 void tst_RecordingPreviewExport::smartSaveReencodesHighBitrateRecording()
 {
     QTemporaryDir directory;
@@ -986,10 +1023,10 @@ void tst_RecordingPreviewExport::closeOutcomes()
     else if (action == 2) {
         // An unedited MP4 save is decided on a worker; with no transcoder
         // available it saves the original as is.
+        auto restore = qScopeGuard([]() { RecordingPreviewBackend::transcoderFactoryOverride() = {}; });
         RecordingPreviewBackend::transcoderFactoryOverride() = []() { return std::unique_ptr<IVideoTranscoder>(); };
         backend.save();
         QTRY_COMPARE(closed.count(), 1);
-        RecordingPreviewBackend::transcoderFactoryOverride() = {};
     } else backend.close();
     QCOMPARE(closed.count(), action == 3 ? 0 : 1);
     QCOMPARE(discarded.count(), action < 2 ? 1 : 0);

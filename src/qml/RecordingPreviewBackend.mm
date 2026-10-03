@@ -846,8 +846,12 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
     const QString workingPath = base + QStringLiteral("_edited_") + stamp + QStringLiteral(".part-")
         + QUuid::createUuid().toString(QUuid::WithoutBraces) + QStringLiteral(".mp4");
 
-    qDebug() << "RecordingPreviewBackend: Exporting MP4 edits, trim:" << hasTrim()
-             << "crop:" << m_cropRect;
+    if (smartSave) {
+        qDebug() << "RecordingPreviewBackend: Finalizing unedited recording";
+    } else {
+        qDebug() << "RecordingPreviewBackend: Exporting MP4 edits, trim:" << hasTrim()
+                 << "crop:" << m_cropRect;
+    }
 
     m_isProcessing = true;
     m_processProgress = 0;
@@ -897,8 +901,13 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
             if (!moveInstead) result.errorMessage = unsupportedError;
         } else {
             sourceProbe = transcoder->probe(request.inputPath);
-            if (smartSave && SnapTray::IntermediateQuality::smartSaveShouldMove(
-                                 sourceProbe, QFileInfo(request.inputPath).size(), outputQuality)) {
+            if (smartSave && !sourceProbe.valid) {
+                // A re-encode would only fail validation and leave the user
+                // with Discard; keep the recording as recorded.
+                qWarning() << "RecordingPreviewBackend: unedited recording could not be probed; saving it as recorded";
+                moveInstead = true;
+            } else if (smartSave && SnapTray::IntermediateQuality::smartSaveShouldMove(
+                                        sourceProbe, QFileInfo(request.inputPath).size(), outputQuality)) {
                 moveInstead = true;
             }
         }
