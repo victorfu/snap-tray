@@ -37,6 +37,9 @@ private slots:
     void roundsToIntegers();
     void emptyInputs();
     void zeroConfidenceEdgeIgnored();
+    void longChainConverges();
+    void longChainWithClosure();
+    void equalWeightOutlierClosureRejected();
 };
 
 void tst_PositionSolver::chainIsCumulative()
@@ -127,6 +130,40 @@ void tst_PositionSolver::zeroConfidenceEdgeIgnored()
     const auto result = PositionSolver::solve(times(3), {edge(0, 1, 10), edge(1, 2, 10, 0.0)}, 3.0);
     QVERIFY(!result.positions[2].has_value());
     QCOMPARE(result.breakTimesMs, (std::vector<qint64>{200}));
+}
+
+void tst_PositionSolver::longChainConverges()
+{
+    std::vector<qint64> t = times(1000);
+    std::vector<PairShift> edges;
+    for (int i = 0; i < 999; ++i) edges.push_back(edge(i, i + 1, 10));
+    const auto result = PositionSolver::solve(t, edges, 3.0);
+    QCOMPARE(*result.positions[999], 9990);
+    QCOMPARE(*result.positions[500], 5000);
+    QVERIFY(result.breakTimesMs.empty());
+    QCOMPARE(result.rejectedEdges, 0);
+}
+
+void tst_PositionSolver::longChainWithClosure()
+{
+    std::vector<qint64> t = times(1000);
+    std::vector<PairShift> edges;
+    for (int i = 0; i < 999; ++i) edges.push_back(edge(i, i + 1, 10));
+    edges.push_back(edge(0, 999, 9990));
+    const auto result = PositionSolver::solve(t, edges, 3.0);
+    QCOMPARE(*result.positions[999], 9990);
+    QCOMPARE(*result.positions[500], 5000);
+    QVERIFY(result.breakTimesMs.empty());
+    QCOMPARE(result.rejectedEdges, 0);
+}
+
+void tst_PositionSolver::equalWeightOutlierClosureRejected()
+{
+    const auto result = PositionSolver::solve(
+        times(4), {edge(0, 1, 10), edge(1, 2, 10), edge(2, 3, 10), edge(0, 3, 300, 1.0)}, 4.0);
+    QCOMPARE(*result.positions[3], 30);
+    QCOMPARE(result.rejectedEdges, 1);
+    QVERIFY(result.breakTimesMs.empty());
 }
 
 QTEST_APPLESS_MAIN(tst_PositionSolver)

@@ -10,10 +10,13 @@ namespace SnapTray::Longshot {
 
 namespace {
 
-// Gauss-Seidel converges geometrically on this diagonally dominant system;
-// 2000 sweeps at 1e-4 is far beyond what sub-pixel rounding can observe.
-constexpr int kMaxSweeps = 2000;
-constexpr double kConvergenceTolerancePx = 1e-4;
+// Conjugate gradient on the grounded weighted Laplacian: exact for this
+// symmetric positive-definite system in at most n steps; the stop is on the
+// residual, so a converged answer is converged everywhere, not just where
+// the last sweep happened to look.
+constexpr double kResidualTolerancePx = 1e-6;
+constexpr int kExtraIterations = 10;        // beyond n, for rounding noise
+constexpr double kResidualTieWindow = 1e-6; // residuals closer than this are tied
 
 struct Edge {
     int from;
@@ -52,31 +55,57 @@ std::vector<int> components(int frameCount, const std::vector<Edge>& edges)
 std::vector<double> solveIsland(int frameCount, const std::vector<Edge>& edges,
                                 const std::vector<int>& root, int islandRoot, int anchor)
 {
-    std::vector<double> pos(frameCount, 0.0);
-    std::vector<double> diag(frameCount, 0.0);
-    std::vector<std::vector<std::pair<int, double>>> neighbours(frameCount); // (other, weight)
-    std::vector<double> rhs(frameCount, 0.0);
-    for (const Edge& e : edges) {
-        if (!e.active || root[e.from] != islandRoot) continue;
-        diag[e.from] += e.weight;
-        diag[e.to] += e.weight;
-        neighbours[e.from].push_back({e.to, e.weight});
-        neighbours[e.to].push_back({e.from, e.weight});
-        rhs[e.from] -= e.weight * e.dy; // pos[from] = pos[to] - dy
-        rhs[e.to] += e.weight * e.dy;   // pos[to] = pos[from] + dy
-    }
-    for (int sweep = 0; sweep < kMaxSweeps; ++sweep) {
-        double maxDelta = 0.0;
-        for (int i = 0; i < frameCount; ++i) {
-            if (root[i] != islandRoot || i == anchor || diag[i] <= 0.0) continue;
-            double sum = rhs[i];
-            for (const auto& [other, weight] : neighbours[i]) sum += weight * pos[other];
-            const double updated = sum / diag[i];
-            maxDelta = std::max(maxDelta, std::abs(updated - pos[i]));
-            pos[i] = updated;
+    std::vector<int> nodes; // island members except the anchor
+    std::vector<int> slot(frameCount, -1);
+    for (int i = 0; i < frameCount; ++i) {
+        if (root[i] == islandRoot && i != anchor) {
+            slot[i] = int(nodes.size());
+            nodes.push_back(i);
         }
-        if (maxDelta < kConvergenceTolerancePx) break;
     }
+    const int n = int(nodes.size());
+    std::vector<double> pos(frameCount, 0.0);
+    if (n == 0) return pos;
+    std::vector<const Edge*> islandEdges;
+    for (const Edge& e : edges) {
+        if (e.active && root[e.from] == islandRoot) islandEdges.push_back(&e);
+    }
+    // b = L-side constant: for pos[to] - pos[from] = dy, the gradient terms.
+    std::vector<double> b(n, 0.0);
+    for (const Edge* e : islandEdges) {
+        if (slot[e->to] >= 0) b[slot[e->to]] += e->weight * e->dy;
+        if (slot[e->from] >= 0) b[slot[e->from]] -= e->weight * e->dy;
+    }
+    // y = A x, A = grounded weighted Laplacian (anchor row/column removed).
+    auto applyA = [&](const std::vector<double>& x, std::vector<double>& y) {
+        std::fill(y.begin(), y.end(), 0.0);
+        for (const Edge* e : islandEdges) {
+            const int a = slot[e->from];
+            const int c = slot[e->to];
+            const double xa = a >= 0 ? x[a] : 0.0;
+            const double xc = c >= 0 ? x[c] : 0.0;
+            const double d = e->weight * (xa - xc);
+            if (a >= 0) y[a] += d;
+            if (c >= 0) y[c] -= d;
+        }
+    };
+    std::vector<double> x(n, 0.0), r = b, p = b, Ap(n);
+    double rr = std::inner_product(r.begin(), r.end(), r.begin(), 0.0);
+    for (int iteration = 0; iteration < n + kExtraIterations; ++iteration) {
+        double maxResidual = 0.0;
+        for (double v : r) maxResidual = std::max(maxResidual, std::abs(v));
+        if (maxResidual < kResidualTolerancePx) break;
+        applyA(p, Ap);
+        const double pAp = std::inner_product(p.begin(), p.end(), Ap.begin(), 0.0);
+        if (pAp <= 0.0) break;
+        const double alpha = rr / pAp;
+        for (int i = 0; i < n; ++i) { x[i] += alpha * p[i]; r[i] -= alpha * Ap[i]; }
+        const double rrNext = std::inner_product(r.begin(), r.end(), r.begin(), 0.0);
+        const double beta = rrNext / rr;
+        rr = rrNext;
+        for (int i = 0; i < n; ++i) p[i] = r[i] + beta * p[i];
+    }
+    for (int i = 0; i < n; ++i) pos[nodes[i]] = x[i];
     return pos;
 }
 
@@ -94,7 +123,7 @@ SolveResult PositionSolver::solve(const std::vector<qint64>& frameTimesMs,
     std::vector<Edge> edges;
     edges.reserve(observations.size());
     for (const PairShift& o : observations) {
-        if (o.confidence <= 0.0 || o.from < 0 || o.to < 0 || o.from >= frameCount || o.to >= frameCount
+        if (!(o.confidence > 0.0) || o.from < 0 || o.to < 0 || o.from >= frameCount || o.to >= frameCount
             || o.from == o.to) {
             continue;
         }
@@ -130,6 +159,16 @@ SolveResult PositionSolver::solve(const std::vector<qint64>& frameTimesMs,
             if (residual > worstResidual) {
                 worstResidual = residual;
                 worst = k;
+            } else if (worst >= 0 && std::abs(residual - worstResidual) <= kResidualTieWindow) {
+                // Residuals tied: prefer lower confidence, then larger span
+                const Edge& worstE = edges[worst];
+                const int worstSpan = std::abs(worstE.to - worstE.from);
+                const int thisSpan = std::abs(e.to - e.from);
+                if (e.weight < worstE.weight ||
+                    (std::abs(e.weight - worstE.weight) <= kResidualTieWindow && thisSpan > worstSpan)) {
+                    worstResidual = residual;
+                    worst = k;
+                }
             }
         }
         if (worst < 0) break;
