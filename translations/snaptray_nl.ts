@@ -1741,6 +1741,11 @@ Grootte: %2</translation>
         <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
         <translation>Audio is niet beschikbaar. Deze opname zal stil zijn. Controleer de systeemtoestemmingen en het geselecteerde audioapparaat.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>Onvoldoende vrije schijfruimte voor opnemen in hoge kwaliteit. Er wordt opgenomen in de geselecteerde kwaliteit.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -2173,6 +2178,11 @@ Audio wordt niet ondersteund voor GIF-opnamen.</translation>
         <source>5 seconds</source>
         <translation>5 seconden</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>Kwaliteit van de opgeslagen video. Met voorbeeld aan worden opnamen in hoge kwaliteit vastgelegd en bij het opslaan naar deze kwaliteit omgezet.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>

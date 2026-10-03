@@ -1735,6 +1735,11 @@ Size: %2</source>
         <source>Failed to save recording to selected location</source>
         <translation>فشل حفظ التسجيل في الموقع المحدد</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>لا توجد مساحة كافية على القرص للتسجيل بجودة عالية. سيتم التسجيل بالجودة المحددة بدلاً من ذلك.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -2167,6 +2172,11 @@ Audio is not supported for GIF recordings.</source>
         <source>5 seconds</source>
         <translation>5 ثوانٍ</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>جودة الفيديو المحفوظ. عند تشغيل المعاينة، تُسجَّل التسجيلات بجودة عالية ثم تُحوَّل إلى هذه الجودة عند الحفظ.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>

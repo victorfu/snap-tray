@@ -1735,6 +1735,11 @@ Boyut: %2</translation>
         <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
         <translation>Ses kullanılamıyor. Bu kayıt sessiz olacaktır. Sistem izinlerini ve seçili ses aygıtını kontrol edin.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>Yüksek kaliteli kayıt için yeterli boş disk alanı yok. Bunun yerine seçilen kalitede kaydediliyor.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -2167,6 +2172,11 @@ GIF kayıtlarında ses desteklenmez.</translation>
         <source>5 seconds</source>
         <translation>5 saniye</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>Kaydedilen videonun kalitesi. Önizleme açıkken kayıtlar yüksek kalitede alınır ve kaydederken bu kaliteye dönüştürülür.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>

@@ -1735,6 +1735,11 @@ Kích thước: %2</translation>
         <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
         <translation>Không thể sử dụng âm thanh. Bản ghi này sẽ không có tiếng. Hãy kiểm tra quyền hệ thống và thiết bị âm thanh đã chọn.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>Không đủ dung lượng đĩa trống để ghi ở chất lượng cao. Sẽ ghi ở chất lượng đã chọn.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -2167,6 +2172,11 @@ Ghi GIF không hỗ trợ âm thanh.</translation>
         <source>5 seconds</source>
         <translation>5 giây</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>Chất lượng của video đã lưu. Khi bật xem trước, bản ghi được quay ở chất lượng cao và chuyển về chất lượng này khi lưu.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>

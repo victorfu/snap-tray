@@ -1735,6 +1735,11 @@ Storlek: %2</translation>
         <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
         <translation>Ljud är inte tillgängligt. Den här inspelningen blir utan ljud. Kontrollera systembehörigheterna och den valda ljudenheten.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>Inte tillräckligt med ledigt diskutrymme för inspelning i hög kvalitet. Spelar in i vald kvalitet i stället.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -2167,6 +2172,11 @@ Ljud stöds inte för GIF-inspelningar.</translation>
         <source>5 seconds</source>
         <translation>5 sekunder</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>Kvaliteten på den sparade videon. Med förhandsgranskning på spelas inspelningar in i hög kvalitet och konverteras till denna kvalitet när du sparar.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>

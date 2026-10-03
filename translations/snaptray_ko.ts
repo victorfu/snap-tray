@@ -1741,6 +1741,11 @@ Size: %2</source>
         <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
         <translation>오디오를 사용할 수 없습니다. 이 녹화는 무음으로 저장됩니다. 시스템 권한과 선택한 오디오 장치를 확인하세요.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>고화질 녹화를 위한 디스크 여유 공간이 부족합니다. 선택한 화질로 녹화합니다.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -2173,6 +2178,11 @@ GIF 녹화에서는 오디오가 지원되지 않습니다.</translation>
         <source>5 seconds</source>
         <translation>5초</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>저장되는 동영상의 화질입니다. 미리보기가 켜져 있으면 고화질로 녹화한 뒤 저장할 때 이 화질로 변환합니다.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>

@@ -1741,6 +1741,11 @@ Tamaño: %2</translation>
         <source>Failed to save recording to selected location</source>
         <translation>Error al guardar la grabación en la ubicación seleccionada</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>No hay suficiente espacio libre en disco para grabar en alta calidad. Se grabará con la calidad seleccionada.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -2173,6 +2178,11 @@ El audio no es compatible con grabaciones GIF.</translation>
         <source>5 seconds</source>
         <translation>5 segundos</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>Calidad del video guardado. Con la vista previa activada, las grabaciones se capturan en alta calidad y se convierten a esta calidad al guardar.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>

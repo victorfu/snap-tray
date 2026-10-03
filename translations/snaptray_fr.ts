@@ -1741,6 +1741,11 @@ Taille : %2</translation>
         <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
         <translation>L’audio n’est pas disponible. Cet enregistrement sera silencieux. Vérifiez les autorisations système et le périphérique audio sélectionné.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>Espace disque insuffisant pour un enregistrement en haute qualité. L'enregistrement se fera à la qualité sélectionnée.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -2173,6 +2178,11 @@ L'audio n'est pas pris en charge pour les enregistrements GIF.</translation>
         <source>5 seconds</source>
         <translation>5 secondes</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>Qualité de la vidéo enregistrée. Avec l'aperçu activé, les enregistrements sont capturés en haute qualité puis convertis à cette qualité lors de la sauvegarde.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>

@@ -1722,6 +1722,11 @@ English is always included and cannot be removed.</source>
         <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
         <translation>ไม่สามารถใช้เสียงได้ การบันทึกนี้จะไม่มีเสียง โปรดตรวจสอบสิทธิ์ของระบบและอุปกรณ์เสียงที่เลือก</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>พื้นที่ว่างในดิสก์ไม่พอสำหรับการบันทึกคุณภาพสูง จะบันทึกด้วยคุณภาพที่เลือกแทน</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -2034,6 +2039,11 @@ English is always included and cannot be removed.</source>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="247"/>
         <source>5 seconds</source>
         <translation>5 วินาที</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>คุณภาพของวิดีโอที่บันทึก เมื่อเปิดตัวอย่าง การบันทึกจะจับภาพด้วยคุณภาพสูงและแปลงเป็นคุณภาพนี้เมื่อบันทึก</translation>
     </message>
 </context>
 <context>

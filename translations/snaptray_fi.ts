@@ -1735,6 +1735,11 @@ Koko: %2</translation>
         <source>Failed to save recording to selected location</source>
         <translation>Tallennuksen tallennus valittuun sijaintiin epäonnistui</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>Levytilaa ei ole tarpeeksi korkealaatuiseen tallennukseen. Tallennetaan valitulla laadulla.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -2167,6 +2172,11 @@ GIF-tallennuksissa ääntä ei tueta.</translation>
         <source>5 seconds</source>
         <translation>5 sekuntia</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>Tallennetun videon laatu. Kun esikatselu on käytössä, tallenteet kaapataan korkealaatuisina ja muunnetaan tähän laatuun tallennettaessa.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>

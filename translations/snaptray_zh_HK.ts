@@ -1735,6 +1735,11 @@ Size: %2</source>
         <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
         <translation>音訊無法使用，此錄製將沒有聲音。請檢查系統權限及所選音訊裝置。</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>磁碟可用空間不足,無法以高畫質錄影。將改以所選畫質錄影。</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -2167,6 +2172,11 @@ GIF 錄製不支援音訊。</translation>
         <source>5 seconds</source>
         <translation>5 秒</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>儲存影片的畫質。開啟預覽時,錄影會以高畫質擷取,儲存時再轉換為此畫質。</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>

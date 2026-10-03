@@ -298,6 +298,7 @@ void tst_QmlTranslations::testRecordingPreviewCropTranslatedForAllLocales()
         {"RecordingPreviewBackend", "Video export is not supported on this platform"},
         {"RecordingPreviewBackend", "Export failed: %1"},
         {"RecordingPreviewBackend", "Export failed; the original recording was kept."},
+        {"RecordingSettings", "Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save."},
     };
 
     const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));

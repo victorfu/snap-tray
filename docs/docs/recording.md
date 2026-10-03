@@ -56,3 +56,5 @@ GIF and WebP exports are silent.
 ## Quality tuning
 
 Open Settings > Recording and adjust frame rate, quality, countdown, and preview behavior.
+
+The quality slider sets the quality of the saved video. When preview is on, the recording itself is captured at high quality so trims and crops do not lose detail; saving converts it to the selected quality, or keeps the file as is when it is already small enough. If the drive holding temporary recordings has less than about ten minutes of high-quality space free, SnapTray records at the selected quality instead and shows a warning. With preview off, recordings are written directly at the selected quality.

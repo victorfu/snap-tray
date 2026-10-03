@@ -112,6 +112,17 @@ Flickable {
             onMoved: function(value) { settingsBackend.recordingQuality = value }
         }
 
+        Text {
+            width: parent.width
+            wrapMode: Text.WordWrap
+            visible: settingsBackend.recordingShowPreview || settingsBackend.recordingOutputFormat === 0
+            text: qsTr("Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.")
+            color: SemanticTokens.textTertiary
+            font.pixelSize: SemanticTokens.fontSizeCaption
+            font.family: SemanticTokens.fontFamily
+            font.letterSpacing: SemanticTokens.letterSpacingDefault
+        }
+
         Rectangle {
             width: parent.width - 2 * ComponentTokens.settingsContentPadding
             height: formatInfoTextItem.implicitHeight + 20

@@ -1735,6 +1735,11 @@ Dydis: %2</translation>
         <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
         <translation>Garsas nepasiekiamas. Šis įrašas bus be garso. Patikrinkite sistemos leidimus ir pasirinktą garso įrenginį.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>Nepakanka laisvos vietos diske aukštos kokybės įrašymui. Įrašoma pasirinkta kokybe.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -2167,6 +2172,11 @@ GIF įrašuose garsas nepalaikomas.</translation>
         <source>5 seconds</source>
         <translation>5 sekundės</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>Įrašyto vaizdo įrašo kokybė. Įjungus peržiūrą, įrašai fiksuojami aukšta kokybe ir išsaugant konvertuojami į šią kokybę.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>

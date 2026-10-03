@@ -1735,6 +1735,11 @@ Tamanho: %2</translation>
         <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
         <translation>O áudio não está disponível. Esta gravação ficará sem som. Verifique as permissões do sistema e o dispositivo de áudio selecionado.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>Não há espaço livre suficiente no disco para gravar em alta qualidade. A gravação será feita na qualidade selecionada.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -2167,6 +2172,11 @@ Ideal para clipes curtos e partilha na web.
         <source>5 seconds</source>
         <translation>5 segundos</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>Qualidade do vídeo guardado. Com a pré-visualização ativa, as gravações são captadas em alta qualidade e convertidas para esta qualidade ao guardar.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>
