@@ -67,7 +67,7 @@ struct WindowFrameMapping {
     QRect logicalScreen;
     QRect physicalScreen;
     qreal devicePixelRatio = 1.0;
-    QRect physicalRegion;
+    QRect physicalRegion; // The recorded region in physical pixels relative to the screen's physical origin (on every platform).
 
     bool isValid() const { return !logicalScreen.isEmpty() && !physicalRegion.isEmpty() && devicePixelRatio > 0.0; }
     // The part of `logicalBounds` inside the recorded frame, in video pixels; empty when none.

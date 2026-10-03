@@ -182,12 +182,12 @@ QRect WindowFrameMapping::toVideoRect(const QRect& logicalBounds) const
     }
     QRect physical;
     if (!physicalScreen.isEmpty()) {
-        physical = CoordinateHelper::toPhysicalScreenRect(onScreen, logicalScreen, physicalScreen, devicePixelRatio)
-                       .translated(-physicalRegion.topLeft());
+        physical = CoordinateHelper::toPhysicalScreenRect(onScreen, logicalScreen, physicalScreen, devicePixelRatio);
     } else {
         physical = CoordinateHelper::toPhysicalCoveringRect(onScreen.translated(-logicalScreen.topLeft()),
                                                            devicePixelRatio);
     }
+    physical.translate(-physicalRegion.topLeft());
     return physical.intersected(QRect(QPoint(0, 0), physicalRegion.size()));
 }
 

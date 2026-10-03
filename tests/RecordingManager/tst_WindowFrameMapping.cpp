@@ -45,6 +45,22 @@ void tst_WindowFrameMapping::mapsLogicalWindowsToVideoPixels_data()
     QTest::newRow("window on another screen is dropped") << secondary150 << QRect(0, 0, 100, 100) << QRect();
     // Hanging off the bottom-right of the recorded screen is clipped to the frame.
     QTest::newRow("overhanging window is clipped") << secondary150 << QRect(2531, 568, 400, 400) << QRect(1236, 852, 300, 300);
+
+    // Native branch with a region that is a strict sub-rect of the screen.
+    // Window (1720,10,100,40) is (13,10,100,40) relative to the logical screen; x1.5 outwards gives
+    // native (2560+19, 15)-(2560+170, 75) = (2579,15)-(2730,75). Minus the region origin (2660,50)
+    // that is (-81,-35)-(70,25), clipped to the 800x600 frame: (0,0,70,25).
+    WindowFrameMapping nativeSubRegion = secondary150;
+    nativeSubRegion.physicalRegion = QRect(2660, 50, 800, 600);
+    QTest::newRow("native sub-region window is clipped") << nativeSubRegion << QRect(1720, 10, 100, 40) << QRect(0, 0, 70, 25);
+
+    // macOS branch (no native bounds) with a sub-region: video pixels are relative to the region origin.
+    // Window (200,100,100,50) x2 = (400,200,200,100); minus the region origin (400,200) = (0,0,200,100).
+    const WindowFrameMapping macSubRegion{QRect(0, 0, 1440, 900), QRect(), 2.0, QRect(400, 200, 800, 600)};
+    QTest::newRow("mac sub-region window") << macSubRegion << QRect(200, 100, 100, 50) << QRect(0, 0, 200, 100);
+    // Window (550,300,200,200) x2 = (1100,600,400,400); minus the origin = (700,400,400,400),
+    // clipped to the 800x600 frame: (700,400,100,200).
+    QTest::newRow("mac sub-region window is clipped") << macSubRegion << QRect(550, 300, 200, 200) << QRect(700, 400, 100, 200);
 }
 
 void tst_WindowFrameMapping::mapsLogicalWindowsToVideoPixels()
