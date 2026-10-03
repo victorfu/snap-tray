@@ -1,6 +1,7 @@
 #include "SyntheticScroll.h"
 #include "longshot/LongshotAnalyzer.h"
 
+#include <QPainter>
 #include <QtTest>
 
 using namespace SnapTray::Longshot;
@@ -27,7 +28,7 @@ Pair makePair(const QImage& page, int offsetFrom, int offsetTo, const Disturbanc
     return p;
 }
 
-constexpr int kShiftTolerance = 1;
+constexpr int kShiftTolerance = 0;
 
 } // namespace
 
@@ -40,6 +41,7 @@ private slots:
     void recoversKnownShift();
     void stationaryIsDetected();
     void uniformRegionIsAmbiguous();
+    void periodicContentIsAmbiguous();
     void stickyHeaderBecomesTopBand();
     void tallHeaderLeavesContentOrRejects();
     void sidebarExcludedFromMovingSpan();
@@ -111,6 +113,34 @@ void tst_LongshotAnalyzer::uniformRegionIsAmbiguous()
     QVERIFY(!obs.has_value());
     const Pair same = makePair(page, 1600, 1600);
     QVERIFY(!LongshotAnalyzer::estimateShift(same.from, same.fromFeatures, same.to, same.toFeatures, 0, 1, AnalyzerParams{}).has_value());
+}
+
+void tst_LongshotAnalyzer::periodicContentIsAmbiguous()
+{
+    // A 600-row page whose middle repeats exactly every 44 rows (12-row bars),
+    // with one unique block at each end so the two frames are not identical.
+    constexpr int kPitch = 44;
+    QImage page(kViewport.width(), 600, QImage::Format_RGB32);
+    {
+        QPainter painter(&page);
+        // A faint background ramp (1 luma per 8 rows) keeps unshifted rows
+        // from matching each other, so the static-band pre-pass cannot call
+        // the periodic bars an overlay; the bars themselves stay periodic.
+        for (int y = 0; y < page.height(); ++y) {
+            const int luma = 255 - y / 8;
+            painter.fillRect(QRect(0, y, page.width(), 1), QColor(luma, luma, luma));
+        }
+        for (int y = 0; y + 12 <= page.height(); y += kPitch) {
+            if (y + 12 > 20 && y < 40) continue;   // keep the unique top block clean
+            if (y + 12 > 500 && y < 520) continue; // and the unique bottom block
+            painter.fillRect(QRect(24, y, page.width() - 48, 12), QColor(30, 30, 30));
+        }
+        painter.fillRect(QRect(24, 20, page.width() - 48, 20), QColor(200, 60, 60));
+        painter.fillRect(QRect(24, 500, page.width() - 48, 20), QColor(60, 60, 200));
+    }
+    const Pair p = makePair(page, 0, kPitch);
+    // Many shifts fit equally well, so the pair must be refused, not guessed.
+    QVERIFY(!LongshotAnalyzer::estimateShift(p.from, p.fromFeatures, p.to, p.toFeatures, 0, 1, AnalyzerParams{}).has_value());
 }
 
 void tst_LongshotAnalyzer::stickyHeaderBecomesTopBand()

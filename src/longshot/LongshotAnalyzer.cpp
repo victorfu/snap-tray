@@ -15,8 +15,8 @@ namespace SnapTray::Longshot {
 
 namespace {
 
-constexpr float kLumaMax = 255.0f;
 constexpr int kPeakExclusionRows = 2;   // neighbours of a chosen peak are not a second peak
+constexpr float kInkMeanDeviation = 8.0f; // luma: a row this far from the median row is solid ink, not background
 constexpr int kMinContentRows = 32;     // fewer usable rows than this: give up on the pair
 constexpr int kMinTemplateRows = 24;
 constexpr double kStationaryMeanDiff = 1.5; // whole-frame mean |diff| below this = no motion
@@ -25,6 +25,24 @@ constexpr int kMinMovingColumns = 32;
 cv::Mat gray(const QImage& image)
 {
     return MatConverter::toGray(image.format() == QImage::Format_RGB32 ? image : image.convertToFormat(QImage::Format_RGB32));
+}
+
+// A row carries information when it has vertical edges (text line borders) or
+// its mean luma departs from the frame's typical (background) row, which
+// catches the solid interior rows of text lines, blocks and headers.
+std::vector<char> inkedRows(const FrameFeatures& features, const AnalyzerParams& params)
+{
+    const size_t n = features.rowMean.size();
+    std::vector<char> inked(n, 0);
+    if (n == 0) return inked;
+    std::vector<float> sorted(features.rowMean);
+    std::nth_element(sorted.begin(), sorted.begin() + n / 2, sorted.end());
+    const float median = sorted[n / 2];
+    for (size_t y = 0; y < n; ++y) {
+        inked[y] = features.rowGradient[y] >= params.inkGradientThreshold
+                   || std::abs(features.rowMean[y] - median) >= kInkMeanDeviation;
+    }
+    return inked;
 }
 
 // Mean |a - b| per row, both the same size.
@@ -82,7 +100,9 @@ std::vector<double> phaseCorrelation(const std::vector<float>& from, const std::
     return out;
 }
 
-// Top-k local maxima of the response as signed shifts in [-n/2, n/2).
+// Highest `count` responses at least kPeakExclusionRows+1 apart, as signed
+// shifts. The response has length 2 * profileRows, so bins map to shifts in
+// [-profileRows, profileRows); only |shift| <= maxAbsShift is considered.
 std::vector<int> topShifts(const std::vector<double>& response, int count, int maxAbsShift)
 {
     const int n = int(response.size());
@@ -125,16 +145,14 @@ std::pair<double, int> refineByNcc(const cv::Mat& from, const cv::Mat& to, int c
     const cv::Rect tplRect(contentTo.left(), tplTop, contentTo.width(), tplHeight);
     if (tplRect.width <= 0 || tplRect.height <= 0) return {0.0, candidate};
     // Search window in `from`: rows [tplTop + candidate - radius, ... + tplHeight + radius).
-    const int clampedTop = tplTop + candidate - radius;
-    const int clampedBottom = tplTop + candidate + tplHeight + radius; // exclusive
-    const cv::Rect searchRect(contentTo.left(), clampedTop, contentTo.width(), clampedBottom - clampedTop);
-    if (searchRect.x + searchRect.width > from.cols || searchRect.y + searchRect.height > from.rows) return {0.0, candidate};
+    const int searchTop = tplTop + candidate - radius;
+    const cv::Rect searchRect(contentTo.left(), searchTop, contentTo.width(), tplHeight + 2 * radius);
     cv::Mat result;
     cv::matchTemplate(from(searchRect), to(tplRect), result, cv::TM_CCOEFF_NORMED);
     double minVal = 0.0, maxVal = 0.0;
     cv::Point minLoc, maxLoc;
     cv::minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc);
-    const int matchedRowInFrom = clampedTop + maxLoc.y;
+    const int matchedRowInFrom = searchTop + maxLoc.y;
     return {std::isfinite(maxVal) ? maxVal : 0.0, matchedRowInFrom - tplTop};
 }
 
@@ -161,16 +179,16 @@ FrameFeatures LongshotAnalyzer::computeFeatures(const QImage& frame, qint64 tMs)
     return f;
 }
 
-StaticBands LongshotAnalyzer::detectStaticBands(const QImage& fromImage, const QImage& toImage, int dy,
-                                                const AnalyzerParams& params)
+namespace {
+
+StaticBands staticBandsImpl(const cv::Mat& from, const cv::Mat& to, const FrameFeatures& toFeatures, int dy,
+                            const AnalyzerParams& params)
 {
     StaticBands bands;
     if (dy == 0) return bands;
-    const cv::Mat from = gray(fromImage);
-    const cv::Mat to = gray(toImage);
     if (from.size() != to.size()) return bands;
     const std::vector<double> unchanged = rowAbsDiff(from, to);
-    const FrameFeatures toFeatures = computeFeatures(toImage, 0);
+    const std::vector<char> inkedTo = inkedRows(toFeatures, params);
     // Rows that have ink and did not move, scanning in from the edges. Rows
     // without ink are skipped (they cannot tell us anything) but end the band
     // once a moving inked row has been seen.
@@ -191,8 +209,7 @@ StaticBands LongshotAnalyzer::detectStaticBands(const QImage& fromImage, const Q
         int band = 0;
         int y = start;
         while (y >= 0 && y < to.rows) {
-            const bool inked = toFeatures.rowGradient[y] >= params.inkGradientThreshold;
-            if (inked) {
+            if (inkedTo[y]) {
                 if (unchanged[y] > params.staticRowDiffThreshold) break;
                 // Unchanged only because the scroll moved it onto an identical
                 // row (inside a text line after a small shift) is no evidence
@@ -212,12 +229,8 @@ StaticBands LongshotAnalyzer::detectStaticBands(const QImage& fromImage, const Q
     return bands;
 }
 
-QRect LongshotAnalyzer::movingColumnSpan(const QImage& fromImage, const QImage& toImage, int dy,
-                                         const AnalyzerParams& params)
+QRect movingSpanImpl(const cv::Mat& from, const cv::Mat& to, const AnalyzerParams& params)
 {
-    Q_UNUSED(dy);
-    const cv::Mat from = gray(fromImage);
-    const cv::Mat to = gray(toImage);
     const QRect full(0, 0, to.cols, to.rows);
     if (from.size() != to.size()) return full;
     const std::vector<double> unchanged = columnAbsDiff(from, to);
@@ -229,6 +242,22 @@ QRect LongshotAnalyzer::movingColumnSpan(const QImage& fromImage, const QImage& 
     return QRect(left, 0, right - left + 1, to.rows);
 }
 
+} // namespace
+
+StaticBands LongshotAnalyzer::detectStaticBands(const QImage& fromImage, const QImage& toImage, int dy,
+                                                const AnalyzerParams& params)
+{
+    if (dy == 0 || fromImage.size() != toImage.size()) return StaticBands{};
+    return staticBandsImpl(gray(fromImage), gray(toImage), computeFeatures(toImage, 0), dy, params);
+}
+
+QRect LongshotAnalyzer::movingColumnSpan(const QImage& fromImage, const QImage& toImage, int dy,
+                                         const AnalyzerParams& params)
+{
+    Q_UNUSED(dy);
+    return movingSpanImpl(gray(fromImage), gray(toImage), params);
+}
+
 std::optional<ShiftObservation> LongshotAnalyzer::estimateShift(const QImage& fromImage, const FrameFeatures& fromFeatures,
                                                                 const QImage& toImage, const FrameFeatures& toFeatures,
                                                                 int fromIndex, int toIndex, const AnalyzerParams& params)
@@ -238,6 +267,11 @@ std::optional<ShiftObservation> LongshotAnalyzer::estimateShift(const QImage& fr
     const cv::Mat to = gray(toImage);
     const int height = to.rows;
     const int width = to.cols;
+    if (fromFeatures.rowMean.size() != size_t(height) || toFeatures.rowMean.size() != size_t(height)
+        || fromFeatures.rowGradient.size() != size_t(height) || toFeatures.rowGradient.size() != size_t(height)) {
+        qDebug() << "LongshotAnalyzer: feature size does not match the frame height";
+        return std::nullopt;
+    }
 
     ShiftObservation obs;
     obs.shift.from = fromIndex;
@@ -247,9 +281,11 @@ std::optional<ShiftObservation> LongshotAnalyzer::estimateShift(const QImage& fr
 
     // Frames without ink carry no information: two blank frames look
     // stationary but could be anywhere inside a blank region. Refuse them.
+    const std::vector<char> inkedFrom = inkedRows(fromFeatures, params);
+    const std::vector<char> inkedTo = inkedRows(toFeatures, params);
     int inkedAnywhere = 0;
     for (int y = 0; y < height; ++y) {
-        if (fromFeatures.rowGradient[y] >= params.inkGradientThreshold || toFeatures.rowGradient[y] >= params.inkGradientThreshold) ++inkedAnywhere;
+        if (inkedFrom[y] || inkedTo[y]) ++inkedAnywhere;
     }
     if (inkedAnywhere < kMinContentRows) {
         qDebug() << "LongshotAnalyzer: pair" << fromIndex << "->" << toIndex << "has no ink; ambiguous";
@@ -275,8 +311,12 @@ std::optional<ShiftObservation> LongshotAnalyzer::estimateShift(const QImage& fr
 
     // Static bands from the leading candidate, then redo the coarse pass on
     // content rows only so a header cannot pin the correlation at zero.
-    StaticBands bands = detectStaticBands(fromImage, toImage, candidates.front(), params);
-    const QRect span = movingColumnSpan(fromImage, toImage, candidates.front(), params);
+    // A zero candidate would report no bands at all, so prefer the first
+    // non-zero one for the pre-pass.
+    const auto firstNonZero = std::find_if(candidates.begin(), candidates.end(), [](int c) { return c != 0; });
+    const int bandProbe = firstNonZero != candidates.end() ? *firstNonZero : candidates.front();
+    const StaticBands bands = staticBandsImpl(from, to, toFeatures, bandProbe, params);
+    const QRect span = movingSpanImpl(from, to, params);
     const int contentTop = bands.top;
     const int contentBottom = height - bands.bottom; // exclusive
     if (contentBottom - contentTop < kMinContentRows) {
@@ -287,11 +327,11 @@ std::optional<ShiftObservation> LongshotAnalyzer::estimateShift(const QImage& fr
     std::vector<float> toProfile(toFeatures.rowMean.begin() + contentTop, toFeatures.rowMean.begin() + contentBottom);
     // Rows without ink in BOTH frames add nothing but noise; a fully blank
     // content area has no information at all.
-    int inkedRows = 0;
+    int inkedContentRows = 0;
     for (int y = contentTop; y < contentBottom; ++y) {
-        if (fromFeatures.rowGradient[y] >= params.inkGradientThreshold || toFeatures.rowGradient[y] >= params.inkGradientThreshold) ++inkedRows;
+        if (inkedFrom[y] || inkedTo[y]) ++inkedContentRows;
     }
-    if (inkedRows < kMinContentRows) {
+    if (inkedContentRows < kMinContentRows) {
         qDebug() << "LongshotAnalyzer: content area has no ink; ambiguous";
         return std::nullopt;
     }
@@ -313,7 +353,9 @@ std::optional<ShiftObservation> LongshotAnalyzer::estimateShift(const QImage& fr
         if (std::abs(refined[i].second - refined.front().second) > kPeakExclusionRows) { runnerUp = refined[i].first; break; }
     }
     const double confidence = std::clamp(best + (best - runnerUp), 0.0, 1.0);
-    if (best < params.minPeakScore || confidence < params.minConfidence) {
+    // Periodic content scores nearly as well at several shifts: reject on the
+    // margin over the runner-up (confidence is always >= best, so it cannot).
+    if (best < params.minPeakScore || best - runnerUp < params.minMargin) {
         qDebug() << "LongshotAnalyzer: ambiguous pair" << fromIndex << "->" << toIndex << "best" << best
                  << "runner-up" << runnerUp;
         return std::nullopt;
@@ -325,7 +367,7 @@ std::optional<ShiftObservation> LongshotAnalyzer::estimateShift(const QImage& fr
     // present in only one frame is indistinguishable from newly revealed
     // content within a single pair), so the band is attributed to both; the
     // pipeline resolves per frame across all of a frame's pairs.
-    const StaticBands finalBands = detectStaticBands(fromImage, toImage, obs.shift.dy, params);
+    const StaticBands finalBands = staticBandsImpl(from, to, toFeatures, obs.shift.dy, params);
     obs.bandsTo = finalBands;
     obs.bandsFrom = finalBands;
     obs.movingSpanFrom = span;
