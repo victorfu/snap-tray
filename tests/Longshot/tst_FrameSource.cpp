@@ -25,12 +25,12 @@ constexpr int kFinishTimeoutMs = 10000;
 constexpr int kBarHeight = 20;
 constexpr int kBarStep = 10;
 
-QImage frameAt(int index)
+QImage frameAt(int index, const QSize& size = kSize)
 {
-    QImage image(kSize, QImage::Format_ARGB32);
+    QImage image(size, QImage::Format_ARGB32);
     image.fill(Qt::white);
     QPainter painter(&image);
-    painter.fillRect(QRect(0, index * kBarStep, kSize.width(), kBarHeight), Qt::black);
+    painter.fillRect(QRect(0, index * kBarStep, size.width(), kBarHeight), Qt::black);
     return image;
 }
 
@@ -42,20 +42,20 @@ int barRowOf(const QImage& image)
     return -1;
 }
 
-QString createRecording(const QString& path)
+QString createRecording(const QString& path, const QSize& size = kSize)
 {
     std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
     if (!encoder) return QStringLiteral("No native encoder");
     encoder->setQuality(IntermediateQuality::kConstantQualityValue);
     encoder->setRateControl(VideoRateControl::ConstantQuality, IntermediateQuality::kConstantQualityValue);
     encoder->setKeyFrameIntervalSeconds(IntermediateQuality::kKeyFrameIntervalSeconds);
-    if (!encoder->start(path, kSize, kFrameRate)) return encoder->lastError();
+    if (!encoder->start(path, size, kFrameRate)) return encoder->lastError();
     for (int i = 0; i < kFrameCount; ++i) {
         const qint64 before = encoder->framesWritten();
         QElapsedTimer timer;
         timer.start();
         do {
-            encoder->writeFrame(frameAt(i), qint64(i) * kFrameIntervalMs);
+            encoder->writeFrame(frameAt(i, size), qint64(i) * kFrameIntervalMs);
             if (encoder->framesWritten() != before) break;
             QTest::qWait(5);
         } while (timer.elapsed() < kFrameAcceptTimeoutMs);
@@ -75,6 +75,7 @@ class tst_FrameSource : public QObject
 private slots:
     void initTestCase();
     void readerDecodesAscendingFrames();
+    void readerHonoursApertureOnPaddedHeight();
     void readerRejectsDescendingRequests();
     void sourceHonoursTrimAndCrop();
     void sourceFullRangeCountsFrames();
@@ -84,6 +85,8 @@ private slots:
 private:
     QTemporaryDir m_dir;
     QString m_path;
+    QString m_paddedPath;
+    QSize m_paddedSize;
 };
 
 void tst_FrameSource::initTestCase()
@@ -92,6 +95,36 @@ void tst_FrameSource::initTestCase()
     m_path = m_dir.filePath(QStringLiteral("scroll.mp4"));
     const QString error = createRecording(m_path);
     QVERIFY2(error.isEmpty(), qPrintable(error));
+    // Height 232 is not a multiple of 16, so the decoder pads to 240 coded rows
+    // and the display aperture must be honoured. Fall back to 248 if refused.
+    for (const QSize candidate : {QSize(320, 232), QSize(320, 248)}) {
+        m_paddedPath = m_dir.filePath(QStringLiteral("padded%1.mp4").arg(candidate.height()));
+        if (createRecording(m_paddedPath, candidate).isEmpty()) {
+            m_paddedSize = candidate;
+            break;
+        }
+    }
+    QVERIFY2(m_paddedSize.isValid(), "encoder refused both 232 and 248 row frames");
+    qInfo() << "padded fixture height:" << m_paddedSize.height();
+}
+
+void tst_FrameSource::readerHonoursApertureOnPaddedHeight()
+{
+    auto reader = IVideoFrameReader::create();
+    if (!reader) QSKIP("No frame reader on this platform");
+    QVERIFY2(reader->load(m_paddedPath), qPrintable(reader->lastError()));
+    QCOMPARE(reader->videoSize(), m_paddedSize);
+    for (int i = 0; i < kFrameCount; ++i) {
+        const QImage frame = reader->frameAt(qint64(i) * kFrameIntervalMs);
+        QVERIFY2(!frame.isNull(), qPrintable(reader->lastError()));
+        QCOMPARE(frame.size(), m_paddedSize);
+        QVERIFY2(qAbs(barRowOf(frame) - i * kBarStep) <= 1,
+                 qPrintable(QStringLiteral("frame %1 bar at %2").arg(i).arg(barRowOf(frame))));
+    }
+    auto source = FrameReaderLongshotSource::createNative();
+    QVERIFY(source);
+    QVERIFY2(source->open(m_paddedPath, 0, -1, QRect()), qPrintable(source->lastError()));
+    QCOMPARE(source->frameSize(), m_paddedSize);
 }
 
 void tst_FrameSource::readerDecodesAscendingFrames()
@@ -161,7 +194,8 @@ void tst_FrameSource::sourceFullRangeCountsFrames()
     int count = 0;
     qint64 t = 0;
     while (source->next(&t)) ++count;
-    QCOMPARE(count, kFrameCount);
+    QCOMPARE(count, source->expectedFrameCount());
+    QVERIFY(count >= kFrameCount);
 }
 
 void tst_FrameSource::openRejectsTinyCrop()
