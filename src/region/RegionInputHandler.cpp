@@ -1436,12 +1436,7 @@ SelectionStateManager::ResizeHandle RegionInputHandler::determineHandleFromOutsi
 void RegionInputHandler::adjustEdgesToPosition(const QPoint& pos,
     SelectionStateManager::ResizeHandle handle)
 {
-    QRect currentRect = m_selectionManager->selectionRect();
-    QRect newRect = SelectionResizeHelper::adjustEdgesToPosition(pos, handle, currentRect);
-
-    if (SelectionResizeHelper::meetsMinimumSize(newRect)) {
-        m_selectionManager->setSelectionRect(newRect);
-    }
+    m_selectionManager->resizeToPosition(pos, handle);
 }
 
 // ============================================================================
