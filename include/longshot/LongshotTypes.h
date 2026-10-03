@@ -58,6 +58,7 @@ struct SolveResult {
     std::vector<std::optional<int>> positions; // page offset of each frame's crop origin; nullopt = not placed
     std::vector<qint64> breakTimesMs;          // first frame time of every island that was not kept
     int rejectedEdges = 0;                     // outliers dropped during solving
+    bool converged = true;                     // false: an island solve hit its iteration cap; positions are unusable
 };
 
 struct LongshotOptions {

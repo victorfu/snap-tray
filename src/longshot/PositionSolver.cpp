@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <numeric>
 
 namespace SnapTray::Longshot {
@@ -52,8 +53,9 @@ std::vector<int> components(int frameCount, const std::vector<Edge>& edges)
 }
 
 // Weighted least squares for one island, anchored at `anchor` = 0.
+// *converged is cleared when conjugate gradient stops at its cap.
 std::vector<double> solveIsland(int frameCount, const std::vector<Edge>& edges,
-                                const std::vector<int>& root, int islandRoot, int anchor)
+                                const std::vector<int>& root, int islandRoot, int anchor, bool* converged)
 {
     std::vector<int> nodes; // island members except the anchor
     std::vector<int> slot(frameCount, -1);
@@ -91,11 +93,11 @@ std::vector<double> solveIsland(int frameCount, const std::vector<Edge>& edges,
     };
     std::vector<double> x(n, 0.0), r = b, p = b, Ap(n);
     double rr = std::inner_product(r.begin(), r.end(), r.begin(), 0.0);
-    bool converged = false;
+    bool done = false;
     for (int iteration = 0; iteration < n + kExtraIterations; ++iteration) {
         double maxResidual = 0.0;
         for (double v : r) maxResidual = std::max(maxResidual, std::abs(v));
-        if (maxResidual < kResidualTolerancePx) { converged = true; break; }
+        if (maxResidual < kResidualTolerancePx) { done = true; break; }
         applyA(p, Ap);
         const double pAp = std::inner_product(p.begin(), p.end(), Ap.begin(), 0.0);
         if (pAp <= 0.0) break;
@@ -106,11 +108,12 @@ std::vector<double> solveIsland(int frameCount, const std::vector<Edge>& edges,
         rr = rrNext;
         for (int i = 0; i < n; ++i) p[i] = r[i] + beta * p[i];
     }
-    if (!converged) {
+    if (!done) {
         double maxResidual = 0.0;
         for (double v : r) maxResidual = std::max(maxResidual, std::abs(v));
         if (maxResidual >= kResidualTolerancePx) {
             qWarning() << "PositionSolver: conjugate gradient did not converge; residual" << maxResidual;
+            *converged = false;
         }
     }
     for (int i = 0; i < n; ++i) pos[nodes[i]] = x[i];
@@ -121,7 +124,8 @@ std::vector<double> solveIsland(int frameCount, const std::vector<Edge>& edges,
 
 SolveResult PositionSolver::solve(const std::vector<qint64>& frameTimesMs,
                                   const std::vector<PairShift>& observations,
-                                  double maxResidualPx)
+                                  double maxResidualPx,
+                                  int frameHeight)
 {
     SolveResult result;
     const int frameCount = int(frameTimesMs.size());
@@ -150,7 +154,7 @@ SolveResult PositionSolver::solve(const std::vector<qint64>& frameTimesMs,
         for (int i = 0; i < frameCount; ++i) {
             if (solved[i]) continue;
             const int islandRoot = root[i];
-            const std::vector<double> islandPos = solveIsland(frameCount, edges, root, islandRoot, i);
+            const std::vector<double> islandPos = solveIsland(frameCount, edges, root, islandRoot, i, &result.converged);
             for (int j = 0; j < frameCount; ++j) {
                 if (root[j] == islandRoot) {
                     pos[j] = islandPos[j];
@@ -184,12 +188,27 @@ SolveResult PositionSolver::solve(const std::vector<qint64>& frameTimesMs,
                  << "dy" << edges[worst].dy << "residual" << worstResidual;
     }
 
-    // Keep the largest island (ties: the one containing the earliest frame).
+    // Keep the island with the longest page extent (a long scroll beats a long
+    // pause), then the most frames, then the one containing the earliest frame.
     std::vector<int> islandSize(frameCount, 0);
-    for (int i = 0; i < frameCount; ++i) ++islandSize[root[i]];
+    std::vector<double> islandMin(frameCount, std::numeric_limits<double>::max());
+    std::vector<double> islandMax(frameCount, std::numeric_limits<double>::lowest());
+    for (int i = 0; i < frameCount; ++i) {
+        ++islandSize[root[i]];
+        islandMin[root[i]] = std::min(islandMin[root[i]], pos[i]);
+        islandMax[root[i]] = std::max(islandMax[root[i]], pos[i]);
+    }
+    auto extent = [&](int r) {
+        return frameHeight > 0 ? std::lround(islandMax[r] - islandMin[r]) + frameHeight : 0L;
+    };
     int keptRoot = root[0];
     for (int i = 0; i < frameCount; ++i) {
-        if (islandSize[root[i]] > islandSize[keptRoot]) keptRoot = root[i];
+        const int r = root[i];
+        if (r == keptRoot) continue;
+        // Visiting frames in time order, a tie keeps the island seen first.
+        if (extent(r) > extent(keptRoot) || (extent(r) == extent(keptRoot) && islandSize[r] > islandSize[keptRoot])) {
+            keptRoot = r;
+        }
     }
     int anchor = -1;
     for (int i = 0; i < frameCount; ++i) {

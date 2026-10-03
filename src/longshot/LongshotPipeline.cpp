@@ -264,8 +264,14 @@ AnalysisResult LongshotPipeline::analyzeIncremental(LongshotFrameSource& source,
     std::vector<qint64> times;
     for (const FrameFeatures& f : result.frames) times.push_back(f.tMs);
 
-    // First solve on chain edges only.
-    result.solve = PositionSolver::solve(times, result.edges, params.maxResidualPx);
+    // First solve on chain edges only. Unconverged positions are never used.
+    result.solve = PositionSolver::solve(times, result.edges, params.maxResidualPx, result.frameSize.height());
+    if (!result.solve.converged) {
+        qWarning() << "LongshotPipeline: position solve did not converge; refusing to place frames";
+        result.error = LongshotError::NoReliableContent;
+        if (framesAnalyzed) *framesAnalyzed = analyzed;
+        return result;
+    }
 
     // Loop closures and island rejoin need full-resolution frames: pick the
     // pairs, then decode the range once more keeping only those frames,
@@ -326,7 +332,13 @@ AnalysisResult LongshotPipeline::analyzeIncremental(LongshotFrameSource& source,
             }
         }
         observations.insert(observations.end(), closureObservations.begin(), closureObservations.end());
-        result.solve = PositionSolver::solve(times, result.edges, params.maxResidualPx);
+        result.solve = PositionSolver::solve(times, result.edges, params.maxResidualPx, result.frameSize.height());
+        if (!result.solve.converged) {
+            qWarning() << "LongshotPipeline: position solve with closures did not converge; refusing to place frames";
+            result.error = LongshotError::NoReliableContent;
+            if (framesAnalyzed) *framesAnalyzed = analyzed;
+            return result;
+        }
     }
     result.islandsRejoined = std::max(0, islandsBefore - int(result.solve.breakTimesMs.size()));
 

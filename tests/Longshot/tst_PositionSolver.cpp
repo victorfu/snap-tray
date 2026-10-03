@@ -41,6 +41,8 @@ private slots:
     void longChainWithClosure();
     void equalWeightOutlierClosureRejected();
     void tieBreakIsOrderIndependent();
+    void keepsLongestExtentIsland();
+    void longMixedWeightChainConverges();
 };
 
 void tst_PositionSolver::chainIsCumulative()
@@ -175,6 +177,48 @@ void tst_PositionSolver::tieBreakIsOrderIndependent()
     QCOMPARE(*result.positions[3], 30);
     QCOMPARE(result.rejectedEdges, 1);
     QVERIFY(result.breakTimesMs.empty());
+}
+
+void tst_PositionSolver::keepsLongestExtentIsland()
+{
+    // Island A: a 300-frame pause (frames 0..299, all at one position).
+    // Island B: a 20-frame scroll (frames 300..319) spanning 0..4000 rows.
+    // Ranked by page extent, the short scroll wins over the long pause.
+    constexpr int kPauseFrames = 300;
+    constexpr int kScrollFrames = 20;
+    constexpr int kScrollSpan = 4000;
+    constexpr int kFrameHeight = 480;
+    std::vector<PairShift> edges;
+    for (int i = 0; i + 1 < kPauseFrames; ++i) edges.push_back(edge(i, i + 1, 0));
+    for (int k = 0; k + 1 < kScrollFrames; ++k) {
+        const int p0 = int(std::lround(double(kScrollSpan) * k / (kScrollFrames - 1)));
+        const int p1 = int(std::lround(double(kScrollSpan) * (k + 1) / (kScrollFrames - 1)));
+        edges.push_back(edge(kPauseFrames + k, kPauseFrames + k + 1, p1 - p0));
+    }
+    const auto result = PositionSolver::solve(times(kPauseFrames + kScrollFrames), edges, 3.0, kFrameHeight);
+    QVERIFY(result.converged);
+    QVERIFY(!result.positions[0].has_value());
+    QVERIFY(!result.positions[kPauseFrames - 1].has_value());
+    QCOMPARE(*result.positions[kPauseFrames], 0);
+    QCOMPARE(*result.positions[kPauseFrames + kScrollFrames - 1], kScrollSpan);
+    QCOMPARE(result.breakTimesMs, (std::vector<qint64>{0}));
+    // Without a frame height the ranking falls back to frame count: the pause wins.
+    const auto byCount = PositionSolver::solve(times(kPauseFrames + kScrollFrames), edges, 3.0);
+    QVERIFY(byCount.positions[0].has_value());
+    QVERIFY(!byCount.positions[kPauseFrames].has_value());
+}
+
+void tst_PositionSolver::longMixedWeightChainConverges()
+{
+    constexpr int kFrames = 4000;
+    std::vector<PairShift> edges;
+    for (int i = 0; i + 1 < kFrames; ++i) edges.push_back(edge(i, i + 1, 10, i % 2 == 0 ? 0.7 : 1.0));
+    const auto result = PositionSolver::solve(times(kFrames), edges, 3.0);
+    QVERIFY(result.converged);
+    QCOMPARE(*result.positions[kFrames - 1], 39990);
+    QCOMPARE(*result.positions[2000], 20000);
+    QVERIFY(result.breakTimesMs.empty());
+    QCOMPARE(result.rejectedEdges, 0);
 }
 
 QTEST_APPLESS_MAIN(tst_PositionSolver)
