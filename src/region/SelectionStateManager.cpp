@@ -45,12 +45,13 @@ int maximumRoundedLength(int maxLength, int maxOtherLength, RoundedDimension rou
 QSize ratioSizeFromHeight(int requestedHeight, qreal ratio, int maxWidth, int maxHeight,
                           int minimumSize = kMinimumResizeSize)
 {
-    const int minHeight = qMax(minimumSize, qCeil(minimumSize / ratio));
-    const int allowedHeight = maximumRoundedLength(maxHeight, maxWidth,
-        [ratio](int height) { return qRound(height * ratio); });
-    if (allowedHeight < minHeight) {
+    const auto roundedWidth = [ratio](int height) { return qRound(height * ratio); };
+    const int allowedHeight = maximumRoundedLength(maxHeight, maxWidth, roundedWidth);
+    if (allowedHeight < minimumSize || roundedWidth(allowedHeight) < minimumSize) {
         return {};
     }
+    const int minHeight = qMax(minimumSize,
+        maximumRoundedLength(allowedHeight, minimumSize - 1, roundedWidth) + 1);
 
     const int height = qBound(minHeight, requestedHeight, allowedHeight);
     const int width = qRound(height * ratio);
@@ -63,12 +64,13 @@ QSize ratioSizeFromHeight(int requestedHeight, qreal ratio, int maxWidth, int ma
 QSize ratioSizeFromWidth(int requestedWidth, qreal ratio, int maxWidth, int maxHeight,
                           int minimumSize = kMinimumResizeSize)
 {
-    const int minWidth = qMax(minimumSize, qCeil(minimumSize * ratio));
-    const int allowedWidth = maximumRoundedLength(maxWidth, maxHeight,
-        [ratio](int width) { return qRound(width / ratio); });
-    if (allowedWidth < minWidth) {
+    const auto roundedHeight = [ratio](int width) { return qRound(width / ratio); };
+    const int allowedWidth = maximumRoundedLength(maxWidth, maxHeight, roundedHeight);
+    if (allowedWidth < minimumSize || roundedHeight(allowedWidth) < minimumSize) {
         return {};
     }
+    const int minWidth = qMax(minimumSize,
+        maximumRoundedLength(allowedWidth, minimumSize - 1, roundedHeight) + 1);
 
     const int width = qBound(minWidth, requestedWidth, allowedWidth);
     const int height = qRound(width / ratio);
@@ -387,6 +389,11 @@ void SelectionStateManager::resizeToPosition(const QPoint& pos, ResizeHandle han
     const QPoint edgePoint(qBound(rect.left(), pos.x(), rect.right()),
                            qBound(rect.top(), pos.y(), rect.bottom()));
     const QRect resized = resizedRect(rect, handle, pos - edgePoint).normalized();
+    // Outside clicks only expand. Switching the driving axis of a rounded
+    // ratio at a perpendicular bound must not shrink either dimension.
+    if (resized.width() < rect.width() || resized.height() < rect.height()) {
+        return;
+    }
     if (resized.width() >= kMinimumResizeSize && resized.height() >= kMinimumResizeSize) {
         setSelectionRect(resized);
     }

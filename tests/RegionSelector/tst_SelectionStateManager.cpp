@@ -48,6 +48,8 @@ private slots:
     void testUpdateResize_BottomRight();
     void testFinishResize();
     void testResize_MinimumSize();
+    void testKeyboardReachesFirstRoundedSize_data();
+    void testKeyboardReachesFirstRoundedSize();
     void testKeyboardReachesLastRoundedSize_data();
     void testKeyboardReachesLastRoundedSize();
     void testKeyboardGrowAtRoundedRatioBound_data();
@@ -390,6 +392,61 @@ void tst_SelectionStateManager::testResize_MinimumSize()
     QCOMPARE(m_manager->selectionRect(), originalRect);
 }
 
+void tst_SelectionStateManager::testKeyboardReachesFirstRoundedSize_data()
+{
+    QTest::addColumn<qreal>("landscapeRatio");
+    QTest::addColumn<int>("firstWidth");
+    QTest::addColumn<int>("minimumSize");
+    QTest::addColumn<bool>("portrait");
+    struct RatioCase { const char* name; qreal ratio; int first10; int first20; };
+    const RatioCase cases[] = {
+        {"10-to-1", 10.0, 95, 195}, {"2-to-1", 2.0, 19, 39},
+        {"16-to-9", 16.0 / 9.0, 17, 35}, {"4-to-3", 4.0 / 3.0, 13, 26}
+    };
+    for (const auto& entry : cases) {
+        for (const int minimum : {10, 20}) {
+            const int first = minimum == 10 ? entry.first10 : entry.first20;
+            QTest::addRow("%s-min%d-landscape", entry.name, minimum)
+                << entry.ratio << first << minimum << false;
+            QTest::addRow("%s-min%d-portrait", entry.name, minimum)
+                << entry.ratio << first << minimum << true;
+        }
+    }
+}
+
+void tst_SelectionStateManager::testKeyboardReachesFirstRoundedSize()
+{
+    QFETCH(qreal, landscapeRatio);
+    QFETCH(int, firstWidth);
+    QFETCH(int, minimumSize);
+    QFETCH(bool, portrait);
+    const QPoint origin(10, 10);
+    const qreal ratio = portrait ? 1.0 / landscapeRatio : landscapeRatio;
+    const int initialWidth = qCeil(minimumSize * landscapeRatio);
+    const QSize initial(initialWidth, minimumSize);
+    const QSize first(firstWidth, minimumSize);
+    const QPoint shrink = portrait ? QPoint(0, -1) : QPoint(-1, 0);
+    m_manager->setAspectRatio(ratio);
+    m_manager->setSelectionRect(QRect(origin, portrait ? initial.transposed() : initial));
+    QSignalSpy changed(m_manager, &SelectionStateManager::selectionChanged);
+    for (int width = initialWidth - 1; width >= firstWidth; --width) {
+        QVERIFY(m_manager->resizeFromBottomRight(shrink, minimumSize));
+        const QSize expected(width, minimumSize);
+        QCOMPARE(m_manager->selectionRect(), QRect(origin, portrait ? expected.transposed() : expected));
+    }
+    const int expectedChanges = initialWidth - firstWidth;
+    QCOMPARE(changed.count(), expectedChanges);
+    for (int repeat = 0; repeat < 3; ++repeat) {
+        QVERIFY(!m_manager->resizeFromBottomRight(shrink, minimumSize));
+        QCOMPARE(m_manager->selectionRect(), QRect(origin, portrait ? first.transposed() : first));
+    }
+    QCOMPARE(changed.count(), expectedChanges);
+    QVERIFY(m_manager->resizeFromBottomRight(-shrink, minimumSize));
+    QVERIFY(m_manager->resizeFromBottomRight(shrink, minimumSize));
+    QCOMPARE(m_manager->selectionRect(), QRect(origin, portrait ? first.transposed() : first));
+    QCOMPARE(m_manager->aspectRatio(), ratio);
+}
+
 void tst_SelectionStateManager::testKeyboardReachesLastRoundedSize_data()
 {
     QTest::addColumn<qreal>("landscapeRatio");
@@ -504,7 +561,7 @@ void tst_SelectionStateManager::testKeyboardResizeHonorsAspectRatio_data()
     QTest::newRow("up") << QPoint(0, -1) << QSize(200, 100) << QSize(198, 99) << bounds << 10;
     QTest::newRow("width-boundary") << QPoint(0, 1) << QSize(400, 200) << QSize(400, 200) << bounds << 10;
     QTest::newRow("height-boundary") << QPoint(1, 0) << QSize(200, 100) << QSize(200, 100) << QRect(0, 0, 500, 200) << 10;
-    QTest::newRow("minimum-height") << QPoint(-1, 0) << QSize(20, 10) << QSize(20, 10) << bounds << 10;
+    QTest::newRow("minimum-rounded-height") << QPoint(-1, 0) << QSize(20, 10) << QSize(19, 10) << bounds << 10;
     QTest::newRow("custom-minimum") << QPoint(0, -1) << QSize(40, 20) << QSize(40, 20) << bounds << 20;
     QTest::newRow("portrait-right") << QPoint(1, 0) << QSize(100, 200) << QSize(101, 202) << bounds << 10;
     QTest::newRow("portrait-down") << QPoint(0, 1) << QSize(100, 200) << QSize(101, 201) << bounds << 10;
