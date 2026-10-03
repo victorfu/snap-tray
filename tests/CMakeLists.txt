@@ -658,6 +658,15 @@ if(WIN32)
     set_tests_properties(Encoding_MediaFoundationEncoderIntermediate PROPERTIES TIMEOUT 120 LABELS "integration;slow")
 endif()
 
+if(APPLE)
+    add_executable(Encoding_AVFoundationEncoderIntermediate Encoding/tst_AVFoundationEncoderIntermediate_mac.mm)
+    set_source_files_properties(Encoding/tst_AVFoundationEncoderIntermediate_mac.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+    target_link_libraries(Encoding_AVFoundationEncoderIntermediate PRIVATE snaptray_platform Qt6::Gui Qt6::Test
+        "-framework AVFoundation" "-framework CoreMedia")
+    add_test(NAME Encoding_AVFoundationEncoderIntermediate COMMAND Encoding_AVFoundationEncoderIntermediate)
+    set_tests_properties(Encoding_AVFoundationEncoderIntermediate PROPERTIES TIMEOUT 120 LABELS "integration;slow")
+endif()
+
 # ============================================================================
 # Detection Tests (link snaptray_algorithms)
 # ============================================================================
