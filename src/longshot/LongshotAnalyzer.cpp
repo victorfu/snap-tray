@@ -100,10 +100,14 @@ std::vector<double> phaseCorrelation(const std::vector<float>& from, const std::
     return out;
 }
 
-// Highest `count` responses at least kPeakExclusionRows+1 apart, as signed
+// Highest `count` responses at least `exclusion` rows apart, as signed
 // shifts. The response has length 2 * profileRows, so bins map to shifts in
 // [-profileRows, profileRows); only |shift| <= maxAbsShift is considered.
-std::vector<int> topShifts(const std::vector<double>& response, int count, int maxAbsShift)
+// Peaks closer than `exclusion` rows to a chosen one are skipped. Callers pass
+// 2 * refineRadius + 1: NCC refinement searches +-refineRadius around each
+// candidate, so candidates nearer than that would collapse onto the same dy
+// and hide the true runner-up.
+std::vector<int> topShifts(const std::vector<double>& response, int count, int maxAbsShift, int exclusion)
 {
     const int n = int(response.size());
     std::vector<std::pair<double, int>> peaks;
@@ -115,7 +119,7 @@ std::vector<int> topShifts(const std::vector<double>& response, int count, int m
     std::sort(peaks.begin(), peaks.end(), [](const auto& l, const auto& r) { return l.first > r.first; });
     std::vector<int> chosen;
     for (const auto& [score, shift] : peaks) {
-        if (std::any_of(chosen.begin(), chosen.end(), [&](int c) { return std::abs(c - shift) <= kPeakExclusionRows; })) continue;
+        if (std::any_of(chosen.begin(), chosen.end(), [&](int c) { return std::abs(c - shift) < exclusion; })) continue;
         chosen.push_back(shift);
         if (int(chosen.size()) == count) break;
     }
@@ -305,8 +309,11 @@ std::optional<ShiftObservation> LongshotAnalyzer::estimateShift(const QImage& fr
     const int maxAbsShift = height / std::max(1, params.maxShiftFraction);
 
     // Coarse pass 1: full-profile phase correlation gives a first dy.
+    // Fetch two spare peaks so the pool is not starved by the exclusion window.
+    const int coarsePool = params.coarseCandidates + 2;
+    const int coarseExclusion = 2 * params.refineRadius + 1;
     std::vector<int> candidates = topShifts(phaseCorrelation(fromFeatures.rowMean, toFeatures.rowMean),
-                                            params.coarseCandidates, maxAbsShift);
+                                            coarsePool, maxAbsShift, coarseExclusion);
     if (candidates.empty()) return std::nullopt;
 
     // Static bands from the leading candidate, then redo the coarse pass on
@@ -335,8 +342,9 @@ std::optional<ShiftObservation> LongshotAnalyzer::estimateShift(const QImage& fr
         qDebug() << "LongshotAnalyzer: content area has no ink; ambiguous";
         return std::nullopt;
     }
-    candidates = topShifts(phaseCorrelation(fromProfile, toProfile), params.coarseCandidates,
-                           std::min(maxAbsShift, (contentBottom - contentTop) / std::max(1, params.maxShiftFraction)));
+    candidates = topShifts(phaseCorrelation(fromProfile, toProfile), coarsePool,
+                           std::min(maxAbsShift, (contentBottom - contentTop) / std::max(1, params.maxShiftFraction)),
+                           coarseExclusion);
     if (candidates.empty()) return std::nullopt;
 
     // Fine pass: NCC around each candidate; best + margin = confidence.
@@ -344,7 +352,12 @@ std::optional<ShiftObservation> LongshotAnalyzer::estimateShift(const QImage& fr
     const QRect contentFrom = contentTo;
     std::vector<std::pair<double, int>> refined;
     for (int candidate : candidates) {
-        refined.push_back(refineByNcc(from, to, candidate, params.refineRadius, contentTo, contentFrom, params.templateRows));
+        if (int(refined.size()) == params.coarseCandidates) break;
+        const auto result = refineByNcc(from, to, candidate, params.refineRadius, contentTo, contentFrom, params.templateRows);
+        // Refine up to coarseCandidates *distinct* shifts.
+        const bool duplicate = std::any_of(refined.begin(), refined.end(),
+                                           [&](const auto& r) { return std::abs(r.second - result.second) <= kPeakExclusionRows; });
+        if (!duplicate) refined.push_back(result);
     }
     std::sort(refined.begin(), refined.end(), [](const auto& l, const auto& r) { return l.first > r.first; });
     const double best = refined.front().first;
