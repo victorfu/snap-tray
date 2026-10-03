@@ -5,6 +5,7 @@
 #include "encoding/NativeGifEncoder.h"
 #include "encoding/WebPAnimEncoder.h"
 #include "FakeAudioEncoder.h"
+#include "encoding/VideoRateControl.h"
 
 /**
  * @brief Tests for EncoderFactory
@@ -38,6 +39,8 @@ private slots:
     void testCreateNativeEncoder();
     void testCreateNativeEncoderWithAudio();
     void testCreateNativeEncoderWithQuality();
+    void testNativeEncoderReceivesRateControl_data();
+    void testNativeEncoderReceivesRateControl();
 
 private:
     QTemporaryDir* m_tempDir = nullptr;
@@ -261,4 +264,33 @@ void TestEncoderFactory::testCreateNativeEncoderWithQuality()
 }
 
 QTEST_MAIN(TestEncoderFactory)
+void TestEncoderFactory::testNativeEncoderReceivesRateControl_data()
+{
+    QTest::addColumn<int>("rateControl");
+    QTest::addColumn<int>("quality");
+    QTest::addColumn<int>("keyFrameIntervalSeconds");
+    QTest::newRow("defaults") << int(SnapTray::VideoRateControl::Bitrate) << 55 << 0;
+    QTest::newRow("intermediate") << int(SnapTray::VideoRateControl::ConstantQuality) << 85 << 1;
+}
+
+void TestEncoderFactory::testNativeEncoderReceivesRateControl()
+{
+    QFETCH(int, rateControl);
+    QFETCH(int, quality);
+    QFETCH(int, keyFrameIntervalSeconds);
+    auto config = createTestConfig(EncoderFactory::Format::MP4);
+    config.rateControl = static_cast<SnapTray::VideoRateControl>(rateControl);
+    config.quality = quality;
+    config.keyFrameIntervalSeconds = keyFrameIntervalSeconds;
+    auto state = std::make_shared<AudioEncoderTestState>();
+    auto result = EncoderFactoryTestAccess::create(config, this, state);
+    QVERIFY(result.success);
+    QVERIFY(result.isNative);
+    QCOMPARE(int(state->rateControl), rateControl);
+    QCOMPARE(state->rateControlQuality, quality);
+    QCOMPARE(state->keyFrameIntervalSeconds, keyFrameIntervalSeconds);
+    QCOMPARE(state->quality, quality);
+    delete result.nativeEncoder;
+}
+
 #include "tst_EncoderFactory.moc"

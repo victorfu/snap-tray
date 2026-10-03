@@ -5,6 +5,7 @@
 #include <QSize>
 #include <QString>
 #include <functional>
+#include "encoding/VideoRateControl.h"
 
 class IVideoEncoder;
 class NativeGifEncoder;
@@ -48,6 +49,11 @@ public:
 
         // Native encoder settings
         int quality = 55;  // 0-100 (higher = better quality, larger file)
+        // Native (MP4) encoders only. ConstantQuality uses `quality` as the
+        // quality target and VideoBitrate as a ceiling; 0 keyframe seconds
+        // keeps the encoder default.
+        SnapTray::VideoRateControl rateControl = SnapTray::VideoRateControl::Bitrate;
+        int keyFrameIntervalSeconds = 0;
 
         // GIF settings (msf_gif)
         int gifBitDepth = 16;  // 1-16, higher = better colors but larger file
