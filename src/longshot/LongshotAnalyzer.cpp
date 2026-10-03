@@ -21,6 +21,9 @@ constexpr int kMinContentRows = 32;     // fewer usable rows than this: give up 
 constexpr int kMinTemplateRows = 24;
 constexpr double kStationaryMeanDiff = 1.5; // whole-frame mean |diff| below this = no motion
 constexpr int kMinMovingColumns = 32;
+// A static edge run of columns is a side panel only if some column in it has
+// at least this vertical luma deviation; a blank page margin is not a panel.
+constexpr double kStaticColumnInkStdDev = 4.0;
 constexpr double kMinTemplateStdDev = 3.0; // luma: a flatter template (or match window) scores 1.0 in OpenCV for any content
 constexpr int kMinTemplateInkedRows = 6;   // rows with ink the NCC template band must contain
 constexpr int kTemplateSlideStep = 8;      // rows between candidate template positions
@@ -314,6 +317,30 @@ QRect movingSpanImpl(const cv::Mat& from, const cv::Mat& to, const AnalyzerParam
     int right = to.cols - 1;
     while (right > left && unchanged[right] < params.movingColumnDiffThreshold) --right;
     if (right - left + 1 < kMinMovingColumns) return full;
+    // Like static bands, a static run needs ink: uniform margin columns carry
+    // no evidence of an overlay and stay inside the span.
+    auto columnStd = [](const cv::Mat& m) {
+        cv::Mat f, mean, meanSq;
+        m.convertTo(f, CV_32F);
+        cv::reduce(f, mean, 0, cv::REDUCE_AVG, CV_32F);
+        cv::reduce(f.mul(f), meanSq, 0, cv::REDUCE_AVG, CV_32F);
+        std::vector<double> out(m.cols);
+        for (int x = 0; x < m.cols; ++x) {
+            const double mu = mean.at<float>(0, x);
+            out[x] = std::sqrt(std::max(0.0, double(meanSq.at<float>(0, x)) - mu * mu));
+        }
+        return out;
+    };
+    const std::vector<double> stdFrom = columnStd(from);
+    const std::vector<double> stdTo = columnStd(to);
+    auto runHasInk = [&](int begin, int end) { // [begin, end)
+        for (int x = begin; x < end; ++x) {
+            if (std::max(stdFrom[x], stdTo[x]) >= kStaticColumnInkStdDev) return true;
+        }
+        return false;
+    };
+    if (!runHasInk(0, left)) left = 0;
+    if (!runHasInk(right + 1, to.cols)) right = to.cols - 1;
     return QRect(left, 0, right - left + 1, to.rows);
 }
 

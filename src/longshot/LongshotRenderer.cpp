@@ -100,7 +100,8 @@ bool framesAgreeOnTile(const AnalysisResult& a, int i, int j, int minPosition, i
     int compared = 0, differing = 0;
     compareRowMeans(a, i, j, minPosition, top, bottom, &compared, &differing);
     const int allowed = std::max(kMinDeviatingRows, (bottom - top) / kRowMeanOutlierRowsDivisor);
-    return differing <= allowed;
+    // Strict: a transient covering exactly `allowed` rows is a disagreement.
+    return differing < allowed;
 }
 
 } // namespace
@@ -189,17 +190,22 @@ RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString
     const int frameCount = int(a.frames.size());
     if (frameCount == 0 || a.solve.positions.size() != a.frames.size()) { result.error = LongshotError::NoReliableContent; return result; }
 
-    // Common column span and vertical extent over placed frames.
+    // Output columns: the union of the placed frames' moving spans. A column is
+    // cropped only when it is static in EVERY placed frame (no placed frame
+    // moves there), so one quiet pair cannot narrow the whole page.
     int minPosition = std::numeric_limits<int>::max();
-    QRect columns(0, 0, a.frameSize.width(), 1);
+    QRect columns;
     int firstPlaced = -1;
     for (int i = 0; i < frameCount; ++i) {
         if (!a.solve.positions[i].has_value() || !a.frames[i].validContentRect.isValid()) continue;
-        if (firstPlaced < 0) firstPlaced = i;
-        minPosition = std::min(minPosition, *a.solve.positions[i]);
         const QRect v = a.frames[i].validContentRect;
-        columns.setLeft(std::max(columns.left(), v.left()));
-        columns.setRight(std::min(columns.right(), v.right()));
+        if (firstPlaced < 0) {
+            firstPlaced = i;
+            columns = QRect(v.left(), 0, v.width(), 1);
+        }
+        minPosition = std::min(minPosition, *a.solve.positions[i]);
+        columns.setLeft(std::min(columns.left(), v.left()));
+        columns.setRight(std::max(columns.right(), v.right()));
     }
     if (firstPlaced < 0 || columns.width() <= 0) { result.error = LongshotError::NoReliableContent; return result; }
     result.autoCroppedLeft = columns.left();
@@ -237,9 +243,32 @@ RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString
         renderHeight = maxHeight;
         result.heightCapped = true;
     }
-    QImage canvas(columns.width(), renderHeight, QImage::Format_RGB32);
-    if (canvas.isNull()) { result.error = LongshotError::OutOfMemory; return result; }
-    canvas.fill(Qt::white);
+    // Output parts: one (possibly capped) image, or consecutive maxHeight
+    // slices when splitting. Each part is its own allocation; no full-height
+    // canvas exists when splitting.
+    const int partHeight = options.splitOversize && outputHeight > maxHeight ? maxHeight : renderHeight;
+    QList<QImage> parts;
+    for (int top = 0; top < renderHeight; top += partHeight) {
+        QImage part(columns.width(), std::min(partHeight, renderHeight - top), QImage::Format_RGB32);
+        if (part.isNull()) { result.error = LongshotError::OutOfMemory; return result; }
+        part.fill(Qt::white);
+        parts.push_back(part);
+    }
+    if (parts.isEmpty()) { result.error = LongshotError::NoReliableContent; return result; }
+    // Paints frame rows [srcTop, srcTop + height) (output columns) at output
+    // row destTop, into every part the range overlaps.
+    auto paintRows = [&](const QImage& frame, int srcTop, int destTop, int height) {
+        const int first = std::max(0, destTop / partHeight);
+        for (int p = first; p < parts.size(); ++p) {
+            const int partTop = p * partHeight;
+            const int from = std::max(destTop, partTop);
+            const int to = std::min(destTop + height, partTop + int(parts[p].height()));
+            if (from >= destTop + height) break;
+            if (to <= from) continue;
+            QPainter painter(&parts[p]);
+            painter.drawImage(QPoint(0, from - partTop), frame, QRect(columns.left(), srcTop + (from - destTop), columns.width(), to - from));
+        }
+    };
 
     // Which frames paint which output row ranges.
     std::map<int, std::vector<std::pair<int, int>>> ranges; // frame -> [(outTop, outBottom)]
@@ -264,7 +293,11 @@ RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString
     }
 
     if (!source.open(path, startMs, endMs, crop)) { result.error = LongshotError::SourceUnavailable; return result; }
-    QPainter painter(&canvas);
+    if (source.frameSize() != a.frameSize) {
+        qWarning() << "LongshotRenderer: source frame size" << source.frameSize() << "does not match the analysis" << a.frameSize;
+        result.error = LongshotError::SourceUnavailable;
+        return result;
+    }
     int index = 0;
     qint64 tMs = 0;
     const int expected = std::max(1, source.expectedFrameCount());
@@ -275,7 +308,7 @@ RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString
             for (const auto& [outTop, outBottom] : it->second) {
                 if (outTop < 0) {
                     // Header band from the frame's excluded top rows.
-                    painter.drawImage(QPoint(0, 0), *frame, QRect(columns.left(), 0, columns.width(), headerRows));
+                    paintRows(*frame, 0, 0, std::min(headerRows, renderHeight));
                     continue;
                 }
                 const int srcTop = outTop - pos;
@@ -283,7 +316,7 @@ RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString
                 const int height = outBottom - outTop;
                 if (destTop >= renderHeight) continue;
                 const int clippedHeight = std::min(height, renderHeight - destTop);
-                painter.drawImage(QPoint(0, destTop), *frame, QRect(columns.left(), srcTop, columns.width(), clippedHeight));
+                paintRows(*frame, srcTop, destTop, clippedHeight);
                 if (bestEdgeConfidence[index] < kLowConfidence && index != firstPlaced) {
                     for (int y = destTop; y < destTop + clippedHeight; ++y) result.lowConfidenceRows.push_back(y);
                 }
@@ -292,7 +325,6 @@ RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString
         ++index;
         if (progress && !progress(std::min(99, int(qint64(index) * 100 / expected)))) { result.error = LongshotError::Cancelled; return result; }
     }
-    painter.end();
     if (index < frameCount || !source.lastError().isEmpty()) {
         // A partial canvas must not be presented as complete.
         qWarning() << "LongshotRenderer: decode stopped at frame" << index << "of" << frameCount << source.lastError();
@@ -300,13 +332,7 @@ RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString
         return result;
     }
 
-    if (options.splitOversize && outputHeight > maxHeight) {
-        for (int top = 0; top < outputHeight; top += maxHeight) {
-            result.parts.push_back(canvas.copy(0, top, canvas.width(), std::min(maxHeight, outputHeight - top)));
-        }
-    } else {
-        result.parts.push_back(canvas);
-    }
+    result.parts = parts;
     std::sort(result.breakRows.begin(), result.breakRows.end());
     if (progress) progress(100);
     qDebug() << "LongshotRenderer: height" << result.fullHeightPx << "parts" << result.parts.size() << "capped" << result.heightCapped

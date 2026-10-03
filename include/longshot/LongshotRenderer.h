@@ -12,7 +12,13 @@
 namespace SnapTray::Longshot {
 
 // Edges below this confidence mark the rows they place as low confidence.
-constexpr double kLowConfidence = 0.5;
+// The analyzer only accepts a pair whose best NCC score reaches minPeakScore
+// (0.55) with a margin of minMargin (0.15) over the runner-up, and reports
+// confidence = best + margin, so every accepted edge lies in
+// [minPeakScore + minMargin, 1.0] = [0.70, 1.0]. A threshold at or below 0.70
+// could never fire; 0.85 marks the weaker half of the accepted range. Keep it
+// inside that range if AnalyzerParams defaults change.
+constexpr double kLowConfidence = 0.85;
 
 struct RenderResult {
     LongshotError error = LongshotError::None;
