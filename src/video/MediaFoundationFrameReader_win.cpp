@@ -28,6 +28,8 @@ qint64 hnsToMs(LONGLONG hns)
     return qint64((hns + kHnsPerMs / 2) / kHnsPerMs);
 }
 
+// Construct, use and destroy on one thread: COM is initialised in the constructor and
+// uninitialised in the destructor on the calling thread.
 class MediaFoundationFrameReader final : public IVideoFrameReader
 {
 public:
@@ -49,6 +51,8 @@ public:
     bool load(const QString& filePath) override
     {
         m_lastError.clear();
+        m_loaded = false;
+        m_reader.Reset();
         if (FAILED(m_mfResult)) {
             m_lastError = QStringLiteral("Media Foundation unavailable");
             return false;
@@ -91,12 +95,19 @@ public:
         hr = m_reader->GetPresentationAttribute(MF_SOURCE_READER_MEDIASOURCE, MF_PD_DURATION, &duration);
         m_durationMs = SUCCEEDED(hr) && duration.vt == VT_UI8 ? hnsToMs(LONGLONG(duration.uhVal.QuadPart)) : 0;
         PropVariantClear(&duration);
+        if (m_durationMs <= 0) return fail(QStringLiteral("Invalid media duration"), E_FAIL);
 
         m_current = QImage();
         m_lookAhead = QImage();
         m_lookAheadMs = -1;
         m_lastRequestMs = -1;
         m_endOfStream = false;
+        // Pre-roll the first sample: the decoder reports its real output layout
+        // (coded size and display aperture) with the first sample, and
+        // readNext() re-reads the layout when that happens.
+        if (!readNext()) return false;
+        if (m_lookAhead.isNull()) return fail(QStringLiteral("No video frames"), MF_E_END_OF_STREAM);
+        m_loaded = true;
         return true;
     }
 
@@ -141,7 +152,9 @@ private:
     {
         m_lastError = QStringLiteral("%1 (hr=0x%2)").arg(message).arg(ulong(hr), 8, 16, QChar('0'));
         qWarning() << "MediaFoundationFrameReader:" << m_lastError;
-        m_reader.Reset();
+        // A failed load leaves no reader; after a successful load the reader is kept so
+        // the error text survives repeated calls.
+        if (!m_loaded) m_reader.Reset();
         return false;
     }
 
@@ -191,7 +204,10 @@ private:
             }
             if (!sample) continue; // stream tick or gap: keep reading
             QImage frame = copySample(sample.Get());
-            if (frame.isNull()) return false;
+            if (frame.isNull()) {
+                if (m_lastError.isEmpty()) m_lastError = QStringLiteral("Frame copy failed");
+                return false;
+            }
             m_lookAhead = frame;
             m_lookAheadMs = hnsToMs(timestamp);
             return true;
@@ -255,6 +271,7 @@ private:
     qint64 m_lookAheadMs = -1;
     qint64 m_lastRequestMs = -1;
     bool m_endOfStream = false;
+    bool m_loaded = false;
     QString m_lastError;
 };
 
