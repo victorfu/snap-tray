@@ -17,6 +17,7 @@ constexpr int kProgressClosureEnd = 95;
 constexpr int kBytesPerPixel = 4;
 constexpr int kRejoinNeighbours = 3;      // placed frames tried on each side of an unplaced frame
 constexpr int kClosureStride = 4;         // frames skipped between overlap closure checks
+constexpr int kMinClosureOverlapFraction = 4;     // closures need an overlap of at least frameHeight / this
 constexpr double kClosureRowTolerance = 10.0;     // mean |luma diff| for a row to agree at the claimed shift
 constexpr int kClosureMinInkedRows = 12;          // overlap rows with ink needed to trust a closure
 constexpr double kClosureMinAgreement = 0.75;     // fraction of inked overlap rows that must agree
@@ -43,10 +44,11 @@ bool closureAgreesWithPixels(const QImage& fromImage, const QImage& toImage, con
     const int bottom = std::min({height, height - dy, height - obs.bandsTo.bottom, height - obs.bandsFrom.bottom - dy});
     QRect span = obs.movingSpanTo.isEmpty() ? to.rect() : obs.movingSpanTo.intersected(to.rect());
     if (span.isEmpty()) span = to.rect();
+    const std::vector<char> inkRows = LongshotAnalyzer::rowInkFlags(toFeatures, analyzer);
     int inked = 0;
     int agreeing = 0;
     for (int y = top; y < bottom; ++y) {
-        if (toFeatures.rowGradient[y] < analyzer.inkGradientThreshold) continue;
+        if (!inkRows[y]) continue;
         const uchar* a = to.constScanLine(y);
         const uchar* b = from.constScanLine(y + dy);
         qint64 sum = 0;
@@ -60,6 +62,34 @@ bool closureAgreesWithPixels(const QImage& fromImage, const QImage& toImage, con
 bool report(const ProgressFn& progress, int percent)
 {
     return !progress || progress(percent);
+}
+
+// A stationary pair shows the same view twice, so it observes no bands of its
+// own; the two frames must share one mask. Iterates to a fixed point so a
+// whole pause run inherits what its moving neighbours measured.
+void propagateStationaryMasks(std::vector<FrameFeatures>& frames, const std::vector<ShiftObservation>& observations)
+{
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        for (const ShiftObservation& o : observations) {
+            if (!o.stationary) continue;
+            if (o.shift.from < 0 || o.shift.to < 0 || o.shift.from >= int(frames.size()) || o.shift.to >= int(frames.size())) continue;
+            FrameFeatures& a = frames[size_t(o.shift.from)];
+            FrameFeatures& b = frames[size_t(o.shift.to)];
+            StaticBands merged;
+            merged.top = std::max(a.excludedBands.top, b.excludedBands.top);
+            merged.bottom = std::max(a.excludedBands.bottom, b.excludedBands.bottom);
+            merged.left = std::max(a.excludedBands.left, b.excludedBands.left);
+            merged.right = std::max(a.excludedBands.right, b.excludedBands.right);
+            const QRect rect = a.validContentRect.intersected(b.validContentRect);
+            if (!(a.excludedBands == merged) || !(b.excludedBands == merged) || a.validContentRect != rect || b.validContentRect != rect) {
+                a.excludedBands = b.excludedBands = merged;
+                a.validContentRect = b.validContentRect = rect;
+                changed = true;
+            }
+        }
+    }
 }
 
 } // namespace
@@ -142,7 +172,7 @@ std::vector<std::pair<int, int>> LongshotPipeline::selectClosureCandidates(const
         for (size_t bi = ai + 1; bi < placed.size(); ++bi) {
             const int b = placed[bi];
             if (b - a < loopMinGapFrames) continue;
-            if (std::abs(*solve.positions[a] - *solve.positions[b]) >= frameHeight) continue;
+            if (std::abs(*solve.positions[a] - *solve.positions[b]) > frameHeight - frameHeight / kMinClosureOverlapFraction) continue;
             tryAdd(a, b, loopMinGapFrames);
             break; // one closure per anchor keeps the budget for other anchors
         }
@@ -209,8 +239,11 @@ AnalysisResult LongshotPipeline::analyzeIncremental(LongshotFrameSource& source,
         if (!report(progress, std::min(kProgressAnalyzeEnd, int(qint64(result.frames.size()) * kProgressAnalyzeEnd / expected)))) {
             result.error = LongshotError::Cancelled;
             if (framesAnalyzed) *framesAnalyzed = analyzed;
-        return result;
+            return result;
         }
+    }
+    if (!source.lastError().isEmpty() && !result.frames.empty()) {
+        qWarning() << "LongshotPipeline: decoding stopped early after" << result.frames.size() << "frames:" << source.lastError();
     }
     if (!source.lastError().isEmpty() && result.frames.empty()) {
         result.error = LongshotError::SourceUnavailable;
@@ -233,8 +266,11 @@ AnalysisResult LongshotPipeline::analyzeIncremental(LongshotFrameSource& source,
     // within the memory budget.
     const int height = result.frameSize.height();
     const qint64 bytesPerFrame = qint64(result.frameSize.width()) * height * kBytesPerPixel;
-    const int budgetFrames = int(std::min<qint64>(params.maxClosureFrames, std::max<qint64>(2, params.closureFrameBudgetBytes / std::max<qint64>(1, bytesPerFrame))));
-    const auto candidates = selectClosureCandidates(result.solve, height, times, params.loopMinGapFrames, budgetFrames);
+    const qint64 fitFrames = params.closureFrameBudgetBytes / std::max<qint64>(1, bytesPerFrame);
+    const int budgetFrames = int(std::min<qint64>(params.maxClosureFrames, fitFrames));
+    if (budgetFrames < 2) qWarning() << "LongshotPipeline: closure frame budget too small for even one pair; skipping loop closures";
+    const auto candidates = budgetFrames < 2 ? std::vector<std::pair<int, int>>()
+                                             : selectClosureCandidates(result.solve, height, times, params.loopMinGapFrames, budgetFrames);
     const int islandsBefore = int(result.solve.breakTimesMs.size());
     if (!candidates.empty()) {
         std::set<int> wanted;
@@ -243,12 +279,15 @@ AnalysisResult LongshotPipeline::analyzeIncremental(LongshotFrameSource& source,
         if (source.open(path, startMs, endMs, crop)) {
             int index = 0;
             while (auto frame = source.next(&tMs)) {
-                if (wanted.count(index)) kept[index] = *frame;
+                if (wanted.count(index)) {
+                    if (index < int(times.size()) && tMs == times[size_t(index)]) kept[index] = *frame;
+                    else qDebug() << "LongshotPipeline: decode order changed at frame" << index << "time" << tMs << "expected" << (index < int(times.size()) ? times[size_t(index)] : -1) << "; skipping its closures";
+                }
                 ++index;
                 if (!report(progress, kProgressAnalyzeEnd + std::min(int(qint64(index) * (kProgressClosureEnd - kProgressAnalyzeEnd) / (2 * expected)), (kProgressClosureEnd - kProgressAnalyzeEnd) / 2))) {
                     result.error = LongshotError::Cancelled;
                     if (framesAnalyzed) *framesAnalyzed = analyzed;
-        return result;
+                    return result;
                 }
             }
         } else {
@@ -270,12 +309,14 @@ AnalysisResult LongshotPipeline::analyzeIncremental(LongshotFrameSource& source,
                 closureObservations.push_back(*obs);
                 result.edges.push_back(obs->shift);
                 ++result.closuresAccepted;
+            } else if (obs) {
+                ++result.pixelRejectedClosures;
             }
             if (!report(progress, kProgressAnalyzeEnd + (kProgressClosureEnd - kProgressAnalyzeEnd) / 2
                                       + int(qint64(k + 1) * (kProgressClosureEnd - kProgressAnalyzeEnd) / (2 * candidates.size())))) {
                 result.error = LongshotError::Cancelled;
                 if (framesAnalyzed) *framesAnalyzed = analyzed;
-        return result;
+                return result;
             }
         }
         observations.insert(observations.end(), closureObservations.begin(), closureObservations.end());
@@ -285,6 +326,7 @@ AnalysisResult LongshotPipeline::analyzeIncremental(LongshotFrameSource& source,
 
     for (FrameFeatures& f : result.frames) f.validContentRect = QRect(QPoint(0, 0), result.frameSize);
     resolveFrameMasks(result.frames, observations);
+    propagateStationaryMasks(result.frames, observations);
 
     bool anyPlaced = false;
     for (const auto& p : result.solve.positions) anyPlaced = anyPlaced || p.has_value();
@@ -293,7 +335,8 @@ AnalysisResult LongshotPipeline::analyzeIncremental(LongshotFrameSource& source,
     if (!report(progress, 100)) result.error = LongshotError::Cancelled;
     qDebug() << "LongshotPipeline: frames" << result.frames.size() << "rejected pairs" << result.rejectedPairs
              << "closures" << result.closuresAccepted << "/" << result.closuresTried << "breaks" << result.solve.breakTimesMs.size()
-             << "rejoined" << result.islandsRejoined;
+             << "rejoined" << result.islandsRejoined << "solver-rejected edges" << result.solve.rejectedEdges
+             << "pixel-rejected closures" << result.pixelRejectedClosures;
     return result;
 }
 
