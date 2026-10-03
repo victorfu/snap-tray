@@ -35,6 +35,7 @@ struct AnalysisResult {
     int rejectedPairs = 0;             // chain pairs the analyzer could not match
     int closuresTried = 0;
     int closuresAccepted = 0;
+    int pixelRejectedClosures = 0;     // closures the analyzer accepted but the pixel check refused
     int islandsRejoined = 0;
 };
 

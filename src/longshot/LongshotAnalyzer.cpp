@@ -21,6 +21,9 @@ constexpr int kMinContentRows = 32;     // fewer usable rows than this: give up 
 constexpr int kMinTemplateRows = 24;
 constexpr double kStationaryMeanDiff = 1.5; // whole-frame mean |diff| below this = no motion
 constexpr int kMinMovingColumns = 32;
+constexpr double kMinTemplateStdDev = 3.0; // luma: a flatter template (or match window) scores 1.0 in OpenCV for any content
+constexpr int kMinTemplateInkedRows = 6;   // rows with ink the NCC template band must contain
+constexpr int kTemplateSlideStep = 8;      // rows between candidate template positions
 
 cv::Mat gray(const QImage& image)
 {
@@ -131,7 +134,8 @@ std::vector<int> topShifts(const std::vector<double>& response, int count, int m
 // and the refined dy. With dy = pageOffset(to) - pageOffset(from): a row y of
 // `to` shows page row offsetTo + y, which in `from` is row y + dy.
 std::pair<double, int> refineByNcc(const cv::Mat& from, const cv::Mat& to, int candidate, int radius,
-                                   const QRect& contentTo, const QRect& contentFrom, int templateRows)
+                                   const QRect& contentTo, const QRect& contentFrom, int templateRows,
+                                   const std::vector<char>& inkedTo)
 {
     // Template: a band of `to` that has a counterpart in `from` for every
     // shift within +-radius of the candidate. `to` row y corresponds to `from`
@@ -145,7 +149,23 @@ std::pair<double, int> refineByNcc(const cv::Mat& from, const cv::Mat& to, int c
     if (overlapRows < kMinTemplateRows) return {0.0, candidate};
     const int tplHeight = std::clamp(templateRows, kMinTemplateRows,
                                      std::min(overlapRows, std::max(kMinTemplateRows, contentTo.height() / 2)));
-    const int tplTop = overlapTop + (overlapRows - tplHeight) / 2;
+    // Slide the template over the overlap and keep the position holding the
+    // most inked rows (ties: closest to the centre): a band that falls inside
+    // a whitespace gap would otherwise match anywhere.
+    const int centreTop = overlapTop + (overlapRows - tplHeight) / 2;
+    int tplTop = centreTop;
+    int bestInked = -1;
+    auto consider = [&](int top) {
+        int inked = 0;
+        for (int y = top; y < top + tplHeight; ++y) inked += inkedTo[y] ? 1 : 0;
+        if (inked > bestInked || (inked == bestInked && std::abs(top - centreTop) < std::abs(tplTop - centreTop))) {
+            bestInked = inked;
+            tplTop = top;
+        }
+    };
+    for (int top = overlapTop; top + tplHeight <= overlapBottom; top += kTemplateSlideStep) consider(top);
+    consider(overlapBottom - tplHeight);
+    if (bestInked < kMinTemplateInkedRows) return {0.0, candidate};
     const cv::Rect tplRect(contentTo.left(), tplTop, contentTo.width(), tplHeight);
     if (tplRect.width <= 0 || tplRect.height <= 0) return {0.0, candidate};
     // Search window in `from`: rows [tplTop + candidate - radius, ... + tplHeight + radius).
@@ -157,10 +177,19 @@ std::pair<double, int> refineByNcc(const cv::Mat& from, const cv::Mat& to, int c
     cv::Point minLoc, maxLoc;
     cv::minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc);
     const int matchedRowInFrom = searchTop + maxLoc.y;
+    cv::Scalar meanValue, stdTemplate, stdWindow;
+    cv::meanStdDev(to(tplRect), meanValue, stdTemplate);
+    cv::meanStdDev(from(cv::Rect(contentTo.left(), matchedRowInFrom, contentTo.width(), tplHeight)), meanValue, stdWindow);
+    if (stdTemplate[0] < kMinTemplateStdDev || stdWindow[0] < kMinTemplateStdDev) return {0.0, candidate};
     return {std::isfinite(maxVal) ? maxVal : 0.0, matchedRowInFrom - tplTop};
 }
 
 } // namespace
+
+std::vector<char> LongshotAnalyzer::rowInkFlags(const FrameFeatures& features, const AnalyzerParams& params)
+{
+    return inkedRows(features, params);
+}
 
 FrameFeatures LongshotAnalyzer::computeFeatures(const QImage& frame, qint64 tMs)
 {
@@ -306,7 +335,9 @@ std::optional<ShiftObservation> LongshotAnalyzer::estimateShift(const QImage& fr
         return obs;
     }
 
-    const int maxAbsShift = height / std::max(1, params.maxShiftFraction);
+    // Shifts are bounded by the search fraction and by the overlap a match needs.
+    const int minOverlap = height / std::max(1, params.minOverlapFraction);
+    const int maxAbsShift = std::min(height / std::max(1, params.maxShiftFraction), height - minOverlap);
 
     // Coarse pass 1: full-profile phase correlation gives a first dy.
     // Fetch two spare peaks so the pool is not starved by the exclusion window.
@@ -353,7 +384,7 @@ std::optional<ShiftObservation> LongshotAnalyzer::estimateShift(const QImage& fr
     std::vector<std::pair<double, int>> refined;
     for (int candidate : candidates) {
         if (int(refined.size()) == params.coarseCandidates) break;
-        const auto result = refineByNcc(from, to, candidate, params.refineRadius, contentTo, contentFrom, params.templateRows);
+        const auto result = refineByNcc(from, to, candidate, params.refineRadius, contentTo, contentFrom, params.templateRows, inkedTo);
         // Refine up to coarseCandidates *distinct* shifts.
         const bool duplicate = std::any_of(refined.begin(), refined.end(),
                                            [&](const auto& r) { return std::abs(r.second - result.second) <= kPeakExclusionRows; });
@@ -371,6 +402,10 @@ std::optional<ShiftObservation> LongshotAnalyzer::estimateShift(const QImage& fr
     if (best < params.minPeakScore || best - runnerUp < params.minMargin) {
         qDebug() << "LongshotAnalyzer: ambiguous pair" << fromIndex << "->" << toIndex << "best" << best
                  << "runner-up" << runnerUp;
+        return std::nullopt;
+    }
+    if (height - std::abs(refined.front().second) < minOverlap) {
+        qDebug() << "LongshotAnalyzer: pair" << fromIndex << "->" << toIndex << "overlaps too little at dy" << refined.front().second;
         return std::nullopt;
     }
     obs.shift.dy = refined.front().second;

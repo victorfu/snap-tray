@@ -48,6 +48,7 @@ private slots:
     void sidebarExcludedFromMovingSpan();
     void scrollUpHeaderIsPerFrame();
     void hoverChangeDoesNotBreakShift();
+    void blankBandInTemplateIsNotAMatch();
 };
 
 void tst_LongshotAnalyzer::featuresHaveOneEntryPerRow()
@@ -245,6 +246,23 @@ void tst_LongshotAnalyzer::hoverChangeDoesNotBreakShift()
                                                      b, LongshotAnalyzer::computeFeatures(b, 50), 0, 1, AnalyzerParams{});
     QVERIFY(obs.has_value());
     QVERIFY2(qAbs(obs->shift.dy - 30) <= kShiftTolerance, qPrintable(QString::number(obs->shift.dy)));
+}
+
+void tst_LongshotAnalyzer::blankBandInTemplateIsNotAMatch()
+{
+    PageSpec spec;
+    spec.blankTop = 1200;
+    spec.blankHeight = 300;
+    const QImage page = renderPage(spec);
+    // Ink above and below the gap: the true shift must still be found.
+    const Pair a = makePair(page, 1000, 1040);
+    const auto found = LongshotAnalyzer::estimateShift(a.from, a.fromFeatures, a.to, a.toFeatures, 0, 1, AnalyzerParams{});
+    QVERIFY(found.has_value());
+    QCOMPARE(found->shift.dy, 40);
+    // Ink only in rows 1150-1199 and 1500-1629 of the viewport: right or refuse, never wrong.
+    const Pair b = makePair(page, 1150, 1190);
+    const auto sparse = LongshotAnalyzer::estimateShift(b.from, b.fromFeatures, b.to, b.toFeatures, 0, 1, AnalyzerParams{});
+    if (sparse.has_value()) QCOMPARE(sparse->shift.dy, 40);
 }
 
 QTEST_MAIN(tst_LongshotAnalyzer)

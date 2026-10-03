@@ -67,6 +67,7 @@ private slots:
     void blankGapReportsBreak();
     void tooFewFramesFails();
     void cancelStopsEarly();
+    void incrementalReusesKnownFrames();
 
 private:
     QTemporaryDir m_dir;
@@ -144,6 +145,7 @@ void tst_LongshotPipeline::trajectories_data()
     QTest::newRow("back-and-forth") << 2 << 0;
     QTest::newRow("pauses") << 3 << 0;
     QTest::newRow("constant+sticky header") << 0 << 1;
+    QTest::newRow("pauses+sticky header") << 3 << 1;
     QTest::newRow("back-and-forth+scroll-up header") << 2 << 2;
     QTest::newRow("constant+sidebar") << 0 << 3;
     QTest::newRow("constant+hover") << 0 << 4;
@@ -234,7 +236,7 @@ void tst_LongshotPipeline::blankGapReportsBreak()
     QVERIFY2(!a.solve.breakTimesMs.empty(), "a blank gap taller than the viewport must be reported as a break");
     QVERIFY(a.rejectedPairs > 0);
     int placed = 0;
-    QVERIFY(placedAccuracy(a, r.trajectory, &placed) >= kMinPlacedFraction);
+    QCOMPARE(placedAccuracy(a, r.trajectory, &placed), 1.0); // no false join across the gap
     QVERIFY(placed >= 20); // the larger side survives
 }
 
@@ -261,6 +263,30 @@ void tst_LongshotPipeline::cancelStopsEarly()
                                                       [&calls](int) { return ++calls < 3; });
     QCOMPARE(int(a.error), int(LongshotError::Cancelled));
     QVERIFY(a.frames.size() < 60);
+}
+
+void tst_LongshotPipeline::incrementalReusesKnownFrames()
+{
+    QString error;
+    const Recording r = record(m_dir.filePath(QStringLiteral("incremental.mp4")), PageSpec{}, constantSpeed(40, 0, 45), Disturbances{}, &error);
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+    auto source = FrameReaderLongshotSource::createNative();
+    QVERIFY(source->open(r.path, 0, -1, QRect()));
+    const AnalysisResult full = LongshotPipeline::analyze(*source, r.path, 0, -1, QRect(), PipelineParams{}, {});
+    QCOMPARE(int(full.error), int(LongshotError::None));
+    QCOMPARE(full.frames.size(), size_t(40));
+    const std::vector<FrameFeatures> known(full.frames.begin(), full.frames.begin() + 20);
+    const std::vector<QImage> knownThumbs(full.thumbnails.begin(), full.thumbnails.begin() + 20);
+    QVERIFY(source->open(r.path, 0, -1, QRect()));
+    int analyzed = -1;
+    const AnalysisResult inc = LongshotPipeline::analyzeIncremental(*source, r.path, 0, -1, QRect(), PipelineParams{}, {}, known, knownThumbs, &analyzed);
+    QCOMPARE(int(inc.error), int(LongshotError::None));
+    QCOMPARE(analyzed, 20);
+    QCOMPARE(inc.frames.size(), size_t(40));
+    QCOMPARE(inc.thumbnails.size(), size_t(40));
+    int placed = 0;
+    QVERIFY(placedAccuracy(inc, r.trajectory, &placed) >= kMinPlacedFraction);
+    QCOMPARE(placed, 40);
 }
 
 QTEST_MAIN(tst_LongshotPipeline)

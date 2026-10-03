@@ -17,6 +17,7 @@ struct AnalyzerParams {
     double inkGradientThreshold = 2.0;   // rows with less vertical gradient carry no information
     double movingColumnDiffThreshold = 6.0; // a column with less unshifted change is static
     int maxShiftFraction = 2;            // |dy| may not exceed height / maxShiftFraction
+    int minOverlapFraction = 4;          // a pair must overlap by at least height / this many rows
     int coarseCandidates = 3;            // phase-correlation peaks refined by NCC
 };
 
@@ -37,6 +38,10 @@ class LongshotAnalyzer
 {
 public:
     static FrameFeatures computeFeatures(const QImage& frame, qint64 tMs);
+
+    // Per row: does it carry information (vertical edges, or a mean luma far
+    // from the frame's typical row)? Shared by the analyzer and the pipeline.
+    static std::vector<char> rowInkFlags(const FrameFeatures& features, const AnalyzerParams& params);
 
     // Coarse candidates from 1-D phase correlation of row-mean profiles
     // (static bands excluded), refined by normalized cross-correlation at
