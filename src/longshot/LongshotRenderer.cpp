@@ -5,8 +5,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <map>
-#include <numeric>
 
 namespace SnapTray::Longshot {
 
@@ -17,11 +17,12 @@ constexpr double kKeyFrameBonus = 1.0;
 constexpr double kLaterTieBreak = 0.01;
 constexpr int kSeamSearchRows = 8;
 constexpr double kMajorityDiffThreshold = 12.0; // mean |luma| difference on thumbnails
-constexpr int kMinMajority = 3;
 // Row means (full resolution) closer than this count as the same row content.
 constexpr float kRowDeviation = 6.0f;
-// A candidate whose row means deviate on more than 1/8 of the tile (at least
-// this many rows) shows a transient the others do not (hover, lazy load).
+// Two frames disagree on a tile when their row means deviate on more than
+// 1/kRowMeanOutlierRowsDivisor of its rows (at least kMinDeviatingRows): that is
+// a transient (hover, lazy load), not codec ringing on an edge row.
+constexpr int kRowMeanOutlierRowsDivisor = 8;
 constexpr int kMinDeviatingRows = 3;
 
 int clampInt(int v, int lo, int hi) { return std::max(lo, std::min(v, hi)); }
@@ -59,48 +60,47 @@ double thumbnailDisagreement(const AnalysisResult& a, int i, int j, int top, int
     return count ? sum / count : 0.0;
 }
 
-// True when both frames' row means agree on output rows [top, bottom) (or are
-// unavailable): a seam must not swap in rows the other frame renders differently.
-bool framesAgree(const AnalysisResult& a, int i, int j, int minPosition, int top, int bottom)
+// Rows of output [top, bottom) on which both frames have row means, and how many
+// of those differ by more than kRowDeviation.
+void compareRowMeans(const AnalysisResult& a, int i, int j, int minPosition, int top, int bottom, int* compared,
+                     int* differing)
 {
     const int posI = *a.solve.positions[i] - minPosition;
     const int posJ = *a.solve.positions[j] - minPosition;
     const std::vector<float>& mi = a.frames[i].rowMean;
     const std::vector<float>& mj = a.frames[j].rowMean;
+    *compared = 0;
+    *differing = 0;
     for (int y = top; y < bottom; ++y) {
         const int ri = y - posI;
         const int rj = y - posJ;
-        if (ri < 0 || rj < 0 || ri >= int(mi.size()) || rj >= int(mj.size())) return true; // features incomplete
-        if (std::abs(mi[ri] - mj[rj]) > kRowDeviation) return false;
+        if (ri < 0 || rj < 0 || ri >= int(mi.size()) || rj >= int(mj.size())) continue; // no features for this row
+        ++*compared;
+        if (std::abs(mi[ri] - mj[rj]) > kRowDeviation) ++*differing;
     }
-    return true;
 }
 
-// Counts, per candidate, the rows whose full-resolution row mean differs from the
-// median candidate's by more than kRowDeviation over output rows [top, bottom).
-// Returns false when row means are unavailable for some candidate.
-bool deviatingRowCounts(const AnalysisResult& a, const std::vector<std::pair<double, int>>& candidates, int top, int bottom,
-                        int minPosition, std::vector<int>* deviating)
+// A seam must not swap in rows the other frame renders differently; it only
+// moves where at least one row could be compared and none differ.
+bool framesAgreeOnRows(const AnalysisResult& a, int i, int j, int minPosition, int top, int bottom)
 {
-    const size_t n = candidates.size();
-    std::vector<int> pos(n);
-    for (size_t c = 0; c < n; ++c) {
-        const int i = candidates[c].second;
-        pos[c] = *a.solve.positions[i] - minPosition;
-        if (top - pos[c] < 0 || bottom - pos[c] > int(a.frames[i].rowMean.size())) return false;
+    int compared = 0, differing = 0;
+    compareRowMeans(a, i, j, minPosition, top, bottom, &compared, &differing);
+    return compared > 0 && differing == 0;
+}
+
+// Two candidates show the same content on a tile: thumbnails close and row means
+// differing on only a few rows (missing features count as agreement).
+bool framesAgreeOnTile(const AnalysisResult& a, int i, int j, int minPosition, int top, int bottom)
+{
+    if (a.thumbnails.size() == a.frames.size()
+        && thumbnailDisagreement(a, i, j, top, bottom, minPosition) > kMajorityDiffThreshold) {
+        return false;
     }
-    deviating->assign(n, 0);
-    std::vector<float> values(n);
-    for (int y = top; y < bottom; ++y) {
-        for (size_t c = 0; c < n; ++c) values[c] = a.frames[candidates[c].second].rowMean[y - pos[c]];
-        std::vector<float> sorted = values;
-        std::nth_element(sorted.begin(), sorted.begin() + sorted.size() / 2, sorted.end());
-        const float median = sorted[sorted.size() / 2];
-        for (size_t c = 0; c < n; ++c) {
-            if (std::abs(values[c] - median) > kRowDeviation) ++(*deviating)[c];
-        }
-    }
-    return true;
+    int compared = 0, differing = 0;
+    compareRowMeans(a, i, j, minPosition, top, bottom, &compared, &differing);
+    const int allowed = std::max(kMinDeviatingRows, (bottom - top) / kRowMeanOutlierRowsDivisor);
+    return differing <= allowed;
 }
 
 } // namespace
@@ -135,30 +135,14 @@ std::vector<TileAssignment> LongshotRenderer::assignTiles(const AnalysisResult& 
             candidates.push_back({score, i});
         }
         if (!candidates.empty()) {
-            // Majority check: drop candidates that disagree with most others
-            // (only when thumbnails exist for every frame).
-            if (int(candidates.size()) >= kMinMajority && a.thumbnails.size() == a.frames.size()) {
-                std::vector<std::pair<double, int>> kept;
-                for (const auto& c : candidates) {
-                    int agree = 0;
-                    for (const auto& o : candidates) {
-                        if (o.second == c.second) continue;
-                        if (thumbnailDisagreement(a, c.second, o.second, tile.outputTop, tile.outputBottom, minPosition) <= kMajorityDiffThreshold) ++agree;
-                    }
-                    if (agree * 2 >= int(candidates.size()) - 1) kept.push_back(c);
-                }
-                if (!kept.empty()) candidates = kept;
+            // Later observations win: keep the candidates that agree with the latest
+            // frame covering the tile (the group containing it), then score.
+            const int latest = std::max_element(candidates.begin(), candidates.end(), [](const auto& l, const auto& r) { return l.second < r.second; })->second;
+            std::vector<std::pair<double, int>> group;
+            for (const auto& c : candidates) {
+                if (c.second == latest || framesAgreeOnTile(a, latest, c.second, minPosition, tile.outputTop, tile.outputBottom)) group.push_back(c);
             }
-            std::vector<int> deviating;
-            if (int(candidates.size()) >= kMinMajority
-                && deviatingRowCounts(a, candidates, tile.outputTop, tile.outputBottom, minPosition, &deviating)) {
-                const int allowed = std::max(kMinDeviatingRows, (tile.outputBottom - tile.outputTop) / 8);
-                std::vector<std::pair<double, int>> kept;
-                for (size_t c = 0; c < candidates.size(); ++c) {
-                    if (deviating[c] <= allowed) kept.push_back(candidates[c]);
-                }
-                if (!kept.empty()) candidates = kept;
-            }
+            candidates = group;
             std::sort(candidates.begin(), candidates.end(), [](const auto& l, const auto& r) { return l.first > r.first; });
             tile.frameIndex = candidates.front().second;
         }
@@ -188,7 +172,7 @@ void LongshotRenderer::placeSeams(std::vector<TileAssignment>& tiles, const Anal
         for (int y = lo; y <= hi; ++y) {
             const int row = y - pos;
             if (row < 0 || row >= int(f.rowGradient.size())) continue;
-            if (!framesAgree(a, above.frameIndex, below.frameIndex, minPosition, std::min(boundary, y), std::max(boundary, y) + 1)) continue;
+            if (!framesAgreeOnRows(a, above.frameIndex, below.frameIndex, minPosition, std::min(boundary, y), std::max(boundary, y) + 1)) continue;
             if (f.rowGradient[row] < bestGradient) { bestGradient = f.rowGradient[row]; best = y; }
         }
         above.outputBottom = best;
@@ -207,14 +191,12 @@ RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString
 
     // Common column span and vertical extent over placed frames.
     int minPosition = std::numeric_limits<int>::max();
-    int maxBottom = std::numeric_limits<int>::min();
     QRect columns(0, 0, a.frameSize.width(), 1);
     int firstPlaced = -1;
     for (int i = 0; i < frameCount; ++i) {
         if (!a.solve.positions[i].has_value() || !a.frames[i].validContentRect.isValid()) continue;
         if (firstPlaced < 0) firstPlaced = i;
         minPosition = std::min(minPosition, *a.solve.positions[i]);
-        maxBottom = std::max(maxBottom, *a.solve.positions[i] + a.frameSize.height());
         const QRect v = a.frames[i].validContentRect;
         columns.setLeft(std::max(columns.left(), v.left()));
         columns.setRight(std::min(columns.right(), v.right()));
@@ -223,9 +205,14 @@ RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString
     result.autoCroppedLeft = columns.left();
     result.autoCroppedRight = a.frameSize.width() - 1 - columns.right();
 
-    // Sticky header: the first placed frame's top band, once, when requested.
-    const int headerRows = (options.includeStickyHeader && a.frames[firstPlaced].excludedBands.top > 0)
-                               ? a.frames[firstPlaced].excludedBands.top : 0;
+    // Sticky header: the top band of the first placed frame that has one, once, when requested.
+    int headerFrame = -1;
+    if (options.includeStickyHeader) {
+        for (int i = 0; i < frameCount; ++i) {
+            if (a.solve.positions[i].has_value() && a.frames[i].validContentRect.isValid() && a.frames[i].excludedBands.top > 0) { headerFrame = i; break; }
+        }
+    }
+    const int headerRows = headerFrame >= 0 ? a.frames[headerFrame].excludedBands.top : 0;
     result.stickyHeaderIncluded = headerRows > 0;
 
     // Rows between the top-most valid row and the bottom-most valid row.
@@ -244,12 +231,14 @@ RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString
 
     result.fullHeightPx = headerRows + bodyHeight;
     const int outputHeight = result.fullHeightPx;
+    const int maxHeight = std::max(options.maxHeightPx, std::max(1, options.tileRows));
     int renderHeight = outputHeight;
-    if (!options.splitOversize && outputHeight > options.maxHeightPx) {
-        renderHeight = options.maxHeightPx;
+    if (!options.splitOversize && outputHeight > maxHeight) {
+        renderHeight = maxHeight;
         result.heightCapped = true;
     }
     QImage canvas(columns.width(), renderHeight, QImage::Format_RGB32);
+    if (canvas.isNull()) { result.error = LongshotError::OutOfMemory; return result; }
     canvas.fill(Qt::white);
 
     // Which frames paint which output row ranges.
@@ -257,12 +246,15 @@ RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString
     for (const TileAssignment& t : tiles) {
         if (t.outputBottom <= t.outputTop) continue;
         if (t.frameIndex < 0) {
-            for (int y = t.outputTop; y < t.outputBottom; ++y) result.breakRows.push_back(headerRows + y - contentTop);
+            for (int y = t.outputTop; y < t.outputBottom; ++y) {
+                const int row = headerRows + y - contentTop;
+                if (row < renderHeight) result.breakRows.push_back(row);
+            }
             continue;
         }
         ranges[t.frameIndex].push_back({t.outputTop, t.outputBottom});
     }
-    if (headerRows > 0) ranges[firstPlaced].push_back({-headerRows, 0}); // sentinel: header band
+    if (headerRows > 0) ranges[headerFrame].push_back({-headerRows, 0}); // sentinel: header band
 
     // Low-confidence rows: frames placed only through weak edges.
     std::vector<double> bestEdgeConfidence(frameCount, 0.0);
@@ -301,10 +293,16 @@ RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString
         if (progress && !progress(std::min(99, int(qint64(index) * 100 / expected)))) { result.error = LongshotError::Cancelled; return result; }
     }
     painter.end();
+    if (index < frameCount || !source.lastError().isEmpty()) {
+        // A partial canvas must not be presented as complete.
+        qWarning() << "LongshotRenderer: decode stopped at frame" << index << "of" << frameCount << source.lastError();
+        result.error = LongshotError::SourceUnavailable;
+        return result;
+    }
 
-    if (options.splitOversize && outputHeight > options.maxHeightPx) {
-        for (int top = 0; top < outputHeight; top += options.maxHeightPx) {
-            result.parts.push_back(canvas.copy(0, top, canvas.width(), std::min(options.maxHeightPx, outputHeight - top)));
+    if (options.splitOversize && outputHeight > maxHeight) {
+        for (int top = 0; top < outputHeight; top += maxHeight) {
+            result.parts.push_back(canvas.copy(0, top, canvas.width(), std::min(maxHeight, outputHeight - top)));
         }
     } else {
         result.parts.push_back(canvas);

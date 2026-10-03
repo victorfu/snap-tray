@@ -41,15 +41,19 @@ public:
                                const QRect& crop, const AnalysisResult& analysis, const LongshotOptions& options,
                                const ProgressFn& progress);
 
-    // One frame per tile: must cover the tile with valid rows; scored by
-    // stationary (+2), keyframe (+1), tile centre near frame centre (+0..1),
-    // later frames win ties; frames whose thumbnail disagrees with the
-    // majority of candidates are rejected.
+    // One frame per tile. Candidates must cover the tile with valid rows. They
+    // are partitioned into agreeing groups (thumbnails within
+    // kMajorityDiffThreshold and full-resolution row means within
+    // kRowDeviation on all but a few rows); the group containing the LATEST
+    // frame wins (later observations override earlier transients such as lazy
+    // placeholders), and within it the best score: stationary (+2), keyframe
+    // (+1), tile centre near frame centre (+0..1), later frames win ties.
     static std::vector<TileAssignment> assignTiles(const AnalysisResult& analysis, const LongshotOptions& options,
                                                    int outputHeight, int minPosition);
 
     // Moves each boundary between different frames to the lowest-gradient
-    // row within kSeamSearchRows of it (gradient of the frame above).
+    // row within kSeamSearchRows of it (gradient of the frame above), never
+    // across rows on which the two frames' row means disagree.
     static void placeSeams(std::vector<TileAssignment>& tiles, const AnalysisResult& analysis, int minPosition);
 };
 

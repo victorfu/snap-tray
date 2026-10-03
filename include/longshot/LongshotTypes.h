@@ -79,6 +79,7 @@ enum class LongshotError {
     CropTooSmall,      // crop below kMinAnalysisSide
     Cancelled,
     NoReliableContent, // every pair was rejected; nothing to place
+    OutOfMemory,       // the output image could not be allocated
 };
 
 } // namespace SnapTray::Longshot
