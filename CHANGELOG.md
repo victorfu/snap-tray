@@ -9,6 +9,7 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 ### Added
 
 - Recording preview can crop the recording to a region before exporting MP4, GIF, or WebP.
+- Trimming a recording to a part after its audio stopped exports that part as video only instead of failing, and a failed export now shows a translated message while keeping the original recording.
 
 ### Fixed
 
