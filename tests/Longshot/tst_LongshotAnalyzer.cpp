@@ -49,6 +49,8 @@ private slots:
     void scrollUpHeaderIsPerFrame();
     void hoverChangeDoesNotBreakShift();
     void blankBandInTemplateIsNotAMatch();
+    void horizontalShiftIsRefused();
+    void zoomIsRefused();
 };
 
 void tst_LongshotAnalyzer::featuresHaveOneEntryPerRow()
@@ -263,6 +265,46 @@ void tst_LongshotAnalyzer::blankBandInTemplateIsNotAMatch()
     const Pair b = makePair(page, 1150, 1190);
     const auto sparse = LongshotAnalyzer::estimateShift(b.from, b.fromFeatures, b.to, b.toFeatures, 0, 1, AnalyzerParams{});
     if (sparse.has_value()) QCOMPARE(sparse->shift.dy, 40);
+}
+
+void tst_LongshotAnalyzer::horizontalShiftIsRefused()
+{
+    // Vertical scroll by 30 plus a 6 px horizontal pan: the engine is
+    // vertical-only, so the pair must be refused rather than stitched torn.
+    const QImage page = renderPage(PageSpec{});
+    const QImage from = page.copy(0, 1000, kViewport.width(), kViewport.height());
+    QImage to(kViewport, QImage::Format_RGB32);
+    to.fill(Qt::white);
+    {
+        QPainter painter(&to);
+        painter.drawImage(6, 0, page.copy(0, 1030, kViewport.width(), kViewport.height()));
+    }
+    const auto obs = LongshotAnalyzer::estimateShift(from, LongshotAnalyzer::computeFeatures(from, 0), to,
+                                                     LongshotAnalyzer::computeFeatures(to, 50), 0, 1, AnalyzerParams{});
+    QVERIFY2(!obs.has_value(), qPrintable(QStringLiteral("accepted dy %1").arg(obs ? obs->shift.dy : 0)));
+}
+
+void tst_LongshotAnalyzer::zoomIsRefused()
+{
+    // The same page window magnified by 1.1 around its centre (a browser zoom).
+    const QImage page = renderPage(PageSpec{});
+    const QImage from = page.copy(0, 1000, kViewport.width(), kViewport.height());
+    const QSize zoomed(qRound(kViewport.width() * 1.1), qRound(kViewport.height() * 1.1));
+    const QImage to = from.scaled(zoomed, Qt::IgnoreAspectRatio, Qt::SmoothTransformation)
+                          .copy((zoomed.width() - kViewport.width()) / 2, (zoomed.height() - kViewport.height()) / 2,
+                                kViewport.width(), kViewport.height())
+                          .convertToFormat(QImage::Format_RGB32);
+    const FrameFeatures fromFeatures = LongshotAnalyzer::computeFeatures(from, 0);
+    const FrameFeatures toFeatures = LongshotAnalyzer::computeFeatures(to, 50);
+    const auto obs = LongshotAnalyzer::estimateShift(from, fromFeatures, to, toFeatures, 0, 1, AnalyzerParams{});
+    QVERIFY2(!obs.has_value(), qPrintable(QStringLiteral("accepted dy %1").arg(obs ? obs->shift.dy : 0)));
+    // With the NCC thresholds relaxed so the vertical match alone would
+    // accept the pair, the scale check still refuses it.
+    AnalyzerParams relaxed;
+    relaxed.minPeakScore = 0.0;
+    relaxed.minMargin = 0.0;
+    const auto relaxedObs = LongshotAnalyzer::estimateShift(from, fromFeatures, to, toFeatures, 0, 1, relaxed);
+    QVERIFY2(!relaxedObs.has_value(), qPrintable(QStringLiteral("accepted dy %1").arg(relaxedObs ? relaxedObs->shift.dy : 0)));
 }
 
 QTEST_MAIN(tst_LongshotAnalyzer)
