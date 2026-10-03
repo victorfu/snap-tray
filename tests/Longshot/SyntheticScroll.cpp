@@ -43,7 +43,6 @@ constexpr int kBackpressurePollMs = 5;
 // Row profile for matching: luma summed into 64 column bins.
 constexpr int kProfileBins = 64;
 constexpr double kProfileTolerance = 6.0;   // mean abs bin difference, 0..255
-constexpr double kCandidateMargin = 2.0;    // page rows this close to the best match are candidates
 constexpr double kStartBias = 1e-6;         // first row: prefer candidates near firstPageRow
 
 const QColor kInk(30, 30, 30);
@@ -283,16 +282,19 @@ RowMatchReport compareWithGroundTruth(const QImage& result, const QImage& page, 
     int skipped = 0;             // unmatched output rows since the last layer
     for (int y = 0; y < outRows; ++y) {
         const std::vector<float> profile = rowProfile(out, y);
-        double minDistance = kProfileTolerance;
+        bool anyCandidate = false;
         for (int p = 0; p < truth.height(); ++p) {
             distances[p] = profileDistance(profile, truthProfiles[p]);
-            minDistance = std::min(minDistance, distances[p]);
+            if (distances[p] < kProfileTolerance) anyCandidate = true;
         }
-        if (minDistance >= kProfileTolerance) {
+        if (!anyCandidate) {
             ++skipped;
             continue;
         }
-        const double limit = std::min(kProfileTolerance, minDistance + kCandidateMargin);
+        // Every page row within the absolute tolerance is a candidate: a matching
+        // margin relative to the best row would drop the true row whenever codec
+        // ringing makes another (periodic) row a closer match.
+        const double limit = kProfileTolerance;
         std::vector<State> layer;
         if (layers.empty()) {
             for (int p = 0; p < truth.height(); ++p) {
