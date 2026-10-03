@@ -824,6 +824,11 @@ target_link_libraries(Longshot_Renderer PRIVATE Longshot_SyntheticScroll Qt6::Te
 add_test(NAME Longshot_Renderer COMMAND Longshot_Renderer)
 set_tests_properties(Longshot_Renderer PROPERTIES TIMEOUT 600 LABELS "integration;slow")
 
+add_executable(Longshot_Session Longshot/tst_LongshotSession.cpp)
+target_link_libraries(Longshot_Session PRIVATE Longshot_SyntheticScroll Qt6::Test)
+add_test(NAME Longshot_Session COMMAND Longshot_Session)
+set_tests_properties(Longshot_Session PROPERTIES TIMEOUT 300 LABELS "unit")
+
 # ============================================================================
 # Utils Tests (link snaptray_core)
 # ============================================================================
