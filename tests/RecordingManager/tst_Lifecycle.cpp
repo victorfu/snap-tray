@@ -48,6 +48,7 @@ private slots:
     void testWindowTimelineOnlyRecordedForPreview();
     void testWindowTimelinePausesWithRecording();
     void testFinishWritesSidecarOnlyOnSuccess();
+    void testFinishSkipsSidecarWithoutWindows();
     void testStaleSidecarsAreCleanedUp();
 
 private:
@@ -304,6 +305,25 @@ void TestRecordingManagerLifecycle::testFinishWritesSidecarOnlyOnSuccess()
     // Without a recorder (direct save) finishing writes nothing.
     QFile::remove(SnapTray::WindowTimelineSidecar::pathFor(output));
     m_manager->finishWindowTimeline(output, true);
+    QVERIFY(!QFile::exists(SnapTray::WindowTimelineSidecar::pathFor(output)));
+}
+
+void TestRecordingManagerLifecycle::testFinishSkipsSidecarWithoutWindows()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString output = dir.filePath(QStringLiteral("rec.mp4"));
+    m_manager->m_createWindowEnumerator = [](QScreen*) {
+        return SnapTray::WindowTimelineRecorder::Enumerator([]() { return std::vector<DetectedElement>{}; });
+    };
+    m_manager->m_windowFrameMapping = {QRect(0, 0, 1000, 500), QRect(), 1.0, QRect(0, 0, 1000, 500)};
+    m_manager->m_startSettings.showPreview = true;
+    m_manager->m_elapsedTimer.start();
+
+    m_manager->startWindowTimeline();
+    QVERIFY(m_manager->m_windowTimelineRecorder);
+    m_manager->finishWindowTimeline(output, true);
+    QVERIFY(!m_manager->m_windowTimelineRecorder);
     QVERIFY(!QFile::exists(SnapTray::WindowTimelineSidecar::pathFor(output)));
 }
 

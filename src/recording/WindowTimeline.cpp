@@ -169,6 +169,24 @@ std::optional<WindowTimeline> WindowTimeline::fromJson(const QByteArray& json)
     return timeline;
 }
 
+bool WindowTimeline::hasWindows() const
+{
+    return std::any_of(m_entries.begin(), m_entries.end(),
+                       [](const WindowTimelineEntry& entry) { return !entry.windows.empty(); });
+}
+
+WindowFrameMapping WindowFrameMapping::fromCapture(const QRect& logicalRegion, const QRect& logicalScreen,
+                                                   const QRect& physicalScreen, qreal dpr,
+                                                   const QRect& mappedPhysicalRegion)
+{
+    QRect region = mappedPhysicalRegion;
+    if (physicalScreen.isEmpty()) {
+        region.moveTopLeft(CoordinateHelper::toPhysicalCoveringRect(
+            logicalRegion.translated(-logicalScreen.topLeft()), dpr).topLeft());
+    }
+    return {logicalScreen, physicalScreen, dpr, region};
+}
+
 QRect WindowFrameMapping::toVideoRect(const QRect& logicalBounds) const
 {
     if (!isValid()) {

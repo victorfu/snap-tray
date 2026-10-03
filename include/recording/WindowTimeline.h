@@ -42,6 +42,8 @@ public:
     void append(qint64 tMs, std::vector<WindowSample> windows);
     const std::vector<WindowTimelineEntry>& entries() const { return m_entries; }
     bool isEmpty() const { return m_entries.empty(); }
+    // True when at least one entry lists a window.
+    bool hasWindows() const;
 
     // Last entry with t <= tMs; the first entry for a time before it; nullptr when empty.
     const std::vector<WindowSample>* windowsAt(qint64 tMs) const;
@@ -69,6 +71,14 @@ struct WindowFrameMapping {
     QRect physicalScreen;
     qreal devicePixelRatio = 1.0;
     QRect physicalRegion; // Recorded region in physical pixels; origin maps to video (0, 0) on every platform.
+
+    // Builds the mapping for a capture of `logicalRegion` (logical screen coordinates).
+    // `mappedPhysicalRegion` is the native physical capture region. With a physical screen its origin is
+    // used as-is; without one (macOS) the region sits at (0, 0), so its origin is restored from the
+    // logical region to keep window rects and the region in one coordinate space.
+    static WindowFrameMapping fromCapture(const QRect& logicalRegion, const QRect& logicalScreen,
+                                          const QRect& physicalScreen, qreal dpr,
+                                          const QRect& mappedPhysicalRegion);
 
     bool isValid() const { return !logicalScreen.isEmpty() && !physicalRegion.isEmpty() && devicePixelRatio > 0.0; }
     // The part of `logicalBounds` inside the recorded frame, in video pixels; empty when none.

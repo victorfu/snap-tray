@@ -15,6 +15,8 @@ private slots:
     void mapsLogicalWindowsToVideoPixels_data();
     void mapsLogicalWindowsToVideoPixels();
     void invalidMappingProducesNothing();
+    void fromCaptureBuildsRegionOrigin_data();
+    void fromCaptureBuildsRegionOrigin();
 };
 
 void tst_WindowFrameMapping::mapsLogicalWindowsToVideoPixels_data()
@@ -82,6 +84,48 @@ void tst_WindowFrameMapping::invalidMappingProducesNothing()
     mapping.devicePixelRatio = 0.0;
     QVERIFY(!mapping.isValid());
     QCOMPARE(mapping.toVideoRect(QRect(0, 0, 50, 50)), QRect());
+}
+
+void tst_WindowFrameMapping::fromCaptureBuildsRegionOrigin_data()
+{
+    QTest::addColumn<QRect>("logicalRegion");
+    QTest::addColumn<QRect>("logicalScreen");
+    QTest::addColumn<QRect>("physicalScreen");
+    QTest::addColumn<qreal>("dpr");
+    QTest::addColumn<QRect>("mappedRegion");
+    QTest::addColumn<QRect>("expectedRegion");
+
+    // Physical screen present: the mapped region is already in native desktop pixels.
+    QTest::newRow("native secondary 150%")
+        << QRect(1807, 100, 400, 300) << QRect(1707, 0, 1024, 768) << QRect(2560, 0, 1536, 1152) << 1.5
+        << QRect(2660, 150, 600, 450) << QRect(2660, 150, 600, 450);
+    // Physical screen absent (macOS): origin restored from the logical region, size kept.
+    QTest::newRow("mac retina sub-region")
+        << QRect(200, 100, 400, 300) << QRect(0, 0, 1440, 900) << QRect() << 2.0
+        << QRect(0, 0, 800, 600) << QRect(400, 200, 800, 600);
+    QTest::newRow("mac retina offset screen")
+        << QRect(1540, 100, 400, 300) << QRect(1440, 0, 1440, 900) << QRect() << 2.0
+        << QRect(0, 0, 800, 600) << QRect(200, 200, 800, 600);
+    QTest::newRow("mac fractional origin covers outwards")
+        << QRect(1, 1, 100, 100) << QRect(0, 0, 1440, 900) << QRect() << 1.25
+        << QRect(0, 0, 126, 126) << QRect(1, 1, 126, 126);
+}
+
+void tst_WindowFrameMapping::fromCaptureBuildsRegionOrigin()
+{
+    QFETCH(QRect, logicalRegion);
+    QFETCH(QRect, logicalScreen);
+    QFETCH(QRect, physicalScreen);
+    QFETCH(qreal, dpr);
+    QFETCH(QRect, mappedRegion);
+    QFETCH(QRect, expectedRegion);
+    const WindowFrameMapping mapping =
+        WindowFrameMapping::fromCapture(logicalRegion, logicalScreen, physicalScreen, dpr, mappedRegion);
+    QCOMPARE(mapping.logicalScreen, logicalScreen);
+    QCOMPARE(mapping.physicalScreen, physicalScreen);
+    QCOMPARE(mapping.devicePixelRatio, dpr);
+    QCOMPARE(mapping.physicalRegion, expectedRegion);
+    QCOMPARE(mapping.physicalRegion.size(), mappedRegion.size());
 }
 
 QTEST_GUILESS_MAIN(tst_WindowFrameMapping)

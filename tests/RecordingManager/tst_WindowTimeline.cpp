@@ -31,6 +31,7 @@ private slots:
     void windowsAtOutsideRange();
     void hitTestPrefersTopmost();
     void hitTestMissesOutsideEveryWindow();
+    void hasWindowsIgnoresEmptyEntries();
     void jsonRoundTrip();
     void fromJsonRejectsBadInput_data();
     void fromJsonRejectsBadInput();
@@ -104,6 +105,20 @@ void tst_WindowTimeline::hitTestMissesOutsideEveryWindow()
     // QRect::contains is inclusive of right/bottom - 1 only.
     QVERIFY(timeline.hitTest(QPoint(499, 399), 0).has_value());
     QVERIFY(!timeline.hitTest(QPoint(500, 400), 0).has_value());
+}
+
+void tst_WindowTimeline::hasWindowsIgnoresEmptyEntries()
+{
+    WindowTimeline timeline;
+    QVERIFY(!timeline.hasWindows());
+    timeline.append(0, {});
+    QVERIFY(!timeline.isEmpty());
+    QVERIFY(!timeline.hasWindows());
+    WindowSample sample;
+    sample.windowId = 1;
+    sample.rect = QRect(0, 0, 10, 10);
+    timeline.append(100, {sample});
+    QVERIFY(timeline.hasWindows());
 }
 
 void tst_WindowTimeline::jsonRoundTrip()

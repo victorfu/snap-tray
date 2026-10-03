@@ -650,13 +650,9 @@ void RecordingManager::beginAsyncInitialization()
     const QSize physicalSize = mappedPhysicalRegion.size();
     // Without native desktop bounds (macOS) the mapped region sits at (0, 0); window rects are
     // relative to the screen, so restore the region's offset to keep them in one coordinate space.
-    QRect mappingRegion = mappedPhysicalRegion;
-    if (screenInfo.physicalGeometry.isEmpty()) {
-        mappingRegion.moveTopLeft(CoordinateHelper::toPhysicalCoveringRect(
-            m_recordingRegion.translated(-screenInfo.geometry.topLeft()), screenInfo.devicePixelRatio).topLeft());
-    }
-    m_windowFrameMapping = {screenInfo.geometry, screenInfo.physicalGeometry, screenInfo.devicePixelRatio,
-                            mappingRegion};
+    m_windowFrameMapping = SnapTray::WindowFrameMapping::fromCapture(
+        m_recordingRegion, screenInfo.geometry, screenInfo.physicalGeometry, screenInfo.devicePixelRatio,
+        mappedPhysicalRegion);
     if (physicalSize.isEmpty()) {
         qWarning() << "RecordingManager: Failed to map recording region to physical pixels";
         stopFrameCapture();
@@ -1107,7 +1103,6 @@ void RecordingManager::startRecordingAfterCountdown()
     setState(State::Recording);
     if (m_state != State::Recording || generation != m_startGeneration) return;
     m_frameCount = 0;
-    startWindowTimeline();
 
     // Start audio capture here to synchronize with video timer
     if (m_audioEngine) {
@@ -1123,6 +1118,10 @@ void RecordingManager::startRecordingAfterCountdown()
             }
         }
     }
+
+    // After audio start: the first sample enumerates windows synchronously and must not delay audio.
+    // Samples are stamped by the elapsed clock, so the timeline is unaffected by the later start.
+    startWindowTimeline();
 
     if (m_state != State::Recording || generation != m_startGeneration) return;
     m_collectStartupAudioWarnings = false;
@@ -1653,6 +1652,7 @@ void RecordingManager::onEncodingError(const QString &error)
         teardownEncodingWorker(true);
     }
     m_usingNativeEncoder = false;
+    m_windowTimelineRecorder.reset();
 
     setState(State::Idle);
     emit recordingError(error);
@@ -1718,8 +1718,8 @@ void RecordingManager::finishWindowTimeline(const QString& outputPath, bool succ
     if (!success || outputPath.isEmpty()) {
         return;
     }
-    if (timeline.isEmpty()) {
-        qDebug() << "RecordingManager: window timeline is empty; no sidecar written";
+    if (!timeline.hasWindows()) {
+        qDebug() << "RecordingManager: window timeline has no windows; no sidecar written";
         return;
     }
     if (!SnapTray::WindowTimelineSidecar::write(outputPath, timeline)) {
