@@ -39,6 +39,7 @@ private slots:
     void compareIdenticalIsClean();
     void compareDetectsDuplicatesMissingAndShift();
     void encodedFramesDecodeCloseToSource();
+    void decodedFramesStitchCleanly();
 };
 
 void tst_SyntheticHarness::pageIsDeterministicAndBusy()
@@ -229,6 +230,44 @@ void tst_SyntheticHarness::encodedFramesDecodeCloseToSource()
     QCOMPARE(index, 40);
     qInfo() << "max decoded row-profile distance" << maxProfile;
     QVERIFY2(maxProfile < kProfileTolerance, qPrintable(QString::number(maxProfile)));
+}
+
+void tst_SyntheticHarness::decodedFramesStitchCleanly()
+{
+    auto source = SnapTray::Longshot::FrameReaderLongshotSource::createNative();
+    if (!source) QSKIP("No frame reader on this platform");
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QImage page = renderPage(PageSpec{});
+    const Trajectory t = clampTrajectory(constantSpeed(40, 0, 30), page.height(), kViewport.height());
+    std::vector<QImage> frames;
+    for (int i = 0; i < 40; ++i) frames.push_back(renderFrame(page, kViewport, t, i, Disturbances{}));
+    const QString path = dir.filePath(QStringLiteral("stitch.mp4"));
+    const QString error = encodeFrames(path, frames, kFrameRate);
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+    QVERIFY2(source->open(path, 0, -1, QRect()), qPrintable(source->lastError()));
+    const int firstOffset = t.offsets.front();
+    const int lastOffset = *std::max_element(t.offsets.begin(), t.offsets.end());
+    QImage canvas(kViewport.width(), lastOffset + kViewport.height() - firstOffset, QImage::Format_RGB32);
+    canvas.fill(Qt::white);
+    QPainter painter(&canvas);
+    int index = 0;
+    qint64 tMs = 0;
+    while (auto decoded = source->next(&tMs)) {
+        QVERIFY(index < 40);
+        painter.drawImage(0, t.offsets[size_t(index)] - firstOffset, *decoded);
+        ++index;
+    }
+    painter.end();
+    QCOMPARE(index, 40);
+    QElapsedTimer timer;
+    timer.start();
+    const RowMatchReport report = compareWithGroundTruth(canvas, page, firstOffset, lastOffset + kViewport.height() - 1);
+    qInfo() << "compareWithGroundTruth ms" << timer.elapsed() << "rows" << report.outputRows;
+    QCOMPARE(report.duplicatedRows, 0);
+    QCOMPARE(report.missingRows, 0);
+    QCOMPARE(report.misalignedRows, 0);
+    QVERIFY2(report.unmatchedRows <= 0.02 * report.outputRows, qPrintable(QString::number(report.unmatchedRows)));
 }
 
 QTEST_MAIN(tst_SyntheticHarness)
