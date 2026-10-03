@@ -1834,6 +1834,11 @@ Tamaño: %2</translation>
         <source>Clear Crop</source>
         <translation>Quitar recorte</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="285" />
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>Haz clic en una ventana para recortar a ella, o arrastra para dibujar</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

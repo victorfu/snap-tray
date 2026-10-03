@@ -1828,6 +1828,11 @@ Dydis: %2</translation>
         <source>Clear Crop</source>
         <translation>Išvalyti apkarpymą</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="285" />
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>Spustelėkite langą, kad apkirptumėte pagal jį, arba vilkite ir nubrėžkite</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

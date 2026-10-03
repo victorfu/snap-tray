@@ -1834,6 +1834,11 @@ Size: %2</source>
         <source>Clear Crop</source>
         <translation>자르기 영역 지우기</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="285" />
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>창을 클릭하면 그 창에 맞춰 자르고, 드래그하면 직접 그릴 수 있습니다</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

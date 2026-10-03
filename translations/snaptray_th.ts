@@ -1815,6 +1815,11 @@ English is always included and cannot be removed.</source>
         <source>Clear Crop</source>
         <translation>ล้างการครอบตัด</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="285" />
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>คลิกหน้าต่างเพื่อครอบตัดตามหน้าต่างนั้น หรือลากเพื่อวาดเอง</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

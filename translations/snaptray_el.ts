@@ -1828,6 +1828,11 @@ Size: %2</source>
         <source>Clear Crop</source>
         <translation>Κατάργηση περικοπής</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="285" />
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>Κάντε κλικ σε ένα παράθυρο για περικοπή σε αυτό ή σύρετε για σχεδίαση</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

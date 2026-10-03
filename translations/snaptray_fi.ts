@@ -1828,6 +1828,11 @@ Koko: %2</translation>
         <source>Clear Crop</source>
         <translation>Poista rajaus</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="285" />
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>Rajaa ikkunaan napsauttamalla sitä tai piirrä alue vetämällä</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

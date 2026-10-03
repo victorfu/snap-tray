@@ -31,7 +31,7 @@ recording, and its recording UI is hidden.
 Recording always captures the full screen. To keep only part of it, open the preview after you stop:
 
 1. Click **Crop** in the preview toolbar.
-2. Drag on the video to draw the area, then drag inside it to move or drag a handle to resize. Edges snap to the video edges and centre lines.
+2. Drag on the video to draw the area, then drag inside it to move or drag a handle to resize. Edges snap to the video edges and centre lines. Hover over a window and it lights up; click it to crop to that window as it was at the current moment of the video.
 3. Press **Enter** to apply or **Esc** to cancel. The applied size appears at the top-left of the video; click ✕ to clear it.
 4. Save as MP4, GIF, or WebP. MP4 exports keep their audio.
 

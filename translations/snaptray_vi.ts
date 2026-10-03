@@ -1828,6 +1828,11 @@ Kích thước: %2</translation>
         <source>Clear Crop</source>
         <translation>Xóa vùng xén</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="285" />
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>Nhấp vào một cửa sổ để cắt theo cửa sổ đó, hoặc kéo để vẽ</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

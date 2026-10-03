@@ -1834,6 +1834,11 @@ Velikost: %2</translation>
         <source>Clear Crop</source>
         <translation>Zrušit ořez</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="285" />
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>Klepnutím na okno ořízněte na něj, nebo tažením nakreslete výběr</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

@@ -1834,6 +1834,11 @@ Size: %2</source>
         <source>Clear Crop</source>
         <translation>切り抜きをクリア</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="285" />
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>ウィンドウをクリックするとその範囲に切り抜き、ドラッグで自由に描けます</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

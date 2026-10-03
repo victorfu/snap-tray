@@ -293,6 +293,7 @@ void tst_QmlTranslations::testRecordingPreviewCropTranslatedForAllLocales()
         {"RecordingPreview", "Edit Crop"},
         {"RecordingPreview", "Apply Crop (Enter)"},
         {"RecordingPreview", "Clear Crop"},
+        {"RecordingPreview", "Click a window to crop to it, or drag to draw"},
         {"RecordingPreviewBackend", "Exporting video..."},
         {"RecordingPreviewBackend", "Video export is not supported on this platform"},
         {"RecordingPreviewBackend", "Export failed: %1"},

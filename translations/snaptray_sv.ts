@@ -1828,6 +1828,11 @@ Storlek: %2</translation>
         <source>Clear Crop</source>
         <translation>Rensa beskärning</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="285" />
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>Klicka på ett fönster för att beskära till det, eller dra för att rita</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

@@ -1834,6 +1834,11 @@ Taille : %2</translation>
         <source>Clear Crop</source>
         <translation>Supprimer le rognage</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="285" />
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>Cliquez sur une fenêtre pour recadrer dessus, ou faites glisser pour dessiner</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

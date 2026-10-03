@@ -1834,6 +1834,11 @@ Size: %2</source>
         <source>Clear Crop</source>
         <translation>Сбросить кадрирование</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="285" />
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>Щёлкните окно, чтобы обрезать по нему, или перетащите, чтобы нарисовать область</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

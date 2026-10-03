@@ -1834,6 +1834,11 @@ Size: %2</source>
         <source>Clear Crop</source>
         <translation>Обриши исецање</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="285" />
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>Кликните на прозор да бисте исекли по њему или превуците да нацртате</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

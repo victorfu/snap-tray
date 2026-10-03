@@ -1828,6 +1828,11 @@ Size: %2</source>
         <source>Clear Crop</source>
         <translation>مسح الاقتصاص</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="285" />
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>انقر على نافذة لقصّ التسجيل إليها، أو اسحب للرسم</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>

@@ -1828,6 +1828,11 @@ Boyut: %2</translation>
         <source>Clear Crop</source>
         <translation>Kırpmayı temizle</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="285" />
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>Bir pencereye tıklayarak ona göre kırpın veya sürükleyerek çizin</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
