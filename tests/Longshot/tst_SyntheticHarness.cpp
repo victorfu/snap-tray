@@ -38,6 +38,7 @@ private slots:
     void disturbancesPaintWhereExpected();
     void compareIdenticalIsClean();
     void compareDetectsDuplicatesMissingAndShift();
+    void ringedRowDoesNotDetourThePath();
     void encodedFramesDecodeCloseToSource();
     void decodedFramesStitchCleanly();
 };
@@ -198,6 +199,21 @@ void tst_SyntheticHarness::compareDetectsDuplicatesMissingAndShift()
     QCOMPARE(r.unmatchedRows, 1);
     QVERIFY(r.matchedRows >= 199);
     QCOMPARE(r.duplicatedRows, 0);
+}
+
+void tst_SyntheticHarness::ringedRowDoesNotDetourThePath()
+{
+    const QImage page = renderPage(PageSpec{});
+    // One row of codec-ringing luma (~11 from its true white row, matching no page row within tolerance).
+    QImage slice = page.copy(0, 500, page.width(), 1000);
+    QPainter painter(&slice);
+    painter.fillRect(0, 300, slice.width(), 1, QColor(244, 244, 244));
+    painter.end();
+    const RowMatchReport r = compareWithGroundTruth(slice, page, 500, 1499);
+    QCOMPARE(r.unmatchedRows, 1);
+    QCOMPARE(r.duplicatedRows, 0);
+    QCOMPARE(r.misalignedRows, 0);
+    QCOMPARE(r.missingRows, 1);
 }
 
 void tst_SyntheticHarness::encodedFramesDecodeCloseToSource()
