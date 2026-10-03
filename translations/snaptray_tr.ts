@@ -1838,6 +1838,11 @@ Boyut: %2</translation>
         <source>Click a window to crop to it, or drag to draw</source>
         <translation>Bir pencereye tıklayarak ona göre kırpın veya sürükleyerek çizin</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="681" />
+        <source>Cancel</source>
+        <translation>İptal</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -1914,6 +1919,11 @@ Boyut: %2</translation>
     <message>
         <source>Export failed; the original recording was kept.</source>
         <translation>Dışa aktarma başarısız oldu; özgün kayıt korundu.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>İptal ediliyor...</translation>
     </message>
 </context>
 <context>

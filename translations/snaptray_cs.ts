@@ -1844,6 +1844,11 @@ Velikost: %2</translation>
         <source>Click a window to crop to it, or drag to draw</source>
         <translation>Klepnutím na okno ořízněte na něj, nebo tažením nakreslete výběr</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="681" />
+        <source>Cancel</source>
+        <translation>Zrušit</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -1920,6 +1925,11 @@ Velikost: %2</translation>
     <message>
         <source>Export failed; the original recording was kept.</source>
         <translation>Export se nezdařil; původní nahrávka byla zachována.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>Rušení...</translation>
     </message>
 </context>
 <context>

@@ -84,7 +84,9 @@ signals:
     void recordingPaused();
     void recordingResumed();
     void stateChanged(State state);
-    void previewRequested(const QString &tempVideoPath, int defaultOutputFormat);
+    // recordedAsIntermediate: the recording was captured as the high-quality
+    // intermediate rather than at the selected quality.
+    void previewRequested(const QString &tempVideoPath, int defaultOutputFormat, bool recordedAsIntermediate);
 
 private slots:
     void captureFrame();
@@ -181,6 +183,10 @@ private:
     // Free bytes on the volume holding `path`; replaced by tests.
     std::function<qint64(const QString&)> m_freeBytesForPath;
     bool chooseIntermediateQuality(const QString& outputDirectory, const QSize& frameSize);
+    // Whether this start records the high-quality intermediate; also stored in
+    // m_recordedAsIntermediate. Without preview the disk is never queried.
+    bool decideIntermediateQuality(bool showPreview, const QString& outputDirectory, const QSize& frameSize);
+    bool m_recordedAsIntermediate = false;
     void warnAboutVisibleCaptureControls();
     QStringList m_startupAudioWarnings;
     QStringList m_reportedStartupAudioWarnings;

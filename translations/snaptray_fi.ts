@@ -1838,6 +1838,11 @@ Koko: %2</translation>
         <source>Click a window to crop to it, or drag to draw</source>
         <translation>Rajaa ikkunaan napsauttamalla sitä tai piirrä alue vetämällä</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="681" />
+        <source>Cancel</source>
+        <translation>Peruuta</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -1914,6 +1919,11 @@ Koko: %2</translation>
     <message>
         <source>Export failed; the original recording was kept.</source>
         <translation>Vienti epäonnistui; alkuperäinen tallenne säilytettiin.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>Peruutetaan...</translation>
     </message>
 </context>
 <context>

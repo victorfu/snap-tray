@@ -1838,6 +1838,11 @@ Kích thước: %2</translation>
         <source>Click a window to crop to it, or drag to draw</source>
         <translation>Nhấp vào một cửa sổ để cắt theo cửa sổ đó, hoặc kéo để vẽ</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="681" />
+        <source>Cancel</source>
+        <translation>Hủy</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -1914,6 +1919,11 @@ Kích thước: %2</translation>
     <message>
         <source>Export failed; the original recording was kept.</source>
         <translation>Xuất không thành công; bản ghi gốc đã được giữ lại.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>Đang hủy...</translation>
     </message>
 </context>
 <context>

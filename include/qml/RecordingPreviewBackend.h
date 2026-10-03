@@ -2,7 +2,6 @@
 
 #include "encoding/EncoderFactory.h"
 #include "utils/VideoCropGeometry.h"
-#include "video/IVideoTranscoder.h"
 #include "recording/WindowTimeline.h"
 #include <QObject>
 #include <QString>
@@ -17,6 +16,7 @@
 
 class QQuickView;
 class QEvent;
+class IVideoTranscoder;
 class tst_RecordingPreviewExport;
 
 /**
@@ -80,7 +80,11 @@ public:
     };
     Q_ENUM(OutputFormat)
 
+    // A recording made at the selected quality (not as a high-quality
+    // intermediate) is saved as recorded when unedited; this overload treats
+    // the recording as an intermediate.
     explicit RecordingPreviewBackend(const QString &videoPath, QObject *parent = nullptr);
+    RecordingPreviewBackend(const QString &videoPath, bool recordedAsIntermediate, QObject *parent = nullptr);
     ~RecordingPreviewBackend() override;
 
     // Window management
@@ -119,6 +123,8 @@ public:
 
     // QML actions
     Q_INVOKABLE void save();
+    // Stops a running MP4 export; the source is kept and no error is shown.
+    Q_INVOKABLE void cancelExport();
     Q_INVOKABLE void discard();
     Q_INVOKABLE void toggleTrim();
     Q_INVOKABLE QString formatTime(qint64 ms) const;
@@ -192,7 +198,10 @@ private:
 
     // Video
     QString m_videoPath;
-    int m_outputQuality = kDefaultTranscodeQuality; // snapshot taken when save() begins
+    int m_outputQuality = -1; // snapshot taken when save() begins
+    // False when the recording was captured at the selected quality, so an
+    // unedited save never needs a re-encode.
+    bool m_recordedAsIntermediate = true;
     qint64 m_duration = 0;
     qint64 m_position = 0;
     bool m_isPlaying = false;
@@ -213,7 +222,8 @@ private:
 
     // Processing
     bool m_isProcessing = false;
-    // Shared with the MP4 export worker; set on destruction to cancel it.
+    // Shared with the MP4 export worker; set by cancelExport() or on
+    // destruction to cancel it. Each export starts with a fresh token.
     std::shared_ptr<std::atomic_bool> m_exportCancelToken = std::make_shared<std::atomic_bool>(false);
     int m_processProgress = 0;
     QString m_processStatus;

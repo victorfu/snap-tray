@@ -1835,6 +1835,11 @@ Size: %2</source>
         <source>Click a window to crop to it, or drag to draw</source>
         <translation>点击窗口即可裁切到该窗口，或拖曳自行绘制</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="681" />
+        <source>Cancel</source>
+        <translation>取消</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -1911,6 +1916,11 @@ Size: %2</source>
     <message>
         <source>Export failed; the original recording was kept.</source>
         <translation>导出失败；已保留原始录制。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>正在取消...</translation>
     </message>
 </context>
 <context>

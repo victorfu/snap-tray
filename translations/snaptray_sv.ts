@@ -1838,6 +1838,11 @@ Storlek: %2</translation>
         <source>Click a window to crop to it, or drag to draw</source>
         <translation>Klicka på ett fönster för att beskära till det, eller dra för att rita</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="681" />
+        <source>Cancel</source>
+        <translation>Avbryt</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -1914,6 +1919,11 @@ Storlek: %2</translation>
     <message>
         <source>Export failed; the original recording was kept.</source>
         <translation>Exporten misslyckades; den ursprungliga inspelningen behölls.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>Avbryter...</translation>
     </message>
 </context>
 <context>

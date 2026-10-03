@@ -1838,6 +1838,11 @@ Dydis: %2</translation>
         <source>Click a window to crop to it, or drag to draw</source>
         <translation>Spustelėkite langą, kad apkirptumėte pagal jį, arba vilkite ir nubrėžkite</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="681" />
+        <source>Cancel</source>
+        <translation>Atšaukti</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -1914,6 +1919,11 @@ Dydis: %2</translation>
     <message>
         <source>Export failed; the original recording was kept.</source>
         <translation>Eksportuoti nepavyko; pradinis įrašas išsaugotas.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>Atšaukiama...</translation>
     </message>
 </context>
 <context>

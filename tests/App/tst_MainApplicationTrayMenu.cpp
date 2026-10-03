@@ -631,7 +631,7 @@ void tst_MainApplicationTrayMenu::previewCloseDiscardsTemporaryFile()
         QVERIFY(file.write("Incomplete recording") > 0);
         file.close();
     }
-    application.showRecordingPreview(path, 0);
+    application.showRecordingPreview(path, 0, true);
     QVERIFY(application.m_previewBackend);
     QPointer<RecordingPreviewBackend> backend(application.m_previewBackend);
     if (validVideo) QTRY_VERIFY(backend->duration() > 0);

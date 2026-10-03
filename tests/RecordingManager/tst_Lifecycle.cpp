@@ -53,6 +53,8 @@ private slots:
     void testStaleSidecarsAreCleanedUp();
     void intermediateQualityFollowsFreeSpace_data();
     void intermediateQualityFollowsFreeSpace();
+    void previewRequestedCarriesIntermediateDecision_data();
+    void previewRequestedCarriesIntermediateDecision();
 
 private:
     RecordingManager* m_manager = nullptr;
@@ -387,6 +389,46 @@ void TestRecordingManagerLifecycle::intermediateQualityFollowsFreeSpace()
         QCOMPARE(warnings.first().at(0).toString(), RecordingManager::tr(
             "Not enough free disk space for high-quality recording. Recording at the selected quality instead."));
     }
+}
+
+void TestRecordingManagerLifecycle::previewRequestedCarriesIntermediateDecision_data()
+{
+    QTest::addColumn<qint64>("freeBytes");
+    QTest::addColumn<bool>("expectIntermediate");
+    const QSize frame(1920, 1080);
+    const qint64 needed = SnapTray::IntermediateQuality::estimatedBytesPerMinute(
+                              SnapTray::IntermediateQuality::intermediateBitrate(frame, 30))
+                          * SnapTray::IntermediateQuality::kMinimumRecordingMinutes;
+    QTest::newRow("ample space") << needed * 10 << true;
+    QTest::newRow("low disk") << needed - 1 << false;
+}
+
+void TestRecordingManagerLifecycle::previewRequestedCarriesIntermediateDecision()
+{
+    QFETCH(qint64, freeBytes);
+    QFETCH(bool, expectIntermediate);
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    m_manager->m_frameRate = 30;
+    m_manager->m_freeBytesForPath = [freeBytes](const QString&) { return freeBytes; };
+    m_manager->m_startSettings.showPreview = true;
+
+    // The decision beginAsyncInitialization() makes for a preview-on start...
+    QCOMPARE(m_manager->decideIntermediateQuality(true, dir.path(), QSize(1920, 1080)), expectIntermediate);
+
+    // ...reaches the preview when encoding finishes.
+    QSignalSpy previewSpy(m_manager, &RecordingManager::previewRequested);
+    m_manager->m_state = RecordingManager::State::Encoding;
+    const QString output = dir.filePath(QStringLiteral("rec.mp4"));
+    m_manager->onEncodingFinished(true, output);
+    QTRY_COMPARE(previewSpy.count(), 1);
+    QCOMPARE(previewSpy.first().at(0).toString(), output);
+    QCOMPARE(previewSpy.first().at(2).toBool(), expectIntermediate);
+
+    // A new start forgets the previous decision.
+    m_manager->initializeStartState();
+    QVERIFY(!m_manager->m_recordedAsIntermediate);
+    m_manager->m_state = RecordingManager::State::Idle;
 }
 
 #include "tst_Lifecycle.moc"

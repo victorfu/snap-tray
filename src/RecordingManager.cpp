@@ -224,6 +224,13 @@ bool RecordingManager::chooseIntermediateQuality(const QString& outputDirectory,
     return false;
 }
 
+bool RecordingManager::decideIntermediateQuality(bool showPreview, const QString& outputDirectory,
+                                                 const QSize& frameSize)
+{
+    m_recordedAsIntermediate = showPreview && chooseIntermediateQuality(outputDirectory, frameSize);
+    return m_recordedAsIntermediate;
+}
+
 RecordingManager::RecordingManager(QObject *parent)
     : QObject(parent)
     , m_usingNativeEncoder(false)
@@ -494,6 +501,7 @@ void RecordingManager::initializeStartState()
     m_countdownEnabled = m_startSettings.countdownEnabled;
     m_countdownSeconds = m_startSettings.countdownSeconds;
     ++m_startGeneration;
+    m_recordedAsIntermediate = false;
     m_permissionPending = false;
     m_captureExclusionWarningShown = false;
     m_startupAudioWarnings.clear();
@@ -694,8 +702,8 @@ void RecordingManager::beginAsyncInitialization()
     config.outputFormat = recordingFormat;
     config.frameSize = physicalSize;
     config.quality = m_startSettings.quality;
-    config.intermediateQuality = showPreview
-        && chooseIntermediateQuality(QFileInfo(config.outputPath).absolutePath(), physicalSize);
+    config.intermediateQuality = decideIntermediateQuality(
+        showPreview, QFileInfo(config.outputPath).absolutePath(), physicalSize);
 
     // Collect UI window IDs to exclude from capture.
     if (m_controlBar) {
@@ -1499,10 +1507,11 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
         if (showPreview) {
             QString tempPath = outputPath;
             int defaultOutputFormat = m_defaultOutputFormat;
-            QMetaObject::invokeMethod(this, [this, tempPath, defaultOutputFormat]() {
+            const bool recordedAsIntermediate = m_recordedAsIntermediate;
+            QMetaObject::invokeMethod(this, [this, tempPath, defaultOutputFormat, recordedAsIntermediate]() {
                 m_tempVideoPath = tempPath;
                 setState(State::Previewing);
-                emit previewRequested(tempPath, defaultOutputFormat);
+                emit previewRequested(tempPath, defaultOutputFormat, recordedAsIntermediate);
             }, Qt::QueuedConnection);
         } else {
             // Existing flow: go directly to save dialog

@@ -1844,6 +1844,11 @@ Size: %2</source>
         <source>Click a window to crop to it, or drag to draw</source>
         <translation>창을 클릭하면 그 창에 맞춰 자르고, 드래그하면 직접 그릴 수 있습니다</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="681" />
+        <source>Cancel</source>
+        <translation>취소</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -1920,6 +1925,11 @@ Size: %2</source>
     <message>
         <source>Export failed; the original recording was kept.</source>
         <translation>내보내기에 실패했습니다. 원본 녹화는 유지되었습니다.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>취소하는 중...</translation>
     </message>
 </context>
 <context>

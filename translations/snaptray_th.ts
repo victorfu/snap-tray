@@ -1825,6 +1825,11 @@ English is always included and cannot be removed.</source>
         <source>Click a window to crop to it, or drag to draw</source>
         <translation>คลิกหน้าต่างเพื่อครอบตัดตามหน้าต่างนั้น หรือลากเพื่อวาดเอง</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="681" />
+        <source>Cancel</source>
+        <translation>ยกเลิก</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -1846,6 +1851,11 @@ English is always included and cannot be removed.</source>
     <message>
         <source>Export failed; the original recording was kept.</source>
         <translation>ส่งออกไม่สำเร็จ ระบบยังคงเก็บการบันทึกต้นฉบับไว้</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>กำลังยกเลิก...</translation>
     </message>
 </context>
 <context>

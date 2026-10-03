@@ -1844,6 +1844,11 @@ Size: %2</source>
         <source>Click a window to crop to it, or drag to draw</source>
         <translation>Кликните на прозор да бисте исекли по њему или превуците да нацртате</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="681" />
+        <source>Cancel</source>
+        <translation>Откажи</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -1920,6 +1925,11 @@ Size: %2</source>
     <message>
         <source>Export failed; the original recording was kept.</source>
         <translation>Извоз није успео; оригинални снимак је задржан.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>Отказивање...</translation>
     </message>
 </context>
 <context>

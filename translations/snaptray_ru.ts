@@ -1844,6 +1844,11 @@ Size: %2</source>
         <source>Click a window to crop to it, or drag to draw</source>
         <translation>Щёлкните окно, чтобы обрезать по нему, или перетащите, чтобы нарисовать область</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="681" />
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -1920,6 +1925,11 @@ Size: %2</source>
     <message>
         <source>Export failed; the original recording was kept.</source>
         <translation>Экспорт не удался; исходная запись сохранена.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>Отмена...</translation>
     </message>
 </context>
 <context>

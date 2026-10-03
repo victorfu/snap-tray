@@ -674,6 +674,16 @@ Item {
                 color: root.textSecondary
                 anchors.horizontalCenter: parent.horizontalCenter
             }
+
+            // Only MP4 exports can be stopped; animated conversions run to completion.
+            DialogButton {
+                objectName: "previewCancelExportButton"
+                text: qsTr("Cancel")
+                style: "secondary"
+                visible: backend.selectedFormat === 0
+                anchors.horizontalCenter: parent.horizontalCenter
+                onClicked: backend.cancelExport()
+            }
         }
     }
 

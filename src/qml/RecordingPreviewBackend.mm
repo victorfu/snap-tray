@@ -43,8 +43,15 @@ constexpr int kFrameExtractionTimeoutMs = 5000;
 }
 
 RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, QObject *parent)
+    : RecordingPreviewBackend(videoPath, true, parent)
+{
+}
+
+RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool recordedAsIntermediate,
+                                                 QObject *parent)
     : QObject(parent)
     , m_videoPath(videoPath)
+    , m_recordedAsIntermediate(recordedAsIntermediate)
 {
     m_windowTimeline = SnapTray::WindowTimelineSidecar::read(videoPath);
 }
@@ -346,6 +353,17 @@ void RecordingPreviewBackend::save()
     // MP4 with no edits: move the intermediate if it already meets the
     // user's quality, otherwise re-encode it to that quality.
     performTranscode(true);
+}
+
+void RecordingPreviewBackend::cancelExport()
+{
+    if (!m_isProcessing || !m_exportCancelToken) {
+        return;
+    }
+    qDebug() << "RecordingPreviewBackend: Export cancel requested";
+    m_exportCancelToken->store(true);
+    m_processStatus = tr("Cancelling...");
+    emit processStatusChanged();
 }
 
 void RecordingPreviewBackend::discard()
@@ -873,6 +891,9 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
     // log; the user sees this translated summary instead.
     const QString keptMessage = tr("Export failed; the original recording was kept.");
     const int outputQuality = m_outputQuality;
+    const bool recordedAsIntermediate = m_recordedAsIntermediate;
+    // A fresh token per export, so a cancelled export never cancels the next one.
+    m_exportCancelToken = std::make_shared<std::atomic_bool>(false);
     const auto cancelToken = m_exportCancelToken;
     const TranscoderFactory createTranscoder = transcoderFactoryOverride()
         ? transcoderFactoryOverride()
@@ -880,7 +901,8 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
     QPointer<RecordingPreviewBackend> weakThis(this);
 
     (void)QtConcurrent::run([weakThis, request, outputPath, croppedSize, unsupportedError, failedTemplate,
-                             keptMessage, cancelToken, createTranscoder, smartSave, outputQuality]() mutable {
+                             keptMessage, cancelToken, createTranscoder, smartSave, outputQuality,
+                             recordedAsIntermediate]() mutable {
         // Queued onto the GUI thread; never blocks, so it is safe from the
         // transcoder's worker threads (see IVideoTranscoder::ProgressCallback).
         auto post = [](auto fn) {
@@ -895,10 +917,16 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
         VideoTranscodeResult result;
         VideoFileProbe sourceProbe;
         bool moveInstead = false;
+        const char* moveReason = "";
         if (unsupported) {
             // Without a transcoder an unedited save still works as before.
             moveInstead = smartSave;
+            moveReason = "no transcoder on this platform";
             if (!moveInstead) result.errorMessage = unsupportedError;
+        } else if (smartSave && !recordedAsIntermediate) {
+            // Already encoded at the user's quality; a re-encode would only lose detail.
+            moveInstead = true;
+            moveReason = "not an intermediate: recorded at the selected quality; saving as recorded";
         } else {
             sourceProbe = transcoder->probe(request.inputPath);
             if (smartSave && !sourceProbe.valid) {
@@ -906,13 +934,15 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
                 // with Discard; keep the recording as recorded.
                 qWarning() << "RecordingPreviewBackend: unedited recording could not be probed; saving it as recorded";
                 moveInstead = true;
+                moveReason = "unprobeable";
             } else if (smartSave && SnapTray::IntermediateQuality::smartSaveShouldMove(
                                         sourceProbe, QFileInfo(request.inputPath).size(), outputQuality)) {
                 moveInstead = true;
+                moveReason = "meets the output quality target";
             }
         }
         if (moveInstead) {
-            qDebug() << "RecordingPreviewBackend: unedited recording meets the output quality; moving it";
+            qDebug() << "RecordingPreviewBackend: moving the unedited recording;" << moveReason;
             const QString inputPath = request.inputPath;
             post([weakThis, inputPath]() {
                 if (!weakThis) return;
@@ -992,8 +1022,12 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
             result.success = false;
             result.errorMessage = QStringLiteral("rename failed");
         }
+        // A cancelled export (cancelExport() or destruction) keeps the
+        // source and shows no error; the output was removed above.
+        const bool cancelled = !result.success && cancelToken->load();
         const bool posted = post([weakThis, result, outputPath, croppedSize, failedTemplate, keptMessage,
-                                  unsupported, unsupportedError, inputPath = request.inputPath]() {
+                                  unsupported, unsupportedError, inputPath = request.inputPath, cancelled,
+                                  smartSave]() {
             if (!weakThis) {
                 // The preview went away mid-export; keep the source, drop the output.
                 QFile::remove(outputPath);
@@ -1002,6 +1036,20 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
             weakThis->m_isProcessing = false;
             emit weakThis->processingChanged();
             if (!result.success) {
+                if (cancelled) {
+                    qDebug() << "RecordingPreviewBackend: export cancelled; the original recording was kept";
+                    return;
+                }
+                if (smartSave) {
+                    // An unedited recording is still a valid recording: save
+                    // it as recorded rather than leave the user with Discard.
+                    qWarning() << "RecordingPreviewBackend: moving the unedited recording; re-encode failed:"
+                               << result.errorMessage;
+                    weakThis->m_saved = true;
+                    weakThis->close();
+                    emit weakThis->saveRequested(inputPath, QSize());
+                    return;
+                }
                 weakThis->setErrorMessage(unsupported ? failedTemplate.arg(unsupportedError) : keptMessage);
                 return;
             }

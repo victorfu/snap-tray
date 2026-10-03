@@ -883,13 +883,14 @@ void MainApplication::pinFromClipboard(std::optional<QPoint> requestedPosition)
     }
 }
 
-void MainApplication::showRecordingPreview(const QString& videoPath, int defaultOutputFormat)
+void MainApplication::showRecordingPreview(const QString& videoPath, int defaultOutputFormat,
+                                           bool recordedAsIntermediate)
 {
     // Prevent multiple preview windows
     if (m_previewBackend)
         return;
 
-    m_previewBackend = new RecordingPreviewBackend(videoPath, this);
+    m_previewBackend = new RecordingPreviewBackend(videoPath, recordedAsIntermediate, this);
     m_previewBackend->setDefaultOutputFormat(defaultOutputFormat);
 
     // The save handler opens a native dialog. Keep it out of the QML click/key

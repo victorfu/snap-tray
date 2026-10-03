@@ -1844,6 +1844,11 @@ Grootte: %2</translation>
         <source>Click a window to crop to it, or drag to draw</source>
         <translation>Klik op een venster om daarop bij te snijden, of sleep om te tekenen</translation>
     </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="681" />
+        <source>Cancel</source>
+        <translation>Annuleren</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -1920,6 +1925,11 @@ Grootte: %2</translation>
     <message>
         <source>Export failed; the original recording was kept.</source>
         <translation>Exporteren is mislukt; de oorspronkelijke opname is bewaard.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>Annuleren...</translation>
     </message>
 </context>
 <context>

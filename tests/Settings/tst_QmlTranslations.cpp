@@ -294,10 +294,12 @@ void tst_QmlTranslations::testRecordingPreviewCropTranslatedForAllLocales()
         {"RecordingPreview", "Apply Crop (Enter)"},
         {"RecordingPreview", "Clear Crop"},
         {"RecordingPreview", "Click a window to crop to it, or drag to draw"},
+        {"RecordingPreview", "Cancel"},
         {"RecordingPreviewBackend", "Exporting video..."},
         {"RecordingPreviewBackend", "Video export is not supported on this platform"},
         {"RecordingPreviewBackend", "Export failed: %1"},
         {"RecordingPreviewBackend", "Export failed; the original recording was kept."},
+        {"RecordingPreviewBackend", "Cancelling..."},
         {"RecordingSettings", "Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save."},
     };
 
@@ -384,6 +386,9 @@ void tst_QmlTranslations::testRecordingAudioWarningsTranslatedForAllLocales()
         QByteArray(
             "Audio is unavailable. This recording will be silent. "
             "Check system permissions and the selected audio device."),
+        QByteArray(
+            "Not enough free disk space for high-quality recording. "
+            "Recording at the selected quality instead."),
     };
 
     const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
