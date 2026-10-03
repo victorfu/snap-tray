@@ -7,12 +7,15 @@
 #include <QClipboard>
 
 #include "PinWindow.h"
+#include "PinWindowManager.h"
 #include "PlatformFeatures.h"
 #include "annotations/MosaicStroke.h"
 #include "annotations/MosaicRectAnnotation.h"
 #include "annotations/MarkerStroke.h"
 #include "capture/ICaptureEngine.h"
 #include "pinwindow/ResizeHandler.h"
+#include "pinwindow/UIIndicators.h"
+#include "pinwindow/ClickThroughExitButton.h"
 #include "tools/ToolManager.h"
 #include <QScreen>
 
@@ -45,6 +48,82 @@ private:
     }
 
 private slots:
+    void testClickThroughExitAfterShowAllPins() {
+        if (!PlatformFeatures::instance().capabilities().supportsClickThrough) {
+            QSKIP("Click-through is not supported on this platform");
+        }
+        PinWindowManager manager;
+        auto* window = manager.createPinWindow(createTestPixmap(200, 150), QPoint(100, 100));
+        window->setClickThrough(true);
+        auto* button = window->findChild<ClickThroughExitButton*>();
+        QVERIFY(button);
+        QVERIFY(button->isVisible());
+        manager.setAllPinsVisible(false);
+        QVERIFY(window->isClickThrough());
+        QVERIFY(!button->isVisible());
+        manager.setAllPinsVisible(true);
+        QVERIFY(window->isClickThrough());
+        QVERIFY(button->isVisible());
+        QTest::mouseClick(button, Qt::LeftButton);
+        QVERIFY(!window->isClickThrough());
+        QVERIFY(!button->isVisible());
+    }
+
+    void testClickThroughIndicatorRestoredAfterHide() {
+        QWidget target;
+        target.setGeometry(100, 100, 300, 200);
+        UIIndicators indicators(&target);
+        target.show();
+        indicators.showClickThroughIndicator(true);
+        auto* button = target.findChild<ClickThroughExitButton*>();
+        QVERIFY(button);
+        QVERIFY(button->isVisible());
+        QSignalSpy exitSpy(&indicators, &UIIndicators::exitClickThroughRequested);
+        for (int cycle = 0; cycle < 2; ++cycle) {
+            target.hide();
+            QVERIFY(!button->isVisible());
+            target.move(150 + cycle * 20, 150);
+            target.resize(350 + cycle * 20, 250);
+            target.show();
+            QVERIFY(button->isVisible());
+            QCOMPARE(button->pos(), QPoint(target.x() + target.width() - button->width() - 16,
+                                           target.y() + 16));
+            QVERIFY(button->findChild<QTimer*>()->isActive());
+        }
+        QTest::mouseClick(button, Qt::LeftButton);
+        QCOMPARE(exitSpy.count(), 1);
+    }
+
+    void testClickThroughIndicatorDisabledWhileHidden() {
+        QWidget target;
+        UIIndicators indicators(&target);
+        target.show();
+        indicators.showClickThroughIndicator(true);
+        auto* button = target.findChild<ClickThroughExitButton*>();
+        QVERIFY(button);
+        QVERIFY(button->isVisible());
+        target.hide();
+        indicators.showClickThroughIndicator(false);
+        target.show();
+        QVERIFY(!button->isVisible());
+        QVERIFY(!button->findChild<QTimer*>()->isActive());
+    }
+
+    void testClickThroughIndicatorEnabledWhileHidden() {
+        QWidget target;
+        UIIndicators indicators(&target);
+        indicators.showClickThroughIndicator(true);
+        auto* button = target.findChild<ClickThroughExitButton*>();
+        QVERIFY(button);
+        QVERIFY(!button->isVisible());
+        target.show();
+        QVERIFY(button->isVisible());
+        indicators.showClickThroughIndicator(false);
+        target.hide();
+        target.show();
+        QVERIFY(!button->isVisible());
+    }
+
     void testNativeStopEndsLivePin_data() {
         QTest::addColumn<bool>("replaceEngine");
         QTest::newRow("active-engine") << false;

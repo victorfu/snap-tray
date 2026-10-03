@@ -54,11 +54,5 @@ void UIIndicators::showOpacityIndicator(qreal opacity)
 void UIIndicators::showClickThroughIndicator(bool enabled)
 {
     ensureClickThroughExitButtonCreated();
-    if (enabled) {
-        m_clickThroughExitButton->updatePosition();
-        m_clickThroughExitButton->show();
-        m_clickThroughExitButton->raise();
-    } else {
-        m_clickThroughExitButton->hide();
-    }
+    m_clickThroughExitButton->setClickThroughEnabled(enabled);
 }
