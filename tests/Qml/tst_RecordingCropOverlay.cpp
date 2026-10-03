@@ -292,6 +292,7 @@ private slots:
     void previewNoTimelineNoHoverNoHint();
     void previewDragAndReturnDoesNotSnap();
     void previewClickInsideDraftKeepsDraft();
+    void previewNoHighlightOverExistingDraft();
     void previewEndEditingClearsHover();
 
 private:
@@ -1346,6 +1347,8 @@ void tst_RecordingCropOverlay::previewHoverHighlightsWindow()
     QCOMPARE(overlay->property("hoverRect").toRectF(), expected);
     QCOMPARE(overlay->property("hoverLabel").toString(), QStringLiteral("Code"));
     QVERIFY(label->isVisible());
+    // The lookup uses the player's playhead.
+    QCOMPARE(m_backend->lastLookupPositionMs, previewItem("previewVideoPlayer")->property("position").toLongLong());
 
     // Off the window: highlight gone.
     QTest::mouseMove(m_view.get(), overlayPoint(content.x() + 5, content.y() + 5));
@@ -1441,6 +1444,37 @@ void tst_RecordingCropOverlay::previewClickInsideDraftKeepsDraft()
     QTest::mouseClick(m_view.get(), Qt::LeftButton, Qt::NoModifier, inside);
     QTest::qWait(50);
     QCOMPARE(overlay->property("draftRect").toRectF(), draft);
+}
+
+void tst_RecordingCropOverlay::previewNoHighlightOverExistingDraft()
+{
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
+    m_backend->setStubWindow(QRect(400, 100, 400, 200), QStringLiteral("Code"));
+    click(previewItem("previewCropButton"));
+    const QRectF content = previewContentRect();
+    // A draft well inside the stub window (x 30%-45%, y 35%-65% of the content).
+    drag(overlayPoint(content.x() + content.width() * 0.3, content.y() + content.height() * 0.35),
+         overlayPoint(content.x() + content.width() * 0.45, content.y() + content.height() * 0.65));
+    QObject* overlay = previewOverlay();
+    const QRectF draft = overlay->property("draftRect").toRectF();
+    QVERIFY(!draft.isEmpty());
+    QQuickItem* frame = previewItem("cropHoverFrame");
+
+    // Over the window but outside the draft: a click would snap, so the highlight shows.
+    QTest::mouseMove(m_view.get(), overlayPoint(content.x() + content.width() * 0.49, content.y() + content.height() * 0.5));
+    QTRY_VERIFY(overlay->property("showsHover").toBool());
+    QVERIFY(frame->isVisible());
+
+    // Inside the draft: the window is still found, but a click is a no-op, so no highlight.
+    QTest::mouseMove(m_view.get(), overlayPoint(draft.center().x(), draft.center().y()));
+    QTRY_VERIFY(!overlay->property("showsHover").toBool());
+    QVERIFY(!overlay->property("hoverRect").toRectF().isEmpty());
+    QVERIFY(!frame->isVisible());
+
+    // On a handle (the draft's right edge): same.
+    QTest::mouseMove(m_view.get(), overlayPoint(draft.right(), draft.center().y()));
+    QTRY_VERIFY(!overlay->property("showsHover").toBool());
+    QVERIFY(!frame->isVisible());
 }
 
 void tst_RecordingCropOverlay::previewEndEditingClearsHover()

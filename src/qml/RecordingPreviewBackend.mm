@@ -401,8 +401,8 @@ void RecordingPreviewBackend::updateVideoSize(const QSize &size)
     m_videoSize = size;
     emit videoSizeChanged();
     if (m_windowTimeline && m_windowTimeline->frameSize() != size) {
-        qDebug() << "RecordingPreviewBackend: window timeline frame size" << m_windowTimeline->frameSize()
-                 << "does not match the video" << size << "- snapping disabled";
+        qWarning() << "RecordingPreviewBackend: window timeline frame size" << m_windowTimeline->frameSize()
+                   << "does not match the video" << size << "- snapping disabled";
         m_windowTimeline.reset();
         emit windowTimelineChanged();
     }

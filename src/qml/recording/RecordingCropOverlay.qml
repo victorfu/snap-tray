@@ -34,7 +34,10 @@ Item {
     property bool hovering: false
     // The pointer moved or left while editing (not during a drag).
     signal hoverChanged()
+    // A click inside an existing draft or on its handles moves/resizes it and never snaps,
+    // so the highlight is only shown where a click would actually snap.
     readonly property bool showsHover: editing && hovering && isNonEmpty(hoverRect) && !cropMouse.pressed
+            && !containsPoint(draftRect, hoverPoint.x, hoverPoint.y) && edgesAt(hoverPoint.x, hoverPoint.y) === 0
     readonly property bool pressed: cropMouse.pressed
     readonly property real hoverFillAlpha: 0.12
     // What a click would select: the hovered window clamped into the content.
