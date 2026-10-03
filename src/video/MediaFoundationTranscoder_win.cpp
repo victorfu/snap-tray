@@ -614,6 +614,21 @@ VideoFileProbe MediaFoundationTranscoder::probe(const QString& filePath)
     ComPtr<IMFMediaType> audioType;
     result.videoSize = area.size();
     result.durationMs = hnsToMs(durationHns);
+
+    UINT32 fpsNumerator = 0;
+    UINT32 fpsDenominator = 0;
+    if (SUCCEEDED(MFGetAttributeRatio(videoType.Get(), MF_MT_FRAME_RATE, &fpsNumerator, &fpsDenominator))
+        && fpsDenominator != 0) {
+        result.frameRate = double(fpsNumerator) / double(fpsDenominator);
+    }
+    GUID subtype = GUID_NULL;
+    if (SUCCEEDED(videoType->GetGUID(MF_MT_SUBTYPE, &subtype))) {
+        if (subtype == MFVideoFormat_H264) {
+            result.videoCodec = QLatin1String(kVideoCodecH264);
+        } else if (subtype == MFVideoFormat_HEVC) {
+            result.videoCodec = QLatin1String(kVideoCodecHevc);
+        }
+    }
     result.hasAudio = SUCCEEDED(reader->GetNativeMediaType(MF_SOURCE_READER_FIRST_AUDIO_STREAM, 0, &audioType));
     if (result.hasAudio) {
         bool hasPackets = false;

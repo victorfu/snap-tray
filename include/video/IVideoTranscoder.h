@@ -18,6 +18,11 @@ constexpr int kDefaultTranscodeQuality = 80;
 // all of them judge "lost audio" the same way.
 constexpr qint64 kAudioCoverageToleranceMs = 50;
 
+// Probe codec identifiers. The smart-save rule only trusts the H.264 bitrate
+// formula, so anything else re-encodes.
+constexpr auto kVideoCodecH264 = "h264";
+constexpr auto kVideoCodecHevc = "hevc";
+
 struct VideoTranscodeRequest {
     QString inputPath;
     QString outputPath;
@@ -48,6 +53,8 @@ struct VideoFileProbe {
     // Presentation range of the first audio track; -1/-1 without audio.
     qint64 audioStartMs = -1;
     qint64 audioEndMs = -1;
+    double frameRate = 0.0;   // nominal fps of the first video track; 0 when unknown
+    QString videoCodec;       // "h264", "hevc", or empty when unknown
 };
 
 // Offline MP4 trim + crop + H.264 re-encode with AAC passthrough.

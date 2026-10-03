@@ -291,6 +291,16 @@ VideoFileProbe AVFoundationTranscoder::probe(const QString& filePath)
         const CGSize size = CGSizeApplyAffineTransform(video.naturalSize, video.preferredTransform);
         result.videoSize = QSize(qAbs(qRound(size.width)), qAbs(qRound(size.height)));
         result.durationMs = toMs(asset.duration);
+        result.frameRate = video.nominalFrameRate;
+        if (CMFormatDescriptionRef description =
+                (__bridge CMFormatDescriptionRef)video.formatDescriptions.firstObject) {
+            const FourCharCode codec = CMFormatDescriptionGetMediaSubType(description);
+            if (codec == kCMVideoCodecType_H264) {
+                result.videoCodec = QLatin1String(kVideoCodecH264);
+            } else if (codec == kCMVideoCodecType_HEVC) {
+                result.videoCodec = QLatin1String(kVideoCodecHevc);
+            }
+        }
         result.hasAudio = [asset tracksWithMediaType:AVMediaTypeAudio].count > 0;
         if (result.hasAudio) {
             const auto [audioStartMs, audioEndMs] = audioRangeMs(asset);

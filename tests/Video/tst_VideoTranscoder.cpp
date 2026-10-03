@@ -30,6 +30,7 @@ constexpr int kAudioChannels = 2;
 constexpr int kAudioBytesPerSample = 2;
 constexpr int kAudioFramesPerVideoFrame = kAudioSampleRate / kFrameRate;
 constexpr qint64 kDurationToleranceMs = 150;
+constexpr double kFrameRateTolerance = 0.5; // nominal rates are exact on both platforms
 constexpr double kMsPerSecond = 1000.0;
 const QSize kSourceSize(160, 120);
 
@@ -442,6 +443,11 @@ void tst_VideoTranscoder::probeReportsFixture()
     QCOMPARE(probe.videoSize, kSourceSize);
     QVERIFY(qAbs(probe.durationMs - kFrameCount * kFrameIntervalMs) <= kDurationToleranceMs);
     QVERIFY(probe.hasAudio);
+    // The fixture is encoded at kFrameRate fps as H.264; Phase 3's output
+    // bitrate contract needs both facts from the probe.
+    QVERIFY2(qAbs(probe.frameRate - kFrameRate) < kFrameRateTolerance,
+             qPrintable(QStringLiteral("probed fps %1").arg(probe.frameRate)));
+    QCOMPARE(probe.videoCodec, QStringLiteral("h264"));
 }
 
 void tst_VideoTranscoder::fixtureHasTimedPulses()
