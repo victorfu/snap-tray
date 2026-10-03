@@ -743,6 +743,14 @@ target_link_libraries(Longshot_PositionSolver PRIVATE snaptray_algorithms Qt6::T
 add_test(NAME Longshot_PositionSolver COMMAND Longshot_PositionSolver)
 set_tests_properties(Longshot_PositionSolver PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Longshot_FrameSource Longshot/tst_FrameSource.cpp)
+target_include_directories(Longshot_FrameSource PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(Longshot_FrameSource PRIVATE snaptray_platform snaptray_algorithms Qt6::Gui Qt6::Test
+    "$<$<PLATFORM_ID:Windows>:mfreadwrite>" "$<$<PLATFORM_ID:Windows>:mfplat>"
+    "$<$<PLATFORM_ID:Windows>:mfuuid>" "$<$<PLATFORM_ID:Windows>:ole32>")
+add_test(NAME Longshot_FrameSource COMMAND Longshot_FrameSource)
+set_tests_properties(Longshot_FrameSource PROPERTIES TIMEOUT 120 LABELS "integration;slow")
+
 # ============================================================================
 # Utils Tests (link snaptray_core)
 # ============================================================================

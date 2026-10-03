@@ -505,6 +505,7 @@ add_library(snaptray_platform STATIC
     src/recording/ScreenSourceService.cpp
     src/recording/WindowTimelineRecorder.cpp
     src/video/IVideoFrameReader.cpp
+    src/longshot/FrameReaderLongshotSource.cpp
     src/video/IVideoPlayer.cpp
     src/video/IVideoTranscoder.cpp
     src/VideoEncoderFactory.cpp
@@ -568,6 +569,7 @@ add_library(snaptray_platform STATIC
         src/capture/WASAPIAudioCaptureEngine_win.cpp
         src/MediaFoundationEncoder.cpp
         src/video/MediaFoundationPlayer_win.cpp
+        src/video/MediaFoundationFrameReader_win.cpp
         src/video/MediaFoundationTranscoder_win.cpp
     >
     # Linux sources
