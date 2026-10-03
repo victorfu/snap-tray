@@ -40,6 +40,7 @@ private slots:
     void longChainConverges();
     void longChainWithClosure();
     void equalWeightOutlierClosureRejected();
+    void tieBreakIsOrderIndependent();
 };
 
 void tst_PositionSolver::chainIsCumulative()
@@ -161,6 +162,16 @@ void tst_PositionSolver::equalWeightOutlierClosureRejected()
 {
     const auto result = PositionSolver::solve(
         times(4), {edge(0, 1, 10), edge(1, 2, 10), edge(2, 3, 10), edge(0, 3, 300, 1.0)}, 4.0);
+    QCOMPARE(*result.positions[3], 30);
+    QCOMPARE(result.rejectedEdges, 1);
+    QVERIFY(result.breakTimesMs.empty());
+}
+
+void tst_PositionSolver::tieBreakIsOrderIndependent()
+{
+    // Same edges as equalWeightOutlierClosureRejected but closure listed FIRST
+    const auto result = PositionSolver::solve(
+        times(4), {edge(0, 3, 300, 1.0), edge(0, 1, 10), edge(1, 2, 10), edge(2, 3, 10)}, 4.0);
     QCOMPARE(*result.positions[3], 30);
     QCOMPARE(result.rejectedEdges, 1);
     QVERIFY(result.breakTimesMs.empty());

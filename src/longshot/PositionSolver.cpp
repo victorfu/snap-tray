@@ -91,10 +91,11 @@ std::vector<double> solveIsland(int frameCount, const std::vector<Edge>& edges,
     };
     std::vector<double> x(n, 0.0), r = b, p = b, Ap(n);
     double rr = std::inner_product(r.begin(), r.end(), r.begin(), 0.0);
+    bool converged = false;
     for (int iteration = 0; iteration < n + kExtraIterations; ++iteration) {
         double maxResidual = 0.0;
         for (double v : r) maxResidual = std::max(maxResidual, std::abs(v));
-        if (maxResidual < kResidualTolerancePx) break;
+        if (maxResidual < kResidualTolerancePx) { converged = true; break; }
         applyA(p, Ap);
         const double pAp = std::inner_product(p.begin(), p.end(), Ap.begin(), 0.0);
         if (pAp <= 0.0) break;
@@ -104,6 +105,13 @@ std::vector<double> solveIsland(int frameCount, const std::vector<Edge>& edges,
         const double beta = rrNext / rr;
         rr = rrNext;
         for (int i = 0; i < n; ++i) p[i] = r[i] + beta * p[i];
+    }
+    if (!converged) {
+        double maxResidual = 0.0;
+        for (double v : r) maxResidual = std::max(maxResidual, std::abs(v));
+        if (maxResidual >= kResidualTolerancePx) {
+            qWarning() << "PositionSolver: conjugate gradient did not converge; residual" << maxResidual;
+        }
     }
     for (int i = 0; i < n; ++i) pos[nodes[i]] = x[i];
     return pos;
@@ -151,25 +159,23 @@ SolveResult PositionSolver::solve(const std::vector<qint64>& frameTimesMs,
             }
         }
         int worst = -1;
-        double worstResidual = maxResidualPx;
+        double worstResidual = 0.0;
         for (int k = 0; k < int(edges.size()); ++k) {
             const Edge& e = edges[k];
             if (!e.active) continue;
             const double residual = std::abs(pos[e.to] - pos[e.from] - e.dy);
-            if (residual > worstResidual) {
-                worstResidual = residual;
-                worst = k;
-            } else if (worst >= 0 && std::abs(residual - worstResidual) <= kResidualTieWindow) {
-                // Residuals tied: prefer lower confidence, then larger span
-                const Edge& worstE = edges[worst];
-                const int worstSpan = std::abs(worstE.to - worstE.from);
-                const int thisSpan = std::abs(e.to - e.from);
-                if (e.weight < worstE.weight ||
-                    (std::abs(e.weight - worstE.weight) <= kResidualTieWindow && thisSpan > worstSpan)) {
-                    worstResidual = residual;
-                    worst = k;
-                }
+            if (residual <= maxResidualPx) continue;
+            const int span = std::abs(e.to - e.from);
+            bool takeIt = false;
+            if (worst < 0) {
+                takeIt = true;
+            } else if (std::abs(residual - worstResidual) <= kResidualTieWindow) {
+                const Edge& w = edges[worst];
+                takeIt = e.weight < w.weight || (e.weight == w.weight && span > std::abs(w.to - w.from));
+            } else {
+                takeIt = residual > worstResidual;
             }
+            if (takeIt) { worst = k; worstResidual = residual; }
         }
         if (worst < 0) break;
         edges[worst].active = false;
