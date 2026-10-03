@@ -453,6 +453,7 @@ add_library(snaptray_algorithms STATIC
     src/longshot/PositionSolver.cpp
     src/longshot/LongshotAnalyzer.cpp
     src/longshot/LongshotPipeline.cpp
+    src/longshot/LongshotRenderer.cpp
     # Headers with Q_OBJECT for MOC processing
     include/detection/FaceDetector.h
     include/detection/AutoBlurManager.h
