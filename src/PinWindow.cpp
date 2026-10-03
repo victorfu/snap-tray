@@ -4334,7 +4334,13 @@ void PinWindow::keepRegionLayoutControlsOnScreen()
     if (!m_regionLayoutManager) {
         return;
     }
-    QScreen* targetScreen = screen();
+    // Keep the controls on the screen the pin sits on. A canvas grown across
+    // a monitor gap makes screen() follow the larger overlap, which would
+    // pull the window onto the other monitor.
+    QScreen* targetScreen = QGuiApplication::screenAt(pos());
+    if (!targetScreen) {
+        targetScreen = screen();
+    }
     if (!targetScreen) {
         targetScreen = QGuiApplication::primaryScreen();
     }

@@ -1138,6 +1138,8 @@ void TestPinWindowCropUndo::testRegionLayoutDefersScreenClampUntilGestureEnds()
     const QRect buttonsGlobal = RegionLayoutRenderer::confirmButtonRect(controls)
                                     .united(RegionLayoutRenderer::cancelButtonRect(controls))
                                     .translated(window.pos());
+    // On a multi-monitor machine the grown window can overlap another screen
+    // more than the one it sits on; the controls must still stay on the latter.
     QVERIFY(available.contains(buttonsGlobal));
 
     window.exitRegionLayoutMode(false);
