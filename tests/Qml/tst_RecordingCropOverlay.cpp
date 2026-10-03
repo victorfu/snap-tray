@@ -944,20 +944,21 @@ void tst_RecordingCropOverlay::previewMoveResizeReplace()
 
     // Move: drag from inside the selection.
     drag(overlayPoint(200, 150), overlayPoint(230, 170));
-    QCOMPARE(overlay->property("draftRect").toRectF(), QRectF(130, 120, 200, 100));
+    QTRY_COMPARE(overlay->property("draftRect").toRectF(), QRectF(130, 120, 200, 100));
 
     // Resize: drag the bottom-right handle.
     drag(overlayPoint(330, 220), overlayPoint(350, 230));
-    QCOMPARE(overlay->property("draftRect").toRectF(), QRectF(130, 120, 220, 110));
+    QTRY_COMPARE(overlay->property("draftRect").toRectF(), QRectF(130, 120, 220, 110));
 
     // Resize: drag the left-edge handle.
     drag(overlayPoint(130, 175), overlayPoint(110, 175));
-    QCOMPARE(overlay->property("draftRect").toRectF(), QRectF(110, 120, 240, 110));
+    QTRY_COMPARE(overlay->property("draftRect").toRectF(), QRectF(110, 120, 240, 110));
 
     // Replace: drag outside the selection.
     const QPoint start = overlayPoint(area.width() * 0.6, area.height() * 0.6);
     const QPoint end = overlayPoint(area.width() * 0.6 + 100, area.height() * 0.6 + 80);
     drag(start, end);
+    QTRY_VERIFY_WITH_TIMEOUT(overlay->property("draftRect").toRectF() != QRectF(110, 120, 240, 110), 2000);
     const QRectF replaced = overlay->property("draftRect").toRectF();
     QCOMPARE(replaced, QRectF(QPointF(start), QPointF(end)));
 
@@ -984,6 +985,7 @@ void tst_RecordingCropOverlay::previewEscapeRestoresCommitted()
     QVERIFY(editing());
     drag(overlayPoint(committedView.center().x(), committedView.center().y()),
          overlayPoint(committedView.center().x() + 40, committedView.center().y() + 10));
+    QTRY_VERIFY_WITH_TIMEOUT(overlay->property("draftRect").toRectF() != committedView, 2000);
     QVERIFY(overlay->property("draftRect").toRectF() != committedView);
 
     sendKey(Qt::Key_Escape);
@@ -1039,6 +1041,7 @@ void tst_RecordingCropOverlay::previewSaveButtonExportsDraft()
     click(previewItem("previewCropButton"));
     const QRectF content = previewContentRect();
     drag(overlayPoint(content.x() + 100, content.y() + 30), overlayPoint(content.x() + 300, content.y() + 130));
+    QTRY_VERIFY_WITH_TIMEOUT(!previewOverlay()->property("draftRect").toRectF().isEmpty(), 2000);
     const QRectF draft = previewOverlay()->property("draftRect").toRectF();
     QVERIFY(!draft.isEmpty());
     QVERIFY(!m_backend->hasCrop());
@@ -1056,6 +1059,7 @@ void tst_RecordingCropOverlay::previewCtrlSExportsDraft()
     click(previewItem("previewCropButton"));
     const QRectF content = previewContentRect();
     drag(overlayPoint(content.x() + 120, content.y() + 40), overlayPoint(content.x() + 320, content.y() + 140));
+    QTRY_VERIFY_WITH_TIMEOUT(!previewOverlay()->property("draftRect").toRectF().isEmpty(), 2000);
     const QRectF draft = previewOverlay()->property("draftRect").toRectF();
     QVERIFY(!draft.isEmpty());
 
@@ -1082,6 +1086,7 @@ void tst_RecordingCropOverlay::previewProcessingBlocksSave()
     click(previewItem("previewCropButton"));
     const QRectF content = previewContentRect();
     drag(overlayPoint(content.x() + 100, content.y() + 30), overlayPoint(content.x() + 300, content.y() + 130));
+    QTRY_VERIFY_WITH_TIMEOUT(!previewOverlay()->property("draftRect").toRectF().isEmpty(), 2000);
     const QRectF draft = previewOverlay()->property("draftRect").toRectF();
     QVERIFY(!draft.isEmpty());
 
@@ -1120,6 +1125,7 @@ void tst_RecordingCropOverlay::previewGeometryChangeKeepsDraft()
     const QRectF committedView = overlay->property("committedRect").toRectF();
     drag(overlayPoint(committedView.center().x(), committedView.center().y()),
          overlayPoint(committedView.center().x() + 40, committedView.center().y() + 10));
+    QTRY_VERIFY_WITH_TIMEOUT(overlay->property("draftRect").toRectF() != committedView, 2000);
     QVERIFY(editing());
     const QRectF draftBefore = overlay->property("draftRect").toRectF();
     const QRect videoCropBefore = SnapTray::VideoCropGeometry::normalizeCropRect(
@@ -1263,6 +1269,7 @@ void tst_RecordingCropOverlay::previewSmallSelectionMoves()
     QTRY_COMPARE(cursorAt(centre), Qt::SizeAllCursor);
 
     drag(centre, centre + QPoint(20, 10));
+    QTRY_VERIFY_WITH_TIMEOUT(overlay->property("draftRect").toRectF() != committedView, 2000);
     const QRectF moved = overlay->property("draftRect").toRectF();
     const QRectF expected = committedView.translated(20, 10);
     QVERIFY2(qAbs(moved.x() - expected.x()) < 0.01 && qAbs(moved.y() - expected.y()) < 0.01
@@ -1285,6 +1292,7 @@ void tst_RecordingCropOverlay::previewTinyDraftAppliesWithoutJump()
     QVERIFY(editing());
     // A tiny drag draws a draft that is already as large as the backend will make it.
     drag(overlayPoint(content.x() + 100, content.y() + 100), overlayPoint(content.x() + 104, content.y() + 104));
+    QTRY_VERIFY_WITH_TIMEOUT(!overlay->property("draftRect").toRectF().isEmpty(), 2000);
     const QRectF draft = overlay->property("draftRect").toRectF();
     QVERIFY(!draft.isEmpty());
     QVERIFY2(draft.width() >= minView - 0.01 && draft.height() >= minView - 0.01,
@@ -1390,6 +1398,7 @@ void tst_RecordingCropOverlay::previewDragStillDrawsFreeRect()
     drag(overlayPoint(content.x() + content.width() * 0.3, content.y() + content.height() * 0.4),
          overlayPoint(content.x() + content.width() * 0.9, content.y() + content.height() * 0.9));
     QObject* overlay = previewOverlay();
+    QTRY_VERIFY_WITH_TIMEOUT(!overlay->property("draftRect").toRectF().isEmpty(), 2000);
     const QRectF draft = overlay->property("draftRect").toRectF();
     QVERIFY(draft.width() > content.width() * 0.5);
     QVERIFY(!previewItem("cropHoverFrame")->isVisible());
@@ -1437,6 +1446,7 @@ void tst_RecordingCropOverlay::previewClickInsideDraftKeepsDraft()
     drag(overlayPoint(content.x() + content.width() * 0.3, content.y() + content.height() * 0.35),
          overlayPoint(content.x() + content.width() * 0.45, content.y() + content.height() * 0.65));
     QObject* overlay = previewOverlay();
+    QTRY_VERIFY_WITH_TIMEOUT(!overlay->property("draftRect").toRectF().isEmpty(), 2000);
     const QRectF draft = overlay->property("draftRect").toRectF();
     QVERIFY(!draft.isEmpty());
     const QPoint inside = overlayPoint(draft.center().x(), draft.center().y());
@@ -1456,6 +1466,7 @@ void tst_RecordingCropOverlay::previewNoHighlightOverExistingDraft()
     drag(overlayPoint(content.x() + content.width() * 0.3, content.y() + content.height() * 0.35),
          overlayPoint(content.x() + content.width() * 0.45, content.y() + content.height() * 0.65));
     QObject* overlay = previewOverlay();
+    QTRY_VERIFY_WITH_TIMEOUT(!overlay->property("draftRect").toRectF().isEmpty(), 2000);
     const QRectF draft = overlay->property("draftRect").toRectF();
     QVERIFY(!draft.isEmpty());
     QQuickItem* frame = previewItem("cropHoverFrame");
