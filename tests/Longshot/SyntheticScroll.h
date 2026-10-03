@@ -18,7 +18,9 @@ struct PageSpec {
     int width = kViewport.width();
     int height = 4000;
     quint32 seed = 1;
-    // Rows [blankTop, blankTop + blankHeight) are left uniform white; 0 = none.
+    // Rows [blankTop, blankTop + blankHeight) are left uniform white (no element
+    // overlapping the band is painted); 0 = none. Enabling the band changes the
+    // random sequence for later rows, since skipped lines consume no draws.
     int blankTop = 0;
     int blankHeight = 0;
 };
@@ -39,7 +41,7 @@ struct Disturbances {
 struct RowMatchReport {
     int outputRows = 0;
     int matchedRows = 0;     // output rows that matched some page row
-    int duplicatedRows = 0;  // output rows mapping to a page row already used by the previous output row
+    int duplicatedRows = 0;  // output rows repeating earlier content: matched page row <= highest matched so far
     int missingRows = 0;     // page rows in [first, last] no output row mapped to
     int misalignedRows = 0;  // matched rows whose page row breaks monotonic +1 progression by more than 1
     int unmatchedRows = 0;   // output rows with no acceptable page match
@@ -63,9 +65,13 @@ QImage renderFrame(const QImage& page, const QSize& viewport, const Trajectory& 
 QString encodeFrames(const QString& path, const std::vector<QImage>& frames, int frameRate);
 
 // Maps each output row to the best-matching ground-truth row (by a 64-bin
-// luma profile within a search window around the previous match) and scores
-// the mapping. [firstPageRow, lastPageRow] is the page span the recording
+// luma profile within a one-viewport window around the previous match, falling
+// back to the whole page for repeats) and scores the mapping. [firstPageRow, lastPageRow] is the page span the recording
 // actually showed, so rows outside it are not counted as missing.
 RowMatchReport compareWithGroundTruth(const QImage& result, const QImage& page, int firstPageRow, int lastPageRow);
+
+// 64-bin luma profile distance (mean abs bin difference, 0..255) between row
+// ya of a and row yb of b; both must be RGB32.
+double rowProfileDistance(const QImage& a, int ya, const QImage& b, int yb);
 
 } // namespace SyntheticScroll

@@ -43,8 +43,8 @@ constexpr int kBackpressurePollMs = 5;
 // Row profile for matching: luma summed into 64 column bins.
 constexpr int kProfileBins = 64;
 constexpr double kProfileTolerance = 6.0;   // mean abs bin difference, 0..255
-constexpr int kSearchWindowRows = 240;      // around the previous match
-constexpr int kInitialSearchRows = 4000;    // first row: search the whole span
+constexpr int kSearchWindowRows = 480;      // around the previous match (one viewport); misses fall back to the whole page
+constexpr int kInitialSearchRows = 4000;    // first row: centred on firstPageRow, effectively the whole page
 
 const QColor kInk(30, 30, 30);
 const QColor kHeading(10, 40, 120);
@@ -83,6 +83,11 @@ double profileDistance(const std::vector<float>& a, const std::vector<float>& b)
 
 } // namespace
 
+double rowProfileDistance(const QImage& a, int ya, const QImage& b, int yb)
+{
+    return profileDistance(rowProfile(a, ya), rowProfile(b, yb));
+}
+
 QImage renderPage(const PageSpec& spec)
 {
     QImage page(spec.width, spec.height, QImage::Format_RGB32);
@@ -91,20 +96,25 @@ QImage renderPage(const PageSpec& spec)
     QRandomGenerator random(spec.seed);
     int line = 0;
     for (int y = kMargin; y + kLineHeight <= spec.height - kMargin; y += kLinePitch, ++line) {
-        if (spec.blankHeight > 0 && y + kLineHeight > spec.blankTop && y < spec.blankTop + spec.blankHeight) {
+        const bool isBlock = line % kBlockEvery == kBlockEvery - 1;
+        const bool isRule = !isBlock && line % kRuleEvery == kRuleEvery - 1;
+        const bool heading = !isBlock && !isRule && line % kHeadingEvery == 0;
+        // Real vertical extent of what this line would paint.
+        const int top = isRule ? y + kLineHeight / 2 : y;
+        const int extent = isBlock ? kBlockHeight : isRule ? 2 : (heading ? kLineHeight + 6 : kLineHeight);
+        if (spec.blankHeight > 0 && top + extent > spec.blankTop && top < spec.blankTop + spec.blankHeight) {
             continue;
         }
-        if (line % kBlockEvery == kBlockEvery - 1) {
+        if (isBlock) {
             painter.fillRect(QRect(kMargin, y, spec.width - 2 * kMargin, kBlockHeight),
                              kBlockColours[line % 3]);
             y += kBlockHeight - kLinePitch; // the loop adds one pitch
             continue;
         }
-        if (line % kRuleEvery == kRuleEvery - 1) {
+        if (isRule) {
             painter.fillRect(QRect(kMargin, y + kLineHeight / 2, spec.width - 2 * kMargin, 2), kRule);
             continue;
         }
-        const bool heading = line % kHeadingEvery == 0;
         const int height = heading ? kLineHeight + 6 : kLineHeight;
         const QColor colour = heading ? kHeading : kInk;
         int x = kMargin + int(random.bounded(40));
@@ -115,6 +125,7 @@ QImage renderPage(const PageSpec& spec)
             x += width + kWordGap;
         }
     }
+    painter.end();
     return page;
 }
 
@@ -212,6 +223,7 @@ QImage renderFrame(const QImage& page, const QSize& viewport, const Trajectory& 
         painter.fillRect(QRect(0, 0, viewport.width(), d.scrollUpHeaderHeight), kHeader);
         painter.fillRect(QRect(kMargin, d.scrollUpHeaderHeight / 3, 260, d.scrollUpHeaderHeight / 3), kHeading);
     }
+    painter.end();
     return frame;
 }
 
@@ -271,12 +283,26 @@ RowMatchReport compareWithGroundTruth(const QImage& result, const QImage& page, 
                 best = p;
             }
         }
+        bool repeated = false;
+        if (best < 0 && previous >= 0) {
+            // Outside the window: a repeat of far-earlier content still counts as a duplicate.
+            bestDistance = kProfileTolerance;
+            for (int p = 0; p < truth.height(); ++p) {
+                const double distance = profileDistance(profile, truthProfiles[p]);
+                if (distance < bestDistance || (best >= 0 && distance == bestDistance && std::abs(p - centre) < std::abs(best - centre))) {
+                    bestDistance = distance;
+                    best = p;
+                }
+            }
+            if (best >= 0 && best <= highest) repeated = true;
+            else best = -1;
+        }
         mapping[y] = best;
         if (best < 0) {
             ++report.unmatchedRows;
         } else {
             ++report.matchedRows;
-            if (best <= highest) ++report.duplicatedRows;
+            if (repeated || best <= highest) ++report.duplicatedRows;
             else if (previous >= 0 && std::abs(best - (previous + 1)) > 1) ++report.misalignedRows;
             previous = best;
             highest = std::max(highest, best);
