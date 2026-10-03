@@ -35,6 +35,9 @@ public:
     QString outputPath() const override;
 
     void setQuality(int quality) override;
+    void setRateControl(SnapTray::VideoRateControl mode, int qualityValue) override;
+    void setKeyFrameIntervalSeconds(int seconds) override;
+    SnapTray::VideoRateControl effectiveRateControl() const override;
 
     // Audio support
     void setAudioFormat(int sampleRate, int channels, int bitsPerSample) override;

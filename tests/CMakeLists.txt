@@ -651,6 +651,11 @@ if(WIN32)
     target_link_libraries(Video_MediaFoundationPipeline PRIVATE snaptray_platform Qt6::Test)
     add_test(NAME Video_MediaFoundationPipeline COMMAND Video_MediaFoundationPipeline)
     set_tests_properties(Video_MediaFoundationPipeline PROPERTIES TIMEOUT 60 LABELS "integration;slow")
+
+    add_executable(Encoding_MediaFoundationEncoderIntermediate Encoding/tst_MediaFoundationEncoderIntermediate_win.cpp)
+    target_link_libraries(Encoding_MediaFoundationEncoderIntermediate PRIVATE snaptray_platform Qt6::Gui Qt6::Test mfreadwrite mfplat mfuuid ole32)
+    add_test(NAME Encoding_MediaFoundationEncoderIntermediate COMMAND Encoding_MediaFoundationEncoderIntermediate)
+    set_tests_properties(Encoding_MediaFoundationEncoderIntermediate PROPERTIES TIMEOUT 120 LABELS "integration;slow")
 endif()
 
 # ============================================================================

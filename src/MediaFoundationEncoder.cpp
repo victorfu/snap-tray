@@ -1,6 +1,8 @@
 #include "MediaFoundationEncoder.h"
 #include "encoding/AudioSampleTiming.h"
+#include "encoding/IntermediateQuality.h"
 #include "encoding/VideoBitrate.h"
+#include "encoding/VideoRateControl.h"
 
 #ifdef Q_OS_WIN
 
@@ -9,6 +11,12 @@
 #include <QThread>
 
 #include <windows.h>
+#include <oleauto.h>
+// strmif.h (ICodecAPI) declares a COM interface named IVideoEncoder that
+// collides with SnapTray's IVideoEncoder; rename the COM one while including.
+#define IVideoEncoder WinSdkIVideoEncoder
+#include <strmif.h>
+#undef IVideoEncoder
 #include <mfapi.h>
 #include <mfidl.h>
 #include <mfreadwrite.h>
@@ -41,6 +49,9 @@ public:
     qint64 frameNumber = 0;
     bool running = false;
     int quality = 55;  // 0-100
+    SnapTray::VideoRateControl requestedRateControl = SnapTray::VideoRateControl::Bitrate;
+    SnapTray::VideoRateControl effectiveRateControl = SnapTray::VideoRateControl::Bitrate;
+    int keyFrameIntervalSeconds = 0; // 0 = encoder default
     bool mfInitialized = false;
     bool warnedAboutFrameResize = false;
 
@@ -48,8 +59,48 @@ public:
         return frameRate > 0 ? 10000000LL / frameRate : 10000000LL / 30;
     }
 
+    // In constant-quality mode MF_MT_AVG_BITRATE is the VBR ceiling (and the
+    // whole budget if the MFT refuses quality mode).
     UINT32 calculateBitrate() const {
+        if (requestedRateControl == SnapTray::VideoRateControl::ConstantQuality) {
+            return static_cast<UINT32>(SnapTray::IntermediateQuality::intermediateBitrate(frameSize, frameRate));
+        }
         return static_cast<UINT32>(SnapTray::VideoBitrate::forQuality(frameSize, frameRate, quality));
+    }
+
+    // Codec properties live on the encoder MFT behind the sink writer; it only
+    // exists after SetInputMediaType. Failures here never fail the recording:
+    // the stream type already carries a usable average bitrate.
+    void applyCodecProperties() {
+        effectiveRateControl = SnapTray::VideoRateControl::Bitrate;
+        ICodecAPI *codecApi = nullptr;
+        HRESULT hr = sinkWriter->GetServiceForStream(videoStreamIndex, GUID_NULL, IID_PPV_ARGS(&codecApi));
+        if (FAILED(hr) || !codecApi) {
+            qWarning() << "MediaFoundationEncoder: ICodecAPI unavailable, keeping encoder defaults (hr =" << Qt::hex << hr << ")";
+            return;
+        }
+        VARIANT value;
+        VariantInit(&value);
+        value.vt = VT_UI4;
+        if (requestedRateControl == SnapTray::VideoRateControl::ConstantQuality) {
+            value.ulVal = eAVEncCommonRateControlMode_Quality;
+            hr = codecApi->SetValue(&CODECAPI_AVEncCommonRateControlMode, &value);
+            if (SUCCEEDED(hr)) {
+                value.ulVal = static_cast<ULONG>(quality);
+                hr = codecApi->SetValue(&CODECAPI_AVEncCommonQuality, &value);
+            }
+            if (SUCCEEDED(hr)) {
+                effectiveRateControl = SnapTray::VideoRateControl::ConstantQuality;
+                qDebug() << "MediaFoundationEncoder: constant quality" << quality;
+            } else {
+                qWarning() << "MediaFoundationEncoder: quality rate control unsupported (hr =" << Qt::hex << hr
+                           << "), falling back to VBR at" << calculateBitrate() << "bps";
+                value.ulVal = eAVEncCommonRateControlMode_UnconstrainedVBR;
+                (void)codecApi->SetValue(&CODECAPI_AVEncCommonRateControlMode, &value);
+            }
+        }
+        VariantClear(&value);
+        codecApi->Release();
     }
 
     HRESULT createSinkWriter(const QString &path) {
@@ -74,6 +125,7 @@ public:
     HRESULT configureVideoStream() {
         IMFMediaType *outputType = nullptr;
         IMFMediaType *inputType = nullptr;
+        IMFAttributes *encodingParams = nullptr;
         HRESULT hr = S_OK;
 
         // ========== Output type (H.264) ==========
@@ -126,11 +178,23 @@ public:
         hr = MFSetAttributeRatio(inputType, MF_MT_PIXEL_ASPECT_RATIO, 1, 1);
         if (FAILED(hr)) goto done;
 
-        hr = sinkWriter->SetInputMediaType(videoStreamIndex, inputType, nullptr);
+        // GOP size must be handed over as encoding parameters: setting
+        // CODECAPI_AVEncMPVGOPSize through ICodecAPI after the input type is
+        // negotiated is accepted but ignored by the H.264 MFT (1 keyframe/3 s).
+        if (keyFrameIntervalSeconds > 0) {
+            if (SUCCEEDED(MFCreateAttributes(&encodingParams, 1))) {
+                encodingParams->SetUINT32(CODECAPI_AVEncMPVGOPSize, static_cast<UINT32>(frameRate * keyFrameIntervalSeconds));
+            }
+        }
+        hr = sinkWriter->SetInputMediaType(videoStreamIndex, inputType, encodingParams);
+        if (SUCCEEDED(hr)) {
+            applyCodecProperties();
+        }
 
     done:
         if (outputType) outputType->Release();
         if (inputType) inputType->Release();
+        if (encodingParams) encodingParams->Release();
         return hr;
     }
 
@@ -463,6 +527,22 @@ QString MediaFoundationEncoder::outputPath() const
 void MediaFoundationEncoder::setQuality(int quality)
 {
     d->quality = qBound(0, quality, 100);
+}
+
+void MediaFoundationEncoder::setRateControl(SnapTray::VideoRateControl mode, int qualityValue)
+{
+    d->requestedRateControl = mode;
+    d->quality = qBound(0, qualityValue, 100);
+}
+
+void MediaFoundationEncoder::setKeyFrameIntervalSeconds(int seconds)
+{
+    d->keyFrameIntervalSeconds = qMax(0, seconds);
+}
+
+SnapTray::VideoRateControl MediaFoundationEncoder::effectiveRateControl() const
+{
+    return d->effectiveRateControl;
 }
 
 void MediaFoundationEncoder::setAudioFormat(int sampleRate, int channels, int bitsPerSample)
