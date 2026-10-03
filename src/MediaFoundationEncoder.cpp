@@ -11,8 +11,6 @@
 #include <QThread>
 
 #include <windows.h>
-#include <oleauto.h>
-#include <icodecapi.h>
 #include <mfapi.h>
 #include <mfidl.h>
 #include <mfreadwrite.h>
@@ -55,46 +53,13 @@ public:
         return frameRate > 0 ? 10000000LL / frameRate : 10000000LL / 30;
     }
 
-    // In constant-quality mode MF_MT_AVG_BITRATE is the VBR ceiling (and the
-    // whole budget if the MFT refuses quality mode).
+    // For the intermediate (ConstantQuality requested) this is both the
+    // average target and the peak of the peak-constrained VBR encode.
     UINT32 calculateBitrate() const {
         if (requestedRateControl == SnapTray::VideoRateControl::ConstantQuality) {
             return static_cast<UINT32>(SnapTray::IntermediateQuality::intermediateBitrate(frameSize, frameRate));
         }
         return static_cast<UINT32>(SnapTray::VideoBitrate::forQuality(frameSize, frameRate, quality));
-    }
-
-    // Reads the rate-control mode back from the encoder MFT (it only exists
-    // after SetInputMediaType); only a confirmed Quality mode is reported as
-    // ConstantQuality. Never fails the recording.
-    void verifyRateControl(bool qualityParamsSet) {
-        effectiveRateControl = SnapTray::VideoRateControl::Bitrate;
-        if (requestedRateControl != SnapTray::VideoRateControl::ConstantQuality) return;
-        if (!qualityParamsSet) {
-            qWarning() << "MediaFoundationEncoder: constant quality not applied, using VBR at" << calculateBitrate() << "bps";
-            return;
-        }
-        ICodecAPI *codecApi = nullptr;
-        HRESULT hr = sinkWriter->GetServiceForStream(videoStreamIndex, GUID_NULL, IID_PPV_ARGS(&codecApi));
-        if (FAILED(hr) || !codecApi) {
-            qWarning() << "MediaFoundationEncoder: ICodecAPI unavailable, cannot confirm constant quality (hr ="
-                       << Qt::hex << hr << ")";
-            return;
-        }
-        VARIANT value;
-        VariantInit(&value);
-        hr = codecApi->GetValue(&CODECAPI_AVEncCommonRateControlMode, &value);
-        if (SUCCEEDED(hr) && value.vt == VT_UI4 && value.ulVal == eAVEncCommonRateControlMode_Quality) {
-            effectiveRateControl = SnapTray::VideoRateControl::ConstantQuality;
-            qDebug() << "MediaFoundationEncoder: constant quality" << quality << "confirmed";
-        } else {
-            // Setting a mode through ICodecAPI here is accepted but ignored,
-            // so the readback alone decides what is reported.
-            qWarning() << "MediaFoundationEncoder: quality mode not adopted (hr =" << Qt::hex << hr
-                       << "), encoding with the MFT's rate control up to" << Qt::dec << calculateBitrate() << "bps";
-        }
-        VariantClear(&value);
-        codecApi->Release();
     }
 
     HRESULT createSinkWriter(const QString &path) {
@@ -177,36 +142,38 @@ public:
         // but ignored by the H.264 MFT. When the full set is rejected, keep
         // the GOP (seeking in the preview depends on it) before giving up on
         // parameters altogether.
+        //
+        // A ConstantQuality request (the preview intermediate) is encoded as
+        // peak-constrained VBR at the intermediate ceiling: the MFT's Quality
+        // mode accepts CODECAPI_AVEncCommonMaxBitRate but ignores it (random
+        // content measured at 14.5x the ceiling), so it cannot be bounded on
+        // this platform. effectiveRateControl therefore stays Bitrate.
         {
-            const bool wantQuality = requestedRateControl == SnapTray::VideoRateControl::ConstantQuality;
-            bool qualityParamsSet = false;
-            // full: GOP plus constant quality with a bitrate ceiling;
+            const bool intermediate = requestedRateControl == SnapTray::VideoRateControl::ConstantQuality;
+            const UINT32 gopFrames = keyFrameIntervalSeconds > 0
+                ? static_cast<UINT32>(frameRate * keyFrameIntervalSeconds) : 0;
+            // full: GOP plus, for the intermediate, peak-constrained VBR;
             // otherwise: GOP plus unconstrained VBR.
-            auto createParams = [this, wantQuality, &qualityParamsSet](bool full) -> IMFAttributes* {
+            auto createParams = [this, intermediate, gopFrames](bool full) -> IMFAttributes* {
                 IMFAttributes *params = nullptr;
-                HRESULT paramHr = MFCreateAttributes(&params, 4);
+                HRESULT paramHr = MFCreateAttributes(&params, 3);
                 if (FAILED(paramHr) || !params) {
                     qWarning() << "MediaFoundationEncoder: cannot create encoding parameters (hr =" << Qt::hex << paramHr << ")";
                     return nullptr;
                 }
-                if (keyFrameIntervalSeconds > 0) {
-                    paramHr = params->SetUINT32(CODECAPI_AVEncMPVGOPSize,
-                        static_cast<UINT32>(frameRate * keyFrameIntervalSeconds));
+                if (gopFrames > 0) {
+                    paramHr = params->SetUINT32(CODECAPI_AVEncMPVGOPSize, gopFrames);
                     if (FAILED(paramHr)) {
                         qWarning() << "MediaFoundationEncoder: GOP size parameter rejected (hr =" << Qt::hex << paramHr << ")";
                     }
                 }
-                if (full && wantQuality) {
+                if (full && intermediate) {
                     const HRESULT modeHr = params->SetUINT32(CODECAPI_AVEncCommonRateControlMode,
-                        eAVEncCommonRateControlMode_Quality);
-                    const HRESULT qualityHr = params->SetUINT32(CODECAPI_AVEncCommonQuality,
-                        static_cast<UINT32>(quality));
-                    // Quality mode alone lets busy content grow without bound.
-                    const HRESULT ceilingHr = params->SetUINT32(CODECAPI_AVEncCommonMaxBitRate, calculateBitrate());
-                    qualityParamsSet = SUCCEEDED(modeHr) && SUCCEEDED(qualityHr);
-                    if (!qualityParamsSet || FAILED(ceilingHr)) {
-                        qWarning() << "MediaFoundationEncoder: quality parameters rejected (hr =" << Qt::hex
-                                   << modeHr << qualityHr << ceilingHr << ")";
+                        eAVEncCommonRateControlMode_PeakConstrainedVBR);
+                    const HRESULT peakHr = params->SetUINT32(CODECAPI_AVEncCommonMaxBitRate, calculateBitrate());
+                    if (FAILED(modeHr) || FAILED(peakHr)) {
+                        qWarning() << "MediaFoundationEncoder: peak-constrained VBR parameters rejected (hr =" << Qt::hex
+                                   << modeHr << peakHr << ")";
                     }
                 } else if (!full) {
                     paramHr = params->SetUINT32(CODECAPI_AVEncCommonRateControlMode,
@@ -219,7 +186,8 @@ public:
             };
 
             const char *appliedParams = "encoder defaults";
-            if (wantQuality || keyFrameIntervalSeconds > 0) {
+            bool peakApplied = false;
+            if (intermediate || gopFrames > 0) {
                 encodingParams = createParams(true);
             }
             hr = sinkWriter->SetInputMediaType(videoStreamIndex, inputType, encodingParams);
@@ -227,11 +195,11 @@ public:
                 encodingParams->Release();
                 encodingParams = nullptr;
                 if (SUCCEEDED(hr)) {
-                    appliedParams = wantQuality ? "GOP + constant quality with bitrate ceiling" : "GOP";
+                    appliedParams = intermediate ? "GOP + peak-constrained VBR" : "GOP";
+                    peakApplied = intermediate;
                 } else {
                     qWarning() << "MediaFoundationEncoder: encoding parameters rejected (hr =" << Qt::hex << hr
                                << "), retrying with GOP and unconstrained VBR";
-                    qualityParamsSet = false;
                     encodingParams = createParams(false);
                     hr = sinkWriter->SetInputMediaType(videoStreamIndex, inputType, encodingParams);
                     if (SUCCEEDED(hr)) {
@@ -247,9 +215,13 @@ public:
                     }
                 }
             }
+            effectiveRateControl = SnapTray::VideoRateControl::Bitrate;
             if (SUCCEEDED(hr)) {
                 qDebug() << "MediaFoundationEncoder: video encoding parameters applied:" << appliedParams;
-                verifyRateControl(qualityParamsSet);
+                if (peakApplied) {
+                    qDebug() << "MediaFoundationEncoder: intermediate VBR at" << calculateBitrate() << "bps, peak"
+                             << calculateBitrate() << "bps, GOP" << gopFrames << "frames";
+                }
             }
         }
 

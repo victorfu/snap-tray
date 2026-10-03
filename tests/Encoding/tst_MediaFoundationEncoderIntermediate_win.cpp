@@ -28,15 +28,7 @@ const QSize kFrameSize(320, 240);
 // the end; the Media Foundation default GOP is several seconds, so 3 is the
 // smallest count that proves the interval was applied.
 constexpr int kMinimumKeyFrames = kSeconds;
-constexpr int kLowQuality = 30;
-constexpr int kHighQuality = 95;
-// Quality mode must visibly change the output; high quality has to be at
-// least this many times larger than low quality for identical content.
-constexpr double kQualitySizeRatio = 1.3;
-// Seconds of content for the quality-size comparison; longer than kSeconds
-// so the difference between the two sizes is well above container overhead.
-constexpr int kQualitySizeSeconds = 6;
-// Constant-quality output may overshoot its bitrate ceiling by this much on
+// The intermediate may overshoot its bitrate ceiling by this much on
 // worst-case (random-noise) content before the ceiling counts as ignored.
 constexpr double kCeilingTolerance = 1.25;
 const QSize kNoiseFrameSize(640, 360);
@@ -133,7 +125,6 @@ private slots:
     void cleanupTestCase() { MFShutdown(); }
     void intermediateHasOneSecondKeyFrames();
     void defaultModeStillRecords();
-    void constantQualityChangesOutputSize();
     void constantQualityRespectsCeiling();
 };
 
@@ -145,7 +136,8 @@ void tst_MediaFoundationEncoderIntermediate::intermediateHasOneSecondKeyFrames()
     VideoRateControl effective = VideoRateControl::Bitrate;
     const QString error = encode(path, VideoRateControl::ConstantQuality, IntermediateQuality::kKeyFrameIntervalSeconds, &effective);
     QVERIFY2(error.isEmpty(), qPrintable(error));
-    QVERIFY(effective == VideoRateControl::ConstantQuality || effective == VideoRateControl::Bitrate);
+    // Quality mode cannot be bounded on Windows, so the intermediate is VBR.
+    QVERIFY(effective == VideoRateControl::Bitrate);
     qInfo() << "intermediate effective rate control:" << int(effective);
     auto transcoder = IVideoTranscoder::create();
     QVERIFY(transcoder);
@@ -171,30 +163,6 @@ void tst_MediaFoundationEncoderIntermediate::defaultModeStillRecords()
     QVERIFY(transcoder);
     QVERIFY(transcoder->probe(path).valid);
     QVERIFY(countKeyFrames(path) >= 1);
-}
-
-void tst_MediaFoundationEncoderIntermediate::constantQualityChangesOutputSize()
-{
-    QTemporaryDir dir;
-    QVERIFY(dir.isValid());
-    const QString lowPath = dir.filePath(QStringLiteral("low.mp4"));
-    const QString highPath = dir.filePath(QStringLiteral("high.mp4"));
-    Content content;
-    content.seconds = kQualitySizeSeconds;
-    VideoRateControl effective = VideoRateControl::Bitrate;
-    QString error = encode(lowPath, VideoRateControl::ConstantQuality, 1, &effective, kLowQuality, content);
-    QVERIFY2(error.isEmpty(), qPrintable(error));
-    if (effective != VideoRateControl::ConstantQuality) {
-        QSKIP("MFT did not adopt Quality mode");
-    }
-    error = encode(highPath, VideoRateControl::ConstantQuality, 1, nullptr, kHighQuality, content);
-    QVERIFY2(error.isEmpty(), qPrintable(error));
-    const qint64 lowSize = QFileInfo(lowPath).size();
-    const qint64 highSize = QFileInfo(highPath).size();
-    qInfo() << "size low:" << lowSize << "high:" << highSize
-            << "ratio:" << (lowSize > 0 ? double(highSize) / double(lowSize) : 0.0);
-    QVERIFY2(highSize > lowSize * kQualitySizeRatio,
-             qPrintable(QStringLiteral("low %1 high %2").arg(lowSize).arg(highSize)));
 }
 
 void tst_MediaFoundationEncoderIntermediate::constantQualityRespectsCeiling()
