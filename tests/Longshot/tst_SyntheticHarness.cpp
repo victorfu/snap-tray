@@ -21,7 +21,9 @@ double meanAbsDiff(const QImage& a, const QImage& b)
 }
 
 // Loose bound for H.264 at intermediate quality on text-like content.
-constexpr double kMaxCodecError = 6.0;
+constexpr double kMaxCodecError = 2.0;
+// Must match the matcher's row tolerance in SyntheticScroll.cpp.
+constexpr double kProfileTolerance = 6.0;
 
 } // namespace
 
@@ -30,6 +32,7 @@ class tst_SyntheticHarness : public QObject
     Q_OBJECT
 private slots:
     void pageIsDeterministicAndBusy();
+    void blankBandIsPureWhite();
     void trajectoriesClamp();
     void frameIsPageWindow();
     void disturbancesPaintWhereExpected();
@@ -55,6 +58,20 @@ void tst_SyntheticHarness::pageIsDeterministicAndBusy()
     }
     spec.seed = 2;
     QVERIFY(renderPage(spec) != a);
+}
+
+void tst_SyntheticHarness::blankBandIsPureWhite()
+{
+    PageSpec spec;
+    spec.height = 6000;
+    spec.blankTop = 2000;
+    spec.blankHeight = 1400;
+    const QImage page = renderPage(spec);
+    for (int y = spec.blankTop; y < spec.blankTop + spec.blankHeight; ++y) {
+        for (int x = 0; x < page.width(); ++x) {
+            QVERIFY2(page.pixel(x, y) == qRgb(255, 255, 255), qPrintable(QStringLiteral("ink at %1,%2").arg(x).arg(y)));
+        }
+    }
 }
 
 void tst_SyntheticHarness::trajectoriesClamp()
@@ -108,8 +125,11 @@ void tst_SyntheticHarness::disturbancesPaintWhereExpected()
     const QImage down = renderFrame(page, kViewport, bf, 1, up);
     const QImage upFrame = renderFrame(page, kViewport, bf, firstUpFrame, up);
     QVERIFY(down.copy(0, 0, kViewport.width(), 48) != upFrame.copy(0, 0, kViewport.width(), 48));
-    QCOMPARE(upFrame.copy(0, 0, kViewport.width(), 48),
-             renderFrame(page, kViewport, bf, firstUpFrame, up).copy(0, 0, kViewport.width(), 48));
+    // The header is identical across consecutive up-scroll frames.
+    QVERIFY(size_t(firstUpFrame) + 1 < bf.offsets.size());
+    QVERIFY(bf.offsets[size_t(firstUpFrame) + 1] < bf.offsets[size_t(firstUpFrame)]);
+    const QImage nextUp = renderFrame(page, kViewport, bf, firstUpFrame + 1, up);
+    QCOMPARE(upFrame.copy(0, 0, kViewport.width(), 48), nextUp.copy(0, 0, kViewport.width(), 48));
 }
 
 void tst_SyntheticHarness::compareIdenticalIsClean()
@@ -146,6 +166,16 @@ void tst_SyntheticHarness::compareDetectsDuplicatesMissingAndShift()
     r = compareWithGroundTruth(gap, page, 500, 1499);
     QVERIFY2(r.missingRows >= 9 && r.missingRows <= 11, qPrintable(QString::number(r.missingRows)));
     QCOMPARE(r.duplicatedRows, 0);
+    QVERIFY(r.misalignedRows >= 1);
+    // Repeat a 300-row chunk (larger than a gap): rows 500-999 then 700-1199.
+    QImage chunk(page.width(), 1000, QImage::Format_RGB32);
+    QPainter c(&chunk);
+    c.drawImage(0, 0, page, 0, 500, page.width(), 500);
+    c.drawImage(0, 500, page, 0, 700, page.width(), 500);
+    c.end();
+    r = compareWithGroundTruth(chunk, page, 500, 1199);
+    QVERIFY2(r.duplicatedRows >= 290 && r.duplicatedRows <= 310, qPrintable(QString::number(r.duplicatedRows)));
+    QCOMPARE(r.unmatchedRows, 0);
     // A corrupted row (inverted) is not a page row: it must count as unmatched, not be forced onto a neighbour.
     QImage corrupted = page.copy(0, 500, page.width(), 200);
     QImage row = corrupted.copy(0, 100, page.width(), 1);
@@ -174,14 +204,21 @@ void tst_SyntheticHarness::encodedFramesDecodeCloseToSource()
     QVERIFY2(error.isEmpty(), qPrintable(error));
     QVERIFY2(source->open(path, 0, -1, QRect()), qPrintable(source->lastError()));
     int index = 0;
+    double maxProfile = 0.0;
     qint64 tMs = 0;
     while (auto decoded = source->next(&tMs)) {
         QVERIFY(index < 40);
         const double err = meanAbsDiff(*decoded, frames[index]);
         QVERIFY2(err < kMaxCodecError, qPrintable(QStringLiteral("frame %1 error %2").arg(index).arg(err)));
+        QCOMPARE(decoded->size(), frames[size_t(index)].size());
+        for (int y = 0; y < decoded->height(); ++y) {
+            maxProfile = qMax(maxProfile, rowProfileDistance(*decoded, y, frames[size_t(index)], y));
+        }
         ++index;
     }
     QCOMPARE(index, 40);
+    qInfo() << "max decoded row-profile distance" << maxProfile;
+    QVERIFY2(maxProfile < kProfileTolerance, qPrintable(QString::number(maxProfile)));
 }
 
 QTEST_MAIN(tst_SyntheticHarness)
