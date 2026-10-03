@@ -810,6 +810,13 @@ target_link_libraries(Longshot_Analyzer PRIVATE Longshot_SyntheticScroll Qt6::Te
 add_test(NAME Longshot_Analyzer COMMAND Longshot_Analyzer)
 set_tests_properties(Longshot_Analyzer PROPERTIES TIMEOUT 120 LABELS "unit")
 
+add_executable(Longshot_Pipeline Longshot/tst_LongshotPipeline.cpp)
+target_link_libraries(Longshot_Pipeline PRIVATE Longshot_SyntheticScroll Qt6::Test
+    "$<$<PLATFORM_ID:Windows>:mfreadwrite>" "$<$<PLATFORM_ID:Windows>:mfplat>"
+    "$<$<PLATFORM_ID:Windows>:mfuuid>" "$<$<PLATFORM_ID:Windows>:ole32>")
+add_test(NAME Longshot_Pipeline COMMAND Longshot_Pipeline)
+set_tests_properties(Longshot_Pipeline PROPERTIES TIMEOUT 600 LABELS "integration;slow")
+
 # ============================================================================
 # Utils Tests (link snaptray_core)
 # ============================================================================
