@@ -48,6 +48,8 @@ private slots:
     void testUpdateResize_BottomRight();
     void testFinishResize();
     void testResize_MinimumSize();
+    void testKeyboardReachesLastRoundedSize_data();
+    void testKeyboardReachesLastRoundedSize();
     void testKeyboardGrowAtRoundedRatioBound_data();
     void testKeyboardGrowAtRoundedRatioBound();
     void testKeyboardResizeHonorsAspectRatio_data();
@@ -388,6 +390,64 @@ void tst_SelectionStateManager::testResize_MinimumSize()
     QCOMPARE(m_manager->selectionRect(), originalRect);
 }
 
+void tst_SelectionStateManager::testKeyboardReachesLastRoundedSize_data()
+{
+    QTest::addColumn<qreal>("landscapeRatio");
+    QTest::addColumn<int>("lastWidth");
+    QTest::addColumn<bool>("portrait");
+    QTest::addColumn<int>("otherLimit");
+    struct RatioCase { const char* name; qreal ratio; int lastWidth; };
+    const RatioCase cases[] = {
+        {"16-to-9", 16.0 / 9.0, 178}, {"4-to-3", 4.0 / 3.0, 133},
+        {"3-to-2", 1.5, 150}, {"5-to-4", 1.25, 125},
+        {"10-to-1", 10.0, 1004}, {"2-to-1", 2.0, 200}, {"square", 1.0, 100}
+    };
+    for (const auto& entry : cases) {
+        QTest::addRow("%s-landscape", entry.name) << entry.ratio << entry.lastWidth << false << 100;
+        QTest::addRow("%s-portrait", entry.name) << entry.ratio << entry.lastWidth << true << 100;
+    }
+    QTest::newRow("half-pixel-division") << 14.0 / 3.0 << 525 << false << 112;
+    QTest::newRow("half-pixel-multiplication") << 14.0 / 3.0 << 524 << true << 112;
+}
+
+void tst_SelectionStateManager::testKeyboardReachesLastRoundedSize()
+{
+    QFETCH(qreal, landscapeRatio);
+    QFETCH(int, lastWidth);
+    QFETCH(bool, portrait);
+    QFETCH(int, otherLimit);
+    const qreal ratio = portrait ? 1.0 / landscapeRatio : landscapeRatio;
+    const QPoint origin(10, 10);
+    const QRect bounds = portrait ? QRect(0, 0, otherLimit + origin.x(), 2000)
+                                 : QRect(0, 0, 2000, otherLimit + origin.y());
+    const QSize before(lastWidth - 1, qRound((lastWidth - 1) / landscapeRatio));
+    const QSize last(lastWidth, otherLimit);
+    const QRect expected(origin, portrait ? last.transposed() : last);
+    const QPoint grow = portrait ? QPoint(0, 1) : QPoint(1, 0);
+    const QPoint otherGrow = portrait ? QPoint(1, 0) : QPoint(0, 1);
+    m_manager->setBounds(bounds);
+    m_manager->setAspectRatio(ratio);
+    m_manager->setSelectionRect(QRect(origin, portrait ? before.transposed() : before));
+    QSignalSpy changed(m_manager, &SelectionStateManager::selectionChanged);
+    QVERIFY(m_manager->resizeFromBottomRight(grow));
+    QCOMPARE(m_manager->selectionRect(), expected);
+    QVERIFY(bounds.contains(expected));
+    QCOMPARE(changed.count(), 1);
+
+    // Neither axis may overshoot or shrink the last fitting rounded size.
+    for (int repeat = 0; repeat < 3; ++repeat) {
+        QVERIFY(!m_manager->resizeFromBottomRight(grow));
+        QVERIFY(!m_manager->resizeFromBottomRight(otherGrow));
+        QCOMPARE(m_manager->selectionRect(), expected);
+    }
+    QCOMPARE(changed.count(), 1);
+    QVERIFY(m_manager->resizeFromBottomRight(-grow));
+    QCOMPARE(m_manager->selectionRect(), QRect(origin, portrait ? before.transposed() : before));
+    QVERIFY(m_manager->resizeFromBottomRight(grow));
+    QCOMPARE(m_manager->selectionRect(), expected);
+    QCOMPARE(m_manager->aspectRatio(), ratio);
+}
+
 void tst_SelectionStateManager::testKeyboardGrowAtRoundedRatioBound_data()
 {
     QTest::addColumn<bool>("portrait");
@@ -409,7 +469,7 @@ void tst_SelectionStateManager::testKeyboardGrowAtRoundedRatioBound()
     m_manager->setSelectionRect(QRect(origin, initialSize));
 
     // Reach the perpendicular bound using the other axis. Rounding gives a
-    // size larger than the floor-based limit used on the next grow request.
+    // size above the exact (unrounded) ratio limit for the next grow request.
     QVERIFY(m_manager->resizeFromBottomRight(portrait ? QPoint(10, 0) : QPoint(0, 10)));
     QCOMPARE(m_manager->selectionRect(), QRect(origin, boundedSize));
     QSignalSpy changed(m_manager, &SelectionStateManager::selectionChanged);

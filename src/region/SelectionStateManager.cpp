@@ -24,12 +24,30 @@ int maximumCenteredLength(int doubledCenter, int boundsStart, int boundsEnd)
     return qMax(0, qMin(distanceToStart, distanceToEnd) + 1);
 }
 
+template <typename RoundedDimension>
+int maximumRoundedLength(int maxLength, int maxOtherLength, RoundedDimension roundedDimension)
+{
+    // Use the final dimension's exact rounding operation. Inverting it with
+    // floating-point multiplication/division can disagree at half-pixel ties.
+    int low = 0;
+    int high = maxLength;
+    while (low < high) {
+        const int middle = low + (high - low) / 2 + 1;
+        if (roundedDimension(middle) <= maxOtherLength) {
+            low = middle;
+        } else {
+            high = middle - 1;
+        }
+    }
+    return low;
+}
+
 QSize ratioSizeFromHeight(int requestedHeight, qreal ratio, int maxWidth, int maxHeight,
                           int minimumSize = kMinimumResizeSize)
 {
     const int minHeight = qMax(minimumSize, qCeil(minimumSize / ratio));
-    const int maxHeightForWidth = qFloor(maxWidth / ratio);
-    const int allowedHeight = qMin(maxHeight, maxHeightForWidth);
+    const int allowedHeight = maximumRoundedLength(maxHeight, maxWidth,
+        [ratio](int height) { return qRound(height * ratio); });
     if (allowedHeight < minHeight) {
         return {};
     }
@@ -46,8 +64,8 @@ QSize ratioSizeFromWidth(int requestedWidth, qreal ratio, int maxWidth, int maxH
                           int minimumSize = kMinimumResizeSize)
 {
     const int minWidth = qMax(minimumSize, qCeil(minimumSize * ratio));
-    const int maxWidthForHeight = qFloor(maxHeight * ratio);
-    const int allowedWidth = qMin(maxWidth, maxWidthForHeight);
+    const int allowedWidth = maximumRoundedLength(maxWidth, maxHeight,
+        [ratio](int width) { return qRound(width / ratio); });
     if (allowedWidth < minWidth) {
         return {};
     }
@@ -432,10 +450,11 @@ bool SelectionStateManager::resizeFromBottomRight(
         if (size.isEmpty()) {
             return false;
         }
-        // A size rounded up on the other axis may exceed this axis's
-        // floor-based bound by one pixel. A grow key must not shrink it.
-        if ((edgeDelta.x() > 0 && size.width() < original.width())
-            || (edgeDelta.y() > 0 && size.height() < original.height())) {
+        // Switching the driving axis after rounding must not turn a grow
+        // request into a shrink on either axis, including at a saturated bound.
+        const bool growingOnly = edgeDelta.x() >= 0 && edgeDelta.y() >= 0;
+        if (growingOnly
+            && (size.width() < original.width() || size.height() < original.height())) {
             return false;
         }
         resized.setSize(size);
