@@ -43,8 +43,8 @@ constexpr int kBackpressurePollMs = 5;
 // Row profile for matching: luma summed into 64 column bins.
 constexpr int kProfileBins = 64;
 constexpr double kProfileTolerance = 6.0;   // mean abs bin difference, 0..255
-constexpr int kSearchWindowRows = 480;      // around the previous match (one viewport); misses fall back to the whole page
-constexpr int kInitialSearchRows = 4000;    // first row: centred on firstPageRow, effectively the whole page
+constexpr double kCandidateMargin = 1.0;    // page rows this close to the best match are candidates
+constexpr double kStartBias = 1e-6;         // first row: prefer candidates near firstPageRow
 
 const QColor kInk(30, 30, 30);
 const QColor kHeading(10, 40, 120);
@@ -264,49 +264,92 @@ RowMatchReport compareWithGroundTruth(const QImage& result, const QImage& page, 
     std::vector<std::vector<float>> truthProfiles(truth.height());
     for (int y = 0; y < truth.height(); ++y) truthProfiles[y] = rowProfile(truth, y);
 
-    std::vector<int> mapping(out.height(), -1);
-    int previous = -1;
-    int highest = -1; // highest page row matched so far
-    for (int y = 0; y < out.height(); ++y) {
+    const int outRows = out.height();
+    std::vector<int> mapping(outRows, -1);
+
+    // Rows inside a uniform band (and every row of one text line) have identical
+    // profiles, so a per-row best match is ambiguous. Pick, per output row, the
+    // set of near-best page rows and choose the path through those sets with the
+    // fewest discontinuities (a step other than +1 costs one jump); the first row
+    // prefers the page row nearest firstPageRow.
+    struct State {
+        int pageRow;
+        double cost;
+        int back; // index into the previous matched row's state list, -1 at the start
+    };
+    std::vector<std::vector<State>> layers;
+    std::vector<int> layerRow;   // output row of each layer
+    std::vector<double> distances(truth.height());
+    int skipped = 0;             // unmatched output rows since the last layer
+    for (int y = 0; y < outRows; ++y) {
         const std::vector<float> profile = rowProfile(out, y);
-        const int centre = previous < 0 ? firstPageRow : previous + 1;
-        const int radius = previous < 0 ? kInitialSearchRows : kSearchWindowRows;
-        const int lo = std::max(0, centre - radius);
-        const int hi = std::min(truth.height() - 1, centre + radius);
-        int best = -1;
-        double bestDistance = kProfileTolerance;
-        for (int p = lo; p <= hi; ++p) {
-            const double distance = profileDistance(profile, truthProfiles[p]);
-            // Prefer the row closest to the expected progression on ties.
-            if (distance < bestDistance || (best >= 0 && distance == bestDistance && std::abs(p - centre) < std::abs(best - centre))) {
-                bestDistance = distance;
-                best = p;
-            }
+        double minDistance = kProfileTolerance;
+        for (int p = 0; p < truth.height(); ++p) {
+            distances[p] = profileDistance(profile, truthProfiles[p]);
+            minDistance = std::min(minDistance, distances[p]);
         }
-        bool repeated = false;
-        if (best < 0 && previous >= 0) {
-            // Outside the window: a repeat of far-earlier content still counts as a duplicate.
-            bestDistance = kProfileTolerance;
+        if (minDistance >= kProfileTolerance) {
+            ++skipped;
+            continue;
+        }
+        const double limit = std::min(kProfileTolerance, minDistance + kCandidateMargin);
+        std::vector<State> layer;
+        if (layers.empty()) {
             for (int p = 0; p < truth.height(); ++p) {
-                const double distance = profileDistance(profile, truthProfiles[p]);
-                if (distance < bestDistance || (best >= 0 && distance == bestDistance && std::abs(p - centre) < std::abs(best - centre))) {
-                    bestDistance = distance;
-                    best = p;
+                if (distances[p] < limit) {
+                    layer.push_back({p, kStartBias * std::abs(p - firstPageRow), -1});
                 }
             }
-            if (best >= 0 && best <= highest) repeated = true;
-            else best = -1;
+        } else {
+            const std::vector<State>& prev = layers.back();
+            int globalBest = 0;
+            for (size_t i = 1; i < prev.size(); ++i) {
+                if (prev[i].cost < prev[size_t(globalBest)].cost) globalBest = int(i);
+            }
+            std::vector<int> indexOfRow(truth.height(), -1);
+            for (size_t i = 0; i < prev.size(); ++i) indexOfRow[prev[i].pageRow] = int(i);
+            for (int p = 0; p < truth.height(); ++p) {
+                if (distances[p] >= limit) continue;
+                State st{p, prev[size_t(globalBest)].cost + 1.0, globalBest};
+                const int from = p - 1 - skipped;
+                if (from >= 0 && indexOfRow[from] >= 0) {
+                    const State& cont = prev[size_t(indexOfRow[from])];
+                    if (cont.cost <= st.cost) st = {p, cont.cost, indexOfRow[from]};
+                }
+                layer.push_back(st);
+            }
         }
-        mapping[y] = best;
+        layers.push_back(std::move(layer));
+        layerRow.push_back(y);
+        skipped = 0;
+    }
+    if (!layers.empty()) {
+        int index = 0;
+        const std::vector<State>& last = layers.back();
+        for (size_t i = 1; i < last.size(); ++i) {
+            if (last[i].cost < last[size_t(index)].cost) index = int(i);
+        }
+        for (int l = int(layers.size()) - 1; l >= 0; --l) {
+            const State& st = layers[size_t(l)][size_t(index)];
+            mapping[layerRow[size_t(l)]] = st.pageRow;
+            index = st.back;
+        }
+    }
+
+    // Score the final mapping.
+    int previous = -1;
+    int highest = -1; // highest page row matched so far
+    for (int y = 0; y < outRows; ++y) {
+        const int best = mapping[y];
         if (best < 0) {
             ++report.unmatchedRows;
-        } else {
-            ++report.matchedRows;
-            if (repeated || best <= highest) ++report.duplicatedRows;
-            else if (previous >= 0 && std::abs(best - (previous + 1)) > 1) ++report.misalignedRows;
-            previous = best;
-            highest = std::max(highest, best);
+            continue;
         }
+        ++report.matchedRows;
+        if (best <= highest) ++report.duplicatedRows;
+        else if (previous >= 0 && std::abs(best - (previous + 1)) > 1) ++report.misalignedRows;
+        previous = best;
+        highest = std::max(highest, best);
     }
     std::vector<bool> covered(truth.height(), false);
     for (int p : mapping) {

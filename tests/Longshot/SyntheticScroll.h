@@ -65,8 +65,8 @@ QImage renderFrame(const QImage& page, const QSize& viewport, const Trajectory& 
 QString encodeFrames(const QString& path, const std::vector<QImage>& frames, int frameRate);
 
 // Maps each output row to the best-matching ground-truth row (by a 64-bin
-// luma profile within a one-viewport window around the previous match, falling
-// back to the whole page for repeats) and scores the mapping. [firstPageRow, lastPageRow] is the page span the recording
+// luma profile; ambiguous rows (uniform bands, identical text-line rows) are
+// resolved by the path with the fewest discontinuities) and scores the mapping. [firstPageRow, lastPageRow] is the page span the recording
 // actually showed, so rows outside it are not counted as missing.
 RowMatchReport compareWithGroundTruth(const QImage& result, const QImage& page, int firstPageRow, int lastPageRow);
 
