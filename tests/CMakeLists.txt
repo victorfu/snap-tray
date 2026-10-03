@@ -805,6 +805,11 @@ target_link_libraries(Longshot_SyntheticHarness PRIVATE Longshot_SyntheticScroll
 add_test(NAME Longshot_SyntheticHarness COMMAND Longshot_SyntheticHarness)
 set_tests_properties(Longshot_SyntheticHarness PROPERTIES TIMEOUT 180 LABELS "integration;slow")
 
+add_executable(Longshot_Analyzer Longshot/tst_LongshotAnalyzer.cpp)
+target_link_libraries(Longshot_Analyzer PRIVATE Longshot_SyntheticScroll Qt6::Test)
+add_test(NAME Longshot_Analyzer COMMAND Longshot_Analyzer)
+set_tests_properties(Longshot_Analyzer PROPERTIES TIMEOUT 120 LABELS "unit")
+
 # ============================================================================
 # Utils Tests (link snaptray_core)
 # ============================================================================
@@ -1415,7 +1420,3 @@ set_property(TEST ${snaptray_registered_tests} APPEND PROPERTY ENVIRONMENT "QT_F
 add_test(NAME Update_AppImageArtifacts
     COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/Update/tst_appimage_artifacts.py")
 set_tests_properties(Update_AppImageArtifacts PROPERTIES TIMEOUT 60 LABELS "unit")
-add_executable(Longshot_Analyzer Longshot/tst_LongshotAnalyzer.cpp)
-target_link_libraries(Longshot_Analyzer PRIVATE Longshot_SyntheticScroll Qt6::Test)
-add_test(NAME Longshot_Analyzer COMMAND Longshot_Analyzer)
-set_tests_properties(Longshot_Analyzer PROPERTIES TIMEOUT 120 LABELS "unit")

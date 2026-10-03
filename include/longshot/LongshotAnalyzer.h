@@ -10,7 +10,7 @@ namespace SnapTray::Longshot {
 
 struct AnalyzerParams {
     double minPeakScore = 0.55;          // NCC below this is not a match
-    double minConfidence = 0.35;         // best + margin below this is ambiguous
+    double minMargin = 0.15;             // best - runner-up below this is ambiguous (periodic content)
     int refineRadius = 4;                // rows searched around each coarse candidate
     int templateRows = 96;               // height of the NCC template band
     double staticRowDiffThreshold = 4.0; // mean |luma diff| for a row to count as unchanged
