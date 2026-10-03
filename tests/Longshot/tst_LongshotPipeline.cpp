@@ -1,3 +1,4 @@
+#include "IVideoEncoder.h"
 #include "SyntheticScroll.h"
 #include "longshot/FrameReaderLongshotSource.h"
 #include "longshot/LongshotPipeline.h"
@@ -76,6 +77,7 @@ private:
 void tst_LongshotPipeline::initTestCase()
 {
     QVERIFY(m_dir.isValid());
+    if (!std::unique_ptr<IVideoEncoder>(IVideoEncoder::createNativeEncoder())) QSKIP("No native encoder on this platform");
     if (!FrameReaderLongshotSource::createNative()) QSKIP("No frame reader on this platform");
 }
 

@@ -11,6 +11,15 @@ std::unique_ptr<IVideoFrameReader> IVideoFrameReader::create()
 {
 #ifdef Q_OS_MACOS
     return createAVFoundationFrameReader();
+#else
+    return nullptr;
+#endif
+}
+
+std::unique_ptr<IVideoFrameReader> IVideoFrameReader::createOffline()
+{
+#ifdef Q_OS_MACOS
+    return createAVFoundationFrameReader();
 #elif defined(Q_OS_WIN)
     return createMediaFoundationFrameReader();
 #else

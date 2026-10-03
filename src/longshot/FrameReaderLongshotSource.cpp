@@ -23,7 +23,7 @@ FrameReaderLongshotSource::~FrameReaderLongshotSource() = default;
 
 std::unique_ptr<LongshotFrameSource> FrameReaderLongshotSource::createNative()
 {
-    auto reader = IVideoFrameReader::create();
+    auto reader = IVideoFrameReader::createOffline();
     if (!reader) {
         qWarning() << "FrameReaderLongshotSource: no video frame reader on this platform";
         return nullptr;

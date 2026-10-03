@@ -1,3 +1,4 @@
+#include "IVideoEncoder.h"
 #include "SyntheticScroll.h"
 #include "longshot/FrameReaderLongshotSource.h"
 
@@ -220,6 +221,7 @@ void tst_SyntheticHarness::encodedFramesDecodeCloseToSource()
 {
     auto source = SnapTray::Longshot::FrameReaderLongshotSource::createNative();
     if (!source) QSKIP("No frame reader on this platform");
+    if (!std::unique_ptr<IVideoEncoder>(IVideoEncoder::createNativeEncoder())) QSKIP("No native encoder on this platform");
     QTemporaryDir dir;
     QVERIFY(dir.isValid());
     const QImage page = renderPage(PageSpec{});
@@ -252,6 +254,7 @@ void tst_SyntheticHarness::decodedFramesStitchCleanly()
 {
     auto source = SnapTray::Longshot::FrameReaderLongshotSource::createNative();
     if (!source) QSKIP("No frame reader on this platform");
+    if (!std::unique_ptr<IVideoEncoder>(IVideoEncoder::createNativeEncoder())) QSKIP("No native encoder on this platform");
     QTemporaryDir dir;
     QVERIFY(dir.isValid());
     const QImage page = renderPage(PageSpec{});

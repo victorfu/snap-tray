@@ -8,7 +8,6 @@
 
 // Offline frame extraction for export. Requests must be in ascending timestamp
 // order. Empty lead-in time uses the first video frame; gaps hold the last frame.
-// macOS: AVFoundationFrameReader. Windows: MediaFoundationFrameReader (RGB32, CPU decode).
 class IVideoFrameReader
 {
 public:
@@ -21,6 +20,13 @@ public:
     virtual double frameRate() const = 0;
     virtual QString lastError() const = 0;
 
-    // Platforms without an offline reader (Linux) return nullptr and retain their existing player path.
+    // Reader for the preview's GIF/WebP conversion: AVFoundation on macOS.
+    // Platforms without one (Windows, Linux) return nullptr and retain their
+    // existing player path.
     static std::unique_ptr<IVideoFrameReader> create();
+
+    // Sequential offline decoder for analysis: AVFoundation on macOS, Media
+    // Foundation on Windows (RGB32, CPU decode), nullptr elsewhere. Not used by
+    // the preview's GIF/WebP conversion.
+    static std::unique_ptr<IVideoFrameReader> createOffline();
 };
