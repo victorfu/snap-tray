@@ -20,6 +20,9 @@ constexpr double kMajorityDiffThreshold = 12.0; // mean |luma| difference on thu
 constexpr int kMinMajority = 3;
 // Row means (full resolution) closer than this count as the same row content.
 constexpr float kRowDeviation = 6.0f;
+// A candidate whose row means deviate on more than 1/8 of the tile (at least
+// this many rows) shows a transient the others do not (hover, lazy load).
+constexpr int kMinDeviatingRows = 3;
 
 int clampInt(int v, int lo, int hi) { return std::max(lo, std::min(v, hi)); }
 
@@ -73,6 +76,33 @@ bool framesAgree(const AnalysisResult& a, int i, int j, int minPosition, int top
     return true;
 }
 
+// Counts, per candidate, the rows whose full-resolution row mean differs from the
+// median candidate's by more than kRowDeviation over output rows [top, bottom).
+// Returns false when row means are unavailable for some candidate.
+bool deviatingRowCounts(const AnalysisResult& a, const std::vector<std::pair<double, int>>& candidates, int top, int bottom,
+                        int minPosition, std::vector<int>* deviating)
+{
+    const size_t n = candidates.size();
+    std::vector<int> pos(n);
+    for (size_t c = 0; c < n; ++c) {
+        const int i = candidates[c].second;
+        pos[c] = *a.solve.positions[i] - minPosition;
+        if (top - pos[c] < 0 || bottom - pos[c] > int(a.frames[i].rowMean.size())) return false;
+    }
+    deviating->assign(n, 0);
+    std::vector<float> values(n);
+    for (int y = top; y < bottom; ++y) {
+        for (size_t c = 0; c < n; ++c) values[c] = a.frames[candidates[c].second].rowMean[y - pos[c]];
+        std::vector<float> sorted = values;
+        std::nth_element(sorted.begin(), sorted.begin() + sorted.size() / 2, sorted.end());
+        const float median = sorted[sorted.size() / 2];
+        for (size_t c = 0; c < n; ++c) {
+            if (std::abs(values[c] - median) > kRowDeviation) ++(*deviating)[c];
+        }
+    }
+    return true;
+}
+
 } // namespace
 
 std::vector<TileAssignment> LongshotRenderer::assignTiles(const AnalysisResult& a, const LongshotOptions& options,
@@ -116,6 +146,16 @@ std::vector<TileAssignment> LongshotRenderer::assignTiles(const AnalysisResult& 
                         if (thumbnailDisagreement(a, c.second, o.second, tile.outputTop, tile.outputBottom, minPosition) <= kMajorityDiffThreshold) ++agree;
                     }
                     if (agree * 2 >= int(candidates.size()) - 1) kept.push_back(c);
+                }
+                if (!kept.empty()) candidates = kept;
+            }
+            std::vector<int> deviating;
+            if (int(candidates.size()) >= kMinMajority
+                && deviatingRowCounts(a, candidates, tile.outputTop, tile.outputBottom, minPosition, &deviating)) {
+                const int allowed = std::max(kMinDeviatingRows, (tile.outputBottom - tile.outputTop) / 8);
+                std::vector<std::pair<double, int>> kept;
+                for (size_t c = 0; c < candidates.size(); ++c) {
+                    if (deviating[c] <= allowed) kept.push_back(candidates[c]);
                 }
                 if (!kept.empty()) candidates = kept;
             }
