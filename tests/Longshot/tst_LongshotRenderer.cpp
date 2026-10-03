@@ -4,6 +4,8 @@
 #include "longshot/LongshotRenderer.h"
 
 #include <QtTest>
+#include <limits>
+#include <memory>
 #include <QTemporaryDir>
 
 using namespace SnapTray::Longshot;
@@ -15,6 +17,39 @@ constexpr double kMaxDuplicatedFraction = 0.01;
 constexpr double kMaxMissingFraction = 0.01;
 constexpr double kMaxMisalignedFraction = 0.01;
 constexpr double kMaxUnmatchedFraction = 0.03; // codec noise on dense text rows
+constexpr int kMaxAbsoluteRows = 8;            // measured values are <= 2 rows
+constexpr double kProfileTolerance = 6.0;      // same tolerance as the oracle's row matching
+
+// Decorator over the native source that stops delivering frames after a limit and
+// reports an error, like a decoder failing mid-stream.
+class FailingSource : public LongshotFrameSource
+{
+public:
+    FailingSource(std::unique_ptr<LongshotFrameSource> inner, int limit) : m_inner(std::move(inner)), m_limit(limit) {}
+    bool open(const QString& path, qint64 startMs, qint64 endMs, const QRect& crop) override
+    {
+        m_delivered = 0;
+        m_error.clear();
+        return m_inner->open(path, startMs, endMs, crop);
+    }
+    std::optional<QImage> next(qint64* tMs) override
+    {
+        if (m_delivered >= m_limit) { m_error = QStringLiteral("injected decode failure"); return std::nullopt; }
+        ++m_delivered;
+        return m_inner->next(tMs);
+    }
+    QSize frameSize() const override { return m_inner->frameSize(); }
+    QSize videoSize() const override { return m_inner->videoSize(); }
+    double frameRate() const override { return m_inner->frameRate(); }
+    int expectedFrameCount() const override { return m_inner->expectedFrameCount(); }
+    QString lastError() const override { return m_error.isEmpty() ? m_inner->lastError() : m_error; }
+
+private:
+    std::unique_ptr<LongshotFrameSource> m_inner;
+    int m_limit;
+    int m_delivered = 0;
+    QString m_error;
+};
 
 struct Run {
     QImage page;
@@ -61,6 +96,10 @@ void checkAgainstTruth(const Run& run, int headerHeight = 0)
     QVERIFY2(r.misalignedRows <= kMaxMisalignedFraction * rows, qPrintable(QStringLiteral("misaligned %1").arg(r.misalignedRows)));
     QVERIFY2(r.unmatchedRows <= kMaxUnmatchedFraction * rows, qPrintable(QStringLiteral("unmatched %1").arg(r.unmatchedRows)));
     QVERIFY(run.render.breakRows.empty());
+    QVERIFY2(r.duplicatedRows <= kMaxAbsoluteRows && r.missingRows <= kMaxAbsoluteRows && r.misalignedRows <= kMaxAbsoluteRows
+                 && r.unmatchedRows <= kMaxAbsoluteRows,
+             qPrintable(QStringLiteral("absolute: dup %1 missing %2 misaligned %3 unmatched %4")
+                            .arg(r.duplicatedRows).arg(r.missingRows).arg(r.misalignedRows).arg(r.unmatchedRows)));
 }
 
 } // namespace
@@ -79,6 +118,7 @@ private slots:
     void sidebarIsAutoCropped();
     void heightCapSplitsOrReports();
     void breakLeavesGapReported();
+    void decodeFailureIsReported();
 
 private:
     QTemporaryDir m_dir;
@@ -122,6 +162,7 @@ void tst_LongshotRenderer::seamsMoveToLowGradientRows()
     for (auto& f : a.frames) {
         f.validContentRect = QRect(0, 0, 640, 480);
         f.rowGradient.assign(480, 10.0f);
+        f.rowMean.assign(480, 100.0f);
     }
     a.solve.positions = {0, 32};
     // Frame 0 has a flat (gap) row at output row 70; the tile boundary at 64 should move there.
@@ -141,6 +182,7 @@ void tst_LongshotRenderer::endToEnd_data()
     QTest::newRow("pauses") << 3;
     QTest::newRow("hover") << 4;
     QTest::newRow("lazy load") << 5;
+    QTest::newRow("lazy load unbalanced") << 6;
 }
 
 void tst_LongshotRenderer::endToEnd()
@@ -154,7 +196,9 @@ void tst_LongshotRenderer::endToEnd()
     case 2: t = backAndForth(70, 900, 600, 50); break;
     case 3: t = withPauses(constantSpeed(40, 0, 45), 5, 3); break;
     case 4: t = constantSpeed(60, 0, 45); d.hoverChange = true; break;
-    default: t = constantSpeed(60, 0, 45); d.lazyLoadRow = 1400; d.lazyLoadFrame = 20; break;
+    case 5: t = constantSpeed(60, 0, 45); d.lazyLoadRow = 1400; d.lazyLoadFrame = 20; break;
+    // Row 1400 is visible in frames ~21-31; frames 28-31 show it loaded, 21-27 the placeholder.
+    default: t = constantSpeed(60, 0, 45); d.lazyLoadRow = 1400; d.lazyLoadFrame = 28; break;
     }
     QString error;
     const Run run = runEndToEnd(m_dir.filePath(QStringLiteral("e2e-%1.mp4").arg(kind)), PageSpec{}, t, d, LongshotOptions{}, &error);
@@ -192,12 +236,14 @@ void tst_LongshotRenderer::stickyHeaderOnceWhenRequested()
     const RenderResult with = LongshotRenderer::render(*source, without.path, 0, -1, QRect(), without.analysis, options, {});
     QVERIFY(with.stickyHeaderIncluded);
     QCOMPARE(with.parts.first().height(), without.render.parts.first().height() + 40);
-    // The header rows do not recur further down: compare row profiles of the first 40 rows against all later rows.
+    // The header rows do not recur further down: compare the header band's row profiles
+    // against every 40-row window below it.
     const QImage out = with.parts.first();
-    const QImage header = out.copy(0, 0, out.width(), 40);
     int repeats = 0;
-    for (int y = 40; y + 40 <= out.height(); y += 4) {
-        if (out.copy(0, y, out.width(), 40) == header) ++repeats;
+    for (int y = 40; y + 40 <= out.height(); ++y) {
+        bool same = true;
+        for (int r = 0; r < 40 && same; ++r) same = rowProfileDistance(out, r, out, y + r) < kProfileTolerance;
+        if (same) ++repeats;
     }
     QCOMPARE(repeats, 0);
 }
@@ -251,6 +297,34 @@ void tst_LongshotRenderer::breakLeavesGapReported()
     // the UI can mark where the recording could not be joined.
     QVERIFY(!run.analysis.solve.breakTimesMs.empty());
     QVERIFY(run.render.parts.first().height() < 6000);
+    QVERIFY(run.render.breakRows.empty());
+    int minPos = std::numeric_limits<int>::max();
+    int maxPos = std::numeric_limits<int>::min();
+    int validHeight = 0;
+    qint64 lastPlacedMs = -1;
+    qint64 firstPlacedMs = std::numeric_limits<qint64>::max();
+    for (size_t i = 0; i < run.analysis.frames.size(); ++i) {
+        if (!run.analysis.solve.positions[i].has_value()) continue;
+        minPos = std::min(minPos, *run.analysis.solve.positions[i]);
+        if (*run.analysis.solve.positions[i] >= maxPos) { maxPos = *run.analysis.solve.positions[i]; validHeight = run.analysis.frames[i].validContentRect.height(); }
+        lastPlacedMs = std::max(lastPlacedMs, run.analysis.frames[i].tMs);
+        firstPlacedMs = std::min(firstPlacedMs, run.analysis.frames[i].tMs);
+    }
+    QVERIFY(std::abs(run.render.fullHeightPx - (maxPos - minPos + validHeight)) <= kTileRows);
+    // Every dropped island starts outside the kept island's time span (here the first island is the one dropped).
+    for (qint64 breakMs : run.analysis.solve.breakTimesMs) QVERIFY2(breakMs < firstPlacedMs || breakMs > lastPlacedMs, qPrintable(QString::number(breakMs)));
+}
+
+void tst_LongshotRenderer::decodeFailureIsReported()
+{
+    QString error;
+    const Run run = runEndToEnd(m_dir.filePath(QStringLiteral("fail.mp4")), PageSpec{}, constantSpeed(20, 0, 45), Disturbances{}, LongshotOptions{}, &error);
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+    QCOMPARE(int(run.render.error), int(LongshotError::None));
+    FailingSource failing(FrameReaderLongshotSource::createNative(), 10);
+    const RenderResult result = LongshotRenderer::render(failing, run.path, 0, -1, QRect(), run.analysis, LongshotOptions{}, {});
+    QCOMPARE(int(result.error), int(LongshotError::SourceUnavailable));
+    QVERIFY(result.parts.isEmpty());
 }
 
 QTEST_MAIN(tst_LongshotRenderer)
