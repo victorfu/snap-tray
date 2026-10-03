@@ -43,7 +43,7 @@ constexpr int kBackpressurePollMs = 5;
 // Row profile for matching: luma summed into 64 column bins.
 constexpr int kProfileBins = 64;
 constexpr double kProfileTolerance = 6.0;   // mean abs bin difference, 0..255
-constexpr double kCandidateMargin = 1.0;    // page rows this close to the best match are candidates
+constexpr double kCandidateMargin = 2.0;    // page rows this close to the best match are candidates
 constexpr double kStartBias = 1e-6;         // first row: prefer candidates near firstPageRow
 
 const QColor kInk(30, 30, 30);
