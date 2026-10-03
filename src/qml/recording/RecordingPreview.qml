@@ -138,6 +138,7 @@ Item {
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
+        enabled: !backend.isProcessing
 
         Item {
             Layout.fillWidth: true
@@ -636,6 +637,12 @@ Item {
         color: SemanticTokens.backgroundOverlay
         visible: backend.isProcessing
 
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.AllButtons
+            onWheel: function(wheel) { wheel.accepted = true }
+        }
+
         Column {
             anchors.centerIn: parent
             spacing: SemanticTokens.spacing16
@@ -680,7 +687,7 @@ Item {
                 objectName: "previewCancelExportButton"
                 text: qsTr("Cancel")
                 style: "secondary"
-                visible: backend.selectedFormat === 0
+                visible: backend.canCancelExport
                 anchors.horizontalCenter: parent.horizontalCenter
                 onClicked: backend.cancelExport()
             }

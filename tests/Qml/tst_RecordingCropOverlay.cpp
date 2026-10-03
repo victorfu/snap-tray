@@ -83,6 +83,7 @@ class StubPreviewBackend : public QObject
     Q_PROPERTY(int minCropSide READ minCropSide CONSTANT)
     Q_PROPERTY(int selectedFormat READ selectedFormat WRITE setSelectedFormat NOTIFY formatChanged)
     Q_PROPERTY(bool isProcessing READ isProcessing WRITE setProcessing NOTIFY processingChanged)
+    Q_PROPERTY(bool canCancelExport READ canCancelExport NOTIFY processingChanged)
     Q_PROPERTY(int processProgress READ processProgress CONSTANT)
     Q_PROPERTY(QString processStatus READ processStatus CONSTANT)
     Q_PROPERTY(QString errorMessage READ errorMessage CONSTANT)
@@ -131,11 +132,22 @@ public:
         emit formatChanged();
     }
     bool isProcessing() const { return m_isProcessing; }
+    bool canCancelExport() const { return m_isProcessing && m_activeFormat == 0 && !m_cancelRequested; }
     void setProcessing(bool processing)
     {
         m_isProcessing = processing;
+        m_activeFormat = m_selectedFormat;
+        m_cancelRequested = false;
         emit processingChanged();
     }
+    Q_INVOKABLE void cancelExport()
+    {
+        if (!canCancelExport()) return;
+        ++cancelCount;
+        m_cancelRequested = true;
+        emit processingChanged();
+    }
+    int cancelCount = 0;
     int processProgress() const { return 0; }
     QString processStatus() const { return {}; }
     QString errorMessage() const { return {}; }
@@ -219,6 +231,8 @@ private:
     QRect m_cropRect;
     QSize m_videoSize;
     int m_selectedFormat = 0;
+    int m_activeFormat = 0;
+    bool m_cancelRequested = false;
     bool m_isProcessing = false;
 };
 
@@ -272,6 +286,7 @@ private slots:
     void previewCtrlSExportsDraft();
     void previewEnterSavesWhenNotEditing();
     void previewProcessingBlocksSave();
+    void previewCancellationFollowsActiveJob();
     void previewGeometryChangeKeepsDraft();
     void previewSizeChipAndClear();
     void previewToolbarFitsAtMinimumWidth();
@@ -1091,6 +1106,14 @@ void tst_RecordingCropOverlay::previewProcessingBlocksSave()
     QVERIFY(!draft.isEmpty());
 
     m_backend->setProcessing(true);
+    for (auto* item : m_view->rootObject()->findChildren<QQuickItem*>()) {
+        if ((item->property("text").toString() == "GIF" || item->property("text").toString() == "WebP")
+            && item->property("selected").isValid()) {
+            click(item);
+            QCOMPARE(m_backend->selectedFormat(), 0);
+            QVERIFY(previewItem("previewCancelExportButton")->isVisible());
+        }
+    }
     click(previewItem("previewSaveButton"));
     sendKey(Qt::Key_S, Qt::ControlModifier);
     sendKey(Qt::Key_Return);
@@ -1110,6 +1133,34 @@ void tst_RecordingCropOverlay::previewProcessingBlocksSave()
     click(previewItem("previewSaveButton"));
     QCOMPARE(m_backend->saveCount, 1);
     QCOMPARE(m_backend->cropAtSave, expectedVideoCrop(draft));
+}
+
+void tst_RecordingCropOverlay::previewCancellationFollowsActiveJob()
+{
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
+    auto* cancel = previewItem("previewCancelExportButton");
+    QVERIFY(cancel);
+    for (int format : {0, 1, 2}) {
+        m_backend->setSelectedFormat(format);
+        m_backend->setProcessing(true);
+        QCOMPARE(cancel->isVisible(), format == 0);
+        // Even an external property change must not alter the running job's capability.
+        m_backend->setSelectedFormat(format == 0 ? 1 : 0);
+        QCOMPARE(cancel->isVisible(), format == 0);
+        if (format == 0) {
+            // The newly visible Column must finish positioning its children
+            // before we calculate a real mouse-click coordinate.
+            QSignalSpy rendered(m_view.get(), &QQuickWindow::afterAnimating);
+            m_view->requestUpdate();
+            QVERIFY(rendered.wait(2000));
+            click(cancel);
+            QCOMPARE(m_backend->cancelCount, 1);
+            QVERIFY(!cancel->isVisible());
+        }
+        m_backend->setProcessing(false);
+        click(previewItem("previewSaveButton"));
+        QCOMPARE(m_backend->saveCount, format + 1);
+    }
 }
 
 void tst_RecordingCropOverlay::previewGeometryChangeKeepsDraft()

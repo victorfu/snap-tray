@@ -54,7 +54,41 @@ private slots:
     void pauseStopsSamplingAndResumeContinues();
     void stopKeepsTimeline();
     void unchangedSamplesCompact();
+    void nativeBoundsTakePrecedence();
 };
+
+void tst_WindowTimelineRecorder::nativeBoundsTakePrecedence()
+{
+    Fakes fakes;
+    auto spanning = element(1, QRect(1500, 100, 600, 400));
+    spanning.nativePhysicalBounds = QRect(1500, 100, 600, 400);
+    auto invalid = element(2, QRect(2000, 100, 100, 100));
+    invalid.nativePhysicalBounds = QRect(); // must not fall back to logical bounds
+    auto logicalOnly = element(3, QRect(2000, 100, 100, 100));
+    fakes.elements = {spanning, invalid, logicalOnly};
+    const WindowFrameMapping native{QRect(1920, 0, 1920, 1080), QRect(1920, 0, 3840, 2160), 2.0,
+                                    QRect(1920, 0, 3840, 2160)};
+    WindowTimelineRecorder recorder(fakes.enumerator(), fakes.clock(), native);
+    recorder.sampleNow();
+    const auto timeline = recorder.timeline();
+    const auto& windows = timeline.entries().front().windows;
+    QCOMPARE(windows.size(), size_t(2));
+    QCOMPARE(windows[0].windowId, quint32(1));
+    QCOMPARE(windows[0].rect, QRect(0, 100, 180, 400));
+    QCOMPARE(windows[1].windowId, quint32(3));
+    QCOMPARE(windows[1].rect, QRect(160, 200, 200, 200));
+    const auto roundTrip = WindowTimeline::fromJson(timeline.toJson());
+    QVERIFY(roundTrip.has_value());
+    QCOMPARE(roundTrip->toJson(), timeline.toJson());
+
+    // Platforms without native desktop geometry retain their logical path.
+    spanning.bounds = QRect(10, 20, 100, 100);
+    spanning.nativePhysicalBounds = QRect(5000, 5000, 100, 100);
+    fakes.elements = {spanning};
+    WindowTimelineRecorder logicalRecorder(fakes.enumerator(), fakes.clock(), kMapping);
+    logicalRecorder.sampleNow();
+    QCOMPARE(logicalRecorder.timeline().entries().front().windows.front().rect, QRect(20, 40, 200, 200));
+}
 
 void tst_WindowTimelineRecorder::sampleMapsFiltersAndOrders()
 {

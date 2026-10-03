@@ -83,6 +83,9 @@ struct WindowFrameMapping {
     bool isValid() const { return !logicalScreen.isEmpty() && !physicalRegion.isEmpty() && devicePixelRatio > 0.0; }
     // The part of `logicalBounds` inside the recorded frame, in video pixels; empty when none.
     QRect toVideoRect(const QRect& logicalBounds) const;
+    // Native desktop pixels share the capture region's origin; never scale again.
+    // Requires a native physicalScreen (not the screen-relative macOS mapping).
+    QRect toVideoRectFromPhysical(const QRect& nativeBounds) const;
 };
 
 } // namespace SnapTray

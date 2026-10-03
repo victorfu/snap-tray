@@ -266,6 +266,7 @@ qint64 RecordingPreviewBackend::trimmedDuration() const
 
 void RecordingPreviewBackend::setSelectedFormat(int format)
 {
+    if (m_isProcessing) return;
     format = qBound(0, format, 2);
     auto fmt = static_cast<OutputFormat>(format);
     if (m_selectedFormat != fmt) {
@@ -364,15 +365,28 @@ void RecordingPreviewBackend::save()
     performTranscode(true);
 }
 
+bool RecordingPreviewBackend::canCancelExport() const
+{
+    return m_isProcessing && m_exportKind == ExportKind::MP4 && !m_exportCancelToken->load();
+}
+
+void RecordingPreviewBackend::finishProcessing()
+{
+    m_exportKind = ExportKind::None;
+    m_isProcessing = false;
+    emit processingChanged();
+}
+
 void RecordingPreviewBackend::cancelExport()
 {
-    if (!m_isProcessing || !m_exportCancelToken) {
+    if (!canCancelExport()) {
         return;
     }
     qDebug() << "RecordingPreviewBackend: Export cancel requested";
     m_exportCancelToken->store(true);
     m_processStatus = tr("Cancelling...");
     emit processStatusChanged();
+    emit processingChanged();
 }
 
 void RecordingPreviewBackend::discard()
@@ -540,6 +554,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
     qDebug() << "RecordingPreviewBackend: Converting to" << extension;
 
     // Show processing state
+    m_exportKind = ExportKind::Animated;
     m_isProcessing = true;
     m_processProgress = 0;
     m_processStatus = tr("Converting video...");
@@ -601,8 +616,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
                     return;
                 }
                 weakThis->setErrorMessage(errorMessage);
-                weakThis->m_isProcessing = false;
-                emit weakThis->processingChanged();
+                weakThis->finishProcessing();
             }, Qt::QueuedConnection);
         };
 
@@ -843,8 +857,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
 
             weakThis->m_processProgress = 100;
             emit weakThis->processProgressChanged();
-            weakThis->m_isProcessing = false;
-            emit weakThis->processingChanged();
+            weakThis->finishProcessing();
 
             // Clean up original MP4 only if output is valid
             QFileInfo outInfo(outputPath);
@@ -880,6 +893,10 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
                  << "crop:" << m_cropRect;
     }
 
+    // Install the job and token before notifying QML or synchronous observers.
+    m_exportCancelToken = std::make_shared<std::atomic_bool>(false);
+    const auto cancelToken = m_exportCancelToken;
+    m_exportKind = ExportKind::MP4;
     m_isProcessing = true;
     m_processProgress = 0;
     m_processStatus = tr("Exporting video...");
@@ -901,9 +918,6 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
     const QString keptMessage = tr("Export failed; the original recording was kept.");
     const int outputQuality = m_outputQuality;
     const bool recordedAsIntermediate = m_recordedAsIntermediate;
-    // A fresh token per export, so a cancelled export never cancels the next one.
-    m_exportCancelToken = std::make_shared<std::atomic_bool>(false);
-    const auto cancelToken = m_exportCancelToken;
     const TranscoderFactory createTranscoder = transcoderFactoryOverride()
         ? transcoderFactoryOverride()
         : TranscoderFactory(&IVideoTranscoder::create);
@@ -953,10 +967,12 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
         if (moveInstead) {
             qDebug() << "RecordingPreviewBackend: moving the unedited recording;" << moveReason;
             const QString inputPath = request.inputPath;
-            post([weakThis, inputPath]() {
+            post([weakThis, inputPath, cancelToken]() {
                 if (!weakThis) return;
-                weakThis->m_isProcessing = false;
-                emit weakThis->processingChanged();
+                // GUI commit boundary: cancellation wins until this callback starts.
+                const bool cancelled = cancelToken->load();
+                weakThis->finishProcessing();
+                if (cancelled) return;
                 weakThis->m_saved = true;
                 weakThis->close();
                 emit weakThis->saveRequested(inputPath, QSize());
@@ -966,8 +982,9 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
         if (!unsupported) {
             const IVideoTranscoder::ProgressCallback progressCallback =
                 [weakThis, cancelToken, post](int percent) {
-                    post([weakThis, percent]() {
-                        if (weakThis && weakThis->m_processProgress != percent) {
+                    post([weakThis, percent, cancelToken]() {
+                        if (weakThis && weakThis->m_isProcessing && weakThis->m_exportCancelToken == cancelToken
+                            && !cancelToken->load() && weakThis->m_processProgress != percent) {
                             weakThis->m_processProgress = percent;
                             emit weakThis->processProgressChanged();
                         }
@@ -1031,24 +1048,26 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
             result.success = false;
             result.errorMessage = QStringLiteral("rename failed");
         }
-        // A cancelled export (cancelExport() or destruction) keeps the
-        // source and shows no error; the output was removed above.
-        const bool cancelled = !result.success && cancelToken->load();
+        // A cancelled export keeps the source and shows no error. Cancellation
+        // may still arrive after promotion, before the GUI commits the result.
         const bool posted = post([weakThis, result, outputPath, croppedSize, failedTemplate, keptMessage,
-                                  unsupported, unsupportedError, inputPath = request.inputPath, cancelled,
+                                  unsupported, unsupportedError, inputPath = request.inputPath, cancelToken,
                                   smartSave]() {
             if (!weakThis) {
                 // The preview went away mid-export; keep the source, drop the output.
                 QFile::remove(outputPath);
                 return;
             }
-            weakThis->m_isProcessing = false;
-            emit weakThis->processingChanged();
+            // Read on the GUI thread, not before posting: the user may have
+            // cancelled while this completion was waiting in the event queue.
+            const bool cancelled = cancelToken->load();
+            if (cancelled) QFile::remove(outputPath);
+            weakThis->finishProcessing();
+            if (cancelled) {
+                qDebug() << "RecordingPreviewBackend: export cancelled; the original recording was kept";
+                return;
+            }
             if (!result.success) {
-                if (cancelled) {
-                    qDebug() << "RecordingPreviewBackend: export cancelled; the original recording was kept";
-                    return;
-                }
                 if (smartSave) {
                     // An unedited recording is still a valid recording: save
                     // it as recorded rather than leave the user with Discard.

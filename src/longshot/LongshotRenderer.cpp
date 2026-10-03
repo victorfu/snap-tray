@@ -119,10 +119,10 @@ std::vector<TileAssignment> LongshotRenderer::assignTiles(const AnalysisResult& 
         int fTop = 0, fBottom = 0;
         if (frameCoverage(a, i, minPosition, &fTop, &fBottom)) coveredTop = std::min(coveredTop, fTop);
     }
-    for (int top = 0; top < outputHeight; top += tileRows) {
+    auto assignRange = [&](int top, int bottom) {
         TileAssignment tile;
         tile.outputTop = top;
-        tile.outputBottom = std::min(outputHeight, top + tileRows);
+        tile.outputBottom = bottom;
         std::vector<std::pair<double, int>> candidates;
         for (int i = 0; i < frameCount; ++i) {
             int fTop = 0, fBottom = 0;
@@ -147,7 +147,30 @@ std::vector<TileAssignment> LongshotRenderer::assignTiles(const AnalysisResult& 
             std::sort(candidates.begin(), candidates.end(), [](const auto& l, const auto& r) { return l.first > r.first; });
             tile.frameIndex = candidates.front().second;
         }
-        tiles.push_back(tile);
+        return tile;
+    };
+    for (int top = 0; top < outputHeight; top += tileRows) {
+        const int bottom = std::min(outputHeight, top + tileRows);
+        const TileAssignment tile = assignRange(top, bottom);
+        if (tile.frameIndex >= 0) {
+            tiles.push_back(tile);
+            continue;
+        }
+        // A union of overlapping short frames can cover the entire tile even
+        // when no single frame does. Only split these tiles, keeping ordinary
+        // tiles (and their existing scoring) unchanged.
+        std::vector<int> boundaries{top, bottom};
+        for (int i = 0; i < frameCount; ++i) {
+            int fTop = 0, fBottom = 0;
+            if (!frameCoverage(a, i, minPosition, &fTop, &fBottom)) continue;
+            if (fTop > top && fTop < bottom) boundaries.push_back(fTop);
+            if (fBottom > top && fBottom < bottom) boundaries.push_back(fBottom);
+        }
+        std::sort(boundaries.begin(), boundaries.end());
+        boundaries.erase(std::unique(boundaries.begin(), boundaries.end()), boundaries.end());
+        for (size_t i = 1; i < boundaries.size(); ++i) {
+            tiles.push_back(assignRange(boundaries[i - 1], boundaries[i]));
+        }
     }
     return tiles;
 }
@@ -168,6 +191,7 @@ void LongshotRenderer::placeSeams(std::vector<TileAssignment>& tiles, const Anal
         // The seam may move only where both frames still cover the rows.
         const int lo = std::max({boundary - kSeamSearchRows, above.outputTop + 1, bTop});
         const int hi = std::min({boundary + kSeamSearchRows, below.outputBottom - 1, fBottom});
+        if (lo > hi) continue;
         int best = boundary;
         float bestGradient = std::numeric_limits<float>::max();
         for (int y = lo; y <= hi; ++y) {

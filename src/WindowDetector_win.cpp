@@ -69,6 +69,7 @@ std::vector<DetectedElement> enumerateWindowsSnapshot(qreal dpr, DetectionFlags 
                             QRect physicalBounds(rect.left, rect.top, width, height);
                             DetectedElement element;
                             element.bounds = CoordinateHelper::physicalToQtLogical(physicalBounds, menuWnd);
+                            element.nativePhysicalBounds = physicalBounds;
                             element.windowTitle = QString();
                             element.ownerApp = QString();
                             element.windowLayer = 0;
@@ -326,6 +327,7 @@ BOOL CALLBACK enumWindowsProc(HWND hwnd, LPARAM lParam)
     // Create DetectedElement
     DetectedElement element;
     element.bounds = logicalBounds;
+    element.nativePhysicalBounds = physicalBounds;
     element.windowTitle = windowTitle;
     element.ownerApp = ownerApp;
     element.windowLayer = 0;  // Windows doesn't have explicit layers like macOS
@@ -407,6 +409,7 @@ BOOL CALLBACK enumChildWindowsProc(HWND hwnd, LPARAM lParam)
 
     DetectedElement element;
     element.bounds = logicalBounds;
+    element.nativePhysicalBounds = physicalBounds;
     element.windowLayer = 1;  // Child elements have layer 1 (vs 0 for windows)
     element.windowId = reinterpret_cast<uintptr_t>(hwnd) & 0xFFFFFFFF;
     element.elementType = elementType;
@@ -569,6 +572,7 @@ void WindowDetector::enumerateWindows()
                             QRect physicalBounds(rect.left, rect.top, width, height);
                             DetectedElement element;
                             element.bounds = CoordinateHelper::physicalToQtLogical(physicalBounds, menuWnd);
+                            element.nativePhysicalBounds = physicalBounds;
                             element.windowTitle = QString();
                             element.ownerApp = QString();
                             element.windowLayer = 0;

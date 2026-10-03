@@ -16,6 +16,7 @@
 #include <QRandomGenerator>
 #include <QSignalSpy>
 #include <QScopeGuard>
+#include <QSemaphore>
 #include <QTemporaryDir>
 #include <QWindow>
 #include <QGuiApplication>
@@ -260,6 +261,50 @@ QStringList partFiles(const QString& directoryPath)
     return QDir(directoryPath).entryList(QStringList(QStringLiteral("*.part-*")), QDir::Files);
 }
 
+// The destructor runs after the worker has queued its completion callback.
+// Waiting on this semaphore without pumping GUI events exposes the commit race.
+constexpr int kExportGateTimeoutMs = 5000;
+
+struct ExportGate {
+    QSemaphore probeEntered;
+    QSemaphore resumeProbe;
+    QSemaphore workerFinished;
+    std::atomic_bool firstProbe{true};
+    std::atomic_bool timedOut{false};
+    bool blockProbe = false;
+    bool failTranscode = false;
+};
+
+class GatedTranscoder : public IVideoTranscoder
+{
+public:
+    explicit GatedTranscoder(std::shared_ptr<ExportGate> gate) : m_gate(std::move(gate)) {}
+    ~GatedTranscoder() override { m_gate->workerFinished.release(); }
+    VideoFileProbe probe(const QString&) override
+    {
+        if (m_gate->blockProbe && m_gate->firstProbe.exchange(false)) {
+            m_gate->probeEntered.release();
+            if (!m_gate->resumeProbe.tryAcquire(1, kExportGateTimeoutMs)) m_gate->timedOut.store(true);
+        }
+        VideoFileProbe result;
+        result.valid = true;
+        result.videoSize = QSize(160, 120);
+        result.durationMs = 1000;
+        result.frameRate = 10;
+        result.videoCodec = QString::fromLatin1(m_gate->failTranscode ? kVideoCodecHevc : kVideoCodecH264);
+        return result;
+    }
+    VideoTranscodeResult transcode(const VideoTranscodeRequest& request, const ProgressCallback&) override
+    {
+        VideoTranscodeResult result;
+        if (m_gate->failTranscode) result.errorMessage = QStringLiteral("injected failure");
+        else result.success = QFile::copy(request.inputPath, request.outputPath);
+        return result;
+    }
+private:
+    std::shared_ptr<ExportGate> m_gate;
+};
+
 } // namespace
 
 class tst_RecordingPreviewExport : public QObject
@@ -288,6 +333,8 @@ private slots:
     void smartSaveMovesRecordingNotRecordedAsIntermediate();
     void failedSmartSaveReencodeSavesOriginal();
     void cancelExportKeepsSource();
+    void cancelBeforeGuiCommit_data();
+    void cancelBeforeGuiCommit();
     void videoOnlyExportAcceptedWhenRangeHasNoSourceAudio();
     void invalidTranscodeKeepsSourceAndRetries_data();
     void invalidTranscodeKeepsSourceAndRetries();
@@ -334,6 +381,12 @@ void tst_RecordingPreviewExport::saveAnimation()
     }
     QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
     backend.save();
+    QVERIFY(!backend.canCancelExport());
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    QCOMPARE(backend.selectedFormat(), format);
+    const QString status = backend.processStatus();
+    backend.cancelExport();
+    QCOMPARE(backend.processStatus(), status);
     QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
     QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
     QCOMPARE(savedSpy.count(), 1);
@@ -1132,6 +1185,99 @@ void tst_RecordingPreviewExport::cancelExportKeepsSource()
     QCOMPARE(QDir(directory.path()).entryList(QDir::Files), QStringList(QStringLiteral("recording.mp4")));
     QVERIFY(input.open(QIODevice::ReadOnly));
     QCOMPARE(input.readAll(), originalBytes);
+}
+
+void tst_RecordingPreviewExport::cancelBeforeGuiCommit_data()
+{
+    QTest::addColumn<bool>("duringProbe");
+    QTest::addColumn<bool>("edited");
+    QTest::addColumn<bool>("failTranscode");
+    QTest::newRow("direct-save-during-probe") << true << false << false;
+    QTest::newRow("direct-save-queued") << false << false << false;
+    QTest::newRow("transcode-queued") << false << true << false;
+    QTest::newRow("fallback-during-probe") << true << false << true;
+    QTest::newRow("fallback-queued") << false << false << true;
+}
+
+void tst_RecordingPreviewExport::cancelBeforeGuiCommit()
+{
+    QFETCH(bool, duringProbe);
+    QFETCH(bool, edited);
+    QFETCH(bool, failTranscode);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    QFile input(inputPath);
+    QVERIFY(input.open(QIODevice::WriteOnly));
+    const QByteArray original("original recording");
+    QCOMPARE(input.write(original), qint64(original.size()));
+    input.close();
+    SnapTray::WindowTimeline timeline;
+    timeline.setFrameSize(QSize(160, 120));
+    SnapTray::WindowSample window;
+    window.rect = QRect(0, 0, 100, 100);
+    timeline.append(0, {window});
+    QVERIFY(SnapTray::WindowTimelineSidecar::write(inputPath, timeline));
+    const QStringList originalFiles = QDir(directory.path()).entryList(QDir::Files);
+
+    const auto gate = std::make_shared<ExportGate>();
+    gate->blockProbe = duringProbe;
+    gate->failTranscode = failTranscode;
+    auto restore = qScopeGuard([gate]() {
+        gate->resumeProbe.release();
+        RecordingPreviewBackend::transcoderFactoryOverride() = {};
+    });
+    RecordingPreviewBackend::transcoderFactoryOverride() = [gate]() {
+        return std::make_unique<GatedTranscoder>(gate);
+    };
+    RecordingPreviewBackend backend(inputPath);
+    backend.updateDuration(1000);
+    backend.updateVideoSize(QSize(160, 120));
+    if (edited) backend.setTrimStart(100);
+    QSignalSpy saved(&backend, &RecordingPreviewBackend::saveRequested);
+    QSignalSpy closed(&backend, &RecordingPreviewBackend::closed);
+    QSignalSpy discarded(&backend, &RecordingPreviewBackend::discardRequested);
+    QVERIFY(!backend.canCancelExport());
+    backend.save();
+    QVERIFY(backend.isProcessing());
+    QVERIFY(backend.canCancelExport());
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QCOMPARE(backend.selectedFormat(), int(RecordingPreviewBackend::MP4));
+    if (duringProbe) QVERIFY(gate->probeEntered.tryAcquire(1, kExportGateTimeoutMs));
+    else QVERIFY(gate->workerFinished.tryAcquire(1, kExportGateTimeoutMs));
+    backend.cancelExport();
+    QCOMPARE(backend.processStatus(), RecordingPreviewBackend::tr("Cancelling..."));
+    QVERIFY(!backend.canCancelExport());
+    QSignalSpy statusChanged(&backend, &RecordingPreviewBackend::processStatusChanged);
+    backend.cancelExport();
+    QCOMPARE(statusChanged.count(), 0);
+    if (duringProbe) {
+        gate->resumeProbe.release();
+        QVERIFY(gate->workerFinished.tryAcquire(1, kExportGateTimeoutMs));
+    }
+    QVERIFY(!gate->timedOut.load());
+    QTRY_VERIFY(!backend.isProcessing());
+    QVERIFY(!backend.canCancelExport());
+    QCOMPARE(saved.count(), 0);
+    QCOMPARE(closed.count(), 0);
+    QCOMPARE(discarded.count(), 0);
+    QVERIFY(backend.errorMessage().isEmpty());
+    QCOMPARE(QDir(directory.path()).entryList(QDir::Files), originalFiles);
+    QVERIFY(input.open(QIODevice::ReadOnly));
+    QCOMPARE(input.readAll(), original);
+    input.close();
+    const auto keptTimeline = SnapTray::WindowTimelineSidecar::read(inputPath);
+    QVERIFY(keptTimeline.has_value());
+    QCOMPARE(keptTimeline->toJson(), timeline.toJson());
+
+    // A fresh export must not inherit cancellation from the previous one.
+    backend.save();
+    QVERIFY(backend.canCancelExport());
+    QVERIFY(gate->workerFinished.tryAcquire(1, kExportGateTimeoutMs));
+    QTRY_COMPARE(saved.count(), 1);
+    QVERIFY(!backend.canCancelExport());
+    QCOMPARE(closed.count(), 1);
+    QCOMPARE(discarded.count(), 0);
 }
 
 void tst_RecordingPreviewExport::previewWindowKeepsNativeCaption()

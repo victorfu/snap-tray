@@ -17,6 +17,8 @@ private slots:
     void invalidMappingProducesNothing();
     void fromCaptureBuildsRegionOrigin_data();
     void fromCaptureBuildsRegionOrigin();
+    void mapsNativeWindows_data();
+    void mapsNativeWindows();
 };
 
 void tst_WindowFrameMapping::mapsLogicalWindowsToVideoPixels_data()
@@ -126,6 +128,41 @@ void tst_WindowFrameMapping::fromCaptureBuildsRegionOrigin()
     QCOMPARE(mapping.devicePixelRatio, dpr);
     QCOMPARE(mapping.physicalRegion, expectedRegion);
     QCOMPARE(mapping.physicalRegion.size(), mappedRegion.size());
+}
+
+void tst_WindowFrameMapping::mapsNativeWindows_data()
+{
+    QTest::addColumn<WindowFrameMapping>("mapping");
+    QTest::addColumn<QRect>("nativeBounds");
+    QTest::addColumn<QRect>("expected");
+    const WindowFrameMapping right{QRect(1920, 0, 1920, 1080), QRect(1920, 0, 3840, 2160), 2.0,
+                                   QRect(1920, 0, 3840, 2160)};
+    QTest::newRow("100-to-200-percent") << right << QRect(1500, 100, 600, 400) << QRect(0, 100, 180, 400);
+    const WindowFrameMapping primary{QRect(0, 0, 1920, 1080), QRect(0, 0, 1920, 1080), 1.0,
+                                     QRect(0, 0, 1920, 1080)};
+    QTest::newRow("200-to-100-percent") << primary << QRect(1800, 100, 600, 400) << QRect(1800, 100, 120, 400);
+    const WindowFrameMapping left{QRect(-2560, -200, 1280, 720), QRect(-2560, -200, 2560, 1440), 2.0,
+                                  QRect(-2560, -200, 2560, 1440)};
+    QTest::newRow("negative-origin") << left << QRect(-200, -100, 600, 400) << QRect(2360, 100, 200, 400);
+    QTest::newRow("outside") << right << QRect(100, 100, 600, 400) << QRect();
+    QTest::newRow("invalid-bounds") << right << QRect() << QRect();
+    WindowFrameMapping region = right;
+    region.physicalRegion = QRect(2100, 300, 800, 600);
+    QTest::newRow("partial-region") << region << QRect(2000, 200, 300, 300) << QRect(0, 0, 200, 200);
+    QTest::newRow("no-native-screen")
+        << WindowFrameMapping{QRect(0, 0, 100, 100), QRect(), 2.0, QRect(0, 0, 200, 200)}
+        << QRect(0, 0, 100, 100) << QRect();
+    QTest::newRow("invalid-mapping") << WindowFrameMapping{} << QRect(0, 0, 100, 100) << QRect();
+}
+
+void tst_WindowFrameMapping::mapsNativeWindows()
+{
+    QFETCH(WindowFrameMapping, mapping);
+    QFETCH(QRect, nativeBounds);
+    QFETCH(QRect, expected);
+    const QRect actual = mapping.toVideoRectFromPhysical(nativeBounds);
+    if (expected.isEmpty()) QVERIFY(actual.isEmpty());
+    else QCOMPARE(actual, expected);
 }
 
 QTEST_GUILESS_MAIN(tst_WindowFrameMapping)

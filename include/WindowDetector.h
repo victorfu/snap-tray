@@ -45,6 +45,8 @@ struct DetectedElement {
     uint32_t windowId;      // Window ID for identification
     ElementType elementType = ElementType::Window;  // Type of detected element
     qint64 ownerPid = 0;   // Process ID of owning application
+    // Windows native desktop pixels, before monitor-specific logical conversion.
+    std::optional<QRect> nativePhysicalBounds;
 };
 
 class WindowDetector : public QObject

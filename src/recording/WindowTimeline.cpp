@@ -187,6 +187,12 @@ WindowFrameMapping WindowFrameMapping::fromCapture(const QRect& logicalRegion, c
     return {logicalScreen, physicalScreen, dpr, region};
 }
 
+QRect WindowFrameMapping::toVideoRectFromPhysical(const QRect& nativeBounds) const
+{
+    if (!isValid() || physicalScreen.isEmpty() || nativeBounds.isEmpty()) return {};
+    return nativeBounds.intersected(physicalRegion).translated(-physicalRegion.topLeft());
+}
+
 QRect WindowFrameMapping::toVideoRect(const QRect& logicalBounds) const
 {
     if (!isValid()) {

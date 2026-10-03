@@ -66,6 +66,7 @@ class RecordingPreviewBackend : public QObject
 
     // Processing progress
     Q_PROPERTY(bool isProcessing READ isProcessing NOTIFY processingChanged)
+    Q_PROPERTY(bool canCancelExport READ canCancelExport NOTIFY processingChanged)
     Q_PROPERTY(int processProgress READ processProgress NOTIFY processProgressChanged)
     Q_PROPERTY(QString processStatus READ processStatus NOTIFY processStatusChanged)
 
@@ -111,6 +112,7 @@ public:
     int selectedFormat() const { return m_selectedFormat; }
 
     bool isProcessing() const { return m_isProcessing; }
+    bool canCancelExport() const;
     int processProgress() const { return m_processProgress; }
     QString processStatus() const { return m_processStatus; }
 
@@ -190,6 +192,7 @@ private:
     // smartSave: no edits -- move the file if it already meets the user's
     // target bitrate, otherwise re-encode the full range at that bitrate.
     void performTranscode(bool smartSave);
+    void finishProcessing();
 
     void setErrorMessage(const QString &msg);
 
@@ -221,6 +224,8 @@ private:
     OutputFormat m_selectedFormat = MP4;
 
     // Processing
+    enum class ExportKind { None, MP4, Animated };
+    ExportKind m_exportKind = ExportKind::None;
     bool m_isProcessing = false;
     // Shared with the MP4 export worker; set by cancelExport() or on
     // destruction to cancel it. Each export starts with a fresh token.

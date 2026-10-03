@@ -100,7 +100,9 @@ void WindowTimelineRecorder::sampleNow()
         if (!isSnapTarget(element.elementType)) {
             continue;
         }
-        const QRect rect = m_mapping.toVideoRect(element.bounds);
+        const QRect rect = element.nativePhysicalBounds.has_value() && !m_mapping.physicalScreen.isEmpty()
+            ? m_mapping.toVideoRectFromPhysical(*element.nativePhysicalBounds)
+            : m_mapping.toVideoRect(element.bounds);
         if (rect.isEmpty()) {
             continue;
         }
