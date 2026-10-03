@@ -176,6 +176,16 @@ void tst_SyntheticHarness::compareDetectsDuplicatesMissingAndShift()
     r = compareWithGroundTruth(chunk, page, 500, 1199);
     QVERIFY2(r.duplicatedRows >= 290 && r.duplicatedRows <= 310, qPrintable(QString::number(r.duplicatedRows)));
     QCOMPARE(r.unmatchedRows, 0);
+    // Jump back further than the search window: rows 500-1499 then 500-600 (re-homes 1000 rows back).
+    QImage farBack(page.width(), 1101, QImage::Format_RGB32);
+    QPainter f(&farBack);
+    f.drawImage(0, 0, page, 0, 500, page.width(), 1000);
+    f.drawImage(0, 1000, page, 0, 500, page.width(), 101);
+    f.end();
+    r = compareWithGroundTruth(farBack, page, 500, 1499);
+    QVERIFY2(r.duplicatedRows >= 99 && r.duplicatedRows <= 101, qPrintable(QString::number(r.duplicatedRows)));
+    QCOMPARE(r.unmatchedRows, 0);
+    QCOMPARE(r.missingRows, 0);
     // A corrupted row (inverted) is not a page row: it must count as unmatched, not be forced onto a neighbour.
     QImage corrupted = page.copy(0, 500, page.width(), 200);
     QImage row = corrupted.copy(0, 100, page.width(), 1);
