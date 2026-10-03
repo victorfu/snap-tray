@@ -10,6 +10,7 @@
 #include <QDir>
 #include "recording/WindowTimelineSidecar.h"
 #include "recording/WindowTimelineRecorder.h"
+#include "encoding/IntermediateQuality.h"
 
 /**
  * @brief Tests for RecordingManager resource lifecycle
@@ -50,6 +51,8 @@ private slots:
     void testFinishWritesSidecarOnlyOnSuccess();
     void testFinishSkipsSidecarWithoutWindows();
     void testStaleSidecarsAreCleanedUp();
+    void intermediateQualityFollowsFreeSpace_data();
+    void intermediateQualityFollowsFreeSpace();
 
 private:
     RecordingManager* m_manager = nullptr;
@@ -349,4 +352,41 @@ void TestRecordingManagerLifecycle::testStaleSidecarsAreCleanedUp()
 }
 
 QTEST_MAIN(TestRecordingManagerLifecycle)
+void TestRecordingManagerLifecycle::intermediateQualityFollowsFreeSpace_data()
+{
+    QTest::addColumn<qint64>("freeBytes");
+    QTest::addColumn<bool>("expectIntermediate");
+    QTest::addColumn<int>("expectWarnings");
+    const QSize frame(1920, 1080);
+    const qint64 needed = SnapTray::IntermediateQuality::estimatedBytesPerMinute(
+                              SnapTray::IntermediateQuality::intermediateBitrate(frame, 30))
+                          * SnapTray::IntermediateQuality::kMinimumRecordingMinutes;
+    QTest::newRow("enough space") << needed << true << 0;
+    QTest::newRow("one byte short") << needed - 1 << false << 1;
+    QTest::newRow("unknown space") << qint64(-1) << false << 1;
+}
+
+void TestRecordingManagerLifecycle::intermediateQualityFollowsFreeSpace()
+{
+    QFETCH(qint64, freeBytes);
+    QFETCH(bool, expectIntermediate);
+    QFETCH(int, expectWarnings);
+    RecordingManager manager;
+    manager.m_frameRate = 30;
+    QString queriedPath;
+    manager.m_freeBytesForPath = [&queriedPath, freeBytes](const QString& path) {
+        queriedPath = path;
+        return freeBytes;
+    };
+    QSignalSpy warnings(&manager, &RecordingManager::recordingWarning);
+    const QString directory = QStringLiteral("C:/tmp/recordings");
+    QCOMPARE(manager.chooseIntermediateQuality(directory, QSize(1920, 1080)), expectIntermediate);
+    QCOMPARE(queriedPath, directory);
+    QCOMPARE(warnings.count(), expectWarnings);
+    if (expectWarnings) {
+        QCOMPARE(warnings.first().at(0).toString(), RecordingManager::tr(
+            "Not enough free disk space for high-quality recording. Recording at the selected quality instead."));
+    }
+}
+
 #include "tst_Lifecycle.moc"

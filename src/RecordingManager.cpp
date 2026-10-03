@@ -30,6 +30,8 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QFileInfo>
+#include <QStorageInfo>
+#include "encoding/IntermediateQuality.h"
 #include <QFile>
 #include <QMutexLocker>
 #include <QScopeGuard>
@@ -209,6 +211,19 @@ static void syncFile(const QString &path)
 #endif
 }
 
+bool RecordingManager::chooseIntermediateQuality(const QString& outputDirectory, const QSize& frameSize)
+{
+    const qint64 freeBytes = m_freeBytesForPath ? m_freeBytesForPath(outputDirectory) : -1;
+    if (SnapTray::IntermediateQuality::hasRoomForIntermediate(freeBytes, frameSize, m_frameRate)) {
+        return true;
+    }
+    qWarning() << "RecordingManager: free space" << freeBytes << "bytes in" << outputDirectory
+               << "is below" << SnapTray::IntermediateQuality::kMinimumRecordingMinutes
+               << "minutes of intermediate recording; using the selected quality";
+    emit recordingWarning(tr("Not enough free disk space for high-quality recording. Recording at the selected quality instead."));
+    return false;
+}
+
 RecordingManager::RecordingManager(QObject *parent)
     : QObject(parent)
     , m_usingNativeEncoder(false)
@@ -223,6 +238,7 @@ RecordingManager::RecordingManager(QObject *parent)
     , m_countdownEnabled(true)
     , m_countdownSeconds(3)
 {
+    m_freeBytesForPath = [](const QString& path) { return QStorageInfo(path).bytesAvailable(); };
     m_captureControlsMayBeVisible = [] {
         return SnapTray::requiresVisibleRecordingControls(QOperatingSystemVersion::current());
     };
@@ -678,6 +694,8 @@ void RecordingManager::beginAsyncInitialization()
     config.outputFormat = recordingFormat;
     config.frameSize = physicalSize;
     config.quality = m_startSettings.quality;
+    config.intermediateQuality = showPreview
+        && chooseIntermediateQuality(QFileInfo(config.outputPath).absolutePath(), physicalSize);
 
     // Collect UI window IDs to exclude from capture.
     if (m_controlBar) {

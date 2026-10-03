@@ -178,6 +178,9 @@ private:
     bool m_permissionPending = false;
     bool m_captureExclusionWarningShown = false;
     std::function<bool()> m_captureControlsMayBeVisible;
+    // Free bytes on the volume holding `path`; replaced by tests.
+    std::function<qint64(const QString&)> m_freeBytesForPath;
+    bool chooseIntermediateQuality(const QString& outputDirectory, const QSize& frameSize);
     void warnAboutVisibleCaptureControls();
     QStringList m_startupAudioWarnings;
     QStringList m_reportedStartupAudioWarnings;

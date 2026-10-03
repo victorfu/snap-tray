@@ -4,6 +4,8 @@
 #include "encoding/NativeGifEncoder.h"
 #include "encoding/WebPAnimEncoder.h"
 #include "encoding/EncoderFactory.h"
+#include "encoding/IntermediateQuality.h"
+#include "encoding/VideoRateControl.h"
 #include "utils/CoordinateHelper.h"
 
 #include <QDebug>
@@ -217,7 +219,13 @@ bool RecordingInitTask::initializeEncoder()
     encoderConfig.frameSize = m_config.frameSize;
     encoderConfig.frameRate = m_config.frameRate;
     encoderConfig.outputPath = m_config.outputPath;
-    encoderConfig.quality = m_config.quality;
+    if (m_config.intermediateQuality) {
+        encoderConfig.rateControl = SnapTray::VideoRateControl::ConstantQuality;
+        encoderConfig.quality = SnapTray::IntermediateQuality::kConstantQualityValue;
+        encoderConfig.keyFrameIntervalSeconds = SnapTray::IntermediateQuality::kKeyFrameIntervalSeconds;
+    } else {
+        encoderConfig.quality = m_config.quality;
+    }
 
     // Configure audio settings for native encoder.
     // Format must match captured PCM data to avoid speed/channel distortion.
