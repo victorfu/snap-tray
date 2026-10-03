@@ -56,6 +56,18 @@ Item {
         backend.save()
     }
 
+    // The window under the resting pointer follows the playhead too.
+    function refreshWindowHover() {
+        if (!cropOverlay.editing || !cropOverlay.hovering || !backend.hasWindowTimeline) {
+            cropOverlay.hoverRect = Qt.rect(0, 0, 0, 0)
+            cropOverlay.hoverLabel = ""
+            return
+        }
+        const p = cropOverlay.hoverPoint
+        cropOverlay.hoverRect = backend.windowRectInViewAt(p, videoPlayer.contentRect, videoPlayer.position)
+        cropOverlay.hoverLabel = backend.windowAppAt(p, videoPlayer.contentRect, videoPlayer.position)
+    }
+
     function showButtonTooltip(text, item, preferAbove) {
         if (!text || !item || backend.isProcessing) {
             hideButtonTooltip(item)
@@ -136,7 +148,10 @@ Item {
 
                 onVideoLoaded: backend.updateVideoSize(videoPlayer.videoSize)
                 onDurationChanged: function(durationMs) { backend.updateDuration(durationMs) }
-                onPositionChanged: function(positionMs) { backend.updatePosition(positionMs) }
+                onPositionChanged: function(positionMs) {
+                    backend.updatePosition(positionMs)
+                    root.refreshWindowHover()
+                }
                 onStateChanged: backend.updatePlayingState(videoPlayer.playing)
                 onErrorOccurred: function(message) { backend.reportPlaybackError(message) }
                 Component.onCompleted: {
@@ -170,6 +185,7 @@ Item {
                     backend.cropRect
                     return backend.hasCrop ? backend.cropRectInView(videoPlayer.contentRect) : Qt.rect(0, 0, 0, 0)
                 }
+                onHoverChanged: root.refreshWindowHover()
                 onApplyRequested: function(viewRect) {
                     if (!backend.isProcessing)
                         backend.setCropFromView(viewRect, videoPlayer.contentRect)
@@ -242,6 +258,31 @@ Item {
                         tooltipPreferredAbove: false
                         onClicked: backend.clearCrop()
                     }
+                }
+            }
+
+            GlassSurface {
+                objectName: "previewWindowSnapHint"
+                visible: cropOverlay.editing && backend.hasWindowTimeline && !cropOverlay.hasShownRect
+                anchors.top: parent.top
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.margins: SemanticTokens.spacing12
+                width: snapHintText.implicitWidth + SemanticTokens.spacing16
+                height: root.overlayChipHeight
+                z: 5
+                glassBg: ComponentTokens.tooltipBackground
+                glassBgTop: ComponentTokens.tooltipBackgroundTop
+                glassHighlight: ComponentTokens.tooltipHighlight
+                glassBorder: ComponentTokens.tooltipBorder
+                glassRadius: ComponentTokens.tooltipRadius
+
+                Text {
+                    id: snapHintText
+                    anchors.centerIn: parent
+                    text: qsTr("Click a window to crop to it, or drag to draw")
+                    color: root.textSecondary
+                    font.pixelSize: SemanticTokens.fontSizeCaption
+                    font.family: SemanticTokens.fontFamily
                 }
             }
 

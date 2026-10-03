@@ -86,8 +86,34 @@ class StubPreviewBackend : public QObject
     Q_PROPERTY(int processProgress READ processProgress CONSTANT)
     Q_PROPERTY(QString processStatus READ processStatus CONSTANT)
     Q_PROPERTY(QString errorMessage READ errorMessage CONSTANT)
+    Q_PROPERTY(bool hasWindowTimeline READ hasWindowTimeline NOTIFY windowTimelineChanged)
 
 public:
+    bool hasWindowTimeline() const { return !m_stubWindowRect.isEmpty(); }
+    // The one "window" of the stub timeline, in video pixels; empty = no timeline.
+    void setStubWindow(const QRect& videoRect, const QString& app)
+    {
+        m_stubWindowRect = videoRect;
+        m_stubWindowApp = app;
+        emit windowTimelineChanged();
+    }
+    Q_INVOKABLE QRectF windowRectInViewAt(const QPointF& viewPoint, const QRectF& contentRect, qint64 positionMs) const
+    {
+        lookupCount++;
+        lastLookupPositionMs = positionMs;
+        const QPoint video = SnapTray::VideoCropGeometry::viewPointToVideo(viewPoint, contentRect, m_videoSize);
+        if (m_stubWindowRect.isEmpty() || video.x() < 0 || !m_stubWindowRect.contains(video)) {
+            return {};
+        }
+        return SnapTray::VideoCropGeometry::videoToView(m_stubWindowRect, contentRect, m_videoSize);
+    }
+    Q_INVOKABLE QString windowAppAt(const QPointF& viewPoint, const QRectF& contentRect, qint64 positionMs) const
+    {
+        return windowRectInViewAt(viewPoint, contentRect, positionMs).isEmpty() ? QString() : m_stubWindowApp;
+    }
+    mutable int lookupCount = 0;
+    mutable qint64 lastLookupPositionMs = -1;
+
     QString videoPath() const { return {}; }
     qint64 trimStart() const { return 0; }
     qint64 trimEnd() const { return 0; }
@@ -185,8 +211,11 @@ signals:
     void videoSizeChanged();
     void formatChanged();
     void processingChanged();
+    void windowTimelineChanged();
 
 private:
+    QRect m_stubWindowRect;
+    QString m_stubWindowApp;
     QRect m_cropRect;
     QSize m_videoSize;
     int m_selectedFormat = 0;
@@ -253,6 +282,14 @@ private slots:
 
     // The draft follows the content when the window is resized (#11).
     void draftFollowsContentRect();
+
+    // Window snapping (Phase 2).
+    void snapToRectClampsAndGrows_data();
+    void snapToRectClampsAndGrows();
+    void previewHoverHighlightsWindow();
+    void previewClickSnapsToWindow();
+    void previewDragStillDrawsFreeRect();
+    void previewNoTimelineNoHoverNoHint();
 
 private:
     QVariant call(const char* name, const QVariantList& args = {});
@@ -1264,6 +1301,107 @@ void tst_RecordingCropOverlay::previewTinyDraftAppliesWithoutJump()
                  && qAbs(committed.right() - draft.right()) <= 1.0
                  && qAbs(committed.bottom() - draft.bottom()) <= 1.0,
              qPrintable(where));
+}
+
+void tst_RecordingCropOverlay::snapToRectClampsAndGrows_data()
+{
+    QTest::addColumn<QRectF>("input");
+    QTest::addColumn<QRectF>("expected");
+    QTest::newRow("inside") << QRectF(100, 100, 100, 50) << QRectF(100, 100, 100, 50);
+    QTest::newRow("clamped to content") << QRectF(-20, 40, 100, 50) << QRectF(0, 50, 80, 40);
+    QTest::newRow("grows around centre") << QRectF(200, 150, 2, 2) << QRectF(197, 147, 8, 8);
+    QTest::newRow("grows inside the corner") << QRectF(398, 248, 2, 2) << QRectF(392, 242, 8, 8);
+}
+
+void tst_RecordingCropOverlay::snapToRectClampsAndGrows()
+{
+    QFETCH(QRectF, input);
+    QFETCH(QRectF, expected);
+    QCOMPARE(call("snapToRect", {input}).toRectF(), expected);
+}
+
+void tst_RecordingCropOverlay::previewHoverHighlightsWindow()
+{
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
+    m_backend->setStubWindow(QRect(400, 100, 400, 200), QStringLiteral("Code"));
+    QQuickItem* frame = previewItem("cropHoverFrame");
+    QQuickItem* label = previewItem("cropHoverLabel");
+    QVERIFY(frame && label);
+    QVERIFY(!frame->isVisible()); // not editing
+
+    click(previewItem("previewCropButton"));
+    QVERIFY(editing());
+    QVERIFY(previewItem("previewWindowSnapHint")->isVisible());
+    const QRectF content = previewContentRect();
+    const QRectF expected = m_backend->windowRectInViewAt(
+        QPointF(content.x() + content.width() * 0.3, content.y() + content.height() * 0.4), content, 0);
+    QVERIFY(!expected.isEmpty());
+
+    QTest::mouseMove(m_view.get(), overlayPoint(content.x() + content.width() * 0.3, content.y() + content.height() * 0.4));
+    QTRY_VERIFY(frame->isVisible());
+    QObject* overlay = previewOverlay();
+    QCOMPARE(overlay->property("hoverRect").toRectF(), expected);
+    QCOMPARE(overlay->property("hoverLabel").toString(), QStringLiteral("Code"));
+    QVERIFY(label->isVisible());
+
+    // Off the window: highlight gone.
+    QTest::mouseMove(m_view.get(), overlayPoint(content.x() + 5, content.y() + 5));
+    QTRY_VERIFY(!frame->isVisible());
+    QCOMPARE(overlay->property("hoverRect").toRectF(), QRectF());
+}
+
+void tst_RecordingCropOverlay::previewClickSnapsToWindow()
+{
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
+    m_backend->setStubWindow(QRect(400, 100, 400, 200), QStringLiteral("Code"));
+    click(previewItem("previewCropButton"));
+    const QRectF content = previewContentRect();
+    const QPoint inside = overlayPoint(content.x() + content.width() * 0.3, content.y() + content.height() * 0.4);
+    const QRectF expected = m_backend->windowRectInViewAt(
+        QPointF(content.x() + content.width() * 0.3, content.y() + content.height() * 0.4), content, 0);
+
+    QTest::mouseMove(m_view.get(), inside);
+    QTest::mouseClick(m_view.get(), Qt::LeftButton, Qt::NoModifier, inside);
+    QObject* overlay = previewOverlay();
+    QTRY_COMPARE(overlay->property("draftRect").toRectF(), expected);
+    QVERIFY(editing());
+    QVERIFY(!previewItem("previewWindowSnapHint")->isVisible()); // a draft exists now
+
+    // Enter commits the snapped window as the crop (through the usual view-to-video
+    // rounding and even alignment, like any other draft).
+    sendKey(Qt::Key_Return);
+    QVERIFY(!editing());
+    QCOMPARE(m_backend->cropRect(), expectedVideoCrop(expected));
+}
+
+void tst_RecordingCropOverlay::previewDragStillDrawsFreeRect()
+{
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
+    m_backend->setStubWindow(QRect(400, 100, 400, 200), QStringLiteral("Code"));
+    click(previewItem("previewCropButton"));
+    const QRectF content = previewContentRect();
+    // Start inside the window, drag well outside it: a free rect, not the window.
+    drag(overlayPoint(content.x() + content.width() * 0.3, content.y() + content.height() * 0.4),
+         overlayPoint(content.x() + content.width() * 0.9, content.y() + content.height() * 0.9));
+    QObject* overlay = previewOverlay();
+    const QRectF draft = overlay->property("draftRect").toRectF();
+    QVERIFY(draft.width() > content.width() * 0.5);
+    QVERIFY(!previewItem("cropHoverFrame")->isVisible());
+}
+
+void tst_RecordingCropOverlay::previewNoTimelineNoHoverNoHint()
+{
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
+    click(previewItem("previewCropButton"));
+    QVERIFY(!previewItem("previewWindowSnapHint")->isVisible());
+    const QRectF content = previewContentRect();
+    const QPoint inside = overlayPoint(content.x() + 100, content.y() + 100);
+    QTest::mouseMove(m_view.get(), inside);
+    QTest::mouseClick(m_view.get(), Qt::LeftButton, Qt::NoModifier, inside);
+    QTest::qWait(50);
+    QVERIFY(!previewItem("cropHoverFrame")->isVisible());
+    QCOMPARE(previewOverlay()->property("draftRect").toRectF(), QRectF(0, 0, 0, 0)); // a click alone draws nothing
+    QCOMPARE(m_backend->lookupCount, 0);
 }
 
 QTEST_MAIN(tst_RecordingCropOverlay)

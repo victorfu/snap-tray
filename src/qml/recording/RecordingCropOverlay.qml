@@ -26,6 +26,15 @@ Item {
     // The backend grows any committed crop below this many video px per side
     // (capped at the even-floored frame size). 0 falls back to minViewSide.
     property int minVideoSide: 0
+    // Window under the pointer at the playhead, in view coordinates, as the
+    // preview looks it up from the recording's window timeline. Empty = none.
+    property rect hoverRect: Qt.rect(0, 0, 0, 0)
+    property string hoverLabel: ""
+    property point hoverPoint: Qt.point(0, 0)
+    property bool hovering: false
+    // The pointer moved or left while editing (not during a drag).
+    signal hoverChanged()
+    readonly property bool showsHover: editing && hovering && isNonEmpty(hoverRect) && !cropMouse.pressed
 
     signal applyRequested(rect viewRect)
     signal cancelRequested()
@@ -92,6 +101,25 @@ Item {
         const sx = to.width / from.width
         const sy = to.height / from.height
         return Qt.rect(to.x + (r.x - from.x) * sx, to.y + (r.y - from.y) * sy, r.width * sx, r.height * sy)
+    }
+
+    // r clamped into the content and grown around its centre to the minimum
+    // draft size, so a tiny window still gives a usable selection.
+    function snapToRect(r) {
+        const c = contentRect
+        let left = clamp(r.x, c.x, c.x + c.width)
+        let right = clamp(r.x + r.width, c.x, c.x + c.width)
+        let top = clamp(r.y, c.y, c.y + c.height)
+        let bottom = clamp(r.y + r.height, c.y, c.y + c.height)
+        if (right - left < minViewWidth) {
+            left = clamp((left + right - minViewWidth) / 2, c.x, c.x + c.width - minViewWidth)
+            right = left + minViewWidth
+        }
+        if (bottom - top < minViewHeight) {
+            top = clamp((top + bottom - minViewHeight) / 2, c.y, c.y + c.height - minViewHeight)
+            bottom = top + minViewHeight
+        }
+        return Qt.rect(left, top, right - left, bottom - top)
     }
 
     function beginEditing() {
@@ -302,6 +330,41 @@ Item {
         }
     }
 
+    Rectangle {
+        objectName: "cropHoverFrame"
+        visible: overlay.showsHover
+        x: overlay.hoverRect.x
+        y: overlay.hoverRect.y
+        width: overlay.hoverRect.width
+        height: overlay.hoverRect.height
+        color: Qt.rgba(overlay.accentColor.r, overlay.accentColor.g, overlay.accentColor.b, 0.12)
+        border.color: overlay.accentColor
+        border.width: overlay.borderWidth
+    }
+
+    GlassSurface {
+        objectName: "cropHoverLabel"
+        visible: overlay.showsHover && overlay.hoverLabel.length > 0
+        width: hoverLabelText.implicitWidth + SemanticTokens.spacing16
+        height: overlay.sizeChipHeight
+        x: overlay.clamp(overlay.hoverRect.x + SemanticTokens.spacing4, 0, Math.max(0, overlay.width - width))
+        y: overlay.clamp(overlay.hoverRect.y + SemanticTokens.spacing4, 0, Math.max(0, overlay.height - height))
+        glassBg: ComponentTokens.tooltipBackground
+        glassBgTop: ComponentTokens.tooltipBackgroundTop
+        glassHighlight: ComponentTokens.tooltipHighlight
+        glassBorder: ComponentTokens.tooltipBorder
+        glassRadius: ComponentTokens.tooltipRadius
+
+        Text {
+            id: hoverLabelText
+            anchors.centerIn: parent
+            text: overlay.hoverLabel
+            color: SemanticTokens.textPrimary
+            font.pixelSize: SemanticTokens.fontSizeCaption
+            font.family: SemanticTokens.fontFamily
+        }
+    }
+
     MouseArea {
         id: cropMouse
         objectName: "cropMouseArea"
@@ -343,7 +406,13 @@ Item {
                 mode = modeNone
         }
         onPositionChanged: function(mouse) {
-            if (!pressed || mode === modeNone)
+            if (!pressed) {
+                overlay.hoverPoint = Qt.point(mouse.x, mouse.y)
+                overlay.hovering = true
+                overlay.hoverChanged()
+                return
+            }
+            if (mode === modeNone)
                 return
             const dx = mouse.x - pressX
             const dy = mouse.y - pressY
@@ -359,7 +428,21 @@ Item {
                 overlay.draftRect = overlay.resizeRect(pressRect, edges, dx, dy)
             }
         }
-        onReleased: mode = modeNone
+        onExited: {
+            overlay.hovering = false
+            overlay.hoverChanged()
+        }
+        onReleased: function(mouse) {
+            const clicked = Math.abs(mouse.x - pressX) < overlay.createDragThreshold
+                    && Math.abs(mouse.y - pressY) < overlay.createDragThreshold
+            if (clicked && (mode === modeCreate || mode === modeMove) && overlay.isNonEmpty(overlay.hoverRect))
+                overlay.draftRect = overlay.snapToRect(overlay.hoverRect)
+            mode = modeNone
+            // The pointer may have left the window it hovered before the press:
+            // re-evaluate at the release point instead of showing a stale highlight.
+            overlay.hoverPoint = Qt.point(mouse.x, mouse.y)
+            overlay.hoverChanged()
+        }
         onCanceled: {
             if (mode !== modeNone && overlay.editing)
                 overlay.draftRect = pressRect
