@@ -24,6 +24,15 @@ constexpr int kMinMovingColumns = 32;
 constexpr double kMinTemplateStdDev = 3.0; // luma: a flatter template (or match window) scores 1.0 in OpenCV for any content
 constexpr int kMinTemplateInkedRows = 6;   // rows with ink the NCC template band must contain
 constexpr int kTemplateSlideStep = 8;      // rows between candidate template positions
+// Zoom check: a template scaled by these factors must not fit the other frame
+// better than the unscaled template by more than kScaleMargin (NCC units).
+constexpr double kScaleFactors[] = {0.9, 1.1};
+constexpr double kScaleMargin = 0.05;
+// The zoom check crops the (scaled) template to this fraction of the moving
+// span so it can slide horizontally, and searches this fraction of the frame
+// and template height (plus the refine radius) above and below the match.
+constexpr double kScaleTemplateWidthFraction = 0.8;
+constexpr double kScaleSearchFraction = 0.1;
 
 cv::Mat gray(const QImage& image)
 {
@@ -129,11 +138,18 @@ std::vector<int> topShifts(const std::vector<double>& response, int count, int m
     return chosen;
 }
 
+struct NccMatch {
+    double score = 0.0;
+    int dy = 0;
+    cv::Rect templateRect; // in `to`; empty when no template could be placed
+};
+
 // NCC of a template band taken from `to` (content rows only) against `from`
-// shifted by candidate dy, searched within +-radius. Returns the best score
-// and the refined dy. With dy = pageOffset(to) - pageOffset(from): a row y of
-// `to` shows page row offsetTo + y, which in `from` is row y + dy.
-std::pair<double, int> refineByNcc(const cv::Mat& from, const cv::Mat& to, int candidate, int radius,
+// shifted by candidate dy, searched within +-radius. Returns the best score,
+// the refined dy and the template used. With dy = pageOffset(to) -
+// pageOffset(from): a row y of `to` shows page row offsetTo + y, which in
+// `from` is row y + dy.
+NccMatch refineByNcc(const cv::Mat& from, const cv::Mat& to, int candidate, int radius,
                                    const QRect& contentTo, const QRect& contentFrom, int templateRows,
                                    const std::vector<char>& inkedTo)
 {
@@ -146,7 +162,7 @@ std::pair<double, int> refineByNcc(const cv::Mat& from, const cv::Mat& to, int c
     const int overlapTop = std::max(contentTo.top(), contentFrom.top() - candidate + radius);
     const int overlapBottom = std::min(toBottom, fromBottom - candidate - radius); // exclusive
     const int overlapRows = overlapBottom - overlapTop;
-    if (overlapRows < kMinTemplateRows) return {0.0, candidate};
+    if (overlapRows < kMinTemplateRows) return {0.0, candidate, {}};
     const int tplHeight = std::clamp(templateRows, kMinTemplateRows,
                                      std::min(overlapRows, std::max(kMinTemplateRows, contentTo.height() / 2)));
     // Slide the template over the overlap and keep the position holding the
@@ -165,9 +181,9 @@ std::pair<double, int> refineByNcc(const cv::Mat& from, const cv::Mat& to, int c
     };
     for (int top = overlapTop; top + tplHeight <= overlapBottom; top += kTemplateSlideStep) consider(top);
     consider(overlapBottom - tplHeight);
-    if (bestInked < kMinTemplateInkedRows) return {0.0, candidate};
+    if (bestInked < kMinTemplateInkedRows) return {0.0, candidate, {}};
     const cv::Rect tplRect(contentTo.left(), tplTop, contentTo.width(), tplHeight);
-    if (tplRect.width <= 0 || tplRect.height <= 0) return {0.0, candidate};
+    if (tplRect.width <= 0 || tplRect.height <= 0) return {0.0, candidate, {}};
     // Search window in `from`: rows [tplTop + candidate - radius, ... + tplHeight + radius).
     const int searchTop = tplTop + candidate - radius;
     const cv::Rect searchRect(contentTo.left(), searchTop, contentTo.width(), tplHeight + 2 * radius);
@@ -180,8 +196,34 @@ std::pair<double, int> refineByNcc(const cv::Mat& from, const cv::Mat& to, int c
     cv::Scalar meanValue, stdTemplate, stdWindow;
     cv::meanStdDev(to(tplRect), meanValue, stdTemplate);
     cv::meanStdDev(from(cv::Rect(contentTo.left(), matchedRowInFrom, contentTo.width(), tplHeight)), meanValue, stdWindow);
-    if (stdTemplate[0] < kMinTemplateStdDev || stdWindow[0] < kMinTemplateStdDev) return {0.0, candidate};
-    return {std::isfinite(maxVal) ? maxVal : 0.0, matchedRowInFrom - tplTop};
+    if (stdTemplate[0] < kMinTemplateStdDev || stdWindow[0] < kMinTemplateStdDev) return {0.0, candidate, {}};
+    return {std::isfinite(maxVal) ? maxVal : 0.0, matchedRowInFrom - tplTop, tplRect};
+}
+
+// Column-mean profile of rows [top, bottom) over the columns of `span`.
+std::vector<float> columnMeans(const cv::Mat& image, int top, int bottom, const QRect& span)
+{
+    cv::Mat means;
+    cv::reduce(image(cv::Rect(span.left(), top, span.width(), bottom - top)), means, 0, cv::REDUCE_AVG, CV_32F);
+    return std::vector<float>(means.begin<float>(), means.end<float>());
+}
+
+// Best TM_CCOEFF_NORMED score of `tpl` resized by `scale`, cropped to
+// `cropWidth` centred columns, anywhere inside `window` of `from`.
+double scaledTemplateFit(const cv::Mat& from, const cv::Mat& tpl, double scale, const cv::Rect& window, int cropWidth)
+{
+    cv::Mat scaled;
+    if (scale == 1.0) scaled = tpl;
+    else cv::resize(tpl, scaled, cv::Size(), scale, scale, scale < 1.0 ? cv::INTER_AREA : cv::INTER_LINEAR);
+    const int width = std::min(cropWidth, scaled.cols);
+    if (width <= 0 || scaled.rows <= 0) return 0.0;
+    const cv::Mat cropped = scaled(cv::Rect((scaled.cols - width) / 2, 0, width, scaled.rows));
+    if (cropped.cols > window.width || cropped.rows > window.height) return 0.0;
+    cv::Mat result;
+    cv::matchTemplate(from(window), cropped, result, cv::TM_CCOEFF_NORMED);
+    double maxVal = 0.0;
+    cv::minMaxLoc(result, nullptr, &maxVal);
+    return std::isfinite(maxVal) ? maxVal : 0.0;
 }
 
 } // namespace
@@ -381,20 +423,20 @@ std::optional<ShiftObservation> LongshotAnalyzer::estimateShift(const QImage& fr
     // Fine pass: NCC around each candidate; best + margin = confidence.
     const QRect contentTo(span.left(), contentTop, span.width(), contentBottom - contentTop);
     const QRect contentFrom = contentTo;
-    std::vector<std::pair<double, int>> refined;
+    std::vector<NccMatch> refined;
     for (int candidate : candidates) {
         if (int(refined.size()) == params.coarseCandidates) break;
-        const auto result = refineByNcc(from, to, candidate, params.refineRadius, contentTo, contentFrom, params.templateRows, inkedTo);
+        const NccMatch result = refineByNcc(from, to, candidate, params.refineRadius, contentTo, contentFrom, params.templateRows, inkedTo);
         // Refine up to coarseCandidates *distinct* shifts.
         const bool duplicate = std::any_of(refined.begin(), refined.end(),
-                                           [&](const auto& r) { return std::abs(r.second - result.second) <= kPeakExclusionRows; });
+                                           [&](const NccMatch& r) { return std::abs(r.dy - result.dy) <= kPeakExclusionRows; });
         if (!duplicate) refined.push_back(result);
     }
-    std::sort(refined.begin(), refined.end(), [](const auto& l, const auto& r) { return l.first > r.first; });
-    const double best = refined.front().first;
+    std::sort(refined.begin(), refined.end(), [](const NccMatch& l, const NccMatch& r) { return l.score > r.score; });
+    const double best = refined.front().score;
     double runnerUp = 0.0;
     for (size_t i = 1; i < refined.size(); ++i) {
-        if (std::abs(refined[i].second - refined.front().second) > kPeakExclusionRows) { runnerUp = refined[i].first; break; }
+        if (std::abs(refined[i].dy - refined.front().dy) > kPeakExclusionRows) { runnerUp = refined[i].score; break; }
     }
     const double confidence = std::clamp(best + (best - runnerUp), 0.0, 1.0);
     // Periodic content scores nearly as well at several shifts: reject on the
@@ -404,11 +446,52 @@ std::optional<ShiftObservation> LongshotAnalyzer::estimateShift(const QImage& fr
                  << "runner-up" << runnerUp;
         return std::nullopt;
     }
-    if (height - std::abs(refined.front().second) < minOverlap) {
-        qDebug() << "LongshotAnalyzer: pair" << fromIndex << "->" << toIndex << "overlaps too little at dy" << refined.front().second;
+    const int dy = refined.front().dy;
+    if (height - std::abs(dy) < minOverlap) {
+        qDebug() << "LongshotAnalyzer: pair" << fromIndex << "->" << toIndex << "overlaps too little at dy" << dy;
         return std::nullopt;
     }
-    obs.shift.dy = refined.front().second;
+
+    // The engine is vertical-only: horizontal motion or a zoom between the
+    // frames cannot be stitched, so such pairs are refused, not approximated.
+    // Horizontal: phase-correlate the column-mean profiles of the rows both
+    // frames show (to row y <-> from row y + dy) over the moving span.
+    const int overlapTop = std::max(contentTop, contentTop - dy);
+    const int overlapBottom = std::min(contentBottom, contentBottom - dy); // exclusive, rows of `to`
+    if (overlapBottom > overlapTop) {
+        const std::vector<float> fromColumns = columnMeans(from, overlapTop + dy, overlapBottom + dy, span);
+        const std::vector<float> toColumns = columnMeans(to, overlapTop, overlapBottom, span);
+        const std::vector<int> dxPeak = topShifts(phaseCorrelation(fromColumns, toColumns), 1, span.width() / 2, 1);
+        // Bin k means "to column x shows from column x + k": content moved by -k.
+        const int dx = dxPeak.empty() ? 0 : -dxPeak.front();
+        if (std::abs(dx) > params.maxHorizontalShift) {
+            qDebug() << "LongshotAnalyzer: pair" << fromIndex << "->" << toIndex << "moved horizontally by" << dx << "px; refused";
+            return std::nullopt;
+        }
+    }
+    // Zoom: the winning template, scaled by 0.9 and 1.1, must not fit `from`
+    // clearly better than unscaled. All three use the same centred crop and
+    // search window so the comparison is like for like.
+    const cv::Rect tpl = refined.front().templateRect;
+    if (!tpl.empty()) {
+        const int cropWidth = int(span.width() * kScaleTemplateWidthFraction);
+        const int margin = int(std::ceil(kScaleSearchFraction * (height + tpl.height))) + params.refineRadius;
+        const int windowTop = std::max(0, tpl.y + dy - margin);
+        const int windowBottom = std::min(height, tpl.y + dy + tpl.height + margin);
+        const cv::Rect window(span.left(), windowTop, span.width(), windowBottom - windowTop);
+        const cv::Mat templateBand = to(tpl);
+        const double unscaled = scaledTemplateFit(from, templateBand, 1.0, window, cropWidth);
+        for (double scale : kScaleFactors) {
+            const double fit = scaledTemplateFit(from, templateBand, scale, window, cropWidth);
+            if (fit > unscaled + kScaleMargin) {
+                qDebug() << "LongshotAnalyzer: pair" << fromIndex << "->" << toIndex << "fits better scaled by" << scale
+                         << "(" << fit << "vs" << unscaled << "); refused";
+                return std::nullopt;
+            }
+        }
+    }
+
+    obs.shift.dy = dy;
     obs.shift.confidence = confidence;
     // Static bands are rows with ink that stayed put while the content moved.
     // Such rows exist in both frames of the pair by construction (an overlay

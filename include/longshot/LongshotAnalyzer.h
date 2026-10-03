@@ -19,6 +19,7 @@ struct AnalyzerParams {
     int maxShiftFraction = 2;            // |dy| may not exceed height / maxShiftFraction
     int minOverlapFraction = 4;          // a pair must overlap by at least height / this many rows
     int coarseCandidates = 3;            // phase-correlation peaks refined by NCC
+    int maxHorizontalShift = 2;          // |dx| above this is horizontal motion: the pair is refused
 };
 
 // Result of matching one frame pair. Bands and spans are per frame and in
