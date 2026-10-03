@@ -24,10 +24,10 @@ int maximumCenteredLength(int doubledCenter, int boundsStart, int boundsEnd)
     return qMax(0, qMin(distanceToStart, distanceToEnd) + 1);
 }
 
-QSize ratioSizeFromHeight(int requestedHeight, qreal ratio, int maxWidth, int maxHeight)
+QSize ratioSizeFromHeight(int requestedHeight, qreal ratio, int maxWidth, int maxHeight,
+                          int minimumSize = kMinimumResizeSize)
 {
-    const int minHeight = qMax(kMinimumResizeSize,
-                               qCeil(kMinimumResizeSize / ratio));
+    const int minHeight = qMax(minimumSize, qCeil(minimumSize / ratio));
     const int maxHeightForWidth = qFloor(maxWidth / ratio);
     const int allowedHeight = qMin(maxHeight, maxHeightForWidth);
     if (allowedHeight < minHeight) {
@@ -36,16 +36,16 @@ QSize ratioSizeFromHeight(int requestedHeight, qreal ratio, int maxWidth, int ma
 
     const int height = qBound(minHeight, requestedHeight, allowedHeight);
     const int width = qRound(height * ratio);
-    if (width < kMinimumResizeSize || width > maxWidth) {
+    if (width < minimumSize || width > maxWidth) {
         return {};
     }
     return QSize(width, height);
 }
 
-QSize ratioSizeFromWidth(int requestedWidth, qreal ratio, int maxWidth, int maxHeight)
+QSize ratioSizeFromWidth(int requestedWidth, qreal ratio, int maxWidth, int maxHeight,
+                          int minimumSize = kMinimumResizeSize)
 {
-    const int minWidth = qMax(kMinimumResizeSize,
-                              qCeil(kMinimumResizeSize * ratio));
+    const int minWidth = qMax(minimumSize, qCeil(minimumSize * ratio));
     const int maxWidthForHeight = qFloor(maxHeight * ratio);
     const int allowedWidth = qMin(maxWidth, maxWidthForHeight);
     if (allowedWidth < minWidth) {
@@ -54,7 +54,7 @@ QSize ratioSizeFromWidth(int requestedWidth, qreal ratio, int maxWidth, int maxH
 
     const int width = qBound(minWidth, requestedWidth, allowedWidth);
     const int height = qRound(width / ratio);
-    if (height < kMinimumResizeSize || height > maxHeight) {
+    if (height < minimumSize || height > maxHeight) {
         return {};
     }
     return QSize(width, height);
@@ -203,12 +203,23 @@ void SelectionStateManager::updateResize(const QPoint& pos)
 {
     if (m_state != State::ResizingHandle) return;
 
-    QPoint delta = pos - m_startPoint;
-    QRect newRect = m_originalRect;
+    const QRect newRect = resizedRect(m_originalRect, m_activeHandle, pos - m_startPoint);
+    const QRect normalized = newRect.normalized();
+    if (normalized.width() >= kMinimumResizeSize && normalized.height() >= kMinimumResizeSize) {
+        m_selectionRect = newRect;
+        m_handleCacheValid = false;
+        emit selectionChanged(normalized);
+    }
+}
 
-    if (m_aspectRatio > 0.0 && isCornerHandle(m_activeHandle)) {
-        const QRect rect = m_originalRect.normalized();
-        const auto edges = kResizeEdges[static_cast<std::size_t>(m_activeHandle)];
+QRect SelectionStateManager::resizedRect(
+    const QRect& originalRect, ResizeHandle handle, const QPoint& delta) const
+{
+    QRect newRect = originalRect;
+
+    if (m_aspectRatio > 0.0 && isCornerHandle(handle)) {
+        const QRect rect = originalRect.normalized();
+        const auto edges = kResizeEdges[static_cast<std::size_t>(handle)];
         const QPoint anchor(edges.testFlag(Qt::LeftEdge) ? rect.right() : rect.left(),
                             edges.testFlag(Qt::TopEdge) ? rect.bottom() : rect.top());
         const QPoint corner(edges.testFlag(Qt::LeftEdge) ? rect.left() : rect.right(),
@@ -216,19 +227,19 @@ void SelectionStateManager::updateResize(const QPoint& pos)
         // The handle's hit area extends around the corner. Preserve that press
         // offset, including when release arrives without any mouse movement.
         newRect = delta.isNull() ? rect : selectionRectForDrag(anchor, corner + delta);
-    } else if (m_aspectRatio > 0.0 && !isCornerHandle(m_activeHandle)) {
+    } else if (m_aspectRatio > 0.0 && !isCornerHandle(handle)) {
         // Edge resize with aspect ratio locked. The opposite edge remains fixed,
         // while the perpendicular axis stays centered on the original selection.
         // Limit the requested size before constructing the rect so clamping cannot
         // break either the ratio or those anchor semantics.
-        QRect rect = m_originalRect.normalized();
+        QRect rect = originalRect.normalized();
         const int doubledCenterX = rect.left() + rect.right();
         const int doubledCenterY = rect.top() + rect.bottom();
 
-        switch (m_activeHandle) {
+        switch (handle) {
         case ResizeHandle::Top:
         case ResizeHandle::Bottom: {
-            const bool movingTop = m_activeHandle == ResizeHandle::Top;
+            const bool movingTop = handle == ResizeHandle::Top;
             const int movedEdge = (movingTop ? rect.top() : rect.bottom()) + delta.y();
             const int requestedHeight = movingTop
                 ? rect.bottom() - movedEdge + 1
@@ -265,7 +276,7 @@ void SelectionStateManager::updateResize(const QPoint& pos)
         }
         case ResizeHandle::Left:
         case ResizeHandle::Right: {
-            const bool movingLeft = m_activeHandle == ResizeHandle::Left;
+            const bool movingLeft = handle == ResizeHandle::Left;
             const int movedEdge = (movingLeft ? rect.left() : rect.right()) + delta.x();
             const int requestedWidth = movingLeft
                 ? rect.right() - movedEdge + 1
@@ -304,36 +315,36 @@ void SelectionStateManager::updateResize(const QPoint& pos)
             break;
         }
     } else {
-        switch (m_activeHandle) {
+        switch (handle) {
         case ResizeHandle::TopLeft:
-            newRect.setTopLeft(m_originalRect.topLeft() + delta);
+            newRect.setTopLeft(originalRect.topLeft() + delta);
             break;
         case ResizeHandle::Top:
-            newRect.setTop(m_originalRect.top() + delta.y());
+            newRect.setTop(originalRect.top() + delta.y());
             break;
         case ResizeHandle::TopRight:
-            newRect.setTopRight(m_originalRect.topRight() + delta);
+            newRect.setTopRight(originalRect.topRight() + delta);
             break;
         case ResizeHandle::Left:
-            newRect.setLeft(m_originalRect.left() + delta.x());
+            newRect.setLeft(originalRect.left() + delta.x());
             break;
         case ResizeHandle::Right:
-            newRect.setRight(m_originalRect.right() + delta.x());
+            newRect.setRight(originalRect.right() + delta.x());
             break;
         case ResizeHandle::BottomLeft:
-            newRect.setBottomLeft(m_originalRect.bottomLeft() + delta);
+            newRect.setBottomLeft(originalRect.bottomLeft() + delta);
             break;
         case ResizeHandle::Bottom:
-            newRect.setBottom(m_originalRect.bottom() + delta.y());
+            newRect.setBottom(originalRect.bottom() + delta.y());
             break;
         case ResizeHandle::BottomRight:
-            newRect.setBottomRight(m_originalRect.bottomRight() + delta);
+            newRect.setBottomRight(originalRect.bottomRight() + delta);
             break;
         default:
             break;
         }
         if (!m_bounds.isEmpty()) {
-            const auto index = static_cast<std::size_t>(m_activeHandle);
+            const auto index = static_cast<std::size_t>(handle);
             const Qt::Edges edges = index < kResizeEdges.size() ? kResizeEdges[index] : Qt::Edges{};
             const QPoint topLeft = clampPointToBounds(newRect.topLeft());
             const QPoint bottomRight = clampPointToBounds(newRect.bottomRight());
@@ -344,12 +355,22 @@ void SelectionStateManager::updateResize(const QPoint& pos)
         }
     }
 
-    // Ensure minimum size
-    QRect normalized = newRect.normalized();
-    if (normalized.width() >= 10 && normalized.height() >= 10) {
-        m_selectionRect = newRect;
-        m_handleCacheValid = false;  // Invalidate handle cache
-        emit selectionChanged(normalized);
+    return newRect;
+}
+
+void SelectionStateManager::resizeToPosition(const QPoint& pos, ResizeHandle handle)
+{
+    if (!isComplete() || m_selectionRect.isEmpty() || handle == ResizeHandle::None) {
+        return;
+    }
+    const QRect rect = selectionRect();
+    // Project the click onto the current edge/corner so a zero delta means
+    // the existing geometry, just as it does at the start of a handle drag.
+    const QPoint edgePoint(qBound(rect.left(), pos.x(), rect.right()),
+                           qBound(rect.top(), pos.y(), rect.bottom()));
+    const QRect resized = resizedRect(rect, handle, pos - edgePoint).normalized();
+    if (resized.width() >= kMinimumResizeSize && resized.height() >= kMinimumResizeSize) {
+        setSelectionRect(resized);
     }
 }
 
@@ -387,6 +408,31 @@ bool SelectionStateManager::resizeFromBottomRight(
 
     resized.setRight(newRight);
     resized.setBottom(newBottom);
+    if (m_aspectRatio > 0.0) {
+        // Keyboard resize anchors the top-left, unlike centered edge dragging.
+        // Derive the other dimension from the requested axis before applying
+        // bounds, so growing one axis also grows the other when space permits.
+        const int maxWidth = m_bounds.isEmpty()
+            ? qMax(resized.width(), qRound(resized.height() * m_aspectRatio))
+            : m_bounds.right() - resized.left() + 1;
+        const int maxHeight = m_bounds.isEmpty()
+            ? qMax(resized.height(), qRound(resized.width() / m_aspectRatio))
+            : m_bounds.bottom() - resized.top() + 1;
+        QSize size;
+        if (edgeDelta.y() == 0) {
+            size = ratioSizeFromWidth(resized.width(), m_aspectRatio, maxWidth, maxHeight, minimumSize);
+        } else if (edgeDelta.x() == 0) {
+            size = ratioSizeFromHeight(resized.height(), m_aspectRatio, maxWidth, maxHeight, minimumSize);
+        } else {
+            size = ratioSizeFromWidth(resized.width(), m_aspectRatio,
+                                      qMin(maxWidth, resized.width()),
+                                      qMin(maxHeight, resized.height()), minimumSize);
+        }
+        if (size.isEmpty()) {
+            return false;
+        }
+        resized.setSize(size);
+    }
     if (resized == m_selectionRect.normalized()) {
         return false;
     }

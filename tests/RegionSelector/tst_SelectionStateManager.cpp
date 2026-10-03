@@ -48,6 +48,8 @@ private slots:
     void testUpdateResize_BottomRight();
     void testFinishResize();
     void testResize_MinimumSize();
+    void testKeyboardResizeHonorsAspectRatio_data();
+    void testKeyboardResizeHonorsAspectRatio();
     void testKeyboardEdgeResize_ClampsToBounds_data();
     void testKeyboardEdgeResize_ClampsToBounds();
     void testAspectRatioEdgeResize_ClampsToBounds_data();
@@ -382,6 +384,48 @@ void tst_SelectionStateManager::testResize_MinimumSize()
 
     // Selection should not change if it would become too small
     QCOMPARE(m_manager->selectionRect(), originalRect);
+}
+
+void tst_SelectionStateManager::testKeyboardResizeHonorsAspectRatio_data()
+{
+    QTest::addColumn<QPoint>("delta");
+    QTest::addColumn<QSize>("size");
+    QTest::addColumn<QSize>("expectedSize");
+    QTest::addColumn<QRect>("bounds");
+    QTest::addColumn<int>("minimumSize");
+    const QRect bounds(0, 0, 500, 400);
+    QTest::newRow("right") << QPoint(1, 0) << QSize(200, 100) << QSize(201, 101) << bounds << 10;
+    QTest::newRow("left") << QPoint(-1, 0) << QSize(200, 100) << QSize(199, 100) << bounds << 10;
+    QTest::newRow("down") << QPoint(0, 1) << QSize(200, 100) << QSize(202, 101) << bounds << 10;
+    QTest::newRow("up") << QPoint(0, -1) << QSize(200, 100) << QSize(198, 99) << bounds << 10;
+    QTest::newRow("width-boundary") << QPoint(0, 1) << QSize(400, 200) << QSize(400, 200) << bounds << 10;
+    QTest::newRow("height-boundary") << QPoint(1, 0) << QSize(200, 100) << QSize(200, 100) << QRect(0, 0, 500, 200) << 10;
+    QTest::newRow("minimum-height") << QPoint(-1, 0) << QSize(20, 10) << QSize(20, 10) << bounds << 10;
+    QTest::newRow("custom-minimum") << QPoint(0, -1) << QSize(40, 20) << QSize(40, 20) << bounds << 20;
+    QTest::newRow("portrait-right") << QPoint(1, 0) << QSize(100, 200) << QSize(101, 202) << bounds << 10;
+    QTest::newRow("portrait-down") << QPoint(0, 1) << QSize(100, 200) << QSize(101, 201) << bounds << 10;
+    QTest::newRow("portrait-height-boundary") << QPoint(1, 0) << QSize(100, 200) << QSize(100, 200) << QRect(0, 0, 500, 300) << 10;
+    QTest::newRow("unbounded") << QPoint(0, 1) << QSize(200, 100) << QSize(202, 101) << QRect() << 10;
+}
+
+void tst_SelectionStateManager::testKeyboardResizeHonorsAspectRatio()
+{
+    QFETCH(QPoint, delta);
+    QFETCH(QSize, size);
+    QFETCH(QSize, expectedSize);
+    QFETCH(QRect, bounds);
+    QFETCH(int, minimumSize);
+    m_manager->setBounds(bounds);
+    m_manager->setSelectionRect(QRect(QPoint(100, 100), size));
+    const qreal ratio = qreal(size.width()) / size.height();
+    m_manager->setAspectRatio(ratio);
+    QSignalSpy changed(m_manager, &SelectionStateManager::selectionChanged);
+    const bool expectedChange = size != expectedSize;
+    QCOMPARE(m_manager->resizeFromBottomRight(delta, minimumSize), expectedChange);
+    QCOMPARE(m_manager->selectionRect(), QRect(QPoint(100, 100), expectedSize));
+    QCOMPARE(m_manager->aspectRatio(), ratio);
+    QVERIFY(m_manager->isComplete());
+    QCOMPARE(changed.count(), expectedChange ? 1 : 0);
 }
 
 void tst_SelectionStateManager::testKeyboardEdgeResize_ClampsToBounds_data()
