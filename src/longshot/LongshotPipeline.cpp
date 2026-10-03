@@ -17,7 +17,7 @@ constexpr int kProgressClosureEnd = 95;
 constexpr int kBytesPerPixel = 4;
 constexpr int kRejoinNeighbours = 3;      // placed frames tried on each side of an unplaced frame
 constexpr int kClosureStride = 4;         // frames skipped between overlap closure checks
-constexpr int kMinClosureOverlapFraction = 4;     // closures need an overlap of at least frameHeight / this
+constexpr int kRejoinMinGap = 1;          // chain neighbours are retried: closures search a larger shift range
 constexpr double kClosureRowTolerance = 10.0;     // mean |luma diff| for a row to agree at the claimed shift
 constexpr int kClosureMinInkedRows = 12;          // overlap rows with ink needed to trust a closure
 constexpr double kClosureMinAgreement = 0.75;     // fraction of inked overlap rows that must agree
@@ -126,14 +126,13 @@ void LongshotPipeline::resolveFrameMasks(std::vector<FrameFeatures>& frames, con
 }
 
 std::vector<std::pair<int, int>> LongshotPipeline::selectClosureCandidates(const SolveResult& solve, int frameHeight,
-                                                                           const std::vector<qint64>& frameTimesMs,
-                                                                           int loopMinGapFrames, int maxFrames)
+                                                                           int loopMinGapFrames, int maxFrames,
+                                                                           int minOverlapFraction)
 {
-    Q_UNUSED(frameTimesMs);
     std::vector<std::pair<int, int>> pairs;
     std::set<int> framesUsed;
     const int n = int(solve.positions.size());
-    constexpr int kRejoinMinGap = 2; // chain neighbours (gap 1) were already tried and failed
+    const int minOverlapRows = frameHeight / std::max(1, minOverlapFraction);
     auto tryAdd = [&](int a, int b, int minGap) {
         if (a == b || a < 0 || b < 0 || a >= n || b >= n) return;
         if (a > b) std::swap(a, b);
@@ -172,7 +171,7 @@ std::vector<std::pair<int, int>> LongshotPipeline::selectClosureCandidates(const
         for (size_t bi = ai + 1; bi < placed.size(); ++bi) {
             const int b = placed[bi];
             if (b - a < loopMinGapFrames) continue;
-            if (std::abs(*solve.positions[a] - *solve.positions[b]) > frameHeight - frameHeight / kMinClosureOverlapFraction) continue;
+            if (std::abs(*solve.positions[a] - *solve.positions[b]) > frameHeight - minOverlapRows) continue;
             tryAdd(a, b, loopMinGapFrames);
             break; // one closure per anchor keeps the budget for other anchors
         }
@@ -248,10 +247,9 @@ AnalysisResult LongshotPipeline::analyzeIncremental(LongshotFrameSource& source,
             return result;
         }
     }
-    if (!source.lastError().isEmpty() && !result.frames.empty()) {
-        qWarning() << "LongshotPipeline: decoding stopped early after" << result.frames.size() << "frames:" << source.lastError();
-    }
-    if (!source.lastError().isEmpty() && result.frames.empty()) {
+    if (!source.lastError().isEmpty()) {
+        // A truncated analysis must not pass for the whole range.
+        qWarning() << "LongshotPipeline: decoding stopped after" << result.frames.size() << "frames:" << source.lastError();
         result.error = LongshotError::SourceUnavailable;
         if (framesAnalyzed) *framesAnalyzed = analyzed;
         return result;
@@ -282,7 +280,8 @@ AnalysisResult LongshotPipeline::analyzeIncremental(LongshotFrameSource& source,
     const int budgetFrames = int(std::min<qint64>(params.maxClosureFrames, fitFrames));
     if (budgetFrames < 2) qWarning() << "LongshotPipeline: closure frame budget too small for even one pair; skipping loop closures";
     const auto candidates = budgetFrames < 2 ? std::vector<std::pair<int, int>>()
-                                             : selectClosureCandidates(result.solve, height, times, params.loopMinGapFrames, budgetFrames);
+                                             : selectClosureCandidates(result.solve, height, params.loopMinGapFrames, budgetFrames,
+                                                                       params.analyzer.minOverlapFraction);
     const int islandsBefore = int(result.solve.breakTimesMs.size());
     if (!candidates.empty()) {
         std::set<int> wanted;

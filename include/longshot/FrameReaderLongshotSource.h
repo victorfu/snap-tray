@@ -9,8 +9,11 @@ class IVideoFrameReader;
 namespace SnapTray::Longshot {
 
 // Adapts the platform IVideoFrameReader (ascending-only frameAt) to the
-// longshot contract: iterates media times at the nominal frame rate from
-// startMs to endMs and crops each frame.
+// longshot contract: iterates media times on the absolute grid of the nominal
+// frame rate (k * interval, k integer) from the first grid time at or after
+// startMs up to (excluding) endMs, and crops each frame. The grid does not
+// depend on startMs, so two trims of one recording yield the same timestamps
+// where they overlap.
 class FrameReaderLongshotSource final : public LongshotFrameSource
 {
 public:
@@ -35,6 +38,7 @@ private:
     double m_frameRate = 0.0;
     qint64 m_startMs = 0;
     qint64 m_endMs = 0;
+    qint64 m_firstGridIndex = 0; // grid index k of the first frame in the range
     int m_frameCount = 0;
     int m_nextIndex = 0;
     QString m_lastError;

@@ -54,6 +54,8 @@ public:
     // frame wins (later observations override earlier transients such as lazy
     // placeholders), and within it the best score: stationary (+2), keyframe
     // (+1), tile centre near frame centre (+0..1), later frames win ties.
+    // No current reader sets FrameFeatures::keyFrame (IVideoFrameReader exposes
+    // no keyframe flag), so the keyframe bonus is inert until one does.
     static std::vector<TileAssignment> assignTiles(const AnalysisResult& analysis, const LongshotOptions& options,
                                                    int outputHeight, int minPosition);
 

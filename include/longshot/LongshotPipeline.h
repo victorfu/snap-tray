@@ -61,12 +61,15 @@ public:
                                              const std::vector<FrameFeatures>& knownFrames,
                                              const std::vector<QImage>& knownThumbnails, int* framesAnalyzed);
 
-    // Frame pairs worth a loop-closure check: far apart in time, overlapping
-    // in solved position, plus every unplaced frame against the placed frames
-    // nearest in time (island rejoin). Bounded by maxFrames distinct frames.
+    // Frame pairs worth a loop-closure check: at least loopMinGapFrames apart,
+    // overlapping in solved position by at least frameHeight /
+    // minOverlapFraction rows (the analyzer's own overlap rule), plus every
+    // unplaced frame against the placed frames nearest in time (island rejoin,
+    // chain neighbours included: closures search a larger shift range than
+    // the chain did). Bounded by maxFrames distinct frames.
     static std::vector<std::pair<int, int>> selectClosureCandidates(const SolveResult& solve, int frameHeight,
-                                                                    const std::vector<qint64>& frameTimesMs,
-                                                                    int loopMinGapFrames, int maxFrames);
+                                                                    int loopMinGapFrames, int maxFrames,
+                                                                    int minOverlapFraction);
 
     // Per-frame masks from all observations touching the frame: bands are the
     // maximum over observations; validContentRect = moving span minus bands.

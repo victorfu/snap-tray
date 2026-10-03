@@ -69,6 +69,7 @@ private slots:
     void tooFewFramesFails();
     void cancelStopsEarly();
     void incrementalReusesKnownFrames();
+    void decodeFailureMidRangeIsAnError();
 
 private:
     QTemporaryDir m_dir;
@@ -85,12 +86,9 @@ void tst_LongshotPipeline::closureCandidatesPreferOverlapAndGap()
 {
     SolveResult solve;
     // Frames 0..9 scrolled down 100 each, then 10..19 back up 100 each: frame 2 and frame 18 overlap.
-    std::vector<qint64> times;
-    for (int i = 0; i < 20; ++i) {
-        solve.positions.push_back(i < 10 ? i * 100 : (9 - (i - 10)) * 100);
-        times.push_back(i * 50);
-    }
-    const auto pairs = LongshotPipeline::selectClosureCandidates(solve, 480, times, 5, 64);
+    const int overlapFraction = AnalyzerParams{}.minOverlapFraction;
+    for (int i = 0; i < 20; ++i) solve.positions.push_back(i < 10 ? i * 100 : (9 - (i - 10)) * 100);
+    const auto pairs = LongshotPipeline::selectClosureCandidates(solve, 480, 5, 64, overlapFraction);
     QVERIFY(!pairs.empty());
     bool crossesLegs = false;
     for (const auto& [a, b] : pairs) {
@@ -100,17 +98,19 @@ void tst_LongshotPipeline::closureCandidatesPreferOverlapAndGap()
     }
     QVERIFY(crossesLegs);
     // Unplaced frames (another island) pair with nearby placed ones so islands
-    // can be rejoined; the time-gap rule does not apply to rejoin pairs, only
-    // the already-tried chain neighbours (gap 1) are skipped.
+    // can be rejoined; the time-gap rule does not apply to rejoin pairs, and
+    // the chain neighbours (gap 1) are retried with the closure search range.
     solve.positions[15] = std::nullopt;
-    const auto withIsland = LongshotPipeline::selectClosureCandidates(solve, 480, times, 5, 64);
+    const auto withIsland = LongshotPipeline::selectClosureCandidates(solve, 480, 5, 64, overlapFraction);
     int rejoinPairs = 0;
+    bool neighbourRetried = false;
     for (const auto& [a, b] : withIsland) {
-        if (a == 15 || b == 15) { ++rejoinPairs; QVERIFY(b - a >= 2); }
+        if (a == 15 || b == 15) { ++rejoinPairs; neighbourRetried = neighbourRetried || b - a == 1; }
     }
     QVERIFY(rejoinPairs >= 2);
+    QVERIFY(neighbourRetried);
     // The frame budget bounds how many distinct frames are involved.
-    const auto tight = LongshotPipeline::selectClosureCandidates(solve, 480, times, 5, 4);
+    const auto tight = LongshotPipeline::selectClosureCandidates(solve, 480, 5, 4, overlapFraction);
     std::set<int> distinct;
     for (const auto& [a, b] : tight) { distinct.insert(a); distinct.insert(b); }
     QVERIFY(distinct.size() <= 4);
@@ -289,6 +289,47 @@ void tst_LongshotPipeline::incrementalReusesKnownFrames()
     int placed = 0;
     QVERIFY(placedAccuracy(inc, r.trajectory, &placed) >= kMinPlacedFraction);
     QCOMPARE(placed, 40);
+}
+
+void tst_LongshotPipeline::decodeFailureMidRangeIsAnError()
+{
+    // Decorator that stops after `limit` frames with a decode error.
+    class FailingSource : public LongshotFrameSource
+    {
+    public:
+        FailingSource(std::unique_ptr<LongshotFrameSource> inner, int limit) : m_inner(std::move(inner)), m_limit(limit) {}
+        bool open(const QString& path, qint64 startMs, qint64 endMs, const QRect& crop) override
+        {
+            m_delivered = 0;
+            m_error.clear();
+            return m_inner->open(path, startMs, endMs, crop);
+        }
+        std::optional<QImage> next(qint64* tMs) override
+        {
+            if (m_delivered >= m_limit) { m_error = QStringLiteral("injected decode failure"); return std::nullopt; }
+            ++m_delivered;
+            return m_inner->next(tMs);
+        }
+        QSize frameSize() const override { return m_inner->frameSize(); }
+        QSize videoSize() const override { return m_inner->videoSize(); }
+        double frameRate() const override { return m_inner->frameRate(); }
+        int expectedFrameCount() const override { return m_inner->expectedFrameCount(); }
+        QString lastError() const override { return m_error.isEmpty() ? m_inner->lastError() : m_error; }
+
+    private:
+        std::unique_ptr<LongshotFrameSource> m_inner;
+        int m_limit;
+        int m_delivered = 0;
+        QString m_error;
+    };
+    QString error;
+    const Recording r = record(m_dir.filePath(QStringLiteral("failing.mp4")), PageSpec{}, constantSpeed(20, 0, 45), Disturbances{}, &error);
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+    FailingSource source(FrameReaderLongshotSource::createNative(), 10);
+    QVERIFY(source.open(r.path, 0, -1, QRect()));
+    // Ten frames were analysed, but a truncated range must not pass as the whole.
+    const AnalysisResult a = LongshotPipeline::analyze(source, r.path, 0, -1, QRect(), PipelineParams{}, {});
+    QCOMPARE(int(a.error), int(LongshotError::SourceUnavailable));
 }
 
 QTEST_MAIN(tst_LongshotPipeline)
