@@ -55,6 +55,8 @@ private slots:
     void trimExtensionReusesOverlapFeatures();
     void cropChangeInvalidatesAll();
     void sourceChangeInvalidatesAll();
+    void pipelineParamsChangeInvalidatesAnalysis();
+    void tooManyFramesIsRejectedBeforeDecoding();
 
 private:
     std::shared_ptr<std::vector<QImage>> m_frames = std::make_shared<std::vector<QImage>>();
@@ -122,7 +124,8 @@ void tst_LongshotSession::identicalRunReusesEverything()
     *m_decodes = 0;
     const RunReport first = session.run({});
     QCOMPARE(int(first.error), int(LongshotError::None));
-    QVERIFY(first.framesAnalyzed == 40);
+    QVERIFY(!first.reusedFeatures);
+    QCOMPARE(first.framesAnalyzed, 40);
     QVERIFY(*m_decodes > 0);
     const int decodesAfterFirst = *m_decodes;
     const RunReport second = session.run({});
@@ -130,7 +133,8 @@ void tst_LongshotSession::identicalRunReusesEverything()
     QVERIFY(second.reusedSolve);
     QVERIFY(second.reusedRender);
     QCOMPARE(*m_decodes, decodesAfterFirst);
-    QCOMPARE(second.render.parts.first(), first.render.parts.first());
+    QCOMPARE(second.render.parts.size(), first.render.parts.size());
+    for (int i = 0; i < second.render.parts.size(); ++i) QCOMPARE(second.render.parts[i], first.render.parts[i]);
 }
 
 void tst_LongshotSession::optionsChangeReusesAnalysis()
@@ -159,8 +163,13 @@ void tst_LongshotSession::trimExtensionReusesOverlapFeatures()
     const RunReport first = session.run({});
     QCOMPARE(first.framesAnalyzed, 20);
     session.setTrim(0, 2000); // frames 0..39
+    // A cancelled edit must keep the previous analysis reusable.
+    const RunReport cancelled = session.run([](int) { return false; });
+    QCOMPARE(int(cancelled.error), int(LongshotError::Cancelled));
     *m_decodes = 0;
     const RunReport extended = session.run({});
+    QVERIFY(*m_decodes >= 40); // pass 1 reads the whole new range
+    QCOMPARE(int(extended.error), int(LongshotError::None));
     QVERIFY(extended.reusedFeatures);
     QVERIFY(!extended.reusedSolve);
     QVERIFY(!extended.reusedRender);
@@ -172,6 +181,7 @@ void tst_LongshotSession::trimExtensionReusesOverlapFeatures()
     session.setTrim(500, 1500);
     *m_decodes = 0;
     const RunReport shrunk = session.run({});
+    QVERIFY(*m_decodes >= 20); // frames are still streamed for pair shifts and rendering
     QVERIFY(shrunk.reusedFeatures);
     QCOMPARE(shrunk.framesAnalyzed, 0);
     QCOMPARE(shrunk.analysis.frames.size(), size_t(20));
@@ -203,6 +213,38 @@ void tst_LongshotSession::sourceChangeInvalidatesAll()
     const RunReport report = session.run({});
     QVERIFY(!report.reusedFeatures);
     QCOMPARE(report.framesAnalyzed, 40);
+}
+
+void tst_LongshotSession::pipelineParamsChangeInvalidatesAnalysis()
+{
+    LongshotSession session = makeSession();
+    session.setRecording(m_fileA);
+    session.run({});
+    PipelineParams params;
+    params.loopMinGapFrames = 8;
+    session.setPipelineParams(params);
+    const RunReport report = session.run({});
+    QVERIFY(!report.reusedFeatures);
+    QVERIFY(!report.reusedSolve);
+    QVERIFY(!report.reusedRender);
+    QCOMPARE(report.framesAnalyzed, 40);
+}
+
+void tst_LongshotSession::tooManyFramesIsRejectedBeforeDecoding()
+{
+    LongshotSession session = makeSession();
+    session.setRecording(m_fileA);
+    PipelineParams params;
+    params.maxAnalyzedFrames = 10;
+    session.setPipelineParams(params);
+    *m_decodes = 0;
+    const RunReport report = session.run({});
+    QCOMPARE(int(report.error), int(LongshotError::TooManyFrames));
+    QCOMPARE(report.framesAnalyzed, 0);
+    QCOMPARE(*m_decodes, 0);
+    QVERIFY(!report.reusedFeatures);
+    QVERIFY(!report.reusedSolve);
+    QVERIFY(!report.reusedRender);
 }
 
 QTEST_MAIN(tst_LongshotSession)

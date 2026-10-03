@@ -80,6 +80,7 @@ enum class LongshotError {
     Cancelled,
     NoReliableContent, // every pair was rejected; nothing to place
     OutOfMemory,       // the output image could not be allocated
+    TooManyFrames,     // trim range exceeds PipelineParams::maxAnalyzedFrames
 };
 
 } // namespace SnapTray::Longshot

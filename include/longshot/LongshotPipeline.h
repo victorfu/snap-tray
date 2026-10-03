@@ -22,6 +22,7 @@ struct PipelineParams {
     int maxClosureFrames = 64;         // full-resolution frames retained for closure refinement
     qint64 closureFrameBudgetBytes = qint64(256) * 1024 * 1024; // hard memory budget for those frames
     int thumbnailWidth = 160;          // gray thumbnails kept for every frame (renderer majority check)
+    int maxAnalyzedFrames = 4000;      // ≈ 100 MB of row features and thumbnails; longer ranges must be trimmed
 };
 
 struct AnalysisResult {
