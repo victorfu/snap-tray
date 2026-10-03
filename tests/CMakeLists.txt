@@ -777,6 +777,15 @@ if(WIN32)
 endif()
 
 # ============================================================================
+# Longshot Tests (link snaptray_algorithms)
+# ============================================================================
+
+add_executable(Longshot_PositionSolver Longshot/tst_PositionSolver.cpp)
+target_link_libraries(Longshot_PositionSolver PRIVATE snaptray_algorithms Qt6::Test)
+add_test(NAME Longshot_PositionSolver COMMAND Longshot_PositionSolver)
+set_tests_properties(Longshot_PositionSolver PROPERTIES TIMEOUT 60 LABELS "unit")
+
+# ============================================================================
 # Utils Tests (link snaptray_core)
 # ============================================================================
 
