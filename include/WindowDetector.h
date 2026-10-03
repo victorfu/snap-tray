@@ -1,6 +1,8 @@
 #ifndef WINDOWDETECTOR_H
 #define WINDOWDETECTOR_H
 
+#include "ElementType.h"
+
 #include <QObject>
 #include <QRect>
 #include <QPoint>
@@ -17,16 +19,6 @@
 #include <optional>
 
 class QScreen;
-
-// Element type classification for detected UI elements
-enum class ElementType {
-    Window,         // Normal application window
-    ContextMenu,    // Right-click context menu
-    PopupMenu,      // Application menu dropdown
-    Dialog,         // Dialog/modal window
-    StatusBarItem,  // Menu bar popup (macOS) / System tray popup (Windows)
-    Unknown
-};
 
 // Detection mode flags for controlling what types of elements to detect
 enum class DetectionFlag {

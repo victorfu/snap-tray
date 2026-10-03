@@ -1,6 +1,6 @@
 #pragma once
 
-#include "WindowDetector.h" // ElementType
+#include "ElementType.h"
 
 #include <QByteArray>
 #include <QPoint>
