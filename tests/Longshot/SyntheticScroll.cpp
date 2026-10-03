@@ -124,6 +124,11 @@ QImage renderPage(const PageSpec& spec)
             x += width + kWordGap;
         }
     }
+    // A fixed page element at row 900 in its resting colour; frames repaint it in
+    // the hover colour when Disturbances::hoverChange is set.
+    if (spec.height >= 900 + kHoverBlockHeight) {
+        painter.fillRect(QRect(kMargin, 900, kHoverBlockWidth, kHoverBlockHeight), kHoverB);
+    }
     painter.end();
     return page;
 }
@@ -199,12 +204,12 @@ QImage renderFrame(const QImage& page, const QSize& viewport, const Trajectory& 
     }
     painter.drawImage(0, 0, source, 0, offset, viewport.width(), viewport.height());
     if (d.hoverChange) {
-        // A fixed page element (row 900) toggles colour every third frame.
+        // The page's hover element (row 900) shows its hover colour every third frame.
         const int pageRow = 900;
         const int y = pageRow - offset;
-        if (y + kHoverBlockHeight > 0 && y < viewport.height()) {
+        if (frameIndex % kHoverEveryFrames == 0 && y + kHoverBlockHeight > 0 && y < viewport.height()) {
             painter.fillRect(QRect(kMargin, y, kHoverBlockWidth, kHoverBlockHeight),
-                             (frameIndex % kHoverEveryFrames == 0) ? kHoverA : kHoverB);
+                             kHoverA);
         }
     }
     if (d.sidebarWidth > 0) {
