@@ -8,6 +8,7 @@
 
 // Offline frame extraction for export. Requests must be in ascending timestamp
 // order. Empty lead-in time uses the first video frame; gaps hold the last frame.
+// macOS: AVFoundationFrameReader. Windows: MediaFoundationFrameReader (RGB32, CPU decode).
 class IVideoFrameReader
 {
 public:
