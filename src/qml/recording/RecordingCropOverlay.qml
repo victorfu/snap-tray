@@ -35,6 +35,18 @@ Item {
     // The pointer moved or left while editing (not during a drag).
     signal hoverChanged()
     readonly property bool showsHover: editing && hovering && isNonEmpty(hoverRect) && !cropMouse.pressed
+    readonly property bool pressed: cropMouse.pressed
+    readonly property real hoverFillAlpha: 0.12
+    // What a click would select: the hovered window clamped into the content.
+    readonly property rect hoverShownRect: isNonEmpty(hoverRect) ? snapToRect(hoverRect) : Qt.rect(0, 0, 0, 0)
+    // Pointer state is meaningless once editing ends; a stale highlight must not return.
+    onEditingChanged: {
+        if (editing)
+            return
+        hovering = false
+        hoverRect = Qt.rect(0, 0, 0, 0)
+        hoverLabel = ""
+    }
 
     signal applyRequested(rect viewRect)
     signal cancelRequested()
@@ -333,11 +345,11 @@ Item {
     Rectangle {
         objectName: "cropHoverFrame"
         visible: overlay.showsHover
-        x: overlay.hoverRect.x
-        y: overlay.hoverRect.y
-        width: overlay.hoverRect.width
-        height: overlay.hoverRect.height
-        color: Qt.rgba(overlay.accentColor.r, overlay.accentColor.g, overlay.accentColor.b, 0.12)
+        x: overlay.hoverShownRect.x
+        y: overlay.hoverShownRect.y
+        width: overlay.hoverShownRect.width
+        height: overlay.hoverShownRect.height
+        color: Qt.rgba(overlay.accentColor.r, overlay.accentColor.g, overlay.accentColor.b, overlay.hoverFillAlpha)
         border.color: overlay.accentColor
         border.width: overlay.borderWidth
     }
@@ -347,8 +359,8 @@ Item {
         visible: overlay.showsHover && overlay.hoverLabel.length > 0
         width: hoverLabelText.implicitWidth + SemanticTokens.spacing16
         height: overlay.sizeChipHeight
-        x: overlay.clamp(overlay.hoverRect.x + SemanticTokens.spacing4, 0, Math.max(0, overlay.width - width))
-        y: overlay.clamp(overlay.hoverRect.y + SemanticTokens.spacing4, 0, Math.max(0, overlay.height - height))
+        x: overlay.clamp(overlay.hoverShownRect.x + SemanticTokens.spacing4, 0, Math.max(0, overlay.width - width))
+        y: overlay.clamp(overlay.hoverShownRect.y + SemanticTokens.spacing4, 0, Math.max(0, overlay.height - height))
         glassBg: ComponentTokens.tooltipBackground
         glassBgTop: ComponentTokens.tooltipBackgroundTop
         glassHighlight: ComponentTokens.tooltipHighlight
@@ -385,6 +397,8 @@ Item {
 
         property int mode: modeNone
         property bool createStarted: false
+        // The pointer left the click radius at some point during this press.
+        property bool moved: false
         property int edges: 0
         property real pressX: 0
         property real pressY: 0
@@ -395,6 +409,7 @@ Item {
             pressY = mouse.y
             pressRect = overlay.draftRect
             createStarted = false
+            moved = false
             edges = overlay.edgesAt(mouse.x, mouse.y)
             if (edges !== 0)
                 mode = modeResize
@@ -416,6 +431,8 @@ Item {
                 return
             const dx = mouse.x - pressX
             const dy = mouse.y - pressY
+            if (Math.abs(dx) >= overlay.createDragThreshold || Math.abs(dy) >= overlay.createDragThreshold)
+                moved = true
             if (mode === modeCreate) {
                 if (!createStarted && Math.abs(dx) < overlay.createDragThreshold
                         && Math.abs(dy) < overlay.createDragThreshold)
@@ -433,10 +450,9 @@ Item {
             overlay.hoverChanged()
         }
         onReleased: function(mouse) {
-            const clicked = Math.abs(mouse.x - pressX) < overlay.createDragThreshold
-                    && Math.abs(mouse.y - pressY) < overlay.createDragThreshold
-            if (clicked && (mode === modeCreate || mode === modeMove) && overlay.isNonEmpty(overlay.hoverRect))
-                overlay.draftRect = overlay.snapToRect(overlay.hoverRect)
+            // Only a click that started outside any draft snaps; inside one it is a no-op.
+            if (!moved && mode === modeCreate && overlay.isNonEmpty(overlay.hoverRect))
+                overlay.draftRect = overlay.hoverShownRect
             mode = modeNone
             // The pointer may have left the window it hovered before the press:
             // re-evaluate at the release point instead of showing a stale highlight.

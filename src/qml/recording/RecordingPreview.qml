@@ -58,6 +58,8 @@ Item {
 
     // The window under the resting pointer follows the playhead too.
     function refreshWindowHover() {
+        if (cropOverlay.pressed)
+            return
         if (!cropOverlay.editing || !cropOverlay.hovering || !backend.hasWindowTimeline) {
             cropOverlay.hoverRect = Qt.rect(0, 0, 0, 0)
             cropOverlay.hoverLabel = ""
@@ -65,7 +67,8 @@ Item {
         }
         const p = cropOverlay.hoverPoint
         cropOverlay.hoverRect = backend.windowRectInViewAt(p, videoPlayer.contentRect, videoPlayer.position)
-        cropOverlay.hoverLabel = backend.windowAppAt(p, videoPlayer.contentRect, videoPlayer.position)
+        cropOverlay.hoverLabel = cropOverlay.isNonEmpty(cropOverlay.hoverRect)
+                ? backend.windowAppAt(p, videoPlayer.contentRect, videoPlayer.position) : ""
     }
 
     function showButtonTooltip(text, item, preferAbove) {

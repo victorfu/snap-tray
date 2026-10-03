@@ -290,6 +290,9 @@ private slots:
     void previewClickSnapsToWindow();
     void previewDragStillDrawsFreeRect();
     void previewNoTimelineNoHoverNoHint();
+    void previewDragAndReturnDoesNotSnap();
+    void previewClickInsideDraftKeepsDraft();
+    void previewEndEditingClearsHover();
 
 private:
     QVariant call(const char* name, const QVariantList& args = {});
@@ -1402,6 +1405,62 @@ void tst_RecordingCropOverlay::previewNoTimelineNoHoverNoHint()
     QVERIFY(!previewItem("cropHoverFrame")->isVisible());
     QCOMPARE(previewOverlay()->property("draftRect").toRectF(), QRectF(0, 0, 0, 0)); // a click alone draws nothing
     QCOMPARE(m_backend->lookupCount, 0);
+}
+
+void tst_RecordingCropOverlay::previewDragAndReturnDoesNotSnap()
+{
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
+    m_backend->setStubWindow(QRect(400, 100, 400, 200), QStringLiteral("Code"));
+    click(previewItem("previewCropButton"));
+    const QRectF content = previewContentRect();
+    const QPoint start = overlayPoint(content.x() + content.width() * 0.3, content.y() + content.height() * 0.4);
+    const QRectF window = m_backend->windowRectInViewAt(
+        QPointF(content.x() + content.width() * 0.3, content.y() + content.height() * 0.4), content, 0);
+    QTest::mouseMove(m_view.get(), start);
+    QTest::mousePress(m_view.get(), Qt::LeftButton, Qt::NoModifier, start);
+    QTest::mouseMove(m_view.get(), start + QPoint(30, 20));
+    QTest::mouseMove(m_view.get(), start + QPoint(1, 1));
+    QTest::mouseRelease(m_view.get(), Qt::LeftButton, Qt::NoModifier, start + QPoint(1, 1));
+    QVERIFY(previewOverlay()->property("draftRect").toRectF() != window);
+}
+
+void tst_RecordingCropOverlay::previewClickInsideDraftKeepsDraft()
+{
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
+    m_backend->setStubWindow(QRect(400, 100, 400, 200), QStringLiteral("Code"));
+    click(previewItem("previewCropButton"));
+    const QRectF content = previewContentRect();
+    // A draft well inside the stub window (x 25%-50%, y 25%-75% of the content).
+    drag(overlayPoint(content.x() + content.width() * 0.3, content.y() + content.height() * 0.35),
+         overlayPoint(content.x() + content.width() * 0.45, content.y() + content.height() * 0.65));
+    QObject* overlay = previewOverlay();
+    const QRectF draft = overlay->property("draftRect").toRectF();
+    QVERIFY(!draft.isEmpty());
+    const QPoint inside = overlayPoint(draft.center().x(), draft.center().y());
+    QTest::mouseMove(m_view.get(), inside);
+    QTest::mouseClick(m_view.get(), Qt::LeftButton, Qt::NoModifier, inside);
+    QTest::qWait(50);
+    QCOMPARE(overlay->property("draftRect").toRectF(), draft);
+}
+
+void tst_RecordingCropOverlay::previewEndEditingClearsHover()
+{
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
+    m_backend->setStubWindow(QRect(400, 100, 400, 200), QStringLiteral("Code"));
+    click(previewItem("previewCropButton"));
+    const QRectF content = previewContentRect();
+    QTest::mouseMove(m_view.get(), overlayPoint(content.x() + content.width() * 0.3, content.y() + content.height() * 0.4));
+    QObject* overlay = previewOverlay();
+    QTRY_VERIFY(!overlay->property("hoverRect").toRectF().isEmpty());
+
+    sendKey(Qt::Key_Escape);
+    QVERIFY(!editing());
+    QCOMPARE(overlay->property("hoverRect").toRectF(), QRectF());
+    QVERIFY(!overlay->property("hovering").toBool());
+    const int lookups = m_backend->lookupCount;
+    QVERIFY(QMetaObject::invokeMethod(m_view->rootObject(), "refreshWindowHover"));
+    QCOMPARE(m_backend->lookupCount, lookups);
+    QCOMPARE(overlay->property("hoverRect").toRectF(), QRectF());
 }
 
 QTEST_MAIN(tst_RecordingCropOverlay)
