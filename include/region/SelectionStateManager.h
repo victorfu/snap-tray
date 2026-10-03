@@ -80,9 +80,11 @@ public:
     void startResize(const QPoint& pos, ResizeHandle handle);
     void updateResize(const QPoint& pos);
     void finishResize();
+    // Apply an outside click with the same constraints as a handle drag.
+    void resizeToPosition(const QPoint& pos, ResizeHandle handle);
 
     // Keyboard resize keeps top/left fixed and adjusts the inclusive
-    // bottom-right edges while honoring bounds and minimum size.
+    // bottom-right edges while honoring the ratio, bounds and minimum size.
     bool resizeFromBottomRight(const QPoint& edgeDelta, int minimumSize = 10);
 
     // Move operations
@@ -107,6 +109,7 @@ signals:
 private:
     void setState(State state);
     void clampToBounds();
+    QRect resizedRect(const QRect& originalRect, ResizeHandle handle, const QPoint& delta) const;
     QPoint clampPointToBounds(const QPoint& point) const;
     QRect selectionRectForDrag(const QPoint& anchor, const QPoint& point) const;
     QPoint adjustDeltaForAspectRatio(const QPoint& delta) const;
