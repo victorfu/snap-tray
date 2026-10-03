@@ -168,20 +168,25 @@ REM Step 4: Code signing (optional)
 echo.
 if defined CODESIGN_CERT (
     echo [4/5] Signing executable...
-    signtool sign /f "%CODESIGN_CERT%" /p "%CODESIGN_PASSWORD%" ^
+    signtool sign /fd SHA256 /f "%CODESIGN_CERT%" /p "%CODESIGN_PASSWORD%" ^
         /t http://timestamp.digicert.com ^
         /d "%APP_NAME%" ^
         "%STAGING_DIR%\%APP_NAME%.exe"
     if errorlevel 1 (
-        echo WARNING: Code signing failed, continuing without signature
+        echo ERROR: Executable signing failed
+        exit /b 1
     ) else (
         echo Executable signed successfully
     )
     echo Signing WinSparkle.dll...
-    signtool sign /f "%CODESIGN_CERT%" /p "%CODESIGN_PASSWORD%" ^
+    signtool sign /fd SHA256 /f "%CODESIGN_CERT%" /p "%CODESIGN_PASSWORD%" ^
         /t http://timestamp.digicert.com ^
         /d "WinSparkle" ^
         "%STAGING_DIR%\WinSparkle.dll"
+    if errorlevel 1 (
+        echo ERROR: WinSparkle.dll signing failed
+        exit /b 1
+    )
 ) else (
     echo [4/5] Skipping code signing (CODESIGN_CERT not set)
 )
@@ -208,10 +213,14 @@ if errorlevel 1 (
 REM Sign installer if certificate provided
 if defined CODESIGN_CERT (
     echo Signing installer...
-    signtool sign /f "%CODESIGN_CERT%" /p "%CODESIGN_PASSWORD%" ^
+    signtool sign /fd SHA256 /f "%CODESIGN_CERT%" /p "%CODESIGN_PASSWORD%" ^
         /t http://timestamp.digicert.com ^
         /d "%APP_NAME% Setup" ^
         "%OUTPUT_DIR%\%APP_NAME%-%VERSION%-Setup.exe"
+    if errorlevel 1 (
+        echo ERROR: Installer signing failed
+        exit /b 1
+    )
 )
 
 echo.

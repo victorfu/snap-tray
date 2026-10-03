@@ -205,6 +205,11 @@ set CODESIGN_PASSWORD=your-password
 packaging\windows\package.bat nsis
 ```
 
+When `CODESIGN_CERT` is set, NSIS packaging signs the staged executable,
+WinSparkle DLL, and installer using SHA256. Any signing failure stops packaging
+with a nonzero exit code; do not distribute artifacts left by a failed run.
+Without `CODESIGN_CERT`, NSIS packaging skips signing.
+
 MSIX sideload / enterprise signing:
 
 ```batch

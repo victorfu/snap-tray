@@ -29,6 +29,9 @@ add_test(
 set_tests_properties(Packaging_MacMicrophoneMetadata PROPERTIES TIMEOUT 30 LABELS "unit;packaging")
 
 if(WIN32)
+    add_test(NAME Packaging_WindowsNsisSigning
+        COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_WindowsNsisSigning.py" "${CMAKE_SOURCE_DIR}")
+    set_tests_properties(Packaging_WindowsNsisSigning PROPERTIES TIMEOUT 30 LABELS "unit;packaging")
     add_test(NAME Packaging_WindowsPackageWrapper
         COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_WindowsPackageWrapper.py" "${CMAKE_SOURCE_DIR}")
     set_tests_properties(Packaging_WindowsPackageWrapper PROPERTIES TIMEOUT 30 LABELS "unit;packaging")
