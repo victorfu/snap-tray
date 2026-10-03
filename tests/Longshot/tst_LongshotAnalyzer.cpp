@@ -44,7 +44,7 @@ private slots:
     void periodicContentIsAmbiguous();
     void collapsedCandidatesStillSeeTheRunnerUp();
     void stickyHeaderBecomesTopBand();
-    void tallHeaderLeavesContentOrRejects();
+    void tallHeaderStillMatches();
     void sidebarExcludedFromMovingSpan();
     void scrollUpHeaderIsPerFrame();
     void hoverChangeDoesNotBreakShift();
@@ -178,18 +178,17 @@ void tst_LongshotAnalyzer::stickyHeaderBecomesTopBand()
     QCOMPARE(obs->bandsTo.bottom, 0);
 }
 
-void tst_LongshotAnalyzer::tallHeaderLeavesContentOrRejects()
+void tst_LongshotAnalyzer::tallHeaderStillMatches()
 {
     const QImage page = renderPage(PageSpec{});
     Disturbances d;
     d.stickyHeaderHeight = 300; // more than half the 480 px viewport
     const Pair p = makePair(page, 1000, 1040, d);
     const auto obs = LongshotAnalyzer::estimateShift(p.from, p.fromFeatures, p.to, p.toFeatures, 0, 1, AnalyzerParams{});
-    if (obs.has_value()) {
-        QVERIFY2(qAbs(obs->shift.dy - 40) <= kShiftTolerance, qPrintable(QString::number(obs->shift.dy)));
-        QVERIFY(obs->bandsTo.top >= 290);
-    }
-    // Either outcome is acceptable; a wrong shift is not.
+    // The 180 content rows below the header are enough to match on.
+    QVERIFY(obs.has_value());
+    QVERIFY2(qAbs(obs->shift.dy - 40) <= kShiftTolerance, qPrintable(QString::number(obs->shift.dy)));
+    QVERIFY2(obs->bandsTo.top >= 290, qPrintable(QString::number(obs->bandsTo.top)));
 }
 
 void tst_LongshotAnalyzer::sidebarExcludedFromMovingSpan()
