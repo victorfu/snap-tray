@@ -41,7 +41,7 @@ public:
     // Coarse candidates from 1-D phase correlation of row-mean profiles
     // (static bands excluded), refined by normalized cross-correlation at
     // full resolution. Confidence = best score + (best - runner-up). Returns
-    // nullopt when no candidate reaches minPeakScore / minConfidence.
+    // nullopt when no candidate reaches minPeakScore / minMargin.
     static std::optional<ShiftObservation> estimateShift(const QImage& from, const FrameFeatures& fromFeatures,
                                                          const QImage& to, const FrameFeatures& toFeatures,
                                                          int fromIndex, int toIndex, const AnalyzerParams& params);
