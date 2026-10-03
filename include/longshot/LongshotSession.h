@@ -44,7 +44,7 @@ struct AnalysisKey {
 };
 
 // Bounded LRU of decoded full frames keyed by (source identity, media time).
-// Separate from analysis: crop changes do not touch it.
+// Separate from analysis: crop changes do not touch it. Single-thread only.
 class DecodedFrameCache
 {
 public:
@@ -68,6 +68,8 @@ struct RunReport {
     bool reusedSolve = false;
     bool reusedRender = false;
     int framesAnalyzed = 0;
+    // Copies of the session's cached results (also on pure reuse); the
+    // PipelineParams::maxAnalyzedFrames budget bounds their size.
     AnalysisResult analysis;
     RenderResult render;
 };
@@ -89,6 +91,7 @@ public:
     RunReport run(const ProgressFn& progress);
 
     const DecodedFrameCache& decodeCache() const { return m_decodeCache; }
+    DecodedFrameCache& decodeCache() { return m_decodeCache; }
 
 private:
     SourceFactory m_factory;

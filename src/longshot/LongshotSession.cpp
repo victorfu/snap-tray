@@ -70,7 +70,12 @@ void LongshotSession::setRecording(const QString& path) { m_path = path; }
 void LongshotSession::setCrop(const QRect& crop) { m_crop = crop; }
 void LongshotSession::setTrim(qint64 startMs, qint64 endMs) { m_startMs = startMs; m_endMs = endMs; }
 void LongshotSession::setOptions(const LongshotOptions& options) { m_options = options; }
-void LongshotSession::setPipelineParams(const PipelineParams& params) { m_params = params; }
+void LongshotSession::setPipelineParams(const PipelineParams& params)
+{
+    m_params = params;
+    m_analysisKey.reset(); // parameters shape every cached analysis result
+    m_renderOptions.reset();
+}
 
 RunReport LongshotSession::run(const ProgressFn& progress)
 {
@@ -112,8 +117,16 @@ RunReport LongshotSession::run(const ProgressFn& progress)
                 knownThumbs.push_back(m_analysis.thumbnails[i]);
             }
         }
-        m_analysis = LongshotPipeline::analyzeIncremental(*source, m_path, m_startMs, m_endMs, m_crop, m_params, progress,
-                                                          known, knownThumbs, &report.framesAnalyzed);
+        AnalysisResult updated = LongshotPipeline::analyzeIncremental(*source, m_path, m_startMs, m_endMs, m_crop, m_params,
+                                                                      progress, known, knownThumbs, &report.framesAnalyzed);
+        if (updated.error != LongshotError::None) {
+            // Keep the previous analysis and key: a cancelled trim edit must not discard reusable work.
+            report.reusedFeatures = false;
+            report.error = updated.error;
+            report.analysis = std::move(updated);
+            return report;
+        }
+        m_analysis = std::move(updated);
     } else {
         // Source or crop changed: nothing crop-dependent survives.
         m_analysis = LongshotPipeline::analyze(*source, m_path, m_startMs, m_endMs, m_crop, m_params, progress);

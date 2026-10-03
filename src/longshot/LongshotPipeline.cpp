@@ -204,6 +204,12 @@ AnalysisResult LongshotPipeline::analyzeIncremental(LongshotFrameSource& source,
         if (framesAnalyzed) *framesAnalyzed = analyzed;
         return result;
     }
+    if (source.expectedFrameCount() > params.maxAnalyzedFrames) {
+        qWarning() << "LongshotPipeline: range has" << source.expectedFrameCount() << "frames, limit is" << params.maxAnalyzedFrames;
+        result.error = LongshotError::TooManyFrames;
+        if (framesAnalyzed) *framesAnalyzed = analyzed;
+        return result;
+    }
     const int expected = std::max(1, source.expectedFrameCount());
 
     // Pass 1: sequential features + chain shifts. Only the previous frame stays in memory.
