@@ -59,15 +59,16 @@ private:
 
 // Converts logical screen rectangles (QScreen coordinates) into the recorded
 // frame's video pixels, with the mapping RecordingManager used for the capture
-// region. `physicalRegion` is the mapped capture region in native desktop
-// pixels (its origin is the frame's (0, 0)); `physicalScreen` may be empty on
-// platforms that expose no native desktop bounds (macOS), in which case the
-// logical screen origin is the frame origin.
+// region. `physicalRegion` is the mapped capture region in physical pixels,
+// expressed in the same space as `physicalScreen` (native desktop pixels);
+// its origin is the frame's (0, 0). `physicalScreen` may be empty on platforms
+// that expose no native desktop bounds (macOS), in which case both rects are
+// physical pixels relative to the logical screen's origin.
 struct WindowFrameMapping {
     QRect logicalScreen;
     QRect physicalScreen;
     qreal devicePixelRatio = 1.0;
-    QRect physicalRegion; // The recorded region in physical pixels relative to the screen's physical origin (on every platform).
+    QRect physicalRegion; // Recorded region in physical pixels; origin maps to video (0, 0) on every platform.
 
     bool isValid() const { return !logicalScreen.isEmpty() && !physicalRegion.isEmpty() && devicePixelRatio > 0.0; }
     // The part of `logicalBounds` inside the recorded frame, in video pixels; empty when none.
