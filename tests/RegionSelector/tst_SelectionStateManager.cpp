@@ -48,6 +48,8 @@ private slots:
     void testUpdateResize_BottomRight();
     void testFinishResize();
     void testResize_MinimumSize();
+    void testKeyboardGrowAtRoundedRatioBound_data();
+    void testKeyboardGrowAtRoundedRatioBound();
     void testKeyboardResizeHonorsAspectRatio_data();
     void testKeyboardResizeHonorsAspectRatio();
     void testKeyboardEdgeResize_ClampsToBounds_data();
@@ -384,6 +386,48 @@ void tst_SelectionStateManager::testResize_MinimumSize()
 
     // Selection should not change if it would become too small
     QCOMPARE(m_manager->selectionRect(), originalRect);
+}
+
+void tst_SelectionStateManager::testKeyboardGrowAtRoundedRatioBound_data()
+{
+    QTest::addColumn<bool>("portrait");
+    QTest::newRow("16-to-9-bottom-bound") << false;
+    QTest::newRow("9-to-16-right-bound") << true;
+}
+
+void tst_SelectionStateManager::testKeyboardGrowAtRoundedRatioBound()
+{
+    QFETCH(bool, portrait);
+    const QPoint origin(10, 10);
+    const QRect bounds = portrait ? QRect(0, 0, 110, 1000) : QRect(0, 0, 1000, 110);
+    const qreal ratio = portrait ? 9.0 / 16.0 : 16.0 / 9.0;
+    const QSize initialSize = portrait ? QSize(90, 160) : QSize(160, 90);
+    const QSize boundedSize = portrait ? QSize(100, 178) : QSize(178, 100);
+    const QPoint grow = portrait ? QPoint(0, 1) : QPoint(1, 0);
+    m_manager->setBounds(bounds);
+    m_manager->setAspectRatio(ratio);
+    m_manager->setSelectionRect(QRect(origin, initialSize));
+
+    // Reach the perpendicular bound using the other axis. Rounding gives a
+    // size larger than the floor-based limit used on the next grow request.
+    QVERIFY(m_manager->resizeFromBottomRight(portrait ? QPoint(10, 0) : QPoint(0, 10)));
+    QCOMPARE(m_manager->selectionRect(), QRect(origin, boundedSize));
+    QSignalSpy changed(m_manager, &SelectionStateManager::selectionChanged);
+    for (int repeat = 0; repeat < 3; ++repeat) {
+        QVERIFY(!m_manager->resizeFromBottomRight(grow));
+        QCOMPARE(m_manager->selectionRect(), QRect(origin, boundedSize));
+    }
+    QCOMPARE(changed.count(), 0);
+    QCOMPARE(m_manager->aspectRatio(), ratio);
+    QVERIFY(m_manager->isComplete());
+
+    // Growing resumes when space becomes available; shrinking still works.
+    m_manager->setBounds(bounds.adjusted(0, 0, portrait ? 10 : 0, portrait ? 0 : 10));
+    QVERIFY(m_manager->resizeFromBottomRight(grow));
+    QCOMPARE(m_manager->selectionRect(), QRect(origin, portrait ? QSize(101, 179) : QSize(179, 101)));
+    QVERIFY(m_manager->resizeFromBottomRight(-grow));
+    QCOMPARE(m_manager->selectionRect(), QRect(origin, boundedSize));
+    QCOMPARE(changed.count(), 2);
 }
 
 void tst_SelectionStateManager::testKeyboardResizeHonorsAspectRatio_data()

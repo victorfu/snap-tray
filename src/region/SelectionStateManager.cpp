@@ -392,7 +392,8 @@ bool SelectionStateManager::resizeFromBottomRight(
     }
 
     minimumSize = qMax(1, minimumSize);
-    QRect resized = m_selectionRect.normalized();
+    const QRect original = m_selectionRect.normalized();
+    QRect resized = original;
     int newRight = resized.right() + edgeDelta.x();
     int newBottom = resized.bottom() + edgeDelta.y();
 
@@ -431,9 +432,15 @@ bool SelectionStateManager::resizeFromBottomRight(
         if (size.isEmpty()) {
             return false;
         }
+        // A size rounded up on the other axis may exceed this axis's
+        // floor-based bound by one pixel. A grow key must not shrink it.
+        if ((edgeDelta.x() > 0 && size.width() < original.width())
+            || (edgeDelta.y() > 0 && size.height() < original.height())) {
+            return false;
+        }
         resized.setSize(size);
     }
-    if (resized == m_selectionRect.normalized()) {
+    if (resized == original) {
         return false;
     }
 
