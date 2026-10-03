@@ -55,6 +55,7 @@ private slots:
     void intermediateQualityFollowsFreeSpace();
     void previewRequestedCarriesIntermediateDecision_data();
     void previewRequestedCarriesIntermediateDecision();
+    void previewOffNeverQueriesDiskSpace();
 
 private:
     RecordingManager* m_manager = nullptr;
@@ -429,6 +430,27 @@ void TestRecordingManagerLifecycle::previewRequestedCarriesIntermediateDecision(
     m_manager->initializeStartState();
     QVERIFY(!m_manager->m_recordedAsIntermediate);
     m_manager->m_state = RecordingManager::State::Idle;
+}
+
+void TestRecordingManagerLifecycle::previewOffNeverQueriesDiskSpace()
+{
+    int seamCalls = 0;
+    m_manager->m_frameRate = 30;
+    m_manager->m_freeBytesForPath = [&seamCalls](const QString&) {
+        ++seamCalls;
+        return qint64(0); // would warn if it were ever consulted
+    };
+    m_manager->m_startSettings.showPreview = false;
+    m_manager->m_recordedAsIntermediate = true;
+    QSignalSpy warnings(m_manager, &RecordingManager::recordingWarning);
+
+    // The same call beginAsyncInitialization() makes when building the init config.
+    QCOMPARE(m_manager->decideIntermediateQuality(m_manager->m_startSettings.showPreview,
+                                                  QStringLiteral("C:/tmp/recordings"), QSize(1920, 1080)),
+             false);
+    QCOMPARE(seamCalls, 0);
+    QCOMPARE(warnings.count(), 0);
+    QVERIFY(!m_manager->m_recordedAsIntermediate);
 }
 
 #include "tst_Lifecycle.moc"
