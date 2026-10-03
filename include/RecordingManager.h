@@ -16,6 +16,7 @@
 #include "capture/IAudioCaptureEngine.h"
 
 #include "WatermarkRenderer.h"
+#include "recording/WindowTimelineRecorder.h"
 #include "utils/ResourceCleanupHelper.h"
 
 class RecordingInitTask;
@@ -123,6 +124,11 @@ private:
     bool shouldUseDedicatedEncodingThread(bool hasNativeEncoder) const;
     void teardownEncodingWorker(bool abortEncoding);
 
+    // Window timeline for preview snapping. Only recorded when the preview
+    // will open (the sidecar is its input); written next to the temp MP4.
+    void startWindowTimeline();
+    void finishWindowTimeline(const QString& outputPath, bool success);
+
     // Countdown methods
     void startCountdown();                    // Begin countdown overlay
     void startRecordingAfterCountdown();      // Called when countdown finishes
@@ -200,6 +206,10 @@ private:
 
     // Watermark for recording (settings stored, rendering done by EncodingWorker)
     WatermarkRenderer::Settings m_watermarkSettings;
+    std::unique_ptr<SnapTray::WindowTimelineRecorder> m_windowTimelineRecorder;
+    SnapTray::WindowFrameMapping m_windowFrameMapping;
+    std::function<SnapTray::WindowTimelineRecorder::Enumerator(QScreen*)> m_createWindowEnumerator =
+        &SnapTray::WindowTimelineRecorder::detectorEnumerator;
 };
 
 #endif // RECORDINGMANAGER_H

@@ -6,6 +6,10 @@
 #include "settings/FileSettingsManager.h"
 #include <QFile>
 #include <QTemporaryDir>
+#include <QStandardPaths>
+#include <QDir>
+#include "recording/WindowTimelineSidecar.h"
+#include "recording/WindowTimelineRecorder.h"
 
 /**
  * @brief Tests for RecordingManager resource lifecycle
@@ -41,6 +45,10 @@ private slots:
     void testErrorSignalOnInvalidOperation();
     void testAutoSaveKeepsExistingRecording();
     void testSaveNameUsesCroppedOutputSize();
+    void testWindowTimelineOnlyRecordedForPreview();
+    void testWindowTimelinePausesWithRecording();
+    void testFinishWritesSidecarOnlyOnSuccess();
+    void testStaleSidecarsAreCleanedUp();
 
 private:
     RecordingManager* m_manager = nullptr;
@@ -205,6 +213,113 @@ void TestRecordingManagerLifecycle::testSaveNameUsesCroppedOutputSize()
     m_manager->triggerSaveDialog(uncropped);
     QCOMPARE(saved.count(), 2);
     QCOMPARE(saved.at(1).first().toString(), dir.filePath("1440x900.mp4"));
+}
+
+namespace {
+SnapTray::WindowTimelineRecorder::Enumerator fakeEnumerator(int* calls)
+{
+    return [calls]() {
+        ++*calls;
+        DetectedElement e;
+        e.bounds = QRect(10, 10, 100, 100);
+        e.ownerApp = QStringLiteral("Code");
+        e.windowId = 7;
+        return std::vector<DetectedElement>{e};
+    };
+}
+} // namespace
+
+void TestRecordingManagerLifecycle::testWindowTimelineOnlyRecordedForPreview()
+{
+    int calls = 0;
+    m_manager->m_createWindowEnumerator = [&calls](QScreen*) { return fakeEnumerator(&calls); };
+    m_manager->m_windowFrameMapping = {QRect(0, 0, 1000, 500), QRect(), 2.0, QRect(0, 0, 2000, 1000)};
+    m_manager->m_elapsedTimer.start();
+
+    m_manager->m_startSettings.showPreview = false;
+    m_manager->startWindowTimeline();
+    QVERIFY(!m_manager->m_windowTimelineRecorder);
+    QCOMPARE(calls, 0);
+
+    m_manager->m_startSettings.showPreview = true;
+    m_manager->startWindowTimeline();
+    QVERIFY(m_manager->m_windowTimelineRecorder);
+    QCOMPARE(calls, 1); // sampled immediately
+    const auto timeline = m_manager->m_windowTimelineRecorder->timeline();
+    QCOMPARE(timeline.frameSize(), QSize(2000, 1000));
+    QCOMPARE(timeline.entries().front().windows.front().rect, QRect(20, 20, 200, 200));
+    m_manager->m_windowTimelineRecorder.reset();
+}
+
+void TestRecordingManagerLifecycle::testWindowTimelinePausesWithRecording()
+{
+    int calls = 0;
+    m_manager->m_createWindowEnumerator = [&calls](QScreen*) { return fakeEnumerator(&calls); };
+    m_manager->m_windowFrameMapping = {QRect(0, 0, 1000, 500), QRect(), 1.0, QRect(0, 0, 1000, 500)};
+    m_manager->m_startSettings.showPreview = true;
+    m_manager->m_elapsedTimer.start();
+    m_manager->startWindowTimeline();
+    QVERIFY(m_manager->m_windowTimelineRecorder->isRunning());
+
+    // pauseRecording()/resumeRecording() are state-gated; drive the recorder the way they do.
+    m_manager->m_state = RecordingManager::State::Recording;
+    m_manager->pauseRecording();
+    QVERIFY(!m_manager->m_windowTimelineRecorder->isRunning());
+    m_manager->resumeRecording();
+    QVERIFY(m_manager->m_windowTimelineRecorder->isRunning());
+    m_manager->m_state = RecordingManager::State::Idle;
+    m_manager->m_windowTimelineRecorder.reset();
+}
+
+void TestRecordingManagerLifecycle::testFinishWritesSidecarOnlyOnSuccess()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString output = dir.filePath(QStringLiteral("rec.mp4"));
+    int calls = 0;
+    m_manager->m_createWindowEnumerator = [&calls](QScreen*) { return fakeEnumerator(&calls); };
+    m_manager->m_windowFrameMapping = {QRect(0, 0, 1000, 500), QRect(), 1.0, QRect(0, 0, 1000, 500)};
+    m_manager->m_startSettings.showPreview = true;
+    m_manager->m_elapsedTimer.start();
+
+    m_manager->startWindowTimeline();
+    m_manager->finishWindowTimeline(output, false);
+    QVERIFY(!QFile::exists(SnapTray::WindowTimelineSidecar::pathFor(output)));
+    QVERIFY(!m_manager->m_windowTimelineRecorder);
+
+    m_manager->startWindowTimeline();
+    m_manager->finishWindowTimeline(output, true);
+    QVERIFY(!m_manager->m_windowTimelineRecorder);
+    const auto sidecar = SnapTray::WindowTimelineSidecar::read(output);
+    QVERIFY(sidecar.has_value());
+    QCOMPARE(sidecar->frameSize(), QSize(1000, 500));
+    QCOMPARE(sidecar->entries().front().windows.front().ownerApp, QStringLiteral("Code"));
+
+    // Without a recorder (direct save) finishing writes nothing.
+    QFile::remove(SnapTray::WindowTimelineSidecar::pathFor(output));
+    m_manager->finishWindowTimeline(output, true);
+    QVERIFY(!QFile::exists(SnapTray::WindowTimelineSidecar::pathFor(output)));
+}
+
+void TestRecordingManagerLifecycle::testStaleSidecarsAreCleanedUp()
+{
+    const QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+    const QString stale = QDir(tempDir).filePath(QStringLiteral("SnapTray_Recording_stale-test.mp4.windows.json"));
+    const QString fresh = QDir(tempDir).filePath(QStringLiteral("SnapTray_Recording_fresh-test.mp4.windows.json"));
+    for (const QString& path : {stale, fresh}) {
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("{}");
+    }
+    {
+        QFile file(stale);
+        QVERIFY(file.open(QIODevice::ReadWrite));
+        QVERIFY(file.setFileTime(QDateTime::currentDateTime().addDays(-2), QFileDevice::FileModificationTime));
+    }
+    m_manager->cleanupStaleTempFiles();
+    QVERIFY(!QFile::exists(stale));
+    QVERIFY(QFile::exists(fresh));
+    QFile::remove(fresh);
 }
 
 QTEST_MAIN(TestRecordingManagerLifecycle)
