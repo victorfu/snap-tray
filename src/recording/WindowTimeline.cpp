@@ -171,8 +171,24 @@ std::optional<WindowTimeline> WindowTimeline::fromJson(const QByteArray& json)
 
 QRect WindowFrameMapping::toVideoRect(const QRect& logicalBounds) const
 {
-    Q_UNUSED(logicalBounds);
-    return {}; // Task 2
+    if (!isValid()) {
+        return {};
+    }
+    // toPhysicalScreenRect() refuses a rect that leaves the screen, so clip
+    // first: a window spanning two screens keeps the part on this one.
+    const QRect onScreen = logicalBounds.intersected(logicalScreen);
+    if (onScreen.isEmpty()) {
+        return {};
+    }
+    QRect physical;
+    if (!physicalScreen.isEmpty()) {
+        physical = CoordinateHelper::toPhysicalScreenRect(onScreen, logicalScreen, physicalScreen, devicePixelRatio)
+                       .translated(-physicalRegion.topLeft());
+    } else {
+        physical = CoordinateHelper::toPhysicalCoveringRect(onScreen.translated(-logicalScreen.topLeft()),
+                                                           devicePixelRatio);
+    }
+    return physical.intersected(QRect(QPoint(0, 0), physicalRegion.size()));
 }
 
 } // namespace SnapTray
