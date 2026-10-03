@@ -4,6 +4,7 @@
 #include "video/IVideoTranscoder.h"
 
 #include <QtTest>
+#include <QFileInfo>
 #include <QImage>
 #include <QPainter>
 #include <QTemporaryDir>
@@ -27,6 +28,11 @@ const QSize kFrameSize(320, 240);
 // the end; the Media Foundation default GOP is several seconds, so 3 is the
 // smallest count that proves the interval was applied.
 constexpr int kMinimumKeyFrames = kSeconds;
+constexpr int kLowQuality = 30;
+constexpr int kHighQuality = 95;
+// Quality mode must visibly change the output; high quality has to be at
+// least this many times larger than low quality for identical content.
+constexpr double kQualitySizeRatio = 1.3;
 constexpr int kFrameAcceptTimeoutMs = 2000;
 constexpr int kFinishTimeoutMs = 10000;
 
@@ -41,12 +47,13 @@ QImage frameAt(int index)
     return image;
 }
 
-QString encode(const QString& path, VideoRateControl mode, int keyFrameIntervalSeconds)
+QString encode(const QString& path, VideoRateControl mode, int keyFrameIntervalSeconds,
+               VideoRateControl* effective = nullptr, int quality = IntermediateQuality::kConstantQualityValue)
 {
     std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
     if (!encoder) return QStringLiteral("No native encoder");
-    encoder->setQuality(IntermediateQuality::kConstantQualityValue);
-    encoder->setRateControl(mode, IntermediateQuality::kConstantQualityValue);
+    encoder->setQuality(quality);
+    encoder->setRateControl(mode, quality);
     encoder->setKeyFrameIntervalSeconds(keyFrameIntervalSeconds);
     if (!encoder->start(path, kFrameSize, kFrameRate)) return encoder->lastError();
     for (int i = 0; i < kFrameCount; ++i) {
@@ -65,6 +72,7 @@ QString encode(const QString& path, VideoRateControl mode, int keyFrameIntervalS
     if (finished.isEmpty() && !finished.wait(kFinishTimeoutMs)) return QStringLiteral("did not finish");
     if (!finished.first().at(0).toBool()) return encoder->lastError();
     qInfo() << "effective rate control:" << int(encoder->effectiveRateControl());
+    if (effective) *effective = encoder->effectiveRateControl();
     return {};
 }
 
@@ -97,6 +105,7 @@ private slots:
     void cleanupTestCase() { MFShutdown(); }
     void intermediateHasOneSecondKeyFrames();
     void defaultModeStillRecords();
+    void constantQualityChangesOutputSize();
 };
 
 void tst_MediaFoundationEncoderIntermediate::intermediateHasOneSecondKeyFrames()
@@ -104,8 +113,11 @@ void tst_MediaFoundationEncoderIntermediate::intermediateHasOneSecondKeyFrames()
     QTemporaryDir dir;
     QVERIFY(dir.isValid());
     const QString path = dir.filePath(QStringLiteral("intermediate.mp4"));
-    const QString error = encode(path, VideoRateControl::ConstantQuality, IntermediateQuality::kKeyFrameIntervalSeconds);
+    VideoRateControl effective = VideoRateControl::Bitrate;
+    const QString error = encode(path, VideoRateControl::ConstantQuality, IntermediateQuality::kKeyFrameIntervalSeconds, &effective);
     QVERIFY2(error.isEmpty(), qPrintable(error));
+    QVERIFY(effective == VideoRateControl::ConstantQuality || effective == VideoRateControl::Bitrate);
+    qInfo() << "intermediate effective rate control:" << int(effective);
     auto transcoder = IVideoTranscoder::create();
     QVERIFY(transcoder);
     const VideoFileProbe probe = transcoder->probe(path);
@@ -114,6 +126,7 @@ void tst_MediaFoundationEncoderIntermediate::intermediateHasOneSecondKeyFrames()
     QCOMPARE(probe.videoCodec, QString::fromLatin1(kVideoCodecH264));
     const int keyFrames = countKeyFrames(path);
     QVERIFY2(keyFrames >= kMinimumKeyFrames, qPrintable(QStringLiteral("key frames: %1").arg(keyFrames)));
+    qInfo() << "key frames:" << keyFrames;
 }
 
 void tst_MediaFoundationEncoderIntermediate::defaultModeStillRecords()
@@ -121,12 +134,32 @@ void tst_MediaFoundationEncoderIntermediate::defaultModeStillRecords()
     QTemporaryDir dir;
     QVERIFY(dir.isValid());
     const QString path = dir.filePath(QStringLiteral("default.mp4"));
-    const QString error = encode(path, VideoRateControl::Bitrate, 0);
+    VideoRateControl effective = VideoRateControl::ConstantQuality;
+    const QString error = encode(path, VideoRateControl::Bitrate, 0, &effective);
     QVERIFY2(error.isEmpty(), qPrintable(error));
+    QVERIFY(effective == VideoRateControl::Bitrate);
     auto transcoder = IVideoTranscoder::create();
     QVERIFY(transcoder);
     QVERIFY(transcoder->probe(path).valid);
     QVERIFY(countKeyFrames(path) >= 1);
+}
+
+void tst_MediaFoundationEncoderIntermediate::constantQualityChangesOutputSize()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString lowPath = dir.filePath(QStringLiteral("low.mp4"));
+    const QString highPath = dir.filePath(QStringLiteral("high.mp4"));
+    QString error = encode(lowPath, VideoRateControl::ConstantQuality, 1, nullptr, kLowQuality);
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+    error = encode(highPath, VideoRateControl::ConstantQuality, 1, nullptr, kHighQuality);
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+    const qint64 lowSize = QFileInfo(lowPath).size();
+    const qint64 highSize = QFileInfo(highPath).size();
+    qInfo() << "size low:" << lowSize << "high:" << highSize
+            << "ratio:" << (lowSize > 0 ? double(highSize) / double(lowSize) : 0.0);
+    QVERIFY2(highSize > lowSize * kQualitySizeRatio,
+             qPrintable(QStringLiteral("low %1 high %2").arg(lowSize).arg(highSize)));
 }
 
 QTEST_MAIN(tst_MediaFoundationEncoderIntermediate)

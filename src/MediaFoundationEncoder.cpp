@@ -12,11 +12,7 @@
 
 #include <windows.h>
 #include <oleauto.h>
-// strmif.h (ICodecAPI) declares a COM interface named IVideoEncoder that
-// collides with SnapTray's IVideoEncoder; rename the COM one while including.
-#define IVideoEncoder WinSdkIVideoEncoder
-#include <strmif.h>
-#undef IVideoEncoder
+#include <icodecapi.h>
 #include <mfapi.h>
 #include <mfidl.h>
 #include <mfreadwrite.h>
@@ -68,36 +64,37 @@ public:
         return static_cast<UINT32>(SnapTray::VideoBitrate::forQuality(frameSize, frameRate, quality));
     }
 
-    // Codec properties live on the encoder MFT behind the sink writer; it only
-    // exists after SetInputMediaType. Failures here never fail the recording:
-    // the stream type already carries a usable average bitrate.
-    void applyCodecProperties() {
+    // Reads the rate-control mode back from the encoder MFT (it only exists
+    // after SetInputMediaType); only a confirmed Quality mode is reported as
+    // ConstantQuality. Never fails the recording.
+    void verifyRateControl(bool qualityParamsSet) {
         effectiveRateControl = SnapTray::VideoRateControl::Bitrate;
+        if (requestedRateControl != SnapTray::VideoRateControl::ConstantQuality) return;
+        if (!qualityParamsSet) {
+            qWarning() << "MediaFoundationEncoder: constant quality not applied, using VBR at" << calculateBitrate() << "bps";
+            return;
+        }
         ICodecAPI *codecApi = nullptr;
         HRESULT hr = sinkWriter->GetServiceForStream(videoStreamIndex, GUID_NULL, IID_PPV_ARGS(&codecApi));
         if (FAILED(hr) || !codecApi) {
-            qWarning() << "MediaFoundationEncoder: ICodecAPI unavailable, keeping encoder defaults (hr =" << Qt::hex << hr << ")";
+            qWarning() << "MediaFoundationEncoder: ICodecAPI unavailable, cannot confirm constant quality (hr ="
+                       << Qt::hex << hr << ")";
             return;
         }
         VARIANT value;
         VariantInit(&value);
-        value.vt = VT_UI4;
-        if (requestedRateControl == SnapTray::VideoRateControl::ConstantQuality) {
-            value.ulVal = eAVEncCommonRateControlMode_Quality;
-            hr = codecApi->SetValue(&CODECAPI_AVEncCommonRateControlMode, &value);
-            if (SUCCEEDED(hr)) {
-                value.ulVal = static_cast<ULONG>(quality);
-                hr = codecApi->SetValue(&CODECAPI_AVEncCommonQuality, &value);
-            }
-            if (SUCCEEDED(hr)) {
-                effectiveRateControl = SnapTray::VideoRateControl::ConstantQuality;
-                qDebug() << "MediaFoundationEncoder: constant quality" << quality;
-            } else {
-                qWarning() << "MediaFoundationEncoder: quality rate control unsupported (hr =" << Qt::hex << hr
-                           << "), falling back to VBR at" << calculateBitrate() << "bps";
-                value.ulVal = eAVEncCommonRateControlMode_UnconstrainedVBR;
-                (void)codecApi->SetValue(&CODECAPI_AVEncCommonRateControlMode, &value);
-            }
+        hr = codecApi->GetValue(&CODECAPI_AVEncCommonRateControlMode, &value);
+        if (SUCCEEDED(hr) && value.vt == VT_UI4 && value.ulVal == eAVEncCommonRateControlMode_Quality) {
+            effectiveRateControl = SnapTray::VideoRateControl::ConstantQuality;
+            qDebug() << "MediaFoundationEncoder: constant quality" << quality << "confirmed";
+        } else {
+            qWarning() << "MediaFoundationEncoder: quality mode not adopted (hr =" << Qt::hex << hr
+                       << "), falling back to VBR at" << calculateBitrate() << "bps";
+            VariantClear(&value);
+            VariantInit(&value);
+            value.vt = VT_UI4;
+            value.ulVal = eAVEncCommonRateControlMode_UnconstrainedVBR;
+            (void)codecApi->SetValue(&CODECAPI_AVEncCommonRateControlMode, &value);
         }
         VariantClear(&value);
         codecApi->Release();
@@ -178,17 +175,48 @@ public:
         hr = MFSetAttributeRatio(inputType, MF_MT_PIXEL_ASPECT_RATIO, 1, 1);
         if (FAILED(hr)) goto done;
 
-        // GOP size must be handed over as encoding parameters: setting
-        // CODECAPI_AVEncMPVGOPSize through ICodecAPI after the input type is
-        // negotiated is accepted but ignored by the H.264 MFT (1 keyframe/3 s).
-        if (keyFrameIntervalSeconds > 0) {
-            if (SUCCEEDED(MFCreateAttributes(&encodingParams, 1))) {
-                encodingParams->SetUINT32(CODECAPI_AVEncMPVGOPSize, static_cast<UINT32>(frameRate * keyFrameIntervalSeconds));
+        // Codec properties must be handed over as encoding parameters: values
+        // set through ICodecAPI after the input type is negotiated are accepted
+        // but ignored by the H.264 MFT.
+        {
+            const bool wantQuality = requestedRateControl == SnapTray::VideoRateControl::ConstantQuality;
+            bool qualityParamsSet = false;
+            if (wantQuality || keyFrameIntervalSeconds > 0) {
+                HRESULT paramHr = MFCreateAttributes(&encodingParams, 3);
+                if (FAILED(paramHr)) {
+                    qWarning() << "MediaFoundationEncoder: cannot create encoding parameters (hr =" << Qt::hex << paramHr << ")";
+                    encodingParams = nullptr;
+                } else {
+                    if (keyFrameIntervalSeconds > 0) {
+                        paramHr = encodingParams->SetUINT32(CODECAPI_AVEncMPVGOPSize,
+                            static_cast<UINT32>(frameRate * keyFrameIntervalSeconds));
+                        if (FAILED(paramHr)) {
+                            qWarning() << "MediaFoundationEncoder: GOP size parameter rejected (hr =" << Qt::hex << paramHr << ")";
+                        }
+                    }
+                    if (wantQuality) {
+                        const HRESULT modeHr = encodingParams->SetUINT32(CODECAPI_AVEncCommonRateControlMode,
+                            eAVEncCommonRateControlMode_Quality);
+                        const HRESULT qualityHr = encodingParams->SetUINT32(CODECAPI_AVEncCommonQuality,
+                            static_cast<UINT32>(quality));
+                        qualityParamsSet = SUCCEEDED(modeHr) && SUCCEEDED(qualityHr);
+                        if (!qualityParamsSet) {
+                            qWarning() << "MediaFoundationEncoder: quality parameters rejected (hr =" << Qt::hex
+                                       << modeHr << qualityHr << ")";
+                        }
+                    }
+                }
             }
-        }
-        hr = sinkWriter->SetInputMediaType(videoStreamIndex, inputType, encodingParams);
-        if (SUCCEEDED(hr)) {
-            applyCodecProperties();
+            hr = sinkWriter->SetInputMediaType(videoStreamIndex, inputType, encodingParams);
+            if (FAILED(hr) && encodingParams) {
+                qWarning() << "MediaFoundationEncoder: encoding parameters rejected (hr =" << Qt::hex << hr
+                           << "), retrying with encoder defaults";
+                qualityParamsSet = false;
+                hr = sinkWriter->SetInputMediaType(videoStreamIndex, inputType, nullptr);
+            }
+            if (SUCCEEDED(hr)) {
+                verifyRateControl(qualityParamsSet);
+            }
         }
 
     done:
