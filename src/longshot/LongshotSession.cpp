@@ -85,8 +85,13 @@ RunReport LongshotSession::run(const ProgressFn& progress)
     if (!source) { report.error = LongshotError::SourceUnavailable; return report; }
     if (!source->open(m_path, m_startMs, m_endMs, m_crop)) {
         qWarning() << "LongshotSession: open failed:" << source->lastError();
-        report.error = source->lastError().contains(QStringLiteral("crop")) ? LongshotError::CropTooSmall
-                                                                            : LongshotError::SourceUnavailable;
+        // The crop is to blame only when the file itself was probed and the
+        // resulting frame is below the analysis minimum.
+        const QSize probed = source->videoSize();
+        const QSize frame = source->frameSize();
+        const bool cropTooSmall = !probed.isEmpty()
+                                  && (frame.width() < kMinAnalysisSide || frame.height() < kMinAnalysisSide);
+        report.error = cropTooSmall ? LongshotError::CropTooSmall : LongshotError::SourceUnavailable;
         return report;
     }
 
@@ -106,7 +111,6 @@ RunReport LongshotSession::run(const ProgressFn& progress)
     } else if (sameSourceCrop) {
         // Trim change: per-frame features inside the new range are reused,
         // only newly included frames are analysed, edges/solve are rebuilt.
-        report.reusedFeatures = true;
         const qint64 newEnd = m_endMs < 0 ? std::numeric_limits<qint64>::max() : m_endMs;
         std::vector<FrameFeatures> known;
         std::vector<QImage> knownThumbs;
@@ -121,11 +125,12 @@ RunReport LongshotSession::run(const ProgressFn& progress)
                                                                       progress, known, knownThumbs, &report.framesAnalyzed);
         if (updated.error != LongshotError::None) {
             // Keep the previous analysis and key: a cancelled trim edit must not discard reusable work.
-            report.reusedFeatures = false;
             report.error = updated.error;
             report.analysis = std::move(updated);
             return report;
         }
+        // Reused = frames of the new analysis whose features came from the old one.
+        report.reusedFeatures = int(updated.frames.size()) - report.framesAnalyzed > 0;
         m_analysis = std::move(updated);
     } else {
         // Source or crop changed: nothing crop-dependent survives.

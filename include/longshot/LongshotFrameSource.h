@@ -19,7 +19,10 @@ public:
 
     // startMs inclusive, endMs exclusive (-1 = end of media). `crop` is in
     // video pixels (empty = full frame) and is normalized the same way the
-    // preview normalizes its crop (even alignment, minimum side).
+    // preview normalizes its crop (even alignment, minimum side). Frame times
+    // lie on the media's absolute frame grid, independent of startMs. On
+    // failure lastError() says why; videoSize() is non-empty only if the file
+    // itself was opened, in which case frameSize() is the refused crop size.
     virtual bool open(const QString& path, qint64 startMs, qint64 endMs, const QRect& crop) = 0;
     // Next frame in time order; nullopt at the end of the range or on error
     // (see lastError()). *tMs receives the frame's media time.

@@ -9,7 +9,8 @@ using namespace SyntheticScroll;
 
 namespace {
 
-// Serves pre-rendered frames at 50 ms intervals and counts decodes.
+// Serves pre-rendered frames on the absolute 50 ms grid (first frame at the
+// first grid time >= startMs, like FrameReaderLongshotSource) and counts decodes.
 class FakeSource final : public LongshotFrameSource
 {
 public:
@@ -17,7 +18,7 @@ public:
     bool open(const QString&, qint64 startMs, qint64 endMs, const QRect& crop) override
     {
         m_crop = crop.isEmpty() ? m_frames->front().rect() : crop;
-        m_start = int(startMs / 50);
+        m_start = int((startMs + 49) / 50);
         m_end = endMs < 0 ? int(m_frames->size()) : int(std::min<qint64>(m_frames->size(), (endMs + 49) / 50));
         m_next = m_start;
         return true;
@@ -53,6 +54,7 @@ private slots:
     void identicalRunReusesEverything();
     void optionsChangeReusesAnalysis();
     void trimExtensionReusesOverlapFeatures();
+    void misalignedTrimStartStillReusesFeatures();
     void cropChangeInvalidatesAll();
     void sourceChangeInvalidatesAll();
     void pipelineParamsChangeInvalidatesAnalysis();
@@ -186,6 +188,25 @@ void tst_LongshotSession::trimExtensionReusesOverlapFeatures()
     QCOMPARE(shrunk.framesAnalyzed, 0);
     QCOMPARE(shrunk.analysis.frames.size(), size_t(20));
     QCOMPARE(shrunk.analysis.frames.front().tMs, qint64(500));
+}
+
+void tst_LongshotSession::misalignedTrimStartStillReusesFeatures()
+{
+    LongshotSession session = makeSession();
+    session.setRecording(m_fileA);
+    session.setTrim(0, 1000); // frames 0, 50, ..., 950
+    const RunReport first = session.run({});
+    QCOMPARE(int(first.error), int(LongshotError::None));
+    QCOMPARE(first.framesAnalyzed, 20);
+    // A start between grid times: frames stay on the grid (50, 100, ..., 1950),
+    // so the 19 overlapping frames are found and only the 20 new ones analysed.
+    session.setTrim(30, 2000);
+    const RunReport second = session.run({});
+    QCOMPARE(int(second.error), int(LongshotError::None));
+    QVERIFY(second.reusedFeatures);
+    QCOMPARE(second.framesAnalyzed, 20);
+    QCOMPARE(second.analysis.frames.size(), size_t(39));
+    QCOMPARE(second.analysis.frames.front().tMs, qint64(50));
 }
 
 void tst_LongshotSession::cropChangeInvalidatesAll()
