@@ -383,7 +383,7 @@ void tst_MainApplicationTrayMenu::queuedHistoryEntryRechecksCaptureMode()
     QCOMPARE(replayCalls, 1);
     using State = RecordingManager::State;
     for (State state : {State::Preparing, State::Countdown, State::Recording,
-                        State::Paused, State::Encoding, State::Previewing}) {
+                        State::Paused, State::Encoding}) {
         application.m_recordingManager->m_state = state;
         QVERIFY(!application.canStartRegionCapture());
         QVERIFY(!application.startHistoryReplay("test-entry"));
@@ -391,6 +391,11 @@ void tst_MainApplicationTrayMenu::queuedHistoryEntryRechecksCaptureMode()
         QCOMPARE(captureStarted.count(), 0);
         QCOMPARE(replayCalls, 1);
     }
+    // The preview window is an ordinary window: captures and history replay stay available.
+    application.m_recordingManager->m_state = State::Previewing;
+    QVERIFY(application.canStartRegionCapture());
+    QVERIFY(application.startHistoryReplay("test-entry"));
+    QCOMPARE(replayCalls, 2);
     application.m_recordingManager->m_state = State::Idle;
 }
 

@@ -93,7 +93,16 @@ void RecordingPreviewBackend::ensureView()
 
     auto& mgr = SnapTray::QmlOverlayManager::instance();
     m_view = mgr.createUtilityWindow();
+#ifdef Q_OS_WIN
+    // Qt 6.11's Windows backend turns a plain Qt::Window that carries
+    // WindowStaysOnTopHint into a caption-less WS_POPUP frame; spelling out
+    // the caption hints keeps the title bar and its min/max/close buttons.
+    m_view->setFlags(Qt::Window | Qt::WindowStaysOnTopHint | Qt::CustomizeWindowHint
+                     | Qt::WindowTitleHint | Qt::WindowSystemMenuHint
+                     | Qt::WindowMinMaxButtonsHint | Qt::WindowCloseButtonHint);
+#else
     m_view->setFlag(Qt::WindowStaysOnTopHint, true);
+#endif
     m_view->setMinimumSize(QSize(640, 480));
     m_view->setResizeMode(QQuickView::SizeRootObjectToView);
     m_view->setTitle(tr("Recording Preview"));

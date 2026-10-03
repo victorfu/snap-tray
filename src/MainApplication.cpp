@@ -442,7 +442,7 @@ bool MainApplication::canStartRegionCapture() const
 {
     return m_captureManager && !m_screenPickerDialog
         && (!m_screenCanvasManager || !m_screenCanvasManager->isActive())
-        && (!m_recordingManager || !m_recordingManager->isActive());
+        && (!m_recordingManager || !m_recordingManager->blocksCapture());
 }
 
 bool MainApplication::startHistoryReplay(const QString& entryId)
@@ -471,8 +471,8 @@ void MainApplication::onQuickPin()
         return;
     }
 
-    // Don't trigger if recording is active
-    if (m_recordingManager->isActive()) {
+    // Don't trigger while a recording is in flight (an open preview is fine)
+    if (m_recordingManager->blocksCapture()) {
         return;
     }
     if (m_screenPickerDialog) {
@@ -492,8 +492,8 @@ void MainApplication::onScreenCanvas()
         return;
     }
 
-    // Don't trigger if recording is active
-    if (m_recordingManager->isActive()) {
+    // Don't trigger while a recording is in flight (an open preview is fine)
+    if (m_recordingManager->blocksCapture()) {
         qDebug() << "onScreenCanvas: blocked by recordingManager";
         return;
     }

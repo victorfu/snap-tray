@@ -16,6 +16,8 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 ### Fixed
 
 - Trimming an MP4 recording with audio now keeps the audio instead of failing.
+- The recording preview window has its title bar back on Windows, with minimize, maximize and close buttons.
+- Region capture, quick pin and the screen canvas work while the recording preview window is open.
 
 ## [1.0.67] - 2026-09-30
 

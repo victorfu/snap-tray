@@ -17,10 +17,19 @@
 #include <QSignalSpy>
 #include <QScopeGuard>
 #include <QTemporaryDir>
+#include <QWindow>
+#include <QGuiApplication>
 
 #include <atomic>
 #include <memory>
 #include <mutex>
+
+#ifdef Q_OS_WIN
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
 
 namespace {
 
@@ -260,6 +269,7 @@ class tst_RecordingPreviewExport : public QObject
 private slots:
     void closeOutcomes_data();
     void closeOutcomes();
+    void previewWindowKeepsNativeCaption();
     void saveAnimation_data();
     void saveAnimation();
     void saveCroppedAnimation_data();
@@ -1122,6 +1132,49 @@ void tst_RecordingPreviewExport::cancelExportKeepsSource()
     QCOMPARE(QDir(directory.path()).entryList(QDir::Files), QStringList(QStringLiteral("recording.mp4")));
     QVERIFY(input.open(QIODevice::ReadOnly));
     QCOMPARE(input.readAll(), originalBytes);
+}
+
+void tst_RecordingPreviewExport::previewWindowKeepsNativeCaption()
+{
+#ifdef Q_OS_WIN
+    // Qt 6.11's Windows backend builds a plain Qt::Window that also carries
+    // WindowStaysOnTopHint as a caption-less WS_POPUP frame unless the caption
+    // hints are spelled out. The preview must keep its title bar and buttons.
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.show();
+    QWindow* view = nullptr;
+    auto findView = [&view]() {
+        for (QWindow* window : QGuiApplication::topLevelWindows()) {
+            if (window->isVisible() && window->title() == RecordingPreviewBackend::tr("Recording Preview")) {
+                view = window;
+                return true;
+            }
+        }
+        return false;
+    };
+    QTRY_VERIFY_WITH_TIMEOUT(findView(), 5000);
+    QVERIFY(QTest::qWaitForWindowExposed(view));
+
+    const HWND hwnd = reinterpret_cast<HWND>(view->winId());
+    const LONG_PTR style = GetWindowLongPtrW(hwnd, GWL_STYLE);
+    const LONG_PTR exStyle = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+    const QString styles = QStringLiteral("style 0x%1 exstyle 0x%2").arg(qulonglong(style), 0, 16).arg(qulonglong(exStyle), 0, 16);
+    QVERIFY2((style & WS_CAPTION) == WS_CAPTION, qPrintable(styles));
+    QVERIFY2(style & WS_SYSMENU, qPrintable(styles));
+    QVERIFY2(style & WS_MINIMIZEBOX, qPrintable(styles));
+    QVERIFY2(style & WS_MAXIMIZEBOX, qPrintable(styles));
+    QVERIFY2(style & WS_THICKFRAME, qPrintable(styles));
+    QVERIFY2(exStyle & WS_EX_TOPMOST, qPrintable(styles));
+    QVERIFY(view->frameMargins().top() > 0);
+#else
+    QSKIP("Native caption styles are checked on Windows only");
+#endif
 }
 
 QTEST_MAIN(tst_RecordingPreviewExport)

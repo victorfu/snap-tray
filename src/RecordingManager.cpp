@@ -286,6 +286,16 @@ bool RecordingManager::isActive() const
            m_initFuture.isRunning();
 }
 
+bool RecordingManager::blocksCapture() const
+{
+    // Screenshots, pins and the canvas can run while the preview window is
+    // open: it is an ordinary window, not an in-flight recording.
+    return isRecording() || isPaused() ||
+           (m_state == State::Preparing) || (m_state == State::Countdown) ||
+           (m_state == State::Encoding) ||
+           m_initFuture.isRunning();
+}
+
 bool RecordingManager::isRecording() const
 {
     return m_state == State::Recording;

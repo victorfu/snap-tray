@@ -56,6 +56,7 @@ private slots:
     void previewRequestedCarriesIntermediateDecision_data();
     void previewRequestedCarriesIntermediateDecision();
     void previewOffNeverQueriesDiskSpace();
+    void blocksCaptureOnlyWhileRecordingWork();
 
 private:
     RecordingManager* m_manager = nullptr;
@@ -352,6 +353,30 @@ void TestRecordingManagerLifecycle::testStaleSidecarsAreCleanedUp()
     QVERIFY(!QFile::exists(stale));
     QVERIFY(QFile::exists(fresh));
     QFile::remove(fresh);
+}
+
+void TestRecordingManagerLifecycle::blocksCaptureOnlyWhileRecordingWork()
+{
+    struct Row { RecordingManager::State state; bool blocks; bool active; };
+    const Row rows[] = {
+        {RecordingManager::State::Idle, false, false},
+        {RecordingManager::State::Preparing, true, true},
+        {RecordingManager::State::Countdown, true, true},
+        {RecordingManager::State::Recording, true, true},
+        {RecordingManager::State::Paused, true, true},
+        {RecordingManager::State::Encoding, true, true},
+        // The preview is an ordinary window: screenshots stay available while
+        // it is open, but a new recording does not start (isActive stays true).
+        {RecordingManager::State::Previewing, false, true},
+    };
+    for (const Row& row : rows) {
+        m_manager->m_state = row.state;
+        QVERIFY2(m_manager->blocksCapture() == row.blocks,
+                 qPrintable(QStringLiteral("blocksCapture() for state %1").arg(int(row.state))));
+        QVERIFY2(m_manager->isActive() == row.active,
+                 qPrintable(QStringLiteral("isActive() for state %1").arg(int(row.state))));
+    }
+    m_manager->m_state = RecordingManager::State::Idle;
 }
 
 QTEST_MAIN(TestRecordingManagerLifecycle)

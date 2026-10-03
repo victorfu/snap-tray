@@ -56,6 +56,7 @@ public:
 
     // State queries
     bool isActive() const;          // Recording or post-record workflow in progress
+    bool blocksCapture() const;     // A recording is being prepared, captured or encoded; an open preview does not block captures
     bool isRecording() const;       // Actively recording frames
     bool isPaused() const;          // Recording is paused
     bool isPreviewing() const;      // Preview window is open
