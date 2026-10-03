@@ -341,6 +341,7 @@ add_library(snaptray_core STATIC
     src/utils/ScreenCaptureRegionUtils.cpp
     src/utils/VideoCropGeometry.cpp
     src/recording/WindowTimeline.cpp
+    src/recording/WindowTimelineSidecar.cpp
     src/utils/OCRImageUtils.cpp
     src/utils/TextLayoutUtils.cpp
     # Headers with Q_OBJECT for MOC processing
