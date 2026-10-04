@@ -12,6 +12,9 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 - Added AppImageUpdate-compatible update metadata and zsync files to Linux releases.
 - Linux X11 recording now supports microphone/system audio, recording preview, crop/trim and animated exports, with VA-API/NVENC encoding when available and software fallback. AppImages include the required media libraries.
 - Linux captures frames on a background X11 connection and sends them directly to the encoder. Recording controls move to the tray so the floating toolbar is not recorded.
+- Long screenshots retain independent reliable sections, with separate section/part labels and filenames.
+- Long screenshot results support horizontal trimming and band removal with undo/redo, and can open the edited image in the pin annotation toolbar.
+
 - Recording Preview can turn vertically scrolling recordings into long screenshots, with crop/trim, quality markers, automatic splitting, PNG export, copying and pinning while retaining the source recording.
 
 - Recording preview can crop the recording to a region before exporting MP4, GIF, or WebP.

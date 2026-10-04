@@ -1859,6 +1859,42 @@ Dydis: %2</translation>
         <source>Pin</source>
         <translation>Prisegti</translation>
     </message>
+    <message>
+        <source>Edit Image</source>
+        <translation>Redaguoti vaizdą</translation>
+    </message>
+    <message>
+        <source>Keep Selection</source>
+        <translation>Palikti pažymėtą sritį</translation>
+    </message>
+    <message>
+        <source>Delete Selection</source>
+        <translation>Pašalinti pažymėtą sritį</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Atšaukti</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>Grąžinti</translation>
+    </message>
+    <message>
+        <source>Reset Image</source>
+        <translation>Atkurti vaizdą</translation>
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>Žymėti prisegtame lange</translation>
+    </message>
+    <message>
+        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
+        <translation>Vilkite, kad pažymėtumėte šios dalies eilutes. Generuojant iš naujo vaizdo pakeitimai atkuriami.</translation>
+    </message>
+    <message>
+        <source>View Result</source>
+        <translation>Rodyti rezultatą</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3406,6 +3442,10 @@ Failo dydis: %3</translation>
     <message>
         <source>Saved %1 of %2 parts.</source>
         <translation>Išsaugota %1 iš %2 dalių.</translation>
+    </message>
+    <message>
+        <source>Section %1 of %2 · Part %3 of %4</source>
+        <translation>Skyrius %1 iš %2 · Dalis %3 iš %4</translation>
     </message>
 </context>
 </TS>

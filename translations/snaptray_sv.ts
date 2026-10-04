@@ -1859,6 +1859,42 @@ Storlek: %2</translation>
         <source>Pin</source>
         <translation>Fäst</translation>
     </message>
+    <message>
+        <source>Edit Image</source>
+        <translation>Redigera bild</translation>
+    </message>
+    <message>
+        <source>Keep Selection</source>
+        <translation>Behåll markering</translation>
+    </message>
+    <message>
+        <source>Delete Selection</source>
+        <translation>Ta bort markering</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Ångra</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>Gör om</translation>
+    </message>
+    <message>
+        <source>Reset Image</source>
+        <translation>Återställ bild</translation>
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>Anteckna i fäst fönster</translation>
+    </message>
+    <message>
+        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
+        <translation>Dra för att markera rader i denna del. Om du genererar på nytt återställs bildredigeringarna.</translation>
+    </message>
+    <message>
+        <source>View Result</source>
+        <translation>Visa resultat</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3406,6 +3442,10 @@ Filstorlek: %3</translation>
     <message>
         <source>Saved %1 of %2 parts.</source>
         <translation>Sparade %1 av %2 delar.</translation>
+    </message>
+    <message>
+        <source>Section %1 of %2 · Part %3 of %4</source>
+        <translation>Avsnitt %1 av %2 · Del %3 av %4</translation>
     </message>
 </context>
 </TS>

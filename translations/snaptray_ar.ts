@@ -1859,6 +1859,42 @@ Size: %2</source>
         <source>Pin</source>
         <translation>تثبيت</translation>
     </message>
+    <message>
+        <source>Edit Image</source>
+        <translation>تحرير الصورة</translation>
+    </message>
+    <message>
+        <source>Keep Selection</source>
+        <translation>الاحتفاظ بالتحديد</translation>
+    </message>
+    <message>
+        <source>Delete Selection</source>
+        <translation>حذف التحديد</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>تراجع</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>إعادة</translation>
+    </message>
+    <message>
+        <source>Reset Image</source>
+        <translation>إعادة ضبط الصورة</translation>
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>إضافة تعليقات في النافذة المثبتة</translation>
+    </message>
+    <message>
+        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
+        <translation>اسحب لتحديد صفوف في هذا الجزء. تؤدي إعادة الإنشاء إلى إعادة ضبط تعديلات الصورة.</translation>
+    </message>
+    <message>
+        <source>View Result</source>
+        <translation>عرض النتيجة</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3406,6 +3442,10 @@ File size: %3</source>
     <message>
         <source>Saved %1 of %2 parts.</source>
         <translation>تم حفظ %1 من %2 أجزاء.</translation>
+    </message>
+    <message>
+        <source>Section %1 of %2 · Part %3 of %4</source>
+        <translation>القسم %1 من %2 · الجزء %3 من %4</translation>
     </message>
 </context>
 </TS>

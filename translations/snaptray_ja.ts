@@ -1865,6 +1865,42 @@ Size: %2</source>
         <source>Pin</source>
         <translation>ピン留め</translation>
     </message>
+    <message>
+        <source>Edit Image</source>
+        <translation>画像を編集</translation>
+    </message>
+    <message>
+        <source>Keep Selection</source>
+        <translation>選択範囲を残す</translation>
+    </message>
+    <message>
+        <source>Delete Selection</source>
+        <translation>選択範囲を削除</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>元に戻す</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>やり直す</translation>
+    </message>
+    <message>
+        <source>Reset Image</source>
+        <translation>画像をリセット</translation>
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>ピン留めで注釈</translation>
+    </message>
+    <message>
+        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
+        <translation>この画像内の行をドラッグして選択します。再生成すると画像の編集はリセットされます。</translation>
+    </message>
+    <message>
+        <source>View Result</source>
+        <translation>結果を表示</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3412,6 +3448,10 @@ File size: %3</source>
     <message>
         <source>Saved %1 of %2 parts.</source>
         <translation>%2 枚中 %1 枚を保存しました。</translation>
+    </message>
+    <message>
+        <source>Section %1 of %2 · Part %3 of %4</source>
+        <translation>区間 %1/%2 · 画像 %3/%4</translation>
     </message>
 </context>
 </TS>

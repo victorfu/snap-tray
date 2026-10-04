@@ -1865,6 +1865,42 @@ Size: %2</source>
         <source>Pin</source>
         <translation>Закачи</translation>
     </message>
+    <message>
+        <source>Edit Image</source>
+        <translation>Уреди слику</translation>
+    </message>
+    <message>
+        <source>Keep Selection</source>
+        <translation>Задржи избор</translation>
+    </message>
+    <message>
+        <source>Delete Selection</source>
+        <translation>Обриши избор</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Опозови</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>Понови</translation>
+    </message>
+    <message>
+        <source>Reset Image</source>
+        <translation>Врати слику</translation>
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>Означи у закаченом прозору</translation>
+    </message>
+    <message>
+        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
+        <translation>Превуците да изаберете редове у овом делу. Поновно прављење поништава измене слике.</translation>
+    </message>
+    <message>
+        <source>View Result</source>
+        <translation>Прикажи резултат</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3412,6 +3448,10 @@ File size: %3</source>
     <message>
         <source>Saved %1 of %2 parts.</source>
         <translation>Сачувано %1 од %2 делова.</translation>
+    </message>
+    <message>
+        <source>Section %1 of %2 · Part %3 of %4</source>
+        <translation>Одељак %1 од %2 · Део %3 од %4</translation>
     </message>
 </context>
 </TS>

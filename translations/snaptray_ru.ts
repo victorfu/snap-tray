@@ -1865,6 +1865,42 @@ Size: %2</source>
         <source>Pin</source>
         <translation>Закрепить</translation>
     </message>
+    <message>
+        <source>Edit Image</source>
+        <translation>Изменить изображение</translation>
+    </message>
+    <message>
+        <source>Keep Selection</source>
+        <translation>Оставить выделение</translation>
+    </message>
+    <message>
+        <source>Delete Selection</source>
+        <translation>Удалить выделение</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Отменить</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>Повторить</translation>
+    </message>
+    <message>
+        <source>Reset Image</source>
+        <translation>Сбросить изображение</translation>
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>Аннотации в закреплённом окне</translation>
+    </message>
+    <message>
+        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
+        <translation>Перетащите, чтобы выделить строки в этой части. Повторное создание сбрасывает изменения изображения.</translation>
+    </message>
+    <message>
+        <source>View Result</source>
+        <translation>Показать результат</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3412,6 +3448,10 @@ File size: %3</source>
     <message>
         <source>Saved %1 of %2 parts.</source>
         <translation>Сохранено частей: %1 из %2.</translation>
+    </message>
+    <message>
+        <source>Section %1 of %2 · Part %3 of %4</source>
+        <translation>Раздел %1 из %2 · Часть %3 из %4</translation>
     </message>
 </context>
 </TS>

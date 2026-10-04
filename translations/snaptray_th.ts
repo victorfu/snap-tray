@@ -1846,6 +1846,42 @@ English is always included and cannot be removed.</source>
         <source>Pin</source>
         <translation>ปักหมุด</translation>
     </message>
+    <message>
+        <source>Edit Image</source>
+        <translation>แก้ไขภาพ</translation>
+    </message>
+    <message>
+        <source>Keep Selection</source>
+        <translation>เก็บส่วนที่เลือก</translation>
+    </message>
+    <message>
+        <source>Delete Selection</source>
+        <translation>ลบส่วนที่เลือก</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>เลิกทำ</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>ทำซ้ำ</translation>
+    </message>
+    <message>
+        <source>Reset Image</source>
+        <translation>รีเซ็ตภาพ</translation>
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>ใส่คำอธิบายในหน้าต่างที่ปักหมุด</translation>
+    </message>
+    <message>
+        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
+        <translation>ลากเพื่อเลือกแถวในส่วนนี้ การสร้างใหม่จะรีเซ็ตการแก้ไขภาพ</translation>
+    </message>
+    <message>
+        <source>View Result</source>
+        <translation>ดูผลลัพธ์</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3178,6 +3214,10 @@ English is always included and cannot be removed.</source>
     <message>
         <source>Saved %1 of %2 parts.</source>
         <translation>บันทึกแล้ว %1 จาก %2 ส่วน</translation>
+    </message>
+    <message>
+        <source>Section %1 of %2 · Part %3 of %4</source>
+        <translation>ช่วง %1 จาก %2 · ส่วน %3 จาก %4</translation>
     </message>
 </context>
 </TS>

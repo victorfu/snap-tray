@@ -1856,6 +1856,42 @@ Size: %2</source>
         <source>Pin</source>
         <translation>固定</translation>
     </message>
+    <message>
+        <source>Edit Image</source>
+        <translation>修整图片</translation>
+    </message>
+    <message>
+        <source>Keep Selection</source>
+        <translation>保留选区</translation>
+    </message>
+    <message>
+        <source>Delete Selection</source>
+        <translation>删除选区</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>撤销</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>重做</translation>
+    </message>
+    <message>
+        <source>Reset Image</source>
+        <translation>重置图片</translation>
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>在固定窗口中标注</translation>
+    </message>
+    <message>
+        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
+        <translation>拖动选择此分图的横向范围。重新生成会重置图片编辑。</translation>
+    </message>
+    <message>
+        <source>View Result</source>
+        <translation>查看结果</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3403,6 +3439,10 @@ File size: %3</source>
     <message>
         <source>Saved %1 of %2 parts.</source>
         <translation>已保存 %1 张，共 %2 张。</translation>
+    </message>
+    <message>
+        <source>Section %1 of %2 · Part %3 of %4</source>
+        <translation>区段 %1／%2 · 分图 %3／%4</translation>
     </message>
 </context>
 </TS>

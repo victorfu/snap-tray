@@ -1859,6 +1859,42 @@ Boyut: %2</translation>
         <source>Pin</source>
         <translation>Sabitle</translation>
     </message>
+    <message>
+        <source>Edit Image</source>
+        <translation>Görüntüyü Düzenle</translation>
+    </message>
+    <message>
+        <source>Keep Selection</source>
+        <translation>Seçimi Koru</translation>
+    </message>
+    <message>
+        <source>Delete Selection</source>
+        <translation>Seçimi Sil</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Geri Al</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>Yinele</translation>
+    </message>
+    <message>
+        <source>Reset Image</source>
+        <translation>Görüntüyü Sıfırla</translation>
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>Sabit Pencerede Açıkla</translation>
+    </message>
+    <message>
+        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
+        <translation>Bu parçadaki satırları seçmek için sürükleyin. Yeniden oluşturma görüntü düzenlemelerini sıfırlar.</translation>
+    </message>
+    <message>
+        <source>View Result</source>
+        <translation>Sonucu Görüntüle</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3406,6 +3442,10 @@ Dosya boyutu: %3</translation>
     <message>
         <source>Saved %1 of %2 parts.</source>
         <translation>%2 parçadan %1 tanesi kaydedildi.</translation>
+    </message>
+    <message>
+        <source>Section %1 of %2 · Part %3 of %4</source>
+        <translation>Bölüm %1/%2 · Parça %3/%4</translation>
     </message>
 </context>
 </TS>

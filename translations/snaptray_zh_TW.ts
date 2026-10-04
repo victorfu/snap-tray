@@ -1992,6 +1992,42 @@ File size: %3</source>
         <source>Pin</source>
         <translation>釘選</translation>
     </message>
+    <message>
+        <source>Edit Image</source>
+        <translation>修整圖片</translation>
+    </message>
+    <message>
+        <source>Keep Selection</source>
+        <translation>保留選取</translation>
+    </message>
+    <message>
+        <source>Delete Selection</source>
+        <translation>刪除選取</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>復原</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>重做</translation>
+    </message>
+    <message>
+        <source>Reset Image</source>
+        <translation>重設圖片</translation>
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>在釘選視窗標註</translation>
+    </message>
+    <message>
+        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
+        <translation>拖曳選取此分張的橫向範圍。重新產生會重設圖片修整。</translation>
+    </message>
+    <message>
+        <source>View Result</source>
+        <translation>檢視結果</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3412,6 +3448,10 @@ It may be in use by another application.</source>
     <message>
         <source>Saved %1 of %2 parts.</source>
         <translation>已儲存 %1 張，共 %2 張。</translation>
+    </message>
+    <message>
+        <source>Section %1 of %2 · Part %3 of %4</source>
+        <translation>區段 %1／%2 · 分張 %3／%4</translation>
     </message>
 </context>
 </TS>

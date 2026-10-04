@@ -320,6 +320,7 @@ private slots:
     void previewSizeChipAndClear();
     void previewToolbarFitsAtMinimumWidth();
     void previewLongshotResultKeepsRecording();
+    void previewLongshotImageEdits();
     void previewCursorOverVideo();
     void previewSmallSelectionMoves();
     void previewReleaseCommitsFinalPosition();
@@ -1350,6 +1351,63 @@ void tst_RecordingCropOverlay::previewLongshotResultKeepsRecording()
     QVERIFY(!previewItem("longshotResult")->isVisible());
     QCOMPARE(m_backend->discardCount, 0);
     QVERIFY(controller->hasResult());
+}
+
+void tst_RecordingCropOverlay::previewLongshotImageEdits()
+{
+    OPEN_PREVIEW_OR_FAIL(QSize(320,480));
+    m_view->resize(kPreviewMinWidth,kPreviewMinHeight);
+    QTest::qWait(100);
+    auto* controller=m_backend->longshot();
+    QSignalSpy pinned(controller,&LongshotController::pinRequested);
+    QSignalSpy annotated(controller,&LongshotController::annotateRequested);
+    m_backend->setSelectedFormat(3);
+    controller->start("editing-fixture",0,-1,{});
+    QTRY_VERIFY_WITH_TIMEOUT(controller->hasResult(),10000);
+    QTRY_VERIFY(previewItem("longshotResult")->isVisible());
+    controller->pin();
+    const auto original=qvariant_cast<QImage>(pinned[0][0]);
+    click(previewItem("longshotEdit"));
+    QTRY_VERIFY(previewItem("longshotRowSelector")->isVisible());
+    QTest::qWait(100); // let the edit tools and viewport settle before mapping input
+    auto* selector=previewItem("longshotRowSelector");
+    QVERIFY(selector->height()>50);
+    drag(scenePoint(selector,QPointF(20,10)),scenePoint(selector,QPointF(20,50)));
+    const int first=m_view->rootObject()->property("firstSelectedRow").toInt();
+    const int end=m_view->rootObject()->property("endSelectedRow").toInt();
+    QVERIFY(end>first);
+    click(previewItem("longshotKeepRows"));
+    QCOMPARE(controller->imageSize().height(),end-first);
+    controller->pin();
+    QCOMPARE(qvariant_cast<QImage>(pinned.last()[0]),original.copy(0,first,original.width(),end-first));
+    QTRY_VERIFY(previewItem("longshotViewport")->property("contentHeight").toReal() < selector->height());
+    QTest::mouseClick(m_view.get(),Qt::LeftButton,Qt::NoModifier,scenePoint(selector,QPointF(20,selector->height()-1)));
+    QVERIFY(!m_view->rootObject()->property("hasRowSelection").toBool());
+    click(previewItem("longshotUndo"));
+    QCOMPARE(controller->imageSize(),original.size());
+    QTest::qWait(100);
+    drag(scenePoint(selector,QPointF(20,10)),scenePoint(selector,QPointF(20,50)));
+    const int removed=m_view->rootObject()->property("endSelectedRow").toInt()-m_view->rootObject()->property("firstSelectedRow").toInt();
+    click(previewItem("longshotDeleteRows"));
+    QCOMPARE(controller->imageSize().height(),original.height()-removed);
+    click(previewItem("longshotAnnotate")); QCOMPARE(annotated.count(),1);
+    QCOMPARE(qvariant_cast<QImage>(annotated[0][0]).size(),controller->imageSize());
+    QCOMPARE(m_backend->discardCount,0);
+    const QSize editedSize=controller->imageSize();
+    sendKey(Qt::Key_Escape); // leave row-selection mode
+    sendKey(Qt::Key_Escape); // return to recording
+    QVERIFY(!previewItem("longshotResult")->isVisible());
+    click(previewItem("longshotViewResult"));
+    QVERIFY(previewItem("longshotResult")->isVisible());
+    QCOMPARE(controller->imageSize(),editedSize); QVERIFY(controller->canUndo());
+    click(previewItem("longshotEdit"));
+    m_view->rootObject()->setProperty("rowAnchor",0);
+    m_view->rootObject()->setProperty("rowEnd",controller->imageSize().height()-1);
+    QVERIFY(!previewItem("longshotDeleteRows")->isEnabled());
+    if (qEnvironmentVariableIsSet("SNAPTRAY_LONGSHOT_EDIT_ARTIFACT")) {
+        QTest::qWait(150);
+        QVERIFY(m_view->grabWindow().save(qEnvironmentVariable("SNAPTRAY_LONGSHOT_EDIT_ARTIFACT")));
+    }
 }
 
 void tst_RecordingCropOverlay::previewCursorOverVideo()

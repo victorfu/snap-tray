@@ -74,3 +74,11 @@ Review the result before sharing. The result reports automatic side cropping, lo
 Outputs taller than 30,000 pixels split automatically. All three output actions keep the original recording open. Closing Recording Preview still discards its temporary recording. The preview loads visible image tiles rather than one oversized texture. Extremely large results or ranges are rejected with a message; shorten the range or reduce the crop.
 
 This feature supports vertical scrolling only and is unavailable in Linux beta. Recording on 5K/6K displays has not yet been validated.
+
+### Independent sections and image repair
+
+When reliable portions cannot be joined, each connected section is exported separately, in order of its first appearance in the recording. No relative page position is guessed between sections. The result labels **Section** separately from **Part**: a section may itself split at 30,000 pixels. Isolated frames without a reliable pair remain reported as unjoined footage. Save PNG exports every section; filenames use `-s01` and, when needed, `-s01-p001`.
+
+Choose **Edit Image** and drag vertically over the image to select a horizontal band. **Keep Selection** crops away everything above and below it; **Delete Selection** removes the band and brings the remaining rows together. Edits affect only the selected part. Undo/Redo (Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z, or Ctrl+Y) retain up to 32 operations per part; **Reset Image** can always restore the generated image. Deleting the entire image is disabled. Warning markers follow the surviving pixels.
+
+**Back** returns to the recording, and **View Result** returns to the existing edited result. Changing the recording crop/trim or generating again resets these image edits. Saving an edited revision creates a new unique file and leaves earlier exports intact. **Annotate in Pin** opens the current edited part with the existing annotation toolbar visible; save annotations from that pin window. Those annotations do not modify other parts or the recording preview's image.

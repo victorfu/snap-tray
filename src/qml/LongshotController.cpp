@@ -62,9 +62,16 @@ LongshotController::LongshotController(QObject* parent, LongshotSession::SourceF
         m_busy = false;
         if (!m_cancel->load() && report.error == LongshotError::None && !report.render.parts.isEmpty()) {
             m_result = report.render; m_selectedPart = 0; m_progress = 100;
+            m_edits.clear(); m_originalPartStarts.clear();
+            int originalStart = 0;
+            for (const auto& part : m_result.parts) {
+                m_edits.emplace_back(part); m_originalPartStarts.push_back(originalStart);
+                originalStart += part.height();
+            }
             buildMarkers(report);
-            m_message = tr("Auto-cropped columns: left %1, right %2.").arg(m_result.autoCroppedLeft).arg(m_result.autoCroppedRight);
-            if (!m_markers.isEmpty()) m_message += " " + tr("Review the marked areas: the result may be incomplete.");
+            m_originalMarkers = m_markers;
+            m_originalSpans = report.render.sourceSpans;
+            m_message.clear();
             updatePreview();
             emit resultReady();
         } else if (!m_cancel->load() && report.error != LongshotError::Cancelled) {
@@ -124,8 +131,24 @@ void LongshotController::invalidate()
 {
     if (m_busy) { cancel(); return; }
     { QMutexLocker lock(&m_previewState->mutex); m_previewState->image = {}; }
+    m_edits.clear(); m_originalPartStarts.clear(); m_originalMarkers.clear(); m_originalSpans.clear();
     m_result = {}; m_markers.clear(); m_preview = QUrl(); m_savedParts.clear(); m_recordedParts.clear(); m_saveDestination.clear();
     emit changed();
+}
+QString LongshotController::partLabel() const
+{
+    if (!hasResult()) return {};
+    const auto info = m_result.partInfo.value(m_selectedPart);
+    return tr("Section %1 of %2 · Part %3 of %4").arg(info.section + 1).arg(m_result.sectionCount)
+        .arg(info.indexInSection + 1).arg(info.partsInSection);
+}
+QString LongshotController::resultSummary() const
+{
+    if (!hasResult()) return {};
+    const auto info = m_result.partInfo.value(m_selectedPart);
+    QString summary = tr("Auto-cropped columns: left %1, right %2.").arg(info.autoCroppedLeft).arg(info.autoCroppedRight);
+    if (!m_markers.isEmpty()) summary += " " + tr("Review the marked areas: the result may be incomplete.");
+    return summary;
 }
 QSize LongshotController::imageSize() const { return hasResult() ? m_result.parts[m_selectedPart].size() : QSize(); }
 int LongshotController::partStartRow() const
@@ -167,18 +190,85 @@ void LongshotController::buildMarkers(const RunReport& report)
     auto appendRows = [&](const std::vector<int>& rows, const QString& kind) {
         int previous = -2;
         for (int row : rows) {
-            if (row <= previous + 1) { previous = row; continue; }
+            if (row <= previous + 1) {
+                auto marker = m_markers.last().toMap();
+                marker["endRow"] = std::max(marker.value("endRow").toInt(),row+1);
+                m_markers.last() = marker;
+                previous = row; continue;
+            }
             previous = row;
             qint64 time = -1;
             for (const auto& span : report.render.sourceSpans)
                 if (row >= span.firstRow && row < span.endRow) { time = span.timeMs; break; }
-            m_markers.append(QVariantMap{{"row", row}, {"timeMs", time}, {"label", kind}});
+            m_markers.append(QVariantMap{{"row", row}, {"endRow", row+1}, {"timeMs", time}, {"label", kind}});
         }
     };
     appendRows(report.render.breakRows, tr("Missing coverage"));
     appendRows(report.render.lowConfidenceRows, tr("Low confidence"));
-    for (auto time : report.analysis.solve.breakTimesMs)
-        m_markers.append(QVariantMap{{"row", -1}, {"timeMs", time}, {"label", tr("Unjoined recording section")}});
+    for (auto time : report.analysis.solve.breakTimesMs) {
+        const bool exported = std::any_of(report.render.partInfo.cbegin(), report.render.partInfo.cend(),
+                                          [time](const RenderPartInfo& part) { return part.startMs == time; });
+        if (!exported)
+            m_markers.append(QVariantMap{{"row", -1}, {"timeMs", time}, {"label", tr("Unjoined recording section")}});
+    }
+}
+bool LongshotController::canUndo() const { return hasResult() && m_edits[size_t(m_selectedPart)].canUndo(); }
+bool LongshotController::canRedo() const { return hasResult() && m_edits[size_t(m_selectedPart)].canRedo(); }
+bool LongshotController::imageEdited() const { return hasResult() && m_edits[size_t(m_selectedPart)].edited(); }
+bool LongshotController::edit(const std::function<bool(LongshotImageEdit&)>& operation)
+{
+    if (m_busy || !hasResult()) return false;
+    auto candidate = m_edits[size_t(m_selectedPart)];
+    if (!operation(candidate)) return false;
+    QImage image = candidate.image();
+    if (image.isNull()) { m_message = failureMessage(LongshotError::OutOfMemory); emit changed(); return false; }
+    m_edits[size_t(m_selectedPart)] = std::move(candidate);
+    m_result.parts[m_selectedPart] = std::move(image);
+    m_result.fullHeightPx = 0;
+    for (const auto& part : m_result.parts) m_result.fullHeightPx += part.height();
+    m_savedParts.remove(m_selectedPart); m_recordedParts.remove(m_selectedPart);
+    m_message.clear();
+    remapMarkers(); updatePreview(); emit changed(); return true;
+}
+bool LongshotController::keepRows(int begin, int end)
+{ return edit([=](LongshotImageEdit& image) { return image.keepRows(begin,end); }); }
+bool LongshotController::removeRows(int begin, int end)
+{ return edit([=](LongshotImageEdit& image) { return image.removeRows(begin,end); }); }
+bool LongshotController::undoEdit()
+{ return edit([](LongshotImageEdit& image) { return image.undo(); }); }
+bool LongshotController::redoEdit()
+{ return edit([](LongshotImageEdit& image) { return image.redo(); }); }
+bool LongshotController::resetImage()
+{ return edit([](LongshotImageEdit& image) { return image.reset(); }); }
+void LongshotController::remapMarkers()
+{
+    m_markers.clear();
+    for (const auto& marker : m_originalMarkers) {
+        QVariantMap mapped = marker.toMap();
+        const int originalRow = mapped.value("row").toInt();
+        if (originalRow < 0) { m_markers.append(mapped); continue; }
+        const int originalEnd = mapped.value("endRow",originalRow+1).toInt();
+        int outputOffset = 0;
+        for (int part = 0; part < partCount(); ++part) {
+            const int originalOffset = m_originalPartStarts[size_t(part)];
+            for (const auto& range : m_edits[size_t(part)].mapRows(originalRow-originalOffset,originalEnd-originalOffset)) {
+                auto fragment = mapped;
+                fragment["row"] = outputOffset+range.outputBegin;
+                fragment["endRow"] = outputOffset+range.outputBegin+range.count;
+                const int sourceRow = originalOffset+range.originalBegin;
+                qint64 time = -1;
+                for (const auto& span : m_originalSpans)
+                    if (sourceRow >= span.firstRow && sourceRow < span.endRow) { time = span.timeMs; break; }
+                fragment["timeMs"] = time;
+                m_markers.append(fragment);
+            }
+            outputOffset += m_result.parts[part].height();
+        }
+    }
+}
+void LongshotController::annotate()
+{
+    if (!m_busy && hasResult()) emit annotateRequested(m_result.parts[m_selectedPart]);
 }
 void LongshotController::clearMessage() { m_message.clear(); emit changed(); }
 void LongshotController::copy()
@@ -220,7 +310,16 @@ bool LongshotController::saveToDirectory(const QString& directory, const QString
         spec.outputDir = directory;
         // User-entered names are literals, not template expressions.
         spec.filenameTemplate = "{prefix}";
-        spec.context.prefix = baseName + (partCount() > 1 ? QString("-%1").arg(i + 1, 3, 10, QLatin1Char('0')) : QString());
+        const auto info = m_result.partInfo.value(i);
+        QString suffix;
+        if (m_result.sectionCount > 1) {
+            suffix = QString("-s%1").arg(info.section + 1, 2, 10, QLatin1Char('0'));
+            if (info.partsInSection > 1)
+                suffix += QString("-p%1").arg(info.indexInSection + 1, 3, 10, QLatin1Char('0'));
+        } else if (partCount() > 1) {
+            suffix = QString("-%1").arg(i + 1, 3, 10, QLatin1Char('0'));
+        }
+        spec.context.prefix = baseName + suffix;
         spec.context.ext = "png";
         const auto saved = ImageSaveUtils::saveImageUnique(m_result.parts[i], spec, "PNG");
         if (saved.success) {

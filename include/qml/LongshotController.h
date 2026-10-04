@@ -1,5 +1,6 @@
 #pragma once
 #include "longshot/LongshotSession.h"
+#include "longshot/LongshotImageEdit.h"
 #include <QObject>
 #include <QFutureWatcher>
 #include <QTemporaryDir>
@@ -17,12 +18,17 @@ struct LongshotPreviewState;
 class LongshotController : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(bool canUndo READ canUndo NOTIFY changed)
+    Q_PROPERTY(bool canRedo READ canRedo NOTIFY changed)
+    Q_PROPERTY(bool imageEdited READ imageEdited NOTIFY changed)
     Q_PROPERTY(bool busy READ busy NOTIFY changed)
     Q_PROPERTY(bool hasResult READ hasResult NOTIFY changed)
     Q_PROPERTY(int progress READ progress NOTIFY changed)
     Q_PROPERTY(QString status READ status NOTIFY changed)
     Q_PROPERTY(QString message READ message NOTIFY changed)
     Q_PROPERTY(QUrl preview READ preview NOTIFY changed)
+    Q_PROPERTY(QString partLabel READ partLabel NOTIFY changed)
+    Q_PROPERTY(QString resultSummary READ resultSummary NOTIFY changed)
     Q_PROPERTY(int partCount READ partCount NOTIFY changed)
     Q_PROPERTY(int selectedPart READ selectedPart WRITE setSelectedPart NOTIFY changed)
     Q_PROPERTY(int partStartRow READ partStartRow NOTIFY changed)
@@ -39,6 +45,8 @@ public:
     QString status() const { return m_status; }
     QString message() const { return m_message; }
     QUrl preview() const { return m_preview; }
+    QString partLabel() const;
+    QString resultSummary() const;
     int partCount() const { return m_result.parts.size(); }
     int selectedPart() const { return m_selectedPart; }
     QSize imageSize() const;
@@ -54,6 +62,15 @@ public:
     Q_INVOKABLE void copy();
     Q_INVOKABLE void pin();
     Q_INVOKABLE void clearMessage();
+    Q_INVOKABLE void annotate();
+    Q_INVOKABLE bool keepRows(int begin, int end);
+    Q_INVOKABLE bool removeRows(int begin, int end);
+    Q_INVOKABLE bool undoEdit();
+    Q_INVOKABLE bool redoEdit();
+    Q_INVOKABLE bool resetImage();
+    bool canUndo() const;
+    bool canRedo() const;
+    bool imageEdited() const;
     // Separate from native dialog for deterministic disk-failure/retry tests.
     bool saveToDirectory(const QString& directory, const QString& baseName);
 signals:
@@ -62,7 +79,10 @@ signals:
     void resultReady();
     void imageSaved(const QImage& image);
     void pinRequested(const QImage& image);
+    void annotateRequested(const QImage& image);
 private:
+    bool edit(const std::function<bool(SnapTray::Longshot::LongshotImageEdit&)>& operation);
+    void remapMarkers();
     void updatePreview();
     void buildMarkers(const SnapTray::Longshot::RunReport& report);
     std::shared_ptr<LongshotPreviewState> m_previewState;
@@ -79,7 +99,10 @@ private:
     int m_selectedPart = 0;
     QString m_status, m_message;
     QUrl m_preview;
-    QVariantList m_markers;
+    QVariantList m_markers, m_originalMarkers;
+    std::vector<SnapTray::Longshot::LongshotImageEdit> m_edits;
+    std::vector<int> m_originalPartStarts;
+    std::vector<SnapTray::Longshot::SourceSpan> m_originalSpans;
     SnapTray::Longshot::RenderResult m_result;
     QTemporaryDir m_previewDir;
     quint64 m_previewRevision = 0;
