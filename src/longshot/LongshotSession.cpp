@@ -159,7 +159,7 @@ RunReport LongshotSession::run(const ProgressFn& progress, const StageFn& stage)
     if (sameRender) {
         report.reusedRender = true;
     } else {
-        m_render = LongshotRenderer::render(*source, m_path, m_startMs, m_endMs, m_crop, m_analysis, m_options, progress);
+        m_render = LongshotRenderer::renderSections(*source, m_path, m_startMs, m_endMs, m_crop, m_analysis, m_options, progress);
         m_renderOptions = m_options;
     }
     report.render = m_render;

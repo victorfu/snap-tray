@@ -26,9 +26,22 @@ struct SourceSpan {
     qint64 timeMs = 0;
 };
 
+constexpr qint64 kOutputBudgetBytes = 512LL * 1024 * 1024;
+struct RenderPartInfo {
+    int section = 0;
+    int indexInSection = 0;
+    int partsInSection = 1;
+    qint64 startMs = 0;
+    qint64 endMs = 0; // timestamp of the section's last observed frame
+    int autoCroppedLeft = 0;
+    int autoCroppedRight = 0;
+};
+
 struct RenderResult {
     LongshotError error = LongshotError::None;
-    QList<QImage> parts;            // one image unless options.splitOversize
+    int sectionCount = 1;
+    QList<RenderPartInfo> partInfo;
+    QList<QImage> parts;            // independent sections, each followed by its height-split parts
     int fullHeightPx = 0;           // height before any cap or split
     bool heightCapped = false;
     int autoCroppedLeft = 0;        // static side columns removed
@@ -50,9 +63,13 @@ struct TileAssignment {
 class LongshotRenderer
 {
 public:
+    // Render independently solved sections without joining their coordinate systems.
+    static RenderResult renderSections(LongshotFrameSource& source, const QString& path, qint64 startMs, qint64 endMs,
+                                       const QRect& crop, const AnalysisResult& analysis, const LongshotOptions& options,
+                                       const ProgressFn& progress);
     static RenderResult render(LongshotFrameSource& source, const QString& path, qint64 startMs, qint64 endMs,
                                const QRect& crop, const AnalysisResult& analysis, const LongshotOptions& options,
-                               const ProgressFn& progress);
+                               const ProgressFn& progress, qint64 outputBudgetBytes = kOutputBudgetBytes);
 
     // One frame per tile. Candidates must cover its valid rows and, when
     // supplied, columns. They

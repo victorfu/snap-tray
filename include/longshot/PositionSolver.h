@@ -19,7 +19,10 @@ namespace SnapTray::Longshot {
 // count only. Frames outside the kept island get no position; the first frame time
 // of each dropped island is reported as a break. The kept island is anchored so
 // its first frame sits at position 0. Positions are rounded to the nearest integer
-// row. If any conjugate-gradient solve stops at its iteration cap without
+// row. The sections collection additionally preserves all components supported
+// by at least two connected frames, ordered by their first recorded frame. Each
+// section retains its own origin; positions remains the largest-island view for
+// closure search compatibility. If any conjugate-gradient solve stops at its iteration cap without
 // converging, SolveResult::converged is false and callers must not use the
 // positions.
 // A wrong closure whose misfit, spread over a long loop, stays under maxResidualPx

@@ -19,7 +19,7 @@ constexpr int kDefaultMaxHeightPx = 30000;
 // Analysis frames narrower or shorter than this cannot be matched reliably.
 constexpr int kMinAnalysisSide = 64;
 // Version of the analysis algorithm; part of every analysis cache key.
-constexpr int kAnalysisVersion = 2;
+constexpr int kAnalysisVersion = 3;
 
 // Crop-local pixel bands excluded from matching and rendering for ONE frame
 // (sticky header, bottom bar, side panels). Zero means nothing excluded.
@@ -54,9 +54,17 @@ struct PairShift {
     double confidence = 0.0;
 };
 
+// Each section has its own coordinate origin. No relationship between sections
+// is asserted. Only components supported by at least two connected frames enter here.
+struct SolvedSection {
+    std::vector<int> frameIndices;
+    std::vector<int> positions;
+};
+
 struct SolveResult {
     std::vector<std::optional<int>> positions; // page offset of each frame's crop origin; nullopt = not placed
     std::vector<qint64> breakTimesMs;          // first frame time of every island that was not kept
+    std::vector<SolvedSection> sections; // all reliable components, in recording order
     int rejectedEdges = 0;                     // outliers dropped during solving
     bool cancelled = false;
     bool converged = true;                     // false: an island solve hit its iteration cap; positions are unusable
