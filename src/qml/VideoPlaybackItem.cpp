@@ -190,8 +190,8 @@ void VideoPlaybackItem::stop()
 {
     if (m_player) {
         m_player->stop();
-        clearFrame();
     }
+    clearFrame();
 }
 
 void VideoPlaybackItem::clearFrame()
