@@ -63,7 +63,8 @@ struct TileAssignment {
 class LongshotRenderer
 {
 public:
-    // Render independently solved sections without joining their coordinate systems.
+    // Plan independent sections without joining their coordinate systems, then
+    // share one sequential decode across all sections and height-split parts.
     static RenderResult renderSections(LongshotFrameSource& source, const QString& path, qint64 startMs, qint64 endMs,
                                        const QRect& crop, const AnalysisResult& analysis, const LongshotOptions& options,
                                        const ProgressFn& progress);
