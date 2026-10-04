@@ -40,8 +40,8 @@ class LongshotAnalyzer
 public:
     static FrameFeatures computeFeatures(const QImage& frame, qint64 tMs);
 
-    // Per row: does it carry information (vertical edges, or a mean luma far
-    // from the frame's typical row)? Shared by the analyzer and the pipeline.
+    // Per row: vertical edges, luma differing from the typical row, or
+    // horizontal contrast above the typical background row. Shared by the analyzer and the pipeline.
     static std::vector<char> rowInkFlags(const FrameFeatures& features, const AnalyzerParams& params);
 
     // Coarse candidates from 1-D phase correlation of row-mean profiles

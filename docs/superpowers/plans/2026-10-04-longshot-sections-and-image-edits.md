@@ -20,10 +20,18 @@ Implemented scope: the two requested follow-ups, retaining every reliable sectio
 - QML lint exited 0 with warnings; `python3 scripts/check-longshot-translations.py` passed all 24 catalogs.
 - Full canonical test run executed 185 suites. Three initially failed: two native pauses cases below and the new raw crosshair cursor binding. The cursor binding was changed to CursorTokens.captureSelection and its suite passed in the final focused run. The two pauses failures remain; the full run is not claimed green.
 
-## Existing native pause-matching gap
+## Native pause-matching gap at the original delivery
 
 Longshot_Pipeline trajectories(pauses) places 45/64 frames; Longshot_Renderer endToEnd(pauses) produces 1785 rows instead of 2235. The same pipeline failure reproduced using the pre-change PositionSolver implementation substituted into the current test binary. The analyzer and pipeline matching logic were not changed by this work, and no acceptance thresholds were relaxed. The solver comparison preserves the current interface layout but removes this change's section-retention logic; it is a behavioral isolation check, not a claim that every baseline target was rebuilt.
 
 Evidence logs for this session: `/tmp/sections-edits-final-tests.log`, `/tmp/sections-pauses-baseline.log`, `/tmp/sections-edits-verified.log`, `/tmp/sections-edits-ui-final.log`, `/tmp/sections-edits-last-lint.log`. The native pause issue is left separate from these two requested feature additions.
 
 Engine milestone: `88e329a1`. The final image-selection regression also verifies that clicks in the blank area below a shortened image do not select or delete its last row.
+
+## Reliability follow-up
+
+The sparse-text/noisy-pause follow-up resolves the native pause failures recorded above. The native pipeline now connects all 64 frames without a break; the renderer returns the expected 2,235 rows with zero duplicate, missing, misaligned or unmatched rows. Fixed-header cases retain the expected 40-pixel mask. The canonical full test run passes all 185 suites (`/tmp/terminal-final-tests.log`).
+
+Sparse text is recognized using horizontal contrast above the typical row, while constant vertical stripes and lower-contrast blank rows remain non-evidence. When a proposed static mask removes nearly all content, a conservative local zero-shift check can recognize a noisy pause: strong correlation, distinct competing shifts and sufficient informative rows are required. Existing match score/margin settings remain enforced. Loop closures check local pixel blocks so wide blank margins cannot dilute a mismatch. Analysis cache version is 4.
+
+These are reproducible synthetic/native regressions. The user's original failure recording was not available, so this does not claim that exact recording has been replayed successfully.
