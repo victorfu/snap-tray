@@ -803,6 +803,10 @@ target_include_directories(Longshot_SyntheticScroll PUBLIC ${CMAKE_CURRENT_SOURC
 target_include_directories(Longshot_SyntheticScroll PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(Longshot_SyntheticScroll PUBLIC snaptray_platform snaptray_algorithms Qt6::Gui Qt6::Test)
 
+# Developer evaluator shares the calibrated test oracle and production session.
+add_executable(longshot-eval ${CMAKE_SOURCE_DIR}/tools/longshot-eval/main.cpp)
+target_link_libraries(longshot-eval PRIVATE Longshot_SyntheticScroll Qt6::Core Qt6::Gui)
+
 add_executable(Longshot_SyntheticHarness Longshot/tst_SyntheticHarness.cpp)
 target_link_libraries(Longshot_SyntheticHarness PRIVATE Longshot_SyntheticScroll Qt6::Test
     "$<$<PLATFORM_ID:Windows>:mfreadwrite>" "$<$<PLATFORM_ID:Windows>:mfplat>"
