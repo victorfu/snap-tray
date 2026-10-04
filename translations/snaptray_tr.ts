@@ -1823,6 +1823,42 @@ Boyut: %2</translation>
         <source>Dismiss Error</source>
         <translation>Hatayı kapat</translation>
     </message>
+    <message>
+        <source>Long Screenshot</source>
+        <translation>Uzun Ekran Görüntüsü</translation>
+    </message>
+    <message>
+        <source>Generate Long Screenshot</source>
+        <translation>Uzun Ekran Görüntüsü Oluştur</translation>
+    </message>
+    <message>
+        <source>Crop to the scrolling area, then generate a long screenshot.</source>
+        <translation>Kaydırma alanına kırpın, ardından uzun ekran görüntüsü oluşturun.</translation>
+    </message>
+    <message>
+        <source>Remove Fixed Header</source>
+        <translation>Sabit Başlığı Kaldır</translation>
+    </message>
+    <message>
+        <source>Include Fixed Header</source>
+        <translation>Sabit Başlığı Ekle</translation>
+    </message>
+    <message>
+        <source>Save PNG</source>
+        <translation>PNG Kaydet</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Geri</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopyala</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Sabitle</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3287,6 +3323,89 @@ Dosya boyutu: %3</translation>
     <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Yüzleri ve kimlik bilgilerini otomatik olarak algılayıp bulanıklaştırın</translation>
+    </message>
+</context>
+<context>
+    <name>LongshotController</name>
+    <message>
+        <source>Select a longer recording range.</source>
+        <translation>Daha uzun bir kayıt aralığı seçin.</translation>
+    </message>
+    <message>
+        <source>Crop must be at least 64 pixels on each side.</source>
+        <translation>Kırpmanın her kenarı en az 64 piksel olmalıdır.</translation>
+    </message>
+    <message>
+        <source>This range is too long. Trim it and try again.</source>
+        <translation>Bu aralık çok uzun. Kısaltıp yeniden deneyin.</translation>
+    </message>
+    <message>
+        <source>Not enough memory. Choose a smaller crop or range.</source>
+        <translation>Yeterli bellek yok. Daha küçük bir kırpma veya aralık seçin.</translation>
+    </message>
+    <message>
+        <source>No reliable scrolling content was found.</source>
+        <translation>Güvenilir kaydırma içeriği bulunamadı.</translation>
+    </message>
+    <message>
+        <source>The recording could not be decoded. The source has been kept.</source>
+        <translation>Kaydın kodu çözülemedi. Kaynak korundu.</translation>
+    </message>
+    <message>
+        <source>Auto-cropped columns: left %1, right %2.</source>
+        <translation>Otomatik kırpılan sütunlar: sol %1, sağ %2.</translation>
+    </message>
+    <message>
+        <source>Review the marked areas: the result may be incomplete.</source>
+        <translation>İşaretli alanları inceleyin: sonuç eksik olabilir.</translation>
+    </message>
+    <message>
+        <source>Analyzing...</source>
+        <translation>Analiz ediliyor…</translation>
+    </message>
+    <message>
+        <source>Solving positions...</source>
+        <translation>Konumlar hesaplanıyor…</translation>
+    </message>
+    <message>
+        <source>Rendering...</source>
+        <translation>İşleniyor…</translation>
+    </message>
+    <message>
+        <source>Could not create the result preview.</source>
+        <translation>Sonuç önizlemesi oluşturulamadı.</translation>
+    </message>
+    <message>
+        <source>Missing coverage</source>
+        <translation>Eksik içerik</translation>
+    </message>
+    <message>
+        <source>Low confidence</source>
+        <translation>Düşük güven</translation>
+    </message>
+    <message>
+        <source>Unjoined recording section</source>
+        <translation>Birleştirilmemiş kayıt bölümü</translation>
+    </message>
+    <message>
+        <source>Copied part %1.</source>
+        <translation>%1. parça kopyalandı.</translation>
+    </message>
+    <message>
+        <source>Save Long Screenshot</source>
+        <translation>Uzun Ekran Görüntüsünü Kaydet</translation>
+    </message>
+    <message>
+        <source>PNG image (*.png)</source>
+        <translation>PNG görüntüsü (*.png)</translation>
+    </message>
+    <message>
+        <source>Part %1: %2</source>
+        <translation>Parça %1: %2</translation>
+    </message>
+    <message>
+        <source>Saved %1 of %2 parts.</source>
+        <translation>%2 parçadan %1 tanesi kaydedildi.</translation>
     </message>
 </context>
 </TS>

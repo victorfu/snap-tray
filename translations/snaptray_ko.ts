@@ -1829,6 +1829,42 @@ Size: %2</source>
         <source>Dismiss Error</source>
         <translation>오류 닫기</translation>
     </message>
+    <message>
+        <source>Long Screenshot</source>
+        <translation>긴 스크린샷</translation>
+    </message>
+    <message>
+        <source>Generate Long Screenshot</source>
+        <translation>긴 스크린샷 생성</translation>
+    </message>
+    <message>
+        <source>Crop to the scrolling area, then generate a long screenshot.</source>
+        <translation>스크롤 영역으로 자른 후 긴 스크린샷을 생성하세요.</translation>
+    </message>
+    <message>
+        <source>Remove Fixed Header</source>
+        <translation>고정 헤더 제외</translation>
+    </message>
+    <message>
+        <source>Include Fixed Header</source>
+        <translation>고정 헤더 포함</translation>
+    </message>
+    <message>
+        <source>Save PNG</source>
+        <translation>PNG 저장</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>뒤로</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>복사</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>고정</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3293,6 +3329,89 @@ File size: %3</source>
     <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>얼굴과 자격 증명을 자동으로 감지하여 블러 처리</translation>
+    </message>
+</context>
+<context>
+    <name>LongshotController</name>
+    <message>
+        <source>Select a longer recording range.</source>
+        <translation>더 긴 녹화 구간을 선택하세요.</translation>
+    </message>
+    <message>
+        <source>Crop must be at least 64 pixels on each side.</source>
+        <translation>자르기 영역의 각 변은 최소 64픽셀이어야 합니다.</translation>
+    </message>
+    <message>
+        <source>This range is too long. Trim it and try again.</source>
+        <translation>구간이 너무 깁니다. 줄인 후 다시 시도하세요.</translation>
+    </message>
+    <message>
+        <source>Not enough memory. Choose a smaller crop or range.</source>
+        <translation>메모리가 부족합니다. 자르기 영역이나 구간을 줄이세요.</translation>
+    </message>
+    <message>
+        <source>No reliable scrolling content was found.</source>
+        <translation>신뢰할 수 있는 스크롤 내용을 찾지 못했습니다.</translation>
+    </message>
+    <message>
+        <source>The recording could not be decoded. The source has been kept.</source>
+        <translation>녹화를 디코딩할 수 없습니다. 원본은 보존되었습니다.</translation>
+    </message>
+    <message>
+        <source>Auto-cropped columns: left %1, right %2.</source>
+        <translation>자동으로 잘린 열: 왼쪽 %1, 오른쪽 %2.</translation>
+    </message>
+    <message>
+        <source>Review the marked areas: the result may be incomplete.</source>
+        <translation>표시된 영역을 확인하세요. 결과가 불완전할 수 있습니다.</translation>
+    </message>
+    <message>
+        <source>Analyzing...</source>
+        <translation>분석 중…</translation>
+    </message>
+    <message>
+        <source>Solving positions...</source>
+        <translation>위치 계산 중…</translation>
+    </message>
+    <message>
+        <source>Rendering...</source>
+        <translation>렌더링 중…</translation>
+    </message>
+    <message>
+        <source>Could not create the result preview.</source>
+        <translation>결과 미리보기를 만들 수 없습니다.</translation>
+    </message>
+    <message>
+        <source>Missing coverage</source>
+        <translation>내용 누락</translation>
+    </message>
+    <message>
+        <source>Low confidence</source>
+        <translation>낮은 신뢰도</translation>
+    </message>
+    <message>
+        <source>Unjoined recording section</source>
+        <translation>연결되지 않은 녹화 구간</translation>
+    </message>
+    <message>
+        <source>Copied part %1.</source>
+        <translation>%1번째 이미지를 복사했습니다.</translation>
+    </message>
+    <message>
+        <source>Save Long Screenshot</source>
+        <translation>긴 스크린샷 저장</translation>
+    </message>
+    <message>
+        <source>PNG image (*.png)</source>
+        <translation>PNG 이미지 (*.png)</translation>
+    </message>
+    <message>
+        <source>Part %1: %2</source>
+        <translation>%1번째 이미지: %2</translation>
+    </message>
+    <message>
+        <source>Saved %1 of %2 parts.</source>
+        <translation>%2개 중 %1개를 저장했습니다.</translation>
     </message>
 </context>
 </TS>

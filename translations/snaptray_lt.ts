@@ -1823,6 +1823,42 @@ Dydis: %2</translation>
         <source>Dismiss Error</source>
         <translation>Uždaryti klaidą</translation>
     </message>
+    <message>
+        <source>Long Screenshot</source>
+        <translation>Ilga ekrano kopija</translation>
+    </message>
+    <message>
+        <source>Generate Long Screenshot</source>
+        <translation>Sukurti ilgą ekrano kopiją</translation>
+    </message>
+    <message>
+        <source>Crop to the scrolling area, then generate a long screenshot.</source>
+        <translation>Apkirpkite slinkimo sritį, tada sukurkite ilgą ekrano kopiją.</translation>
+    </message>
+    <message>
+        <source>Remove Fixed Header</source>
+        <translation>Pašalinti fiksuotą antraštę</translation>
+    </message>
+    <message>
+        <source>Include Fixed Header</source>
+        <translation>Įtraukti fiksuotą antraštę</translation>
+    </message>
+    <message>
+        <source>Save PNG</source>
+        <translation>Išsaugoti PNG</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Atgal</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopijuoti</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Prisegti</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3287,6 +3323,89 @@ Failo dydis: %3</translation>
     <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Automatiškai aptikti ir sulieti veidus bei prisijungimo duomenis</translation>
+    </message>
+</context>
+<context>
+    <name>LongshotController</name>
+    <message>
+        <source>Select a longer recording range.</source>
+        <translation>Pasirinkite ilgesnį įrašo intervalą.</translation>
+    </message>
+    <message>
+        <source>Crop must be at least 64 pixels on each side.</source>
+        <translation>Kiekviena apkirpimo kraštinė turi būti bent 64 pikselių.</translation>
+    </message>
+    <message>
+        <source>This range is too long. Trim it and try again.</source>
+        <translation>Intervalas per ilgas. Sutrumpinkite jį ir bandykite dar kartą.</translation>
+    </message>
+    <message>
+        <source>Not enough memory. Choose a smaller crop or range.</source>
+        <translation>Nepakanka atminties. Pasirinkite mažesnę sritį arba trumpesnį intervalą.</translation>
+    </message>
+    <message>
+        <source>No reliable scrolling content was found.</source>
+        <translation>Patikimo slenkamo turinio nerasta.</translation>
+    </message>
+    <message>
+        <source>The recording could not be decoded. The source has been kept.</source>
+        <translation>Nepavyko dekoduoti įrašo. Pradinis failas išsaugotas.</translation>
+    </message>
+    <message>
+        <source>Auto-cropped columns: left %1, right %2.</source>
+        <translation>Automatiškai apkirpti stulpeliai: kairėje %1, dešinėje %2.</translation>
+    </message>
+    <message>
+        <source>Review the marked areas: the result may be incomplete.</source>
+        <translation>Patikrinkite pažymėtas sritis: rezultatas gali būti nepilnas.</translation>
+    </message>
+    <message>
+        <source>Analyzing...</source>
+        <translation>Analizuojama…</translation>
+    </message>
+    <message>
+        <source>Solving positions...</source>
+        <translation>Skaičiuojamos pozicijos…</translation>
+    </message>
+    <message>
+        <source>Rendering...</source>
+        <translation>Atvaizduojama…</translation>
+    </message>
+    <message>
+        <source>Could not create the result preview.</source>
+        <translation>Nepavyko sukurti rezultato peržiūros.</translation>
+    </message>
+    <message>
+        <source>Missing coverage</source>
+        <translation>Trūkstamas turinys</translation>
+    </message>
+    <message>
+        <source>Low confidence</source>
+        <translation>Mažas patikimumas</translation>
+    </message>
+    <message>
+        <source>Unjoined recording section</source>
+        <translation>Nesujungta įrašo dalis</translation>
+    </message>
+    <message>
+        <source>Copied part %1.</source>
+        <translation>Nukopijuota dalis %1.</translation>
+    </message>
+    <message>
+        <source>Save Long Screenshot</source>
+        <translation>Išsaugoti ilgą ekrano kopiją</translation>
+    </message>
+    <message>
+        <source>PNG image (*.png)</source>
+        <translation>PNG vaizdas (*.png)</translation>
+    </message>
+    <message>
+        <source>Part %1: %2</source>
+        <translation>Dalis %1: %2</translation>
+    </message>
+    <message>
+        <source>Saved %1 of %2 parts.</source>
+        <translation>Išsaugota %1 iš %2 dalių.</translation>
     </message>
 </context>
 </TS>

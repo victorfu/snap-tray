@@ -1829,6 +1829,42 @@ Velikost: %2</translation>
         <source>Dismiss Error</source>
         <translation>Zavřít chybu</translation>
     </message>
+    <message>
+        <source>Long Screenshot</source>
+        <translation>Dlouhý snímek</translation>
+    </message>
+    <message>
+        <source>Generate Long Screenshot</source>
+        <translation>Vytvořit dlouhý snímek</translation>
+    </message>
+    <message>
+        <source>Crop to the scrolling area, then generate a long screenshot.</source>
+        <translation>Ořízněte oblast posouvání a poté vytvořte dlouhý snímek.</translation>
+    </message>
+    <message>
+        <source>Remove Fixed Header</source>
+        <translation>Odebrat pevné záhlaví</translation>
+    </message>
+    <message>
+        <source>Include Fixed Header</source>
+        <translation>Zahrnout pevné záhlaví</translation>
+    </message>
+    <message>
+        <source>Save PNG</source>
+        <translation>Uložit PNG</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Zpět</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopírovat</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Připnout</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3293,6 +3329,89 @@ Velikost souboru: %3</translation>
     <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Automaticky rozpoznat a rozmazat obličeje a přihlašovací údaje</translation>
+    </message>
+</context>
+<context>
+    <name>LongshotController</name>
+    <message>
+        <source>Select a longer recording range.</source>
+        <translation>Vyberte delší úsek záznamu.</translation>
+    </message>
+    <message>
+        <source>Crop must be at least 64 pixels on each side.</source>
+        <translation>Každá strana výřezu musí mít alespoň 64 pixelů.</translation>
+    </message>
+    <message>
+        <source>This range is too long. Trim it and try again.</source>
+        <translation>Úsek je příliš dlouhý. Zkraťte jej a zkuste to znovu.</translation>
+    </message>
+    <message>
+        <source>Not enough memory. Choose a smaller crop or range.</source>
+        <translation>Nedostatek paměti. Vyberte menší výřez nebo kratší úsek.</translation>
+    </message>
+    <message>
+        <source>No reliable scrolling content was found.</source>
+        <translation>Nebyl nalezen spolehlivý posouvaný obsah.</translation>
+    </message>
+    <message>
+        <source>The recording could not be decoded. The source has been kept.</source>
+        <translation>Záznam se nepodařilo dekódovat. Originál byl zachován.</translation>
+    </message>
+    <message>
+        <source>Auto-cropped columns: left %1, right %2.</source>
+        <translation>Automaticky oříznuté sloupce: vlevo %1, vpravo %2.</translation>
+    </message>
+    <message>
+        <source>Review the marked areas: the result may be incomplete.</source>
+        <translation>Zkontrolujte označené oblasti: výsledek může být neúplný.</translation>
+    </message>
+    <message>
+        <source>Analyzing...</source>
+        <translation>Analyzování…</translation>
+    </message>
+    <message>
+        <source>Solving positions...</source>
+        <translation>Výpočet pozic…</translation>
+    </message>
+    <message>
+        <source>Rendering...</source>
+        <translation>Vykreslování…</translation>
+    </message>
+    <message>
+        <source>Could not create the result preview.</source>
+        <translation>Nepodařilo se vytvořit náhled výsledku.</translation>
+    </message>
+    <message>
+        <source>Missing coverage</source>
+        <translation>Chybějící obsah</translation>
+    </message>
+    <message>
+        <source>Low confidence</source>
+        <translation>Nízká spolehlivost</translation>
+    </message>
+    <message>
+        <source>Unjoined recording section</source>
+        <translation>Nespojený úsek záznamu</translation>
+    </message>
+    <message>
+        <source>Copied part %1.</source>
+        <translation>Část %1 zkopírována.</translation>
+    </message>
+    <message>
+        <source>Save Long Screenshot</source>
+        <translation>Uložit dlouhý snímek</translation>
+    </message>
+    <message>
+        <source>PNG image (*.png)</source>
+        <translation>Obrázek PNG (*.png)</translation>
+    </message>
+    <message>
+        <source>Part %1: %2</source>
+        <translation>Část %1: %2</translation>
+    </message>
+    <message>
+        <source>Saved %1 of %2 parts.</source>
+        <translation>Uloženo %1 z %2 částí.</translation>
     </message>
 </context>
 </TS>

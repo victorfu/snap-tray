@@ -1810,6 +1810,42 @@ English is always included and cannot be removed.</source>
         <source>Dismiss Error</source>
         <translation>ปิดข้อความผิดพลาด</translation>
     </message>
+    <message>
+        <source>Long Screenshot</source>
+        <translation>ภาพหน้าจอแบบยาว</translation>
+    </message>
+    <message>
+        <source>Generate Long Screenshot</source>
+        <translation>สร้างภาพหน้าจอแบบยาว</translation>
+    </message>
+    <message>
+        <source>Crop to the scrolling area, then generate a long screenshot.</source>
+        <translation>ครอบตัดให้เหลือพื้นที่เลื่อน แล้วสร้างภาพหน้าจอแบบยาว</translation>
+    </message>
+    <message>
+        <source>Remove Fixed Header</source>
+        <translation>นำส่วนหัวคงที่ออก</translation>
+    </message>
+    <message>
+        <source>Include Fixed Header</source>
+        <translation>รวมส่วนหัวคงที่</translation>
+    </message>
+    <message>
+        <source>Save PNG</source>
+        <translation>บันทึก PNG</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>ย้อนกลับ</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>คัดลอก</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>ปักหมุด</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3059,6 +3095,89 @@ English is always included and cannot be removed.</source>
     <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>ตรวจจับและเบลอใบหน้าและข้อมูลประจำตัวโดยอัตโนมัติ</translation>
+    </message>
+</context>
+<context>
+    <name>LongshotController</name>
+    <message>
+        <source>Select a longer recording range.</source>
+        <translation>เลือกช่วงการบันทึกที่ยาวขึ้น</translation>
+    </message>
+    <message>
+        <source>Crop must be at least 64 pixels on each side.</source>
+        <translation>แต่ละด้านของพื้นที่ครอบตัดต้องมีอย่างน้อย 64 พิกเซล</translation>
+    </message>
+    <message>
+        <source>This range is too long. Trim it and try again.</source>
+        <translation>ช่วงนี้ยาวเกินไป โปรดย่อให้สั้นลงแล้วลองอีกครั้ง</translation>
+    </message>
+    <message>
+        <source>Not enough memory. Choose a smaller crop or range.</source>
+        <translation>หน่วยความจำไม่เพียงพอ เลือกพื้นที่ครอบตัดหรือช่วงที่เล็กลง</translation>
+    </message>
+    <message>
+        <source>No reliable scrolling content was found.</source>
+        <translation>ไม่พบเนื้อหาการเลื่อนที่เชื่อถือได้</translation>
+    </message>
+    <message>
+        <source>The recording could not be decoded. The source has been kept.</source>
+        <translation>ไม่สามารถถอดรหัสการบันทึกได้ ไฟล์ต้นฉบับยังคงอยู่</translation>
+    </message>
+    <message>
+        <source>Auto-cropped columns: left %1, right %2.</source>
+        <translation>คอลัมน์ที่ครอบตัดอัตโนมัติ: ซ้าย %1 ขวา %2</translation>
+    </message>
+    <message>
+        <source>Review the marked areas: the result may be incomplete.</source>
+        <translation>ตรวจสอบพื้นที่ที่ทำเครื่องหมายไว้ ผลลัพธ์อาจไม่สมบูรณ์</translation>
+    </message>
+    <message>
+        <source>Analyzing...</source>
+        <translation>กำลังวิเคราะห์…</translation>
+    </message>
+    <message>
+        <source>Solving positions...</source>
+        <translation>กำลังคำนวณตำแหน่ง…</translation>
+    </message>
+    <message>
+        <source>Rendering...</source>
+        <translation>กำลังเรนเดอร์…</translation>
+    </message>
+    <message>
+        <source>Could not create the result preview.</source>
+        <translation>ไม่สามารถสร้างตัวอย่างผลลัพธ์ได้</translation>
+    </message>
+    <message>
+        <source>Missing coverage</source>
+        <translation>เนื้อหาขาดหาย</translation>
+    </message>
+    <message>
+        <source>Low confidence</source>
+        <translation>ความเชื่อมั่นต่ำ</translation>
+    </message>
+    <message>
+        <source>Unjoined recording section</source>
+        <translation>ส่วนการบันทึกที่ยังไม่เชื่อมต่อ</translation>
+    </message>
+    <message>
+        <source>Copied part %1.</source>
+        <translation>คัดลอกส่วนที่ %1 แล้ว</translation>
+    </message>
+    <message>
+        <source>Save Long Screenshot</source>
+        <translation>บันทึกภาพหน้าจอแบบยาว</translation>
+    </message>
+    <message>
+        <source>PNG image (*.png)</source>
+        <translation>ภาพ PNG (*.png)</translation>
+    </message>
+    <message>
+        <source>Part %1: %2</source>
+        <translation>ส่วนที่ %1: %2</translation>
+    </message>
+    <message>
+        <source>Saved %1 of %2 parts.</source>
+        <translation>บันทึกแล้ว %1 จาก %2 ส่วน</translation>
     </message>
 </context>
 </TS>

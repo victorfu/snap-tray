@@ -1823,6 +1823,42 @@ Size: %2</source>
         <source>Dismiss Error</source>
         <translation>إغلاق الخطأ</translation>
     </message>
+    <message>
+        <source>Long Screenshot</source>
+        <translation>لقطة شاشة طويلة</translation>
+    </message>
+    <message>
+        <source>Generate Long Screenshot</source>
+        <translation>إنشاء لقطة شاشة طويلة</translation>
+    </message>
+    <message>
+        <source>Crop to the scrolling area, then generate a long screenshot.</source>
+        <translation>اقتصص إلى منطقة التمرير، ثم أنشئ لقطة شاشة طويلة.</translation>
+    </message>
+    <message>
+        <source>Remove Fixed Header</source>
+        <translation>إزالة الرأس الثابت</translation>
+    </message>
+    <message>
+        <source>Include Fixed Header</source>
+        <translation>تضمين الرأس الثابت</translation>
+    </message>
+    <message>
+        <source>Save PNG</source>
+        <translation>حفظ PNG</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>رجوع</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>نسخ</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>تثبيت</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3287,6 +3323,89 @@ File size: %3</source>
     <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>اكتشف الوجوه وبيانات الاعتماد وموّهها تلقائيًا</translation>
+    </message>
+</context>
+<context>
+    <name>LongshotController</name>
+    <message>
+        <source>Select a longer recording range.</source>
+        <translation>حدد نطاق تسجيل أطول.</translation>
+    </message>
+    <message>
+        <source>Crop must be at least 64 pixels on each side.</source>
+        <translation>يجب ألا يقل كل جانب من منطقة الاقتصاص عن 64 بكسل.</translation>
+    </message>
+    <message>
+        <source>This range is too long. Trim it and try again.</source>
+        <translation>هذا النطاق طويل جدًا. اختصره وحاول مجددًا.</translation>
+    </message>
+    <message>
+        <source>Not enough memory. Choose a smaller crop or range.</source>
+        <translation>الذاكرة غير كافية. اختر منطقة اقتصاص أو نطاقًا أصغر.</translation>
+    </message>
+    <message>
+        <source>No reliable scrolling content was found.</source>
+        <translation>لم يتم العثور على محتوى تمرير موثوق.</translation>
+    </message>
+    <message>
+        <source>The recording could not be decoded. The source has been kept.</source>
+        <translation>تعذر فك ترميز التسجيل. تم الاحتفاظ بالمصدر.</translation>
+    </message>
+    <message>
+        <source>Auto-cropped columns: left %1, right %2.</source>
+        <translation>الأعمدة المقصوصة تلقائيًا: اليسار %1، اليمين %2.</translation>
+    </message>
+    <message>
+        <source>Review the marked areas: the result may be incomplete.</source>
+        <translation>راجع المناطق المحددة: قد تكون النتيجة غير مكتملة.</translation>
+    </message>
+    <message>
+        <source>Analyzing...</source>
+        <translation>جارٍ التحليل…</translation>
+    </message>
+    <message>
+        <source>Solving positions...</source>
+        <translation>جارٍ حساب المواضع…</translation>
+    </message>
+    <message>
+        <source>Rendering...</source>
+        <translation>جارٍ التصيير…</translation>
+    </message>
+    <message>
+        <source>Could not create the result preview.</source>
+        <translation>تعذر إنشاء معاينة النتيجة.</translation>
+    </message>
+    <message>
+        <source>Missing coverage</source>
+        <translation>محتوى مفقود</translation>
+    </message>
+    <message>
+        <source>Low confidence</source>
+        <translation>ثقة منخفضة</translation>
+    </message>
+    <message>
+        <source>Unjoined recording section</source>
+        <translation>جزء تسجيل غير موصول</translation>
+    </message>
+    <message>
+        <source>Copied part %1.</source>
+        <translation>تم نسخ الجزء %1.</translation>
+    </message>
+    <message>
+        <source>Save Long Screenshot</source>
+        <translation>حفظ لقطة شاشة طويلة</translation>
+    </message>
+    <message>
+        <source>PNG image (*.png)</source>
+        <translation>صورة PNG (*.png)</translation>
+    </message>
+    <message>
+        <source>Part %1: %2</source>
+        <translation>الجزء %1: %2</translation>
+    </message>
+    <message>
+        <source>Saved %1 of %2 parts.</source>
+        <translation>تم حفظ %1 من %2 أجزاء.</translation>
     </message>
 </context>
 </TS>

@@ -17,7 +17,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/web.html",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; scroll down steadily to bottom."
     },
     {
       "id": "web-fling",
@@ -35,7 +41,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/web.html",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; use several fast scrolls with short settling pauses to bottom."
     },
     {
       "id": "web-reverse",
@@ -53,7 +65,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/web.html",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; scroll down two viewports, up one, then continue to bottom."
     },
     {
       "id": "web-pause",
@@ -71,7 +89,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/web.html",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; scroll one viewport at a time with a two-second pause between moves."
     },
     {
       "id": "chat-steady",
@@ -89,7 +113,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/chat-transcript.txt",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; scroll down steadily to bottom."
     },
     {
       "id": "chat-fling",
@@ -107,7 +137,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/chat-transcript.txt",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; use several fast scrolls with short settling pauses to bottom."
     },
     {
       "id": "chat-reverse",
@@ -125,7 +161,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/chat-transcript.txt",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; scroll down two viewports, up one, then continue to bottom."
     },
     {
       "id": "chat-pause",
@@ -143,7 +185,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/chat-transcript.txt",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; scroll one viewport at a time with a two-second pause between moves."
     },
     {
       "id": "ide-steady",
@@ -161,7 +209,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/ide-example.cpp.txt",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; scroll down steadily to bottom."
     },
     {
       "id": "ide-fling",
@@ -179,7 +233,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/ide-example.cpp.txt",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; use several fast scrolls with short settling pauses to bottom."
     },
     {
       "id": "ide-reverse",
@@ -197,7 +257,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/ide-example.cpp.txt",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; scroll down two viewports, up one, then continue to bottom."
     },
     {
       "id": "ide-pause",
@@ -215,7 +281,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/ide-example.cpp.txt",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; scroll one viewport at a time with a two-second pause between moves."
     },
     {
       "id": "table-steady",
@@ -233,7 +305,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/table.csv",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; scroll down steadily to bottom."
     },
     {
       "id": "table-fling",
@@ -251,7 +329,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/table.csv",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; use several fast scrolls with short settling pauses to bottom."
     },
     {
       "id": "table-reverse",
@@ -269,7 +353,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/table.csv",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; scroll down two viewports, up one, then continue to bottom."
     },
     {
       "id": "table-pause",
@@ -287,7 +377,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/table.csv",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; scroll one viewport at a time with a two-second pause between moves."
     },
     {
       "id": "settings-steady",
@@ -305,7 +401,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/settings.txt",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; scroll down steadily to bottom."
     },
     {
       "id": "settings-fling",
@@ -323,7 +425,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/settings.txt",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; use several fast scrolls with short settling pauses to bottom."
     },
     {
       "id": "settings-reverse",
@@ -341,7 +449,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/settings.txt",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; scroll down two viewports, up one, then continue to bottom."
     },
     {
       "id": "settings-pause",
@@ -359,7 +473,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/settings.txt",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; scroll one viewport at a time with a two-second pause between moves."
     },
     {
       "id": "pdf-steady",
@@ -377,7 +497,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/print-page.html",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; scroll down steadily to bottom."
     },
     {
       "id": "pdf-fling",
@@ -395,7 +521,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/print-page.html",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; use several fast scrolls with short settling pauses to bottom."
     },
     {
       "id": "pdf-reverse",
@@ -413,7 +545,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/print-page.html",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; scroll down two viewports, up one, then continue to bottom."
     },
     {
       "id": "pdf-pause",
@@ -431,7 +569,13 @@
       "startMs": 0,
       "endMs": -1,
       "crop": [],
-      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture."
+      "limitations": "Requires actual application recording and independent reference; not a synthetic fixture.",
+      "sourceDocument": "sources/print-page.html",
+      "expected": {
+        "outcome": "clean",
+        "referenceRequired": true
+      },
+      "captureRecipe": "Start at top; scroll one viewport at a time with a two-second pause between moves."
     }
   ]
 }

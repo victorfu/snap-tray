@@ -1823,6 +1823,42 @@ Size: %2</source>
         <source>Dismiss Error</source>
         <translation>Κλείσιμο σφάλματος</translation>
     </message>
+    <message>
+        <source>Long Screenshot</source>
+        <translation>Μεγάλο στιγμιότυπο</translation>
+    </message>
+    <message>
+        <source>Generate Long Screenshot</source>
+        <translation>Δημιουργία μεγάλου στιγμιότυπου</translation>
+    </message>
+    <message>
+        <source>Crop to the scrolling area, then generate a long screenshot.</source>
+        <translation>Περικόψτε στην περιοχή κύλισης και δημιουργήστε ένα μεγάλο στιγμιότυπο.</translation>
+    </message>
+    <message>
+        <source>Remove Fixed Header</source>
+        <translation>Αφαίρεση σταθερής κεφαλίδας</translation>
+    </message>
+    <message>
+        <source>Include Fixed Header</source>
+        <translation>Συμπερίληψη σταθερής κεφαλίδας</translation>
+    </message>
+    <message>
+        <source>Save PNG</source>
+        <translation>Αποθήκευση PNG</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Πίσω</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Αντιγραφή</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Καρφίτσωμα</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3287,6 +3323,89 @@ File size: %3</source>
     <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Αυτόματος εντοπισμός και θόλωση προσώπων και διαπιστευτηρίων</translation>
+    </message>
+</context>
+<context>
+    <name>LongshotController</name>
+    <message>
+        <source>Select a longer recording range.</source>
+        <translation>Επιλέξτε μεγαλύτερο διάστημα εγγραφής.</translation>
+    </message>
+    <message>
+        <source>Crop must be at least 64 pixels on each side.</source>
+        <translation>Κάθε πλευρά της περικοπής πρέπει να είναι τουλάχιστον 64 pixel.</translation>
+    </message>
+    <message>
+        <source>This range is too long. Trim it and try again.</source>
+        <translation>Το διάστημα είναι πολύ μεγάλο. Συντομεύστε το και δοκιμάστε ξανά.</translation>
+    </message>
+    <message>
+        <source>Not enough memory. Choose a smaller crop or range.</source>
+        <translation>Δεν υπάρχει αρκετή μνήμη. Επιλέξτε μικρότερη περικοπή ή διάστημα.</translation>
+    </message>
+    <message>
+        <source>No reliable scrolling content was found.</source>
+        <translation>Δεν βρέθηκε αξιόπιστο περιεχόμενο κύλισης.</translation>
+    </message>
+    <message>
+        <source>The recording could not be decoded. The source has been kept.</source>
+        <translation>Δεν ήταν δυνατή η αποκωδικοποίηση της εγγραφής. Το αρχικό αρχείο διατηρήθηκε.</translation>
+    </message>
+    <message>
+        <source>Auto-cropped columns: left %1, right %2.</source>
+        <translation>Αυτόματα περικομμένες στήλες: αριστερά %1, δεξιά %2.</translation>
+    </message>
+    <message>
+        <source>Review the marked areas: the result may be incomplete.</source>
+        <translation>Ελέγξτε τις επισημασμένες περιοχές: το αποτέλεσμα μπορεί να είναι ελλιπές.</translation>
+    </message>
+    <message>
+        <source>Analyzing...</source>
+        <translation>Ανάλυση…</translation>
+    </message>
+    <message>
+        <source>Solving positions...</source>
+        <translation>Υπολογισμός θέσεων…</translation>
+    </message>
+    <message>
+        <source>Rendering...</source>
+        <translation>Απόδοση…</translation>
+    </message>
+    <message>
+        <source>Could not create the result preview.</source>
+        <translation>Δεν ήταν δυνατή η δημιουργία προεπισκόπησης.</translation>
+    </message>
+    <message>
+        <source>Missing coverage</source>
+        <translation>Ελλιπές περιεχόμενο</translation>
+    </message>
+    <message>
+        <source>Low confidence</source>
+        <translation>Χαμηλή εμπιστοσύνη</translation>
+    </message>
+    <message>
+        <source>Unjoined recording section</source>
+        <translation>Μη ενωμένο τμήμα εγγραφής</translation>
+    </message>
+    <message>
+        <source>Copied part %1.</source>
+        <translation>Αντιγράφηκε το τμήμα %1.</translation>
+    </message>
+    <message>
+        <source>Save Long Screenshot</source>
+        <translation>Αποθήκευση μεγάλου στιγμιότυπου</translation>
+    </message>
+    <message>
+        <source>PNG image (*.png)</source>
+        <translation>Εικόνα PNG (*.png)</translation>
+    </message>
+    <message>
+        <source>Part %1: %2</source>
+        <translation>Τμήμα %1: %2</translation>
+    </message>
+    <message>
+        <source>Saved %1 of %2 parts.</source>
+        <translation>Αποθηκεύτηκαν %1 από %2 τμήματα.</translation>
     </message>
 </context>
 </TS>

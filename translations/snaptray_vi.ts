@@ -1823,6 +1823,42 @@ Kích thước: %2</translation>
         <source>Dismiss Error</source>
         <translation>Đóng lỗi</translation>
     </message>
+    <message>
+        <source>Long Screenshot</source>
+        <translation>Ảnh chụp dài</translation>
+    </message>
+    <message>
+        <source>Generate Long Screenshot</source>
+        <translation>Tạo ảnh chụp dài</translation>
+    </message>
+    <message>
+        <source>Crop to the scrolling area, then generate a long screenshot.</source>
+        <translation>Cắt vào vùng cuộn, rồi tạo ảnh chụp dài.</translation>
+    </message>
+    <message>
+        <source>Remove Fixed Header</source>
+        <translation>Bỏ tiêu đề cố định</translation>
+    </message>
+    <message>
+        <source>Include Fixed Header</source>
+        <translation>Giữ tiêu đề cố định</translation>
+    </message>
+    <message>
+        <source>Save PNG</source>
+        <translation>Lưu PNG</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Quay lại</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Sao chép</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Ghim</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3287,6 +3323,89 @@ Kích thước tệp: %3</translation>
     <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Tự động phát hiện và làm mờ khuôn mặt cùng thông tin đăng nhập</translation>
+    </message>
+</context>
+<context>
+    <name>LongshotController</name>
+    <message>
+        <source>Select a longer recording range.</source>
+        <translation>Chọn khoảng ghi hình dài hơn.</translation>
+    </message>
+    <message>
+        <source>Crop must be at least 64 pixels on each side.</source>
+        <translation>Mỗi cạnh của vùng cắt phải có ít nhất 64 pixel.</translation>
+    </message>
+    <message>
+        <source>This range is too long. Trim it and try again.</source>
+        <translation>Khoảng này quá dài. Hãy rút ngắn rồi thử lại.</translation>
+    </message>
+    <message>
+        <source>Not enough memory. Choose a smaller crop or range.</source>
+        <translation>Không đủ bộ nhớ. Chọn vùng cắt hoặc khoảng ghi nhỏ hơn.</translation>
+    </message>
+    <message>
+        <source>No reliable scrolling content was found.</source>
+        <translation>Không tìm thấy nội dung cuộn đáng tin cậy.</translation>
+    </message>
+    <message>
+        <source>The recording could not be decoded. The source has been kept.</source>
+        <translation>Không thể giải mã bản ghi. Tệp gốc đã được giữ lại.</translation>
+    </message>
+    <message>
+        <source>Auto-cropped columns: left %1, right %2.</source>
+        <translation>Số cột tự động cắt: trái %1, phải %2.</translation>
+    </message>
+    <message>
+        <source>Review the marked areas: the result may be incomplete.</source>
+        <translation>Kiểm tra các vùng được đánh dấu: kết quả có thể chưa đầy đủ.</translation>
+    </message>
+    <message>
+        <source>Analyzing...</source>
+        <translation>Đang phân tích…</translation>
+    </message>
+    <message>
+        <source>Solving positions...</source>
+        <translation>Đang tính vị trí…</translation>
+    </message>
+    <message>
+        <source>Rendering...</source>
+        <translation>Đang kết xuất…</translation>
+    </message>
+    <message>
+        <source>Could not create the result preview.</source>
+        <translation>Không thể tạo bản xem trước kết quả.</translation>
+    </message>
+    <message>
+        <source>Missing coverage</source>
+        <translation>Thiếu nội dung</translation>
+    </message>
+    <message>
+        <source>Low confidence</source>
+        <translation>Độ tin cậy thấp</translation>
+    </message>
+    <message>
+        <source>Unjoined recording section</source>
+        <translation>Đoạn ghi chưa ghép</translation>
+    </message>
+    <message>
+        <source>Copied part %1.</source>
+        <translation>Đã sao chép phần %1.</translation>
+    </message>
+    <message>
+        <source>Save Long Screenshot</source>
+        <translation>Lưu ảnh chụp dài</translation>
+    </message>
+    <message>
+        <source>PNG image (*.png)</source>
+        <translation>Ảnh PNG (*.png)</translation>
+    </message>
+    <message>
+        <source>Part %1: %2</source>
+        <translation>Phần %1: %2</translation>
+    </message>
+    <message>
+        <source>Saved %1 of %2 parts.</source>
+        <translation>Đã lưu %1 trong %2 phần.</translation>
     </message>
 </context>
 </TS>

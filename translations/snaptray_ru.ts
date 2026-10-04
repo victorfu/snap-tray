@@ -1829,6 +1829,42 @@ Size: %2</source>
         <source>Dismiss Error</source>
         <translation>Закрыть ошибку</translation>
     </message>
+    <message>
+        <source>Long Screenshot</source>
+        <translation>Длинный снимок</translation>
+    </message>
+    <message>
+        <source>Generate Long Screenshot</source>
+        <translation>Создать длинный снимок</translation>
+    </message>
+    <message>
+        <source>Crop to the scrolling area, then generate a long screenshot.</source>
+        <translation>Обрежьте до области прокрутки, затем создайте длинный снимок.</translation>
+    </message>
+    <message>
+        <source>Remove Fixed Header</source>
+        <translation>Убрать закреплённый заголовок</translation>
+    </message>
+    <message>
+        <source>Include Fixed Header</source>
+        <translation>Включить закреплённый заголовок</translation>
+    </message>
+    <message>
+        <source>Save PNG</source>
+        <translation>Сохранить PNG</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Назад</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Копировать</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Закрепить</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3293,6 +3329,89 @@ File size: %3</source>
     <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Автоматически обнаруживать и размывать лица и учётные данные</translation>
+    </message>
+</context>
+<context>
+    <name>LongshotController</name>
+    <message>
+        <source>Select a longer recording range.</source>
+        <translation>Выберите более длинный фрагмент записи.</translation>
+    </message>
+    <message>
+        <source>Crop must be at least 64 pixels on each side.</source>
+        <translation>Каждая сторона области обрезки должна быть не меньше 64 пикселей.</translation>
+    </message>
+    <message>
+        <source>This range is too long. Trim it and try again.</source>
+        <translation>Фрагмент слишком длинный. Сократите его и повторите попытку.</translation>
+    </message>
+    <message>
+        <source>Not enough memory. Choose a smaller crop or range.</source>
+        <translation>Недостаточно памяти. Уменьшите область или длину фрагмента.</translation>
+    </message>
+    <message>
+        <source>No reliable scrolling content was found.</source>
+        <translation>Надёжное прокручиваемое содержимое не найдено.</translation>
+    </message>
+    <message>
+        <source>The recording could not be decoded. The source has been kept.</source>
+        <translation>Не удалось декодировать запись. Исходный файл сохранён.</translation>
+    </message>
+    <message>
+        <source>Auto-cropped columns: left %1, right %2.</source>
+        <translation>Автоматически обрезано столбцов: слева %1, справа %2.</translation>
+    </message>
+    <message>
+        <source>Review the marked areas: the result may be incomplete.</source>
+        <translation>Проверьте отмеченные области: результат может быть неполным.</translation>
+    </message>
+    <message>
+        <source>Analyzing...</source>
+        <translation>Анализ…</translation>
+    </message>
+    <message>
+        <source>Solving positions...</source>
+        <translation>Вычисление позиций…</translation>
+    </message>
+    <message>
+        <source>Rendering...</source>
+        <translation>Отрисовка…</translation>
+    </message>
+    <message>
+        <source>Could not create the result preview.</source>
+        <translation>Не удалось создать предпросмотр результата.</translation>
+    </message>
+    <message>
+        <source>Missing coverage</source>
+        <translation>Отсутствующее содержимое</translation>
+    </message>
+    <message>
+        <source>Low confidence</source>
+        <translation>Низкая достоверность</translation>
+    </message>
+    <message>
+        <source>Unjoined recording section</source>
+        <translation>Несоединённый фрагмент записи</translation>
+    </message>
+    <message>
+        <source>Copied part %1.</source>
+        <translation>Часть %1 скопирована.</translation>
+    </message>
+    <message>
+        <source>Save Long Screenshot</source>
+        <translation>Сохранить длинный снимок</translation>
+    </message>
+    <message>
+        <source>PNG image (*.png)</source>
+        <translation>Изображение PNG (*.png)</translation>
+    </message>
+    <message>
+        <source>Part %1: %2</source>
+        <translation>Часть %1: %2</translation>
+    </message>
+    <message>
+        <source>Saved %1 of %2 parts.</source>
+        <translation>Сохранено частей: %1 из %2.</translation>
     </message>
 </context>
 </TS>

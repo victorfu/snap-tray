@@ -1823,6 +1823,42 @@ Tamanho: %2</translation>
         <source>Dismiss Error</source>
         <translation>Fechar erro</translation>
     </message>
+    <message>
+        <source>Long Screenshot</source>
+        <translation>Captura longa</translation>
+    </message>
+    <message>
+        <source>Generate Long Screenshot</source>
+        <translation>Gerar captura longa</translation>
+    </message>
+    <message>
+        <source>Crop to the scrolling area, then generate a long screenshot.</source>
+        <translation>Recorte a área de deslocamento e gere uma captura longa.</translation>
+    </message>
+    <message>
+        <source>Remove Fixed Header</source>
+        <translation>Remover cabeçalho fixo</translation>
+    </message>
+    <message>
+        <source>Include Fixed Header</source>
+        <translation>Incluir cabeçalho fixo</translation>
+    </message>
+    <message>
+        <source>Save PNG</source>
+        <translation>Guardar PNG</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Voltar</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Copiar</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Fixar</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3287,6 +3323,89 @@ Tamanho do ficheiro: %3</translation>
     <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Detetar e desfocar automaticamente rostos e credenciais</translation>
+    </message>
+</context>
+<context>
+    <name>LongshotController</name>
+    <message>
+        <source>Select a longer recording range.</source>
+        <translation>Selecione um intervalo de gravação mais longo.</translation>
+    </message>
+    <message>
+        <source>Crop must be at least 64 pixels on each side.</source>
+        <translation>Cada lado do recorte deve ter pelo menos 64 píxeis.</translation>
+    </message>
+    <message>
+        <source>This range is too long. Trim it and try again.</source>
+        <translation>O intervalo é demasiado longo. Reduza-o e tente novamente.</translation>
+    </message>
+    <message>
+        <source>Not enough memory. Choose a smaller crop or range.</source>
+        <translation>Memória insuficiente. Escolha um recorte ou intervalo menor.</translation>
+    </message>
+    <message>
+        <source>No reliable scrolling content was found.</source>
+        <translation>Não foi encontrado conteúdo de deslocamento fiável.</translation>
+    </message>
+    <message>
+        <source>The recording could not be decoded. The source has been kept.</source>
+        <translation>Não foi possível descodificar a gravação. O original foi mantido.</translation>
+    </message>
+    <message>
+        <source>Auto-cropped columns: left %1, right %2.</source>
+        <translation>Colunas recortadas automaticamente: esquerda %1, direita %2.</translation>
+    </message>
+    <message>
+        <source>Review the marked areas: the result may be incomplete.</source>
+        <translation>Verifique as áreas assinaladas: o resultado pode estar incompleto.</translation>
+    </message>
+    <message>
+        <source>Analyzing...</source>
+        <translation>A analisar…</translation>
+    </message>
+    <message>
+        <source>Solving positions...</source>
+        <translation>A calcular posições…</translation>
+    </message>
+    <message>
+        <source>Rendering...</source>
+        <translation>A renderizar…</translation>
+    </message>
+    <message>
+        <source>Could not create the result preview.</source>
+        <translation>Não foi possível criar a pré-visualização do resultado.</translation>
+    </message>
+    <message>
+        <source>Missing coverage</source>
+        <translation>Conteúdo em falta</translation>
+    </message>
+    <message>
+        <source>Low confidence</source>
+        <translation>Baixa confiança</translation>
+    </message>
+    <message>
+        <source>Unjoined recording section</source>
+        <translation>Secção da gravação não unida</translation>
+    </message>
+    <message>
+        <source>Copied part %1.</source>
+        <translation>Parte %1 copiada.</translation>
+    </message>
+    <message>
+        <source>Save Long Screenshot</source>
+        <translation>Guardar captura longa</translation>
+    </message>
+    <message>
+        <source>PNG image (*.png)</source>
+        <translation>Imagem PNG (*.png)</translation>
+    </message>
+    <message>
+        <source>Part %1: %2</source>
+        <translation>Parte %1: %2</translation>
+    </message>
+    <message>
+        <source>Saved %1 of %2 parts.</source>
+        <translation>%1 de %2 partes guardadas.</translation>
     </message>
 </context>
 </TS>

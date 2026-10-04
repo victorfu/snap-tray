@@ -1,5 +1,12 @@
 # Long Screenshot Engine (Phase 4a) Implementation Plan
 
+## Implementation audit — 2026-10-04
+
+- [x] The planned core implementation is present on dev-3 (baseline `7afc5b80`).
+- [ ] Complete all native platform/hardware acceptance gates. Implementation presence is not runtime proof.
+
+The historical step checkboxes below retain the original execution recipe. Current remaining work and evidence are tracked in [dev-3 completion](2026-10-04-dev-3-completion.md); the review tracker remains authoritative for review IDs.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build the offline long-screenshot engine — sequential frame decoding on both platforms, a global position solver, row-feature analysis with static-band masks, a tile renderer with seams and a height cap, a cache contract — plus the synthetic evaluation harness that proves it against ground truth, with no UI yet.

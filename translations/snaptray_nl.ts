@@ -1829,6 +1829,42 @@ Grootte: %2</translation>
         <source>Dismiss Error</source>
         <translation>Fout sluiten</translation>
     </message>
+    <message>
+        <source>Long Screenshot</source>
+        <translation>Lange schermafbeelding</translation>
+    </message>
+    <message>
+        <source>Generate Long Screenshot</source>
+        <translation>Lange schermafbeelding maken</translation>
+    </message>
+    <message>
+        <source>Crop to the scrolling area, then generate a long screenshot.</source>
+        <translation>Snijd bij tot het scrollgebied en maak een lange schermafbeelding.</translation>
+    </message>
+    <message>
+        <source>Remove Fixed Header</source>
+        <translation>Vaste kop verwijderen</translation>
+    </message>
+    <message>
+        <source>Include Fixed Header</source>
+        <translation>Vaste kop opnemen</translation>
+    </message>
+    <message>
+        <source>Save PNG</source>
+        <translation>PNG opslaan</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Terug</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopiëren</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Vastzetten</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3293,6 +3329,89 @@ Bestandsgrootte: %3</translation>
     <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Gezichten en inloggegevens automatisch detecteren en vervagen</translation>
+    </message>
+</context>
+<context>
+    <name>LongshotController</name>
+    <message>
+        <source>Select a longer recording range.</source>
+        <translation>Selecteer een langer opnamebereik.</translation>
+    </message>
+    <message>
+        <source>Crop must be at least 64 pixels on each side.</source>
+        <translation>Elke zijde van de uitsnede moet minstens 64 pixels zijn.</translation>
+    </message>
+    <message>
+        <source>This range is too long. Trim it and try again.</source>
+        <translation>Dit bereik is te lang. Kort het in en probeer opnieuw.</translation>
+    </message>
+    <message>
+        <source>Not enough memory. Choose a smaller crop or range.</source>
+        <translation>Onvoldoende geheugen. Kies een kleinere uitsnede of een korter bereik.</translation>
+    </message>
+    <message>
+        <source>No reliable scrolling content was found.</source>
+        <translation>Geen betrouwbare scrollinhoud gevonden.</translation>
+    </message>
+    <message>
+        <source>The recording could not be decoded. The source has been kept.</source>
+        <translation>De opname kon niet worden gedecodeerd. Het origineel is behouden.</translation>
+    </message>
+    <message>
+        <source>Auto-cropped columns: left %1, right %2.</source>
+        <translation>Automatisch bijgesneden kolommen: links %1, rechts %2.</translation>
+    </message>
+    <message>
+        <source>Review the marked areas: the result may be incomplete.</source>
+        <translation>Controleer de gemarkeerde gebieden: het resultaat is mogelijk onvolledig.</translation>
+    </message>
+    <message>
+        <source>Analyzing...</source>
+        <translation>Analyseren…</translation>
+    </message>
+    <message>
+        <source>Solving positions...</source>
+        <translation>Posities berekenen…</translation>
+    </message>
+    <message>
+        <source>Rendering...</source>
+        <translation>Renderen…</translation>
+    </message>
+    <message>
+        <source>Could not create the result preview.</source>
+        <translation>Het resultaatvoorbeeld kon niet worden gemaakt.</translation>
+    </message>
+    <message>
+        <source>Missing coverage</source>
+        <translation>Ontbrekende inhoud</translation>
+    </message>
+    <message>
+        <source>Low confidence</source>
+        <translation>Lage betrouwbaarheid</translation>
+    </message>
+    <message>
+        <source>Unjoined recording section</source>
+        <translation>Niet verbonden opnamesectie</translation>
+    </message>
+    <message>
+        <source>Copied part %1.</source>
+        <translation>Deel %1 gekopieerd.</translation>
+    </message>
+    <message>
+        <source>Save Long Screenshot</source>
+        <translation>Lange schermafbeelding opslaan</translation>
+    </message>
+    <message>
+        <source>PNG image (*.png)</source>
+        <translation>PNG-afbeelding (*.png)</translation>
+    </message>
+    <message>
+        <source>Part %1: %2</source>
+        <translation>Deel %1: %2</translation>
+    </message>
+    <message>
+        <source>Saved %1 of %2 parts.</source>
+        <translation>%1 van %2 delen opgeslagen.</translation>
     </message>
 </context>
 </TS>

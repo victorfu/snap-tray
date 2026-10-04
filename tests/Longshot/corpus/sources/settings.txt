@@ -1,0 +1,5 @@
+Use a dedicated test profile and an actual application settings window.
+Record the same settings category and scroll extent for all four cases.
+Do not include account names, tokens, network identifiers or unrelated user content.
+Record the application/version and which settings sections were visible.
+This case requires manual reference review unless an independent full-content reference is available.
