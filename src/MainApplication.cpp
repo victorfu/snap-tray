@@ -22,6 +22,9 @@
 #include "update/InstallSourceDetector.h"
 #include "update/UpdateCoordinator.h"
 #include "utils/CoordinateHelper.h"
+#ifdef Q_OS_MACOS
+#include "platform/MacTrayActivationGuard.h"
+#endif
 
 #include <QFile>
 #include <QJsonDocument>
@@ -353,6 +356,9 @@ void MainApplication::initialize()
     connect(exitAction, &QAction::triggered, qApp, &QCoreApplication::quit);
 
     // Set menu and show tray icon
+#ifdef Q_OS_MACOS
+    SnapTray::installMacTrayActivationGuard();
+#endif
     m_trayIcon->setContextMenu(m_trayMenu);
     m_trayIcon->setToolTip(tr("SnapTray - Screenshot Utility"));
     m_trayIcon->show();

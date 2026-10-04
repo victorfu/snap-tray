@@ -256,6 +256,11 @@ if(UNIX AND NOT APPLE)
 endif()
 
 if(APPLE)
+    add_executable(Platform_MacTrayActivationGuard Platform/tst_MacTrayActivationGuard.mm)
+    target_link_libraries(Platform_MacTrayActivationGuard PRIVATE snaptray_platform Qt6::Test)
+    add_test(NAME Platform_MacTrayActivationGuard COMMAND Platform_MacTrayActivationGuard)
+    set_tests_properties(Platform_MacTrayActivationGuard PROPERTIES TIMEOUT 30 LABELS "unit;integration")
+
     add_executable(Platform_GuiClipboardOrdering Platform/tst_GuiClipboardOrdering.mm)
     target_link_libraries(Platform_GuiClipboardOrdering PRIVATE snaptray_platform Qt6::Test)
     add_test(NAME Platform_GuiClipboardOrdering COMMAND Platform_GuiClipboardOrdering)
