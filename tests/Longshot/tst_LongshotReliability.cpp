@@ -3,31 +3,44 @@
 #include "longshot/LongshotSession.h"
 
 #include <QtTest>
+#include <QPainter>
 #include <QRandomGenerator>
 #include <QTemporaryFile>
+#include <algorithm>
 
 using namespace SnapTray::Longshot;
 
 namespace {
+constexpr qint64 kFrameIntervalMs = 50;
+
 class MemorySource final : public LongshotFrameSource
 {
 public:
     explicit MemorySource(std::vector<QImage> frames) : m_frames(std::move(frames)) {}
-    bool open(const QString&, qint64, qint64, const QRect&) override { m_next = 0; return true; }
+    bool open(const QString&, qint64 startMs, qint64 endMs, const QRect&) override
+    {
+        m_start = size_t((startMs + kFrameIntervalMs - 1) / kFrameIntervalMs);
+        m_next = m_start;
+        m_end = endMs < 0 ? m_frames.size()
+                         : std::min(m_frames.size(), size_t((endMs + kFrameIntervalMs - 1) / kFrameIntervalMs));
+        return true;
+    }
     std::optional<QImage> next(qint64* tMs) override
     {
-        if (m_next == m_frames.size()) return std::nullopt;
-        if (tMs) *tMs = qint64(m_next) * 50;
+        if (m_next >= m_end) return std::nullopt;
+        if (tMs) *tMs = qint64(m_next) * kFrameIntervalMs;
         return m_frames[m_next++];
     }
     QSize frameSize() const override { return m_frames.front().size(); }
     QSize videoSize() const override { return frameSize(); }
     double frameRate() const override { return 20.0; }
-    int expectedFrameCount() const override { return int(m_frames.size()); }
+    int expectedFrameCount() const override { return int(m_end - m_start); }
     QString lastError() const override { return {}; }
 private:
     std::vector<QImage> m_frames;
     size_t m_next = 0;
+    size_t m_start = 0;
+    size_t m_end = 0;
 };
 
 QImage texture()
@@ -51,7 +64,10 @@ private slots:
     void unmatchedFramesAreRejected_data();
     void unmatchedFramesAreRejected();
     void texturedStationaryFramesRemainValid();
+    void noisyStationaryFramesAreDetected();
     void failedSessionDoesNotCacheSuccess();
+    void cancelledTrimBeforeRenderInvalidatesPreviousImage();
+    void sparseSlowScrollIsNotStationary();
     void changingSidebar_data();
     void changingSidebar();
     void complementaryMasksCoverTheWholeOutput();
@@ -102,6 +118,24 @@ void tst_LongshotReliability::texturedStationaryFramesRemainValid()
     QCOMPARE(rendered.parts.front(), frame);
 }
 
+void tst_LongshotReliability::noisyStationaryFramesAreDetected()
+{
+    const QImage from = texture().copy(0, 0, 128, 128);
+    QImage to = from;
+    for (int y = 0; y < to.height(); ++y) {
+        for (int x = 0; x < to.width(); ++x) {
+            const int value = std::min(255, qRed(to.pixel(x, y)) + 2);
+            to.setPixel(x, y, qRgb(value, value, value));
+        }
+    }
+    const auto observation = LongshotAnalyzer::estimateShift(
+        from, LongshotAnalyzer::computeFeatures(from, 0),
+        to, LongshotAnalyzer::computeFeatures(to, kFrameIntervalMs), 0, 1, {});
+    QVERIFY(observation.has_value());
+    QCOMPARE(observation->shift.dy, 0);
+    QVERIFY(observation->stationary);
+}
+
 void tst_LongshotReliability::failedSessionDoesNotCacheSuccess()
 {
     QTemporaryFile file;
@@ -118,6 +152,73 @@ void tst_LongshotReliability::failedSessionDoesNotCacheSuccess()
         QVERIFY(report.render.parts.empty());
         QVERIFY(!report.reusedRender);
     }
+}
+
+void tst_LongshotReliability::cancelledTrimBeforeRenderInvalidatesPreviousImage()
+{
+    const QImage page = texture();
+    std::vector<QImage> frames;
+    for (int i = 0; i < 6; ++i) frames.push_back(page.copy(0, i * 20, 128, 128));
+    const auto factory = [frames] { return std::make_unique<MemorySource>(frames); };
+    LongshotSession session(factory);
+    session.setTrim(0, 150);
+    const auto first = session.run({});
+    QCOMPARE(first.error, LongshotError::None);
+    QCOMPARE(first.render.fullHeightPx, 168);
+
+    session.setTrim(0, 300);
+    WorkStage stage = WorkStage::Analyze;
+    const auto cancelled = session.run([&](int) { return stage != WorkStage::Render; },
+                                       [&](WorkStage next) { stage = next; });
+    QCOMPARE(cancelled.error, LongshotError::Cancelled);
+    QCOMPARE(stage, WorkStage::Render);
+
+    const auto retry = session.run({});
+    QCOMPARE(retry.error, LongshotError::None);
+    QVERIFY(retry.reusedSolve);
+    QVERIFY(!retry.reusedRender);
+    LongshotSession fresh(factory);
+    fresh.setTrim(0, 300);
+    const auto expected = fresh.run({});
+    QCOMPARE(expected.error, LongshotError::None);
+    QCOMPARE(expected.render.fullHeightPx, 228);
+    QCOMPARE(retry.render.parts, expected.render.parts);
+    QVERIFY(session.run({}).reusedRender);
+}
+
+void tst_LongshotReliability::sparseSlowScrollIsNotStationary()
+{
+    QImage page(640, 600, QImage::Format_RGB32);
+    page.fill(Qt::white);
+    {
+        QPainter painter(&page);
+        for (int y = 0, row = 0; y < page.height(); y += 30, ++row)
+            painter.fillRect(24 + (row * 7) % 80, y, 50, 12, QColor(20, 20, 20));
+    }
+    std::vector<QImage> frames;
+    constexpr int frameCount = 12;
+    for (int i = 0; i < frameCount; ++i) frames.push_back(page.copy(0, i, 640, 480));
+    for (int i = 1; i < frameCount; ++i) {
+        const auto from = LongshotAnalyzer::computeFeatures(frames[i - 1], (i - 1) * 50);
+        const auto to = LongshotAnalyzer::computeFeatures(frames[i], i * 50);
+        const auto observation = LongshotAnalyzer::estimateShift(frames[i - 1], from, frames[i], to, i - 1, i, {});
+        // An ambiguous sparse pair may be refused, but must never assert no motion.
+        if (observation) {
+            QVERIFY(!observation->stationary);
+            QCOMPARE(observation->shift.dy, 1);
+        }
+    }
+    MemorySource source(frames);
+    QVERIFY(source.open({}, 0, -1, {}));
+    const auto analysis = LongshotPipeline::analyze(source, {}, 0, -1, {}, {}, {});
+    if (analysis.error == LongshotError::NoReliableContent) return;
+    QCOMPARE(analysis.error, LongshotError::None);
+    const auto rendered = LongshotRenderer::render(source, {}, 0, -1, {}, analysis, {}, {});
+    QCOMPARE(rendered.error, LongshotError::None);
+    // A shorter result must explicitly report the unjoined content.
+    QVERIFY(rendered.fullHeightPx == 480 + frameCount - 1
+            || !analysis.solve.breakTimesMs.empty() || !rendered.breakRows.empty()
+            || !rendered.lowConfidenceRows.empty());
 }
 
 void tst_LongshotReliability::changingSidebar_data()
