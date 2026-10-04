@@ -21,9 +21,15 @@ constexpr int kMinContentRows = 32;     // fewer usable rows than this: give up 
 constexpr int kMinTemplateRows = 24;
 constexpr double kStationaryMeanDiff = 1.5; // whole-frame mean |diff| below this = no motion
 constexpr int kMinMovingColumns = 32;
-// A static edge run of columns is a side panel only if some column in it has
-// at least this vertical luma deviation; a blank page margin is not a panel.
+// One or two unchanged edge rows can be codec ringing after a small scroll.
+// Do not turn that isolated evidence into a mask covering the entire edge band.
+constexpr int kMinStaticEvidenceRows = 3;
+constexpr double kColumnMotionAdvantage = 0.25; // ignore sub-luma codec/rounding noise
+constexpr double kColumnAlignmentRatio = 0.5;
+// A static edge run is a side panel only with a contiguous group of textured
+// columns; blank page margins and isolated codec fringes are not panels.
 constexpr double kStaticColumnInkStdDev = 4.0;
+constexpr int kMinStaticInkColumns = 8; // a codec fringe is not a textured panel
 constexpr double kMinTemplateStdDev = 3.0; // luma: a flatter template (or match window) scores 1.0 in OpenCV for any content
 constexpr int kMinTemplateInkedRows = 6;   // rows with ink the NCC template band must contain
 constexpr int kTemplateSlideStep = 8;      // rows between candidate template positions
@@ -285,6 +291,8 @@ StaticBands staticBandsImpl(const cv::Mat& from, const cv::Mat& to, const FrameF
     };
     auto scan = [&](int start, int step) {
         int band = 0;
+        int evidenceRows = 0;
+        bool supported = false;
         int y = start;
         while (y >= 0 && y < to.rows) {
             if (inkedTo[y]) {
@@ -292,12 +300,16 @@ StaticBands staticBandsImpl(const cv::Mat& from, const cv::Mat& to, const FrameF
                 // Unchanged only because the scroll moved it onto an identical
                 // row (inside a text line after a small shift) is no evidence
                 // of an overlay: skip it like a blank row.
-                if (explainedByScroll(y)) { y += step; continue; }
+                if (explainedByScroll(y)) { evidenceRows = 0; y += step; continue; }
+                ++evidenceRows;
+                supported = supported || evidenceRows >= kMinStaticEvidenceRows;
                 band = step > 0 ? y + 1 : to.rows - y;
+            } else {
+                evidenceRows = 0;
             }
             y += step;
         }
-        return band;
+        return supported ? band : 0;
     };
     bands.top = scan(0, 1);
     bands.bottom = scan(to.rows - 1, -1);
@@ -307,16 +319,11 @@ StaticBands staticBandsImpl(const cv::Mat& from, const cv::Mat& to, const FrameF
     return bands;
 }
 
-QRect movingSpanImpl(const cv::Mat& from, const cv::Mat& to, const AnalyzerParams& params)
+QRect movingSpanImpl(const cv::Mat& from, const cv::Mat& to, int dy, const AnalyzerParams& params)
 {
     const QRect full(0, 0, to.cols, to.rows);
     if (from.size() != to.size()) return full;
     const std::vector<double> unchanged = columnAbsDiff(from, to);
-    int left = 0;
-    while (left < to.cols && unchanged[left] < params.movingColumnDiffThreshold) ++left;
-    int right = to.cols - 1;
-    while (right > left && unchanged[right] < params.movingColumnDiffThreshold) --right;
-    if (right - left + 1 < kMinMovingColumns) return full;
     // Like static bands, a static run needs ink: uniform margin columns carry
     // no evidence of an overlay and stay inside the span.
     auto columnStd = [](const cv::Mat& m) {
@@ -333,9 +340,37 @@ QRect movingSpanImpl(const cv::Mat& from, const cv::Mat& to, const AnalyzerParam
     };
     const std::vector<double> stdFrom = columnStd(from);
     const std::vector<double> stdTo = columnStd(to);
+    // Sparse text can change too few pixels to exceed a whole-column mean
+    // threshold. A substantially better match after the known vertical shift
+    // is positive evidence of scrolling content, not a fixed side panel.
+    std::vector<double> aligned;
+    std::vector<double> overlapUnchanged;
+    const int overlap = to.rows - std::abs(dy);
+    if (dy != 0 && overlap > 0) {
+        const int fromTop = std::max(0, dy);
+        const int toTop = std::max(0, -dy);
+        const cv::Mat target = to.rowRange(toTop, toTop + overlap);
+        aligned = columnAbsDiff(from.rowRange(fromTop, fromTop + overlap), target);
+        overlapUnchanged = columnAbsDiff(from.rowRange(toTop, toTop + overlap), target);
+    }
+    auto moving = [&](int x) {
+        if (unchanged[x] >= params.movingColumnDiffThreshold) return true;
+        return !aligned.empty() && std::min(stdFrom[x], stdTo[x]) >= kStaticColumnInkStdDev
+            && aligned[x] + kColumnMotionAdvantage < overlapUnchanged[x]
+            && aligned[x] < kColumnAlignmentRatio * overlapUnchanged[x];
+    };
+    int left = 0;
+    while (left < to.cols && !moving(left)) ++left;
+    int right = to.cols - 1;
+    while (right > left && !moving(right)) --right;
+    if (right - left + 1 < kMinMovingColumns) return full;
+    // A newly revealed rule or word is not a panel in the other frame.
+    // Require texture in both observations, rather than borrowing one frame's ink.
     auto runHasInk = [&](int begin, int end) { // [begin, end)
+        int inkColumns = 0;
         for (int x = begin; x < end; ++x) {
-            if (std::max(stdFrom[x], stdTo[x]) >= kStaticColumnInkStdDev) return true;
+            inkColumns = std::min(stdFrom[x], stdTo[x]) >= kStaticColumnInkStdDev ? inkColumns + 1 : 0;
+            if (inkColumns >= kMinStaticInkColumns) return true;
         }
         return false;
     };
@@ -356,8 +391,7 @@ StaticBands LongshotAnalyzer::detectStaticBands(const QImage& fromImage, const Q
 QRect LongshotAnalyzer::movingColumnSpan(const QImage& fromImage, const QImage& toImage, int dy,
                                          const AnalyzerParams& params)
 {
-    Q_UNUSED(dy);
-    return movingSpanImpl(gray(fromImage), gray(toImage), params);
+    return movingSpanImpl(gray(fromImage), gray(toImage), dy, params);
 }
 
 std::optional<ShiftObservation> LongshotAnalyzer::estimateShift(const QImage& fromImage, const FrameFeatures& fromFeatures,
@@ -423,7 +457,7 @@ std::optional<ShiftObservation> LongshotAnalyzer::estimateShift(const QImage& fr
     const auto firstNonZero = std::find_if(candidates.begin(), candidates.end(), [](int c) { return c != 0; });
     const int bandProbe = firstNonZero != candidates.end() ? *firstNonZero : candidates.front();
     const StaticBands bands = staticBandsImpl(from, to, toFeatures, bandProbe, params);
-    const QRect span = movingSpanImpl(from, to, params);
+    const QRect span = movingSpanImpl(from, to, bandProbe, params);
     const int contentTop = bands.top;
     const int contentBottom = height - bands.bottom; // exclusive
     if (contentBottom - contentTop < kMinContentRows) {
@@ -528,8 +562,8 @@ std::optional<ShiftObservation> LongshotAnalyzer::estimateShift(const QImage& fr
     const StaticBands finalBands = staticBandsImpl(from, to, toFeatures, obs.shift.dy, params);
     obs.bandsTo = finalBands;
     obs.bandsFrom = finalBands;
-    obs.movingSpanFrom = span;
-    obs.movingSpanTo = span;
+    obs.movingSpanFrom = movingSpanImpl(from, to, dy, params);
+    obs.movingSpanTo = obs.movingSpanFrom;
     return obs;
 }
 

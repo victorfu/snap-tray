@@ -785,6 +785,11 @@ target_link_libraries(Longshot_PositionSolver PRIVATE snaptray_algorithms Qt6::T
 add_test(NAME Longshot_PositionSolver COMMAND Longshot_PositionSolver)
 set_tests_properties(Longshot_PositionSolver PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Longshot_Reliability Longshot/tst_LongshotReliability.cpp)
+target_link_libraries(Longshot_Reliability PRIVATE snaptray_algorithms Qt6::Test)
+add_test(NAME Longshot_Reliability COMMAND Longshot_Reliability)
+set_tests_properties(Longshot_Reliability PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Longshot_FrameSource Longshot/tst_FrameSource.cpp)
 target_include_directories(Longshot_FrameSource PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(Longshot_FrameSource PRIVATE snaptray_platform snaptray_algorithms Qt6::Gui Qt6::Test

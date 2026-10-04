@@ -64,11 +64,23 @@ QImage renderFrame(const QImage& page, const QSize& viewport, const Trajectory& 
 // request, 1 s keyframes). Returns an empty string on success, else an error.
 QString encodeFrames(const QString& path, const std::vector<QImage>& frames, int frameRate);
 
+// Optional codec-domain observations at KNOWN page coordinates. Only rows
+// whose uncompressed input equals the desired page may calibrate the oracle;
+// overlays, hover states and lazy placeholders must never become ground truth.
+struct RowMatchReference {
+    int pageRow;
+    std::vector<float> profile;
+};
+using RowMatchReferences = std::vector<RowMatchReference>;
+void addRowMatchReferences(RowMatchReferences& references, const QImage& decoded, const QImage& original,
+                           const QImage& page, int pageTop);
+
 // Maps each output row to the best-matching ground-truth row (by a 64-bin
 // luma profile; ambiguous rows (uniform bands, identical text-line rows) are
 // resolved by the path with the fewest discontinuities) and scores the mapping. [firstPageRow, lastPageRow] is the page span the recording
 // actually showed, so rows outside it are not counted as missing.
-RowMatchReport compareWithGroundTruth(const QImage& result, const QImage& page, int firstPageRow, int lastPageRow);
+RowMatchReport compareWithGroundTruth(const QImage& result, const QImage& page, int firstPageRow, int lastPageRow,
+                                     const RowMatchReferences& references = {});
 
 // 64-bin luma profile distance (mean abs bin difference, 0..255) between row
 // ya of a and row yb of b; both must be RGB32.

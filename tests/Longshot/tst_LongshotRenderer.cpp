@@ -82,6 +82,7 @@ private:
 struct Run {
     QImage page;
     Trajectory trajectory;
+    Disturbances disturbances;
     AnalysisResult analysis;
     RenderResult render;
     QString path;
@@ -92,6 +93,7 @@ Run runEndToEnd(const QString& path, const PageSpec& spec, const Trajectory& bas
 {
     Run run;
     run.page = renderPage(spec);
+    run.disturbances = d;
     run.trajectory = clampTrajectory(base, run.page.height(), kViewport.height());
     std::vector<QImage> frames;
     for (size_t i = 0; i < run.trajectory.offsets.size(); ++i) frames.push_back(renderFrame(run.page, kViewport, run.trajectory, int(i), d));
@@ -116,7 +118,23 @@ void checkAgainstTruth(const Run& run, int headerHeight = 0, RowMatchReport* rep
     if (run.render.autoCroppedLeft || run.render.autoCroppedRight) {
         truth = truth.copy(run.render.autoCroppedLeft, 0, truth.width() - run.render.autoCroppedLeft - run.render.autoCroppedRight, truth.height());
     }
-    const RowMatchReport r = compareWithGroundTruth(out, truth, first, last);
+    // Build independent references from the fixture's known trajectory, not
+    // from the solver or renderer's tile choices. Only pristine source rows
+    // participate, so transient hover/placeholder pixels cannot be accepted.
+    auto source = FrameReaderLongshotSource::createNative();
+    QVERIFY(source->open(run.path, 0, -1, {}));
+    RowMatchReferences references;
+    size_t index = 0;
+    const QRect columns(run.render.autoCroppedLeft, 0, truth.width(), kViewport.height());
+    while (auto frame = source->next(nullptr)) {
+        QVERIFY(index < run.trajectory.offsets.size());
+        const QImage original = renderFrame(run.page, kViewport, run.trajectory, int(index), run.disturbances);
+        addRowMatchReferences(references, frame->copy(columns), original.copy(columns), truth,
+                              run.trajectory.offsets[index]);
+        ++index;
+    }
+    QCOMPARE(index, run.trajectory.offsets.size());
+    const RowMatchReport r = compareWithGroundTruth(out, truth, first, last, references);
     if (report) *report = r;
     qInfo() << "METRICS" << r.outputRows << r.matchedRows << r.duplicatedRows << r.missingRows << r.misalignedRows << r.unmatchedRows << "first" << first << "last" << last;
     const double rows = r.outputRows;
@@ -367,6 +385,10 @@ void tst_LongshotRenderer::endToEnd()
     const Run run = runEndToEnd(m_dir.filePath(QStringLiteral("e2e-%1.mp4").arg(kind)), PageSpec{}, t, d, LongshotOptions{}, &error);
     QVERIFY2(error.isEmpty(), qPrintable(error));
     RowMatchReport report;
+    // No footer exists in these fixtures: even a few missing tail rows are data loss.
+    const int expectedHeight = *std::max_element(run.trajectory.offsets.begin(), run.trajectory.offsets.end())
+        - *std::min_element(run.trajectory.offsets.begin(), run.trajectory.offsets.end()) + kViewport.height();
+    QCOMPARE(run.render.fullHeightPx, expectedHeight);
     checkAgainstTruth(run, 0, &report);
     QCOMPARE(run.render.fullHeightPx, run.render.parts.first().height());
     QVERIFY(!run.render.stickyHeaderIncluded);
