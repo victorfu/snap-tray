@@ -65,6 +65,9 @@ private slots:
     void unmatchedFramesAreRejected();
     void texturedStationaryFramesRemainValid();
     void noisyStationaryFramesAreDetected();
+    void localizedPauseNoiseDoesNotMaskAllContent_data();
+    void localizedPauseNoiseDoesNotMaskAllContent();
+    void staticSurroundingsDoNotHideSmallMovingContent();
     void failedSessionDoesNotCacheSuccess();
     void cancelledTrimBeforeRenderInvalidatesPreviousImage();
     void sparseSlowScrollIsNotStationary();
@@ -102,6 +105,51 @@ void tst_LongshotReliability::unmatchedFramesAreRejected()
     const auto rendered = LongshotRenderer::render(source, {}, 0, -1, {}, analysis, {}, {});
     QCOMPARE(rendered.error, LongshotError::NoReliableContent);
     QVERIFY(rendered.parts.empty());
+}
+
+void tst_LongshotReliability::localizedPauseNoiseDoesNotMaskAllContent_data()
+{
+    QTest::addColumn<int>("height");
+    QTest::addColumn<bool>("blankMargins");
+    QTest::newRow("minimum-crop") << 64 << false;
+    QTest::newRow("medium-crop") << 128 << false;
+    QTest::newRow("full-frame") << 480 << false;
+    QTest::newRow("blank-margins") << 480 << true;
+}
+void tst_LongshotReliability::localizedPauseNoiseDoesNotMaskAllContent()
+{
+    QFETCH(int,height); QFETCH(bool,blankMargins);
+    auto first=texture().copy(0,0,128,height);
+    if (blankMargins) {
+        first.fill(QColor(12,12,12));
+        QPainter painter(&first);
+        painter.drawImage(0,height/2-64,texture().copy(0,0,128,128));
+    }
+    QImage second=first.copy();
+    for(int y=height/2;y<height/2+12;++y) for(int x=0;x<second.width();++x) {
+        const int gray=std::clamp(qGray(first.pixel(x,y))+(x%2 ? 10 : -10),0,255);
+        second.setPixel(x,y,qRgb(gray,gray,gray));
+    }
+    const auto from=LongshotAnalyzer::computeFeatures(first,0), to=LongshotAnalyzer::computeFeatures(second,50);
+    const auto observation=LongshotAnalyzer::estimateShift(first,from,second,to,0,1,{});
+    QVERIFY(observation.has_value()); QVERIFY(observation->stationary);
+    QCOMPARE(observation->shift.dy,0);
+    QCOMPARE(observation->bandsFrom,StaticBands{});
+    QCOMPARE(observation->bandsTo,StaticBands{});
+    AnalyzerParams strict;
+    strict.minPeakScore=1.0;
+    QVERIFY(!LongshotAnalyzer::estimateShift(first,from,second,to,0,1,strict));
+}
+void tst_LongshotReliability::staticSurroundingsDoNotHideSmallMovingContent()
+{
+    const auto page=texture();
+    const auto first=page.copy(0,0,128,480);
+    QImage second=first.copy();
+    for(int y=240;y<256;++y) for(int x=0;x<second.width();++x)
+        second.setPixel(x,y,page.pixel(x,y+1));
+    const auto from=LongshotAnalyzer::computeFeatures(first,0), to=LongshotAnalyzer::computeFeatures(second,50);
+    const auto observation=LongshotAnalyzer::estimateShift(first,from,second,to,0,1,{});
+    QVERIFY(!observation || !observation->stationary);
 }
 
 void tst_LongshotReliability::texturedStationaryFramesRemainValid()

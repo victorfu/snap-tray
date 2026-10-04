@@ -3,6 +3,7 @@
 
 #include <QPainter>
 #include <QtTest>
+#include <QRandomGenerator>
 
 using namespace SnapTray::Longshot;
 using namespace SyntheticScroll;
@@ -36,6 +37,10 @@ class tst_LongshotAnalyzer : public QObject
 {
     Q_OBJECT
 private slots:
+    void lowerContrastRowsAreNotInk();
+    void verticalStripesDoNotProveVerticalPosition();
+    void sparseTerminalText_data();
+    void sparseTerminalText();
     void featuresHaveOneEntryPerRow();
     void recoversKnownShift_data();
     void recoversKnownShift();
@@ -52,6 +57,63 @@ private slots:
     void horizontalShiftIsRefused();
     void zoomIsRefused();
 };
+
+void tst_LongshotAnalyzer::lowerContrastRowsAreNotInk()
+{
+    FrameFeatures features;
+    features.rowMean.assign(64,100.0f); features.rowGradient.assign(64,0.0f);
+    features.rowTexture.assign(64,20.0f);
+    for(int y=0;y<16;++y) features.rowTexture[size_t(y)]=0.0f;
+    for(int y=48;y<64;++y) features.rowTexture[size_t(y)]=25.0f;
+    const auto flags=LongshotAnalyzer::rowInkFlags(features,{});
+    for(int y=0;y<48;++y) QVERIFY(!flags[size_t(y)]);
+    for(int y=48;y<64;++y) QVERIFY(flags[size_t(y)]);
+}
+
+void tst_LongshotAnalyzer::verticalStripesDoNotProveVerticalPosition()
+{
+    QImage frame(2048,384,QImage::Format_RGB32); frame.fill(QColor(12,12,12));
+    QPainter painter(&frame); painter.fillRect(24,0,4,384,QColor(220,220,220)); painter.end();
+    const auto features=LongshotAnalyzer::computeFeatures(frame,0);
+    const auto observed=LongshotAnalyzer::estimateShift(frame,features,frame,features,0,1,{});
+    QVERIFY(!observed); // horizontal contrast alone is not evidence of a vertical position
+}
+
+void tst_LongshotAnalyzer::sparseTerminalText_data()
+{
+    QTest::addColumn<bool>("dark"); QTest::addColumn<int>("shift");
+    QTest::newRow("dark-scroll") << true << 17;
+    QTest::newRow("light-scroll") << false << 17;
+    QTest::newRow("dark-slow-scroll") << true << 1;
+    QTest::newRow("dark-reverse") << true << -17;
+}
+void tst_LongshotAnalyzer::sparseTerminalText()
+{
+    QFETCH(bool,dark); QFETCH(int,shift);
+    QImage page(2048,960,QImage::Format_RGB32);
+    page.fill(dark ? QColor(12,12,12) : QColor(244,244,244));
+    QRandomGenerator random(812);
+    for (int line=0;line<40;++line) {
+        const int glyphs=1+int(random.bounded(4));
+        for(int glyph=0;glyph<glyphs;++glyph) {
+            const int left=24+int(random.bounded(120));
+            for(int y=0;y<9;++y) for(int x=0;x<2;++x) {
+                if (random.bounded(5)>0)
+                    page.setPixelColor(left+x,20+line*22+y,dark?QColor(220,220,220):QColor(30,30,30));
+            }
+        }
+    }
+    const QImage from=page.copy(0,200,2048,384), to=page.copy(0,200+shift,2048,384);
+    const auto ff=LongshotAnalyzer::computeFeatures(from,0), tf=LongshotAnalyzer::computeFeatures(to,50);
+    const auto flags=LongshotAnalyzer::rowInkFlags(ff,{});
+    QVERIFY2(std::count(flags.begin(),flags.end(),char(1)) >= 32,"Text must not disappear into the average of a wide blank row");
+    const auto observation=LongshotAnalyzer::estimateShift(from,ff,to,tf,0,1,{});
+    QVERIFY(observation.has_value());
+    QCOMPARE(observation->shift.dy,shift);
+    QVERIFY(!observation->stationary);
+    QCOMPARE(observation->bandsFrom,StaticBands{});
+    QCOMPARE(observation->bandsTo,StaticBands{});
+}
 
 void tst_LongshotAnalyzer::featuresHaveOneEntryPerRow()
 {

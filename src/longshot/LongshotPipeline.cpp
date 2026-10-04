@@ -19,6 +19,7 @@ constexpr int kBytesPerPixel = 4;
 constexpr int kRejoinNeighbours = 3;      // placed frames tried on each side of an unplaced frame
 constexpr int kClosureStride = 4;         // frames skipped between overlap closure checks
 constexpr int kRejoinMinGap = 1;          // chain neighbours are retried: closures search a larger shift range
+constexpr int kClosureEvidenceColumns = 32; // do not dilute sparse ink with blank page margins
 constexpr double kClosureRowTolerance = 10.0;     // mean |luma diff| for a row to agree at the claimed shift
 constexpr int kClosureMinInkedRows = 12;          // overlap rows with ink needed to trust a closure
 constexpr double kClosureMinAgreement = 0.75;     // fraction of inked overlap rows that must agree
@@ -52,10 +53,15 @@ bool closureAgreesWithPixels(const QImage& fromImage, const QImage& toImage, con
         if (!inkRows[y]) continue;
         const uchar* a = to.constScanLine(y);
         const uchar* b = from.constScanLine(y + dy);
-        qint64 sum = 0;
-        for (int x = span.left(); x <= span.right(); ++x) sum += std::abs(int(a[x]) - int(b[x]));
+        bool rowAgrees = true;
+        for (int left = span.left(); left <= span.right(); left += kClosureEvidenceColumns) {
+            const int end = std::min(span.right() + 1, left + kClosureEvidenceColumns);
+            int sum = 0;
+            for (int x = left; x < end; ++x) sum += std::abs(int(a[x]) - int(b[x]));
+            if (double(sum) / (end - left) > kClosureRowTolerance) { rowAgrees = false; break; }
+        }
         ++inked;
-        if (double(sum) / span.width() <= kClosureRowTolerance) ++agreeing;
+        if (rowAgrees) ++agreeing;
     }
     return inked >= kClosureMinInkedRows && double(agreeing) >= kClosureMinAgreement * inked;
 }

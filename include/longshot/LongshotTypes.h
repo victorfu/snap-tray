@@ -19,7 +19,7 @@ constexpr int kDefaultMaxHeightPx = 30000;
 // Analysis frames narrower or shorter than this cannot be matched reliably.
 constexpr int kMinAnalysisSide = 64;
 // Version of the analysis algorithm; part of every analysis cache key.
-constexpr int kAnalysisVersion = 3;
+constexpr int kAnalysisVersion = 4;
 
 // Crop-local pixel bands excluded from matching and rendering for ONE frame
 // (sticky header, bottom bar, side panels). Zero means nothing excluded.
@@ -38,6 +38,7 @@ struct FrameFeatures {
     qint64 tMs = 0;
     std::vector<float> rowMean;      // mean luma per crop-local row
     std::vector<float> rowGradient;  // mean |vertical luma gradient| per row
+    std::vector<float> rowTexture; // horizontal contrast, so narrow text survives wide margins
     bool stationary = false;         // no motion relative to the previous frame
     bool keyFrame = false;           // encoder keyframe (from the reader when known)
     StaticBands excludedBands;       // resolved for this frame from its pair observations

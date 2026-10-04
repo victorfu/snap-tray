@@ -50,7 +50,9 @@ cv::Mat gray(const QImage& image)
 
 // A row carries information when it has vertical edges (text line borders) or
 // its mean luma departs from the frame's typical (background) row, which
-// catches the solid interior rows of text lines, blocks and headers.
+// catches the solid interior rows of text lines, blocks and headers. Horizontal
+// contrast relative to the typical row also retains narrow text in wide crops;
+// a constant vertical stripe alone provides no evidence of vertical position.
 std::vector<char> inkedRows(const FrameFeatures& features, const AnalyzerParams& params)
 {
     const size_t n = features.rowMean.size();
@@ -59,9 +61,16 @@ std::vector<char> inkedRows(const FrameFeatures& features, const AnalyzerParams&
     std::vector<float> sorted(features.rowMean);
     std::nth_element(sorted.begin(), sorted.begin() + n / 2, sorted.end());
     const float median = sorted[n / 2];
+    float medianTexture = 0.0f;
+    if (features.rowTexture.size() == n) {
+        auto texture = features.rowTexture;
+        std::nth_element(texture.begin(), texture.begin() + n / 2, texture.end());
+        medianTexture = texture[n / 2];
+    }
     for (size_t y = 0; y < n; ++y) {
         inked[y] = features.rowGradient[y] >= params.inkGradientThreshold
-                   || std::abs(features.rowMean[y] - median) >= kInkMeanDeviation;
+                   || std::abs(features.rowMean[y] - median) >= kInkMeanDeviation
+                   || (features.rowTexture.size() == n && features.rowTexture[y] - medianTexture >= kMinTemplateStdDev);
     }
     return inked;
 }
@@ -209,6 +218,62 @@ NccMatch refineByNcc(const cv::Mat& from, const cv::Mat& to, int candidate, int 
     return {std::isfinite(maxVal) ? maxVal : 0.0, matchedRowInFrom - tplTop, tplRect};
 }
 
+// A noisy pause can look like two enormous static bands surrounding a few
+// changed codec rows. Verify zero motion locally before trusting that mask:
+// sparse moving text must veto a stationary header, and repeated patterns must
+// still provide a unique zero-shift match rather than mere visual similarity.
+bool verifiedNoisyPause(const cv::Mat& from, const cv::Mat& to, const std::vector<char>& inked,
+                        int maxShift, const AnalyzerParams& params)
+{
+    constexpr int kPatchSide = 64;
+    constexpr double kStationaryNcc = 0.98;
+    constexpr double kScoreRoundingTolerance = 0.001;
+    // Leave room to compare nonzero shifts even for the smallest supported crop.
+    const int patchRows = std::min(kPatchSide, to.rows / 2);
+    if (patchRows < kMinTemplateRows) return false;
+    std::vector<char> supported(to.rows, 0);
+    for (int top = 0; top < to.rows; top += patchRows) {
+        const int y = std::min(top, to.rows - patchRows);
+        const int height = patchRows;
+        for (int left = 0; left < to.cols; left += kPatchSide) {
+            const cv::Rect tile(left, y, std::min(kPatchSide, to.cols - left), height);
+            cv::Scalar mean, fromStd, toStd;
+            cv::meanStdDev(from(tile), mean, fromStd);
+            cv::meanStdDev(to(tile), mean, toStd);
+            if (std::max(fromStd[0], toStd[0]) < kMinTemplateStdDev) continue;
+            if (std::min(fromStd[0], toStd[0]) < kMinTemplateStdDev) return false;
+            const int searchTop = std::max(0, y - maxShift);
+            const int searchBottom = std::min(from.rows, y + height + maxShift);
+            cv::Mat scores;
+            cv::matchTemplate(from(cv::Rect(left, searchTop, tile.width, searchBottom - searchTop)),
+                              to(tile), scores, cv::TM_CCOEFF_NORMED);
+            const double zero = scores.at<float>(y - searchTop, 0);
+            if (!std::isfinite(zero) || zero < std::max(kStationaryNcc, params.minPeakScore)) return false;
+            double runner = 0.0;
+            for (int row = 0; row < scores.rows; ++row) {
+                const int shift = searchTop + row - y;
+                if (shift == 0) continue;
+                const double score = scores.at<float>(row, 0);
+                if (!std::isfinite(score)) continue;
+                const bool betterShift = score > zero + kScoreRoundingTolerance;
+                const bool nextRunner = std::abs(shift) > kPeakExclusionRows && score > runner;
+                if (!betterShift && !nextRunner) continue;
+                cv::Scalar candidateStd;
+                cv::meanStdDev(from(cv::Rect(left, searchTop + row, tile.width, height)), mean, candidateStd);
+                if (candidateStd[0] < kMinTemplateStdDev) continue;
+                if (betterShift) return false;
+                if (nextRunner) runner = score;
+            }
+            if (zero - runner >= params.minMargin) {
+                for (int row = y; row < y + height; ++row) {
+                    if (inked[size_t(row)]) supported[size_t(row)] = 1;
+                }
+            }
+        }
+    }
+    return std::count(supported.begin(), supported.end(), char(1)) >= kMinContentRows;
+}
+
 // Column-mean profile of rows [top, bottom) over the columns of `span`.
 std::vector<float> columnMeans(const cv::Mat& image, int top, int bottom, const QRect& span)
 {
@@ -249,8 +314,12 @@ FrameFeatures LongshotAnalyzer::computeFeatures(const QImage& frame, qint64 tMs)
     const cv::Mat g = gray(frame);
     f.rowMean.resize(g.rows);
     f.rowGradient.resize(g.rows);
+    f.rowTexture.resize(g.rows);
     for (int y = 0; y < g.rows; ++y) {
-        f.rowMean[y] = float(cv::mean(g.row(y))[0]);
+        cv::Scalar mean, deviation;
+        cv::meanStdDev(g.row(y), mean, deviation);
+        f.rowMean[y] = float(mean[0]);
+        f.rowTexture[y] = float(deviation[0]);
         if (y + 1 < g.rows) {
             cv::Mat diff;
             cv::absdiff(g.row(y + 1), g.row(y), diff);
@@ -461,6 +530,12 @@ std::optional<ShiftObservation> LongshotAnalyzer::estimateShift(const QImage& fr
     const int contentTop = bands.top;
     const int contentBottom = height - bands.bottom; // exclusive
     if (contentBottom - contentTop < kMinContentRows) {
+        if (candidates.front() == 0 && verifiedNoisyPause(from, to, inkedTo, maxAbsShift, params)) {
+            obs.stationary = true;
+            obs.shift.dy = 0;
+            obs.shift.confidence = 1.0;
+            return obs;
+        }
         qDebug() << "LongshotAnalyzer: too little content between bands" << bands.top << bands.bottom;
         return std::nullopt;
     }

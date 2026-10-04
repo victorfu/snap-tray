@@ -24,6 +24,8 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ### Fixed
 
+- Fixed long screenshot failures on sparse text in wide crops and on paused recordings affected by video compression noise.
+
 - Recording crop gestures now commit the final pointer position when mouse-move events are coalesced.
 
 - Trimming an MP4 recording with audio now keeps the audio instead of failing.
