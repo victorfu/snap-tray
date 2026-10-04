@@ -19,7 +19,7 @@ constexpr int kDefaultMaxHeightPx = 30000;
 // Analysis frames narrower or shorter than this cannot be matched reliably.
 constexpr int kMinAnalysisSide = 64;
 // Version of the analysis algorithm; part of every analysis cache key.
-constexpr int kAnalysisVersion = 1;
+constexpr int kAnalysisVersion = 2;
 
 // Crop-local pixel bands excluded from matching and rendering for ONE frame
 // (sticky header, bottom bar, side panels). Zero means nothing excluded.

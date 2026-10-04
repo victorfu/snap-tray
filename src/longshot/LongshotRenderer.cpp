@@ -107,18 +107,15 @@ bool framesAgreeOnTile(const AnalysisResult& a, int i, int j, int minPosition, i
 } // namespace
 
 std::vector<TileAssignment> LongshotRenderer::assignTiles(const AnalysisResult& a, const LongshotOptions& options,
-                                                          int outputHeight, int minPosition)
+                                                          int outputHeight, int minPosition, const QRect& columns)
 {
     std::vector<TileAssignment> tiles;
     const int tileRows = std::max(1, options.tileRows);
     const int frameCount = int(a.frames.size());
-    // Rows above the first valid row of any frame are never covered (excluded
-    // header band); the first tile only has to cover from there.
-    int coveredTop = outputHeight;
-    for (int i = 0; i < frameCount; ++i) {
-        int fTop = 0, fBottom = 0;
-        if (frameCoverage(a, i, minPosition, &fTop, &fBottom)) coveredTop = std::min(coveredTop, fTop);
-    }
+    auto coversColumns = [&](int index) {
+        const QRect valid = a.frames[index].validContentRect;
+        return columns.isEmpty() || (valid.left() <= columns.left() && valid.right() >= columns.right());
+    };
     auto assignRange = [&](int top, int bottom) {
         TileAssignment tile;
         tile.outputTop = top;
@@ -127,7 +124,7 @@ std::vector<TileAssignment> LongshotRenderer::assignTiles(const AnalysisResult& 
         for (int i = 0; i < frameCount; ++i) {
             int fTop = 0, fBottom = 0;
             if (!frameCoverage(a, i, minPosition, &fTop, &fBottom)) continue;
-            if (fTop > std::max(tile.outputTop, coveredTop) || fBottom < tile.outputBottom) continue;
+            if (!coversColumns(i) || fTop > tile.outputTop || fBottom < tile.outputBottom) continue;
             const double frameCentre = (fTop + fBottom) / 2.0;
             const double tileCentre = (tile.outputTop + tile.outputBottom) / 2.0;
             const double centrality = 1.0 - std::min(1.0, std::abs(tileCentre - frameCentre) / std::max(1, fBottom - fTop));
@@ -253,11 +250,33 @@ RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString
         if (frameCoverage(a, i, minPosition, &t, &b)) { contentTop = std::min(contentTop, t); contentBottom = std::max(contentBottom, b); }
     }
     const int bodyHeight = contentBottom - contentTop;
-    std::vector<TileAssignment> tiles = assignTiles(a, options, contentBottom, minPosition);
-    // Drop tiles above the first valid row (header area excluded everywhere).
-    tiles.erase(std::remove_if(tiles.begin(), tiles.end(), [&](const TileAssignment& t) { return t.outputBottom <= contentTop; }), tiles.end());
-    if (!tiles.empty() && tiles.front().outputTop < contentTop) tiles.front().outputTop = contentTop;
-    placeSeams(tiles, a, minPosition);
+    // Split only where a frame's horizontal mask changes. Each strip then uses
+    // the existing tile/seam policy, restricted to frames covering that strip.
+    // This preserves the union width without sampling another frame's sidebar.
+    struct PaintTile { QRect rect; int frameIndex; };
+    std::vector<PaintTile> paintTiles;
+    std::vector<int> columnEdges{columns.left(), columns.right() + 1};
+    for (int i = 0; i < frameCount; ++i) {
+        if (!a.solve.positions[i] || !a.frames[i].validContentRect.isValid()) continue;
+        const QRect valid = a.frames[i].validContentRect;
+        columnEdges.push_back(valid.left());
+        columnEdges.push_back(valid.right() + 1);
+    }
+    std::sort(columnEdges.begin(), columnEdges.end());
+    columnEdges.erase(std::unique(columnEdges.begin(), columnEdges.end()), columnEdges.end());
+    for (size_t i = 1; i < columnEdges.size(); ++i) {
+        const QRect strip(columnEdges[i - 1], 0, columnEdges[i] - columnEdges[i - 1], 1);
+        auto tiles = assignTiles(a, options, contentBottom, minPosition, strip);
+        tiles.erase(std::remove_if(tiles.begin(), tiles.end(), [&](const TileAssignment& t) {
+            return t.outputBottom <= contentTop;
+        }), tiles.end());
+        if (!tiles.empty()) tiles.front().outputTop = std::max(tiles.front().outputTop, contentTop);
+        placeSeams(tiles, a, minPosition);
+        for (const TileAssignment& tile : tiles) {
+            paintTiles.push_back({QRect(strip.left(), tile.outputTop, strip.width(),
+                                       tile.outputBottom - tile.outputTop), tile.frameIndex});
+        }
+    }
 
     result.fullHeightPx = headerRows + bodyHeight;
     const int outputHeight = result.fullHeightPx;
@@ -279,9 +298,10 @@ RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString
         parts.push_back(part);
     }
     if (parts.isEmpty()) { result.error = LongshotError::NoReliableContent; return result; }
-    // Paints frame rows [srcTop, srcTop + height) (output columns) at output
-    // row destTop, into every part the range overlaps.
-    auto paintRows = [&](const QImage& frame, int srcTop, int destTop, int height) {
+    // Paint a valid source rectangle at output row destTop, into every part
+    // it overlaps. Horizontal placement preserves the union output columns.
+    auto paintRows = [&](const QImage& frame, const QRect& sourceRect, int destTop) {
+        const int height = sourceRect.height();
         const int first = std::max(0, destTop / partHeight);
         for (int p = first; p < parts.size(); ++p) {
             const int partTop = p * partHeight;
@@ -290,24 +310,34 @@ RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString
             if (from >= destTop + height) break;
             if (to <= from) continue;
             QPainter painter(&parts[p]);
-            painter.drawImage(QPoint(0, from - partTop), frame, QRect(columns.left(), srcTop + (from - destTop), columns.width(), to - from));
+            painter.drawImage(QPoint(sourceRect.left() - columns.left(), from - partTop), frame,
+                              QRect(sourceRect.left(), sourceRect.top() + (from - destTop), sourceRect.width(), to - from));
         }
     };
 
-    // Which frames paint which output row ranges.
-    std::map<int, std::vector<std::pair<int, int>>> ranges; // frame -> [(outTop, outBottom)]
-    for (const TileAssignment& t : tiles) {
-        if (t.outputBottom <= t.outputTop) continue;
-        if (t.frameIndex < 0) {
-            for (int y = t.outputTop; y < t.outputBottom; ++y) {
+    // Which frames paint which rectangles. Partial horizontal gaps use the
+    // same white background and break-row reporting as missing vertical rows.
+    std::map<int, std::vector<QRect>> ranges;
+    for (const PaintTile& tile : paintTiles) {
+        if (tile.rect.isEmpty()) continue;
+        if (tile.frameIndex < 0) {
+            for (int y = tile.rect.top(); y <= tile.rect.bottom(); ++y) {
                 const int row = headerRows + y - contentTop;
-                if (row < renderHeight) result.breakRows.push_back(row);
+                if (row >= 0 && row < renderHeight) result.breakRows.push_back(row);
             }
-            continue;
+        } else {
+            ranges[tile.frameIndex].push_back(tile.rect);
         }
-        ranges[t.frameIndex].push_back({t.outputTop, t.outputBottom});
     }
-    if (headerRows > 0) ranges[headerFrame].push_back({-headerRows, 0}); // sentinel: header band
+    if (headerRows > 0) {
+        const QRect valid = a.frames[headerFrame].validContentRect;
+        const int left = std::max(columns.left(), valid.left());
+        const int right = std::min(columns.right(), valid.right());
+        ranges[headerFrame].push_back(QRect(left, -headerRows, right - left + 1, headerRows));
+        if (left > columns.left() || right < columns.right()) {
+            for (int y = 0; y < std::min(headerRows, renderHeight); ++y) result.breakRows.push_back(y);
+        }
+    }
 
     // Low-confidence rows: frames placed only through weak edges.
     std::vector<double> bestEdgeConfidence(frameCount, 0.0);
@@ -329,10 +359,12 @@ RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString
         const auto it = ranges.find(index);
         if (it != ranges.end()) {
             const int pos = *a.solve.positions[index] - minPosition;
-            for (const auto& [outTop, outBottom] : it->second) {
+            for (const QRect& range : it->second) {
+                const int outTop = range.top();
+                const int outBottom = range.bottom() + 1;
                 if (outTop < 0) {
                     // Header band from the frame's excluded top rows.
-                    paintRows(*frame, 0, 0, std::min(headerRows, renderHeight));
+                    paintRows(*frame, QRect(range.left(), 0, range.width(), std::min(headerRows, renderHeight)), 0);
                     continue;
                 }
                 const int srcTop = outTop - pos;
@@ -340,7 +372,7 @@ RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString
                 const int height = outBottom - outTop;
                 if (destTop >= renderHeight) continue;
                 const int clippedHeight = std::min(height, renderHeight - destTop);
-                paintRows(*frame, srcTop, destTop, clippedHeight);
+                paintRows(*frame, QRect(range.left(), srcTop, range.width(), clippedHeight), destTop);
                 if (bestEdgeConfidence[index] < kLowConfidence && index != firstPlaced) {
                     for (int y = destTop; y < destTop + clippedHeight; ++y) result.lowConfidenceRows.push_back(y);
                 }
@@ -358,6 +390,10 @@ RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString
 
     result.parts = parts;
     std::sort(result.breakRows.begin(), result.breakRows.end());
+    result.breakRows.erase(std::unique(result.breakRows.begin(), result.breakRows.end()), result.breakRows.end());
+    std::sort(result.lowConfidenceRows.begin(), result.lowConfidenceRows.end());
+    result.lowConfidenceRows.erase(std::unique(result.lowConfidenceRows.begin(), result.lowConfidenceRows.end()),
+                                   result.lowConfidenceRows.end());
     if (progress) progress(100);
     qDebug() << "LongshotRenderer: height" << result.fullHeightPx << "parts" << result.parts.size() << "capped" << result.heightCapped
              << "side crop" << result.autoCroppedLeft << result.autoCroppedRight << "break rows" << result.breakRows.size();
