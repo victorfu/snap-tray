@@ -1,5 +1,12 @@
 # Recording Preview Crop (Phase 1) Implementation Plan
 
+## Implementation audit — 2026-10-04
+
+- [x] The planned core implementation is present on dev-3 (baseline `7afc5b80`).
+- [ ] Complete all native platform/hardware acceptance gates. Implementation presence is not runtime proof.
+
+The historical step checkboxes below retain the original execution recipe. Current remaining work and evidence are tracked in [dev-3 completion](2026-10-04-dev-3-completion.md); the review tracker remains authoritative for review IDs.
+
 > Implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. This document contains the Phase 1 specification and does not require an external design document or workflow skill.
 
 **Goal:** Let users choose a region of a finished screen recording by cropping in RecordingPreview, and export MP4/GIF/WebP with that crop. MP4 trims and crops must keep their audio.

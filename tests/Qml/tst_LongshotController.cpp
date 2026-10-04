@@ -30,8 +30,8 @@ public:
 private:
     QImage m_frame; bool m_slow; int m_index = 0;
 };
-LongshotSession::SourceFactory factory(bool slow = false) {
-    auto page = SyntheticScroll::renderPage({320, 240, 42});
+LongshotSession::SourceFactory factory(bool slow = false, QSize size = QSize(320, 240)) {
+    auto page = SyntheticScroll::renderPage({size.width(), size.height(), 42});
     return [page, slow] { return std::make_unique<Source>(page, slow); };
 }
 }
@@ -62,6 +62,33 @@ private slots:
         QCOMPARE(QDir(dir.path()).entryList({"capture*.png"}, QDir::Files).size(), 1);
         QVERIFY(controller.hasResult());
         controller.invalidate(); QVERIFY(!controller.hasResult());
+    }
+    void splitSaveAndPinSelectedPart() {
+        QTemporaryDir dir;
+        LongshotController controller(nullptr, factory(false, QSize(96, 30064)));
+        QSignalSpy ready(&controller, &LongshotController::resultReady);
+        QSignalSpy saved(&controller, &LongshotController::imageSaved);
+        QSignalSpy pinned(&controller, &LongshotController::pinRequested);
+        controller.start("tall-fixture", 0, -1, {});
+        QTRY_COMPARE_WITH_TIMEOUT(ready.count(), 1, 20000);
+        QCOMPARE(controller.partCount(), 2);
+        QCOMPARE(controller.imageSize(), QSize(96, 30000));
+        controller.setSelectedPart(1);
+        QCOMPARE(controller.imageSize(), QSize(96, 64));
+        QCOMPARE(controller.partStartRow(), 30000);
+        controller.pin();
+        QCOMPARE(pinned.count(), 1);
+        QCOMPARE(qvariant_cast<QImage>(pinned.first().first()).size(), QSize(96, 64));
+        QVERIFY(controller.saveToDirectory(dir.path(), "split"));
+        QCOMPARE(saved.count(), 2);
+        const auto files = QDir(dir.path()).entryList({"split*.png"}, QDir::Files, QDir::Name);
+        QCOMPARE(files.size(), 2);
+        QCOMPARE(QImage(dir.filePath(files[0])).size(), QSize(96, 30000));
+        QCOMPARE(QImage(dir.filePath(files[1])).size(), QSize(96, 64));
+        QVERIFY(controller.saveToDirectory(dir.path(), "split"));
+        QCOMPARE(saved.count(), 2);
+        QCOMPARE(QDir(dir.path()).entryList({"split*.png"}, QDir::Files).size(), 2);
+        QVERIFY(controller.hasResult());
     }
     void cancellationKeepsEventLoopResponsive() {
         LongshotController controller(nullptr, factory(true));

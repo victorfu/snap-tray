@@ -1843,6 +1843,42 @@ Koko: %2</translation>
         <source>Cancel</source>
         <translation>Peruuta</translation>
     </message>
+    <message>
+        <source>Long Screenshot</source>
+        <translation>Pitkä kuvakaappaus</translation>
+    </message>
+    <message>
+        <source>Generate Long Screenshot</source>
+        <translation>Luo pitkä kuvakaappaus</translation>
+    </message>
+    <message>
+        <source>Crop to the scrolling area, then generate a long screenshot.</source>
+        <translation>Rajaa vieritysalueeseen ja luo sitten pitkä kuvakaappaus.</translation>
+    </message>
+    <message>
+        <source>Remove Fixed Header</source>
+        <translation>Poista kiinteä otsake</translation>
+    </message>
+    <message>
+        <source>Include Fixed Header</source>
+        <translation>Sisällytä kiinteä otsake</translation>
+    </message>
+    <message>
+        <source>Save PNG</source>
+        <translation>Tallenna PNG</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Takaisin</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopioi</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Kiinnitä</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3307,6 +3343,89 @@ Tiedoston koko: %3</translation>
     <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Tunnista ja sumenna kasvot ja tunnistetiedot automaattisesti</translation>
+    </message>
+</context>
+<context>
+    <name>LongshotController</name>
+    <message>
+        <source>Select a longer recording range.</source>
+        <translation>Valitse pidempi tallennusjakso.</translation>
+    </message>
+    <message>
+        <source>Crop must be at least 64 pixels on each side.</source>
+        <translation>Rajauksen jokaisen sivun on oltava vähintään 64 pikseliä.</translation>
+    </message>
+    <message>
+        <source>This range is too long. Trim it and try again.</source>
+        <translation>Jakso on liian pitkä. Lyhennä sitä ja yritä uudelleen.</translation>
+    </message>
+    <message>
+        <source>Not enough memory. Choose a smaller crop or range.</source>
+        <translation>Muisti ei riitä. Valitse pienempi rajaus tai lyhyempi jakso.</translation>
+    </message>
+    <message>
+        <source>No reliable scrolling content was found.</source>
+        <translation>Luotettavaa vieritettävää sisältöä ei löytynyt.</translation>
+    </message>
+    <message>
+        <source>The recording could not be decoded. The source has been kept.</source>
+        <translation>Tallennusta ei voitu purkaa. Alkuperäinen tiedosto säilytettiin.</translation>
+    </message>
+    <message>
+        <source>Auto-cropped columns: left %1, right %2.</source>
+        <translation>Automaattisesti rajatut sarakkeet: vasen %1, oikea %2.</translation>
+    </message>
+    <message>
+        <source>Review the marked areas: the result may be incomplete.</source>
+        <translation>Tarkista merkityt alueet: tulos voi olla puutteellinen.</translation>
+    </message>
+    <message>
+        <source>Analyzing...</source>
+        <translation>Analysoidaan…</translation>
+    </message>
+    <message>
+        <source>Solving positions...</source>
+        <translation>Lasketaan sijainteja…</translation>
+    </message>
+    <message>
+        <source>Rendering...</source>
+        <translation>Piirretään…</translation>
+    </message>
+    <message>
+        <source>Could not create the result preview.</source>
+        <translation>Tuloksen esikatselua ei voitu luoda.</translation>
+    </message>
+    <message>
+        <source>Missing coverage</source>
+        <translation>Puuttuva sisältö</translation>
+    </message>
+    <message>
+        <source>Low confidence</source>
+        <translation>Heikko luotettavuus</translation>
+    </message>
+    <message>
+        <source>Unjoined recording section</source>
+        <translation>Yhdistämätön tallennusjakso</translation>
+    </message>
+    <message>
+        <source>Copied part %1.</source>
+        <translation>Osa %1 kopioitu.</translation>
+    </message>
+    <message>
+        <source>Save Long Screenshot</source>
+        <translation>Tallenna pitkä kuvakaappaus</translation>
+    </message>
+    <message>
+        <source>PNG image (*.png)</source>
+        <translation>PNG-kuva (*.png)</translation>
+    </message>
+    <message>
+        <source>Part %1: %2</source>
+        <translation>Osa %1: %2</translation>
+    </message>
+    <message>
+        <source>Saved %1 of %2 parts.</source>
+        <translation>Tallennettu %1/%2 osaa.</translation>
     </message>
 </context>
 </TS>

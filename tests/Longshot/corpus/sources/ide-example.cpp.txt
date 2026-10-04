@@ -1,0 +1,300 @@
+// Dedicated display fixture, not compiled. Open in the target IDE.
+// Section 001
+int fixture_001(int input) { return input * 2 + 7919; }
+
+// Section 002
+int fixture_002(int input) { return input * 3 + 15838; }
+
+// Section 003
+int fixture_003(int input) { return input * 4 + 23757; }
+
+// Section 004
+int fixture_004(int input) { return input * 5 + 31676; }
+
+// Section 005
+int fixture_005(int input) { return input * 6 + 39595; }
+
+// Section 006
+int fixture_006(int input) { return input * 7 + 47514; }
+
+// Section 007
+int fixture_007(int input) { return input * 8 + 55433; }
+
+// Section 008
+int fixture_008(int input) { return input * 9 + 63352; }
+
+// Section 009
+int fixture_009(int input) { return input * 10 + 71271; }
+
+// Section 010
+int fixture_010(int input) { return input * 11 + 79190; }
+
+// Section 011
+int fixture_011(int input) { return input * 12 + 87109; }
+
+// Section 012
+int fixture_012(int input) { return input * 13 + 95028; }
+
+// Section 013
+int fixture_013(int input) { return input * 14 + 2944; }
+
+// Section 014
+int fixture_014(int input) { return input * 15 + 10863; }
+
+// Section 015
+int fixture_015(int input) { return input * 16 + 18782; }
+
+// Section 016
+int fixture_016(int input) { return input * 17 + 26701; }
+
+// Section 017
+int fixture_017(int input) { return input * 18 + 34620; }
+
+// Section 018
+int fixture_018(int input) { return input * 19 + 42539; }
+
+// Section 019
+int fixture_019(int input) { return input * 20 + 50458; }
+
+// Section 020
+int fixture_020(int input) { return input * 21 + 58377; }
+
+// Section 021
+int fixture_021(int input) { return input * 22 + 66296; }
+
+// Section 022
+int fixture_022(int input) { return input * 23 + 74215; }
+
+// Section 023
+int fixture_023(int input) { return input * 24 + 82134; }
+
+// Section 024
+int fixture_024(int input) { return input * 25 + 90053; }
+
+// Section 025
+int fixture_025(int input) { return input * 26 + 97972; }
+
+// Section 026
+int fixture_026(int input) { return input * 27 + 5888; }
+
+// Section 027
+int fixture_027(int input) { return input * 28 + 13807; }
+
+// Section 028
+int fixture_028(int input) { return input * 29 + 21726; }
+
+// Section 029
+int fixture_029(int input) { return input * 30 + 29645; }
+
+// Section 030
+int fixture_030(int input) { return input * 31 + 37564; }
+
+// Section 031
+int fixture_031(int input) { return input * 32 + 45483; }
+
+// Section 032
+int fixture_032(int input) { return input * 33 + 53402; }
+
+// Section 033
+int fixture_033(int input) { return input * 34 + 61321; }
+
+// Section 034
+int fixture_034(int input) { return input * 35 + 69240; }
+
+// Section 035
+int fixture_035(int input) { return input * 36 + 77159; }
+
+// Section 036
+int fixture_036(int input) { return input * 37 + 85078; }
+
+// Section 037
+int fixture_037(int input) { return input * 38 + 92997; }
+
+// Section 038
+int fixture_038(int input) { return input * 39 + 913; }
+
+// Section 039
+int fixture_039(int input) { return input * 40 + 8832; }
+
+// Section 040
+int fixture_040(int input) { return input * 41 + 16751; }
+
+// Section 041
+int fixture_041(int input) { return input * 42 + 24670; }
+
+// Section 042
+int fixture_042(int input) { return input * 43 + 32589; }
+
+// Section 043
+int fixture_043(int input) { return input * 44 + 40508; }
+
+// Section 044
+int fixture_044(int input) { return input * 45 + 48427; }
+
+// Section 045
+int fixture_045(int input) { return input * 46 + 56346; }
+
+// Section 046
+int fixture_046(int input) { return input * 47 + 64265; }
+
+// Section 047
+int fixture_047(int input) { return input * 48 + 72184; }
+
+// Section 048
+int fixture_048(int input) { return input * 49 + 80103; }
+
+// Section 049
+int fixture_049(int input) { return input * 50 + 88022; }
+
+// Section 050
+int fixture_050(int input) { return input * 51 + 95941; }
+
+// Section 051
+int fixture_051(int input) { return input * 52 + 3857; }
+
+// Section 052
+int fixture_052(int input) { return input * 53 + 11776; }
+
+// Section 053
+int fixture_053(int input) { return input * 54 + 19695; }
+
+// Section 054
+int fixture_054(int input) { return input * 55 + 27614; }
+
+// Section 055
+int fixture_055(int input) { return input * 56 + 35533; }
+
+// Section 056
+int fixture_056(int input) { return input * 57 + 43452; }
+
+// Section 057
+int fixture_057(int input) { return input * 58 + 51371; }
+
+// Section 058
+int fixture_058(int input) { return input * 59 + 59290; }
+
+// Section 059
+int fixture_059(int input) { return input * 60 + 67209; }
+
+// Section 060
+int fixture_060(int input) { return input * 61 + 75128; }
+
+// Section 061
+int fixture_061(int input) { return input * 62 + 83047; }
+
+// Section 062
+int fixture_062(int input) { return input * 63 + 90966; }
+
+// Section 063
+int fixture_063(int input) { return input * 64 + 98885; }
+
+// Section 064
+int fixture_064(int input) { return input * 65 + 6801; }
+
+// Section 065
+int fixture_065(int input) { return input * 66 + 14720; }
+
+// Section 066
+int fixture_066(int input) { return input * 67 + 22639; }
+
+// Section 067
+int fixture_067(int input) { return input * 68 + 30558; }
+
+// Section 068
+int fixture_068(int input) { return input * 69 + 38477; }
+
+// Section 069
+int fixture_069(int input) { return input * 70 + 46396; }
+
+// Section 070
+int fixture_070(int input) { return input * 71 + 54315; }
+
+// Section 071
+int fixture_071(int input) { return input * 72 + 62234; }
+
+// Section 072
+int fixture_072(int input) { return input * 73 + 70153; }
+
+// Section 073
+int fixture_073(int input) { return input * 74 + 78072; }
+
+// Section 074
+int fixture_074(int input) { return input * 75 + 85991; }
+
+// Section 075
+int fixture_075(int input) { return input * 76 + 93910; }
+
+// Section 076
+int fixture_076(int input) { return input * 77 + 1826; }
+
+// Section 077
+int fixture_077(int input) { return input * 78 + 9745; }
+
+// Section 078
+int fixture_078(int input) { return input * 79 + 17664; }
+
+// Section 079
+int fixture_079(int input) { return input * 80 + 25583; }
+
+// Section 080
+int fixture_080(int input) { return input * 81 + 33502; }
+
+// Section 081
+int fixture_081(int input) { return input * 82 + 41421; }
+
+// Section 082
+int fixture_082(int input) { return input * 83 + 49340; }
+
+// Section 083
+int fixture_083(int input) { return input * 84 + 57259; }
+
+// Section 084
+int fixture_084(int input) { return input * 85 + 65178; }
+
+// Section 085
+int fixture_085(int input) { return input * 86 + 73097; }
+
+// Section 086
+int fixture_086(int input) { return input * 87 + 81016; }
+
+// Section 087
+int fixture_087(int input) { return input * 88 + 88935; }
+
+// Section 088
+int fixture_088(int input) { return input * 89 + 96854; }
+
+// Section 089
+int fixture_089(int input) { return input * 90 + 4770; }
+
+// Section 090
+int fixture_090(int input) { return input * 91 + 12689; }
+
+// Section 091
+int fixture_091(int input) { return input * 92 + 20608; }
+
+// Section 092
+int fixture_092(int input) { return input * 93 + 28527; }
+
+// Section 093
+int fixture_093(int input) { return input * 94 + 36446; }
+
+// Section 094
+int fixture_094(int input) { return input * 95 + 44365; }
+
+// Section 095
+int fixture_095(int input) { return input * 96 + 52284; }
+
+// Section 096
+int fixture_096(int input) { return input * 97 + 60203; }
+
+// Section 097
+int fixture_097(int input) { return input * 98 + 68122; }
+
+// Section 098
+int fixture_098(int input) { return input * 99 + 76041; }
+
+// Section 099
+int fixture_099(int input) { return input * 100 + 83960; }
+
+// Section 100
+int fixture_100(int input) { return input * 101 + 91879; }

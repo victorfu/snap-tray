@@ -1840,6 +1840,42 @@ Size: %2</source>
         <source>Cancel</source>
         <translation>取消</translation>
     </message>
+    <message>
+        <source>Long Screenshot</source>
+        <translation>长截图</translation>
+    </message>
+    <message>
+        <source>Generate Long Screenshot</source>
+        <translation>生成长截图</translation>
+    </message>
+    <message>
+        <source>Crop to the scrolling area, then generate a long screenshot.</source>
+        <translation>请裁剪至滚动区域，再生成长截图。</translation>
+    </message>
+    <message>
+        <source>Remove Fixed Header</source>
+        <translation>移除固定页眉</translation>
+    </message>
+    <message>
+        <source>Include Fixed Header</source>
+        <translation>保留固定页眉</translation>
+    </message>
+    <message>
+        <source>Save PNG</source>
+        <translation>保存 PNG</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>返回</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>复制</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>固定</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3304,6 +3340,89 @@ File size: %3</source>
     <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>自动检测并模糊人脸和凭证信息</translation>
+    </message>
+</context>
+<context>
+    <name>LongshotController</name>
+    <message>
+        <source>Select a longer recording range.</source>
+        <translation>请选择较长的录制范围。</translation>
+    </message>
+    <message>
+        <source>Crop must be at least 64 pixels on each side.</source>
+        <translation>裁剪区域的每边至少须有 64 像素。</translation>
+    </message>
+    <message>
+        <source>This range is too long. Trim it and try again.</source>
+        <translation>此范围过长，请缩短后重试。</translation>
+    </message>
+    <message>
+        <source>Not enough memory. Choose a smaller crop or range.</source>
+        <translation>内存不足，请缩小裁剪区域或录制范围。</translation>
+    </message>
+    <message>
+        <source>No reliable scrolling content was found.</source>
+        <translation>找不到可靠的滚动内容。</translation>
+    </message>
+    <message>
+        <source>The recording could not be decoded. The source has been kept.</source>
+        <translation>无法解码录像，原始文件已保留。</translation>
+    </message>
+    <message>
+        <source>Auto-cropped columns: left %1, right %2.</source>
+        <translation>自动裁去的列数：左 %1，右 %2。</translation>
+    </message>
+    <message>
+        <source>Review the marked areas: the result may be incomplete.</source>
+        <translation>请检查标记区域，结果可能不完整。</translation>
+    </message>
+    <message>
+        <source>Analyzing...</source>
+        <translation>正在分析…</translation>
+    </message>
+    <message>
+        <source>Solving positions...</source>
+        <translation>正在求解位置…</translation>
+    </message>
+    <message>
+        <source>Rendering...</source>
+        <translation>正在渲染…</translation>
+    </message>
+    <message>
+        <source>Could not create the result preview.</source>
+        <translation>无法创建结果预览。</translation>
+    </message>
+    <message>
+        <source>Missing coverage</source>
+        <translation>内容缺口</translation>
+    </message>
+    <message>
+        <source>Low confidence</source>
+        <translation>置信度较低</translation>
+    </message>
+    <message>
+        <source>Unjoined recording section</source>
+        <translation>未拼接的录影片段</translation>
+    </message>
+    <message>
+        <source>Copied part %1.</source>
+        <translation>已复制第 %1 张。</translation>
+    </message>
+    <message>
+        <source>Save Long Screenshot</source>
+        <translation>保存长截图</translation>
+    </message>
+    <message>
+        <source>PNG image (*.png)</source>
+        <translation>PNG 图片 (*.png)</translation>
+    </message>
+    <message>
+        <source>Part %1: %2</source>
+        <translation>第 %1 张：%2</translation>
+    </message>
+    <message>
+        <source>Saved %1 of %2 parts.</source>
+        <translation>已保存 %1 张，共 %2 张。</translation>
     </message>
 </context>
 </TS>

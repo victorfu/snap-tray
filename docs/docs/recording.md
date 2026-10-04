@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-03-26
+last_modified_at: 2026-10-04
 layout: docs
 title: Recording
 seo_title: "SnapTray Screen Recording: MP4, GIF and WebP Capture for macOS and Windows"
@@ -58,3 +58,18 @@ GIF and WebP exports are silent.
 Open Settings > Recording and adjust frame rate, quality, countdown, and preview behavior.
 
 The quality slider sets the quality of the saved video. When preview is on, the recording itself is captured at high quality so trims and crops do not lose detail; saving converts it to the selected quality, or keeps the file as is when it is already small enough. If the drive holding temporary recordings has less than about ten minutes of high-quality space free, SnapTray records at the selected quality instead and shows a warning. With preview off, recordings are written directly at the selected quality.
+
+## Long screenshots from recordings
+
+On macOS and Windows, record while manually scrolling one vertical content area. In Recording Preview, trim the relevant interval and crop to the scrolling area (window snapping is available). Choose **Long Screenshot**, then use the save/generate button. Playback pauses while the screenshot is analyzed and rendered; **Cancel** keeps the recording.
+
+Review the result before sharing. The result reports automatic side cropping, low-confidence regions and unjoined sections. Click a marker with a known source time to return to that point in the video; a missing-coverage marker without a source cannot seek. Uncertain joins are not invented. An entirely unreliable recording produces an error instead of an image.
+
+- **Save PNG** saves all parts, with numbered filenames when needed. Existing files are not overwritten; collisions receive a unique name. A failed part can be retried without saving successful parts again to the same destination.
+- **Copy** and **Pin** use the selected part at its original resolution.
+- **Back** returns to the video to adjust the crop or trim, or export a video instead.
+- Fixed headers are excluded by default; use **Include Fixed Header** to regenerate with the observed header.
+
+Outputs taller than 30,000 pixels split automatically. All three output actions keep the original recording open. Closing Recording Preview still discards its temporary recording. The preview loads visible image tiles rather than one oversized texture. Extremely large results or ranges are rejected with a message; shorten the range or reduce the crop.
+
+This feature supports vertical scrolling only and is unavailable in Linux beta. Recording on 5K/6K displays has not yet been validated.

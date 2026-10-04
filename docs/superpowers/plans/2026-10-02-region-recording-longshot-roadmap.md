@@ -1,5 +1,7 @@
 # Region Recording and Long Screenshot Roadmap
 
+> 2026-10-04 audit: Phases 1–3 and 4a have implementations on dev-3. Phase 4b integration and remaining validation are tracked in [dev-3 completion](2026-10-04-dev-3-completion.md). Native corpus, cross-platform and 5K/6K acceptance must not be inferred from source completion.
+
 > This is the roadmap for the whole effort. Phase 1 has a detailed, executable plan in `2026-10-02-recording-preview-crop.md`. Phases 2-4 are only broken down into tasks and interfaces here. Each phase gets its own detailed plan once the phase before it has merged. That way the details are based on the code as it actually stands.
 
 **Goal:** Region recording that needs no selection before recording starts, and a long screenshot (scrolling capture) built on top of it.

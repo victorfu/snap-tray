@@ -1,5 +1,12 @@
 # Recording Intermediate Quality and Smart Save Implementation Plan
 
+## Implementation audit — 2026-10-04
+
+- [x] The planned core implementation is present on dev-3 (baseline `7afc5b80`).
+- [ ] Complete all native platform/hardware acceptance gates. Implementation presence is not runtime proof.
+
+The historical step checkboxes below retain the original execution recipe. Current remaining work and evidence are tracked in [dev-3 completion](2026-10-04-dev-3-completion.md); the review tracker remains authoritative for review IDs.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** When Preview is on, record to a high-quality intermediate MP4 (constant quality where the platform supports it, 1 s keyframes, bounded by free disk space), and make every MP4 export from the preview — trim, crop, both, or an unedited save — produce a file at the user's configured quality, moving the intermediate untouched only when it is already small enough.

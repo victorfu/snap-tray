@@ -1,5 +1,12 @@
 # Recording Window Timeline and Snapping (Phase 2) Implementation Plan
 
+## Implementation audit — 2026-10-04
+
+- [x] The planned core implementation is present on dev-3 (baseline `7afc5b80`).
+- [ ] Complete all native platform/hardware acceptance gates. Implementation presence is not runtime proof.
+
+The historical step checkboxes below retain the original execution recipe. Current remaining work and evidence are tracked in [dev-3 completion](2026-10-04-dev-3-completion.md); the review tracker remains authoritative for review IDs.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** While a recording runs, remember where the top-level windows were; in the preview's crop editor, hovering highlights the window under the cursor at the playhead and a click snaps the crop to it, while dragging still draws a free rectangle.

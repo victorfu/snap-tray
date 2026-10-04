@@ -1843,6 +1843,42 @@ Storlek: %2</translation>
         <source>Cancel</source>
         <translation>Avbryt</translation>
     </message>
+    <message>
+        <source>Long Screenshot</source>
+        <translation>Lång skärmbild</translation>
+    </message>
+    <message>
+        <source>Generate Long Screenshot</source>
+        <translation>Skapa lång skärmbild</translation>
+    </message>
+    <message>
+        <source>Crop to the scrolling area, then generate a long screenshot.</source>
+        <translation>Beskär till rullningsområdet och skapa sedan en lång skärmbild.</translation>
+    </message>
+    <message>
+        <source>Remove Fixed Header</source>
+        <translation>Ta bort fast sidhuvud</translation>
+    </message>
+    <message>
+        <source>Include Fixed Header</source>
+        <translation>Inkludera fast sidhuvud</translation>
+    </message>
+    <message>
+        <source>Save PNG</source>
+        <translation>Spara PNG</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Tillbaka</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopiera</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Fäst</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3307,6 +3343,89 @@ Filstorlek: %3</translation>
     <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Identifiera och sudda automatiskt ansikten och inloggningsuppgifter</translation>
+    </message>
+</context>
+<context>
+    <name>LongshotController</name>
+    <message>
+        <source>Select a longer recording range.</source>
+        <translation>Välj ett längre inspelningsintervall.</translation>
+    </message>
+    <message>
+        <source>Crop must be at least 64 pixels on each side.</source>
+        <translation>Varje sida av beskärningen måste vara minst 64 pixlar.</translation>
+    </message>
+    <message>
+        <source>This range is too long. Trim it and try again.</source>
+        <translation>Intervallet är för långt. Korta ned det och försök igen.</translation>
+    </message>
+    <message>
+        <source>Not enough memory. Choose a smaller crop or range.</source>
+        <translation>Otillräckligt minne. Välj en mindre beskärning eller ett kortare intervall.</translation>
+    </message>
+    <message>
+        <source>No reliable scrolling content was found.</source>
+        <translation>Inget tillförlitligt rullande innehåll hittades.</translation>
+    </message>
+    <message>
+        <source>The recording could not be decoded. The source has been kept.</source>
+        <translation>Inspelningen kunde inte avkodas. Originalet har behållits.</translation>
+    </message>
+    <message>
+        <source>Auto-cropped columns: left %1, right %2.</source>
+        <translation>Automatiskt beskurna kolumner: vänster %1, höger %2.</translation>
+    </message>
+    <message>
+        <source>Review the marked areas: the result may be incomplete.</source>
+        <translation>Granska de markerade områdena: resultatet kan vara ofullständigt.</translation>
+    </message>
+    <message>
+        <source>Analyzing...</source>
+        <translation>Analyserar…</translation>
+    </message>
+    <message>
+        <source>Solving positions...</source>
+        <translation>Beräknar positioner…</translation>
+    </message>
+    <message>
+        <source>Rendering...</source>
+        <translation>Renderar…</translation>
+    </message>
+    <message>
+        <source>Could not create the result preview.</source>
+        <translation>Kunde inte skapa en förhandsvisning av resultatet.</translation>
+    </message>
+    <message>
+        <source>Missing coverage</source>
+        <translation>Saknat innehåll</translation>
+    </message>
+    <message>
+        <source>Low confidence</source>
+        <translation>Låg tillförlitlighet</translation>
+    </message>
+    <message>
+        <source>Unjoined recording section</source>
+        <translation>Ej sammanfogad inspelningsdel</translation>
+    </message>
+    <message>
+        <source>Copied part %1.</source>
+        <translation>Del %1 kopierad.</translation>
+    </message>
+    <message>
+        <source>Save Long Screenshot</source>
+        <translation>Spara lång skärmbild</translation>
+    </message>
+    <message>
+        <source>PNG image (*.png)</source>
+        <translation>PNG-bild (*.png)</translation>
+    </message>
+    <message>
+        <source>Part %1: %2</source>
+        <translation>Del %1: %2</translation>
+    </message>
+    <message>
+        <source>Saved %1 of %2 parts.</source>
+        <translation>Sparade %1 av %2 delar.</translation>
     </message>
 </context>
 </TS>

@@ -1849,6 +1849,42 @@ Size: %2</source>
         <source>Cancel</source>
         <translation>Откажи</translation>
     </message>
+    <message>
+        <source>Long Screenshot</source>
+        <translation>Дугачак снимак екрана</translation>
+    </message>
+    <message>
+        <source>Generate Long Screenshot</source>
+        <translation>Направи дугачак снимак екрана</translation>
+    </message>
+    <message>
+        <source>Crop to the scrolling area, then generate a long screenshot.</source>
+        <translation>Исеците област померања, па направите дугачак снимак екрана.</translation>
+    </message>
+    <message>
+        <source>Remove Fixed Header</source>
+        <translation>Уклони фиксно заглавље</translation>
+    </message>
+    <message>
+        <source>Include Fixed Header</source>
+        <translation>Укључи фиксно заглавље</translation>
+    </message>
+    <message>
+        <source>Save PNG</source>
+        <translation>Сачувај PNG</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Назад</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Копирај</translation>
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Закачи</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3313,6 +3349,89 @@ File size: %3</source>
     <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Аутоматски откријте и замаглите лица и акредитиве</translation>
+    </message>
+</context>
+<context>
+    <name>LongshotController</name>
+    <message>
+        <source>Select a longer recording range.</source>
+        <translation>Изаберите дужи опсег снимка.</translation>
+    </message>
+    <message>
+        <source>Crop must be at least 64 pixels on each side.</source>
+        <translation>Свака страна исечка мора имати најмање 64 пиксела.</translation>
+    </message>
+    <message>
+        <source>This range is too long. Trim it and try again.</source>
+        <translation>Опсег је предугачак. Скратите га и покушајте поново.</translation>
+    </message>
+    <message>
+        <source>Not enough memory. Choose a smaller crop or range.</source>
+        <translation>Нема довољно меморије. Изаберите мањи исечак или краћи опсег.</translation>
+    </message>
+    <message>
+        <source>No reliable scrolling content was found.</source>
+        <translation>Није пронађен поуздан садржај за померање.</translation>
+    </message>
+    <message>
+        <source>The recording could not be decoded. The source has been kept.</source>
+        <translation>Снимак није могуће декодирати. Извор је сачуван.</translation>
+    </message>
+    <message>
+        <source>Auto-cropped columns: left %1, right %2.</source>
+        <translation>Аутоматски исечене колоне: лево %1, десно %2.</translation>
+    </message>
+    <message>
+        <source>Review the marked areas: the result may be incomplete.</source>
+        <translation>Проверите означене области: резултат може бити непотпун.</translation>
+    </message>
+    <message>
+        <source>Analyzing...</source>
+        <translation>Анализирање…</translation>
+    </message>
+    <message>
+        <source>Solving positions...</source>
+        <translation>Израчунавање положаја…</translation>
+    </message>
+    <message>
+        <source>Rendering...</source>
+        <translation>Исцртавање…</translation>
+    </message>
+    <message>
+        <source>Could not create the result preview.</source>
+        <translation>Није могуће направити преглед резултата.</translation>
+    </message>
+    <message>
+        <source>Missing coverage</source>
+        <translation>Недостајући садржај</translation>
+    </message>
+    <message>
+        <source>Low confidence</source>
+        <translation>Ниска поузданост</translation>
+    </message>
+    <message>
+        <source>Unjoined recording section</source>
+        <translation>Неспојени део снимка</translation>
+    </message>
+    <message>
+        <source>Copied part %1.</source>
+        <translation>Део %1 је копиран.</translation>
+    </message>
+    <message>
+        <source>Save Long Screenshot</source>
+        <translation>Сачувај дугачак снимак екрана</translation>
+    </message>
+    <message>
+        <source>PNG image (*.png)</source>
+        <translation>PNG слика (*.png)</translation>
+    </message>
+    <message>
+        <source>Part %1: %2</source>
+        <translation>Део %1: %2</translation>
+    </message>
+    <message>
+        <source>Saved %1 of %2 parts.</source>
+        <translation>Сачувано %1 од %2 делова.</translation>
     </message>
 </context>
 </TS>

@@ -590,43 +590,45 @@
 
 ## 2026-10-04 結案驗收基線
 
-基線 dev-3 `7afc5b80`。36 項 Fix Ready 保留原完成條件；本輪尚未補齊原生平台證據，不變更為 Verified。
+基線 dev-3 `7afc5b80`；本輪在 macOS 27.0.1 ARM64、Qt 6.11.2 執行 canonical build 與完整測試。完整 183 suites 已執行；最終完整跑為 182/183，裁切 suite 修正測試吸附座標與 release 座標處理後，ctest 失敗項重跑通過（該 suite 最终 67/67 cases）。下列套件均有本輪 Passed 結果；包含 skip 的套件不能替代被略過案例的完成證據。
 
-| ID | 本輪驗收依據 | 狀態 |
+實機資源：Gigabyte M32U，3840×2160 像素（邏輯 1920×1080）；目前工具程序的 Screen Recording preflight=false。未有 Windows／Linux 本輪結果，`gh run list --branch dev-3` 回傳空列表。故不批次改為 Verified。REV-007／REV-037 保留 Potential 分類。
+
+| ID | 本輪 macOS 回歸套件（Passed） | 剩餘結案門檻 |
 |---|---|---|
-| REV-002 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-003 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-005 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-006 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-007 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-008 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-010 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-011 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-012 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-013 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-014 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-015 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-016 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-017 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-018 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-019 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-020 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-021 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-022 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-023 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-024 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-025 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-026 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-027 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-028 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-029 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-030 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-031 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-032 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-033 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-034 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-035 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-036 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| REV-037 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| POT-001 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
-| POT-002 | 依本項「完成條件」、測試與平台驗證欄逐項核對；缺少原生證據不得結案 | 待本輪驗證 |
+| REV-002 | `Annotations_MosaicRectAnnotation`、`RegionSelector_StyleSync`、`PinWindow_StyleSync`；其中含平台／環境 skip | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-003 | `Detection_OCRImageUtils`、`Detection_CredentialDetector`、`Detection_AutoBlurManager` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-005 | `Utils_ImageSaveUtils`、`RegionSelector_RegionExportManager`、`CLI_CaptureOutputHelper`、`RecordingManager_Lifecycle` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-006 | `Annotations_AnnotationLayer`、`ScreenCanvas_AnnotationRenderHelper` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-007 | `Video_SourceReaderMailbox`；其中含平台／環境 skip | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-008 | `RecordingManager_Startup`、`RecordingManager_CoreAudioCaptureEngineSafety` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-010 | `RegionSelector_SelectionStateManager`、`RegionSelector_RegionExportManager`、`RegionSelector_MultiRegionReplaceFlow` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-011 | `RegionSelector_RegionInputHandler`、`RegionSelector_MultiRegionReplaceFlow` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-012 | `Tools_EraserToolHandler`、`Annotations_AnnotationLayer` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-013 | `Annotations_ArrowAnnotation`、`PinWindow_AnnotationSerializer`、`Tools_ArrowToolHandler` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-014 | `Annotations_ArrowAnnotation`、`Annotations_PolylineAnnotation`、`Annotations_AnnotationLayer` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-015 | `Annotations_PolylineAnnotation`、`Tools_PolylineToolHandler` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-016 | `RegionSelector_TransformationGizmo` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-017 | `Annotations_TextBoxAnnotation`、`RegionSelector_TextAnnotationEditor`、`Tools_TextToolHandler` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-018 | `RegionSelector_RegionExportManager` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-019 | `RegionSelector_HistoryReplay`、`PinWindow_HistoryRecorder` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-020 | `ScreenCanvas_StyleSync` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-021 | `PinWindow_PinWindowPlacement`、`App_MainApplicationTrayMenu` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-022 | `App_MainApplicationTrayMenu` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-023 | `CLI_NumericArgumentValidation` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-024 | `CLI_NumericArgumentValidation` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-025 | `Utils_FilenameTemplateEngine`、`Utils_ImageSaveUtils` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-026 | `Platform_Capabilities` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-027 | `Qml_CursorTokens` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-028 | `Settings_SettingsBackend`、`CLI_PathPersistence`；其中含平台／環境 skip | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-029 | `ColorWidgets_ColorWheel`、`ScreenCanvas_StyleSync` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-030 | `Qml_DialogModality`、`App_MainApplicationTrayMenu`、`RegionSelector_TransientUiCancelGuard`；其中含平台／環境 skip | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-031 | `PinWindow_Transform`、`PinWindow_CropUndo` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-032 | `RecordingManager_CaptureExclusion`、`RecordingManager_InitTask`；其中含平台／環境 skip | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-033 | `Platform_Capabilities`、`Qml_FloatingOverlayCaptureExclusion` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-034 | `Encoding_EncoderFactory`、`RecordingManager_InitTask`、`RecordingManager_Startup`、`Encoding_EncodingWorker` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-035 | `RecordingManager_CaptureFrameTiming` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-036 | `RecordingManager_CoreAudioRuntime`、`RecordingManager_CoreAudioCaptureEngineSafety`、`RecordingManager_TimestampedPcmMixer` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| REV-037 | `RegionSelector_ToolbarState`、`Qml_RegionToolbarViewModel` | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| POT-001 | `Qml_ToolbarOverflow`、`PinWindow_StyleSync`；其中含平台／環境 skip | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
+| POT-002 | `Qml_RecordingPreviewExport`、`App_MainApplicationTrayMenu`；其中含平台／環境 skip | 原詳細項目的原生平台／實機完成條件仍須補齊；本輪未取得該缺口證據，保留 Fix Ready。 |
