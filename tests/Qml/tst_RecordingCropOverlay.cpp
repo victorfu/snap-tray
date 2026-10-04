@@ -1,6 +1,7 @@
 #include <QtTest/QtTest>
 
 #include "qml/QmlOverlayManager.h"
+#include "qml/LongshotController.h"
 #include "utils/VideoCropGeometry.h"
 
 #include <QImage>
@@ -17,6 +18,28 @@
 Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
 
 namespace {
+
+class PreviewFrameSource final : public SnapTray::Longshot::LongshotFrameSource {
+public:
+    PreviewFrameSource() : m_frame(320, 480, QImage::Format_RGB32) {
+        for (int y = 0; y < m_frame.height(); ++y)
+            for (int x = 0; x < m_frame.width(); ++x)
+                m_frame.setPixel(x, y, qRgb((x * 13 + y * 7) % 240, (x * 3 + y * 11) % 240, (x + y * 3) % 240));
+    }
+    bool open(const QString&, qint64, qint64, const QRect&) override { m_index = 0; return true; }
+    std::optional<QImage> next(qint64* time) override {
+        if (m_index >= 3) return {};
+        *time = m_index++ * 50; return m_frame;
+    }
+    QSize frameSize() const override { return m_frame.size(); }
+    QSize videoSize() const override { return m_frame.size(); }
+    double frameRate() const override { return 20; }
+    int expectedFrameCount() const override { return 3; }
+    QString lastError() const override { return {}; }
+private:
+    QImage m_frame;
+    int m_index = 0;
+};
 
 constexpr int kEdgeLeft = 1;
 constexpr int kEdgeRight = 2;
@@ -73,6 +96,7 @@ QVariant invokeQml(QObject* object, const char* name, const QVariantList& args =
 class StubPreviewBackend : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(LongshotController* longshot READ longshot CONSTANT)
     Q_PROPERTY(QString videoPath READ videoPath CONSTANT)
     Q_PROPERTY(qint64 trimStart READ trimStart WRITE setTrimStart NOTIFY trimRangeChanged)
     Q_PROPERTY(qint64 trimEnd READ trimEnd WRITE setTrimEnd NOTIFY trimRangeChanged)
@@ -89,6 +113,10 @@ class StubPreviewBackend : public QObject
     Q_PROPERTY(QString errorMessage READ errorMessage CONSTANT)
     Q_PROPERTY(bool hasWindowTimeline READ hasWindowTimeline NOTIFY windowTimelineChanged)
 
+public:
+    LongshotController* longshot() { return &m_longshot; }
+private:
+    LongshotController m_longshot{nullptr, [] { return std::make_unique<PreviewFrameSource>(); }};
 public:
     bool hasWindowTimeline() const { return !m_stubWindowRect.isEmpty(); }
     // The one "window" of the stub timeline, in video pixels; empty = no timeline.
@@ -290,8 +318,10 @@ private slots:
     void previewGeometryChangeKeepsDraft();
     void previewSizeChipAndClear();
     void previewToolbarFitsAtMinimumWidth();
+    void previewLongshotResultKeepsRecording();
     void previewCursorOverVideo();
     void previewSmallSelectionMoves();
+    void previewReleaseCommitsFinalPosition();
     void previewTinyDraftAppliesWithoutJump();
     void previewCropUnavailableAfterFrameCleared();
 
@@ -730,6 +760,7 @@ tst_RecordingCropOverlay::PreviewOpen tst_RecordingCropOverlay::openPreview(cons
     }
     m_backend = std::make_unique<StubPreviewBackend>();
     m_view = std::make_unique<QQuickView>(SnapTray::QmlOverlayManager::instance().engine(), nullptr);
+    m_backend->longshot()->installImageProvider(m_view->engine());
     m_view->rootContext()->setContextProperty(QStringLiteral("backend"), m_backend.get());
     m_view->setResizeMode(QQuickView::SizeRootObjectToView);
     m_view->setMinimumSize(QSize(kPreviewMinWidth, kPreviewMinHeight));
@@ -961,19 +992,19 @@ void tst_RecordingCropOverlay::previewMoveResizeReplace()
     drag(overlayPoint(200, 150), overlayPoint(230, 170));
     QTRY_COMPARE(overlay->property("draftRect").toRectF(), QRectF(130, 120, 200, 100));
 
-    // Resize: drag the bottom-right handle.
-    drag(overlayPoint(330, 220), overlayPoint(350, 230));
-    QTRY_COMPARE(overlay->property("draftRect").toRectF(), QRectF(130, 120, 220, 110));
+    // Resize away from the centre snap line (the format row reduces the video area).
+    drag(overlayPoint(330, 220), overlayPoint(350, 260));
+    QTRY_COMPARE(overlay->property("draftRect").toRectF(), QRectF(130, 120, 220, 140));
 
     // Resize: drag the left-edge handle.
-    drag(overlayPoint(130, 175), overlayPoint(110, 175));
-    QTRY_COMPARE(overlay->property("draftRect").toRectF(), QRectF(110, 120, 240, 110));
+    drag(overlayPoint(130, 190), overlayPoint(110, 190));
+    QTRY_COMPARE(overlay->property("draftRect").toRectF(), QRectF(110, 120, 240, 140));
 
     // Replace: drag outside the selection.
     const QPoint start = overlayPoint(area.width() * 0.6, area.height() * 0.6);
     const QPoint end = overlayPoint(area.width() * 0.6 + 100, area.height() * 0.6 + 80);
     drag(start, end);
-    QTRY_VERIFY_WITH_TIMEOUT(overlay->property("draftRect").toRectF() != QRectF(110, 120, 240, 110), 2000);
+    QTRY_VERIFY_WITH_TIMEOUT(overlay->property("draftRect").toRectF() != QRectF(110, 120, 240, 140), 2000);
     const QRectF replaced = overlay->property("draftRect").toRectF();
     QCOMPARE(replaced, QRectF(QPointF(start), QPointF(end)));
 
@@ -1257,6 +1288,35 @@ void tst_RecordingCropOverlay::previewToolbarFitsAtMinimumWidth()
                             .arg(rightEdge(save)).arg(m_view->rootObject()->width())));
 }
 
+void tst_RecordingCropOverlay::previewLongshotResultKeepsRecording()
+{
+    OPEN_PREVIEW_OR_FAIL(QSize(320, 480));
+    m_view->resize(kPreviewMinWidth, kPreviewMinHeight);
+    QTest::qWait(100); // apply the resized toolbar geometry before delivering input
+    click(previewItem("longshotFormatButton"));
+    QCOMPARE(m_backend->selectedFormat(), 3);
+    auto* controller = m_backend->longshot();
+    QSignalSpy pinned(controller, &LongshotController::pinRequested);
+    controller->start("fixture", 0, -1, {});
+    QTRY_VERIFY_WITH_TIMEOUT(controller->hasResult(), 10000);
+    QTRY_VERIFY(previewItem("longshotResult")->isVisible());
+    auto* pin = previewItem("longshotPin");
+    QTRY_VERIFY(pin->isVisible());
+    QVERIFY(pin->mapRectToScene(QRectF(0, 0, pin->width(), pin->height())).right() <= kPreviewMinWidth);
+    click(pin);
+    QCOMPARE(pinned.count(), 1);
+    QCOMPARE(m_backend->saveCount, 0);
+    QCOMPARE(m_backend->discardCount, 0);
+    if (qEnvironmentVariableIsSet("SNAPTRAY_LONGSHOT_PREVIEW_ARTIFACT")) {
+        QTest::qWait(150);
+        QVERIFY(m_view->grabWindow().save(qEnvironmentVariable("SNAPTRAY_LONGSHOT_PREVIEW_ARTIFACT")));
+    }
+    sendKey(Qt::Key_Escape);
+    QVERIFY(!previewItem("longshotResult")->isVisible());
+    QCOMPARE(m_backend->discardCount, 0);
+    QVERIFY(controller->hasResult());
+}
+
 void tst_RecordingCropOverlay::previewCursorOverVideo()
 {
     OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
@@ -1303,6 +1363,19 @@ void tst_RecordingCropOverlay::previewCropUnavailableAfterFrameCleared()
     QTRY_VERIFY(!cropButton->isEnabled());
     QVERIFY(!overlay->isVisible());
     QVERIFY(previewContentRect().isEmpty());
+}
+
+void tst_RecordingCropOverlay::previewReleaseCommitsFinalPosition()
+{
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
+    m_backend->setCropRect(QRect(200, 100, 200, 100));
+    click(previewItem("previewCropButton"));
+    const QRectF initial = previewOverlay()->property("draftRect").toRectF();
+    const QPoint from = overlayPoint(initial.center().x(), initial.center().y());
+    // A final release carries meaningful position even when no move is delivered.
+    QTest::mousePress(m_view.get(), Qt::LeftButton, Qt::NoModifier, from);
+    QTest::mouseRelease(m_view.get(), Qt::LeftButton, Qt::NoModifier, from + QPoint(20, 10));
+    QTRY_COMPARE(previewOverlay()->property("draftRect").toRectF(), initial.translated(20, 10));
 }
 
 void tst_RecordingCropOverlay::previewSmallSelectionMoves()
@@ -1529,8 +1602,10 @@ void tst_RecordingCropOverlay::previewNoHighlightOverExistingDraft()
 
     // Inside the draft: the window is still found, but a click is a no-op, so no highlight.
     QTest::mouseMove(m_view.get(), overlayPoint(draft.center().x(), draft.center().y()));
-    QTRY_VERIFY(!overlay->property("showsHover").toBool());
-    QVERIFY(!overlay->property("hoverRect").toRectF().isEmpty());
+    // Wait for the complete hover state, not the transient cleared state while
+    // native enter/move events are being delivered.
+    QTRY_VERIFY(!overlay->property("showsHover").toBool()
+                && !overlay->property("hoverRect").toRectF().isEmpty());
     QVERIFY(!frame->isVisible());
 
     // On a handle (the draft's right edge): same.

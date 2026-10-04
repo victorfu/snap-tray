@@ -25,6 +25,18 @@ Item {
     readonly property real overlayChipHeight: 28
     readonly property real overlayChipButtonSize: 20
 
+    property bool showLongshotResult: false
+    property real longshotZoom: 1.0
+    readonly property int longshotTileHeight: 1024
+    readonly property int longshotTextureMaxWidth: 2048
+    readonly property var longshot: backend.longshot
+
+    Connections {
+        target: root.longshot
+        function onResultReady() { root.showLongshotResult = true }
+        function onChanged() { if (!root.longshot.hasResult && !root.longshot.busy) root.showLongshotResult = false }
+    }
+
     property bool isScrubbing: false
     property bool isDraggingTrimStart: false
     property bool isDraggingTrimEnd: false
@@ -53,6 +65,11 @@ Item {
             return
         if (cropOverlay.editing)
             cropOverlay.apply()
+        if (root.showLongshotResult && root.longshot.hasResult) {
+            root.longshot.save()
+            return
+        }
+        if (backend.selectedFormat === 3) videoPlayer.pause()
         backend.save()
     }
 
@@ -138,7 +155,7 @@ Item {
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
-        enabled: !backend.isProcessing
+        enabled: !backend.isProcessing && !root.showLongshotResult
 
         Item {
             Layout.fillWidth: true
@@ -506,6 +523,48 @@ Item {
             }
         }
 
+        Item {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 36
+            Row {
+                anchors.centerIn: parent
+                spacing: 1
+
+                    SegmentButton {
+                        text: "MP4"
+                        tooltipText: qsTr("Export as MP4")
+                        selected: backend.selectedFormat === 0
+                        isFirst: true
+                        isLast: false
+                        onClicked: backend.selectedFormat = 0
+                    }
+                    SegmentButton {
+                        text: "GIF"
+                        tooltipText: qsTr("Export as GIF")
+                        selected: backend.selectedFormat === 1
+                        isFirst: false
+                        isLast: false
+                        onClicked: backend.selectedFormat = 1
+                    }
+                    SegmentButton {
+                        text: "WebP"
+                        tooltipText: qsTr("Export as WebP")
+                        selected: backend.selectedFormat === 2
+                        isFirst: false
+                        isLast: false
+                        onClicked: backend.selectedFormat = 2
+                    }
+                    SegmentButton {
+                        objectName: "longshotFormatButton"
+                        text: qsTr("Long Screenshot")
+                        selected: backend.selectedFormat === 3
+                        isFirst: false
+                        isLast: true
+                        onClicked: backend.selectedFormat = 3
+                    }
+                }
+        }
+
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 48
@@ -550,34 +609,7 @@ Item {
 
                 Item { Layout.fillWidth: true }
 
-                Row {
-                    spacing: 1
 
-                    SegmentButton {
-                        text: "MP4"
-                        tooltipText: qsTr("Export as MP4")
-                        selected: backend.selectedFormat === 0
-                        isFirst: true
-                        isLast: false
-                        onClicked: backend.selectedFormat = 0
-                    }
-                    SegmentButton {
-                        text: "GIF"
-                        tooltipText: qsTr("Export as GIF")
-                        selected: backend.selectedFormat === 1
-                        isFirst: false
-                        isLast: false
-                        onClicked: backend.selectedFormat = 1
-                    }
-                    SegmentButton {
-                        text: "WebP"
-                        tooltipText: qsTr("Export as WebP")
-                        selected: backend.selectedFormat === 2
-                        isFirst: false
-                        isLast: true
-                        onClicked: backend.selectedFormat = 2
-                    }
-                }
 
                 Item { Layout.fillWidth: true }
 
@@ -624,9 +656,142 @@ Item {
                     objectName: "previewSaveButton"
                     iconSource: "qrc:/icons/icons/save.svg"
                     primary: true
-                    tooltipText: qsTr("Save Recording (Enter / Ctrl+S)")
+                    tooltipText: backend.selectedFormat === 3 ? qsTr("Generate Long Screenshot") : qsTr("Save Recording (Enter / Ctrl+S)")
                     onClicked: root.saveWithCrop()
                 }
+            }
+        }
+    }
+
+    Rectangle {
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: Math.min(parent.width - 32, hint.implicitWidth + 24)
+        height: hint.implicitHeight + 16
+        radius: SemanticTokens.radiusSmall
+        color: root.bgPanel
+        visible: backend.selectedFormat === 3 && !root.showLongshotResult && !backend.isProcessing
+        Text {
+            id: hint
+            anchors.centerIn: parent
+            width: parent.width - 24
+            wrapMode: Text.WordWrap
+            text: qsTr("Crop to the scrolling area, then generate a long screenshot.")
+            color: root.textPrimary
+        }
+    }
+
+    Rectangle {
+        id: longshotResult
+        objectName: "longshotResult"
+        anchors.fill: parent
+        visible: root.showLongshotResult && root.longshot.hasResult
+        color: root.bgPanel
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: SemanticTokens.spacing16
+            spacing: SemanticTokens.spacing8
+            Text {
+                text: root.longshot.message
+                color: root.textPrimary
+                wrapMode: Text.Wrap
+                Layout.fillWidth: true
+            }
+            RowLayout {
+                DialogButton { text: qsTr("Back"); onClicked: root.showLongshotResult = false }
+                DialogButton { text: "−"; enabled: root.longshotZoom > 1; onClicked: root.longshotZoom = Math.max(1, root.longshotZoom / 1.5) }
+                DialogButton { text: "+"; enabled: root.longshotZoom < 8; onClicked: root.longshotZoom = Math.min(8, root.longshotZoom * 1.5) }
+                Text {
+                    text: root.longshot.imageSize.width + " × " + root.longshot.imageSize.height
+                    color: root.textSecondary
+                }
+                Item { Layout.fillWidth: true }
+                DialogButton { text: "‹"; enabled: root.longshot.selectedPart > 0; onClicked: root.longshot.selectedPart-- }
+                Text { text: (root.longshot.selectedPart + 1) + " / " + root.longshot.partCount; color: root.textPrimary }
+                DialogButton { text: "›"; enabled: root.longshot.selectedPart + 1 < root.longshot.partCount; onClicked: root.longshot.selectedPart++ }
+            }
+            Flickable {
+                id: resultViewport
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                contentWidth: width * root.longshotZoom
+                contentHeight: root.longshot.imageSize.width > 0 ? contentWidth * root.longshot.imageSize.height / root.longshot.imageSize.width : 0
+                Repeater {
+                    model: Math.ceil(root.longshot.imageSize.height / root.longshotTileHeight)
+                    Image {
+                        required property int index
+                        readonly property real scaleFactor: resultViewport.contentWidth / Math.max(1, root.longshot.imageSize.width)
+                        y: index * root.longshotTileHeight * scaleFactor
+                        width: resultViewport.contentWidth
+                        height: Math.min(root.longshotTileHeight, root.longshot.imageSize.height - index * root.longshotTileHeight) * scaleFactor
+                        source: y + height >= resultViewport.contentY && y <= resultViewport.contentY + resultViewport.height
+                                ? root.longshot.preview + "/" + index : ""
+                        sourceSize.width: Math.min(root.longshotTextureMaxWidth, Math.ceil(width))
+                        cache: false
+                        smooth: true
+                    }
+                }
+                Repeater {
+                    model: root.longshot.markers
+                    Rectangle {
+                        required property var modelData
+                        readonly property int localRow: modelData.row - root.longshot.partStartRow
+                        visible: modelData.row >= 0 && localRow >= 0 && localRow < root.longshot.imageSize.height
+                        y: localRow * resultViewport.contentWidth / Math.max(1, root.longshot.imageSize.width)
+                        width: resultViewport.contentWidth
+                        height: 3
+                        color: SemanticTokens.statusWarning
+                        MouseArea {
+                            anchors.fill: parent
+                            anchors.margins: -3
+                            enabled: parent.modelData.timeMs >= 0
+                            onClicked: {
+                                root.showLongshotResult = false
+                                videoPlayer.seek(parent.modelData.timeMs)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Flickable {
+                Layout.fillWidth: true
+                Layout.preferredHeight: markerRow.implicitHeight
+                contentWidth: markerRow.implicitWidth
+                contentHeight: markerRow.implicitHeight
+                clip: true
+                Row {
+                    id: markerRow
+                    spacing: 8
+                    Repeater {
+                        model: root.longshot.markers
+                        DialogButton {
+                            required property var modelData
+                            text: modelData.label + (modelData.row >= 0 ? " · " + modelData.row : "")
+                            enabled: modelData.timeMs >= 0
+                            onClicked: {
+                                root.showLongshotResult = false
+                                videoPlayer.seek(modelData.timeMs)
+                            }
+                        }
+                    }
+                }
+            }
+            Flow {
+                Layout.fillWidth: true
+                spacing: 8
+                DialogButton {
+                    text: root.longshot.includeHeader ? qsTr("Remove Fixed Header") : qsTr("Include Fixed Header")
+                    onClicked: {
+                        root.longshot.includeHeader = !root.longshot.includeHeader
+                        root.showLongshotResult = false
+                        backend.save()
+                    }
+                }
+                DialogButton { objectName: "longshotSave"; text: qsTr("Save PNG"); onClicked: root.longshot.save() }
+                DialogButton { objectName: "longshotCopy"; text: qsTr("Copy"); onClicked: root.longshot.copy() }
+                DialogButton { objectName: "longshotPin"; text: qsTr("Pin"); onClicked: root.longshot.pin() }
             }
         }
     }
@@ -701,7 +866,7 @@ Item {
         anchors.right: parent.right
         anchors.margins: SemanticTokens.spacing16
         height: visible ? errorRow.implicitHeight + SemanticTokens.spacing16 : 0
-        visible: backend.errorMessage !== ""
+        visible: backend.errorMessage !== "" || (!root.longshot.hasResult && root.longshot.message !== "")
         radius: SemanticTokens.radiusSmall
         color: ComponentTokens.recordingPreviewDangerHover
         z: 10
@@ -709,10 +874,13 @@ Item {
         Row {
             id: errorRow
             anchors.centerIn: parent
+            width: parent.width - SemanticTokens.spacing16
             spacing: SemanticTokens.spacing8
 
             Text {
-                text: backend.errorMessage
+                width: parent.width - 28
+                wrapMode: Text.Wrap
+                text: backend.errorMessage || root.longshot.message
                 font.pixelSize: SemanticTokens.fontSizeBody
                 font.family: SemanticTokens.fontFamily
                 color: SemanticTokens.statusError
@@ -727,7 +895,7 @@ Item {
                 tooltipText: qsTr("Dismiss Error")
                 tooltipPreferredAbove: false
                 anchors.verticalCenter: parent.verticalCenter
-                onClicked: backend.clearError()
+                onClicked: { backend.clearError(); root.longshot.clearMessage() }
             }
         }
     }
@@ -740,6 +908,17 @@ Item {
             return
         }
 
+        if (root.showLongshotResult) {
+            if (event.key === Qt.Key_Escape) {
+                root.showLongshotResult = false
+                event.accepted = true
+            } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter
+                       || (event.key === Qt.Key_S && (event.modifiers & Qt.ControlModifier))) {
+                root.longshot.save()
+                event.accepted = true
+            }
+            return
+        }
         if (cropOverlay.editing) {
             // Escape only drops the draft (the preview stays open); Enter only applies it.
             if (event.key === Qt.Key_Escape) {

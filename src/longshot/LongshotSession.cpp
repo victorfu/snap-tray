@@ -77,9 +77,11 @@ void LongshotSession::setPipelineParams(const PipelineParams& params)
     m_renderOptions.reset();
 }
 
-RunReport LongshotSession::run(const ProgressFn& progress)
+RunReport LongshotSession::run(const ProgressFn& progress, const StageFn& stage)
 {
     RunReport report;
+    if (stage) stage(WorkStage::Analyze);
+    if (progress && !progress(0)) { report.error = LongshotError::Cancelled; return report; }
     if (!m_factory) { report.error = LongshotError::SourceUnavailable; return report; }
     std::unique_ptr<LongshotFrameSource> source = m_factory();
     if (!source) { report.error = LongshotError::SourceUnavailable; return report; }
@@ -122,7 +124,7 @@ RunReport LongshotSession::run(const ProgressFn& progress)
             }
         }
         AnalysisResult updated = LongshotPipeline::analyzeIncremental(*source, m_path, m_startMs, m_endMs, m_crop, m_params,
-                                                                      progress, known, knownThumbs, &report.framesAnalyzed);
+                                                                      progress, known, knownThumbs, &report.framesAnalyzed, stage);
         if (updated.error != LongshotError::None) {
             // Keep the previous analysis and key: a cancelled trim edit must not discard reusable work.
             report.error = updated.error;
@@ -134,7 +136,7 @@ RunReport LongshotSession::run(const ProgressFn& progress)
         m_analysis = std::move(updated);
     } else {
         // Source or crop changed: nothing crop-dependent survives.
-        m_analysis = LongshotPipeline::analyze(*source, m_path, m_startMs, m_endMs, m_crop, m_params, progress);
+        m_analysis = LongshotPipeline::analyze(*source, m_path, m_startMs, m_endMs, m_crop, m_params, progress, stage);
         report.framesAnalyzed = int(m_analysis.frames.size());
         m_renderOptions.reset();
     }
@@ -146,6 +148,8 @@ RunReport LongshotSession::run(const ProgressFn& progress)
         return report;
     }
 
+    if (stage) stage(WorkStage::Render);
+    if (progress && !progress(0)) { report.error = LongshotError::Cancelled; return report; }
     // Rendered tiles survive only when analysis and options are both unchanged.
     const bool sameRender = sameAnalysis && m_renderOptions.has_value() && *m_renderOptions == m_options
                             && m_render.error == LongshotError::None;

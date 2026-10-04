@@ -770,6 +770,11 @@ target_link_libraries(Longshot_SyntheticScroll PUBLIC snaptray_platform snaptray
 add_executable(longshot-eval ${CMAKE_SOURCE_DIR}/tools/longshot-eval/main.cpp)
 target_link_libraries(longshot-eval PRIVATE Longshot_SyntheticScroll Qt6::Core Qt6::Gui)
 
+add_executable(Qml_LongshotController Qml/tst_LongshotController.cpp)
+target_link_libraries(Qml_LongshotController PRIVATE snaptray_qml Longshot_SyntheticScroll Qt6::Test)
+add_test(NAME Qml_LongshotController COMMAND Qml_LongshotController)
+set_tests_properties(Qml_LongshotController PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Longshot_SyntheticHarness Longshot/tst_SyntheticHarness.cpp)
 target_link_libraries(Longshot_SyntheticHarness PRIVATE Longshot_SyntheticScroll Qt6::Test
     "$<$<PLATFORM_ID:Windows>:mfreadwrite>" "$<$<PLATFORM_ID:Windows>:mfplat>"

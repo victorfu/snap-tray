@@ -1029,6 +1029,7 @@ set(SNAPTRAY_QML_NATIVE_SOURCES
     src/qml/QmlRecordingBoundary.mm
     src/qml/QmlRecordingControlBar.mm
     src/qml/QmlCountdownOverlay.mm
+    src/qml/LongshotController.cpp
     src/qml/RecordingPreviewBackend.mm
     src/qml/QmlWindowedToolbar.mm
     src/qml/QmlFloatingToolbar.mm
@@ -1145,6 +1146,7 @@ qt_add_qml_module(snaptray_qml
         include/qml/VideoPlaybackItem.h
         src/qml/SvgIconItem.cpp
         include/qml/SvgIconItem.h
+        include/qml/LongshotController.h
         include/qml/RecordingPreviewBackend.h
         src/qml/ToolbarViewModelBase.cpp
         include/qml/ToolbarViewModelBase.h

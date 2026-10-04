@@ -20,6 +20,12 @@ namespace SnapTray::Longshot {
 // inside that range if AnalyzerParams defaults change.
 constexpr double kLowConfidence = 0.85;
 
+struct SourceSpan {
+    int firstRow = 0;
+    int endRow = 0; // exclusive; output coordinates across all parts
+    qint64 timeMs = 0;
+};
+
 struct RenderResult {
     LongshotError error = LongshotError::None;
     QList<QImage> parts;            // one image unless options.splitOversize
@@ -29,6 +35,7 @@ struct RenderResult {
     int autoCroppedRight = 0;
     std::vector<int> breakRows;     // output rows with unfilled pixels because coverage was incomplete
     std::vector<int> lowConfidenceRows;
+    std::vector<SourceSpan> sourceSpans; // actual painted observations for result navigation
     bool stickyHeaderIncluded = false;
 };
 

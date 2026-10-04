@@ -55,7 +55,7 @@ std::vector<int> components(int frameCount, const std::vector<Edge>& edges)
 // Weighted least squares for one island, anchored at `anchor` = 0.
 // *converged is cleared when conjugate gradient stops at its cap.
 std::vector<double> solveIsland(int frameCount, const std::vector<Edge>& edges,
-                                const std::vector<int>& root, int islandRoot, int anchor, bool* converged)
+                                const std::vector<int>& root, int islandRoot, int anchor, bool* converged, const std::function<bool()>& shouldContinue)
 {
     std::vector<int> nodes; // island members except the anchor
     std::vector<int> slot(frameCount, -1);
@@ -95,6 +95,7 @@ std::vector<double> solveIsland(int frameCount, const std::vector<Edge>& edges,
     double rr = std::inner_product(r.begin(), r.end(), r.begin(), 0.0);
     bool done = false;
     for (int iteration = 0; iteration < n + kExtraIterations; ++iteration) {
+        if (shouldContinue && !shouldContinue()) return pos;
         double maxResidual = 0.0;
         for (double v : r) maxResidual = std::max(maxResidual, std::abs(v));
         if (maxResidual < kResidualTolerancePx) { done = true; break; }
@@ -125,7 +126,7 @@ std::vector<double> solveIsland(int frameCount, const std::vector<Edge>& edges,
 SolveResult PositionSolver::solve(const std::vector<qint64>& frameTimesMs,
                                   const std::vector<PairShift>& observations,
                                   double maxResidualPx,
-                                  int frameHeight)
+                                  int frameHeight, const std::function<bool()>& shouldContinue)
 {
     SolveResult result;
     const int frameCount = int(frameTimesMs.size());
@@ -148,13 +149,15 @@ SolveResult PositionSolver::solve(const std::vector<qint64>& frameTimesMs,
     std::vector<int> root;
     std::vector<double> pos;
     for (;;) {
+        if (shouldContinue && !shouldContinue()) { result.cancelled = true; return result; }
         root = components(frameCount, edges);
         pos.assign(frameCount, 0.0);
         std::vector<bool> solved(frameCount, false);
         for (int i = 0; i < frameCount; ++i) {
             if (solved[i]) continue;
             const int islandRoot = root[i];
-            const std::vector<double> islandPos = solveIsland(frameCount, edges, root, islandRoot, i, &result.converged);
+            const std::vector<double> islandPos = solveIsland(frameCount, edges, root, islandRoot, i, &result.converged, shouldContinue);
+            if (shouldContinue && !shouldContinue()) { result.cancelled = true; return result; }
             for (int j = 0; j < frameCount; ++j) {
                 if (root[j] == islandRoot) {
                     pos[j] = islandPos[j];

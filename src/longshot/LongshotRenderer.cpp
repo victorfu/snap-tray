@@ -290,6 +290,11 @@ RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString
     // slices when splitting. Each part is its own allocation; no full-height
     // canvas exists when splitting.
     const int partHeight = options.splitOversize && outputHeight > maxHeight ? maxHeight : renderHeight;
+    // Split output still retains all parts. Bound total allocation, not just each part.
+    constexpr qint64 kOutputBudgetBytes = 512LL * 1024 * 1024;
+    if (qint64(columns.width()) * renderHeight * 4 > kOutputBudgetBytes) {
+        result.error = LongshotError::OutOfMemory; return result;
+    }
     QList<QImage> parts;
     for (int top = 0; top < renderHeight; top += partHeight) {
         QImage part(columns.width(), std::min(partHeight, renderHeight - top), QImage::Format_RGB32);
@@ -373,6 +378,7 @@ RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString
                 if (destTop >= renderHeight) continue;
                 const int clippedHeight = std::min(height, renderHeight - destTop);
                 paintRows(*frame, QRect(range.left(), srcTop, range.width(), clippedHeight), destTop);
+                result.sourceSpans.push_back({destTop, destTop + clippedHeight, a.frames[index].tMs});
                 if (bestEdgeConfidence[index] < kLowConfidence && index != firstPlaced) {
                     for (int y = destTop; y < destTop + clippedHeight; ++y) result.lowConfidenceRows.push_back(y);
                 }

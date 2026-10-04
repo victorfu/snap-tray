@@ -430,10 +430,15 @@ Item {
                 overlay.hoverChanged()
                 return
             }
+            updateDraft(mouse.x, mouse.y)
+        }
+        function updateDraft(x, y) {
             if (mode === modeNone)
                 return
-            const dx = mouse.x - pressX
-            const dy = mouse.y - pressY
+            const dx = x - pressX
+            const dy = y - pressY
+            if (dx === 0 && dy === 0 && !moved)
+                return
             if (Math.abs(dx) >= overlay.createDragThreshold || Math.abs(dy) >= overlay.createDragThreshold)
                 moved = true
             if (mode === modeCreate) {
@@ -441,18 +446,22 @@ Item {
                         && Math.abs(dy) < overlay.createDragThreshold)
                     return
                 createStarted = true
-                overlay.draftRect = overlay.createRect(pressX, pressY, mouse.x, mouse.y)
+                overlay.draftRect = overlay.createRect(pressX, pressY, x, y)
             } else if (mode === modeMove) {
                 overlay.draftRect = overlay.moveRect(pressRect, dx, dy)
             } else {
                 overlay.draftRect = overlay.resizeRect(pressRect, edges, dx, dy)
             }
         }
+
         onExited: {
             overlay.hovering = false
             overlay.hoverChanged()
         }
         onReleased: function(mouse) {
+            // Native moves may be coalesced or queued. Commit the release position
+            // against the press snapshot before ending the gesture.
+            updateDraft(mouse.x, mouse.y)
             // Only a click that started outside any draft snaps; inside one it is a no-op.
             if (!moved && mode === modeCreate && overlay.isNonEmpty(overlay.hoverRect))
                 overlay.draftRect = overlay.hoverShownRect
