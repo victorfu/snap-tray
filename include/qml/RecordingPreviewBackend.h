@@ -1,6 +1,7 @@
 #pragma once
 
 #include "encoding/EncoderFactory.h"
+#include "qml/LongshotController.h"
 #include "utils/VideoCropGeometry.h"
 #include "recording/WindowTimeline.h"
 #include <QObject>
@@ -40,6 +41,7 @@ class RecordingPreviewBackend : public QObject
 {
     Q_OBJECT
 
+    Q_PROPERTY(LongshotController* longshot READ longshot CONSTANT)
     // Video state
     Q_PROPERTY(QString videoPath READ videoPath CONSTANT)
     Q_PROPERTY(qint64 duration READ duration NOTIFY durationChanged)
@@ -77,7 +79,8 @@ public:
     enum OutputFormat {
         MP4  = 0,
         GIF  = 1,
-        WebP = 2
+        WebP = 2,
+        LongScreenshot = 3
     };
     Q_ENUM(OutputFormat)
 
@@ -111,10 +114,11 @@ public:
 
     int selectedFormat() const { return m_selectedFormat; }
 
-    bool isProcessing() const { return m_isProcessing; }
+    LongshotController* longshot() const { return m_longshot; }
+    bool isProcessing() const { return m_isProcessing || (m_longshot && m_longshot->busy()); }
     bool canCancelExport() const;
-    int processProgress() const { return m_processProgress; }
-    QString processStatus() const { return m_processStatus; }
+    int processProgress() const { return m_longshot->busy() ? m_longshot->progress() : m_processProgress; }
+    QString processStatus() const { return m_longshot->busy() ? m_longshot->status() : m_processStatus; }
 
     QString errorMessage() const { return m_errorMessage; }
 
@@ -195,6 +199,9 @@ private:
     void finishProcessing();
 
     void setErrorMessage(const QString &msg);
+
+    LongshotController* m_longshot = nullptr;
+    bool m_longshotClosePending = false;
 
     // View
     QQuickView *m_view = nullptr;

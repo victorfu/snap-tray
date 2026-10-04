@@ -54,6 +54,15 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
     , m_recordedAsIntermediate(recordedAsIntermediate)
 {
     m_windowTimeline = SnapTray::WindowTimelineSidecar::read(videoPath);
+    m_longshot = new LongshotController(this);
+    connect(m_longshot, &LongshotController::changed, this, [this] {
+        emit processingChanged(); emit processProgressChanged(); emit processStatusChanged();
+    });
+    connect(m_longshot, &LongshotController::idle, this, [this] {
+        if (m_longshotClosePending) { m_longshotClosePending = false; close(); }
+    });
+    connect(this, &RecordingPreviewBackend::cropRectChanged, m_longshot, &LongshotController::invalidate);
+    connect(this, &RecordingPreviewBackend::trimRangeChanged, m_longshot, &LongshotController::invalidate);
 }
 
 std::function<int()>& RecordingPreviewBackend::outputQualityOverride()
@@ -71,6 +80,7 @@ RecordingPreviewBackend::TranscoderFactory& RecordingPreviewBackend::transcoderF
 RecordingPreviewBackend::~RecordingPreviewBackend()
 {
     m_exportCancelToken->store(true);
+    m_longshot->cancel();
 
     if (m_view) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
@@ -93,6 +103,7 @@ void RecordingPreviewBackend::ensureView()
 
     auto& mgr = SnapTray::QmlOverlayManager::instance();
     m_view = mgr.createUtilityWindow();
+    m_longshot->installImageProvider(m_view->engine());
 #ifdef Q_OS_WIN
     // Qt 6.11's Windows backend turns a plain Qt::Window that carries
     // WindowStaysOnTopHint into a caption-less WS_POPUP frame; spelling out
@@ -126,6 +137,10 @@ void RecordingPreviewBackend::ensureView()
 
 bool RecordingPreviewBackend::eventFilter(QObject* watched, QEvent* event)
 {
+    if (watched == m_view && event && event->type() == QEvent::Close && m_longshot->busy()) {
+        m_longshotClosePending = true; m_longshot->cancel();
+        static_cast<QCloseEvent*>(event)->ignore(); return true;
+    }
     if (watched == m_view && event && event->type() == QEvent::Close && m_isProcessing) {
         static_cast<QCloseEvent*>(event)->ignore();
         return true;
@@ -184,6 +199,7 @@ void RecordingPreviewBackend::show()
 
 void RecordingPreviewBackend::close()
 {
+    if (m_longshot->busy()) { m_longshotClosePending = true; m_longshot->cancel(); return; }
     if (isProcessing() || m_closeHandled) return;
     if (m_view) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
@@ -267,7 +283,7 @@ qint64 RecordingPreviewBackend::trimmedDuration() const
 void RecordingPreviewBackend::setSelectedFormat(int format)
 {
     if (isProcessing()) return;
-    format = qBound(0, format, 2);
+    format = qBound(0, format, 3);
     auto fmt = static_cast<OutputFormat>(format);
     if (m_selectedFormat != fmt) {
         m_selectedFormat = fmt;
@@ -350,6 +366,10 @@ void RecordingPreviewBackend::save()
                                               : RecordingSettingsManager::instance().quality();
 
     // Animated exports share the same offline extraction path, including trims.
+    if (m_selectedFormat == LongScreenshot) {
+        m_longshot->start(m_videoPath, m_trimStart, trimEnd(), m_cropRect);
+        return;
+    }
     if (m_selectedFormat != MP4) {
         performFormatConversion(m_selectedFormat);
         return;
@@ -367,6 +387,7 @@ void RecordingPreviewBackend::save()
 
 bool RecordingPreviewBackend::canCancelExport() const
 {
+    if (m_longshot->busy()) return true;
     return m_isProcessing && m_exportKind == ExportKind::MP4 && !m_exportCancelToken->load();
 }
 
@@ -379,6 +400,7 @@ void RecordingPreviewBackend::finishProcessing()
 
 void RecordingPreviewBackend::cancelExport()
 {
+    if (m_longshot->busy()) { m_longshot->cancel(); return; }
     if (!canCancelExport()) {
         return;
     }

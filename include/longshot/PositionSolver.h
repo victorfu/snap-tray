@@ -1,6 +1,7 @@
 #pragma once
 
 #include "longshot/LongshotTypes.h"
+#include <functional>
 
 namespace SnapTray::Longshot {
 
@@ -30,7 +31,8 @@ public:
     static SolveResult solve(const std::vector<qint64>& frameTimesMs,
                              const std::vector<PairShift>& edges,
                              double maxResidualPx,
-                             int frameHeight = 0);
+                             int frameHeight = 0,
+                             const std::function<bool()>& shouldContinue = {});
 };
 
 } // namespace SnapTray::Longshot

@@ -4,6 +4,7 @@
 #include "encoding/IntermediateQuality.h"
 #include "encoding/VideoBitrate.h"
 #include "qml/RecordingPreviewBackend.h"
+#include "longshot/FrameReaderLongshotSource.h"
 #include "recording/WindowTimeline.h"
 #include "recording/WindowTimelineSidecar.h"
 #include "video/IVideoTranscoder.h"
@@ -312,6 +313,7 @@ class tst_RecordingPreviewExport : public QObject
     Q_OBJECT
 
 private slots:
+    void closeCancelsLongshotBeforeDiscard();
     void closeOutcomes_data();
     void closeOutcomes();
     void previewWindowKeepsNativeCaption();
@@ -341,6 +343,32 @@ private slots:
     void destroyWhileExportingKeepsSource_data();
     void destroyWhileExportingKeepsSource();
 };
+
+void tst_RecordingPreviewExport::closeCancelsLongshotBeforeDiscard()
+{
+    if (!SnapTray::Longshot::FrameReaderLongshotSource::createNative()) QSKIP("No native offline reader");
+    QTemporaryDir directory;
+    const QString path = directory.filePath("longshot-close.mp4");
+    const QString error = createRecording(path, 0);
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+    RecordingPreviewBackend backend(path);
+    backend.updateDuration(1000);
+    backend.setSelectedFormat(RecordingPreviewBackend::LongScreenshot);
+    QSignalSpy closed(&backend, &RecordingPreviewBackend::closed);
+    bool removedAfterIdle = false;
+    connect(&backend, &RecordingPreviewBackend::discardRequested, this, [&](const QString& source) {
+        removedAfterIdle = !backend.longshot()->busy() && QFile::remove(source);
+    });
+    backend.save();
+    QVERIFY(backend.longshot()->busy());
+    backend.close();
+    QCOMPARE(closed.count(), 0);
+    QVERIFY(QFile::exists(path));
+    QTRY_COMPARE_WITH_TIMEOUT(closed.count(), 1, 10000);
+    QVERIFY(removedAfterIdle);
+    QVERIFY(!QFile::exists(path));
+    QVERIFY(!backend.longshot()->hasResult());
+}
 
 void tst_RecordingPreviewExport::saveAnimation_data()
 {

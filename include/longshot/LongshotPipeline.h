@@ -13,6 +13,9 @@
 
 namespace SnapTray::Longshot {
 
+enum class WorkStage { Analyze, Solve, Render };
+using StageFn = std::function<void(WorkStage)>;
+
 using ProgressFn = std::function<bool(int percent)>; // false = cancel
 
 struct PipelineParams {
@@ -48,7 +51,7 @@ class LongshotPipeline
 {
 public:
     static AnalysisResult analyze(LongshotFrameSource& source, const QString& path, qint64 startMs, qint64 endMs,
-                                  const QRect& crop, const PipelineParams& params, const ProgressFn& progress);
+                                  const QRect& crop, const PipelineParams& params, const ProgressFn& progress, const StageFn& stage = {});
 
     // Same as analyze(), but frames whose media time appears in knownFrames
     // reuse those features and thumbnails instead of recomputing them (the
@@ -59,7 +62,7 @@ public:
     static AnalysisResult analyzeIncremental(LongshotFrameSource& source, const QString& path, qint64 startMs, qint64 endMs,
                                              const QRect& crop, const PipelineParams& params, const ProgressFn& progress,
                                              const std::vector<FrameFeatures>& knownFrames,
-                                             const std::vector<QImage>& knownThumbnails, int* framesAnalyzed);
+                                             const std::vector<QImage>& knownThumbnails, int* framesAnalyzed, const StageFn& stage = {});
 
     // Frame pairs worth a loop-closure check: at least loopMinGapFrames apart,
     // overlapping in solved position by at least frameHeight /

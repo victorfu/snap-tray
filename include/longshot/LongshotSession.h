@@ -88,7 +88,7 @@ public:
     void setOptions(const LongshotOptions& options);
     void setPipelineParams(const PipelineParams& params);
 
-    RunReport run(const ProgressFn& progress);
+    RunReport run(const ProgressFn& progress, const StageFn& stage = {});
 
     const DecodedFrameCache& decodeCache() const { return m_decodeCache; }
     DecodedFrameCache& decodeCache() { return m_decodeCache; }

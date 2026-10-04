@@ -181,15 +181,15 @@ std::vector<std::pair<int, int>> LongshotPipeline::selectClosureCandidates(const
 }
 
 AnalysisResult LongshotPipeline::analyze(LongshotFrameSource& source, const QString& path, qint64 startMs, qint64 endMs,
-                                         const QRect& crop, const PipelineParams& params, const ProgressFn& progress)
+                                         const QRect& crop, const PipelineParams& params, const ProgressFn& progress, const StageFn& stage)
 {
-    return analyzeIncremental(source, path, startMs, endMs, crop, params, progress, {}, {}, nullptr);
+    return analyzeIncremental(source, path, startMs, endMs, crop, params, progress, {}, {}, nullptr, stage);
 }
 
 AnalysisResult LongshotPipeline::analyzeIncremental(LongshotFrameSource& source, const QString& path, qint64 startMs, qint64 endMs,
                                                     const QRect& crop, const PipelineParams& params, const ProgressFn& progress,
                                                     const std::vector<FrameFeatures>& knownFrames,
-                                                    const std::vector<QImage>& knownThumbnails, int* framesAnalyzed)
+                                                    const std::vector<QImage>& knownThumbnails, int* framesAnalyzed, const StageFn& stage)
 {
     std::map<qint64, size_t> knownByTime;
     if (knownFrames.size() == knownThumbnails.size()) {
@@ -264,7 +264,9 @@ AnalysisResult LongshotPipeline::analyzeIncremental(LongshotFrameSource& source,
     for (const FrameFeatures& f : result.frames) times.push_back(f.tMs);
 
     // First solve on chain edges only. Unconverged positions are never used.
-    result.solve = PositionSolver::solve(times, result.edges, params.maxResidualPx, result.frameSize.height());
+    if (stage) stage(WorkStage::Solve);
+    result.solve = PositionSolver::solve(times, result.edges, params.maxResidualPx, result.frameSize.height(), [&] { return report(progress, kProgressAnalyzeEnd); });
+    if (result.solve.cancelled) { result.error = LongshotError::Cancelled; return result; }
     if (!result.solve.converged) {
         qWarning() << "LongshotPipeline: position solve did not converge; refusing to place frames";
         result.error = LongshotError::NoReliableContent;
@@ -332,7 +334,9 @@ AnalysisResult LongshotPipeline::analyzeIncremental(LongshotFrameSource& source,
             }
         }
         observations.insert(observations.end(), closureObservations.begin(), closureObservations.end());
-        result.solve = PositionSolver::solve(times, result.edges, params.maxResidualPx, result.frameSize.height());
+        if (stage) stage(WorkStage::Solve);
+        result.solve = PositionSolver::solve(times, result.edges, params.maxResidualPx, result.frameSize.height(), [&] { return report(progress, kProgressClosureEnd); });
+        if (result.solve.cancelled) { result.error = LongshotError::Cancelled; return result; }
         if (!result.solve.converged) {
             qWarning() << "LongshotPipeline: position solve with closures did not converge; refusing to place frames";
             result.error = LongshotError::NoReliableContent;
