@@ -1885,6 +1885,42 @@ Velikost: %2</translation>
         <source>Pin</source>
         <translation>Připnout</translation>
     </message>
+    <message>
+        <source>Edit Image</source>
+        <translation>Upravit obrázek</translation>
+    </message>
+    <message>
+        <source>Keep Selection</source>
+        <translation>Ponechat výběr</translation>
+    </message>
+    <message>
+        <source>Delete Selection</source>
+        <translation>Odstranit výběr</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Zpět</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>Znovu</translation>
+    </message>
+    <message>
+        <source>Reset Image</source>
+        <translation>Obnovit obrázek</translation>
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>Anotovat v připnutém okně</translation>
+    </message>
+    <message>
+        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
+        <translation>Tažením vyberte řádky v této části. Nové vygenerování zruší úpravy obrázku.</translation>
+    </message>
+    <message>
+        <source>View Result</source>
+        <translation>Zobrazit výsledek</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3432,6 +3468,10 @@ Velikost souboru: %3</translation>
     <message>
         <source>Saved %1 of %2 parts.</source>
         <translation>Uloženo %1 z %2 částí.</translation>
+    </message>
+    <message>
+        <source>Section %1 of %2 · Part %3 of %4</source>
+        <translation>Úsek %1 z %2 · Část %3 z %4</translation>
     </message>
 </context>
 </TS>

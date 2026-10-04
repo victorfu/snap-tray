@@ -30,6 +30,30 @@ public:
 private:
     QImage m_frame; bool m_slow; int m_index = 0;
 };
+class SeparateSource final : public LongshotFrameSource {
+public:
+    SeparateSource() {
+        QRandomGenerator random(42);
+        for (int i=0;i<2;++i) {
+            QImage frame(96,96,QImage::Format_RGB32);
+            for(int y=0;y<96;++y) for(int x=0;x<96;++x) {
+                const int gray=int(random.bounded(256)); frame.setPixel(x,y,qRgb(gray,gray,gray));
+            }
+            frames.append(frame);
+        }
+    }
+    bool open(const QString&,qint64,qint64,const QRect&) override { index=0; return true; }
+    std::optional<QImage> next(qint64* time) override {
+        if(index==4) return {};
+        *time=index*50; return frames[index++/2];
+    }
+    QSize frameSize() const override { return {96,96}; }
+    QSize videoSize() const override { return frameSize(); }
+    double frameRate() const override { return 20; }
+    int expectedFrameCount() const override { return 4; }
+    QString lastError() const override { return {}; }
+    QList<QImage> frames; int index=0;
+};
 LongshotSession::SourceFactory factory(bool slow = false, QSize size = QSize(320, 240)) {
     auto page = SyntheticScroll::renderPage({size.width(), size.height(), 42});
     return [page, slow] { return std::make_unique<Source>(page, slow); };
@@ -89,6 +113,47 @@ private slots:
         QCOMPARE(saved.count(), 2);
         QCOMPARE(QDir(dir.path()).entryList({"split*.png"}, QDir::Files).size(), 2);
         QVERIFY(controller.hasResult());
+    }
+    void savesIndependentSections() {
+        QTemporaryDir dir;
+        LongshotController controller(nullptr, [] { return std::make_unique<SeparateSource>(); });
+        QSignalSpy ready(&controller,&LongshotController::resultReady);
+        controller.start("sections",0,-1,{});
+        QTRY_COMPARE_WITH_TIMEOUT(ready.count(),1,10000);
+        QCOMPARE(controller.partCount(),2);
+        QVERIFY(controller.partLabel().contains("Section 1 of 2"));
+        controller.setSelectedPart(1);
+        QVERIFY(controller.partLabel().contains("Section 2 of 2"));
+        QVERIFY(controller.saveToDirectory(dir.path(),"separate"));
+        QVERIFY(QFile::exists(dir.filePath("separate-s01.png")));
+        QVERIFY(QFile::exists(dir.filePath("separate-s02.png")));
+        QVERIFY(QImage(dir.filePath("separate-s01.png")) != QImage(dir.filePath("separate-s02.png")));
+    }
+    void imageEditsExportNewPixelsAndUndo() {
+        QTemporaryDir dir;
+        LongshotController controller(nullptr,factory());
+        QSignalSpy ready(&controller,&LongshotController::resultReady);
+        QSignalSpy saved(&controller,&LongshotController::imageSaved);
+        QSignalSpy annotate(&controller,&LongshotController::annotateRequested);
+        controller.start("edit",0,-1,{});
+        QTRY_COMPARE_WITH_TIMEOUT(ready.count(),1,10000);
+        QVERIFY(controller.saveToDirectory(dir.path(),"edited"));
+        QCOMPARE(saved.count(),1);
+        const auto original=qvariant_cast<QImage>(saved[0][0]);
+        QVERIFY(controller.keepRows(10,200)); QCOMPARE(controller.imageSize().height(),190);
+        QVERIFY(controller.removeRows(50,60)); QCOMPARE(controller.imageSize().height(),180);
+        QVERIFY(controller.canUndo()); QVERIFY(controller.imageEdited());
+        QVERIFY(controller.saveToDirectory(dir.path(),"edited"));
+        QCOMPARE(saved.count(),2); QCOMPARE(QDir(dir.path()).entryList({"edited*.png"},QDir::Files).size(),2);
+        const auto edited=qvariant_cast<QImage>(saved[1][0]);
+        QCOMPARE(edited.copy(0,0,edited.width(),50),original.copy(0,10,original.width(),50));
+        QCOMPARE(edited.copy(0,50,edited.width(),130),original.copy(0,70,original.width(),130));
+        controller.annotate(); QCOMPARE(annotate.count(),1);
+        QCOMPARE(qvariant_cast<QImage>(annotate[0][0]),edited);
+        QVERIFY(controller.undoEdit()); QCOMPARE(controller.imageSize().height(),190);
+        QVERIFY(controller.redoEdit()); QCOMPARE(controller.imageSize().height(),180);
+        QVERIFY(controller.resetImage()); QCOMPARE(controller.imageSize().height(),240);
+        QVERIFY(!controller.imageEdited());
     }
     void cancellationKeepsEventLoopResponsive() {
         LongshotController controller(nullptr, factory(true));

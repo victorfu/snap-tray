@@ -743,6 +743,11 @@ endif()
 # Longshot Tests (link snaptray_algorithms)
 # ============================================================================
 
+add_executable(Longshot_ImageEdit Longshot/tst_LongshotImageEdit.cpp)
+target_link_libraries(Longshot_ImageEdit PRIVATE snaptray_algorithms Qt6::Test)
+add_test(NAME Longshot_ImageEdit COMMAND Longshot_ImageEdit)
+set_tests_properties(Longshot_ImageEdit PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Longshot_Sections Longshot/tst_LongshotSections.cpp)
 target_link_libraries(Longshot_Sections PRIVATE snaptray_algorithms Qt6::Test)
 add_test(NAME Longshot_Sections COMMAND Longshot_Sections)

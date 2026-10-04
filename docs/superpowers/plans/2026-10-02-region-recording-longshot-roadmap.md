@@ -239,7 +239,7 @@ public:
 4. Global solve wiring:
    - Chain edges plus loop-closure edges for frames whose positions overlap but whose times are not adjacent.
    - Try to rejoin islands with a global search.
-   - Otherwise report the break and keep the largest island.
+   - Otherwise report the break and export every reliably connected island as an independent section (2026-10-04 extension). Order sections by first recorded frame, never infer a join, and keep isolated frames reported rather than promoting them to a stitched section.
 5. `LongshotRenderer`:
    - Picks one source frame per 64-row tile, scoring stationary frames, keyframes and tile position mid-frame higher, and rejecting frames that disagree with the majority.
    - Places seams on low-gradient rows; on conflicts, later observations win.

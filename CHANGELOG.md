@@ -8,6 +8,9 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ### Added
 
+- Long screenshots retain independent reliable sections, with separate section/part labels and filenames.
+- Long screenshot results support horizontal trimming and band removal with undo/redo, and can open the edited image in the pin annotation toolbar.
+
 - Recording Preview can turn vertically scrolling recordings into long screenshots, with crop/trim, quality markers, automatic splitting, PNG export, copying and pinning while retaining the source recording.
 
 - Recording preview can crop the recording to a region before exporting MP4, GIF, or WebP.

@@ -1879,6 +1879,42 @@ Kích thước: %2</translation>
         <source>Pin</source>
         <translation>Ghim</translation>
     </message>
+    <message>
+        <source>Edit Image</source>
+        <translation>Sửa ảnh</translation>
+    </message>
+    <message>
+        <source>Keep Selection</source>
+        <translation>Giữ vùng chọn</translation>
+    </message>
+    <message>
+        <source>Delete Selection</source>
+        <translation>Xóa vùng chọn</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Hoàn tác</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>Làm lại</translation>
+    </message>
+    <message>
+        <source>Reset Image</source>
+        <translation>Đặt lại ảnh</translation>
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>Chú thích trong cửa sổ ghim</translation>
+    </message>
+    <message>
+        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
+        <translation>Kéo để chọn các hàng trong phần này. Tạo lại sẽ đặt lại các chỉnh sửa ảnh.</translation>
+    </message>
+    <message>
+        <source>View Result</source>
+        <translation>Xem kết quả</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3426,6 +3462,10 @@ Kích thước tệp: %3</translation>
     <message>
         <source>Saved %1 of %2 parts.</source>
         <translation>Đã lưu %1 trong %2 phần.</translation>
+    </message>
+    <message>
+        <source>Section %1 of %2 · Part %3 of %4</source>
+        <translation>Đoạn %1/%2 · Phần %3/%4</translation>
     </message>
 </context>
 </TS>

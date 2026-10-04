@@ -926,14 +926,19 @@ void MainApplication::showRecordingPreview(const QString& videoPath, int default
         request.maxEntries = PinWindowSettingsManager::instance().loadMaxCacheFiles();
         SnapTray::HistoryRecorder::instance().submitCaptureSession(std::move(request));
     });
-    connect(m_previewBackend->longshot(), &LongshotController::pinRequested, this, [this](const QImage& image) {
+    const auto pinLongshot = [this](const QImage& image, bool annotate) {
         QScreen* screen = QGuiApplication::primaryScreen();
         if (!screen || image.isNull()) return;
         const QPixmap pixmap = QPixmap::fromImage(convertImageForDisplay(image));
         const auto placement = computeInitialPinWindowPlacement(pixmap, screen->availableGeometry());
         auto* pin = m_pinWindowManager->createPinWindow(pixmap, placement.position);
         if (pin && placement.zoomLevel < 1.0) pin->setZoomLevel(placement.zoomLevel);
-    });
+        if (pin && annotate && !pin->isToolbarVisible()) pin->toggleToolbar();
+    };
+    connect(m_previewBackend->longshot(), &LongshotController::pinRequested, this,
+            [pinLongshot](const QImage& image) { pinLongshot(image, false); });
+    connect(m_previewBackend->longshot(), &LongshotController::annotateRequested, this,
+            [pinLongshot](const QImage& image) { pinLongshot(image, true); });
     m_previewBackend->show();
 }
 

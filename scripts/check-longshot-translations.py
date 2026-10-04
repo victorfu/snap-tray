@@ -10,6 +10,8 @@ required = {"LongshotController": set(re.findall(r'tr\("([^"\n]*)"\)', controlle
 required["RecordingPreview"] = {
     "Long Screenshot", "Generate Long Screenshot",
     "Crop to the scrolling area, then generate a long screenshot.",
+    "View Result", "Edit Image", "Keep Selection", "Delete Selection", "Undo", "Redo", "Reset Image", "Annotate in Pin",
+    "Drag to select rows in this part. Regenerating resets image edits.",
     "Remove Fixed Header", "Include Fixed Header", "Save PNG", "Back", "Copy", "Pin",
 }
 failures = []

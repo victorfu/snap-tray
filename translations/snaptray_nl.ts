@@ -1885,6 +1885,42 @@ Grootte: %2</translation>
         <source>Pin</source>
         <translation>Vastzetten</translation>
     </message>
+    <message>
+        <source>Edit Image</source>
+        <translation>Afbeelding bewerken</translation>
+    </message>
+    <message>
+        <source>Keep Selection</source>
+        <translation>Selectie behouden</translation>
+    </message>
+    <message>
+        <source>Delete Selection</source>
+        <translation>Selectie verwijderen</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Ongedaan maken</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>Opnieuw</translation>
+    </message>
+    <message>
+        <source>Reset Image</source>
+        <translation>Afbeelding herstellen</translation>
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>Annoteren in vastgezet venster</translation>
+    </message>
+    <message>
+        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
+        <translation>Sleep om rijen in dit deel te selecteren. Opnieuw genereren wist de beeldbewerkingen.</translation>
+    </message>
+    <message>
+        <source>View Result</source>
+        <translation>Resultaat bekijken</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3432,6 +3468,10 @@ Bestandsgrootte: %3</translation>
     <message>
         <source>Saved %1 of %2 parts.</source>
         <translation>%1 van %2 delen opgeslagen.</translation>
+    </message>
+    <message>
+        <source>Section %1 of %2 · Part %3 of %4</source>
+        <translation>Sectie %1 van %2 · Deel %3 van %4</translation>
     </message>
 </context>
 </TS>

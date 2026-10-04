@@ -1879,6 +1879,42 @@ Koko: %2</translation>
         <source>Pin</source>
         <translation>Kiinnitä</translation>
     </message>
+    <message>
+        <source>Edit Image</source>
+        <translation>Muokkaa kuvaa</translation>
+    </message>
+    <message>
+        <source>Keep Selection</source>
+        <translation>Säilytä valinta</translation>
+    </message>
+    <message>
+        <source>Delete Selection</source>
+        <translation>Poista valinta</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Kumoa</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>Tee uudelleen</translation>
+    </message>
+    <message>
+        <source>Reset Image</source>
+        <translation>Palauta kuva</translation>
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>Merkitse kiinnitetyssä ikkunassa</translation>
+    </message>
+    <message>
+        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
+        <translation>Valitse tämän osan rivejä vetämällä. Uudelleen luominen nollaa kuvan muokkaukset.</translation>
+    </message>
+    <message>
+        <source>View Result</source>
+        <translation>Näytä tulos</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3426,6 +3462,10 @@ Tiedoston koko: %3</translation>
     <message>
         <source>Saved %1 of %2 parts.</source>
         <translation>Tallennettu %1/%2 osaa.</translation>
+    </message>
+    <message>
+        <source>Section %1 of %2 · Part %3 of %4</source>
+        <translation>Jakso %1/%2 · Osa %3/%4</translation>
     </message>
 </context>
 </TS>

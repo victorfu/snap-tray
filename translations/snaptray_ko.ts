@@ -1885,6 +1885,42 @@ Size: %2</source>
         <source>Pin</source>
         <translation>고정</translation>
     </message>
+    <message>
+        <source>Edit Image</source>
+        <translation>이미지 편집</translation>
+    </message>
+    <message>
+        <source>Keep Selection</source>
+        <translation>선택 영역 유지</translation>
+    </message>
+    <message>
+        <source>Delete Selection</source>
+        <translation>선택 영역 삭제</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>실행 취소</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>다시 실행</translation>
+    </message>
+    <message>
+        <source>Reset Image</source>
+        <translation>이미지 초기화</translation>
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>고정 창에서 주석</translation>
+    </message>
+    <message>
+        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
+        <translation>드래그하여 이 이미지의 행을 선택하세요. 다시 생성하면 이미지 편집이 초기화됩니다.</translation>
+    </message>
+    <message>
+        <source>View Result</source>
+        <translation>결과 보기</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3432,6 +3468,10 @@ File size: %3</source>
     <message>
         <source>Saved %1 of %2 parts.</source>
         <translation>%2개 중 %1개를 저장했습니다.</translation>
+    </message>
+    <message>
+        <source>Section %1 of %2 · Part %3 of %4</source>
+        <translation>구간 %1/%2 · 이미지 %3/%4</translation>
     </message>
 </context>
 </TS>

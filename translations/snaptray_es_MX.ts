@@ -1885,6 +1885,42 @@ Tamaño: %2</translation>
         <source>Pin</source>
         <translation>Fijar</translation>
     </message>
+    <message>
+        <source>Edit Image</source>
+        <translation>Editar imagen</translation>
+    </message>
+    <message>
+        <source>Keep Selection</source>
+        <translation>Conservar selección</translation>
+    </message>
+    <message>
+        <source>Delete Selection</source>
+        <translation>Eliminar selección</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Deshacer</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>Rehacer</translation>
+    </message>
+    <message>
+        <source>Reset Image</source>
+        <translation>Restablecer imagen</translation>
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>Anotar en ventana fijada</translation>
+    </message>
+    <message>
+        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
+        <translation>Arrastra para seleccionar filas de esta parte. Al volver a generar se restablecen las ediciones.</translation>
+    </message>
+    <message>
+        <source>View Result</source>
+        <translation>Ver resultado</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3432,6 +3468,10 @@ Tamaño del archivo: %3</translation>
     <message>
         <source>Saved %1 of %2 parts.</source>
         <translation>Se guardaron %1 de %2 partes.</translation>
+    </message>
+    <message>
+        <source>Section %1 of %2 · Part %3 of %4</source>
+        <translation>Sección %1 de %2 · Parte %3 de %4</translation>
     </message>
 </context>
 </TS>

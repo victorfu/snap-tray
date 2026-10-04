@@ -1879,6 +1879,42 @@ Size: %2</source>
         <source>Pin</source>
         <translation>Καρφίτσωμα</translation>
     </message>
+    <message>
+        <source>Edit Image</source>
+        <translation>Επεξεργασία εικόνας</translation>
+    </message>
+    <message>
+        <source>Keep Selection</source>
+        <translation>Διατήρηση επιλογής</translation>
+    </message>
+    <message>
+        <source>Delete Selection</source>
+        <translation>Διαγραφή επιλογής</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Αναίρεση</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>Επανάληψη</translation>
+    </message>
+    <message>
+        <source>Reset Image</source>
+        <translation>Επαναφορά εικόνας</translation>
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>Σχολιασμός στο καρφιτσωμένο παράθυρο</translation>
+    </message>
+    <message>
+        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
+        <translation>Σύρετε για επιλογή γραμμών σε αυτό το τμήμα. Η νέα δημιουργία επαναφέρει τις αλλαγές της εικόνας.</translation>
+    </message>
+    <message>
+        <source>View Result</source>
+        <translation>Προβολή αποτελέσματος</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -3426,6 +3462,10 @@ File size: %3</source>
     <message>
         <source>Saved %1 of %2 parts.</source>
         <translation>Αποθηκεύτηκαν %1 από %2 τμήματα.</translation>
+    </message>
+    <message>
+        <source>Section %1 of %2 · Part %3 of %4</source>
+        <translation>Ενότητα %1 από %2 · Τμήμα %3 από %4</translation>
     </message>
 </context>
 </TS>
