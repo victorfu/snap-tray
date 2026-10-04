@@ -230,6 +230,21 @@ SolveResult PositionSolver::solve(const std::vector<qint64>& frameTimesMs,
             result.breakTimesMs.push_back(frameTimesMs[i]);
         }
     }
+    // Preserve every reliable component in addition to the legacy largest-island
+    // projection used by the closure search. Never promote an isolated frame.
+    std::vector<bool> emitted(frameCount, false);
+    for (int i = 0; i < frameCount; ++i) {
+        const int r = root[i];
+        if (emitted[r] || islandSize[r] < 2) continue;
+        emitted[r] = true;
+        SolvedSection section;
+        for (int j = i; j < frameCount; ++j) {
+            if (root[j] != r) continue;
+            section.frameIndices.push_back(j);
+            section.positions.push_back(int(std::lround(pos[j] - pos[i])));
+        }
+        result.sections.push_back(std::move(section));
+    }
     std::sort(result.breakTimesMs.begin(), result.breakTimesMs.end());
     return result;
 }

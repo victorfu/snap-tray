@@ -204,7 +204,7 @@ void LongshotRenderer::placeSeams(std::vector<TileAssignment>& tiles, const Anal
 
 RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString& path, qint64 startMs, qint64 endMs,
                                       const QRect& crop, const AnalysisResult& a, const LongshotOptions& options,
-                                      const ProgressFn& progress)
+                                      const ProgressFn& progress, qint64 outputBudgetBytes)
 {
     RenderResult result;
     if (a.error != LongshotError::None) { result.error = a.error; return result; }
@@ -291,8 +291,7 @@ RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString
     // canvas exists when splitting.
     const int partHeight = options.splitOversize && outputHeight > maxHeight ? maxHeight : renderHeight;
     // Split output still retains all parts. Bound total allocation, not just each part.
-    constexpr qint64 kOutputBudgetBytes = 512LL * 1024 * 1024;
-    if (qint64(columns.width()) * renderHeight * 4 > kOutputBudgetBytes) {
+    if (qint64(columns.width()) * renderHeight * 4 > outputBudgetBytes) {
         result.error = LongshotError::OutOfMemory; return result;
     }
     QList<QImage> parts;
@@ -403,6 +402,64 @@ RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString
     if (progress) progress(100);
     qDebug() << "LongshotRenderer: height" << result.fullHeightPx << "parts" << result.parts.size() << "capped" << result.heightCapped
              << "side crop" << result.autoCroppedLeft << result.autoCroppedRight << "break rows" << result.breakRows.size();
+    return result;
+}
+
+RenderResult LongshotRenderer::renderSections(LongshotFrameSource& source, const QString& path,
+                                                qint64 startMs, qint64 endMs, const QRect& crop,
+                                                const AnalysisResult& analysis, const LongshotOptions& options,
+                                                const ProgressFn& progress)
+{
+    RenderResult result;
+    result.sectionCount = int(analysis.solve.sections.size());
+    if (analysis.error != LongshotError::None || result.sectionCount == 0) {
+        result.error = analysis.error == LongshotError::None ? LongshotError::NoReliableContent : analysis.error;
+        return result;
+    }
+    AnalysisResult sectionAnalysis = analysis;
+    sectionAnalysis.solve.sections.clear();
+    qint64 retainedBytes = 0;
+    int rowOffset = 0;
+    for (int sectionIndex = 0; sectionIndex < result.sectionCount; ++sectionIndex) {
+        if (progress && !progress(sectionIndex * 100 / result.sectionCount)) {
+            result = {}; result.error = LongshotError::Cancelled; return result;
+        }
+        const auto& section = analysis.solve.sections[size_t(sectionIndex)];
+        sectionAnalysis.solve.positions.assign(analysis.frames.size(), std::nullopt);
+        for (size_t i = 0; i < section.frameIndices.size(); ++i)
+            sectionAnalysis.solve.positions[size_t(section.frameIndices[i])] = section.positions[i];
+        auto rendered = render(source, path, startMs, endMs, crop, sectionAnalysis, options,
+                               [&](int percent) { return !progress || progress((sectionIndex * 100 + percent) / result.sectionCount); },
+                               kOutputBudgetBytes - retainedBytes);
+        if (rendered.error != LongshotError::None) {
+            result = {}; result.error = rendered.error; return result;
+        }
+        for (int i = 0; i < rendered.parts.size(); ++i) {
+            const auto& part = rendered.parts[i];
+            retainedBytes += part.sizeInBytes();
+            result.parts.append(part);
+            result.partInfo.append({sectionIndex, i, int(rendered.parts.size()),
+                                    analysis.frames[size_t(section.frameIndices.front())].tMs,
+                                    analysis.frames[size_t(section.frameIndices.back())].tMs,
+                                    rendered.autoCroppedLeft, rendered.autoCroppedRight});
+        }
+        for (int row : rendered.breakRows) result.breakRows.push_back(rowOffset + row);
+        for (int row : rendered.lowConfidenceRows) result.lowConfidenceRows.push_back(rowOffset + row);
+        for (auto span : rendered.sourceSpans) {
+            span.firstRow += rowOffset; span.endRow += rowOffset;
+            result.sourceSpans.push_back(span);
+        }
+        int renderedHeight = 0;
+        for (const auto& part : rendered.parts) renderedHeight += part.height();
+        rowOffset += renderedHeight;
+        result.fullHeightPx += rendered.fullHeightPx;
+        result.heightCapped |= rendered.heightCapped;
+        result.stickyHeaderIncluded |= rendered.stickyHeaderIncluded;
+        if (sectionIndex == 0) {
+            result.autoCroppedLeft = rendered.autoCroppedLeft;
+            result.autoCroppedRight = rendered.autoCroppedRight;
+        }
+    }
     return result;
 }
 

@@ -85,10 +85,17 @@ static QJsonObject evaluate(const QJsonObject& spec, const QDir& base, const QSt
         const QString name = QString("part-%1.png").arg(i + 1, 3, 10, QLatin1Char('0'));
         QSaveFile file(QDir(output).filePath(name));
         if (!file.open(QIODevice::WriteOnly) || !image.save(&file, "PNG") || !file.commit()) return fail("PNG write failed");
-        parts.append(QJsonObject{{"file", name}, {"width", image.width()}, {"height", image.height()}});
+        const auto info = report.render.partInfo.value(i);
+        parts.append(QJsonObject{{"file", name}, {"width", image.width()}, {"height", image.height()},
+                                 {"section", info.section + 1}, {"partInSection", info.indexInSection + 1},
+                                 {"partsInSection", info.partsInSection}, {"sourceStartMs", double(info.startMs)},
+                                 {"sourceEndMs", double(info.endMs)}});
         totalHeight += image.height();
     }
     result["parts"] = parts;
+    result["sectionCount"] = report.render.sectionCount;
+    if (report.render.sectionCount > 1)
+        return fail("Multiple independent sections exported; a single ground-truth image cannot certify their ordering");
     const QString truthPath = spec.value("groundTruth").toString();
     if (truthPath.isEmpty()) return fail("Manual review required: no ground truth; not an automated pass");
     const QImage truth(base.absoluteFilePath(truthPath));
