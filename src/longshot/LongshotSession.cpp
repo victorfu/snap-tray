@@ -134,6 +134,9 @@ RunReport LongshotSession::run(const ProgressFn& progress, const StageFn& stage)
         // Reused = frames of the new analysis whose features came from the old one.
         report.reusedFeatures = int(updated.frames.size()) - report.framesAnalyzed > 0;
         m_analysis = std::move(updated);
+        // The previous render belongs to the old trim, even if cancellation
+        // prevents rendering this newly committed analysis.
+        m_renderOptions.reset();
     } else {
         // Source or crop changed: nothing crop-dependent survives.
         m_analysis = LongshotPipeline::analyze(*source, m_path, m_startMs, m_endMs, m_crop, m_params, progress, stage);

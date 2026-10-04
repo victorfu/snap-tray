@@ -19,7 +19,7 @@ constexpr int kPeakExclusionRows = 2;   // neighbours of a chosen peak are not a
 constexpr float kInkMeanDeviation = 8.0f; // luma: a row this far from the median row is solid ink, not background
 constexpr int kMinContentRows = 32;     // fewer usable rows than this: give up on the pair
 constexpr int kMinTemplateRows = 24;
-constexpr double kStationaryMeanDiff = 1.5; // whole-frame mean |diff| below this = no motion
+constexpr double kStationaryMaxPixelDiff = 1.5; // tolerate at most one luma level of rounding per pixel
 constexpr int kMinMovingColumns = 32;
 // One or two unchanged edge rows can be codec ringing after a small scroll.
 // Do not turn that isolated evidence into a mask covering the entire edge band.
@@ -428,10 +428,10 @@ std::optional<ShiftObservation> LongshotAnalyzer::estimateShift(const QImage& fr
         return std::nullopt;
     }
 
-    // Stationary pair: nothing changed anywhere.
-    const std::vector<double> unchangedRows = rowAbsDiff(from, to);
-    const double meanDiff = std::accumulate(unchangedRows.begin(), unchangedRows.end(), 0.0) / height;
-    if (meanDiff < kStationaryMeanDiff) {
+    // Only bypass motion matching when every pixel is unchanged (apart from
+    // rounding). A whole-frame mean lets white margins hide slow motion in
+    // sparse content and introduces a false zero-shift edge on every frame.
+    if (cv::norm(from, to, cv::NORM_INF) < kStationaryMaxPixelDiff) {
         obs.stationary = true;
         obs.shift.dy = 0;
         obs.shift.confidence = 1.0;
@@ -554,6 +554,9 @@ std::optional<ShiftObservation> LongshotAnalyzer::estimateShift(const QImage& fr
 
     obs.shift.dy = dy;
     obs.shift.confidence = confidence;
+    // Noisy pauses can reach the matcher instead of the equality shortcut.
+    // Preserve their mask propagation once zero motion has been verified.
+    obs.stationary = dy == 0;
     // Static bands are rows with ink that stayed put while the content moved.
     // Such rows exist in both frames of the pair by construction (an overlay
     // present in only one frame is indistinguishable from newly revealed
