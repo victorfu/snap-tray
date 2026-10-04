@@ -13,6 +13,8 @@
 #include <algorithm>
 #include <cmath>
 #include <memory>
+#include <cstring>
+#include <map>
 
 namespace SyntheticScroll {
 
@@ -78,6 +80,19 @@ double profileDistance(const std::vector<float>& a, const std::vector<float>& b)
     double sum = 0.0;
     for (int i = 0; i < kProfileBins; ++i) sum += std::abs(a[i] - b[i]);
     return sum / kProfileBins;
+}
+
+// Most page rows are clearly different. Stop once the absolute tolerance
+// cannot be met; this preserves the exact candidate set with codec references.
+bool profilesMatch(const std::vector<float>& a, const std::vector<float>& b)
+{
+    double sum = 0.0;
+    const double limit = kProfileTolerance * kProfileBins;
+    for (int i = 0; i < kProfileBins; ++i) {
+        sum += std::abs(a[i] - b[i]);
+        if (sum >= limit) return false;
+    }
+    return true;
 }
 
 } // namespace
@@ -258,15 +273,42 @@ QString encodeFrames(const QString& path, const std::vector<QImage>& frames, int
     return finished.first().at(0).toBool() ? QString() : encoder->lastError();
 }
 
-RowMatchReport compareWithGroundTruth(const QImage& result, const QImage& page, int firstPageRow, int lastPageRow)
+void addRowMatchReferences(RowMatchReferences& references, const QImage& decoded, const QImage& original,
+                           const QImage& page, int pageTop)
+{
+    Q_ASSERT(decoded.size() == original.size() && original.width() == page.width());
+    const QImage input = original.convertToFormat(QImage::Format_RGB32);
+    const QImage truth = page.convertToFormat(QImage::Format_RGB32);
+    const QImage output = decoded.convertToFormat(QImage::Format_RGB32);
+    for (int y = 0; y < input.height(); ++y) {
+        const int pageRow = pageTop + y;
+        if (pageRow < 0 || pageRow >= truth.height()) continue;
+        if (std::memcmp(input.constScanLine(y), truth.constScanLine(pageRow), size_t(input.width()) * sizeof(QRgb)) == 0) {
+            references.push_back({pageRow, rowProfile(output, y)});
+        }
+    }
+}
+
+RowMatchReport compareWithGroundTruth(const QImage& result, const QImage& page, int firstPageRow, int lastPageRow,
+                                     const RowMatchReferences& references)
 {
     RowMatchReport report;
     report.outputRows = result.height();
     if (result.isNull() || page.isNull()) return report;
     const QImage out = result.convertToFormat(QImage::Format_RGB32);
     const QImage truth = page.convertToFormat(QImage::Format_RGB32);
-    std::vector<std::vector<float>> truthProfiles(truth.height());
-    for (int y = 0; y < truth.height(); ++y) truthProfiles[y] = rowProfile(truth, y);
+    std::vector<std::vector<std::vector<float>>> truthProfiles(truth.height());
+    for (int y = 0; y < truth.height(); ++y) truthProfiles[y].push_back(rowProfile(truth, y));
+    for (const RowMatchReference& reference : references) {
+        if (reference.pageRow < 0 || reference.pageRow >= truth.height()) continue;
+        auto& profiles = truthProfiles[reference.pageRow];
+        if (std::find(profiles.begin(), profiles.end(), reference.profile) == profiles.end()) {
+            profiles.push_back(reference.profile);
+        }
+    }
+    // Text lines and flat bands repeat profiles. Memoize their candidate sets
+    // so calibration does not multiply the cost for each identical output row.
+    std::map<std::vector<float>, std::vector<int>> candidateCache;
 
     const int outRows = out.height();
     std::vector<int> mapping(outRows, -1);
@@ -283,29 +325,32 @@ RowMatchReport compareWithGroundTruth(const QImage& result, const QImage& page, 
     };
     std::vector<std::vector<State>> layers;
     std::vector<int> layerRow;   // output row of each layer
-    std::vector<double> distances(truth.height());
     int skipped = 0;             // unmatched output rows since the last layer
     for (int y = 0; y < outRows; ++y) {
-        const std::vector<float> profile = rowProfile(out, y);
-        bool anyCandidate = false;
-        for (int p = 0; p < truth.height(); ++p) {
-            distances[p] = profileDistance(profile, truthProfiles[p]);
-            if (distances[p] < kProfileTolerance) anyCandidate = true;
+        const auto profile = rowProfile(out, y);
+        auto [cached, inserted] = candidateCache.try_emplace(profile);
+        if (inserted) {
+            for (int p = 0; p < truth.height(); ++p) {
+                for (const auto& reference : truthProfiles[p]) {
+                    if (profilesMatch(profile, reference)) {
+                        cached->second.push_back(p);
+                        break;
+                    }
+                }
+            }
         }
-        if (!anyCandidate) {
+        const auto& candidates = cached->second;
+        if (candidates.empty()) {
             ++skipped;
             continue;
         }
-        // Every page row within the absolute tolerance is a candidate: a matching
-        // margin relative to the best row would drop the true row whenever codec
-        // ringing makes another (periodic) row a closer match.
-        const double limit = kProfileTolerance;
+        // Keep the same absolute tolerance and continuity rule. Codec-domain
+        // references prevent rejecting the correct row merely because RGB
+        // reconstruction differs between native encoders/decoders.
         std::vector<State> layer;
         if (layers.empty()) {
-            for (int p = 0; p < truth.height(); ++p) {
-                if (distances[p] < limit) {
-                    layer.push_back({p, kStartBias * std::abs(p - firstPageRow), -1});
-                }
+            for (int p : candidates) {
+                layer.push_back({p, kStartBias * std::abs(p - firstPageRow), -1});
             }
         } else {
             const std::vector<State>& prev = layers.back();
@@ -315,8 +360,7 @@ RowMatchReport compareWithGroundTruth(const QImage& result, const QImage& page, 
             }
             std::vector<int> indexOfRow(truth.height(), -1);
             for (size_t i = 0; i < prev.size(); ++i) indexOfRow[prev[i].pageRow] = int(i);
-            for (int p = 0; p < truth.height(); ++p) {
-                if (distances[p] >= limit) continue;
+            for (int p : candidates) {
                 State st{p, prev[size_t(globalBest)].cost + 1.0, globalBest};
                 const int from = p - 1 - skipped;
                 if (from >= 0 && indexOfRow[from] >= 0) {

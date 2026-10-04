@@ -142,7 +142,9 @@ void tst_FrameSource::readerDecodesAscendingFrames()
     for (int i = 0; i < kFrameCount; ++i) {
         const QImage frame = reader->frameAt(qint64(i) * kFrameIntervalMs);
         QVERIFY2(!frame.isNull(), qPrintable(reader->lastError()));
-        QCOMPARE(frame.format(), QImage::Format_RGB32);
+        // Native readers keep their platform format; the Longshot adapter
+        // below owns normalization to RGB32 (macOS returns opaque ARGB32).
+        QVERIFY(frame.format() == QImage::Format_RGB32 || frame.format() == QImage::Format_ARGB32);
         QVERIFY2(qAbs(barRowOf(frame) - i * kBarStep) <= 1,
                  qPrintable(QStringLiteral("frame %1 bar at %2").arg(i).arg(barRowOf(frame))));
     }
@@ -174,6 +176,7 @@ void tst_FrameSource::sourceHonoursTrimAndCrop()
     qint64 lastT = -1;
     while (auto frame = source->next(&lastT)) {
         QCOMPARE(frame->size(), crop.size());
+        QCOMPARE(frame->format(), QImage::Format_RGB32);
         QVERIFY(lastT >= 500 && lastT < 1200);
         // Frame at t has its bar at row t/100*10 in full-frame coordinates; in
         // crop-local coordinates that is minus crop.y().

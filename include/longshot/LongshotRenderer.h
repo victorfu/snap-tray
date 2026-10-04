@@ -27,7 +27,7 @@ struct RenderResult {
     bool heightCapped = false;
     int autoCroppedLeft = 0;        // static side columns removed
     int autoCroppedRight = 0;
-    std::vector<int> breakRows;     // output rows left empty because no frame covered them reliably
+    std::vector<int> breakRows;     // output rows with unfilled pixels because coverage was incomplete
     std::vector<int> lowConfidenceRows;
     bool stickyHeaderIncluded = false;
 };
@@ -47,7 +47,8 @@ public:
                                const QRect& crop, const AnalysisResult& analysis, const LongshotOptions& options,
                                const ProgressFn& progress);
 
-    // One frame per tile. Candidates must cover the tile with valid rows. They
+    // One frame per tile. Candidates must cover its valid rows and, when
+    // supplied, columns. They
     // are partitioned into agreeing groups (thumbnails within
     // kMajorityDiffThreshold and full-resolution row means within
     // kRowDeviation on all but a few rows); the group containing the LATEST
@@ -57,7 +58,7 @@ public:
     // No current reader sets FrameFeatures::keyFrame (IVideoFrameReader exposes
     // no keyframe flag), so the keyframe bonus is inert until one does.
     static std::vector<TileAssignment> assignTiles(const AnalysisResult& analysis, const LongshotOptions& options,
-                                                   int outputHeight, int minPosition);
+                                                   int outputHeight, int minPosition, const QRect& columns = {});
 
     // Moves each boundary between different frames to the lowest-gradient
     // row within kSeamSearchRows of it (gradient of the frame above), never

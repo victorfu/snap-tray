@@ -5,6 +5,7 @@
 #include <QDebug>
 
 #include <algorithm>
+#include <cmath>
 #include <map>
 #include <set>
 
@@ -345,9 +346,17 @@ AnalysisResult LongshotPipeline::analyzeIncremental(LongshotFrameSource& source,
     resolveFrameMasks(result.frames, observations);
     propagateStationaryMasks(result.frames, observations);
 
-    bool anyPlaced = false;
-    for (const auto& p : result.solve.positions) anyPlaced = anyPlaced || p.has_value();
-    if (!anyPlaced) result.error = LongshotError::NoReliableContent;
+    // The solver deliberately anchors a singleton even when every pair failed.
+    // Success requires evidence connecting two retained frames, not just an anchor.
+    const bool hasReliablePair = std::any_of(result.edges.begin(), result.edges.end(), [&](const PairShift& edge) {
+        const int count = int(result.solve.positions.size());
+        if (edge.from < 0 || edge.to < 0 || edge.from >= count || edge.to >= count
+            || edge.from == edge.to || !(edge.confidence > 0.0)) return false;
+        const auto& from = result.solve.positions[edge.from];
+        const auto& to = result.solve.positions[edge.to];
+        return from && to && std::abs(double(*to) - double(*from) - edge.dy) <= params.maxResidualPx;
+    });
+    if (!hasReliablePair) result.error = LongshotError::NoReliableContent;
     if (framesAnalyzed) *framesAnalyzed = analyzed;
     if (!report(progress, 100)) result.error = LongshotError::Cancelled;
     qDebug() << "LongshotPipeline: frames" << result.frames.size() << "rejected pairs" << result.rejectedPairs
