@@ -140,7 +140,7 @@ std::vector<int> topShifts(const std::vector<double>& response, int count, int m
     std::sort(peaks.begin(), peaks.end(), [](const auto& l, const auto& r) { return l.first > r.first; });
     std::vector<int> chosen;
     for (const auto& [score, shift] : peaks) {
-        if (std::any_of(chosen.begin(), chosen.end(), [&](int c) { return std::abs(c - shift) < exclusion; })) continue;
+        if (std::any_of(chosen.begin(), chosen.end(), [shift = shift, exclusion](int c) { return std::abs(c - shift) < exclusion; })) continue;
         chosen.push_back(shift);
         if (int(chosen.size()) == count) break;
     }
