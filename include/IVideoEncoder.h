@@ -13,9 +13,9 @@
  * Platform implementations:
  * - macOS: AVFoundationEncoder
  * - Windows: MediaFoundationEncoder
+ * - Linux opt-in prototype: FFmpegEncoder (system libraries)
  *
- * This interface provides a common API for native video encoding
- * without requiring external dependencies like FFmpeg.
+ * This interface provides a common API for platform video encoding.
  */
 class IVideoEncoder : public QObject
 {

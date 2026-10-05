@@ -97,6 +97,10 @@ PlatformCapabilities capabilitiesForPlatform(PlatformKind platform,
         return caps;
     case PlatformKind::Linux:
         caps.supportsRecording = false;
+#ifdef SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE
+        caps.supportsRecording = displayServer == DisplayServerKind::X11;
+        caps.recordingDirectMp4Only = caps.supportsRecording;
+#endif
         caps.supportsOCR = false;
         caps.supportsGlobalHotkeys = displayServer == DisplayServerKind::X11;
         caps.supportsWindowDetection = displayServer == DisplayServerKind::X11;

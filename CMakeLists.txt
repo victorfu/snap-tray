@@ -497,6 +497,17 @@ target_compile_definitions(snaptray_algorithms PRIVATE
 # ----------------------------------------------------------------------------
 # snaptray_platform: Platform-specific code (capture, encoding, OS APIs)
 # ----------------------------------------------------------------------------
+option(SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE
+    "Build the Linux recording prototype using system FFmpeg libraries" OFF)
+if(SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE)
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        message(FATAL_ERROR "The FFmpeg recording prototype is Linux-only")
+    endif()
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(SYSTEM_FFMPEG REQUIRED IMPORTED_TARGET
+        libavcodec>=58.134 libavformat>=58.76 libavutil>=56.70 libswscale>=5.9)
+endif()
+
 add_library(snaptray_platform STATIC
     # Common sources
     src/capture/ICaptureEngine.cpp
@@ -596,6 +607,13 @@ add_library(snaptray_platform STATIC
         include/capture/WASAPIAudioCaptureEngine.h
     >
 )
+
+if(SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE)
+    target_compile_definitions(snaptray_core PRIVATE SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE)
+    target_sources(snaptray_platform PRIVATE src/encoding/FFmpegEncoder_linux.cpp)
+    target_link_libraries(snaptray_platform PRIVATE PkgConfig::SYSTEM_FFMPEG)
+    target_compile_definitions(snaptray_platform PRIVATE SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE)
+endif()
 
 # These Objective-C++ sources keep Cocoa/AVFoundation/ScreenCaptureKit objects
 # in C++ storage or across asynchronous callbacks. Compile them with ARC so
@@ -1359,6 +1377,11 @@ qt_add_translations(${PROJECT_NAME}
 # ============================================================================
 # Testing Configuration
 # ============================================================================
+if(SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE)
+    add_executable(SnapTrayRecordingPrototype tools/recording-prototype/main.cpp)
+    target_link_libraries(SnapTrayRecordingPrototype PRIVATE snaptray_ui)
+endif()
+
 if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()

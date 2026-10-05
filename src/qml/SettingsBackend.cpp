@@ -696,8 +696,9 @@ void SettingsBackend::setRecordingFrameRate(int v) {
     }
 }
 
-int SettingsBackend::recordingOutputFormat() const { return m_recordingOutputFormat; }
+int SettingsBackend::recordingOutputFormat() const { return recordingDirectMp4Only() ? 0 : m_recordingOutputFormat; }
 void SettingsBackend::setRecordingOutputFormat(int v) {
+    if (recordingDirectMp4Only()) return;
     v = qBound(0, v, 2);
     if (m_recordingOutputFormat == v)
         return;
@@ -716,8 +717,9 @@ void SettingsBackend::setRecordingQuality(int v) {
     }
 }
 
-bool SettingsBackend::recordingShowPreview() const { return m_recordingShowPreview; }
+bool SettingsBackend::recordingShowPreview() const { return !recordingDirectMp4Only() && m_recordingShowPreview; }
 void SettingsBackend::setRecordingShowPreview(bool v) {
+    if (recordingDirectMp4Only()) return;
     if (m_recordingShowPreview == v)
         return;
 
@@ -726,8 +728,9 @@ void SettingsBackend::setRecordingShowPreview(bool v) {
     emit recordingShowPreviewChanged();
 }
 
-bool SettingsBackend::recordingAudioEnabled() const { return m_recordingAudioEnabled; }
+bool SettingsBackend::recordingAudioEnabled() const { return !recordingDirectMp4Only() && m_recordingAudioEnabled; }
 void SettingsBackend::setRecordingAudioEnabled(bool v) {
+    if (recordingDirectMp4Only()) return;
     if (m_recordingAudioEnabled != v) {
         m_recordingAudioEnabled = v;
         RecordingSettingsManager::instance().setAudioEnabled(v);
@@ -928,6 +931,11 @@ QString SettingsBackend::appVersion() const
 bool SettingsBackend::recordingSupported() const
 {
     return PlatformFeatures::instance().capabilities().supportsRecording;
+}
+
+bool SettingsBackend::recordingDirectMp4Only() const
+{
+    return PlatformFeatures::instance().capabilities().recordingDirectMp4Only;
 }
 
 bool SettingsBackend::ocrSettingsVisible() const

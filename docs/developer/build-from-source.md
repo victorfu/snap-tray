@@ -138,6 +138,67 @@ C:\Qt\6.11.2\msvc2022_64\bin\windeployqt.exe --release release\bin\SnapTray.exe
 - `Debug` builds use the display name `SnapTray-Debug` and a debug bundle identifier on macOS
 - `Release` builds use the shipping app name `SnapTray`
 
+### Experimental Linux recording with system FFmpeg
+
+The optional development prototype directly links the host's FFmpeg libraries;
+it does not launch the `ffmpeg` executable or download/bundle an FFmpeg build.
+The normal Linux beta recording capability remains disabled unless this option
+is enabled. Windows and macOS continue to use their existing encoders.
+
+On Ubuntu 22.04, install the development packages and enable the option:
+
+```bash
+sudo apt install pkg-config libavcodec-dev libavformat-dev libavutil-dev libswscale-dev
+cmake -S . -B build -DSNAPTRAY_ENABLE_FFMPEG_PROTOTYPE=ON
+./scripts/build.sh
+./scripts/build-and-run.sh
+# The enabled X11 build now includes Record Screen in the tray menu.
+# Optional standalone diagnostics window:
+cmake --build build --target SnapTrayRecordingPrototype
+./build/bin/SnapTrayRecordingPrototype
+./scripts/run-tests.sh
+```
+
+In the main app, select **Record Screen** from the tray menu, choose a screen,
+then use the existing recording controls to pause, resume, or stop. The output
+is silent MP4, saved according to the recording auto-save/path settings (or via
+the save dialog when auto-save is off). Audio, preview, and animated-format
+settings are unavailable for this backend; existing saved preferences are not
+overwritten. Live pin updates remain disabled because X11 cannot exclude the
+pin itself from capture. Restart an already running app after rebuilding.
+
+In the optional diagnostics window, select a screen and recording duration,
+then choose **Record screen** and an output path. This window records the selected X11
+screen at a target 30 fps to silent H.264 MP4. Stop early with **Stop and save**.
+Closing the window cancels the recording. An existing destination is replaced
+only after successful finalization. The prototype window itself is captured if
+it is on the selected screen; capture exclusion is not implemented on X11.
+The main app's recording control bar and tooltips may also appear in the video.
+Even physical screen dimensions are required for YUV420P. There is no preview,
+audio, cropping, or hardware-encoder selection in this prototype.
+
+The host FFmpeg must expose `libx264` or `libopenh264`; a decoder alone is not
+sufficient. `libx264` is preferred when both are present. Frames are captured on
+the GUI thread and encoded using the existing bounded `EncodingWorker` queue.
+The completion message reports encoded frames, queue rejections, and elapsed
+capture time. Timer delays can also reduce achieved fps without a queue
+rejection. Use these figures alongside a system CPU monitor for manual
+1080p/30 fps evaluation; the automated Xvfb test is not a desktop performance
+benchmark.
+
+Runtime dependencies must match the linked FFmpeg ABI. A build against Ubuntu
+22.04's `libavcodec.so.58` cannot assume another distribution's newer SONAME is
+interchangeable. Missing shared libraries prevent program startup; missing
+H.264 encoders are reported by the prototype. System codec updates do not
+require shipping codec binaries with SnapTray, but FFmpeg build options and
+licensing still need to be considered when choosing distribution packages.
+
+This option is for a local development build, not the existing AppImage release
+pipeline: deployment tools may automatically bundle linked libraries. Shipping
+a system-dependent package requires an explicit packaging decision and runtime
+dependency declarations. Disable the option with
+`cmake -S . -B build -DSNAPTRAY_ENABLE_FFMPEG_PROTOTYPE=OFF`.
+
 ## Build optimization
 
 The build system automatically uses compiler caching when available.

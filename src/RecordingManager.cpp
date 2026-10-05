@@ -1,4 +1,5 @@
 #include "platform/CaptureExclusionPolicy.h"
+#include "platform/PlatformCapabilities.h"
 #include "RecordingManager.h"
 #include "recording/ScreenSourceService.h"
 #include "recording/RecordingFileUtils.h"
@@ -247,7 +248,11 @@ RecordingManager::RecordingManager(QObject *parent)
 {
     m_freeBytesForPath = [](const QString& path) { return QStorageInfo(path).bytesAvailable(); };
     m_captureControlsMayBeVisible = [] {
-        return SnapTray::requiresVisibleRecordingControls(QOperatingSystemVersion::current());
+        return SnapTray::currentPlatformCapabilities().recordingDirectMp4Only
+            || SnapTray::requiresVisibleRecordingControls(QOperatingSystemVersion::current());
+    };
+    m_requiresDirectMp4Recording = [] {
+        return SnapTray::currentPlatformCapabilities().recordingDirectMp4Only;
     };
 
     cleanupStaleTempFiles();
@@ -503,6 +508,13 @@ void RecordingManager::initializeStartState()
     m_startSettings = {settings.outputFormat(), settings.showPreview(), settings.quality(),
                       settings.audioEnabled(), settings.audioSource(), settings.audioDevice(),
                       settings.countdownEnabled(), settings.countdownSeconds()};
+    if (m_requiresDirectMp4Recording()) {
+        // Apply backend limits to this request, without overwriting saved
+        // preferences from a platform with audio and preview support.
+        m_startSettings.outputFormat = 0;
+        m_startSettings.showPreview = false;
+        m_startSettings.audioEnabled = false;
+    }
     m_defaultOutputFormat = m_startSettings.outputFormat;
     m_audioEnabled = m_startSettings.audioEnabled
         && recordingSupportsAudioCapture(m_startSettings.outputFormat, m_startSettings.showPreview);
@@ -528,7 +540,9 @@ void RecordingManager::warnAboutVisibleCaptureControls()
     if (m_state != State::Preparing || m_captureExclusionWarningShown
         || !m_captureControlsMayBeVisible || !m_captureControlsMayBeVisible()) return;
     m_captureExclusionWarningShown = true;
-    emit recordingWarning(tr("Recording controls and tooltips may appear in videos on this Windows version."));
+    emit recordingWarning(m_requiresDirectMp4Recording()
+        ? tr("Recording controls and tooltips may appear in videos on this platform.")
+        : tr("Recording controls and tooltips may appear in videos on this Windows version."));
 }
 
 void RecordingManager::addStartupAudioWarning(const QString& warning)

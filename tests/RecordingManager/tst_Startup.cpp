@@ -68,6 +68,7 @@ private slots:
     void captureExclusionWarning();
     void nativeStreamStopFinishesRecording_data();
     void nativeStreamStopFinishesRecording();
+    void basicBackendIgnoresUnsupportedPreferences();
 private:
     void prepare(RecordingManager& manager);
 };
@@ -236,10 +237,30 @@ void TestRecordingStartup::init()
 
 void TestRecordingStartup::prepare(RecordingManager& manager)
 {
+    // These tests exercise the full audio/preview flow with injected engines.
+    manager.m_requiresDirectMp4Recording = [] { return false; };
     manager.m_targetScreen = QGuiApplication::primaryScreen();
     QVERIFY(manager.m_targetScreen);
     manager.m_recordingRegion = manager.m_targetScreen->geometry();
     manager.initializeStartState();
+}
+
+void TestRecordingStartup::basicBackendIgnoresUnsupportedPreferences()
+{
+    auto& settings = RecordingSettingsManager::instance();
+    settings.setOutputFormat(2);
+    settings.setShowPreview(true);
+    settings.setAudioEnabled(true);
+    RecordingManager manager;
+    manager.m_requiresDirectMp4Recording = [] { return true; };
+    manager.initializeStartState();
+    QCOMPARE(manager.m_startSettings.outputFormat, 0);
+    QVERIFY(!manager.m_startSettings.showPreview);
+    QVERIFY(!manager.m_audioEnabled);
+    QVERIFY(manager.generateOutputPath().endsWith(".mp4"));
+    QCOMPARE(settings.outputFormat(), 2);
+    QVERIFY(settings.showPreview());
+    QVERIFY(settings.audioEnabled());
 }
 
 void TestRecordingStartup::waitingKeepsEventLoopResponsiveAndSettingsSnapshot()

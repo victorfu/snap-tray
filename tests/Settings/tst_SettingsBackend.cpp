@@ -5,6 +5,7 @@
 #include "AutoLaunchManager.h"
 #include "hotkey/HotkeyTypes.h"
 #include "qml/SettingsBackend.h"
+#include "platform/PlatformCapabilities.h"
 #include "settings/AutoLaunchSettingsManager.h"
 #include "settings/RecordingSettingsManager.h"
 #include "settings/Settings.h"
@@ -541,13 +542,9 @@ void tst_SettingsBackend::testFeatureSupportPropertiesFollowPlatformCapabilities
 {
     SettingsBackend backend;
 
-#if defined(Q_OS_LINUX)
-    QVERIFY(!backend.recordingSupported());
-    QVERIFY(!backend.ocrSettingsVisible());
-#else
-    QVERIFY(backend.recordingSupported());
-    QVERIFY(backend.ocrSettingsVisible());
-#endif
+    const auto caps = SnapTray::currentPlatformCapabilities();
+    QCOMPARE(backend.recordingSupported(), caps.supportsRecording);
+    QCOMPARE(backend.ocrSettingsVisible(), caps.supportsOCR);
 }
 
 void tst_SettingsBackend::testHotkeyCategoriesHideRecordingWhenUnsupported()
@@ -564,11 +561,7 @@ void tst_SettingsBackend::testHotkeyCategoriesHideRecordingWhenUnsupported()
         }
     }
 
-#if defined(Q_OS_LINUX)
-    QVERIFY(!sawRecording);
-#else
-    QVERIFY(sawRecording);
-#endif
+    QCOMPARE(sawRecording, backend.recordingSupported());
 }
 
 QTEST_MAIN(tst_SettingsBackend)

@@ -13,7 +13,8 @@ Flickable {
     ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
 
     readonly property var frameRates: [10, 15, 24, 30]
-    readonly property bool audioCaptureSupported: settingsBackend.recordingShowPreview || settingsBackend.recordingOutputFormat === 0
+    readonly property bool audioCaptureSupported: !settingsBackend.recordingDirectMp4Only
+        && (settingsBackend.recordingShowPreview || settingsBackend.recordingOutputFormat === 0)
     readonly property bool audioSourceUsesInputDevice: settingsBackend.recordingAudioSource !== 1
     readonly property var audioDevices: settingsBackend.recordingAudioDevices
     readonly property bool audioDevicesLoading: settingsBackend.recordingAudioDevicesLoading
@@ -25,7 +26,8 @@ Flickable {
 
     Component.onCompleted: {
         Qt.callLater(function() {
-            settingsBackend.loadRecordingAudioDevices()
+            if (!settingsBackend.recordingDirectMp4Only)
+                settingsBackend.loadRecordingAudioDevices()
         })
     }
 
@@ -53,6 +55,8 @@ Flickable {
     }
 
     function formatInfoText() {
+        if (settingsBackend.recordingDirectMp4Only)
+            return qsTr("Recording saves silent MP4 files directly, without a preview.")
         if (settingsBackend.recordingShowPreview) {
             if (settingsBackend.recordingOutputFormat === 0) {
                 return qsTr("Preview always records as MP4 for playback compatibility. This setting chooses the default export format shown in the preview window. MP4 is the only export format that keeps audio.")
@@ -94,6 +98,7 @@ Flickable {
 
         SettingsCombo {
             label: qsTr("Default output format")
+            enabled: !settingsBackend.recordingDirectMp4Only
             model: [
                 { text: qsTr("MP4 (H.264)"), value: 0 },
                 { text: qsTr("GIF"), value: 1 },
@@ -130,7 +135,7 @@ Flickable {
             color: ComponentTokens.infoPanelBg
             border.width: 1
             border.color: ComponentTokens.infoPanelBorder
-            visible: settingsBackend.recordingShowPreview || settingsBackend.recordingOutputFormat > 0
+            visible: settingsBackend.recordingDirectMp4Only || settingsBackend.recordingShowPreview || settingsBackend.recordingOutputFormat > 0
 
             Text {
                 id: formatInfoTextItem
@@ -145,10 +150,11 @@ Flickable {
             }
         }
 
-        SettingsSection { title: qsTr("Audio") }
+        SettingsSection { title: qsTr("Audio"); visible: !settingsBackend.recordingDirectMp4Only }
 
         SettingsToggle {
             label: qsTr("Record audio")
+            visible: !settingsBackend.recordingDirectMp4Only
             description: root.audioCaptureSupported
                 ? (settingsBackend.recordingShowPreview
                     ? qsTr("Audio is captured in the temporary MP4 recording. Only MP4 export keeps audio.")
@@ -162,6 +168,7 @@ Flickable {
 
         SettingsCombo {
             label: qsTr("Source")
+            visible: !settingsBackend.recordingDirectMp4Only
             model: [
                 { text: qsTr("Microphone"), value: 0 },
                 { text: qsTr("System Audio"), value: 1 },
@@ -235,6 +242,7 @@ Flickable {
 
         SettingsToggle {
             label: qsTr("Show preview")
+            visible: !settingsBackend.recordingDirectMp4Only
             description: qsTr("Keep this on to trim or export after recording. Preview recordings are always captured as MP4 first.")
             checked: settingsBackend.recordingShowPreview
             onToggled: function(checked) { settingsBackend.recordingShowPreview = checked }

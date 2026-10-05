@@ -35,6 +35,7 @@ class SettingsBackend : public QObject
     Q_PROPERTY(bool cliInstalled READ cliInstalled NOTIFY cliInstalledChanged)
     Q_PROPERTY(bool isMacOS READ isMacOS CONSTANT)
     Q_PROPERTY(bool recordingSupported READ recordingSupported CONSTANT)
+    Q_PROPERTY(bool recordingDirectMp4Only READ recordingDirectMp4Only CONSTANT)
     Q_PROPERTY(bool ocrSettingsVisible READ ocrSettingsVisible CONSTANT)
 
 #ifdef Q_OS_MAC
@@ -135,6 +136,7 @@ public:
     bool cliInstalled() const;
     bool isMacOS() const;
     bool recordingSupported() const;
+    bool recordingDirectMp4Only() const;
     bool ocrSettingsVisible() const;
 
 #ifdef Q_OS_MAC

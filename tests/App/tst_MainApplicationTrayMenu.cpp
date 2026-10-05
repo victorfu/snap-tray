@@ -1,4 +1,5 @@
 #include "MainApplication.h"
+#include "platform/PlatformCapabilities.h"
 #include "ImageColorSpaceHelper.h"
 #include <QClipboard>
 #include <QCursor>
@@ -295,16 +296,12 @@ void tst_MainApplicationTrayMenu::initialize_hidesRecordingActionWhenUnsupported
     MainApplication application;
     application.initialize();
 
-#ifdef Q_OS_LINUX
-    QVERIFY(application.m_fullScreenRecordingAction == nullptr);
-
-    const QList<QAction*> actions = application.m_trayMenu->actions();
-    for (QAction* action : actions) {
-        QVERIFY(!action || action->text() != MainApplication::tr("Record Screen"));
+    const bool supported = SnapTray::currentPlatformCapabilities().supportsRecording;
+    QCOMPARE(application.m_fullScreenRecordingAction != nullptr, supported);
+    if (supported) {
+        QVERIFY(application.m_trayMenu->actions().contains(application.m_fullScreenRecordingAction));
+        QVERIFY(application.m_fullScreenRecordingAction->text().contains(MainApplication::tr("Record Screen")));
     }
-#else
-    QVERIFY(application.m_fullScreenRecordingAction != nullptr);
-#endif
 }
 
 void tst_MainApplicationTrayMenu::onCheckForUpdates_usesSharedSettingsWindowFlowWithoutShowingSettings()

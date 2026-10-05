@@ -100,6 +100,7 @@ private:
     friend class TestRecordingManagerStateMachine;
     friend class TestRecordingManagerLifecycle;
     friend class TestRecordingStartup;
+    friend class TestLinuxRecordingPrototype;
     friend class tst_MainApplicationTrayMenu;
 
     void startFrameCapture();
@@ -181,6 +182,7 @@ private:
     bool m_permissionPending = false;
     bool m_captureExclusionWarningShown = false;
     std::function<bool()> m_captureControlsMayBeVisible;
+    std::function<bool()> m_requiresDirectMp4Recording;
     // Free bytes on the volume holding `path`; replaced by tests.
     std::function<qint64(const QString&)> m_freeBytesForPath;
     bool chooseIntermediateQuality(const QString& outputDirectory, const QSize& frameSize);
