@@ -649,6 +649,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_libraries(snaptray_platform
         PRIVATE
             X11::X11
+            X11::Xext
     )
 endif()
 

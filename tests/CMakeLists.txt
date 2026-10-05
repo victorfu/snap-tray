@@ -387,6 +387,9 @@ set_tests_properties(ScreenCanvas_StyleSync PROPERTIES TIMEOUT 60 LABELS "unit;i
 
 add_executable(ScreenCanvas_Placement ScreenCanvas/tst_Placement.cpp)
 target_link_libraries(ScreenCanvas_Placement PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_libraries(ScreenCanvas_Placement PRIVATE X11::X11 X11::Xext)
+endif()
 add_test(NAME ScreenCanvas_Placement COMMAND ScreenCanvas_Placement)
 set_tests_properties(ScreenCanvas_Placement PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 

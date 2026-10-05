@@ -1160,7 +1160,7 @@ void ScreenCanvasSession::updateSurfaceInputMasks()
             subtractGlobalRectFromMask(mask, surface, popup->frameGeometry());
         }
 
-        surface->setMask(mask);
+        surface->setFloatingUiInputRegion(mask);
     }
 #else
     for (const QPointer<ScreenCanvas>& surface : m_surfaces) {
