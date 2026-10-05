@@ -741,7 +741,7 @@ bool WindowDetector::hasAccessibilityPermission(bool promptIfMissing)
     return AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)options);
 }
 
-void WindowDetector::populateWindowMetadata(DetectedElement & /*element*/)
+void WindowDetector::populateWindowMetadata(DetectedElement & /*element*/, bool /*includeTitle*/)
 {
     // Enumeration already reads kCGWindowName / kCGWindowOwnerName.
 }

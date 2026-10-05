@@ -609,10 +609,8 @@ add_library(snaptray_platform STATIC
 )
 
 if(SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE)
-    target_compile_definitions(snaptray_core PRIVATE SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE)
-    target_sources(snaptray_platform PRIVATE src/encoding/FFmpegEncoder_linux.cpp)
-    target_link_libraries(snaptray_platform PRIVATE PkgConfig::SYSTEM_FFMPEG)
-    target_compile_definitions(snaptray_platform PRIVATE SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE)
+    add_library(snaptray_ffmpeg_prototype STATIC src/encoding/FFmpegEncoder_linux.cpp)
+    target_link_libraries(snaptray_ffmpeg_prototype PUBLIC snaptray_platform PRIVATE PkgConfig::SYSTEM_FFMPEG)
 endif()
 
 # These Objective-C++ sources keep Cocoa/AVFoundation/ScreenCaptureKit objects
@@ -1379,7 +1377,7 @@ qt_add_translations(${PROJECT_NAME}
 # ============================================================================
 if(SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE)
     add_executable(SnapTrayRecordingPrototype tools/recording-prototype/main.cpp)
-    target_link_libraries(SnapTrayRecordingPrototype PRIVATE snaptray_ui)
+    target_link_libraries(SnapTrayRecordingPrototype PRIVATE snaptray_ui snaptray_ffmpeg_prototype)
 endif()
 
 if(BUILD_TESTING)

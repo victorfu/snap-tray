@@ -156,7 +156,7 @@ public:
             // otherwise: GOP plus unconstrained VBR.
             auto createParams = [this, intermediate, gopFrames](bool full) -> IMFAttributes* {
                 IMFAttributes *params = nullptr;
-                HRESULT paramHr = MFCreateAttributes(&params, 3);
+                HRESULT paramHr = MFCreateAttributes(&params, 5);
                 if (FAILED(paramHr) || !params) {
                     qWarning() << "MediaFoundationEncoder: cannot create encoding parameters (hr =" << Qt::hex << paramHr << ")";
                     return nullptr;
@@ -171,9 +171,16 @@ public:
                     const HRESULT modeHr = params->SetUINT32(CODECAPI_AVEncCommonRateControlMode,
                         eAVEncCommonRateControlMode_PeakConstrainedVBR);
                     const HRESULT peakHr = params->SetUINT32(CODECAPI_AVEncCommonMaxBitRate, calculateBitrate());
-                    if (FAILED(modeHr) || FAILED(peakHr)) {
+                    const HRESULT meanHr = params->SetUINT32(CODECAPI_AVEncCommonMeanBitRate, calculateBitrate());
+                    // Bound the initial burst as well as the drain rate. The
+                    // default buffer can overshoot the ceiling on short clips.
+                    constexpr UINT32 kBufferDurationMs = 500;
+                    const UINT32 bufferBytes = static_cast<UINT32>(
+                        quint64(calculateBitrate()) * kBufferDurationMs / (8 * 1000));
+                    const HRESULT bufferHr = params->SetUINT32(CODECAPI_AVEncCommonBufferSize, bufferBytes);
+                    if (FAILED(modeHr) || FAILED(peakHr) || FAILED(meanHr) || FAILED(bufferHr)) {
                         qWarning() << "MediaFoundationEncoder: peak-constrained VBR parameters rejected (hr =" << Qt::hex
-                                   << modeHr << peakHr << ")";
+                                   << modeHr << peakHr << meanHr << bufferHr << ")";
                     }
                 } else if (!full) {
                     paramHr = params->SetUINT32(CODECAPI_AVEncCommonRateControlMode,

@@ -531,7 +531,7 @@ bool WindowDetector::hasAccessibilityPermission(bool promptIfMissing)
     return true;
 }
 
-void WindowDetector::populateWindowMetadata(DetectedElement& element)
+void WindowDetector::populateWindowMetadata(DetectedElement& element, bool /*includeTitle*/)
 {
     // Enumeration already reads the X11 window title and owner app.
     Q_UNUSED(element);

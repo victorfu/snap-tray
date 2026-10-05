@@ -1,6 +1,7 @@
 #include "recording/WindowTimelineRecorder.h"
 
 #include <QDebug>
+#include <QHash>
 #include <QScreen>
 
 #include <algorithm>
@@ -35,10 +36,24 @@ WindowTimelineRecorder::Enumerator WindowTimelineRecorder::detectorEnumerator(QS
     auto detector = std::make_shared<WindowDetector>();
     detector->setScreen(screen);
     detector->setEnabled(true);
-    return [detector]() {
+    return [detector, appNames = QHash<qint64, QString>()]() mutable {
         // Top level only: no titles, no child controls, a few milliseconds.
         detector->refreshWindowList(WindowDetector::QueryMode::TopLevelOnly);
-        return detector->topLevelWindowsSnapshot();
+        auto windows = detector->topLevelWindowsSnapshot();
+        QHash<qint64, QString> currentAppNames;
+        for (auto& window : windows) {
+            if (!isSnapTarget(window.elementType) || window.ownerPid <= 0) continue;
+            if (window.ownerApp.isEmpty()) {
+                window.ownerApp = currentAppNames.value(window.ownerPid, appNames.value(window.ownerPid));
+                if (window.ownerApp.isEmpty()) {
+                    WindowDetector::populateWindowMetadata(window, false);
+                }
+            }
+            currentAppNames.insert(window.ownerPid, window.ownerApp);
+        }
+        // Drop processes no longer present instead of accumulating stale PIDs.
+        appNames = std::move(currentAppNames);
+        return windows;
     };
 }
 

@@ -67,7 +67,8 @@ public:
 
     // Fill windowTitle/ownerApp for platforms that skip them during enumeration
     // for speed. Call once a detected element is actually used, not per hover.
-    static void populateWindowMetadata(DetectedElement &element);
+    // Pass includeTitle=false for recording metadata that only needs the app name.
+    static void populateWindowMetadata(DetectedElement &element, bool includeTitle = true);
 
     // Detection control
     void setScreen(QScreen *screen);

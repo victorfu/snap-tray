@@ -443,7 +443,7 @@ bool WindowDetector::hasAccessibilityPermission(bool /*promptIfMissing*/)
     return true;
 }
 
-void WindowDetector::populateWindowMetadata(DetectedElement &element)
+void WindowDetector::populateWindowMetadata(DetectedElement &element, bool includeTitle)
 {
     // windowId holds the HWND truncated to 32 bits; Windows documents that
     // handles round-trip safely by sign-extending them back.
@@ -453,7 +453,7 @@ void WindowDetector::populateWindowMetadata(DetectedElement &element)
         return;
     }
 
-    if (element.windowTitle.isEmpty()) {
+    if (includeTitle && element.windowTitle.isEmpty()) {
         // Child controls report the title of their top-level window.
         HWND rootHwnd = GetAncestor(hwnd, GA_ROOT);
         if (!rootHwnd) {

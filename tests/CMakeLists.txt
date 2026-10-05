@@ -69,12 +69,12 @@ set(CMAKE_AUTOMOC ON)
 if(SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE)
     add_executable(Encoding_FFmpegEncoder Encoding/tst_FFmpegEncoder.cpp)
     target_link_libraries(Encoding_FFmpegEncoder PRIVATE
-        snaptray_platform PkgConfig::SYSTEM_FFMPEG Qt6::Test)
+        snaptray_ffmpeg_prototype PkgConfig::SYSTEM_FFMPEG Qt6::Test)
     add_test(NAME Encoding_FFmpegEncoder COMMAND Encoding_FFmpegEncoder)
     set_tests_properties(Encoding_FFmpegEncoder PROPERTIES TIMEOUT 60 LABELS "integration;encoding")
     add_executable(Encoding_LinuxRecordingPrototype Encoding/tst_LinuxRecordingPrototype.cpp)
     target_link_libraries(Encoding_LinuxRecordingPrototype PRIVATE
-        snaptray_ui snaptray_qmlplugin PkgConfig::SYSTEM_FFMPEG Qt6::Test)
+        snaptray_ui snaptray_qmlplugin snaptray_ffmpeg_prototype PkgConfig::SYSTEM_FFMPEG Qt6::Test)
     target_sources(Encoding_LinuxRecordingPrototype PRIVATE
         ${CMAKE_SOURCE_DIR}/resources/resources.qrc
         ${CMAKE_SOURCE_DIR}/src/qml/SettingsBackend.cpp
@@ -266,9 +266,6 @@ target_link_libraries(RecordingManager_WindowTimelineSidecar PRIVATE snaptray_co
 add_test(NAME RecordingManager_WindowTimelineSidecar COMMAND RecordingManager_WindowTimelineSidecar)
 set_tests_properties(RecordingManager_WindowTimelineSidecar PROPERTIES TIMEOUT 60 LABELS "unit")
 target_link_libraries(Platform_Capabilities PRIVATE snaptray_core Qt6::Test)
-if(SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE)
-    target_compile_definitions(Platform_Capabilities PRIVATE SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE)
-endif()
 add_test(NAME Platform_Capabilities COMMAND Platform_Capabilities)
 set_tests_properties(Platform_Capabilities PROPERTIES TIMEOUT 60 LABELS "unit")
 

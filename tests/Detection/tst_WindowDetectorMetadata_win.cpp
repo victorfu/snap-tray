@@ -52,6 +52,15 @@ void tst_WindowDetectorMetadata::testPopulateWindowMetadata()
 {
     QFETCH(bool, denyMemoryRead);
 
+    // Hosted CI may enable SeDebugPrivilege, which bypasses the fixture DACL.
+    // Restrict a temporary thread token without changing the process token.
+    QVERIFY(ImpersonateSelf(SecurityImpersonation));
+    const auto revertToken = qScopeGuard([] { RevertToSelf(); });
+    HANDLE threadToken = nullptr;
+    QVERIFY(OpenThreadToken(GetCurrentThread(), TOKEN_ADJUST_PRIVILEGES, TRUE, &threadToken));
+    const auto closeToken = qScopeGuard([&] { CloseHandle(threadToken); });
+    QVERIFY(AdjustTokenPrivileges(threadToken, TRUE, nullptr, 0, nullptr, nullptr));
+
     PSECURITY_DESCRIPTOR descriptor = nullptr;
     const auto freeDescriptor = qScopeGuard([&]() {
         if (descriptor) LocalFree(descriptor);
@@ -97,6 +106,9 @@ void tst_WindowDetectorMetadata::testPopulateWindowMetadata()
     DetectedElement element{};
     element.windowId = static_cast<uint32_t>(windowId);
     element.ownerPid = child.processId();
+    WindowDetector::populateWindowMetadata(element, false);
+    QVERIFY(element.windowTitle.isEmpty());
+    QCOMPARE(element.ownerApp, QFileInfo(QCoreApplication::applicationFilePath()).baseName());
     WindowDetector::populateWindowMetadata(element);
 
     QCOMPARE(element.windowTitle, QString::fromWCharArray(kWindowTitle));

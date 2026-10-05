@@ -1,4 +1,5 @@
 #include "IVideoEncoder.h"
+#include "encoding/FFmpegEncoder.h"
 #include "encoding/EncodingWorker.h"
 #include "platform/PlatformCapabilities.h"
 
@@ -109,8 +110,8 @@ private:
         }
         // Get physical dimensions from an actual full-screen frame (HiDPI).
         const QImage first = m_screen ? m_screen->grabWindow(0).toImage() : QImage();
-        std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
-        if (!encoder) {
+        std::unique_ptr<IVideoEncoder> encoder = std::make_unique<FFmpegEncoder>();
+        if (!encoder->isAvailable()) {
             failed(QStringLiteral("System FFmpeg needs a libx264 or libopenh264 encoder."));
             return;
         }
