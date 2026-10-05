@@ -365,7 +365,24 @@ StaticBands staticBandsImpl(const cv::Mat& from, const cv::Mat& to, const FrameF
         int y = start;
         while (y >= 0 && y < to.rows) {
             if (inkedTo[y]) {
-                if (unchanged[y] > params.staticRowDiffThreshold) break;
+                if (unchanged[y] > params.staticRowDiffThreshold) {
+                    // Native video codecs can change one edge row inside an
+                    // otherwise static header. Bridge it only after established
+                    // evidence and before another complete run of static ink;
+                    // a moving content boundary must still stop the band.
+                    bool isolatedNoise = supported && evidenceRows >= kMinStaticEvidenceRows;
+                    for (int offset = 1; isolatedNoise && offset <= kMinStaticEvidenceRows; ++offset) {
+                        const int next = y + step * offset;
+                        isolatedNoise = next >= 0 && next < to.rows && inkedTo[next]
+                            && unchanged[next] <= params.staticRowDiffThreshold && !explainedByScroll(next);
+                    }
+                    if (isolatedNoise) {
+                        evidenceRows = 0;
+                        y += step;
+                        continue;
+                    }
+                    break;
+                }
                 // Unchanged only because the scroll moved it onto an identical
                 // row (inside a text line after a small shift) is no evidence
                 // of an overlay: skip it like a blank row.

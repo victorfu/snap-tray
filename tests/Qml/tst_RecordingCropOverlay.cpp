@@ -556,6 +556,8 @@ void tst_RecordingCropOverlay::resizeNearCentreKeepsMinimum()
 
 void tst_RecordingCropOverlay::resizeSweepKeepsMinimumAndBounds()
 {
+    constexpr int kGarbageCollectionBatchSize = 128;
+    int callsSinceCollection = 0;
     const QRectF content(0, 50, 400, 200);
     const QList<QRectF> starts{QRectF(195, 145, 10, 10), QRectF(0, 50, 20, 20), QRectF(380, 230, 20, 20),
                                QRectF(100, 100, 150, 100)};
@@ -569,9 +571,17 @@ void tst_RecordingCropOverlay::resizeSweepKeepsMinimumAndBounds()
                                           .arg(edges).arg(d).arg(r.x()).arg(r.y()).arg(r.width()).arg(r.height());
                 QVERIFY2(r.width() >= kMinViewSide && r.height() >= kMinViewSide, qPrintable(where));
                 QVERIFY2(content.contains(r), qPrintable(where));
+                // This synchronous sweep never yields to QML's event loop.
+                // Reclaim temporary JS wrappers in bounded batches; retaining
+                // the entire sweep makes Qt's debug cleanup quadratic.
+                if (++callsSinceCollection == kGarbageCollectionBatchSize) {
+                    SnapTray::QmlOverlayManager::instance().engine()->collectGarbage();
+                    callsSinceCollection = 0;
+                }
             }
         }
     }
+    SnapTray::QmlOverlayManager::instance().engine()->collectGarbage();
 }
 
 void tst_RecordingCropOverlay::createSweepStaysInside()

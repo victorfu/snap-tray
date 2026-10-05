@@ -59,6 +59,14 @@ void TestColorWheel::testTriangleColors()
     const int x = qRound((image.width() - 1) * 128.0 / 255.0);
     const qreal slice = (image.height() - 1) * 128.0 / 255.0;
     const int y = qRound(((image.height() - 1) - slice) / 2.0 + slice * 128.0 / 255.0);
+    // Compare with the color represented by the sampled texel. Rounding the
+    // selector position changes saturation, especially in a small LCH triangle
+    // near the RGB gamut boundary.
+    const qreal sampledValue = qreal(x) / (image.width() - 1);
+    const qreal sampledSlice = (image.height() - 1) * sampledValue;
+    const qreal sampledSaturation = (y - ((image.height() - 1) - sampledSlice) / 2.0) / sampledSlice;
+    wheel.setValue(qRound(sampledValue * 255));
+    wheel.setSaturation(qRound(sampledSaturation * 255));
     QVERIFY(difference(image.pixelColor(x, y), wheel.color()) <= 10);
 }
 
