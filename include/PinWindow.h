@@ -161,6 +161,7 @@ protected:
     void contextMenuEvent(QContextMenuEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
     void closeEvent(QCloseEvent* event) override;
+    void hideEvent(QHideEvent* event) override;
     void moveEvent(QMoveEvent* event) override;
 
 private:
@@ -207,6 +208,8 @@ private:
     // Performance optimization: ensure transform cache is valid
     void ensureTransformCacheValid() const;
     void onResizeFinished();
+    void applyPendingDragPosition();
+    void endWindowDrag();
 
     // Rounded corner handling
     int effectiveCornerRadius(const QSize& contentSize) const;
@@ -403,6 +406,9 @@ private:
     QPoint m_initialPosition;
     bool m_hasPerformedInitialShow = false;
     bool m_isDragging;
+    QTimer* m_dragMoveTimer = nullptr;
+    QPoint m_pendingDragPosition;
+    bool m_hasPendingDragPosition = false;
     QMenu* m_contextMenu;
     QMenu* m_moveToScreenMenu = nullptr;
     QMenu* m_infoMenu = nullptr;

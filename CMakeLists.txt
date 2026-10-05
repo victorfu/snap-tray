@@ -534,6 +534,7 @@ add_library(snaptray_platform STATIC
     include/QRCodeManager.h
     include/ImageColorSpaceHelper.h
     include/platform/QtQuickBackendPolicy.h
+    include/platform/WindowDragPolicy.h
     src/platform/LinuxClipboardOwner.cpp
 
     # macOS sources

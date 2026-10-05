@@ -92,6 +92,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QTextEdit>
 #include <QLabel>
 #include <QTimer>
+#include "platform/WindowDragPolicy.h"
 #include <QPointer>
 #include <QTransform>
 #include <QFontMetrics>
@@ -617,6 +618,13 @@ PinWindow::PinWindow(const QPixmap& screenshot,
     m_resizeFinishTimer = new QTimer(this);
     m_resizeFinishTimer->setSingleShot(true);
     connect(m_resizeFinishTimer, &QTimer::timeout, this, &PinWindow::onResizeFinished);
+
+    if (const int interval = SnapTray::windowDragUpdateIntervalMs(); interval > 0) {
+        m_dragMoveTimer = new QTimer(this);
+        m_dragMoveTimer->setTimerType(Qt::PreciseTimer);
+        m_dragMoveTimer->setInterval(interval);
+        connect(m_dragMoveTimer, &QTimer::timeout, this, &PinWindow::applyPendingDragPosition);
+    }
 
     if (PlatformFeatures::instance().capabilities().supportsClickThrough) {
         // Track cursor near edges for click-through resize.
@@ -2618,6 +2626,10 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
             // Start dragging
             m_isDragging = true;
             m_dragStartPos = event->globalPosition().toPoint() - frameGeometry().topLeft();
+            m_hasPendingDragPosition = false;
+            if (m_dragMoveTimer) {
+                m_dragMoveTimer->start();
+            }
             CursorManager::instance().setDragStateForWidget(this, DragState::WidgetDrag);
         }
     }
@@ -2767,7 +2779,13 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
 
     }
     else if (m_isDragging) {
-        move(event->globalPosition().toPoint() - m_dragStartPos);
+        const QPoint target = event->globalPosition().toPoint() - m_dragStartPos;
+        if (m_dragMoveTimer) {
+            m_pendingDragPosition = target;
+            m_hasPendingDragPosition = true;
+        } else {
+            move(target);
+        }
     }
     else {
         auto& cm = CursorManager::instance();
@@ -2893,9 +2911,15 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
             rebuildManagedCursorAt(event->pos());
         }
         if (m_isDragging) {
-            m_isDragging = false;
-            CursorManager::instance().setDragStateForWidget(this, DragState::None);
-            rebuildManagedCursorAt(event->pos());
+            if (m_dragMoveTimer) {
+                // The release may arrive before the next tick, and can contain
+                // a newer position than the last mouse move.
+                m_pendingDragPosition = event->globalPosition().toPoint() - m_dragStartPos;
+                m_hasPendingDragPosition = true;
+                applyPendingDragPosition();
+            }
+            endWindowDrag();
+            rebuildManagedCursorAt(mapFromGlobal(event->globalPosition().toPoint()));
         }
         if (m_clickThrough) {
             updateClickThroughForCursor();
@@ -3188,6 +3212,34 @@ void PinWindow::moveEvent(QMoveEvent* event)
         m_toolManager->setDevicePixelRatio(devicePixelRatioF());
     }
     updateToolbarPosition();
+}
+
+void PinWindow::applyPendingDragPosition()
+{
+    if (!m_isDragging || !m_hasPendingDragPosition) {
+        return;
+    }
+    m_hasPendingDragPosition = false;
+    move(m_pendingDragPosition);
+}
+
+void PinWindow::endWindowDrag()
+{
+    if (m_dragMoveTimer) {
+        m_dragMoveTimer->stop();
+    }
+    m_hasPendingDragPosition = false;
+    if (m_isDragging) {
+        m_isDragging = false;
+        CursorManager::instance().setDragStateForWidget(this, DragState::None);
+    }
+}
+
+void PinWindow::hideEvent(QHideEvent* event)
+{
+    // Hidden pins can be shown again; discard work from the previous drag.
+    endWindowDrag();
+    QWidget::hideEvent(event);
 }
 
 // ============================================================================
