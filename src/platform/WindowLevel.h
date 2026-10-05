@@ -65,6 +65,10 @@ void reinforceFramelessToolWindow(QWindow *window);
 // On Linux/X11: uses XSetInputFocus because Qt activation alone does not focus
 // override-redirect windows. No declaration is exposed on other platforms.
 void requestNativeWindowFocus(QWidget *widget);
+
+// Sets only the X11 input shape, leaving the visible bounding shape unchanged.
+// Region coordinates are widget-local logical pixels. Returns false if unavailable.
+bool setWindowInputRegion(QWidget* widget, const QRegion& region);
 #endif
 
 // Hides the native title-bar icon for standard top-level QWindows.

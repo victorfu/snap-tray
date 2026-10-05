@@ -15,6 +15,12 @@
 #include "qml/QmlFloatingToolbar.h"
 #include "settings/ScreenCanvasSettingsManager.h"
 
+#ifdef Q_OS_LINUX
+#include <QtGui/qguiapplication_platform.h>
+#include <X11/Xlib.h>
+#include <X11/extensions/shape.h>
+#endif
+
 namespace {
 constexpr int kToolbarMargin = 8;
 constexpr int kViewportInset = 10;
@@ -155,6 +161,8 @@ private slots:
     void testLinuxOpenKeepsSurfaceAtFullScreenGeometry();
     void testLinuxOpenDoesNotRequestFullscreenWindowState();
     void testLinuxOpenKeepsFloatingUiClickableAboveBypassCanvas();
+    void testLinuxInputHolesPreserveNativeBounds_data();
+    void testLinuxInputHolesPreserveNativeBounds();
 #endif
     void testOpenPositionsSubToolbarAwayFromMainToolbar();
     void testSubToolbarUsesAvailableScreenBoundsNearBottomPanel();
@@ -395,6 +403,82 @@ void TestScreenCanvasPlacement::testLinuxOpenDoesNotRequestFullscreenWindowState
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 }
 
+namespace {
+QRegion nativeShapeRegion(QWidget* widget, int kind)
+{
+    auto* application = qGuiApp->nativeInterface<QNativeInterface::QX11Application>();
+    int count = 0;
+    int ordering = 0;
+    XRectangle* rectangles = XShapeGetRectangles(application->display(), widget->winId(),
+                                                kind, &count, &ordering);
+    QRegion region;
+    for (int i = 0; i < count; ++i) {
+        const XRectangle& r = rectangles[i];
+        region += QRect(r.x, r.y, r.width, r.height);
+    }
+    XFree(rectangles);
+    return region;
+}
+
+QRegion nativePixels(const QRegion& logical, qreal scale)
+{
+    QRegion result;
+    for (const QRect& rect : logical) {
+        const int x = qRound(rect.x() * scale);
+        const int y = qRound(rect.y() * scale);
+        result += QRect(x, y, qRound((rect.x() + rect.width()) * scale) - x,
+                        qRound((rect.y() + rect.height()) * scale) - y);
+    }
+    return result;
+}
+}
+
+void TestScreenCanvasPlacement::testLinuxInputHolesPreserveNativeBounds_data()
+{
+    QTest::addColumn<bool>("whiteboard");
+    QTest::newRow("whiteboard") << true;
+    QTest::newRow("blackboard") << false;
+}
+
+void TestScreenCanvasPlacement::testLinuxInputHolesPreserveNativeBounds()
+{
+    QFETCH(bool, whiteboard);
+    if (!qGuiApp->nativeInterface<QNativeInterface::QX11Application>()) {
+        QSKIP("Native input shape verification requires X11.");
+    }
+    ScreenCanvasSession session;
+    session.m_bgMode = whiteboard ? CanvasBackgroundMode::Whiteboard
+                                 : CanvasBackgroundMode::Blackboard;
+    ScreenCanvas surface(&session);
+    surface.resize(320, 240);
+    surface.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&surface));
+    const QRegion full(surface.rect());
+    const qreal scale = surface.devicePixelRatioF();
+    const QRect firstHole(40, 60, 50, 40);
+    const QRect secondHole(180, 60, 50, 40);
+    for (const QRect& hole : {firstHole, secondHole}) {
+        const QRegion input = full - hole;
+        surface.setFloatingUiInputRegion(input);
+        QCOMPARE(nativeShapeRegion(&surface, ShapeBounding), nativePixels(full, scale));
+        QCOMPARE(nativeShapeRegion(&surface, ShapeInput), nativePixels(input, scale));
+        QVERIFY(surface.mask().isEmpty());
+        const QImage rendered = surface.grab().toImage();
+        const auto pixel = [&](const QPoint& point) {
+            return rendered.pixelColor(qRound(point.x() * scale), qRound(point.y() * scale));
+        };
+        QCOMPARE(pixel(hole.center()).alpha(), 0);
+        const QPoint filled = hole == secondHole ? firstHole.center() : secondHole.center();
+        QCOMPARE(pixel(filled), whiteboard ? QColor(Qt::white) : QColor(Qt::black));
+    }
+    // Closing a floating panel restores both input and painted canvas coverage.
+    surface.setFloatingUiInputRegion(full);
+    QCOMPARE(nativeShapeRegion(&surface, ShapeInput), nativePixels(full, scale));
+    const QImage restored = surface.grab().toImage();
+    QCOMPARE(restored.pixelColor(qRound(secondHole.center().x() * scale),
+                                 qRound(secondHole.center().y() * scale)).alpha(), 255);
+}
+
 void TestScreenCanvasPlacement::testLinuxOpenKeepsFloatingUiClickableAboveBypassCanvas()
 {
     QScreen* activationScreen = primaryOrFirstScreen();
@@ -419,7 +503,7 @@ void TestScreenCanvasPlacement::testLinuxOpenKeepsFloatingUiClickableAboveBypass
     QVERIFY2(!subToolbarWindow->flags().testFlag(Qt::X11BypassWindowManagerHint),
              "Screen Canvas sub-toolbar must stay WM-managed so QML pointer handling works normally.");
 
-    const QRegion inputMask = session->m_activeSurface->mask();
+    const QRegion inputMask = session->m_activeSurface->floatingUiInputRegion();
     QVERIFY2(!inputMask.isEmpty(),
              "Screen Canvas must shape its input region around floating UI on Linux.");
 
