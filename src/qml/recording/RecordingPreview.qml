@@ -544,41 +544,34 @@ Item {
 
         Item {
             Layout.fillWidth: true
-            Layout.preferredHeight: 36
+            Layout.preferredHeight: formatRow.height + SemanticTokens.spacing16
             Row {
+                id: formatRow
                 anchors.centerIn: parent
-                spacing: 1
+                spacing: SemanticTokens.spacing8
 
                     SegmentButton {
                         text: "MP4"
                         tooltipText: qsTr("Export as MP4")
                         selected: backend.selectedFormat === 0
-                        isFirst: true
-                        isLast: false
                         onClicked: backend.selectedFormat = 0
                     }
                     SegmentButton {
                         text: "GIF"
                         tooltipText: qsTr("Export as GIF")
                         selected: backend.selectedFormat === 1
-                        isFirst: false
-                        isLast: false
                         onClicked: backend.selectedFormat = 1
                     }
                     SegmentButton {
                         text: "WebP"
                         tooltipText: qsTr("Export as WebP")
                         selected: backend.selectedFormat === 2
-                        isFirst: false
-                        isLast: false
                         onClicked: backend.selectedFormat = 2
                     }
                     SegmentButton {
                         objectName: "longshotFormatButton"
                         text: qsTr("Long Screenshot")
                         selected: backend.selectedFormat === 3
-                        isFirst: false
-                        isLast: true
                         onClicked: backend.selectedFormat = 3
                     }
                 }
@@ -1204,8 +1197,7 @@ Item {
         property string tooltipText: ""
         property bool tooltipPreferredAbove: true
         property bool selected: false
-        property bool isFirst: false
-        property bool isLast: false
+        readonly property real minimumButtonWidth: 64
 
         signal clicked()
 
@@ -1218,11 +1210,11 @@ Item {
             root.showButtonTooltip(tooltipText, this, tooltipPreferredAbove)
         }
 
-        width: fmtLabel.implicitWidth + 20
-        height: 28
-        radius: SemanticTokens.radiusSmall
+        width: Math.max(minimumButtonWidth, fmtLabel.implicitWidth + 2 * SemanticTokens.spacing16)
+        height: ComponentTokens.recordingPreviewControlButtonHeight
+        radius: SemanticTokens.radiusMedium
 
-        color: selected ? root.accent
+        color: selected ? (fmtMouseArea.containsMouse ? root.accentHover : root.accent)
              : fmtMouseArea.pressed ? root.bgPanelPressed
              : fmtMouseArea.containsMouse ? root.bgPanelHover
              : root.bgPanel
@@ -1230,13 +1222,8 @@ Item {
         border.width: selected ? 0 : 1
         border.color: root.borderColor
 
-        Rectangle {
-            visible: !isFirst
-            anchors.left: parent.left
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
-            width: 1
-            color: root.borderColor
+        Behavior on color {
+            ColorAnimation { duration: SemanticTokens.durationFast }
         }
 
         Text {
@@ -1245,7 +1232,7 @@ Item {
             text: parent.text
             font.pixelSize: SemanticTokens.fontSizeSmall
             font.family: SemanticTokens.fontFamily
-            font.weight: selected ? SemanticTokens.fontWeightSemiBold : SemanticTokens.fontWeightRegular
+            font.weight: SemanticTokens.fontWeightSemiBold
             color: selected ? ComponentTokens.recordingPreviewPrimaryButtonIcon : root.textSecondary
         }
 
