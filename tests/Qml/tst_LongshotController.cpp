@@ -1,208 +1,147 @@
 #include "qml/LongshotController.h"
-#include "longshot/PositionSolver.h"
-#include "SyntheticScroll.h"
+#include "longshot/LongshotSession.h"
 #include <QtTest>
 #include <QTemporaryDir>
-#include <QThread>
-#include <QTimer>
 #include <QFile>
-#include <QDir>
 #include <QClipboard>
 #include <QApplication>
 #include <QQmlEngine>
 #include <QQuickImageProvider>
+#include <QThread>
+#include <stdexcept>
 using namespace SnapTray::Longshot;
 namespace {
+struct Stats { std::atomic_int opens{0}; std::atomic_bool fail{false}, throws{false}; };
 class Source final : public LongshotFrameSource {
 public:
-    Source(QImage frame, bool slow) : m_frame(std::move(frame)), m_slow(slow) {}
-    bool open(const QString&, qint64, qint64, const QRect&) override { m_index = 0; return true; }
-    std::optional<QImage> next(qint64* time) override {
-        if (m_index >= (m_slow ? 40 : 3)) return {};
-        if (m_slow) QThread::msleep(15);
-        *time = m_index++ * 50; return m_frame;
-    }
-    QSize frameSize() const override { return m_frame.size(); }
-    QSize videoSize() const override { return m_frame.size(); }
-    double frameRate() const override { return 20; }
-    int expectedFrameCount() const override { return m_slow ? 40 : 3; }
-    QString lastError() const override { return {}; }
-private:
-    QImage m_frame; bool m_slow; int m_index = 0;
-};
-class SeparateSource final : public LongshotFrameSource {
-public:
-    SeparateSource() {
+    Source(std::shared_ptr<Stats> stats, bool stationary, bool slow) : stats(stats), stationary(stationary), slow(slow), page(160,400,QImage::Format_RGB32) {
         QRandomGenerator random(42);
-        for (int i=0;i<2;++i) {
-            QImage frame(96,96,QImage::Format_RGB32);
-            for(int y=0;y<96;++y) for(int x=0;x<96;++x) {
-                const int gray=int(random.bounded(256)); frame.setPixel(x,y,qRgb(gray,gray,gray));
-            }
-            frames.append(frame);
-        }
+        for(int y=0;y<page.height();++y) for(int x=0;x<page.width();++x) page.setPixel(x,y,QColor::fromRgb(random.generate()).rgb());
     }
-    bool open(const QString&,qint64,qint64,const QRect&) override { index=0; return true; }
+    bool open(const QString&,qint64,qint64,const QRect&) override { index=0; ++stats->opens; return !stats->fail; }
     std::optional<QImage> next(qint64* time) override {
+        if (stats->throws) throw std::runtime_error("Decode failed");
         if(index==4) return {};
-        *time=index*50; return frames[index++/2];
+        if(slow) QThread::msleep(30);
+        *time=index*50; return page.copy(0,stationary ? (index++,0) : index++*60,160,200);
     }
-    QSize frameSize() const override { return {96,96}; }
+    QSize frameSize() const override { return {160,200}; }
     QSize videoSize() const override { return frameSize(); }
     double frameRate() const override { return 20; }
     int expectedFrameCount() const override { return 4; }
     QString lastError() const override { return {}; }
-    QList<QImage> frames; int index=0;
+    std::shared_ptr<Stats> stats; bool stationary,slow; int index=0; QImage page;
 };
-LongshotSession::SourceFactory factory(bool slow = false, QSize size = QSize(320, 240)) {
-    auto page = SyntheticScroll::renderPage({size.width(), size.height(), 42});
-    return [page, slow] { return std::make_unique<Source>(page, slow); };
+LongshotSession::SourceFactory factory(std::shared_ptr<Stats> stats, bool stationary=false, bool slow=false) {
+    return [=]{return std::make_unique<Source>(stats,stationary,slow);};
 }
 }
 class tst_LongshotController : public QObject {
     Q_OBJECT
 private slots:
-    void resultAndRetry() {
-        QTemporaryDir dir;
-        LongshotController controller(nullptr, factory());
-        QSignalSpy ready(&controller, &LongshotController::resultReady);
+    void multipartSaveRetriesOnlyFailedImages() {
+        LongshotController controller;
+        QImage first(64, 100, QImage::Format_RGB32); first.fill(Qt::red);
+        QImage second(64, 80, QImage::Format_RGB32); second.fill(Qt::blue);
+        // A missing second image simulates an encoder failure after part one succeeds.
+        controller.m_result.parts = {first, QImage()};
+        controller.m_result.fullHeightPx = 180;
+        controller.m_phase = "result";
+        QTemporaryDir directory;
         QSignalSpy saved(&controller, &LongshotController::imageSaved);
-        QSignalSpy pinned(&controller, &LongshotController::pinRequested);
-        controller.start(dir.filePath("source.mp4"), 0, 150, {});
-        QTRY_COMPARE_WITH_TIMEOUT(ready.count(), 1, 10000);
-        QVERIFY(!controller.busy()); QVERIFY(controller.hasResult());
-        QCOMPARE(controller.partCount(), 1);
-        QVERIFY(QFile::exists(controller.preview().toLocalFile()));
-        controller.pin(); QCOMPARE(pinned.count(), 1);
-        QVERIFY(controller.hasResult());
-        // Invalid destination cannot report success; retry leaves the result alive.
-        QFile blocker(dir.filePath("blocker")); QVERIFY(blocker.open(QIODevice::WriteOnly)); blocker.close();
-        QVERIFY(!controller.saveToDirectory(blocker.fileName(), "capture"));
-        QCOMPARE(saved.count(), 0);
-        QVERIFY(controller.saveToDirectory(dir.path(), "capture"));
+        QVERIFY(!controller.saveToDirectory(directory.path(), "long"));
         QCOMPARE(saved.count(), 1);
-        QVERIFY(controller.saveToDirectory(dir.path(), "capture"));
-        QCOMPARE(saved.count(), 1);
-        QCOMPARE(QDir(dir.path()).entryList({"capture*.png"}, QDir::Files).size(), 1);
-        QVERIFY(controller.hasResult());
-        controller.invalidate(); QVERIFY(!controller.hasResult());
-    }
-    void splitSaveAndPinSelectedPart() {
-        QTemporaryDir dir;
-        LongshotController controller(nullptr, factory(false, QSize(96, 30064)));
-        QSignalSpy ready(&controller, &LongshotController::resultReady);
-        QSignalSpy saved(&controller, &LongshotController::imageSaved);
-        QSignalSpy pinned(&controller, &LongshotController::pinRequested);
-        controller.start("tall-fixture", 0, -1, {});
-        QTRY_COMPARE_WITH_TIMEOUT(ready.count(), 1, 20000);
-        QCOMPARE(controller.partCount(), 2);
-        QCOMPARE(controller.imageSize(), QSize(96, 30000));
+        QCOMPARE(QImage(directory.filePath("long-001.png")), first);
+        controller.m_result.parts[1] = second;
+        controller.save(); // Retries the remembered destination without another dialog.
+        QCOMPARE(saved.count(), 2);
+        QCOMPARE(QImage(directory.filePath("long-002.png")), second);
+        QCOMPARE(QDir(directory.path()).entryList({"*.png"}, QDir::Files).size(), 2);
         controller.setSelectedPart(1);
-        QCOMPARE(controller.imageSize(), QSize(96, 64));
-        QCOMPARE(controller.partStartRow(), 30000);
+        QSignalSpy pin(&controller, &LongshotController::pinRequested);
         controller.pin();
-        QCOMPARE(pinned.count(), 1);
-        QCOMPARE(qvariant_cast<QImage>(pinned.first().first()).size(), QSize(96, 64));
-        QVERIFY(controller.saveToDirectory(dir.path(), "split"));
-        QCOMPARE(saved.count(), 2);
-        const auto files = QDir(dir.path()).entryList({"split*.png"}, QDir::Files, QDir::Name);
-        QCOMPARE(files.size(), 2);
-        QCOMPARE(QImage(dir.filePath(files[0])).size(), QSize(96, 30000));
-        QCOMPARE(QImage(dir.filePath(files[1])).size(), QSize(96, 64));
-        QVERIFY(controller.saveToDirectory(dir.path(), "split"));
-        QCOMPARE(saved.count(), 2);
-        QCOMPARE(QDir(dir.path()).entryList({"split*.png"}, QDir::Files).size(), 2);
-        QVERIFY(controller.hasResult());
+        QCOMPARE(qvariant_cast<QImage>(pin[0][0]), second);
     }
-    void savesIndependentSections() {
-        QTemporaryDir dir;
-        LongshotController controller(nullptr, [] { return std::make_unique<SeparateSource>(); });
-        QSignalSpy ready(&controller,&LongshotController::resultReady);
-        controller.start("sections",0,-1,{});
-        QTRY_COMPARE_WITH_TIMEOUT(ready.count(),1,10000);
-        QCOMPARE(controller.partCount(),2);
-        QVERIFY(controller.partLabel().contains("Section 1 of 2"));
-        controller.setSelectedPart(1);
-        QVERIFY(controller.partLabel().contains("Section 2 of 2"));
-        QVERIFY(controller.saveToDirectory(dir.path(),"separate"));
-        QVERIFY(QFile::exists(dir.filePath("separate-s01.png")));
-        QVERIFY(QFile::exists(dir.filePath("separate-s02.png")));
-        QVERIFY(QImage(dir.filePath("separate-s01.png")) != QImage(dir.filePath("separate-s02.png")));
+    void clipboardUsesOriginalPixels() {
+        LongshotController controller(nullptr,factory(std::make_shared<Stats>()));
+        controller.start("fixture",0,200,{});
+        QTRY_COMPARE_WITH_TIMEOUT(controller.phase(),QString("recommendation"),10000);
+        controller.generate(); QTRY_VERIFY_WITH_TIMEOUT(controller.hasResult(),10000);
+        QSignalSpy pinned(&controller,&LongshotController::pinRequested);
+        controller.pin(); controller.copy();
+        QTRY_VERIFY(!controller.message().isEmpty());
+        const QImage copied=QApplication::clipboard()->image();
+        if(copied.isNull()) QSKIP("System clipboard unavailable in this desktop session");
+        QCOMPARE(copied,qvariant_cast<QImage>(pinned[0][0]));
     }
-    void imageEditsExportNewPixelsAndUndo() {
-        QTemporaryDir dir;
-        LongshotController controller(nullptr,factory());
-        QSignalSpy ready(&controller,&LongshotController::resultReady);
-        QSignalSpy saved(&controller,&LongshotController::imageSaved);
-        QSignalSpy annotate(&controller,&LongshotController::annotateRequested);
-        controller.start("edit",0,-1,{});
-        QTRY_COMPARE_WITH_TIMEOUT(ready.count(),1,10000);
-        QVERIFY(controller.saveToDirectory(dir.path(),"edited"));
-        QCOMPARE(saved.count(),1);
-        const auto original=qvariant_cast<QImage>(saved[0][0]);
-        QVERIFY(controller.keepRows(10,200)); QCOMPARE(controller.imageSize().height(),190);
-        QVERIFY(controller.removeRows(50,60)); QCOMPARE(controller.imageSize().height(),180);
-        QVERIFY(controller.canUndo()); QVERIFY(controller.imageEdited());
-        QVERIFY(controller.saveToDirectory(dir.path(),"edited"));
-        QCOMPARE(saved.count(),2); QCOMPARE(QDir(dir.path()).entryList({"edited*.png"},QDir::Files).size(),2);
-        const auto edited=qvariant_cast<QImage>(saved[1][0]);
-        QCOMPARE(edited.copy(0,0,edited.width(),50),original.copy(0,10,original.width(),50));
-        QCOMPARE(edited.copy(0,50,edited.width(),130),original.copy(0,70,original.width(),130));
-        controller.annotate(); QCOMPARE(annotate.count(),1);
-        QCOMPARE(qvariant_cast<QImage>(annotate[0][0]),edited);
-        QVERIFY(controller.undoEdit()); QCOMPARE(controller.imageSize().height(),190);
-        QVERIFY(controller.redoEdit()); QCOMPARE(controller.imageSize().height(),180);
-        QVERIFY(controller.resetImage()); QCOMPARE(controller.imageSize().height(),240);
-        QVERIFY(!controller.imageEdited());
-    }
-    void cancellationKeepsEventLoopResponsive() {
-        LongshotController controller(nullptr, factory(true));
-        QSignalSpy ready(&controller, &LongshotController::resultReady);
-        QSignalSpy idle(&controller, &LongshotController::idle);
-        int ticks = 0; QTimer timer; timer.setInterval(1);
-        connect(&timer, &QTimer::timeout, this, [&] { ++ticks; }); timer.start();
-        controller.start("unused", 0, -1, {});
-        QTimer::singleShot(30, &controller, &LongshotController::cancel);
-        QTRY_COMPARE_WITH_TIMEOUT(idle.count(), 1, 10000);
-        QVERIFY(ticks > 1); QCOMPARE(ready.count(), 0); QVERIFY(!controller.hasResult());
-        controller.start("unused", 0, -1, {});
-        controller.cancel();
-        QTRY_COMPARE_WITH_TIMEOUT(idle.count(), 2, 10000);
-        QCOMPARE(ready.count(), 0);
-    }
-    void unavailableSourceFails() {
-        LongshotController controller(nullptr, [] { return std::unique_ptr<LongshotFrameSource>(); });
-        QSignalSpy idle(&controller, &LongshotController::idle);
-        controller.start("missing", 0, -1, {});
-        QTRY_COMPARE_WITH_TIMEOUT(idle.count(), 1, 10000);
-        QVERIFY(!controller.hasResult()); QVERIFY(!controller.message().isEmpty());
-    }
-    void boundedTileProviderIsRemoved() {
+    void recommendationThenSelectedOutput() {
+        const auto stats=std::make_shared<Stats>();
         QQmlEngine engine;
-        QString provider;
-        {
-            LongshotController controller(nullptr, factory());
-            controller.installImageProvider(&engine);
-            QSignalSpy ready(&controller, &LongshotController::resultReady);
-            controller.start("unused", 0, -1, {});
-            QTRY_COMPARE_WITH_TIMEOUT(ready.count(), 1, 10000);
-            provider = controller.preview().host();
-            auto* images = static_cast<QQuickImageProvider*>(engine.imageProvider(provider));
-            QVERIFY(images);
-            QSize original;
-            const auto tile = images->requestImage("1/0", &original, QSize(10000, 10000));
-            QVERIFY(!tile.isNull()); QVERIFY(tile.width() <= 2048); QVERIFY(tile.height() <= 2048);
-            QCOMPARE(original, controller.imageSize());
-            QVERIFY(images->requestImage("1/100", nullptr, {}).isNull());
-        }
-        QVERIFY(!engine.imageProvider(provider));
+        LongshotController controller(nullptr,factory(stats)); controller.installImageProvider(&engine);
+        controller.start("fixture",0,200,{});
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(),10000);
+        QCOMPARE(controller.phase(),QString("recommendation")); QVERIFY(!controller.hasResult());
+        QVERIFY(!controller.candidates().isEmpty());
+        const auto choice=controller.candidate();
+        QVERIFY(choice.value("recommended").toBool());
+        auto url=choice.value("startPreview").toUrl();
+        auto* provider=static_cast<QQuickImageProvider*>(engine.imageProvider(url.host()));
+        QVERIFY(provider); QSize size;
+        QVERIFY(!provider->requestImage(url.path().mid(1),&size,{}).isNull());
+        const int opens=stats->opens;
+        controller.generate(); QTRY_VERIFY_WITH_TIMEOUT(controller.hasResult(),10000);
+        QCOMPARE(stats->opens,opens+1); // Render only: no new analysis/solve pass.
+        QCOMPARE(controller.phase(),QString("result"));
+        QCOMPARE(controller.imageSize(),QSize(choice.value("width").toInt(),choice.value("height").toInt()));
+        QSignalSpy pin(&controller,&LongshotController::pinRequested), annotate(&controller,&LongshotController::annotateRequested);
+        controller.pin(); controller.annotate();
+        QCOMPARE(pin.count(),1); QCOMPARE(annotate.count(),1);
+        QCOMPARE(qvariant_cast<QImage>(pin[0][0]),qvariant_cast<QImage>(annotate[0][0]));
+        QTemporaryDir dir; QFile blocker(dir.filePath("blocker")); QVERIFY(blocker.open(QIODevice::WriteOnly)); blocker.close();
+        QVERIFY(!controller.saveToDirectory(blocker.fileName(),"image"));
+        QSignalSpy saved(&controller,&LongshotController::imageSaved);
+        QVERIFY(controller.saveToDirectory(dir.path(),"image")); QVERIFY(controller.saveToDirectory(dir.path(),"image"));
+        QCOMPARE(saved.count(),1); QVERIFY(QFile::exists(dir.filePath("image.png")));
+        controller.showRecommendation(); QVERIFY(!controller.hasResult()); QCOMPARE(controller.candidate(),choice);
     }
-    void solverCancellation() {
-        std::vector<qint64> times; std::vector<PairShift> edges;
-        for (int i = 0; i < 100; ++i) { times.push_back(i * 50); if (i) edges.push_back({i - 1, i, 20, 1.0}); }
-        int calls = 0;
-        auto result = PositionSolver::solve(times, edges, 3, 240, [&] { return ++calls < 3; });
-        QVERIFY(result.cancelled);
+    void stationaryIsActionable() {
+        LongshotController controller(nullptr,factory(std::make_shared<Stats>(),true));
+        controller.start("fixture",0,200,{}); QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(),10000);
+        QCOMPARE(controller.phase(),QString("error")); QCOMPARE(controller.failureReason(),QString("noScrolling"));
+        QVERIFY(controller.candidates().isEmpty()); QVERIFY(!controller.hasResult());
+    }
+    void cancellationAndRetryPreserveRecommendation() {
+        const auto stats=std::make_shared<Stats>();
+        LongshotController controller(nullptr,factory(stats,false,true));
+        controller.start("fixture",0,200,{}); controller.cancel();
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(),10000); QCOMPARE(controller.phase(),QString("idle"));
+        controller.start("fixture",0,200,{}); QTRY_COMPARE_WITH_TIMEOUT(controller.phase(),QString("recommendation"),10000);
+        const auto choice=controller.candidate();
+        controller.generate(); controller.cancel(); QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(),10000);
+        QCOMPARE(controller.phase(),QString("recommendation")); QCOMPARE(controller.candidate(),choice);
+        stats->fail=true; controller.generate(); QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(),10000);
+        QCOMPARE(controller.phase(),QString("recommendation")); QCOMPARE(controller.candidate(),choice); QVERIFY(!controller.message().isEmpty());
+        stats->fail=false; stats->throws=true; controller.generate(); QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(),10000);
+        QCOMPARE(controller.phase(),QString("recommendation")); QCOMPARE(controller.candidate(),choice);
+        stats->throws=false; controller.generate(); QTRY_VERIFY_WITH_TIMEOUT(controller.hasResult(),10000);
+        controller.invalidate(); QCOMPARE(controller.phase(),QString("idle")); QVERIFY(controller.candidates().isEmpty());
+    }
+    void invalidationRejectsWorkerResult() {
+        LongshotController controller(nullptr,factory(std::make_shared<Stats>(),false,true));
+        controller.start("fixture",0,200,{}); controller.invalidate();
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(),10000);
+        QCOMPARE(controller.phase(),QString("idle")); QVERIFY(controller.candidates().isEmpty()); QVERIFY(!controller.hasResult());
+    }
+    void sessionRejectsStaleIdsAndInputs() {
+        const auto stats=std::make_shared<Stats>(); LongshotSession session(factory(stats));
+        session.setRecording("fixture"); session.setTrim(0,200);
+        auto report=session.analyze({}); QCOMPARE(report.error,LongshotError::None); QVERIFY(!report.candidates.empty());
+        const auto id=report.candidates.front().id;
+        QVERIFY(session.renderCandidate("obsolete",{}).error!=LongshotError::None);
+        session.setCrop(QRect(0,0,100,100)); QVERIFY(session.renderCandidate(id,{}).error!=LongshotError::None);
+        session.setCrop({}); report=session.analyze({}); QVERIFY(!report.candidates.empty());
+        QVERIFY(report.candidates.front().id!=id); QVERIFY(session.renderCandidate(id,{}).error!=LongshotError::None);
+        session.setTrim(0,100); QVERIFY(session.renderCandidate(report.candidates.front().id,{}).error!=LongshotError::None);
     }
 };
 QTEST_MAIN(tst_LongshotController)

@@ -353,13 +353,12 @@ void tst_RecordingPreviewExport::closeCancelsLongshotBeforeDiscard()
     QVERIFY2(error.isEmpty(), qPrintable(error));
     RecordingPreviewBackend backend(path);
     backend.updateDuration(1000);
-    backend.setSelectedFormat(RecordingPreviewBackend::LongScreenshot);
     QSignalSpy closed(&backend, &RecordingPreviewBackend::closed);
     bool removedAfterIdle = false;
     connect(&backend, &RecordingPreviewBackend::discardRequested, this, [&](const QString& source) {
         removedAfterIdle = !backend.longshot()->busy() && QFile::remove(source);
     });
-    backend.save();
+    backend.startLongshot();
     QVERIFY(backend.longshot()->busy());
     backend.close();
     QCOMPARE(closed.count(), 0);

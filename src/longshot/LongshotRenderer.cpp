@@ -7,6 +7,8 @@
 #include <cmath>
 #include <limits>
 #include <map>
+#include <set>
+#include <QUuid>
 
 namespace SnapTray::Longshot {
 
@@ -212,10 +214,11 @@ using PaintCommands = std::map<int, std::vector<PaintCommand>>;
 struct RenderPlan {
     RenderResult result;
     PaintCommands frames;
+    QList<QSize> sizes;
 };
 
 // Select tiles, seams and masks without opening or retaining decoded frames.
-RenderPlan prepareRender(const AnalysisResult& a, const LongshotOptions& options, qint64 outputBudgetBytes)
+RenderPlan prepareRender(const AnalysisResult& a, const LongshotOptions& options, qint64 outputBudgetBytes, bool allocate = true)
 {
     RenderPlan plan;
     RenderResult& result = plan.result;
@@ -303,26 +306,30 @@ RenderPlan prepareRender(const AnalysisResult& a, const LongshotOptions& options
     // canvas exists when splitting.
     const int partHeight = options.splitOversize && outputHeight > maxHeight ? maxHeight : renderHeight;
     // Split output still retains all parts. Bound total allocation, not just each part.
-    if (qint64(columns.width()) * renderHeight * 4 > outputBudgetBytes) {
+    if (allocate && qint64(columns.width()) * renderHeight * 4 > outputBudgetBytes) {
         result.error = LongshotError::OutOfMemory; return plan;
     }
     QList<QImage> parts;
     for (int top = 0; top < renderHeight; top += partHeight) {
-        QImage part(columns.width(), std::min(partHeight, renderHeight - top), QImage::Format_RGB32);
-        if (part.isNull()) { result.error = LongshotError::OutOfMemory; return plan; }
-        part.fill(Qt::white);
-        parts.push_back(part);
+        const QSize size(columns.width(), std::min(partHeight, renderHeight - top));
+        plan.sizes.append(size);
+        if (allocate) {
+            QImage part(size, QImage::Format_RGB32);
+            if (part.isNull()) { result.error = LongshotError::OutOfMemory; return plan; }
+            part.fill(Qt::white);
+            parts.append(part);
+        }
     }
-    if (parts.isEmpty()) { result.error = LongshotError::NoReliableContent; return plan; }
+    if (plan.sizes.isEmpty()) { result.error = LongshotError::NoReliableContent; return plan; }
     // Schedule a valid source rectangle at output row destTop in every part
     // it overlaps. Horizontal placement preserves the union output columns.
     auto scheduleRows = [&](int frameIndex, const QRect& sourceRect, int destTop) {
         const int height = sourceRect.height();
         const int first = std::max(0, destTop / partHeight);
-        for (int p = first; p < parts.size(); ++p) {
+        for (int p = first; p < plan.sizes.size(); ++p) {
             const int partTop = p * partHeight;
             const int from = std::max(destTop, partTop);
-            const int to = std::min(destTop + height, partTop + int(parts[p].height()));
+            const int to = std::min(destTop + height, partTop + plan.sizes[p].height());
             if (from >= destTop + height) break;
             if (to <= from) continue;
             plan.frames[frameIndex].push_back({p, QPoint(sourceRect.left() - columns.left(), from - partTop),
@@ -451,6 +458,140 @@ RenderResult paintRecording(LongshotFrameSource& source, const QString& path, qi
     return result;
 }
 } // namespace
+
+struct CandidateRenderPlan {
+    RenderPlan render;
+};
+
+std::vector<LongshotCandidate> LongshotRenderer::candidates(const AnalysisResult& analysis,
+                                                          const LongshotOptions& requested,
+                                                          const ProgressFn& progress)
+{
+    std::vector<LongshotCandidate> candidates;
+    if (analysis.error != LongshotError::None || !analysis.solve.converged) return candidates;
+    LongshotOptions options = requested;
+    options.includeStickyHeader = false;
+    options.splitOversize = true;
+    const int partHeight = std::max(options.maxHeightPx, std::max(1, options.tileRows));
+    const QString generation = QUuid::createUuid().toString(QUuid::Id128);
+    bool omitted = !analysis.solve.breakTimesMs.empty();
+    std::set<int> coveredFrames;
+    for (const auto& section : analysis.solve.sections) {
+        if (progress && !progress(0)) return {};
+        AnalysisResult selected = analysis;
+        selected.solve.positions.assign(analysis.frames.size(), std::nullopt);
+        selected.solve.sections.clear();
+        for (size_t i = 0; i < section.frameIndices.size(); ++i) {
+            selected.solve.positions[section.frameIndices[i]] = section.positions[i];
+            coveredFrames.insert(section.frameIndices[i]);
+        }
+        auto source = prepareRender(selected, options, kOutputBudgetBytes, false);
+        if (source.result.error != LongshotError::None) { omitted = true; continue; }
+        const int height = source.result.fullHeightPx;
+        std::vector<std::pair<int, int>> runs;
+        int begin = 0;
+        for (int gap : source.result.breakRows) {
+            if (gap > begin) runs.push_back({begin, gap});
+            begin = gap + 1;
+        }
+        if (begin < height) runs.push_back({begin, height});
+        omitted |= !source.result.breakRows.empty();
+        for (const auto& [top, bottom] : runs) {
+            if (progress && !progress(0)) return {};
+            auto plan = std::make_shared<CandidateRenderPlan>();
+            auto& output = plan->render;
+            const int width = source.sizes.first().width();
+            const int runHeight = bottom - top;
+            std::set<int> contributors;
+            int singleFrameHeight = 0;
+            for (int row = 0; row < runHeight; row += partHeight)
+                output.sizes.append(QSize(width, std::min(partHeight, runHeight - row)));
+            for (const auto& [frame, commands] : source.frames) {
+                for (const auto& command : commands) {
+                    const int globalTop = command.part * partHeight + command.destination.y();
+                    const int from = std::max(top, globalTop);
+                    const int to = std::min(bottom, globalTop + command.source.height());
+                    if (to <= from) continue;
+                    contributors.insert(frame);
+                    singleFrameHeight = std::max(singleFrameHeight, analysis.frames[frame].validContentRect.height());
+                    for (int y = from; y < to;) {
+                        const int local = y - top;
+                        const int part = local / partHeight;
+                        const int count = std::min(to - y, partHeight - local % partHeight);
+                        output.frames[frame].push_back({part, QPoint(command.destination.x(), local % partHeight),
+                            QRect(command.source.x(), command.source.y() + y - globalTop, command.source.width(), count)});
+                        y += count;
+                    }
+                }
+            }
+            if (contributors.size() < 2 || runHeight <= singleFrameHeight) { omitted = true; continue; }
+            LongshotCandidate candidate;
+            candidate.id = generation + QString::number(candidates.size());
+            candidate.size = QSize(width, runHeight);
+            candidate.imageCount = output.sizes.size();
+            const int first = *contributors.begin(), last = *contributors.rbegin();
+            candidate.startMs = analysis.frames[first].tMs;
+            candidate.endMs = analysis.frames[last].tMs;
+            if (analysis.thumbnails.size() == analysis.frames.size()) {
+                candidate.startPreview = analysis.thumbnails[first];
+                candidate.endPreview = analysis.thumbnails[last];
+            }
+            output.result.fullHeightPx = runHeight;
+            for (int row : source.result.lowConfidenceRows)
+                if (row >= top && row < bottom) output.result.lowConfidenceRows.push_back(row - top);
+            candidate.needsReview = !output.result.lowConfidenceRows.empty();
+            for (const auto& span : source.result.sourceSpans) {
+                const int from = std::max(top, span.firstRow), to = std::min(bottom, span.endRow);
+                if (to > from) output.result.sourceSpans.push_back({from - top, to - top, span.timeMs});
+            }
+            for (int i = 0; i < output.sizes.size(); ++i)
+                output.result.partInfo.append({0, i, int(output.sizes.size()), candidate.startMs, candidate.endMs,
+                                              source.result.autoCroppedLeft, source.result.autoCroppedRight});
+            candidate.plan = std::move(plan);
+            candidates.push_back(std::move(candidate));
+        }
+    }
+    for (int i = 0; i < int(analysis.frames.size()); ++i)
+        if (!analysis.frames[i].stationary && !coveredFrames.count(i)) omitted = true;
+    for (auto& candidate : candidates) candidate.partial = omitted || candidates.size() > 1;
+    // Only the recommendation moves to the front; alternatives stay in recording order.
+    std::stable_sort(candidates.begin(), candidates.end(), [](const auto& a, const auto& b) { return a.startMs < b.startMs; });
+    const auto better = [](const auto& a, const auto& b) {
+        if (a.needsReview != b.needsReview) return !a.needsReview;
+        const qint64 areaA = qint64(a.size.width()) * a.size.height();
+        const qint64 areaB = qint64(b.size.width()) * b.size.height();
+        return areaA != areaB ? areaA > areaB : a.startMs < b.startMs;
+    };
+    if (!candidates.empty()) {
+        const auto best = std::min_element(candidates.begin(), candidates.end(), better);
+        std::rotate(candidates.begin(), best, best + 1);
+    }
+    return candidates;
+}
+
+RenderResult LongshotRenderer::renderCandidate(LongshotFrameSource& source, const QString& path,
+                                               qint64 startMs, qint64 endMs, const QRect& crop,
+                                               const AnalysisResult& analysis, const LongshotCandidate& candidate,
+                                               const ProgressFn& progress)
+{
+    RenderResult result;
+    if (!candidate.plan) { result.error = LongshotError::NoReliableContent; return result; }
+    const auto& plan = candidate.plan->render;
+    result = plan.result;
+    qint64 bytes = 0;
+    for (const QSize& size : plan.sizes) {
+        bytes += qint64(size.width()) * size.height() * 4;
+        if (bytes > kOutputBudgetBytes) { result = {}; result.error = LongshotError::OutOfMemory; return result; }
+    }
+    for (const QSize& size : plan.sizes) {
+        if (progress && !progress(0)) { result = {}; result.error = LongshotError::Cancelled; return result; }
+        QImage image(size, QImage::Format_RGB32);
+        if (image.isNull()) { result = {}; result.error = LongshotError::OutOfMemory; return result; }
+        image.fill(Qt::white);
+        result.parts.append(std::move(image));
+    }
+    return paintRecording(source, path, startMs, endMs, crop, analysis, std::move(result), plan.frames, progress);
+}
 
 RenderResult LongshotRenderer::render(LongshotFrameSource& source, const QString& path, qint64 startMs, qint64 endMs,
                                       const QRect& crop, const AnalysisResult& analysis, const LongshotOptions& options,

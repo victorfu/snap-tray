@@ -74,6 +74,12 @@ struct RunReport {
     RenderResult render;
 };
 
+struct AnalysisReport {
+    LongshotError error = LongshotError::None;
+    bool noScrolling = false;
+    std::vector<LongshotCandidate> candidates;
+};
+
 // Owns the cache contract between the preview's edits and the engine.
 class LongshotSession
 {
@@ -89,11 +95,16 @@ public:
     void setPipelineParams(const PipelineParams& params);
 
     RunReport run(const ProgressFn& progress, const StageFn& stage = {});
+    AnalysisReport analyze(const ProgressFn& progress, const StageFn& stage = {});
+    RenderResult renderCandidate(const QString& id, const ProgressFn& progress);
 
     const DecodedFrameCache& decodeCache() const { return m_decodeCache; }
     DecodedFrameCache& decodeCache() { return m_decodeCache; }
 
 private:
+    RunReport runAnalysis(const ProgressFn& progress, const StageFn& stage, bool renderOutput);
+    std::vector<LongshotCandidate> m_candidates;
+    std::optional<AnalysisKey> m_candidateKey;
     SourceFactory m_factory;
     DecodedFrameCache m_decodeCache;
     QString m_path;

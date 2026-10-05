@@ -62,23 +62,17 @@ The quality slider sets the quality of the saved video. When preview is on, the 
 
 ## Long screenshots from recordings
 
-On macOS and Windows, record while manually scrolling one vertical content area. In Recording Preview, trim the relevant interval and crop to the scrolling area (window snapping is available). Choose **Long Screenshot**, then use the save/generate button. Playback pauses while the screenshot is analyzed and rendered; **Cancel** keeps the recording.
+Record while manually scrolling one vertical content area. In Recording Preview, select **Create Long Screenshot**. Analysis starts automatically using the current time range and crop, or the full recording if neither was changed. Playback pauses; cancelling keeps the recording.
 
-Review the result before sharing. The result reports automatic side cropping, low-confidence regions and unjoined sections. Click a marker with a known source time to return to that point in the video; a missing-coverage marker without a source cannot seek. Uncertain joins are not invented. An entirely unreliable recording produces an error instead of an image.
+The recommendation shows the source's start and end previews, time range, and number of images. Select **Generate Long Screenshot** to create only this range. When the entire recording cannot be joined, the page explicitly recommends partial content. **Other available ranges** is optional: choose one to replace the recommendation. Disconnected content is never forced together or filled in.
 
-- **Save PNG** saves all parts, with numbered filenames when needed. Existing files are not overwritten; collisions receive a unique name. A failed part can be retried without saving successful parts again to the same destination.
-- **Copy** and **Pin** use the selected part at its original resolution.
-- **Back** returns to the video to adjust the crop or trim, or export a video instead.
-- Fixed headers are excluded by default; use **Include Fixed Header** to regenerate with the observed header.
+Use **Adjust Analysis Range** to change the existing crop and trim controls. **Analyze Again** confirms the changes; **Cancel** restores the previous settings and recommendation. Dragging a control does not start another analysis.
 
-Outputs taller than 30,000 pixels split automatically. All three output actions keep the original recording open. Closing Recording Preview still discards its temporary recording. The preview loads visible image tiles rather than one oversized texture. Extremely large results or ranges are rejected with a message; shorten the range or reduce the crop.
+- **Save PNG** saves the selected range. Content taller than 30,000 pixels is split into numbered images without reducing resolution; the recommendation announces the count beforehand. Existing files are not overwritten, and retries to the same destination skip successfully saved images.
+- **Copy** copies the current image at its original resolution.
+- **More…** contains **Pin** and **Annotate in Pin** for the current image. Save annotations from the pin window.
+- **Choose Content** returns to the recommendation; **Recording Preview** returns to the video. The original recording remains available until the preview is closed.
 
-This feature supports vertical scrolling only and is unavailable in Linux beta. Recording on 5K/6K displays has not yet been validated.
+The result fits the viewport width without enlarging small images. Scroll to read it, use Ctrl+wheel to zoom and Ctrl+0 to reset. If seams need review, one summary offers **Review** to visit the marked areas. Marks appear only in the preview, never in saved or copied images. Fixed headers and static sidebars are handled automatically; there is no separate image-row editor.
 
-### Independent sections and image repair
-
-When reliable portions cannot be joined, each connected section is exported separately, in order of its first appearance in the recording. No relative page position is guessed between sections. The result labels **Section** separately from **Part**: a section may itself split at 30,000 pixels. Isolated frames without a reliable pair remain reported as unjoined footage. Save PNG exports every section; filenames use `-s01` and, when needed, `-s01-p001`.
-
-Choose **Edit Image** and drag vertically over the image to select a horizontal band. **Keep Selection** crops away everything above and below it; **Delete Selection** removes the band and brings the remaining rows together. Edits affect only the selected part. Undo/Redo (Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z, or Ctrl+Y) retain up to 32 operations per part; **Reset Image** can always restore the generated image. Deleting the entire image is disabled. Warning markers follow the surviving pixels.
-
-**Back** returns to the recording, and **View Result** returns to the existing edited result. Changing the recording crop/trim or generating again resets these image edits. Saving an edited revision creates a new unique file and leaves earlier exports intact. **Annotate in Pin** opens the current edited part with the existing annotation toolbar visible; save annotations from that pin window. Those annotations do not modify other parts or the recording preview's image.
+If no usable range is found, adjust to one scrolling content area or record again while scrolling slowly. Stationary recordings are not presented as successful long screenshots. Large analysis ranges or outputs may require a smaller crop or shorter range. This feature handles vertical scrolling, and availability depends on the platform's offline video reader. 5K/6K recording has not yet been validated.

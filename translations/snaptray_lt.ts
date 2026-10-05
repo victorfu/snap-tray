@@ -1744,176 +1744,96 @@ Dydis: %2</translation>
 <context>
     <name>RecordingPreview</name>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Pause Preview (Space)</source>
-        <translation>Pristabdyti peržiūrą (Space)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Play Preview (Space)</source>
-        <translation>Leisti peržiūrą (Space)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="376" />
-        <source>Playback Speed: %1x</source>
-        <translation>Atkūrimo greitis: %1x</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="390" />
-        <source>Export as MP4</source>
-        <translation>Eksportuoti kaip MP4</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="398" />
-        <source>Export as GIF</source>
-        <translation>Eksportuoti kaip GIF</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="406" />
-        <source>Export as WebP</source>
-        <translation>Eksportuoti kaip WebP</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
-        <source>Audio playback is unavailable in this preview.</source>
-        <translation>Šioje peržiūroje garso atkūrimas nepasiekiamas.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
-        <source>Unmute Preview (M)</source>
-        <translation>Įjungti peržiūros garsą (M)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
-        <source>Mute Preview (M)</source>
-        <translation>Nutildyti peržiūrą (M)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
-        <source>Clear Trim Selection</source>
-        <translation>Išvalyti apkarpymo pasirinkimą</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
-        <source>Trim Recording</source>
-        <translation>Apkarpyti įrašą</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="438" />
-        <source>Discard Recording (Esc)</source>
-        <translation>Atmesti įrašą (Esc)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="445" />
-        <source>Save Recording (Enter / Ctrl+S)</source>
-        <translation>Išsaugoti įrašą (Enter / Ctrl+S)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="529" />
-        <source>Dismiss Error</source>
-        <translation>Uždaryti klaidą</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="552" />
-        <source>Crop Recording</source>
-        <translation>Apkarpyti įrašo vaizdą</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="552" />
-        <source>Edit Crop</source>
-        <translation>Redaguoti apkarpymą</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="551" />
-        <source>Apply Crop (Enter)</source>
-        <translation>Taikyti apkarpymą (Enter)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="239" />
         <source>Clear Crop</source>
         <translation>Išvalyti apkarpymą</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="285" />
         <source>Click a window to crop to it, or drag to draw</source>
         <translation>Spustelėkite langą, kad apkirptumėte pagal jį, arba vilkite ir nubrėžkite</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="681" />
+        <source>Audio playback is unavailable in this preview.</source>
+        <translation>Šioje peržiūroje garso atkūrimas nepasiekiamas.</translation>
+    </message>
+    <message>
+        <source>Export as MP4</source>
+        <translation>Eksportuoti kaip MP4</translation>
+    </message>
+    <message>
+        <source>Export as GIF</source>
+        <translation>Eksportuoti kaip GIF</translation>
+    </message>
+    <message>
+        <source>Export as WebP</source>
+        <translation>Eksportuoti kaip WebP</translation>
+    </message>
+    <message>
+        <source>Pause Preview (Space)</source>
+        <translation>Pristabdyti peržiūrą (Space)</translation>
+    </message>
+    <message>
+        <source>Play Preview (Space)</source>
+        <translation>Leisti peržiūrą (Space)</translation>
+    </message>
+    <message>
+        <source>Playback Speed: %1x</source>
+        <translation>Atkūrimo greitis: %1x</translation>
+    </message>
+    <message>
+        <source>Unmute Preview (M)</source>
+        <translation>Įjungti peržiūros garsą (M)</translation>
+    </message>
+    <message>
+        <source>Mute Preview (M)</source>
+        <translation>Nutildyti peržiūrą (M)</translation>
+    </message>
+    <message>
+        <source>Apply Crop (Enter)</source>
+        <translation>Taikyti apkarpymą (Enter)</translation>
+    </message>
+    <message>
+        <source>Edit Crop</source>
+        <translation>Redaguoti apkarpymą</translation>
+    </message>
+    <message>
+        <source>Crop Recording</source>
+        <translation>Apkarpyti įrašo vaizdą</translation>
+    </message>
+    <message>
+        <source>Clear Trim Selection</source>
+        <translation>Išvalyti apkarpymo pasirinkimą</translation>
+    </message>
+    <message>
+        <source>Trim Recording</source>
+        <translation>Apkarpyti įrašą</translation>
+    </message>
+    <message>
+        <source>Discard Recording (Esc)</source>
+        <translation>Atmesti įrašą (Esc)</translation>
+    </message>
+    <message>
+        <source>Create Long Screenshot</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Save Recording (Enter / Ctrl+S)</source>
+        <translation>Išsaugoti įrašą (Enter / Ctrl+S)</translation>
+    </message>
+    <message>
+        <source>Adjust the crop or time range, then analyze again.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
         <source>Cancel</source>
         <translation>Atšaukti</translation>
     </message>
     <message>
-        <source>Long Screenshot</source>
-        <translation>Ilga ekrano kopija</translation>
+        <source>Analyze Again</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Generate Long Screenshot</source>
-        <translation>Sukurti ilgą ekrano kopiją</translation>
-    </message>
-    <message>
-        <source>Crop to the scrolling area, then generate a long screenshot.</source>
-        <translation>Apkirpkite slinkimo sritį, tada sukurkite ilgą ekrano kopiją.</translation>
-    </message>
-    <message>
-        <source>Remove Fixed Header</source>
-        <translation>Pašalinti fiksuotą antraštę</translation>
-    </message>
-    <message>
-        <source>Include Fixed Header</source>
-        <translation>Įtraukti fiksuotą antraštę</translation>
-    </message>
-    <message>
-        <source>Save PNG</source>
-        <translation>Išsaugoti PNG</translation>
-    </message>
-    <message>
-        <source>Back</source>
-        <translation>Atgal</translation>
-    </message>
-    <message>
-        <source>Copy</source>
-        <translation>Kopijuoti</translation>
-    </message>
-    <message>
-        <source>Pin</source>
-        <translation>Prisegti</translation>
-    </message>
-    <message>
-        <source>Edit Image</source>
-        <translation>Redaguoti vaizdą</translation>
-    </message>
-    <message>
-        <source>Keep Selection</source>
-        <translation>Palikti pažymėtą sritį</translation>
-    </message>
-    <message>
-        <source>Delete Selection</source>
-        <translation>Pašalinti pažymėtą sritį</translation>
-    </message>
-    <message>
-        <source>Undo</source>
-        <translation>Atšaukti</translation>
-    </message>
-    <message>
-        <source>Redo</source>
-        <translation>Grąžinti</translation>
-    </message>
-    <message>
-        <source>Reset Image</source>
-        <translation>Atkurti vaizdą</translation>
-    </message>
-    <message>
-        <source>Annotate in Pin</source>
-        <translation>Žymėti prisegtame lange</translation>
-    </message>
-    <message>
-        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
-        <translation>Vilkite, kad pažymėtumėte šios dalies eilutes. Generuojant iš naujo vaizdo pakeitimai atkuriami.</translation>
-    </message>
-    <message>
-        <source>View Result</source>
-        <translation>Rodyti rezultatą</translation>
+        <source>Dismiss Error</source>
+        <translation>Uždaryti klaidą</translation>
     </message>
 </context>
 <context>
@@ -3408,44 +3328,20 @@ Failo dydis: %3</translation>
         <translation>Nepavyko dekoduoti įrašo. Pradinis failas išsaugotas.</translation>
     </message>
     <message>
-        <source>Auto-cropped columns: left %1, right %2.</source>
-        <translation>Automatiškai apkirpti stulpeliai: kairėje %1, dešinėje %2.</translation>
+        <source>Finding content to stitch…</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Review the marked areas: the result may be incomplete.</source>
-        <translation>Patikrinkite pažymėtas sritis: rezultatas gali būti nepilnas.</translation>
-    </message>
-    <message>
-        <source>Analyzing...</source>
-        <translation>Analizuojama…</translation>
-    </message>
-    <message>
-        <source>Solving positions...</source>
-        <translation>Skaičiuojamos pozicijos…</translation>
-    </message>
-    <message>
-        <source>Rendering...</source>
-        <translation>Atvaizduojama…</translation>
+        <source>Generating long screenshot…</source>
+        <translation type="unfinished" />
     </message>
     <message>
         <source>Could not create the result preview.</source>
         <translation>Nepavyko sukurti rezultato peržiūros.</translation>
     </message>
     <message>
-        <source>Missing coverage</source>
-        <translation>Trūkstamas turinys</translation>
-    </message>
-    <message>
-        <source>Low confidence</source>
-        <translation>Mažas patikimumas</translation>
-    </message>
-    <message>
-        <source>Unjoined recording section</source>
-        <translation>Nesujungta įrašo dalis</translation>
-    </message>
-    <message>
-        <source>Copied part %1.</source>
-        <translation>Nukopijuota dalis %1.</translation>
+        <source>Image copied.</source>
+        <translation type="unfinished" />
     </message>
     <message>
         <source>Save Long Screenshot</source>
@@ -3456,16 +3352,215 @@ Failo dydis: %3</translation>
         <translation>PNG vaizdas (*.png)</translation>
     </message>
     <message>
-        <source>Part %1: %2</source>
-        <translation>Dalis %1: %2</translation>
+        <source>Image %1: %2</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Saved %1 of %2 parts.</source>
-        <translation>Išsaugota %1 iš %2 dalių.</translation>
+        <source>Saved %1 of %2 images.</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Section %1 of %2 · Part %3 of %4</source>
-        <translation>Skyrius %1 iš %2 · Dalis %3 iš %4</translation>
+        <source>Copy failed. Please try again.</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
+    <name>LongshotWorkspace</name>
+    <message>
+        <source>Choose Content</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recording Preview</source>
+        <translation>Įrašo peržiūra</translation>
+    </message>
+    <message>
+        <source>Long Screenshot Ready</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Create Long Screenshot</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>We will recommend a suitable range when analysis is complete.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Creating only your selected content.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Atšaukti</translation>
+    </message>
+    <message>
+        <source>This recording cannot produce a long screenshot yet</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Content found; some seams need a look</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>We recommend this content</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This content can become a long screenshot</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>There is not enough scrolling content. Choose a range that includes scrolling.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This recording is too long to analyze. Select a shorter range and try again.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No continuous content was found. Crop to one content area, or record again while scrolling slowly.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Some content could not be joined. This selection produces a separate long screenshot and does not include the entire recording.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Review the selected source range, then generate your screenshot.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recommended range</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Selected range</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Source preview · Start</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Source preview · End</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This content is long and will be saved as %1 images.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Produces 1 image</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Some seams will be marked for review in the preview.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The largest continuous range with reliable content.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>A continuous range of content.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Hide other ranges</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Other available ranges (%1)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Adjust Analysis Range</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recommended</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Seams need review</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Continuous content</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Selected source range: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Includes only part of the recording</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 areas have seams worth checking.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Review</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Done</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>More…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pin Current Image</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Prisegti</translation>
+    </message>
+    <message>
+        <source>Annotate Current Image in Pin</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>Žymėti prisegtame lange</translation>
+    </message>
+    <message>
+        <source>Image %1 / %2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Copy Current Image</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopijuoti</translation>
+    </message>
+    <message>
+        <source>Retry</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Generate Long Screenshot</source>
+        <translation>Sukurti ilgą ekrano kopiją</translation>
+    </message>
+    <message>
+        <source>Retry Analysis</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Save %1 PNG Images</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Save PNG</source>
+        <translation>Išsaugoti PNG</translation>
     </message>
 </context>
 </TS>

@@ -1741,176 +1741,96 @@ Size: %2</source>
 <context>
     <name>RecordingPreview</name>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Pause Preview (Space)</source>
-        <translation>暂停预览 (Space)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Play Preview (Space)</source>
-        <translation>播放预览 (Space)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="376" />
-        <source>Playback Speed: %1x</source>
-        <translation>播放速度：%1x</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="390" />
-        <source>Export as MP4</source>
-        <translation>导出为 MP4</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="398" />
-        <source>Export as GIF</source>
-        <translation>导出为 GIF</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="406" />
-        <source>Export as WebP</source>
-        <translation>导出为 WebP</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
-        <source>Audio playback is unavailable in this preview.</source>
-        <translation>此预览不支持音频播放。</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
-        <source>Unmute Preview (M)</source>
-        <translation>取消静音预览 (M)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
-        <source>Mute Preview (M)</source>
-        <translation>静音预览 (M)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
-        <source>Clear Trim Selection</source>
-        <translation>清除裁剪选区</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
-        <source>Trim Recording</source>
-        <translation>裁剪录制内容</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="438" />
-        <source>Discard Recording (Esc)</source>
-        <translation>丢弃录制内容 (Esc)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="445" />
-        <source>Save Recording (Enter / Ctrl+S)</source>
-        <translation>保存录制内容 (Enter / Ctrl+S)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="529" />
-        <source>Dismiss Error</source>
-        <translation>关闭错误提示</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="552" />
-        <source>Crop Recording</source>
-        <translation>裁剪画面区域</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="552" />
-        <source>Edit Crop</source>
-        <translation>编辑裁剪区域</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="551" />
-        <source>Apply Crop (Enter)</source>
-        <translation>应用裁剪区域 (Enter)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="239" />
         <source>Clear Crop</source>
         <translation>清除裁剪区域</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="285" />
         <source>Click a window to crop to it, or drag to draw</source>
         <translation>点击窗口即可裁切到该窗口，或拖曳自行绘制</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="681" />
+        <source>Audio playback is unavailable in this preview.</source>
+        <translation>此预览不支持音频播放。</translation>
+    </message>
+    <message>
+        <source>Export as MP4</source>
+        <translation>导出为 MP4</translation>
+    </message>
+    <message>
+        <source>Export as GIF</source>
+        <translation>导出为 GIF</translation>
+    </message>
+    <message>
+        <source>Export as WebP</source>
+        <translation>导出为 WebP</translation>
+    </message>
+    <message>
+        <source>Pause Preview (Space)</source>
+        <translation>暂停预览 (Space)</translation>
+    </message>
+    <message>
+        <source>Play Preview (Space)</source>
+        <translation>播放预览 (Space)</translation>
+    </message>
+    <message>
+        <source>Playback Speed: %1x</source>
+        <translation>播放速度：%1x</translation>
+    </message>
+    <message>
+        <source>Unmute Preview (M)</source>
+        <translation>取消静音预览 (M)</translation>
+    </message>
+    <message>
+        <source>Mute Preview (M)</source>
+        <translation>静音预览 (M)</translation>
+    </message>
+    <message>
+        <source>Apply Crop (Enter)</source>
+        <translation>应用裁剪区域 (Enter)</translation>
+    </message>
+    <message>
+        <source>Edit Crop</source>
+        <translation>编辑裁剪区域</translation>
+    </message>
+    <message>
+        <source>Crop Recording</source>
+        <translation>裁剪画面区域</translation>
+    </message>
+    <message>
+        <source>Clear Trim Selection</source>
+        <translation>清除裁剪选区</translation>
+    </message>
+    <message>
+        <source>Trim Recording</source>
+        <translation>裁剪录制内容</translation>
+    </message>
+    <message>
+        <source>Discard Recording (Esc)</source>
+        <translation>丢弃录制内容 (Esc)</translation>
+    </message>
+    <message>
+        <source>Create Long Screenshot</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Save Recording (Enter / Ctrl+S)</source>
+        <translation>保存录制内容 (Enter / Ctrl+S)</translation>
+    </message>
+    <message>
+        <source>Adjust the crop or time range, then analyze again.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
         <source>Cancel</source>
         <translation>取消</translation>
     </message>
     <message>
-        <source>Long Screenshot</source>
-        <translation>长截图</translation>
+        <source>Analyze Again</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Generate Long Screenshot</source>
-        <translation>生成长截图</translation>
-    </message>
-    <message>
-        <source>Crop to the scrolling area, then generate a long screenshot.</source>
-        <translation>请裁剪至滚动区域，再生成长截图。</translation>
-    </message>
-    <message>
-        <source>Remove Fixed Header</source>
-        <translation>移除固定页眉</translation>
-    </message>
-    <message>
-        <source>Include Fixed Header</source>
-        <translation>保留固定页眉</translation>
-    </message>
-    <message>
-        <source>Save PNG</source>
-        <translation>保存 PNG</translation>
-    </message>
-    <message>
-        <source>Back</source>
-        <translation>返回</translation>
-    </message>
-    <message>
-        <source>Copy</source>
-        <translation>复制</translation>
-    </message>
-    <message>
-        <source>Pin</source>
-        <translation>固定</translation>
-    </message>
-    <message>
-        <source>Edit Image</source>
-        <translation>修整图片</translation>
-    </message>
-    <message>
-        <source>Keep Selection</source>
-        <translation>保留选区</translation>
-    </message>
-    <message>
-        <source>Delete Selection</source>
-        <translation>删除选区</translation>
-    </message>
-    <message>
-        <source>Undo</source>
-        <translation>撤销</translation>
-    </message>
-    <message>
-        <source>Redo</source>
-        <translation>重做</translation>
-    </message>
-    <message>
-        <source>Reset Image</source>
-        <translation>重置图片</translation>
-    </message>
-    <message>
-        <source>Annotate in Pin</source>
-        <translation>在固定窗口中标注</translation>
-    </message>
-    <message>
-        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
-        <translation>拖动选择此分图的横向范围。重新生成会重置图片编辑。</translation>
-    </message>
-    <message>
-        <source>View Result</source>
-        <translation>查看结果</translation>
+        <source>Dismiss Error</source>
+        <translation>关闭错误提示</translation>
     </message>
 </context>
 <context>
@@ -3405,44 +3325,20 @@ File size: %3</source>
         <translation>无法解码录像，原始文件已保留。</translation>
     </message>
     <message>
-        <source>Auto-cropped columns: left %1, right %2.</source>
-        <translation>自动裁去的列数：左 %1，右 %2。</translation>
+        <source>Finding content to stitch…</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Review the marked areas: the result may be incomplete.</source>
-        <translation>请检查标记区域，结果可能不完整。</translation>
-    </message>
-    <message>
-        <source>Analyzing...</source>
-        <translation>正在分析…</translation>
-    </message>
-    <message>
-        <source>Solving positions...</source>
-        <translation>正在求解位置…</translation>
-    </message>
-    <message>
-        <source>Rendering...</source>
-        <translation>正在渲染…</translation>
+        <source>Generating long screenshot…</source>
+        <translation type="unfinished" />
     </message>
     <message>
         <source>Could not create the result preview.</source>
         <translation>无法创建结果预览。</translation>
     </message>
     <message>
-        <source>Missing coverage</source>
-        <translation>内容缺口</translation>
-    </message>
-    <message>
-        <source>Low confidence</source>
-        <translation>置信度较低</translation>
-    </message>
-    <message>
-        <source>Unjoined recording section</source>
-        <translation>未拼接的录影片段</translation>
-    </message>
-    <message>
-        <source>Copied part %1.</source>
-        <translation>已复制第 %1 张。</translation>
+        <source>Image copied.</source>
+        <translation type="unfinished" />
     </message>
     <message>
         <source>Save Long Screenshot</source>
@@ -3453,16 +3349,215 @@ File size: %3</source>
         <translation>PNG 图片 (*.png)</translation>
     </message>
     <message>
-        <source>Part %1: %2</source>
-        <translation>第 %1 张：%2</translation>
+        <source>Image %1: %2</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Saved %1 of %2 parts.</source>
-        <translation>已保存 %1 张，共 %2 张。</translation>
+        <source>Saved %1 of %2 images.</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Section %1 of %2 · Part %3 of %4</source>
-        <translation>区段 %1／%2 · 分图 %3／%4</translation>
+        <source>Copy failed. Please try again.</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
+    <name>LongshotWorkspace</name>
+    <message>
+        <source>Choose Content</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recording Preview</source>
+        <translation>录制预览</translation>
+    </message>
+    <message>
+        <source>Long Screenshot Ready</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Create Long Screenshot</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>We will recommend a suitable range when analysis is complete.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Creating only your selected content.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>取消</translation>
+    </message>
+    <message>
+        <source>This recording cannot produce a long screenshot yet</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Content found; some seams need a look</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>We recommend this content</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This content can become a long screenshot</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>There is not enough scrolling content. Choose a range that includes scrolling.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This recording is too long to analyze. Select a shorter range and try again.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No continuous content was found. Crop to one content area, or record again while scrolling slowly.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Some content could not be joined. This selection produces a separate long screenshot and does not include the entire recording.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Review the selected source range, then generate your screenshot.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recommended range</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Selected range</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Source preview · Start</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Source preview · End</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This content is long and will be saved as %1 images.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Produces 1 image</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Some seams will be marked for review in the preview.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The largest continuous range with reliable content.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>A continuous range of content.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Hide other ranges</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Other available ranges (%1)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Adjust Analysis Range</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recommended</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Seams need review</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Continuous content</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Selected source range: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Includes only part of the recording</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 areas have seams worth checking.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Review</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Done</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>More…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pin Current Image</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>固定</translation>
+    </message>
+    <message>
+        <source>Annotate Current Image in Pin</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>在固定窗口中标注</translation>
+    </message>
+    <message>
+        <source>Image %1 / %2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Copy Current Image</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>复制</translation>
+    </message>
+    <message>
+        <source>Retry</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Generate Long Screenshot</source>
+        <translation>生成长截图</translation>
+    </message>
+    <message>
+        <source>Retry Analysis</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Save %1 PNG Images</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Save PNG</source>
+        <translation>保存 PNG</translation>
     </message>
 </context>
 </TS>

@@ -8,6 +8,7 @@
 #include <QList>
 
 #include <vector>
+#include <memory>
 
 namespace SnapTray::Longshot {
 
@@ -59,11 +60,33 @@ struct TileAssignment {
     int frameIndex = -1;  // -1 = no reliable coverage
 };
 
+struct CandidateRenderPlan;
+struct LongshotCandidate {
+    QString id;
+    qint64 startMs = 0;
+    qint64 endMs = 0;
+    QSize size;
+    int imageCount = 0;
+    bool partial = false;
+    bool needsReview = false;
+    QImage startPreview;
+    QImage endPreview;
+    std::shared_ptr<const CandidateRenderPlan> plan;
+};
+
 // Pass 2. Decodes the range once more sequentially and paints each tile from
 // its chosen frame's valid pixels only.
 class LongshotRenderer
 {
 public:
+    // Analysis-only planning: no full-resolution output images are allocated.
+    static std::vector<LongshotCandidate> candidates(const AnalysisResult& analysis,
+                                                     const LongshotOptions& options,
+                                                     const ProgressFn& progress = {});
+    static RenderResult renderCandidate(LongshotFrameSource& source, const QString& path,
+                                        qint64 startMs, qint64 endMs, const QRect& crop,
+                                        const AnalysisResult& analysis, const LongshotCandidate& candidate,
+                                        const ProgressFn& progress);
     // Plan independent sections without joining their coordinate systems, then
     // share one sequential decode across all sections and height-split parts.
     static RenderResult renderSections(LongshotFrameSource& source, const QString& path, qint64 startMs, qint64 endMs,

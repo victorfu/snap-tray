@@ -1750,176 +1750,96 @@ Size: %2</source>
 <context>
     <name>RecordingPreview</name>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Pause Preview (Space)</source>
-        <translation>미리 보기 일시 중지 (스페이스)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Play Preview (Space)</source>
-        <translation>미리 보기 재생 (스페이스)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="376" />
-        <source>Playback Speed: %1x</source>
-        <translation>재생 속도: %1x</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="390" />
-        <source>Export as MP4</source>
-        <translation>MP4로 내보내기</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="398" />
-        <source>Export as GIF</source>
-        <translation>GIF로 내보내기</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="406" />
-        <source>Export as WebP</source>
-        <translation>WebP로 내보내기</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
-        <source>Audio playback is unavailable in this preview.</source>
-        <translation>이 미리보기에서는 오디오를 재생할 수 없습니다.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
-        <source>Unmute Preview (M)</source>
-        <translation>미리 보기 음소거 해제 (M)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
-        <source>Mute Preview (M)</source>
-        <translation>미리 보기 음소거 (M)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
-        <source>Clear Trim Selection</source>
-        <translation>자르기 선택 지우기</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
-        <source>Trim Recording</source>
-        <translation>녹화 자르기</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="438" />
-        <source>Discard Recording (Esc)</source>
-        <translation>녹화 삭제 (Esc)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="445" />
-        <source>Save Recording (Enter / Ctrl+S)</source>
-        <translation>녹화 저장 (Enter / Ctrl+S)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="529" />
-        <source>Dismiss Error</source>
-        <translation>오류 닫기</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="552" />
-        <source>Crop Recording</source>
-        <translation>녹화 영역 자르기</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="552" />
-        <source>Edit Crop</source>
-        <translation>자르기 영역 편집</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="551" />
-        <source>Apply Crop (Enter)</source>
-        <translation>자르기 적용 (Enter)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="239" />
         <source>Clear Crop</source>
         <translation>자르기 영역 지우기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="285" />
         <source>Click a window to crop to it, or drag to draw</source>
         <translation>창을 클릭하면 그 창에 맞춰 자르고, 드래그하면 직접 그릴 수 있습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="681" />
+        <source>Audio playback is unavailable in this preview.</source>
+        <translation>이 미리보기에서는 오디오를 재생할 수 없습니다.</translation>
+    </message>
+    <message>
+        <source>Export as MP4</source>
+        <translation>MP4로 내보내기</translation>
+    </message>
+    <message>
+        <source>Export as GIF</source>
+        <translation>GIF로 내보내기</translation>
+    </message>
+    <message>
+        <source>Export as WebP</source>
+        <translation>WebP로 내보내기</translation>
+    </message>
+    <message>
+        <source>Pause Preview (Space)</source>
+        <translation>미리 보기 일시 중지 (스페이스)</translation>
+    </message>
+    <message>
+        <source>Play Preview (Space)</source>
+        <translation>미리 보기 재생 (스페이스)</translation>
+    </message>
+    <message>
+        <source>Playback Speed: %1x</source>
+        <translation>재생 속도: %1x</translation>
+    </message>
+    <message>
+        <source>Unmute Preview (M)</source>
+        <translation>미리 보기 음소거 해제 (M)</translation>
+    </message>
+    <message>
+        <source>Mute Preview (M)</source>
+        <translation>미리 보기 음소거 (M)</translation>
+    </message>
+    <message>
+        <source>Apply Crop (Enter)</source>
+        <translation>자르기 적용 (Enter)</translation>
+    </message>
+    <message>
+        <source>Edit Crop</source>
+        <translation>자르기 영역 편집</translation>
+    </message>
+    <message>
+        <source>Crop Recording</source>
+        <translation>녹화 영역 자르기</translation>
+    </message>
+    <message>
+        <source>Clear Trim Selection</source>
+        <translation>자르기 선택 지우기</translation>
+    </message>
+    <message>
+        <source>Trim Recording</source>
+        <translation>녹화 자르기</translation>
+    </message>
+    <message>
+        <source>Discard Recording (Esc)</source>
+        <translation>녹화 삭제 (Esc)</translation>
+    </message>
+    <message>
+        <source>Create Long Screenshot</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Save Recording (Enter / Ctrl+S)</source>
+        <translation>녹화 저장 (Enter / Ctrl+S)</translation>
+    </message>
+    <message>
+        <source>Adjust the crop or time range, then analyze again.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
         <source>Cancel</source>
         <translation>취소</translation>
     </message>
     <message>
-        <source>Long Screenshot</source>
-        <translation>긴 스크린샷</translation>
+        <source>Analyze Again</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Generate Long Screenshot</source>
-        <translation>긴 스크린샷 생성</translation>
-    </message>
-    <message>
-        <source>Crop to the scrolling area, then generate a long screenshot.</source>
-        <translation>스크롤 영역으로 자른 후 긴 스크린샷을 생성하세요.</translation>
-    </message>
-    <message>
-        <source>Remove Fixed Header</source>
-        <translation>고정 헤더 제외</translation>
-    </message>
-    <message>
-        <source>Include Fixed Header</source>
-        <translation>고정 헤더 포함</translation>
-    </message>
-    <message>
-        <source>Save PNG</source>
-        <translation>PNG 저장</translation>
-    </message>
-    <message>
-        <source>Back</source>
-        <translation>뒤로</translation>
-    </message>
-    <message>
-        <source>Copy</source>
-        <translation>복사</translation>
-    </message>
-    <message>
-        <source>Pin</source>
-        <translation>고정</translation>
-    </message>
-    <message>
-        <source>Edit Image</source>
-        <translation>이미지 편집</translation>
-    </message>
-    <message>
-        <source>Keep Selection</source>
-        <translation>선택 영역 유지</translation>
-    </message>
-    <message>
-        <source>Delete Selection</source>
-        <translation>선택 영역 삭제</translation>
-    </message>
-    <message>
-        <source>Undo</source>
-        <translation>실행 취소</translation>
-    </message>
-    <message>
-        <source>Redo</source>
-        <translation>다시 실행</translation>
-    </message>
-    <message>
-        <source>Reset Image</source>
-        <translation>이미지 초기화</translation>
-    </message>
-    <message>
-        <source>Annotate in Pin</source>
-        <translation>고정 창에서 주석</translation>
-    </message>
-    <message>
-        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
-        <translation>드래그하여 이 이미지의 행을 선택하세요. 다시 생성하면 이미지 편집이 초기화됩니다.</translation>
-    </message>
-    <message>
-        <source>View Result</source>
-        <translation>결과 보기</translation>
+        <source>Dismiss Error</source>
+        <translation>오류 닫기</translation>
     </message>
 </context>
 <context>
@@ -3414,44 +3334,20 @@ File size: %3</source>
         <translation>녹화를 디코딩할 수 없습니다. 원본은 보존되었습니다.</translation>
     </message>
     <message>
-        <source>Auto-cropped columns: left %1, right %2.</source>
-        <translation>자동으로 잘린 열: 왼쪽 %1, 오른쪽 %2.</translation>
+        <source>Finding content to stitch…</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Review the marked areas: the result may be incomplete.</source>
-        <translation>표시된 영역을 확인하세요. 결과가 불완전할 수 있습니다.</translation>
-    </message>
-    <message>
-        <source>Analyzing...</source>
-        <translation>분석 중…</translation>
-    </message>
-    <message>
-        <source>Solving positions...</source>
-        <translation>위치 계산 중…</translation>
-    </message>
-    <message>
-        <source>Rendering...</source>
-        <translation>렌더링 중…</translation>
+        <source>Generating long screenshot…</source>
+        <translation type="unfinished" />
     </message>
     <message>
         <source>Could not create the result preview.</source>
         <translation>결과 미리보기를 만들 수 없습니다.</translation>
     </message>
     <message>
-        <source>Missing coverage</source>
-        <translation>내용 누락</translation>
-    </message>
-    <message>
-        <source>Low confidence</source>
-        <translation>낮은 신뢰도</translation>
-    </message>
-    <message>
-        <source>Unjoined recording section</source>
-        <translation>연결되지 않은 녹화 구간</translation>
-    </message>
-    <message>
-        <source>Copied part %1.</source>
-        <translation>%1번째 이미지를 복사했습니다.</translation>
+        <source>Image copied.</source>
+        <translation type="unfinished" />
     </message>
     <message>
         <source>Save Long Screenshot</source>
@@ -3462,16 +3358,215 @@ File size: %3</source>
         <translation>PNG 이미지 (*.png)</translation>
     </message>
     <message>
-        <source>Part %1: %2</source>
-        <translation>%1번째 이미지: %2</translation>
+        <source>Image %1: %2</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Saved %1 of %2 parts.</source>
-        <translation>%2개 중 %1개를 저장했습니다.</translation>
+        <source>Saved %1 of %2 images.</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Section %1 of %2 · Part %3 of %4</source>
-        <translation>구간 %1/%2 · 이미지 %3/%4</translation>
+        <source>Copy failed. Please try again.</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
+    <name>LongshotWorkspace</name>
+    <message>
+        <source>Choose Content</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recording Preview</source>
+        <translation>녹화 미리 보기</translation>
+    </message>
+    <message>
+        <source>Long Screenshot Ready</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Create Long Screenshot</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>We will recommend a suitable range when analysis is complete.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Creating only your selected content.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>취소</translation>
+    </message>
+    <message>
+        <source>This recording cannot produce a long screenshot yet</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Content found; some seams need a look</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>We recommend this content</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This content can become a long screenshot</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>There is not enough scrolling content. Choose a range that includes scrolling.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This recording is too long to analyze. Select a shorter range and try again.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No continuous content was found. Crop to one content area, or record again while scrolling slowly.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Some content could not be joined. This selection produces a separate long screenshot and does not include the entire recording.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Review the selected source range, then generate your screenshot.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recommended range</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Selected range</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Source preview · Start</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Source preview · End</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This content is long and will be saved as %1 images.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Produces 1 image</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Some seams will be marked for review in the preview.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The largest continuous range with reliable content.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>A continuous range of content.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Hide other ranges</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Other available ranges (%1)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Adjust Analysis Range</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recommended</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Seams need review</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Continuous content</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Selected source range: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Includes only part of the recording</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 areas have seams worth checking.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Review</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Done</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>More…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pin Current Image</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>고정</translation>
+    </message>
+    <message>
+        <source>Annotate Current Image in Pin</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>고정 창에서 주석</translation>
+    </message>
+    <message>
+        <source>Image %1 / %2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Copy Current Image</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>복사</translation>
+    </message>
+    <message>
+        <source>Retry</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Generate Long Screenshot</source>
+        <translation>긴 스크린샷 생성</translation>
+    </message>
+    <message>
+        <source>Retry Analysis</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Save %1 PNG Images</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Save PNG</source>
+        <translation>PNG 저장</translation>
     </message>
 </context>
 </TS>

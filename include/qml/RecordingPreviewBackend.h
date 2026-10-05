@@ -79,8 +79,7 @@ public:
     enum OutputFormat {
         MP4  = 0,
         GIF  = 1,
-        WebP = 2,
-        LongScreenshot = 3
+        WebP = 2
     };
     Q_ENUM(OutputFormat)
 
@@ -129,6 +128,10 @@ public:
 
     // QML actions
     Q_INVOKABLE void save();
+    Q_INVOKABLE void startLongshot();
+    Q_INVOKABLE void beginLongshotAdjustment();
+    Q_INVOKABLE void cancelLongshotAdjustment();
+    Q_INVOKABLE void applyLongshotAdjustment();
     // Stops a running MP4 export; the source is kept and no error is shown.
     Q_INVOKABLE void cancelExport();
     Q_INVOKABLE void discard();
@@ -202,6 +205,9 @@ private:
 
     LongshotController* m_longshot = nullptr;
     bool m_longshotClosePending = false;
+    bool m_longshotAdjusting = false;
+    qint64 m_longshotOriginalStart = 0, m_longshotOriginalEnd = -1;
+    QRect m_longshotOriginalCrop;
 
     // View
     QQuickView *m_view = nullptr;

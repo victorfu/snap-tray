@@ -1750,176 +1750,96 @@ Size: %2</source>
 <context>
     <name>RecordingPreview</name>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Pause Preview (Space)</source>
-        <translation>Приостановить предпросмотр (Space)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Play Preview (Space)</source>
-        <translation>Воспроизвести предпросмотр (Space)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="376" />
-        <source>Playback Speed: %1x</source>
-        <translation>Скорость воспроизведения: %1x</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="390" />
-        <source>Export as MP4</source>
-        <translation>Экспортировать как MP4</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="398" />
-        <source>Export as GIF</source>
-        <translation>Экспортировать как GIF</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="406" />
-        <source>Export as WebP</source>
-        <translation>Экспортировать как WebP</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
-        <source>Audio playback is unavailable in this preview.</source>
-        <translation>В этом окне предварительного просмотра воспроизведение звука недоступно.</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
-        <source>Unmute Preview (M)</source>
-        <translation>Включить звук предпросмотра (M)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
-        <source>Mute Preview (M)</source>
-        <translation>Выключить звук предпросмотра (M)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
-        <source>Clear Trim Selection</source>
-        <translation>Очистить выделение обрезки</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
-        <source>Trim Recording</source>
-        <translation>Обрезать запись</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="438" />
-        <source>Discard Recording (Esc)</source>
-        <translation>Отбросить запись (Esc)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="445" />
-        <source>Save Recording (Enter / Ctrl+S)</source>
-        <translation>Сохранить запись (Enter / Ctrl+S)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="529" />
-        <source>Dismiss Error</source>
-        <translation>Закрыть ошибку</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="552" />
-        <source>Crop Recording</source>
-        <translation>Кадрировать запись</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="552" />
-        <source>Edit Crop</source>
-        <translation>Изменить кадрирование</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="551" />
-        <source>Apply Crop (Enter)</source>
-        <translation>Применить кадрирование (Enter)</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="239" />
         <source>Clear Crop</source>
         <translation>Сбросить кадрирование</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="285" />
         <source>Click a window to crop to it, or drag to draw</source>
         <translation>Щёлкните окно, чтобы обрезать по нему, или перетащите, чтобы нарисовать область</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="681" />
+        <source>Audio playback is unavailable in this preview.</source>
+        <translation>В этом окне предварительного просмотра воспроизведение звука недоступно.</translation>
+    </message>
+    <message>
+        <source>Export as MP4</source>
+        <translation>Экспортировать как MP4</translation>
+    </message>
+    <message>
+        <source>Export as GIF</source>
+        <translation>Экспортировать как GIF</translation>
+    </message>
+    <message>
+        <source>Export as WebP</source>
+        <translation>Экспортировать как WebP</translation>
+    </message>
+    <message>
+        <source>Pause Preview (Space)</source>
+        <translation>Приостановить предпросмотр (Space)</translation>
+    </message>
+    <message>
+        <source>Play Preview (Space)</source>
+        <translation>Воспроизвести предпросмотр (Space)</translation>
+    </message>
+    <message>
+        <source>Playback Speed: %1x</source>
+        <translation>Скорость воспроизведения: %1x</translation>
+    </message>
+    <message>
+        <source>Unmute Preview (M)</source>
+        <translation>Включить звук предпросмотра (M)</translation>
+    </message>
+    <message>
+        <source>Mute Preview (M)</source>
+        <translation>Выключить звук предпросмотра (M)</translation>
+    </message>
+    <message>
+        <source>Apply Crop (Enter)</source>
+        <translation>Применить кадрирование (Enter)</translation>
+    </message>
+    <message>
+        <source>Edit Crop</source>
+        <translation>Изменить кадрирование</translation>
+    </message>
+    <message>
+        <source>Crop Recording</source>
+        <translation>Кадрировать запись</translation>
+    </message>
+    <message>
+        <source>Clear Trim Selection</source>
+        <translation>Очистить выделение обрезки</translation>
+    </message>
+    <message>
+        <source>Trim Recording</source>
+        <translation>Обрезать запись</translation>
+    </message>
+    <message>
+        <source>Discard Recording (Esc)</source>
+        <translation>Отбросить запись (Esc)</translation>
+    </message>
+    <message>
+        <source>Create Long Screenshot</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Save Recording (Enter / Ctrl+S)</source>
+        <translation>Сохранить запись (Enter / Ctrl+S)</translation>
+    </message>
+    <message>
+        <source>Adjust the crop or time range, then analyze again.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
         <source>Cancel</source>
         <translation>Отмена</translation>
     </message>
     <message>
-        <source>Long Screenshot</source>
-        <translation>Длинный снимок</translation>
+        <source>Analyze Again</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Generate Long Screenshot</source>
-        <translation>Создать длинный снимок</translation>
-    </message>
-    <message>
-        <source>Crop to the scrolling area, then generate a long screenshot.</source>
-        <translation>Обрежьте до области прокрутки, затем создайте длинный снимок.</translation>
-    </message>
-    <message>
-        <source>Remove Fixed Header</source>
-        <translation>Убрать закреплённый заголовок</translation>
-    </message>
-    <message>
-        <source>Include Fixed Header</source>
-        <translation>Включить закреплённый заголовок</translation>
-    </message>
-    <message>
-        <source>Save PNG</source>
-        <translation>Сохранить PNG</translation>
-    </message>
-    <message>
-        <source>Back</source>
-        <translation>Назад</translation>
-    </message>
-    <message>
-        <source>Copy</source>
-        <translation>Копировать</translation>
-    </message>
-    <message>
-        <source>Pin</source>
-        <translation>Закрепить</translation>
-    </message>
-    <message>
-        <source>Edit Image</source>
-        <translation>Изменить изображение</translation>
-    </message>
-    <message>
-        <source>Keep Selection</source>
-        <translation>Оставить выделение</translation>
-    </message>
-    <message>
-        <source>Delete Selection</source>
-        <translation>Удалить выделение</translation>
-    </message>
-    <message>
-        <source>Undo</source>
-        <translation>Отменить</translation>
-    </message>
-    <message>
-        <source>Redo</source>
-        <translation>Повторить</translation>
-    </message>
-    <message>
-        <source>Reset Image</source>
-        <translation>Сбросить изображение</translation>
-    </message>
-    <message>
-        <source>Annotate in Pin</source>
-        <translation>Аннотации в закреплённом окне</translation>
-    </message>
-    <message>
-        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
-        <translation>Перетащите, чтобы выделить строки в этой части. Повторное создание сбрасывает изменения изображения.</translation>
-    </message>
-    <message>
-        <source>View Result</source>
-        <translation>Показать результат</translation>
+        <source>Dismiss Error</source>
+        <translation>Закрыть ошибку</translation>
     </message>
 </context>
 <context>
@@ -3414,44 +3334,20 @@ File size: %3</source>
         <translation>Не удалось декодировать запись. Исходный файл сохранён.</translation>
     </message>
     <message>
-        <source>Auto-cropped columns: left %1, right %2.</source>
-        <translation>Автоматически обрезано столбцов: слева %1, справа %2.</translation>
+        <source>Finding content to stitch…</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Review the marked areas: the result may be incomplete.</source>
-        <translation>Проверьте отмеченные области: результат может быть неполным.</translation>
-    </message>
-    <message>
-        <source>Analyzing...</source>
-        <translation>Анализ…</translation>
-    </message>
-    <message>
-        <source>Solving positions...</source>
-        <translation>Вычисление позиций…</translation>
-    </message>
-    <message>
-        <source>Rendering...</source>
-        <translation>Отрисовка…</translation>
+        <source>Generating long screenshot…</source>
+        <translation type="unfinished" />
     </message>
     <message>
         <source>Could not create the result preview.</source>
         <translation>Не удалось создать предпросмотр результата.</translation>
     </message>
     <message>
-        <source>Missing coverage</source>
-        <translation>Отсутствующее содержимое</translation>
-    </message>
-    <message>
-        <source>Low confidence</source>
-        <translation>Низкая достоверность</translation>
-    </message>
-    <message>
-        <source>Unjoined recording section</source>
-        <translation>Несоединённый фрагмент записи</translation>
-    </message>
-    <message>
-        <source>Copied part %1.</source>
-        <translation>Часть %1 скопирована.</translation>
+        <source>Image copied.</source>
+        <translation type="unfinished" />
     </message>
     <message>
         <source>Save Long Screenshot</source>
@@ -3462,16 +3358,215 @@ File size: %3</source>
         <translation>Изображение PNG (*.png)</translation>
     </message>
     <message>
-        <source>Part %1: %2</source>
-        <translation>Часть %1: %2</translation>
+        <source>Image %1: %2</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Saved %1 of %2 parts.</source>
-        <translation>Сохранено частей: %1 из %2.</translation>
+        <source>Saved %1 of %2 images.</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Section %1 of %2 · Part %3 of %4</source>
-        <translation>Раздел %1 из %2 · Часть %3 из %4</translation>
+        <source>Copy failed. Please try again.</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
+    <name>LongshotWorkspace</name>
+    <message>
+        <source>Choose Content</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recording Preview</source>
+        <translation>Предпросмотр записи</translation>
+    </message>
+    <message>
+        <source>Long Screenshot Ready</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Create Long Screenshot</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>We will recommend a suitable range when analysis is complete.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Creating only your selected content.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
+    <message>
+        <source>This recording cannot produce a long screenshot yet</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Content found; some seams need a look</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>We recommend this content</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This content can become a long screenshot</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>There is not enough scrolling content. Choose a range that includes scrolling.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This recording is too long to analyze. Select a shorter range and try again.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No continuous content was found. Crop to one content area, or record again while scrolling slowly.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Some content could not be joined. This selection produces a separate long screenshot and does not include the entire recording.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Review the selected source range, then generate your screenshot.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recommended range</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Selected range</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Source preview · Start</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Source preview · End</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This content is long and will be saved as %1 images.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Produces 1 image</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Some seams will be marked for review in the preview.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The largest continuous range with reliable content.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>A continuous range of content.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Hide other ranges</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Other available ranges (%1)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Adjust Analysis Range</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recommended</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Seams need review</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Continuous content</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Selected source range: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Includes only part of the recording</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 areas have seams worth checking.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Review</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Done</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>More…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pin Current Image</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Закрепить</translation>
+    </message>
+    <message>
+        <source>Annotate Current Image in Pin</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>Аннотации в закреплённом окне</translation>
+    </message>
+    <message>
+        <source>Image %1 / %2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Copy Current Image</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Копировать</translation>
+    </message>
+    <message>
+        <source>Retry</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Generate Long Screenshot</source>
+        <translation>Создать длинный снимок</translation>
+    </message>
+    <message>
+        <source>Retry Analysis</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Save %1 PNG Images</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Save PNG</source>
+        <translation>Сохранить PNG</translation>
     </message>
 </context>
 </TS>
