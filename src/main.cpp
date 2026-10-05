@@ -1,3 +1,4 @@
+#include <QLocalSocket>
 #include "MainApplication.h"
 #include "AutoLaunchManager.h"
 #include "SingleInstanceGuard.h"
@@ -199,6 +200,21 @@ int main(int argc, char* argv[])
         &MainApplication::handleCLICommand);
 
     mainApp.initialize();
+#ifdef Q_OS_LINUX
+    // Confirm only after single-instance ownership and tray initialization.
+    const auto updateAck = qEnvironmentVariable("SNAPTRAY_UPDATE_ACK");
+    const auto updateToken = qgetenv("SNAPTRAY_UPDATE_TOKEN");
+    qunsetenv("SNAPTRAY_UPDATE_ACK");
+    qunsetenv("SNAPTRAY_UPDATE_TOKEN");
+    if (updateAck.startsWith("snaptray-update-") && !updateToken.isEmpty()) {
+        QLocalSocket socket;
+        socket.connectToServer(updateAck);
+        if (socket.waitForConnected(1000)) {
+            socket.write(updateToken);
+            socket.waitForBytesWritten(1000);
+        }
+    }
+#endif
 
     return app.exec();
 }

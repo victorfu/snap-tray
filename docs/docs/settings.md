@@ -65,3 +65,18 @@ App name, version, copyright, author, and website link.
 ## Next step
 
 Use [Troubleshooting](/docs/troubleshooting/) if any permission or output issue appears.
+
+
+### Linux AppImage updates
+
+Signed Linux AppImage builds can check for updates from the tray menu or the
+Updates settings page. Review the version and release notes, choose **Download
+Update**, then **Restart and Update** when ready. **Later** keeps the verified
+download for a future session. Automatic checks follow your configured interval;
+download and installation require confirmation.
+
+Keep the AppImage in a writable directory with space for the download and a
+backup. If an update fails, the existing version is preserved or restored; use
+**Discard Download** to clear a failed pending download and check again. You can
+also download a release manually. Older unsigned AppImages need one manual
+upgrade to a signed build before in-app updates are available.

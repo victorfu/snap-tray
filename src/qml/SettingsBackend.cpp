@@ -243,6 +243,9 @@ void SettingsBackend::checkWindowsPrintScreenSnippingConflict()
 SettingsBackend::SettingsBackend(QObject* parent)
     : QObject(parent)
 {
+    connect(&UpdateCoordinator::instance(), &UpdateCoordinator::updateStateChanged,
+            this, &SettingsBackend::isCheckingForUpdatesChanged);
+
     connect(&UpdateCoordinator::instance(), &UpdateCoordinator::lastCheckTimeChanged,
             this, &SettingsBackend::lastCheckedTextChanged);
     loadAllSettings();
@@ -894,7 +897,7 @@ QString SettingsBackend::lastCheckedText() const
     return QLocale().toString(lastCheck, QLocale::ShortFormat);
 }
 
-bool SettingsBackend::isCheckingForUpdates() const { return m_isCheckingForUpdates; }
+bool SettingsBackend::isCheckingForUpdates() const { return m_isCheckingForUpdates || UpdateCoordinator::instance().isBusy(); }
 
 bool SettingsBackend::updatesExternallyManaged() const
 {

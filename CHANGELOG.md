@@ -6,6 +6,11 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+### Added
+
+- Added Linux AppImage update checks, confirmed downloads, and restart-to-install with signature verification and recovery to the previous version.
+- Added AppImageUpdate-compatible update metadata and zsync files to Linux releases.
+
 ## [1.0.67] - 2026-09-30
 
 ### Fixed
