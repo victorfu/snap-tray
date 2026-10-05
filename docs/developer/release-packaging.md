@@ -41,6 +41,35 @@ Typical outputs:
 - `dist\SnapTray-<version>-Setup.exe`
 - `dist\SnapTray-<version>.msix`
 
+### Linux-only CI builds and releases
+
+In GitHub Actions, choose **Release → Run workflow**, select the source branch,
+and set `platform` to `linux`. The workflow uses the same signed AppImage build
+as a full release, including its matching `.zsync` file.
+
+- Disable `publish_release` to build only. Download the `linux-appimage` artifact
+  from the completed run. No GitHub Release or appcast is published.
+- Enable `publish_release` to publish a Linux-only **formal, latest** GitHub
+  Release. Its version must match `CMakeLists.txt` and have a corresponding
+  `CHANGELOG.md` entry. Use a new version/tag; do not replace an existing release.
+  The release targets the selected workflow commit.
+
+The optional `version` input validates the source version; it does not change
+`CMakeLists.txt`. Both modes require the AppImage signing secret and variable
+listed below. Linux-only mode skips macOS, Windows, appcasts, and the website
+release page deployment. Existing macOS/Windows appcast feeds remain unchanged,
+but the repository's latest GitHub Release becomes the Linux release.
+
+For an A → B update test, build signed A with publishing disabled, install it
+locally, then run again from the higher-version B commit with publishing enabled.
+Both commits must contain the AppImage updater and use the same signing key.
+Drafts and prereleases are not discovered by the updater. Build-only CI does not
+replace manual X11 download/restart/rollback validation.
+
+Use manual dispatch for Linux-only releases: pushing a `v*` tag still triggers
+the full, all-platform release workflow. The dispatch form becomes available
+with the new inputs after this workflow is present on the default branch.
+
 ### Linux
 
 ```bash
