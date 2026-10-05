@@ -5,6 +5,8 @@
 #include <QMouseEvent>
 
 #include "PinWindow.h"
+#include "PinWindowManager.h"
+#include "pinwindow/PinWindowPlacement.h"
 #include "platform/WindowDragPolicy.h"
 
 class TestPinWindowResize : public QObject
@@ -31,6 +33,34 @@ private:
     }
 
 private slots:
+    void testLongScreenshotFitsBeforeFirstShow() {
+        class ShowObserver : public QObject {
+        public:
+            QSize firstSize;
+            bool eventFilter(QObject* object, QEvent* event) override {
+                if (event->type() == QEvent::Show && firstSize.isEmpty()) {
+                    if (auto* pin = qobject_cast<PinWindow*>(object)) firstSize = pin->size();
+                }
+                return false;
+            }
+        } observer;
+        qApp->installEventFilter(&observer);
+        const QPixmap pixmap = createTestPixmap(800, 30000);
+        const QRect screen(0, 0, 1920, 1080);
+        const auto placement = computeInitialPinWindowPlacement(pixmap, screen);
+        QVERIFY(placement.zoomLevel < 0.1);
+        QVERIFY(screen.contains(QRect(placement.position, placement.displaySize)));
+
+        PinWindowManager manager;
+        auto* pin = manager.createPinWindow(pixmap, placement.position, true, placement.zoomLevel);
+        QCOMPARE(observer.firstSize, placement.displaySize);
+        QCOMPARE(pin->size(), placement.displaySize);
+        QVERIFY(pin->isVisible());
+        // Keep the original pixels available when the user zooms in again.
+        pin->setZoomLevel(placement.zoomLevel * 2);
+        QCOMPARE(pin->height(), qRound(30000 * placement.zoomLevel * 2));
+    }
+
     void initTestCase() {
         if (QGuiApplication::screens().isEmpty()) {
             QSKIP("No screens available for PinWindow tests in this environment.");

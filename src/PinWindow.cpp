@@ -692,7 +692,7 @@ void PinWindow::setZoomLevel(qreal zoom)
         return;
     }
 
-    m_zoomLevel = qBound(0.1, zoom, 5.0);
+    m_zoomLevel = qBound(minimumPinWindowZoom(transformedContentLogicalSize()), zoom, 5.0);
     if (m_currentZoomAction) {
         m_currentZoomAction->setText(QString("%1%").arg(qRound(m_zoomLevel * 100)));
     }
@@ -1060,7 +1060,7 @@ void PinWindow::updateSize(bool liveFrame)
 {
     invalidateAutoBlurRequest();
     const QSize transformedLogicalSize = transformedContentLogicalSize();
-    QSize newLogicalSize = transformedLogicalSize * m_zoomLevel;
+    QSize newLogicalSize = (transformedLogicalSize * m_zoomLevel).expandedTo(QSize(1, 1));
 
     Qt::TransformationMode mode = m_smoothing ? Qt::SmoothTransformation : Qt::FastTransformation;
     m_displayPixmap = buildDisplayPixmap(newLogicalSize, mode);
@@ -2974,7 +2974,7 @@ void PinWindow::wheelEvent(QWheelEvent* event)
     qreal newZoom = (event->angleDelta().y() > 0)
         ? m_zoomLevel + zoomStep
         : m_zoomLevel - zoomStep;
-    newZoom = qBound(0.1, newZoom, 5.0);
+    newZoom = qBound(minimumPinWindowZoom(transformedContentLogicalSize()), newZoom, 5.0);
 
     if (qFuzzyCompare(oldZoom, newZoom)) {
         event->accept();

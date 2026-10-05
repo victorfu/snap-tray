@@ -938,8 +938,11 @@ void MainApplication::showRecordingPreview(const QString& videoPath, int default
         if (!screen || image.isNull()) return;
         const QPixmap pixmap = QPixmap::fromImage(convertImageForDisplay(image));
         const auto placement = computeInitialPinWindowPlacement(pixmap, screen->availableGeometry());
-        auto* pin = m_pinWindowManager->createPinWindow(pixmap, placement.position);
-        if (pin && placement.zoomLevel < 1.0) pin->setZoomLevel(placement.zoomLevel);
+        auto* pin = m_pinWindowManager->createPinWindow(pixmap, placement.position, true, placement.zoomLevel);
+        if (pin) {
+            pin->raise();
+            pin->activateWindow();
+        }
         if (pin && annotate && !pin->isToolbarVisible()) pin->toggleToolbar();
     };
     connect(m_previewBackend->longshot(), &LongshotController::pinRequested, this,
