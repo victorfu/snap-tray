@@ -130,6 +130,8 @@ UpdatePlatform currentUpdatePlatform()
     return UpdatePlatform::MacOS;
 #elif defined(Q_OS_WIN)
     return UpdatePlatform::Windows;
+#elif defined(Q_OS_LINUX)
+    return UpdatePlatform::Linux;
 #else
     return UpdatePlatform::Other;
 #endif
@@ -183,7 +185,10 @@ UpdateServiceKind UpdateCoordinator::selectServiceKind(UpdatePlatform platform, 
     case InstallSource::MicrosoftStore:
     case InstallSource::MacAppStore:
     case InstallSource::Homebrew:
+        return UpdateServiceKind::ExternalManaged;
     case InstallSource::AppImage:
+        return platform == UpdatePlatform::Linux ? UpdateServiceKind::AppImageUpdate
+                                                  : UpdateServiceKind::ExternalManaged;
     case InstallSource::Development:
         return UpdateServiceKind::ExternalManaged;
     case InstallSource::DirectDownload:
@@ -385,4 +390,9 @@ void UpdateCoordinator::recordSuccessfulCheck()
 {
     UpdateSettingsManager::instance().setLastCheckTime(QDateTime::currentDateTime());
     emit lastCheckTimeChanged();
+}
+
+bool UpdateCoordinator::isBusy() const
+{
+    return m_service && m_service->isBusy();
 }

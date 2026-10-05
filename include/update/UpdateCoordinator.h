@@ -38,12 +38,14 @@ public:
     UpdateServiceKind serviceKind() const;
     QString updateChannelLabel() const;
     bool isExternallyManaged() const;
+    bool isBusy() const;
     QString managementMessage() const;
     QDateTime lastCheckTime() const;
     void recordSuccessfulCheck();
 
 signals:
     void lastCheckTimeChanged();
+    void updateStateChanged();
 
 private:
     UpdateCoordinator() = default;

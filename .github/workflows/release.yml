@@ -7,6 +7,19 @@ on:
         description: 'Version to release (e.g., 1.0.0). Leave empty to use CMakeLists.txt version.'
         required: false
         type: string
+      platform:
+        description: 'Platforms to build (linux skips macOS/Windows and appcast deployment).'
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - linux
+      publish_release:
+        description: 'Publish a GitHub Release. Disable to download signed build artifacts only.'
+        required: true
+        default: true
+        type: boolean
   push:
     tags:
       - 'v*'
@@ -34,17 +47,23 @@ jobs:
       - name: Determine version
         id: version
         env:
+          INPUT_VERSION: ${{ inputs.version }}
           APPCAST_BASE_URL_OVERRIDE: ${{ vars.SNAPTRAY_APPCAST_BASE_URL }}
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
             # Extract version from tag (remove 'v' prefix)
             VERSION="${GITHUB_REF_NAME#v}"
-          elif [ -n "${{ github.event.inputs.version }}" ]; then
-            VERSION="${{ github.event.inputs.version }}"
+          elif [ -n "$INPUT_VERSION" ]; then
+            VERSION="$INPUT_VERSION"
           else
             # Extract from CMakeLists.txt
             VERSION=$(grep "project(SnapTray VERSION" CMakeLists.txt | \
                       sed -E 's/.*VERSION ([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+          fi
+
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Release version must be X.Y.Z."
+            exit 1
           fi
 
           if [ -n "$APPCAST_BASE_URL_OVERRIDE" ]; then
@@ -81,6 +100,8 @@ jobs:
           echo "Releasing version: $VERSION"
 
       - name: Validate version consistency
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
           CMAKE_VERSION=$(grep "project(SnapTray VERSION" CMakeLists.txt | \
                           sed -E 's/.*VERSION ([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
@@ -88,8 +109,8 @@ jobs:
           if [ "${{ github.event_name }}" = "push" ]; then
             RELEASE_VERSION="${GITHUB_REF_NAME#v}"
             SOURCE_LABEL="tag"
-          elif [ -n "${{ github.event.inputs.version }}" ]; then
-            RELEASE_VERSION="${{ github.event.inputs.version }}"
+          elif [ -n "$INPUT_VERSION" ]; then
+            RELEASE_VERSION="$INPUT_VERSION"
             SOURCE_LABEL="workflow input"
           else
             RELEASE_VERSION="$CMAKE_VERSION"
@@ -104,7 +125,22 @@ jobs:
 
           echo "Version validated: $RELEASE_VERSION"
 
+      - name: Validate new Linux-only release
+        if: github.event_name == 'workflow_dispatch' && inputs.platform == 'linux' && inputs.publish_release
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          python3 scripts/extract_changelog_entry.py "$RELEASE_VERSION" --output "$RUNNER_TEMP/linux-release-notes.md"
+          # A Linux-only run must not replace or relabel an existing full release.
+          EXISTING_TAG=$(git ls-remote --tags origin "refs/tags/v$RELEASE_VERSION")
+          if [ -n "$EXISTING_TAG" ]; then
+            echo "::error::Tag v$RELEASE_VERSION already exists. Choose a new source version for a Linux-only release."
+            exit 1
+          fi
+
   build-macos:
+    if: github.event_name != 'workflow_dispatch' || inputs.platform != 'linux'
     needs: prepare
     runs-on: macos-latest
     #runs-on: [self-hosted, macOS, ARM64]
@@ -331,6 +367,7 @@ jobs:
           retention-days: 5
 
   build-windows:
+    if: github.event_name != 'workflow_dispatch' || inputs.platform != 'linux'
     needs: prepare
     runs-on: windows-latest
     env:
@@ -556,7 +593,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             build-essential cmake ninja-build ccache git curl patchelf file libfuse2 \
-            python3 xvfb xauth \
+            python3 xvfb xauth libgpgme-dev libgcrypt20-dev nlohmann-json3-dev libxpm-dev libssl-dev libcurl4-openssl-dev \
+            libfuse-dev libglib2.0-dev libarchive-dev liblzma-dev gnupg \
             libgl1-mesa-dev libxkbcommon-x11-0 libxcb-cursor0 \
             libxcb-keysyms1-dev libxcb-xinerama0-dev libxcb-render-util0-dev \
             libxcb-image0-dev libxcb-icccm4-dev libxcb-randr0-dev \
@@ -573,17 +611,51 @@ jobs:
           modules: 'qtimageformats'
           cache: true
 
+      - name: Prepare AppImage signing
+        env:
+          APPIMAGE_PRIVATE_KEY: ${{ secrets.APPIMAGE_PRIVATE_KEY }}
+          APPIMAGE_SIGN_KEY: ${{ vars.APPIMAGE_SIGN_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$APPIMAGE_PRIVATE_KEY" && test -n "$APPIMAGE_SIGN_KEY"
+          export GNUPGHOME="$RUNNER_TEMP/snaptray-appimage-gnupg"
+          mkdir -m 700 "$GNUPGHOME"
+          printf '%s' "$APPIMAGE_PRIVATE_KEY" | gpg --batch --import
+          echo "GNUPGHOME=$GNUPGHOME" >> "$GITHUB_ENV"
+          echo "SNAPTRAY_APPIMAGE_SIGN_KEY=$APPIMAGE_SIGN_KEY" >> "$GITHUB_ENV"
+          echo "SNAPTRAY_REQUIRE_APPIMAGE_SIGNATURE=1" >> "$GITHUB_ENV"
+
       - name: Build AppImage
         run: ./packaging/linux/package-appimage.sh
+
+      - name: Remove temporary AppImage signing material
+        if: always()
+        run: |
+          if [ -n "${GNUPGHOME:-}" ] && [ "$GNUPGHOME" = "$RUNNER_TEMP/snaptray-appimage-gnupg" ]; then
+            gpgconf --kill all || true
+            rm -rf "$GNUPGHOME"
+          fi
 
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
         with:
           name: linux-appimage
-          path: dist/SnapTray-${{ needs.prepare.outputs.version }}-x86_64.AppImage
+          if-no-files-found: error
+          path: |
+            dist/SnapTray-${{ needs.prepare.outputs.version }}-x86_64.AppImage
+            dist/SnapTray-${{ needs.prepare.outputs.version }}-x86_64.AppImage.zsync
           retention-days: 5
 
   release:
+    # Explicitly permit intentionally skipped platform jobs, but never failed builds.
+    if: >-
+      ${{ !cancelled() && needs.prepare.result == 'success' &&
+          needs.build-linux-appimage.result == 'success' &&
+          (github.event_name != 'workflow_dispatch' || inputs.publish_release) &&
+          ((github.event_name == 'workflow_dispatch' && inputs.platform == 'linux' &&
+            needs.build-macos.result == 'skipped' && needs.build-windows.result == 'skipped') ||
+           ((github.event_name != 'workflow_dispatch' || inputs.platform != 'linux') &&
+            needs.build-macos.result == 'success' && needs.build-windows.result == 'success')) }}
     needs: [prepare, build-macos, build-windows, build-linux-appimage]
     runs-on: ubuntu-latest
     permissions:
@@ -612,7 +684,24 @@ jobs:
       - name: Display downloaded files
         run: ls -R artifacts
 
+      - name: Create Linux-only GitHub Release
+        if: github.event_name == 'workflow_dispatch' && inputs.platform == 'linux'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.tag_name }}
+          target_commitish: ${{ github.sha }}
+          name: SnapTray ${{ needs.prepare.outputs.version }} (Linux)
+          draft: false
+          prerelease: false
+          make_latest: true
+          body_path: release-notes.md
+          fail_on_unmatched_files: true
+          files: |
+            artifacts/linux-appimage/*.AppImage
+            artifacts/linux-appimage/*.AppImage.zsync
+
       - name: Create GitHub Release
+        if: github.event_name != 'workflow_dispatch' || inputs.platform != 'linux'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.prepare.outputs.tag_name }}
@@ -624,8 +713,10 @@ jobs:
             artifacts/macos-dmg/*.dmg
             artifacts/windows-nsis/*.exe
             artifacts/linux-appimage/*.AppImage
+            artifacts/linux-appimage/*.AppImage.zsync
 
   deploy-appcasts:
+    if: github.event_name != 'workflow_dispatch' || inputs.platform != 'linux'
     needs: [prepare, release]
     runs-on: ubuntu-latest
     permissions:
