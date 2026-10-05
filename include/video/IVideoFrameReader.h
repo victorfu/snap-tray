@@ -20,13 +20,12 @@ public:
     virtual double frameRate() const = 0;
     virtual QString lastError() const = 0;
 
-    // Reader for the preview's GIF/WebP conversion: AVFoundation on macOS.
-    // Platforms without one (Windows, Linux) return nullptr and retain their
-    // existing player path.
+    // Reader for GIF/WebP conversion: AVFoundation on macOS, FFmpeg on Linux.
+    // Other platforms return nullptr and retain their existing player path.
     static std::unique_ptr<IVideoFrameReader> create();
 
     // Sequential offline decoder for analysis: AVFoundation on macOS, Media
-    // Foundation on Windows (RGB32, CPU decode), nullptr elsewhere. Not used by
+    // Foundation on Windows (RGB32, CPU decode), FFmpeg on Linux when enabled. Not used by
     // the preview's GIF/WebP conversion.
     static std::unique_ptr<IVideoFrameReader> createOffline();
 };

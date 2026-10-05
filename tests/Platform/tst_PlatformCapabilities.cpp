@@ -27,8 +27,14 @@ void tst_PlatformCapabilities::linuxX11BetaCapabilities()
 
     QVERIFY(caps.isRuntimeSupported);
     QVERIFY(caps.supportsGlobalHotkeys);
+#ifdef SNAPTRAY_ENABLE_LINUX_RECORDING
+    QVERIFY(caps.supportsRecording);
+    QVERIFY(!caps.recordingDirectMp4Only);
+    QVERIFY(caps.recordingControlsInTray);
+#else
     QVERIFY(!caps.supportsRecording);
     QVERIFY(!caps.recordingDirectMp4Only);
+#endif
     QVERIFY(!caps.supportsOCR);
     QVERIFY(caps.supportsWindowDetection);
     QVERIFY(!caps.supportsClickThrough);
@@ -163,8 +169,14 @@ void tst_PlatformCapabilities::linuxSessionBackendMatrix()
     QCOMPARE(caps.isRuntimeSupported, supported);
     QCOMPARE(caps.supportsGlobalHotkeys, supported);
     QCOMPARE(caps.supportsWindowDetection, supported);
+#ifdef SNAPTRAY_ENABLE_LINUX_RECORDING
+    QCOMPARE(caps.supportsRecording, supported);
+    QVERIFY(!caps.recordingDirectMp4Only);
+    QCOMPARE(caps.recordingControlsInTray, supported);
+#else
     QVERIFY(!caps.supportsRecording);
     QVERIFY(!caps.recordingDirectMp4Only);
+#endif
     QVERIFY(!caps.supportsOCR);
     QCOMPARE(caps.unsupportedRuntimeMessage.isEmpty(), supported);
 }

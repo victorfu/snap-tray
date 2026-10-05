@@ -81,6 +81,6 @@ public:
                                            const ProgressCallback& progress) = 0;
     virtual VideoFileProbe probe(const QString& filePath) = 0;
 
-    // nullptr on platforms without a native implementation (Linux beta).
+    // nullptr on platforms/builds without a recording backend.
     static std::unique_ptr<IVideoTranscoder> create();
 };

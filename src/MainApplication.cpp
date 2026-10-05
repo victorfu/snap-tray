@@ -343,6 +343,13 @@ void MainApplication::initialize()
                 &QAction::triggered,
                 this,
                 &MainApplication::onFullScreenRecording);
+        if (PlatformFeatures::instance().capabilities().recordingControlsInTray) {
+            m_pauseRecordingAction = m_trayMenu->addAction(QCoreApplication::translate("RecordingControlBar", "Pause Recording"));
+            m_pauseRecordingAction->setVisible(false);
+            connect(m_pauseRecordingAction, &QAction::triggered, this, [this] {
+                if (m_recordingManager) m_recordingManager->togglePause();
+            });
+        }
     }
 
     m_trayMenu->addSeparator();
@@ -1021,6 +1028,11 @@ void MainApplication::updateTrayMenuHotkeyText()
 
 void MainApplication::updateRecordingActionText()
 {
+    if (m_pauseRecordingAction) {
+        const auto state = m_recordingManager ? m_recordingManager->state() : RecordingManager::State::Idle;
+        m_pauseRecordingAction->setVisible(state == RecordingManager::State::Recording || state == RecordingManager::State::Paused);
+        m_pauseRecordingAction->setText(state == RecordingManager::State::Paused ? QCoreApplication::translate("RecordingControlBar", "Resume Recording") : QCoreApplication::translate("RecordingControlBar", "Pause Recording"));
+    }
     if (!m_fullScreenRecordingAction) {
         return;
     }

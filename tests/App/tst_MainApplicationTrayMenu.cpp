@@ -302,6 +302,22 @@ void tst_MainApplicationTrayMenu::initialize_hidesRecordingActionWhenUnsupported
         QVERIFY(application.m_trayMenu->actions().contains(application.m_fullScreenRecordingAction));
         QVERIFY(application.m_fullScreenRecordingAction->text().contains(MainApplication::tr("Record Screen")));
     }
+    if (SnapTray::currentPlatformCapabilities().recordingControlsInTray) {
+        QVERIFY(application.m_pauseRecordingAction);
+        QVERIFY(!application.m_pauseRecordingAction->isVisible());
+        application.m_recordingManager->m_elapsedTimer.start();
+        application.m_recordingManager->m_state = RecordingManager::State::Recording;
+        application.updateRecordingActionText();
+        QVERIFY(application.m_pauseRecordingAction->isVisible());
+        QCOMPARE(application.m_pauseRecordingAction->text(), QCoreApplication::translate("RecordingControlBar", "Pause Recording"));
+        application.m_pauseRecordingAction->trigger();
+        QCOMPARE(application.m_recordingManager->state(), RecordingManager::State::Paused);
+        QCOMPARE(application.m_pauseRecordingAction->text(), QCoreApplication::translate("RecordingControlBar", "Resume Recording"));
+        application.m_recordingManager->m_state = RecordingManager::State::Idle;
+        application.updateRecordingActionText();
+        QVERIFY(!application.m_pauseRecordingAction->isVisible());
+    }
+
 }
 
 void tst_MainApplicationTrayMenu::onCheckForUpdates_usesSharedSettingsWindowFlowWithoutShowingSettings()

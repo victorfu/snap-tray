@@ -1,5 +1,5 @@
 #include "IVideoEncoder.h"
-#include "encoding/FFmpegEncoder.h"
+#include "capture/ICaptureEngine.h"
 #include "encoding/EncodingWorker.h"
 #include "platform/PlatformCapabilities.h"
 
@@ -64,10 +64,13 @@ public:
     ~RecordingPrototype() override { cleanup(); }
 
 private:
+    std::unique_ptr<ICaptureEngine> m_capture;
+
     void cleanup()
     {
         ++m_generation;
         m_timer.stop();
+        m_capture.reset();
         if (m_worker) {
             disconnect(m_worker, nullptr, this, nullptr);
             m_worker->stop();
@@ -110,14 +113,19 @@ private:
         }
         // Get physical dimensions from an actual full-screen frame (HiDPI).
         const QImage first = m_screen ? m_screen->grabWindow(0).toImage() : QImage();
-        std::unique_ptr<IVideoEncoder> encoder = std::make_unique<FFmpegEncoder>();
-        if (!encoder->isAvailable()) {
+        std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
+        if (!encoder) {
             failed(QStringLiteral("System FFmpeg needs a libx264 or libopenh264 encoder."));
             return;
         }
         if (!encoder->start(path, first.size(), kFrameRate)) {
             failed(encoder->lastError());
             return;
+        }
+        m_capture.reset(ICaptureEngine::createBestEngine());
+        if (!m_capture || !m_capture->setRegion(m_screen->geometry(), m_screen)
+            || !m_capture->start()) {
+            failed(QStringLiteral("Could not start screen capture.")); return;
         }
         const quint64 generation = ++m_generation;
         connect(encoder.get(), &IVideoEncoder::error, this,
@@ -175,10 +183,9 @@ private:
             return;
         }
         const qint64 timestamp = m_elapsed.elapsed();
-        const QImage image = m_screen->grabWindow(0).toImage();
+        const QImage image = m_capture->captureFrame();
         if (image.isNull()) {
-            failed(QStringLiteral("Screen capture failed."));
-            return;
+            return; // No new asynchronous frame yet.
         }
         if (!m_worker->enqueueFrame({image, timestamp})) {
             ++m_dropped;

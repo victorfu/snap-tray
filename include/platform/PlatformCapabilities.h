@@ -24,6 +24,8 @@ struct PlatformCapabilities {
     bool supportsRecording = false;
     // Basic recording backend: silent MP4 with a save dialog, no preview/export.
     bool recordingDirectMp4Only = false;
+    // X11 root capture cannot exclude overlays. Keep recording controls in the tray.
+    bool recordingControlsInTray = false;
     bool supportsOCR = false;
     bool supportsGlobalHotkeys = false;
     bool supportsWindowDetection = false;

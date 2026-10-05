@@ -107,6 +107,7 @@ private:
     QAction *m_togglePinsVisibilityAction;
     QAction *m_closeAllPinsAction;
     QAction *m_fullScreenRecordingAction;
+    QAction *m_pauseRecordingAction = nullptr;
     QAction *m_checkForUpdatesAction;
     QPointer<SnapTray::QmlSettingsWindow> m_settingsWindow;
     QPointer<SnapTray::QmlHistoryWindow> m_historyWindow;

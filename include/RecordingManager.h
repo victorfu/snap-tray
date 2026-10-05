@@ -11,6 +11,7 @@
 #include <QFuture>
 #include <QSharedPointer>
 #include <memory>
+#include <atomic>
 #include <functional>
 #include <QStringList>
 #include "capture/IAudioCaptureEngine.h"
@@ -156,7 +157,8 @@ private:
     QPointer<QScreen> m_targetScreen;
     State m_state;
     int m_frameRate;
-    qint64 m_frameCount;
+    std::atomic<qint64> m_frameCount;
+    bool m_acceptAsyncFrames = false; // guarded by m_durationMutex
 
     // Pause tracking
     qint64 m_pausedDuration;     // Total time spent paused

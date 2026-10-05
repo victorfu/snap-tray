@@ -19,6 +19,10 @@ IVideoPlayer* createMediaFoundationPlayer(QObject *parent);
 bool isMediaFoundationAvailable();
 #endif
 
+#ifdef SNAPTRAY_ENABLE_LINUX_RECORDING
+IVideoPlayer* createFFmpegPlayer(QObject* parent);
+#endif
+
 IVideoPlayer* IVideoPlayer::create(QObject *parent)
 {
 #ifdef Q_OS_MAC
@@ -37,6 +41,9 @@ IVideoPlayer* IVideoPlayer::create(QObject *parent)
     qWarning() << "IVideoPlayer: Media Foundation not available";
 #endif
 
+#ifdef SNAPTRAY_ENABLE_LINUX_RECORDING
+    return createFFmpegPlayer(parent);
+#endif
     qWarning() << "IVideoPlayer: No video player implementation available";
     return nullptr;
 }

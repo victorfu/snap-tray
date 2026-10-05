@@ -66,15 +66,21 @@ endif()
 # Enable automoc for tests
 set(CMAKE_AUTOMOC ON)
 
-if(SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE)
+if(SNAPTRAY_ENABLE_LINUX_RECORDING)
+    add_executable(Encoding_LinuxMedia Encoding/tst_LinuxMedia.cpp)
+    target_include_directories(Encoding_LinuxMedia PRIVATE ${CMAKE_SOURCE_DIR}/src)
+    target_link_libraries(Encoding_LinuxMedia PRIVATE snaptray_platform PkgConfig::SYSTEM_FFMPEG Qt6::Test)
+    add_test(NAME Encoding_LinuxMedia COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/Encoding/run_linux_media_test.py $<TARGET_FILE:Encoding_LinuxMedia>)
+    set_tests_properties(Encoding_LinuxMedia PROPERTIES TIMEOUT 60 LABELS "integration;encoding")
     add_executable(Encoding_FFmpegEncoder Encoding/tst_FFmpegEncoder.cpp)
     target_link_libraries(Encoding_FFmpegEncoder PRIVATE
-        snaptray_ffmpeg_prototype PkgConfig::SYSTEM_FFMPEG Qt6::Test)
+        snaptray_platform PkgConfig::SYSTEM_FFMPEG Qt6::Test)
     add_test(NAME Encoding_FFmpegEncoder COMMAND Encoding_FFmpegEncoder)
     set_tests_properties(Encoding_FFmpegEncoder PROPERTIES TIMEOUT 60 LABELS "integration;encoding")
     add_executable(Encoding_LinuxRecordingPrototype Encoding/tst_LinuxRecordingPrototype.cpp)
     target_link_libraries(Encoding_LinuxRecordingPrototype PRIVATE
-        snaptray_ui snaptray_qmlplugin snaptray_ffmpeg_prototype PkgConfig::SYSTEM_FFMPEG Qt6::Test)
+        snaptray_ui snaptray_qmlplugin PkgConfig::SYSTEM_FFMPEG Qt6::Test)
     target_sources(Encoding_LinuxRecordingPrototype PRIVATE
         ${CMAKE_SOURCE_DIR}/resources/resources.qrc
         ${CMAKE_SOURCE_DIR}/src/qml/SettingsBackend.cpp
@@ -266,6 +272,9 @@ target_link_libraries(RecordingManager_WindowTimelineSidecar PRIVATE snaptray_co
 add_test(NAME RecordingManager_WindowTimelineSidecar COMMAND RecordingManager_WindowTimelineSidecar)
 set_tests_properties(RecordingManager_WindowTimelineSidecar PROPERTIES TIMEOUT 60 LABELS "unit")
 target_link_libraries(Platform_Capabilities PRIVATE snaptray_core Qt6::Test)
+if(SNAPTRAY_ENABLE_LINUX_RECORDING)
+    target_compile_definitions(Platform_Capabilities PRIVATE SNAPTRAY_ENABLE_LINUX_RECORDING)
+endif()
 add_test(NAME Platform_Capabilities COMMAND Platform_Capabilities)
 set_tests_properties(Platform_Capabilities PROPERTIES TIMEOUT 60 LABELS "unit")
 
@@ -655,8 +664,11 @@ set_tests_properties(Video_SourceReaderMailbox PROPERTIES TIMEOUT 30 LABELS "uni
 # if a platform gains a transcoder without a decoder.
 add_executable(Video_VideoTranscoder
     Video/tst_VideoTranscoder.cpp
-    $<IF:$<PLATFORM_ID:Darwin>,Video/VideoTranscoderTestAudio_mac.mm,$<IF:$<PLATFORM_ID:Windows>,Video/VideoTranscoderTestAudio_win.cpp,Video/VideoTranscoderTestAudio_stub.cpp>>
+    $<IF:$<PLATFORM_ID:Darwin>,Video/VideoTranscoderTestAudio_mac.mm,$<IF:$<PLATFORM_ID:Windows>,Video/VideoTranscoderTestAudio_win.cpp,$<IF:$<BOOL:${SNAPTRAY_ENABLE_LINUX_RECORDING}>,Video/VideoTranscoderTestAudio_linux.cpp,Video/VideoTranscoderTestAudio_stub.cpp>>>
 )
+if(SNAPTRAY_ENABLE_LINUX_RECORDING)
+    target_link_libraries(Video_VideoTranscoder PRIVATE PkgConfig::SYSTEM_FFMPEG)
+endif()
 set_source_files_properties(Video/VideoTranscoderTestAudio_mac.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
 target_include_directories(Video_VideoTranscoder PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(Video_VideoTranscoder PRIVATE snaptray_platform Qt6::Test

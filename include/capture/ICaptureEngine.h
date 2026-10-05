@@ -115,6 +115,10 @@ public:
      */
     virtual QImage captureFrame() = 0;
 
+    // Asynchronous backends can deliver completed frames directly to the
+    // encoding queue instead of depending on GUI-thread polling.
+    virtual bool deliversFrames() const { return false; }
+
     /**
      * @brief Get the name of this capture engine
      */
@@ -128,6 +132,7 @@ public:
     static ICaptureEngine *createBestEngine(QObject *parent = nullptr);
 
 signals:
+    void frameReady(const QImage& frame);
     // The user ended capture through a native system control. Finish encoding
     // normally so the recording can still be previewed or saved.
     void stoppedByUser();

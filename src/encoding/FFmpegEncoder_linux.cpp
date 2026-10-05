@@ -3,6 +3,11 @@
 
 #include <QSaveFile>
 #include <QDebug>
+#include <QDir>
+#include <QElapsedTimer>
+#include <QThread>
+#include <climits>
+#include <QtEndian>
 #include <cerrno>
 #include <cstdio>
 #include <limits>
@@ -11,6 +16,7 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/imgutils.h>
+#include <libavutil/hwcontext.h>
 #include <libswscale/swscale.h>
 }
 
@@ -82,6 +88,16 @@ struct FFmpegEncoder::State
     AVFrame* frame = nullptr;
     AVPacket* packet = nullptr;
     SwsContext* scaler = nullptr;
+    AVBufferRef* device = nullptr;
+    AVFrame* hardwareFrame = nullptr;
+    AVCodecContext* audioCodec = nullptr;
+    AVStream* audioStream = nullptr;
+    AVFrame* audioFrame = nullptr;
+    QByteArray audioPending;
+    qint64 audioPts = 0;
+    bool audioStarted = false;
+    qint64 encodeNs = 0;
+    SnapTray::VideoRateControl rateControl = SnapTray::VideoRateControl::Bitrate;
     QSize size;
     int frameRate = 0;
     qint64 lastPts = -1;
@@ -93,6 +109,7 @@ FFmpegEncoder::~FFmpegEncoder() { release(); }
 bool FFmpegEncoder::isAvailable() const { return softwareEncoder() != nullptr; }
 QString FFmpegEncoder::encoderName() const
 {
+    if (!m_encoderName.isEmpty()) return m_encoderName;
     const AVCodec* codec = softwareEncoder();
     return QStringLiteral("System FFmpeg (%1)").arg(codec ? QString::fromLatin1(codec->name)
                                                         : QStringLiteral("no software H.264 encoder"));
@@ -113,7 +130,13 @@ void FFmpegEncoder::release()
         return;
     }
     auto& s = *m_state;
+    if (m_framesWritten) qDebug() << "FFmpeg encoding:" << m_encoderName << m_framesWritten
+        << "frames, mean conversion/encode ms" << double(s.encodeNs)/m_framesWritten/1e6;
     sws_freeContext(s.scaler);
+    av_frame_free(&s.hardwareFrame);
+    av_frame_free(&s.audioFrame);
+    avcodec_free_context(&s.audioCodec);
+    av_buffer_unref(&s.device);
     av_packet_free(&s.packet);
     av_frame_free(&s.frame);
     avcodec_free_context(&s.codec);
@@ -177,39 +200,114 @@ bool FFmpegEncoder::start(const QString& path, const QSize& size, int frameRate)
             av_free(buffer);
         }
     }
-    s.codec = avcodec_alloc_context3(encoder);
+    s.codec = nullptr;
     s.stream = avformat_new_stream(s.format, nullptr);
     s.frame = av_frame_alloc();
     s.packet = av_packet_alloc();
-    if (!s.io || !s.codec || !s.stream || !s.frame || !s.packet) {
+    if (!s.io || !s.stream || !s.frame || !s.packet) {
         fail(QStringLiteral("Cannot allocate FFmpeg encoding buffers."));
         return false;
     }
     s.format->pb = s.io;
     s.format->flags |= AVFMT_FLAG_CUSTOM_IO;
-    s.codec->width = size.width();
-    s.codec->height = size.height();
-    s.codec->pix_fmt = AV_PIX_FMT_YUV420P;
-    s.codec->time_base = AVRational{1, kMillisecondsPerSecond};
-    s.codec->framerate = AVRational{frameRate, 1};
-    s.codec->bit_rate = SnapTray::VideoBitrate::forQuality(size, frameRate, m_quality);
-    if (m_keyframeSeconds > 0) {
-        s.codec->gop_size = frameRate * m_keyframeSeconds;
+    auto openEncoder = [&](const AVCodec* candidate, AVBufferRef* device) {
+        if (!candidate) return false;
+        avcodec_free_context(&s.codec);
+        s.codec = avcodec_alloc_context3(candidate);
+        if (!s.codec) return false;
+        s.codec->width = size.width();
+        s.codec->height = size.height();
+        s.codec->pix_fmt = device ? AV_PIX_FMT_VAAPI : AV_PIX_FMT_YUV420P;
+        s.codec->time_base = AVRational{1, kMillisecondsPerSecond};
+        s.codec->framerate = AVRational{frameRate, 1};
+        s.codec->bit_rate = m_bitrate > 0 ? m_bitrate
+            : SnapTray::VideoBitrate::forQuality(size, frameRate, m_quality);
+        if (m_keyframeSeconds > 0) s.codec->gop_size = frameRate * m_keyframeSeconds;
+        s.codec->max_b_frames = 0;
+        // Bound CPU thread fan-out on high-core-count desktops.
+        s.codec->thread_count = qBound(1, QThread::idealThreadCount(), 8);
+        if (s.format->oformat->flags & AVFMT_GLOBALHEADER) s.codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+        if (device) {
+            AVBufferRef* frames = av_hwframe_ctx_alloc(device);
+            if (!frames) return false;
+            auto* context = reinterpret_cast<AVHWFramesContext*>(frames->data);
+            context->format = AV_PIX_FMT_VAAPI;
+            context->sw_format = AV_PIX_FMT_NV12;
+            context->width = size.width(); context->height = size.height();
+            context->initial_pool_size = 8;
+            if (av_hwframe_ctx_init(frames) < 0) { av_buffer_unref(&frames); return false; }
+            s.codec->hw_frames_ctx = frames;
+        }
+        AVDictionary* options = nullptr;
+        if (QByteArray(candidate->name) == "libx264") {
+            av_dict_set(&options, "preset", "ultrafast", 0);
+            av_dict_set(&options, "tune", "zerolatency", 0);
+            if (m_rateControl == SnapTray::VideoRateControl::ConstantQuality) {
+                const QByteArray crf = QByteArray::number(35 - m_quality * 29 / 100);
+                av_dict_set(&options, "crf", crf.constData(), 0);
+                s.codec->rc_max_rate = s.codec->bit_rate;
+                s.codec->rc_buffer_size = qMin<int64_t>(s.codec->bit_rate * 2, INT_MAX);
+            }
+        }
+        const int opened = avcodec_open2(s.codec, candidate, &options);
+        av_dict_free(&options);
+        if (opened < 0) return false;
+        m_encoderName = QStringLiteral("System FFmpeg (%1)").arg(QString::fromLatin1(candidate->name));
+        s.rateControl = QByteArray(candidate->name) == "libx264" ? m_rateControl : SnapTray::VideoRateControl::Bitrate;
+        return true;
+    };
+    bool opened = false;
+    const QByteArray preference = qgetenv("SNAPTRAY_FFMPEG_ENCODER");
+    if (preference != "software") {
+        if (preference.isEmpty() || preference == "h264_vaapi") {
+            const auto nodes = QDir(QStringLiteral("/dev/dri")).entryList({QStringLiteral("renderD*")}, QDir::System | QDir::Files);
+            for (const auto& node : nodes) {
+                const QByteArray path = QFile::encodeName(QStringLiteral("/dev/dri/") + node);
+                if (av_hwdevice_ctx_create(&s.device, AV_HWDEVICE_TYPE_VAAPI, path.constData(), nullptr, 0) >= 0
+                    && openEncoder(avcodec_find_encoder_by_name("h264_vaapi"), s.device)) { opened = true; break; }
+                av_buffer_unref(&s.device);
+            }
+        }
+        if (!opened && (preference.isEmpty() || preference == "h264_nvenc"))
+            opened = openEncoder(avcodec_find_encoder_by_name("h264_nvenc"), nullptr);
     }
-    s.codec->max_b_frames = 0;
-    if (s.format->oformat->flags & AVFMT_GLOBALHEADER) {
-        s.codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+    if (!opened) opened = openEncoder(encoder, nullptr);
+    if (!opened) { fail(QStringLiteral("Cannot initialize a hardware or software H.264 encoder.")); return false; }
+    s.frame->format = s.device ? AV_PIX_FMT_NV12 : s.codec->pix_fmt;
+    if (s.device) {
+        s.hardwareFrame = av_frame_alloc();
+        if (!s.hardwareFrame) { fail(QStringLiteral("Cannot allocate GPU frame.")); return false; }
     }
-    AVDictionary* options = nullptr;
-    if (QByteArray(encoder->name) == "libx264") {
-        av_dict_set(&options, "preset", "veryfast", 0);
-        av_dict_set(&options, "tune", "zerolatency", 0);
-    }
-    result = avcodec_open2(s.codec, encoder, &options);
-    av_dict_free(&options);
-    if (result < 0) {
-        fail(QStringLiteral("Cannot open H.264 encoder: %1").arg(ffmpegError(result)));
-        return false;
+    if (m_audioRate) {
+        const AVCodec* aac = avcodec_find_encoder(AV_CODEC_ID_AAC);
+        s.audioCodec = aac ? avcodec_alloc_context3(aac) : nullptr;
+        s.audioFrame = av_frame_alloc();
+        s.audioStream = avformat_new_stream(s.format, nullptr);
+        if (!s.audioCodec || !s.audioFrame || !s.audioStream) { fail(QStringLiteral("Cannot allocate AAC encoder.")); return false; }
+        s.audioCodec->sample_rate = m_audioRate;
+        s.audioCodec->sample_fmt = AV_SAMPLE_FMT_FLTP;
+        s.audioCodec->time_base = AVRational{1, m_audioRate};
+        s.audioCodec->bit_rate = 192000;
+#if LIBAVUTIL_VERSION_MAJOR >= 57
+        av_channel_layout_default(&s.audioCodec->ch_layout, m_audioChannels);
+#else
+        s.audioCodec->channels = m_audioChannels;
+        s.audioCodec->channel_layout = av_get_default_channel_layout(m_audioChannels);
+#endif
+        s.audioCodec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+        if (avcodec_open2(s.audioCodec, aac, nullptr) < 0) { fail(QStringLiteral("Cannot initialize AAC encoder.")); return false; }
+        s.audioStream->time_base = s.audioCodec->time_base;
+        if (avcodec_parameters_from_context(s.audioStream->codecpar, s.audioCodec) < 0) { fail(QStringLiteral("Cannot configure AAC stream.")); return false; }
+        s.audioFrame->format = s.audioCodec->sample_fmt;
+        s.audioFrame->sample_rate = m_audioRate;
+        s.audioFrame->nb_samples = s.audioCodec->frame_size;
+#if LIBAVUTIL_VERSION_MAJOR >= 57
+        av_channel_layout_copy(&s.audioFrame->ch_layout, &s.audioCodec->ch_layout);
+#else
+        s.audioFrame->channel_layout = s.audioCodec->channel_layout;
+        s.audioFrame->channels = m_audioChannels;
+#endif
+        if (av_frame_get_buffer(s.audioFrame, 0) < 0) { fail(QStringLiteral("Cannot allocate AAC frame.")); return false; }
     }
     s.stream->time_base = s.codec->time_base;
     s.stream->avg_frame_rate = s.codec->framerate;
@@ -217,7 +315,6 @@ bool FFmpegEncoder::start(const QString& path, const QSize& size, int frameRate)
     if (result >= 0) {
         result = avformat_write_header(s.format, nullptr);
     }
-    s.frame->format = s.codec->pix_fmt;
     s.frame->width = size.width();
     s.frame->height = size.height();
     if (result >= 0) {
@@ -230,16 +327,18 @@ bool FFmpegEncoder::start(const QString& path, const QSize& size, int frameRate)
     return true;
 }
 
-bool FFmpegEncoder::drainPackets()
+bool FFmpegEncoder::drainPackets(bool audio)
 {
     auto& s = *m_state;
     int result = 0;
-    while ((result = avcodec_receive_packet(s.codec, s.packet)) >= 0) {
-        if (s.packet->duration <= 0) {
+    auto* codec = audio ? s.audioCodec : s.codec;
+    auto* stream = audio ? s.audioStream : s.stream;
+    while ((result = avcodec_receive_packet(codec, s.packet)) >= 0) {
+        if (!audio && s.packet->duration <= 0) {
             s.packet->duration = av_rescale_q(1, AVRational{1, s.frameRate}, s.codec->time_base);
         }
-        av_packet_rescale_ts(s.packet, s.codec->time_base, s.stream->time_base);
-        s.packet->stream_index = s.stream->index;
+        av_packet_rescale_ts(s.packet, codec->time_base, stream->time_base);
+        s.packet->stream_index = stream->index;
         result = av_interleaved_write_frame(s.format, s.packet);
         av_packet_unref(s.packet);
         if (result < 0) {
@@ -264,9 +363,13 @@ void FFmpegEncoder::writeFrame(const QImage& image, qint64 timestampMs)
         fail(QStringLiteral("Captured frame dimensions changed during recording."));
         return;
     }
-    const QImage rgba = image.convertToFormat(QImage::Format_RGBA8888);
-    s.scaler = sws_getCachedContext(s.scaler, s.size.width(), s.size.height(), AV_PIX_FMT_RGBA,
-                                   s.size.width(), s.size.height(), AV_PIX_FMT_YUV420P,
+    QElapsedTimer timer; timer.start();
+    // X11 delivers native BGRA. Feed it directly to swscale instead of making
+    // another full-sized RGBA copy on every 4K frame.
+    const bool bgra = image.format() == QImage::Format_RGB32 || image.format() == QImage::Format_ARGB32;
+    const QImage rgba = bgra ? image : image.convertToFormat(QImage::Format_RGBA8888);
+    s.scaler = sws_getCachedContext(s.scaler, s.size.width(), s.size.height(), bgra ? AV_PIX_FMT_BGRA : AV_PIX_FMT_RGBA,
+                                   s.size.width(), s.size.height(), static_cast<AVPixelFormat>(s.frame->format),
                                    SWS_BILINEAR, nullptr, nullptr, nullptr);
     int result = av_frame_make_writable(s.frame);
     if (rgba.isNull() || !s.scaler || result < 0) {
@@ -292,16 +395,25 @@ void FFmpegEncoder::writeFrame(const QImage& image, qint64 timestampMs)
         if (s.originMs < 0) {
             s.originMs = timestampMs;
         }
-        pts = qMax(s.lastPts + 1, timestampMs - s.originMs);
+        pts = qMax(s.lastPts + 1, timestampMs - (s.audioCodec ? 0 : s.originMs));
     }
     s.frame->pts = pts;
-    result = avcodec_send_frame(s.codec, s.frame);
+    AVFrame* submitted = s.frame;
+    if (s.device) {
+        av_frame_unref(s.hardwareFrame);
+        result = av_hwframe_get_buffer(s.codec->hw_frames_ctx, s.hardwareFrame, 0);
+        if (result >= 0) result = av_hwframe_transfer_data(s.hardwareFrame, s.frame, 0);
+        if (result < 0) { fail(QStringLiteral("Cannot upload frame to GPU: %1").arg(ffmpegError(result))); return; }
+        s.hardwareFrame->pts = pts; submitted = s.hardwareFrame;
+    }
+    result = avcodec_send_frame(s.codec, submitted);
     if (result < 0) {
         fail(QStringLiteral("Cannot submit video frame: %1").arg(ffmpegError(result)));
         return;
     }
     s.lastPts = pts;
     if (drainPackets()) {
+        s.encodeNs += timer.nsecsElapsed();
         ++m_framesWritten;
         emit progress(m_framesWritten);
     }
@@ -317,6 +429,14 @@ void FFmpegEncoder::finish()
         fail(QStringLiteral("No frames were recorded."));
         emit finished(false, m_outputPath);
         return;
+    }
+    if (m_state->audioCodec) {
+        if (!encodeAudio(true)) { emit finished(false, m_outputPath); return; }
+        const int sent = avcodec_send_frame(m_state->audioCodec, nullptr);
+        if (sent < 0 || !drainPackets(true)) {
+            if (m_state) fail(QStringLiteral("Cannot flush AAC encoder."));
+            emit finished(false, m_outputPath); return;
+        }
     }
     int result = avcodec_send_frame(m_state->codec, nullptr);
     if (result < 0) {
@@ -336,3 +456,63 @@ void FFmpegEncoder::finish()
 }
 
 void FFmpegEncoder::abort() { release(); }
+
+void FFmpegEncoder::setRateControl(SnapTray::VideoRateControl mode, int quality) {
+    m_rateControl = mode; setQuality(quality);
+}
+SnapTray::VideoRateControl FFmpegEncoder::effectiveRateControl() const {
+    return m_state ? m_state->rateControl : SnapTray::VideoRateControl::Bitrate;
+}
+void FFmpegEncoder::setAudioFormat(int rate, int channels, int bits) {
+    if (isRunning()) return;
+    m_audioRate = (rate == 48000 && (channels == 1 || channels == 2) && bits == 16) ? rate : 0;
+    m_audioChannels = m_audioRate ? channels : 0;
+}
+bool FFmpegEncoder::isAudioSupported() const { return avcodec_find_encoder(AV_CODEC_ID_AAC); }
+bool FFmpegEncoder::isAudioEnabled() const { return m_state && m_state->audioCodec; }
+bool FFmpegEncoder::encodeAudio(bool partial) {
+    auto& s = *m_state;
+    const int bytes = s.audioCodec->frame_size * m_audioChannels * 2;
+    while (s.audioPending.size() >= bytes || (partial && !s.audioPending.isEmpty())) {
+        const int used = qMin(bytes, int(s.audioPending.size()));
+        if (av_frame_make_writable(s.audioFrame) < 0) { fail(QStringLiteral("Cannot prepare AAC frame.")); return false; }
+        for (int channel = 0; channel < m_audioChannels; ++channel) {
+            auto* samples = reinterpret_cast<float*>(s.audioFrame->data[channel]);
+            for (int i = 0; i < s.audioCodec->frame_size; ++i) {
+                const int offset = (i * m_audioChannels + channel) * 2;
+                samples[i] = offset + 2 <= used ? qFromLittleEndian<qint16>(s.audioPending.constData()+offset)/32768.0f : 0.0f;
+            }
+        }
+        s.audioFrame->pts = s.audioPts;
+        s.audioPts += s.audioCodec->frame_size;
+        s.audioPending.remove(0, used);
+        if (avcodec_send_frame(s.audioCodec, s.audioFrame) < 0) { fail(QStringLiteral("Cannot encode AAC samples.")); return false; }
+        if (!drainPackets(true)) return false;
+    }
+    return true;
+}
+void FFmpegEncoder::writeAudioSamples(const QByteArray& pcm, qint64 startFrame) {
+    if (!isAudioEnabled() || pcm.isEmpty()) return;
+    const int stride = m_audioChannels*2;
+    if (startFrame < 0 || pcm.size()%stride) { fail(QStringLiteral("Invalid PCM sample range.")); return; }
+    auto& s = *m_state;
+    if (!s.audioStarted) { s.audioPts = startFrame; s.audioStarted = true; }
+    qint64 expected = s.audioPts + s.audioPending.size()/stride;
+    if (startFrame > expected) {
+        // Preserve discontinuities without allocating unbounded silence.
+        if (startFrame - expected > m_audioRate) {
+            if (!encodeAudio(true)) return;
+            s.audioPts = qMax(s.audioPts, startFrame);
+        } else {
+            s.audioPending.append(QByteArray((startFrame-expected)*stride, '\0'));
+        }
+    }
+    expected = s.audioPts + s.audioPending.size()/stride;
+    const qint64 skip = qMin<qint64>(pcm.size()/stride, qMax<qint64>(0, expected-startFrame));
+    // Keep the staging buffer bounded even for large offline input chunks.
+    for (qsizetype offset = skip*stride; offset < pcm.size();) {
+        const qsizetype count = qMin<qsizetype>(4096*stride, pcm.size()-offset);
+        s.audioPending.append(pcm.constData()+offset, count); offset += count;
+        if (!encodeAudio(false)) return;
+    }
+}

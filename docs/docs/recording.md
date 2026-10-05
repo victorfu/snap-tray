@@ -2,8 +2,8 @@
 last_modified_at: 2026-10-04
 layout: docs
 title: Recording
-seo_title: "SnapTray Screen Recording: MP4, GIF and WebP Capture for macOS and Windows"
-description: "macOS/Windows only: record full screen sources with MP4, GIF, and WebP outputs."
+seo_title: "SnapTray Screen Recording: MP4, GIF and WebP Capture for macOS, Windows and Linux X11"
+description: "macOS, Windows and Linux X11: record full screen sources with MP4, GIF, and WebP outputs."
 permalink: /docs/recording/
 lang: en
 route_key: docs_recording
@@ -11,8 +11,9 @@ doc_group: workflow
 doc_order: 2
 ---
 
-Recording is available on macOS and Windows only. Linux beta does not include
-recording, and its recording UI is hidden.
+Recording is available on macOS, Windows, and Linux X11 builds with recording
+enabled. Linux uses the system FFmpeg libraries and PulseAudio (or PipeWire's
+PulseAudio compatibility service).
 
 ## Recording entry points
 
@@ -23,7 +24,7 @@ recording, and its recording UI is hidden.
 
 1. Choose the screen to record when prompted on multi-display setups.
 2. Recording starts immediately on the selected screen.
-3. Use the floating control bar to monitor duration and stop recording.
+3. Use the floating control bar to monitor duration and stop recording. On Linux, use the tray menu to pause, resume, or stop; floating controls are hidden while recording.
 4. Click Stop to export.
 
 ## Crop a recording

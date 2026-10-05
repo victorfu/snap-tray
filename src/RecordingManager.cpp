@@ -248,8 +248,7 @@ RecordingManager::RecordingManager(QObject *parent)
 {
     m_freeBytesForPath = [](const QString& path) { return QStorageInfo(path).bytesAvailable(); };
     m_captureControlsMayBeVisible = [] {
-        return SnapTray::currentPlatformCapabilities().recordingDirectMp4Only
-            || SnapTray::requiresVisibleRecordingControls(QOperatingSystemVersion::current());
+        return SnapTray::requiresVisibleRecordingControls(QOperatingSystemVersion::current());
     };
     m_requiresDirectMp4Recording = [] {
         return SnapTray::currentPlatformCapabilities().recordingDirectMp4Only;
@@ -398,6 +397,10 @@ bool RecordingManager::shouldUseDedicatedEncodingThread(bool hasNativeEncoder) c
 
 void RecordingManager::teardownEncodingWorker(bool abortEncoding)
 {
+    {
+        QMutexLocker lock(&m_durationMutex);
+        m_acceptAsyncFrames = false;
+    }
     // Invalidate any queued callbacks from previous encoding workers.
     ++m_encodingGeneration;
 
@@ -965,6 +968,17 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
         return;
     }
 
+    if (m_captureEngine && m_captureEngine->deliversFrames()) {
+        auto* worker = m_encodingWorker.get();
+        connect(m_captureEngine.get(), &ICaptureEngine::frameReady, worker,
+                [this, worker](const QImage& frame) {
+            QMutexLocker lock(&m_durationMutex);
+            if (!m_acceptAsyncFrames || frame.isNull()) return;
+            const qint64 time = qMax<qint64>(0, m_elapsedTimer.elapsed()-m_pausedDuration);
+            if (worker->enqueueFrame({frame, time})) ++m_frameCount;
+        }, Qt::DirectConnection);
+    }
+
     configureAudioCapture();
 
     // Clean up init task
@@ -1148,6 +1162,12 @@ void RecordingManager::startRecordingAfterCountdown()
         return;
     }
 
+    if (SnapTray::currentPlatformCapabilities().recordingControlsInTray && m_controlBar) {
+        m_controlBar->hide();
+        // Discard any frame cached while the preparation/countdown UI was visible.
+        if (m_captureEngine) m_captureEngine->captureFrame();
+    }
+
     // Initialize state and counters
     m_elapsedTimer.start();
     setState(State::Recording);
@@ -1226,11 +1246,16 @@ void RecordingManager::startCaptureTimers()
         m_durationTimer.reset();
     }
 
-    // Start frame capture timer
-    // No parent, managed by unique_ptr
-    m_captureTimer = std::make_unique<QTimer>(nullptr);
-    connect(m_captureTimer.get(), &QTimer::timeout, this, &RecordingManager::captureFrame);
-    m_captureTimer->start(1000 / m_frameRate);
+    if (m_captureEngine && m_captureEngine->deliversFrames()) {
+        QMutexLocker lock(&m_durationMutex);
+        m_acceptAsyncFrames = true;
+    } else {
+        // Polling backends retain the existing GUI-thread path.
+        m_captureTimer = std::make_unique<QTimer>(nullptr);
+        m_captureTimer->setTimerType(Qt::PreciseTimer);
+        connect(m_captureTimer.get(), &QTimer::timeout, this, &RecordingManager::captureFrame);
+        m_captureTimer->start(1000 / m_frameRate);
+    }
 
     // Start duration timer (update UI at regular intervals)
     // No parent, managed by unique_ptr
@@ -1280,9 +1305,7 @@ void RecordingManager::captureFrame()
         // Enqueue frame for encoding (non-blocking)
         // Watermark is applied by the worker thread
         EncodingWorker::FrameData frameData{frame, elapsedMs};
-        encodingWorker->enqueueFrame(frameData);
-
-        m_frameCount++;
+        if (encodingWorker->enqueueFrame(frameData)) ++m_frameCount;
     }
 }
 
@@ -1316,6 +1339,10 @@ void RecordingManager::pauseRecording()
         return;
     }
 
+    {
+        QMutexLocker lock(&m_durationMutex);
+        m_acceptAsyncFrames = false;
+    }
     // Stop frame capture timer
     if (m_captureTimer) {
         m_captureTimer->stop();
@@ -1362,6 +1389,14 @@ void RecordingManager::resumeRecording()
         m_audioEngine->resume();
     }
 
+    if (m_captureEngine && m_captureEngine->deliversFrames()) {
+        const quint64 generation = m_startGeneration;
+        QTimer::singleShot(kOverlayRenderDelay, this, [this, generation] {
+            if (generation != m_startGeneration || m_state != State::Recording) return;
+            QMutexLocker lock(&m_durationMutex);
+            m_acceptAsyncFrames = true;
+        });
+    }
     // Resume frame capture timer
     if (m_captureTimer) {
         m_captureTimer->start(1000 / m_frameRate);
@@ -1453,6 +1488,10 @@ void RecordingManager::cancelRecording()
 
 void RecordingManager::stopFrameCapture()
 {
+    {
+        QMutexLocker lock(&m_durationMutex);
+        m_acceptAsyncFrames = false;
+    }
     if (m_windowTimelineRecorder) {
         if (m_windowTimelineRecorder->isRunning()) {
             m_windowTimelineRecorder->sampleNow(); // capture the final window layout

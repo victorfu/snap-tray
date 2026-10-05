@@ -113,7 +113,8 @@ jobs:
             libxcb-image0-dev libxcb-icccm4-dev libxcb-randr0-dev \
             libxcb-shape0-dev libxcb-xfixes0-dev libxcb-sync-dev \
             libxrender-dev libxi-dev libxtst-dev \
-            pkg-config libavcodec-dev libavformat-dev libavutil-dev libswscale-dev
+            pkg-config libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev \
+            libpulse-dev libxcb-shm0-dev pulseaudio pulseaudio-utils
 
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
@@ -139,16 +140,6 @@ jobs:
       - name: Run Tests
         run: SNAPTRAY_TEST_X11_CLIPBOARD=1 XDG_SESSION_TYPE=x11 xvfb-run -a ctest --test-dir build --output-on-failure --output-junit "${{ github.workspace }}/build/test-results.xml" -C Release
 
-      - name: Verify isolated Linux recording prototype
-        run: |
-          cmake -S . -B build -DSNAPTRAY_ENABLE_FFMPEG_PROTOTYPE=ON
-          cmake --build build --parallel --target SnapTray SnapTrayRecordingPrototype Encoding_FFmpegEncoder Encoding_LinuxRecordingPrototype Platform_Capabilities
-          if ldd build/bin/SnapTray | grep -E 'lib(avcodec|avformat|avutil|swscale)'; then
-            echo "The production app must not link the FFmpeg prototype libraries."
-            exit 1
-          fi
-          XDG_SESSION_TYPE=x11 xvfb-run -a ctest --test-dir build --output-on-failure -R '^(Encoding_(FFmpegEncoder|LinuxRecordingPrototype)|Platform_Capabilities)$' --output-junit "${{ github.workspace }}/build/prototype-test-results.xml"
-
       - name: Upload test evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -156,7 +147,6 @@ jobs:
           name: test-evidence-${{ runner.os }}
           path: |
             build/test-results.xml
-            build/prototype-test-results.xml
             build/Testing/Temporary/LastTest.log
             build/Testing/Temporary/LastTestsFailed.log
 

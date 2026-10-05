@@ -497,15 +497,25 @@ target_compile_definitions(snaptray_algorithms PRIVATE
 # ----------------------------------------------------------------------------
 # snaptray_platform: Platform-specific code (capture, encoding, OS APIs)
 # ----------------------------------------------------------------------------
-option(SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE
-    "Build the Linux recording prototype using system FFmpeg libraries" OFF)
-if(SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE)
+set(SNAPTRAY_LINUX_RECORDING_DEFAULT OFF)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(SNAPTRAY_LINUX_RECORDING_DEFAULT ON)
+endif()
+# Honor existing prototype build directories while migrating the option name.
+if(DEFINED SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE)
+    set(SNAPTRAY_LINUX_RECORDING_DEFAULT ${SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE})
+    unset(SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE CACHE)
+endif()
+option(SNAPTRAY_ENABLE_LINUX_RECORDING
+    "Build Linux recording using system FFmpeg and PulseAudio libraries" ${SNAPTRAY_LINUX_RECORDING_DEFAULT})
+if(SNAPTRAY_ENABLE_LINUX_RECORDING)
     if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        message(FATAL_ERROR "The FFmpeg recording prototype is Linux-only")
+        message(FATAL_ERROR "The FFmpeg recording backend is Linux-only")
     endif()
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(SYSTEM_FFMPEG REQUIRED IMPORTED_TARGET
-        libavcodec>=58.134 libavformat>=58.76 libavutil>=56.70 libswscale>=5.9)
+        libavcodec>=58.134 libavformat>=58.76 libavutil>=56.70 libswscale>=5.9 libswresample>=3.9)
+    pkg_check_modules(LINUX_MEDIA REQUIRED IMPORTED_TARGET libpulse xcb xcb-shm xcb-randr)
 endif()
 
 add_library(snaptray_platform STATIC
@@ -594,6 +604,7 @@ add_library(snaptray_platform STATIC
     $<$<PLATFORM_ID:Linux>:
         src/platform/LinuxDesktopEnvironment_linux.cpp
         src/platform/LinuxQtQuickSmokeCheck.cpp
+        src/platform/LinuxRecordingSmokeCheck.cpp
         src/platform/WindowLevel_linux.cpp
         src/platform/PlatformFeatures_linux.cpp
         src/WindowDetector_linux.cpp
@@ -608,9 +619,17 @@ add_library(snaptray_platform STATIC
     >
 )
 
-if(SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE)
-    add_library(snaptray_ffmpeg_prototype STATIC src/encoding/FFmpegEncoder_linux.cpp)
-    target_link_libraries(snaptray_ffmpeg_prototype PUBLIC snaptray_platform PRIVATE PkgConfig::SYSTEM_FFMPEG)
+if(SNAPTRAY_ENABLE_LINUX_RECORDING)
+    target_compile_definitions(snaptray_core PRIVATE SNAPTRAY_ENABLE_LINUX_RECORDING)
+    target_sources(snaptray_platform PRIVATE
+        src/encoding/FFmpegEncoder_linux.cpp
+        src/capture/X11CaptureEngine_linux.cpp
+        src/capture/PulseAudioCaptureEngine_linux.cpp
+        src/video/FFmpegMedia_linux.cpp
+        src/video/FFmpegPlayer_linux.cpp
+        src/video/FFmpegTranscoder_linux.cpp)
+    target_link_libraries(snaptray_platform PRIVATE PkgConfig::SYSTEM_FFMPEG PkgConfig::LINUX_MEDIA)
+    target_compile_definitions(snaptray_platform PRIVATE SNAPTRAY_ENABLE_LINUX_RECORDING)
 endif()
 
 # These Objective-C++ sources keep Cocoa/AVFoundation/ScreenCaptureKit objects
@@ -1379,9 +1398,9 @@ qt_add_translations(${PROJECT_NAME}
 # ============================================================================
 # Testing Configuration
 # ============================================================================
-if(SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE)
+if(SNAPTRAY_ENABLE_LINUX_RECORDING)
     add_executable(SnapTrayRecordingPrototype tools/recording-prototype/main.cpp)
-    target_link_libraries(SnapTrayRecordingPrototype PRIVATE snaptray_ui snaptray_ffmpeg_prototype)
+    target_link_libraries(SnapTrayRecordingPrototype PRIVATE snaptray_ui)
 endif()
 
 if(BUILD_TESTING)

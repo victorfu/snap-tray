@@ -810,18 +810,16 @@ void tst_VideoTranscoder::cancelWithAudioRemovesOutputAndKeepsSource()
     request.outputPath = m_dir.filePath(QStringLiteral("cancelled-av.mp4"));
     request.startMs = 200;
     std::atomic<int> maxPercent{-1};
-    std::atomic<bool> partialOutputExisted{false};
     const VideoTranscodeResult result = m_transcoder->transcode(request, [&](int percent) {
         maxPercent = qMax(maxPercent.load(), percent);
         if (percent < kCancelAtPercent) {
             return true;
         }
-        partialOutputExisted = QFileInfo::exists(request.outputPath);
         return false;
     });
     QVERIFY(!result.success);
     QVERIFY(!result.errorMessage.isEmpty());
-    QVERIFY(partialOutputExisted.load());
+    // Atomic exporters keep partial media in staging, outside outputPath.
     QVERIFY(maxPercent.load() >= kCancelAtPercent);
     QVERIFY(maxPercent.load() < 100);
     QVERIFY(!QFileInfo::exists(request.outputPath));
@@ -839,16 +837,16 @@ void tst_VideoTranscoder::cancelAtCompletionRemovesOutput()
     request.inputPath = input;
     request.outputPath = m_dir.filePath(QStringLiteral("declined.mp4"));
     request.startMs = 500;
-    bool outputExistedAtCompletion = false;
+    bool completionReported = false;
     const VideoTranscodeResult result = m_transcoder->transcode(request, [&](int percent) {
         if (percent < 100) {
             return true;
         }
-        outputExistedAtCompletion = QFileInfo::exists(request.outputPath);
+        completionReported = true;
         return false;
     });
     QVERIFY(!result.success);
-    QVERIFY(outputExistedAtCompletion);
+    QVERIFY(completionReported);
     QVERIFY(!QFileInfo::exists(request.outputPath));
 }
 

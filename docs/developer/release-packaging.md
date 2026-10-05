@@ -77,6 +77,16 @@ with the new inputs after this workflow is present on the default branch.
 # Output: dist/SnapTray-<version>-x86_64.AppImage
 ```
 
+The Linux beta artifact targets Ubuntu 22.04 X11. Recording is enabled in the
+AppImage build. Install `libavcodec-dev`, `libavformat-dev`, `libavutil-dev`,
+`libswscale-dev`, `libswresample-dev`, `libpulse-dev`, and `libxcb-shm0-dev` on the
+build host. linuxdeploy bundles the linked media libraries and their runtime
+dependencies; this avoids depending on the target distribution's FFmpeg SONAME.
+PulseAudio/PipeWire services and GPU drivers remain supplied by the host. The
+extracted artifact must pass an H.264/AAC encode/decode/crop-export smoke check
+in addition to the normal startup and rendering checks.
+
+
 The Linux beta artifact targets Ubuntu 22.04 X11 (x86_64). Signed AppImages
 include an in-app updater based on AppImageUpdate. The release must include both
 `SnapTray-<version>-x86_64.AppImage` and its matching `.AppImage.zsync`. Existing

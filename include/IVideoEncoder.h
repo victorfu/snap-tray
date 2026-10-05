@@ -13,7 +13,7 @@
  * Platform implementations:
  * - macOS: AVFoundationEncoder
  * - Windows: MediaFoundationEncoder
- * - Linux opt-in prototype: FFmpegEncoder (system libraries)
+ * - Linux: FFmpegEncoder (system libraries)
  *
  * This interface provides a common API for platform video encoding.
  */

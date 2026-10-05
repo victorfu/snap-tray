@@ -274,9 +274,8 @@ bool EncodingWorker::enqueueFrame(const FrameData& frame)
     }
 
     // Emit queue pressure signals outside lock
-    if (depth >= QUEUE_NEAR_FULL_THRESHOLD && !m_wasNearFull) {
+    if (depth >= QUEUE_NEAR_FULL_THRESHOLD && !m_wasNearFull.exchange(true)) {
         emit queuePressure(depth, MAX_QUEUE_SIZE);
-        m_wasNearFull = true;
     }
 
     scheduleProcessing();
@@ -406,14 +405,13 @@ void EncodingWorker::processNextFrame()
             }
         } else if (hasFrame) {
             // Emit queue low signal outside lock
-            if (frameDepth <= QUEUE_LOW_THRESHOLD && m_wasNearFull) {
+            if (frameDepth <= QUEUE_LOW_THRESHOLD && m_wasNearFull.exchange(false)) {
                 QPointer<EncodingWorker> guard(this);
                 QMetaObject::invokeMethod(this, [guard, frameDepth]() {
                     if (guard) {
                         emit guard->queueLow(frameDepth, MAX_QUEUE_SIZE);
                     }
                 }, Qt::QueuedConnection);
-                m_wasNearFull = false;
             }
 
             // Process the frame (heavy work)

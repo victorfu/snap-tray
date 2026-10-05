@@ -9,6 +9,11 @@
 #include "capture/DXGICaptureEngine.h"
 #endif
 
+#ifdef SNAPTRAY_ENABLE_LINUX_RECORDING
+#include "capture/X11CaptureEngine.h"
+#include "platform/PlatformCapabilities.h"
+#endif
+
 #include <QDebug>
 #include <QScreen>
 
@@ -74,6 +79,10 @@ ICaptureEngine *ICaptureEngine::createBestEngine(QObject *parent)
     qDebug() << "ICaptureEngine: DXGI unavailable, using Qt fallback";
 #endif
 
+#ifdef SNAPTRAY_ENABLE_LINUX_RECORDING
+    if (SnapTray::currentPlatformCapabilities().supportsRecording)
+        return new X11CaptureEngine(parent);
+#endif
     qDebug() << "ICaptureEngine: Using Qt capture engine";
     return new QtCaptureEngine(parent);
 }
