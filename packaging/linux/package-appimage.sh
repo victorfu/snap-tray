@@ -44,6 +44,12 @@ fi
 cmake "${CMAKE_ARGS[@]}"
 cmake --build "$BUILD_DIR" --target SnapTray --parallel
 
+# Build the isolated updater without importing upstream CMake options into SnapTray.
+cmake -S "$PROJECT_DIR/src/update/appimage" -B "$BUILD_DIR/appimage-updater" -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release ${QT_ROOT_DIR:+"-DCMAKE_PREFIX_PATH=$QT_ROOT_DIR"}
+cmake --build "$BUILD_DIR/appimage-updater" --target snaptray-appimage-updater --parallel
+UPDATER="$BUILD_DIR/appimage-updater/snaptray-appimage-updater"
+
 SNAPTRAY_BINARY="$BUILD_DIR/bin/SnapTray"
 if [ ! -x "$SNAPTRAY_BINARY" ]; then
   SNAPTRAY_BINARY="$BUILD_DIR/SnapTray"
@@ -59,6 +65,7 @@ mkdir -p \
   "$APPDIR/usr/share/applications" \
   "$APPDIR/usr/share/icons/hicolor/scalable/apps"
 cp "$SNAPTRAY_BINARY" "$APPDIR/usr/bin/SnapTray"
+cp "$UPDATER" "$APPDIR/usr/bin/snaptray-appimage-updater"
 cp "$SCRIPT_DIR/SnapTray.desktop" "$APPDIR/usr/share/applications/SnapTray.desktop"
 cp "$PROJECT_DIR/resources/icons/snaptray.svg" "$APPDIR/usr/share/icons/hicolor/scalable/apps/snaptray.svg"
 
@@ -144,6 +151,16 @@ export QML_SOURCES_PATHS="$PROJECT_DIR/src/qml"
 # deprecated alias for Qt modules, not a list of plugin directories.
 export EXTRA_PLATFORM_PLUGINS="${EXTRA_PLATFORM_PLUGINS:+${EXTRA_PLATFORM_PLUGINS};}libqoffscreen.so"
 export OUTPUT="SnapTray-$VERSION-x86_64.AppImage"
+export LDAI_OUTPUT="$OUTPUT"
+export LDAI_UPDATE_INFORMATION="gh-releases-zsync|victorfu|snap-tray|latest|SnapTray-*-x86_64.AppImage.zsync"
+export UPDATE_INFORMATION="$LDAI_UPDATE_INFORMATION"
+if [ -n "${SNAPTRAY_APPIMAGE_SIGN_KEY:-}" ]; then
+  export LDAI_SIGN=1 LDAI_SIGN_KEY="$SNAPTRAY_APPIMAGE_SIGN_KEY"
+fi
+if [ "${SNAPTRAY_REQUIRE_APPIMAGE_SIGNATURE:-0}" = 1 ] && [ -z "${SNAPTRAY_APPIMAGE_SIGN_KEY:-}" ]; then
+  echo "Release AppImages require SNAPTRAY_APPIMAGE_SIGN_KEY." >&2
+  exit 1
+fi
 
 cd "$PROJECT_DIR"
 "$LINUXDEPLOY_RUNNER" \
@@ -151,11 +168,18 @@ cd "$PROJECT_DIR"
   --desktop-file "$APPDIR/usr/share/applications/SnapTray.desktop" \
   --icon-file "$APPDIR/usr/share/icons/hicolor/scalable/apps/snaptray.svg" \
   --executable "$APPDIR/usr/bin/SnapTray" \
+  --executable "$APPDIR/usr/bin/snaptray-appimage-updater" \
   --plugin qt \
   --output appimage
 
 mv "$PROJECT_DIR/$OUTPUT" "$DIST_DIR/$OUTPUT"
 validate_appimage_header "$DIST_DIR/$OUTPUT"
+test -s "$PROJECT_DIR/$OUTPUT.zsync"
+mv "$PROJECT_DIR/$OUTPUT.zsync" "$DIST_DIR/$OUTPUT.zsync"
+if [ -n "${SNAPTRAY_APPIMAGE_SIGN_KEY:-}" ]; then
+  "$UPDATER" validate "$DIST_DIR/$OUTPUT"
+fi
+python3 "$SCRIPT_DIR/verify-update-artifacts.py" "$DIST_DIR/$OUTPUT"
 
 VERSION_OUTPUT_FILE="$(mktemp)"
 trap 'rm -f "$VERSION_OUTPUT_FILE"' EXIT

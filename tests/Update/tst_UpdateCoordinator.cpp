@@ -144,6 +144,12 @@ void tst_UpdateCoordinator::testSelectServiceKind_Homebrew_UsesExternalManaged()
 
 void tst_UpdateCoordinator::testSelectServiceKind_AppImage_UsesExternalManaged()
 {
+    QCOMPARE(UpdateCoordinator::selectServiceKind(UpdatePlatform::Linux, InstallSource::AppImage),
+             UpdateServiceKind::AppImageUpdate);
+    QCOMPARE(UpdateCoordinator::selectServiceKind(UpdatePlatform::Linux, InstallSource::Development),
+             UpdateServiceKind::ExternalManaged);
+    QCOMPARE(UpdateCoordinator::selectServiceKind(UpdatePlatform::Linux, InstallSource::DirectDownload),
+             UpdateServiceKind::Unsupported);
     QCOMPARE(UpdateCoordinator::selectServiceKind(UpdatePlatform::Other,
                                                   InstallSource::AppImage),
              UpdateServiceKind::ExternalManaged);

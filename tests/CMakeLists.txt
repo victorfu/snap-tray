@@ -1405,6 +1405,13 @@ add_test(
 )
 set_tests_properties(Update_RenderReleaseNotesPage PROPERTIES TIMEOUT 60 LABELS "unit")
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_executable(Update_AppImageUpdateService Update/tst_AppImageUpdateService.cpp)
+    target_link_libraries(Update_AppImageUpdateService PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+    add_test(NAME Update_AppImageUpdateService COMMAND Update_AppImageUpdateService)
+    set_tests_properties(Update_AppImageUpdateService PROPERTIES TIMEOUT 60 LABELS "unit")
+endif()
+
 # Keep this after all test executable declarations so newly added test targets
 # are isolated automatically as well.
 get_property(snaptray_test_targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
@@ -1436,3 +1443,7 @@ set_property(TEST ${snaptray_registered_tests} APPEND PROPERTY ENVIRONMENT "QT_F
 #   ctest -L slow           # Run slow tests
 #   ctest -LE slow          # Exclude slow tests
 # ============================================================================
+
+add_test(NAME Update_AppImageArtifacts
+    COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/Update/tst_appimage_artifacts.py")
+set_tests_properties(Update_AppImageArtifacts PROPERTIES TIMEOUT 60 LABELS "unit")

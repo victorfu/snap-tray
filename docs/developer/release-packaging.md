@@ -41,6 +41,35 @@ Typical outputs:
 - `dist\SnapTray-<version>-Setup.exe`
 - `dist\SnapTray-<version>.msix`
 
+### Linux-only CI builds and releases
+
+In GitHub Actions, choose **Release → Run workflow**, select the source branch,
+and set `platform` to `linux`. The workflow uses the same signed AppImage build
+as a full release, including its matching `.zsync` file.
+
+- Disable `publish_release` to build only. Download the `linux-appimage` artifact
+  from the completed run. No GitHub Release or appcast is published.
+- Enable `publish_release` to publish a Linux-only **formal, latest** GitHub
+  Release. Its version must match `CMakeLists.txt` and have a corresponding
+  `CHANGELOG.md` entry. Use a new version/tag; do not replace an existing release.
+  The release targets the selected workflow commit.
+
+The optional `version` input validates the source version; it does not change
+`CMakeLists.txt`. Both modes require the AppImage signing secret and variable
+listed below. Linux-only mode skips macOS, Windows, appcasts, and the website
+release page deployment. Existing macOS/Windows appcast feeds remain unchanged,
+but the repository's latest GitHub Release becomes the Linux release.
+
+For an A → B update test, build signed A with publishing disabled, install it
+locally, then run again from the higher-version B commit with publishing enabled.
+Both commits must contain the AppImage updater and use the same signing key.
+Drafts and prereleases are not discovered by the updater. Build-only CI does not
+replace manual X11 download/restart/rollback validation.
+
+Use manual dispatch for Linux-only releases: pushing a `v*` tag still triggers
+the full, all-platform release workflow. The dispatch form becomes available
+with the new inputs after this workflow is present on the default branch.
+
 ### Linux
 
 ```bash
@@ -48,8 +77,68 @@ Typical outputs:
 # Output: dist/SnapTray-<version>-x86_64.AppImage
 ```
 
-The Linux beta artifact targets Ubuntu 22.04 X11. It does not include in-app
-updates; users download a newer AppImage for upgrades.
+The Linux beta artifact targets Ubuntu 22.04 X11 (x86_64). Signed AppImages
+include an in-app updater based on AppImageUpdate. The release must include both
+`SnapTray-<version>-x86_64.AppImage` and its matching `.AppImage.zsync`. Existing
+unsigned releases require one manual download of a signed version first.
+
+The updater is built separately from `src/update/appimage` with CMake 3.20+.
+Install `libgpgme-dev`, `libgcrypt20-dev`, `nlohmann-json3-dev`, `libxpm-dev`,
+`libssl-dev`, and `gnupg` in addition to the normal build prerequisites.
+The helper uses the system GnuPG engine on Ubuntu 22.04 to verify signatures.
+AppImageUpdate and its bundled source dependencies are fixed by the helper's
+CMake configuration; the GUI does not link the updater library.
+
+Before publishing the first update-enabled release, configure:
+
+- GitHub Actions secret `APPIMAGE_PRIVATE_KEY`: an ASCII-armored OpenPGP secret
+  signing key usable non-interactively. Use a dedicated release key, not the
+  Sparkle/WinSparkle EdDSA key. Never commit this key or write it to build logs.
+- Repository variable `APPIMAGE_SIGN_KEY`: the full public signing fingerprint.
+
+The release workflow imports the key into a temporary GnuPG home. Missing signing
+configuration fails the Linux release build. For local signed packaging, set
+`GNUPGHOME` and `SNAPTRAY_APPIMAGE_SIGN_KEY`; set
+`SNAPTRAY_REQUIRE_APPIMAGE_SIGNATURE=1` to require signing. Unsigned local builds
+can be packaged for development, but the in-app installer rejects them.
+
+`LDAI_UPDATE_INFORMATION` selects the latest **formal GitHub release**, excluding
+prereleases. The selected release and architecture are fixed when the user
+confirms a download. The final AppImage is signed before the zsync checksum is
+produced. `verify-update-artifacts.py` checks the embedded source and final
+checksum; do not modify either artifact after that check.
+
+The updater requires a valid signature from the same key as the running signed
+AppImage. Key rotation is not automatic: distribute a new trusted version
+manually when changing the signing key. A `.zsync` checksum alone is insufficient.
+
+Updates are staged next to the original AppImage, so that installation can use
+same-filesystem renames. The original launch path and executable permissions are
+retained; the previous version remains at `<AppImage>.snaptray-backup`. The
+private `<AppImage>.snaptray-update` directory holds pending downloads and an
+interrupted-install journal. A failed startup confirmation triggers rollback.
+Replacement uses an atomic rename after creating the backup, keeping the original
+launch path present throughout installation. The next update operation detects
+and recovers interrupted transactions before doing any new work.
+
+For helper integration tests, build a small signed AppImage with a **temporary
+non-production key**, then run:
+
+```bash
+python3 tests/Update/tst_appimage_helper.py \
+  release-linux/appimage-updater/snaptray-appimage-updater /path/to/signed-fixture.AppImage
+```
+
+To exercise successful restart acknowledgement and rollback without FUSE, build
+with `-DSNAPTRAY_BUILD_UPDATER_TESTS=ON`, build the additional
+`snaptray-appimage-updater-test` target, and set `SNAPTRAY_TEST_HELPER` to that
+executable when running the same Python suite. Its injected launcher exists
+only in the test executable; never package that executable.
+
+Before release, additionally exercise two different signed versions end to end
+on Ubuntu 22.04 X11: confirm download, cancel, defer, restart, preserve shortcuts,
+and recover when the new version fails to acknowledge startup. Verify externally
+with AppImageUpdate too. These network/mount/UI checks are distinct from unit tests.
 
 The packaging script preserves and checks the ELF header and the type 2
 AppImage marker (`AI\x02` at byte offset 8), as required by the

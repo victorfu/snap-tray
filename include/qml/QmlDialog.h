@@ -20,8 +20,11 @@ class QmlDialog : public QObject
     Q_OBJECT
 
 public:
+    enum class ViewModelOwnership { Owned, Borrowed };
+
     QmlDialog(const QUrl& qmlSource, QObject* viewModel,
-              const QString& contextPropertyName, QObject* parent = nullptr);
+              const QString& contextPropertyName, QObject* parent = nullptr,
+              ViewModelOwnership ownership = ViewModelOwnership::Owned);
     ~QmlDialog() override;
 
     virtual void showAt(const QPoint& pos = QPoint());

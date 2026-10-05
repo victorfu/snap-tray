@@ -29,14 +29,14 @@ QPoint QmlDialog::centeredTopLeftForBounds(const QRect& bounds, const QSize& vie
 }
 
 QmlDialog::QmlDialog(const QUrl& qmlSource, QObject* viewModel,
-                     const QString& contextPropertyName, QObject* parent)
+                     const QString& contextPropertyName, QObject* parent, ViewModelOwnership ownership)
     : QObject(parent)
     , m_qmlSource(qmlSource)
     , m_viewModel(viewModel)
     , m_contextPropertyName(contextPropertyName)
 {
     // Take ownership of the ViewModel so it is cleaned up together with this dialog.
-    if (viewModel)
+    if (viewModel && ownership == ViewModelOwnership::Owned)
         viewModel->setParent(this);
 }
 

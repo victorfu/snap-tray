@@ -8,6 +8,9 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ### Added
 
+- Added Linux AppImage update checks, confirmed downloads, and restart-to-install with signature verification and recovery to the previous version.
+- Added AppImageUpdate-compatible update metadata and zsync files to Linux releases.
+
 - Long screenshots retain independent reliable sections, with separate section/part labels and filenames.
 - Long screenshot results support horizontal trimming and band removal with undo/redo, and can open the edited image in the pin annotation toolbar.
 
