@@ -66,6 +66,7 @@ struct SolveResult {
     std::vector<std::optional<int>> positions; // page offset of each frame's crop origin; nullopt = not placed
     std::vector<qint64> breakTimesMs;          // first frame time of every island that was not kept
     std::vector<SolvedSection> sections; // all reliable components, in recording order
+    std::vector<int> rejectedObservationIndices; // indices in the input observations; never use for confidence paths
     int rejectedEdges = 0;                     // outliers dropped during solving
     bool cancelled = false;
     bool converged = true;                     // false: an island solve hit its iteration cap; positions are unusable

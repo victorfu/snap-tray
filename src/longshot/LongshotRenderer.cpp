@@ -354,11 +354,30 @@ RenderPlan prepareRender(const AnalysisResult& a, const LongshotOptions& options
         }
     }
 
-    // Low-confidence rows: frames placed only through weak edges.
-    std::vector<double> bestEdgeConfidence(frameCount, 0.0);
-    for (const PairShift& e : a.edges) {
-        bestEdgeConfidence[e.to] = std::max(bestEdgeConfidence[e.to], e.confidence);
-        bestEdgeConfidence[e.from] = std::max(bestEdgeConfidence[e.from], e.confidence);
+    // A strong edge inside a later pause does not make the weak join to that
+    // pause reliable. Only frames reachable from this section's anchor through
+    // accepted strong edges can be painted without a low-confidence warning.
+    std::vector<bool> rejected(a.edges.size(), false);
+    for (int index : a.solve.rejectedObservationIndices)
+        if (index >= 0 && size_t(index) < rejected.size()) rejected[size_t(index)] = true;
+    std::vector<std::vector<int>> strongNeighbors(frameCount);
+    for (size_t i = 0; i < a.edges.size(); ++i) {
+        const PairShift& edge = a.edges[i];
+        if (rejected[i] || edge.confidence < kLowConfidence
+            || edge.from < 0 || edge.from >= frameCount || edge.to < 0 || edge.to >= frameCount
+            || !a.solve.positions[edge.from] || !a.solve.positions[edge.to]) continue;
+        strongNeighbors[edge.from].push_back(edge.to);
+        strongNeighbors[edge.to].push_back(edge.from);
+    }
+    std::vector<bool> reliable(frameCount, false);
+    std::vector<int> pending{firstPlaced};
+    reliable[firstPlaced] = true;
+    for (size_t i = 0; i < pending.size(); ++i) {
+        for (int neighbor : strongNeighbors[pending[i]]) {
+            if (reliable[neighbor]) continue;
+            reliable[neighbor] = true;
+            pending.push_back(neighbor);
+        }
     }
 
     for (const auto& entry : ranges) {
@@ -379,7 +398,7 @@ RenderPlan prepareRender(const AnalysisResult& a, const LongshotOptions& options
             const int clippedHeight = std::min(height, renderHeight - destTop);
             scheduleRows(index, QRect(range.left(), srcTop, range.width(), clippedHeight), destTop);
             result.sourceSpans.push_back({destTop, destTop + clippedHeight, a.frames[index].tMs});
-            if (bestEdgeConfidence[index] < kLowConfidence && index != firstPlaced) {
+            if (!reliable[index]) {
                 for (int y = destTop; y < destTop + clippedHeight; ++y) result.lowConfidenceRows.push_back(y);
             }
         }

@@ -11,7 +11,8 @@
 
 namespace SnapTray::Longshot {
 
-// Edges below this confidence mark the rows they place as low confidence.
+// Frames without an accepted path of edges at or above this confidence to
+// their section anchor have their painted rows marked as low confidence.
 // The analyzer only accepts a pair whose best NCC score reaches minPeakScore
 // (0.55) with a margin of minMargin (0.15) over the runner-up, and reports
 // confidence = best + margin, so every accepted edge lies in

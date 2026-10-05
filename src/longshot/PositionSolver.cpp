@@ -25,6 +25,7 @@ struct Edge {
     double dy;
     double weight;
     bool active;
+    int observationIndex;
 };
 
 // Union-find over frames connected by active edges.
@@ -135,12 +136,13 @@ SolveResult PositionSolver::solve(const std::vector<qint64>& frameTimesMs,
 
     std::vector<Edge> edges;
     edges.reserve(observations.size());
-    for (const PairShift& o : observations) {
+    for (int index = 0; index < int(observations.size()); ++index) {
+        const PairShift& o = observations[size_t(index)];
         if (!(o.confidence > 0.0) || o.from < 0 || o.to < 0 || o.from >= frameCount || o.to >= frameCount
             || o.from == o.to) {
             continue;
         }
-        edges.push_back({o.from, o.to, double(o.dy), o.confidence, true});
+        edges.push_back({o.from, o.to, double(o.dy), o.confidence, true, index});
     }
 
     // Outlier rejection: solve, drop the single worst edge above the residual
@@ -187,6 +189,7 @@ SolveResult PositionSolver::solve(const std::vector<qint64>& frameTimesMs,
         if (worst < 0) break;
         edges[worst].active = false;
         ++result.rejectedEdges;
+        result.rejectedObservationIndices.push_back(edges[worst].observationIndex);
         qDebug() << "PositionSolver: rejected edge" << edges[worst].from << "->" << edges[worst].to
                  << "dy" << edges[worst].dy << "residual" << worstResidual;
     }

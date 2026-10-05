@@ -1,6 +1,7 @@
 #include "longshot/LongshotPipeline.h"
 #include "longshot/LongshotRenderer.h"
 #include "longshot/LongshotSession.h"
+#include "longshot/PositionSolver.h"
 
 #include <QtTest>
 #include <QPainter>
@@ -61,6 +62,7 @@ class tst_LongshotReliability : public QObject
 {
     Q_OBJECT
 private slots:
+    void weakJoinRemainsMarkedAfterPause();
     void unmatchedFramesAreRejected_data();
     void unmatchedFramesAreRejected();
     void texturedStationaryFramesRemainValid();
@@ -474,6 +476,49 @@ void tst_LongshotReliability::sparseScrollingColumnsAreNotSidebars()
     const QImage from = page.copy(0, 0, 128, 128);
     const QImage to = page.copy(0, 8, 128, 128);
     QCOMPARE(LongshotAnalyzer::movingColumnSpan(from, to, 8, {}), from.rect());
+}
+
+void tst_LongshotReliability::weakJoinRemainsMarkedAfterPause()
+{
+    const QImage page = texture();
+    MemorySource source({page.copy(0, 0, 128, 128), page.copy(0, 64, 128, 128),
+                         page.copy(0, 64, 128, 128)});
+    AnalysisResult analysis;
+    analysis.frameSize = QSize(128, 128);
+    for (int i = 0; i < 3; ++i) {
+        auto frame = LongshotAnalyzer::computeFeatures(
+            page.copy(0, i == 0 ? 0 : 64, 128, 128), i * kFrameIntervalMs);
+        frame.stationary = i == 2;
+        analysis.frames.push_back(frame);
+    }
+    analysis.edges = {{0, 1, 64, 0.75}, {1, 2, 0, 1.0}};
+    auto render = [&] {
+        analysis.solve = PositionSolver::solve({0, 50, 100}, analysis.edges, 3, 128);
+        return LongshotRenderer::renderSections(source, {}, 0, -1, {}, analysis, {}, {});
+    };
+    const auto paused = render();
+    QCOMPARE(paused.error, LongshotError::None);
+    QCOMPARE(paused.fullHeightPx, 192);
+    QVERIFY(std::find(paused.lowConfidenceRows.begin(), paused.lowConfidenceRows.end(), 150)
+            != paused.lowConfidenceRows.end());
+
+    // An independent strong connection to the anchor really does resolve the uncertainty.
+    analysis.edges.push_back({0, 2, 64, 0.95});
+    const auto rejoined = render();
+    QCOMPARE(rejoined.error, LongshotError::None);
+    QVERIFY(rejoined.lowConfidenceRows.empty());
+
+    // A strong but inconsistent closure rejected by the solver cannot clear it.
+    // Include an invalid observation to check indices refer to the original input.
+    analysis.edges = {{-1, 0, 0, 1.0}};
+    for (int i = 0; i < 10; ++i) analysis.edges.push_back({0, 1, 64, 0.75});
+    analysis.edges.push_back({1, 2, 0, 1.0});
+    analysis.edges.push_back({0, 2, 300, 0.95});
+    const auto rejected = render();
+    QCOMPARE(rejected.error, LongshotError::None);
+    QCOMPARE(analysis.solve.rejectedObservationIndices, std::vector<int>{12});
+    QVERIFY(std::find(rejected.lowConfidenceRows.begin(), rejected.lowConfidenceRows.end(), 150)
+            != rejected.lowConfidenceRows.end());
 }
 
 QTEST_GUILESS_MAIN(tst_LongshotReliability)
