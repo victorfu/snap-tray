@@ -49,6 +49,8 @@ private slots:
     void periodicContentIsAmbiguous();
     void collapsedCandidatesStillSeeTheRunnerUp();
     void stickyHeaderBecomesTopBand();
+    void stickyHeaderToleratesIsolatedCodecRow_data();
+    void stickyHeaderToleratesIsolatedCodecRow();
     void tallHeaderStillMatches();
     void sidebarExcludedFromMovingSpan();
     void scrollUpHeaderIsPerFrame();
@@ -238,6 +240,49 @@ void tst_LongshotAnalyzer::stickyHeaderBecomesTopBand()
     QVERIFY2(qAbs(obs->bandsFrom.top - 40) <= 2, qPrintable(QString::number(obs->bandsFrom.top)));
     QVERIFY2(qAbs(obs->bandsTo.top - 40) <= 2, qPrintable(QString::number(obs->bandsTo.top)));
     QCOMPARE(obs->bandsTo.bottom, 0);
+}
+
+void tst_LongshotAnalyzer::stickyHeaderToleratesIsolatedCodecRow_data()
+{
+    QTest::addColumn<bool>("bottom");
+    QTest::addColumn<int>("firstChangedRow");
+    QTest::addColumn<int>("changedRows");
+    QTest::addColumn<int>("expectedBand");
+    QTest::newRow("header") << false << 13 << 1 << 40;
+    QTest::newRow("footer") << true << 13 << 1 << 40;
+    QTest::newRow("header-moving-rows") << false << 13 << 2 << 13;
+    QTest::newRow("footer-moving-rows") << true << 13 << 2 << 13;
+    QTest::newRow("header-without-prior-evidence") << false << 1 << 1 << 0;
+    QTest::newRow("footer-without-prior-evidence") << true << 1 << 1 << 0;
+}
+
+void tst_LongshotAnalyzer::stickyHeaderToleratesIsolatedCodecRow()
+{
+    Disturbances d;
+    d.stickyHeaderHeight = 40;
+    Pair p = makePair(renderPage(PageSpec{}), 1000, 1060, d);
+    QFETCH(int, firstChangedRow);
+    QFETCH(int, changedRows);
+    QFETCH(int, expectedBand);
+    // Model the single high-contrast row changed by Media Foundation encoding
+    // at the header text edge, with unchanged header pixels on either side.
+    for (int y = firstChangedRow; y < firstChangedRow + changedRows; ++y) {
+        for (int x = 0; x < p.to.width(); ++x) {
+            const QColor color = p.to.pixelColor(x, y);
+            p.to.setPixelColor(x, y, QColor(std::min(255, color.red() + 24),
+                                          std::min(255, color.green() + 24),
+                                          std::min(255, color.blue() + 24)));
+        }
+    }
+    QFETCH(bool, bottom);
+    if (bottom) {
+        p.from = p.from.mirrored(false, true);
+        p.to = p.to.mirrored(false, true);
+    }
+    const auto bands = LongshotAnalyzer::detectStaticBands(p.from, p.to, bottom ? -60 : 60, {});
+    const int band = bottom ? bands.bottom : bands.top;
+    QVERIFY2(qAbs(band - expectedBand) <= 2, qPrintable(QString::number(band)));
+    QCOMPARE(bottom ? bands.top : bands.bottom, 0);
 }
 
 void tst_LongshotAnalyzer::tallHeaderStillMatches()
