@@ -287,6 +287,7 @@ void LongshotController::save()
     auto& settings = FileSettingsManager::instance();
     const QString dir = settings.resolveManualScreenshotSaveDirectory(settings.loadUseLastScreenshotSaveLocation());
     FilenameTemplateEngine::Context context;
+    context.type = QStringLiteral("LongScreenshot");
     context.width = m_result.parts.first().width();
     context.height = m_result.fullHeightPx;
     context.prefix = settings.loadFilenamePrefix();
