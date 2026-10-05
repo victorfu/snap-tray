@@ -1818,88 +1818,28 @@ Grootte: %2</translation>
         <translation>Opname verwerpen (Esc)</translation>
     </message>
     <message>
+        <source>Create Long Screenshot</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
         <source>Save Recording (Enter / Ctrl+S)</source>
         <translation>Opname opslaan (Enter / Ctrl+S)</translation>
+    </message>
+    <message>
+        <source>Adjust the crop or time range, then analyze again.</source>
+        <translation type="unfinished" />
     </message>
     <message>
         <source>Cancel</source>
         <translation>Annuleren</translation>
     </message>
     <message>
+        <source>Analyze Again</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
         <source>Dismiss Error</source>
         <translation>Fout sluiten</translation>
-    </message>
-    <message>
-        <source>Long Screenshot</source>
-        <translation>Lange schermafbeelding</translation>
-    </message>
-    <message>
-        <source>Generate Long Screenshot</source>
-        <translation>Lange schermafbeelding maken</translation>
-    </message>
-    <message>
-        <source>Crop to the scrolling area, then generate a long screenshot.</source>
-        <translation>Snijd bij tot het scrollgebied en maak een lange schermafbeelding.</translation>
-    </message>
-    <message>
-        <source>Remove Fixed Header</source>
-        <translation>Vaste kop verwijderen</translation>
-    </message>
-    <message>
-        <source>Include Fixed Header</source>
-        <translation>Vaste kop opnemen</translation>
-    </message>
-    <message>
-        <source>Save PNG</source>
-        <translation>PNG opslaan</translation>
-    </message>
-    <message>
-        <source>Back</source>
-        <translation>Terug</translation>
-    </message>
-    <message>
-        <source>Copy</source>
-        <translation>Kopiëren</translation>
-    </message>
-    <message>
-        <source>Pin</source>
-        <translation>Vastzetten</translation>
-    </message>
-    <message>
-        <source>Edit Image</source>
-        <translation>Afbeelding bewerken</translation>
-    </message>
-    <message>
-        <source>Keep Selection</source>
-        <translation>Selectie behouden</translation>
-    </message>
-    <message>
-        <source>Delete Selection</source>
-        <translation>Selectie verwijderen</translation>
-    </message>
-    <message>
-        <source>Undo</source>
-        <translation>Ongedaan maken</translation>
-    </message>
-    <message>
-        <source>Redo</source>
-        <translation>Opnieuw</translation>
-    </message>
-    <message>
-        <source>Reset Image</source>
-        <translation>Afbeelding herstellen</translation>
-    </message>
-    <message>
-        <source>Annotate in Pin</source>
-        <translation>Annoteren in vastgezet venster</translation>
-    </message>
-    <message>
-        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
-        <translation>Sleep om rijen in dit deel te selecteren. Opnieuw genereren wist de beeldbewerkingen.</translation>
-    </message>
-    <message>
-        <source>View Result</source>
-        <translation>Resultaat bekijken</translation>
     </message>
 </context>
 <context>
@@ -3394,44 +3334,20 @@ Bestandsgrootte: %3</translation>
         <translation>De opname kon niet worden gedecodeerd. Het origineel is behouden.</translation>
     </message>
     <message>
-        <source>Auto-cropped columns: left %1, right %2.</source>
-        <translation>Automatisch bijgesneden kolommen: links %1, rechts %2.</translation>
+        <source>Finding content to stitch…</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Review the marked areas: the result may be incomplete.</source>
-        <translation>Controleer de gemarkeerde gebieden: het resultaat is mogelijk onvolledig.</translation>
-    </message>
-    <message>
-        <source>Analyzing...</source>
-        <translation>Analyseren…</translation>
-    </message>
-    <message>
-        <source>Solving positions...</source>
-        <translation>Posities berekenen…</translation>
-    </message>
-    <message>
-        <source>Rendering...</source>
-        <translation>Renderen…</translation>
+        <source>Generating long screenshot…</source>
+        <translation type="unfinished" />
     </message>
     <message>
         <source>Could not create the result preview.</source>
         <translation>Het resultaatvoorbeeld kon niet worden gemaakt.</translation>
     </message>
     <message>
-        <source>Missing coverage</source>
-        <translation>Ontbrekende inhoud</translation>
-    </message>
-    <message>
-        <source>Low confidence</source>
-        <translation>Lage betrouwbaarheid</translation>
-    </message>
-    <message>
-        <source>Unjoined recording section</source>
-        <translation>Niet verbonden opnamesectie</translation>
-    </message>
-    <message>
-        <source>Copied part %1.</source>
-        <translation>Deel %1 gekopieerd.</translation>
+        <source>Image copied.</source>
+        <translation type="unfinished" />
     </message>
     <message>
         <source>Save Long Screenshot</source>
@@ -3442,16 +3358,215 @@ Bestandsgrootte: %3</translation>
         <translation>PNG-afbeelding (*.png)</translation>
     </message>
     <message>
-        <source>Part %1: %2</source>
-        <translation>Deel %1: %2</translation>
+        <source>Image %1: %2</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Saved %1 of %2 parts.</source>
-        <translation>%1 van %2 delen opgeslagen.</translation>
+        <source>Saved %1 of %2 images.</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Section %1 of %2 · Part %3 of %4</source>
-        <translation>Sectie %1 van %2 · Deel %3 van %4</translation>
+        <source>Copy failed. Please try again.</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
+    <name>LongshotWorkspace</name>
+    <message>
+        <source>Choose Content</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recording Preview</source>
+        <translation>Opnamevoorbeeld</translation>
+    </message>
+    <message>
+        <source>Long Screenshot Ready</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Create Long Screenshot</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>We will recommend a suitable range when analysis is complete.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Creating only your selected content.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Annuleren</translation>
+    </message>
+    <message>
+        <source>This recording cannot produce a long screenshot yet</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Content found; some seams need a look</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>We recommend this content</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This content can become a long screenshot</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>There is not enough scrolling content. Choose a range that includes scrolling.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This recording is too long to analyze. Select a shorter range and try again.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No continuous content was found. Crop to one content area, or record again while scrolling slowly.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Some content could not be joined. This selection produces a separate long screenshot and does not include the entire recording.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Review the selected source range, then generate your screenshot.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recommended range</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Selected range</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Source preview · Start</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Source preview · End</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This content is long and will be saved as %1 images.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Produces 1 image</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Some seams will be marked for review in the preview.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The largest continuous range with reliable content.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>A continuous range of content.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Hide other ranges</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Other available ranges (%1)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Adjust Analysis Range</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recommended</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Seams need review</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Continuous content</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Selected source range: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Includes only part of the recording</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 areas have seams worth checking.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Review</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Done</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>More…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pin Current Image</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Vastmaken</translation>
+    </message>
+    <message>
+        <source>Annotate Current Image in Pin</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>Annoteren in vastgezet venster</translation>
+    </message>
+    <message>
+        <source>Image %1 / %2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Copy Current Image</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopiëren</translation>
+    </message>
+    <message>
+        <source>Retry</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Generate Long Screenshot</source>
+        <translation>Lange schermafbeelding maken</translation>
+    </message>
+    <message>
+        <source>Retry Analysis</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Save %1 PNG Images</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Save PNG</source>
+        <translation>PNG opslaan</translation>
     </message>
 </context>
 </TS>

@@ -1,6 +1,5 @@
 #pragma once
 #include "longshot/LongshotSession.h"
-#include "longshot/LongshotImageEdit.h"
 #include <QObject>
 #include <QFutureWatcher>
 #include <QTemporaryDir>
@@ -10,68 +9,63 @@
 #include <QPointer>
 #include <QVariantList>
 #include <atomic>
+#include <memory>
 class QQmlEngine;
 struct LongshotPreviewState;
-#include <memory>
 
-// Single-worker owner of the offline engine. All public actions are GUI-thread only.
+// GUI-thread owner. Analysis and rendering run serially on a dedicated worker.
 class LongshotController : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(bool canUndo READ canUndo NOTIFY changed)
-    Q_PROPERTY(bool canRedo READ canRedo NOTIFY changed)
-    Q_PROPERTY(bool imageEdited READ imageEdited NOTIFY changed)
+    Q_PROPERTY(QString phase READ phase NOTIFY changed)
+    Q_PROPERTY(QString failureReason READ failureReason NOTIFY changed)
+    Q_PROPERTY(QVariantList candidates READ candidates NOTIFY changed)
+    Q_PROPERTY(int selectedCandidate READ selectedCandidate WRITE setSelectedCandidate NOTIFY changed)
+    Q_PROPERTY(QVariantMap candidate READ candidate NOTIFY changed)
     Q_PROPERTY(bool busy READ busy NOTIFY changed)
     Q_PROPERTY(bool hasResult READ hasResult NOTIFY changed)
     Q_PROPERTY(int progress READ progress NOTIFY changed)
     Q_PROPERTY(QString status READ status NOTIFY changed)
     Q_PROPERTY(QString message READ message NOTIFY changed)
     Q_PROPERTY(QUrl preview READ preview NOTIFY changed)
-    Q_PROPERTY(QString partLabel READ partLabel NOTIFY changed)
-    Q_PROPERTY(QString resultSummary READ resultSummary NOTIFY changed)
     Q_PROPERTY(int partCount READ partCount NOTIFY changed)
     Q_PROPERTY(int selectedPart READ selectedPart WRITE setSelectedPart NOTIFY changed)
     Q_PROPERTY(int partStartRow READ partStartRow NOTIFY changed)
     Q_PROPERTY(QSize imageSize READ imageSize NOTIFY changed)
     Q_PROPERTY(QVariantList markers READ markers NOTIFY changed)
-    Q_PROPERTY(bool includeHeader MEMBER m_includeHeader NOTIFY changed)
 public:
     explicit LongshotController(QObject* parent = nullptr,
-        SnapTray::Longshot::LongshotSession::SourceFactory factory = SnapTray::Longshot::LongshotSession::SourceFactory());
+        SnapTray::Longshot::LongshotSession::SourceFactory factory = {});
     ~LongshotController() override;
+    QString phase() const { return m_phase; }
+    QString failureReason() const { return m_failureReason; }
+    QVariantList candidates() const { return m_candidates; }
+    int selectedCandidate() const { return m_selectedCandidate; }
+    QVariantMap candidate() const { return m_candidates.value(m_selectedCandidate).toMap(); }
     bool busy() const { return m_busy; }
     bool hasResult() const { return !m_result.parts.isEmpty(); }
     int progress() const { return m_progress; }
     QString status() const { return m_status; }
     QString message() const { return m_message; }
     QUrl preview() const { return m_preview; }
-    QString partLabel() const;
-    QString resultSummary() const;
     int partCount() const { return m_result.parts.size(); }
     int selectedPart() const { return m_selectedPart; }
-    QSize imageSize() const;
     int partStartRow() const;
+    QSize imageSize() const;
     QVariantList markers() const { return m_markers; }
     void setSelectedPart(int part);
+    void setSelectedCandidate(int index);
     void start(const QString& path, qint64 startMs, qint64 endMs, const QRect& crop);
-    // Invalidate a displayed result after editing without discarding compatible session caches.
-    void invalidate();
+    Q_INVOKABLE void invalidate();
     void installImageProvider(QQmlEngine* engine);
+    Q_INVOKABLE void generate();
+    Q_INVOKABLE void showRecommendation();
     Q_INVOKABLE void cancel();
     Q_INVOKABLE void save();
     Q_INVOKABLE void copy();
     Q_INVOKABLE void pin();
     Q_INVOKABLE void clearMessage();
     Q_INVOKABLE void annotate();
-    Q_INVOKABLE bool keepRows(int begin, int end);
-    Q_INVOKABLE bool removeRows(int begin, int end);
-    Q_INVOKABLE bool undoEdit();
-    Q_INVOKABLE bool redoEdit();
-    Q_INVOKABLE bool resetImage();
-    bool canUndo() const;
-    bool canRedo() const;
-    bool imageEdited() const;
-    // Separate from native dialog for deterministic disk-failure/retry tests.
     bool saveToDirectory(const QString& directory, const QString& baseName);
 signals:
     void changed();
@@ -81,28 +75,37 @@ signals:
     void pinRequested(const QImage& image);
     void annotateRequested(const QImage& image);
 private:
-    bool edit(const std::function<bool(SnapTray::Longshot::LongshotImageEdit&)>& operation);
-    void remapMarkers();
+    friend class tst_LongshotController;
+    struct WorkResult {
+        quint64 generation = 0;
+        bool analyzing = false;
+        SnapTray::Longshot::AnalysisReport analysis;
+        SnapTray::Longshot::RenderResult render;
+    };
+    void launch(bool analyzing);
+    void clearResult();
     void updatePreview();
-    void buildMarkers(const SnapTray::Longshot::RunReport& report);
+    void buildMarkers();
+    void publishCandidates(const SnapTray::Longshot::AnalysisReport& report);
     std::shared_ptr<LongshotPreviewState> m_previewState;
     QString m_providerId;
     QPointer<QQmlEngine> m_engine;
     QThreadPool m_pool;
     std::shared_ptr<SnapTray::Longshot::LongshotSession> m_session;
-    QFutureWatcher<SnapTray::Longshot::RunReport> m_watcher;
+    QFutureWatcher<WorkResult> m_watcher;
     std::shared_ptr<std::atomic_bool> m_cancel;
     quint64 m_generation = 0;
     bool m_busy = false;
-    bool m_includeHeader = false;
     int m_progress = 0;
     int m_selectedPart = 0;
-    QString m_status, m_message;
+    int m_selectedCandidate = -1;
+    QString m_phase = QStringLiteral("idle");
+    QString m_failureReason, m_status, m_message;
+    QString m_path;
+    qint64 m_startMs = 0, m_endMs = -1;
+    QRect m_crop;
     QUrl m_preview;
-    QVariantList m_markers, m_originalMarkers;
-    std::vector<SnapTray::Longshot::LongshotImageEdit> m_edits;
-    std::vector<int> m_originalPartStarts;
-    std::vector<SnapTray::Longshot::SourceSpan> m_originalSpans;
+    QVariantList m_candidates, m_markers;
     SnapTray::Longshot::RenderResult m_result;
     QTemporaryDir m_previewDir;
     quint64 m_previewRevision = 0;

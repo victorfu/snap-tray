@@ -61,8 +61,8 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
     connect(m_longshot, &LongshotController::idle, this, [this] {
         if (m_longshotClosePending) { m_longshotClosePending = false; close(); }
     });
-    connect(this, &RecordingPreviewBackend::cropRectChanged, m_longshot, &LongshotController::invalidate);
-    connect(this, &RecordingPreviewBackend::trimRangeChanged, m_longshot, &LongshotController::invalidate);
+    connect(this, &RecordingPreviewBackend::cropRectChanged, this, [this] { if (!m_longshotAdjusting) m_longshot->invalidate(); });
+    connect(this, &RecordingPreviewBackend::trimRangeChanged, this, [this] { if (!m_longshotAdjusting) m_longshot->invalidate(); });
 }
 
 std::function<int()>& RecordingPreviewBackend::outputQualityOverride()
@@ -283,7 +283,7 @@ qint64 RecordingPreviewBackend::trimmedDuration() const
 void RecordingPreviewBackend::setSelectedFormat(int format)
 {
     if (isProcessing()) return;
-    format = qBound(0, format, 3);
+    format = qBound(0, format, 2);
     auto fmt = static_cast<OutputFormat>(format);
     if (m_selectedFormat != fmt) {
         m_selectedFormat = fmt;
@@ -352,6 +352,39 @@ QString RecordingPreviewBackend::formatTime(qint64 ms) const
         .arg(seconds, 2, 10, QChar('0'));
 }
 
+void RecordingPreviewBackend::startLongshot()
+{
+    if (isProcessing() || m_closeHandled) return;
+    m_longshot->start(m_videoPath, m_trimStart, trimEnd(), m_cropRect);
+}
+
+void RecordingPreviewBackend::beginLongshotAdjustment()
+{
+    if (isProcessing() || m_longshotAdjusting) return;
+    m_longshotOriginalStart = m_trimStart;
+    m_longshotOriginalEnd = m_trimEnd;
+    m_longshotOriginalCrop = m_cropRect;
+    m_longshotAdjusting = true;
+}
+
+void RecordingPreviewBackend::cancelLongshotAdjustment()
+{
+    if (!m_longshotAdjusting) return;
+    m_trimStart = m_longshotOriginalStart;
+    m_trimEnd = m_longshotOriginalEnd;
+    m_cropRect = m_longshotOriginalCrop;
+    emit trimRangeChanged();
+    emit cropRectChanged();
+    m_longshotAdjusting = false;
+}
+
+void RecordingPreviewBackend::applyLongshotAdjustment()
+{
+    if (!m_longshotAdjusting || isProcessing()) return;
+    m_longshotAdjusting = false;
+    startLongshot();
+}
+
 void RecordingPreviewBackend::save()
 {
     qDebug() << "RecordingPreviewBackend: Save requested";
@@ -366,10 +399,6 @@ void RecordingPreviewBackend::save()
                                               : RecordingSettingsManager::instance().quality();
 
     // Animated exports share the same offline extraction path, including trims.
-    if (m_selectedFormat == LongScreenshot) {
-        m_longshot->start(m_videoPath, m_trimStart, trimEnd(), m_cropRect);
-        return;
-    }
     if (m_selectedFormat != MP4) {
         performFormatConversion(m_selectedFormat);
         return;

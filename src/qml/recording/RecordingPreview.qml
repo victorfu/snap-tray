@@ -25,37 +25,20 @@ Item {
     readonly property real overlayChipHeight: 28
     readonly property real overlayChipButtonSize: 20
 
-    property bool imageEditMode: false
-    property real rowAnchor: -1
-    property real rowEnd: -1
-    property int observedPart: 0
-    readonly property bool hasRowSelection: rowAnchor >= 0 && rowEnd >= 0
-    readonly property int firstSelectedRow: hasRowSelection ? Math.max(0, Math.floor(Math.min(rowAnchor, rowEnd))) : 0
-    readonly property int endSelectedRow: hasRowSelection ? Math.min(root.longshot.imageSize.height, Math.floor(Math.max(rowAnchor, rowEnd)) + 1) : 0
-    function clearRowSelection() { rowAnchor = -1; rowEnd = -1 }
-    function finishImageEdit() {
-        clearRowSelection()
-        resultViewport.contentY = Math.min(resultViewport.contentY, Math.max(0, resultViewport.contentHeight - resultViewport.height))
-    }
-    property bool showLongshotResult: false
-    property real longshotZoom: 1.0
-    readonly property int longshotTileHeight: 1024
-    readonly property int longshotTextureMaxWidth: 2048
+    readonly property var previewBackend: backend
     readonly property var longshot: backend.longshot
-
-    Connections {
-        target: root.longshot
-        function onResultReady() { root.imageEditMode = false; root.clearRowSelection(); root.showLongshotResult = true }
-        function onChanged() {
-            if (!root.longshot.hasResult && !root.longshot.busy) { root.showLongshotResult = false; root.imageEditMode = false; root.clearRowSelection() }
-            if (root.observedPart !== root.longshot.selectedPart) {
-                root.observedPart = root.longshot.selectedPart
-                root.clearRowSelection()
-                resultViewport.contentY = 0
-            }
-        }
+    property bool adjustingLongshot: false
+    readonly property bool showLongshotWorkspace: longshot.phase !== "idle" && !adjustingLongshot
+    function startLongshot() {
+        videoPlayer.pause()
+        if (cropOverlay.editing) cropOverlay.apply()
+        backend.startLongshot()
     }
-
+    function cancelLongshotAdjustment() {
+        if (cropOverlay.editing) cropOverlay.cancel()
+        backend.cancelLongshotAdjustment()
+        adjustingLongshot = false
+    }
     property bool isScrubbing: false
     property bool isDraggingTrimStart: false
     property bool isDraggingTrimEnd: false
@@ -84,12 +67,7 @@ Item {
             return
         if (cropOverlay.editing)
             cropOverlay.apply()
-        if (root.showLongshotResult && root.longshot.hasResult) {
-            root.longshot.save()
-            return
-        }
-        if (backend.selectedFormat === 3) videoPlayer.pause()
-        backend.save()
+        if (!root.adjustingLongshot) backend.save()
     }
 
     // The window under the resting pointer follows the playhead too.
@@ -174,7 +152,7 @@ Item {
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
-        enabled: !backend.isProcessing && !root.showLongshotResult
+        enabled: !backend.isProcessing && !root.showLongshotWorkspace
 
         Item {
             Layout.fillWidth: true
@@ -550,31 +528,35 @@ Item {
                 anchors.centerIn: parent
                 spacing: SemanticTokens.spacing8
 
-                SegmentButton {
-                    text: "MP4"
-                    tooltipText: qsTr("Export as MP4")
-                    selected: backend.selectedFormat === 0
-                    onClicked: backend.selectedFormat = 0
+                    SegmentButton {
+                        text: "MP4"
+                        tooltipText: qsTr("Export as MP4")
+                        selected: backend.selectedFormat === 0
+                        onClicked: backend.selectedFormat = 0
+                    }
+                    SegmentButton {
+                        text: "GIF"
+                        tooltipText: qsTr("Export as GIF")
+                        selected: backend.selectedFormat === 1
+                        onClicked: backend.selectedFormat = 1
+                    }
+                    SegmentButton {
+                        text: "WebP"
+                        tooltipText: qsTr("Export as WebP")
+                        selected: backend.selectedFormat === 2
+                        onClicked: backend.selectedFormat = 2
+                    }
+
+                DialogButton {
+                    objectName: "longshotCreate"
+                    height: 32
+                    visible: !root.adjustingLongshot
+                    text: qsTr("Create Long Screenshot")
+                    onClicked: root.startLongshot()
                 }
-                SegmentButton {
-                    text: "GIF"
-                    tooltipText: qsTr("Export as GIF")
-                    selected: backend.selectedFormat === 1
-                    onClicked: backend.selectedFormat = 1
+
+
                 }
-                SegmentButton {
-                    text: "WebP"
-                    tooltipText: qsTr("Export as WebP")
-                    selected: backend.selectedFormat === 2
-                    onClicked: backend.selectedFormat = 2
-                }
-                SegmentButton {
-                    objectName: "longshotFormatButton"
-                    text: qsTr("Long Screenshot")
-                    selected: backend.selectedFormat === 3
-                    onClicked: backend.selectedFormat = 3
-                }
-            }
         }
 
         Rectangle {
@@ -621,6 +603,10 @@ Item {
 
                 Item { Layout.fillWidth: true }
 
+
+
+                Item { Layout.fillWidth: true }
+
                 IconButton {
                     objectName: "previewMuteButton"
                     visible: videoPlayer.audioPlaybackSupported
@@ -656,240 +642,61 @@ Item {
                 IconButton {
                     iconSource: "qrc:/icons/icons/trash-2.svg"
                     destructive: true
+                    visible: !root.adjustingLongshot
                     tooltipText: qsTr("Discard Recording (Esc)")
                     onClicked: backend.discard()
                 }
 
                 IconButton {
                     objectName: "previewSaveButton"
+                    visible: !root.adjustingLongshot
                     iconSource: "qrc:/icons/icons/save.svg"
                     primary: true
-                    tooltipText: backend.selectedFormat === 3 ? qsTr("Generate Long Screenshot") : qsTr("Save Recording (Enter / Ctrl+S)")
+                    tooltipText: qsTr("Save Recording (Enter / Ctrl+S)")
                     onClicked: root.saveWithCrop()
                 }
             }
         }
     }
 
-    Rectangle {
-        anchors.top: parent.top
-        anchors.horizontalCenter: parent.horizontalCenter
-        width: parent.width - 32
-        height: hintLayout.implicitHeight + 16
-        radius: SemanticTokens.radiusSmall
-        color: root.bgPanel
-        visible: backend.selectedFormat === 3 && !root.showLongshotResult && !backend.isProcessing
-        RowLayout {
-            id: hintLayout
-            x: 8; y: 8
-            width: parent.width - 16
-            Text {
-                Layout.fillWidth: true
-                wrapMode: Text.WordWrap
-                text: qsTr("Crop to the scrolling area, then generate a long screenshot.")
-                color: root.textPrimary
-            }
-            DialogButton {
-                objectName: "longshotViewResult"
-                visible: root.longshot.hasResult
-                text: qsTr("View Result")
-                onClicked: { videoPlayer.pause(); root.showLongshotResult = true }
-            }
+    LongshotWorkspace {
+        id: longshotWorkspace
+        anchors.fill: parent
+        visible: root.showLongshotWorkspace
+        backend: root.previewBackend
+        onBackRequested: root.longshot.invalidate()
+        onAdjustRequested: {
+            backend.beginLongshotAdjustment()
+            root.adjustingLongshot = true
         }
     }
-
     Rectangle {
-        id: longshotResult
-        objectName: "longshotResult"
-        anchors.fill: parent
-        visible: root.showLongshotResult && root.longshot.hasResult
+        visible: root.adjustingLongshot
+        anchors.top: parent.top
+        width: parent.width
+        height: adjustmentRow.implicitHeight + 16
         color: root.bgPanel
-        ColumnLayout {
+        RowLayout {
+            id: adjustmentRow
             anchors.fill: parent
-            anchors.margins: SemanticTokens.spacing16
-            spacing: SemanticTokens.spacing8
+            anchors.margins: 8
             Text {
-                text: root.longshot.resultSummary + (root.longshot.message ? "\n" + root.longshot.message : "")
+                Layout.fillWidth: true
+                text: qsTr("Adjust the crop or time range, then analyze again.")
+                wrapMode: Text.WordWrap
                 color: root.textPrimary
-                wrapMode: Text.Wrap
-                Layout.fillWidth: true
             }
-            Text {
-                text: root.longshot.partLabel
-                color: root.textSecondary
-                wrapMode: Text.Wrap
-                Layout.fillWidth: true
-            }
-            RowLayout {
-                DialogButton { text: qsTr("Back"); onClicked: root.showLongshotResult = false }
-                DialogButton { text: "−"; enabled: root.longshotZoom > 1; onClicked: root.longshotZoom = Math.max(1, root.longshotZoom / 1.5) }
-                DialogButton { text: "+"; enabled: root.longshotZoom < 8; onClicked: root.longshotZoom = Math.min(8, root.longshotZoom * 1.5) }
-                Text {
-                    text: root.longshot.imageSize.width + " × " + root.longshot.imageSize.height
-                    color: root.textSecondary
+            DialogButton { text: qsTr("Cancel"); onClicked: root.cancelLongshotAdjustment() }
+            DialogButton {
+                objectName: "longshotReanalyze"
+                text: qsTr("Analyze Again")
+                style: "primary"
+                onClicked: {
+                    videoPlayer.pause()
+                    if (cropOverlay.editing) cropOverlay.apply()
+                    root.adjustingLongshot = false
+                    backend.applyLongshotAdjustment()
                 }
-                Item { Layout.fillWidth: true }
-                DialogButton { text: "‹"; enabled: root.longshot.selectedPart > 0; onClicked: root.longshot.selectedPart-- }
-                Text { text: (root.longshot.selectedPart + 1) + " / " + root.longshot.partCount; color: root.textPrimary }
-                DialogButton { text: "›"; enabled: root.longshot.selectedPart + 1 < root.longshot.partCount; onClicked: root.longshot.selectedPart++ }
-            }
-            Flow {
-                Layout.fillWidth: true
-                spacing: 8
-                DialogButton {
-                    objectName: "longshotEdit"
-                    text: qsTr("Edit Image")
-                    onClicked: { root.imageEditMode = !root.imageEditMode; root.clearRowSelection() }
-                }
-                DialogButton {
-                    objectName: "longshotKeepRows"
-                    text: qsTr("Keep Selection")
-                    visible: root.imageEditMode
-                    enabled: root.hasRowSelection && (root.firstSelectedRow > 0 || root.endSelectedRow < root.longshot.imageSize.height)
-                    onClicked: { if (root.longshot.keepRows(root.firstSelectedRow, root.endSelectedRow)) root.finishImageEdit() }
-                }
-                DialogButton {
-                    objectName: "longshotDeleteRows"
-                    text: qsTr("Delete Selection")
-                    visible: root.imageEditMode
-                    enabled: root.hasRowSelection && root.endSelectedRow - root.firstSelectedRow < root.longshot.imageSize.height
-                    onClicked: { if (root.longshot.removeRows(root.firstSelectedRow, root.endSelectedRow)) root.finishImageEdit() }
-                }
-                DialogButton { objectName: "longshotUndo"; text: qsTr("Undo"); enabled: root.longshot.canUndo; onClicked: { root.longshot.undoEdit(); root.finishImageEdit() } }
-                DialogButton { objectName: "longshotRedo"; text: qsTr("Redo"); enabled: root.longshot.canRedo; onClicked: { root.longshot.redoEdit(); root.finishImageEdit() } }
-                DialogButton { text: qsTr("Reset Image"); enabled: root.longshot.imageEdited; onClicked: { root.longshot.resetImage(); root.finishImageEdit() } }
-            }
-            Text {
-                visible: root.imageEditMode
-                text: qsTr("Drag to select rows in this part. Regenerating resets image edits.")
-                color: root.textSecondary
-                wrapMode: Text.Wrap
-                Layout.fillWidth: true
-            }
-            Flickable {
-                id: resultViewport
-                objectName: "longshotViewport"
-                interactive: !root.imageEditMode
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                clip: true
-                contentWidth: width * root.longshotZoom
-                contentHeight: root.longshot.imageSize.width > 0 ? contentWidth * root.longshot.imageSize.height / root.longshot.imageSize.width : 0
-                Repeater {
-                    model: Math.ceil(root.longshot.imageSize.height / root.longshotTileHeight)
-                    Image {
-                        required property int index
-                        readonly property real scaleFactor: resultViewport.contentWidth / Math.max(1, root.longshot.imageSize.width)
-                        y: index * root.longshotTileHeight * scaleFactor
-                        width: resultViewport.contentWidth
-                        height: Math.min(root.longshotTileHeight, root.longshot.imageSize.height - index * root.longshotTileHeight) * scaleFactor
-                        source: y + height >= resultViewport.contentY && y <= resultViewport.contentY + resultViewport.height
-                                ? root.longshot.preview + "/" + index : ""
-                        sourceSize.width: Math.min(root.longshotTextureMaxWidth, Math.ceil(width))
-                        cache: false
-                        smooth: true
-                    }
-                }
-                Repeater {
-                    model: root.longshot.markers
-                    Rectangle {
-                        required property var modelData
-                        readonly property int localRow: modelData.row - root.longshot.partStartRow
-                        visible: modelData.row >= 0 && localRow >= 0 && localRow < root.longshot.imageSize.height
-                        y: localRow * resultViewport.contentWidth / Math.max(1, root.longshot.imageSize.width)
-                        width: resultViewport.contentWidth
-                        height: 3
-                        color: SemanticTokens.statusWarning
-                        MouseArea {
-                            anchors.fill: parent
-                            anchors.margins: -3
-                            enabled: parent.modelData.timeMs >= 0
-                            onClicked: {
-                                root.showLongshotResult = false
-                                videoPlayer.seek(parent.modelData.timeMs)
-                            }
-                        }
-                    }
-                }
-                Rectangle {
-                    visible: root.imageEditMode && root.hasRowSelection
-                    y: root.firstSelectedRow * resultViewport.contentWidth / Math.max(1, root.longshot.imageSize.width)
-                    width: resultViewport.contentWidth
-                    height: (root.endSelectedRow - root.firstSelectedRow) * resultViewport.contentWidth / Math.max(1, root.longshot.imageSize.width)
-                    color: Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.25)
-                    border.color: root.accent
-                }
-                MouseArea {
-                    objectName: "longshotRowSelector"
-                    parent: resultViewport
-                    anchors.fill: parent
-                    enabled: root.imageEditMode
-                    visible: root.imageEditMode
-                    cursorShape: CursorTokens.captureSelection
-                    function imageRow(y) {
-                        return Math.max(0, Math.min(root.longshot.imageSize.height - 1,
-                            (y + resultViewport.contentY) * root.longshot.imageSize.width / Math.max(1, resultViewport.contentWidth)))
-                    }
-                    onPressed: function(mouse) {
-                        const sourceY = mouse.y + resultViewport.contentY
-                        if (sourceY < 0 || sourceY >= resultViewport.contentHeight) {
-                            root.clearRowSelection()
-                            mouse.accepted = false
-                            return
-                        }
-                        root.rowAnchor = imageRow(mouse.y)
-                        root.rowEnd = root.rowAnchor
-                    }
-                    onPositionChanged: function(mouse) { if (pressed) root.rowEnd = imageRow(mouse.y) }
-                    onReleased: function(mouse) { root.rowEnd = imageRow(mouse.y) }
-                    onCanceled: root.clearRowSelection()
-                    onWheel: function(wheel) {
-                        resultViewport.contentY = Math.max(0, Math.min(resultViewport.contentHeight - resultViewport.height,
-                            resultViewport.contentY - (wheel.pixelDelta.y || wheel.angleDelta.y / 2)))
-                        if (pressed) root.rowEnd = imageRow(mouseY)
-                        wheel.accepted = true
-                    }
-                }
-            }
-
-            Flickable {
-                Layout.fillWidth: true
-                Layout.preferredHeight: markerRow.implicitHeight
-                contentWidth: markerRow.implicitWidth
-                contentHeight: markerRow.implicitHeight
-                clip: true
-                Row {
-                    id: markerRow
-                    spacing: 8
-                    Repeater {
-                        model: root.longshot.markers
-                        DialogButton {
-                            required property var modelData
-                            text: modelData.label + (modelData.row >= 0 ? " · " + modelData.row : "")
-                            enabled: modelData.timeMs >= 0
-                            onClicked: {
-                                root.showLongshotResult = false
-                                videoPlayer.seek(modelData.timeMs)
-                            }
-                        }
-                    }
-                }
-            }
-            Flow {
-                Layout.fillWidth: true
-                spacing: 8
-                DialogButton {
-                    text: root.longshot.includeHeader ? qsTr("Remove Fixed Header") : qsTr("Include Fixed Header")
-                    onClicked: {
-                        root.longshot.includeHeader = !root.longshot.includeHeader
-                        root.showLongshotResult = false
-                        backend.save()
-                    }
-                }
-                DialogButton { objectName: "longshotSave"; text: qsTr("Save PNG"); onClicked: root.longshot.save() }
-                DialogButton { objectName: "longshotCopy"; text: qsTr("Copy"); onClicked: root.longshot.copy() }
-                DialogButton { objectName: "longshotPin"; text: qsTr("Pin"); onClicked: root.longshot.pin() }
-                DialogButton { objectName: "longshotAnnotate"; text: qsTr("Annotate in Pin"); onClicked: root.longshot.annotate() }
             }
         }
     }
@@ -898,7 +705,7 @@ Item {
         id: processingOverlay
         anchors.fill: parent
         color: SemanticTokens.backgroundOverlay
-        visible: backend.isProcessing
+        visible: backend.isProcessing && !root.showLongshotWorkspace
 
         MouseArea {
             anchors.fill: parent
@@ -964,7 +771,7 @@ Item {
         anchors.right: parent.right
         anchors.margins: SemanticTokens.spacing16
         height: visible ? errorRow.implicitHeight + SemanticTokens.spacing16 : 0
-        visible: backend.errorMessage !== "" || (!root.longshot.hasResult && root.longshot.message !== "")
+        visible: backend.errorMessage !== "" && !root.showLongshotWorkspace
         radius: SemanticTokens.radiusSmall
         color: ComponentTokens.recordingPreviewDangerHover
         z: 10
@@ -978,7 +785,7 @@ Item {
             Text {
                 width: parent.width - 28
                 wrapMode: Text.Wrap
-                text: backend.errorMessage || root.longshot.message
+                text: backend.errorMessage
                 font.pixelSize: SemanticTokens.fontSizeBody
                 font.family: SemanticTokens.fontFamily
                 color: SemanticTokens.statusError
@@ -1001,30 +808,15 @@ Item {
     focus: true
 
     Keys.onPressed: function(event) {
+        if (root.showLongshotWorkspace) { longshotWorkspace.handleKey(event); return }
+        if (root.adjustingLongshot && event.key === Qt.Key_Escape) {
+            root.cancelLongshotAdjustment(); event.accepted = true; return
+        }
         if (backend.isProcessing) {
             event.accepted = true
             return
         }
 
-        if (root.showLongshotResult) {
-            if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_Z) {
-                if (event.modifiers & Qt.ShiftModifier) root.longshot.redoEdit()
-                else root.longshot.undoEdit()
-                root.finishImageEdit()
-                event.accepted = true
-            } else if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_Y) {
-                root.longshot.redoEdit(); root.finishImageEdit(); event.accepted = true
-            } else if (event.key === Qt.Key_Escape) {
-                if (root.imageEditMode) { root.imageEditMode = false; root.clearRowSelection() }
-                else root.showLongshotResult = false
-                event.accepted = true
-            } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter
-                       || (event.key === Qt.Key_S && (event.modifiers & Qt.ControlModifier))) {
-                root.longshot.save()
-                event.accepted = true
-            }
-            return
-        }
         if (cropOverlay.editing) {
             // Escape only drops the draft (the preview stays open); Enter only applies it.
             if (event.key === Qt.Key_Escape) {

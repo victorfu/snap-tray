@@ -66,18 +66,64 @@ LongshotSession::LongshotSession(SourceFactory factory, qint64 decodeCacheBudget
 {
 }
 
-void LongshotSession::setRecording(const QString& path) { m_path = path; }
-void LongshotSession::setCrop(const QRect& crop) { m_crop = crop; }
-void LongshotSession::setTrim(qint64 startMs, qint64 endMs) { m_startMs = startMs; m_endMs = endMs; }
-void LongshotSession::setOptions(const LongshotOptions& options) { m_options = options; }
+void LongshotSession::setRecording(const QString& path) { if (m_path != path) m_candidateKey.reset(); m_path = path; }
+void LongshotSession::setCrop(const QRect& crop) { if (m_crop != crop) m_candidateKey.reset(); m_crop = crop; }
+void LongshotSession::setTrim(qint64 startMs, qint64 endMs) { if (m_startMs != startMs || m_endMs != endMs) m_candidateKey.reset(); m_startMs = startMs; m_endMs = endMs; }
+void LongshotSession::setOptions(const LongshotOptions& options) { if (!(m_options == options)) m_candidateKey.reset(); m_options = options; }
 void LongshotSession::setPipelineParams(const PipelineParams& params)
 {
+    m_candidateKey.reset();
     m_params = params;
     m_analysisKey.reset(); // parameters shape every cached analysis result
     m_renderOptions.reset();
 }
 
 RunReport LongshotSession::run(const ProgressFn& progress, const StageFn& stage)
+{
+    m_candidates.clear();
+    m_candidateKey.reset();
+    return runAnalysis(progress, stage, true);
+}
+
+AnalysisReport LongshotSession::analyze(const ProgressFn& progress, const StageFn& stage)
+{
+    m_candidates.clear();
+    m_candidateKey.reset();
+    m_render = {};
+    m_renderOptions.reset();
+    const auto report = runAnalysis(progress, stage, false);
+    AnalysisReport result;
+    result.error = report.error;
+    if (result.error != LongshotError::None) return result;
+    auto options = m_options;
+    options.splitOversize = true;
+    result.candidates = LongshotRenderer::candidates(m_analysis, options, progress);
+    if (progress && !progress(100)) { result = {}; result.error = LongshotError::Cancelled; return result; }
+    result.noScrolling = result.candidates.empty() && !m_analysis.frames.empty()
+        && std::all_of(m_analysis.edges.begin(), m_analysis.edges.end(), [](const PairShift& edge) { return edge.dy == 0; })
+        && !m_analysis.edges.empty();
+    m_candidates = result.candidates;
+    m_candidateKey = m_analysisKey;
+    return result;
+}
+
+RenderResult LongshotSession::renderCandidate(const QString& id, const ProgressFn& progress)
+{
+    RenderResult result;
+    // File replacement and input changes must never render an obsolete plan.
+    if (!m_candidateKey || !m_analysisKey || !(*m_candidateKey == *m_analysisKey)
+        || !(m_candidateKey->source == SourceIdentity::fromFile(m_path))
+        || m_candidateKey->startMs != m_startMs || m_candidateKey->endMs != m_endMs) {
+        result.error = LongshotError::SourceUnavailable; return result;
+    }
+    const auto found = std::find_if(m_candidates.begin(), m_candidates.end(), [&](const auto& candidate) { return candidate.id == id; });
+    if (found == m_candidates.end()) { result.error = LongshotError::NoReliableContent; return result; }
+    auto source = m_factory ? m_factory() : nullptr;
+    if (!source) { result.error = LongshotError::SourceUnavailable; return result; }
+    return LongshotRenderer::renderCandidate(*source, m_path, m_startMs, m_endMs, m_crop, m_analysis, *found, progress);
+}
+
+RunReport LongshotSession::runAnalysis(const ProgressFn& progress, const StageFn& stage, bool renderOutput)
 {
     RunReport report;
     if (stage) stage(WorkStage::Analyze);
@@ -151,6 +197,7 @@ RunReport LongshotSession::run(const ProgressFn& progress, const StageFn& stage)
         return report;
     }
 
+    if (!renderOutput) return report;
     if (stage) stage(WorkStage::Render);
     if (progress && !progress(0)) { report.error = LongshotError::Cancelled; return report; }
     // Rendered tiles survive only when analysis and options are both unchanged.

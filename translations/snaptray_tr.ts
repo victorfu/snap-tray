@@ -1812,88 +1812,28 @@ Boyut: %2</translation>
         <translation>Kaydı at (Esc)</translation>
     </message>
     <message>
+        <source>Create Long Screenshot</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
         <source>Save Recording (Enter / Ctrl+S)</source>
         <translation>Kaydı kaydet (Enter / Ctrl+S)</translation>
+    </message>
+    <message>
+        <source>Adjust the crop or time range, then analyze again.</source>
+        <translation type="unfinished" />
     </message>
     <message>
         <source>Cancel</source>
         <translation>İptal</translation>
     </message>
     <message>
+        <source>Analyze Again</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
         <source>Dismiss Error</source>
         <translation>Hatayı kapat</translation>
-    </message>
-    <message>
-        <source>Long Screenshot</source>
-        <translation>Uzun Ekran Görüntüsü</translation>
-    </message>
-    <message>
-        <source>Generate Long Screenshot</source>
-        <translation>Uzun Ekran Görüntüsü Oluştur</translation>
-    </message>
-    <message>
-        <source>Crop to the scrolling area, then generate a long screenshot.</source>
-        <translation>Kaydırma alanına kırpın, ardından uzun ekran görüntüsü oluşturun.</translation>
-    </message>
-    <message>
-        <source>Remove Fixed Header</source>
-        <translation>Sabit Başlığı Kaldır</translation>
-    </message>
-    <message>
-        <source>Include Fixed Header</source>
-        <translation>Sabit Başlığı Ekle</translation>
-    </message>
-    <message>
-        <source>Save PNG</source>
-        <translation>PNG Kaydet</translation>
-    </message>
-    <message>
-        <source>Back</source>
-        <translation>Geri</translation>
-    </message>
-    <message>
-        <source>Copy</source>
-        <translation>Kopyala</translation>
-    </message>
-    <message>
-        <source>Pin</source>
-        <translation>Sabitle</translation>
-    </message>
-    <message>
-        <source>Edit Image</source>
-        <translation>Görüntüyü Düzenle</translation>
-    </message>
-    <message>
-        <source>Keep Selection</source>
-        <translation>Seçimi Koru</translation>
-    </message>
-    <message>
-        <source>Delete Selection</source>
-        <translation>Seçimi Sil</translation>
-    </message>
-    <message>
-        <source>Undo</source>
-        <translation>Geri Al</translation>
-    </message>
-    <message>
-        <source>Redo</source>
-        <translation>Yinele</translation>
-    </message>
-    <message>
-        <source>Reset Image</source>
-        <translation>Görüntüyü Sıfırla</translation>
-    </message>
-    <message>
-        <source>Annotate in Pin</source>
-        <translation>Sabit Pencerede Açıkla</translation>
-    </message>
-    <message>
-        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
-        <translation>Bu parçadaki satırları seçmek için sürükleyin. Yeniden oluşturma görüntü düzenlemelerini sıfırlar.</translation>
-    </message>
-    <message>
-        <source>View Result</source>
-        <translation>Sonucu Görüntüle</translation>
     </message>
 </context>
 <context>
@@ -3388,44 +3328,20 @@ Dosya boyutu: %3</translation>
         <translation>Kaydın kodu çözülemedi. Kaynak korundu.</translation>
     </message>
     <message>
-        <source>Auto-cropped columns: left %1, right %2.</source>
-        <translation>Otomatik kırpılan sütunlar: sol %1, sağ %2.</translation>
+        <source>Finding content to stitch…</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Review the marked areas: the result may be incomplete.</source>
-        <translation>İşaretli alanları inceleyin: sonuç eksik olabilir.</translation>
-    </message>
-    <message>
-        <source>Analyzing...</source>
-        <translation>Analiz ediliyor…</translation>
-    </message>
-    <message>
-        <source>Solving positions...</source>
-        <translation>Konumlar hesaplanıyor…</translation>
-    </message>
-    <message>
-        <source>Rendering...</source>
-        <translation>İşleniyor…</translation>
+        <source>Generating long screenshot…</source>
+        <translation type="unfinished" />
     </message>
     <message>
         <source>Could not create the result preview.</source>
         <translation>Sonuç önizlemesi oluşturulamadı.</translation>
     </message>
     <message>
-        <source>Missing coverage</source>
-        <translation>Eksik içerik</translation>
-    </message>
-    <message>
-        <source>Low confidence</source>
-        <translation>Düşük güven</translation>
-    </message>
-    <message>
-        <source>Unjoined recording section</source>
-        <translation>Birleştirilmemiş kayıt bölümü</translation>
-    </message>
-    <message>
-        <source>Copied part %1.</source>
-        <translation>%1. parça kopyalandı.</translation>
+        <source>Image copied.</source>
+        <translation type="unfinished" />
     </message>
     <message>
         <source>Save Long Screenshot</source>
@@ -3436,16 +3352,215 @@ Dosya boyutu: %3</translation>
         <translation>PNG görüntüsü (*.png)</translation>
     </message>
     <message>
-        <source>Part %1: %2</source>
-        <translation>Parça %1: %2</translation>
+        <source>Image %1: %2</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Saved %1 of %2 parts.</source>
-        <translation>%2 parçadan %1 tanesi kaydedildi.</translation>
+        <source>Saved %1 of %2 images.</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Section %1 of %2 · Part %3 of %4</source>
-        <translation>Bölüm %1/%2 · Parça %3/%4</translation>
+        <source>Copy failed. Please try again.</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
+    <name>LongshotWorkspace</name>
+    <message>
+        <source>Choose Content</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recording Preview</source>
+        <translation>Kayıt Önizleme</translation>
+    </message>
+    <message>
+        <source>Long Screenshot Ready</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Create Long Screenshot</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>We will recommend a suitable range when analysis is complete.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Creating only your selected content.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>İptal</translation>
+    </message>
+    <message>
+        <source>This recording cannot produce a long screenshot yet</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Content found; some seams need a look</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>We recommend this content</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This content can become a long screenshot</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>There is not enough scrolling content. Choose a range that includes scrolling.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This recording is too long to analyze. Select a shorter range and try again.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No continuous content was found. Crop to one content area, or record again while scrolling slowly.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Some content could not be joined. This selection produces a separate long screenshot and does not include the entire recording.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Review the selected source range, then generate your screenshot.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recommended range</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Selected range</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Source preview · Start</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Source preview · End</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This content is long and will be saved as %1 images.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Produces 1 image</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Some seams will be marked for review in the preview.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The largest continuous range with reliable content.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>A continuous range of content.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Hide other ranges</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Other available ranges (%1)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Adjust Analysis Range</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recommended</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Seams need review</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Continuous content</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Selected source range: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Includes only part of the recording</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 areas have seams worth checking.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Review</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Done</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>More…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pin Current Image</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Sabitle</translation>
+    </message>
+    <message>
+        <source>Annotate Current Image in Pin</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>Sabit Pencerede Açıkla</translation>
+    </message>
+    <message>
+        <source>Image %1 / %2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Copy Current Image</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopyala</translation>
+    </message>
+    <message>
+        <source>Retry</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Generate Long Screenshot</source>
+        <translation>Uzun Ekran Görüntüsü Oluştur</translation>
+    </message>
+    <message>
+        <source>Retry Analysis</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Save %1 PNG Images</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Save PNG</source>
+        <translation>PNG Kaydet</translation>
     </message>
 </context>
 </TS>

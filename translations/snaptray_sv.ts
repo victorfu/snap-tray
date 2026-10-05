@@ -1812,88 +1812,28 @@ Storlek: %2</translation>
         <translation>Kasta inspelning (Esc)</translation>
     </message>
     <message>
+        <source>Create Long Screenshot</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
         <source>Save Recording (Enter / Ctrl+S)</source>
         <translation>Spara inspelning (Enter / Ctrl+S)</translation>
+    </message>
+    <message>
+        <source>Adjust the crop or time range, then analyze again.</source>
+        <translation type="unfinished" />
     </message>
     <message>
         <source>Cancel</source>
         <translation>Avbryt</translation>
     </message>
     <message>
+        <source>Analyze Again</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
         <source>Dismiss Error</source>
         <translation>Stäng fel</translation>
-    </message>
-    <message>
-        <source>Long Screenshot</source>
-        <translation>Lång skärmbild</translation>
-    </message>
-    <message>
-        <source>Generate Long Screenshot</source>
-        <translation>Skapa lång skärmbild</translation>
-    </message>
-    <message>
-        <source>Crop to the scrolling area, then generate a long screenshot.</source>
-        <translation>Beskär till rullningsområdet och skapa sedan en lång skärmbild.</translation>
-    </message>
-    <message>
-        <source>Remove Fixed Header</source>
-        <translation>Ta bort fast sidhuvud</translation>
-    </message>
-    <message>
-        <source>Include Fixed Header</source>
-        <translation>Inkludera fast sidhuvud</translation>
-    </message>
-    <message>
-        <source>Save PNG</source>
-        <translation>Spara PNG</translation>
-    </message>
-    <message>
-        <source>Back</source>
-        <translation>Tillbaka</translation>
-    </message>
-    <message>
-        <source>Copy</source>
-        <translation>Kopiera</translation>
-    </message>
-    <message>
-        <source>Pin</source>
-        <translation>Fäst</translation>
-    </message>
-    <message>
-        <source>Edit Image</source>
-        <translation>Redigera bild</translation>
-    </message>
-    <message>
-        <source>Keep Selection</source>
-        <translation>Behåll markering</translation>
-    </message>
-    <message>
-        <source>Delete Selection</source>
-        <translation>Ta bort markering</translation>
-    </message>
-    <message>
-        <source>Undo</source>
-        <translation>Ångra</translation>
-    </message>
-    <message>
-        <source>Redo</source>
-        <translation>Gör om</translation>
-    </message>
-    <message>
-        <source>Reset Image</source>
-        <translation>Återställ bild</translation>
-    </message>
-    <message>
-        <source>Annotate in Pin</source>
-        <translation>Anteckna i fäst fönster</translation>
-    </message>
-    <message>
-        <source>Drag to select rows in this part. Regenerating resets image edits.</source>
-        <translation>Dra för att markera rader i denna del. Om du genererar på nytt återställs bildredigeringarna.</translation>
-    </message>
-    <message>
-        <source>View Result</source>
-        <translation>Visa resultat</translation>
     </message>
 </context>
 <context>
@@ -3388,44 +3328,20 @@ Filstorlek: %3</translation>
         <translation>Inspelningen kunde inte avkodas. Originalet har behållits.</translation>
     </message>
     <message>
-        <source>Auto-cropped columns: left %1, right %2.</source>
-        <translation>Automatiskt beskurna kolumner: vänster %1, höger %2.</translation>
+        <source>Finding content to stitch…</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Review the marked areas: the result may be incomplete.</source>
-        <translation>Granska de markerade områdena: resultatet kan vara ofullständigt.</translation>
-    </message>
-    <message>
-        <source>Analyzing...</source>
-        <translation>Analyserar…</translation>
-    </message>
-    <message>
-        <source>Solving positions...</source>
-        <translation>Beräknar positioner…</translation>
-    </message>
-    <message>
-        <source>Rendering...</source>
-        <translation>Renderar…</translation>
+        <source>Generating long screenshot…</source>
+        <translation type="unfinished" />
     </message>
     <message>
         <source>Could not create the result preview.</source>
         <translation>Kunde inte skapa en förhandsvisning av resultatet.</translation>
     </message>
     <message>
-        <source>Missing coverage</source>
-        <translation>Saknat innehåll</translation>
-    </message>
-    <message>
-        <source>Low confidence</source>
-        <translation>Låg tillförlitlighet</translation>
-    </message>
-    <message>
-        <source>Unjoined recording section</source>
-        <translation>Ej sammanfogad inspelningsdel</translation>
-    </message>
-    <message>
-        <source>Copied part %1.</source>
-        <translation>Del %1 kopierad.</translation>
+        <source>Image copied.</source>
+        <translation type="unfinished" />
     </message>
     <message>
         <source>Save Long Screenshot</source>
@@ -3436,16 +3352,215 @@ Filstorlek: %3</translation>
         <translation>PNG-bild (*.png)</translation>
     </message>
     <message>
-        <source>Part %1: %2</source>
-        <translation>Del %1: %2</translation>
+        <source>Image %1: %2</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Saved %1 of %2 parts.</source>
-        <translation>Sparade %1 av %2 delar.</translation>
+        <source>Saved %1 of %2 images.</source>
+        <translation type="unfinished" />
     </message>
     <message>
-        <source>Section %1 of %2 · Part %3 of %4</source>
-        <translation>Avsnitt %1 av %2 · Del %3 av %4</translation>
+        <source>Copy failed. Please try again.</source>
+        <translation type="unfinished" />
+    </message>
+</context>
+<context>
+    <name>LongshotWorkspace</name>
+    <message>
+        <source>Choose Content</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recording Preview</source>
+        <translation>Förhandsgranskning av inspelning</translation>
+    </message>
+    <message>
+        <source>Long Screenshot Ready</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Create Long Screenshot</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>We will recommend a suitable range when analysis is complete.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Creating only your selected content.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Avbryt</translation>
+    </message>
+    <message>
+        <source>This recording cannot produce a long screenshot yet</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Content found; some seams need a look</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>We recommend this content</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This content can become a long screenshot</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>There is not enough scrolling content. Choose a range that includes scrolling.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This recording is too long to analyze. Select a shorter range and try again.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>No continuous content was found. Crop to one content area, or record again while scrolling slowly.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Some content could not be joined. This selection produces a separate long screenshot and does not include the entire recording.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Review the selected source range, then generate your screenshot.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recommended range</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Selected range</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Source preview · Start</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Source preview · End</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>This content is long and will be saved as %1 images.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Produces 1 image</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Some seams will be marked for review in the preview.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The largest continuous range with reliable content.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>A continuous range of content.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Hide other ranges</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Other available ranges (%1)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Adjust Analysis Range</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Recommended</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Seams need review</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Continuous content</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Selected source range: %1</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Includes only part of the recording</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>%1 areas have seams worth checking.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Review</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Done</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>More…</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pin Current Image</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Pin</source>
+        <translation>Fäst</translation>
+    </message>
+    <message>
+        <source>Annotate Current Image in Pin</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Annotate in Pin</source>
+        <translation>Anteckna i fäst fönster</translation>
+    </message>
+    <message>
+        <source>Image %1 / %2</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Copy Current Image</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Kopiera</translation>
+    </message>
+    <message>
+        <source>Retry</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Generate Long Screenshot</source>
+        <translation>Skapa lång skärmbild</translation>
+    </message>
+    <message>
+        <source>Retry Analysis</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Save %1 PNG Images</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Save PNG</source>
+        <translation>Spara PNG</translation>
     </message>
 </context>
 </TS>
