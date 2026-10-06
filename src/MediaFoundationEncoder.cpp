@@ -26,6 +26,7 @@ class MediaFoundationEncoderPrivate
 public:
     IMFSinkWriter *sinkWriter = nullptr;
     DWORD videoStreamIndex = 0;
+    bool enableHardwareTransforms = true;
 
     // Audio members
     DWORD audioStreamIndex = 0;
@@ -68,7 +69,7 @@ public:
         if (FAILED(hr)) return hr;
 
         // Enable hardware transforms for better performance
-        hr = attributes->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, TRUE);
+        hr = attributes->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, enableHardwareTransforms ? TRUE : FALSE);
 
         hr = MFCreateSinkWriterFromURL(
             reinterpret_cast<LPCWSTR>(path.utf16()),
@@ -317,9 +318,15 @@ public:
 };
 
 MediaFoundationEncoder::MediaFoundationEncoder(QObject *parent)
+    : MediaFoundationEncoder(true, parent)
+{
+}
+
+MediaFoundationEncoder::MediaFoundationEncoder(bool enableHardwareTransforms, QObject *parent)
     : IVideoEncoder(parent)
     , d(new MediaFoundationEncoderPrivate)
 {
+    d->enableHardwareTransforms = enableHardwareTransforms;
     HRESULT hr = MFStartup(MF_VERSION);
     d->mfInitialized = SUCCEEDED(hr);
     if (!d->mfInitialized) {

@@ -19,6 +19,8 @@ class MediaFoundationEncoder : public IVideoEncoder
 
 public:
     explicit MediaFoundationEncoder(QObject *parent = nullptr);
+    // Explicit software selection also allows validating the fallback without a GPU.
+    MediaFoundationEncoder(bool enableHardwareTransforms, QObject *parent);
     ~MediaFoundationEncoder() override;
 
     bool isAvailable() const override;

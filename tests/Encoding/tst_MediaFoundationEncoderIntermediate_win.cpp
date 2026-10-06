@@ -1,4 +1,5 @@
 #include "IVideoEncoder.h"
+#include "MediaFoundationEncoder.h"
 #include "encoding/IntermediateQuality.h"
 #include "encoding/VideoRateControl.h"
 #include "video/IVideoTranscoder.h"
@@ -28,8 +29,11 @@ const QSize kFrameSize(320, 240);
 // the end; the Media Foundation default GOP is several seconds, so 3 is the
 // smallest count that proves the interval was applied.
 constexpr int kMinimumKeyFrames = kSeconds;
-// The intermediate may overshoot its bitrate ceiling by this much on
-// worst-case (random-noise) content before the ceiling counts as ignored.
+// Measure sustained rate control, not the startup burst: the software MFT
+// exceeds the target on a 3 s noise clip before VBR converges. Keep the
+// original tolerance and content, and exercise both hardware and software.
+constexpr int kRateControlMeasurementSeconds = 30;
+// Allow container overhead and rate-control variation over the full clip.
 constexpr double kCeilingTolerance = 1.25;
 const QSize kNoiseFrameSize(640, 360);
 constexpr quint32 kNoiseSeed = 0x5eed;
@@ -65,9 +69,9 @@ QImage noiseFrame(const QSize& size, QRandomGenerator& random)
 
 QString encode(const QString& path, VideoRateControl mode, int keyFrameIntervalSeconds,
                VideoRateControl* effective = nullptr, int quality = IntermediateQuality::kConstantQualityValue,
-               const Content& content = {})
+               const Content& content = {}, bool enableHardwareTransforms = true)
 {
-    std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
+    auto encoder = std::make_unique<MediaFoundationEncoder>(enableHardwareTransforms, nullptr);
     if (!encoder) return QStringLiteral("No native encoder");
     encoder->setQuality(quality);
     encoder->setRateControl(mode, quality);
@@ -125,7 +129,8 @@ private slots:
     void cleanupTestCase() { MFShutdown(); }
     void intermediateHasOneSecondKeyFrames();
     void defaultModeStillRecords();
-    void constantQualityRespectsCeiling();
+    void intermediateAverageBitrateConverges_data();
+    void intermediateAverageBitrateConverges();
 };
 
 void tst_MediaFoundationEncoderIntermediate::intermediateHasOneSecondKeyFrames()
@@ -165,22 +170,34 @@ void tst_MediaFoundationEncoderIntermediate::defaultModeStillRecords()
     QVERIFY(countKeyFrames(path) >= 1);
 }
 
-void tst_MediaFoundationEncoderIntermediate::constantQualityRespectsCeiling()
+void tst_MediaFoundationEncoderIntermediate::intermediateAverageBitrateConverges_data()
 {
+    QTest::addColumn<bool>("enableHardwareTransforms");
+    QTest::newRow("hardware-when-available") << true;
+    QTest::newRow("software") << false;
+}
+
+void tst_MediaFoundationEncoderIntermediate::intermediateAverageBitrateConverges()
+{
+    QFETCH(bool, enableHardwareTransforms);
     QTemporaryDir dir;
     QVERIFY(dir.isValid());
     const QString path = dir.filePath(QStringLiteral("noise.mp4"));
     Content content;
     content.size = kNoiseFrameSize;
     content.noise = true;
+    content.seconds = kRateControlMeasurementSeconds;
     VideoRateControl effective = VideoRateControl::Bitrate;
     const QString error = encode(path, VideoRateControl::ConstantQuality, IntermediateQuality::kKeyFrameIntervalSeconds,
-                                 &effective, IntermediateQuality::kConstantQualityValue, content);
+                                 &effective, IntermediateQuality::kConstantQualityValue, content, enableHardwareTransforms);
     QVERIFY2(error.isEmpty(), qPrintable(error));
     auto transcoder = IVideoTranscoder::create();
     QVERIFY(transcoder);
     const VideoFileProbe probe = transcoder->probe(path);
     QVERIFY(probe.valid);
+    QVERIFY(probe.durationMs >= qint64(content.seconds) * 1000 - 1000 / kFrameRate);
+    QCOMPARE(probe.videoSize, content.size);
+    QCOMPARE(effective, VideoRateControl::Bitrate);
     const qint64 average = IntermediateQuality::averageBitrate(QFileInfo(path).size(), probe.durationMs);
     const qint64 ceiling = IntermediateQuality::intermediateBitrate(kNoiseFrameSize, kFrameRate);
     qInfo() << "effective rate control:" << int(effective) << "average bps:" << average
