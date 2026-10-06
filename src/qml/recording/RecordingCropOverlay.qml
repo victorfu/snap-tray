@@ -423,11 +423,19 @@ Item {
             else
                 mode = modeNone
         }
+        function updateHover(x, y) {
+            if (!enabled || pressed)
+                return
+            overlay.hoverPoint = Qt.point(x, y)
+            overlay.hovering = true
+            overlay.hoverChanged()
+        }
+        // Entering (or revealing the area under a stationary pointer) need not
+        // produce positionChanged. Initialize hover for that event too.
+        onEntered: updateHover(mouseX, mouseY)
         onPositionChanged: function(mouse) {
             if (!pressed) {
-                overlay.hoverPoint = Qt.point(mouse.x, mouse.y)
-                overlay.hovering = true
-                overlay.hoverChanged()
+                updateHover(mouse.x, mouse.y)
                 return
             }
             updateDraft(mouse.x, mouse.y)

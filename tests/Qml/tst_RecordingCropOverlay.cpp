@@ -246,6 +246,7 @@ private slots:
 
     // Overlay helpers (no window).
     void beginEditingStartsEmpty();
+    void enterStartsHoverWithoutMove();
     void createRectClampsToContent();
     void moveRectStaysInside();
     void resizeRectRespectsEdges();
@@ -372,6 +373,30 @@ void tst_RecordingCropOverlay::beginEditingStartsEmpty()
     call("beginEditing");
     QVERIFY(m_overlay->property("editing").toBool());
     QCOMPARE(m_overlay->property("draftRect").toRectF(), QRectF(0, 0, 0, 0));
+}
+
+void tst_RecordingCropOverlay::enterStartsHoverWithoutMove()
+{
+    call("beginEditing");
+    auto* mouseArea = m_overlay->findChild<QObject*>(QStringLiteral("cropMouseArea"));
+    QVERIFY(mouseArea);
+    QSignalSpy hoverChanged(m_overlay.get(), SIGNAL(hoverChanged()));
+    // Enter can arrive without positionChanged, including when editing makes
+    // the crop MouseArea visible beneath a resting pointer.
+    QVERIFY(QMetaObject::invokeMethod(mouseArea, "entered"));
+    QVERIFY(m_overlay->property("hovering").toBool());
+    QCOMPARE(hoverChanged.count(), 1);
+    QCOMPARE(m_overlay->property("hoverPoint").toPointF(),
+             QPointF(mouseArea->property("mouseX").toReal(), mouseArea->property("mouseY").toReal()));
+    QVERIFY(QMetaObject::invokeMethod(mouseArea, "exited"));
+    QVERIFY(!m_overlay->property("hovering").toBool());
+    QCOMPARE(hoverChanged.count(), 2);
+
+    call("cancel");
+    const int count = hoverChanged.count();
+    QVERIFY(QMetaObject::invokeMethod(mouseArea, "entered"));
+    QVERIFY(!m_overlay->property("hovering").toBool());
+    QCOMPARE(hoverChanged.count(), count);
 }
 
 void tst_RecordingCropOverlay::createRectClampsToContent()
