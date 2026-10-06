@@ -501,6 +501,7 @@ std::vector<DetectedElement> enumerateWindowsSnapshot(qreal dpr, DetectionFlags 
 
         DetectedElement element;
         element.bounds = physicalToLogicalRect(*physicalBounds, dpr);
+        element.nativePhysicalBounds = *physicalBounds;
         element.windowTitle = readWindowTitle(display, window, atoms);
         element.ownerApp = readOwnerApp(display, window, atoms);
         element.windowLayer = 0;

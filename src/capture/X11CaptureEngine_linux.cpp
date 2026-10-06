@@ -1,5 +1,6 @@
 #include "capture/X11CaptureEngine.h"
 #include "capture/CaptureFrameTiming.h"
+#include "X11ScreenGeometry.h"
 #include <QDebug>
 #include <QElapsedTimer>
 #include <QScreen>
@@ -61,34 +62,13 @@ bool X11CaptureEngine::start() {
     auto screens = xcb_setup_roots_iterator(setup);
     for (int i = 0; i < screenNumber; ++i) xcb_screen_next(&screens);
     s.screen = screens.data;
-    // XRandR reports native output origins. Scaling the logical global origin
-    // is incorrect for mixed-DPI monitor arrangements.
-    QRect native;
-    auto* resources = xcb_randr_get_screen_resources_current_reply(s.connection,
-        xcb_randr_get_screen_resources_current(s.connection, s.screen->root), nullptr);
-    if (resources) {
-        const auto* outputs = xcb_randr_get_screen_resources_current_outputs(resources);
-        for (int i = 0; i < xcb_randr_get_screen_resources_current_outputs_length(resources); ++i) {
-            auto* output = xcb_randr_get_output_info_reply(s.connection,
-                xcb_randr_get_output_info(s.connection, outputs[i], resources->config_timestamp), nullptr);
-            if (output && output->crtc && QString::fromUtf8(
-                    reinterpret_cast<char*>(xcb_randr_get_output_info_name(output)),
-                    xcb_randr_get_output_info_name_length(output)) == m_info.name) {
-                auto* crtc = xcb_randr_get_crtc_info_reply(s.connection,
-                    xcb_randr_get_crtc_info(s.connection, output->crtc, resources->config_timestamp), nullptr);
-                if (crtc) { native = QRect(crtc->x, crtc->y, crtc->width, crtc->height); free(crtc); }
-            }
-            free(output);
-        }
-        free(resources);
-    }
-    if (native.isEmpty()) {
-        // Safe fallback only for a single full-root screen (including Xvfb).
-        if (qRound(m_info.geometry.width() * m_info.devicePixelRatio) != s.screen->width_in_pixels
-            || qRound(m_info.geometry.height() * m_info.devicePixelRatio) != s.screen->height_in_pixels) {
-            emit error(QStringLiteral("Cannot resolve the X11 monitor's native bounds.")); d.reset(); return false;
-        }
-        native = QRect(0, 0, s.screen->width_in_pixels, s.screen->height_in_pixels);
+    const QRect native = SnapTray::x11ScreenGeometry(s.connection, s.screen, m_info.name,
+        QSize(qRound(m_info.geometry.width() * m_info.devicePixelRatio),
+              qRound(m_info.geometry.height() * m_info.devicePixelRatio)));
+    if (native.isEmpty() || (!m_info.physicalGeometry.isEmpty() && native != m_info.physicalGeometry)) {
+        emit error(QStringLiteral("Cannot resolve the X11 monitor's native bounds, or the output changed."));
+        d.reset();
+        return false;
     }
     const auto offset = m_captureRegion.topLeft() - m_info.geometry.topLeft();
     s.pixels = QRect(native.topLeft() + QPoint(qRound(offset.x()*m_info.devicePixelRatio),

@@ -7,6 +7,7 @@
 #include <QScreen>
 
 #include "WindowDetector.h"
+#include "capture/ICaptureEngine.h"
 #include "../../src/WindowDetectorWinFilters.h"
 
 #ifdef Q_OS_LINUX
@@ -489,6 +490,13 @@ void tst_WindowDetectorQueryMode::testLinuxX11TopLevelWindowDetectionFindsVisibl
     QVERIFY(result.has_value());
     QCOMPARE(result->elementType, ElementType::Window);
     QVERIFY(result->bounds.intersects(testBounds.adjusted(-8, -8, 8, 8)));
+    QVERIFY(result->nativePhysicalBounds.has_value());
+    QVERIFY(result->nativePhysicalBounds->intersects(testBounds));
+#ifdef SNAPTRAY_ENABLE_LINUX_RECORDING
+    const auto captureScreen = CaptureScreenInfo::fromScreen(screen);
+    QVERIFY(!captureScreen.physicalGeometry.isEmpty());
+    QVERIFY(captureScreen.physicalGeometry.contains(*result->nativePhysicalBounds));
+#endif
 #endif
 }
 

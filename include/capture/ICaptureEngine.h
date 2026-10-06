@@ -24,7 +24,7 @@ struct CaptureScreenInfo
     // may be a monitor model such as "ROG PG279Q".
     QString nativeName;
     QRect geometry;
-    // Native desktop-pixel bounds when the platform exposes them. On Windows
+    // Native desktop-pixel bounds: RandR output geometry on X11. On Windows
     // these match DXGI_OUTPUT_DESC::DesktopCoordinates and avoid scaling Qt's
     // mixed-DPI logical screen origin/size heuristically.
     QRect physicalGeometry;

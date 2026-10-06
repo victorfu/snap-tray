@@ -55,7 +55,27 @@ private slots:
     void stopKeepsTimeline();
     void unchangedSamplesCompact();
     void nativeBoundsTakePrecedence();
+    void mixedDpiX11SecondaryOutput();
 };
+
+void tst_WindowTimelineRecorder::mixedDpiX11SecondaryOutput()
+{
+    // Qt retains the secondary screen origin; dividing native global X by DPR
+    // wrongly puts this window on the primary display instead.
+    Fakes fakes;
+    auto window = element(1, QRect(1060, 50, 400, 300));
+    window.nativePhysicalBounds = QRect(2120, 100, 800, 600);
+    fakes.elements = {window};
+    const auto mapping = WindowFrameMapping::fromCapture(
+        QRect(1920, 0, 1920, 1080), QRect(1920, 0, 1920, 1080),
+        QRect(1920, 0, 3840, 2160), 2.0, QRect(1920, 0, 3840, 2160));
+    WindowTimelineRecorder recorder(fakes.enumerator(), fakes.clock(), mapping);
+    recorder.sampleNow();
+    const auto timeline = recorder.timeline();
+    QCOMPARE(timeline.entries().size(), size_t(1));
+    QCOMPARE(timeline.entries().front().windows.size(), size_t(1));
+    QCOMPARE(timeline.entries().front().windows.front().rect, QRect(200, 100, 800, 600));
+}
 
 void tst_WindowTimelineRecorder::nativeBoundsTakePrecedence()
 {
