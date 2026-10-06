@@ -1,6 +1,8 @@
 #ifndef WINDOWDETECTOR_H
 #define WINDOWDETECTOR_H
 
+#include "ElementType.h"
+
 #include <QObject>
 #include <QRect>
 #include <QPoint>
@@ -17,16 +19,6 @@
 #include <optional>
 
 class QScreen;
-
-// Element type classification for detected UI elements
-enum class ElementType {
-    Window,         // Normal application window
-    ContextMenu,    // Right-click context menu
-    PopupMenu,      // Application menu dropdown
-    Dialog,         // Dialog/modal window
-    StatusBarItem,  // Menu bar popup (macOS) / System tray popup (Windows)
-    Unknown
-};
 
 // Detection mode flags for controlling what types of elements to detect
 enum class DetectionFlag {
@@ -53,6 +45,8 @@ struct DetectedElement {
     uint32_t windowId;      // Window ID for identification
     ElementType elementType = ElementType::Window;  // Type of detected element
     qint64 ownerPid = 0;   // Process ID of owning application
+    // Native desktop pixels on Windows/X11, before logical coordinate conversion.
+    std::optional<QRect> nativePhysicalBounds;
 };
 
 class WindowDetector : public QObject
@@ -70,6 +64,11 @@ public:
 
     // Permission management
     static bool hasAccessibilityPermission(bool promptIfMissing = false);
+
+    // Fill windowTitle/ownerApp for platforms that skip them during enumeration
+    // for speed. Call once a detected element is actually used, not per hover.
+    // Pass includeTitle=false for recording metadata that only needs the app name.
+    static void populateWindowMetadata(DetectedElement &element, bool includeTitle = true);
 
     // Detection control
     void setScreen(QScreen *screen);
@@ -93,6 +92,17 @@ public:
     std::optional<DetectedElement> detectWindowAt(
         const QPoint &screenPos,
         QueryMode queryMode = QueryMode::IncludeChildControls) const;
+
+    // Copy of the cached top-level elements after refreshWindowList(TopLevelOnly).
+    // Empty before a refresh or when the cache holds child controls too.
+    std::vector<DetectedElement> topLevelWindowsSnapshot() const
+    {
+        QMutexLocker locker(&m_cacheMutex);
+        if (!m_cacheReady || m_cacheQueryMode != QueryMode::TopLevelOnly) {
+            return {};
+        }
+        return m_windowCache;
+    }
 
     // Detection mode control
     DetectionFlags detectionFlags() const;

@@ -92,6 +92,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include <QTextEdit>
 #include <QLabel>
 #include <QTimer>
+#include "platform/WindowDragPolicy.h"
 #include <QPointer>
 #include <QTransform>
 #include <QFontMetrics>
@@ -618,6 +619,13 @@ PinWindow::PinWindow(const QPixmap& screenshot,
     m_resizeFinishTimer->setSingleShot(true);
     connect(m_resizeFinishTimer, &QTimer::timeout, this, &PinWindow::onResizeFinished);
 
+    if (const int interval = SnapTray::windowDragUpdateIntervalMs(); interval > 0) {
+        m_dragMoveTimer = new QTimer(this);
+        m_dragMoveTimer->setTimerType(Qt::PreciseTimer);
+        m_dragMoveTimer->setInterval(interval);
+        connect(m_dragMoveTimer, &QTimer::timeout, this, &PinWindow::applyPendingDragPosition);
+    }
+
     if (PlatformFeatures::instance().capabilities().supportsClickThrough) {
         // Track cursor near edges for click-through resize.
         m_clickThroughHoverTimer = new QTimer(this);
@@ -684,7 +692,7 @@ void PinWindow::setZoomLevel(qreal zoom)
         return;
     }
 
-    m_zoomLevel = qBound(0.1, zoom, 5.0);
+    m_zoomLevel = qBound(minimumPinWindowZoom(transformedContentLogicalSize()), zoom, 5.0);
     if (m_currentZoomAction) {
         m_currentZoomAction->setText(QString("%1%").arg(qRound(m_zoomLevel * 100)));
     }
@@ -1052,7 +1060,7 @@ void PinWindow::updateSize(bool liveFrame)
 {
     invalidateAutoBlurRequest();
     const QSize transformedLogicalSize = transformedContentLogicalSize();
-    QSize newLogicalSize = transformedLogicalSize * m_zoomLevel;
+    QSize newLogicalSize = (transformedLogicalSize * m_zoomLevel).expandedTo(QSize(1, 1));
 
     Qt::TransformationMode mode = m_smoothing ? Qt::SmoothTransformation : Qt::FastTransformation;
     m_displayPixmap = buildDisplayPixmap(newLogicalSize, mode);
@@ -2522,6 +2530,13 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
             return;
         }
 
+        // Erasing must take precedence over selecting or transforming existing items.
+        if (m_annotationMode && m_currentToolId == ToolId::Eraser && m_toolManager) {
+            m_annotationLayer->clearSelection();
+            m_toolManager->handleMousePress(mapToOriginalCoords(event->position()), event->modifiers());
+            return;
+        }
+
         // 2. Handle gizmo interaction (scale/rotate selected text)
         if (m_annotationMode && handleGizmoPress(event->pos())) {
             return;
@@ -2611,6 +2626,10 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
             // Start dragging
             m_isDragging = true;
             m_dragStartPos = event->globalPosition().toPoint() - frameGeometry().topLeft();
+            m_hasPendingDragPosition = false;
+            if (m_dragMoveTimer) {
+                m_dragMoveTimer->start();
+            }
             CursorManager::instance().setDragStateForWidget(this, DragState::WidgetDrag);
         }
     }
@@ -2760,7 +2779,13 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
 
     }
     else if (m_isDragging) {
-        move(event->globalPosition().toPoint() - m_dragStartPos);
+        const QPoint target = event->globalPosition().toPoint() - m_dragStartPos;
+        if (m_dragMoveTimer) {
+            m_pendingDragPosition = target;
+            m_hasPendingDragPosition = true;
+        } else {
+            move(target);
+        }
     }
     else {
         auto& cm = CursorManager::instance();
@@ -2886,9 +2911,15 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
             rebuildManagedCursorAt(event->pos());
         }
         if (m_isDragging) {
-            m_isDragging = false;
-            CursorManager::instance().setDragStateForWidget(this, DragState::None);
-            rebuildManagedCursorAt(event->pos());
+            if (m_dragMoveTimer) {
+                // The release may arrive before the next tick, and can contain
+                // a newer position than the last mouse move.
+                m_pendingDragPosition = event->globalPosition().toPoint() - m_dragStartPos;
+                m_hasPendingDragPosition = true;
+                applyPendingDragPosition();
+            }
+            endWindowDrag();
+            rebuildManagedCursorAt(mapFromGlobal(event->globalPosition().toPoint()));
         }
         if (m_clickThrough) {
             updateClickThroughForCursor();
@@ -2943,7 +2974,7 @@ void PinWindow::wheelEvent(QWheelEvent* event)
     qreal newZoom = (event->angleDelta().y() > 0)
         ? m_zoomLevel + zoomStep
         : m_zoomLevel - zoomStep;
-    newZoom = qBound(0.1, newZoom, 5.0);
+    newZoom = qBound(minimumPinWindowZoom(transformedContentLogicalSize()), newZoom, 5.0);
 
     if (qFuzzyCompare(oldZoom, newZoom)) {
         event->accept();
@@ -3181,6 +3212,34 @@ void PinWindow::moveEvent(QMoveEvent* event)
         m_toolManager->setDevicePixelRatio(devicePixelRatioF());
     }
     updateToolbarPosition();
+}
+
+void PinWindow::applyPendingDragPosition()
+{
+    if (!m_isDragging || !m_hasPendingDragPosition) {
+        return;
+    }
+    m_hasPendingDragPosition = false;
+    move(m_pendingDragPosition);
+}
+
+void PinWindow::endWindowDrag()
+{
+    if (m_dragMoveTimer) {
+        m_dragMoveTimer->stop();
+    }
+    m_hasPendingDragPosition = false;
+    if (m_isDragging) {
+        m_isDragging = false;
+        CursorManager::instance().setDragStateForWidget(this, DragState::None);
+    }
+}
+
+void PinWindow::hideEvent(QHideEvent* event)
+{
+    // Hidden pins can be shown again; discard work from the previous drag.
+    endWindowDrag();
+    QWidget::hideEvent(event);
 }
 
 // ============================================================================
@@ -4327,7 +4386,13 @@ void PinWindow::keepRegionLayoutControlsOnScreen()
     if (!m_regionLayoutManager) {
         return;
     }
-    QScreen* targetScreen = screen();
+    // Keep the controls on the screen the pin sits on. A canvas grown across
+    // a monitor gap makes screen() follow the larger overlap, which would
+    // pull the window onto the other monitor.
+    QScreen* targetScreen = QGuiApplication::screenAt(pos());
+    if (!targetScreen) {
+        targetScreen = screen();
+    }
     if (!targetScreen) {
         targetScreen = QGuiApplication::primaryScreen();
     }

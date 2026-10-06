@@ -7,6 +7,8 @@
 
 class QPixmap;
 
+qreal minimumPinWindowZoom(const QSize& logicalSize);
+
 struct PinWindowPlacement
 {
     QPoint position;

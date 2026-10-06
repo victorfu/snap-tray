@@ -501,6 +501,7 @@ std::vector<DetectedElement> enumerateWindowsSnapshot(qreal dpr, DetectionFlags 
 
         DetectedElement element;
         element.bounds = physicalToLogicalRect(*physicalBounds, dpr);
+        element.nativePhysicalBounds = *physicalBounds;
         element.windowTitle = readWindowTitle(display, window, atoms);
         element.ownerApp = readOwnerApp(display, window, atoms);
         element.windowLayer = 0;
@@ -529,6 +530,12 @@ bool WindowDetector::hasAccessibilityPermission(bool promptIfMissing)
 {
     Q_UNUSED(promptIfMissing);
     return true;
+}
+
+void WindowDetector::populateWindowMetadata(DetectedElement& element, bool /*includeTitle*/)
+{
+    // Enumeration already reads the X11 window title and owner app.
+    Q_UNUSED(element);
 }
 
 void WindowDetector::setScreen(QScreen* screen)

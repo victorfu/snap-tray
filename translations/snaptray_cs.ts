@@ -1741,76 +1741,91 @@ Velikost: %2</translation>
         <source>Failed to save recording to selected location</source>
         <translation>Uložení nahrávky do vybraného umístění se nezdařilo</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>Nedostatek volného místa na disku pro nahrávání ve vysoké kvalitě. Nahrává se ve zvolené kvalitě.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Pause Preview (Space)</source>
-        <translation>Pozastavit náhled (Space)</translation>
+        <source>Clear Crop</source>
+        <translation>Zrušit ořez</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Play Preview (Space)</source>
-        <translation>Přehrát náhled (Space)</translation>
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>Klepnutím na okno ořízněte na něj, nebo tažením nakreslete výběr</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="376" />
-        <source>Playback Speed: %1x</source>
-        <translation>Rychlost přehrávání: %1x</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="390" />
-        <source>Export as MP4</source>
-        <translation>Exportovat jako MP4</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="398" />
-        <source>Export as GIF</source>
-        <translation>Exportovat jako GIF</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="406" />
-        <source>Export as WebP</source>
-        <translation>Exportovat jako WebP</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
         <source>Audio playback is unavailable in this preview.</source>
         <translation>Přehrávání zvuku není v tomto náhledu k dispozici.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
+        <source>Export as MP4</source>
+        <translation>Exportovat jako MP4</translation>
+    </message>
+    <message>
+        <source>Export as GIF</source>
+        <translation>Exportovat jako GIF</translation>
+    </message>
+    <message>
+        <source>Export as WebP</source>
+        <translation>Exportovat jako WebP</translation>
+    </message>
+    <message>
+        <source>Pause Preview (Space)</source>
+        <translation>Pozastavit náhled (Space)</translation>
+    </message>
+    <message>
+        <source>Play Preview (Space)</source>
+        <translation>Přehrát náhled (Space)</translation>
+    </message>
+    <message>
+        <source>Playback Speed: %1x</source>
+        <translation>Rychlost přehrávání: %1x</translation>
+    </message>
+    <message>
         <source>Unmute Preview (M)</source>
         <translation>Zapnout zvuk náhledu (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Mute Preview (M)</source>
         <translation>Ztlumit náhled (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
+        <source>Apply Crop (Enter)</source>
+        <translation>Použít ořez (Enter)</translation>
+    </message>
+    <message>
+        <source>Edit Crop</source>
+        <translation>Upravit ořez</translation>
+    </message>
+    <message>
+        <source>Crop Recording</source>
+        <translation>Oříznout obraz nahrávky</translation>
+    </message>
+    <message>
         <source>Clear Trim Selection</source>
         <translation>Vymazat výběr ořezu</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
         <source>Trim Recording</source>
         <translation>Oříznout nahrávku</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="438" />
         <source>Discard Recording (Esc)</source>
         <translation>Zahodit nahrávku (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="445" />
         <source>Save Recording (Enter / Ctrl+S)</source>
         <translation>Uložit nahrávku (Enter / Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="529" />
+        <source>Cancel</source>
+        <translation>Zrušit</translation>
+    </message>
+    <message>
         <source>Dismiss Error</source>
         <translation>Zavřít chybu</translation>
     </message>
@@ -1871,6 +1886,30 @@ Velikost: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
         <translation>Ořezávání se nezdařilo</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="804" />
+        <source>Exporting video...</source>
+        <translation>Exportování videa...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="815" />
+        <source>Video export is not supported on this platform</source>
+        <translation>Export videa není na této platformě podporován</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="816" />
+        <source>Export failed: %1</source>
+        <translation>Export se nezdařil: %1</translation>
+    </message>
+    <message>
+        <source>Export failed; the original recording was kept.</source>
+        <translation>Export se nezdařil; původní nahrávka byla zachována.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>Rušení...</translation>
     </message>
 </context>
 <context>
@@ -2129,6 +2168,11 @@ Zvuk není podporován pro nahrávky ve formátu GIF.</translation>
         <source>5 seconds</source>
         <translation>5 sekund</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>Kvalita uloženého videa. Při zapnutém náhledu se nahrávky pořizují ve vysoké kvalitě a při uložení se převedou na tuto kvalitu.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>
@@ -2974,44 +3018,6 @@ Může být používána jinou aplikací.</translation>
         <source>Check Now</source>
         <translation>Zkontrolovat nyní</translation>
         </message>
-</context>
-<context>
-    <name>VideoTrimmer</name>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="52" />
-        <source>Input or output path not set</source>
-        <translation>Vstupní nebo výstupní cesta není nastavena</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="57" />
-        <source>Invalid trim range</source>
-        <translation>Neplatný rozsah oříznutí</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="73" />
-        <source>Failed to create video player</source>
-        <translation>Vytvoření přehrávače videa se nezdařilo</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="84" />
-        <source>Failed to load video: %1</source>
-        <translation>Načtení videa se nezdařilo: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="91" />
-        <source>Failed to load input video</source>
-        <translation>Načtení vstupního videa se nezdařilo</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="133" />
-        <source>Failed to create encoder: %1</source>
-        <translation>Vytvoření kodéru se nezdařilo: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="269" />
-        <source>Encoding failed</source>
-        <translation>Kódování se nezdařilo</translation>
-    </message>
 </context>
 <context>
     <name>WatermarkSettings</name>

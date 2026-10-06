@@ -1735,76 +1735,91 @@ Size: %2</source>
         <source>Failed to save recording to selected location</source>
         <translation>فشل حفظ التسجيل في الموقع المحدد</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>لا توجد مساحة كافية على القرص للتسجيل بجودة عالية. سيتم التسجيل بالجودة المحددة بدلاً من ذلك.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Pause Preview (Space)</source>
-        <translation>إيقاف المعاينة مؤقتًا (Space)</translation>
+        <source>Clear Crop</source>
+        <translation>مسح الاقتصاص</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Play Preview (Space)</source>
-        <translation>تشغيل المعاينة (Space)</translation>
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>انقر على نافذة لقصّ التسجيل إليها، أو اسحب للرسم</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="376" />
-        <source>Playback Speed: %1x</source>
-        <translation>سرعة التشغيل: %1x</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="390" />
-        <source>Export as MP4</source>
-        <translation>تصدير بصيغة MP4</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="398" />
-        <source>Export as GIF</source>
-        <translation>تصدير بصيغة GIF</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="406" />
-        <source>Export as WebP</source>
-        <translation>تصدير بصيغة WebP</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
         <source>Audio playback is unavailable in this preview.</source>
         <translation>تشغيل الصوت غير متاح في هذه المعاينة.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
+        <source>Export as MP4</source>
+        <translation>تصدير بصيغة MP4</translation>
+    </message>
+    <message>
+        <source>Export as GIF</source>
+        <translation>تصدير بصيغة GIF</translation>
+    </message>
+    <message>
+        <source>Export as WebP</source>
+        <translation>تصدير بصيغة WebP</translation>
+    </message>
+    <message>
+        <source>Pause Preview (Space)</source>
+        <translation>إيقاف المعاينة مؤقتًا (Space)</translation>
+    </message>
+    <message>
+        <source>Play Preview (Space)</source>
+        <translation>تشغيل المعاينة (Space)</translation>
+    </message>
+    <message>
+        <source>Playback Speed: %1x</source>
+        <translation>سرعة التشغيل: %1x</translation>
+    </message>
+    <message>
         <source>Unmute Preview (M)</source>
         <translation>إلغاء كتم صوت المعاينة (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Mute Preview (M)</source>
         <translation>كتم صوت المعاينة (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
+        <source>Apply Crop (Enter)</source>
+        <translation>تطبيق الاقتصاص (Enter)</translation>
+    </message>
+    <message>
+        <source>Edit Crop</source>
+        <translation>تعديل الاقتصاص</translation>
+    </message>
+    <message>
+        <source>Crop Recording</source>
+        <translation>اقتصاص التسجيل</translation>
+    </message>
+    <message>
         <source>Clear Trim Selection</source>
         <translation>مسح تحديد القص</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
         <source>Trim Recording</source>
         <translation>قص التسجيل</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="438" />
         <source>Discard Recording (Esc)</source>
         <translation>تجاهل التسجيل (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="445" />
         <source>Save Recording (Enter / Ctrl+S)</source>
         <translation>حفظ التسجيل (Enter / Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="529" />
+        <source>Cancel</source>
+        <translation>إلغاء</translation>
+    </message>
+    <message>
         <source>Dismiss Error</source>
         <translation>إغلاق الخطأ</translation>
     </message>
@@ -1865,6 +1880,30 @@ Size: %2</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
         <translation>فشل القص</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="804" />
+        <source>Exporting video...</source>
+        <translation>جارٍ تصدير الفيديو...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="815" />
+        <source>Video export is not supported on this platform</source>
+        <translation>تصدير الفيديو غير مدعوم على هذه المنصة</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="816" />
+        <source>Export failed: %1</source>
+        <translation>فشل التصدير: %1</translation>
+    </message>
+    <message>
+        <source>Export failed; the original recording was kept.</source>
+        <translation>فشل التصدير؛ تم الاحتفاظ بالتسجيل الأصلي.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>جارٍ الإلغاء...</translation>
     </message>
 </context>
 <context>
@@ -2123,6 +2162,11 @@ Audio is not supported for GIF recordings.</source>
         <source>5 seconds</source>
         <translation>5 ثوانٍ</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>جودة الفيديو المحفوظ. عند تشغيل المعاينة، تُسجَّل التسجيلات بجودة عالية ثم تُحوَّل إلى هذه الجودة عند الحفظ.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>
@@ -2968,44 +3012,6 @@ It may be in use by another application.</source>
         <source>Check Now</source>
         <translation>تحقق الآن</translation>
         </message>
-</context>
-<context>
-    <name>VideoTrimmer</name>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="52" />
-        <source>Input or output path not set</source>
-        <translation>لم يتم تعيين مسار الإدخال أو الإخراج</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="57" />
-        <source>Invalid trim range</source>
-        <translation>نطاق القص غير صالح</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="73" />
-        <source>Failed to create video player</source>
-        <translation>فشل إنشاء مشغل الفيديو</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="84" />
-        <source>Failed to load video: %1</source>
-        <translation>فشل تحميل الفيديو: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="91" />
-        <source>Failed to load input video</source>
-        <translation>فشل تحميل فيديو الإدخال</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="133" />
-        <source>Failed to create encoder: %1</source>
-        <translation>فشل إنشاء المُرمّز: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="269" />
-        <source>Encoding failed</source>
-        <translation>فشل الترميز</translation>
-    </message>
 </context>
 <context>
     <name>WatermarkSettings</name>

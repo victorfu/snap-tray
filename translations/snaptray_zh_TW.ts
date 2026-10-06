@@ -1868,76 +1868,91 @@ File size: %3</source>
         <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
         <translation>音訊無法使用，此錄製將沒有聲音。請檢查系統權限及所選音訊裝置。</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>磁碟可用空間不足,無法以高畫質錄影。將改以所選畫質錄影。</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Pause Preview (Space)</source>
-        <translation>暫停預覽 (Space)</translation>
+        <source>Clear Crop</source>
+        <translation>清除裁切</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Play Preview (Space)</source>
-        <translation>播放預覽 (Space)</translation>
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>點擊視窗即可裁切到該視窗，或拖曳自行繪製</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="376" />
-        <source>Playback Speed: %1x</source>
-        <translation>播放速度：%1x</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="390" />
-        <source>Export as MP4</source>
-        <translation>匯出為 MP4</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="398" />
-        <source>Export as GIF</source>
-        <translation>匯出為 GIF</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="406" />
-        <source>Export as WebP</source>
-        <translation>匯出為 WebP</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
         <source>Audio playback is unavailable in this preview.</source>
         <translation>此預覽不支援音訊播放。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
+        <source>Export as MP4</source>
+        <translation>匯出為 MP4</translation>
+    </message>
+    <message>
+        <source>Export as GIF</source>
+        <translation>匯出為 GIF</translation>
+    </message>
+    <message>
+        <source>Export as WebP</source>
+        <translation>匯出為 WebP</translation>
+    </message>
+    <message>
+        <source>Pause Preview (Space)</source>
+        <translation>暫停預覽 (Space)</translation>
+    </message>
+    <message>
+        <source>Play Preview (Space)</source>
+        <translation>播放預覽 (Space)</translation>
+    </message>
+    <message>
+        <source>Playback Speed: %1x</source>
+        <translation>播放速度：%1x</translation>
+    </message>
+    <message>
         <source>Unmute Preview (M)</source>
         <translation>取消靜音預覽 (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Mute Preview (M)</source>
         <translation>靜音預覽 (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
+        <source>Apply Crop (Enter)</source>
+        <translation>套用裁切 (Enter)</translation>
+    </message>
+    <message>
+        <source>Edit Crop</source>
+        <translation>編輯裁切</translation>
+    </message>
+    <message>
+        <source>Crop Recording</source>
+        <translation>裁切錄影</translation>
+    </message>
+    <message>
         <source>Clear Trim Selection</source>
         <translation>清除修剪選取</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
         <source>Trim Recording</source>
         <translation>修剪錄製內容</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="438" />
         <source>Discard Recording (Esc)</source>
         <translation>捨棄錄製內容 (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="445" />
         <source>Save Recording (Enter / Ctrl+S)</source>
         <translation>儲存錄製內容 (Enter / Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="529" />
+        <source>Cancel</source>
+        <translation>取消</translation>
+    </message>
+    <message>
         <source>Dismiss Error</source>
         <translation>關閉錯誤訊息</translation>
     </message>
@@ -1998,6 +2013,30 @@ File size: %3</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
         <translation>修剪失敗</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="804" />
+        <source>Exporting video...</source>
+        <translation>正在匯出影片...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="815" />
+        <source>Video export is not supported on this platform</source>
+        <translation>此平台不支援匯出影片</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="816" />
+        <source>Export failed: %1</source>
+        <translation>匯出失敗：%1</translation>
+    </message>
+    <message>
+        <source>Export failed; the original recording was kept.</source>
+        <translation>匯出失敗；已保留原始錄製。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>正在取消...</translation>
     </message>
 </context>
 <context>
@@ -2256,6 +2295,11 @@ GIF 錄製不支援音訊。</translation>
         <source>5 seconds</source>
         <translation>5 秒</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>儲存影片的畫質。開啟預覽時,錄影會以高畫質擷取,儲存時再轉換為此畫質。</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>
@@ -3101,44 +3145,6 @@ It may be in use by another application.</source>
         <source>Check Now</source>
         <translation>立即檢查</translation>
         </message>
-</context>
-<context>
-    <name>VideoTrimmer</name>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="52" />
-        <source>Input or output path not set</source>
-        <translation>未設定輸入或輸出路徑</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="57" />
-        <source>Invalid trim range</source>
-        <translation>無效的修剪範圍</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="73" />
-        <source>Failed to create video player</source>
-        <translation>建立影片播放器失敗</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="84" />
-        <source>Failed to load video: %1</source>
-        <translation>載入影片失敗：%1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="91" />
-        <source>Failed to load input video</source>
-        <translation>載入輸入影片失敗</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="133" />
-        <source>Failed to create encoder: %1</source>
-        <translation>建立編碼器失敗：%1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="269" />
-        <source>Encoding failed</source>
-        <translation>編碼失敗</translation>
-    </message>
 </context>
 <context>
     <name>WatermarkSettings</name>

@@ -10,6 +10,21 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 - Added Linux AppImage update checks, confirmed downloads, and restart-to-install with signature verification and recovery to the previous version.
 - Added AppImageUpdate-compatible update metadata and zsync files to Linux releases.
+- Linux X11 recording now supports microphone/system audio, recording preview, crop/trim and animated exports, with VA-API/NVENC encoding when available and software fallback. AppImages include the required media libraries.
+- Linux captures frames on a background X11 connection and sends them directly to the encoder. Recording controls move to the tray so the floating toolbar is not recorded.
+
+- Recording preview can crop the recording to a region before exporting MP4, GIF, or WebP.
+- Trimming a recording to a part after its audio stopped exports that part as video only instead of failing, and a failed export now shows a translated message while keeping the original recording.
+- In the recording preview's crop editor, hovering highlights the window that was under the cursor at that moment and clicking snaps the crop to it.
+- Recordings made with the preview on are captured at high quality and converted to the selected quality when saved, so trimming and cropping keep their detail; unedited recordings that already meet the selected quality are saved as they are. Low disk space falls back to the selected quality with a warning.
+
+### Fixed
+
+- Recording crop gestures now commit the final pointer position when mouse-move events are coalesced.
+
+- Trimming an MP4 recording with audio now keeps the audio instead of failing.
+- The recording preview window has its title bar back on Windows, with minimize, maximize and close buttons.
+- Region capture, quick pin and the screen canvas work while the recording preview window is open.
 
 ## [1.0.67] - 2026-09-30
 

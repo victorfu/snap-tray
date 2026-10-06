@@ -1560,6 +1560,13 @@ svg {
     display: none;
   }
 
+  // Without JS the language toggle is hidden and can't add .is-open, so keep
+  // the options visible inline (outranks the mobile `display: none` above).
+  .no-js .site-nav .language-switcher .lang-menu {
+    display: grid;
+    border-radius: 0.9rem;
+  }
+
   .hero-layout {
     grid-template-columns: 1fr;
   }

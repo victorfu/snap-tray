@@ -11,11 +11,13 @@
 #include <QFuture>
 #include <QSharedPointer>
 #include <memory>
+#include <atomic>
 #include <functional>
 #include <QStringList>
 #include "capture/IAudioCaptureEngine.h"
 
 #include "WatermarkRenderer.h"
+#include "recording/WindowTimelineRecorder.h"
 #include "utils/ResourceCleanupHelper.h"
 
 class RecordingInitTask;
@@ -55,6 +57,7 @@ public:
 
     // State queries
     bool isActive() const;          // Recording or post-record workflow in progress
+    bool blocksCapture() const;     // A recording is being prepared, captured or encoded; an open preview does not block captures
     bool isRecording() const;       // Actively recording frames
     bool isPaused() const;          // Recording is paused
     bool isPreviewing() const;      // Preview window is open
@@ -69,7 +72,9 @@ public slots:
     void resumeRecording();         // Resume recording
     void togglePause();             // Toggle pause state
     void onPreviewClosed(bool saved);  // Handle preview window close
-    void triggerSaveDialog(const QString &videoPath);  // Show save dialog for video
+    // Show save dialog for video. `outputSize` (pixels) replaces the recording
+    // region in the filename's {w}x{h} for a cropped export; empty = region.
+    void triggerSaveDialog(const QString &videoPath, const QSize &outputSize = QSize());
 
 signals:
     void recordingStarted();
@@ -81,7 +86,9 @@ signals:
     void recordingPaused();
     void recordingResumed();
     void stateChanged(State state);
-    void previewRequested(const QString &tempVideoPath, int defaultOutputFormat);
+    // recordedAsIntermediate: the recording was captured as the high-quality
+    // intermediate rather than at the selected quality.
+    void previewRequested(const QString &tempVideoPath, int defaultOutputFormat, bool recordedAsIntermediate);
 
 private slots:
     void captureFrame();
@@ -94,6 +101,7 @@ private:
     friend class TestRecordingManagerStateMachine;
     friend class TestRecordingManagerLifecycle;
     friend class TestRecordingStartup;
+    friend class TestLinuxRecordingPrototype;
     friend class tst_MainApplicationTrayMenu;
 
     void startFrameCapture();
@@ -115,11 +123,16 @@ private:
     void cleanupStaleTempFiles();      // Clean up old temp files on startup
     QString generateOutputPath() const;
     void setState(State newState);
-    void showSaveDialog(const QString &tempOutputPath);
+    void showSaveDialog(const QString &tempOutputPath, const QSize &outputSize = QSize());
     void loadAndValidateFrameRate();
     void resetPauseTracking();
     bool shouldUseDedicatedEncodingThread(bool hasNativeEncoder) const;
     void teardownEncodingWorker(bool abortEncoding);
+
+    // Window timeline for preview snapping. Only recorded when the preview
+    // will open (the sidecar is its input); written next to the temp MP4.
+    void startWindowTimeline();
+    void finishWindowTimeline(const QString& outputPath, bool success);
 
     // Countdown methods
     void startCountdown();                    // Begin countdown overlay
@@ -144,7 +157,8 @@ private:
     QPointer<QScreen> m_targetScreen;
     State m_state;
     int m_frameRate;
-    qint64 m_frameCount;
+    std::atomic<qint64> m_frameCount;
+    bool m_acceptAsyncFrames = false; // guarded by m_durationMutex
 
     // Pause tracking
     qint64 m_pausedDuration;     // Total time spent paused
@@ -170,6 +184,14 @@ private:
     bool m_permissionPending = false;
     bool m_captureExclusionWarningShown = false;
     std::function<bool()> m_captureControlsMayBeVisible;
+    std::function<bool()> m_requiresDirectMp4Recording;
+    // Free bytes on the volume holding `path`; replaced by tests.
+    std::function<qint64(const QString&)> m_freeBytesForPath;
+    bool chooseIntermediateQuality(const QString& outputDirectory, const QSize& frameSize);
+    // Whether this start records the high-quality intermediate; also stored in
+    // m_recordedAsIntermediate. Without preview the disk is never queried.
+    bool decideIntermediateQuality(bool showPreview, const QString& outputDirectory, const QSize& frameSize);
+    bool m_recordedAsIntermediate = false;
     void warnAboutVisibleCaptureControls();
     QStringList m_startupAudioWarnings;
     QStringList m_reportedStartupAudioWarnings;
@@ -198,6 +220,10 @@ private:
 
     // Watermark for recording (settings stored, rendering done by EncodingWorker)
     WatermarkRenderer::Settings m_watermarkSettings;
+    std::unique_ptr<SnapTray::WindowTimelineRecorder> m_windowTimelineRecorder;
+    SnapTray::WindowFrameMapping m_windowFrameMapping;
+    std::function<SnapTray::WindowTimelineRecorder::Enumerator(QScreen*)> m_createWindowEnumerator =
+        &SnapTray::WindowTimelineRecorder::detectorEnumerator;
 };
 
 #endif // RECORDINGMANAGER_H

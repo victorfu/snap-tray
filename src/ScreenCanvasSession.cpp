@@ -1719,6 +1719,14 @@ void ScreenCanvasSession::handleSurfaceMousePress(ScreenCanvas* surface, QMouseE
             return;
         }
 
+        // Erasing must take precedence over selecting or transforming existing items.
+        if (m_toolManager && m_currentToolId == ToolId::Eraser) {
+            m_annotationLayer->clearSelection();
+            beginMouseGrab(surface);
+            m_toolManager->handleMousePress(annotationPosF, event->modifiers());
+            return;
+        }
+
         if (m_toolManager && m_toolManager->isDrawing()) {
             beginMouseGrab(surface);
             m_toolManager->handleMousePress(annotationPosF, event->modifiers());

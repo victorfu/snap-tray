@@ -1,7 +1,9 @@
 #include "platform/CaptureExclusionPolicy.h"
+#include "platform/PlatformCapabilities.h"
 #include "RecordingManager.h"
 #include "recording/ScreenSourceService.h"
 #include "recording/RecordingFileUtils.h"
+#include "recording/WindowTimelineSidecar.h"
 #include "qml/QmlRecordingControlBar.h"
 #include "RecordingInitTask.h"
 #include "RecordingRegionNormalizer.h"
@@ -29,8 +31,11 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QFileInfo>
+#include <QStorageInfo>
+#include "encoding/IntermediateQuality.h"
 #include <QFile>
 #include <QMutexLocker>
+#include <QScopeGuard>
 #include <QUuid>
 #include <QtConcurrent/QtConcurrent>
 #include <QFutureWatcher>
@@ -207,6 +212,26 @@ static void syncFile(const QString &path)
 #endif
 }
 
+bool RecordingManager::chooseIntermediateQuality(const QString& outputDirectory, const QSize& frameSize)
+{
+    const qint64 freeBytes = m_freeBytesForPath ? m_freeBytesForPath(outputDirectory) : -1;
+    if (SnapTray::IntermediateQuality::hasRoomForIntermediate(freeBytes, frameSize, m_frameRate)) {
+        return true;
+    }
+    qWarning() << "RecordingManager: free space" << freeBytes << "bytes in" << outputDirectory
+               << "is below" << SnapTray::IntermediateQuality::kMinimumRecordingMinutes
+               << "minutes of intermediate recording; using the selected quality";
+    emit recordingWarning(tr("Not enough free disk space for high-quality recording. Recording at the selected quality instead."));
+    return false;
+}
+
+bool RecordingManager::decideIntermediateQuality(bool showPreview, const QString& outputDirectory,
+                                                 const QSize& frameSize)
+{
+    m_recordedAsIntermediate = showPreview && chooseIntermediateQuality(outputDirectory, frameSize);
+    return m_recordedAsIntermediate;
+}
+
 RecordingManager::RecordingManager(QObject *parent)
     : QObject(parent)
     , m_usingNativeEncoder(false)
@@ -221,8 +246,12 @@ RecordingManager::RecordingManager(QObject *parent)
     , m_countdownEnabled(true)
     , m_countdownSeconds(3)
 {
+    m_freeBytesForPath = [](const QString& path) { return QStorageInfo(path).bytesAvailable(); };
     m_captureControlsMayBeVisible = [] {
         return SnapTray::requiresVisibleRecordingControls(QOperatingSystemVersion::current());
+    };
+    m_requiresDirectMp4Recording = [] {
+        return SnapTray::currentPlatformCapabilities().recordingDirectMp4Only;
     };
 
     cleanupStaleTempFiles();
@@ -256,6 +285,16 @@ void RecordingManager::setState(State newState)
 bool RecordingManager::isActive() const
 {
     return isRecording() || isPaused() || isPreviewing() ||
+           (m_state == State::Preparing) || (m_state == State::Countdown) ||
+           (m_state == State::Encoding) ||
+           m_initFuture.isRunning();
+}
+
+bool RecordingManager::blocksCapture() const
+{
+    // Screenshots, pins and the canvas can run while the preview window is
+    // open: it is an ordinary window, not an in-flight recording.
+    return isRecording() || isPaused() ||
            (m_state == State::Preparing) || (m_state == State::Countdown) ||
            (m_state == State::Encoding) ||
            m_initFuture.isRunning();
@@ -358,6 +397,10 @@ bool RecordingManager::shouldUseDedicatedEncodingThread(bool hasNativeEncoder) c
 
 void RecordingManager::teardownEncodingWorker(bool abortEncoding)
 {
+    {
+        QMutexLocker lock(&m_durationMutex);
+        m_acceptAsyncFrames = false;
+    }
     // Invalidate any queued callbacks from previous encoding workers.
     ++m_encodingGeneration;
 
@@ -468,6 +511,13 @@ void RecordingManager::initializeStartState()
     m_startSettings = {settings.outputFormat(), settings.showPreview(), settings.quality(),
                       settings.audioEnabled(), settings.audioSource(), settings.audioDevice(),
                       settings.countdownEnabled(), settings.countdownSeconds()};
+    if (m_requiresDirectMp4Recording()) {
+        // Apply backend limits to this request, without overwriting saved
+        // preferences from a platform with audio and preview support.
+        m_startSettings.outputFormat = 0;
+        m_startSettings.showPreview = false;
+        m_startSettings.audioEnabled = false;
+    }
     m_defaultOutputFormat = m_startSettings.outputFormat;
     m_audioEnabled = m_startSettings.audioEnabled
         && recordingSupportsAudioCapture(m_startSettings.outputFormat, m_startSettings.showPreview);
@@ -476,6 +526,7 @@ void RecordingManager::initializeStartState()
     m_countdownEnabled = m_startSettings.countdownEnabled;
     m_countdownSeconds = m_startSettings.countdownSeconds;
     ++m_startGeneration;
+    m_recordedAsIntermediate = false;
     m_permissionPending = false;
     m_captureExclusionWarningShown = false;
     m_startupAudioWarnings.clear();
@@ -492,7 +543,9 @@ void RecordingManager::warnAboutVisibleCaptureControls()
     if (m_state != State::Preparing || m_captureExclusionWarningShown
         || !m_captureControlsMayBeVisible || !m_captureControlsMayBeVisible()) return;
     m_captureExclusionWarningShown = true;
-    emit recordingWarning(tr("Recording controls and tooltips may appear in videos on this Windows version."));
+    emit recordingWarning(m_requiresDirectMp4Recording()
+        ? tr("Recording controls and tooltips may appear in videos on this platform.")
+        : tr("Recording controls and tooltips may appear in videos on this Windows version."));
 }
 
 void RecordingManager::addStartupAudioWarning(const QString& warning)
@@ -646,6 +699,11 @@ void RecordingManager::beginAsyncInitialization()
     const QRect mappedPhysicalRegion = physicalRecordingRegion(
         m_recordingRegion, screenInfo);
     const QSize physicalSize = mappedPhysicalRegion.size();
+    // Without native desktop bounds (macOS) the mapped region sits at (0, 0); window rects are
+    // relative to the screen, so restore the region's offset to keep them in one coordinate space.
+    m_windowFrameMapping = SnapTray::WindowFrameMapping::fromCapture(
+        m_recordingRegion, screenInfo.geometry, screenInfo.physicalGeometry, screenInfo.devicePixelRatio,
+        mappedPhysicalRegion);
     if (physicalSize.isEmpty()) {
         qWarning() << "RecordingManager: Failed to map recording region to physical pixels";
         stopFrameCapture();
@@ -671,6 +729,8 @@ void RecordingManager::beginAsyncInitialization()
     config.outputFormat = recordingFormat;
     config.frameSize = physicalSize;
     config.quality = m_startSettings.quality;
+    config.intermediateQuality = decideIntermediateQuality(
+        showPreview, QFileInfo(config.outputPath).absolutePath(), physicalSize);
 
     // Collect UI window IDs to exclude from capture.
     if (m_controlBar) {
@@ -908,6 +968,17 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
         return;
     }
 
+    if (m_captureEngine && m_captureEngine->deliversFrames()) {
+        auto* worker = m_encodingWorker.get();
+        connect(m_captureEngine.get(), &ICaptureEngine::frameReady, worker,
+                [this, worker](const QImage& frame) {
+            QMutexLocker lock(&m_durationMutex);
+            if (!m_acceptAsyncFrames || frame.isNull()) return;
+            const qint64 time = qMax<qint64>(0, m_elapsedTimer.elapsed()-m_pausedDuration);
+            if (worker->enqueueFrame({frame, time})) ++m_frameCount;
+        }, Qt::DirectConnection);
+    }
+
     configureAudioCapture();
 
     // Clean up init task
@@ -1091,6 +1162,12 @@ void RecordingManager::startRecordingAfterCountdown()
         return;
     }
 
+    if (SnapTray::currentPlatformCapabilities().recordingControlsInTray && m_controlBar) {
+        m_controlBar->hide();
+        // Discard any frame cached while the preparation/countdown UI was visible.
+        if (m_captureEngine) m_captureEngine->captureFrame();
+    }
+
     // Initialize state and counters
     m_elapsedTimer.start();
     setState(State::Recording);
@@ -1111,6 +1188,10 @@ void RecordingManager::startRecordingAfterCountdown()
             }
         }
     }
+
+    // After audio start: the first sample enumerates windows synchronously and must not delay audio.
+    // Samples are stamped by the elapsed clock, so the timeline is unaffected by the later start.
+    startWindowTimeline();
 
     if (m_state != State::Recording || generation != m_startGeneration) return;
     m_collectStartupAudioWarnings = false;
@@ -1165,11 +1246,16 @@ void RecordingManager::startCaptureTimers()
         m_durationTimer.reset();
     }
 
-    // Start frame capture timer
-    // No parent, managed by unique_ptr
-    m_captureTimer = std::make_unique<QTimer>(nullptr);
-    connect(m_captureTimer.get(), &QTimer::timeout, this, &RecordingManager::captureFrame);
-    m_captureTimer->start(1000 / m_frameRate);
+    if (m_captureEngine && m_captureEngine->deliversFrames()) {
+        QMutexLocker lock(&m_durationMutex);
+        m_acceptAsyncFrames = true;
+    } else {
+        // Polling backends retain the existing GUI-thread path.
+        m_captureTimer = std::make_unique<QTimer>(nullptr);
+        m_captureTimer->setTimerType(Qt::PreciseTimer);
+        connect(m_captureTimer.get(), &QTimer::timeout, this, &RecordingManager::captureFrame);
+        m_captureTimer->start(1000 / m_frameRate);
+    }
 
     // Start duration timer (update UI at regular intervals)
     // No parent, managed by unique_ptr
@@ -1219,9 +1305,7 @@ void RecordingManager::captureFrame()
         // Enqueue frame for encoding (non-blocking)
         // Watermark is applied by the worker thread
         EncodingWorker::FrameData frameData{frame, elapsedMs};
-        encodingWorker->enqueueFrame(frameData);
-
-        m_frameCount++;
+        if (encodingWorker->enqueueFrame(frameData)) ++m_frameCount;
     }
 }
 
@@ -1255,6 +1339,10 @@ void RecordingManager::pauseRecording()
         return;
     }
 
+    {
+        QMutexLocker lock(&m_durationMutex);
+        m_acceptAsyncFrames = false;
+    }
     // Stop frame capture timer
     if (m_captureTimer) {
         m_captureTimer->stop();
@@ -1269,6 +1357,10 @@ void RecordingManager::pauseRecording()
     {
         QMutexLocker locker(&m_durationMutex);
         m_pauseStartTime = m_elapsedTimer.elapsed();
+    }
+
+    if (m_windowTimelineRecorder) {
+        m_windowTimelineRecorder->pause();
     }
 
     setState(State::Paused);
@@ -1297,9 +1389,22 @@ void RecordingManager::resumeRecording()
         m_audioEngine->resume();
     }
 
+    if (m_captureEngine && m_captureEngine->deliversFrames()) {
+        const quint64 generation = m_startGeneration;
+        QTimer::singleShot(kOverlayRenderDelay, this, [this, generation] {
+            if (generation != m_startGeneration || m_state != State::Recording) return;
+            QMutexLocker lock(&m_durationMutex);
+            m_acceptAsyncFrames = true;
+        });
+    }
     // Resume frame capture timer
     if (m_captureTimer) {
         m_captureTimer->start(1000 / m_frameRate);
+    }
+
+    // After the pause duration above is accounted for, so the immediate sample uses media time.
+    if (m_windowTimelineRecorder) {
+        m_windowTimelineRecorder->resume();
     }
 
     setState(State::Recording);
@@ -1369,6 +1474,7 @@ void RecordingManager::cancelRecording()
     }
 
     stopFrameCapture();
+    m_windowTimelineRecorder.reset();
 
     // Stop encoding worker (aborts encoding)
     if (m_encodingWorker || m_encodingThread) {
@@ -1382,6 +1488,17 @@ void RecordingManager::cancelRecording()
 
 void RecordingManager::stopFrameCapture()
 {
+    {
+        QMutexLocker lock(&m_durationMutex);
+        m_acceptAsyncFrames = false;
+    }
+    if (m_windowTimelineRecorder) {
+        if (m_windowTimelineRecorder->isRunning()) {
+            m_windowTimelineRecorder->sampleNow(); // capture the final window layout
+        }
+        m_windowTimelineRecorder->stop();
+    }
+
     // Stop timers
     if (m_captureTimer) {
         m_captureTimer->stop();
@@ -1444,6 +1561,7 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
 
     // Clean up encoding worker
     teardownEncodingWorker(false);
+    finishWindowTimeline(outputPath, success);
     m_usingNativeEncoder = false;
 
     if (success) {
@@ -1452,10 +1570,11 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
         if (showPreview) {
             QString tempPath = outputPath;
             int defaultOutputFormat = m_defaultOutputFormat;
-            QMetaObject::invokeMethod(this, [this, tempPath, defaultOutputFormat]() {
+            const bool recordedAsIntermediate = m_recordedAsIntermediate;
+            QMetaObject::invokeMethod(this, [this, tempPath, defaultOutputFormat, recordedAsIntermediate]() {
                 m_tempVideoPath = tempPath;
                 setState(State::Previewing);
-                emit previewRequested(tempPath, defaultOutputFormat);
+                emit previewRequested(tempPath, defaultOutputFormat, recordedAsIntermediate);
             }, Qt::QueuedConnection);
         } else {
             // Existing flow: go directly to save dialog
@@ -1483,13 +1602,19 @@ void RecordingManager::onPreviewClosed(bool saved)
     m_tempVideoPath.clear();
 }
 
-void RecordingManager::triggerSaveDialog(const QString &videoPath)
+void RecordingManager::triggerSaveDialog(const QString &videoPath, const QSize &outputSize)
 {
-    showSaveDialog(videoPath);
+    showSaveDialog(videoPath, outputSize);
 }
 
-void RecordingManager::showSaveDialog(const QString &tempOutputPath)
+void RecordingManager::showSaveDialog(const QString &tempOutputPath, const QSize &outputSize)
 {
+    // Whatever happens below, the temp recording stops being a preview input:
+    // it is moved, kept as the final file, or deleted. Its sidecar goes with it.
+    const auto dropSidecar = qScopeGuard([&tempOutputPath]() {
+        SnapTray::WindowTimelineSidecar::remove(tempOutputPath);
+    });
+
     // Get settings from FileSettingsManager
     auto& fileSettings = FileSettingsManager::instance();
 
@@ -1509,8 +1634,10 @@ void RecordingManager::showSaveDialog(const QString &tempOutputPath)
     FilenameTemplateEngine::Context context;
     context.type = QStringLiteral("Recording");
     context.prefix = fileSettings.loadFilenamePrefix();
-    context.width = m_recordingRegion.width();
-    context.height = m_recordingRegion.height();
+    // A cropped export is named by its own size; other saves by the region.
+    const QSize nameSize = outputSize.isEmpty() ? m_recordingRegion.size() : outputSize;
+    context.width = nameSize.width();
+    context.height = nameSize.height();
     context.monitor = monitorIndex >= 0 ? QString::number(monitorIndex) : QStringLiteral("unknown");
     context.windowTitle = QString();
     context.appName = QString();
@@ -1615,6 +1742,7 @@ void RecordingManager::onEncodingError(const QString &error)
         teardownEncodingWorker(true);
     }
     m_usingNativeEncoder = false;
+    m_windowTimelineRecorder.reset();
 
     setState(State::Idle);
     emit recordingError(error);
@@ -1653,6 +1781,42 @@ QString RecordingManager::generateOutputPath() const
     return QDir(tempDir).filePath(filename);
 }
 
+void RecordingManager::startWindowTimeline()
+{
+    m_windowTimelineRecorder.reset();
+    if (!m_startSettings.showPreview || !m_windowFrameMapping.isValid()) {
+        return;
+    }
+    // The same clock that stamps the encoded frames: raw elapsed minus pauses.
+    auto mediaTime = [this]() {
+        QMutexLocker locker(&m_durationMutex);
+        return qMax<qint64>(0, m_elapsedTimer.elapsed() - m_pausedDuration);
+    };
+    m_windowTimelineRecorder = std::make_unique<SnapTray::WindowTimelineRecorder>(
+        m_createWindowEnumerator(m_targetScreen.data()), mediaTime, m_windowFrameMapping, nullptr);
+    m_windowTimelineRecorder->start();
+}
+
+void RecordingManager::finishWindowTimeline(const QString& outputPath, bool success)
+{
+    if (!m_windowTimelineRecorder) {
+        return;
+    }
+    m_windowTimelineRecorder->stop();
+    const SnapTray::WindowTimeline timeline = m_windowTimelineRecorder->timeline();
+    m_windowTimelineRecorder.reset();
+    if (!success || outputPath.isEmpty()) {
+        return;
+    }
+    if (!timeline.hasWindows()) {
+        qDebug() << "RecordingManager: window timeline has no windows; no sidecar written";
+        return;
+    }
+    if (!SnapTray::WindowTimelineSidecar::write(outputPath, timeline)) {
+        qWarning() << "RecordingManager: window timeline sidecar not written; preview keeps free-rect cropping";
+    }
+}
+
 void RecordingManager::cleanupStaleTempFiles()
 {
     QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
@@ -1660,7 +1824,8 @@ void RecordingManager::cleanupStaleTempFiles()
 
     // Clean up SnapTray recording temp files older than 24 hours
     QStringList filters;
-    filters << "SnapTray_Recording_*.mp4" << "SnapTray_Recording_*.gif" << "SnapTray_Recording_*.webp";
+    filters << "SnapTray_Recording_*.mp4" << "SnapTray_Recording_*.gif" << "SnapTray_Recording_*.webp"
+            << "SnapTray_Recording_*.windows.json";
 
     QFileInfoList files = dir.entryInfoList(filters, QDir::Files);
     QDateTime threshold = QDateTime::currentDateTime().addDays(-1);

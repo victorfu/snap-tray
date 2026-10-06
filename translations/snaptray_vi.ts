@@ -1735,76 +1735,91 @@ Kích thước: %2</translation>
         <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
         <translation>Không thể sử dụng âm thanh. Bản ghi này sẽ không có tiếng. Hãy kiểm tra quyền hệ thống và thiết bị âm thanh đã chọn.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>Không đủ dung lượng đĩa trống để ghi ở chất lượng cao. Sẽ ghi ở chất lượng đã chọn.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Pause Preview (Space)</source>
-        <translation>Tạm dừng xem trước (Space)</translation>
+        <source>Clear Crop</source>
+        <translation>Xóa vùng xén</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Play Preview (Space)</source>
-        <translation>Phát xem trước (Space)</translation>
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>Nhấp vào một cửa sổ để cắt theo cửa sổ đó, hoặc kéo để vẽ</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="376" />
-        <source>Playback Speed: %1x</source>
-        <translation>Tốc độ phát: %1x</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="390" />
-        <source>Export as MP4</source>
-        <translation>Xuất dưới dạng MP4</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="398" />
-        <source>Export as GIF</source>
-        <translation>Xuất dưới dạng GIF</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="406" />
-        <source>Export as WebP</source>
-        <translation>Xuất dưới dạng WebP</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
         <source>Audio playback is unavailable in this preview.</source>
         <translation>Không thể phát âm thanh trong bản xem trước này.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
+        <source>Export as MP4</source>
+        <translation>Xuất dưới dạng MP4</translation>
+    </message>
+    <message>
+        <source>Export as GIF</source>
+        <translation>Xuất dưới dạng GIF</translation>
+    </message>
+    <message>
+        <source>Export as WebP</source>
+        <translation>Xuất dưới dạng WebP</translation>
+    </message>
+    <message>
+        <source>Pause Preview (Space)</source>
+        <translation>Tạm dừng xem trước (Space)</translation>
+    </message>
+    <message>
+        <source>Play Preview (Space)</source>
+        <translation>Phát xem trước (Space)</translation>
+    </message>
+    <message>
+        <source>Playback Speed: %1x</source>
+        <translation>Tốc độ phát: %1x</translation>
+    </message>
+    <message>
         <source>Unmute Preview (M)</source>
         <translation>Bật tiếng xem trước (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Mute Preview (M)</source>
         <translation>Tắt tiếng xem trước (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
+        <source>Apply Crop (Enter)</source>
+        <translation>Áp dụng vùng xén (Enter)</translation>
+    </message>
+    <message>
+        <source>Edit Crop</source>
+        <translation>Chỉnh sửa vùng xén</translation>
+    </message>
+    <message>
+        <source>Crop Recording</source>
+        <translation>Xén bản ghi</translation>
+    </message>
+    <message>
         <source>Clear Trim Selection</source>
         <translation>Xóa vùng cắt đã chọn</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
         <source>Trim Recording</source>
         <translation>Cắt bản ghi</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="438" />
         <source>Discard Recording (Esc)</source>
         <translation>Hủy bản ghi (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="445" />
         <source>Save Recording (Enter / Ctrl+S)</source>
         <translation>Lưu bản ghi (Enter / Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="529" />
+        <source>Cancel</source>
+        <translation>Hủy</translation>
+    </message>
+    <message>
         <source>Dismiss Error</source>
         <translation>Đóng lỗi</translation>
     </message>
@@ -1865,6 +1880,30 @@ Kích thước: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
         <translation>Cắt video thất bại</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="804" />
+        <source>Exporting video...</source>
+        <translation>Đang xuất video...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="815" />
+        <source>Video export is not supported on this platform</source>
+        <translation>Nền tảng này không hỗ trợ xuất video</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="816" />
+        <source>Export failed: %1</source>
+        <translation>Xuất video thất bại: %1</translation>
+    </message>
+    <message>
+        <source>Export failed; the original recording was kept.</source>
+        <translation>Xuất không thành công; bản ghi gốc đã được giữ lại.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>Đang hủy...</translation>
     </message>
 </context>
 <context>
@@ -2123,6 +2162,11 @@ Ghi GIF không hỗ trợ âm thanh.</translation>
         <source>5 seconds</source>
         <translation>5 giây</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>Chất lượng của video đã lưu. Khi bật xem trước, bản ghi được quay ở chất lượng cao và chuyển về chất lượng này khi lưu.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>
@@ -2968,44 +3012,6 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
         <source>Check Now</source>
         <translation>Kiểm tra ngay</translation>
         </message>
-</context>
-<context>
-    <name>VideoTrimmer</name>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="52" />
-        <source>Input or output path not set</source>
-        <translation>Chưa đặt đường dẫn đầu vào hoặc đầu ra</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="57" />
-        <source>Invalid trim range</source>
-        <translation>Khoảng cắt không hợp lệ</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="73" />
-        <source>Failed to create video player</source>
-        <translation>Không thể tạo trình phát video</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="84" />
-        <source>Failed to load video: %1</source>
-        <translation>Không thể tải video: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="91" />
-        <source>Failed to load input video</source>
-        <translation>Không thể tải video đầu vào</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="133" />
-        <source>Failed to create encoder: %1</source>
-        <translation>Không thể tạo bộ mã hóa: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="269" />
-        <source>Encoding failed</source>
-        <translation>Mã hóa thất bại</translation>
-    </message>
 </context>
 <context>
     <name>WatermarkSettings</name>

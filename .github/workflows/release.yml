@@ -599,7 +599,9 @@ jobs:
             libxcb-keysyms1-dev libxcb-xinerama0-dev libxcb-render-util0-dev \
             libxcb-image0-dev libxcb-icccm4-dev libxcb-randr0-dev \
             libxcb-shape0-dev libxcb-xfixes0-dev libxcb-sync-dev \
-            libxrender-dev libxi-dev libxtst-dev
+            libxrender-dev libxi-dev libxtst-dev \
+            libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev \
+            libpulse-dev libxcb-shm0-dev pulseaudio pulseaudio-utils
 
       - name: Install Qt
         uses: jurplel/install-qt-action@v4

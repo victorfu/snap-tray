@@ -15,16 +15,19 @@ Row {
     default property alias content: contentContainer.data
 
     width: parent ? parent.width - parent.leftPadding - parent.rightPadding : 0
-    height: 36
+    height: Math.max(36, labelText.implicitHeight + SemanticTokens.spacing8)
     spacing: 0
 
     Text {
+        id: labelText
         text: root.label
         color: SemanticTokens.textPrimary
         font.pixelSize: SemanticTokens.fontSizeBody
         font.family: SemanticTokens.fontFamily
         font.letterSpacing: SemanticTokens.letterSpacingDefault
         width: root.labelWidth
+        rightPadding: SemanticTokens.spacing12
+        wrapMode: Text.Wrap
         anchors.verticalCenter: parent.verticalCenter
     }
 

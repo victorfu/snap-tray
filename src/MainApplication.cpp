@@ -17,10 +17,14 @@
 #include "hotkey/HotkeyManager.h"
 #include "qml/QmlToast.h"
 #include "qml/RecordingPreviewBackend.h"
+#include "recording/WindowTimelineSidecar.h"
 #include "ui/TrayTooltipFormatter.h"
 #include "update/InstallSourceDetector.h"
 #include "update/UpdateCoordinator.h"
 #include "utils/CoordinateHelper.h"
+#ifdef Q_OS_MACOS
+#include "platform/MacTrayActivationGuard.h"
+#endif
 
 #include <QFile>
 #include <QJsonDocument>
@@ -335,6 +339,13 @@ void MainApplication::initialize()
                 &QAction::triggered,
                 this,
                 &MainApplication::onFullScreenRecording);
+        if (PlatformFeatures::instance().capabilities().recordingControlsInTray) {
+            m_pauseRecordingAction = m_trayMenu->addAction(QCoreApplication::translate("RecordingControlBar", "Pause Recording"));
+            m_pauseRecordingAction->setVisible(false);
+            connect(m_pauseRecordingAction, &QAction::triggered, this, [this] {
+                if (m_recordingManager) m_recordingManager->togglePause();
+            });
+        }
     }
 
     m_trayMenu->addSeparator();
@@ -352,6 +363,9 @@ void MainApplication::initialize()
     connect(exitAction, &QAction::triggered, qApp, &QCoreApplication::quit);
 
     // Set menu and show tray icon
+#ifdef Q_OS_MACOS
+    SnapTray::installMacTrayActivationGuard();
+#endif
     m_trayIcon->setContextMenu(m_trayMenu);
     m_trayIcon->setToolTip(tr("SnapTray - Screenshot Utility"));
     m_trayIcon->show();
@@ -441,7 +455,7 @@ bool MainApplication::canStartRegionCapture() const
 {
     return m_captureManager && !m_screenPickerDialog
         && (!m_screenCanvasManager || !m_screenCanvasManager->isActive())
-        && (!m_recordingManager || !m_recordingManager->isActive());
+        && (!m_recordingManager || !m_recordingManager->blocksCapture());
 }
 
 bool MainApplication::startHistoryReplay(const QString& entryId)
@@ -470,8 +484,8 @@ void MainApplication::onQuickPin()
         return;
     }
 
-    // Don't trigger if recording is active
-    if (m_recordingManager->isActive()) {
+    // Don't trigger while a recording is in flight (an open preview is fine)
+    if (m_recordingManager->blocksCapture()) {
         return;
     }
     if (m_screenPickerDialog) {
@@ -491,8 +505,8 @@ void MainApplication::onScreenCanvas()
         return;
     }
 
-    // Don't trigger if recording is active
-    if (m_recordingManager->isActive()) {
+    // Don't trigger while a recording is in flight (an open preview is fine)
+    if (m_recordingManager->blocksCapture()) {
         qDebug() << "onScreenCanvas: blocked by recordingManager";
         return;
     }
@@ -882,13 +896,14 @@ void MainApplication::pinFromClipboard(std::optional<QPoint> requestedPosition)
     }
 }
 
-void MainApplication::showRecordingPreview(const QString& videoPath, int defaultOutputFormat)
+void MainApplication::showRecordingPreview(const QString& videoPath, int defaultOutputFormat,
+                                           bool recordedAsIntermediate)
 {
     // Prevent multiple preview windows
     if (m_previewBackend)
         return;
 
-    m_previewBackend = new RecordingPreviewBackend(videoPath, this);
+    m_previewBackend = new RecordingPreviewBackend(videoPath, recordedAsIntermediate, this);
     m_previewBackend->setDefaultOutputFormat(defaultOutputFormat);
 
     // The save handler opens a native dialog. Keep it out of the QML click/key
@@ -908,9 +923,9 @@ void MainApplication::showRecordingPreview(const QString& videoPath, int default
     m_previewBackend->show();
 }
 
-void MainApplication::onPreviewSaveRequested(const QString& videoPath)
+void MainApplication::onPreviewSaveRequested(const QString& videoPath, const QSize& outputSize)
 {
-    m_recordingManager->triggerSaveDialog(videoPath);
+    m_recordingManager->triggerSaveDialog(videoPath, outputSize);
 }
 
 void MainApplication::onPreviewDiscardRequested(const QString& videoPath)
@@ -920,6 +935,7 @@ void MainApplication::onPreviewDiscardRequested(const QString& videoPath)
             qWarning() << "MainApplication: Failed to delete temp file:" << videoPath;
         }
     }
+    SnapTray::WindowTimelineSidecar::remove(videoPath);
 }
 
 void MainApplication::updateActionHotkeyText(QAction* action,
@@ -986,6 +1002,11 @@ void MainApplication::updateTrayMenuHotkeyText()
 
 void MainApplication::updateRecordingActionText()
 {
+    if (m_pauseRecordingAction) {
+        const auto state = m_recordingManager ? m_recordingManager->state() : RecordingManager::State::Idle;
+        m_pauseRecordingAction->setVisible(state == RecordingManager::State::Recording || state == RecordingManager::State::Paused);
+        m_pauseRecordingAction->setText(state == RecordingManager::State::Paused ? QCoreApplication::translate("RecordingControlBar", "Resume Recording") : QCoreApplication::translate("RecordingControlBar", "Pause Recording"));
+    }
     if (!m_fullScreenRecordingAction) {
         return;
     }

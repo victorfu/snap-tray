@@ -97,6 +97,10 @@ PlatformCapabilities capabilitiesForPlatform(PlatformKind platform,
         return caps;
     case PlatformKind::Linux:
         caps.supportsRecording = false;
+#ifdef SNAPTRAY_ENABLE_LINUX_RECORDING
+        caps.supportsRecording = displayServer == DisplayServerKind::X11;
+        caps.recordingControlsInTray = caps.supportsRecording;
+#endif
         caps.supportsOCR = false;
         caps.supportsGlobalHotkeys = displayServer == DisplayServerKind::X11;
         caps.supportsWindowDetection = displayServer == DisplayServerKind::X11;

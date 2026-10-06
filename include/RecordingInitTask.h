@@ -49,6 +49,10 @@ public:
         EncoderFactory::Format outputFormat = EncoderFactory::Format::MP4;
         QSize frameSize;
         int quality = 55;
+        // Preview recordings capture a high-quality intermediate (constant
+        // quality where supported, 1 s keyframes); the user's quality is then
+        // applied when the preview saves. See IntermediateQuality.h.
+        bool intermediateQuality = false;
         QList<quintptr> excludedCaptureWindowIds; // Native capture IDs resolved on the GUI thread
     };
 
@@ -132,6 +136,7 @@ signals:
 
 private:
     friend class TestRecordingStartup;
+    friend class TestRecordingInitTask;
     bool initializeCaptureEngine();
     bool initializeAudioEngine();
     bool initializeEncoder();

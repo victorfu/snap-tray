@@ -1741,76 +1741,91 @@ Tamaño: %2</translation>
         <source>Failed to save recording to selected location</source>
         <translation>Error al guardar la grabación en la ubicación seleccionada</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>No hay suficiente espacio libre en disco para grabar en alta calidad. Se grabará con la calidad seleccionada.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Pause Preview (Space)</source>
-        <translation>Pausar vista previa (Espacio)</translation>
+        <source>Clear Crop</source>
+        <translation>Quitar recorte</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Play Preview (Space)</source>
-        <translation>Reproducir vista previa (Espacio)</translation>
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>Haz clic en una ventana para recortar a ella, o arrastra para dibujar</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="376" />
-        <source>Playback Speed: %1x</source>
-        <translation>Velocidad de reproducción: %1x</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="390" />
-        <source>Export as MP4</source>
-        <translation>Exportar como MP4</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="398" />
-        <source>Export as GIF</source>
-        <translation>Exportar como GIF</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="406" />
-        <source>Export as WebP</source>
-        <translation>Exportar como WebP</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
         <source>Audio playback is unavailable in this preview.</source>
         <translation>La reproducción de audio no está disponible en esta vista previa.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
+        <source>Export as MP4</source>
+        <translation>Exportar como MP4</translation>
+    </message>
+    <message>
+        <source>Export as GIF</source>
+        <translation>Exportar como GIF</translation>
+    </message>
+    <message>
+        <source>Export as WebP</source>
+        <translation>Exportar como WebP</translation>
+    </message>
+    <message>
+        <source>Pause Preview (Space)</source>
+        <translation>Pausar vista previa (Espacio)</translation>
+    </message>
+    <message>
+        <source>Play Preview (Space)</source>
+        <translation>Reproducir vista previa (Espacio)</translation>
+    </message>
+    <message>
+        <source>Playback Speed: %1x</source>
+        <translation>Velocidad de reproducción: %1x</translation>
+    </message>
+    <message>
         <source>Unmute Preview (M)</source>
         <translation>Activar sonido de la vista previa (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Mute Preview (M)</source>
         <translation>Silenciar vista previa (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
+        <source>Apply Crop (Enter)</source>
+        <translation>Aplicar recorte (Enter)</translation>
+    </message>
+    <message>
+        <source>Edit Crop</source>
+        <translation>Editar área de recorte</translation>
+    </message>
+    <message>
+        <source>Crop Recording</source>
+        <translation>Recortar área de grabación</translation>
+    </message>
+    <message>
         <source>Clear Trim Selection</source>
         <translation>Borrar selección de recorte</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
         <source>Trim Recording</source>
         <translation>Recortar grabación</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="438" />
         <source>Discard Recording (Esc)</source>
         <translation>Descartar grabación (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="445" />
         <source>Save Recording (Enter / Ctrl+S)</source>
         <translation>Guardar grabación (Enter / Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="529" />
+        <source>Cancel</source>
+        <translation>Cancelar</translation>
+    </message>
+    <message>
         <source>Dismiss Error</source>
         <translation>Cerrar error</translation>
     </message>
@@ -1871,6 +1886,30 @@ Tamaño: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
         <translation>El recorte falló</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="804" />
+        <source>Exporting video...</source>
+        <translation>Exportando video...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="815" />
+        <source>Video export is not supported on this platform</source>
+        <translation>La exportación de video no es compatible con esta plataforma</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="816" />
+        <source>Export failed: %1</source>
+        <translation>La exportación falló: %1</translation>
+    </message>
+    <message>
+        <source>Export failed; the original recording was kept.</source>
+        <translation>La exportación falló; se conservó la grabación original.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>Cancelando...</translation>
     </message>
 </context>
 <context>
@@ -2129,6 +2168,11 @@ El audio no es compatible con grabaciones GIF.</translation>
         <source>5 seconds</source>
         <translation>5 segundos</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>Calidad del video guardado. Con la vista previa activada, las grabaciones se capturan en alta calidad y se convierten a esta calidad al guardar.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>
@@ -2974,44 +3018,6 @@ Puede estar en uso por otra aplicación.</translation>
         <source>Check Now</source>
         <translation>Verificar ahora</translation>
         </message>
-</context>
-<context>
-    <name>VideoTrimmer</name>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="52" />
-        <source>Input or output path not set</source>
-        <translation>Ruta de entrada o salida no establecida</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="57" />
-        <source>Invalid trim range</source>
-        <translation>Rango de recorte no válido</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="73" />
-        <source>Failed to create video player</source>
-        <translation>Error al crear el reproductor de video</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="84" />
-        <source>Failed to load video: %1</source>
-        <translation>Error al cargar el video: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="91" />
-        <source>Failed to load input video</source>
-        <translation>Error al cargar el video de entrada</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="133" />
-        <source>Failed to create encoder: %1</source>
-        <translation>Error al crear el codificador: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="269" />
-        <source>Encoding failed</source>
-        <translation>Error de codificación</translation>
-    </message>
 </context>
 <context>
     <name>WatermarkSettings</name>

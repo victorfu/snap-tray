@@ -1735,76 +1735,91 @@ Dydis: %2</translation>
         <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
         <translation>Garsas nepasiekiamas. Šis įrašas bus be garso. Patikrinkite sistemos leidimus ir pasirinktą garso įrenginį.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>Nepakanka laisvos vietos diske aukštos kokybės įrašymui. Įrašoma pasirinkta kokybe.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Pause Preview (Space)</source>
-        <translation>Pristabdyti peržiūrą (Space)</translation>
+        <source>Clear Crop</source>
+        <translation>Išvalyti apkarpymą</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Play Preview (Space)</source>
-        <translation>Leisti peržiūrą (Space)</translation>
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>Spustelėkite langą, kad apkirptumėte pagal jį, arba vilkite ir nubrėžkite</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="376" />
-        <source>Playback Speed: %1x</source>
-        <translation>Atkūrimo greitis: %1x</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="390" />
-        <source>Export as MP4</source>
-        <translation>Eksportuoti kaip MP4</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="398" />
-        <source>Export as GIF</source>
-        <translation>Eksportuoti kaip GIF</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="406" />
-        <source>Export as WebP</source>
-        <translation>Eksportuoti kaip WebP</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
         <source>Audio playback is unavailable in this preview.</source>
         <translation>Šioje peržiūroje garso atkūrimas nepasiekiamas.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
+        <source>Export as MP4</source>
+        <translation>Eksportuoti kaip MP4</translation>
+    </message>
+    <message>
+        <source>Export as GIF</source>
+        <translation>Eksportuoti kaip GIF</translation>
+    </message>
+    <message>
+        <source>Export as WebP</source>
+        <translation>Eksportuoti kaip WebP</translation>
+    </message>
+    <message>
+        <source>Pause Preview (Space)</source>
+        <translation>Pristabdyti peržiūrą (Space)</translation>
+    </message>
+    <message>
+        <source>Play Preview (Space)</source>
+        <translation>Leisti peržiūrą (Space)</translation>
+    </message>
+    <message>
+        <source>Playback Speed: %1x</source>
+        <translation>Atkūrimo greitis: %1x</translation>
+    </message>
+    <message>
         <source>Unmute Preview (M)</source>
         <translation>Įjungti peržiūros garsą (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Mute Preview (M)</source>
         <translation>Nutildyti peržiūrą (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
+        <source>Apply Crop (Enter)</source>
+        <translation>Taikyti apkarpymą (Enter)</translation>
+    </message>
+    <message>
+        <source>Edit Crop</source>
+        <translation>Redaguoti apkarpymą</translation>
+    </message>
+    <message>
+        <source>Crop Recording</source>
+        <translation>Apkarpyti įrašo vaizdą</translation>
+    </message>
+    <message>
         <source>Clear Trim Selection</source>
         <translation>Išvalyti apkarpymo pasirinkimą</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
         <source>Trim Recording</source>
         <translation>Apkarpyti įrašą</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="438" />
         <source>Discard Recording (Esc)</source>
         <translation>Atmesti įrašą (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="445" />
         <source>Save Recording (Enter / Ctrl+S)</source>
         <translation>Išsaugoti įrašą (Enter / Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="529" />
+        <source>Cancel</source>
+        <translation>Atšaukti</translation>
+    </message>
+    <message>
         <source>Dismiss Error</source>
         <translation>Uždaryti klaidą</translation>
     </message>
@@ -1865,6 +1880,30 @@ Dydis: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
         <translation>Apkarpymas nepavyko</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="804" />
+        <source>Exporting video...</source>
+        <translation>Eksportuojamas vaizdo įrašas...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="815" />
+        <source>Video export is not supported on this platform</source>
+        <translation>Vaizdo įrašo eksportavimas šioje platformoje nepalaikomas</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="816" />
+        <source>Export failed: %1</source>
+        <translation>Eksportavimas nepavyko: %1</translation>
+    </message>
+    <message>
+        <source>Export failed; the original recording was kept.</source>
+        <translation>Eksportuoti nepavyko; pradinis įrašas išsaugotas.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>Atšaukiama...</translation>
     </message>
 </context>
 <context>
@@ -2123,6 +2162,11 @@ GIF įrašuose garsas nepalaikomas.</translation>
         <source>5 seconds</source>
         <translation>5 sekundės</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>Įrašyto vaizdo įrašo kokybė. Įjungus peržiūrą, įrašai fiksuojami aukšta kokybe ir išsaugant konvertuojami į šią kokybę.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>
@@ -2968,44 +3012,6 @@ Jį gali naudoti kita programa.</translation>
         <source>Check Now</source>
         <translation>Tikrinti dabar</translation>
         </message>
-</context>
-<context>
-    <name>VideoTrimmer</name>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="52" />
-        <source>Input or output path not set</source>
-        <translation>Nenustatytas įvesties arba išvesties kelias</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="57" />
-        <source>Invalid trim range</source>
-        <translation>Neteisingas apkirpimo intervalas</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="73" />
-        <source>Failed to create video player</source>
-        <translation>Nepavyko sukurti vaizdo grotuvo</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="84" />
-        <source>Failed to load video: %1</source>
-        <translation>Nepavyko įkelti vaizdo įrašo: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="91" />
-        <source>Failed to load input video</source>
-        <translation>Nepavyko įkelti įvesties vaizdo įrašo</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="133" />
-        <source>Failed to create encoder: %1</source>
-        <translation>Nepavyko sukurti koduotuvo: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="269" />
-        <source>Encoding failed</source>
-        <translation>Koduoti nepavyko</translation>
-    </message>
 </context>
 <context>
     <name>WatermarkSettings</name>

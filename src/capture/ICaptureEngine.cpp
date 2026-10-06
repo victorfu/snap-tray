@@ -9,6 +9,12 @@
 #include "capture/DXGICaptureEngine.h"
 #endif
 
+#ifdef SNAPTRAY_ENABLE_LINUX_RECORDING
+#include "capture/X11CaptureEngine.h"
+#include "X11ScreenGeometry.h"
+#include "platform/PlatformCapabilities.h"
+#endif
+
 #include <QDebug>
 #include <QScreen>
 
@@ -45,6 +51,20 @@ CaptureScreenInfo CaptureScreenInfo::fromScreen(const QScreen *screen)
 #endif
     const qreal dpr = screen->devicePixelRatio();
     info.devicePixelRatio = dpr > 0.0 ? dpr : 1.0;
+#ifdef SNAPTRAY_ENABLE_LINUX_RECORDING
+    int screenNumber = 0;
+    auto* connection = xcb_connect(nullptr, &screenNumber);
+    if (!xcb_connection_has_error(connection)) {
+        auto screens = xcb_setup_roots_iterator(xcb_get_setup(connection));
+        for (int i = 0; i < screenNumber && screens.rem; ++i) xcb_screen_next(&screens);
+        if (screens.rem) {
+            info.physicalGeometry = SnapTray::x11ScreenGeometry(connection, screens.data, info.name,
+                QSize(qRound(info.geometry.width() * info.devicePixelRatio),
+                      qRound(info.geometry.height() * info.devicePixelRatio)));
+        }
+    }
+    xcb_disconnect(connection);
+#endif
     return info;
 }
 
@@ -74,6 +94,10 @@ ICaptureEngine *ICaptureEngine::createBestEngine(QObject *parent)
     qDebug() << "ICaptureEngine: DXGI unavailable, using Qt fallback";
 #endif
 
+#ifdef SNAPTRAY_ENABLE_LINUX_RECORDING
+    if (SnapTray::currentPlatformCapabilities().supportsRecording)
+        return new X11CaptureEngine(parent);
+#endif
     qDebug() << "ICaptureEngine: Using Qt capture engine";
     return new QtCaptureEngine(parent);
 }

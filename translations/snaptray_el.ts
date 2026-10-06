@@ -1735,76 +1735,91 @@ Size: %2</source>
         <source>Failed to save recording to selected location</source>
         <translation>Αποτυχία αποθήκευσης εγγραφής στην επιλεγμένη τοποθεσία</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>Δεν υπάρχει αρκετός ελεύθερος χώρος στον δίσκο για εγγραφή υψηλής ποιότητας. Η εγγραφή γίνεται στην επιλεγμένη ποιότητα.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Pause Preview (Space)</source>
-        <translation>Παύση προεπισκόπησης (Space)</translation>
+        <source>Clear Crop</source>
+        <translation>Κατάργηση περικοπής</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Play Preview (Space)</source>
-        <translation>Αναπαραγωγή προεπισκόπησης (Space)</translation>
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>Κάντε κλικ σε ένα παράθυρο για περικοπή σε αυτό ή σύρετε για σχεδίαση</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="376" />
-        <source>Playback Speed: %1x</source>
-        <translation>Ταχύτητα αναπαραγωγής: %1x</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="390" />
-        <source>Export as MP4</source>
-        <translation>Εξαγωγή ως MP4</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="398" />
-        <source>Export as GIF</source>
-        <translation>Εξαγωγή ως GIF</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="406" />
-        <source>Export as WebP</source>
-        <translation>Εξαγωγή ως WebP</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
         <source>Audio playback is unavailable in this preview.</source>
         <translation>Η αναπαραγωγή ήχου δεν είναι διαθέσιμη σε αυτήν την προεπισκόπηση.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
+        <source>Export as MP4</source>
+        <translation>Εξαγωγή ως MP4</translation>
+    </message>
+    <message>
+        <source>Export as GIF</source>
+        <translation>Εξαγωγή ως GIF</translation>
+    </message>
+    <message>
+        <source>Export as WebP</source>
+        <translation>Εξαγωγή ως WebP</translation>
+    </message>
+    <message>
+        <source>Pause Preview (Space)</source>
+        <translation>Παύση προεπισκόπησης (Space)</translation>
+    </message>
+    <message>
+        <source>Play Preview (Space)</source>
+        <translation>Αναπαραγωγή προεπισκόπησης (Space)</translation>
+    </message>
+    <message>
+        <source>Playback Speed: %1x</source>
+        <translation>Ταχύτητα αναπαραγωγής: %1x</translation>
+    </message>
+    <message>
         <source>Unmute Preview (M)</source>
         <translation>Κατάργηση σίγασης προεπισκόπησης (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Mute Preview (M)</source>
         <translation>Σίγαση προεπισκόπησης (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
+        <source>Apply Crop (Enter)</source>
+        <translation>Εφαρμογή περικοπής (Enter)</translation>
+    </message>
+    <message>
+        <source>Edit Crop</source>
+        <translation>Επεξεργασία περικοπής</translation>
+    </message>
+    <message>
+        <source>Crop Recording</source>
+        <translation>Περικοπή περιοχής εγγραφής</translation>
+    </message>
+    <message>
         <source>Clear Trim Selection</source>
         <translation>Εκκαθάριση επιλογής περικοπής</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
         <source>Trim Recording</source>
         <translation>Περικοπή εγγραφής</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="438" />
         <source>Discard Recording (Esc)</source>
         <translation>Απόρριψη εγγραφής (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="445" />
         <source>Save Recording (Enter / Ctrl+S)</source>
         <translation>Αποθήκευση εγγραφής (Enter / Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="529" />
+        <source>Cancel</source>
+        <translation>Ακύρωση</translation>
+    </message>
+    <message>
         <source>Dismiss Error</source>
         <translation>Κλείσιμο σφάλματος</translation>
     </message>
@@ -1865,6 +1880,30 @@ Size: %2</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
         <translation>Η περικοπή απέτυχε</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="804" />
+        <source>Exporting video...</source>
+        <translation>Εξαγωγή βίντεο...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="815" />
+        <source>Video export is not supported on this platform</source>
+        <translation>Η εξαγωγή βίντεο δεν υποστηρίζεται σε αυτήν την πλατφόρμα</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="816" />
+        <source>Export failed: %1</source>
+        <translation>Η εξαγωγή απέτυχε: %1</translation>
+    </message>
+    <message>
+        <source>Export failed; the original recording was kept.</source>
+        <translation>Η εξαγωγή απέτυχε· η αρχική εγγραφή διατηρήθηκε.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>Ακύρωση σε εξέλιξη...</translation>
     </message>
 </context>
 <context>
@@ -2123,6 +2162,11 @@ Audio is not supported for GIF recordings.</source>
         <source>5 seconds</source>
         <translation>5 δευτερόλεπτα</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>Ποιότητα του αποθηκευμένου βίντεο. Με ενεργή προεπισκόπηση, οι εγγραφές καταγράφονται σε υψηλή ποιότητα και μετατρέπονται σε αυτή την ποιότητα κατά την αποθήκευση.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>
@@ -2968,44 +3012,6 @@ It may be in use by another application.</source>
         <source>Check Now</source>
         <translation>Έλεγχος τώρα</translation>
         </message>
-</context>
-<context>
-    <name>VideoTrimmer</name>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="52" />
-        <source>Input or output path not set</source>
-        <translation>Δεν έχει οριστεί διαδρομή εισόδου ή εξόδου</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="57" />
-        <source>Invalid trim range</source>
-        <translation>Μη έγκυρο εύρος περικοπής</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="73" />
-        <source>Failed to create video player</source>
-        <translation>Αποτυχία δημιουργίας προγράμματος αναπαραγωγής βίντεο</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="84" />
-        <source>Failed to load video: %1</source>
-        <translation>Αποτυχία φόρτωσης βίντεο: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="91" />
-        <source>Failed to load input video</source>
-        <translation>Αποτυχία φόρτωσης βίντεο εισόδου</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="133" />
-        <source>Failed to create encoder: %1</source>
-        <translation>Αποτυχία δημιουργίας κωδικοποιητή: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="269" />
-        <source>Encoding failed</source>
-        <translation>Η κωδικοποίηση απέτυχε</translation>
-    </message>
 </context>
 <context>
     <name>WatermarkSettings</name>

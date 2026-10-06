@@ -5,6 +5,7 @@
 #include <QSize>
 #include <QImage>
 #include <QString>
+#include "encoding/VideoRateControl.h"
 
 /**
  * @brief Abstract interface for video encoders (MP4 only)
@@ -12,9 +13,9 @@
  * Platform implementations:
  * - macOS: AVFoundationEncoder
  * - Windows: MediaFoundationEncoder
+ * - Linux: FFmpegEncoder (system libraries)
  *
- * This interface provides a common API for native video encoding
- * without requiring external dependencies like FFmpeg.
+ * This interface provides a common API for platform video encoding.
  */
 class IVideoEncoder : public QObject
 {
@@ -45,6 +46,30 @@ public:
      * @param quality 0-100 (higher = better quality, larger file)
      */
     virtual void setQuality(int quality) { Q_UNUSED(quality); }
+
+    /**
+     * @brief Choose how bits are spent. ConstantQuality asks the platform
+     * encoder for @p qualityValue (0-100) with a bitrate ceiling; encoders
+     * that cannot honour it stay in Bitrate mode (see effectiveRateControl()).
+     * Must be called before start().
+     */
+    virtual void setRateControl(SnapTray::VideoRateControl mode, int qualityValue)
+    {
+        Q_UNUSED(mode);
+        Q_UNUSED(qualityValue);
+    }
+
+    /**
+     * @brief Keyframe (GOP) interval in seconds; 0 keeps the encoder default.
+     * Must be called before start().
+     */
+    virtual void setKeyFrameIntervalSeconds(int seconds) { Q_UNUSED(seconds); }
+
+    /** @brief The rate control actually in effect after start(). */
+    virtual SnapTray::VideoRateControl effectiveRateControl() const
+    {
+        return SnapTray::VideoRateControl::Bitrate;
+    }
 
     // ========== Audio Support ==========
 

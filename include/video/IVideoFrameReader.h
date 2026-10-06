@@ -20,6 +20,8 @@ public:
     virtual double frameRate() const = 0;
     virtual QString lastError() const = 0;
 
-    // Platforms without an offline reader retain their existing player path.
+    // Reader for GIF/WebP conversion: AVFoundation on macOS, FFmpeg on Linux.
+    // Other platforms return nullptr and retain their existing player path.
     static std::unique_ptr<IVideoFrameReader> create();
+
 };

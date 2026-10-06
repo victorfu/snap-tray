@@ -1741,76 +1741,91 @@ Size: %2</source>
         <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
         <translation>오디오를 사용할 수 없습니다. 이 녹화는 무음으로 저장됩니다. 시스템 권한과 선택한 오디오 장치를 확인하세요.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>고화질 녹화를 위한 디스크 여유 공간이 부족합니다. 선택한 화질로 녹화합니다.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Pause Preview (Space)</source>
-        <translation>미리 보기 일시 중지 (스페이스)</translation>
+        <source>Clear Crop</source>
+        <translation>자르기 영역 지우기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Play Preview (Space)</source>
-        <translation>미리 보기 재생 (스페이스)</translation>
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>창을 클릭하면 그 창에 맞춰 자르고, 드래그하면 직접 그릴 수 있습니다</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="376" />
-        <source>Playback Speed: %1x</source>
-        <translation>재생 속도: %1x</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="390" />
-        <source>Export as MP4</source>
-        <translation>MP4로 내보내기</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="398" />
-        <source>Export as GIF</source>
-        <translation>GIF로 내보내기</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="406" />
-        <source>Export as WebP</source>
-        <translation>WebP로 내보내기</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
         <source>Audio playback is unavailable in this preview.</source>
         <translation>이 미리보기에서는 오디오를 재생할 수 없습니다.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
+        <source>Export as MP4</source>
+        <translation>MP4로 내보내기</translation>
+    </message>
+    <message>
+        <source>Export as GIF</source>
+        <translation>GIF로 내보내기</translation>
+    </message>
+    <message>
+        <source>Export as WebP</source>
+        <translation>WebP로 내보내기</translation>
+    </message>
+    <message>
+        <source>Pause Preview (Space)</source>
+        <translation>미리 보기 일시 중지 (스페이스)</translation>
+    </message>
+    <message>
+        <source>Play Preview (Space)</source>
+        <translation>미리 보기 재생 (스페이스)</translation>
+    </message>
+    <message>
+        <source>Playback Speed: %1x</source>
+        <translation>재생 속도: %1x</translation>
+    </message>
+    <message>
         <source>Unmute Preview (M)</source>
         <translation>미리 보기 음소거 해제 (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Mute Preview (M)</source>
         <translation>미리 보기 음소거 (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
+        <source>Apply Crop (Enter)</source>
+        <translation>자르기 적용 (Enter)</translation>
+    </message>
+    <message>
+        <source>Edit Crop</source>
+        <translation>자르기 영역 편집</translation>
+    </message>
+    <message>
+        <source>Crop Recording</source>
+        <translation>녹화 영역 자르기</translation>
+    </message>
+    <message>
         <source>Clear Trim Selection</source>
         <translation>자르기 선택 지우기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
         <source>Trim Recording</source>
         <translation>녹화 자르기</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="438" />
         <source>Discard Recording (Esc)</source>
         <translation>녹화 삭제 (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="445" />
         <source>Save Recording (Enter / Ctrl+S)</source>
         <translation>녹화 저장 (Enter / Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="529" />
+        <source>Cancel</source>
+        <translation>취소</translation>
+    </message>
+    <message>
         <source>Dismiss Error</source>
         <translation>오류 닫기</translation>
     </message>
@@ -1871,6 +1886,30 @@ Size: %2</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
         <translation>잘라내기 실패</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="804" />
+        <source>Exporting video...</source>
+        <translation>비디오 내보내는 중...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="815" />
+        <source>Video export is not supported on this platform</source>
+        <translation>이 플랫폼에서는 비디오 내보내기가 지원되지 않습니다</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="816" />
+        <source>Export failed: %1</source>
+        <translation>내보내기 실패: %1</translation>
+    </message>
+    <message>
+        <source>Export failed; the original recording was kept.</source>
+        <translation>내보내기에 실패했습니다. 원본 녹화는 유지되었습니다.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>취소하는 중...</translation>
     </message>
 </context>
 <context>
@@ -2129,6 +2168,11 @@ GIF 녹화에서는 오디오가 지원되지 않습니다.</translation>
         <source>5 seconds</source>
         <translation>5초</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>저장되는 동영상의 화질입니다. 미리보기가 켜져 있으면 고화질로 녹화한 뒤 저장할 때 이 화질로 변환합니다.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>
@@ -2974,44 +3018,6 @@ It may be in use by another application.</source>
         <source>Check Now</source>
         <translation>지금 확인</translation>
         </message>
-</context>
-<context>
-    <name>VideoTrimmer</name>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="52" />
-        <source>Input or output path not set</source>
-        <translation>입력 또는 출력 경로가 설정되지 않았습니다</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="57" />
-        <source>Invalid trim range</source>
-        <translation>잘못된 다듬기 범위</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="73" />
-        <source>Failed to create video player</source>
-        <translation>비디오 플레이어 생성에 실패했습니다</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="84" />
-        <source>Failed to load video: %1</source>
-        <translation>비디오 불러오기에 실패했습니다: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="91" />
-        <source>Failed to load input video</source>
-        <translation>입력 비디오 불러오기에 실패했습니다</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="133" />
-        <source>Failed to create encoder: %1</source>
-        <translation>인코더 생성에 실패했습니다: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="269" />
-        <source>Encoding failed</source>
-        <translation>인코딩에 실패했습니다</translation>
-    </message>
 </context>
 <context>
     <name>WatermarkSettings</name>

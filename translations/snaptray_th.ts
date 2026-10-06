@@ -1722,78 +1722,120 @@ English is always included and cannot be removed.</source>
         <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
         <translation>ไม่สามารถใช้เสียงได้ การบันทึกนี้จะไม่มีเสียง โปรดตรวจสอบสิทธิ์ของระบบและอุปกรณ์เสียงที่เลือก</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>พื้นที่ว่างในดิสก์ไม่พอสำหรับการบันทึกคุณภาพสูง จะบันทึกด้วยคุณภาพที่เลือกแทน</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361"/>
-        <source>Pause Preview (Space)</source>
-        <translation>หยุดตัวอย่างชั่วคราว (Space)</translation>
+        <source>Clear Crop</source>
+        <translation>ล้างการครอบตัด</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361"/>
-        <source>Play Preview (Space)</source>
-        <translation>เล่นตัวอย่าง (Space)</translation>
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>คลิกหน้าต่างเพื่อครอบตัดตามหน้าต่างนั้น หรือลากเพื่อวาดเอง</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="376"/>
-        <source>Playback Speed: %1x</source>
-        <translation>ความเร็วในการเล่น: %1x</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="390"/>
-        <source>Export as MP4</source>
-        <translation>ส่งออกเป็น MP4</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="398"/>
-        <source>Export as GIF</source>
-        <translation>ส่งออกเป็น GIF</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="406"/>
-        <source>Export as WebP</source>
-        <translation>ส่งออกเป็น WebP</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="170"/>
         <source>Audio playback is unavailable in this preview.</source>
         <translation>ไม่สามารถเล่นเสียงในการแสดงตัวอย่างนี้ได้</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418"/>
+        <source>Export as MP4</source>
+        <translation>ส่งออกเป็น MP4</translation>
+    </message>
+    <message>
+        <source>Export as GIF</source>
+        <translation>ส่งออกเป็น GIF</translation>
+    </message>
+    <message>
+        <source>Export as WebP</source>
+        <translation>ส่งออกเป็น WebP</translation>
+    </message>
+    <message>
+        <source>Pause Preview (Space)</source>
+        <translation>หยุดตัวอย่างชั่วคราว (Space)</translation>
+    </message>
+    <message>
+        <source>Play Preview (Space)</source>
+        <translation>เล่นตัวอย่าง (Space)</translation>
+    </message>
+    <message>
+        <source>Playback Speed: %1x</source>
+        <translation>ความเร็วในการเล่น: %1x</translation>
+    </message>
+    <message>
         <source>Unmute Preview (M)</source>
         <translation>เปิดเสียงตัวอย่าง (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418"/>
         <source>Mute Preview (M)</source>
         <translation>ปิดเสียงตัวอย่าง (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425"/>
+        <source>Apply Crop (Enter)</source>
+        <translation>ใช้การครอบตัด (Enter)</translation>
+    </message>
+    <message>
+        <source>Edit Crop</source>
+        <translation>แก้ไขการครอบตัด</translation>
+    </message>
+    <message>
+        <source>Crop Recording</source>
+        <translation>ครอบตัดการบันทึก</translation>
+    </message>
+    <message>
         <source>Clear Trim Selection</source>
         <translation>ล้างช่วงตัดที่เลือก</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425"/>
         <source>Trim Recording</source>
         <translation>ตัดการบันทึก</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="438"/>
         <source>Discard Recording (Esc)</source>
         <translation>ทิ้งการบันทึก (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="445"/>
         <source>Save Recording (Enter / Ctrl+S)</source>
         <translation>บันทึกการบันทึก (Enter / Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="529"/>
+        <source>Cancel</source>
+        <translation>ยกเลิก</translation>
+    </message>
+    <message>
         <source>Dismiss Error</source>
         <translation>ปิดข้อความผิดพลาด</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPreviewBackend</name>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="804"/>
+        <source>Exporting video...</source>
+        <translation>กำลังส่งออกวิดีโอ...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="815"/>
+        <source>Video export is not supported on this platform</source>
+        <translation>แพลตฟอร์มนี้ไม่รองรับการส่งออกวิดีโอ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="816"/>
+        <source>Export failed: %1</source>
+        <translation>ส่งออกไม่สำเร็จ: %1</translation>
+    </message>
+    <message>
+        <source>Export failed; the original recording was kept.</source>
+        <translation>ส่งออกไม่สำเร็จ ระบบยังคงเก็บการบันทึกต้นฉบับไว้</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>กำลังยกเลิก...</translation>
     </message>
 </context>
 <context>
@@ -1987,6 +2029,11 @@ English is always included and cannot be removed.</source>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="247"/>
         <source>5 seconds</source>
         <translation>5 วินาที</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>คุณภาพของวิดีโอที่บันทึก เมื่อเปิดตัวอย่าง การบันทึกจะจับภาพด้วยคุณภาพสูงและแปลงเป็นคุณภาพนี้เมื่อบันทึก</translation>
     </message>
 </context>
 <context>
@@ -2853,44 +2900,6 @@ English is always included and cannot be removed.</source>
         <location filename="../src/qml/settings/UpdatesSettings.qml" line="117"/>
         <source>Check Now</source>
         <translation>ตรวจสอบตอนนี้</translation>
-    </message>
-</context>
-<context>
-    <name>VideoTrimmer</name>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="52"/>
-        <source>Input or output path not set</source>
-        <translation>ยังไม่ได้ตั้งค่าพาธอินพุตหรือเอาต์พุต</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="57"/>
-        <source>Invalid trim range</source>
-        <translation>ช่วงตัดไม่ถูกต้อง</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="73"/>
-        <source>Failed to create video player</source>
-        <translation>สร้างตัวเล่นวิดีโอไม่สำเร็จ</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="84"/>
-        <source>Failed to load video: %1</source>
-        <translation>โหลดวิดีโอไม่สำเร็จ: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="91"/>
-        <source>Failed to load input video</source>
-        <translation>โหลดวิดีโออินพุตไม่สำเร็จ</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="133"/>
-        <source>Failed to create encoder: %1</source>
-        <translation>สร้างตัวเข้ารหัสไม่สำเร็จ: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="269"/>
-        <source>Encoding failed</source>
-        <translation>การเข้ารหัสล้มเหลว</translation>
     </message>
 </context>
 <context>

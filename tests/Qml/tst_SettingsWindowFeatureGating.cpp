@@ -101,13 +101,8 @@ void tst_SettingsWindowFeatureGating::sidebarModelHidesUnsupportedPages()
         keys.append(item.toMap().value(QStringLiteral("key")).toString());
     }
 
-#if defined(Q_OS_LINUX)
-    QVERIFY(!keys.contains(QStringLiteral("ocr")));
-    QVERIFY(!keys.contains(QStringLiteral("recording")));
-#else
-    QVERIFY(keys.contains(QStringLiteral("ocr")));
-    QVERIFY(keys.contains(QStringLiteral("recording")));
-#endif
+    QCOMPARE(keys.contains(QStringLiteral("ocr")), backend.ocrSettingsVisible());
+    QCOMPARE(keys.contains(QStringLiteral("recording")), backend.recordingSupported());
 }
 
 void tst_SettingsWindowFeatureGating::filesPageShowsRememberLastFolderOnAllPlatforms()

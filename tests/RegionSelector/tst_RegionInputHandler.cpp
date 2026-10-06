@@ -35,6 +35,10 @@ private slots:
     void init();
     void cleanup();
 
+    void testOutsideClickAtRoundedBound_data();
+    void testOutsideClickAtRoundedBound();
+    void testOutsideClickHonorsAspectRatio_data();
+    void testOutsideClickHonorsAspectRatio();
     void testTinyMoveKeepsDetectedWindowSelection();
     void testReleaseAppliesFinalSelectionPoint_data();
     void testReleaseAppliesFinalSelectionPoint();
@@ -197,6 +201,79 @@ void tst_RegionInputHandler::testAspectLockedCornerResizeKeepsPressOffset()
     m_handler->handleMouseRelease(&release);
     QCOMPARE(m_selectionManager->selectionRect(), expected);
     QVERIFY(m_selectionManager->isComplete());
+}
+
+void tst_RegionInputHandler::testOutsideClickAtRoundedBound_data()
+{
+    QTest::addColumn<bool>("vertical");
+    QTest::addColumn<bool>("negative");
+    QTest::newRow("right") << false << false;
+    QTest::newRow("left") << false << true;
+    QTest::newRow("bottom") << true << false;
+    QTest::newRow("top") << true << true;
+}
+
+void tst_RegionInputHandler::testOutsideClickAtRoundedBound()
+{
+    QFETCH(bool, vertical);
+    QFETCH(bool, negative);
+    m_selectionManager->setBounds(vertical ? QRect(0, 0, 21, 1000) : QRect(0, 0, 1000, 21));
+    m_selectionManager->setSelectionRect(vertical ? QRect(0, 100, 20, 10) : QRect(100, 0, 10, 20));
+    m_selectionManager->setAspectRatio(vertical ? 2.0 : 0.5);
+    QVERIFY(m_selectionManager->resizeFromBottomRight(vertical ? QPoint(1, 0) : QPoint(0, 1)));
+    const QRect original = vertical ? QRect(0, 100, 21, 11) : QRect(100, 0, 11, 21);
+    QCOMPARE(m_selectionManager->selectionRect(), original);
+    const int outside = negative ? 50 : 160;
+    const QPoint pos = vertical ? QPoint(10, outside) : QPoint(outside, 10);
+    QSignalSpy changed(m_selectionManager, &SelectionStateManager::selectionChanged);
+    QSignalSpy stateChanged(m_selectionManager, &SelectionStateManager::stateChanged);
+    for (int repeat = 0; repeat < 3; ++repeat) {
+        auto press = makeMouseEvent(QEvent::MouseButtonPress, pos, Qt::LeftButton, Qt::LeftButton);
+        m_handler->handleMousePress(&press);
+        auto release = makeMouseEvent(QEvent::MouseButtonRelease, pos, Qt::LeftButton, Qt::NoButton);
+        m_handler->handleMouseRelease(&release);
+        QCOMPARE(m_selectionManager->selectionRect(), original);
+    }
+    QCOMPARE(changed.count(), 0);
+    QCOMPARE(stateChanged.count(), 0);
+    QVERIFY(m_selectionManager->isComplete());
+}
+
+void tst_RegionInputHandler::testOutsideClickHonorsAspectRatio_data()
+{
+    QTest::addColumn<QPoint>("position");
+    QTest::addColumn<QRect>("expected");
+    QTest::addColumn<qreal>("ratio");
+    QTest::newRow("right") << QPoint(399, 149) << QRect(100, 75, 300, 150) << 2.0;
+    QTest::newRow("left") << QPoint(0, 149) << QRect(0, 75, 300, 150) << 2.0;
+    QTest::newRow("top") << QPoint(199, 50) << QRect(50, 50, 300, 150) << 2.0;
+    QTest::newRow("bottom") << QPoint(199, 249) << QRect(50, 100, 300, 150) << 2.0;
+    QTest::newRow("top-left") << QPoint(0, 0) << QRect(0, 50, 300, 150) << 2.0;
+    QTest::newRow("top-right") << QPoint(499, 50) << QRect(100, 50, 300, 150) << 2.0;
+    QTest::newRow("bottom-left") << QPoint(0, 399) << QRect(0, 100, 300, 150) << 2.0;
+    QTest::newRow("bottom-right") << QPoint(499, 249) << QRect(100, 100, 300, 150) << 2.0;
+    QTest::newRow("perpendicular-boundary") << QPoint(999, 149) << QRect(100, 0, 600, 300) << 2.0;
+    QTest::newRow("unlocked") << QPoint(399, 149) << QRect(100, 100, 300, 100) << 0.0;
+}
+
+void tst_RegionInputHandler::testOutsideClickHonorsAspectRatio()
+{
+    QFETCH(QPoint, position);
+    QFETCH(QRect, expected);
+    QFETCH(qreal, ratio);
+    m_selectionManager->setSelectionRect(QRect(100, 100, 200, 100));
+    m_selectionManager->setAspectRatio(ratio);
+    QSignalSpy changed(m_selectionManager, &SelectionStateManager::selectionChanged);
+    QSignalSpy stateChanged(m_selectionManager, &SelectionStateManager::stateChanged);
+    auto press = makeMouseEvent(QEvent::MouseButtonPress, position, Qt::LeftButton, Qt::LeftButton);
+    m_handler->handleMousePress(&press);
+    auto release = makeMouseEvent(QEvent::MouseButtonRelease, position, Qt::LeftButton, Qt::NoButton);
+    m_handler->handleMouseRelease(&release);
+    QCOMPARE(m_selectionManager->selectionRect(), expected);
+    QCOMPARE(m_selectionManager->aspectRatio(), ratio);
+    QVERIFY(m_selectionManager->isComplete());
+    QCOMPARE(changed.count(), 1);
+    QCOMPARE(stateChanged.count(), 0);
 }
 
 void tst_RegionInputHandler::testTinyMoveKeepsDetectedWindowSelection()

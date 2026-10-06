@@ -1735,76 +1735,91 @@ Boyut: %2</translation>
         <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
         <translation>Ses kullanılamıyor. Bu kayıt sessiz olacaktır. Sistem izinlerini ve seçili ses aygıtını kontrol edin.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>Yüksek kaliteli kayıt için yeterli boş disk alanı yok. Bunun yerine seçilen kalitede kaydediliyor.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Pause Preview (Space)</source>
-        <translation>Önizlemeyi duraklat (Space)</translation>
+        <source>Clear Crop</source>
+        <translation>Kırpmayı temizle</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Play Preview (Space)</source>
-        <translation>Önizlemeyi oynat (Space)</translation>
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>Bir pencereye tıklayarak ona göre kırpın veya sürükleyerek çizin</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="376" />
-        <source>Playback Speed: %1x</source>
-        <translation>Oynatma hızı: %1x</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="390" />
-        <source>Export as MP4</source>
-        <translation>MP4 olarak dışa aktar</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="398" />
-        <source>Export as GIF</source>
-        <translation>GIF olarak dışa aktar</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="406" />
-        <source>Export as WebP</source>
-        <translation>WebP olarak dışa aktar</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
         <source>Audio playback is unavailable in this preview.</source>
         <translation>Bu önizlemede ses oynatma kullanılamıyor.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
+        <source>Export as MP4</source>
+        <translation>MP4 olarak dışa aktar</translation>
+    </message>
+    <message>
+        <source>Export as GIF</source>
+        <translation>GIF olarak dışa aktar</translation>
+    </message>
+    <message>
+        <source>Export as WebP</source>
+        <translation>WebP olarak dışa aktar</translation>
+    </message>
+    <message>
+        <source>Pause Preview (Space)</source>
+        <translation>Önizlemeyi duraklat (Space)</translation>
+    </message>
+    <message>
+        <source>Play Preview (Space)</source>
+        <translation>Önizlemeyi oynat (Space)</translation>
+    </message>
+    <message>
+        <source>Playback Speed: %1x</source>
+        <translation>Oynatma hızı: %1x</translation>
+    </message>
+    <message>
         <source>Unmute Preview (M)</source>
         <translation>Önizleme sesini aç (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Mute Preview (M)</source>
         <translation>Önizlemeyi sessize al (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
+        <source>Apply Crop (Enter)</source>
+        <translation>Kırpmayı uygula (Enter)</translation>
+    </message>
+    <message>
+        <source>Edit Crop</source>
+        <translation>Kırpmayı düzenle</translation>
+    </message>
+    <message>
+        <source>Crop Recording</source>
+        <translation>Kayıt alanını kırp</translation>
+    </message>
+    <message>
         <source>Clear Trim Selection</source>
         <translation>Kırpma seçimini temizle</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
         <source>Trim Recording</source>
         <translation>Kaydı kırp</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="438" />
         <source>Discard Recording (Esc)</source>
         <translation>Kaydı at (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="445" />
         <source>Save Recording (Enter / Ctrl+S)</source>
         <translation>Kaydı kaydet (Enter / Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="529" />
+        <source>Cancel</source>
+        <translation>İptal</translation>
+    </message>
+    <message>
         <source>Dismiss Error</source>
         <translation>Hatayı kapat</translation>
     </message>
@@ -1865,6 +1880,30 @@ Boyut: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
         <translation>Kırpma başarısız</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="804" />
+        <source>Exporting video...</source>
+        <translation>Video dışa aktarılıyor...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="815" />
+        <source>Video export is not supported on this platform</source>
+        <translation>Video dışa aktarma bu platformda desteklenmiyor</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="816" />
+        <source>Export failed: %1</source>
+        <translation>Dışa aktarma başarısız: %1</translation>
+    </message>
+    <message>
+        <source>Export failed; the original recording was kept.</source>
+        <translation>Dışa aktarma başarısız oldu; özgün kayıt korundu.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>İptal ediliyor...</translation>
     </message>
 </context>
 <context>
@@ -2123,6 +2162,11 @@ GIF kayıtlarında ses desteklenmez.</translation>
         <source>5 seconds</source>
         <translation>5 saniye</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>Kaydedilen videonun kalitesi. Önizleme açıkken kayıtlar yüksek kalitede alınır ve kaydederken bu kaliteye dönüştürülür.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>
@@ -2968,44 +3012,6 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
         <source>Check Now</source>
         <translation>Şimdi Denetle</translation>
         </message>
-</context>
-<context>
-    <name>VideoTrimmer</name>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="52" />
-        <source>Input or output path not set</source>
-        <translation>Girdi veya çıktı yolu ayarlanmadı</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="57" />
-        <source>Invalid trim range</source>
-        <translation>Geçersiz kırpma aralığı</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="73" />
-        <source>Failed to create video player</source>
-        <translation>Video oynatıcı oluşturulamadı</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="84" />
-        <source>Failed to load video: %1</source>
-        <translation>Video yüklenemedi: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="91" />
-        <source>Failed to load input video</source>
-        <translation>Girdi videosu yüklenemedi</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="133" />
-        <source>Failed to create encoder: %1</source>
-        <translation>Kodlayıcı oluşturulamadı: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="269" />
-        <source>Encoding failed</source>
-        <translation>Kodlama başarısız oldu</translation>
-    </message>
 </context>
 <context>
     <name>WatermarkSettings</name>

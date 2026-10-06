@@ -18,7 +18,8 @@ public:
 
     PinWindow* createPinWindow(const QPixmap &screenshot,
                                const QPoint &position,
-                               bool showImmediately = true);
+                               bool showImmediately = true,
+                               qreal initialZoom = 1.0);
     void closeAllWindows();
     void closeWindows(const QList<PinWindow*>& windows);
     void setAllPinsVisible(bool visible);

@@ -2,6 +2,7 @@
 
 #ifdef Q_OS_WIN
 
+#include "MediaFoundationFrameCopy_win.h"
 #include "MediaFoundationReaderCallback_win.h"
 
 #include <QCoreApplication>
@@ -31,6 +32,7 @@
 #pragma comment(lib, "propsys.lib")
 
 namespace {
+constexpr qint64 kTimeUnitsPerMillisecond = 10000;
 constexpr int kBytesPerPixel = 4;
 constexpr int kStrideAlignments[] = { 16, 32, 64, 128, 256 };
 constexpr int kHeightAlignments[] = { 1, 2, 4, 8, 16, 32 };
@@ -150,17 +152,26 @@ public:
         m_wakeCondition.wakeAll();
     }
     void requestSeek(qint64 positionMs) {
+        requestFrame(positionMs * kTimeUnitsPerMillisecond, false);
+    }
+    void requestNextFrame(qint64 timestamp) {
+        requestFrame(timestamp, true);
+    }
+    quint64 seekSerial() const { return m_seekSerial.load(); }
+
+private:
+    void requestFrame(qint64 timestamp, bool nextFrame) {
         QMutexLocker locker(&m_waitMutex);
-        m_seekPosition = positionMs;
+        m_seekTimestamp = timestamp;
+        m_seekNextFrame = nextFrame;
         ++m_seekSerial;
         m_seekRequested = true;
         m_waitingAtEndOfStream = false;
         m_wakeCondition.wakeAll();
     }
-    quint64 seekSerial() const { return m_seekSerial.load(); }
 
 signals:
-    void frameReady(const QImage &frame, qint64 timestampMs, quint64 seekSerial);
+    void frameReady(const QImage &frame, qint64 timestamp, quint64 seekSerial);
     void endOfStream(quint64 seekSerial);
     void errorOccurred(const QString &message);
 
@@ -178,6 +189,7 @@ protected:
         // Source Reader may first return stream ticks, media-type flags, or a
         // null/non-decodable sample; none of those should consume the request.
         bool framePendingAfterSeek = false;
+        bool seekNextFrame = false;
         bool waitingForSeekAfterEndOfStream = false;
         quint64 activeSeekSerial = 0;
         qint64 targetTime = 0;
@@ -208,7 +220,8 @@ protected:
                 QMutexLocker locker(&m_waitMutex);
                 seekRequested = m_seekRequested.exchange(false);
                 if (seekRequested) {
-                    targetTime = m_seekPosition.load() * 10000;
+                    targetTime = m_seekTimestamp;
+                    seekNextFrame = m_seekNextFrame;
                     activeSeekSerial = m_seekSerial.load();
                 }
             }
@@ -222,7 +235,7 @@ protected:
                 // Seeking exactly to the media end may return EOF without any
                 // samples. Start just inside the stream to recover its last frame.
                 var.hVal.QuadPart = m_durationMs > 0
-                    ? qMin(targetTime, m_durationMs * 10000 - 1) : targetTime;
+                    ? qMin(targetTime, m_durationMs * kTimeUnitsPerMillisecond - 1) : targetTime;
                 const HRESULT seekHr = m_reader->SetCurrentPosition(GUID_NULL, var);
                 PropVariantClear(&var);
 
@@ -248,7 +261,7 @@ protected:
             }
 
             if (!lookAheadFrame.isNull()) {
-                emit frameReady(lookAheadFrame, lookAheadTime / 10000, activeSeekSerial);
+                emit frameReady(lookAheadFrame, lookAheadTime, activeSeekSerial);
                 lookAheadFrame = {};
                 pacePlayback();
                 continue;
@@ -300,7 +313,7 @@ protected:
                 // The final frame covers the remainder of the timeline,
                 // including a seek to duration(). Do not time out at EOF.
                 if (framePendingAfterSeek && !candidateFrame.isNull()) {
-                    emit frameReady(candidateFrame, candidateTime / 10000, activeSeekSerial);
+                    emit frameReady(candidateFrame, candidateTime, activeSeekSerial);
                     candidateFrame = {};
                 }
 
@@ -326,13 +339,15 @@ protected:
             if (sample) {
                 QImage frame = extractFrame(sample);
                 if (!frame.isNull()) {
-                    if (framePendingAfterSeek && timestamp < targetTime) {
+                    if (framePendingAfterSeek
+                        && (timestamp < targetTime || (seekNextFrame && timestamp == targetTime))) {
                         // SetCurrentPosition lands on an earlier keyframe.
-                        // Decode without playback pacing until we bracket t.
+                        // Time seeks bracket t; stepping needs the first PTS
+                        // strictly after the displayed frame's native timestamp.
                         candidateFrame = frame;
                         candidateTime = timestamp;
                     } else {
-                        if (framePendingAfterSeek && timestamp > targetTime
+                        if (framePendingAfterSeek && !seekNextFrame && timestamp > targetTime
                             && !candidateFrame.isNull()) {
                             // candidate PTS <= t < next PTS. Save the next
                             // frame so resumed playback does not skip it.
@@ -342,7 +357,7 @@ protected:
                         } else {
                             candidateTime = timestamp;
                         }
-                        emit frameReady(frame, candidateTime / 10000, activeSeekSerial);
+                        emit frameReady(frame, candidateTime, activeSeekSerial);
                         candidateFrame = {};
                         frameDelivered = true;
                     }
@@ -394,24 +409,7 @@ private:
                     m_stride = static_cast<int>(pitch);
                 }
 
-                frame = QImage(m_videoSize.width(), m_videoSize.height(), QImage::Format_RGB32);
-                if (!frame.isNull()) {
-                    int absPitch = qAbs(pitch);
-
-                    if (pitch < 0) {
-                        // Bottom-up buffer - flip vertically
-                        for (int y = 0; y < m_videoSize.height(); y++) {
-                            const BYTE *srcRow = data + (m_videoSize.height() - 1 - y) * absPitch;
-                            memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
-                        }
-                    } else {
-                        // Top-down - copy directly
-                        for (int y = 0; y < m_videoSize.height(); y++) {
-                            const BYTE *srcRow = data + y * absPitch;
-                            memcpy(frame.scanLine(y), srcRow, m_videoSize.width() * 4);
-                        }
-                    }
-                }
+                frame = copyMediaFoundationRgb32Frame(data, pitch, m_videoSize);
                 buffer2D->Unlock2D();
             }
             buffer2D->Release();
@@ -502,7 +500,9 @@ private:
     std::atomic<bool> m_stopRequested{false};
     std::atomic<bool> m_paused{true};
     std::atomic<bool> m_seekRequested{false};
-    std::atomic<qint64> m_seekPosition{0};
+    // Accessed together under m_waitMutex.
+    qint64 m_seekTimestamp = 0;
+    bool m_seekNextFrame = false;
     std::atomic<quint64> m_seekSerial{0};
     std::atomic<bool> m_waitingAtEndOfStream{false};
     QMutex m_waitMutex;
@@ -524,6 +524,7 @@ public:
     void pause() override;
     void stop() override;
     void seek(qint64 positionMs) override;
+    void stepForward() override;
 
     State state() const override { return m_state; }
     qint64 duration() const override { return m_duration; }
@@ -548,7 +549,7 @@ public:
     int frameIntervalMs() const override { return m_frameIntervalMs; }
 
 private slots:
-    void onFrameReady(const QImage &frame, qint64 timestampMs);
+    void onFrameReady(const QImage &frame, qint64 timestamp);
     void onEndOfStream();
     void onReaderError(const QString &message);
 
@@ -575,6 +576,8 @@ private:
     State m_state = State::Stopped;
     qint64 m_duration = 0;
     qint64 m_position = 0;
+    qint64 m_frameTimestamp = 0; // Native 100 ns units, preserved for frame stepping.
+    int m_pendingFrameSteps = 0; // Includes the frame awaiting delivery to this player.
     QSize m_videoSize;
     bool m_hasVideo = false;
     bool m_hasAudio = false;
@@ -635,6 +638,7 @@ void MediaFoundationPlayer::cleanup()
 {
     // Invalidate callbacks that may already be queued from this reader.
     ++m_readerGeneration;
+    m_pendingFrameSteps = 0;
     stopReaderThread();
 
     if (m_reader) {
@@ -654,6 +658,7 @@ void MediaFoundationPlayer::cleanup()
     m_duration = 0;
     m_position = 0;
     m_videoSize = QSize();
+    m_frameTimestamp = 0;
     m_stride = 0;
 }
 
@@ -704,10 +709,10 @@ bool MediaFoundationPlayer::load(const QString &filePath)
 
     const quint64 readerGeneration = m_readerGeneration;
     connect(m_readerThread, &FrameReaderThread::frameReady, this,
-            [this, readerGeneration](const QImage& frame, qint64 timestampMs, quint64 seekSerial) {
+            [this, readerGeneration](const QImage& frame, qint64 timestamp, quint64 seekSerial) {
                 if (readerGeneration == m_readerGeneration && m_readerThread
                     && seekSerial == m_readerThread->seekSerial()) {
-                    onFrameReady(frame, timestampMs);
+                    onFrameReady(frame, timestamp);
                 }
             }, Qt::QueuedConnection);
     connect(m_readerThread, &FrameReaderThread::endOfStream, this,
@@ -936,6 +941,7 @@ void MediaFoundationPlayer::play()
 
     if (!m_readerThread || !m_hasVideo) return;
 
+    m_pendingFrameSteps = 0;
     // The reader stays at EOF after completion or a paused terminal seek.
     // Rewind before resuming either case.
     if (m_atEndOfStream) {
@@ -963,6 +969,7 @@ void MediaFoundationPlayer::stop()
 {
     qDebug() << "MediaFoundationPlayer::stop()";
 
+    m_pendingFrameSteps = 0;
     if (m_readerThread) {
         m_readerThread->requestPause();
         m_readerThread->requestSeek(0);
@@ -970,6 +977,7 @@ void MediaFoundationPlayer::stop()
     m_atEndOfStream = false;
     m_positionTimer->stop();
     m_position = 0;
+    m_frameTimestamp = 0;
     emit positionChanged(0);
     setState(State::Stopped);
 }
@@ -978,8 +986,10 @@ void MediaFoundationPlayer::seek(qint64 positionMs)
 {
     qDebug() << "MediaFoundationPlayer::seek() to" << positionMs << "ms";
 
+    m_pendingFrameSteps = 0;
     positionMs = qBound(0LL, positionMs, m_duration);
     m_position = positionMs;
+    m_frameTimestamp = positionMs * kTimeUnitsPerMillisecond;
     m_atEndOfStream = false;
 
     if (m_readerThread) {
@@ -1001,10 +1011,34 @@ void MediaFoundationPlayer::setPlaybackRate(float rate)
     emit playbackRateChanged(newRate);
 }
 
-void MediaFoundationPlayer::onFrameReady(const QImage &frame, qint64 timestampMs)
+void MediaFoundationPlayer::stepForward()
 {
+    if (!m_readerThread || !m_hasVideo) return;
+
+    pause();
     m_atEndOfStream = false;
-    m_position = timestampMs;
+    if (++m_pendingFrameSteps == 1) {
+        m_readerThread->requestNextFrame(m_frameTimestamp);
+    }
+}
+
+void MediaFoundationPlayer::onFrameReady(const QImage &frame, qint64 timestamp)
+{
+    if (m_pendingFrameSteps > 0) {
+        // A terminal step returns the current frame. Drop excess presses at EOF.
+        m_pendingFrameSteps = timestamp > m_frameTimestamp ? m_pendingFrameSteps - 1 : 0;
+    }
+    m_atEndOfStream = false;
+    m_frameTimestamp = timestamp;
+    m_position = timestamp / kTimeUnitsPerMillisecond;
+    if (m_pendingFrameSteps > 0) {
+        // Dispatch before notifying observers so a seek/stop from a signal
+        // handler supersedes this request along with the remaining steps.
+        m_readerThread->requestNextFrame(m_frameTimestamp);
+    }
+    if (m_state == State::Paused) {
+        emit positionChanged(m_position);
+    }
     emit frameReady(frame);
 }
 
@@ -1020,6 +1054,7 @@ void MediaFoundationPlayer::onEndOfStream()
     }
 
     m_atEndOfStream = true;
+    m_pendingFrameSteps = 0;
 
     // Only active playback may finish or loop. Seeking while paused must
     // leave the requested final frame visible without changing player state.
@@ -1042,6 +1077,7 @@ void MediaFoundationPlayer::onEndOfStream()
 void MediaFoundationPlayer::onReaderError(const QString &message)
 {
     qWarning() << "MediaFoundationPlayer: Reader error:" << message;
+    m_pendingFrameSteps = 0;
     emit error(message);
 }
 

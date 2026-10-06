@@ -1,5 +1,6 @@
 #include "qml/VideoPlaybackItem.h"
 #include "video/IVideoPlayer.h"
+#include "utils/VideoCropGeometry.h"
 
 #include <QPainter>
 #include <QDebug>
@@ -61,10 +62,7 @@ void VideoPlaybackItem::paint(QPainter *painter)
         return;
     }
 
-    // Center the scaled frame (letterboxing)
-    int x = (width() - m_scaledFrame.width()) / 2;
-    int y = (height() - m_scaledFrame.height()) / 2;
-    painter->drawImage(x, y, m_scaledFrame);
+    painter->drawImage(m_contentRect.topLeft().toPoint(), m_scaledFrame);
 }
 
 void VideoPlaybackItem::setSource(const QString &source)
@@ -78,9 +76,7 @@ void VideoPlaybackItem::setSource(const QString &source)
     if (!m_player || source.isEmpty())
         return;
 
-    m_currentFrame = QImage();
-    m_scaledFrame = QImage();
-    update();
+    clearFrame();
 
     if (!m_player->load(source)) {
         const QString message = QStringLiteral("Failed to load: %1").arg(source);
@@ -194,10 +190,21 @@ void VideoPlaybackItem::stop()
 {
     if (m_player) {
         m_player->stop();
-        m_currentFrame = QImage();
-        m_scaledFrame = QImage();
-        update();
     }
+    clearFrame();
+}
+
+void VideoPlaybackItem::clearFrame()
+{
+    m_currentFrame = QImage();
+    m_scaledFrame = QImage();
+    m_lastFrameSize = QSize();
+    // No frame, no content: overlays placed by contentRect must know.
+    if (!m_contentRect.isEmpty()) {
+        m_contentRect = QRectF();
+        emit contentRectChanged();
+    }
+    update();
 }
 
 void VideoPlaybackItem::seek(qint64 positionMs)
@@ -212,6 +219,12 @@ void VideoPlaybackItem::setLooping(bool loop)
 {
     if (m_player)
         m_player->setLooping(loop);
+}
+
+void VideoPlaybackItem::stepForward()
+{
+    if (m_player)
+        m_player->stepForward();
 }
 
 void VideoPlaybackItem::onFrameReady(const QImage &frame)
@@ -246,6 +259,13 @@ void VideoPlaybackItem::refreshScaledFrameForCurrentSize()
         m_lastItemSize = itemSize;
         m_lastFrameSize = m_currentFrame.size();
         m_targetScaledSize = m_currentFrame.size().scaled(itemSize, Qt::KeepAspectRatio);
+
+        const QRectF contentRect = SnapTray::VideoCropGeometry::aspectFitRect(
+            m_currentFrame.size(), QSizeF(width(), height()));
+        if (contentRect != m_contentRect) {
+            m_contentRect = contentRect;
+            emit contentRectChanged();
+        }
     }
 
     // Scale only if needed

@@ -383,9 +383,9 @@ void AVFoundationPlayer::deliverSeekFrame()
     }
 
     const QImage frame = [m_helper currentFrame];
-    // Always emit frameReady so downstream consumers (like VideoTrimmer)
-    // don't hang waiting for a signal that never comes. Consumers should
-    // handle null frames appropriately.
+    // Always emit frameReady so downstream consumers (like the preview's
+    // animated export) don't hang waiting for a signal that never comes.
+    // Consumers should handle null frames appropriately.
     emit frameReady(frame);
 }
 

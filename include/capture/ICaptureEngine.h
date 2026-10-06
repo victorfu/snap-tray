@@ -24,7 +24,7 @@ struct CaptureScreenInfo
     // may be a monitor model such as "ROG PG279Q".
     QString nativeName;
     QRect geometry;
-    // Native desktop-pixel bounds when the platform exposes them. On Windows
+    // Native desktop-pixel bounds: RandR output geometry on X11. On Windows
     // these match DXGI_OUTPUT_DESC::DesktopCoordinates and avoid scaling Qt's
     // mixed-DPI logical screen origin/size heuristically.
     QRect physicalGeometry;
@@ -115,6 +115,10 @@ public:
      */
     virtual QImage captureFrame() = 0;
 
+    // Asynchronous backends can deliver completed frames directly to the
+    // encoding queue instead of depending on GUI-thread polling.
+    virtual bool deliversFrames() const { return false; }
+
     /**
      * @brief Get the name of this capture engine
      */
@@ -128,6 +132,7 @@ public:
     static ICaptureEngine *createBestEngine(QObject *parent = nullptr);
 
 signals:
+    void frameReady(const QImage& frame);
     // The user ended capture through a native system control. Finish encoding
     // normally so the recording can still be previewed or saved.
     void stoppedByUser();

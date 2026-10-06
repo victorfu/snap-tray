@@ -21,6 +21,9 @@ Item {
     readonly property color bgPanelPressed: ComponentTokens.recordingPreviewPanelPressed
     readonly property color borderColor: ComponentTokens.recordingPreviewBorder
     readonly property color trimOverlayColor: ComponentTokens.recordingPreviewTrimOverlay
+    readonly property real disabledControlOpacity: 0.6
+    readonly property real overlayChipHeight: 28
+    readonly property real overlayChipButtonSize: 20
 
     property bool isScrubbing: false
     property bool isDraggingTrimStart: false
@@ -32,6 +35,41 @@ Item {
     property rect activeTooltipAnchor: Qt.rect(0, 0, 0, 0)
     property bool activeTooltipPreferAbove: true
     property var activeTooltipSourceItem: null
+
+    // Crop editing needs a decoded frame on screen (contentRect is empty until one is shown and
+    // again once it is cleared) and the video size the crop is mapped to.
+    readonly property bool cropAvailable: backend.videoSize.width > 0 && backend.videoSize.height > 0
+                                          && videoPlayer.contentRect.width > 0
+                                          && videoPlayer.contentRect.height > 0
+    onCropAvailableChanged: {
+        if (!cropAvailable)
+            cropOverlay.cancel()
+    }
+
+    // The single guarded save path shared by the Save button, Ctrl+S and non-editing Enter.
+    // A visible crop draft is applied first so the export matches what the user sees.
+    function saveWithCrop() {
+        if (backend.isProcessing)
+            return
+        if (cropOverlay.editing)
+            cropOverlay.apply()
+        backend.save()
+    }
+
+    // The window under the resting pointer follows the playhead too.
+    function refreshWindowHover() {
+        if (cropOverlay.pressed)
+            return
+        if (!cropOverlay.editing || !cropOverlay.hovering || !backend.hasWindowTimeline) {
+            cropOverlay.hoverRect = Qt.rect(0, 0, 0, 0)
+            cropOverlay.hoverLabel = ""
+            return
+        }
+        const p = cropOverlay.hoverPoint
+        cropOverlay.hoverRect = backend.windowRectInViewAt(p, videoPlayer.contentRect, videoPlayer.position)
+        cropOverlay.hoverLabel = cropOverlay.isNonEmpty(cropOverlay.hoverRect)
+                ? backend.windowAppAt(p, videoPlayer.contentRect, videoPlayer.position) : ""
+    }
 
     function showButtonTooltip(text, item, preferAbove) {
         if (!text || !item || backend.isProcessing) {
@@ -100,6 +138,7 @@ Item {
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
+        enabled: !backend.isProcessing
 
         Item {
             Layout.fillWidth: true
@@ -107,11 +146,16 @@ Item {
 
             VideoPlaybackItem {
                 id: videoPlayer
+                objectName: "previewVideoPlayer"
                 anchors.fill: parent
                 source: backend.videoPath
 
+                onVideoLoaded: backend.updateVideoSize(videoPlayer.videoSize)
                 onDurationChanged: function(durationMs) { backend.updateDuration(durationMs) }
-                onPositionChanged: function(positionMs) { backend.updatePosition(positionMs) }
+                onPositionChanged: function(positionMs) {
+                    backend.updatePosition(positionMs)
+                    root.refreshWindowHover()
+                }
                 onStateChanged: backend.updatePlayingState(videoPlayer.playing)
                 onErrorOccurred: function(message) { backend.reportPlaybackError(message) }
                 Component.onCompleted: {
@@ -121,9 +165,35 @@ Item {
             }
 
             MouseArea {
+                objectName: "previewVideoClickArea"
                 anchors.fill: parent
+                // Video clicks belong to the crop editor while editing; Space and the play button still work.
+                enabled: !cropOverlay.editing
                 cursorShape: CursorTokens.clickable
                 onClicked: videoPlayer.togglePlayPause()
+            }
+
+            RecordingCropOverlay {
+                id: cropOverlay
+                objectName: "previewCropOverlay"
+                anchors.fill: parent
+                z: 4
+                visible: root.cropAvailable
+                interactive: !backend.isProcessing
+                contentRect: videoPlayer.contentRect
+                videoSize: backend.videoSize
+                minVideoSide: backend.minCropSide
+                accentColor: root.accent
+                // backend.cropRect is read so the binding re-evaluates when the crop changes.
+                committedRect: {
+                    backend.cropRect
+                    return backend.hasCrop ? backend.cropRectInView(videoPlayer.contentRect) : Qt.rect(0, 0, 0, 0)
+                }
+                onHoverChanged: root.refreshWindowHover()
+                onApplyRequested: function(viewRect) {
+                    if (!backend.isProcessing)
+                        backend.setCropFromView(viewRect, videoPlayer.contentRect)
+                }
             }
 
             Rectangle {
@@ -148,6 +218,78 @@ Item {
                 }
             }
 
+            // Committed crop chip; kept off the toolbar so it fits the minimum window width.
+            GlassSurface {
+                id: cropChip
+                objectName: "previewCropChip"
+                visible: backend.hasCrop && !cropOverlay.editing
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.margins: SemanticTokens.spacing12
+                width: cropChipRow.implicitWidth + SemanticTokens.spacing16
+                height: root.overlayChipHeight
+                z: 5
+                glassBg: ComponentTokens.tooltipBackground
+                glassBgTop: ComponentTokens.tooltipBackgroundTop
+                glassHighlight: ComponentTokens.tooltipHighlight
+                glassBorder: ComponentTokens.tooltipBorder
+                glassRadius: ComponentTokens.tooltipRadius
+
+                Row {
+                    id: cropChipRow
+                    anchors.centerIn: parent
+                    spacing: SemanticTokens.spacing4
+
+                    Text {
+                        objectName: "previewCropSizeLabel"
+                        anchors.verticalCenter: parent.verticalCenter
+                        // Authoritative: the backend's normalized, even video-pixel crop.
+                        text: backend.cropRect.width + " × " + backend.cropRect.height
+                        color: root.textSecondary
+                        font.pixelSize: SemanticTokens.fontSizeCaption
+                        font.family: SemanticTokens.fontFamily
+                    }
+
+                    IconButton {
+                        objectName: "previewClearCropButton"
+                        anchors.verticalCenter: parent.verticalCenter
+                        enabled: !backend.isProcessing
+                        iconSource: "qrc:/icons/icons/close.svg"
+                        iconSize: ComponentTokens.iconSizeMenu
+                        width: root.overlayChipButtonSize
+                        height: root.overlayChipButtonSize
+                        tooltipText: qsTr("Clear Crop")
+                        tooltipPreferredAbove: false
+                        onClicked: backend.clearCrop()
+                    }
+                }
+            }
+
+            GlassSurface {
+                objectName: "previewWindowSnapHint"
+                visible: cropOverlay.editing && backend.hasWindowTimeline && !cropOverlay.hasShownRect
+                anchors.top: parent.top
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.margins: SemanticTokens.spacing12
+                width: snapHintText.implicitWidth + SemanticTokens.spacing16
+                height: root.overlayChipHeight
+                z: 5
+                glassBg: ComponentTokens.tooltipBackground
+                glassBgTop: ComponentTokens.tooltipBackgroundTop
+                glassHighlight: ComponentTokens.tooltipHighlight
+                glassBorder: ComponentTokens.tooltipBorder
+                glassRadius: ComponentTokens.tooltipRadius
+
+                Text {
+                    id: snapHintText
+                    anchors.centerIn: parent
+                    text: qsTr("Click a window to crop to it, or drag to draw")
+                    color: root.textSecondary
+                    font.pixelSize: SemanticTokens.fontSizeCaption
+                    font.family: SemanticTokens.fontFamily
+                }
+            }
+
             GlassSurface {
                 id: silentPreviewNotice
                 objectName: "previewAudioUnavailableLabel"
@@ -156,7 +298,7 @@ Item {
                 anchors.right: parent.right
                 anchors.margins: SemanticTokens.spacing12
                 width: silentPreviewText.implicitWidth + SemanticTokens.spacing16
-                height: 28
+                height: root.overlayChipHeight
                 z: 5
                 glassBg: ComponentTokens.tooltipBackground
                 glassBgTop: ComponentTokens.tooltipBackgroundTop
@@ -364,6 +506,35 @@ Item {
             }
         }
 
+        Item {
+            Layout.fillWidth: true
+            Layout.preferredHeight: formatRow.height + SemanticTokens.spacing16
+            Row {
+                id: formatRow
+                anchors.centerIn: parent
+                spacing: SemanticTokens.spacing8
+
+                SegmentButton {
+                    text: "MP4"
+                    tooltipText: qsTr("Export as MP4")
+                    selected: backend.selectedFormat === 0
+                    onClicked: backend.selectedFormat = 0
+                }
+                SegmentButton {
+                    text: "GIF"
+                    tooltipText: qsTr("Export as GIF")
+                    selected: backend.selectedFormat === 1
+                    onClicked: backend.selectedFormat = 1
+                }
+                SegmentButton {
+                    text: "WebP"
+                    tooltipText: qsTr("Export as WebP")
+                    selected: backend.selectedFormat === 2
+                    onClicked: backend.selectedFormat = 2
+                }
+            }
+        }
+
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 48
@@ -408,43 +579,23 @@ Item {
 
                 Item { Layout.fillWidth: true }
 
-                Row {
-                    spacing: 1
-
-                    SegmentButton {
-                        text: "MP4"
-                        tooltipText: qsTr("Export as MP4")
-                        selected: backend.selectedFormat === 0
-                        isFirst: true
-                        isLast: false
-                        onClicked: backend.selectedFormat = 0
-                    }
-                    SegmentButton {
-                        text: "GIF"
-                        tooltipText: qsTr("Export as GIF")
-                        selected: backend.selectedFormat === 1
-                        isFirst: false
-                        isLast: false
-                        onClicked: backend.selectedFormat = 1
-                    }
-                    SegmentButton {
-                        text: "WebP"
-                        tooltipText: qsTr("Export as WebP")
-                        selected: backend.selectedFormat === 2
-                        isFirst: false
-                        isLast: true
-                        onClicked: backend.selectedFormat = 2
-                    }
-                }
-
-                Item { Layout.fillWidth: true }
-
                 IconButton {
                     objectName: "previewMuteButton"
                     visible: videoPlayer.audioPlaybackSupported
                     iconSource: videoPlayer.muted ? "qrc:/icons/icons/volume-x.svg" : "qrc:/icons/icons/volume-2.svg"
                     tooltipText: videoPlayer.muted ? qsTr("Unmute Preview (M)") : qsTr("Mute Preview (M)")
                     onClicked: videoPlayer.muted = !videoPlayer.muted
+                }
+
+                IconButton {
+                    objectName: "previewCropButton"
+                    iconSource: "qrc:/icons/icons/crop.svg"
+                    enabled: root.cropAvailable && !backend.isProcessing
+                    opacity: enabled ? 1.0 : root.disabledControlOpacity
+                    highlighted: backend.hasCrop || cropOverlay.editing
+                    tooltipText: cropOverlay.editing ? qsTr("Apply Crop (Enter)")
+                                                     : backend.hasCrop ? qsTr("Edit Crop") : qsTr("Crop Recording")
+                    onClicked: cropOverlay.editing ? cropOverlay.apply() : cropOverlay.beginEditing()
                 }
 
                 IconButton {
@@ -468,10 +619,11 @@ Item {
                 }
 
                 IconButton {
+                    objectName: "previewSaveButton"
                     iconSource: "qrc:/icons/icons/save.svg"
                     primary: true
                     tooltipText: qsTr("Save Recording (Enter / Ctrl+S)")
-                    onClicked: backend.save()
+                    onClicked: root.saveWithCrop()
                 }
             }
         }
@@ -482,6 +634,12 @@ Item {
         anchors.fill: parent
         color: SemanticTokens.backgroundOverlay
         visible: backend.isProcessing
+
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.AllButtons
+            onWheel: function(wheel) { wheel.accepted = true }
+        }
 
         Column {
             anchors.centerIn: parent
@@ -521,6 +679,16 @@ Item {
                 color: root.textSecondary
                 anchors.horizontalCenter: parent.horizontalCenter
             }
+
+            // Only MP4 exports can be stopped; animated conversions run to completion.
+            DialogButton {
+                objectName: "previewCancelExportButton"
+                text: qsTr("Cancel")
+                style: "secondary"
+                visible: backend.canCancelExport
+                anchors.horizontalCenter: parent.horizontalCenter
+                onClicked: backend.cancelExport()
+            }
         }
     }
 
@@ -539,9 +707,12 @@ Item {
         Row {
             id: errorRow
             anchors.centerIn: parent
+            width: parent.width - SemanticTokens.spacing16
             spacing: SemanticTokens.spacing8
 
             Text {
+                width: parent.width - 28
+                wrapMode: Text.Wrap
                 text: backend.errorMessage
                 font.pixelSize: SemanticTokens.fontSizeBody
                 font.family: SemanticTokens.fontFamily
@@ -570,6 +741,20 @@ Item {
             return
         }
 
+        if (cropOverlay.editing) {
+            // Escape only drops the draft (the preview stays open); Enter only applies it.
+            if (event.key === Qt.Key_Escape) {
+                cropOverlay.cancel()
+                event.accepted = true
+                return
+            }
+            if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                cropOverlay.apply()
+                event.accepted = true
+                return
+            }
+        }
+
         switch (event.key) {
         case Qt.Key_Space:
             videoPlayer.togglePlayPause()
@@ -581,7 +766,7 @@ Item {
             break
         case Qt.Key_Return:
         case Qt.Key_Enter:
-            backend.save()
+            root.saveWithCrop()
             event.accepted = true
             break
         case Qt.Key_M:
@@ -604,13 +789,12 @@ Item {
             event.accepted = true
             break
         case Qt.Key_Period:
-            videoPlayer.pause()
-            videoPlayer.seek(Math.min(videoPlayer.duration, videoPlayer.position + videoPlayer.frameIntervalMs))
+            videoPlayer.stepForward()
             event.accepted = true
             break
         case Qt.Key_S:
             if (event.modifiers & Qt.ControlModifier) {
-                backend.save()
+                root.saveWithCrop()
                 event.accepted = true
             }
             break
@@ -725,8 +909,7 @@ Item {
         property string tooltipText: ""
         property bool tooltipPreferredAbove: true
         property bool selected: false
-        property bool isFirst: false
-        property bool isLast: false
+        readonly property real minimumButtonWidth: 64
 
         signal clicked()
 
@@ -739,11 +922,11 @@ Item {
             root.showButtonTooltip(tooltipText, this, tooltipPreferredAbove)
         }
 
-        width: fmtLabel.implicitWidth + 20
-        height: 28
-        radius: SemanticTokens.radiusSmall
+        width: Math.max(minimumButtonWidth, fmtLabel.implicitWidth + 2 * SemanticTokens.spacing16)
+        height: ComponentTokens.recordingPreviewControlButtonHeight
+        radius: SemanticTokens.radiusMedium
 
-        color: selected ? root.accent
+        color: selected ? (fmtMouseArea.containsMouse ? root.accentHover : root.accent)
              : fmtMouseArea.pressed ? root.bgPanelPressed
              : fmtMouseArea.containsMouse ? root.bgPanelHover
              : root.bgPanel
@@ -751,13 +934,8 @@ Item {
         border.width: selected ? 0 : 1
         border.color: root.borderColor
 
-        Rectangle {
-            visible: !isFirst
-            anchors.left: parent.left
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
-            width: 1
-            color: root.borderColor
+        Behavior on color {
+            ColorAnimation { duration: SemanticTokens.durationFast }
         }
 
         Text {
@@ -766,7 +944,7 @@ Item {
             text: parent.text
             font.pixelSize: SemanticTokens.fontSizeSmall
             font.family: SemanticTokens.fontFamily
-            font.weight: selected ? SemanticTokens.fontWeightSemiBold : SemanticTokens.fontWeightRegular
+            font.weight: SemanticTokens.fontWeightSemiBold
             color: selected ? ComponentTokens.recordingPreviewPrimaryButtonIcon : root.textSecondary
         }
 

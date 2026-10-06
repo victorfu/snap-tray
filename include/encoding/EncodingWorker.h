@@ -202,7 +202,7 @@ private:
     std::atomic<bool> m_finishRequested{false};
     std::atomic<qint64> m_framesWritten{0};
     std::atomic<bool> m_finishCalled{false};
-    bool m_wasNearFull = false;
+    std::atomic<bool> m_wasNearFull{false};
 
     // Configuration
     WatermarkRenderer::Settings m_watermarkSettings;

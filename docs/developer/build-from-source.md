@@ -41,6 +41,7 @@ SnapTray currently supports macOS, Windows, and Ubuntu 22.04 X11 beta.
 - Ninja
 - Git
 - X11 development libraries required by Qt and QHotkey
+- FFmpeg, PulseAudio, and XCB shared-memory development packages (see Linux recording below)
 
 ### Auto-fetched dependencies
 
@@ -137,6 +138,65 @@ C:\Qt\6.11.2\msvc2022_64\bin\windeployqt.exe --release release\bin\SnapTray.exe
 
 - `Debug` builds use the display name `SnapTray-Debug` and a debug bundle identifier on macOS
 - `Release` builds use the shipping app name `SnapTray`
+
+### Linux recording with system FFmpeg
+
+Linux X11 builds enable `SNAPTRAY_ENABLE_LINUX_RECORDING` by default. The backend
+links the distribution's FFmpeg and PulseAudio libraries directly; it does not
+launch the `ffmpeg` executable. Windows and macOS retain their native backends.
+Existing `SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE` build caches migrate to the new option.
+
+```bash
+sudo apt install pkg-config libavcodec-dev libavformat-dev libavutil-dev \
+  libswscale-dev libswresample-dev libpulse-dev libxcb-shm0-dev libxcb-randr0-dev
+./scripts/build-and-run.sh
+```
+
+Select **Record Screen** in the tray and choose a screen. Recording uses a
+background X11 connection with MIT-SHM when available, falling back to XCB image
+transfers. Completed frames go directly to the encoding queue, independently of
+GUI event delivery. The floating preparation/countdown UI is hidden before recording;
+use the tray's **Pause Recording**, **Resume Recording**, and **Stop Recording**
+actions or the recording hotkey. X11 captures the composed desktop, so menus and
+other visible applications can still appear. Live pin updates remain disabled.
+
+Microphone and system audio use PulseAudio, including PipeWire's PulseAudio
+compatibility server. System audio is the default output device's monitor;
+**Both** mixes that monitor with the selected microphone at 48 kHz stereo.
+Recordings encode H.264 video and optional AAC audio. Recording Preview supports
+playback with audio, seeking, cropping, trimming, MP4 export with AAC passthrough,
+and GIF/WebP conversion through the FFmpeg frame reader.
+
+The encoder attempts VA-API on available render nodes, then NVIDIA NVENC, then
+software H.264 (`libx264` or `libopenh264`). A listed encoder is not considered
+usable until initialization succeeds. GPU drivers must be supplied by the host.
+For diagnosis, `SNAPTRAY_FFMPEG_ENCODER=software` forces CPU encoding;
+`h264_vaapi` or `h264_nvenc` selects that hardware attempt with software fallback.
+Debug logs report the selected encoder and mean capture/conversion/encoding
+costs. Actual frame rate still depends on screen resolution, CPU/GPU, and load.
+
+```bash
+# Canonical suite; audio integration tests use an isolated PulseAudio server.
+sudo apt install pulseaudio pulseaudio-utils xvfb xauth
+./scripts/run-tests.sh
+# Generated media only; no screen or microphone access:
+QT_QPA_PLATFORM=offscreen ./build/bin/SnapTray --internal-recording-smoke-check
+# Optional 4K throughput check, generated scene on an isolated display:
+SNAPTRAY_TEST_ISOLATED_X11=1 SNAPTRAY_TEST_BENCHMARK_4K=1 \
+  SNAPTRAY_FFMPEG_ENCODER=software QT_QUICK_BACKEND=software XDG_SESSION_TYPE=x11 \
+  xvfb-run -a -s '-screen 0 3840x2160x24' \
+  ./build/bin/Encoding_LinuxRecordingPrototype benchmark4K
+# Optional standalone silent-recording diagnostic window:
+cmake --build build --target SnapTrayRecordingPrototype
+```
+
+Unpackaged binaries need the FFmpeg ABI used at build time. An Ubuntu 22.04 build
+linked to `libavcodec.so.58` cannot substitute another distribution's newer
+SONAME. AppImage packaging bundles the build distribution's shared media
+libraries as a matching set and verifies encoding, decoding, and crop export
+inside the extracted artifact. The host still supplies its audio server and GPU
+drivers. Disable recording for a minimal build with
+`cmake -S . -B build -DSNAPTRAY_ENABLE_LINUX_RECORDING=OFF`.
 
 ## Build optimization
 

@@ -76,6 +76,18 @@ void ClickThroughExitButton::attachTo(QWidget* targetWindow)
     }
 }
 
+void ClickThroughExitButton::setClickThroughEnabled(bool enabled)
+{
+    // Hiding the target must not discard the requested click-through state.
+    m_clickThroughEnabled = enabled;
+    if (enabled && m_targetWindow && m_targetWindow->isVisible()) {
+        updatePosition();
+        show();
+    } else {
+        hide();
+    }
+}
+
 void ClickThroughExitButton::updatePosition()
 {
     if (!m_targetWindow)
@@ -98,8 +110,8 @@ bool ClickThroughExitButton::eventFilter(QObject* watched, QEvent* event)
             updatePosition();
         } else if (event->type() == QEvent::Close || event->type() == QEvent::Hide) {
             hide();
-        } else if (event->type() == QEvent::Show && isVisible()) {
-            updatePosition();
+        } else if (event->type() == QEvent::Show) {
+            setClickThroughEnabled(m_clickThroughEnabled);
         }
         // Note: We intentionally do NOT call raise() here anymore as it steals focus.
         // The native window level set by setWindowFloatingWithoutFocus() handles this.

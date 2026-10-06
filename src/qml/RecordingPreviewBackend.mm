@@ -1,11 +1,15 @@
 #include "qml/RecordingPreviewBackend.h"
 #include "cursor/CursorSurfaceSupport.h"
 #include "qml/QmlOverlayManager.h"
-#include "video/VideoTrimmer.h"
+#include "utils/VideoCropGeometry.h"
+#include "video/IVideoTranscoder.h"
 #include "video/IVideoFrameReader.h"
 #include "video/IVideoPlayer.h"
 #include "encoding/NativeGifEncoder.h"
 #include "encoding/WebPAnimEncoder.h"
+#include "encoding/IntermediateQuality.h"
+#include "settings/RecordingSettingsManager.h"
+#include "recording/WindowTimelineSidecar.h"
 
 #include <QCloseEvent>
 #include <QCoreApplication>
@@ -34,23 +38,39 @@
 
 namespace {
 constexpr int kVideoLoadTimeoutMs = 5000;
-// Keep the extraction allowance used by VideoTrimmer for animated trims.
+// How long an animated export waits for each extracted frame to arrive.
 constexpr int kFrameExtractionTimeoutMs = 5000;
 }
 
 RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, QObject *parent)
+    : RecordingPreviewBackend(videoPath, true, parent)
+{
+}
+
+RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool recordedAsIntermediate,
+                                                 QObject *parent)
     : QObject(parent)
     , m_videoPath(videoPath)
+    , m_recordedAsIntermediate(recordedAsIntermediate)
 {
+    m_windowTimeline = SnapTray::WindowTimelineSidecar::read(videoPath);
+}
+
+std::function<int()>& RecordingPreviewBackend::outputQualityOverride()
+{
+    static std::function<int()> override;
+    return override;
+}
+
+RecordingPreviewBackend::TranscoderFactory& RecordingPreviewBackend::transcoderFactoryOverride()
+{
+    static TranscoderFactory factory;
+    return factory;
 }
 
 RecordingPreviewBackend::~RecordingPreviewBackend()
 {
-    if (m_trimmer) {
-        m_trimmer->cancel();
-        delete m_trimmer;
-        m_trimmer = nullptr;
-    }
+    m_exportCancelToken->store(true);
 
     if (m_view) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
@@ -73,7 +93,16 @@ void RecordingPreviewBackend::ensureView()
 
     auto& mgr = SnapTray::QmlOverlayManager::instance();
     m_view = mgr.createUtilityWindow();
+#ifdef Q_OS_WIN
+    // Qt 6.11's Windows backend turns a plain Qt::Window that carries
+    // WindowStaysOnTopHint into a caption-less WS_POPUP frame; spelling out
+    // the caption hints keeps the title bar and its min/max/close buttons.
+    m_view->setFlags(Qt::Window | Qt::WindowStaysOnTopHint | Qt::CustomizeWindowHint
+                     | Qt::WindowTitleHint | Qt::WindowSystemMenuHint
+                     | Qt::WindowMinMaxButtonsHint | Qt::WindowCloseButtonHint);
+#else
     m_view->setFlag(Qt::WindowStaysOnTopHint, true);
+#endif
     m_view->setMinimumSize(QSize(640, 480));
     m_view->setResizeMode(QQuickView::SizeRootObjectToView);
     m_view->setTitle(tr("Recording Preview"));
@@ -155,7 +184,7 @@ void RecordingPreviewBackend::show()
 
 void RecordingPreviewBackend::close()
 {
-    if (m_isProcessing || m_closeHandled) return;
+    if (isProcessing() || m_closeHandled) return;
     if (m_view) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->close();
@@ -237,6 +266,7 @@ qint64 RecordingPreviewBackend::trimmedDuration() const
 
 void RecordingPreviewBackend::setSelectedFormat(int format)
 {
+    if (isProcessing()) return;
     format = qBound(0, format, 2);
     auto fmt = static_cast<OutputFormat>(format);
     if (m_selectedFormat != fmt) {
@@ -309,10 +339,15 @@ QString RecordingPreviewBackend::formatTime(qint64 ms) const
 void RecordingPreviewBackend::save()
 {
     qDebug() << "RecordingPreviewBackend: Save requested";
-    if (m_isProcessing || m_closeHandled) {
+    if (isProcessing() || m_closeHandled) {
         qDebug() << "RecordingPreviewBackend: Save ignored while processing";
         return;
     }
+
+    // Output quality contract: snapshot the user's setting when Save begins;
+    // every MP4 re-encode below uses it. Quality 80 is only the legacy default.
+    m_outputQuality = outputQualityOverride() ? outputQualityOverride()()
+                                              : RecordingSettingsManager::instance().quality();
 
     // Animated exports share the same offline extraction path, including trims.
     if (m_selectedFormat != MP4) {
@@ -320,22 +355,44 @@ void RecordingPreviewBackend::save()
         return;
     }
 
-    if (hasTrim()) {
-        performTrim();
+    if (hasTrim() || hasCrop()) {
+        performTranscode(false);
         return;
     }
 
-    // MP4 -- use original file directly
-    m_saved = true;
-    const QString outputPath = m_videoPath;
-    close(); // Release playback resources before caller touches the file.
-    emit saveRequested(outputPath);
+    // MP4 with no edits: move the intermediate if it already meets the
+    // user's quality, otherwise re-encode it to that quality.
+    performTranscode(true);
+}
+
+bool RecordingPreviewBackend::canCancelExport() const
+{
+    return m_isProcessing && m_exportKind == ExportKind::MP4 && !m_exportCancelToken->load();
+}
+
+void RecordingPreviewBackend::finishProcessing()
+{
+    m_exportKind = ExportKind::None;
+    m_isProcessing = false;
+    emit processingChanged();
+}
+
+void RecordingPreviewBackend::cancelExport()
+{
+    if (!canCancelExport()) {
+        return;
+    }
+    qDebug() << "RecordingPreviewBackend: Export cancel requested";
+    m_exportCancelToken->store(true);
+    m_processStatus = tr("Cancelling...");
+    emit processStatusChanged();
+    emit processingChanged();
 }
 
 void RecordingPreviewBackend::discard()
 {
     qDebug() << "RecordingPreviewBackend: Discard requested";
-    if (m_isProcessing || m_closeHandled) {
+    if (isProcessing() || m_closeHandled) {
         qDebug() << "RecordingPreviewBackend: Discard ignored while processing";
         return;
     }
@@ -386,6 +443,84 @@ void RecordingPreviewBackend::toggleTrim()
     emit trimRangeChanged();
 }
 
+// ---------- Crop ----------
+
+void RecordingPreviewBackend::updateVideoSize(const QSize &size)
+{
+    if (m_videoSize == size) {
+        return;
+    }
+    m_videoSize = size;
+    emit videoSizeChanged();
+    if (m_windowTimeline && m_windowTimeline->frameSize() != size) {
+        qWarning() << "RecordingPreviewBackend: window timeline frame size" << m_windowTimeline->frameSize()
+                   << "does not match the video" << size << "- snapping disabled";
+        m_windowTimeline.reset();
+        emit windowTimelineChanged();
+    }
+    setCropRect(m_cropRect);
+}
+
+void RecordingPreviewBackend::setCropRect(const QRect &videoRect)
+{
+    const QRect normalized = SnapTray::VideoCropGeometry::normalizeCropRect(videoRect, m_videoSize);
+    if (normalized == m_cropRect) {
+        return;
+    }
+    m_cropRect = normalized;
+    emit cropRectChanged();
+}
+
+void RecordingPreviewBackend::setCropFromView(const QRectF &viewRect, const QRectF &contentRect)
+{
+    setCropRect(SnapTray::VideoCropGeometry::viewToVideo(viewRect, contentRect, m_videoSize));
+}
+
+QRectF RecordingPreviewBackend::cropRectInView(const QRectF &contentRect) const
+{
+    if (!hasCrop()) {
+        return contentRect;
+    }
+    return SnapTray::VideoCropGeometry::videoToView(m_cropRect, contentRect, m_videoSize);
+}
+
+std::optional<SnapTray::WindowSample> RecordingPreviewBackend::windowAt(const QPointF &viewPoint,
+                                                                         const QRectF &contentRect,
+                                                                         qint64 positionMs) const
+{
+    if (!m_windowTimeline || m_videoSize.isEmpty()) {
+        return std::nullopt;
+    }
+    const QPoint videoPoint = SnapTray::VideoCropGeometry::viewPointToVideo(viewPoint, contentRect, m_videoSize);
+    if (videoPoint.x() < 0) {
+        return std::nullopt;
+    }
+    return m_windowTimeline->hitTest(videoPoint, positionMs);
+}
+
+QRectF RecordingPreviewBackend::windowRectInViewAt(const QPointF &viewPoint, const QRectF &contentRect,
+                                                   qint64 positionMs) const
+{
+    const auto window = windowAt(viewPoint, contentRect, positionMs);
+    return window ? SnapTray::VideoCropGeometry::videoToView(window->rect, contentRect, m_videoSize) : QRectF();
+}
+
+QString RecordingPreviewBackend::windowAppAt(const QPointF &viewPoint, const QRectF &contentRect,
+                                             qint64 positionMs) const
+{
+    const auto window = windowAt(viewPoint, contentRect, positionMs);
+    return window ? window->ownerApp : QString();
+}
+
+void RecordingPreviewBackend::clearCrop()
+{
+    if (m_cropRect.isNull()) {
+        return;
+    }
+    m_cropRect = QRect();
+    emit cropRectChanged();
+}
+
 // ---------- Format conversion (runs on background thread) ----------
 
 void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
@@ -419,6 +554,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
     qDebug() << "RecordingPreviewBackend: Converting to" << extension;
 
     // Show processing state
+    m_exportKind = ExportKind::Animated;
     m_isProcessing = true;
     m_processProgress = 0;
     m_processStatus = tr("Converting video...");
@@ -431,6 +567,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
     const QString sourceVideoPath = m_videoPath;
     const qint64 requestedStartMs = m_trimStart;
     const qint64 requestedEndMs = m_trimEnd;
+    const QRect cropRect = m_cropRect;
     const int selectedFormat = static_cast<int>(format);
     const QString createPlayerError = tr("Failed to create video player for conversion");
     const QString loadVideoError = tr("Failed to load video for conversion");
@@ -447,6 +584,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
                              sourceVideoPath,
                              requestedStartMs,
                              requestedEndMs,
+                             cropRect,
                              outputPath,
                              selectedFormat,
                              createPlayerError,
@@ -478,8 +616,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
                     return;
                 }
                 weakThis->setErrorMessage(errorMessage);
-                weakThis->m_isProcessing = false;
-                emit weakThis->processingChanged();
+                weakThis->finishProcessing();
             }, Qt::QueuedConnection);
         };
 
@@ -533,6 +670,7 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
         const qint64 dur = frameReader ? frameReader->duration() : player->duration();
         const qint64 startMs = qMax<qint64>(0, requestedStartMs);
         const qint64 endMs = requestedEndMs < 0 ? dur : qMin(requestedEndMs, dur);
+        const QSize outputSize = cropRect.isEmpty() ? vidSize : cropRect.size();
 
         if (dur <= 0 || vidSize.isEmpty() || startMs >= endMs) {
             qWarning() << "RecordingPreviewBackend: Video not loaded properly for conversion";
@@ -550,12 +688,12 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
         if (selectedFormat == GIF) {
             gifEncoder = std::make_unique<NativeGifEncoder>(nullptr);
             gifEncoder->setMaxBitDepth(16);
-            encoderStarted = gifEncoder->start(workingOutputPath, vidSize, frameRateInt);
+            encoderStarted = gifEncoder->start(workingOutputPath, outputSize, frameRateInt);
         } else {
             webpEncoder = std::make_unique<WebPAnimationEncoder>(nullptr);
             webpEncoder->setQuality(80);
             webpEncoder->setLooping(true);
-            encoderStarted = webpEncoder->start(workingOutputPath, vidSize, frameRateInt);
+            encoderStarted = webpEncoder->start(workingOutputPath, outputSize, frameRateInt);
         }
 
         if (!encoderStarted) {
@@ -624,6 +762,16 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
             }
 
             if (!capturedFrame.isNull()) {
+                if (!cropRect.isEmpty()) {
+                    const QRect frameRect(QPoint(0, 0), capturedFrame.size());
+                    if (!frameRect.contains(cropRect)) {
+                        qWarning() << "RecordingPreviewBackend: Crop rectangle" << cropRect
+                                   << "exceeds frame bounds" << frameRect;
+                        frameExtractionFailed = true;
+                        break;
+                    }
+                    capturedFrame = capturedFrame.copy(cropRect);
+                }
                 const qint64 framesBefore = gifEncoder
                     ? gifEncoder->framesWritten()
                     : webpEncoder->framesWritten();
@@ -700,23 +848,25 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
             return;
         }
 
-        QMetaObject::invokeMethod(app, [weakThis, outputPath, sourceVideoPath, outputMissingError]() {
+        const QSize croppedSize = cropRect.isEmpty() ? QSize() : outputSize;
+        QMetaObject::invokeMethod(app, [weakThis, outputPath, sourceVideoPath, outputMissingError,
+                                        croppedSize]() {
             if (!weakThis) {
                 return;
             }
 
             weakThis->m_processProgress = 100;
             emit weakThis->processProgressChanged();
-            weakThis->m_isProcessing = false;
-            emit weakThis->processingChanged();
+            weakThis->finishProcessing();
 
             // Clean up original MP4 only if output is valid
             QFileInfo outInfo(outputPath);
             if (outInfo.exists() && outInfo.size() > 0) {
                 QFile::remove(sourceVideoPath);
+                SnapTray::WindowTimelineSidecar::remove(sourceVideoPath);
                 weakThis->m_saved = true;
                 weakThis->close();
-                emit weakThis->saveRequested(outputPath);
+                emit weakThis->saveRequested(outputPath, croppedSize);
             } else {
                 qWarning() << "RecordingPreviewBackend: Conversion output missing or empty, keeping original";
                 weakThis->setErrorMessage(outputMissingError);
@@ -725,105 +875,220 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
     });
 }
 
-// ---------- Trim ----------
+// ---------- MP4 trim / crop (runs on background thread) ----------
 
-void RecordingPreviewBackend::performTrim()
+void RecordingPreviewBackend::performTranscode(bool smartSave)
 {
-    // Determine output format
-    QString extension;
-    EncoderFactory::Format encoderFormat;
-    switch (m_selectedFormat) {
-    case GIF:
-        extension = ".gif";
-        encoderFormat = EncoderFactory::Format::GIF;
-        break;
-    case WebP:
-        extension = ".webp";
-        encoderFormat = EncoderFactory::Format::WebP;
-        break;
-    default:
-        extension = ".mp4";
-        encoderFormat = EncoderFactory::Format::MP4;
-        break;
+    const int dotIndex = m_videoPath.lastIndexOf('.');
+    const QString base = dotIndex > 0 ? m_videoPath.left(dotIndex) : m_videoPath;
+    const QString stamp = QString::number(QDateTime::currentMSecsSinceEpoch());
+    const QString outputPath = base + QStringLiteral("_edited_") + stamp + QStringLiteral(".mp4");
+    const QString workingPath = base + QStringLiteral("_edited_") + stamp + QStringLiteral(".part-")
+        + QUuid::createUuid().toString(QUuid::WithoutBraces) + QStringLiteral(".mp4");
+
+    if (smartSave) {
+        qDebug() << "RecordingPreviewBackend: Finalizing unedited recording";
+    } else {
+        qDebug() << "RecordingPreviewBackend: Exporting MP4 edits, trim:" << hasTrim()
+                 << "crop:" << m_cropRect;
     }
 
-    // Create output path with timestamp for uniqueness
-    QString outputPath = m_videoPath;
-    int dotIndex = outputPath.lastIndexOf('.');
-    QString timestamp = QString::number(QDateTime::currentMSecsSinceEpoch());
-    if (dotIndex > 0)
-        outputPath = outputPath.left(dotIndex) + "_trimmed_" + timestamp + extension;
-    else
-        outputPath += "_trimmed_" + timestamp + extension;
-
-    // Show processing state
+    // Install the job and token before notifying QML or synchronous observers.
+    m_exportCancelToken = std::make_shared<std::atomic_bool>(false);
+    const auto cancelToken = m_exportCancelToken;
+    m_exportKind = ExportKind::MP4;
     m_isProcessing = true;
     m_processProgress = 0;
-    m_processStatus = tr("Trimming video...");
+    m_processStatus = tr("Exporting video...");
     emit processingChanged();
     emit processProgressChanged();
     emit processStatusChanged();
 
-    // Create trimmer
-    m_trimmer = new VideoTrimmer(this);
-    m_trimmer->setInputPath(m_videoPath);
-    m_trimmer->setTrimRange(m_trimStart, trimEnd());
-    m_trimmer->setOutputFormat(encoderFormat);
-    m_trimmer->setOutputPath(outputPath);
+    VideoTranscodeRequest request;
+    request.inputPath = m_videoPath;
+    request.outputPath = workingPath;
+    request.startMs = m_trimStart;
+    request.endMs = m_trimEnd;
+    request.cropRect = m_cropRect;
+    const QSize croppedSize = m_cropRect.isEmpty() ? QSize() : m_cropRect.size();
+    const QString unsupportedError = tr("Video export is not supported on this platform");
+    const QString failedTemplate = tr("Export failed: %1");
+    // Transcoder and validation failures carry English diagnostics for the
+    // log; the user sees this translated summary instead.
+    const QString keptMessage = tr("Export failed; the original recording was kept.");
+    const int outputQuality = m_outputQuality;
+    const bool recordedAsIntermediate = m_recordedAsIntermediate;
+    const TranscoderFactory createTranscoder = transcoderFactoryOverride()
+        ? transcoderFactoryOverride()
+        : TranscoderFactory(&IVideoTranscoder::create);
+    QPointer<RecordingPreviewBackend> weakThis(this);
 
-    connect(m_trimmer, &VideoTrimmer::progress,
-            this, &RecordingPreviewBackend::onTrimProgress);
-    connect(m_trimmer, &VideoTrimmer::finished,
-            this, &RecordingPreviewBackend::onTrimFinished);
-    connect(m_trimmer, &VideoTrimmer::error,
-            this, [this](const QString &msg) {
-        qWarning() << "RecordingPreviewBackend: Trim error:" << msg;
-        setErrorMessage(tr("Trim failed: %1").arg(msg));
-        if (m_trimmer) {
-            m_trimmer->deleteLater();
-            m_trimmer = nullptr;
-        }
-        m_isProcessing = false;
-        emit processingChanged();
-    });
-
-    m_trimmer->startTrim();
-}
-
-void RecordingPreviewBackend::onTrimProgress(int percent)
-{
-    if (m_processProgress != percent) {
-        m_processProgress = percent;
-        emit processProgressChanged();
-    }
-}
-
-void RecordingPreviewBackend::onTrimFinished(bool success, const QString &outputPath)
-{
-    qDebug() << "RecordingPreviewBackend: Trim finished, success:" << success;
-
-    // Clean up trimmer
-    if (m_trimmer) {
-        m_trimmer->deleteLater();
-        m_trimmer = nullptr;
-    }
-
-    m_isProcessing = false;
-    emit processingChanged();
-
-    if (success) {
-        QFileInfo outInfo(outputPath);
-        if (outInfo.exists() && outInfo.size() > 0) {
-            QFile::remove(m_videoPath);
+    (void)QtConcurrent::run([weakThis, request, outputPath, croppedSize, unsupportedError, failedTemplate,
+                             keptMessage, cancelToken, createTranscoder, smartSave, outputQuality,
+                             recordedAsIntermediate]() mutable {
+        // Queued onto the GUI thread; never blocks, so it is safe from the
+        // transcoder's worker threads (see IVideoTranscoder::ProgressCallback).
+        auto post = [](auto fn) {
+            if (QCoreApplication* app = QCoreApplication::instance()) {
+                QMetaObject::invokeMethod(app, fn, Qt::QueuedConnection);
+                return true;
+            }
+            return false;
+        };
+        auto transcoder = createTranscoder();
+        const bool unsupported = !transcoder;
+        VideoTranscodeResult result;
+        VideoFileProbe sourceProbe;
+        bool moveInstead = false;
+        const char* moveReason = "";
+        if (unsupported) {
+            // Without a transcoder an unedited save still works as before.
+            moveInstead = smartSave;
+            moveReason = "no transcoder on this platform";
+            if (!moveInstead) result.errorMessage = unsupportedError;
+        } else if (smartSave && !recordedAsIntermediate) {
+            // Already encoded at the user's quality; a re-encode would only lose detail.
+            moveInstead = true;
+            moveReason = "not an intermediate: recorded at the selected quality; saving as recorded";
         } else {
-            qWarning() << "RecordingPreviewBackend: Trim output missing or empty, keeping original";
-            setErrorMessage(tr("Trim failed: output file is missing or empty"));
+            sourceProbe = transcoder->probe(request.inputPath);
+            if (smartSave && !sourceProbe.valid) {
+                // A re-encode would only fail validation and leave the user
+                // with Discard; keep the recording as recorded.
+                qWarning() << "RecordingPreviewBackend: unedited recording could not be probed; saving it as recorded";
+                moveInstead = true;
+                moveReason = "unprobeable";
+            } else if (smartSave && SnapTray::IntermediateQuality::smartSaveShouldMove(
+                                        sourceProbe, QFileInfo(request.inputPath).size(), outputQuality)) {
+                moveInstead = true;
+                moveReason = "meets the output quality target";
+            }
+        }
+        if (moveInstead) {
+            qDebug() << "RecordingPreviewBackend: moving the unedited recording;" << moveReason;
+            const QString inputPath = request.inputPath;
+            post([weakThis, inputPath, cancelToken]() {
+                if (!weakThis) return;
+                // GUI commit boundary: cancellation wins until this callback starts.
+                const bool cancelled = cancelToken->load();
+                weakThis->finishProcessing();
+                if (cancelled) return;
+                weakThis->m_saved = true;
+                weakThis->close();
+                emit weakThis->saveRequested(inputPath, QSize());
+            });
             return;
         }
-        m_saved = true;
-        close();
-        emit saveRequested(outputPath);
-    } else {
-        setErrorMessage(tr("Trim failed"));
-    }
+        if (!unsupported) {
+            const IVideoTranscoder::ProgressCallback progressCallback =
+                [weakThis, cancelToken, post](int percent) {
+                    post([weakThis, percent, cancelToken]() {
+                        if (weakThis && weakThis->m_isProcessing && weakThis->m_exportCancelToken == cancelToken
+                            && !cancelToken->load() && weakThis->m_processProgress != percent) {
+                            weakThis->m_processProgress = percent;
+                            emit weakThis->processProgressChanged();
+                        }
+                    });
+                    return !cancelToken->load();
+                };
+            const QSize outputSize = request.cropRect.isEmpty() ? sourceProbe.videoSize : request.cropRect.size();
+            request.videoBitrate = SnapTray::IntermediateQuality::outputBitrateFor(
+                outputSize, sourceProbe.frameRate, outputQuality);
+            qDebug() << "RecordingPreviewBackend: exporting at" << request.videoBitrate << "bps for"
+                     << outputSize << "quality" << outputQuality;
+            result = transcoder->transcode(request, progressCallback);
+        }
+        // Do not trust the transcoder's claim alone: the source is deleted on
+        // success, so the output must be a playable file that kept whatever
+        // audio the selected range had. A range the source audio does not
+        // reach (within kAudioCoverageToleranceMs) exports video only, as the
+        // source is there; that is not lost audio.
+        if (result.success) {
+            const VideoFileProbe outputProbe = transcoder->probe(request.outputPath);
+            const QFileInfo outputInfo(request.outputPath);
+            const qint64 rangeStartMs = qMax<qint64>(0, request.startMs);
+            const qint64 rangeEndMs = request.endMs < 0 ? sourceProbe.durationMs
+                                                        : qMin(request.endMs, sourceProbe.durationMs);
+            const qint64 audioCoverageMs = sourceProbe.hasAudio
+                ? qMax<qint64>(0, qMin(sourceProbe.audioEndMs, rangeEndMs)
+                                      - qMax(sourceProbe.audioStartMs, rangeStartMs))
+                : 0;
+            const bool expectAudio = audioCoverageMs > kAudioCoverageToleranceMs;
+            // The picture must be exactly what was asked for: a crop the
+            // transcoder had to shrink or ignore is a different export (and
+            // would be named by the requested size).
+            const QSize expectedSize = request.cropRect.isEmpty() ? sourceProbe.videoSize : request.cropRect.size();
+            if (cancelToken->load() || !sourceProbe.valid || !outputProbe.valid
+                || !outputInfo.exists() || outputInfo.size() <= 0 || outputProbe.durationMs <= 0
+                || outputProbe.videoSize != expectedSize
+                || (expectAudio && (!result.audioCopied || !outputProbe.hasAudio))
+                || (result.audioCopied && !outputProbe.hasAudio)) {
+                qWarning() << "RecordingPreviewBackend: MP4 export output failed validation;"
+                           << "cancelled:" << cancelToken->load()
+                           << "source valid:" << sourceProbe.valid
+                           << "output valid:" << outputProbe.valid
+                           << "output size:" << outputProbe.videoSize << "expected:" << expectedSize
+                           << "source audio:" << sourceProbe.hasAudio
+                           << "audio coverage (ms):" << audioCoverageMs
+                           << "audio copied:" << result.audioCopied
+                           << "output audio:" << outputProbe.hasAudio;
+                QFile::remove(request.outputPath);
+                result.success = false;
+                result.errorMessage = QStringLiteral("Output validation failed; source retained");
+            }
+        } else {
+            qWarning() << "RecordingPreviewBackend: MP4 export failed:" << result.errorMessage;
+            // The transcoder removes its own output on failure; a fake or
+            // misbehaving one must not leave a partial file behind either.
+            QFile::remove(request.outputPath);
+        }
+        if (result.success && !QFile::rename(request.outputPath, outputPath)) {
+            qWarning() << "RecordingPreviewBackend: Failed to promote MP4 export output";
+            QFile::remove(request.outputPath);
+            result.success = false;
+            result.errorMessage = QStringLiteral("rename failed");
+        }
+        // A cancelled export keeps the source and shows no error. Cancellation
+        // may still arrive after promotion, before the GUI commits the result.
+        const bool posted = post([weakThis, result, outputPath, croppedSize, failedTemplate, keptMessage,
+                                  unsupported, unsupportedError, inputPath = request.inputPath, cancelToken,
+                                  smartSave]() {
+            if (!weakThis) {
+                // The preview went away mid-export; keep the source, drop the output.
+                QFile::remove(outputPath);
+                return;
+            }
+            // Read on the GUI thread, not before posting: the user may have
+            // cancelled while this completion was waiting in the event queue.
+            const bool cancelled = cancelToken->load();
+            if (cancelled) QFile::remove(outputPath);
+            weakThis->finishProcessing();
+            if (cancelled) {
+                qDebug() << "RecordingPreviewBackend: export cancelled; the original recording was kept";
+                return;
+            }
+            if (!result.success) {
+                if (smartSave) {
+                    // An unedited recording is still a valid recording: save
+                    // it as recorded rather than leave the user with Discard.
+                    qWarning() << "RecordingPreviewBackend: moving the unedited recording; re-encode failed:"
+                               << result.errorMessage;
+                    weakThis->m_saved = true;
+                    weakThis->close();
+                    emit weakThis->saveRequested(inputPath, QSize());
+                    return;
+                }
+                weakThis->setErrorMessage(unsupported ? failedTemplate.arg(unsupportedError) : keptMessage);
+                return;
+            }
+            QFile::remove(inputPath);
+            SnapTray::WindowTimelineSidecar::remove(inputPath);
+            weakThis->m_saved = true;
+            weakThis->close();
+            emit weakThis->saveRequested(outputPath, croppedSize);
+        });
+        if (!posted && result.success) {
+            QFile::remove(outputPath);
+        }
+    });
 }

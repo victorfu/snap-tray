@@ -15,10 +15,15 @@ PinWindowManager::~PinWindowManager()
 
 PinWindow* PinWindowManager::createPinWindow(const QPixmap &screenshot,
                                              const QPoint &position,
-                                             bool showImmediately)
+                                             bool showImmediately,
+                                             qreal initialZoom)
 {
-    PinWindow *window = new PinWindow(screenshot, position, nullptr, false, showImmediately);
+    // Prepare the display size before creating a visible native backing surface.
+    PinWindow *window = new PinWindow(screenshot, position, nullptr, false, false);
     window->setPinWindowManager(this);
+    if (!qFuzzyCompare(initialZoom, qreal(1.0))) {
+        window->setZoomLevel(initialZoom);
+    }
 
     connect(window, &PinWindow::closed, this, &PinWindowManager::onWindowClosed);
     connect(window, &PinWindow::ocrCompleted, this, &PinWindowManager::ocrCompleted);
@@ -26,7 +31,9 @@ PinWindow* PinWindowManager::createPinWindow(const QPixmap &screenshot,
     connect(window, &PinWindow::saveFailed, this, &PinWindowManager::saveFailed);
 
     m_windows.append(window);
-    // Note: show() is called in PinWindow constructor
+    if (showImmediately) {
+        window->showPreparedWindow();
+    }
 
     // New visible pins should make all hidden pins visible again.
     if (showImmediately && m_pinsHidden) {

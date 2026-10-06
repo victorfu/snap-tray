@@ -1741,76 +1741,91 @@ Size: %2</source>
         <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
         <translation>音声を利用できません。この録画は無音になります。システムの許可と選択したオーディオデバイスを確認してください。</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>高画質で録画するための空き容量が不足しています。選択した画質で録画します。</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Pause Preview (Space)</source>
-        <translation>プレビューを一時停止 (スペース)</translation>
+        <source>Clear Crop</source>
+        <translation>切り抜きをクリア</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Play Preview (Space)</source>
-        <translation>プレビューを再生 (スペース)</translation>
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>ウィンドウをクリックするとその範囲に切り抜き、ドラッグで自由に描けます</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="376" />
-        <source>Playback Speed: %1x</source>
-        <translation>再生速度: %1x</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="390" />
-        <source>Export as MP4</source>
-        <translation>MP4 として書き出す</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="398" />
-        <source>Export as GIF</source>
-        <translation>GIF として書き出す</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="406" />
-        <source>Export as WebP</source>
-        <translation>WebP として書き出す</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
         <source>Audio playback is unavailable in this preview.</source>
         <translation>このプレビューでは音声を再生できません。</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
+        <source>Export as MP4</source>
+        <translation>MP4 として書き出す</translation>
+    </message>
+    <message>
+        <source>Export as GIF</source>
+        <translation>GIF として書き出す</translation>
+    </message>
+    <message>
+        <source>Export as WebP</source>
+        <translation>WebP として書き出す</translation>
+    </message>
+    <message>
+        <source>Pause Preview (Space)</source>
+        <translation>プレビューを一時停止 (スペース)</translation>
+    </message>
+    <message>
+        <source>Play Preview (Space)</source>
+        <translation>プレビューを再生 (スペース)</translation>
+    </message>
+    <message>
+        <source>Playback Speed: %1x</source>
+        <translation>再生速度: %1x</translation>
+    </message>
+    <message>
         <source>Unmute Preview (M)</source>
         <translation>プレビューのミュートを解除 (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Mute Preview (M)</source>
         <translation>プレビューをミュート (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
+        <source>Apply Crop (Enter)</source>
+        <translation>切り抜きを適用 (Enter)</translation>
+    </message>
+    <message>
+        <source>Edit Crop</source>
+        <translation>切り抜きを編集</translation>
+    </message>
+    <message>
+        <source>Crop Recording</source>
+        <translation>録画を切り抜き</translation>
+    </message>
+    <message>
         <source>Clear Trim Selection</source>
         <translation>トリミング範囲をクリア</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
         <source>Trim Recording</source>
         <translation>録画をトリミング</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="438" />
         <source>Discard Recording (Esc)</source>
         <translation>録画を破棄 (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="445" />
         <source>Save Recording (Enter / Ctrl+S)</source>
         <translation>録画を保存 (Enter / Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="529" />
+        <source>Cancel</source>
+        <translation>キャンセル</translation>
+    </message>
+    <message>
         <source>Dismiss Error</source>
         <translation>エラーを閉じる</translation>
     </message>
@@ -1871,6 +1886,30 @@ Size: %2</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
         <translation>トリミングに失敗しました</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="804" />
+        <source>Exporting video...</source>
+        <translation>動画を書き出し中...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="815" />
+        <source>Video export is not supported on this platform</source>
+        <translation>このプラットフォームでは動画の書き出しはサポートされていません</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="816" />
+        <source>Export failed: %1</source>
+        <translation>書き出しに失敗しました: %1</translation>
+    </message>
+    <message>
+        <source>Export failed; the original recording was kept.</source>
+        <translation>書き出しに失敗しました。元の録画は保持されています。</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>キャンセルしています...</translation>
     </message>
 </context>
 <context>
@@ -2129,6 +2168,11 @@ GIF録画では音声はサポートされていません。</translation>
         <source>5 seconds</source>
         <translation>5秒</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>保存する動画の画質です。プレビューがオンのときは高画質で録画し、保存時にこの画質へ変換します。</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>
@@ -2974,44 +3018,6 @@ It may be in use by another application.</source>
         <source>Check Now</source>
         <translation>今すぐ確認</translation>
         </message>
-</context>
-<context>
-    <name>VideoTrimmer</name>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="52" />
-        <source>Input or output path not set</source>
-        <translation>入力または出力パスが設定されていません</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="57" />
-        <source>Invalid trim range</source>
-        <translation>無効なトリミング範囲</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="73" />
-        <source>Failed to create video player</source>
-        <translation>動画プレーヤーの作成に失敗しました</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="84" />
-        <source>Failed to load video: %1</source>
-        <translation>動画の読み込みに失敗しました: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="91" />
-        <source>Failed to load input video</source>
-        <translation>入力動画の読み込みに失敗しました</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="133" />
-        <source>Failed to create encoder: %1</source>
-        <translation>エンコーダーの作成に失敗しました: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="269" />
-        <source>Encoding failed</source>
-        <translation>エンコードに失敗しました</translation>
-    </message>
 </context>
 <context>
     <name>WatermarkSettings</name>

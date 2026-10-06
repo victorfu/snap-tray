@@ -19,6 +19,8 @@ class MediaFoundationEncoder : public IVideoEncoder
 
 public:
     explicit MediaFoundationEncoder(QObject *parent = nullptr);
+    // Explicit software selection also allows validating the fallback without a GPU.
+    MediaFoundationEncoder(bool enableHardwareTransforms, QObject *parent);
     ~MediaFoundationEncoder() override;
 
     bool isAvailable() const override;
@@ -35,6 +37,9 @@ public:
     QString outputPath() const override;
 
     void setQuality(int quality) override;
+    void setRateControl(SnapTray::VideoRateControl mode, int qualityValue) override;
+    void setKeyFrameIntervalSeconds(int seconds) override;
+    SnapTray::VideoRateControl effectiveRateControl() const override;
 
     // Audio support
     void setAudioFormat(int sampleRate, int channels, int bitsPerSample) override;

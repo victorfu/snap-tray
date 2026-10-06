@@ -1735,76 +1735,91 @@ Storlek: %2</translation>
         <source>Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device.</source>
         <translation>Ljud är inte tillgängligt. Den här inspelningen blir utan ljud. Kontrollera systembehörigheterna och den valda ljudenheten.</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>Inte tillräckligt med ledigt diskutrymme för inspelning i hög kvalitet. Spelar in i vald kvalitet i stället.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Pause Preview (Space)</source>
-        <translation>Pausa förhandsgranskning (Blanksteg)</translation>
+        <source>Clear Crop</source>
+        <translation>Rensa beskärning</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Play Preview (Space)</source>
-        <translation>Spela förhandsgranskning (Blanksteg)</translation>
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>Klicka på ett fönster för att beskära till det, eller dra för att rita</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="376" />
-        <source>Playback Speed: %1x</source>
-        <translation>Uppspelningshastighet: %1x</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="390" />
-        <source>Export as MP4</source>
-        <translation>Exportera som MP4</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="398" />
-        <source>Export as GIF</source>
-        <translation>Exportera som GIF</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="406" />
-        <source>Export as WebP</source>
-        <translation>Exportera som WebP</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
         <source>Audio playback is unavailable in this preview.</source>
         <translation>Ljuduppspelning är inte tillgänglig i den här förhandsgranskningen.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
+        <source>Export as MP4</source>
+        <translation>Exportera som MP4</translation>
+    </message>
+    <message>
+        <source>Export as GIF</source>
+        <translation>Exportera som GIF</translation>
+    </message>
+    <message>
+        <source>Export as WebP</source>
+        <translation>Exportera som WebP</translation>
+    </message>
+    <message>
+        <source>Pause Preview (Space)</source>
+        <translation>Pausa förhandsgranskning (Blanksteg)</translation>
+    </message>
+    <message>
+        <source>Play Preview (Space)</source>
+        <translation>Spela förhandsgranskning (Blanksteg)</translation>
+    </message>
+    <message>
+        <source>Playback Speed: %1x</source>
+        <translation>Uppspelningshastighet: %1x</translation>
+    </message>
+    <message>
         <source>Unmute Preview (M)</source>
         <translation>Slå på ljud för förhandsgranskning (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Mute Preview (M)</source>
         <translation>Tysta förhandsgranskning (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
+        <source>Apply Crop (Enter)</source>
+        <translation>Tillämpa beskärning (Enter)</translation>
+    </message>
+    <message>
+        <source>Edit Crop</source>
+        <translation>Redigera beskärning</translation>
+    </message>
+    <message>
+        <source>Crop Recording</source>
+        <translation>Beskär inspelning</translation>
+    </message>
+    <message>
         <source>Clear Trim Selection</source>
         <translation>Rensa trimningsmarkering</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
         <source>Trim Recording</source>
         <translation>Trimma inspelning</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="438" />
         <source>Discard Recording (Esc)</source>
         <translation>Kasta inspelning (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="445" />
         <source>Save Recording (Enter / Ctrl+S)</source>
         <translation>Spara inspelning (Enter / Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="529" />
+        <source>Cancel</source>
+        <translation>Avbryt</translation>
+    </message>
+    <message>
         <source>Dismiss Error</source>
         <translation>Stäng fel</translation>
     </message>
@@ -1865,6 +1880,30 @@ Storlek: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
         <translation>Trimningen misslyckades</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="804" />
+        <source>Exporting video...</source>
+        <translation>Exporterar video...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="815" />
+        <source>Video export is not supported on this platform</source>
+        <translation>Videoexport stöds inte på den här plattformen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="816" />
+        <source>Export failed: %1</source>
+        <translation>Exporten misslyckades: %1</translation>
+    </message>
+    <message>
+        <source>Export failed; the original recording was kept.</source>
+        <translation>Exporten misslyckades; den ursprungliga inspelningen behölls.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>Avbryter...</translation>
     </message>
 </context>
 <context>
@@ -2123,6 +2162,11 @@ Ljud stöds inte för GIF-inspelningar.</translation>
         <source>5 seconds</source>
         <translation>5 sekunder</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>Kvaliteten på den sparade videon. Med förhandsgranskning på spelas inspelningar in i hög kvalitet och konverteras till denna kvalitet när du sparar.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>
@@ -2968,44 +3012,6 @@ Den kan användas av ett annat program.</translation>
         <source>Check Now</source>
         <translation>Kontrollera nu</translation>
         </message>
-</context>
-<context>
-    <name>VideoTrimmer</name>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="52" />
-        <source>Input or output path not set</source>
-        <translation>In- eller utmatningssökväg är inte angiven</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="57" />
-        <source>Invalid trim range</source>
-        <translation>Ogiltigt trimningsintervall</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="73" />
-        <source>Failed to create video player</source>
-        <translation>Det gick inte att skapa videospelare</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="84" />
-        <source>Failed to load video: %1</source>
-        <translation>Det gick inte att läsa in video: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="91" />
-        <source>Failed to load input video</source>
-        <translation>Det gick inte att läsa in indata-video</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="133" />
-        <source>Failed to create encoder: %1</source>
-        <translation>Det gick inte att skapa kodare: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="269" />
-        <source>Encoding failed</source>
-        <translation>Kodning misslyckades</translation>
-    </message>
 </context>
 <context>
     <name>WatermarkSettings</name>

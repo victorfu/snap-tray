@@ -907,7 +907,9 @@ RegionSelector::RegionSelector(QWidget* parent)
                 && m_inputState.hasDetectedWindow
                 && m_selectionManager->selectionRect()
                     == m_inputState.highlightedWindowRect.intersected(rect())) {
-                setSelectionWindowMetadata(m_detectedWindow->windowTitle, m_detectedWindow->ownerApp);
+                DetectedElement selectedWindow = *m_detectedWindow;
+                WindowDetector::populateWindowMetadata(selectedWindow);
+                setSelectionWindowMetadata(selectedWindow.windowTitle, selectedWindow.ownerApp);
             }
             m_selectionManager->finishSelection();
             if (!m_inputState.multiRegionMode) {
@@ -1530,7 +1532,7 @@ bool RegionSelector::beginHistoryReplay(const QString& entryId)
     resetInitialRevealState();
     m_initialRevealState = InitialRevealState::Revealed;
 
-    if (!m_historyLiveSlot.valid) {
+    if (m_historyReplayIndex < 0) {
         snapshotLiveReplaySlot();
     }
 
@@ -1569,10 +1571,6 @@ void RegionSelector::navigateHistoryReplay(int direction)
         return;
     }
 
-    if (!m_historyLiveSlot.valid) {
-        snapshotLiveReplaySlot();
-    }
-
     int targetIndex = m_historyReplayIndex;
     if (direction < 0) {
         targetIndex = (m_historyReplayIndex < 0)
@@ -1585,6 +1583,12 @@ void RegionSelector::navigateHistoryReplay(int direction)
 
     if (targetIndex == m_historyReplayIndex) {
         return;
+    }
+
+    // Refresh live edits on every departure, but never snapshot a no-op key
+    // press or replace the live slot while browsing historical entries.
+    if (m_historyReplayIndex < 0) {
+        snapshotLiveReplaySlot();
     }
 
     if (targetIndex < 0) {

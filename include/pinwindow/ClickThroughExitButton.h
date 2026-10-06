@@ -14,6 +14,7 @@ public:
     ~ClickThroughExitButton() override = default;
 
     void attachTo(QWidget* targetWindow);
+    void setClickThroughEnabled(bool enabled);
     void updatePosition();
 
 signals:
@@ -33,6 +34,7 @@ private:
     void updatePositionIfNeeded();
 
     QWidget* m_targetWindow = nullptr;
+    bool m_clickThroughEnabled = false;
     QLabel* m_label = nullptr;
     QTimer* m_raiseTimer = nullptr;
     int m_shadowMargin = 8;

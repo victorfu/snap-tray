@@ -11,6 +11,10 @@ extern void requestMicrophonePermissionMac(std::function<void(bool)> callback);
 #include "capture/WASAPIAudioCaptureEngine.h"
 #endif
 
+#ifdef SNAPTRAY_ENABLE_LINUX_RECORDING
+#include "capture/PulseAudioCaptureEngine.h"
+#endif
+
 #include <QDebug>
 
 IAudioCaptureEngine* IAudioCaptureEngine::createBestEngine(QObject *parent)
@@ -35,6 +39,11 @@ IAudioCaptureEngine* IAudioCaptureEngine::createBestEngine(QObject *parent)
     delete engine;
 #endif
 
+#ifdef SNAPTRAY_ENABLE_LINUX_RECORDING
+    auto* engine = new PulseAudioCaptureEngine(parent);
+    if (engine->isAvailable()) return engine;
+    delete engine;
+#endif
     qWarning() << "IAudioCaptureEngine: No audio capture engine available";
     return nullptr;
 }

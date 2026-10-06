@@ -43,6 +43,11 @@ QString shellQuote(const QString& value)
     return QStringLiteral("'%1'").arg(escaped);
 }
 
+QString cliExecLine(const QString& appPath)
+{
+    return QStringLiteral("exec %1 \"$@\"").arg(shellQuote(appPath));
+}
+
 } // namespace
 
 PlatformFeatures& PlatformFeatures::instance()
@@ -178,7 +183,9 @@ bool PlatformFeatures::isCLIInstalled() const
         return false;
     }
 
-    return QString::fromUtf8(file.readAll()).contains(getAppExecutablePath());
+    // Match the shell-quoted exec line installCLI() writes; the raw path won't
+    // appear verbatim when it contains a single quote.
+    return QString::fromUtf8(file.readAll()).contains(cliExecLine(getAppExecutablePath()));
 }
 
 bool PlatformFeatures::installCLI() const
@@ -195,7 +202,7 @@ bool PlatformFeatures::installCLI() const
 
     QTextStream stream(&file);
     stream << "#!/bin/sh\n";
-    stream << "exec " << shellQuote(getAppExecutablePath()) << " \"$@\"\n";
+    stream << cliExecLine(getAppExecutablePath()) << "\n";
     file.close();
 
     return QFile::setPermissions(

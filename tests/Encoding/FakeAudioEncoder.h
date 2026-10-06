@@ -1,6 +1,7 @@
 #pragma once
 #include "IVideoEncoder.h"
 #include "encoding/EncoderFactory.h"
+#include "encoding/VideoRateControl.h"
 #include <atomic>
 #include <memory>
 
@@ -11,6 +12,10 @@ struct AudioEncoderTestState {
     std::atomic<int> created{0};
     std::atomic<int> destroyed{0};
     std::atomic<int> audioWrites{0};
+    int quality = -1;
+    SnapTray::VideoRateControl rateControl = SnapTray::VideoRateControl::Bitrate;
+    int rateControlQuality = -1;
+    int keyFrameIntervalSeconds = -1;
 };
 
 class FakeAudioEncoder final : public IVideoEncoder
@@ -34,6 +39,11 @@ public:
     void setAudioFormat(int, int, int) override { m_audioRequested = true; }
     bool isAudioSupported() const override { return m_state->supportsAudio; }
     bool isAudioEnabled() const override { return m_running && m_audioRequested && m_state->acceptsAudio; }
+    void setQuality(int quality) override { m_state->quality = quality; }
+    void setRateControl(SnapTray::VideoRateControl mode, int qualityValue) override {
+        m_state->rateControl = mode; m_state->rateControlQuality = qualityValue;
+    }
+    void setKeyFrameIntervalSeconds(int seconds) override { m_state->keyFrameIntervalSeconds = seconds; }
     void writeAudioSamples(const QByteArray&, qint64) override { ++m_state->audioWrites; }
 private:
     std::shared_ptr<AudioEncoderTestState> m_state;

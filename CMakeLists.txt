@@ -72,7 +72,10 @@ configure_file(
 # Platform-specific version file generation
 if(APPLE)
     # Set variables for Info.plist.in template
-    set(MACOSX_BUNDLE_EXECUTABLE_NAME ${PROJECT_NAME})
+    # Must match the target's OUTPUT_NAME (SnapTray-Debug in Debug builds);
+    # this template is expanded before CMake's own Info.plist pass, so the
+    # CFBundleExecutable placeholder is already gone by then.
+    set(MACOSX_BUNDLE_EXECUTABLE_NAME "${APP_DISPLAY_NAME}")
     set(MACOSX_BUNDLE_BUNDLE_NAME "${APP_DISPLAY_NAME}")
     set(MACOSX_BUNDLE_GUI_IDENTIFIER "${APP_BUNDLE_ID}")
     set(MACOSX_BUNDLE_ICON_FILE "snaptray.icns")
@@ -336,6 +339,9 @@ add_library(snaptray_core STATIC
     src/utils/ImageSaveUtils.cpp
     src/utils/NativeFileDialogUtils.cpp
     src/utils/ScreenCaptureRegionUtils.cpp
+    src/utils/VideoCropGeometry.cpp
+    src/recording/WindowTimeline.cpp
+    src/recording/WindowTimelineSidecar.cpp
     src/utils/OCRImageUtils.cpp
     src/utils/TextLayoutUtils.cpp
     # Headers with Q_OBJECT for MOC processing
@@ -484,6 +490,27 @@ target_compile_definitions(snaptray_algorithms PRIVATE
 # ----------------------------------------------------------------------------
 # snaptray_platform: Platform-specific code (capture, encoding, OS APIs)
 # ----------------------------------------------------------------------------
+set(SNAPTRAY_LINUX_RECORDING_DEFAULT OFF)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(SNAPTRAY_LINUX_RECORDING_DEFAULT ON)
+endif()
+# Honor existing prototype build directories while migrating the option name.
+if(DEFINED SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE)
+    set(SNAPTRAY_LINUX_RECORDING_DEFAULT ${SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE})
+    unset(SNAPTRAY_ENABLE_FFMPEG_PROTOTYPE CACHE)
+endif()
+option(SNAPTRAY_ENABLE_LINUX_RECORDING
+    "Build Linux recording using system FFmpeg and PulseAudio libraries" ${SNAPTRAY_LINUX_RECORDING_DEFAULT})
+if(SNAPTRAY_ENABLE_LINUX_RECORDING)
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        message(FATAL_ERROR "The FFmpeg recording backend is Linux-only")
+    endif()
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(SYSTEM_FFMPEG REQUIRED IMPORTED_TARGET
+        libavcodec>=58.134 libavformat>=58.76 libavutil>=56.70 libswscale>=5.9 libswresample>=3.9)
+    pkg_check_modules(LINUX_MEDIA REQUIRED IMPORTED_TARGET libpulse xcb xcb-shm xcb-randr)
+endif()
+
 add_library(snaptray_platform STATIC
     # Common sources
     src/capture/ICaptureEngine.cpp
@@ -495,9 +522,10 @@ add_library(snaptray_platform STATIC
     src/encoding/NativeGifEncoder.cpp
     src/encoding/WebPAnimEncoder.cpp
     src/recording/ScreenSourceService.cpp
+    src/recording/WindowTimelineRecorder.cpp
     src/video/IVideoFrameReader.cpp
     src/video/IVideoPlayer.cpp
-    src/video/VideoTrimmer.cpp
+    src/video/IVideoTranscoder.cpp
     src/VideoEncoderFactory.cpp
     src/QRCodeManager.cpp
     src/platform/QtQuickBackendPolicy.cpp
@@ -515,16 +543,18 @@ add_library(snaptray_platform STATIC
     include/capture/ScreenSnapshot.h
     include/capture/QtCaptureEngine.h
     include/video/IVideoPlayer.h
-    include/video/VideoTrimmer.h
+    include/recording/WindowTimelineRecorder.h
     include/QRCodeManager.h
     include/ImageColorSpaceHelper.h
     include/platform/QtQuickBackendPolicy.h
+    include/platform/WindowDragPolicy.h
     src/platform/LinuxClipboardOwner.cpp
 
     # macOS sources
     $<$<PLATFORM_ID:Darwin>:
         src/ImageColorSpaceHelper_mac.mm
         src/platform/WindowLevel_mac.mm
+        src/platform/MacTrayActivationGuard_mac.mm
         src/platform/PlatformFeatures_mac.mm
         src/WindowDetector.mm
         src/OCRManager.mm
@@ -534,6 +564,7 @@ add_library(snaptray_platform STATIC
         src/AVFoundationEncoder.mm
         src/video/AVFoundationFrameReader_mac.mm
         src/video/AVFoundationPlayer_mac.mm
+        src/video/AVFoundationTranscoder_mac.mm
     >
     # macOS headers with Q_OBJECT
     $<$<PLATFORM_ID:Darwin>:
@@ -558,11 +589,13 @@ add_library(snaptray_platform STATIC
         src/capture/WASAPIAudioCaptureEngine_win.cpp
         src/MediaFoundationEncoder.cpp
         src/video/MediaFoundationPlayer_win.cpp
+        src/video/MediaFoundationTranscoder_win.cpp
     >
     # Linux sources
     $<$<PLATFORM_ID:Linux>:
         src/platform/LinuxDesktopEnvironment_linux.cpp
         src/platform/LinuxQtQuickSmokeCheck.cpp
+        src/platform/LinuxRecordingSmokeCheck.cpp
         src/platform/WindowLevel_linux.cpp
         src/platform/PlatformFeatures_linux.cpp
         src/WindowDetector_linux.cpp
@@ -577,6 +610,19 @@ add_library(snaptray_platform STATIC
     >
 )
 
+if(SNAPTRAY_ENABLE_LINUX_RECORDING)
+    target_compile_definitions(snaptray_core PRIVATE SNAPTRAY_ENABLE_LINUX_RECORDING)
+    target_sources(snaptray_platform PRIVATE
+        src/encoding/FFmpegEncoder_linux.cpp
+        src/capture/X11CaptureEngine_linux.cpp
+        src/capture/PulseAudioCaptureEngine_linux.cpp
+        src/video/FFmpegMedia_linux.cpp
+        src/video/FFmpegPlayer_linux.cpp
+        src/video/FFmpegTranscoder_linux.cpp)
+    target_link_libraries(snaptray_platform PRIVATE PkgConfig::SYSTEM_FFMPEG PkgConfig::LINUX_MEDIA)
+    target_compile_definitions(snaptray_platform PRIVATE SNAPTRAY_ENABLE_LINUX_RECORDING)
+endif()
+
 # These Objective-C++ sources keep Cocoa/AVFoundation/ScreenCaptureKit objects
 # in C++ storage or across asynchronous callbacks. Compile them with ARC so
 # assigning nil and leaving a scope release the owned Objective-C/GCD objects.
@@ -588,6 +634,7 @@ set_source_files_properties(
     src/AVFoundationEncoder.mm
     src/video/AVFoundationFrameReader_mac.mm
     src/video/AVFoundationPlayer_mac.mm
+    src/video/AVFoundationTranscoder_mac.mm
     PROPERTIES COMPILE_FLAGS "-fobjc-arc"
 )
 
@@ -996,6 +1043,7 @@ set_source_files_properties(src/qml/dialogs/ScreenPickerDialog.qml PROPERTIES QT
 
 # Recording preview
 set_source_files_properties(src/qml/recording/RecordingPreview.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingPreview.qml)
+set_source_files_properties(src/qml/recording/RecordingCropOverlay.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingCropOverlay.qml)
 
 # Recording control bar
 set_source_files_properties(src/qml/recording/RecordingControlBar.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingControlBar.qml)
@@ -1075,6 +1123,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/settings/UpdatesSettings.qml
         src/qml/settings/AboutSettings.qml
         src/qml/recording/RecordingPreview.qml
+        src/qml/recording/RecordingCropOverlay.qml
         src/qml/recording/RecordingControlBar.qml
         src/qml/panels/BeautifyPanel.qml
         src/qml/panels/EmojiPickerPopup.qml
@@ -1339,6 +1388,11 @@ qt_add_translations(${PROJECT_NAME}
 # ============================================================================
 # Testing Configuration
 # ============================================================================
+if(SNAPTRAY_ENABLE_LINUX_RECORDING)
+    add_executable(SnapTrayRecordingPrototype tools/recording-prototype/main.cpp)
+    target_link_libraries(SnapTrayRecordingPrototype PRIVATE snaptray_ui)
+endif()
+
 if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()

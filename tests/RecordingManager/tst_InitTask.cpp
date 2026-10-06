@@ -9,6 +9,8 @@
 #include "RecordingInitTask.h"
 #include "RecordingRegionNormalizer.h"
 #include "utils/CoordinateHelper.h"
+#include "encoding/IntermediateQuality.h"
+#include "encoding/VideoRateControl.h"
 
 namespace {
 
@@ -50,6 +52,8 @@ private slots:
     void testConfigWithAudio();
     void testConfigWithGif();
     void testConfigWithNativeEncoder();
+    void testIntermediateQualityMapsToEncoderConfig_data();
+    void testIntermediateQualityMapsToEncoderConfig();
     void testNormalizedRegionFrameSizeAlignment();
     void testScreenMetadataSnapshot();
     void testSckInitializationUsesScreenSnapshot();
@@ -156,6 +160,43 @@ void TestRecordingInitTask::testConfigWithGif()
 
     RecordingInitTask task(config);
     QVERIFY(!task.isCancelled());
+}
+
+void TestRecordingInitTask::testIntermediateQualityMapsToEncoderConfig_data()
+{
+    QTest::addColumn<bool>("intermediate");
+    QTest::addColumn<int>("expectedRateControl");
+    QTest::addColumn<int>("expectedQuality");
+    QTest::addColumn<int>("expectedKeyFrameSeconds");
+    QTest::newRow("user quality") << false << int(SnapTray::VideoRateControl::Bitrate) << 37 << 0;
+    QTest::newRow("intermediate") << true << int(SnapTray::VideoRateControl::ConstantQuality)
+                                  << SnapTray::IntermediateQuality::kConstantQualityValue
+                                  << SnapTray::IntermediateQuality::kKeyFrameIntervalSeconds;
+}
+
+void TestRecordingInitTask::testIntermediateQualityMapsToEncoderConfig()
+{
+    QFETCH(bool, intermediate);
+    QFETCH(int, expectedRateControl);
+    QFETCH(int, expectedQuality);
+    QFETCH(int, expectedKeyFrameSeconds);
+    RecordingInitTask::Config config = createTestConfig();
+    config.outputFormat = EncoderFactory::Format::MP4;
+    config.quality = 37;
+    config.intermediateQuality = intermediate;
+    RecordingInitTask task(config);
+    EncoderFactory::EncoderConfig captured;
+    task.m_createEncoder = [&captured](const EncoderFactory::EncoderConfig& encoderConfig, QObject*) {
+        captured = encoderConfig;
+        EncoderFactory::EncoderResult result;
+        result.success = false;
+        result.errorMessage = QStringLiteral("captured");
+        return result;
+    };
+    QVERIFY(!task.initializeEncoder());
+    QCOMPARE(int(captured.rateControl), expectedRateControl);
+    QCOMPARE(captured.quality, expectedQuality);
+    QCOMPARE(captured.keyFrameIntervalSeconds, expectedKeyFrameSeconds);
 }
 
 void TestRecordingInitTask::testConfigWithNativeEncoder()

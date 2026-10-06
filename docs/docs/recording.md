@@ -1,9 +1,9 @@
 ---
-last_modified_at: 2026-03-26
+last_modified_at: 2026-10-04
 layout: docs
 title: Recording
-seo_title: "SnapTray Screen Recording: MP4, GIF and WebP Capture for macOS and Windows"
-description: "macOS/Windows only: record full screen sources with MP4, GIF, and WebP outputs."
+seo_title: "SnapTray Screen Recording: MP4, GIF and WebP Capture for macOS, Windows and Linux X11"
+description: "macOS, Windows and Linux X11: record full screen sources with MP4, GIF, and WebP outputs."
 permalink: /docs/recording/
 lang: en
 route_key: docs_recording
@@ -11,8 +11,9 @@ doc_group: workflow
 doc_order: 2
 ---
 
-Recording is available on macOS and Windows only. Linux beta does not include
-recording, and its recording UI is hidden.
+Recording is available on macOS, Windows, and Linux X11 builds with recording
+enabled. Linux uses the system FFmpeg libraries and PulseAudio (or PipeWire's
+PulseAudio compatibility service).
 
 ## Recording entry points
 
@@ -23,8 +24,17 @@ recording, and its recording UI is hidden.
 
 1. Choose the screen to record when prompted on multi-display setups.
 2. Recording starts immediately on the selected screen.
-3. Use the floating control bar to monitor duration and stop recording.
+3. Use the floating control bar to monitor duration and stop recording. On Linux, use the tray menu to pause, resume, or stop; floating controls are hidden while recording.
 4. Click Stop to export.
+
+## Crop a recording
+
+Recording always captures the full screen. To keep only part of it, open the preview after you stop:
+
+1. Click **Crop** in the preview toolbar.
+2. Drag on the video to draw the area, then drag inside it to move or drag a handle to resize. Edges snap to the video edges and centre lines. Hover over a window and it lights up; click it to crop to that window as it was at the current moment of the video.
+3. Press **Enter** to apply or **Esc** to cancel. The applied size appears at the top-left of the video; click ✕ to clear it.
+4. Save as MP4, GIF, or WebP. MP4 exports keep their audio.
 
 ## Output formats
 
@@ -47,3 +57,5 @@ GIF and WebP exports are silent.
 ## Quality tuning
 
 Open Settings > Recording and adjust frame rate, quality, countdown, and preview behavior.
+
+The quality slider sets the quality of the saved video. When preview is on, the recording itself is captured at high quality so trims and crops do not lose detail; saving converts it to the selected quality, or keeps the file as is when it is already small enough. If the drive holding temporary recordings has less than about ten minutes of high-quality space free, SnapTray records at the selected quality instead and shows a warning. With preview off, recordings are written directly at the selected quality.

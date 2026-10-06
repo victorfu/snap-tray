@@ -1735,76 +1735,91 @@ Koko: %2</translation>
         <source>Failed to save recording to selected location</source>
         <translation>Tallennuksen tallennus valittuun sijaintiin epäonnistui</translation>
     </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="223" />
+        <source>Not enough free disk space for high-quality recording. Recording at the selected quality instead.</source>
+        <translation>Levytilaa ei ole tarpeeksi korkealaatuiseen tallennukseen. Tallennetaan valitulla laadulla.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Pause Preview (Space)</source>
-        <translation>Keskeytä esikatselu (Välilyönti)</translation>
+        <source>Clear Crop</source>
+        <translation>Poista rajaus</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="361" />
-        <source>Play Preview (Space)</source>
-        <translation>Toista esikatselu (Välilyönti)</translation>
+        <source>Click a window to crop to it, or drag to draw</source>
+        <translation>Rajaa ikkunaan napsauttamalla sitä tai piirrä alue vetämällä</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="376" />
-        <source>Playback Speed: %1x</source>
-        <translation>Toistonopeus: %1x</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="390" />
-        <source>Export as MP4</source>
-        <translation>Vie MP4-muodossa</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="398" />
-        <source>Export as GIF</source>
-        <translation>Vie GIF-muodossa</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="406" />
-        <source>Export as WebP</source>
-        <translation>Vie WebP-muodossa</translation>
-    </message>
-    <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="170" />
         <source>Audio playback is unavailable in this preview.</source>
         <translation>Äänen toisto ei ole käytettävissä tässä esikatselussa.</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
+        <source>Export as MP4</source>
+        <translation>Vie MP4-muodossa</translation>
+    </message>
+    <message>
+        <source>Export as GIF</source>
+        <translation>Vie GIF-muodossa</translation>
+    </message>
+    <message>
+        <source>Export as WebP</source>
+        <translation>Vie WebP-muodossa</translation>
+    </message>
+    <message>
+        <source>Pause Preview (Space)</source>
+        <translation>Keskeytä esikatselu (Välilyönti)</translation>
+    </message>
+    <message>
+        <source>Play Preview (Space)</source>
+        <translation>Toista esikatselu (Välilyönti)</translation>
+    </message>
+    <message>
+        <source>Playback Speed: %1x</source>
+        <translation>Toistonopeus: %1x</translation>
+    </message>
+    <message>
         <source>Unmute Preview (M)</source>
         <translation>Poista esikatselun mykistys (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="418" />
         <source>Mute Preview (M)</source>
         <translation>Mykistä esikatselu (M)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
+        <source>Apply Crop (Enter)</source>
+        <translation>Käytä rajausta (Enter)</translation>
+    </message>
+    <message>
+        <source>Edit Crop</source>
+        <translation>Muokkaa rajausta</translation>
+    </message>
+    <message>
+        <source>Crop Recording</source>
+        <translation>Rajaa tallenne</translation>
+    </message>
+    <message>
         <source>Clear Trim Selection</source>
         <translation>Tyhjennä leikkausvalinta</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="425" />
         <source>Trim Recording</source>
         <translation>Leikkaa tallenne</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="438" />
         <source>Discard Recording (Esc)</source>
         <translation>Hylkää tallenne (Esc)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="445" />
         <source>Save Recording (Enter / Ctrl+S)</source>
         <translation>Tallenna tallenne (Enter / Ctrl+S)</translation>
     </message>
     <message>
-        <location filename="../src/qml/recording/RecordingPreview.qml" line="529" />
+        <source>Cancel</source>
+        <translation>Peruuta</translation>
+    </message>
+    <message>
         <source>Dismiss Error</source>
         <translation>Sulje virhe</translation>
     </message>
@@ -1865,6 +1880,30 @@ Koko: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="657" />
         <source>Trim failed</source>
         <translation>Videon leikkaus epäonnistui</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="804" />
+        <source>Exporting video...</source>
+        <translation>Viedään videota...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="815" />
+        <source>Video export is not supported on this platform</source>
+        <translation>Videon vienti ei ole tuettu tällä alustalla</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="816" />
+        <source>Export failed: %1</source>
+        <translation>Vienti epäonnistui: %1</translation>
+    </message>
+    <message>
+        <source>Export failed; the original recording was kept.</source>
+        <translation>Vienti epäonnistui; alkuperäinen tallenne säilytettiin.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="365" />
+        <source>Cancelling...</source>
+        <translation>Peruutetaan...</translation>
     </message>
 </context>
 <context>
@@ -2123,6 +2162,11 @@ GIF-tallennuksissa ääntä ei tueta.</translation>
         <source>5 seconds</source>
         <translation>5 sekuntia</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="119" />
+        <source>Quality of the saved video. With preview on, recordings are captured at high quality and converted to this quality when you save.</source>
+        <translation>Tallennetun videon laatu. Kun esikatselu on käytössä, tallenteet kaapataan korkealaatuisina ja muunnetaan tähän laatuun tallennettaessa.</translation>
+    </message>
 </context>
 <context>
     <name>RegionExportManager</name>
@@ -2968,44 +3012,6 @@ Se saattaa olla toisen sovelluksen käytössä.</translation>
         <source>Check Now</source>
         <translation>Tarkista nyt</translation>
         </message>
-</context>
-<context>
-    <name>VideoTrimmer</name>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="52" />
-        <source>Input or output path not set</source>
-        <translation>Syöte- tai tulostepolkua ei ole asetettu</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="57" />
-        <source>Invalid trim range</source>
-        <translation>Virheellinen leikkausalue</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="73" />
-        <source>Failed to create video player</source>
-        <translation>Videotoistimen luonti epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="84" />
-        <source>Failed to load video: %1</source>
-        <translation>Videon lataus epäonnistui: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="91" />
-        <source>Failed to load input video</source>
-        <translation>Syötevideon lataus epäonnistui</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="133" />
-        <source>Failed to create encoder: %1</source>
-        <translation>Enkooderin luonti epäonnistui: %1</translation>
-    </message>
-    <message>
-        <location filename="../src/video/VideoTrimmer.cpp" line="269" />
-        <source>Encoding failed</source>
-        <translation>Enkoodaus epäonnistui</translation>
-    </message>
 </context>
 <context>
     <name>WatermarkSettings</name>

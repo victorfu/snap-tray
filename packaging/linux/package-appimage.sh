@@ -33,6 +33,7 @@ CMAKE_ARGS=(
   -B "$BUILD_DIR"
   -G Ninja
   -DCMAKE_BUILD_TYPE=Release
+  -DSNAPTRAY_ENABLE_LINUX_RECORDING=ON
 )
 
 if [ -n "${QT_ROOT_DIR:-}" ]; then
@@ -42,7 +43,7 @@ if [ -n "${QT_ROOT_DIR:-}" ]; then
 fi
 
 cmake "${CMAKE_ARGS[@]}"
-cmake --build "$BUILD_DIR" --target SnapTray --parallel
+cmake --build "$BUILD_DIR" --target SnapTray --parallel "${CMAKE_BUILD_PARALLEL_LEVEL:-4}"
 
 # Build the isolated updater without importing upstream CMake options into SnapTray.
 cmake -S "$PROJECT_DIR/src/update/appimage" -B "$BUILD_DIR/appimage-updater" -G Ninja \
@@ -216,6 +217,20 @@ for plugin in libqwebp.so libqtiff.so; do
     exit 1
   fi
 done
+
+# AppImages bundle the build distribution's media libraries as a matching ABI
+# set. GPU drivers and the PulseAudio/PipeWire server remain host services.
+for library in libavcodec libavformat libavutil libswscale libswresample libpulse; do
+  if [ -z "$(find "$SMOKE_APPDIR/squashfs-root/usr/lib" -name "$library.so.*" -print -quit)" ]; then
+    echo "Missing recording runtime library $library in AppImage." >&2
+    exit 1
+  fi
+done
+
+env -u QT_PLUGIN_PATH -u QT_QPA_PLATFORM_PLUGIN_PATH -u LD_PRELOAD \
+  LD_LIBRARY_PATH="$SMOKE_APPDIR/squashfs-root/usr/lib" \
+  QT_QPA_PLATFORM=offscreen SNAPTRAY_FFMPEG_ENCODER=software \
+  timeout 30s "$SMOKE_APPDIR/squashfs-root/AppRun" --internal-recording-smoke-check
 
 QT_QPA_PLATFORM=offscreen "$SMOKE_APPDIR/squashfs-root/AppRun" --version >"$VERSION_OUTPUT_FILE"
 grep -q "SnapTray version" "$VERSION_OUTPUT_FILE"

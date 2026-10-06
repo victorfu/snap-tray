@@ -110,6 +110,11 @@ IVideoEncoder* EncoderFactory::tryCreateNativeEncoder(
     // Set quality
     encoder->setQuality(config.quality);
     qDebug() << "EncoderFactory: Native encoder quality set to" << config.quality;
+    encoder->setRateControl(config.rateControl, config.quality);
+    encoder->setKeyFrameIntervalSeconds(config.keyFrameIntervalSeconds);
+    qDebug() << "EncoderFactory: Native encoder rate control"
+             << (config.rateControl == SnapTray::VideoRateControl::ConstantQuality ? "constant quality" : "bitrate")
+             << "keyframe interval (s):" << config.keyFrameIntervalSeconds;
 
     // Configure audio format before start() - this is critical
     if (config.enableAudio && encoder->isAudioSupported()) {

@@ -5,6 +5,9 @@
 #include <QMouseEvent>
 
 #include "PinWindow.h"
+#include "PinWindowManager.h"
+#include "pinwindow/PinWindowPlacement.h"
+#include "platform/WindowDragPolicy.h"
 
 class TestPinWindowResize : public QObject
 {
@@ -20,7 +23,44 @@ private:
     static constexpr int kResizeMargin = 6;
     static constexpr int kMinSize = 50;
 
+    static void sendDragEvent(PinWindow& window, QEvent::Type type, const QPoint& globalPos)
+    {
+        const auto button = type == QEvent::MouseMove ? Qt::NoButton : Qt::LeftButton;
+        const auto buttons = type == QEvent::MouseButtonRelease ? Qt::NoButton : Qt::LeftButton;
+        QMouseEvent event(type, window.mapFromGlobal(globalPos), globalPos,
+                          button, buttons, Qt::NoModifier);
+        QCoreApplication::sendEvent(&window, &event);
+    }
+
 private slots:
+    void testLongScreenshotFitsBeforeFirstShow() {
+        class ShowObserver : public QObject {
+        public:
+            QSize firstSize;
+            bool eventFilter(QObject* object, QEvent* event) override {
+                if (event->type() == QEvent::Show && firstSize.isEmpty()) {
+                    if (auto* pin = qobject_cast<PinWindow*>(object)) firstSize = pin->size();
+                }
+                return false;
+            }
+        } observer;
+        qApp->installEventFilter(&observer);
+        const QPixmap pixmap = createTestPixmap(800, 30000);
+        const QRect screen(0, 0, 1920, 1080);
+        const auto placement = computeInitialPinWindowPlacement(pixmap, screen);
+        QVERIFY(placement.zoomLevel < 0.1);
+        QVERIFY(screen.contains(QRect(placement.position, placement.displaySize)));
+
+        PinWindowManager manager;
+        auto* pin = manager.createPinWindow(pixmap, placement.position, true, placement.zoomLevel);
+        QCOMPARE(observer.firstSize, placement.displaySize);
+        QCOMPARE(pin->size(), placement.displaySize);
+        QVERIFY(pin->isVisible());
+        // Keep the original pixels available when the user zooms in again.
+        pin->setZoomLevel(placement.zoomLevel * 2);
+        QCOMPARE(pin->height(), qRound(30000 * placement.zoomLevel * 2));
+    }
+
     void initTestCase() {
         if (QGuiApplication::screens().isEmpty()) {
             QSKIP("No screens available for PinWindow tests in this environment.");
@@ -52,6 +92,82 @@ private slots:
         PinWindow window(pixmap, requestedPos);
 
         QCOMPARE(window.pos(), requestedPos);
+    }
+
+    void testDragBurstUsesLatestPosition() {
+        PinWindow window(createTestPixmap(240, 160), QPoint(100, 100));
+        QCoreApplication::processEvents();
+        const QPoint initial = window.pos();
+        const QPoint press = window.mapToGlobal(QPoint(100, 80));
+        sendDragEvent(window, QEvent::MouseButtonPress, press);
+
+        for (const QPoint& delta : {QPoint(10, 20), QPoint(40, 10), QPoint(60, 30)}) {
+            sendDragEvent(window, QEvent::MouseMove, press + delta);
+            if (SnapTray::windowDragUpdateIntervalMs() > 0) {
+                // No event-loop tick yet: a burst must not issue geometry changes.
+                QCOMPARE(window.pos(), initial);
+            } else {
+                QCOMPARE(window.pos(), initial + delta);
+            }
+        }
+        QTRY_COMPARE(window.pos(), initial + QPoint(60, 30));
+        sendDragEvent(window, QEvent::MouseButtonRelease, press + QPoint(60, 30));
+    }
+
+    void testPacedDragReleaseFlushesFinalPosition() {
+        const int interval = SnapTray::windowDragUpdateIntervalMs();
+        if (interval == 0) QSKIP("This platform uses immediate window dragging.");
+        PinWindow window(createTestPixmap(240, 160), QPoint(100, 100));
+        QCoreApplication::processEvents();
+        const QPoint initial = window.pos();
+        const QPoint press = window.mapToGlobal(QPoint(100, 80));
+        sendDragEvent(window, QEvent::MouseButtonPress, press);
+        sendDragEvent(window, QEvent::MouseMove, press + QPoint(30, 20));
+        QCOMPARE(window.pos(), initial);
+
+        // Release before the tick, at a newer position than the queued move.
+        sendDragEvent(window, QEvent::MouseButtonRelease, press + QPoint(50, 40));
+        const QPoint finalPosition = initial + QPoint(50, 40);
+        QCOMPARE(window.pos(), finalPosition);
+        QTest::qWait(interval * 3);
+        QCOMPARE(window.pos(), finalPosition);
+
+        // A new press must not replay the previous drag's queued position.
+        const QPoint nextPress = window.mapToGlobal(QPoint(100, 80));
+        sendDragEvent(window, QEvent::MouseButtonPress, nextPress);
+        QTest::qWait(interval * 3);
+        QCOMPARE(window.pos(), finalPosition);
+        sendDragEvent(window, QEvent::MouseButtonRelease, nextPress);
+    }
+
+    void testHiddenPinDiscardsPendingDrag() {
+        const int interval = SnapTray::windowDragUpdateIntervalMs();
+        if (interval == 0) QSKIP("This platform uses immediate window dragging.");
+        PinWindow window(createTestPixmap(240, 160), QPoint(100, 100));
+        QCoreApplication::processEvents();
+        const QPoint initial = window.pos();
+        const QPoint press = window.mapToGlobal(QPoint(100, 80));
+        sendDragEvent(window, QEvent::MouseButtonPress, press);
+        sendDragEvent(window, QEvent::MouseMove, press + QPoint(30, 20));
+        window.hide();
+        QTest::qWait(interval * 3);
+        QCOMPARE(window.pos(), initial);
+        window.show();
+        QTest::qWait(interval * 3);
+        QCOMPARE(window.pos(), initial);
+        sendDragEvent(window, QEvent::MouseMove, press + QPoint(50, 40));
+        QTest::qWait(interval * 3);
+        QCOMPARE(window.pos(), initial);
+    }
+
+    void testResizeRemainsImmediate() {
+        PinWindow window(createTestPixmap(240, 160), QPoint(100, 100));
+        QCoreApplication::processEvents();
+        const QPoint press = window.mapToGlobal(QPoint(window.width() - 1, 80));
+        sendDragEvent(window, QEvent::MouseButtonPress, press);
+        sendDragEvent(window, QEvent::MouseMove, press + QPoint(40, 0));
+        QVERIFY(window.width() > 240);
+        sendDragEvent(window, QEvent::MouseButtonRelease, press + QPoint(40, 0));
     }
 
     // =========================================================================

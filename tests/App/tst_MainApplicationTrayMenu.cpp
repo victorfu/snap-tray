@@ -1,4 +1,5 @@
 #include "MainApplication.h"
+#include "platform/PlatformCapabilities.h"
 #include "ImageColorSpaceHelper.h"
 #include <QClipboard>
 #include <QCursor>
@@ -295,16 +296,28 @@ void tst_MainApplicationTrayMenu::initialize_hidesRecordingActionWhenUnsupported
     MainApplication application;
     application.initialize();
 
-#ifdef Q_OS_LINUX
-    QVERIFY(application.m_fullScreenRecordingAction == nullptr);
-
-    const QList<QAction*> actions = application.m_trayMenu->actions();
-    for (QAction* action : actions) {
-        QVERIFY(!action || action->text() != MainApplication::tr("Record Screen"));
+    const bool supported = SnapTray::currentPlatformCapabilities().supportsRecording;
+    QCOMPARE(application.m_fullScreenRecordingAction != nullptr, supported);
+    if (supported) {
+        QVERIFY(application.m_trayMenu->actions().contains(application.m_fullScreenRecordingAction));
+        QVERIFY(application.m_fullScreenRecordingAction->text().contains(MainApplication::tr("Record Screen")));
     }
-#else
-    QVERIFY(application.m_fullScreenRecordingAction != nullptr);
-#endif
+    if (SnapTray::currentPlatformCapabilities().recordingControlsInTray) {
+        QVERIFY(application.m_pauseRecordingAction);
+        QVERIFY(!application.m_pauseRecordingAction->isVisible());
+        application.m_recordingManager->m_elapsedTimer.start();
+        application.m_recordingManager->m_state = RecordingManager::State::Recording;
+        application.updateRecordingActionText();
+        QVERIFY(application.m_pauseRecordingAction->isVisible());
+        QCOMPARE(application.m_pauseRecordingAction->text(), QCoreApplication::translate("RecordingControlBar", "Pause Recording"));
+        application.m_pauseRecordingAction->trigger();
+        QCOMPARE(application.m_recordingManager->state(), RecordingManager::State::Paused);
+        QCOMPARE(application.m_pauseRecordingAction->text(), QCoreApplication::translate("RecordingControlBar", "Resume Recording"));
+        application.m_recordingManager->m_state = RecordingManager::State::Idle;
+        application.updateRecordingActionText();
+        QVERIFY(!application.m_pauseRecordingAction->isVisible());
+    }
+
 }
 
 void tst_MainApplicationTrayMenu::onCheckForUpdates_usesSharedSettingsWindowFlowWithoutShowingSettings()
@@ -383,7 +396,7 @@ void tst_MainApplicationTrayMenu::queuedHistoryEntryRechecksCaptureMode()
     QCOMPARE(replayCalls, 1);
     using State = RecordingManager::State;
     for (State state : {State::Preparing, State::Countdown, State::Recording,
-                        State::Paused, State::Encoding, State::Previewing}) {
+                        State::Paused, State::Encoding}) {
         application.m_recordingManager->m_state = state;
         QVERIFY(!application.canStartRegionCapture());
         QVERIFY(!application.startHistoryReplay("test-entry"));
@@ -391,6 +404,11 @@ void tst_MainApplicationTrayMenu::queuedHistoryEntryRechecksCaptureMode()
         QCOMPARE(captureStarted.count(), 0);
         QCOMPARE(replayCalls, 1);
     }
+    // The preview window is an ordinary window: captures and history replay stay available.
+    application.m_recordingManager->m_state = State::Previewing;
+    QVERIFY(application.canStartRegionCapture());
+    QVERIFY(application.startHistoryReplay("test-entry"));
+    QCOMPARE(replayCalls, 2);
     application.m_recordingManager->m_state = State::Idle;
 }
 
@@ -631,7 +649,7 @@ void tst_MainApplicationTrayMenu::previewCloseDiscardsTemporaryFile()
         QVERIFY(file.write("Incomplete recording") > 0);
         file.close();
     }
-    application.showRecordingPreview(path, 0);
+    application.showRecordingPreview(path, 0, true);
     QVERIFY(application.m_previewBackend);
     QPointer<RecordingPreviewBackend> backend(application.m_previewBackend);
     if (validVideo) QTRY_VERIFY(backend->duration() > 0);

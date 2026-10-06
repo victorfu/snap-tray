@@ -1,4 +1,7 @@
 #include "AVFoundationEncoder.h"
+#include "encoding/VideoBitrate.h"
+#include "encoding/IntermediateQuality.h"
+#include "encoding/VideoRateControl.h"
 
 #ifdef Q_OS_MAC
 
@@ -16,6 +19,15 @@
 #error "AVFoundationEncoder.mm requires Objective-C ARC"
 #endif
 
+namespace {
+// The historical AVAssetWriter default this encoder has always used.
+constexpr int kDefaultKeyFrameIntervalSeconds = 2;
+// AVVideoQualityKey is documented for JPEG/ProRes; its effect on H.264 via
+// AVAssetWriter is unverified. Stays off until validated on hardware, so the
+// intermediate uses the VBR fallback (IntermediateQuality::intermediateBitrate).
+constexpr bool kUseVideoToolboxQuality = false;
+} // namespace
+
 class AVFoundationEncoderPrivate
 {
 public:
@@ -31,6 +43,9 @@ public:
     qint64 frameNumber = 0;
     bool running = false;
     int quality = 55;  // 0-100
+    SnapTray::VideoRateControl requestedRateControl = SnapTray::VideoRateControl::Bitrate;
+    SnapTray::VideoRateControl effectiveRateControl = SnapTray::VideoRateControl::Bitrate;
+    int keyFrameIntervalSeconds = 0; // 0 = kDefaultKeyFrameIntervalSeconds
 
     // Audio members
     AVAssetWriterInput *audioInput = nil;
@@ -55,12 +70,14 @@ public:
     NSDictionary *pixelBufferAttributes = nil;
 
     int calculateBitrate() const {
-        int pixels = frameSize.width() * frameSize.height();
-        // Quality 0-100 maps to bits per pixel 0.1-0.3
-        double bitsPerPixel = 0.1 + (quality / 100.0) * 0.2;
-        int bitrate = static_cast<int>(pixels * frameRate * bitsPerPixel);
-        // Clamp to reasonable range: 1 Mbps to 50 Mbps
-        return qBound(1000000, bitrate, 50000000);
+        if (requestedRateControl == SnapTray::VideoRateControl::ConstantQuality) {
+            return SnapTray::IntermediateQuality::intermediateBitrate(frameSize, frameRate);
+        }
+        return SnapTray::VideoBitrate::forQuality(frameSize, frameRate, quality);
+    }
+    int keyFrameInterval() const {
+        const int seconds = keyFrameIntervalSeconds > 0 ? keyFrameIntervalSeconds : kDefaultKeyFrameIntervalSeconds;
+        return frameRate * seconds;
     }
 
     CVPixelBufferRef createPixelBufferFromImage(const QImage &image) {
@@ -186,17 +203,23 @@ bool AVFoundationEncoder::start(const QString &outputPath, const QSize &frameSiz
     // Configure H.264 video settings
     int bitrate = d->calculateBitrate();
 
+    NSMutableDictionary *compression = [@{
+        AVVideoAverageBitRateKey: @(bitrate),
+        AVVideoExpectedSourceFrameRateKey: @(frameRate),
+        AVVideoMaxKeyFrameIntervalKey: @(d->keyFrameInterval()),
+        AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,
+        AVVideoAllowFrameReorderingKey: @NO
+    } mutableCopy];
+    d->effectiveRateControl = SnapTray::VideoRateControl::Bitrate;
+    if (kUseVideoToolboxQuality && d->requestedRateControl == SnapTray::VideoRateControl::ConstantQuality) {
+        compression[AVVideoQualityKey] = @(d->quality / 100.0);
+        d->effectiveRateControl = SnapTray::VideoRateControl::ConstantQuality;
+    }
     NSDictionary *videoSettings = @{
         AVVideoCodecKey: AVVideoCodecTypeH264,
         AVVideoWidthKey: @(adjustedSize.width()),
         AVVideoHeightKey: @(adjustedSize.height()),
-        AVVideoCompressionPropertiesKey: @{
-            AVVideoAverageBitRateKey: @(bitrate),
-            AVVideoExpectedSourceFrameRateKey: @(frameRate),
-            AVVideoMaxKeyFrameIntervalKey: @(frameRate * 2),
-            AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,
-            AVVideoAllowFrameReorderingKey: @NO
-        }
+        AVVideoCompressionPropertiesKey: compression
     };
 
     d->videoInput = [[AVAssetWriterInput alloc] initWithMediaType:AVMediaTypeVideo
@@ -436,6 +459,22 @@ QString AVFoundationEncoder::outputPath() const
 void AVFoundationEncoder::setQuality(int quality)
 {
     d->quality = qBound(0, quality, 100);
+}
+
+void AVFoundationEncoder::setRateControl(SnapTray::VideoRateControl mode, int qualityValue)
+{
+    d->requestedRateControl = mode;
+    d->quality = qBound(0, qualityValue, 100);
+}
+
+void AVFoundationEncoder::setKeyFrameIntervalSeconds(int seconds)
+{
+    d->keyFrameIntervalSeconds = qMax(0, seconds);
+}
+
+SnapTray::VideoRateControl AVFoundationEncoder::effectiveRateControl() const
+{
+    return d->effectiveRateControl;
 }
 
 void AVFoundationEncoder::setAudioFormat(int sampleRate, int channels, int bitsPerSample)

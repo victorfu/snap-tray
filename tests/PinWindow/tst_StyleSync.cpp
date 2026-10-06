@@ -12,6 +12,8 @@
 #include <QtMath>
 
 #include "PinWindow.h"
+#include "PinWindowManager.h"
+#include "pinwindow/PinWindowPlacement.h"
 #include "PlatformFeatures.h"
 #include "qml/PinToolOptionsViewModel.h"
 #include "qml/PinToolbarViewModel.h"
@@ -150,6 +152,7 @@ class TestPinWindowStyleSync : public QObject
     Q_OBJECT
 
 private slots:
+    void testLongScreenshotAnnotationToolbar();
     void initTestCase();
     void testUsesAuthorityModeByDefault();
     void testAnnotationToolUsesWindowDevicePixelRatio();
@@ -979,6 +982,20 @@ void TestPinWindowStyleSync::testLinuxBypassPinDoesNotBecomeToolbarTransientPare
     toolbar.close();
     window.close();
 #endif
+}
+
+void TestPinWindowStyleSync::testLongScreenshotAnnotationToolbar()
+{
+    PinWindowManager manager;
+    const auto pixmap = createTestPixmap(800, 30000);
+    const auto placement = computeInitialPinWindowPlacement(pixmap, QRect(0, 0, 1920, 1080));
+    auto* pin = manager.createPinWindow(pixmap, placement.position, true, placement.zoomLevel);
+    pin->toggleToolbar();
+    QCoreApplication::processEvents();
+    QVERIFY(pin->isToolbarVisible());
+    QCOMPARE(pin->size(), placement.displaySize);
+    pin->toggleToolbar();
+    QVERIFY(!pin->isToolbarVisible());
 }
 
 void TestPinWindowStyleSync::testLinuxBypassPinReceivesSpaceShortcutAfterShow()

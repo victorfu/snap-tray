@@ -1,10 +1,11 @@
 name: CI Build
 
 on:
+  workflow_dispatch:
   push:
-    branches: [main, dev]
+    branches: [main, dev, dev-3]
   pull_request:
-    branches: [main, dev]
+    branches: [main, dev, dev-3]
 
 jobs:
   build-macos:
@@ -18,8 +19,17 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install qt@6 ccache
+          brew install ccache
           echo "$(brew --prefix ccache)/libexec" >> "$GITHUB_PATH"
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.11.2'
+          host: 'mac'
+          target: 'desktop'
+          modules: 'qtimageformats'
+          cache: true
 
       - name: Configure ccache path
         run: echo "CCACHE_CONFIGPATH=$RUNNER_TEMP/snap-tray-ccache.conf" >> "$GITHUB_ENV"
@@ -65,7 +75,7 @@ jobs:
         run: |
           cmake -S . -B build \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)" \
+            -DCMAKE_PREFIX_PATH="${QT_ROOT_DIR}" \
             -DCMAKE_OSX_SYSROOT="${{ steps.deps-key.outputs.sdk_path }}" \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache
@@ -74,7 +84,17 @@ jobs:
         run: cmake --build build --config Release --parallel 1
 
       - name: Run Tests
-        run: ctest --test-dir build --output-on-failure
+        run: ctest --test-dir build --output-on-failure --output-junit "${{ github.workspace }}/build/test-results.xml"
+
+      - name: Upload test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-evidence-${{ runner.os }}
+          path: |
+            build/test-results.xml
+            build/Testing/Temporary/LastTest.log
+            build/Testing/Temporary/LastTestsFailed.log
 
   build-linux:
     runs-on: ubuntu-22.04
@@ -92,7 +112,9 @@ jobs:
             libxcb-keysyms1-dev libxcb-xinerama0-dev libxcb-render-util0-dev \
             libxcb-image0-dev libxcb-icccm4-dev libxcb-randr0-dev \
             libxcb-shape0-dev libxcb-xfixes0-dev libxcb-sync-dev \
-            libxrender-dev libxi-dev libxtst-dev
+            libxrender-dev libxi-dev libxtst-dev \
+            pkg-config libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev \
+            libpulse-dev libxcb-shm0-dev pulseaudio pulseaudio-utils
 
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
@@ -116,7 +138,17 @@ jobs:
         run: cmake --build build --config Release --parallel
 
       - name: Run Tests
-        run: SNAPTRAY_TEST_X11_CLIPBOARD=1 XDG_SESSION_TYPE=x11 xvfb-run -a ctest --test-dir build --output-on-failure -C Release
+        run: SNAPTRAY_TEST_X11_CLIPBOARD=1 XDG_SESSION_TYPE=x11 xvfb-run -a ctest --test-dir build --output-on-failure --output-junit "${{ github.workspace }}/build/test-results.xml" -C Release
+
+      - name: Upload test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-evidence-${{ runner.os }}
+          path: |
+            build/test-results.xml
+            build/Testing/Temporary/LastTest.log
+            build/Testing/Temporary/LastTestsFailed.log
 
   build-windows:
     runs-on: windows-latest
@@ -200,4 +232,14 @@ jobs:
         run: sccache --show-stats
 
       - name: Run Tests
-        run: ctest --test-dir build --output-on-failure -C Release
+        run: ctest --test-dir build --output-on-failure --output-junit "${{ github.workspace }}/build/test-results.xml" -C Release
+
+      - name: Upload test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-evidence-${{ runner.os }}
+          path: |
+            build/test-results.xml
+            build/Testing/Temporary/LastTest.log
+            build/Testing/Temporary/LastTestsFailed.log

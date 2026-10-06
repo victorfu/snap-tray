@@ -3,6 +3,7 @@
 #include <QQuickPaintedItem>
 #include <QImage>
 #include <QSize>
+#include <QRectF>
 
 class IVideoPlayer;
 
@@ -35,6 +36,7 @@ class VideoPlaybackItem : public QQuickPaintedItem
     Q_PROPERTY(qreal frameRate READ frameRate NOTIFY videoLoaded)
     Q_PROPERTY(int frameIntervalMs READ frameIntervalMs NOTIFY videoLoaded)
     Q_PROPERTY(QSize videoSize READ videoSize NOTIFY videoLoaded)
+    Q_PROPERTY(QRectF contentRect READ contentRect NOTIFY contentRectChanged)
 
 public:
     explicit VideoPlaybackItem(QQuickItem *parent = nullptr);
@@ -64,6 +66,7 @@ public:
     qreal frameRate() const;
     int frameIntervalMs() const;
     QSize videoSize() const;
+    QRectF contentRect() const { return m_contentRect; }
 
     // Invokable from QML
     Q_INVOKABLE void play();
@@ -71,6 +74,7 @@ public:
     Q_INVOKABLE void togglePlayPause();
     Q_INVOKABLE void stop();
     Q_INVOKABLE void seek(qint64 positionMs);
+    Q_INVOKABLE void stepForward();
     Q_INVOKABLE void setLooping(bool loop);
 
 signals:
@@ -82,6 +86,7 @@ signals:
     void volumeChanged();
     void playbackRateChanged();
     void videoLoaded();
+    void contentRectChanged();
     void errorOccurred(const QString &message);
     void playbackFinished();
     void frameReady(const QImage &frame);
@@ -93,6 +98,8 @@ private slots:
 private:
     void createPlayer();
     void refreshScaledFrameForCurrentSize();
+    // Drops the shown frame and empties contentRect (emitting contentRectChanged).
+    void clearFrame();
 
     IVideoPlayer *m_player = nullptr;
     QString m_source;
@@ -101,4 +108,5 @@ private:
     QSize m_lastItemSize;
     QSize m_lastFrameSize;
     QSize m_targetScaledSize;
+    QRectF m_contentRect;
 };

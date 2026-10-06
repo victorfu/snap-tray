@@ -174,6 +174,14 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
                 return;
             }
 
+            // Erasing must take precedence over selecting or transforming existing items.
+            if (state().currentTool == ToolId::Eraser && m_toolManager) {
+                m_annotationLayer->clearSelection();
+                handleAnnotationToolPress(event->pos());
+                emit updateRequested();
+                return;
+            }
+
             // Finalize polyline when clicking on UI elements
             auto finalizePolylineForUiClick = [&](const QPoint& pos) {
                 if (state().currentTool == ToolId::Arrow && m_toolManager->isDrawing()) {
@@ -1428,12 +1436,7 @@ SelectionStateManager::ResizeHandle RegionInputHandler::determineHandleFromOutsi
 void RegionInputHandler::adjustEdgesToPosition(const QPoint& pos,
     SelectionStateManager::ResizeHandle handle)
 {
-    QRect currentRect = m_selectionManager->selectionRect();
-    QRect newRect = SelectionResizeHelper::adjustEdgesToPosition(pos, handle, currentRect);
-
-    if (SelectionResizeHelper::meetsMinimumSize(newRect)) {
-        m_selectionManager->setSelectionRect(newRect);
-    }
+    m_selectionManager->resizeToPosition(pos, handle);
 }
 
 // ============================================================================
