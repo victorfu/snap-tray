@@ -1,12 +1,9 @@
 #include <QtTest/QtTest>
 
 #include "qml/QmlOverlayManager.h"
-#include "qml/LongshotController.h"
 #include "utils/VideoCropGeometry.h"
 
 #include <QImage>
-#include <QClipboard>
-#include <QRandomGenerator>
 #include <QQmlComponent>
 #include <QQmlContext>
 #include <QQmlEngine>
@@ -20,29 +17,6 @@
 Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
 
 namespace {
-
-class PreviewFrameSource final : public SnapTray::Longshot::LongshotFrameSource {
-public:
-    PreviewFrameSource() : m_frame(320, 640, QImage::Format_RGB32) {
-        QRandomGenerator random(42);
-        for (int y = 0; y < m_frame.height(); ++y)
-            for (int x = 0; x < m_frame.width(); ++x)
-                m_frame.setPixel(x, y, QColor::fromRgb(random.generate()).rgb());
-    }
-    bool open(const QString&, qint64, qint64, const QRect&) override { m_index = 0; return true; }
-    std::optional<QImage> next(qint64* time) override {
-        if (m_index >= 3) return {};
-        *time = m_index * 50; return m_frame.copy(0, m_index++ * 80, 320, 480);
-    }
-    QSize frameSize() const override { return {320, 480}; }
-    QSize videoSize() const override { return frameSize(); }
-    double frameRate() const override { return 20; }
-    int expectedFrameCount() const override { return 3; }
-    QString lastError() const override { return {}; }
-private:
-    QImage m_frame;
-    int m_index = 0;
-};
 
 constexpr int kEdgeLeft = 1;
 constexpr int kEdgeRight = 2;
@@ -99,7 +73,6 @@ QVariant invokeQml(QObject* object, const char* name, const QVariantList& args =
 class StubPreviewBackend : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(LongshotController* longshot READ longshot CONSTANT)
     Q_PROPERTY(QString videoPath READ videoPath CONSTANT)
     Q_PROPERTY(qint64 trimStart READ trimStart WRITE setTrimStart NOTIFY trimRangeChanged)
     Q_PROPERTY(qint64 trimEnd READ trimEnd WRITE setTrimEnd NOTIFY trimRangeChanged)
@@ -116,14 +89,6 @@ class StubPreviewBackend : public QObject
     Q_PROPERTY(QString errorMessage READ errorMessage CONSTANT)
     Q_PROPERTY(bool hasWindowTimeline READ hasWindowTimeline NOTIFY windowTimelineChanged)
 
-public:
-    LongshotController* longshot() { return &m_longshot; }
-    Q_INVOKABLE void startLongshot() { m_longshot.start("fixture", 0, -1, {}); }
-    Q_INVOKABLE void beginLongshotAdjustment() {}
-    Q_INVOKABLE void cancelLongshotAdjustment() {}
-    Q_INVOKABLE void applyLongshotAdjustment() { startLongshot(); }
-private:
-    LongshotController m_longshot{nullptr, [] { return std::make_unique<PreviewFrameSource>(); }};
 public:
     bool hasWindowTimeline() const { return !m_stubWindowRect.isEmpty(); }
     // The one "window" of the stub timeline, in video pixels; empty = no timeline.
@@ -325,8 +290,6 @@ private slots:
     void previewGeometryChangeKeepsDraft();
     void previewSizeChipAndClear();
     void previewToolbarFitsAtMinimumWidth();
-    void previewLongshotResultKeepsRecording();
-    void previewLongshotRecommendationNavigation();
     void previewCursorOverVideo();
     void previewSmallSelectionMoves();
     void previewReleaseCommitsFinalPosition();
@@ -778,7 +741,6 @@ tst_RecordingCropOverlay::PreviewOpen tst_RecordingCropOverlay::openPreview(cons
     }
     m_backend = std::make_unique<StubPreviewBackend>();
     m_view = std::make_unique<QQuickView>(SnapTray::QmlOverlayManager::instance().engine(), nullptr);
-    m_backend->longshot()->installImageProvider(m_view->engine());
     m_view->rootContext()->setContextProperty(QStringLiteral("backend"), m_backend.get());
     m_view->setResizeMode(QQuickView::SizeRootObjectToView);
     m_view->setMinimumSize(QSize(kPreviewMinWidth, kPreviewMinHeight));
@@ -1304,86 +1266,6 @@ void tst_RecordingCropOverlay::previewToolbarFitsAtMinimumWidth()
     QVERIFY2(rightEdge(save) <= m_view->rootObject()->width(),
              qPrintable(QStringLiteral("save button right edge %1 > %2")
                             .arg(rightEdge(save)).arg(m_view->rootObject()->width())));
-}
-
-void tst_RecordingCropOverlay::previewLongshotResultKeepsRecording()
-{
-    OPEN_PREVIEW_OR_FAIL(QSize(320, 480));
-    m_view->resize(kPreviewMinWidth, kPreviewMinHeight);
-    QTest::qWait(100);
-    click(previewItem("longshotCreate"));
-    QCOMPARE(m_backend->selectedFormat(), 0);
-    auto* controller = m_backend->longshot();
-    QTRY_COMPARE_WITH_TIMEOUT(controller->phase(), QString("recommendation"), 10000);
-    QTest::qWait(50); // Let the state-dependent layout polish before clicking.
-    QVERIFY(!controller->hasResult());
-    QVERIFY(previewItem("longshotWorkspace")->isVisible());
-    QVERIFY(!previewItem("longshotMore")->isVisible());
-    if (qEnvironmentVariableIsSet("SNAPTRAY_LONGSHOT_RECOMMENDATION_ARTIFACT")) {
-        QTest::qWait(150);
-        QVERIFY(m_view->grabWindow().save(qEnvironmentVariable("SNAPTRAY_LONGSHOT_RECOMMENDATION_ARTIFACT")));
-    }
-    click(previewItem("longshotGenerate"));
-    QTRY_VERIFY_WITH_TIMEOUT(controller->hasResult(), 10000);
-    QTest::qWait(50);
-    QTRY_VERIFY(previewItem("longshotMore")->isVisible());
-    auto* save = previewItem("longshotSave");
-    QVERIFY(save->mapRectToScene(QRectF(0,0,save->width(),save->height())).right() <= kPreviewMinWidth);
-    QSignalSpy pinned(controller, &LongshotController::pinRequested);
-    click(previewItem("longshotMore"));
-    auto* menu = m_view->rootObject()->findChild<QObject*>("longshotMenu");
-    QVERIFY(menu);
-    QTRY_VERIFY(menu->property("opened").toBool());
-    auto* menuContent = menu->property("contentItem").value<QQuickItem*>();
-    QVERIFY(menuContent);
-    QTest::mouseClick(m_view.get(), Qt::LeftButton, Qt::NoModifier, scenePoint(menuContent, QPointF(50, 17)));
-    QTRY_COMPARE(pinned.count(), 1);
-    QTRY_VERIFY(!menu->property("visible").toBool());
-    // Native clipboard access is covered by LongshotController's clipboard test.
-    // Keep layout/navigation independent of desktop clipboard ownership.
-    QVERIFY(previewItem("longshotCopy")->isVisible());
-    QCOMPARE(m_backend->saveCount, 0); QCOMPARE(m_backend->discardCount, 0);
-    if (qEnvironmentVariableIsSet("SNAPTRAY_LONGSHOT_PREVIEW_ARTIFACT")) {
-        QTest::qWait(150);
-        QVERIFY(m_view->grabWindow().save(qEnvironmentVariable("SNAPTRAY_LONGSHOT_PREVIEW_ARTIFACT")));
-    }
-    sendKey(Qt::Key_Escape);
-    QCOMPARE(controller->phase(), QString("recommendation"));
-    QVERIFY(!controller->hasResult());
-    sendKey(Qt::Key_Escape);
-    QCOMPARE(controller->phase(), QString("idle"));
-    QCOMPARE(m_backend->discardCount, 0);
-}
-
-void tst_RecordingCropOverlay::previewLongshotRecommendationNavigation()
-{
-    OPEN_PREVIEW_OR_FAIL(QSize(320,480));
-    click(previewItem("longshotCreate"));
-    auto* controller = m_backend->longshot();
-    QTRY_COMPARE_WITH_TIMEOUT(controller->phase(), QString("recommendation"), 10000);
-    QTest::qWait(50);
-    const auto candidates = controller->candidates();
-    click(previewItem("longshotAdjust"));
-    QVERIFY(m_view->rootObject()->property("adjustingLongshot").toBool());
-    QVERIFY(!previewItem("longshotWorkspace")->isVisible());
-    sendKey(Qt::Key_Escape);
-    QVERIFY(previewItem("longshotWorkspace")->isVisible());
-    QCOMPARE(controller->candidates(), candidates);
-    click(previewItem("longshotGenerate"));
-    QTRY_VERIFY_WITH_TIMEOUT(controller->hasResult(),10000);
-    QTest::qWait(50);
-    QSignalSpy annotated(controller, &LongshotController::annotateRequested);
-    click(previewItem("longshotMore"));
-    auto* menu = m_view->rootObject()->findChild<QObject*>("longshotMenu");
-    QVERIFY(menu);
-    QTRY_VERIFY(menu->property("opened").toBool());
-    auto* menuContent = menu->property("contentItem").value<QQuickItem*>();
-    QVERIFY(menuContent);
-    QTest::mouseClick(m_view.get(), Qt::LeftButton, Qt::NoModifier, scenePoint(menuContent, QPointF(50, 53)));
-    QTRY_COMPARE(annotated.count(), 1);
-    QTRY_VERIFY(!menu->property("visible").toBool());
-    QCOMPARE(qvariant_cast<QImage>(annotated[0][0]).size(), controller->imageSize());
-    QCOMPARE(m_backend->discardCount, 0);
 }
 
 void tst_RecordingCropOverlay::previewCursorOverVideo()

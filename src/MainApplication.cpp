@@ -17,10 +17,6 @@
 #include "hotkey/HotkeyManager.h"
 #include "qml/QmlToast.h"
 #include "qml/RecordingPreviewBackend.h"
-#include "history/HistoryRecorder.h"
-#include "history/AnnotationSerializer.h"
-#include "annotations/AnnotationLayer.h"
-#include "settings/PinWindowSettingsManager.h"
 #include "recording/WindowTimelineSidecar.h"
 #include "ui/TrayTooltipFormatter.h"
 #include "update/InstallSourceDetector.h"
@@ -924,31 +920,6 @@ void MainApplication::showRecordingPreview(const QString& videoPath, int default
             m_previewBackend = nullptr;
         });
 
-    connect(m_previewBackend->longshot(), &LongshotController::imageSaved, this, [](const QImage& image) {
-        SnapTray::CaptureSessionWriteRequest request;
-        request.canvasImage = image; request.resultImage = image;
-        AnnotationLayer annotations;
-        request.annotationsJson = SnapTray::serializeAnnotationLayer(annotations);
-        request.selectionRect = image.rect(); request.canvasLogicalSize = image.size();
-        request.maxEntries = PinWindowSettingsManager::instance().loadMaxCacheFiles();
-        SnapTray::HistoryRecorder::instance().submitCaptureSession(std::move(request));
-    });
-    const auto pinLongshot = [this](const QImage& image, bool annotate) {
-        QScreen* screen = QGuiApplication::primaryScreen();
-        if (!screen || image.isNull()) return;
-        const QPixmap pixmap = QPixmap::fromImage(convertImageForDisplay(image));
-        const auto placement = computeInitialPinWindowPlacement(pixmap, screen->availableGeometry());
-        auto* pin = m_pinWindowManager->createPinWindow(pixmap, placement.position, true, placement.zoomLevel);
-        if (pin) {
-            pin->raise();
-            pin->activateWindow();
-        }
-        if (pin && annotate && !pin->isToolbarVisible()) pin->toggleToolbar();
-    };
-    connect(m_previewBackend->longshot(), &LongshotController::pinRequested, this,
-            [pinLongshot](const QImage& image) { pinLongshot(image, false); });
-    connect(m_previewBackend->longshot(), &LongshotController::annotateRequested, this,
-            [pinLongshot](const QImage& image) { pinLongshot(image, true); });
     m_previewBackend->show();
 }
 

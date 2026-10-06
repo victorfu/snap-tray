@@ -1,7 +1,6 @@
 #pragma once
 
 #include "encoding/EncoderFactory.h"
-#include "qml/LongshotController.h"
 #include "utils/VideoCropGeometry.h"
 #include "recording/WindowTimeline.h"
 #include <QObject>
@@ -41,7 +40,6 @@ class RecordingPreviewBackend : public QObject
 {
     Q_OBJECT
 
-    Q_PROPERTY(LongshotController* longshot READ longshot CONSTANT)
     // Video state
     Q_PROPERTY(QString videoPath READ videoPath CONSTANT)
     Q_PROPERTY(qint64 duration READ duration NOTIFY durationChanged)
@@ -113,11 +111,10 @@ public:
 
     int selectedFormat() const { return m_selectedFormat; }
 
-    LongshotController* longshot() const { return m_longshot; }
-    bool isProcessing() const { return m_isProcessing || (m_longshot && m_longshot->busy()); }
+    bool isProcessing() const { return m_isProcessing; }
     bool canCancelExport() const;
-    int processProgress() const { return m_longshot->busy() ? m_longshot->progress() : m_processProgress; }
-    QString processStatus() const { return m_longshot->busy() ? m_longshot->status() : m_processStatus; }
+    int processProgress() const { return m_processProgress; }
+    QString processStatus() const { return m_processStatus; }
 
     QString errorMessage() const { return m_errorMessage; }
 
@@ -128,10 +125,6 @@ public:
 
     // QML actions
     Q_INVOKABLE void save();
-    Q_INVOKABLE void startLongshot();
-    Q_INVOKABLE void beginLongshotAdjustment();
-    Q_INVOKABLE void cancelLongshotAdjustment();
-    Q_INVOKABLE void applyLongshotAdjustment();
     // Stops a running MP4 export; the source is kept and no error is shown.
     Q_INVOKABLE void cancelExport();
     Q_INVOKABLE void discard();
@@ -202,12 +195,6 @@ private:
     void finishProcessing();
 
     void setErrorMessage(const QString &msg);
-
-    LongshotController* m_longshot = nullptr;
-    bool m_longshotClosePending = false;
-    bool m_longshotAdjusting = false;
-    qint64 m_longshotOriginalStart = 0, m_longshotOriginalEnd = -1;
-    QRect m_longshotOriginalCrop;
 
     // View
     QQuickView *m_view = nullptr;

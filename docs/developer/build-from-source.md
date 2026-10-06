@@ -165,7 +165,7 @@ compatibility server. System audio is the default output device's monitor;
 **Both** mixes that monitor with the selected microphone at 48 kHz stereo.
 Recordings encode H.264 video and optional AAC audio. Recording Preview supports
 playback with audio, seeking, cropping, trimming, MP4 export with AAC passthrough,
-GIF/WebP conversion, and long screenshot analysis through the FFmpeg frame reader.
+and GIF/WebP conversion through the FFmpeg frame reader.
 
 The encoder attempts VA-API on available render nodes, then NVIDIA NVENC, then
 software H.264 (`libx264` or `libopenh264`). A listed encoder is not considered

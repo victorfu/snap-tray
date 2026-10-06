@@ -54,15 +54,6 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
     , m_recordedAsIntermediate(recordedAsIntermediate)
 {
     m_windowTimeline = SnapTray::WindowTimelineSidecar::read(videoPath);
-    m_longshot = new LongshotController(this);
-    connect(m_longshot, &LongshotController::changed, this, [this] {
-        emit processingChanged(); emit processProgressChanged(); emit processStatusChanged();
-    });
-    connect(m_longshot, &LongshotController::idle, this, [this] {
-        if (m_longshotClosePending) { m_longshotClosePending = false; close(); }
-    });
-    connect(this, &RecordingPreviewBackend::cropRectChanged, this, [this] { if (!m_longshotAdjusting) m_longshot->invalidate(); });
-    connect(this, &RecordingPreviewBackend::trimRangeChanged, this, [this] { if (!m_longshotAdjusting) m_longshot->invalidate(); });
 }
 
 std::function<int()>& RecordingPreviewBackend::outputQualityOverride()
@@ -80,7 +71,6 @@ RecordingPreviewBackend::TranscoderFactory& RecordingPreviewBackend::transcoderF
 RecordingPreviewBackend::~RecordingPreviewBackend()
 {
     m_exportCancelToken->store(true);
-    m_longshot->cancel();
 
     if (m_view) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
@@ -103,7 +93,6 @@ void RecordingPreviewBackend::ensureView()
 
     auto& mgr = SnapTray::QmlOverlayManager::instance();
     m_view = mgr.createUtilityWindow();
-    m_longshot->installImageProvider(m_view->engine());
 #ifdef Q_OS_WIN
     // Qt 6.11's Windows backend turns a plain Qt::Window that carries
     // WindowStaysOnTopHint into a caption-less WS_POPUP frame; spelling out
@@ -137,10 +126,6 @@ void RecordingPreviewBackend::ensureView()
 
 bool RecordingPreviewBackend::eventFilter(QObject* watched, QEvent* event)
 {
-    if (watched == m_view && event && event->type() == QEvent::Close && m_longshot->busy()) {
-        m_longshotClosePending = true; m_longshot->cancel();
-        static_cast<QCloseEvent*>(event)->ignore(); return true;
-    }
     if (watched == m_view && event && event->type() == QEvent::Close && m_isProcessing) {
         static_cast<QCloseEvent*>(event)->ignore();
         return true;
@@ -199,7 +184,6 @@ void RecordingPreviewBackend::show()
 
 void RecordingPreviewBackend::close()
 {
-    if (m_longshot->busy()) { m_longshotClosePending = true; m_longshot->cancel(); return; }
     if (isProcessing() || m_closeHandled) return;
     if (m_view) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
@@ -352,39 +336,6 @@ QString RecordingPreviewBackend::formatTime(qint64 ms) const
         .arg(seconds, 2, 10, QChar('0'));
 }
 
-void RecordingPreviewBackend::startLongshot()
-{
-    if (isProcessing() || m_closeHandled) return;
-    m_longshot->start(m_videoPath, m_trimStart, trimEnd(), m_cropRect);
-}
-
-void RecordingPreviewBackend::beginLongshotAdjustment()
-{
-    if (isProcessing() || m_longshotAdjusting) return;
-    m_longshotOriginalStart = m_trimStart;
-    m_longshotOriginalEnd = m_trimEnd;
-    m_longshotOriginalCrop = m_cropRect;
-    m_longshotAdjusting = true;
-}
-
-void RecordingPreviewBackend::cancelLongshotAdjustment()
-{
-    if (!m_longshotAdjusting) return;
-    m_trimStart = m_longshotOriginalStart;
-    m_trimEnd = m_longshotOriginalEnd;
-    m_cropRect = m_longshotOriginalCrop;
-    emit trimRangeChanged();
-    emit cropRectChanged();
-    m_longshotAdjusting = false;
-}
-
-void RecordingPreviewBackend::applyLongshotAdjustment()
-{
-    if (!m_longshotAdjusting || isProcessing()) return;
-    m_longshotAdjusting = false;
-    startLongshot();
-}
-
 void RecordingPreviewBackend::save()
 {
     qDebug() << "RecordingPreviewBackend: Save requested";
@@ -416,7 +367,6 @@ void RecordingPreviewBackend::save()
 
 bool RecordingPreviewBackend::canCancelExport() const
 {
-    if (m_longshot->busy()) return true;
     return m_isProcessing && m_exportKind == ExportKind::MP4 && !m_exportCancelToken->load();
 }
 
@@ -429,7 +379,6 @@ void RecordingPreviewBackend::finishProcessing()
 
 void RecordingPreviewBackend::cancelExport()
 {
-    if (m_longshot->busy()) { m_longshot->cancel(); return; }
     if (!canCancelExport()) {
         return;
     }

@@ -24,8 +24,4 @@ public:
     // Other platforms return nullptr and retain their existing player path.
     static std::unique_ptr<IVideoFrameReader> create();
 
-    // Sequential offline decoder for analysis: AVFoundation on macOS, Media
-    // Foundation on Windows (RGB32, CPU decode), FFmpeg on Linux when enabled. Not used by
-    // the preview's GIF/WebP conversion.
-    static std::unique_ptr<IVideoFrameReader> createOffline();
 };

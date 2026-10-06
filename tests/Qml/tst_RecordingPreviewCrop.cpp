@@ -13,18 +13,6 @@ class tst_RecordingPreviewCrop : public QObject
     Q_OBJECT
 
 private slots:
-    void longshotAdjustmentIsTransactional() {
-        RecordingPreviewBackend backend(QStringLiteral("unused.mp4"));
-        backend.updateDuration(5000); backend.updateVideoSize(QSize(1920,1080));
-        backend.setTrimStart(500); backend.setTrimEnd(4000);
-        backend.setCropRect(QRect(100,100,800,600));
-        backend.beginLongshotAdjustment();
-        backend.setTrimStart(1000); backend.setTrimEnd(3000); backend.clearCrop();
-        backend.cancelLongshotAdjustment();
-        QCOMPARE(backend.trimStart(),qint64(500)); QCOMPARE(backend.trimEnd(),qint64(4000));
-        QCOMPARE(backend.cropRect(),QRect(100,100,800,600));
-        QVERIFY(!backend.longshot()->busy());
-    }
     void cropIgnoredUntilVideoSizeKnown();
     void setCropRectNormalizes();
     void fullFrameCropClears();

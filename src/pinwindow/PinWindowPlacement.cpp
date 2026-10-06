@@ -57,7 +57,7 @@ QPointF rectPixelCenter(const QRect& rect)
 
 qreal minimumPinWindowZoom(const QSize& logicalSize)
 {
-    // Long screenshots must be able to fit on screen below the normal 10% limit.
+    // Very tall images must be able to fit on screen below the normal 10% limit.
     const int extent = qMax(logicalSize.width(), logicalSize.height());
     return extent > 0 ? qMin(kDefaultMinZoom, qreal(kMinZoomedExtent) / extent)
                       : kDefaultMinZoom;

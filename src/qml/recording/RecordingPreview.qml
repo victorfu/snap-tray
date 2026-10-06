@@ -25,20 +25,6 @@ Item {
     readonly property real overlayChipHeight: 28
     readonly property real overlayChipButtonSize: 20
 
-    readonly property var previewBackend: backend
-    readonly property var longshot: backend.longshot
-    property bool adjustingLongshot: false
-    readonly property bool showLongshotWorkspace: longshot.phase !== "idle" && !adjustingLongshot
-    function startLongshot() {
-        videoPlayer.pause()
-        if (cropOverlay.editing) cropOverlay.apply()
-        backend.startLongshot()
-    }
-    function cancelLongshotAdjustment() {
-        if (cropOverlay.editing) cropOverlay.cancel()
-        backend.cancelLongshotAdjustment()
-        adjustingLongshot = false
-    }
     property bool isScrubbing: false
     property bool isDraggingTrimStart: false
     property bool isDraggingTrimEnd: false
@@ -67,7 +53,7 @@ Item {
             return
         if (cropOverlay.editing)
             cropOverlay.apply()
-        if (!root.adjustingLongshot) backend.save()
+        backend.save()
     }
 
     // The window under the resting pointer follows the playhead too.
@@ -152,7 +138,7 @@ Item {
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
-        enabled: !backend.isProcessing && !root.showLongshotWorkspace
+        enabled: !backend.isProcessing
 
         Item {
             Layout.fillWidth: true
@@ -528,35 +514,25 @@ Item {
                 anchors.centerIn: parent
                 spacing: SemanticTokens.spacing8
 
-                    SegmentButton {
-                        text: "MP4"
-                        tooltipText: qsTr("Export as MP4")
-                        selected: backend.selectedFormat === 0
-                        onClicked: backend.selectedFormat = 0
-                    }
-                    SegmentButton {
-                        text: "GIF"
-                        tooltipText: qsTr("Export as GIF")
-                        selected: backend.selectedFormat === 1
-                        onClicked: backend.selectedFormat = 1
-                    }
-                    SegmentButton {
-                        text: "WebP"
-                        tooltipText: qsTr("Export as WebP")
-                        selected: backend.selectedFormat === 2
-                        onClicked: backend.selectedFormat = 2
-                    }
-
-                DialogButton {
-                    objectName: "longshotCreate"
-                    height: 32
-                    visible: !root.adjustingLongshot
-                    text: qsTr("Create Long Screenshot")
-                    onClicked: root.startLongshot()
+                SegmentButton {
+                    text: "MP4"
+                    tooltipText: qsTr("Export as MP4")
+                    selected: backend.selectedFormat === 0
+                    onClicked: backend.selectedFormat = 0
                 }
-
-
+                SegmentButton {
+                    text: "GIF"
+                    tooltipText: qsTr("Export as GIF")
+                    selected: backend.selectedFormat === 1
+                    onClicked: backend.selectedFormat = 1
                 }
+                SegmentButton {
+                    text: "WebP"
+                    tooltipText: qsTr("Export as WebP")
+                    selected: backend.selectedFormat === 2
+                    onClicked: backend.selectedFormat = 2
+                }
+            }
         }
 
         Rectangle {
@@ -603,10 +579,6 @@ Item {
 
                 Item { Layout.fillWidth: true }
 
-
-
-                Item { Layout.fillWidth: true }
-
                 IconButton {
                     objectName: "previewMuteButton"
                     visible: videoPlayer.audioPlaybackSupported
@@ -642,14 +614,12 @@ Item {
                 IconButton {
                     iconSource: "qrc:/icons/icons/trash-2.svg"
                     destructive: true
-                    visible: !root.adjustingLongshot
                     tooltipText: qsTr("Discard Recording (Esc)")
                     onClicked: backend.discard()
                 }
 
                 IconButton {
                     objectName: "previewSaveButton"
-                    visible: !root.adjustingLongshot
                     iconSource: "qrc:/icons/icons/save.svg"
                     primary: true
                     tooltipText: qsTr("Save Recording (Enter / Ctrl+S)")
@@ -659,53 +629,11 @@ Item {
         }
     }
 
-    LongshotWorkspace {
-        id: longshotWorkspace
-        anchors.fill: parent
-        visible: root.showLongshotWorkspace
-        backend: root.previewBackend
-        onBackRequested: root.longshot.invalidate()
-        onAdjustRequested: {
-            backend.beginLongshotAdjustment()
-            root.adjustingLongshot = true
-        }
-    }
-    Rectangle {
-        visible: root.adjustingLongshot
-        anchors.top: parent.top
-        width: parent.width
-        height: adjustmentRow.implicitHeight + 16
-        color: root.bgPanel
-        RowLayout {
-            id: adjustmentRow
-            anchors.fill: parent
-            anchors.margins: 8
-            Text {
-                Layout.fillWidth: true
-                text: qsTr("Adjust the crop or time range, then analyze again.")
-                wrapMode: Text.WordWrap
-                color: root.textPrimary
-            }
-            DialogButton { text: qsTr("Cancel"); onClicked: root.cancelLongshotAdjustment() }
-            DialogButton {
-                objectName: "longshotReanalyze"
-                text: qsTr("Analyze Again")
-                style: "primary"
-                onClicked: {
-                    videoPlayer.pause()
-                    if (cropOverlay.editing) cropOverlay.apply()
-                    root.adjustingLongshot = false
-                    backend.applyLongshotAdjustment()
-                }
-            }
-        }
-    }
-
     Rectangle {
         id: processingOverlay
         anchors.fill: parent
         color: SemanticTokens.backgroundOverlay
-        visible: backend.isProcessing && !root.showLongshotWorkspace
+        visible: backend.isProcessing
 
         MouseArea {
             anchors.fill: parent
@@ -771,7 +699,7 @@ Item {
         anchors.right: parent.right
         anchors.margins: SemanticTokens.spacing16
         height: visible ? errorRow.implicitHeight + SemanticTokens.spacing16 : 0
-        visible: backend.errorMessage !== "" && !root.showLongshotWorkspace
+        visible: backend.errorMessage !== ""
         radius: SemanticTokens.radiusSmall
         color: ComponentTokens.recordingPreviewDangerHover
         z: 10
@@ -800,7 +728,7 @@ Item {
                 tooltipText: qsTr("Dismiss Error")
                 tooltipPreferredAbove: false
                 anchors.verticalCenter: parent.verticalCenter
-                onClicked: { backend.clearError(); root.longshot.clearMessage() }
+                onClicked: backend.clearError()
             }
         }
     }
@@ -808,10 +736,6 @@ Item {
     focus: true
 
     Keys.onPressed: function(event) {
-        if (root.showLongshotWorkspace) { longshotWorkspace.handleKey(event); return }
-        if (root.adjustingLongshot && event.key === Qt.Key_Escape) {
-            root.cancelLongshotAdjustment(); event.accepted = true; return
-        }
         if (backend.isProcessing) {
             event.accepted = true
             return

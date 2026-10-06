@@ -13,19 +13,12 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 - Linux X11 recording now supports microphone/system audio, recording preview, crop/trim and animated exports, with VA-API/NVENC encoding when available and software fallback. AppImages include the required media libraries.
 - Linux captures frames on a background X11 connection and sends them directly to the encoder. Recording controls move to the tray so the floating toolbar is not recorded.
 
-- Long screenshots retain independent reliable sections, with separate section/part labels and filenames.
-- Long screenshot results support horizontal trimming and band removal with undo/redo, and can open the edited image in the pin annotation toolbar.
-
-- Recording Preview can turn vertically scrolling recordings into long screenshots, with crop/trim, quality markers, automatic splitting, PNG export, copying and pinning while retaining the source recording.
-
 - Recording preview can crop the recording to a region before exporting MP4, GIF, or WebP.
 - Trimming a recording to a part after its audio stopped exports that part as video only instead of failing, and a failed export now shows a translated message while keeping the original recording.
 - In the recording preview's crop editor, hovering highlights the window that was under the cursor at that moment and clicking snaps the crop to it.
 - Recordings made with the preview on are captured at high quality and converted to the selected quality when saved, so trimming and cropping keep their detail; unedited recordings that already meet the selected quality are saved as they are. Low disk space falls back to the selected quality with a warning.
 
 ### Fixed
-
-- Fixed long screenshot failures on sparse text in wide crops and on paused recordings affected by video compression noise.
 
 - Recording crop gestures now commit the final pointer position when mouse-move events are coalesced.
 

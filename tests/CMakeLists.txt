@@ -9,9 +9,6 @@
 find_package(Qt6 REQUIRED COMPONENTS Test)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
-add_test(NAME Qml_LongshotTranslations
-    COMMAND ${Python3_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/check-longshot-translations.py")
-set_tests_properties(Qml_LongshotTranslations PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # Compile this bootstrap directly into every C++ test executable. It enables
 # a test-only settings override before main() and gives each process its own
@@ -775,83 +772,6 @@ if(WIN32)
     add_test(NAME Detection_WindowDetectorMetadata COMMAND Detection_WindowDetectorMetadata)
     set_tests_properties(Detection_WindowDetectorMetadata PROPERTIES TIMEOUT 60 LABELS "unit")
 endif()
-
-# ============================================================================
-# Longshot Tests (link snaptray_algorithms)
-# ============================================================================
-
-add_executable(Longshot_Candidates Longshot/tst_LongshotCandidates.cpp)
-target_link_libraries(Longshot_Candidates PRIVATE snaptray_algorithms Qt6::Test)
-add_test(NAME Longshot_Candidates COMMAND Longshot_Candidates)
-set_tests_properties(Longshot_Candidates PROPERTIES TIMEOUT 60 LABELS "unit")
-
-add_executable(Longshot_Sections Longshot/tst_LongshotSections.cpp)
-target_link_libraries(Longshot_Sections PRIVATE snaptray_algorithms Qt6::Test)
-add_test(NAME Longshot_Sections COMMAND Longshot_Sections)
-set_tests_properties(Longshot_Sections PROPERTIES TIMEOUT 60 LABELS "unit")
-
-add_executable(Longshot_PositionSolver Longshot/tst_PositionSolver.cpp)
-target_link_libraries(Longshot_PositionSolver PRIVATE snaptray_algorithms Qt6::Test)
-add_test(NAME Longshot_PositionSolver COMMAND Longshot_PositionSolver)
-set_tests_properties(Longshot_PositionSolver PROPERTIES TIMEOUT 60 LABELS "unit")
-
-add_executable(Longshot_Reliability Longshot/tst_LongshotReliability.cpp)
-target_link_libraries(Longshot_Reliability PRIVATE snaptray_algorithms Qt6::Test)
-add_test(NAME Longshot_Reliability COMMAND Longshot_Reliability)
-set_tests_properties(Longshot_Reliability PROPERTIES TIMEOUT 60 LABELS "unit")
-
-add_executable(Longshot_FrameSource Longshot/tst_FrameSource.cpp)
-target_include_directories(Longshot_FrameSource PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries(Longshot_FrameSource PRIVATE snaptray_platform snaptray_algorithms Qt6::Gui Qt6::Test
-    "$<$<PLATFORM_ID:Windows>:mfreadwrite>" "$<$<PLATFORM_ID:Windows>:mfplat>"
-    "$<$<PLATFORM_ID:Windows>:mfuuid>" "$<$<PLATFORM_ID:Windows>:ole32>")
-add_test(NAME Longshot_FrameSource COMMAND Longshot_FrameSource)
-set_tests_properties(Longshot_FrameSource PROPERTIES TIMEOUT 120 LABELS "integration;slow")
-
-add_library(Longshot_SyntheticScroll STATIC Longshot/SyntheticScroll.cpp Longshot/SyntheticScroll.h)
-target_include_directories(Longshot_SyntheticScroll PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Longshot)
-target_include_directories(Longshot_SyntheticScroll PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries(Longshot_SyntheticScroll PUBLIC snaptray_platform snaptray_algorithms Qt6::Gui Qt6::Test)
-
-# Developer evaluator shares the calibrated test oracle and production session.
-add_executable(longshot-eval ${CMAKE_SOURCE_DIR}/tools/longshot-eval/main.cpp)
-target_link_libraries(longshot-eval PRIVATE Longshot_SyntheticScroll Qt6::Core Qt6::Gui)
-
-add_executable(Qml_LongshotController Qml/tst_LongshotController.cpp)
-target_link_libraries(Qml_LongshotController PRIVATE snaptray_qml Longshot_SyntheticScroll Qt6::Test)
-add_test(NAME Qml_LongshotController COMMAND Qml_LongshotController)
-set_tests_properties(Qml_LongshotController PROPERTIES TIMEOUT 60 LABELS "unit")
-
-add_executable(Longshot_SyntheticHarness Longshot/tst_SyntheticHarness.cpp)
-target_link_libraries(Longshot_SyntheticHarness PRIVATE Longshot_SyntheticScroll Qt6::Test
-    "$<$<PLATFORM_ID:Windows>:mfreadwrite>" "$<$<PLATFORM_ID:Windows>:mfplat>"
-    "$<$<PLATFORM_ID:Windows>:mfuuid>" "$<$<PLATFORM_ID:Windows>:ole32>")
-add_test(NAME Longshot_SyntheticHarness COMMAND Longshot_SyntheticHarness)
-set_tests_properties(Longshot_SyntheticHarness PROPERTIES TIMEOUT 180 LABELS "integration;slow")
-
-add_executable(Longshot_Analyzer Longshot/tst_LongshotAnalyzer.cpp)
-target_link_libraries(Longshot_Analyzer PRIVATE Longshot_SyntheticScroll Qt6::Test)
-add_test(NAME Longshot_Analyzer COMMAND Longshot_Analyzer)
-set_tests_properties(Longshot_Analyzer PROPERTIES TIMEOUT 120 LABELS "unit")
-
-add_executable(Longshot_Pipeline Longshot/tst_LongshotPipeline.cpp)
-target_link_libraries(Longshot_Pipeline PRIVATE Longshot_SyntheticScroll Qt6::Test
-    "$<$<PLATFORM_ID:Windows>:mfreadwrite>" "$<$<PLATFORM_ID:Windows>:mfplat>"
-    "$<$<PLATFORM_ID:Windows>:mfuuid>" "$<$<PLATFORM_ID:Windows>:ole32>")
-add_test(NAME Longshot_Pipeline COMMAND Longshot_Pipeline)
-set_tests_properties(Longshot_Pipeline PROPERTIES TIMEOUT 600 LABELS "integration;slow")
-
-add_executable(Longshot_Renderer Longshot/tst_LongshotRenderer.cpp)
-target_link_libraries(Longshot_Renderer PRIVATE Longshot_SyntheticScroll Qt6::Test
-    "$<$<PLATFORM_ID:Windows>:mfreadwrite>" "$<$<PLATFORM_ID:Windows>:mfplat>"
-    "$<$<PLATFORM_ID:Windows>:mfuuid>" "$<$<PLATFORM_ID:Windows>:ole32>")
-add_test(NAME Longshot_Renderer COMMAND Longshot_Renderer)
-set_tests_properties(Longshot_Renderer PROPERTIES TIMEOUT 600 LABELS "integration;slow")
-
-add_executable(Longshot_Session Longshot/tst_LongshotSession.cpp)
-target_link_libraries(Longshot_Session PRIVATE Longshot_SyntheticScroll Qt6::Test)
-add_test(NAME Longshot_Session COMMAND Longshot_Session)
-set_tests_properties(Longshot_Session PROPERTIES TIMEOUT 300 LABELS "unit")
 
 # ============================================================================
 # Utils Tests (link snaptray_core)
