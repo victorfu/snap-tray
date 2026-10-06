@@ -6,14 +6,10 @@ import xml.etree.ElementTree as ET
 
 root = Path(__file__).resolve().parents[1]
 controller = root / "src/qml/LongshotController.cpp"
-required = {"LongshotController": set(re.findall(r'tr\("([^"\n]*)"\)', controller.read_text()))}
-required["RecordingPreview"] = {
-    "Long Screenshot", "Generate Long Screenshot",
-    "Crop to the scrolling area, then generate a long screenshot.",
-    "View Result", "Edit Image", "Keep Selection", "Delete Selection", "Undo", "Redo", "Reset Image", "Annotate in Pin",
-    "Drag to select rows in this part. Regenerating resets image edits.",
-    "Remove Fixed Header", "Include Fixed Header", "Save PNG", "Back", "Copy", "Pin",
-}
+required = {"LongshotController": set(re.findall(r'tr\("([^"\n]*)"\)', controller.read_text(encoding="utf-8")))}
+for context in ("RecordingPreview", "LongshotWorkspace"):
+    qml = root / "src/qml/recording" / f"{context}.qml"
+    required[context] = set(re.findall(r'qsTr\("([^"\n]*)"\)', qml.read_text(encoding="utf-8")))
 failures = []
 files = sorted((root / "translations").glob("snaptray_*.ts"))
 for path in files:

@@ -28,6 +28,8 @@ std::unique_ptr<IVideoFrameReader> IVideoFrameReader::createOffline()
     return createAVFoundationFrameReader();
 #elif defined(Q_OS_WIN)
     return createMediaFoundationFrameReader();
+#elif defined(SNAPTRAY_ENABLE_LINUX_RECORDING)
+    return createFFmpegFrameReader();
 #else
     return nullptr;
 #endif

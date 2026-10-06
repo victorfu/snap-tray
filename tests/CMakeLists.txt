@@ -9,6 +9,9 @@
 find_package(Qt6 REQUIRED COMPONENTS Test)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
+add_test(NAME Qml_LongshotTranslations
+    COMMAND ${Python3_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/check-longshot-translations.py")
+set_tests_properties(Qml_LongshotTranslations PROPERTIES TIMEOUT 60 LABELS "unit")
 
 # Compile this bootstrap directly into every C++ test executable. It enables
 # a test-only settings override before main() and gives each process its own

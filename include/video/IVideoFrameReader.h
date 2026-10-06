@@ -25,7 +25,7 @@ public:
     static std::unique_ptr<IVideoFrameReader> create();
 
     // Sequential offline decoder for analysis: AVFoundation on macOS, Media
-    // Foundation on Windows (RGB32, CPU decode), nullptr elsewhere. Not used by
+    // Foundation on Windows (RGB32, CPU decode), FFmpeg on Linux when enabled. Not used by
     // the preview's GIF/WebP conversion.
     static std::unique_ptr<IVideoFrameReader> createOffline();
 };

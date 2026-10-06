@@ -1800,7 +1800,7 @@ English is always included and cannot be removed.</source>
     </message>
     <message>
         <source>Create Long Screenshot</source>
-        <translation type="unfinished" />
+        <translation>สร้างภาพหน้าจอแบบยาว</translation>
     </message>
     <message>
         <source>Save Recording (Enter / Ctrl+S)</source>
@@ -1808,7 +1808,7 @@ English is always included and cannot be removed.</source>
     </message>
     <message>
         <source>Adjust the crop or time range, then analyze again.</source>
-        <translation type="unfinished" />
+        <translation>ปรับการครอบตัดหรือช่วงเวลา แล้ววิเคราะห์อีกครั้ง</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -1816,7 +1816,7 @@ English is always included and cannot be removed.</source>
     </message>
     <message>
         <source>Analyze Again</source>
-        <translation type="unfinished" />
+        <translation>วิเคราะห์อีกครั้ง</translation>
     </message>
     <message>
         <source>Dismiss Error</source>
@@ -3101,11 +3101,11 @@ English is always included and cannot be removed.</source>
     </message>
     <message>
         <source>Finding content to stitch…</source>
-        <translation type="unfinished" />
+        <translation>กำลังค้นหาเนื้อหาเพื่อต่อภาพ…</translation>
     </message>
     <message>
         <source>Generating long screenshot…</source>
-        <translation type="unfinished" />
+        <translation>กำลังสร้างภาพหน้าจอแบบยาว…</translation>
     </message>
     <message>
         <source>Could not create the result preview.</source>
@@ -3113,7 +3113,7 @@ English is always included and cannot be removed.</source>
     </message>
     <message>
         <source>Image copied.</source>
-        <translation type="unfinished" />
+        <translation>คัดลอกภาพแล้ว</translation>
     </message>
     <message>
         <source>Save Long Screenshot</source>
@@ -3125,42 +3125,42 @@ English is always included and cannot be removed.</source>
     </message>
     <message>
         <source>Image %1: %2</source>
-        <translation type="unfinished" />
+        <translation>ภาพ %1: %2</translation>
     </message>
     <message>
         <source>Saved %1 of %2 images.</source>
-        <translation type="unfinished" />
+        <translation>บันทึกแล้ว %1 จาก %2 ภาพ</translation>
     </message>
     <message>
         <source>Copy failed. Please try again.</source>
-        <translation type="unfinished" />
+        <translation>คัดลอกไม่สำเร็จ โปรดลองอีกครั้ง</translation>
     </message>
 </context>
 <context>
     <name>LongshotWorkspace</name>
     <message>
         <source>Choose Content</source>
-        <translation type="unfinished" />
+        <translation>เลือกเนื้อหา</translation>
     </message>
     <message>
         <source>Recording Preview</source>
-        <translation type="unfinished" />
+        <translation>ตัวอย่างการบันทึก</translation>
     </message>
     <message>
         <source>Long Screenshot Ready</source>
-        <translation type="unfinished" />
+        <translation>ภาพหน้าจอแบบยาวพร้อมแล้ว</translation>
     </message>
     <message>
         <source>Create Long Screenshot</source>
-        <translation type="unfinished" />
+        <translation>สร้างภาพหน้าจอแบบยาว</translation>
     </message>
     <message>
         <source>We will recommend a suitable range when analysis is complete.</source>
-        <translation type="unfinished" />
+        <translation>เราจะแนะนำช่วงที่เหมาะสมเมื่อวิเคราะห์เสร็จ</translation>
     </message>
     <message>
         <source>Creating only your selected content.</source>
-        <translation type="unfinished" />
+        <translation>กำลังสร้างเฉพาะเนื้อหาที่คุณเลือก</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -3168,127 +3168,127 @@ English is always included and cannot be removed.</source>
     </message>
     <message>
         <source>This recording cannot produce a long screenshot yet</source>
-        <translation type="unfinished" />
+        <translation>การบันทึกนี้ยังไม่สามารถสร้างภาพหน้าจอแบบยาวได้</translation>
     </message>
     <message>
         <source>Content found; some seams need a look</source>
-        <translation type="unfinished" />
+        <translation>พบเนื้อหาแล้ว บางรอยต่อต้องตรวจสอบ</translation>
     </message>
     <message>
         <source>We recommend this content</source>
-        <translation type="unfinished" />
+        <translation>เราแนะนำเนื้อหานี้</translation>
     </message>
     <message>
         <source>This content can become a long screenshot</source>
-        <translation type="unfinished" />
+        <translation>เนื้อหานี้สามารถสร้างเป็นภาพหน้าจอแบบยาวได้</translation>
     </message>
     <message>
         <source>There is not enough scrolling content. Choose a range that includes scrolling.</source>
-        <translation type="unfinished" />
+        <translation>มีเนื้อหาที่เลื่อนไม่เพียงพอ เลือกช่วงที่มีการเลื่อน</translation>
     </message>
     <message>
         <source>This recording is too long to analyze. Select a shorter range and try again.</source>
-        <translation type="unfinished" />
+        <translation>การบันทึกนี้ยาวเกินกว่าจะวิเคราะห์ได้ เลือกช่วงที่สั้นลงแล้วลองอีกครั้ง</translation>
     </message>
     <message>
         <source>No continuous content was found. Crop to one content area, or record again while scrolling slowly.</source>
-        <translation type="unfinished" />
+        <translation>ไม่พบเนื้อหาต่อเนื่อง ครอบตัดให้เหลือพื้นที่เนื้อหาเดียว หรือบันทึกใหม่โดยเลื่อนช้าๆ</translation>
     </message>
     <message>
         <source>Some content could not be joined. This selection produces a separate long screenshot and does not include the entire recording.</source>
-        <translation type="unfinished" />
+        <translation>เนื้อหาบางส่วนไม่สามารถต่อกันได้ การเลือกนี้จะสร้างภาพหน้าจอแบบยาวแยกต่างหาก และไม่รวมการบันทึกทั้งหมด</translation>
     </message>
     <message>
         <source>Review the selected source range, then generate your screenshot.</source>
-        <translation type="unfinished" />
+        <translation>ตรวจสอบช่วงต้นฉบับที่เลือก แล้วสร้างภาพหน้าจอ</translation>
     </message>
     <message>
         <source>Recommended range</source>
-        <translation type="unfinished" />
+        <translation>ช่วงที่แนะนำ</translation>
     </message>
     <message>
         <source>Selected range</source>
-        <translation type="unfinished" />
+        <translation>ช่วงที่เลือก</translation>
     </message>
     <message>
         <source>Source preview · Start</source>
-        <translation type="unfinished" />
+        <translation>ตัวอย่างต้นฉบับ · เริ่มต้น</translation>
     </message>
     <message>
         <source>Source preview · End</source>
-        <translation type="unfinished" />
+        <translation>ตัวอย่างต้นฉบับ · สิ้นสุด</translation>
     </message>
     <message>
         <source>This content is long and will be saved as %1 images.</source>
-        <translation type="unfinished" />
+        <translation>เนื้อหานี้ยาวและจะบันทึกเป็น %1 ภาพ</translation>
     </message>
     <message>
         <source>Produces 1 image</source>
-        <translation type="unfinished" />
+        <translation>สร้าง 1 ภาพ</translation>
     </message>
     <message>
         <source>Some seams will be marked for review in the preview.</source>
-        <translation type="unfinished" />
+        <translation>บางรอยต่อจะถูกทำเครื่องหมายในตัวอย่างเพื่อตรวจสอบ</translation>
     </message>
     <message>
         <source>The largest continuous range with reliable content.</source>
-        <translation type="unfinished" />
+        <translation>ช่วงต่อเนื่องที่ใหญ่ที่สุดซึ่งมีเนื้อหาที่เชื่อถือได้</translation>
     </message>
     <message>
         <source>A continuous range of content.</source>
-        <translation type="unfinished" />
+        <translation>ช่วงของเนื้อหาที่ต่อเนื่องกัน</translation>
     </message>
     <message>
         <source>Hide other ranges</source>
-        <translation type="unfinished" />
+        <translation>ซ่อนช่วงอื่น</translation>
     </message>
     <message>
         <source>Other available ranges (%1)</source>
-        <translation type="unfinished" />
+        <translation>ช่วงอื่นที่ใช้ได้ (%1)</translation>
     </message>
     <message>
         <source>Adjust Analysis Range</source>
-        <translation type="unfinished" />
+        <translation>ปรับช่วงการวิเคราะห์</translation>
     </message>
     <message>
         <source>Recommended</source>
-        <translation type="unfinished" />
+        <translation>แนะนำ</translation>
     </message>
     <message>
         <source>Seams need review</source>
-        <translation type="unfinished" />
+        <translation>รอยต่อต้องตรวจสอบ</translation>
     </message>
     <message>
         <source>Continuous content</source>
-        <translation type="unfinished" />
+        <translation>เนื้อหาต่อเนื่อง</translation>
     </message>
     <message>
         <source>Selected source range: %1</source>
-        <translation type="unfinished" />
+        <translation>ช่วงต้นฉบับที่เลือก: %1</translation>
     </message>
     <message>
         <source>Includes only part of the recording</source>
-        <translation type="unfinished" />
+        <translation>รวมเฉพาะบางส่วนของการบันทึก</translation>
     </message>
     <message>
         <source>%1 areas have seams worth checking.</source>
-        <translation type="unfinished" />
+        <translation>มี %1 บริเวณที่มีรอยต่อควรตรวจสอบ</translation>
     </message>
     <message>
         <source>Review</source>
-        <translation type="unfinished" />
+        <translation>ตรวจสอบ</translation>
     </message>
     <message>
         <source>Done</source>
-        <translation type="unfinished" />
+        <translation>เสร็จสิ้น</translation>
     </message>
     <message>
         <source>More…</source>
-        <translation type="unfinished" />
+        <translation>เพิ่มเติม…</translation>
     </message>
     <message>
         <source>Pin Current Image</source>
-        <translation type="unfinished" />
+        <translation>ปักหมุดภาพปัจจุบัน</translation>
     </message>
     <message>
         <source>Pin</source>
@@ -3296,7 +3296,7 @@ English is always included and cannot be removed.</source>
     </message>
     <message>
         <source>Annotate Current Image in Pin</source>
-        <translation type="unfinished" />
+        <translation>ใส่คำอธิบายภาพปัจจุบันในหน้าต่างที่ปักหมุด</translation>
     </message>
     <message>
         <source>Annotate in Pin</source>
@@ -3304,11 +3304,11 @@ English is always included and cannot be removed.</source>
     </message>
     <message>
         <source>Image %1 / %2</source>
-        <translation type="unfinished" />
+        <translation>ภาพ %1 / %2</translation>
     </message>
     <message>
         <source>Copy Current Image</source>
-        <translation type="unfinished" />
+        <translation>คัดลอกภาพปัจจุบัน</translation>
     </message>
     <message>
         <source>Copy</source>
@@ -3316,7 +3316,7 @@ English is always included and cannot be removed.</source>
     </message>
     <message>
         <source>Retry</source>
-        <translation type="unfinished" />
+        <translation>ลองอีกครั้ง</translation>
     </message>
     <message>
         <source>Generate Long Screenshot</source>
@@ -3324,11 +3324,11 @@ English is always included and cannot be removed.</source>
     </message>
     <message>
         <source>Retry Analysis</source>
-        <translation type="unfinished" />
+        <translation>ลองวิเคราะห์อีกครั้ง</translation>
     </message>
     <message>
         <source>Save %1 PNG Images</source>
-        <translation type="unfinished" />
+        <translation>บันทึกภาพ PNG %1 ภาพ</translation>
     </message>
     <message>
         <source>Save PNG</source>
