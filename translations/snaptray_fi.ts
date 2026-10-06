@@ -1813,7 +1813,7 @@ Koko: %2</translation>
     </message>
     <message>
         <source>Create Long Screenshot</source>
-        <translation type="unfinished" />
+        <translation>Luo pitkä kuvakaappaus</translation>
     </message>
     <message>
         <source>Save Recording (Enter / Ctrl+S)</source>
@@ -1821,7 +1821,7 @@ Koko: %2</translation>
     </message>
     <message>
         <source>Adjust the crop or time range, then analyze again.</source>
-        <translation type="unfinished" />
+        <translation>Säädä rajausta tai aikaväliä ja analysoi uudelleen.</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -1829,7 +1829,7 @@ Koko: %2</translation>
     </message>
     <message>
         <source>Analyze Again</source>
-        <translation type="unfinished" />
+        <translation>Analysoi uudelleen</translation>
     </message>
     <message>
         <source>Dismiss Error</source>
@@ -3329,11 +3329,11 @@ Tiedoston koko: %3</translation>
     </message>
     <message>
         <source>Finding content to stitch…</source>
-        <translation type="unfinished" />
+        <translation>Etsitään yhdistettävää sisältöä…</translation>
     </message>
     <message>
         <source>Generating long screenshot…</source>
-        <translation type="unfinished" />
+        <translation>Luodaan pitkää kuvakaappausta…</translation>
     </message>
     <message>
         <source>Could not create the result preview.</source>
@@ -3341,7 +3341,7 @@ Tiedoston koko: %3</translation>
     </message>
     <message>
         <source>Image copied.</source>
-        <translation type="unfinished" />
+        <translation>Kuva kopioitu.</translation>
     </message>
     <message>
         <source>Save Long Screenshot</source>
@@ -3353,22 +3353,22 @@ Tiedoston koko: %3</translation>
     </message>
     <message>
         <source>Image %1: %2</source>
-        <translation type="unfinished" />
+        <translation>Kuva %1: %2</translation>
     </message>
     <message>
         <source>Saved %1 of %2 images.</source>
-        <translation type="unfinished" />
+        <translation>Tallennettu %1 kuvaa / %2.</translation>
     </message>
     <message>
         <source>Copy failed. Please try again.</source>
-        <translation type="unfinished" />
+        <translation>Kopiointi epäonnistui. Yritä uudelleen.</translation>
     </message>
 </context>
 <context>
     <name>LongshotWorkspace</name>
     <message>
         <source>Choose Content</source>
-        <translation type="unfinished" />
+        <translation>Valitse sisältö</translation>
     </message>
     <message>
         <source>Recording Preview</source>
@@ -3376,19 +3376,19 @@ Tiedoston koko: %3</translation>
     </message>
     <message>
         <source>Long Screenshot Ready</source>
-        <translation type="unfinished" />
+        <translation>Pitkä kuvakaappaus valmis</translation>
     </message>
     <message>
         <source>Create Long Screenshot</source>
-        <translation type="unfinished" />
+        <translation>Luo pitkä kuvakaappaus</translation>
     </message>
     <message>
         <source>We will recommend a suitable range when analysis is complete.</source>
-        <translation type="unfinished" />
+        <translation>Suosittelemme sopivaa aikaväliä analyysin valmistuttua.</translation>
     </message>
     <message>
         <source>Creating only your selected content.</source>
-        <translation type="unfinished" />
+        <translation>Luodaan vain valitsemasi sisältö.</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -3396,127 +3396,127 @@ Tiedoston koko: %3</translation>
     </message>
     <message>
         <source>This recording cannot produce a long screenshot yet</source>
-        <translation type="unfinished" />
+        <translation>Tästä tallenteesta ei vielä voi luoda pitkää kuvakaappausta</translation>
     </message>
     <message>
         <source>Content found; some seams need a look</source>
-        <translation type="unfinished" />
+        <translation>Sisältö löytyi; jotkin saumat on tarkistettava</translation>
     </message>
     <message>
         <source>We recommend this content</source>
-        <translation type="unfinished" />
+        <translation>Suosittelemme tätä sisältöä</translation>
     </message>
     <message>
         <source>This content can become a long screenshot</source>
-        <translation type="unfinished" />
+        <translation>Tästä sisällöstä voi luoda pitkän kuvakaappauksen</translation>
     </message>
     <message>
         <source>There is not enough scrolling content. Choose a range that includes scrolling.</source>
-        <translation type="unfinished" />
+        <translation>Vieritettävää sisältöä ei ole tarpeeksi. Valitse aikaväli, joka sisältää vieritystä.</translation>
     </message>
     <message>
         <source>This recording is too long to analyze. Select a shorter range and try again.</source>
-        <translation type="unfinished" />
+        <translation>Tallenne on liian pitkä analysoitavaksi. Valitse lyhyempi aikaväli ja yritä uudelleen.</translation>
     </message>
     <message>
         <source>No continuous content was found. Crop to one content area, or record again while scrolling slowly.</source>
-        <translation type="unfinished" />
+        <translation>Yhtenäistä sisältöä ei löytynyt. Rajaa yhteen sisältöalueeseen tai tallenna uudelleen vierittäen hitaasti.</translation>
     </message>
     <message>
         <source>Some content could not be joined. This selection produces a separate long screenshot and does not include the entire recording.</source>
-        <translation type="unfinished" />
+        <translation>Osaa sisällöstä ei voitu yhdistää. Tämä valinta tuottaa erillisen pitkän kuvakaappauksen eikä sisällä koko tallennetta.</translation>
     </message>
     <message>
         <source>Review the selected source range, then generate your screenshot.</source>
-        <translation type="unfinished" />
+        <translation>Tarkista valittu lähteen aikaväli ja luo sitten kuvakaappaus.</translation>
     </message>
     <message>
         <source>Recommended range</source>
-        <translation type="unfinished" />
+        <translation>Suositeltu aikaväli</translation>
     </message>
     <message>
         <source>Selected range</source>
-        <translation type="unfinished" />
+        <translation>Valittu aikaväli</translation>
     </message>
     <message>
         <source>Source preview · Start</source>
-        <translation type="unfinished" />
+        <translation>Lähteen esikatselu · Alku</translation>
     </message>
     <message>
         <source>Source preview · End</source>
-        <translation type="unfinished" />
+        <translation>Lähteen esikatselu · Loppu</translation>
     </message>
     <message>
         <source>This content is long and will be saved as %1 images.</source>
-        <translation type="unfinished" />
+        <translation>Sisältö on pitkä ja tallennetaan %1 kuvana.</translation>
     </message>
     <message>
         <source>Produces 1 image</source>
-        <translation type="unfinished" />
+        <translation>Tuottaa 1 kuvan</translation>
     </message>
     <message>
         <source>Some seams will be marked for review in the preview.</source>
-        <translation type="unfinished" />
+        <translation>Jotkin saumat merkitään esikatseluun tarkistettaviksi.</translation>
     </message>
     <message>
         <source>The largest continuous range with reliable content.</source>
-        <translation type="unfinished" />
+        <translation>Suurin yhtenäinen aikaväli, jonka sisältö on luotettavaa.</translation>
     </message>
     <message>
         <source>A continuous range of content.</source>
-        <translation type="unfinished" />
+        <translation>Yhtenäinen sisältöjakso.</translation>
     </message>
     <message>
         <source>Hide other ranges</source>
-        <translation type="unfinished" />
+        <translation>Piilota muut aikavälit</translation>
     </message>
     <message>
         <source>Other available ranges (%1)</source>
-        <translation type="unfinished" />
+        <translation>Muut käytettävissä olevat aikavälit (%1)</translation>
     </message>
     <message>
         <source>Adjust Analysis Range</source>
-        <translation type="unfinished" />
+        <translation>Säädä analyysin aikaväliä</translation>
     </message>
     <message>
         <source>Recommended</source>
-        <translation type="unfinished" />
+        <translation>Suositeltu</translation>
     </message>
     <message>
         <source>Seams need review</source>
-        <translation type="unfinished" />
+        <translation>Saumat on tarkistettava</translation>
     </message>
     <message>
         <source>Continuous content</source>
-        <translation type="unfinished" />
+        <translation>Yhtenäinen sisältö</translation>
     </message>
     <message>
         <source>Selected source range: %1</source>
-        <translation type="unfinished" />
+        <translation>Valittu lähteen aikaväli: %1</translation>
     </message>
     <message>
         <source>Includes only part of the recording</source>
-        <translation type="unfinished" />
+        <translation>Sisältää vain osan tallenteesta</translation>
     </message>
     <message>
         <source>%1 areas have seams worth checking.</source>
-        <translation type="unfinished" />
+        <translation>%1 alueella on tarkistettavia saumoja.</translation>
     </message>
     <message>
         <source>Review</source>
-        <translation type="unfinished" />
+        <translation>Tarkista</translation>
     </message>
     <message>
         <source>Done</source>
-        <translation type="unfinished" />
+        <translation>Valmis</translation>
     </message>
     <message>
         <source>More…</source>
-        <translation type="unfinished" />
+        <translation>Lisää…</translation>
     </message>
     <message>
         <source>Pin Current Image</source>
-        <translation type="unfinished" />
+        <translation>Kiinnitä nykyinen kuva</translation>
     </message>
     <message>
         <source>Pin</source>
@@ -3524,7 +3524,7 @@ Tiedoston koko: %3</translation>
     </message>
     <message>
         <source>Annotate Current Image in Pin</source>
-        <translation type="unfinished" />
+        <translation>Lisää merkintöjä nykyiseen kuvaan kiinnitetyssä ikkunassa</translation>
     </message>
     <message>
         <source>Annotate in Pin</source>
@@ -3532,11 +3532,11 @@ Tiedoston koko: %3</translation>
     </message>
     <message>
         <source>Image %1 / %2</source>
-        <translation type="unfinished" />
+        <translation>Kuva %1 / %2</translation>
     </message>
     <message>
         <source>Copy Current Image</source>
-        <translation type="unfinished" />
+        <translation>Kopioi nykyinen kuva</translation>
     </message>
     <message>
         <source>Copy</source>
@@ -3544,7 +3544,7 @@ Tiedoston koko: %3</translation>
     </message>
     <message>
         <source>Retry</source>
-        <translation type="unfinished" />
+        <translation>Yritä uudelleen</translation>
     </message>
     <message>
         <source>Generate Long Screenshot</source>
@@ -3552,11 +3552,11 @@ Tiedoston koko: %3</translation>
     </message>
     <message>
         <source>Retry Analysis</source>
-        <translation type="unfinished" />
+        <translation>Yritä analyysia uudelleen</translation>
     </message>
     <message>
         <source>Save %1 PNG Images</source>
-        <translation type="unfinished" />
+        <translation>Tallenna %1 PNG-kuvaa</translation>
     </message>
     <message>
         <source>Save PNG</source>

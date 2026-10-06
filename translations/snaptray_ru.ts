@@ -1819,7 +1819,7 @@ Size: %2</source>
     </message>
     <message>
         <source>Create Long Screenshot</source>
-        <translation type="unfinished" />
+        <translation>Создать длинный снимок экрана</translation>
     </message>
     <message>
         <source>Save Recording (Enter / Ctrl+S)</source>
@@ -1827,7 +1827,7 @@ Size: %2</source>
     </message>
     <message>
         <source>Adjust the crop or time range, then analyze again.</source>
-        <translation type="unfinished" />
+        <translation>Измените обрезку или временной диапазон и повторите анализ.</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -1835,7 +1835,7 @@ Size: %2</source>
     </message>
     <message>
         <source>Analyze Again</source>
-        <translation type="unfinished" />
+        <translation>Анализировать снова</translation>
     </message>
     <message>
         <source>Dismiss Error</source>
@@ -3335,11 +3335,11 @@ File size: %3</source>
     </message>
     <message>
         <source>Finding content to stitch…</source>
-        <translation type="unfinished" />
+        <translation>Поиск содержимого для сшивки…</translation>
     </message>
     <message>
         <source>Generating long screenshot…</source>
-        <translation type="unfinished" />
+        <translation>Создание длинного снимка экрана…</translation>
     </message>
     <message>
         <source>Could not create the result preview.</source>
@@ -3347,7 +3347,7 @@ File size: %3</source>
     </message>
     <message>
         <source>Image copied.</source>
-        <translation type="unfinished" />
+        <translation>Изображение скопировано.</translation>
     </message>
     <message>
         <source>Save Long Screenshot</source>
@@ -3359,22 +3359,22 @@ File size: %3</source>
     </message>
     <message>
         <source>Image %1: %2</source>
-        <translation type="unfinished" />
+        <translation>Изображение %1: %2</translation>
     </message>
     <message>
         <source>Saved %1 of %2 images.</source>
-        <translation type="unfinished" />
+        <translation>Сохранено %1 из %2 изображений.</translation>
     </message>
     <message>
         <source>Copy failed. Please try again.</source>
-        <translation type="unfinished" />
+        <translation>Не удалось скопировать. Повторите попытку.</translation>
     </message>
 </context>
 <context>
     <name>LongshotWorkspace</name>
     <message>
         <source>Choose Content</source>
-        <translation type="unfinished" />
+        <translation>Выбрать содержимое</translation>
     </message>
     <message>
         <source>Recording Preview</source>
@@ -3382,19 +3382,19 @@ File size: %3</source>
     </message>
     <message>
         <source>Long Screenshot Ready</source>
-        <translation type="unfinished" />
+        <translation>Длинный снимок экрана готов</translation>
     </message>
     <message>
         <source>Create Long Screenshot</source>
-        <translation type="unfinished" />
+        <translation>Создать длинный снимок экрана</translation>
     </message>
     <message>
         <source>We will recommend a suitable range when analysis is complete.</source>
-        <translation type="unfinished" />
+        <translation>После завершения анализа мы предложим подходящий диапазон.</translation>
     </message>
     <message>
         <source>Creating only your selected content.</source>
-        <translation type="unfinished" />
+        <translation>Создаётся только выбранное содержимое.</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -3402,127 +3402,127 @@ File size: %3</source>
     </message>
     <message>
         <source>This recording cannot produce a long screenshot yet</source>
-        <translation type="unfinished" />
+        <translation>Из этой записи пока нельзя создать длинный снимок экрана</translation>
     </message>
     <message>
         <source>Content found; some seams need a look</source>
-        <translation type="unfinished" />
+        <translation>Содержимое найдено; некоторые стыки требуют проверки</translation>
     </message>
     <message>
         <source>We recommend this content</source>
-        <translation type="unfinished" />
+        <translation>Мы рекомендуем это содержимое</translation>
     </message>
     <message>
         <source>This content can become a long screenshot</source>
-        <translation type="unfinished" />
+        <translation>Из этого содержимого можно создать длинный снимок экрана</translation>
     </message>
     <message>
         <source>There is not enough scrolling content. Choose a range that includes scrolling.</source>
-        <translation type="unfinished" />
+        <translation>Недостаточно прокручиваемого содержимого. Выберите диапазон с прокруткой.</translation>
     </message>
     <message>
         <source>This recording is too long to analyze. Select a shorter range and try again.</source>
-        <translation type="unfinished" />
+        <translation>Эта запись слишком длинная для анализа. Выберите более короткий диапазон и повторите попытку.</translation>
     </message>
     <message>
         <source>No continuous content was found. Crop to one content area, or record again while scrolling slowly.</source>
-        <translation type="unfinished" />
+        <translation>Непрерывное содержимое не найдено. Обрежьте до одной области содержимого или запишите снова, прокручивая медленно.</translation>
     </message>
     <message>
         <source>Some content could not be joined. This selection produces a separate long screenshot and does not include the entire recording.</source>
-        <translation type="unfinished" />
+        <translation>Часть содержимого не удалось соединить. Этот выбор создаёт отдельный длинный снимок и не включает всю запись.</translation>
     </message>
     <message>
         <source>Review the selected source range, then generate your screenshot.</source>
-        <translation type="unfinished" />
+        <translation>Проверьте выбранный диапазон источника, затем создайте снимок экрана.</translation>
     </message>
     <message>
         <source>Recommended range</source>
-        <translation type="unfinished" />
+        <translation>Рекомендуемый диапазон</translation>
     </message>
     <message>
         <source>Selected range</source>
-        <translation type="unfinished" />
+        <translation>Выбранный диапазон</translation>
     </message>
     <message>
         <source>Source preview · Start</source>
-        <translation type="unfinished" />
+        <translation>Просмотр источника · Начало</translation>
     </message>
     <message>
         <source>Source preview · End</source>
-        <translation type="unfinished" />
+        <translation>Просмотр источника · Конец</translation>
     </message>
     <message>
         <source>This content is long and will be saved as %1 images.</source>
-        <translation type="unfinished" />
+        <translation>Это содержимое длинное и будет сохранено в виде %1 изображений.</translation>
     </message>
     <message>
         <source>Produces 1 image</source>
-        <translation type="unfinished" />
+        <translation>Создаёт 1 изображение</translation>
     </message>
     <message>
         <source>Some seams will be marked for review in the preview.</source>
-        <translation type="unfinished" />
+        <translation>Некоторые стыки будут отмечены для проверки в предпросмотре.</translation>
     </message>
     <message>
         <source>The largest continuous range with reliable content.</source>
-        <translation type="unfinished" />
+        <translation>Самый большой непрерывный диапазон с надёжным содержимым.</translation>
     </message>
     <message>
         <source>A continuous range of content.</source>
-        <translation type="unfinished" />
+        <translation>Непрерывный диапазон содержимого.</translation>
     </message>
     <message>
         <source>Hide other ranges</source>
-        <translation type="unfinished" />
+        <translation>Скрыть другие диапазоны</translation>
     </message>
     <message>
         <source>Other available ranges (%1)</source>
-        <translation type="unfinished" />
+        <translation>Другие доступные диапазоны (%1)</translation>
     </message>
     <message>
         <source>Adjust Analysis Range</source>
-        <translation type="unfinished" />
+        <translation>Изменить диапазон анализа</translation>
     </message>
     <message>
         <source>Recommended</source>
-        <translation type="unfinished" />
+        <translation>Рекомендуется</translation>
     </message>
     <message>
         <source>Seams need review</source>
-        <translation type="unfinished" />
+        <translation>Стыки требуют проверки</translation>
     </message>
     <message>
         <source>Continuous content</source>
-        <translation type="unfinished" />
+        <translation>Непрерывное содержимое</translation>
     </message>
     <message>
         <source>Selected source range: %1</source>
-        <translation type="unfinished" />
+        <translation>Выбранный диапазон источника: %1</translation>
     </message>
     <message>
         <source>Includes only part of the recording</source>
-        <translation type="unfinished" />
+        <translation>Включает только часть записи</translation>
     </message>
     <message>
         <source>%1 areas have seams worth checking.</source>
-        <translation type="unfinished" />
+        <translation>Областей со стыками, которые стоит проверить: %1.</translation>
     </message>
     <message>
         <source>Review</source>
-        <translation type="unfinished" />
+        <translation>Проверить</translation>
     </message>
     <message>
         <source>Done</source>
-        <translation type="unfinished" />
+        <translation>Готово</translation>
     </message>
     <message>
         <source>More…</source>
-        <translation type="unfinished" />
+        <translation>Ещё…</translation>
     </message>
     <message>
         <source>Pin Current Image</source>
-        <translation type="unfinished" />
+        <translation>Закрепить текущее изображение</translation>
     </message>
     <message>
         <source>Pin</source>
@@ -3530,7 +3530,7 @@ File size: %3</source>
     </message>
     <message>
         <source>Annotate Current Image in Pin</source>
-        <translation type="unfinished" />
+        <translation>Добавить пометки к текущему изображению в закреплённом окне</translation>
     </message>
     <message>
         <source>Annotate in Pin</source>
@@ -3538,11 +3538,11 @@ File size: %3</source>
     </message>
     <message>
         <source>Image %1 / %2</source>
-        <translation type="unfinished" />
+        <translation>Изображение %1 / %2</translation>
     </message>
     <message>
         <source>Copy Current Image</source>
-        <translation type="unfinished" />
+        <translation>Копировать текущее изображение</translation>
     </message>
     <message>
         <source>Copy</source>
@@ -3550,7 +3550,7 @@ File size: %3</source>
     </message>
     <message>
         <source>Retry</source>
-        <translation type="unfinished" />
+        <translation>Повторить</translation>
     </message>
     <message>
         <source>Generate Long Screenshot</source>
@@ -3558,11 +3558,11 @@ File size: %3</source>
     </message>
     <message>
         <source>Retry Analysis</source>
-        <translation type="unfinished" />
+        <translation>Повторить анализ</translation>
     </message>
     <message>
         <source>Save %1 PNG Images</source>
-        <translation type="unfinished" />
+        <translation>Сохранить %1 изображений PNG</translation>
     </message>
     <message>
         <source>Save PNG</source>

@@ -1819,7 +1819,7 @@ Velikost: %2</translation>
     </message>
     <message>
         <source>Create Long Screenshot</source>
-        <translation type="unfinished" />
+        <translation>Vytvořit dlouhý snímek obrazovky</translation>
     </message>
     <message>
         <source>Save Recording (Enter / Ctrl+S)</source>
@@ -1827,7 +1827,7 @@ Velikost: %2</translation>
     </message>
     <message>
         <source>Adjust the crop or time range, then analyze again.</source>
-        <translation type="unfinished" />
+        <translation>Upravte ořez nebo časový rozsah a spusťte analýzu znovu.</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -1835,7 +1835,7 @@ Velikost: %2</translation>
     </message>
     <message>
         <source>Analyze Again</source>
-        <translation type="unfinished" />
+        <translation>Analyzovat znovu</translation>
     </message>
     <message>
         <source>Dismiss Error</source>
@@ -3335,11 +3335,11 @@ Velikost souboru: %3</translation>
     </message>
     <message>
         <source>Finding content to stitch…</source>
-        <translation type="unfinished" />
+        <translation>Hledání obsahu ke spojení…</translation>
     </message>
     <message>
         <source>Generating long screenshot…</source>
-        <translation type="unfinished" />
+        <translation>Vytváření dlouhého snímku obrazovky…</translation>
     </message>
     <message>
         <source>Could not create the result preview.</source>
@@ -3347,7 +3347,7 @@ Velikost souboru: %3</translation>
     </message>
     <message>
         <source>Image copied.</source>
-        <translation type="unfinished" />
+        <translation>Obrázek zkopírován.</translation>
     </message>
     <message>
         <source>Save Long Screenshot</source>
@@ -3359,22 +3359,22 @@ Velikost souboru: %3</translation>
     </message>
     <message>
         <source>Image %1: %2</source>
-        <translation type="unfinished" />
+        <translation>Obrázek %1: %2</translation>
     </message>
     <message>
         <source>Saved %1 of %2 images.</source>
-        <translation type="unfinished" />
+        <translation>Uloženo %1 z %2 obrázků.</translation>
     </message>
     <message>
         <source>Copy failed. Please try again.</source>
-        <translation type="unfinished" />
+        <translation>Kopírování se nezdařilo. Zkuste to znovu.</translation>
     </message>
 </context>
 <context>
     <name>LongshotWorkspace</name>
     <message>
         <source>Choose Content</source>
-        <translation type="unfinished" />
+        <translation>Vybrat obsah</translation>
     </message>
     <message>
         <source>Recording Preview</source>
@@ -3382,19 +3382,19 @@ Velikost souboru: %3</translation>
     </message>
     <message>
         <source>Long Screenshot Ready</source>
-        <translation type="unfinished" />
+        <translation>Dlouhý snímek obrazovky je připraven</translation>
     </message>
     <message>
         <source>Create Long Screenshot</source>
-        <translation type="unfinished" />
+        <translation>Vytvořit dlouhý snímek obrazovky</translation>
     </message>
     <message>
         <source>We will recommend a suitable range when analysis is complete.</source>
-        <translation type="unfinished" />
+        <translation>Po dokončení analýzy doporučíme vhodný rozsah.</translation>
     </message>
     <message>
         <source>Creating only your selected content.</source>
-        <translation type="unfinished" />
+        <translation>Vytváří se pouze vybraný obsah.</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -3402,127 +3402,127 @@ Velikost souboru: %3</translation>
     </message>
     <message>
         <source>This recording cannot produce a long screenshot yet</source>
-        <translation type="unfinished" />
+        <translation>Z této nahrávky zatím nelze vytvořit dlouhý snímek obrazovky</translation>
     </message>
     <message>
         <source>Content found; some seams need a look</source>
-        <translation type="unfinished" />
+        <translation>Obsah nalezen; některé spoje je třeba zkontrolovat</translation>
     </message>
     <message>
         <source>We recommend this content</source>
-        <translation type="unfinished" />
+        <translation>Doporučujeme tento obsah</translation>
     </message>
     <message>
         <source>This content can become a long screenshot</source>
-        <translation type="unfinished" />
+        <translation>Z tohoto obsahu lze vytvořit dlouhý snímek obrazovky</translation>
     </message>
     <message>
         <source>There is not enough scrolling content. Choose a range that includes scrolling.</source>
-        <translation type="unfinished" />
+        <translation>Není dostatek posouvaného obsahu. Vyberte rozsah zahrnující posouvání.</translation>
     </message>
     <message>
         <source>This recording is too long to analyze. Select a shorter range and try again.</source>
-        <translation type="unfinished" />
+        <translation>Tato nahrávka je pro analýzu příliš dlouhá. Vyberte kratší rozsah a zkuste to znovu.</translation>
     </message>
     <message>
         <source>No continuous content was found. Crop to one content area, or record again while scrolling slowly.</source>
-        <translation type="unfinished" />
+        <translation>Nebyl nalezen souvislý obsah. Ořízněte záznam na jednu oblast obsahu nebo jej nahrajte znovu při pomalém posouvání.</translation>
     </message>
     <message>
         <source>Some content could not be joined. This selection produces a separate long screenshot and does not include the entire recording.</source>
-        <translation type="unfinished" />
+        <translation>Část obsahu se nepodařilo spojit. Tento výběr vytvoří samostatný dlouhý snímek a nezahrnuje celou nahrávku.</translation>
     </message>
     <message>
         <source>Review the selected source range, then generate your screenshot.</source>
-        <translation type="unfinished" />
+        <translation>Zkontrolujte vybraný zdrojový rozsah a poté vytvořte snímek.</translation>
     </message>
     <message>
         <source>Recommended range</source>
-        <translation type="unfinished" />
+        <translation>Doporučený rozsah</translation>
     </message>
     <message>
         <source>Selected range</source>
-        <translation type="unfinished" />
+        <translation>Vybraný rozsah</translation>
     </message>
     <message>
         <source>Source preview · Start</source>
-        <translation type="unfinished" />
+        <translation>Náhled zdroje · Začátek</translation>
     </message>
     <message>
         <source>Source preview · End</source>
-        <translation type="unfinished" />
+        <translation>Náhled zdroje · Konec</translation>
     </message>
     <message>
         <source>This content is long and will be saved as %1 images.</source>
-        <translation type="unfinished" />
+        <translation>Tento obsah je dlouhý a bude uložen jako %1 obrázků.</translation>
     </message>
     <message>
         <source>Produces 1 image</source>
-        <translation type="unfinished" />
+        <translation>Vytvoří 1 obrázek</translation>
     </message>
     <message>
         <source>Some seams will be marked for review in the preview.</source>
-        <translation type="unfinished" />
+        <translation>Některé spoje budou v náhledu označeny ke kontrole.</translation>
     </message>
     <message>
         <source>The largest continuous range with reliable content.</source>
-        <translation type="unfinished" />
+        <translation>Největší souvislý rozsah se spolehlivým obsahem.</translation>
     </message>
     <message>
         <source>A continuous range of content.</source>
-        <translation type="unfinished" />
+        <translation>Souvislý rozsah obsahu.</translation>
     </message>
     <message>
         <source>Hide other ranges</source>
-        <translation type="unfinished" />
+        <translation>Skrýt ostatní rozsahy</translation>
     </message>
     <message>
         <source>Other available ranges (%1)</source>
-        <translation type="unfinished" />
+        <translation>Další dostupné rozsahy (%1)</translation>
     </message>
     <message>
         <source>Adjust Analysis Range</source>
-        <translation type="unfinished" />
+        <translation>Upravit rozsah analýzy</translation>
     </message>
     <message>
         <source>Recommended</source>
-        <translation type="unfinished" />
+        <translation>Doporučeno</translation>
     </message>
     <message>
         <source>Seams need review</source>
-        <translation type="unfinished" />
+        <translation>Spoje vyžadují kontrolu</translation>
     </message>
     <message>
         <source>Continuous content</source>
-        <translation type="unfinished" />
+        <translation>Souvislý obsah</translation>
     </message>
     <message>
         <source>Selected source range: %1</source>
-        <translation type="unfinished" />
+        <translation>Vybraný zdrojový rozsah: %1</translation>
     </message>
     <message>
         <source>Includes only part of the recording</source>
-        <translation type="unfinished" />
+        <translation>Zahrnuje pouze část nahrávky</translation>
     </message>
     <message>
         <source>%1 areas have seams worth checking.</source>
-        <translation type="unfinished" />
+        <translation>Oblasti se spoji ke kontrole: %1.</translation>
     </message>
     <message>
         <source>Review</source>
-        <translation type="unfinished" />
+        <translation>Zkontrolovat</translation>
     </message>
     <message>
         <source>Done</source>
-        <translation type="unfinished" />
+        <translation>Hotovo</translation>
     </message>
     <message>
         <source>More…</source>
-        <translation type="unfinished" />
+        <translation>Více…</translation>
     </message>
     <message>
         <source>Pin Current Image</source>
-        <translation type="unfinished" />
+        <translation>Připnout aktuální obrázek</translation>
     </message>
     <message>
         <source>Pin</source>
@@ -3530,7 +3530,7 @@ Velikost souboru: %3</translation>
     </message>
     <message>
         <source>Annotate Current Image in Pin</source>
-        <translation type="unfinished" />
+        <translation>Anotovat aktuální obrázek v připnutém okně</translation>
     </message>
     <message>
         <source>Annotate in Pin</source>
@@ -3538,11 +3538,11 @@ Velikost souboru: %3</translation>
     </message>
     <message>
         <source>Image %1 / %2</source>
-        <translation type="unfinished" />
+        <translation>Obrázek %1 / %2</translation>
     </message>
     <message>
         <source>Copy Current Image</source>
-        <translation type="unfinished" />
+        <translation>Kopírovat aktuální obrázek</translation>
     </message>
     <message>
         <source>Copy</source>
@@ -3550,7 +3550,7 @@ Velikost souboru: %3</translation>
     </message>
     <message>
         <source>Retry</source>
-        <translation type="unfinished" />
+        <translation>Zkusit znovu</translation>
     </message>
     <message>
         <source>Generate Long Screenshot</source>
@@ -3558,11 +3558,11 @@ Velikost souboru: %3</translation>
     </message>
     <message>
         <source>Retry Analysis</source>
-        <translation type="unfinished" />
+        <translation>Opakovat analýzu</translation>
     </message>
     <message>
         <source>Save %1 PNG Images</source>
-        <translation type="unfinished" />
+        <translation>Uložit %1 obrázků PNG</translation>
     </message>
     <message>
         <source>Save PNG</source>

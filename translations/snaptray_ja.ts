@@ -1819,7 +1819,7 @@ Size: %2</source>
     </message>
     <message>
         <source>Create Long Screenshot</source>
-        <translation type="unfinished" />
+        <translation>長いスクリーンショットを作成</translation>
     </message>
     <message>
         <source>Save Recording (Enter / Ctrl+S)</source>
@@ -1827,7 +1827,7 @@ Size: %2</source>
     </message>
     <message>
         <source>Adjust the crop or time range, then analyze again.</source>
-        <translation type="unfinished" />
+        <translation>切り抜き範囲または時間範囲を調整して、再分析してください。</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -1835,7 +1835,7 @@ Size: %2</source>
     </message>
     <message>
         <source>Analyze Again</source>
-        <translation type="unfinished" />
+        <translation>再分析</translation>
     </message>
     <message>
         <source>Dismiss Error</source>
@@ -3335,11 +3335,11 @@ File size: %3</source>
     </message>
     <message>
         <source>Finding content to stitch…</source>
-        <translation type="unfinished" />
+        <translation>結合するコンテンツを検索中…</translation>
     </message>
     <message>
         <source>Generating long screenshot…</source>
-        <translation type="unfinished" />
+        <translation>長いスクリーンショットを生成中…</translation>
     </message>
     <message>
         <source>Could not create the result preview.</source>
@@ -3347,7 +3347,7 @@ File size: %3</source>
     </message>
     <message>
         <source>Image copied.</source>
-        <translation type="unfinished" />
+        <translation>画像をコピーしました。</translation>
     </message>
     <message>
         <source>Save Long Screenshot</source>
@@ -3359,22 +3359,22 @@ File size: %3</source>
     </message>
     <message>
         <source>Image %1: %2</source>
-        <translation type="unfinished" />
+        <translation>画像 %1：%2</translation>
     </message>
     <message>
         <source>Saved %1 of %2 images.</source>
-        <translation type="unfinished" />
+        <translation>%2 枚中 %1 枚の画像を保存しました。</translation>
     </message>
     <message>
         <source>Copy failed. Please try again.</source>
-        <translation type="unfinished" />
+        <translation>コピーに失敗しました。もう一度お試しください。</translation>
     </message>
 </context>
 <context>
     <name>LongshotWorkspace</name>
     <message>
         <source>Choose Content</source>
-        <translation type="unfinished" />
+        <translation>コンテンツを選択</translation>
     </message>
     <message>
         <source>Recording Preview</source>
@@ -3382,19 +3382,19 @@ File size: %3</source>
     </message>
     <message>
         <source>Long Screenshot Ready</source>
-        <translation type="unfinished" />
+        <translation>長いスクリーンショットの準備ができました</translation>
     </message>
     <message>
         <source>Create Long Screenshot</source>
-        <translation type="unfinished" />
+        <translation>長いスクリーンショットを作成</translation>
     </message>
     <message>
         <source>We will recommend a suitable range when analysis is complete.</source>
-        <translation type="unfinished" />
+        <translation>分析が完了したら、適切な範囲をおすすめします。</translation>
     </message>
     <message>
         <source>Creating only your selected content.</source>
-        <translation type="unfinished" />
+        <translation>選択したコンテンツのみを作成しています。</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -3402,127 +3402,127 @@ File size: %3</source>
     </message>
     <message>
         <source>This recording cannot produce a long screenshot yet</source>
-        <translation type="unfinished" />
+        <translation>この録画からはまだ長いスクリーンショットを作成できません</translation>
     </message>
     <message>
         <source>Content found; some seams need a look</source>
-        <translation type="unfinished" />
+        <translation>コンテンツが見つかりました。一部のつなぎ目を確認してください</translation>
     </message>
     <message>
         <source>We recommend this content</source>
-        <translation type="unfinished" />
+        <translation>このコンテンツをおすすめします</translation>
     </message>
     <message>
         <source>This content can become a long screenshot</source>
-        <translation type="unfinished" />
+        <translation>このコンテンツから長いスクリーンショットを作成できます</translation>
     </message>
     <message>
         <source>There is not enough scrolling content. Choose a range that includes scrolling.</source>
-        <translation type="unfinished" />
+        <translation>スクロールするコンテンツが不足しています。スクロールを含む範囲を選択してください。</translation>
     </message>
     <message>
         <source>This recording is too long to analyze. Select a shorter range and try again.</source>
-        <translation type="unfinished" />
+        <translation>この録画は長すぎて分析できません。短い範囲を選択して再試行してください。</translation>
     </message>
     <message>
         <source>No continuous content was found. Crop to one content area, or record again while scrolling slowly.</source>
-        <translation type="unfinished" />
+        <translation>連続したコンテンツが見つかりませんでした。1つのコンテンツ領域に切り抜くか、ゆっくりスクロールして録画し直してください。</translation>
     </message>
     <message>
         <source>Some content could not be joined. This selection produces a separate long screenshot and does not include the entire recording.</source>
-        <translation type="unfinished" />
+        <translation>一部のコンテンツを結合できませんでした。この選択では独立した長いスクリーンショットが作成され、録画全体は含まれません。</translation>
     </message>
     <message>
         <source>Review the selected source range, then generate your screenshot.</source>
-        <translation type="unfinished" />
+        <translation>選択した元の範囲を確認してから、スクリーンショットを生成してください。</translation>
     </message>
     <message>
         <source>Recommended range</source>
-        <translation type="unfinished" />
+        <translation>おすすめの範囲</translation>
     </message>
     <message>
         <source>Selected range</source>
-        <translation type="unfinished" />
+        <translation>選択した範囲</translation>
     </message>
     <message>
         <source>Source preview · Start</source>
-        <translation type="unfinished" />
+        <translation>元の映像のプレビュー · 開始</translation>
     </message>
     <message>
         <source>Source preview · End</source>
-        <translation type="unfinished" />
+        <translation>元の映像のプレビュー · 終了</translation>
     </message>
     <message>
         <source>This content is long and will be saved as %1 images.</source>
-        <translation type="unfinished" />
+        <translation>このコンテンツは長いため、%1 枚の画像として保存されます。</translation>
     </message>
     <message>
         <source>Produces 1 image</source>
-        <translation type="unfinished" />
+        <translation>1 枚の画像を作成</translation>
     </message>
     <message>
         <source>Some seams will be marked for review in the preview.</source>
-        <translation type="unfinished" />
+        <translation>確認が必要なつなぎ目がプレビューにマークされます。</translation>
     </message>
     <message>
         <source>The largest continuous range with reliable content.</source>
-        <translation type="unfinished" />
+        <translation>信頼できるコンテンツを含む最も大きい連続した範囲です。</translation>
     </message>
     <message>
         <source>A continuous range of content.</source>
-        <translation type="unfinished" />
+        <translation>連続したコンテンツの範囲です。</translation>
     </message>
     <message>
         <source>Hide other ranges</source>
-        <translation type="unfinished" />
+        <translation>他の範囲を非表示</translation>
     </message>
     <message>
         <source>Other available ranges (%1)</source>
-        <translation type="unfinished" />
+        <translation>他の利用可能な範囲（%1）</translation>
     </message>
     <message>
         <source>Adjust Analysis Range</source>
-        <translation type="unfinished" />
+        <translation>分析範囲を調整</translation>
     </message>
     <message>
         <source>Recommended</source>
-        <translation type="unfinished" />
+        <translation>おすすめ</translation>
     </message>
     <message>
         <source>Seams need review</source>
-        <translation type="unfinished" />
+        <translation>つなぎ目の確認が必要</translation>
     </message>
     <message>
         <source>Continuous content</source>
-        <translation type="unfinished" />
+        <translation>連続したコンテンツ</translation>
     </message>
     <message>
         <source>Selected source range: %1</source>
-        <translation type="unfinished" />
+        <translation>選択した元の範囲：%1</translation>
     </message>
     <message>
         <source>Includes only part of the recording</source>
-        <translation type="unfinished" />
+        <translation>録画の一部のみを含みます</translation>
     </message>
     <message>
         <source>%1 areas have seams worth checking.</source>
-        <translation type="unfinished" />
+        <translation>%1 か所につなぎ目の確認が必要です。</translation>
     </message>
     <message>
         <source>Review</source>
-        <translation type="unfinished" />
+        <translation>確認</translation>
     </message>
     <message>
         <source>Done</source>
-        <translation type="unfinished" />
+        <translation>完了</translation>
     </message>
     <message>
         <source>More…</source>
-        <translation type="unfinished" />
+        <translation>その他…</translation>
     </message>
     <message>
         <source>Pin Current Image</source>
-        <translation type="unfinished" />
+        <translation>現在の画像をピン留め</translation>
     </message>
     <message>
         <source>Pin</source>
@@ -3530,7 +3530,7 @@ File size: %3</source>
     </message>
     <message>
         <source>Annotate Current Image in Pin</source>
-        <translation type="unfinished" />
+        <translation>ピン留めウィンドウで現在の画像に注釈を追加</translation>
     </message>
     <message>
         <source>Annotate in Pin</source>
@@ -3538,11 +3538,11 @@ File size: %3</source>
     </message>
     <message>
         <source>Image %1 / %2</source>
-        <translation type="unfinished" />
+        <translation>画像 %1 / %2</translation>
     </message>
     <message>
         <source>Copy Current Image</source>
-        <translation type="unfinished" />
+        <translation>現在の画像をコピー</translation>
     </message>
     <message>
         <source>Copy</source>
@@ -3550,7 +3550,7 @@ File size: %3</source>
     </message>
     <message>
         <source>Retry</source>
-        <translation type="unfinished" />
+        <translation>再試行</translation>
     </message>
     <message>
         <source>Generate Long Screenshot</source>
@@ -3558,11 +3558,11 @@ File size: %3</source>
     </message>
     <message>
         <source>Retry Analysis</source>
-        <translation type="unfinished" />
+        <translation>分析を再試行</translation>
     </message>
     <message>
         <source>Save %1 PNG Images</source>
-        <translation type="unfinished" />
+        <translation>%1 枚の PNG 画像を保存</translation>
     </message>
     <message>
         <source>Save PNG</source>

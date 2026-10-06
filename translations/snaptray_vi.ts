@@ -1813,7 +1813,7 @@ Kích thước: %2</translation>
     </message>
     <message>
         <source>Create Long Screenshot</source>
-        <translation type="unfinished" />
+        <translation>Tạo ảnh chụp màn hình dài</translation>
     </message>
     <message>
         <source>Save Recording (Enter / Ctrl+S)</source>
@@ -1821,7 +1821,7 @@ Kích thước: %2</translation>
     </message>
     <message>
         <source>Adjust the crop or time range, then analyze again.</source>
-        <translation type="unfinished" />
+        <translation>Điều chỉnh vùng cắt hoặc khoảng thời gian rồi phân tích lại.</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -1829,7 +1829,7 @@ Kích thước: %2</translation>
     </message>
     <message>
         <source>Analyze Again</source>
-        <translation type="unfinished" />
+        <translation>Phân tích lại</translation>
     </message>
     <message>
         <source>Dismiss Error</source>
@@ -3329,11 +3329,11 @@ Kích thước tệp: %3</translation>
     </message>
     <message>
         <source>Finding content to stitch…</source>
-        <translation type="unfinished" />
+        <translation>Đang tìm nội dung để ghép…</translation>
     </message>
     <message>
         <source>Generating long screenshot…</source>
-        <translation type="unfinished" />
+        <translation>Đang tạo ảnh chụp màn hình dài…</translation>
     </message>
     <message>
         <source>Could not create the result preview.</source>
@@ -3341,7 +3341,7 @@ Kích thước tệp: %3</translation>
     </message>
     <message>
         <source>Image copied.</source>
-        <translation type="unfinished" />
+        <translation>Đã sao chép ảnh.</translation>
     </message>
     <message>
         <source>Save Long Screenshot</source>
@@ -3353,22 +3353,22 @@ Kích thước tệp: %3</translation>
     </message>
     <message>
         <source>Image %1: %2</source>
-        <translation type="unfinished" />
+        <translation>Ảnh %1: %2</translation>
     </message>
     <message>
         <source>Saved %1 of %2 images.</source>
-        <translation type="unfinished" />
+        <translation>Đã lưu %1 trong số %2 ảnh.</translation>
     </message>
     <message>
         <source>Copy failed. Please try again.</source>
-        <translation type="unfinished" />
+        <translation>Sao chép thất bại. Vui lòng thử lại.</translation>
     </message>
 </context>
 <context>
     <name>LongshotWorkspace</name>
     <message>
         <source>Choose Content</source>
-        <translation type="unfinished" />
+        <translation>Chọn nội dung</translation>
     </message>
     <message>
         <source>Recording Preview</source>
@@ -3376,19 +3376,19 @@ Kích thước tệp: %3</translation>
     </message>
     <message>
         <source>Long Screenshot Ready</source>
-        <translation type="unfinished" />
+        <translation>Ảnh chụp màn hình dài đã sẵn sàng</translation>
     </message>
     <message>
         <source>Create Long Screenshot</source>
-        <translation type="unfinished" />
+        <translation>Tạo ảnh chụp màn hình dài</translation>
     </message>
     <message>
         <source>We will recommend a suitable range when analysis is complete.</source>
-        <translation type="unfinished" />
+        <translation>Chúng tôi sẽ đề xuất khoảng phù hợp khi phân tích hoàn tất.</translation>
     </message>
     <message>
         <source>Creating only your selected content.</source>
-        <translation type="unfinished" />
+        <translation>Chỉ tạo nội dung bạn đã chọn.</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -3396,127 +3396,127 @@ Kích thước tệp: %3</translation>
     </message>
     <message>
         <source>This recording cannot produce a long screenshot yet</source>
-        <translation type="unfinished" />
+        <translation>Bản ghi này chưa thể tạo ảnh chụp màn hình dài</translation>
     </message>
     <message>
         <source>Content found; some seams need a look</source>
-        <translation type="unfinished" />
+        <translation>Đã tìm thấy nội dung; một số đường ghép cần được kiểm tra</translation>
     </message>
     <message>
         <source>We recommend this content</source>
-        <translation type="unfinished" />
+        <translation>Chúng tôi đề xuất nội dung này</translation>
     </message>
     <message>
         <source>This content can become a long screenshot</source>
-        <translation type="unfinished" />
+        <translation>Nội dung này có thể tạo thành ảnh chụp màn hình dài</translation>
     </message>
     <message>
         <source>There is not enough scrolling content. Choose a range that includes scrolling.</source>
-        <translation type="unfinished" />
+        <translation>Không đủ nội dung cuộn. Hãy chọn khoảng có thao tác cuộn.</translation>
     </message>
     <message>
         <source>This recording is too long to analyze. Select a shorter range and try again.</source>
-        <translation type="unfinished" />
+        <translation>Bản ghi này quá dài để phân tích. Hãy chọn khoảng ngắn hơn rồi thử lại.</translation>
     </message>
     <message>
         <source>No continuous content was found. Crop to one content area, or record again while scrolling slowly.</source>
-        <translation type="unfinished" />
+        <translation>Không tìm thấy nội dung liên tục. Hãy cắt vào một vùng nội dung hoặc ghi lại trong khi cuộn chậm.</translation>
     </message>
     <message>
         <source>Some content could not be joined. This selection produces a separate long screenshot and does not include the entire recording.</source>
-        <translation type="unfinished" />
+        <translation>Không thể ghép một số nội dung. Lựa chọn này tạo ảnh chụp màn hình dài riêng và không bao gồm toàn bộ bản ghi.</translation>
     </message>
     <message>
         <source>Review the selected source range, then generate your screenshot.</source>
-        <translation type="unfinished" />
+        <translation>Kiểm tra khoảng nguồn đã chọn rồi tạo ảnh chụp màn hình.</translation>
     </message>
     <message>
         <source>Recommended range</source>
-        <translation type="unfinished" />
+        <translation>Khoảng đề xuất</translation>
     </message>
     <message>
         <source>Selected range</source>
-        <translation type="unfinished" />
+        <translation>Khoảng đã chọn</translation>
     </message>
     <message>
         <source>Source preview · Start</source>
-        <translation type="unfinished" />
+        <translation>Xem trước nguồn · Đầu</translation>
     </message>
     <message>
         <source>Source preview · End</source>
-        <translation type="unfinished" />
+        <translation>Xem trước nguồn · Cuối</translation>
     </message>
     <message>
         <source>This content is long and will be saved as %1 images.</source>
-        <translation type="unfinished" />
+        <translation>Nội dung này dài và sẽ được lưu thành %1 ảnh.</translation>
     </message>
     <message>
         <source>Produces 1 image</source>
-        <translation type="unfinished" />
+        <translation>Tạo 1 ảnh</translation>
     </message>
     <message>
         <source>Some seams will be marked for review in the preview.</source>
-        <translation type="unfinished" />
+        <translation>Một số đường ghép sẽ được đánh dấu trong bản xem trước để kiểm tra.</translation>
     </message>
     <message>
         <source>The largest continuous range with reliable content.</source>
-        <translation type="unfinished" />
+        <translation>Khoảng liên tục lớn nhất có nội dung đáng tin cậy.</translation>
     </message>
     <message>
         <source>A continuous range of content.</source>
-        <translation type="unfinished" />
+        <translation>Một khoảng nội dung liên tục.</translation>
     </message>
     <message>
         <source>Hide other ranges</source>
-        <translation type="unfinished" />
+        <translation>Ẩn các khoảng khác</translation>
     </message>
     <message>
         <source>Other available ranges (%1)</source>
-        <translation type="unfinished" />
+        <translation>Các khoảng khả dụng khác (%1)</translation>
     </message>
     <message>
         <source>Adjust Analysis Range</source>
-        <translation type="unfinished" />
+        <translation>Điều chỉnh khoảng phân tích</translation>
     </message>
     <message>
         <source>Recommended</source>
-        <translation type="unfinished" />
+        <translation>Đề xuất</translation>
     </message>
     <message>
         <source>Seams need review</source>
-        <translation type="unfinished" />
+        <translation>Đường ghép cần kiểm tra</translation>
     </message>
     <message>
         <source>Continuous content</source>
-        <translation type="unfinished" />
+        <translation>Nội dung liên tục</translation>
     </message>
     <message>
         <source>Selected source range: %1</source>
-        <translation type="unfinished" />
+        <translation>Khoảng nguồn đã chọn: %1</translation>
     </message>
     <message>
         <source>Includes only part of the recording</source>
-        <translation type="unfinished" />
+        <translation>Chỉ bao gồm một phần bản ghi</translation>
     </message>
     <message>
         <source>%1 areas have seams worth checking.</source>
-        <translation type="unfinished" />
+        <translation>%1 vùng có đường ghép cần kiểm tra.</translation>
     </message>
     <message>
         <source>Review</source>
-        <translation type="unfinished" />
+        <translation>Kiểm tra</translation>
     </message>
     <message>
         <source>Done</source>
-        <translation type="unfinished" />
+        <translation>Xong</translation>
     </message>
     <message>
         <source>More…</source>
-        <translation type="unfinished" />
+        <translation>Thêm…</translation>
     </message>
     <message>
         <source>Pin Current Image</source>
-        <translation type="unfinished" />
+        <translation>Ghim ảnh hiện tại</translation>
     </message>
     <message>
         <source>Pin</source>
@@ -3524,7 +3524,7 @@ Kích thước tệp: %3</translation>
     </message>
     <message>
         <source>Annotate Current Image in Pin</source>
-        <translation type="unfinished" />
+        <translation>Chú thích ảnh hiện tại trong cửa sổ ghim</translation>
     </message>
     <message>
         <source>Annotate in Pin</source>
@@ -3532,11 +3532,11 @@ Kích thước tệp: %3</translation>
     </message>
     <message>
         <source>Image %1 / %2</source>
-        <translation type="unfinished" />
+        <translation>Ảnh %1 / %2</translation>
     </message>
     <message>
         <source>Copy Current Image</source>
-        <translation type="unfinished" />
+        <translation>Sao chép ảnh hiện tại</translation>
     </message>
     <message>
         <source>Copy</source>
@@ -3544,7 +3544,7 @@ Kích thước tệp: %3</translation>
     </message>
     <message>
         <source>Retry</source>
-        <translation type="unfinished" />
+        <translation>Thử lại</translation>
     </message>
     <message>
         <source>Generate Long Screenshot</source>
@@ -3552,11 +3552,11 @@ Kích thước tệp: %3</translation>
     </message>
     <message>
         <source>Retry Analysis</source>
-        <translation type="unfinished" />
+        <translation>Thử phân tích lại</translation>
     </message>
     <message>
         <source>Save %1 PNG Images</source>
-        <translation type="unfinished" />
+        <translation>Lưu %1 ảnh PNG</translation>
     </message>
     <message>
         <source>Save PNG</source>

@@ -1813,7 +1813,7 @@ Storlek: %2</translation>
     </message>
     <message>
         <source>Create Long Screenshot</source>
-        <translation type="unfinished" />
+        <translation>Skapa lång skärmbild</translation>
     </message>
     <message>
         <source>Save Recording (Enter / Ctrl+S)</source>
@@ -1821,7 +1821,7 @@ Storlek: %2</translation>
     </message>
     <message>
         <source>Adjust the crop or time range, then analyze again.</source>
-        <translation type="unfinished" />
+        <translation>Justera beskärningen eller tidsintervallet och analysera igen.</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -1829,7 +1829,7 @@ Storlek: %2</translation>
     </message>
     <message>
         <source>Analyze Again</source>
-        <translation type="unfinished" />
+        <translation>Analysera igen</translation>
     </message>
     <message>
         <source>Dismiss Error</source>
@@ -3329,11 +3329,11 @@ Filstorlek: %3</translation>
     </message>
     <message>
         <source>Finding content to stitch…</source>
-        <translation type="unfinished" />
+        <translation>Söker efter innehåll att sammanfoga…</translation>
     </message>
     <message>
         <source>Generating long screenshot…</source>
-        <translation type="unfinished" />
+        <translation>Skapar lång skärmbild…</translation>
     </message>
     <message>
         <source>Could not create the result preview.</source>
@@ -3341,7 +3341,7 @@ Filstorlek: %3</translation>
     </message>
     <message>
         <source>Image copied.</source>
-        <translation type="unfinished" />
+        <translation>Bilden har kopierats.</translation>
     </message>
     <message>
         <source>Save Long Screenshot</source>
@@ -3353,22 +3353,22 @@ Filstorlek: %3</translation>
     </message>
     <message>
         <source>Image %1: %2</source>
-        <translation type="unfinished" />
+        <translation>Bild %1: %2</translation>
     </message>
     <message>
         <source>Saved %1 of %2 images.</source>
-        <translation type="unfinished" />
+        <translation>Sparade %1 av %2 bilder.</translation>
     </message>
     <message>
         <source>Copy failed. Please try again.</source>
-        <translation type="unfinished" />
+        <translation>Kopieringen misslyckades. Försök igen.</translation>
     </message>
 </context>
 <context>
     <name>LongshotWorkspace</name>
     <message>
         <source>Choose Content</source>
-        <translation type="unfinished" />
+        <translation>Välj innehåll</translation>
     </message>
     <message>
         <source>Recording Preview</source>
@@ -3376,19 +3376,19 @@ Filstorlek: %3</translation>
     </message>
     <message>
         <source>Long Screenshot Ready</source>
-        <translation type="unfinished" />
+        <translation>Lång skärmbild klar</translation>
     </message>
     <message>
         <source>Create Long Screenshot</source>
-        <translation type="unfinished" />
+        <translation>Skapa lång skärmbild</translation>
     </message>
     <message>
         <source>We will recommend a suitable range when analysis is complete.</source>
-        <translation type="unfinished" />
+        <translation>Vi rekommenderar ett lämpligt intervall när analysen är klar.</translation>
     </message>
     <message>
         <source>Creating only your selected content.</source>
-        <translation type="unfinished" />
+        <translation>Skapar endast det valda innehållet.</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -3396,127 +3396,127 @@ Filstorlek: %3</translation>
     </message>
     <message>
         <source>This recording cannot produce a long screenshot yet</source>
-        <translation type="unfinished" />
+        <translation>Den här inspelningen kan ännu inte ge en lång skärmbild</translation>
     </message>
     <message>
         <source>Content found; some seams need a look</source>
-        <translation type="unfinished" />
+        <translation>Innehåll hittades; några skarvar behöver granskas</translation>
     </message>
     <message>
         <source>We recommend this content</source>
-        <translation type="unfinished" />
+        <translation>Vi rekommenderar det här innehållet</translation>
     </message>
     <message>
         <source>This content can become a long screenshot</source>
-        <translation type="unfinished" />
+        <translation>Det här innehållet kan bli en lång skärmbild</translation>
     </message>
     <message>
         <source>There is not enough scrolling content. Choose a range that includes scrolling.</source>
-        <translation type="unfinished" />
+        <translation>Det finns inte tillräckligt med rullande innehåll. Välj ett intervall som innehåller rullning.</translation>
     </message>
     <message>
         <source>This recording is too long to analyze. Select a shorter range and try again.</source>
-        <translation type="unfinished" />
+        <translation>Inspelningen är för lång för att analyseras. Välj ett kortare intervall och försök igen.</translation>
     </message>
     <message>
         <source>No continuous content was found. Crop to one content area, or record again while scrolling slowly.</source>
-        <translation type="unfinished" />
+        <translation>Inget sammanhängande innehåll hittades. Beskär till ett innehållsområde eller spela in igen medan du rullar långsamt.</translation>
     </message>
     <message>
         <source>Some content could not be joined. This selection produces a separate long screenshot and does not include the entire recording.</source>
-        <translation type="unfinished" />
+        <translation>En del innehåll kunde inte sammanfogas. Det här urvalet ger en separat lång skärmbild och omfattar inte hela inspelningen.</translation>
     </message>
     <message>
         <source>Review the selected source range, then generate your screenshot.</source>
-        <translation type="unfinished" />
+        <translation>Granska det valda källintervallet och skapa sedan skärmbilden.</translation>
     </message>
     <message>
         <source>Recommended range</source>
-        <translation type="unfinished" />
+        <translation>Rekommenderat intervall</translation>
     </message>
     <message>
         <source>Selected range</source>
-        <translation type="unfinished" />
+        <translation>Valt intervall</translation>
     </message>
     <message>
         <source>Source preview · Start</source>
-        <translation type="unfinished" />
+        <translation>Förhandsvisning av källa · Början</translation>
     </message>
     <message>
         <source>Source preview · End</source>
-        <translation type="unfinished" />
+        <translation>Förhandsvisning av källa · Slut</translation>
     </message>
     <message>
         <source>This content is long and will be saved as %1 images.</source>
-        <translation type="unfinished" />
+        <translation>Innehållet är långt och sparas som %1 bilder.</translation>
     </message>
     <message>
         <source>Produces 1 image</source>
-        <translation type="unfinished" />
+        <translation>Ger 1 bild</translation>
     </message>
     <message>
         <source>Some seams will be marked for review in the preview.</source>
-        <translation type="unfinished" />
+        <translation>Några skarvar markeras för granskning i förhandsvisningen.</translation>
     </message>
     <message>
         <source>The largest continuous range with reliable content.</source>
-        <translation type="unfinished" />
+        <translation>Det största sammanhängande intervallet med tillförlitligt innehåll.</translation>
     </message>
     <message>
         <source>A continuous range of content.</source>
-        <translation type="unfinished" />
+        <translation>Ett sammanhängande innehållsintervall.</translation>
     </message>
     <message>
         <source>Hide other ranges</source>
-        <translation type="unfinished" />
+        <translation>Dölj andra intervall</translation>
     </message>
     <message>
         <source>Other available ranges (%1)</source>
-        <translation type="unfinished" />
+        <translation>Andra tillgängliga intervall (%1)</translation>
     </message>
     <message>
         <source>Adjust Analysis Range</source>
-        <translation type="unfinished" />
+        <translation>Justera analysintervall</translation>
     </message>
     <message>
         <source>Recommended</source>
-        <translation type="unfinished" />
+        <translation>Rekommenderat</translation>
     </message>
     <message>
         <source>Seams need review</source>
-        <translation type="unfinished" />
+        <translation>Skarvar behöver granskas</translation>
     </message>
     <message>
         <source>Continuous content</source>
-        <translation type="unfinished" />
+        <translation>Sammanhängande innehåll</translation>
     </message>
     <message>
         <source>Selected source range: %1</source>
-        <translation type="unfinished" />
+        <translation>Valt källintervall: %1</translation>
     </message>
     <message>
         <source>Includes only part of the recording</source>
-        <translation type="unfinished" />
+        <translation>Innehåller endast en del av inspelningen</translation>
     </message>
     <message>
         <source>%1 areas have seams worth checking.</source>
-        <translation type="unfinished" />
+        <translation>%1 områden har skarvar som bör kontrolleras.</translation>
     </message>
     <message>
         <source>Review</source>
-        <translation type="unfinished" />
+        <translation>Granska</translation>
     </message>
     <message>
         <source>Done</source>
-        <translation type="unfinished" />
+        <translation>Klart</translation>
     </message>
     <message>
         <source>More…</source>
-        <translation type="unfinished" />
+        <translation>Mer…</translation>
     </message>
     <message>
         <source>Pin Current Image</source>
-        <translation type="unfinished" />
+        <translation>Fäst aktuell bild</translation>
     </message>
     <message>
         <source>Pin</source>
@@ -3524,7 +3524,7 @@ Filstorlek: %3</translation>
     </message>
     <message>
         <source>Annotate Current Image in Pin</source>
-        <translation type="unfinished" />
+        <translation>Kommentera aktuell bild i fäst fönster</translation>
     </message>
     <message>
         <source>Annotate in Pin</source>
@@ -3532,11 +3532,11 @@ Filstorlek: %3</translation>
     </message>
     <message>
         <source>Image %1 / %2</source>
-        <translation type="unfinished" />
+        <translation>Bild %1 / %2</translation>
     </message>
     <message>
         <source>Copy Current Image</source>
-        <translation type="unfinished" />
+        <translation>Kopiera aktuell bild</translation>
     </message>
     <message>
         <source>Copy</source>
@@ -3544,7 +3544,7 @@ Filstorlek: %3</translation>
     </message>
     <message>
         <source>Retry</source>
-        <translation type="unfinished" />
+        <translation>Försök igen</translation>
     </message>
     <message>
         <source>Generate Long Screenshot</source>
@@ -3552,11 +3552,11 @@ Filstorlek: %3</translation>
     </message>
     <message>
         <source>Retry Analysis</source>
-        <translation type="unfinished" />
+        <translation>Analysera på nytt</translation>
     </message>
     <message>
         <source>Save %1 PNG Images</source>
-        <translation type="unfinished" />
+        <translation>Spara %1 PNG-bilder</translation>
     </message>
     <message>
         <source>Save PNG</source>

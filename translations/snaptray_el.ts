@@ -1813,7 +1813,7 @@ Size: %2</source>
     </message>
     <message>
         <source>Create Long Screenshot</source>
-        <translation type="unfinished" />
+        <translation>Δημιουργία μεγάλου στιγμιότυπου</translation>
     </message>
     <message>
         <source>Save Recording (Enter / Ctrl+S)</source>
@@ -1821,7 +1821,7 @@ Size: %2</source>
     </message>
     <message>
         <source>Adjust the crop or time range, then analyze again.</source>
-        <translation type="unfinished" />
+        <translation>Προσαρμόστε την περικοπή ή το χρονικό εύρος και αναλύστε ξανά.</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -1829,7 +1829,7 @@ Size: %2</source>
     </message>
     <message>
         <source>Analyze Again</source>
-        <translation type="unfinished" />
+        <translation>Νέα ανάλυση</translation>
     </message>
     <message>
         <source>Dismiss Error</source>
@@ -3329,11 +3329,11 @@ File size: %3</source>
     </message>
     <message>
         <source>Finding content to stitch…</source>
-        <translation type="unfinished" />
+        <translation>Αναζήτηση περιεχομένου για συρραφή…</translation>
     </message>
     <message>
         <source>Generating long screenshot…</source>
-        <translation type="unfinished" />
+        <translation>Δημιουργία μεγάλου στιγμιότυπου…</translation>
     </message>
     <message>
         <source>Could not create the result preview.</source>
@@ -3341,7 +3341,7 @@ File size: %3</source>
     </message>
     <message>
         <source>Image copied.</source>
-        <translation type="unfinished" />
+        <translation>Η εικόνα αντιγράφηκε.</translation>
     </message>
     <message>
         <source>Save Long Screenshot</source>
@@ -3353,22 +3353,22 @@ File size: %3</source>
     </message>
     <message>
         <source>Image %1: %2</source>
-        <translation type="unfinished" />
+        <translation>Εικόνα %1: %2</translation>
     </message>
     <message>
         <source>Saved %1 of %2 images.</source>
-        <translation type="unfinished" />
+        <translation>Αποθηκεύτηκαν %1 από %2 εικόνες.</translation>
     </message>
     <message>
         <source>Copy failed. Please try again.</source>
-        <translation type="unfinished" />
+        <translation>Η αντιγραφή απέτυχε. Δοκιμάστε ξανά.</translation>
     </message>
 </context>
 <context>
     <name>LongshotWorkspace</name>
     <message>
         <source>Choose Content</source>
-        <translation type="unfinished" />
+        <translation>Επιλογή περιεχομένου</translation>
     </message>
     <message>
         <source>Recording Preview</source>
@@ -3376,19 +3376,19 @@ File size: %3</source>
     </message>
     <message>
         <source>Long Screenshot Ready</source>
-        <translation type="unfinished" />
+        <translation>Το μεγάλο στιγμιότυπο είναι έτοιμο</translation>
     </message>
     <message>
         <source>Create Long Screenshot</source>
-        <translation type="unfinished" />
+        <translation>Δημιουργία μεγάλου στιγμιότυπου</translation>
     </message>
     <message>
         <source>We will recommend a suitable range when analysis is complete.</source>
-        <translation type="unfinished" />
+        <translation>Θα προτείνουμε ένα κατάλληλο εύρος όταν ολοκληρωθεί η ανάλυση.</translation>
     </message>
     <message>
         <source>Creating only your selected content.</source>
-        <translation type="unfinished" />
+        <translation>Δημιουργείται μόνο το επιλεγμένο περιεχόμενο.</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -3396,127 +3396,127 @@ File size: %3</source>
     </message>
     <message>
         <source>This recording cannot produce a long screenshot yet</source>
-        <translation type="unfinished" />
+        <translation>Αυτή η εγγραφή δεν μπορεί ακόμη να παράγει μεγάλο στιγμιότυπο</translation>
     </message>
     <message>
         <source>Content found; some seams need a look</source>
-        <translation type="unfinished" />
+        <translation>Βρέθηκε περιεχόμενο· ορισμένες ενώσεις χρειάζονται έλεγχο</translation>
     </message>
     <message>
         <source>We recommend this content</source>
-        <translation type="unfinished" />
+        <translation>Προτείνουμε αυτό το περιεχόμενο</translation>
     </message>
     <message>
         <source>This content can become a long screenshot</source>
-        <translation type="unfinished" />
+        <translation>Αυτό το περιεχόμενο μπορεί να γίνει μεγάλο στιγμιότυπο</translation>
     </message>
     <message>
         <source>There is not enough scrolling content. Choose a range that includes scrolling.</source>
-        <translation type="unfinished" />
+        <translation>Δεν υπάρχει αρκετό περιεχόμενο κύλισης. Επιλέξτε εύρος που περιλαμβάνει κύλιση.</translation>
     </message>
     <message>
         <source>This recording is too long to analyze. Select a shorter range and try again.</source>
-        <translation type="unfinished" />
+        <translation>Αυτή η εγγραφή είναι πολύ μεγάλη για ανάλυση. Επιλέξτε μικρότερο εύρος και δοκιμάστε ξανά.</translation>
     </message>
     <message>
         <source>No continuous content was found. Crop to one content area, or record again while scrolling slowly.</source>
-        <translation type="unfinished" />
+        <translation>Δεν βρέθηκε συνεχές περιεχόμενο. Περικόψτε σε μία περιοχή περιεχομένου ή εγγράψτε ξανά κάνοντας αργή κύλιση.</translation>
     </message>
     <message>
         <source>Some content could not be joined. This selection produces a separate long screenshot and does not include the entire recording.</source>
-        <translation type="unfinished" />
+        <translation>Κάποιο περιεχόμενο δεν μπόρεσε να ενωθεί. Αυτή η επιλογή παράγει ξεχωριστό μεγάλο στιγμιότυπο και δεν περιλαμβάνει ολόκληρη την εγγραφή.</translation>
     </message>
     <message>
         <source>Review the selected source range, then generate your screenshot.</source>
-        <translation type="unfinished" />
+        <translation>Ελέγξτε το επιλεγμένο εύρος πηγής και έπειτα δημιουργήστε το στιγμιότυπο.</translation>
     </message>
     <message>
         <source>Recommended range</source>
-        <translation type="unfinished" />
+        <translation>Προτεινόμενο εύρος</translation>
     </message>
     <message>
         <source>Selected range</source>
-        <translation type="unfinished" />
+        <translation>Επιλεγμένο εύρος</translation>
     </message>
     <message>
         <source>Source preview · Start</source>
-        <translation type="unfinished" />
+        <translation>Προεπισκόπηση πηγής · Αρχή</translation>
     </message>
     <message>
         <source>Source preview · End</source>
-        <translation type="unfinished" />
+        <translation>Προεπισκόπηση πηγής · Τέλος</translation>
     </message>
     <message>
         <source>This content is long and will be saved as %1 images.</source>
-        <translation type="unfinished" />
+        <translation>Αυτό το περιεχόμενο είναι μεγάλο και θα αποθηκευτεί σε %1 εικόνες.</translation>
     </message>
     <message>
         <source>Produces 1 image</source>
-        <translation type="unfinished" />
+        <translation>Παράγει 1 εικόνα</translation>
     </message>
     <message>
         <source>Some seams will be marked for review in the preview.</source>
-        <translation type="unfinished" />
+        <translation>Ορισμένες ενώσεις θα επισημανθούν στην προεπισκόπηση για έλεγχο.</translation>
     </message>
     <message>
         <source>The largest continuous range with reliable content.</source>
-        <translation type="unfinished" />
+        <translation>Το μεγαλύτερο συνεχές εύρος με αξιόπιστο περιεχόμενο.</translation>
     </message>
     <message>
         <source>A continuous range of content.</source>
-        <translation type="unfinished" />
+        <translation>Ένα συνεχές εύρος περιεχομένου.</translation>
     </message>
     <message>
         <source>Hide other ranges</source>
-        <translation type="unfinished" />
+        <translation>Απόκρυψη άλλων ευρών</translation>
     </message>
     <message>
         <source>Other available ranges (%1)</source>
-        <translation type="unfinished" />
+        <translation>Άλλα διαθέσιμα εύρη (%1)</translation>
     </message>
     <message>
         <source>Adjust Analysis Range</source>
-        <translation type="unfinished" />
+        <translation>Προσαρμογή εύρους ανάλυσης</translation>
     </message>
     <message>
         <source>Recommended</source>
-        <translation type="unfinished" />
+        <translation>Προτεινόμενο</translation>
     </message>
     <message>
         <source>Seams need review</source>
-        <translation type="unfinished" />
+        <translation>Οι ενώσεις χρειάζονται έλεγχο</translation>
     </message>
     <message>
         <source>Continuous content</source>
-        <translation type="unfinished" />
+        <translation>Συνεχές περιεχόμενο</translation>
     </message>
     <message>
         <source>Selected source range: %1</source>
-        <translation type="unfinished" />
+        <translation>Επιλεγμένο εύρος πηγής: %1</translation>
     </message>
     <message>
         <source>Includes only part of the recording</source>
-        <translation type="unfinished" />
+        <translation>Περιλαμβάνει μόνο μέρος της εγγραφής</translation>
     </message>
     <message>
         <source>%1 areas have seams worth checking.</source>
-        <translation type="unfinished" />
+        <translation>%1 περιοχές έχουν ενώσεις που αξίζει να ελεγχθούν.</translation>
     </message>
     <message>
         <source>Review</source>
-        <translation type="unfinished" />
+        <translation>Έλεγχος</translation>
     </message>
     <message>
         <source>Done</source>
-        <translation type="unfinished" />
+        <translation>Τέλος</translation>
     </message>
     <message>
         <source>More…</source>
-        <translation type="unfinished" />
+        <translation>Περισσότερα…</translation>
     </message>
     <message>
         <source>Pin Current Image</source>
-        <translation type="unfinished" />
+        <translation>Καρφίτσωμα τρέχουσας εικόνας</translation>
     </message>
     <message>
         <source>Pin</source>
@@ -3524,7 +3524,7 @@ File size: %3</source>
     </message>
     <message>
         <source>Annotate Current Image in Pin</source>
-        <translation type="unfinished" />
+        <translation>Σχολιασμός τρέχουσας εικόνας στο καρφιτσωμένο παράθυρο</translation>
     </message>
     <message>
         <source>Annotate in Pin</source>
@@ -3532,11 +3532,11 @@ File size: %3</source>
     </message>
     <message>
         <source>Image %1 / %2</source>
-        <translation type="unfinished" />
+        <translation>Εικόνα %1 / %2</translation>
     </message>
     <message>
         <source>Copy Current Image</source>
-        <translation type="unfinished" />
+        <translation>Αντιγραφή τρέχουσας εικόνας</translation>
     </message>
     <message>
         <source>Copy</source>
@@ -3544,7 +3544,7 @@ File size: %3</source>
     </message>
     <message>
         <source>Retry</source>
-        <translation type="unfinished" />
+        <translation>Επανάληψη</translation>
     </message>
     <message>
         <source>Generate Long Screenshot</source>
@@ -3552,11 +3552,11 @@ File size: %3</source>
     </message>
     <message>
         <source>Retry Analysis</source>
-        <translation type="unfinished" />
+        <translation>Επανάληψη ανάλυσης</translation>
     </message>
     <message>
         <source>Save %1 PNG Images</source>
-        <translation type="unfinished" />
+        <translation>Αποθήκευση %1 εικόνων PNG</translation>
     </message>
     <message>
         <source>Save PNG</source>

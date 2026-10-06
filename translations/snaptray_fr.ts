@@ -1819,7 +1819,7 @@ Taille : %2</translation>
     </message>
     <message>
         <source>Create Long Screenshot</source>
-        <translation type="unfinished" />
+        <translation>Créer une capture longue</translation>
     </message>
     <message>
         <source>Save Recording (Enter / Ctrl+S)</source>
@@ -1827,7 +1827,7 @@ Taille : %2</translation>
     </message>
     <message>
         <source>Adjust the crop or time range, then analyze again.</source>
-        <translation type="unfinished" />
+        <translation>Ajustez le recadrage ou la plage temporelle, puis relancez l’analyse.</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -1835,7 +1835,7 @@ Taille : %2</translation>
     </message>
     <message>
         <source>Analyze Again</source>
-        <translation type="unfinished" />
+        <translation>Analyser à nouveau</translation>
     </message>
     <message>
         <source>Dismiss Error</source>
@@ -3335,11 +3335,11 @@ Taille du fichier : %3</translation>
     </message>
     <message>
         <source>Finding content to stitch…</source>
-        <translation type="unfinished" />
+        <translation>Recherche de contenu à assembler…</translation>
     </message>
     <message>
         <source>Generating long screenshot…</source>
-        <translation type="unfinished" />
+        <translation>Génération de la capture longue…</translation>
     </message>
     <message>
         <source>Could not create the result preview.</source>
@@ -3347,7 +3347,7 @@ Taille du fichier : %3</translation>
     </message>
     <message>
         <source>Image copied.</source>
-        <translation type="unfinished" />
+        <translation>Image copiée.</translation>
     </message>
     <message>
         <source>Save Long Screenshot</source>
@@ -3359,22 +3359,22 @@ Taille du fichier : %3</translation>
     </message>
     <message>
         <source>Image %1: %2</source>
-        <translation type="unfinished" />
+        <translation>Image %1 : %2</translation>
     </message>
     <message>
         <source>Saved %1 of %2 images.</source>
-        <translation type="unfinished" />
+        <translation>%1 images sur %2 enregistrées.</translation>
     </message>
     <message>
         <source>Copy failed. Please try again.</source>
-        <translation type="unfinished" />
+        <translation>Échec de la copie. Veuillez réessayer.</translation>
     </message>
 </context>
 <context>
     <name>LongshotWorkspace</name>
     <message>
         <source>Choose Content</source>
-        <translation type="unfinished" />
+        <translation>Choisir le contenu</translation>
     </message>
     <message>
         <source>Recording Preview</source>
@@ -3382,19 +3382,19 @@ Taille du fichier : %3</translation>
     </message>
     <message>
         <source>Long Screenshot Ready</source>
-        <translation type="unfinished" />
+        <translation>Capture longue prête</translation>
     </message>
     <message>
         <source>Create Long Screenshot</source>
-        <translation type="unfinished" />
+        <translation>Créer une capture longue</translation>
     </message>
     <message>
         <source>We will recommend a suitable range when analysis is complete.</source>
-        <translation type="unfinished" />
+        <translation>Nous recommanderons une plage adaptée une fois l’analyse terminée.</translation>
     </message>
     <message>
         <source>Creating only your selected content.</source>
-        <translation type="unfinished" />
+        <translation>Création du contenu sélectionné uniquement.</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -3402,127 +3402,127 @@ Taille du fichier : %3</translation>
     </message>
     <message>
         <source>This recording cannot produce a long screenshot yet</source>
-        <translation type="unfinished" />
+        <translation>Cet enregistrement ne permet pas encore de créer une capture longue</translation>
     </message>
     <message>
         <source>Content found; some seams need a look</source>
-        <translation type="unfinished" />
+        <translation>Contenu trouvé ; certaines jonctions sont à vérifier</translation>
     </message>
     <message>
         <source>We recommend this content</source>
-        <translation type="unfinished" />
+        <translation>Nous recommandons ce contenu</translation>
     </message>
     <message>
         <source>This content can become a long screenshot</source>
-        <translation type="unfinished" />
+        <translation>Ce contenu peut devenir une capture longue</translation>
     </message>
     <message>
         <source>There is not enough scrolling content. Choose a range that includes scrolling.</source>
-        <translation type="unfinished" />
+        <translation>Le contenu défilant est insuffisant. Choisissez une plage incluant un défilement.</translation>
     </message>
     <message>
         <source>This recording is too long to analyze. Select a shorter range and try again.</source>
-        <translation type="unfinished" />
+        <translation>Cet enregistrement est trop long à analyser. Sélectionnez une plage plus courte et réessayez.</translation>
     </message>
     <message>
         <source>No continuous content was found. Crop to one content area, or record again while scrolling slowly.</source>
-        <translation type="unfinished" />
+        <translation>Aucun contenu continu trouvé. Recadrez sur une seule zone de contenu ou enregistrez à nouveau en faisant défiler lentement.</translation>
     </message>
     <message>
         <source>Some content could not be joined. This selection produces a separate long screenshot and does not include the entire recording.</source>
-        <translation type="unfinished" />
+        <translation>Certains contenus n’ont pas pu être assemblés. Cette sélection produit une capture longue distincte et n’inclut pas tout l’enregistrement.</translation>
     </message>
     <message>
         <source>Review the selected source range, then generate your screenshot.</source>
-        <translation type="unfinished" />
+        <translation>Vérifiez la plage source sélectionnée, puis générez votre capture.</translation>
     </message>
     <message>
         <source>Recommended range</source>
-        <translation type="unfinished" />
+        <translation>Plage recommandée</translation>
     </message>
     <message>
         <source>Selected range</source>
-        <translation type="unfinished" />
+        <translation>Plage sélectionnée</translation>
     </message>
     <message>
         <source>Source preview · Start</source>
-        <translation type="unfinished" />
+        <translation>Aperçu de la source · Début</translation>
     </message>
     <message>
         <source>Source preview · End</source>
-        <translation type="unfinished" />
+        <translation>Aperçu de la source · Fin</translation>
     </message>
     <message>
         <source>This content is long and will be saved as %1 images.</source>
-        <translation type="unfinished" />
+        <translation>Ce contenu est long et sera enregistré en %1 images.</translation>
     </message>
     <message>
         <source>Produces 1 image</source>
-        <translation type="unfinished" />
+        <translation>Produit 1 image</translation>
     </message>
     <message>
         <source>Some seams will be marked for review in the preview.</source>
-        <translation type="unfinished" />
+        <translation>Certaines jonctions seront signalées dans l’aperçu pour vérification.</translation>
     </message>
     <message>
         <source>The largest continuous range with reliable content.</source>
-        <translation type="unfinished" />
+        <translation>La plus grande plage continue contenant du contenu fiable.</translation>
     </message>
     <message>
         <source>A continuous range of content.</source>
-        <translation type="unfinished" />
+        <translation>Une plage de contenu continu.</translation>
     </message>
     <message>
         <source>Hide other ranges</source>
-        <translation type="unfinished" />
+        <translation>Masquer les autres plages</translation>
     </message>
     <message>
         <source>Other available ranges (%1)</source>
-        <translation type="unfinished" />
+        <translation>Autres plages disponibles (%1)</translation>
     </message>
     <message>
         <source>Adjust Analysis Range</source>
-        <translation type="unfinished" />
+        <translation>Ajuster la plage d’analyse</translation>
     </message>
     <message>
         <source>Recommended</source>
-        <translation type="unfinished" />
+        <translation>Recommandée</translation>
     </message>
     <message>
         <source>Seams need review</source>
-        <translation type="unfinished" />
+        <translation>Jonctions à vérifier</translation>
     </message>
     <message>
         <source>Continuous content</source>
-        <translation type="unfinished" />
+        <translation>Contenu continu</translation>
     </message>
     <message>
         <source>Selected source range: %1</source>
-        <translation type="unfinished" />
+        <translation>Plage source sélectionnée : %1</translation>
     </message>
     <message>
         <source>Includes only part of the recording</source>
-        <translation type="unfinished" />
+        <translation>Inclut seulement une partie de l’enregistrement</translation>
     </message>
     <message>
         <source>%1 areas have seams worth checking.</source>
-        <translation type="unfinished" />
+        <translation>%1 zones contiennent des jonctions à vérifier.</translation>
     </message>
     <message>
         <source>Review</source>
-        <translation type="unfinished" />
+        <translation>Vérifier</translation>
     </message>
     <message>
         <source>Done</source>
-        <translation type="unfinished" />
+        <translation>Terminé</translation>
     </message>
     <message>
         <source>More…</source>
-        <translation type="unfinished" />
+        <translation>Plus…</translation>
     </message>
     <message>
         <source>Pin Current Image</source>
-        <translation type="unfinished" />
+        <translation>Épingler l’image actuelle</translation>
     </message>
     <message>
         <source>Pin</source>
@@ -3530,7 +3530,7 @@ Taille du fichier : %3</translation>
     </message>
     <message>
         <source>Annotate Current Image in Pin</source>
-        <translation type="unfinished" />
+        <translation>Annoter l’image actuelle dans la fenêtre épinglée</translation>
     </message>
     <message>
         <source>Annotate in Pin</source>
@@ -3538,11 +3538,11 @@ Taille du fichier : %3</translation>
     </message>
     <message>
         <source>Image %1 / %2</source>
-        <translation type="unfinished" />
+        <translation>Image %1 / %2</translation>
     </message>
     <message>
         <source>Copy Current Image</source>
-        <translation type="unfinished" />
+        <translation>Copier l’image actuelle</translation>
     </message>
     <message>
         <source>Copy</source>
@@ -3550,7 +3550,7 @@ Taille du fichier : %3</translation>
     </message>
     <message>
         <source>Retry</source>
-        <translation type="unfinished" />
+        <translation>Réessayer</translation>
     </message>
     <message>
         <source>Generate Long Screenshot</source>
@@ -3558,11 +3558,11 @@ Taille du fichier : %3</translation>
     </message>
     <message>
         <source>Retry Analysis</source>
-        <translation type="unfinished" />
+        <translation>Relancer l’analyse</translation>
     </message>
     <message>
         <source>Save %1 PNG Images</source>
-        <translation type="unfinished" />
+        <translation>Enregistrer %1 images PNG</translation>
     </message>
     <message>
         <source>Save PNG</source>

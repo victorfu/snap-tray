@@ -1810,7 +1810,7 @@ Size: %2</source>
     </message>
     <message>
         <source>Create Long Screenshot</source>
-        <translation type="unfinished" />
+        <translation>创建长截图</translation>
     </message>
     <message>
         <source>Save Recording (Enter / Ctrl+S)</source>
@@ -1818,7 +1818,7 @@ Size: %2</source>
     </message>
     <message>
         <source>Adjust the crop or time range, then analyze again.</source>
-        <translation type="unfinished" />
+        <translation>调整裁剪区域或时间范围，然后重新分析。</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -1826,7 +1826,7 @@ Size: %2</source>
     </message>
     <message>
         <source>Analyze Again</source>
-        <translation type="unfinished" />
+        <translation>重新分析</translation>
     </message>
     <message>
         <source>Dismiss Error</source>
@@ -3326,11 +3326,11 @@ File size: %3</source>
     </message>
     <message>
         <source>Finding content to stitch…</source>
-        <translation type="unfinished" />
+        <translation>正在查找可拼接的内容…</translation>
     </message>
     <message>
         <source>Generating long screenshot…</source>
-        <translation type="unfinished" />
+        <translation>正在生成长截图…</translation>
     </message>
     <message>
         <source>Could not create the result preview.</source>
@@ -3338,7 +3338,7 @@ File size: %3</source>
     </message>
     <message>
         <source>Image copied.</source>
-        <translation type="unfinished" />
+        <translation>图片已复制。</translation>
     </message>
     <message>
         <source>Save Long Screenshot</source>
@@ -3350,22 +3350,22 @@ File size: %3</source>
     </message>
     <message>
         <source>Image %1: %2</source>
-        <translation type="unfinished" />
+        <translation>图片 %1：%2</translation>
     </message>
     <message>
         <source>Saved %1 of %2 images.</source>
-        <translation type="unfinished" />
+        <translation>已保存 %1 张图片，共 %2 张。</translation>
     </message>
     <message>
         <source>Copy failed. Please try again.</source>
-        <translation type="unfinished" />
+        <translation>复制失败，请重试。</translation>
     </message>
 </context>
 <context>
     <name>LongshotWorkspace</name>
     <message>
         <source>Choose Content</source>
-        <translation type="unfinished" />
+        <translation>选择内容</translation>
     </message>
     <message>
         <source>Recording Preview</source>
@@ -3373,19 +3373,19 @@ File size: %3</source>
     </message>
     <message>
         <source>Long Screenshot Ready</source>
-        <translation type="unfinished" />
+        <translation>长截图已就绪</translation>
     </message>
     <message>
         <source>Create Long Screenshot</source>
-        <translation type="unfinished" />
+        <translation>创建长截图</translation>
     </message>
     <message>
         <source>We will recommend a suitable range when analysis is complete.</source>
-        <translation type="unfinished" />
+        <translation>分析完成后，我们将推荐合适的范围。</translation>
     </message>
     <message>
         <source>Creating only your selected content.</source>
-        <translation type="unfinished" />
+        <translation>仅生成您选中的内容。</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -3393,127 +3393,127 @@ File size: %3</source>
     </message>
     <message>
         <source>This recording cannot produce a long screenshot yet</source>
-        <translation type="unfinished" />
+        <translation>此录制暂时无法生成长截图</translation>
     </message>
     <message>
         <source>Content found; some seams need a look</source>
-        <translation type="unfinished" />
+        <translation>已找到内容，部分拼接处需要检查</translation>
     </message>
     <message>
         <source>We recommend this content</source>
-        <translation type="unfinished" />
+        <translation>我们推荐此内容</translation>
     </message>
     <message>
         <source>This content can become a long screenshot</source>
-        <translation type="unfinished" />
+        <translation>此内容可以生成长截图</translation>
     </message>
     <message>
         <source>There is not enough scrolling content. Choose a range that includes scrolling.</source>
-        <translation type="unfinished" />
+        <translation>滚动内容不足，请选择包含滚动的范围。</translation>
     </message>
     <message>
         <source>This recording is too long to analyze. Select a shorter range and try again.</source>
-        <translation type="unfinished" />
+        <translation>此录制过长，无法分析。请选择较短的范围后重试。</translation>
     </message>
     <message>
         <source>No continuous content was found. Crop to one content area, or record again while scrolling slowly.</source>
-        <translation type="unfinished" />
+        <translation>未找到连续内容。请裁剪到单个内容区域，或缓慢滚动并重新录制。</translation>
     </message>
     <message>
         <source>Some content could not be joined. This selection produces a separate long screenshot and does not include the entire recording.</source>
-        <translation type="unfinished" />
+        <translation>部分内容无法拼接。当前选择将生成单独的长截图，不包含整段录制。</translation>
     </message>
     <message>
         <source>Review the selected source range, then generate your screenshot.</source>
-        <translation type="unfinished" />
+        <translation>检查所选的源范围，然后生成截图。</translation>
     </message>
     <message>
         <source>Recommended range</source>
-        <translation type="unfinished" />
+        <translation>推荐范围</translation>
     </message>
     <message>
         <source>Selected range</source>
-        <translation type="unfinished" />
+        <translation>所选范围</translation>
     </message>
     <message>
         <source>Source preview · Start</source>
-        <translation type="unfinished" />
+        <translation>源预览 · 开始</translation>
     </message>
     <message>
         <source>Source preview · End</source>
-        <translation type="unfinished" />
+        <translation>源预览 · 结束</translation>
     </message>
     <message>
         <source>This content is long and will be saved as %1 images.</source>
-        <translation type="unfinished" />
+        <translation>此内容较长，将保存为 %1 张图片。</translation>
     </message>
     <message>
         <source>Produces 1 image</source>
-        <translation type="unfinished" />
+        <translation>生成 1 张图片</translation>
     </message>
     <message>
         <source>Some seams will be marked for review in the preview.</source>
-        <translation type="unfinished" />
+        <translation>部分拼接处将在预览中标记，以供检查。</translation>
     </message>
     <message>
         <source>The largest continuous range with reliable content.</source>
-        <translation type="unfinished" />
+        <translation>内容可靠的最大连续范围。</translation>
     </message>
     <message>
         <source>A continuous range of content.</source>
-        <translation type="unfinished" />
+        <translation>一段连续的内容范围。</translation>
     </message>
     <message>
         <source>Hide other ranges</source>
-        <translation type="unfinished" />
+        <translation>隐藏其他范围</translation>
     </message>
     <message>
         <source>Other available ranges (%1)</source>
-        <translation type="unfinished" />
+        <translation>其他可用范围（%1）</translation>
     </message>
     <message>
         <source>Adjust Analysis Range</source>
-        <translation type="unfinished" />
+        <translation>调整分析范围</translation>
     </message>
     <message>
         <source>Recommended</source>
-        <translation type="unfinished" />
+        <translation>推荐</translation>
     </message>
     <message>
         <source>Seams need review</source>
-        <translation type="unfinished" />
+        <translation>拼接处需要检查</translation>
     </message>
     <message>
         <source>Continuous content</source>
-        <translation type="unfinished" />
+        <translation>连续内容</translation>
     </message>
     <message>
         <source>Selected source range: %1</source>
-        <translation type="unfinished" />
+        <translation>所选源范围：%1</translation>
     </message>
     <message>
         <source>Includes only part of the recording</source>
-        <translation type="unfinished" />
+        <translation>仅包含部分录制内容</translation>
     </message>
     <message>
         <source>%1 areas have seams worth checking.</source>
-        <translation type="unfinished" />
+        <translation>%1 个区域的拼接处值得检查。</translation>
     </message>
     <message>
         <source>Review</source>
-        <translation type="unfinished" />
+        <translation>检查</translation>
     </message>
     <message>
         <source>Done</source>
-        <translation type="unfinished" />
+        <translation>完成</translation>
     </message>
     <message>
         <source>More…</source>
-        <translation type="unfinished" />
+        <translation>更多…</translation>
     </message>
     <message>
         <source>Pin Current Image</source>
-        <translation type="unfinished" />
+        <translation>置顶当前图片</translation>
     </message>
     <message>
         <source>Pin</source>
@@ -3521,7 +3521,7 @@ File size: %3</source>
     </message>
     <message>
         <source>Annotate Current Image in Pin</source>
-        <translation type="unfinished" />
+        <translation>在置顶窗口中标注当前图片</translation>
     </message>
     <message>
         <source>Annotate in Pin</source>
@@ -3529,11 +3529,11 @@ File size: %3</source>
     </message>
     <message>
         <source>Image %1 / %2</source>
-        <translation type="unfinished" />
+        <translation>图片 %1 / %2</translation>
     </message>
     <message>
         <source>Copy Current Image</source>
-        <translation type="unfinished" />
+        <translation>复制当前图片</translation>
     </message>
     <message>
         <source>Copy</source>
@@ -3541,7 +3541,7 @@ File size: %3</source>
     </message>
     <message>
         <source>Retry</source>
-        <translation type="unfinished" />
+        <translation>重试</translation>
     </message>
     <message>
         <source>Generate Long Screenshot</source>
@@ -3549,11 +3549,11 @@ File size: %3</source>
     </message>
     <message>
         <source>Retry Analysis</source>
-        <translation type="unfinished" />
+        <translation>重新分析</translation>
     </message>
     <message>
         <source>Save %1 PNG Images</source>
-        <translation type="unfinished" />
+        <translation>保存 %1 张 PNG 图片</translation>
     </message>
     <message>
         <source>Save PNG</source>

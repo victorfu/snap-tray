@@ -1813,7 +1813,7 @@ Size: %2</source>
     </message>
     <message>
         <source>Create Long Screenshot</source>
-        <translation type="unfinished" />
+        <translation>إنشاء لقطة شاشة طويلة</translation>
     </message>
     <message>
         <source>Save Recording (Enter / Ctrl+S)</source>
@@ -1821,7 +1821,7 @@ Size: %2</source>
     </message>
     <message>
         <source>Adjust the crop or time range, then analyze again.</source>
-        <translation type="unfinished" />
+        <translation>اضبط الاقتصاص أو النطاق الزمني، ثم أعد التحليل.</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -1829,7 +1829,7 @@ Size: %2</source>
     </message>
     <message>
         <source>Analyze Again</source>
-        <translation type="unfinished" />
+        <translation>تحليل مرة أخرى</translation>
     </message>
     <message>
         <source>Dismiss Error</source>
@@ -3329,11 +3329,11 @@ File size: %3</source>
     </message>
     <message>
         <source>Finding content to stitch…</source>
-        <translation type="unfinished" />
+        <translation>جارٍ البحث عن محتوى لدمجه…</translation>
     </message>
     <message>
         <source>Generating long screenshot…</source>
-        <translation type="unfinished" />
+        <translation>جارٍ إنشاء لقطة شاشة طويلة…</translation>
     </message>
     <message>
         <source>Could not create the result preview.</source>
@@ -3341,7 +3341,7 @@ File size: %3</source>
     </message>
     <message>
         <source>Image copied.</source>
-        <translation type="unfinished" />
+        <translation>تم نسخ الصورة.</translation>
     </message>
     <message>
         <source>Save Long Screenshot</source>
@@ -3353,22 +3353,22 @@ File size: %3</source>
     </message>
     <message>
         <source>Image %1: %2</source>
-        <translation type="unfinished" />
+        <translation>الصورة %1: %2</translation>
     </message>
     <message>
         <source>Saved %1 of %2 images.</source>
-        <translation type="unfinished" />
+        <translation>تم حفظ %1 من %2 صورة.</translation>
     </message>
     <message>
         <source>Copy failed. Please try again.</source>
-        <translation type="unfinished" />
+        <translation>فشل النسخ. يُرجى المحاولة مرة أخرى.</translation>
     </message>
 </context>
 <context>
     <name>LongshotWorkspace</name>
     <message>
         <source>Choose Content</source>
-        <translation type="unfinished" />
+        <translation>اختيار المحتوى</translation>
     </message>
     <message>
         <source>Recording Preview</source>
@@ -3376,19 +3376,19 @@ File size: %3</source>
     </message>
     <message>
         <source>Long Screenshot Ready</source>
-        <translation type="unfinished" />
+        <translation>لقطة الشاشة الطويلة جاهزة</translation>
     </message>
     <message>
         <source>Create Long Screenshot</source>
-        <translation type="unfinished" />
+        <translation>إنشاء لقطة شاشة طويلة</translation>
     </message>
     <message>
         <source>We will recommend a suitable range when analysis is complete.</source>
-        <translation type="unfinished" />
+        <translation>سنقترح نطاقًا مناسبًا عند اكتمال التحليل.</translation>
     </message>
     <message>
         <source>Creating only your selected content.</source>
-        <translation type="unfinished" />
+        <translation>جارٍ إنشاء المحتوى المحدد فقط.</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -3396,127 +3396,127 @@ File size: %3</source>
     </message>
     <message>
         <source>This recording cannot produce a long screenshot yet</source>
-        <translation type="unfinished" />
+        <translation>لا يمكن إنشاء لقطة شاشة طويلة من هذا التسجيل بعد</translation>
     </message>
     <message>
         <source>Content found; some seams need a look</source>
-        <translation type="unfinished" />
+        <translation>تم العثور على محتوى؛ بعض مواضع الوصل تحتاج إلى مراجعة</translation>
     </message>
     <message>
         <source>We recommend this content</source>
-        <translation type="unfinished" />
+        <translation>نوصي بهذا المحتوى</translation>
     </message>
     <message>
         <source>This content can become a long screenshot</source>
-        <translation type="unfinished" />
+        <translation>يمكن تحويل هذا المحتوى إلى لقطة شاشة طويلة</translation>
     </message>
     <message>
         <source>There is not enough scrolling content. Choose a range that includes scrolling.</source>
-        <translation type="unfinished" />
+        <translation>لا يوجد محتوى تمرير كافٍ. اختر نطاقًا يتضمن التمرير.</translation>
     </message>
     <message>
         <source>This recording is too long to analyze. Select a shorter range and try again.</source>
-        <translation type="unfinished" />
+        <translation>هذا التسجيل طويل جدًا للتحليل. حدد نطاقًا أقصر وحاول مرة أخرى.</translation>
     </message>
     <message>
         <source>No continuous content was found. Crop to one content area, or record again while scrolling slowly.</source>
-        <translation type="unfinished" />
+        <translation>لم يتم العثور على محتوى متصل. اقتصّ إلى منطقة محتوى واحدة، أو أعد التسجيل مع التمرير ببطء.</translation>
     </message>
     <message>
         <source>Some content could not be joined. This selection produces a separate long screenshot and does not include the entire recording.</source>
-        <translation type="unfinished" />
+        <translation>تعذر دمج بعض المحتوى. ينتج عن هذا التحديد لقطة شاشة طويلة منفصلة لا تتضمن التسجيل بأكمله.</translation>
     </message>
     <message>
         <source>Review the selected source range, then generate your screenshot.</source>
-        <translation type="unfinished" />
+        <translation>راجع نطاق المصدر المحدد، ثم أنشئ لقطة الشاشة.</translation>
     </message>
     <message>
         <source>Recommended range</source>
-        <translation type="unfinished" />
+        <translation>النطاق المقترح</translation>
     </message>
     <message>
         <source>Selected range</source>
-        <translation type="unfinished" />
+        <translation>النطاق المحدد</translation>
     </message>
     <message>
         <source>Source preview · Start</source>
-        <translation type="unfinished" />
+        <translation>معاينة المصدر · البداية</translation>
     </message>
     <message>
         <source>Source preview · End</source>
-        <translation type="unfinished" />
+        <translation>معاينة المصدر · النهاية</translation>
     </message>
     <message>
         <source>This content is long and will be saved as %1 images.</source>
-        <translation type="unfinished" />
+        <translation>هذا المحتوى طويل وسيُحفظ في %1 صورة.</translation>
     </message>
     <message>
         <source>Produces 1 image</source>
-        <translation type="unfinished" />
+        <translation>ينتج صورة واحدة</translation>
     </message>
     <message>
         <source>Some seams will be marked for review in the preview.</source>
-        <translation type="unfinished" />
+        <translation>ستُعلَّم بعض مواضع الوصل في المعاينة لمراجعتها.</translation>
     </message>
     <message>
         <source>The largest continuous range with reliable content.</source>
-        <translation type="unfinished" />
+        <translation>أكبر نطاق متصل بمحتوى موثوق.</translation>
     </message>
     <message>
         <source>A continuous range of content.</source>
-        <translation type="unfinished" />
+        <translation>نطاق متصل من المحتوى.</translation>
     </message>
     <message>
         <source>Hide other ranges</source>
-        <translation type="unfinished" />
+        <translation>إخفاء النطاقات الأخرى</translation>
     </message>
     <message>
         <source>Other available ranges (%1)</source>
-        <translation type="unfinished" />
+        <translation>نطاقات أخرى متاحة (%1)</translation>
     </message>
     <message>
         <source>Adjust Analysis Range</source>
-        <translation type="unfinished" />
+        <translation>ضبط نطاق التحليل</translation>
     </message>
     <message>
         <source>Recommended</source>
-        <translation type="unfinished" />
+        <translation>مقترح</translation>
     </message>
     <message>
         <source>Seams need review</source>
-        <translation type="unfinished" />
+        <translation>مواضع الوصل تحتاج إلى مراجعة</translation>
     </message>
     <message>
         <source>Continuous content</source>
-        <translation type="unfinished" />
+        <translation>محتوى متصل</translation>
     </message>
     <message>
         <source>Selected source range: %1</source>
-        <translation type="unfinished" />
+        <translation>نطاق المصدر المحدد: %1</translation>
     </message>
     <message>
         <source>Includes only part of the recording</source>
-        <translation type="unfinished" />
+        <translation>يتضمن جزءًا من التسجيل فقط</translation>
     </message>
     <message>
         <source>%1 areas have seams worth checking.</source>
-        <translation type="unfinished" />
+        <translation>توجد مواضع وصل تستحق المراجعة في %1 منطقة.</translation>
     </message>
     <message>
         <source>Review</source>
-        <translation type="unfinished" />
+        <translation>مراجعة</translation>
     </message>
     <message>
         <source>Done</source>
-        <translation type="unfinished" />
+        <translation>تم</translation>
     </message>
     <message>
         <source>More…</source>
-        <translation type="unfinished" />
+        <translation>المزيد…</translation>
     </message>
     <message>
         <source>Pin Current Image</source>
-        <translation type="unfinished" />
+        <translation>تثبيت الصورة الحالية</translation>
     </message>
     <message>
         <source>Pin</source>
@@ -3524,7 +3524,7 @@ File size: %3</source>
     </message>
     <message>
         <source>Annotate Current Image in Pin</source>
-        <translation type="unfinished" />
+        <translation>إضافة تعليقات إلى الصورة الحالية في النافذة المثبتة</translation>
     </message>
     <message>
         <source>Annotate in Pin</source>
@@ -3532,11 +3532,11 @@ File size: %3</source>
     </message>
     <message>
         <source>Image %1 / %2</source>
-        <translation type="unfinished" />
+        <translation>الصورة %1 / %2</translation>
     </message>
     <message>
         <source>Copy Current Image</source>
-        <translation type="unfinished" />
+        <translation>نسخ الصورة الحالية</translation>
     </message>
     <message>
         <source>Copy</source>
@@ -3544,7 +3544,7 @@ File size: %3</source>
     </message>
     <message>
         <source>Retry</source>
-        <translation type="unfinished" />
+        <translation>إعادة المحاولة</translation>
     </message>
     <message>
         <source>Generate Long Screenshot</source>
@@ -3552,11 +3552,11 @@ File size: %3</source>
     </message>
     <message>
         <source>Retry Analysis</source>
-        <translation type="unfinished" />
+        <translation>إعادة التحليل</translation>
     </message>
     <message>
         <source>Save %1 PNG Images</source>
-        <translation type="unfinished" />
+        <translation>حفظ %1 صورة PNG</translation>
     </message>
     <message>
         <source>Save PNG</source>

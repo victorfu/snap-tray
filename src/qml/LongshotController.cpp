@@ -155,7 +155,7 @@ void LongshotController::cancel() { if (m_cancel) m_cancel->store(true); }
 void LongshotController::clearResult()
 {
     { QMutexLocker lock(&m_previewState->mutex); m_previewState->image = {}; }
-    m_result = {}; m_markers.clear(); m_preview = {}; m_selectedPart = 0;
+    m_result = {}; m_markers.clear(); m_preview.clear(); m_selectedPart = 0;
     m_savedParts.clear(); m_recordedParts.clear(); m_saveDestination.clear();
 }
 void LongshotController::invalidate()
@@ -228,7 +228,7 @@ void LongshotController::updatePreview()
     const QString path = m_previewDir.filePath(QString::number(++m_previewRevision) + ".png");
     if (m_result.parts[m_selectedPart].scaled(kPreviewMaxSide, kPreviewMaxSide, Qt::KeepAspectRatio, Qt::SmoothTransformation).save(path))
         m_preview = QUrl::fromLocalFile(path);
-    else { m_preview = {}; m_message = tr("Could not create the result preview."); }
+    else { m_preview.clear(); m_message = tr("Could not create the result preview."); }
     if (!old.isEmpty()) QFile::remove(old);
 }
 void LongshotController::buildMarkers()
