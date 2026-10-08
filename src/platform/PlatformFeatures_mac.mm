@@ -3,7 +3,9 @@
 #include "OCRManager.h"
 #include "WindowDetector.h"
 #include <QBuffer>
+#include <QClipboard>
 #include <QCoreApplication>
+#include <QGuiApplication>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -11,11 +13,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QPixmap>
-#include <QPointer>
 #include <QProcess>
-#include <QtConcurrent/QtConcurrentRun>
-
-#include <atomic>
 
 #import <AppKit/AppKit.h>
 #import <ApplicationServices/ApplicationServices.h>
@@ -27,8 +25,6 @@
 #endif
 
 namespace {
-
-std::atomic<quint64> g_guiClipboardGeneration{0};
 
 QByteArray encodePngImage(const QImage& image)
 {
@@ -64,25 +60,6 @@ bool writePngDataToGeneralPasteboard(const QByteArray& pngData)
 bool writePngImageToGeneralPasteboard(const QImage& image)
 {
     return writePngDataToGeneralPasteboard(encodePngImage(image));
-}
-
-void invokeClipboardCompletion(QObject* context,
-                               PlatformFeatures::ClipboardCopyCompletion completion,
-                               PlatformFeatures::ClipboardCopyResult result)
-{
-    if (!completion) {
-        return;
-    }
-
-    QObject* target = context ? context : QCoreApplication::instance();
-    if (!target) {
-        completion(result);
-        return;
-    }
-
-    QMetaObject::invokeMethod(target, [completion = std::move(completion), result]() mutable {
-        completion(result);
-    }, Qt::QueuedConnection);
 }
 
 } // namespace
@@ -171,9 +148,15 @@ bool PlatformFeatures::copyImageToClipboardPersistently(const QImage& image) con
 
 bool PlatformFeatures::copyImageToClipboardForGui(const QImage& image) const
 {
-    // Qt 6.11/macOS can trap later while fulfilling promised TIFF data from
-    // QColorSpace-tagged QImages. Eager PNG pasteboard data avoids that path.
-    return writePngImageToGeneralPasteboard(image);
+    if (image.isNull()) {
+        return false;
+    }
+
+    if (QClipboard* clipboard = QGuiApplication::clipboard()) {
+        clipboard->setImage(image);
+        return true;
+    }
+    return false;
 }
 
 void PlatformFeatures::copyImageToClipboardForGuiAsync(
@@ -181,15 +164,6 @@ void PlatformFeatures::copyImageToClipboardForGuiAsync(
     QObject* context,
     ClipboardCopyCompletion completion) const
 {
-    const quint64 requestGeneration =
-        g_guiClipboardGeneration.fetch_add(1, std::memory_order_acq_rel) + 1;
-
-    if (image.isNull()) {
-        invokeClipboardCompletion(
-            context, std::move(completion), ClipboardCopyResult::Failed);
-        return;
-    }
-
     QObject* target = context ? context : QCoreApplication::instance();
     if (!target) {
         const bool success = copyImageToClipboardForGui(image);
@@ -199,34 +173,14 @@ void PlatformFeatures::copyImageToClipboardForGuiAsync(
         return;
     }
 
-    const QImage imageForClipboard = image;
-    const QPointer<QObject> targetGuard(target);
-    (void)QtConcurrent::run([imageForClipboard,
-                             targetGuard,
-                             completion = std::move(completion),
-                             requestGeneration]() mutable {
-        QByteArray pngData = encodePngImage(imageForClipboard);
-        QObject* guardedTarget = targetGuard.data();
-        if (!guardedTarget) {
-            return;
-        }
-
-        QMetaObject::invokeMethod(guardedTarget,
-            [pngData = std::move(pngData), completion = std::move(completion), requestGeneration]() mutable {
-                if (requestGeneration != g_guiClipboardGeneration.load(std::memory_order_acquire)) {
-                    if (completion) {
-                        completion(ClipboardCopyResult::Superseded);
-                    }
-                    return;
-                }
-
-                const bool success = writePngDataToGeneralPasteboard(pngData);
-                if (completion) {
-                    completion(success ? ClipboardCopyResult::Success : ClipboardCopyResult::Failed);
-                }
-            },
-            Qt::QueuedConnection);
-    });
+    QMetaObject::invokeMethod(target,
+        [this, image, completion = std::move(completion)]() mutable {
+            const bool success = copyImageToClipboardForGui(image);
+            if (completion) {
+                completion(success ? ClipboardCopyResult::Success : ClipboardCopyResult::Failed);
+            }
+        },
+        Qt::QueuedConnection);
 }
 
 QString PlatformFeatures::getAppExecutablePath() const

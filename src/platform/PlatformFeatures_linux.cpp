@@ -4,7 +4,6 @@
 #include "OCRManager.h"
 #include "WindowDetector.h"
 
-#include <QBuffer>
 #include <QClipboard>
 #include <QCoreApplication>
 #include <QDir>
@@ -12,7 +11,6 @@
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QMetaObject>
-#include <QMimeData>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPixmap>
@@ -131,20 +129,11 @@ bool PlatformFeatures::copyImageToClipboardForGui(const QImage& image) const
         return false;
     }
 
-    QClipboard* clipboard = QGuiApplication::clipboard();
-    if (!clipboard) {
-        return false;
+    if (QClipboard* clipboard = QGuiApplication::clipboard()) {
+        clipboard->setImage(image);
+        return true;
     }
-
-    auto* mimeData = new QMimeData();
-    QByteArray pngData;
-    QBuffer buffer(&pngData);
-    buffer.open(QIODevice::WriteOnly);
-    image.save(&buffer, "PNG");
-    mimeData->setData(QStringLiteral("image/png"), pngData);
-    mimeData->setImageData(image);
-    clipboard->setMimeData(mimeData);
-    return true;
+    return false;
 }
 
 void PlatformFeatures::copyImageToClipboardForGuiAsync(

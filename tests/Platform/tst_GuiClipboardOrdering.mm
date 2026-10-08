@@ -1,6 +1,8 @@
 #include <QtTest/QtTest>
 
 #include <QImage>
+#include <QClipboard>
+#include <QColorSpace>
 
 #include "PlatformFeatures.h"
 
@@ -33,24 +35,6 @@ QImage makeLatestImage()
     return image;
 }
 
-QImage readPngImageFromGeneralPasteboard()
-{
-    // PlatformFeatures writes NSPasteboard directly. QClipboard observes that
-    // native change asynchronously, so reading it in the completion callback
-    // can return stale cached data even though the pasteboard write is done.
-    @autoreleasepool {
-        NSData* pngData = [[NSPasteboard generalPasteboard] dataForType:NSPasteboardTypePNG];
-        if (!pngData) {
-            return {};
-        }
-
-        return QImage::fromData(
-            static_cast<const uchar*>(pngData.bytes),
-            static_cast<int>(pngData.length),
-            "PNG");
-    }
-}
-
 } // namespace
 
 class tst_GuiClipboardOrdering : public QObject
@@ -58,21 +42,22 @@ class tst_GuiClipboardOrdering : public QObject
     Q_OBJECT
 
 private slots:
-    void latestGuiCopyWinsWhenEncodingCompletesOutOfOrder();
+    void latestQueuedGuiCopyWins();
+    void colorSpaceTaggedImageCanFulfillNativePasteboardData();
 };
 
-void tst_GuiClipboardOrdering::latestGuiCopyWinsWhenEncodingCompletesOutOfOrder()
+void tst_GuiClipboardOrdering::latestQueuedGuiCopyWins()
 {
     QImage sentinelImage(QSize(7, 5), QImage::Format_ARGB32);
     sentinelImage.fill(QColor(201, 37, 91));
     QVERIFY(PlatformFeatures::instance().copyImageToClipboardForGui(sentinelImage));
-    QCOMPARE(readPngImageFromGeneralPasteboard().size(), sentinelImage.size());
+    QCOMPARE(QGuiApplication::clipboard()->image().size(), sentinelImage.size());
 
     const QImage staleImage = makeHighEntropyImage(QSize(4096, 3072));
     const QImage latestImage = makeLatestImage();
 
     bool staleCompletionCalled = false;
-    bool staleCopyWasSuperseded = false;
+    bool staleCopySucceeded = false;
     bool latestCompletionCalled = false;
     bool latestCopySucceeded = false;
     QImage pasteboardImageAtLatestCompletion;
@@ -80,11 +65,11 @@ void tst_GuiClipboardOrdering::latestGuiCopyWinsWhenEncodingCompletesOutOfOrder(
     PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
         staleImage,
         qApp,
-        [&staleCompletionCalled, &staleCopyWasSuperseded](
+        [&staleCompletionCalled, &staleCopySucceeded](
             PlatformFeatures::ClipboardCopyResult result) {
             staleCompletionCalled = true;
-            staleCopyWasSuperseded =
-                result == PlatformFeatures::ClipboardCopyResult::Superseded;
+            staleCopySucceeded =
+                result == PlatformFeatures::ClipboardCopyResult::Success;
         });
 
     PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
@@ -95,7 +80,7 @@ void tst_GuiClipboardOrdering::latestGuiCopyWinsWhenEncodingCompletesOutOfOrder(
             PlatformFeatures::ClipboardCopyResult result) {
             latestCompletionCalled = true;
             latestCopySucceeded = result == PlatformFeatures::ClipboardCopyResult::Success;
-            pasteboardImageAtLatestCompletion = readPngImageFromGeneralPasteboard();
+            pasteboardImageAtLatestCompletion = QGuiApplication::clipboard()->image();
         });
 
     QTRY_VERIFY_WITH_TIMEOUT(latestCompletionCalled, 5000);
@@ -104,11 +89,26 @@ void tst_GuiClipboardOrdering::latestGuiCopyWinsWhenEncodingCompletesOutOfOrder(
     QCOMPARE(pasteboardImageAtLatestCompletion.pixelColor(0, 0), latestImage.pixelColor(0, 0));
 
     QTRY_VERIFY_WITH_TIMEOUT(staleCompletionCalled, 15000);
-    QVERIFY(staleCopyWasSuperseded);
+    QVERIFY(staleCopySucceeded);
 
-    const QImage finalImage = readPngImageFromGeneralPasteboard();
+    const QImage finalImage = QGuiApplication::clipboard()->image();
     QCOMPARE(finalImage.size(), latestImage.size());
     QCOMPARE(finalImage.pixelColor(0, 0), latestImage.pixelColor(0, 0));
+}
+
+void tst_GuiClipboardOrdering::colorSpaceTaggedImageCanFulfillNativePasteboardData()
+{
+    QImage image = makeLatestImage();
+    image.setColorSpace(QColorSpace::SRgb);
+    QVERIFY(PlatformFeatures::instance().copyImageToClipboardForGui(image));
+
+    // Exercise native promised image data, where Qt's macOS color-space
+    // conversion previously trapped; a Qt image round trip alone misses it.
+    @autoreleasepool {
+        NSData* data = [[NSPasteboard generalPasteboard] dataForType:NSPasteboardTypeTIFF];
+        QVERIFY(data != nil);
+        QVERIFY(data.length > 0);
+    }
 }
 
 QTEST_MAIN(tst_GuiClipboardOrdering)
