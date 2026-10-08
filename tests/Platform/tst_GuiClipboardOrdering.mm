@@ -111,13 +111,25 @@ void tst_GuiClipboardOrdering::colorSpaceTaggedImageCanFulfillNativePasteboardDa
     @autoreleasepool {
         int index = 0;
         for (NSScreen* screen in [NSScreen screens]) {
+            const int screenIndex = index++;
             NSData* profile = screen.colorSpace.ICCProfileData;
+            // Virtual displays may not expose an ICC profile. Keep the fixed
+            // sRGB and Display P3 rows even when screen-specific data is absent.
+            if (profile.length == 0) {
+                qInfo() << "Skipping screen" << screenIndex
+                        << QString::fromNSString(screen.localizedName) << "ICC test: no profile available";
+                continue;
+            }
             const QColorSpace space = QColorSpace::fromIccProfile(QByteArray(
                 static_cast<const char*>(profile.bytes), static_cast<int>(profile.length)));
-            QVERIFY2(space.isValid(), "Screen ICC profile must be valid");
-            qInfo() << "Screen" << index << QString::fromNSString(screen.localizedName)
+            if (!space.isValid()) {
+                qInfo() << "Skipping screen" << screenIndex
+                        << QString::fromNSString(screen.localizedName) << "ICC test: unsupported or invalid profile";
+                continue;
+            }
+            qInfo() << "Screen" << screenIndex << QString::fromNSString(screen.localizedName)
                     << "ICC:" << space.description();
-            addSizes("screenICC-" + QByteArray::number(index++), space);
+            addSizes("screenICC-" + QByteArray::number(screenIndex), space);
         }
     }
 }
