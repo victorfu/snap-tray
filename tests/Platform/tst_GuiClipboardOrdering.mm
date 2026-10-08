@@ -3,6 +3,7 @@
 #include <QImage>
 #include <QClipboard>
 #include <QColorSpace>
+#include <QBuffer>
 
 #include "PlatformFeatures.h"
 
@@ -43,6 +44,7 @@ class tst_GuiClipboardOrdering : public QObject
 
 private slots:
     void latestQueuedGuiCopyWins();
+    void colorSpaceTaggedImageCanFulfillNativePasteboardData_data();
     void colorSpaceTaggedImageCanFulfillNativePasteboardData();
 };
 
@@ -96,10 +98,39 @@ void tst_GuiClipboardOrdering::latestQueuedGuiCopyWins()
     QCOMPARE(finalImage.pixelColor(0, 0), latestImage.pixelColor(0, 0));
 }
 
+void tst_GuiClipboardOrdering::colorSpaceTaggedImageCanFulfillNativePasteboardData_data()
+{
+    QTest::addColumn<QColorSpace>("colorSpace");
+    QTest::addColumn<QSize>("size");
+    const auto addSizes = [](const QByteArray& name, const QColorSpace& space) {
+        QTest::newRow((name + "-small").constData()) << space << QSize(29, 17);
+        QTest::newRow((name + "-large").constData()) << space << QSize(4096, 3072);
+    };
+    addSizes("sRGB", QColorSpace(QColorSpace::SRgb));
+    addSizes("DisplayP3", QColorSpace(QColorSpace::DisplayP3));
+    @autoreleasepool {
+        int index = 0;
+        for (NSScreen* screen in [NSScreen screens]) {
+            NSData* profile = screen.colorSpace.ICCProfileData;
+            const QColorSpace space = QColorSpace::fromIccProfile(QByteArray(
+                static_cast<const char*>(profile.bytes), static_cast<int>(profile.length)));
+            QVERIFY2(space.isValid(), "Screen ICC profile must be valid");
+            qInfo() << "Screen" << index << QString::fromNSString(screen.localizedName)
+                    << "ICC:" << space.description();
+            addSizes("screenICC-" + QByteArray::number(index++), space);
+        }
+    }
+}
+
 void tst_GuiClipboardOrdering::colorSpaceTaggedImageCanFulfillNativePasteboardData()
 {
-    QImage image = makeLatestImage();
-    image.setColorSpace(QColorSpace::SRgb);
+    QFETCH(QColorSpace, colorSpace);
+    QFETCH(QSize, size);
+    QImage image(size, QImage::Format_ARGB32_Premultiplied);
+    image.fill(QColor(80, 160, 120));
+    image.setPixelColor(0, 0, QColor(0, 0, 0, 0));
+    image.setPixelColor(1, 0, QColor(80, 160, 120, 128));
+    image.setColorSpace(colorSpace);
     QVERIFY(PlatformFeatures::instance().copyImageToClipboardForGui(image));
 
     // Exercise native promised image data, where Qt's macOS color-space
@@ -108,6 +139,47 @@ void tst_GuiClipboardOrdering::colorSpaceTaggedImageCanFulfillNativePasteboardDa
         NSData* data = [[NSPasteboard generalPasteboard] dataForType:NSPasteboardTypeTIFF];
         QVERIFY(data != nil);
         QVERIFY(data.length > 0);
+        NSBitmapImageRep* decoded = [NSBitmapImageRep imageRepWithData:data];
+        QVERIFY(decoded != nil);
+        QCOMPARE(decoded.pixelsWide, image.width());
+        QCOMPARE(decoded.pixelsHigh, image.height());
+        QVERIFY(decoded.hasAlpha);
+        // Use the same native color-management engine for the PNG reference
+        // and TIFF consumer, avoiding differences between Qt and ColorSync.
+        QByteArray png;
+        QBuffer buffer(&png);
+        QVERIFY(buffer.open(QIODevice::WriteOnly));
+        QVERIFY(image.save(&buffer, "PNG"));
+        NSBitmapImageRep* referenceImage = [NSBitmapImageRep imageRepWithData:
+            [NSData dataWithBytes:png.constData() length:png.size()]];
+        QVERIFY(referenceImage != nil);
+        NSBitmapImageRep* actualSRgb = [decoded bitmapImageRepByConvertingToColorSpace:
+            [NSColorSpace sRGBColorSpace] renderingIntent:NSColorRenderingIntentDefault];
+        NSBitmapImageRep* referenceSRgb = [referenceImage bitmapImageRepByConvertingToColorSpace:
+            [NSColorSpace sRGBColorSpace] renderingIntent:NSColorRenderingIntentDefault];
+        QVERIFY(actualSRgb != nil);
+        QVERIFY(referenceSRgb != nil);
+        constexpr int channelTolerance = 3;
+        bool colorsMatch = true;
+        qInfo() << "Decoded TIFF color space:" << QString::fromNSString(decoded.colorSpace.localizedName);
+        for (int x = 0; x < 3; ++x) {
+            NSColor* pixel = [actualSRgb colorAtX:x y:0];
+            QVERIFY(pixel != nil);
+            NSColor* referencePixel = [referenceSRgb colorAtX:x y:0];
+            QVERIFY(referencePixel != nil);
+            const QColor reference = QColor::fromRgbF(referencePixel.redComponent,
+                referencePixel.greenComponent, referencePixel.blueComponent, referencePixel.alphaComponent);
+            qInfo() << "pixel" << x << "actual" << pixel.redComponent << pixel.greenComponent
+                    << pixel.blueComponent << pixel.alphaComponent << "expected" << reference
+                    << "bitmapFormat" << decoded.bitmapFormat;
+            QVERIFY(qAbs(qRound(pixel.alphaComponent * 255) - reference.alpha()) <= 1);
+            if (reference.alpha() != 0) {
+                colorsMatch &= qAbs(qRound(pixel.redComponent * 255) - reference.red()) <= channelTolerance;
+                colorsMatch &= qAbs(qRound(pixel.greenComponent * 255) - reference.green()) <= channelTolerance;
+                colorsMatch &= qAbs(qRound(pixel.blueComponent * 255) - reference.blue()) <= channelTolerance;
+            }
+        }
+        QVERIFY2(colorsMatch, "Native TIFF colors differ after conversion to sRGB");
     }
 }
 
