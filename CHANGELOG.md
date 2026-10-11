@@ -6,25 +6,29 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+## [1.0.68] - 2026-10-11
+
 ### Added
 
-- Added Linux AppImage update checks, confirmed downloads, and restart-to-install with signature verification and recovery to the previous version.
-- Added AppImageUpdate-compatible update metadata and zsync files to Linux releases.
-- Linux X11 recording now supports microphone/system audio, recording preview, crop/trim and animated exports, with VA-API/NVENC encoding when available and software fallback. AppImages include the required media libraries.
-- Linux captures frames on a background X11 connection and sends them directly to the encoder. Recording controls move to the tray so the floating toolbar is not recorded.
+- Added Linux AppImage update checks and signed downloads, with restart-to-install and recovery to the previous version. Linux releases now include AppImageUpdate-compatible metadata and zsync files.
+- Added Linux X11 full-screen recording with microphone/system audio, recording preview, crop/trim, and MP4, GIF, and WebP exports. Hardware encoding is available through VA-API/NVENC with software fallback, and AppImages bundle the required media libraries.
+- Added recording preview cropping, including window highlighting and click-to-snap using the windows recorded at that moment.
 
-- Recording preview can crop the recording to a region before exporting MP4, GIF, or WebP.
-- Trimming a recording to a part after its audio stopped exports that part as video only instead of failing, and a failed export now shows a translated message while keeping the original recording.
-- In the recording preview's crop editor, hovering highlights the window that was under the cursor at that moment and clicking snaps the crop to it.
-- Recordings made with the preview on are captured at high quality and converted to the selected quality when saved, so trimming and cropping keep their detail; unedited recordings that already meet the selected quality are saved as they are. Low disk space falls back to the selected quality with a warning.
+### Improved
+
+- Preview recordings use a high-quality intermediate when disk space permits, preserving detail during trimming and cropping before export at the selected quality. Unedited recordings that already meet the selected quality are saved directly.
+- Linux recording captures frames in the background and keeps recording controls in the tray so floating controls are excluded from captures.
+- Unified image copying from the graphical interface across macOS, Windows, and Linux.
 
 ### Fixed
 
-- Recording crop gestures now commit the final pointer position when mouse-move events are coalesced.
-
-- Trimming an MP4 recording with audio now keeps the audio instead of failing.
-- The recording preview window has its title bar back on Windows, with minimize, maximize and close buttons.
-- Region capture, quick pin and the screen canvas work while the recording preview window is open.
+- Fixed MP4 trimming with audio and exports of intervals after the source audio ends; failed or cancelled exports preserve the original recording.
+- Fixed small crop selections, final pointer positions, and cropped export filenames; restored the Windows preview title bar and improved frame stepping and video frame handling.
+- Allowed region capture, quick pin, and screen canvas use while recording preview is open.
+- Preserved live annotation edits when navigating capture history and made the eraser take priority over object selection and editing.
+- Fixed aspect-ratio and rounded-size behavior when resizing regions, pinned-window controls on multiple screens, and the click-through exit button.
+- Reduced Linux pinned-window drag stutter, kept canvas bounds stable while dragging toolbars, and fixed CLI installation detection and autostart for paths containing special characters.
+- Fixed Windows window-title and application-name filename tokens, macOS Debug app launches, and Windows installer signing failure handling.
 
 ## [1.0.67] - 2026-09-30
 
