@@ -53,6 +53,29 @@ Pinned images stay above other apps and support zoom, opacity, rotation, flip, m
 
 On macOS/Windows, start from the tray menu or recording hotkey, choose a screen when needed, then use the floating control bar to monitor duration and stop recording.
 
+## Linux: outdated AppImageLauncher
+
+Older AppImageLauncher installations (including the 2022 Ubuntu PPA build) can prevent SnapTray's AppImage from starting, with errors such as `fuse: memory allocation failed`, `Can't open squashfs image: Bad address`, or `execv error: No such file or directory`. These messages can indicate an [AppImageLauncher compatibility issue](https://github.com/AppImage/type2-runtime/issues/121), rather than insufficient memory.
+
+If AppImageLauncher is installed, update it using the appropriate `.deb` from the [official releases](https://github.com/TheAssassin/AppImageLauncher/releases). For Ubuntu x86_64, choose the `amd64.deb` package. The old PPA may still offer the affected version; follow the [official Ubuntu installation instructions](https://github.com/TheAssassin/AppImageLauncher/wiki/Install-on-Ubuntu-or-Debian).
+
+After updating, if launching appears to hang, press `Ctrl+C` in that terminal and try reloading the user service without rebooting:
+
+```bash
+systemctl --user daemon-reload
+systemctl --user restart appimagelauncherd.service
+# Replace <version> and the path with your downloaded AppImage.
+timeout 15s ./SnapTray-<version>-x86_64.AppImage --version
+```
+
+The `Created symlink ... appimagelauncherd.service` message is normal service setup output. Once the version check succeeds, launch SnapTray normally, or keep the terminal free with:
+
+```bash
+nohup ./SnapTray-<version>-x86_64.AppImage > /tmp/snaptray.log 2>&1 &
+```
+
+SnapTray runs in the system tray; look for its tray icon rather than a main window. If the service restart does not resolve the issue, see the [extraction workaround](docs/developer/release-packaging.md#linux).
+
 ## Learn More
 
 - Releases: [GitHub Releases](https://github.com/victorfu/snap-tray/releases)

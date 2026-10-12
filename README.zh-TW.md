@@ -53,6 +53,29 @@ SnapTray 是一款支援 macOS、Windows 與 Ubuntu 22.04 X11 beta 的 Qt 6 截�
 
 在 macOS/Windows 可從托盤選單或錄影快捷鍵啟動錄影；若是多螢幕，先選擇螢幕，再透過浮動控制列查看時間並停止錄影。
 
+## Linux：AppImageLauncher 版本過舊
+
+舊版 AppImageLauncher（包含 Ubuntu PPA 的 2022 年版本）可能導致 SnapTray AppImage 無法啟動，出現 `fuse: memory allocation failed`、`Can't open squashfs image: Bad address` 或 `execv error: No such file or directory`。這些訊息可能是 [AppImageLauncher 相容性問題](https://github.com/AppImage/type2-runtime/issues/121)，不一定代表記憶體不足。
+
+如果已安裝 AppImageLauncher，請從[官方發佈頁面](https://github.com/TheAssassin/AppImageLauncher/releases)下載適合系統的 `.deb` 更新；Ubuntu x86_64 請選擇 `amd64.deb`。舊 PPA 可能仍提供有問題的版本，請依照[官方 Ubuntu 安裝說明](https://github.com/TheAssassin/AppImageLauncher/wiki/Install-on-Ubuntu-or-Debian)操作。
+
+更新後若啟動看似卡住，可先在該終端機按 `Ctrl+C`，再嘗試重新載入使用者服務，不必先重新開機：
+
+```bash
+systemctl --user daemon-reload
+systemctl --user restart appimagelauncherd.service
+# 將 <version> 與路徑替換為實際下載的 AppImage。
+timeout 15s ./SnapTray-<version>-x86_64.AppImage --version
+```
+
+`Created symlink ... appimagelauncherd.service` 是正常的服務設定訊息。版本檢查成功後，即可正常啟動 SnapTray；若不想占用終端機，可在背景執行：
+
+```bash
+nohup ./SnapTray-<version>-x86_64.AppImage > /tmp/snaptray.log 2>&1 &
+```
+
+SnapTray 啟動後會常駐系統列，請尋找托盤圖示，不會自動開啟主視窗。如果重啟服務仍無法解決，請參考[解壓後執行的替代方式](docs/developer/release-packaging.md#linux)。
+
 ## 進一步了解
 
 - 發佈版本：[GitHub Releases](https://github.com/victorfu/snap-tray/releases)
