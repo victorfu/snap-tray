@@ -1,6 +1,7 @@
 #include <QtTest/QtTest>
 
 #include <QApplication>
+#include <QDir>
 #include <QElapsedTimer>
 #include <QFile>
 #include <QImage>
@@ -666,9 +667,16 @@ int main(int argc, char** argv)
         qFatal("Failed to write offscreen screen configuration");
     }
     configFile.close();
-    qputenv("QT_QPA_PLATFORM", QByteArray("offscreen:configfile=") + configPath.toLocal8Bit());
+
+    // Platform arguments are split on ':', which would cut a Windows drive
+    // letter off an absolute path. Use a relative path, resolved against the
+    // working directory while the platform plugin initializes.
+    const QString previousDirectory = QDir::currentPath();
+    QDir::setCurrent(configDirectory.path());
+    qputenv("QT_QPA_PLATFORM", QByteArray("offscreen:configfile=screens.json"));
 
     QApplication app(argc, argv);
+    QDir::setCurrent(previousDirectory);
     tst_FullScreenCapture test;
     QTEST_SET_MAIN_SOURCE_PATH
     return QTest::qExec(&test, argc, argv);
