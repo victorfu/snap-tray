@@ -324,10 +324,6 @@ void MainApplication::initialize()
     connect(m_fullScreenCaptureAction, &QAction::triggered,
             this, &MainApplication::onFullScreenCapture);
 
-    m_activeWindowCaptureAction = m_trayMenu->addAction(tr("Active Window Capture"));
-    connect(m_activeWindowCaptureAction, &QAction::triggered,
-            this, &MainApplication::onActiveWindowCapture);
-
     m_screenCanvasAction = m_trayMenu->addAction(tr("Screen Canvas"));
     connect(m_screenCanvasAction, &QAction::triggered, this, &MainApplication::onScreenCanvas);
 
@@ -499,21 +495,11 @@ void MainApplication::onRegionCapture()
     startRegionCapture(true);
 }
 
-void MainApplication::startQuickCapture(snaptray::capture::QuickCaptureTarget target)
+void MainApplication::onFullScreenCapture()
 {
     if (!canStartRegionCapture() || m_captureManager->isActive()) return;
 
-    m_captureManager->startQuickCapture(target);
-}
-
-void MainApplication::onFullScreenCapture()
-{
-    startQuickCapture(snaptray::capture::QuickCaptureTarget::FullScreen);
-}
-
-void MainApplication::onActiveWindowCapture()
-{
-    startQuickCapture(snaptray::capture::QuickCaptureTarget::ActiveWindow);
+    m_captureManager->startFullScreenCapture();
 }
 
 void MainApplication::onQuickPin()
@@ -784,9 +770,6 @@ void MainApplication::onHotkeyAction(SnapTray::HotkeyAction action)
     case HotkeyAction::CaptureFullScreen:
         onFullScreenCapture();
         break;
-    case HotkeyAction::CaptureActiveWindow:
-        onActiveWindowCapture();
-        break;
     case HotkeyAction::ScreenCanvas:
         onScreenCanvas();
         break;
@@ -1033,9 +1016,6 @@ void MainApplication::updateTrayMenuHotkeyText()
     updateActionHotkeyText(m_fullScreenCaptureAction,
                            SnapTray::HotkeyAction::CaptureFullScreen,
                            tr("Full Screen Capture"));
-    updateActionHotkeyText(m_activeWindowCaptureAction,
-                           SnapTray::HotkeyAction::CaptureActiveWindow,
-                           tr("Active Window Capture"));
     updateActionHotkeyText(m_screenCanvasAction,
                            SnapTray::HotkeyAction::ScreenCanvas,
                            tr("Screen Canvas"));

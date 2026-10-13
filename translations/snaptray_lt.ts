@@ -102,8 +102,8 @@
         </message>
     <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="41" />
-        <source>Full screen / window capture</source>
-        <translation>Viso ekrano / lango fiksavimas</translation>
+        <source>After full screen capture</source>
+        <translation>Po viso ekrano fiksavimo</translation>
     </message>
     <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="43" />
@@ -721,11 +721,6 @@ Datos žetonai: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} arba {date}</translatio
         <location filename="../src/MainApplication.cpp" line="323" />
         <source>Full Screen Capture</source>
         <translation>Viso ekrano fiksavimas</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="327" />
-        <source>Active Window Capture</source>
-        <translation>Aktyvaus lango fiksavimas</translation>
     </message>
 </context>
 <context>

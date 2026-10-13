@@ -102,8 +102,8 @@
         </message>
     <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="41" />
-        <source>Full screen / window capture</source>
-        <translation>Opname volledig scherm / venster</translation>
+        <source>After full screen capture</source>
+        <translation>Na opname van volledig scherm</translation>
     </message>
     <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="43" />
@@ -727,11 +727,6 @@ Datumtokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} of {date}</translation>
         <location filename="../src/MainApplication.cpp" line="323" />
         <source>Full Screen Capture</source>
         <translation>Volledig scherm opnemen</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="327" />
-        <source>Active Window Capture</source>
-        <translation>Actief venster opnemen</translation>
     </message>
 </context>
 <context>

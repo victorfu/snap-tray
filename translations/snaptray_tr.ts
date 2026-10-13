@@ -102,8 +102,8 @@
         </message>
     <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="41" />
-        <source>Full screen / window capture</source>
-        <translation>Tam ekran / pencere yakalama</translation>
+        <source>After full screen capture</source>
+        <translation>Tam ekran yakalamadan sonra</translation>
     </message>
     <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="43" />
@@ -721,11 +721,6 @@ Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</trans
         <location filename="../src/MainApplication.cpp" line="323" />
         <source>Full Screen Capture</source>
         <translation>Tam Ekran Yakalama</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="327" />
-        <source>Active Window Capture</source>
-        <translation>Etkin Pencere Yakalama</translation>
     </message>
 </context>
 <context>

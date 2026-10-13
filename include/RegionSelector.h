@@ -98,12 +98,10 @@ public:
     // 初始化指定螢幕的截圖 (由 CaptureManager 調用)
     void initializeForScreen(QScreen *screen, const QPixmap &preCapture = QPixmap());
 
-    // 初始化指定螢幕並使用預設區域 (用於錄影取消後返回、全螢幕/視窗截圖編輯)
+    // 初始化指定螢幕並使用預設區域 (用於錄影取消後返回、全螢幕截圖編輯)
     void initializeWithRegion(QScreen *screen,
                               const QRect &region,
-                              const QPixmap &preCapture = QPixmap(),
-                              const QString &windowTitle = QString(),
-                              const QString &ownerApp = QString());
+                              const QPixmap &preCapture = QPixmap());
 
     // 設置 Quick Pin 模式 (選擇區域後直接 pin，不顯示 toolbar)
     void setQuickPinMode(bool enabled);

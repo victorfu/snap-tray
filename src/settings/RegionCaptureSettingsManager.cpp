@@ -71,22 +71,22 @@ void RegionCaptureSettingsManager::setShortcutHintsEnabled(bool enabled)
     settings.setValue(kSettingsKeyShowShortcutHints, enabled);
 }
 
-RegionCaptureSettingsManager::QuickCaptureAction
-RegionCaptureSettingsManager::quickCaptureAction() const
+RegionCaptureSettingsManager::FullScreenCaptureAction
+RegionCaptureSettingsManager::fullScreenCaptureAction() const
 {
     auto settings = SnapTray::getSettings();
     bool ok = false;
-    const int rawValue = settings.value(kSettingsKeyQuickCaptureAction).toInt(&ok);
+    const int rawValue = settings.value(kSettingsKeyFullScreenCaptureAction).toInt(&ok);
     if (!ok
-        || rawValue < static_cast<int>(QuickCaptureAction::CopyToClipboard)
-        || rawValue > static_cast<int>(QuickCaptureAction::Edit)) {
-        return kDefaultQuickCaptureAction;
+        || rawValue < static_cast<int>(FullScreenCaptureAction::CopyToClipboard)
+        || rawValue > static_cast<int>(FullScreenCaptureAction::Edit)) {
+        return kDefaultFullScreenCaptureAction;
     }
-    return static_cast<QuickCaptureAction>(rawValue);
+    return static_cast<FullScreenCaptureAction>(rawValue);
 }
 
-void RegionCaptureSettingsManager::setQuickCaptureAction(QuickCaptureAction action)
+void RegionCaptureSettingsManager::setFullScreenCaptureAction(FullScreenCaptureAction action)
 {
     auto settings = SnapTray::getSettings();
-    settings.setValue(kSettingsKeyQuickCaptureAction, static_cast<int>(action));
+    settings.setValue(kSettingsKeyFullScreenCaptureAction, static_cast<int>(action));
 }

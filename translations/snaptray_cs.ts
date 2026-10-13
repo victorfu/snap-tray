@@ -102,8 +102,8 @@
         </message>
     <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="41" />
-        <source>Full screen / window capture</source>
-        <translation>Zachycení obrazovky / okna</translation>
+        <source>After full screen capture</source>
+        <translation>Po zachycení celé obrazovky</translation>
     </message>
     <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="43" />
@@ -727,11 +727,6 @@ Tokeny data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} nebo {date}</translation>
         <location filename="../src/MainApplication.cpp" line="323" />
         <source>Full Screen Capture</source>
         <translation>Zachycení celé obrazovky</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="327" />
-        <source>Active Window Capture</source>
-        <translation>Zachycení aktivního okna</translation>
     </message>
 </context>
 <context>

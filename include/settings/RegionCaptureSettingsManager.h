@@ -10,8 +10,8 @@ public:
         Beaver = 2
     };
 
-    // What the full-screen and active-window capture actions do with the image.
-    enum class QuickCaptureAction {
+    // What Full Screen Capture does with the image.
+    enum class FullScreenCaptureAction {
         CopyToClipboard = 0,
         Save = 1,
         Edit = 2
@@ -26,14 +26,14 @@ public:
     void setMagnifierEnabled(bool enabled);
     bool isShortcutHintsEnabled() const;
     void setShortcutHintsEnabled(bool enabled);
-    QuickCaptureAction quickCaptureAction() const;
-    void setQuickCaptureAction(QuickCaptureAction action);
+    FullScreenCaptureAction fullScreenCaptureAction() const;
+    void setFullScreenCaptureAction(FullScreenCaptureAction action);
 
     static constexpr bool kDefaultShortcutHintsEnabled = true;
     static constexpr CursorCompanionStyle kDefaultCursorCompanionStyle =
         CursorCompanionStyle::Beaver;
-    static constexpr QuickCaptureAction kDefaultQuickCaptureAction =
-        QuickCaptureAction::CopyToClipboard;
+    static constexpr FullScreenCaptureAction kDefaultFullScreenCaptureAction =
+        FullScreenCaptureAction::CopyToClipboard;
 
 private:
     RegionCaptureSettingsManager() = default;
@@ -45,8 +45,8 @@ private:
         "regionCapture/cursorCompanionStyle";
     static constexpr const char* kSettingsKeyShowShortcutHints =
         "regionCapture/showShortcutHints";
-    static constexpr const char* kSettingsKeyQuickCaptureAction =
-        "regionCapture/quickCaptureAction";
+    static constexpr const char* kSettingsKeyFullScreenCaptureAction =
+        "regionCapture/fullScreenCaptureAction";
 };
 
 #endif // REGIONCAPTURESETTINGSMANAGER_H

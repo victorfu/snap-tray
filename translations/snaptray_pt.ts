@@ -102,8 +102,8 @@
         </message>
     <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="41" />
-        <source>Full screen / window capture</source>
-        <translation>Captura de tela inteira / janela</translation>
+        <source>After full screen capture</source>
+        <translation>Após a captura de tela inteira</translation>
     </message>
     <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="43" />
@@ -727,11 +727,6 @@ Tokens de data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, ou {date}</translation
         <location filename="../src/MainApplication.cpp" line="323" />
         <source>Full Screen Capture</source>
         <translation>Captura de tela inteira</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="327" />
-        <source>Active Window Capture</source>
-        <translation>Captura da janela ativa</translation>
     </message>
 </context>
 <context>

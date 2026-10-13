@@ -20,9 +20,9 @@ private slots:
     void testSetMagnifierDisabledRoundtrip();
     void testSetMagnifierEnabledRoundtrip();
     void testSetCursorCompanionStyleBeaverRoundtrip();
-    void testQuickCaptureActionDefaultValue();
-    void testQuickCaptureActionRoundtrip();
-    void testQuickCaptureActionInvalidStoredValueFallsBack();
+    void testFullScreenCaptureActionDefaultValue();
+    void testFullScreenCaptureActionRoundtrip();
+    void testFullScreenCaptureActionInvalidStoredValueFallsBack();
 
 private:
     void clearSettings();
@@ -43,7 +43,7 @@ void tst_RegionCaptureSettingsManager::clearSettings()
     auto settings = SnapTray::getSettings();
     settings.remove("regionCapture/cursorCompanionStyle");
     settings.remove("regionCapture/showShortcutHints");
-    settings.remove("regionCapture/quickCaptureAction");
+    settings.remove("regionCapture/fullScreenCaptureAction");
     settings.sync();
 }
 
@@ -123,40 +123,40 @@ void tst_RegionCaptureSettingsManager::testSetCursorCompanionStyleBeaverRoundtri
     QCOMPARE(settings.value("regionCapture/cursorCompanionStyle").toInt(), 2);
 }
 
-void tst_RegionCaptureSettingsManager::testQuickCaptureActionDefaultValue()
+void tst_RegionCaptureSettingsManager::testFullScreenCaptureActionDefaultValue()
 {
     QCOMPARE(
-        RegionCaptureSettingsManager::instance().quickCaptureAction(),
-        RegionCaptureSettingsManager::QuickCaptureAction::CopyToClipboard);
+        RegionCaptureSettingsManager::instance().fullScreenCaptureAction(),
+        RegionCaptureSettingsManager::FullScreenCaptureAction::CopyToClipboard);
 }
 
-void tst_RegionCaptureSettingsManager::testQuickCaptureActionRoundtrip()
+void tst_RegionCaptureSettingsManager::testFullScreenCaptureActionRoundtrip()
 {
-    using Action = RegionCaptureSettingsManager::QuickCaptureAction;
+    using Action = RegionCaptureSettingsManager::FullScreenCaptureAction;
     auto settings = SnapTray::getSettings();
     auto& manager = RegionCaptureSettingsManager::instance();
 
-    manager.setQuickCaptureAction(Action::Edit);
-    QCOMPARE(manager.quickCaptureAction(), Action::Edit);
-    QCOMPARE(settings.value("regionCapture/quickCaptureAction").toInt(), 2);
+    manager.setFullScreenCaptureAction(Action::Edit);
+    QCOMPARE(manager.fullScreenCaptureAction(), Action::Edit);
+    QCOMPARE(settings.value("regionCapture/fullScreenCaptureAction").toInt(), 2);
 
-    manager.setQuickCaptureAction(Action::Save);
-    QCOMPARE(manager.quickCaptureAction(), Action::Save);
-    QCOMPARE(settings.value("regionCapture/quickCaptureAction").toInt(), 1);
+    manager.setFullScreenCaptureAction(Action::Save);
+    QCOMPARE(manager.fullScreenCaptureAction(), Action::Save);
+    QCOMPARE(settings.value("regionCapture/fullScreenCaptureAction").toInt(), 1);
 }
 
-void tst_RegionCaptureSettingsManager::testQuickCaptureActionInvalidStoredValueFallsBack()
+void tst_RegionCaptureSettingsManager::testFullScreenCaptureActionInvalidStoredValueFallsBack()
 {
     auto settings = SnapTray::getSettings();
-    settings.setValue("regionCapture/quickCaptureAction", 42);
+    settings.setValue("regionCapture/fullScreenCaptureAction", 42);
     QCOMPARE(
-        RegionCaptureSettingsManager::instance().quickCaptureAction(),
-        RegionCaptureSettingsManager::kDefaultQuickCaptureAction);
+        RegionCaptureSettingsManager::instance().fullScreenCaptureAction(),
+        RegionCaptureSettingsManager::kDefaultFullScreenCaptureAction);
 
-    settings.setValue("regionCapture/quickCaptureAction", QStringLiteral("bogus"));
+    settings.setValue("regionCapture/fullScreenCaptureAction", QStringLiteral("bogus"));
     QCOMPARE(
-        RegionCaptureSettingsManager::instance().quickCaptureAction(),
-        RegionCaptureSettingsManager::kDefaultQuickCaptureAction);
+        RegionCaptureSettingsManager::instance().fullScreenCaptureAction(),
+        RegionCaptureSettingsManager::kDefaultFullScreenCaptureAction);
 }
 
 QTEST_MAIN(tst_RegionCaptureSettingsManager)

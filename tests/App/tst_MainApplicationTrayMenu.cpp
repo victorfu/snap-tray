@@ -136,7 +136,7 @@ private slots:
     void cleanupTestCase();
 
     void updateTrayMenuHotkeyText_updatesPasteAction();
-    void updateTrayMenuHotkeyText_updatesQuickCaptureActions();
+    void updateTrayMenuHotkeyText_updatesFullScreenCaptureAction();
     void updateTrayMenuHotkeyText_marksFailedHotkeyUnavailable();
     void updateTrayMenuHotkeyText_usesTranslatedPasteLabel();
     void initialize_directDownload_addsEnabledCheckForUpdatesActionBeforeSettings();
@@ -208,19 +208,16 @@ void tst_MainApplicationTrayMenu::updateTrayMenuHotkeyText_updatesPasteAction()
     QCOMPARE(pasteAction.text(), MainApplication::tr("%1 (%2)").arg(baseName, displayHotkey));
 }
 
-void tst_MainApplicationTrayMenu::updateTrayMenuHotkeyText_updatesQuickCaptureActions()
+void tst_MainApplicationTrayMenu::updateTrayMenuHotkeyText_updatesFullScreenCaptureAction()
 {
     MainApplication application;
     QAction fullScreenAction(&application);
-    QAction activeWindowAction(&application);
     application.m_fullScreenCaptureAction = &fullScreenAction;
-    application.m_activeWindowCaptureAction = &activeWindowAction;
 
     application.updateTrayMenuHotkeyText();
 
-    // Both hotkeys are optional, so the default menu text has no shortcut suffix.
+    // The hotkey is optional, so the default menu text has no shortcut suffix.
     QCOMPARE(fullScreenAction.text(), MainApplication::tr("Full Screen Capture"));
-    QCOMPARE(activeWindowAction.text(), MainApplication::tr("Active Window Capture"));
 }
 
 void tst_MainApplicationTrayMenu::updateTrayMenuHotkeyText_marksFailedHotkeyUnavailable()
@@ -407,7 +404,6 @@ void tst_MainApplicationTrayMenu::queuedHistoryEntryRechecksCaptureMode()
     QSignalSpy captureStarted(application.m_captureManager, &CaptureManager::captureStarted);
     application.onHotkeyAction(SnapTray::HotkeyAction::RegionCapture);
     application.onHotkeyAction(SnapTray::HotkeyAction::CaptureFullScreen);
-    application.onHotkeyAction(SnapTray::HotkeyAction::CaptureActiveWindow);
     QCOMPARE(captureStarted.count(), 0);
     application.closeScreenPicker();
     QVERIFY(application.startHistoryReplay("test-entry"));
@@ -420,7 +416,6 @@ void tst_MainApplicationTrayMenu::queuedHistoryEntryRechecksCaptureMode()
         QVERIFY(!application.startHistoryReplay("test-entry"));
         application.onRegionCapture();
         application.onFullScreenCapture();
-        application.onActiveWindowCapture();
         QCOMPARE(captureStarted.count(), 0);
         QCOMPARE(replayCalls, 1);
     }

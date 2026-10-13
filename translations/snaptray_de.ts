@@ -102,8 +102,8 @@
         </message>
     <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="41" />
-        <source>Full screen / window capture</source>
-        <translation>Vollbild-/Fensteraufnahme</translation>
+        <source>After full screen capture</source>
+        <translation>Nach Vollbildaufnahme</translation>
     </message>
     <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="43" />
@@ -727,11 +727,6 @@ Datums-Tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} oder {date}</translation
         <location filename="../src/MainApplication.cpp" line="323" />
         <source>Full Screen Capture</source>
         <translation>Vollbildaufnahme</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="327" />
-        <source>Active Window Capture</source>
-        <translation>Aufnahme des aktiven Fensters</translation>
     </message>
 </context>
 <context>

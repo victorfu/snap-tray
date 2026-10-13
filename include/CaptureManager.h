@@ -8,11 +8,16 @@
 #include <QPointer>
 #include <QString>
 
-#include "capture/QuickCaptureTarget.h"
+#include <functional>
+#include <memory>
+
 #include "settings/RegionCaptureSettingsManager.h"
 
 class RegionSelector;
 class RegionExportManager;
+namespace snaptray::capture {
+class OwnWindowCaptureHider;
+}
 class QScreen;
 class PinWindowManager;
 class WindowDetector;
@@ -20,6 +25,7 @@ class WindowDetector;
 class CaptureManager : public QObject
 {
     Q_OBJECT
+    friend class tst_FullScreenCapture;
 
 public:
     explicit CaptureManager(PinWindowManager *pinManager, QObject *parent = nullptr);
@@ -31,14 +37,14 @@ public:
     void cancelCapture();
     void cycleOrSwitchCaptureScreenByCursor();
     bool startHistoryReplay(const QString& entryId);
-    bool isQuickCaptureInProgress() const;
+    bool isFullScreenCaptureInProgress() const;
 
 public slots:
     void startRegionCapture(bool showShortcutHintsOnEntry = false);
     void startQuickPinCapture();
     void startRegionCaptureWithPreset(const QRect &region, QScreen *screen);
-    // Full-screen / active-window capture that skips region selection.
-    void startQuickCapture(snaptray::capture::QuickCaptureTarget target);
+    // Captures the screen under the cursor without region selection.
+    void startFullScreenCapture();
 
 signals:
     void captureStarted();
@@ -69,20 +75,22 @@ private:
     void refreshWindowDetectorForCapture(QScreen *screen);
     void refreshWindowDetectorAsync(QScreen *screen);
     RegionSelector *createRegionSelector(bool showShortcutHintsOnEntry);
-    void startPresetRegionCapture(QScreen *screen,
-                                  const QRect &region,
-                                  const QPixmap &preCapture,
-                                  const QString &windowTitle,
-                                  const QString &ownerApp);
-    std::optional<DetectedElement> detectFrontmostWindow(QScreen *screen);
-    void exportQuickCapture(QScreen *screen,
-                            const QPixmap &snapshot,
-                            const snaptray::capture::QuickCaptureRegion &region,
-                            RegionCaptureSettingsManager::QuickCaptureAction action);
-    void finishQuickCapture();
+    void startPresetRegionCapture(QScreen *screen, const QRect &region, const QPixmap &preCapture);
+    void startFullScreenCaptureOnScreen(QScreen *screen);
+    void captureFullScreenAfterHidingOwnWindows(QScreen *screen);
+    void exportFullScreenCapture(QScreen *screen,
+                                 const QPixmap &snapshot,
+                                 RegionCaptureSettingsManager::FullScreenCaptureAction action);
+    void finishFullScreenExport();
+    QPixmap captureSnapshot(QScreen *screen) const;
 
     QPointer<RegionSelector> m_regionSelector;
-    QPointer<RegionExportManager> m_quickCaptureExport;
+    QPointer<RegionExportManager> m_fullScreenExport;
+    std::unique_ptr<snaptray::capture::OwnWindowCaptureHider> m_ownWindowHider;
+    bool m_fullScreenCapturePending = false;
+    // Test hooks: replace the platform screen grab and clipboard write.
+    std::function<QPixmap(QScreen*)> m_snapshotOverride;
+    std::function<void(const QImage&, std::function<void(bool)>)> m_clipboardWriterOverride;
     PinWindowManager *m_pinManager;
     WindowDetector *m_windowDetector;
 };

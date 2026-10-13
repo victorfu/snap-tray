@@ -23,10 +23,6 @@ class RecordingManager;
 class RecordingPreviewBackend;
 class QScreen;
 
-namespace snaptray::capture {
-enum class QuickCaptureTarget;
-}
-
 namespace SnapTray {
 class QmlSettingsWindow;
 class QmlHistoryWindow;
@@ -51,7 +47,6 @@ public slots:
 private slots:
     void onRegionCapture();
     void onFullScreenCapture();
-    void onActiveWindowCapture();
     void onQuickPin();
     void onScreenCanvas();
     void onPasteFromClipboard();
@@ -78,7 +73,6 @@ private:
 
     void startRegionCapture(bool showShortcutHintsOnEntry);
     bool canStartRegionCapture() const;
-    void startQuickCapture(snaptray::capture::QuickCaptureTarget target);
     bool startHistoryReplay(const QString& entryId);
     std::function<bool(const QString&)> m_historyReplayStarter;
     bool canShutdownForUpdate() const;
@@ -108,7 +102,6 @@ private:
     RecordingManager *m_recordingManager;
     QAction *m_regionCaptureAction;
     QAction *m_fullScreenCaptureAction = nullptr;
-    QAction *m_activeWindowCaptureAction = nullptr;
     QAction *m_screenCanvasAction;
     QAction *m_pasteAction;
     QAction *m_pinFromImageAction;

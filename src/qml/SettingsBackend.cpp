@@ -275,8 +275,8 @@ void SettingsBackend::loadAllSettings()
     m_cursorCompanionStyle = cursorCompanionStyleToUiValue(
         RegionCaptureSettingsManager::instance().cursorCompanionStyle());
     m_shortcutHintsEnabled = RegionCaptureSettingsManager::instance().isShortcutHintsEnabled();
-    m_quickCaptureAction =
-        static_cast<int>(RegionCaptureSettingsManager::instance().quickCaptureAction());
+    m_fullScreenCaptureAction =
+        static_cast<int>(RegionCaptureSettingsManager::instance().fullScreenCaptureAction());
 
     auto blurOpts = AutoBlurSettingsManager::instance().load();
     m_blurIntensity = blurOpts.blurIntensity;
@@ -558,24 +558,24 @@ void SettingsBackend::setShortcutHintsEnabled(bool v) {
     }
 }
 
-int SettingsBackend::quickCaptureAction() const { return m_quickCaptureAction; }
+int SettingsBackend::fullScreenCaptureAction() const { return m_fullScreenCaptureAction; }
 
-void SettingsBackend::setQuickCaptureAction(int v)
+void SettingsBackend::setFullScreenCaptureAction(int v)
 {
-    using QuickCaptureAction = RegionCaptureSettingsManager::QuickCaptureAction;
+    using FullScreenCaptureAction = RegionCaptureSettingsManager::FullScreenCaptureAction;
     v = qBound(
-        static_cast<int>(QuickCaptureAction::CopyToClipboard),
+        static_cast<int>(FullScreenCaptureAction::CopyToClipboard),
         v,
-        static_cast<int>(QuickCaptureAction::Edit));
+        static_cast<int>(FullScreenCaptureAction::Edit));
 
-    if (m_quickCaptureAction == v) {
+    if (m_fullScreenCaptureAction == v) {
         return;
     }
 
-    m_quickCaptureAction = v;
-    RegionCaptureSettingsManager::instance().setQuickCaptureAction(
-        static_cast<QuickCaptureAction>(v));
-    emit quickCaptureActionChanged();
+    m_fullScreenCaptureAction = v;
+    RegionCaptureSettingsManager::instance().setFullScreenCaptureAction(
+        static_cast<FullScreenCaptureAction>(v));
+    emit fullScreenCaptureActionChanged();
 }
 
 int SettingsBackend::blurIntensity() const { return m_blurIntensity; }

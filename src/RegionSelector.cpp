@@ -1458,9 +1458,7 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
 
 void RegionSelector::initializeWithRegion(QScreen* screen,
                                           const QRect& region,
-                                          const QPixmap& preCapture,
-                                          const QString& windowTitle,
-                                          const QString& ownerApp)
+                                          const QPixmap& preCapture)
 {
     setSelectionWindowMetadata({}, {});
     m_historyReplayEntries.clear();
@@ -1500,8 +1498,6 @@ void RegionSelector::initializeWithRegion(QScreen* screen,
     // Set selection from the region (this marks selection as complete)
     m_selectionManager->setSelectionRect(localRegion);
     m_selectionManager->setFromDetectedWindow(localRegion);
-    // Selection changes clear window metadata, so apply it after the preset.
-    setSelectionWindowMetadata(windowTitle, ownerApp);
     m_inputState.highlightedWindowRect = QRect();
     m_inputState.hasDetectedWindow = false;
     m_detectedWindow.reset();

@@ -8,7 +8,7 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ### Added
 
-- Added Full Screen Capture and Active Window Capture to the tray menu, with optional hotkeys. Captures can be copied to the clipboard, saved, or opened in the editor, and are added to History.
+- Added Full Screen Capture to the tray menu, with an optional hotkey. It captures the screen under the cursor at native resolution, leaves SnapTray's own windows out, and can copy, save, or open the capture in the editor. Captures are added to History.
 
 ## [1.0.68] - 2026-10-11
 

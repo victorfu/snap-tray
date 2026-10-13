@@ -82,7 +82,7 @@ private slots:
     void testAvailableLanguages_PrioritizesConfiguredAsianLanguages();
     void testCursorCompanionStyle_RoundTripPersistsAndSignals();
     void testMagnifierEnabled_RoundTripPersistsAndSignals();
-    void testQuickCaptureAction_RoundTripPersistsAndSignals();
+    void testFullScreenCaptureAction_RoundTripPersistsAndSignals();
     void testNormalizeRecordingAudioSettings_PreservesUnavailableLoadedDevice();
     void testBlurTypeMapping_RoundTripMatchesUiIndices();
     void testUseLastScreenshotSaveLocation_RoundTripPersistsAndSignals();
@@ -113,7 +113,7 @@ void tst_SettingsBackend::initTestCase()
         QStringLiteral("detection/blurType"),
         QStringLiteral("general/startOnLogin"),
         QStringLiteral("regionCapture/cursorCompanionStyle"),
-        QStringLiteral("regionCapture/quickCaptureAction"),
+        QStringLiteral("regionCapture/fullScreenCaptureAction"),
         QStringLiteral("update/lastCheckTime"),
         QStringLiteral("files/filenameTemplate"),
         QStringLiteral("files/useLastScreenshotSaveLocation"),
@@ -160,7 +160,7 @@ void tst_SettingsBackend::clearTestSettings()
     settings.remove("detection/blurType");
     settings.remove("general/startOnLogin");
     settings.remove("regionCapture/cursorCompanionStyle");
-    settings.remove("regionCapture/quickCaptureAction");
+    settings.remove("regionCapture/fullScreenCaptureAction");
     settings.remove("update/lastCheckTime");
     settings.remove("files/filenameTemplate");
     settings.remove("files/useLastScreenshotSaveLocation");
@@ -358,30 +358,30 @@ void tst_SettingsBackend::testCursorCompanionStyle_RoundTripPersistsAndSignals()
     QCOMPARE(magnifierChangedSpy.count(), 2);
 }
 
-void tst_SettingsBackend::testQuickCaptureAction_RoundTripPersistsAndSignals()
+void tst_SettingsBackend::testFullScreenCaptureAction_RoundTripPersistsAndSignals()
 {
     auto settings = SnapTray::getSettings();
     SettingsBackend backend;
-    QCOMPARE(backend.quickCaptureAction(), 0);
+    QCOMPARE(backend.fullScreenCaptureAction(), 0);
 
-    QSignalSpy changedSpy(&backend, &SettingsBackend::quickCaptureActionChanged);
+    QSignalSpy changedSpy(&backend, &SettingsBackend::fullScreenCaptureActionChanged);
 
-    backend.setQuickCaptureAction(0);
+    backend.setFullScreenCaptureAction(0);
     QCOMPARE(changedSpy.count(), 0);
-    QVERIFY(!settings.contains("regionCapture/quickCaptureAction"));
+    QVERIFY(!settings.contains("regionCapture/fullScreenCaptureAction"));
 
-    backend.setQuickCaptureAction(2);
-    QCOMPARE(backend.quickCaptureAction(), 2);
-    QCOMPARE(settings.value("regionCapture/quickCaptureAction").toInt(), 2);
+    backend.setFullScreenCaptureAction(2);
+    QCOMPARE(backend.fullScreenCaptureAction(), 2);
+    QCOMPARE(settings.value("regionCapture/fullScreenCaptureAction").toInt(), 2);
     QCOMPARE(changedSpy.count(), 1);
 
-    backend.setQuickCaptureAction(99);
-    QCOMPARE(backend.quickCaptureAction(), 2);
+    backend.setFullScreenCaptureAction(99);
+    QCOMPARE(backend.fullScreenCaptureAction(), 2);
     QCOMPARE(changedSpy.count(), 1);
 
-    backend.setQuickCaptureAction(1);
-    QCOMPARE(backend.quickCaptureAction(), 1);
-    QCOMPARE(settings.value("regionCapture/quickCaptureAction").toInt(), 1);
+    backend.setFullScreenCaptureAction(1);
+    QCOMPARE(backend.fullScreenCaptureAction(), 1);
+    QCOMPARE(settings.value("regionCapture/fullScreenCaptureAction").toInt(), 1);
     QCOMPARE(changedSpy.count(), 2);
 }
 

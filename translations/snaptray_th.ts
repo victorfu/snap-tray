@@ -103,8 +103,8 @@
     </message>
     <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="41" />
-        <source>Full screen / window capture</source>
-        <translation>จับภาพเต็มหน้าจอ / หน้าต่าง</translation>
+        <source>After full screen capture</source>
+        <translation>หลังจับภาพเต็มหน้าจอ</translation>
     </message>
     <message>
         <location filename="../src/qml/settings/AdvancedSettings.qml" line="43" />
@@ -792,11 +792,6 @@ File size: %3</source>
         <location filename="../src/MainApplication.cpp" line="323" />
         <source>Full Screen Capture</source>
         <translation>จับภาพเต็มหน้าจอ</translation>
-    </message>
-    <message>
-        <location filename="../src/MainApplication.cpp" line="327" />
-        <source>Active Window Capture</source>
-        <translation>จับภาพหน้าต่างที่ใช้งานอยู่</translation>
     </message>
 </context>
 <context>

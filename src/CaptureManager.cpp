@@ -2,6 +2,7 @@
 #include "RegionSelector.h"
 #include "PinWindowManager.h"
 #include "PinWindow.h"
+#include "capture/OwnWindowCaptureHider.h"
 #include "capture/ScreenSnapshot.h"
 #include "platform/WindowLevel.h"
 #include "WindowDetector.h"
@@ -24,12 +25,11 @@
 #include <QKeyEvent>
 #include <QDialog>
 #include <QImage>
+#include <QTimer>
 
 namespace {
 
-using snaptray::capture::QuickCaptureRegion;
-using snaptray::capture::QuickCaptureTarget;
-using QuickCaptureAction = RegionCaptureSettingsManager::QuickCaptureAction;
+using FullScreenCaptureAction = RegionCaptureSettingsManager::FullScreenCaptureAction;
 
 QScreen* screenAtCursor()
 {
@@ -61,12 +61,8 @@ QString monitorIdentifier(QScreen* screen)
     return monitorIndex >= 0 ? QString::number(monitorIndex) : QStringLiteral("unknown");
 }
 
-SnapTray::CaptureSessionWriteRequest makeQuickCaptureHistoryRequest(
-    const QPixmap& snapshot,
-    const QImage& resultImage,
-    const QRect& localRect,
-    QScreen* screen,
-    const QuickCaptureRegion& region)
+SnapTray::CaptureSessionWriteRequest makeFullScreenHistoryRequest(
+    const QPixmap& snapshot, const QImage& resultImage, const QRect& localRect, QScreen* screen)
 {
     const AnnotationLayer emptyAnnotations;
 
@@ -78,8 +74,6 @@ SnapTray::CaptureSessionWriteRequest makeQuickCaptureHistoryRequest(
     request.devicePixelRatio = screen->devicePixelRatio();
     request.canvasLogicalSize = screen->geometry().size();
     request.maxEntries = PinWindowSettingsManager::instance().loadMaxCacheFiles();
-    request.windowTitle = region.windowTitle;
-    request.ownerApp = region.ownerApp;
     return request;
 }
 
@@ -104,6 +98,7 @@ CaptureManager::CaptureManager(PinWindowManager *pinManager, QObject *parent)
     , m_regionSelector(nullptr)
     , m_pinManager(pinManager)
     , m_windowDetector(PlatformFeatures::instance().createWindowDetector(this))
+    , m_ownWindowHider(std::make_unique<snaptray::capture::OwnWindowCaptureHider>())
 {
 }
 
@@ -353,14 +348,12 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
     }
 
     emit captureStarted();
-    startPresetRegionCapture(screen, region, QPixmap(), QString(), QString());
+    startPresetRegionCapture(screen, region, QPixmap());
 }
 
 void CaptureManager::startPresetRegionCapture(QScreen *screen,
                                               const QRect &region,
-                                              const QPixmap &preCapture,
-                                              const QString &windowTitle,
-                                              const QString &ownerApp)
+                                              const QPixmap &preCapture)
 {
     // Create RegionSelector
     m_regionSelector = createRegionSelector(false);
@@ -372,7 +365,7 @@ void CaptureManager::startPresetRegionCapture(QScreen *screen,
     }
 
     // Initialize with preset region
-    m_regionSelector->initializeWithRegion(screen, region, preCapture, windowTitle, ownerApp);
+    m_regionSelector->initializeWithRegion(screen, region, preCapture);
 
     connect(m_regionSelector, &RegionSelector::regionSelected,
             this, &CaptureManager::onRegionSelected);
@@ -386,14 +379,23 @@ void CaptureManager::startPresetRegionCapture(QScreen *screen,
     showPreparedRegionSelector(screen);
 }
 
-bool CaptureManager::isQuickCaptureInProgress() const
+bool CaptureManager::isFullScreenCaptureInProgress() const
 {
-    return !m_quickCaptureExport.isNull();
+    return m_fullScreenCapturePending || !m_fullScreenExport.isNull();
 }
 
-void CaptureManager::startQuickCapture(QuickCaptureTarget target)
+void CaptureManager::startFullScreenCapture()
 {
-    if (isActive() || isQuickCaptureInProgress()) {
+    startFullScreenCaptureOnScreen(screenAtCursor());
+}
+
+void CaptureManager::startFullScreenCaptureOnScreen(QScreen* screen)
+{
+    if (isActive() || isFullScreenCaptureInProgress()) {
+        return;
+    }
+    if (!screen) {
+        qCritical() << "CaptureManager: No valid screen available for full screen capture";
         return;
     }
 
@@ -401,123 +403,129 @@ void CaptureManager::startQuickCapture(QuickCaptureTarget target)
         m_regionSelector->close();
     }
 
-    QScreen* screen = screenAtCursor();
-    if (!screen) {
-        qCritical() << "CaptureManager: No valid screen available for quick capture";
-        return;
-    }
-
     emit captureStarted();
+    m_fullScreenCapturePending = true;
 
-    std::optional<DetectedElement> window;
-    if (target == QuickCaptureTarget::ActiveWindow) {
-        window = detectFrontmostWindow(screen);
-        if (!window.has_value()) {
-            qDebug() << "CaptureManager: No active window found, capturing full screen";
-        }
-    }
+    // SnapTray's own UI must not appear in the capture. Give the compositor a
+    // frame to drop the hidden windows before grabbing the screen.
+    m_ownWindowHider->hide();
+    const int settleDelayMs = m_ownWindowHider->hasHiddenWindows()
+        ? snaptray::capture::OwnWindowCaptureHider::kSettleDelayMs
+        : 0;
+    const QPointer<QScreen> targetScreen(screen);
+    QTimer::singleShot(settleDelayMs, this, [this, targetScreen]() {
+        captureFullScreenAfterHidingOwnWindows(targetScreen.data());
+    });
+}
 
-    QWidget* popup = QApplication::activePopupWidget();
-    QWidget* modal = QApplication::activeModalWidget();
-    const QPixmap snapshot = snaptray::capture::captureScreenSnapshot(screen);
-    closeTransientWindows(popup, modal);
+void CaptureManager::captureFullScreenAfterHidingOwnWindows(QScreen* screen)
+{
+    const QPixmap snapshot = screen ? captureSnapshot(screen) : QPixmap();
+
+    // Dismiss popups/modals the same way region capture does, then bring the
+    // remaining windows back.
+    closeTransientWindows(QApplication::activePopupWidget(), QApplication::activeModalWidget());
+    m_ownWindowHider->restore();
+    m_fullScreenCapturePending = false;
 
     if (snapshot.isNull()) {
-        qWarning() << "CaptureManager: Failed to capture screen for quick capture";
+        qWarning() << "CaptureManager: Failed to capture screen for full screen capture";
         emit captureCancelled();
         return;
     }
 
-    const QuickCaptureRegion region =
-        snaptray::capture::resolveQuickCaptureRegion(target, screen->geometry(), window);
-    const QuickCaptureAction action = RegionCaptureSettingsManager::instance().quickCaptureAction();
-
-    if (action == QuickCaptureAction::Edit) {
-        startPresetRegionCapture(
-            screen, region.globalRect, snapshot, region.windowTitle, region.ownerApp);
+    const FullScreenCaptureAction action =
+        RegionCaptureSettingsManager::instance().fullScreenCaptureAction();
+    if (action == FullScreenCaptureAction::Edit) {
+        startPresetRegionCapture(screen, screen->geometry(), snapshot);
         return;
     }
 
-    exportQuickCapture(screen, snapshot, region, action);
+    exportFullScreenCapture(screen, snapshot, action);
 }
 
-std::optional<DetectedElement> CaptureManager::detectFrontmostWindow(QScreen* screen)
+QPixmap CaptureManager::captureSnapshot(QScreen* screen) const
 {
-    if (!m_windowDetector || !m_windowDetector->isEnabled() || !screen) {
-        return std::nullopt;
+    if (m_snapshotOverride) {
+        return m_snapshotOverride(screen);
     }
-
-    m_windowDetector->setScreen(screen);
-    m_windowDetector->refreshWindowList(WindowDetector::QueryMode::TopLevelOnly);
-
-    auto window = snaptray::capture::findFrontmostWindow(
-        m_windowDetector->topLevelWindowsSnapshot(), screen->geometry());
-    if (window.has_value()) {
-        WindowDetector::populateWindowMetadata(*window);
-    }
-    return window;
+    return snaptray::capture::captureScreenSnapshot(screen);
 }
 
-void CaptureManager::exportQuickCapture(QScreen* screen,
-                                        const QPixmap& snapshot,
-                                        const QuickCaptureRegion& region,
-                                        QuickCaptureAction action)
+void CaptureManager::exportFullScreenCapture(QScreen* screen,
+                                             const QPixmap& snapshot,
+                                             FullScreenCaptureAction action)
 {
     auto* exporter = new RegionExportManager(this);
-    m_quickCaptureExport = exporter;
+    m_fullScreenExport = exporter;
     exporter->setBackgroundPixmap(snapshot);
     exporter->setDevicePixelRatio(screen->devicePixelRatio());
     exporter->setSourceScreen(screen);
     exporter->setMonitorIdentifier(monitorIdentifier(screen));
-    exporter->setWindowMetadata(region.windowTitle, region.ownerApp);
 
-    const QRect localRect = region.globalRect.translated(-screen->geometry().topLeft());
+    // The whole screen in screen-local logical coordinates. The exporter maps it
+    // to the covering device-pixel rect, clamped to the snapshot, so fractional
+    // scale factors keep every native pixel.
+    const QRect localRect(QPoint(0, 0), screen->geometry().size());
     RegionExportManager::PreparedExport prepared = exporter->prepareExport(localRect);
     if (!prepared.isValid()) {
-        qWarning() << "CaptureManager: Failed to prepare quick capture" << localRect;
-        finishQuickCapture();
+        qWarning() << "CaptureManager: Failed to prepare full screen capture" << localRect;
+        finishFullScreenExport();
         emit captureCancelled();
         return;
     }
 
     SnapTray::CaptureSessionWriteRequest historyRequest =
-        makeQuickCaptureHistoryRequest(snapshot, prepared.image, localRect, screen, region);
+        makeFullScreenHistoryRequest(snapshot, prepared.image, localRect, screen);
 
-    if (action == QuickCaptureAction::CopyToClipboard) {
+    if (action == FullScreenCaptureAction::CopyToClipboard) {
         const QPixmap pixmap = prepared.pixmap;
-        PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
-            prepared.image, this,
-            [this, pixmap, historyRequest = std::move(historyRequest)](
-                PlatformFeatures::ClipboardCopyResult result) mutable {
-                finishQuickCapture();
-                switch (result) {
-                case PlatformFeatures::ClipboardCopyResult::Success:
-                    SnapTray::HistoryRecorder::instance().submitCaptureSession(
-                        std::move(historyRequest));
-                    emit copyCompleted(pixmap);
-                    emit captureCompleted(pixmap);
-                    break;
-                case PlatformFeatures::ClipboardCopyResult::Failed:
-                    qWarning() << "CaptureManager: Failed to copy quick capture to clipboard";
-                    emit copyFailed();
-                    break;
-                case PlatformFeatures::ClipboardCopyResult::Superseded:
-                    emit captureCancelled();
-                    break;
-                }
-            });
+        auto finishCopy = [this, pixmap, historyRequest = std::move(historyRequest)](
+                              PlatformFeatures::ClipboardCopyResult result) mutable {
+            finishFullScreenExport();
+            switch (result) {
+            case PlatformFeatures::ClipboardCopyResult::Success:
+                SnapTray::HistoryRecorder::instance().submitCaptureSession(
+                    std::move(historyRequest));
+                emit copyCompleted(pixmap);
+                emit captureCompleted(pixmap);
+                break;
+            case PlatformFeatures::ClipboardCopyResult::Failed:
+                qWarning() << "CaptureManager: Failed to copy full screen capture to clipboard";
+                emit copyFailed();
+                break;
+            case PlatformFeatures::ClipboardCopyResult::Superseded:
+                emit captureCancelled();
+                break;
+            }
+        };
+
+        if (m_clipboardWriterOverride) {
+            const QPointer<CaptureManager> guard(this);
+            m_clipboardWriterOverride(
+                prepared.image,
+                [guard, finishCopy = std::move(finishCopy)](bool success) mutable {
+                    if (guard) {
+                        finishCopy(success ? PlatformFeatures::ClipboardCopyResult::Success
+                                           : PlatformFeatures::ClipboardCopyResult::Failed);
+                    }
+                });
+        } else {
+            PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
+                prepared.image, this, std::move(finishCopy));
+        }
         return;
     }
 
     const RegionExportManager::SaveRequest saveRequest =
         exporter->createSaveRequest(localRect, nullptr);
     if (saveRequest.cancelled) {
-        finishQuickCapture();
+        finishFullScreenExport();
         emit captureCancelled();
         return;
     }
     if (!saveRequest.error.isEmpty()) {
-        finishQuickCapture();
+        finishFullScreenExport();
         emit saveFailed(saveRequest.filePath, saveRequest.error);
         return;
     }
@@ -525,7 +533,7 @@ void CaptureManager::exportQuickCapture(QScreen* screen,
     connect(exporter, &RegionExportManager::saveCompleted, this,
         [this, historyRequest = std::move(historyRequest)](
             const QPixmap& pixmap, const QImage& image, const QString& filePath) mutable {
-            finishQuickCapture();
+            finishFullScreenExport();
             historyRequest.resultImage = image;
             SnapTray::HistoryRecorder::instance().submitCaptureSession(std::move(historyRequest));
             emit saveCompleted(pixmap, filePath);
@@ -533,17 +541,17 @@ void CaptureManager::exportQuickCapture(QScreen* screen,
         });
     connect(exporter, &RegionExportManager::saveFailed, this,
         [this](const QString& filePath, const QString& error) {
-            finishQuickCapture();
+            finishFullScreenExport();
             emit saveFailed(filePath, error);
         });
     exporter->savePreparedExportAsync(std::move(prepared), saveRequest);
 }
 
-void CaptureManager::finishQuickCapture()
+void CaptureManager::finishFullScreenExport()
 {
-    if (m_quickCaptureExport) {
-        m_quickCaptureExport->deleteLater();
-        m_quickCaptureExport = nullptr;
+    if (m_fullScreenExport) {
+        m_fullScreenExport->deleteLater();
+        m_fullScreenExport = nullptr;
     }
 }
 
