@@ -11,8 +11,9 @@ OwnWindowCaptureHider::~OwnWindowCaptureHider()
     restore();
 }
 
-void OwnWindowCaptureHider::hide()
+int OwnWindowCaptureHider::hide()
 {
+    int newlyHidden = 0;
     const auto windows = QGuiApplication::topLevelWindows();
     for (QWindow* window : windows) {
         if (!window || !window->isVisible() || window->opacity() <= 0.0) {
@@ -28,7 +29,9 @@ void OwnWindowCaptureHider::hide()
 
         m_hiddenWindows.push_back({window, window->opacity()});
         window->setOpacity(0.0);
+        ++newlyHidden;
     }
+    return newlyHidden;
 }
 
 void OwnWindowCaptureHider::restore()

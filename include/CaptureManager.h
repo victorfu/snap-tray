@@ -77,6 +77,7 @@ private:
     RegionSelector *createRegionSelector(bool showShortcutHintsOnEntry);
     void startPresetRegionCapture(QScreen *screen, const QRect &region, const QPixmap &preCapture);
     void startFullScreenCaptureOnScreen(QScreen *screen);
+    void scheduleFullScreenGrab(QScreen *screen, quint64 generation, int settleRound);
     void captureFullScreenAfterHidingOwnWindows(QScreen *screen);
     void exportFullScreenCapture(QScreen *screen,
                                  const QPixmap &snapshot,

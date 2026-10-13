@@ -1,6 +1,7 @@
 #include <QtTest/QtTest>
 
 #include <QApplication>
+#include <QElapsedTimer>
 #include <QFile>
 #include <QImage>
 #include <QPainter>
@@ -143,6 +144,8 @@ private slots:
     void otherCaptureEntryPoints_rejectedWhilePending();
     void otherCaptureEntryPoints_rejectedDuringExport();
     void cancelCapture_whilePending_restoresWindowsWithoutGrabbing();
+    void windowShownDuringSettleDelay_isHiddenBeforeGrab();
+    void windowShownBeforeImmediateGrab_isHiddenBeforeGrab();
 
 private:
     void configure(CaptureManager& manager, std::optional<QImage>* copiedImage);
@@ -528,6 +531,69 @@ void tst_FullScreenCapture::cancelCapture_whilePending_restoresWindowsWithoutGra
     QTest::qWait(snaptray::capture::OwnWindowCaptureHider::kSettleDelayMs * 2);
     QCOMPARE(grabs, 0);
     QCOMPARE(cancelled.count(), 1);
+}
+
+void tst_FullScreenCapture::windowShownDuringSettleDelay_isHiddenBeforeGrab()
+{
+    RegionCaptureSettingsManager::instance().setFullScreenCaptureAction(
+        FullScreenCaptureAction::CopyToClipboard);
+
+    QWidget pin;
+    pin.resize(100, 100);
+    pin.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&pin));
+
+    CaptureManager manager(nullptr);
+    configure(manager, nullptr);
+    QWidget latePin;  // e.g. a pin pasted from the clipboard mid-delay
+    latePin.resize(120, 80);
+    std::optional<qreal> latePinOpacityAtGrab;
+    QElapsedTimer sinceStart;
+    qint64 grabDelayMs = -1;
+    manager.m_snapshotOverride = [&](QScreen* screen) {
+        latePinOpacityAtGrab = latePin.windowHandle()->opacity();
+        grabDelayMs = sinceStart.elapsed();
+        return nativeSnapshot(screen);
+    };
+    QSignalSpy copied(&manager, &CaptureManager::copyCompleted);
+
+    sinceStart.start();
+    manager.startFullScreenCaptureOnScreen(screenNamed(QStringLiteral("Primary100")));
+    QTimer::singleShot(snaptray::capture::OwnWindowCaptureHider::kSettleDelayMs / 2,
+                       &latePin, [&latePin]() { latePin.show(); });
+
+    QTRY_COMPARE(copied.count(), 1);
+    QVERIFY(latePinOpacityAtGrab.has_value());
+    QCOMPARE(*latePinOpacityAtGrab, 0.0);
+    // The late window got its own settle round before the grab.
+    QVERIFY(grabDelayMs >= 2 * snaptray::capture::OwnWindowCaptureHider::kSettleDelayMs - 10);
+    QCOMPARE(latePin.windowHandle()->opacity(), 1.0);
+    QCOMPARE(pin.windowHandle()->opacity(), 1.0);
+}
+
+void tst_FullScreenCapture::windowShownBeforeImmediateGrab_isHiddenBeforeGrab()
+{
+    RegionCaptureSettingsManager::instance().setFullScreenCaptureAction(
+        FullScreenCaptureAction::CopyToClipboard);
+
+    CaptureManager manager(nullptr);
+    configure(manager, nullptr);
+    QWidget toast;  // nothing else visible, so the grab is not delayed by default
+    toast.resize(200, 40);
+    std::optional<qreal> toastOpacityAtGrab;
+    manager.m_snapshotOverride = [&](QScreen* screen) {
+        toastOpacityAtGrab = toast.windowHandle()->opacity();
+        return nativeSnapshot(screen);
+    };
+    QSignalSpy copied(&manager, &CaptureManager::copyCompleted);
+
+    manager.startFullScreenCaptureOnScreen(screenNamed(QStringLiteral("Far125")));
+    toast.show();
+
+    QTRY_COMPARE(copied.count(), 1);
+    QVERIFY(toastOpacityAtGrab.has_value());
+    QCOMPARE(*toastOpacityAtGrab, 0.0);
+    QCOMPARE(toast.windowHandle()->opacity(), 1.0);
 }
 
 int main(int argc, char** argv)

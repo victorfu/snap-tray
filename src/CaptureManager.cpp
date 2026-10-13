@@ -419,14 +419,28 @@ void CaptureManager::startFullScreenCaptureOnScreen(QScreen* screen)
 
     // SnapTray's own UI must not appear in the capture. Give the compositor a
     // frame to drop the hidden windows before grabbing the screen.
-    m_ownWindowHider->hide();
-    const int settleDelayMs = m_ownWindowHider->hasHiddenWindows()
-        ? snaptray::capture::OwnWindowCaptureHider::kSettleDelayMs
-        : 0;
+    const int hiddenWindows = m_ownWindowHider->hide();
+    scheduleFullScreenGrab(screen, generation, hiddenWindows > 0 ? 1 : 0);
+}
+
+void CaptureManager::scheduleFullScreenGrab(QScreen* screen, quint64 generation, int settleRound)
+{
+    using snaptray::capture::OwnWindowCaptureHider;
+
+    // Round 0 means nothing was hidden, so there is nothing to wait for.
+    const int delayMs = settleRound > 0 ? OwnWindowCaptureHider::kSettleDelayMs : 0;
     const QPointer<QScreen> targetScreen(screen);
-    QTimer::singleShot(settleDelayMs, this, [this, targetScreen, generation]() {
+    QTimer::singleShot(delayMs, this, [this, targetScreen, generation, settleRound]() {
         if (!m_fullScreenCapturePending || generation != m_fullScreenCaptureGeneration) {
             return;  // Cancelled while waiting for the compositor.
+        }
+
+        // Windows can appear while waiting (a pasted pin, a toast, a CLI
+        // command). Hide them too and give the compositor another frame.
+        if (m_ownWindowHider->hide() > 0
+            && settleRound < OwnWindowCaptureHider::kMaxSettleRounds) {
+            scheduleFullScreenGrab(targetScreen.data(), generation, settleRound + 1);
+            return;
         }
         captureFullScreenAfterHidingOwnWindows(targetScreen.data());
     });

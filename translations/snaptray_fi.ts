@@ -2446,6 +2446,16 @@ GIF-tallennuksissa ääntä ei tueta.</translation>
         <source>Conflicts with: %1</source>
         <translation>Ristiriita kohteen kanssa: %1</translation>
     </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="119" />
+        <source>Full Screen Capture</source>
+        <translation>Koko näytön kaappaus</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="120" />
+        <source>Capture the screen under the cursor</source>
+        <translation>Kaappaa kohdistimen alla oleva näyttö</translation>
+    </message>
 </context>
 <context>
     <name>SnapTray::HotkeySettingsTab</name>

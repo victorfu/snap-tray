@@ -2452,6 +2452,16 @@ GIF 녹화에서는 오디오가 지원되지 않습니다.</translation>
         <source>Conflicts with: %1</source>
         <translation>충돌: %1</translation>
     </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="119" />
+        <source>Full Screen Capture</source>
+        <translation>전체 화면 캡처</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="120" />
+        <source>Capture the screen under the cursor</source>
+        <translation>커서가 있는 화면 캡처</translation>
+    </message>
 </context>
 <context>
     <name>SnapTray::HotkeySettingsTab</name>

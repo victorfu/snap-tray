@@ -137,6 +137,7 @@ private slots:
 
     void updateTrayMenuHotkeyText_updatesPasteAction();
     void updateTrayMenuHotkeyText_updatesFullScreenCaptureAction();
+    void fullScreenCapture_usesTranslatedHotkeyAndTrayLabels();
     void updateTrayMenuHotkeyText_marksFailedHotkeyUnavailable();
     void updateTrayMenuHotkeyText_usesTranslatedPasteLabel();
     void initialize_directDownload_addsEnabledCheckForUpdatesActionBeforeSettings();
@@ -218,6 +219,32 @@ void tst_MainApplicationTrayMenu::updateTrayMenuHotkeyText_updatesFullScreenCapt
 
     // The hotkey is optional, so the default menu text has no shortcut suffix.
     QCOMPARE(fullScreenAction.text(), MainApplication::tr("Full Screen Capture"));
+}
+
+void tst_MainApplicationTrayMenu::fullScreenCapture_usesTranslatedHotkeyAndTrayLabels()
+{
+    QTranslator translator;
+    QVERIFY2(translator.load(translationFilePath()),
+             qPrintable(QStringLiteral("Failed to load translation file: %1")
+                            .arg(translationFilePath())));
+    QVERIFY(QCoreApplication::installTranslator(&translator));
+
+    // Settings > Hotkeys reads labels resolved when the configs are built.
+    manager().shutdown();
+    manager().initialize();
+    const auto config = manager().getConfig(SnapTray::HotkeyAction::CaptureFullScreen);
+    QCOMPARE(config.displayName, QString::fromUtf8("全螢幕擷取"));
+    QCOMPARE(config.description, QString::fromUtf8("擷取游標所在的螢幕"));
+
+    MainApplication application;
+    QAction fullScreenAction(&application);
+    application.m_fullScreenCaptureAction = &fullScreenAction;
+    application.updateTrayMenuHotkeyText();
+    QCOMPARE(fullScreenAction.text(), QString::fromUtf8("全螢幕擷取"));
+
+    QCoreApplication::removeTranslator(&translator);
+    manager().shutdown();
+    manager().initialize();
 }
 
 void tst_MainApplicationTrayMenu::updateTrayMenuHotkeyText_marksFailedHotkeyUnavailable()

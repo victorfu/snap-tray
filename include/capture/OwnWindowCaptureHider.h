@@ -22,6 +22,8 @@ class OwnWindowCaptureHider
 public:
     // Time for the compositor to present a frame without the hidden windows.
     static constexpr int kSettleDelayMs = 100;
+    // Extra settle rounds allowed for windows that appear while waiting.
+    static constexpr int kMaxSettleRounds = 5;
 
     OwnWindowCaptureHider() = default;
     ~OwnWindowCaptureHider();
@@ -29,7 +31,8 @@ public:
     OwnWindowCaptureHider(const OwnWindowCaptureHider&) = delete;
     OwnWindowCaptureHider& operator=(const OwnWindowCaptureHider&) = delete;
 
-    void hide();
+    // Hides visible windows not already hidden; returns how many were newly hidden.
+    int hide();
     void restore();
     bool hasHiddenWindows() const { return !m_hiddenWindows.empty(); }
 

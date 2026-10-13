@@ -2446,6 +2446,16 @@ GIF kayıtlarında ses desteklenmez.</translation>
         <source>Conflicts with: %1</source>
         <translation>Şununla çakışıyor: %1</translation>
     </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="119" />
+        <source>Full Screen Capture</source>
+        <translation>Tam Ekran Yakalama</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="120" />
+        <source>Capture the screen under the cursor</source>
+        <translation>İmlecin altındaki ekranı yakala</translation>
+    </message>
 </context>
 <context>
     <name>SnapTray::HotkeySettingsTab</name>

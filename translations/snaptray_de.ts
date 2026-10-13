@@ -2452,6 +2452,16 @@ Audio wird bei GIF-Aufnahmen nicht unterstützt.</translation>
         <source>Conflicts with: %1</source>
         <translation>Konflikt mit: %1</translation>
     </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="119" />
+        <source>Full Screen Capture</source>
+        <translation>Vollbildaufnahme</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="120" />
+        <source>Capture the screen under the cursor</source>
+        <translation>Den Bildschirm unter dem Mauszeiger aufnehmen</translation>
+    </message>
 </context>
 <context>
     <name>SnapTray::HotkeySettingsTab</name>

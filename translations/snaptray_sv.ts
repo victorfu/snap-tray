@@ -2446,6 +2446,16 @@ Ljud stöds inte för GIF-inspelningar.</translation>
         <source>Conflicts with: %1</source>
         <translation>Konflikt med: %1</translation>
     </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="119" />
+        <source>Full Screen Capture</source>
+        <translation>Helskärmsfångst</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="120" />
+        <source>Capture the screen under the cursor</source>
+        <translation>Fånga skärmen under pekaren</translation>
+    </message>
 </context>
 <context>
     <name>SnapTray::HotkeySettingsTab</name>

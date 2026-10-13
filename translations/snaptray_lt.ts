@@ -2446,6 +2446,16 @@ GIF įrašuose garsas nepalaikomas.</translation>
         <source>Conflicts with: %1</source>
         <translation>Konfliktuoja su: %1</translation>
     </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="119" />
+        <source>Full Screen Capture</source>
+        <translation>Viso ekrano fiksavimas</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="120" />
+        <source>Capture the screen under the cursor</source>
+        <translation>Fiksuoti ekraną po žymekliu</translation>
+    </message>
 </context>
 <context>
     <name>SnapTray::HotkeySettingsTab</name>

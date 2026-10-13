@@ -2452,6 +2452,16 @@ Zvuk není podporován pro nahrávky ve formátu GIF.</translation>
         <source>Conflicts with: %1</source>
         <translation>Konflikt s: %1</translation>
     </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="119" />
+        <source>Full Screen Capture</source>
+        <translation>Zachycení celé obrazovky</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="120" />
+        <source>Capture the screen under the cursor</source>
+        <translation>Zachytit obrazovku pod kurzorem</translation>
+    </message>
 </context>
 <context>
     <name>SnapTray::HotkeySettingsTab</name>

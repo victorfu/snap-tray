@@ -2452,6 +2452,16 @@ El audio no es compatible con grabaciones GIF.</translation>
         <source>Conflicts with: %1</source>
         <translation>Conflicto con: %1</translation>
     </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="119" />
+        <source>Full Screen Capture</source>
+        <translation>Captura de pantalla completa</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="120" />
+        <source>Capture the screen under the cursor</source>
+        <translation>Capturar la pantalla bajo el cursor</translation>
+    </message>
 </context>
 <context>
     <name>SnapTray::HotkeySettingsTab</name>

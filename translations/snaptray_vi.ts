@@ -2446,6 +2446,16 @@ Ghi GIF không hỗ trợ âm thanh.</translation>
         <source>Conflicts with: %1</source>
         <translation>Xung đột với: %1</translation>
     </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="119" />
+        <source>Full Screen Capture</source>
+        <translation>Chụp toàn màn hình</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="120" />
+        <source>Capture the screen under the cursor</source>
+        <translation>Chụp màn hình đang có con trỏ</translation>
+    </message>
 </context>
 <context>
     <name>SnapTray::HotkeySettingsTab</name>

@@ -2443,6 +2443,16 @@ GIF 录制不支持音频。</translation>
         <source>Conflicts with: %1</source>
         <translation>与 %1 冲突</translation>
     </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="119" />
+        <source>Full Screen Capture</source>
+        <translation>全屏截图</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="120" />
+        <source>Capture the screen under the cursor</source>
+        <translation>截取光标所在的屏幕</translation>
+    </message>
 </context>
 <context>
     <name>SnapTray::HotkeySettingsTab</name>

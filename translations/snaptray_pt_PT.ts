@@ -2446,6 +2446,16 @@ Ideal para clipes curtos e partilha na web.
         <source>Conflicts with: %1</source>
         <translation>Conflito com: %1</translation>
     </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="119" />
+        <source>Full Screen Capture</source>
+        <translation>Captura de ecrã inteiro</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="120" />
+        <source>Capture the screen under the cursor</source>
+        <translation>Capturar o ecrã sob o cursor</translation>
+    </message>
 </context>
 <context>
     <name>SnapTray::HotkeySettingsTab</name>

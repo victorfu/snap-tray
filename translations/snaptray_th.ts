@@ -2392,6 +2392,16 @@ English is always included and cannot be removed.</source>
         <source>Start full screen recording</source>
         <translation>เริ่มบันทึกเต็มหน้าจอ</translation>
     </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="119" />
+        <source>Full Screen Capture</source>
+        <translation>จับภาพเต็มหน้าจอ</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="120" />
+        <source>Capture the screen under the cursor</source>
+        <translation>จับภาพหน้าจอที่เคอร์เซอร์อยู่</translation>
+    </message>
 </context>
 <context>
     <name>SnapTray::QmlHistoryWindow</name>
