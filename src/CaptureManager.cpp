@@ -455,6 +455,7 @@ void CaptureManager::abortPendingFullScreenCapture()
     m_fullScreenCapturePending = false;
     m_ownWindowHider->restore();
     emit captureCancelled();
+    emit fullScreenCaptureFinished();
 }
 
 void CaptureManager::captureFullScreenAfterHidingOwnWindows(QScreen* screen)
@@ -470,13 +471,16 @@ void CaptureManager::captureFullScreenAfterHidingOwnWindows(QScreen* screen)
     if (snapshot.isNull()) {
         qWarning() << "CaptureManager: Failed to capture screen for full screen capture";
         emit captureCancelled();
+        emit fullScreenCaptureFinished();
         return;
     }
 
     const FullScreenCaptureAction action =
         RegionCaptureSettingsManager::instance().fullScreenCaptureAction();
     if (action == FullScreenCaptureAction::Edit) {
+        // From here on the editor is an ordinary region capture session.
         startPresetRegionCapture(screen, screen->geometry(), snapshot);
+        emit fullScreenCaptureFinished();
         return;
     }
 
@@ -591,6 +595,7 @@ void CaptureManager::finishFullScreenExport()
     if (m_fullScreenExport) {
         m_fullScreenExport->deleteLater();
         m_fullScreenExport = nullptr;
+        emit fullScreenCaptureFinished();
     }
 }
 

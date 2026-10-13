@@ -26,6 +26,7 @@ class CaptureManager : public QObject
 {
     Q_OBJECT
     friend class tst_FullScreenCapture;
+    friend class tst_MainApplicationTrayMenu;
 
 public:
     explicit CaptureManager(PinWindowManager *pinManager, QObject *parent = nullptr);
@@ -54,6 +55,9 @@ signals:
     void saveFailed(const QString &filePath, const QString &error);
     void copyCompleted(const QPixmap &screenshot);
     void copyFailed();
+    // The full screen capture no longer owns the screen (grabbed and exported,
+    // handed to the editor, failed, or cancelled).
+    void fullScreenCaptureFinished();
 
 private slots:
     void prewarmWindowDetector();

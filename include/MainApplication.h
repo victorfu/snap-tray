@@ -5,6 +5,7 @@
 
 #include <QByteArray>
 #include <QImage>
+#include <QList>
 #include <QObject>
 #include <QPixmap>
 #include <QPointer>
@@ -72,6 +73,7 @@ private:
                        std::optional<QPoint> position = std::nullopt);
 
     void startRegionCapture(bool showShortcutHintsOnEntry);
+    void runDeferredCLICommands();
     bool canStartRegionCapture() const;
     bool startHistoryReplay(const QString& entryId);
     std::function<bool(const QString&)> m_historyReplayStarter;
@@ -116,6 +118,8 @@ private:
     QPointer<SnapTray::QmlDialog> m_screenPickerDialog;
     QPointer<SnapTray::ScreenPickerViewModel> m_screenPickerViewModel;
     RecordingPreviewBackend *m_previewBackend = nullptr;
+    // CLI commands received while a full screen capture was still exporting.
+    QList<QByteArray> m_deferredCLICommands;
 };
 
 #endif // MAINAPPLICATION_H
