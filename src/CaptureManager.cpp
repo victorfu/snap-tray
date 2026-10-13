@@ -416,18 +416,19 @@ void CaptureManager::startFullScreenCaptureOnScreen(QScreen* screen)
 
     // SnapTray's own UI must not appear in the capture. Give the compositor a
     // frame to drop the hidden windows before grabbing the screen.
-    const int hiddenWindows = m_ownWindowHider->hide();
-    scheduleFullScreenGrab(screen, generation, hiddenWindows > 0 ? 1 : 0);
+    // Qt may already have closed the tray menu before triggering this action.
+    // Even if no windows remain visible, its last frame needs time to disappear.
+    m_ownWindowHider->hide();
+    scheduleFullScreenGrab(screen, generation, 1);
 }
 
 void CaptureManager::scheduleFullScreenGrab(QScreen* screen, quint64 generation, int settleRound)
 {
     using snaptray::capture::OwnWindowCaptureHider;
 
-    // Round 0 means nothing was hidden, so there is nothing to wait for.
-    const int delayMs = settleRound > 0 ? OwnWindowCaptureHider::kSettleDelayMs : 0;
     const QPointer<QScreen> targetScreen(screen);
-    QTimer::singleShot(delayMs, this, [this, targetScreen, generation, settleRound]() {
+    QTimer::singleShot(OwnWindowCaptureHider::kSettleDelayMs, this,
+                      [this, targetScreen, generation, settleRound]() {
         if (!m_fullScreenCapturePending || generation != m_fullScreenCaptureGeneration) {
             return;  // Cancelled while waiting for the compositor.
         }

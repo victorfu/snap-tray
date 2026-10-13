@@ -5,6 +5,7 @@
 #include <QElapsedTimer>
 #include <QFile>
 #include <QImage>
+#include <QMenu>
 #include <QPainter>
 #include <QPixmap>
 #include <QPointer>
@@ -148,7 +149,8 @@ private slots:
     void otherCaptureEntryPoints_rejectedDuringExport();
     void cancelCapture_whilePending_restoresWindowsWithoutGrabbing();
     void windowShownDuringSettleDelay_isHiddenBeforeGrab();
-    void windowShownBeforeImmediateGrab_isHiddenBeforeGrab();
+    void recentlyClosedMenu_waitsBeforeGrab();
+    void windowShownAfterCaptureStarts_isHiddenBeforeGrab();
     void windowsKeepAppearing_cancelsInsteadOfGrabbing();
 
 private:
@@ -582,14 +584,48 @@ void tst_FullScreenCapture::windowShownDuringSettleDelay_isHiddenBeforeGrab()
     QCOMPARE(pin.windowHandle()->opacity(), 1.0);
 }
 
-void tst_FullScreenCapture::windowShownBeforeImmediateGrab_isHiddenBeforeGrab()
+void tst_FullScreenCapture::recentlyClosedMenu_waitsBeforeGrab()
+{
+    using snaptray::capture::OwnWindowCaptureHider;
+    RegionCaptureSettingsManager::instance().setFullScreenCaptureAction(
+        FullScreenCaptureAction::CopyToClipboard);
+
+    QMenu menu;
+    menu.addAction(QStringLiteral("Full Screen Capture"));
+    menu.popup(QPoint(20, 20));
+    QVERIFY(QTest::qWaitForWindowExposed(&menu));
+    // QMenu closes before dispatching the action, leaving no visible window
+    // for the capture hider to detect, but potentially a stale composed frame.
+    menu.close();
+    QVERIFY(!menu.isVisible());
+    OwnWindowCaptureHider hider;
+    QCOMPARE(hider.hide(), 0);
+
+    CaptureManager manager(nullptr);
+    configure(manager, nullptr);
+    QElapsedTimer sinceStart;
+    qint64 grabDelayMs = -1;
+    manager.m_snapshotOverride = [&](QScreen* screen) {
+        grabDelayMs = sinceStart.elapsed();
+        return nativeSnapshot(screen);
+    };
+    QSignalSpy copied(&manager, &CaptureManager::copyCompleted);
+
+    sinceStart.start();
+    manager.startFullScreenCaptureOnScreen(screenNamed(QStringLiteral("Primary100")));
+    QTRY_COMPARE(copied.count(), 1);
+    // Allow coarse timer rounding, as in the late-window settle test.
+    QVERIFY(grabDelayMs >= OwnWindowCaptureHider::kSettleDelayMs - 10);
+}
+
+void tst_FullScreenCapture::windowShownAfterCaptureStarts_isHiddenBeforeGrab()
 {
     RegionCaptureSettingsManager::instance().setFullScreenCaptureAction(
         FullScreenCaptureAction::CopyToClipboard);
 
     CaptureManager manager(nullptr);
     configure(manager, nullptr);
-    QWidget toast;  // nothing else visible, so the grab is not delayed by default
+    QWidget toast;  // nothing else visible when capture starts
     toast.resize(200, 40);
     std::optional<qreal> toastOpacityAtGrab;
     manager.m_snapshotOverride = [&](QScreen* screen) {
