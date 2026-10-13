@@ -100,6 +100,26 @@
         <source>Max cache files</source>
         <translation>Välimuistitiedostojen enimmäismäärä:</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="41" />
+        <source>Full screen / window capture</source>
+        <translation>Koko näytön / ikkunan kaappaus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="43" />
+        <source>Copy to clipboard</source>
+        <translation>Kopioi leikepöydälle</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="44" />
+        <source>Save to file</source>
+        <translation>Tallenna tiedostoon</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
+        <source>Open editor</source>
+        <translation>Avaa editori</translation>
+    </message>
 </context>
 <context>
     <name>BeautifyPanel</name>
@@ -681,6 +701,31 @@ Päivämäärätunnisteet: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} tai {date}</
         <location filename="../src/MainApplication.cpp" line="938" />
         <source>Show All Pins</source>
         <translation>Näytä kaikki kiinnitykset</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="264" />
+        <source>Screenshot Copied</source>
+        <translation>Kuvakaappaus kopioitu</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="265" />
+        <source>Copied to clipboard</source>
+        <translation>Kopioitu leikepöydälle</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="271" />
+        <source>Copy failed</source>
+        <translation>Kopiointi epäonnistui</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="323" />
+        <source>Full Screen Capture</source>
+        <translation>Koko näytön kaappaus</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="327" />
+        <source>Active Window Capture</source>
+        <translation>Aktiivisen ikkunan kaappaus</translation>
     </message>
 </context>
 <context>

@@ -100,6 +100,26 @@
         <source>Max cache files</source>
         <translation>File cache max.:</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="41" />
+        <source>Full screen / window capture</source>
+        <translation>Cattura schermo intero / finestra</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="43" />
+        <source>Copy to clipboard</source>
+        <translation>Copia negli appunti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="44" />
+        <source>Save to file</source>
+        <translation>Salva su file</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
+        <source>Open editor</source>
+        <translation>Apri editor</translation>
+    </message>
 </context>
 <context>
     <name>BeautifyPanel</name>
@@ -687,6 +707,31 @@ Token di data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} o {date}</translation>
         <location filename="../src/MainApplication.cpp" line="938" />
         <source>Show All Pins</source>
         <translation>Mostra tutti i pin</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="264" />
+        <source>Screenshot Copied</source>
+        <translation>Schermata copiata</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="265" />
+        <source>Copied to clipboard</source>
+        <translation>Copiato negli appunti</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="271" />
+        <source>Copy failed</source>
+        <translation>Copia non riuscita</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="323" />
+        <source>Full Screen Capture</source>
+        <translation>Cattura schermo intero</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="327" />
+        <source>Active Window Capture</source>
+        <translation>Cattura finestra attiva</translation>
     </message>
 </context>
 <context>

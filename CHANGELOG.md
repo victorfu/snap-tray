@@ -6,6 +6,10 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+### Added
+
+- Added Full Screen Capture and Active Window Capture to the tray menu, with optional hotkeys. Captures can be copied to the clipboard, saved, or opened in the editor, and are added to History.
+
 ## [1.0.68] - 2026-10-11
 
 ### Added

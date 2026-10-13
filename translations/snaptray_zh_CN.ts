@@ -100,6 +100,26 @@
         <source>Max cache files</source>
         <translation>最大缓存文件数：</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="41" />
+        <source>Full screen / window capture</source>
+        <translation>全屏 / 窗口截图</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="43" />
+        <source>Copy to clipboard</source>
+        <translation>复制到剪贴板</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="44" />
+        <source>Save to file</source>
+        <translation>保存到文件</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
+        <source>Open editor</source>
+        <translation>打开编辑器</translation>
+    </message>
 </context>
 <context>
     <name>BeautifyPanel</name>
@@ -678,6 +698,31 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/MainApplication.cpp" line="938" />
         <source>Show All Pins</source>
         <translation>显示所有图钉</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="264" />
+        <source>Screenshot Copied</source>
+        <translation>截图已复制</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="265" />
+        <source>Copied to clipboard</source>
+        <translation>已复制到剪贴板</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="271" />
+        <source>Copy failed</source>
+        <translation>复制失败</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="323" />
+        <source>Full Screen Capture</source>
+        <translation>全屏截图</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="327" />
+        <source>Active Window Capture</source>
+        <translation>活动窗口截图</translation>
     </message>
 </context>
 <context>

@@ -100,6 +100,26 @@
         <source>Max cache files</source>
         <translation>Maks. podėlio failų:</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="41" />
+        <source>Full screen / window capture</source>
+        <translation>Viso ekrano / lango fiksavimas</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="43" />
+        <source>Copy to clipboard</source>
+        <translation>Kopijuoti į iškarpinę</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="44" />
+        <source>Save to file</source>
+        <translation>Išsaugoti į failą</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
+        <source>Open editor</source>
+        <translation>Atidaryti redaktorių</translation>
+    </message>
 </context>
 <context>
     <name>BeautifyPanel</name>
@@ -681,6 +701,31 @@ Datos žetonai: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} arba {date}</translatio
         <location filename="../src/MainApplication.cpp" line="938" />
         <source>Show All Pins</source>
         <translation>Rodyti visus prisegtus langus</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="264" />
+        <source>Screenshot Copied</source>
+        <translation>Ekrano nuotrauka nukopijuota</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="265" />
+        <source>Copied to clipboard</source>
+        <translation>Nukopijuota į iškarpinę</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="271" />
+        <source>Copy failed</source>
+        <translation>Kopijavimas nepavyko</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="323" />
+        <source>Full Screen Capture</source>
+        <translation>Viso ekrano fiksavimas</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="327" />
+        <source>Active Window Capture</source>
+        <translation>Aktyvaus lango fiksavimas</translation>
     </message>
 </context>
 <context>

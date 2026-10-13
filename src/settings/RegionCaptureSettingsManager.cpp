@@ -70,3 +70,23 @@ void RegionCaptureSettingsManager::setShortcutHintsEnabled(bool enabled)
     auto settings = SnapTray::getSettings();
     settings.setValue(kSettingsKeyShowShortcutHints, enabled);
 }
+
+RegionCaptureSettingsManager::QuickCaptureAction
+RegionCaptureSettingsManager::quickCaptureAction() const
+{
+    auto settings = SnapTray::getSettings();
+    bool ok = false;
+    const int rawValue = settings.value(kSettingsKeyQuickCaptureAction).toInt(&ok);
+    if (!ok
+        || rawValue < static_cast<int>(QuickCaptureAction::CopyToClipboard)
+        || rawValue > static_cast<int>(QuickCaptureAction::Edit)) {
+        return kDefaultQuickCaptureAction;
+    }
+    return static_cast<QuickCaptureAction>(rawValue);
+}
+
+void RegionCaptureSettingsManager::setQuickCaptureAction(QuickCaptureAction action)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyQuickCaptureAction, static_cast<int>(action));
+}

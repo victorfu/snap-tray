@@ -22,6 +22,8 @@ doc_order: 3
 
 ## 其他可設定動作（預設未綁定）
 
+- Full Screen Capture
+- Active Window Capture
 - Pin from Image
 - Pin History
 - Toggle Hide/Show All Pins

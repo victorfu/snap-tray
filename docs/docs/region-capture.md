@@ -15,6 +15,21 @@ doc_order: 1
 
 Press `F2` (default) to enter Region Capture. The cursor switches to crosshair, and the cursor companion appears according to the `Cursor companion` setting in Settings.
 
+## Full screen and active window capture
+
+Use `Full Screen Capture` or `Active Window Capture` from the tray menu, or bind them in Settings > Hotkeys, to skip region selection:
+
+- `Full Screen Capture` captures the screen under the cursor.
+- `Active Window Capture` captures the front-most window on that screen, excluding SnapTray's own windows. If no window is found, it captures the full screen.
+
+Choose what happens next in Settings > Advanced > `Full screen / window capture`:
+
+- `Copy to clipboard` (default)
+- `Save to file`, using your Files settings
+- `Open editor`, which opens the capture with the selection preset so you can annotate before copying or saving
+
+Captures are added to History, and window captures fill the window title and application name filename tokens.
+
 ## Selection behavior
 
 ### Precision targeting

@@ -30,6 +30,8 @@ enum class HotkeyAction {
 
     // Capture actions (100-199)
     RegionCapture = 100,
+    CaptureFullScreen = 101,
+    CaptureActiveWindow = 102,
 
     // Canvas actions (200-299)
     ScreenCanvas = 200,
@@ -111,6 +113,22 @@ inline constexpr HotkeyMetadata kDefaultHotkeys[] = {
         QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Capture a selected region of the screen"),
         "hotkey",  // kSettingsKeyHotkey
         "F2"       // kDefaultHotkey
+    },
+    {
+        HotkeyAction::CaptureFullScreen,
+        HotkeyCategory::Capture,
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Full Screen Capture"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Capture the screen under the cursor"),
+        "captureFullScreenHotkey",
+        ""  // Optional, no default
+    },
+    {
+        HotkeyAction::CaptureActiveWindow,
+        HotkeyCategory::Capture,
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Active Window Capture"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Capture the front-most window"),
+        "captureActiveWindowHotkey",
+        ""  // Optional, no default
     },
     {
         HotkeyAction::ScreenCanvas,

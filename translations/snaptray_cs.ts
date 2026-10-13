@@ -100,6 +100,26 @@
         <source>Max cache files</source>
         <translation>Max. souborů v mezipaměti:</translation>
         </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="41" />
+        <source>Full screen / window capture</source>
+        <translation>Zachycení obrazovky / okna</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="43" />
+        <source>Copy to clipboard</source>
+        <translation>Kopírovat do schránky</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="44" />
+        <source>Save to file</source>
+        <translation>Uložit do souboru</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
+        <source>Open editor</source>
+        <translation>Otevřít editor</translation>
+    </message>
 </context>
 <context>
     <name>BeautifyPanel</name>
@@ -687,6 +707,31 @@ Tokeny data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} nebo {date}</translation>
         <location filename="../src/MainApplication.cpp" line="938" />
         <source>Show All Pins</source>
         <translation>Zobrazit všechny piny</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="264" />
+        <source>Screenshot Copied</source>
+        <translation>Snímek obrazovky zkopírován</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="265" />
+        <source>Copied to clipboard</source>
+        <translation>Zkopírováno do schránky</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="271" />
+        <source>Copy failed</source>
+        <translation>Kopírování se nezdařilo</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="323" />
+        <source>Full Screen Capture</source>
+        <translation>Zachycení celé obrazovky</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="327" />
+        <source>Active Window Capture</source>
+        <translation>Zachycení aktivního okna</translation>
     </message>
 </context>
 <context>

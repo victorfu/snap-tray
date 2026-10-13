@@ -769,6 +769,11 @@ target_link_libraries(Detection_WindowDetectorQueryMode PRIVATE snaptray_platfor
 add_test(NAME Detection_WindowDetectorQueryMode COMMAND Detection_WindowDetectorQueryMode)
 set_tests_properties(Detection_WindowDetectorQueryMode PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Detection_QuickCaptureTarget Detection/tst_QuickCaptureTarget.cpp)
+target_link_libraries(Detection_QuickCaptureTarget PRIVATE snaptray_platform Qt6::Test)
+add_test(NAME Detection_QuickCaptureTarget COMMAND Detection_QuickCaptureTarget)
+set_tests_properties(Detection_QuickCaptureTarget PROPERTIES TIMEOUT 60 LABELS "unit")
+
 if(WIN32)
     add_executable(Detection_WindowDetectorMetadata Detection/tst_WindowDetectorMetadata_win.cpp)
     target_link_libraries(Detection_WindowDetectorMetadata PRIVATE snaptray_platform Qt6::Test advapi32)

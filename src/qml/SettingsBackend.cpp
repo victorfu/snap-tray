@@ -275,6 +275,8 @@ void SettingsBackend::loadAllSettings()
     m_cursorCompanionStyle = cursorCompanionStyleToUiValue(
         RegionCaptureSettingsManager::instance().cursorCompanionStyle());
     m_shortcutHintsEnabled = RegionCaptureSettingsManager::instance().isShortcutHintsEnabled();
+    m_quickCaptureAction =
+        static_cast<int>(RegionCaptureSettingsManager::instance().quickCaptureAction());
 
     auto blurOpts = AutoBlurSettingsManager::instance().load();
     m_blurIntensity = blurOpts.blurIntensity;
@@ -554,6 +556,26 @@ void SettingsBackend::setShortcutHintsEnabled(bool v) {
         RegionCaptureSettingsManager::instance().setShortcutHintsEnabled(v);
         emit shortcutHintsEnabledChanged();
     }
+}
+
+int SettingsBackend::quickCaptureAction() const { return m_quickCaptureAction; }
+
+void SettingsBackend::setQuickCaptureAction(int v)
+{
+    using QuickCaptureAction = RegionCaptureSettingsManager::QuickCaptureAction;
+    v = qBound(
+        static_cast<int>(QuickCaptureAction::CopyToClipboard),
+        v,
+        static_cast<int>(QuickCaptureAction::Edit));
+
+    if (m_quickCaptureAction == v) {
+        return;
+    }
+
+    m_quickCaptureAction = v;
+    RegionCaptureSettingsManager::instance().setQuickCaptureAction(
+        static_cast<QuickCaptureAction>(v));
+    emit quickCaptureActionChanged();
 }
 
 int SettingsBackend::blurIntensity() const { return m_blurIntensity; }

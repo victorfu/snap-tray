@@ -517,6 +517,7 @@ add_library(snaptray_platform STATIC
     src/capture/IAudioCaptureEngine.cpp
     src/capture/TimestampedPcmMixer.cpp
     src/capture/ScreenSnapshot.cpp
+    src/capture/QuickCaptureTarget.cpp
     src/capture/QtCaptureEngine.cpp
     src/encoding/EncoderFactory.cpp
     src/encoding/NativeGifEncoder.cpp

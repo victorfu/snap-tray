@@ -22,6 +22,8 @@ doc_order: 3
 
 ## Additional configurable actions (no default)
 
+- Full Screen Capture
+- Active Window Capture
 - Pin from Image
 - Pin History
 - Toggle Hide/Show All Pins

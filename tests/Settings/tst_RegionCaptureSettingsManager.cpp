@@ -20,6 +20,9 @@ private slots:
     void testSetMagnifierDisabledRoundtrip();
     void testSetMagnifierEnabledRoundtrip();
     void testSetCursorCompanionStyleBeaverRoundtrip();
+    void testQuickCaptureActionDefaultValue();
+    void testQuickCaptureActionRoundtrip();
+    void testQuickCaptureActionInvalidStoredValueFallsBack();
 
 private:
     void clearSettings();
@@ -40,6 +43,7 @@ void tst_RegionCaptureSettingsManager::clearSettings()
     auto settings = SnapTray::getSettings();
     settings.remove("regionCapture/cursorCompanionStyle");
     settings.remove("regionCapture/showShortcutHints");
+    settings.remove("regionCapture/quickCaptureAction");
     settings.sync();
 }
 
@@ -117,6 +121,42 @@ void tst_RegionCaptureSettingsManager::testSetCursorCompanionStyleBeaverRoundtri
         RegionCaptureSettingsManager::CursorCompanionStyle::Beaver);
     QCOMPARE(manager.isMagnifierEnabled(), false);
     QCOMPARE(settings.value("regionCapture/cursorCompanionStyle").toInt(), 2);
+}
+
+void tst_RegionCaptureSettingsManager::testQuickCaptureActionDefaultValue()
+{
+    QCOMPARE(
+        RegionCaptureSettingsManager::instance().quickCaptureAction(),
+        RegionCaptureSettingsManager::QuickCaptureAction::CopyToClipboard);
+}
+
+void tst_RegionCaptureSettingsManager::testQuickCaptureActionRoundtrip()
+{
+    using Action = RegionCaptureSettingsManager::QuickCaptureAction;
+    auto settings = SnapTray::getSettings();
+    auto& manager = RegionCaptureSettingsManager::instance();
+
+    manager.setQuickCaptureAction(Action::Edit);
+    QCOMPARE(manager.quickCaptureAction(), Action::Edit);
+    QCOMPARE(settings.value("regionCapture/quickCaptureAction").toInt(), 2);
+
+    manager.setQuickCaptureAction(Action::Save);
+    QCOMPARE(manager.quickCaptureAction(), Action::Save);
+    QCOMPARE(settings.value("regionCapture/quickCaptureAction").toInt(), 1);
+}
+
+void tst_RegionCaptureSettingsManager::testQuickCaptureActionInvalidStoredValueFallsBack()
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue("regionCapture/quickCaptureAction", 42);
+    QCOMPARE(
+        RegionCaptureSettingsManager::instance().quickCaptureAction(),
+        RegionCaptureSettingsManager::kDefaultQuickCaptureAction);
+
+    settings.setValue("regionCapture/quickCaptureAction", QStringLiteral("bogus"));
+    QCOMPARE(
+        RegionCaptureSettingsManager::instance().quickCaptureAction(),
+        RegionCaptureSettingsManager::kDefaultQuickCaptureAction);
 }
 
 QTEST_MAIN(tst_RegionCaptureSettingsManager)

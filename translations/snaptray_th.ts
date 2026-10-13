@@ -101,6 +101,26 @@
         <source>Max history entries</source>
         <translation>จำนวนรายการประวัติสูงสุด</translation>
     </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="41" />
+        <source>Full screen / window capture</source>
+        <translation>จับภาพเต็มหน้าจอ / หน้าต่าง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="43" />
+        <source>Copy to clipboard</source>
+        <translation>คัดลอกไปยังคลิปบอร์ด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="44" />
+        <source>Save to file</source>
+        <translation>บันทึกเป็นไฟล์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
+        <source>Open editor</source>
+        <translation>เปิดตัวแก้ไข</translation>
+    </message>
 </context>
 <context>
     <name>BeautifyPanel</name>
@@ -752,6 +772,31 @@ File size: %3</source>
         <location filename="../src/MainApplication.cpp" line="1015"/>
         <source>Show All Pins</source>
         <translation>แสดงหมุดทั้งหมด</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="264" />
+        <source>Screenshot Copied</source>
+        <translation>คัดลอกภาพหน้าจอแล้ว</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="265" />
+        <source>Copied to clipboard</source>
+        <translation>คัดลอกไปยังคลิปบอร์ดแล้ว</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="271" />
+        <source>Copy failed</source>
+        <translation>คัดลอกไม่สำเร็จ</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="323" />
+        <source>Full Screen Capture</source>
+        <translation>จับภาพเต็มหน้าจอ</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="327" />
+        <source>Active Window Capture</source>
+        <translation>จับภาพหน้าต่างที่ใช้งานอยู่</translation>
     </message>
 </context>
 <context>
