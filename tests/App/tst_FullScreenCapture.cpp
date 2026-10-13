@@ -275,6 +275,13 @@ void tst_FullScreenCapture::edit_opensSelectorWithFullScreenPreset_data()
 
 void tst_FullScreenCapture::edit_opensSelectorWithFullScreenPreset()
 {
+#ifdef Q_OS_MACOS
+    // RegionSelector and its floating toolbars call Cocoa APIs on their native
+    // windows, which the offscreen platform used for the multi-monitor layout
+    // does not provide. The editor hand-off is platform independent and is
+    // covered on Linux and Windows.
+    QSKIP("RegionSelector needs the Cocoa platform; this suite runs offscreen.");
+#endif
     QFETCH(QString, screenName);
     RegionCaptureSettingsManager::instance().setFullScreenCaptureAction(
         FullScreenCaptureAction::Edit);
