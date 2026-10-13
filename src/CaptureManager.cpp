@@ -506,9 +506,8 @@ void CaptureManager::exportFullScreenCapture(QScreen* screen,
     exporter->setSourceScreen(screen);
     exporter->setMonitorIdentifier(monitorIdentifier(screen));
 
-    // The whole screen in screen-local logical coordinates. The exporter maps it
-    // to the covering device-pixel rect, clamped to the snapshot, so fractional
-    // scale factors keep every native pixel.
+    // The whole screen in screen-local logical coordinates. The exporter
+    // preserves the snapshot's full pixel bounds for a full-background selection.
     const QRect localRect(QPoint(0, 0), screen->geometry().size());
     RegionExportManager::PreparedExport prepared = exporter->prepareExport(localRect);
     if (!prepared.isValid()) {

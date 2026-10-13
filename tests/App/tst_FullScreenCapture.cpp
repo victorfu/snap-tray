@@ -44,6 +44,7 @@ const TestScreen kTestScreens[] = {
     {"Right150", QRect(1920, -120, 1707, 960), 1.5, QSize(2560, 1440)},
     {"Far125", QRect(3627, 0, 1536, 864), 1.25, QSize(1920, 1080)},
     {"Left200", QRect(-1440, 0, 1440, 900), 2.0, QSize(2880, 1800)},
+    {"Above275", QRect(0, -785, 1396, 785), 2.75, QSize(3840, 2160)},
 };
 
 const QColor kTopLeftMarker(255, 0, 0);
