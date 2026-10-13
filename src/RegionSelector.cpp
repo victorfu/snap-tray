@@ -1456,7 +1456,9 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     beginInitialRevealPreparation(m_initialWindowDetectionMode);
 }
 
-void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
+void RegionSelector::initializeWithRegion(QScreen* screen,
+                                          const QRect& region,
+                                          const QPixmap& preCapture)
 {
     setSelectionWindowMetadata({}, {});
     m_historyReplayEntries.clear();
@@ -1481,8 +1483,13 @@ void RegionSelector::initializeWithRegion(QScreen* screen, const QRect& region)
         return;
     }
 
-    // Capture the screen first
-    applyCaptureContext({m_currentScreen->grabWindow(0), m_devicePixelRatio, m_currentScreen});
+    // Reuse the caller's frame when provided so the preset matches what was captured.
+    if (!preCapture.isNull()) {
+        applyCaptureContext({preCapture, m_devicePixelRatio, m_currentScreen});
+    }
+    else {
+        applyCaptureContext({m_currentScreen->grabWindow(0), m_devicePixelRatio, m_currentScreen});
+    }
 
     // Convert global region to local coordinates
     QRect screenGeom = m_currentScreen->geometry();

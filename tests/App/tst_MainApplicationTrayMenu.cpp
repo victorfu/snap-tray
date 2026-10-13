@@ -136,6 +136,8 @@ private slots:
     void cleanupTestCase();
 
     void updateTrayMenuHotkeyText_updatesPasteAction();
+    void updateTrayMenuHotkeyText_updatesFullScreenCaptureAction();
+    void fullScreenCapture_usesTranslatedHotkeyAndTrayLabels();
     void updateTrayMenuHotkeyText_marksFailedHotkeyUnavailable();
     void updateTrayMenuHotkeyText_usesTranslatedPasteLabel();
     void initialize_directDownload_addsEnabledCheckForUpdatesActionBeforeSettings();
@@ -143,6 +145,7 @@ private slots:
     void onCheckForUpdates_usesSharedSettingsWindowFlowWithoutShowingSettings();
     void initialize_externalManaged_disablesCheckForUpdatesAction();
     void handleCLICommand_removedRecordCommandIsIgnored();
+    void handleCLICommand_deferredUntilFullScreenExportFinishes();
     void screenPickerClosed_deletesWrapperAndViewModel();
     void queuedHistoryEntryRechecksCaptureMode();
     void previewCloseDiscardsTemporaryFile_data();
@@ -205,6 +208,44 @@ void tst_MainApplicationTrayMenu::updateTrayMenuHotkeyText_updatesPasteAction()
 
     QVERIFY(!displayHotkey.isEmpty());
     QCOMPARE(pasteAction.text(), MainApplication::tr("%1 (%2)").arg(baseName, displayHotkey));
+}
+
+void tst_MainApplicationTrayMenu::updateTrayMenuHotkeyText_updatesFullScreenCaptureAction()
+{
+    MainApplication application;
+    QAction fullScreenAction(&application);
+    application.m_fullScreenCaptureAction = &fullScreenAction;
+
+    application.updateTrayMenuHotkeyText();
+
+    // The hotkey is optional, so the default menu text has no shortcut suffix.
+    QCOMPARE(fullScreenAction.text(), MainApplication::tr("Full Screen Capture"));
+}
+
+void tst_MainApplicationTrayMenu::fullScreenCapture_usesTranslatedHotkeyAndTrayLabels()
+{
+    QTranslator translator;
+    QVERIFY2(translator.load(translationFilePath()),
+             qPrintable(QStringLiteral("Failed to load translation file: %1")
+                            .arg(translationFilePath())));
+    QVERIFY(QCoreApplication::installTranslator(&translator));
+
+    // Settings > Hotkeys reads labels resolved when the configs are built.
+    manager().shutdown();
+    manager().initialize();
+    const auto config = manager().getConfig(SnapTray::HotkeyAction::CaptureFullScreen);
+    QCOMPARE(config.displayName, QString::fromUtf8("全螢幕擷取"));
+    QCOMPARE(config.description, QString::fromUtf8("擷取游標所在的螢幕"));
+
+    MainApplication application;
+    QAction fullScreenAction(&application);
+    application.m_fullScreenCaptureAction = &fullScreenAction;
+    application.updateTrayMenuHotkeyText();
+    QCOMPARE(fullScreenAction.text(), QString::fromUtf8("全螢幕擷取"));
+
+    QCoreApplication::removeTranslator(&translator);
+    manager().shutdown();
+    manager().initialize();
 }
 
 void tst_MainApplicationTrayMenu::updateTrayMenuHotkeyText_marksFailedHotkeyUnavailable()
@@ -348,6 +389,58 @@ void tst_MainApplicationTrayMenu::initialize_externalManaged_disablesCheckForUpd
     QVERIFY(!application.m_checkForUpdatesAction->isEnabled());
 }
 
+void tst_MainApplicationTrayMenu::handleCLICommand_deferredUntilFullScreenExportFinishes()
+{
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    RegionCaptureSettingsManager::instance().setFullScreenCaptureAction(
+        RegionCaptureSettingsManager::FullScreenCaptureAction::CopyToClipboard);
+
+    MainApplication application;
+    application.initialize();
+
+    // Hold the full screen capture in its copy phase, after the grab.
+    CaptureManager* captureManager = application.m_captureManager;
+    captureManager->m_snapshotOverride = [](QScreen* screen) {
+        QPixmap pixmap(screen->geometry().size() * screen->devicePixelRatio());
+        pixmap.fill(Qt::darkCyan);
+        pixmap.setDevicePixelRatio(screen->devicePixelRatio());
+        return pixmap;
+    };
+    std::function<void(bool)> finishClipboardWrite;
+    captureManager->m_clipboardWriterOverride =
+        [&finishClipboardWrite](const QImage&, std::function<void(bool)> done) {
+            finishClipboardWrite = std::move(done);
+        };
+    captureManager->startFullScreenCaptureOnScreen(QGuiApplication::primaryScreen());
+    QTRY_VERIFY(finishClipboardWrite);
+    QVERIFY(captureManager->isFullScreenCaptureInProgress());
+
+    QTemporaryDir dir;
+    const QString path = dir.filePath(QStringLiteral("deferred.png"));
+    QImage image(40, 30, QImage::Format_RGB32);
+    image.fill(Qt::red);
+    QVERIFY(image.save(path));
+
+    SnapTray::CLI::IPCMessage command;
+    command.command = QStringLiteral("pin");
+    command.options = {{QStringLiteral("file"), path}};
+    QSignalSpy created(application.m_pinWindowManager, &PinWindowManager::windowCreated);
+    application.handleCLICommand(command.toJson());
+
+    // Not dropped, and not run while the export still owns the capture state.
+    QTest::qWait(100);
+    QCOMPARE(created.count(), 0);
+    QCOMPARE(application.m_deferredCLICommands.size(), 1);
+
+    finishClipboardWrite(true);
+    QVERIFY(!captureManager->isFullScreenCaptureInProgress());
+    QTRY_COMPARE(created.count(), 1);
+    QVERIFY(application.m_deferredCLICommands.isEmpty());
+
+    application.m_pinWindowManager->closeAllWindows();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
 void tst_MainApplicationTrayMenu::handleCLICommand_removedRecordCommandIsIgnored()
 {
     using namespace SnapTray::CLI;
@@ -390,6 +483,7 @@ void tst_MainApplicationTrayMenu::queuedHistoryEntryRechecksCaptureMode()
     QCOMPARE(replayCalls, 0);
     QSignalSpy captureStarted(application.m_captureManager, &CaptureManager::captureStarted);
     application.onHotkeyAction(SnapTray::HotkeyAction::RegionCapture);
+    application.onHotkeyAction(SnapTray::HotkeyAction::CaptureFullScreen);
     QCOMPARE(captureStarted.count(), 0);
     application.closeScreenPicker();
     QVERIFY(application.startHistoryReplay("test-entry"));
@@ -401,6 +495,7 @@ void tst_MainApplicationTrayMenu::queuedHistoryEntryRechecksCaptureMode()
         QVERIFY(!application.canStartRegionCapture());
         QVERIFY(!application.startHistoryReplay("test-entry"));
         application.onRegionCapture();
+        application.onFullScreenCapture();
         QCOMPARE(captureStarted.count(), 0);
         QCOMPARE(replayCalls, 1);
     }

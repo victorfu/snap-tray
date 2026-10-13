@@ -95,8 +95,14 @@ QPixmap RegionExportManager::getSelectedRegion(const QRect &selectionRect, int c
         return QPixmap();
     }
 
-    // Use edge-aligned device-pixel coordinates for cropping.
-    const QRect physicalRect = CoordinateHelper::toPhysicalCoveringRect(selectionRect, m_devicePixelRatio);
+    // A full-background selection uses Qt's rounded logical size. Converting
+    // that size back at fractional DPR can lose the last native row/column.
+    // Preserve the original pixel bounds when the entire background is selected.
+    const qreal effectiveDpr = m_devicePixelRatio > 0.0 ? m_devicePixelRatio : 1.0;
+    const QRect logicalBounds(QPoint(0, 0), m_backgroundPixmap.size() / effectiveDpr);
+    const QRect physicalRect = selectionRect == logicalBounds
+        ? m_backgroundPixmap.rect()
+        : CoordinateHelper::toPhysicalCoveringRect(selectionRect, m_devicePixelRatio);
     const QRect clampedPhysicalRect = physicalRect.intersected(m_backgroundPixmap.rect());
     if (clampedPhysicalRect.isEmpty()) {
         return QPixmap();

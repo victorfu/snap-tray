@@ -22,6 +22,7 @@ doc_order: 3
 
 ## การดำเนินการที่กำหนดค่าได้เพิ่มเติม (ไม่มีค่าเริ่มต้น)
 
+- Full Screen Capture
 - Pin from Image
 - Pin History
 - Toggle Hide/Show All Pins

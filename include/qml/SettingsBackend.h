@@ -48,6 +48,7 @@ class SettingsBackend : public QObject
     Q_PROPERTY(bool magnifierEnabled READ magnifierEnabled WRITE setMagnifierEnabled NOTIFY magnifierEnabledChanged)
     Q_PROPERTY(int cursorCompanionStyle READ cursorCompanionStyle WRITE setCursorCompanionStyle NOTIFY cursorCompanionStyleChanged)
     Q_PROPERTY(bool shortcutHintsEnabled READ shortcutHintsEnabled WRITE setShortcutHintsEnabled NOTIFY shortcutHintsEnabledChanged)
+    Q_PROPERTY(int fullScreenCaptureAction READ fullScreenCaptureAction WRITE setFullScreenCaptureAction NOTIFY fullScreenCaptureActionChanged)
     Q_PROPERTY(int blurIntensity READ blurIntensity WRITE setBlurIntensity NOTIFY blurIntensityChanged)
     Q_PROPERTY(int blurType READ blurType WRITE setBlurType NOTIFY blurTypeChanged)
     Q_PROPERTY(int pinDefaultOpacity READ pinDefaultOpacity WRITE setPinDefaultOpacity NOTIFY pinDefaultOpacityChanged)
@@ -152,6 +153,8 @@ public:
     void setCursorCompanionStyle(int v);
     bool shortcutHintsEnabled() const;
     void setShortcutHintsEnabled(bool v);
+    int fullScreenCaptureAction() const;
+    void setFullScreenCaptureAction(int v);
     int blurIntensity() const;
     void setBlurIntensity(int v);
     int blurType() const;
@@ -295,6 +298,7 @@ signals:
     void magnifierEnabledChanged();
     void cursorCompanionStyleChanged();
     void shortcutHintsEnabledChanged();
+    void fullScreenCaptureActionChanged();
     void blurIntensityChanged();
     void blurTypeChanged();
     void pinDefaultOpacityChanged();
@@ -390,6 +394,7 @@ private:
     // Advanced
     int m_cursorCompanionStyle = 2;
     bool m_shortcutHintsEnabled = true;
+    int m_fullScreenCaptureAction = 0;
     int m_blurIntensity = 50;
     int m_blurType = 0;
     int m_pinDefaultOpacity = 100;

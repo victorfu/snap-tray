@@ -275,6 +275,8 @@ void SettingsBackend::loadAllSettings()
     m_cursorCompanionStyle = cursorCompanionStyleToUiValue(
         RegionCaptureSettingsManager::instance().cursorCompanionStyle());
     m_shortcutHintsEnabled = RegionCaptureSettingsManager::instance().isShortcutHintsEnabled();
+    m_fullScreenCaptureAction =
+        static_cast<int>(RegionCaptureSettingsManager::instance().fullScreenCaptureAction());
 
     auto blurOpts = AutoBlurSettingsManager::instance().load();
     m_blurIntensity = blurOpts.blurIntensity;
@@ -554,6 +556,26 @@ void SettingsBackend::setShortcutHintsEnabled(bool v) {
         RegionCaptureSettingsManager::instance().setShortcutHintsEnabled(v);
         emit shortcutHintsEnabledChanged();
     }
+}
+
+int SettingsBackend::fullScreenCaptureAction() const { return m_fullScreenCaptureAction; }
+
+void SettingsBackend::setFullScreenCaptureAction(int v)
+{
+    using FullScreenCaptureAction = RegionCaptureSettingsManager::FullScreenCaptureAction;
+    v = qBound(
+        static_cast<int>(FullScreenCaptureAction::CopyToClipboard),
+        v,
+        static_cast<int>(FullScreenCaptureAction::Edit));
+
+    if (m_fullScreenCaptureAction == v) {
+        return;
+    }
+
+    m_fullScreenCaptureAction = v;
+    RegionCaptureSettingsManager::instance().setFullScreenCaptureAction(
+        static_cast<FullScreenCaptureAction>(v));
+    emit fullScreenCaptureActionChanged();
 }
 
 int SettingsBackend::blurIntensity() const { return m_blurIntensity; }

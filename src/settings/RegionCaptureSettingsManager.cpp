@@ -70,3 +70,23 @@ void RegionCaptureSettingsManager::setShortcutHintsEnabled(bool enabled)
     auto settings = SnapTray::getSettings();
     settings.setValue(kSettingsKeyShowShortcutHints, enabled);
 }
+
+RegionCaptureSettingsManager::FullScreenCaptureAction
+RegionCaptureSettingsManager::fullScreenCaptureAction() const
+{
+    auto settings = SnapTray::getSettings();
+    bool ok = false;
+    const int rawValue = settings.value(kSettingsKeyFullScreenCaptureAction).toInt(&ok);
+    if (!ok
+        || rawValue < static_cast<int>(FullScreenCaptureAction::CopyToClipboard)
+        || rawValue > static_cast<int>(FullScreenCaptureAction::Edit)) {
+        return kDefaultFullScreenCaptureAction;
+    }
+    return static_cast<FullScreenCaptureAction>(rawValue);
+}
+
+void RegionCaptureSettingsManager::setFullScreenCaptureAction(FullScreenCaptureAction action)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyFullScreenCaptureAction, static_cast<int>(action));
+}

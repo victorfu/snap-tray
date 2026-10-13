@@ -82,6 +82,7 @@ private slots:
     void testAvailableLanguages_PrioritizesConfiguredAsianLanguages();
     void testCursorCompanionStyle_RoundTripPersistsAndSignals();
     void testMagnifierEnabled_RoundTripPersistsAndSignals();
+    void testFullScreenCaptureAction_RoundTripPersistsAndSignals();
     void testNormalizeRecordingAudioSettings_PreservesUnavailableLoadedDevice();
     void testBlurTypeMapping_RoundTripMatchesUiIndices();
     void testUseLastScreenshotSaveLocation_RoundTripPersistsAndSignals();
@@ -112,6 +113,7 @@ void tst_SettingsBackend::initTestCase()
         QStringLiteral("detection/blurType"),
         QStringLiteral("general/startOnLogin"),
         QStringLiteral("regionCapture/cursorCompanionStyle"),
+        QStringLiteral("regionCapture/fullScreenCaptureAction"),
         QStringLiteral("update/lastCheckTime"),
         QStringLiteral("files/filenameTemplate"),
         QStringLiteral("files/useLastScreenshotSaveLocation"),
@@ -158,6 +160,7 @@ void tst_SettingsBackend::clearTestSettings()
     settings.remove("detection/blurType");
     settings.remove("general/startOnLogin");
     settings.remove("regionCapture/cursorCompanionStyle");
+    settings.remove("regionCapture/fullScreenCaptureAction");
     settings.remove("update/lastCheckTime");
     settings.remove("files/filenameTemplate");
     settings.remove("files/useLastScreenshotSaveLocation");
@@ -353,6 +356,33 @@ void tst_SettingsBackend::testCursorCompanionStyle_RoundTripPersistsAndSignals()
     QCOMPARE(backend.magnifierEnabled(), false);
     QCOMPARE(styleChangedSpy.count(), 2);
     QCOMPARE(magnifierChangedSpy.count(), 2);
+}
+
+void tst_SettingsBackend::testFullScreenCaptureAction_RoundTripPersistsAndSignals()
+{
+    auto settings = SnapTray::getSettings();
+    SettingsBackend backend;
+    QCOMPARE(backend.fullScreenCaptureAction(), 0);
+
+    QSignalSpy changedSpy(&backend, &SettingsBackend::fullScreenCaptureActionChanged);
+
+    backend.setFullScreenCaptureAction(0);
+    QCOMPARE(changedSpy.count(), 0);
+    QVERIFY(!settings.contains("regionCapture/fullScreenCaptureAction"));
+
+    backend.setFullScreenCaptureAction(2);
+    QCOMPARE(backend.fullScreenCaptureAction(), 2);
+    QCOMPARE(settings.value("regionCapture/fullScreenCaptureAction").toInt(), 2);
+    QCOMPARE(changedSpy.count(), 1);
+
+    backend.setFullScreenCaptureAction(99);
+    QCOMPARE(backend.fullScreenCaptureAction(), 2);
+    QCOMPARE(changedSpy.count(), 1);
+
+    backend.setFullScreenCaptureAction(1);
+    QCOMPARE(backend.fullScreenCaptureAction(), 1);
+    QCOMPARE(settings.value("regionCapture/fullScreenCaptureAction").toInt(), 1);
+    QCOMPARE(changedSpy.count(), 2);
 }
 
 void tst_SettingsBackend::testNormalizeRecordingAudioSettings_PreservesUnavailableLoadedDevice()

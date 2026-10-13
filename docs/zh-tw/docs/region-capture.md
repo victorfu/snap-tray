@@ -15,6 +15,18 @@ doc_order: 1
 
 按預設熱鍵 `F2` 進入 Region Capture，游標會切換為十字準星；游標旁輔助視覺會依設定中的 `Cursor companion` 模式顯示。
 
+## 全螢幕截圖
+
+從 tray 選單使用 `Full Screen Capture`，或在 Settings > Hotkeys 綁定快捷鍵，不需選取區域即可擷取游標所在的螢幕。每個螢幕都以原生解析度輸出，包含 125%、150% 等非整數縮放。SnapTray 自己的視窗（例如 Pin 與通知）不會出現在截圖中。
+
+在 Settings > Advanced > `After full screen capture` 選擇擷取後的動作：
+
+- `Copy to clipboard`（預設）
+- `Save to file`，依照 Files 設定儲存
+- `Open editor`，以選取整個螢幕的狀態開啟編輯，可先標註再複製或儲存
+
+截圖會加入 History。
+
 ## 選取行為
 
 ### 精準定位

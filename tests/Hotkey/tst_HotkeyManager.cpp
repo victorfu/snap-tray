@@ -245,8 +245,10 @@ void tst_HotkeyManager::testGetConfigsByCategory_FilterCorrectly()
     using namespace SnapTray;
 
     auto captureConfigs = manager().getConfigsByCategory(HotkeyCategory::Capture);
-    QCOMPARE(captureConfigs.size(), 1);
+    QCOMPARE(captureConfigs.size(), 2);  // RegionCapture, CaptureFullScreen
     QCOMPARE(captureConfigs.first().action, HotkeyAction::RegionCapture);
+    QCOMPARE(captureConfigs.at(1).action, HotkeyAction::CaptureFullScreen);
+    QVERIFY(captureConfigs.at(1).defaultKeySequence.isEmpty());
 
     auto pinConfigs = manager().getConfigsByCategory(HotkeyCategory::Pin);
     QCOMPARE(pinConfigs.size(), 4);  // QuickPin, PinFromImage, HistoryWindow, TogglePinsVisibility

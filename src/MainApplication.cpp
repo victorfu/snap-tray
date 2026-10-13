@@ -52,6 +52,7 @@
 #include <QtConcurrent>
 
 #include <algorithm>
+#include <utility>
 
 namespace {
 // Text pixmap rendering constants (for paste-as-text feature)
@@ -172,6 +173,14 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
         m_captureManager->cancelCapture();
     }
 
+    // A full screen capture that already grabbed the screen is still copying or
+    // saving and cannot be cancelled. Run the command once it finishes.
+    if (m_captureManager->isFullScreenCaptureInProgress()) {
+        qDebug() << "CLI: Deferring command until full screen capture finishes";
+        m_deferredCLICommands.append(commandData);
+        return;
+    }
+
     if (msg.command == "gui") {
         int delay = msg.options["delay"].toInt();
         if (delay > 0) {
@@ -204,6 +213,14 @@ void MainApplication::handleCLICommand(const QByteArray& commandData)
     }
 }
 
+void MainApplication::runDeferredCLICommands()
+{
+    const QList<QByteArray> commands = std::exchange(m_deferredCLICommands, {});
+    for (const QByteArray& command : commands) {
+        handleCLICommand(command);
+    }
+}
+
 void MainApplication::initialize()
 {
     // Create pin window manager first (needed by capture manager)
@@ -211,6 +228,9 @@ void MainApplication::initialize()
 
     // Create capture manager
     m_captureManager = new CaptureManager(m_pinWindowManager, this);
+
+    connect(m_captureManager, &CaptureManager::fullScreenCaptureFinished,
+            this, &MainApplication::runDeferredCLICommands, Qt::QueuedConnection);
 
     // Create screen canvas manager
     m_screenCanvasManager = new ScreenCanvasManager(this);
@@ -256,6 +276,20 @@ void MainApplication::initialize()
                 SnapTray::QmlToast::Level::Error,
                 MainApplication::tr("Screenshot Save Failed"),
                 MainApplication::tr("%1\n%2").arg(error).arg(path), 5000);
+        });
+    connect(m_captureManager, &CaptureManager::copyCompleted,
+        this, [](const QPixmap&) {
+            SnapTray::QmlToast::screenToast().showToast(
+                SnapTray::QmlToast::Level::Success,
+                MainApplication::tr("Screenshot Copied"),
+                MainApplication::tr("Copied to clipboard"));
+        });
+    connect(m_captureManager, &CaptureManager::copyFailed,
+        this, []() {
+            SnapTray::QmlToast::screenToast().showToast(
+                SnapTray::QmlToast::Level::Error,
+                MainApplication::tr("Copy failed"),
+                QString(), 5000);
         });
 
     // Connect screenshot save signals from PinWindowManager
@@ -305,6 +339,10 @@ void MainApplication::initialize()
 
     m_regionCaptureAction = m_trayMenu->addAction(tr("Region Capture"));
     connect(m_regionCaptureAction, &QAction::triggered, this, &MainApplication::onRegionCapture);
+
+    m_fullScreenCaptureAction = m_trayMenu->addAction(tr("Full Screen Capture"));
+    connect(m_fullScreenCaptureAction, &QAction::triggered,
+            this, &MainApplication::onFullScreenCapture);
 
     m_screenCanvasAction = m_trayMenu->addAction(tr("Screen Canvas"));
     connect(m_screenCanvasAction, &QAction::triggered, this, &MainApplication::onScreenCanvas);
@@ -475,6 +513,13 @@ void MainApplication::startRegionCapture(bool showShortcutHintsOnEntry)
 void MainApplication::onRegionCapture()
 {
     startRegionCapture(true);
+}
+
+void MainApplication::onFullScreenCapture()
+{
+    if (!canStartRegionCapture() || m_captureManager->isActive()) return;
+
+    m_captureManager->startFullScreenCapture();
 }
 
 void MainApplication::onQuickPin()
@@ -742,6 +787,9 @@ void MainApplication::onHotkeyAction(SnapTray::HotkeyAction action)
             startRegionCapture(true);
         }
         break;
+    case HotkeyAction::CaptureFullScreen:
+        onFullScreenCapture();
+        break;
     case HotkeyAction::ScreenCanvas:
         onScreenCanvas();
         break;
@@ -985,6 +1033,9 @@ void MainApplication::updateTrayMenuHotkeyText()
     updateActionHotkeyText(m_regionCaptureAction,
                            SnapTray::HotkeyAction::RegionCapture,
                            tr("Region Capture"));
+    updateActionHotkeyText(m_fullScreenCaptureAction,
+                           SnapTray::HotkeyAction::CaptureFullScreen,
+                           tr("Full Screen Capture"));
     updateActionHotkeyText(m_screenCanvasAction,
                            SnapTray::HotkeyAction::ScreenCanvas,
                            tr("Screen Canvas"));

@@ -101,6 +101,26 @@
         <source>Max history entries</source>
         <translation>จำนวนรายการประวัติสูงสุด</translation>
     </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="41" />
+        <source>After full screen capture</source>
+        <translation>หลังจับภาพเต็มหน้าจอ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="43" />
+        <source>Copy to clipboard</source>
+        <translation>คัดลอกไปยังคลิปบอร์ด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="44" />
+        <source>Save to file</source>
+        <translation>บันทึกเป็นไฟล์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/AdvancedSettings.qml" line="45" />
+        <source>Open editor</source>
+        <translation>เปิดตัวแก้ไข</translation>
+    </message>
 </context>
 <context>
     <name>BeautifyPanel</name>
@@ -752,6 +772,26 @@ File size: %3</source>
         <location filename="../src/MainApplication.cpp" line="1015"/>
         <source>Show All Pins</source>
         <translation>แสดงหมุดทั้งหมด</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="264" />
+        <source>Screenshot Copied</source>
+        <translation>คัดลอกภาพหน้าจอแล้ว</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="265" />
+        <source>Copied to clipboard</source>
+        <translation>คัดลอกไปยังคลิปบอร์ดแล้ว</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="271" />
+        <source>Copy failed</source>
+        <translation>คัดลอกไม่สำเร็จ</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="323" />
+        <source>Full Screen Capture</source>
+        <translation>จับภาพเต็มหน้าจอ</translation>
     </message>
 </context>
 <context>
@@ -2351,6 +2391,16 @@ English is always included and cannot be removed.</source>
         <location filename="../include/hotkey/HotkeyTypes.h" line="167"/>
         <source>Start full screen recording</source>
         <translation>เริ่มบันทึกเต็มหน้าจอ</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="119" />
+        <source>Full Screen Capture</source>
+        <translation>จับภาพเต็มหน้าจอ</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="120" />
+        <source>Capture the screen under the cursor</source>
+        <translation>จับภาพหน้าจอที่เคอร์เซอร์อยู่</translation>
     </message>
 </context>
 <context>

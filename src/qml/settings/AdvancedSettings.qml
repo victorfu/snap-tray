@@ -37,6 +37,17 @@ Flickable {
             onToggled: function(checked) { settingsBackend.shortcutHintsEnabled = checked }
         }
 
+        SettingsCombo {
+            label: qsTr("After full screen capture")
+            model: [
+                { text: qsTr("Copy to clipboard"), value: 0 },
+                { text: qsTr("Save to file"), value: 1 },
+                { text: qsTr("Open editor"), value: 2 }
+            ]
+            currentIndex: settingsBackend.fullScreenCaptureAction
+            onActivated: function(index) { settingsBackend.fullScreenCaptureAction = index }
+        }
+
         SettingsSection { title: qsTr("Blur") }
 
         SettingsSlider {

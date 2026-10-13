@@ -2,11 +2,17 @@
 #include "RegionSelector.h"
 #include "PinWindowManager.h"
 #include "PinWindow.h"
+#include "capture/OwnWindowCaptureHider.h"
 #include "capture/ScreenSnapshot.h"
 #include "platform/WindowLevel.h"
 #include "WindowDetector.h"
 #include "PlatformFeatures.h"
+#include "annotations/AnnotationLayer.h"
+#include "history/AnnotationSerializer.h"
+#include "history/HistoryRecorder.h"
 #include "history/HistoryStore.h"
+#include "region/RegionExportManager.h"
+#include "settings/PinWindowSettingsManager.h"
 #include "region/CapturePerfRecorder.h"
 #include "region/MultiRegionManager.h"
 #include "pinwindow/RegionLayoutManager.h"
@@ -19,16 +25,56 @@
 #include <QKeyEvent>
 #include <QDialog>
 #include <QImage>
+#include <QTimer>
 
 namespace {
 
-QScreen* fallbackReplayScreen()
+using FullScreenCaptureAction = RegionCaptureSettingsManager::FullScreenCaptureAction;
+
+QScreen* screenAtCursor()
 {
     QScreen* screen = QGuiApplication::screenAt(QCursor::pos());
     if (!screen) {
         screen = QGuiApplication::primaryScreen();
     }
     return screen;
+}
+
+// Close popups/modals only after the frame has been captured so they can be included.
+void closeTransientWindows(QWidget* popup, QWidget* modal)
+{
+    if (popup) {
+        popup->close();
+    }
+    if (modal) {
+        if (QDialog* dialog = qobject_cast<QDialog*>(modal)) {
+            dialog->reject();
+        } else {
+            modal->close();
+        }
+    }
+}
+
+QString monitorIdentifier(QScreen* screen)
+{
+    const int monitorIndex = QGuiApplication::screens().indexOf(screen);
+    return monitorIndex >= 0 ? QString::number(monitorIndex) : QStringLiteral("unknown");
+}
+
+SnapTray::CaptureSessionWriteRequest makeFullScreenHistoryRequest(
+    const QPixmap& snapshot, const QImage& resultImage, const QRect& localRect, QScreen* screen)
+{
+    const AnnotationLayer emptyAnnotations;
+
+    SnapTray::CaptureSessionWriteRequest request;
+    request.canvasImage = snapshot.toImage();
+    request.resultImage = resultImage;
+    request.selectionRect = localRect;
+    request.annotationsJson = SnapTray::serializeAnnotationLayer(emptyAnnotations);
+    request.devicePixelRatio = screen->devicePixelRatio();
+    request.canvasLogicalSize = screen->geometry().size();
+    request.maxEntries = PinWindowSettingsManager::instance().loadMaxCacheFiles();
+    return request;
 }
 
 QScreen* chooseReplayScreen(const SnapTray::HistoryEntry& entry)
@@ -42,7 +88,7 @@ QScreen* chooseReplayScreen(const SnapTray::HistoryEntry& entry)
         }
     }
 
-    return fallbackReplayScreen();
+    return screenAtCursor();
 }
 
 } // namespace
@@ -52,6 +98,7 @@ CaptureManager::CaptureManager(PinWindowManager *pinManager, QObject *parent)
     , m_regionSelector(nullptr)
     , m_pinManager(pinManager)
     , m_windowDetector(PlatformFeatures::instance().createWindowDetector(this))
+    , m_ownWindowHider(std::make_unique<snaptray::capture::OwnWindowCaptureHider>())
 {
 }
 
@@ -61,7 +108,9 @@ CaptureManager::~CaptureManager()
 
 bool CaptureManager::isActive() const
 {
-    return m_regionSelector && m_regionSelector->isVisible();
+    // A full-screen capture owns the screen until it is grabbed and exported, so
+    // other capture, canvas and recording entry points must stay out.
+    return (m_regionSelector && m_regionSelector->isVisible()) || isFullScreenCaptureInProgress();
 }
 
 bool CaptureManager::hasCompleteSelection() const
@@ -80,6 +129,11 @@ void CaptureManager::triggerFinishSelection()
 
 void CaptureManager::cancelCapture()
 {
+    if (m_fullScreenCapturePending) {
+        qDebug() << "CaptureManager: Cancelling pending full screen capture";
+        abortPendingFullScreenCapture();
+    }
+
     if (m_regionSelector && m_regionSelector->isVisible()) {
         qDebug() << "CaptureManager: Cancelling active capture via CLI";
         m_regionSelector->close();
@@ -109,7 +163,7 @@ void CaptureManager::cycleOrSwitchCaptureScreenByCursor()
 
 bool CaptureManager::startHistoryReplay(const QString& entryId)
 {
-    if (entryId.isEmpty()) {
+    if (entryId.isEmpty() || isFullScreenCaptureInProgress()) {
         return false;
     }
 
@@ -139,17 +193,7 @@ bool CaptureManager::startHistoryReplay(const QString& entryId)
     QWidget* popup = QApplication::activePopupWidget();
     QWidget* modal = QApplication::activeModalWidget();
     const QPixmap preCapture = snaptray::capture::captureScreenSnapshot(targetScreen);
-
-    if (popup) {
-        popup->close();
-    }
-    if (modal) {
-        if (QDialog* dialog = qobject_cast<QDialog*>(modal)) {
-            dialog->reject();
-        } else {
-            modal->close();
-        }
-    }
+    closeTransientWindows(popup, modal);
 
     initializeRegionSelector(targetScreen, preCapture, false, false);
     if (!m_regionSelector || !m_regionSelector->beginHistoryReplay(entryId)) {
@@ -178,7 +222,7 @@ void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortc
     snaptray::region::CapturePerfScope capturePerfScope("CaptureManager.startCaptureInternal");
 
     // Skip if already in capture mode
-    if (m_regionSelector && m_regionSelector->isVisible()) {
+    if (isActive()) {
         return;
     }
 
@@ -189,10 +233,7 @@ void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortc
 
     emit captureStarted();
     // 1. Determine target screen (the screen where cursor is located)
-    QScreen *targetScreen = QGuiApplication::screenAt(QCursor::pos());
-    if (!targetScreen) {
-        targetScreen = QGuiApplication::primaryScreen();
-    }
+    QScreen *targetScreen = screenAtCursor();
 
     if (!targetScreen) {
         if (mode == CaptureEntryMode::QuickPin) {
@@ -222,16 +263,7 @@ void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortc
     }
 
     // 4. Close popup/modal AFTER screenshot
-    if (popup) {
-        popup->close();
-    }
-    if (modal) {
-        if (QDialog* dialog = qobject_cast<QDialog*>(modal)) {
-            dialog->reject();
-        } else {
-            modal->close();
-        }
-    }
+    closeTransientWindows(popup, modal);
 
     const bool quickPinMode = (mode == CaptureEntryMode::QuickPin);
     {
@@ -313,7 +345,7 @@ void CaptureManager::onSelectionCancelled()
 void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *screen)
 {
     // If already in capture mode, ignore
-    if (m_regionSelector && m_regionSelector->isVisible()) {
+    if (isActive()) {
         return;
     }
 
@@ -323,7 +355,13 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
     }
 
     emit captureStarted();
+    startPresetRegionCapture(screen, region, QPixmap());
+}
 
+void CaptureManager::startPresetRegionCapture(QScreen *screen,
+                                              const QRect &region,
+                                              const QPixmap &preCapture)
+{
     // Create RegionSelector
     m_regionSelector = createRegionSelector(false);
 
@@ -334,7 +372,7 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
     }
 
     // Initialize with preset region
-    m_regionSelector->initializeWithRegion(screen, region);
+    m_regionSelector->initializeWithRegion(screen, region, preCapture);
 
     connect(m_regionSelector, &RegionSelector::regionSelected,
             this, &CaptureManager::onRegionSelected);
@@ -346,6 +384,219 @@ void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *
             this, &CaptureManager::saveFailed);
 
     showPreparedRegionSelector(screen);
+}
+
+bool CaptureManager::isFullScreenCaptureInProgress() const
+{
+    return m_fullScreenCapturePending || !m_fullScreenExport.isNull();
+}
+
+void CaptureManager::startFullScreenCapture()
+{
+    startFullScreenCaptureOnScreen(screenAtCursor());
+}
+
+void CaptureManager::startFullScreenCaptureOnScreen(QScreen* screen)
+{
+    if (isActive()) {
+        return;
+    }
+    if (!screen) {
+        qCritical() << "CaptureManager: No valid screen available for full screen capture";
+        return;
+    }
+
+    if (m_regionSelector) {
+        m_regionSelector->close();
+    }
+
+    emit captureStarted();
+    m_fullScreenCapturePending = true;
+    const quint64 generation = ++m_fullScreenCaptureGeneration;
+
+    // SnapTray's own UI must not appear in the capture. Give the compositor a
+    // frame to drop the hidden windows before grabbing the screen.
+    // Qt may already have closed the tray menu before triggering this action.
+    // Even if no windows remain visible, its last frame needs time to disappear.
+    m_ownWindowHider->hide();
+    scheduleFullScreenGrab(screen, generation, 1);
+}
+
+void CaptureManager::scheduleFullScreenGrab(QScreen* screen, quint64 generation, int settleRound)
+{
+    using snaptray::capture::OwnWindowCaptureHider;
+
+    const QPointer<QScreen> targetScreen(screen);
+    QTimer::singleShot(OwnWindowCaptureHider::kSettleDelayMs, this,
+                      [this, targetScreen, generation, settleRound]() {
+        if (!m_fullScreenCapturePending || generation != m_fullScreenCaptureGeneration) {
+            return;  // Cancelled while waiting for the compositor.
+        }
+
+        // Windows can appear while waiting (a pasted pin, a toast, a CLI
+        // command). Hide them too and give the compositor another frame.
+        if (m_ownWindowHider->hide() > 0) {
+            if (settleRound < OwnWindowCaptureHider::kMaxSettleRounds) {
+                scheduleFullScreenGrab(targetScreen.data(), generation, settleRound + 1);
+            } else {
+                // Grabbing now could still show the window just hidden.
+                qWarning() << "CaptureManager: SnapTray windows kept appearing;"
+                           << "full screen capture cancelled";
+                abortPendingFullScreenCapture();
+            }
+            return;
+        }
+        captureFullScreenAfterHidingOwnWindows(targetScreen.data());
+    });
+}
+
+void CaptureManager::abortPendingFullScreenCapture()
+{
+    ++m_fullScreenCaptureGeneration;
+    m_fullScreenCapturePending = false;
+    m_ownWindowHider->restore();
+    emit captureCancelled();
+    emit fullScreenCaptureFinished();
+}
+
+void CaptureManager::captureFullScreenAfterHidingOwnWindows(QScreen* screen)
+{
+    const QPixmap snapshot = screen ? captureSnapshot(screen) : QPixmap();
+
+    // Dismiss popups/modals the same way region capture does, then bring the
+    // remaining windows back.
+    closeTransientWindows(QApplication::activePopupWidget(), QApplication::activeModalWidget());
+    m_ownWindowHider->restore();
+    m_fullScreenCapturePending = false;
+
+    if (snapshot.isNull()) {
+        qWarning() << "CaptureManager: Failed to capture screen for full screen capture";
+        emit captureCancelled();
+        emit fullScreenCaptureFinished();
+        return;
+    }
+
+    const FullScreenCaptureAction action =
+        RegionCaptureSettingsManager::instance().fullScreenCaptureAction();
+    if (action == FullScreenCaptureAction::Edit) {
+        // From here on the editor is an ordinary region capture session.
+        startPresetRegionCapture(screen, screen->geometry(), snapshot);
+        emit fullScreenCaptureFinished();
+        return;
+    }
+
+    exportFullScreenCapture(screen, snapshot, action);
+}
+
+QPixmap CaptureManager::captureSnapshot(QScreen* screen) const
+{
+    if (m_snapshotOverride) {
+        return m_snapshotOverride(screen);
+    }
+    return snaptray::capture::captureScreenSnapshot(screen);
+}
+
+void CaptureManager::exportFullScreenCapture(QScreen* screen,
+                                             const QPixmap& snapshot,
+                                             FullScreenCaptureAction action)
+{
+    auto* exporter = new RegionExportManager(this);
+    m_fullScreenExport = exporter;
+    exporter->setBackgroundPixmap(snapshot);
+    exporter->setDevicePixelRatio(screen->devicePixelRatio());
+    exporter->setSourceScreen(screen);
+    exporter->setMonitorIdentifier(monitorIdentifier(screen));
+
+    // The whole screen in screen-local logical coordinates. The exporter
+    // preserves the snapshot's full pixel bounds for a full-background selection.
+    const QRect localRect(QPoint(0, 0), screen->geometry().size());
+    RegionExportManager::PreparedExport prepared = exporter->prepareExport(localRect);
+    if (!prepared.isValid()) {
+        qWarning() << "CaptureManager: Failed to prepare full screen capture" << localRect;
+        finishFullScreenExport();
+        emit captureCancelled();
+        return;
+    }
+
+    SnapTray::CaptureSessionWriteRequest historyRequest =
+        makeFullScreenHistoryRequest(snapshot, prepared.image, localRect, screen);
+
+    if (action == FullScreenCaptureAction::CopyToClipboard) {
+        const QPixmap pixmap = prepared.pixmap;
+        auto finishCopy = [this, pixmap, historyRequest = std::move(historyRequest)](
+                              PlatformFeatures::ClipboardCopyResult result) mutable {
+            finishFullScreenExport();
+            switch (result) {
+            case PlatformFeatures::ClipboardCopyResult::Success:
+                SnapTray::HistoryRecorder::instance().submitCaptureSession(
+                    std::move(historyRequest));
+                emit copyCompleted(pixmap);
+                emit captureCompleted(pixmap);
+                break;
+            case PlatformFeatures::ClipboardCopyResult::Failed:
+                qWarning() << "CaptureManager: Failed to copy full screen capture to clipboard";
+                emit copyFailed();
+                break;
+            case PlatformFeatures::ClipboardCopyResult::Superseded:
+                emit captureCancelled();
+                break;
+            }
+        };
+
+        if (m_clipboardWriterOverride) {
+            const QPointer<CaptureManager> guard(this);
+            m_clipboardWriterOverride(
+                prepared.image,
+                [guard, finishCopy = std::move(finishCopy)](bool success) mutable {
+                    if (guard) {
+                        finishCopy(success ? PlatformFeatures::ClipboardCopyResult::Success
+                                           : PlatformFeatures::ClipboardCopyResult::Failed);
+                    }
+                });
+        } else {
+            PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
+                prepared.image, this, std::move(finishCopy));
+        }
+        return;
+    }
+
+    const RegionExportManager::SaveRequest saveRequest =
+        exporter->createSaveRequest(localRect, nullptr);
+    if (saveRequest.cancelled) {
+        finishFullScreenExport();
+        emit captureCancelled();
+        return;
+    }
+    if (!saveRequest.error.isEmpty()) {
+        finishFullScreenExport();
+        emit saveFailed(saveRequest.filePath, saveRequest.error);
+        return;
+    }
+
+    connect(exporter, &RegionExportManager::saveCompleted, this,
+        [this, historyRequest = std::move(historyRequest)](
+            const QPixmap& pixmap, const QImage& image, const QString& filePath) mutable {
+            finishFullScreenExport();
+            historyRequest.resultImage = image;
+            SnapTray::HistoryRecorder::instance().submitCaptureSession(std::move(historyRequest));
+            emit saveCompleted(pixmap, filePath);
+            emit captureCompleted(pixmap);
+        });
+    connect(exporter, &RegionExportManager::saveFailed, this,
+        [this](const QString& filePath, const QString& error) {
+            finishFullScreenExport();
+            emit saveFailed(filePath, error);
+        });
+    exporter->savePreparedExportAsync(std::move(prepared), saveRequest);
+}
+
+void CaptureManager::finishFullScreenExport()
+{
+    if (m_fullScreenExport) {
+        m_fullScreenExport->deleteLater();
+        m_fullScreenExport = nullptr;
+        emit fullScreenCaptureFinished();
+    }
 }
 
 void CaptureManager::initializeRegionSelector(QScreen *targetScreen,
@@ -414,10 +665,7 @@ void CaptureManager::prewarmWindowDetector()
         return;
     }
 
-    QScreen *targetScreen = QGuiApplication::screenAt(QCursor::pos());
-    if (!targetScreen) {
-        targetScreen = QGuiApplication::primaryScreen();
-    }
+    QScreen *targetScreen = screenAtCursor();
     if (!targetScreen) {
         return;
     }

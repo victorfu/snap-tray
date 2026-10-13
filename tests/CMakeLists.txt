@@ -366,6 +366,32 @@ add_dependencies(App_MainApplicationTrayMenu SnapTray_lrelease)
 add_test(NAME App_MainApplicationTrayMenu COMMAND App_MainApplicationTrayMenu)
 set_tests_properties(App_MainApplicationTrayMenu PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(App_FullScreenCapture
+    App/tst_FullScreenCapture.cpp
+    ${CMAKE_SOURCE_DIR}/src/CaptureManager.cpp
+    ${CMAKE_SOURCE_DIR}/include/CaptureManager.h
+)
+target_include_directories(App_FullScreenCapture PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_BINARY_DIR}/generated
+    ${CMAKE_BINARY_DIR}
+)
+target_link_libraries(App_FullScreenCapture PRIVATE
+    snaptray_ui
+    snaptray_platform
+    snaptray_algorithms
+    snaptray_core
+    snaptray_qmlplugin
+    Qt6::Test
+)
+add_test(NAME App_FullScreenCapture COMMAND App_FullScreenCapture)
+set_tests_properties(App_FullScreenCapture PROPERTIES TIMEOUT 60 LABELS "unit")
+if(TARGET Qt6::QOffscreenIntegrationPlugin)
+    set_property(TEST App_FullScreenCapture APPEND PROPERTY ENVIRONMENT
+        "QT_QPA_PLATFORM_PLUGIN_PATH=$<TARGET_FILE_DIR:Qt6::QOffscreenIntegrationPlugin>")
+endif()
+
 if(WIN32)
     add_executable(Qml_QtQuickBackendWin Qml/tst_QtQuickBackendWin.cpp)
     target_link_libraries(Qml_QtQuickBackendWin PRIVATE snaptray_platform Qt6::Qml Qt6::Quick Qt6::Test)

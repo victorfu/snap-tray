@@ -125,6 +125,11 @@ public:
         return selector.buildCaptureSessionWriteRequest({*snapshot, QImage()});
     }
 
+    static QPixmap exportSelection(RegionSelector& selector)
+    {
+        return selector.m_exportManager->getSelectedRegion(selector.m_selectionManager->selectionRect());
+    }
+
     static RegionExportManager::SaveRequest createSaveRequest(RegionSelector& selector)
     {
         return selector.m_exportManager->createSaveRequest(selector.m_selectionManager->selectionRect());
