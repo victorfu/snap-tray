@@ -13,6 +13,7 @@
 #include <QWindow>
 
 #include <cmath>
+#include <memory>
 #include <optional>
 
 #include "CaptureManager.h"
@@ -146,6 +147,7 @@ private slots:
     void cancelCapture_whilePending_restoresWindowsWithoutGrabbing();
     void windowShownDuringSettleDelay_isHiddenBeforeGrab();
     void windowShownBeforeImmediateGrab_isHiddenBeforeGrab();
+    void windowsKeepAppearing_cancelsInsteadOfGrabbing();
 
 private:
     void configure(CaptureManager& manager, std::optional<QImage>* copiedImage);
@@ -594,6 +596,54 @@ void tst_FullScreenCapture::windowShownBeforeImmediateGrab_isHiddenBeforeGrab()
     QVERIFY(toastOpacityAtGrab.has_value());
     QCOMPARE(*toastOpacityAtGrab, 0.0);
     QCOMPARE(toast.windowHandle()->opacity(), 1.0);
+}
+
+void tst_FullScreenCapture::windowsKeepAppearing_cancelsInsteadOfGrabbing()
+{
+    using snaptray::capture::OwnWindowCaptureHider;
+    RegionCaptureSettingsManager::instance().setFullScreenCaptureAction(
+        FullScreenCaptureAction::CopyToClipboard);
+
+    QWidget pin;
+    pin.resize(100, 100);
+    pin.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&pin));
+
+    CaptureManager manager(nullptr);
+    configure(manager, nullptr);
+    int grabs = 0;
+    manager.m_snapshotOverride = [&grabs](QScreen* screen) {
+        ++grabs;
+        return nativeSnapshot(screen);
+    };
+    QSignalSpy cancelled(&manager, &CaptureManager::captureCancelled);
+    QSignalSpy copied(&manager, &CaptureManager::copyCompleted);
+
+    // A new window shows up during every settle interval, including the last.
+    std::vector<std::unique_ptr<QWidget>> lateWindows;
+    QTimer spawner;
+    spawner.setInterval(OwnWindowCaptureHider::kSettleDelayMs / 2);
+    QObject::connect(&spawner, &QTimer::timeout, [&lateWindows]() {
+        auto window = std::make_unique<QWidget>();
+        window->resize(60, 40);
+        window->show();
+        lateWindows.push_back(std::move(window));
+    });
+    spawner.start();
+
+    manager.startFullScreenCaptureOnScreen(screenNamed(QStringLiteral("Right150")));
+
+    QTRY_COMPARE_WITH_TIMEOUT(cancelled.count(), 1,
+        (OwnWindowCaptureHider::kMaxSettleRounds + 3) * OwnWindowCaptureHider::kSettleDelayMs);
+    spawner.stop();
+
+    QCOMPARE(grabs, 0);
+    QCOMPARE(copied.count(), 0);
+    QVERIFY(!manager.isActive());
+    QCOMPARE(pin.windowHandle()->opacity(), 1.0);
+    for (const auto& window : lateWindows) {
+        QCOMPARE(window->windowHandle()->opacity(), 1.0);
+    }
 }
 
 int main(int argc, char** argv)

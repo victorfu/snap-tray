@@ -131,10 +131,7 @@ void CaptureManager::cancelCapture()
 {
     if (m_fullScreenCapturePending) {
         qDebug() << "CaptureManager: Cancelling pending full screen capture";
-        ++m_fullScreenCaptureGeneration;
-        m_fullScreenCapturePending = false;
-        m_ownWindowHider->restore();
-        emit captureCancelled();
+        abortPendingFullScreenCapture();
     }
 
     if (m_regionSelector && m_regionSelector->isVisible()) {
@@ -437,13 +434,27 @@ void CaptureManager::scheduleFullScreenGrab(QScreen* screen, quint64 generation,
 
         // Windows can appear while waiting (a pasted pin, a toast, a CLI
         // command). Hide them too and give the compositor another frame.
-        if (m_ownWindowHider->hide() > 0
-            && settleRound < OwnWindowCaptureHider::kMaxSettleRounds) {
-            scheduleFullScreenGrab(targetScreen.data(), generation, settleRound + 1);
+        if (m_ownWindowHider->hide() > 0) {
+            if (settleRound < OwnWindowCaptureHider::kMaxSettleRounds) {
+                scheduleFullScreenGrab(targetScreen.data(), generation, settleRound + 1);
+            } else {
+                // Grabbing now could still show the window just hidden.
+                qWarning() << "CaptureManager: SnapTray windows kept appearing;"
+                           << "full screen capture cancelled";
+                abortPendingFullScreenCapture();
+            }
             return;
         }
         captureFullScreenAfterHidingOwnWindows(targetScreen.data());
     });
+}
+
+void CaptureManager::abortPendingFullScreenCapture()
+{
+    ++m_fullScreenCaptureGeneration;
+    m_fullScreenCapturePending = false;
+    m_ownWindowHider->restore();
+    emit captureCancelled();
 }
 
 void CaptureManager::captureFullScreenAfterHidingOwnWindows(QScreen* screen)

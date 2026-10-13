@@ -79,6 +79,7 @@ private:
     void startFullScreenCaptureOnScreen(QScreen *screen);
     void scheduleFullScreenGrab(QScreen *screen, quint64 generation, int settleRound);
     void captureFullScreenAfterHidingOwnWindows(QScreen *screen);
+    void abortPendingFullScreenCapture();
     void exportFullScreenCapture(QScreen *screen,
                                  const QPixmap &snapshot,
                                  RegionCaptureSettingsManager::FullScreenCaptureAction action);
