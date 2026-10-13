@@ -88,6 +88,7 @@ private:
     QPointer<RegionExportManager> m_fullScreenExport;
     std::unique_ptr<snaptray::capture::OwnWindowCaptureHider> m_ownWindowHider;
     bool m_fullScreenCapturePending = false;
+    quint64 m_fullScreenCaptureGeneration = 0;
     // Test hooks: replace the platform screen grab and clipboard write.
     std::function<QPixmap(QScreen*)> m_snapshotOverride;
     std::function<void(const QImage&, std::function<void(bool)>)> m_clipboardWriterOverride;

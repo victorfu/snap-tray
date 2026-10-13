@@ -108,7 +108,9 @@ CaptureManager::~CaptureManager()
 
 bool CaptureManager::isActive() const
 {
-    return m_regionSelector && m_regionSelector->isVisible();
+    // A full-screen capture owns the screen until it is grabbed and exported, so
+    // other capture, canvas and recording entry points must stay out.
+    return (m_regionSelector && m_regionSelector->isVisible()) || isFullScreenCaptureInProgress();
 }
 
 bool CaptureManager::hasCompleteSelection() const
@@ -127,6 +129,14 @@ void CaptureManager::triggerFinishSelection()
 
 void CaptureManager::cancelCapture()
 {
+    if (m_fullScreenCapturePending) {
+        qDebug() << "CaptureManager: Cancelling pending full screen capture";
+        ++m_fullScreenCaptureGeneration;
+        m_fullScreenCapturePending = false;
+        m_ownWindowHider->restore();
+        emit captureCancelled();
+    }
+
     if (m_regionSelector && m_regionSelector->isVisible()) {
         qDebug() << "CaptureManager: Cancelling active capture via CLI";
         m_regionSelector->close();
@@ -156,7 +166,7 @@ void CaptureManager::cycleOrSwitchCaptureScreenByCursor()
 
 bool CaptureManager::startHistoryReplay(const QString& entryId)
 {
-    if (entryId.isEmpty()) {
+    if (entryId.isEmpty() || isFullScreenCaptureInProgress()) {
         return false;
     }
 
@@ -215,7 +225,7 @@ void CaptureManager::startCaptureInternal(CaptureEntryMode mode, bool showShortc
     snaptray::region::CapturePerfScope capturePerfScope("CaptureManager.startCaptureInternal");
 
     // Skip if already in capture mode
-    if (m_regionSelector && m_regionSelector->isVisible()) {
+    if (isActive()) {
         return;
     }
 
@@ -338,7 +348,7 @@ void CaptureManager::onSelectionCancelled()
 void CaptureManager::startRegionCaptureWithPreset(const QRect &region, QScreen *screen)
 {
     // If already in capture mode, ignore
-    if (m_regionSelector && m_regionSelector->isVisible()) {
+    if (isActive()) {
         return;
     }
 
@@ -391,7 +401,7 @@ void CaptureManager::startFullScreenCapture()
 
 void CaptureManager::startFullScreenCaptureOnScreen(QScreen* screen)
 {
-    if (isActive() || isFullScreenCaptureInProgress()) {
+    if (isActive()) {
         return;
     }
     if (!screen) {
@@ -405,6 +415,7 @@ void CaptureManager::startFullScreenCaptureOnScreen(QScreen* screen)
 
     emit captureStarted();
     m_fullScreenCapturePending = true;
+    const quint64 generation = ++m_fullScreenCaptureGeneration;
 
     // SnapTray's own UI must not appear in the capture. Give the compositor a
     // frame to drop the hidden windows before grabbing the screen.
@@ -413,7 +424,10 @@ void CaptureManager::startFullScreenCaptureOnScreen(QScreen* screen)
         ? snaptray::capture::OwnWindowCaptureHider::kSettleDelayMs
         : 0;
     const QPointer<QScreen> targetScreen(screen);
-    QTimer::singleShot(settleDelayMs, this, [this, targetScreen]() {
+    QTimer::singleShot(settleDelayMs, this, [this, targetScreen, generation]() {
+        if (!m_fullScreenCapturePending || generation != m_fullScreenCaptureGeneration) {
+            return;  // Cancelled while waiting for the compositor.
+        }
         captureFullScreenAfterHidingOwnWindows(targetScreen.data());
     });
 }

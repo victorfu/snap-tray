@@ -140,6 +140,9 @@ private slots:
     void ownWindows_restoredWhenGrabFails();
     void ownWindowHider_skipsHiddenWindowsAndKeepsCustomOpacity();
     void secondRequestWhilePending_isIgnored();
+    void otherCaptureEntryPoints_rejectedWhilePending();
+    void otherCaptureEntryPoints_rejectedDuringExport();
+    void cancelCapture_whilePending_restoresWindowsWithoutGrabbing();
 
 private:
     void configure(CaptureManager& manager, std::optional<QImage>* copiedImage);
@@ -428,6 +431,103 @@ void tst_FullScreenCapture::secondRequestWhilePending_isIgnored()
     QCOMPARE(started.count(), 1);
     QCOMPARE(grabs, 1);
     QCOMPARE(pin.windowHandle()->opacity(), 1.0);
+}
+
+void tst_FullScreenCapture::otherCaptureEntryPoints_rejectedWhilePending()
+{
+    RegionCaptureSettingsManager::instance().setFullScreenCaptureAction(
+        FullScreenCaptureAction::CopyToClipboard);
+
+    QWidget pin;
+    pin.resize(100, 100);
+    pin.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&pin));
+
+    CaptureManager manager(nullptr);
+    configure(manager, nullptr);
+    int grabs = 0;
+    manager.m_snapshotOverride = [&grabs](QScreen* screen) {
+        ++grabs;
+        return nativeSnapshot(screen);
+    };
+    QSignalSpy started(&manager, &CaptureManager::captureStarted);
+    QSignalSpy copied(&manager, &CaptureManager::copyCompleted);
+
+    QScreen* screen = screenNamed(QStringLiteral("Primary100"));
+    manager.startFullScreenCaptureOnScreen(screen);
+
+    // During the compositor delay the capture counts as active, so a selector
+    // cannot open and end up in the full-screen image.
+    QVERIFY(manager.isActive());
+    manager.startRegionCapture();
+    manager.startQuickPinCapture();
+    manager.startRegionCaptureWithPreset(QRect(10, 10, 100, 100), screen);
+    QVERIFY(!manager.startHistoryReplay(QStringLiteral("entry")));
+    QVERIFY(!manager.m_regionSelector);
+    QCOMPARE(started.count(), 1);
+
+    QTRY_COMPARE(copied.count(), 1);
+    QCOMPARE(grabs, 1);
+    QVERIFY(!manager.isActive());
+}
+
+void tst_FullScreenCapture::otherCaptureEntryPoints_rejectedDuringExport()
+{
+    RegionCaptureSettingsManager::instance().setFullScreenCaptureAction(
+        FullScreenCaptureAction::CopyToClipboard);
+
+    CaptureManager manager(nullptr);
+    configure(manager, nullptr);
+    std::function<void(bool)> finishClipboardWrite;
+    manager.m_clipboardWriterOverride =
+        [&finishClipboardWrite](const QImage&, std::function<void(bool)> done) {
+            finishClipboardWrite = std::move(done);
+        };
+    QSignalSpy copied(&manager, &CaptureManager::copyCompleted);
+
+    QScreen* screen = screenNamed(QStringLiteral("Right150"));
+    manager.startFullScreenCaptureOnScreen(screen);
+    QTRY_VERIFY(finishClipboardWrite);
+
+    QVERIFY(manager.isActive());
+    manager.startRegionCapture();
+    QVERIFY(!manager.m_regionSelector);
+    manager.startFullScreenCaptureOnScreen(screen);
+    QCOMPARE(copied.count(), 0);
+
+    finishClipboardWrite(true);
+    QCOMPARE(copied.count(), 1);
+    QVERIFY(!manager.isActive());
+}
+
+void tst_FullScreenCapture::cancelCapture_whilePending_restoresWindowsWithoutGrabbing()
+{
+    QWidget pin;
+    pin.resize(100, 100);
+    pin.setWindowOpacity(0.7);
+    pin.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&pin));
+
+    CaptureManager manager(nullptr);
+    configure(manager, nullptr);
+    int grabs = 0;
+    manager.m_snapshotOverride = [&grabs](QScreen* screen) {
+        ++grabs;
+        return nativeSnapshot(screen);
+    };
+    QSignalSpy cancelled(&manager, &CaptureManager::captureCancelled);
+
+    manager.startFullScreenCaptureOnScreen(screenNamed(QStringLiteral("Left200")));
+    QCOMPARE(pin.windowHandle()->opacity(), 0.0);
+
+    manager.cancelCapture();
+    QCOMPARE(cancelled.count(), 1);
+    QVERIFY(!manager.isActive());
+    QVERIFY(qAbs(pin.windowHandle()->opacity() - 0.7) < 0.01);
+
+    QTest::qWait(snaptray::capture::OwnWindowCaptureHider::kSettleDelayMs * 2);
+    QCOMPARE(grabs, 0);
+    QCOMPARE(cancelled.count(), 1);
 }
 
 int main(int argc, char** argv)
