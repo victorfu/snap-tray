@@ -9,6 +9,7 @@
 #include <QWindow>
 #include <QColor>
 #include <QString>
+#include <memory>
 
 #include "cursor/CursorTypes.h"
 
@@ -73,6 +74,10 @@ public:
     void close();
     void prewarm();
 
+    // Opt-in Windows diagnostics; no-op on other platforms.
+    void beginSelectionTiming();
+    void recordSelectionTiming(const char* stage) const;
+
     bool isVisible() const;
 
     /**
@@ -134,6 +139,11 @@ private slots:
     void onButtonUnhovered();
 
 private:
+    struct SelectionTiming;
+    void connectSelectionTiming();
+    std::shared_ptr<SelectionTiming> m_selectionTiming;
+    QList<QMetaObject::Connection> m_timingConnections;
+
     void ensureView();
     void ensureTooltipView();
     void setupConnections();

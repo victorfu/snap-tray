@@ -7,6 +7,9 @@
 #include <QSettings>
 #include <QScreen>
 #include <QScopeGuard>
+#include <QQmlDebuggingEnabler>
+#include <QQmlEngine>
+#include "qml/QmlOverlayManager.h"
 #include <QtMath>
 #include "RegionSelector.h"
 #include "RegionSelectorTestAccess.h"
@@ -810,7 +813,13 @@ void TestRegionSelectorStyleSync::testSelectionCompletionShowsToolbarAfterWindow
                           Qt::NoModifier);
     selector.m_inputHandler->handleMouseMove(&moveEvent);
 
-    RegionSelectorTestAccess::dispatchMouseRelease(selector, end);
+    // Exercise the widget entry point as well as the input handler, including
+    // the opt-in Windows release-to-toolbar timing start.
+    QMouseEvent releaseEvent(QEvent::MouseButtonRelease,
+                             QPointF(end),
+                             QPointF(selector.mapToGlobal(end)),
+                             Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+    QApplication::sendEvent(&selector, &releaseEvent);
 
 #ifdef Q_OS_WIN
     QVERIFY(RegionSelectorTestAccess::selectionCompletionHandoffPending(selector));
@@ -1609,5 +1618,30 @@ void TestRegionSelectorStyleSync::testInitialRevealTimeoutRevealsReadySelector()
     selector.close();
 }
 
-QTEST_MAIN(TestRegionSelectorStyleSync)
+int main(int argc, char** argv)
+{
+    const bool profileToolbar = qEnvironmentVariableIntValue("SNAPTRAY_PROFILE_TOOLBAR") > 0;
+    // Profile a fresh process running only the selection-completion test.
+    // Keep debugging disabled for normal tests and restrict enabled services
+    // to profiling (no JavaScript debugger or object inspector).
+    if (profileToolbar) {
+        QQmlDebuggingEnabler::enableDebugging(true);
+    }
+    QApplication app(argc, argv);
+    app.setAttribute(Qt::AA_Use96Dpi, true);
+    if (profileToolbar) {
+        QQmlDebuggingEnabler::setServices(QQmlDebuggingEnabler::profilerServices());
+    }
+    TestRegionSelectorStyleSync test;
+    QTEST_SET_MAIN_SOURCE_PATH
+    const int result = QTest::qExec(&test, argc, argv);
+    if (profileToolbar) {
+        // The overlay engine intentionally survives until process exit. Stop
+        // recording explicitly and let the profiler receive its buffered data.
+        SnapTray::QmlOverlayManager::instance().engine()->evaluate(QStringLiteral("console.profileEnd()"));
+        constexpr int kProfilerFlushWaitMs = 2000;
+        QTest::qWait(kProfilerFlushWaitMs);
+    }
+    return result;
+}
 #include "tst_StyleSync.moc"

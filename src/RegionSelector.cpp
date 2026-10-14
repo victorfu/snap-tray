@@ -269,6 +269,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             }
             if (enteringCompletedSelectionHandoff) {
                 m_selectionCompletionHandoffPending = true;
+                m_qmlToolbar->recordSelectionTiming("selectionComplete.handoffPending");
             }
 
             const bool suppressionBefore = m_inputState.completedSelectionDragUiSuppressed;
@@ -3008,12 +3009,14 @@ void RegionSelector::commitSelectionCompletionHandoffAfterChromePaint()
         return;
     }
 
+    m_qmlToolbar->recordSelectionTiming("chromePaint.callback");
     m_selectionCompletionHandoffPending = false;
     QTimer::singleShot(0, this, [this]() {
         if (m_isClosing || !isVisible()) {
             return;
         }
 
+        m_qmlToolbar->recordSelectionTiming("handoff.queuedCallback");
         syncDetachedSelectionUiDuringPaint();
         syncRegionControlPanelDuringPaint();
         syncFloatingUiCursor();
@@ -4304,6 +4307,11 @@ void RegionSelector::mouseReleaseEvent(QMouseEvent* event)
 
     const bool releasedOverFloatingUi =
         isGlobalPosOverFloatingUi(event->globalPosition().toPoint());
+    if (event->button() == Qt::LeftButton && !releasedOverFloatingUi &&
+        !m_inputState.multiRegionMode && !m_quickPinMode &&
+        !m_selectionManager->isComplete() && m_qmlToolbar) {
+        m_qmlToolbar->beginSelectionTiming();
+    }
     m_inputHandler->handleMouseRelease(
         event,
         releasedOverFloatingUi

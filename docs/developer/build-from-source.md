@@ -89,6 +89,79 @@ The Windows scripts reconfigure an existing build directory when its cached Qt i
 
 For validation, prefer `build.sh` / `build.bat` and the test scripts. Running the app is useful for manual QA but not required for every change.
 
+## Windows capture toolbar timing
+
+Set `SNAPTRAY_TOOLBAR_TIMING=1` before launching SnapTray to trace single-region
+selection toolbar latency. This opt-in trace uses `qInfo`, so it works in both
+Debug and Release builds. Exit the existing instance first so the new process
+receives the environment variable. For a Debug build, run from PowerShell:
+
+```powershell
+$env:SNAPTRAY_TOOLBAR_TIMING = '1'
+$env:QT_FORCE_STDERR_LOGGING = '1'
+& .\build\bin\SnapTray-Debug.exe 2> toolbar-timing.log
+```
+
+For Release, use the same environment variables and run:
+
+```powershell
+Start-Process .\release\bin\SnapTray.exe -Wait -RedirectStandardError toolbar-timing.log
+```
+
+Unset the timing variable after collecting traces. Record the build configuration,
+GPU and driver version alongside the log, and compare the first capture after
+launch with several subsequent captures.
+
+`ToolbarTiming` records have a selection ID and monotonic `elapsedMs` measured
+from the canvas mouse-release handler. Subtract timestamps with the same ID:
+
+| Milestones | What the interval measures |
+|---|---|
+| `mouseRelease` → `selectionComplete.handoffPending` | Selection completion processing |
+| `selectionComplete.handoffPending` → `chromePaint.callback` | Waiting for the selection-border paint callback |
+| `chromePaint.callback` → `handoff.queuedCallback` | Event-loop scheduling after the paint callback |
+| `createView.begin` → `createView.end` | QQuickView creation, including shared QML engine initialization if needed |
+| `setSource.begin` → `setSource.end` | Loading and instantiating the toolbar QML |
+| `syncTransientParent.begin` → `syncTransientParent.end` | Native parent/style setup; `nativeSurface.created` marks surface creation |
+| `nativeShow.begin` → `nativeShow.end` | Native show call |
+| `nativeShow.end` → `show.end` | Window policy, shadow, raise and cursor setup |
+| `nativeShow.begin` → `firstBeforeRendering` → `firstAfterRendering` → `firstFrameSwapped` | First render and frame submission milestones |
+
+Render callbacks timestamp directly on the emitting thread; log lines may
+interleave with GUI-thread events. `firstFrameSwapped` is a Qt frame-submission
+milestone, **not proof that the desktop compositor has presented the pixels**.
+Likewise, `chromePaint.callback` is a paint-event callback, not presentation.
+Backend-dependent signals may be absent, and scene-graph initialization is absent
+when already initialized. The trace logs the Qt graphics API enum when initialized
+(Software = 1, Direct3D11 = 4, Direct3D12 = 8).
+Attempts cancelled before showing the toolbar can have incomplete traces.
+Logging itself adds some overhead; use this to locate large delays rather than
+as a precise benchmark. It does not enable prewarming or change display ordering.
+
+### Profiling inside the toolbar QML load
+
+The `RegionSelector_StyleSync` test supports opt-in QML profiling without enabling
+debugging in the application. Build that target, then run the single handoff test
+in a fresh process to capture the first toolbar load:
+
+```powershell
+$env:PATH = "C:\Qt\6.11.2\msvc2022_64\bin;$env:PATH"
+$env:SNAPTRAY_TOOLBAR_TIMING = '1'
+$env:SNAPTRAY_PROFILE_TOOLBAR = '1'
+Start-Process C:\Qt\6.11.2\msvc2022_64\bin\qmlprofiler.exe -Wait -WindowStyle Hidden -ArgumentList '--include compiling,creating,binding -o build/toolbar-focused.qmltrace build/bin/RegionSelector_StyleSync.exe testSelectionCompletionShowsToolbarAfterWindowsHandoff -o build/toolbar-focused-test.txt,txt'
+Remove-Item Env:SNAPTRAY_PROFILE_TOOLBAR
+Remove-Item Env:SNAPTRAY_TOOLBAR_TIMING
+```
+
+Open the `.qmltrace` in Qt Creator's QML Profiler. The test enables only profiling
+services and explicitly ends recording before process exit because the shared
+overlay engine normally survives until process termination. Profiling mode adds
+a two-second flush wait; ordinary tests do not enable debugging or wait.
+Use the limited feature set above to reduce measurement overhead. Nested event
+durations overlap and must not be summed. The profiler's `Compiling` category is
+a QML loading/compilation interval, not proof that all that time is spent compiling
+source. Compare findings against unprofiled timing runs before drawing conclusions.
+
 ## PowerShell with MSVC
 
 The Windows build and test scripts load the x64 MSVC developer environment automatically using Visual Studio Installer's `vswhere`, preserving an existing x64 developer environment. This supplies the standard C++ headers and Windows SDK libraries even when CMake reuses a cached compiler path. Missing headers such as `optional` or `type_traits` usually indicate that this environment was not loaded.
