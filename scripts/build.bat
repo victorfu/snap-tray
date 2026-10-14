@@ -12,6 +12,10 @@ set "EXE_PATH=%BIN_DIR%\SnapTray-Debug.exe"
 
 cd /d "%PROJECT_DIR%"
 
+REM Load compiler headers and libraries even when using an existing CMake cache.
+call "%SCRIPT_DIR%setup-msvc.bat"
+if errorlevel 1 exit /b 1
+
 REM Detect the supported Qt installation (or preserve an explicit QT_PATH).
 call "%SCRIPT_DIR%detect-qt.bat"
 if errorlevel 1 exit /b 1

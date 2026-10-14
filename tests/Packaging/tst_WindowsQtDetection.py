@@ -24,6 +24,8 @@ class QtDetectionTests(unittest.TestCase):
                 folder = Path(directory)
                 scripts = folder / "scripts"
                 scripts.mkdir()
+                # Qt selection tests do not need an installed compiler toolchain.
+                (scripts / "setup-msvc.bat").write_text("@exit /b 0\n", encoding="ascii")
                 qt = folder / "Qt"
                 for version in versions:
                     binary = qt / version / "msvc2022_64/bin/qmake.exe"
@@ -157,6 +159,8 @@ class QtCacheFixture:
         self.root = Path(self.temp.name)
         self.scripts = self.root / "scripts"
         self.scripts.mkdir()
+        # This compiler-free fixture tests Qt cache selection only.
+        (self.scripts / "setup-msvc.bat").write_text("@exit /b 0\n", encoding="ascii")
         self.build_type = "Release" if "release" in entry else "Debug"
         self.build = self.root / ("release" if self.build_type == "Release" else "build")
         self.pending = self.build / ".qt-deploy-pending"

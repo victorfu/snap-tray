@@ -91,7 +91,9 @@ For validation, prefer `build.sh` / `build.bat` and the test scripts. Running th
 
 ## PowerShell with MSVC
 
-If you build on Windows from PowerShell, load the Visual Studio developer shell first:
+The Windows build and test scripts load the x64 MSVC developer environment automatically using Visual Studio Installer's `vswhere`, preserving an existing x64 developer environment. This supplies the standard C++ headers and Windows SDK libraries even when CMake reuses a cached compiler path. Missing headers such as `optional` or `type_traits` usually indicate that this environment was not loaded.
+
+For manual CMake commands from PowerShell, load the Visual Studio developer shell first (adjust the installation path for your machine):
 
 ```powershell
 Import-Module "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
