@@ -67,6 +67,10 @@ private slots:
         QCOMPARE(GetWindowLongPtrW(hwnd, GWL_EXSTYLE), originalStyle);
 
         overlay.show();
+        // Setting affinity can succeed without invalidating the surface, and
+        // show() is a no-op for the already-painted row. Explicitly request a
+        // repaint so both paths verify that exclusion survives painting.
+        overlay.update();
         QTRY_VERIFY(overlay.paintCount > previousPaintCount);
         QVERIFY(GetWindowDisplayAffinity(hwnd, &affinity));
         QCOMPARE(affinity, DWORD(WDA_EXCLUDEFROMCAPTURE));
