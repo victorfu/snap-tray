@@ -87,15 +87,19 @@ Item {
         }
     }
 
-    // Interaction
-    Text {
+    // Avoid first-use text initialization for icon-only and hidden buttons.
+    Loader {
         anchors.centerIn: parent
-        visible: root.textLabel.length > 0
-        text: root.textLabel
-        font.pixelSize: 20
-        color: root.isActive ? root.iconActiveColor : root.iconNormalColor
+        active: root.visible && root.textLabel.length > 0
+        sourceComponent: Text {
+            objectName: "toolbarTextLabel"
+            text: root.textLabel
+            font.pixelSize: 20
+            color: root.isActive ? root.iconActiveColor : root.iconNormalColor
+        }
     }
 
+    // Interaction
     MouseArea {
         id: mouseArea
         anchors.fill: parent

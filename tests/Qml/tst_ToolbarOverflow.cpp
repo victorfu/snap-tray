@@ -22,6 +22,7 @@ class TestToolbarOverflow : public QObject
 private slots:
     void init() { QTest::failOnWarning(QRegularExpression(".*Binding loop.*")); }
     void standaloneEngineCanImportModule();
+    void textLabelsCreatedOnlyWhenNeeded();
     void layout_data();
     void layout();
     void safePositioning();
@@ -35,6 +36,78 @@ void TestToolbarOverflow::standaloneEngineCanImportModule()
     QVERIFY2(component.isReady(), qPrintable(component.errorString()));
     QScopedPointer<QObject> item(component.create());
     QVERIFY(item);
+}
+
+void TestToolbarOverflow::textLabelsCreatedOnlyWhenNeeded()
+{
+    QQmlEngine engine;
+    QQuickWindow window;
+    window.resize(100, 60);
+    QQuickItem parent(window.contentItem());
+    QQmlComponent component(&engine, QUrl("qrc:/SnapTrayQml/components/ToolbarButton.qml"));
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+    QScopedPointer<QObject> object(component.create());
+    auto* button = qobject_cast<QQuickItem*>(object.data());
+    QVERIFY(button);
+    button->setParentItem(&parent);
+    window.show();
+    QTRY_VERIFY(window.isExposed());
+    auto label = [button]() -> QQuickItem* {
+        // Loader items belong to the visual tree, which need not match QObject ownership.
+        QList<QQuickItem*> pending{button};
+        while (!pending.isEmpty()) {
+            auto* item = pending.takeLast();
+            if (item->objectName() == QStringLiteral("toolbarTextLabel")) {
+                return item;
+            }
+            pending.append(item->childItems());
+        }
+        return nullptr;
+    };
+    QVERIFY(!label()); // Visible icon-only button.
+
+    button->setVisible(false);
+    button->setProperty("textLabel", QStringLiteral("\u22ef"));
+    QVERIFY(!label()); // Hidden More button must not initialize text either.
+
+    button->setProperty("iconNormalColor", QColor(Qt::red));
+    button->setProperty("iconActiveColor", QColor(Qt::blue));
+    button->setVisible(true);
+    QTRY_VERIFY(label());
+    QCOMPARE(label()->property("text").toString(), QStringLiteral("\u22ef"));
+    QCOMPARE(label()->property("color").value<QColor>(), QColor(Qt::red));
+    QTRY_VERIFY(label()->width() > 0);
+    // Qt centers odd-sized text on whole pixels by default.
+    constexpr qreal kCenterRoundingTolerance = 0.5;
+    QTRY_VERIFY(qAbs(label()->mapToItem(button, label()->boundingRect().center()).x()
+                     - button->boundingRect().center().x()) <= kCenterRoundingTolerance);
+    QTRY_VERIFY(qAbs(label()->mapToItem(button, label()->boundingRect().center()).y()
+                     - button->boundingRect().center().y()) <= kCenterRoundingTolerance);
+    button->setProperty("isActive", true);
+    QCOMPARE(label()->property("color").value<QColor>(), QColor(Qt::blue));
+    button->setProperty("textLabel", QStringLiteral("More"));
+    QCOMPARE(label()->property("text").toString(), QStringLiteral("More"));
+
+    parent.setVisible(false);
+    QTRY_VERIFY(!label()); // Ancestor visibility also controls allocation.
+    parent.setVisible(true);
+    QTRY_VERIFY(label());
+    QCOMPARE(label()->property("text").toString(), QStringLiteral("More"));
+    QCOMPARE(label()->property("color").value<QColor>(), QColor(Qt::blue));
+    QSignalSpy clicked(button, SIGNAL(clicked(int)));
+    QVERIFY(clicked.isValid());
+    const QPoint clickPosition = button->mapToScene(button->boundingRect().center()).toPoint();
+    QTest::mouseClick(&window, Qt::LeftButton, Qt::NoModifier, clickPosition);
+    QCOMPARE(clicked.count(), 1);
+    button->setProperty("isDisabled", true);
+    QTest::mouseClick(&window, Qt::LeftButton, Qt::NoModifier, clickPosition);
+    QCOMPARE(clicked.count(), 1);
+    button->setProperty("isDisabled", false);
+    button->setProperty("textLabel", QString());
+    QTRY_VERIFY(!label());
+    QTest::mouseClick(&window, Qt::LeftButton, Qt::NoModifier, clickPosition);
+    QCOMPARE(clicked.count(), 2);
+    button->setParentItem(nullptr);
 }
 
 void TestToolbarOverflow::layout_data()
@@ -137,8 +210,10 @@ void TestToolbarOverflow::menuActionsAndLifetime()
     QVERIFY(more->isVisible());
     QSignalSpy closed(&toolbar, &QmlWindowedToolbar::closeRequested);
     QSignalSpy undo(toolbar.viewModel(), &PinToolbarViewModel::undoClicked);
-    toolbar.onOverflowRequested(8, 4, 28, 24);
-    QVERIFY(toolbar.m_overflowRootItem);
+    QTRY_VERIFY(toolbar.m_view->isExposed());
+    QTest::mouseClick(toolbar.m_view, Qt::LeftButton, Qt::NoModifier,
+                      more->mapToScene(more->boundingRect().center()).toPoint());
+    QTRY_VERIFY(toolbar.m_overflowRootItem);
     QCOMPARE(toolbar.m_overflowView->status(), QQuickView::Ready);
     QVERIFY(toolbar.m_overflowView->isVisible());
     QVERIFY(toolbar.m_overflowView->flags().testFlag(Qt::WindowDoesNotAcceptFocus));
