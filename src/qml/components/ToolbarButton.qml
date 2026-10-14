@@ -87,10 +87,17 @@ Item {
         }
     }
 
-    // Avoid first-use text initialization for icon-only and hidden buttons.
+    // Defer first-use text initialization, then retain it across visibility changes.
+    property bool textLabelNeeded: false
+    Binding on textLabelNeeded {
+        when: root.visible && root.textLabel.length > 0
+        value: true
+        restoreMode: Binding.RestoreNone
+    }
+
     Loader {
         anchors.centerIn: parent
-        active: root.visible && root.textLabel.length > 0
+        active: root.textLabelNeeded && root.textLabel.length > 0
         sourceComponent: Text {
             objectName: "toolbarTextLabel"
             text: root.textLabel

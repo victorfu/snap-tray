@@ -1,6 +1,7 @@
 #include <QtTest>
 #include <QQuickView>
 #include <QQuickItem>
+#include <QPointer>
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QApplication>
@@ -72,8 +73,12 @@ void TestToolbarOverflow::textLabelsCreatedOnlyWhenNeeded()
 
     button->setProperty("iconNormalColor", QColor(Qt::red));
     button->setProperty("iconActiveColor", QColor(Qt::blue));
+    parent.setVisible(false);
     button->setVisible(true);
+    QVERIFY(!label()); // An initially hidden ancestor also defers creation.
+    parent.setVisible(true);
     QTRY_VERIFY(label());
+    QPointer<QQuickItem> originalLabel(label());
     QCOMPARE(label()->property("text").toString(), QStringLiteral("\u22ef"));
     QCOMPARE(label()->property("color").value<QColor>(), QColor(Qt::red));
     QTRY_VERIFY(label()->width() > 0);
@@ -88,10 +93,25 @@ void TestToolbarOverflow::textLabelsCreatedOnlyWhenNeeded()
     button->setProperty("textLabel", QStringLiteral("More"));
     QCOMPARE(label()->property("text").toString(), QStringLiteral("More"));
 
-    parent.setVisible(false);
-    QTRY_VERIFY(!label()); // Ancestor visibility also controls allocation.
-    parent.setVisible(true);
-    QTRY_VERIFY(label());
+    for (int i = 0; i < 3; ++i) {
+        button->setVisible(false);
+        QCoreApplication::processEvents();
+        QVERIFY(originalLabel);
+        QCOMPARE(label(), originalLabel.data());
+        QVERIFY(!label()->isVisible());
+        button->setVisible(true);
+        QCOMPARE(label(), originalLabel.data());
+        QVERIFY(label()->isVisible());
+
+        parent.setVisible(false);
+        QCoreApplication::processEvents();
+        QVERIFY(originalLabel);
+        QCOMPARE(label(), originalLabel.data());
+        QVERIFY(!label()->isVisible());
+        parent.setVisible(true);
+        QCOMPARE(label(), originalLabel.data());
+        QVERIFY(label()->isVisible());
+    }
     QCOMPARE(label()->property("text").toString(), QStringLiteral("More"));
     QCOMPARE(label()->property("color").value<QColor>(), QColor(Qt::blue));
     QSignalSpy clicked(button, SIGNAL(clicked(int)));
@@ -105,6 +125,7 @@ void TestToolbarOverflow::textLabelsCreatedOnlyWhenNeeded()
     button->setProperty("isDisabled", false);
     button->setProperty("textLabel", QString());
     QTRY_VERIFY(!label());
+    QTRY_VERIFY(originalLabel.isNull());
     QTest::mouseClick(&window, Qt::LeftButton, Qt::NoModifier, clickPosition);
     QCOMPARE(clicked.count(), 2);
     button->setParentItem(nullptr);
