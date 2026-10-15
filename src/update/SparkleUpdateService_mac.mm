@@ -5,7 +5,7 @@
 #include "update_config.h"
 #include "version.h"
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 
 #import <AppKit/AppKit.h>
 #import <Foundation/Foundation.h>
@@ -266,4 +266,4 @@ std::unique_ptr<IUpdateService> createPlatformUpdateService(UpdateServiceKind ki
     return nullptr;
 }
 
-#endif // Q_OS_MAC
+#endif // Q_OS_MACOS

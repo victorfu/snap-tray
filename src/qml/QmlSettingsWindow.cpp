@@ -23,7 +23,7 @@ namespace SnapTray {
 namespace {
 void releaseTextInputSession(QQuickView* view)
 {
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     if (!view) {
         return;
     }
@@ -159,7 +159,7 @@ void QmlSettingsWindow::ensureView()
                          m_backend);
     });
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     // Revert to accessory (LSUIElement) mode when the window is dismissed.
     connect(m_view, &QWindow::visibleChanged, this, [](bool visible) {
         if (!visible) {
@@ -179,7 +179,7 @@ void QmlSettingsWindow::show()
         m_backend->refreshStartOnLogin();
     }
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     // Temporarily switch to regular activation policy so the window
     // survives app-deactivation (LSUIElement apps hide all windows
     // when another app comes to the foreground).
@@ -192,7 +192,7 @@ void QmlSettingsWindow::show()
     m_view->requestActivate();
     syncCursorSurface();
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     PlatformFeatures::activateApp();
 #endif
 }
@@ -206,7 +206,7 @@ void QmlSettingsWindow::raise()
         m_view->raise();
         m_view->requestActivate();
         syncCursorSurface();
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
         PlatformFeatures::activateApp();
 #endif
     }
@@ -217,7 +217,7 @@ void QmlSettingsWindow::activateWindow()
     if (m_view) {
         m_view->requestActivate();
         syncCursorSurface();
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
         PlatformFeatures::activateApp();
 #endif
     }
@@ -247,7 +247,7 @@ bool QmlSettingsWindow::eventFilter(QObject* watched, QEvent* event)
 {
     if (watched == m_view && event) {
         if (event->type() == QEvent::Hide || event->type() == QEvent::Close) {
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
             releaseTextInputSession(m_view);
 #endif
             CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);

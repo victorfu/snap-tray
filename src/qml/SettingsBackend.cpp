@@ -266,7 +266,7 @@ void SettingsBackend::loadAllSettings()
     m_appTheme = static_cast<int>(ToolbarStyleConfig::loadStyle());
     m_cliInstalled = PlatformFeatures::instance().isCLIInstalled();
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     m_hasScreenRecordingPermission = PlatformFeatures::hasScreenRecordingPermission();
     m_hasAccessibilityPermission = PlatformFeatures::hasAccessibilityPermission();
 #endif
@@ -493,7 +493,7 @@ bool SettingsBackend::cliInstalled() const { return m_cliInstalled; }
 
 bool SettingsBackend::isMacOS() const
 {
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     return true;
 #else
     return false;
@@ -504,7 +504,7 @@ bool SettingsBackend::isMacOS() const
 // macOS Permissions
 // ─────────────────────────────────────────────────────────────────────────────
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 bool SettingsBackend::hasScreenRecordingPermission() const { return m_hasScreenRecordingPermission; }
 bool SettingsBackend::hasAccessibilityPermission() const { return m_hasAccessibilityPermission; }
 #endif
@@ -1014,7 +1014,7 @@ void SettingsBackend::changeCLIInstallation(bool installed, const std::function<
 // macOS Permissions
 // ─────────────────────────────────────────────────────────────────────────────
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 void SettingsBackend::openScreenRecordingSettings()
 {
     PlatformFeatures::openScreenRecordingSettings();

@@ -44,7 +44,7 @@ private slots:
     void testUniqueEncodingFailure();
     void testUniquePreservesOutputPermissions_data();
     void testUniquePreservesOutputPermissions();
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     void testPixmapRoundTripPreservesTaggedColorSpace();
     void testSavePixmapPreservesTaggedColorSpace();
     void testSavePixmapAppliesScreenColorSpaceWhenMissing();
@@ -404,7 +404,7 @@ void tst_ImageSaveUtils::testSaveImageWithColorSpacePreservesProfile()
     }
 }
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 void tst_ImageSaveUtils::testPixmapRoundTripPreservesTaggedColorSpace()
 {
     QColorSpace sourceColorSpace = QColorSpace(QColorSpace::DisplayP3);

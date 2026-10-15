@@ -7,7 +7,7 @@ void IVideoPlayer::stepForward()
     seek(qMin(duration(), position() + frameIntervalMs()));
 }
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 class AVFoundationPlayer;
 IVideoPlayer* createAVFoundationPlayer(QObject *parent);
 bool isAVFoundationAvailable();
@@ -25,7 +25,7 @@ IVideoPlayer* createFFmpegPlayer(QObject* parent);
 
 IVideoPlayer* IVideoPlayer::create(QObject *parent)
 {
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     if (isAVFoundationAvailable()) {
         qDebug() << "IVideoPlayer: Using AVFoundation player";
         return createAVFoundationPlayer(parent);

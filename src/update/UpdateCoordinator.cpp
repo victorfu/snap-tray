@@ -126,7 +126,7 @@ std::unique_ptr<IUpdateService> createService(UpdateServiceKind kind, InstallSou
 
 UpdatePlatform currentUpdatePlatform()
 {
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     return UpdatePlatform::MacOS;
 #elif defined(Q_OS_WIN)
     return UpdatePlatform::Windows;

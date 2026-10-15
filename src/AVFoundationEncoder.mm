@@ -3,7 +3,7 @@
 #include "encoding/IntermediateQuality.h"
 #include "encoding/VideoRateControl.h"
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 
 #import <AVFoundation/AVFoundation.h>
 #import <CoreMedia/CoreMedia.h>
@@ -634,4 +634,4 @@ void AVFoundationEncoder::writeAudioSamples(const QByteArray &pcmData, qint64 st
     }
 }
 
-#endif // Q_OS_MAC
+#endif // Q_OS_MACOS

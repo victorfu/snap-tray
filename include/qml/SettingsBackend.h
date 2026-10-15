@@ -38,7 +38,7 @@ class SettingsBackend : public QObject
     Q_PROPERTY(bool recordingDirectMp4Only READ recordingDirectMp4Only CONSTANT)
     Q_PROPERTY(bool ocrSettingsVisible READ ocrSettingsVisible CONSTANT)
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     // ──── macOS Permissions ────
     Q_PROPERTY(bool hasScreenRecordingPermission READ hasScreenRecordingPermission NOTIFY permissionsChanged)
     Q_PROPERTY(bool hasAccessibilityPermission READ hasAccessibilityPermission NOTIFY permissionsChanged)
@@ -140,7 +140,7 @@ public:
     bool recordingDirectMp4Only() const;
     bool ocrSettingsVisible() const;
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     // ──── macOS Permissions ────
     bool hasScreenRecordingPermission() const;
     bool hasAccessibilityPermission() const;
@@ -251,7 +251,7 @@ public:
     Q_INVOKABLE void installCLI();
     Q_INVOKABLE void uninstallCLI();
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     Q_INVOKABLE void openScreenRecordingSettings();
     Q_INVOKABLE void openAccessibilitySettings();
     Q_INVOKABLE void refreshPermissions();
@@ -290,7 +290,7 @@ signals:
     void cliInstalledChanged();
     void cliOperationFinished(bool success, const QString& errorMessage);
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     void permissionsChanged();
 #endif
 
@@ -386,7 +386,7 @@ private:
     int m_appTheme = 0;
     bool m_cliInstalled = false;
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     bool m_hasScreenRecordingPermission = false;
     bool m_hasAccessibilityPermission = false;
 #endif

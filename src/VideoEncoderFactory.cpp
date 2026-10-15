@@ -5,7 +5,7 @@
 #include "encoding/FFmpegEncoder.h"
 #endif
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 #include "AVFoundationEncoder.h"
 #endif
 
@@ -22,7 +22,7 @@ IVideoEncoder* IVideoEncoder::createNativeEncoder(QObject *parent)
     }
     delete encoder;
 #endif
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     auto encoder = new AVFoundationEncoder(parent);
     if (encoder->isAvailable()) {
         qDebug() << "VideoEncoderFactory: Using AVFoundation encoder";

@@ -9,7 +9,7 @@ namespace {
 QFont emojiBaseFont()
 {
     QFont font;
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     font.setFamily("Apple Color Emoji");
 #elif defined(Q_OS_WIN)
     font.setFamily("Segoe UI Emoji");

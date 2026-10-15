@@ -1,6 +1,6 @@
 #include "capture/IAudioCaptureEngine.h"
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 #include "capture/CoreAudioCaptureEngine.h"
 // Forward declarations for Objective-C implementations
 extern IAudioCaptureEngine::MicrophonePermission checkMicrophonePermissionMac();
@@ -29,7 +29,7 @@ IAudioCaptureEngine* IAudioCaptureEngine::createBestEngine(QObject *parent)
     delete engine;
 #endif
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     auto engine = new CoreAudioCaptureEngine(parent);
     if (engine->isAvailable()) {
         qDebug() << "IAudioCaptureEngine: Using CoreAudio engine";
@@ -50,7 +50,7 @@ IAudioCaptureEngine* IAudioCaptureEngine::createBestEngine(QObject *parent)
 
 IAudioCaptureEngine::MicrophonePermission IAudioCaptureEngine::checkMicrophonePermission()
 {
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     return checkMicrophonePermissionMac();
 #else
     // Windows doesn't require explicit microphone permission
@@ -60,7 +60,7 @@ IAudioCaptureEngine::MicrophonePermission IAudioCaptureEngine::checkMicrophonePe
 
 void IAudioCaptureEngine::requestMicrophonePermission(std::function<void(bool granted)> callback)
 {
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     requestMicrophonePermissionMac(callback);
 #else
     // Windows doesn't require explicit permission, always grant

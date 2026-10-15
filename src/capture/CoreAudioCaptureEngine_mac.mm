@@ -1,6 +1,6 @@
 #include "capture/CoreAudioCaptureEngine.h"
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 
 #import <AVFoundation/AVFoundation.h>
 #import <CoreAudio/CoreAudio.h>
@@ -1403,4 +1403,4 @@ void requestMicrophonePermissionMac(std::function<void(bool)> callback)
     }];
 }
 
-#endif // Q_OS_MAC
+#endif // Q_OS_MACOS

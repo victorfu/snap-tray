@@ -3,7 +3,7 @@
 #include <QDebug>
 #include <QFileInfo>
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 #import <Foundation/Foundation.h>
 
 InstallSource InstallSourceDetector::detect()
@@ -67,4 +67,4 @@ InstallSource InstallSourceDetector::detect()
     return s_cachedSource;
 }
 
-#endif // Q_OS_MAC
+#endif // Q_OS_MACOS

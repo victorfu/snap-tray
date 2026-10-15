@@ -4,7 +4,7 @@
 #include "IAudioCaptureEngine.h"
 #include "capture/TimestampedPcmMixer.h"
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 
 #include <QMutex>
 #include <atomic>
@@ -89,6 +89,6 @@ private:
     mutable QMutex m_timingMutex;
 };
 
-#endif // Q_OS_MAC
+#endif // Q_OS_MACOS
 
 #endif // COREAUDIOCAPTUREENGINE_H

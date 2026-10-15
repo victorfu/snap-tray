@@ -1,7 +1,7 @@
 #include "capture/ICaptureEngine.h"
 #include "capture/QtCaptureEngine.h"
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 #include "capture/SCKCaptureEngine.h"
 #endif
 
@@ -78,7 +78,7 @@ bool ICaptureEngine::setRegion(const QRect &region, const CaptureScreenInfo &scr
 
 ICaptureEngine *ICaptureEngine::createBestEngine(QObject *parent)
 {
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     if (SCKCaptureEngine::isAvailable()) {
         qDebug() << "ICaptureEngine: Using ScreenCaptureKit engine";
         return new SCKCaptureEngine(parent);

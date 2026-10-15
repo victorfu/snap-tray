@@ -3,7 +3,7 @@
 
 #include "IVideoEncoder.h"
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 
 class AVFoundationEncoderPrivate;
 
@@ -49,5 +49,5 @@ private:
     AVFoundationEncoderPrivate *d;
 };
 
-#endif // Q_OS_MAC
+#endif // Q_OS_MACOS
 #endif // AVFOUNDATIONENCODER_H

@@ -1,6 +1,6 @@
 #include "video/IVideoPlayer.h"
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 
 #import <AVFoundation/AVFoundation.h>
 #import <CoreMedia/CoreMedia.h>
@@ -520,4 +520,4 @@ bool isAVFoundationAvailable()
 
 #include "AVFoundationPlayer_mac.moc"
 
-#endif // Q_OS_MAC
+#endif // Q_OS_MACOS

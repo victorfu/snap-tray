@@ -428,7 +428,7 @@ void CursorManager::applyCursorForWidget(QWidget* widget, bool force)
     const QCursor targetCursor = CursorStyleCatalog::instance().cursorForStyle(targetSpec);
     const bool cursorChanged = !cursorsEqual(targetCursor, widget->cursor());
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     if (force || cursorChanged || widget->underMouse()) {
 #else
     if (force || cursorChanged) {
