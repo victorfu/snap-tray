@@ -64,7 +64,10 @@ Item {
                     readonly property real ratio: (root.currentWidthValue - root.minWidthValue) /
                                                   Math.max(1, root.maxWidthValue - root.minWidthValue)
 
-                    width: Math.round(minDot + ratio * (maxDot - minDot))
+                    // Even diameters keep the dot on whole pixels inside the
+                    // 22px container; half-pixel offsets render lopsided on
+                    // the software scene graph (Windows 10).
+                    width: 2 * Math.round((minDot + ratio * (maxDot - minDot)) / 2)
                     height: width
                     x: (parent.width - width) / 2
                     y: (parent.height - height) / 2

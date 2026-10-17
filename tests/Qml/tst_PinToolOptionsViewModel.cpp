@@ -1,6 +1,7 @@
 #include <QtTest/QtTest>
 
 #include "qml/PinToolOptionsViewModel.h"
+#include "ui/DesignSystem.h"
 
 #include <QSignalSpy>
 
@@ -33,6 +34,7 @@ private slots:
     void testMosaicWidthWheel_IsNotHandled();
     void testNonMosaicWidthWheel_RemainsHandled();
     void testLaserPointerOptions_ClearMosaicSemantics();
+    void testDefaultRed_MatchesDesignSystem();
 };
 
 void tst_PinToolOptionsViewModel::testDropdownRequested_PreservesCoordinates_data()
@@ -256,6 +258,16 @@ void tst_PinToolOptionsViewModel::testLaserPointerOptions_ClearMosaicSemantics()
     QCOMPARE(viewModel.activeToolId(), static_cast<int>(ToolId::Count));
     QVERIFY(!viewModel.isMosaicActive());
     QVERIFY(!viewModel.handleWidthWheelDelta(120));
+}
+
+void tst_PinToolOptionsViewModel::testDefaultRed_MatchesDesignSystem()
+{
+    PinToolOptionsViewModel viewModel;
+    const QColor red = DesignSystem::instance().annotationRed();
+
+    QVERIFY(!viewModel.colorPalette().isEmpty());
+    QCOMPARE(viewModel.colorPalette().first().value<QColor>(), red);
+    QCOMPARE(viewModel.currentColor(), red);
 }
 
 QTEST_MAIN(tst_PinToolOptionsViewModel)

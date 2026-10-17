@@ -247,7 +247,7 @@ private:
 
     // Color
     QVariantList m_colorPalette;
-    QColor m_currentColor{220, 53, 69}; // Default red
+    QColor m_currentColor{0xFF, 0x3B, 0x30}; // Default red (DesignSystem::annotationRed)
 
     // Width
     int m_currentWidth = 3;

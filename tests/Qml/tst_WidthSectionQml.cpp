@@ -149,6 +149,16 @@ void tst_WidthSectionQml::testPreviewDotCenterStaysFixedAcrossWidthChanges()
         QCOMPARE(containerCenter, expectedCenter);
         QCOMPARE(dotCenter, expectedCenter);
     }
+
+    // Odd diameters land the dot on half-pixel offsets, which the software
+    // scene graph (Windows 10) rasterizes as a lopsided circle.
+    for (int width = 1; width <= 30; ++width) {
+        viewModel.setCurrentWidth(width);
+        QCoreApplication::processEvents();
+
+        QCOMPARE(qRound(previewDot->x()), previewDot->x());
+        QCOMPARE(qRound(previewDot->y()), previewDot->y());
+    }
 }
 
 void tst_WidthSectionQml::testNonMosaicPreviewRemainsCompact()

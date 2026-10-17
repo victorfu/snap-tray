@@ -6,6 +6,7 @@
 #include "annotations/LineStyle.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/Settings.h"
+#include "ui/DesignSystem.h"
 
 /**
  * @brief Unit tests for AnnotationSettingsManager singleton class.
@@ -141,7 +142,8 @@ void tst_AnnotationSettingsManager::testSingletonInstance()
 void tst_AnnotationSettingsManager::testLoadColor_DefaultValue()
 {
     QColor color = AnnotationSettingsManager::instance().loadColor();
-    QCOMPARE(color, Qt::red);
+    QCOMPARE(color, QColor(0xFF, 0x3B, 0x30));
+    QCOMPARE(color, DesignSystem::instance().annotationRed());
 }
 
 void tst_AnnotationSettingsManager::testSaveLoadColor_Roundtrip()

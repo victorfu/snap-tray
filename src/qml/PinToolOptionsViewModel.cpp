@@ -1,6 +1,7 @@
 #include "qml/PinToolOptionsViewModel.h"
 #include "tools/ToolSectionConfig.h"
 #include "tools/ToolWidthSlot.h"
+#include "ui/DesignSystem.h"
 
 #include <iterator>
 
@@ -29,7 +30,7 @@ void PinToolOptionsViewModel::buildColorPalette()
     m_colorPalette.clear();
     // Match ColorSection's default palette
     const QColor colors[] = {
-        QColor(220, 53, 69),    // Red
+        DesignSystem::instance().annotationRed(),
         QColor(255, 240, 120),  // Yellow
         QColor(80, 200, 120),   // Green
         QColor(0x6C, 0x5C, 0xE7), // Primary purple
