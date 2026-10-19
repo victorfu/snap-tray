@@ -99,6 +99,8 @@ private slots:
     void testPreciseSourceSampleRectForRegion_UsesScreenLocalCoordinates();
     void testDisplaySourceRectForTarget_PrefersTranslationOverScaling();
     void testSetSourceRegion_FractionalDpr_PreservesExactLogicalSize();
+    void testSetSourceRegion_PreservesNativeColors_data();
+    void testSetSourceRegion_PreservesNativeColors();
     void testCropUndoRedo_FractionalDpr_RestoresExactLogicalSize();
     void testHandleToolbarUndo_PrioritizesCropWhenNoPostCropAnnotations();
     void testHandleToolbarUndo_PrioritizesPostCropAnnotationsFirst();
@@ -1199,6 +1201,65 @@ void TestPinWindowCropUndo::testSetSourceRegion_FractionalDpr_PreservesExactLogi
     QCOMPARE(window.m_sourceSampleRect, QRectF(0.25, 0.0, 125.0, 80.0));
     QCOMPARE(window.m_displayPixmap.size(), QSize(125, 80));
     QVERIFY(qFuzzyCompare(window.m_displayPixmap.devicePixelRatio(), 1.25));
+}
+
+void TestPinWindowCropUndo::testSetSourceRegion_PreservesNativeColors_data()
+{
+    QTest::addColumn<qreal>("dpr");
+    QTest::newRow("100-percent") << qreal(1.0);
+    QTest::newRow("125-percent") << qreal(1.25);
+    QTest::newRow("150-percent") << qreal(1.5);
+    QTest::newRow("200-percent") << qreal(2.0);
+    QTest::newRow("250-percent") << qreal(2.5);
+}
+
+void TestPinWindowCropUndo::testSetSourceRegion_PreservesNativeColors()
+{
+    QFETCH(qreal, dpr);
+    const QSize logicalSize(101, 81);
+    const QSize capturedSize(qCeil(logicalSize.width() * dpr),
+                             qCeil(logicalSize.height() * dpr));
+    QImage captured(capturedSize, QImage::Format_RGB32);
+    // Native-pixel stripes expose interpolation that a uniform color cannot.
+    for (int y = 0; y < captured.height(); ++y) {
+        for (int x = 0; x < captured.width(); ++x) {
+            captured.setPixelColor(x, y, (x + y) % 2 ? Qt::red : Qt::cyan);
+        }
+    }
+    QPixmap source = QPixmap::fromImage(captured);
+    source.setDevicePixelRatio(dpr);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.setShowBorder(false);
+    window.setSourceRegion(QRect(QPoint(0, 0), logicalSize), nullptr);
+
+    const QImage display = window.m_displayPixmap.toImage();
+    QCOMPARE(display.size(), CoordinateHelper::toPhysical(logicalSize, dpr));
+    int maxChannelError = 0;
+    for (int y = 0; y < display.height(); ++y) {
+        for (int x = 0; x < display.width(); ++x) {
+            const QColor actual = display.pixelColor(x, y);
+            const QColor expected = captured.pixelColor(x, y);
+            maxChannelError = qMax(maxChannelError, qAbs(actual.red() - expected.red()));
+            maxChannelError = qMax(maxChannelError, qAbs(actual.green() - expected.green()));
+            maxChannelError = qMax(maxChannelError, qAbs(actual.blue() - expected.blue()));
+        }
+    }
+    QCOMPARE(maxChannelError, 0);
+
+    // The final widget paint must not resample the already-sized display
+    // pixmap a second time. Render at the capture DPR, including fractional
+    // backing-store extents, without relying on the test monitor's scale.
+    QImage painted(display.size(), QImage::Format_ARGB32_Premultiplied);
+    painted.setDevicePixelRatio(dpr);
+    painted.fill(Qt::transparent);
+    {
+        QPainter painter(&painted);
+        window.render(&painter);
+    }
+    const QRect interior = display.rect().adjusted(8, 8, -8, -8);
+    painted.setDevicePixelRatio(1.0);
+    QCOMPARE(painted.copy(interior).convertToFormat(QImage::Format_RGB32),
+             captured.copy(interior).convertToFormat(QImage::Format_RGB32));
 }
 
 void TestPinWindowCropUndo::testCropUndoRedo_FractionalDpr_RestoresExactLogicalSize()

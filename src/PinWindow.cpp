@@ -606,7 +606,7 @@ PinWindow::PinWindow(const QPixmap& screenshot,
         showPreparedWindow();
     }
 
-    // Apply default opacity (90%)
+    // Apply the configured opacity (100% by default).
     setWindowOpacity(m_opacity);
 
     // Initialize loading spinner for OCR
@@ -2129,7 +2129,11 @@ QPixmap PinWindow::buildDisplayPixmap(const QSize& logicalSize, Qt::Transformati
     painter.setRenderHint(QPainter::SmoothPixmapTransform, mode == Qt::SmoothTransformation);
     const QRectF sourceRect = displaySourceRectForTarget(
         transformedSourceSampleRect(), m_transformedCache.size(), deviceSize);
-    painter.drawPixmap(QRectF(QPointF(0.0, 0.0), QSizeF(logicalSize)),
+    // A logical extent can end between native pixels at fractional DPR. Use
+    // the allocated pixel extent so an unscaled capture remains a pixel copy,
+    // rather than blending adjacent colors to fit a half-pixel smaller rect.
+    const QSizeF targetSize = QSizeF(deviceSize) / dpr;
+    painter.drawPixmap(QRectF(QPointF(0.0, 0.0), targetSize),
                        m_transformedCache,
                        sourceRect);
     painter.end();
@@ -2273,7 +2277,14 @@ void PinWindow::paintEvent(QPaintEvent* event)
 
     // Draw the screenshot (skip in layout mode - regions are drawn separately)
     if (!isRegionLayoutMode()) {
-        painter.drawPixmap(pixmapRect, m_displayPixmap);
+        // Match the native backing-store extent. Drawing into the integer
+        // logical rect would resample the display pixmap again at fractional
+        // scale factors (for example, 101 logical pixels -> 151.5 pixels).
+        // deviceTransform also covers redirected painting such as render().
+        const qreal paintDpr = painter.deviceTransform().m11();
+        const QSize nativeSize = CoordinateHelper::toPhysical(pixmapRect.size(), paintDpr);
+        const QRectF imageRect(QPointF(pixmapRect.topLeft()), QSizeF(nativeSize) / paintDpr);
+        painter.drawPixmap(imageRect, m_displayPixmap, QRectF(m_displayPixmap.rect()));
     } else {
         // Draw solid background for layout mode
         painter.fillRect(pixmapRect, QColor(40, 40, 40));
