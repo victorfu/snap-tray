@@ -3,6 +3,7 @@
 #include <QPixmap>
 #include <QPainter>
 #include <QMouseEvent>
+#include <QScreen>
 
 #include "PinWindow.h"
 #include "PinWindowManager.h"
@@ -33,6 +34,55 @@ private:
     }
 
 private slots:
+    void testInitialPositionBeforeFirstShow_data() {
+        QTest::addColumn<int>("screenIndex");
+        const auto screens = QGuiApplication::screens();
+        for (int i = 0; i < screens.size(); ++i) {
+            QTest::newRow(qPrintable(QStringLiteral("screen-%1").arg(i))) << i;
+        }
+    }
+
+    void testInitialPositionBeforeFirstShow() {
+#ifdef Q_OS_MACOS
+        QSKIP("macOS deliberately positions pin windows after show().");
+#endif
+        QFETCH(int, screenIndex);
+        QScreen* targetScreen = QGuiApplication::screens().at(screenIndex);
+        const QPoint requestedPos = targetScreen->availableGeometry().topLeft() + QPoint(101, 81);
+        class ShowObserver : public QObject {
+        public:
+            bool observed = false;
+            QPoint position;
+            QScreen* screen = nullptr;
+            bool eventFilter(QObject* object, QEvent* event) override {
+                if (event->type() == QEvent::Show && !observed) {
+                    auto* pin = qobject_cast<PinWindow*>(object);
+                    if (pin) {
+                        observed = true;
+                        position = pin->pos();
+                        screen = pin->screen();
+                    }
+                }
+                return false;
+            }
+        } observer;
+        PinWindow window(createTestPixmap(160, 100), requestedPos, nullptr, false, false);
+        window.installEventFilter(&observer);
+        window.showPreparedWindow();
+        QVERIFY(observer.observed);
+        QCOMPARE(observer.position, requestedPos);
+        QCOMPARE(observer.screen, targetScreen);
+        QCoreApplication::processEvents();
+        QCOMPARE(window.pos(), requestedPos);
+
+        // Hiding/revealing an existing pin must preserve the user's new position.
+        const QPoint movedPos = requestedPos + QPoint(20, 20);
+        window.move(movedPos);
+        window.hide();
+        window.showPreparedWindow();
+        QCOMPARE(window.pos(), movedPos);
+    }
+
     void testLongScreenshotFitsBeforeFirstShow() {
         class ShowObserver : public QObject {
         public:

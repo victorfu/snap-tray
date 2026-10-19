@@ -1011,12 +1011,13 @@ void PinWindow::showPreparedWindow()
         return;
     }
 
-    // Must show() first, then move() to get correct positioning on macOS.
-    // Moving before show() can result in incorrect window placement there.
-#ifdef Q_OS_LINUX
-    move(m_initialPosition);
+    // macOS needs show() before move(). On Windows/Linux, position while
+    // hidden so the first visible surface uses the requested screen and DPR,
+    // rather than appearing at the default position and then jumping.
+#ifdef Q_OS_MACOS
     show();
 #else
+    move(m_initialPosition);
     show();
 #endif
 
@@ -1030,7 +1031,7 @@ void PinWindow::showPreparedWindow()
     setFocus(Qt::OtherFocusReason);
 #endif
 
-#ifndef Q_OS_LINUX
+#ifdef Q_OS_MACOS
     move(m_initialPosition);
 #endif
     m_hasPerformedInitialShow = true;
