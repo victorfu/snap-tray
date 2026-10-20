@@ -70,6 +70,10 @@ void QmlDelayedCaptureIndicator::show(QScreen* screen, int remainingSeconds)
     m_view->setScreen(screen);
     reposition();
     m_view->show();
+    // The user switches to the target app during the countdown. As an
+    // LSUIElement app, macOS would hide our tool windows on deactivation;
+    // keep the pill visible. Must run after show(), like the other overlays.
+    QmlOverlayManager::preventWindowHideOnDeactivate(m_view);
 }
 
 void QmlDelayedCaptureIndicator::setRemainingSeconds(int seconds)
