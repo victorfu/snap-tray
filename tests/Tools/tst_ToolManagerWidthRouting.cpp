@@ -18,7 +18,7 @@ void tst_ToolManagerWidthRouting::testDefaultsAreIndependent()
     ToolManager manager;
 
     manager.setCurrentTool(ToolId::Mosaic);
-    QCOMPARE(manager.width(), ToolWidthDefaults::kMosaicBrush);
+    QCOMPARE(manager.width(), ToolWidthDefaults::kMosaicBrushDefault);
 
     manager.setCurrentTool(ToolId::Pencil);
     QCOMPARE(manager.width(), ToolWidthDefaults::kStroke);
@@ -58,7 +58,7 @@ void tst_ToolManagerWidthRouting::testStrokeToolsContinueSharingOneSlot()
     QCOMPARE(manager.width(), 7);
 
     manager.setCurrentTool(ToolId::Mosaic);
-    QCOMPARE(manager.width(), ToolWidthDefaults::kMosaicBrush);
+    QCOMPARE(manager.width(), ToolWidthDefaults::kMosaicBrushDefault);
 }
 
 QTEST_MAIN(tst_ToolManagerWidthRouting)

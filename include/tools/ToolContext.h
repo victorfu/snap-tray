@@ -37,7 +37,7 @@ public:
     // Current drawing settings
     QColor color = Qt::red;
     int width = ToolWidthDefaults::kStroke;
-    int mosaicWidth = ToolWidthDefaults::kMosaicBrush;
+    int mosaicWidth = ToolWidthDefaults::kMosaicBrushDefault;
     LineEndStyle arrowStyle = LineEndStyle::EndArrow;
     LineStyle lineStyle = LineStyle::Solid;
 

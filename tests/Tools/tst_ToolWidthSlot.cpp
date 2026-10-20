@@ -19,8 +19,9 @@ void tst_ToolWidthSlot::testDefaultsAndPresets()
 {
     QCOMPARE(ToolWidthDefaults::kStroke, 3);
     QCOMPARE(ToolWidthDefaults::kMosaicBrushSmall, 10);
-    QCOMPARE(ToolWidthDefaults::kMosaicBrush, 18);
+    QCOMPARE(ToolWidthDefaults::kMosaicBrushMedium, 18);
     QCOMPARE(ToolWidthDefaults::kMosaicBrushLarge, 30);
+    QCOMPARE(ToolWidthDefaults::kMosaicBrushDefault, ToolWidthDefaults::kMosaicBrushSmall);
 }
 
 void tst_ToolWidthSlot::testMosaicPresetValidation_data()

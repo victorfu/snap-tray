@@ -16,7 +16,7 @@
  */
 class MosaicToolHandler : public IToolHandler {
 public:
-    static constexpr int kDefaultBrushWidth = ToolWidthDefaults::kMosaicBrush;
+    static constexpr int kDefaultBrushWidth = ToolWidthDefaults::kMosaicBrushDefault;
     static constexpr int kDefaultBlockSize = 6;
 
     MosaicToolHandler() = default;

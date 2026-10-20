@@ -14,7 +14,7 @@ struct MosaicWidthPreset
 
 constexpr MosaicWidthPreset kMosaicWidthPresets[] = {
     {ToolWidthDefaults::kMosaicBrushSmall, 6},
-    {ToolWidthDefaults::kMosaicBrush, 10},
+    {ToolWidthDefaults::kMosaicBrushMedium, 10},
     {ToolWidthDefaults::kMosaicBrushLarge, 14},
 };
 } // namespace

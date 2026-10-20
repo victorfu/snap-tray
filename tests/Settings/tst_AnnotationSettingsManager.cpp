@@ -242,7 +242,7 @@ void tst_AnnotationSettingsManager::testLoadWidthForTool_DefaultValues()
              AnnotationSettingsManager::kDefaultWidth);
     QCOMPARE(manager.loadWidthForTool(ToolId::Mosaic),
              AnnotationSettingsManager::kDefaultMosaicBrushSize);
-    QCOMPARE(AnnotationSettingsManager::kDefaultMosaicBrushSize, 18);
+    QCOMPARE(AnnotationSettingsManager::kDefaultMosaicBrushSize, 10);
 }
 
 void tst_AnnotationSettingsManager::testSaveLoadMosaicBrushSize_AllPresets()
@@ -250,7 +250,7 @@ void tst_AnnotationSettingsManager::testSaveLoadMosaicBrushSize_AllPresets()
     auto& manager = AnnotationSettingsManager::instance();
     const QList<int> presets = {
         ToolWidthDefaults::kMosaicBrushSmall,
-        ToolWidthDefaults::kMosaicBrush,
+        ToolWidthDefaults::kMosaicBrushMedium,
         ToolWidthDefaults::kMosaicBrushLarge,
     };
 

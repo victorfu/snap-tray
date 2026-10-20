@@ -6,8 +6,9 @@
 namespace ToolWidthDefaults {
 inline constexpr int kStroke = 3;
 inline constexpr int kMosaicBrushSmall = 10;
-inline constexpr int kMosaicBrush = 18;
+inline constexpr int kMosaicBrushMedium = 18;
 inline constexpr int kMosaicBrushLarge = 30;
+inline constexpr int kMosaicBrushDefault = kMosaicBrushSmall;
 } // namespace ToolWidthDefaults
 
 /**

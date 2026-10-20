@@ -11,7 +11,7 @@ const std::map<ToolId, WidthSlot> kWidthSlotOverrides = {
 
 constexpr std::array kMosaicWidthPresets = {
     ToolWidthDefaults::kMosaicBrushSmall,
-    ToolWidthDefaults::kMosaicBrush,
+    ToolWidthDefaults::kMosaicBrushMedium,
     ToolWidthDefaults::kMosaicBrushLarge,
 };
 

@@ -59,7 +59,7 @@ public:
 
     // Default values
     static constexpr int kDefaultWidth = ToolWidthDefaults::kStroke;
-    static constexpr int kDefaultMosaicBrushSize = ToolWidthDefaults::kMosaicBrush;
+    static constexpr int kDefaultMosaicBrushSize = ToolWidthDefaults::kMosaicBrushDefault;
     // Apple system red; must match DesignSystem::annotationRed() (UI layer).
     static QColor defaultColor() { return QColor(0xFF, 0x3B, 0x30); }
     static constexpr LineEndStyle kDefaultArrowStyle = LineEndStyle::EndArrow;
