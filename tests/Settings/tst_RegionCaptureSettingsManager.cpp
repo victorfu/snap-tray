@@ -23,6 +23,10 @@ private slots:
     void testFullScreenCaptureActionDefaultValue();
     void testFullScreenCaptureActionRoundtrip();
     void testFullScreenCaptureActionInvalidStoredValueFallsBack();
+    void testDelayedCaptureSecondsDefaultValue();
+    void testDelayedCaptureSecondsRoundtrip();
+    void testDelayedCaptureSecondsInvalidValuesFallBack();
+    void testDelayedCapturePresetsAreValid();
 
 private:
     void clearSettings();
@@ -44,6 +48,7 @@ void tst_RegionCaptureSettingsManager::clearSettings()
     settings.remove("regionCapture/cursorCompanionStyle");
     settings.remove("regionCapture/showShortcutHints");
     settings.remove("regionCapture/fullScreenCaptureAction");
+    settings.remove("regionCapture/delayedCaptureSeconds");
     settings.sync();
 }
 
@@ -157,6 +162,70 @@ void tst_RegionCaptureSettingsManager::testFullScreenCaptureActionInvalidStoredV
     QCOMPARE(
         RegionCaptureSettingsManager::instance().fullScreenCaptureAction(),
         RegionCaptureSettingsManager::kDefaultFullScreenCaptureAction);
+}
+
+void tst_RegionCaptureSettingsManager::testDelayedCaptureSecondsDefaultValue()
+{
+    QCOMPARE(RegionCaptureSettingsManager::instance().delayedCaptureSeconds(),
+             RegionCaptureSettingsManager::kDefaultDelayedCaptureSeconds);
+    QCOMPARE(RegionCaptureSettingsManager::kDefaultDelayedCaptureSeconds, 3);
+}
+
+void tst_RegionCaptureSettingsManager::testDelayedCaptureSecondsRoundtrip()
+{
+    auto settings = SnapTray::getSettings();
+    auto& manager = RegionCaptureSettingsManager::instance();
+
+    manager.setDelayedCaptureSeconds(10);
+    QCOMPARE(manager.delayedCaptureSeconds(), 10);
+    QCOMPARE(settings.value("regionCapture/delayedCaptureSeconds").toInt(), 10);
+
+    manager.setDelayedCaptureSeconds(5);
+    QCOMPARE(manager.delayedCaptureSeconds(), 5);
+    QCOMPARE(settings.value("regionCapture/delayedCaptureSeconds").toInt(), 5);
+}
+
+void tst_RegionCaptureSettingsManager::testDelayedCaptureSecondsInvalidValuesFallBack()
+{
+    auto settings = SnapTray::getSettings();
+    auto& manager = RegionCaptureSettingsManager::instance();
+
+    settings.setValue("regionCapture/delayedCaptureSeconds", 0);
+    QCOMPARE(manager.delayedCaptureSeconds(),
+             RegionCaptureSettingsManager::kDefaultDelayedCaptureSeconds);
+
+    settings.setValue("regionCapture/delayedCaptureSeconds", -5);
+    QCOMPARE(manager.delayedCaptureSeconds(),
+             RegionCaptureSettingsManager::kDefaultDelayedCaptureSeconds);
+
+    settings.setValue("regionCapture/delayedCaptureSeconds",
+                      RegionCaptureSettingsManager::kMaxDelayedCaptureSeconds + 1);
+    QCOMPARE(manager.delayedCaptureSeconds(),
+             RegionCaptureSettingsManager::kDefaultDelayedCaptureSeconds);
+
+    settings.setValue("regionCapture/delayedCaptureSeconds", QStringLiteral("bogus"));
+    QCOMPARE(manager.delayedCaptureSeconds(),
+             RegionCaptureSettingsManager::kDefaultDelayedCaptureSeconds);
+
+    // Writing an invalid delay stores the default rather than the bad value.
+    manager.setDelayedCaptureSeconds(0);
+    QCOMPARE(settings.value("regionCapture/delayedCaptureSeconds").toInt(),
+             RegionCaptureSettingsManager::kDefaultDelayedCaptureSeconds);
+}
+
+void tst_RegionCaptureSettingsManager::testDelayedCapturePresetsAreValid()
+{
+    const auto& presets = RegionCaptureSettingsManager::kDelayedCapturePresetSeconds;
+    QCOMPARE(int(presets.size()), 3);
+    QCOMPARE(presets[0], 3);
+    QCOMPARE(presets[1], 5);
+    QCOMPARE(presets[2], 10);
+    for (int seconds : presets) {
+        QVERIFY(RegionCaptureSettingsManager::isValidDelayedCaptureSeconds(seconds));
+    }
+    QVERIFY(!RegionCaptureSettingsManager::isValidDelayedCaptureSeconds(0));
+    QVERIFY(!RegionCaptureSettingsManager::isValidDelayedCaptureSeconds(
+        RegionCaptureSettingsManager::kMaxDelayedCaptureSeconds + 1));
 }
 
 QTEST_MAIN(tst_RegionCaptureSettingsManager)

@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-03-25
+last_modified_at: 2026-10-20
 layout: docs
 title: 區域截圖
 seo_title: "SnapTray 區域截圖：放大鏡、視窗偵測、多區域與快速匯出的高精度擷取"
@@ -26,6 +26,15 @@ doc_order: 1
 - `Open editor`，以選取整個螢幕的狀態開啟編輯，可先標註再複製或儲存
 
 截圖會加入 History。
+
+## 延遲截圖
+
+從 tray 選單的 `Delayed Capture` 子選單選擇 `3 秒`、`5 秒` 或 `10 秒`，可擷取一按快捷鍵就會消失的 UI，例如 hover 狀態、下拉選單、右鍵選單與 tooltip。倒數期間畫面上方會顯示小型倒數提示；它不會攔截滑鼠與鍵盤，所以你可以照常打開選單或將游標移到想擷取的控制項上。
+
+倒數結束後，SnapTray 會先隱藏倒數提示、凍結游標所在螢幕的畫面，再以該畫面進入 Region Capture。之後的流程與一般區域截圖相同，倒數提示不會出現在截圖中。
+
+- tray 會記住上次選擇的秒數。在 Settings > Hotkeys 綁定 `Delayed Capture` 快捷鍵，即可用鍵盤以該秒數啟動倒數。
+- 若要取消，從 tray 選單選擇 `Cancel Delayed Capture`，或再按一次 `Delayed Capture` 快捷鍵。倒數期間再次觸發截圖會被忽略。
 
 ## 選取行為
 

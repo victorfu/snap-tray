@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-06-13
+last_modified_at: 2026-10-20
 layout: docs
 title: ปุ่มลัด
 seo_title: "ปุ่มลัด SnapTray: ปุ่มลัดจับภาพและบันทึกเฉพาะแพลตฟอร์ม"
@@ -23,6 +23,7 @@ doc_order: 3
 ## การดำเนินการที่กำหนดค่าได้เพิ่มเติม (ไม่มีค่าเริ่มต้น)
 
 - Full Screen Capture
+- Delayed Capture
 - Pin from Image
 - Pin History
 - Toggle Hide/Show All Pins
