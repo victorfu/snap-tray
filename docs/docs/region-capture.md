@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-03-25
+last_modified_at: 2026-10-20
 layout: docs
 title: Region Capture
 seo_title: "SnapTray Region Capture: Precise Screenshots and Magnifier"
@@ -26,6 +26,15 @@ Choose what happens next in Settings > Advanced > `After full screen capture`:
 - `Open editor`, which opens the capture with the whole screen selected so you can annotate before copying or saving
 
 Captures are added to History.
+
+## Delayed capture
+
+Use `Delayed Capture` from the tray menu and pick `3 seconds`, `5 seconds`, or `10 seconds` to capture UI that disappears as soon as you press a key, such as hover states, dropdown menus, context menus, and tooltips. A small countdown pill appears at the top of the screen. It is click-through, so you can open the menu or hover the control you want while it counts down.
+
+When the countdown ends, SnapTray hides the pill, freezes the screen under the cursor, and opens Region Capture on that frozen frame. From there the flow is the same as a normal region capture, and the countdown pill never appears in the result.
+
+- The tray remembers the last delay you picked. Bind `Delayed Capture` in Settings > Hotkeys to start a countdown with that delay from the keyboard.
+- To cancel, choose `Cancel Delayed Capture` from the tray menu or press the `Delayed Capture` hotkey again. Starting another capture during the countdown is ignored.
 
 ## Selection behavior
 

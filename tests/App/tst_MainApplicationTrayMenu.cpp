@@ -17,6 +17,7 @@
 #include "PinWindowManager.h"
 #include "PinWindow.h"
 #include "pinwindow/PinWindowPlacement.h"
+#include "settings/RegionCaptureSettingsManager.h"
 #include "settings/Settings.h"
 #include "update/IUpdateService.h"
 #include "update/InstallSourceDetector.h"
@@ -138,6 +139,10 @@ private slots:
     void updateTrayMenuHotkeyText_updatesPasteAction();
     void updateTrayMenuHotkeyText_updatesFullScreenCaptureAction();
     void fullScreenCapture_usesTranslatedHotkeyAndTrayLabels();
+    void updateTrayMenuHotkeyText_updatesDelayedCaptureMenu();
+    void initialize_addsDelayedCaptureMenuAfterFullScreenCapture();
+    void delayedCapture_trayPresetStartsCountdownAndRemembersDelay();
+    void delayedCapture_hotkeyTogglesCountdownWithRememberedDelay();
     void updateTrayMenuHotkeyText_marksFailedHotkeyUnavailable();
     void updateTrayMenuHotkeyText_usesTranslatedPasteLabel();
     void initialize_directDownload_addsEnabledCheckForUpdatesActionBeforeSettings();
@@ -246,6 +251,134 @@ void tst_MainApplicationTrayMenu::fullScreenCapture_usesTranslatedHotkeyAndTrayL
     QCoreApplication::removeTranslator(&translator);
     manager().shutdown();
     manager().initialize();
+}
+
+void tst_MainApplicationTrayMenu::updateTrayMenuHotkeyText_updatesDelayedCaptureMenu()
+{
+    MainApplication application;
+    QMenu delayedCaptureMenu;
+    application.m_delayedCaptureMenu = &delayedCaptureMenu;
+
+    application.updateTrayMenuHotkeyText();
+    // Optional hotkey: no shortcut suffix until one is bound.
+    QCOMPARE(delayedCaptureMenu.menuAction()->text(), MainApplication::tr("Delayed Capture"));
+
+    QVERIFY(manager().updateHotkey(SnapTray::HotkeyAction::DelayedRegionCapture,
+                                   QStringLiteral("Ctrl+Shift+D")));
+    application.updateTrayMenuHotkeyText();
+    const QString displayHotkey = SnapTray::HotkeyManager::formatKeySequence(
+        manager().getConfig(SnapTray::HotkeyAction::DelayedRegionCapture).keySequence);
+    QVERIFY(!displayHotkey.isEmpty());
+    QCOMPARE(delayedCaptureMenu.menuAction()->text(),
+             MainApplication::tr("%1 (%2)").arg(MainApplication::tr("Delayed Capture"), displayHotkey));
+    application.m_delayedCaptureMenu = nullptr;
+}
+
+void tst_MainApplicationTrayMenu::initialize_addsDelayedCaptureMenuAfterFullScreenCapture()
+{
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+
+    MainApplication application;
+    application.initialize();
+
+    QVERIFY(application.m_delayedCaptureMenu);
+    QVERIFY(application.m_cancelDelayedCaptureAction);
+    const QList<QAction*> actions = application.m_trayMenu->actions();
+    const int fullScreenIndex = actions.indexOf(application.m_fullScreenCaptureAction);
+    QVERIFY(fullScreenIndex >= 0);
+    QCOMPARE(actions.at(fullScreenIndex + 1), application.m_delayedCaptureMenu->menuAction());
+    QCOMPARE(actions.at(fullScreenIndex + 2), application.m_cancelDelayedCaptureAction);
+    QVERIFY(!application.m_cancelDelayedCaptureAction->isVisible());
+    QVERIFY(application.m_delayedCaptureMenu->isEnabled());
+
+    // One checkable preset per delay, the remembered (default) delay checked.
+    const auto& presets = RegionCaptureSettingsManager::kDelayedCapturePresetSeconds;
+    QCOMPARE(application.m_delayedCapturePresetActions.size(), int(presets.size()));
+    QCOMPARE(application.m_delayedCaptureMenu->actions().size(), int(presets.size()));
+    for (int i = 0; i < int(presets.size()); ++i) {
+        QAction* preset = application.m_delayedCapturePresetActions.at(i);
+        QCOMPARE(preset->data().toInt(), presets[i]);
+        QCOMPARE(preset->text(), MainApplication::tr("%n seconds", nullptr, presets[i]));
+        QVERIFY(preset->isCheckable());
+        QCOMPARE(preset->isChecked(),
+                 presets[i] == RegionCaptureSettingsManager::kDefaultDelayedCaptureSeconds);
+    }
+}
+
+void tst_MainApplicationTrayMenu::delayedCapture_trayPresetStartsCountdownAndRemembersDelay()
+{
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+
+    MainApplication application;
+    application.initialize();
+    CaptureManager* captureManager = application.m_captureManager;
+    QSignalSpy cancelled(captureManager, &CaptureManager::captureCancelled);
+    QSignalSpy started(captureManager, &CaptureManager::captureStarted);
+
+    QAction* fiveSeconds = application.m_delayedCapturePresetActions.at(1);
+    QCOMPARE(fiveSeconds->data().toInt(), 5);
+    fiveSeconds->trigger();
+
+    QVERIFY(captureManager->isDelayedCapturePending());
+    QCOMPARE(captureManager->delayedCaptureRemainingSeconds(), 5);
+    QCOMPARE(RegionCaptureSettingsManager::instance().delayedCaptureSeconds(), 5);
+    QVERIFY(fiveSeconds->isChecked());
+    QVERIFY(application.m_cancelDelayedCaptureAction->isVisible());
+    QVERIFY(!application.m_delayedCaptureMenu->isEnabled());
+    QCOMPARE(started.count(), 0);
+
+    // Another preset during the countdown is ignored and must not move the check mark.
+    QAction* tenSeconds = application.m_delayedCapturePresetActions.at(2);
+    tenSeconds->trigger();
+    QCOMPARE(captureManager->delayedCaptureRemainingSeconds(), 5);
+    QCOMPARE(RegionCaptureSettingsManager::instance().delayedCaptureSeconds(), 5);
+    QVERIFY(fiveSeconds->isChecked());
+    QVERIFY(!tenSeconds->isChecked());
+
+    // Region and full screen capture stay out while the countdown owns the screen.
+    application.onRegionCapture();
+    application.onFullScreenCapture();
+    QCOMPARE(started.count(), 0);
+    QVERIFY(!captureManager->isFullScreenCaptureInProgress());
+
+    application.m_cancelDelayedCaptureAction->trigger();
+    QVERIFY(!captureManager->isDelayedCapturePending());
+    QVERIFY(!captureManager->isActive());
+    QCOMPARE(cancelled.count(), 1);
+    QVERIFY(!application.m_cancelDelayedCaptureAction->isVisible());
+    QVERIFY(application.m_delayedCaptureMenu->isEnabled());
+    QCOMPARE(started.count(), 0);
+}
+
+void tst_MainApplicationTrayMenu::delayedCapture_hotkeyTogglesCountdownWithRememberedDelay()
+{
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    RegionCaptureSettingsManager::instance().setDelayedCaptureSeconds(10);
+
+    MainApplication application;
+    application.initialize();
+    CaptureManager* captureManager = application.m_captureManager;
+    QSignalSpy cancelled(captureManager, &CaptureManager::captureCancelled);
+
+    application.onHotkeyAction(SnapTray::HotkeyAction::DelayedRegionCapture);
+    QVERIFY(captureManager->isDelayedCapturePending());
+    QCOMPARE(captureManager->delayedCaptureRemainingSeconds(), 10);
+    QVERIFY(application.m_cancelDelayedCaptureAction->isVisible());
+
+    // Pressing the hotkey again cancels the countdown.
+    application.onHotkeyAction(SnapTray::HotkeyAction::DelayedRegionCapture);
+    QVERIFY(!captureManager->isDelayedCapturePending());
+    QCOMPARE(cancelled.count(), 1);
+    QVERIFY(!application.m_cancelDelayedCaptureAction->isVisible());
+
+    // CLI commands preempt a pending countdown like any other active capture.
+    application.onHotkeyAction(SnapTray::HotkeyAction::DelayedRegionCapture);
+    QVERIFY(captureManager->isDelayedCapturePending());
+    SnapTray::CLI::IPCMessage command;
+    command.command = QStringLiteral("pin");  // no file/clipboard option: nothing to pin
+    application.handleCLICommand(command.toJson());
+    QVERIFY(!captureManager->isDelayedCapturePending());
+    QCOMPARE(cancelled.count(), 2);
 }
 
 void tst_MainApplicationTrayMenu::updateTrayMenuHotkeyText_marksFailedHotkeyUnavailable()
@@ -484,7 +617,9 @@ void tst_MainApplicationTrayMenu::queuedHistoryEntryRechecksCaptureMode()
     QSignalSpy captureStarted(application.m_captureManager, &CaptureManager::captureStarted);
     application.onHotkeyAction(SnapTray::HotkeyAction::RegionCapture);
     application.onHotkeyAction(SnapTray::HotkeyAction::CaptureFullScreen);
+    application.onHotkeyAction(SnapTray::HotkeyAction::DelayedRegionCapture);
     QCOMPARE(captureStarted.count(), 0);
+    QVERIFY(!application.m_captureManager->isDelayedCapturePending());
     application.closeScreenPicker();
     QVERIFY(application.startHistoryReplay("test-entry"));
     QCOMPARE(replayCalls, 1);
@@ -496,7 +631,9 @@ void tst_MainApplicationTrayMenu::queuedHistoryEntryRechecksCaptureMode()
         QVERIFY(!application.startHistoryReplay("test-entry"));
         application.onRegionCapture();
         application.onFullScreenCapture();
+        application.onDelayedCaptureHotkey();
         QCOMPARE(captureStarted.count(), 0);
+        QVERIFY(!application.m_captureManager->isDelayedCapturePending());
         QCOMPARE(replayCalls, 1);
     }
     // The preview window is an ordinary window: captures and history replay stay available.
@@ -537,9 +674,11 @@ void tst_MainApplicationTrayMenu::clearAllTestSettings()
     clearSetting(SnapTray::kSettingsKeyHistoryWindowHotkey);
     clearSetting(SnapTray::kSettingsKeyTogglePinsVisibilityHotkey);
     clearSetting(SnapTray::kSettingsKeyRecordFullScreenHotkey);
+    clearSetting(SnapTray::kSettingsKeyDelayedRegionCaptureHotkey);
 
     auto settings = SnapTray::getSettings();
     settings.remove(QString::fromLatin1(SnapTray::kSettingsKeyHotkeyRegistrationCounter));
+    settings.remove(QStringLiteral("regionCapture/delayedCaptureSeconds"));
     settings.remove(QStringLiteral("update/autoCheck"));
     settings.remove(QStringLiteral("update/checkIntervalHours"));
     settings.remove(QStringLiteral("update/lastCheckTime"));

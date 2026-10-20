@@ -9,6 +9,7 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 ### Added
 
 - Added Full Screen Capture to the tray menu, with an optional hotkey. It captures the screen under the cursor at native resolution, leaves SnapTray's own windows out, and can copy, save, or open the capture in the editor. Captures are added to History.
+- Added Delayed Capture to the tray menu, with 3, 5, and 10 second countdowns and an optional hotkey. A click-through countdown pill lets you open menus or hover controls first; when it ends, SnapTray hides the pill, freezes the screen, and opens Region Capture on it. The countdown can be cancelled from the tray or by pressing the hotkey again.
 
 ## [1.0.68] - 2026-10-11
 

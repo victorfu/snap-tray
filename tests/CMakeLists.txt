@@ -408,6 +408,28 @@ if(TARGET Qt6::QOffscreenIntegrationPlugin)
         "QT_QPA_PLATFORM_PLUGIN_PATH=$<TARGET_FILE_DIR:Qt6::QOffscreenIntegrationPlugin>")
 endif()
 
+add_executable(App_DelayedCapture
+    App/tst_DelayedCapture.cpp
+    ${CMAKE_SOURCE_DIR}/src/CaptureManager.cpp
+    ${CMAKE_SOURCE_DIR}/include/CaptureManager.h
+)
+target_include_directories(App_DelayedCapture PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_BINARY_DIR}/generated
+    ${CMAKE_BINARY_DIR}
+)
+target_link_libraries(App_DelayedCapture PRIVATE
+    snaptray_ui
+    snaptray_platform
+    snaptray_algorithms
+    snaptray_core
+    snaptray_qmlplugin
+    Qt6::Test
+)
+add_test(NAME App_DelayedCapture COMMAND App_DelayedCapture)
+set_tests_properties(App_DelayedCapture PROPERTIES TIMEOUT 60 LABELS "unit")
+
 if(WIN32)
     add_executable(Qml_QtQuickBackendWin Qml/tst_QtQuickBackendWin.cpp)
     target_link_libraries(Qml_QtQuickBackendWin PRIVATE snaptray_platform Qt6::Qml Qt6::Quick Qt6::Test)
