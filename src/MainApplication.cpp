@@ -15,6 +15,7 @@
 #include "ImageColorSpaceHelper.h"
 #include "cli/IPCProtocol.h"
 #include "hotkey/HotkeyManager.h"
+#include "settings/RegionCaptureSettingsManager.h"
 #include "qml/QmlToast.h"
 #include "qml/RecordingPreviewBackend.h"
 #include "recording/WindowTimelineSidecar.h"
@@ -33,6 +34,7 @@
 #include <QSystemTrayIcon>
 #include <QMenu>
 #include <QAction>
+#include <QActionGroup>
 #include <QCoreApplication>
 #include <QGuiApplication>
 #include <QApplication>
@@ -344,6 +346,29 @@ void MainApplication::initialize()
     connect(m_fullScreenCaptureAction, &QAction::triggered,
             this, &MainApplication::onFullScreenCapture);
 
+    // Delayed Capture: pick a countdown, interact with the screen, then capture.
+    m_delayedCaptureMenu = m_trayMenu->addMenu(tr("Delayed Capture"));
+    auto* delayedCaptureGroup = new QActionGroup(m_delayedCaptureMenu);
+    delayedCaptureGroup->setExclusive(true);
+    for (int seconds : RegionCaptureSettingsManager::kDelayedCapturePresetSeconds) {
+        QAction* presetAction = m_delayedCaptureMenu->addAction(
+            tr("%n seconds", nullptr, seconds));
+        presetAction->setCheckable(true);
+        presetAction->setData(seconds);
+        delayedCaptureGroup->addAction(presetAction);
+        connect(presetAction, &QAction::triggered, this, [this, seconds]() {
+            startDelayedCapture(seconds);
+        });
+        m_delayedCapturePresetActions.append(presetAction);
+    }
+    m_cancelDelayedCaptureAction = m_trayMenu->addAction(tr("Cancel Delayed Capture"));
+    m_cancelDelayedCaptureAction->setVisible(false);
+    connect(m_cancelDelayedCaptureAction, &QAction::triggered,
+            this, &MainApplication::onCancelDelayedCapture);
+    connect(m_captureManager, &CaptureManager::delayedCaptureStateChanged,
+            this, &MainApplication::onDelayedCaptureStateChanged);
+    updateDelayedCaptureMenu();
+
     m_screenCanvasAction = m_trayMenu->addAction(tr("Screen Canvas"));
     connect(m_screenCanvasAction, &QAction::triggered, this, &MainApplication::onScreenCanvas);
 
@@ -520,6 +545,57 @@ void MainApplication::onFullScreenCapture()
     if (!canStartRegionCapture() || m_captureManager->isActive()) return;
 
     m_captureManager->startFullScreenCapture();
+}
+
+void MainApplication::startDelayedCapture(int delaySeconds)
+{
+    if (!canStartRegionCapture() || m_captureManager->isActive()) {
+        // Re-check the menu: a preset click while a countdown runs must not move
+        // the check mark away from the delay that is actually in use.
+        updateDelayedCaptureMenu();
+        return;
+    }
+
+    // Remember the choice so the hotkey reuses it.
+    RegionCaptureSettingsManager::instance().setDelayedCaptureSeconds(delaySeconds);
+    updateDelayedCaptureMenu();
+    m_captureManager->startDelayedRegionCapture(delaySeconds, true);
+}
+
+void MainApplication::onDelayedCaptureHotkey()
+{
+    if (m_captureManager && m_captureManager->isDelayedCapturePending()) {
+        // Pressing the hotkey again during the countdown cancels it.
+        m_captureManager->cancelDelayedCapture();
+        return;
+    }
+
+    startDelayedCapture(RegionCaptureSettingsManager::instance().delayedCaptureSeconds());
+}
+
+void MainApplication::onCancelDelayedCapture()
+{
+    if (m_captureManager) {
+        m_captureManager->cancelDelayedCapture();
+    }
+}
+
+void MainApplication::onDelayedCaptureStateChanged(bool pending)
+{
+    if (m_delayedCaptureMenu) {
+        m_delayedCaptureMenu->setEnabled(!pending);
+    }
+    if (m_cancelDelayedCaptureAction) {
+        m_cancelDelayedCaptureAction->setVisible(pending);
+    }
+}
+
+void MainApplication::updateDelayedCaptureMenu()
+{
+    const int currentSeconds = RegionCaptureSettingsManager::instance().delayedCaptureSeconds();
+    for (QAction* presetAction : std::as_const(m_delayedCapturePresetActions)) {
+        presetAction->setChecked(presetAction->data().toInt() == currentSeconds);
+    }
 }
 
 void MainApplication::onQuickPin()
@@ -790,6 +866,9 @@ void MainApplication::onHotkeyAction(SnapTray::HotkeyAction action)
     case HotkeyAction::CaptureFullScreen:
         onFullScreenCapture();
         break;
+    case HotkeyAction::DelayedRegionCapture:
+        onDelayedCaptureHotkey();
+        break;
     case HotkeyAction::ScreenCanvas:
         onScreenCanvas();
         break;
@@ -1036,6 +1115,9 @@ void MainApplication::updateTrayMenuHotkeyText()
     updateActionHotkeyText(m_fullScreenCaptureAction,
                            SnapTray::HotkeyAction::CaptureFullScreen,
                            tr("Full Screen Capture"));
+    updateActionHotkeyText(m_delayedCaptureMenu ? m_delayedCaptureMenu->menuAction() : nullptr,
+                           SnapTray::HotkeyAction::DelayedRegionCapture,
+                           tr("Delayed Capture"));
     updateActionHotkeyText(m_screenCanvasAction,
                            SnapTray::HotkeyAction::ScreenCanvas,
                            tr("Screen Canvas"));

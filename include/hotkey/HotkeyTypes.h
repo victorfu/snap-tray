@@ -31,6 +31,7 @@ enum class HotkeyAction {
     // Capture actions (100-199)
     RegionCapture = 100,
     CaptureFullScreen = 101,
+    DelayedRegionCapture = 102,
 
     // Canvas actions (200-299)
     ScreenCanvas = 200,
@@ -119,6 +120,14 @@ inline constexpr HotkeyMetadata kDefaultHotkeys[] = {
         QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Full Screen Capture"),
         QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Capture the screen under the cursor"),
         "captureFullScreenHotkey",
+        ""  // Optional, no default
+    },
+    {
+        HotkeyAction::DelayedRegionCapture,
+        HotkeyCategory::Capture,
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Delayed Capture"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Start a countdown, then capture a region"),
+        "delayedRegionCaptureHotkey",
         ""  // Optional, no default
     },
     {
