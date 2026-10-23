@@ -39,7 +39,11 @@ public:
     bool supportsLineStyle() const override { return true; }
 
 private:
+    void updateStraightStroke(const QPointF& pos);
+
     bool m_isDrawing = false;
+    // Latch Shift at press so modifier changes cannot reshape an active stroke.
+    bool m_straightStroke = false;
     std::unique_ptr<PencilStroke> m_currentStroke;
     QRect m_previewDirtyRect;
 

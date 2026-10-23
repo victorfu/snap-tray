@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-02-26
+last_modified_at: 2026-10-23
 layout: docs
 title: Annotation Tools
 seo_title: "SnapTray Annotation Tools: Draw, Text, Mosaic and Steps"
@@ -30,6 +30,12 @@ doc_order: 2
 
 - Mosaic
 - Eraser
+
+## Straight pencil and marker strokes
+
+Hold `Shift` before pressing the left mouse button, then drag with Pencil or Marker to draw a straight stroke from the starting point to the cursor. The line can follow any angle and keeps the tool’s normal style, including the marker’s transparency. Each stroke is one Undo/Redo step.
+
+The Shift state at the start determines the mode for the entire stroke. Pressing or releasing Shift during a drag does not switch modes. Start without Shift for normal freehand drawing. This works in Region Capture, Pin Windows, and Screen Canvas.
 
 ## Editing workflow
 

@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-02-26
+last_modified_at: 2026-10-23
 layout: docs
 title: 標註工具
 seo_title: "SnapTray 標註工具：用箭頭、文字、馬賽克與步驟標號清楚標示重點"
@@ -30,6 +30,12 @@ doc_order: 2
 
 - Mosaic
 - Eraser
+
+## 鉛筆與螢光筆直線
+
+使用 Pencil 或 Marker 時，先按住 `Shift`，再按住滑鼠左鍵拖曳，即可從起點到游標畫出任意角度的直線。直線沿用工具原本的樣式，包含螢光筆的透明效果；每筆直線可單獨 Undo／Redo。
+
+起筆時的 Shift 狀態會決定整筆模式，拖曳途中按下或放開 Shift 不會切換。起筆時未按 Shift，則維持自由手繪。區域截圖、釘選視窗與螢幕畫布的操作相同。
 
 ## 建議編修流程
 
