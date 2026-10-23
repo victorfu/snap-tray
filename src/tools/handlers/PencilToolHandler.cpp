@@ -20,6 +20,7 @@ void PencilToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
 
 void PencilToolHandler::onMousePressF(ToolContext* ctx, const QPointF& pos) {
     m_isDrawing = true;
+    m_straightStroke = ctx->shiftPressed;
     const QVector<QPointF> initialPoints{pos};
 
     // Initialize smoothing state
@@ -42,6 +43,12 @@ void PencilToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
 
 void PencilToolHandler::onMouseMoveF(ToolContext* ctx, const QPointF& pos) {
     if (!m_isDrawing || !m_currentStroke || !m_hasSmoothedPoint) {
+        return;
+    }
+
+    if (m_straightStroke) {
+        updateStraightStroke(pos);
+        ctx->repaint();
         return;
     }
 
@@ -106,7 +113,9 @@ void PencilToolHandler::onMouseReleaseF(ToolContext* ctx, const QPointF& pos) {
 
     // Add final point (use raw position for accurate endpoint)
     const QPointF finalPoint = pos;
-    if (m_currentStroke &&
+    if (m_straightStroke && m_currentStroke) {
+        updateStraightStroke(finalPoint);
+    } else if (m_currentStroke &&
         (m_currentStroke->points().isEmpty() || m_currentStroke->points().last() != finalPoint)) {
         m_currentStroke->addPoint(finalPoint);
     }
@@ -121,6 +130,7 @@ void PencilToolHandler::onMouseReleaseF(ToolContext* ctx, const QPointF& pos) {
 
     // Reset state
     m_isDrawing = false;
+    m_straightStroke = false;
     m_currentStroke.reset();
     m_hasSmoothedPoint = false;
     m_previewDirtyRect = QRect();
@@ -128,6 +138,20 @@ void PencilToolHandler::onMouseReleaseF(ToolContext* ctx, const QPointF& pos) {
     if (!committedStroke) {
         ctx->repaint();
     }
+}
+
+void PencilToolHandler::updateStraightStroke(const QPointF& pos)
+{
+    const QRect oldBounds = m_currentStroke->previewAffectedBoundingRect();
+    const QPointF start = m_currentStroke->points().first();
+    QVector<QPointF> points{start};
+    if (pos != start) {
+        points.append(pos);
+    }
+    // Rebuild only the two endpoints, retaining the style captured at press.
+    m_currentStroke = std::make_unique<PencilStroke>(
+        points, m_currentStroke->color(), m_currentStroke->width(), m_currentStroke->lineStyle());
+    m_previewDirtyRect = oldBounds.united(m_currentStroke->previewAffectedBoundingRect());
 }
 
 void PencilToolHandler::drawPreview(QPainter& painter) const {
@@ -146,6 +170,7 @@ QRect PencilToolHandler::previewBounds() const
 
 void PencilToolHandler::cancelDrawing() {
     m_isDrawing = false;
+    m_straightStroke = false;
     m_currentStroke.reset();
     m_hasSmoothedPoint = false;
     m_previewDirtyRect = QRect();

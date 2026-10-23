@@ -63,6 +63,7 @@ void MarkerToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
 
 void MarkerToolHandler::onMousePressF(ToolContext* ctx, const QPointF& pos) {
     m_isDrawing = true;
+    m_straightStroke = ctx->shiftPressed;
     m_currentPath.clear();
     m_currentPath.append(pos);
 
@@ -80,6 +81,12 @@ void MarkerToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
 
 void MarkerToolHandler::onMouseMoveF(ToolContext* ctx, const QPointF& pos) {
     if (!m_isDrawing || !m_currentStroke) {
+        return;
+    }
+
+    if (m_straightStroke) {
+        updateStraightStroke(pos);
+        ctx->repaint();
         return;
     }
 
@@ -108,7 +115,9 @@ void MarkerToolHandler::onMouseReleaseF(ToolContext* ctx, const QPointF& pos) {
 
     // Avoid a tiny release-only terminal segment; with a wide round-cap marker
     // that can show up as a visible end bump.
-    if (shouldAppendPoint(ctx, m_currentPath, pos)) {
+    if (m_straightStroke && m_currentStroke) {
+        updateStraightStroke(pos);
+    } else if (shouldAppendPoint(ctx, m_currentPath, pos)) {
         m_currentPath.append(pos);
         if (m_currentStroke) {
             m_currentStroke->addPoint(pos);
@@ -124,6 +133,7 @@ void MarkerToolHandler::onMouseReleaseF(ToolContext* ctx, const QPointF& pos) {
 
     // Reset state
     m_isDrawing = false;
+    m_straightStroke = false;
     m_currentPath.clear();
     m_currentStroke.reset();
     m_previewDirtyRect = QRect();
@@ -131,6 +141,19 @@ void MarkerToolHandler::onMouseReleaseF(ToolContext* ctx, const QPointF& pos) {
     if (!committedStroke) {
         ctx->repaint();
     }
+}
+
+void MarkerToolHandler::updateStraightStroke(const QPointF& pos)
+{
+    const QRect oldBounds = tailDirtyRect(m_currentPath, kMarkerWidth);
+    const QPointF start = m_currentPath.first();
+    m_currentPath = {start};
+    if (pos != start) {
+        m_currentPath.append(pos);
+    }
+    m_currentStroke = std::make_unique<MarkerStroke>(
+        m_currentPath, m_currentStroke->color(), m_currentStroke->width());
+    m_previewDirtyRect = oldBounds.united(tailDirtyRect(m_currentPath, kMarkerWidth));
 }
 
 void MarkerToolHandler::drawPreview(QPainter& painter) const {
@@ -149,6 +172,7 @@ QRect MarkerToolHandler::previewBounds() const
 
 void MarkerToolHandler::cancelDrawing() {
     m_isDrawing = false;
+    m_straightStroke = false;
     m_currentPath.clear();
     m_currentStroke.reset();
     m_previewDirtyRect = QRect();
