@@ -308,6 +308,11 @@ if(APPLE)
     add_test(NAME Platform_MacTrayActivationGuard COMMAND Platform_MacTrayActivationGuard)
     set_tests_properties(Platform_MacTrayActivationGuard PROPERTIES TIMEOUT 30 LABELS "unit;integration")
 
+    add_executable(Platform_MacDockPresence Platform/tst_MacDockPresence.mm)
+    target_link_libraries(Platform_MacDockPresence PRIVATE snaptray_platform Qt6::Test)
+    add_test(NAME Platform_MacDockPresence COMMAND Platform_MacDockPresence)
+    set_tests_properties(Platform_MacDockPresence PROPERTIES TIMEOUT 30 LABELS "unit;integration")
+
     add_executable(Platform_GuiClipboardOrdering Platform/tst_GuiClipboardOrdering.mm)
     target_link_libraries(Platform_GuiClipboardOrdering PRIVATE snaptray_platform Qt6::Test)
     add_test(NAME Platform_GuiClipboardOrdering COMMAND Platform_GuiClipboardOrdering)
@@ -1374,6 +1379,13 @@ add_executable(Update_InstallSourceDetector Update/tst_InstallSourceDetector.cpp
 target_link_libraries(Update_InstallSourceDetector PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Update_InstallSourceDetector COMMAND Update_InstallSourceDetector)
 set_tests_properties(Update_InstallSourceDetector PROPERTIES TIMEOUT 60 LABELS "unit")
+
+if(APPLE)
+    add_executable(Update_SparkleGentleReminders Update/tst_SparkleGentleReminders.mm)
+    target_link_libraries(Update_SparkleGentleReminders PRIVATE snaptray_ui Qt6::Test)
+    add_test(NAME Update_SparkleGentleReminders COMMAND Update_SparkleGentleReminders)
+    set_tests_properties(Update_SparkleGentleReminders PROPERTIES TIMEOUT 30 LABELS "unit;integration")
+endif()
 
 add_test(
     NAME Update_GenerateAppcast
