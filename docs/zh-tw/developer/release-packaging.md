@@ -17,7 +17,11 @@ docs_copy_key: developer
 
 ### macOS
 
+打包需要 Qt 6.12.0 SDK（含 `qtimageformats`），並檢查版本；
+CMake 與 `macdeployqt` 使用同一份 SDK。
+
 ```bash
+export QT_ROOT_DIR="$HOME/Qt/6.12.0/macos"
 ./packaging/macos/package.sh
 # 輸出：dist/SnapTray-<version>-macOS.dmg
 ```
@@ -43,7 +47,13 @@ packaging\windows\package.bat msix      REM 只建置 MSIX
 
 ### Linux
 
+CI 與 AppImage 打包固定使用 Qt 6.12.0 `linux_gcc_64` SDK（含 `qtimageformats`）。
+腳本預設選取 `$HOME/Qt/6.12.0/gcc_64`，可用 `QT_ROOT_DIR` 指定其他安裝位置，
+但會拒絕其他版本。CMake 與 linuxdeploy 使用同一份 SDK，並清除舊 Qt 套件路徑快取。
+驗證 clean release build 時請使用全新的 `release-linux` 目錄。
+
 ```bash
+export QT_ROOT_DIR="$HOME/Qt/6.12.0/gcc_64"
 ./packaging/linux/package-appimage.sh
 # Output: dist/SnapTray-<version>-x86_64.AppImage
 ```
@@ -76,13 +86,13 @@ X11 測試環境，並確認 Wayland 與 offscreen session 仍不受支援。
 
 ### macOS
 
-- 已安裝 Qt 6
+- 已安裝 Qt 6.12.0（含 `qtimageformats`）
 - Xcode Command Line Tools
 - 可選 `create-dmg` 以美化 DMG 視覺
 
 ### Windows
 
-- 已安裝 Qt 6
+- 已安裝 Qt 6.12.0（含 `qtimageformats`）
 - Visual Studio Build Tools 或 Visual Studio
 - NSIS（產出 NSIS 安裝程式）
 - Windows 10 SDK（產出 MSIX）
@@ -90,7 +100,7 @@ X11 測試環境，並確認 Wayland 與 offscreen session 仍不受支援。
 若 Qt 不是安裝在預設路徑，可設定：
 
 ```batch
-set QT_PATH=C:\Qt\6.11.2\msvc2022_64
+set QT_PATH=C:\Qt\6.12.0\msvc2022_64
 ```
 
 ## Release Notes 與版本規則

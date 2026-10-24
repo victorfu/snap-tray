@@ -38,7 +38,7 @@ scripts\build-and-run-release.bat   REM Release build + run app
 
 ### Linux beta
 
-Use Ubuntu 22.04 X11 with Qt 6.11.2 for the supported Linux beta target.
+Use Ubuntu 22.04 X11 with Qt 6.12.0 for the supported Linux beta target.
 
 ```bash
 ./scripts/build.sh                  # Debug build
@@ -52,7 +52,7 @@ For routine verification, use the build and test scripts. Running the app is onl
 
 ## Prerequisites
 
-- Qt 6.12.0 on Windows/macOS; Qt 6.11.2 on Linux beta
+- Qt 6.12.0 on all supported platforms
 - CMake 3.16+
 - Ninja
 - macOS: Xcode Command Line Tools

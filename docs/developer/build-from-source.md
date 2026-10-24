@@ -24,7 +24,7 @@ SnapTray currently supports macOS, Windows, and Ubuntu 22.04 X11 beta.
 
 ### Development prerequisites
 
-- Qt 6.12.0 on Windows/macOS; Qt 6.11.2 on Linux, with Widgets, Gui, Svg, Concurrent, Network, Quick, QuickControls2, and QuickWidgets
+- Qt 6.12.0 on all supported platforms, with Widgets, Gui, Svg, Concurrent, Network, Quick, QuickControls2, and QuickWidgets
 - Qt Image Formats add-on (`qtimageformats`) for WebP/TIFF image import
 - CMake 3.16+
 - Ninja
@@ -35,7 +35,7 @@ SnapTray currently supports macOS, Windows, and Ubuntu 22.04 X11 beta.
 ### Linux
 
 - Ubuntu 22.04 X11 session
-- Qt 6.11.2 with Widgets, Gui, Svg, Concurrent, Network, Quick, QuickControls2, and QuickWidgets
+- Qt 6.12.0 with Widgets, Gui, Svg, Concurrent, Network, Quick, QuickControls2, and QuickWidgets
 - Qt Image Formats add-on (`qtimageformats`) for WebP/TIFF image import
 - CMake 3.16+
 - Ninja
@@ -73,12 +73,20 @@ export QT_ROOT_DIR="$HOME/Qt/6.12.0/macos"
 
 ### Linux
 
-Ubuntu 22.04 X11 beta uses the same shell scripts as macOS:
+Ubuntu 22.04 X11 beta uses the Qt 6.12.0 `linux_gcc_64` SDK with
+`qtimageformats`, matching Linux CI and AppImage packaging. Select it explicitly:
 
 ```bash
+export QT_ROOT_DIR="$HOME/Qt/6.12.0/gcc_64"
 ./scripts/build.sh
+./scripts/build-release.sh
 ./scripts/run-tests.sh
 ```
+
+When switching Qt versions, move aside or remove `build`, `release`, and
+`release-linux` before building. The local scripts can otherwise retain cached
+Qt package paths. For a clean verification build, also set `CCACHE_DISABLE=1`
+to compile without reusing compiler-cache results.
 
 ### Windows
 

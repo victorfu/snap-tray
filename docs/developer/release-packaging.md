@@ -78,7 +78,14 @@ with the new inputs after this workflow is present on the default branch.
 
 ### Linux
 
+Linux CI and AppImage packaging use Qt 6.12.0 (`linux_gcc_64`, including
+`qtimageformats`). Packaging defaults to `$HOME/Qt/6.12.0/gcc_64`, accepts
+`QT_ROOT_DIR` for another installation location, and rejects other versions.
+CMake and linuxdeploy use the same SDK; cached Qt package paths are refreshed.
+For clean release validation, start with a fresh `release-linux` directory.
+
 ```bash
+export QT_ROOT_DIR="$HOME/Qt/6.12.0/gcc_64"
 ./packaging/linux/package-appimage.sh
 # Output: dist/SnapTray-<version>-x86_64.AppImage
 ```

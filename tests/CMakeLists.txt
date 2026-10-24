@@ -47,6 +47,10 @@ if(WIN32)
 endif()
 
 if(UNIX AND NOT APPLE)
+    add_test(NAME Packaging_LinuxQtSelection
+        COMMAND ${Python3_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_LinuxQtSelection.py"
+                "${CMAKE_SOURCE_DIR}")
+    set_tests_properties(Packaging_LinuxQtSelection PROPERTIES TIMEOUT 60 LABELS "unit;packaging")
     add_test(
         NAME Packaging_AppImageFormat
         COMMAND bash "${CMAKE_CURRENT_SOURCE_DIR}/Packaging/tst_AppImageFormat.sh" "${CMAKE_SOURCE_DIR}"

@@ -25,6 +25,21 @@ for tool in python3 xvfb-run xauth; do
   fi
 done
 
+# Build and deploy with the same pinned SDK as Linux CI.
+QT_ROOT_DIR="${QT_ROOT_DIR:-$HOME/Qt/6.12.0/gcc_64}"
+if [ ! -x "$QT_ROOT_DIR/bin/qmake" ] || [ ! -f "$QT_ROOT_DIR/lib/cmake/Qt6/Qt6Config.cmake" ]; then
+  echo "Set QT_ROOT_DIR to a complete Qt 6.12.0 Linux SDK." >&2
+  exit 1
+fi
+QT_VERSION="$("$QT_ROOT_DIR/bin/qmake" -query QT_VERSION)"
+if [ "$QT_VERSION" != "6.12.0" ]; then
+  echo "Linux packaging requires Qt 6.12.0; found $QT_VERSION at $QT_ROOT_DIR." >&2
+  exit 1
+fi
+export QT_ROOT_DIR
+export PATH="$QT_ROOT_DIR/bin:$PATH"
+export QMAKE="$QT_ROOT_DIR/bin/qmake"
+
 mkdir -p "$DIST_DIR" "$TOOLS_DIR" "$TOOLS_DOWNLOADS_DIR"
 rm -rf "$APPDIR"
 
@@ -34,13 +49,10 @@ CMAKE_ARGS=(
   -G Ninja
   -DCMAKE_BUILD_TYPE=Release
   -DSNAPTRAY_ENABLE_LINUX_RECORDING=ON
+  -U 'Qt6*_DIR' -U QT_DIR
+  "-DCMAKE_PREFIX_PATH=$QT_ROOT_DIR"
+  "-DQt6_DIR:PATH=$QT_ROOT_DIR/lib/cmake/Qt6"
 )
-
-if [ -n "${QT_ROOT_DIR:-}" ]; then
-  CMAKE_ARGS+=("-DCMAKE_PREFIX_PATH=$QT_ROOT_DIR")
-  export PATH="$QT_ROOT_DIR/bin:$PATH"
-  export QMAKE="$QT_ROOT_DIR/bin/qmake"
-fi
 
 cmake "${CMAKE_ARGS[@]}"
 cmake --build "$BUILD_DIR" --target SnapTray --parallel "${CMAKE_BUILD_PARALLEL_LEVEL:-4}"
