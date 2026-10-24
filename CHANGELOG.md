@@ -6,9 +6,24 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+## [1.0.69] - 2026-10-24
+
 ### Added
 
 - Added Full Screen Capture to the tray menu, with an optional hotkey. It captures the screen under the cursor at native resolution, leaves SnapTray's own windows out, and can copy, save, or open the capture in the editor. Captures are added to History.
+- Hold Shift to draw straight pencil and marker strokes.
+
+### Improved
+
+- Reduced selection toolbar display latency on Windows and deferred toolbar text label creation until needed.
+- Mosaic now starts with the small brush preset for more precise edits.
+- Updated the Qt runtime to 6.12.0 across macOS, Windows, and Linux.
+
+### Fixed
+
+- Restored capture exclusion for translucent SnapTray windows on Windows.
+- Fixed initial pinned-window positioning on Windows and preserved native pixel colors at fractional display scales.
+- Kept toolbar text labels visible after hiding and showing toolbars, made annotation red consistent, and sharpened the stroke-width preview dot.
 
 ## [1.0.68] - 2026-10-11
 
