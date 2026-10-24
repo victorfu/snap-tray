@@ -27,7 +27,7 @@ configure_build_dir() {
         desired_generator="Ninja"
         desired_sdk="$(xcrun --sdk macosx --show-sdk-path)"
         buildsystem_file="$build_dir/build.ninja"
-        cmake_args=(-G "$desired_generator" "${cmake_args[@]}" -DCMAKE_PREFIX_PATH="$(brew --prefix qt)" -DCMAKE_OSX_SYSROOT="$desired_sdk")
+        cmake_args=(-G "$desired_generator" "${cmake_args[@]}" -DCMAKE_PREFIX_PATH="${QT_ROOT_DIR:-$(brew --prefix qt)}" -DCMAKE_OSX_SYSROOT="$desired_sdk")
     fi
 
     if [[ "$OSTYPE" == linux* ]]; then

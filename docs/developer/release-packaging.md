@@ -17,7 +17,13 @@ Packaging scripts run Release builds, deploy Qt dependencies, and produce instal
 
 ### macOS
 
+The macOS CI and release workflows both install Qt 6.12.0 (`clang_64`, including
+`qtimageformats`). Packaging requires `QT_ROOT_DIR` pointing to that SDK and
+rejects other versions; it does not select Qt from Homebrew. CMake and
+`macdeployqt` use the same SDK root.
+
 ```bash
+export QT_ROOT_DIR="$HOME/Qt/6.12.0/macos"
 ./packaging/macos/package.sh
 # Output: dist/SnapTray-<version>-macOS.dmg
 ```
@@ -201,21 +207,23 @@ checks separately guard against missing plugins in distributable artifacts.
 
 ### macOS
 
-- Qt 6 installed
+- Qt 6.12.0 macOS SDK with `qtimageformats`; set `QT_ROOT_DIR` to its root
 - Xcode Command Line Tools
 - Optional `create-dmg` for nicer DMG presentation
 
 ### Windows
 
-- Qt 6 installed
+- Qt 6.12.0 MSVC 2022 installed
 - Visual Studio Build Tools or Visual Studio
 - NSIS for NSIS installers
 - Windows 10 SDK for MSIX packaging
 
+Windows builds and NSIS/MSIX packaging share `scripts/detect-qt.bat`.
+They default to Qt 6.12.0 and report an error instead of falling back to older SDKs.
 If Qt is not installed in the default location, set:
 
 ```batch
-set QT_PATH=C:\Qt\6.11.2\msvc2022_64
+set QT_PATH=C:\Qt\6.12.0\msvc2022_64
 ```
 
 ## Release notes and versioning

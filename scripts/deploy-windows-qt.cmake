@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 if(NOT DEFINED SNAPTRAY_BUILD_DIR OR NOT DEFINED SNAPTRAY_BUILD_TYPE OR "$ENV{QT_PATH}" STREQUAL "")
     message(FATAL_ERROR "Build directory, build type and QT_PATH are required")
 endif()
+
 get_filename_component(build_dir "${SNAPTRAY_BUILD_DIR}" ABSOLUTE)
 get_filename_component(qt_prefix "$ENV{QT_PATH}" REALPATH)
 set(suffix "")
@@ -61,4 +62,11 @@ if(needs_deploy)
         endif()
     endforeach()
     file(REMOVE "${pending}")
+endif()
+
+# windeployqt scans the application, which does not link Qt Test. Keep test
+# executables on the selected SDK too when an older DLL is already deployed.
+set(qt_test_runtime "${qt_prefix}/bin/Qt6Test${suffix}.dll")
+if(EXISTS "${qt_test_runtime}")
+    configure_file("${qt_test_runtime}" "${build_dir}/bin/Qt6Test${suffix}.dll" COPYONLY)
 endif()

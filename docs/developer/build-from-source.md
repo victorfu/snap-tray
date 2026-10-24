@@ -24,7 +24,7 @@ SnapTray currently supports macOS, Windows, and Ubuntu 22.04 X11 beta.
 
 ### Development prerequisites
 
-- Qt 6.11.2 with Widgets, Gui, Svg, Concurrent, Network, Quick, QuickControls2, and QuickWidgets
+- Qt 6.12.0 on Windows/macOS; Qt 6.11.2 on Linux, with Widgets, Gui, Svg, Concurrent, Network, Quick, QuickControls2, and QuickWidgets
 - Qt Image Formats add-on (`qtimageformats`) for WebP/TIFF image import
 - CMake 3.16+
 - Ninja
@@ -56,7 +56,14 @@ Use the repository scripts for day-to-day development. They encode the supported
 
 ### macOS
 
+CI and release packaging use the Qt 6.12.0 `clang_64` SDK with `qtimageformats`.
+For local builds, set `QT_ROOT_DIR` to that SDK (for example,
+`$HOME/Qt/6.12.0/macos`). Without it, local scripts use `brew --prefix qt`,
+which is not version-pinned. When changing SDKs, use a fresh build directory
+so existing CMake package caches cannot retain the previous Qt.
+
 ```bash
+export QT_ROOT_DIR="$HOME/Qt/6.12.0/macos"
 ./scripts/build.sh                  # Debug build
 ./scripts/build-release.sh          # Release build
 ./scripts/run-tests.sh              # Build and run tests
@@ -157,10 +164,10 @@ debugging in the application. Build that target, then run the single handoff tes
 in a fresh process to capture the first toolbar load:
 
 ```powershell
-$env:PATH = "C:\Qt\6.11.2\msvc2022_64\bin;$env:PATH"
+$env:PATH = "C:\Qt\6.12.0\msvc2022_64\bin;$env:PATH"
 $env:SNAPTRAY_TOOLBAR_TIMING = '1'
 $env:SNAPTRAY_PROFILE_TOOLBAR = '1'
-Start-Process C:\Qt\6.11.2\msvc2022_64\bin\qmlprofiler.exe -Wait -WindowStyle Hidden -ArgumentList '--include compiling,creating,binding -o build/toolbar-focused.qmltrace build/bin/RegionSelector_StyleSync.exe testSelectionCompletionShowsToolbarBeforeChromePaint -o build/toolbar-focused-test.txt,txt'
+Start-Process C:\Qt\6.12.0\msvc2022_64\bin\qmlprofiler.exe -Wait -WindowStyle Hidden -ArgumentList '--include compiling,creating,binding -o build/toolbar-focused.qmltrace build/bin/RegionSelector_StyleSync.exe testSelectionCompletionShowsToolbarBeforeChromePaint -o build/toolbar-focused-test.txt,txt'
 Remove-Item Env:SNAPTRAY_PROFILE_TOOLBAR
 Remove-Item Env:SNAPTRAY_TOOLBAR_TIMING
 ```
@@ -192,7 +199,7 @@ Use manual configure/build only when you need custom flags or when debugging the
 ### macOS (Debug)
 
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR"
 cmake --build build --parallel
 # Output: build/bin/SnapTray-Debug.app
 ```
@@ -200,7 +207,7 @@ cmake --build build --parallel
 ### macOS (Release)
 
 ```bash
-cmake -S . -B release -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+cmake -S . -B release -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR"
 cmake --build release --parallel
 # Output: release/bin/SnapTray.app
 ```
@@ -208,17 +215,17 @@ cmake --build release --parallel
 ### Windows (Debug)
 
 ```batch
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=C:/Qt/6.11.2/msvc2022_64
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=C:/Qt/6.12.0/msvc2022_64
 cmake --build build --parallel
-C:\Qt\6.11.2\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray-Debug.exe
+C:\Qt\6.12.0\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray-Debug.exe
 ```
 
 ### Windows (Release)
 
 ```batch
-cmake -S . -B release -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.11.2/msvc2022_64
+cmake -S . -B release -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.12.0/msvc2022_64
 cmake --build release --parallel
-C:\Qt\6.11.2\msvc2022_64\bin\windeployqt.exe --release release\bin\SnapTray.exe
+C:\Qt\6.12.0\msvc2022_64\bin\windeployqt.exe --release release\bin\SnapTray.exe
 ```
 
 ## Build outputs and build modes
@@ -338,7 +345,7 @@ xattr -cr /Applications/SnapTray.app
 If you see errors such as `Qt6Core.dll was not found` or `no Qt platform plugin could be initialized`, deploy Qt dependencies with `windeployqt`:
 
 ```batch
-C:\Qt\6.11.2\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray-Debug.exe
+C:\Qt\6.12.0\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray-Debug.exe
 ```
 
 Replace the Qt path if your installation lives elsewhere.

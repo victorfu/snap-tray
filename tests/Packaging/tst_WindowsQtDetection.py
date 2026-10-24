@@ -12,12 +12,50 @@ ENTRIES = ("build.bat", "build-release.bat", "build-and-run.bat", "build-and-run
 
 @unittest.skipUnless(sys.platform == "win32", "cmd.exe is required")
 class QtDetectionTests(unittest.TestCase):
+    def test_packaging_uses_shared_qt_selection(self):
+        for entry in ("package-nsis.bat", "package-msix.bat"):
+            source = (ROOT / "packaging/windows" / entry).read_text()
+            selection = source.split("REM Use the same Qt selection policy", 1)[1]
+            selection = selection.split("echo Qt path:", 1)[0]
+            for version, override, succeeds in (
+                ("6.12.0", "", True),
+                ("6.8.0", "", False),
+                ("6.8.0", "custom Qt", True),
+            ):
+                with self.subTest(entry=entry, version=version, override=override):
+                    with tempfile.TemporaryDirectory(prefix="snaptray package qt ") as directory:
+                        folder = Path(directory)
+                        scripts = folder / "scripts"
+                        scripts.mkdir()
+                        qt = folder / "Qt"
+                        binary = qt / version / "msvc2022_64/bin/qmake.exe"
+                        binary.parent.mkdir(parents=True)
+                        binary.touch()
+                        detector = (ROOT / "scripts/detect-qt.bat").read_text()
+                        (scripts / "detect-qt.bat").write_text(
+                            detector.replace("C:\\Qt", "%SNAPTRAY_TEST_QT_ROOT%"))
+                        (folder / "probe.bat").write_text(
+                            '@echo off\nset "PROJECT_ROOT=%~dp0"\nREM Use the same Qt selection policy'
+                            + selection
+                            + '\nif "%QT_PATH%"=="%SNAPTRAY_TEST_EXPECTED%" exit /b 0\nexit /b 23\n')
+                        env = os.environ.copy()
+                        env.pop("QT_PATH", None)
+                        if override:
+                            env["QT_PATH"] = str(folder / override)
+                        env["SNAPTRAY_TEST_QT_ROOT"] = str(qt)
+                        env["SNAPTRAY_TEST_EXPECTED"] = env.get(
+                            "QT_PATH", str(qt / "6.12.0/msvc2022_64"))
+                        result = subprocess.run(["cmd.exe", "/d", "/c", "probe.bat"],
+                                                cwd=folder, env=env, capture_output=True, timeout=10)
+                        self.assertEqual(result.returncode == 0, succeeds,
+                                         result.stdout + result.stderr)
+
     def test_all_entries(self):
         cases = [
-            (("6.11.2", "6.10.1", "6.8.0"), "", True),
-            (("6.10.1", "6.8.0"), "", False),
+            (("6.12.0", "6.11.2", "6.10.1"), "", True),
+            (("6.11.2", "6.10.1", "6.8.0"), "", False),
             ((), "", False),
-            (("6.11.2", "6.7.0"), "custom Qt", True),
+            (("6.12.0", "6.7.0"), "custom Qt", True),
         ]
         for versions, override, succeeds in cases:
             with tempfile.TemporaryDirectory(prefix="snaptray qt ") as directory:
@@ -44,7 +82,7 @@ class QtDetectionTests(unittest.TestCase):
                         if override:
                             env["QT_PATH"] = str(folder / override)
                         env["SNAPTRAY_TEST_QT_ROOT"] = str(qt)
-                        env["SNAPTRAY_TEST_EXPECTED"] = env.get("QT_PATH", str(qt / "6.11.2/msvc2022_64"))
+                        env["SNAPTRAY_TEST_EXPECTED"] = env.get("QT_PATH", str(qt / "6.12.0/msvc2022_64"))
                         result = subprocess.run(["cmd.exe", "/d", "/c", entry], cwd=scripts,
                                                 env=env, capture_output=True, timeout=10)
                         self.assertEqual(result.returncode == 0, succeeds, result.stdout + result.stderr)
@@ -130,11 +168,19 @@ class QtDetectionTests(unittest.TestCase):
                 (binary_dir / "platforms/qwindows.dll").touch()
                 for plugin in ("qwebp", "qtiff"):
                     (binary_dir / f"imageformats/{plugin}.dll").touch()
+                # The application does not link Qt Test, so windeployqt cannot
+                # refresh this test-only runtime after switching SDKs.
+                test_runtime = fixture.new_qt / "bin/Qt6Test.dll"
+                test_runtime.parent.mkdir(parents=True, exist_ok=True)
+                test_runtime.write_bytes(b"selected Qt Test runtime")
+                deployed_test_runtime = binary_dir / "Qt6Test.dll"
+                deployed_test_runtime.write_bytes(b"old Qt Test runtime")
                 args = ["cmake", f"-DSNAPTRAY_BUILD_DIR={fixture.build}", "-DSNAPTRAY_BUILD_TYPE=Release",
                         "-P", str(fixture.scripts / "deploy-windows-qt.cmake")]
                 env = dict(os.environ, QT_PATH=str(fixture.new_qt))
                 # No deployment is needed when the matching runtime is already present.
                 subprocess.run(args, env=env, check=True, capture_output=True, timeout=15)
+                self.assertEqual(deployed_test_runtime.read_bytes(), test_runtime.read_bytes())
                 missing_dll = binary_dir / missing
                 missing_dll.unlink()
                 # The SDK deliberately has no deployment tool. A missing runtime
@@ -164,8 +210,8 @@ class QtCacheFixture:
         self.build_type = "Release" if "release" in entry else "Debug"
         self.build = self.root / ("release" if self.build_type == "Release" else "build")
         self.pending = self.build / ".qt-deploy-pending"
-        self.old_qt = self.root / "Qt 6.10.1"
-        self.new_qt = self.root / "Qt 6.11.2"
+        self.old_qt = self.root / "Qt 6.11.2"
+        self.new_qt = self.root / "Qt 6.12.0"
         for qt in (self.old_qt, self.new_qt):
             self.config(qt).parent.mkdir(parents=True)
             self.config(qt).write_text('find_package(Qt6Core CONFIG REQUIRED)\nset(Qt6_FOUND TRUE)\n')

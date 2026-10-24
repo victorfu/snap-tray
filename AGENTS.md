@@ -52,7 +52,7 @@ For routine verification, use the build and test scripts. Running the app is onl
 
 ## Prerequisites
 
-- Qt 6.11.2
+- Qt 6.12.0 on Windows/macOS; Qt 6.11.2 on Linux beta
 - CMake 3.16+
 - Ninja
 - macOS: Xcode Command Line Tools

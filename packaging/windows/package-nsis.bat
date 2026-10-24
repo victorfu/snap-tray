@@ -14,7 +14,7 @@ REM   - NSIS (winget install NSIS.NSIS)
 REM   - Visual Studio Build Tools or Visual Studio
 REM
 REM Environment variables:
-REM   QT_PATH              - Path to Qt installation (e.g., C:\Qt\6.6.1\msvc2019_64)
+REM   QT_PATH              - Path to Qt installation (e.g., C:\Qt\6.12.0\msvc2022_64)
 REM   CODESIGN_CERT        - Path to .pfx certificate file (optional)
 REM   CODESIGN_PASSWORD    - Certificate password (optional)
 REM   WINSPARKLE_DLL       - Absolute path to WinSparkle.dll
@@ -69,21 +69,9 @@ if not exist "%WINSPARKLE_DLL%" (
     exit /b 1
 )
 
-REM Check for Qt
-if "%QT_PATH%"=="" (
-    if exist "C:\Qt\6.11.2\msvc2022_64" (
-        set QT_PATH=C:\Qt\6.11.2\msvc2022_64
-    ) else if exist "C:\Qt\6.8.0\msvc2022_64" (
-        set QT_PATH=C:\Qt\6.8.0\msvc2022_64
-    ) else if exist "C:\Qt\6.7.0\msvc2022_64" (
-        set QT_PATH=C:\Qt\6.7.0\msvc2022_64
-    ) else if exist "C:\Qt\6.6.1\msvc2019_64" (
-        set QT_PATH=C:\Qt\6.6.1\msvc2019_64
-    ) else (
-        echo ERROR: Qt not found. Please set QT_PATH environment variable.
-        exit /b 1
-    )
-)
+REM Use the same Qt selection policy as the Windows build scripts.
+call "%PROJECT_ROOT%\scripts\detect-qt.bat"
+if errorlevel 1 exit /b 1
 echo Qt path: %QT_PATH%
 
 REM Check for NSIS
