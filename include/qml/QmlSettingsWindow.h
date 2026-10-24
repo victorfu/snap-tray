@@ -4,6 +4,12 @@
 #include <QPointer>
 #include <QString>
 
+#ifdef Q_OS_MACOS
+#include "platform/MacDockPresence.h"
+
+#include <optional>
+#endif
+
 class QEvent;
 class QQuickView;
 
@@ -34,5 +40,8 @@ private:
     SettingsBackend* m_backend = nullptr;
     QString m_cursorSurfaceId;
     QString m_cursorOwnerId;
+#ifdef Q_OS_MACOS
+    std::optional<DockPresenceClaim> m_dockPresence;
+#endif
 };
 } // namespace SnapTray

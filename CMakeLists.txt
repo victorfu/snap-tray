@@ -555,6 +555,7 @@ add_library(snaptray_platform STATIC
     $<$<PLATFORM_ID:Darwin>:
         src/ImageColorSpaceHelper_mac.mm
         src/platform/WindowLevel_mac.mm
+        src/platform/MacDockPresence_mac.mm
         src/platform/MacTrayActivationGuard_mac.mm
         src/platform/PlatformFeatures_mac.mm
         src/WindowDetector.mm
@@ -866,6 +867,7 @@ add_library(snaptray_ui STATIC
     $<$<PLATFORM_ID:Darwin>:
         src/update/InstallSourceDetector_mac.mm
         src/update/SparkleUpdateService_mac.mm
+        include/update/SparkleReadyToInstallRaise.h
     >
     $<$<PLATFORM_ID:Windows>:
         src/update/InstallSourceDetector_win.cpp
