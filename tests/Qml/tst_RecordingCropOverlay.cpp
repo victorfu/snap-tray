@@ -303,7 +303,7 @@ private slots:
     // Window snapping (Phase 2).
     void snapToRectClampsAndGrows_data();
     void snapToRectClampsAndGrows();
-    void previewHoverHighlightsWindow();
+    void previewHoverStateHighlightsWindow();
     void previewClickSnapsToWindow();
     void previewDragStillDrawsFreeRect();
     void previewNoTimelineNoHoverNoHint();
@@ -1432,7 +1432,7 @@ void tst_RecordingCropOverlay::snapToRectClampsAndGrows()
     QCOMPARE(call("snapToRect", {input}).toRectF(), expected);
 }
 
-void tst_RecordingCropOverlay::previewHoverHighlightsWindow()
+void tst_RecordingCropOverlay::previewHoverStateHighlightsWindow()
 {
     OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
     m_backend->setStubWindow(QRect(400, 100, 400, 200), QStringLiteral("Code"));
@@ -1441,17 +1441,28 @@ void tst_RecordingCropOverlay::previewHoverHighlightsWindow()
     QVERIFY(frame && label);
     QVERIFY(!frame->isVisible()); // not editing
 
-    click(previewItem("previewCropButton"));
+    QObject* overlay = previewOverlay();
+    auto* mouseArea = overlay->findChild<QObject*>(QStringLiteral("cropMouseArea"));
+    QVERIFY(mouseArea);
+    // Exercise the real hover handler, signal wiring and view bindings without
+    // depending on native enter/move delivery in a CI desktop session.
+    const auto updateHover = [mouseArea](const QPointF& point) {
+        return QMetaObject::invokeMethod(mouseArea, "updateHover",
+                                         Q_ARG(QVariant, QVariant(point.x())),
+                                         Q_ARG(QVariant, QVariant(point.y())));
+    };
+    QVERIFY(QMetaObject::invokeMethod(overlay, "beginEditing"));
     QVERIFY(editing());
     QVERIFY(previewItem("previewWindowSnapHint")->isVisible());
     const QRectF content = previewContentRect();
+    const QPointF inside(content.x() + content.width() * 0.3,
+                         content.y() + content.height() * 0.4);
     const QRectF expected = m_backend->windowRectInViewAt(
-        QPointF(content.x() + content.width() * 0.3, content.y() + content.height() * 0.4), content, 0);
+        inside, content, 0);
     QVERIFY(!expected.isEmpty());
 
-    QTest::mouseMove(m_view.get(), overlayPoint(content.x() + content.width() * 0.3, content.y() + content.height() * 0.4));
-    QTRY_VERIFY(frame->isVisible());
-    QObject* overlay = previewOverlay();
+    QVERIFY(updateHover(inside));
+    QVERIFY(frame->isVisible());
     QCOMPARE(overlay->property("hoverRect").toRectF(), expected);
     QCOMPARE(overlay->property("hoverLabel").toString(), QStringLiteral("Code"));
     QVERIFY(label->isVisible());
@@ -1459,9 +1470,11 @@ void tst_RecordingCropOverlay::previewHoverHighlightsWindow()
     QCOMPARE(m_backend->lastLookupPositionMs, previewItem("previewVideoPlayer")->property("position").toLongLong());
 
     // Off the window: highlight gone.
-    QTest::mouseMove(m_view.get(), overlayPoint(content.x() + 5, content.y() + 5));
-    QTRY_VERIFY(!frame->isVisible());
+    QVERIFY(updateHover(QPointF(content.x() + 5, content.y() + 5)));
+    QVERIFY(!frame->isVisible());
     QCOMPARE(overlay->property("hoverRect").toRectF(), QRectF());
+    QCOMPARE(overlay->property("hoverLabel").toString(), QString());
+    QVERIFY(!label->isVisible());
 }
 
 void tst_RecordingCropOverlay::previewClickSnapsToWindow()
