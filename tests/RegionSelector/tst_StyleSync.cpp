@@ -6,6 +6,7 @@
 #include <QGuiApplication>
 #include <QSettings>
 #include <QScreen>
+#include <QQuickWindow>
 #include <QScopeGuard>
 #include <QQmlDebuggingEnabler>
 #include <QQmlEngine>
@@ -119,8 +120,8 @@ private slots:
     void testStrokeAndMosaicWidthsRestoreIndependently();
     void testSelectionBodyHoverUsesMoveCursor();
     void testSelectionBodyHoverUsesEventPosWhenLiveCursorLags();
-    void testSelectionCompletionShowsToolbarAfterWindowsHandoff();
-    void testSelectionCompletionPositionsToolbarAfterWindowsHandoff();
+    void testSelectionCompletionShowsToolbarBeforeChromePaint();
+    void testSelectionCompletionPositionsToolbarBeforeChromePaint();
     void testSelectionDragUsesClosedHandCursor();
     void testReleaseOverFloatingUiFinishesSelectionDrag();
     void testReleaseOverFloatingUiFinishesDrawingDrag();
@@ -165,7 +166,18 @@ private slots:
 
 void TestRegionSelectorStyleSync::initTestCase()
 {
-    SnapTray::applyQtQuickGraphicsBackendPolicy(SnapTray::currentQtQuickGraphicsBackendPolicy());
+    // Test-only override for comparing identical capture paths in fresh
+    // processes. Production platform policy remains unchanged.
+    const QByteArray backend = qgetenv("SNAPTRAY_TEST_TOOLBAR_BACKEND");
+    QVERIFY2(backend.isEmpty() || backend == "software" || backend == "default",
+             "SNAPTRAY_TEST_TOOLBAR_BACKEND must be software or default");
+    auto policy = SnapTray::currentQtQuickGraphicsBackendPolicy();
+    if (backend == "software") {
+        policy = SnapTray::QtQuickGraphicsBackendPolicy::Software;
+    } else if (backend == "default") {
+        policy = SnapTray::QtQuickGraphicsBackendPolicy::PlatformDefault;
+    }
+    SnapTray::applyQtQuickGraphicsBackendPolicy(policy);
 }
 
 void TestRegionSelectorStyleSync::testHostFallbackPaintsAboveShortcutHints()
@@ -784,7 +796,7 @@ void TestRegionSelectorStyleSync::testSelectionBodyHoverUsesEventPosWhenLiveCurs
     QCursor::setPos(originalCursorPos);
 }
 
-void TestRegionSelectorStyleSync::testSelectionCompletionShowsToolbarAfterWindowsHandoff()
+void TestRegionSelectorStyleSync::testSelectionCompletionShowsToolbarBeforeChromePaint()
 {
     QScreen* screen = QGuiApplication::primaryScreen();
     if (!screen) {
@@ -822,16 +834,23 @@ void TestRegionSelectorStyleSync::testSelectionCompletionShowsToolbarAfterWindow
     QApplication::sendEvent(&selector, &releaseEvent);
 
 #ifdef Q_OS_WIN
+    // The detached chrome/control-panel handoff still runs, but the toolbar
+    // must already be visible without processing another paint event.
     QVERIFY(RegionSelectorTestAccess::selectionCompletionHandoffPending(selector));
-    QVERIFY(!RegionSelectorTestAccess::toolbarVisible(selector));
+#endif
+    QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+#ifdef Q_OS_WIN
+    auto* toolbar = qobject_cast<QQuickWindow*>(
+        RegionSelectorTestAccess::toolbarWindow(selector));
+    QVERIFY(toolbar);
+    QSignalSpy frameSpy(toolbar, &QQuickWindow::frameSwapped);
+    QTRY_VERIFY(!frameSpy.isEmpty());
     QTRY_VERIFY(!RegionSelectorTestAccess::selectionCompletionHandoffPending(selector));
-    QTRY_VERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
-#else
     QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
 #endif
 }
 
-void TestRegionSelectorStyleSync::testSelectionCompletionPositionsToolbarAfterWindowsHandoff()
+void TestRegionSelectorStyleSync::testSelectionCompletionPositionsToolbarBeforeChromePaint()
 {
     QScreen* screen = QGuiApplication::primaryScreen();
     if (!screen) {
@@ -872,12 +891,8 @@ void TestRegionSelectorStyleSync::testSelectionCompletionPositionsToolbarAfterWi
 
 #ifdef Q_OS_WIN
     QVERIFY(RegionSelectorTestAccess::selectionCompletionHandoffPending(selector));
-    QVERIFY(!RegionSelectorTestAccess::toolbarVisible(selector));
-    QTRY_VERIFY(!RegionSelectorTestAccess::selectionCompletionHandoffPending(selector));
-    QTRY_VERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
-#else
-    QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
 #endif
+    QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
     const QRect toolbarGeometry = RegionSelectorTestAccess::toolbarGeometry(selector);
     QVERIFY(toolbarGeometry.isValid());
     QVERIFY(!toolbarGeometry.isEmpty());
@@ -906,6 +921,12 @@ void TestRegionSelectorStyleSync::testSelectionCompletionPositionsToolbarAfterWi
         dimensionRect);
 
     QCOMPARE(toolbarGeometry.topLeft(), selector.mapToGlobal(expectedLocalTopLeft));
+#ifdef Q_OS_WIN
+    QTRY_VERIFY(!RegionSelectorTestAccess::selectionCompletionHandoffPending(selector));
+    QCoreApplication::processEvents();
+    QCOMPARE(RegionSelectorTestAccess::toolbarGeometry(selector), toolbarGeometry);
+    QVERIFY(RegionSelectorTestAccess::toolbarVisible(selector));
+#endif
 }
 
 void TestRegionSelectorStyleSync::testSelectionDragUsesClosedHandCursor()

@@ -118,8 +118,7 @@ from the canvas mouse-release handler. Subtract timestamps with the same ID:
 | Milestones | What the interval measures |
 |---|---|
 | `mouseRelease` → `selectionComplete.handoffPending` | Selection completion processing |
-| `selectionComplete.handoffPending` → `chromePaint.callback` | Waiting for the selection-border paint callback |
-| `chromePaint.callback` → `handoff.queuedCallback` | Event-loop scheduling after the paint callback |
+| `selectionComplete.handoffPending` → `createView.begin` | Toolbar preparation starts immediately, without waiting for the selection-border paint |
 | `createView.begin` → `createView.end` | QQuickView creation, including shared QML engine initialization if needed |
 | `setSource.begin` → `setSource.end` | Loading and instantiating the toolbar QML |
 | `syncTransientParent.begin` → `syncTransientParent.end` | Native parent/style setup; `nativeSurface.created` marks surface creation |
@@ -137,8 +136,21 @@ when already initialized. The trace logs the Qt graphics API enum when initializ
 Attempts cancelled before showing the toolbar can have incomplete traces.
 Logging itself adds some overhead; use this to locate large delays rather than
 as a precise benchmark. It does not enable prewarming or change display ordering.
+The toolbar is positioned and shown synchronously on selection completion.
+The detached chrome handoff still gates the control panel, but no longer gates
+the toolbar. Its later `chromePaint.callback` and `handoff.queuedCallback` stages
+normally fall after the toolbar's GUI-thread timing session has ended and are absent.
 
 ### Profiling inside the toolbar QML load
+
+For a backend A/B comparison, the `RegionSelector_StyleSync` test executable
+accepts `SNAPTRAY_TEST_TOOLBAR_BACKEND=software` or `default`. Run the
+`testSelectionCompletionShowsToolbarBeforeChromePaint` test in a fresh process
+for each sample with `SNAPTRAY_TOOLBAR_TIMING=1`, alternate backend order, and
+check the logged `graphicsApi` rather than assuming the selected policy's result.
+Unset the override afterward. This override applies only to the test executable;
+it does not change the application's platform policy. `QSG_INFO=1` can additionally
+identify the graphics adapter in a separate diagnostic run.
 
 The `RegionSelector_StyleSync` test supports opt-in QML profiling without enabling
 debugging in the application. Build that target, then run the single handoff test
@@ -148,7 +160,7 @@ in a fresh process to capture the first toolbar load:
 $env:PATH = "C:\Qt\6.11.2\msvc2022_64\bin;$env:PATH"
 $env:SNAPTRAY_TOOLBAR_TIMING = '1'
 $env:SNAPTRAY_PROFILE_TOOLBAR = '1'
-Start-Process C:\Qt\6.11.2\msvc2022_64\bin\qmlprofiler.exe -Wait -WindowStyle Hidden -ArgumentList '--include compiling,creating,binding -o build/toolbar-focused.qmltrace build/bin/RegionSelector_StyleSync.exe testSelectionCompletionShowsToolbarAfterWindowsHandoff -o build/toolbar-focused-test.txt,txt'
+Start-Process C:\Qt\6.11.2\msvc2022_64\bin\qmlprofiler.exe -Wait -WindowStyle Hidden -ArgumentList '--include compiling,creating,binding -o build/toolbar-focused.qmltrace build/bin/RegionSelector_StyleSync.exe testSelectionCompletionShowsToolbarBeforeChromePaint -o build/toolbar-focused-test.txt,txt'
 Remove-Item Env:SNAPTRAY_PROFILE_TOOLBAR
 Remove-Item Env:SNAPTRAY_TOOLBAR_TIMING
 ```

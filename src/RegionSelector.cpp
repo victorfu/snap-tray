@@ -936,7 +936,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             // Quick Pin mode: directly pin without showing toolbar
             if (m_quickPinMode && !m_inputState.multiRegionMode) {
                 finishSelection();
-            } else if (!m_selectionCompletionHandoffPending) {
+            } else {
                 syncCompletedSelectionFloatingUi();
             }
         });
@@ -961,7 +961,7 @@ RegionSelector::RegionSelector(QWidget* parent)
             // Quick Pin mode: directly pin without showing toolbar
             if (m_quickPinMode && !m_inputState.multiRegionMode) {
                 finishSelection();
-            } else if (!m_selectionCompletionHandoffPending) {
+            } else {
                 syncCompletedSelectionFloatingUi();
             }
         });
@@ -2752,8 +2752,10 @@ void RegionSelector::syncDetachedSelectionUiDuringPaint(const QRect& dimensionIn
         m_selectionManager->hasActiveSelection() &&
         selectionRect.isValid() &&
         m_selectionManager->hasSelection();
-    const bool suppressSelectionFloatingUi =
-        completedSelectionDragUiSuppressed() || m_selectionCompletionHandoffPending;
+    // The toolbar can be positioned from the current selection before the
+    // detached chrome paints. Keep the chrome handoff for the control panel,
+    // but do not put toolbar creation and its first frame behind that paint.
+    const bool suppressSelectionFloatingUi = completedSelectionDragUiSuppressed();
     const bool shouldShowSelectionUi =
         initialRevealVisible &&
         hasSelectableCapture &&
@@ -2763,7 +2765,9 @@ void RegionSelector::syncDetachedSelectionUiDuringPaint(const QRect& dimensionIn
         if (m_qmlToolbar) {
             if (!m_toolbarUserDragged) {
                 const QRect dimensionInfoRect =
-                    dimensionInfoRectOverride.isValid() && !dimensionInfoRectOverride.isEmpty()
+                    m_selectionCompletionHandoffPending
+                        ? currentSelectionDimensionInfoRect()
+                        : dimensionInfoRectOverride.isValid() && !dimensionInfoRectOverride.isEmpty()
                         ? dimensionInfoRectOverride
                         : (m_captureChromeWindow && m_captureChromeWindow->isVisible()
                             ? m_captureChromeWindow->lastDimensionInfoRect()
