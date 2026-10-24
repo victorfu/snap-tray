@@ -48,6 +48,9 @@ public slots:
 private slots:
     void onRegionCapture();
     void onFullScreenCapture();
+    void onDelayedCaptureHotkey();
+    void onCancelDelayedCapture();
+    void onDelayedCaptureStateChanged(bool pending);
     void onQuickPin();
     void onScreenCanvas();
     void onPasteFromClipboard();
@@ -73,6 +76,8 @@ private:
                        std::optional<QPoint> position = std::nullopt);
 
     void startRegionCapture(bool showShortcutHintsOnEntry);
+    void startDelayedCapture(int delaySeconds);
+    void updateDelayedCaptureMenu();
     void runDeferredCLICommands();
     bool canStartRegionCapture() const;
     bool startHistoryReplay(const QString& entryId);
@@ -104,6 +109,9 @@ private:
     RecordingManager *m_recordingManager;
     QAction *m_regionCaptureAction;
     QAction *m_fullScreenCaptureAction = nullptr;
+    QMenu *m_delayedCaptureMenu = nullptr;
+    QList<QAction*> m_delayedCapturePresetActions;
+    QAction *m_cancelDelayedCaptureAction = nullptr;
     QAction *m_screenCanvasAction;
     QAction *m_pasteAction;
     QAction *m_pinFromImageAction;

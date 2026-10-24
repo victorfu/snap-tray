@@ -289,6 +289,14 @@
     <name>ColorPickerDialogCompat</name>
 </context>
 <context>
+    <name>DelayedCaptureIndicator</name>
+    <message>
+        <location filename="../src/qml/components/DelayedCaptureIndicator.qml" line="63" />
+        <source>Delayed capture</source>
+        <translation>Captura com atraso</translation>
+    </message>
+</context>
+<context>
     <name>FilesSettings</name>
     <message>
         <location filename="../src/qml/settings/FilesSettings.qml" line="21" />
@@ -727,6 +735,24 @@ Tokens de data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, ou {date}</translation
         <location filename="../src/MainApplication.cpp" line="323" />
         <source>Full Screen Capture</source>
         <translation>Captura de tela inteira</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="350" />
+        <source>Delayed Capture</source>
+        <translation>Captura com atraso</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../src/MainApplication.cpp" line="355" />
+        <source>%n seconds</source>
+        <translation>
+            <numerusform>%n segundo</numerusform>
+            <numerusform>%n segundos</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="364" />
+        <source>Cancel Delayed Capture</source>
+        <translation>Cancelar captura com atraso</translation>
     </message>
 </context>
 <context>
@@ -2461,6 +2487,16 @@ O áudio não é suportado em gravações GIF.</translation>
         <location filename="../include/hotkey/HotkeyTypes.h" line="120" />
         <source>Capture the screen under the cursor</source>
         <translation>Capturar a tela sob o cursor</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="128" />
+        <source>Delayed Capture</source>
+        <translation>Captura com atraso</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="129" />
+        <source>Start a countdown, then capture a region</source>
+        <translation>Iniciar uma contagem regressiva e depois capturar uma região</translation>
     </message>
 </context>
 <context>

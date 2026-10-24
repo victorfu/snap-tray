@@ -198,6 +198,14 @@
     </message>
 </context>
 <context>
+    <name>DelayedCaptureIndicator</name>
+    <message>
+        <location filename="../src/qml/components/DelayedCaptureIndicator.qml" line="63" />
+        <source>Delayed capture</source>
+        <translation>จับภาพแบบหน่วงเวลา</translation>
+    </message>
+</context>
+<context>
     <name>FilesSettings</name>
     <message>
         <location filename="../src/qml/settings/FilesSettings.qml" line="21"/>
@@ -792,6 +800,23 @@ File size: %3</source>
         <location filename="../src/MainApplication.cpp" line="323" />
         <source>Full Screen Capture</source>
         <translation>จับภาพเต็มหน้าจอ</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="350" />
+        <source>Delayed Capture</source>
+        <translation>จับภาพแบบหน่วงเวลา</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../src/MainApplication.cpp" line="355" />
+        <source>%n seconds</source>
+        <translation>
+            <numerusform>%n วินาที</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="364" />
+        <source>Cancel Delayed Capture</source>
+        <translation>ยกเลิกการจับภาพแบบหน่วงเวลา</translation>
     </message>
 </context>
 <context>
@@ -2401,6 +2426,16 @@ English is always included and cannot be removed.</source>
         <location filename="../include/hotkey/HotkeyTypes.h" line="120" />
         <source>Capture the screen under the cursor</source>
         <translation>จับภาพหน้าจอที่เคอร์เซอร์อยู่</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="128" />
+        <source>Delayed Capture</source>
+        <translation>จับภาพแบบหน่วงเวลา</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="129" />
+        <source>Start a countdown, then capture a region</source>
+        <translation>เริ่มนับถอยหลังแล้วจับภาพพื้นที่</translation>
     </message>
 </context>
 <context>
