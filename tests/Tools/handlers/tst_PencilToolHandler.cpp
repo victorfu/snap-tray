@@ -147,6 +147,7 @@ private slots:
     void testHighDpiAllowsCloserPoints();
     void testPointSpacingSuppressesSubPixelJitter_data();
     void testPointSpacingSuppressesSubPixelJitter();
+    void testLiveTailReachesCursorBeforePointCommits();
 
     // Cancellation tests
     void testCancelDrawing();
@@ -484,6 +485,31 @@ void TestPencilToolHandler::testPointSpacingSuppressesSubPixelJitter()
                                 .arg(i - 1).arg(i).arg(minSpacing)));
     }
     QCOMPARE(points.last(), QPointF(70.0, 10.0));
+}
+
+void TestPencilToolHandler::testLiveTailReachesCursorBeforePointCommits()
+{
+    m_handler->onMousePressF(m_context, QPointF(20.0, 30.0));
+    for (int i = 1; i <= 20; ++i) {
+        m_handler->onMouseMoveF(m_context, QPointF(20.0 + i * 3.0, 30.0));
+    }
+    const QPointF cursor(80.0, 30.0);
+    QVERIFY(m_handler->previewBounds().contains(cursor.toPoint()));
+
+    QImage image(120, 60, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    {
+        QPainter painter(&image);
+        m_handler->drawPreview(painter);
+    }
+    // The smoothed points trail the cursor, but the preview reaches it.
+    QVERIFY(qAlpha(image.pixel(cursor.toPoint())) > 0);
+    QCOMPARE(qAlpha(image.pixel(QPoint(100, 30))), 0);
+
+    m_handler->onMouseReleaseF(m_context, cursor);
+    auto* stroke = dynamic_cast<PencilStroke*>(m_layer->itemAt(m_layer->itemCount() - 1));
+    QVERIFY(stroke != nullptr);
+    QCOMPARE(stroke->points().last(), cursor);
 }
 
 // ============================================================================

@@ -29,6 +29,11 @@ public:
     }
 
     void addPoint(const QPointF &point);
+    void moveLastPoint(const QPointF &point);
+    // Raw cursor position drawn as a transient tail while the stroke is active.
+    // It is not stored; clear it before committing the stroke.
+    void setLivePoint(const QPointF &point);
+    void clearLivePoint() { m_hasLivePoint = false; }
     QVector<QPointF> points() const { return m_points; }
     QColor color() const { return m_color; }
     int width() const { return m_width; }
@@ -41,6 +46,8 @@ private:
     QVector<QPointF> m_points;
     QColor m_color;
     int m_width;
+    QPointF m_livePoint;
+    bool m_hasLivePoint = false;
 
     mutable QPainterPath m_cachedPreviewPath;
     mutable int m_cachedPreviewLastControlIndex = 0;
@@ -50,6 +57,7 @@ private:
     mutable bool m_boundingRectDirty = true;
 
     void rebuildPreviewPath() const;
+    QPainterPath buildPreviewPath() const;
 };
 
 #endif // MARKERSTROKE_H

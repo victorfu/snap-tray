@@ -2,19 +2,6 @@
 #include "tools/ToolContext.h"
 
 #include <QPainter>
-#include <QtMath>
-
-namespace {
-
-qreal effectiveMinPointDistance(const ToolContext* ctx,
-                                qreal targetPhysicalDistance,
-                                qreal maxLogicalDistance)
-{
-    const qreal dpr = (ctx && ctx->devicePixelRatio > 0.0) ? ctx->devicePixelRatio : 1.0;
-    return qMin(targetPhysicalDistance / dpr, maxLogicalDistance);
-}
-
-} // namespace
 
 void PencilToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
     onMousePressF(ctx, QPointF(pos));
@@ -25,11 +12,7 @@ void PencilToolHandler::onMousePressF(ToolContext* ctx, const QPointF& pos) {
     m_straightStroke = ctx->shiftPressed;
     const QVector<QPointF> initialPoints{pos};
 
-    // Initialize smoothing state
-    m_smoothedPoint = pos;
-    m_smoothedVelocity = QPointF(0, 0);
-    m_lastRawPoint = pos;
-    m_hasSmoothedPoint = true;
+    m_smoother.reset(pos);
 
     m_currentStroke = std::make_unique<PencilStroke>(
         initialPoints, ctx->color, ctx->width, ctx->lineStyle
@@ -44,7 +27,7 @@ void PencilToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
 }
 
 void PencilToolHandler::onMouseMoveF(ToolContext* ctx, const QPointF& pos) {
-    if (!m_isDrawing || !m_currentStroke || !m_hasSmoothedPoint) {
+    if (!m_isDrawing || !m_currentStroke) {
         return;
     }
 
@@ -54,54 +37,18 @@ void PencilToolHandler::onMouseMoveF(ToolContext* ctx, const QPointF& pos) {
         return;
     }
 
-    const QPointF rawPoint = pos;
-
-    // Calculate raw velocity (displacement since last event)
-    QPointF rawVelocity = rawPoint - m_lastRawPoint;
-    m_lastRawPoint = rawPoint;
-
-    // Smooth the velocity to stabilize direction changes
-    m_smoothedVelocity = kVelocitySmoothing * rawVelocity
-                       + (1.0 - kVelocitySmoothing) * m_smoothedVelocity;
-
-    // Calculate speed for adaptive smoothing
-    qreal speed = qSqrt(rawVelocity.x() * rawVelocity.x()
-                      + rawVelocity.y() * rawVelocity.y());
-
-    // Adaptive smoothing: less smoothing at high speed, more at low speed
-    // This keeps fast strokes responsive while smoothing slow/shaky movements
-    qreal adaptiveFactor;
-    if (speed <= kSpeedThresholdLow) {
-        adaptiveFactor = kBaseSmoothing;  // Maximum smoothing for slow movement
-    } else if (speed >= kSpeedThresholdHigh) {
-        adaptiveFactor = 0.85;  // Minimal smoothing for fast movement
-    } else {
-        // Linear interpolation between thresholds
-        qreal t = (speed - kSpeedThresholdLow) / (kSpeedThresholdHigh - kSpeedThresholdLow);
-        adaptiveFactor = kBaseSmoothing + t * (0.85 - kBaseSmoothing);
-    }
-
-    // Apply EMA smoothing with adaptive factor
-    m_smoothedPoint = adaptiveFactor * rawPoint + (1.0 - adaptiveFactor) * m_smoothedPoint;
-
-    // Check minimum distance from last recorded point
-    const QVector<QPointF>& points = m_currentStroke->points();
-    if (!points.isEmpty()) {
-        QPointF delta = m_smoothedPoint - points.last();
-        qreal distance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
-
-        if (distance < effectiveMinPointDistance(
-                ctx, kMinPointDistancePhysical, kMaxMinPointDistanceLogical)) {
-            return;
-        }
-    }
-
     const QRect oldTailBounds = m_currentStroke->previewAffectedBoundingRect();
 
-    m_currentStroke->addPoint(m_smoothedPoint);
-    const QRect newTailBounds = m_currentStroke->previewAffectedBoundingRect();
-    m_previewDirtyRect = oldTailBounds.united(newTailBounds);
+    const QPointF smoothedPoint = m_smoother.smooth(pos);
+    if (FreehandSmoother::shouldCommit(
+            m_currentStroke->points().last(), smoothedPoint, ctx->devicePixelRatio)) {
+        m_currentStroke->addPoint(smoothedPoint);
+    }
+    // Repaint on every move: the live tail reaches the raw cursor even when no
+    // point was committed, so the stroke never trails behind it.
+    m_currentStroke->setLivePoint(pos);
 
+    m_previewDirtyRect = oldTailBounds.united(m_currentStroke->previewAffectedBoundingRect());
     ctx->repaint();
 }
 
@@ -135,7 +82,6 @@ void PencilToolHandler::onMouseReleaseF(ToolContext* ctx, const QPointF& pos) {
     m_isDrawing = false;
     m_straightStroke = false;
     m_currentStroke.reset();
-    m_hasSmoothedPoint = false;
     m_previewDirtyRect = QRect();
 
     if (!committedStroke) {
@@ -175,6 +121,5 @@ void PencilToolHandler::cancelDrawing() {
     m_isDrawing = false;
     m_straightStroke = false;
     m_currentStroke.reset();
-    m_hasSmoothedPoint = false;
     m_previewDirtyRect = QRect();
 }

@@ -8,25 +8,6 @@ static constexpr int kMarkerWidth = 20;
 
 namespace {
 
-qreal effectiveMinPointDistance(const ToolContext* ctx, qreal targetPhysicalDistance)
-{
-    const qreal dpr = (ctx && ctx->devicePixelRatio > 0.0) ? ctx->devicePixelRatio : 1.0;
-    return targetPhysicalDistance / dpr;
-}
-
-constexpr qreal kMarkerMinPointDistancePhysical = 2.5;
-
-bool shouldAppendPoint(const ToolContext* ctx, const QVector<QPointF>& points, const QPointF& point)
-{
-    if (points.isEmpty()) {
-        return true;
-    }
-
-    const QPointF delta = point - points.last();
-    const qreal distance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
-    return distance >= effectiveMinPointDistance(ctx, kMarkerMinPointDistancePhysical);
-}
-
 QRect tailDirtyRect(const QVector<QPointF>& points, int width, int tailPointCount = 4)
 {
     if (points.isEmpty()) {
@@ -66,6 +47,8 @@ void MarkerToolHandler::onMousePressF(ToolContext* ctx, const QPointF& pos) {
     m_straightStroke = ctx->shiftPressed;
     m_currentPath.clear();
     m_currentPath.append(pos);
+    m_smoother.reset(pos);
+    m_hasLivePoint = false;
 
     m_currentStroke = std::make_unique<MarkerStroke>(
         m_currentPath, ctx->color, kMarkerWidth
@@ -90,17 +73,20 @@ void MarkerToolHandler::onMouseMoveF(ToolContext* ctx, const QPointF& pos) {
         return;
     }
 
-    if (!shouldAppendPoint(ctx, m_currentPath, pos)) {
-        return;
+    const QRect oldTailBounds = liveTailDirtyRect();
+
+    const QPointF smoothedPoint = m_smoother.smooth(pos);
+    if (FreehandSmoother::shouldCommit(m_currentPath.last(), smoothedPoint, ctx->devicePixelRatio)) {
+        m_currentPath.append(smoothedPoint);
+        m_currentStroke->addPoint(smoothedPoint);
     }
+    // Repaint on every move: the live tail reaches the raw cursor even when no
+    // point was committed, so the stroke never trails behind it.
+    m_livePoint = pos;
+    m_hasLivePoint = true;
+    m_currentStroke->setLivePoint(pos);
 
-    const QRect oldTailBounds = tailDirtyRect(m_currentPath, kMarkerWidth);
-
-    m_currentPath.append(pos);
-    m_currentStroke->addPoint(pos);
-    const QRect newTailBounds = tailDirtyRect(m_currentPath, kMarkerWidth);
-    m_previewDirtyRect = oldTailBounds.united(newTailBounds);
-
+    m_previewDirtyRect = oldTailBounds.united(liveTailDirtyRect());
     ctx->repaint();
 }
 
@@ -113,15 +99,22 @@ void MarkerToolHandler::onMouseReleaseF(ToolContext* ctx, const QPointF& pos) {
         return;
     }
 
-    // Avoid a tiny release-only terminal segment; with a wide round-cap marker
-    // that can show up as a visible end bump.
+    // End exactly where the live tail ended. A tiny terminal segment shows as a
+    // bump under the wide round cap, so a close release moves the last point.
     if (m_straightStroke && m_currentStroke) {
         updateStraightStroke(pos);
-    } else if (shouldAppendPoint(ctx, m_currentPath, pos)) {
-        m_currentPath.append(pos);
-        if (m_currentStroke) {
+    } else if (m_currentStroke && pos != m_currentPath.last()) {
+        if (m_currentPath.size() >= 2 &&
+            !FreehandSmoother::shouldCommit(m_currentPath.last(), pos, ctx->devicePixelRatio)) {
+            m_currentPath.last() = pos;
+            m_currentStroke->moveLastPoint(pos);
+        } else {
+            m_currentPath.append(pos);
             m_currentStroke->addPoint(pos);
         }
+    }
+    if (m_currentStroke) {
+        m_currentStroke->clearLivePoint();
     }
 
     // Add to annotation layer if we have a valid stroke
@@ -137,6 +130,7 @@ void MarkerToolHandler::onMouseReleaseF(ToolContext* ctx, const QPointF& pos) {
     m_currentPath.clear();
     m_currentStroke.reset();
     m_previewDirtyRect = QRect();
+    m_hasLivePoint = false;
 
     if (!committedStroke) {
         ctx->repaint();
@@ -156,6 +150,16 @@ void MarkerToolHandler::updateStraightStroke(const QPointF& pos)
     m_previewDirtyRect = oldBounds.united(tailDirtyRect(m_currentPath, kMarkerWidth));
 }
 
+QRect MarkerToolHandler::liveTailDirtyRect() const
+{
+    // The preview tail spans the last committed points plus the live cursor.
+    QVector<QPointF> tail = m_currentPath.mid(qMax(0, m_currentPath.size() - 4));
+    if (m_hasLivePoint) {
+        tail.append(m_livePoint);
+    }
+    return tailDirtyRect(tail, kMarkerWidth);
+}
+
 void MarkerToolHandler::drawPreview(QPainter& painter) const {
     if (m_isDrawing && m_currentStroke) {
         m_currentStroke->drawPreview(painter);
@@ -172,6 +176,7 @@ QRect MarkerToolHandler::previewBounds() const
 
 void MarkerToolHandler::cancelDrawing() {
     m_isDrawing = false;
+    m_hasLivePoint = false;
     m_straightStroke = false;
     m_currentPath.clear();
     m_currentStroke.reset();

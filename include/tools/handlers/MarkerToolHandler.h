@@ -4,6 +4,7 @@
 #include "../IToolHandler.h"
 #include "annotations/AnnotationLayer.h"
 #include "annotations/MarkerStroke.h"
+#include "tools/handlers/FreehandSmoother.h"
 
 #include <QVector>
 #include <QPointF>
@@ -36,6 +37,7 @@ public:
 
 private:
     void updateStraightStroke(const QPointF& pos);
+    QRect liveTailDirtyRect() const;
 
     bool m_isDrawing = false;
     // Latch Shift at press so modifier changes cannot reshape an active stroke.
@@ -43,6 +45,9 @@ private:
     QVector<QPointF> m_currentPath;
     std::unique_ptr<MarkerStroke> m_currentStroke;
     QRect m_previewDirtyRect;
+    FreehandSmoother m_smoother;
+    QPointF m_livePoint;
+    bool m_hasLivePoint = false;
 };
 
 #endif // MARKERTOOLHANDLER_H

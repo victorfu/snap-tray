@@ -172,7 +172,7 @@ PencilStroke::PencilStroke(const QVector<QPointF> &points, const QColor &color, 
 
 void PencilStroke::draw(QPainter &painter) const
 {
-    if (m_points.size() < 2) return;
+    if (renderedPointCount() < 2) return;
 
     painter.save();
 
@@ -184,7 +184,7 @@ void PencilStroke::draw(QPainter &painter) const
     const bool requiresSinglePath =
         m_lineStyle != LineStyle::Solid || m_color.alpha() != 255;
     if (requiresSinglePath && !m_finalized) {
-        painter.drawPath(buildSmoothPath(m_points));
+        painter.drawPath(buildLivePath(0));
     } else {
         if (!m_cachedPath.isEmpty()) {
             painter.drawPath(m_cachedPath);
@@ -200,7 +200,7 @@ void PencilStroke::draw(QPainter &painter) const
 
 void PencilStroke::drawPreview(QPainter &painter) const
 {
-    if (m_points.size() < 2) {
+    if (renderedPointCount() < 2) {
         return;
     }
 
@@ -290,6 +290,7 @@ void PencilStroke::translate(const QPointF& delta)
     for (QPointF& point : m_points) {
         point += delta;
     }
+    m_livePoint += delta;
 
     QTransform translation;
     translation.translate(delta.x(), delta.y());
@@ -324,8 +325,23 @@ void PencilStroke::addPoint(const QPointF &point)
     }
 }
 
+void PencilStroke::setLivePoint(const QPointF &point)
+{
+    if (m_finalized || m_points.isEmpty()) {
+        return;
+    }
+    m_livePoint = point;
+    m_hasLivePoint = true;
+    rebuildTailPath();
+}
+
 void PencilStroke::finalize()
 {
+    if (m_hasLivePoint) {
+        m_hasLivePoint = false;
+        rebuildTailPath();
+    }
+
     // For styles where separate painter calls change the output, pay the
     // one-time cost of consolidating the incremental prefix/tail caches.
     // Opaque solid strokes keep their existing caches because the split is
@@ -401,9 +417,24 @@ void PencilStroke::rebuildPathCaches()
 
 void PencilStroke::rebuildTailPath()
 {
-    m_tailPath = buildSmoothPath(m_points, m_cachedSegmentCount);
-    m_previewAffectedPath = buildSmoothPath(
-        m_points, qMax(0, m_cachedSegmentCount - 1));
+    m_tailPath = buildLivePath(m_cachedSegmentCount);
+    m_previewAffectedPath = buildLivePath(qMax(0, m_cachedSegmentCount - 1));
+}
+
+QPainterPath PencilStroke::buildLivePath(int firstSegment) const
+{
+    if (!m_hasLivePoint) {
+        return buildSmoothPath(m_points, firstSegment);
+    }
+
+    // Treat the live cursor as one more spline point. Copy only the tail, plus
+    // one leading point so the first segment keeps its full-stroke tangent.
+    const int start = qBound(0, firstSegment - 1, qMax(0, m_points.size() - 1));
+    QVector<QPointF> livePoints(m_points.cbegin() + start, m_points.cend());
+    if (QLineF(livePoints.last(), m_livePoint).length() > kParameterEpsilon) {
+        livePoints.append(m_livePoint);
+    }
+    return buildSmoothPath(livePoints, firstSegment - start);
 }
 
 void PencilStroke::syncPreviewRasterCache(PreviewRasterCache& cache) const

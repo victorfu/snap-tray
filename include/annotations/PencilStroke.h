@@ -28,6 +28,9 @@ public:
     std::size_t estimatedRetainedBytes() const override;
 
     void addPoint(const QPointF &point);
+    // Raw cursor position drawn as a transient tail after the committed points
+    // while the stroke is active. It is not stored and finalize() drops it.
+    void setLivePoint(const QPointF &point);
     void finalize();
     // Geometry that can change on the next point: newly locked segment + live tail.
     QRect previewAffectedBoundingRect() const;
@@ -57,6 +60,8 @@ private:
     QColor m_color;
     int m_width;
     LineStyle m_lineStyle;
+    QPointF m_livePoint;
+    bool m_hasLivePoint = false;
 
     // Incremental Catmull-Rom spline caching
     mutable QPainterPath m_cachedPath;       // Locked segments that won't change
@@ -77,6 +82,8 @@ private:
     void appendLockableSegments();
     void rebuildPathCaches();
     void rebuildTailPath();
+    QPainterPath buildLivePath(int firstSegment) const;
+    int renderedPointCount() const { return m_points.size() + (m_hasLivePoint ? 1 : 0); }
     void syncPreviewRasterCache(PreviewRasterCache& cache) const;
     void drawPreviewTiles(QPainter& painter, PreviewRasterCache& cache) const;
 };

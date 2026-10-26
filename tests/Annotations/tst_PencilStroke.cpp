@@ -155,6 +155,8 @@ class TestPencilStroke : public QObject
     Q_OBJECT
 
 private slots:
+    void testLivePointDrawsTailUntilFinalize_data();
+    void testLivePointDrawsTailUntilFinalize();
     void testAddPoint_BoundingRectPreservesConstructorStartPoint();
     void testIntersectsCircle_FollowsSmoothPathAtSharpTurn();
     void testIntersectsCircle_BoundingRectCoversSmoothOvershoot();
@@ -426,6 +428,43 @@ void TestPencilStroke::testPreviewRasterPreservesSelfOverlapAlpha()
     const QImage vectorImage = renderStroke(stroke, false, 1.0, 0.0);
     const QImage previewImage = renderStroke(stroke, true, 1.0, 0.0);
     QCOMPARE(previewImage, vectorImage);
+}
+
+void TestPencilStroke::testLivePointDrawsTailUntilFinalize_data()
+{
+    QTest::addColumn<int>("lineStyle");
+    QTest::addColumn<int>("alpha");
+    QTest::newRow("solid-opaque") << int(LineStyle::Solid) << 255;
+    QTest::newRow("solid-translucent") << int(LineStyle::Solid) << 128;
+    QTest::newRow("dashed") << int(LineStyle::Dashed) << 255;
+}
+
+void TestPencilStroke::testLivePointDrawsTailUntilFinalize()
+{
+    QFETCH(int, lineStyle);
+    QFETCH(int, alpha);
+    QColor color(Qt::red);
+    color.setAlpha(alpha);
+    PencilStroke stroke({QPointF(10, 30), QPointF(30, 30), QPointF(50, 30)},
+                        color, 6, static_cast<LineStyle>(lineStyle));
+    stroke.setLivePoint(QPointF(90, 30));
+    QVERIFY(stroke.previewAffectedBoundingRect().contains(QPoint(90, 30)));
+
+    auto render = [&stroke](bool preview) {
+        QImage image(120, 60, QImage::Format_ARGB32);
+        image.fill(Qt::white);
+        QPainter painter(&image);
+        preview ? stroke.drawPreview(painter) : stroke.draw(painter);
+        return image;
+    };
+    // Solid strokes paint a continuous tail; check a short span for dashes.
+    const QRect nearCursor(80, 27, 10, 6);
+    QVERIFY(regionHasNonWhitePixel(render(true), nearCursor));
+    QVERIFY(regionHasNonWhitePixel(render(false), nearCursor));
+
+    stroke.finalize();
+    QCOMPARE(stroke.points().size(), qsizetype(3));
+    QVERIFY(!regionHasNonWhitePixel(render(false), QRect(60, 20, 40, 20)));
 }
 
 QTEST_MAIN(TestPencilStroke)

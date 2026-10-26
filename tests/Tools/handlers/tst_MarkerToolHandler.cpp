@@ -17,8 +17,10 @@ private slots:
     void testPreviewBounds_StaysLocalAsStrokeGrows();
     void testFloatInputPreservesFractionalPoints();
     void testFiltersMicroMoves();
-    void testReleaseFiltersTinyTerminalSegment();
-    void testDprScaledPointFiltering();
+    void testReleaseMovesTinyTerminalSegmentOntoCursor();
+    void testPointSpacingSuppressesSubPixelJitter_data();
+    void testPointSpacingSuppressesSubPixelJitter();
+    void testLiveTailReachesCursorBeforePointCommits();
 
 private:
     MarkerToolHandler* m_handler = nullptr;
@@ -118,51 +120,76 @@ void TestMarkerToolHandler::testFiltersMicroMoves()
     QCOMPARE(stroke->points().size(), qsizetype(2));
 }
 
-void TestMarkerToolHandler::testReleaseFiltersTinyTerminalSegment()
+void TestMarkerToolHandler::testReleaseMovesTinyTerminalSegmentOntoCursor()
 {
     m_handler->onMousePressF(m_context, QPointF(10.0, 10.0));
     m_handler->onMouseMoveF(m_context, QPointF(20.0, 10.0));
-    m_handler->onMouseReleaseF(m_context, QPointF(21.0, 10.0));
+    // Smoothing commits the move short of x=20, within spacing of the release.
+    m_handler->onMouseReleaseF(m_context, QPointF(18.0, 10.0));
 
     QCOMPARE(m_layer->itemCount(), size_t(1));
     auto* stroke = dynamic_cast<MarkerStroke*>(m_layer->itemAt(0));
     QVERIFY(stroke != nullptr);
+    // The stroke ends under the cursor without adding a tiny bump segment.
     QCOMPARE(stroke->points().size(), qsizetype(2));
-    QCOMPARE(stroke->points().last(), QPointF(20.0, 10.0));
+    QCOMPARE(stroke->points().last(), QPointF(18.0, 10.0));
 }
 
-void TestMarkerToolHandler::testDprScaledPointFiltering()
+void TestMarkerToolHandler::testPointSpacingSuppressesSubPixelJitter_data()
 {
-    struct Case {
-        qreal dpr;
-        qsizetype expectedPointCount;
-    };
+    QTest::addColumn<qreal>("dpr");
+    QTest::addColumn<qreal>("minSpacing");
+    QTest::newRow("100%") << 1.0 << 4.0;
+    QTest::newRow("150%") << 1.5 << 4.0;
+    QTest::newRow("200%") << 2.0 << 3.0;
+}
 
-    const Case cases[] = {
-        {1.0, 2},
-        {1.25, 3},
-        {1.5, 3},
-        {2.0, 3}
-    };
+void TestMarkerToolHandler::testPointSpacingSuppressesSubPixelJitter()
+{
+    QFETCH(qreal, dpr);
+    QFETCH(qreal, minSpacing);
 
-    for (const Case& testCase : cases) {
-        MarkerToolHandler handler;
-        AnnotationLayer layer;
-        ToolContext context;
-        context.annotationLayer = &layer;
-        context.color = Qt::yellow;
-        context.devicePixelRatio = testCase.dpr;
-
-        handler.onMousePressF(&context, QPointF(10.0, 10.0));
-        handler.onMouseMoveF(&context, QPointF(12.1, 10.0));
-        handler.onMouseMoveF(&context, QPointF(14.2, 10.0));
-        handler.onMouseReleaseF(&context, QPointF(14.2, 10.0));
-
-        QCOMPARE(layer.itemCount(), size_t(1));
-        auto* stroke = dynamic_cast<MarkerStroke*>(layer.itemAt(0));
-        QVERIFY(stroke != nullptr);
-        QCOMPARE(stroke->points().size(), testCase.expectedPointCount);
+    // One physical pixel per event, as a slow drag delivers on Windows.
+    m_context->devicePixelRatio = dpr;
+    const qreal step = 1.0 / dpr;
+    m_handler->onMousePressF(m_context, QPointF(10.0, 10.0));
+    for (qreal x = 10.0 + step; x < 70.0; x += step) {
+        m_handler->onMouseMoveF(m_context, QPointF(x, 10.0));
     }
+    m_handler->onMouseReleaseF(m_context, QPointF(70.0, 10.0));
+
+    QCOMPARE(m_layer->itemCount(), size_t(1));
+    auto* stroke = dynamic_cast<MarkerStroke*>(m_layer->itemAt(0));
+    QVERIFY(stroke != nullptr);
+    const QVector<QPointF> points = stroke->points();
+    QVERIFY(points.size() >= 3);
+    // The release point is exempt so the stroke still ends under the cursor.
+    for (int i = 1; i < points.size() - 1; ++i) {
+        QVERIFY2(QLineF(points[i - 1], points[i]).length() >= minSpacing - 1e-6,
+                 qPrintable(QStringLiteral("points %1 and %2 are closer than %3")
+                                .arg(i - 1).arg(i).arg(minSpacing)));
+    }
+    QCOMPARE(points.last(), QPointF(70.0, 10.0));
+}
+
+void TestMarkerToolHandler::testLiveTailReachesCursorBeforePointCommits()
+{
+    m_handler->onMousePressF(m_context, QPointF(20.0, 30.0));
+    for (int i = 1; i <= 20; ++i) {
+        m_handler->onMouseMoveF(m_context, QPointF(20.0 + i * 3.0, 30.0));
+    }
+    const QPointF cursor(80.0, 30.0);
+    QVERIFY(m_handler->previewBounds().contains(cursor.toPoint()));
+
+    QImage image(120, 60, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    {
+        QPainter painter(&image);
+        m_handler->drawPreview(painter);
+    }
+    // The committed points trail the cursor, but the preview reaches it.
+    QVERIFY(qAlpha(image.pixel(cursor.toPoint())) > 0);
+    QCOMPARE(qAlpha(image.pixel(QPoint(100, 30))), 0);
 }
 
 QTEST_MAIN(TestMarkerToolHandler)
