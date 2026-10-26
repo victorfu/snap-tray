@@ -53,9 +53,12 @@ private:
     QPointF m_lastRawPoint;       // Previous raw input for velocity calculation
     bool m_hasSmoothedPoint = false;
 
-    // Minimum physical distance threshold before committing another point.
-    // Keep spacing stable across mixed-DPI setups instead of hard-coding logical pixels.
-    static constexpr qreal kMinPointDistancePhysical = 2.0;
+    // Minimum distance before committing another point. The spline interpolates
+    // every committed point, so dense samples turn the +/-0.5 physical-pixel
+    // input quantization into visible wobble; spacing is set in physical pixels
+    // and capped in logical pixels so small shapes keep their detail at 100%.
+    static constexpr qreal kMinPointDistancePhysical = 6.0;
+    static constexpr qreal kMaxMinPointDistanceLogical = 4.0;
 
     // Smoothing parameters
     // Base smoothing factor (0 = max smooth, 1 = no smooth)

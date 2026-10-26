@@ -6,10 +6,12 @@
 
 namespace {
 
-qreal effectiveMinPointDistance(const ToolContext* ctx, qreal targetPhysicalDistance)
+qreal effectiveMinPointDistance(const ToolContext* ctx,
+                                qreal targetPhysicalDistance,
+                                qreal maxLogicalDistance)
 {
     const qreal dpr = (ctx && ctx->devicePixelRatio > 0.0) ? ctx->devicePixelRatio : 1.0;
-    return targetPhysicalDistance / dpr;
+    return qMin(targetPhysicalDistance / dpr, maxLogicalDistance);
 }
 
 } // namespace
@@ -88,7 +90,8 @@ void PencilToolHandler::onMouseMoveF(ToolContext* ctx, const QPointF& pos) {
         QPointF delta = m_smoothedPoint - points.last();
         qreal distance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
 
-        if (distance < effectiveMinPointDistance(ctx, kMinPointDistancePhysical)) {
+        if (distance < effectiveMinPointDistance(
+                ctx, kMinPointDistancePhysical, kMaxMinPointDistanceLogical)) {
             return;
         }
     }

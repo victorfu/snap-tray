@@ -145,6 +145,8 @@ private slots:
     void testLongDiagonalPreview_UsesSparseTiles();
     void testFloatInputPreservesFractionalPoints();
     void testHighDpiAllowsCloserPoints();
+    void testPointSpacingSuppressesSubPixelJitter_data();
+    void testPointSpacingSuppressesSubPixelJitter();
 
     // Cancellation tests
     void testCancelDrawing();
@@ -366,7 +368,7 @@ void TestPencilToolHandler::testLongStrokePreview_HasBoundedPathSubmission()
     for (int i = 1; i <= kMoveCount; ++i) {
         const int repaintCountBeforeMove = m_repaintCount;
         m_handler->onMouseMoveF(
-            m_context, QPointF(i * 4.0, 100.0 + (i % 11)));
+            m_context, QPointF(i * 6.0, 100.0 + (i % 11)));
         if (m_repaintCount == repaintCountBeforeMove) {
             continue;
         }
@@ -430,19 +432,58 @@ void TestPencilToolHandler::testFloatInputPreservesFractionalPoints()
     QVERIFY(hasFractionalPoint);
 }
 
+namespace {
+
+QVector<QPointF> drawHorizontalStroke(PencilToolHandler* handler, ToolContext* ctx,
+                                      AnnotationLayer* layer, qreal dpr)
+{
+    // One physical pixel per event, as a slow drag delivers on Windows.
+    ctx->devicePixelRatio = dpr;
+    const qreal step = 1.0 / dpr;
+    handler->onMousePressF(ctx, QPointF(10.0, 10.0));
+    for (qreal x = 10.0 + step; x < 70.0; x += step) {
+        handler->onMouseMoveF(ctx, QPointF(x, 10.0));
+    }
+    handler->onMouseReleaseF(ctx, QPointF(70.0, 10.0));
+
+    auto* stroke = dynamic_cast<PencilStroke*>(layer->itemAt(layer->itemCount() - 1));
+    return stroke ? stroke->points() : QVector<QPointF>();
+}
+
+} // namespace
+
 void TestPencilToolHandler::testHighDpiAllowsCloserPoints()
 {
-    m_context->devicePixelRatio = 2.0;
+    const int lowDpiPoints = drawHorizontalStroke(m_handler, m_context, m_layer, 1.0).size();
+    const int highDpiPoints = drawHorizontalStroke(m_handler, m_context, m_layer, 2.0).size();
 
-    m_handler->onMousePressF(m_context, QPointF(10.0, 10.0));
-    m_handler->onMouseMoveF(m_context, QPointF(11.0, 11.0));
-    m_handler->onMouseMoveF(m_context, QPointF(11.8, 11.8));
-    m_handler->onMouseReleaseF(m_context, QPointF(12.6, 12.6));
+    QVERIFY(lowDpiPoints >= 3);
+    QVERIFY(highDpiPoints > lowDpiPoints);
+}
 
-    QCOMPARE(m_layer->itemCount(), size_t(1));
-    auto* stroke = dynamic_cast<PencilStroke*>(m_layer->itemAt(0));
-    QVERIFY(stroke != nullptr);
-    QVERIFY(stroke->points().size() >= 3);
+void TestPencilToolHandler::testPointSpacingSuppressesSubPixelJitter_data()
+{
+    QTest::addColumn<qreal>("dpr");
+    QTest::addColumn<qreal>("minSpacing");
+    QTest::newRow("100%") << 1.0 << 4.0;
+    QTest::newRow("150%") << 1.5 << 4.0;
+    QTest::newRow("200%") << 2.0 << 3.0;
+}
+
+void TestPencilToolHandler::testPointSpacingSuppressesSubPixelJitter()
+{
+    QFETCH(qreal, dpr);
+    QFETCH(qreal, minSpacing);
+
+    const QVector<QPointF> points = drawHorizontalStroke(m_handler, m_context, m_layer, dpr);
+    QVERIFY(points.size() >= 3);
+    // The release point is exempt so the stroke still ends under the cursor.
+    for (int i = 1; i < points.size() - 1; ++i) {
+        QVERIFY2(QLineF(points[i - 1], points[i]).length() >= minSpacing - 1e-6,
+                 qPrintable(QStringLiteral("points %1 and %2 are closer than %3")
+                                .arg(i - 1).arg(i).arg(minSpacing)));
+    }
+    QCOMPARE(points.last(), QPointF(70.0, 10.0));
 }
 
 // ============================================================================
