@@ -13,8 +13,42 @@
 #include "region/RegionInputState.h"
 #include "region/SelectionStateManager.h"
 #include "region/UpdateThrottler.h"
+#include "tools/IToolHandler.h"
+#include "tools/ToolManager.h"
 
 namespace {
+
+QMouseEvent makeMouseEventF(QEvent::Type type,
+                            const QPointF& pos,
+                            Qt::MouseButton button,
+                            Qt::MouseButtons buttons)
+{
+    return QMouseEvent(type, pos, pos, pos, button, buttons, Qt::NoModifier);
+}
+
+class RecordingPencilHandler : public IToolHandler
+{
+public:
+    explicit RecordingPencilHandler(QVector<QPointF>* positions) : m_positions(positions) {}
+
+    ToolId toolId() const override { return ToolId::Pencil; }
+    void onMousePressF(ToolContext*, const QPointF& pos) override
+    {
+        m_drawing = true;
+        m_positions->append(pos);
+    }
+    void onMouseMoveF(ToolContext*, const QPointF& pos) override { m_positions->append(pos); }
+    void onMouseReleaseF(ToolContext*, const QPointF& pos) override
+    {
+        m_drawing = false;
+        m_positions->append(pos);
+    }
+    bool isDrawing() const override { return m_drawing; }
+
+private:
+    QVector<QPointF>* m_positions;
+    bool m_drawing = false;
+};
 
 QMouseEvent makeMouseEvent(QEvent::Type type,
                            const QPoint& pos,
@@ -56,6 +90,7 @@ private slots:
     void testMouseMoveEmitsCurrentPointUpdatedDuringSelectionDrag();
 
     void testCompletedSelectionHoverSkipsMagnifierDirtyRegionWhenDisabled();
+    void testFreehandDrawingPreservesFractionalMovePositions();
 
 private:
     RegionInputHandler* m_handler = nullptr;
@@ -512,6 +547,34 @@ void tst_RegionInputHandler::testCompletedSelectionHoverSkipsMagnifierDirtyRegio
     m_handler->handleMouseMove(&secondMoveEvent);
 
     QVERIFY(m_handler->lastMagnifierRect().isNull());
+}
+
+void tst_RegionInputHandler::testFreehandDrawingPreservesFractionalMovePositions()
+{
+    // Fractional DPR (e.g. Windows 150%) delivers sub-pixel logical positions;
+    // rounding them before the freehand tool sees them makes curves wobble.
+    QVector<QPointF> positions;
+    ToolManager toolManager;
+    toolManager.setAnnotationLayer(m_annotationLayer);
+    toolManager.registerHandler(std::make_unique<RecordingPencilHandler>(&positions));
+    m_handler->setToolManager(&toolManager);
+    m_selectionManager->setSelectionRect(QRect(0, 0, 800, 600));
+    m_state.currentTool = ToolId::Pencil;
+
+    const QPointF pressPos(100.333, 100.667);
+    const QPointF movePos(120.667, 110.333);
+    const QPointF releasePos(130.333, 115.667);
+
+    auto press = makeMouseEventF(QEvent::MouseButtonPress, pressPos, Qt::LeftButton, Qt::LeftButton);
+    m_handler->handleMousePress(&press);
+    QVERIFY(m_state.isDrawing);
+    auto move = makeMouseEventF(QEvent::MouseMove, movePos, Qt::NoButton, Qt::LeftButton);
+    m_handler->handleMouseMove(&move);
+    auto release = makeMouseEventF(QEvent::MouseButtonRelease, releasePos, Qt::LeftButton, Qt::NoButton);
+    m_handler->handleMouseRelease(&release, RegionInputHandler::ReleaseTarget::Canvas);
+
+    m_handler->setToolManager(nullptr);
+    QCOMPARE(positions, (QVector<QPointF>{pressPos, movePos, releasePos}));
 }
 
 QTEST_MAIN(tst_RegionInputHandler)

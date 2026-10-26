@@ -351,7 +351,8 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
 
     // Handle selection states
     if (!selectionGesture && state().isDrawing) {
-        handleAnnotationMove(QPointF(effectivePos));
+        // Freehand tools need the sub-pixel position; effectivePos is rounded.
+        handleAnnotationMove(event->position());
     }
     else if (!selectionGesture && (m_selectionManager->isComplete() ||
         (state().multiRegionMode && m_multiRegionManager && m_multiRegionManager->count() > 0))) {
