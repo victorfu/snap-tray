@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-06-13
+last_modified_at: 2026-10-20
 layout: docs
 title: 단축키
 seo_title: "SnapTray 단축키: 캡처 및 플랫폼별 녹화 단축키"
@@ -23,6 +23,7 @@ doc_order: 3
 ## 추가 설정 가능 동작 (기본값 없음)
 
 - 전체 화면 캡처
+- 지연 캡처
 - 이미지로 고정
 - 핀 기록
 - 모든 핀 숨기기/표시 전환

@@ -283,6 +283,14 @@
     </message>
 </context>
 <context>
+    <name>DelayedCaptureIndicator</name>
+    <message>
+        <location filename="../src/qml/components/DelayedCaptureIndicator.qml" line="63" />
+        <source>Delayed capture</source>
+        <translation>Chụp trễ</translation>
+    </message>
+</context>
+<context>
     <name>FilesSettings</name>
     <message>
         <location filename="../src/qml/settings/FilesSettings.qml" line="21" />
@@ -721,6 +729,23 @@ Token ngày: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, hoặc {date}</translatio
         <location filename="../src/MainApplication.cpp" line="323" />
         <source>Full Screen Capture</source>
         <translation>Chụp toàn màn hình</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="350" />
+        <source>Delayed Capture</source>
+        <translation>Chụp trễ</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../src/MainApplication.cpp" line="355" />
+        <source>%n seconds</source>
+        <translation>
+            <numerusform>%n giây</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="364" />
+        <source>Cancel Delayed Capture</source>
+        <translation>Hủy chụp trễ</translation>
     </message>
 </context>
 <context>
@@ -2455,6 +2480,16 @@ Ghi GIF không hỗ trợ âm thanh.</translation>
         <location filename="../include/hotkey/HotkeyTypes.h" line="120" />
         <source>Capture the screen under the cursor</source>
         <translation>Chụp màn hình đang có con trỏ</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="128" />
+        <source>Delayed Capture</source>
+        <translation>Chụp trễ</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="129" />
+        <source>Start a countdown, then capture a region</source>
+        <translation>Bắt đầu đếm ngược rồi chụp một vùng</translation>
     </message>
 </context>
 <context>

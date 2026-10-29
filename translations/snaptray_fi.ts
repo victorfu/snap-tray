@@ -283,6 +283,14 @@
     </message>
 </context>
 <context>
+    <name>DelayedCaptureIndicator</name>
+    <message>
+        <location filename="../src/qml/components/DelayedCaptureIndicator.qml" line="63" />
+        <source>Delayed capture</source>
+        <translation>Viivästetty kaappaus</translation>
+    </message>
+</context>
+<context>
     <name>FilesSettings</name>
     <message>
         <location filename="../src/qml/settings/FilesSettings.qml" line="21" />
@@ -721,6 +729,24 @@ Päivämäärätunnisteet: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} tai {date}</
         <location filename="../src/MainApplication.cpp" line="323" />
         <source>Full Screen Capture</source>
         <translation>Koko näytön kaappaus</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="350" />
+        <source>Delayed Capture</source>
+        <translation>Viivästetty kaappaus</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../src/MainApplication.cpp" line="355" />
+        <source>%n seconds</source>
+        <translation>
+            <numerusform>%n sekunti</numerusform>
+            <numerusform>%n sekuntia</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="364" />
+        <source>Cancel Delayed Capture</source>
+        <translation>Peruuta viivästetty kaappaus</translation>
     </message>
 </context>
 <context>
@@ -2455,6 +2481,16 @@ GIF-tallennuksissa ääntä ei tueta.</translation>
         <location filename="../include/hotkey/HotkeyTypes.h" line="120" />
         <source>Capture the screen under the cursor</source>
         <translation>Kaappaa kohdistimen alla oleva näyttö</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="128" />
+        <source>Delayed Capture</source>
+        <translation>Viivästetty kaappaus</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="129" />
+        <source>Start a countdown, then capture a region</source>
+        <translation>Aloita lähtölaskenta ja kaappaa sitten alue</translation>
     </message>
 </context>
 <context>

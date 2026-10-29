@@ -283,6 +283,14 @@
     </message>
 </context>
 <context>
+    <name>DelayedCaptureIndicator</name>
+    <message>
+        <location filename="../src/qml/components/DelayedCaptureIndicator.qml" line="63" />
+        <source>Delayed capture</source>
+        <translation>Gecikmeli yakalama</translation>
+    </message>
+</context>
+<context>
     <name>FilesSettings</name>
     <message>
         <location filename="../src/qml/settings/FilesSettings.qml" line="21" />
@@ -721,6 +729,23 @@ Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</trans
         <location filename="../src/MainApplication.cpp" line="323" />
         <source>Full Screen Capture</source>
         <translation>Tam Ekran Yakalama</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="350" />
+        <source>Delayed Capture</source>
+        <translation>Gecikmeli Yakalama</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../src/MainApplication.cpp" line="355" />
+        <source>%n seconds</source>
+        <translation>
+            <numerusform>%n saniye</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="364" />
+        <source>Cancel Delayed Capture</source>
+        <translation>Gecikmeli Yakalamayı İptal Et</translation>
     </message>
 </context>
 <context>
@@ -2455,6 +2480,16 @@ GIF kayıtlarında ses desteklenmez.</translation>
         <location filename="../include/hotkey/HotkeyTypes.h" line="120" />
         <source>Capture the screen under the cursor</source>
         <translation>İmlecin altındaki ekranı yakala</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="128" />
+        <source>Delayed Capture</source>
+        <translation>Gecikmeli Yakalama</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="129" />
+        <source>Start a countdown, then capture a region</source>
+        <translation>Geri sayım başlat, ardından bir bölge yakala</translation>
     </message>
 </context>
 <context>

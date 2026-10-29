@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-03-17
+last_modified_at: 2026-10-20
 layout: docs
 title: Hotkeys
 seo_title: "SnapTray Hotkeys: Capture and Platform-Specific Recording Shortcuts"
@@ -23,6 +23,7 @@ doc_order: 3
 ## Additional configurable actions (no default)
 
 - Full Screen Capture
+- Delayed Capture
 - Pin from Image
 - Pin History
 - Toggle Hide/Show All Pins

@@ -6,6 +6,10 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+### Added
+
+- Added Delayed Capture to the tray menu, with 3, 5, and 10 second countdowns and an optional hotkey. A click-through countdown pill lets you open menus or hover controls first; when it ends, SnapTray hides the pill, freezes the screen, and opens Region Capture on it. The countdown can be cancelled from the tray or by pressing the hotkey again.
+
 ## [1.0.69] - 2026-10-24
 
 ### Added
