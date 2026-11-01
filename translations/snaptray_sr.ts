@@ -617,6 +617,31 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>Сними цео екран</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="1177" />
+        <source>Preparing to record</source>
+        <translation>Припрема снимања</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1178" />
+        <source>Recording starts soon</source>
+        <translation>Снимање ускоро почиње</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1179" />
+        <source>Recording</source>
+        <translation>Снимање у току</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1180" />
+        <source>Recording paused</source>
+        <translation>Снимање паузирано</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1181" />
+        <source>Finishing recording</source>
+        <translation>Завршавање снимања</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="436" />
         <source>Check for Updates</source>
         <translation>Провера ажурирања</translation>

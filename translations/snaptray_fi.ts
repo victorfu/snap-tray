@@ -611,6 +611,31 @@ Päivämäärätunnisteet: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} tai {date}</
         <translation>Tallenna koko näyttö</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="1177" />
+        <source>Preparing to record</source>
+        <translation>Valmistellaan tallennusta</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1178" />
+        <source>Recording starts soon</source>
+        <translation>Tallennus alkaa pian</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1179" />
+        <source>Recording</source>
+        <translation>Tallennetaan</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1180" />
+        <source>Recording paused</source>
+        <translation>Tallennus keskeytetty</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1181" />
+        <source>Finishing recording</source>
+        <translation>Viimeistellään tallennusta</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="436" />
         <source>Check for Updates</source>
         <translation>Päivitystarkistus</translation>

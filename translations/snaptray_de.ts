@@ -617,6 +617,31 @@ Datums-Tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} oder {date}</translation
         <translation>Vollbild aufnehmen</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="1177" />
+        <source>Preparing to record</source>
+        <translation>Aufnahme wird vorbereitet</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1178" />
+        <source>Recording starts soon</source>
+        <translation>Aufnahme beginnt gleich</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1179" />
+        <source>Recording</source>
+        <translation>Aufnahme läuft</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1180" />
+        <source>Recording paused</source>
+        <translation>Aufnahme pausiert</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1181" />
+        <source>Finishing recording</source>
+        <translation>Aufnahme wird abgeschlossen</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="436" />
         <source>Check for Updates</source>
         <translation>Update-Prüfung</translation>

@@ -617,6 +617,31 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>Запись полного экрана</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="1177" />
+        <source>Preparing to record</source>
+        <translation>Подготовка к записи</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1178" />
+        <source>Recording starts soon</source>
+        <translation>Запись скоро начнётся</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1179" />
+        <source>Recording</source>
+        <translation>Идёт запись</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1180" />
+        <source>Recording paused</source>
+        <translation>Запись приостановлена</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1181" />
+        <source>Finishing recording</source>
+        <translation>Завершение записи</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="436" />
         <source>Check for Updates</source>
         <translation>Проверка обновлений</translation>

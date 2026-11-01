@@ -682,6 +682,31 @@ File size: %3</source>
         <translation>บันทึกเต็มหน้าจอ</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="1177" />
+        <source>Preparing to record</source>
+        <translation>กำลังเตรียมบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1178" />
+        <source>Recording starts soon</source>
+        <translation>กำลังจะเริ่มบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1179" />
+        <source>Recording</source>
+        <translation>กำลังบันทึก</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1180" />
+        <source>Recording paused</source>
+        <translation>หยุดบันทึกชั่วคราว</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1181" />
+        <source>Finishing recording</source>
+        <translation>กำลังจบการบันทึก</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="436"/>
         <source>Check for Updates</source>
         <translation>ตรวจสอบการอัปเดต</translation>

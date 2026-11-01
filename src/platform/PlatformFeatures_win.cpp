@@ -67,7 +67,7 @@ WindowDetector* PlatformFeatures::createWindowDetector(QObject* parent) const
     return new WindowDetector(parent);
 }
 
-QIcon PlatformFeatures::createTrayIcon() const
+QPixmap PlatformFeatures::createTrayPixmap() const
 {
     const int size = 32;
     QPixmap pixmap(size, size);
@@ -97,7 +97,7 @@ QIcon PlatformFeatures::createTrayIcon() const
     painter.setBrush(QColor("#FBBF24"));
     painter.drawPath(lightningPath);
 
-    return QIcon(pixmap);
+    return pixmap;
 }
 
 bool PlatformFeatures::copyImageToClipboardPersistently(const QImage& image) const

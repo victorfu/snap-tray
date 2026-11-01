@@ -32,6 +32,8 @@
 #include <QTemporaryDir>
 #include <QScreen>
 #include <QPainter>
+#include <QSet>
+#include <QSystemTrayIcon>
 #include <QtTest>
 
 namespace {
@@ -142,6 +144,7 @@ private slots:
     void updateTrayMenuHotkeyText_usesTranslatedPasteLabel();
     void initialize_directDownload_addsEnabledCheckForUpdatesActionBeforeSettings();
     void initialize_hidesRecordingActionWhenUnsupported();
+    void recordingState_updatesTrayIconAndToolTip();
     void onCheckForUpdates_usesSharedSettingsWindowFlowWithoutShowingSettings();
     void initialize_externalManaged_disablesCheckForUpdatesAction();
     void handleCLICommand_removedRecordCommandIsIgnored();
@@ -359,6 +362,67 @@ void tst_MainApplicationTrayMenu::initialize_hidesRecordingActionWhenUnsupported
         QVERIFY(!application.m_pauseRecordingAction->isVisible());
     }
 
+}
+
+void tst_MainApplicationTrayMenu::recordingState_updatesTrayIconAndToolTip()
+{
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+
+    MainApplication application;
+    application.initialize();
+    QVERIFY(application.m_trayIcon);
+    QVERIFY(!application.m_trayBasePixmap.isNull());
+
+    using State = RecordingManager::State;
+    using Status = SnapTray::TrayRecordingStatus;
+    RecordingManager* recording = application.m_recordingManager;
+    const qint64 idleIconKey = application.m_trayIcon->icon().cacheKey();
+    const QString idleToolTip = application.m_trayIcon->toolTip();
+    QVERIFY(!idleToolTip.contains(MainApplication::tr("Recording")));
+
+    struct Expectation {
+        State state;
+        Status status;
+        QString text;
+    };
+    const QList<Expectation> expectations{
+        {State::Preparing, Status::Preparing, MainApplication::tr("Preparing to record")},
+        {State::Countdown, Status::Countdown, MainApplication::tr("Recording starts soon")},
+        {State::Recording, Status::Recording, MainApplication::tr("Recording")},
+        {State::Paused, Status::Paused, MainApplication::tr("Recording paused")},
+        {State::Encoding, Status::Finalizing, MainApplication::tr("Finishing recording")},
+    };
+
+    QSet<qint64> activeIconKeys;
+    for (const auto& expected : expectations) {
+        recording->setState(expected.state);
+        QCOMPARE(application.m_trayRecordingStatus, expected.status);
+        const qint64 iconKey = application.m_trayIcon->icon().cacheKey();
+        QVERIFY2(iconKey != idleIconKey, "an active recording state must badge the tray icon");
+        activeIconKeys.insert(iconKey);
+        QVERIFY2(application.m_trayIcon->toolTip().contains(expected.text),
+                 qPrintable(application.m_trayIcon->toolTip()));
+    }
+    QCOMPARE(activeIconKeys.size(), expectations.size());
+
+    // Elapsed time is pause-excluded (RecordingManager computes it) and shown
+    // only while recording or paused.
+    recording->setState(State::Recording);
+    emit recording->durationChanged(83'400);
+    QVERIFY2(application.m_trayIcon->toolTip().contains(QStringLiteral("1:23")),
+             qPrintable(application.m_trayIcon->toolTip()));
+    recording->setState(State::Paused);
+    QVERIFY(application.m_trayIcon->toolTip().contains(QStringLiteral("1:23")));
+    recording->setState(State::Encoding);
+    QVERIFY(!application.m_trayIcon->toolTip().contains(QStringLiteral("1:23")));
+
+    // The preview window is its own indicator; the tray returns to normal.
+    recording->setState(State::Previewing);
+    QCOMPARE(application.m_trayRecordingStatus, Status::Idle);
+    QCOMPARE(application.m_trayIcon->toolTip(), idleToolTip);
+    recording->setState(State::Idle);
+    QCOMPARE(application.m_trayRecordingStatus, Status::Idle);
+    QCOMPARE(application.m_trayIcon->toolTip(), idleToolTip);
 }
 
 void tst_MainApplicationTrayMenu::onCheckForUpdates_usesSharedSettingsWindowFlowWithoutShowingSettings()

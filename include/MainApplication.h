@@ -2,6 +2,7 @@
 #define MAINAPPLICATION_H
 
 #include "hotkey/HotkeyTypes.h"
+#include "ui/TrayRecordingIndicator.h"
 
 #include <QByteArray>
 #include <QImage>
@@ -81,6 +82,9 @@ private:
     void prepareForUpdateShutdown();
     void updateTrayMenuHotkeyText();
     void updateTrayToolTip();
+    void updateTrayRecordingIndicator();
+    void onRecordingDurationChanged(qint64 elapsedMs);
+    QString trayRecordingStatusLine() const;
     void updatePinsVisibilityActionText();
     void updateRecordingActionText();
     SnapTray::QmlSettingsWindow* ensureSettingsWindow();
@@ -118,6 +122,11 @@ private:
     QPointer<SnapTray::QmlDialog> m_screenPickerDialog;
     QPointer<SnapTray::ScreenPickerViewModel> m_screenPickerViewModel;
     RecordingPreviewBackend *m_previewBackend = nullptr;
+    // Tray artwork without a recording badge, and the state currently shown on it.
+    QPixmap m_trayBasePixmap;
+    SnapTray::TrayRecordingStatus m_trayRecordingStatus = SnapTray::TrayRecordingStatus::Idle;
+    // Effective (pause-excluded) duration shown in the tray tooltip; -1 when none.
+    qint64 m_trayRecordingElapsedMs = -1;
     // CLI commands received while a full screen capture was still exporting.
     QList<QByteArray> m_deferredCLICommands;
 };

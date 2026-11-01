@@ -18,6 +18,7 @@
 #include "qml/QmlToast.h"
 #include "qml/RecordingPreviewBackend.h"
 #include "recording/WindowTimelineSidecar.h"
+#include "ui/TrayRecordingIndicator.h"
 #include "ui/TrayTooltipFormatter.h"
 #include "update/InstallSourceDetector.h"
 #include "update/UpdateCoordinator.h"
@@ -55,6 +56,25 @@
 #include <utility>
 
 namespace {
+
+SnapTray::TrayRecordingStatus trayRecordingStatusForState(RecordingManager::State state)
+{
+    using State = RecordingManager::State;
+    using Status = SnapTray::TrayRecordingStatus;
+    switch (state) {
+    case State::Preparing: return Status::Preparing;
+    case State::Countdown: return Status::Countdown;
+    case State::Recording: return Status::Recording;
+    case State::Paused: return Status::Paused;
+    case State::Encoding: return Status::Finalizing;
+    case State::Idle:
+    case State::Previewing:
+        return Status::Idle;
+    }
+    return Status::Idle;
+}
+
+constexpr qint64 kTrayElapsedResolutionMs = 1000;
 // Text pixmap rendering constants (for paste-as-text feature)
 constexpr int kMaxTextPixmapWidth = 800;
 constexpr int kMaxTextPixmapHeight = 600;
@@ -327,12 +347,14 @@ void MainApplication::initialize()
             }
 
             updateRecordingActionText();
-            updateTrayToolTip();
+            updateTrayRecordingIndicator();
         });
+    connect(m_recordingManager, &RecordingManager::durationChanged,
+        this, &MainApplication::onRecordingDurationChanged);
 
     // Create system tray icon
-    QIcon icon = PlatformFeatures::instance().createTrayIcon();
-    m_trayIcon = new QSystemTrayIcon(icon, this);
+    m_trayBasePixmap = PlatformFeatures::instance().createTrayPixmap();
+    m_trayIcon = new QSystemTrayIcon(QIcon(m_trayBasePixmap), this);
 
     // Create context menu
     m_trayMenu = new QMenu();
@@ -1110,12 +1132,7 @@ void MainApplication::updateTrayToolTip()
         return;
     }
 
-    const QString recordingSummary = m_recordingManager
-        ? m_recordingManager->activeScreenSummary()
-        : QString();
-    const QString statusLine = recordingSummary.isEmpty()
-        ? QString()
-        : tr("Record Screen") + QStringLiteral(": ") + recordingSummary;
+    const QString statusLine = trayRecordingStatusLine();
 
 #ifdef Q_OS_WIN
     const QString notSetText = tr("Not set");
@@ -1149,6 +1166,61 @@ void MainApplication::updateTrayToolTip()
         m_trayIcon->setToolTip(tr("SnapTray - Screenshot Utility"));
     }
 #endif
+}
+
+QString MainApplication::trayRecordingStatusLine() const
+{
+    using Status = SnapTray::TrayRecordingStatus;
+    QString statusText;
+    switch (m_trayRecordingStatus) {
+    case Status::Idle: return {};
+    case Status::Preparing: statusText = tr("Preparing to record"); break;
+    case Status::Countdown: statusText = tr("Recording starts soon"); break;
+    case Status::Recording: statusText = tr("Recording"); break;
+    case Status::Paused: statusText = tr("Recording paused"); break;
+    case Status::Finalizing: statusText = tr("Finishing recording"); break;
+    }
+
+    QStringList parts{statusText};
+    if ((m_trayRecordingStatus == Status::Recording || m_trayRecordingStatus == Status::Paused)
+        && m_trayRecordingElapsedMs >= 0) {
+        parts.append(SnapTray::formatTrayRecordingElapsed(m_trayRecordingElapsedMs));
+    }
+    const QString screenSummary = m_recordingManager
+        ? m_recordingManager->activeScreenSummary()
+        : QString();
+    if (!screenSummary.isEmpty()) {
+        parts.append(screenSummary);
+    }
+    return parts.join(QStringLiteral(" \u00B7 "));
+}
+
+void MainApplication::updateTrayRecordingIndicator()
+{
+    const auto state = m_recordingManager ? m_recordingManager->state() : RecordingManager::State::Idle;
+    const auto status = trayRecordingStatusForState(state);
+    if (status != SnapTray::TrayRecordingStatus::Recording
+        && status != SnapTray::TrayRecordingStatus::Paused) {
+        m_trayRecordingElapsedMs = -1;
+    }
+    if (status != m_trayRecordingStatus) {
+        m_trayRecordingStatus = status;
+        if (m_trayIcon && !m_trayBasePixmap.isNull()) {
+            m_trayIcon->setIcon(QIcon(SnapTray::composeTrayRecordingPixmap(m_trayBasePixmap, status)));
+        }
+    }
+    updateTrayToolTip();
+}
+
+void MainApplication::onRecordingDurationChanged(qint64 elapsedMs)
+{
+    // durationChanged fires every 100 ms; the tooltip only shows whole seconds.
+    const qint64 previousSecond = m_trayRecordingElapsedMs < 0
+        ? -1 : m_trayRecordingElapsedMs / kTrayElapsedResolutionMs;
+    m_trayRecordingElapsedMs = qMax<qint64>(0, elapsedMs);
+    if (m_trayRecordingElapsedMs / kTrayElapsedResolutionMs != previousSecond) {
+        updateTrayToolTip();
+    }
 }
 
 void MainApplication::startScreenRecordingFlow(QScreen* preferredScreen)
