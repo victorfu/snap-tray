@@ -517,6 +517,26 @@ Token ngày: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, hoặc {date}</translatio
 <context>
     <name>MainApplication</name>
     <message>
+        <location filename="../src/MainApplication.cpp" line="1282" />
+        <source>dropping frames</source>
+        <translation>đang mất khung hình</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="425" />
+        <source>The recording diagnostics are on the clipboard. They contain no images, audio or file names.</source>
+        <translation>Chẩn đoán bản ghi đã ở trong bộ nhớ tạm. Không chứa hình ảnh, âm thanh hay tên tệp.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="424" />
+        <source>Diagnostics Copied</source>
+        <translation>Đã sao chép chẩn đoán</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="417" />
+        <source>Copy Recording Diagnostics</source>
+        <translation>Sao chép chẩn đoán bản ghi</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="411" />
         <source>Show Recording Controls</source>
         <translation>Hiện điều khiển ghi hình</translation>
@@ -1712,6 +1732,11 @@ Kích thước: %2</translation>
 </context>
 <context>
     <name>RecordingManager</name>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1460" />
+        <source>Recording can't keep up and is dropping frames. Try a lower frame rate, or close other busy apps.</source>
+        <translation>Bản ghi không theo kịp và đang mất khung hình. Hãy thử tốc độ khung hình thấp hơn hoặc đóng các ứng dụng đang bận.</translation>
+    </message>
     <message>
         <location filename="../src/RecordingManager.cpp" line="1145" />
         <source>The selected microphone was not found. Recording from the default microphone.</source>

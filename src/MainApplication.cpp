@@ -356,6 +356,10 @@ void MainApplication::initialize()
         this, &MainApplication::onRecordingDurationChanged);
     connect(m_recordingManager, &RecordingManager::audioStatusChanged,
         this, &MainApplication::updateTrayToolTip);
+    connect(m_recordingManager, &RecordingManager::droppingFramesChanged,
+        this, &MainApplication::updateTrayToolTip);
+    connect(m_recordingManager, &RecordingManager::diagnosticsAvailable,
+        this, &MainApplication::updateRecordingActionText);
 
     // Create system tray icon
     m_trayBasePixmap = PlatformFeatures::instance().createTrayPixmap();
@@ -408,6 +412,17 @@ void MainApplication::initialize()
         m_pauseRecordingAction->setVisible(false);
         connect(m_pauseRecordingAction, &QAction::triggered, this, [this] {
             if (m_recordingManager) m_recordingManager->togglePause();
+        });
+        // Local diagnostics for the last recording; only copied when the user asks.
+        m_copyRecordingDiagnosticsAction = m_trayMenu->addAction(tr("Copy Recording Diagnostics"));
+        m_copyRecordingDiagnosticsAction->setVisible(false);
+        connect(m_copyRecordingDiagnosticsAction, &QAction::triggered, this, [this] {
+            if (!m_recordingManager || m_recordingManager->lastDiagnostics().isEmpty()) return;
+            QGuiApplication::clipboard()->setText(m_recordingManager->lastDiagnostics());
+            SnapTray::QmlToast::screenToast().showToast(
+                SnapTray::QmlToast::Level::Info,
+                tr("Diagnostics Copied"),
+                tr("The recording diagnostics are on the clipboard. They contain no images, audio or file names."));
         });
         // Platforms that keep active controls in the tray never show the bar while recording.
         if (!PlatformFeatures::instance().capabilities().recordingControlsInTray) {
@@ -1136,6 +1151,12 @@ void MainApplication::updateRecordingActionText()
                                    ? QCoreApplication::translate("RecordingControlBar", "Resume Recording")
                                    : QCoreApplication::translate("RecordingControlBar", "Pause Recording"));
     }
+    if (m_copyRecordingDiagnosticsAction) {
+        m_copyRecordingDiagnosticsAction->setVisible(
+            m_recordingManager && !m_recordingManager->lastDiagnostics().isEmpty()
+            && (recordingState == RecordingManager::State::Idle
+                || recordingState == RecordingManager::State::Previewing));
+    }
     if (m_showRecordingControlsAction) {
         m_showRecordingControlsAction->setVisible(
             capturing
@@ -1256,6 +1277,9 @@ QString MainApplication::trayRecordingStatusLine() const
         : QString();
     if (!screenSummary.isEmpty()) {
         parts.append(screenSummary);
+    }
+    if (m_recordingManager && m_recordingManager->isDroppingFrames()) {
+        parts.append(tr("dropping frames"));
     }
     QString line = parts.join(QStringLiteral(" \u00B7 "));
     // Audio stays visible for the whole recording, including fallbacks that

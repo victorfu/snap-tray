@@ -523,6 +523,26 @@ Jetons de date : {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} ou {date}</translation
 <context>
     <name>MainApplication</name>
     <message>
+        <location filename="../src/MainApplication.cpp" line="1282" />
+        <source>dropping frames</source>
+        <translation>perte d’images</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="425" />
+        <source>The recording diagnostics are on the clipboard. They contain no images, audio or file names.</source>
+        <translation>Le diagnostic d’enregistrement est dans le presse-papiers. Il ne contient ni images, ni son, ni noms de fichiers.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="424" />
+        <source>Diagnostics Copied</source>
+        <translation>Diagnostic copié</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="417" />
+        <source>Copy Recording Diagnostics</source>
+        <translation>Copier le diagnostic d’enregistrement</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="411" />
         <source>Show Recording Controls</source>
         <translation>Afficher les commandes d’enregistrement</translation>
@@ -1718,6 +1738,11 @@ Taille : %2</translation>
 </context>
 <context>
     <name>RecordingManager</name>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1460" />
+        <source>Recording can't keep up and is dropping frames. Try a lower frame rate, or close other busy apps.</source>
+        <translation>L’enregistrement ne suit pas et perd des images. Essayez une fréquence d’images plus basse ou fermez d’autres apps gourmandes.</translation>
+    </message>
     <message>
         <location filename="../src/RecordingManager.cpp" line="1145" />
         <source>The selected microphone was not found. Recording from the default microphone.</source>

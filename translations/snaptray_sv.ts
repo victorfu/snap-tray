@@ -517,6 +517,26 @@ Datumtoken: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} eller {date}</translation>
 <context>
     <name>MainApplication</name>
     <message>
+        <location filename="../src/MainApplication.cpp" line="1282" />
+        <source>dropping frames</source>
+        <translation>tappar bildrutor</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="425" />
+        <source>The recording diagnostics are on the clipboard. They contain no images, audio or file names.</source>
+        <translation>Inspelningsdiagnostiken finns i urklipp. Den innehåller inga bilder, ljud eller filnamn.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="424" />
+        <source>Diagnostics Copied</source>
+        <translation>Diagnostik kopierad</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="417" />
+        <source>Copy Recording Diagnostics</source>
+        <translation>Kopiera inspelningsdiagnostik</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="411" />
         <source>Show Recording Controls</source>
         <translation>Visa inspelningskontroller</translation>
@@ -1712,6 +1732,11 @@ Storlek: %2</translation>
 </context>
 <context>
     <name>RecordingManager</name>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1460" />
+        <source>Recording can't keep up and is dropping frames. Try a lower frame rate, or close other busy apps.</source>
+        <translation>Inspelningen hinner inte med och tappar bildrutor. Prova en lägre bildfrekvens eller stäng andra krävande appar.</translation>
+    </message>
     <message>
         <location filename="../src/RecordingManager.cpp" line="1145" />
         <source>The selected microphone was not found. Recording from the default microphone.</source>

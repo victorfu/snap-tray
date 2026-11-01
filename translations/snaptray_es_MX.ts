@@ -523,6 +523,26 @@ Tokens de fecha: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, o {date}</translation
 <context>
     <name>MainApplication</name>
     <message>
+        <location filename="../src/MainApplication.cpp" line="1282" />
+        <source>dropping frames</source>
+        <translation>perdiendo fotogramas</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="425" />
+        <source>The recording diagnostics are on the clipboard. They contain no images, audio or file names.</source>
+        <translation>El diagnóstico de la grabación está en el portapapeles. No contiene imágenes, audio ni nombres de archivo.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="424" />
+        <source>Diagnostics Copied</source>
+        <translation>Diagnóstico copiado</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="417" />
+        <source>Copy Recording Diagnostics</source>
+        <translation>Copiar diagnóstico de grabación</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="411" />
         <source>Show Recording Controls</source>
         <translation>Mostrar controles de grabación</translation>
@@ -1718,6 +1738,11 @@ Tamaño: %2</translation>
 </context>
 <context>
     <name>RecordingManager</name>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1460" />
+        <source>Recording can't keep up and is dropping frames. Try a lower frame rate, or close other busy apps.</source>
+        <translation>La grabación no da abasto y está perdiendo fotogramas. Prueba una velocidad de fotogramas menor o cierra otras apps ocupadas.</translation>
+    </message>
     <message>
         <location filename="../src/RecordingManager.cpp" line="1145" />
         <source>The selected microphone was not found. Recording from the default microphone.</source>

@@ -517,6 +517,26 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 <context>
     <name>MainApplication</name>
     <message>
+        <location filename="../src/MainApplication.cpp" line="1282" />
+        <source>dropping frames</source>
+        <translation>χάνει καρέ</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="425" />
+        <source>The recording diagnostics are on the clipboard. They contain no images, audio or file names.</source>
+        <translation>Τα διαγνωστικά εγγραφής βρίσκονται στο πρόχειρο. Δεν περιέχουν εικόνες, ήχο ή ονόματα αρχείων.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="424" />
+        <source>Diagnostics Copied</source>
+        <translation>Τα διαγνωστικά αντιγράφηκαν</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="417" />
+        <source>Copy Recording Diagnostics</source>
+        <translation>Αντιγραφή διαγνωστικών εγγραφής</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="411" />
         <source>Show Recording Controls</source>
         <translation>Εμφάνιση στοιχείων ελέγχου εγγραφής</translation>
@@ -1712,6 +1732,11 @@ Size: %2</source>
 </context>
 <context>
     <name>RecordingManager</name>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1460" />
+        <source>Recording can't keep up and is dropping frames. Try a lower frame rate, or close other busy apps.</source>
+        <translation>Η εγγραφή δεν προλαβαίνει και χάνει καρέ. Δοκιμάστε χαμηλότερο ρυθμό καρέ ή κλείστε άλλες απαιτητικές εφαρμογές.</translation>
+    </message>
     <message>
         <location filename="../src/RecordingManager.cpp" line="1145" />
         <source>The selected microphone was not found. Recording from the default microphone.</source>

@@ -1,4 +1,7 @@
 #include "encoding/EncodingWorker.h"
+#include "recording/CapturedFrame.h"
+
+#include <optional>
 #include "IVideoEncoder.h"
 #include "encoding/NativeGifEncoder.h"
 #include "encoding/WebPAnimEncoder.h"
@@ -250,6 +253,27 @@ void EncodingWorker::requestFinishOnWorkerThread()
     }, Qt::QueuedConnection);
 }
 
+void EncodingWorker::setQueueBudget(const QueueBudget& budget)
+{
+    QMutexLocker locker(&m_queueMutex);
+    m_budget = budget;
+    m_budget.maxFrames = qMax(1, m_budget.maxFrames);
+}
+
+void EncodingWorker::setHealth(std::shared_ptr<SnapTray::RecordingHealth> health)
+{
+    QMutexLocker locker(&m_queueMutex);
+    m_health = std::move(health);
+}
+
+qint64 EncodingWorker::encoderFramesWritten() const
+{
+    if (m_encoderType == EncoderType::Video && m_videoEncoder) return m_videoEncoder->framesWritten();
+    if (m_encoderType == EncoderType::Gif && m_gifEncoder) return m_gifEncoder->framesWritten();
+    if (m_encoderType == EncoderType::WebP && m_webpEncoder) return m_webpEncoder->framesWritten();
+    return 0;
+}
+
 bool EncodingWorker::enqueueFrame(const FrameData& frame)
 {
     if (frame.frame.isNull()) {
@@ -261,21 +285,44 @@ bool EncodingWorker::enqueueFrame(const FrameData& frame)
     }
 
     int depth;
+    int maxFrames;
+    qint64 queuedBytes;
+    const qint64 frameBytes = frame.frame.sizeInBytes();
+    const qint64 nowNs = SnapTray::captureClockNowNs();
+    using Drop = SnapTray::RecordingHealth::FrameDrop;
+    std::optional<Drop> drop;
     {
         QMutexLocker locker(&m_queueMutex);
-
-        if (m_frameQueue.size() >= MAX_QUEUE_SIZE) {
-            return false;
+        if (m_health) m_health->frameOffered();
+        maxFrames = m_budget.maxFrames;
+        if (m_frameQueue.size() >= m_budget.maxFrames) {
+            drop = Drop::QueueFull;
+        } else if (!m_frameQueue.isEmpty() && m_queuedBytes + frameBytes > m_budget.maxBytes) {
+            drop = Drop::QueueBytes;
+        } else if (!m_frameQueue.isEmpty()
+                   && nowNs - m_frameQueue.head().enqueuedNs > m_budget.maxAgeMs * 1000000) {
+            drop = Drop::QueueStale;
+        } else {
+            // QImage uses implicit sharing (COW), no deep copy here
+            FrameData queued = frame;
+            queued.enqueuedNs = nowNs;
+            m_frameQueue.enqueue(queued);
+            m_queuedBytes += frameBytes;
         }
-
-        // QImage uses implicit sharing (COW), no deep copy here
-        m_frameQueue.enqueue(frame);
         depth = m_frameQueue.size();
+        queuedBytes = m_queuedBytes;
+        if (m_health) {
+            if (drop) m_health->frameDropped(*drop);
+            else m_health->frameQueued(depth, queuedBytes);
+        }
+    }
+    if (drop) {
+        return false;
     }
 
     // Emit queue pressure signals outside lock
-    if (depth >= QUEUE_NEAR_FULL_THRESHOLD && !m_wasNearFull.exchange(true)) {
-        emit queuePressure(depth, MAX_QUEUE_SIZE);
+    if (depth >= maxFrames * QUEUE_NEAR_FULL_PERCENT / 100 && !m_wasNearFull.exchange(true)) {
+        emit queuePressure(depth, maxFrames);
     }
 
     scheduleProcessing();
@@ -296,9 +343,14 @@ void EncodingWorker::writeAudioSamples(const QByteArray& data, qint64 startFrame
     {
         QMutexLocker locker(&m_queueMutex);
         if (m_audioQueue.size() >= MAX_AUDIO_QUEUE_SIZE) {
-            return;  // Drop audio if queue full (prevents blocking capture thread)
+            // Drop rather than block the capture thread. Packets carry their
+            // sample position, so the encoder leaves a gap instead of
+            // compressing time.
+            if (m_health) m_health->audioDropped(data.size());
+            return;
         }
         m_audioQueue.enqueue({data, startFrame});
+        if (m_health) m_health->audioQueued();
     }
 
     scheduleProcessing();
@@ -361,6 +413,7 @@ void EncodingWorker::processNextFrame()
                 hasAudio = true;
             } else if (!m_frameQueue.isEmpty()) {
                 frameData = m_frameQueue.dequeue();
+                m_queuedBytes = qMax<qint64>(0, m_queuedBytes - frameData.frame.sizeInBytes());
                 frameDepth = m_frameQueue.size();
                 hasFrame = true;
             } else {
@@ -405,11 +458,16 @@ void EncodingWorker::processNextFrame()
             }
         } else if (hasFrame) {
             // Emit queue low signal outside lock
-            if (frameDepth <= QUEUE_LOW_THRESHOLD && m_wasNearFull.exchange(false)) {
+            int maxFrames;
+            {
+                QMutexLocker locker(&m_queueMutex);
+                maxFrames = m_budget.maxFrames;
+            }
+            if (frameDepth <= maxFrames * QUEUE_LOW_PERCENT / 100 && m_wasNearFull.exchange(false)) {
                 QPointer<EncodingWorker> guard(this);
-                QMetaObject::invokeMethod(this, [guard, frameDepth]() {
+                QMetaObject::invokeMethod(this, [guard, frameDepth, maxFrames]() {
                     if (guard) {
-                        emit guard->queueLow(frameDepth, MAX_QUEUE_SIZE);
+                        emit guard->queueLow(frameDepth, maxFrames);
                     }
                 }, Qt::QueuedConnection);
             }
@@ -435,13 +493,24 @@ void EncodingWorker::doProcessFrame(const FrameData& frameData)
             applyWatermark(frame);
         }
 
-        // Write to encoder
+        // Write to encoder. Every encoder counts accepted frames synchronously
+        // in writeFrame(), so an unchanged count means it rejected the frame.
+        const qint64 writtenBefore = encoderFramesWritten();
+        const qint64 encodeStartNs = SnapTray::captureClockNowNs();
         if (m_encoderType == EncoderType::Video && m_videoEncoder) {
             m_videoEncoder->writeFrame(frame, frameData.timestampMs);
         } else if (m_encoderType == EncoderType::Gif && m_gifEncoder) {
             m_gifEncoder->writeFrame(frame, frameData.timestampMs);
         } else if (m_encoderType == EncoderType::WebP && m_webpEncoder) {
             m_webpEncoder->writeFrame(frame, frameData.timestampMs);
+        }
+        if (m_health) {
+            const qint64 nowNs = SnapTray::captureClockNowNs();
+            if (encoderFramesWritten() > writtenBefore) {
+                m_health->frameEncoded(encodeStartNs - frameData.enqueuedNs, nowNs - encodeStartNs, nowNs);
+            } else {
+                m_health->frameDropped(SnapTray::RecordingHealth::FrameDrop::EncoderRejected);
+            }
         }
 
         // Update frame count

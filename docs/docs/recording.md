@@ -52,6 +52,12 @@ With a trim range, the start and end times under the timeline can be typed as `m
 
 Every applied crop and trim change can be undone (**Ctrl+Z**) and redone (**Ctrl+Shift+Z** or **Ctrl+Y**). Use ⟲ to go back to the unedited recording (also undoable), and ◧ or **\\** to compare with the original frame. The line under the timeline shows the original and output pixel sizes, the kept duration, and whether the chosen format has audio.
 
+## When recording can't keep up
+
+If the computer cannot encode frames as fast as they are captured for several seconds in a row, SnapTray shows one warning and the tray tooltip says "dropping frames" until it recovers. A short hiccup or an unchanging screen does not count. Lowering the frame rate in Settings > Recording usually helps.
+
+After a recording, **Copy Recording Diagnostics** in the tray menu copies a short text summary (frames captured, encoded and dropped with the reason, queue and encode times). It contains no images, audio, window titles or file names, and nothing is sent anywhere.
+
 ## Saving and cancelling
 
 While MP4, GIF, or WebP is being exported, the preview shows what it is doing: converting (with a percentage), writing the file, or saving. **Cancel** stops any of them between frames. Your recording, its crop, and its trim stay, so you can change them or pick another format and save again.

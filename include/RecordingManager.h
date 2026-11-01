@@ -18,6 +18,7 @@
 #include "recording/RecordingAudioStatus.h"
 #include "recording/SessionClock.h"
 #include "recording/FramePacer.h"
+#include "recording/RecordingHealth.h"
 
 #include "WatermarkRenderer.h"
 #include "recording/WindowTimelineRecorder.h"
@@ -67,6 +68,11 @@ public:
     QString activeScreenSummary() const;
     // Per-source audio outcome of the current recording; Off/Off when idle.
     SnapTray::RecordingAudioStatus audioStatus() const { return m_audioStatus; }
+    // True while frames are being lost (sustained, not a single hiccup).
+    bool isDroppingFrames() const { return m_healthPolicy.isWarning(); }
+    // Plain-text summary of the last recording's capture and encoding
+    // counters, for the user to copy. Empty until a recording has finished.
+    QString lastDiagnostics() const { return m_lastDiagnostics; }
     State state() const { return m_state; }
 
 public slots:
@@ -102,6 +108,8 @@ signals:
     void recordingResumed();
     void stateChanged(State state);
     void audioStatusChanged();
+    void droppingFramesChanged(bool dropping);
+    void diagnosticsAvailable();
     // recordedAsIntermediate: the recording was captured as the high-quality
     // intermediate rather than at the selected quality.
     void previewRequested(const QString &tempVideoPath, int defaultOutputFormat, bool recordedAsIntermediate);
@@ -191,6 +199,17 @@ private:
     // captured at `sourceTimeNs` belongs in the video. `paced` applies the
     // frame pacer (backends that capture on their own thread).
     bool admitFrameLocked(qint64 sourceTimeNs, bool paced, qint64* encoderTimeMs);
+
+    // Recording health: counters shared with the encoding worker, checked
+    // once a second for sustained frame loss.
+    std::shared_ptr<SnapTray::RecordingHealth> m_health;
+    SnapTray::HealthWarningPolicy m_healthPolicy;
+    qint64 m_healthOfferedSeen = 0;
+    qint64 m_healthDroppedSeen = 0;
+    int m_healthTicks = 0;
+    QString m_lastDiagnostics;
+    void checkHealth(qint64 nowMs);
+    SnapTray::RecordingHealth::ClockCounters clockCountersLocked() const;
 
     // Pause tracking
     qint64 m_pausedDuration;     // Total time spent paused

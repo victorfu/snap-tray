@@ -948,6 +948,13 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
 
     // Create encoding worker to offload encoding from main thread
     m_encodingWorker = std::make_unique<EncodingWorker>(nullptr);
+    m_health = std::make_shared<SnapTray::RecordingHealth>();
+    m_health->reset(m_captureEngine ? m_captureEngine->engineName() : QString(), m_startGeneration);
+    m_encodingWorker->setHealth(m_health);
+    m_healthPolicy.reset();
+    m_healthOfferedSeen = 0;
+    m_healthDroppedSeen = 0;
+    m_healthTicks = 0;
 
     // Transfer encoder ownership to worker
     const bool hasNativeEncoder = (result.nativeEncoder != nullptr);
@@ -1420,6 +1427,47 @@ void RecordingManager::captureFrame()
     }
 }
 
+SnapTray::RecordingHealth::ClockCounters RecordingManager::clockCountersLocked() const
+{
+    const auto clock = m_sessionClock.stats();
+    const auto pacing = m_framePacer.stats();
+    SnapTray::RecordingHealth::ClockCounters counters;
+    counters.beforeStart = clock.beforeStart;
+    counters.paused = clock.paused;
+    counters.outOfOrder = clock.duplicates + clock.backwards;
+    counters.pacedOut = pacing.dropped;
+    counters.late = pacing.late;
+    counters.stalls = pacing.stalls;
+    counters.longestGapMs = pacing.longestGapNs / 1000000;
+    return counters;
+}
+
+void RecordingManager::checkHealth(qint64 nowMs)
+{
+    if (!m_health || m_state != State::Recording) {
+        return;
+    }
+    const auto snapshot = m_health->snapshot(SnapTray::captureClockNowNs());
+    const qint64 offered = snapshot.offered - m_healthOfferedSeen;
+    const qint64 dropped = snapshot.droppedFrames() - m_healthDroppedSeen;
+    m_healthOfferedSeen = snapshot.offered;
+    m_healthDroppedSeen = snapshot.droppedFrames();
+    switch (m_healthPolicy.evaluate(offered, dropped, nowMs)) {
+    case SnapTray::HealthWarningPolicy::Action::Warn:
+        qWarning() << "RecordingManager: sustained frame loss;"
+                   << SnapTray::RecordingHealth::formatDiagnostics(snapshot);
+        emit droppingFramesChanged(true);
+        emit recordingWarning(tr("Recording can't keep up and is dropping frames. "
+                                 "Try a lower frame rate, or close other busy apps."));
+        break;
+    case SnapTray::HealthWarningPolicy::Action::Recovered:
+        emit droppingFramesChanged(false);
+        break;
+    case SnapTray::HealthWarningPolicy::Action::None:
+        break;
+    }
+}
+
 bool RecordingManager::admitFrameLocked(qint64 sourceTimeNs, bool paced, qint64* encoderTimeMs)
 {
     qint64 recordingTimeNs = 0;
@@ -1450,6 +1498,12 @@ void RecordingManager::updateDuration()
         }
 
         emit durationChanged(effectiveElapsed);
+
+        constexpr int kTicksPerHealthCheck = 1000 / kDurationUpdate;
+        if (++m_healthTicks >= kTicksPerHealthCheck) {
+            m_healthTicks = 0;
+            checkHealth(effectiveElapsed);
+        }
 
         if (m_controlBar) {
             m_controlBar->updateDuration(effectiveElapsed);
@@ -1647,6 +1701,9 @@ void RecordingManager::stopFrameCapture()
     {
         QMutexLocker lock(&m_durationMutex);
         m_acceptAsyncFrames = false;
+        if (m_health && m_sessionClock.isStarted()) {
+            m_health->setClockCounters(clockCountersLocked());
+        }
         if (m_sessionClock.isStarted()) {
             const auto clock = m_sessionClock.stats();
             const auto pacing = m_framePacer.stats();
@@ -1660,6 +1717,10 @@ void RecordingManager::stopFrameCapture()
     }
     // Frames still in flight from a capture thread are rejected from here on.
     m_sessionClock.stop();
+    if (m_healthPolicy.isWarning()) {
+        m_healthPolicy.reset();
+        emit droppingFramesChanged(false);
+    }
     if (m_windowTimelineRecorder) {
         if (m_windowTimelineRecorder->isRunning()) {
             m_windowTimelineRecorder->sampleNow(); // capture the final window layout
@@ -1719,6 +1780,14 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
         qWarning() << "RecordingManager: Ignoring encoding finished in non-encoding state"
                    << static_cast<int>(m_state);
         return;
+    }
+
+    // The encoder has drained its queue: the counters are final.
+    if (m_health) {
+        const auto snapshot = m_health->snapshot(SnapTray::captureClockNowNs());
+        m_lastDiagnostics = SnapTray::RecordingHealth::formatDiagnostics(snapshot);
+        qDebug().noquote() << m_lastDiagnostics;
+        emit diagnosticsAvailable();
     }
 
     // Get error message if encoding failed

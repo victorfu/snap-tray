@@ -57,6 +57,7 @@ class TestRecordingStartup : public QObject
 private slots:
     void init();
     void sessionClockFollowsRecordingLifecycle();
+    void sustainedFrameLossWarnsOnce();
     void controlBarOffersPauseResumeAndStop();
     void waitingKeepsEventLoopResponsiveAndSettingsSnapshot();
     void permissionPolicy_data();
@@ -571,6 +572,55 @@ void TestRecordingStartup::sessionClockFollowsRecordingLifecycle()
         QMutexLocker lock(&manager.m_durationMutex);
         QVERIFY(!manager.admitFrameLocked(SnapTray::captureClockNowNs(), true, &ms));
     }
+    manager.cancelRecording();
+}
+
+void TestRecordingStartup::sustainedFrameLossWarnsOnce()
+{
+    RecordingSettingsManager::instance().setAudioEnabled(false);
+    RecordingManager manager;
+    prepare(manager);
+    auto encoderState = std::make_shared<AudioEncoderTestState>();
+    RecordingInitTask::Config config;
+    config.region = QRect(0, 0, 16, 16);
+    config.screenInfo.geometry = config.region;
+    config.frameSize = QSize(16, 16);
+    config.outputPath = "unused-health-test.mp4";
+    auto task = QSharedPointer<RecordingInitTask>::create(config);
+    task->m_createEncoder = [encoderState](const auto& options, QObject* parent) {
+        return EncoderFactoryTestAccess::create(options, parent, encoderState);
+    };
+    QVERIFY(task->initializeEncoder());
+    task->result().success = true;
+    task->result().captureEngine = std::make_unique<FakeStartupCapture>();
+    task->result().captureEngineStarted = true;
+    manager.m_initTask = task;
+    manager.onInitializationComplete(task, manager.m_initGeneration);
+    QCOMPARE(manager.state(), RecordingManager::State::Recording);
+    QVERIFY(manager.m_health);
+
+    QSignalSpy warnings(&manager, &RecordingManager::recordingWarning);
+    QSignalSpy dropping(&manager, &RecordingManager::droppingFramesChanged);
+    // Three seconds in which half of the offered frames are lost.
+    for (int second = 1; second <= 3; ++second) {
+        for (int i = 0; i < 30; ++i) manager.m_health->frameOffered();
+        for (int i = 0; i < 15; ++i) manager.m_health->frameDropped(SnapTray::RecordingHealth::FrameDrop::QueueFull);
+        manager.checkHealth(second * 1000);
+    }
+    QCOMPARE(warnings.count(), 1);
+    QVERIFY(warnings.first().first().toString().contains(QStringLiteral("dropping frames")));
+    QCOMPARE(dropping.count(), 1);
+    QVERIFY(manager.isDroppingFrames());
+    // More bad seconds do not repeat the message.
+    for (int i = 0; i < 30; ++i) manager.m_health->frameOffered();
+    for (int i = 0; i < 15; ++i) manager.m_health->frameDropped(SnapTray::RecordingHealth::FrameDrop::QueueFull);
+    manager.checkHealth(4000);
+    QCOMPARE(warnings.count(), 1);
+
+    // Stopping clears the state for the tray.
+    manager.stopRecording();
+    QVERIFY(!manager.isDroppingFrames());
+    QCOMPARE(dropping.count(), 2);
     manager.cancelRecording();
 }
 
