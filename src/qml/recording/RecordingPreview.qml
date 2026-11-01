@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls.Basic
 import QtQuick.Layouts
 import SnapTrayQml
 
@@ -26,6 +27,24 @@ Item {
     readonly property real overlayChipButtonSize: 20
 
     property bool isScrubbing: false
+    // Shows the unedited frame (no crop dimming) while on. Only meaningful
+    // with a committed crop, and never while a crop is being edited.
+    property bool comparingOriginal: false
+    Connections {
+        target: backend
+        function onCropRectChanged() {
+            if (!backend.hasCrop)
+                root.comparingOriginal = false
+        }
+    }
+    readonly property var aspectPresetLabels: [qsTr("Free"), qsTr("Original"), "16:9", "4:3", "1:1", "9:16"]
+    // A text field has keyboard focus: playback shortcuts must not steal its keys.
+    readonly property bool textEntryActive: !!Window.activeFocusItem
+                                            && Window.activeFocusItem.selectedText !== undefined
+    // Legal (exported) crop of the current draft, in video pixels.
+    readonly property rect draftVideoRect: cropOverlay.editing && cropOverlay.hasShownRect
+                                           ? backend.legalCropForView(cropOverlay.draftRect, videoPlayer.contentRect)
+                                           : Qt.rect(0, 0, 0, 0)
     property bool isDraggingTrimStart: false
     property bool isDraggingTrimEnd: false
 
@@ -54,6 +73,33 @@ Item {
         if (cropOverlay.editing)
             cropOverlay.apply()
         backend.save()
+    }
+
+    function undoEdit() {
+        cropOverlay.cancel()
+        backend.undo()
+    }
+    function redoEdit() {
+        cropOverlay.cancel()
+        backend.redo()
+    }
+    function chooseAspect(index) {
+        backend.cropAspectIndex = index
+        if (cropOverlay.editing && backend.cropAspectRatio > 0)
+            cropOverlay.draftRect = backend.fitViewRectToAspect(cropOverlay.draftRect, videoPlayer.contentRect)
+    }
+    // Exact video-pixel input for the draft.
+    function setDraftFromFields(x, y, w, h) {
+        if (!cropOverlay.editing)
+            return
+        cropOverlay.draftRect = backend.legalViewRectForVideo(x, y, w, h, videoPlayer.contentRect)
+    }
+    // Arrow keys move the crop draft by 2 video pixels (10 with Shift).
+    function nudgeDraft(dxVideo, dyVideo) {
+        const r = root.draftVideoRect
+        if (r.width <= 0)
+            return
+        setDraftFromFields(r.x + dxVideo, r.y + dyVideo, r.width, r.height)
     }
 
     // The window under the resting pointer follows the playhead too.
@@ -178,8 +224,13 @@ Item {
                 objectName: "previewCropOverlay"
                 anchors.fill: parent
                 z: 4
-                visible: root.cropAvailable
+                visible: root.cropAvailable && !root.comparingOriginal
                 interactive: !backend.isProcessing
+                aspectRatio: backend.cropAspectRatio
+                legalSizeForDraft: function(r) {
+                    const legal = backend.legalCropForView(r, videoPlayer.contentRect)
+                    return Qt.size(legal.width, legal.height)
+                }
                 contentRect: videoPlayer.contentRect
                 videoSize: backend.videoSize
                 minVideoSide: backend.minCropSide
@@ -222,7 +273,7 @@ Item {
             GlassSurface {
                 id: cropChip
                 objectName: "previewCropChip"
-                visible: backend.hasCrop && !cropOverlay.editing
+                visible: backend.hasCrop && !cropOverlay.editing && !root.comparingOriginal
                 anchors.top: parent.top
                 anchors.left: parent.left
                 anchors.margins: SemanticTokens.spacing12
@@ -262,6 +313,31 @@ Item {
                         tooltipPreferredAbove: false
                         onClicked: backend.clearCrop()
                     }
+                }
+            }
+
+            GlassSurface {
+                objectName: "previewCompareChip"
+                visible: root.comparingOriginal
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.margins: SemanticTokens.spacing12
+                width: compareText.implicitWidth + SemanticTokens.spacing16
+                height: root.overlayChipHeight
+                z: 5
+                glassBg: ComponentTokens.tooltipBackground
+                glassBgTop: ComponentTokens.tooltipBackgroundTop
+                glassHighlight: ComponentTokens.tooltipHighlight
+                glassBorder: ComponentTokens.tooltipBorder
+                glassRadius: ComponentTokens.tooltipRadius
+
+                Text {
+                    id: compareText
+                    anchors.centerIn: parent
+                    text: qsTr("Original")
+                    color: root.textPrimary
+                    font.pixelSize: SemanticTokens.fontSizeCaption
+                    font.family: SemanticTokens.fontFamily
                 }
             }
 
@@ -475,11 +551,17 @@ Item {
                 }
 
                 onReleased: {
+                    const trimmed = draggingTrimStart || draggingTrimEnd
                     resetInteractionState()
+                    if (trimmed)
+                        backend.commitTrimEdit()
                 }
 
                 onCanceled: {
+                    const trimmed = draggingTrimStart || draggingTrimEnd
                     resetInteractionState()
+                    if (trimmed)
+                        backend.commitTrimEdit()
                 }
             }
 
@@ -499,10 +581,67 @@ Item {
                 anchors.rightMargin: timelineArea.handleWidth
                 anchors.top: trackRect.bottom
                 anchors.topMargin: 6
+                visible: !backend.hasTrim
                 text: backend.formatTime(videoPlayer.duration)
                 font.pixelSize: SemanticTokens.fontSizeSmall
                 font.family: SemanticTokens.fontFamily
                 color: root.textSecondary
+            }
+
+            // What Save will produce: encoded pixel sizes (not window sizes), kept time, audio.
+            // Centred under the track between the position and duration labels.
+            Text {
+                objectName: "previewOutputSummary"
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: trackRect.bottom
+                anchors.topMargin: 6
+                width: Math.max(0, parent.width - 2 * 180)
+                horizontalAlignment: Text.AlignHCenter
+                elide: Text.ElideRight
+                color: root.textSecondary
+                font.pixelSize: SemanticTokens.fontSizeSmall
+                font.family: SemanticTokens.fontFamily
+                text: {
+                    if (backend.videoSize.width <= 0)
+                        return ""
+                    const source = backend.videoSize.width + " × " + backend.videoSize.height
+                    const out = backend.hasCrop ? backend.cropRect.width + " × " + backend.cropRect.height : source
+                    const parts = [qsTr("Original %1 → Output %2").arg(source).arg(out),
+                                   qsTr("%1 kept").arg(backend.formatPreciseTime(backend.trimmedDuration))]
+                    if (backend.selectedFormat !== 0)
+                        parts.push(qsTr("no audio"))
+                    return parts.join(" · ")
+                }
+            }
+
+            // Exact trim entry ("m:ss.mmm") while a trim range exists.
+            Row {
+                objectName: "previewTrimFields"
+                visible: backend.hasTrim
+                anchors.right: parent.right
+                anchors.rightMargin: timelineArea.handleWidth
+                anchors.top: trackRect.bottom
+                anchors.topMargin: 2
+                spacing: SemanticTokens.spacing4
+
+                TimeField {
+                    objectName: "previewTrimStartField"
+                    accessibleName: qsTr("Trim start")
+                    timeMs: backend.trimStart
+                    onCommitted: function(ms) { backend.setTrimFromInput(ms, backend.trimEnd) }
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "–"
+                    color: root.textSecondary
+                    font.pixelSize: SemanticTokens.fontSizeSmall
+                }
+                TimeField {
+                    objectName: "previewTrimEndField"
+                    accessibleName: qsTr("Trim end")
+                    timeMs: backend.trimEnd
+                    onCommitted: function(ms) { backend.setTrimFromInput(backend.trimStart, ms) }
+                }
             }
         }
 
@@ -513,6 +652,7 @@ Item {
                 id: formatRow
                 anchors.centerIn: parent
                 spacing: SemanticTokens.spacing8
+                visible: !cropOverlay.editing
 
                 SegmentButton {
                     text: "MP4"
@@ -533,7 +673,68 @@ Item {
                     onClicked: backend.selectedFormat = 2
                 }
             }
+
+            // Exact crop entry while editing, in place of the format buttons so the
+            // video keeps its size: aspect presets and X/Y/W/H in video pixels.
+            Row {
+                id: cropPanel
+                objectName: "previewCropPanel"
+                anchors.centerIn: parent
+                spacing: SemanticTokens.spacing4
+                visible: cropOverlay.editing
+
+                Row {
+                    spacing: 2
+                    Repeater {
+                        model: root.aspectPresetLabels
+                        SegmentButton {
+                            required property int index
+                            required property string modelData
+                            objectName: "previewAspectPreset" + index
+                            minimumButtonWidth: 0
+                            text: modelData
+                            tooltipText: qsTr("Crop aspect: %1").arg(modelData)
+                            selected: backend.cropAspectIndex === index
+                            onClicked: root.chooseAspect(index)
+                        }
+                    }
+                }
+
+                Repeater {
+                    model: [
+                        { key: "x", label: qsTr("X") },
+                        { key: "y", label: qsTr("Y") },
+                        { key: "width", label: qsTr("W") },
+                        { key: "height", label: qsTr("H") }
+                    ]
+                    delegate: Row {
+                        required property var modelData
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 2
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: modelData.label
+                            color: root.textSecondary
+                            font.pixelSize: SemanticTokens.fontSizeCaption
+                            font.family: SemanticTokens.fontFamily
+                        }
+                        NumberField {
+                            objectName: "previewCrop_" + modelData.key
+                            accessibleName: qsTr("Crop %1 in pixels").arg(modelData.label)
+                            value: root.draftVideoRect[modelData.key]
+                            onCommitted: function(v) {
+                                const r = root.draftVideoRect
+                                root.setDraftFromFields(modelData.key === "x" ? v : r.x,
+                                                        modelData.key === "y" ? v : r.y,
+                                                        modelData.key === "width" ? v : r.width,
+                                                        modelData.key === "height" ? v : r.height)
+                            }
+                        }
+                    }
+                }
+            }
         }
+
 
         Rectangle {
             Layout.fillWidth: true
@@ -588,14 +789,65 @@ Item {
                 }
 
                 IconButton {
+                    objectName: "previewUndoButton"
+                    iconText: "↶"
+                    enabled: backend.canUndo
+                    opacity: enabled ? 1.0 : root.disabledControlOpacity
+                    tooltipText: qsTr("Undo Edit (Ctrl+Z)")
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Undo Edit")
+                    onClicked: root.undoEdit()
+                }
+
+                IconButton {
+                    objectName: "previewRedoButton"
+                    iconText: "↷"
+                    enabled: backend.canRedo
+                    opacity: enabled ? 1.0 : root.disabledControlOpacity
+                    tooltipText: qsTr("Redo Edit (Ctrl+Shift+Z)")
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Redo Edit")
+                    onClicked: root.redoEdit()
+                }
+
+                IconButton {
+                    objectName: "previewResetButton"
+                    iconText: "⟲"
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Reset Crop and Trim")
+                    enabled: backend.hasEdits
+                    opacity: enabled ? 1.0 : root.disabledControlOpacity
+                    tooltipText: qsTr("Reset Crop and Trim")
+                    onClicked: {
+                        cropOverlay.cancel()
+                        backend.resetEdits()
+                    }
+                }
+
+                IconButton {
+                    objectName: "previewCompareButton"
+                    iconText: "◧"
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Compare with Original")
+                    enabled: backend.hasCrop
+                    opacity: enabled ? 1.0 : root.disabledControlOpacity
+                    highlighted: root.comparingOriginal
+                    tooltipText: qsTr("Compare with Original (\\)")
+                    onClicked: root.comparingOriginal = !root.comparingOriginal
+                }
+
+                IconButton {
                     objectName: "previewCropButton"
                     iconSource: "qrc:/icons/icons/crop.svg"
                     enabled: root.cropAvailable && !backend.isProcessing
                     opacity: enabled ? 1.0 : root.disabledControlOpacity
                     highlighted: backend.hasCrop || cropOverlay.editing
-                    tooltipText: cropOverlay.editing ? qsTr("Apply Crop (Enter)")
+                    tooltipText: cropOverlay.editing ? qsTr("Apply Crop (Enter) · Arrow keys move it by 2 px (Shift: 10 px)")
                                                      : backend.hasCrop ? qsTr("Edit Crop") : qsTr("Crop Recording")
-                    onClicked: cropOverlay.editing ? cropOverlay.apply() : cropOverlay.beginEditing()
+                    onClicked: {
+                        root.comparingOriginal = false
+                        cropOverlay.editing ? cropOverlay.apply() : cropOverlay.beginEditing()
+                    }
                 }
 
                 IconButton {
@@ -840,6 +1092,10 @@ Item {
             event.accepted = true
             return
         }
+        // Keys a text field did not use (for example Left at its first
+        // character) must not seek, play or discard.
+        if (root.textEntryActive)
+            return
 
         if (backend.discardConfirmationPending) {
             // Esc always keeps the recording; Tab/arrows move between the two
@@ -864,7 +1120,38 @@ Item {
             return
         }
 
+        if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_Z) {
+            if (event.modifiers & Qt.ShiftModifier)
+                root.redoEdit()
+            else
+                root.undoEdit()
+            event.accepted = true
+            return
+        }
+        if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_Y) {
+            root.redoEdit()
+            event.accepted = true
+            return
+        }
+        if (event.key === Qt.Key_Backslash && backend.hasCrop) {
+            root.comparingOriginal = !root.comparingOriginal
+            event.accepted = true
+            return
+        }
+
         if (cropOverlay.editing) {
+            // Crops sit on even pixels (encoder requirement), so 2 px is the smallest step.
+            const step = (event.modifiers & Qt.ShiftModifier) ? 10 : 2
+            const nudges = {}
+            nudges[Qt.Key_Left] = [-step, 0]
+            nudges[Qt.Key_Right] = [step, 0]
+            nudges[Qt.Key_Up] = [0, -step]
+            nudges[Qt.Key_Down] = [0, step]
+            if (nudges[event.key] !== undefined) {
+                root.nudgeDraft(nudges[event.key][0], nudges[event.key][1])
+                event.accepted = true
+                return
+            }
             // Escape only drops the draft (the preview stays open); Enter only applies it.
             if (event.key === Qt.Key_Escape) {
                 cropOverlay.cancel()
@@ -935,6 +1222,88 @@ Item {
             }
             event.accepted = true
             break
+        }
+    }
+
+    // Integer entry committed on Enter or focus loss; Esc restores the value
+    // and gives focus back to the preview.
+    component NumberField: TextField {
+        id: numberField
+        property int value: 0
+        property string accessibleName: ""
+        signal committed(int value)
+
+        width: 48
+        height: 24
+        padding: 2
+        horizontalAlignment: TextInput.AlignRight
+        font.pixelSize: SemanticTokens.fontSizeCaption
+        color: root.textPrimary
+        selectByMouse: true
+        validator: IntValidator { bottom: 0; top: 100000 }
+        text: value
+        Accessible.name: accessibleName
+        background: Rectangle {
+            radius: SemanticTokens.radiusSmall
+            color: root.bgPanel
+            border.width: 1
+            border.color: numberField.activeFocus ? root.accent : root.borderColor
+        }
+        onValueChanged: if (!activeFocus) text = value
+        onEditingFinished: {
+            if (acceptableInput && parseInt(text) !== value)
+                committed(parseInt(text))
+            text = Qt.binding(function() { return numberField.value })
+        }
+        Keys.onEscapePressed: function(event) {
+            text = value
+            root.forceActiveFocus()
+            event.accepted = true
+        }
+    }
+
+    // Time entry ("m:ss.mmm"). committed returns false to reject the value.
+    component TimeField: TextField {
+        id: timeField
+        property real timeMs: 0
+        property string accessibleName: ""
+        property bool invalid: false
+        signal committed(real ms)
+
+        width: 76
+        height: 22
+        padding: 2
+        horizontalAlignment: TextInput.AlignHCenter
+        font.pixelSize: SemanticTokens.fontSizeSmall
+        color: invalid ? SemanticTokens.statusError : root.textPrimary
+        selectByMouse: true
+        text: backend.formatPreciseTime(timeMs)
+        Accessible.name: accessibleName
+        background: Rectangle {
+            radius: SemanticTokens.radiusSmall
+            color: root.bgPanel
+            border.width: 1
+            border.color: timeField.invalid ? SemanticTokens.statusError
+                                            : timeField.activeFocus ? root.accent : root.borderColor
+        }
+        onTimeMsChanged: if (!activeFocus) text = backend.formatPreciseTime(timeMs)
+        onEditingFinished: {
+            const ms = backend.parseTime(text)
+            invalid = ms < 0
+            if (!invalid && ms !== timeMs) {
+                committed(ms)
+                // The backend rejects out-of-range or too-short ranges and keeps its value.
+                invalid = timeMs !== ms
+            }
+            if (!invalid)
+                text = backend.formatPreciseTime(timeMs)
+        }
+        onTextEdited: invalid = false
+        Keys.onEscapePressed: function(event) {
+            invalid = false
+            text = backend.formatPreciseTime(timeMs)
+            root.forceActiveFocus()
+            event.accepted = true
         }
     }
 
@@ -1032,7 +1401,7 @@ Item {
         property string tooltipText: ""
         property bool tooltipPreferredAbove: true
         property bool selected: false
-        readonly property real minimumButtonWidth: 64
+        property real minimumButtonWidth: 64
 
         signal clicked()
 

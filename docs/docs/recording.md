@@ -42,6 +42,16 @@ Recording always captures the full screen. To keep only part of it, open the pre
 3. Press **Enter** to apply or **Esc** to cancel. The applied size appears at the top-left of the video; click ✕ to clear it.
 4. Save as MP4, GIF, or WebP. MP4 exports keep their audio.
 
+While cropping, the row under the timeline offers:
+
+- **Aspect presets**: Free, Original, 16:9, 4:3, 1:1, and 9:16. Drawing, resizing, and clicking a window keep the chosen shape.
+- **X, Y, W, H**: the crop in video pixels. Typed values are adjusted to even numbers and the minimum size, as the encoder requires, and the size label next to the selection always shows the size you will get.
+- **Arrow keys** move the crop by 2 px (hold Shift for 10 px). Keys typed into a field stay in the field; **Esc** there only restores the field.
+
+With a trim range, the start and end times under the timeline can be typed as `m:ss.mmm` (for example `0:07.250`).
+
+Every applied crop and trim change can be undone (**Ctrl+Z**) and redone (**Ctrl+Shift+Z** or **Ctrl+Y**). Use ⟲ to go back to the unedited recording (also undoable), and ◧ or **\\** to compare with the original frame. The line under the timeline shows the original and output pixel sizes, the kept duration, and whether the chosen format has audio.
+
 ## Output formats
 
 | Format | Typical use |

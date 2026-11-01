@@ -88,6 +88,12 @@ class StubPreviewBackend : public QObject
     Q_PROPERTY(QString processStatus READ processStatus CONSTANT)
     Q_PROPERTY(QString errorMessage READ errorMessage CONSTANT)
     Q_PROPERTY(bool discardConfirmationPending READ discardConfirmationPending CONSTANT)
+    Q_PROPERTY(int cropAspectIndex READ cropAspectIndex WRITE setCropAspectIndex NOTIFY cropAspectChanged)
+    Q_PROPERTY(qreal cropAspectRatio READ cropAspectRatio NOTIFY cropAspectChanged)
+    Q_PROPERTY(bool canUndo READ canUndo CONSTANT)
+    Q_PROPERTY(bool canRedo READ canRedo CONSTANT)
+    Q_PROPERTY(bool hasEdits READ hasEdits CONSTANT)
+    Q_PROPERTY(qint64 trimmedDuration READ trimmedDuration CONSTANT)
     Q_PROPERTY(bool hasWindowTimeline READ hasWindowTimeline NOTIFY windowTimelineChanged)
 
 public:
@@ -198,7 +204,7 @@ public:
     Q_INVOKABLE void setCropFromView(const QRectF& viewRect, const QRectF& contentRect)
     {
         ++setCropFromViewCount;
-        setCropRect(SnapTray::VideoCropGeometry::viewToVideo(viewRect, contentRect, m_videoSize));
+        setCropRect(legalCropForView(viewRect, contentRect));
     }
     Q_INVOKABLE QRectF cropRectInView(const QRectF& contentRect) const
     {
@@ -216,6 +222,63 @@ public:
         emit cropRectChanged();
     }
 
+    // Aspect presets and exact entry, mirroring the real backend's contract.
+    int cropAspectIndex() const { return m_aspectIndex; }
+    void setCropAspectIndex(int index)
+    {
+        m_aspectIndex = index;
+        emit cropAspectChanged();
+    }
+    QSize aspectUnits() const
+    {
+        static const QSize presets[] = {{0, 0}, {-1, -1}, {16, 9}, {4, 3}, {1, 1}, {9, 16}};
+        const QSize preset = presets[qBound(0, m_aspectIndex, 5)];
+        return preset.width() < 0 ? m_videoSize : preset;
+    }
+    qreal cropAspectRatio() const
+    {
+        const QSize units = aspectUnits();
+        return units.isEmpty() ? 0.0 : qreal(units.width()) / units.height();
+    }
+    Q_INVOKABLE QRect legalCropForView(const QRectF& viewRect, const QRectF& contentRect) const
+    {
+        const QRect video = SnapTray::VideoCropGeometry::viewToVideo(viewRect, contentRect, m_videoSize);
+        const QSize units = aspectUnits();
+        const QRect legal = SnapTray::VideoCropGeometry::fitAspect(video, m_videoSize, units.width(), units.height());
+        return legal.isEmpty() && !video.isEmpty() ? QRect(QPoint(0, 0), m_videoSize) : legal;
+    }
+    Q_INVOKABLE QRectF legalViewRectForVideo(int x, int y, int width, int height, const QRectF& contentRect) const
+    {
+        const QSize units = aspectUnits();
+        QRect legal = SnapTray::VideoCropGeometry::fitAspect(QRect(x, y, width, height), m_videoSize,
+                                                             units.width(), units.height());
+        if (legal.isEmpty()) legal = QRect(QPoint(0, 0), m_videoSize);
+        return SnapTray::VideoCropGeometry::videoToView(legal, contentRect, m_videoSize);
+    }
+    Q_INVOKABLE QRectF fitViewRectToAspect(const QRectF& viewRect, const QRectF& contentRect) const
+    {
+        const QRectF source = viewRect.isEmpty() ? contentRect : viewRect;
+        return SnapTray::VideoCropGeometry::videoToView(legalCropForView(source, contentRect), contentRect, m_videoSize);
+    }
+    Q_INVOKABLE QString formatPreciseTime(qint64 ms) const { return QString::number(ms); }
+    Q_INVOKABLE qint64 parseTime(const QString& text) const
+    {
+        bool ok = false;
+        const qint64 value = text.toLongLong(&ok);
+        return ok ? value : -1;
+    }
+    Q_INVOKABLE bool setTrimFromInput(qint64, qint64) { return false; }
+    Q_INVOKABLE void commitTrimEdit() {}
+    bool canUndo() const { return false; }
+    bool canRedo() const { return false; }
+    bool hasEdits() const { return false; }
+    qint64 trimmedDuration() const { return 0; }
+    Q_INVOKABLE void undo() { ++undoCount; }
+    Q_INVOKABLE void redo() { ++redoCount; }
+    Q_INVOKABLE void resetEdits() {}
+    int undoCount = 0;
+    int redoCount = 0;
+
     int saveCount = 0;
     int discardCount = 0;
     int requestDiscardCount = 0;
@@ -223,6 +286,7 @@ public:
     QRect cropAtSave;
 
 signals:
+    void cropAspectChanged();
     void trimRangeChanged();
     void cropRectChanged();
     void videoSizeChanged();
@@ -235,6 +299,7 @@ private:
     QString m_stubWindowApp;
     QRect m_cropRect;
     QSize m_videoSize;
+    int m_aspectIndex = 0;
     int m_selectedFormat = 0;
     int m_activeFormat = 0;
     bool m_cancelRequested = false;
@@ -301,6 +366,14 @@ private slots:
     void previewReleaseCommitsFinalPosition();
     void previewTinyDraftAppliesWithoutJump();
     void previewCropUnavailableAfterFrameCleared();
+
+    // Exact editing (#149).
+    void previewAspectLockedDrag();
+    void previewNumericCropEntry();
+    void previewArrowKeysNudgeDraft();
+    void previewTextFieldKeepsItsKeys();
+    void previewUndoShortcutCancelsDraft();
+    void previewCompareShowsOriginal();
 
     // The draft follows the content when the window is resized (#11).
     void draftFollowsContentRect();
@@ -836,9 +909,24 @@ QObject* tst_RecordingCropOverlay::previewOverlay() const
     return m_view->rootObject()->findChild<QObject*>(QStringLiteral("previewCropOverlay"));
 }
 
+namespace {
+// Repeater delegates are only reachable through the visual tree.
+QQuickItem* findVisualItem(QQuickItem* item, const QString& name)
+{
+    if (!item) return nullptr;
+    if (item->objectName() == name) return item;
+    for (QQuickItem* child : item->childItems()) {
+        if (QQuickItem* found = findVisualItem(child, name)) return found;
+    }
+    return nullptr;
+}
+} // namespace
+
 QQuickItem* tst_RecordingCropOverlay::previewItem(const char* objectName) const
 {
-    return m_view->rootObject()->findChild<QQuickItem*>(QString::fromLatin1(objectName));
+    const QString name = QString::fromLatin1(objectName);
+    if (auto* item = m_view->rootObject()->findChild<QQuickItem*>(name)) return item;
+    return findVisualItem(qobject_cast<QQuickItem*>(m_view->rootObject()), name);
 }
 
 QRectF tst_RecordingCropOverlay::previewContentRect() const
@@ -1629,6 +1717,181 @@ void tst_RecordingCropOverlay::previewEndEditingClearsHover()
     QVERIFY(QMetaObject::invokeMethod(m_view->rootObject(), "refreshWindowHover"));
     QCOMPARE(m_backend->lookupCount, lookups);
     QCOMPARE(overlay->property("hoverRect").toRectF(), QRectF());
+}
+
+void tst_RecordingCropOverlay::previewAspectLockedDrag()
+{
+    OPEN_PREVIEW_OR_FAIL(QSize(1600, 400));
+    QQuickItem* video = previewItem("previewVideoPlayer");
+    const QSize area(qRound(video->width()), qRound(video->height()));
+    m_view.reset();
+    OPEN_PREVIEW_OR_FAIL(area);  // view pixels == video pixels
+    QObject* overlay = previewOverlay();
+
+    click(previewItem("previewCropButton"));
+    QVERIFY(editing());
+    QVERIFY(previewItem("previewAspectPreset4"));
+    click(previewItem("previewAspectPreset4"));  // 1:1
+    QCOMPARE(m_backend->cropAspectIndex(), 4);
+    QCOMPARE(overlay->property("aspectRatio").toReal(), 1.0);
+
+    // A wide drag still draws a square, anchored at the press point.
+    drag(overlayPoint(40, 40), overlayPoint(240, 120));
+    QTRY_VERIFY_WITH_TIMEOUT(!overlay->property("draftRect").toRectF().isEmpty(), 2000);
+    QRectF draft = overlay->property("draftRect").toRectF();
+    QCOMPARE(draft.topLeft(), QPointF(40, 40));
+    QCOMPARE(draft.width(), draft.height());
+
+    // Resizing a corner keeps the ratio and the opposite corner.
+    const QPointF corner = draft.bottomRight();
+    drag(overlayPoint(corner.x(), corner.y()), overlayPoint(corner.x() + 30, corner.y() + 5));
+    draft = overlay->property("draftRect").toRectF();
+    QCOMPARE(draft.topLeft(), QPointF(40, 40));
+    QCOMPARE(draft.width(), draft.height());
+
+    QVariant edgeRect;
+    // Starting at the far edge and heading out still gives at least the
+    // minimum, pulled back inside the content.
+    const QRectF content = previewContentRect();
+    QVERIFY(QMetaObject::invokeMethod(overlay, "createRect", Q_RETURN_ARG(QVariant, edgeRect),
+                                      Q_ARG(QVariant, content.right() - 1), Q_ARG(QVariant, content.bottom() - 1),
+                                      Q_ARG(QVariant, content.right() + 50), Q_ARG(QVariant, content.bottom() + 50)));
+    const QRectF edge = edgeRect.toRectF();
+    QCOMPARE(edge.width(), edge.height());
+    QVERIFY(edge.width() >= overlay->property("minViewWidth").toReal());
+    QVERIFY(content.contains(edge));
+
+    // The size chip shows the legal export size while dragging.
+    QQuickItem* chip = previewItem("cropSizeLabel");
+    QVERIFY(chip);
+    const QRect legal = m_backend->legalCropForView(draft, previewContentRect());
+    QString chipText;
+    std::function<void(QQuickItem*)> collect = [&](QQuickItem* item) {
+        const QString text = item->property("text").toString();
+        if (text.contains(QChar(0x00D7))) chipText = text;
+        for (QQuickItem* child : item->childItems()) collect(child);
+    };
+    collect(chip);
+    QCOMPARE(chipText, QStringLiteral("%1 × %2").arg(legal.width()).arg(legal.height()));
+    sendKey(Qt::Key_Return);
+    QCOMPARE(m_backend->cropRect(), legal);
+    QCOMPARE(m_backend->cropRect().width(), m_backend->cropRect().height());
+}
+
+void tst_RecordingCropOverlay::previewNumericCropEntry()
+{
+    OPEN_PREVIEW_OR_FAIL(QSize(1920, 1080));
+    QObject* overlay = previewOverlay();
+    click(previewItem("previewCropButton"));
+    QVERIFY(editing());
+    // Fields replace the format buttons while editing.
+    QVERIFY(previewItem("previewCropPanel")->isVisible());
+
+    // Set the draft directly: this test is about entry, not pointer drawing.
+    previewOverlay()->setProperty("draftRect", QRectF(previewContentRect().topLeft() + QPointF(40, 40), QSizeF(160, 100)));
+    QQuickItem* width = previewItem("previewCrop_width");
+    QQuickItem* x = previewItem("previewCrop_x");
+    QVERIFY(width && x);
+    const QRect before = m_backend->legalCropForView(overlay->property("draftRect").toRectF(), previewContentRect());
+    QCOMPARE(width->property("text").toString().toInt(), before.width());
+
+    // Typed values are legalized (even) and become the draft.
+    QCOMPARE(before.x() % 2, 0);
+    width->setProperty("text", QStringLiteral("641"));
+    QVERIFY(QMetaObject::invokeMethod(width, "editingFinished"));
+    x->setProperty("text", QStringLiteral("301"));
+    QVERIFY(QMetaObject::invokeMethod(x, "editingFinished"));
+    const QRect typed = m_backend->legalCropForView(overlay->property("draftRect").toRectF(), previewContentRect());
+    // x 301 -> 300; the right edge (301 + 640) floors to even, keeping 640 wide.
+    QCOMPARE(typed.x(), 300);
+    QCOMPARE(typed.width(), 640);
+    QCOMPARE(typed.y(), before.y());
+    QCOMPARE(typed.height(), before.height());
+
+    sendKey(Qt::Key_Return);
+    QCOMPARE(m_backend->cropRect(), typed);
+}
+
+void tst_RecordingCropOverlay::previewArrowKeysNudgeDraft()
+{
+    OPEN_PREVIEW_OR_FAIL(QSize(1920, 1080));
+    QObject* overlay = previewOverlay();
+    click(previewItem("previewCropButton"));
+    // Set the draft directly: this test is about entry, not pointer drawing.
+    previewOverlay()->setProperty("draftRect", QRectF(previewContentRect().topLeft() + QPointF(40, 40), QSizeF(160, 100)));
+    const QRect start = m_backend->legalCropForView(overlay->property("draftRect").toRectF(), previewContentRect());
+    sendKey(Qt::Key_Right);
+    sendKey(Qt::Key_Right);
+    sendKey(Qt::Key_Down, Qt::ShiftModifier);
+    const QRect moved = m_backend->legalCropForView(overlay->property("draftRect").toRectF(), previewContentRect());
+    // Each arrow moves 2 px (the even-pixel grid); Shift moves 10.
+    QCOMPARE(moved.x(), start.x() + 4);
+    QCOMPARE(moved.y(), start.y() + 10);
+    QCOMPARE(moved.size(), start.size());
+    QVERIFY(editing());
+}
+
+void tst_RecordingCropOverlay::previewTextFieldKeepsItsKeys()
+{
+    OPEN_PREVIEW_OR_FAIL(QSize(1920, 1080));
+    QObject* overlay = previewOverlay();
+    click(previewItem("previewCropButton"));
+    // Set the draft directly: this test is about entry, not pointer drawing.
+    previewOverlay()->setProperty("draftRect", QRectF(previewContentRect().topLeft() + QPointF(40, 40), QSizeF(160, 100)));
+    const QRectF draft = overlay->property("draftRect").toRectF();
+    QQuickItem* field = previewItem("previewCrop_x");
+    field->forceActiveFocus();
+    if (m_view->activeFocusItem() != field) {
+        QSKIP("The preview window cannot take keyboard focus in this session");
+    }
+    // Left at the first character is not used by the field; it must not
+    // nudge the crop or seek.
+    field->setProperty("cursorPosition", 0);
+    QTest::keyClick(m_view.get(), Qt::Key_Left);
+    QCOMPARE(overlay->property("draftRect").toRectF(), draft);
+    // Esc in the field restores it and leaves crop editing alone.
+    field->setProperty("text", QStringLiteral("999"));
+    QTest::keyClick(m_view.get(), Qt::Key_Escape);
+    QVERIFY(editing());
+    QCOMPARE(m_backend->requestDiscardCount, 0);
+    QVERIFY(field->property("text").toString() != QStringLiteral("999"));
+    QVERIFY(m_view->activeFocusItem() != field);
+}
+
+void tst_RecordingCropOverlay::previewUndoShortcutCancelsDraft()
+{
+    OPEN_PREVIEW_OR_FAIL(QSize(1920, 1080));
+    click(previewItem("previewCropButton"));
+    // Set the draft directly: this test is about entry, not pointer drawing.
+    previewOverlay()->setProperty("draftRect", QRectF(previewContentRect().topLeft() + QPointF(40, 40), QSizeF(160, 100)));
+    QVERIFY(editing());
+    sendKey(Qt::Key_Z, Qt::ControlModifier);
+    QCOMPARE(m_backend->undoCount, 1);
+    QVERIFY(!editing());
+    sendKey(Qt::Key_Z, Qt::ControlModifier | Qt::ShiftModifier);
+    sendKey(Qt::Key_Y, Qt::ControlModifier);
+    QCOMPARE(m_backend->redoCount, 2);
+}
+
+void tst_RecordingCropOverlay::previewCompareShowsOriginal()
+{
+    OPEN_PREVIEW_OR_FAIL(QSize(1920, 1080));
+    QQuickItem* compare = previewItem("previewCompareButton");
+    QVERIFY(compare);
+    QVERIFY(!compare->isEnabled());  // nothing to compare without a crop
+    m_backend->setCropRect(QRect(100, 100, 640, 360));
+    QVERIFY(compare->isEnabled());
+    sendKey(Qt::Key_Backslash);
+    QVERIFY(previewItem("previewCompareChip")->isVisible());
+    QVERIFY(!previewItem("previewCropOverlay")->isVisible());
+    QVERIFY(!previewItem("previewCropChip")->isVisible());
+    sendKey(Qt::Key_Backslash);
+    QVERIFY(!previewItem("previewCompareChip")->isVisible());
+    QVERIFY(previewItem("previewCropOverlay")->isVisible());
+    // Clearing the crop ends comparing.
+    sendKey(Qt::Key_Backslash);
+    m_backend->clearCrop();
+    QVERIFY(!previewItem("previewCompareChip")->isVisible());
 }
 
 QTEST_MAIN(tst_RecordingCropOverlay)

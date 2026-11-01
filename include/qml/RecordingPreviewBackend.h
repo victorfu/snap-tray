@@ -1,5 +1,6 @@
 #pragma once
 
+#include "recording/PreviewEditHistory.h"
 #include "encoding/EncoderFactory.h"
 #include "utils/VideoCropGeometry.h"
 #include "recording/WindowTimeline.h"
@@ -72,6 +73,16 @@ class RecordingPreviewBackend : public QObject
 
     // Error state
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorMessageChanged)
+
+    // Crop aspect preset: 0 free, 1 original, 2 16:9, 3 4:3, 4 1:1, 5 9:16.
+    Q_PROPERTY(int cropAspectIndex READ cropAspectIndex WRITE setCropAspectIndex NOTIFY cropAspectChanged)
+    // Width / height of the locked aspect in video pixels; 0 when free.
+    Q_PROPERTY(qreal cropAspectRatio READ cropAspectRatio NOTIFY cropAspectChanged)
+
+    // Session undo/redo over applied crop and trim edits.
+    Q_PROPERTY(bool canUndo READ canUndo NOTIFY editHistoryChanged)
+    Q_PROPERTY(bool canRedo READ canRedo NOTIFY editHistoryChanged)
+    Q_PROPERTY(bool hasEdits READ hasEdits NOTIFY editHistoryChanged)
 
     // True while the "discard this recording?" confirmation is shown.
     Q_PROPERTY(bool discardConfirmationPending READ discardConfirmationPending NOTIFY discardConfirmationChanged)
@@ -151,6 +162,36 @@ public:
     Q_INVOKABLE QString windowAppAt(const QPointF &viewPoint, const QRectF &contentRect, qint64 positionMs) const;
     Q_INVOKABLE void clearCrop();
 
+    // Aspect presets and exact entry.
+    int cropAspectIndex() const { return m_cropAspectIndex; }
+    void setCropAspectIndex(int index);
+    qreal cropAspectRatio() const;
+    // The legal (even, minimum-size, aspect-locked) crop for a view rect, in
+    // video pixels; the full frame when it would cover it.
+    Q_INVOKABLE QRect legalCropForView(const QRectF &viewRect, const QRectF &contentRect) const;
+    // A view rect for exact video-pixel input, after legalizing it.
+    Q_INVOKABLE QRectF legalViewRectForVideo(int x, int y, int width, int height,
+                                             const QRectF &contentRect) const;
+    // The draft re-fitted to the current aspect preset (the whole frame when empty).
+    Q_INVOKABLE QRectF fitViewRectToAspect(const QRectF &viewRect, const QRectF &contentRect) const;
+
+    // Trim entry: "m:ss.mmm" text and parsing ("ss", "ss.mmm", "m:ss",
+    // "m:ss.mmm", "h:mm:ss.mmm"); parseTime() returns -1 when invalid.
+    Q_INVOKABLE QString formatPreciseTime(qint64 ms) const;
+    Q_INVOKABLE qint64 parseTime(const QString &text) const;
+    // Applies a typed trim range; false (and nothing changes) when invalid.
+    Q_INVOKABLE bool setTrimFromInput(qint64 startMs, qint64 endMs);
+    // Records the trim after a handle drag as one undo step.
+    Q_INVOKABLE void commitTrimEdit();
+
+    bool canUndo() const { return m_editHistory.canUndo(); }
+    bool canRedo() const { return m_editHistory.canRedo(); }
+    bool hasEdits() const { return !currentEditState().isUnedited(); }
+    Q_INVOKABLE void undo();
+    Q_INVOKABLE void redo();
+    // Back to the unedited recording, as one undoable step.
+    Q_INVOKABLE void resetEdits();
+
     // Called by QML VideoPlaybackItem position/duration updates
     Q_INVOKABLE void updatePosition(qint64 ms);
     Q_INVOKABLE void updateDuration(qint64 ms);
@@ -176,6 +217,8 @@ signals:
     void processStatusChanged();
     void errorMessageChanged();
     void discardConfirmationChanged();
+    void cropAspectChanged();
+    void editHistoryChanged();
     void cropRectChanged();
     void videoSizeChanged();
 
@@ -250,6 +293,13 @@ private:
     bool m_saved = false;
     bool m_closeHandled = false;
     bool m_discardConfirmationPending = false;
+    int m_cropAspectIndex = 0;
+    SnapTray::PreviewEditHistory m_editHistory;
+    SnapTray::PreviewEditState currentEditState() const;
+    void applyEditState(const SnapTray::PreviewEditState &state);
+    void recordEdit();
+    // The locked aspect as integers; {0, 0} when free.
+    QSize aspectUnits() const;
     // Set when SnapTray itself closes the window (save, confirmed discard).
     bool m_closeApproved = false;
     bool m_applicationQuitting = false;

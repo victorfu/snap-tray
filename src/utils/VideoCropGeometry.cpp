@@ -3,6 +3,7 @@
 #include <QtGlobal>
 
 #include <algorithm>
+#include <numeric>
 
 namespace SnapTray::VideoCropGeometry {
 
@@ -46,6 +47,48 @@ QRect normalizeCropRect(const QRect& rect, const QSize& frameSize)
     x = std::min(x, maxWidth - width);
     y = std::min(y, maxHeight - height);
 
+    if (x == 0 && y == 0 && width == maxWidth && height == maxHeight) {
+        return {};
+    }
+    return QRect(x, y, width, height);
+}
+
+QRect fitAspect(const QRect& bounds, const QSize& frameSize, int aspectWidth, int aspectHeight)
+{
+    if (aspectWidth <= 0 || aspectHeight <= 0) {
+        return normalizeCropRect(bounds, frameSize);
+    }
+    if (frameSize.isEmpty() || bounds.isEmpty()) {
+        return {};
+    }
+    const QRect clipped = bounds.intersected(QRect(QPoint(0, 0), frameSize));
+    if (clipped.isEmpty()) {
+        return {};
+    }
+    const int maxWidth = frameSize.width() & kEvenMask;
+    const int maxHeight = frameSize.height() & kEvenMask;
+
+    // Doubling the reduced ratio keeps every multiple even on both axes.
+    const int divisor = std::gcd(aspectWidth, aspectHeight);
+    const int unitWidth = 2 * (aspectWidth / divisor);
+    const int unitHeight = 2 * (aspectHeight / divisor);
+    const int maxUnits = std::min(maxWidth / unitWidth, maxHeight / unitHeight);
+    if (maxUnits < 1) {
+        return normalizeCropRect(bounds, frameSize);
+    }
+    const int minUnits = std::min(maxUnits,
+        (kMinCropSide + std::min(unitWidth, unitHeight) - 1) / std::min(unitWidth, unitHeight));
+    const int fitUnits = std::min(clipped.width() / unitWidth, clipped.height() / unitHeight);
+    const int units = std::clamp(fitUnits, minUnits, maxUnits);
+    const int width = units * unitWidth;
+    const int height = units * unitHeight;
+
+    // Exact centre (QRect::center() rounds down), so a rect that is already
+    // legal maps to itself and typed coordinates do not drift.
+    const int centreX2 = 2 * clipped.x() + clipped.width();
+    const int centreY2 = 2 * clipped.y() + clipped.height();
+    const int x = std::clamp(((centreX2 - width) / 2) & kEvenMask, 0, maxWidth - width);
+    const int y = std::clamp(((centreY2 - height) / 2) & kEvenMask, 0, maxHeight - height);
     if (x == 0 && y == 0 && width == maxWidth && height == maxHeight) {
         return {};
     }
