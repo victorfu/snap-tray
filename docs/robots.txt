@@ -42,6 +42,5 @@ Allow: /
 User-agent: CCBot
 Allow: /
 
-# Sitemap & LLMs
+# Sitemap
 Sitemap: https://snaptray.cc/sitemap.xml
-Sitemap: https://snaptray.cc/llms.txt
