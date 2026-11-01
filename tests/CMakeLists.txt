@@ -220,6 +220,11 @@ target_link_libraries(Qml_ScreenPickerViewModel PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_ScreenPickerViewModel COMMAND Qml_ScreenPickerViewModel)
 set_tests_properties(Qml_ScreenPickerViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RecordingManager_SessionClock RecordingManager/tst_SessionClock.cpp)
+target_link_libraries(RecordingManager_SessionClock PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_SessionClock COMMAND RecordingManager_SessionClock)
+set_tests_properties(RecordingManager_SessionClock PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(RecordingManager_RecordingSetup RecordingManager/tst_RecordingSetup.cpp)
 target_link_libraries(RecordingManager_RecordingSetup PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
 target_sources(RecordingManager_RecordingSetup PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)

@@ -103,8 +103,11 @@ bool X11CaptureEngine::start() {
     s.fps = m_frameRate; s.running = true;
     s.worker = std::thread([this, &s] {
         qint64 count = 0, captureNs = 0;
+        quint64 sequence = 0;
         while (s.running) {
             const auto deadline = std::chrono::steady_clock::now() + SnapTray::captureFrameInterval(s.fps.load());
+            // Stamp when the grab is requested: that is when the pixels are read.
+            const qint64 sourceTimeNs = SnapTray::captureClockNowNs();
             QElapsedTimer timer; timer.start();
             QImage image;
             if (s.shared) {
@@ -129,7 +132,12 @@ bool X11CaptureEngine::start() {
                 std::lock_guard<std::mutex> lock(s.mutex);
                 s.latest = image;
             }
-            emit frameReady(image);
+            SnapTray::CapturedFrame frame;
+            frame.image = image;
+            frame.sourceTimeNs = sourceTimeNs;
+            frame.sequence = ++sequence;
+            frame.pixelSize = image.size();
+            emit frameCaptured(frame);
             std::unique_lock<std::mutex> lock(s.mutex);
             s.wake.wait_until(lock, deadline, [&] { return !s.running; });
         }
