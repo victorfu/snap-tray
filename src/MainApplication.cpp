@@ -1034,7 +1034,18 @@ void MainApplication::showRecordingPreview(const QString& videoPath, int default
 
 void MainApplication::onPreviewSaveRequested(const QString& videoPath, const QSize& outputSize)
 {
-    m_recordingManager->triggerSaveDialog(videoPath, outputSize);
+    const QPointer<RecordingPreviewBackend> backend(m_previewBackend);
+    const auto outcome = m_recordingManager->triggerSaveDialog(videoPath, outputSize);
+    // The preview keeps the recording until it hears the outcome.
+    if (!backend) {
+        return;
+    }
+    using Outcome = RecordingPreviewBackend::SaveOutcome;
+    switch (outcome) {
+    case RecordingManager::SaveOutcome::Saved: backend->completeSave(Outcome::Saved); break;
+    case RecordingManager::SaveOutcome::Cancelled: backend->completeSave(Outcome::Cancelled); break;
+    case RecordingManager::SaveOutcome::Failed: backend->completeSave(Outcome::Failed); break;
+    }
 }
 
 void MainApplication::onPreviewDiscardRequested(const QString& videoPath)

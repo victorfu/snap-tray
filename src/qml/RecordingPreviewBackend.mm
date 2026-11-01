@@ -71,6 +71,10 @@ RecordingPreviewBackend::TranscoderFactory& RecordingPreviewBackend::transcoderF
 RecordingPreviewBackend::~RecordingPreviewBackend()
 {
     m_exportCancelToken->store(true);
+    // Never saved: drop the derived export. The recording itself is untouched.
+    if (m_awaitingSave && m_pendingSaveOutput != m_videoPath) {
+        QFile::remove(m_pendingSaveOutput);
+    }
 
     if (m_view) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
@@ -129,6 +133,11 @@ bool RecordingPreviewBackend::eventFilter(QObject* watched, QEvent* event)
 {
     if (watched == m_view && event && event->type() == QEvent::Close && m_isProcessing) {
         static_cast<QCloseEvent*>(event)->ignore();
+        // Never drop an export silently: let the user choose to keep or cancel it.
+        if (canCancelExport() && !m_applicationQuitting && !m_exportCloseQuestionPending) {
+            m_exportCloseQuestionPending = true;
+            emit exportCloseQuestionChanged();
+        }
         return true;
     }
     // QCoreApplication::quit() closes every window and gives up if one refuses.
@@ -362,6 +371,8 @@ void RecordingPreviewBackend::save()
     }
     // Saving answers a pending "discard?" question with "keep".
     cancelDiscard();
+    m_canRetrySave = false;
+    clearError();
 
     // Output quality contract: snapshot the user's setting when Save begins;
     // every MP4 re-encode below uses it. Quality 80 is only the legacy default.
@@ -386,14 +397,93 @@ void RecordingPreviewBackend::save()
 
 bool RecordingPreviewBackend::canCancelExport() const
 {
-    return m_isProcessing && m_exportKind == ExportKind::MP4 && !m_exportCancelToken->load();
+    // Both export kinds check the token between frames. Once the file is
+    // handed over for saving, the save dialog decides instead.
+    return m_isProcessing && !m_awaitingSave
+        && (m_exportKind == ExportKind::MP4 || m_exportKind == ExportKind::Animated)
+        && !m_exportCancelToken->load();
 }
 
 void RecordingPreviewBackend::finishProcessing()
 {
     m_exportKind = ExportKind::None;
     m_isProcessing = false;
+    m_processIndeterminate = false;
+    if (m_exportCloseQuestionPending) {
+        m_exportCloseQuestionPending = false;
+        emit exportCloseQuestionChanged();
+    }
     emit processingChanged();
+    emit processProgressChanged();
+}
+
+void RecordingPreviewBackend::setProcessPhase(const QString &status, bool indeterminate)
+{
+    m_processStatus = status;
+    m_processIndeterminate = indeterminate;
+    emit processStatusChanged();
+    emit processProgressChanged();
+}
+
+void RecordingPreviewBackend::handOffForSave(const QString &outputPath, const QSize &croppedSize)
+{
+    // The export is done; the save dialog (or auto-save) now owns the outcome.
+    // Stay "processing" so the window cannot close or start another export.
+    m_awaitingSave = true;
+    m_pendingSaveOutput = outputPath;
+    m_isProcessing = true;
+    m_exportKind = ExportKind::None;
+    setProcessPhase(tr("Saving..."), true);
+    emit processingChanged();
+    emit saveRequested(outputPath, croppedSize);
+}
+
+void RecordingPreviewBackend::completeSave(SaveOutcome outcome)
+{
+    if (!m_awaitingSave) {
+        return;
+    }
+    m_awaitingSave = false;
+    const QString output = m_pendingSaveOutput;
+    m_pendingSaveOutput.clear();
+    const bool derived = output != m_videoPath;
+
+    if (outcome == SaveOutcome::Saved) {
+        // Only now is the source no longer needed.
+        if (derived) {
+            QFile::remove(m_videoPath);
+        }
+        SnapTray::WindowTimelineSidecar::remove(m_videoPath);
+        finishProcessing();
+        m_saved = true;
+        close();
+        return;
+    }
+
+    // Not saved: drop what this export produced, keep the recording, its
+    // window timeline and the crop/trim so the user can save again.
+    if (derived) {
+        QFile::remove(output);
+    }
+    finishProcessing();
+    if (outcome == SaveOutcome::Failed) {
+        m_canRetrySave = true;
+        setErrorMessage(tr("The file could not be saved. Your recording is kept; "
+                           "try Save again or choose another location."));
+    }
+}
+
+void RecordingPreviewBackend::keepExporting()
+{
+    if (!m_exportCloseQuestionPending) return;
+    m_exportCloseQuestionPending = false;
+    emit exportCloseQuestionChanged();
+}
+
+void RecordingPreviewBackend::cancelExportFromClose()
+{
+    keepExporting();
+    cancelExport();
 }
 
 void RecordingPreviewBackend::cancelExport()
@@ -784,18 +874,22 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
 
     qDebug() << "RecordingPreviewBackend: Converting to" << extension;
 
-    // Show processing state
+    // A new job and token before notifying QML: stale callbacks of an earlier
+    // (cancelled) job compare tokens and never touch this job's UI.
+    m_exportCancelToken = std::make_shared<std::atomic_bool>(false);
+    const auto cancelToken = m_exportCancelToken;
     m_exportKind = ExportKind::Animated;
     m_isProcessing = true;
     m_processProgress = 0;
-    m_processStatus = tr("Converting video...");
+    m_processIndeterminate = false;
+    m_processStatus = format == GIF ? tr("Converting to GIF...") : tr("Converting to WebP...");
     emit processingChanged();
     emit processProgressChanged();
     emit processStatusChanged();
+    const QString writingStatus = tr("Writing file...");
 
     // Capture values needed by the worker thread
     const QString videoPath = m_videoPath;
-    const QString sourceVideoPath = m_videoPath;
     const qint64 requestedStartMs = m_trimStart;
     const qint64 requestedEndMs = m_trimEnd;
     const QRect cropRect = m_cropRect;
@@ -811,8 +905,9 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
     QPointer<RecordingPreviewBackend> weakThis(this);
 
     (void)QtConcurrent::run([weakThis,
+                             cancelToken,
+                             writingStatus,
                              videoPath,
-                             sourceVideoPath,
                              requestedStartMs,
                              requestedEndMs,
                              cropRect,
@@ -836,19 +931,38 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
         } comGuard;
 #endif
 
-        auto postFailure = [weakThis](const QString& errorMessage) {
+        // True while this job is still the preview's current job.
+        const auto isCurrent = [weakThis, cancelToken]() {
+            return weakThis && weakThis->m_exportCancelToken == cancelToken;
+        };
+        auto postFailure = [weakThis, cancelToken, isCurrent](const QString& errorMessage) {
             QCoreApplication* app = QCoreApplication::instance();
             if (!app) {
                 return;
             }
 
-            QMetaObject::invokeMethod(app, [weakThis, errorMessage]() {
-                if (!weakThis) {
+            QMetaObject::invokeMethod(app, [weakThis, cancelToken, isCurrent, errorMessage]() {
+                if (!isCurrent()) {
                     return;
                 }
-                weakThis->setErrorMessage(errorMessage);
                 weakThis->finishProcessing();
+                // A cancelled job ends quietly; the recording and edits are kept.
+                if (!cancelToken->load()) {
+                    weakThis->m_canRetrySave = true;
+                    weakThis->setErrorMessage(errorMessage);
+                }
             }, Qt::QueuedConnection);
+        };
+        // Cooperative cancellation: checked between frames and before each
+        // file step. The encoder is aborted, never killed with its thread.
+        auto stopIfCancelled = [cancelToken, postFailure](NativeGifEncoder* gif, WebPAnimationEncoder* webp,
+                                                          const QString& workingPath) {
+            if (!cancelToken->load()) return false;
+            if (gif) gif->abort();
+            if (webp) webp->abort();
+            QFile::remove(workingPath);
+            postFailure(QString());
+            return true;
         };
 
         auto frameReader = IVideoFrameReader::create();
@@ -962,6 +1076,9 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
             if (timeMs >= endMs) {
                 break;
             }
+            if (stopIfCancelled(gifEncoder.get(), webpEncoder.get(), workingOutputPath)) {
+                return;
+            }
             QImage capturedFrame;
             if (frameReader) {
                 capturedFrame = frameReader->frameAt(timeMs);
@@ -1028,8 +1145,8 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
             int percent = static_cast<int>(((timeMs - startMs) * 100) / (endMs - startMs));
             QCoreApplication* app = QCoreApplication::instance();
             if (app) {
-                QMetaObject::invokeMethod(app, [weakThis, percent]() {
-                    if (!weakThis) {
+                QMetaObject::invokeMethod(app, [weakThis, isCurrent, cancelToken, percent]() {
+                    if (!isCurrent() || cancelToken->load()) {
                         return;
                     }
                     if (percent != weakThis->m_processProgress) {
@@ -1051,6 +1168,18 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
         const qint64 encodedFrameCount = gifEncoder
             ? gifEncoder->framesWritten()
             : webpEncoder->framesWritten();
+
+        if (stopIfCancelled(gifEncoder.get(), webpEncoder.get(), workingOutputPath)) {
+            return;
+        }
+        // Writing out the file has no frame count to report: show it as its own phase.
+        if (QCoreApplication* app = QCoreApplication::instance()) {
+            QMetaObject::invokeMethod(app, [weakThis, isCurrent, cancelToken, writingStatus]() {
+                if (isCurrent() && !cancelToken->load()) {
+                    weakThis->setProcessPhase(writingStatus, true);
+                }
+            }, Qt::QueuedConnection);
+        }
 
         // Finish encoding. Both encoders complete synchronously and report the
         // actual result through their finished signal.
@@ -1080,26 +1209,27 @@ void RecordingPreviewBackend::performFormatConversion(OutputFormat format)
         }
 
         const QSize croppedSize = cropRect.isEmpty() ? QSize() : outputSize;
-        QMetaObject::invokeMethod(app, [weakThis, outputPath, sourceVideoPath, outputMissingError,
+        QMetaObject::invokeMethod(app, [weakThis, isCurrent, cancelToken, outputPath, outputMissingError,
                                         croppedSize]() {
-            if (!weakThis) {
+            // The output is still only a temporary next to the recording, so a
+            // cancel that arrives now still wins; so does a newer job.
+            if (!isCurrent() || cancelToken->load()) {
+                QFile::remove(outputPath);
+                if (isCurrent()) weakThis->finishProcessing();
                 return;
             }
 
             weakThis->m_processProgress = 100;
             emit weakThis->processProgressChanged();
-            weakThis->finishProcessing();
 
-            // Clean up original MP4 only if output is valid
             QFileInfo outInfo(outputPath);
             if (outInfo.exists() && outInfo.size() > 0) {
-                QFile::remove(sourceVideoPath);
-                SnapTray::WindowTimelineSidecar::remove(sourceVideoPath);
-                weakThis->m_saved = true;
-                weakThis->close();
-                emit weakThis->saveRequested(outputPath, croppedSize);
+                // The source stays until the save dialog has committed the output.
+                weakThis->handOffForSave(outputPath, croppedSize);
             } else {
                 qWarning() << "RecordingPreviewBackend: Conversion output missing or empty, keeping original";
+                weakThis->finishProcessing();
+                weakThis->m_canRetrySave = true;
                 weakThis->setErrorMessage(outputMissingError);
             }
         }, Qt::QueuedConnection);
@@ -1204,9 +1334,7 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
                 const bool cancelled = cancelToken->load();
                 weakThis->finishProcessing();
                 if (cancelled) return;
-                weakThis->m_saved = true;
-                weakThis->close();
-                emit weakThis->saveRequested(inputPath, QSize());
+                weakThis->handOffForSave(inputPath, QSize());
             });
             return;
         }
@@ -1304,19 +1432,15 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
                     // it as recorded rather than leave the user with Discard.
                     qWarning() << "RecordingPreviewBackend: moving the unedited recording; re-encode failed:"
                                << result.errorMessage;
-                    weakThis->m_saved = true;
-                    weakThis->close();
-                    emit weakThis->saveRequested(inputPath, QSize());
+                    weakThis->handOffForSave(inputPath, QSize());
                     return;
                 }
+                weakThis->m_canRetrySave = true;
                 weakThis->setErrorMessage(unsupported ? failedTemplate.arg(unsupportedError) : keptMessage);
                 return;
             }
-            QFile::remove(inputPath);
-            SnapTray::WindowTimelineSidecar::remove(inputPath);
-            weakThis->m_saved = true;
-            weakThis->close();
-            emit weakThis->saveRequested(outputPath, croppedSize);
+            // The source stays until the save dialog has committed the output.
+            weakThis->handOffForSave(outputPath, croppedSize);
         });
         if (!posted && result.success) {
             QFile::remove(outputPath);

@@ -1,4 +1,5 @@
 #include <QtTest/QtTest>
+#include <QThread>
 
 #include "IVideoEncoder.h"
 #include "encoding/IntermediateQuality.h"
@@ -31,6 +32,11 @@
 #endif
 #include <windows.h>
 #endif
+
+// An export ends either handed over for saving (the preview then keeps the
+// source until completeSave()) or with the preview idle again.
+#define WAIT_FOR_EXPORT(backend, savedSpy, timeoutMs) \
+    QTRY_VERIFY_WITH_TIMEOUT((savedSpy).count() > 0 || !(backend).isProcessing(), timeoutMs)
 
 namespace {
 
@@ -340,6 +346,11 @@ private slots:
     void invalidTranscodeKeepsSourceAndRetries();
     void destroyWhileExportingKeepsSource_data();
     void destroyWhileExportingKeepsSource();
+    void cancelAnimationKeepsSource_data();
+    void cancelAnimationKeepsSource();
+    void saveOutcomeKeepsRecordingUntilCommitted_data();
+    void saveOutcomeKeepsRecordingUntilCommitted();
+    void closeDuringExportAsks();
 };
 
 void tst_RecordingPreviewExport::saveAnimation_data()
@@ -381,15 +392,19 @@ void tst_RecordingPreviewExport::saveAnimation()
     }
     QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
     backend.save();
-    QVERIFY(!backend.canCancelExport());
+    // Animated exports can be cancelled like MP4 (see cancelAnimationKeepsSource).
+    QVERIFY(backend.canCancelExport());
     backend.setSelectedFormat(RecordingPreviewBackend::MP4);
     QCOMPARE(backend.selectedFormat(), format);
-    const QString status = backend.processStatus();
-    backend.cancelExport();
-    QCOMPARE(backend.processStatus(), status);
-    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
+    WAIT_FOR_EXPORT(backend, savedSpy, 20000);
     QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
     QCOMPARE(savedSpy.count(), 1);
+    // Handed over for saving: the source stays until the save is committed.
+    QVERIFY(backend.isProcessing());
+    QVERIFY(!backend.canCancelExport());
+    QVERIFY(QFileInfo::exists(inputPath));
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
+    QVERIFY(!backend.isProcessing());
 
     const QString outputPath = savedSpy.first().at(0).toString();
     // Uncropped: no output size, so the filename keeps the recording's size.
@@ -505,7 +520,7 @@ void tst_RecordingPreviewExport::saveCroppedAnimation()
 
     QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
     backend.save();
-    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
+    WAIT_FOR_EXPORT(backend, savedSpy, 20000);
     QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
     QCOMPARE(savedSpy.count(), 1);
     // The filename's {w}x{h} must describe the cropped output.
@@ -622,10 +637,12 @@ void tst_RecordingPreviewExport::saveMp4Edits()
     QVERIFY(backend.isProcessing());
     // A second save while the export runs must not start another export.
     backend.save();
-    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
+    WAIT_FOR_EXPORT(backend, savedSpy, 20000);
     QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
     QCOMPARE(savedSpy.count(), 1);
     QCOMPARE(backend.processProgress(), 100);
+    QVERIFY(QFileInfo::exists(inputPath));
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
 
     const QString outputPath = savedSpy.first().at(0).toString();
     QCOMPARE(savedSpy.first().at(1).toSize(), crop ? cropRect.size() : QSize());
@@ -692,7 +709,7 @@ void tst_RecordingPreviewExport::videoOnlyExportAcceptedWhenRangeHasNoSourceAudi
 
     QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
     backend.save();
-    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
+    WAIT_FOR_EXPORT(backend, savedSpy, 20000);
     QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
     QCOMPARE(savedSpy.count(), 1);
     {
@@ -700,6 +717,7 @@ void tst_RecordingPreviewExport::videoOnlyExportAcceptedWhenRangeHasNoSourceAudi
         QCOMPARE(log->calls, 1);
         QCOMPARE(log->lastRequest.startMs, trimStartMs);
     }
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
     QVERIFY(!QFileInfo::exists(inputPath));
     const VideoFileProbe outputProbe = realTranscoder->probe(savedSpy.first().at(0).toString());
     QVERIFY(outputProbe.valid);
@@ -787,11 +805,14 @@ void tst_RecordingPreviewExport::invalidTranscodeKeepsSourceAndRetries()
 
     // The failure leaves the export retryable with the real transcoder.
     RecordingPreviewBackend::transcoderFactoryOverride() = {};
+    QVERIFY(backend.canRetrySave());
     backend.clearError();
     backend.save();
-    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
+    WAIT_FOR_EXPORT(backend, savedSpy, 20000);
     QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
     QCOMPARE(savedSpy.count(), 1);
+    QCOMPARE(closedSpy.count(), 0);
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
     QCOMPARE(closedSpy.count(), 1);
     QVERIFY(!QFileInfo::exists(inputPath));
     const VideoFileProbe probe = realTranscoder->probe(savedSpy.first().at(0).toString());
@@ -929,7 +950,7 @@ void tst_RecordingPreviewExport::saveMp4EditsUseOutputQuality()
 
     QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
     backend.save();
-    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
+    WAIT_FOR_EXPORT(backend, savedSpy, 20000);
     QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
     QCOMPARE(savedSpy.count(), 1);
     const QSize outputSize = crop ? cropRect.size() : sourceSize;
@@ -967,10 +988,12 @@ void tst_RecordingPreviewExport::smartSaveMovesLowBitrateRecording()
     QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
     QSignalSpy closedSpy(&backend, &RecordingPreviewBackend::closed);
     backend.save();
-    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
+    WAIT_FOR_EXPORT(backend, savedSpy, 20000);
     QTRY_COMPARE(savedSpy.count(), 1);
     QCOMPARE(savedSpy.first().at(0).toString(), inputPath);
     QCOMPARE(savedSpy.first().at(1).toSize(), QSize());
+    QCOMPARE(closedSpy.count(), 0);
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
     QCOMPARE(closedSpy.count(), 1);
     QVERIFY(QFileInfo::exists(inputPath)); // the consumer of saveRequested moves it
     std::lock_guard<std::mutex> lock(log->mutex);
@@ -1003,7 +1026,7 @@ void tst_RecordingPreviewExport::smartSaveMovesUnprobeableRecording()
     backend.updateDuration(2000);
     QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
     backend.save();
-    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
+    WAIT_FOR_EXPORT(backend, savedSpy, 20000);
     QTRY_COMPARE(savedSpy.count(), 1);
     QCOMPARE(savedSpy.first().at(0).toString(), inputPath);
     QCOMPARE(savedSpy.first().at(1).toSize(), QSize());
@@ -1047,11 +1070,13 @@ void tst_RecordingPreviewExport::smartSaveReencodesHighBitrateRecording()
     backend.save();
     QVERIFY(backend.isProcessing());
     QCOMPARE(backend.processStatus(), RecordingPreviewBackend::tr("Exporting video..."));
-    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 60000);
+    WAIT_FOR_EXPORT(backend, savedSpy, 60000);
     QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
     QCOMPARE(savedSpy.count(), 1);
     const QString outputPath = savedSpy.first().at(0).toString();
     QVERIFY(outputPath != inputPath);
+    QVERIFY(QFileInfo::exists(inputPath));
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
     QVERIFY(!QFileInfo::exists(inputPath));
     const VideoFileProbe outputProbe = realTranscoder->probe(outputPath);
     QVERIFY(outputProbe.valid);
@@ -1091,7 +1116,7 @@ void tst_RecordingPreviewExport::smartSaveMovesRecordingNotRecordedAsIntermediat
     backend.updateDuration(kNoiseFrameCount * kFrameIntervalMs);
     QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
     backend.save();
-    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
+    WAIT_FOR_EXPORT(backend, savedSpy, 20000);
     QTRY_COMPARE(savedSpy.count(), 1);
     QCOMPARE(savedSpy.first().at(0).toString(), noiseInputPath);
     QCOMPARE(savedSpy.first().at(1).toSize(), QSize());
@@ -1128,7 +1153,7 @@ void tst_RecordingPreviewExport::failedSmartSaveReencodeSavesOriginal()
     backend.updateDuration(kNoiseFrameCount * kFrameIntervalMs);
     QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
     backend.save();
-    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
+    WAIT_FOR_EXPORT(backend, savedSpy, 20000);
     QTRY_COMPARE(savedSpy.count(), 1);
     QCOMPARE(savedSpy.first().at(0).toString(), inputPath);
     QCOMPARE(savedSpy.first().at(1).toSize(), QSize());
@@ -1276,6 +1301,9 @@ void tst_RecordingPreviewExport::cancelBeforeGuiCommit()
     QVERIFY(gate->workerFinished.tryAcquire(1, kExportGateTimeoutMs));
     QTRY_COMPARE(saved.count(), 1);
     QVERIFY(!backend.canCancelExport());
+    // The preview closes once the save is committed, not before.
+    QCOMPARE(closed.count(), 0);
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
     QCOMPARE(closed.count(), 1);
     QCOMPARE(discarded.count(), 0);
 }
@@ -1323,6 +1351,187 @@ void tst_RecordingPreviewExport::previewWindowKeepsNativeCaption()
 #endif
 }
 
+void tst_RecordingPreviewExport::cancelAnimationKeepsSource_data()
+{
+    QTest::addColumn<int>("format");
+    QTest::addColumn<bool>("afterWorker");
+    QTest::newRow("gif-at-start") << int(RecordingPreviewBackend::GIF) << false;
+    QTest::newRow("webp-at-start") << int(RecordingPreviewBackend::WebP) << false;
+    QTest::newRow("gif-before-gui-commit") << int(RecordingPreviewBackend::GIF) << true;
+    QTest::newRow("webp-before-gui-commit") << int(RecordingPreviewBackend::WebP) << true;
+}
+
+void tst_RecordingPreviewExport::cancelAnimationKeepsSource()
+{
+    QFETCH(int, format);
+    QFETCH(bool, afterWorker);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    SnapTray::WindowTimeline timeline;
+    timeline.setFrameSize(kFrameSize);
+    QVERIFY(SnapTray::WindowTimelineSidecar::write(inputPath, timeline));
+    QFile input(inputPath);
+    QVERIFY(input.open(QIODevice::ReadOnly));
+    const QByteArray originalBytes = input.readAll();
+    input.close();
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(format);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    backend.setTrimStart(kFrameIntervalMs);
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    QSignalSpy closedSpy(&backend, &RecordingPreviewBackend::closed);
+    backend.save();
+    QVERIFY(backend.isProcessing());
+    QVERIFY(backend.canCancelExport());
+    QVERIFY(!backend.processIndeterminate());
+
+    if (afterWorker) {
+        // Let the worker write and promote its output without running the
+        // event loop: its completion is still queued when the cancel lands.
+        const QString extension = format == RecordingPreviewBackend::GIF ? QStringLiteral("*.gif")
+                                                                         : QStringLiteral("*.webp");
+        QElapsedTimer timer;
+        timer.start();
+        while (QDir(directory.path()).entryList(QStringList(extension), QDir::Files).isEmpty()
+               && timer.elapsed() < 20000) {
+            QThread::msleep(kFakeCancelPollMs);
+        }
+        QVERIFY(!QDir(directory.path()).entryList(QStringList(extension), QDir::Files).isEmpty());
+    }
+    backend.cancelExport();
+    QCOMPARE(backend.processStatus(), RecordingPreviewBackend::tr("Cancelling..."));
+    QVERIFY(!backend.canCancelExport());
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
+
+    // Quiet cancel: no error, nothing handed over, the window stays.
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(savedSpy.count(), 0);
+    QCOMPARE(closedSpy.count(), 0);
+    QTRY_COMPARE(QDir(directory.path()).entryList(QDir::Files),
+                 QStringList({QStringLiteral("recording.mp4"),
+                              QFileInfo(SnapTray::WindowTimelineSidecar::pathFor(inputPath)).fileName()}));
+    QVERIFY(input.open(QIODevice::ReadOnly));
+    QCOMPARE(input.readAll(), originalBytes);
+    input.close();
+    // Edits survive, so the user can change them and try again right away.
+    QCOMPARE(backend.trimStart(), qint64(kFrameIntervalMs));
+    backend.save();
+    QVERIFY(backend.canCancelExport());
+    WAIT_FOR_EXPORT(backend, savedSpy, 20000);
+    QCOMPARE(savedSpy.count(), 1);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+}
+
+void tst_RecordingPreviewExport::saveOutcomeKeepsRecordingUntilCommitted_data()
+{
+    QTest::addColumn<int>("outcome");
+    QTest::newRow("cancelled") << int(RecordingPreviewBackend::SaveOutcome::Cancelled);
+    QTest::newRow("failed") << int(RecordingPreviewBackend::SaveOutcome::Failed);
+    QTest::newRow("saved") << int(RecordingPreviewBackend::SaveOutcome::Saved);
+}
+
+void tst_RecordingPreviewExport::saveOutcomeKeepsRecordingUntilCommitted()
+{
+    QFETCH(int, outcome);
+    const auto result = static_cast<RecordingPreviewBackend::SaveOutcome>(outcome);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    SnapTray::WindowTimeline timeline;
+    timeline.setFrameSize(kFrameSize);
+    QVERIFY(SnapTray::WindowTimelineSidecar::write(inputPath, timeline));
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    backend.setTrimStart(kFrameIntervalMs);
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    QSignalSpy closedSpy(&backend, &RecordingPreviewBackend::closed);
+    backend.save();
+    WAIT_FOR_EXPORT(backend, savedSpy, 20000);
+    QCOMPARE(savedSpy.count(), 1);
+    const QString output = savedSpy.first().at(0).toString();
+    // Waiting for the save dialog: indeterminate "Saving...", not cancellable,
+    // source and sidecar still there.
+    QVERIFY(backend.isProcessing());
+    QVERIFY(backend.processIndeterminate());
+    QCOMPARE(backend.processStatus(), RecordingPreviewBackend::tr("Saving..."));
+    QVERIFY(!backend.canCancelExport());
+    QVERIFY(QFileInfo::exists(inputPath));
+    QVERIFY(QFileInfo::exists(SnapTray::WindowTimelineSidecar::pathFor(inputPath)));
+    backend.save();  // ignored while waiting
+    QCOMPARE(savedSpy.count(), 1);
+
+    backend.completeSave(result);
+    QVERIFY(!backend.isProcessing());
+    if (result == RecordingPreviewBackend::SaveOutcome::Saved) {
+        QCOMPARE(closedSpy.count(), 1);
+        QVERIFY(!QFileInfo::exists(inputPath));
+        QVERIFY(QFileInfo::exists(output));  // the consumer moves it to its destination
+        return;
+    }
+    // Not saved: back to editing with the recording, its timeline and the trim.
+    QCOMPARE(closedSpy.count(), 0);
+    QVERIFY(QFileInfo::exists(inputPath));
+    QVERIFY(QFileInfo::exists(SnapTray::WindowTimelineSidecar::pathFor(inputPath)));
+    QVERIFY(!QFileInfo::exists(output));
+    QCOMPARE(backend.trimStart(), qint64(kFrameIntervalMs));
+    const bool failed = result == RecordingPreviewBackend::SaveOutcome::Failed;
+    QCOMPARE(backend.errorMessage().isEmpty(), !failed);
+    QCOMPARE(backend.canRetrySave(), failed);
+    // A late or repeated outcome does nothing.
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
+    QVERIFY(QFileInfo::exists(inputPath));
+    QCOMPARE(closedSpy.count(), 0);
+}
+
+void tst_RecordingPreviewExport::closeDuringExportAsks()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.show();
+    QWindow* view = nullptr;
+    QTRY_VERIFY_WITH_TIMEOUT([&] {
+        for (QWindow* window : QGuiApplication::topLevelWindows()) {
+            if (window->isVisible() && window->title() == RecordingPreviewBackend::tr("Recording Preview"))
+                view = window;
+        }
+        return view != nullptr;
+    }(), 5000);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    QSignalSpy closedSpy(&backend, &RecordingPreviewBackend::closed);
+    backend.save();
+    QVERIFY(backend.canCancelExport());
+
+    // Closing during the export never closes or drops it: it asks.
+    QVERIFY(!view->close());
+    QVERIFY(backend.exportCloseQuestionPending());
+    QVERIFY(backend.isProcessing());
+    backend.keepExporting();
+    QVERIFY(!backend.exportCloseQuestionPending());
+    QVERIFY(backend.isProcessing());
+
+    QVERIFY(!view->close());
+    QVERIFY(backend.exportCloseQuestionPending());
+    backend.cancelExportFromClose();
+    QVERIFY(!backend.exportCloseQuestionPending());
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
+    QCOMPARE(closedSpy.count(), 0);
+    QVERIFY(QFileInfo::exists(inputPath));
+}
+
 QTEST_MAIN(tst_RecordingPreviewExport)
 #include "tst_RecordingPreviewExport.moc"
 
@@ -1350,6 +1559,9 @@ void tst_RecordingPreviewExport::closeOutcomes()
         auto restore = qScopeGuard([]() { RecordingPreviewBackend::transcoderFactoryOverride() = {}; });
         RecordingPreviewBackend::transcoderFactoryOverride() = []() { return std::unique_ptr<IVideoTranscoder>(); };
         backend.save();
+        QTRY_COMPARE(saved.count(), 1);
+        QCOMPARE(closed.count(), 0);  // waits for the save outcome
+        backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
         QTRY_COMPARE(closed.count(), 1);
     } else backend.close();
     QCOMPARE(closed.count(), action == 3 ? 0 : 1);

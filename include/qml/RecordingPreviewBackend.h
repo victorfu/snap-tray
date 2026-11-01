@@ -70,6 +70,13 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(bool canCancelExport READ canCancelExport NOTIFY processingChanged)
     Q_PROPERTY(int processProgress READ processProgress NOTIFY processProgressChanged)
     Q_PROPERTY(QString processStatus READ processStatus NOTIFY processStatusChanged)
+    // No trustworthy total for this phase (finishing or saving the file):
+    // show an indeterminate indicator instead of a percentage.
+    Q_PROPERTY(bool processIndeterminate READ processIndeterminate NOTIFY processProgressChanged)
+    // The window was closed during an export: ask whether to keep exporting.
+    Q_PROPERTY(bool exportCloseQuestionPending READ exportCloseQuestionPending NOTIFY exportCloseQuestionChanged)
+    // The last export or save failed; Save can be tried again.
+    Q_PROPERTY(bool canRetrySave READ canRetrySave NOTIFY errorMessageChanged)
 
     // Error state
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorMessageChanged)
@@ -139,6 +146,21 @@ public:
 
     // QML actions
     Q_INVOKABLE void save();
+
+    // What happened to a file handed over with saveRequested.
+    enum class SaveOutcome { Saved, Cancelled, Failed };
+    Q_ENUM(SaveOutcome)
+    // The owner of saveRequested reports the result. Until then the preview
+    // stays open and keeps the source recording. Saved removes the source
+    // (unless it is the saved file) and closes; Cancelled and Failed remove
+    // only the derived output and keep editing, so Save can be retried.
+    void completeSave(SaveOutcome outcome);
+    bool processIndeterminate() const { return m_processIndeterminate; }
+    bool exportCloseQuestionPending() const { return m_exportCloseQuestionPending; }
+    bool canRetrySave() const { return m_canRetrySave && !m_errorMessage.isEmpty(); }
+    // Answers to the close-during-export question.
+    Q_INVOKABLE void keepExporting();
+    Q_INVOKABLE void cancelExportFromClose();
     // Stops a running MP4 export; the source is kept and no error is shown.
     Q_INVOKABLE void cancelExport();
     // Deletes the recording immediately. User-facing paths (trash button, Esc,
@@ -218,6 +240,7 @@ signals:
     void errorMessageChanged();
     void discardConfirmationChanged();
     void cropAspectChanged();
+    void exportCloseQuestionChanged();
     void editHistoryChanged();
     void cropRectChanged();
     void videoSizeChanged();
@@ -293,6 +316,14 @@ private:
     bool m_saved = false;
     bool m_closeHandled = false;
     bool m_discardConfirmationPending = false;
+    // Save hand-off: the output waiting for completeSave().
+    bool m_awaitingSave = false;
+    QString m_pendingSaveOutput;
+    bool m_processIndeterminate = false;
+    bool m_exportCloseQuestionPending = false;
+    bool m_canRetrySave = false;
+    void handOffForSave(const QString &outputPath, const QSize &croppedSize);
+    void setProcessPhase(const QString &status, bool indeterminate);
     int m_cropAspectIndex = 0;
     SnapTray::PreviewEditHistory m_editHistory;
     SnapTray::PreviewEditState currentEditState() const;

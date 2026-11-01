@@ -906,6 +906,7 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
 
                 Rectangle {
+                    visible: !backend.processIndeterminate
                     width: parent.width * (backend.processProgress / 100.0)
                     height: parent.height
                     radius: 3
@@ -913,6 +914,34 @@ Item {
 
                     Behavior on width {
                         NumberAnimation { duration: SemanticTokens.durationInteractionHover }
+                    }
+                }
+
+                // No trustworthy total (writing or saving the file): a moving
+                // segment instead of an invented percentage.
+                Rectangle {
+                    id: indeterminateSegment
+                    objectName: "previewIndeterminateProgress"
+                    visible: backend.processIndeterminate
+                    width: parent.width / 4
+                    height: parent.height
+                    radius: 3
+                    color: root.accent
+                    SequentialAnimation on x {
+                        running: indeterminateSegment.visible
+                        loops: Animation.Infinite
+                        NumberAnimation {
+                            from: 0
+                            to: 280 - 280 / 4
+                            duration: SemanticTokens.durationNormal * 4
+                            easing.type: Easing.InOutQuad
+                        }
+                        NumberAnimation {
+                            from: 280 - 280 / 4
+                            to: 0
+                            duration: SemanticTokens.durationNormal * 4
+                            easing.type: Easing.InOutQuad
+                        }
                     }
                 }
             }
@@ -926,6 +955,7 @@ Item {
             }
 
             Text {
+                visible: !backend.processIndeterminate
                 text: backend.processProgress + "%"
                 font.pixelSize: SemanticTokens.fontSizeCaption
                 font.family: SemanticTokens.fontFamily
@@ -933,14 +963,53 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
             }
 
-            // Only MP4 exports can be stopped; animated conversions run to completion.
+            // MP4, GIF and WebP exports stop between frames; the recording and
+            // edits stay, so the user can change settings and save again.
             DialogButton {
                 objectName: "previewCancelExportButton"
                 text: qsTr("Cancel")
                 style: "secondary"
-                visible: backend.canCancelExport
+                visible: backend.canCancelExport && !backend.exportCloseQuestionPending
                 anchors.horizontalCenter: parent.horizontalCenter
+                Accessible.role: Accessible.Button
+                Accessible.name: qsTr("Cancel Export")
                 onClicked: backend.cancelExport()
+            }
+
+            // The window was closed during an export: keep it or cancel it.
+            Column {
+                objectName: "previewExportCloseQuestion"
+                visible: backend.exportCloseQuestionPending
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: SemanticTokens.spacing8
+
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: qsTr("An export is in progress. Keep exporting or cancel it?")
+                    font.pixelSize: SemanticTokens.fontSizeBody
+                    font.family: SemanticTokens.fontFamily
+                    color: root.textPrimary
+                }
+                Row {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: SemanticTokens.spacing8
+                    DialogButton {
+                        objectName: "previewKeepExportingButton"
+                        text: qsTr("Keep Exporting")
+                        style: "primary"
+                        Accessible.role: Accessible.Button
+                        Accessible.name: text
+                        onClicked: backend.keepExporting()
+                    }
+                    DialogButton {
+                        objectName: "previewCancelExportFromCloseButton"
+                        text: qsTr("Cancel Export")
+                        style: "secondary"
+                        Accessible.role: Accessible.Button
+                        Accessible.name: text
+                        onClicked: backend.cancelExportFromClose()
+                    }
+                }
             }
         }
     }
@@ -1063,13 +1132,29 @@ Item {
             spacing: SemanticTokens.spacing8
 
             Text {
-                width: parent.width - 28
+                // Leaves room for the dismiss button and, when shown, Try Again.
+                width: parent.width - 28 - (retryButtonSlot.visible ? retryButtonSlot.width + errorRow.spacing : 0)
                 wrapMode: Text.Wrap
                 text: backend.errorMessage
                 font.pixelSize: SemanticTokens.fontSizeBody
                 font.family: SemanticTokens.fontFamily
                 color: SemanticTokens.statusError
                 anchors.verticalCenter: parent.verticalCenter
+            }
+
+            IconButton {
+                id: retryButtonSlot
+                objectName: "previewRetrySaveButton"
+                visible: backend.canRetrySave
+                iconText: qsTr("Try Again")
+                height: 20
+                tooltipText: qsTr("Save again with the current settings")
+                tooltipPreferredAbove: false
+                anchors.verticalCenter: parent.verticalCenter
+                onClicked: {
+                    backend.clearError()
+                    root.saveWithCrop()
+                }
             }
 
             IconButton {

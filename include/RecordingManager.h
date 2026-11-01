@@ -79,9 +79,15 @@ public slots:
     // platforms that keep active controls in the tray.
     bool showRecordingControls();
     void onPreviewClosed(bool saved);  // Handle preview window close
-    // Show save dialog for video. `outputSize` (pixels) replaces the recording
-    // region in the filename's {w}x{h} for a cropped export; empty = region.
-    void triggerSaveDialog(const QString &videoPath, const QSize &outputSize = QSize());
+public:
+    enum class SaveOutcome { Saved, Cancelled, Failed };
+    // Saves a file exported by the preview (auto-save or the save dialog).
+    // `outputSize` (pixels) replaces the recording region in the filename's
+    // {w}x{h} for a cropped export; empty = region. Unlike the no-preview
+    // flow, a cancelled dialog or failed save leaves the file where it is:
+    // the preview still owns it and the recording it came from.
+    SaveOutcome triggerSaveDialog(const QString &videoPath, const QSize &outputSize = QSize());
+public slots:
 
 signals:
     void recordingStarted();
@@ -134,7 +140,10 @@ private:
     void cleanupStaleTempFiles();      // Clean up old temp files on startup
     QString generateOutputPath() const;
     void setState(State newState);
-    void showSaveDialog(const QString &tempOutputPath, const QSize &outputSize = QSize());
+    // `keepOnCancel`: the preview flow keeps the file (and its window
+    // timeline) when the dialog is cancelled or the save fails.
+    SaveOutcome showSaveDialog(const QString &tempOutputPath, const QSize &outputSize = QSize(),
+                               bool keepOnCancel = false);
     void loadAndValidateFrameRate();
     void resetPauseTracking();
     bool shouldUseDedicatedEncodingThread(bool hasNativeEncoder) const;
