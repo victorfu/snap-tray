@@ -114,3 +114,15 @@ void RecordingSettingsManager::setCountdownSeconds(int value)
     auto settings = SnapTray::getSettings();
     settings.setValue(kKeyCountdownSeconds, value);
 }
+
+bool RecordingSettingsManager::showSetupBeforeRecording() const
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(kKeyShowSetupBeforeRecording, kDefaultShowSetupBeforeRecording).toBool();
+}
+
+void RecordingSettingsManager::setShowSetupBeforeRecording(bool value)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kKeyShowSetupBeforeRecording, value);
+}

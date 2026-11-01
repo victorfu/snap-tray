@@ -1719,6 +1719,11 @@ Taille : %2</translation>
 <context>
     <name>RecordingManager</name>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="1145" />
+        <source>The selected microphone was not found. Recording from the default microphone.</source>
+        <translation>Le microphone sélectionné est introuvable. Enregistrement avec le microphone par défaut.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="312" />
         <source>No screen available for region selection.</source>
         <translation>Aucun écran disponible pour la sélection de zone.</translation>
@@ -2055,6 +2060,16 @@ Taille : %2</translation>
 </context>
 <context>
     <name>RecordingSettings</name>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="245" />
+        <source>Confirm the screen, microphone, and system audio before each recording. When off, recording starts right away with these settings.</source>
+        <translation>Confirmez l’écran, le microphone et l’audio système avant chaque enregistrement. Désactivé, l’enregistrement démarre immédiatement avec ces réglages.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="244" />
+        <source>Show setup before recording</source>
+        <translation>Afficher la configuration avant l’enregistrement</translation>
+    </message>
     <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="31" />
         <source>Frame rate</source>
@@ -3428,6 +3443,195 @@ Taille du fichier : %3</translation>
     <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Détecter et flouter automatiquement les visages et les identifiants</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingAudioStatus</name>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="70" />
+        <source>System audio</source>
+        <translation>Audio système</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="68" />
+        <source>Microphone</source>
+        <translation>Microphone</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="66" />
+        <source>%1: %2</source>
+        <translation>%1: %2</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="28" />
+        <source>Not supported by GIF/WebP</source>
+        <translation>Non pris en charge par GIF/WebP</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="27" />
+        <source>Unavailable</source>
+        <translation>Indisponible</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="26" />
+        <source>Device not found</source>
+        <translation>Appareil introuvable</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="25" />
+        <source>Permission denied</source>
+        <translation>Autorisation refusée</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="24" />
+        <source>Recording</source>
+        <translation>Enregistrement</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="23" />
+        <source>Starting</source>
+        <translation>Démarrage</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="22" />
+        <source>Off</source>
+        <translation>Désactivé</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::ScreenPickerViewModel</name>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="212" />
+        <source>Not connected: %1</source>
+        <translation>Non connecté : %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="166" />
+        <source>Audio is recorded for the preview; GIF and WebP exports are silent.</source>
+        <translation>L’audio est enregistré pour l’aperçu ; les exportations GIF et WebP sont muettes.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="163" />
+        <source>GIF and WebP recordings have no sound. Turn on preview or choose MP4 to record audio.</source>
+        <translation>Les enregistrements GIF et WebP n’ont pas de son. Activez l’aperçu ou choisissez MP4 pour enregistrer l’audio.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="155" />
+        <source>No countdown</source>
+        <translation>Sans compte à rebours</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="154" />
+        <source>Countdown: %1 s</source>
+        <translation>Compte à rebours : %1 s</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="152" />
+        <source>Saved without preview</source>
+        <translation>Enregistré sans aperçu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="151" />
+        <source>Preview after recording</source>
+        <translation>Aperçu après l’enregistrement</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="42" />
+        <source>Microphone unavailable</source>
+        <translation>Microphone indisponible</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="40" />
+        <source>Selected microphone not found</source>
+        <translation>Microphone sélectionné introuvable</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="38" />
+        <source>Microphone permission denied</source>
+        <translation>Autorisation du microphone refusée</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="36" />
+        <source>Speak to test the microphone</source>
+        <translation>Parlez pour tester le microphone</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="34" />
+        <source>Waiting for microphone permission...</source>
+        <translation>En attente de l’autorisation du microphone...</translation>
+    </message>
+</context>
+<context>
+    <name>ScreenPickerDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="236" />
+        <source>Cancel</source>
+        <translation>Annuler</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="228" />
+        <source>Start Recording</source>
+        <translation>Démarrer l’enregistrement</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="204" />
+        <source>Show this setup before every recording</source>
+        <translation>Afficher cette configuration avant chaque enregistrement</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="172" />
+        <source>Not supported on this system</source>
+        <translation>Non pris en charge sur ce système</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="170" />
+        <source>System audio</source>
+        <translation>Audio système</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="148" />
+        <source>Microphone level</source>
+        <translation>Niveau du microphone</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="131" />
+        <source>Test Microphone</source>
+        <translation>Tester le microphone</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="130" />
+        <source>Stop Test</source>
+        <translation>Arrêter le test</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="112" />
+        <source>Input device</source>
+        <translation>Périphérique d’entrée</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="102" />
+        <source>Not recorded with the current output format</source>
+        <translation>Non enregistré avec le format de sortie actuel</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="100" />
+        <source>Microphone</source>
+        <translation>Microphone</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="16" />
+        <source>System Default</source>
+        <translation>Valeur par défaut du système</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="38" />
+        <source>Choose a screen to start recording</source>
+        <translation>Choisissez un écran pour commencer l’enregistrement</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="37" />
+        <source>Record Screen</source>
+        <translation>Enregistrer l’écran</translation>
     </message>
 </context>
 </TS>

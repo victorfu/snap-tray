@@ -1713,6 +1713,11 @@ Boyut: %2</translation>
 <context>
     <name>RecordingManager</name>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="1145" />
+        <source>The selected microphone was not found. Recording from the default microphone.</source>
+        <translation>Seçilen mikrofon bulunamadı. Varsayılan mikrofonla kaydediliyor.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="312" />
         <source>No screen available for region selection.</source>
         <translation>Bölge seçimi için kullanılabilir ekran yok.</translation>
@@ -2049,6 +2054,16 @@ Boyut: %2</translation>
 </context>
 <context>
     <name>RecordingSettings</name>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="245" />
+        <source>Confirm the screen, microphone, and system audio before each recording. When off, recording starts right away with these settings.</source>
+        <translation>Her kayıttan önce ekranı, mikrofonu ve sistem sesini onaylayın. Kapalıyken kayıt bu ayarlarla hemen başlar.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="244" />
+        <source>Show setup before recording</source>
+        <translation>Kayıttan önce kurulumu göster</translation>
+    </message>
     <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="31" />
         <source>Frame rate</source>
@@ -3422,6 +3437,195 @@ Dosya boyutu: %3</translation>
     <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Yüzleri ve kimlik bilgilerini otomatik olarak algılayıp bulanıklaştırın</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingAudioStatus</name>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="70" />
+        <source>System audio</source>
+        <translation>Sistem sesi</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="68" />
+        <source>Microphone</source>
+        <translation>Mikrofon</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="66" />
+        <source>%1: %2</source>
+        <translation>%1: %2</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="28" />
+        <source>Not supported by GIF/WebP</source>
+        <translation>GIF/WebP desteklemiyor</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="27" />
+        <source>Unavailable</source>
+        <translation>Kullanılamıyor</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="26" />
+        <source>Device not found</source>
+        <translation>Cihaz bulunamadı</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="25" />
+        <source>Permission denied</source>
+        <translation>İzin reddedildi</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="24" />
+        <source>Recording</source>
+        <translation>Kaydediliyor</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="23" />
+        <source>Starting</source>
+        <translation>Başlatılıyor</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="22" />
+        <source>Off</source>
+        <translation>Kapalı</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::ScreenPickerViewModel</name>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="212" />
+        <source>Not connected: %1</source>
+        <translation>Bağlı değil: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="166" />
+        <source>Audio is recorded for the preview; GIF and WebP exports are silent.</source>
+        <translation>Ses önizleme için kaydedilir; GIF ve WebP dışa aktarımları sessizdir.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="163" />
+        <source>GIF and WebP recordings have no sound. Turn on preview or choose MP4 to record audio.</source>
+        <translation>GIF ve WebP kayıtlarında ses yoktur. Ses kaydetmek için önizlemeyi açın veya MP4 seçin.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="155" />
+        <source>No countdown</source>
+        <translation>Geri sayım yok</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="154" />
+        <source>Countdown: %1 s</source>
+        <translation>Geri sayım: %1 sn</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="152" />
+        <source>Saved without preview</source>
+        <translation>Önizlemesiz kaydedilir</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="151" />
+        <source>Preview after recording</source>
+        <translation>Kayıttan sonra önizleme</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="42" />
+        <source>Microphone unavailable</source>
+        <translation>Mikrofon kullanılamıyor</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="40" />
+        <source>Selected microphone not found</source>
+        <translation>Seçilen mikrofon bulunamadı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="38" />
+        <source>Microphone permission denied</source>
+        <translation>Mikrofon izni reddedildi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="36" />
+        <source>Speak to test the microphone</source>
+        <translation>Mikrofonu test etmek için konuşun</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="34" />
+        <source>Waiting for microphone permission...</source>
+        <translation>Mikrofon izni bekleniyor...</translation>
+    </message>
+</context>
+<context>
+    <name>ScreenPickerDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="236" />
+        <source>Cancel</source>
+        <translation>İptal</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="228" />
+        <source>Start Recording</source>
+        <translation>Kaydı başlat</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="204" />
+        <source>Show this setup before every recording</source>
+        <translation>Bu kurulumu her kayıttan önce göster</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="172" />
+        <source>Not supported on this system</source>
+        <translation>Bu sistemde desteklenmiyor</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="170" />
+        <source>System audio</source>
+        <translation>Sistem sesi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="148" />
+        <source>Microphone level</source>
+        <translation>Mikrofon seviyesi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="131" />
+        <source>Test Microphone</source>
+        <translation>Mikrofonu test et</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="130" />
+        <source>Stop Test</source>
+        <translation>Testi durdur</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="112" />
+        <source>Input device</source>
+        <translation>Giriş cihazı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="102" />
+        <source>Not recorded with the current output format</source>
+        <translation>Geçerli çıktı biçiminde kaydedilmez</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="100" />
+        <source>Microphone</source>
+        <translation>Mikrofon</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="16" />
+        <source>System Default</source>
+        <translation>Sistem varsayılanı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="38" />
+        <source>Choose a screen to start recording</source>
+        <translation>Kayda başlamak için bir ekran seçin</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="37" />
+        <source>Record Screen</source>
+        <translation>Ekranı kaydet</translation>
     </message>
 </context>
 </TS>

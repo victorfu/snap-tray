@@ -1719,6 +1719,11 @@ Size: %2</source>
 <context>
     <name>RecordingManager</name>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="1145" />
+        <source>The selected microphone was not found. Recording from the default microphone.</source>
+        <translation>선택한 마이크를 찾을 수 없습니다. 기본 마이크로 녹음합니다.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="312" />
         <source>No screen available for region selection.</source>
         <translation>영역 선택에 사용할 수 있는 화면이 없습니다.</translation>
@@ -2055,6 +2060,16 @@ Size: %2</source>
 </context>
 <context>
     <name>RecordingSettings</name>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="245" />
+        <source>Confirm the screen, microphone, and system audio before each recording. When off, recording starts right away with these settings.</source>
+        <translation>녹화할 때마다 화면, 마이크, 시스템 오디오를 확인합니다. 끄면 이 설정으로 바로 녹화를 시작합니다.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="244" />
+        <source>Show setup before recording</source>
+        <translation>녹화 전에 설정 표시</translation>
+    </message>
     <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="31" />
         <source>Frame rate</source>
@@ -3428,6 +3443,195 @@ File size: %3</source>
     <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>얼굴과 자격 증명을 자동으로 감지하여 블러 처리</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingAudioStatus</name>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="70" />
+        <source>System audio</source>
+        <translation>시스템 오디오</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="68" />
+        <source>Microphone</source>
+        <translation>마이크</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="66" />
+        <source>%1: %2</source>
+        <translation>%1: %2</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="28" />
+        <source>Not supported by GIF/WebP</source>
+        <translation>GIF/WebP에서 지원되지 않음</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="27" />
+        <source>Unavailable</source>
+        <translation>사용할 수 없음</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="26" />
+        <source>Device not found</source>
+        <translation>장치를 찾을 수 없음</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="25" />
+        <source>Permission denied</source>
+        <translation>권한 거부됨</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="24" />
+        <source>Recording</source>
+        <translation>녹음 중</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="23" />
+        <source>Starting</source>
+        <translation>시작 중</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="22" />
+        <source>Off</source>
+        <translation>끔</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::ScreenPickerViewModel</name>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="212" />
+        <source>Not connected: %1</source>
+        <translation>연결되지 않음: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="166" />
+        <source>Audio is recorded for the preview; GIF and WebP exports are silent.</source>
+        <translation>오디오는 미리 보기용으로 녹음되며, GIF 및 WebP 내보내기에는 소리가 없습니다.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="163" />
+        <source>GIF and WebP recordings have no sound. Turn on preview or choose MP4 to record audio.</source>
+        <translation>GIF 및 WebP 녹화에는 소리가 없습니다. 오디오를 녹음하려면 미리 보기를 켜거나 MP4를 선택하세요.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="155" />
+        <source>No countdown</source>
+        <translation>카운트다운 없음</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="154" />
+        <source>Countdown: %1 s</source>
+        <translation>카운트다운: %1초</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="152" />
+        <source>Saved without preview</source>
+        <translation>미리 보기 없이 저장</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="151" />
+        <source>Preview after recording</source>
+        <translation>녹화 후 미리 보기</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="42" />
+        <source>Microphone unavailable</source>
+        <translation>마이크를 사용할 수 없음</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="40" />
+        <source>Selected microphone not found</source>
+        <translation>선택한 마이크를 찾을 수 없음</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="38" />
+        <source>Microphone permission denied</source>
+        <translation>마이크 권한이 거부됨</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="36" />
+        <source>Speak to test the microphone</source>
+        <translation>말하여 마이크를 테스트하세요</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="34" />
+        <source>Waiting for microphone permission...</source>
+        <translation>마이크 권한을 기다리는 중...</translation>
+    </message>
+</context>
+<context>
+    <name>ScreenPickerDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="236" />
+        <source>Cancel</source>
+        <translation>취소</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="228" />
+        <source>Start Recording</source>
+        <translation>녹화 시작</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="204" />
+        <source>Show this setup before every recording</source>
+        <translation>녹화할 때마다 이 설정 표시</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="172" />
+        <source>Not supported on this system</source>
+        <translation>이 시스템에서는 지원되지 않음</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="170" />
+        <source>System audio</source>
+        <translation>시스템 오디오</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="148" />
+        <source>Microphone level</source>
+        <translation>마이크 레벨</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="131" />
+        <source>Test Microphone</source>
+        <translation>마이크 테스트</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="130" />
+        <source>Stop Test</source>
+        <translation>테스트 중지</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="112" />
+        <source>Input device</source>
+        <translation>입력 장치</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="102" />
+        <source>Not recorded with the current output format</source>
+        <translation>현재 출력 형식에서는 녹음되지 않음</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="100" />
+        <source>Microphone</source>
+        <translation>마이크</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="16" />
+        <source>System Default</source>
+        <translation>시스템 기본값</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="38" />
+        <source>Choose a screen to start recording</source>
+        <translation>녹화할 화면을 선택하세요</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="37" />
+        <source>Record Screen</source>
+        <translation>화면 녹화</translation>
     </message>
 </context>
 </TS>

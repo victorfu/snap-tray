@@ -1713,6 +1713,11 @@ Size: %2</source>
 <context>
     <name>RecordingManager</name>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="1145" />
+        <source>The selected microphone was not found. Recording from the default microphone.</source>
+        <translation>Το επιλεγμένο μικρόφωνο δεν βρέθηκε. Γίνεται εγγραφή από το προεπιλεγμένο μικρόφωνο.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="312" />
         <source>No screen available for region selection.</source>
         <translation>Δεν υπάρχει διαθέσιμη οθόνη για επιλογή περιοχής.</translation>
@@ -2049,6 +2054,16 @@ Size: %2</source>
 </context>
 <context>
     <name>RecordingSettings</name>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="245" />
+        <source>Confirm the screen, microphone, and system audio before each recording. When off, recording starts right away with these settings.</source>
+        <translation>Επιβεβαιώστε οθόνη, μικρόφωνο και ήχο συστήματος πριν από κάθε εγγραφή. Όταν είναι ανενεργό, η εγγραφή ξεκινά αμέσως με αυτές τις ρυθμίσεις.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/settings/RecordingSettings.qml" line="244" />
+        <source>Show setup before recording</source>
+        <translation>Εμφάνιση ρύθμισης πριν από την εγγραφή</translation>
+    </message>
     <message>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="31" />
         <source>Frame rate</source>
@@ -3422,6 +3437,195 @@ File size: %3</source>
     <message>
         <source>Automatically detect and blur faces and credentials</source>
         <translation>Αυτόματος εντοπισμός και θόλωση προσώπων και διαπιστευτηρίων</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingAudioStatus</name>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="70" />
+        <source>System audio</source>
+        <translation>Ήχος συστήματος</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="68" />
+        <source>Microphone</source>
+        <translation>Μικρόφωνο</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="66" />
+        <source>%1: %2</source>
+        <translation>%1: %2</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="28" />
+        <source>Not supported by GIF/WebP</source>
+        <translation>Δεν υποστηρίζεται σε GIF/WebP</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="27" />
+        <source>Unavailable</source>
+        <translation>Μη διαθέσιμο</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="26" />
+        <source>Device not found</source>
+        <translation>Η συσκευή δεν βρέθηκε</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="25" />
+        <source>Permission denied</source>
+        <translation>Η άδεια απορρίφθηκε</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="24" />
+        <source>Recording</source>
+        <translation>Εγγράφεται</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="23" />
+        <source>Starting</source>
+        <translation>Εκκίνηση</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingAudioStatus.cpp" line="22" />
+        <source>Off</source>
+        <translation>Ανενεργό</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::ScreenPickerViewModel</name>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="212" />
+        <source>Not connected: %1</source>
+        <translation>Μη συνδεδεμένο: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="166" />
+        <source>Audio is recorded for the preview; GIF and WebP exports are silent.</source>
+        <translation>Ο ήχος εγγράφεται για την προεπισκόπηση· οι εξαγωγές GIF και WebP είναι χωρίς ήχο.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="163" />
+        <source>GIF and WebP recordings have no sound. Turn on preview or choose MP4 to record audio.</source>
+        <translation>Οι εγγραφές GIF και WebP δεν έχουν ήχο. Ενεργοποιήστε την προεπισκόπηση ή επιλέξτε MP4 για εγγραφή ήχου.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="155" />
+        <source>No countdown</source>
+        <translation>Χωρίς αντίστροφη μέτρηση</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="154" />
+        <source>Countdown: %1 s</source>
+        <translation>Αντίστροφη μέτρηση: %1 δ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="152" />
+        <source>Saved without preview</source>
+        <translation>Αποθήκευση χωρίς προεπισκόπηση</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="151" />
+        <source>Preview after recording</source>
+        <translation>Προεπισκόπηση μετά την εγγραφή</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="42" />
+        <source>Microphone unavailable</source>
+        <translation>Το μικρόφωνο δεν είναι διαθέσιμο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="40" />
+        <source>Selected microphone not found</source>
+        <translation>Το επιλεγμένο μικρόφωνο δεν βρέθηκε</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="38" />
+        <source>Microphone permission denied</source>
+        <translation>Η άδεια μικροφώνου απορρίφθηκε</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="36" />
+        <source>Speak to test the microphone</source>
+        <translation>Μιλήστε για να δοκιμάσετε το μικρόφωνο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ScreenPickerViewModel.cpp" line="34" />
+        <source>Waiting for microphone permission...</source>
+        <translation>Αναμονή για άδεια μικροφώνου...</translation>
+    </message>
+</context>
+<context>
+    <name>ScreenPickerDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="236" />
+        <source>Cancel</source>
+        <translation>Ακύρωση</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="228" />
+        <source>Start Recording</source>
+        <translation>Έναρξη εγγραφής</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="204" />
+        <source>Show this setup before every recording</source>
+        <translation>Εμφάνιση αυτής της ρύθμισης πριν από κάθε εγγραφή</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="172" />
+        <source>Not supported on this system</source>
+        <translation>Δεν υποστηρίζεται σε αυτό το σύστημα</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="170" />
+        <source>System audio</source>
+        <translation>Ήχος συστήματος</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="148" />
+        <source>Microphone level</source>
+        <translation>Στάθμη μικροφώνου</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="131" />
+        <source>Test Microphone</source>
+        <translation>Δοκιμή μικροφώνου</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="130" />
+        <source>Stop Test</source>
+        <translation>Διακοπή δοκιμής</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="112" />
+        <source>Input device</source>
+        <translation>Συσκευή εισόδου</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="102" />
+        <source>Not recorded with the current output format</source>
+        <translation>Δεν εγγράφεται με την τρέχουσα μορφή εξόδου</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="100" />
+        <source>Microphone</source>
+        <translation>Μικρόφωνο</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="16" />
+        <source>System Default</source>
+        <translation>Προεπιλογή συστήματος</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="38" />
+        <source>Choose a screen to start recording</source>
+        <translation>Επιλέξτε οθόνη για έναρξη εγγραφής</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="37" />
+        <source>Record Screen</source>
+        <translation>Εγγραφή οθόνης</translation>
     </message>
 </context>
 </TS>

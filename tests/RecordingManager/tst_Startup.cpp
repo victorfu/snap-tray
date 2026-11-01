@@ -183,6 +183,14 @@ void TestRecordingStartup::encoderCapabilityControlsAudioPipeline()
     }
     QCOMPARE(manager.state(), RecordingManager::State::Recording);
     const bool audioEnabled = requested && acceptsAudio;
+    using AudioState = SnapTray::AudioSourceState;
+    {
+        // The tray reads this persistent status; it follows actual results.
+        const auto expected = !requested ? AudioState::Off
+            : audioEnabled ? AudioState::Active : AudioState::Unavailable;
+        QCOMPARE(manager.audioStatus().microphone, expected);
+        QCOMPARE(manager.audioStatus().systemAudio, expected);
+    }
     QCOMPARE(manager.m_audioEnabled, audioEnabled);
     QCOMPARE(manager.m_controlBar->m_rootItem->property("audioEnabled").toBool(), audioEnabled);
     QCOMPARE(audioState->created, audioEnabled ? 1 : 0);
@@ -201,6 +209,8 @@ void TestRecordingStartup::encoderCapabilityControlsAudioPipeline()
         QTRY_COMPARE(encoderState->audioWrites.load(), 1);
         audio->activeSourceChanged(IAudioCaptureEngine::AudioSource::SystemAudio);
         QCOMPARE(warnings.count(), 1);
+        QCOMPARE(manager.audioStatus().microphone, AudioState::Unavailable);
+        QCOMPARE(manager.audioStatus().systemAudio, AudioState::Active);
         QCOMPARE(manager.state(), RecordingManager::State::Recording);
         QVERIFY(manager.m_audioEnabled);
         QVERIFY(manager.m_controlBar->m_rootItem->property("audioEnabled").toBool());
@@ -208,6 +218,10 @@ void TestRecordingStartup::encoderCapabilityControlsAudioPipeline()
         QTRY_COMPARE(encoderState->audioWrites.load(), 2);
         audio->activeSourceChanged(IAudioCaptureEngine::AudioSource::None);
         QCOMPARE(warnings.count(), 2);
+        QCOMPARE(manager.audioStatus().microphone, AudioState::Unavailable);
+        QCOMPARE(manager.audioStatus().systemAudio, AudioState::Unavailable);
+        emit audio->deviceLost();
+        QCOMPARE(manager.audioStatus().microphone, AudioState::DeviceMissing);
         QCOMPARE(manager.state(), RecordingManager::State::Recording);
         QVERIFY(!manager.m_audioEnabled);
         QVERIFY(!manager.m_controlBar->m_rootItem->property("audioEnabled").toBool());
@@ -353,6 +367,16 @@ void TestRecordingStartup::permissionPolicy()
     QCOMPARE(warnings.count(), denied ? 1 : 0);
     QCOMPARE(settings.audioSource(), source);
     QCOMPARE(settings.audioEnabled(), requested);
+    using AudioState = SnapTray::AudioSourceState;
+    const auto requestedState = !requested ? AudioState::Off
+        : audioSupported ? AudioState::Starting : AudioState::UnsupportedFormat;
+    const auto expectedMic = source == 1 ? AudioState::Off
+        : denied ? AudioState::PermissionDenied : requestedState;
+    const auto expectedSystem = source == 0 ? AudioState::Off : requestedState;
+    QCOMPARE(manager.audioStatus().microphone, expectedMic);
+    QCOMPARE(manager.audioStatus().systemAudio, expectedSystem);
+    manager.cancelRecording();
+    QCOMPARE(manager.audioStatus(), SnapTray::RecordingAudioStatus{});
 }
 
 void TestRecordingStartup::staleAndDuplicateRepliesCannotStart()

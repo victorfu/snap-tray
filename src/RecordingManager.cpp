@@ -139,7 +139,7 @@ IAudioCaptureEngine::AudioSource resolveAudioSource(int audioSourceSetting)
 
 bool recordingSupportsAudioCapture(int outputFormat, bool showPreview)
 {
-    return showPreview || outputFormat == 0;
+    return SnapTray::recordingCapturesAudio(outputFormat, showPreview);
 }
 
 bool audioSourceUsesInputDevice(int audioSourceSetting)
@@ -290,8 +290,32 @@ void RecordingManager::setState(State newState)
 {
     if (m_state != newState) {
         m_state = newState;
+        if (m_state == State::Idle) {
+            setAudioStatus({});
+        }
         emit stateChanged(m_state);
     }
+}
+
+void RecordingManager::setAudioStatus(const SnapTray::RecordingAudioStatus& status)
+{
+    if (m_audioStatus == status) {
+        return;
+    }
+    m_audioStatus = status;
+    emit audioStatusChanged();
+}
+
+void RecordingManager::transitionAudioSources(SnapTray::AudioSourceState from,
+                                              SnapTray::AudioSourceState to)
+{
+    auto status = m_audioStatus;
+    for (auto* state : {&status.microphone, &status.systemAudio}) {
+        if (*state == from) {
+            *state = to;
+        }
+    }
+    setAudioStatus(status);
 }
 
 bool RecordingManager::isActive() const
@@ -537,6 +561,19 @@ void RecordingManager::initializeStartState()
     m_defaultOutputFormat = m_startSettings.outputFormat;
     m_audioEnabled = m_startSettings.audioEnabled
         && recordingSupportsAudioCapture(m_startSettings.outputFormat, m_startSettings.showPreview);
+    auto requestedAudio = SnapTray::requestedAudioStatus(
+        settings.audioEnabled(), settings.audioSource(),
+        m_startSettings.outputFormat, m_startSettings.showPreview);
+    if (settings.audioEnabled() && !m_startSettings.audioEnabled) {
+        // The platform backend records without audio (direct MP4 only).
+        requestedAudio = SnapTray::requestedAudioStatus(
+            true, settings.audioSource(), RecordingSettingsManager::kDefaultOutputFormat, true);
+        for (auto* state : {&requestedAudio.microphone, &requestedAudio.systemAudio}) {
+            if (*state != SnapTray::AudioSourceState::Off)
+                *state = SnapTray::AudioSourceState::Unavailable;
+        }
+    }
+    setAudioStatus(requestedAudio);
     m_audioSource = m_startSettings.audioSource;
     m_audioDevice = m_startSettings.audioDevice;
     m_countdownEnabled = m_startSettings.countdownEnabled;
@@ -590,6 +627,7 @@ void RecordingManager::applyEncoderAudioResult(bool audioEnabled, const QString&
 {
     if (!m_audioEnabled || audioEnabled) return;
     m_audioEnabled = false;
+    transitionAudioSources(SnapTray::AudioSourceState::Starting, SnapTray::AudioSourceState::Unavailable);
     cleanupAudio();
     if (m_controlBar) m_controlBar->setAudioEnabled(false);
     addStartupAudioWarning(warning.isEmpty()
@@ -634,6 +672,9 @@ void RecordingManager::finishAudioPermission(quint64 generation, bool granted)
         return;
     }
     if (!granted && m_audioEnabled) {
+        auto status = m_audioStatus;
+        status.microphone = SnapTray::AudioSourceState::PermissionDenied;
+        setAudioStatus(status);
         if (m_audioSource == kBothAudioSources) {
             m_audioSource = kSystemAudioSource;
             m_audioDevice.clear();
@@ -1043,6 +1084,23 @@ void RecordingManager::configureAudioCapture()
                 if (!configuredEngine || m_audioEngine.get() != configuredEngine.data()) {
                     return;
                 }
+                auto status = m_audioStatus;
+                const auto lost = [](SnapTray::AudioSourceState& state) {
+                    if (state != SnapTray::AudioSourceState::Off
+                        && state != SnapTray::AudioSourceState::PermissionDenied
+                        && state != SnapTray::AudioSourceState::DeviceMissing) {
+                        state = SnapTray::AudioSourceState::Unavailable;
+                    }
+                };
+                if (activeSource == IAudioCaptureEngine::AudioSource::Microphone
+                    || activeSource == IAudioCaptureEngine::AudioSource::None) {
+                    lost(status.systemAudio);
+                }
+                if (activeSource == IAudioCaptureEngine::AudioSource::SystemAudio
+                    || activeSource == IAudioCaptureEngine::AudioSource::None) {
+                    lost(status.microphone);
+                }
+                setAudioStatus(status);
                 switch (activeSource) {
                 case IAudioCaptureEngine::AudioSource::Microphone:
 #ifdef Q_OS_MACOS
@@ -1074,10 +1132,24 @@ void RecordingManager::configureAudioCapture()
                 }
             });
 
+            connect(m_audioEngine.get(), &IAudioCaptureEngine::deviceLost,
+                    this, [this, configuredEngine] {
+                if (!configuredEngine || m_audioEngine.get() != configuredEngine.data()) {
+                    return;
+                }
+                auto status = m_audioStatus;
+                if (status.microphone != SnapTray::AudioSourceState::Off) {
+                    status.microphone = SnapTray::AudioSourceState::DeviceMissing;
+                }
+                setAudioStatus(status);
+            });
+
             // Set audio source
             const auto source = resolveAudioSource(m_audioSource);
             if (!m_audioEngine->setAudioSource(source)) {
                 qWarning() << "RecordingManager: Failed to apply configured audio source";
+                transitionAudioSources(SnapTray::AudioSourceState::Starting,
+                                       SnapTray::AudioSourceState::Unavailable);
                 reportAudioWarning(tr(
                     "Audio is unavailable. This recording will be silent. "
                     "Check system permissions and the selected audio device."));
@@ -1086,8 +1158,14 @@ void RecordingManager::configureAudioCapture()
             }
 
             if (m_audioEngine) {
+                const QString requestedDevice = m_audioDevice;
                 m_audioDevice = configuredAudioInputDeviceOrDefault(
                     *m_audioEngine, m_audioSource, m_audioDevice);
+                if (audioSourceUsesInputDevice(m_audioSource)
+                    && !requestedDevice.isEmpty() && m_audioDevice.isEmpty()) {
+                    reportAudioWarning(tr(
+                        "The selected microphone was not found. Recording from the default microphone."));
+                }
 
                 if (audioSourceUsesInputDevice(m_audioSource)
                     && !m_audioDevice.isEmpty() && !m_audioEngine->setDevice(m_audioDevice)) {
@@ -1097,6 +1175,8 @@ void RecordingManager::configureAudioCapture()
         } else {
             qWarning() << "RecordingManager: Failed to create audio engine";
             m_audioEnabled = false;
+            transitionAudioSources(SnapTray::AudioSourceState::Starting,
+                                   SnapTray::AudioSourceState::Unavailable);
             reportAudioWarning(tr(
                 "Audio is unavailable. This recording will be silent. "
                 "Check system permissions and the selected audio device."));
@@ -1119,6 +1199,8 @@ void RecordingManager::configureAudioCapture()
             // GIF format does not support audio - this shouldn't happen as
             // audio is disabled for GIF in beginAsyncInitialization()
             qWarning() << "RecordingManager: Audio not supported for current format";
+            transitionAudioSources(SnapTray::AudioSourceState::Starting,
+                                   SnapTray::AudioSourceState::UnsupportedFormat);
             cleanupAudio();
         }
     }
@@ -1192,8 +1274,12 @@ void RecordingManager::startRecordingAfterCountdown()
 
     // Start audio capture here to synchronize with video timer
     if (m_audioEngine) {
-        if (!m_audioEngine->start()) {
+        if (m_audioEngine->start()) {
+            transitionAudioSources(SnapTray::AudioSourceState::Starting, SnapTray::AudioSourceState::Active);
+        } else {
             qWarning() << "RecordingManager: Failed to start audio capture";
+            transitionAudioSources(SnapTray::AudioSourceState::Starting,
+                                   SnapTray::AudioSourceState::Unavailable);
             reportAudioWarning(tr(
                 "Audio is unavailable. This recording will be silent. "
                 "Check system permissions and the selected audio device."));

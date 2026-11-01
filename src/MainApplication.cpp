@@ -18,6 +18,7 @@
 #include "qml/QmlToast.h"
 #include "qml/RecordingPreviewBackend.h"
 #include "recording/WindowTimelineSidecar.h"
+#include "settings/RecordingSettingsManager.h"
 #include "ui/TrayRecordingIndicator.h"
 #include "ui/TrayTooltipFormatter.h"
 #include "update/InstallSourceDetector.h"
@@ -353,6 +354,8 @@ void MainApplication::initialize()
         });
     connect(m_recordingManager, &RecordingManager::durationChanged,
         this, &MainApplication::onRecordingDurationChanged);
+    connect(m_recordingManager, &RecordingManager::audioStatusChanged,
+        this, &MainApplication::updateTrayToolTip);
 
     // Create system tray icon
     m_trayBasePixmap = PlatformFeatures::instance().createTrayPixmap();
@@ -1243,7 +1246,16 @@ QString MainApplication::trayRecordingStatusLine() const
     if (!screenSummary.isEmpty()) {
         parts.append(screenSummary);
     }
-    return parts.join(QStringLiteral(" \u00B7 "));
+    QString line = parts.join(QStringLiteral(" \u00B7 "));
+    // Audio stays visible for the whole recording, including fallbacks that
+    // were announced once in a notification.
+    const QString audioLine = m_recordingManager && m_trayRecordingStatus != Status::Finalizing
+        ? SnapTray::describeRecordingAudioStatus(m_recordingManager->audioStatus())
+        : QString();
+    if (!audioLine.isEmpty()) {
+        line += QLatin1Char('\n') + audioLine;
+    }
+    return line;
 }
 
 void MainApplication::updateTrayRecordingIndicator()
@@ -1308,7 +1320,9 @@ void MainApplication::startScreenRecordingFlow(QScreen* preferredScreen)
         }
     }
 
-    if (sources.size() == 1) {
+    // Quick recording: one screen and no setup requested starts right away
+    // with the last-used settings.
+    if (sources.size() == 1 && !RecordingSettingsManager::instance().showSetupBeforeRecording()) {
         m_recordingManager->startScreenRecording(sources.first().screen.data());
         return;
     }
