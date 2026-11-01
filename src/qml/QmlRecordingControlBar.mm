@@ -37,6 +37,15 @@ const char* const kStopRecordingText =
     QT_TRANSLATE_NOOP("RecordingControlBar", "Stop Recording");
 const char* const kCancelRecordingText =
     QT_TRANSLATE_NOOP("RecordingControlBar", "Cancel Recording");
+const char* const kStopAndReviewText =
+    QT_TRANSLATE_NOOP("RecordingControlBar", "Stop and Review");
+const char* const kTooltipWithHotkeyText =
+    QT_TRANSLATE_NOOP("RecordingControlBar", "%1 (%2)");
+
+enum ControlBarButton {
+    kStopButton = 0,
+    kPauseResumeButton = 1,
+};
 
 QString translateRecordingControlBar(const char* sourceText)
 {
@@ -394,6 +403,18 @@ QString QmlRecordingControlBar::formatDuration(qint64 ms) const
         .arg(seconds, 2, 10, QChar('0'));
 }
 
+void QmlRecordingControlBar::setStopOpensPreview(bool opensPreview)
+{
+    m_stopOpensPreview = opensPreview;
+}
+
+void QmlRecordingControlBar::setShortcutHints(const QString& pauseResumeHotkey,
+                                              const QString& stopHotkey)
+{
+    m_pauseResumeHotkey = pauseResumeHotkey;
+    m_stopHotkey = stopHotkey;
+}
+
 void QmlRecordingControlBar::setPaused(bool paused)
 {
     m_isPaused = paused;
@@ -474,12 +495,23 @@ void QmlRecordingControlBar::onButtonUnhovered()
 
 QString QmlRecordingControlBar::tooltipForButton(int buttonId) const
 {
+    QString label;
+    QString hotkey;
     switch (buttonId) {
-    case 0: // Stop
-        return translateRecordingControlBar(kStopRecordingText);
+    case kStopButton:
+        label = translateRecordingControlBar(m_stopOpensPreview ? kStopAndReviewText : kStopRecordingText);
+        hotkey = m_stopHotkey;
+        break;
+    case kPauseResumeButton:
+        label = translateRecordingControlBar(m_isPaused ? kResumeRecordingText : kPauseRecordingText);
+        hotkey = m_pauseResumeHotkey;
+        break;
     default:
         return QString();
     }
+    return hotkey.isEmpty()
+        ? label
+        : translateRecordingControlBar(kTooltipWithHotkeyText).arg(label, hotkey);
 }
 
 void QmlRecordingControlBar::showTooltip(const QString& text, const QRect& anchorRect)

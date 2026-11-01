@@ -5,6 +5,7 @@
 #include "recording/RecordingFileUtils.h"
 #include "recording/WindowTimelineSidecar.h"
 #include "qml/QmlRecordingControlBar.h"
+#include "hotkey/HotkeyManager.h"
 #include "RecordingInitTask.h"
 #include "RecordingRegionNormalizer.h"
 #include "qml/QmlCountdownOverlay.h"
@@ -50,6 +51,17 @@
 
 // Local constants for recording (moved from Constants.h)
 namespace {
+
+// Display text for a recording hotkey that is active, or empty.
+QString registeredHotkeyText(SnapTray::HotkeyAction action)
+{
+    const auto config = SnapTray::HotkeyManager::instance().getConfig(action);
+    if (!config.enabled || config.status != SnapTray::HotkeyStatus::Registered) {
+        return {};
+    }
+    return SnapTray::HotkeyManager::formatKeySequence(config.keySequence);
+}
+
 constexpr int kDefaultFrameRate = 30;
 constexpr int kMaxFrameRate = 120;
 constexpr int kDefaultAudioSampleRate = 48000;
@@ -488,6 +500,10 @@ void RecordingManager::startFrameCapture()
             this, &RecordingManager::pauseRecording);
     connect(m_controlBar, &SnapTray::QmlRecordingControlBar::resumeRequested,
             this, &RecordingManager::resumeRecording);
+
+    m_controlBar->setStopOpensPreview(m_startSettings.showPreview);
+    m_controlBar->setShortcutHints(registeredHotkeyText(SnapTray::HotkeyAction::PauseResumeRecording),
+                                   registeredHotkeyText(SnapTray::HotkeyAction::RecordFullScreen));
 
     // Set initial region size
     m_controlBar->updateRegionSize(m_recordingRegion.width(), m_recordingRegion.height());
@@ -1423,6 +1439,35 @@ void RecordingManager::togglePause()
     } else if (m_state == State::Paused) {
         resumeRecording();
     }
+}
+
+bool RecordingManager::showRecordingControls()
+{
+    if (!m_controlBar) {
+        return false;
+    }
+    switch (m_state) {
+    case State::Preparing:
+    case State::Countdown:
+        break;
+    case State::Recording:
+    case State::Paused:
+        // These platforms cannot keep floating controls out of the video.
+        if (SnapTray::currentPlatformCapabilities().recordingControlsInTray) {
+            return false;
+        }
+        break;
+    case State::Idle:
+    case State::Encoding:
+    case State::Previewing:
+        return false;
+    }
+
+    m_controlBar->show();
+    m_controlBar->raiseAboveMenuBar();
+    // Position after show(), as at start, to undo a drag off the recorded screen.
+    m_controlBar->positionNear(m_recordingRegion);
+    return true;
 }
 
 void RecordingManager::stopRecording()

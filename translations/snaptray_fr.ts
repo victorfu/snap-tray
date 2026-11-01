@@ -523,6 +523,11 @@ Jetons de date : {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} ou {date}</translation
 <context>
     <name>MainApplication</name>
     <message>
+        <location filename="../src/MainApplication.cpp" line="411" />
+        <source>Show Recording Controls</source>
+        <translation>Afficher les commandes d’enregistrement</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="130" />
         <source>SnapTray is already running</source>
         <translation>SnapTray est déjà en cours d'exécution</translation>
@@ -1644,6 +1649,21 @@ Taille : %2</translation>
 <context>
     <name>RecordingControlBar</name>
     <message>
+        <location filename="../src/qml/recording/RecordingControlBar.qml" line="260" />
+        <source>Paused %1</source>
+        <translation>En pause %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QmlRecordingControlBar.mm" line="43" />
+        <source>%1 (%2)</source>
+        <translation>%1 (%2)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QmlRecordingControlBar.mm" line="41" />
+        <source>Stop and Review</source>
+        <translation>Arrêter et vérifier</translation>
+    </message>
+    <message>
         <source>-- fps</source>
         <translation>-- FPS</translation>
     </message>
@@ -1814,6 +1834,26 @@ Taille : %2</translation>
 </context>
 <context>
     <name>RecordingPreview</name>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="780" />
+        <source>Discard</source>
+        <translation>Supprimer</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="767" />
+        <source>Keep Recording</source>
+        <translation>Conserver l’enregistrement</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="755" />
+        <source>The video will be deleted and cannot be recovered.</source>
+        <translation>La vidéo sera supprimée et ne pourra pas être récupérée.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="744" />
+        <source>Discard this recording?</source>
+        <translation>Supprimer cet enregistrement ?</translation>
+    </message>
     <message>
         <source>Clear Crop</source>
         <translation>Supprimer le rognage</translation>
@@ -2472,6 +2512,26 @@ L'audio n'est pas pris en charge pour les enregistrements GIF.</translation>
 </context>
 <context>
     <name>SnapTray::HotkeyManager</name>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="194" />
+        <source>Bring the recording control bar back into view</source>
+        <translation>Ramener la barre de commande d’enregistrement à l’écran</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="193" />
+        <source>Show Recording Controls</source>
+        <translation>Afficher les commandes d’enregistrement</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="186" />
+        <source>Pause or resume the current screen recording</source>
+        <translation>Suspendre ou reprendre l’enregistrement d’écran en cours</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="185" />
+        <source>Pause/Resume Recording</source>
+        <translation>Suspendre/reprendre l’enregistrement</translation>
+    </message>
     <message>
         <location filename="../src/hotkey/HotkeyManager.cpp" line="371" />
         <source>Conflicts with: %1</source>

@@ -26,7 +26,11 @@ doc_order: 3
 - Pin from Image
 - Pin History
 - Toggle Hide/Show All Pins
-- Record Screen (macOS/Windows only)
+- Record Screen: starts a recording; pressing it again stops (or cancels while preparing)
+- Pause/Resume Recording
+- Show Recording Controls: brings the floating control bar back onto the recorded screen (macOS/Windows)
+
+Recording actions appear only where recording is available. A recording hotkey pressed again within a fraction of a second, for example through key repeat, counts as one press.
 
 ## Hotkey categories
 
@@ -36,7 +40,7 @@ Hotkeys are managed by category inside Settings:
 - Canvas
 - Clipboard
 - Pin
-- Recording (macOS/Windows only; hidden in Linux beta)
+- Recording (shown where recording is available)
 
 ## Conflict strategy
 

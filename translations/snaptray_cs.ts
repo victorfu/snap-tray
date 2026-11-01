@@ -523,6 +523,11 @@ Tokeny data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} nebo {date}</translation>
 <context>
     <name>MainApplication</name>
     <message>
+        <location filename="../src/MainApplication.cpp" line="411" />
+        <source>Show Recording Controls</source>
+        <translation>Zobrazit ovládání nahrávání</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="130" />
         <source>SnapTray is already running</source>
         <translation>SnapTray je již spuštěn</translation>
@@ -1644,6 +1649,21 @@ Velikost: %2</translation>
 <context>
     <name>RecordingControlBar</name>
     <message>
+        <location filename="../src/qml/recording/RecordingControlBar.qml" line="260" />
+        <source>Paused %1</source>
+        <translation>Pozastaveno %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QmlRecordingControlBar.mm" line="43" />
+        <source>%1 (%2)</source>
+        <translation>%1 (%2)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/QmlRecordingControlBar.mm" line="41" />
+        <source>Stop and Review</source>
+        <translation>Zastavit a zkontrolovat</translation>
+    </message>
+    <message>
         <source>-- fps</source>
         <translation>-- fps</translation>
     </message>
@@ -1814,6 +1834,26 @@ Velikost: %2</translation>
 </context>
 <context>
     <name>RecordingPreview</name>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="780" />
+        <source>Discard</source>
+        <translation>Zahodit</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="767" />
+        <source>Keep Recording</source>
+        <translation>Ponechat nahrávku</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="755" />
+        <source>The video will be deleted and cannot be recovered.</source>
+        <translation>Video bude smazáno a nelze jej obnovit.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="744" />
+        <source>Discard this recording?</source>
+        <translation>Zahodit tuto nahrávku?</translation>
+    </message>
     <message>
         <source>Clear Crop</source>
         <translation>Zrušit ořez</translation>
@@ -2472,6 +2512,26 @@ Zvuk není podporován pro nahrávky ve formátu GIF.</translation>
 </context>
 <context>
     <name>SnapTray::HotkeyManager</name>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="194" />
+        <source>Bring the recording control bar back into view</source>
+        <translation>Vrátit ovládací lištu nahrávání zpět do zobrazení</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="193" />
+        <source>Show Recording Controls</source>
+        <translation>Zobrazit ovládání nahrávání</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="186" />
+        <source>Pause or resume the current screen recording</source>
+        <translation>Pozastavit nebo obnovit aktuální nahrávání obrazovky</translation>
+    </message>
+    <message>
+        <location filename="../include/hotkey/HotkeyTypes.h" line="185" />
+        <source>Pause/Resume Recording</source>
+        <translation>Pozastavit/obnovit nahrávání</translation>
+    </message>
     <message>
         <location filename="../src/hotkey/HotkeyManager.cpp" line="371" />
         <source>Conflicts with: %1</source>

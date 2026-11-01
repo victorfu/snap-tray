@@ -46,6 +46,8 @@ enum class HotkeyAction {
 
     // Recording actions (500-599)
     RecordFullScreen = 500,
+    PauseResumeRecording = 501,
+    ShowRecordingControls = 502,
 };
 
 /**
@@ -176,6 +178,22 @@ inline constexpr HotkeyMetadata kDefaultHotkeys[] = {
         QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Start screen recording"),
         "recordFullScreenHotkey",  // kSettingsKeyRecordFullScreenHotkey
         ""                         // Optional, no default
+    },
+    {
+        HotkeyAction::PauseResumeRecording,
+        HotkeyCategory::Recording,
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Pause/Resume Recording"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Pause or resume the current screen recording"),
+        "pauseResumeRecordingHotkey",  // kSettingsKeyPauseResumeRecordingHotkey
+        ""                             // Optional, no default
+    },
+    {
+        HotkeyAction::ShowRecordingControls,
+        HotkeyCategory::Recording,
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Show Recording Controls"),
+        QT_TRANSLATE_NOOP("SnapTray::HotkeyManager", "Bring the recording control bar back into view"),
+        "showRecordingControlsHotkey",  // kSettingsKeyShowRecordingControlsHotkey
+        ""                              // Optional, no default
     },
 };
 

@@ -5,6 +5,8 @@
 #include "ui/TrayRecordingIndicator.h"
 
 #include <QByteArray>
+#include <QElapsedTimer>
+#include <QHash>
 #include <QImage>
 #include <QList>
 #include <QObject>
@@ -87,6 +89,7 @@ private:
     QString trayRecordingStatusLine() const;
     void updatePinsVisibilityActionText();
     void updateRecordingActionText();
+    bool acceptRecordingHotkey(SnapTray::HotkeyAction action);
     SnapTray::QmlSettingsWindow* ensureSettingsWindow();
     void startScreenRecordingFlow(QScreen* preferredScreen = nullptr);
     void attachScreenPicker(SnapTray::QmlDialog* dialog,
@@ -116,6 +119,7 @@ private:
     QAction *m_closeAllPinsAction;
     QAction *m_fullScreenRecordingAction;
     QAction *m_pauseRecordingAction = nullptr;
+    QAction *m_showRecordingControlsAction = nullptr;
     QAction *m_checkForUpdatesAction;
     QPointer<SnapTray::QmlSettingsWindow> m_settingsWindow;
     QPointer<SnapTray::QmlHistoryWindow> m_historyWindow;
@@ -127,6 +131,9 @@ private:
     SnapTray::TrayRecordingStatus m_trayRecordingStatus = SnapTray::TrayRecordingStatus::Idle;
     // Effective (pause-excluded) duration shown in the tray tooltip; -1 when none.
     qint64 m_trayRecordingElapsedMs = -1;
+    // Last accepted press of each recording hotkey, on m_recordingHotkeyClock.
+    QElapsedTimer m_recordingHotkeyClock;
+    QHash<int, qint64> m_lastRecordingHotkeyMs;
     // CLI commands received while a full screen capture was still exporting.
     QList<QByteArray> m_deferredCLICommands;
 };

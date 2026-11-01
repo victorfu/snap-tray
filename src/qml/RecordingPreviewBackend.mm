@@ -107,6 +107,7 @@ void RecordingPreviewBackend::ensureView()
     m_view->setResizeMode(QQuickView::SizeRootObjectToView);
     m_view->setTitle(tr("Recording Preview"));
     m_view->installEventFilter(this);
+    if (qApp) qApp->installEventFilter(this);
     m_cursorSurfaceId = CursorSurfaceSupport::registerManagedSurface(
         m_view, QStringLiteral("RecordingPreviewBackend"));
     m_cursorOwnerId = CursorSurfaceSupport::defaultOwnerId(QStringLiteral("RecordingPreviewBackend"));
@@ -128,6 +129,21 @@ bool RecordingPreviewBackend::eventFilter(QObject* watched, QEvent* event)
 {
     if (watched == m_view && event && event->type() == QEvent::Close && m_isProcessing) {
         static_cast<QCloseEvent*>(event)->ignore();
+        return true;
+    }
+    // QCoreApplication::quit() closes every window and gives up if one refuses.
+    // Let that close through so Exit keeps working; the flag only covers the
+    // quit being handled right now.
+    if (watched == qApp && event && event->type() == QEvent::Quit) {
+        m_applicationQuitting = true;
+        QTimer::singleShot(0, this, [this] { m_applicationQuitting = false; });
+        return QObject::eventFilter(watched, event);
+    }
+    // The title-bar close button must not delete an unsaved recording silently.
+    if (watched == m_view && event && event->type() == QEvent::Close
+        && !m_closeApproved && !m_applicationQuitting && !m_saved && !m_closeHandled) {
+        static_cast<QCloseEvent*>(event)->ignore();
+        requestDiscard();
         return true;
     }
 
@@ -185,6 +201,7 @@ void RecordingPreviewBackend::show()
 void RecordingPreviewBackend::close()
 {
     if (isProcessing() || m_closeHandled) return;
+    m_closeApproved = true;
     if (m_view) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->close();
@@ -343,6 +360,8 @@ void RecordingPreviewBackend::save()
         qDebug() << "RecordingPreviewBackend: Save ignored while processing";
         return;
     }
+    // Saving answers a pending "discard?" question with "keep".
+    cancelDiscard();
 
     // Output quality contract: snapshot the user's setting when Save begins;
     // every MP4 re-encode below uses it. Quality 80 is only the legacy default.
@@ -397,7 +416,34 @@ void RecordingPreviewBackend::discard()
         return;
     }
     m_saved = false;
+    if (m_discardConfirmationPending) {
+        m_discardConfirmationPending = false;
+        emit discardConfirmationChanged();
+    }
     close(); // All close paths share the same discard/teardown notification.
+}
+
+void RecordingPreviewBackend::requestDiscard()
+{
+    if (isProcessing() || m_closeHandled || m_discardConfirmationPending) {
+        return;
+    }
+    m_discardConfirmationPending = true;
+    emit discardConfirmationChanged();
+    if (m_view) {
+        // A title-bar close can come while another app is active.
+        m_view->raise();
+        m_view->requestActivate();
+    }
+}
+
+void RecordingPreviewBackend::cancelDiscard()
+{
+    if (!m_discardConfirmationPending) {
+        return;
+    }
+    m_discardConfirmationPending = false;
+    emit discardConfirmationChanged();
 }
 
 void RecordingPreviewBackend::toggleTrim()

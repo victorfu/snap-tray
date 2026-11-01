@@ -62,6 +62,9 @@ public:
     void updateRegionSize(int width, int height);
     void updateFps(double fps);
     void setAudioEnabled(bool enabled);
+    // Hover tooltips name the stop outcome and the configured global hotkeys.
+    void setStopOpensPreview(bool opensPreview);
+    void setShortcutHints(const QString& pauseResumeHotkey, const QString& stopHotkey);
 
 signals:
     void stopRequested();
@@ -102,6 +105,9 @@ private:
 
     QRect m_recordingRegion;
     bool m_isPaused = false;
+    bool m_stopOpensPreview = false;
+    QString m_pauseResumeHotkey;
+    QString m_stopHotkey;
 
     // For drag: track where the view started
     QPoint m_dragStartViewPos;

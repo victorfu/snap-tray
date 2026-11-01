@@ -110,6 +110,8 @@ void tst_HotkeyManager::clearAllTestSettings()
     clearSetting(SnapTray::kSettingsKeyHistoryWindowHotkey);
     clearSetting(SnapTray::kSettingsKeyTogglePinsVisibilityHotkey);
     clearSetting(SnapTray::kSettingsKeyRecordFullScreenHotkey);
+    clearSetting(SnapTray::kSettingsKeyPauseResumeRecordingHotkey);
+    clearSetting(SnapTray::kSettingsKeyShowRecordingControlsHotkey);
 
     auto settings = SnapTray::getSettings();
     settings.remove(QString::fromLatin1(SnapTray::kSettingsKeyHotkeyRegistrationCounter));
@@ -203,6 +205,10 @@ void tst_HotkeyManager::testGetConfig_AllActionsExist()
     QVERIFY(!manager().getConfig(HotkeyAction::HistoryWindow).displayName.isEmpty());
     QVERIFY(!manager().getConfig(HotkeyAction::TogglePinsVisibility).displayName.isEmpty());
     QVERIFY(!manager().getConfig(HotkeyAction::RecordFullScreen).displayName.isEmpty());
+    QVERIFY(!manager().getConfig(HotkeyAction::PauseResumeRecording).displayName.isEmpty());
+    QVERIFY(!manager().getConfig(HotkeyAction::ShowRecordingControls).displayName.isEmpty());
+    QVERIFY(manager().getConfig(HotkeyAction::PauseResumeRecording).isOptional());
+    QVERIFY(manager().getConfig(HotkeyAction::ShowRecordingControls).isOptional());
 }
 
 void tst_HotkeyManager::testGetConfig_HasCorrectDefaults()
@@ -228,6 +234,8 @@ void tst_HotkeyManager::testGetConfig_CategoryAssignment()
     QCOMPARE(manager().getConfig(HotkeyAction::HistoryWindow).category, HotkeyCategory::Pin);
     QCOMPARE(manager().getConfig(HotkeyAction::TogglePinsVisibility).category, HotkeyCategory::Pin);
     QCOMPARE(manager().getConfig(HotkeyAction::RecordFullScreen).category, HotkeyCategory::Recording);
+    QCOMPARE(manager().getConfig(HotkeyAction::PauseResumeRecording).category, HotkeyCategory::Recording);
+    QCOMPARE(manager().getConfig(HotkeyAction::ShowRecordingControls).category, HotkeyCategory::Recording);
 }
 
 // ============================================================================

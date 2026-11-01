@@ -56,6 +56,7 @@ class TestRecordingStartup : public QObject
     Q_OBJECT
 private slots:
     void init();
+    void controlBarOffersPauseResumeAndStop();
     void waitingKeepsEventLoopResponsiveAndSettingsSnapshot();
     void permissionPolicy_data();
     void permissionPolicy();
@@ -448,6 +449,49 @@ void TestRecordingStartup::captureExclusionWarning()
     manager.warnAboutVisibleCaptureControls();
     QCOMPARE(warnings.count(), legacy ? 2 : 0);
     manager.cancelRecording();
+}
+
+void TestRecordingStartup::controlBarOffersPauseResumeAndStop()
+{
+    SnapTray::QmlRecordingControlBar bar;
+    bar.ensureView();
+    QVERIFY(bar.m_rootItem);
+    auto* pauseButton = bar.m_rootItem->findChild<QQuickItem*>(QStringLiteral("pauseResumeButton"));
+    auto* stopButton = bar.m_rootItem->findChild<QQuickItem*>(QStringLiteral("stopButton"));
+    QVERIFY(pauseButton);
+    QVERIFY(stopButton);
+
+    QSignalSpy pause(&bar, &SnapTray::QmlRecordingControlBar::pauseRequested);
+    QSignalSpy resume(&bar, &SnapTray::QmlRecordingControlBar::resumeRequested);
+    QSignalSpy stop(&bar, &SnapTray::QmlRecordingControlBar::stopRequested);
+    bar.setPreparing(false);
+    QVERIFY(QMetaObject::invokeMethod(pauseButton, "activated"));
+    QCOMPARE(pause.count(), 1);
+    bar.setPaused(true);
+    QVERIFY(QMetaObject::invokeMethod(pauseButton, "activated"));
+    QCOMPARE(resume.count(), 1);
+    QVERIFY(QMetaObject::invokeMethod(stopButton, "activated"));
+    QCOMPARE(stop.count(), 1);
+
+    // Paused shows a label next to the frozen time.
+    bar.updateDuration(65'000);
+    auto* label = bar.m_rootItem->findChild<QQuickItem*>(QStringLiteral("durationLabel"));
+    QVERIFY(label);
+    QVERIFY(label->property("text").toString().contains(QStringLiteral("00:01:05")));
+    QVERIFY(label->property("text").toString() != QStringLiteral("00:01:05"));
+    bar.setPaused(false);
+    QCOMPARE(label->property("text").toString(), QStringLiteral("00:01:05"));
+
+    // Tooltips name the outcome of Stop and the configured hotkeys.
+    QCOMPARE(bar.tooltipForButton(0), QStringLiteral("Stop Recording"));
+    bar.setStopOpensPreview(true);
+    QCOMPARE(bar.tooltipForButton(0), QStringLiteral("Stop and Review"));
+    QCOMPARE(bar.tooltipForButton(1), QStringLiteral("Pause Recording"));
+    bar.setShortcutHints(QStringLiteral("F9"), QStringLiteral("F10"));
+    QCOMPARE(bar.tooltipForButton(1), QStringLiteral("Pause Recording (F9)"));
+    QCOMPARE(bar.tooltipForButton(0), QStringLiteral("Stop and Review (F10)"));
+    bar.setPaused(true);
+    QCOMPARE(bar.tooltipForButton(1), QStringLiteral("Resume Recording (F9)"));
 }
 
 QTEST_MAIN(TestRecordingStartup)

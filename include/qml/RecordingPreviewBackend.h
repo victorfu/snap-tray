@@ -73,6 +73,9 @@ class RecordingPreviewBackend : public QObject
     // Error state
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorMessageChanged)
 
+    // True while the "discard this recording?" confirmation is shown.
+    Q_PROPERTY(bool discardConfirmationPending READ discardConfirmationPending NOTIFY discardConfirmationChanged)
+
 public:
     enum OutputFormat {
         MP4  = 0,
@@ -127,7 +130,12 @@ public:
     Q_INVOKABLE void save();
     // Stops a running MP4 export; the source is kept and no error is shown.
     Q_INVOKABLE void cancelExport();
+    // Deletes the recording immediately. User-facing paths (trash button, Esc,
+    // title-bar close) go through requestDiscard() so they ask first.
     Q_INVOKABLE void discard();
+    Q_INVOKABLE void requestDiscard();
+    Q_INVOKABLE void cancelDiscard();
+    bool discardConfirmationPending() const { return m_discardConfirmationPending; }
     Q_INVOKABLE void toggleTrim();
     Q_INVOKABLE QString formatTime(qint64 ms) const;
     Q_INVOKABLE void clearError();
@@ -167,12 +175,14 @@ signals:
     void processProgressChanged();
     void processStatusChanged();
     void errorMessageChanged();
+    void discardConfirmationChanged();
     void cropRectChanged();
     void videoSizeChanged();
 
 private:
     friend class tst_RecordingPreviewExport;
     friend class tst_RecordingPreviewCrop;
+    friend class tst_RecordingPreviewDiscard;
 
     // Test seam: when set, replaces IVideoTranscoder::create() for MP4 edit
     // exports. Empty (the default, and always in production) = native factory.
@@ -239,6 +249,10 @@ private:
     // State
     bool m_saved = false;
     bool m_closeHandled = false;
+    bool m_discardConfirmationPending = false;
+    // Set when SnapTray itself closes the window (save, confirmed discard).
+    bool m_closeApproved = false;
+    bool m_applicationQuitting = false;
     QString m_cursorSurfaceId;
     QString m_cursorOwnerId;
 };

@@ -20,12 +20,16 @@ PulseAudio compatibility service).
 - Tray menu: Record Screen
 - Recording hotkey: configure Record Screen in Settings > Hotkeys
 
+While recording, the tray menu also offers Pause/Resume Recording and, on macOS and Windows, Show Recording Controls. Both can be given hotkeys in Settings > Hotkeys.
+
 ## Recording lifecycle
 
 1. Choose the screen to record when prompted on multi-display setups.
 2. Recording starts immediately on the selected screen.
-3. Use the floating control bar to monitor duration and stop recording. On Linux, use the tray menu to pause, resume, or stop; floating controls are hidden while recording.
-4. Click Stop to export.
+3. Use the floating control bar to monitor duration, pause or resume, and stop recording. While paused, the bar shows "Paused" and the time stops. On Linux, use the tray menu to pause, resume, or stop; floating controls are hidden while recording.
+4. Click Stop to open the preview (or to save directly when preview is off).
+
+In the preview, the trash button, **Esc**, and the window's close button ask before deleting the recording. **Esc** or **Enter** on that question keeps the recording; press **Tab** to move to Discard. While you are drawing a crop, **Esc** only cancels the crop.
 
 While a recording is in progress, the tray or menu bar icon shows its state with a corner badge: a ring while preparing or counting down, a red dot while recording, pause bars while paused, and three dots while the video is finishing. Hover the icon to see the state, the recorded time (pauses excluded), and the screen being recorded. If the tray sits on the recorded screen, the icon can appear in the video.
 
