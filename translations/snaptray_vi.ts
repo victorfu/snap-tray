@@ -3916,6 +3916,11 @@ Kích thước tệp: %3</translation>
 <context>
     <name>SnapTray::RecordingRecoveryViewModel</name>
     <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="60" />
+        <source>Open in another SnapTray window. Close it there, then try again.</source>
+        <translation>Đang mở trong một cửa sổ SnapTray khác. Hãy đóng ở đó rồi thử lại.</translation>
+    </message>
+    <message>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="55" />
         <source>Unknown date</source>
         <translation>Không rõ ngày</translation>
