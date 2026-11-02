@@ -310,9 +310,15 @@ void TestRecordingStartup::lostSystemAudioDeviceKeepsTheMicrophone()
     using AudioState = SnapTray::AudioSourceState;
     QCOMPARE(manager.audioStatus().microphone, AudioState::Active);
     auto* audio = static_cast<FakeStartupAudio*>(manager.m_audioEngine.get());
+    QSignalSpy warnings(&manager, &RecordingManager::recordingWarning);
     emit audio->deviceLost(IAudioCaptureEngine::AudioSource::SystemAudio);
     audio->activeSourceChanged(IAudioCaptureEngine::AudioSource::Microphone);
     QCOMPARE(manager.audioStatus().microphone, AudioState::Active);
+    // PR #173 review: no "microphone was disconnected" for a system-audio loss.
+    for (const auto& args : warnings) {
+        QVERIFY2(!args.first().toString().contains(QStringLiteral("microphone was disconnected")),
+                 qPrintable(args.first().toString()));
+    }
     QCOMPARE(manager.audioStatus().systemAudio, AudioState::DeviceMissing);
     manager.cancelRecording();
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
@@ -1108,13 +1114,20 @@ void TestRecordingStartup::userStopIsNotAnInterruption()
 void TestRecordingStartup::failedFinishSaysWhatWasKept_data()
 {
     QTest::addColumn<bool>("fragmented");
-    QTest::newRow("crash-safe file") << true;
-    QTest::newRow("unfinished regular file") << false;
+    QTest::addColumn<bool>("playable");
+    QTest::addColumn<bool>("partKept");
+    QTest::newRow("crash-safe, playable") << true << true << true;
+    // PR #173 review: a non-empty but unplayable file (headers only) is not
+    // a kept part: recovery would refuse it.
+    QTest::newRow("crash-safe, unplayable") << true << false << false;
+    QTest::newRow("unfinished regular file") << false << true << false;
 }
 
 void TestRecordingStartup::failedFinishSaysWhatWasKept()
 {
     QFETCH(bool, fragmented);
+    QFETCH(bool, playable);
+    QFETCH(bool, partKept);
     QTemporaryDir dir;
     const QString output = dir.filePath(QStringLiteral("SnapTray_Recording_f.mp4"));
     {
@@ -1123,15 +1136,16 @@ void TestRecordingStartup::failedFinishSaysWhatWasKept()
         file.write("partial");
     }
     RecordingManager manager;
+    manager.m_isRecordingPlayable = [playable](const QString&) { return playable; };
     manager.m_session.fragmented = fragmented;
     manager.m_session.videoPath = output;
     manager.m_state = RecordingManager::State::Encoding;
     QSignalSpy errors(&manager, &RecordingManager::recordingError);
     manager.onEncodingFinished(false, output);
     QCOMPARE(manager.state(), RecordingManager::State::Idle);
-    QCOMPARE(errors.count(), 1);
+    QTRY_COMPARE(errors.count(), 1);
     const QString message = errors.first().first().toString();
-    if (fragmented) {
+    if (partKept) {
         QVERIFY2(message.contains(QStringLiteral("recover it from the tray menu")), qPrintable(message));
     } else {
         QVERIFY2(message.contains(QStringLiteral("Nothing usable could be kept")), qPrintable(message));

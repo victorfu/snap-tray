@@ -263,6 +263,10 @@ RecordingManager::RecordingManager(QObject *parent)
     , m_countdownEnabled(true)
     , m_countdownSeconds(3)
 {
+    m_isRecordingPlayable = [](const QString& path) {
+        const auto transcoder = IVideoTranscoder::create();
+        return transcoder && transcoder->probe(path).valid;
+    };
     m_freeBytesForPath = [](const QString& path) { return QStorageInfo(path).bytesAvailable(); };
     m_captureControlsMayBeVisible = [] {
         return SnapTray::requiresVisibleRecordingControls(QOperatingSystemVersion::current());
@@ -2171,16 +2175,28 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
         }
     } else {
         setState(State::Idle);
-        // Say what was kept: a crash-safe recording leaves its playable part
+        // Say what was kept: a crash-safe recording may leave a playable part
         // (offered for recovery); otherwise nothing usable remains.
-        const bool partKept = crashSafeOutput && QFileInfo(outputPath).size() > 0;
-        emit recordingError(partKept
-            ? tr("The recording could not be finished. The part recorded so far was kept; "
-                 "recover it from the tray menu.")
-            : errorMsg + QLatin1Char(' ') + tr("Nothing usable could be kept."));
-        if (partKept) {
-            scanForRecoveries();
+        const QString nothingKept = errorMsg + QLatin1Char(' ') + tr("Nothing usable could be kept.");
+        if (!crashSafeOutput || QFileInfo(outputPath).size() <= 0) {
+            emit recordingError(nothingKept);
+            return;
         }
+        // A non-empty file is not yet a playable one (headers only, a torn
+        // first fragment): ask the probe the recovery scan uses, off the GUI
+        // thread, before promising recovery (#173 review).
+        const QString partKept = tr("The recording could not be finished. The part recorded so far was kept; "
+                                    "recover it from the tray menu.");
+        const auto playable = m_isRecordingPlayable;
+        const QPointer<RecordingManager> guard(this);
+        (void)QtConcurrent::run([guard, outputPath, playable, partKept, nothingKept]() {
+            const bool kept = playable && playable(outputPath);
+            QMetaObject::invokeMethod(QCoreApplication::instance(), [guard, kept, partKept, nothingKept]() {
+                if (!guard) return;
+                emit guard->recordingError(kept ? partKept : nothingKept);
+                if (kept) guard->scanForRecoveries();
+            }, Qt::QueuedConnection);
+        });
     }
 }
 
