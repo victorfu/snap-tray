@@ -23,6 +23,8 @@ QRect normalizeCropRect(const QRect& rect, const QSize& frameSize);
 
 // The largest rect of exactly aspectWidth:aspectHeight with even width and
 // height that fits inside `bounds` (clipped to the frame), centred on it.
+// Ratios whose exact even step is large (native display sizes such as
+// 3456x2234) keep the paired side within one pixel of the ratio instead.
 // It is grown to kMinCropSide on its shorter side when the frame allows,
 // staying inside the frame. A non-positive aspect falls back to
 // normalizeCropRect(). Like normalizeCropRect(), a result covering the whole
