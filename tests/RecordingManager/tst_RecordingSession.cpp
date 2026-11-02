@@ -9,6 +9,9 @@
 #include <memory>
 #include "recording/RecordingSession.h"
 #include "recording/WindowTimelineSidecar.h"
+#include "encoding/NativeGifEncoder.h"
+#include "encoding/WebPAnimEncoder.h"
+#include <QSignalSpy>
 
 using SnapTray::RecordingSessionInfo;
 namespace Session = SnapTray::RecordingSession;
@@ -53,6 +56,7 @@ private slots:
     void discardRemovesEverything();
     void recoveryTextsAreHonest();
     void discardRespectsTheSessionLock();
+    void finishedAnimationsAreRecoverable();
 };
 
 void TestRecordingSession::manifestRoundTrip()
@@ -265,6 +269,71 @@ void TestRecordingSession::discardRespectsTheSessionLock()
     QVERIFY(!QFileInfo::exists(Session::lockPathFor(video)));
     QCOMPARE(model.count(), 0);
     QCOMPARE(discarded.count(), 1);
+}
+
+void TestRecordingSession::finishedAnimationsAreRecoverable()
+{
+    // PR #172 review: with preview off, a GIF/WebP recording is finished
+    // before its save dialog; a crash there leaves a complete animation that
+    // the video probe (AVFoundation, Media Foundation) cannot open, so it was
+    // offered only for Discard. Animations are checked as images.
+    QTemporaryDir dir;
+    QImage a(64, 48, QImage::Format_ARGB32);
+    QImage b(64, 48, QImage::Format_ARGB32);
+    a.fill(Qt::red);
+    b.fill(Qt::blue);
+    const QString gif = dir.filePath(QStringLiteral("SnapTray_Recording_g.gif"));
+    {
+        NativeGifEncoder encoder;
+        QVERIFY(encoder.start(gif, a.size(), 10));
+        for (int i = 0; i < 6; ++i) encoder.writeFrame(i % 2 ? a : b, i * 100);
+        QSignalSpy finished(&encoder, &NativeGifEncoder::finished);
+        encoder.finish();
+        QTRY_COMPARE(finished.count(), 1);
+    }
+    const QString webp = dir.filePath(QStringLiteral("SnapTray_Recording_w.webp"));
+    {
+        WebPAnimationEncoder encoder;
+        QVERIFY(encoder.start(webp, a.size(), 10));
+        for (int i = 0; i < 6; ++i) encoder.writeFrame(i % 2 ? a : b, i * 100);
+        QSignalSpy finished(&encoder, &WebPAnimationEncoder::finished);
+        encoder.finish();
+        QTRY_COMPARE(finished.count(), 1);
+    }
+    // The video probe cannot open either, as on macOS and Windows.
+    const Session::Probe videoProbe = [](const QString&) { return Session::ProbeResult{}; };
+    const auto probe = [&videoProbe](const QString& path) { return Session::probeForRecovery(path, videoProbe); };
+    for (const QString& path : {gif, webp}) {
+        QVERIFY2(QFileInfo(path).size() > 0, qPrintable(path));
+        auto info = sessionFor(path);
+        info.format = QFileInfo(path).suffix();
+        info.state = RecordingSessionInfo::State::Finished;
+        info.recordedMs = 600;
+        QVERIFY(Session::write(info));
+    }
+    // A cut-off copy (a crash while it was written) is not offered.
+    const QString cut = dir.filePath(QStringLiteral("SnapTray_Recording_c.gif"));
+    {
+        QFile source(gif);
+        QVERIFY(source.open(QIODevice::ReadOnly));
+        const QByteArray bytes = source.readAll();
+        touch(cut, bytes.left(bytes.size() - 20));
+        auto info = sessionFor(cut);
+        info.format = QStringLiteral("gif");
+        info.state = RecordingSessionInfo::State::Finished;
+        info.recordedMs = 600;
+        QVERIFY(Session::write(info));
+    }
+    const auto found = Session::scan(dir.path(), probe, {});
+    QCOMPARE(found.size(), 3);
+    for (const auto& item : found) {
+        const bool truncated = item.info.videoPath == cut;
+        QCOMPARE(item.decodable, !truncated);
+        if (!truncated) {
+            QVERIFY(item.complete);
+            QCOMPARE(item.durationMs, qint64(600));
+        }
+    }
 }
 
 QTEST_MAIN(TestRecordingSession)

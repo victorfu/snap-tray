@@ -10,6 +10,7 @@
 #include <QGuiApplication>
 #include <QTimer>
 #include "RecordingManager.h"
+#include "settings/FileSettingsManager.h"
 #include "recording/RecordingSession.h"
 #include "settings/RecordingSettingsManager.h"
 #include "RecordingInitTask.h"
@@ -71,6 +72,7 @@ private slots:
     void sessionManifestFollowsTheRecording();
     void staleCleanupSparesPendingRecoveries();
     void recoveredRecordingOpensInPreview();
+    void recoveredAnimationIsSavedDirectly();
     void recoveredRecordingKeepsItsQuality();
     void saveDialogSessionSurvivesANewRecording();
     void bufferedAnimationCountsTowardTheDiskGuard();
@@ -970,6 +972,43 @@ void TestRecordingStartup::recoveredRecordingOpensInPreview()
     manager.onPreviewClosed(false);
     QVERIFY(SnapTray::RecordingSession::hasSession(video));
     QVERIFY(!RecordingManager::isSessionActive(video));
+}
+
+void TestRecordingStartup::recoveredAnimationIsSavedDirectly()
+{
+    // PR #172 review: a recovered GIF/WebP went to the preview, which plays
+    // video only. A finished animation is the output already: Recover saves
+    // it (here through auto-save) and its manifest goes once it is saved.
+    QTemporaryDir dir;
+    QTemporaryDir out;
+    const QString gif = dir.filePath(QStringLiteral("SnapTray_Recording_a.gif"));
+    {
+        QFile file(gif);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("GIF89a");
+    }
+    SnapTray::RecordingSessionInfo info;
+    info.videoPath = gif;
+    info.format = QStringLiteral("gif");
+    info.state = SnapTray::RecordingSessionInfo::State::Finished;
+    QVERIFY(SnapTray::RecordingSession::write(info));
+    auto& settings = FileSettingsManager::instance();
+    settings.saveAutoSaveRecordings(true);
+    settings.saveRecordingPath(out.path());
+    settings.saveFilenameTemplate("recovered.{ext}");
+    auto restore = qScopeGuard([&settings] { settings.saveAutoSaveRecordings(false); });
+
+    RecordingManager manager;
+    QSignalSpy preview(&manager, &RecordingManager::previewRequested);
+    QSignalSpy saved(&manager, &RecordingManager::recordingStopped);
+    QVERIFY(manager.openRecoveredRecording(gif));
+    QTRY_COMPARE(saved.count(), 1);
+    QCOMPARE(preview.count(), 0);
+    QCOMPARE(manager.state(), RecordingManager::State::Idle);
+    QCOMPARE(saved.first().first().toString(), QDir(out.path()).filePath(QStringLiteral("recovered.gif")));
+    QVERIFY(!QFileInfo::exists(gif));
+    QVERIFY(!SnapTray::RecordingSession::hasSession(gif));
+    QVERIFY(!RecordingManager::isSessionActive(gif));
 }
 
 QTEST_MAIN(TestRecordingStartup)

@@ -125,6 +125,9 @@ signals:
     void droppingFramesChanged(bool dropping);
     void lowDiskSpaceChanged(bool low);
     void recoveriesFound(const QList<SnapTray::RecordingSession::Recoverable>& recoveries);
+    // A recovered recording that was not saved (cancelled or failed): it can
+    // still be recovered later.
+    void recoveryKept(const QString& videoPath);
     void diagnosticsAvailable();
     // recordedAsIntermediate: the recording was captured as the high-quality
     // intermediate rather than at the selected quality.
