@@ -70,6 +70,8 @@ bool CursorTimelineRecorder::start()
     m_paused = false;
     m_forceSample = true;
     m_buttonFloorMs = m_clock();
+    m_activeSinceMs = m_buttonFloorMs;
+    m_recent.clear();
     sampleNow();
     m_sampleTimer.start();
     m_flushTimer.start();
@@ -89,10 +91,14 @@ void CursorTimelineRecorder::pause()
 void CursorTimelineRecorder::resume()
 {
     if (!m_running || !m_paused) return;
+    // Events made during the pause may still be queued on the probe:
+    // deliver them while still paused, so they are dropped (#174 review).
+    if (m_probe) m_probe->poll();
     m_paused = false;
     // The pointer may have moved or changed shape during the pause.
     m_forceSample = true;
-    m_buttonFloorMs = qMax(m_buttonFloorMs, m_clock());
+    m_activeSinceMs = m_clock();
+    m_buttonFloorMs = qMax(m_buttonFloorMs, m_activeSinceMs);
     sampleNow();
     m_sampleTimer.start();
 }
@@ -128,6 +134,7 @@ void CursorTimelineRecorder::sampleNow()
     m_forceSample = false;
     m_last = sample;
     m_writer.addSample(sample);
+    rememberSample(sample);
 }
 
 quint32 CursorTimelineRecorder::currentShapeId()
@@ -163,17 +170,41 @@ void CursorTimelineRecorder::onButtonChanged(Qt::MouseButton button, bool down, 
     if (!m_running || m_paused || !m_capabilities.clicks) return;
     // Position the click where it happened, not up to one poll later.
     sampleNow();
+    // A queued event happened ageMs before it reached us. One from before
+    // the recording (re)started, i.e. during a pause, is not recorded.
+    const qint64 happenedMs = m_clock() - qMax<qint64>(0, ageMs);
+    if (happenedMs < m_activeSinceMs) return;
     if (m_held.testFlag(button) == down) return; // a press from before start/resume, or a repeat
     m_held.setFlag(button, down);
     CursorButtonEvent event;
-    // A queued event happened ageMs before it reached us; keep that time,
-    // but never before the recording (re)started or the previous event.
-    event.tMs = qMax(m_clock() - qMax<qint64>(0, ageMs), m_buttonFloorMs);
+    // Its time is kept, but never before the previous event.
+    event.tMs = qMax(happenedMs, m_buttonFloorMs);
     m_buttonFloorMs = event.tMs;
     event.button = button;
     event.down = down;
-    event.position = m_last ? m_last->position : QPoint();
+    // Where the recorded pointer was then: for a late event, not where it
+    // has moved to since (#174 review).
+    event.position = positionAt(event.tMs);
     m_writer.addButton(event);
+}
+
+void CursorTimelineRecorder::rememberSample(const CursorSample& sample)
+{
+    m_recent.push_back(sample);
+    // Keep what a late event can still need; the last sample always stays.
+    while (m_recent.size() > 1 && sample.tMs - m_recent[1].tMs > kRecentPositionsMs) {
+        m_recent.pop_front();
+    }
+}
+
+QPoint CursorTimelineRecorder::positionAt(qint64 tMs) const
+{
+    // The last sample at or before tMs: the position held at that time.
+    for (auto it = m_recent.crbegin(); it != m_recent.crend(); ++it) {
+        if (it->tMs <= tMs) return it->position;
+    }
+    if (!m_recent.empty()) return m_recent.front().position;
+    return m_last ? m_last->position : QPoint();
 }
 
 void CursorTimelineRecorder::releaseHeldButtons()
