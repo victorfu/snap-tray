@@ -66,6 +66,7 @@ private slots:
     void permissionWaitIsOutsideTimelineAndOldTimerIsIgnored();
     void encoderCapabilityControlsAudioPipeline_data();
     void encoderCapabilityControlsAudioPipeline();
+    void lostSystemAudioDeviceKeepsTheMicrophone();
     void captureExclusionWarning_data();
     void captureExclusionWarning();
     void nativeStreamStopFinishesRecording_data();
@@ -221,7 +222,7 @@ void TestRecordingStartup::encoderCapabilityControlsAudioPipeline()
         QCOMPARE(warnings.count(), 2);
         QCOMPARE(manager.audioStatus().microphone, AudioState::Unavailable);
         QCOMPARE(manager.audioStatus().systemAudio, AudioState::Unavailable);
-        emit audio->deviceLost();
+        emit audio->deviceLost(IAudioCaptureEngine::AudioSource::Microphone);
         QCOMPARE(manager.audioStatus().microphone, AudioState::DeviceMissing);
         QCOMPARE(manager.state(), RecordingManager::State::Recording);
         QVERIFY(!manager.m_audioEnabled);
@@ -236,6 +237,47 @@ void TestRecordingStartup::encoderCapabilityControlsAudioPipeline()
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     QTRY_COMPARE(encoderState->destroyed.load(), 1);
     QCOMPARE(audioState->destroyed, audioState->created);
+}
+
+void TestRecordingStartup::lostSystemAudioDeviceKeepsTheMicrophone()
+{
+    // Both sources; the playback endpoint fails (Windows reports deviceLost
+    // for it too). The microphone is still recording and must not read as missing.
+    RecordingSettingsManager::instance().setAudioEnabled(true);
+    constexpr int kBothSourcesSetting = 2;
+    RecordingSettingsManager::instance().setAudioSource(kBothSourcesSetting);
+    auto encoderState = std::make_shared<AudioEncoderTestState>();
+    auto audioState = std::make_shared<AudioCaptureTestState>();
+    RecordingManager manager;
+    prepare(manager);
+    manager.m_createAudioEngine = [audioState] { return new FakeStartupAudio(audioState); };
+    RecordingInitTask::Config config;
+    config.region = QRect(0, 0, 16, 16);
+    config.screenInfo.geometry = config.region;
+    config.frameSize = QSize(16, 16);
+    config.audioEnabled = true;
+    config.outputPath = "unused-device-lost.mp4";
+    auto task = QSharedPointer<RecordingInitTask>::create(config);
+    task->m_createEncoder = [encoderState](const auto& options, QObject* parent) {
+        return EncoderFactoryTestAccess::create(options, parent, encoderState);
+    };
+    QVERIFY(task->initializeEncoder());
+    task->result().success = true;
+    task->result().captureEngine = std::make_unique<FakeStartupCapture>();
+    task->result().captureEngineStarted = true;
+    manager.m_initTask = task;
+    manager.onInitializationComplete(task, manager.m_initGeneration);
+    QCOMPARE(manager.state(), RecordingManager::State::Recording);
+    using AudioState = SnapTray::AudioSourceState;
+    QCOMPARE(manager.audioStatus().microphone, AudioState::Active);
+    auto* audio = static_cast<FakeStartupAudio*>(manager.m_audioEngine.get());
+    emit audio->deviceLost(IAudioCaptureEngine::AudioSource::SystemAudio);
+    audio->activeSourceChanged(IAudioCaptureEngine::AudioSource::Microphone);
+    QCOMPARE(manager.audioStatus().microphone, AudioState::Active);
+    QCOMPARE(manager.audioStatus().systemAudio, AudioState::DeviceMissing);
+    manager.cancelRecording();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    QTRY_COMPARE(encoderState->destroyed.load(), 1);
 }
 
 void TestRecordingStartup::init()
