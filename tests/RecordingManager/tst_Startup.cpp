@@ -5,6 +5,7 @@
 #include <QStandardPaths>
 #include <QUuid>
 #include <QTemporaryDir>
+#include <QThreadPool>
 #include <QScreen>
 #include <QGuiApplication>
 #include <QTimer>
@@ -73,6 +74,7 @@ private slots:
     void recoveredRecordingKeepsItsQuality();
     void saveDialogSessionSurvivesANewRecording();
     void bufferedAnimationCountsTowardTheDiskGuard();
+    void encoderWrittenBytesFeedTheDiskGuard();
     void controlBarOffersPauseResumeAndStop();
     void waitingKeepsEventLoopResponsiveAndSettingsSnapshot();
     void permissionPolicy_data();
@@ -90,7 +92,7 @@ private slots:
     void basicBackendIgnoresUnsupportedPreferences();
 private:
     void prepare(RecordingManager& manager);
-    void startFakeRecordingForDisk(RecordingManager& manager);
+    void startFakeRecordingForDisk(RecordingManager& manager, IVideoEncoder::ByteCounter written = nullptr);
 };
 
 void TestRecordingStartup::nativeStreamStopFinishesRecording_data()
@@ -313,12 +315,33 @@ void TestRecordingStartup::bufferedAnimationCountsTowardTheDiskGuard()
     manager.cancelRecording();
 }
 
-void TestRecordingStartup::startFakeRecordingForDisk(RecordingManager& manager)
+void TestRecordingStartup::encoderWrittenBytesFeedTheDiskGuard()
+{
+    // PR #171 review: the Linux encoder writes a temporary file until it
+    // finishes, so the destination's size read 0 all recording long and the
+    // guard reserved nothing for it. The encoder's own count is used.
+    constexpr qint64 kMiB = 1024 * 1024;
+    auto written = std::make_shared<std::atomic<qint64>>(10240 * kMiB);
+    RecordingManager manager;
+    manager.m_freeBytesForPath = [](const QString&) { return 150 * kMiB; };
+    startFakeRecordingForDisk(manager, written);
+    // 150 MiB free: enough for an empty file, not for finishing 10 GiB.
+    manager.checkDiskSpace();
+    // Deliver only the probe's result; a full event loop would also run the
+    // stopped recording's save, which opens a dialog without a real file.
+    QVERIFY(QThreadPool::globalInstance()->waitForDone(5000));
+    QCoreApplication::sendPostedEvents(QCoreApplication::instance(), QEvent::MetaCall);
+    QCOMPARE(manager.state(), RecordingManager::State::Encoding); // stopped safely, kept
+    manager.cancelRecording();
+}
+
+void TestRecordingStartup::startFakeRecordingForDisk(RecordingManager& manager, IVideoEncoder::ByteCounter written)
 {
     RecordingSettingsManager::instance().setAudioEnabled(false);
     RecordingSettingsManager::instance().setShowPreview(false);
     prepare(manager);
     auto encoderState = std::make_shared<AudioEncoderTestState>();
+    encoderState->written = written;
     RecordingInitTask::Config config;
     config.region = QRect(0, 0, 16, 16);
     config.screenInfo.geometry = config.region;
