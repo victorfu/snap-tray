@@ -2,8 +2,10 @@
 
 #include <QDebug>
 #include <QScopeGuard>
+#include <QElapsedTimer>
 #include <QSocketNotifier>
 
+#include <X11/Xatom.h>
 #include <X11/Xlib.h>
 #include <X11/extensions/XInput2.h>
 #include <X11/extensions/Xfixes.h>
@@ -48,6 +50,8 @@ public:
         m_display = XOpenDisplay(nullptr);
         if (!m_display) return false;
         m_root = DefaultRootWindow(m_display);
+        m_localClock.start();
+        seedTimeReference();
 
         int fixesError = 0;
         if (!XFixesQueryExtension(m_display, &m_fixesEvent, &fixesError)) {
@@ -127,6 +131,47 @@ private:
         for (int i = 0; i < count; ++i) m_pointerMap[i + 1] = map[i];
     }
 
+    // Reads the server clock once (a property change on a private, unmapped
+    // window is timestamped by the server), so the first queued click
+    // already has a reference to be aged against.
+    void seedTimeReference()
+    {
+        const Window window = XCreateSimpleWindow(m_display, m_root, -1, -1, 1, 1, 0, 0, 0);
+        XSelectInput(m_display, window, PropertyChangeMask);
+        const Atom atom = XInternAtom(m_display, "_SNAPTRAY_CURSOR_CLOCK", False);
+        XChangeProperty(m_display, window, atom, XA_STRING, 8, PropModeAppend, nullptr, 0);
+        XEvent event;
+        XWindowEvent(m_display, window, PropertyChangeMask, &event);
+        m_referenceLocalMs = m_localClock.elapsed();
+        m_referenceServerMs = static_cast<quint32>(event.xproperty.time);
+        m_haveTimeReference = true;
+        XDestroyWindow(m_display, window);
+    }
+
+    // How long ago an event with this X server timestamp happened. The
+    // server clock (32-bit ms) is related to ours through the reference event
+    // that arrived soonest after it happened: delivery only ever adds delay,
+    // so the smallest observed offset is the best estimate.
+    qint64 ageOf(Time serverTime)
+    {
+        const qint64 now = m_localClock.elapsed();
+        const auto server = static_cast<quint32>(serverTime);
+        if (!m_haveTimeReference) {
+            m_haveTimeReference = true;
+            m_referenceLocalMs = now;
+            m_referenceServerMs = server;
+            return 0;
+        }
+        // Signed 32-bit difference: correct across the ~49-day wrap.
+        const qint64 happened = m_referenceLocalMs + static_cast<qint32>(server - m_referenceServerMs);
+        if (happened > now) {
+            m_referenceLocalMs = now;
+            m_referenceServerMs = server;
+            return 0;
+        }
+        return now - happened;
+    }
+
     void drainEvents()
     {
         // A button signal's handler polls the position, which drains again:
@@ -155,9 +200,10 @@ private:
                 loadPointerMapping();
                 const int physical = raw->detail;
                 const int logical = physical > 0 && physical < kMaxPointerMap ? m_pointerMap[physical] : 0;
+                const qint64 ageMs = ageOf(raw->time);
                 for (const auto& entry : kX11Buttons) {
                     if (entry.number == logical) {
-                        emit buttonChanged(entry.button, cookie->evtype == XI_RawButtonPress);
+                        emit buttonChanged(entry.button, cookie->evtype == XI_RawButtonPress, ageMs);
                         break;
                     }
                 }
@@ -175,6 +221,10 @@ private:
     bool m_clicks = false;
     quint64 m_serial = 0;
     bool m_draining = false;
+    QElapsedTimer m_localClock;
+    bool m_haveTimeReference = false;
+    qint64 m_referenceLocalMs = 0;
+    quint32 m_referenceServerMs = 0;
     std::array<int, kMaxPointerMap> m_pointerMap{};
 };
 

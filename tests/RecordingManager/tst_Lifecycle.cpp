@@ -54,6 +54,7 @@ private slots:
     void testFinishSkipsSidecarWithoutWindows();
     void testStaleSidecarsAreCleanedUp();
     void testCursorTimelineFollowsTheRecording();
+    void testCursorPauseIsStampedAtTheBoundary();
     void testCursorTimelineOutcome_data();
     void testCursorTimelineOutcome();
     void intermediateQualityFollowsFreeSpace_data();
@@ -388,6 +389,19 @@ public:
     QString name() const override { return QStringLiteral("test"); }
     void click(bool down) { emit buttonChanged(Qt::LeftButton, down); }
 };
+
+// A probe whose position query can block, like XQueryPointer on a busy server.
+class SlowCursorProbe : public LifecycleCursorProbe
+{
+public:
+    std::optional<State> poll() override
+    {
+        if (slowMs > 0) QThread::msleep(static_cast<unsigned long>(slowMs));
+        return State{position, false, 0};
+    }
+    int slowMs = 0;
+    QPoint position{5, 5};
+};
 } // namespace
 
 void TestRecordingManagerLifecycle::testCursorTimelineFollowsTheRecording()
@@ -435,6 +449,51 @@ void TestRecordingManagerLifecycle::testCursorTimelineFollowsTheRecording()
     m_manager->cancelRecording();
     QCOMPARE(m_manager->state(), RecordingManager::State::Idle);
     QVERIFY(!QFile::exists(SnapTray::CursorTimelineSidecar::pathFor(video)));
+    m_manager->m_session = {};
+}
+
+void TestRecordingManagerLifecycle::testCursorPauseIsStampedAtTheBoundary()
+{
+    // PR #174 review: a slow final poll at pause used to stamp the pause
+    // events after the boundary, later than the first sample after resume.
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("SnapTray_Recording_p.mp4"));
+    SlowCursorProbe* probe = nullptr;
+    m_manager->m_createCursorProbe = [&probe] {
+        auto owned = std::make_unique<SlowCursorProbe>();
+        probe = owned.get();
+        return owned;
+    };
+    m_manager->m_windowFrameMapping = {QRect(0, 0, 1000, 500), QRect(), 1.0, QRect(0, 0, 1000, 500)};
+    m_manager->m_session.videoPath = video;
+    m_manager->m_startSettings.showPreview = true;
+    m_manager->m_elapsedTimer.start();
+    m_manager->startCursorTimeline();
+    QVERIFY(probe);
+    m_manager->m_state = RecordingManager::State::Recording;
+    QTest::qWait(20);
+    probe->click(true);
+    probe->position = QPoint(6, 6);
+    probe->slowMs = 120;
+    m_manager->pauseRecording();
+    probe->slowMs = 0;
+    probe->position = QPoint(7, 7);
+    m_manager->resumeRecording();
+    m_manager->stopFrameCapture();
+
+    const auto timeline = SnapTray::CursorTimelineSidecar::read(video);
+    QVERIFY(timeline);
+    for (size_t i = 1; i < timeline->samples.size(); ++i) {
+        QVERIFY2(timeline->samples[i - 1].tMs <= timeline->samples[i].tMs,
+                 qPrintable(QStringLiteral("sample %1 at %2 after %3").arg(i)
+                                .arg(timeline->samples[i].tMs).arg(timeline->samples[i - 1].tMs)));
+    }
+    QCOMPARE(int(timeline->buttons.size()), 2);
+    const auto release = timeline->buttons.back();
+    QVERIFY(release.synthetic);
+    QCOMPARE(timeline->samples.back().position, QPoint(7, 7));
+    QVERIFY(release.tMs <= timeline->samples.back().tMs);
+    m_manager->cancelRecording();
     m_manager->m_session = {};
 }
 

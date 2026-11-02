@@ -320,6 +320,7 @@ private slots:
     void lockedCornerShrinksAlongTheMovedAxis();
     void previewNudgeAtEdgeKeepsSize();
     void previewApplyUsesTypedCropFields();
+    void previewLockedSizeEntryResizesBothSides();
     void enterStartsHoverWithoutMove();
     void createRectClampsToContent();
     void moveRectStaysInside();
@@ -1968,6 +1969,28 @@ void tst_RecordingCropOverlay::previewApplyUsesTypedCropFields()
     x->setProperty("edited", true);
     click(previewItem("previewCropButton"));
     QVERIFY(editing());
+}
+
+void tst_RecordingCropOverlay::previewLockedSizeEntryResizesBothSides()
+{
+    // PR #167 review: with an aspect lock, typing W or H only moved the crop.
+    OPEN_PREVIEW_OR_FAIL(QSize(1920, 1080));
+    QObject* overlay = previewOverlay();
+    click(previewItem("previewCropButton"));
+    click(previewItem("previewAspectPreset4")); // 1:1
+    QCOMPARE(overlay->property("aspectRatio").toReal(), 1.0);
+    overlay->setProperty("draftRect", m_backend->legalViewRectForVideo(100, 100, 200, 200, previewContentRect()));
+    const auto draft = [&] { return m_view->rootObject()->property("draftVideoRect").toRect(); };
+    QCOMPARE(draft(), QRect(100, 100, 200, 200));
+    const auto type = [](QQuickItem* field, const QString& text) {
+        field->setProperty("text", text);
+        field->setProperty("edited", true);
+        QVERIFY(QMetaObject::invokeMethod(field, "editingFinished"));
+    };
+    type(previewItem("previewCrop_width"), QStringLiteral("400"));
+    QCOMPARE(draft(), QRect(100, 100, 400, 400));
+    type(previewItem("previewCrop_height"), QStringLiteral("300"));
+    QCOMPARE(draft(), QRect(100, 100, 300, 300));
 }
 
 QTEST_MAIN(tst_RecordingCropOverlay)

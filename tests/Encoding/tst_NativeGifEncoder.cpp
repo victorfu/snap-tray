@@ -1,5 +1,6 @@
 #include <QtTest/QtTest>
 #include <QTemporaryDir>
+#include <QPainter>
 #include "encoding/WebPAnimEncoder.h"
 #include <QSignalSpy>
 #include <QFile>
@@ -124,6 +125,7 @@ class TestNativeGifEncoder : public QObject
 
 private slots:
     void bufferedBytesAreCountedBeforeTheFileExists();
+    void webpEstimateFollowsChangedRegions();
     void initTestCase();
     void cleanupTestCase();
     void init();
@@ -762,6 +764,36 @@ void TestNativeGifEncoder::bufferedBytesAreCountedBeforeTheFileExists()
     QVERIFY(webpBytes->load() > afterFirst);
     QVERIFY(!QFileInfo::exists(webpPath) || QFileInfo(webpPath).size() == 0);
     webp.abort();
+}
+
+void TestNativeGifEncoder::webpEstimateFollowsChangedRegions()
+{
+    // PR #171 review: a small moving square charged the whole screen per
+    // frame, so the disk guard reserved ~250x the real output.
+    QTemporaryDir dir;
+    const QSize size(640, 360);
+    WebPAnimationEncoder webp;
+    const QString path = dir.filePath(QStringLiteral("square.webp"));
+    QVERIFY(webp.start(path, size, 30));
+    const auto counter = webp.bufferedBytesCounter();
+    for (int i = 0; i < 100; ++i) {
+        QImage frame(size, QImage::Format_ARGB32);
+        frame.fill(Qt::white);
+        QPainter painter(&frame);
+        painter.fillRect(QRect(10 + i * 5, 100, 10, 10), Qt::black);
+        painter.end();
+        webp.writeFrame(frame, i * 33);
+    }
+    const qint64 estimate = counter->load();
+    QSignalSpy finished(&webp, &WebPAnimationEncoder::finished);
+    webp.finish();
+    QCOMPARE(finished.count(), 1);
+    const qint64 actual = QFileInfo(path).size();
+    QVERIFY(actual > 0);
+    QVERIFY2(estimate < actual * 10,
+             qPrintable(QStringLiteral("estimate %1 vs actual %2").arg(estimate).arg(actual)));
+    QVERIFY2(estimate >= actual / 2,
+             qPrintable(QStringLiteral("estimate %1 vs actual %2").arg(estimate).arg(actual)));
 }
 
 QTEST_MAIN(TestNativeGifEncoder)

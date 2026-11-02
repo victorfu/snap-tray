@@ -46,7 +46,7 @@ public:
     bool failed() const { return m_writer.failed(); }
 
 private:
-    void onButtonChanged(Qt::MouseButton button, bool down);
+    void onButtonChanged(Qt::MouseButton button, bool down, qint64 ageMs);
     quint32 currentShapeId();
     void releaseHeldButtons();
 
@@ -70,6 +70,7 @@ private:
     QHash<QByteArray, quint32> m_shapeIds; // image + hotspot digest -> id
     quint32 m_nextShapeId = 1;
     Qt::MouseButtons m_held;
+    qint64 m_buttonFloorMs = 0; // button events stay in order and after start/resume
 };
 
 } // namespace SnapTray
