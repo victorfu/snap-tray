@@ -349,6 +349,10 @@ add_library(snaptray_core STATIC
     src/recording/DiskSpaceGuard.cpp
     src/recording/RecordingSession.cpp
     src/recording/RecordingInterruption.cpp
+    src/recording/CursorTimeline.cpp
+    src/recording/CursorEffects.cpp
+    src/recording/ZoomTrack.cpp
+    src/recording/RedactionTrack.cpp
     src/utils/OCRImageUtils.cpp
     src/utils/TextLayoutUtils.cpp
     # Headers with Q_OBJECT for MOC processing
@@ -533,6 +537,8 @@ add_library(snaptray_platform STATIC
     src/encoding/WebPAnimEncoder.cpp
     src/recording/ScreenSourceService.cpp
     src/recording/WindowTimelineRecorder.cpp
+    src/recording/CursorProbe.cpp
+    src/recording/CursorTimelineRecorder.cpp
     src/video/IVideoFrameReader.cpp
     src/video/IVideoPlayer.cpp
     src/video/IVideoTranscoder.cpp
@@ -554,6 +560,8 @@ add_library(snaptray_platform STATIC
     include/capture/QtCaptureEngine.h
     include/video/IVideoPlayer.h
     include/recording/WindowTimelineRecorder.h
+    include/recording/CursorProbe.h
+    include/recording/CursorTimelineRecorder.h
     include/QRCodeManager.h
     include/ImageColorSpaceHelper.h
     include/platform/QtQuickBackendPolicy.h
@@ -708,6 +716,15 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
             X11::X11
             X11::Xext
     )
+    # Pointer shape (XFixes) and passive click events (XInput2) for the
+    # recording cursor sidecar; without them only positions are recorded.
+    if(X11_Xfixes_FOUND AND X11_Xi_FOUND)
+        target_sources(snaptray_platform PRIVATE src/recording/X11CursorProbe_linux.cpp)
+        target_link_libraries(snaptray_platform PRIVATE X11::Xfixes X11::Xi)
+        target_compile_definitions(snaptray_platform PRIVATE SNAPTRAY_HAS_X11_CURSOR_PROBE)
+    else()
+        message(STATUS "libXfixes/libXi not found: recordings keep pointer positions only")
+    endif()
 endif()
 
 target_compile_definitions(snaptray_platform PRIVATE
@@ -1190,6 +1207,8 @@ qt_add_qml_module(snaptray_qml
         include/qml/QmlCountdownOverlay.h
         src/qml/VideoPlaybackItem.cpp
         include/qml/VideoPlaybackItem.h
+        src/qml/RecordingCursorOverlay.cpp
+        include/qml/RecordingCursorOverlay.h
         src/qml/SvgIconItem.cpp
         include/qml/SvgIconItem.h
         include/qml/RecordingPreviewBackend.h
@@ -1410,5 +1429,8 @@ if(SNAPTRAY_ENABLE_LINUX_RECORDING)
 endif()
 
 if(BUILD_TESTING)
+    # Developer tool: prints a recording's pointer sidecar.
+    add_executable(SnapTrayCursorInspector tools/cursor-inspector/main.cpp)
+    target_link_libraries(SnapTrayCursorInspector PRIVATE snaptray_core)
     add_subdirectory(tests)
 endif()

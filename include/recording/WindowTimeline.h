@@ -86,6 +86,11 @@ struct WindowFrameMapping {
     // Native desktop pixels share the capture region's origin; never scale again.
     // Requires a native physicalScreen (not the screen-relative macOS mapping).
     QRect toVideoRectFromPhysical(const QRect& nativeBounds) const;
+    // A global logical point (QCursor::pos()) in video pixels. Not clipped:
+    // a point off the recorded frame stays off it.
+    QPoint toVideoPoint(const QPointF& logicalPoint) const;
+    // A native desktop pixel (X11 root coordinates) in video pixels; not clipped.
+    QPoint toVideoPointFromPhysical(const QPoint& nativePoint) const;
 };
 
 } // namespace SnapTray

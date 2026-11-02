@@ -1,5 +1,6 @@
 #pragma once
 
+class QImage;
 #include <QRect>
 #include <QSize>
 #include <QString>
@@ -30,6 +31,10 @@ struct VideoTranscodeRequest {
     qint64 endMs = -1;      // -1 = end of input
     QRect cropRect;         // video pixels, even-aligned; empty = full frame
     int videoBitrate = 0;   // bits/s; 0 = VideoBitrate::forQuality(output size, fps, kDefaultTranscodeQuality)
+    // Draws on each output frame (already cropped, RGB32) before it is
+    // encoded; sourceMs is the frame's time in the input. Empty = none.
+    // Only for transcoders whose supportsFrameFilter() is true.
+    std::function<void(QImage& frame, qint64 sourceMs)> frameFilter;
 };
 
 struct VideoTranscodeResult {
@@ -80,6 +85,8 @@ public:
     virtual VideoTranscodeResult transcode(const VideoTranscodeRequest& request,
                                            const ProgressCallback& progress) = 0;
     virtual VideoFileProbe probe(const QString& filePath) = 0;
+    // True when transcode() applies VideoTranscodeRequest::frameFilter.
+    virtual bool supportsFrameFilter() const { return false; }
 
     // nullptr on platforms/builds without a recording backend.
     static std::unique_ptr<IVideoTranscoder> create();

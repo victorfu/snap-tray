@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QJsonObject>
 #include <QString>
 
 class RecordingSettingsManager
@@ -38,6 +39,11 @@ public:
     bool showSetupBeforeRecording() const;
     void setShowSetupBeforeRecording(bool value);
 
+    // Last pointer effects chosen in the preview (CursorEffectSettings JSON);
+    // empty = defaults.
+    QJsonObject pointerEffects() const;
+    void setPointerEffects(const QJsonObject& value);
+
     // Default values (shared with RecordingManager)
     static constexpr int kDefaultFrameRate = 30;
     static constexpr int kDefaultOutputFormat = 0;
@@ -66,4 +72,5 @@ private:
     static constexpr const char* kKeyCountdownEnabled = "recording/countdownEnabled";
     static constexpr const char* kKeyCountdownSeconds = "recording/countdownSeconds";
     static constexpr const char* kKeyShowSetupBeforeRecording = "recording/showSetupBeforeRecording";
+    static constexpr const char* kKeyPointerEffects = "recording/pointerEffects";
 };

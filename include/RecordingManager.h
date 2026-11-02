@@ -26,6 +26,7 @@
 
 #include "WatermarkRenderer.h"
 #include "recording/WindowTimelineRecorder.h"
+#include "recording/CursorTimelineRecorder.h"
 #include "utils/ResourceCleanupHelper.h"
 
 class RecordingInitTask;
@@ -186,6 +187,10 @@ private:
     // will open (the sidecar is its input); written next to the temp MP4.
     void startWindowTimeline();
     void finishWindowTimeline(const QString& outputPath, bool success);
+    // The pointer sidecar (#159), next to the recording while it is previewed.
+    qint64 mediaTimeMs();
+    void startCursorTimeline();
+    void dropCursorTimeline(bool removeFile);
 
     // Countdown methods
     void startCountdown();                    // Begin countdown overlay
@@ -277,6 +282,7 @@ private:
     // Pause tracking
     qint64 m_pausedDuration;     // Total time spent paused
     qint64 m_pauseStartTime;     // When current pause began
+    bool m_mediaClockPaused = false; // media time holds at m_pauseStartTime until resume
     mutable QMutex m_durationMutex;  // Protects pause duration variables
 
     // Audio capture
@@ -336,6 +342,10 @@ private:
     // Watermark for recording (settings stored, rendering done by EncodingWorker)
     WatermarkRenderer::Settings m_watermarkSettings;
     std::unique_ptr<SnapTray::WindowTimelineRecorder> m_windowTimelineRecorder;
+    std::unique_ptr<SnapTray::CursorTimelineRecorder> m_cursorRecorder;
+    QString m_cursorSidecarVideo;
+    QString m_cursorDiagnostics;
+    std::function<std::unique_ptr<SnapTray::CursorProbe>()> m_createCursorProbe = &SnapTray::createCursorProbe;
     SnapTray::WindowFrameMapping m_windowFrameMapping;
     std::function<SnapTray::WindowTimelineRecorder::Enumerator(QScreen*)> m_createWindowEnumerator =
         &SnapTray::WindowTimelineRecorder::detectorEnumerator;

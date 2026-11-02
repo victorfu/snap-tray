@@ -1,5 +1,7 @@
 #include "recording/WindowTimeline.h"
 
+#include <QtMath>
+
 #include "utils/CoordinateHelper.h"
 
 #include <QJsonArray>
@@ -191,6 +193,21 @@ QRect WindowFrameMapping::toVideoRectFromPhysical(const QRect& nativeBounds) con
 {
     if (!isValid() || physicalScreen.isEmpty() || nativeBounds.isEmpty()) return {};
     return nativeBounds.intersected(physicalRegion).translated(-physicalRegion.topLeft());
+}
+
+QPoint WindowFrameMapping::toVideoPoint(const QPointF& logicalPoint) const
+{
+    // Relative to the screen origin, then scaled: origins are translated,
+    // never scaled (mixed-DPI desktops use different origin spaces).
+    const QPointF onScreen = (logicalPoint - QPointF(logicalScreen.topLeft())) * devicePixelRatio;
+    const QPoint physical = QPoint(qFloor(onScreen.x()), qFloor(onScreen.y()))
+        + (physicalScreen.isEmpty() ? QPoint() : physicalScreen.topLeft());
+    return physical - physicalRegion.topLeft();
+}
+
+QPoint WindowFrameMapping::toVideoPointFromPhysical(const QPoint& nativePoint) const
+{
+    return nativePoint - physicalRegion.topLeft();
 }
 
 QRect WindowFrameMapping::toVideoRect(const QRect& logicalBounds) const

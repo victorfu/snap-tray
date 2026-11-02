@@ -4,6 +4,7 @@
 #include "recording/ScreenSourceService.h"
 #include "recording/RecordingFileUtils.h"
 #include "recording/WindowTimelineSidecar.h"
+#include "recording/CursorTimeline.h"
 #include "qml/QmlRecordingControlBar.h"
 #include "hotkey/HotkeyManager.h"
 #include "RecordingInitTask.h"
@@ -433,6 +434,7 @@ void RecordingManager::resetPauseTracking()
 {
     m_pausedDuration = 0;
     m_pauseStartTime = 0;
+    m_mediaClockPaused = false;
 }
 
 bool RecordingManager::shouldUseDedicatedEncodingThread(bool hasNativeEncoder) const
@@ -1367,6 +1369,7 @@ void RecordingManager::startRecordingAfterCountdown()
     // After audio start: the first sample enumerates windows synchronously and must not delay audio.
     // Samples are stamped by the elapsed clock, so the timeline is unaffected by the later start.
     startWindowTimeline();
+    startCursorTimeline();
 
     if (m_state != State::Recording || generation != m_startGeneration) return;
     m_collectStartupAudioWarnings = false;
@@ -1894,12 +1897,16 @@ void RecordingManager::pauseRecording()
     {
         QMutexLocker locker(&m_durationMutex);
         m_pauseStartTime = m_elapsedTimer.elapsed();
+        m_mediaClockPaused = true;
         m_framePacer.notePause();
     }
     m_sessionClock.pause(SnapTray::captureClockNowNs());
 
     if (m_windowTimelineRecorder) {
         m_windowTimelineRecorder->pause();
+    }
+    if (m_cursorRecorder) {
+        m_cursorRecorder->pause();
     }
 
     setState(State::Paused);
@@ -1921,6 +1928,7 @@ void RecordingManager::resumeRecording()
     {
         QMutexLocker locker(&m_durationMutex);
         m_pausedDuration += m_elapsedTimer.elapsed() - m_pauseStartTime;
+        m_mediaClockPaused = false;
     }
     m_sessionClock.resume(SnapTray::captureClockNowNs());
 
@@ -1945,6 +1953,9 @@ void RecordingManager::resumeRecording()
     // After the pause duration above is accounted for, so the immediate sample uses media time.
     if (m_windowTimelineRecorder) {
         m_windowTimelineRecorder->resume();
+    }
+    if (m_cursorRecorder) {
+        m_cursorRecorder->resume();
     }
 
     setState(State::Recording);
@@ -2049,6 +2060,7 @@ void RecordingManager::cancelRecording()
 
     stopFrameCapture();
     m_windowTimelineRecorder.reset();
+    dropCursorTimeline(true);
 
     // Stop encoding worker (aborts encoding)
     if (m_encodingWorker || m_encodingThread) {
@@ -2092,6 +2104,10 @@ void RecordingManager::stopFrameCapture()
             m_windowTimelineRecorder->sampleNow(); // capture the final window layout
         }
         m_windowTimelineRecorder->stop();
+    }
+    if (m_cursorRecorder) {
+        // Last position, held buttons released, file closed.
+        m_cursorRecorder->stop();
     }
 
     // Stop timers
@@ -2152,6 +2168,12 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
     if (m_health) {
         const auto snapshot = m_health->snapshot(SnapTray::captureClockNowNs());
         m_lastDiagnostics = SnapTray::RecordingHealth::formatDiagnostics(snapshot);
+        if (!m_cursorDiagnostics.isEmpty()) {
+            m_lastDiagnostics += QLatin1Char('\n') + m_cursorDiagnostics;
+            if (m_cursorRecorder && m_cursorRecorder->truncated()) {
+                m_lastDiagnostics += QStringLiteral(" (size limit reached)");
+            }
+        }
         qDebug().noquote() << m_lastDiagnostics;
         emit diagnosticsAvailable();
     }
@@ -2168,6 +2190,9 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
     // Clean up encoding worker
     teardownEncodingWorker(false);
     finishWindowTimeline(outputPath, success);
+    // The pointer sidecar stays with a finished file, or with a crash-safe
+    // part that recovery may offer; otherwise there is no video to go with.
+    dropCursorTimeline(!success && !(crashSafeOutput && QFileInfo(outputPath).size() > 0));
     m_usingNativeEncoder = false;
     if (success) {
         // A finished file: if SnapTray stops before it is saved, it is still
@@ -2269,7 +2294,10 @@ RecordingManager::SaveOutcome RecordingManager::showSaveDialog(const QString &te
     // (cancelled or failed save) keeps its sidecar too.
     bool keepSidecar = false;
     const auto dropSidecar = qScopeGuard([&tempOutputPath, &keepSidecar]() {
-        if (!keepSidecar) SnapTray::WindowTimelineSidecar::remove(tempOutputPath);
+        if (!keepSidecar) {
+            SnapTray::WindowTimelineSidecar::remove(tempOutputPath);
+            SnapTray::CursorTimelineSidecar::remove(tempOutputPath);
+        }
     });
 
     // Get settings from FileSettingsManager
@@ -2434,6 +2462,7 @@ void RecordingManager::onEncodingError(const QString &error)
     }
     m_usingNativeEncoder = false;
     m_windowTimelineRecorder.reset();
+    dropCursorTimeline(true);
 
     setState(State::Idle);
     emit recordingError(error);
@@ -2479,10 +2508,7 @@ void RecordingManager::startWindowTimeline()
         return;
     }
     // The same clock that stamps the encoded frames: raw elapsed minus pauses.
-    auto mediaTime = [this]() {
-        QMutexLocker locker(&m_durationMutex);
-        return qMax<qint64>(0, m_elapsedTimer.elapsed() - m_pausedDuration);
-    };
+    auto mediaTime = [this]() { return mediaTimeMs(); };
     m_windowTimelineRecorder = std::make_unique<SnapTray::WindowTimelineRecorder>(
         m_createWindowEnumerator(m_targetScreen.data()), mediaTime, m_windowFrameMapping, nullptr);
     m_windowTimelineRecorder->start();
@@ -2508,6 +2534,60 @@ void RecordingManager::finishWindowTimeline(const QString& outputPath, bool succ
     }
 }
 
+qint64 RecordingManager::mediaTimeMs()
+{
+    // The clock that stamps the encoded frames: raw elapsed minus pauses.
+    // From the moment a pause begins it holds at that boundary, so events
+    // recorded while pausing never land after the first ones after resume.
+    QMutexLocker locker(&m_durationMutex);
+    const qint64 raw = m_mediaClockPaused ? m_pauseStartTime : m_elapsedTimer.elapsed();
+    return qMax<qint64>(0, raw - m_pausedDuration);
+}
+
+void RecordingManager::startCursorTimeline()
+{
+    dropCursorTimeline(false);
+    m_cursorDiagnostics.clear();
+    // Like the window timeline: only a previewed recording has a use for it.
+    if (!m_startSettings.showPreview || !m_windowFrameMapping.isValid() || m_session.videoPath.isEmpty()) {
+        return;
+    }
+    auto probe = m_createCursorProbe ? m_createCursorProbe() : nullptr;
+    if (!probe) {
+        return;
+    }
+    auto mediaTime = [this]() { return mediaTimeMs(); };
+    const bool cursorInVideo = m_captureEngine && m_captureEngine->capturesCursor();
+    m_cursorSidecarVideo = m_session.videoPath;
+    m_cursorRecorder = std::make_unique<SnapTray::CursorTimelineRecorder>(
+        std::move(probe), mediaTime, m_windowFrameMapping,
+        SnapTray::CursorTimelineSidecar::pathFor(m_cursorSidecarVideo), cursorInVideo, nullptr);
+    const auto caps = m_cursorRecorder->capabilities();
+    m_cursorDiagnostics = QStringLiteral("cursor: %1, shapes %2, clicks %3")
+                              .arg(m_cursorRecorder->probeName(),
+                                   caps.shapes ? QStringLiteral("yes") : QStringLiteral("no"),
+                                   caps.clicks ? QStringLiteral("yes") : QStringLiteral("no"));
+    if (!m_cursorRecorder->start()) {
+        qWarning() << "RecordingManager: pointer sidecar not written; the recording continues without it";
+        m_cursorDiagnostics += QStringLiteral(" (not recorded: sidecar could not be written)");
+        dropCursorTimeline(true);
+        return;
+    }
+    qDebug().noquote() << "RecordingManager:" << m_cursorDiagnostics;
+}
+
+void RecordingManager::dropCursorTimeline(bool removeFile)
+{
+    if (m_cursorRecorder) {
+        m_cursorRecorder->stop();
+        m_cursorRecorder.reset();
+    }
+    if (removeFile && !m_cursorSidecarVideo.isEmpty()) {
+        SnapTray::CursorTimelineSidecar::remove(m_cursorSidecarVideo);
+    }
+    m_cursorSidecarVideo.clear();
+}
+
 void RecordingManager::cleanupStaleTempFiles()
 {
     QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
@@ -2516,7 +2596,8 @@ void RecordingManager::cleanupStaleTempFiles()
     // Clean up SnapTray recording temp files older than 24 hours
     QStringList filters;
     filters << "SnapTray_Recording_*.mp4" << "SnapTray_Recording_*.gif" << "SnapTray_Recording_*.webp"
-            << "SnapTray_Recording_*.windows.json";
+            << QStringLiteral("SnapTray_Recording_*") + QLatin1String(SnapTray::WindowTimelineSidecar::kSuffix)
+            << QStringLiteral("SnapTray_Recording_*") + QLatin1String(SnapTray::CursorTimelineSidecar::kSuffix);
 
     QFileInfoList files = dir.entryInfoList(filters, QDir::Files);
     QDateTime threshold = QDateTime::currentDateTime().addDays(-1);
@@ -2525,9 +2606,14 @@ void RecordingManager::cleanupStaleTempFiles()
     for (const QFileInfo &file : files) {
         // A recording with a session manifest is either active or waiting to
         // be recovered: only the user's choice (recover or discard) removes it.
-        const QString owner = file.fileName().endsWith(QLatin1String(".windows.json"))
-            ? file.absoluteFilePath().left(file.absoluteFilePath().size() - int(qstrlen(".windows.json")))
-            : file.absoluteFilePath();
+        // A sidecar belongs to the video its name extends.
+        QString owner = file.absoluteFilePath();
+        for (const char* suffix : {SnapTray::WindowTimelineSidecar::kSuffix, SnapTray::CursorTimelineSidecar::kSuffix}) {
+            if (owner.endsWith(QLatin1String(suffix))) {
+                owner.chop(int(qstrlen(suffix)));
+                break;
+            }
+        }
         if (SnapTray::RecordingSession::hasSession(owner)) {
             continue;
         }
