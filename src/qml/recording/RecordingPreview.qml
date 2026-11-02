@@ -272,7 +272,7 @@ Item {
                 anchors.fill: parent
                 // Video clicks belong to the crop editor while editing; Space and the play button still work.
                 enabled: !cropOverlay.editing
-                cursorShape: backend.selectedZoom >= 0 ? Qt.CrossCursor : CursorTokens.clickable
+                cursorShape: backend.selectedZoom >= 0 ? CursorTokens.pickPoint : CursorTokens.clickable
                 onClicked: function(mouse) {
                     // With a zoom selected, a click moves its centre there.
                     if (backend.selectedZoom >= 0) {

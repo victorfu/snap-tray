@@ -11,4 +11,6 @@ QtObject {
     readonly property int panelDragIdle: Qt.ArrowCursor
     readonly property int panelDragActive: Qt.ClosedHandCursor
     readonly property int dialogMove: Qt.ArrowCursor
+    // Recording preview editing: pick a point on the video (a zoom's centre).
+    readonly property int pickPoint: Qt.CrossCursor
 }
