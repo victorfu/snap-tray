@@ -54,6 +54,18 @@ public:
     virtual void finish() = 0;
     virtual void abort() = 0;
 
+    // ========== Capture device (Windows GPU frames, #155) ==========
+
+    // The capture device frames will arrive on (ICaptureEngine::
+    // nativeFrameDevice()). Call before start(); an encoder that can encode
+    // that device's surfaces directly turns on acceptsNativeFrames().
+    virtual void setNativeFrameDevice(std::shared_ptr<void> device) { Q_UNUSED(device); }
+
+    // After start(): every native buffer from that device is taken by
+    // writeNativeFrame(), including frames that carry no image, so capture
+    // may skip its CPU copy. writeFrame() keeps working alongside.
+    virtual bool acceptsNativeFrames() const { return false; }
+
     // State queries
     virtual bool isRunning() const = 0;
     virtual QString lastError() const = 0;

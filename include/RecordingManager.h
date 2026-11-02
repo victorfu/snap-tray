@@ -211,6 +211,7 @@ private:
     std::unique_ptr<QThread> m_encodingThread;         // Dedicated encoding thread for encoding workload
     quint64 m_encodingGeneration = 0;                  // Guards stale queued encoding callbacks
     bool m_usingNativeEncoder;          // True if using native encoder (vs GIF)
+    bool m_encoderAcceptsNativeFrames = false;  // The MP4 encoder takes GPU frames (#155)
     CaptureEnginePtr m_captureEngine;   // Screen capture engine (stop + disconnect + deleteLater)
 
     // Capture state
@@ -300,6 +301,8 @@ private:
         QString audioDevice;
         bool countdownEnabled = true;
         int countdownSeconds = 3;
+        bool windowsGraphicsCapture = false;
+        bool nativeFrameEncoding = true;
     } m_startSettings;
     quint64 m_startGeneration = 0;
     bool m_permissionPending = false;

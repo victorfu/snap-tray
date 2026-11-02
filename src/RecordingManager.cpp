@@ -569,7 +569,8 @@ void RecordingManager::initializeStartState()
     auto& settings = RecordingSettingsManager::instance();
     m_startSettings = {settings.outputFormat(), settings.showPreview(), settings.quality(),
                       settings.audioEnabled(), settings.audioSource(), settings.audioDevice(),
-                      settings.countdownEnabled(), settings.countdownSeconds()};
+                      settings.countdownEnabled(), settings.countdownSeconds(),
+                      settings.windowsGraphicsCapture(), settings.nativeFrameEncoding()};
     if (m_requiresDirectMp4Recording()) {
         // Apply backend limits to this request, without overwriting saved
         // preferences from a platform with audio and preview support.
@@ -807,6 +808,8 @@ void RecordingManager::beginAsyncInitialization()
     config.outputFormat = recordingFormat;
     config.frameSize = physicalSize;
     config.quality = m_startSettings.quality;
+    config.preferGraphicsCapture = m_startSettings.windowsGraphicsCapture;
+    config.gpuEncoding = m_startSettings.nativeFrameEncoding;
     config.intermediateQuality = decideIntermediateQuality(
         showPreview, QFileInfo(config.outputPath).absolutePath(), physicalSize);
 
@@ -984,6 +987,7 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
     }
 
     m_usingNativeEncoder = result.usingNativeEncoder;
+    m_encoderAcceptsNativeFrames = result.nativeEncoder && result.nativeEncoder->acceptsNativeFrames();
     m_session.fragmented = result.fragmentedOutput;
     updateSession(SnapTray::RecordingSessionInfo::State::Recording);
 
@@ -1084,13 +1088,13 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
         connect(m_captureEngine.get(), &ICaptureEngine::frameCaptured, worker,
                 [this, worker](const SnapTray::CapturedFrame& frame) {
             QMutexLocker lock(&m_durationMutex);
-            if (!m_acceptAsyncFrames || frame.image.isNull()) return;
+            if (!m_acceptAsyncFrames || !frame.isValid()) return;
             // The frame's own capture time, not when this thread got to it.
             const qint64 sourceTimeNs = frame.sourceTimeNs >= 0 ? frame.sourceTimeNs
                                                                 : SnapTray::captureClockNowNs();
             qint64 timeMs = 0;
             if (!admitFrameLocked(sourceTimeNs, true, &timeMs)) return;
-            if (worker->enqueueFrame({frame.image, timeMs, 0, frame.nativeBuffer})) ++m_frameCount;
+            if (worker->enqueueFrame({frame.image, timeMs, 0, frame.nativeBuffer, frame.pixelSize})) ++m_frameCount;
         }, Qt::DirectConnection);
     }
 
@@ -1387,6 +1391,16 @@ void RecordingManager::startRecordingAfterCountdown()
         }
     }
 
+    // GPU frames skip the CPU copy when the encoder takes them and nothing
+    // has to draw on them (#155); otherwise frames stay images.
+    if (m_captureEngine) {
+        const bool nativeFrames = m_encoderAcceptsNativeFrames && !m_watermarkSettings.enabled;
+        m_captureEngine->setNativeFrameOutput(nativeFrames);
+        if (nativeFrames) {
+            qDebug() << "RecordingManager: capture frames go to the encoder as GPU surfaces";
+        }
+    }
+
     // Small delay so the control bar is fully rendered before capture starts
     QTimer::singleShot(kOverlayRenderDelay, this, [this, generation]() {
         if (generation == m_startGeneration) startCaptureTimers();
@@ -1471,7 +1485,7 @@ void RecordingManager::captureFrame()
     const qint64 sourceTimeNs = SnapTray::captureClockNowNs();
     const SnapTray::CapturedFrame frame = captureEngine->captureNativeFrame();
 
-    if (!frame.image.isNull()) {
+    if (frame.isValid()) {
         qint64 timeMs = 0;
         {
             QMutexLocker locker(&m_durationMutex);
@@ -1481,7 +1495,7 @@ void RecordingManager::captureFrame()
 
         // Enqueue frame for encoding (non-blocking)
         // Watermark is applied by the worker thread
-        EncodingWorker::FrameData frameData{frame.image, timeMs, 0, frame.nativeBuffer};
+        EncodingWorker::FrameData frameData{frame.image, timeMs, 0, frame.nativeBuffer, frame.pixelSize};
         if (encodingWorker->enqueueFrame(frameData)) ++m_frameCount;
     }
 }

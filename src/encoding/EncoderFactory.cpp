@@ -132,6 +132,10 @@ IVideoEncoder* EncoderFactory::tryCreateNativeEncoder(
                  << config.audioBitsPerSample << "bits";
     }
 
+    if (config.nativeFrameDevice) {
+        encoder->setNativeFrameDevice(config.nativeFrameDevice);
+    }
+
     // Start the encoder
     if (!encoder->start(config.outputPath, config.frameSize, config.frameRate)) {
         qWarning() << "EncoderFactory: Native encoder failed to start:"
@@ -141,7 +145,8 @@ IVideoEncoder* EncoderFactory::tryCreateNativeEncoder(
     }
 
     qDebug() << "EncoderFactory: Native encoder started successfully:"
-             << encoder->encoderName();
+             << encoder->encoderName()
+             << (encoder->acceptsNativeFrames() ? "(GPU frames)" : "(CPU frames)");
     return encoder;
 }
 

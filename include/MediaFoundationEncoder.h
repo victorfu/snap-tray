@@ -31,6 +31,14 @@ public:
     void finish() override;
     void abort() override;
 
+    // GPU input (a SnapTray::D3D11FrameDevice): NV12 surfaces converted on
+    // the capture device, used when a probe encode on that adapter works.
+    void setNativeFrameDevice(std::shared_ptr<void> device) override;
+    bool acceptsNativeFrames() const override;
+    // Takes every D3D11 frame (read back when it is not on the GPU input's
+    // device); false only for a missing texture or a stopped encoder.
+    bool writeNativeFrame(const std::shared_ptr<void> &nativeBuffer, qint64 timestampMs) override;
+
     bool isRunning() const override;
     QString lastError() const override;
     qint64 framesWritten() const override;
@@ -48,6 +56,7 @@ public:
     void writeAudioSamples(const QByteArray &pcmData, qint64 startFrame) override;
 
 private:
+    friend class MediaFoundationEncoderPrivate;  // the GPU probe drives an encoder of its own
     MediaFoundationEncoderPrivate *d;
 };
 

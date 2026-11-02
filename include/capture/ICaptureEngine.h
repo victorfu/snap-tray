@@ -119,21 +119,36 @@ public:
     /**
      * @brief captureFrame(), plus the backend's own surface for it when it has
      * one (CapturedFrame::nativeBuffer), so a matching encoder can skip the
-     * CPU copy. Only image and nativeBuffer are filled in.
+     * CPU copy. Only image, nativeBuffer and pixelSize are filled in.
+     *
+     * Windows engines with native frame output on may return a frame with
+     * only nativeBuffer (a D3D11 texture, no CPU copy at all).
      */
     virtual SnapTray::CapturedFrame captureNativeFrame()
     {
         SnapTray::CapturedFrame frame;
         frame.image = captureFrame();
+        frame.pixelSize = frame.image.size();
         return frame;
     }
+
+    // The device native frames live on, for the encoder to consume them
+    // directly (a SnapTray::D3D11FrameDevice on Windows). Null when the engine
+    // has no such device. Valid after start().
+    virtual std::shared_ptr<void> nativeFrameDevice() const { return nullptr; }
+
+    // Windows: let frames skip the CPU copy. They then carry only
+    // nativeBuffer while the GPU path works and an image when it does not (a
+    // BitBlt fallback). Enable only when the encoder accepts native frames and
+    // nothing has to draw on them. Takes effect from the next captured frame.
+    virtual void setNativeFrameOutput(bool enabled) { Q_UNUSED(enabled); }
 
     // Asynchronous backends can deliver completed frames directly to the
     // encoding queue instead of depending on GUI-thread polling.
     virtual bool deliversFrames() const { return false; }
 
-    // True when captured frames already contain the pointer. Every current
-    // backend leaves it out; the cursor sidecar records it instead (#159).
+    // True when captured frames already contain the pointer. Backends leave
+    // it out where they can; the cursor sidecar records it instead (#159).
     virtual bool capturesCursor() const { return false; }
 
     /**

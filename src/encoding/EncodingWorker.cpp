@@ -282,7 +282,7 @@ qint64 EncodingWorker::encoderFramesWritten() const
 
 bool EncodingWorker::enqueueFrame(const FrameData& frame)
 {
-    if (frame.frame.isNull()) {
+    if (frame.frame.isNull() && !frame.nativeBuffer) {
         return false;
     }
 
@@ -293,7 +293,7 @@ bool EncodingWorker::enqueueFrame(const FrameData& frame)
     int depth;
     int maxFrames;
     qint64 queuedBytes;
-    const qint64 frameBytes = frame.frame.sizeInBytes();
+    const qint64 frameBytes = frame.byteSize();
     const qint64 nowNs = SnapTray::captureClockNowNs();
     using Drop = SnapTray::RecordingHealth::FrameDrop;
     std::optional<Drop> drop;
@@ -419,7 +419,7 @@ void EncodingWorker::processNextFrame()
                 hasAudio = true;
             } else if (!m_frameQueue.isEmpty()) {
                 frameData = m_frameQueue.dequeue();
-                m_queuedBytes = qMax<qint64>(0, m_queuedBytes - frameData.frame.sizeInBytes());
+                m_queuedBytes = qMax<qint64>(0, m_queuedBytes - frameData.byteSize());
                 frameDepth = m_frameQueue.size();
                 hasFrame = true;
             } else {
@@ -497,7 +497,10 @@ void EncodingWorker::doProcessFrame(const FrameData& frameData)
         const qint64 encodeStartNs = SnapTray::captureClockNowNs();
         const bool wroteNative = m_encoderType == EncoderType::Video && m_videoEncoder
             && writeNativeFrame(frameData);
-        if (!wroteNative) {
+        // A Windows GPU frame without an image cannot take the image path:
+        // it is rejected (counted below) rather than encoded without its
+        // watermark or through an encoder that does not take it.
+        if (!wroteNative && !frameData.frame.isNull()) {
             // Make a copy for modification (triggers COW only now)
             QImage frame = frameData.frame;
 

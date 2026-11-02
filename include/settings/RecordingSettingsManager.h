@@ -45,10 +45,17 @@ public:
     void setPointerEffects(const QJsonObject& value);
 
     // Hand captured surfaces straight to the hardware video encoder when they
-    // fit (macOS ScreenCaptureKit + AVFoundation). Off forces the CPU image
+    // fit (macOS ScreenCaptureKit + AVFoundation;
+    // Windows D3D11 textures + Media Foundation after a probe encode, #155). Off forces the CPU image
     // copy for every frame; kept as a setting for A/B comparison.
     bool nativeFrameEncoding() const;
     void setNativeFrameEncoding(bool value);
+
+    // Windows only, no UI yet. Record through Windows Graphics Capture instead
+    // of Desktop Duplication (experimental until compared on real hardware,
+    // #152); Desktop Duplication remains the fallback.
+    bool windowsGraphicsCapture() const;
+    void setWindowsGraphicsCapture(bool value);
 
     // Default values (shared with RecordingManager)
     static constexpr int kDefaultFrameRate = 30;
@@ -62,6 +69,7 @@ public:
     static constexpr int kDefaultCountdownSeconds = 3;
     static constexpr bool kDefaultShowSetupBeforeRecording = false;
     static constexpr bool kDefaultNativeFrameEncoding = true;
+    static constexpr bool kDefaultWindowsGraphicsCapture = false;
 
 private:
     RecordingSettingsManager() = default;
@@ -81,4 +89,5 @@ private:
     static constexpr const char* kKeyShowSetupBeforeRecording = "recording/showSetupBeforeRecording";
     static constexpr const char* kKeyPointerEffects = "recording/pointerEffects";
     static constexpr const char* kKeyNativeFrameEncoding = "recording/nativeFrameEncoding";
+    static constexpr const char* kKeyWindowsGraphicsCapture = "recording/windowsGraphicsCapture";
 };

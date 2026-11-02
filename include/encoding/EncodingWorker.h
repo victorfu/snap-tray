@@ -49,7 +49,16 @@ public:
         // The capture backend's surface for `frame` (CapturedFrame::nativeBuffer).
         // The video encoder encodes it directly when it can; `frame` stays the
         // fallback (watermark, incompatible buffer, native frames turned off).
+        // Windows GPU frames have no `frame` at all: without the native path
+        // they cannot be encoded and are counted as rejected.
         std::shared_ptr<void> nativeBuffer;
+        QSize pixelSize;  // sizes an image-less frame for the queue budget
+
+        // Bytes counted against the queue budget (a GPU frame as 32-bit pixels).
+        qint64 byteSize() const
+        {
+            return frame.isNull() ? qint64(pixelSize.width()) * pixelSize.height() * 4 : frame.sizeInBytes();
+        }
     };
 
     // Limits for frames waiting to be encoded. When one is reached the new
