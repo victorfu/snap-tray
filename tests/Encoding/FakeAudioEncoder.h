@@ -16,6 +16,7 @@ struct AudioEncoderTestState {
     SnapTray::VideoRateControl rateControl = SnapTray::VideoRateControl::Bitrate;
     int rateControlQuality = -1;
     int keyFrameIntervalSeconds = -1;
+    IVideoEncoder::ByteCounter written; // reported as writtenBytesCounter()
 };
 
 class FakeAudioEncoder final : public IVideoEncoder
@@ -45,6 +46,7 @@ public:
     }
     void setKeyFrameIntervalSeconds(int seconds) override { m_state->keyFrameIntervalSeconds = seconds; }
     void writeAudioSamples(const QByteArray&, qint64) override { ++m_state->audioWrites; }
+    ByteCounter writtenBytesCounter() const override { return m_state->written; }
 private:
     std::shared_ptr<AudioEncoderTestState> m_state;
     bool m_running = false;
