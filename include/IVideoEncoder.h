@@ -68,6 +68,13 @@ public:
      */
     virtual void setKeyFrameIntervalSeconds(int seconds) { Q_UNUSED(seconds); }
 
+    // Writes the MP4 as self-contained fragments, so a crash or power loss
+    // leaves a file that plays up to its last complete fragment. Call before
+    // start(). Returns false when the encoder cannot (the file then needs a
+    // normal finish to be playable).
+    virtual bool setFragmentedOutput(bool enabled) { Q_UNUSED(enabled); return false; }
+    virtual bool isFragmentedOutput() const { return false; }
+
     /** @brief The rate control actually in effect after start(). */
     virtual SnapTray::VideoRateControl effectiveRateControl() const
     {

@@ -2,6 +2,8 @@
 #include "encoding/VideoBitrate.h"
 
 #include <QSaveFile>
+#include <QFile>
+#include <QFileInfo>
 #include <QDebug>
 #include <QDir>
 #include <QElapsedTimer>
@@ -44,10 +46,11 @@ QString ffmpegError(int code)
     return QString::fromUtf8(buffer);
 }
 
-// What the AVIO callbacks write to: the temporary file, and the count of
-// bytes in it so far (the destination exists only after commit()).
+// What the AVIO callbacks write to: the output (a temporary file until
+// commit(), or the destination itself for fragmented recordings), and the
+// count of bytes in it so far.
 struct OutputSink {
-    QSaveFile* file = nullptr;
+    QFileDevice* file = nullptr;
     IVideoEncoder::ByteCounter written;
 };
 
@@ -59,7 +62,7 @@ int writeOutput(void* opaque, uint8_t* data, int size)
 #endif
 {
     auto* sink = static_cast<OutputSink*>(opaque);
-    QSaveFile* file = sink->file;
+    QFileDevice* file = sink->file;
     const qint64 written = file->write(reinterpret_cast<const char*>(data), size);
     if (written != size) {
         return AVERROR(EIO);
@@ -75,7 +78,7 @@ int writeOutput(void* opaque, uint8_t* data, int size)
 
 int64_t seekOutput(void* opaque, int64_t offset, int whence)
 {
-    QSaveFile* file = static_cast<OutputSink*>(opaque)->file;
+    QFileDevice* file = static_cast<OutputSink*>(opaque)->file;
     if (whence & AVSEEK_SIZE) {
         return file->size();
     }
@@ -97,7 +100,11 @@ int64_t seekOutput(void* opaque, int64_t offset, int whence)
 
 struct FFmpegEncoder::State
 {
-    std::unique_ptr<QSaveFile> output;
+    // QSaveFile normally (a finished file appears whole or not at all).
+    // Fragmented recordings write straight to the file instead, so a crash
+    // leaves it in place, playable up to its last fragment.
+    std::unique_ptr<QFileDevice> output;
+    bool directOutput = false;
     OutputSink sink;
     AVFormatContext* format = nullptr;
     AVCodecContext* codec = nullptr;
@@ -142,7 +149,7 @@ void FFmpegEncoder::setKeyFrameIntervalSeconds(int seconds)
     m_keyframeSeconds = qBound(0, seconds, 60);
 }
 
-void FFmpegEncoder::release()
+void FFmpegEncoder::release(bool keepDirectOutput)
 {
     if (!m_state) {
         return;
@@ -164,6 +171,13 @@ void FFmpegEncoder::release()
         avio_context_free(&s.io);
     }
     // QSaveFile discards uncommitted output, preserving any previous file.
+    // Direct (fragmented) output is kept on failure - its complete fragments
+    // still play - and removed only when the recording is aborted.
+    if (s.directOutput && s.output && !keepDirectOutput) {
+        const QString path = s.output->fileName();
+        s.output->close();
+        QFile::remove(path);
+    }
     m_state.reset();
 }
 
@@ -200,8 +214,14 @@ bool FFmpegEncoder::start(const QString& path, const QSize& size, int frameRate)
     auto& s = *m_state;
     s.size = size;
     s.frameRate = frameRate;
-    s.output = std::make_unique<QSaveFile>(path, this);
-    if (!s.output->open(QIODevice::WriteOnly)) {
+    // Never write directly over an existing file: an abort must leave it.
+    s.directOutput = m_fragmented && !QFileInfo::exists(path);
+    if (s.directOutput) {
+        s.output = std::make_unique<QFile>(path);
+    } else {
+        s.output = std::make_unique<QSaveFile>(path, this);
+    }
+    if (!s.output->open(QIODevice::WriteOnly | (s.directOutput ? QIODevice::Unbuffered : QIODevice::NotOpen))) {
         fail(s.output->errorString());
         return false;
     }
@@ -333,7 +353,17 @@ bool FFmpegEncoder::start(const QString& path, const QSize& size, int frameRate)
     s.stream->avg_frame_rate = s.codec->framerate;
     result = avcodec_parameters_from_context(s.stream->codecpar, s.codec);
     if (result >= 0) {
-        result = avformat_write_header(s.format, nullptr);
+        // Fragmented MP4: a fragment at every keyframe, so an interrupted file
+        // still plays up to its last fragment. delay_moov writes the header
+        // with the first fragment, once hardware encoders (VAAPI) have
+        // produced their SPS/PPS; an empty moov written earlier would lack it.
+        AVDictionary* muxerOptions = nullptr;
+        if (m_fragmented) {
+            av_dict_set(&muxerOptions, "movflags",
+                        "frag_keyframe+empty_moov+delay_moov+default_base_moof", 0);
+        }
+        result = avformat_write_header(s.format, &muxerOptions);
+        av_dict_free(&muxerOptions);
     }
     s.frame->width = size.width();
     s.frame->height = size.height();
@@ -466,7 +496,10 @@ void FFmpegEncoder::finish()
         avio_flush(m_state->io);
         if (result < 0 || m_state->io->error < 0) {
             fail(QStringLiteral("Cannot finalize MP4 output."));
-        } else if (!m_state->output->commit()) {
+        } else if (m_state->directOutput) {
+            m_state->output->close();
+            if (m_state->output->error() != QFileDevice::NoError) fail(m_state->output->errorString());
+        } else if (!static_cast<QSaveFile*>(m_state->output.get())->commit()) {
             fail(m_state->output->errorString());
         }
     }
@@ -475,7 +508,7 @@ void FFmpegEncoder::finish()
     emit finished(success, m_outputPath);
 }
 
-void FFmpegEncoder::abort() { release(); }
+void FFmpegEncoder::abort() { release(false); }
 
 void FFmpegEncoder::setRateControl(SnapTray::VideoRateControl mode, int quality) {
     m_rateControl = mode; setQuality(quality);

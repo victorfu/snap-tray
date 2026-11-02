@@ -13,6 +13,7 @@
 
 #include <QCloseEvent>
 #include "recording/DiskSpaceGuard.h"
+#include "recording/RecordingSession.h"
 #include <QLocale>
 #include <QStorageInfo>
 #include <cmath>
@@ -238,7 +239,9 @@ void RecordingPreviewBackend::finishClose()
     // Preserve teardown ordering: the owner schedules deletion of playback
     // resources before the queued discard handler removes the temporary file.
     emit closed(saved);
-    if (!saved) emit discardRequested(discardPath);
+    // Quitting SnapTray is not a choice to discard: the recording and its
+    // session manifest stay, and the next launch offers to recover it.
+    if (!saved && !m_applicationQuitting) emit discardRequested(discardPath);
 }
 
 void RecordingPreviewBackend::syncCursorSurface()
@@ -500,6 +503,7 @@ void RecordingPreviewBackend::completeSave(SaveOutcome outcome, const QString &s
             QFile::remove(m_videoPath);
         }
         SnapTray::WindowTimelineSidecar::remove(m_videoPath);
+        SnapTray::RecordingSession::remove(m_videoPath);
         finishProcessing();
         m_saved = true;
         close();

@@ -23,6 +23,8 @@ public:
     QString outputPath() const override;
     void setQuality(int quality) override;
     void setKeyFrameIntervalSeconds(int seconds) override;
+    bool setFragmentedOutput(bool enabled) override { m_fragmented = enabled; return true; }
+    bool isFragmentedOutput() const override { return m_fragmented; }
     void setRateControl(SnapTray::VideoRateControl mode, int quality) override;
     SnapTray::VideoRateControl effectiveRateControl() const override;
     void setBitrate(int bitrate) { m_bitrate = qMax(0, bitrate); }
@@ -40,7 +42,9 @@ private:
     bool drainPackets(bool audio = false);
     bool encodeAudio(bool flushPartial);
     void fail(const QString& message);
-    void release();
+    // `keepDirectOutput`: leave a fragmented recording's file on disk (failure,
+    // teardown); false removes it (abort).
+    void release(bool keepDirectOutput = true);
     QString m_error;
     QString m_outputPath;
     qint64 m_framesWritten = 0;
@@ -51,4 +55,5 @@ private:
     SnapTray::VideoRateControl m_rateControl = SnapTray::VideoRateControl::Bitrate;
     QString m_encoderName;
     int m_keyframeSeconds = 2;
+    bool m_fragmented = false;
 };

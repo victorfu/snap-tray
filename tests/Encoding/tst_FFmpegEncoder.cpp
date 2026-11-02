@@ -1,4 +1,7 @@
 #include "encoding/FFmpegEncoder.h"
+#include "video/IVideoTranscoder.h"
+#include <QFileInfo>
+#include <memory>
 #include <QtTest>
 #include <QFile>
 #include <QSignalSpy>
@@ -17,6 +20,10 @@ private slots:
     void invalidConfiguration();
     void abortAndFailurePreserveDestination();
     void emptyRecordingAndReuse();
+    void fragmentedCrashLeavesPlayablePrefix_data();
+    void fragmentedCrashLeavesPlayablePrefix();
+    void unfragmentedCrashLeavesNothingAtThePath();
+    void fragmentedNeverOverwritesExistingFile();
     void writtenBytesAreReportedBeforeCommit();
 };
 
@@ -153,6 +160,119 @@ void TestFFmpegEncoder::emptyRecordingAndReuse()
     QVERIFY(avformat_find_stream_info(format, nullptr) >= 0);
     // The implicit 30 fps clock must not accumulate rounded 33 ms intervals.
     QVERIFY(qAbs(format->duration - 10000000) <= 1000);
+}
+
+namespace {
+void writeSeconds(FFmpegEncoder& encoder, int fromMs, int toMs, const QSize& size = QSize(128, 96))
+{
+    QImage image(size, QImage::Format_ARGB32);
+    for (int t = fromMs; t < toMs; t += 33) {
+        image.fill(QColor::fromHsv((t / 10) % 360, 200, 200));
+        encoder.writeFrame(image, t);
+    }
+}
+
+// The strict check players and the save flow rely on: stream parameters
+// (including the decoder configuration) can be read from the file.
+bool hasStreamInfo(const QString& path)
+{
+    AVFormatContext* format = nullptr;
+    if (avformat_open_input(&format, QFile::encodeName(path).constData(), nullptr, nullptr) != 0) return false;
+    const bool ok = avformat_find_stream_info(format, nullptr) >= 0 && format->nb_streams >= 1
+        && format->streams[0]->codecpar->width > 0;
+    avformat_close_input(&format);
+    return ok;
+}
+}
+
+void TestFFmpegEncoder::fragmentedCrashLeavesPlayablePrefix_data()
+{
+    QTest::addColumn<QSize>("size");
+    QTest::newRow("small (software)") << QSize(128, 96);
+    // Large enough for the hardware (VAAPI) path where available: its SPS/PPS
+    // arrive with the first packet, after an empty moov would be written.
+    QTest::newRow("1080p") << QSize(1920, 1080);
+}
+
+void TestFFmpegEncoder::fragmentedCrashLeavesPlayablePrefix()
+{
+    QFETCH(QSize, size);
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    FFmpegEncoder encoder;
+    QVERIFY(encoder.isAvailable());
+    QVERIFY(encoder.setFragmentedOutput(true));
+    QVERIFY(encoder.isFragmentedOutput());
+    const QString path = dir.filePath(QStringLiteral("SnapTray_Recording_crash.mp4"));
+    QVERIFY2(encoder.start(path, size, 30), qPrintable(encoder.lastError()));
+    // The file is written where it belongs from the start.
+    QVERIFY(QFileInfo::exists(path));
+    writeSeconds(encoder, 0, 4500, size);  // keyframes (fragments) at 0, 2 and 4 s
+
+    // A crash: the process is gone, the file stays exactly as it is now.
+    const QString crashed = dir.filePath(QStringLiteral("crashed.mp4"));
+    QVERIFY(QFile::copy(path, crashed));
+    std::unique_ptr<IVideoTranscoder> transcoder = IVideoTranscoder::create();
+    QVERIFY(transcoder);
+    const VideoFileProbe probe = transcoder->probe(crashed);
+    QVERIFY2(probe.valid, "an interrupted fragmented recording must still open");
+    QVERIFY2(probe.durationMs >= 1900, qPrintable(QString::number(probe.durationMs)));
+    QCOMPARE(probe.videoSize, size);
+    QVERIFY(hasStreamInfo(crashed));
+
+    // Aborting (the user cancelled) removes it; finishing would have kept it.
+    encoder.abort();
+    QVERIFY(!QFileInfo::exists(path));
+}
+
+void TestFFmpegEncoder::unfragmentedCrashLeavesNothingAtThePath()
+{
+    QTemporaryDir dir;
+    FFmpegEncoder encoder;
+    const QString path = dir.filePath(QStringLiteral("SnapTray_Recording_plain.mp4"));
+    QVERIFY(encoder.start(path, QSize(128, 96), 30));
+    writeSeconds(encoder, 0, 1000);
+    // Normal mode writes to a hidden temporary file until finish(): this is
+    // why recordings use fragmented output.
+    QVERIFY(!QFileInfo::exists(path));
+    QSignalSpy finished(&encoder, &IVideoEncoder::finished);
+    encoder.finish();
+    QCOMPARE(finished.count(), 1);
+    QVERIFY(finished.first().first().toBool());
+    QVERIFY(QFileInfo::exists(path));
+}
+
+void TestFFmpegEncoder::fragmentedNeverOverwritesExistingFile()
+{
+    QTemporaryDir dir;
+    const QString path = dir.filePath(QStringLiteral("existing.mp4"));
+    {
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("keep me");
+    }
+    FFmpegEncoder encoder;
+    QVERIFY(encoder.setFragmentedOutput(true));
+    QVERIFY(encoder.start(path, QSize(128, 96), 30));
+    writeSeconds(encoder, 0, 500);
+    encoder.abort();
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    QCOMPARE(file.readAll(), QByteArray("keep me"));
+
+    // A finished fragmented recording is a normal, complete file.
+    FFmpegEncoder second;
+    QVERIFY(second.setFragmentedOutput(true));
+    const QString fresh = dir.filePath(QStringLiteral("fresh.mp4"));
+    QVERIFY(second.start(fresh, QSize(128, 96), 30));
+    writeSeconds(second, 0, 3000);
+    QSignalSpy finished(&second, &IVideoEncoder::finished);
+    second.finish();
+    QVERIFY(finished.first().first().toBool());
+    const VideoFileProbe probe = IVideoTranscoder::create()->probe(fresh);
+    QVERIFY(probe.valid);
+    QVERIFY(hasStreamInfo(fresh));
+    QVERIFY2(qAbs(probe.durationMs - 3000) <= 100, qPrintable(QString::number(probe.durationMs)));
 }
 
 void TestFFmpegEncoder::writtenBytesAreReportedBeforeCommit()

@@ -90,6 +90,8 @@ private:
     QString trayRecordingStatusLine() const;
     void updatePinsVisibilityActionText();
     void updateRecordingActionText();
+    void showRecoveryDialog();
+    void updateRecoveryAction();
     bool acceptRecordingHotkey(SnapTray::HotkeyAction action);
     SnapTray::QmlSettingsWindow* ensureSettingsWindow();
     void startScreenRecordingFlow(QScreen* preferredScreen = nullptr);
@@ -122,6 +124,9 @@ private:
     QAction *m_pauseRecordingAction = nullptr;
     QAction *m_showRecordingControlsAction = nullptr;
     QAction *m_copyRecordingDiagnosticsAction = nullptr;
+    QAction *m_recoverRecordingsAction = nullptr;
+    QPointer<SnapTray::QmlDialog> m_recoveryDialog;
+    QStringList m_recoverablePaths;  // left-behind recordings still offered
     QAction *m_checkForUpdatesAction;
     QPointer<SnapTray::QmlSettingsWindow> m_settingsWindow;
     QPointer<SnapTray::QmlHistoryWindow> m_historyWindow;

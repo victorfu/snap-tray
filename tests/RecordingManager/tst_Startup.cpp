@@ -1,9 +1,17 @@
 #include <QtTest>
+#include <QFile>
+#include <QDir>
+#include <QScopeGuard>
+#include <QStandardPaths>
+#include <QUuid>
+#include <QTemporaryDir>
 #include <QThreadPool>
 #include <QScreen>
 #include <QGuiApplication>
 #include <QTimer>
 #include "RecordingManager.h"
+#include "settings/FileSettingsManager.h"
+#include "recording/RecordingSession.h"
 #include "settings/RecordingSettingsManager.h"
 #include "RecordingInitTask.h"
 #include "qml/QmlRecordingControlBar.h"
@@ -61,6 +69,12 @@ private slots:
     void sustainedFrameLossWarnsOnce();
     void startRefusedWhenDiskIsFull();
     void diskSamplesWarnAndStopSafely();
+    void sessionManifestFollowsTheRecording();
+    void staleCleanupSparesPendingRecoveries();
+    void recoveredRecordingOpensInPreview();
+    void recoveredAnimationIsSavedDirectly();
+    void recoveredRecordingKeepsItsQuality();
+    void saveDialogSessionSurvivesANewRecording();
     void bufferedAnimationCountsTowardTheDiskGuard();
     void encoderWrittenBytesFeedTheDiskGuard();
     void controlBarOffersPauseResumeAndStop();
@@ -347,6 +361,56 @@ void TestRecordingStartup::startFakeRecordingForDisk(RecordingManager& manager, 
     manager.m_recordingFilePath = QStringLiteral("unused-buffered-disk-test.mp4");
     manager.onInitializationComplete(task, manager.m_initGeneration);
     QCOMPARE(manager.state(), RecordingManager::State::Recording);
+}
+
+void TestRecordingStartup::recoveredRecordingKeepsItsQuality()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("SnapTray_Recording_q.mp4"));
+    {
+        QFile file(video);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("x");
+    }
+    SnapTray::RecordingSessionInfo info;
+    info.videoPath = video;
+    info.intermediate = false; // recorded at the selected quality
+    QVERIFY(SnapTray::RecordingSession::write(info));
+    RecordingManager manager;
+    QSignalSpy preview(&manager, &RecordingManager::previewRequested);
+    QVERIFY(manager.openRecoveredRecording(video));
+    QCOMPARE(preview.first().at(2).toBool(), false);
+    manager.onPreviewClosed(false);
+}
+
+void TestRecordingStartup::saveDialogSessionSurvivesANewRecording()
+{
+    // PR #172 review: with preview off, a recording started while the first
+    // one's save dialog is open lost its manifest when that dialog returned.
+    QTemporaryDir dir;
+    const QString first = dir.filePath(QStringLiteral("SnapTray_Recording_first.mp4"));
+    const QString second = dir.filePath(QStringLiteral("SnapTray_Recording_second.mp4"));
+    {
+        QFile file(first);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("x");
+    }
+    RecordingManager manager;
+    manager.m_startSettings.showPreview = false;
+    manager.beginSession(first, QSize(16, 16), false);
+    manager.m_state = RecordingManager::State::Encoding;
+    // Finished: the save dialog is queued (not run here) and owns this session now.
+    manager.onEncodingFinished(true, first);
+    QCOMPARE(manager.state(), RecordingManager::State::Idle);
+    QVERIFY(manager.m_session.videoPath.isEmpty());
+    QVERIFY(SnapTray::RecordingSession::hasSession(first));
+    QVERIFY(RecordingManager::isSessionActive(first)); // still locked by its dialog
+    // A second recording starts meanwhile: both sessions stay.
+    manager.beginSession(second, QSize(16, 16), false);
+    QVERIFY(SnapTray::RecordingSession::hasSession(first));
+    QVERIFY(SnapTray::RecordingSession::hasSession(second));
+    QCOMPARE(manager.m_session.videoPath, second);
+    manager.endSession(true);
 }
 
 void TestRecordingStartup::init()
@@ -820,6 +884,131 @@ void TestRecordingStartup::diskSamplesWarnAndStopSafely()
     QCOMPARE(cancelled.count(), 0);
     QVERIFY(!manager.m_diskTimer);
     manager.cancelRecording();
+}
+
+void TestRecordingStartup::sessionManifestFollowsTheRecording()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("SnapTray_Recording_s.mp4"));
+    RecordingManager manager;
+    manager.beginSession(video, QSize(1920, 1080), true);
+    QVERIFY(SnapTray::RecordingSession::hasSession(video));
+    // Live: a scan (this or another SnapTray) must leave it alone.
+    QVERIFY(RecordingManager::isSessionActive(video));
+    auto info = SnapTray::RecordingSession::read(SnapTray::RecordingSession::manifestPathFor(video));
+    QVERIFY(info);
+    QCOMPARE(info->state, SnapTray::RecordingSessionInfo::State::Recording);
+    QVERIFY(info->audioRequired);
+    manager.updateSession(SnapTray::RecordingSessionInfo::State::Finished);
+    QCOMPARE(SnapTray::RecordingSession::read(SnapTray::RecordingSession::manifestPathFor(video))->state,
+             SnapTray::RecordingSessionInfo::State::Finished);
+    // Ending without removing (encoder failure, quit with the file kept):
+    // the manifest stays for recovery, the lock goes.
+    manager.endSession(false);
+    QVERIFY(SnapTray::RecordingSession::hasSession(video));
+    QVERIFY(!RecordingManager::isSessionActive(video));
+    // Saved or discarded: both go.
+    manager.beginSession(video, QSize(1920, 1080), false);
+    manager.endSession(true);
+    QVERIFY(!SnapTray::RecordingSession::hasSession(video));
+}
+
+void TestRecordingStartup::staleCleanupSparesPendingRecoveries()
+{
+    const QDir temp(QStandardPaths::writableLocation(QStandardPaths::TempLocation));
+    const QString tag = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    const QString pending = temp.filePath(QStringLiteral("SnapTray_Recording_t157_%1_a.mp4").arg(tag));
+    const QString stale = temp.filePath(QStringLiteral("SnapTray_Recording_t157_%1_b.mp4").arg(tag));
+    auto cleanup = qScopeGuard([&] {
+        SnapTray::RecordingSession::discard(pending);
+        SnapTray::RecordingSession::discard(stale);
+    });
+    for (const QString& path : {pending, stale}) {
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("x");
+        file.close();
+        QVERIFY(file.open(QIODevice::ReadWrite));
+        QVERIFY(file.setFileTime(QDateTime::currentDateTime().addDays(-3), QFileDevice::FileModificationTime));
+    }
+    SnapTray::RecordingSessionInfo info;
+    info.videoPath = pending;
+    QVERIFY(SnapTray::RecordingSession::write(info));
+
+    RecordingManager manager;  // its constructor runs the old 24-hour cleanup
+    QVERIFY2(QFileInfo::exists(pending), "a recording waiting for recovery must not be cleaned up");
+    QVERIFY(!QFileInfo::exists(stale));
+}
+
+void TestRecordingStartup::recoveredRecordingOpensInPreview()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("SnapTray_Recording_r.mp4"));
+    {
+        QFile file(video);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("x");
+    }
+    SnapTray::RecordingSessionInfo info;
+    info.videoPath = video;
+    QVERIFY(SnapTray::RecordingSession::write(info));
+
+    RecordingManager manager;
+    QSignalSpy preview(&manager, &RecordingManager::previewRequested);
+    QVERIFY(manager.openRecoveredRecording(video));
+    QCOMPARE(manager.state(), RecordingManager::State::Previewing);
+    QCOMPARE(preview.count(), 1);
+    QCOMPARE(preview.first().first().toString(), video);
+    // PR #172 review: a recovered intermediate keeps its quality check on Save.
+    QCOMPARE(preview.first().at(2).toBool(), true);
+    QVERIFY(RecordingManager::isSessionActive(video));
+    // Busy: a second one cannot open, and neither can another instance.
+    QVERIFY(!manager.openRecoveredRecording(video));
+    RecordingManager other;
+    QVERIFY(!other.openRecoveredRecording(video));
+
+    // Closing the preview while the file is still there (SnapTray quitting)
+    // keeps it for the next launch.
+    manager.onPreviewClosed(false);
+    QVERIFY(SnapTray::RecordingSession::hasSession(video));
+    QVERIFY(!RecordingManager::isSessionActive(video));
+}
+
+void TestRecordingStartup::recoveredAnimationIsSavedDirectly()
+{
+    // PR #172 review: a recovered GIF/WebP went to the preview, which plays
+    // video only. A finished animation is the output already: Recover saves
+    // it (here through auto-save) and its manifest goes once it is saved.
+    QTemporaryDir dir;
+    QTemporaryDir out;
+    const QString gif = dir.filePath(QStringLiteral("SnapTray_Recording_a.gif"));
+    {
+        QFile file(gif);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("GIF89a");
+    }
+    SnapTray::RecordingSessionInfo info;
+    info.videoPath = gif;
+    info.format = QStringLiteral("gif");
+    info.state = SnapTray::RecordingSessionInfo::State::Finished;
+    QVERIFY(SnapTray::RecordingSession::write(info));
+    auto& settings = FileSettingsManager::instance();
+    settings.saveAutoSaveRecordings(true);
+    settings.saveRecordingPath(out.path());
+    settings.saveFilenameTemplate("recovered.{ext}");
+    auto restore = qScopeGuard([&settings] { settings.saveAutoSaveRecordings(false); });
+
+    RecordingManager manager;
+    QSignalSpy preview(&manager, &RecordingManager::previewRequested);
+    QSignalSpy saved(&manager, &RecordingManager::recordingStopped);
+    QVERIFY(manager.openRecoveredRecording(gif));
+    QTRY_COMPARE(saved.count(), 1);
+    QCOMPARE(preview.count(), 0);
+    QCOMPARE(manager.state(), RecordingManager::State::Idle);
+    QCOMPARE(saved.first().first().toString(), QDir(out.path()).filePath(QStringLiteral("recovered.gif")));
+    QVERIFY(!QFileInfo::exists(gif));
+    QVERIFY(!SnapTray::RecordingSession::hasSession(gif));
+    QVERIFY(!RecordingManager::isSessionActive(gif));
 }
 
 QTEST_MAIN(TestRecordingStartup)

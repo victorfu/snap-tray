@@ -65,6 +65,7 @@ EncoderFactory::EncoderResult EncoderFactory::createWithNativeFactory(
         if (result.nativeEncoder) {
             result.success = true;
             result.isNative = true;
+            result.fragmentedOutput = result.nativeEncoder->isFragmentedOutput();
             result.audioEnabled = result.nativeEncoder->isAudioEnabled();
             if (config.enableAudio && !result.audioEnabled) {
                 result.audioWarning = QCoreApplication::translate("EncoderFactory",
@@ -112,6 +113,9 @@ IVideoEncoder* EncoderFactory::tryCreateNativeEncoder(
     qDebug() << "EncoderFactory: Native encoder quality set to" << config.quality;
     encoder->setRateControl(config.rateControl, config.quality);
     encoder->setKeyFrameIntervalSeconds(config.keyFrameIntervalSeconds);
+    if (config.fragmentedOutput && !encoder->setFragmentedOutput(true)) {
+        qDebug() << "EncoderFactory: Native encoder cannot write fragmented MP4";
+    }
     qDebug() << "EncoderFactory: Native encoder rate control"
              << (config.rateControl == SnapTray::VideoRateControl::ConstantQuality ? "constant quality" : "bitrate")
              << "keyframe interval (s):" << config.keyFrameIntervalSeconds;
