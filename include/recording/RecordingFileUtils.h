@@ -16,6 +16,15 @@ bool replaceRecordingFile(const QString &sourcePath,
                           const QString &destinationPath,
                           QString *errorMessage = nullptr);
 
+/**
+ * @brief Whether replaceRecordingFile() will write a second copy of the source.
+ *
+ * Only a destination that does not exist yet on the source's volume is a
+ * rename; replacing an existing file or moving to another volume copies the
+ * whole recording first and needs room for it. The same file needs nothing.
+ */
+bool saveCopiesData(const QString &sourcePath, const QString &destinationPath);
+
 } // namespace SnapTray::RecordingFileUtils
 
 #endif // RECORDINGFILEUTILS_H
