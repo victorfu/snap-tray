@@ -2,6 +2,7 @@
 #define MAINAPPLICATION_H
 
 #include "hotkey/HotkeyTypes.h"
+#include "hotkey/HotkeyHoldFilter.h"
 #include "ui/TrayRecordingIndicator.h"
 
 #include <QByteArray>
@@ -131,9 +132,9 @@ private:
     SnapTray::TrayRecordingStatus m_trayRecordingStatus = SnapTray::TrayRecordingStatus::Idle;
     // Effective (pause-excluded) duration shown in the tray tooltip; -1 when none.
     qint64 m_trayRecordingElapsedMs = -1;
-    // Last accepted press of each recording hotkey, on m_recordingHotkeyClock.
+    // A held recording hotkey counts once (#147 review): on m_recordingHotkeyClock.
     QElapsedTimer m_recordingHotkeyClock;
-    QHash<int, qint64> m_lastRecordingHotkeyMs;
+    SnapTray::HotkeyHoldFilter m_recordingHotkeyHolds;
     // CLI commands received while a full screen capture was still exporting.
     QList<QByteArray> m_deferredCLICommands;
 };
