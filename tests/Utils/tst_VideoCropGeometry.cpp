@@ -21,6 +21,7 @@ private slots:
     void fitAspect_data();
     void fitAspect();
     void fitAspectIsStableForLegalRects();
+    void originalAspectOnNativeDisplaySizes();
     void editHistoryUndoRedo();
 };
 
@@ -166,6 +167,49 @@ void tst_VideoCropGeometry::fitAspectIsStableForLegalRects()
             const QRect legal = SnapTray::VideoCropGeometry::fitAspect(seed, frame, aspect.width(), aspect.height());
             QVERIFY(!legal.isEmpty());
             QCOMPARE(SnapTray::VideoCropGeometry::fitAspect(legal, frame, aspect.width(), aspect.height()), legal);
+        }
+    }
+}
+
+void tst_VideoCropGeometry::originalAspectOnNativeDisplaySizes()
+{
+    // PR #167 review: 3456x2234 reduces to 1728:1117, so exact even
+    // multiples step by the whole frame and every Original crop was cleared.
+    // Large ratios round the paired side to even pixels instead.
+    using SnapTray::VideoCropGeometry::fitAspect;
+    for (const QSize frame : {QSize(3456, 2234), QSize(2880, 1864), QSize(3024, 1964), QSize(2560, 1664)}) {
+        const int aw = frame.width();
+        const int ah = frame.height();
+        const auto close = [&](const QRect& r) {
+            // Within one pixel of the exact ratio on the paired side.
+            return qAbs(qint64(r.width()) * ah - qint64(r.height()) * aw) <= aw;
+        };
+        const QRect draft = fitAspect(QRect(1000, 600, 800, 600), frame, aw, ah);
+        QVERIFY2(!draft.isEmpty(), qPrintable(QStringLiteral("%1x%2").arg(aw).arg(ah)));
+        QVERIFY(draft.width() <= 800 && draft.height() <= 600);
+        QVERIFY(draft.width() >= 790 || draft.height() >= 590); // fills the draft, not a coarse step
+        QVERIFY(close(draft));
+        for (int v : {draft.x(), draft.y(), draft.width(), draft.height()}) QCOMPARE(v % 2, 0);
+        QCOMPARE(fitAspect(draft, frame, aw, ah), draft);
+
+        // A tiny draft grows only to the minimum, not to the whole frame.
+        const QRect tiny = fitAspect(QRect(500, 500, 10, 10), frame, aw, ah);
+        QVERIFY(!tiny.isEmpty());
+        QVERIFY(qMin(tiny.width(), tiny.height()) >= SnapTray::VideoCropGeometry::kMinCropSide);
+        QVERIFY2(tiny.width() <= frame.width() / 16,
+                 qPrintable(QStringLiteral("%1x%2 in %3x%4").arg(tiny.width()).arg(tiny.height()).arg(aw).arg(ah)));
+        QVERIFY(close(tiny));
+        QCOMPARE(fitAspect(tiny, frame, aw, ah), tiny);
+
+        // Typed coordinates never drift, at any size.
+        for (int w = 20; w < aw; w += 97) {
+            for (int h = 20; h < ah; h += 131) {
+                const QRect legal = fitAspect(QRect(7, 9, w, h), frame, aw, ah);
+                if (legal.isEmpty()) continue;
+                QVERIFY(close(legal));
+                QVERIFY(QRect(QPoint(0, 0), frame).contains(legal));
+                QCOMPARE(fitAspect(legal, frame, aw, ah), legal);
+            }
         }
     }
 }
