@@ -310,6 +310,7 @@ private slots:
     void testStopDuringFrameProcessingResetsProcessingState();
     void testFullQueueDropsNewFramesWithoutBlocking();
     void testByteBudgetBoundsRetainedFrames();
+    void testRestartClearsQueuedBytes();
     void testStaleQueueDropsAndAges();
     void testEncoderRejectionsAreCounted();
     void testAudioOverloadIsCounted();
@@ -564,6 +565,32 @@ void TestEncodingWorker::testByteBudgetBoundsRetainedFrames()
     QVERIFY(s.droppedQueueBytes > 0);
     QVERIFY2(s.peakQueueBytes <= budget.maxBytes, qPrintable(QString::number(s.peakQueueBytes)));
     QCOMPARE(s.droppedQueueFull, qint64(0));
+}
+
+void TestEncodingWorker::testRestartClearsQueuedBytes()
+{
+    // PR #170 review: stop() and start() cleared the frame queue but kept
+    // its byte count, so a restarted worker dropped frames for a budget
+    // that the discarded frames still seemed to use.
+    EncodingWorker worker; // on this thread: nothing is processed until events run
+    worker.setEncoderType(EncodingWorker::EncoderType::Video);
+    worker.setVideoEncoder(new BlockingVideoEncoder());
+    const qint64 frameBytes = frameOfSize(64).sizeInBytes();
+    EncodingWorker::QueueBudget budget;
+    budget.maxFrames = 100;
+    budget.maxBytes = 3 * frameBytes;
+    worker.setQueueBudget(budget);
+
+    for (int run = 0; run < 2; ++run) {
+        QVERIFY(worker.start());
+        for (int i = 0; i < 3; ++i) {
+            QVERIFY2(worker.enqueueFrame({frameOfSize(64), i * 5}),
+                     qPrintable(QStringLiteral("run %1, frame %2").arg(run).arg(i)));
+        }
+        QCOMPARE(worker.queueDepth(), 3);
+        worker.stop();
+        QCOMPARE(worker.queueDepth(), 0);
+    }
 }
 
 void TestEncodingWorker::testStaleQueueDropsAndAges()

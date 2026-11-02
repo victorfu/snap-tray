@@ -190,6 +190,8 @@ signals:
 private:
     bool startOnWorkerThread();
     void stopOnWorkerThread();
+    // Empties both queues and their byte count; m_queueMutex must be held.
+    void clearQueuesLocked();
     void requestFinishOnWorkerThread();
     void scheduleProcessing();
     void processNextFrame();
