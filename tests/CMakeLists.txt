@@ -847,6 +847,11 @@ if(WIN32)
     target_link_libraries(Encoding_MediaFoundationEncoderIntermediate PRIVATE snaptray_platform Qt6::Gui Qt6::Test mfreadwrite mfplat mfuuid ole32)
     add_test(NAME Encoding_MediaFoundationEncoderIntermediate COMMAND Encoding_MediaFoundationEncoderIntermediate)
     set_tests_properties(Encoding_MediaFoundationEncoderIntermediate PROPERTIES TIMEOUT 120 LABELS "integration;slow")
+
+    add_executable(Encoding_MediaFoundationEncoderGpu Encoding/tst_MediaFoundationEncoderGpu_win.cpp)
+    target_link_libraries(Encoding_MediaFoundationEncoderGpu PRIVATE snaptray_platform Qt6::Gui Qt6::Test d3d11 mfreadwrite mfplat mfuuid ole32)
+    add_test(NAME Encoding_MediaFoundationEncoderGpu COMMAND Encoding_MediaFoundationEncoderGpu)
+    set_tests_properties(Encoding_MediaFoundationEncoderGpu PROPERTIES TIMEOUT 120 LABELS "integration")
 endif()
 
 if(APPLE)
@@ -1443,6 +1448,19 @@ target_link_libraries(RecordingManager_DXGICaptureEngineThreadLifecycle PRIVATE
 add_test(NAME RecordingManager_DXGICaptureEngineThreadLifecycle
     COMMAND RecordingManager_DXGICaptureEngineThreadLifecycle)
 set_tests_properties(RecordingManager_DXGICaptureEngineThreadLifecycle
+    PROPERTIES TIMEOUT 120 LABELS "integration")
+
+add_executable(RecordingManager_WindowsGpuCapture
+    RecordingManager/tst_WindowsGpuCapture_win.cpp
+)
+target_link_libraries(RecordingManager_WindowsGpuCapture PRIVATE
+    snaptray_platform
+    Qt6::Gui
+    Qt6::Test
+)
+add_test(NAME RecordingManager_WindowsGpuCapture
+    COMMAND RecordingManager_WindowsGpuCapture)
+set_tests_properties(RecordingManager_WindowsGpuCapture
     PROPERTIES TIMEOUT 120 LABELS "integration")
 
 add_executable(RecordingManager_WASAPIAudioCaptureEngineThreadSafety

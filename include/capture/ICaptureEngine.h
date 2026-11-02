@@ -116,12 +116,28 @@ public:
      */
     virtual QImage captureFrame() = 0;
 
+    // The latest frame for GUI-timer polling. Engines with a native (GPU)
+    // frame path return it here once setNativeFrameOutput(true) took effect;
+    // the default wraps captureFrame().
+    virtual SnapTray::CapturedFrame pollFrame();
+
+    // The device native frames live on, for the encoder to consume them
+    // directly (a SnapTray::D3D11FrameDevice on Windows). Null when the engine
+    // has no native frame path. Valid after start().
+    virtual std::shared_ptr<void> nativeFrameDevice() const { return nullptr; }
+
+    // Let frames skip the CPU copy: they carry only nativeBuffer when the
+    // native path works and fall back to an image when it does not (for
+    // example a BitBlt fallback). Enable only when every consumer of the frames
+    // accepts native buffers. Takes effect from the next captured frame.
+    virtual void setNativeFrameOutput(bool enabled) { Q_UNUSED(enabled); }
+
     // Asynchronous backends can deliver completed frames directly to the
     // encoding queue instead of depending on GUI-thread polling.
     virtual bool deliversFrames() const { return false; }
 
-    // True when captured frames already contain the pointer. Every current
-    // backend leaves it out; the cursor sidecar records it instead (#159).
+    // True when captured frames already contain the pointer. Backends leave
+    // it out where they can; the cursor sidecar records it instead (#159).
     virtual bool capturesCursor() const { return false; }
 
     /**

@@ -5,6 +5,7 @@
 #include <QSize>
 #include <QString>
 #include <functional>
+#include <memory>
 #include "encoding/VideoRateControl.h"
 
 class IVideoEncoder;
@@ -56,6 +57,9 @@ public:
         int keyFrameIntervalSeconds = 0;
         // Ask the native encoder for fragmented (crash-safe) MP4 output.
         bool fragmentedOutput = false;
+        // Capture device whose frames the native encoder may encode without
+        // a CPU copy (ICaptureEngine::nativeFrameDevice()); null = CPU frames.
+        std::shared_ptr<void> nativeFrameDevice;
 
         // GIF settings (msf_gif)
         int gifBitDepth = 16;  // 1-16, higher = better colors but larger file

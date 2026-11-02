@@ -8,6 +8,10 @@
 #include "encoding/VideoRateControl.h"
 #include "utils/CoordinateHelper.h"
 
+#ifdef Q_OS_WIN
+#include "capture/WGCCaptureEngine.h"
+#endif
+
 #include <QDebug>
 #include <QScreen>
 #include <QDateTime>
@@ -148,17 +152,8 @@ void RecordingInitTask::run()
     emit finished();
 }
 
-bool RecordingInitTask::initializeCaptureEngine()
+bool RecordingInitTask::configureAndStartCaptureEngine()
 {
-    qDebug() << "RecordingInitTask: Creating capture engine...";
-
-    // Create capture engine with nullptr parent (will be reparented on main thread)
-    m_result.captureEngine.reset(ICaptureEngine::createBestEngine(nullptr));
-    if (!m_result.captureEngine) {
-        m_result.error = "Failed to create capture engine";
-        return false;
-    }
-
     qDebug() << "RecordingInitTask: Setting region:" << m_config.region
              << "screen:" << m_config.screenInfo.name;
 
@@ -181,6 +176,41 @@ bool RecordingInitTask::initializeCaptureEngine()
         return false;
     }
     m_result.captureEngineStarted = true;
+    return true;
+}
+
+bool RecordingInitTask::initializeCaptureEngine()
+{
+    qDebug() << "RecordingInitTask: Creating capture engine...";
+
+#ifdef Q_OS_WIN
+    if (m_config.preferGraphicsCapture) {
+        if (!WGCCaptureEngine::isAvailable()) {
+            qWarning() << "RecordingInitTask: Windows Graphics Capture unavailable, using the default engine";
+        } else {
+            m_result.captureEngine.reset(new WGCCaptureEngine(nullptr));
+            if (configureAndStartCaptureEngine()) {
+                qDebug() << "RecordingInitTask: Capture engine started:" << m_result.captureEngine->engineName();
+                return true;
+            }
+            const auto *wgc = static_cast<WGCCaptureEngine *>(m_result.captureEngine.get());
+            qWarning() << "RecordingInitTask: Windows Graphics Capture failed to start ("
+                       << wgc->lastStartError() << "), using the default engine";
+            m_result.captureEngine.reset();
+            m_result.error.clear();
+        }
+    }
+#endif
+
+    // Create capture engine with nullptr parent (will be reparented on main thread)
+    m_result.captureEngine.reset(ICaptureEngine::createBestEngine(nullptr));
+    if (!m_result.captureEngine) {
+        m_result.error = "Failed to create capture engine";
+        return false;
+    }
+    if (!configureAndStartCaptureEngine()) {
+        return false;
+    }
 
     qDebug() << "RecordingInitTask: Capture engine started:"
         << m_result.captureEngine->engineName();
@@ -236,6 +266,11 @@ bool RecordingInitTask::initializeEncoder()
         encoderConfig.audioSampleRate = m_config.audioSampleRate;
         encoderConfig.audioChannels = m_config.audioChannels;
         encoderConfig.audioBitsPerSample = m_config.audioBitsPerSample;
+    }
+
+    // The MP4 encoder may take frames straight from the capture device.
+    if (m_config.gpuEncoding && m_config.outputFormat == EncoderFactory::Format::MP4 && m_result.captureEngine) {
+        encoderConfig.nativeFrameDevice = m_result.captureEngine->nativeFrameDevice();
     }
 
     // Create encoder (pass nullptr parent - will be reparented on main thread)

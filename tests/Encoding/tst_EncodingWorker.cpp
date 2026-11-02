@@ -276,6 +276,37 @@ private:
     QString m_outputPath;
 };
 
+// Takes GPU frames (#155): counts what arrives by which path.
+class NativeFrameVideoEncoder final : public IVideoEncoder
+{
+public:
+    bool isAvailable() const override { return true; }
+    QString encoderName() const override { return QStringLiteral("NativeFrameVideoEncoder"); }
+    bool start(const QString& outputPath, const QSize&, int) override { m_outputPath = outputPath; m_running = true; return true; }
+    void writeFrame(const QImage&, qint64) override { ++m_imageFrames; ++m_framesWritten; }
+    bool acceptsNativeFrames() const override { return true; }
+    void writeNativeFrame(const std::shared_ptr<void>& nativeBuffer, qint64) override
+    {
+        if (nativeBuffer) {
+            ++m_nativeFrames;
+            ++m_framesWritten;
+        }
+    }
+    void finish() override { m_running = false; emit finished(true, m_outputPath); }
+    void abort() override { m_running = false; }
+    bool isRunning() const override { return m_running; }
+    QString lastError() const override { return {}; }
+    qint64 framesWritten() const override { return m_framesWritten; }
+    QString outputPath() const override { return m_outputPath; }
+    std::atomic<int> m_imageFrames{0};
+    std::atomic<int> m_nativeFrames{0};
+
+private:
+    std::atomic<qint64> m_framesWritten{0};
+    bool m_running = false;
+    QString m_outputPath;
+};
+
 // Runs a worker on its own thread and joins it, as RecordingManager does.
 struct ThreadedWorker {
     EncodingWorker worker;
@@ -314,6 +345,9 @@ private slots:
     void testStaleQueueDropsAndAges();
     void testEncoderRejectionsAreCounted();
     void testAudioOverloadIsCounted();
+    void testNativeFramesReachTheEncoderWithoutAnImage();
+    void testNativeFramesAreRejectedUnderAWatermark();
+    void testNativeFramesCountTheirPixelsAgainstTheByteBudget();
 };
 
 void TestEncodingWorker::testFrameExceptionStopsWorker()
@@ -651,6 +685,66 @@ void TestEncodingWorker::testAudioOverloadIsCounted()
     QCOMPARE(s.audioDropped + s.audioQueued, qint64(150));
     QCOMPARE(s.audioDroppedBytes, s.audioDropped * 64);
     QCOMPARE(qint64(encoder->m_audioPackets.load()), s.audioQueued);
+}
+
+void TestEncodingWorker::testNativeFramesReachTheEncoderWithoutAnImage()
+{
+    auto* encoder = new NativeFrameVideoEncoder;
+    ThreadedWorker run(encoder);
+    auto health = std::make_shared<SnapTray::RecordingHealth>();
+    run.worker.setHealth(health);
+    QVERIFY(run.worker.start());
+    auto surface = std::make_shared<int>(0);
+    for (int i = 0; i < 4; ++i) {
+        QVERIFY(run.worker.enqueueFrame({QImage(), i * 33, 0, surface, QSize(16, 16)}));
+    }
+    // CPU frames (a capture fallback) still go through writeFrame().
+    QVERIFY(run.worker.enqueueFrame({frameOfSize(16), 4 * 33}));
+    QVERIFY(finishAndWait(run.worker));
+    QCOMPARE(encoder->m_nativeFrames.load(), 4);
+    QCOMPARE(encoder->m_imageFrames.load(), 1);
+    QCOMPARE(health->snapshot(SnapTray::captureClockNowNs()).encoded, qint64(5));
+    // The worker does not keep a GPU frame after encoding it.
+    QCOMPARE(surface.use_count(), 1L);
+}
+
+void TestEncodingWorker::testNativeFramesAreRejectedUnderAWatermark()
+{
+    auto* encoder = new NativeFrameVideoEncoder;
+    ThreadedWorker run(encoder);
+    auto health = std::make_shared<SnapTray::RecordingHealth>();
+    run.worker.setHealth(health);
+    WatermarkRenderer::Settings watermark;
+    watermark.enabled = true;
+    run.worker.setWatermarkSettings(watermark);
+    QVERIFY(run.worker.start());
+    QVERIFY(run.worker.enqueueFrame({QImage(), 0, 0, std::make_shared<int>(0), QSize(16, 16)}));
+    QVERIFY(finishAndWait(run.worker));
+    // Never encoded without the watermark it could not draw.
+    QCOMPARE(encoder->m_nativeFrames.load(), 0);
+    QCOMPARE(health->snapshot(SnapTray::captureClockNowNs()).encoderRejected, qint64(1));
+}
+
+void TestEncodingWorker::testNativeFramesCountTheirPixelsAgainstTheByteBudget()
+{
+    const EncodingWorker::FrameData native{QImage(), 0, 0, std::make_shared<int>(0), QSize(64, 32)};
+    QCOMPARE(native.byteSize(), qint64(64 * 32 * 4));
+
+    EncodingWorker worker; // on this thread: nothing is processed until events run
+    worker.setEncoderType(EncodingWorker::EncoderType::Video);
+    worker.setVideoEncoder(new NativeFrameVideoEncoder);
+    auto health = std::make_shared<SnapTray::RecordingHealth>();
+    worker.setHealth(health);
+    EncodingWorker::QueueBudget budget;
+    budget.maxBytes = native.byteSize() * 2;
+    worker.setQueueBudget(budget);
+    QVERIFY(worker.start());
+    QVERIFY(worker.enqueueFrame(native));
+    QVERIFY(worker.enqueueFrame(native));
+    // GPU memory is bounded like CPU memory: a third frame exceeds the budget.
+    QVERIFY(!worker.enqueueFrame(native));
+    QCOMPARE(health->snapshot(SnapTray::captureClockNowNs()).droppedQueueBytes, qint64(1));
+    worker.stop();
 }
 
 QTEST_MAIN(TestEncodingWorker)

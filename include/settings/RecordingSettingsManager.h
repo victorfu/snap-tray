@@ -44,6 +44,17 @@ public:
     QJsonObject pointerEffects() const;
     void setPointerEffects(const QJsonObject& value);
 
+    // Windows only, no UI yet. Record through Windows Graphics Capture instead
+    // of Desktop Duplication (experimental until compared on real hardware,
+    // #152); Desktop Duplication remains the fallback.
+    bool windowsGraphicsCapture() const;
+    void setWindowsGraphicsCapture(bool value);
+
+    // Windows only, no UI yet. Encode MP4 from GPU surfaces when a probe
+    // encode on the adapter works (#155); off keeps the CPU frame path.
+    bool windowsGpuEncoding() const;
+    void setWindowsGpuEncoding(bool value);
+
     // Default values (shared with RecordingManager)
     static constexpr int kDefaultFrameRate = 30;
     static constexpr int kDefaultOutputFormat = 0;
@@ -55,6 +66,8 @@ public:
     static constexpr bool kDefaultCountdownEnabled = true;
     static constexpr int kDefaultCountdownSeconds = 3;
     static constexpr bool kDefaultShowSetupBeforeRecording = false;
+    static constexpr bool kDefaultWindowsGraphicsCapture = false;
+    static constexpr bool kDefaultWindowsGpuEncoding = true;
 
 private:
     RecordingSettingsManager() = default;
@@ -73,4 +86,6 @@ private:
     static constexpr const char* kKeyCountdownSeconds = "recording/countdownSeconds";
     static constexpr const char* kKeyShowSetupBeforeRecording = "recording/showSetupBeforeRecording";
     static constexpr const char* kKeyPointerEffects = "recording/pointerEffects";
+    static constexpr const char* kKeyWindowsGraphicsCapture = "recording/windowsGraphicsCapture";
+    static constexpr const char* kKeyWindowsGpuEncoding = "recording/windowsGpuEncoding";
 };

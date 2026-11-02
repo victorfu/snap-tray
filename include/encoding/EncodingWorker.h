@@ -46,6 +46,16 @@ public:
         QImage frame;
         qint64 timestampMs;
         qint64 enqueuedNs = 0;  // set by enqueueFrame(), for the queue-age metric
+        // A GPU frame (CapturedFrame::nativeBuffer) instead of `frame`, for
+        // MP4 recordings without a watermark; pixelSize sizes it for the budget.
+        std::shared_ptr<void> nativeBuffer;
+        QSize pixelSize;
+
+        // Bytes counted against the queue budget (a GPU frame as 32-bit pixels).
+        qint64 byteSize() const
+        {
+            return frame.isNull() ? qint64(pixelSize.width()) * pixelSize.height() * 4 : frame.sizeInBytes();
+        }
     };
 
     // Limits for frames waiting to be encoded. When one is reached the new

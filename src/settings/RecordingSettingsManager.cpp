@@ -140,3 +140,27 @@ void RecordingSettingsManager::setPointerEffects(const QJsonObject& value)
     auto settings = SnapTray::getSettings();
     settings.setValue(kKeyPointerEffects, QJsonDocument(value).toJson(QJsonDocument::Compact));
 }
+
+bool RecordingSettingsManager::windowsGraphicsCapture() const
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(kKeyWindowsGraphicsCapture, kDefaultWindowsGraphicsCapture).toBool();
+}
+
+void RecordingSettingsManager::setWindowsGraphicsCapture(bool value)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kKeyWindowsGraphicsCapture, value);
+}
+
+bool RecordingSettingsManager::windowsGpuEncoding() const
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(kKeyWindowsGpuEncoding, kDefaultWindowsGpuEncoding).toBool();
+}
+
+void RecordingSettingsManager::setWindowsGpuEncoding(bool value)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kKeyWindowsGpuEncoding, value);
+}

@@ -54,6 +54,11 @@ public:
         // applied when the preview saves. See IntermediateQuality.h.
         bool intermediateQuality = false;
         QList<quintptr> excludedCaptureWindowIds; // Native capture IDs resolved on the GUI thread
+        // Windows: try Windows Graphics Capture first (experimental, #152);
+        // the default engine is used when it is unavailable or fails to start.
+        bool preferGraphicsCapture = false;
+        // Hand GPU frames to the MP4 encoder when it can take them (#155).
+        bool gpuEncoding = true;
     };
 
     /**
@@ -139,6 +144,8 @@ private:
     friend class TestRecordingStartup;
     friend class TestRecordingInitTask;
     bool initializeCaptureEngine();
+    // Region, frame rate, exclusions and start() for m_result.captureEngine.
+    bool configureAndStartCaptureEngine();
     bool initializeAudioEngine();
     bool initializeEncoder();
 
