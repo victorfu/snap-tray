@@ -1133,13 +1133,16 @@ void RecordingManager::configureAudioCapture()
             });
 
             connect(m_audioEngine.get(), &IAudioCaptureEngine::deviceLost,
-                    this, [this, configuredEngine] {
+                    this, [this, configuredEngine](IAudioCaptureEngine::AudioSource lost) {
                 if (!configuredEngine || m_audioEngine.get() != configuredEngine.data()) {
                     return;
                 }
+                // Only the source that failed: the other may still be recording.
                 auto status = m_audioStatus;
-                if (status.microphone != SnapTray::AudioSourceState::Off) {
-                    status.microphone = SnapTray::AudioSourceState::DeviceMissing;
+                auto& state = lost == IAudioCaptureEngine::AudioSource::SystemAudio ? status.systemAudio
+                                                                                      : status.microphone;
+                if (state != SnapTray::AudioSourceState::Off) {
+                    state = SnapTray::AudioSourceState::DeviceMissing;
                 }
                 setAudioStatus(status);
             });
