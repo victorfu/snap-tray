@@ -11,6 +11,7 @@
 #include <QFuture>
 #include <QSharedPointer>
 #include <memory>
+#include <optional>
 #include <atomic>
 #include <functional>
 #include <QStringList>
@@ -21,6 +22,7 @@
 #include "recording/RecordingHealth.h"
 #include "recording/DiskSpaceGuard.h"
 #include "recording/RecordingSession.h"
+#include "recording/RecordingInterruption.h"
 
 #include "WatermarkRenderer.h"
 #include "recording/WindowTimelineRecorder.h"
@@ -125,6 +127,8 @@ signals:
     void droppingFramesChanged(bool dropping);
     void lowDiskSpaceChanged(bool low);
     void recoveriesFound(const QList<SnapTray::RecordingSession::Recoverable>& recoveries);
+    // A recording ended for a reason other than Stop; emitted once per recording.
+    void recordingInterrupted(SnapTray::RecordingStopReason reason);
     // A recovered recording that was not saved (cancelled or failed): it can
     // still be recovered later.
     void recoveryKept(const QString& videoPath);
@@ -197,6 +201,8 @@ private:
     // guard counts it as recorded data (#171 review).
     std::shared_ptr<std::atomic<qint64>> m_bufferedOutputBytes;  // GIF/WebP held in memory until the end
     std::shared_ptr<std::atomic<qint64>> m_writtenOutputBytes;   // MP4 written to a temporary file (Linux)
+    // Whether a kept file can be played (the recovery scan's probe); a seam for tests.
+    std::function<bool(const QString&)> m_isRecordingPlayable;
     std::unique_ptr<QThread> m_encodingThread;         // Dedicated encoding thread for encoding workload
     quint64 m_encodingGeneration = 0;                  // Guards stale queued encoding callbacks
     bool m_usingNativeEncoder;          // True if using native encoder (vs GIF)
@@ -249,6 +255,15 @@ private:
     void onDiskSample(quint64 generation, qint64 freeBytes, qint64 fileBytes, qint64 sampleMs,
                       qint64 pendingBytes = 0);
     void setLowDiskSpace(bool low);
+
+    // One way out of a recording for every cause (#158): idempotent, keeps
+    // what was recorded, tells the user why. Before anything is recorded
+    // (preparing, countdown) it cancels instead.
+    void interruptRecording(SnapTray::RecordingStopReason reason, const QString& detail = QString());
+    std::optional<SnapTray::RecordingStopReason> m_stopReason;
+    QList<QMetaObject::Connection> m_screenWatch;
+    void watchTargetScreen();
+    void unwatchTargetScreen();
 
     // Session manifest and lock for crash recovery (#157).
     SnapTray::RecordingSessionInfo m_session;
