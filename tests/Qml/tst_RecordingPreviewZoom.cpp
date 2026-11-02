@@ -53,6 +53,8 @@ private slots:
     void formatsThatCannotDrawDisableZoom();
     void previewControls();
     void addZoomNeverChangesExistingZooms();
+    void pendingZoomTimesApplyOnSave();
+    void zoomedPictureStaysInItsFrame();
 };
 
 void tst_RecordingPreviewZoom::autoZoomKeepsTheUsersZooms()
@@ -236,6 +238,112 @@ void tst_RecordingPreviewZoom::addZoomNeverChangesExistingZooms()
     QCOMPARE(backend.addZoomAt(5500), -1);
     QCOMPARE(backend.zoomTrack().segments().size(), size_t(2));
     QCOMPARE(backend.zoomTrack().segments()[1], existing);
+}
+
+void tst_RecordingPreviewZoom::pendingZoomTimesApplyOnSave()
+{
+    // PR #176 review: Save does not take focus, so a zoom time typed but not
+    // confirmed was ignored and the export used the old range.
+    QTemporaryDir dir;
+    RecordingPreviewBackend backend(writeClicks(dir));
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    // Save stops at the free-space check: reaching it offers a retry.
+    RecordingPreviewBackend::freeBytesForPathOverride() = [](const QString&) { return qint64(0); };
+    auto restore = qScopeGuard([] { RecordingPreviewBackend::freeBytesForPathOverride() = {}; });
+    backend.show();
+    QQuickView* view = nullptr;
+    QVERIFY(QTest::qWaitFor([&view] {
+        for (QWindow* window : QGuiApplication::topLevelWindows()) {
+            if (window->isVisible() && window->title() == RecordingPreviewBackend::tr("Recording Preview"))
+                view = qobject_cast<QQuickView*>(window);
+        }
+        return view != nullptr;
+    }, 5000));
+    QVERIFY(QTest::qWaitForWindowExposed(view));
+    backend.updateVideoSize(kFrame);
+    backend.updateDuration(10000);
+    QCOMPARE(backend.generateAutoZoom(), 2);
+    backend.setSelectedZoom(0);
+    const auto first = backend.zoomTrack().segments().at(0);
+    QQuickItem* start = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("previewZoomStartField"));
+    QQuickItem* end = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("previewZoomEndField"));
+    QVERIFY(start && end);
+    QTRY_VERIFY(start->isVisible());
+
+    // Invalid: the save stops, nothing changes, the field says why.
+    start->setProperty("text", QStringLiteral("nonsense"));
+    start->setProperty("edited", true);
+    QVERIFY(!backend.canRetrySave());
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "saveWithCrop"));
+    QVERIFY(!backend.canRetrySave());
+    QVERIFY(start->property("invalid").toBool());
+    QCOMPARE(backend.zoomTrack().segments().at(0), first);
+
+    // Both ends typed (a range that only works with both): applied, then saved.
+    const qint64 newStart = first.startMs + 200;
+    const qint64 newEnd = first.endMs + 400;
+    start->setProperty("text", backend.formatPreciseTime(newStart));
+    end->setProperty("text", backend.formatPreciseTime(newEnd));
+    end->setProperty("edited", true);
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "saveWithCrop"));
+    QCOMPARE(backend.zoomTrack().segments().at(0).startMs, newStart);
+    QCOMPARE(backend.zoomTrack().segments().at(0).endMs, newEnd);
+    QVERIFY(!start->property("edited").toBool());
+    QVERIFY(!end->property("edited").toBool());
+    QVERIFY(backend.canRetrySave());
+    backend.requestDiscard();
+}
+
+void tst_RecordingPreviewZoom::zoomedPictureStaysInItsFrame()
+{
+    // PR #176 review: letterboxed and zoomed, the enlarged video painted into
+    // the margins, showing what the export leaves out.
+    QTemporaryDir dir;
+    RecordingPreviewBackend backend(writeClicks(dir));
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    backend.show();
+    QQuickView* view = nullptr;
+    QVERIFY(QTest::qWaitFor([&view] {
+        for (QWindow* window : QGuiApplication::topLevelWindows()) {
+            if (window->isVisible() && window->title() == RecordingPreviewBackend::tr("Recording Preview"))
+                view = qobject_cast<QQuickView*>(window);
+        }
+        return view != nullptr;
+    }, 5000));
+    QVERIFY(QTest::qWaitForWindowExposed(view));
+    view->resize(800, 1000); // a tall window: margins above and below the picture
+    QQuickItem* video = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("previewVideoPlayer"));
+    QVERIFY(video);
+    QImage frame(kFrame, QImage::Format_ARGB32_Premultiplied);
+    frame.fill(QColor(255, 0, 0));
+    QVERIFY(QMetaObject::invokeMethod(video, "onFrameReady", Qt::DirectConnection, Q_ARG(QImage, frame)));
+    backend.updateVideoSize(kFrame);
+    backend.updateDuration(10000);
+    QTRY_VERIFY(!video->property("contentRect").toRectF().isEmpty());
+    const auto isRed = [](QRgb c) { return qRed(c) > 200 && qGreen(c) < 60 && qBlue(c) < 60; };
+    // Stage coordinates, through an item the zoom does not transform.
+    QQuickItem* stage = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("previewVideoClickArea"));
+    QVERIFY(stage);
+    const auto pixelAt = [view, stage](const QPointF& stagePoint) {
+        const QImage shot = view->grabWindow();
+        const qreal dpr = shot.devicePixelRatio();
+        const QPointF p = stage->mapToScene(stagePoint) * dpr;
+        return shot.pixel(int(p.x()), int(p.y()));
+    };
+    QTRY_VERIFY(video->property("contentRect").toRectF().bottom() < video->height() - 40);
+    const QRectF content = video->property("contentRect").toRectF();
+    const QPointF inside = content.topLeft() + QPointF(40, 40); // clear of the play button
+    // Below the picture: the zoom frames the pointer near the top-left, so
+    // the enlarged rest of the frame reaches down past the picture's edge.
+    const QPointF margin(content.center().x(), content.bottom() + 20);
+    QTRY_VERIFY(isRed(pixelAt(inside)));
+    QVERIFY(!isRed(pixelAt(margin)));
+
+    QVERIFY(backend.addZoomAt(0) >= 0);
+    QTRY_VERIFY(view->rootObject()->property("zoomFactor").toReal() > 1.5);
+    QTRY_VERIFY(isRed(pixelAt(inside)));
+    QVERIFY2(!isRed(pixelAt(margin)), "the zoomed video spills into the letterbox margin");
+    backend.requestDiscard();
 }
 
 QTEST_MAIN(tst_RecordingPreviewZoom)

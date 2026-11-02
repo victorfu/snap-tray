@@ -1,11 +1,53 @@
 #include "encoding/WebPAnimEncoder.h"
 #include <QDebug>
 #include <QFile>
+#include <QRect>
+
+#include <cstring>
 
 #include <webp/encode.h>
 #include <webp/mux.h>
 
 // Internal data structure to hold libwebp encoder state
+namespace {
+
+// Bounding box of the pixels that differ between two same-sized RGBA8888
+// frames; empty when they match.
+QRect changedBounds(const QImage &previous, const QImage &current)
+{
+    if (previous.isNull() || previous.size() != current.size()
+        || previous.format() != current.format()) {
+        return current.rect();
+    }
+    const int rowBytes = current.width() * 4;
+    int top = -1;
+    int bottom = -1;
+    for (int y = 0; y < current.height(); ++y) {
+        if (std::memcmp(previous.constScanLine(y), current.constScanLine(y), rowBytes) != 0) {
+            if (top < 0) top = y;
+            bottom = y;
+        }
+    }
+    if (top < 0) {
+        return QRect();
+    }
+    int left = current.width();
+    int right = -1;
+    for (int y = top; y <= bottom; ++y) {
+        const auto *a = reinterpret_cast<const quint32 *>(previous.constScanLine(y));
+        const auto *b = reinterpret_cast<const quint32 *>(current.constScanLine(y));
+        for (int x = 0; x < left; ++x) {
+            if (a[x] != b[x]) { left = x; break; }
+        }
+        for (int x = current.width() - 1; x > right; --x) {
+            if (a[x] != b[x]) { right = x; break; }
+        }
+    }
+    return QRect(QPoint(left, top), QPoint(right, bottom));
+}
+
+} // namespace
+
 struct WebPAnimationEncoder::WebPEncoderData {
     WebPAnimEncoder* encoder = nullptr;
     WebPAnimEncoderOptions encOptions;
@@ -224,8 +266,10 @@ void WebPAnimationEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
 
     m_framesWritten++;
     m_lastTimestampMs = currentTimestampMs;
-    if (m_lastCountedFrame.isNull() || processed != m_lastCountedFrame) {
-        m_bufferedBytes->fetch_add(qint64(double(processed.width()) * processed.height() * kEstimatedBytesPerPixel));
+    const QRect changed = changedBounds(m_lastCountedFrame, processed);
+    if (!changed.isEmpty()) {
+        m_bufferedBytes->fetch_add(kEstimatedFrameOverheadBytes
+            + qint64(double(changed.width()) * changed.height() * kEstimatedBytesPerPixel));
         m_lastCountedFrame = processed;
     }
 

@@ -3,6 +3,7 @@
 #include "recording/RecordingSession.h"
 
 #include <QObject>
+#include <QSet>
 #include <QVariantList>
 
 namespace SnapTray {
@@ -22,7 +23,8 @@ public:
 
     // Opens the recording in the preview (the dialog closes on success).
     Q_INVOKABLE void recover(int index);
-    // Deletes the recording, its window timeline and its manifest.
+    // Deletes the recording, its window timeline and its manifest, unless
+    // another instance holds its session lock (the row is then marked busy).
     Q_INVOKABLE void discard(int index);
     Q_INVOKABLE void later();
 
@@ -41,6 +43,7 @@ private:
 
     QList<RecordingSession::Recoverable> m_items;
     QVariantList m_rows;
+    QSet<QString> m_busy;
 };
 
 } // namespace SnapTray

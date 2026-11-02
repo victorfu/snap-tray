@@ -64,9 +64,11 @@ public:
 
     // Estimated bytes of the animation held in memory until finish() writes
     // the file. libwebp reports no size before assembling, so this counts
-    // each frame that differs from the previous one at
-    // kEstimatedBytesPerPixel; unchanged frames add next to nothing.
+    // each frame that differs from the previous one as its changed bounding
+    // box at kEstimatedBytesPerPixel plus kEstimatedFrameOverheadBytes, the
+    // way libwebp stores sub-frames; unchanged frames add nothing.
     static constexpr double kEstimatedBytesPerPixel = 0.1;
+    static constexpr qint64 kEstimatedFrameOverheadBytes = 64;
     using ByteCounter = std::shared_ptr<std::atomic<qint64>>;
     ByteCounter bufferedBytesCounter() const { return m_bufferedBytes; }
     QString outputPath() const { return m_outputPath; }

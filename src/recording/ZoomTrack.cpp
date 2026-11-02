@@ -251,20 +251,50 @@ std::vector<ZoomSegment> generateAutoZoom(const CursorTimeline& timeline, const 
         merged.push_back(group);
     }
 
-    std::vector<ZoomSegment> segments;
-    for (const auto& group : merged) {
-        const double scale = scaleFor(group.area);
-        if (scale < kMinUsefulScale) continue; // the action spans most of the picture: keep the full view
-        ZoomSegment segment;
-        segment.startMs = clampTime(group.startMs);
-        segment.endMs = clampTime(group.endMs);
-        segment.scale = scale;
-        segment.focus = frameFor(group.area.center(), scale, bounds).center();
-        segments.push_back(segment);
+    const auto build = [&](const std::vector<Interaction>& planned) {
+        std::vector<ZoomSegment> segments;
+        for (const auto& group : planned) {
+            const double scale = scaleFor(group.area);
+            if (scale < kMinUsefulScale) continue; // the action spans most of the picture: keep the full view
+            ZoomSegment segment;
+            segment.startMs = clampTime(group.startMs);
+            segment.endMs = clampTime(group.endMs);
+            segment.scale = scale;
+            segment.focus = frameFor(group.area.center(), scale, bounds).center();
+            segments.push_back(segment);
+        }
+        ZoomTrack normalized;
+        normalized.setSegments(std::move(segments));
+        return normalized;
+    };
+
+    // Every interaction must be in view when it happens. Groups squeezed by
+    // close neighbours can end up too short to keep (or mid-pan): then that
+    // group and its neighbours share one wider frame, or the full view when
+    // that is too wide. Each pass removes a group, so this ends.
+    for (;;) {
+        const ZoomTrack track = build(merged);
+        const auto hidden = std::find_if(interactions.cbegin(), interactions.cend(), [&](const Interaction& i) {
+            return !track.viewportAt(i.startMs, bounds).contains(i.area)
+                || !track.viewportAt(i.endMs, bounds).contains(i.area);
+        });
+        if (hidden == interactions.cend()) return track.segments();
+        if (merged.size() <= 1) return {};
+        auto owner = std::find_if(merged.begin(), merged.end(), [&](const Interaction& group) {
+            return hidden->startMs >= group.firstEventMs && hidden->startMs <= group.lastEventMs;
+        });
+        if (owner == merged.end()) return {};
+        const auto first = owner == merged.begin() ? owner : owner - 1;
+        const auto last = owner + 1 == merged.end() ? owner : owner + 1;
+        Interaction wide = *first;
+        for (auto it = first + 1; it <= last; ++it) {
+            wide.endMs = std::max(wide.endMs, it->endMs);
+            wide.area |= it->area;
+            wide.lastEventMs = std::max(wide.lastEventMs, it->lastEventMs);
+        }
+        const auto at = merged.erase(first, last + 1);
+        merged.insert(at, wide);
     }
-    ZoomTrack normalized;
-    normalized.setSegments(std::move(segments));
-    return normalized.segments();
 }
 
 } // namespace SnapTray

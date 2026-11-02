@@ -130,6 +130,8 @@ Item {
                 return
             }
         }
+        if (zoomPanel.visible && !zoomPanel.commitPendingRange())
+            return
         if (cropOverlay.editing && !root.applyCropWithPendingInput())
             return
         backend.save()
@@ -270,46 +272,74 @@ Item {
             // zoomed: crop handles at the edges must stay visible when editing.
             clip: root.zoomFactor > 1.001
 
-            VideoPlaybackItem {
-                id: videoPlayer
-                objectName: "previewVideoPlayer"
-                anchors.fill: parent
-                source: backend.videoPath
-                transform: [
-                    Translate { x: -root.zoomView.x; y: -root.zoomView.y },
-                    Scale { xScale: root.zoomFactor; yScale: root.zoomFactor },
-                    Translate { x: root.zoomTarget.x; y: root.zoomTarget.y }
-                ]
+            // The zoomed picture stays inside the frame the export shows: the
+            // video and pointer are drawn whole and transformed, so without
+            // this they would spill into the letterbox margins (#176 review).
+            // Children sit back at stage coordinates.
+            component ZoomClip: Item {
+                x: root.zoomTarget.x
+                y: root.zoomTarget.y
+                width: root.zoomTarget.width
+                height: root.zoomTarget.height
+                clip: root.zoomFactor > 1.001
+            }
 
-                onVideoLoaded: backend.updateVideoSize(videoPlayer.videoSize)
-                onDurationChanged: function(durationMs) { backend.updateDuration(durationMs) }
-                onPositionChanged: function(positionMs) {
-                    backend.updatePosition(positionMs)
-                    root.refreshWindowHover()
-                }
-                onStateChanged: backend.updatePlayingState(videoPlayer.playing)
-                onErrorOccurred: function(message) { backend.reportPlaybackError(message) }
-                Component.onCompleted: {
-                    setLooping(true)
-                    play()
+            ZoomClip {
+                id: zoomClip
+                objectName: "previewZoomClip"
+
+                VideoPlaybackItem {
+                    id: videoPlayer
+                    objectName: "previewVideoPlayer"
+                    x: -zoomClip.x
+                    y: -zoomClip.y
+                    width: zoomClip.parent.width
+                    height: zoomClip.parent.height
+                    source: backend.videoPath
+                    transform: [
+                        Translate { x: -root.zoomView.x; y: -root.zoomView.y },
+                        Scale { xScale: root.zoomFactor; yScale: root.zoomFactor },
+                        Translate { x: root.zoomTarget.x; y: root.zoomTarget.y }
+                    ]
+
+                    onVideoLoaded: backend.updateVideoSize(videoPlayer.videoSize)
+                    onDurationChanged: function(durationMs) { backend.updateDuration(durationMs) }
+                    onPositionChanged: function(positionMs) {
+                        backend.updatePosition(positionMs)
+                        root.refreshWindowHover()
+                    }
+                    onStateChanged: backend.updatePlayingState(videoPlayer.playing)
+                    onErrorOccurred: function(message) { backend.reportPlaybackError(message) }
+                    Component.onCompleted: {
+                        setLooping(true)
+                        play()
+                    }
                 }
             }
 
             // The pointer and click effects the export will draw, drawn by
             // the same renderer; hidden while comparing with the original.
-            RecordingCursorOverlay {
-                objectName: "previewCursorOverlay"
-                anchors.fill: parent
+            ZoomClip {
+                id: pointerClip
+                objectName: "previewPointerClip"
                 z: 3
-                visible: !root.comparingOriginal
-                backend: root.previewBackend
-                position: videoPlayer.position
-                contentRect: videoPlayer.contentRect
-                transform: [
-                    Translate { x: -root.zoomView.x; y: -root.zoomView.y },
-                    Scale { xScale: root.zoomFactor; yScale: root.zoomFactor },
-                    Translate { x: root.zoomTarget.x; y: root.zoomTarget.y }
-                ]
+
+                RecordingCursorOverlay {
+                    objectName: "previewCursorOverlay"
+                    x: -pointerClip.x
+                    y: -pointerClip.y
+                    width: pointerClip.parent.width
+                    height: pointerClip.parent.height
+                    visible: !root.comparingOriginal
+                    backend: root.previewBackend
+                    position: videoPlayer.position
+                    contentRect: videoPlayer.contentRect
+                    transform: [
+                        Translate { x: -root.zoomView.x; y: -root.zoomView.y },
+                        Scale { xScale: root.zoomFactor; yScale: root.zoomFactor },
+                        Translate { x: root.zoomTarget.x; y: root.zoomTarget.y }
+                    ]
+                }
             }
 
             MouseArea {
@@ -1146,6 +1176,31 @@ Item {
                 visible: backend.selectedZoom >= 0 && !(backend.selectedMask >= 0) && !cropOverlay.editing
                 readonly property var segment: backend.selectedZoom >= 0 ? backend.zoomSegments[backend.selectedZoom] : null
 
+                // Typed zoom times not confirmed yet (Save does not take
+                // focus), applied together so a range that needs both ends
+                // works; false, with the field marked, when it is rejected.
+                function commitPendingRange() {
+                    if (!segment || (!zoomStartField.edited && !zoomEndField.edited))
+                        return true
+                    const start = zoomStartField.edited ? backend.parseTime(zoomStartField.text) : segment.start
+                    const end = zoomEndField.edited ? backend.parseTime(zoomEndField.text) : segment.end
+                    // Unreadable text marks its own field; a rejected range marks what was typed.
+                    const unreadable = start < 0 || end < 0
+                    if (unreadable || !backend.setZoomRange(backend.selectedZoom, start, end)) {
+                        zoomStartField.invalid = zoomStartField.edited && (!unreadable || start < 0)
+                        zoomEndField.invalid = zoomEndField.edited && (!unreadable || end < 0)
+                        const focusField = zoomStartField.invalid ? zoomStartField : zoomEndField
+                        focusField.forceActiveFocus()
+                        return false
+                    }
+                    for (const field of [zoomStartField, zoomEndField]) {
+                        field.edited = false
+                        field.invalid = false
+                        field.text = backend.formatPreciseTime(field.timeMs)
+                    }
+                    return true
+                }
+
                 Repeater {
                     model: root.zoomScales
                     SegmentButton {
@@ -1160,6 +1215,7 @@ Item {
                     }
                 }
                 TimeField {
+                    id: zoomStartField
                     objectName: "previewZoomStartField"
                     accessibleName: qsTr("Zoom start")
                     timeMs: zoomPanel.segment ? zoomPanel.segment.start : 0
@@ -1168,6 +1224,7 @@ Item {
                     }
                 }
                 TimeField {
+                    id: zoomEndField
                     objectName: "previewZoomEndField"
                     accessibleName: qsTr("Zoom end")
                     timeMs: zoomPanel.segment ? zoomPanel.segment.end : 0
@@ -1260,10 +1317,17 @@ Item {
                             value: root.draftVideoRect[modelData.key]
                             onCommitted: function(v) {
                                 const r = root.draftVideoRect
+                                let w = modelData.key === "width" ? v : r.width
+                                let h = modelData.key === "height" ? v : r.height
+                                // Locked ratio: the other side follows, so W or H can
+                                // enlarge the crop instead of only moving it (#167 review).
+                                const ratio = backend.cropAspectRatio
+                                if (ratio > 0 && modelData.key === "width")
+                                    h = Math.round(w / ratio)
+                                else if (ratio > 0 && modelData.key === "height")
+                                    w = Math.round(h * ratio)
                                 root.setDraftFromFields(modelData.key === "x" ? v : r.x,
-                                                        modelData.key === "y" ? v : r.y,
-                                                        modelData.key === "width" ? v : r.width,
-                                                        modelData.key === "height" ? v : r.height)
+                                                        modelData.key === "y" ? v : r.y, w, h)
                             }
                         }
                     }

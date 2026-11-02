@@ -60,6 +60,7 @@ class TestZoomTrack : public QObject
 private slots:
     void repeatedClicksInOneArea();
     void fastMovesAcrossAreas();
+    void quickClicksInThreeAreasStayVisible();
     void cornerClicksStayInFrame();
     void dragKeepsItsPathVisible();
     void longReadingStaysWide();
@@ -104,6 +105,24 @@ void TestZoomTrack::fastMovesAcrossAreas()
     QVERIFY(segments[1].startMs >= segments[0].endMs);
     QVERIFY(track.viewportAt(segments[1].startMs, kBounds).contains(QPointF(1700, 900)));
     for (qint64 t = 0; t < 10000; t += 7) QVERIFY(inside(kBounds, track.viewportAt(t, kBounds)));
+}
+
+void TestZoomTrack::quickClicksInThreeAreasStayVisible()
+{
+    // PR #176 review: the middle of three quick, far-apart clicks was
+    // squeezed below the shortest segment and dropped, so the camera panned
+    // between the outer two and never showed it.
+    Script s;
+    const QPoint clicks[] = {QPoint(100, 100), QPoint(1800, 100), QPoint(100, 900)};
+    const qint64 times[] = {3000, 3400, 3800};
+    for (int i = 0; i < 3; ++i) s.click(times[i], clicks[i]);
+    const ZoomTrack track = trackOf(s.generate());
+    for (int i = 0; i < 3; ++i) {
+        for (const qint64 t : {times[i], times[i] + 80}) {
+            QVERIFY2(track.viewportAt(t, kBounds).contains(QPointF(clicks[i])),
+                     qPrintable(QStringLiteral("click %1 hidden at %2 ms").arg(i).arg(t)));
+        }
+    }
 }
 
 void TestZoomTrack::cornerClicksStayInFrame()

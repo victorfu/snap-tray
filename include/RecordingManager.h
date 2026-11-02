@@ -185,6 +185,7 @@ private:
     void startWindowTimeline();
     void finishWindowTimeline(const QString& outputPath, bool success);
     // The pointer sidecar (#159), next to the recording while it is previewed.
+    qint64 mediaTimeMs();
     void startCursorTimeline();
     void dropCursorTimeline(bool removeFile);
 
@@ -277,6 +278,7 @@ private:
     // Pause tracking
     qint64 m_pausedDuration;     // Total time spent paused
     qint64 m_pauseStartTime;     // When current pause began
+    bool m_mediaClockPaused = false; // media time holds at m_pauseStartTime until resume
     mutable QMutex m_durationMutex;  // Protects pause duration variables
 
     // Audio capture
