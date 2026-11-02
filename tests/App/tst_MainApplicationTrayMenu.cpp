@@ -824,8 +824,10 @@ void tst_MainApplicationTrayMenu::cliClipboardPinPosition()
 
 void tst_MainApplicationTrayMenu::recordingWarnings_stayOffTheRecordedScreen()
 {
-    // PR #170 review: on X11 the whole screen is captured and overlays cannot
-    // be excluded, so a warning toast during recording ended up in the video.
+    // PR #170 review: the whole screen is captured and the toast cannot be
+    // excluded everywhere (X11 never, Windows only from 10 2004), so a
+    // warning toast during recording ended up in the video. Every platform
+    // holds warnings until capture ends.
     installFakeUpdateService(InstallSource::DirectDownload, false);
     MainApplication application;
     application.initialize();
@@ -836,12 +838,6 @@ void tst_MainApplicationTrayMenu::recordingWarnings_stayOffTheRecordedScreen()
     recording->setState(State::Recording);
     emit recording->recordingWarning(QStringLiteral("Frames are being dropped."));
     emit recording->recordingWarning(QStringLiteral("Disk space is low."));
-    if (!SnapTray::currentPlatformCapabilities().recordingControlsInTray) {
-        // Overlays are kept out of the capture here: shown at once.
-        QCOMPARE(shown.size(), 2);
-        recording->setState(State::Idle);
-        return;
-    }
     QVERIFY2(shown.isEmpty(), "a warning toast would be recorded");
     QVERIFY(application.m_trayIcon->toolTip().contains(QStringLiteral("Disk space is low.")));
     // Once the recording stops, everything held is shown, once.
