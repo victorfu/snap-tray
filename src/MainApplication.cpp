@@ -1336,11 +1336,15 @@ void MainApplication::updateTrayToolTip()
 
 bool MainApplication::holdsRecordingWarnings() const
 {
-    if (!m_recordingManager || !PlatformFeatures::instance().capabilities().recordingControlsInTray) {
+    if (!m_recordingManager) {
         return false;
     }
-    // From preparation on: a five-second toast shown during the countdown
-    // would still be on screen when capture starts.
+    // Recording captures the whole screen, and the toast cannot be kept out
+    // of it everywhere: X11 has no capture exclusion, Windows only from 10
+    // 2004, and ScreenCaptureKit fixes its excluded windows when capture
+    // starts. Warnings wait in the tray tooltip until capture ends (#170
+    // review). From preparation on: a five-second toast shown during the
+    // countdown would still be on screen when capture starts.
     switch (m_recordingManager->state()) {
     case RecordingManager::State::Preparing:
     case RecordingManager::State::Countdown:
