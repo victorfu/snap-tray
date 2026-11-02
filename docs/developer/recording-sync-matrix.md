@@ -29,9 +29,10 @@ Sources: `tests/Encoding/SyncMatrix.{h,cpp}` (harness and analysis),
   16 cells, so long rows never wrap), a moving
   square, and a full white flash at fixed wall times (every 700 ms from 350 ms).
   A static span repeats one ID, as an unchanged screen does.
-- **Audio**: a 40 ms, 1 kHz pulse at every flash time, from the microphone,
-  system audio, or both (mixed), delivered as 10 ms capture callbacks
-  timestamped the way the capture engines do.
+- **Audio**: a 40 ms pulse at every flash time, 1 kHz from the microphone and
+  3 kHz from system audio, so a mixed recording shows each source apart;
+  delivered as 10 ms capture callbacks timestamped the way the capture
+  engines do.
 
 ## Faults
 
@@ -57,10 +58,15 @@ Source timestamps and callback arrival are controlled separately.
 - Unique frames are counted apart from repeats (`uniqueFps`); repeated frames
   never make up the frame rate.
 - Audio is present when requested, reaches the end of the video, and every
-  flash has a pulse within one frame interval + 25 ms (`worstAvOffsetMs`).
+  flash has a pulse within one frame interval + 25 ms (`worstAvOffsetMs`),
+  from each enabled source on its own (told apart by pitch), except where
+  the scenario silences that source.
 
 The expected values come from a reference run of the same events through the
-same timing pieces without the injected pipeline bug.
+same session clock and encoder-queue model without the injected pipeline bug.
+Frame pacing in the reference follows the rule `FramePacer` specifies, written
+out separately, so a bug in `FramePacer` shows as missing frames instead of
+shrinking the expectation with it.
 
 ## Proving the checks work
 
@@ -68,7 +74,9 @@ same timing pieces without the injected pipeline bug.
 analysis must report a failure: a pause that is not removed, audio shifted by
 120 ms, a tail cut by 500 ms, backward timestamps reaching the encoder (it
 clamps them, so frames appear at the wrong time), an audio engine whose
-clock starts 150 ms late, and lost repeats of a still screen.
+clock starts 150 ms late, lost repeats of a still screen, a `FramePacer` that
+paces at half the frame rate, and, in mixed rows, only the microphone 120 ms
+late or system audio missing.
 
 ## Running
 

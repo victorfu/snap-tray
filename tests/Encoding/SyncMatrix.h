@@ -17,7 +17,13 @@ namespace SyncMatrix {
 enum class Audio { None, Microphone, SystemAudio, Mixed };
 
 // Deliberate pipeline bugs: the analysis must catch each of them.
-enum class Mutation { None, IgnorePause, ShiftAudio, TruncateTail, ReorderTimestamps, DropRepeats };
+// BrokenPacer stands for a FramePacer bug (it paces at half the frame rate
+// wherever FramePacer is used), not a pipeline wiring mistake.
+// ShiftMicrophone and DropSystemAudio break one source of a mixed recording.
+enum class Mutation {
+    None, IgnorePause, ShiftAudio, TruncateTail, ReorderTimestamps, DropRepeats, BrokenPacer,
+    ShiftMicrophone, DropSystemAudio
+};
 
 struct Pause {
     qint64 atMs = 0;     // wall time (arrival clock) the pause begins

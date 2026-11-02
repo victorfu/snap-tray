@@ -48,7 +48,10 @@ constexpr int kIdBits = kIdCellsPerRow * kIdRows;
 constexpr qint64 kFlashFirstMs = 350;    // flash + audio pulse schedule (wall clock)
 constexpr qint64 kFlashEveryMs = 700;
 constexpr qint64 kPulseMs = 40;
-constexpr double kPulseHz = 1000.0;
+// Each source pulses at its own pitch, so a mixed recording shows both
+// (#178 review). 5 ms windows hold whole cycles of each.
+constexpr double kMicrophonePulseHz = 1000.0;
+constexpr double kSystemAudioPulseHz = 3000.0;
 constexpr int kSampleRate = 48000;
 constexpr int kChannels = 2;
 constexpr qint64 kAudioChunkMs = 10;      // capture callback period
@@ -57,7 +60,7 @@ constexpr qint64 kTruncateTailMs = 500;   // TruncateTail drops this much at the
 constexpr qint64 kShiftAudioMs = 120;     // ShiftAudio moves audio this much
 constexpr qint64 kWriteRetryMs = 2000;    // an encoder applying backpressure
 constexpr int kPulseWindowFrames = 240;   // 5 ms analysis windows
-constexpr double kPulseThreshold = 0.1;   // RMS (full scale 1.0) that counts as sound
+constexpr double kPulseThreshold = 0.08;  // amplitude (full scale 1.0) of a source's pitch that counts as its pulse
 
 // --- Synthetic content -----------------------------------------------------
 
@@ -149,14 +152,14 @@ bool isFlash(const QImage& frame)
     return meanGray(frame, QRect(0, frame.height() / 4, frame.width(), frame.height() * 3 / 4)) > 200;
 }
 
-bool pulseAt(qint64 wallMs, double* phaseOut, qint64 sampleIndex)
+bool pulseAt(qint64 wallMs, double* phaseOut, qint64 sampleIndex, double hz)
 {
     if (!flashActiveAt(wallMs, kPulseMs)) return false;
-    *phaseOut = 2.0 * M_PI * kPulseHz * double(sampleIndex) / kSampleRate;
+    *phaseOut = 2.0 * M_PI * hz * double(sampleIndex) / kSampleRate;
     return true;
 }
 
-QByteArray audioChunk(qint64 wallStartMs, qint64 lengthMs, double amplitude)
+QByteArray audioChunk(qint64 wallStartMs, qint64 lengthMs, double amplitude, double hz)
 {
     const int frames = int(lengthMs * kSampleRate / 1000);
     QByteArray pcm(frames * kChannels * 2, '\0');
@@ -165,7 +168,7 @@ QByteArray audioChunk(qint64 wallStartMs, qint64 lengthMs, double amplitude)
         const qint64 sample = wallStartMs * kSampleRate / 1000 + i;
         const qint64 wallMs = sample * 1000 / kSampleRate;
         double phase = 0;
-        const qint16 v = pulseAt(wallMs, &phase, sample) ? qint16(amplitude * 32767 * std::sin(phase)) : 0;
+        const qint16 v = pulseAt(wallMs, &phase, sample, hz) ? qint16(amplitude * 32767 * std::sin(phase)) : 0;
         out[i * 2] = v;
         out[i * 2 + 1] = v;
     }
@@ -302,10 +305,37 @@ struct EncoderQueueModel {
     }
 };
 
+// The pacing rule as FramePacer.h specifies it, written out for the
+// reference model: a frame closer than 60 % of an interval to the last one
+// kept is dropped, nothing else is. Independent of FramePacer, so a bug in
+// it shows as missing frames instead of shrinking the expectation too
+// (#178 review).
+class SpecPacer
+{
+public:
+    explicit SpecPacer(int fps) : m_intervalNs(1000000000LL / std::max(1, fps)) {}
+    bool keep(qint64 recordingNs)
+    {
+        if (m_lastNs >= 0 && recordingNs - m_lastNs < m_intervalNs * 60 / 100) return false;
+        m_lastNs = recordingNs;
+        return true;
+    }
+
+private:
+    qint64 m_intervalNs;
+    qint64 m_lastNs = -1;
+};
+
+// Every FramePacer the matrix builds; BrokenPacer simulates a bug in it.
+SnapTray::FramePacer makePacer(const Scenario& s)
+{
+    return SnapTray::FramePacer(s.mutation == Mutation::BrokenPacer ? s.fps / 2 : s.fps);
+}
+
 std::vector<ExpectedFrame> expectedFrames(const Scenario& s, const std::vector<VideoEvent>& events)
 {
     SnapTray::SessionClock clock;
-    SnapTray::FramePacer pacer(s.fps);
+    SpecPacer pacer(s.fps);
     clock.start(0);
     auto ctl = controls(s);
     size_t next = 0;
@@ -313,13 +343,13 @@ std::vector<ExpectedFrame> expectedFrames(const Scenario& s, const std::vector<V
     EncoderQueueModel queue{s};
     for (const auto& e : events) {
         while (next < ctl.size() && ctl[next].wallMs <= e.arrivalMs) {
-            if (ctl[next].pause) { clock.pause(qint64(ctl[next].wallMs * kNsPerMs)); pacer.notePause(); }
+            if (ctl[next].pause) clock.pause(qint64(ctl[next].wallMs * kNsPerMs));
             else clock.resume(qint64(ctl[next].wallMs * kNsPerMs));
             ++next;
         }
         qint64 recNs = 0;
         if (clock.admit(qint64(e.sourceMs * kNsPerMs), &recNs) != SnapTray::SessionClock::Admission::Accepted) continue;
-        if (pacer.onFrame(recNs) != SnapTray::FramePacer::Decision::Emit) continue;
+        if (!pacer.keep(recNs)) continue;
         queue.offer(e.arrivalMs, {SnapTray::SessionClock::toEncoderMs(recNs), e.id, e.flash, e.motion, e.arrivalMs},
                     [&frames](const EncoderQueueModel::Queued& q) { frames.push_back({q.ms, q.id, q.flash}); });
     }
@@ -389,10 +419,12 @@ struct AudioPath {
         const bool gap = s.audioGapFromMs >= 0 && startMs >= s.audioGapFromMs && startMs < s.audioGapToMs;
         const SnapTray::Audio::Pcm16Format format{kSampleRate, kChannels};
         if (hasSource(Source::Microphone) && !gap) {
-            deliver(mixer.push(Source::Microphone, {audioChunk(qint64(startMs), kAudioChunkMs, 0.5), startNs, format}, nowNs));
+            // ShiftMicrophone: the microphone's sound arrives late, alone.
+            const double soundMs = s.mutation == Mutation::ShiftMicrophone ? startMs - kShiftAudioMs : startMs;
+            deliver(mixer.push(Source::Microphone, {audioChunk(qint64(soundMs), kAudioChunkMs, 0.5, kMicrophonePulseHz), startNs, format}, nowNs));
         }
-        if (hasSource(Source::SystemAudio)) {
-            deliver(mixer.push(Source::SystemAudio, {audioChunk(qint64(startMs), kAudioChunkMs, 0.3), startNs, format}, nowNs));
+        if (hasSource(Source::SystemAudio) && s.mutation != Mutation::DropSystemAudio) {
+            deliver(mixer.push(Source::SystemAudio, {audioChunk(qint64(startMs), kAudioChunkMs, 0.3, kSystemAudioPulseHz), startNs, format}, nowNs));
         }
         deliver(mixer.advanceTo(nowNs));
     }
@@ -437,10 +469,30 @@ std::vector<DecodedFrame> decodeVideo(const QString& path, QString* error)
 }
 
 // Pulse onsets (ms) and audio length (ms) of the decoded first audio track.
-std::vector<qint64> decodePulses(const QString& path, qint64* lengthMs, QString* error)
+// Amplitude of `hz` in a window of the left channel (Goertzel).
+double toneAmplitude(const qint16* samples, int count, double hz)
+{
+    const double coefficient = 2.0 * std::cos(2.0 * M_PI * hz / kSampleRate);
+    double previous = 0, beforePrevious = 0;
+    for (int i = 0; i < count; ++i) {
+        const double value = samples[i * kChannels] / 32768.0 + coefficient * previous - beforePrevious;
+        beforePrevious = previous;
+        previous = value;
+    }
+    const double power = previous * previous + beforePrevious * beforePrevious - coefficient * previous * beforePrevious;
+    return 2.0 * std::sqrt(std::max(0.0, power)) / count;
+}
+
+struct PulseOnsets {
+    std::vector<qint64> microphone;
+    std::vector<qint64> systemAudio;
+};
+
+// Where each source's pulses start, told apart by pitch.
+PulseOnsets decodePulses(const QString& path, qint64* lengthMs, QString* error)
 {
     SnapTray::FFmpeg::AudioReader reader;
-    std::vector<qint64> onsets;
+    PulseOnsets onsets;
     *lengthMs = 0;
     // The reader pads silence past the end; the container says where audio ends.
     const VideoFileProbe probe = SnapTray::FFmpeg::probeFile(path);
@@ -453,7 +505,7 @@ std::vector<qint64> decodePulses(const QString& path, qint64* lengthMs, QString*
         *error = reader.error();
         return onsets;
     }
-    bool sounding = false;
+    bool micSounding = false, systemSounding = false;
     qint64 frame = 0;
     constexpr int kChunk = 4800;
     while (frame < endFrame) {
@@ -462,14 +514,14 @@ std::vector<qint64> decodePulses(const QString& path, qint64* lengthMs, QString*
         const auto* s = reinterpret_cast<const qint16*>(pcm.constData());
         const int frames = int(pcm.size() / (kChannels * 2));
         for (int w = 0; w + kPulseWindowFrames <= frames; w += kPulseWindowFrames) {
-            double energy = 0;
-            for (int i = w; i < w + kPulseWindowFrames; ++i) {
-                const double v = s[i * 2] / 32768.0;
-                energy += v * v;
-            }
-            const bool loud = std::sqrt(energy / kPulseWindowFrames) > kPulseThreshold;
-            if (loud && !sounding) onsets.push_back((frame + w) * 1000 / kSampleRate);
-            sounding = loud;
+            const qint64 atMs = (frame + w) * 1000 / kSampleRate;
+            const qint16* window = s + w * kChannels;
+            const bool mic = toneAmplitude(window, kPulseWindowFrames, kMicrophonePulseHz) > kPulseThreshold;
+            const bool system = toneAmplitude(window, kPulseWindowFrames, kSystemAudioPulseHz) > kPulseThreshold;
+            if (mic && !micSounding) onsets.microphone.push_back(atMs);
+            if (system && !systemSounding) onsets.systemAudio.push_back(atMs);
+            micSounding = mic;
+            systemSounding = system;
         }
         frame += frames;
     }
@@ -509,6 +561,9 @@ const char* mutationName(Mutation m)
     case Mutation::TruncateTail: return "truncate-tail";
     case Mutation::ReorderTimestamps: return "reorder-timestamps";
     case Mutation::DropRepeats: return "drop-repeats";
+    case Mutation::BrokenPacer: return "broken-pacer";
+    case Mutation::ShiftMicrophone: return "shift-microphone";
+    case Mutation::DropSystemAudio: return "drop-system-audio";
     }
     return "?";
 }
@@ -573,7 +628,7 @@ Result run(const Scenario& s, const QString& workDir)
 
     // The pipeline under test: the same pieces, in arrival order.
     SnapTray::SessionClock clock;
-    SnapTray::FramePacer pacer(s.fps);
+    SnapTray::FramePacer pacer = makePacer(s);
     clock.start(0);
     AudioPath audio(s, encoder.get());
     const qint64 lastFrameMs = expected.empty() ? 0 : expected.back().ms;
@@ -759,31 +814,57 @@ Result run(const Scenario& s, const QString& workDir)
         result.failures << QStringLiteral("audio: %1").arg(audioError);
         return result;
     }
-    QJsonArray offsets;
-    double worst = 0;
-    for (const auto& flash : decodedFlashes) {
-        const qint64 v = flash.toInteger();
-        if (onsets.empty()) continue;
-        // Onsets are in time order: the nearest is beside v (the earlier one on a tie).
-        const auto after = std::lower_bound(onsets.begin(), onsets.end(), v);
-        qint64 best = after != onsets.end() ? *after - v : std::numeric_limits<qint64>::max();
-        if (after != onsets.begin() && qAbs(*(after - 1) - v) <= qAbs(best)) best = *(after - 1) - v;
-        offsets.append(best);
-        worst = std::max(worst, double(qAbs(best)));
-    }
     const double tolerance = interval + kAvToleranceMs;
-    if (offsets.size() < decodedFlashes.size()) result.failures << QStringLiteral("flashes without an audio pulse");
-    if (worst > tolerance) {
-        result.failures << QStringLiteral("audio/video offset up to %1 ms (tolerance %2 ms)").arg(worst).arg(tolerance);
+    // Each enabled source on its own: in a mix, one late or missing source
+    // must not hide behind the other (#178 review). A source is not expected
+    // where the scenario silences it.
+    double worst = 0;
+    const auto checkSource = [&](const QString& name, const std::vector<qint64>& sourceOnsets,
+                                 qint64 silentFromMs, qint64 silentToMs, const QString& offsetsKey) {
+        QJsonArray offsets;
+        int missing = 0;
+        double sourceWorst = 0;
+        for (const auto& flash : decodedFlashes) {
+            const qint64 v = flash.toInteger();
+            if (silentFromMs >= 0 && v >= silentFromMs - qint64(tolerance) && v < silentToMs + qint64(tolerance)) continue;
+            if (sourceOnsets.empty()) {
+                ++missing;
+                continue;
+            }
+            // Onsets are in time order: the nearest is beside v (the earlier one on a tie).
+            const auto after = std::lower_bound(sourceOnsets.begin(), sourceOnsets.end(), v);
+            qint64 best = after != sourceOnsets.end() ? *after - v : std::numeric_limits<qint64>::max();
+            if (after != sourceOnsets.begin() && qAbs(*(after - 1) - v) <= qAbs(best)) best = *(after - 1) - v;
+            offsets.append(best);
+            sourceWorst = std::max(sourceWorst, double(qAbs(best)));
+        }
+        if (missing) result.failures << QStringLiteral("%1: %2 flashes without its pulse").arg(name).arg(missing);
+        if (sourceWorst > tolerance) {
+            result.failures << QStringLiteral("%1: audio/video offset up to %2 ms (tolerance %3 ms)")
+                                   .arg(name).arg(sourceWorst).arg(tolerance);
+        }
+        worst = std::max(worst, sourceWorst);
+        result.measured.insert(offsetsKey, offsets);
+    };
+    const auto config = AudioPath::config(s);
+    if (config.microphoneEnabled) {
+        const qint64 gapFrom = s.audioGapFromMs >= 0 ? recordingMs(s, s.audioGapFromMs) : -1;
+        const qint64 gapTo = s.audioGapFromMs >= 0 ? recordingMs(s, s.audioGapToMs) : -1;
+        checkSource(QStringLiteral("microphone"), onsets.microphone, gapFrom, gapTo, QStringLiteral("pulseOffsetsMs"));
+    }
+    if (config.systemAudioEnabled) {
+        checkSource(QStringLiteral("system audio"), onsets.systemAudio, -1, -1,
+                    config.microphoneEnabled ? QStringLiteral("systemAudioPulseOffsetsMs")
+                                             : QStringLiteral("pulseOffsetsMs"));
     }
     // Audio is cut short when it ends well before the video does.
     if (audioLengthMs + qint64(tolerance) < lastDecodedMs) {
         result.failures << QStringLiteral("audio ends at %1 ms, video at %2 ms").arg(audioLengthMs).arg(lastDecodedMs);
     }
     result.measured.insert(QStringLiteral("audioMs"), audioLengthMs);
-    result.measured.insert(QStringLiteral("pulseOffsetsMs"), offsets);
     result.measured.insert(QStringLiteral("worstAvOffsetMs"), worst);
-    result.measured.insert(QStringLiteral("audioPulses"), int(onsets.size()));
+    result.measured.insert(QStringLiteral("microphonePulses"), int(onsets.microphone.size()));
+    result.measured.insert(QStringLiteral("systemAudioPulses"), int(onsets.systemAudio.size()));
     return result;
 }
 

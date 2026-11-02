@@ -69,6 +69,15 @@ QVector<Row> rows()
         s = base; s.name = "detect-late-audio-engine"; s.audioClockOffsetMs = 150; add(s, false);
         s = base; s.name = "detect-lost-repeats"; s.staticFromMs = 1000; s.staticToMs = 2000;
         s.mutation = Mutation::DropRepeats; add(s, false);
+        // PR #178 review: a FramePacer that drops valid frames must not also
+        // shrink the expectation it is checked against.
+        s = base; s.name = "detect-broken-pacer"; s.mutation = Mutation::BrokenPacer; add(s, false);
+        // PR #178 review: in mixed rows each source is checked on its own;
+        // one late or missing source must not hide behind the other.
+        s = base; s.name = "detect-shifted-microphone-in-mix"; s.audio = Audio::Mixed;
+        s.mutation = Mutation::ShiftMicrophone; add(s, false);
+        s = base; s.name = "detect-missing-system-audio-in-mix"; s.audio = Audio::Mixed;
+        s.mutation = Mutation::DropSystemAudio; add(s, false);
     }
     {
         auto s = base; s.name = "full-2160p30-mixed"; s.size = QSize(3840, 2160); s.durationMs = 3000; s.audio = Audio::Mixed; add(s, true, true);
