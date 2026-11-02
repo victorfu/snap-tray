@@ -75,10 +75,16 @@ clock starts 150 ms late, and lost repeats of a still screen.
 ```bash
 ./scripts/run-tests.sh                         # includes the fast rows (about 10 s)
 ./scripts/run-sync-matrix.sh                   # fast rows, JSON reports in build/sync-matrix/<commit>
-./scripts/run-sync-matrix.sh reports/a --full  # adds 4K30, 4K60 and a long 1080p30 row
+./scripts/run-sync-matrix.sh --full            # adds 4K30, 4K60 and a long 1080p30 row
+./scripts/run-sync-matrix.sh reports/a --full  # ...into reports/a
 SNAPTRAY_SYNC_LONG_S=600 ./scripts/run-sync-matrix.sh reports/b --full   # a 10-minute long row
 scripts/sync-matrix-compare.py reports/a reports/b   # A/B across commits
 ```
+
+A run replaces the reports in its directory: reports left from an earlier
+run are removed first, so a row the new run skips (the 4K and long rows
+without `--full`) shows as missing in a comparison instead of passing on its
+old result.
 
 Each report keeps the scenario (configuration), the expected and measured
 values, failures and skipped checks, and the cost: wall and CPU time, resident
