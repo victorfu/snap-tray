@@ -3896,6 +3896,11 @@ Tamanho do ficheiro: %3</translation>
 <context>
     <name>SnapTray::RecordingRecoveryViewModel</name>
     <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="60" />
+        <source>Open in another SnapTray window. Close it there, then try again.</source>
+        <translation>Aberto noutra janela do SnapTray. Feche-o lá e tente novamente.</translation>
+    </message>
+    <message>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="55" />
         <source>Unknown date</source>
         <translation>Data desconhecida</translation>

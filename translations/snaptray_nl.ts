@@ -3902,6 +3902,11 @@ Bestandsgrootte: %3</translation>
 <context>
     <name>SnapTray::RecordingRecoveryViewModel</name>
     <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="60" />
+        <source>Open in another SnapTray window. Close it there, then try again.</source>
+        <translation>Geopend in een ander SnapTray-venster. Sluit het daar en probeer het opnieuw.</translation>
+    </message>
+    <message>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="55" />
         <source>Unknown date</source>
         <translation>Onbekende datum</translation>
