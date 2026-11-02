@@ -32,10 +32,13 @@ public:
     bool isAudioSupported() const override;
     bool isAudioEnabled() const override;
     void writeAudioSamples(const QByteArray& pcm, qint64 startFrame) override;
+    // Output is a temporary file until finish(): its size so far.
+    ByteCounter writtenBytesCounter() const override { return m_writtenBytes; }
 
 private:
     struct State;
     std::unique_ptr<State> m_state;
+    ByteCounter m_writtenBytes = std::make_shared<std::atomic<qint64>>(0);
     bool drainPackets(bool audio = false);
     bool encodeAudio(bool flushPartial);
     void fail(const QString& message);
