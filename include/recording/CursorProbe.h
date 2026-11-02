@@ -45,8 +45,9 @@ public:
 
 signals:
     // A physical button changed, already mapped to the user's button order
-    // (left-handed setups report their primary button as Left).
-    void buttonChanged(Qt::MouseButton button, bool down);
+    // (left-handed setups report their primary button as Left). ageMs is
+    // how long ago it happened, for events delivered late.
+    void buttonChanged(Qt::MouseButton button, bool down, qint64 ageMs = 0);
 };
 
 // The best probe this platform and session supports. Never null: without a

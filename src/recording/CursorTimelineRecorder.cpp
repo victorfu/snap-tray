@@ -68,6 +68,7 @@ bool CursorTimelineRecorder::start()
     m_running = true;
     m_paused = false;
     m_forceSample = true;
+    m_buttonFloorMs = m_clock();
     sampleNow();
     m_sampleTimer.start();
     m_flushTimer.start();
@@ -90,6 +91,7 @@ void CursorTimelineRecorder::resume()
     m_paused = false;
     // The pointer may have moved or changed shape during the pause.
     m_forceSample = true;
+    m_buttonFloorMs = qMax(m_buttonFloorMs, m_clock());
     sampleNow();
     m_sampleTimer.start();
 }
@@ -155,7 +157,7 @@ quint32 CursorTimelineRecorder::currentShapeId()
     return id;
 }
 
-void CursorTimelineRecorder::onButtonChanged(Qt::MouseButton button, bool down)
+void CursorTimelineRecorder::onButtonChanged(Qt::MouseButton button, bool down, qint64 ageMs)
 {
     if (!m_running || m_paused || !m_capabilities.clicks) return;
     // Position the click where it happened, not up to one poll later.
@@ -163,7 +165,10 @@ void CursorTimelineRecorder::onButtonChanged(Qt::MouseButton button, bool down)
     if (m_held.testFlag(button) == down) return; // a press from before start/resume, or a repeat
     m_held.setFlag(button, down);
     CursorButtonEvent event;
-    event.tMs = m_clock();
+    // A queued event happened ageMs before it reached us; keep that time,
+    // but never before the recording (re)started or the previous event.
+    event.tMs = qMax(m_clock() - qMax<qint64>(0, ageMs), m_buttonFloorMs);
+    m_buttonFloorMs = event.tMs;
     event.button = button;
     event.down = down;
     event.position = m_last ? m_last->position : QPoint();
@@ -177,13 +182,14 @@ void CursorTimelineRecorder::releaseHeldButtons()
     for (const Qt::MouseButton button : kRecordedButtons) {
         if (!m_held.testFlag(button)) continue;
         CursorButtonEvent event;
-        event.tMs = t;
+        event.tMs = qMax(t, m_buttonFloorMs);
         event.button = button;
         event.down = false;
         event.position = m_last ? m_last->position : QPoint();
         event.synthetic = true;
         m_writer.addButton(event);
     }
+    m_buttonFloorMs = qMax(m_buttonFloorMs, t);
     m_held = {};
 }
 

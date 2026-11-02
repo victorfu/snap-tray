@@ -433,6 +433,7 @@ void RecordingManager::resetPauseTracking()
 {
     m_pausedDuration = 0;
     m_pauseStartTime = 0;
+    m_mediaClockPaused = false;
 }
 
 bool RecordingManager::shouldUseDedicatedEncodingThread(bool hasNativeEncoder) const
@@ -1859,6 +1860,7 @@ void RecordingManager::pauseRecording()
     {
         QMutexLocker locker(&m_durationMutex);
         m_pauseStartTime = m_elapsedTimer.elapsed();
+        m_mediaClockPaused = true;
         m_framePacer.notePause();
     }
     m_sessionClock.pause(SnapTray::captureClockNowNs());
@@ -1889,6 +1891,7 @@ void RecordingManager::resumeRecording()
     {
         QMutexLocker locker(&m_durationMutex);
         m_pausedDuration += m_elapsedTimer.elapsed() - m_pauseStartTime;
+        m_mediaClockPaused = false;
     }
     m_sessionClock.resume(SnapTray::captureClockNowNs());
 
@@ -2468,10 +2471,7 @@ void RecordingManager::startWindowTimeline()
         return;
     }
     // The same clock that stamps the encoded frames: raw elapsed minus pauses.
-    auto mediaTime = [this]() {
-        QMutexLocker locker(&m_durationMutex);
-        return qMax<qint64>(0, m_elapsedTimer.elapsed() - m_pausedDuration);
-    };
+    auto mediaTime = [this]() { return mediaTimeMs(); };
     m_windowTimelineRecorder = std::make_unique<SnapTray::WindowTimelineRecorder>(
         m_createWindowEnumerator(m_targetScreen.data()), mediaTime, m_windowFrameMapping, nullptr);
     m_windowTimelineRecorder->start();
@@ -2497,6 +2497,16 @@ void RecordingManager::finishWindowTimeline(const QString& outputPath, bool succ
     }
 }
 
+qint64 RecordingManager::mediaTimeMs()
+{
+    // The clock that stamps the encoded frames: raw elapsed minus pauses.
+    // From the moment a pause begins it holds at that boundary, so events
+    // recorded while pausing never land after the first ones after resume.
+    QMutexLocker locker(&m_durationMutex);
+    const qint64 raw = m_mediaClockPaused ? m_pauseStartTime : m_elapsedTimer.elapsed();
+    return qMax<qint64>(0, raw - m_pausedDuration);
+}
+
 void RecordingManager::startCursorTimeline()
 {
     dropCursorTimeline(false);
@@ -2509,10 +2519,7 @@ void RecordingManager::startCursorTimeline()
     if (!probe) {
         return;
     }
-    auto mediaTime = [this]() {
-        QMutexLocker locker(&m_durationMutex);
-        return qMax<qint64>(0, m_elapsedTimer.elapsed() - m_pausedDuration);
-    };
+    auto mediaTime = [this]() { return mediaTimeMs(); };
     const bool cursorInVideo = m_captureEngine && m_captureEngine->capturesCursor();
     m_cursorSidecarVideo = m_session.videoPath;
     m_cursorRecorder = std::make_unique<SnapTray::CursorTimelineRecorder>(
