@@ -17,6 +17,7 @@
 #include "recording/RecordingSession.h"
 #include <QLocale>
 #include <QStorageInfo>
+#include <cmath>
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDebug>
@@ -400,10 +401,16 @@ void RecordingPreviewBackend::save()
         const qint64 freeBytes = freeBytesForPathOverride() ? freeBytesForPathOverride()(directory)
                                                             : QStorageInfo(directory).bytesAvailable();
         const qint64 sourceBytes = qMax<qint64>(0, QFileInfo(m_videoPath).size());
+        // Only the kept part is exported: a short clip from a long recording
+        // needs room for that clip, not the whole recording (#171 review).
+        // A crop is not counted down; the estimate stays on the safe side.
+        const qint64 keptBytes = m_duration > 0 && hasTrim()
+            ? qint64(std::ceil(double(sourceBytes) * double(trimmedDuration()) / double(m_duration)))
+            : sourceBytes;
         // MP4 edits are at most about the source's size; GIF and WebP can be
         // larger, so allow twice as much. Unknown free space does not block.
         const qint64 needed = SnapTray::DiskSpaceGuard::kFloorBytes
-            + (m_selectedFormat == MP4 ? sourceBytes : 2 * sourceBytes);
+            + (m_selectedFormat == MP4 ? keptBytes : 2 * keptBytes);
         if (freeBytes >= 0 && freeBytes < needed) {
             qWarning() << "RecordingPreviewBackend: not enough space to export:" << freeBytes << "<" << needed;
             m_canRetrySave = true;
