@@ -328,7 +328,9 @@ Item {
                     height: pointerClip.parent.height
                     visible: !root.comparingOriginal
                     backend: root.previewBackend
-                    position: videoPlayer.position
+                    // Each frame's own time: the player's position is reported
+                    // only every 100 ms on some platforms (#175 review).
+                    position: videoPlayer.framePosition
                     contentRect: videoPlayer.contentRect
                     transform: [
                         Translate { x: -root.zoomView.x; y: -root.zoomView.y },
