@@ -20,6 +20,7 @@ private slots:
     void matrix_data();
     void matrix();
     void barcodeKeepsLongRunIds();
+    void pulseScheduleIsConstantTime();
 };
 
 #ifdef SNAPTRAY_SYNC_MATRIX_DECODE
@@ -123,6 +124,25 @@ void TestSyncMatrix::barcodeKeepsLongRunIds()
     }
 }
 
+void TestSyncMatrix::pulseScheduleIsConstantTime()
+{
+    // PR #178 review: audio generation scanned every earlier flash for each
+    // sample, quadratic in the row's length. Same answers, constant time.
+    constexpr qint64 kFirst = 350, kEvery = 700, kPulse = 40;
+    for (qint64 t = -10; t < 30000; ++t) {
+        bool expected = false;
+        for (qint64 f = kFirst; f <= t; f += kEvery) expected = expected || (t >= f && t < f + kPulse);
+        QCOMPARE(flashActiveAt(t, kPulse), expected);
+    }
+    // Days into a recording: still immediate (the old scan took seconds).
+    QElapsedTimer timer;
+    timer.start();
+    int active = 0;
+    for (qint64 i = 0; i < 1000; ++i) active += flashActiveAt(86400000LL * 30 + i, kPulse) ? 1 : 0;
+    QVERIFY(active > 0);
+    QVERIFY2(timer.elapsed() < 100, qPrintable(QString::number(timer.elapsed())));
+}
+
 #else
 
 void TestSyncMatrix::matrix_data()
@@ -140,6 +160,11 @@ void TestSyncMatrix::matrix()
 }
 
 void TestSyncMatrix::barcodeKeepsLongRunIds()
+{
+    QSKIP("The sync matrix runs with the Linux build's FFmpeg readers");
+}
+
+void TestSyncMatrix::pulseScheduleIsConstantTime()
 {
     QSKIP("The sync matrix runs with the Linux build's FFmpeg readers");
 }

@@ -26,6 +26,7 @@
 #include <QtMath>
 
 #include <algorithm>
+#include <limits>
 #include <cmath>
 #include <ctime>
 #include <memory>
@@ -91,6 +92,16 @@ QImage makeFrame(const QSize& size, int id, bool flash, int motion)
 
 namespace {
 
+// Distance from `t` to the closest of the sorted `times` (not empty).
+qint64 nearestDistance(const std::vector<qint64>& times, qint64 t)
+{
+    const auto after = std::lower_bound(times.begin(), times.end(), t);
+    qint64 nearest = std::numeric_limits<qint64>::max();
+    if (after != times.end()) nearest = *after - t;
+    if (after != times.begin()) nearest = std::min(nearest, t - *(after - 1));
+    return nearest;
+}
+
 int meanGray(const QImage& image, const QRect& rect)
 {
     qint64 sum = 0;
@@ -107,6 +118,16 @@ int meanGray(const QImage& image, const QRect& rect)
 }
 
 } // namespace
+
+bool flashActiveAt(qint64 wallMs, qint64 lengthMs)
+{
+    // Constant time: called for every audio sample, so scanning the schedule
+    // made long rows quadratic (#178 review). Flashes are shorter than their
+    // spacing, so only the latest one can cover wallMs.
+    static_assert(kPulseMs < kFlashEveryMs, "a pulse must end before the next one");
+    if (wallMs < kFlashFirstMs) return false;
+    return (wallMs - kFlashFirstMs) % kFlashEveryMs < std::min(lengthMs, kFlashEveryMs);
+}
 
 int readId(const QImage& frame)
 {
@@ -130,13 +151,9 @@ bool isFlash(const QImage& frame)
 
 bool pulseAt(qint64 wallMs, double* phaseOut, qint64 sampleIndex)
 {
-    for (qint64 f = kFlashFirstMs; f <= wallMs; f += kFlashEveryMs) {
-        if (wallMs >= f && wallMs < f + kPulseMs) {
-            *phaseOut = 2.0 * M_PI * kPulseHz * double(sampleIndex) / kSampleRate;
-            return true;
-        }
-    }
-    return false;
+    if (!flashActiveAt(wallMs, kPulseMs)) return false;
+    *phaseOut = 2.0 * M_PI * kPulseHz * double(sampleIndex) / kSampleRate;
+    return true;
 }
 
 QByteArray audioChunk(qint64 wallStartMs, qint64 lengthMs, double amplitude)
@@ -181,7 +198,8 @@ std::vector<VideoEvent> videoEvents(const Scenario& s)
         if (still && staticId < 0) staticId = i;
         if (!still) staticId = -1;
         const int id = still ? staticId : i;
-        const bool flash = !still && std::find(flashFrames.begin(), flashFrames.end(), i) != flashFrames.end();
+        // Sorted: a binary search keeps long rows linear (#178 review).
+        const bool flash = !still && std::binary_search(flashFrames.begin(), flashFrames.end(), i);
         if (s.dropEvery && i % s.dropEvery == s.dropEvery - 1) continue;
         const double jitter = s.sourceJitterMs ? (rng.generateDouble() * 2 - 1) * s.sourceJitterMs : 0;
         const double source = std::max(0.0, ideal + jitter);
@@ -687,14 +705,16 @@ Result run(const Scenario& s, const QString& workDir)
     if (outOfOrder) result.failures << QStringLiteral("%1 frames out of order").arg(outOfOrder);
     // Placement: every decoded frame is presented when that frame was
     // expected (repeats of a still screen match their nearest occurrence).
-    QMultiHash<int, qint64> expectedTimes;
-    for (const auto& f : expected) expectedTimes.insert(f.id, f.ms);
+    // Times per ID in order (expected is in time order), searched rather than
+    // scanned: a long still span repeats one ID thousands of times.
+    QHash<int, std::vector<qint64>> expectedTimes;
+    for (const auto& f : expected) expectedTimes[f.id].push_back(f.ms);
     int misplaced = 0;
     const double placementTolerance = std::max(2.0, interval / 2);
     for (const auto& d : decoded) {
-        qint64 nearest = std::numeric_limits<qint64>::max();
-        for (const qint64 t : expectedTimes.values(d.id)) nearest = std::min(nearest, qAbs(t - d.ms));
-        if (expectedTimes.contains(d.id) && nearest > placementTolerance) ++misplaced;
+        const auto times = expectedTimes.constFind(d.id);
+        if (times == expectedTimes.cend()) continue;
+        if (nearestDistance(*times, d.ms) > placementTolerance) ++misplaced;
     }
     if (misplaced) result.failures << QStringLiteral("%1 frames shown at the wrong time").arg(misplaced);
     // The tail is complete.
@@ -743,9 +763,11 @@ Result run(const Scenario& s, const QString& workDir)
     double worst = 0;
     for (const auto& flash : decodedFlashes) {
         const qint64 v = flash.toInteger();
-        qint64 best = std::numeric_limits<qint64>::max();
-        for (const qint64 a : onsets) if (qAbs(a - v) < qAbs(best)) best = a - v;
-        if (best == std::numeric_limits<qint64>::max()) continue;
+        if (onsets.empty()) continue;
+        // Onsets are in time order: the nearest is beside v (the earlier one on a tie).
+        const auto after = std::lower_bound(onsets.begin(), onsets.end(), v);
+        qint64 best = after != onsets.end() ? *after - v : std::numeric_limits<qint64>::max();
+        if (after != onsets.begin() && qAbs(*(after - 1) - v) <= qAbs(best)) best = *(after - 1) - v;
         offsets.append(best);
         worst = std::max(worst, double(qAbs(best)));
     }

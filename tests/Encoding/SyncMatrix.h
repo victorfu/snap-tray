@@ -74,6 +74,9 @@ Result run(const Scenario& scenario, const QString& workDir);
 // reader, exposed for the barcode round-trip test.
 QImage makeFrame(const QSize& size, int id, bool flash, int motion);
 int readId(const QImage& frame);
+// Whether a flash (and its audio pulse) of `lengthMs` starting on the
+// schedule covers wall time `wallMs`.
+bool flashActiveAt(qint64 wallMs, qint64 lengthMs);
 
 // Writes <dir>/<scenario>.json when SNAPTRAY_SYNC_REPORT_DIR is set.
 void writeReport(const Scenario& scenario, const Result& result, bool mustPass);
