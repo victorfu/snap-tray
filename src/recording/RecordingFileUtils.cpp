@@ -6,6 +6,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QSaveFile>
+#include <QStorageInfo>
 
 namespace SnapTray::RecordingFileUtils {
 namespace {
@@ -41,6 +42,19 @@ bool pathsReferToSameFile(const QString &left, const QString &right)
 }
 
 } // namespace
+
+bool saveCopiesData(const QString &sourcePath, const QString &destinationPath)
+{
+    if (pathsReferToSameFile(sourcePath, destinationPath)) {
+        return false;
+    }
+    if (QFileInfo::exists(destinationPath)) {
+        return true; // replaced through a complete copy (see replaceRecordingFile())
+    }
+    const QString sourceRoot = QStorageInfo(QFileInfo(sourcePath).absolutePath()).rootPath();
+    const QString destinationRoot = QStorageInfo(QFileInfo(destinationPath).absolutePath()).rootPath();
+    return sourceRoot.isEmpty() || sourceRoot != destinationRoot;
+}
 
 bool replaceRecordingFile(const QString &sourcePath,
                           const QString &destinationPath,

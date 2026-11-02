@@ -63,12 +63,20 @@ public:
     qint64 framesWritten() const { return m_framesWritten; }
 
     // Estimated bytes of the animation held in memory until finish() writes
-    // the file. libwebp reports no size before assembling, so this counts
-    // each frame that differs from the previous one as its changed bounding
-    // box at kEstimatedBytesPerPixel plus kEstimatedFrameOverheadBytes, the
-    // way libwebp stores sub-frames; unchanged frames add nothing.
-    static constexpr double kEstimatedBytesPerPixel = 0.1;
+    // the file. libwebp reports no size before assembling, so each frame that
+    // differs from the previous one is measured: its changed bounding box,
+    // with unchanged pixels transparent as the animation blends them, is
+    // encoded at the same quality (whole, or as an even sample of
+    // full-resolution tiles) and counted with kEstimatedFrameOverheadBytes;
+    // unchanged frames add nothing. Content that does not compress is
+    // counted at its real size, not at an assumed rate.
     static constexpr qint64 kEstimatedFrameOverheadBytes = 64;
+    // Used only when a sample cannot be encoded: about the most a lossy
+    // frame takes per pixel.
+    static constexpr double kFallbackBytesPerPixel = 1.0;
+    // The least counted per changed-box pixel: sparse changes can fall
+    // between the sample tiles.
+    static constexpr double kMinBytesPerPixel = 0.1;
     using ByteCounter = std::shared_ptr<std::atomic<qint64>>;
     ByteCounter bufferedBytesCounter() const { return m_bufferedBytes; }
     QString outputPath() const { return m_outputPath; }
@@ -110,6 +118,9 @@ private:
     bool m_aborted;
     ByteCounter m_bufferedBytes = std::make_shared<std::atomic<qint64>>(0);
     QImage m_lastCountedFrame;
+    static constexpr int kMeasureEveryFrames = 4;
+    double m_sampledBytesPerPixel = 0; // last measured rate for large regions
+    int m_framesSinceMeasure = 0;
 };
 
 #endif // WEBPANIMENCODER_H

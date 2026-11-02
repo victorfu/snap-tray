@@ -2346,14 +2346,14 @@ RecordingManager::SaveOutcome RecordingManager::showSaveDialog(const QString &te
     }
     // Move/rename the file to chosen location
     if (savePath != tempOutputPath) {
-        // Across volumes the move is a copy: the destination needs room for
-        // the whole file. Within one volume a rename needs none.
+        // A copy (another volume, or replacing an existing file, #171 review)
+        // needs room for the whole file; renaming to a new name on the same
+        // volume needs none.
         const QString destinationDir = QFileInfo(savePath).absolutePath();
         const qint64 fileBytes = qMax<qint64>(0, QFileInfo(tempOutputPath).size());
-        const bool sameVolume = QStorageInfo(QFileInfo(tempOutputPath).absolutePath()).rootPath()
-            == QStorageInfo(destinationDir).rootPath();
-        const qint64 destinationFree = m_freeBytesForPath ? m_freeBytesForPath(destinationDir) : -1;
-        if (!sameVolume && destinationFree >= 0
+        const bool copies = SnapTray::RecordingFileUtils::saveCopiesData(tempOutputPath, savePath);
+        const qint64 destinationFree = copies && m_freeBytesForPath ? m_freeBytesForPath(destinationDir) : -1;
+        if (copies && destinationFree >= 0
             && destinationFree < fileBytes + SnapTray::DiskSpaceGuard::kFloorBytes) {
             qWarning() << "RecordingManager: destination too small:" << destinationFree << "for" << fileBytes;
             keepSidecar = keepOnCancel;
