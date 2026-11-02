@@ -319,6 +319,7 @@ private slots:
     void lockedCornerShrinksAlongTheMovedAxis_data();
     void lockedCornerShrinksAlongTheMovedAxis();
     void previewNudgeAtEdgeKeepsSize();
+    void previewApplyUsesTypedCropFields();
     void enterStartsHoverWithoutMove();
     void createRectClampsToContent();
     void moveRectStaysInside();
@@ -1800,9 +1801,12 @@ void tst_RecordingCropOverlay::previewNumericCropEntry()
 
     // Typed values are legalized (even) and become the draft.
     QCOMPARE(before.x() % 2, 0);
+    // Typing sets the text and marks it edited (textEdited).
     width->setProperty("text", QStringLiteral("641"));
+    width->setProperty("edited", true);
     QVERIFY(QMetaObject::invokeMethod(width, "editingFinished"));
     x->setProperty("text", QStringLiteral("301"));
+    x->setProperty("edited", true);
     QVERIFY(QMetaObject::invokeMethod(x, "editingFinished"));
     const QRect typed = m_backend->legalCropForView(overlay->property("draftRect").toRectF(), previewContentRect());
     // x 301 -> 300; the right edge (301 + 640) floors to even, keeping 640 wide.
@@ -1938,6 +1942,32 @@ void tst_RecordingCropOverlay::previewNudgeAtEdgeKeepsSize()
     invokeQml(m_view->rootObject(), "nudgeDraft", {10, 0});
     QCOMPARE(m_view->rootObject()->property("draftVideoRect").toRect().x(), 10);
     QCOMPARE(m_view->rootObject()->property("draftVideoRect").toRect().size(), before.size());
+}
+
+void tst_RecordingCropOverlay::previewApplyUsesTypedCropFields()
+{
+    // PR #167 review: X/Y/W/H typed without Enter or Tab were ignored by
+    // Apply Crop and Save (neither takes focus).
+    OPEN_PREVIEW_OR_FAIL(QSize(1920, 1080));
+    QObject* overlay = previewOverlay();
+    click(previewItem("previewCropButton"));
+    overlay->setProperty("draftRect", QRectF(previewContentRect().topLeft() + QPointF(40, 40), QSizeF(160, 100)));
+    QQuickItem* width = previewItem("previewCrop_width");
+    QVERIFY(width);
+    // What typing does: new text, marked as edited, not yet confirmed.
+    width->setProperty("text", QStringLiteral("640"));
+    width->setProperty("edited", true);
+    click(previewItem("previewCropButton")); // Apply Crop
+    QVERIFY(!editing());
+    QCOMPARE(m_backend->cropRect().width(), 640);
+    // Invalid typed input keeps the editor open instead of applying.
+    click(previewItem("previewCropButton"));
+    QVERIFY(editing());
+    QQuickItem* x = previewItem("previewCrop_x");
+    x->setProperty("text", QStringLiteral(""));
+    x->setProperty("edited", true);
+    click(previewItem("previewCropButton"));
+    QVERIFY(editing());
 }
 
 QTEST_MAIN(tst_RecordingCropOverlay)
