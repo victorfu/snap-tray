@@ -1103,11 +1103,13 @@ Item {
                                 let h = modelData.key === "height" ? v : r.height
                                 // Locked ratio: the other side follows, so W or H can
                                 // enlarge the crop instead of only moving it (#167 review).
+                                // It gets one even step of slack, so the legal size is
+                                // limited by the typed side and keeps its value.
                                 const ratio = backend.cropAspectRatio
                                 if (ratio > 0 && modelData.key === "width")
-                                    h = Math.round(w / ratio)
+                                    h = 2 * Math.ceil(w / ratio / 2) + 2
                                 else if (ratio > 0 && modelData.key === "height")
-                                    w = Math.round(h * ratio)
+                                    w = 2 * Math.ceil(h * ratio / 2) + 2
                                 root.setDraftFromFields(modelData.key === "x" ? v : r.x,
                                                         modelData.key === "y" ? v : r.y, w, h)
                             }
@@ -1409,7 +1411,23 @@ Item {
 
         // 0 = Keep Recording (default), 1 = Discard
         property int focusIndex: 0
-        onVisibleChanged: if (visible) focusIndex = 0
+        // The editor that had keyboard focus: the confirmation takes the keys
+        // while open (a focused field would otherwise commit on Enter or
+        // restore on Escape behind it) and hands focus back on close.
+        property Item focusBeforeOpen: null
+        onVisibleChanged: {
+            if (visible) {
+                focusIndex = 0
+                const current = root.Window.activeFocusItem
+                focusBeforeOpen = current !== root ? current : null
+                root.forceActiveFocus()
+            } else {
+                const previous = focusBeforeOpen
+                focusBeforeOpen = null
+                if (previous && previous.visible && previous.enabled)
+                    previous.forceActiveFocus()
+            }
+        }
 
         function activateFocused() {
             if (focusIndex === 1)
@@ -1562,11 +1580,6 @@ Item {
             event.accepted = true
             return
         }
-        // Keys a text field did not use (for example Left at its first
-        // character) must not seek, play or discard.
-        if (root.textEntryActive)
-            return
-
         if (backend.discardConfirmationPending) {
             // Esc always keeps the recording; Tab/arrows move between the two
             // buttons and Enter/Space activates the focused one ("Keep" first).
@@ -1589,6 +1602,11 @@ Item {
             event.accepted = true
             return
         }
+
+        // Keys a text field did not use (for example Left at its first
+        // character) must not seek, play or discard.
+        if (root.textEntryActive)
+            return
 
         if ((event.modifiers & Qt.ControlModifier) && event.key === Qt.Key_Z) {
             if (event.modifiers & Qt.ShiftModifier)
@@ -1738,7 +1756,9 @@ Item {
             text = Qt.binding(function() { return numberField.value })
             return true
         }
-        onEditingFinished: commitText()
+        // Not when the discard confirmation took the focus: typed text stays
+        // pending (focus returns here if the recording is kept).
+        onEditingFinished: if (!backend.discardConfirmationPending) commitText()
         Keys.onEscapePressed: function(event) {
             edited = false
             text = Qt.binding(function() { return numberField.value })
@@ -1796,7 +1816,9 @@ Item {
             }
             return !invalid
         }
-        onEditingFinished: commitText()
+        // Not when the discard confirmation took the focus: typed text stays
+        // pending (focus returns here if the recording is kept).
+        onEditingFinished: if (!backend.discardConfirmationPending) commitText()
         onTextEdited: {
             invalid = false
             edited = true
