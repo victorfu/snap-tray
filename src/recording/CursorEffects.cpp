@@ -101,7 +101,7 @@ CursorEffectAvailability CursorEffectAvailability::of(const CursorTimeline* time
 
 QPointF CursorFrameMapping::toOutput(const QPointF& sourcePoint) const
 {
-    const QRect crop = sourceCrop.isEmpty() ? QRect(QPoint(0, 0), sourceSize) : sourceCrop;
+    const QRectF crop = sourceCrop.isEmpty() ? QRectF(QPointF(0, 0), QSizeF(sourceSize)) : sourceCrop;
     if (crop.isEmpty() || outputSize.isEmpty()) return {};
     return QPointF((sourcePoint.x() - crop.x()) * outputSize.width() / crop.width(),
                    (sourcePoint.y() - crop.y()) * outputSize.height() / crop.height());
@@ -109,7 +109,7 @@ QPointF CursorFrameMapping::toOutput(const QPointF& sourcePoint) const
 
 double CursorFrameMapping::scale() const
 {
-    const QRect crop = sourceCrop.isEmpty() ? QRect(QPoint(0, 0), sourceSize) : sourceCrop;
+    const QRectF crop = sourceCrop.isEmpty() ? QRectF(QPointF(0, 0), QSizeF(sourceSize)) : sourceCrop;
     return crop.isEmpty() ? 1.0 : double(outputSize.width()) / crop.width();
 }
 

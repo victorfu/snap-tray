@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QQuickPaintedItem>
+#include <functional>
 #include <QImage>
 #include <QSize>
 #include <QRectF>
@@ -82,6 +83,13 @@ public:
     Q_INVOKABLE void stepForward();
     Q_INVOKABLE void setLooping(bool loop);
 
+    // Processes each shown frame (before scaling) with its own time (framePosition),
+    // e.g. to burn in the export's masks so the preview never shows what the
+    // export hides. The raw frame is kept; reprocessFrame() redoes the shown one.
+    using FrameProcessor = std::function<void(QImage& frame, qint64 positionMs)>;
+    void setFrameProcessor(FrameProcessor processor);
+    void reprocessFrame();
+
 signals:
     void sourceChanged();
     void stateChanged();
@@ -111,6 +119,8 @@ private:
     IVideoPlayer *m_player = nullptr;
     QString m_source;
     QImage m_currentFrame;
+    QImage m_rawFrame;
+    FrameProcessor m_frameProcessor;
     qint64 m_framePosition = 0;
     QImage m_scaledFrame;
     QSize m_lastItemSize;

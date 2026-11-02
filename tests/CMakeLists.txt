@@ -83,6 +83,15 @@ if(SNAPTRAY_ENABLE_LINUX_RECORDING)
     add_test(NAME Encoding_LinuxMedia COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/Encoding/run_linux_media_test.py $<TARGET_FILE:Encoding_LinuxMedia>)
     set_tests_properties(Encoding_LinuxMedia PROPERTIES TIMEOUT 60 LABELS "integration;encoding")
+    # Recording sync matrix (#163): synthetic content through the real timing
+    # pipeline and encoder, then decoded and checked.
+    add_executable(Encoding_SyncMatrix Encoding/tst_SyncMatrix.cpp Encoding/SyncMatrix.cpp)
+    target_include_directories(Encoding_SyncMatrix PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/Encoding)
+    target_compile_definitions(Encoding_SyncMatrix PRIVATE SNAPTRAY_SYNC_MATRIX_DECODE)
+    target_link_libraries(Encoding_SyncMatrix PRIVATE snaptray_platform PkgConfig::SYSTEM_FFMPEG Qt6::Test)
+    add_test(NAME Encoding_SyncMatrix COMMAND Encoding_SyncMatrix)
+    set_tests_properties(Encoding_SyncMatrix PROPERTIES TIMEOUT 300 LABELS "integration;encoding"
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
     add_executable(Encoding_FFmpegEncoder Encoding/tst_FFmpegEncoder.cpp)
     target_link_libraries(Encoding_FFmpegEncoder PRIVATE
         snaptray_platform PkgConfig::SYSTEM_FFMPEG Qt6::Test)
@@ -251,6 +260,12 @@ target_link_libraries(Qml_RecordingPreviewCrop PRIVATE snaptray_ui snaptray_qmlp
 add_test(NAME Qml_RecordingPreviewCrop COMMAND Qml_RecordingPreviewCrop)
 set_tests_properties(Qml_RecordingPreviewCrop PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_RecordingPreviewZoom Qml/tst_RecordingPreviewZoom.cpp)
+target_link_libraries(Qml_RecordingPreviewZoom PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
+target_sources(Qml_RecordingPreviewZoom PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_RecordingPreviewZoom COMMAND Qml_RecordingPreviewZoom)
+set_tests_properties(Qml_RecordingPreviewZoom PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 add_executable(Qml_RecordingPreviewPointer Qml/tst_RecordingPreviewPointer.cpp)
 target_link_libraries(Qml_RecordingPreviewPointer PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
 target_sources(Qml_RecordingPreviewPointer PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
@@ -327,6 +342,18 @@ target_link_libraries(RecordingManager_CursorTimeline PRIVATE snaptray_core Qt6:
 add_test(NAME RecordingManager_CursorTimeline COMMAND RecordingManager_CursorTimeline)
 set_tests_properties(RecordingManager_CursorTimeline PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RecordingManager_RedactionTrack RecordingManager/tst_RedactionTrack.cpp)
+target_link_libraries(RecordingManager_RedactionTrack PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_RedactionTrack COMMAND RecordingManager_RedactionTrack)
+set_tests_properties(RecordingManager_RedactionTrack PROPERTIES TIMEOUT 60 LABELS "unit"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+add_executable(RecordingManager_ZoomTrack RecordingManager/tst_ZoomTrack.cpp)
+target_link_libraries(RecordingManager_ZoomTrack PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_ZoomTrack COMMAND RecordingManager_ZoomTrack)
+set_tests_properties(RecordingManager_ZoomTrack PROPERTIES TIMEOUT 60 LABELS "unit"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
 add_executable(RecordingManager_CursorEffects RecordingManager/tst_CursorEffects.cpp)
 target_link_libraries(RecordingManager_CursorEffects PRIVATE snaptray_core Qt6::Test)
 add_test(NAME RecordingManager_CursorEffects COMMAND RecordingManager_CursorEffects)
@@ -392,12 +419,26 @@ if(APPLE)
     set_tests_properties(Qml_FloatingOverlayCaptureExclusion PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 endif()
 
+# The sync matrix reports an explicit skip where decoded-media analysis is unavailable.
+if(APPLE OR WIN32)
+    add_executable(Encoding_SyncMatrix Encoding/tst_SyncMatrix.cpp)
+    target_link_libraries(Encoding_SyncMatrix PRIVATE Qt6::Test)
+    add_test(NAME Encoding_SyncMatrix COMMAND Encoding_SyncMatrix)
+    set_tests_properties(Encoding_SyncMatrix PROPERTIES TIMEOUT 60 LABELS "integration;encoding")
+endif()
+
 # Recording preview export (native encoder + transcoder): every recording platform.
 if(APPLE OR WIN32 OR SNAPTRAY_ENABLE_LINUX_RECORDING)
     add_executable(Qml_RecordingPreviewExport Qml/tst_RecordingPreviewExport.cpp)
     target_link_libraries(Qml_RecordingPreviewExport PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
     add_test(NAME Qml_RecordingPreviewExport COMMAND Qml_RecordingPreviewExport)
     set_tests_properties(Qml_RecordingPreviewExport PROPERTIES TIMEOUT 120 LABELS "integration")
+    add_executable(Qml_RecordingPreviewMasks Qml/tst_RecordingPreviewMasks.cpp)
+    target_link_libraries(Qml_RecordingPreviewMasks PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
+    target_sources(Qml_RecordingPreviewMasks PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+    add_test(NAME Qml_RecordingPreviewMasks COMMAND Qml_RecordingPreviewMasks)
+    set_tests_properties(Qml_RecordingPreviewMasks PROPERTIES TIMEOUT 120 LABELS "integration"
+        ENVIRONMENT "QT_QUICK_BACKEND=software")
 endif()
 
 add_executable(Utils_ScreenCaptureRegionUtils Utils/tst_ScreenCaptureRegionUtils.cpp)
