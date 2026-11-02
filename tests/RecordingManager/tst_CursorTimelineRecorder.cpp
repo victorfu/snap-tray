@@ -406,12 +406,12 @@ void TestCursorTimelineRecorder::x11RecorderKeepsQueuedClicks()
     // press handler's position poll drained the queue re-entrantly.
     QTemporaryDir dir;
     const QString path = dir.filePath(QStringLiteral("x11.cursor.jsonl"));
-    // A manual clock that does not move with real time: start it well past
-    // zero, so a click's real delivery delay (age) under load never puts it
-    // before the start, where it would be dropped.
-    qint64 now = 10000;
+    qint64 now = 0;
     CursorTimelineRecorder recorder(createCursorProbe(), [&now] { return now; }, kMapping, path, false);
     QVERIFY(recorder.start());
+    // The clicks come after the start, as with a real clock: a click's
+    // delivery delay must not place it at or before the start (dropped).
+    now += 1000;
     snaptrayTestX11Pointer("move", 50, 60);
     for (int i = 0; i < 2; ++i) {
         // Both events reach the socket before SnapTray reads either.
@@ -507,12 +507,12 @@ void TestCursorTimelineRecorder::x11ClicksDuringAnotherPointerGrab()
     // looked held until stop). XI 2.1 delivers them regardless.
     QTemporaryDir dir;
     const QString path = dir.filePath(QStringLiteral("x11-grab.cursor.jsonl"));
-    // A manual clock that does not move with real time: start it well past
-    // zero, so a click's real delivery delay (age) under load never puts it
-    // before the start, where it would be dropped.
-    qint64 now = 10000;
+    qint64 now = 0;
     CursorTimelineRecorder recorder(createCursorProbe(), [&now] { return now; }, kMapping, path, false);
     QVERIFY(recorder.start());
+    // The clicks come after the start, as with a real clock: a click's
+    // delivery delay must not place it at or before the start (dropped).
+    now += 1000;
     snaptrayTestX11Pointer("move", 70, 80);
     snaptrayTestX11Pointer("grab", 1, 0);
     snaptrayTestX11Pointer("button", 1, 1);
