@@ -54,7 +54,9 @@ Item {
         void backend.cropRect; void backend.selectedFormat
         if (cropOverlay.editing || root.comparingOriginal)
             return root.zoomTarget
-        return backend.zoomViewportInView(videoPlayer.position, videoPlayer.contentRect)
+        // Per frame, like the pointer overlay (#175 review): the reported
+        // position would pan the zoom at 10 fps on some platforms.
+        return backend.zoomViewportInView(videoPlayer.framePosition, videoPlayer.contentRect)
     }
     readonly property real zoomFactor: zoomView.width > 0 ? zoomTarget.width / zoomView.width : 1
     readonly property var zoomScales: [1.5, 2.0, 2.5, 3.0]
