@@ -33,6 +33,7 @@ public:
     struct Input {
         std::optional<qint64> freeBytes;  // nullopt when the probe failed
         qint64 recordedBytes = 0;          // written by this recording so far
+        qint64 pendingBytes = 0;           // held in memory, written in full at the end (GIF/WebP)
         qint64 bytesPerSecond = 0;         // recent write rate; 0 if not known yet
         bool exportLikely = false;
     };

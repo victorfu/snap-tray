@@ -253,14 +253,14 @@ bool CursorTimelineWriter::addShape(const CursorShape& shape)
     QBuffer buffer(&png);
     buffer.open(QIODevice::WriteOnly);
     if (!shape.image.save(&buffer, "PNG")) return false;
-    const qint64 before = m_bytes + m_buffer.size();
-    append(line({{QStringLiteral("type"), QStringLiteral("shape")},
+    if (!append(line({{QStringLiteral("type"), QStringLiteral("shape")},
                  {QStringLiteral("id"), qint64(shape.id)},
                  {QStringLiteral("hotspot"), pair(shape.hotspot.x(), shape.hotspot.y())},
                  {QStringLiteral("size"), pair(shape.image.width(), shape.image.height())},
                  {QStringLiteral("png"), QString::fromLatin1(png.toBase64())}}),
-           false);
-    if (m_bytes + m_buffer.size() == before) return false;
+           false)) {
+        return false;
+    }
     ++m_shapeCount;
     return true;
 }
@@ -280,30 +280,34 @@ void CursorTimelineWriter::addButton(const CursorButtonEvent& event)
 {
     const char* name = nameFor(event.button);
     if (!name) return;
-    // A release closes a press; it is written even at the size limit so no
-    // press is left open.
-    append(line({{QStringLiteral("type"), QStringLiteral("button")},
+    // A release that closes a press in the file is written even at the size
+    // limit, so no press is left open; any other line obeys the limit (a
+    // release whose press was refused there must not grow the file, #174 review).
+    const bool closesWrittenPress = !event.down && m_writtenDown.testFlag(event.button);
+    const bool written = append(line({{QStringLiteral("type"), QStringLiteral("button")},
                  {QStringLiteral("t"), event.tMs},
                  {QStringLiteral("button"), QLatin1String(name)},
                  {QStringLiteral("down"), event.down},
                  {QStringLiteral("x"), event.position.x()},
                  {QStringLiteral("y"), event.position.y()},
                  {QStringLiteral("synthetic"), event.synthetic}}),
-           !event.down);
+                                closesWrittenPress);
+    if (written) m_writtenDown.setFlag(event.button, event.down);
 }
 
-void CursorTimelineWriter::append(const QByteArray& data, bool essential)
+bool CursorTimelineWriter::append(const QByteArray& data, bool essential)
 {
-    if (m_failed || m_finished || !m_file.isOpen()) return;
+    if (m_failed || m_finished || !m_file.isOpen()) return false;
     if (!essential && m_bytes + m_buffer.size() + data.size() > m_maxBytes) {
         if (!m_truncated) {
             qWarning() << "CursorTimelineWriter: size limit reached; later pointer events are not recorded";
         }
         m_truncated = true;
-        return;
+        return false;
     }
     m_buffer += data;
     if (m_buffer.size() >= kBufferFlushBytes) flush();
+    return true;
 }
 
 void CursorTimelineWriter::flush()

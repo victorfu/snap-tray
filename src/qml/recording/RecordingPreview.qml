@@ -67,6 +67,21 @@ Item {
         return Qt.point(zoomView.x + (x - zoomTarget.x) / zoomFactor, zoomView.y + (y - zoomTarget.y) / zoomFactor)
     }
 
+    // Width a centred row of controls needs on one line: its visible items
+    // side by side. Wrapping rows take this when it fits, else wrap (#176 review).
+    function rowContentWidth(row) {
+        let width = 0
+        let count = 0
+        for (let i = 0; i < row.children.length; ++i) {
+            const child = row.children[i]
+            if (child.visible && child.width > 0) {
+                width += child.width
+                ++count
+            }
+        }
+        return width + Math.max(0, count - 1) * row.spacing
+    }
+
     function nextPointerScale(current) {
         for (let i = 0; i < pointerScales.length; ++i) {
             if (pointerScales[i] > current + 0.01)
@@ -106,6 +121,15 @@ Item {
     function saveWithCrop() {
         if (backend.isProcessing)
             return
+        // A time typed but not yet confirmed (Save does not take focus) is
+        // applied first; an invalid one stops the save instead of exporting
+        // the old range.
+        for (const field of [trimStartField, trimEndField]) {
+            if (field.visible && field.hasPendingText() && !field.commitText()) {
+                field.forceActiveFocus()
+                return
+            }
+        }
         if (cropOverlay.editing)
             cropOverlay.apply()
         backend.save()
@@ -135,7 +159,10 @@ Item {
         const r = root.draftVideoRect
         if (r.width <= 0)
             return
-        setDraftFromFields(r.x + dxVideo, r.y + dyVideo, r.width, r.height)
+        // Moving never resizes: at an edge the crop stops instead of shrinking.
+        const x = Math.max(0, Math.min(backend.videoSize.width - r.width, r.x + dxVideo))
+        const y = Math.max(0, Math.min(backend.videoSize.height - r.height, r.y + dyVideo))
+        setDraftFromFields(x, y, r.width, r.height)
     }
 
     // The window under the resting pointer follows the playhead too.
@@ -860,6 +887,7 @@ Item {
                 spacing: SemanticTokens.spacing4
 
                 TimeField {
+                    id: trimStartField
                     objectName: "previewTrimStartField"
                     accessibleName: qsTr("Trim start")
                     timeMs: backend.trimStart
@@ -872,6 +900,7 @@ Item {
                     font.pixelSize: SemanticTokens.fontSizeSmall
                 }
                 TimeField {
+                    id: trimEndField
                     objectName: "previewTrimEndField"
                     accessibleName: qsTr("Trim end")
                     timeMs: backend.trimEnd
@@ -881,11 +910,19 @@ Item {
         }
 
         Item {
+            id: controlRowArea
             Layout.fillWidth: true
-            Layout.preferredHeight: formatRow.height + SemanticTokens.spacing16
-            Row {
+            // Rows wrap at narrow widths (down to the 640 px minimum): grow with them.
+            Layout.preferredHeight: Math.max(formatRow.visible ? formatRow.height : 0,
+                                             zoomPanel.visible ? zoomPanel.height : 0,
+                                             cropPanel.visible ? cropPanel.height : 0,
+                                             ComponentTokens.recordingPreviewControlButtonHeight)
+                                    + SemanticTokens.spacing16
+            Flow {
                 id: formatRow
+                objectName: "previewFormatRow"
                 anchors.centerIn: parent
+                width: Math.min(controlRowArea.width - 2 * SemanticTokens.spacing8, root.rowContentWidth(this))
                 spacing: SemanticTokens.spacing8
                 visible: !cropOverlay.editing && !(backend.selectedZoom >= 0) && !(backend.selectedMask >= 0)
 
@@ -981,7 +1018,9 @@ Item {
                     tooltipText: qsTr("Add a zoom at the playhead")
                     onClicked: {
                         videoPlayer.pause()
-                        backend.addZoomAt(videoPlayer.position)
+                        // Existing zooms are never changed to make room.
+                        if (backend.addZoomAt(videoPlayer.position) < 0)
+                            root.showButtonTooltip(qsTr("No room for a new zoom here"), this, true)
                     }
                 }
                 SegmentButton {
@@ -1075,10 +1114,11 @@ Item {
             }
 
             // Editing one zoom segment, in place of the format buttons.
-            Row {
+            Flow {
                 id: zoomPanel
                 objectName: "previewZoomPanel"
                 anchors.centerIn: parent
+                width: Math.min(controlRowArea.width - 2 * SemanticTokens.spacing8, root.rowContentWidth(this))
                 spacing: SemanticTokens.spacing4
                 visible: backend.selectedZoom >= 0 && !(backend.selectedMask >= 0) && !cropOverlay.editing
                 readonly property var segment: backend.selectedZoom >= 0 ? backend.zoomSegments[backend.selectedZoom] : null
@@ -1842,7 +1882,12 @@ Item {
                                             : timeField.activeFocus ? root.accent : root.borderColor
         }
         onTimeMsChanged: if (!activeFocus) text = backend.formatPreciseTime(timeMs)
-        onEditingFinished: {
+        // Text that differs from the value shown: typed but not applied yet.
+        function hasPendingText() {
+            return text !== backend.formatPreciseTime(timeMs)
+        }
+        // Applies the typed time; false when it is invalid or rejected.
+        function commitText() {
             const ms = backend.parseTime(text)
             invalid = ms < 0
             if (!invalid && ms !== timeMs) {
@@ -1852,7 +1897,9 @@ Item {
             }
             if (!invalid)
                 text = backend.formatPreciseTime(timeMs)
+            return !invalid
         }
+        onEditingFinished: commitText()
         onTextEdited: invalid = false
         Keys.onEscapePressed: function(event) {
             invalid = false

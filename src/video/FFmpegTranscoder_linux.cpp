@@ -76,6 +76,9 @@ public:
                 const qint64 interval = qMax<qint64>(1, qRound(1000.0 / fps));
                 const qint64 gapEnd = next < 0 ? end : qMin(next, end);
                 for (qint64 t = sourceTime + interval; gapEnd - t >= interval / 2; t += interval) {
+                    // A long gap is many frames: keep reporting, and stop on Cancel.
+                    if (progress && !progress(int((t - start) * 85 / (end - start))))
+                        return fail(QStringLiteral("Export cancelled."));
                     lastImage = lastSource.copy();
                     request.frameFilter(lastImage, t);
                     encoder.writeFrame(lastImage, t - start); writtenTime = t - start;

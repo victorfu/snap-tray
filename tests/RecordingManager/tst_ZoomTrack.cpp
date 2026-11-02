@@ -67,6 +67,7 @@ private slots:
     void nearbyGroupsDoNotPump();
     void viewportIsStableAndBounded();
     void reducedMotionAndOff();
+    void touchingSegmentsBlend();
     void segmentsNormalizeAndRoundTrip();
     void demoContactSheet();
 };
@@ -234,6 +235,23 @@ void TestZoomTrack::segmentsNormalizeAndRoundTrip()
     QCOMPARE(track.segmentAt(500), -1);
     track.reduceMotion = true;
     QCOMPARE(ZoomTrack::fromJson(track.toJson()), track);
+}
+
+void TestZoomTrack::touchingSegmentsBlend()
+{
+    // PR #176 review: segments that touch cut from one frame to the next.
+    ZoomTrack track = trackOf({{2000, 4000, 2.0, QPointF(300, 300)}, {4000, 6000, 2.0, QPointF(1600, 800)}});
+    const QRectF before = track.viewportAt(3999, kBounds);
+    const QRectF after = track.viewportAt(4001, kBounds);
+    // Two milliseconds apart: a small step, not a jump across the screen.
+    QVERIFY2(qAbs(after.center().x() - before.center().x()) < 50,
+             qPrintable(QStringLiteral("%1 -> %2").arg(before.center().x()).arg(after.center().x())));
+    // Fully in either frame outside the blend.
+    QCOMPARE(track.viewportAt(4000 - ZoomTrack::kMinBlendMs, kBounds), track.viewportAt(2500, kBounds));
+    QCOMPARE(track.viewportAt(4000 + ZoomTrack::kMinBlendMs, kBounds), track.viewportAt(5500, kBounds));
+    // Less Motion keeps a cut: no motion rather than a fast pan.
+    track.reduceMotion = true;
+    QCOMPARE(track.viewportAt(3999, kBounds), track.viewportAt(2500, kBounds));
 }
 
 void TestZoomTrack::demoContactSheet()

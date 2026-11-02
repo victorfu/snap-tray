@@ -109,7 +109,9 @@ public:
     // {w}x{h} for a cropped export; empty = region. Unlike the no-preview
     // flow, a cancelled dialog or failed save leaves the file where it is:
     // the preview still owns it and the recording it came from.
-    SaveOutcome triggerSaveDialog(const QString &videoPath, const QSize &outputSize = QSize());
+    // `savedPath` (optional) receives where the recording was saved.
+    SaveOutcome triggerSaveDialog(const QString &videoPath, const QSize &outputSize = QSize(),
+                                  QString *savedPath = nullptr);
 public slots:
 
 signals:
@@ -172,7 +174,7 @@ private:
     // `keepOnCancel`: the preview flow keeps the file (and its window
     // timeline) when the dialog is cancelled or the save fails.
     SaveOutcome showSaveDialog(const QString &tempOutputPath, const QSize &outputSize = QSize(),
-                               bool keepOnCancel = false);
+                               bool keepOnCancel = false, QString *savedPath = nullptr);
     void loadAndValidateFrameRate();
     void resetPauseTracking();
     bool shouldUseDedicatedEncodingThread(bool hasNativeEncoder) const;
@@ -195,7 +197,12 @@ private:
     // Recording state
     QPointer<SnapTray::QmlRecordingControlBar> m_controlBar;
     QString m_tempVideoPath;
-    std::unique_ptr<EncodingWorker> m_encodingWorker;  // Offloads encoding to worker thread
+    std::unique_ptr<EncodingWorker> m_encodingWorker;
+    // GIF/WebP keep the whole animation in memory until finish(); the disk
+    // guard counts it as recorded data (#171 review).
+    std::shared_ptr<std::atomic<qint64>> m_bufferedOutputBytes;
+    // Whether a kept file can be played (the recovery scan's probe); a seam for tests.
+    std::function<bool(const QString&)> m_isRecordingPlayable;  // Offloads encoding to worker thread
     std::unique_ptr<QThread> m_encodingThread;         // Dedicated encoding thread for encoding workload
     quint64 m_encodingGeneration = 0;                  // Guards stale queued encoding callbacks
     bool m_usingNativeEncoder;          // True if using native encoder (vs GIF)
@@ -244,7 +251,9 @@ private:
     void startDiskMonitor();
     void stopDiskMonitor();
     void checkDiskSpace();
-    void onDiskSample(quint64 generation, qint64 freeBytes, qint64 fileBytes, qint64 sampleMs);
+    // pendingBytes: output held in memory that still has to be written (GIF/WebP).
+    void onDiskSample(quint64 generation, qint64 freeBytes, qint64 fileBytes, qint64 sampleMs,
+                      qint64 pendingBytes = 0);
     void setLowDiskSpace(bool low);
 
     // One way out of a recording for every cause (#158): idempotent, keeps

@@ -623,6 +623,11 @@ File size: %3</source>
         <translation>พื้นที่ดิสก์เหลือน้อย</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Warning: %1</source>
+        <translation>คำเตือน: %1</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="1282" />
         <source>dropping frames</source>
         <translation>กำลังทิ้งเฟรม</translation>
@@ -2034,6 +2039,11 @@ English is always included and cannot be removed.</source>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Add Mask</source>
         <translation>เพิ่มมาสก์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No room for a new zoom here</source>
+        <translation>ไม่มีที่ว่างสำหรับการซูมใหม่ตรงนี้</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />

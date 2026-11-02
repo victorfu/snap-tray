@@ -48,6 +48,7 @@ private slots:
     void unusableFilesAreRejected();
     void damagedShapeDegradesToUnknown();
     void sizeLimitStillClosesPresses();
+    void sizeLimitBoundsLaterClicks();
     void shapeLimits();
     void queries();
     void videoPointMapping_data();
@@ -301,6 +302,31 @@ void TestCursorTimeline::growthStaysWithinTheLimit()
           bytesPerMinute / 1024.0, CursorTimelineWriter::kDefaultMaxBytes / (1024 * 1024), hoursAtLimit);
     // A still pointer writes nothing; constant motion must still fit hours.
     QVERIFY(hoursAtLimit >= 3.0);
+}
+
+void TestCursorTimeline::sizeLimitBoundsLaterClicks()
+{
+    // PR #174 review: past the limit every release was still written, even
+    // for presses that were refused, so clicking kept growing the file.
+    QTemporaryDir dir;
+    const QString path = dir.filePath(QStringLiteral("bound.cursor.jsonl"));
+    constexpr qint64 kTinyLimit = 600;
+    CursorTimelineWriter writer(path, kTinyLimit);
+    QVERIFY(writer.open(info()));
+    for (int i = 0; i < 100; ++i) writer.addSample({i, QPoint(i, i), true, 0});
+    QVERIFY(writer.truncated());
+    writer.flush();
+    const qint64 atLimit = writer.bytes();
+    for (int i = 0; i < 1000; ++i) {
+        writer.addButton({1000 + i * 2, Qt::LeftButton, true, QPoint(), false});
+        writer.addButton({1001 + i * 2, Qt::LeftButton, false, QPoint(), false});
+    }
+    writer.flush();
+    QCOMPARE(writer.bytes(), atLimit);
+    QVERIFY(writer.finish());
+    const auto timeline = CursorTimeline::parse(readAll(path));
+    QVERIFY(timeline && timeline->truncated);
+    QVERIFY(timeline->buttons.empty());
 }
 
 QTEST_GUILESS_MAIN(TestCursorTimeline)

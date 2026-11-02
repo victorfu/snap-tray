@@ -33,6 +33,9 @@ public:
     static constexpr qint64 kTransitionMs = 600;
     static constexpr qint64 kReducedMotionTransitionMs = 900;
     static constexpr qint64 kMinSegmentMs = 500;
+    // The shortest blend between neighbouring segments, so touching ones
+    // never cut from one frame to the next.
+    static constexpr qint64 kMinBlendMs = 300;
 
     bool enabled = true;
     bool reduceMotion = false; // gentler: smaller zoom, slower transitions, no direct pans
