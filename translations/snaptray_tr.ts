@@ -1834,6 +1834,111 @@ Boyut: %2</translation>
 <context>
     <name>RecordingPreview</name>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="837" />
+        <source>Apply Crop (Enter) · Arrow keys move it by 2 px (Shift: 10 px)</source>
+        <translation>Kırpmayı uygula (Enter) · ok tuşları 2 px taşır (Shift: 10 px)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="827" />
+        <source>Compare with Original (\)</source>
+        <translation>Orijinalle karşılaştır (\)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="823" />
+        <source>Compare with Original</source>
+        <translation>Orijinalle karşılaştır</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="809" />
+        <source>Reset Crop and Trim</source>
+        <translation>Kırpma ve kesmeyi sıfırla</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="801" />
+        <source>Redo Edit</source>
+        <translation>Düzenlemeyi yinele</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="799" />
+        <source>Redo Edit (Ctrl+Shift+Z)</source>
+        <translation>Düzenlemeyi yinele (Ctrl+Shift+Z)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="790" />
+        <source>Undo Edit</source>
+        <translation>Düzenlemeyi geri al</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="788" />
+        <source>Undo Edit (Ctrl+Z)</source>
+        <translation>Düzenlemeyi geri al (Ctrl+Z)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="715" />
+        <source>Crop %1 in pixels</source>
+        <translation>Kırpma %1 (piksel)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="700" />
+        <source>H</source>
+        <translation>Y</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="699" />
+        <source>W</source>
+        <translation>G</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="698" />
+        <source>Y</source>
+        <translation>Y</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="697" />
+        <source>X</source>
+        <translation>X</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="688" />
+        <source>Crop aspect: %1</source>
+        <translation>Kırpma oranı: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="633" />
+        <source>Trim end</source>
+        <translation>Kırpma bitişi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="621" />
+        <source>Trim start</source>
+        <translation>Kırpma başlangıcı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="604" />
+        <source>no audio</source>
+        <translation>ses yok</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="602" />
+        <source>%1 kept</source>
+        <translation>%1 korunur</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="601" />
+        <source>Original %1 → Output %2</source>
+        <translation>Orijinal %1 → Çıktı %2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="32" />
+        <source>Original</source>
+        <translation>Orijinal</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="32" />
+        <source>Free</source>
+        <translation>Serbest</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="780" />
         <source>Discard</source>
         <translation>Sil</translation>

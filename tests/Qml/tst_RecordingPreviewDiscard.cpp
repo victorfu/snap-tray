@@ -20,6 +20,9 @@ private slots:
     void titleBarCloseAsksInsteadOfDiscarding();
     void keyboardFlow();
     void applicationQuitCloseIsNotBlocked();
+    void saveAppliesATypedTrimTime_data();
+    void saveAppliesATypedTrimTime();
+    void undoRefreshesAConfirmedTrimTime();
 
 private:
     static QQuickView* findPreviewWindow();
@@ -166,6 +169,86 @@ void tst_RecordingPreviewDiscard::applicationQuitCloseIsNotBlocked()
     QVERIFY(view->close());
     QVERIFY(!backend.discardConfirmationPending());
     QCOMPARE(closed.count(), 1);
+}
+
+void tst_RecordingPreviewDiscard::saveAppliesATypedTrimTime_data()
+{
+    QTest::addColumn<QString>("typed");
+    QTest::addColumn<qint64>("trimStart");
+    QTest::addColumn<bool>("saved");
+    QTest::newRow("valid") << QStringLiteral("0:02.500") << qint64(2500) << true;
+    QTest::newRow("invalid") << QStringLiteral("nonsense") << qint64(1000) << false;
+}
+
+void tst_RecordingPreviewDiscard::saveAppliesATypedTrimTime()
+{
+    // PR #167 review: a time typed without Enter or Tab was ignored by Save,
+    // which exported the old range.
+    QFETCH(QString, typed);
+    QFETCH(qint64, trimStart);
+    QFETCH(bool, saved);
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    RecordingPreviewBackend backend(dir.filePath(QStringLiteral("missing.mp4")));
+    backend.updateDuration(10000);
+    backend.setTrimStart(1000);
+    backend.setTrimEnd(5000);
+    QVERIFY(backend.hasTrim());
+    backend.show();
+    QQuickView* view = nullptr;
+    QTRY_VERIFY_WITH_TIMEOUT((view = findPreviewWindow()) != nullptr, 5000);
+    QVERIFY(QTest::qWaitForWindowExposed(view));
+    auto* field = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("previewTrimStartField"));
+    QVERIFY(field);
+    QTRY_VERIFY(field->isVisible());
+    field->setProperty("text", typed); // typed, not confirmed
+    field->setProperty("edited", true);
+    QSignalSpy processing(&backend, &RecordingPreviewBackend::processingChanged);
+    QSignalSpy errors(&backend, &RecordingPreviewBackend::errorMessageChanged);
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "saveWithCrop"));
+    QCOMPARE(backend.trimStart(), trimStart);
+    // Save went ahead (it then fails on the missing file) only with a valid time.
+    QCOMPARE(processing.count() > 0 || errors.count() > 0, saved);
+    if (!saved) QVERIFY(field->property("invalid").toBool());
+    backend.requestDiscard();
+}
+
+void tst_RecordingPreviewDiscard::undoRefreshesAConfirmedTrimTime()
+{
+    // PR #167 review: after a time confirmed with Enter, Undo left the
+    // focused field showing it, and Save then applied it again.
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    RecordingPreviewBackend backend(dir.filePath(QStringLiteral("missing.mp4")));
+    backend.updateDuration(10000);
+    backend.setTrimStart(1000);
+    backend.setTrimEnd(5000);
+    backend.commitTrimEdit();
+    backend.show();
+    QQuickView* view = nullptr;
+    QTRY_VERIFY_WITH_TIMEOUT((view = findPreviewWindow()) != nullptr, 5000);
+    QVERIFY(QTest::qWaitForWindowExposed(view));
+    auto* field = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("previewTrimStartField"));
+    QVERIFY(field);
+    QTRY_VERIFY(field->isVisible());
+    // The case only exists while the field keeps keyboard focus.
+    view->requestActivate();
+    field->forceActiveFocus();
+    if (!QTest::qWaitFor([field] { return field->hasActiveFocus(); }, 2000))
+        QSKIP("The preview window cannot take keyboard focus in this session");
+    // Typed and confirmed (Enter): applied, focus stays in the field.
+    field->setProperty("text", QStringLiteral("0:02.000"));
+    field->setProperty("edited", true);
+    QVERIFY(QMetaObject::invokeMethod(field, "commitText"));
+    QCOMPARE(backend.trimStart(), qint64(2000));
+    // Undo while the field still has focus: it shows the restored time.
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "undoEdit"));
+    QCOMPARE(backend.trimStart(), qint64(1000));
+    QCOMPARE(field->property("text").toString(), backend.formatPreciseTime(1000));
+    // Save must not bring the undone time back.
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "saveWithCrop"));
+    QCOMPARE(backend.trimStart(), qint64(1000));
+    backend.requestDiscard();
 }
 
 QTEST_MAIN(tst_RecordingPreviewDiscard)

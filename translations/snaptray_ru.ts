@@ -1840,6 +1840,111 @@ Size: %2</source>
 <context>
     <name>RecordingPreview</name>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="837" />
+        <source>Apply Crop (Enter) · Arrow keys move it by 2 px (Shift: 10 px)</source>
+        <translation>Применить кадрирование (Enter) · стрелки сдвигают на 2 px (Shift: 10 px)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="827" />
+        <source>Compare with Original (\)</source>
+        <translation>Сравнить с исходным (\)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="823" />
+        <source>Compare with Original</source>
+        <translation>Сравнить с исходным</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="809" />
+        <source>Reset Crop and Trim</source>
+        <translation>Сбросить кадрирование и обрезку</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="801" />
+        <source>Redo Edit</source>
+        <translation>Повторить изменение</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="799" />
+        <source>Redo Edit (Ctrl+Shift+Z)</source>
+        <translation>Повторить изменение (Ctrl+Shift+Z)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="790" />
+        <source>Undo Edit</source>
+        <translation>Отменить изменение</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="788" />
+        <source>Undo Edit (Ctrl+Z)</source>
+        <translation>Отменить изменение (Ctrl+Z)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="715" />
+        <source>Crop %1 in pixels</source>
+        <translation>Обрезка %1 в пикселях</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="700" />
+        <source>H</source>
+        <translation>В</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="699" />
+        <source>W</source>
+        <translation>Ш</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="698" />
+        <source>Y</source>
+        <translation>Y</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="697" />
+        <source>X</source>
+        <translation>X</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="688" />
+        <source>Crop aspect: %1</source>
+        <translation>Соотношение сторон: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="633" />
+        <source>Trim end</source>
+        <translation>Конец обрезки</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="621" />
+        <source>Trim start</source>
+        <translation>Начало обрезки</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="604" />
+        <source>no audio</source>
+        <translation>без звука</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="602" />
+        <source>%1 kept</source>
+        <translation>Остаётся %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="601" />
+        <source>Original %1 → Output %2</source>
+        <translation>Исходник %1 → Результат %2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="32" />
+        <source>Original</source>
+        <translation>Исходный</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="32" />
+        <source>Free</source>
+        <translation>Свободно</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="780" />
         <source>Discard</source>
         <translation>Удалить</translation>

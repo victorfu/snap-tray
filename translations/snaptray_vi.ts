@@ -1834,6 +1834,111 @@ Kích thước: %2</translation>
 <context>
     <name>RecordingPreview</name>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="837" />
+        <source>Apply Crop (Enter) · Arrow keys move it by 2 px (Shift: 10 px)</source>
+        <translation>Áp dụng cắt (Enter) · phím mũi tên di chuyển 2 px (Shift: 10 px)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="827" />
+        <source>Compare with Original (\)</source>
+        <translation>So sánh với bản gốc (\)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="823" />
+        <source>Compare with Original</source>
+        <translation>So sánh với bản gốc</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="809" />
+        <source>Reset Crop and Trim</source>
+        <translation>Đặt lại cắt khung và cắt đoạn</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="801" />
+        <source>Redo Edit</source>
+        <translation>Làm lại chỉnh sửa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="799" />
+        <source>Redo Edit (Ctrl+Shift+Z)</source>
+        <translation>Làm lại chỉnh sửa (Ctrl+Shift+Z)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="790" />
+        <source>Undo Edit</source>
+        <translation>Hoàn tác chỉnh sửa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="788" />
+        <source>Undo Edit (Ctrl+Z)</source>
+        <translation>Hoàn tác chỉnh sửa (Ctrl+Z)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="715" />
+        <source>Crop %1 in pixels</source>
+        <translation>Cắt %1 theo pixel</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="700" />
+        <source>H</source>
+        <translation>C</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="699" />
+        <source>W</source>
+        <translation>R</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="698" />
+        <source>Y</source>
+        <translation>Y</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="697" />
+        <source>X</source>
+        <translation>X</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="688" />
+        <source>Crop aspect: %1</source>
+        <translation>Tỷ lệ cắt: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="633" />
+        <source>Trim end</source>
+        <translation>Điểm cuối cắt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="621" />
+        <source>Trim start</source>
+        <translation>Điểm đầu cắt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="604" />
+        <source>no audio</source>
+        <translation>không có âm thanh</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="602" />
+        <source>%1 kept</source>
+        <translation>Giữ %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="601" />
+        <source>Original %1 → Output %2</source>
+        <translation>Gốc %1 → Đầu ra %2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="32" />
+        <source>Original</source>
+        <translation>Gốc</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="32" />
+        <source>Free</source>
+        <translation>Tự do</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="780" />
         <source>Discard</source>
         <translation>Bỏ</translation>

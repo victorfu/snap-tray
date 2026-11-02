@@ -1834,6 +1834,111 @@ Dydis: %2</translation>
 <context>
     <name>RecordingPreview</name>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="837" />
+        <source>Apply Crop (Enter) · Arrow keys move it by 2 px (Shift: 10 px)</source>
+        <translation>Taikyti apkirpimą (Enter) · rodyklės perkelia 2 px (Shift: 10 px)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="827" />
+        <source>Compare with Original (\)</source>
+        <translation>Palyginti su originalu (\)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="823" />
+        <source>Compare with Original</source>
+        <translation>Palyginti su originalu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="809" />
+        <source>Reset Crop and Trim</source>
+        <translation>Atstatyti apkirpimą ir apkarpymą</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="801" />
+        <source>Redo Edit</source>
+        <translation>Grąžinti keitimą</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="799" />
+        <source>Redo Edit (Ctrl+Shift+Z)</source>
+        <translation>Grąžinti keitimą (Ctrl+Shift+Z)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="790" />
+        <source>Undo Edit</source>
+        <translation>Atšaukti keitimą</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="788" />
+        <source>Undo Edit (Ctrl+Z)</source>
+        <translation>Atšaukti keitimą (Ctrl+Z)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="715" />
+        <source>Crop %1 in pixels</source>
+        <translation>Apkirpimas %1 pikseliais</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="700" />
+        <source>H</source>
+        <translation>A</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="699" />
+        <source>W</source>
+        <translation>P</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="698" />
+        <source>Y</source>
+        <translation>Y</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="697" />
+        <source>X</source>
+        <translation>X</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="688" />
+        <source>Crop aspect: %1</source>
+        <translation>Apkirpimo santykis: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="633" />
+        <source>Trim end</source>
+        <translation>Apkarpymo pabaiga</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="621" />
+        <source>Trim start</source>
+        <translation>Apkarpymo pradžia</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="604" />
+        <source>no audio</source>
+        <translation>be garso</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="602" />
+        <source>%1 kept</source>
+        <translation>Paliekama %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="601" />
+        <source>Original %1 → Output %2</source>
+        <translation>Originalas %1 → Išvestis %2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="32" />
+        <source>Original</source>
+        <translation>Originalus</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="32" />
+        <source>Free</source>
+        <translation>Laisvas</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="780" />
         <source>Discard</source>
         <translation>Atmesti</translation>

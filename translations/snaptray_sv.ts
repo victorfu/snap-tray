@@ -1834,6 +1834,111 @@ Storlek: %2</translation>
 <context>
     <name>RecordingPreview</name>
     <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="837" />
+        <source>Apply Crop (Enter) · Arrow keys move it by 2 px (Shift: 10 px)</source>
+        <translation>Använd beskärning (Enter) · piltangenter flyttar 2 px (Skift: 10 px)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="827" />
+        <source>Compare with Original (\)</source>
+        <translation>Jämför med originalet (\)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="823" />
+        <source>Compare with Original</source>
+        <translation>Jämför med originalet</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="809" />
+        <source>Reset Crop and Trim</source>
+        <translation>Återställ beskärning och trimning</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="801" />
+        <source>Redo Edit</source>
+        <translation>Gör om redigering</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="799" />
+        <source>Redo Edit (Ctrl+Shift+Z)</source>
+        <translation>Gör om redigering (Ctrl+Shift+Z)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="790" />
+        <source>Undo Edit</source>
+        <translation>Ångra redigering</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="788" />
+        <source>Undo Edit (Ctrl+Z)</source>
+        <translation>Ångra redigering (Ctrl+Z)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="715" />
+        <source>Crop %1 in pixels</source>
+        <translation>Beskärning %1 i pixlar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="700" />
+        <source>H</source>
+        <translation>H</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="699" />
+        <source>W</source>
+        <translation>B</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="698" />
+        <source>Y</source>
+        <translation>Y</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="697" />
+        <source>X</source>
+        <translation>X</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="688" />
+        <source>Crop aspect: %1</source>
+        <translation>Beskärningsformat: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="633" />
+        <source>Trim end</source>
+        <translation>Trimma slut</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="621" />
+        <source>Trim start</source>
+        <translation>Trimma start</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="604" />
+        <source>no audio</source>
+        <translation>inget ljud</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="602" />
+        <source>%1 kept</source>
+        <translation>%1 behålls</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="601" />
+        <source>Original %1 → Output %2</source>
+        <translation>Original %1 → Utdata %2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="32" />
+        <source>Original</source>
+        <translation>Original</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="32" />
+        <source>Free</source>
+        <translation>Fritt</translation>
+    </message>
+    <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="780" />
         <source>Discard</source>
         <translation>Ta bort</translation>

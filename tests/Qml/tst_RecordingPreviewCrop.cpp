@@ -25,6 +25,13 @@ private slots:
     void windowLookupMapsToView();
     void sidecarFrameSizeMismatchDisablesTimeline();
     void corruptSidecarIsIgnored();
+    void timeTextRoundTrips_data();
+    void timeTextRoundTrips();
+    void trimInputValidates();
+    void aspectPresetLocksAppliedCrop();
+    void exactInputIsLegalized();
+    void undoRedoCoversCropAndTrim();
+    void resetIsUndoable();
 };
 
 namespace {
@@ -182,6 +189,167 @@ void tst_RecordingPreviewCrop::corruptSidecarIsIgnored()
     corrupt.close();
     RecordingPreviewBackend backend(video);
     QVERIFY(!backend.hasWindowTimeline());
+}
+
+void tst_RecordingPreviewCrop::timeTextRoundTrips_data()
+{
+    QTest::addColumn<QString>("text");
+    QTest::addColumn<qint64>("ms");
+    QTest::newRow("seconds") << QStringLiteral("12") << qint64(12000);
+    QTest::newRow("fraction") << QStringLiteral("1.5") << qint64(1500);
+    QTest::newRow("m:ss") << QStringLiteral("1:05") << qint64(65000);
+    QTest::newRow("m:ss.mmm") << QStringLiteral("0:07.250") << qint64(7250);
+    QTest::newRow("h:mm:ss.mmm") << QStringLiteral("1:02:03.004") << qint64(3723004);
+    QTest::newRow("spaces") << QStringLiteral("  2:00 ") << qint64(120000);
+    QTest::newRow("seconds-over-59-with-minutes") << QStringLiteral("1:75") << qint64(-1);
+    QTest::newRow("negative") << QStringLiteral("-1") << qint64(-1);
+    QTest::newRow("letters") << QStringLiteral("abc") << qint64(-1);
+    QTest::newRow("exponent") << QStringLiteral("1e3") << qint64(-1);
+    QTest::newRow("too-many-fields") << QStringLiteral("1:2:3:4") << qint64(-1);
+    QTest::newRow("empty") << QString() << qint64(-1);
+}
+
+void tst_RecordingPreviewCrop::timeTextRoundTrips()
+{
+    QFETCH(QString, text);
+    QFETCH(qint64, ms);
+    RecordingPreviewBackend backend(QStringLiteral("unused.mp4"));
+    QCOMPARE(backend.parseTime(text), ms);
+    if (ms >= 0) {
+        QCOMPARE(backend.parseTime(backend.formatPreciseTime(ms)), ms);
+    }
+    QCOMPARE(backend.formatPreciseTime(65432), QStringLiteral("1:05.432"));
+}
+
+void tst_RecordingPreviewCrop::trimInputValidates()
+{
+    RecordingPreviewBackend backend(QStringLiteral("unused.mp4"));
+    backend.updateDuration(10000);
+    QVERIFY(backend.setTrimFromInput(1000, 9000));
+    QCOMPARE(backend.trimStart(), qint64(1000));
+    QCOMPARE(backend.trimEnd(), qint64(9000));
+    QVERIFY(backend.hasTrim());
+    // Rejected: reversed, too short, beyond the end, negative. Nothing changes.
+    QVERIFY(!backend.setTrimFromInput(5000, 4000));
+    QVERIFY(!backend.setTrimFromInput(5000, 5050));
+    QVERIFY(!backend.setTrimFromInput(1000, 10001));
+    QVERIFY(!backend.setTrimFromInput(-1, 5000));
+    QCOMPARE(backend.trimStart(), qint64(1000));
+    QCOMPARE(backend.trimEnd(), qint64(9000));
+    // Up to the end is the same as no end trim.
+    QVERIFY(backend.setTrimFromInput(1000, 10000));
+    QCOMPARE(backend.trimEnd(), qint64(10000));
+    QCOMPARE(backend.trimmedDuration(), qint64(9000));
+}
+
+void tst_RecordingPreviewCrop::aspectPresetLocksAppliedCrop()
+{
+    RecordingPreviewBackend backend(QStringLiteral("unused.mp4"));
+    backend.updateVideoSize(QSize(1920, 1080));
+    const QRectF content(0, 0, 960, 540);  // half scale
+    QCOMPARE(backend.cropAspectRatio(), 0.0);
+    backend.setCropAspectIndex(4);  // 1:1
+    QCOMPARE(backend.cropAspectRatio(), 1.0);
+    // The legal size is visible before applying, and applying gives exactly it.
+    const QRect legal = backend.legalCropForView(QRectF(100, 100, 301, 200), content);
+    QCOMPARE(legal.width(), legal.height());
+    backend.setCropFromView(QRectF(100, 100, 301, 200), content);
+    QCOMPARE(backend.cropRect(), legal);
+    backend.setCropAspectIndex(1);  // original 16:9
+    QCOMPARE(backend.cropAspectRatio(), 1920.0 / 1080.0);
+    const QRectF fitted = backend.fitViewRectToAspect(QRectF(), content);
+    QCOMPARE(fitted, content);  // whole frame already has the original aspect
+    backend.setCropAspectIndex(5);  // 9:16
+    const QRect portrait = backend.legalCropForView(content, content);
+    QCOMPARE(qint64(portrait.width()) * 16, qint64(portrait.height()) * 9);
+    backend.setCropAspectIndex(99);  // out of range clamps
+    QCOMPARE(backend.cropAspectIndex(), 5);
+}
+
+void tst_RecordingPreviewCrop::exactInputIsLegalized()
+{
+    RecordingPreviewBackend backend(QStringLiteral("unused.mp4"));
+    backend.updateVideoSize(QSize(1920, 1080));
+    const QRectF content(10, 20, 960, 540);
+    // Odd values are evened; the view rect maps back to the same video pixels.
+    const QRectF view = backend.legalViewRectForVideo(101, 51, 641, 361, content);
+    QCOMPARE(backend.legalCropForView(view, content), QRect(100, 50, 642, 362));
+    backend.setCropFromView(view, content);
+    QCOMPARE(backend.cropRect(), QRect(100, 50, 642, 362));
+    // Too small grows to the minimum side; beyond the frame is pulled in.
+    QCOMPARE(backend.legalCropForView(backend.legalViewRectForVideo(5, 5, 4, 4, content), content).size(),
+             QSize(64, 64));
+    QVERIFY(QRect(0, 0, 1920, 1080).contains(
+        backend.legalCropForView(backend.legalViewRectForVideo(1900, 1000, 500, 500, content), content)));
+}
+
+void tst_RecordingPreviewCrop::undoRedoCoversCropAndTrim()
+{
+    RecordingPreviewBackend backend(QStringLiteral("unused.mp4"));
+    backend.updateVideoSize(QSize(1920, 1080));
+    backend.updateDuration(10000);
+    const QRectF content(0, 0, 1920, 1080);
+    QVERIFY(!backend.canUndo());
+    QVERIFY(!backend.hasEdits());
+
+    backend.setCropFromView(QRectF(100, 100, 640, 360), content);
+    const QRect firstCrop = backend.cropRect();
+    QVERIFY(backend.canUndo());
+    // Re-reporting the video size renormalizes but is not a user edit.
+    backend.updateVideoSize(QSize(1920, 1080));
+    backend.undo();
+    QVERIFY(!backend.canUndo());
+    backend.redo();
+    QCOMPARE(backend.cropRect(), firstCrop);
+    QVERIFY(backend.setTrimFromInput(1000, 8000));
+    backend.toggleTrim();  // clears the trim
+    QVERIFY(!backend.hasTrim());
+    QVERIFY(backend.hasEdits());
+
+    backend.undo();
+    QCOMPARE(backend.trimStart(), qint64(1000));
+    QCOMPARE(backend.trimEnd(), qint64(8000));
+    backend.undo();
+    QVERIFY(!backend.hasTrim());
+    QCOMPARE(backend.cropRect(), firstCrop);
+    backend.undo();
+    QVERIFY(!backend.hasCrop());
+    QVERIFY(!backend.canUndo());
+    backend.redo();
+    backend.redo();
+    QCOMPARE(backend.cropRect(), firstCrop);
+    QCOMPARE(backend.trimEnd(), qint64(8000));
+    QVERIFY(backend.canRedo());
+
+    // Dragging a trim handle is one step when it is committed.
+    backend.setTrimStart(2000);
+    backend.commitTrimEdit();
+    QVERIFY(!backend.canRedo());
+    backend.undo();
+    QCOMPARE(backend.trimStart(), qint64(1000));
+}
+
+void tst_RecordingPreviewCrop::resetIsUndoable()
+{
+    RecordingPreviewBackend backend(QStringLiteral("unused.mp4"));
+    backend.updateVideoSize(QSize(1920, 1080));
+    backend.updateDuration(10000);
+    backend.setCropFromView(QRectF(100, 100, 640, 360), QRectF(0, 0, 1920, 1080));
+    QVERIFY(backend.setTrimFromInput(1000, 8000));
+    QSignalSpy history(&backend, &RecordingPreviewBackend::editHistoryChanged);
+    backend.resetEdits();
+    QVERIFY(!backend.hasCrop());
+    QVERIFY(!backend.hasTrim());
+    QVERIFY(!backend.hasEdits());
+    QVERIFY(history.count() > 0);
+    backend.undo();
+    QVERIFY(backend.hasCrop());
+    QVERIFY(backend.hasTrim());
+    // Processing blocks history changes, like every other edit.
+    backend.m_isProcessing = true;
+    backend.redo();
+    QVERIFY(backend.hasCrop());
+    backend.m_isProcessing = false;
 }
 
 QTEST_MAIN(tst_RecordingPreviewCrop)

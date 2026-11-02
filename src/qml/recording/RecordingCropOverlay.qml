@@ -30,6 +30,12 @@ Item {
     // preview looks it up from the recording's window timeline. Empty = none.
     property rect hoverRect: Qt.rect(0, 0, 0, 0)
     property string hoverLabel: ""
+    // Locked width / height (video and view share it: the content is aspect-fitted).
+    // 0 = free. Creating, resizing and window snapping keep this ratio.
+    property real aspectRatio: 0
+    // Optional function(viewRect) returning the legal video-pixel size the
+    // backend will export; the size chip shows it instead of an estimate.
+    property var legalSizeForDraft: null
     property point hoverPoint: Qt.point(0, 0)
     property bool hovering: false
     // The pointer moved or left while editing (not during a drag).
@@ -121,6 +127,47 @@ Item {
     // r clamped into the content and grown around its centre to the minimum
     // draft size, so a tiny window still gives a usable selection.
     function snapToRect(r) {
+        return fitInside(snapToRectFree(r))
+    }
+    // Largest rect of the locked aspect inside r, centred on it.
+    function fitInside(r) {
+        if (aspectRatio <= 0 || !isNonEmpty(r))
+            return r
+        let w = Math.min(r.width, r.height * aspectRatio)
+        let h = w / aspectRatio
+        if (w < minViewWidth || h < minViewHeight) {
+            w = Math.min(contentRect.width, Math.max(minViewWidth, minViewHeight * aspectRatio))
+            h = Math.min(contentRect.height, w / aspectRatio)
+            w = h * aspectRatio
+        }
+        const c = contentRect
+        const x = clamp(r.x + (r.width - w) / 2, c.x, c.x + c.width - w)
+        const y = clamp(r.y + (r.height - h) / 2, c.y, c.y + c.height - h)
+        return Qt.rect(x, y, w, h)
+    }
+    // Lock (w, h) to the aspect around an anchor. dir is +1 (grows right/down
+    // from the anchor), -1 (grows left/up) or 0 (centred on the anchor). The
+    // result stays inside the content and keeps the minimum size when it fits.
+    function anchoredAspectRect(ax, ay, dirX, dirY, w, h, widthLeads) {
+        const c = contentRect
+        const room = function(anchor, dir, lo, hi) {
+            return dir > 0 ? hi - anchor : dir < 0 ? anchor - lo : 2 * Math.min(anchor - lo, hi - anchor)
+        }
+        const maxW = Math.min(room(ax, dirX, c.x, c.x + c.width),
+                              room(ay, dirY, c.y, c.y + c.height) * aspectRatio)
+        // The minimum always wins over the room at the anchor; like a free draft,
+        // the anchor then retreats into the content instead of the rect shrinking.
+        const minW = Math.min(Math.max(minViewWidth, minViewHeight * aspectRatio),
+                              Math.min(c.width, c.height * aspectRatio))
+        let width = widthLeads ? w : h * aspectRatio
+        width = Math.min(Math.max(width, minW), Math.max(maxW, minW))
+        const height = width / aspectRatio
+        const x = dirX > 0 ? ax : dirX < 0 ? ax - width : ax - width / 2
+        const y = dirY > 0 ? ay : dirY < 0 ? ay - height : ay - height / 2
+        return Qt.rect(clamp(x, c.x, c.x + c.width - width), clamp(y, c.y, c.y + c.height - height),
+                       width, height)
+    }
+    function snapToRectFree(r) {
         const c = contentRect
         let left = clamp(r.x, c.x, c.x + c.width)
         let right = clamp(r.x + r.width, c.x, c.x + c.width)
@@ -190,6 +237,14 @@ Item {
     // New selection from the press point (px, py) to the pointer (x, y).
     function createRect(px, py, x, y) {
         const c = contentRect
+        if (aspectRatio > 0) {
+            const ax = clamp(px, c.x, c.x + c.width)
+            const ay = clamp(py, c.y, c.y + c.height)
+            const w = Math.abs(x - ax)
+            const h = Math.abs(y - ay)
+            return anchoredAspectRect(ax, ay, x >= ax ? 1 : -1, y >= ay ? 1 : -1, w, h,
+                                      w >= h * aspectRatio)
+        }
         const h = createSpan(px, x, xTargets(), c.x, c.x + c.width, minViewWidth)
         const v = createSpan(py, y, yTargets(), c.y, c.y + c.height, minViewHeight)
         return Qt.rect(h.lo, v.lo, h.hi - h.lo, v.hi - v.lo)
@@ -228,7 +283,24 @@ Item {
             top = snapWithin(top + dy, yTargets(), c.y, Math.max(c.y, bottom - minViewHeight))
         if (edges & edgeBottom)
             bottom = snapWithin(bottom + dy, yTargets(), Math.min(c.y + c.height, top + minViewHeight), c.y + c.height)
+        if (aspectRatio > 0)
+            return lockResize(r, edges, right - left, bottom - top)
         return Qt.rect(left, top, right - left, bottom - top)
+    }
+    // Aspect-locked resize: the opposite corner (or, for a side handle, the
+    // centre of the other axis) stays put.
+    function lockResize(r, edges, w, h) {
+        const horizontal = (edges & (edgeLeft | edgeRight)) !== 0
+        const vertical = (edges & (edgeTop | edgeBottom)) !== 0
+        const dirX = edges & edgeLeft ? -1 : edges & edgeRight ? 1 : 0
+        const dirY = edges & edgeTop ? -1 : edges & edgeBottom ? 1 : 0
+        const ax = dirX < 0 ? r.x + r.width : dirX > 0 ? r.x : r.x + r.width / 2
+        const ay = dirY < 0 ? r.y + r.height : dirY > 0 ? r.y : r.y + r.height / 2
+        // A corner follows whichever side changed more, growing or shrinking;
+        // a side handle leads with its axis.
+        const widthLeads = horizontal
+            && (!vertical || Math.abs(w / r.width - 1) >= Math.abs(h / r.height - 1))
+        return anchoredAspectRect(ax, ay, dirX, dirY, w, h, widthLeads)
     }
     function containsPoint(r, x, y) {
         return x > r.x && x < r.x + r.width && y > r.y && y < r.y + r.height
@@ -333,12 +405,18 @@ Item {
         Text {
             id: draftSizeText
             anchors.centerIn: parent
-            // Approximate; the committed (normalized) size is shown by the crop
-            // size chip in the top-left corner of the video.
-            text: overlay.hasContent
-                  ? Math.round(overlay.draftRect.width * overlay.videoSize.width / overlay.contentRect.width)
-                    + " × " + Math.round(overlay.draftRect.height * overlay.videoSize.height / overlay.contentRect.height)
-                  : ""
+            // The size the export will have (even, minimum size, aspect) when the
+            // preview provides legalSizeForDraft; otherwise an estimate.
+            text: {
+                if (!overlay.hasContent)
+                    return ""
+                if (overlay.legalSizeForDraft) {
+                    const legal = overlay.legalSizeForDraft(overlay.draftRect)
+                    return legal.width + " × " + legal.height
+                }
+                return Math.round(overlay.draftRect.width * overlay.videoSize.width / overlay.contentRect.width)
+                        + " × " + Math.round(overlay.draftRect.height * overlay.videoSize.height / overlay.contentRect.height)
+            }
             color: SemanticTokens.textPrimary
             font.pixelSize: SemanticTokens.fontSizeCaption
             font.family: SemanticTokens.fontFamily

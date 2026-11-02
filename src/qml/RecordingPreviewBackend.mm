@@ -466,6 +466,7 @@ void RecordingPreviewBackend::toggleTrim()
         }
         if (changed) {
             emit trimRangeChanged();
+            recordEdit();
         }
         return;
     }
@@ -487,6 +488,7 @@ void RecordingPreviewBackend::toggleTrim()
     m_trimStart = start;
     m_trimEnd = end;
     emit trimRangeChanged();
+    recordEdit();
 }
 
 // ---------- Crop ----------
@@ -519,7 +521,189 @@ void RecordingPreviewBackend::setCropRect(const QRect &videoRect)
 
 void RecordingPreviewBackend::setCropFromView(const QRectF &viewRect, const QRectF &contentRect)
 {
-    setCropRect(SnapTray::VideoCropGeometry::viewToVideo(viewRect, contentRect, m_videoSize));
+    setCropRect(legalCropForView(viewRect, contentRect));
+    recordEdit();
+}
+
+namespace {
+
+// Aspect presets, index-aligned with cropAspectIndex. {-1, -1} = the video's own aspect.
+constexpr QSize kAspectPresets[] = {
+    {0, 0}, {-1, -1}, {16, 9}, {4, 3}, {1, 1}, {9, 16},
+};
+constexpr int kAspectPresetCount = int(sizeof(kAspectPresets) / sizeof(kAspectPresets[0]));
+constexpr qint64 kMsPerSecond = 1000;
+constexpr qint64 kSecondsPerMinute = 60;
+constexpr qint64 kMinTrimSpanMs = 100;
+
+} // namespace
+
+QSize RecordingPreviewBackend::aspectUnits() const
+{
+    const QSize preset = kAspectPresets[m_cropAspectIndex];
+    if (preset.width() < 0) {
+        return m_videoSize.isEmpty() ? QSize() : m_videoSize;
+    }
+    return preset;
+}
+
+void RecordingPreviewBackend::setCropAspectIndex(int index)
+{
+    index = qBound(0, index, kAspectPresetCount - 1);
+    if (m_cropAspectIndex == index) {
+        return;
+    }
+    m_cropAspectIndex = index;
+    emit cropAspectChanged();
+}
+
+qreal RecordingPreviewBackend::cropAspectRatio() const
+{
+    const QSize units = aspectUnits();
+    return units.isEmpty() ? 0.0 : qreal(units.width()) / units.height();
+}
+
+QRect RecordingPreviewBackend::legalCropForView(const QRectF &viewRect, const QRectF &contentRect) const
+{
+    const QRect video = SnapTray::VideoCropGeometry::viewToVideo(viewRect, contentRect, m_videoSize);
+    const QSize units = aspectUnits();
+    const QRect legal = SnapTray::VideoCropGeometry::fitAspect(video, m_videoSize, units.width(), units.height());
+    return legal.isEmpty() && !m_videoSize.isEmpty() && !video.isEmpty()
+        ? QRect(QPoint(0, 0), m_videoSize) : legal;
+}
+
+QRectF RecordingPreviewBackend::legalViewRectForVideo(int x, int y, int width, int height,
+                                                      const QRectF &contentRect) const
+{
+    const QSize units = aspectUnits();
+    QRect legal = SnapTray::VideoCropGeometry::fitAspect(QRect(x, y, width, height), m_videoSize,
+                                                         units.width(), units.height());
+    if (legal.isEmpty()) {
+        legal = QRect(QPoint(0, 0), m_videoSize);
+    }
+    return SnapTray::VideoCropGeometry::videoToView(legal, contentRect, m_videoSize);
+}
+
+QRectF RecordingPreviewBackend::fitViewRectToAspect(const QRectF &viewRect, const QRectF &contentRect) const
+{
+    const QRectF source = viewRect.isEmpty() ? contentRect : viewRect;
+    return SnapTray::VideoCropGeometry::videoToView(legalCropForView(source, contentRect),
+                                                    contentRect, m_videoSize);
+}
+
+QString RecordingPreviewBackend::formatPreciseTime(qint64 ms) const
+{
+    ms = qMax<qint64>(0, ms);
+    const qint64 minutes = ms / (kSecondsPerMinute * kMsPerSecond);
+    const qint64 seconds = (ms / kMsPerSecond) % kSecondsPerMinute;
+    const qint64 millis = ms % kMsPerSecond;
+    return QStringLiteral("%1:%2.%3")
+        .arg(minutes)
+        .arg(seconds, 2, 10, QLatin1Char('0'))
+        .arg(millis, 3, 10, QLatin1Char('0'));
+}
+
+qint64 RecordingPreviewBackend::parseTime(const QString &text) const
+{
+    const QStringList fields = text.trimmed().split(QLatin1Char(':'));
+    if (fields.isEmpty() || fields.size() > 3) {
+        return -1;
+    }
+    // Last field: seconds with optional fraction; the others: whole units.
+    bool ok = false;
+    const QString secondsText = fields.last();
+    const double seconds = secondsText.toDouble(&ok);
+    if (!ok || seconds < 0 || secondsText.contains(QLatin1Char('e'), Qt::CaseInsensitive)
+        || (fields.size() > 1 && seconds >= kSecondsPerMinute)) {
+        return -1;
+    }
+    qint64 total = qRound64(seconds * kMsPerSecond);
+    qint64 unitMs = kSecondsPerMinute * kMsPerSecond;
+    for (int i = fields.size() - 2; i >= 0; --i) {
+        const int value = fields.at(i).toInt(&ok);
+        if (!ok || value < 0 || (i > 0 && value >= kSecondsPerMinute)) {
+            return -1;
+        }
+        total += value * unitMs;
+        unitMs *= kSecondsPerMinute;
+    }
+    return total;
+}
+
+bool RecordingPreviewBackend::setTrimFromInput(qint64 startMs, qint64 endMs)
+{
+    if (m_duration <= 0 || startMs < 0 || endMs > m_duration || endMs - startMs < kMinTrimSpanMs) {
+        return false;
+    }
+    m_trimStart = startMs;
+    m_trimEnd = endMs >= m_duration ? -1 : endMs;
+    emit trimRangeChanged();
+    recordEdit();
+    return true;
+}
+
+void RecordingPreviewBackend::commitTrimEdit()
+{
+    recordEdit();
+}
+
+SnapTray::PreviewEditState RecordingPreviewBackend::currentEditState() const
+{
+    SnapTray::PreviewEditState state;
+    state.crop = m_cropRect;
+    state.trimStart = m_trimStart;
+    // A trim end at the duration is the same as no trim end.
+    state.trimEnd = (m_trimEnd >= 0 && m_trimEnd < m_duration) ? m_trimEnd : -1;
+    if (state.trimStart == 0 && state.trimEnd < 0) {
+        state.trimEnd = -1;
+    }
+    return state;
+}
+
+void RecordingPreviewBackend::applyEditState(const SnapTray::PreviewEditState &state)
+{
+    if (m_cropRect != state.crop) {
+        m_cropRect = SnapTray::VideoCropGeometry::normalizeCropRect(state.crop, m_videoSize);
+        emit cropRectChanged();
+    }
+    if (m_trimStart != state.trimStart || m_trimEnd != state.trimEnd) {
+        m_trimStart = state.trimStart;
+        m_trimEnd = state.trimEnd;
+        emit trimRangeChanged();
+    }
+    emit editHistoryChanged();
+}
+
+void RecordingPreviewBackend::recordEdit()
+{
+    if (m_editHistory.record(currentEditState())) {
+        emit editHistoryChanged();
+    }
+}
+
+void RecordingPreviewBackend::undo()
+{
+    if (isProcessing() || !m_editHistory.canUndo()) {
+        return;
+    }
+    applyEditState(m_editHistory.undo());
+}
+
+void RecordingPreviewBackend::redo()
+{
+    if (isProcessing() || !m_editHistory.canRedo()) {
+        return;
+    }
+    applyEditState(m_editHistory.redo());
+}
+
+void RecordingPreviewBackend::resetEdits()
+{
+    if (isProcessing() || !hasEdits()) {
+        return;
+    }
+    applyEditState({});
+    recordEdit();
 }
 
 QRectF RecordingPreviewBackend::cropRectInView(const QRectF &contentRect) const
@@ -565,6 +749,7 @@ void RecordingPreviewBackend::clearCrop()
     }
     m_cropRect = QRect();
     emit cropRectChanged();
+    recordEdit();
 }
 
 // ---------- Format conversion (runs on background thread) ----------
