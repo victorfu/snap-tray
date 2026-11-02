@@ -254,7 +254,7 @@ void VideoPlaybackItem::onFrameReady(const QImage &frame, qint64 positionMs)
     setFramePosition(positionMs >= 0 ? positionMs : position());
     m_currentFrame = frame;
     if (m_frameProcessor) {
-        m_frameProcessor(m_currentFrame, position());
+        m_frameProcessor(m_currentFrame, m_framePosition);
     }
     refreshScaledFrameForCurrentSize();
 
@@ -273,7 +273,7 @@ void VideoPlaybackItem::reprocessFrame()
     if (m_rawFrame.isNull()) return;
     m_currentFrame = m_rawFrame;
     if (m_frameProcessor) {
-        m_frameProcessor(m_currentFrame, position());
+        m_frameProcessor(m_currentFrame, m_framePosition);
     }
     refreshScaledFrameForCurrentSize();
 }

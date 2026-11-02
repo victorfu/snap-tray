@@ -83,7 +83,7 @@ public:
     Q_INVOKABLE void stepForward();
     Q_INVOKABLE void setLooping(bool loop);
 
-    // Processes each shown frame (before scaling) with the playback position,
+    // Processes each shown frame (before scaling) with its own time (framePosition),
     // e.g. to burn in the export's masks so the preview never shows what the
     // export hides. The raw frame is kept; reprocessFrame() redoes the shown one.
     using FrameProcessor = std::function<void(QImage& frame, qint64 positionMs)>;

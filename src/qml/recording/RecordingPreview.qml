@@ -143,6 +143,25 @@ Item {
         backend.save()
     }
 
+    // The mask to select after `current` when the timeline is clicked at
+    // `ms`: masks covering that time, topmost (latest) first, then none.
+    // `clicked` is the bar hit, for a click just past its ends.
+    function nextMaskAt(ms, current, clicked) {
+        const here = []
+        for (let i = backend.masks.length - 1; i >= 0; --i) {
+            const mask = backend.masks[i]
+            const end = mask.end < 0 ? timelineArea.dur : mask.end
+            if (ms >= mask.start && ms <= end)
+                here.push(i)
+        }
+        if (here.length === 0)
+            return current === clicked ? -1 : clicked
+        const at = here.indexOf(current)
+        if (at < 0)
+            return here[0]
+        return at + 1 < here.length ? here[at + 1] : -1
+    }
+
     // A start/end pair typed but not confirmed yet (Save does not take
     // focus), applied together so a range that needs both ends works. False,
     // with the field marked and focused, when it is unreadable or rejected.
@@ -758,12 +777,17 @@ Item {
                         anchors.fill: parent
                         anchors.margins: -2
                         cursorShape: CursorTokens.clickable
-                        onClicked: {
+                        onClicked: function(mouse) {
+                            // Overlapping masks share the bar's place: each click
+                            // moves to the next one under the pointer, then to
+                            // none, so every mask can be reached (#177 review).
+                            const ms = timelineArea.xToPos(mapToItem(timelineArea, mouse.x, mouse.y).x)
+                            const next = root.nextMaskAt(ms, backend.selectedMask, parent.index)
                             backend.selectedZoom = -1
-                            backend.selectedMask = parent.selected ? -1 : parent.index
-                            if (backend.selectedMask >= 0) {
+                            backend.selectedMask = next
+                            if (next >= 0) {
                                 videoPlayer.pause()
-                                videoPlayer.seek(parent.modelData.start)
+                                videoPlayer.seek(backend.masks[next].start)
                             }
                         }
                     }
@@ -1136,6 +1160,16 @@ Item {
                 readonly property bool wholeRecording: root.selectedMaskData !== null
                     && root.selectedMaskData.start === 0 && root.selectedMaskData.end < 0
 
+                // The fields are shared by all masks: text typed for one and
+                // not applied must not reach the next one selected.
+                Connections {
+                    target: root.previewBackend
+                    function onSelectedMaskChanged() {
+                        maskStartField.discardEdit()
+                        maskEndField.discardEdit()
+                    }
+                }
+
                 Repeater {
                     model: root.maskStyleLabels
                     SegmentButton {
@@ -1198,7 +1232,13 @@ Item {
                     minimumButtonWidth: 0
                     text: qsTr("Done")
                     tooltipText: qsTr("Drag the mask to move it, or its corner to resize it. Done finishes editing.")
-                    onClicked: backend.selectedMask = -1
+                    // Typed times are applied first; invalid ones keep the editor
+                    // open, so Save cannot skip them (#177 review).
+                    onClicked: {
+                        if (maskPanel.wholeRecording || root.commitPendingRange(maskStartField, maskEndField,
+                                (start, end) => backend.setMaskRange(backend.selectedMask, start, end)))
+                            backend.selectedMask = -1
+                    }
                 }
             }
 
