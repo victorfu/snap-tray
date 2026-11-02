@@ -61,8 +61,22 @@ struct ProbeResult {
     bool decodable = false;
     qint64 durationMs = 0;
     bool hasAudio = false;
+    // The file holds no reliable duration (a finished animation): use the
+    // manifest's recorded duration.
+    bool durationFromManifest = false;
 };
 using Probe = std::function<ProbeResult(const QString& videoPath)>;
+
+// GIF and WebP recordings are finished animated images, written whole when
+// the recording ends; MP4 is video.
+bool isAnimatedFormat(const QString& videoPath);
+// A finished animation: complete to its end (GIF trailer, WebP RIFF size)
+// and its first frame decodes. Decoding every frame would be slow for a long
+// recording; the duration comes from the manifest.
+ProbeResult probeFinishedAnimation(const QString& path);
+// The recovery check for any recording: animations as images (the video
+// probe cannot open them on every platform), video through `videoProbe`.
+ProbeResult probeForRecovery(const QString& path, const Probe& videoProbe);
 // True while another live owner (this or another SnapTray) holds the session.
 using IsActive = std::function<bool(const QString& videoPath)>;
 

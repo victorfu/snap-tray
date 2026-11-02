@@ -362,6 +362,10 @@ void MainApplication::initialize()
         this, &MainApplication::updateTrayToolTip);
     connect(m_recordingManager, &RecordingManager::diagnosticsAvailable,
         this, &MainApplication::updateRecordingActionText);
+    connect(m_recordingManager, &RecordingManager::recoveryKept, this, [this](const QString& path) {
+        if (!m_recoverablePaths.contains(path)) m_recoverablePaths.append(path);
+        updateRecoveryAction();
+    });
     connect(m_recordingManager, &RecordingManager::recoveriesFound, this,
         [this](const QList<SnapTray::RecordingSession::Recoverable>& found) {
             m_recoverablePaths.clear();

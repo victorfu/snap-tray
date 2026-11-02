@@ -130,6 +130,9 @@ signals:
     void recoveriesFound(const QList<SnapTray::RecordingSession::Recoverable>& recoveries);
     // A recording ended for a reason other than Stop; emitted once per recording.
     void recordingInterrupted(SnapTray::RecordingStopReason reason);
+    // A recovered recording that was not saved (cancelled or failed): it can
+    // still be recovered later.
+    void recoveryKept(const QString& videoPath);
     void diagnosticsAvailable();
     // recordedAsIntermediate: the recording was captured as the high-quality
     // intermediate rather than at the selected quality.
