@@ -8,6 +8,7 @@
 #include <QObject>
 #include <QTimer>
 
+#include <deque>
 #include <functional>
 #include <memory>
 
@@ -49,6 +50,8 @@ private:
     void onButtonChanged(Qt::MouseButton button, bool down, qint64 ageMs);
     quint32 currentShapeId();
     void releaseHeldButtons();
+    void rememberSample(const CursorSample& sample);
+    QPoint positionAt(qint64 tMs) const;
 
     std::unique_ptr<CursorProbe> m_probe;
     Clock m_clock;
@@ -71,6 +74,10 @@ private:
     quint32 m_nextShapeId = 1;
     Qt::MouseButtons m_held;
     qint64 m_buttonFloorMs = 0; // button events stay in order and after start/resume
+    qint64 m_activeSinceMs = 0; // last start/resume: earlier button events are dropped
+    // Recent samples, for positioning events delivered late.
+    static constexpr qint64 kRecentPositionsMs = 5000;
+    std::deque<CursorSample> m_recent;
 };
 
 } // namespace SnapTray
