@@ -2,6 +2,9 @@
 #define NATIVEGIFENCODER_H
 
 #include <QObject>
+
+#include <atomic>
+#include <memory>
 #include <QImage>
 #include <QSize>
 #include <QString>
@@ -56,6 +59,11 @@ public:
     bool isRunning() const { return m_running; }
     QString lastError() const { return m_lastError; }
     qint64 framesWritten() const { return m_framesWritten; }
+
+    // Bytes of encoded GIF held in memory: the file is only written by
+    // finish(), so the disk guard counts these (shared, readable from any thread).
+    using ByteCounter = std::shared_ptr<std::atomic<qint64>>;
+    ByteCounter bufferedBytesCounter() const { return m_bufferedBytes; }
     QString outputPath() const { return m_outputPath; }
 
     /**
@@ -89,6 +97,7 @@ private:
     QString m_lastError;
     bool m_running;
     bool m_aborted;
+    ByteCounter m_bufferedBytes = std::make_shared<std::atomic<qint64>>(0);
 };
 
 #endif // NATIVEGIFENCODER_H

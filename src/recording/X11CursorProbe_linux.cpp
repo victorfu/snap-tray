@@ -1,6 +1,7 @@
 #include "recording/CursorProbe.h"
 
 #include <QDebug>
+#include <QScopeGuard>
 #include <QSocketNotifier>
 
 #include <X11/Xlib.h>
@@ -128,6 +129,12 @@ private:
 
     void drainEvents()
     {
+        // A button signal's handler polls the position, which drains again:
+        // a nested drain would deliver a queued release inside the press
+        // handler, before the press is recorded (#174 review).
+        if (m_draining) return;
+        m_draining = true;
+        const auto done = qScopeGuard([this] { m_draining = false; });
         while (XPending(m_display) > 0) {
             XEvent event;
             XNextEvent(m_display, &event);
@@ -167,6 +174,7 @@ private:
     bool m_shapes = false;
     bool m_clicks = false;
     quint64 m_serial = 0;
+    bool m_draining = false;
     std::array<int, kMaxPointerMap> m_pointerMap{};
 };
 

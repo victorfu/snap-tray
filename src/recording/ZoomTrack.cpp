@@ -88,6 +88,24 @@ QRectF ZoomTrack::viewportAt(qint64 sourceMs, const QRectF& bounds) const
         return frameFor(s.focus, std::min(s.scale, maxScale), bounds);
     };
 
+    // Close together: pan (and re-zoom) straight across the gap. Segments
+    // that touch or nearly touch still get kMinBlendMs, centred on their
+    // boundary, instead of a cut (#176 review). Less Motion keeps the cut:
+    // no motion at all is gentler than a fast pan.
+    if (!reduceMotion) {
+        for (size_t i = 0; i + 1 < m_segments.size(); ++i) {
+            const ZoomSegment& a = m_segments[i];
+            const ZoomSegment& b = m_segments[i + 1];
+            if (b.startMs - a.endMs > 2 * transition) continue;
+            const double middle = (a.endMs + b.startMs) / 2.0;
+            const double from = std::min(double(a.endMs), middle - kMinBlendMs / 2.0);
+            const double to = std::max(double(b.startMs), middle + kMinBlendMs / 2.0);
+            if (sourceMs > from && sourceMs < to) {
+                return lerp(frame(a), frame(b), smootherstep((sourceMs - from) / (to - from)));
+            }
+        }
+    }
+
     // The segment holding sourceMs, or its neighbours.
     const ZoomSegment* previous = nullptr;
     const ZoomSegment* next = nullptr;
@@ -95,13 +113,6 @@ QRectF ZoomTrack::viewportAt(qint64 sourceMs, const QRectF& bounds) const
         if (sourceMs >= segment.startMs && sourceMs <= segment.endMs) return frame(segment);
         if (segment.endMs < sourceMs) previous = &segment;
         if (segment.startMs > sourceMs && !next) next = &segment;
-    }
-    if (previous && next) {
-        const qint64 gap = next->startMs - previous->endMs;
-        if (!reduceMotion && gap <= 2 * transition) {
-            // Close together: pan (and re-zoom) straight across.
-            return lerp(frame(*previous), frame(*next), smootherstep(double(sourceMs - previous->endMs) / gap));
-        }
     }
     // Otherwise ease out to the whole picture and back in, sharing a short gap.
     const qint64 room = previous && next ? (next->startMs - previous->endMs) / 2 : transition;

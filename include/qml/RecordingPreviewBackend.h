@@ -179,7 +179,9 @@ public:
     // stays open and keeps the source recording. Saved removes the source
     // (unless it is the saved file) and closes; Cancelled and Failed remove
     // only the derived output and keep editing, so Save can be retried.
-    void completeSave(SaveOutcome outcome);
+    // `savedPath`: where it was saved, when known; the source is never
+    // removed when it is that file (the user saved over the recording).
+    void completeSave(SaveOutcome outcome, const QString &savedPath = QString());
     bool processIndeterminate() const { return m_processIndeterminate; }
     bool exportCloseQuestionPending() const { return m_exportCloseQuestionPending; }
     bool canRetrySave() const { return m_canRetrySave && !m_errorMessage.isEmpty(); }

@@ -558,6 +558,11 @@ Tokens de data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, ou {date}</translation
         <translation>pouco espaço em disco</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Warning: %1</source>
+        <translation>Aviso: %1</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="1282" />
         <source>dropping frames</source>
         <translation>perdendo quadros</translation>
@@ -1961,6 +1966,16 @@ Tamanho: %2</translation>
     <name>RecordingPreview</name>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cover a sensitive area in the exported file</source>
+        <translation>Cobrir uma área sensível no arquivo exportado</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>masks: %1, burned into the export; the unmasked temporary file is deleted after saving</source>
+        <translation>máscaras: %1, aplicadas na exportação; o arquivo temporário sem máscaras é excluído após salvar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Selected mask</source>
         <translation>Máscara selecionada</translation>
     </message>
@@ -2053,6 +2068,11 @@ Tamanho: %2</translation>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Add Mask</source>
         <translation>Adicionar máscara</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No room for a new zoom here</source>
+        <translation>Não há espaço para um novo zoom aqui</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />

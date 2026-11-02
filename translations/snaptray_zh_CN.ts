@@ -549,6 +549,11 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>磁盘空间不足</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Warning: %1</source>
+        <translation>警告：%1</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="1282" />
         <source>dropping frames</source>
         <translation>正在丢帧</translation>
@@ -1952,6 +1957,16 @@ Size: %2</source>
     <name>RecordingPreview</name>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cover a sensitive area in the exported file</source>
+        <translation>在导出的文件中遮住敏感区域</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>masks: %1, burned into the export; the unmasked temporary file is deleted after saving</source>
+        <translation>遮罩：%1，已烧录到导出文件；保存后会删除未遮罩的临时文件</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Selected mask</source>
         <translation>所选遮罩</translation>
     </message>
@@ -2044,6 +2059,11 @@ Size: %2</source>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Add Mask</source>
         <translation>添加遮罩</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No room for a new zoom here</source>
+        <translation>此处没有空间添加新的缩放</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />

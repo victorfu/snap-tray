@@ -11,6 +11,7 @@
 #include "RecordingRegionNormalizer.h"
 #include "qml/QmlCountdownOverlay.h"
 #include "encoding/NativeGifEncoder.h"
+#include "encoding/WebPAnimEncoder.h"
 #include "encoding/EncodingWorker.h"
 #include "IVideoEncoder.h"
 #include "encoding/EncoderFactory.h"
@@ -263,6 +264,10 @@ RecordingManager::RecordingManager(QObject *parent)
     , m_countdownEnabled(true)
     , m_countdownSeconds(3)
 {
+    m_isRecordingPlayable = [](const QString& path) {
+        const auto transcoder = IVideoTranscoder::create();
+        return transcoder && transcoder->probe(path).valid;
+    };
     m_freeBytesForPath = [](const QString& path) { return QStorageInfo(path).bytesAvailable(); };
     m_captureControlsMayBeVisible = [] {
         return SnapTray::requiresVisibleRecordingControls(QOperatingSystemVersion::current());
@@ -995,6 +1000,8 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
         m_encodingWorker->setVideoEncoder(nativeEncoder);
         m_encodingWorker->setEncoderType(EncodingWorker::EncoderType::Video);
     }
+    m_bufferedOutputBytes = gifEncoder ? gifEncoder->bufferedBytesCounter()
+        : webpEncoder ? webpEncoder->bufferedBytesCounter() : nullptr;
     if (gifEncoder) {
         m_encodingWorker->setGifEncoder(gifEncoder);
         if (!nativeEncoder) {
@@ -1172,14 +1179,18 @@ void RecordingManager::configureAudioCapture()
             });
 
             connect(m_audioEngine.get(), &IAudioCaptureEngine::deviceLost,
-                    this, [this, configuredEngine] {
+                    this, [this, configuredEngine](IAudioCaptureEngine::AudioSource lost) {
                 if (!configuredEngine || m_audioEngine.get() != configuredEngine.data()) {
                     return;
                 }
+                // Only the source that failed: the other may still be recording.
                 auto status = m_audioStatus;
-                const bool micWasRecording = status.microphone == SnapTray::AudioSourceState::Active;
-                if (status.microphone != SnapTray::AudioSourceState::Off) {
-                    status.microphone = SnapTray::AudioSourceState::DeviceMissing;
+                const bool microphoneLost = lost != IAudioCaptureEngine::AudioSource::SystemAudio;
+                const bool micWasRecording = microphoneLost
+                    && status.microphone == SnapTray::AudioSourceState::Active;
+                auto& state = microphoneLost ? status.microphone : status.systemAudio;
+                if (state != SnapTray::AudioSourceState::Off) {
+                    state = SnapTray::AudioSourceState::DeviceMissing;
                 }
                 setAudioStatus(status);
                 // Keep recording the rest; never switch to another microphone
@@ -1530,6 +1541,7 @@ void RecordingManager::beginSession(const QString& videoPath, const QSize& frame
     m_session.frameSize = frameSize;
     m_session.frameRate = m_frameRate;
     m_session.audioRequired = audioRequired;
+    m_session.intermediate = m_recordedAsIntermediate;
     m_session.startedAt = QDateTime::currentDateTime();
     m_sessionHeartbeat = 0;
     // The lock tells a scan (here or in another SnapTray) this session is live;
@@ -1618,7 +1630,9 @@ bool RecordingManager::openRecoveredRecording(const QString& videoPath)
     }
     m_tempVideoPath = videoPath;
     setState(State::Previewing);
-    emit previewRequested(videoPath, RecordingSettingsManager::instance().outputFormat(), false);
+    // Recorded as the high-quality intermediate (or unknown, from an older
+    // manifest): Save still checks the output quality instead of moving it.
+    emit previewRequested(videoPath, RecordingSettingsManager::instance().outputFormat(), m_session.intermediate);
     return true;
 }
 
@@ -1654,13 +1668,17 @@ void RecordingManager::checkDiskSpace()
     const quint64 generation = m_startGeneration;
     const QString path = m_recordingFilePath;
     const auto probe = m_freeBytesForPath;
+    const auto buffered = m_bufferedOutputBytes;
     const qint64 sampleMs = m_elapsedTimer.isValid() ? m_elapsedTimer.elapsed() : 0;
     const QPointer<RecordingManager> guard(this);
-    (void)QtConcurrent::run([guard, generation, path, probe, sampleMs]() {
+    (void)QtConcurrent::run([guard, generation, path, probe, buffered, sampleMs]() {
         const qint64 freeBytes = probe ? probe(QFileInfo(path).absolutePath()) : -1;
         const qint64 fileBytes = QFileInfo(path).size();
-        QMetaObject::invokeMethod(QCoreApplication::instance(), [guard, generation, freeBytes, fileBytes, sampleMs]() {
-            if (guard) guard->onDiskSample(generation, freeBytes, fileBytes, sampleMs);
+        // Buffered formats have no file yet: all of it still needs the room.
+        const qint64 pendingBytes = buffered ? buffered->load() : 0;
+        QMetaObject::invokeMethod(QCoreApplication::instance(),
+                                  [guard, generation, freeBytes, fileBytes, sampleMs, pendingBytes]() {
+            if (guard) guard->onDiskSample(generation, freeBytes, fileBytes, sampleMs, pendingBytes);
         }, Qt::QueuedConnection);
     });
 }
@@ -1672,13 +1690,15 @@ void RecordingManager::setLowDiskSpace(bool low)
     emit lowDiskSpaceChanged(low);
 }
 
-void RecordingManager::onDiskSample(quint64 generation, qint64 freeBytes, qint64 fileBytes, qint64 sampleMs)
+void RecordingManager::onDiskSample(quint64 generation, qint64 freeBytes, qint64 fileBytes, qint64 sampleMs,
+                                    qint64 pendingBytes)
 {
     m_diskProbeRunning = false;
     if (generation != m_startGeneration || (m_state != State::Recording && m_state != State::Paused)) {
         return;
     }
-    m_writeRate.addSample(fileBytes, sampleMs);
+    // The rate covers both: buffered data reaches the disk at the end.
+    m_writeRate.addSample(qMax<qint64>(0, fileBytes) + qMax<qint64>(0, pendingBytes), sampleMs);
     // Keep the recovery manifest's duration roughly current (every ~10 s).
     constexpr int kSamplesPerHeartbeat = 5;
     if (++m_sessionHeartbeat >= kSamplesPerHeartbeat) {
@@ -1689,6 +1709,7 @@ void RecordingManager::onDiskSample(quint64 generation, qint64 freeBytes, qint64
     SnapTray::DiskSpaceGuard::Input input;
     if (freeBytes >= 0) input.freeBytes = freeBytes;
     input.recordedBytes = qMax<qint64>(0, fileBytes);
+    input.pendingBytes = qMax<qint64>(0, pendingBytes);
     input.bytesPerSecond = m_writeRate.bytesPerSecond();
     input.exportLikely = m_startSettings.showPreview;
     const auto previous = m_diskGuard.level();
@@ -2156,27 +2177,48 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
             }, Qt::QueuedConnection);
         } else {
             // Existing flow: go directly to save dialog
+            // The dialog runs a nested event loop, and a new recording may
+            // start meanwhile (#172 review): this recording's session (manifest
+            // and lock) leaves the manager and is completed by its own dialog.
+            const QString sessionPath = m_session.videoPath;
+            const std::shared_ptr<QLockFile> sessionLock(m_sessionLock.release());
+            m_session = {};
             setState(State::Idle);
             QString tempPath = outputPath;
-            QMetaObject::invokeMethod(this, [this, tempPath]() {
+            QMetaObject::invokeMethod(this, [this, tempPath, sessionPath, sessionLock]() {
                 const SaveOutcome outcome = showSaveDialog(tempPath);
                 // Saved or discarded: nothing to recover. A failed save keeps
                 // the file in the temp folder, so its manifest stays.
-                endSession(outcome != SaveOutcome::Failed);
+                if (outcome != SaveOutcome::Failed && !sessionPath.isEmpty()) {
+                    SnapTray::RecordingSession::remove(sessionPath);
+                }
+                if (sessionLock) sessionLock->unlock();
             }, Qt::QueuedConnection);
         }
     } else {
         setState(State::Idle);
-        // Say what was kept: a crash-safe recording leaves its playable part
+        // Say what was kept: a crash-safe recording may leave a playable part
         // (offered for recovery); otherwise nothing usable remains.
-        const bool partKept = crashSafeOutput && QFileInfo(outputPath).size() > 0;
-        emit recordingError(partKept
-            ? tr("The recording could not be finished. The part recorded so far was kept; "
-                 "recover it from the tray menu.")
-            : errorMsg + QLatin1Char(' ') + tr("Nothing usable could be kept."));
-        if (partKept) {
-            scanForRecoveries();
+        const QString nothingKept = errorMsg + QLatin1Char(' ') + tr("Nothing usable could be kept.");
+        if (!crashSafeOutput || QFileInfo(outputPath).size() <= 0) {
+            emit recordingError(nothingKept);
+            return;
         }
+        // A non-empty file is not yet a playable one (headers only, a torn
+        // first fragment): ask the probe the recovery scan uses, off the GUI
+        // thread, before promising recovery (#173 review).
+        const QString partKept = tr("The recording could not be finished. The part recorded so far was kept; "
+                                    "recover it from the tray menu.");
+        const auto playable = m_isRecordingPlayable;
+        const QPointer<RecordingManager> guard(this);
+        (void)QtConcurrent::run([guard, outputPath, playable, partKept, nothingKept]() {
+            const bool kept = playable && playable(outputPath);
+            QMetaObject::invokeMethod(QCoreApplication::instance(), [guard, kept, partKept, nothingKept]() {
+                if (!guard) return;
+                emit guard->recordingError(kept ? partKept : nothingKept);
+                if (kept) guard->scanForRecoveries();
+            }, Qt::QueuedConnection);
+        });
     }
 }
 
@@ -2196,14 +2238,16 @@ void RecordingManager::onPreviewClosed(bool saved)
 }
 
 RecordingManager::SaveOutcome RecordingManager::triggerSaveDialog(const QString &videoPath,
-                                                                  const QSize &outputSize)
+                                                                  const QSize &outputSize,
+                                                                  QString *savedPath)
 {
-    return showSaveDialog(videoPath, outputSize, true);
+    return showSaveDialog(videoPath, outputSize, true, savedPath);
 }
 
 RecordingManager::SaveOutcome RecordingManager::showSaveDialog(const QString &tempOutputPath,
                                                                const QSize &outputSize,
-                                                               bool keepOnCancel)
+                                                               bool keepOnCancel,
+                                                               QString *savedPath)
 {
     // Once saved or deleted, the temp recording stops being a preview input
     // and its window-timeline sidecar goes with it. A file the preview keeps
@@ -2259,6 +2303,7 @@ RecordingManager::SaveOutcome RecordingManager::showSaveDialog(const QString &te
         while (attempt < maxAttempts) {
             if (QFile::rename(tempOutputPath, savePath)) {
                 syncFile(savePath);
+                if (savedPath) *savedPath = savePath;
                 emit recordingStopped(savePath);
                 return SaveOutcome::Saved;
             }
@@ -2282,6 +2327,7 @@ RecordingManager::SaveOutcome RecordingManager::showSaveDialog(const QString &te
         if (QFile::copy(tempOutputPath, savePath)) {
             QFile::remove(tempOutputPath);
             syncFile(savePath);
+            if (savedPath) *savedPath = savePath;
             emit recordingStopped(savePath);
             return SaveOutcome::Saved;
         }
@@ -2345,6 +2391,7 @@ RecordingManager::SaveOutcome RecordingManager::showSaveDialog(const QString &te
         if (SnapTray::RecordingFileUtils::replaceRecordingFile(
                 tempOutputPath, savePath, &saveError)) {
             syncFile(savePath);
+            if (savedPath) *savedPath = savePath;
             emit recordingStopped(savePath);
             return SaveOutcome::Saved;
         }
@@ -2358,6 +2405,7 @@ RecordingManager::SaveOutcome RecordingManager::showSaveDialog(const QString &te
         return SaveOutcome::Failed;
     }
     syncFile(tempOutputPath);
+    if (savedPath) *savedPath = tempOutputPath;
     emit recordingStopped(tempOutputPath);
     return SaveOutcome::Saved;
 }

@@ -418,9 +418,21 @@ int RecordingPreviewBackend::addZoomAt(qint64 positionMs)
     constexpr double kNewZoomScale = 2.0;
     const QRectF bounds = zoomBounds();
     if (bounds.isEmpty()) return -1;
+    // Only into free time: existing zooms are never trimmed or replaced
+    // (#176 review). Inside one, nothing is added.
+    const qint64 start = qMax<qint64>(0, positionMs);
+    if (m_zoom.segmentAt(start) >= 0) return -1;
+    qint64 end = m_duration > 0 ? qMin(m_duration, start + kNewZoomMs) : start + kNewZoomMs;
+    for (const auto& existing : m_zoom.segments()) {
+        if (existing.startMs > start) {
+            end = qMin(end, existing.startMs);
+            break;
+        }
+    }
+    if (end - start < SnapTray::ZoomTrack::kMinSegmentMs) return -1;
     SnapTray::ZoomSegment segment;
-    segment.startMs = qMax<qint64>(0, positionMs);
-    segment.endMs = m_duration > 0 ? qMin(m_duration, segment.startMs + kNewZoomMs) : segment.startMs + kNewZoomMs;
+    segment.startMs = start;
+    segment.endMs = end;
     segment.scale = kNewZoomScale;
     segment.focus = bounds.center();
     if (m_cursorTimeline) {
@@ -436,7 +448,11 @@ int RecordingPreviewBackend::addZoomAt(qint64 positionMs)
         z.enabled = true;
         z.setSegments(std::move(segments));
     });
-    const int index = m_zoom.segmentAt(segment.startMs + 1);
+    // Select the zoom that was inserted (it starts exactly at `start`).
+    int index = -1;
+    for (int i = 0; i < int(m_zoom.segments().size()); ++i) {
+        if (m_zoom.segments()[i].startMs == start) index = i;
+    }
     setSelectedZoom(index);
     return index;
 }
@@ -930,7 +946,7 @@ void RecordingPreviewBackend::handOffForSave(const QString &outputPath, const QS
     emit saveRequested(outputPath, croppedSize);
 }
 
-void RecordingPreviewBackend::completeSave(SaveOutcome outcome)
+void RecordingPreviewBackend::completeSave(SaveOutcome outcome, const QString &savedPath)
 {
     if (!m_awaitingSave) {
         return;
@@ -941,8 +957,15 @@ void RecordingPreviewBackend::completeSave(SaveOutcome outcome)
     const bool derived = output != m_videoPath;
 
     if (outcome == SaveOutcome::Saved) {
-        // Only now is the source no longer needed.
-        if (derived) {
+        // Only now is the source no longer needed, unless the export was
+        // saved over it: then that path is the user's saved file.
+        const auto samePath = [](const QString& a, const QString& b) {
+            const QFileInfo fa(a), fb(b);
+            const QString ca = fa.canonicalFilePath(), cb = fb.canonicalFilePath();
+            return !ca.isEmpty() ? ca == cb : fa.absoluteFilePath() == fb.absoluteFilePath();
+        };
+        const bool savedOverSource = !savedPath.isEmpty() && samePath(savedPath, m_videoPath);
+        if (derived && !savedOverSource) {
             QFile::remove(m_videoPath);
         }
         SnapTray::WindowTimelineSidecar::remove(m_videoPath);
@@ -1857,6 +1880,20 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
                                         sourceProbe, QFileInfo(request.inputPath).size(), outputQuality)) {
                 moveInstead = true;
                 moveReason = "meets the output quality target";
+            }
+        }
+        if (smartSave && !moveInstead && !unsupported) {
+            // Re-encoding an unedited recording writes a second file. Without
+            // room for it, save the recording as recorded (a move needs no
+            // space) instead of filling the disk with an export.
+            const QString directory = QFileInfo(request.outputPath).absolutePath();
+            const qint64 freeBytes = freeBytesForPathOverride() ? freeBytesForPathOverride()(directory)
+                                                                : QStorageInfo(directory).bytesAvailable();
+            const qint64 needed = SnapTray::DiskSpaceGuard::kFloorBytes
+                + qMax<qint64>(0, QFileInfo(request.inputPath).size());
+            if (freeBytes >= 0 && freeBytes < needed) {
+                moveInstead = true;
+                moveReason = "not enough free space to re-encode";
             }
         }
         if (moveInstead) {

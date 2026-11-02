@@ -552,6 +552,11 @@ Datos žetonai: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} arba {date}</translatio
         <translation>mažai vietos diske</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Warning: %1</source>
+        <translation>Įspėjimas: %1</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="1282" />
         <source>dropping frames</source>
         <translation>praranda kadrus</translation>
@@ -1955,6 +1960,16 @@ Dydis: %2</translation>
     <name>RecordingPreview</name>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cover a sensitive area in the exported file</source>
+        <translation>Uždengti jautrią sritį eksportuotame faile</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>masks: %1, burned into the export; the unmasked temporary file is deleted after saving</source>
+        <translation>kaukės: %1, įrašytos į eksportą; laikinas failas be kaukių po išsaugojimo ištrinamas</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Selected mask</source>
         <translation>Pasirinkta kaukė</translation>
     </message>
@@ -2047,6 +2062,11 @@ Dydis: %2</translation>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Add Mask</source>
         <translation>Pridėti kaukę</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No room for a new zoom here</source>
+        <translation>Čia nėra vietos naujam priartinimui</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />

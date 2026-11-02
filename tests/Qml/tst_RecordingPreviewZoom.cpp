@@ -52,12 +52,15 @@ private slots:
     void rangeEditsStayLegal();
     void formatsThatCannotDrawDisableZoom();
     void previewControls();
+    void addZoomNeverChangesExistingZooms();
 };
 
 void tst_RecordingPreviewZoom::autoZoomKeepsTheUsersZooms()
 {
     QTemporaryDir dir;
     RecordingPreviewBackend backend(writeClicks(dir));
+    // GIF draws zooms on every platform (MP4 only where the transcoder can).
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
     backend.updateVideoSize(kFrame);
     backend.updateDuration(10000);
     QVERIFY(backend.autoZoomAvailable());
@@ -92,12 +95,13 @@ void tst_RecordingPreviewZoom::withoutPointerDataOnlyManualZoom()
 {
     QTemporaryDir dir;
     RecordingPreviewBackend backend(dir.filePath(QStringLiteral("missing.mp4")));
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
     backend.updateVideoSize(kFrame);
     backend.updateDuration(10000);
     QVERIFY(!backend.autoZoomAvailable());
     QCOMPARE(backend.generateAutoZoom(), 0); // nothing invented
     QVERIFY(backend.zoomSegments().isEmpty());
-    if (!backend.zoomAvailable()) QSKIP("This platform's MP4 transcoder cannot draw zooms yet");
+    QVERIFY(backend.zoomAvailable());
     QCOMPARE(backend.addZoomAt(4000), 0);
     QCOMPARE(backend.selectedZoom(), 0);
     // Centred on the picture without a pointer to follow.
@@ -112,9 +116,10 @@ void tst_RecordingPreviewZoom::rangeEditsStayLegal()
 {
     QTemporaryDir dir;
     RecordingPreviewBackend backend(writeClicks(dir));
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
     backend.updateVideoSize(kFrame);
     backend.updateDuration(10000);
-    if (!backend.zoomAvailable()) QSKIP("This platform's MP4 transcoder cannot draw zooms yet");
+    QVERIFY(backend.zoomAvailable());
     // A zoom added at the playhead follows the pointer there.
     QCOMPARE(backend.addZoomAt(1000), 0);
     QCOMPARE(backend.zoomTrack().segments().front().focus, QPointF(300, 300));
@@ -147,6 +152,7 @@ void tst_RecordingPreviewZoom::previewControls()
 {
     QTemporaryDir dir;
     RecordingPreviewBackend backend(writeClicks(dir));
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
     backend.show();
     QQuickView* view = nullptr;
     QVERIFY(QTest::qWaitFor([&view] {
@@ -159,7 +165,7 @@ void tst_RecordingPreviewZoom::previewControls()
     QVERIFY(QTest::qWaitForWindowExposed(view));
     backend.updateVideoSize(kFrame);
     backend.updateDuration(10000);
-    if (!backend.zoomAvailable()) QSKIP("This platform's MP4 transcoder cannot draw zooms yet");
+    QVERIFY(backend.zoomAvailable()); // GIF: on every platform
     // Repeater delegates are only reachable through the visual tree.
     std::function<QQuickItem*(QQuickItem*, const QString&)> walk = [&walk](QQuickItem* item, const QString& name) -> QQuickItem* {
         if (item->objectName() == name) return item;
@@ -178,8 +184,20 @@ void tst_RecordingPreviewZoom::previewControls()
     QTRY_VERIFY(find(QStringLiteral("previewZoomSegment1")));
     QQuickItem* panel = find(QStringLiteral("previewZoomPanel"));
     QVERIFY(panel && !panel->isVisible());
+    // Every control stays reachable at the 640 px minimum width (#176 review).
+    view->resize(640, 480);
+    const auto allInside = [view](QQuickItem* row) {
+        for (QQuickItem* child : row->childItems()) {
+            if (!child->isVisible() || child->width() <= 0) continue;
+            const QRectF r = child->mapRectToScene(QRectF(0, 0, child->width(), child->height()));
+            if (r.left() < 0 || r.right() > view->width()) return false;
+        }
+        return true;
+    };
+    QTRY_VERIFY(allInside(find(QStringLiteral("previewFormatRow"))));
     backend.setSelectedZoom(1);
     QTRY_VERIFY(panel->isVisible());
+    QTRY_VERIFY(allInside(panel));
     QQuickItem* scale = find(QStringLiteral("previewZoomScale2")); // 2.5x
     QVERIFY(scale);
     QVERIFY(QMetaObject::invokeMethod(scale, "clicked"));
@@ -188,6 +206,31 @@ void tst_RecordingPreviewZoom::previewControls()
     QCOMPARE(backend.selectedZoom(), -1);
     QTRY_VERIFY(!panel->isVisible());
     backend.requestDiscard();
+}
+
+void tst_RecordingPreviewZoom::addZoomNeverChangesExistingZooms()
+{
+    // PR #176 review: adding just before an existing zoom trimmed or deleted it.
+    QTemporaryDir dir;
+    RecordingPreviewBackend backend(dir.filePath(QStringLiteral("missing.mp4")));
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    backend.updateVideoSize(kFrame);
+    backend.updateDuration(20000);
+    QCOMPARE(backend.addZoomAt(5000), 0);
+    QVERIFY(backend.setZoomRange(0, 5000, 6000));
+    const auto existing = backend.zoomTrack().segments().front();
+    // Just before it: fits the free time, the existing zoom stays as it was.
+    QCOMPARE(backend.addZoomAt(4300), 0);
+    QCOMPARE(backend.selectedZoom(), 0); // the one inserted
+    QCOMPARE(backend.zoomTrack().segments().size(), size_t(2));
+    QCOMPARE(backend.zoomTrack().segments()[0].startMs, qint64(4300));
+    QCOMPARE(backend.zoomTrack().segments()[0].endMs, qint64(5000));
+    QCOMPARE(backend.zoomTrack().segments()[1], existing);
+    // Too little room, or inside an existing zoom: nothing changes.
+    QCOMPARE(backend.addZoomAt(4900), -1);
+    QCOMPARE(backend.addZoomAt(5500), -1);
+    QCOMPARE(backend.zoomTrack().segments().size(), size_t(2));
+    QCOMPARE(backend.zoomTrack().segments()[1], existing);
 }
 
 QTEST_MAIN(tst_RecordingPreviewZoom)

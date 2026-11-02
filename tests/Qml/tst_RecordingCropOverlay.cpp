@@ -316,6 +316,9 @@ private slots:
 
     // Overlay helpers (no window).
     void beginEditingStartsEmpty();
+    void lockedCornerShrinksAlongTheMovedAxis_data();
+    void lockedCornerShrinksAlongTheMovedAxis();
+    void previewNudgeAtEdgeKeepsSize();
     void enterStartsHoverWithoutMove();
     void createRectClampsToContent();
     void moveRectStaysInside();
@@ -1892,6 +1895,49 @@ void tst_RecordingCropOverlay::previewCompareShowsOriginal()
     sendKey(Qt::Key_Backslash);
     m_backend->clearCrop();
     QVERIFY(!previewItem("previewCompareChip")->isVisible());
+}
+
+void tst_RecordingCropOverlay::lockedCornerShrinksAlongTheMovedAxis_data()
+{
+    QTest::addColumn<int>("dx");
+    QTest::addColumn<int>("dy");
+    QTest::addColumn<QRectF>("expected");
+    // PR #167 review: with 1:1 locked, an inward drag along one axis used to
+    // follow the unchanged axis and leave the square as it was.
+    QTest::newRow("width only") << -50 << 0 << QRectF(100, 60, 100, 100);
+    QTest::newRow("height only") << 0 << -50 << QRectF(100, 60, 100, 100);
+    QTest::newRow("unequal diagonal follows the larger") << -60 << -10 << QRectF(100, 60, 90, 90);
+    QTest::newRow("growing still works") << 30 << 0 << QRectF(100, 60, 180, 180);
+}
+
+void tst_RecordingCropOverlay::lockedCornerShrinksAlongTheMovedAxis()
+{
+    QFETCH(int, dx);
+    QFETCH(int, dy);
+    QFETCH(QRectF, expected);
+    m_overlay->setProperty("aspectRatio", 1.0);
+    const QRectF r = call("resizeRect", {QRectF(100, 60, 150, 150), kEdgeRight | kEdgeBottom, dx, dy}).toRectF();
+    QCOMPARE(r, expected);
+}
+
+void tst_RecordingCropOverlay::previewNudgeAtEdgeKeepsSize()
+{
+    OPEN_PREVIEW_OR_FAIL(QSize(1920, 1080));
+    QObject* overlay = previewOverlay();
+    click(previewItem("previewCropButton"));
+    // A draft touching the left edge of the picture.
+    overlay->setProperty("draftRect", QRectF(previewContentRect().topLeft() + QPointF(0, 40), QSizeF(160, 100)));
+    const QRect before = m_view->rootObject()->property("draftVideoRect").toRect();
+    QCOMPARE(before.x(), 0);
+    // PR #167 review: nudging outward clipped the crop by 2 px per press.
+    for (int i = 0; i < 5; ++i) invokeQml(m_view->rootObject(), "nudgeDraft", {-2, 0});
+    const QRect after = m_view->rootObject()->property("draftVideoRect").toRect();
+    QCOMPARE(after.size(), before.size());
+    QCOMPARE(after.x(), 0);
+    // Moving inward still works.
+    invokeQml(m_view->rootObject(), "nudgeDraft", {10, 0});
+    QCOMPARE(m_view->rootObject()->property("draftVideoRect").toRect().x(), 10);
+    QCOMPARE(m_view->rootObject()->property("draftVideoRect").toRect().size(), before.size());
 }
 
 QTEST_MAIN(tst_RecordingCropOverlay)

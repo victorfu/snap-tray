@@ -558,6 +558,11 @@ Token di data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} o {date}</translation>
         <translation>poco spazio su disco</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Warning: %1</source>
+        <translation>Avviso: %1</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="1282" />
         <source>dropping frames</source>
         <translation>perde fotogrammi</translation>
@@ -1961,6 +1966,16 @@ Dimensione: %2</translation>
     <name>RecordingPreview</name>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cover a sensitive area in the exported file</source>
+        <translation>Copri un’area sensibile nel file esportato</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>masks: %1, burned into the export; the unmasked temporary file is deleted after saving</source>
+        <translation>maschere: %1, impresse nell’esportazione; il file temporaneo senza maschere viene eliminato dopo il salvataggio</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Selected mask</source>
         <translation>Maschera selezionata</translation>
     </message>
@@ -2053,6 +2068,11 @@ Dimensione: %2</translation>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Add Mask</source>
         <translation>Aggiungi maschera</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No room for a new zoom here</source>
+        <translation>Qui non c’è spazio per un nuovo zoom</translation>
     </message>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
