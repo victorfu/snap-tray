@@ -311,13 +311,15 @@ void tst_RecordingPreviewZoom::zoomedPictureStaysInItsFrame()
         return view != nullptr;
     }, 5000));
     QVERIFY(QTest::qWaitForWindowExposed(view));
-    view->resize(800, 1000); // a tall window: margins above and below the picture
     QQuickItem* video = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("previewVideoPlayer"));
     QVERIFY(video);
-    QImage frame(kFrame, QImage::Format_ARGB32_Premultiplied);
+    // A very wide picture is letterboxed at any window size the screen allows
+    // (a tall window does not fit every CI display).
+    const QSize wide(1920, 400);
+    QImage frame(wide, QImage::Format_ARGB32_Premultiplied);
     frame.fill(QColor(255, 0, 0));
     QVERIFY(QMetaObject::invokeMethod(video, "onFrameReady", Qt::DirectConnection, Q_ARG(QImage, frame)));
-    backend.updateVideoSize(kFrame);
+    backend.updateVideoSize(wide);
     backend.updateDuration(10000);
     QTRY_VERIFY(!video->property("contentRect").toRectF().isEmpty());
     const auto isRed = [](QRgb c) { return qRed(c) > 200 && qGreen(c) < 60 && qBlue(c) < 60; };
@@ -330,19 +332,21 @@ void tst_RecordingPreviewZoom::zoomedPictureStaysInItsFrame()
         const QPointF p = stage->mapToScene(stagePoint) * dpr;
         return shot.pixel(int(p.x()), int(p.y()));
     };
-    QTRY_VERIFY(video->property("contentRect").toRectF().bottom() < video->height() - 40);
+    QTRY_VERIFY(video->property("contentRect").toRectF().top() > 40);
     const QRectF content = video->property("contentRect").toRectF();
-    const QPointF inside = content.topLeft() + QPointF(40, 40); // clear of the play button
-    // Below the picture: the zoom frames the pointer near the top-left, so
-    // the enlarged rest of the frame reaches down past the picture's edge.
-    const QPointF margin(content.center().x(), content.bottom() + 20);
+    QVERIFY(content.bottom() < video->height() - 40);
+    const QPointF inside = content.topLeft() + QPointF(20, 20); // clear of the play button
+    // Both margins: the zoom frames the pointer, clamped at an edge of the
+    // picture, so the enlarged rest of the frame reaches past the other edge.
+    const QPointF above(content.center().x(), content.top() - 20);
+    const QPointF below(content.center().x(), content.bottom() + 20);
     QTRY_VERIFY(isRed(pixelAt(inside)));
-    QVERIFY(!isRed(pixelAt(margin)));
+    QVERIFY(!isRed(pixelAt(above)) && !isRed(pixelAt(below)));
 
     QVERIFY(backend.addZoomAt(0) >= 0);
     QTRY_VERIFY(view->rootObject()->property("zoomFactor").toReal() > 1.5);
     QTRY_VERIFY(isRed(pixelAt(inside)));
-    QVERIFY2(!isRed(pixelAt(margin)), "the zoomed video spills into the letterbox margin");
+    QVERIFY2(!isRed(pixelAt(above)) && !isRed(pixelAt(below)), "the zoomed video spills into the letterbox margin");
     backend.requestDiscard();
 }
 
