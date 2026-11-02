@@ -962,6 +962,16 @@ Item {
                 visible: backend.selectedZoom >= 0 && !cropOverlay.editing
                 readonly property var segment: backend.selectedZoom >= 0 ? backend.zoomSegments[backend.selectedZoom] : null
 
+                // The fields are shared by all zooms: text typed for one and
+                // not applied must not reach the next one selected (#176 review).
+                Connections {
+                    target: root.previewBackend
+                    function onSelectedZoomChanged() {
+                        zoomStartField.discardEdit()
+                        zoomEndField.discardEdit()
+                    }
+                }
+
                 // Typed zoom times not confirmed yet (Save does not take
                 // focus), applied together so a range that needs both ends
                 // works; false, with the field marked, when it is rejected.
@@ -1046,7 +1056,11 @@ Item {
                     minimumButtonWidth: 0
                     text: qsTr("Done")
                     tooltipText: qsTr("Click the video to move the zoom's centre. Done finishes editing.")
-                    onClicked: backend.selectedZoom = -1
+                    // Typed times are applied first; invalid ones keep the editor open.
+                    onClicked: {
+                        if (zoomPanel.commitPendingRange())
+                            backend.selectedZoom = -1
+                    }
                 }
             }
 
@@ -1827,10 +1841,14 @@ Item {
             invalid = false
             edited = true
         }
-        Keys.onEscapePressed: function(event) {
+        // Drops typed text that was not applied, back to the value.
+        function discardEdit() {
             invalid = false
             edited = false
             text = backend.formatPreciseTime(timeMs)
+        }
+        Keys.onEscapePressed: function(event) {
+            discardEdit()
             root.forceActiveFocus()
             event.accepted = true
         }

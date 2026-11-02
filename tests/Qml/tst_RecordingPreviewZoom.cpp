@@ -55,6 +55,7 @@ private slots:
     void addZoomNeverChangesExistingZooms();
     void pendingZoomTimesApplyOnSave();
     void zoomedPictureStaysInItsFrame();
+    void typedTimesStayWithTheirZoom();
 };
 
 void tst_RecordingPreviewZoom::autoZoomKeepsTheUsersZooms()
@@ -347,6 +348,63 @@ void tst_RecordingPreviewZoom::zoomedPictureStaysInItsFrame()
     QTRY_VERIFY(view->rootObject()->property("zoomFactor").toReal() > 1.5);
     QTRY_VERIFY(isRed(pixelAt(inside)));
     QVERIFY2(!isRed(pixelAt(above)) && !isRed(pixelAt(below)), "the zoomed video spills into the letterbox margin");
+    backend.requestDiscard();
+}
+
+void tst_RecordingPreviewZoom::typedTimesStayWithTheirZoom()
+{
+    // PR #176 review: a rejected time typed for one zoom stayed in the
+    // shared fields when another zoom was selected, and Save then applied
+    // it to that zoom. Switching zooms drops the stale text; Done applies
+    // what was typed for the zoom being edited.
+    QTemporaryDir dir;
+    RecordingPreviewBackend backend(writeClicks(dir));
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    RecordingPreviewBackend::freeBytesForPathOverride() = [](const QString&) { return qint64(0); };
+    auto restore = qScopeGuard([] { RecordingPreviewBackend::freeBytesForPathOverride() = {}; });
+    backend.show();
+    QQuickView* view = nullptr;
+    QVERIFY(QTest::qWaitFor([&view] {
+        for (QWindow* window : QGuiApplication::topLevelWindows()) {
+            if (window->isVisible() && window->title() == RecordingPreviewBackend::tr("Recording Preview"))
+                view = qobject_cast<QQuickView*>(window);
+        }
+        return view != nullptr;
+    }, 5000));
+    QVERIFY(QTest::qWaitForWindowExposed(view));
+    backend.updateVideoSize(kFrame);
+    backend.updateDuration(10000);
+    QVERIFY(backend.addZoomAt(1000) >= 0);
+    QVERIFY(backend.addZoomAt(6000) >= 0);
+    QCOMPARE(backend.zoomTrack().segments().size(), size_t(2));
+    QVERIFY(backend.setZoomRange(0, 1000, 3000));
+    QVERIFY(backend.setZoomRange(1, 6000, 8000));
+    QQuickItem* end = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("previewZoomEndField"));
+    QVERIFY(end);
+    backend.setSelectedZoom(0);
+    QTRY_VERIFY(end->isVisible());
+    // 7000 for the first zoom overlaps the second: rejected.
+    end->setProperty("text", backend.formatPreciseTime(7000));
+    end->setProperty("edited", true);
+    QVERIFY(QMetaObject::invokeMethod(end, "editingFinished"));
+    QVERIFY(end->property("invalid").toBool());
+    QCOMPARE(backend.zoomTrack().segments().at(0).endMs, qint64(3000));
+
+    backend.setSelectedZoom(1);
+    QTRY_COMPARE(end->property("text").toString(), backend.formatPreciseTime(8000));
+    QVERIFY(!end->property("edited").toBool());
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "saveWithCrop"));
+    QCOMPARE(backend.zoomTrack().segments().at(1).endMs, qint64(8000));
+    QCOMPARE(backend.zoomTrack().segments().at(0).endMs, qint64(3000));
+
+    // Done applies a valid typed end to the zoom being edited.
+    end->setProperty("text", backend.formatPreciseTime(8500));
+    end->setProperty("edited", true);
+    QQuickItem* done = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("previewZoomDone"));
+    QVERIFY(done);
+    QVERIFY(QMetaObject::invokeMethod(done, "clicked"));
+    QCOMPARE(backend.zoomTrack().segments().at(1).endMs, qint64(8500));
+    QCOMPARE(backend.selectedZoom(), -1);
     backend.requestDiscard();
 }
 
