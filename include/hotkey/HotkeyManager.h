@@ -177,6 +177,12 @@ signals:
     void actionTriggered(SnapTray::HotkeyAction action);
 
     /**
+     * @brief Emitted when a hotkey's key is released (where the platform
+     * reports it), so a held key can be treated as one press.
+     */
+    void actionReleased(SnapTray::HotkeyAction action);
+
+    /**
      * @brief Emitted when a hotkey's configuration changes.
      *
      * Use this to update UI elements displaying hotkey information.
