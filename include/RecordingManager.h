@@ -179,7 +179,10 @@ private:
     // Recording state
     QPointer<SnapTray::QmlRecordingControlBar> m_controlBar;
     QString m_tempVideoPath;
-    std::unique_ptr<EncodingWorker> m_encodingWorker;  // Offloads encoding to worker thread
+    std::unique_ptr<EncodingWorker> m_encodingWorker;
+    // GIF/WebP keep the whole animation in memory until finish(); the disk
+    // guard counts it as recorded data (#171 review).
+    std::shared_ptr<std::atomic<qint64>> m_bufferedOutputBytes;  // Offloads encoding to worker thread
     std::unique_ptr<QThread> m_encodingThread;         // Dedicated encoding thread for encoding workload
     quint64 m_encodingGeneration = 0;                  // Guards stale queued encoding callbacks
     bool m_usingNativeEncoder;          // True if using native encoder (vs GIF)
@@ -228,7 +231,9 @@ private:
     void startDiskMonitor();
     void stopDiskMonitor();
     void checkDiskSpace();
-    void onDiskSample(quint64 generation, qint64 freeBytes, qint64 fileBytes, qint64 sampleMs);
+    // pendingBytes: output held in memory that still has to be written (GIF/WebP).
+    void onDiskSample(quint64 generation, qint64 freeBytes, qint64 fileBytes, qint64 sampleMs,
+                      qint64 pendingBytes = 0);
     void setLowDiskSpace(bool low);
     SnapTray::RecordingHealth::ClockCounters clockCountersLocked() const;
 

@@ -1364,6 +1364,20 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
                 moveReason = "meets the output quality target";
             }
         }
+        if (smartSave && !moveInstead && !unsupported) {
+            // Re-encoding an unedited recording writes a second file. Without
+            // room for it, save the recording as recorded (a move needs no
+            // space) instead of filling the disk with an export.
+            const QString directory = QFileInfo(request.outputPath).absolutePath();
+            const qint64 freeBytes = freeBytesForPathOverride() ? freeBytesForPathOverride()(directory)
+                                                                : QStorageInfo(directory).bytesAvailable();
+            const qint64 needed = SnapTray::DiskSpaceGuard::kFloorBytes
+                + qMax<qint64>(0, QFileInfo(request.inputPath).size());
+            if (freeBytes >= 0 && freeBytes < needed) {
+                moveInstead = true;
+                moveReason = "not enough free space to re-encode";
+            }
+        }
         if (moveInstead) {
             qDebug() << "RecordingPreviewBackend: moving the unedited recording;" << moveReason;
             const QString inputPath = request.inputPath;

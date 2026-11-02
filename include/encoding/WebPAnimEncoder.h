@@ -2,6 +2,9 @@
 #define WEBPANIMENCODER_H
 
 #include <QObject>
+
+#include <atomic>
+#include <memory>
 #include <QImage>
 #include <QSize>
 #include <QString>
@@ -58,6 +61,14 @@ public:
     bool isRunning() const { return m_running; }
     QString lastError() const { return m_lastError; }
     qint64 framesWritten() const { return m_framesWritten; }
+
+    // Estimated bytes of the animation held in memory until finish() writes
+    // the file. libwebp reports no size before assembling, so this counts
+    // each frame that differs from the previous one at
+    // kEstimatedBytesPerPixel; unchanged frames add next to nothing.
+    static constexpr double kEstimatedBytesPerPixel = 0.1;
+    using ByteCounter = std::shared_ptr<std::atomic<qint64>>;
+    ByteCounter bufferedBytesCounter() const { return m_bufferedBytes; }
     QString outputPath() const { return m_outputPath; }
 
     /**
@@ -95,6 +106,8 @@ private:
     QString m_lastError;
     bool m_running;
     bool m_aborted;
+    ByteCounter m_bufferedBytes = std::make_shared<std::atomic<qint64>>(0);
+    QImage m_lastCountedFrame;
 };
 
 #endif // WEBPANIMENCODER_H

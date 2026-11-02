@@ -60,6 +60,7 @@ private slots:
     void sustainedFrameLossWarnsOnce();
     void startRefusedWhenDiskIsFull();
     void diskSamplesWarnAndStopSafely();
+    void bufferedAnimationCountsTowardTheDiskGuard();
     void controlBarOffersPauseResumeAndStop();
     void waitingKeepsEventLoopResponsiveAndSettingsSnapshot();
     void permissionPolicy_data();
@@ -77,6 +78,7 @@ private slots:
     void basicBackendIgnoresUnsupportedPreferences();
 private:
     void prepare(RecordingManager& manager);
+    void startFakeRecordingForDisk(RecordingManager& manager);
 };
 
 void TestRecordingStartup::nativeStreamStopFinishesRecording_data()
@@ -281,6 +283,47 @@ void TestRecordingStartup::lostSystemAudioDeviceKeepsTheMicrophone()
     manager.cancelRecording();
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     QTRY_COMPARE(encoderState->destroyed.load(), 1);
+}
+
+void TestRecordingStartup::bufferedAnimationCountsTowardTheDiskGuard()
+{
+    // PR #171 review: with preview off, a GIF/WebP recording has no file
+    // until it ends; its buffered size must still count.
+    RecordingManager manager;
+    startFakeRecordingForDisk(manager);
+    constexpr qint64 kMiB = 1024 * 1024;
+    const quint64 generation = manager.m_startGeneration;
+    QSignalSpy interrupted(&manager, &RecordingManager::recordingWarning);
+    // 400 MiB free, no file on disk, 500 MiB of animation in memory.
+    manager.onDiskSample(generation, 400 * kMiB, 0, 1000, 500 * kMiB);
+    QCOMPARE(manager.state(), RecordingManager::State::Encoding); // stopped safely, kept
+    QVERIFY(interrupted.count() >= 1);
+    manager.cancelRecording();
+}
+
+void TestRecordingStartup::startFakeRecordingForDisk(RecordingManager& manager)
+{
+    RecordingSettingsManager::instance().setAudioEnabled(false);
+    RecordingSettingsManager::instance().setShowPreview(false);
+    prepare(manager);
+    auto encoderState = std::make_shared<AudioEncoderTestState>();
+    RecordingInitTask::Config config;
+    config.region = QRect(0, 0, 16, 16);
+    config.screenInfo.geometry = config.region;
+    config.frameSize = QSize(16, 16);
+    config.outputPath = "unused-buffered-disk-test.mp4";
+    auto task = QSharedPointer<RecordingInitTask>::create(config);
+    task->m_createEncoder = [encoderState](const auto& options, QObject* parent) {
+        return EncoderFactoryTestAccess::create(options, parent, encoderState);
+    };
+    QVERIFY(task->initializeEncoder());
+    task->result().success = true;
+    task->result().captureEngine = std::make_unique<FakeStartupCapture>();
+    task->result().captureEngineStarted = true;
+    manager.m_initTask = task;
+    manager.m_recordingFilePath = QStringLiteral("unused-buffered-disk-test.mp4");
+    manager.onInitializationComplete(task, manager.m_initGeneration);
+    QCOMPARE(manager.state(), RecordingManager::State::Recording);
 }
 
 void TestRecordingStartup::init()

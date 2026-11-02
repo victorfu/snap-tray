@@ -10,6 +10,7 @@
 #include "RecordingRegionNormalizer.h"
 #include "qml/QmlCountdownOverlay.h"
 #include "encoding/NativeGifEncoder.h"
+#include "encoding/WebPAnimEncoder.h"
 #include "encoding/EncodingWorker.h"
 #include "IVideoEncoder.h"
 #include "encoding/EncoderFactory.h"
@@ -988,6 +989,8 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
         m_encodingWorker->setVideoEncoder(nativeEncoder);
         m_encodingWorker->setEncoderType(EncodingWorker::EncoderType::Video);
     }
+    m_bufferedOutputBytes = gifEncoder ? gifEncoder->bufferedBytesCounter()
+        : webpEncoder ? webpEncoder->bufferedBytesCounter() : nullptr;
     if (gifEncoder) {
         m_encodingWorker->setGifEncoder(gifEncoder);
         if (!nativeEncoder) {
@@ -1483,13 +1486,17 @@ void RecordingManager::checkDiskSpace()
     const quint64 generation = m_startGeneration;
     const QString path = m_recordingFilePath;
     const auto probe = m_freeBytesForPath;
+    const auto buffered = m_bufferedOutputBytes;
     const qint64 sampleMs = m_elapsedTimer.isValid() ? m_elapsedTimer.elapsed() : 0;
     const QPointer<RecordingManager> guard(this);
-    (void)QtConcurrent::run([guard, generation, path, probe, sampleMs]() {
+    (void)QtConcurrent::run([guard, generation, path, probe, buffered, sampleMs]() {
         const qint64 freeBytes = probe ? probe(QFileInfo(path).absolutePath()) : -1;
         const qint64 fileBytes = QFileInfo(path).size();
-        QMetaObject::invokeMethod(QCoreApplication::instance(), [guard, generation, freeBytes, fileBytes, sampleMs]() {
-            if (guard) guard->onDiskSample(generation, freeBytes, fileBytes, sampleMs);
+        // Buffered formats have no file yet: all of it still needs the room.
+        const qint64 pendingBytes = buffered ? buffered->load() : 0;
+        QMetaObject::invokeMethod(QCoreApplication::instance(),
+                                  [guard, generation, freeBytes, fileBytes, sampleMs, pendingBytes]() {
+            if (guard) guard->onDiskSample(generation, freeBytes, fileBytes, sampleMs, pendingBytes);
         }, Qt::QueuedConnection);
     });
 }
@@ -1501,16 +1508,19 @@ void RecordingManager::setLowDiskSpace(bool low)
     emit lowDiskSpaceChanged(low);
 }
 
-void RecordingManager::onDiskSample(quint64 generation, qint64 freeBytes, qint64 fileBytes, qint64 sampleMs)
+void RecordingManager::onDiskSample(quint64 generation, qint64 freeBytes, qint64 fileBytes, qint64 sampleMs,
+                                    qint64 pendingBytes)
 {
     m_diskProbeRunning = false;
     if (generation != m_startGeneration || (m_state != State::Recording && m_state != State::Paused)) {
         return;
     }
-    m_writeRate.addSample(fileBytes, sampleMs);
+    // The rate covers both: buffered data reaches the disk at the end.
+    m_writeRate.addSample(qMax<qint64>(0, fileBytes) + qMax<qint64>(0, pendingBytes), sampleMs);
     SnapTray::DiskSpaceGuard::Input input;
     if (freeBytes >= 0) input.freeBytes = freeBytes;
     input.recordedBytes = qMax<qint64>(0, fileBytes);
+    input.pendingBytes = qMax<qint64>(0, pendingBytes);
     input.bytesPerSecond = m_writeRate.bytesPerSecond();
     input.exportLikely = m_startSettings.showPreview;
     const auto previous = m_diskGuard.level();
