@@ -44,6 +44,13 @@ QString ffmpegError(int code)
     return QString::fromUtf8(buffer);
 }
 
+// What the AVIO callbacks write to: the temporary file, and the count of
+// bytes in it so far (the destination exists only after commit()).
+struct OutputSink {
+    QSaveFile* file = nullptr;
+    IVideoEncoder::ByteCounter written;
+};
+
 // FFmpeg 7 made the AVIO write buffer const.
 #if LIBAVFORMAT_VERSION_MAJOR >= 61
 int writeOutput(void* opaque, const uint8_t* data, int size)
@@ -51,14 +58,24 @@ int writeOutput(void* opaque, const uint8_t* data, int size)
 int writeOutput(void* opaque, uint8_t* data, int size)
 #endif
 {
-    auto* file = static_cast<QSaveFile*>(opaque);
+    auto* sink = static_cast<OutputSink*>(opaque);
+    QSaveFile* file = sink->file;
     const qint64 written = file->write(reinterpret_cast<const char*>(data), size);
-    return written == size ? size : AVERROR(EIO);
+    if (written != size) {
+        return AVERROR(EIO);
+    }
+    // The furthest byte written is the file's size (the muxer seeks back to
+    // patch headers, which does not grow it).
+    if (sink->written) {
+        const qint64 end = file->pos();
+        if (end > sink->written->load()) sink->written->store(end);
+    }
+    return size;
 }
 
 int64_t seekOutput(void* opaque, int64_t offset, int whence)
 {
-    auto* file = static_cast<QSaveFile*>(opaque);
+    QSaveFile* file = static_cast<OutputSink*>(opaque)->file;
     if (whence & AVSEEK_SIZE) {
         return file->size();
     }
@@ -81,6 +98,7 @@ int64_t seekOutput(void* opaque, int64_t offset, int whence)
 struct FFmpegEncoder::State
 {
     std::unique_ptr<QSaveFile> output;
+    OutputSink sink;
     AVFormatContext* format = nullptr;
     AVCodecContext* codec = nullptr;
     AVIOContext* io = nullptr;
@@ -187,6 +205,8 @@ bool FFmpegEncoder::start(const QString& path, const QSize& size, int frameRate)
         fail(s.output->errorString());
         return false;
     }
+    m_writtenBytes->store(0);
+    s.sink = OutputSink{s.output.get(), m_writtenBytes};
     int result = avformat_alloc_output_context2(&s.format, nullptr, "mp4", nullptr);
     if (result < 0 || !s.format) {
         fail(QStringLiteral("Cannot allocate MP4 muxer: %1").arg(ffmpegError(result)));
@@ -194,7 +214,7 @@ bool FFmpegEncoder::start(const QString& path, const QSize& size, int frameRate)
     }
     auto* buffer = static_cast<unsigned char*>(av_malloc(kIoBufferSize));
     if (buffer) {
-        s.io = avio_alloc_context(buffer, kIoBufferSize, 1, s.output.get(),
+        s.io = avio_alloc_context(buffer, kIoBufferSize, 1, &s.sink,
                                  nullptr, writeOutput, seekOutput);
         if (!s.io) {
             av_free(buffer);

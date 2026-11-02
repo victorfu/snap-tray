@@ -17,6 +17,7 @@ private slots:
     void invalidConfiguration();
     void abortAndFailurePreserveDestination();
     void emptyRecordingAndReuse();
+    void writtenBytesAreReportedBeforeCommit();
 };
 
 void TestFFmpegEncoder::roundTrip()
@@ -152,6 +153,38 @@ void TestFFmpegEncoder::emptyRecordingAndReuse()
     QVERIFY(avformat_find_stream_info(format, nullptr) >= 0);
     // The implicit 30 fps clock must not accumulate rounded 33 ms intervals.
     QVERIFY(qAbs(format->duration - 10000000) <= 1000);
+}
+
+void TestFFmpegEncoder::writtenBytesAreReportedBeforeCommit()
+{
+    // PR #171 review: output goes to a temporary file until finish() commits
+    // it, so the destination has no size while recording; the encoder
+    // reports what it has written for the disk guard.
+    QTemporaryDir dir;
+    FFmpegEncoder encoder;
+    QVERIFY2(encoder.isAvailable(), "Install a system FFmpeg build with libx264 or libopenh264");
+    const QString path = dir.filePath(QStringLiteral("growing.mp4"));
+    QVERIFY2(encoder.start(path, QSize(320, 240), 30), qPrintable(encoder.lastError()));
+    const auto written = encoder.writtenBytesCounter();
+    QVERIFY(written);
+    QImage image(320, 240, QImage::Format_ARGB32);
+    quint32 seed = 1;
+    for (int i = 0; i < 90; ++i) {
+        // Noise does not compress: the muxer flushes to disk during recording.
+        for (int y = 0; y < image.height(); ++y) {
+            auto* line = reinterpret_cast<QRgb*>(image.scanLine(y));
+            for (int x = 0; x < image.width(); ++x) {
+                seed = seed * 1664525u + 1013904223u;
+                line[x] = 0xff000000u | (seed >> 8);
+            }
+        }
+        encoder.writeFrame(image, i * 33);
+    }
+    QVERIFY(!QFileInfo::exists(path));
+    QVERIFY2(written->load() > 0, "nothing reported while recording");
+    encoder.finish();
+    QVERIFY(QFileInfo::exists(path));
+    QCOMPARE(written->load(), QFileInfo(path).size());
 }
 
 QTEST_GUILESS_MAIN(TestFFmpegEncoder)

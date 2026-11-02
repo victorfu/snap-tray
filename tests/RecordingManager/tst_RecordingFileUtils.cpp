@@ -44,6 +44,7 @@ private slots:
     void testNewDestinationMovesSource();
     void testSamePathIsNoOp();
     void testCaseAliasOfSameFileIsNoOp();
+    void testOverwritingCopiesData();
 };
 
 void TestRecordingFileUtils::testExistingDestinationReplacedAfterCompleteCopy()
@@ -178,6 +179,28 @@ void TestRecordingFileUtils::testCaseAliasOfSameFileIsNoOp()
     QVERIFY(QFileInfo::exists(aliasPath));
     QCOMPARE(readFile(sourcePath), recording);
     QCOMPARE(readFile(aliasPath), recording);
+}
+
+void TestRecordingFileUtils::testOverwritingCopiesData()
+{
+    // PR #171 review: a save onto an existing file on the recording's volume
+    // skipped the free-space check, yet it copies the whole recording before
+    // replacing the destination. Only a new name on the same volume renames.
+    QTemporaryDir dir;
+    const QString source = dir.filePath(QStringLiteral("recording.mp4"));
+    QFile file(source);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    file.write("video");
+    file.close();
+    const QString fresh = dir.filePath(QStringLiteral("fresh.mp4"));
+    QVERIFY(!SnapTray::RecordingFileUtils::saveCopiesData(source, fresh));
+    const QString existing = dir.filePath(QStringLiteral("existing.mp4"));
+    QFile other(existing);
+    QVERIFY(other.open(QIODevice::WriteOnly));
+    other.write("old");
+    other.close();
+    QVERIFY(SnapTray::RecordingFileUtils::saveCopiesData(source, existing));
+    QVERIFY(!SnapTray::RecordingFileUtils::saveCopiesData(source, source));
 }
 
 QTEST_MAIN(TestRecordingFileUtils)

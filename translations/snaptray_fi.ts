@@ -517,6 +517,11 @@ Päivämäärätunnisteet: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} tai {date}</
 <context>
     <name>MainApplication</name>
     <message>
+        <location filename="../src/MainApplication.cpp" line="1287" />
+        <source>low disk space</source>
+        <translation>levytila vähissä</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="0" />
         <source>Warning: %1</source>
         <translation>Varoitus: %1</translation>
@@ -1738,6 +1743,46 @@ Koko: %2</translation>
 <context>
     <name>RecordingManager</name>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="2106" />
+        <source>The recording is kept at %1.</source>
+        <translation>Tallenne on tallessa sijainnissa %1.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2105" />
+        <source>Your recording is kept; choose another location.</source>
+        <translation>Tallenne säilyy; valitse toinen sijainti.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2101" />
+        <source>Not enough free space at the chosen location (%1 free, %2 needed).</source>
+        <translation>Valitussa sijainnissa ei ole tarpeeksi tilaa (%1 vapaana, tarvitaan %2).</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1547" />
+        <source>Recording stopped because the disk is almost full. Everything recorded so far is kept.</source>
+        <translation>Tallennus pysäytettiin, koska levy on lähes täynnä. Kaikki tähän asti tallennettu säilyy.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1536" />
+        <source>Disk space is running low: %1 free. Stop soon to keep this recording.</source>
+        <translation>Levytila on vähissä: %1 vapaana. Lopeta pian, jotta tallenne säilyy.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1534" />
+        <source>Disk space is running low: about %1 min of recording left (estimate). Stop soon to keep this recording.</source>
+        <translation>Levytila on vähissä: noin %1 min tallennusaikaa jäljellä (arvio). Lopeta pian, jotta tallenne säilyy.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1524" />
+        <source>SnapTray can't check the free disk space for this recording. Keep an eye on it during long recordings.</source>
+        <translation>SnapTray ei voi tarkistaa tämän tallennuksen vapaata levytilaa. Seuraa sitä pitkissä tallennuksissa.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="806" />
+        <source>Not enough free disk space to start recording (%1 free).</source>
+        <translation>Levyllä ei ole tarpeeksi tilaa tallennuksen aloittamiseen (%1 vapaana).</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="1460" />
         <source>Recording can't keep up and is dropping frames. Try a lower frame rate, or close other busy apps.</source>
         <translation>Tallennus ei pysy perässä ja pudottaa kuvia. Kokeile pienempää kuvataajuutta tai sulje muita raskaita sovelluksia.</translation>
@@ -2096,6 +2141,11 @@ Koko: %2</translation>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="406" />
+        <source>Not enough free disk space to export (%1 free, about %2 needed). Free up space and try again; your recording is kept.</source>
+        <translation>Levytilaa ei ole tarpeeksi vientiin (%1 vapaana, tarvitaan noin %2). Vapauta tilaa ja yritä uudelleen; tallenne säilyy.</translation>
+    </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="889" />
         <source>Writing file...</source>

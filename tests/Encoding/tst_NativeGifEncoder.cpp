@@ -1,5 +1,7 @@
 #include <QtTest/QtTest>
 #include <QTemporaryDir>
+#include <QPainter>
+#include "encoding/WebPAnimEncoder.h"
 #include <QSignalSpy>
 #include <QFile>
 #include "encoding/NativeGifEncoder.h"
@@ -122,6 +124,9 @@ class TestNativeGifEncoder : public QObject
     Q_OBJECT
 
 private slots:
+    void bufferedBytesAreCountedBeforeTheFileExists();
+    void webpEstimateFollowsChangedRegions();
+    void webpEstimateCoversHighEntropyFrames();
     void initTestCase();
     void cleanupTestCase();
     void init();
@@ -725,6 +730,107 @@ void TestNativeGifEncoder::testLastErrorMessage()
     m_encoder->finish();
 
     QVERIFY(!m_encoder->lastError().isEmpty());
+}
+
+void TestNativeGifEncoder::bufferedBytesAreCountedBeforeTheFileExists()
+{
+    // PR #171 review: these encoders write the file only in finish(); the
+    // disk guard reads how much they hold.
+    QTemporaryDir dir;
+    QImage a(64, 48, QImage::Format_ARGB32);
+    QImage b(64, 48, QImage::Format_ARGB32);
+    a.fill(Qt::red);
+    b.fill(Qt::blue);
+
+    NativeGifEncoder gif;
+    const QString gifPath = dir.filePath(QStringLiteral("held.gif"));
+    QVERIFY(gif.start(gifPath, a.size(), 10));
+    const auto gifBytes = gif.bufferedBytesCounter();
+    for (int i = 0; i < 6; ++i) gif.writeFrame(i % 2 ? a : b, i * 100);
+    QVERIFY(!QFileInfo::exists(gifPath) || QFileInfo(gifPath).size() == 0);
+    QVERIFY(gifBytes->load() > 0);
+    gif.abort();
+
+    WebPAnimationEncoder webp;
+    const QString webpPath = dir.filePath(QStringLiteral("held.webp"));
+    QVERIFY(webp.start(webpPath, a.size(), 10));
+    const auto webpBytes = webp.bufferedBytesCounter();
+    webp.writeFrame(a, 0);
+    const qint64 afterFirst = webpBytes->load();
+    QVERIFY(afterFirst > 0);
+    // An unchanged screen adds nothing to the estimate; a change does.
+    webp.writeFrame(a, 100);
+    QCOMPARE(webpBytes->load(), afterFirst);
+    webp.writeFrame(b, 200);
+    QVERIFY(webpBytes->load() > afterFirst);
+    QVERIFY(!QFileInfo::exists(webpPath) || QFileInfo(webpPath).size() == 0);
+    webp.abort();
+}
+
+void TestNativeGifEncoder::webpEstimateFollowsChangedRegions()
+{
+    // PR #171 review: a small moving square charged the whole screen per
+    // frame, so the disk guard reserved ~250x the real output.
+    QTemporaryDir dir;
+    const QSize size(640, 360);
+    WebPAnimationEncoder webp;
+    const QString path = dir.filePath(QStringLiteral("square.webp"));
+    QVERIFY(webp.start(path, size, 30));
+    const auto counter = webp.bufferedBytesCounter();
+    for (int i = 0; i < 100; ++i) {
+        QImage frame(size, QImage::Format_ARGB32);
+        frame.fill(Qt::white);
+        QPainter painter(&frame);
+        painter.fillRect(QRect(10 + i * 5, 100, 10, 10), Qt::black);
+        painter.end();
+        webp.writeFrame(frame, i * 33);
+    }
+    const qint64 estimate = counter->load();
+    QSignalSpy finished(&webp, &WebPAnimationEncoder::finished);
+    webp.finish();
+    QCOMPARE(finished.count(), 1);
+    const qint64 actual = QFileInfo(path).size();
+    QVERIFY(actual > 0);
+    QVERIFY2(estimate < actual * 10,
+             qPrintable(QStringLiteral("estimate %1 vs actual %2").arg(estimate).arg(actual)));
+    QVERIFY2(estimate >= actual / 2,
+             qPrintable(QStringLiteral("estimate %1 vs actual %2").arg(estimate).arg(actual)));
+}
+
+void TestNativeGifEncoder::webpEstimateCoversHighEntropyFrames()
+{
+    // PR #171 review: a fixed bytes-per-pixel rate reserved 2.3 MB for
+    // 100 noise frames that encode to 15.6 MB, so the animation could
+    // outgrow the disk before the guard stopped it. The estimate must not
+    // fall short of the real output for content that does not compress.
+    QTemporaryDir dir;
+    const QSize size(640, 360);
+    WebPAnimationEncoder webp;
+    const QString path = dir.filePath(QStringLiteral("noise.webp"));
+    QVERIFY(webp.start(path, size, 30));
+    const auto counter = webp.bufferedBytesCounter();
+    QImage frame(size, QImage::Format_ARGB32);
+    quint32 seed = 7;
+    for (int i = 0; i < 40; ++i) {
+        for (int y = 0; y < size.height(); ++y) {
+            auto* line = reinterpret_cast<QRgb*>(frame.scanLine(y));
+            for (int x = 0; x < size.width(); ++x) {
+                seed = seed * 1664525u + 1013904223u;
+                line[x] = 0xff000000u | (seed >> 8);
+            }
+        }
+        webp.writeFrame(frame, i * 33);
+    }
+    const qint64 estimate = counter->load();
+    QSignalSpy finished(&webp, &WebPAnimationEncoder::finished);
+    webp.finish();
+    QCOMPARE(finished.count(), 1);
+    const qint64 actual = QFileInfo(path).size();
+    QVERIFY(actual > 0);
+    QVERIFY2(estimate >= actual,
+             qPrintable(QStringLiteral("estimate %1 vs actual %2").arg(estimate).arg(actual)));
+    QVERIFY2(estimate < actual * 4,
+             qPrintable(QStringLiteral("estimate %1 vs actual %2").arg(estimate).arg(actual)));
 }
 
 QTEST_MAIN(TestNativeGifEncoder)

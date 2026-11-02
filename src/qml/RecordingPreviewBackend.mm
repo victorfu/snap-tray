@@ -12,6 +12,10 @@
 #include "recording/WindowTimelineSidecar.h"
 
 #include <QCloseEvent>
+#include "recording/DiskSpaceGuard.h"
+#include <QLocale>
+#include <QStorageInfo>
+#include <cmath>
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDebug>
@@ -59,6 +63,12 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
 std::function<int()>& RecordingPreviewBackend::outputQualityOverride()
 {
     static std::function<int()> override;
+    return override;
+}
+
+std::function<qint64(const QString&)>& RecordingPreviewBackend::freeBytesForPathOverride()
+{
+    static std::function<qint64(const QString&)> override;
     return override;
 }
 
@@ -378,6 +388,35 @@ void RecordingPreviewBackend::save()
     // every MP4 re-encode below uses it. Quality 80 is only the legacy default.
     m_outputQuality = outputQualityOverride() ? outputQualityOverride()()
                                               : RecordingSettingsManager::instance().quality();
+
+    // An export writes a second file next to the recording. Check the room
+    // for it first (an unedited MP4 can be moved as is, so it needs none).
+    const bool writesNewFile = m_selectedFormat != MP4 || hasTrim() || hasCrop();
+    if (writesNewFile) {
+        const QString directory = QFileInfo(m_videoPath).absolutePath();
+        const qint64 freeBytes = freeBytesForPathOverride() ? freeBytesForPathOverride()(directory)
+                                                            : QStorageInfo(directory).bytesAvailable();
+        const qint64 sourceBytes = qMax<qint64>(0, QFileInfo(m_videoPath).size());
+        // Only the kept part is exported: a short clip from a long recording
+        // needs room for that clip, not the whole recording (#171 review).
+        // A crop is not counted down; the estimate stays on the safe side.
+        const qint64 keptBytes = m_duration > 0 && hasTrim()
+            ? qint64(std::ceil(double(sourceBytes) * double(trimmedDuration()) / double(m_duration)))
+            : sourceBytes;
+        // MP4 edits are at most about the source's size; GIF and WebP can be
+        // larger, so allow twice as much. Unknown free space does not block.
+        const qint64 needed = SnapTray::DiskSpaceGuard::kFloorBytes
+            + (m_selectedFormat == MP4 ? keptBytes : 2 * keptBytes);
+        if (freeBytes >= 0 && freeBytes < needed) {
+            qWarning() << "RecordingPreviewBackend: not enough space to export:" << freeBytes << "<" << needed;
+            m_canRetrySave = true;
+            setErrorMessage(tr("Not enough free disk space to export (%1 free, about %2 needed). "
+                               "Free up space and try again; your recording is kept.")
+                                .arg(QLocale().formattedDataSize(freeBytes),
+                                     QLocale().formattedDataSize(needed)));
+            return;
+        }
+    }
 
     // Animated exports share the same offline extraction path, including trims.
     if (m_selectedFormat != MP4) {
@@ -1330,6 +1369,20 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
                                         sourceProbe, QFileInfo(request.inputPath).size(), outputQuality)) {
                 moveInstead = true;
                 moveReason = "meets the output quality target";
+            }
+        }
+        if (smartSave && !moveInstead && !unsupported) {
+            // Re-encoding an unedited recording writes a second file. Without
+            // room for it, save the recording as recorded (a move needs no
+            // space) instead of filling the disk with an export.
+            const QString directory = QFileInfo(request.outputPath).absolutePath();
+            const qint64 freeBytes = freeBytesForPathOverride() ? freeBytesForPathOverride()(directory)
+                                                                : QStorageInfo(directory).bytesAvailable();
+            const qint64 needed = SnapTray::DiskSpaceGuard::kFloorBytes
+                + qMax<qint64>(0, QFileInfo(request.inputPath).size());
+            if (freeBytes >= 0 && freeBytes < needed) {
+                moveInstead = true;
+                moveReason = "not enough free space to re-encode";
             }
         }
         if (moveInstead) {

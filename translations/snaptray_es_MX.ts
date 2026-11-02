@@ -523,6 +523,11 @@ Tokens de fecha: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, o {date}</translation
 <context>
     <name>MainApplication</name>
     <message>
+        <location filename="../src/MainApplication.cpp" line="1287" />
+        <source>low disk space</source>
+        <translation>poco espacio en disco</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="0" />
         <source>Warning: %1</source>
         <translation>Advertencia: %1</translation>
@@ -1744,6 +1749,46 @@ Tamaño: %2</translation>
 <context>
     <name>RecordingManager</name>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="2106" />
+        <source>The recording is kept at %1.</source>
+        <translation>La grabación se conserva en %1.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2105" />
+        <source>Your recording is kept; choose another location.</source>
+        <translation>Tu grabación se conserva; elige otra ubicación.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2101" />
+        <source>Not enough free space at the chosen location (%1 free, %2 needed).</source>
+        <translation>No hay suficiente espacio en la ubicación elegida (%1 libres, se necesitan %2).</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1547" />
+        <source>Recording stopped because the disk is almost full. Everything recorded so far is kept.</source>
+        <translation>La grabación se detuvo porque el disco está casi lleno. Se conserva todo lo grabado hasta ahora.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1536" />
+        <source>Disk space is running low: %1 free. Stop soon to keep this recording.</source>
+        <translation>Queda poco espacio en disco: %1 libres. Detén pronto para conservar la grabación.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1534" />
+        <source>Disk space is running low: about %1 min of recording left (estimate). Stop soon to keep this recording.</source>
+        <translation>Queda poco espacio en disco: unos %1 min de grabación (estimado). Detén pronto para conservar la grabación.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1524" />
+        <source>SnapTray can't check the free disk space for this recording. Keep an eye on it during long recordings.</source>
+        <translation>SnapTray no puede comprobar el espacio libre para esta grabación. Vigílalo en grabaciones largas.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="806" />
+        <source>Not enough free disk space to start recording (%1 free).</source>
+        <translation>No hay suficiente espacio en disco para empezar a grabar (%1 libres).</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="1460" />
         <source>Recording can't keep up and is dropping frames. Try a lower frame rate, or close other busy apps.</source>
         <translation>La grabación no da abasto y está perdiendo fotogramas. Prueba una velocidad de fotogramas menor o cierra otras apps ocupadas.</translation>
@@ -2102,6 +2147,11 @@ Tamaño: %2</translation>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="406" />
+        <source>Not enough free disk space to export (%1 free, about %2 needed). Free up space and try again; your recording is kept.</source>
+        <translation>No hay suficiente espacio para exportar (%1 libres, se necesitan unos %2). Libera espacio e inténtalo de nuevo; tu grabación se conserva.</translation>
+    </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="889" />
         <source>Writing file...</source>

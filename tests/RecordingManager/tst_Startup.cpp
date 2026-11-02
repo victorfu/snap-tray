@@ -1,4 +1,5 @@
 #include <QtTest>
+#include <QThreadPool>
 #include <QScreen>
 #include <QGuiApplication>
 #include <QTimer>
@@ -58,6 +59,10 @@ private slots:
     void init();
     void sessionClockFollowsRecordingLifecycle();
     void sustainedFrameLossWarnsOnce();
+    void startRefusedWhenDiskIsFull();
+    void diskSamplesWarnAndStopSafely();
+    void bufferedAnimationCountsTowardTheDiskGuard();
+    void encoderWrittenBytesFeedTheDiskGuard();
     void controlBarOffersPauseResumeAndStop();
     void waitingKeepsEventLoopResponsiveAndSettingsSnapshot();
     void permissionPolicy_data();
@@ -75,6 +80,7 @@ private slots:
     void basicBackendIgnoresUnsupportedPreferences();
 private:
     void prepare(RecordingManager& manager);
+    void startFakeRecordingForDisk(RecordingManager& manager, IVideoEncoder::ByteCounter written = nullptr);
 };
 
 void TestRecordingStartup::nativeStreamStopFinishesRecording_data()
@@ -279,6 +285,68 @@ void TestRecordingStartup::lostSystemAudioDeviceKeepsTheMicrophone()
     manager.cancelRecording();
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     QTRY_COMPARE(encoderState->destroyed.load(), 1);
+}
+
+void TestRecordingStartup::bufferedAnimationCountsTowardTheDiskGuard()
+{
+    // PR #171 review: with preview off, a GIF/WebP recording has no file
+    // until it ends; its buffered size must still count.
+    RecordingManager manager;
+    startFakeRecordingForDisk(manager);
+    constexpr qint64 kMiB = 1024 * 1024;
+    const quint64 generation = manager.m_startGeneration;
+    QSignalSpy interrupted(&manager, &RecordingManager::recordingWarning);
+    // 400 MiB free, no file on disk, 500 MiB of animation in memory.
+    manager.onDiskSample(generation, 400 * kMiB, 0, 1000, 500 * kMiB);
+    QCOMPARE(manager.state(), RecordingManager::State::Encoding); // stopped safely, kept
+    QVERIFY(interrupted.count() >= 1);
+    manager.cancelRecording();
+}
+
+void TestRecordingStartup::encoderWrittenBytesFeedTheDiskGuard()
+{
+    // PR #171 review: the Linux encoder writes a temporary file until it
+    // finishes, so the destination's size read 0 all recording long and the
+    // guard reserved nothing for it. The encoder's own count is used.
+    constexpr qint64 kMiB = 1024 * 1024;
+    auto written = std::make_shared<std::atomic<qint64>>(10240 * kMiB);
+    RecordingManager manager;
+    manager.m_freeBytesForPath = [](const QString&) { return 150 * kMiB; };
+    startFakeRecordingForDisk(manager, written);
+    // 150 MiB free: enough for an empty file, not for finishing 10 GiB.
+    manager.checkDiskSpace();
+    // Deliver only the probe's result; a full event loop would also run the
+    // stopped recording's save, which opens a dialog without a real file.
+    QVERIFY(QThreadPool::globalInstance()->waitForDone(5000));
+    QCoreApplication::sendPostedEvents(QCoreApplication::instance(), QEvent::MetaCall);
+    QCOMPARE(manager.state(), RecordingManager::State::Encoding); // stopped safely, kept
+    manager.cancelRecording();
+}
+
+void TestRecordingStartup::startFakeRecordingForDisk(RecordingManager& manager, IVideoEncoder::ByteCounter written)
+{
+    RecordingSettingsManager::instance().setAudioEnabled(false);
+    RecordingSettingsManager::instance().setShowPreview(false);
+    prepare(manager);
+    auto encoderState = std::make_shared<AudioEncoderTestState>();
+    encoderState->written = written;
+    RecordingInitTask::Config config;
+    config.region = QRect(0, 0, 16, 16);
+    config.screenInfo.geometry = config.region;
+    config.frameSize = QSize(16, 16);
+    config.outputPath = "unused-buffered-disk-test.mp4";
+    auto task = QSharedPointer<RecordingInitTask>::create(config);
+    task->m_createEncoder = [encoderState](const auto& options, QObject* parent) {
+        return EncoderFactoryTestAccess::create(options, parent, encoderState);
+    };
+    QVERIFY(task->initializeEncoder());
+    task->result().success = true;
+    task->result().captureEngine = std::make_unique<FakeStartupCapture>();
+    task->result().captureEngineStarted = true;
+    manager.m_initTask = task;
+    manager.m_recordingFilePath = QStringLiteral("unused-buffered-disk-test.mp4");
+    manager.onInitializationComplete(task, manager.m_initGeneration);
+    QCOMPARE(manager.state(), RecordingManager::State::Recording);
 }
 
 void TestRecordingStartup::init()
@@ -663,6 +731,94 @@ void TestRecordingStartup::sustainedFrameLossWarnsOnce()
     manager.stopRecording();
     QVERIFY(!manager.isDroppingFrames());
     QCOMPARE(dropping.count(), 2);
+    manager.cancelRecording();
+}
+
+void TestRecordingStartup::startRefusedWhenDiskIsFull()
+{
+    RecordingSettingsManager::instance().setAudioEnabled(false);
+    RecordingManager manager;
+    manager.m_freeBytesForPath = [](const QString&) { return qint64(10 * 1024 * 1024); };
+    prepare(manager);
+    QSignalSpy errors(&manager, &RecordingManager::recordingError);
+    manager.beginAsyncInitialization();
+    QCOMPARE(manager.state(), RecordingManager::State::Idle);
+    QCOMPARE(errors.count(), 1);
+    QVERIFY(errors.first().first().toString().contains(QStringLiteral("Not enough free disk space")));
+    QVERIFY(!manager.m_initTask);
+
+    // Unknown free space does not block a start.
+    RecordingManager unknown;
+    unknown.m_freeBytesForPath = [](const QString&) { return qint64(-1); };
+    unknown.m_initializeRecording = [] {};
+    prepare(unknown);
+    QSignalSpy unknownErrors(&unknown, &RecordingManager::recordingError);
+    unknown.beginAsyncInitialization();
+    QCOMPARE(unknownErrors.count(), 0);
+    unknown.cancelRecording();
+}
+
+void TestRecordingStartup::diskSamplesWarnAndStopSafely()
+{
+    RecordingSettingsManager::instance().setAudioEnabled(false);
+    RecordingSettingsManager::instance().setShowPreview(false);
+    RecordingManager manager;
+    prepare(manager);
+    auto encoderState = std::make_shared<AudioEncoderTestState>();
+    RecordingInitTask::Config config;
+    config.region = QRect(0, 0, 16, 16);
+    config.screenInfo.geometry = config.region;
+    config.frameSize = QSize(16, 16);
+    config.outputPath = "unused-disk-test.mp4";
+    auto task = QSharedPointer<RecordingInitTask>::create(config);
+    task->m_createEncoder = [encoderState](const auto& options, QObject* parent) {
+        return EncoderFactoryTestAccess::create(options, parent, encoderState);
+    };
+    QVERIFY(task->initializeEncoder());
+    task->result().success = true;
+    task->result().captureEngine = std::make_unique<FakeStartupCapture>();
+    task->result().captureEngineStarted = true;
+    manager.m_initTask = task;
+    manager.m_recordingFilePath = QStringLiteral("unused-disk-test.mp4");
+    manager.onInitializationComplete(task, manager.m_initGeneration);
+    QCOMPARE(manager.state(), RecordingManager::State::Recording);
+    QVERIFY(manager.m_diskTimer);  // monitoring runs while recording
+
+    constexpr qint64 kMiB = 1024 * 1024;
+    const quint64 generation = manager.m_startGeneration;
+    QSignalSpy warnings(&manager, &RecordingManager::recordingWarning);
+    QSignalSpy low(&manager, &RecordingManager::lowDiskSpaceChanged);
+    // Plenty of room, a growing file at 1 MiB/s.
+    manager.onDiskSample(generation, 100000 * kMiB, 0, 0);
+    manager.onDiskSample(generation, 100000 * kMiB, 1 * kMiB, 1000);
+    QCOMPARE(warnings.count(), 0);
+    // Into the warning band: one warning with an estimated time left.
+    manager.onDiskSample(generation, 150 * kMiB, 2 * kMiB, 2000);
+    QCOMPARE(warnings.count(), 1);
+    QVERIFY(warnings.last().first().toString().contains(QStringLiteral("estimate")));
+    QVERIFY(manager.isLowOnDiskSpace());
+    manager.onDiskSample(generation, 140 * kMiB, 3 * kMiB, 3000);
+    QCOMPARE(warnings.count(), 1);  // no repeat
+    // A sample from an older session is ignored.
+    manager.onDiskSample(generation - 1, 0, 0, 3500);
+    QCOMPARE(manager.state(), RecordingManager::State::Recording);
+    // Space freed: the warning clears.
+    manager.onDiskSample(generation, 100000 * kMiB, 4 * kMiB, 4000);
+    QVERIFY(!manager.isLowOnDiskSpace());
+    // The probe fails: reported once, the recording continues.
+    manager.onDiskSample(generation, -1, 5 * kMiB, 5000);
+    manager.onDiskSample(generation, -1, 6 * kMiB, 6000);
+    QCOMPARE(warnings.count(), 2);
+    QCOMPARE(manager.state(), RecordingManager::State::Recording);
+    // Nearly full: the recording is stopped through the normal stop path
+    // (finalize, then save), never discarded.
+    QSignalSpy cancelled(&manager, &RecordingManager::recordingCancelled);
+    manager.onDiskSample(generation, 70 * kMiB, 7 * kMiB, 7000);
+    QCOMPARE(manager.state(), RecordingManager::State::Encoding);
+    QCOMPARE(warnings.count(), 3);
+    QVERIFY(warnings.last().first().toString().contains(QStringLiteral("disk is almost full")));
+    QCOMPARE(cancelled.count(), 0);
+    QVERIFY(!manager.m_diskTimer);
     manager.cancelRecording();
 }
 

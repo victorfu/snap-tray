@@ -355,6 +355,8 @@ void MainApplication::initialize()
         this, &MainApplication::updateTrayToolTip);
     connect(m_recordingManager, &RecordingManager::droppingFramesChanged,
         this, &MainApplication::updateTrayToolTip);
+    connect(m_recordingManager, &RecordingManager::lowDiskSpaceChanged,
+        this, &MainApplication::updateTrayToolTip);
     connect(m_recordingManager, &RecordingManager::diagnosticsAvailable,
         this, &MainApplication::updateRecordingActionText);
 
@@ -1323,6 +1325,9 @@ QString MainApplication::trayRecordingStatusLine() const
     }
     if (m_recordingManager && m_recordingManager->isDroppingFrames()) {
         parts.append(tr("dropping frames"));
+    }
+    if (m_recordingManager && m_recordingManager->isLowOnDiskSpace()) {
+        parts.append(tr("low disk space"));
     }
     QString line = parts.join(QStringLiteral(" \u00B7 "));
     // Audio stays visible for the whole recording, including fallbacks that

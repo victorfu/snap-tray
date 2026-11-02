@@ -517,6 +517,11 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 <context>
     <name>MainApplication</name>
     <message>
+        <location filename="../src/MainApplication.cpp" line="1287" />
+        <source>low disk space</source>
+        <translation>λίγος χώρος στον δίσκο</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="0" />
         <source>Warning: %1</source>
         <translation>Προειδοποίηση: %1</translation>
@@ -1738,6 +1743,46 @@ Size: %2</source>
 <context>
     <name>RecordingManager</name>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="2106" />
+        <source>The recording is kept at %1.</source>
+        <translation>Η εγγραφή διατηρείται στο %1.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2105" />
+        <source>Your recording is kept; choose another location.</source>
+        <translation>Η εγγραφή σας διατηρείται· επιλέξτε άλλη θέση.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2101" />
+        <source>Not enough free space at the chosen location (%1 free, %2 needed).</source>
+        <translation>Δεν υπάρχει αρκετός χώρος στη θέση που επιλέξατε (%1 ελεύθερα, χρειάζονται %2).</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1547" />
+        <source>Recording stopped because the disk is almost full. Everything recorded so far is kept.</source>
+        <translation>Η εγγραφή σταμάτησε επειδή ο δίσκος είναι σχεδόν γεμάτος. Ό,τι έχει εγγραφεί μέχρι τώρα διατηρείται.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1536" />
+        <source>Disk space is running low: %1 free. Stop soon to keep this recording.</source>
+        <translation>Ο χώρος στον δίσκο τελειώνει: %1 ελεύθερα. Σταματήστε σύντομα για να κρατήσετε την εγγραφή.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1534" />
+        <source>Disk space is running low: about %1 min of recording left (estimate). Stop soon to keep this recording.</source>
+        <translation>Ο χώρος στον δίσκο τελειώνει: απομένουν περίπου %1 λεπτά εγγραφής (εκτίμηση). Σταματήστε σύντομα για να κρατήσετε την εγγραφή.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1524" />
+        <source>SnapTray can't check the free disk space for this recording. Keep an eye on it during long recordings.</source>
+        <translation>Το SnapTray δεν μπορεί να ελέγξει τον ελεύθερο χώρο για αυτή την εγγραφή. Παρακολουθήστε τον σε μεγάλες εγγραφές.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="806" />
+        <source>Not enough free disk space to start recording (%1 free).</source>
+        <translation>Δεν υπάρχει αρκετός χώρος στον δίσκο για έναρξη εγγραφής (%1 ελεύθερα).</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="1460" />
         <source>Recording can't keep up and is dropping frames. Try a lower frame rate, or close other busy apps.</source>
         <translation>Η εγγραφή δεν προλαβαίνει και χάνει καρέ. Δοκιμάστε χαμηλότερο ρυθμό καρέ ή κλείστε άλλες απαιτητικές εφαρμογές.</translation>
@@ -2096,6 +2141,11 @@ Size: %2</source>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="406" />
+        <source>Not enough free disk space to export (%1 free, about %2 needed). Free up space and try again; your recording is kept.</source>
+        <translation>Δεν υπάρχει αρκετός χώρος για εξαγωγή (%1 ελεύθερα, χρειάζονται περίπου %2). Ελευθερώστε χώρο και δοκιμάστε ξανά· η εγγραφή σας διατηρείται.</translation>
+    </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="889" />
         <source>Writing file...</source>

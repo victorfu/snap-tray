@@ -1,4 +1,7 @@
 #include <QtTest/QtTest>
+#include <QFileInfo>
+#include <QFile>
+#include <QScopeGuard>
 
 #include "qml/RecordingPreviewBackend.h"
 #include "utils/VideoCropGeometry.h"
@@ -32,6 +35,8 @@ private slots:
     void exactInputIsLegalized();
     void undoRedoCoversCropAndTrim();
     void resetIsUndoable();
+    void exportNeedsRoomForASecondFile();
+    void exportRoomFollowsTheTrimmedLength();
 };
 
 namespace {
@@ -350,6 +355,89 @@ void tst_RecordingPreviewCrop::resetIsUndoable()
     backend.redo();
     QVERIFY(backend.hasCrop());
     backend.m_isProcessing = false;
+}
+
+void tst_RecordingPreviewCrop::exportNeedsRoomForASecondFile()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString video = dir.filePath(QStringLiteral("rec.mp4"));
+    {
+        QFile file(video);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        QVERIFY(file.write(QByteArray(1024 * 1024, 'x')) > 0);  // a 1 MiB "recording"
+    }
+    qint64 freeBytes = 10 * 1024 * 1024;
+    QString queried;
+    RecordingPreviewBackend::freeBytesForPathOverride() = [&](const QString& path) {
+        queried = path;
+        return freeBytes;
+    };
+    auto restore = qScopeGuard([] { RecordingPreviewBackend::freeBytesForPathOverride() = {}; });
+
+    RecordingPreviewBackend backend(video);
+    backend.updateDuration(10000);
+    QSignalSpy saved(&backend, &RecordingPreviewBackend::saveRequested);
+    // GIF: refused before any work starts, with a retryable error; nothing is deleted.
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    backend.save();
+    QVERIFY(!backend.isProcessing());
+    QVERIFY(backend.errorMessage().contains(QStringLiteral("Not enough free disk space")));
+    QVERIFY(backend.canRetrySave());
+    QCOMPARE(QFileInfo(queried).canonicalFilePath(), QFileInfo(dir.path()).canonicalFilePath());
+    QVERIFY(QFileInfo::exists(video));
+    QCOMPARE(saved.count(), 0);
+
+    // MP4 with a trim also writes a second file.
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    QVERIFY(backend.setTrimFromInput(1000, 9000));
+    backend.clearError();
+    backend.save();
+    QVERIFY(!backend.isProcessing());
+    QVERIFY(!backend.errorMessage().isEmpty());
+
+    // Enough room (or unknown room): the export starts.
+    freeBytes = -1;
+    backend.clearError();
+    backend.save();
+    QVERIFY(backend.errorMessage().isEmpty());
+    QVERIFY(backend.isProcessing());
+}
+
+void tst_RecordingPreviewCrop::exportRoomFollowsTheTrimmedLength()
+{
+    // PR #171 review: a few seconds trimmed from a long recording still
+    // needed room for the whole recording, so a recording stopped for low
+    // space could not even be cut down to a small clip.
+    constexpr qint64 kMiB = 1024 * 1024;
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("long.mp4"));
+    {
+        QFile file(video);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        QVERIFY(file.resize(1024 * kMiB)); // a sparse 1 GiB "recording"
+    }
+    RecordingPreviewBackend::freeBytesForPathOverride() = [](const QString&) { return 200 * kMiB; };
+    auto restore = qScopeGuard([] { RecordingPreviewBackend::freeBytesForPathOverride() = {}; });
+    RecordingPreviewBackend backend(video);
+    backend.updateDuration(100000);
+    backend.updateVideoSize(QSize(1280, 720));
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+
+    // The whole recording re-encoded (a crop) does not fit in 200 MiB...
+    backend.setCropRect(QRect(0, 0, 640, 360));
+    QVERIFY(backend.hasCrop());
+    backend.save();
+    QVERIFY(backend.canRetrySave());
+    QVERIFY(!backend.isProcessing());
+    backend.clearCrop();
+
+    // ...ten seconds of it do.
+    QVERIFY(backend.setTrimFromInput(20000, 30000));
+    backend.clearError();
+    backend.save();
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QVERIFY(backend.isProcessing());
 }
 
 QTEST_MAIN(tst_RecordingPreviewCrop)
