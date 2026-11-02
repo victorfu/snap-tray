@@ -110,6 +110,7 @@ private slots:
     void outputNotes();
     void dialogShowsSetup();
     void recoveryDialogLists();
+    void recoveryDialogScrollsManyRecordings();
 
 private:
     std::shared_ptr<FakeEngineState> m_engineState;
@@ -518,6 +519,62 @@ void TestRecordingSetup::recoveryDialogLists()
     viewModel->recover(0);
     QCOMPARE(recover.count(), 1);
     QCOMPARE(recover.first().first().toString(), video);
+}
+
+void TestRecordingSetup::recoveryDialogScrollsManyRecordings()
+{
+    // PR #172 review: the list grew with every recording, so enough of them
+    // pushed the dialog past the screen and its lower rows and Later out of
+    // reach. It is bounded by the screen and scrolls.
+    QTemporaryDir dir;
+    QList<SnapTray::RecordingSession::Recoverable> many;
+    for (int i = 0; i < 40; ++i) {
+        SnapTray::RecordingSession::Recoverable item;
+        item.info.videoPath = dir.filePath(QStringLiteral("SnapTray_Recording_%1.mp4").arg(i));
+        item.info.startedAt = QDateTime::currentDateTime().addSecs(-60 * i);
+        item.decodable = true;
+        item.durationMs = 1000 * (i + 1);
+        many.append(item);
+    }
+    auto* viewModel = new SnapTray::RecordingRecoveryViewModel;
+    viewModel->setRecoveries(many);
+    SnapTray::QmlDialog dialog(QUrl(QStringLiteral("qrc:/SnapTrayQml/dialogs/RecordingRecoveryDialog.qml")),
+                               viewModel, QStringLiteral("viewModel"));
+    viewModel->setParent(&dialog);
+    QScreen* screen = QGuiApplication::primaryScreen();
+    dialog.showCenteredOnScreen(screen);
+    QQuickView* view = nullptr;
+    for (QWindow* window : QGuiApplication::topLevelWindows()) {
+        if (auto* candidate = qobject_cast<QQuickView*>(window); candidate && candidate->isVisible())
+            view = candidate;
+    }
+    QVERIFY(view);
+    QVERIFY(QTest::qWaitForWindowExposed(view));
+    // Laid out (the window follows its content's size), it fits the screen.
+    QTest::qWait(100);
+    QTRY_COMPARE(view->height(), qRound(view->rootObject()->height()));
+    QVERIFY2(view->height() <= screen->availableGeometry().height(),
+             qPrintable(QStringLiteral("%1 > %2").arg(view->height()).arg(screen->availableGeometry().height())));
+    // Every row is in the list, which scrolls.
+    auto* list = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("recoveryList"));
+    QVERIFY(list);
+    QTRY_VERIFY(list->property("contentHeight").toReal() > list->height() && list->height() > 0);
+    auto* later = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("recoveryLaterButton"));
+    QVERIFY(later && later->isVisible());
+    const QRectF laterRect = later->mapRectToScene(QRectF(0, 0, later->width(), later->height()));
+    QVERIFY(laterRect.bottom() <= view->height());
+    // The last row comes into view by scrolling.
+    list->setProperty("contentY", list->property("contentHeight").toReal() - list->height());
+    QQuickItem* lastDiscard = nullptr;
+    std::function<void(QQuickItem*)> walk = [&](QQuickItem* item) {
+        if (item->objectName() == QLatin1String("recoveryDiscardButton")) lastDiscard = item;
+        for (QQuickItem* child : item->childItems()) walk(child);
+    };
+    walk(list);
+    QVERIFY(lastDiscard);
+    const QRectF lastRect = lastDiscard->mapRectToItem(list, QRectF(0, 0, lastDiscard->width(), lastDiscard->height()));
+    QVERIFY2(lastRect.top() >= 0 && lastRect.bottom() <= list->height(),
+             qPrintable(QStringLiteral("last row at %1-%2 of %3").arg(lastRect.top()).arg(lastRect.bottom()).arg(list->height())));
 }
 
 void TestRecordingSetup::lostMicrophoneEndsTheTest_data()
