@@ -52,7 +52,7 @@ Item {
         // Re-evaluate when the zoom, crop or format changes, not only the position.
         void backend.zoomSegments; void backend.zoomEnabled; void backend.zoomReduceMotion
         void backend.cropRect; void backend.selectedFormat
-        if (cropOverlay.editing || root.comparingOriginal)
+        if (cropOverlay.editing || root.comparingOriginal || backend.selectedMask >= 0)
             return root.zoomTarget
         // Per frame, like the pointer overlay (#175 review): the reported
         // position would pan the zoom at 10 fps on some platforms.
@@ -60,6 +60,10 @@ Item {
     }
     readonly property real zoomFactor: zoomView.width > 0 ? zoomTarget.width / zoomView.width : 1
     readonly property var zoomScales: [1.5, 2.0, 2.5, 3.0]
+    // Masks (#162): style names in RedactionMask::Style order.
+    readonly property var maskStyleLabels: [qsTr("Solid"), qsTr("Pixelate"), qsTr("Blur")]
+    readonly property var selectedMaskData: backend.selectedMask >= 0 ? backend.masks[backend.selectedMask] : null
+    readonly property int newMaskRangeMs: 3000
     // A point on the stage, through the zoom, in unzoomed stage coordinates.
     function unzoomPoint(x, y) {
         return Qt.point(zoomView.x + (x - zoomTarget.x) / zoomFactor, zoomView.y + (y - zoomTarget.y) / zoomFactor)
@@ -128,11 +132,59 @@ Item {
                 return
             }
         }
-        if (zoomPanel.visible && !zoomPanel.commitPendingRange())
+        if (zoomPanel.visible && !root.commitPendingRange(zoomStartField, zoomEndField,
+                (start, end) => backend.setZoomRange(backend.selectedZoom, start, end)))
+            return
+        if (maskPanel.visible && !maskPanel.wholeRecording && !root.commitPendingRange(maskStartField, maskEndField,
+                (start, end) => backend.setMaskRange(backend.selectedMask, start, end)))
             return
         if (cropOverlay.editing && !root.applyCropWithPendingInput())
             return
         backend.save()
+    }
+
+    // The mask to select after `current` when the timeline is clicked at
+    // `ms`: masks covering that time, topmost (latest) first, then none.
+    // `clicked` is the bar hit, for a click just past its ends.
+    function nextMaskAt(ms, current, clicked) {
+        const here = []
+        for (let i = backend.masks.length - 1; i >= 0; --i) {
+            const mask = backend.masks[i]
+            const end = mask.end < 0 ? timelineArea.dur : mask.end
+            if (ms >= mask.start && ms <= end)
+                here.push(i)
+        }
+        if (here.length === 0)
+            return current === clicked ? -1 : clicked
+        const at = here.indexOf(current)
+        if (at < 0)
+            return here[0]
+        return at + 1 < here.length ? here[at + 1] : -1
+    }
+
+    // A start/end pair typed but not confirmed yet (Save does not take
+    // focus), applied together so a range that needs both ends works. False,
+    // with the field marked and focused, when it is unreadable or rejected.
+    function commitPendingRange(startField, endField, apply) {
+        if (!startField.edited && !endField.edited)
+            return true
+        const start = startField.edited ? backend.parseTime(startField.text) : startField.timeMs
+        const end = endField.edited ? backend.parseTime(endField.text) : endField.timeMs
+        // Unreadable text marks its own field; a rejected range marks what was typed.
+        const unreadable = start < 0 || end < 0
+        if (unreadable || !apply(start, end)) {
+            startField.invalid = startField.edited && (!unreadable || start < 0)
+            endField.invalid = endField.edited && (!unreadable || end < 0)
+            const focusField = startField.invalid ? startField : endField
+            focusField.forceActiveFocus()
+            return false
+        }
+        for (const field of [startField, endField]) {
+            field.edited = false
+            field.invalid = false
+            field.text = backend.formatPreciseTime(field.timeMs)
+        }
+        return true
     }
 
     // Apply Crop and Save do not take focus: typed X/Y/W/H not yet confirmed
@@ -346,7 +398,8 @@ Item {
                 objectName: "previewVideoClickArea"
                 anchors.fill: parent
                 // Video clicks belong to the crop editor while editing; Space and the play button still work.
-                enabled: !cropOverlay.editing
+                // While a mask is selected its editor owns the video.
+                enabled: !cropOverlay.editing && !(backend.selectedMask >= 0)
                 cursorShape: backend.selectedZoom >= 0 ? CursorTokens.pickPoint : CursorTokens.clickable
                 onClicked: function(mouse) {
                     // With a zoom selected, a click moves its centre there.
@@ -356,6 +409,86 @@ Item {
                         return
                     }
                     videoPlayer.togglePlayPause()
+                }
+            }
+
+            // The selected mask: drag it to move, drag the corner to resize.
+            Item {
+                id: maskEditor
+                objectName: "previewMaskEditor"
+                anchors.fill: parent
+                z: 5
+                visible: backend.selectedMask >= 0 && !cropOverlay.editing
+                property rect draft: Qt.rect(0, 0, 0, 0)
+                property bool dragging: false
+                readonly property rect shown: {
+                    void backend.masks
+                    return dragging ? draft : backend.maskRectInView(backend.selectedMask, videoPlayer.contentRect)
+                }
+                function commit() {
+                    dragging = false
+                    backend.setMaskRectFromView(backend.selectedMask, draft, videoPlayer.contentRect)
+                }
+
+                Rectangle {
+                    x: maskEditor.shown.x
+                    y: maskEditor.shown.y
+                    width: maskEditor.shown.width
+                    height: maskEditor.shown.height
+                    color: "transparent"
+                    border.width: 2
+                    border.color: root.accent
+                    Accessible.role: Accessible.Graphic
+                    Accessible.name: qsTr("Selected mask")
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: CursorTokens.moveItem
+                        property point origin
+                        onPressed: function(mouse) {
+                            origin = Qt.point(mouse.x, mouse.y)
+                            maskEditor.draft = maskEditor.shown
+                            maskEditor.dragging = true
+                        }
+                        onPositionChanged: function(mouse) {
+                            const c = videoPlayer.contentRect
+                            const d = maskEditor.draft
+                            const nx = Math.max(c.x, Math.min(c.x + c.width - d.width, d.x + mouse.x - origin.x))
+                            const ny = Math.max(c.y, Math.min(c.y + c.height - d.height, d.y + mouse.y - origin.y))
+                            maskEditor.draft = Qt.rect(nx, ny, d.width, d.height)
+                        }
+                        onReleased: maskEditor.commit()
+                        onCanceled: maskEditor.commit()
+                    }
+
+                    Rectangle {
+                        objectName: "previewMaskResizeHandle"
+                        width: 12
+                        height: 12
+                        radius: 2
+                        x: parent.width - width / 2
+                        y: parent.height - height / 2
+                        color: root.accent
+                        MouseArea {
+                            anchors.fill: parent
+                            anchors.margins: -4
+                            cursorShape: CursorTokens.resizeDiagonal
+                            onPressed: {
+                                maskEditor.draft = maskEditor.shown
+                                maskEditor.dragging = true
+                            }
+                            onPositionChanged: function(mouse) {
+                                const p = mapToItem(maskEditor, mouse.x, mouse.y)
+                                const c = videoPlayer.contentRect
+                                const d = maskEditor.draft
+                                const w = Math.max(8, Math.min(c.x + c.width, p.x) - d.x)
+                                const h = Math.max(8, Math.min(c.y + c.height, p.y) - d.y)
+                                maskEditor.draft = Qt.rect(d.x, d.y, w, h)
+                            }
+                            onReleased: maskEditor.commit()
+                            onCanceled: maskEditor.commit()
+                        }
+                    }
                 }
             }
 
@@ -389,6 +522,7 @@ Item {
 
             Rectangle {
                 id: playOverlay
+                objectName: "previewPlayOverlay"
                 anchors.centerIn: parent
                 width: 72
                 height: 72
@@ -618,6 +752,48 @@ Item {
                 color: root.isDraggingTrimEnd ? root.accentHover : root.accent
             }
 
+            // Masks just above the track; click one to edit it.
+            Repeater {
+                model: backend.masks
+                Rectangle {
+                    required property int index
+                    required property var modelData
+                    objectName: "previewMaskSegment" + index
+                    readonly property bool selected: backend.selectedMask === index
+                    readonly property real endMs: modelData.end < 0 ? timelineArea.dur : modelData.end
+                    x: timelineArea.posToX(modelData.start)
+                    y: 10
+                    z: 2
+                    width: Math.max(4, timelineArea.posToX(endMs) - x)
+                    height: 5
+                    radius: 2
+                    color: root.textPrimary
+                    opacity: selected ? 0.9 : 0.45
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Mask from %1 to %2").arg(backend.formatPreciseTime(modelData.start))
+                                         .arg(modelData.end < 0 ? qsTr("the end") : backend.formatPreciseTime(modelData.end))
+                    Accessible.onPressAction: backend.selectedMask = index
+                    MouseArea {
+                        anchors.fill: parent
+                        anchors.margins: -2
+                        cursorShape: CursorTokens.clickable
+                        onClicked: function(mouse) {
+                            // Overlapping masks share the bar's place: each click
+                            // moves to the next one under the pointer, then to
+                            // none, so every mask can be reached (#177 review).
+                            const ms = timelineArea.xToPos(mapToItem(timelineArea, mouse.x, mouse.y).x)
+                            const next = root.nextMaskAt(ms, backend.selectedMask, parent.index)
+                            backend.selectedZoom = -1
+                            backend.selectedMask = next
+                            if (next >= 0) {
+                                videoPlayer.pause()
+                                videoPlayer.seek(backend.masks[next].start)
+                            }
+                        }
+                    }
+                }
+            }
+
             // Zoom segments above the track; click one to edit it.
             Repeater {
                 model: backend.zoomSegments
@@ -627,10 +803,10 @@ Item {
                     objectName: "previewZoomSegment" + index
                     readonly property bool selected: backend.selectedZoom === index
                     x: timelineArea.posToX(modelData.start)
-                    y: 2
+                    y: 1
                     z: 2
                     width: Math.max(4, timelineArea.posToX(modelData.end) - x)
-                    height: 8
+                    height: 7
                     radius: 3
                     color: root.accent
                     opacity: !backend.zoomEnabled ? 0.3 : selected ? 1.0 : 0.6
@@ -648,6 +824,7 @@ Item {
                         anchors.margins: -2
                         cursorShape: CursorTokens.clickable
                         onClicked: {
+                            backend.selectedMask = -1
                             backend.selectedZoom = parent.selected ? -1 : parent.index
                             if (backend.selectedZoom >= 0) {
                                 videoPlayer.pause()
@@ -793,6 +970,10 @@ Item {
                         parts.push(qsTr("no audio"))
                     if (backend.hasPointerData && !backend.cursorEffectsAvailable)
                         parts.push(qsTr("pointer effects need GIF or WebP on this system"))
+                    if (backend.masks.length > 0)
+                        parts.push(backend.masksAvailable
+                                   ? qsTr("masks: %1, burned into the export; the unmasked temporary file is deleted after saving").arg(backend.masks.length)
+                                   : qsTr("masks need GIF or WebP on this system"))
                     return parts.join(" · ")
                 }
             }
@@ -839,6 +1020,7 @@ Item {
             // never resizes the video under the pointer.
             Layout.preferredHeight: Math.max(formatRow.height,
                                              zoomPanel.visible ? zoomPanel.height : 0,
+                                             maskPanel.visible ? maskPanel.height : 0,
                                              cropPanel.visible ? cropPanel.height : 0,
                                              ComponentTokens.recordingPreviewControlButtonHeight)
                                     + SemanticTokens.spacing16
@@ -849,6 +1031,7 @@ Item {
                 width: Math.min(controlRowArea.width - 2 * SemanticTokens.spacing8, root.rowContentWidth(this))
                 spacing: SemanticTokens.spacing8
                 readonly property bool shown: !cropOverlay.editing && !(backend.selectedZoom >= 0)
+                                              && !(backend.selectedMask >= 0)
                 opacity: shown ? 1 : 0
                 enabled: shown
                 Accessible.ignored: !shown
@@ -950,6 +1133,113 @@ Item {
                             root.showButtonTooltip(qsTr("No room for a new zoom here"), this, true)
                     }
                 }
+                SegmentButton {
+                    objectName: "previewAddMask"
+                    enabled: backend.masksAvailable
+                    minimumButtonWidth: 0
+                    text: qsTr("Add Mask")
+                    tooltipText: backend.masksAvailable
+                        ? qsTr("Cover a sensitive area in the exported file")
+                        : qsTr("Masks need GIF or WebP on this system")
+                    onClicked: {
+                        videoPlayer.pause()
+                        backend.selectedZoom = -1
+                        backend.addMask()
+                    }
+                }
+            }
+
+            // Editing one mask, in place of the format buttons.
+            Flow {
+                id: maskPanel
+                objectName: "previewMaskPanel"
+                anchors.centerIn: parent
+                width: Math.min(controlRowArea.width - 2 * SemanticTokens.spacing8, root.rowContentWidth(this))
+                spacing: SemanticTokens.spacing4
+                visible: backend.selectedMask >= 0 && !cropOverlay.editing
+                readonly property bool wholeRecording: root.selectedMaskData !== null
+                    && root.selectedMaskData.start === 0 && root.selectedMaskData.end < 0
+
+                // The fields are shared by all masks: text typed for one and
+                // not applied must not reach the next one selected.
+                Connections {
+                    target: root.previewBackend
+                    function onSelectedMaskChanged() {
+                        maskStartField.discardEdit()
+                        maskEndField.discardEdit()
+                    }
+                }
+
+                Repeater {
+                    model: root.maskStyleLabels
+                    SegmentButton {
+                        required property int index
+                        required property string modelData
+                        objectName: "previewMaskStyle" + index
+                        minimumButtonWidth: 0
+                        text: modelData
+                        tooltipText: index === 0 ? qsTr("Cover with solid black")
+                                                 : qsTr("Weaken detail; it may still be possible to recognise or recover")
+                        selected: root.selectedMaskData !== null && root.selectedMaskData.style === index
+                        onClicked: backend.setMaskStyle(backend.selectedMask, index)
+                    }
+                }
+                SegmentButton {
+                    objectName: "previewMaskWhole"
+                    minimumButtonWidth: 0
+                    text: qsTr("Whole Recording")
+                    tooltipText: qsTr("Mask for the whole recording, or only for a time range")
+                    selected: maskPanel.wholeRecording
+                    onClicked: {
+                        if (maskPanel.wholeRecording) {
+                            const start = videoPlayer.position
+                            backend.setMaskRange(backend.selectedMask, start,
+                                                 Math.min(timelineArea.dur, start + root.newMaskRangeMs))
+                        } else {
+                            backend.setMaskRange(backend.selectedMask, 0, -1)
+                        }
+                    }
+                }
+                TimeField {
+                    id: maskStartField
+                    objectName: "previewMaskStartField"
+                    visible: !maskPanel.wholeRecording
+                    accessibleName: qsTr("Mask start")
+                    timeMs: root.selectedMaskData ? root.selectedMaskData.start : 0
+                    onCommitted: function(ms) {
+                        invalid = !backend.setMaskRange(backend.selectedMask, ms, root.selectedMaskData.end)
+                    }
+                }
+                TimeField {
+                    id: maskEndField
+                    objectName: "previewMaskEndField"
+                    visible: !maskPanel.wholeRecording
+                    accessibleName: qsTr("Mask end")
+                    timeMs: root.selectedMaskData && root.selectedMaskData.end >= 0 ? root.selectedMaskData.end : timelineArea.dur
+                    onCommitted: function(ms) {
+                        invalid = !backend.setMaskRange(backend.selectedMask, root.selectedMaskData.start, ms)
+                    }
+                }
+                SegmentButton {
+                    objectName: "previewMaskDelete"
+                    minimumButtonWidth: 0
+                    text: qsTr("Delete")
+                    tooltipText: qsTr("Delete this mask")
+                    onClicked: backend.removeMask(backend.selectedMask)
+                }
+                SegmentButton {
+                    objectName: "previewMaskDone"
+                    minimumButtonWidth: 0
+                    text: qsTr("Done")
+                    tooltipText: qsTr("Drag the mask to move it, or its corner to resize it. Done finishes editing.")
+                    // Typed times are applied first; invalid ones keep the editor
+                    // open, so Save cannot skip them (#177 review).
+                    onClicked: {
+                        if (maskPanel.wholeRecording || root.commitPendingRange(maskStartField, maskEndField,
+                                (start, end) => backend.setMaskRange(backend.selectedMask, start, end)))
+                            backend.selectedMask = -1
+                    }
+                }
             }
 
             // Editing one zoom segment, in place of the format buttons.
@@ -959,7 +1249,7 @@ Item {
                 anchors.centerIn: parent
                 width: Math.min(controlRowArea.width - 2 * SemanticTokens.spacing8, root.rowContentWidth(this))
                 spacing: SemanticTokens.spacing4
-                visible: backend.selectedZoom >= 0 && !cropOverlay.editing
+                visible: backend.selectedZoom >= 0 && !(backend.selectedMask >= 0) && !cropOverlay.editing
                 readonly property var segment: backend.selectedZoom >= 0 ? backend.zoomSegments[backend.selectedZoom] : null
 
                 // The fields are shared by all zooms: text typed for one and
@@ -970,31 +1260,6 @@ Item {
                         zoomStartField.discardEdit()
                         zoomEndField.discardEdit()
                     }
-                }
-
-                // Typed zoom times not confirmed yet (Save does not take
-                // focus), applied together so a range that needs both ends
-                // works; false, with the field marked, when it is rejected.
-                function commitPendingRange() {
-                    if (!segment || (!zoomStartField.edited && !zoomEndField.edited))
-                        return true
-                    const start = zoomStartField.edited ? backend.parseTime(zoomStartField.text) : segment.start
-                    const end = zoomEndField.edited ? backend.parseTime(zoomEndField.text) : segment.end
-                    // Unreadable text marks its own field; a rejected range marks what was typed.
-                    const unreadable = start < 0 || end < 0
-                    if (unreadable || !backend.setZoomRange(backend.selectedZoom, start, end)) {
-                        zoomStartField.invalid = zoomStartField.edited && (!unreadable || start < 0)
-                        zoomEndField.invalid = zoomEndField.edited && (!unreadable || end < 0)
-                        const focusField = zoomStartField.invalid ? zoomStartField : zoomEndField
-                        focusField.forceActiveFocus()
-                        return false
-                    }
-                    for (const field of [zoomStartField, zoomEndField]) {
-                        field.edited = false
-                        field.invalid = false
-                        field.text = backend.formatPreciseTime(field.timeMs)
-                    }
-                    return true
                 }
 
                 Repeater {
@@ -1058,7 +1323,8 @@ Item {
                     tooltipText: qsTr("Click the video to move the zoom's centre. Done finishes editing.")
                     // Typed times are applied first; invalid ones keep the editor open.
                     onClicked: {
-                        if (zoomPanel.commitPendingRange())
+                        if (root.commitPendingRange(zoomStartField, zoomEndField,
+                                (start, end) => backend.setZoomRange(backend.selectedZoom, start, end)))
                             backend.selectedZoom = -1
                     }
                 }

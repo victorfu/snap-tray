@@ -1966,6 +1966,111 @@ Rozmiar: %2</translation>
     <name>RecordingPreview</name>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cover a sensitive area in the exported file</source>
+        <translation>Zakryj wrażliwy obszar w eksportowanym pliku</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>masks: %1, burned into the export; the unmasked temporary file is deleted after saving</source>
+        <translation>maski: %1, wtopione w eksport; tymczasowy plik bez masek zostanie usunięty po zapisaniu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Selected mask</source>
+        <translation>Wybrana maska</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>the end</source>
+        <translation>końca</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mask from %1 to %2</source>
+        <translation>Maska od %1 do %2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Drag the mask to move it, or its corner to resize it. Done finishes editing.</source>
+        <translation>Przeciągnij maskę, aby ją przesunąć, lub jej róg, aby zmienić rozmiar. Gotowe kończy edycję.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Delete this mask</source>
+        <translation>Usuń tę maskę</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mask end</source>
+        <translation>Koniec maski</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mask start</source>
+        <translation>Początek maski</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mask for the whole recording, or only for a time range</source>
+        <translation>Maska na całe nagranie lub tylko na zakres czasu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Whole Recording</source>
+        <translation>Całe nagranie</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Weaken detail; it may still be possible to recognise or recover</source>
+        <translation>Osłabia szczegóły; nadal może być możliwe ich rozpoznanie lub odtworzenie</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cover with solid black</source>
+        <translation>Zakryj pełną czernią</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Blur</source>
+        <translation>Rozmycie</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Pixelate</source>
+        <translation>Pikselizacja</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Solid</source>
+        <translation>Pełna</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>masks: %1, burned into the export; the original keeps everything</source>
+        <translation>maski: %1, wtopione w eksport; oryginał zachowuje wszystko</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>masks need GIF or WebP on this system</source>
+        <translation>maski wymagają tu formatu GIF lub WebP</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Masks need GIF or WebP on this system</source>
+        <translation>Maski wymagają tu formatu GIF lub WebP</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cover a sensitive area in the export. The original recording is not changed.</source>
+        <translation>Zakryj wrażliwy obszar w eksporcie. Oryginalne nagranie się nie zmienia.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add Mask</source>
+        <translation>Dodaj maskę</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>No room for a new zoom here</source>
         <translation>Brak miejsca na nowe powiększenie w tym miejscu</translation>
     </message>
@@ -2367,6 +2472,11 @@ Rozmiar: %2</translation>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Masks cannot be applied to MP4 on this system yet. Export as GIF or WebP, or remove the masks to export MP4. Nothing was exported.</source>
+        <translation>Maski nie mogą jeszcze być stosowane do MP4 w tym systemie. Eksportuj jako GIF lub WebP albo usuń maski, aby wyeksportować MP4. Nic nie zostało wyeksportowane.</translation>
+    </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="406" />
         <source>Not enough free disk space to export (%1 free, about %2 needed). Free up space and try again; your recording is kept.</source>

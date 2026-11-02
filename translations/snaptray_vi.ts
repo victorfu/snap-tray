@@ -1960,6 +1960,111 @@ Kích thước: %2</translation>
     <name>RecordingPreview</name>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cover a sensitive area in the exported file</source>
+        <translation>Che vùng nhạy cảm trong tệp đã xuất</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>masks: %1, burned into the export; the unmasked temporary file is deleted after saving</source>
+        <translation>mặt nạ: %1, được áp vào tệp xuất; tệp tạm chưa che sẽ bị xóa sau khi lưu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Selected mask</source>
+        <translation>Mặt nạ đã chọn</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>the end</source>
+        <translation>cuối</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mask from %1 to %2</source>
+        <translation>Mặt nạ từ %1 đến %2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Drag the mask to move it, or its corner to resize it. Done finishes editing.</source>
+        <translation>Kéo mặt nạ để di chuyển, hoặc kéo góc để đổi kích thước. Xong để kết thúc chỉnh sửa.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Delete this mask</source>
+        <translation>Xóa mặt nạ này</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mask end</source>
+        <translation>Kết thúc mặt nạ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mask start</source>
+        <translation>Bắt đầu mặt nạ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mask for the whole recording, or only for a time range</source>
+        <translation>Mặt nạ cho toàn bộ bản ghi hoặc chỉ một khoảng thời gian</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Whole Recording</source>
+        <translation>Toàn bộ bản ghi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Weaken detail; it may still be possible to recognise or recover</source>
+        <translation>Làm giảm chi tiết; vẫn có thể nhận ra hoặc khôi phục</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cover with solid black</source>
+        <translation>Che bằng màu đen đặc</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Blur</source>
+        <translation>Làm mờ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Pixelate</source>
+        <translation>Làm mờ điểm ảnh</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Solid</source>
+        <translation>Đặc</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>masks: %1, burned into the export; the original keeps everything</source>
+        <translation>mặt nạ: %1, được áp vào tệp xuất; bản gốc giữ nguyên mọi thứ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>masks need GIF or WebP on this system</source>
+        <translation>mặt nạ cần GIF hoặc WebP trên hệ thống này</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Masks need GIF or WebP on this system</source>
+        <translation>Mặt nạ cần GIF hoặc WebP trên hệ thống này</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cover a sensitive area in the export. The original recording is not changed.</source>
+        <translation>Che vùng nhạy cảm trong tệp xuất. Bản ghi gốc không thay đổi.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add Mask</source>
+        <translation>Thêm mặt nạ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>No room for a new zoom here</source>
         <translation>Không còn chỗ cho thu phóng mới ở đây</translation>
     </message>
@@ -2361,6 +2466,11 @@ Kích thước: %2</translation>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Masks cannot be applied to MP4 on this system yet. Export as GIF or WebP, or remove the masks to export MP4. Nothing was exported.</source>
+        <translation>Hệ thống này chưa thể áp dụng mặt nạ cho MP4. Hãy xuất dạng GIF hoặc WebP, hoặc gỡ mặt nạ để xuất MP4. Chưa có gì được xuất.</translation>
+    </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="406" />
         <source>Not enough free disk space to export (%1 free, about %2 needed). Free up space and try again; your recording is kept.</source>

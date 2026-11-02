@@ -111,6 +111,11 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(QVariantList zoomSegments READ zoomSegments NOTIFY zoomChanged)
     Q_PROPERTY(int selectedZoom READ selectedZoom WRITE setSelectedZoom NOTIFY selectedZoomChanged)
 
+    // Masks (#162).
+    Q_PROPERTY(bool masksAvailable READ masksAvailable NOTIFY masksChanged)
+    Q_PROPERTY(QVariantList masks READ masks NOTIFY masksChanged)
+    Q_PROPERTY(int selectedMask READ selectedMask WRITE setSelectedMask NOTIFY selectedMaskChanged)
+
     // True while the "discard this recording?" confirmation is shown.
     Q_PROPERTY(bool discardConfirmationPending READ discardConfirmationPending NOTIFY discardConfirmationChanged)
 
@@ -277,7 +282,23 @@ public:
     Q_INVOKABLE void setZoomFocusFromView(int index, const QPointF& viewPoint, const QRectF& contentRect);
     // The part of the picture shown at positionMs, in view coordinates.
     Q_INVOKABLE QRectF zoomViewportInView(qint64 positionMs, const QRectF& contentRect) const;
-    // Anything drawn into the export: pointer effects or zoom.
+    // Masks: burned into every export, never only shown in the preview.
+    bool masksAvailable() const { return formatCanDrawEffects(); }
+    QVariantList masks() const;
+    int selectedMask() const { return m_selectedMask; }
+    void setSelectedMask(int index);
+    const SnapTray::RedactionTrack& redaction() const { return m_redaction; }
+    // A solid mask over the middle of the picture for the whole recording;
+    // returns its index (or -1 when masks cannot be exported).
+    Q_INVOKABLE int addMask();
+    Q_INVOKABLE void removeMask(int index);
+    Q_INVOKABLE void setMaskRectFromView(int index, const QRectF& viewRect, const QRectF& contentRect);
+    Q_INVOKABLE QRectF maskRectInView(int index, const QRectF& contentRect) const;
+    Q_INVOKABLE void setMaskStyle(int index, int style);
+    // endMs -1 = to the end; false (nothing changes) when invalid.
+    Q_INVOKABLE bool setMaskRange(int index, qint64 startMs, qint64 endMs);
+
+    // Anything drawn into the export: masks, pointer effects or zoom.
     bool effectsActive() const;
     SnapTray::CursorEffectSettings cursorEffects() const { return m_cursorEffects; }
 
@@ -287,6 +308,8 @@ public:
     Q_INVOKABLE void updatePlayingState(bool playing);
 
 signals:
+    void masksChanged();
+    void selectedMaskChanged();
     void windowTimelineChanged();
     void cursorEffectsChanged();
     void zoomChanged();
@@ -320,6 +343,7 @@ private:
     friend class tst_RecordingPreviewCrop;
     friend class tst_RecordingPreviewDiscard;
     friend class tst_RecordingPreviewZoom;
+    friend class tst_RecordingPreviewMasks;
 
     // Test seam: when set, replaces IVideoTranscoder::create() for MP4 edit
     // exports. Empty (the default, and always in production) = native factory.
@@ -375,6 +399,10 @@ private:
     std::function<void(QImage&, qint64)> effectsFrameFilter() const;
     SnapTray::ZoomTrack m_zoom;
     int m_selectedZoom = -1;
+    SnapTray::RedactionTrack m_redaction;
+    int m_selectedMask = -1;
+    void editRedaction(const std::function<void(SnapTray::RedactionTrack&)>& change);
+    void installPreviewFrameProcessor();
     QRectF zoomBounds() const;
     // The selected format's export can draw onto frames on this platform.
     bool formatCanDrawEffects() const;

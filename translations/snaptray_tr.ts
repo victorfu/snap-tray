@@ -1960,6 +1960,111 @@ Boyut: %2</translation>
     <name>RecordingPreview</name>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cover a sensitive area in the exported file</source>
+        <translation>Dışa aktarılan dosyada hassas bir alanı ört</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>masks: %1, burned into the export; the unmasked temporary file is deleted after saving</source>
+        <translation>maskeler: %1, dışa aktarıma işlendi; maskesiz geçici dosya kaydettikten sonra silinir</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Selected mask</source>
+        <translation>Seçili maske</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>the end</source>
+        <translation>son</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mask from %1 to %2</source>
+        <translation>%1 ile %2 arası maske</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Drag the mask to move it, or its corner to resize it. Done finishes editing.</source>
+        <translation>Taşımak için maskeyi, boyutlandırmak için köşesini sürükleyin. Bitti düzenlemeyi bitirir.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Delete this mask</source>
+        <translation>Bu maskeyi sil</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mask end</source>
+        <translation>Maske sonu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mask start</source>
+        <translation>Maske başlangıcı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mask for the whole recording, or only for a time range</source>
+        <translation>Tüm kayıt veya yalnızca bir zaman aralığı için maske</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Whole Recording</source>
+        <translation>Tüm kayıt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Weaken detail; it may still be possible to recognise or recover</source>
+        <translation>Ayrıntıları zayıflatır; yine de tanınabilir veya kurtarılabilir</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cover with solid black</source>
+        <translation>Düz siyahla ört</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Blur</source>
+        <translation>Bulanıklaştır</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Pixelate</source>
+        <translation>Pikselleştir</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Solid</source>
+        <translation>Düz</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>masks: %1, burned into the export; the original keeps everything</source>
+        <translation>maskeler: %1, dışa aktarıma işlendi; özgün her şeyi korur</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>masks need GIF or WebP on this system</source>
+        <translation>maskeler bu sistemde GIF veya WebP gerektirir</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Masks need GIF or WebP on this system</source>
+        <translation>Maskeler bu sistemde GIF veya WebP gerektirir</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cover a sensitive area in the export. The original recording is not changed.</source>
+        <translation>Dışa aktarımda hassas bir alanı örter. Özgün kayıt değişmez.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add Mask</source>
+        <translation>Maske ekle</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>No room for a new zoom here</source>
         <translation>Burada yeni bir yakınlaştırma için yer yok</translation>
     </message>
@@ -2361,6 +2466,11 @@ Boyut: %2</translation>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Masks cannot be applied to MP4 on this system yet. Export as GIF or WebP, or remove the masks to export MP4. Nothing was exported.</source>
+        <translation>Bu sistemde maskeler henüz MP4'e uygulanamıyor. GIF veya WebP olarak dışa aktarın ya da MP4 için maskeleri kaldırın. Hiçbir şey dışa aktarılmadı.</translation>
+    </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="406" />
         <source>Not enough free disk space to export (%1 free, about %2 needed). Free up space and try again; your recording is kept.</source>

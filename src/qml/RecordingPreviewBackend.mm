@@ -1,6 +1,7 @@
 #include "qml/RecordingPreviewBackend.h"
 #include "cursor/CursorSurfaceSupport.h"
 #include "qml/QmlOverlayManager.h"
+#include "qml/VideoPlaybackItem.h"
 #include "utils/VideoCropGeometry.h"
 #include "video/IVideoTranscoder.h"
 #include "video/IVideoFrameReader.h"
@@ -31,6 +32,7 @@
 #include <QQmlContext>
 #include <QQuickView>
 #include <QTimer>
+#include <QtMath>
 #include <QScreen>
 #include <QtConcurrent/QtConcurrentRun>
 #include <QUuid>
@@ -70,6 +72,7 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
     // Availability depends on the format (MP4 needs a capable transcoder).
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::cursorEffectsChanged);
     connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::zoomChanged);
+    connect(this, &RecordingPreviewBackend::formatChanged, this, &RecordingPreviewBackend::masksChanged);
 }
 
 std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter() const
@@ -83,9 +86,19 @@ std::function<void(QImage&, qint64)> RecordingPreviewBackend::effectsFrameFilter
                                    : std::shared_ptr<SnapTray::CursorEffectRenderer>();
     const auto zoom = zoomAvailable() && m_zoom.isActive() ? std::make_shared<SnapTray::ZoomTrack>(m_zoom)
                                                             : std::shared_ptr<SnapTray::ZoomTrack>();
-    return [timeline, cursor, zoom, bounds, videoSize](QImage& frame, qint64 sourceMs) {
+    const auto redaction = m_redaction.isEmpty() ? std::shared_ptr<SnapTray::RedactionTrack>()
+                                                  : std::make_shared<SnapTray::RedactionTrack>(m_redaction);
+    return [timeline, cursor, zoom, redaction, bounds, videoSize](QImage& frame, qint64 sourceMs) {
         if (frame.format() != QImage::Format_RGB32 && frame.format() != QImage::Format_ARGB32_Premultiplied) {
             frame = frame.convertToFormat(QImage::Format_RGB32);
+        }
+        // Masks first, on the source content: nothing they cover can come
+        // back through the zoom's resampling.
+        // Never skip masks for lack of geometry: without a known size the
+        // frame itself is the source area.
+        if (redaction) {
+            redaction->apply(frame, sourceMs,
+                             bounds.isEmpty() ? QRectF(QPointF(0, 0), QSizeF(frame.size())) : bounds);
         }
         // The frame shows `bounds`; a zoom shows part of it, scaled to fill.
         QRectF shown = bounds;
@@ -185,7 +198,130 @@ void RecordingPreviewBackend::setClickRipple(bool value)
 
 bool RecordingPreviewBackend::effectsActive() const
 {
-    return cursorEffectsActive() || (zoomAvailable() && m_zoom.isActive());
+    return !m_redaction.isEmpty() || cursorEffectsActive() || (zoomAvailable() && m_zoom.isActive());
+}
+
+QVariantList RecordingPreviewBackend::masks() const
+{
+    QVariantList list;
+    for (const auto& mask : m_redaction.masks) {
+        list.append(QVariantMap{{QStringLiteral("x"), mask.rect.x()},
+                                {QStringLiteral("y"), mask.rect.y()},
+                                {QStringLiteral("width"), mask.rect.width()},
+                                {QStringLiteral("height"), mask.rect.height()},
+                                {QStringLiteral("start"), mask.startMs},
+                                {QStringLiteral("end"), mask.endMs},
+                                {QStringLiteral("style"), int(mask.style)}});
+    }
+    return list;
+}
+
+void RecordingPreviewBackend::setSelectedMask(int index)
+{
+    index = index >= 0 && index < int(m_redaction.masks.size()) ? index : -1;
+    if (m_selectedMask == index) return;
+    m_selectedMask = index;
+    emit selectedMaskChanged();
+}
+
+void RecordingPreviewBackend::editRedaction(const std::function<void(SnapTray::RedactionTrack&)>& change)
+{
+    if (isProcessing()) return; // a running export keeps what it started with
+    SnapTray::RedactionTrack redaction = m_redaction;
+    change(redaction);
+    if (redaction == m_redaction) return;
+    m_redaction = redaction;
+    if (m_selectedMask >= int(m_redaction.masks.size())) setSelectedMask(-1);
+    emit masksChanged();
+    recordEdit();
+}
+
+int RecordingPreviewBackend::addMask()
+{
+    if (isProcessing() || !masksAvailable() || m_videoSize.isEmpty()) return -1;
+    // A quarter of the picture in the middle, for the whole recording.
+    const QSize size(qMax(SnapTray::RedactionTrack::kMinMaskSide, m_videoSize.width() / 4),
+                     qMax(SnapTray::RedactionTrack::kMinMaskSide, m_videoSize.height() / 4));
+    SnapTray::RedactionMask mask;
+    mask.rect = QRect(QPoint((m_videoSize.width() - size.width()) / 2, (m_videoSize.height() - size.height()) / 2), size);
+    editRedaction([&mask](SnapTray::RedactionTrack& r) { r.masks.push_back(mask); });
+    const int index = int(m_redaction.masks.size()) - 1;
+    setSelectedMask(index);
+    return index;
+}
+
+void RecordingPreviewBackend::removeMask(int index)
+{
+    editRedaction([index](SnapTray::RedactionTrack& r) {
+        if (index >= 0 && index < int(r.masks.size())) r.masks.erase(r.masks.begin() + index);
+    });
+    setSelectedMask(-1);
+}
+
+void RecordingPreviewBackend::setMaskRectFromView(int index, const QRectF& viewRect, const QRectF& contentRect)
+{
+    if (m_videoSize.isEmpty() || contentRect.isEmpty()) return;
+    const double sx = m_videoSize.width() / contentRect.width();
+    const double sy = m_videoSize.height() / contentRect.height();
+    // Outward to whole video pixels, inside the picture, never smaller than the minimum.
+    QRect rect(QPoint(qFloor((viewRect.left() - contentRect.x()) * sx), qFloor((viewRect.top() - contentRect.y()) * sy)),
+               QPoint(qCeil((viewRect.right() - contentRect.x()) * sx) - 1, qCeil((viewRect.bottom() - contentRect.y()) * sy) - 1));
+    rect = rect.intersected(QRect(QPoint(0, 0), m_videoSize));
+    if (rect.width() < SnapTray::RedactionTrack::kMinMaskSide || rect.height() < SnapTray::RedactionTrack::kMinMaskSide) {
+        return;
+    }
+    editRedaction([index, rect](SnapTray::RedactionTrack& r) {
+        if (index >= 0 && index < int(r.masks.size())) r.masks[index].rect = rect;
+    });
+}
+
+QRectF RecordingPreviewBackend::maskRectInView(int index, const QRectF& contentRect) const
+{
+    if (index < 0 || index >= int(m_redaction.masks.size()) || m_videoSize.isEmpty()) return {};
+    const QRect rect = m_redaction.masks[index].rect;
+    const double sx = contentRect.width() / m_videoSize.width();
+    const double sy = contentRect.height() / m_videoSize.height();
+    return QRectF(contentRect.x() + rect.x() * sx, contentRect.y() + rect.y() * sy, rect.width() * sx, rect.height() * sy);
+}
+
+void RecordingPreviewBackend::setMaskStyle(int index, int style)
+{
+    const int clamped = qBound(0, style, int(SnapTray::RedactionMask::Style::Blur));
+    editRedaction([index, clamped](SnapTray::RedactionTrack& r) {
+        if (index >= 0 && index < int(r.masks.size())) r.masks[index].style = SnapTray::RedactionMask::Style(clamped);
+    });
+}
+
+bool RecordingPreviewBackend::setMaskRange(int index, qint64 startMs, qint64 endMs)
+{
+    if (isProcessing() || index < 0 || index >= int(m_redaction.masks.size())) return false;
+    if (startMs < 0 || (endMs >= 0 && endMs <= startMs) || (m_duration > 0 && startMs >= m_duration)) return false;
+    editRedaction([index, startMs, endMs](SnapTray::RedactionTrack& r) {
+        r.masks[index].startMs = startMs;
+        r.masks[index].endMs = endMs;
+    });
+    return true;
+}
+
+void RecordingPreviewBackend::installPreviewFrameProcessor()
+{
+    auto* player = m_view && m_view->rootObject()
+        ? m_view->rootObject()->findChild<VideoPlaybackItem*>(QStringLiteral("previewVideoPlayer"))
+        : nullptr;
+    if (!player) return;
+    // The preview shows masks burned into the real pixels, with the same
+    // function as the exports, never a lookalike drawn on top.
+    QPointer<RecordingPreviewBackend> weakThis(this);
+    player->setFrameProcessor([weakThis](QImage& frame, qint64 positionMs) {
+        if (!weakThis || weakThis->m_redaction.isEmpty()) return;
+        const QSize source = weakThis->m_videoSize.isEmpty() ? frame.size() : weakThis->m_videoSize;
+        // positionMs is this frame's own time (#175), so the preview masks
+        // exactly the frames the export does, with the same function; no
+        // extra margin that would show frames masked that are exported
+        // unmasked (#177 review).
+        weakThis->m_redaction.apply(frame, positionMs, QRectF(QPointF(0, 0), QSizeF(source)));
+    });
+    connect(this, &RecordingPreviewBackend::masksChanged, player, &VideoPlaybackItem::reprocessFrame);
 }
 
 bool RecordingPreviewBackend::zoomAvailable() const
@@ -458,6 +594,7 @@ void RecordingPreviewBackend::ensureView()
 
     m_view->setSource(
         QUrl(QStringLiteral("qrc:/SnapTrayQml/recording/RecordingPreview.qml")));
+    installPreviewFrameProcessor();
 
     // Handle window close
     connect(m_view, &QQuickView::closing, this, [this](QQuickCloseEvent *) {
@@ -716,6 +853,14 @@ void RecordingPreviewBackend::save()
     // every MP4 re-encode below uses it. Quality 80 is only the legacy default.
     m_outputQuality = outputQualityOverride() ? outputQualityOverride()()
                                               : RecordingSettingsManager::instance().quality();
+
+    // Masks are only kept off the export by drawing them; an export that
+    // cannot draw them must not happen at all.
+    if (!m_redaction.isEmpty() && !masksAvailable()) {
+        setErrorMessage(tr("Masks cannot be applied to MP4 on this system yet. Export as GIF or WebP, "
+                           "or remove the masks to export MP4. Nothing was exported."));
+        return;
+    }
 
     // An export writes a second file next to the recording. Check the room
     // for it first (an unedited MP4 can be moved as is, so it needs none).
@@ -1126,6 +1271,7 @@ SnapTray::PreviewEditState RecordingPreviewBackend::currentEditState() const
     state.crop = m_cropRect;
     state.cursor = m_cursorEffects;
     state.zoom = m_zoom;
+    state.redaction = m_redaction;
     state.trimStart = m_trimStart;
     // A trim end at the duration is the same as no trim end.
     state.trimEnd = (m_trimEnd >= 0 && m_trimEnd < m_duration) ? m_trimEnd : -1;
@@ -1145,6 +1291,11 @@ void RecordingPreviewBackend::applyEditState(const SnapTray::PreviewEditState &s
         m_trimStart = state.trimStart;
         m_trimEnd = state.trimEnd;
         emit trimRangeChanged();
+    }
+    if (state.redaction != m_redaction) {
+        m_redaction = state.redaction;
+        if (m_selectedMask >= int(m_redaction.masks.size())) setSelectedMask(-1);
+        emit masksChanged();
     }
     if (state.zoom != m_zoom) {
         m_zoom = state.zoom;
@@ -1190,6 +1341,7 @@ void RecordingPreviewBackend::resetEdits()
     SnapTray::PreviewEditState unedited;
     unedited.cursor = m_cursorEffects;
     unedited.zoom = m_zoom;
+    unedited.redaction = m_redaction;
     applyEditState(unedited);
     recordEdit();
 }
@@ -1705,7 +1857,9 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
             return false;
         };
         auto transcoder = createTranscoder();
-        const bool unsupported = !transcoder;
+        // Never export without drawing what was asked for: masks left out
+        // would leave what they cover visible.
+        const bool unsupported = !transcoder || (request.frameFilter && !transcoder->supportsFrameFilter());
         VideoTranscodeResult result;
         VideoFileProbe sourceProbe;
         bool moveInstead = false;

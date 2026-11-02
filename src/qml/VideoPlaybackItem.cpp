@@ -202,6 +202,7 @@ void VideoPlaybackItem::stop()
 void VideoPlaybackItem::clearFrame()
 {
     m_currentFrame = QImage();
+    m_rawFrame = QImage();
     m_scaledFrame = QImage();
     m_lastFrameSize = QSize();
     if (m_framePosition != 0) {
@@ -249,12 +250,32 @@ void VideoPlaybackItem::onFrameReady(const QImage &frame, qint64 positionMs)
     if (frame.isNull())
         return;
 
+    m_rawFrame = frame;
     setFramePosition(positionMs >= 0 ? positionMs : position());
     m_currentFrame = frame;
+    if (m_frameProcessor) {
+        m_frameProcessor(m_currentFrame, m_framePosition);
+    }
     refreshScaledFrameForCurrentSize();
 
     // Re-emit for external consumers (format conversion)
     emit frameReady(frame);
+}
+
+void VideoPlaybackItem::setFrameProcessor(FrameProcessor processor)
+{
+    m_frameProcessor = std::move(processor);
+    reprocessFrame();
+}
+
+void VideoPlaybackItem::reprocessFrame()
+{
+    if (m_rawFrame.isNull()) return;
+    m_currentFrame = m_rawFrame;
+    if (m_frameProcessor) {
+        m_frameProcessor(m_currentFrame, m_framePosition);
+    }
+    refreshScaledFrameForCurrentSize();
 }
 
 void VideoPlaybackItem::onMediaLoaded()

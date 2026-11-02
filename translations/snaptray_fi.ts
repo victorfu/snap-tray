@@ -1960,6 +1960,111 @@ Koko: %2</translation>
     <name>RecordingPreview</name>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cover a sensitive area in the exported file</source>
+        <translation>Peitä arkaluonteinen alue viedyssä tiedostossa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>masks: %1, burned into the export; the unmasked temporary file is deleted after saving</source>
+        <translation>peitteet: %1, poltettu vientiin; peittämätön väliaikainen tiedosto poistetaan tallennuksen jälkeen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Selected mask</source>
+        <translation>Valittu peite</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>the end</source>
+        <translation>loppuun</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mask from %1 to %2</source>
+        <translation>Peite %1–%2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Drag the mask to move it, or its corner to resize it. Done finishes editing.</source>
+        <translation>Siirrä peitettä vetämällä tai muuta kokoa vetämällä kulmasta. Valmis lopettaa muokkauksen.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Delete this mask</source>
+        <translation>Poista tämä peite</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mask end</source>
+        <translation>Peitteen loppu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mask start</source>
+        <translation>Peitteen alku</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Mask for the whole recording, or only for a time range</source>
+        <translation>Peite koko tallenteelle tai vain aikavälille</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Whole Recording</source>
+        <translation>Koko tallenne</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Weaken detail; it may still be possible to recognise or recover</source>
+        <translation>Heikentää yksityiskohtia; tunnistaminen tai palauttaminen voi silti olla mahdollista</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cover with solid black</source>
+        <translation>Peitä mustalla</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Blur</source>
+        <translation>Sumenna</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Pixelate</source>
+        <translation>Pikselöi</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Solid</source>
+        <translation>Peittävä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>masks: %1, burned into the export; the original keeps everything</source>
+        <translation>peitteet: %1, poltettu vientiin; alkuperäinen säilyttää kaiken</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>masks need GIF or WebP on this system</source>
+        <translation>peitteet vaativat tässä järjestelmässä GIF- tai WebP-muodon</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Masks need GIF or WebP on this system</source>
+        <translation>Peitteet vaativat tässä järjestelmässä GIF- tai WebP-muodon</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Cover a sensitive area in the export. The original recording is not changed.</source>
+        <translation>Peitä arkaluonteinen alue viennissä. Alkuperäinen tallenne ei muutu.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add Mask</source>
+        <translation>Lisää peite</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>No room for a new zoom here</source>
         <translation>Uudelle zoomaukselle ei ole tässä tilaa</translation>
     </message>
@@ -2361,6 +2466,11 @@ Koko: %2</translation>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="0" />
+        <source>Masks cannot be applied to MP4 on this system yet. Export as GIF or WebP, or remove the masks to export MP4. Nothing was exported.</source>
+        <translation>Peitteitä ei vielä voi käyttää MP4-muodossa tässä järjestelmässä. Vie GIF- tai WebP-muodossa tai poista peitteet viedäksesi MP4:n. Mitään ei viety.</translation>
+    </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="406" />
         <source>Not enough free disk space to export (%1 free, about %2 needed). Free up space and try again; your recording is kept.</source>
