@@ -384,23 +384,27 @@ void tst_MainApplicationTrayMenu::pauseResumeHotkey_ignoresRepeatsAndOnlyActsWhi
     // Idle, preparing or finishing: the hotkey does nothing.
     for (State state : {State::Idle, State::Preparing, State::Countdown, State::Encoding}) {
         recording->m_state = state;
-        application.m_lastRecordingHotkeyMs.clear();
+        application.m_recordingHotkeyHolds = {};
         application.onHotkeyAction(SnapTray::HotkeyAction::PauseResumeRecording);
         QCOMPARE(recording->state(), state);
     }
 
     recording->m_elapsedTimer.start();
     recording->m_state = State::Recording;
-    application.m_lastRecordingHotkeyMs.clear();
+    application.m_recordingHotkeyHolds = {};
     application.onHotkeyAction(SnapTray::HotkeyAction::PauseResumeRecording);
     QCOMPARE(recording->state(), State::Paused);
-    // Key auto-repeat right after the first press is ignored.
-    application.onHotkeyAction(SnapTray::HotkeyAction::PauseResumeRecording);
-    application.onHotkeyAction(SnapTray::HotkeyAction::PauseResumeRecording);
-    QCOMPARE(recording->state(), State::Paused);
-    // A deliberate second press, a second later, resumes.
-    const int pauseKey = static_cast<int>(SnapTray::HotkeyAction::PauseResumeRecording);
-    application.m_lastRecordingHotkeyMs[pauseKey] = application.m_recordingHotkeyClock.elapsed() - 1000;
+    // Holding the key: auto-repeat for longer than the old 400 ms throttle
+    // must not resume (PR #165 review).
+    constexpr int kRepeatMs = 40;
+    for (int i = 0; i < 15; ++i) {
+        QTest::qWait(kRepeatMs);
+        application.onHotkeyAction(SnapTray::HotkeyAction::PauseResumeRecording);
+        QCOMPARE(recording->state(), State::Paused);
+    }
+    // Released, then a deliberate second press resumes.
+    emit SnapTray::HotkeyManager::instance().actionReleased(SnapTray::HotkeyAction::PauseResumeRecording);
+    QTest::qWait(int(SnapTray::HotkeyHoldFilter::kMinIntervalMs) + 50);
     application.onHotkeyAction(SnapTray::HotkeyAction::PauseResumeRecording);
     QCOMPARE(recording->state(), State::Recording);
 

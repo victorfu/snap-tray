@@ -1100,6 +1100,12 @@ set_tests_properties(Cursor_CursorQmlGuard PROPERTIES TIMEOUT 60 LABELS "unit")
 # Hotkey Tests (link snaptray_ui for HotkeyManager)
 # ============================================================================
 
+add_executable(Hotkey_HotkeyHoldFilter Hotkey/tst_HotkeyHoldFilter.cpp)
+target_include_directories(Hotkey_HotkeyHoldFilter PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(Hotkey_HotkeyHoldFilter PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME Hotkey_HotkeyHoldFilter COMMAND Hotkey_HotkeyHoldFilter)
+set_tests_properties(Hotkey_HotkeyHoldFilter PROPERTIES TIMEOUT 30 LABELS "unit")
+
 add_executable(Hotkey_HotkeyManager Hotkey/tst_HotkeyManager.cpp)
 target_link_libraries(Hotkey_HotkeyManager PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Hotkey_HotkeyManager COMMAND Hotkey_HotkeyManager)
