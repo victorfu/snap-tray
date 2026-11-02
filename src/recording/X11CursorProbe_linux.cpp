@@ -66,9 +66,14 @@ public:
         }
 
         int event = 0, error = 0;
-        int major = 2, minor = 0;
+        // XI 2.1 or later: raw button events then arrive even while another
+        // client holds a pointer grab (an application's implicit grab during
+        // a click or drag, an open menu). XI 2.0 clients lose them, and a
+        // lost release would leave a button looking held (#174 review).
+        int major = 2, minor = 2;
         if (XQueryExtension(m_display, "XInputExtension", &m_xiOpcode, &event, &error)
-            && XIQueryVersion(m_display, &major, &minor) == Success) {
+            && XIQueryVersion(m_display, &major, &minor) == Success
+            && (major > 2 || (major == 2 && minor >= 1))) {
             std::array<unsigned char, XIMaskLen(XI_LASTEVENT)> bits{};
             XISetMask(bits.data(), XI_RawButtonPress);
             XISetMask(bits.data(), XI_RawButtonRelease);
@@ -79,7 +84,7 @@ public:
             m_clicks = XISelectEvents(m_display, m_root, &mask, 1) == Success;
         }
         if (!m_clicks) {
-            qWarning() << "X11CursorProbe: XInput2 unavailable; clicks are not recorded";
+            qWarning() << "X11CursorProbe: XInput 2.1 unavailable; clicks are not recorded";
         }
         XFlush(m_display);
         m_notifier = new QSocketNotifier(ConnectionNumber(m_display), QSocketNotifier::Read);
