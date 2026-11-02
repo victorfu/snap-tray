@@ -277,12 +277,7 @@ void MainApplication::initialize()
                 error, 5000);
         });
     connect(m_recordingManager, &RecordingManager::recordingWarning,
-        this, [](const QString& warning) {
-            SnapTray::QmlToast::screenToast().showToast(
-                SnapTray::QmlToast::Level::Warning,
-                MainApplication::tr("Recording Warning"),
-                warning, 5000);
-        });
+        this, &MainApplication::showRecordingWarning);
 
     // Connect screenshot save signals from CaptureManager
     connect(m_captureManager, &CaptureManager::saveCompleted,
@@ -350,6 +345,9 @@ void MainApplication::initialize()
 
             updateRecordingActionText();
             updateTrayRecordingIndicator();
+            if (!holdsRecordingWarnings()) {
+                flushHeldRecordingWarnings();
+            }
         });
     connect(m_recordingManager, &RecordingManager::durationChanged,
         this, &MainApplication::onRecordingDurationChanged);
@@ -1046,14 +1044,15 @@ void MainApplication::showRecordingPreview(const QString& videoPath, int default
 void MainApplication::onPreviewSaveRequested(const QString& videoPath, const QSize& outputSize)
 {
     const QPointer<RecordingPreviewBackend> backend(m_previewBackend);
-    const auto outcome = m_recordingManager->triggerSaveDialog(videoPath, outputSize);
+    QString savedPath;
+    const auto outcome = m_recordingManager->triggerSaveDialog(videoPath, outputSize, &savedPath);
     // The preview keeps the recording until it hears the outcome.
     if (!backend) {
         return;
     }
     using Outcome = RecordingPreviewBackend::SaveOutcome;
     switch (outcome) {
-    case RecordingManager::SaveOutcome::Saved: backend->completeSave(Outcome::Saved); break;
+    case RecordingManager::SaveOutcome::Saved: backend->completeSave(Outcome::Saved, savedPath); break;
     case RecordingManager::SaveOutcome::Cancelled: backend->completeSave(Outcome::Cancelled); break;
     case RecordingManager::SaveOutcome::Failed: backend->completeSave(Outcome::Failed); break;
     }
@@ -1250,6 +1249,52 @@ void MainApplication::updateTrayToolTip()
 #endif
 }
 
+bool MainApplication::holdsRecordingWarnings() const
+{
+    if (!m_recordingManager || !PlatformFeatures::instance().capabilities().recordingControlsInTray) {
+        return false;
+    }
+    // From preparation on: a five-second toast shown during the countdown
+    // would still be on screen when capture starts.
+    switch (m_recordingManager->state()) {
+    case RecordingManager::State::Preparing:
+    case RecordingManager::State::Countdown:
+    case RecordingManager::State::Recording:
+    case RecordingManager::State::Paused:
+        return true;
+    default:
+        return false;
+    }
+}
+
+void MainApplication::showRecordingWarning(const QString& warning)
+{
+    if (holdsRecordingWarnings()) {
+        if (!m_heldRecordingWarnings.contains(warning)) {
+            m_heldRecordingWarnings.append(warning);
+        }
+        updateTrayToolTip();
+        return;
+    }
+    if (m_recordingWarningToast) {
+        m_recordingWarningToast(tr("Recording Warning"), warning);
+        return;
+    }
+    SnapTray::QmlToast::screenToast().showToast(SnapTray::QmlToast::Level::Warning, tr("Recording Warning"),
+                                                warning, 5000);
+}
+
+void MainApplication::flushHeldRecordingWarnings()
+{
+    if (m_heldRecordingWarnings.isEmpty()) {
+        return;
+    }
+    const QString text = m_heldRecordingWarnings.join(QLatin1Char('\n'));
+    m_heldRecordingWarnings.clear();
+    updateTrayToolTip();
+    showRecordingWarning(text);
+}
+
 QString MainApplication::trayRecordingStatusLine() const
 {
     using Status = SnapTray::TrayRecordingStatus;
@@ -1288,6 +1333,10 @@ QString MainApplication::trayRecordingStatusLine() const
         : QString();
     if (!audioLine.isEmpty()) {
         line += QLatin1Char('\n') + audioLine;
+    }
+    // Warnings held back from the screen while capturing (shown after).
+    if (!m_heldRecordingWarnings.isEmpty()) {
+        line += QLatin1Char('\n') + tr("Warning: %1").arg(m_heldRecordingWarnings.last());
     }
     return line;
 }

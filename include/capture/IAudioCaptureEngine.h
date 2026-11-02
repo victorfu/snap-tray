@@ -220,9 +220,11 @@ signals:
     void activeSourceChanged(AudioSource source);
 
     /**
-     * @brief Emitted when the audio device is disconnected
+     * @brief Emitted when a capture device is disconnected
+     * @param source The source whose device was lost (Microphone or
+     *        SystemAudio); capture may continue with the other one.
      */
-    void deviceLost();
+    void deviceLost(IAudioCaptureEngine::AudioSource source);
 
     /**
      * @brief Emitted with audio level for UI visualization

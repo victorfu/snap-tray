@@ -593,6 +593,11 @@ File size: %3</source>
         <translation>พื้นที่ดิสก์เหลือน้อย</translation>
     </message>
     <message>
+        <location filename="../src/MainApplication.cpp" line="0" />
+        <source>Warning: %1</source>
+        <translation>คำเตือน: %1</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="1282" />
         <source>dropping frames</source>
         <translation>กำลังทิ้งเฟรม</translation>

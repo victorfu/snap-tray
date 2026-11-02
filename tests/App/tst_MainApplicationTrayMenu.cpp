@@ -146,6 +146,7 @@ private slots:
     void initialize_hidesRecordingActionWhenUnsupported();
     void recordingState_updatesTrayIconAndToolTip();
     void pauseResumeHotkey_ignoresRepeatsAndOnlyActsWhileCapturing();
+    void recordingWarnings_stayOffTheRecordedScreen();
     void onCheckForUpdates_usesSharedSettingsWindowFlowWithoutShowingSettings();
     void initialize_externalManaged_disablesCheckForUpdatesAction();
     void handleCLICommand_removedRecordCommandIsIgnored();
@@ -819,6 +820,41 @@ void tst_MainApplicationTrayMenu::cliClipboardPinPosition()
     application.m_pinWindowManager->closeAllWindows();
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     clipboard->clear();
+}
+
+void tst_MainApplicationTrayMenu::recordingWarnings_stayOffTheRecordedScreen()
+{
+    // PR #170 review: on X11 the whole screen is captured and overlays cannot
+    // be excluded, so a warning toast during recording ended up in the video.
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    MainApplication application;
+    application.initialize();
+    QStringList shown;
+    application.m_recordingWarningToast = [&shown](const QString&, const QString& text) { shown.append(text); };
+    using State = RecordingManager::State;
+    RecordingManager* recording = application.m_recordingManager;
+    recording->setState(State::Recording);
+    emit recording->recordingWarning(QStringLiteral("Frames are being dropped."));
+    emit recording->recordingWarning(QStringLiteral("Disk space is low."));
+    if (!SnapTray::currentPlatformCapabilities().recordingControlsInTray) {
+        // Overlays are kept out of the capture here: shown at once.
+        QCOMPARE(shown.size(), 2);
+        recording->setState(State::Idle);
+        return;
+    }
+    QVERIFY2(shown.isEmpty(), "a warning toast would be recorded");
+    QVERIFY(application.m_trayIcon->toolTip().contains(QStringLiteral("Disk space is low.")));
+    // Once the recording stops, everything held is shown, once.
+    recording->setState(State::Encoding);
+    QCOMPARE(shown.size(), 1);
+    QVERIFY(shown.first().contains(QStringLiteral("Frames are being dropped.")));
+    QVERIFY(shown.first().contains(QStringLiteral("Disk space is low.")));
+    QVERIFY(!application.m_trayIcon->toolTip().contains(QStringLiteral("Disk space is low.")));
+    recording->setState(State::Idle);
+    QCOMPARE(shown.size(), 1);
+    // Outside a recording, warnings show immediately.
+    emit recording->recordingWarning(QStringLiteral("Later warning."));
+    QCOMPARE(shown.size(), 2);
 }
 
 QTEST_MAIN(tst_MainApplicationTrayMenu)

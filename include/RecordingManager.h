@@ -97,7 +97,9 @@ public:
     // {w}x{h} for a cropped export; empty = region. Unlike the no-preview
     // flow, a cancelled dialog or failed save leaves the file where it is:
     // the preview still owns it and the recording it came from.
-    SaveOutcome triggerSaveDialog(const QString &videoPath, const QSize &outputSize = QSize());
+    // `savedPath` (optional) receives where the recording was saved.
+    SaveOutcome triggerSaveDialog(const QString &videoPath, const QSize &outputSize = QSize(),
+                                  QString *savedPath = nullptr);
 public slots:
 
 signals:
@@ -157,7 +159,7 @@ private:
     // `keepOnCancel`: the preview flow keeps the file (and its window
     // timeline) when the dialog is cancelled or the save fails.
     SaveOutcome showSaveDialog(const QString &tempOutputPath, const QSize &outputSize = QSize(),
-                               bool keepOnCancel = false);
+                               bool keepOnCancel = false, QString *savedPath = nullptr);
     void loadAndValidateFrameRate();
     void resetPauseTracking();
     bool shouldUseDedicatedEncodingThread(bool hasNativeEncoder) const;
