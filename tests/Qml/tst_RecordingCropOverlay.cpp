@@ -87,7 +87,7 @@ class StubPreviewBackend : public QObject
     Q_PROPERTY(int processProgress READ processProgress CONSTANT)
     Q_PROPERTY(QString processStatus READ processStatus CONSTANT)
     Q_PROPERTY(QString errorMessage READ errorMessage CONSTANT)
-    Q_PROPERTY(bool discardConfirmationPending READ discardConfirmationPending CONSTANT)
+    Q_PROPERTY(bool discardConfirmationPending READ discardConfirmationPending NOTIFY discardPendingChanged)
     Q_PROPERTY(int cropAspectIndex READ cropAspectIndex WRITE setCropAspectIndex NOTIFY cropAspectChanged)
     Q_PROPERTY(qreal cropAspectRatio READ cropAspectRatio NOTIFY cropAspectChanged)
     Q_PROPERTY(bool canUndo READ canUndo CONSTANT)
@@ -166,8 +166,18 @@ public:
     }
     Q_INVOKABLE void discard() { ++discardCount; }
     Q_INVOKABLE void requestDiscard() { ++requestDiscardCount; }
-    Q_INVOKABLE void cancelDiscard() {}
-    bool discardConfirmationPending() const { return false; }
+    Q_INVOKABLE void cancelDiscard()
+    {
+        ++cancelDiscardCount;
+        setDiscardPending(false);
+    }
+    bool discardConfirmationPending() const { return m_discardPending; }
+    void setDiscardPending(bool pending)
+    {
+        if (m_discardPending == pending) return;
+        m_discardPending = pending;
+        emit discardPendingChanged();
+    }
     Q_INVOKABLE void toggleTrim() {}
     // Same "mm:ss" shape as the real backend, so toolbar widths are realistic.
     Q_INVOKABLE QString formatTime(qint64 ms) const
@@ -282,12 +292,15 @@ public:
     int saveCount = 0;
     int discardCount = 0;
     int requestDiscardCount = 0;
+    int cancelDiscardCount = 0;
+    bool m_discardPending = false;
     int setCropFromViewCount = 0;
     QRect cropAtSave;
 
 signals:
     void cropAspectChanged();
     void trimRangeChanged();
+    void discardPendingChanged();
     void cropRectChanged();
     void videoSizeChanged();
     void formatChanged();
@@ -377,6 +390,8 @@ private slots:
     void previewNumericCropEntry();
     void previewArrowKeysNudgeDraft();
     void previewTextFieldKeepsItsKeys();
+    void previewDiscardConfirmationTakesFocus();
+    void previewLockedSizeEntryOnNativeOriginal();
     void previewUndoShortcutCancelsDraft();
     void previewCompareShowsOriginal();
 
@@ -1866,6 +1881,52 @@ void tst_RecordingCropOverlay::previewTextFieldKeepsItsKeys()
     QVERIFY(m_view->activeFocusItem() != field);
 }
 
+void tst_RecordingCropOverlay::previewDiscardConfirmationTakesFocus()
+{
+    // PR #167 review: with a crop field focused, the discard confirmation
+    // opened without focus, so Enter committed the field and Escape restored
+    // it instead of answering the confirmation.
+    OPEN_PREVIEW_OR_FAIL(QSize(1920, 1080));
+    QObject* overlay = previewOverlay();
+    click(previewItem("previewCropButton"));
+    overlay->setProperty("draftRect", QRectF(previewContentRect().topLeft() + QPointF(40, 40), QSizeF(160, 100)));
+    const QRectF draft = overlay->property("draftRect").toRectF();
+    QQuickItem* field = previewItem("previewCrop_x");
+    field->forceActiveFocus();
+    if (m_view->activeFocusItem() != field) {
+        QSKIP("The preview window cannot take keyboard focus in this session");
+    }
+    // Typed, not confirmed yet.
+    field->setProperty("text", QStringLiteral("500"));
+    field->setProperty("edited", true);
+
+    m_backend->setDiscardPending(true);
+    QVERIFY(m_view->activeFocusItem() != field);
+    // Opening the confirmation neither applies nor drops the typed value.
+    QCOMPARE(overlay->property("draftRect").toRectF(), draft);
+    QCOMPARE(field->property("text").toString(), QStringLiteral("500"));
+    QVERIFY(field->property("edited").toBool());
+
+    // Enter answers the confirmation (Keep Recording is the default).
+    QTest::keyClick(m_view.get(), Qt::Key_Return);
+    QCOMPARE(m_backend->cancelDiscardCount, 1);
+    QCOMPARE(m_backend->discardCount, 0);
+    QCOMPARE(m_backend->saveCount, 0);
+    QCOMPARE(overlay->property("draftRect").toRectF(), draft);
+    // Focus returns to the field, its typing intact.
+    QTRY_COMPARE(m_view->activeFocusItem(), field);
+    QCOMPARE(field->property("text").toString(), QStringLiteral("500"));
+
+    // Escape keeps the recording too, without touching the field.
+    m_backend->setDiscardPending(true);
+    QTest::keyClick(m_view.get(), Qt::Key_Escape);
+    QCOMPARE(m_backend->cancelDiscardCount, 2);
+    QCOMPARE(m_backend->requestDiscardCount, 0);
+    QTRY_COMPARE(m_view->activeFocusItem(), field);
+    QCOMPARE(field->property("text").toString(), QStringLiteral("500"));
+    QVERIFY(editing());
+}
+
 void tst_RecordingCropOverlay::previewUndoShortcutCancelsDraft()
 {
     OPEN_PREVIEW_OR_FAIL(QSize(1920, 1080));
@@ -1991,6 +2052,37 @@ void tst_RecordingCropOverlay::previewLockedSizeEntryResizesBothSides()
     QCOMPARE(draft(), QRect(100, 100, 400, 400));
     type(previewItem("previewCrop_height"), QStringLiteral("300"));
     QCOMPARE(draft(), QRect(100, 100, 300, 300));
+}
+
+void tst_RecordingCropOverlay::previewLockedSizeEntryOnNativeOriginal()
+{
+    // Original on a native display size uses even rounding of the paired
+    // side; a typed W or H must come back exactly, not 2 px smaller.
+    const QSize frame(3456, 2234);
+    OPEN_PREVIEW_OR_FAIL(frame);
+    QObject* overlay = previewOverlay();
+    click(previewItem("previewCropButton"));
+    click(previewItem("previewAspectPreset1")); // Original
+    overlay->setProperty("draftRect", m_backend->legalViewRectForVideo(100, 100, 400, 300, previewContentRect()));
+    const auto draft = [&] { return m_view->rootObject()->property("draftVideoRect").toRect(); };
+    QVERIFY(!draft().isEmpty());
+    const auto type = [](QQuickItem* field, int value) {
+        field->setProperty("text", QString::number(value));
+        field->setProperty("edited", true);
+        QVERIFY(QMetaObject::invokeMethod(field, "editingFinished"));
+    };
+    const double ratio = double(frame.width()) / frame.height();
+    // Widths whose paired height rounds to an odd number but even-rounds up.
+    int typed = 0;
+    for (int w = 600; w < 1600 && typed == 0; w += 2) {
+        const double h = w / ratio;
+        if (qRound(h) % 2 == 1 && h - std::floor(h) < 0.5 && int(std::floor(h)) % 2 == 1) typed = w;
+    }
+    QVERIFY(typed > 0);
+    type(previewItem("previewCrop_width"), typed);
+    QCOMPARE(draft().width(), typed);
+    type(previewItem("previewCrop_height"), 700);
+    QCOMPARE(draft().height(), 700);
 }
 
 QTEST_MAIN(tst_RecordingCropOverlay)
