@@ -1,6 +1,8 @@
 #include <QtTest>
 
+#include <QElapsedTimer>
 #include <QTemporaryDir>
+#include <QThread>
 
 #include "recording/CursorTimelineRecorder.h"
 
@@ -42,7 +44,7 @@ public:
         return m_s->caps.shapes ? m_s->shape : std::nullopt;
     }
     QString name() const override { return QStringLiteral("fake"); }
-    void press(Qt::MouseButton b, bool down) { emit buttonChanged(b, down); }
+    void press(Qt::MouseButton b, bool down, qint64 ageMs = 0) { emit buttonChanged(b, down, ageMs); }
 
 private:
     ProbeState* m_s;
@@ -93,6 +95,8 @@ private slots:
     void timerSamplesWhileRunning();
     void x11ProbeOnIsolatedDisplay();
     void x11RecorderKeepsQueuedClicks();
+    void queuedClicksKeepTheirSourceTime();
+    void x11QueuedClickKeepsItsDuration();
 };
 
 void TestCursorTimelineRecorder::startRecordsTheInitialPointer()
@@ -406,6 +410,73 @@ void TestCursorTimelineRecorder::x11RecorderKeepsQueuedClicks()
     QCOMPARE(int(timeline->buttons.size()), 4); // two real clicks, nothing synthetic
     for (const auto& event : timeline->buttons) QVERIFY(!event.synthetic);
     QCOMPARE(timeline->buttons.back().down, false);
+#else
+    QSKIP("Built without XTest");
+#endif
+}
+
+void TestCursorTimelineRecorder::queuedClicksKeepTheirSourceTime()
+{
+    // PR #174 review: events delivered late (a busy GUI thread) are stamped
+    // when they happened, not when they arrived.
+    Rig rig;
+    rig.now = 100;
+    QVERIFY(rig.recorder->start());
+    rig.now = 1000;
+    rig.probe->press(Qt::LeftButton, true, 400);
+    rig.probe->press(Qt::LeftButton, false, 100);
+    // Never before the recording (re)started, never out of order.
+    rig.now = 1200;
+    rig.probe->press(Qt::RightButton, true, 5000);
+    rig.probe->press(Qt::RightButton, false, 6000);
+    const auto timeline = rig.finish();
+    QCOMPARE(int(timeline.buttons.size()), 4);
+    QCOMPARE(timeline.buttons[0].tMs, qint64(600));
+    QCOMPARE(timeline.buttons[1].tMs, qint64(900));
+    QCOMPARE(timeline.buttons[2].tMs, qint64(900));
+    QCOMPARE(timeline.buttons[3].tMs, qint64(900));
+
+    Rig resumed;
+    QVERIFY(resumed.recorder->start());
+    resumed.now = 500;
+    resumed.recorder->pause();
+    resumed.recorder->resume();
+    resumed.now = 600;
+    resumed.probe->press(Qt::LeftButton, true, 300);
+    const auto afterResume = resumed.finish();
+    QCOMPARE(afterResume.buttons.front().tMs, qint64(500));
+}
+
+void TestCursorTimelineRecorder::x11QueuedClickKeepsItsDuration()
+{
+#if defined(SNAPTRAY_TEST_HAS_XTEST)
+    if (qEnvironmentVariable("SNAPTRAY_TEST_ISOLATED_X11") != QLatin1String("1")
+        || QGuiApplication::platformName() != QLatin1String("xcb")) {
+        QSKIP("Clicks the pointer: runs only on an isolated X display (ctest provides one).");
+    }
+    // PR #174 review: a 300 ms press made while the GUI thread is blocked
+    // must not collapse into an instant click when both events arrive.
+    QTemporaryDir dir;
+    const QString path = dir.filePath(QStringLiteral("x11-held.cursor.jsonl"));
+    QElapsedTimer clock;
+    clock.start();
+    CursorTimelineRecorder recorder(createCursorProbe(), [&clock] { return clock.elapsed(); }, kMapping, path,
+                                    false);
+    QVERIFY(recorder.start());
+    snaptrayTestX11Pointer("move", 50, 60);
+    QTest::qWait(50);
+    snaptrayTestX11Pointer("button", 1, 1);
+    QThread::msleep(300); // no event processing: both events queue up
+    snaptrayTestX11Pointer("button", 1, 0);
+    QTest::qWait(150);
+    recorder.stop();
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    const auto timeline = CursorTimeline::parse(file.readAll());
+    QVERIFY(timeline);
+    QCOMPARE(int(timeline->buttons.size()), 2);
+    const qint64 held = timeline->buttons[1].tMs - timeline->buttons[0].tMs;
+    QVERIFY2(held >= 250 && held <= 400, qPrintable(QString::number(held)));
 #else
     QSKIP("Built without XTest");
 #endif

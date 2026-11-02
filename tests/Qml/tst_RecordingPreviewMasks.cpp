@@ -101,6 +101,7 @@ private slots:
     void masksAreBurnedIntoEveryOutput();
     void exportThatCannotMaskIsRefused();
     void previewShowsTheMaskedPixels();
+    void pendingMaskTimesApplyBeforeExport();
 };
 
 void tst_RecordingPreviewMasks::masksAreBurnedIntoEveryOutput_data()
@@ -219,6 +220,13 @@ void tst_RecordingPreviewMasks::previewShowsTheMaskedPixels()
     QVERIFY(player);
     QTRY_VERIFY_WITH_TIMEOUT(!backend.videoSize().isEmpty(), 10000);
     QMetaObject::invokeMethod(player, "pause");
+    // Measure the picture only: the paused play button's glyph and the
+    // "no audio" notice (shown without an audio device, as on CI) are white.
+    for (const char* name : {"previewPlayOverlay", "previewAudioUnavailableLabel"}) {
+        auto* overlay = view->rootObject()->findChild<QQuickItem*>(QString::fromLatin1(name));
+        QVERIFY(overlay);
+        overlay->setVisible(false);
+    }
     const auto videoArea = [&] {
         const QRectF content = player->property("contentRect").toRectF();
         return player->mapRectToScene(content).toAlignedRect().adjusted(2, 2, -2, -2);
@@ -236,6 +244,67 @@ void tst_RecordingPreviewMasks::previewShowsTheMaskedPixels()
     // Undo takes the mask away again.
     backend.undo();
     QTRY_VERIFY_WITH_TIMEOUT(edges(view->grabWindow(), videoArea()) > 50, 5000);
+    backend.requestDiscard();
+}
+
+void tst_RecordingPreviewMasks::pendingMaskTimesApplyBeforeExport()
+{
+    // PR #177 review: a mask end typed but not confirmed (Save does not take
+    // focus) was ignored, so the export used the shorter range and showed
+    // what the user meant to hide.
+    QTemporaryDir dir;
+    const QString input = dir.filePath(QStringLiteral("recording.mp4"));
+    QVERIFY(createSecretRecording(input).isEmpty());
+    RecordingPreviewBackend backend(input);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    // Save stops at the free-space check: reaching it offers a retry.
+    RecordingPreviewBackend::freeBytesForPathOverride() = [](const QString&) { return qint64(0); };
+    auto restore = qScopeGuard([] { RecordingPreviewBackend::freeBytesForPathOverride() = {}; });
+    backend.show();
+    QQuickView* view = nullptr;
+    QVERIFY(QTest::qWaitFor([&view] {
+        for (QWindow* window : QGuiApplication::topLevelWindows()) {
+            if (window->isVisible() && window->title() == RecordingPreviewBackend::tr("Recording Preview"))
+                view = qobject_cast<QQuickView*>(window);
+        }
+        return view != nullptr;
+    }, 5000));
+    QVERIFY(QTest::qWaitForWindowExposed(view));
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.videoSize().isEmpty(), 10000);
+    QCOMPARE(backend.addMask(), 0);
+    QVERIFY(backend.setMaskRange(0, 0, 300));
+    backend.setSelectedMask(0);
+    auto* panel = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("previewMaskPanel"));
+    auto* end = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("previewMaskEndField"));
+    QVERIFY(panel && end);
+    QTRY_VERIFY(end->isVisible());
+
+    // Every control stays reachable at the 640 px minimum width.
+    view->resize(640, 480);
+    QTRY_VERIFY([&] {
+        for (QQuickItem* child : panel->childItems()) {
+            if (!child->isVisible() || child->width() <= 0) continue;
+            const QRectF r = child->mapRectToScene(QRectF(0, 0, child->width(), child->height()));
+            if (r.left() < 0 || r.right() > view->width()) return false;
+        }
+        return true;
+    }());
+
+    const auto maskEnd = [&backend] { return backend.masks().at(0).toMap().value(QStringLiteral("end")).toLongLong(); };
+    // Unreadable: nothing is exported, the field says why.
+    end->setProperty("text", QStringLiteral("nonsense"));
+    end->setProperty("edited", true);
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "saveWithCrop"));
+    QVERIFY(!backend.canRetrySave());
+    QVERIFY(end->property("invalid").toBool());
+    QCOMPARE(maskEnd(), qint64(300));
+
+    end->setProperty("text", backend.formatPreciseTime(900));
+    end->setProperty("edited", true);
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "saveWithCrop"));
+    QCOMPARE(maskEnd(), qint64(900));
+    QVERIFY(!end->property("edited").toBool());
+    QVERIFY(backend.canRetrySave());
     backend.requestDiscard();
 }
 
