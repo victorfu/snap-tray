@@ -126,6 +126,7 @@ class TestNativeGifEncoder : public QObject
 private slots:
     void bufferedBytesAreCountedBeforeTheFileExists();
     void webpEstimateFollowsChangedRegions();
+    void webpEstimateCoversHighEntropyFrames();
     void initTestCase();
     void cleanupTestCase();
     void init();
@@ -793,6 +794,42 @@ void TestNativeGifEncoder::webpEstimateFollowsChangedRegions()
     QVERIFY2(estimate < actual * 10,
              qPrintable(QStringLiteral("estimate %1 vs actual %2").arg(estimate).arg(actual)));
     QVERIFY2(estimate >= actual / 2,
+             qPrintable(QStringLiteral("estimate %1 vs actual %2").arg(estimate).arg(actual)));
+}
+
+void TestNativeGifEncoder::webpEstimateCoversHighEntropyFrames()
+{
+    // PR #171 review: a fixed bytes-per-pixel rate reserved 2.3 MB for
+    // 100 noise frames that encode to 15.6 MB, so the animation could
+    // outgrow the disk before the guard stopped it. The estimate must not
+    // fall short of the real output for content that does not compress.
+    QTemporaryDir dir;
+    const QSize size(640, 360);
+    WebPAnimationEncoder webp;
+    const QString path = dir.filePath(QStringLiteral("noise.webp"));
+    QVERIFY(webp.start(path, size, 30));
+    const auto counter = webp.bufferedBytesCounter();
+    QImage frame(size, QImage::Format_ARGB32);
+    quint32 seed = 7;
+    for (int i = 0; i < 40; ++i) {
+        for (int y = 0; y < size.height(); ++y) {
+            auto* line = reinterpret_cast<QRgb*>(frame.scanLine(y));
+            for (int x = 0; x < size.width(); ++x) {
+                seed = seed * 1664525u + 1013904223u;
+                line[x] = 0xff000000u | (seed >> 8);
+            }
+        }
+        webp.writeFrame(frame, i * 33);
+    }
+    const qint64 estimate = counter->load();
+    QSignalSpy finished(&webp, &WebPAnimationEncoder::finished);
+    webp.finish();
+    QCOMPARE(finished.count(), 1);
+    const qint64 actual = QFileInfo(path).size();
+    QVERIFY(actual > 0);
+    QVERIFY2(estimate >= actual,
+             qPrintable(QStringLiteral("estimate %1 vs actual %2").arg(estimate).arg(actual)));
+    QVERIFY2(estimate < actual * 4,
              qPrintable(QStringLiteral("estimate %1 vs actual %2").arg(estimate).arg(actual)));
 }
 
