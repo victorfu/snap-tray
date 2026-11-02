@@ -257,6 +257,8 @@ private:
     // Test seam for the user's output quality; empty means read
     // RecordingSettingsManager at save time.
     static std::function<int()>& outputQualityOverride();
+    // Test seam for free space next to the recording; empty means QStorageInfo.
+    static std::function<qint64(const QString&)>& freeBytesForPathOverride();
 
     void finishClose();
     bool eventFilter(QObject* watched, QEvent* event) override;

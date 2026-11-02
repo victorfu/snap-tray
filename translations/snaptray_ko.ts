@@ -523,6 +523,11 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 <context>
     <name>MainApplication</name>
     <message>
+        <location filename="../src/MainApplication.cpp" line="1287" />
+        <source>low disk space</source>
+        <translation>디스크 공간 부족</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="1282" />
         <source>dropping frames</source>
         <translation>프레임 누락 중</translation>
@@ -1739,6 +1744,46 @@ Size: %2</source>
 <context>
     <name>RecordingManager</name>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="2106" />
+        <source>The recording is kept at %1.</source>
+        <translation>녹화는 %1에 보관되어 있습니다.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2105" />
+        <source>Your recording is kept; choose another location.</source>
+        <translation>녹화는 유지되었습니다. 다른 위치를 선택하세요.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2101" />
+        <source>Not enough free space at the chosen location (%1 free, %2 needed).</source>
+        <translation>선택한 위치에 공간이 부족합니다(%1 남음, %2 필요).</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1547" />
+        <source>Recording stopped because the disk is almost full. Everything recorded so far is kept.</source>
+        <translation>디스크가 거의 가득 차서 녹화를 중지했습니다. 지금까지 녹화한 내용은 모두 유지됩니다.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1536" />
+        <source>Disk space is running low: %1 free. Stop soon to keep this recording.</source>
+        <translation>디스크 공간이 부족합니다: %1 남음. 녹화를 지키려면 곧 중지하세요.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1534" />
+        <source>Disk space is running low: about %1 min of recording left (estimate). Stop soon to keep this recording.</source>
+        <translation>디스크 공간이 부족합니다: 약 %1분 녹화 가능(추정). 녹화를 지키려면 곧 중지하세요.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1524" />
+        <source>SnapTray can't check the free disk space for this recording. Keep an eye on it during long recordings.</source>
+        <translation>SnapTray가 이 녹화의 여유 디스크 공간을 확인할 수 없습니다. 긴 녹화 중에는 주의해서 확인하세요.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="806" />
+        <source>Not enough free disk space to start recording (%1 free).</source>
+        <translation>녹화를 시작할 디스크 공간이 부족합니다(%1 남음).</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="1460" />
         <source>Recording can't keep up and is dropping frames. Try a lower frame rate, or close other busy apps.</source>
         <translation>녹화가 따라가지 못해 프레임이 누락되고 있습니다. 프레임 속도를 낮추거나 다른 바쁜 앱을 닫아 보세요.</translation>
@@ -2097,6 +2142,11 @@ Size: %2</source>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="406" />
+        <source>Not enough free disk space to export (%1 free, about %2 needed). Free up space and try again; your recording is kept.</source>
+        <translation>내보낼 디스크 공간이 부족합니다(%1 남음, 약 %2 필요). 공간을 확보한 뒤 다시 시도하세요. 녹화는 유지되었습니다.</translation>
+    </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="889" />
         <source>Writing file...</source>

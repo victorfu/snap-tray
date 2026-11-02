@@ -523,6 +523,11 @@ Tokeny daty: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} lub {date}</translation>
 <context>
     <name>MainApplication</name>
     <message>
+        <location filename="../src/MainApplication.cpp" line="1287" />
+        <source>low disk space</source>
+        <translation>mało miejsca na dysku</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="1282" />
         <source>dropping frames</source>
         <translation>gubi klatki</translation>
@@ -1739,6 +1744,46 @@ Rozmiar: %2</translation>
 <context>
     <name>RecordingManager</name>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="2106" />
+        <source>The recording is kept at %1.</source>
+        <translation>Nagranie znajduje się w %1.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2105" />
+        <source>Your recording is kept; choose another location.</source>
+        <translation>Nagranie zostało zachowane; wybierz inną lokalizację.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2101" />
+        <source>Not enough free space at the chosen location (%1 free, %2 needed).</source>
+        <translation>Za mało miejsca w wybranej lokalizacji (wolne: %1, potrzeba: %2).</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1547" />
+        <source>Recording stopped because the disk is almost full. Everything recorded so far is kept.</source>
+        <translation>Nagrywanie zatrzymano, bo dysk jest prawie pełny. Wszystko nagrane do tej pory zostało zachowane.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1536" />
+        <source>Disk space is running low: %1 free. Stop soon to keep this recording.</source>
+        <translation>Kończy się miejsce na dysku: wolne %1. Zatrzymaj wkrótce, aby zachować nagranie.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1534" />
+        <source>Disk space is running low: about %1 min of recording left (estimate). Stop soon to keep this recording.</source>
+        <translation>Kończy się miejsce na dysku: zostało ok. %1 min nagrania (szacunek). Zatrzymaj wkrótce, aby zachować nagranie.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1524" />
+        <source>SnapTray can't check the free disk space for this recording. Keep an eye on it during long recordings.</source>
+        <translation>SnapTray nie może sprawdzić wolnego miejsca dla tego nagrania. Pilnuj go przy długich nagraniach.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="806" />
+        <source>Not enough free disk space to start recording (%1 free).</source>
+        <translation>Za mało miejsca na dysku, aby rozpocząć nagrywanie (wolne: %1).</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="1460" />
         <source>Recording can't keep up and is dropping frames. Try a lower frame rate, or close other busy apps.</source>
         <translation>Nagrywanie nie nadąża i gubi klatki. Spróbuj niższej liczby klatek lub zamknij inne obciążające aplikacje.</translation>
@@ -2097,6 +2142,11 @@ Rozmiar: %2</translation>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="406" />
+        <source>Not enough free disk space to export (%1 free, about %2 needed). Free up space and try again; your recording is kept.</source>
+        <translation>Za mało miejsca na dysku do eksportu (wolne: %1, potrzeba ok. %2). Zwolnij miejsce i spróbuj ponownie; nagranie zostało zachowane.</translation>
+    </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="889" />
         <source>Writing file...</source>

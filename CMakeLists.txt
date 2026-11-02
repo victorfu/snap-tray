@@ -346,6 +346,7 @@ add_library(snaptray_core STATIC
     src/recording/SessionClock.cpp
     src/recording/FramePacer.cpp
     src/recording/RecordingHealth.cpp
+    src/recording/DiskSpaceGuard.cpp
     src/utils/OCRImageUtils.cpp
     src/utils/TextLayoutUtils.cpp
     # Headers with Q_OBJECT for MOC processing

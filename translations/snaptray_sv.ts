@@ -517,6 +517,11 @@ Datumtoken: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} eller {date}</translation>
 <context>
     <name>MainApplication</name>
     <message>
+        <location filename="../src/MainApplication.cpp" line="1287" />
+        <source>low disk space</source>
+        <translation>lite diskutrymme</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="1282" />
         <source>dropping frames</source>
         <translation>tappar bildrutor</translation>
@@ -1733,6 +1738,46 @@ Storlek: %2</translation>
 <context>
     <name>RecordingManager</name>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="2106" />
+        <source>The recording is kept at %1.</source>
+        <translation>Inspelningen finns i %1.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2105" />
+        <source>Your recording is kept; choose another location.</source>
+        <translation>Inspelningen finns kvar; välj en annan plats.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="2101" />
+        <source>Not enough free space at the chosen location (%1 free, %2 needed).</source>
+        <translation>Inte tillräckligt med utrymme på vald plats (%1 ledigt, %2 behövs).</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1547" />
+        <source>Recording stopped because the disk is almost full. Everything recorded so far is kept.</source>
+        <translation>Inspelningen stoppades eftersom disken är nästan full. Allt som spelats in hittills finns kvar.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1536" />
+        <source>Disk space is running low: %1 free. Stop soon to keep this recording.</source>
+        <translation>Diskutrymmet håller på att ta slut: %1 ledigt. Stoppa snart för att behålla inspelningen.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1534" />
+        <source>Disk space is running low: about %1 min of recording left (estimate). Stop soon to keep this recording.</source>
+        <translation>Diskutrymmet håller på att ta slut: ungefär %1 min inspelning kvar (uppskattning). Stoppa snart för att behålla inspelningen.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="1524" />
+        <source>SnapTray can't check the free disk space for this recording. Keep an eye on it during long recordings.</source>
+        <translation>SnapTray kan inte kontrollera ledigt diskutrymme för den här inspelningen. Håll koll på det vid långa inspelningar.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="806" />
+        <source>Not enough free disk space to start recording (%1 free).</source>
+        <translation>Inte tillräckligt med ledigt diskutrymme för att börja spela in (%1 ledigt).</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="1460" />
         <source>Recording can't keep up and is dropping frames. Try a lower frame rate, or close other busy apps.</source>
         <translation>Inspelningen hinner inte med och tappar bildrutor. Prova en lägre bildfrekvens eller stäng andra krävande appar.</translation>
@@ -2091,6 +2136,11 @@ Storlek: %2</translation>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
+    <message>
+        <location filename="../src/qml/RecordingPreviewBackend.mm" line="406" />
+        <source>Not enough free disk space to export (%1 free, about %2 needed). Free up space and try again; your recording is kept.</source>
+        <translation>Inte tillräckligt med ledigt diskutrymme för att exportera (%1 ledigt, ungefär %2 behövs). Frigör utrymme och försök igen; inspelningen finns kvar.</translation>
+    </message>
     <message>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="889" />
         <source>Writing file...</source>

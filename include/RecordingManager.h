@@ -19,6 +19,7 @@
 #include "recording/SessionClock.h"
 #include "recording/FramePacer.h"
 #include "recording/RecordingHealth.h"
+#include "recording/DiskSpaceGuard.h"
 
 #include "WatermarkRenderer.h"
 #include "recording/WindowTimelineRecorder.h"
@@ -70,6 +71,8 @@ public:
     SnapTray::RecordingAudioStatus audioStatus() const { return m_audioStatus; }
     // True while frames are being lost (sustained, not a single hiccup).
     bool isDroppingFrames() const { return m_healthPolicy.isWarning(); }
+    // True while the recording's disk is low on space (warning or stopped).
+    bool isLowOnDiskSpace() const { return m_lowDiskSpace; }
     // Plain-text summary of the last recording's capture and encoding
     // counters, for the user to copy. Empty until a recording has finished.
     QString lastDiagnostics() const { return m_lastDiagnostics; }
@@ -109,6 +112,7 @@ signals:
     void stateChanged(State state);
     void audioStatusChanged();
     void droppingFramesChanged(bool dropping);
+    void lowDiskSpaceChanged(bool low);
     void diagnosticsAvailable();
     // recordedAsIntermediate: the recording was captured as the high-quality
     // intermediate rather than at the selected quality.
@@ -209,6 +213,21 @@ private:
     int m_healthTicks = 0;
     QString m_lastDiagnostics;
     void checkHealth(qint64 nowMs);
+
+    // Disk space of the volume the recording is written to, probed off the
+    // GUI thread every kDiskCheckIntervalMs while recording or paused.
+    SnapTray::DiskSpaceGuard m_diskGuard;
+    SnapTray::WriteRateEstimator m_writeRate;
+    QString m_recordingFilePath;
+    std::unique_ptr<QTimer> m_diskTimer;
+    bool m_diskProbeRunning = false;
+    bool m_diskUnknownReported = false;
+    bool m_lowDiskSpace = false;
+    void startDiskMonitor();
+    void stopDiskMonitor();
+    void checkDiskSpace();
+    void onDiskSample(quint64 generation, qint64 freeBytes, qint64 fileBytes, qint64 sampleMs);
+    void setLowDiskSpace(bool low);
     SnapTray::RecordingHealth::ClockCounters clockCountersLocked() const;
 
     // Pause tracking

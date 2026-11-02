@@ -33,6 +33,7 @@
 #include <QDebug>
 #include <QFileInfo>
 #include <QStorageInfo>
+#include <QLocale>
 #include "encoding/IntermediateQuality.h"
 #include <QFile>
 #include <QMutexLocker>
@@ -69,6 +70,7 @@ constexpr int kDefaultAudioChannels = 2;
 constexpr int kDefaultAudioBitsPerSample = 16;
 constexpr int kOverlayRenderDelay = 100;  // ms, delay before capture to allow overlay render
 constexpr int kDurationUpdate = 100;      // ms, recording duration UI update interval
+constexpr int kDiskCheckIntervalMs = 2000;
 constexpr int kMicrophoneSource = 0;
 constexpr int kSystemAudioSource = 1;
 constexpr int kBothAudioSources = 2;
@@ -790,6 +792,24 @@ void RecordingManager::beginAsyncInitialization()
     config.intermediateQuality = decideIntermediateQuality(
         showPreview, QFileInfo(config.outputPath).absolutePath(), physicalSize);
 
+    // Too little room to record even the first seconds: say so instead of
+    // starting a recording that stops (or fails) right away.
+    {
+        const QString directory = QFileInfo(config.outputPath).absolutePath();
+        const qint64 freeBytes = m_freeBytesForPath ? m_freeBytesForPath(directory) : -1;
+        SnapTray::DiskSpaceGuard::Input input;
+        input.bytesPerSecond = SnapTray::IntermediateQuality::estimatedBytesPerMinute(
+            SnapTray::IntermediateQuality::intermediateBitrate(physicalSize, m_frameRate)) / 60;
+        if (freeBytes >= 0 && freeBytes <= SnapTray::DiskSpaceGuard::safeStopThreshold(input)) {
+            qWarning() << "RecordingManager: only" << freeBytes << "bytes free in" << directory;
+            cancelRecording();
+            emit recordingError(tr("Not enough free disk space to start recording (%1 free).")
+                                    .arg(QLocale().formattedDataSize(freeBytes)));
+            return;
+        }
+    }
+    m_recordingFilePath = config.outputPath;
+
     // Collect UI window IDs to exclude from capture.
     if (m_controlBar) {
         config.excludedCaptureWindowIds = m_controlBar->prepareCaptureExclusions();
@@ -1286,6 +1306,7 @@ void RecordingManager::startRecordingAfterCountdown()
     }
     m_sessionClock.start(SnapTray::captureClockNowNs());
     m_elapsedTimer.start();
+    startDiskMonitor();
     setState(State::Recording);
     if (m_state != State::Recording || generation != m_startGeneration) return;
     m_frameCount = 0;
@@ -1424,6 +1445,109 @@ void RecordingManager::captureFrame()
         // Watermark is applied by the worker thread
         EncodingWorker::FrameData frameData{frame, timeMs};
         if (encodingWorker->enqueueFrame(frameData)) ++m_frameCount;
+    }
+}
+
+void RecordingManager::startDiskMonitor()
+{
+    m_diskGuard.reset();
+    m_writeRate.reset();
+    m_diskProbeRunning = false;
+    m_diskUnknownReported = false;
+    setLowDiskSpace(false);
+    m_diskTimer = std::make_unique<QTimer>(nullptr);
+    connect(m_diskTimer.get(), &QTimer::timeout, this, &RecordingManager::checkDiskSpace);
+    m_diskTimer->start(kDiskCheckIntervalMs);
+}
+
+void RecordingManager::stopDiskMonitor()
+{
+    if (m_diskTimer) {
+        m_diskTimer->stop();
+        m_diskTimer.reset();
+    }
+}
+
+void RecordingManager::checkDiskSpace()
+{
+    if (m_diskProbeRunning || m_recordingFilePath.isEmpty()
+        || (m_state != State::Recording && m_state != State::Paused)) {
+        return;
+    }
+    // Free-space and file-size queries can block on slow or network volumes:
+    // never on the GUI thread, and never more than one at a time.
+    m_diskProbeRunning = true;
+    const quint64 generation = m_startGeneration;
+    const QString path = m_recordingFilePath;
+    const auto probe = m_freeBytesForPath;
+    const qint64 sampleMs = m_elapsedTimer.isValid() ? m_elapsedTimer.elapsed() : 0;
+    const QPointer<RecordingManager> guard(this);
+    (void)QtConcurrent::run([guard, generation, path, probe, sampleMs]() {
+        const qint64 freeBytes = probe ? probe(QFileInfo(path).absolutePath()) : -1;
+        const qint64 fileBytes = QFileInfo(path).size();
+        QMetaObject::invokeMethod(QCoreApplication::instance(), [guard, generation, freeBytes, fileBytes, sampleMs]() {
+            if (guard) guard->onDiskSample(generation, freeBytes, fileBytes, sampleMs);
+        }, Qt::QueuedConnection);
+    });
+}
+
+void RecordingManager::setLowDiskSpace(bool low)
+{
+    if (m_lowDiskSpace == low) return;
+    m_lowDiskSpace = low;
+    emit lowDiskSpaceChanged(low);
+}
+
+void RecordingManager::onDiskSample(quint64 generation, qint64 freeBytes, qint64 fileBytes, qint64 sampleMs)
+{
+    m_diskProbeRunning = false;
+    if (generation != m_startGeneration || (m_state != State::Recording && m_state != State::Paused)) {
+        return;
+    }
+    m_writeRate.addSample(fileBytes, sampleMs);
+    SnapTray::DiskSpaceGuard::Input input;
+    if (freeBytes >= 0) input.freeBytes = freeBytes;
+    input.recordedBytes = qMax<qint64>(0, fileBytes);
+    input.bytesPerSecond = m_writeRate.bytesPerSecond();
+    input.exportLikely = m_startSettings.showPreview;
+    const auto previous = m_diskGuard.level();
+    const auto result = m_diskGuard.evaluate(input);
+    using Level = SnapTray::DiskSpaceGuard::Level;
+    switch (result.level) {
+    case Level::Ok:
+        setLowDiskSpace(false);
+        break;
+    case Level::Unknown:
+        if (!m_diskUnknownReported) {
+            m_diskUnknownReported = true;
+            qWarning() << "RecordingManager: free space unknown for" << m_recordingFilePath;
+            emit recordingWarning(tr("SnapTray can't check the free disk space for this recording. "
+                                     "Keep an eye on it during long recordings."));
+        }
+        break;
+    case Level::Warning:
+        if (previous != Level::Warning) {
+            setLowDiskSpace(true);
+            // Minutes are an estimate from the recent write rate; without one,
+            // report the free space itself.
+            emit recordingWarning(result.secondsLeft >= 0
+                ? tr("Disk space is running low: about %1 min of recording left (estimate). "
+                     "Stop soon to keep this recording.").arg(qMax<qint64>(1, result.secondsLeft / 60))
+                : tr("Disk space is running low: %1 free. Stop soon to keep this recording.")
+                      .arg(QLocale().formattedDataSize(freeBytes)));
+        }
+        break;
+    case Level::SafeStop:
+        if (previous != Level::SafeStop) {
+            setLowDiskSpace(true);
+            qWarning() << "RecordingManager: stopping; free" << freeBytes << "bytes, threshold"
+                       << result.safeStopBytes;
+            // The normal stop path: drain and finalize, then preview or save.
+            stopRecording();
+            emit recordingWarning(tr("Recording stopped because the disk is almost full. "
+                                     "Everything recorded so far is kept."));
+        }
+        break;
     }
 }
 
@@ -1717,6 +1841,7 @@ void RecordingManager::stopFrameCapture()
     }
     // Frames still in flight from a capture thread are rejected from here on.
     m_sessionClock.stop();
+    stopDiskMonitor();
     if (m_healthPolicy.isWarning()) {
         m_healthPolicy.reset();
         emit droppingFramesChanged(false);
@@ -1962,6 +2087,26 @@ RecordingManager::SaveOutcome RecordingManager::showSaveDialog(const QString &te
     }
     // Move/rename the file to chosen location
     if (savePath != tempOutputPath) {
+        // Across volumes the move is a copy: the destination needs room for
+        // the whole file. Within one volume a rename needs none.
+        const QString destinationDir = QFileInfo(savePath).absolutePath();
+        const qint64 fileBytes = qMax<qint64>(0, QFileInfo(tempOutputPath).size());
+        const bool sameVolume = QStorageInfo(QFileInfo(tempOutputPath).absolutePath()).rootPath()
+            == QStorageInfo(destinationDir).rootPath();
+        const qint64 destinationFree = m_freeBytesForPath ? m_freeBytesForPath(destinationDir) : -1;
+        if (!sameVolume && destinationFree >= 0
+            && destinationFree < fileBytes + SnapTray::DiskSpaceGuard::kFloorBytes) {
+            qWarning() << "RecordingManager: destination too small:" << destinationFree << "for" << fileBytes;
+            keepSidecar = keepOnCancel;
+            const QString room = tr("Not enough free space at the chosen location (%1 free, %2 needed).")
+                                     .arg(QLocale().formattedDataSize(destinationFree),
+                                          QLocale().formattedDataSize(fileBytes));
+            emit recordingError(keepOnCancel
+                ? room + QLatin1Char(' ') + tr("Your recording is kept; choose another location.")
+                : room + QLatin1Char(' ') + tr("The recording is kept at %1.")
+                                               .arg(QDir::toNativeSeparators(tempOutputPath)));
+            return SaveOutcome::Failed;
+        }
         QString saveError;
         if (SnapTray::RecordingFileUtils::replaceRecordingFile(
                 tempOutputPath, savePath, &saveError)) {
@@ -1972,7 +2117,10 @@ RecordingManager::SaveOutcome RecordingManager::showSaveDialog(const QString &te
         qWarning() << "RecordingManager: Failed to save recording to:" << savePath
                    << saveError;
         keepSidecar = keepOnCancel;
-        emit recordingError(tr("Failed to save recording to selected location"));
+        emit recordingError(keepOnCancel
+            ? tr("Failed to save recording to selected location")
+            : tr("Failed to save recording to selected location") + QLatin1Char(' ')
+                  + tr("The recording is kept at %1.").arg(QDir::toNativeSeparators(tempOutputPath)));
         return SaveOutcome::Failed;
     }
     syncFile(tempOutputPath);

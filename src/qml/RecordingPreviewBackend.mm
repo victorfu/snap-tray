@@ -12,6 +12,9 @@
 #include "recording/WindowTimelineSidecar.h"
 
 #include <QCloseEvent>
+#include "recording/DiskSpaceGuard.h"
+#include <QLocale>
+#include <QStorageInfo>
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDebug>
@@ -59,6 +62,12 @@ RecordingPreviewBackend::RecordingPreviewBackend(const QString &videoPath, bool 
 std::function<int()>& RecordingPreviewBackend::outputQualityOverride()
 {
     static std::function<int()> override;
+    return override;
+}
+
+std::function<qint64(const QString&)>& RecordingPreviewBackend::freeBytesForPathOverride()
+{
+    static std::function<qint64(const QString&)> override;
     return override;
 }
 
@@ -378,6 +387,29 @@ void RecordingPreviewBackend::save()
     // every MP4 re-encode below uses it. Quality 80 is only the legacy default.
     m_outputQuality = outputQualityOverride() ? outputQualityOverride()()
                                               : RecordingSettingsManager::instance().quality();
+
+    // An export writes a second file next to the recording. Check the room
+    // for it first (an unedited MP4 can be moved as is, so it needs none).
+    const bool writesNewFile = m_selectedFormat != MP4 || hasTrim() || hasCrop();
+    if (writesNewFile) {
+        const QString directory = QFileInfo(m_videoPath).absolutePath();
+        const qint64 freeBytes = freeBytesForPathOverride() ? freeBytesForPathOverride()(directory)
+                                                            : QStorageInfo(directory).bytesAvailable();
+        const qint64 sourceBytes = qMax<qint64>(0, QFileInfo(m_videoPath).size());
+        // MP4 edits are at most about the source's size; GIF and WebP can be
+        // larger, so allow twice as much. Unknown free space does not block.
+        const qint64 needed = SnapTray::DiskSpaceGuard::kFloorBytes
+            + (m_selectedFormat == MP4 ? sourceBytes : 2 * sourceBytes);
+        if (freeBytes >= 0 && freeBytes < needed) {
+            qWarning() << "RecordingPreviewBackend: not enough space to export:" << freeBytes << "<" << needed;
+            m_canRetrySave = true;
+            setErrorMessage(tr("Not enough free disk space to export (%1 free, about %2 needed). "
+                               "Free up space and try again; your recording is kept.")
+                                .arg(QLocale().formattedDataSize(freeBytes),
+                                     QLocale().formattedDataSize(needed)));
+            return;
+        }
+    }
 
     // Animated exports share the same offline extraction path, including trims.
     if (m_selectedFormat != MP4) {

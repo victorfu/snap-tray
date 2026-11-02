@@ -52,6 +52,17 @@ With a trim range, the start and end times under the timeline can be typed as `m
 
 Every applied crop and trim change can be undone (**Ctrl+Z**) and redone (**Ctrl+Shift+Z** or **Ctrl+Y**). Use ⟲ to go back to the unedited recording (also undoable), and ◧ or **\\** to compare with the original frame. The line under the timeline shows the original and output pixel sizes, the kept duration, and whether the chosen format has audio.
 
+## Disk space
+
+SnapTray checks the free space where the recording is written before it starts and every few seconds while it runs. The limits follow the recording: room to finish the file, a few seconds of recording, and, with preview on, room for an exported copy.
+
+- **Before starting**: if there is almost no room, the recording does not start and says how much is free.
+- **Low space**: one warning with an estimate of the minutes left (or the free space when there is no estimate yet); the tray tooltip says "low disk space". Freeing space clears it.
+- **Almost full**: recording stops on its own, the file is finished normally, and everything recorded so far is kept. It is not discarded.
+- **Unknown**: if the free space cannot be read, SnapTray says so once and keeps recording; it is not treated as unlimited.
+
+Exports from the preview check for room for the new file first, and saving to another drive checks the destination. If there is not enough room, nothing is deleted: free up space or choose another location and save again. Write errors (for example an unplugged drive) are still reported even when the free space looked fine.
+
 ## When recording can't keep up
 
 If the computer cannot encode frames as fast as they are captured for several seconds in a row, SnapTray shows one warning and the tray tooltip says "dropping frames" until it recovers. A short hiccup or an unchanging screen does not count. Lowering the frame rate in Settings > Recording usually helps.

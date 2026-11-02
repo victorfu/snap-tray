@@ -220,6 +220,11 @@ target_link_libraries(Qml_ScreenPickerViewModel PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_ScreenPickerViewModel COMMAND Qml_ScreenPickerViewModel)
 set_tests_properties(Qml_ScreenPickerViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RecordingManager_DiskSpaceGuard RecordingManager/tst_DiskSpaceGuard.cpp)
+target_link_libraries(RecordingManager_DiskSpaceGuard PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_DiskSpaceGuard COMMAND RecordingManager_DiskSpaceGuard)
+set_tests_properties(RecordingManager_DiskSpaceGuard PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(RecordingManager_RecordingHealth RecordingManager/tst_RecordingHealth.cpp)
 target_link_libraries(RecordingManager_RecordingHealth PRIVATE snaptray_core Qt6::Test)
 add_test(NAME RecordingManager_RecordingHealth COMMAND RecordingManager_RecordingHealth)
