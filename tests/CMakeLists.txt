@@ -83,6 +83,15 @@ if(SNAPTRAY_ENABLE_LINUX_RECORDING)
     add_test(NAME Encoding_LinuxMedia COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/Encoding/run_linux_media_test.py $<TARGET_FILE:Encoding_LinuxMedia>)
     set_tests_properties(Encoding_LinuxMedia PROPERTIES TIMEOUT 60 LABELS "integration;encoding")
+    # Recording sync matrix (#163): synthetic content through the real timing
+    # pipeline and encoder, then decoded and checked.
+    add_executable(Encoding_SyncMatrix Encoding/tst_SyncMatrix.cpp Encoding/SyncMatrix.cpp)
+    target_include_directories(Encoding_SyncMatrix PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/Encoding)
+    target_compile_definitions(Encoding_SyncMatrix PRIVATE SNAPTRAY_SYNC_MATRIX_DECODE)
+    target_link_libraries(Encoding_SyncMatrix PRIVATE snaptray_platform PkgConfig::SYSTEM_FFMPEG Qt6::Test)
+    add_test(NAME Encoding_SyncMatrix COMMAND Encoding_SyncMatrix)
+    set_tests_properties(Encoding_SyncMatrix PROPERTIES TIMEOUT 300 LABELS "integration;encoding"
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
     add_executable(Encoding_FFmpegEncoder Encoding/tst_FFmpegEncoder.cpp)
     target_link_libraries(Encoding_FFmpegEncoder PRIVATE
         snaptray_platform PkgConfig::SYSTEM_FFMPEG Qt6::Test)
@@ -408,6 +417,14 @@ if(APPLE)
     target_link_libraries(Qml_FloatingOverlayCaptureExclusion PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
     add_test(NAME Qml_FloatingOverlayCaptureExclusion COMMAND Qml_FloatingOverlayCaptureExclusion)
     set_tests_properties(Qml_FloatingOverlayCaptureExclusion PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+endif()
+
+# The sync matrix reports an explicit skip where decoded-media analysis is unavailable.
+if(APPLE OR WIN32)
+    add_executable(Encoding_SyncMatrix Encoding/tst_SyncMatrix.cpp)
+    target_link_libraries(Encoding_SyncMatrix PRIVATE Qt6::Test)
+    add_test(NAME Encoding_SyncMatrix COMMAND Encoding_SyncMatrix)
+    set_tests_properties(Encoding_SyncMatrix PROPERTIES TIMEOUT 60 LABELS "integration;encoding")
 endif()
 
 # Recording preview export (native encoder + transcoder): every recording platform.
