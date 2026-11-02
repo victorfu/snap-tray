@@ -20,6 +20,8 @@ private slots:
     void titleBarCloseAsksInsteadOfDiscarding();
     void keyboardFlow();
     void applicationQuitCloseIsNotBlocked();
+    void saveAppliesATypedTrimTime_data();
+    void saveAppliesATypedTrimTime();
 
 private:
     static QQuickView* findPreviewWindow();
@@ -166,6 +168,47 @@ void tst_RecordingPreviewDiscard::applicationQuitCloseIsNotBlocked()
     QVERIFY(view->close());
     QVERIFY(!backend.discardConfirmationPending());
     QCOMPARE(closed.count(), 1);
+}
+
+void tst_RecordingPreviewDiscard::saveAppliesATypedTrimTime_data()
+{
+    QTest::addColumn<QString>("typed");
+    QTest::addColumn<qint64>("trimStart");
+    QTest::addColumn<bool>("saved");
+    QTest::newRow("valid") << QStringLiteral("0:02.500") << qint64(2500) << true;
+    QTest::newRow("invalid") << QStringLiteral("nonsense") << qint64(1000) << false;
+}
+
+void tst_RecordingPreviewDiscard::saveAppliesATypedTrimTime()
+{
+    // PR #167 review: a time typed without Enter or Tab was ignored by Save,
+    // which exported the old range.
+    QFETCH(QString, typed);
+    QFETCH(qint64, trimStart);
+    QFETCH(bool, saved);
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    RecordingPreviewBackend backend(dir.filePath(QStringLiteral("missing.mp4")));
+    backend.updateDuration(10000);
+    backend.setTrimStart(1000);
+    backend.setTrimEnd(5000);
+    QVERIFY(backend.hasTrim());
+    backend.show();
+    QQuickView* view = nullptr;
+    QTRY_VERIFY_WITH_TIMEOUT((view = findPreviewWindow()) != nullptr, 5000);
+    QVERIFY(QTest::qWaitForWindowExposed(view));
+    auto* field = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("previewTrimStartField"));
+    QVERIFY(field);
+    QTRY_VERIFY(field->isVisible());
+    field->setProperty("text", typed); // typed, not confirmed
+    QSignalSpy processing(&backend, &RecordingPreviewBackend::processingChanged);
+    QSignalSpy errors(&backend, &RecordingPreviewBackend::errorMessageChanged);
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "saveWithCrop"));
+    QCOMPARE(backend.trimStart(), trimStart);
+    // Save went ahead (it then fails on the missing file) only with a valid time.
+    QCOMPARE(processing.count() > 0 || errors.count() > 0, saved);
+    if (!saved) QVERIFY(field->property("invalid").toBool());
+    backend.requestDiscard();
 }
 
 QTEST_MAIN(tst_RecordingPreviewDiscard)

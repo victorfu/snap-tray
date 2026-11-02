@@ -350,6 +350,7 @@ private slots:
     void cancelAnimationKeepsSource();
     void saveOutcomeKeepsRecordingUntilCommitted_data();
     void saveOutcomeKeepsRecordingUntilCommitted();
+    void savingOverTheSourceKeepsTheSavedFile();
     void closeDuringExportAsks();
 };
 
@@ -1530,6 +1531,36 @@ void tst_RecordingPreviewExport::closeDuringExportAsks()
     QTRY_VERIFY_WITH_TIMEOUT(!backend.isProcessing(), 20000);
     QCOMPARE(closedSpy.count(), 0);
     QVERIFY(QFileInfo::exists(inputPath));
+}
+
+void tst_RecordingPreviewExport::savingOverTheSourceKeepsTheSavedFile()
+{
+    // PR #168 review: choosing the recording's own path in the save dialog
+    // replaced it with the export, and then the source clean-up deleted it.
+    const QSize sourceSize(160, 120);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    backend.updateVideoSize(sourceSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    backend.setTrimStart(200);
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    WAIT_FOR_EXPORT(backend, savedSpy, 20000);
+    QCOMPARE(savedSpy.count(), 1);
+    const QString exported = savedSpy.first().at(0).toString();
+    QVERIFY(exported != inputPath);
+    // What the save dialog does when the user picks the recording's path.
+    QVERIFY(QFile::remove(inputPath));
+    QVERIFY(QFile::rename(exported, inputPath));
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved, inputPath);
+    QVERIFY2(QFileInfo::exists(inputPath), "the saved recording was deleted");
+    QVERIFY(QFileInfo(inputPath).size() > 0);
 }
 
 QTEST_MAIN(tst_RecordingPreviewExport)

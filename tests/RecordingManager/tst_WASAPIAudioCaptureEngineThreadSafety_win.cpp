@@ -600,6 +600,9 @@ void TestWASAPIAudioCaptureEngineThreadSafetyWin::sourceFailureReportsExplicitDe
                  sourceSpy.constFirst().constFirst()),
              IAudioCaptureEngine::AudioSource::SystemAudio);
     QCOMPARE(deviceSpy.size(), 1);
+    // The lost device is named: the microphone, not system audio.
+    QCOMPARE(qvariant_cast<IAudioCaptureEngine::AudioSource>(deviceSpy.constFirst().constFirst()),
+             IAudioCaptureEngine::AudioSource::Microphone);
     QVERIFY(!engine.m_stopRequested);
 
     engine.handleSourceFailure(
@@ -618,6 +621,8 @@ void TestWASAPIAudioCaptureEngineThreadSafetyWin::sourceFailureReportsExplicitDe
                  sourceSpy.constLast().constFirst()),
              IAudioCaptureEngine::AudioSource::None);
     QCOMPARE(deviceSpy.size(), 2);
+    QCOMPARE(qvariant_cast<IAudioCaptureEngine::AudioSource>(deviceSpy.constLast().constFirst()),
+             IAudioCaptureEngine::AudioSource::SystemAudio);
     QVERIFY(engine.m_stopRequested);
     QVERIFY(!engine.m_running);
 }

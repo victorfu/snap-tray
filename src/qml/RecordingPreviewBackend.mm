@@ -438,7 +438,7 @@ void RecordingPreviewBackend::handOffForSave(const QString &outputPath, const QS
     emit saveRequested(outputPath, croppedSize);
 }
 
-void RecordingPreviewBackend::completeSave(SaveOutcome outcome)
+void RecordingPreviewBackend::completeSave(SaveOutcome outcome, const QString &savedPath)
 {
     if (!m_awaitingSave) {
         return;
@@ -449,8 +449,15 @@ void RecordingPreviewBackend::completeSave(SaveOutcome outcome)
     const bool derived = output != m_videoPath;
 
     if (outcome == SaveOutcome::Saved) {
-        // Only now is the source no longer needed.
-        if (derived) {
+        // Only now is the source no longer needed, unless the export was
+        // saved over it: then that path is the user's saved file.
+        const auto samePath = [](const QString& a, const QString& b) {
+            const QFileInfo fa(a), fb(b);
+            const QString ca = fa.canonicalFilePath(), cb = fb.canonicalFilePath();
+            return !ca.isEmpty() ? ca == cb : fa.absoluteFilePath() == fb.absoluteFilePath();
+        };
+        const bool savedOverSource = !savedPath.isEmpty() && samePath(savedPath, m_videoPath);
+        if (derived && !savedOverSource) {
             QFile::remove(m_videoPath);
         }
         SnapTray::WindowTimelineSidecar::remove(m_videoPath);

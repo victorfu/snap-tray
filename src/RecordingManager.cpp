@@ -1145,13 +1145,16 @@ void RecordingManager::configureAudioCapture()
             });
 
             connect(m_audioEngine.get(), &IAudioCaptureEngine::deviceLost,
-                    this, [this, configuredEngine] {
+                    this, [this, configuredEngine](IAudioCaptureEngine::AudioSource lost) {
                 if (!configuredEngine || m_audioEngine.get() != configuredEngine.data()) {
                     return;
                 }
+                // Only the source that failed: the other may still be recording.
                 auto status = m_audioStatus;
-                if (status.microphone != SnapTray::AudioSourceState::Off) {
-                    status.microphone = SnapTray::AudioSourceState::DeviceMissing;
+                auto& state = lost == IAudioCaptureEngine::AudioSource::SystemAudio ? status.systemAudio
+                                                                                      : status.microphone;
+                if (state != SnapTray::AudioSourceState::Off) {
+                    state = SnapTray::AudioSourceState::DeviceMissing;
                 }
                 setAudioStatus(status);
             });
@@ -1840,14 +1843,16 @@ void RecordingManager::onPreviewClosed(bool saved)
 }
 
 RecordingManager::SaveOutcome RecordingManager::triggerSaveDialog(const QString &videoPath,
-                                                                  const QSize &outputSize)
+                                                                  const QSize &outputSize,
+                                                                  QString *savedPath)
 {
-    return showSaveDialog(videoPath, outputSize, true);
+    return showSaveDialog(videoPath, outputSize, true, savedPath);
 }
 
 RecordingManager::SaveOutcome RecordingManager::showSaveDialog(const QString &tempOutputPath,
                                                                const QSize &outputSize,
-                                                               bool keepOnCancel)
+                                                               bool keepOnCancel,
+                                                               QString *savedPath)
 {
     // Once saved or deleted, the temp recording stops being a preview input
     // and its window-timeline sidecar goes with it. A file the preview keeps
@@ -1900,6 +1905,7 @@ RecordingManager::SaveOutcome RecordingManager::showSaveDialog(const QString &te
         while (attempt < maxAttempts) {
             if (QFile::rename(tempOutputPath, savePath)) {
                 syncFile(savePath);
+                if (savedPath) *savedPath = savePath;
                 emit recordingStopped(savePath);
                 return SaveOutcome::Saved;
             }
@@ -1923,6 +1929,7 @@ RecordingManager::SaveOutcome RecordingManager::showSaveDialog(const QString &te
         if (QFile::copy(tempOutputPath, savePath)) {
             QFile::remove(tempOutputPath);
             syncFile(savePath);
+            if (savedPath) *savedPath = savePath;
             emit recordingStopped(savePath);
             return SaveOutcome::Saved;
         }
@@ -1966,6 +1973,7 @@ RecordingManager::SaveOutcome RecordingManager::showSaveDialog(const QString &te
         if (SnapTray::RecordingFileUtils::replaceRecordingFile(
                 tempOutputPath, savePath, &saveError)) {
             syncFile(savePath);
+            if (savedPath) *savedPath = savePath;
             emit recordingStopped(savePath);
             return SaveOutcome::Saved;
         }
@@ -1976,6 +1984,7 @@ RecordingManager::SaveOutcome RecordingManager::showSaveDialog(const QString &te
         return SaveOutcome::Failed;
     }
     syncFile(tempOutputPath);
+    if (savedPath) *savedPath = tempOutputPath;
     emit recordingStopped(tempOutputPath);
     return SaveOutcome::Saved;
 }
