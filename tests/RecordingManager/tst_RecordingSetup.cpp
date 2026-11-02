@@ -271,6 +271,9 @@ void TestRecordingSetup::levelIsThrottledAndReleasedOnStop()
     monitor.setEngineFactory([state, &engine] { return engine = new FakeLevelEngine(state); });
     monitor.setPermissionFunctions([] { return Permission::Authorized; }, {});
     QSignalSpy levelSpy(&monitor, &AudioLevelMonitor::levelChanged);
+    QList<float> publishedLevels;
+    connect(&monitor, &AudioLevelMonitor::levelChanged, this,
+            [&monitor, &publishedLevels] { publishedLevels.append(monitor.level()); });
     monitor.start(QStringLiteral("usb-mic"));
     QCOMPARE(monitor.state(), AudioLevelMonitor::State::Listening);
     QVERIFY(engine);
@@ -287,7 +290,9 @@ void TestRecordingSetup::levelIsThrottledAndReleasedOnStop()
     audioThread->start();
     audioThread->wait();
     delete audioThread;
-    QTRY_COMPARE_WITH_TIMEOUT(monitor.level(), 0.5f, 1000);
+    // The peak is published once; the next poll may already report silence,
+    // so look at what was published rather than the current value.
+    QTRY_VERIFY_WITH_TIMEOUT(publishedLevels.contains(0.5f), 1000);
     QVERIFY2(levelSpy.count() < 10, qPrintable(QString::number(levelSpy.count())));
 
     // Silence is a level of zero, not an error.
