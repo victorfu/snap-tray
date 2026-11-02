@@ -16,6 +16,15 @@ void snaptrayTestX11Pointer(const char* action, int a, int b)
         XTestFakeButtonEvent(display, static_cast<unsigned int>(a), b ? True : False, CurrentTime);
     } else if (std::strcmp(action, "shape") == 0) {
         XDefineCursor(display, root, XCreateFontCursor(display, static_cast<unsigned int>(a)));
+    } else if (std::strcmp(action, "grab") == 0) {
+        // Another application holding the pointer, as during a drag or an
+        // open menu.
+        if (a) {
+            XGrabPointer(display, root, False, ButtonPressMask | ButtonReleaseMask | PointerMotionMask,
+                         GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
+        } else {
+            XUngrabPointer(display, CurrentTime);
+        }
     } else if (std::strcmp(action, "swap") == 0) {
         // The map must keep the server's length; swap only buttons 1 and 3.
         unsigned char map[256];
