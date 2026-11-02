@@ -195,9 +195,14 @@ void tst_RecordingPreviewZoom::previewControls()
         return true;
     };
     QTRY_VERIFY(allInside(find(QStringLiteral("previewFormatRow"))));
+    QQuickItem* video = find(QStringLiteral("previewVideoPlayer"));
+    QVERIFY(video);
+    const qreal videoHeight = video->height();
     backend.setSelectedZoom(1);
     QTRY_VERIFY(panel->isVisible());
     QTRY_VERIFY(allInside(panel));
+    // Swapping the (wrapped) format row for the editor keeps the video still.
+    QCOMPARE(video->height(), videoHeight);
     QQuickItem* scale = find(QStringLiteral("previewZoomScale2")); // 2.5x
     QVERIFY(scale);
     QVERIFY(QMetaObject::invokeMethod(scale, "clicked"));
