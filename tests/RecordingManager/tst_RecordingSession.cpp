@@ -66,6 +66,7 @@ void TestRecordingSession::manifestRoundTrip()
     QCOMPARE(read->frameSize, QSize(1920, 1080));
     QVERIFY(read->audioRequired);
     QVERIFY(read->fragmented);
+    QVERIFY(read->intermediate);
     QCOMPARE(read->recordedMs, qint64(90000));
     QCOMPARE(read->startedAt, sessionFor(video).startedAt);
 
@@ -74,6 +75,14 @@ void TestRecordingSession::manifestRoundTrip()
     finished.state = RecordingSessionInfo::State::Finished;
     QVERIFY(Session::write(finished));
     QCOMPARE(Session::read(Session::manifestPathFor(video))->state, RecordingSessionInfo::State::Finished);
+    // Recorded at the selected quality round-trips; a manifest from before
+    // the field existed counts as intermediate (keeps the quality check).
+    finished.intermediate = false;
+    QVERIFY(Session::write(finished));
+    QVERIFY(!Session::read(Session::manifestPathFor(video))->intermediate);
+    touch(Session::manifestPathFor(video),
+          R"({"version": 1, "video": "SnapTray_Recording_1.mp4", "state": "finished"})");
+    QVERIFY(Session::read(Session::manifestPathFor(video))->intermediate);
     QVERIFY(QDir(dir.path()).entryList({QStringLiteral("*.tmp"), QStringLiteral("*~")}, QDir::Files).isEmpty());
 }
 

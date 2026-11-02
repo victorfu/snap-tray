@@ -70,6 +70,8 @@ private slots:
     void sessionManifestFollowsTheRecording();
     void staleCleanupSparesPendingRecoveries();
     void recoveredRecordingOpensInPreview();
+    void recoveredRecordingKeepsItsQuality();
+    void saveDialogSessionSurvivesANewRecording();
     void bufferedAnimationCountsTowardTheDiskGuard();
     void controlBarOffersPauseResumeAndStop();
     void waitingKeepsEventLoopResponsiveAndSettingsSnapshot();
@@ -334,6 +336,56 @@ void TestRecordingStartup::startFakeRecordingForDisk(RecordingManager& manager)
     manager.m_recordingFilePath = QStringLiteral("unused-buffered-disk-test.mp4");
     manager.onInitializationComplete(task, manager.m_initGeneration);
     QCOMPARE(manager.state(), RecordingManager::State::Recording);
+}
+
+void TestRecordingStartup::recoveredRecordingKeepsItsQuality()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("SnapTray_Recording_q.mp4"));
+    {
+        QFile file(video);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("x");
+    }
+    SnapTray::RecordingSessionInfo info;
+    info.videoPath = video;
+    info.intermediate = false; // recorded at the selected quality
+    QVERIFY(SnapTray::RecordingSession::write(info));
+    RecordingManager manager;
+    QSignalSpy preview(&manager, &RecordingManager::previewRequested);
+    QVERIFY(manager.openRecoveredRecording(video));
+    QCOMPARE(preview.first().at(2).toBool(), false);
+    manager.onPreviewClosed(false);
+}
+
+void TestRecordingStartup::saveDialogSessionSurvivesANewRecording()
+{
+    // PR #172 review: with preview off, a recording started while the first
+    // one's save dialog is open lost its manifest when that dialog returned.
+    QTemporaryDir dir;
+    const QString first = dir.filePath(QStringLiteral("SnapTray_Recording_first.mp4"));
+    const QString second = dir.filePath(QStringLiteral("SnapTray_Recording_second.mp4"));
+    {
+        QFile file(first);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("x");
+    }
+    RecordingManager manager;
+    manager.m_startSettings.showPreview = false;
+    manager.beginSession(first, QSize(16, 16), false);
+    manager.m_state = RecordingManager::State::Encoding;
+    // Finished: the save dialog is queued (not run here) and owns this session now.
+    manager.onEncodingFinished(true, first);
+    QCOMPARE(manager.state(), RecordingManager::State::Idle);
+    QVERIFY(manager.m_session.videoPath.isEmpty());
+    QVERIFY(SnapTray::RecordingSession::hasSession(first));
+    QVERIFY(RecordingManager::isSessionActive(first)); // still locked by its dialog
+    // A second recording starts meanwhile: both sessions stay.
+    manager.beginSession(second, QSize(16, 16), false);
+    QVERIFY(SnapTray::RecordingSession::hasSession(first));
+    QVERIFY(SnapTray::RecordingSession::hasSession(second));
+    QCOMPARE(manager.m_session.videoPath, second);
+    manager.endSession(true);
 }
 
 void TestRecordingStartup::init()
@@ -882,6 +934,8 @@ void TestRecordingStartup::recoveredRecordingOpensInPreview()
     QCOMPARE(manager.state(), RecordingManager::State::Previewing);
     QCOMPARE(preview.count(), 1);
     QCOMPARE(preview.first().first().toString(), video);
+    // PR #172 review: a recovered intermediate keeps its quality check on Save.
+    QCOMPARE(preview.first().at(2).toBool(), true);
     QVERIFY(RecordingManager::isSessionActive(video));
     // Busy: a second one cannot open, and neither can another instance.
     QVERIFY(!manager.openRecoveredRecording(video));

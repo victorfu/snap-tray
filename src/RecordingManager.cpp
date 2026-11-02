@@ -1469,6 +1469,7 @@ void RecordingManager::beginSession(const QString& videoPath, const QSize& frame
     m_session.frameSize = frameSize;
     m_session.frameRate = m_frameRate;
     m_session.audioRequired = audioRequired;
+    m_session.intermediate = m_recordedAsIntermediate;
     m_session.startedAt = QDateTime::currentDateTime();
     m_sessionHeartbeat = 0;
     // The lock tells a scan (here or in another SnapTray) this session is live;
@@ -1557,7 +1558,9 @@ bool RecordingManager::openRecoveredRecording(const QString& videoPath)
     }
     m_tempVideoPath = videoPath;
     setState(State::Previewing);
-    emit previewRequested(videoPath, RecordingSettingsManager::instance().outputFormat(), false);
+    // Recorded as the high-quality intermediate (or unknown, from an older
+    // manifest): Save still checks the output quality instead of moving it.
+    emit previewRequested(videoPath, RecordingSettingsManager::instance().outputFormat(), m_session.intermediate);
     return true;
 }
 
@@ -2077,13 +2080,22 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
             }, Qt::QueuedConnection);
         } else {
             // Existing flow: go directly to save dialog
+            // The dialog runs a nested event loop, and a new recording may
+            // start meanwhile (#172 review): this recording's session (manifest
+            // and lock) leaves the manager and is completed by its own dialog.
+            const QString sessionPath = m_session.videoPath;
+            const std::shared_ptr<QLockFile> sessionLock(m_sessionLock.release());
+            m_session = {};
             setState(State::Idle);
             QString tempPath = outputPath;
-            QMetaObject::invokeMethod(this, [this, tempPath]() {
+            QMetaObject::invokeMethod(this, [this, tempPath, sessionPath, sessionLock]() {
                 const SaveOutcome outcome = showSaveDialog(tempPath);
                 // Saved or discarded: nothing to recover. A failed save keeps
                 // the file in the temp folder, so its manifest stays.
-                endSession(outcome != SaveOutcome::Failed);
+                if (outcome != SaveOutcome::Failed && !sessionPath.isEmpty()) {
+                    SnapTray::RecordingSession::remove(sessionPath);
+                }
+                if (sessionLock) sessionLock->unlock();
             }, Qt::QueuedConnection);
         }
     } else {
