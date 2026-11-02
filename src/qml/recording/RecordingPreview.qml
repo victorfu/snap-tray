@@ -130,9 +130,23 @@ Item {
                 return
             }
         }
-        if (cropOverlay.editing)
-            cropOverlay.apply()
+        if (cropOverlay.editing && !root.applyCropWithPendingInput())
+            return
         backend.save()
+    }
+
+    // Apply Crop and Save do not take focus: typed X/Y/W/H not yet confirmed
+    // is applied first (#167 review); invalid input keeps the editor open.
+    function applyCropWithPendingInput() {
+        for (let i = 0; i < cropFieldRepeater.count; ++i) {
+            const field = cropFieldRepeater.itemAt(i).field
+            if (field.hasPendingInput() && !field.commitText()) {
+                field.forceActiveFocus()
+                return false
+            }
+        }
+        cropOverlay.apply()
+        return true
     }
 
     function undoEdit() {
@@ -1220,6 +1234,7 @@ Item {
                 }
 
                 Repeater {
+                    id: cropFieldRepeater
                     model: [
                         { key: "x", label: qsTr("X") },
                         { key: "y", label: qsTr("Y") },
@@ -1237,7 +1252,9 @@ Item {
                             font.pixelSize: SemanticTokens.fontSizeCaption
                             font.family: SemanticTokens.fontFamily
                         }
+                        property alias field: cropNumberField
                         NumberField {
+                            id: cropNumberField
                             objectName: "previewCrop_" + modelData.key
                             accessibleName: qsTr("Crop %1 in pixels").arg(modelData.label)
                             value: root.draftVideoRect[modelData.key]
@@ -1365,7 +1382,10 @@ Item {
                                                      : backend.hasCrop ? qsTr("Edit Crop") : qsTr("Crop Recording")
                     onClicked: {
                         root.comparingOriginal = false
-                        cropOverlay.editing ? cropOverlay.apply() : cropOverlay.beginEditing()
+                        if (cropOverlay.editing)
+                            root.applyCropWithPendingInput()
+                        else
+                            cropOverlay.beginEditing()
                     }
                 }
 
@@ -1763,7 +1783,7 @@ Item {
                 return
             }
             if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                cropOverlay.apply()
+                root.applyCropWithPendingInput()
                 event.accepted = true
                 return
             }
@@ -1853,14 +1873,29 @@ Item {
             border.width: 1
             border.color: numberField.activeFocus ? root.accent : root.borderColor
         }
-        onValueChanged: if (!activeFocus) text = value
-        onEditingFinished: {
-            if (acceptableInput && parseInt(text) !== value)
+        // Typed and not applied yet (see TimeField).
+        property bool edited: false
+        onValueChanged: if (!edited) text = value
+        onTextEdited: edited = true
+        function hasPendingInput() {
+            return edited
+        }
+        // Applies typed digits; false when they are not a valid number.
+        function commitText() {
+            if (!edited)
+                return true
+            if (!acceptableInput)
+                return false
+            edited = false
+            if (parseInt(text) !== value)
                 committed(parseInt(text))
             text = Qt.binding(function() { return numberField.value })
+            return true
         }
+        onEditingFinished: commitText()
         Keys.onEscapePressed: function(event) {
-            text = value
+            edited = false
+            text = Qt.binding(function() { return numberField.value })
             root.forceActiveFocus()
             event.accepted = true
         }
@@ -1890,13 +1925,18 @@ Item {
             border.color: timeField.invalid ? SemanticTokens.statusError
                                             : timeField.activeFocus ? root.accent : root.borderColor
         }
-        onTimeMsChanged: if (!activeFocus) text = backend.formatPreciseTime(timeMs)
-        // Text that differs from the value shown: typed but not applied yet.
+        // Typed by the user and not applied yet. Without it the field always
+        // shows the value, even while focused: undo/redo or a handle drag
+        // must never leave stale text that Save would apply again (#167 review).
+        property bool edited: false
+        onTimeMsChanged: if (!edited) text = backend.formatPreciseTime(timeMs)
         function hasPendingText() {
-            return text !== backend.formatPreciseTime(timeMs)
+            return edited
         }
         // Applies the typed time; false when it is invalid or rejected.
         function commitText() {
+            if (!edited)
+                return true
             const ms = backend.parseTime(text)
             invalid = ms < 0
             if (!invalid && ms !== timeMs) {
@@ -1904,14 +1944,20 @@ Item {
                 // The backend rejects out-of-range or too-short ranges and keeps its value.
                 invalid = timeMs !== ms
             }
-            if (!invalid)
+            if (!invalid) {
+                edited = false
                 text = backend.formatPreciseTime(timeMs)
+            }
             return !invalid
         }
         onEditingFinished: commitText()
-        onTextEdited: invalid = false
+        onTextEdited: {
+            invalid = false
+            edited = true
+        }
         Keys.onEscapePressed: function(event) {
             invalid = false
+            edited = false
             text = backend.formatPreciseTime(timeMs)
             root.forceActiveFocus()
             event.accepted = true
