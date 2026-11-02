@@ -25,6 +25,10 @@ const QSize kFrameSize(640, 360);
 // Like ScreenCaptureKit's stream queue: the encoder must hand surfaces back.
 constexpr int kPoolBufferLimit = 6;
 constexpr int kFrameAcceptTimeoutMs = 2000;
+// How long a pool surface may stay with the encoder. An encoder that keeps
+// surfaces never frees one, so it fails whatever the wait; the wait only has
+// to outlast a slow encoder (virtualized CI runners needed just over 2 s).
+constexpr int kSurfaceReturnTimeoutMs = 10000;
 constexpr int kFinishTimeoutMs = 10000;
 // H.264 at the default bitrate, measured in the middle of wide flat bars.
 // A color conversion (display profile to BT.709) moves mid-tones by 10+.
@@ -199,7 +203,7 @@ void tst_AVFoundationNativeFrames::nativeSurfacesEncodeColorBars()
     for (int i = 0; i < kFrameCount; ++i) {
         // A small pool runs dry if the encoder keeps surfaces it has encoded.
         std::shared_ptr<void> surface;
-        QTRY_VERIFY_WITH_TIMEOUT((surface = surfaceFrom(pool, bars)) != nullptr, kFrameAcceptTimeoutMs);
+        QTRY_VERIFY_WITH_TIMEOUT((surface = surfaceFrom(pool, bars)) != nullptr, kSurfaceReturnTimeoutMs);
         bool taken = true;
         const QString error = writeUntilAccepted(*encoder, [&] {
             taken = encoder->writeNativeFrame(surface, qint64(i) * 1000 / kFrameRate) && taken;
