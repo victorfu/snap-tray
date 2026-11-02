@@ -13,4 +13,7 @@ QtObject {
     readonly property int dialogMove: Qt.ArrowCursor
     // Recording preview editing: pick a point on the video (a zoom's centre).
     readonly property int pickPoint: Qt.CrossCursor
+    // Moving and resizing a rectangle on the video (a mask).
+    readonly property int moveItem: Qt.SizeAllCursor
+    readonly property int resizeDiagonal: Qt.SizeFDiagCursor
 }

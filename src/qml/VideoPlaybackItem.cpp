@@ -197,6 +197,7 @@ void VideoPlaybackItem::stop()
 void VideoPlaybackItem::clearFrame()
 {
     m_currentFrame = QImage();
+    m_rawFrame = QImage();
     m_scaledFrame = QImage();
     m_lastFrameSize = QSize();
     // No frame, no content: overlays placed by contentRect must know.
@@ -232,11 +233,31 @@ void VideoPlaybackItem::onFrameReady(const QImage &frame)
     if (frame.isNull())
         return;
 
+    m_rawFrame = frame;
     m_currentFrame = frame;
+    if (m_frameProcessor) {
+        m_frameProcessor(m_currentFrame, position());
+    }
     refreshScaledFrameForCurrentSize();
 
     // Re-emit for external consumers (format conversion)
     emit frameReady(frame);
+}
+
+void VideoPlaybackItem::setFrameProcessor(FrameProcessor processor)
+{
+    m_frameProcessor = std::move(processor);
+    reprocessFrame();
+}
+
+void VideoPlaybackItem::reprocessFrame()
+{
+    if (m_rawFrame.isNull()) return;
+    m_currentFrame = m_rawFrame;
+    if (m_frameProcessor) {
+        m_frameProcessor(m_currentFrame, position());
+    }
+    refreshScaledFrameForCurrentSize();
 }
 
 void VideoPlaybackItem::onMediaLoaded()

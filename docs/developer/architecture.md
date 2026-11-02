@@ -192,6 +192,8 @@ Pointer effects: `CursorEffectSettings` (show, size, smoothing, click ripple; se
 
 Zoom: `ZoomTrack` holds sorted, non-overlapping `ZoomSegment`s (time range, scale, focus in source pixels, manual flag) and is part of `PreviewEditState`. `viewportAt(t, bounds)` is the camera: holds during segments, a smootherstep pan between segments closer than two transitions, otherwise an ease out to the whole picture and back; always inside the crop, with its aspect ratio, and never overshooting. `generateAutoZoom()` groups non-synthetic presses and drag paths on visible, on-frame positions by time and distance, frames each group with a margin (capped scale, skipped below a useful zoom), merges groups that would pump, and splits close-in-time groups so each keeps its own clicks zoomed. Exports apply the viewport in the same frame filter before the pointer effects; the preview applies it as a transform on the video and pointer layer (`zoomViewportInView`).
 
+Masks: `RedactionTrack` (source-pixel rects with a time range and Solid/Pixelate/Blur) is part of `PreviewEditState` and is applied first in the frame filter, on the cropped source content, so zoom resampling can never bring masked pixels back. Rects round outward, and a mask covers any frame whose time on screen (up to `kFrameHoldMs`, above the longest export frame interval) overlaps it. The preview burns the same masks into the decoded frame through `VideoPlaybackItem::setFrameProcessor` (ending them a hold later there, since the player position can lead the frame). Masks never fail open: `save()` refuses an export whose format cannot draw them, and the MP4 job refuses any frame filter its transcoder would ignore.
+
 ### CLI subsystem
 
 Commands under `include/cli/commands/` include:

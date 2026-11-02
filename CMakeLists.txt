@@ -352,6 +352,7 @@ add_library(snaptray_core STATIC
     src/recording/CursorTimeline.cpp
     src/recording/CursorEffects.cpp
     src/recording/ZoomTrack.cpp
+    src/recording/RedactionTrack.cpp
     src/utils/OCRImageUtils.cpp
     src/utils/TextLayoutUtils.cpp
     # Headers with Q_OBJECT for MOC processing

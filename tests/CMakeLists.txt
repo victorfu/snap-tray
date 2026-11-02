@@ -333,6 +333,12 @@ target_link_libraries(RecordingManager_CursorTimeline PRIVATE snaptray_core Qt6:
 add_test(NAME RecordingManager_CursorTimeline COMMAND RecordingManager_CursorTimeline)
 set_tests_properties(RecordingManager_CursorTimeline PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(RecordingManager_RedactionTrack RecordingManager/tst_RedactionTrack.cpp)
+target_link_libraries(RecordingManager_RedactionTrack PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_RedactionTrack COMMAND RecordingManager_RedactionTrack)
+set_tests_properties(RecordingManager_RedactionTrack PROPERTIES TIMEOUT 60 LABELS "unit"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
 add_executable(RecordingManager_ZoomTrack RecordingManager/tst_ZoomTrack.cpp)
 target_link_libraries(RecordingManager_ZoomTrack PRIVATE snaptray_core Qt6::Test)
 add_test(NAME RecordingManager_ZoomTrack COMMAND RecordingManager_ZoomTrack)
@@ -410,6 +416,12 @@ if(APPLE OR WIN32 OR SNAPTRAY_ENABLE_LINUX_RECORDING)
     target_link_libraries(Qml_RecordingPreviewExport PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
     add_test(NAME Qml_RecordingPreviewExport COMMAND Qml_RecordingPreviewExport)
     set_tests_properties(Qml_RecordingPreviewExport PROPERTIES TIMEOUT 120 LABELS "integration")
+    add_executable(Qml_RecordingPreviewMasks Qml/tst_RecordingPreviewMasks.cpp)
+    target_link_libraries(Qml_RecordingPreviewMasks PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
+    target_sources(Qml_RecordingPreviewMasks PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+    add_test(NAME Qml_RecordingPreviewMasks COMMAND Qml_RecordingPreviewMasks)
+    set_tests_properties(Qml_RecordingPreviewMasks PROPERTIES TIMEOUT 120 LABELS "integration"
+        ENVIRONMENT "QT_QUICK_BACKEND=software")
 endif()
 
 add_executable(Utils_ScreenCaptureRegionUtils Utils/tst_ScreenCaptureRegionUtils.cpp)

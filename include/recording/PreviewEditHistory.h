@@ -3,6 +3,7 @@
 
 #include "recording/CursorEffects.h"
 #include "recording/ZoomTrack.h"
+#include "recording/RedactionTrack.h"
 
 #include <QRect>
 #include <QVector>
@@ -22,11 +23,14 @@ struct PreviewEditState {
     // Zoom and pan segments (#161); like the pointer look, undoable but kept
     // by "Reset Crop and Trim".
     ZoomTrack zoom;
+    // Masks over sensitive content (#162), undoable; also kept by "Reset
+    // Crop and Trim", so a reset never uncovers anything.
+    RedactionTrack redaction;
 
     bool operator==(const PreviewEditState& other) const
     {
         return crop == other.crop && trimStart == other.trimStart && trimEnd == other.trimEnd
-            && cursor == other.cursor && zoom == other.zoom;
+            && cursor == other.cursor && zoom == other.zoom && redaction == other.redaction;
     }
     bool operator!=(const PreviewEditState& other) const { return !(*this == other); }
     bool isUnedited() const { return crop == QRect() && trimStart == 0 && trimEnd == -1; }
