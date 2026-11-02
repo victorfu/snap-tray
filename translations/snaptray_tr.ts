@@ -1955,6 +1955,106 @@ Boyut: %2</translation>
     <name>RecordingPreview</name>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom %1× from %2 to %3</source>
+        <translation>%2 ile %3 arası %1× yakınlaştırma</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Click the video to move the zoom's centre. Done finishes editing.</source>
+        <translation>Yakınlaştırmanın merkezini taşımak için videoya tıklayın. Bitti düzenlemeyi bitirir.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Done</source>
+        <translation>Bitti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Delete this zoom</source>
+        <translation>Bu yakınlaştırmayı sil</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Delete</source>
+        <translation>Sil</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Turn all zooms on or off without deleting them</source>
+        <translation>Tüm yakınlaştırmaları silmeden aç veya kapat</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom Off</source>
+        <translation>Yakınlaştırma kapalı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom On</source>
+        <translation>Yakınlaştırma açık</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Gentler zooms for all segments: smaller and slower, no direct pans</source>
+        <translation>Tüm bölümlerde daha yumuşak yakınlaştırma: daha küçük ve yavaş, doğrudan kaydırma yok</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Less Motion</source>
+        <translation>Daha az hareket</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom end</source>
+        <translation>Yakınlaştırma sonu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom start</source>
+        <translation>Yakınlaştırma başlangıcı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom: %1</source>
+        <translation>Yakınlaştırma: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add a zoom at the playhead</source>
+        <translation>Oynatma konumuna yakınlaştırma ekle</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add Zoom</source>
+        <translation>Yakınlaştırma ekle</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No clicks to zoom in on</source>
+        <translation>Yakınlaştırılacak tıklama yok</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zooms added: %1</source>
+        <translation>Eklenen yakınlaştırmalar: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Auto zoom needs recorded clicks; add zooms by hand instead</source>
+        <translation>Otomatik yakınlaştırma kayıtlı tıklamalar gerektirir; yakınlaştırmaları elle ekleyin</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom in on clicks automatically. Zooms you added or changed are kept.</source>
+        <translation>Tıklamalara otomatik yakınlaştırır. Eklediğiniz veya değiştirdiğiniz yakınlaştırmalar korunur.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Auto Zoom</source>
+        <translation>Otomatik yakınlaştırma</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Highlight Clicks</source>
         <translation>Tıklamaları vurgula</translation>
     </message>

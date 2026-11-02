@@ -407,6 +407,8 @@ private slots:
     void pointerMatchesAcrossPreviewAndOutputs();
     void pointerEffectsOnlyReencodeWhenDrawn();
     void pointerMovesOverAStillPicture();
+    void zoomMatchesAcrossPreviewAndOutputs_data();
+    void zoomMatchesAcrossPreviewAndOutputs();
 };
 
 void tst_RecordingPreviewExport::saveAnimation_data()
@@ -1795,6 +1797,84 @@ void tst_RecordingPreviewExport::pointerMovesOverAStillPicture()
     // Without filling the gap, 800 ms would still show the 300 ms frame.
     QVERIFY2((moved - QPoint(110, 80)).manhattanLength() <= 2,
              qPrintable(QStringLiteral("%1,%2").arg(moved.x()).arg(moved.y())));
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
+}
+
+void tst_RecordingPreviewExport::zoomMatchesAcrossPreviewAndOutputs_data()
+{
+    QTest::addColumn<int>("format");
+    QTest::newRow("mp4") << int(RecordingPreviewBackend::MP4);
+    QTest::newRow("gif") << int(RecordingPreviewBackend::GIF);
+    QTest::newRow("webp") << int(RecordingPreviewBackend::WebP);
+}
+
+void tst_RecordingPreviewExport::zoomMatchesAcrossPreviewAndOutputs()
+{
+    // The pointer is the marker: zoomed 2x through a crop and trim, it must
+    // land at the same place in the preview's viewport and in every output.
+    QFETCH(int, format);
+    const QSize sourceSize(160, 120);
+    const QRect crop(20, 10, 120, 100);
+    constexpr qint64 kTrimStart = 300;
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    QVERIFY(writePointerSidecar(inputPath, sourceSize));
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(format);
+    backend.updateVideoSize(sourceSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    if (!backend.zoomAvailable()) QSKIP("This platform's MP4 transcoder cannot draw zooms yet");
+    backend.setShowCursor(true);
+    backend.setCursorScale(1.0);
+    backend.setCursorSmoothing(0);
+    backend.setClickRipple(false);
+    backend.setCropRect(crop);
+    backend.setTrimStart(kTrimStart);
+    backend.setTrimEnd(900);
+    const int index = backend.addZoomAt(350);
+    QCOMPARE(index, 0);
+    QVERIFY(backend.setZoomRange(0, 350, 850));
+    backend.setZoomScale(0, 2.0);
+    backend.setZoomFocusFromView(0, QPointF(80, 60), QRectF(QPointF(0, 0), QSizeF(sourceSize)));
+
+    // Preview: a 60x50 view centred on (80,60), inside the crop.
+    const QRectF contentRect(QPointF(0, 0), QSizeF(sourceSize));
+    QCOMPARE(backend.zoomViewportInView(700, contentRect), QRectF(50, 35, 60, 50));
+    // After it has eased out (850 + 600 ms): the whole crop again.
+    QCOMPARE(backend.zoomViewportInView(1500, contentRect), QRectF(crop));
+
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    WAIT_FOR_EXPORT(backend, savedSpy, 30000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(savedSpy.count(), 1);
+    const QString output = savedSpy.first().at(0).toString();
+    QImage frame;
+    const qint64 editedMs = 700 - kTrimStart;
+    if (format == RecordingPreviewBackend::MP4) {
+        auto reader = IVideoFrameReader::create();
+        if (!reader) QSKIP("No frame reader to inspect the MP4 on this platform");
+        QVERIFY(reader->load(output));
+        frame = reader->frameAt(editedMs);
+    } else {
+        frame = animationFrameAt(output, editedMs);
+    }
+    QCOMPARE(frame.size(), crop.size());
+    // Source (100,70) in view (50,35,60,50) at 2x: output (100,70); the 10 px pointer is 20 px.
+    const QPoint actual = pointerTopLeft(frame);
+    QVERIFY2((actual - QPoint(100, 70)).manhattanLength() <= 3,
+             qPrintable(QStringLiteral("%1,%2").arg(actual.x()).arg(actual.y())));
+    int magenta = 0;
+    for (int y = 0; y < frame.height(); ++y)
+        for (int x = 0; x < frame.width(); ++x) {
+            const QColor c = frame.pixelColor(x, y);
+            magenta += c.red() > 170 && c.blue() > 170 && c.green() < 100 ? 1 : 0;
+        }
+    QVERIFY2(magenta > 250, qPrintable(QString::number(magenta))); // ~20x20, not 10x10: zoomed
     backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
 }
 

@@ -1961,6 +1961,106 @@ Size: %2</source>
     <name>RecordingPreview</name>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom %1× from %2 to %3</source>
+        <translation>Зум %1× од %2 до %3</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Click the video to move the zoom's centre. Done finishes editing.</source>
+        <translation>Кликните на видео да померите центар зумирања. „Готово“ завршава уређивање.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Done</source>
+        <translation>Готово</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Delete this zoom</source>
+        <translation>Обриши ово зумирање</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Delete</source>
+        <translation>Обриши</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Turn all zooms on or off without deleting them</source>
+        <translation>Укључи или искључи сва зумирања без брисања</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom Off</source>
+        <translation>Зум искључен</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom On</source>
+        <translation>Зум укључен</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Gentler zooms for all segments: smaller and slower, no direct pans</source>
+        <translation>Блажа зумирања за све сегменте: мања и спорија, без директног померања</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Less Motion</source>
+        <translation>Мање кретања</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom end</source>
+        <translation>Крај зумирања</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom start</source>
+        <translation>Почетак зумирања</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom: %1</source>
+        <translation>Зум: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add a zoom at the playhead</source>
+        <translation>Додај зумирање на позицији репродукције</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add Zoom</source>
+        <translation>Додај зумирање</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No clicks to zoom in on</source>
+        <translation>Нема кликова за зумирање</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zooms added: %1</source>
+        <translation>Додато зумирања: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Auto zoom needs recorded clicks; add zooms by hand instead</source>
+        <translation>Аутоматско зумирање захтева снимљене кликове; додајте зумирања ручно</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom in on clicks automatically. Zooms you added or changed are kept.</source>
+        <translation>Аутоматски зумира на кликове. Зумирања која сте додали или изменили остају.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Auto Zoom</source>
+        <translation>Аутоматско зумирање</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Highlight Clicks</source>
         <translation>Истакни кликове</translation>
     </message>

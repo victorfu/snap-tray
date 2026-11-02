@@ -1961,6 +1961,106 @@ Grootte: %2</translation>
     <name>RecordingPreview</name>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom %1× from %2 to %3</source>
+        <translation>Zoom %1× van %2 tot %3</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Click the video to move the zoom's centre. Done finishes editing.</source>
+        <translation>Klik in de video om het midden van de zoom te verplaatsen. Klaar beëindigt het bewerken.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Done</source>
+        <translation>Klaar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Delete this zoom</source>
+        <translation>Deze zoom verwijderen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Delete</source>
+        <translation>Verwijderen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Turn all zooms on or off without deleting them</source>
+        <translation>Alle zooms aan- of uitzetten zonder ze te verwijderen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom Off</source>
+        <translation>Zoom uit</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom On</source>
+        <translation>Zoom aan</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Gentler zooms for all segments: smaller and slower, no direct pans</source>
+        <translation>Rustiger zoomen voor alle segmenten: kleiner en langzamer, geen directe pans</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Less Motion</source>
+        <translation>Minder beweging</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom end</source>
+        <translation>Einde van zoom</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom start</source>
+        <translation>Begin van zoom</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom: %1</source>
+        <translation>Zoom: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add a zoom at the playhead</source>
+        <translation>Een zoom toevoegen bij de afspeelkop</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add Zoom</source>
+        <translation>Zoom toevoegen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No clicks to zoom in on</source>
+        <translation>Geen klikken om op in te zoomen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zooms added: %1</source>
+        <translation>Zooms toegevoegd: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Auto zoom needs recorded clicks; add zooms by hand instead</source>
+        <translation>Automatisch zoomen vereist opgenomen klikken; voeg zooms handmatig toe</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom in on clicks automatically. Zooms you added or changed are kept.</source>
+        <translation>Zoomt automatisch in op klikken. Zooms die je zelf hebt toegevoegd of gewijzigd, blijven behouden.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Auto Zoom</source>
+        <translation>Automatisch zoomen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Highlight Clicks</source>
         <translation>Klikken markeren</translation>
     </message>

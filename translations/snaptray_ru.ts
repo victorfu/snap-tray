@@ -1961,6 +1961,106 @@ Size: %2</source>
     <name>RecordingPreview</name>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom %1× from %2 to %3</source>
+        <translation>Приближение %1× с %2 до %3</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Click the video to move the zoom's centre. Done finishes editing.</source>
+        <translation>Щёлкните по видео, чтобы переместить центр приближения. «Готово» завершает редактирование.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Done</source>
+        <translation>Готово</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Delete this zoom</source>
+        <translation>Удалить это приближение</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Delete</source>
+        <translation>Удалить</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Turn all zooms on or off without deleting them</source>
+        <translation>Включить или выключить все приближения, не удаляя их</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom Off</source>
+        <translation>Масштаб выкл.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom On</source>
+        <translation>Масштаб вкл.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Gentler zooms for all segments: smaller and slower, no direct pans</source>
+        <translation>Более мягкие приближения для всех отрезков: меньше и медленнее, без прямого панорамирования</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Less Motion</source>
+        <translation>Меньше движения</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom end</source>
+        <translation>Конец приближения</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom start</source>
+        <translation>Начало приближения</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom: %1</source>
+        <translation>Приближение: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add a zoom at the playhead</source>
+        <translation>Добавить приближение в позиции воспроизведения</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add Zoom</source>
+        <translation>Добавить приближение</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No clicks to zoom in on</source>
+        <translation>Нет щелчков для приближения</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zooms added: %1</source>
+        <translation>Добавлено приближений: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Auto zoom needs recorded clicks; add zooms by hand instead</source>
+        <translation>Для автомасштаба нужны записанные щелчки; добавьте приближения вручную</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom in on clicks automatically. Zooms you added or changed are kept.</source>
+        <translation>Автоматически приближает места щелчков. Добавленные или изменённые вами приближения сохраняются.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Auto Zoom</source>
+        <translation>Автомасштаб</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Highlight Clicks</source>
         <translation>Подсвечивать щелчки</translation>
     </message>

@@ -1942,6 +1942,106 @@ English is always included and cannot be removed.</source>
     <name>RecordingPreview</name>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom %1× from %2 to %3</source>
+        <translation>ซูม %1× จาก %2 ถึง %3</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Click the video to move the zoom's centre. Done finishes editing.</source>
+        <translation>คลิกที่วิดีโอเพื่อย้ายจุดกึ่งกลางการซูม กด เสร็จ เพื่อจบการแก้ไข</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Done</source>
+        <translation>เสร็จ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Delete this zoom</source>
+        <translation>ลบการซูมนี้</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Delete</source>
+        <translation>ลบ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Turn all zooms on or off without deleting them</source>
+        <translation>เปิดหรือปิดการซูมทั้งหมดโดยไม่ลบ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom Off</source>
+        <translation>ปิดซูม</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom On</source>
+        <translation>เปิดซูม</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Gentler zooms for all segments: smaller and slower, no direct pans</source>
+        <translation>ซูมนุ่มนวลขึ้นทุกช่วง: เล็กลงและช้าลง ไม่เลื่อนภาพโดยตรง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Less Motion</source>
+        <translation>ลดการเคลื่อนไหว</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom end</source>
+        <translation>สิ้นสุดการซูม</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom start</source>
+        <translation>เริ่มการซูม</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom: %1</source>
+        <translation>ซูม: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add a zoom at the playhead</source>
+        <translation>เพิ่มการซูมที่ตำแหน่งเล่น</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Add Zoom</source>
+        <translation>เพิ่มการซูม</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No clicks to zoom in on</source>
+        <translation>ไม่มีการคลิกให้ซูม</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zooms added: %1</source>
+        <translation>เพิ่มการซูมแล้ว: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Auto zoom needs recorded clicks; add zooms by hand instead</source>
+        <translation>การซูมอัตโนมัติต้องมีการคลิกที่บันทึกไว้ ให้เพิ่มการซูมด้วยตนเองแทน</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Zoom in on clicks automatically. Zooms you added or changed are kept.</source>
+        <translation>ซูมเข้าที่การคลิกโดยอัตโนมัติ การซูมที่คุณเพิ่มหรือแก้ไขจะยังคงอยู่</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>Auto Zoom</source>
+        <translation>ซูมอัตโนมัติ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Highlight Clicks</source>
         <translation>เน้นการคลิก</translation>
     </message>

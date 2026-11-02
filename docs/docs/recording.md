@@ -91,6 +91,16 @@ When a recording has this record, the preview shows pointer controls next to the
 
 Your last choices are remembered, and they can be undone like crop and trim (**Reset Crop and Trim** keeps them). Drawing the pointer means the video is re-encoded when saved; with the pointer hidden and no other edits, an unedited recording is still saved without re-encoding. On macOS and Windows, pointer effects are available for GIF and WebP exports; MP4 exports there do not draw them yet, and the preview says so.
 
+### Zoom and pan
+
+Full-screen recordings often make buttons and text small once shared. The preview can zoom in on parts of the recording:
+
+- **Auto Zoom** zooms in where you clicked or dragged: nearby clicks share one steady zoom, a far-away action pans across, and the view goes back to the whole picture when nothing happens. It needs recorded clicks (Linux); actions spread over most of the screen stay at the full view. Running it again replaces the automatic zooms but keeps the ones you added or changed.
+- **Add Zoom** adds a two-second, 2× zoom at the playhead, centred on the pointer when it is known.
+- Zooms appear as bars above the timeline. Click one to edit it: choose 1.5×, 2×, 2.5× or 3×, type its start and end, or click the video to move its centre. **Less Motion** makes all zooms smaller and slower without direct pans, **Zoom On/Off** turns them all off without deleting them, and **Delete** removes one.
+
+The preview shows exactly what the export draws, and zooms can be undone like other edits. A zoom never shows anything outside the recording or the crop. Typing and scrolling are not recorded, so they do not trigger automatic zooms. Like pointer effects, zooms are available for MP4 on Linux and for GIF and WebP everywhere.
+
 ## Recovering unsaved recordings
 
 SnapTray keeps a small record next to each recording until it is saved or discarded. If SnapTray stops before that (a crash, power loss, or quitting with an unsaved preview open), the next start shows a notice, and **Recover Recordings** in the tray menu lists what was left. Each entry shows when it was recorded, how much of it can be played, and whether audio that should be there is missing. **Recover** opens it in the preview so you can save it; **Discard** deletes it; **Later** keeps it for next time. Files waiting here are never removed by SnapTray's routine clean-up of old temporary files.

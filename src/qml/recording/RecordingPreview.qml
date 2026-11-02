@@ -44,6 +44,25 @@ Item {
     readonly property var pointerScales: [1.0, 1.5, 2.0, 3.0]
     readonly property var pointerSmoothingLabels: [qsTr("Smooth: Off"), qsTr("Smooth: Low"),
                                                    qsTr("Smooth: Medium"), qsTr("Smooth: High")]
+    // Zoom (#161): what the preview shows, the same viewport the export uses.
+    // Identity while editing the crop or comparing with the original.
+    readonly property rect zoomTarget: backend.hasCrop ? backend.cropRectInView(videoPlayer.contentRect)
+                                                       : videoPlayer.contentRect
+    readonly property rect zoomView: {
+        // Re-evaluate when the zoom, crop or format changes, not only the position.
+        void backend.zoomSegments; void backend.zoomEnabled; void backend.zoomReduceMotion
+        void backend.cropRect; void backend.selectedFormat
+        if (cropOverlay.editing || root.comparingOriginal)
+            return root.zoomTarget
+        return backend.zoomViewportInView(videoPlayer.position, videoPlayer.contentRect)
+    }
+    readonly property real zoomFactor: zoomView.width > 0 ? zoomTarget.width / zoomView.width : 1
+    readonly property var zoomScales: [1.5, 2.0, 2.5, 3.0]
+    // A point on the stage, through the zoom, in unzoomed stage coordinates.
+    function unzoomPoint(x, y) {
+        return Qt.point(zoomView.x + (x - zoomTarget.x) / zoomFactor, zoomView.y + (y - zoomTarget.y) / zoomFactor)
+    }
+
     function nextPointerScale(current) {
         for (let i = 0; i < pointerScales.length; ++i) {
             if (pointerScales[i] > current + 0.01)
@@ -202,12 +221,20 @@ Item {
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
+            // A zoomed picture never spills over the controls. Only while
+            // zoomed: crop handles at the edges must stay visible when editing.
+            clip: root.zoomFactor > 1.001
 
             VideoPlaybackItem {
                 id: videoPlayer
                 objectName: "previewVideoPlayer"
                 anchors.fill: parent
                 source: backend.videoPath
+                transform: [
+                    Translate { x: -root.zoomView.x; y: -root.zoomView.y },
+                    Scale { xScale: root.zoomFactor; yScale: root.zoomFactor },
+                    Translate { x: root.zoomTarget.x; y: root.zoomTarget.y }
+                ]
 
                 onVideoLoaded: backend.updateVideoSize(videoPlayer.videoSize)
                 onDurationChanged: function(durationMs) { backend.updateDuration(durationMs) }
@@ -233,6 +260,11 @@ Item {
                 backend: root.previewBackend
                 position: videoPlayer.position
                 contentRect: videoPlayer.contentRect
+                transform: [
+                    Translate { x: -root.zoomView.x; y: -root.zoomView.y },
+                    Scale { xScale: root.zoomFactor; yScale: root.zoomFactor },
+                    Translate { x: root.zoomTarget.x; y: root.zoomTarget.y }
+                ]
             }
 
             MouseArea {
@@ -240,8 +272,16 @@ Item {
                 anchors.fill: parent
                 // Video clicks belong to the crop editor while editing; Space and the play button still work.
                 enabled: !cropOverlay.editing
-                cursorShape: CursorTokens.clickable
-                onClicked: videoPlayer.togglePlayPause()
+                cursorShape: backend.selectedZoom >= 0 ? Qt.CrossCursor : CursorTokens.clickable
+                onClicked: function(mouse) {
+                    // With a zoom selected, a click moves its centre there.
+                    if (backend.selectedZoom >= 0) {
+                        const p = root.unzoomPoint(mouse.x, mouse.y)
+                        backend.setZoomFocusFromView(backend.selectedZoom, p, videoPlayer.contentRect)
+                        return
+                    }
+                    videoPlayer.togglePlayPause()
+                }
             }
 
             RecordingCropOverlay {
@@ -503,6 +543,47 @@ Item {
                 color: root.isDraggingTrimEnd ? root.accentHover : root.accent
             }
 
+            // Zoom segments above the track; click one to edit it.
+            Repeater {
+                model: backend.zoomSegments
+                Rectangle {
+                    required property int index
+                    required property var modelData
+                    objectName: "previewZoomSegment" + index
+                    readonly property bool selected: backend.selectedZoom === index
+                    x: timelineArea.posToX(modelData.start)
+                    y: 2
+                    z: 2
+                    width: Math.max(4, timelineArea.posToX(modelData.end) - x)
+                    height: 8
+                    radius: 3
+                    color: root.accent
+                    opacity: !backend.zoomEnabled ? 0.3 : selected ? 1.0 : 0.6
+                    border.width: selected ? 1 : 0
+                    border.color: root.textPrimary
+
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("Zoom %1× from %2 to %3").arg(modelData.scale.toFixed(1))
+                                         .arg(backend.formatPreciseTime(modelData.start))
+                                         .arg(backend.formatPreciseTime(modelData.end))
+                    Accessible.onPressAction: backend.selectedZoom = index
+
+                    MouseArea {
+                        anchors.fill: parent
+                        anchors.margins: -2
+                        cursorShape: CursorTokens.clickable
+                        onClicked: {
+                            backend.selectedZoom = parent.selected ? -1 : parent.index
+                            if (backend.selectedZoom >= 0) {
+                                videoPlayer.pause()
+                                // Show it fully zoomed, a moment after it starts.
+                                videoPlayer.seek(Math.min(parent.modelData.end, parent.modelData.start + 100))
+                            }
+                        }
+                    }
+                }
+            }
+
             Rectangle {
                 id: playhead
                 x: timelineArea.posToX(videoPlayer.position) - width / 2
@@ -679,7 +760,7 @@ Item {
                 id: formatRow
                 anchors.centerIn: parent
                 spacing: SemanticTokens.spacing8
-                visible: !cropOverlay.editing
+                visible: !cropOverlay.editing && backend.selectedZoom < 0
 
                 SegmentButton {
                     text: "MP4"
@@ -741,6 +822,110 @@ Item {
                     tooltipText: backend.clickRipple ? qsTr("Hide Click Highlights") : qsTr("Highlight Clicks")
                     selected: backend.clickRipple && backend.clickEffectsAvailable
                     onClicked: backend.clickRipple = !backend.clickRipple
+                }
+
+                // Zoom and pan.
+                Item {
+                    width: SemanticTokens.spacing8
+                    height: 1
+                    visible: backend.zoomAvailable
+                }
+                SegmentButton {
+                    objectName: "previewAutoZoom"
+                    visible: backend.zoomAvailable
+                    enabled: backend.autoZoomAvailable
+                    minimumButtonWidth: 0
+                    text: qsTr("Auto Zoom")
+                    tooltipText: backend.autoZoomAvailable
+                        ? qsTr("Zoom in on clicks automatically. Zooms you added or changed are kept.")
+                        : qsTr("Auto zoom needs recorded clicks; add zooms by hand instead")
+                    onClicked: {
+                        const count = backend.generateAutoZoom()
+                        // Say what happened right at the button.
+                        root.showButtonTooltip(count > 0 ? qsTr("Zooms added: %1").arg(count)
+                                                         : qsTr("No clicks to zoom in on"), this, true)
+                    }
+                }
+                SegmentButton {
+                    objectName: "previewAddZoom"
+                    visible: backend.zoomAvailable
+                    minimumButtonWidth: 0
+                    text: qsTr("Add Zoom")
+                    tooltipText: qsTr("Add a zoom at the playhead")
+                    onClicked: {
+                        videoPlayer.pause()
+                        backend.addZoomAt(videoPlayer.position)
+                    }
+                }
+            }
+
+            // Editing one zoom segment, in place of the format buttons.
+            Row {
+                id: zoomPanel
+                objectName: "previewZoomPanel"
+                anchors.centerIn: parent
+                spacing: SemanticTokens.spacing4
+                visible: backend.selectedZoom >= 0 && !cropOverlay.editing
+                readonly property var segment: backend.selectedZoom >= 0 ? backend.zoomSegments[backend.selectedZoom] : null
+
+                Repeater {
+                    model: root.zoomScales
+                    SegmentButton {
+                        required property int index
+                        required property real modelData
+                        objectName: "previewZoomScale" + index
+                        minimumButtonWidth: 0
+                        text: modelData.toLocaleString(Qt.locale(), "f", modelData % 1 ? 1 : 0) + "×"
+                        tooltipText: qsTr("Zoom: %1").arg(text)
+                        selected: zoomPanel.segment !== null && Math.abs(zoomPanel.segment.scale - modelData) < 0.05
+                        onClicked: backend.setZoomScale(backend.selectedZoom, modelData)
+                    }
+                }
+                TimeField {
+                    objectName: "previewZoomStartField"
+                    accessibleName: qsTr("Zoom start")
+                    timeMs: zoomPanel.segment ? zoomPanel.segment.start : 0
+                    onCommitted: function(ms) {
+                        invalid = !backend.setZoomRange(backend.selectedZoom, ms, zoomPanel.segment.end)
+                    }
+                }
+                TimeField {
+                    objectName: "previewZoomEndField"
+                    accessibleName: qsTr("Zoom end")
+                    timeMs: zoomPanel.segment ? zoomPanel.segment.end : 0
+                    onCommitted: function(ms) {
+                        invalid = !backend.setZoomRange(backend.selectedZoom, zoomPanel.segment.start, ms)
+                    }
+                }
+                SegmentButton {
+                    objectName: "previewZoomReduceMotion"
+                    minimumButtonWidth: 0
+                    text: qsTr("Less Motion")
+                    tooltipText: qsTr("Gentler zooms for all segments: smaller and slower, no direct pans")
+                    selected: backend.zoomReduceMotion
+                    onClicked: backend.zoomReduceMotion = !backend.zoomReduceMotion
+                }
+                SegmentButton {
+                    objectName: "previewZoomEnabled"
+                    minimumButtonWidth: 0
+                    text: backend.zoomEnabled ? qsTr("Zoom On") : qsTr("Zoom Off")
+                    tooltipText: qsTr("Turn all zooms on or off without deleting them")
+                    selected: backend.zoomEnabled
+                    onClicked: backend.zoomEnabled = !backend.zoomEnabled
+                }
+                SegmentButton {
+                    objectName: "previewZoomDelete"
+                    minimumButtonWidth: 0
+                    text: qsTr("Delete")
+                    tooltipText: qsTr("Delete this zoom")
+                    onClicked: backend.removeZoom(backend.selectedZoom)
+                }
+                SegmentButton {
+                    objectName: "previewZoomDone"
+                    minimumButtonWidth: 0
+                    text: qsTr("Done")
+                    tooltipText: qsTr("Click the video to move the zoom's centre. Done finishes editing.")
+                    onClicked: backend.selectedZoom = -1
                 }
             }
 

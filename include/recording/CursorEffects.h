@@ -45,7 +45,7 @@ struct CursorEffectAvailability {
 // Where source video pixels land in the output: crop, then scale to the
 // output size (letterboxing is the caller's; output fills the crop).
 struct CursorFrameMapping {
-    QRect sourceCrop;  // source video pixels; empty = whole frame
+    QRectF sourceCrop; // source video pixels (a zoom viewport is fractional); empty = whole frame
     QSize sourceSize;  // the recording's frame size
     QSize outputSize;  // pixels of the image being drawn on
 

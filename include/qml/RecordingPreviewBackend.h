@@ -10,6 +10,7 @@
 #include <QRect>
 #include <QRectF>
 #include <QSize>
+#include <QVariantList>
 
 #include <atomic>
 #include <functional>
@@ -101,6 +102,14 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(qreal cursorScale READ cursorScale WRITE setCursorScale NOTIFY cursorEffectsChanged)
     Q_PROPERTY(int cursorSmoothing READ cursorSmoothing WRITE setCursorSmoothing NOTIFY cursorEffectsChanged)
     Q_PROPERTY(bool clickRipple READ clickRipple WRITE setClickRipple NOTIFY cursorEffectsChanged)
+
+    // Zoom and pan (#161).
+    Q_PROPERTY(bool zoomAvailable READ zoomAvailable NOTIFY zoomChanged)
+    Q_PROPERTY(bool autoZoomAvailable READ autoZoomAvailable NOTIFY zoomChanged)
+    Q_PROPERTY(bool zoomEnabled READ zoomEnabled WRITE setZoomEnabled NOTIFY zoomChanged)
+    Q_PROPERTY(bool zoomReduceMotion READ zoomReduceMotion WRITE setZoomReduceMotion NOTIFY zoomChanged)
+    Q_PROPERTY(QVariantList zoomSegments READ zoomSegments NOTIFY zoomChanged)
+    Q_PROPERTY(int selectedZoom READ selectedZoom WRITE setSelectedZoom NOTIFY selectedZoomChanged)
 
     // True while the "discard this recording?" confirmation is shown.
     Q_PROPERTY(bool discardConfirmationPending READ discardConfirmationPending NOTIFY discardConfirmationChanged)
@@ -241,6 +250,33 @@ public:
     bool clickRipple() const { return m_cursorEffects.clickRipple; }
     void setClickRipple(bool value);
     const SnapTray::CursorTimeline* cursorTimeline() const { return m_cursorTimeline.get(); }
+
+    // Zoom: drawn by the same paths as the pointer effects.
+    bool zoomAvailable() const;
+    bool autoZoomAvailable() const;
+    bool zoomEnabled() const { return m_zoom.enabled; }
+    void setZoomEnabled(bool value);
+    bool zoomReduceMotion() const { return m_zoom.reduceMotion; }
+    void setZoomReduceMotion(bool value);
+    QVariantList zoomSegments() const;
+    int selectedZoom() const { return m_selectedZoom; }
+    void setSelectedZoom(int index);
+    const SnapTray::ZoomTrack& zoomTrack() const { return m_zoom; }
+    // Replaces the automatic segments with new ones from the pointer
+    // activity; segments the user added or changed are kept. Returns how
+    // many were generated (0 without clicks: nothing is invented).
+    Q_INVOKABLE int generateAutoZoom();
+    // A 2x, two-second zoom at the playhead, centred on the pointer when
+    // known; returns its index (or -1).
+    Q_INVOKABLE int addZoomAt(qint64 positionMs);
+    Q_INVOKABLE void removeZoom(int index);
+    Q_INVOKABLE void setZoomScale(int index, qreal scale);
+    Q_INVOKABLE bool setZoomRange(int index, qint64 startMs, qint64 endMs);
+    Q_INVOKABLE void setZoomFocusFromView(int index, const QPointF& viewPoint, const QRectF& contentRect);
+    // The part of the picture shown at positionMs, in view coordinates.
+    Q_INVOKABLE QRectF zoomViewportInView(qint64 positionMs, const QRectF& contentRect) const;
+    // Anything drawn into the export: pointer effects or zoom.
+    bool effectsActive() const;
     SnapTray::CursorEffectSettings cursorEffects() const { return m_cursorEffects; }
 
     // Called by QML VideoPlaybackItem position/duration updates
@@ -251,6 +287,8 @@ public:
 signals:
     void windowTimelineChanged();
     void cursorEffectsChanged();
+    void zoomChanged();
+    void selectedZoomChanged();
     // External interface consumed by MainApplication. `outputSize` is the
     // pixel size of a cropped export (for the filename's {w}x{h}); it is
     // empty when the output is not cropped.
@@ -279,6 +317,7 @@ private:
     friend class tst_RecordingPreviewExport;
     friend class tst_RecordingPreviewCrop;
     friend class tst_RecordingPreviewDiscard;
+    friend class tst_RecordingPreviewZoom;
 
     // Test seam: when set, replaces IVideoTranscoder::create() for MP4 edit
     // exports. Empty (the default, and always in production) = native factory.
@@ -329,8 +368,15 @@ private:
     SnapTray::CursorEffectSettings m_cursorEffects;
     mutable std::optional<bool> m_mp4FrameFilterSupported;
     void setCursorEffects(const SnapTray::CursorEffectSettings& settings);
-    // Draws the current pointer effects on an output frame; a snapshot.
-    std::function<void(QImage&, qint64)> cursorFrameFilter() const;
+    // Draws the current zoom and pointer effects on an output frame
+    // (already cropped); a snapshot of the settings.
+    std::function<void(QImage&, qint64)> effectsFrameFilter() const;
+    SnapTray::ZoomTrack m_zoom;
+    int m_selectedZoom = -1;
+    QRectF zoomBounds() const;
+    // The selected format's export can draw onto frames on this platform.
+    bool formatCanDrawEffects() const;
+    void editZoom(const std::function<void(SnapTray::ZoomTrack&)>& change);
     void editCursorEffects(const std::function<void(SnapTray::CursorEffectSettings&)>& change);
     std::optional<SnapTray::WindowSample> windowAt(const QPointF &viewPoint, const QRectF &contentRect,
                                                    qint64 positionMs) const;

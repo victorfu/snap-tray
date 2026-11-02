@@ -2,6 +2,7 @@
 #define PREVIEWEDITHISTORY_H
 
 #include "recording/CursorEffects.h"
+#include "recording/ZoomTrack.h"
 
 #include <QRect>
 #include <QVector>
@@ -18,11 +19,14 @@ struct PreviewEditState {
     // Pointer effects (#160) are undoable like crop and trim, but they are a
     // look, not an edit of the footage: isUnedited() ignores them.
     CursorEffectSettings cursor;
+    // Zoom and pan segments (#161); like the pointer look, undoable but kept
+    // by "Reset Crop and Trim".
+    ZoomTrack zoom;
 
     bool operator==(const PreviewEditState& other) const
     {
         return crop == other.crop && trimStart == other.trimStart && trimEnd == other.trimEnd
-            && cursor == other.cursor;
+            && cursor == other.cursor && zoom == other.zoom;
     }
     bool operator!=(const PreviewEditState& other) const { return !(*this == other); }
     bool isUnedited() const { return crop == QRect() && trimStart == 0 && trimEnd == -1; }

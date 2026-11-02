@@ -251,6 +251,12 @@ target_link_libraries(Qml_RecordingPreviewCrop PRIVATE snaptray_ui snaptray_qmlp
 add_test(NAME Qml_RecordingPreviewCrop COMMAND Qml_RecordingPreviewCrop)
 set_tests_properties(Qml_RecordingPreviewCrop PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_RecordingPreviewZoom Qml/tst_RecordingPreviewZoom.cpp)
+target_link_libraries(Qml_RecordingPreviewZoom PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
+target_sources(Qml_RecordingPreviewZoom PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_RecordingPreviewZoom COMMAND Qml_RecordingPreviewZoom)
+set_tests_properties(Qml_RecordingPreviewZoom PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 add_executable(Qml_RecordingPreviewPointer Qml/tst_RecordingPreviewPointer.cpp)
 target_link_libraries(Qml_RecordingPreviewPointer PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Quick Qt6::Test)
 target_sources(Qml_RecordingPreviewPointer PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
@@ -326,6 +332,12 @@ add_executable(RecordingManager_CursorTimeline RecordingManager/tst_CursorTimeli
 target_link_libraries(RecordingManager_CursorTimeline PRIVATE snaptray_core Qt6::Test)
 add_test(NAME RecordingManager_CursorTimeline COMMAND RecordingManager_CursorTimeline)
 set_tests_properties(RecordingManager_CursorTimeline PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(RecordingManager_ZoomTrack RecordingManager/tst_ZoomTrack.cpp)
+target_link_libraries(RecordingManager_ZoomTrack PRIVATE snaptray_core Qt6::Test)
+add_test(NAME RecordingManager_ZoomTrack COMMAND RecordingManager_ZoomTrack)
+set_tests_properties(RecordingManager_ZoomTrack PROPERTIES TIMEOUT 60 LABELS "unit"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
 add_executable(RecordingManager_CursorEffects RecordingManager/tst_CursorEffects.cpp)
 target_link_libraries(RecordingManager_CursorEffects PRIVATE snaptray_core Qt6::Test)
