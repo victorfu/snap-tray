@@ -1960,6 +1960,11 @@ Kích thước: %2</translation>
     <name>RecordingPreview</name>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No room for a new zoom here</source>
+        <translation>Không còn chỗ cho thu phóng mới ở đây</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Zoom %1× from %2 to %3</source>
         <translation>Thu phóng %1× từ %2 đến %3</translation>
     </message>

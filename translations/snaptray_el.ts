@@ -1960,6 +1960,11 @@ Size: %2</source>
     <name>RecordingPreview</name>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No room for a new zoom here</source>
+        <translation>Δεν υπάρχει χώρος για νέο ζουμ εδώ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Zoom %1× from %2 to %3</source>
         <translation>Ζουμ %1× από %2 έως %3</translation>
     </message>

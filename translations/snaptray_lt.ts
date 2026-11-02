@@ -1960,6 +1960,11 @@ Dydis: %2</translation>
     <name>RecordingPreview</name>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No room for a new zoom here</source>
+        <translation>Čia nėra vietos naujam priartinimui</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Zoom %1× from %2 to %3</source>
         <translation>Priartinimas %1× nuo %2 iki %3</translation>
     </message>

@@ -1957,6 +1957,11 @@ Size: %2</source>
     <name>RecordingPreview</name>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No room for a new zoom here</source>
+        <translation>此处没有空间添加新的缩放</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Zoom %1× from %2 to %3</source>
         <translation>缩放 %1×，%2 至 %3</translation>
     </message>

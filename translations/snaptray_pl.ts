@@ -1966,6 +1966,11 @@ Rozmiar: %2</translation>
     <name>RecordingPreview</name>
     <message>
         <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
+        <source>No room for a new zoom here</source>
+        <translation>Brak miejsca na nowe powiększenie w tym miejscu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/recording/RecordingPreview.qml" line="0" />
         <source>Zoom %1× from %2 to %3</source>
         <translation>Powiększenie %1× od %2 do %3</translation>
     </message>

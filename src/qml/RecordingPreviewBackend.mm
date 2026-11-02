@@ -280,9 +280,21 @@ int RecordingPreviewBackend::addZoomAt(qint64 positionMs)
     constexpr double kNewZoomScale = 2.0;
     const QRectF bounds = zoomBounds();
     if (bounds.isEmpty()) return -1;
+    // Only into free time: existing zooms are never trimmed or replaced
+    // (#176 review). Inside one, nothing is added.
+    const qint64 start = qMax<qint64>(0, positionMs);
+    if (m_zoom.segmentAt(start) >= 0) return -1;
+    qint64 end = m_duration > 0 ? qMin(m_duration, start + kNewZoomMs) : start + kNewZoomMs;
+    for (const auto& existing : m_zoom.segments()) {
+        if (existing.startMs > start) {
+            end = qMin(end, existing.startMs);
+            break;
+        }
+    }
+    if (end - start < SnapTray::ZoomTrack::kMinSegmentMs) return -1;
     SnapTray::ZoomSegment segment;
-    segment.startMs = qMax<qint64>(0, positionMs);
-    segment.endMs = m_duration > 0 ? qMin(m_duration, segment.startMs + kNewZoomMs) : segment.startMs + kNewZoomMs;
+    segment.startMs = start;
+    segment.endMs = end;
     segment.scale = kNewZoomScale;
     segment.focus = bounds.center();
     if (m_cursorTimeline) {
@@ -298,7 +310,11 @@ int RecordingPreviewBackend::addZoomAt(qint64 positionMs)
         z.enabled = true;
         z.setSegments(std::move(segments));
     });
-    const int index = m_zoom.segmentAt(segment.startMs + 1);
+    // Select the zoom that was inserted (it starts exactly at `start`).
+    int index = -1;
+    for (int i = 0; i < int(m_zoom.segments().size()); ++i) {
+        if (m_zoom.segments()[i].startMs == start) index = i;
+    }
     setSelectedZoom(index);
     return index;
 }
