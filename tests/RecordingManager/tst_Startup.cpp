@@ -65,6 +65,7 @@ private slots:
     void permissionWaitIsOutsideTimelineAndOldTimerIsIgnored();
     void encoderCapabilityControlsAudioPipeline_data();
     void encoderCapabilityControlsAudioPipeline();
+    void lostSystemAudioDeviceKeepsTheMicrophone();
     void captureExclusionWarning_data();
     void captureExclusionWarning();
     void nativeStreamStopFinishesRecording_data();
@@ -183,6 +184,14 @@ void TestRecordingStartup::encoderCapabilityControlsAudioPipeline()
     }
     QCOMPARE(manager.state(), RecordingManager::State::Recording);
     const bool audioEnabled = requested && acceptsAudio;
+    using AudioState = SnapTray::AudioSourceState;
+    {
+        // The tray reads this persistent status; it follows actual results.
+        const auto expected = !requested ? AudioState::Off
+            : audioEnabled ? AudioState::Active : AudioState::Unavailable;
+        QCOMPARE(manager.audioStatus().microphone, expected);
+        QCOMPARE(manager.audioStatus().systemAudio, expected);
+    }
     QCOMPARE(manager.m_audioEnabled, audioEnabled);
     QCOMPARE(manager.m_controlBar->m_rootItem->property("audioEnabled").toBool(), audioEnabled);
     QCOMPARE(audioState->created, audioEnabled ? 1 : 0);
@@ -201,6 +210,8 @@ void TestRecordingStartup::encoderCapabilityControlsAudioPipeline()
         QTRY_COMPARE(encoderState->audioWrites.load(), 1);
         audio->activeSourceChanged(IAudioCaptureEngine::AudioSource::SystemAudio);
         QCOMPARE(warnings.count(), 1);
+        QCOMPARE(manager.audioStatus().microphone, AudioState::Unavailable);
+        QCOMPARE(manager.audioStatus().systemAudio, AudioState::Active);
         QCOMPARE(manager.state(), RecordingManager::State::Recording);
         QVERIFY(manager.m_audioEnabled);
         QVERIFY(manager.m_controlBar->m_rootItem->property("audioEnabled").toBool());
@@ -208,6 +219,10 @@ void TestRecordingStartup::encoderCapabilityControlsAudioPipeline()
         QTRY_COMPARE(encoderState->audioWrites.load(), 2);
         audio->activeSourceChanged(IAudioCaptureEngine::AudioSource::None);
         QCOMPARE(warnings.count(), 2);
+        QCOMPARE(manager.audioStatus().microphone, AudioState::Unavailable);
+        QCOMPARE(manager.audioStatus().systemAudio, AudioState::Unavailable);
+        emit audio->deviceLost(IAudioCaptureEngine::AudioSource::Microphone);
+        QCOMPARE(manager.audioStatus().microphone, AudioState::DeviceMissing);
         QCOMPARE(manager.state(), RecordingManager::State::Recording);
         QVERIFY(!manager.m_audioEnabled);
         QVERIFY(!manager.m_controlBar->m_rootItem->property("audioEnabled").toBool());
@@ -221,6 +236,47 @@ void TestRecordingStartup::encoderCapabilityControlsAudioPipeline()
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     QTRY_COMPARE(encoderState->destroyed.load(), 1);
     QCOMPARE(audioState->destroyed, audioState->created);
+}
+
+void TestRecordingStartup::lostSystemAudioDeviceKeepsTheMicrophone()
+{
+    // Both sources; the playback endpoint fails (Windows reports deviceLost
+    // for it too). The microphone is still recording and must not read as missing.
+    RecordingSettingsManager::instance().setAudioEnabled(true);
+    constexpr int kBothSourcesSetting = 2;
+    RecordingSettingsManager::instance().setAudioSource(kBothSourcesSetting);
+    auto encoderState = std::make_shared<AudioEncoderTestState>();
+    auto audioState = std::make_shared<AudioCaptureTestState>();
+    RecordingManager manager;
+    prepare(manager);
+    manager.m_createAudioEngine = [audioState] { return new FakeStartupAudio(audioState); };
+    RecordingInitTask::Config config;
+    config.region = QRect(0, 0, 16, 16);
+    config.screenInfo.geometry = config.region;
+    config.frameSize = QSize(16, 16);
+    config.audioEnabled = true;
+    config.outputPath = "unused-device-lost.mp4";
+    auto task = QSharedPointer<RecordingInitTask>::create(config);
+    task->m_createEncoder = [encoderState](const auto& options, QObject* parent) {
+        return EncoderFactoryTestAccess::create(options, parent, encoderState);
+    };
+    QVERIFY(task->initializeEncoder());
+    task->result().success = true;
+    task->result().captureEngine = std::make_unique<FakeStartupCapture>();
+    task->result().captureEngineStarted = true;
+    manager.m_initTask = task;
+    manager.onInitializationComplete(task, manager.m_initGeneration);
+    QCOMPARE(manager.state(), RecordingManager::State::Recording);
+    using AudioState = SnapTray::AudioSourceState;
+    QCOMPARE(manager.audioStatus().microphone, AudioState::Active);
+    auto* audio = static_cast<FakeStartupAudio*>(manager.m_audioEngine.get());
+    emit audio->deviceLost(IAudioCaptureEngine::AudioSource::SystemAudio);
+    audio->activeSourceChanged(IAudioCaptureEngine::AudioSource::Microphone);
+    QCOMPARE(manager.audioStatus().microphone, AudioState::Active);
+    QCOMPARE(manager.audioStatus().systemAudio, AudioState::DeviceMissing);
+    manager.cancelRecording();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    QTRY_COMPARE(encoderState->destroyed.load(), 1);
 }
 
 void TestRecordingStartup::init()
@@ -353,6 +409,16 @@ void TestRecordingStartup::permissionPolicy()
     QCOMPARE(warnings.count(), denied ? 1 : 0);
     QCOMPARE(settings.audioSource(), source);
     QCOMPARE(settings.audioEnabled(), requested);
+    using AudioState = SnapTray::AudioSourceState;
+    const auto requestedState = !requested ? AudioState::Off
+        : audioSupported ? AudioState::Starting : AudioState::UnsupportedFormat;
+    const auto expectedMic = source == 1 ? AudioState::Off
+        : denied ? AudioState::PermissionDenied : requestedState;
+    const auto expectedSystem = source == 0 ? AudioState::Off : requestedState;
+    QCOMPARE(manager.audioStatus().microphone, expectedMic);
+    QCOMPARE(manager.audioStatus().systemAudio, expectedSystem);
+    manager.cancelRecording();
+    QCOMPARE(manager.audioStatus(), SnapTray::RecordingAudioStatus{});
 }
 
 void TestRecordingStartup::staleAndDuplicateRepliesCannotStart()

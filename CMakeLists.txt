@@ -342,6 +342,7 @@ add_library(snaptray_core STATIC
     src/utils/VideoCropGeometry.cpp
     src/recording/WindowTimeline.cpp
     src/recording/WindowTimelineSidecar.cpp
+    src/recording/RecordingAudioStatus.cpp
     src/utils/OCRImageUtils.cpp
     src/utils/TextLayoutUtils.cpp
     # Headers with Q_OBJECT for MOC processing
@@ -515,6 +516,8 @@ add_library(snaptray_platform STATIC
     # Common sources
     src/capture/ICaptureEngine.cpp
     src/capture/IAudioCaptureEngine.cpp
+    src/capture/AudioLevelMonitor.cpp
+    include/capture/AudioLevelMonitor.h
     src/capture/TimestampedPcmMixer.cpp
     src/capture/ScreenSnapshot.cpp
     src/capture/OwnWindowCaptureHider.cpp

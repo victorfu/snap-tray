@@ -15,6 +15,7 @@
 #include <functional>
 #include <QStringList>
 #include "capture/IAudioCaptureEngine.h"
+#include "recording/RecordingAudioStatus.h"
 
 #include "WatermarkRenderer.h"
 #include "recording/WindowTimelineRecorder.h"
@@ -62,6 +63,8 @@ public:
     bool isPaused() const;          // Recording is paused
     bool isPreviewing() const;      // Preview window is open
     QString activeScreenSummary() const;
+    // Per-source audio outcome of the current recording; Off/Off when idle.
+    SnapTray::RecordingAudioStatus audioStatus() const { return m_audioStatus; }
     State state() const { return m_state; }
 
 public slots:
@@ -90,6 +93,7 @@ signals:
     void recordingPaused();
     void recordingResumed();
     void stateChanged(State state);
+    void audioStatusChanged();
     // recordedAsIntermediate: the recording was captured as the high-quality
     // intermediate rather than at the selected quality.
     void previewRequested(const QString &tempVideoPath, int defaultOutputFormat, bool recordedAsIntermediate);
@@ -116,6 +120,9 @@ private:
     void flushStartupAudioWarnings();
     void reportAudioWarning(const QString& warning);
     void applyEncoderAudioResult(bool audioEnabled, const QString& warning);
+    void setAudioStatus(const SnapTray::RecordingAudioStatus& status);
+    // Moves every source currently in `from` to `to` (e.g. Starting -> Active).
+    void transitionAudioSources(SnapTray::AudioSourceState from, SnapTray::AudioSourceState to);
     void configureAudioCapture();
     void beginAsyncInitialization();   // Start async initialization
     void onInitializationComplete(const QSharedPointer<RecordingInitTask> &task,
@@ -172,6 +179,7 @@ private:
     // Audio capture
     AudioEnginePtr m_audioEngine;       // Audio engine with callback-draining deferred disposal
     bool m_audioEnabled;
+    SnapTray::RecordingAudioStatus m_audioStatus;
     int m_audioSource;  // 0=Microphone, 1=SystemAudio, 2=Both
     QString m_audioDevice;
     struct StartSettings {

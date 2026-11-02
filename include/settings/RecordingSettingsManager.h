@@ -34,6 +34,10 @@ public:
     int countdownSeconds() const;
     void setCountdownSeconds(int value);
 
+    // Show the screen and audio setup before every recording, even with one screen.
+    bool showSetupBeforeRecording() const;
+    void setShowSetupBeforeRecording(bool value);
+
     // Default values (shared with RecordingManager)
     static constexpr int kDefaultFrameRate = 30;
     static constexpr int kDefaultOutputFormat = 0;
@@ -44,6 +48,7 @@ public:
     static constexpr const char* kDefaultAudioDevice = "";
     static constexpr bool kDefaultCountdownEnabled = true;
     static constexpr int kDefaultCountdownSeconds = 3;
+    static constexpr bool kDefaultShowSetupBeforeRecording = false;
 
 private:
     RecordingSettingsManager() = default;
@@ -60,4 +65,5 @@ private:
     static constexpr const char* kKeyAudioDevice = "recording/audioDevice";
     static constexpr const char* kKeyCountdownEnabled = "recording/countdownEnabled";
     static constexpr const char* kKeyCountdownSeconds = "recording/countdownSeconds";
+    static constexpr const char* kKeyShowSetupBeforeRecording = "recording/showSetupBeforeRecording";
 };

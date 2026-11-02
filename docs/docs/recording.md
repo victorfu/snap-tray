@@ -60,6 +60,18 @@ Audio capture is available for MP4 recordings when supported by the current plat
 
 GIF and WebP exports are silent.
 
+### Check audio before you record
+
+Turn on **Show setup before recording** in Settings > Recording to see a short setup each time you record. On setups with more than one display it appears anyway when you pick the screen. It shows the screen, the microphone and its input device, system audio, and a summary of the output format, preview, and countdown. Changes are saved, so later quick recordings use them.
+
+Click **Test Microphone** to see a live input level. The microphone is only opened while the test runs and is released when you stop the test, start recording, or cancel. Nothing is played back. Silence shows as an empty meter and does not stop the recording.
+
+If a saved microphone is disconnected, it is listed as "Not connected" and recording falls back to the default microphone with a notice.
+
+### Audio status while recording
+
+The tray or menu bar tooltip lists the microphone and system audio separately for the whole recording: Recording, Starting, Off, Permission denied, Device not found, Unavailable, or Not supported by GIF/WebP. If audio falls back during a recording (for example to system audio only), the tooltip keeps showing it after the notification is gone.
+
 ## Quality tuning
 
 Open Settings > Recording and adjust frame rate, quality, countdown, and preview behavior.

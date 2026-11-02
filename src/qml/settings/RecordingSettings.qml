@@ -241,6 +241,13 @@ Flickable {
         Spacer {}
 
         SettingsToggle {
+            label: qsTr("Show setup before recording")
+            description: qsTr("Confirm the screen, microphone, and system audio before each recording. When off, recording starts right away with these settings.")
+            checked: settingsBackend.recordingShowSetup
+            onToggled: function(checked) { settingsBackend.recordingShowSetup = checked }
+        }
+
+        SettingsToggle {
             label: qsTr("Show preview")
             visible: !settingsBackend.recordingDirectMp4Only
             description: qsTr("Keep this on to trim or export after recording. Preview recordings are always captured as MP4 first.")

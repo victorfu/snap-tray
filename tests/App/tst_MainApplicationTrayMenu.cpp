@@ -464,8 +464,16 @@ void tst_MainApplicationTrayMenu::recordingState_updatesTrayIconAndToolTip()
              qPrintable(application.m_trayIcon->toolTip()));
     recording->setState(State::Paused);
     QVERIFY(application.m_trayIcon->toolTip().contains(QStringLiteral("1:23")));
+    // Audio is listed per source while recording, but not while finishing.
+    SnapTray::RecordingAudioStatus audio;
+    audio.microphone = SnapTray::AudioSourceState::PermissionDenied;
+    audio.systemAudio = SnapTray::AudioSourceState::Active;
+    recording->setAudioStatus(audio);
+    QVERIFY2(application.m_trayIcon->toolTip().contains(SnapTray::describeRecordingAudioStatus(audio)),
+             qPrintable(application.m_trayIcon->toolTip()));
     recording->setState(State::Encoding);
     QVERIFY(!application.m_trayIcon->toolTip().contains(QStringLiteral("1:23")));
+    QVERIFY(!application.m_trayIcon->toolTip().contains(SnapTray::describeRecordingAudioStatus(audio)));
 
     // The preview window is its own indicator; the tray returns to normal.
     recording->setState(State::Previewing);

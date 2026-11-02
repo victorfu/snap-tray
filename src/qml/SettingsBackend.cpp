@@ -304,6 +304,7 @@ void SettingsBackend::loadAllSettings()
     m_recordingOutputFormat = recMgr.outputFormat();
     m_recordingQuality = recMgr.quality();
     m_recordingShowPreview = recMgr.showPreview();
+    m_recordingShowSetup = recMgr.showSetupBeforeRecording();
     m_recordingAudioEnabled = recMgr.audioEnabled();
     m_recordingAudioSource = recMgr.audioSource();
     m_recordingAudioDevice = recMgr.audioDevice();
@@ -740,6 +741,14 @@ void SettingsBackend::setRecordingQuality(int v) {
         RecordingSettingsManager::instance().setQuality(v);
         emit recordingQualityChanged();
     }
+}
+
+void SettingsBackend::setRecordingShowSetup(bool v) {
+    if (m_recordingShowSetup == v)
+        return;
+    m_recordingShowSetup = v;
+    RecordingSettingsManager::instance().setShowSetupBeforeRecording(v);
+    emit recordingShowSetupChanged();
 }
 
 bool SettingsBackend::recordingShowPreview() const { return !recordingDirectMp4Only() && m_recordingShowPreview; }
