@@ -88,7 +88,9 @@ On Linux, recordings are written in fragments, so an interrupted recording can u
 
 ## When recording can't keep up
 
-If the computer cannot encode frames as fast as they are captured for several seconds in a row, SnapTray shows one warning and the tray tooltip says "dropping frames" until it recovers. A short hiccup or an unchanging screen does not count. Lowering the frame rate in Settings > Recording usually helps.
+If the computer cannot encode frames as fast as they are captured for several seconds in a row, the tray tooltip says "dropping frames" until it recovers. A short hiccup or an unchanging screen does not count. Lowering the frame rate in Settings > Recording usually helps.
+
+Recording warnings never appear on screen while you record, so they cannot end up in the video. The latest one is shown in the tray tooltip, and all of them appear in one notification when the recording stops.
 
 After a recording, **Copy Recording Diagnostics** in the tray menu copies a short text summary (frames captured, encoded and dropped with the reason, queue and encode times). It contains no images, audio, window titles or file names, and nothing is sent anywhere.
 
