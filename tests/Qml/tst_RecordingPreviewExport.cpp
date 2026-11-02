@@ -5,6 +5,7 @@
 #include "encoding/IntermediateQuality.h"
 #include "encoding/VideoBitrate.h"
 #include "qml/RecordingPreviewBackend.h"
+#include "recording/DiskSpaceGuard.h"
 #include "recording/WindowTimeline.h"
 #include "recording/WindowTimelineSidecar.h"
 #include "recording/CursorTimeline.h"
@@ -403,6 +404,8 @@ private slots:
     void saveOutcomeKeepsRecordingUntilCommitted_data();
     void saveOutcomeKeepsRecordingUntilCommitted();
     void closeDuringExportAsks();
+    void smartSaveWithoutRoomSavesAsRecorded();
+    void savingOverTheSourceKeepsTheSavedFile();
     void pointerMatchesAcrossPreviewAndOutputs_data();
     void pointerMatchesAcrossPreviewAndOutputs();
     void pointerEffectsOnlyReencodeWhenDrawn();
@@ -1875,6 +1878,74 @@ void tst_RecordingPreviewExport::zoomMatchesAcrossPreviewAndOutputs()
             magenta += c.red() > 170 && c.blue() > 170 && c.green() < 100 ? 1 : 0;
         }
     QVERIFY2(magenta > 250, qPrintable(QString::number(magenta))); // ~20x20, not 10x10: zoomed
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
+}
+
+void tst_RecordingPreviewExport::savingOverTheSourceKeepsTheSavedFile()
+{
+    // PR #168 review: choosing the recording's own path in the save dialog
+    // replaced it with the export, and then the source clean-up deleted it.
+    const QSize sourceSize(160, 120);
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createRecording(inputPath, 0, sourceSize);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    backend.updateVideoSize(sourceSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    backend.setTrimStart(200);
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    WAIT_FOR_EXPORT(backend, savedSpy, 20000);
+    QCOMPARE(savedSpy.count(), 1);
+    const QString exported = savedSpy.first().at(0).toString();
+    QVERIFY(exported != inputPath);
+    // What the save dialog does when the user picks the recording's path.
+    QVERIFY(QFile::remove(inputPath));
+    QVERIFY(QFile::rename(exported, inputPath));
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved, inputPath);
+    QVERIFY2(QFileInfo::exists(inputPath), "the saved recording was deleted");
+    QVERIFY(QFileInfo(inputPath).size() > 0);
+}
+
+void tst_RecordingPreviewExport::smartSaveWithoutRoomSavesAsRecorded()
+{
+    // PR #171 review: an unedited recording above the quality target is
+    // re-encoded into a second file, which skipped the free-space check.
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString inputPath = directory.filePath(QStringLiteral("recording.mp4"));
+    const QString fixtureError = createNoiseRecording(inputPath);
+    QVERIFY2(fixtureError.isEmpty(), qPrintable(fixtureError));
+    auto restore = qScopeGuard([]() {
+        RecordingPreviewBackend::transcoderFactoryOverride() = {};
+        RecordingPreviewBackend::outputQualityOverride() = {};
+        RecordingPreviewBackend::freeBytesForPathOverride() = {};
+    });
+    const auto log = std::make_shared<FakeTranscodeLog>();
+    RecordingPreviewBackend::transcoderFactoryOverride() = [log]() {
+        return std::unique_ptr<IVideoTranscoder>(new FakeTranscoder(FakeTranscodeOutcome::Real, QString(), log));
+    };
+    RecordingPreviewBackend::outputQualityOverride() = []() { return 0; };
+    // Just past the floor: not enough for a second copy of the recording.
+    RecordingPreviewBackend::freeBytesForPathOverride() = [](const QString&) {
+        return SnapTray::DiskSpaceGuard::kFloorBytes + 1024;
+    };
+    RecordingPreviewBackend backend(inputPath);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    backend.updateVideoSize(kNoiseSize);
+    backend.updateDuration(kNoiseFrameCount * kFrameIntervalMs);
+    QSignalSpy savedSpy(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save();
+    WAIT_FOR_EXPORT(backend, savedSpy, 60000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(savedSpy.count(), 1);
+    // Saved as recorded, without starting an export.
+    QCOMPARE(savedSpy.first().at(0).toString(), inputPath);
+    QVERIFY(!log->started.load());
     backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
 }
 

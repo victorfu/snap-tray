@@ -358,7 +358,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND X11_XTest_FOUND AND X11_Xfixes_FOUND A
         COMMAND xvfb-run -a -s "-screen 0 800x600x24"
             ${CMAKE_COMMAND} -E env --unset=WAYLAND_DISPLAY --unset=WAYLAND_SOCKET
             QT_QPA_PLATFORM=xcb XDG_SESSION_TYPE=x11 SNAPTRAY_TEST_ISOLATED_X11=1
-            $<TARGET_FILE:RecordingManager_CursorTimelineRecorder> x11ProbeOnIsolatedDisplay)
+            $<TARGET_FILE:RecordingManager_CursorTimelineRecorder> x11ProbeOnIsolatedDisplay x11RecorderKeepsQueuedClicks)
     set_tests_properties(RecordingManager_X11CursorProbe PROPERTIES TIMEOUT 60 LABELS "integration")
 endif()
 

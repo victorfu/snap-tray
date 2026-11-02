@@ -111,12 +111,28 @@ void AudioLevelMonitor::openEngine(quint64 generation)
                && !peak->compare_exchange_weak(current, value, std::memory_order_relaxed)) {
         }
     });
-    connect(m_engine.get(), &IAudioCaptureEngine::deviceLost, this, [this] {
+    // The microphone stops: some backends say deviceLost, others (macOS,
+    // PulseAudio) report that no source is active any more. Either way the
+    // meter must not keep inviting the user to speak. Queued, so the engine
+    // is not destroyed inside its own signal.
+    const auto fail = [this, generation](State state) {
+        if (generation != m_generation || !m_engine) return;
         m_engine.reset();
+        m_peak.reset();
         m_pollTimer.stop();
         setLevel(0.0f);
-        setState(State::DeviceMissing);
-    });
+        setState(state);
+    };
+    connect(m_engine.get(), &IAudioCaptureEngine::deviceLost, this,
+            [fail](IAudioCaptureEngine::AudioSource) { fail(State::DeviceMissing); }, Qt::QueuedConnection);
+    connect(m_engine.get(), &IAudioCaptureEngine::activeSourceChanged, this,
+            [fail](IAudioCaptureEngine::AudioSource active) {
+                if (active != IAudioCaptureEngine::AudioSource::Microphone
+                    && active != IAudioCaptureEngine::AudioSource::Both) {
+                    fail(State::Unavailable);
+                }
+            },
+            Qt::QueuedConnection);
 
     if (!m_engine->start()) {
         m_engine.reset();

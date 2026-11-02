@@ -78,6 +78,9 @@ private slots:
     void failedFinishSaysWhatWasKept_data();
     void failedFinishSaysWhatWasKept();
     void microphoneLossIsReported();
+    void recoveredRecordingKeepsItsQuality();
+    void saveDialogSessionSurvivesANewRecording();
+    void bufferedAnimationCountsTowardTheDiskGuard();
     void controlBarOffersPauseResumeAndStop();
     void waitingKeepsEventLoopResponsiveAndSettingsSnapshot();
     void permissionPolicy_data();
@@ -87,6 +90,7 @@ private slots:
     void permissionWaitIsOutsideTimelineAndOldTimerIsIgnored();
     void encoderCapabilityControlsAudioPipeline_data();
     void encoderCapabilityControlsAudioPipeline();
+    void lostSystemAudioDeviceKeepsTheMicrophone();
     void captureExclusionWarning_data();
     void captureExclusionWarning();
     void nativeStreamStopFinishesRecording_data();
@@ -96,6 +100,7 @@ private:
     void prepare(RecordingManager& manager);
     // Brings `manager` into Recording with fake capture and encoder.
     void startFakeRecording(RecordingManager& manager, std::shared_ptr<AudioEncoderTestState> encoderState);
+    void startFakeRecordingForDisk(RecordingManager& manager);
 };
 
 void TestRecordingStartup::nativeStreamStopFinishesRecording_data()
@@ -254,7 +259,7 @@ void TestRecordingStartup::encoderCapabilityControlsAudioPipeline()
         QCOMPARE(warnings.count(), 2);
         QCOMPARE(manager.audioStatus().microphone, AudioState::Unavailable);
         QCOMPARE(manager.audioStatus().systemAudio, AudioState::Unavailable);
-        emit audio->deviceLost();
+        emit audio->deviceLost(IAudioCaptureEngine::AudioSource::Microphone);
         // The microphone was no longer recording: nothing new to report.
         QCOMPARE(warnings.count(), 2);
         QCOMPARE(manager.audioStatus().microphone, AudioState::DeviceMissing);
@@ -271,6 +276,144 @@ void TestRecordingStartup::encoderCapabilityControlsAudioPipeline()
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     QTRY_COMPARE(encoderState->destroyed.load(), 1);
     QCOMPARE(audioState->destroyed, audioState->created);
+}
+
+void TestRecordingStartup::lostSystemAudioDeviceKeepsTheMicrophone()
+{
+    // Both sources; the playback endpoint fails (Windows reports deviceLost
+    // for it too). The microphone is still recording and must not read as missing.
+    RecordingSettingsManager::instance().setAudioEnabled(true);
+    constexpr int kBothSourcesSetting = 2;
+    RecordingSettingsManager::instance().setAudioSource(kBothSourcesSetting);
+    auto encoderState = std::make_shared<AudioEncoderTestState>();
+    auto audioState = std::make_shared<AudioCaptureTestState>();
+    RecordingManager manager;
+    prepare(manager);
+    manager.m_createAudioEngine = [audioState] { return new FakeStartupAudio(audioState); };
+    RecordingInitTask::Config config;
+    config.region = QRect(0, 0, 16, 16);
+    config.screenInfo.geometry = config.region;
+    config.frameSize = QSize(16, 16);
+    config.audioEnabled = true;
+    config.outputPath = "unused-device-lost.mp4";
+    auto task = QSharedPointer<RecordingInitTask>::create(config);
+    task->m_createEncoder = [encoderState](const auto& options, QObject* parent) {
+        return EncoderFactoryTestAccess::create(options, parent, encoderState);
+    };
+    QVERIFY(task->initializeEncoder());
+    task->result().success = true;
+    task->result().captureEngine = std::make_unique<FakeStartupCapture>();
+    task->result().captureEngineStarted = true;
+    manager.m_initTask = task;
+    manager.onInitializationComplete(task, manager.m_initGeneration);
+    QCOMPARE(manager.state(), RecordingManager::State::Recording);
+    using AudioState = SnapTray::AudioSourceState;
+    QCOMPARE(manager.audioStatus().microphone, AudioState::Active);
+    auto* audio = static_cast<FakeStartupAudio*>(manager.m_audioEngine.get());
+    QSignalSpy warnings(&manager, &RecordingManager::recordingWarning);
+    emit audio->deviceLost(IAudioCaptureEngine::AudioSource::SystemAudio);
+    audio->activeSourceChanged(IAudioCaptureEngine::AudioSource::Microphone);
+    QCOMPARE(manager.audioStatus().microphone, AudioState::Active);
+    // PR #173 review: no "microphone was disconnected" for a system-audio loss.
+    for (const auto& args : warnings) {
+        QVERIFY2(!args.first().toString().contains(QStringLiteral("microphone was disconnected")),
+                 qPrintable(args.first().toString()));
+    }
+    QCOMPARE(manager.audioStatus().systemAudio, AudioState::DeviceMissing);
+    manager.cancelRecording();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    QTRY_COMPARE(encoderState->destroyed.load(), 1);
+}
+
+void TestRecordingStartup::bufferedAnimationCountsTowardTheDiskGuard()
+{
+    // PR #171 review: with preview off, a GIF/WebP recording has no file
+    // until it ends; its buffered size must still count.
+    RecordingManager manager;
+    startFakeRecordingForDisk(manager);
+    constexpr qint64 kMiB = 1024 * 1024;
+    const quint64 generation = manager.m_startGeneration;
+    QSignalSpy interrupted(&manager, &RecordingManager::recordingWarning);
+    // 400 MiB free, no file on disk, 500 MiB of animation in memory.
+    manager.onDiskSample(generation, 400 * kMiB, 0, 1000, 500 * kMiB);
+    QCOMPARE(manager.state(), RecordingManager::State::Encoding); // stopped safely, kept
+    QVERIFY(interrupted.count() >= 1);
+    manager.cancelRecording();
+}
+
+void TestRecordingStartup::startFakeRecordingForDisk(RecordingManager& manager)
+{
+    RecordingSettingsManager::instance().setAudioEnabled(false);
+    RecordingSettingsManager::instance().setShowPreview(false);
+    prepare(manager);
+    auto encoderState = std::make_shared<AudioEncoderTestState>();
+    RecordingInitTask::Config config;
+    config.region = QRect(0, 0, 16, 16);
+    config.screenInfo.geometry = config.region;
+    config.frameSize = QSize(16, 16);
+    config.outputPath = "unused-buffered-disk-test.mp4";
+    auto task = QSharedPointer<RecordingInitTask>::create(config);
+    task->m_createEncoder = [encoderState](const auto& options, QObject* parent) {
+        return EncoderFactoryTestAccess::create(options, parent, encoderState);
+    };
+    QVERIFY(task->initializeEncoder());
+    task->result().success = true;
+    task->result().captureEngine = std::make_unique<FakeStartupCapture>();
+    task->result().captureEngineStarted = true;
+    manager.m_initTask = task;
+    manager.m_recordingFilePath = QStringLiteral("unused-buffered-disk-test.mp4");
+    manager.onInitializationComplete(task, manager.m_initGeneration);
+    QCOMPARE(manager.state(), RecordingManager::State::Recording);
+}
+
+void TestRecordingStartup::recoveredRecordingKeepsItsQuality()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("SnapTray_Recording_q.mp4"));
+    {
+        QFile file(video);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("x");
+    }
+    SnapTray::RecordingSessionInfo info;
+    info.videoPath = video;
+    info.intermediate = false; // recorded at the selected quality
+    QVERIFY(SnapTray::RecordingSession::write(info));
+    RecordingManager manager;
+    QSignalSpy preview(&manager, &RecordingManager::previewRequested);
+    QVERIFY(manager.openRecoveredRecording(video));
+    QCOMPARE(preview.first().at(2).toBool(), false);
+    manager.onPreviewClosed(false);
+}
+
+void TestRecordingStartup::saveDialogSessionSurvivesANewRecording()
+{
+    // PR #172 review: with preview off, a recording started while the first
+    // one's save dialog is open lost its manifest when that dialog returned.
+    QTemporaryDir dir;
+    const QString first = dir.filePath(QStringLiteral("SnapTray_Recording_first.mp4"));
+    const QString second = dir.filePath(QStringLiteral("SnapTray_Recording_second.mp4"));
+    {
+        QFile file(first);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("x");
+    }
+    RecordingManager manager;
+    manager.m_startSettings.showPreview = false;
+    manager.beginSession(first, QSize(16, 16), false);
+    manager.m_state = RecordingManager::State::Encoding;
+    // Finished: the save dialog is queued (not run here) and owns this session now.
+    manager.onEncodingFinished(true, first);
+    QCOMPARE(manager.state(), RecordingManager::State::Idle);
+    QVERIFY(manager.m_session.videoPath.isEmpty());
+    QVERIFY(SnapTray::RecordingSession::hasSession(first));
+    QVERIFY(RecordingManager::isSessionActive(first)); // still locked by its dialog
+    // A second recording starts meanwhile: both sessions stay.
+    manager.beginSession(second, QSize(16, 16), false);
+    QVERIFY(SnapTray::RecordingSession::hasSession(first));
+    QVERIFY(SnapTray::RecordingSession::hasSession(second));
+    QCOMPARE(manager.m_session.videoPath, second);
+    manager.endSession(true);
 }
 
 void TestRecordingStartup::init()
@@ -819,6 +962,8 @@ void TestRecordingStartup::recoveredRecordingOpensInPreview()
     QCOMPARE(manager.state(), RecordingManager::State::Previewing);
     QCOMPARE(preview.count(), 1);
     QCOMPARE(preview.first().first().toString(), video);
+    // PR #172 review: a recovered intermediate keeps its quality check on Save.
+    QCOMPARE(preview.first().at(2).toBool(), true);
     QVERIFY(RecordingManager::isSessionActive(video));
     // Busy: a second one cannot open, and neither can another instance.
     QVERIFY(!manager.openRecoveredRecording(video));
@@ -969,13 +1114,20 @@ void TestRecordingStartup::userStopIsNotAnInterruption()
 void TestRecordingStartup::failedFinishSaysWhatWasKept_data()
 {
     QTest::addColumn<bool>("fragmented");
-    QTest::newRow("crash-safe file") << true;
-    QTest::newRow("unfinished regular file") << false;
+    QTest::addColumn<bool>("playable");
+    QTest::addColumn<bool>("partKept");
+    QTest::newRow("crash-safe, playable") << true << true << true;
+    // PR #173 review: a non-empty but unplayable file (headers only) is not
+    // a kept part: recovery would refuse it.
+    QTest::newRow("crash-safe, unplayable") << true << false << false;
+    QTest::newRow("unfinished regular file") << false << true << false;
 }
 
 void TestRecordingStartup::failedFinishSaysWhatWasKept()
 {
     QFETCH(bool, fragmented);
+    QFETCH(bool, playable);
+    QFETCH(bool, partKept);
     QTemporaryDir dir;
     const QString output = dir.filePath(QStringLiteral("SnapTray_Recording_f.mp4"));
     {
@@ -984,15 +1136,16 @@ void TestRecordingStartup::failedFinishSaysWhatWasKept()
         file.write("partial");
     }
     RecordingManager manager;
+    manager.m_isRecordingPlayable = [playable](const QString&) { return playable; };
     manager.m_session.fragmented = fragmented;
     manager.m_session.videoPath = output;
     manager.m_state = RecordingManager::State::Encoding;
     QSignalSpy errors(&manager, &RecordingManager::recordingError);
     manager.onEncodingFinished(false, output);
     QCOMPARE(manager.state(), RecordingManager::State::Idle);
-    QCOMPARE(errors.count(), 1);
+    QTRY_COMPARE(errors.count(), 1);
     const QString message = errors.first().first().toString();
-    if (fragmented) {
+    if (partKept) {
         QVERIFY2(message.contains(QStringLiteral("recover it from the tray menu")), qPrintable(message));
     } else {
         QVERIFY2(message.contains(QStringLiteral("Nothing usable could be kept")), qPrintable(message));
@@ -1028,7 +1181,7 @@ void TestRecordingStartup::microphoneLossIsReported()
     QSignalSpy warnings(&manager, &RecordingManager::recordingWarning);
     QSignalSpy interrupted(&manager, &RecordingManager::recordingInterrupted);
 
-    emit static_cast<FakeStartupAudio*>(manager.m_audioEngine.get())->deviceLost();
+    emit static_cast<FakeStartupAudio*>(manager.m_audioEngine.get())->deviceLost(IAudioCaptureEngine::AudioSource::Microphone);
     // Recording goes on without the microphone, and the user is told so.
     QCOMPARE(manager.state(), RecordingManager::State::Recording);
     QCOMPARE(interrupted.count(), 0);

@@ -102,6 +102,15 @@ Item {
     function saveWithCrop() {
         if (backend.isProcessing)
             return
+        // A time typed but not yet confirmed (Save does not take focus) is
+        // applied first; an invalid one stops the save instead of exporting
+        // the old range.
+        for (const field of [trimStartField, trimEndField]) {
+            if (field.visible && field.hasPendingText() && !field.commitText()) {
+                field.forceActiveFocus()
+                return
+            }
+        }
         if (cropOverlay.editing)
             cropOverlay.apply()
         backend.save()
@@ -131,7 +140,10 @@ Item {
         const r = root.draftVideoRect
         if (r.width <= 0)
             return
-        setDraftFromFields(r.x + dxVideo, r.y + dyVideo, r.width, r.height)
+        // Moving never resizes: at an edge the crop stops instead of shrinking.
+        const x = Math.max(0, Math.min(backend.videoSize.width - r.width, r.x + dxVideo))
+        const y = Math.max(0, Math.min(backend.videoSize.height - r.height, r.y + dyVideo))
+        setDraftFromFields(x, y, r.width, r.height)
     }
 
     // The window under the resting pointer follows the playhead too.
@@ -733,6 +745,7 @@ Item {
                 spacing: SemanticTokens.spacing4
 
                 TimeField {
+                    id: trimStartField
                     objectName: "previewTrimStartField"
                     accessibleName: qsTr("Trim start")
                     timeMs: backend.trimStart
@@ -745,6 +758,7 @@ Item {
                     font.pixelSize: SemanticTokens.fontSizeSmall
                 }
                 TimeField {
+                    id: trimEndField
                     objectName: "previewTrimEndField"
                     accessibleName: qsTr("Trim end")
                     timeMs: backend.trimEnd
@@ -1627,7 +1641,12 @@ Item {
                                             : timeField.activeFocus ? root.accent : root.borderColor
         }
         onTimeMsChanged: if (!activeFocus) text = backend.formatPreciseTime(timeMs)
-        onEditingFinished: {
+        // Text that differs from the value shown: typed but not applied yet.
+        function hasPendingText() {
+            return text !== backend.formatPreciseTime(timeMs)
+        }
+        // Applies the typed time; false when it is invalid or rejected.
+        function commitText() {
             const ms = backend.parseTime(text)
             invalid = ms < 0
             if (!invalid && ms !== timeMs) {
@@ -1637,7 +1656,9 @@ Item {
             }
             if (!invalid)
                 text = backend.formatPreciseTime(timeMs)
+            return !invalid
         }
+        onEditingFinished: commitText()
         onTextEdited: invalid = false
         Keys.onEscapePressed: function(event) {
             invalid = false
