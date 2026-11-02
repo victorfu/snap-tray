@@ -1774,6 +1774,26 @@ Grootte: %2</translation>
 <context>
     <name>RecordingManager</name>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Nothing usable could be kept.</source>
+        <translation>Er kon niets bruikbaars worden bewaard.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>The recording could not be finished. The part recorded so far was kept; recover it from the tray menu.</source>
+        <translation>De opname kon niet worden voltooid. Het tot nu toe opgenomen deel is bewaard; herstel het via het systeemvakmenu.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recording could not start. %1</source>
+        <translation>Opname kon niet worden gestart. %1</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>The microphone was disconnected. Recording continues without it, so its audio stops from this point.</source>
+        <translation>De microfoon is losgekoppeld. De opname gaat zonder door, dus vanaf hier ontbreekt het microfoongeluid.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="2106" />
         <source>The recording is kept at %1.</source>
         <translation>De opname staat in %1.</translation>
@@ -3958,6 +3978,39 @@ Bestandsgrootte: %3</translation>
         <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="11" />
         <source>Recover Recordings</source>
         <translation>Opnamen herstellen</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingInterruption</name>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The disk is almost full.</source>
+        <translation>De schijf is bijna vol.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Screen capture stopped working.</source>
+        <translation>Schermopname werkt niet meer.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The recorded screen's resolution, scaling or orientation changed.</source>
+        <translation>De resolutie, schaal of stand van het opgenomen scherm is gewijzigd.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The recorded screen was disconnected.</source>
+        <translation>Het opgenomen scherm is losgekoppeld.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Screen recording was stopped from the system's controls.</source>
+        <translation>De schermopname is gestopt via de systeembediening.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Recording stopped. %1 Everything recorded so far is kept.</source>
+        <translation>Opname gestopt. %1 Alles wat tot nu toe is opgenomen, blijft bewaard.</translation>
     </message>
 </context>
 </TS>

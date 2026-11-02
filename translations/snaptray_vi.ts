@@ -1768,6 +1768,26 @@ Kích thước: %2</translation>
 <context>
     <name>RecordingManager</name>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Nothing usable could be kept.</source>
+        <translation>Không giữ lại được phần nào dùng được.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>The recording could not be finished. The part recorded so far was kept; recover it from the tray menu.</source>
+        <translation>Không thể hoàn tất bản ghi. Phần đã ghi đến lúc này được giữ lại; hãy khôi phục từ menu khay hệ thống.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recording could not start. %1</source>
+        <translation>Không thể bắt đầu ghi hình. %1</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>The microphone was disconnected. Recording continues without it, so its audio stops from this point.</source>
+        <translation>Micrô đã bị ngắt kết nối. Việc ghi vẫn tiếp tục mà không có micrô, nên âm thanh micrô dừng từ thời điểm này.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="2106" />
         <source>The recording is kept at %1.</source>
         <translation>Bản ghi được giữ tại %1.</translation>
@@ -3952,6 +3972,39 @@ Kích thước tệp: %3</translation>
         <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="11" />
         <source>Recover Recordings</source>
         <translation>Khôi phục bản ghi</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingInterruption</name>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The disk is almost full.</source>
+        <translation>Ổ đĩa sắp đầy.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Screen capture stopped working.</source>
+        <translation>Tính năng chụp màn hình đã ngừng hoạt động.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The recorded screen's resolution, scaling or orientation changed.</source>
+        <translation>Độ phân giải, tỷ lệ hoặc hướng của màn hình đang ghi đã thay đổi.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The recorded screen was disconnected.</source>
+        <translation>Màn hình đang ghi đã bị ngắt kết nối.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Screen recording was stopped from the system's controls.</source>
+        <translation>Việc ghi màn hình đã bị dừng từ điều khiển của hệ thống.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Recording stopped. %1 Everything recorded so far is kept.</source>
+        <translation>Đã dừng ghi hình. %1 Mọi nội dung đã ghi đến lúc này đều được giữ lại.</translation>
     </message>
 </context>
 </TS>

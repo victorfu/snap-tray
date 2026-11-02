@@ -63,6 +63,17 @@ SnapTray checks the free space where the recording is written before it starts a
 
 Exports from the preview check for room for the new file first, and saving to another drive checks the destination. If there is not enough room, nothing is deleted: free up space or choose another location and save again. Write errors (for example an unplugged drive) are still reported even when the free space looked fine.
 
+## When a recording is interrupted
+
+If something outside SnapTray ends a recording, it stops the same way as pressing Stop: the file is finished, the preview (or save dialog) opens, and everything recorded so far is kept. A notice says why it stopped:
+
+- the recorded screen was disconnected;
+- its resolution, scaling or orientation changed (the output keeps one fixed size, so SnapTray stops instead of distorting the video);
+- screen recording was stopped from the system's own controls, the permission was revoked, or capture stopped working;
+- the disk is almost full (see above).
+
+If several of these happen at once, the recording still ends only once and the first reason is reported. If the microphone is unplugged while recording, the recording continues without it and SnapTray says so; it never switches to another microphone on its own. If the file itself cannot be finished, SnapTray says whether a playable part was kept (on Linux it can be recovered from the tray menu, see below). A recording is only deleted when you choose Discard.
+
 ## Recovering unsaved recordings
 
 SnapTray keeps a small record next to each recording until it is saved or discarded. If SnapTray stops before that (a crash, power loss, or quitting with an unsaved preview open), the next start shows a notice, and **Recover Recordings** in the tray menu lists what was left. Each entry shows when it was recorded, how much of it can be played, and whether audio that should be there is missing. **Recover** opens it in the preview so you can save it; **Discard** deletes it; **Later** keeps it for next time. Files waiting here are never removed by SnapTray's routine clean-up of old temporary files.

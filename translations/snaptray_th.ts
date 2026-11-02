@@ -1755,6 +1755,26 @@ English is always included and cannot be removed.</source>
 <context>
     <name>RecordingManager</name>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Nothing usable could be kept.</source>
+        <translation>ไม่สามารถเก็บส่วนที่ใช้งานได้ไว้ได้เลย</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>The recording could not be finished. The part recorded so far was kept; recover it from the tray menu.</source>
+        <translation>ไม่สามารถทำการบันทึกให้เสร็จได้ ส่วนที่บันทึกไว้จนถึงตอนนี้ยังถูกเก็บไว้ กู้คืนได้จากเมนูถาด</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recording could not start. %1</source>
+        <translation>ไม่สามารถเริ่มการบันทึกได้ %1</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>The microphone was disconnected. Recording continues without it, so its audio stops from this point.</source>
+        <translation>ไมโครโฟนถูกตัดการเชื่อมต่อ การบันทึกดำเนินต่อโดยไม่มีไมโครโฟน เสียงจากไมโครโฟนจึงหยุดตั้งแต่จุดนี้</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="2106" />
         <source>The recording is kept at %1.</source>
         <translation>การบันทึกเก็บอยู่ที่ %1</translation>
@@ -3724,6 +3744,39 @@ English is always included and cannot be removed.</source>
         <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="11" />
         <source>Recover Recordings</source>
         <translation>กู้คืนการบันทึก</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingInterruption</name>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The disk is almost full.</source>
+        <translation>ดิสก์ใกล้เต็มแล้ว</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Screen capture stopped working.</source>
+        <translation>การจับภาพหน้าจอหยุดทำงาน</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The recorded screen's resolution, scaling or orientation changed.</source>
+        <translation>ความละเอียด การปรับขนาด หรือการวางแนวของหน้าจอที่กำลังบันทึกเปลี่ยนไป</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The recorded screen was disconnected.</source>
+        <translation>หน้าจอที่กำลังบันทึกถูกตัดการเชื่อมต่อ</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Screen recording was stopped from the system's controls.</source>
+        <translation>การบันทึกหน้าจอถูกหยุดจากตัวควบคุมของระบบ</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Recording stopped. %1 Everything recorded so far is kept.</source>
+        <translation>การบันทึกหยุดแล้ว %1 ทุกอย่างที่บันทึกไว้จนถึงตอนนี้ยังถูกเก็บไว้</translation>
     </message>
 </context>
 </TS>

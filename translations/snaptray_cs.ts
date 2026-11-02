@@ -1774,6 +1774,26 @@ Velikost: %2</translation>
 <context>
     <name>RecordingManager</name>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Nothing usable could be kept.</source>
+        <translation>Nic použitelného nebylo možné zachovat.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>The recording could not be finished. The part recorded so far was kept; recover it from the tray menu.</source>
+        <translation>Nahrávku nelze dokončit. Dosud nahraná část zůstala zachována; obnovte ji z nabídky v oznamovací oblasti.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recording could not start. %1</source>
+        <translation>Nahrávání nelze spustit. %1</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>The microphone was disconnected. Recording continues without it, so its audio stops from this point.</source>
+        <translation>Mikrofon byl odpojen. Nahrávání pokračuje bez něj, takže jeho zvuk od této chvíle chybí.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="2106" />
         <source>The recording is kept at %1.</source>
         <translation>Nahrávka je uložena v %1.</translation>
@@ -3958,6 +3978,39 @@ Velikost souboru: %3</translation>
         <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="11" />
         <source>Recover Recordings</source>
         <translation>Obnovit nahrávky</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingInterruption</name>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The disk is almost full.</source>
+        <translation>Disk je téměř plný.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Screen capture stopped working.</source>
+        <translation>Snímání obrazovky přestalo fungovat.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The recorded screen's resolution, scaling or orientation changed.</source>
+        <translation>Změnilo se rozlišení, měřítko nebo orientace nahrávané obrazovky.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The recorded screen was disconnected.</source>
+        <translation>Nahrávaná obrazovka byla odpojena.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Screen recording was stopped from the system's controls.</source>
+        <translation>Nahrávání obrazovky bylo zastaveno ovládacími prvky systému.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Recording stopped. %1 Everything recorded so far is kept.</source>
+        <translation>Nahrávání se zastavilo. %1 Vše, co bylo dosud nahráno, zůstává zachováno.</translation>
     </message>
 </context>
 </TS>

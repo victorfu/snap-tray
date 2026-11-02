@@ -1768,6 +1768,26 @@ Storlek: %2</translation>
 <context>
     <name>RecordingManager</name>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Nothing usable could be kept.</source>
+        <translation>Inget användbart kunde behållas.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>The recording could not be finished. The part recorded so far was kept; recover it from the tray menu.</source>
+        <translation>Inspelningen kunde inte slutföras. Delen som spelats in hittills behölls; återställ den från menyn i aktivitetsfältet.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recording could not start. %1</source>
+        <translation>Inspelningen kunde inte starta. %1</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>The microphone was disconnected. Recording continues without it, so its audio stops from this point.</source>
+        <translation>Mikrofonen kopplades från. Inspelningen fortsätter utan den, så dess ljud saknas från och med nu.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="2106" />
         <source>The recording is kept at %1.</source>
         <translation>Inspelningen finns i %1.</translation>
@@ -3952,6 +3972,39 @@ Filstorlek: %3</translation>
         <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="11" />
         <source>Recover Recordings</source>
         <translation>Återställ inspelningar</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingInterruption</name>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The disk is almost full.</source>
+        <translation>Disken är nästan full.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Screen capture stopped working.</source>
+        <translation>Skärminspelningen slutade fungera.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The recorded screen's resolution, scaling or orientation changed.</source>
+        <translation>Upplösningen, skalningen eller orienteringen för skärmen som spelades in ändrades.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The recorded screen was disconnected.</source>
+        <translation>Skärmen som spelades in kopplades från.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Screen recording was stopped from the system's controls.</source>
+        <translation>Skärminspelningen stoppades från systemets kontroller.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Recording stopped. %1 Everything recorded so far is kept.</source>
+        <translation>Inspelningen stoppades. %1 Allt som har spelats in hittills behålls.</translation>
     </message>
 </context>
 </TS>

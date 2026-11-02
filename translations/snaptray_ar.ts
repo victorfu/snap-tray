@@ -1768,6 +1768,26 @@ Size: %2</source>
 <context>
     <name>RecordingManager</name>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Nothing usable could be kept.</source>
+        <translation>تعذّر الاحتفاظ بأي جزء قابل للاستخدام.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>The recording could not be finished. The part recorded so far was kept; recover it from the tray menu.</source>
+        <translation>تعذّر إنهاء التسجيل. تم الاحتفاظ بالجزء المسجّل حتى الآن؛ استعده من قائمة شريط النظام.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recording could not start. %1</source>
+        <translation>تعذّر بدء التسجيل. %1</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>The microphone was disconnected. Recording continues without it, so its audio stops from this point.</source>
+        <translation>تم فصل الميكروفون. يستمر التسجيل بدونه، لذا يتوقف صوته من هذه النقطة.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="2106" />
         <source>The recording is kept at %1.</source>
         <translation>تم الاحتفاظ بالتسجيل في %1.</translation>
@@ -3952,6 +3972,39 @@ File size: %3</source>
         <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="11" />
         <source>Recover Recordings</source>
         <translation>استعادة التسجيلات</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingInterruption</name>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The disk is almost full.</source>
+        <translation>القرص ممتلئ تقريبًا.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Screen capture stopped working.</source>
+        <translation>توقف التقاط الشاشة عن العمل.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The recorded screen's resolution, scaling or orientation changed.</source>
+        <translation>تغيّرت دقة الشاشة التي يجري تسجيلها أو مقياسها أو اتجاهها.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The recorded screen was disconnected.</source>
+        <translation>تم فصل الشاشة التي يجري تسجيلها.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Screen recording was stopped from the system's controls.</source>
+        <translation>تم إيقاف تسجيل الشاشة من عناصر تحكم النظام.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Recording stopped. %1 Everything recorded so far is kept.</source>
+        <translation>توقف التسجيل. %1 تم الاحتفاظ بكل ما سُجّل حتى الآن.</translation>
     </message>
 </context>
 </TS>

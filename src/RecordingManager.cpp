@@ -591,6 +591,7 @@ void RecordingManager::initializeStartState()
     m_collectStartupAudioWarnings = true;
     m_elapsedTimer.invalidate();
     m_sessionClock.reset();
+    m_stopReason.reset();
     m_frameCount = 0;
     resetPauseTracking();
     setState(State::Preparing);
@@ -958,12 +959,12 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
         });
 
         // Connect capture engine error signal
-        connect(m_captureEngine.get(), &ICaptureEngine::stoppedByUser,
-                this, &RecordingManager::stopRecording);
+        connect(m_captureEngine.get(), &ICaptureEngine::stoppedByUser, this, [this] {
+            interruptRecording(SnapTray::RecordingStopReason::SystemControl);
+        });
         connect(m_captureEngine.get(), &ICaptureEngine::error,
                 this, [this](const QString &msg) {
-            stopRecording();
-            emit recordingError(msg);
+            interruptRecording(SnapTray::RecordingStopReason::CaptureFailed, msg);
         });
     }
 
@@ -1175,10 +1176,17 @@ void RecordingManager::configureAudioCapture()
                     return;
                 }
                 auto status = m_audioStatus;
+                const bool micWasRecording = status.microphone == SnapTray::AudioSourceState::Active;
                 if (status.microphone != SnapTray::AudioSourceState::Off) {
                     status.microphone = SnapTray::AudioSourceState::DeviceMissing;
                 }
                 setAudioStatus(status);
+                // Keep recording the rest; never switch to another microphone
+                // without the user choosing it.
+                if (micWasRecording) {
+                    reportAudioWarning(tr("The microphone was disconnected. Recording continues without it, "
+                                          "so its audio stops from this point."));
+                }
             });
 
             // Set audio source
@@ -1312,6 +1320,7 @@ void RecordingManager::startRecordingAfterCountdown()
     m_sessionClock.start(SnapTray::captureClockNowNs());
     m_elapsedTimer.start();
     startDiskMonitor();
+    watchTargetScreen();
     setState(State::Recording);
     if (m_state != State::Recording || generation != m_startGeneration) return;
     m_frameCount = 0;
@@ -1418,9 +1427,8 @@ void RecordingManager::captureFrame()
 
     if (!isScreenAvailable(m_targetScreen.data())) {
         qWarning() << "RecordingManager: Target screen disconnected during capture";
-        m_targetScreen = nullptr;
-        emit recordingError(tr("Recording screen disconnected during capture."));
-        cancelRecording();
+        // Keep what was recorded: stop and finish, do not discard.
+        interruptRecording(SnapTray::RecordingStopReason::ScreenDisconnected);
         return;
     }
 
@@ -1451,6 +1459,63 @@ void RecordingManager::captureFrame()
         EncodingWorker::FrameData frameData{frame, timeMs};
         if (encodingWorker->enqueueFrame(frameData)) ++m_frameCount;
     }
+}
+
+void RecordingManager::interruptRecording(SnapTray::RecordingStopReason reason, const QString& detail)
+{
+    if (m_state == State::Preparing || m_state == State::Countdown) {
+        // Nothing has been recorded yet.
+        qWarning() << "RecordingManager: interrupted before recording:"
+                   << SnapTray::recordingStopReasonName(reason) << detail;
+        cancelRecording();
+        emit recordingError(tr("Recording could not start. %1")
+                                .arg(detail.isEmpty() ? SnapTray::recordingStopCause(reason) : detail));
+        return;
+    }
+    // Idempotent: the first cause wins; a later stop or error changes nothing.
+    if ((m_state != State::Recording && m_state != State::Paused) || m_stopReason) {
+        return;
+    }
+    m_stopReason = reason;
+    qWarning() << "RecordingManager: recording interrupted:" << SnapTray::recordingStopReasonName(reason)
+               << detail;
+    if (reason == SnapTray::RecordingStopReason::ScreenDisconnected) {
+        m_targetScreen = nullptr;
+    }
+    stopRecording();
+    emit recordingInterrupted(reason);
+    const QString message = SnapTray::recordingStopMessage(reason, detail);
+    if (!message.isEmpty()) {
+        emit recordingWarning(message);
+    }
+}
+
+void RecordingManager::watchTargetScreen()
+{
+    unwatchTargetScreen();
+    QScreen* screen = m_targetScreen.data();
+    if (!screen) {
+        return;
+    }
+    // A different geometry, scale or orientation would distort the fixed
+    // output size: stop and keep the recording instead of warping it.
+    const auto changed = [this] { interruptRecording(SnapTray::RecordingStopReason::ScreenChanged); };
+    m_screenWatch << connect(screen, &QScreen::geometryChanged, this, changed);
+    m_screenWatch << connect(screen, &QScreen::physicalDotsPerInchChanged, this, changed);
+    m_screenWatch << connect(screen, &QScreen::orientationChanged, this, changed);
+    // Backends that capture on their own thread are not polled, so watch for
+    // the screen going away here too.
+    m_screenWatch << connect(qGuiApp, &QGuiApplication::screenRemoved, this, [this, screen](QScreen* removed) {
+        if (removed == screen) interruptRecording(SnapTray::RecordingStopReason::ScreenDisconnected);
+    });
+}
+
+void RecordingManager::unwatchTargetScreen()
+{
+    for (const auto& connection : std::as_const(m_screenWatch)) {
+        disconnect(connection);
+    }
+    m_screenWatch.clear();
 }
 
 void RecordingManager::beginSession(const QString& videoPath, const QSize& frameSize, bool audioRequired)
@@ -1657,9 +1722,7 @@ void RecordingManager::onDiskSample(quint64 generation, qint64 freeBytes, qint64
             qWarning() << "RecordingManager: stopping; free" << freeBytes << "bytes, threshold"
                        << result.safeStopBytes;
             // The normal stop path: drain and finalize, then preview or save.
-            stopRecording();
-            emit recordingWarning(tr("Recording stopped because the disk is almost full. "
-                                     "Everything recorded so far is kept."));
+            interruptRecording(SnapTray::RecordingStopReason::DiskFull);
         }
         break;
     }
@@ -1882,6 +1945,9 @@ void RecordingManager::stopRecording()
     if (m_state != State::Recording && m_state != State::Paused) {
         return;
     }
+    if (!m_stopReason) {
+        m_stopReason = SnapTray::RecordingStopReason::User;
+    }
 
     stopFrameCapture();
     setState(State::Encoding);
@@ -1958,6 +2024,7 @@ void RecordingManager::stopFrameCapture()
     // Frames still in flight from a capture thread are rejected from here on.
     m_sessionClock.stop();
     stopDiskMonitor();
+    unwatchTargetScreen();
     if (m_healthPolicy.isWarning()) {
         m_healthPolicy.reset();
         emit droppingFramesChanged(false);
@@ -2037,6 +2104,9 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
         errorMsg = tr("Failed to encode video");
     }
 
+    // Read before endSession() resets the session.
+    const bool crashSafeOutput = m_session.fragmented;
+
     // Clean up encoding worker
     teardownEncodingWorker(false);
     finishWindowTimeline(outputPath, success);
@@ -2075,7 +2145,16 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
         }
     } else {
         setState(State::Idle);
-        emit recordingError(errorMsg);
+        // Say what was kept: a crash-safe recording leaves its playable part
+        // (offered for recovery); otherwise nothing usable remains.
+        const bool partKept = crashSafeOutput && QFileInfo(outputPath).size() > 0;
+        emit recordingError(partKept
+            ? tr("The recording could not be finished. The part recorded so far was kept; "
+                 "recover it from the tray menu.")
+            : errorMsg + QLatin1Char(' ') + tr("Nothing usable could be kept."));
+        if (partKept) {
+            scanForRecoveries();
+        }
     }
 }
 

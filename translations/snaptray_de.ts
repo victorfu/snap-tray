@@ -1774,6 +1774,26 @@ Größe: %2</translation>
 <context>
     <name>RecordingManager</name>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Nothing usable could be kept.</source>
+        <translation>Es konnte nichts Brauchbares behalten werden.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>The recording could not be finished. The part recorded so far was kept; recover it from the tray menu.</source>
+        <translation>Die Aufnahme konnte nicht abgeschlossen werden. Der bisher aufgenommene Teil wurde behalten; stellen Sie ihn über das Tray-Menü wieder her.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recording could not start. %1</source>
+        <translation>Die Aufnahme konnte nicht gestartet werden. %1</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>The microphone was disconnected. Recording continues without it, so its audio stops from this point.</source>
+        <translation>Das Mikrofon wurde getrennt. Die Aufnahme läuft ohne es weiter, sein Ton fehlt ab diesem Punkt.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="2106" />
         <source>The recording is kept at %1.</source>
         <translation>Die Aufnahme liegt unter %1.</translation>
@@ -3958,6 +3978,39 @@ Dateigröße: %3</translation>
         <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="11" />
         <source>Recover Recordings</source>
         <translation>Aufnahmen wiederherstellen</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingInterruption</name>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The disk is almost full.</source>
+        <translation>Der Datenträger ist fast voll.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Screen capture stopped working.</source>
+        <translation>Die Bildschirmerfassung funktioniert nicht mehr.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The recorded screen's resolution, scaling or orientation changed.</source>
+        <translation>Auflösung, Skalierung oder Ausrichtung des aufgenommenen Bildschirms hat sich geändert.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The recorded screen was disconnected.</source>
+        <translation>Der aufgenommene Bildschirm wurde getrennt.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Screen recording was stopped from the system's controls.</source>
+        <translation>Die Bildschirmaufnahme wurde über die Systemsteuerung beendet.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Recording stopped. %1 Everything recorded so far is kept.</source>
+        <translation>Aufnahme gestoppt. %1 Alles bisher Aufgenommene bleibt erhalten.</translation>
     </message>
 </context>
 </TS>

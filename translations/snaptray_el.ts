@@ -1768,6 +1768,26 @@ Size: %2</source>
 <context>
     <name>RecordingManager</name>
     <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Nothing usable could be kept.</source>
+        <translation>Δεν ήταν δυνατό να διατηρηθεί τίποτα αξιοποιήσιμο.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>The recording could not be finished. The part recorded so far was kept; recover it from the tray menu.</source>
+        <translation>Δεν ήταν δυνατή η ολοκλήρωση της εγγραφής. Το τμήμα που εγγράφηκε μέχρι τώρα διατηρήθηκε· ανακτήστε το από το μενού της γραμμής εργασιών.</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>Recording could not start. %1</source>
+        <translation>Δεν ήταν δυνατή η έναρξη της εγγραφής. %1</translation>
+    </message>
+    <message>
+        <location filename="../src/RecordingManager.cpp" line="0" />
+        <source>The microphone was disconnected. Recording continues without it, so its audio stops from this point.</source>
+        <translation>Το μικρόφωνο αποσυνδέθηκε. Η εγγραφή συνεχίζεται χωρίς αυτό, οπότε ο ήχος του σταματά από εδώ και πέρα.</translation>
+    </message>
+    <message>
         <location filename="../src/RecordingManager.cpp" line="2106" />
         <source>The recording is kept at %1.</source>
         <translation>Η εγγραφή διατηρείται στο %1.</translation>
@@ -3952,6 +3972,39 @@ File size: %3</source>
         <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="11" />
         <source>Recover Recordings</source>
         <translation>Ανάκτηση εγγραφών</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingInterruption</name>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The disk is almost full.</source>
+        <translation>Ο δίσκος είναι σχεδόν γεμάτος.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Screen capture stopped working.</source>
+        <translation>Η καταγραφή οθόνης σταμάτησε να λειτουργεί.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The recorded screen's resolution, scaling or orientation changed.</source>
+        <translation>Άλλαξε η ανάλυση, η κλίμακα ή ο προσανατολισμός της οθόνης που εγγραφόταν.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>The recorded screen was disconnected.</source>
+        <translation>Η οθόνη που εγγραφόταν αποσυνδέθηκε.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Screen recording was stopped from the system's controls.</source>
+        <translation>Η εγγραφή οθόνης σταμάτησε από τα στοιχεία ελέγχου του συστήματος.</translation>
+    </message>
+    <message>
+        <location filename="../src/recording/RecordingInterruption.cpp" line="0" />
+        <source>Recording stopped. %1 Everything recorded so far is kept.</source>
+        <translation>Η εγγραφή σταμάτησε. %1 Ό,τι έχει εγγραφεί μέχρι τώρα διατηρείται.</translation>
     </message>
 </context>
 </TS>

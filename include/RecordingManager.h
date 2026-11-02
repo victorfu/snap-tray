@@ -11,6 +11,7 @@
 #include <QFuture>
 #include <QSharedPointer>
 #include <memory>
+#include <optional>
 #include <atomic>
 #include <functional>
 #include <QStringList>
@@ -21,6 +22,7 @@
 #include "recording/RecordingHealth.h"
 #include "recording/DiskSpaceGuard.h"
 #include "recording/RecordingSession.h"
+#include "recording/RecordingInterruption.h"
 
 #include "WatermarkRenderer.h"
 #include "recording/WindowTimelineRecorder.h"
@@ -123,6 +125,8 @@ signals:
     void droppingFramesChanged(bool dropping);
     void lowDiskSpaceChanged(bool low);
     void recoveriesFound(const QList<SnapTray::RecordingSession::Recoverable>& recoveries);
+    // A recording ended for a reason other than Stop; emitted once per recording.
+    void recordingInterrupted(SnapTray::RecordingStopReason reason);
     void diagnosticsAvailable();
     // recordedAsIntermediate: the recording was captured as the high-quality
     // intermediate rather than at the selected quality.
@@ -238,6 +242,15 @@ private:
     void checkDiskSpace();
     void onDiskSample(quint64 generation, qint64 freeBytes, qint64 fileBytes, qint64 sampleMs);
     void setLowDiskSpace(bool low);
+
+    // One way out of a recording for every cause (#158): idempotent, keeps
+    // what was recorded, tells the user why. Before anything is recorded
+    // (preparing, countdown) it cancels instead.
+    void interruptRecording(SnapTray::RecordingStopReason reason, const QString& detail = QString());
+    std::optional<SnapTray::RecordingStopReason> m_stopReason;
+    QList<QMetaObject::Connection> m_screenWatch;
+    void watchTargetScreen();
+    void unwatchTargetScreen();
 
     // Session manifest and lock for crash recovery (#157).
     SnapTray::RecordingSessionInfo m_session;
