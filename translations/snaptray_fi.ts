@@ -3981,6 +3981,11 @@ Tiedoston koko: %3</translation>
 <context>
     <name>SnapTray::RecordingRecoveryViewModel</name>
     <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="60" />
+        <source>Open in another SnapTray window. Close it there, then try again.</source>
+        <translation>Avoinna toisessa SnapTray-ikkunassa. Sulje se siellä ja yritä uudelleen.</translation>
+    </message>
+    <message>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="55" />
         <source>Unknown date</source>
         <translation>Tuntematon päivä</translation>

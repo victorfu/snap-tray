@@ -825,10 +825,17 @@ Item {
                             value: root.draftVideoRect[modelData.key]
                             onCommitted: function(v) {
                                 const r = root.draftVideoRect
+                                let w = modelData.key === "width" ? v : r.width
+                                let h = modelData.key === "height" ? v : r.height
+                                // Locked ratio: the other side follows, so W or H can
+                                // enlarge the crop instead of only moving it (#167 review).
+                                const ratio = backend.cropAspectRatio
+                                if (ratio > 0 && modelData.key === "width")
+                                    h = Math.round(w / ratio)
+                                else if (ratio > 0 && modelData.key === "height")
+                                    w = Math.round(h * ratio)
                                 root.setDraftFromFields(modelData.key === "x" ? v : r.x,
-                                                        modelData.key === "y" ? v : r.y,
-                                                        modelData.key === "width" ? v : r.width,
-                                                        modelData.key === "height" ? v : r.height)
+                                                        modelData.key === "y" ? v : r.y, w, h)
                             }
                         }
                     }
