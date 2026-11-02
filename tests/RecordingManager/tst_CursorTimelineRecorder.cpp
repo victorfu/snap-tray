@@ -2,6 +2,8 @@
 
 #include <QElapsedTimer>
 #include <QTemporaryDir>
+
+#include <functional>
 #include <QThread>
 
 #include "recording/CursorTimelineRecorder.h"
@@ -30,6 +32,7 @@ struct ProbeState {
     CursorProbe::State state{QPoint(10, 10), true, 1};
     std::optional<CursorProbe::Shape> shape = CursorProbe::Shape{solid(16, Qt::black), QPoint(0, 0)};
     int shapeReads = 0;
+    std::function<void()> onPoll; // events the next poll delivers
 };
 
 class FakeProbe : public CursorProbe
@@ -37,7 +40,16 @@ class FakeProbe : public CursorProbe
 public:
     explicit FakeProbe(ProbeState* s) : m_s(s) {}
     Capabilities capabilities() const override { return m_s->caps; }
-    std::optional<State> poll() override { return m_s->state; }
+    std::optional<State> poll() override
+    {
+        // Events queued on the probe's connection are delivered when it polls.
+        if (m_s->onPoll) {
+            auto deliver = std::move(m_s->onPoll);
+            m_s->onPoll = nullptr;
+            deliver();
+        }
+        return m_s->state;
+    }
     std::optional<Shape> currentShape() override
     {
         ++m_s->shapeReads;
@@ -98,6 +110,8 @@ private slots:
     void queuedClicksKeepTheirSourceTime();
     void x11QueuedClickKeepsItsDuration();
     void x11ClicksDuringAnotherPointerGrab();
+    void lateClickTakesThePositionAtItsTime();
+    void clicksFromAPauseAreDropped();
 };
 
 void TestCursorTimelineRecorder::startRecordsTheInitialPointer()
@@ -392,7 +406,10 @@ void TestCursorTimelineRecorder::x11RecorderKeepsQueuedClicks()
     // press handler's position poll drained the queue re-entrantly.
     QTemporaryDir dir;
     const QString path = dir.filePath(QStringLiteral("x11.cursor.jsonl"));
-    qint64 now = 0;
+    // A manual clock that does not move with real time: start it well past
+    // zero, so a click's real delivery delay (age) under load never puts it
+    // before the start, where it would be dropped.
+    qint64 now = 10000;
     CursorTimelineRecorder recorder(createCursorProbe(), [&now] { return now; }, kMapping, path, false);
     QVERIFY(recorder.start());
     snaptrayTestX11Pointer("move", 50, 60);
@@ -426,26 +443,20 @@ void TestCursorTimelineRecorder::queuedClicksKeepTheirSourceTime()
     rig.now = 1000;
     rig.probe->press(Qt::LeftButton, true, 400);
     rig.probe->press(Qt::LeftButton, false, 100);
-    // Never before the recording (re)started, never out of order.
+    // Never out of order: a later-delivered event that claims to be older
+    // than the previous one is placed right after it.
     rig.now = 1200;
-    rig.probe->press(Qt::RightButton, true, 5000);
-    rig.probe->press(Qt::RightButton, false, 6000);
+    rig.probe->press(Qt::RightButton, true, 400);
+    rig.probe->press(Qt::RightButton, false, 450);
+    // From before the recording started: not part of it.
+    rig.probe->press(Qt::MiddleButton, true, 5000);
     const auto timeline = rig.finish();
     QCOMPARE(int(timeline.buttons.size()), 4);
     QCOMPARE(timeline.buttons[0].tMs, qint64(600));
     QCOMPARE(timeline.buttons[1].tMs, qint64(900));
     QCOMPARE(timeline.buttons[2].tMs, qint64(900));
     QCOMPARE(timeline.buttons[3].tMs, qint64(900));
-
-    Rig resumed;
-    QVERIFY(resumed.recorder->start());
-    resumed.now = 500;
-    resumed.recorder->pause();
-    resumed.recorder->resume();
-    resumed.now = 600;
-    resumed.probe->press(Qt::LeftButton, true, 300);
-    const auto afterResume = resumed.finish();
-    QCOMPARE(afterResume.buttons.front().tMs, qint64(500));
+    for (const auto& event : timeline.buttons) QVERIFY(event.button != Qt::MiddleButton);
 }
 
 void TestCursorTimelineRecorder::x11QueuedClickKeepsItsDuration()
@@ -496,7 +507,10 @@ void TestCursorTimelineRecorder::x11ClicksDuringAnotherPointerGrab()
     // looked held until stop). XI 2.1 delivers them regardless.
     QTemporaryDir dir;
     const QString path = dir.filePath(QStringLiteral("x11-grab.cursor.jsonl"));
-    qint64 now = 0;
+    // A manual clock that does not move with real time: start it well past
+    // zero, so a click's real delivery delay (age) under load never puts it
+    // before the start, where it would be dropped.
+    qint64 now = 10000;
     CursorTimelineRecorder recorder(createCursorProbe(), [&now] { return now; }, kMapping, path, false);
     QVERIFY(recorder.start());
     snaptrayTestX11Pointer("move", 70, 80);
@@ -517,6 +531,55 @@ void TestCursorTimelineRecorder::x11ClicksDuringAnotherPointerGrab()
 #else
     QSKIP("Built without XTest");
 #endif
+}
+
+void TestCursorTimelineRecorder::lateClickTakesThePositionAtItsTime()
+{
+    // PR #174 review: a click delivered late (busy GUI thread) took the
+    // pointer's position at delivery, possibly far from where it happened.
+    Rig rig;
+    rig.probeState.state.position = QPoint(10, 10);
+    QVERIFY(rig.recorder->start());
+    rig.now = 100;
+    rig.probeState.state.position = QPoint(50, 50);
+    rig.recorder->sampleNow();
+    rig.now = 400;
+    // Clicked at 150 (at 50,50), delivered at 400 after moving to 300,200.
+    rig.probeState.state.position = QPoint(300, 200);
+    rig.probe->press(Qt::LeftButton, true, 250);
+    rig.probe->press(Qt::LeftButton, false, 0);
+    const auto timeline = rig.finish();
+    QCOMPARE(int(timeline.buttons.size()), 2);
+    QCOMPARE(timeline.buttons[0].tMs, qint64(150));
+    QCOMPARE(timeline.buttons[0].position, QPoint(50, 50));
+    // On time: where the pointer is now.
+    QCOMPARE(timeline.buttons[1].position, QPoint(300, 200));
+}
+
+void TestCursorTimelineRecorder::clicksFromAPauseAreDropped()
+{
+    // PR #174 review: button events made during a pause could still be
+    // queued at resume; they were accepted and moved to the resume time,
+    // recording a click that happened while paused (and a held button).
+    Rig rig;
+    QVERIFY(rig.recorder->start());
+    rig.now = 100;
+    rig.recorder->pause();
+    rig.now = 500;
+    // Queued during the pause, delivered by the first poll after resume.
+    rig.probeState.onPoll = [&rig] { rig.probe->press(Qt::LeftButton, true, 200); };
+    rig.recorder->resume();
+    // A late event whose real time is in the pause is not counted either.
+    rig.now = 520;
+    rig.probe->press(Qt::RightButton, true, 100);
+    // A real click after resume still is.
+    rig.now = 600;
+    rig.probe->press(Qt::MiddleButton, true, 0);
+    rig.probe->press(Qt::MiddleButton, false, 0);
+    const auto timeline = rig.finish();
+    QCOMPARE(int(timeline.buttons.size()), 2);
+    QCOMPARE(timeline.buttons[0].button, Qt::MiddleButton);
+    QVERIFY(!timeline.buttons[0].synthetic && !timeline.buttons[1].synthetic);
 }
 
 QTEST_MAIN(TestCursorTimelineRecorder)
