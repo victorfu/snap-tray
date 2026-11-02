@@ -219,6 +219,8 @@ bool RecordingInitTask::initializeEncoder()
     encoderConfig.frameSize = m_config.frameSize;
     encoderConfig.frameRate = m_config.frameRate;
     encoderConfig.outputPath = m_config.outputPath;
+    // A crash during recording should leave a recoverable file (#157).
+    encoderConfig.fragmentedOutput = true;
     if (m_config.intermediateQuality) {
         encoderConfig.rateControl = SnapTray::VideoRateControl::ConstantQuality;
         encoderConfig.quality = SnapTray::IntermediateQuality::kConstantQualityValue;
@@ -245,6 +247,7 @@ bool RecordingInitTask::initializeEncoder()
     }
 
     m_result.usingNativeEncoder = encoderResult.isNative;
+    m_result.fragmentedOutput = encoderResult.fragmentedOutput;
     m_result.audioEnabled = encoderResult.audioEnabled;
     m_result.audioWarning = encoderResult.audioWarning;
     m_result.nativeEncoder.reset(encoderResult.nativeEncoder);

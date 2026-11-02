@@ -517,6 +517,36 @@ Päivämäärätunnisteet: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} tai {date}</
 <context>
     <name>MainApplication</name>
     <message>
+        <location filename="../src/MainApplication.cpp" line="1207" />
+        <source>Finish or close the current recording first.</source>
+        <translation>Lopeta tai sulje nykyinen tallennus ensin.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1206" />
+        <source>Recording Busy</source>
+        <translation>Tallennus on varattu</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="380" />
+        <source>SnapTray found %1 recording(s) that were not saved. Recover them from the tray menu.</source>
+        <translation>SnapTray löysi %1 tallentamatonta tallennetta. Palauta ne ilmaisinalueen valikosta.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="379" />
+        <source>Unsaved Recordings Found</source>
+        <translation>Tallentamattomia tallenteita löytyi</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1178" />
+        <source>Recover Recordings (%1)...</source>
+        <translation>Palauta tallenteet (%1)...</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="440" />
+        <source>Recover Recordings...</source>
+        <translation>Palauta tallenteet...</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="1287" />
         <source>low disk space</source>
         <translation>levytila vähissä</translation>
@@ -3856,6 +3886,72 @@ Tiedoston koko: %3</translation>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="37" />
         <source>Record Screen</source>
         <translation>Tallenna näyttö</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::RecordingRecoveryViewModel</name>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="55" />
+        <source>Unknown date</source>
+        <translation>Tuntematon päivä</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="41" />
+        <source>audio is missing</source>
+        <translation>ääni puuttuu</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="38" />
+        <source>Interrupted: %1 can be recovered</source>
+        <translation>Keskeytynyt: %1 voidaan palauttaa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="37" />
+        <source>Complete, %1 long</source>
+        <translation>Valmis, kesto %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="34" />
+        <source>Cannot be recovered: the recording was interrupted before any playable part was saved.</source>
+        <translation>Ei palautettavissa: tallennus keskeytyi ennen kuin toistettavaa osaa tallentui.</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingRecoveryDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="109" />
+        <source>Later</source>
+        <translation>Myöhemmin</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="88" />
+        <source>Discard %1</source>
+        <translation>Hylkää %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="85" />
+        <source>Discard</source>
+        <translation>Hylkää</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="79" />
+        <source>Recover %1</source>
+        <translation>Palauta %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="76" />
+        <source>Recover</source>
+        <translation>Palauta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="12" />
+        <source>SnapTray stopped before these recordings were saved.</source>
+        <translation>SnapTray pysähtyi ennen kuin nämä tallenteet tallennettiin.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="11" />
+        <source>Recover Recordings</source>
+        <translation>Palauta tallenteet</translation>
     </message>
 </context>
 </TS>

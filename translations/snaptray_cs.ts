@@ -523,6 +523,36 @@ Tokeny data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} nebo {date}</translation>
 <context>
     <name>MainApplication</name>
     <message>
+        <location filename="../src/MainApplication.cpp" line="1207" />
+        <source>Finish or close the current recording first.</source>
+        <translation>Nejprve dokončete nebo zavřete aktuální nahrávku.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1206" />
+        <source>Recording Busy</source>
+        <translation>Nahrávání je zaneprázdněno</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="380" />
+        <source>SnapTray found %1 recording(s) that were not saved. Recover them from the tray menu.</source>
+        <translation>SnapTray našel neuložené nahrávky (%1). Obnovte je z nabídky v oznamovací oblasti.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="379" />
+        <source>Unsaved Recordings Found</source>
+        <translation>Nalezeny neuložené nahrávky</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1178" />
+        <source>Recover Recordings (%1)...</source>
+        <translation>Obnovit nahrávky (%1)...</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="440" />
+        <source>Recover Recordings...</source>
+        <translation>Obnovit nahrávky...</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="1287" />
         <source>low disk space</source>
         <translation>málo místa na disku</translation>
@@ -3862,6 +3892,72 @@ Velikost souboru: %3</translation>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="37" />
         <source>Record Screen</source>
         <translation>Nahrát obrazovku</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::RecordingRecoveryViewModel</name>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="55" />
+        <source>Unknown date</source>
+        <translation>Neznámé datum</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="41" />
+        <source>audio is missing</source>
+        <translation>chybí zvuk</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="38" />
+        <source>Interrupted: %1 can be recovered</source>
+        <translation>Přerušeno: lze obnovit %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="37" />
+        <source>Complete, %1 long</source>
+        <translation>Úplná, délka %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="34" />
+        <source>Cannot be recovered: the recording was interrupted before any playable part was saved.</source>
+        <translation>Nelze obnovit: nahrávání bylo přerušeno dřív, než se uložila přehratelná část.</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingRecoveryDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="109" />
+        <source>Later</source>
+        <translation>Později</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="88" />
+        <source>Discard %1</source>
+        <translation>Zahodit %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="85" />
+        <source>Discard</source>
+        <translation>Zahodit</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="79" />
+        <source>Recover %1</source>
+        <translation>Obnovit %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="76" />
+        <source>Recover</source>
+        <translation>Obnovit</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="12" />
+        <source>SnapTray stopped before these recordings were saved.</source>
+        <translation>SnapTray se zastavil dřív, než se tyto nahrávky uložily.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="11" />
+        <source>Recover Recordings</source>
+        <translation>Obnovit nahrávky</translation>
     </message>
 </context>
 </TS>

@@ -20,6 +20,7 @@
 #include "recording/FramePacer.h"
 #include "recording/RecordingHealth.h"
 #include "recording/DiskSpaceGuard.h"
+#include "recording/RecordingSession.h"
 
 #include "WatermarkRenderer.h"
 #include "recording/WindowTimelineRecorder.h"
@@ -73,6 +74,14 @@ public:
     bool isDroppingFrames() const { return m_healthPolicy.isWarning(); }
     // True while the recording's disk is low on space (warning or stopped).
     bool isLowOnDiskSpace() const { return m_lowDiskSpace; }
+    // Recordings an earlier run left behind, found by scanForRecoveries().
+    // Opens one in the preview, like a recording that just finished; false
+    // when a recording or preview is already open.
+    bool openRecoveredRecording(const QString& videoPath);
+    // Scans the temp folder off the GUI thread; emits recoveriesFound.
+    void scanForRecoveries();
+    static bool isSessionActive(const QString& videoPath);
+
     // Plain-text summary of the last recording's capture and encoding
     // counters, for the user to copy. Empty until a recording has finished.
     QString lastDiagnostics() const { return m_lastDiagnostics; }
@@ -113,6 +122,7 @@ signals:
     void audioStatusChanged();
     void droppingFramesChanged(bool dropping);
     void lowDiskSpaceChanged(bool low);
+    void recoveriesFound(const QList<SnapTray::RecordingSession::Recoverable>& recoveries);
     void diagnosticsAvailable();
     // recordedAsIntermediate: the recording was captured as the high-quality
     // intermediate rather than at the selected quality.
@@ -228,6 +238,14 @@ private:
     void checkDiskSpace();
     void onDiskSample(quint64 generation, qint64 freeBytes, qint64 fileBytes, qint64 sampleMs);
     void setLowDiskSpace(bool low);
+
+    // Session manifest and lock for crash recovery (#157).
+    SnapTray::RecordingSessionInfo m_session;
+    std::unique_ptr<class QLockFile> m_sessionLock;
+    int m_sessionHeartbeat = 0;
+    void beginSession(const QString& videoPath, const QSize& frameSize, bool audioRequired);
+    void updateSession(SnapTray::RecordingSessionInfo::State state);
+    void endSession(bool removeManifest);
     SnapTray::RecordingHealth::ClockCounters clockCountersLocked() const;
 
     // Pause tracking

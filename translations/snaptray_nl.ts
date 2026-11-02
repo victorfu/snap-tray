@@ -523,6 +523,36 @@ Datumtokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} of {date}</translation>
 <context>
     <name>MainApplication</name>
     <message>
+        <location filename="../src/MainApplication.cpp" line="1207" />
+        <source>Finish or close the current recording first.</source>
+        <translation>Rond eerst de huidige opname af of sluit deze.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1206" />
+        <source>Recording Busy</source>
+        <translation>Opname bezig</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="380" />
+        <source>SnapTray found %1 recording(s) that were not saved. Recover them from the tray menu.</source>
+        <translation>SnapTray heeft %1 niet-opgeslagen opname(n) gevonden. Herstel ze via het systeemvakmenu.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="379" />
+        <source>Unsaved Recordings Found</source>
+        <translation>Niet-opgeslagen opnamen gevonden</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1178" />
+        <source>Recover Recordings (%1)...</source>
+        <translation>Opnamen herstellen (%1)...</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="440" />
+        <source>Recover Recordings...</source>
+        <translation>Opnamen herstellen...</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="1287" />
         <source>low disk space</source>
         <translation>weinig schijfruimte</translation>
@@ -3862,6 +3892,72 @@ Bestandsgrootte: %3</translation>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="37" />
         <source>Record Screen</source>
         <translation>Scherm opnemen</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::RecordingRecoveryViewModel</name>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="55" />
+        <source>Unknown date</source>
+        <translation>Onbekende datum</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="41" />
+        <source>audio is missing</source>
+        <translation>audio ontbreekt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="38" />
+        <source>Interrupted: %1 can be recovered</source>
+        <translation>Onderbroken: %1 te herstellen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="37" />
+        <source>Complete, %1 long</source>
+        <translation>Volledig, %1 lang</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="34" />
+        <source>Cannot be recovered: the recording was interrupted before any playable part was saved.</source>
+        <translation>Kan niet worden hersteld: de opname werd onderbroken voordat er een afspeelbaar deel was opgeslagen.</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingRecoveryDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="109" />
+        <source>Later</source>
+        <translation>Later</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="88" />
+        <source>Discard %1</source>
+        <translation>Verwijderen %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="85" />
+        <source>Discard</source>
+        <translation>Verwijderen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="79" />
+        <source>Recover %1</source>
+        <translation>Herstellen %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="76" />
+        <source>Recover</source>
+        <translation>Herstellen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="12" />
+        <source>SnapTray stopped before these recordings were saved.</source>
+        <translation>SnapTray stopte voordat deze opnamen waren opgeslagen.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="11" />
+        <source>Recover Recordings</source>
+        <translation>Opnamen herstellen</translation>
     </message>
 </context>
 </TS>

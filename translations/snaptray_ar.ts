@@ -517,6 +517,36 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 <context>
     <name>MainApplication</name>
     <message>
+        <location filename="../src/MainApplication.cpp" line="1207" />
+        <source>Finish or close the current recording first.</source>
+        <translation>أنهِ التسجيل الحالي أو أغلقه أولاً.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1206" />
+        <source>Recording Busy</source>
+        <translation>التسجيل مشغول</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="380" />
+        <source>SnapTray found %1 recording(s) that were not saved. Recover them from the tray menu.</source>
+        <translation>عثر SnapTray على %1 تسجيل/تسجيلات لم تُحفظ. استعدها من قائمة شريط النظام.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="379" />
+        <source>Unsaved Recordings Found</source>
+        <translation>تم العثور على تسجيلات غير محفوظة</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="1178" />
+        <source>Recover Recordings (%1)...</source>
+        <translation>استعادة التسجيلات (%1)...</translation>
+    </message>
+    <message>
+        <location filename="../src/MainApplication.cpp" line="440" />
+        <source>Recover Recordings...</source>
+        <translation>استعادة التسجيلات...</translation>
+    </message>
+    <message>
         <location filename="../src/MainApplication.cpp" line="1287" />
         <source>low disk space</source>
         <translation>مساحة القرص منخفضة</translation>
@@ -3856,6 +3886,72 @@ File size: %3</source>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="37" />
         <source>Record Screen</source>
         <translation>تسجيل الشاشة</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::RecordingRecoveryViewModel</name>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="55" />
+        <source>Unknown date</source>
+        <translation>تاريخ غير معروف</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="41" />
+        <source>audio is missing</source>
+        <translation>الصوت مفقود</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="38" />
+        <source>Interrupted: %1 can be recovered</source>
+        <translation>متقطع: يمكن استعادة %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="37" />
+        <source>Complete, %1 long</source>
+        <translation>مكتمل، المدة %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="34" />
+        <source>Cannot be recovered: the recording was interrupted before any playable part was saved.</source>
+        <translation>لا يمكن استعادته: انقطع التسجيل قبل حفظ أي جزء قابل للتشغيل.</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingRecoveryDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="109" />
+        <source>Later</source>
+        <translation>لاحقًا</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="88" />
+        <source>Discard %1</source>
+        <translation>تجاهل %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="85" />
+        <source>Discard</source>
+        <translation>تجاهل</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="79" />
+        <source>Recover %1</source>
+        <translation>استعادة %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="76" />
+        <source>Recover</source>
+        <translation>استعادة</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="12" />
+        <source>SnapTray stopped before these recordings were saved.</source>
+        <translation>توقف SnapTray قبل حفظ هذه التسجيلات.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/RecordingRecoveryDialog.qml" line="11" />
+        <source>Recover Recordings</source>
+        <translation>استعادة التسجيلات</translation>
     </message>
 </context>
 </TS>

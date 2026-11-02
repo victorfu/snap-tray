@@ -347,6 +347,7 @@ add_library(snaptray_core STATIC
     src/recording/FramePacer.cpp
     src/recording/RecordingHealth.cpp
     src/recording/DiskSpaceGuard.cpp
+    src/recording/RecordingSession.cpp
     src/utils/OCRImageUtils.cpp
     src/utils/TextLayoutUtils.cpp
     # Headers with Q_OBJECT for MOC processing
@@ -1050,6 +1051,7 @@ set_source_files_properties(src/qml/dialogs/AppImageUpdateDialog.qml PROPERTIES 
 set_source_files_properties(src/qml/dialogs/UpdateDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/UpdateDialog.qml)
 set_source_files_properties(src/qml/dialogs/QRCodeResultDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/QRCodeResultDialog.qml)
 set_source_files_properties(src/qml/dialogs/ScreenPickerDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/ScreenPickerDialog.qml)
+set_source_files_properties(src/qml/dialogs/RecordingRecoveryDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/RecordingRecoveryDialog.qml)
 
 # Recording preview
 set_source_files_properties(src/qml/recording/RecordingPreview.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingPreview.qml)
@@ -1143,6 +1145,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/dialogs/AppImageUpdateDialog.qml
         src/qml/dialogs/QRCodeResultDialog.qml
         src/qml/dialogs/ScreenPickerDialog.qml
+        src/qml/dialogs/RecordingRecoveryDialog.qml
         src/qml/toolbar/FloatingToolbar.qml
         src/qml/toolbar/ToolbarOverflowMenu.qml
         src/qml/toolbar/ToolOptionsStrip.qml
@@ -1207,6 +1210,8 @@ qt_add_qml_module(snaptray_qml
         include/qml/DialogImageProvider.h
         src/qml/ScreenPickerViewModel.cpp
         include/qml/ScreenPickerViewModel.h
+        src/qml/RecordingRecoveryViewModel.cpp
+        include/qml/RecordingRecoveryViewModel.h
         src/qml/OCRResultViewModel.cpp
         include/qml/OCRResultViewModel.h
         src/qml/UpdateDialogViewModel.cpp

@@ -33,6 +33,8 @@
 #include <QDebug>
 #include <QFileInfo>
 #include <QStorageInfo>
+#include "video/IVideoTranscoder.h"
+#include <QLockFile>
 #include <QLocale>
 #include "encoding/IntermediateQuality.h"
 #include <QFile>
@@ -809,6 +811,7 @@ void RecordingManager::beginAsyncInitialization()
         }
     }
     m_recordingFilePath = config.outputPath;
+    beginSession(config.outputPath, physicalSize, shouldConfigureAudio);
 
     // Collect UI window IDs to exclude from capture.
     if (m_controlBar) {
@@ -965,6 +968,8 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
     }
 
     m_usingNativeEncoder = result.usingNativeEncoder;
+    m_session.fragmented = result.fragmentedOutput;
+    updateSession(SnapTray::RecordingSessionInfo::State::Recording);
 
     // Create encoding worker to offload encoding from main thread
     m_encodingWorker = std::make_unique<EncodingWorker>(nullptr);
@@ -1448,6 +1453,108 @@ void RecordingManager::captureFrame()
     }
 }
 
+void RecordingManager::beginSession(const QString& videoPath, const QSize& frameSize, bool audioRequired)
+{
+    endSession(true);
+    m_session = {};
+    m_session.sessionId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    m_session.videoPath = videoPath;
+    m_session.format = QFileInfo(videoPath).suffix().toLower();
+    m_session.frameSize = frameSize;
+    m_session.frameRate = m_frameRate;
+    m_session.audioRequired = audioRequired;
+    m_session.startedAt = QDateTime::currentDateTime();
+    m_sessionHeartbeat = 0;
+    // The lock tells a scan (here or in another SnapTray) this session is live;
+    // a crashed owner leaves a stale lock that QLockFile detects.
+    m_sessionLock = std::make_unique<QLockFile>(SnapTray::RecordingSession::lockPathFor(videoPath));
+    m_sessionLock->setStaleLockTime(0);
+    if (!m_sessionLock->tryLock(0)) {
+        qWarning() << "RecordingManager: could not lock recording session" << videoPath;
+    }
+    updateSession(SnapTray::RecordingSessionInfo::State::Recording);
+}
+
+void RecordingManager::updateSession(SnapTray::RecordingSessionInfo::State state)
+{
+    if (m_session.videoPath.isEmpty()) {
+        return;
+    }
+    m_session.state = state;
+    m_session.updatedAt = QDateTime::currentDateTime();
+    QString error;
+    if (!SnapTray::RecordingSession::write(m_session, &error)) {
+        qWarning() << "RecordingManager: could not write recording session:" << error;
+    }
+}
+
+void RecordingManager::endSession(bool removeManifest)
+{
+    if (!m_session.videoPath.isEmpty() && removeManifest) {
+        SnapTray::RecordingSession::remove(m_session.videoPath);
+    }
+    if (m_sessionLock) {
+        m_sessionLock->unlock();
+        m_sessionLock.reset();
+    }
+    m_session = {};
+}
+
+bool RecordingManager::isSessionActive(const QString& videoPath)
+{
+    // Held by this process (another QLockFile) or by a live process: busy.
+    QLockFile probe(SnapTray::RecordingSession::lockPathFor(videoPath));
+    probe.setStaleLockTime(0);
+    if (!probe.tryLock(0)) {
+        return probe.error() == QLockFile::LockFailedError;
+    }
+    probe.unlock();
+    return false;
+}
+
+void RecordingManager::scanForRecoveries()
+{
+    const QString directory = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+    const QPointer<RecordingManager> guard(this);
+    (void)QtConcurrent::run([guard, directory]() {
+        std::unique_ptr<IVideoTranscoder> transcoder = IVideoTranscoder::create();
+        const auto probe = [&transcoder](const QString& path) {
+            SnapTray::RecordingSession::ProbeResult result;
+            if (!transcoder) return result;
+            const VideoFileProbe info = transcoder->probe(path);
+            result.decodable = info.valid;
+            result.durationMs = info.durationMs;
+            result.hasAudio = info.hasAudio;
+            return result;
+        };
+        const auto found = SnapTray::RecordingSession::scan(directory, probe, &RecordingManager::isSessionActive);
+        QMetaObject::invokeMethod(QCoreApplication::instance(), [guard, found]() {
+            if (guard) emit guard->recoveriesFound(found);
+        }, Qt::QueuedConnection);
+    });
+}
+
+bool RecordingManager::openRecoveredRecording(const QString& videoPath)
+{
+    if (m_state != State::Idle || !QFileInfo::exists(videoPath)) {
+        return false;
+    }
+    const auto info = SnapTray::RecordingSession::read(SnapTray::RecordingSession::manifestPathFor(videoPath));
+    m_session = info.value_or(SnapTray::RecordingSessionInfo{});
+    m_session.videoPath = videoPath;
+    m_sessionLock = std::make_unique<QLockFile>(SnapTray::RecordingSession::lockPathFor(videoPath));
+    m_sessionLock->setStaleLockTime(0);
+    if (!m_sessionLock->tryLock(0)) {
+        m_sessionLock.reset();
+        m_session = {};
+        return false;  // another SnapTray has it open
+    }
+    m_tempVideoPath = videoPath;
+    setState(State::Previewing);
+    emit previewRequested(videoPath, RecordingSettingsManager::instance().outputFormat(), false);
+    return true;
+}
+
 void RecordingManager::startDiskMonitor()
 {
     m_diskGuard.reset();
@@ -1505,6 +1612,13 @@ void RecordingManager::onDiskSample(quint64 generation, qint64 freeBytes, qint64
         return;
     }
     m_writeRate.addSample(fileBytes, sampleMs);
+    // Keep the recovery manifest's duration roughly current (every ~10 s).
+    constexpr int kSamplesPerHeartbeat = 5;
+    if (++m_sessionHeartbeat >= kSamplesPerHeartbeat) {
+        m_sessionHeartbeat = 0;
+        m_session.recordedMs = sampleMs;
+        updateSession(SnapTray::RecordingSessionInfo::State::Recording);
+    }
     SnapTray::DiskSpaceGuard::Input input;
     if (freeBytes >= 0) input.freeBytes = freeBytes;
     input.recordedBytes = qMax<qint64>(0, fileBytes);
@@ -1791,6 +1905,8 @@ void RecordingManager::cancelRecording()
     m_permissionPending = false;
     m_collectStartupAudioWarnings = false;
     m_startupAudioWarnings.clear();
+    // A cancelled recording is discarded on purpose: nothing to recover.
+    endSession(true);
 
     // Cancel countdown overlay if active
     if (m_countdownOverlay) {
@@ -1925,6 +2041,14 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
     teardownEncodingWorker(false);
     finishWindowTimeline(outputPath, success);
     m_usingNativeEncoder = false;
+    if (success) {
+        // A finished file: if SnapTray stops before it is saved, it is still
+        // offered for recovery, complete.
+        updateSession(SnapTray::RecordingSessionInfo::State::Finished);
+    } else {
+        // Keep the manifest: if a playable part exists, the next scan offers it.
+        endSession(false);
+    }
 
     if (success) {
         const bool showPreview = m_startSettings.showPreview;
@@ -1943,7 +2067,10 @@ void RecordingManager::onEncodingFinished(bool success, const QString &outputPat
             setState(State::Idle);
             QString tempPath = outputPath;
             QMetaObject::invokeMethod(this, [this, tempPath]() {
-                showSaveDialog(tempPath);
+                const SaveOutcome outcome = showSaveDialog(tempPath);
+                // Saved or discarded: nothing to recover. A failed save keeps
+                // the file in the temp folder, so its manifest stays.
+                endSession(outcome != SaveOutcome::Failed);
             }, Qt::QueuedConnection);
         }
     } else {
@@ -1961,6 +2088,9 @@ void RecordingManager::onPreviewClosed(bool saved)
     }
 
     setState(State::Idle);
+    // Saved or discarded: the file is gone and so is its manifest. A file
+    // still there (SnapTray is quitting) keeps its manifest for recovery.
+    endSession(!QFileInfo::exists(m_tempVideoPath));
     m_tempVideoPath.clear();
 }
 
@@ -2229,6 +2359,14 @@ void RecordingManager::cleanupStaleTempFiles()
 
     int cleanedCount = 0;
     for (const QFileInfo &file : files) {
+        // A recording with a session manifest is either active or waiting to
+        // be recovered: only the user's choice (recover or discard) removes it.
+        const QString owner = file.fileName().endsWith(QLatin1String(".windows.json"))
+            ? file.absoluteFilePath().left(file.absoluteFilePath().size() - int(qstrlen(".windows.json")))
+            : file.absoluteFilePath();
+        if (SnapTray::RecordingSession::hasSession(owner)) {
+            continue;
+        }
         if (file.lastModified() < threshold) {
             if (QFile::remove(file.absoluteFilePath())) {
                 cleanedCount++;

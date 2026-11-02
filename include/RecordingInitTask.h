@@ -70,6 +70,7 @@ public:
         std::unique_ptr<WebPAnimationEncoder> webpEncoder;
 
         bool usingNativeEncoder = false;
+        bool fragmentedOutput = false;  // crash leaves a playable prefix
         bool audioEnabled = false;
         QString audioWarning;
 

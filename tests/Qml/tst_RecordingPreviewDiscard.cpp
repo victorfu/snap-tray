@@ -161,11 +161,14 @@ void tst_RecordingPreviewDiscard::applicationQuitCloseIsNotBlocked()
     QTRY_VERIFY_WITH_TIMEOUT((view = findPreviewWindow()) != nullptr, 5000);
     QVERIFY(QTest::qWaitForWindowExposed(view));
 
+    QSignalSpy discarded(&backend, &RecordingPreviewBackend::discardRequested);
     QEvent quit(QEvent::Quit);
     backend.eventFilter(qApp, &quit);
     QVERIFY(view->close());
     QVERIFY(!backend.discardConfirmationPending());
     QCOMPARE(closed.count(), 1);
+    // Quitting is not discarding: the recording stays for recovery (#157).
+    QCOMPARE(discarded.count(), 0);
 }
 
 QTEST_MAIN(tst_RecordingPreviewDiscard)

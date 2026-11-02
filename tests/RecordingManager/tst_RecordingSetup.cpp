@@ -8,6 +8,8 @@
 
 #include "capture/AudioLevelMonitor.h"
 #include "qml/QmlDialog.h"
+#include "qml/RecordingRecoveryViewModel.h"
+#include <QTemporaryDir>
 #include "qml/ScreenPickerViewModel.h"
 #include "recording/RecordingAudioStatus.h"
 #include "settings/RecordingSettingsManager.h"
@@ -105,6 +107,7 @@ private slots:
     void missingSavedDeviceStaysVisible();
     void outputNotes();
     void dialogShowsSetup();
+    void recoveryDialogLists();
 
 private:
     std::shared_ptr<FakeEngineState> m_engineState;
@@ -467,6 +470,47 @@ void TestRecordingSetup::dialogShowsSetup()
     QTRY_VERIFY(find("setupMicrophoneLevel")->isVisible());
     viewModel->cancel();
     QVERIFY(!viewModel->microphoneTestActive());
+}
+
+void TestRecordingSetup::recoveryDialogLists()
+{
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("SnapTray_Recording_q.mp4"));
+    SnapTray::RecordingSession::Recoverable playable;
+    playable.info.videoPath = video;
+    playable.info.startedAt = QDateTime::currentDateTime();
+    playable.decodable = true;
+    playable.durationMs = 65000;
+    SnapTray::RecordingSession::Recoverable broken = playable;
+    broken.decodable = false;
+
+    auto* viewModel = new SnapTray::RecordingRecoveryViewModel;
+    viewModel->setRecoveries({playable, broken});
+    SnapTray::QmlDialog dialog(QUrl(QStringLiteral("qrc:/SnapTrayQml/dialogs/RecordingRecoveryDialog.qml")),
+                               viewModel, QStringLiteral("viewModel"));
+    viewModel->setParent(&dialog);
+    dialog.showCenteredOnScreen(QGuiApplication::primaryScreen());
+    QQuickView* view = nullptr;
+    for (QWindow* window : QGuiApplication::topLevelWindows()) {
+        if (auto* candidate = qobject_cast<QQuickView*>(window); candidate && candidate->isVisible())
+            view = candidate;
+    }
+    QVERIFY(view);
+    // Recover only where something can be played; Discard on every row.
+    int recoverVisible = 0;
+    int discardButtons = 0;
+    std::function<void(QQuickItem*)> walk = [&](QQuickItem* item) {
+        if (item->objectName() == QLatin1String("recoveryRecoverButton") && item->isVisible()) ++recoverVisible;
+        if (item->objectName() == QLatin1String("recoveryDiscardButton")) ++discardButtons;
+        for (QQuickItem* child : item->childItems()) walk(child);
+    };
+    walk(qobject_cast<QQuickItem*>(view->rootObject()));
+    QCOMPARE(recoverVisible, 1);
+    QCOMPARE(discardButtons, 2);
+    QSignalSpy recover(viewModel, &SnapTray::RecordingRecoveryViewModel::recoverRequested);
+    viewModel->recover(0);
+    QCOMPARE(recover.count(), 1);
+    QCOMPARE(recover.first().first().toString(), video);
 }
 
 QTEST_MAIN(TestRecordingSetup)

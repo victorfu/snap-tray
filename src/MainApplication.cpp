@@ -10,6 +10,7 @@
 #include "qml/QmlDialog.h"
 #include "qml/QmlHistoryWindow.h"
 #include "qml/ScreenPickerViewModel.h"
+#include "qml/RecordingRecoveryViewModel.h"
 #include "qml/QmlSettingsWindow.h"
 #include "pinwindow/PinWindowPlacement.h"
 #include "ImageColorSpaceHelper.h"
@@ -18,6 +19,7 @@
 #include "qml/QmlToast.h"
 #include "qml/RecordingPreviewBackend.h"
 #include "recording/WindowTimelineSidecar.h"
+#include "recording/RecordingSession.h"
 #include "settings/RecordingSettingsManager.h"
 #include "ui/TrayRecordingIndicator.h"
 #include "ui/TrayTooltipFormatter.h"
@@ -362,6 +364,24 @@ void MainApplication::initialize()
         this, &MainApplication::updateTrayToolTip);
     connect(m_recordingManager, &RecordingManager::diagnosticsAvailable,
         this, &MainApplication::updateRecordingActionText);
+    connect(m_recordingManager, &RecordingManager::recoveriesFound, this,
+        [this](const QList<SnapTray::RecordingSession::Recoverable>& found) {
+            m_recoverablePaths.clear();
+            int recoverable = 0;
+            for (const auto& item : found) {
+                m_recoverablePaths.append(item.info.videoPath);
+                if (item.decodable) ++recoverable;
+            }
+            updateRecoveryAction();
+            if (recoverable > 0) {
+                SnapTray::QmlToast::screenToast().showToast(
+                    SnapTray::QmlToast::Level::Info,
+                    tr("Unsaved Recordings Found"),
+                    tr("SnapTray found %1 recording(s) that were not saved. Recover them from the tray menu.")
+                        .arg(recoverable),
+                    8000);
+            }
+        });
 
     // Create system tray icon
     m_trayBasePixmap = PlatformFeatures::instance().createTrayPixmap();
@@ -415,6 +435,11 @@ void MainApplication::initialize()
         connect(m_pauseRecordingAction, &QAction::triggered, this, [this] {
             if (m_recordingManager) m_recordingManager->togglePause();
         });
+        // Recordings an earlier run left behind (crash, power loss, quit with
+        // an unsaved preview). Shown only when there is something to offer.
+        m_recoverRecordingsAction = m_trayMenu->addAction(tr("Recover Recordings..."));
+        m_recoverRecordingsAction->setVisible(false);
+        connect(m_recoverRecordingsAction, &QAction::triggered, this, &MainApplication::showRecoveryDialog);
         // Local diagnostics for the last recording; only copied when the user asks.
         m_copyRecordingDiagnosticsAction = m_trayMenu->addAction(tr("Copy Recording Diagnostics"));
         m_copyRecordingDiagnosticsAction->setVisible(false);
@@ -483,6 +508,11 @@ void MainApplication::initialize()
     updateTrayMenuHotkeyText();
     updateTrayToolTip();
     updatePinsVisibilityActionText();
+
+    // Look for recordings an earlier run could not save (off the GUI thread).
+    if (PlatformFeatures::instance().capabilities().supportsRecording) {
+        m_recordingManager->scanForRecoveries();
+    }
 
     QTimer::singleShot(0, this, [captureManager = QPointer<CaptureManager>(m_captureManager)]() {
         if (!captureManager) {
@@ -1073,6 +1103,7 @@ void MainApplication::onPreviewDiscardRequested(const QString& videoPath)
         }
     }
     SnapTray::WindowTimelineSidecar::remove(videoPath);
+    SnapTray::RecordingSession::remove(videoPath);
 }
 
 void MainApplication::updateActionHotkeyText(QAction* action,
@@ -1138,6 +1169,58 @@ void MainApplication::updateTrayMenuHotkeyText()
                            SnapTray::HotkeyAction::HistoryWindow,
                            tr("History"));
     updateRecordingActionText();
+}
+
+void MainApplication::updateRecoveryAction()
+{
+    if (!m_recoverRecordingsAction) return;
+    m_recoverRecordingsAction->setVisible(!m_recoverablePaths.isEmpty());
+    m_recoverRecordingsAction->setText(tr("Recover Recordings (%1)...").arg(m_recoverablePaths.size()));
+}
+
+void MainApplication::showRecoveryDialog()
+{
+    if (m_recoveryDialog) {
+        m_recoveryDialog->showCenteredOnScreen(QGuiApplication::primaryScreen());
+        return;
+    }
+    // Re-scan so the dialog reflects the files as they are now.
+    auto* viewModel = new SnapTray::RecordingRecoveryViewModel(this);
+    auto* dialog = new SnapTray::QmlDialog(
+        QUrl(QStringLiteral("qrc:/SnapTrayQml/dialogs/RecordingRecoveryDialog.qml")),
+        viewModel, QStringLiteral("viewModel"), this);
+    viewModel->setParent(dialog);
+    m_recoveryDialog = dialog;
+    connect(dialog, &SnapTray::QmlDialog::closed, dialog, &QObject::deleteLater);
+    const QPointer<SnapTray::RecordingRecoveryViewModel> model(viewModel);
+    auto connection = std::make_shared<QMetaObject::Connection>();
+    *connection = connect(m_recordingManager, &RecordingManager::recoveriesFound, dialog,
+        [model, connection](const QList<SnapTray::RecordingSession::Recoverable>& found) {
+            if (model) model->setRecoveries(found);
+            QObject::disconnect(*connection);
+        });
+    connect(viewModel, &SnapTray::RecordingRecoveryViewModel::recoverRequested, this,
+        [this](const QString& path) {
+            if (!m_recordingManager->openRecoveredRecording(path)) {
+                SnapTray::QmlToast::screenToast().showToast(
+                    SnapTray::QmlToast::Level::Warning, tr("Recording Busy"),
+                    tr("Finish or close the current recording first."));
+                return;
+            }
+            m_recoverablePaths.removeAll(path);
+            updateRecoveryAction();
+            if (m_recoveryDialog) m_recoveryDialog->close();
+        });
+    connect(viewModel, &SnapTray::RecordingRecoveryViewModel::discarded, this,
+        [this](const QString& path) {
+            m_recoverablePaths.removeAll(path);
+            updateRecoveryAction();
+        });
+    connect(viewModel, &SnapTray::RecordingRecoveryViewModel::closeRequested, dialog, [this] {
+        if (m_recoveryDialog) m_recoveryDialog->close();
+    });
+    m_recordingManager->scanForRecoveries();
+    dialog->showCenteredOnScreen(QGuiApplication::primaryScreen());
 }
 
 void MainApplication::updateRecordingActionText()

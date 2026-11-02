@@ -54,6 +54,8 @@ public:
         // keeps the encoder default.
         SnapTray::VideoRateControl rateControl = SnapTray::VideoRateControl::Bitrate;
         int keyFrameIntervalSeconds = 0;
+        // Ask the native encoder for fragmented (crash-safe) MP4 output.
+        bool fragmentedOutput = false;
 
         // GIF settings (msf_gif)
         int gifBitDepth = 16;  // 1-16, higher = better colors but larger file
@@ -81,6 +83,8 @@ public:
         QString errorMessage;
         bool audioEnabled = false;
         QString audioWarning;
+        // The native encoder writes fragments: a crash leaves a playable prefix.
+        bool fragmentedOutput = false;
 
         /**
          * @brief Check if any encoder was created
