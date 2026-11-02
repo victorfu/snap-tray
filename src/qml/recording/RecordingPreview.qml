@@ -54,7 +54,9 @@ Item {
         void backend.cropRect; void backend.selectedFormat
         if (cropOverlay.editing || root.comparingOriginal || backend.selectedMask >= 0)
             return root.zoomTarget
-        return backend.zoomViewportInView(videoPlayer.position, videoPlayer.contentRect)
+        // Per frame, like the pointer overlay (#175 review): the reported
+        // position would pan the zoom at 10 fps on some platforms.
+        return backend.zoomViewportInView(videoPlayer.framePosition, videoPlayer.contentRect)
     }
     readonly property real zoomFactor: zoomView.width > 0 ? zoomTarget.width / zoomView.width : 1
     readonly property var zoomScales: [1.5, 2.0, 2.5, 3.0]
@@ -139,6 +141,25 @@ Item {
         if (cropOverlay.editing && !root.applyCropWithPendingInput())
             return
         backend.save()
+    }
+
+    // The mask to select after `current` when the timeline is clicked at
+    // `ms`: masks covering that time, topmost (latest) first, then none.
+    // `clicked` is the bar hit, for a click just past its ends.
+    function nextMaskAt(ms, current, clicked) {
+        const here = []
+        for (let i = backend.masks.length - 1; i >= 0; --i) {
+            const mask = backend.masks[i]
+            const end = mask.end < 0 ? timelineArea.dur : mask.end
+            if (ms >= mask.start && ms <= end)
+                here.push(i)
+        }
+        if (here.length === 0)
+            return current === clicked ? -1 : clicked
+        const at = here.indexOf(current)
+        if (at < 0)
+            return here[0]
+        return at + 1 < here.length ? here[at + 1] : -1
     }
 
     // A start/end pair typed but not confirmed yet (Save does not take
@@ -361,7 +382,9 @@ Item {
                     height: pointerClip.parent.height
                     visible: !root.comparingOriginal
                     backend: root.previewBackend
-                    position: videoPlayer.position
+                    // Each frame's own time: the player's position is reported
+                    // only every 100 ms on some platforms (#175 review).
+                    position: videoPlayer.framePosition
                     contentRect: videoPlayer.contentRect
                     transform: [
                         Translate { x: -root.zoomView.x; y: -root.zoomView.y },
@@ -754,12 +777,17 @@ Item {
                         anchors.fill: parent
                         anchors.margins: -2
                         cursorShape: CursorTokens.clickable
-                        onClicked: {
+                        onClicked: function(mouse) {
+                            // Overlapping masks share the bar's place: each click
+                            // moves to the next one under the pointer, then to
+                            // none, so every mask can be reached (#177 review).
+                            const ms = timelineArea.xToPos(mapToItem(timelineArea, mouse.x, mouse.y).x)
+                            const next = root.nextMaskAt(ms, backend.selectedMask, parent.index)
                             backend.selectedZoom = -1
-                            backend.selectedMask = parent.selected ? -1 : parent.index
-                            if (backend.selectedMask >= 0) {
+                            backend.selectedMask = next
+                            if (next >= 0) {
                                 videoPlayer.pause()
-                                videoPlayer.seek(parent.modelData.start)
+                                videoPlayer.seek(backend.masks[next].start)
                             }
                         }
                     }
@@ -1132,6 +1160,16 @@ Item {
                 readonly property bool wholeRecording: root.selectedMaskData !== null
                     && root.selectedMaskData.start === 0 && root.selectedMaskData.end < 0
 
+                // The fields are shared by all masks: text typed for one and
+                // not applied must not reach the next one selected.
+                Connections {
+                    target: root.previewBackend
+                    function onSelectedMaskChanged() {
+                        maskStartField.discardEdit()
+                        maskEndField.discardEdit()
+                    }
+                }
+
                 Repeater {
                     model: root.maskStyleLabels
                     SegmentButton {
@@ -1194,7 +1232,13 @@ Item {
                     minimumButtonWidth: 0
                     text: qsTr("Done")
                     tooltipText: qsTr("Drag the mask to move it, or its corner to resize it. Done finishes editing.")
-                    onClicked: backend.selectedMask = -1
+                    // Typed times are applied first; invalid ones keep the editor
+                    // open, so Save cannot skip them (#177 review).
+                    onClicked: {
+                        if (maskPanel.wholeRecording || root.commitPendingRange(maskStartField, maskEndField,
+                                (start, end) => backend.setMaskRange(backend.selectedMask, start, end)))
+                            backend.selectedMask = -1
+                    }
                 }
             }
 
@@ -1207,6 +1251,16 @@ Item {
                 spacing: SemanticTokens.spacing4
                 visible: backend.selectedZoom >= 0 && !(backend.selectedMask >= 0) && !cropOverlay.editing
                 readonly property var segment: backend.selectedZoom >= 0 ? backend.zoomSegments[backend.selectedZoom] : null
+
+                // The fields are shared by all zooms: text typed for one and
+                // not applied must not reach the next one selected (#176 review).
+                Connections {
+                    target: root.previewBackend
+                    function onSelectedZoomChanged() {
+                        zoomStartField.discardEdit()
+                        zoomEndField.discardEdit()
+                    }
+                }
 
                 Repeater {
                     model: root.zoomScales
@@ -1267,7 +1321,12 @@ Item {
                     minimumButtonWidth: 0
                     text: qsTr("Done")
                     tooltipText: qsTr("Click the video to move the zoom's centre. Done finishes editing.")
-                    onClicked: backend.selectedZoom = -1
+                    // Typed times are applied first; invalid ones keep the editor open.
+                    onClicked: {
+                        if (root.commitPendingRange(zoomStartField, zoomEndField,
+                                (start, end) => backend.setZoomRange(backend.selectedZoom, start, end)))
+                            backend.selectedZoom = -1
+                    }
                 }
             }
 
@@ -2048,10 +2107,14 @@ Item {
             invalid = false
             edited = true
         }
-        Keys.onEscapePressed: function(event) {
+        // Drops typed text that was not applied, back to the value.
+        function discardEdit() {
             invalid = false
             edited = false
             text = backend.formatPreciseTime(timeMs)
+        }
+        Keys.onEscapePressed: function(event) {
+            discardEdit()
             root.forceActiveFocus()
             event.accepted = true
         }

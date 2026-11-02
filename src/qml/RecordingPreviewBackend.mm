@@ -315,13 +315,11 @@ void RecordingPreviewBackend::installPreviewFrameProcessor()
     player->setFrameProcessor([weakThis](QImage& frame, qint64 positionMs) {
         if (!weakThis || weakThis->m_redaction.isEmpty()) return;
         const QSize source = weakThis->m_videoSize.isEmpty() ? frame.size() : weakThis->m_videoSize;
-        // The position can run slightly ahead of the frame shown; end each
-        // mask a moment later here so the preview never uncovers early.
-        SnapTray::RedactionTrack conservative = weakThis->m_redaction;
-        for (auto& mask : conservative.masks) {
-            if (mask.endMs >= 0) mask.endMs += SnapTray::RedactionTrack::kFrameHoldMs;
-        }
-        conservative.apply(frame, positionMs, QRectF(QPointF(0, 0), QSizeF(source)));
+        // positionMs is this frame's own time (#175), so the preview masks
+        // exactly the frames the export does, with the same function; no
+        // extra margin that would show frames masked that are exported
+        // unmasked (#177 review).
+        weakThis->m_redaction.apply(frame, positionMs, QRectF(QPointF(0, 0), QSizeF(source)));
     });
     connect(this, &RecordingPreviewBackend::masksChanged, player, &VideoPlaybackItem::reprocessFrame);
 }

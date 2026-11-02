@@ -29,6 +29,10 @@ class VideoPlaybackItem : public QQuickPaintedItem
     Q_PROPERTY(bool playing READ isPlaying NOTIFY stateChanged)
     Q_PROPERTY(int playerState READ playerState NOTIFY stateChanged)
     Q_PROPERTY(qint64 position READ position NOTIFY positionChanged)
+    // The time of the frame on screen, updated with every frame: what
+    // overlays drawn over the video follow (position may be reported only
+    // every 100 ms while playing).
+    Q_PROPERTY(qint64 framePosition READ framePosition NOTIFY framePositionChanged)
     Q_PROPERTY(qint64 duration READ duration NOTIFY durationChanged)
     Q_PROPERTY(bool audioPlaybackSupported READ audioPlaybackSupported CONSTANT)
     Q_PROPERTY(bool muted READ isMuted WRITE setMuted NOTIFY mutedChanged)
@@ -52,6 +56,7 @@ public:
     bool isPlaying() const;
     int playerState() const;
     qint64 position() const;
+    qint64 framePosition() const { return m_framePosition; }
     qint64 duration() const;
     bool audioPlaybackSupported() const;
 
@@ -78,7 +83,7 @@ public:
     Q_INVOKABLE void stepForward();
     Q_INVOKABLE void setLooping(bool loop);
 
-    // Processes each shown frame (before scaling) with the playback position,
+    // Processes each shown frame (before scaling) with its own time (framePosition),
     // e.g. to burn in the export's masks so the preview never shows what the
     // export hides. The raw frame is kept; reprocessFrame() redoes the shown one.
     using FrameProcessor = std::function<void(QImage& frame, qint64 positionMs)>;
@@ -89,6 +94,7 @@ signals:
     void sourceChanged();
     void stateChanged();
     void positionChanged(qint64 positionMs);
+    void framePositionChanged();
     void durationChanged(qint64 durationMs);
     void mutedChanged();
     void volumeChanged();
@@ -100,11 +106,12 @@ signals:
     void frameReady(const QImage &frame);
 
 private slots:
-    void onFrameReady(const QImage &frame);
+    void onFrameReady(const QImage &frame, qint64 positionMs = -1);
     void onMediaLoaded();
 
 private:
     void createPlayer();
+    void setFramePosition(qint64 positionMs);
     void refreshScaledFrameForCurrentSize();
     // Drops the shown frame and empties contentRect (emitting contentRectChanged).
     void clearFrame();
@@ -114,6 +121,7 @@ private:
     QImage m_currentFrame;
     QImage m_rawFrame;
     FrameProcessor m_frameProcessor;
+    qint64 m_framePosition = 0;
     QImage m_scaledFrame;
     QSize m_lastItemSize;
     QSize m_lastFrameSize;

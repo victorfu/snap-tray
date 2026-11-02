@@ -102,6 +102,9 @@ private slots:
     void exportThatCannotMaskIsRefused();
     void previewShowsTheMaskedPixels();
     void pendingMaskTimesApplyBeforeExport();
+    void previewMaskTimesMatchTheExport();
+    void overlappingMasksAreAllSelectable();
+    void maskDoneAndSwitchingKeepTypedTimesRight();
 };
 
 void tst_RecordingPreviewMasks::masksAreBurnedIntoEveryOutput_data()
@@ -305,6 +308,165 @@ void tst_RecordingPreviewMasks::pendingMaskTimesApplyBeforeExport()
     QCOMPARE(maskEnd(), qint64(900));
     QVERIFY(!end->property("edited").toBool());
     QVERIFY(backend.canRetrySave());
+    backend.requestDiscard();
+}
+
+void tst_RecordingPreviewMasks::previewMaskTimesMatchTheExport()
+{
+    // PR #177 review: the preview ended time-limited masks up to 200 ms late
+    // (to cover a position running ahead of the frame), so a frame shown
+    // masked could be exported unmasked. With each frame's own time, the
+    // preview masks exactly the frames the export does.
+    QTemporaryDir dir;
+    const QString input = dir.filePath(QStringLiteral("recording.mp4"));
+    QVERIFY(createSecretRecording(input).isEmpty());
+    RecordingPreviewBackend backend(input);
+    backend.show();
+    QQuickView* view = nullptr;
+    QVERIFY(QTest::qWaitFor([&view] {
+        for (QWindow* window : QGuiApplication::topLevelWindows()) {
+            if (window->isVisible() && window->title() == RecordingPreviewBackend::tr("Recording Preview"))
+                view = qobject_cast<QQuickView*>(window);
+        }
+        return view != nullptr;
+    }, 5000));
+    QVERIFY(QTest::qWaitForWindowExposed(view));
+    auto* player = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("previewVideoPlayer"));
+    QVERIFY(player);
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.videoSize().isEmpty(), 10000);
+    QMetaObject::invokeMethod(player, "pause");
+    for (const char* name : {"previewPlayOverlay", "previewAudioUnavailableLabel"}) {
+        auto* overlay = view->rootObject()->findChild<QQuickItem*>(QString::fromLatin1(name));
+        QVERIFY(overlay);
+        overlay->setVisible(false);
+    }
+    if (!backend.masksAvailable()) QSKIP("This platform's MP4 transcoder cannot draw masks yet");
+    QCOMPARE(backend.addMask(), 0);
+    backend.setMaskRectFromView(0, QRectF(kSecret), QRectF(QPointF(0, 0), QSizeF(kSize)));
+    QVERIFY(backend.setMaskRange(0, 0, 800));
+    backend.setSelectedMask(-1);
+    const auto videoArea = [&] {
+        const QRectF content = player->property("contentRect").toRectF();
+        return player->mapRectToScene(content).toAlignedRect().adjusted(2, 2, -2, -2);
+    };
+    QImage frame(kSize, QImage::Format_ARGB32);
+    frame.fill(QColor(128, 128, 128));
+    for (int y = kSecret.top(); y <= kSecret.bottom(); ++y)
+        for (int x = kSecret.left(); x <= kSecret.right(); ++x)
+            frame.setPixelColor(x, y, ((x / 4) + (y / 4)) % 2 ? Qt::white : Qt::black);
+    const auto show = [&](qint64 ms) {
+        return QMetaObject::invokeMethod(player, "onFrameReady", Qt::DirectConnection,
+                                         Q_ARG(QImage, frame), Q_ARG(qint64, ms));
+    };
+    // Inside the mask's time: covered.
+    QVERIFY(show(700));
+    QTRY_COMPARE_WITH_TIMEOUT(edges(view->grabWindow(), videoArea()), 0, 5000);
+    // After it: the export shows this frame, so the preview does too.
+    QVERIFY(show(900));
+    QTRY_VERIFY_WITH_TIMEOUT(edges(view->grabWindow(), videoArea()) > 50, 5000);
+    backend.requestDiscard();
+}
+
+namespace {
+QQuickView* openPreviewFor(RecordingPreviewBackend& backend)
+{
+    backend.show();
+    QQuickView* view = nullptr;
+    QTest::qWaitFor([&view] {
+        for (QWindow* window : QGuiApplication::topLevelWindows()) {
+            if (window->isVisible() && window->title() == RecordingPreviewBackend::tr("Recording Preview"))
+                view = qobject_cast<QQuickView*>(window);
+        }
+        return view != nullptr;
+    }, 5000);
+    return view && QTest::qWaitForWindowExposed(view) ? view : nullptr;
+}
+} // namespace
+
+void tst_RecordingPreviewMasks::overlappingMasksAreAllSelectable()
+{
+    // PR #177 review: two whole-recording masks share one timeline bar, and
+    // the later one covered the earlier, which could not be selected again.
+    // Clicking where masks overlap moves through them in turn.
+    QTemporaryDir dir;
+    const QString input = dir.filePath(QStringLiteral("recording.mp4"));
+    QVERIFY(createSecretRecording(input).isEmpty());
+    RecordingPreviewBackend backend(input);
+    QQuickView* view = openPreviewFor(backend);
+    QVERIFY(view);
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.videoSize().isEmpty(), 10000);
+    if (!backend.masksAvailable()) QSKIP("This platform's MP4 transcoder cannot draw masks yet");
+    QCOMPARE(backend.addMask(), 0);
+    QCOMPARE(backend.addMask(), 1);
+    backend.setSelectedMask(-1);
+    // Repeater delegates are only reachable through the visual tree.
+    std::function<QQuickItem*(QQuickItem*)> walk = [&walk](QQuickItem* item) -> QQuickItem* {
+        if (item->objectName() == QLatin1String("previewMaskSegment1")) return item;
+        for (QQuickItem* child : item->childItems()) {
+            if (QQuickItem* found = walk(child)) return found;
+        }
+        return nullptr;
+    };
+    QQuickItem* top = nullptr;
+    QTRY_VERIFY((top = walk(view->rootObject())) != nullptr);
+    QTRY_VERIFY(top->width() > 10);
+    const QPoint at = top->mapToScene(QPointF(top->width() / 2, top->height() / 2)).toPoint();
+    QList<int> seen;
+    for (int i = 0; i < 3; ++i) {
+        QTest::mouseClick(view, Qt::LeftButton, Qt::NoModifier, at);
+        seen << backend.selectedMask();
+    }
+    QCOMPARE(seen, (QList<int>{1, 0, -1}));
+    backend.requestDiscard();
+}
+
+void tst_RecordingPreviewMasks::maskDoneAndSwitchingKeepTypedTimesRight()
+{
+    // PR #177 review: Done cleared the selection without applying a typed
+    // end, and Save then skipped the hidden fields, exporting the shorter
+    // mask. Done applies typed times (staying open when invalid), and
+    // selecting another mask drops text that was not applied.
+    QTemporaryDir dir;
+    const QString input = dir.filePath(QStringLiteral("recording.mp4"));
+    QVERIFY(createSecretRecording(input).isEmpty());
+    RecordingPreviewBackend backend(input);
+    QQuickView* view = openPreviewFor(backend);
+    QVERIFY(view);
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.videoSize().isEmpty(), 10000);
+    if (!backend.masksAvailable()) QSKIP("This platform's MP4 transcoder cannot draw masks yet");
+    QCOMPARE(backend.addMask(), 0);
+    QCOMPARE(backend.addMask(), 1);
+    QVERIFY(backend.setMaskRange(0, 0, 300));
+    QVERIFY(backend.setMaskRange(1, 500, 700));
+    backend.setSelectedMask(0);
+    auto* end = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("previewMaskEndField"));
+    auto* done = view->rootObject()->findChild<QQuickItem*>(QStringLiteral("previewMaskDone"));
+    QVERIFY(end && done);
+    QTRY_VERIFY(end->isVisible());
+    const auto maskEnd = [&backend](int i) { return backend.masks().at(i).toMap().value(QStringLiteral("end")).toLongLong(); };
+
+    // Unreadable: Done keeps the editor open, nothing changes.
+    end->setProperty("text", QStringLiteral("nonsense"));
+    end->setProperty("edited", true);
+    QVERIFY(QMetaObject::invokeMethod(done, "clicked"));
+    QCOMPARE(backend.selectedMask(), 0);
+    QVERIFY(end->property("invalid").toBool());
+
+    // Switching drops it: it never reaches the other mask.
+    backend.setSelectedMask(1);
+    QTRY_COMPARE(end->property("text").toString(), backend.formatPreciseTime(700));
+    QVERIFY(!end->property("edited").toBool());
+    QVERIFY(QMetaObject::invokeMethod(done, "clicked"));
+    QCOMPARE(maskEnd(1), qint64(700));
+
+    // A valid typed end: Done applies it.
+    backend.setSelectedMask(0);
+    QTRY_VERIFY(end->isVisible());
+    end->setProperty("text", backend.formatPreciseTime(900));
+    end->setProperty("edited", true);
+    QVERIFY(QMetaObject::invokeMethod(done, "clicked"));
+    QCOMPARE(maskEnd(0), qint64(900));
+    QCOMPARE(backend.selectedMask(), -1);
     backend.requestDiscard();
 }
 
