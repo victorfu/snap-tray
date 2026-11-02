@@ -3688,6 +3688,11 @@ English is always included and cannot be removed.</source>
 <context>
     <name>SnapTray::RecordingRecoveryViewModel</name>
     <message>
+        <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="60" />
+        <source>Open in another SnapTray window. Close it there, then try again.</source>
+        <translation>เปิดอยู่ในหน้าต่าง SnapTray อื่น ปิดที่นั่นแล้วลองอีกครั้ง</translation>
+    </message>
+    <message>
         <location filename="../src/qml/RecordingRecoveryViewModel.cpp" line="55" />
         <source>Unknown date</source>
         <translation>ไม่ทราบวันที่</translation>

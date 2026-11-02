@@ -1,6 +1,7 @@
 #include "qml/RecordingRecoveryViewModel.h"
 
 #include <QLocale>
+#include <QLockFile>
 #include <QVariantMap>
 
 namespace SnapTray {
@@ -18,6 +19,7 @@ RecordingRecoveryViewModel::RecordingRecoveryViewModel(QObject* parent)
 void RecordingRecoveryViewModel::setRecoveries(const QList<RecordingSession::Recoverable>& recoveries)
 {
     m_items = recoveries;
+    m_busy.clear();
     rebuildRows();
 }
 
@@ -53,8 +55,12 @@ void RecordingRecoveryViewModel::rebuildRows()
         row[QStringLiteral("title")] = when.isValid()
             ? QLocale().toString(when, QLocale::ShortFormat)
             : tr("Unknown date");
-        row[QStringLiteral("status")] = statusText(item);
+        const bool busy = m_busy.contains(item.info.videoPath);
+        row[QStringLiteral("status")] = busy
+            ? tr("Open in another SnapTray window. Close it there, then try again.")
+            : statusText(item);
         row[QStringLiteral("canRecover")] = item.decodable;
+        row[QStringLiteral("busy")] = busy;
         m_rows.append(row);
     }
     emit recordingsChanged();
@@ -74,7 +80,18 @@ void RecordingRecoveryViewModel::discard(int index)
         return;
     }
     const QString path = m_items.at(index).info.videoPath;
+    // Another instance may have recovered this recording since the list was
+    // built; its session lock keeps the files it has open.
+    QLockFile lock(RecordingSession::lockPathFor(path));
+    lock.setStaleLockTime(0);
+    if (!lock.tryLock(0)) {
+        m_busy.insert(path);
+        rebuildRows();
+        return;
+    }
     RecordingSession::discard(path);
+    lock.unlock();
+    m_busy.remove(path);
     m_items.removeAt(index);
     rebuildRows();
     emit discarded(path);

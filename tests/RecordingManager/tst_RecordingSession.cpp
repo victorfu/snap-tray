@@ -4,6 +4,9 @@
 #include <QTemporaryDir>
 
 #include "qml/RecordingRecoveryViewModel.h"
+
+#include <QLockFile>
+#include <memory>
 #include "recording/RecordingSession.h"
 #include "recording/WindowTimelineSidecar.h"
 
@@ -49,6 +52,7 @@ private slots:
     void scanSkipsActiveAndDropsOrphans();
     void discardRemovesEverything();
     void recoveryTextsAreHonest();
+    void discardRespectsTheSessionLock();
 };
 
 void TestRecordingSession::manifestRoundTrip()
@@ -228,6 +232,39 @@ void TestRecordingSession::recoveryTextsAreHonest()
     QVERIFY(!QFileInfo::exists(video));
     QCOMPARE(model.count(), 0);
     QCOMPARE(closed.count(), 1);
+}
+
+void TestRecordingSession::discardRespectsTheSessionLock()
+{
+    // PR #172 review: another SnapTray instance may hold the recording open
+    // in its preview; a stale recovery row must not delete it from under it.
+    using VM = SnapTray::RecordingRecoveryViewModel;
+    QTemporaryDir dir;
+    const QString video = touch(dir.filePath(QStringLiteral("SnapTray_Recording_l.mp4")));
+    QVERIFY(Session::write(sessionFor(video)));
+    Session::Recoverable item;
+    item.info = sessionFor(video);
+    item.decodable = true;
+    VM model;
+    model.setRecoveries({item});
+
+    auto held = std::make_unique<QLockFile>(Session::lockPathFor(video));
+    held->setStaleLockTime(0);
+    QVERIFY(held->tryLock(0));
+    QSignalSpy discarded(&model, &VM::discarded);
+    model.discard(0);
+    QVERIFY(QFileInfo::exists(video));
+    QVERIFY(Session::hasSession(video));
+    QCOMPARE(model.count(), 1);
+    QCOMPARE(discarded.count(), 0);
+    QVERIFY(model.recordings().first().toMap().value(QStringLiteral("busy")).toBool());
+
+    held.reset();
+    model.discard(0);
+    QVERIFY(!QFileInfo::exists(video));
+    QVERIFY(!QFileInfo::exists(Session::lockPathFor(video)));
+    QCOMPARE(model.count(), 0);
+    QCOMPARE(discarded.count(), 1);
 }
 
 QTEST_MAIN(TestRecordingSession)
