@@ -116,20 +116,31 @@ public:
      */
     virtual QImage captureFrame() = 0;
 
-    // The latest frame for GUI-timer polling. Engines with a native (GPU)
-    // frame path return it here once setNativeFrameOutput(true) took effect;
-    // the default wraps captureFrame().
-    virtual SnapTray::CapturedFrame pollFrame();
+    /**
+     * @brief captureFrame(), plus the backend's own surface for it when it has
+     * one (CapturedFrame::nativeBuffer), so a matching encoder can skip the
+     * CPU copy. Only image, nativeBuffer and pixelSize are filled in.
+     *
+     * Windows engines with native frame output on may return a frame with
+     * only nativeBuffer (a D3D11 texture, no CPU copy at all).
+     */
+    virtual SnapTray::CapturedFrame captureNativeFrame()
+    {
+        SnapTray::CapturedFrame frame;
+        frame.image = captureFrame();
+        frame.pixelSize = frame.image.size();
+        return frame;
+    }
 
     // The device native frames live on, for the encoder to consume them
     // directly (a SnapTray::D3D11FrameDevice on Windows). Null when the engine
-    // has no native frame path. Valid after start().
+    // has no such device. Valid after start().
     virtual std::shared_ptr<void> nativeFrameDevice() const { return nullptr; }
 
-    // Let frames skip the CPU copy: they carry only nativeBuffer when the
-    // native path works and fall back to an image when it does not (for
-    // example a BitBlt fallback). Enable only when every consumer of the frames
-    // accepts native buffers. Takes effect from the next captured frame.
+    // Windows: let frames skip the CPU copy. They then carry only
+    // nativeBuffer while the GPU path works and an image when it does not (a
+    // BitBlt fallback). Enable only when the encoder accepts native frames and
+    // nothing has to draw on them. Takes effect from the next captured frame.
     virtual void setNativeFrameOutput(bool enabled) { Q_UNUSED(enabled); }
 
     // Asynchronous backends can deliver completed frames directly to the

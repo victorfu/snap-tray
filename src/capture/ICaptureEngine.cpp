@@ -76,14 +76,6 @@ bool ICaptureEngine::setRegion(const QRect &region, const CaptureScreenInfo &scr
     return false;
 }
 
-SnapTray::CapturedFrame ICaptureEngine::pollFrame()
-{
-    SnapTray::CapturedFrame frame;
-    frame.image = captureFrame();
-    frame.pixelSize = frame.image.size();
-    return frame;
-}
-
 ICaptureEngine *ICaptureEngine::createBestEngine(QObject *parent)
 {
 #ifdef Q_OS_MACOS

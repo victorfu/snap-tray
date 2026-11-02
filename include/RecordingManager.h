@@ -302,7 +302,7 @@ private:
         bool countdownEnabled = true;
         int countdownSeconds = 3;
         bool windowsGraphicsCapture = false;
-        bool windowsGpuEncoding = true;
+        bool nativeFrameEncoding = true;
     } m_startSettings;
     quint64 m_startGeneration = 0;
     bool m_permissionPending = false;

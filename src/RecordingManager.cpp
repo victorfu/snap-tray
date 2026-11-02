@@ -570,7 +570,7 @@ void RecordingManager::initializeStartState()
     m_startSettings = {settings.outputFormat(), settings.showPreview(), settings.quality(),
                       settings.audioEnabled(), settings.audioSource(), settings.audioDevice(),
                       settings.countdownEnabled(), settings.countdownSeconds(),
-                      settings.windowsGraphicsCapture(), settings.windowsGpuEncoding()};
+                      settings.windowsGraphicsCapture(), settings.nativeFrameEncoding()};
     if (m_requiresDirectMp4Recording()) {
         // Apply backend limits to this request, without overwriting saved
         // preferences from a platform with audio and preview support.
@@ -809,7 +809,7 @@ void RecordingManager::beginAsyncInitialization()
     config.frameSize = physicalSize;
     config.quality = m_startSettings.quality;
     config.preferGraphicsCapture = m_startSettings.windowsGraphicsCapture;
-    config.gpuEncoding = m_startSettings.windowsGpuEncoding;
+    config.gpuEncoding = m_startSettings.nativeFrameEncoding;
     config.intermediateQuality = decideIntermediateQuality(
         showPreview, QFileInfo(config.outputPath).absolutePath(), physicalSize);
 
@@ -1012,6 +1012,8 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
     if (nativeEncoder) {
         m_encodingWorker->setVideoEncoder(nativeEncoder);
         m_encodingWorker->setEncoderType(EncodingWorker::EncoderType::Video);
+        m_encodingWorker->setNativeFramesEnabled(
+            RecordingSettingsManager::instance().nativeFrameEncoding());
     }
     m_writtenOutputBytes = nativeEncoder ? nativeEncoder->writtenBytesCounter() : nullptr;
     m_bufferedOutputBytes = gifEncoder ? gifEncoder->bufferedBytesCounter()
@@ -1481,7 +1483,7 @@ void RecordingManager::captureFrame()
     // Polling backends return their latest frame; it is stamped when read.
     // (Backends that capture on their own thread stamp frames themselves.)
     const qint64 sourceTimeNs = SnapTray::captureClockNowNs();
-    const SnapTray::CapturedFrame frame = captureEngine->pollFrame();
+    const SnapTray::CapturedFrame frame = captureEngine->captureNativeFrame();
 
     if (frame.isValid()) {
         qint64 timeMs = 0;
@@ -1665,8 +1667,14 @@ bool RecordingManager::openRecoveredRecording(const QString& videoPath)
         const std::shared_ptr<QLockFile> sessionLock(m_sessionLock.release());
         m_session = {};
         QMetaObject::invokeMethod(this, [this, videoPath, sessionLock]() {
-            // Named by its own size: a recovered recording has no region.
-            const SaveOutcome outcome = showSaveDialog(videoPath, QImageReader(videoPath).size(), true);
+            // Named by its own size: a recovered recording has no region. The
+            // reader is closed before saving: Windows cannot move an open file.
+            QSize size;
+            {
+                QImageReader reader(videoPath);
+                size = reader.size();
+            }
+            const SaveOutcome outcome = showSaveDialog(videoPath, size, true);
             if (outcome == SaveOutcome::Saved) {
                 SnapTray::RecordingSession::remove(videoPath);
             }

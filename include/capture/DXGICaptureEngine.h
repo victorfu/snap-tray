@@ -38,7 +38,7 @@ public:
     void stop() override;
     bool isRunning() const override;
     QImage captureFrame() override;
-    SnapTray::CapturedFrame pollFrame() override;
+    SnapTray::CapturedFrame captureNativeFrame() override;
     std::shared_ptr<void> nativeFrameDevice() const override;
     void setNativeFrameOutput(bool enabled) override;
     QString engineName() const override;

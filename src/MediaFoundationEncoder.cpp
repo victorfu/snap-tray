@@ -722,29 +722,33 @@ bool MediaFoundationEncoder::acceptsNativeFrames() const
     return d->running && d->gpuInput();
 }
 
-void MediaFoundationEncoder::writeNativeFrame(const std::shared_ptr<void> &nativeBuffer, qint64 timestampMs)
+bool MediaFoundationEncoder::writeNativeFrame(const std::shared_ptr<void> &nativeBuffer, qint64 timestampMs)
 {
     if (!d->running || !d->sinkWriter) {
-        return;
+        return false;
     }
     const auto frame = SnapTray::d3d11FrameFrom(nativeBuffer);
     if (!frame || !frame->texture) {
-        return;
+        return false;
     }
     if (!d->gpuInput() || frame->device != d->converter->device()) {
         // CPU input, or a frame from another device (the capture device was
         // recreated): the same stream continues through a CPU copy.
         const QImage image = SnapTray::readBackD3D11Frame(*frame);
-        if (!image.isNull()) {
-            writeFrame(image, timestampMs);
+        if (image.isNull()) {
+            return false;
         }
-        return;
+        writeFrame(image, timestampMs);
+        return true;
     }
     ComPtr<IMFSample> sample;
     const HRESULT hr = d->converter->convert(frame->texture.Get(), frame->size, &sample);
+    // A failed GPU write is rejected like a failed WriteSample on the CPU
+    // path: retrying it as an image would not succeed on a lost device.
     if (d->writeGpuSample(hr, sample.Get(), timestampMs)) {
         emit progress(d->framesWritten);
     }
+    return true;
 }
 
 void MediaFoundationEncoder::writeFrame(const QImage &frame, qint64 timestampMs)

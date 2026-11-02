@@ -28,6 +28,9 @@ class RecordingHealth
 {
 public:
     enum class FrameDrop { QueueFull, QueueBytes, QueueStale, EncoderRejected };
+    // How a video frame reached the encoder: the capture surface as is, or the
+    // CPU image, and why the surface was not used.
+    enum class FramePath { Native, NoNativeBuffer, Watermark, Disabled, Incompatible };
 
     struct ClockCounters {
         qint64 beforeStart = 0;
@@ -49,6 +52,11 @@ public:
         qint64 droppedQueueBytes = 0;
         qint64 droppedQueueStale = 0;
         qint64 encoderRejected = 0;
+        qint64 nativeFrames = 0;
+        qint64 imageNoNativeBuffer = 0;
+        qint64 imageWatermark = 0;
+        qint64 imageDisabled = 0;
+        qint64 imageIncompatible = 0;
         qint64 audioQueued = 0;
         qint64 audioDropped = 0;
         qint64 audioDroppedBytes = 0;
@@ -77,6 +85,7 @@ public:
     void frameDropped(FrameDrop reason);
     // A frame left the queue and the encoder took it.
     void frameEncoded(qint64 queueAgeNs, qint64 encodeNs, qint64 nowNs);
+    void framePath(FramePath path);
     void audioQueued();
     void audioDropped(qint64 bytes);
     void setClockCounters(const ClockCounters& counters);

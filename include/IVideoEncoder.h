@@ -35,25 +35,36 @@ public:
     // Encoding lifecycle
     virtual bool start(const QString &outputPath, const QSize &frameSize, int frameRate) = 0;
     virtual void writeFrame(const QImage &frame, qint64 timestampMs = -1) = 0;
+
+    /**
+     * @brief Encode a capture backend's own surface without a CPU copy.
+     * @param nativeBuffer CapturedFrame::nativeBuffer (a CVPixelBuffer on macOS)
+     * @return true when the encoder took charge of the frame (written, or
+     * dropped the way writeFrame() drops under backpressure); false when it
+     * cannot use this buffer as is (pixel format or size). The caller then
+     * writes the frame's image instead, so no frame is lost.
+     */
+    virtual bool writeNativeFrame(const std::shared_ptr<void> &nativeBuffer, qint64 timestampMs)
+    {
+        Q_UNUSED(nativeBuffer);
+        Q_UNUSED(timestampMs);
+        return false;
+    }
+
     virtual void finish() = 0;
     virtual void abort() = 0;
 
-    // ========== Native (GPU) frames ==========
+    // ========== Capture device (Windows GPU frames, #155) ==========
 
     // The capture device frames will arrive on (ICaptureEngine::
     // nativeFrameDevice()). Call before start(); an encoder that can encode
     // that device's surfaces directly turns on acceptsNativeFrames().
     virtual void setNativeFrameDevice(std::shared_ptr<void> device) { Q_UNUSED(device); }
 
-    // After start(): writeNativeFrame() takes CapturedFrame::nativeBuffer.
-    // writeFrame() keeps working, so CPU frames (watermark, capture fallback)
-    // can still be mixed in.
+    // After start(): every native buffer from that device is taken by
+    // writeNativeFrame(), including frames that carry no image, so capture
+    // may skip its CPU copy. writeFrame() keeps working alongside.
     virtual bool acceptsNativeFrames() const { return false; }
-    virtual void writeNativeFrame(const std::shared_ptr<void> &nativeBuffer, qint64 timestampMs)
-    {
-        Q_UNUSED(nativeBuffer);
-        Q_UNUSED(timestampMs);
-    }
 
     // State queries
     virtual bool isRunning() const = 0;

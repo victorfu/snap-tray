@@ -6,6 +6,7 @@
 #include <QMutex>
 #include <QThread>
 #include <QWaitCondition>
+#include <QTemporaryDir>
 
 #include "encoding/EncodingWorker.h"
 #include "IVideoEncoder.h"
@@ -276,21 +277,28 @@ private:
     QString m_outputPath;
 };
 
-// Takes GPU frames (#155): counts what arrives by which path.
+// Takes native buffers when `acceptNative`, like AVFoundationEncoder with a
+// matching surface, and records which path every frame came in by.
 class NativeFrameVideoEncoder final : public IVideoEncoder
 {
 public:
+    explicit NativeFrameVideoEncoder(bool acceptNative) : m_acceptNative(acceptNative) {}
     bool isAvailable() const override { return true; }
     QString encoderName() const override { return QStringLiteral("NativeFrameVideoEncoder"); }
     bool start(const QString& outputPath, const QSize&, int) override { m_outputPath = outputPath; m_running = true; return true; }
-    void writeFrame(const QImage&, qint64) override { ++m_imageFrames; ++m_framesWritten; }
-    bool acceptsNativeFrames() const override { return true; }
-    void writeNativeFrame(const std::shared_ptr<void>& nativeBuffer, qint64) override
+    void writeFrame(const QImage& frame, qint64) override
     {
-        if (nativeBuffer) {
-            ++m_nativeFrames;
-            ++m_framesWritten;
-        }
+        m_lastImageColor = frame.pixel(0, 0);
+        ++m_imageFrames;
+        ++m_framesWritten;
+    }
+    bool writeNativeFrame(const std::shared_ptr<void>& nativeBuffer, qint64) override
+    {
+        ++m_nativeOffers;
+        if (!m_acceptNative || !nativeBuffer) return false;
+        ++m_nativeFrames;
+        ++m_framesWritten;
+        return true;
     }
     void finish() override { m_running = false; emit finished(true, m_outputPath); }
     void abort() override { m_running = false; }
@@ -298,10 +306,14 @@ public:
     QString lastError() const override { return {}; }
     qint64 framesWritten() const override { return m_framesWritten; }
     QString outputPath() const override { return m_outputPath; }
-    std::atomic<int> m_imageFrames{0};
+
+    std::atomic<int> m_nativeOffers{0};
     std::atomic<int> m_nativeFrames{0};
+    std::atomic<int> m_imageFrames{0};
+    std::atomic<QRgb> m_lastImageColor{0};
 
 private:
+    bool m_acceptNative;
     std::atomic<qint64> m_framesWritten{0};
     bool m_running = false;
     QString m_outputPath;
@@ -345,6 +357,12 @@ private slots:
     void testStaleQueueDropsAndAges();
     void testEncoderRejectionsAreCounted();
     void testAudioOverloadIsCounted();
+    void testNativeBufferSkipsImage();
+    void testIncompatibleNativeBufferFallsBackToImage();
+    void testWatermarkForcesImagePath();
+    void testNativeFramesCanBeTurnedOff();
+    void testFramesWithoutNativeBufferUseImage();
+    void testNativeBuffersAreReleasedAfterEncoding();
     void testNativeFramesReachTheEncoderWithoutAnImage();
     void testNativeFramesAreRejectedUnderAWatermark();
     void testNativeFramesCountTheirPixelsAgainstTheByteBudget();
@@ -687,9 +705,129 @@ void TestEncodingWorker::testAudioOverloadIsCounted()
     QCOMPARE(qint64(encoder->m_audioPackets.load()), s.audioQueued);
 }
 
+namespace {
+// A stand-in surface: only its lifetime matters to the worker.
+std::shared_ptr<void> fakeNativeBuffer(std::atomic<int>* released = nullptr)
+{
+    static int surface = 0;
+    return std::shared_ptr<void>(&surface, [released](void*) {
+        if (released) ++*released;
+    });
+}
+
+using FramePath = SnapTray::RecordingHealth::FramePath;
+
+// Encodes `frames` frames, all with a native buffer, and returns the counters.
+SnapTray::RecordingHealth::Snapshot encodeNativeFrames(EncodingWorker& worker, int frames)
+{
+    auto health = std::make_shared<SnapTray::RecordingHealth>();
+    worker.setHealth(health);
+    if (!worker.start()) return {};
+    for (int i = 0; i < frames; ++i) {
+        EncodingWorker::FrameData data{frameOfSize(16), i * 33, 0, fakeNativeBuffer()};
+        if (!worker.enqueueFrame(data)) return {};
+        if (!QTest::qWaitFor([&] { return worker.queueDepth() == 0; }, 5000)) return {};
+    }
+    finishAndWait(worker);
+    return health->snapshot(SnapTray::captureClockNowNs());
+}
+} // namespace
+
+void TestEncodingWorker::testNativeBufferSkipsImage()
+{
+    auto* encoder = new NativeFrameVideoEncoder(true);
+    ThreadedWorker run(encoder);
+    const auto s = encodeNativeFrames(run.worker, 3);
+    QCOMPARE(encoder->m_nativeFrames.load(), 3);
+    QCOMPARE(encoder->m_imageFrames.load(), 0);
+    QCOMPARE(s.nativeFrames, qint64(3));
+    QCOMPARE(s.encoded, qint64(3));
+    QCOMPARE(s.encoderRejected, qint64(0));
+}
+
+void TestEncodingWorker::testIncompatibleNativeBufferFallsBackToImage()
+{
+    auto* encoder = new NativeFrameVideoEncoder(false);
+    ThreadedWorker run(encoder);
+    const auto s = encodeNativeFrames(run.worker, 3);
+    // The encoder was asked, declined, and still got every frame.
+    QCOMPARE(encoder->m_nativeOffers.load(), 3);
+    QCOMPARE(encoder->m_imageFrames.load(), 3);
+    QCOMPARE(s.imageIncompatible, qint64(3));
+    QCOMPARE(s.nativeFrames, qint64(0));
+    QCOMPARE(s.encoded, qint64(3));
+}
+
+void TestEncodingWorker::testWatermarkForcesImagePath()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString markPath = dir.filePath(QStringLiteral("mark.png"));
+    QImage mark(16, 16, QImage::Format_ARGB32);
+    mark.fill(Qt::green);
+    QVERIFY(mark.save(markPath));
+
+    auto* encoder = new NativeFrameVideoEncoder(true);
+    ThreadedWorker run(encoder);
+    WatermarkRenderer::Settings settings;
+    settings.enabled = true;
+    settings.imagePath = markPath;
+    settings.opacity = 1.0;
+    settings.imageScale = 100;
+    settings.margin = 0;
+    run.worker.setWatermarkSettings(settings);
+    const auto s = encodeNativeFrames(run.worker, 2);
+    // The surface has no watermark: it must not be encoded as is.
+    QCOMPARE(encoder->m_nativeOffers.load(), 0);
+    QCOMPARE(encoder->m_imageFrames.load(), 2);
+    QCOMPARE(QColor(encoder->m_lastImageColor.load()), QColor(Qt::green));
+    QCOMPARE(s.imageWatermark, qint64(2));
+}
+
+void TestEncodingWorker::testNativeFramesCanBeTurnedOff()
+{
+    auto* encoder = new NativeFrameVideoEncoder(true);
+    ThreadedWorker run(encoder);
+    run.worker.setNativeFramesEnabled(false);
+    const auto s = encodeNativeFrames(run.worker, 2);
+    QCOMPARE(encoder->m_nativeOffers.load(), 0);
+    QCOMPARE(encoder->m_imageFrames.load(), 2);
+    QCOMPARE(s.imageDisabled, qint64(2));
+}
+
+void TestEncodingWorker::testFramesWithoutNativeBufferUseImage()
+{
+    auto* encoder = new NativeFrameVideoEncoder(true);
+    ThreadedWorker run(encoder);
+    auto health = std::make_shared<SnapTray::RecordingHealth>();
+    run.worker.setHealth(health);
+    QVERIFY(run.worker.start());
+    QVERIFY(run.worker.enqueueFrame({frameOfSize(16), 0}));
+    QVERIFY(finishAndWait(run.worker));
+    QCOMPARE(encoder->m_nativeOffers.load(), 0);
+    QCOMPARE(encoder->m_imageFrames.load(), 1);
+    QCOMPARE(health->snapshot(SnapTray::captureClockNowNs()).imageNoNativeBuffer, qint64(1));
+}
+
+void TestEncodingWorker::testNativeBuffersAreReleasedAfterEncoding()
+{
+    // Capture pools are small: the worker must not keep surfaces it is done with.
+    auto* encoder = new NativeFrameVideoEncoder(true);
+    ThreadedWorker run(encoder);
+    QVERIFY(run.worker.start());
+    std::atomic<int> released{0};
+    constexpr int kFrames = 5;
+    for (int i = 0; i < kFrames; ++i) {
+        QVERIFY(run.worker.enqueueFrame({frameOfSize(16), i * 33, 0, fakeNativeBuffer(&released)}));
+    }
+    QTRY_COMPARE(released.load(), kFrames);
+    QCOMPARE(encoder->m_nativeFrames.load(), kFrames);
+    QVERIFY(finishAndWait(run.worker));
+}
+
 void TestEncodingWorker::testNativeFramesReachTheEncoderWithoutAnImage()
 {
-    auto* encoder = new NativeFrameVideoEncoder;
+    auto* encoder = new NativeFrameVideoEncoder(true);
     ThreadedWorker run(encoder);
     auto health = std::make_shared<SnapTray::RecordingHealth>();
     run.worker.setHealth(health);
@@ -710,7 +848,7 @@ void TestEncodingWorker::testNativeFramesReachTheEncoderWithoutAnImage()
 
 void TestEncodingWorker::testNativeFramesAreRejectedUnderAWatermark()
 {
-    auto* encoder = new NativeFrameVideoEncoder;
+    auto* encoder = new NativeFrameVideoEncoder(true);
     ThreadedWorker run(encoder);
     auto health = std::make_shared<SnapTray::RecordingHealth>();
     run.worker.setHealth(health);
@@ -732,7 +870,7 @@ void TestEncodingWorker::testNativeFramesCountTheirPixelsAgainstTheByteBudget()
 
     EncodingWorker worker; // on this thread: nothing is processed until events run
     worker.setEncoderType(EncodingWorker::EncoderType::Video);
-    worker.setVideoEncoder(new NativeFrameVideoEncoder);
+    worker.setVideoEncoder(new NativeFrameVideoEncoder(true));
     auto health = std::make_shared<SnapTray::RecordingHealth>();
     worker.setHealth(health);
     EncodingWorker::QueueBudget budget;

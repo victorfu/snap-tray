@@ -198,7 +198,7 @@ void TestWindowsGpuCapture::testDesktopDuplicationNativeFramesStayOnItsDevice()
     // The first frames can still be CPU copies from before the duplication
     // delivered; wait for a GPU one.
     SnapTray::CapturedFrame frame;
-    QTRY_VERIFY_WITH_TIMEOUT((frame = engine.pollFrame()).nativeBuffer != nullptr, kFrameTimeoutMs);
+    QTRY_VERIFY_WITH_TIMEOUT((frame = engine.captureNativeFrame()).nativeBuffer != nullptr, kFrameTimeoutMs);
     engine.stop();
     QVERIFY(frame.image.isNull());
     QCOMPARE(frame.pixelSize, pixelSize);

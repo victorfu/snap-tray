@@ -26,6 +26,8 @@ public:
 
     bool start(const QString &outputPath, const QSize &frameSize, int frameRate) override;
     void writeFrame(const QImage &frame, qint64 timestampMs = -1) override;
+    // Encodes a BGRA CVPixelBuffer of the encoder's frame size without a copy.
+    bool writeNativeFrame(const std::shared_ptr<void> &nativeBuffer, qint64 timestampMs) override;
     void finish() override;
     void abort() override;
 

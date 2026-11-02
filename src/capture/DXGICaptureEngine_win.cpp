@@ -893,7 +893,7 @@ QImage DXGICaptureEngine::captureFrame()
     return d->getLatestFrame().image;
 }
 
-SnapTray::CapturedFrame DXGICaptureEngine::pollFrame()
+SnapTray::CapturedFrame DXGICaptureEngine::captureNativeFrame()
 {
     if (!d->running) {
         return {};
